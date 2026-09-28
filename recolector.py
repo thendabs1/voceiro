@@ -9,16 +9,22 @@ Fases:
   4. Podar por ventana de retención
   5. Escribir public/datos.json y public/index.html
   6. Reporte final: medios sin titulares (para añadir feeds después)
+
+Incluye parche SSL (OP_LEGACY_SERVER_CONNECT + SECLEVEL=1) para hablar con
+servidores antiguos que Python 3.11+ rechaza por defecto.
 """
 
 import json
 import os
+import ssl
 from datetime import datetime, timedelta
 import concurrent.futures
 
 import requests
 import feedparser
 from bs4 import BeautifulSoup
+from requests.adapters import HTTPAdapter
+from urllib3.util.ssl_ import create_urllib3_context
 
 from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
 
@@ -39,9 +45,48 @@ DATOS_PATH = 'public/datos.json'
 
 
 # ─────────────────────────────────────────────────────────────
+# SESIÓN HTTP CON SSL PERMISIVO
+# ─────────────────────────────────────────────────────────────
+class LegacySSLAdapter(HTTPAdapter):
+    """
+    Permite TLS con servidores antiguos que Python 3.11+ rechaza por defecto:
+      - UNSAFE_LEGACY_RENEGOTIATION_DISABLED
+      - SSLV3_ALERT_HANDSHAKE_FAILURE
+      - SSLCertVerificationError (certificados caducados o mal emitidos)
+    """
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = create_urllib3_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        # OP_LEGACY_SERVER_CONNECT = 0x4
+        try:
+            ctx.options |= 0x4
+        except Exception:
+            pass
+        try:
+            ctx.set_ciphers('DEFAULT@SECLEVEL=1')
+        except ssl.SSLError:
+            pass
+        kwargs['ssl_context'] = ctx
+        return super().init_poolmanager(*args, **kwargs)
+
+
+def _crear_sesion():
+    s = requests.Session()
+    adapter = LegacySSLAdapter()
+    s.mount('https://', adapter)
+    s.mount('http://', adapter)
+    s.headers.update(HEADERS)
+    return s
+
+
+SESSION = _crear_sesion()
+
+
+# ─────────────────────────────────────────────────────────────
 # FASE 1 · OBTENER TITULARES DE UN MEDIO
 # ─────────────────────────────────────────────────────────────
-def _parse_feed(content, base_url):
+def _parse_feed(content):
     """Devuelve lista de dicts {titular, enlace, fecha_pub} del feed."""
     feed = feedparser.parse(content)
     out = []
@@ -63,29 +108,30 @@ def _rss(medio):
     if not url:
         return None
     try:
-        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        r = SESSION.get(url, timeout=TIMEOUT)
         if r.status_code != 200:
             print(f"  [RSS {r.status_code}] {medio['n']}: {url}")
             return None
-        items = _parse_feed(r.content, url)
+        items = _parse_feed(r.content)
         if items:
             return items
     except Exception as e:
-        print(f"  [RSS!] {medio['n']}: {e}")
+        print(f"  [RSS!] {medio['n']}: {type(e).__name__}: {e}")
     return None
 
 
 def _scrape(medio):
-    """Scraping básico: coge titulares de h1/h2 con enlace."""
+    """Scraping básico: coge titulares de h1/h2/h3 con enlace."""
     url = f"https://{medio['d']}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        r = SESSION.get(url, timeout=TIMEOUT, allow_redirects=True)
         if r.status_code != 200:
+            print(f"  [SCRAPE {r.status_code}] {medio['n']}")
             return None
         soup = BeautifulSoup(r.text, 'lxml')
         vistos = set()
         out = []
-        for tag in soup.find_all(['h1', 'h2', 'h3'], limit=60):
+        for tag in soup.find_all(['h1', 'h2', 'h3'], limit=80):
             a = tag.find('a', href=True)
             if not a:
                 continue
@@ -95,6 +141,8 @@ def _scrape(medio):
             href = a['href']
             if href.startswith('/'):
                 href = url + href
+            elif href.startswith('//'):
+                href = 'https:' + href
             elif not href.startswith('http'):
                 continue
             if href in vistos:
@@ -105,12 +153,12 @@ def _scrape(medio):
                 break
         return out or None
     except Exception as e:
-        print(f"  [SCRAPE!] {medio['n']}: {e}")
+        print(f"  [SCRAPE!] {medio['n']}: {type(e).__name__}: {e}")
     return None
 
 
 def obtener_titulares(medio):
-    """Devuelve (medio, lista_noticias, fuente) o (medio, [], None)."""
+    """Devuelve (medio, lista_noticias, fuente)."""
     items = _rss(medio)
     fuente = 'RSS'
     if not items:
@@ -131,7 +179,7 @@ def obtener_titulares(medio):
         'enlace':    it['enlace'],
         'fecha_pub': it.get('fecha_pub', ''),
         'fuente':    fuente,
-        'fecha':     ahora,   # momento de recolección
+        'fecha':     ahora,
     } for it in items]
 
     return (medio, noticias, fuente)
@@ -225,22 +273,25 @@ def main():
     print(f"── Recolectando {len(medios)} medios (hasta {N_FEED} cada uno) ──")
 
     todas = []
-    fuentes = {'RSS': 0, 'Scraping': 0}
+    contador_rss = 0
+    contador_scrape = 0
     sin_resultado = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
         for medio, noticias, fuente in ex.map(obtener_titulares, medios):
             if noticias:
                 todas.extend(noticias)
-                fuentes[fuente] = fuentes.get(fuente, 0) + 1
+                if fuente == 'RSS':
+                    contador_rss += 1
+                else:
+                    contador_scrape += 1
                 print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares")
             else:
                 sin_resultado.append(medio['n'])
                 print(f"✗ {medio['n']}: sin titulares")
 
     print(f"\nTitulares brutos: {len(todas)}")
-    print(f"Medios con resultado: {fuentes.get('RSS',0)} por RSS · "
-          f"{fuentes.get('Scraping',0)} por scraping")
+    print(f"Medios con resultado: {contador_rss} por RSS · {contador_scrape} por scraping")
 
     print("\n── Cargando histórico ──")
     historico = cargar_historico()
