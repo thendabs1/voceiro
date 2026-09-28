@@ -5,74 +5,270 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voceiro · Titulares</title>
 <style>
+  /* ─────────────────────────────────────────────────────────────
+     VARIABLES · Modo lector por defecto
+     ───────────────────────────────────────────────────────────── */
   :root{
-    --bg:#f4f4f9; --card:#fff; --text:#111; --muted:#666;
-    --primary:#0056b3; --primary-hover:#e6f2ff; --border:#ddd; --badge:#eef;
-    --preset:#0a7d3f; --preset-hover:#e6f7ec;
+    --font-size: 22px;
+    --line-height: 1.7;
+    --max-width: 820px;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    --bg: #f4f4f9;
+    --card: #ffffff;
+    --text: #111111;
+    --muted: #666666;
+    --primary: #0056b3;
+    --primary-hover: #e6f2ff;
+    --border: #cccccc;
+    --badge: #eef2ff;
+    --badge-text: #334;
+
+    --preset: #0a7d3f;
+    --preset-hover: #e6f7ec;
+    --mark-bg: #ffe680;
+    --mark-text: #111;
   }
+
+  /* Tema oscuro */
+  [data-tema="oscuro"]{
+    --bg: #16181c;
+    --card: #22252b;
+    --text: #eaeaea;
+    --muted: #a5a5a5;
+    --primary: #6cb3ff;
+    --primary-hover: #1e3550;
+    --border: #3a3d44;
+    --badge: #2c3542;
+    --badge-text: #cfd6e0;
+    --preset: #4cc97a;
+    --preset-hover: #173524;
+    --mark-bg: #b58600;
+    --mark-text: #fff;
+  }
+
+  /* Alto contraste */
+  [data-contraste="alto"]{
+    --bg: #000000;
+    --card: #000000;
+    --text: #ffffff;
+    --muted: #ffff00;
+    --primary: #ffff00;
+    --primary-hover: #333300;
+    --border: #ffffff;
+    --badge: #000000;
+    --badge-text: #ffff00;
+    --preset: #00ff00;
+    --preset-hover: #003300;
+    --mark-bg: #ffff00;
+    --mark-text: #000;
+  }
+  [data-contraste="alto"] .noticia,
+  [data-contraste="alto"] .barra-superior,
+  [data-contraste="alto"] .panel-acces,
+  [data-contraste="alto"] .panel-preset,
+  [data-contraste="alto"] .filtros input,
+  [data-contraste="alto"] .filtros select,
+  [data-contraste="alto"] .filtros button{
+    border: 2px solid var(--border);
+  }
+
+  [data-interlineado="compacto"]{ --line-height: 1.35; }
+  [data-interlineado="normal"]  { --line-height: 1.7; }
+  [data-interlineado="amplio"]  { --line-height: 2.0; }
+
+  [data-ancho="estrecho"]{ --max-width: 640px; }
+  [data-ancho="normal"]  { --max-width: 820px; }
+  [data-ancho="ancho"]   { --max-width: 1100px; }
+  [data-ancho="completo"]{ --max-width: 100%; }
+
+  [data-dislexia="on"]{
+    --font-family: "Comic Sans MS", "Verdana", "Tahoma", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.05em;
+    word-spacing: 0.15em;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     BASE
+     ───────────────────────────────────────────────────────────── */
   *{box-sizing:border-box}
   body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    background:var(--bg); color:var(--text);
-    max-width:960px; margin:0 auto; padding:20px;
-    line-height:1.5; font-size:18px;
+    font-family: var(--font-family);
+    background: var(--bg);
+    color: var(--text);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 20px;
+    transition: background .15s, color .15s;
   }
-  h1{border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:4px}
-  .meta{color:var(--muted); font-size:15px; margin-top:4px}
+  h1{
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 8px; margin-bottom: 4px;
+    font-size: 1.5em;
+  }
+  .meta{color: var(--muted); font-size: 0.75em; margin-top: 4px}
 
+  /* ─────────────────────────────────────────────────────────────
+     BARRA SUPERIOR
+     ───────────────────────────────────────────────────────────── */
   .barra-superior{
-    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
-    margin:16px 0 8px; padding:10px;
-    background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.06);
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    margin:16px 0 8px; padding:12px;
+    background: var(--card); border-radius:8px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06);
   }
   .btn-preset{
-    font-size:16px; font-weight:600; padding:10px 16px; border-radius:8px;
-    border:2px solid var(--preset); background:#fff; color:var(--preset);
-    cursor:pointer; transition:all .15s;
+    font-size:0.85em; font-weight:600; padding:10px 16px; border-radius:8px;
+    border:2px solid var(--preset); background:transparent; color: var(--preset);
+    cursor:pointer; font-family:inherit;
   }
-  .btn-preset:hover{background:var(--preset-hover)}
-  .btn-preset.activo{background:var(--preset); color:#fff}
+  .btn-preset:hover{background: var(--preset-hover)}
+  .btn-preset.activo{background: var(--preset); color:#fff}
   .btn-preset.activo::after{content:' ✓'}
   .barra-superior .info{
-    color:var(--muted); font-size:13px; flex:1; min-width:200px;
+    color: var(--muted); font-size:0.7em; flex:1; min-width:160px;
+  }
+  .btn-acces{
+    font-size:0.85em; font-weight:600; padding:10px 14px; border-radius:8px;
+    border:2px solid var(--border); background:transparent; color: var(--text);
+    cursor:pointer; font-family:inherit;
+  }
+  .btn-acces:hover{background: var(--primary-hover)}
+
+  /* ─────────────────────────────────────────────────────────────
+     PANELES (accesibilidad + preset config)
+     ───────────────────────────────────────────────────────────── */
+  .panel-acces, .panel-preset{
+    background: var(--card);
+    border-radius:8px;
+    padding:16px;
+    margin-bottom:8px;
+    box-shadow:0 1px 3px rgba(0,0,0,.06);
+    display:none;
+  }
+  .panel-acces.abierto, .panel-preset.abierto{display:block}
+  .panel-acces h2, .panel-preset h2{
+    font-size:0.85em; margin:0 0 12px; text-transform:uppercase;
+    letter-spacing:.08em; color: var(--muted);
   }
 
+  .acces-fila{
+    display:grid;
+    grid-template-columns: 150px 1fr;
+    gap:12px; align-items:center;
+    padding:8px 0;
+    border-top:1px solid var(--border);
+  }
+  .acces-fila:first-of-type{border-top:none}
+  .acces-fila label{
+    font-size:0.78em; color: var(--text); font-weight:600;
+  }
+  .grupo-botones{display:flex; flex-wrap:wrap; gap:6px}
+  .grupo-botones button{
+    font-size:0.78em; padding:6px 12px; border-radius:6px;
+    border:1.5px solid var(--border); background:transparent;
+    color: var(--text); cursor:pointer; font-family:inherit;
+  }
+  .grupo-botones button:hover{background: var(--primary-hover)}
+  .grupo-botones button.activo{
+    background: var(--primary); color:#fff; border-color: var(--primary);
+  }
+  [data-contraste="alto"] .grupo-botones button.activo{
+    background:#ffff00; color:#000; border-color:#ffff00;
+  }
+
+  .acces-acciones{
+    display:flex; justify-content:flex-end; gap:8px;
+    margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+  }
+  .acces-acciones button{
+    font-size:0.78em; padding:8px 14px; border-radius:6px;
+    border:1.5px solid var(--border); background:transparent;
+    color: var(--text); cursor:pointer; font-family:inherit;
+  }
+  .acces-acciones button:hover{background: var(--primary-hover)}
+  .acces-acciones button.primario{
+    background: var(--primary); color:#fff; border-color: var(--primary);
+  }
+
+  /* Panel de configuración del preset */
+  .preset-campo{
+    display:grid; gap:6px; margin-bottom:14px;
+  }
+  .preset-campo label{
+    font-size:0.78em; font-weight:600; color: var(--text);
+  }
+  .preset-campo .ayuda{
+    font-size:0.68em; color: var(--muted); font-weight:normal;
+  }
+  .preset-campo textarea,
+  .preset-campo input[type="text"]{
+    width:100%; padding:10px; border-radius:6px;
+    border:1px solid var(--border);
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-family); font-size:0.8em;
+    line-height:1.5; resize:vertical;
+  }
+  .preset-campo textarea{min-height:70px}
+
+  /* ─────────────────────────────────────────────────────────────
+     FILTROS
+     ───────────────────────────────────────────────────────────── */
   .filtros{
-    position:sticky; top:0; background:var(--bg);
+    position:sticky; top:0; background: var(--bg);
     padding:12px 0; display:grid;
     grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;
     gap:8px; border-bottom:1px solid var(--border); z-index:10;
+    margin-top:8px;
   }
   .filtros input, .filtros select, .filtros button{
-    font-size:15px; padding:8px 10px; border:1px solid var(--border);
-    border-radius:6px; background:#fff; font-family:inherit;
+    font-size:0.78em; padding:8px 10px; border:1px solid var(--border);
+    border-radius:6px; background: var(--card); color: var(--text);
+    font-family:inherit;
   }
-  .filtros button{cursor:pointer; background:#eee}
-  .filtros button:hover{background:#ddd}
-  #contador{color:var(--muted); font-size:14px; margin:8px 0 16px}
+  .filtros button{cursor:pointer}
+  .filtros button:hover{background: var(--primary-hover)}
+  #contador{color: var(--muted); font-size:0.7em; margin:8px 0 16px}
 
+  /* ─────────────────────────────────────────────────────────────
+     NOTICIA
+     ───────────────────────────────────────────────────────────── */
   .noticia{
-    background:var(--card); padding:12px 16px; margin-bottom:8px;
+    background: var(--card); padding:14px 18px; margin-bottom:10px;
     border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08);
   }
   .cabecera{
     display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-    margin-bottom:5px; font-size:12px; color:var(--muted);
+    margin-bottom:6px; font-size:0.65em; color: var(--muted);
   }
-  .badge{background:var(--badge); padding:2px 8px; border-radius:10px; color:#445}
+  .badge{
+    background: var(--badge); color: var(--badge-text);
+    padding:2px 8px; border-radius:10px;
+  }
   .badge.preset{background:#d8f3e3; color:#0a5c2f}
-  .medio{font-weight:bold; color:#333; font-size:15px; text-transform:uppercase; letter-spacing:.3px}
-  .noticia a{
-    color:var(--primary); text-decoration:none;
-    font-weight:600; font-size:19px; display:block; margin-top:2px;
+  [data-tema="oscuro"] .badge.preset{background:#173524; color:#4cc97a}
+  [data-contraste="alto"] .badge.preset{background:#003300; color:#00ff00}
+  .medio{
+    font-weight:bold; color: var(--text); font-size:1em;
+    text-transform:uppercase; letter-spacing:.3px;
   }
-  .noticia a:hover{background:var(--primary-hover)}
-  mark{background:#ffe680; padding:0 2px; border-radius:2px}
-  .vacio{text-align:center; color:var(--muted); padding:40px 0}
+  .noticia a{
+    color: var(--primary); text-decoration:none;
+    font-weight:600; display:block; margin-top:2px; font-size:1em;
+  }
+  .noticia a:hover{background: var(--primary-hover); text-decoration:underline}
+  mark{background: var(--mark-bg); color: var(--mark-text); padding:0 3px; border-radius:2px}
+  .vacio{text-align:center; color: var(--muted); padding:40px 0}
 
+  /* ─────────────────────────────────────────────────────────────
+     RESPONSIVE
+     ───────────────────────────────────────────────────────────── */
   @media (max-width:850px){
     .filtros{grid-template-columns:1fr 1fr 1fr}
     #buscar{grid-column:1/-1}
+    .acces-fila{grid-template-columns:1fr; gap:6px}
   }
   @media (max-width:500px){
     .filtros{grid-template-columns:1fr 1fr}
@@ -80,20 +276,109 @@
 </style>
 </head>
 <body>
+
 <header>
   <h1>Voceiro</h1>
   <p class="meta">Actualizado: <span id="fecha">{{FECHA}}</span> · <span id="total">{{TOTAL}}</span> titulares en histórico</p>
 </header>
 
+<!-- BARRA SUPERIOR -->
 <section class="barra-superior">
-  <button id="btn-preset" class="btn-preset" type="button" title="Galicia + El País + elDiario.es + InfoLibre + titulares que mencionen Poio, Pontevedra, Caldas o Galicia">
+  <button id="btn-preset" class="btn-preset" type="button">
     🏔 Modo Mi Zona
   </button>
-  <span class="info" id="preset-info">
-    Activo por defecto: Galicia · El País · elDiario.es · InfoLibre · palabras clave
-  </span>
+  <button id="btn-config-preset" class="btn-acces" type="button" aria-expanded="false" aria-controls="panel-preset">
+    ⚙️ Configurar Mi Zona
+  </button>
+  <span class="info" id="preset-info"></span>
+  <button id="btn-acces" class="btn-acces" type="button" aria-expanded="false" aria-controls="panel-acces">
+    ♿ Accesibilidad
+  </button>
 </section>
 
+<!-- PANEL: CONFIGURAR MI ZONA -->
+<section id="panel-preset" class="panel-preset" role="region" aria-label="Configurar Modo Mi Zona">
+  <h2>Configurar Mi Zona</h2>
+
+  <div class="preset-campo">
+    <label for="preset-grupos">Grupos completos <span class="ayuda">(uno por línea o separados por comas)</span></label>
+    <textarea id="preset-grupos" placeholder="Galicia"></textarea>
+  </div>
+
+  <div class="preset-campo">
+    <label for="preset-medios">Medios <span class="ayuda">(nombre exacto, uno por línea o separados por comas)</span></label>
+    <textarea id="preset-medios" placeholder="El País&#10;elDiario.es&#10;InfoLibre"></textarea>
+  </div>
+
+  <div class="preset-campo">
+    <label for="preset-palabras">Palabras clave <span class="ayuda">(en el titular; una por línea o separados por comas)</span></label>
+    <textarea id="preset-palabras" placeholder="poio&#10;pontevedra&#10;caldas de reis&#10;galicia"></textarea>
+  </div>
+
+  <div class="acces-acciones">
+    <button id="preset-reset" type="button">↺ Valores por defecto</button>
+    <button id="preset-cancelar" type="button">Cancelar</button>
+    <button id="preset-guardar" type="button" class="primario">Guardar</button>
+  </div>
+</section>
+
+<!-- PANEL: ACCESIBILIDAD -->
+<section id="panel-acces" class="panel-acces" role="region" aria-label="Opciones de accesibilidad">
+  <h2>Opciones de lectura</h2>
+
+  <div class="acces-fila">
+    <label>🔤 Tamaño de letra</label>
+    <div class="grupo-botones" data-grupo="fuente">
+      <button data-val="18">Pequeña</button>
+      <button data-val="20">Media</button>
+      <button data-val="22" class="activo">Grande</button>
+      <button data-val="25">Muy grande</button>
+      <button data-val="28">Enorme</button>
+    </div>
+  </div>
+
+  <div class="acces-fila">
+    <label>📏 Interlineado</label>
+    <div class="grupo-botones" data-grupo="interlineado">
+      <button data-val="compacto">Compacto</button>
+      <button data-val="normal" class="activo">Normal</button>
+      <button data-val="amplio">Amplio</button>
+    </div>
+  </div>
+
+  <div class="acces-fila">
+    <label>📐 Ancho de columna</label>
+    <div class="grupo-botones" data-grupo="ancho">
+      <button data-val="estrecho">Estrecho</button>
+      <button data-val="normal" class="activo">Normal</button>
+      <button data-val="ancho">Ancho</button>
+      <button data-val="completo">Completo</button>
+    </div>
+  </div>
+
+  <div class="acces-fila">
+    <label>🌓 Tema</label>
+    <div class="grupo-botones" data-grupo="tema">
+      <button data-val="claro" class="activo">Claro</button>
+      <button data-val="oscuro">Oscuro</button>
+      <button data-val="contraste">Alto contraste</button>
+    </div>
+  </div>
+
+  <div class="acces-fila">
+    <label>♿ Fuente para dislexia</label>
+    <div class="grupo-botones" data-grupo="dislexia">
+      <button data-val="off" class="activo">Desactivada</button>
+      <button data-val="on">Activada</button>
+    </div>
+  </div>
+
+  <div class="acces-acciones">
+    <button id="acces-reset" type="button">↺ Restablecer valores</button>
+  </div>
+</section>
+
+<!-- FILTROS -->
 <section class="filtros">
   <input type="search" id="buscar" placeholder="🔍 Buscar en titulares…" autocomplete="off">
   <select id="grupo"><option value="">Todos los grupos</option></select>
@@ -112,56 +397,227 @@
 <main id="resultados"></main>
 
 <script>
-/* ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
+   ACCESIBILIDAD
+   ═══════════════════════════════════════════════════════════════ */
+const ACCES_DEFECTO = {
+  fuente: '22',
+  interlineado: 'normal',
+  ancho: 'normal',
+  tema: 'claro',
+  dislexia: 'off',
+};
+
+let ACCES = cargarAcces();
+
+function cargarAcces(){
+  try{
+    const raw = localStorage.getItem('voceiro-acces');
+    return raw ? { ...ACCES_DEFECTO, ...JSON.parse(raw) } : { ...ACCES_DEFECTO };
+  }catch(e){ return { ...ACCES_DEFECTO }; }
+}
+
+function guardarAcces(){
+  try{ localStorage.setItem('voceiro-acces', JSON.stringify(ACCES)); }catch(e){}
+}
+
+function aplicarAcces(){
+  const html = document.documentElement;
+  html.style.setProperty('--font-size', ACCES.fuente + 'px');
+  html.dataset.interlineado = ACCES.interlineado;
+  html.dataset.ancho = ACCES.ancho;
+  html.dataset.tema = ACCES.tema === 'oscuro' ? 'oscuro' : 'claro';
+  html.dataset.contraste = ACCES.tema === 'contraste' ? 'alto' : '';
+  html.dataset.dislexia = ACCES.dislexia;
+
+  document.querySelectorAll('.grupo-botones').forEach(g => {
+    const clave = g.dataset.grupo;
+    g.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('activo', b.dataset.val === String(ACCES[clave]));
+    });
+  });
+}
+
+function initAcces(){
+  aplicarAcces();
+
+  const btn = document.getElementById('btn-acces');
+  const panel = document.getElementById('panel-acces');
+  btn.addEventListener('click', () => {
+    const abierto = panel.classList.toggle('abierto');
+    btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  });
+
+  document.querySelectorAll('.grupo-botones').forEach(g => {
+    const clave = g.dataset.grupo;
+    g.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      ACCES[clave] = b.dataset.val;
+      guardarAcces();
+      aplicarAcces();
+    });
+  });
+
+  document.getElementById('acces-reset').addEventListener('click', () => {
+    ACCES = { ...ACCES_DEFECTO };
+    guardarAcces();
+    aplicarAcces();
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
    PRESET "MI ZONA"
-   ───────────────────────────────────────────────────────────── */
-const PRESET = {
-  grupoGalicia: 'Galicia',
+   ═══════════════════════════════════════════════════════════════ */
+const PRESET_DEFECTO = {
+  grupos: ['Galicia'],
   medios: ['El País', 'elDiario.es', 'InfoLibre'],
   palabras: ['poio', 'pontevedra', 'caldas de reis', 'caldas de rei',
              'caldas de resi', 'galicia'],
 };
 
-/* Normaliza texto: minúsculas sin tildes */
+let PRESET = cargarPreset();
+let RX_PRESET = null;
+let PRESET_MEDIOS_SET = new Set();
+let PRESET_GRUPOS_SET = new Set();
+let presetActivo = true;
+
+function cargarPreset(){
+  try{
+    const raw = localStorage.getItem('voceiro-preset');
+    if (!raw) return structuredClone(PRESET_DEFECTO);
+    const p = JSON.parse(raw);
+    // Validación mínima
+    return {
+      grupos:   Array.isArray(p.grupos)   ? p.grupos   : PRESET_DEFECTO.grupos,
+      medios:   Array.isArray(p.medios)   ? p.medios   : PRESET_DEFECTO.medios,
+      palabras: Array.isArray(p.palabras) ? p.palabras : PRESET_DEFECTO.palabras,
+    };
+  }catch(e){ return structuredClone(PRESET_DEFECTO); }
+}
+
+function guardarPreset(){
+  try{ localStorage.setItem('voceiro-preset', JSON.stringify(PRESET)); }catch(e){}
+}
+
 function normalize(s){
   return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
 
-/* Regex \b(...)\b sobre las palabras del preset (ya normalizadas) */
-const RX_PRESET = new RegExp(
-  '\\b(' + PRESET.palabras.map(p => normalize(p).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|') + ')\\b'
-);
-const PRESET_MEDIOS_SET = new Set(PRESET.medios);
+function recompilarPreset(){
+  PRESET_MEDIOS_SET = new Set(PRESET.medios);
+  PRESET_GRUPOS_SET = new Set(PRESET.grupos);
 
-/* ¿Cumple el preset esta noticia? */
+  const palabrasNorm = PRESET.palabras
+    .map(p => normalize(p).trim())
+    .filter(Boolean)
+    .map(p => p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+
+  RX_PRESET = palabrasNorm.length
+    ? new RegExp('\\b(' + palabrasNorm.join('|') + ')\\b')
+    : null;
+}
+
 function cumplePreset(n){
-  if (n.grupo === PRESET.grupoGalicia) return true;
+  if (PRESET_GRUPOS_SET.has(n.grupo)) return true;
   if (PRESET_MEDIOS_SET.has(n.medio)) return true;
-  if (RX_PRESET.test(n._titNorm)) return true;
+  if (RX_PRESET && RX_PRESET.test(n._titNorm)) return true;
   return false;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   ESTADO
-   ───────────────────────────────────────────────────────────── */
-let NOTICIAS = [];
-let presetActivo = true;   // arranca activado
+function textareasAPreset(){
+  const parseLista = txt => txt.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  return {
+    grupos:   parseLista(document.getElementById('preset-grupos').value),
+    medios:   parseLista(document.getElementById('preset-medios').value),
+    palabras: parseLista(document.getElementById('preset-palabras').value),
+  };
+}
 
-/* ─────────────────────────────────────────────────────────────
+function presetATextareas(p){
+  document.getElementById('preset-grupos').value   = p.grupos.join('\n');
+  document.getElementById('preset-medios').value   = p.medios.join('\n');
+  document.getElementById('preset-palabras').value = p.palabras.join('\n');
+}
+
+function actualizarInfoPreset(){
+  const info = document.getElementById('preset-info');
+  const nGrupos = PRESET.grupos.length;
+  const nMedios = PRESET.medios.length;
+  const nPal    = PRESET.palabras.length;
+  info.textContent = `Mi Zona: ${nGrupos} grupo${nGrupos!==1?'s':''} · `
+                   + `${nMedios} medio${nMedios!==1?'s':''} · `
+                   + `${nPal} palabra${nPal!==1?'s':''}`;
+}
+
+function initPreset(){
+  recompilarPreset();
+  presetATextareas(PRESET);
+  actualizarInfoPreset();
+
+  const btnPreset = document.getElementById('btn-preset');
+  const btnConfig = document.getElementById('btn-config-preset');
+  const panel     = document.getElementById('panel-preset');
+
+  btnPreset.addEventListener('click', () => {
+    presetActivo = !presetActivo;
+    btnPreset.classList.toggle('activo', presetActivo);
+    aplicarFiltros();
+  });
+
+  btnConfig.addEventListener('click', () => {
+    const abierto = panel.classList.toggle('abierto');
+    btnConfig.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    if (abierto) presetATextareas(PRESET);
+  });
+
+  document.getElementById('preset-guardar').addEventListener('click', () => {
+    PRESET = textareasAPreset();
+    guardarPreset();
+    recompilarPreset();
+    actualizarInfoPreset();
+    panel.classList.remove('abierto');
+    btnConfig.setAttribute('aria-expanded', 'false');
+    aplicarFiltros();
+  });
+
+  document.getElementById('preset-cancelar').addEventListener('click', () => {
+    presetATextareas(PRESET);
+    panel.classList.remove('abierto');
+    btnConfig.setAttribute('aria-expanded', 'false');
+  });
+
+  document.getElementById('preset-reset').addEventListener('click', () => {
+    PRESET = structuredClone(PRESET_DEFECTO);
+    presetATextareas(PRESET);
+    guardarPreset();
+    recompilarPreset();
+    actualizarInfoPreset();
+    aplicarFiltros();
+  });
+
+  // Estado inicial del botón preset
+  btnPreset.classList.toggle('activo', presetActivo);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    INICIALIZACIÓN
-   ───────────────────────────────────────────────────────────── */
+   ═══════════════════════════════════════════════════════════════ */
+let NOTICIAS = [];
+
 async function init(){
+  initAcces();
+  initPreset();
+
   const res = await fetch('datos.json?' + Date.now());
   const data = await res.json();
   NOTICIAS = data.noticias || [];
 
-  // Índices de búsqueda precalculados
   NOTICIAS.forEach(n => {
     n._norm    = normalize(n.titular + ' ' + n.medio);
     n._titNorm = normalize(n.titular);
   });
 
-  // Rellenar selects
   const selGrupo = document.getElementById('grupo');
   [...new Set(NOTICIAS.map(n=>n.grupo))].sort().forEach(g => selGrupo.add(new Option(g,g)));
 
@@ -178,41 +634,22 @@ async function init(){
     selMedio.appendChild(og);
   });
 
-  // Listeners
   ['buscar','grupo','tipo','medio','rango'].forEach(id =>
     document.getElementById(id).addEventListener('input', aplicarFiltros)
   );
-  document.getElementById('btn-preset').addEventListener('click', () => {
-    presetActivo = !presetActivo;
-    actualizarBotonPreset();
-    aplicarFiltros();
-  });
   document.getElementById('limpiar').addEventListener('click', () => {
     ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
     presetActivo = false;
-    actualizarBotonPreset();
+    document.getElementById('btn-preset').classList.remove('activo');
     aplicarFiltros();
   });
 
-  actualizarBotonPreset();
   aplicarFiltros();
 }
 
-function actualizarBotonPreset(){
-  const btn = document.getElementById('btn-preset');
-  const info = document.getElementById('preset-info');
-  if (presetActivo){
-    btn.classList.add('activo');
-    info.textContent = 'Mostrando: Galicia · El País · elDiario.es · InfoLibre · titulares con Poio/Pontevedra/Caldas/Galicia';
-  } else {
-    btn.classList.remove('activo');
-    info.textContent = 'Preset desactivado · mostrando todos los medios';
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
    FILTRADO
-   ───────────────────────────────────────────────────────────── */
+   ═══════════════════════════════════════════════════════════════ */
 function aplicarFiltros(){
   const q = normalize(document.getElementById('buscar').value.trim());
   const g = document.getElementById('grupo').value;
@@ -242,9 +679,9 @@ function aplicarFiltros(){
   render(filtradas, tokens);
 }
 
-/* ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
    RESALTADO
-   ───────────────────────────────────────────────────────────── */
+   ═══════════════════════════════════════════════════════════════ */
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -274,9 +711,9 @@ function resaltar(texto, tokens){
   return out;
 }
 
-/* ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
    RENDER
-   ───────────────────────────────────────────────────────────── */
+   ═══════════════════════════════════════════════════════════════ */
 function render(lista, tokens){
   document.getElementById('contador').textContent =
     `Mostrando ${lista.length} de ${NOTICIAS.length} titulares`
