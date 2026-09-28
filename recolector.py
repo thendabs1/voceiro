@@ -41,6 +41,15 @@ try:
 except ImportError:
     LISTING_URLS = {}
 
+from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
+try:
+    from medios import LISTING_URLS, google_news_url, GN_FALLBACK_DOMAINS, GN_QUERY_OVERRIDES
+except ImportError:
+    LISTING_URLS = {}
+    GN_FALLBACK_DOMAINS = set()
+    GN_QUERY_OVERRIDES = {}
+    def google_news_url(d, lang='es', extra_q=None):
+        return None
 
 # ─────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
@@ -57,6 +66,11 @@ INTERVALO_MIN_SEG     = 60          # no menos de 1 min
 INTERVALO_MAX_SEG     = 24 * 3600   # no más de 24 h
 
 GRUPOS_INCLUIDOS = []
+
+# Google News fallback
+GN_MAX_ITEMS      = 30             # tope de items que aceptamos por medio
+GN_DIAS_MAX       = 3              # antigüedad máxima aceptada (días)
+GN_SLEEP          = 0.3            # no usar, solo informativo
 
 DATOS_PATH = 'public/datos.json'
 
@@ -350,14 +364,161 @@ def _scrape(medio):
         print(f"  [SCRAPE!] {medio['n']}: {type(e).__name__}: {e}")
     return None
 
+# ─────────────────────────────────────────────────────────────
+# FASE 1c · GOOGLE NEWS (fallback)
+# ─────────────────────────────────────────────────────────────
+def _limpiar_titular_gn(titulo, source_name):
+    """
+    Google News suele añadir ' - Nombre del medio' al final del titular.
+    Lo quitamos solo si el sufijo coincide exactamente con el source.
+    """
+    if not titulo or not source_name:
+        return titulo
+    sufijo = ' - ' + source_name
+    if titulo.endswith(sufijo):
+        return titulo[:-len(sufijo)].strip()
+    return titulo
+
+
+def _parse_gn_feed(content):
+    """
+    Parsea el XML de Google News. Similar a _parse_feed pero además
+    extrae el <source url> (dominio real del artículo).
+    """
+    feed = feedparser.parse(content)
+    out = []
+    for e in feed.entries[:GN_MAX_ITEMS * 2]:  # margen, luego filtramos
+        t = (e.get('title') or '').strip()
+        l = (e.get('link') or '').strip()
+        if not t or not l:
+            continue
+
+        # El <source> en feedparser queda como e.source con .href y .title
+        source_name = ''
+        source_url = ''
+        src = e.get('source')
+        if isinstance(src, dict):
+            source_name = (src.get('title') or '').strip()
+            source_url = (src.get('href') or '').strip()
+        elif src:
+            source_name = str(src).strip()
+
+        # Fecha
+        fecha_pub = ''
+        raw = e.get('published') or e.get('updated') or ''
+        if raw:
+            fecha_pub = _rss_date_to_iso(raw)
+        if not fecha_pub:
+            st = e.get('published_parsed') or e.get('updated_parsed')
+            if st:
+                try:
+                    dt = datetime(*st[:6], tzinfo=timezone.utc)
+                    fecha_pub = _to_iso_madrid(dt)
+                except Exception:
+                    pass
+
+        out.append({
+            'titular':     _limpiar_titular_gn(t, source_name),
+            'enlace':      l,
+            'fecha_pub':   fecha_pub,
+            'source_name': source_name,
+            'source_url':  source_url,
+        })
+    return out
+
+
+def _dominio_de_url(url):
+    """Extrae el dominio 'desnudo' (sin www.) de una URL."""
+    if not url:
+        return ''
+    try:
+        from urllib.parse import urlparse
+        d = (urlparse(url).netloc or '').lower()
+        if d.startswith('www.'):
+            d = d[4:]
+        return d
+    except Exception:
+        return ''
+
+
+def _google_news(medio):
+    """
+    Fallback por Google News. Solo se llama si RSS y scraping han fallado
+    Y el dominio está en GN_FALLBACK_DOMAINS.
+    """
+    domain = medio['d']
+    if domain not in GN_FALLBACK_DOMAINS:
+        return None
+
+    lang = medio.get('lang', 'es')
+    extra_q = GN_QUERY_OVERRIDES.get(domain)
+    url = google_news_url(domain, lang, extra_q)
+    if not url:
+        return None
+
+    try:
+        r = SESSION.get(url, timeout=TIMEOUT)
+        if r.status_code != 200:
+            print(f"  [GN {r.status_code}] {medio['n']}")
+            return None
+        items = _parse_gn_feed(r.content)
+        if not items:
+            print(f"  [GN empty] {medio['n']}")
+            return None
+
+        # Filtro por fecha: solo items de los últimos GN_DIAS_MAX días
+        corte = datetime.now(TZ_MADRID) - timedelta(days=GN_DIAS_MAX)
+        filtrados = []
+        for it in items:
+            if not it.get('fecha_pub'):
+                continue
+            try:
+                dt = datetime.fromisoformat(it['fecha_pub'])
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=TZ_MADRID)
+            except (ValueError, TypeError):
+                continue
+            if dt < corte:
+                continue
+
+            # Verificar que el source apunta al dominio esperado.
+            # GN a veces rellena con items de otros medios cuando no
+            # tiene nada del dominio pedido.
+            dom_src = _dominio_de_url(it.get('source_url', ''))
+            if dom_src and not (
+                dom_src == domain
+                or dom_src.endswith('.' + domain)
+                or domain.endswith('.' + dom_src)
+            ):
+                continue
+
+            filtrados.append(it)
+            if len(filtrados) >= GN_MAX_ITEMS:
+                break
+
+        if not filtrados:
+            return None
+        return filtrados
+
+    except Exception as e:
+        print(f"  [GN!] {medio['n']}: {type(e).__name__}: {e}")
+        return None
+
+
 
 def obtener_titulares(medio):
     """Devuelve (medio, lista_noticias, fuente). No calcula fecha_estimada."""
     items = _rss(medio)
     fuente = 'RSS'
+
     if not items:
         items = _scrape(medio)
         fuente = 'Scraping'
+
+    if not items:
+        items = _google_news(medio)
+        fuente = 'Google News'
+
     if not items:
         return (medio, [], None)
 
@@ -374,14 +535,13 @@ def obtener_titulares(medio):
             'titular':        it['titular'],
             'enlace':         it['enlace'],
             'fecha_pub':      it.get('fecha_pub', ''),
-            'fecha_estimada': '',                # se calcula después
+            'fecha_estimada': '',
             'fuente':         fuente,
             'fecha':          ahora,
-            '_pos':           it.get('pos'),     # solo informativo (no se guarda)
+            '_pos':           it.get('pos'),
         })
 
     return (medio, noticias, fuente)
-
 
 # ─────────────────────────────────────────────────────────────
 # ASIGNACIÓN DE FECHAS ESTIMADAS (solo nuevas scrapeadas sin fecha)
@@ -522,6 +682,7 @@ def main():
     todas = []
     contador_rss = 0
     contador_scrape = 0
+    contador_gn = 0
     sin_resultado = []
     medios_sin_fecha = []
 
@@ -531,8 +692,10 @@ def main():
                 todas.extend(noticias)
                 if fuente == 'RSS':
                     contador_rss += 1
-                else:
+                elif fuente == 'Scraping':
                     contador_scrape += 1
+                elif fuente == 'Google News':
+                    contador_gn += 1
                 con_fecha = sum(1 for n in noticias if n.get('fecha_pub'))
                 if con_fecha == 0 and fuente != 'RSS':
                     medios_sin_fecha.append(medio['n'])
