@@ -218,6 +218,17 @@
   .medio-fila.estado-ignorar{background:var(--block-bg)}
   .medio-fila .celda{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .medio-fila .celda-grupo{color:var(--muted); font-size:.9em}
+  .medio-fila.no-config .celda-dominio{opacity:.75}
+
+  /* Puntito azul "conocido por el plugin" */
+  .known-dot{
+    display:inline-block;
+    width:6px; height:6px; border-radius:50%;
+    background:var(--save);
+    margin-right:6px;
+    vertical-align:middle;
+    flex-shrink:0;
+  }
 
   .chk{display:flex; justify-content:center; align-items:center; cursor:pointer; user-select:none}
   .chk input{display:none}
@@ -536,6 +547,7 @@
 
     <h3 id="cfg-medios"></h3>
     <p id="cfg-medios-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+    <p id="cfg-medios-legend" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
     <div class="ctrl-medios">
       <input type="search" id="filtro-medio">
       <select id="filtro-grupo-medio"><option value=""></option></select>
@@ -741,7 +753,10 @@ const I18N = {
     cfgGrupos: 'Grupos completos',
     cfgGruposHint: 'Al marcar un grupo se incluyen todos sus medios. Bloquear un medio (abajo) tiene más prioridad.',
     cfgMedios: 'Medios',
-    cfgMediosHint: '✓ forzar siempre · ✗ bloquear siempre · sin marca = neutro (depende de grupo y palabras).',
+    cfgMediosHint: '✓ forzar siempre · ✗ bloquear siempre · sin marca = neutro.',
+    knownInPlugin: 'Configurado en el plugin Lector Universal',
+    forceInclude: 'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
+    forceExclude: 'Bloquear siempre',
     cfgBuscarMedio: '🔍 Buscar por dominio, nombre o grupo…', cfgTodosGrupos: 'Todos los grupos',
     cfgPalabras: 'Palabras clave en titular',
     cfgPalabrasHint: 'Una por línea o separadas por comas. Sin tildes, palabra completa.',
@@ -774,11 +789,9 @@ const I18N = {
     presetGuardadoActivado: 'Configuración guardada · Modo Personalizado activado',
     fechaAhora: 'ahora', fechaHaceMin: 'hace {n} min', fechaHaceH: 'hace {n} h',
     fechaHaceD: 'hace {n} d', fechaProgramado: 'programado',
-    // Sync
     syncOnline: 'Sincronizado con el plugin Lector Universal',
     syncOffline: 'Sin plugin — cambios guardados solo en este navegador',
     syncOfflineHint: 'Instala el plugin Lector Universal para sincronizar tu configuración entre dispositivos y compartirla con la lista de sitios.',
-    // Lector
     pendTitle: 'Noticias guardadas para leer después',
     pendRefresh: '↻ Actualizar',
     noUserscript: 'Instala el plugin Lector Universal para guardar noticias y verlas aquí.',
@@ -794,7 +807,6 @@ const I18N = {
     readItemsNo: 'Pendientes',
     markRead: 'Marcar como leída',
     markUnread: 'Marcar como no leída',
-    // Reporte
     repBtnTitle: 'Reportar problema con este titular',
     repTitle: 'Reportar un problema',
     repCtxEmpty: '(Sin titular específico — reporte general)',
@@ -827,6 +839,9 @@ const I18N = {
     cfgGruposHint: 'Ao marcar un grupo inclúense todos os seus medios. Bloquear un medio (abaixo) ten máis prioridade.',
     cfgMedios: 'Medios',
     cfgMediosHint: '✓ forzar sempre · ✗ bloquear sempre · sen marca = neutro.',
+    knownInPlugin: 'Configurado no plugin Lector Universal',
+    forceInclude: 'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
+    forceExclude: 'Bloquear sempre',
     cfgBuscarMedio: '🔍 Buscar por dominio, nome ou grupo…', cfgTodosGrupos: 'Todos os grupos',
     cfgPalabras: 'Palabras clave no titular',
     cfgPalabrasHint: 'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
@@ -878,7 +893,7 @@ const I18N = {
     repDetallesLbl: 'Detalles (opcional)', repDetallesPh: 'Cóntanos que pasa con este titular…',
     repConfigLbl: 'Anexar a miña configuración actual ao reporte. Axuda a reproducir o problema.',
     repCopy: '📋 Copiar reporte', repMail: '✉ Enviar por email', repGithub: '🐞 Abrir en GitHub',
-    repCopiado: 'Reporte copiado ao portapapeis', repErrGithub: 'Non se puido abrir GitHub. Copia o reporte e envíao por email.',
+    repCopiado: 'Reporte copiado ao portapapeis', repErrGithub: 'Non se puido abrir GitHub.',
     repContexto: 'Contexto', repCtxMedio: 'Medio', repCtxGrupo: 'Grupo', repCtxTipo: 'Tipo',
     repCtxTitular: 'Titular', repCtxEnlace: 'Ligazón', repCtxFecha: 'Data', repCtxFuente: 'Fonte',
     repCtxIdioma: 'Idioma activo', repCtxConfig: 'Config', repFecha: 'Data do reporte',
@@ -896,6 +911,9 @@ const I18N = {
     cfgGruposHint: 'En marcar un grup s\'inclouen tots els seus mitjans. Bloquejar un mitjà (a baix) té més prioritat.',
     cfgMedios: 'Mitjans',
     cfgMediosHint: '✓ forçar sempre · ✗ bloquejar sempre · sense marca = neutre.',
+    knownInPlugin: 'Configurat al plugin Lector Universal',
+    forceInclude: 'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
+    forceExclude: 'Bloquejar sempre',
     cfgBuscarMedio: '🔍 Cercar per domini, nom o grup…', cfgTodosGrupos: 'Tots els grups',
     cfgPalabras: 'Paraules clau al titular',
     cfgPalabrasHint: 'Una per línia o separades per comes. Sense accents, paraula completa.',
@@ -964,6 +982,9 @@ const I18N = {
     cfgGruposHint: 'Checking a group includes all its outlets. Blocking an outlet (below) takes precedence.',
     cfgMedios: 'Outlets',
     cfgMediosHint: '✓ always force · ✗ always block · unchecked = neutral.',
+    knownInPlugin: 'Configured in the Universal Reader plugin',
+    forceInclude: 'Always force (include even if group or keywords do not match)',
+    forceExclude: 'Always block',
     cfgBuscarMedio: '🔍 Search by domain, name or group…', cfgTodosGrupos: 'All groups',
     cfgPalabras: 'Keywords in headline',
     cfgPalabrasHint: 'One per line or comma-separated. Accent-insensitive, whole word.',
@@ -1032,6 +1053,9 @@ const I18N = {
     cfgGruposHint: 'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide bat blokeatzeak (behean) lehentasun handiagoa du.',
     cfgMedios: 'Hedabideak',
     cfgMediosHint: '✓ beti behartu · ✗ beti blokeatu · markarik gabe = neutroa.',
+    knownInPlugin: 'Lector Universal pluginean konfiguratuta',
+    forceInclude: 'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
+    forceExclude: 'Beti blokeatu',
     cfgBuscarMedio: '🔍 Bilatu domeinu, izen edo taldearen arabera…', cfgTodosGrupos: 'Talde guztiak',
     cfgPalabras: 'Hitz gakoak izenburuan',
     cfgPalabrasHint: 'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
@@ -1230,25 +1254,18 @@ function ajustarWidth(d){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MODELO DE CONFIGURACIÓN DE VOCEIRO
-   ═══════════════════════════════════════════════════════════════
-   - PRESET: solo lo específico de Voceiro (grupos + palabras)
-   - SITES: mapa domain → { mode, lang, type, tags } — vive en el UserScript
-   - Si no hay plugin, se cachea en localStorage
-   ─────────────────────────────────────────────────────────── */
+   MODELO DE CONFIGURACIÓN
+   ═══════════════════════════════════════════════════════════════ */
 const PRESET_KEY = 'voceiro-preset-v3';
 const PRESET_ACTIVO_KEY = 'voceiro-preset-activo';
 const SITES_CACHE_KEY = 'voceiro-sites-cache-v1';
 
-const PRESET_DEF = {
-  grupos: [],
-  palabras: [],
-};
+const PRESET_DEF = { grupos: [], palabras: [] };
 
 let PRESET = null;
 let PRESET_ACTIVO = false;
-let SITES = new Map();       // domain → { mode, lang, type, tags }
-let SITES_LIST = [];         // cache de la lista de sites para UI
+let SITES = new Map();
+let SITES_LIST = [];
 
 function cargarPreset(){
   try{
@@ -1451,7 +1468,6 @@ function initUserScriptBridge(){
     USCRIPT_OK = true; USCRIPT_CHECKED = true;
     actualizarBotonPendientes();
     actualizarSyncBanner();
-    /* Pedir la config completa en cuanto esté */
     document.dispatchEvent(new CustomEvent('voceiro-get-config'));
     document.dispatchEvent(new CustomEvent('voceiro-later-list'));
   });
@@ -1466,18 +1482,20 @@ function initUserScriptBridge(){
     const d = e.detail || {};
     setSitesFromArray(d.sites);
     guardarSitesCache();
-    if (MEDIOS_UNICOS.length) renderListaMedios();
+    /* Refrescar la vista si el panel está abierto */
+    if ($('#panel-config').classList.contains('open')){
+      renderListaMedios();
+    }
   });
 
   document.addEventListener('voceiro-config-changed', e => {
     const d = e.detail || {};
     setSitesFromArray(d.sites);
     guardarSitesCache();
-    if (MEDIOS_UNICOS.length) renderListaMedios();
-  });
-
-  document.addEventListener('voceiro-update-site-done', e => {
-    /* El config-changed ya actualiza; esto es informativo */
+    /* Refrescar la vista si el panel está abierto */
+    if ($('#panel-config').classList.contains('open')){
+      renderListaMedios();
+    }
   });
 
   document.addEventListener('voceiro-later-list-data', e => {
@@ -1515,12 +1533,10 @@ function initUserScriptBridge(){
   }, 900);
 }
 
-/* Cambiar el mode de un site: con plugin → emitir; sin plugin → cache local */
 function emitirUpdateSite(domain, patch){
   const prev = SITES.get(domain) || { mode: 'prompt', lang: 'auto', type: '', tags: [] };
   const next = { ...prev, ...patch };
   SITES.set(domain, next);
-  /* Actualizar SITES_LIST */
   const idx = SITES_LIST.findIndex(s => s.domain === domain);
   if (idx >= 0) SITES_LIST[idx] = { domain, ...next };
   else SITES_LIST.push({ domain, ...next });
@@ -1549,8 +1565,6 @@ function guardarParaLeerDespues(n){
 
   const url = n.enlace;
   const guardada = PENDIENTES_URLS.has(url);
-  const item = PENDIENTES_MAP.get(url);
-  const leida = guardada && item && item.read;
 
   if (!guardada){
     document.dispatchEvent(new CustomEvent('voceiro-save-later', {
@@ -1650,7 +1664,7 @@ function renderPendientes(items){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LISTA DE MEDIOS ÚNICOS (de datos.json)
+   MEDIOS ÚNICOS
    ═══════════════════════════════════════════════════════════════ */
 let MEDIOS_UNICOS = [];
 function construirMediosUnicos(){
@@ -1737,21 +1751,31 @@ function reconstruirListas(){
   renderListaMedios();
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   LISTA DE MEDIOS DEL PANEL (con puntito azul "conocido")
+   ═══════════════════════════════════════════════════════════════ */
 function renderListaMedios(){
   const cont = $('#lista-medios');
   cont.innerHTML = MEDIOS_UNICOS.map(m => {
-    const site = SITES.get(m.dominio) || { mode: 'prompt' };
+    const site  = SITES.get(m.dominio);
+    const known = !!site;
+    const mode  = (site && site.mode) || 'prompt';
+
+    const dotHtml = known
+      ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
+      : '';
+
     return `
-      <div class="medio-fila" data-dominio="${escapeHtml(m.dominio)}"
+      <div class="medio-fila ${known ? '' : 'no-config'}" data-dominio="${escapeHtml(m.dominio)}"
            data-grupo="${escapeHtml(m.grupo)}"
            data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
-        <label class="chk incluir" title="${escapeHtml(t('markRead') === 'Marcar como leída' ? 'Forzar siempre' : 'Force always')}">
-          <input type="checkbox" class="chk-incluir" ${site.mode === 'auto' ? 'checked' : ''}><span>✓</span>
+        <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
+          <input type="checkbox" class="chk-incluir" ${mode === 'auto' ? 'checked' : ''}><span>✓</span>
         </label>
-        <label class="chk ignorar" title="Bloquear siempre">
-          <input type="checkbox" class="chk-ignorar" ${site.mode === 'off' ? 'checked' : ''}><span>✗</span>
+        <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
+          <input type="checkbox" class="chk-ignorar" ${mode === 'off' ? 'checked' : ''}><span>✗</span>
         </label>
-        <span class="celda celda-dominio"><code>${escapeHtml(m.dominio)}</code></span>
+        <span class="celda celda-dominio">${dotHtml}<code>${escapeHtml(m.dominio)}</code></span>
         <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
         <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
       </div>`;
@@ -1819,7 +1843,7 @@ function leerPanel(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CUMPLE PRESET (usa SITES.mode + grupos + palabras)
+   CUMPLE PRESET
    ═══════════════════════════════════════════════════════════════ */
 let RX_PRESET = null;
 let SET_GRUPOS = new Set();
@@ -1832,13 +1856,9 @@ function recompilarPreset(){
 }
 function cumplePreset(n){
   const site = SITES.get(n.dominio);
-  /* Bloqueado */
   if (site && site.mode === 'off') return false;
-  /* Forzado */
   if (site && site.mode === 'auto') return true;
-  /* Grupo completo */
   if (SET_GRUPOS.has(n.grupo)) return true;
-  /* Palabra clave en titular */
   if (RX_PRESET && RX_PRESET.test(n._titNorm)) return true;
   return false;
 }
@@ -2045,7 +2065,6 @@ function importarDesdeFormatoVoceiro(data){
     setSitesFromArray(data.sites);
     guardarSitesCache();
     if (USCRIPT_OK){
-      /* Empujar al UserScript */
       SITES.forEach((s, d) => {
         document.dispatchEvent(new CustomEvent('voceiro-update-site', {
           detail: { domain: d, mode: s.mode, lang: s.lang, type: s.type, tags: s.tags }
@@ -2077,7 +2096,6 @@ function importarDesdeFormatoLector(data){
   if (typeof data.lang === 'string' && I18N[data.lang]) ACCES.lang = data.lang;
   guardarAcces();
 
-  /* Sites: filtramos los que no existen en datos.json */
   const known = new Set(MEDIOS_UNICOS.map(m => m.dominio));
   const arr = [];
   (data.sites || []).forEach(s => {
@@ -2092,7 +2110,6 @@ function importarDesdeFormatoLector(data){
       tags: s.tags || []
     });
   });
-  /* Los disabledDomains se aplican como mode:'off' si no estaban */
   (data.disabledDomains || []).forEach(d0 => {
     const d = String(d0).toLowerCase().trim();
     if (!known.has(d)) return;
@@ -2214,7 +2231,6 @@ function renderizar(){
     const esFuturo = !isNaN(ts) && (ts - ahora > FUTURO_MAX_MS);
     const tituloHtml = bionicize(resaltar(n.titular, tokens));
 
-    /* Estado del botón 🕒 */
     const guardada = PENDIENTES_URLS.has(n.enlace);
     const item = PENDIENTES_MAP.get(n.enlace);
     const leida = guardada && item && item.read;
@@ -2311,6 +2327,8 @@ function aplicarTextos(){
   $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
   $('#cfg-medios').textContent = t('cfgMedios');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
+  $('#cfg-medios-legend').innerHTML =
+    '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
   $('#filtro-medio').placeholder = t('cfgBuscarMedio');
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-palabras').textContent = t('cfgPalabras');
@@ -2407,7 +2425,6 @@ function wireStaticEvents(){
   $('#btn-config').addEventListener('click', () => {
     abrirPanel('panel-config');
     escribirPanel(PRESET);
-    /* Si tenemos plugin, pedir config fresca */
     if (USCRIPT_OK) document.dispatchEvent(new CustomEvent('voceiro-get-config'));
   });
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
@@ -2521,7 +2538,6 @@ function wireStaticEvents(){
   $('#preset-reset').addEventListener('click', () => {
     PRESET = structuredClone(PRESET_DEF);
     guardarPreset(); recompilarPreset();
-    /* Sites: resetear todos los mode a 'prompt' */
     if (USCRIPT_OK){
       [...SITES.entries()].forEach(([d, s]) => {
         document.dispatchEvent(new CustomEvent('voceiro-update-site', {
@@ -2578,12 +2594,10 @@ async function init(){
 
   construirMediosUnicos();
 
-  /* Preset propio de Voceiro */
   PRESET = cargarPreset();
   recompilarPreset();
   PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
 
-  /* Sites: cargar del cache local de momento; el plugin enviará su config cuando responda */
   setSitesFromArray(cargarSitesCache());
 
   aplicarTextos();
