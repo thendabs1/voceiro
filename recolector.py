@@ -5,18 +5,23 @@ Recolector de titulares de Voceiro.
 Fases:
   1. Pedir el RSS oficial de cada medio (KNOWN_FEEDS) → hasta N_FEED titulares
   2. Si no hay feed, scraping del listado (LISTING_URLS o home)
-  3. Estimar fecha de los scrapeados nuevos usando el intervalo entre runs
-  4. Deduplicar contra el histórico y fusionar
-  5. Podar por ventana de retención
-  6. Escribir public/datos.json y public/index.html
-  7. Reporte final
+  3. Fallback a Google News si RSS y scraping fallan (GN_FALLBACK_DOMAINS)
+  4. Estimar fecha de los scrapeados nuevos usando el intervalo entre runs
+     (por medio, no global — ver `ultimo_exito_por_medio`)
+  5. Deduplicar contra el histórico y fusionar
+  6. Podar por ventana de retención
+  7. Escribir public/datos.json y public/index.html
+  8. Reporte final
 
 Estimación de fechas para scraping:
   - Los listados HTML suelen estar ordenados de más nuevo a más viejo.
   - Si un titular NO estaba en el histórico anterior, apareció entre
-    T_prev (generado del datos.json anterior) y T_now.
+    T_prev y T_now.
   - Repartimos los K titulares nuevos de cada medio en ese intervalo
     por su posición, dando fechas plausibles sin inventar intervalos.
+  - T_prev se toma por MEDIO (última vez que ese medio respondió con
+    items), no global, para no comprimir noticias en medios que
+    llevaban horas caídos.
 """
 
 import json
@@ -37,19 +42,19 @@ from zoneinfo import ZoneInfo
 
 from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
 try:
-    from medios import LISTING_URLS
-except ImportError:
-    LISTING_URLS = {}
-
-from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
-try:
-    from medios import LISTING_URLS, google_news_url, GN_FALLBACK_DOMAINS, GN_QUERY_OVERRIDES
+    from medios import (
+        LISTING_URLS,
+        google_news_url,
+        GN_FALLBACK_DOMAINS,
+        GN_QUERY_OVERRIDES,
+    )
 except ImportError:
     LISTING_URLS = {}
     GN_FALLBACK_DOMAINS = set()
     GN_QUERY_OVERRIDES = {}
     def google_news_url(d, lang='es', extra_q=None):
         return None
+
 
 # ─────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
@@ -68,9 +73,9 @@ INTERVALO_MAX_SEG     = 24 * 3600   # no más de 24 h
 GRUPOS_INCLUIDOS = []
 
 # Google News fallback
-GN_MAX_ITEMS      = 30             # tope de items que aceptamos por medio
-GN_DIAS_MAX       = 3              # antigüedad máxima aceptada (días)
-GN_SLEEP          = 0.3            # no usar, solo informativo
+GN_MAX_ITEMS      = 30              # tope de items que aceptamos por medio
+GN_DIAS_MAX       = 14              # antigüedad máxima aceptada (días)
+GN_SLEEP          = 0.3             # no usar, solo informativo
 
 DATOS_PATH = 'public/datos.json'
 
@@ -355,7 +360,7 @@ def _scrape(medio):
                 'titular':   texto,
                 'enlace':    href,
                 'fecha_pub': item_date,
-                'pos':       len(out),   # ← índice en el listado
+                'pos':       len(out),
             })
             if len(out) >= N_FEED:
                 break
@@ -363,6 +368,7 @@ def _scrape(medio):
     except Exception as e:
         print(f"  [SCRAPE!] {medio['n']}: {type(e).__name__}: {e}")
     return None
+
 
 # ─────────────────────────────────────────────────────────────
 # FASE 1c · GOOGLE NEWS (fallback)
@@ -393,7 +399,6 @@ def _parse_gn_feed(content):
         if not t or not l:
             continue
 
-        # El <source> en feedparser queda como e.source con .href y .title
         source_name = ''
         source_url = ''
         src = e.get('source')
@@ -403,7 +408,6 @@ def _parse_gn_feed(content):
         elif src:
             source_name = str(src).strip()
 
-        # Fecha
         fecha_pub = ''
         raw = e.get('published') or e.get('updated') or ''
         if raw:
@@ -466,7 +470,6 @@ def _google_news(medio):
             print(f"  [GN empty] {medio['n']}")
             return None
 
-        # Filtro por fecha: solo items de los últimos GN_DIAS_MAX días
         corte = datetime.now(TZ_MADRID) - timedelta(days=GN_DIAS_MAX)
         filtrados = []
         for it in items:
@@ -482,8 +485,6 @@ def _google_news(medio):
                 continue
 
             # Verificar que el source apunta al dominio esperado.
-            # GN a veces rellena con items de otros medios cuando no
-            # tiene nada del dominio pedido.
             dom_src = _dominio_de_url(it.get('source_url', ''))
             if dom_src and not (
                 dom_src == domain
@@ -503,7 +504,6 @@ def _google_news(medio):
     except Exception as e:
         print(f"  [GN!] {medio['n']}: {type(e).__name__}: {e}")
         return None
-
 
 
 def obtener_titulares(medio):
@@ -543,16 +543,21 @@ def obtener_titulares(medio):
 
     return (medio, noticias, fuente)
 
+
 # ─────────────────────────────────────────────────────────────
-# ASIGNACIÓN DE FECHAS ESTIMADAS (solo nuevas scrapeadas sin fecha)
+# ASIGNACIÓN DE FECHAS ESTIMADAS
 # ─────────────────────────────────────────────────────────────
-def asignar_fechas_estimadas(todas, historico_keys, t_prev, t_now):
+def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
+                              ultimo_exito_por_medio):
     """
     Asigna 'fecha_estimada' in-place a los titulares scrapeados que sean
     nuevos (no en historico_keys) y no tengan fecha_pub.
 
-    Distribuye los K titulares nuevos de cada medio en el intervalo
-    (t_prev, t_now) por su posición en el listado.
+    Usa como referencia temporal el último run exitoso de CADA medio
+    (no el global), para no comprimir noticias de medios que llevan
+    horas sin responder en una ventana de 15 min.
+
+    Devuelve (total_nuevos, intervalos_por_medio).
     """
     por_medio = defaultdict(list)
 
@@ -566,26 +571,46 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev, t_now):
             continue
         por_medio[n['medio']].append(n)
 
-    if t_prev is not None:
-        intervalo = (t_now - t_prev).total_seconds()
-    else:
-        intervalo = INTERVALO_DEFAULT_SEG
-    intervalo = max(INTERVALO_MIN_SEG, min(intervalo, INTERVALO_MAX_SEG))
-
     total_nuevos = 0
+    intervalos_por_medio = {}
+
     for medio, items in por_medio.items():
+        dominio = items[0].get('dominio')
+        t_prev_medio = None
+
+        # 1) Intentar la marca específica del medio
+        if dominio:
+            iso_prev = ultimo_exito_por_medio.get(dominio)
+            if iso_prev:
+                try:
+                    t_prev_medio = datetime.fromisoformat(iso_prev)
+                    if t_prev_medio.tzinfo is None:
+                        t_prev_medio = t_prev_medio.replace(tzinfo=TZ_MADRID)
+                except (ValueError, TypeError):
+                    t_prev_medio = None
+
+        # 2) Fallback al global
+        if t_prev_medio is None:
+            t_prev_medio = t_prev_global
+
+        # 3) Calcular intervalo
+        if t_prev_medio is not None:
+            intervalo = (t_now - t_prev_medio).total_seconds()
+        else:
+            intervalo = INTERVALO_DEFAULT_SEG
+        intervalo = max(INTERVALO_MIN_SEG, min(intervalo, INTERVALO_MAX_SEG))
+        intervalos_por_medio[medio] = intervalo
+
         # Ordenar por posición en el listado (0 = más reciente)
         items.sort(key=lambda x: x.get('_pos') if x.get('_pos') is not None else 999)
         K = len(items)
         for i, n in enumerate(items):
-            # i=0 (más nuevo) → offset pequeño  → fecha cercana a t_now
-            # i=K-1 (más viejo) → offset grande → fecha cercana a t_prev
             offset_seg = intervalo * (i + 1) / (K + 1)
             fecha = t_now - timedelta(seconds=offset_seg)
             n['fecha_estimada'] = fecha.isoformat(timespec='seconds')
             total_nuevos += 1
 
-    return total_nuevos, intervalo
+    return total_nuevos, intervalos_por_medio
 
 
 # ─────────────────────────────────────────────────────────────
@@ -593,13 +618,16 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev, t_now):
 # ─────────────────────────────────────────────────────────────
 def cargar_historico_payload():
     if not os.path.exists(DATOS_PATH):
-        return {'noticias': [], 'generado': None}
+        return {'noticias': [], 'generado': None, 'ultimo_exito_por_medio': {}}
     try:
         with open(DATOS_PATH, encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+            if 'ultimo_exito_por_medio' not in data:
+                data['ultimo_exito_por_medio'] = {}
+            return data
     except Exception as e:
         print(f"[historico] no se pudo leer: {e}")
-        return {'noticias': [], 'generado': None}
+        return {'noticias': [], 'generado': None, 'ultimo_exito_por_medio': {}}
 
 
 def fusionar_historico(nuevas, viejas, dias):
@@ -626,10 +654,8 @@ def fusionar_historico(nuevas, viejas, dias):
             n['fecha'] = old.get('fecha', n['fecha'])
             if not n.get('fecha_pub') and old.get('fecha_pub'):
                 n['fecha_pub'] = old['fecha_pub']
-            # Conservar fecha_estimada original si no se ha recalculado
             if old.get('fecha_estimada') and not n.get('fecha_estimada'):
                 n['fecha_estimada'] = old['fecha_estimada']
-        # Limpiar campo auxiliar antes de persistir
         n.pop('_pos', None)
         idx[key] = n
 
@@ -641,16 +667,17 @@ def fusionar_historico(nuevas, viejas, dias):
 # ─────────────────────────────────────────────────────────────
 # FASE 3 · SALIDAS
 # ─────────────────────────────────────────────────────────────
-def generar_json(noticias):
+def generar_json(noticias, ultimo_exito_por_medio=None):
     os.makedirs('public', exist_ok=True)
     ahora_madrid = datetime.now(TZ_MADRID)
     payload = {
-        'generado':         ahora_madrid.isoformat(timespec='seconds'),
-        'generado_legible': ahora_madrid.strftime('%d/%m/%Y %H:%M'),
-        'dias_retencion':   DIAS_RETENCION,
-        'n_feed':           N_FEED,
-        'total':            len(noticias),
-        'noticias':         noticias,
+        'generado':               ahora_madrid.isoformat(timespec='seconds'),
+        'generado_legible':       ahora_madrid.strftime('%d/%m/%Y %H:%M'),
+        'dias_retencion':         DIAS_RETENCION,
+        'n_feed':                 N_FEED,
+        'total':                  len(noticias),
+        'ultimo_exito_por_medio': ultimo_exito_por_medio or {},
+        'noticias':               noticias,
     }
     with open(DATOS_PATH, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
@@ -711,34 +738,49 @@ def main():
     print("\n── Cargando histórico ──")
     payload_prev = cargar_historico_payload()
     historico = payload_prev.get('noticias', [])
+    ultimo_exito_prev = payload_prev.get('ultimo_exito_por_medio', {}) or {}
     print(f"Histórico previo: {len(historico)} noticias")
+    print(f"Medios con marca de último éxito: {len(ultimo_exito_prev)}")
 
-    t_prev = None
+    t_prev_global = None
     generado_prev = payload_prev.get('generado')
     if generado_prev:
         try:
-            t_prev = datetime.fromisoformat(generado_prev)
-            if t_prev.tzinfo is None:
-                t_prev = t_prev.replace(tzinfo=TZ_MADRID)
+            t_prev_global = datetime.fromisoformat(generado_prev)
+            if t_prev_global.tzinfo is None:
+                t_prev_global = t_prev_global.replace(tzinfo=TZ_MADRID)
         except (ValueError, TypeError):
-            t_prev = None
+            t_prev_global = None
 
     t_now = datetime.now(TZ_MADRID)
-    if t_prev:
-        delta_min = (t_now - t_prev).total_seconds() / 60
+    if t_prev_global:
+        delta_min = (t_now - t_prev_global).total_seconds() / 60
         print(f"Run anterior: {generado_prev} (hace {delta_min:.1f} min)")
     else:
         print("Sin run previo — usando intervalo por defecto")
 
     historico_keys = {(n['medio'], n['titular']) for n in historico}
 
-    # ─── Asignar fechas estimadas a los scrapeados nuevos ───
+    # ─── Asignar fechas estimadas (t_prev por medio) ───
     print("\n── Estimando fechas para scraping ──")
-    total_estimados, intervalo_usado = asignar_fechas_estimadas(
-        todas, historico_keys, t_prev, t_now
+    total_estimados, intervalos_por_medio = asignar_fechas_estimadas(
+        todas, historico_keys, t_prev_global, t_now, ultimo_exito_prev
     )
-    print(f"Intervalo usado: {intervalo_usado/60:.1f} min")
     print(f"Titulares nuevos con fecha estimada: {total_estimados}")
+
+    if intervalos_por_medio:
+        if t_prev_global:
+            global_seg = (t_now - t_prev_global).total_seconds()
+        else:
+            global_seg = INTERVALO_DEFAULT_SEG
+        raros = {
+            m: s for m, s in intervalos_por_medio.items()
+            if abs(s - global_seg) > 60
+        }
+        if raros:
+            print(f"Intervalos específicos por medio ({len(raros)}):")
+            for m, seg in sorted(raros.items(), key=lambda x: -x[1])[:10]:
+                print(f"  · {m}: {seg/60:.1f} min")
 
     # ─── Fusionar con histórico ───
     print("\n── Fusionando ──")
@@ -754,12 +796,31 @@ def main():
     print(f"  Con fecha estimada: {con_est}")
     print(f"  Sin fecha ninguna:  {sin_fecha}")
 
-    generar_json(finales)
+    # ─── Fuentes ───
+    print(f"\n── Fuentes ──")
+    print(f"  RSS:          {contador_rss} medios")
+    print(f"  Scraping:     {contador_scrape} medios")
+    print(f"  Google News:  {contador_gn} medios")
+
+    # ─── Actualizar marcas de último éxito ───
+    ultimo_exito_nuevo = dict(ultimo_exito_prev)
+    t_now_iso = t_now.isoformat(timespec='seconds')
+    for n in todas:
+        dom = n.get('dominio')
+        if dom:
+            ultimo_exito_nuevo[dom] = t_now_iso
+
+    generar_json(finales, ultimo_exito_nuevo)
     generar_html(datetime.now(TZ_MADRID).strftime('%d/%m/%Y %H:%M'), len(finales))
 
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
         for n in sin_resultado:
+            print(f"  · {n}")
+
+    if medios_sin_fecha:
+        print(f"\n── ℹ Medios scrapeados sin ninguna fecha real ({len(medios_sin_fecha)}) ──")
+        for n in medios_sin_fecha[:15]:
             print(f"  · {n}")
 
     print("\n✅ Listo")
