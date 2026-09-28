@@ -8,6 +8,7 @@
   :root{
     --bg:#f4f4f9; --card:#fff; --text:#111; --muted:#666;
     --primary:#0056b3; --primary-hover:#e6f2ff; --border:#ddd; --badge:#eef;
+    --preset:#0a7d3f; --preset-hover:#e6f7ec;
   }
   *{box-sizing:border-box}
   body{
@@ -18,6 +19,23 @@
   }
   h1{border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:4px}
   .meta{color:var(--muted); font-size:15px; margin-top:4px}
+
+  .barra-superior{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    margin:16px 0 8px; padding:10px;
+    background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  .btn-preset{
+    font-size:16px; font-weight:600; padding:10px 16px; border-radius:8px;
+    border:2px solid var(--preset); background:#fff; color:var(--preset);
+    cursor:pointer; transition:all .15s;
+  }
+  .btn-preset:hover{background:var(--preset-hover)}
+  .btn-preset.activo{background:var(--preset); color:#fff}
+  .btn-preset.activo::after{content:' ✓'}
+  .barra-superior .info{
+    color:var(--muted); font-size:13px; flex:1; min-width:200px;
+  }
 
   .filtros{
     position:sticky; top:0; background:var(--bg);
@@ -42,6 +60,7 @@
     margin-bottom:5px; font-size:12px; color:var(--muted);
   }
   .badge{background:var(--badge); padding:2px 8px; border-radius:10px; color:#445}
+  .badge.preset{background:#d8f3e3; color:#0a5c2f}
   .medio{font-weight:bold; color:#333; font-size:15px; text-transform:uppercase; letter-spacing:.3px}
   .noticia a{
     color:var(--primary); text-decoration:none;
@@ -66,6 +85,15 @@
   <p class="meta">Actualizado: <span id="fecha">{{FECHA}}</span> · <span id="total">{{TOTAL}}</span> titulares en histórico</p>
 </header>
 
+<section class="barra-superior">
+  <button id="btn-preset" class="btn-preset" type="button" title="Galicia + El País + elDiario.es + InfoLibre + titulares que mencionen Poio, Pontevedra, Caldas o Galicia">
+    🏔 Modo Mi Zona
+  </button>
+  <span class="info" id="preset-info">
+    Activo por defecto: Galicia · El País · elDiario.es · InfoLibre · palabras clave
+  </span>
+</section>
+
 <section class="filtros">
   <input type="search" id="buscar" placeholder="🔍 Buscar en titulares…" autocomplete="off">
   <select id="grupo"><option value="">Todos los grupos</option></select>
@@ -84,24 +112,56 @@
 <main id="resultados"></main>
 
 <script>
-let NOTICIAS = [];
+/* ─────────────────────────────────────────────────────────────
+   PRESET "MI ZONA"
+   ───────────────────────────────────────────────────────────── */
+const PRESET = {
+  grupoGalicia: 'Galicia',
+  medios: ['El País', 'elDiario.es', 'InfoLibre'],
+  palabras: ['poio', 'pontevedra', 'caldas de reis', 'caldas de rei',
+             'caldas de resi', 'galicia'],
+};
 
+/* Normaliza texto: minúsculas sin tildes */
 function normalize(s){
   return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Regex \b(...)\b sobre las palabras del preset (ya normalizadas) */
+const RX_PRESET = new RegExp(
+  '\\b(' + PRESET.palabras.map(p => normalize(p).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|') + ')\\b'
+);
+const PRESET_MEDIOS_SET = new Set(PRESET.medios);
+
+/* ¿Cumple el preset esta noticia? */
+function cumplePreset(n){
+  if (n.grupo === PRESET.grupoGalicia) return true;
+  if (PRESET_MEDIOS_SET.has(n.medio)) return true;
+  if (RX_PRESET.test(n._titNorm)) return true;
+  return false;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   ESTADO
+   ───────────────────────────────────────────────────────────── */
+let NOTICIAS = [];
+let presetActivo = true;   // arranca activado
+
+/* ─────────────────────────────────────────────────────────────
+   INICIALIZACIÓN
+   ───────────────────────────────────────────────────────────── */
 async function init(){
   const res = await fetch('datos.json?' + Date.now());
   const data = await res.json();
   NOTICIAS = data.noticias || [];
 
+  // Índices de búsqueda precalculados
   NOTICIAS.forEach(n => {
-    n._norm = normalize(n.titular + ' ' + n.medio);
+    n._norm    = normalize(n.titular + ' ' + n.medio);
+    n._titNorm = normalize(n.titular);
   });
 
+  // Rellenar selects
   const selGrupo = document.getElementById('grupo');
   [...new Set(NOTICIAS.map(n=>n.grupo))].sort().forEach(g => selGrupo.add(new Option(g,g)));
 
@@ -118,17 +178,41 @@ async function init(){
     selMedio.appendChild(og);
   });
 
+  // Listeners
   ['buscar','grupo','tipo','medio','rango'].forEach(id =>
     document.getElementById(id).addEventListener('input', aplicarFiltros)
   );
+  document.getElementById('btn-preset').addEventListener('click', () => {
+    presetActivo = !presetActivo;
+    actualizarBotonPreset();
+    aplicarFiltros();
+  });
   document.getElementById('limpiar').addEventListener('click', () => {
     ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
+    presetActivo = false;
+    actualizarBotonPreset();
     aplicarFiltros();
   });
 
+  actualizarBotonPreset();
   aplicarFiltros();
 }
 
+function actualizarBotonPreset(){
+  const btn = document.getElementById('btn-preset');
+  const info = document.getElementById('preset-info');
+  if (presetActivo){
+    btn.classList.add('activo');
+    info.textContent = 'Mostrando: Galicia · El País · elDiario.es · InfoLibre · titulares con Poio/Pontevedra/Caldas/Galicia';
+  } else {
+    btn.classList.remove('activo');
+    info.textContent = 'Preset desactivado · mostrando todos los medios';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FILTRADO
+   ───────────────────────────────────────────────────────────── */
 function aplicarFiltros(){
   const q = normalize(document.getElementById('buscar').value.trim());
   const g = document.getElementById('grupo').value;
@@ -141,6 +225,7 @@ function aplicarFiltros(){
   const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
 
   const filtradas = NOTICIAS.filter(n => {
+    if (presetActivo && !cumplePreset(n)) return false;
     if (g && n.grupo !== g) return false;
     if (t && n.tipo  !== t) return false;
     if (m && n.medio !== m) return false;
@@ -155,6 +240,13 @@ function aplicarFiltros(){
   });
 
   render(filtradas, tokens);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RESALTADO
+   ───────────────────────────────────────────────────────────── */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function resaltar(texto, tokens){
@@ -173,18 +265,22 @@ function resaltar(texto, tokens){
   });
   const re = new RegExp('(' + patterns.join('|') + ')','gi');
   let out = '', last = 0;
-  for (const m of texto.matchAll(re)){
-    out += escapeHtml(texto.slice(last, m.index));
-    out += '<mark>' + escapeHtml(m[0]) + '</mark>';
-    last = m.index + m[0].length;
+  for (const mm of texto.matchAll(re)){
+    out += escapeHtml(texto.slice(last, mm.index));
+    out += '<mark>' + escapeHtml(mm[0]) + '</mark>';
+    last = mm.index + mm[0].length;
   }
   out += escapeHtml(texto.slice(last));
   return out;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   RENDER
+   ───────────────────────────────────────────────────────────── */
 function render(lista, tokens){
   document.getElementById('contador').textContent =
-    `Mostrando ${lista.length} de ${NOTICIAS.length} titulares`;
+    `Mostrando ${lista.length} de ${NOTICIAS.length} titulares`
+    + (presetActivo ? ' · modo Mi Zona activo' : '');
 
   const cont = document.getElementById('resultados');
   if (!lista.length){
@@ -195,12 +291,13 @@ function render(lista, tokens){
   cont.innerHTML = lista.map(n => {
     const f = n.fecha_pub || n.fecha;
     const fecha = f ? new Date(f).toLocaleString('es-ES') : '';
+    const esPreset = presetActivo && cumplePreset(n);
     return `
       <article class="noticia">
         <div class="cabecera">
           <span class="medio">${escapeHtml(n.medio)}</span>
           <span class="badge">${escapeHtml(n.tipo)}</span>
-          <span class="badge">${escapeHtml(n.grupo)}</span>
+          <span class="badge${esPreset ? ' preset' : ''}">${escapeHtml(n.grupo)}</span>
           ${fecha ? `<span>· ${escapeHtml(fecha)}</span>` : ''}
         </div>
         <a href="${escapeHtml(n.enlace)}" target="_blank" rel="noopener">${resaltar(n.titular, tokens)}</a>
