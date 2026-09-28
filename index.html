@@ -1,26 +1,753 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resumen de Prensa</title>
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-         background:#f4f4f9; color:#111; max-width:820px; margin:0 auto; padding:20px;
-         line-height:1.6; font-size:22px; }
-  h1 { border-bottom:2px solid #ccc; padding-bottom:10px; }
-  .grupo { margin-top:40px; }
-  .grupo-titulo { background:#333; color:#fff; padding:10px; border-radius:5px; font-size:24px; }
-  .noticia { background:#fff; padding:15px; margin-bottom:15px; border-radius:8px;
-             box-shadow:0 2px 4px rgba(0,0,0,.1); }
-  .medio { font-weight:bold; color:#555; font-size:18px; text-transform:uppercase; }
-  .meta { font-size:13px; color:#888; }
-  a { color:#0056b3; text-decoration:none; font-weight:600; display:block; margin-top:5px; }
-  a:hover { text-decoration:underline; background:#e6f2ff; }
-  .fecha { font-size:16px; color:#666; margin-bottom:30px; }
-</style>
-</head>
-<body>
-<h1>Resumen de Prensa</h1>
-<div class="fecha">Última actualización: 28/09/2026 15:14 · 0 titulares</div>
-</body></html>
+
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mis Titulares (Modo Lector)</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+                   background-color: #f4f4f9; color: #111; max-width: 800px; margin: 0 auto; padding: 20px; 
+                   line-height: 1.6; font-size: 22px; } /* Tamaño de letra grande */
+            h1 { border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+            .grupo { margin-top: 40px; }
+            .grupo-titulo { background: #333; color: #fff; padding: 10px; border-radius: 5px; font-size: 24px; }
+            .noticia { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; 
+                       box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .medio { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; }
+            a { color: #0056b3; text-decoration: none; font-weight: 600; display: block; margin-top: 5px; }
+            a:hover { text-decoration: underline; background-color: #e6f2ff; }
+            .fecha { font-size: 16px; color: #666; margin-bottom: 30px; }
+        </style>
+    </head>
+    <body>
+        <h1>Resumen de Prensa</h1>
+        <div class="fecha">Última actualización: 28/09/2026 15:30</div>
+    <div class="grupo"><div class="grupo-titulo">España · Nacionales</div>
+                <div class="noticia">
+                    <div class="medio">El Mundo</div>
+                    <a href="https://www.elmundo.es/espana/2026/09/28/6ab9f7223e9f6f8c52a400fd-directo.html" target="_blank" rel="noopener">Crisis de la vivienda en España</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">ABC</div>
+                    <a href="https://www.abc.es/espana/informacion-aportada-tribunal-cuentas-cerca-fundaciones-fantasma-20260928015839-nt.html" target="_blank" rel="noopener">Fundaciones 'fantasma' del PSOE, señaladas como vía para canalizar comisiones</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Vanguardia</div>
+                    <a href="https://www.lavanguardia.com/" target="_blank" rel="noopener">La Vanguardia</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Razón</div>
+                    <a href="https://www.larazon.es/espana/sanchez-tiende-trampa-junts-podemos-ganar-tiempo-fracaso-politica-vivienda_202609286ab9bc2282932a3cf91bd20d.html" target="_blank" rel="noopener">Sánchez tiende una trampa a Junts y Podemos para ganar tiempo ante el fracaso de su política de vivienda</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">20 Minutos</div>
+                    <a href="https://www.20minutos.es/nacional/gobierno-planea-un-decreto-diferente-para-las-expropiaciones-que-se-aprobara-mas-adelante_7042240_0.html" target="_blank" rel="noopener">El Gobierno contempla un decreto diferente para las expropiaciones que se aprobará "más adelante"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Qué!</div>
+                    <a href="https://www.que.es/2026/09/28/decreto-vivienda-alquiler-desahucios/" target="_blank" rel="noopener">Qué cambios hará el decreto de vivienda que el Gobierno quiere aprobar el martes: actuaciones sobre inquilinos y desahucios</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">elDiario.es</div>
+                    <a href="https://www.eldiario.es/politica/gobierno-ultima-decreto-vivienda-aprobarlo-martes-presionado-calle-exigencias-socios_1_13538460.html" target="_blank" rel="noopener">El Gobierno ultima un decreto de vivienda que evite desahucios, blinde alquileres y recoja ayudas para propietarios e inquilinos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Español</div>
+                    <a href="https://www.elespanol.com/espana/politica/20260928/feijoo-acusa-gobierno-sanchez-llevar-anos-pendiente-casa-jessica-maricarmen/1003744399724_0.html" target="_blank" rel="noopener">Feijóo acusa al Gobierno de Sánchez de llevar ocho años "más pendiente de la casa de Jesica que de la de Maricarmen"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Público</div>
+                    <a href="https://publico.es/economia/vivienda/nuevo-15-m-vivienda-toma-puerta-sol-cae-rentismo-cae-gobierno.html" target="_blank" rel="noopener">Un nuevo 15-M por la vivienda toma la Puerta del Sol: "O cae el rentismo o cae el Gobierno"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Vozpópuli</div>
+                    <a href="https://www.vozpopuli.com/" target="_blank" rel="noopener">Vozpopuli</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">OK Diario</div>
+                    <a href="https://okdiario.com/cool/famosos/julia-janeiro-llama-payasa-belen-esteban-adelanta-movimiento-jesulin-va-poner-demanda-como-castillo-20416674" target="_blank" rel="noopener">Julia Janeiro llama «payasa» a Belén Esteban y adelanta el movimiento de Jesulín: «Le va a poner una demanda como un castillo»</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Plural</div>
+                    <a href="https://www.elplural.com/sociedad/tribunales/pumpido-asegura-supremo-realizo-interpretacion-contradictoria-malversacion-proces-apuesta-amnistiarla_401472102" target="_blank" rel="noopener">Pumpido asegura que el Supremo realizó una interpretación "contradictoria" de la malversación del procés y apuesta por amnistiarla</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">InfoLibre</div>
+                    <a href="https://www.infolibre.es/economia/izquierda-reclama-decreto-maricarmen-llegue-integro-consejo-ministros_1_2237001.html" target="_blank" rel="noopener">La izquierda alternativa reclama que el ‘decreto Maricarmen’ llegue “íntegro” al Consejo de Ministros</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Debate</div>
+                    <a href="https://www.eldebate.com/" target="_blank" rel="noopener">El Debate</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">The Objective</div>
+                    <a href="https://theobjective.com/sociedad/suceso/2026-09-28/detenidas-diez-menores-agredir-educadores-centro-acogida-ceuta/" target="_blank" rel="noopener">Detenidas diez menores por agredir a dos educadores en un centro de acogida en Ceuta</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Libertad Digital</div>
+                    <a href="https://www.libertaddigital.com/espana/politica/2026-09-28/advertencia-a-zapatero-desde-bolivia-analizaremos-desde-el-dia-1-de-su-mandato-7466022/?utm_source=rss&utm_medium=feed&utm_campaign=Libertad+Digital%3A+Noticias+y+opini%C3%B3n+en+la+red" target="_blank" rel="noopener">Advertencia a Zapatero desde Bolivia: &quot;Analizaremos desde el día 1 de su mandato&quot;</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Independiente</div>
+                    <a href="https://www.elindependiente.com/futuro/inteligencia-artificial/2026/09/27/una-ia-sin-control-podria-provocar-mil-millones-de-muertes-la-advertencia-de-bill-gates/" target="_blank" rel="noopener">Una IA sin control podría provocar "mil millones de muertes": la advertencia de Bill Gates</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Moncloa</div>
+                    <a href="https://www.moncloa.com/2026/09/28/reglamento-futura-pac-presupuesto-planas-3439173/" target="_blank" rel="noopener">El reglamento de la futura PAC que Planas no quiere cerrar sin presupuesto: lo que se decide en Bruselas</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">RTVE</div>
+                    <a href="https://www.rtve.es/noticias/" target="_blank" rel="noopener">Noticias</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Antena 3</div>
+                    <a href="https://www.antena3.com/" target="_blank" rel="noopener">Antena3</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Telecinco</div>
+                    <a href="https://www.mediaset.es/comunicacion/television/telecinco/20260925/isla-tentaciones-program-programa-siete_18_020270745.html" target="_blank" rel="noopener">Lágrimas, una huida desesperada y una petición de confrontación: llega la durísima segunda hoguera para los chicos, en ‘La isla de las tentaciones’</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Sexta</div>
+                    <a href="https://lasexta.com/" target="_blank" rel="noopener">laSexta</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Cuatro</div>
+                    <a href="https://www.cuatro.com/noticias/20260928/quedan-libertad-sospechosos-violacion-joven-ceuta_18_020287821.html" target="_blank" rel="noopener">Quedan en libertad los dos sospechosos de la violación de una joven de 17 años en Ceuta: “No estaba drogada”</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Cadena SER</div>
+                    <a href="https://cadenaser.com/" target="_blank" rel="noopener">Cadena SER</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">COPE</div>
+                    <a href="https://www.cope.es" target="_blank" rel="noopener">COPE</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Onda Cero</div>
+                    <a href="https://www.ondacero.es/noticias/sociedad/acampada-sol-protesta-vivienda-directo-cientos-personas-pasan-segunda-noche-espera-conocer-decreto-gobierno_202609286aba083fd5f3ae10c736c4eb.html" target="_blank" rel="noopener">Cientos de personas siguen acampadas en Sol a la espera de conocer el decreto del Gobierno</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Europa Press</div>
+                    <a href="https://www.europapress.es/nacional/noticia-sumar-socios-izquierda-presionan-gobierno-aprobar-martes-decreto-vivienda-exigente-20260928144227.html" target="_blank" rel="noopener">Sumar y los socios de izquierda presionan al Gobierno para aprobar el martes un decreto de vivienda "exigente"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Servimedia</div>
+                    <a href="https://www.servimedia.es/home" target="_blank" rel="noopener">Home</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Agencia Colpisa</div>
+                    <a href="https://www.colpisa.com" target="_blank" rel="noopener">Colpisa 2023</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">España · Deportivos</div>
+                <div class="noticia">
+                    <div class="medio">Mundo Deportivo</div>
+                    <a href="https://www.mundodeportivo.com/" target="_blank" rel="noopener">Mundo Deportivo</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Estadio Deportivo</div>
+                    <a href="https://www.estadiodeportivo.com" target="_blank" rel="noopener">Estadio Deportivo</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Desmarque</div>
+                    <a href="https://www.eldesmarque.com/futbol/liga-1a-division/20260928/charla-pellegrini-riquelme-betis-futuro-entrevista_18_020277189.html" target="_blank" rel="noopener">La conversación con Pellegrini que cambió el futuro de Riquelme en el Betis: "Fue un antes y un después"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Relevo</div>
+                    <a href="https://www.relevo.com/futbol/nations-league/tuchel-proyecta-el-relevo-generacional-de-la-porteria-de-inglaterra.html" target="_blank" rel="noopener">Tuchel proyecta el relevo generacional de la portería de Inglaterra</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Palco23</div>
+                    <a href="https://palco23.mundodeportivo.com/competiciones/el-veto-a-las-apuestas-en-brasil-amenaza-170-millones-anuales-de-patrocinio-en-la-primera-division" target="_blank" rel="noopener">El veto a las apuestas en Brasil amenaza 170 millones anuales de patrocinio en Primera</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">2Playbook</div>
+                    <a href="https://www.2playbook.com/competiciones/terremoto-en-brasil-gobierno-prohibe-apuestas-deportivas-pone-futbol-en-jaque_23802_102.html" target="_blank" rel="noopener">Terremoto en Brasil: el Gobierno prohíbe las apuestas deportivas y pone al fútbol en jaque</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">España · Económicos</div>
+                <div class="noticia">
+                    <div class="medio">Economía Digital</div>
+                    <a href="https://www.economiadigital.es/hemeroteca/grupo-albia-amplia-23-octubre-plazo-participar-laboratorio-universitario-ideas.html" target="_blank" rel="noopener">Grupo Albia amplía hasta el 23 de octubre el plazo para participar en su Laboratorio Universitario de Ideas</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Libre Mercado</div>
+                    <a href="https://www.libertaddigital.com/libremercado/2026-09-28/hacienda-entorpece-la-investigacion-a-zapatero-en-el-senado-y-rechaza-entregar-sus-datos-fiscales-7465835/?utm_source=rss&utm_medium=feed&utm_campaign=Libertad+Digital%3A+Libre+Mercado" target="_blank" rel="noopener">Hacienda entorpece la investigación a Zapatero en el Senado y rechaza entregar sus datos fiscales</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Invertia</div>
+                    <a href="https://invertia.com/invertia/" target="_blank" rel="noopener">Invertia</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Bolsamania</div>
+                    <a href="https://www.bolsamania.com/indice/IBEX-35" target="_blank" rel="noopener">IBEX 35</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">España · Tecnología</div>
+                <div class="noticia">
+                    <div class="medio">Xataka</div>
+                    <a href="https://xataka.com/" target="_blank" rel="noopener">Xataka</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Genbeta</div>
+                    <a href="https://genbeta.com/" target="_blank" rel="noopener">Genbeta</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Applesfera</div>
+                    <a href="https://applesfera.com/" target="_blank" rel="noopener">Applesfera</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Computer Hoy</div>
+                    <a href="https://computerhoy.20minutos.es/" target="_blank" rel="noopener">Computer Hoy</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Hipertextual</div>
+                    <a href="https://hipertextual.com/cine-television/que-es-real-y-que-es-mentira-en-la-bola-negra-de-los-javis/" target="_blank" rel="noopener">Qué es real y qué es mentira en ‘La Bola Negra’ de los Javis</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">ADSLZone</div>
+                    <a href="https://www.adslzone.net/noticias/operadores/movistar-datos-compartidos-limite-100-gigas/" target="_blank" rel="noopener">Movistar y el truco de los 100 GB: por qué compartir datos puede ser mala idea</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">España · Culturales</div>
+                <div class="noticia">
+                    <div class="medio">Jot Down</div>
+                    <a href="https://www.jotdown.es/2026/09/la-casa-que-sert-regalo-a-sevilla/" target="_blank" rel="noopener">La casa que Sert regaló a Sevilla</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Cultural</div>
+                    <a href="https://elcultural.com/el-cultural/" target="_blank" rel="noopener">El Cultural</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Zenda Libros</div>
+                    <a href="https://www.zendalibros.com/palabras-de-japon-para-guiar-el-camino/" target="_blank" rel="noopener">Palabras de Japón para guiar el camino</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Letras Libres</div>
+                    <a href="https://letraslibres.com/politica/viva-la-acampada-aunque-pierda/28/09/2026/" target="_blank" rel="noopener">Viva la acampada aunque pierda</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Ethic</div>
+                    <a href="https://ethic.es/actividades-extraescolares-mas-no-es-mejor" target="_blank" rel="noopener">Actividades extraescolares: más no es mejor, según la ciencia</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Yorokobu</div>
+                    <a href="https://yorokobu.es/asus-zenbook-14/" target="_blank" rel="noopener">Todo lo que un buen diseño consigue que olvidemos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Salto</div>
+                    <a href="https://elsaltodiario.com/opinion" target="_blank" rel="noopener">Opinión</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Marea</div>
+                    <a href="https://www.lamarea.com/2026/09/28/viviendo-que-es-gerundio/" target="_blank" rel="noopener">Viviendo que es gerundio</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Mongolia</div>
+                    <a href="https://www.revistamongolia.com/noticias/mongolity-show-en-malaga-aplazado" target="_blank" rel="noopener">MONGOLITY SHOW EN MÁLAGA (APLAZADO)</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Cataluña</div>
+                <div class="noticia">
+                    <div class="medio">Ara</div>
+                    <a href="https://www.ara.cat/politica/prohibir-compra-especulativa-fons-voltor-proteccio-desnonaments-decret-d-habitatge-ultima-govern-espanyol_1_5862828.html" target="_blank" rel="noopener">Sumar augmenta la pressió al PSOE: o pròrroga de lloguers o plantada al consell de ministres</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Nació Digital</div>
+                    <a href="https://naciodigital.cat/societat/els-mossos-busquen-una-menor-de-13-anys-desapareguda-a-barcelona.html" target="_blank" rel="noopener">Els Mossos busquen una menor de 13 anys desapareguda a Barcelona</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">VilaWeb</div>
+                    <a href="https://www.vilaweb.cat/noticies/barca-florentino-perez-calumnies-cas-negreira/" target="_blank" rel="noopener">El Barça i Florentino Pérez es veuran als jutjats per les calúmnies del cas Negreira</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Nacional</div>
+                    <a href="https://www.elnacional.cat" target="_blank" rel="noopener">El Nacional</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Món</div>
+                    <a href="https://elmon.cat/comunicacio/tv3-travessa-laura-escanes-entrevista-concursants-famosos-1190934/" target="_blank" rel="noopener">‘La Travessa VIP’, des de dins: els més competitius i els que més discuteixen</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">RAC1</div>
+                    <a href="https://www.rac1.cat/" target="_blank" rel="noopener">RAC1</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Via Empresa</div>
+                    <a href="https://www.viaempresa.cat/economia/logistica-catalana-guanya-nou-punt-trobada-naixement-clici_2241140_102.html" target="_blank" rel="noopener">La logística catalana guanya un nou punt de trobada amb el naixement del CLICI</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Nacional</div>
+                    <a href="https://www.elnacional.com/2026/09/amnistia-internacional-los-mecanismos-de-represion-en-venezuela-no-han-cambiado/" target="_blank" rel="noopener">Amnistía Internacional: Los mecanismos de represión en Venezuela no han cambiado</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Galicia</div>
+                <div class="noticia">
+                    <div class="medio">La Región</div>
+                    <a href="https://www.laregion.es/galicia/galicia-logra-mayor-vendimia-historia-80-millones-kilos_1_20260928-4429500.html" target="_blank" rel="noopener">Galicia logra la mayor vendimia de la historia con 80 millones de kilos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Ideal Gallego</div>
+                    <a href="https://www.elidealgallego.com/a-coruna/2026-09-28/estas-son-las-32-actuaciones-propuestas-por-los-vecinos-que-transformaran-a-coruna-881762.html" target="_blank" rel="noopener">Estas son las 32 actuaciones propuestas por los vecinos que transformarán A Coruña</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Atlántico</div>
+                    <a href="https://www.atlantico.net/vigo/detenido-muerte-conductor-pelea-trafico_1_20260928-4429802.html" target="_blank" rel="noopener">La Guardia Civil investiga por homicidio a un vigués de 41 años por la pelea en la A-55</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Ferrol</div>
+                    <a href="https://diariodeferrol.elidealgallego.com/ferrol/2026-09-28/as-forcadas-un-paramo-con-casi-mas-tramos-paseables-que-navegables-881615.html" target="_blank" rel="noopener">As Forcadas, un páramo con casi más tramos paseables que navegables</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Arousa</div>
+                    <a href="https://diariodearousa.elidealgallego.com/o-grove/2026-09-27/reservas-hoteles-ano-outro-disfrutar-festa-do-marisco-grove-881641.html" target="_blank" rel="noopener">Reservas en hoteles “de un ano para outro” para disfrutar de la Festa do Marisco de O Grove</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Nós Diario</div>
+                    <a href="https://www.nosdiario.gal/articulo/social/pleno-vigo-exixe-xunta-que-cese-boicot-transferencia-da-ap-9-que-anule-concesion-prorrogada-polo-goberno-aznar/20260928165010267892.html" target="_blank" rel="noopener">O Pleno de Vigo exixe á Xunta que cese o "boicot" á transferencia da AP-9 e que se anule a concesión prorrogada polo Goberno de Aznar</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Praza Pública</div>
+                    <a href="https://praza.gal/politica/por-que-tarda-o-tren-ou-como-se-protexe-o-patrimonio-2-e-3-anos-de-lenta-transparencia-de-estado-e-xunta" target="_blank" rel="noopener">Por que tarda o tren ou como se protexe o patrimonio: 2 e 3 anos de lenta transparencia de Estado e Xunta</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Mundiario</div>
+                    <a href="https://www.mundiario.com/articulo/salud/mirar-hora-vigilar-salud-nuevo-poder-biomarcadores/20260928170113443692.html" target="_blank" rel="noopener">De mirar la hora a vigilar la salud: el nuevo poder de los biomarcadores</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Pontevedra Viva</div>
+                    <a href="https://www.pontevedraviva.com/gl/deportes/unha-terceira-gran-final-en-pontevedra-si-imos-ir-por-outro-evento-destas-caracteristicas_521328_102.html" target="_blank" rel="noopener">Unha terceira Gran Final en Pontevedra: "Si, imos ir a por outro evento destas características"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Vigoé</div>
+                    <a href="https://www.vigoe.es/vigo/local/luisa-sanchez-lamenta-que-caballero-se-opona-a-ter-a-cidade-preparada-de-cara-a-visita-da-fifa/" target="_blank" rel="noopener">Luisa Sánchez lamenta que Caballero se opoña a ter á cidade preparada de cara á visita da FIFA</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Metropolitano</div>
+                    <a href="https://metropolitano.gal/enfoque/vigo-suspende-el-megacontrato-de-bus-urbano-y-pide-aclaraciones-a-las-empresas-candidatas/" target="_blank" rel="noopener">Vigo suspende el megacontrato del bus urbano y pide "aclaraciones" a las empresas candidatas</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Ferrol 360</div>
+                    <a href="https://ferrol360.es/la-f-101-alvaro-de-bazan-demuestra-su-capacidad-en-el-ejercicio-naval-multinacional-unitas/" target="_blank" rel="noopener">La F-101 ‘Álvaro de Bazán’ demuestra su capacidad en el ejercicio naval multinacional UNITAS</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">DxT Campeón</div>
+                    <a href="https://dxtcampeon.elidealgallego.com/deportivo/depor/2026-09-28/cuatro-luces-y-cuatro-sombras-del-inicio-de-liga-del-depor-881730.html" target="_blank" rel="noopener">Cuatro luces y cuatro sombras del inicio de Liga del Dépor</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Riazor.org</div>
+                    <a href="https://www.riazor.org/sueno-mauro-valeiro-frank-iglesias-leandro-altieri/" target="_blank" rel="noopener">El sueño cumplido de Mauro Valeiro, Frank Iglesias y Leandro Altieri: «Cada minuto que pases aquí es un privilegio»</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">País Vasco · Navarra</div>
+                <div class="noticia">
+                    <div class="medio">El Correo</div>
+                    <a href="https://elcorreo.com/politica/gobierno-perfila-decreto-vivienda-bonificaciones-fiscales-freno-20260928101125-ntrc.html" target="_blank" rel="noopener">El Gobierno intenta salvar su decreto de vivienda: bonificaciones fiscales y freno a los fondos buitre sin expropiación</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario Vasco</div>
+                    <a href="https://diariovasco.com/politica/gobierno-perfila-decreto-vivienda-bonificaciones-fiscales-freno-20260928101125-ntrc.html" target="_blank" rel="noopener">El Gobierno perfila su decreto de vivienda: bonificaciones fiscales y freno a los fondos buitre sin recurrir a la expropiación</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Naiz</div>
+                    <a href="https://naiz.eus/info" target="_blank" rel="noopener">INFO</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Berria</div>
+                    <a href="https://www.berria.eus/iritzia/berben-poza/oroimena_2164032_102.html" target="_blank" rel="noopener">Oroimena</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">EITB</div>
+                    <a href="https://eitb.eus/" target="_blank" rel="noopener">EITB</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Navarra</div>
+                    <a href="https://www.diariodenavarra.es/noticias/navarra/2026/09/28/chivite-destaca-95-emergencias-llegan-112-navarra-atienden-medio-minuto-836865-15.html" target="_blank" rel="noopener"><![CDATA[Chivite destaca que el 95% de las emergencias que llegan al 112 en Navarra se atienden en menos de medio minuto]]></a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Norte · Aragón · La Rioja · Cantabria · Asturias</div>
+                <div class="noticia">
+                    <div class="medio">Heraldo de Aragón</div>
+                    <a href="https://www.heraldo.es/noticias/aragon/2026/09/28/comienza-campana-antigripal-residencias-mayores-aragon-me-vacuno-todos-los-anos-no-me-quiero-poner-mala-2055278.html" target="_blank" rel="noopener">Comienza la campaña antigripal en residencias de Aragón: "Me vacuno siempre, no me quiero poner mala"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Rioja</div>
+                    <a href="https://larioja.com/la-rioja/ecoparque-refuerza-gestion-envases-inversion-millones-20260928135654-nt.html" target="_blank" rel="noopener">El Ecoparque de La Rioja refuerza la gestión de envases con una inversión de 15 millones</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Diario Montañés</div>
+                    <a href="https://eldiariomontanes.es/santander/santander-congela-impuestos-decimotercer-ano-consecutivo-excepto-20260928140846-nt.html" target="_blank" rel="noopener">Santander congela los impuestos por decimotercer año consecutivo, excepto agua y alcantarillado</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Comercio</div>
+                    <a href="https://elcomercio.es/asturias/asturias-decreto-vivienda-pisos-turisticos-20260928134750-nt.html" target="_blank" rel="noopener">El Principado reclama un decreto estatal de vivienda «ambicioso» y respalda subir el IVA de los pisos turísticos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Comercio</div>
+                    <a href="https://www.youtube.com/live/VIp6bPuoP10?si=4r1a7bGknzkL3f83" target="_blank" rel="noopener">"Tenemos que hablar" | Perú ante la criminalidad: 57% cree que gobierno de Keiko no tiene una estrategia clara</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Castilla y León</div>
+                <div class="noticia">
+                    <div class="medio">El Norte de Castilla</div>
+                    <a href="https://elnortedecastilla.es/valladolid/provincia/herido-grave-septuagenario-atropellado-camion-pedrajas-san-20260928113206-nt.html" target="_blank" rel="noopener">Muere un hombre de 74 años tras ser arrollado por un camión en Pedrajas de San Esteban</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de León</div>
+                    <a href="https://www.diariodeleon.es/leon/260928/2098568/adif-olvida-nava-tamano-camiones.html" target="_blank" rel="noopener">Adif ‘se olvida’ en Navatejera del tamaño de los camiones</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Burgos</div>
+                    <a href="https://diariodeburgos.es/local" target="_blank" rel="noopener">Burgos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Gaceta de Salamanca</div>
+                    <a href="https://lagacetadesalamanca.es/salamanca/hosteleria-vislumbra-septiembre-record-tras-tiron-via-20260927060000-nt.html" target="_blank" rel="noopener">La hostelería vislumbra un septiembre de récord tras el tirón de la 'Vía Áurea'</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Ávila</div>
+                    <a href="https://diariodeavila.es/local" target="_blank" rel="noopener">Ávila</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Día de Valladolid</div>
+                    <a href="https://eldiadevalladolid.com/local" target="_blank" rel="noopener">Valladolid</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Castilla-La Mancha</div>
+                <div class="noticia">
+                    <div class="medio">Lanza Digital</div>
+                    <a href="https://www.lanzadigital.com/provincia/ciudad-real/el-psoe-valora-el-acuerdo-de-garantizar-la-gratuidad-de-2-a-3-anos-en-la-escuela-infantil-la-granja/" target="_blank" rel="noopener">El PSOE valora el acuerdo de garantizar la gratuidad de 2 a 3 años en la Escuela Infantil La Granja</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Tribuna de Albacete</div>
+                    <a href="https://latribunadealbacete.es/local" target="_blank" rel="noopener">Albacete</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Tribuna de Ciudad Real</div>
+                    <a href="https://latribunadeciudadreal.es/local" target="_blank" rel="noopener">Ciudad Real</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">En Castilla-La Mancha</div>
+                    <a href="https://www.encastillalamancha.es/guadalajara/renuevan-la-senalizacion-vertical-de-las-carreteras-afectadas-por-el-incendio-de-la-mierla-guadalajara/" target="_blank" rel="noopener">Renuevan la señalización vertical de las carreteras afectadas por el incendio de La Mierla (Guadalajara)</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Comunidad Valenciana · Murcia</div>
+                <div class="noticia">
+                    <div class="medio">Las Provincias</div>
+                    <a href="https://lasprovincias.es/politica/directo-ultimo-debate-politica-general-legislatura-20260928113355-di.html" target="_blank" rel="noopener">El PSPV insiste en la incertidumbre de Pérez Llorca: «No manda. Depende de Génova y de Vox»</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Valencia Plaza</div>
+                    <a href="https://valenciaplaza.com/valenciaplaza/comarca-y-empresa/ontinyent-inicia-les-obres-de-les-12-vivendes-publiques-a-la-vila-i-presentara-el-nou-pla-municipal-dhabitatge" target="_blank" rel="noopener">Comarca y empresa | Ontinyent inicia les obres de les 12 vivendes públiques a La Vila i presentarà el nou Pla Municipal d’Habitatge</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Verdad</div>
+                    <a href="https://laverdad.es/nacional/gobierno-perfila-decreto-vivienda-bonificaciones-fiscales-freno-20260928101125-ntrc.html" target="_blank" rel="noopener">Este es el decálogo de propuestas del Gobierno para atajar la crisis de la vivienda</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Andalucía</div>
+                <div class="noticia">
+                    <div class="medio">Diario Sur</div>
+                    <a href="https://diariosur.es/sucesos/hallan-costa-malaga-cadaver-flotador-tercero-mes-20260928164141-nt.html" target="_blank" rel="noopener">Hallan en la costa de Málaga otro cadáver con un flotador, el tercero en menos de un mes</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Sevilla</div>
+                    <a href="https://www.diariodesevilla.es/sevilla/tranvibus-llega-duque-35-minutos-sin-prioridad-semaforos_0_2008095120.html" target="_blank" rel="noopener">El Tranvibús llega al Duque en 35 minutos, pero sin prioridad en los semáforos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Ideal</div>
+                    <a href="https://ideal.es/granadacf/audiencia-nacional-condena-quique-pina-dos-anos-20260928140207-nt.html" target="_blank" rel="noopener">La Audiencia Nacional condena a Quique Pina a más de dos años de cárcel por defraudar 2,8 millones a Hacienda</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Málaga Hoy</div>
+                    <a href="https://www.malagahoy.es/malaga/policias-efectivos-crimen-organizado-malaga_0_2008096853.html" target="_blank" rel="noopener">Policías se unen para pedir más efectivos contra el crimen organizado en Málaga: "Las mafias y el narco nos superan en todo"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Granada Hoy</div>
+                    <a href="https://www.granadahoy.com/granadacf/expresidente-granada-cf-quique-pina_0_2008096942.html" target="_blank" rel="noopener">El expresidente del Granada CF Quique Pina, condenado a dos años y medio de cárcel</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Cádiz</div>
+                    <a href="https://www.diariodecadiz.es/noticias-provincia-cadiz/david-encina-nuevo-delegado-gobierno-ceuta_0_2008093849.html" target="_blank" rel="noopener">David de la Encina, nuevo delegado del Gobierno en Ceuta</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Jerez</div>
+                    <a href="https://www.diariodejerez.es/jerez/vecinos-incendio-jerez-falta-limpieza-caulina-nadie_0_2008096000.html" target="_blank" rel="noopener">Vecinos tras el incendio en Jerez: "Hace falta limpieza pero Caulina no es de nadie"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Correo de Andalucía</div>
+                    <a href="https://elcorreoweb.es/" target="_blank" rel="noopener">el correo de andalucía</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Extremadura · Madrid</div>
+                <div class="noticia">
+                    <div class="medio">Hoy</div>
+                    <a href="https://hoy.es/extremadura/oferta-publica-empleo-ano-superara-2000-plazas-20260928135213-nt.html" target="_blank" rel="noopener">La Oferta Pública de Empleo de este año superará las 2.000 plazas</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Telemadrid</div>
+                    <a href="https://www.telemadrid.es" target="_blank" rel="noopener">telemadrid</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Baleares · Canarias</div>
+                <div class="noticia">
+                    <div class="medio">Última Hora</div>
+                    <a href="https://ultimahora.es/noticias/local/2026/09/28/2717677/propietarios-estan-alerta-nos-llaman-para-frenar-salida-viviendas-mercado-del-alquiler.html" target="_blank" rel="noopener">«Los propietarios están en alerta y nos llaman para frenar la salida de sus viviendas al mercado del alquiler»</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Canarias 7</div>
+                    <a href="https://canarias7.es/politica/canarias-plantea-modificar-ley-alquiler-maricarmen-populismo-20260928142536-nt.html" target="_blank" rel="noopener">Canarias plantea modificar la ley del alquiler para que no haya más Maricarmen, pero sin populismo</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Diario de Avisos</div>
+                    <a href="https://diariodeavisos.elespanol.com/2026/09/espectaculo-drones-plenilunio-santa-cruz-tenerife/" target="_blank" rel="noopener">Más de 500 drones iluminarán Santa Cruz: cuándo y dónde verlos en Plenilunio</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Internacional · USA / UK</div>
+                <div class="noticia">
+                    <div class="medio">The Guardian</div>
+                    <a href="https://www.theguardian.com/lifeandstyle/2026/sep/28/how-couples-can-divide-household-chores-mental-load" target="_blank" rel="noopener">‘Whose job is it to empty the dishwasher?’ Experts on the conversations every couple needs to have</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">The Telegraph</div>
+                    <a href="https://www.telegraph.co.uk/business/2026/09/28/borrowing-costs-rise-after-jump-in-oil-price/" target="_blank" rel="noopener">UK borrowing costs close to highest level since 2007</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">The Independent</div>
+                    <a href="https://www.independent.co.uk/extras/indybest/christmasgifts/advent-calendars/white-company-christmas-candle-countdown-b3057695.html" target="_blank" rel="noopener">The White Company has launched a 12-day candle calendar for Christmas</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">CNN</div>
+                    <a href="https://www.cnn.com/cnn-underscored" target="_blank" rel="noopener">CNN Underscored</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Financial Times</div>
+                    <a href="https://ft.com/stream/a3fb024b-d93a-4fb0-856c-8e38fe632931" target="_blank" rel="noopener">Monetary Policy Radar – Special Edition</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Time</div>
+                    <a href="https://time.com/article/2026/09/28/raf-fairford-uk-us-airbase-suspected-terror-plot-security-alert/" target="_blank" rel="noopener">U.S. Embassy Issues Security Alert to Citizens in U.K. Amid Suspected Terror Plot</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">NPR</div>
+                    <a href="https://www.npr.org/sections/politics/" target="_blank" rel="noopener">Politics</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Internacional · Europa</div>
+                <div class="noticia">
+                    <div class="medio">Público</div>
+                    <a href="https://publico.es/economia/vivienda/nuevo-15-m-vivienda-toma-puerta-sol-cae-rentismo-cae-gobierno.html" target="_blank" rel="noopener">Un nuevo 15-M por la vivienda toma la Puerta del Sol: "O cae el rentismo o cae el Gobierno"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Le Monde</div>
+                    <a href="https://www.lemonde.fr/en/france/article/2026/09/28/pope-leo-xiv-urges-european-unity-to-fight-lies-and-deceit_6758029_8.html" target="_blank" rel="noopener">Pope Leo XIV urges European unity to fight 'lies and deceit'</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Le Monde Diplomatique</div>
+                    <a href="https://www.monde-diplomatique.fr/carnet/2026-09-27-Taiwan-ou-la-grande-bascule" target="_blank" rel="noopener">Taïwan ou la grande bascule</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Die Zeit</div>
+                    <a href="https://www.zeit.de/index" target="_blank" rel="noopener">DIE ZEIT</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Der Spiegel</div>
+                    <a href="https://www.spiegel.de/kultur/backstreet-boys-aj-mclean-spricht-vor-publikum-ueber-abhaengigkeit-a-7a7dd057-1141-4cdb-9c2b-2f593aeab6f0" target="_blank" rel="noopener">»Ihr habt gesehen, wer wir sind«: Backstreet-Boys-Star spricht vor Publikum über Abhängigkeit
+
+Vor 3 Min</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">FAZ</div>
+                    <a href="https://www.faz.net/aktuell/besser-leben/" target="_blank" rel="noopener">Besser leben</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Süddeutsche Zeitung</div>
+                    <a href="https://www.sueddeutsche.de/thema/CDU" target="_blank" rel="noopener">CDU</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Corriere della Sera</div>
+                    <a href="https://www.corriere.it/" target="_blank" rel="noopener">Corriere della Sera</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Repubblica</div>
+                    <a href="https://milano.repubblica.it/cronaca/2026/09/28/video/carburanti_tetto_al_prezzo_eni_code_milano_automobilisti-425612398/" target="_blank" rel="noopener">Carburanti, in coda a Milano dopo il tetto ai prezzi Eni: "Iniziativa giusta ma si può fare di più"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Il Sole 24 Ore</div>
+                    <a href="https://stream24.ilsole24ore.com" target="_blank" rel="noopener">Video del giorno</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Observador</div>
+                    <a href="https://observador.pt/2026/09/28/ventura-festeja-acusacoes-no-caso-das-gemeas-chega-tinha-razao-foi-tudo-um-conluio-de-podridao/" target="_blank" rel="noopener">"Chega tinha razão. Foi um conluio de podridão"</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Jornal i</div>
+                    <a href="https://sol.iol.pt/opiniao/noticias/anselmo-crespo-a-politica-da-tatica-ou-como-a-tatica-politica-pode-ser-a-nossa-desgraca/20260928/6aba73e50cf22b9f8904ce49" target="_blank" rel="noopener">A política da tática ou como a tática política pode ser a nossa desgraça</a>
+                </div>
+                </div><div class="grupo"><div class="grupo-titulo">Latinoamérica</div>
+                <div class="noticia">
+                    <div class="medio">El Nacional</div>
+                    <a href="https://www.elnacional.cat" target="_blank" rel="noopener">El Nacional</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Comercio</div>
+                    <a href="https://elcomercio.es/asturias/asturias-decreto-vivienda-pisos-turisticos-20260928134750-nt.html" target="_blank" rel="noopener">El Principado reclama un decreto estatal de vivienda «ambicioso» y respalda subir el IVA de los pisos turísticos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Universal</div>
+                    <a href="https://www.eluniversal.com.mx/opinion/" target="_blank" rel="noopener">Opinión</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Clarín</div>
+                    <a href="https://www.clarin.com/mundo/operativo-militar-colombia-matan-lider-disidencias-farc-acusado-financiar-magnicidio-senador-miguel-uribe_0_1t0aghPv7J.html" target="_blank" rel="noopener">Operativo militar en Colombia: matan a un líder de las disidencias de las FARC acusado de financiar el magnicidio del senador Miguel Uribe</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Tiempo</div>
+                    <a href="https://www.eltiempo.com/unidad-investigativa/las-85-menciones-a-maria-jose-pizarro-en-fallo-que-declaro-muerte-politica-de-ivan-name-por-caso-de-la-ungrd-la-exsenadora-responde-3589349" target="_blank" rel="noopener">Las 85 menciones a María José Pizarro en fallo que declaró muerte política de Iván Name por caso de la UNGRD</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Espectador</div>
+                    <a href="https://www.elespectador.com/economia/el-riesgo-de-el-nino-para-el-campo-cual-es-el-papel-del-credito-y-seguro-agropecuario/" target="_blank" rel="noopener">El riesgo de El Niño para el campo: ¿cuál es el papel del crédito y seguro agropecuario?</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Comercio</div>
+                    <a href="https://www.youtube.com/live/VIp6bPuoP10?si=4r1a7bGknzkL3f83" target="_blank" rel="noopener">"Tenemos que hablar" | Perú ante la criminalidad: 57% cree que gobierno de Keiko no tiene una estrategia clara</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">La Tercera</div>
+                    <a href="https://www.latercera.com/el-deportivo/noticia/nicolas-cordova-cita-de-urgencia-a-igor-lichnovsky-para-suplir-las-bajas-que-presentara-la-roja-ante-estados-unidos/" target="_blank" rel="noopener">Nicolás Córdova cita de urgencia a Igor Lichnovsky para suplir las bajas que presentará la Roja ante Estados Unidos</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Emol</div>
+                    <a href="https://emol.com/noticias/Nacional/2026/09/28/1212609/rebelion-rn-gatica-cambio-gabinete.html" target="_blank" rel="noopener">Rebelión RN: Gatica sugiere cambio de gabinete y Balladares insiste en problemas de coordinación en el Gobierno</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">El Nacional</div>
+                    <a href="https://www.elnacional.com/2026/09/amnistia-internacional-los-mecanismos-de-represion-en-venezuela-no-han-cambiado/" target="_blank" rel="noopener">Amnistía Internacional: Los mecanismos de represión en Venezuela no han cambiado</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Telemundo</div>
+                    <a href="https://www.telemundo.com/shows/top-chef-vip" target="_blank" rel="noopener">Top Chef VIP</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">Folha de S.Paulo</div>
+                    <a href="https://www.folha.uol.com.br/" target="_blank" rel="noopener">Folha de SÃ£o Paulo - marca do jornal na navegaÃ§Ã£o principal</a>
+                </div>
+                
+                <div class="noticia">
+                    <div class="medio">O Globo</div>
+                    <a href="https://oglobo.globo.com/blogs/lauro-jardim/post/2026/09/os-dois-motivos-que-lula-levara-em-conta-para-ir-ao-debate-da-globo.ghtml" target="_blank" rel="noopener">Os dois motivos que Lula levará em conta para ir ao debate da Globo</a>
+                </div>
+                </div></body></html>
