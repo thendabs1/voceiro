@@ -376,6 +376,7 @@ GN_LOCALE = {
 # caerán directamente al scraping.
 KNOWN_FEEDS = {
     # ── España · Nacionales ──
+  
     'elpais.com':           'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
     'elmundo.es':           'https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml',
     'abc.es':               'https://www.abc.es/rss/feeds/abc_ultima.xml',
@@ -403,6 +404,7 @@ KNOWN_FEEDS = {
     'as.com':               'https://feeds.as.com/mrss-s/pages/as/site/as.com/portada',
     'mundodeportivo.com':   'https://www.mundodeportivo.com/rss/portada.xml',
     'sport.es':             'https://www.sport.es/es/rss/portada.xml',
+    'estadiodeportivo.com': 'https://www.estadiodeportivo.com/rss/',
 
     # ── España · Económicos ──
     'expansion.com':        'https://e00-expansion.uecdn.es/rss/portada.xml',
@@ -418,12 +420,18 @@ KNOWN_FEEDS = {
     'jotdown.es':           'https://www.jotdown.es/feed/',
     'yorokobu.es':          'https://www.yorokobu.es/feed/',
     'lamarea.com':          'https://www.lamarea.com/feed/',
+    'elsaltodiario.com':    'https://www.elsaltodiario.com/rss',
+    'ctxt.es':              'https://ctxt.es/es/rss/portada.xml',
+    'hipertextual.com':     'https://hipertextual.com/feed',
 
     # ── Cataluña ──
     'ara.cat':              'https://www.ara.cat/rss/',
     'vilaweb.cat':          'https://www.vilaweb.cat/feed/',
     'naciodigital.cat':     'https://www.naciodigital.cat/rss',
     'rac1.cat':             'https://www.rac1.cat/rss',
+    'elpuntavui.cat':       'https://www.elpuntavui.cat/rss',
+    'elmon.cat':            'https://www.elmon.cat/rss',
+    'acn.cat':              'https://www.acn.cat/rss',
 
     # ── Galicia ──
     'farodevigo.es':        'https://www.farodevigo.es/rss/',
