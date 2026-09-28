@@ -332,6 +332,21 @@
     background:#3d2f14; border-color:#b58600; color:#ffcc66;
   }
   [data-theme="contrast"] .badge.futuro{background:#000; border-color:#ff0; color:#ff0}
+
+  /* Badge "Recolectado" para noticias sin fecha real */
+  .badge.recolectado{
+    background:#fef3c7; border-color:#fbbf24; color:#92400e;
+  }
+  [data-theme="dark"] .badge.recolectado{
+    background:#3d2f14; border-color:#b58600; color:#ffcc66;
+  }
+  [data-theme="sepia"] .badge.recolectado{
+    background:#f5e6c3; border-color:#c9a227; color:#5c4a1c;
+  }
+  [data-theme="contrast"] .badge.recolectado{
+    background:#000; border-color:#ff0; color:#ff0;
+  }
+
   .noticia a.titular{
     color:var(--accent); text-decoration:none;
     font-weight:600; font-size:1em; display:block; margin-top:2px;
@@ -789,6 +804,8 @@ const I18N = {
     presetGuardadoActivado: 'Configuración guardada · Modo Personalizado activado',
     fechaAhora: 'ahora', fechaHaceMin: 'hace {n} min', fechaHaceH: 'hace {n} h',
     fechaHaceD: 'hace {n} d', fechaProgramado: 'programado',
+    recolectado: '📥 Recolectado',
+    sinFechaReal: 'Sin fecha exacta del medio',
     syncOnline: 'Sincronizado con el plugin Lector Universal',
     syncOffline: 'Sin plugin — cambios guardados solo en este navegador',
     syncOfflineHint: 'Instala el plugin Lector Universal para sincronizar tu configuración entre dispositivos y compartirla con la lista de sitios.',
@@ -872,6 +889,8 @@ const I18N = {
     presetGuardadoActivado: 'Configuración gardada · Modo Personalizado activado',
     fechaAhora: 'agora', fechaHaceMin: 'hai {n} min', fechaHaceH: 'hai {n} h',
     fechaHaceD: 'hai {n} d', fechaProgramado: 'programado',
+    recolectado: '📥 Recollido',
+    sinFechaReal: 'Sen data exacta do medio',
     syncOnline: 'Sincronizado co plugin Lector Universal',
     syncOffline: 'Sen plugin — cambios gardados só neste navegador',
     syncOfflineHint: 'Instala o plugin Lector Universal para sincronizar a túa configuración entre dispositivos.',
@@ -943,6 +962,8 @@ const I18N = {
     presetGuardadoActivado: 'Configuració desada · Mode Personalitzat activat',
     fechaAhora: 'ara', fechaHaceMin: 'fa {n} min', fechaHaceH: 'fa {n} h',
     fechaHaceD: 'fa {n} d', fechaProgramado: 'programat',
+    recolectado: '📥 Recollit',
+    sinFechaReal: 'Sense data exacta del mitjà',
     syncOnline: 'Sincronitzat amb el plugin Lector Universal',
     syncOffline: 'Sense plugin — canvis desats només en aquest navegador',
     syncOfflineHint: 'Instal·la el plugin Lector Universal per sincronitzar la configuració.',
@@ -1014,6 +1035,8 @@ const I18N = {
     presetGuardadoActivado: 'Settings saved · Custom Mode enabled',
     fechaAhora: 'now', fechaHaceMin: '{n} min ago', fechaHaceH: '{n} h ago',
     fechaHaceD: '{n} d ago', fechaProgramado: 'scheduled',
+    recolectado: '📥 Collected',
+    sinFechaReal: 'No exact date from source',
     syncOnline: 'Synced with the Universal Reader plugin',
     syncOffline: 'No plugin — changes saved only in this browser',
     syncOfflineHint: 'Install the Universal Reader plugin to sync your configuration.',
@@ -1085,6 +1108,8 @@ const I18N = {
     presetGuardadoActivado: 'Konfigurazioa gordeta · Modo Pertsonalizatua aktibatuta',
     fechaAhora: 'orain', fechaHaceMin: 'duela {n} min', fechaHaceH: 'duela {n} h',
     fechaHaceD: 'duela {n} e', fechaProgramado: 'programatuta',
+    recolectado: '📥 Bilduta',
+    sinFechaReal: 'Iturriaren data zehatzik gabe',
     syncOnline: 'Lector Universal pluginarekin sinkronizatuta',
     syncOffline: 'Pluginik gabe — aldaketak nabigatzaile honetan bakarrik gordeta',
     syncOfflineHint: 'Instalatu Lector Universal plugina konfigurazioa sinkronizatzeko.',
@@ -1482,7 +1507,6 @@ function initUserScriptBridge(){
     const d = e.detail || {};
     setSitesFromArray(d.sites);
     guardarSitesCache();
-    /* Refrescar la vista si el panel está abierto */
     if ($('#panel-config').classList.contains('open')){
       renderListaMedios();
     }
@@ -1492,7 +1516,6 @@ function initUserScriptBridge(){
     const d = e.detail || {};
     setSitesFromArray(d.sites);
     guardarSitesCache();
-    /* Refrescar la vista si el panel está abierto */
     if ($('#panel-config').classList.contains('open')){
       renderListaMedios();
     }
@@ -2186,7 +2209,7 @@ function aplicarFiltros(){
     if (t2 && n.tipo  !== t2) return false;
     if (m && n.medio !== m) return false;
     if (limiteMs) {
-      const ts = n._ts;
+      const ts = n._tieneFecha ? n._ts : n._tsRec;
       if (isNaN(ts)) return false;
       if (ahora - ts > limiteMs) return false;
     }
@@ -2197,8 +2220,13 @@ function aplicarFiltros(){
   });
 
   filtradas.sort((a, b) => {
-    const ta = isNaN(a._ts) ? -Infinity : a._ts;
-    const tb = isNaN(b._ts) ? -Infinity : b._ts;
+    /* 1) Los que tienen fecha real van primero */
+    if (a._tieneFecha !== b._tieneFecha){
+      return a._tieneFecha ? -1 : 1;
+    }
+    /* 2) Dentro de cada grupo, por timestamp real (o de recolección) */
+    const ta = a._tieneFecha ? a._ts : (a._tsRec || 0);
+    const tb = b._tieneFecha ? b._ts : (b._tsRec || 0);
     return orden === 'antiguos' ? ta - tb : tb - ta;
   });
 
@@ -2225,10 +2253,24 @@ function renderizar(){
   const ahora = Date.now();
 
   cont.innerHTML = lista.map((n, idx) => {
-    const ts = n._ts;
-    const fecha = !isNaN(ts) ? formatearFecha(ts) : '';
+    /* Fecha: real o "recolectado" */
+    let fecha = '';
+    let sinFechaReal = false;
+    let esFuturo = false;
+    if (n._tieneFecha){
+      fecha = formatearFecha(n._ts);
+      esFuturo = !isNaN(n._ts) && (n._ts - ahora > FUTURO_MAX_MS);
+    } else {
+      sinFechaReal = true;
+      const recTs = n._tsRec;
+      if (!isNaN(recTs)){
+        fecha = `${t('recolectado')} ${formatearFecha(recTs)}`;
+      } else {
+        fecha = t('recolectado');
+      }
+    }
+
     const esPreset = presetEfectivo && cumplePreset(n);
-    const esFuturo = !isNaN(ts) && (ts - ahora > FUTURO_MAX_MS);
     const tituloHtml = bionicize(resaltar(n.titular, tokens));
 
     const guardada = PENDIENTES_URLS.has(n.enlace);
@@ -2243,7 +2285,7 @@ function renderizar(){
           <span class="medio">${escapeHtml(n.medio)}</span>
           <span class="badge">${escapeHtml(n.tipo)}</span>
           <span class="badge${esPreset ? ' preset' : ''}">${escapeHtml(n.grupo)}</span>
-          ${fecha ? `<span${esFuturo ? ' class="badge futuro"' : ''}>· ${escapeHtml(fecha)}</span>` : ''}
+          ${fecha ? `<span class="badge${esFuturo ? ' futuro' : ''}${sinFechaReal ? ' recolectado' : ''}">${sinFechaReal ? '' : '· '}${escapeHtml(fecha)}</span>` : ''}
           <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
           <button class="btn-mini btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${icon}</button>
         </div>
@@ -2589,7 +2631,15 @@ async function init(){
     n._titNorm = normalize(n.titular);
     const tsPub = parseFecha(n.fecha_pub);
     const tsRec = parseFecha(n.fecha);
-    n._ts = sanearTs(tsPub, tsRec);
+    if (!isNaN(tsPub)){
+      n._ts = sanearTs(tsPub, tsRec);
+      n._tsRec = tsRec;
+      n._tieneFecha = true;
+    } else {
+      n._ts = NaN;
+      n._tsRec = tsRec;
+      n._tieneFecha = false;
+    }
   });
 
   construirMediosUnicos();
