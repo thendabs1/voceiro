@@ -3,244 +3,143 @@
 Recolector de titulares de Voceiro.
 
 Fases:
-  1. Obtener titular + enlace de cada medio (Google News → RSS → scraping)
-  2. Decodificar enlaces de Google News a la URL original del medio
-  3. Enriquecer con newspaper3k (texto completo, resumen, palabras clave)
-  4. Deduplicar y fusionar con el histórico (ventana configurable)
+  1. Pedir el RSS oficial de cada medio (KNOWN_FEEDS) → hasta N_FEED titulares
+  2. Si no hay feed, intentar scraping básico del HTML
+  3. Deduplicar contra el histórico y fusionar
+  4. Podar por ventana de retención
   5. Escribir public/datos.json y public/index.html
+  6. Reporte final: medios sin titulares (para añadir feeds después)
 """
 
 import json
 import os
-import re
-import unicodedata
 from datetime import datetime, timedelta
-from collections import Counter
 import concurrent.futures
 
 import requests
 import feedparser
 from bs4 import BeautifulSoup
 
-from medios import MEDIA_CATALOG, HEADERS, GN_LOCALE, KNOWN_FEEDS, todos_los_medios
+from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
 
 
 # ─────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────
-DIAS_RETENCION   = 15       # ventana del histórico
-MAX_TEXTO        = 4000     # caracteres máximos del cuerpo por noticia
-MAX_WORKERS_LINKS = 5       # hilos para obtener titulares
-MAX_WORKERS_ENRICH = 4      # hilos para enriquecer artículos (newspaper3k)
+N_FEED            = 60      # titulares máximos a leer por medio
+DIAS_RETENCION    = 15      # ventana del histórico en días
+MAX_WORKERS       = 8       # hilos paralelos
+TIMEOUT           = 15      # segundos por petición
 
-# ─────────────────────────────────────────────────────────────
-# DEPENDENCIAS OPCIONALES
-# ─────────────────────────────────────────────────────────────
-try:
-    from googlenewsdecoder import gnewsdecoder
-    GN_DECODER_OK = True
-except Exception as e:
-    print(f"[!] googlenewsdecoder no disponible: {e}")
-    GN_DECODER_OK = False
+# Opcional: limitar la recolección a ciertos grupos (vacío = todos)
+# Ej: ['Galicia', 'España · Nacionales']
+GRUPOS_INCLUIDOS = []
 
-try:
-    from newspaper import Article, Config as NPConfig
-    NEWSPAPER_OK = True
-    NP_CONFIG = NPConfig()
-    NP_CONFIG.browser_user_agent = HEADERS['User-Agent']
-    NP_CONFIG.request_timeout = 12
-    NP_CONFIG.fetch_images = False
-    NP_CONFIG.memoize_articles = False
-except Exception as e:
-    print(f"[!] newspaper3k no disponible: {e}")
-    NEWSPAPER_OK = False
+DATOS_PATH = 'public/datos.json'
 
 
 # ─────────────────────────────────────────────────────────────
-# UTILIDADES DE TEXTO
+# FASE 1 · OBTENER TITULARES DE UN MEDIO
 # ─────────────────────────────────────────────────────────────
-_STOP = set("""
-el la los las un una unos unas de del al a en con por para que y o u es son se su sus
-lo le les no si como más mas pero este esta estos estas ese esa esos esas muy ya hay ser
-fue ha han hace había también tambien tan solo sólo sobre entre cuando donde quien
-todo toda todos todas otro otra otros otras mismo misma así asi ni
-""".split())
-
-
-def _normalizar(s: str) -> str:
-    s = (s or '').lower()
-    return ''.join(c for c in unicodedata.normalize('NFD', s)
-                   if unicodedata.category(c) != 'Mn')
-
-
-def _resumir(texto: str, n: int = 3) -> str:
-    """Resumen extractivo: frases con mayor densidad de palabras frecuentes."""
-    if not texto:
-        return ''
-    frases = re.split(r'(?<=[.!?])\s+', texto)
-    frases = [f.strip() for f in frases if 40 < len(f.strip()) < 400]
-    if len(frases) <= n:
-        return ' '.join(frases)
-    palabras = re.findall(r'\w+', texto.lower())
-    freq = Counter(p for p in palabras if p not in _STOP and len(p) > 3)
-
-    def score(f):
-        ws = re.findall(r'\w+', f.lower())
-        if not ws:
-            return 0
-        return sum(freq[w] for w in ws if w not in _STOP) / len(ws)
-
-    scored = sorted(enumerate(frases), key=lambda x: score(x[1]), reverse=True)
-    top = sorted(scored[:n])
-    return ' '.join(f for _, f in top)
-
-
-def _palabras_clave(texto: str, n: int = 8):
-    if not texto:
-        return []
-    palabras = re.findall(r'\w{4,}', texto.lower())
-    freq = Counter(p for p in palabras if p not in _STOP)
-    return [w for w, _ in freq.most_common(n)]
-
-
-# ─────────────────────────────────────────────────────────────
-# FASE 1 · OBTENER TITULAR + ENLACE
-# ─────────────────────────────────────────────────────────────
-def _parse_feed_bytes(url, content):
+def _parse_feed(content, base_url):
+    """Devuelve lista de dicts {titular, enlace, fecha_pub} del feed."""
     feed = feedparser.parse(content)
-    if not feed.entries:
-        return None
-    e = feed.entries[0]
-    return {'titular': e.get('title', '').strip(), 'enlace': e.get('link', url)}
+    out = []
+    for e in feed.entries[:N_FEED]:
+        t = (e.get('title') or '').strip()
+        l = (e.get('link') or '').strip()
+        if not t or not l:
+            continue
+        out.append({
+            'titular':   t,
+            'enlace':    l,
+            'fecha_pub': e.get('published') or e.get('updated') or '',
+        })
+    return out
 
 
-def _google_news(medio):
-    hl, gl, ceid = GN_LOCALE.get(medio.get('lang', 'es'), GN_LOCALE['es'])
-    url = f'https://news.google.com/rss/search?q=site:{medio["d"]}&hl={hl}&gl={gl}&ceid={ceid}'
-    try:
-        r = requests.get(url, headers=HEADERS, timeout=15)
-        if r.status_code == 200:
-            return _parse_feed_bytes(url, r.content)
-    except Exception as e:
-        print(f"  [GN] {medio['n']}: {e}")
-    return None
-
-
-def _known_feed(medio):
+def _rss(medio):
     url = KNOWN_FEEDS.get(medio['d'])
     if not url:
         return None
     try:
-        r = requests.get(url, headers=HEADERS, timeout=15)
-        if r.status_code == 200:
-            return _parse_feed_bytes(url, r.content)
+        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        if r.status_code != 200:
+            print(f"  [RSS {r.status_code}] {medio['n']}: {url}")
+            return None
+        items = _parse_feed(r.content, url)
+        if items:
+            return items
     except Exception as e:
-        print(f"  [RSS] {medio['n']}: {e}")
+        print(f"  [RSS!] {medio['n']}: {e}")
     return None
 
 
 def _scrape(medio):
+    """Scraping básico: coge titulares de h1/h2 con enlace."""
     url = f"https://{medio['d']}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=12)
+        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
         if r.status_code != 200:
             return None
-        soup = BeautifulSoup(r.text, 'html.parser')
-        for h in soup.find_all('h1', limit=8):
-            a = h.find('a', href=True)
+        soup = BeautifulSoup(r.text, 'lxml')
+        vistos = set()
+        out = []
+        for tag in soup.find_all(['h1', 'h2', 'h3'], limit=60):
+            a = tag.find('a', href=True)
             if not a:
                 continue
             texto = a.get_text(' ', strip=True)
-            if len(texto) < 25:
+            if len(texto) < 30:
                 continue
             href = a['href']
             if href.startswith('/'):
                 href = url + href
             elif not href.startswith('http'):
                 continue
-            return {'titular': texto, 'enlace': href}
+            if href in vistos:
+                continue
+            vistos.add(href)
+            out.append({'titular': texto, 'enlace': href, 'fecha_pub': ''})
+            if len(out) >= N_FEED:
+                break
+        return out or None
     except Exception as e:
-        print(f"  [SCRAPE] {medio['n']}: {e}")
+        print(f"  [SCRAPE!] {medio['n']}: {e}")
     return None
 
 
-def obtener_titular(medio):
-    data = _google_news(medio); fuente = 'GoogleNews'
-    if not data:
-        data = _known_feed(medio); fuente = 'RSS'
-    if not data:
-        data = _scrape(medio); fuente = 'Scraping'
-    if not data or not data.get('titular'):
-        return None
-    return {
-        'medio':    medio['n'],
-        'dominio':  medio['d'],
-        'grupo':    medio['grupo'],
-        'tipo':     medio.get('type', ''),
-        'lang':     medio.get('lang', ''),
-        'tags':     medio.get('tags', []),
-        'titular':  data['titular'].strip(),
-        'enlace':   data['enlace'],
-        'fuente':   fuente,
-        'fecha':    datetime.now().isoformat(timespec='seconds'),
-    }
+def obtener_titulares(medio):
+    """Devuelve (medio, lista_noticias, fuente) o (medio, [], None)."""
+    items = _rss(medio)
+    fuente = 'RSS'
+    if not items:
+        items = _scrape(medio)
+        fuente = 'Scraping'
+    if not items:
+        return (medio, [], None)
+
+    ahora = datetime.now().isoformat(timespec='seconds')
+    noticias = [{
+        'medio':     medio['n'],
+        'dominio':   medio['d'],
+        'grupo':     medio['grupo'],
+        'tipo':      medio.get('type', ''),
+        'lang':      medio.get('lang', ''),
+        'tags':      medio.get('tags', []),
+        'titular':   it['titular'],
+        'enlace':    it['enlace'],
+        'fecha_pub': it.get('fecha_pub', ''),
+        'fuente':    fuente,
+        'fecha':     ahora,   # momento de recolección
+    } for it in items]
+
+    return (medio, noticias, fuente)
 
 
 # ─────────────────────────────────────────────────────────────
-# FASE 1b · DECODIFICAR ENLACES DE GOOGLE NEWS
+# FASE 2 · HISTÓRICO
 # ─────────────────────────────────────────────────────────────
-def decodificar_enlace(noticia):
-    if noticia.get('fuente') != 'GoogleNews' or not GN_DECODER_OK:
-        return noticia
-    try:
-        r = gnewsdecoder(noticia['enlace'])
-        if isinstance(r, dict) and r.get('status') == 'success' and r.get('decoded_url'):
-            noticia['enlace_google'] = noticia['enlace']
-            noticia['enlace'] = r['decoded_url']
-        else:
-            noticia['enlace_google'] = noticia['enlace']
-    except Exception as e:
-        print(f"  [decode] {noticia['medio']}: {e}")
-        noticia['enlace_google'] = noticia['enlace']
-    return noticia
-
-
-# ─────────────────────────────────────────────────────────────
-# FASE 2 · ENRIQUECER CON NEWSPAPER3K
-# ─────────────────────────────────────────────────────────────
-def enriquecer(noticia):
-    if not NEWSPAPER_OK:
-        noticia.setdefault('texto', '')
-        noticia.setdefault('resumen', '')
-        noticia.setdefault('palabras_clave', [])
-        noticia.setdefault('autores', [])
-        return noticia
-    try:
-        art = Article(noticia['enlace'], language=noticia.get('lang') or 'es', config=NP_CONFIG)
-        art.download()
-        art.parse()
-        texto = (art.text or '').strip()
-        noticia['texto'] = texto[:MAX_TEXTO]
-        noticia['resumen'] = _resumir(texto)
-        noticia['palabras_clave'] = _palabras_clave(texto)
-        noticia['autores'] = art.authors or []
-        if art.publish_date:
-            noticia['fecha_pub'] = art.publish_date.isoformat()
-    except Exception as e:
-        print(f"  [enrich] {noticia['medio']}: {e}")
-        noticia.setdefault('texto', '')
-        noticia.setdefault('resumen', '')
-        noticia.setdefault('palabras_clave', [])
-        noticia.setdefault('autores', [])
-    return noticia
-
-
-# ─────────────────────────────────────────────────────────────
-# FASE 3 · HISTÓRICO
-# ─────────────────────────────────────────────────────────────
-DATOS_PATH = 'public/datos.json'
-
-
 def cargar_historico():
     if not os.path.exists(DATOS_PATH):
         return []
@@ -252,11 +151,15 @@ def cargar_historico():
         return []
 
 
+def _fecha_orden(n):
+    return n.get('fecha_pub') or n.get('fecha') or ''
+
+
 def fusionar_historico(nuevas, viejas, dias):
     corte = datetime.now() - timedelta(days=dias)
     idx = {}
 
-    # 1) Añadir las viejas que estén dentro de la ventana
+    # 1) Viejas dentro de ventana
     for n in viejas:
         try:
             f = datetime.fromisoformat(n.get('fecha', ''))
@@ -266,24 +169,23 @@ def fusionar_historico(nuevas, viejas, dias):
             continue
         idx[(n['medio'], n['titular'])] = n
 
-    # 2) Fusionar nuevas (reutiliza enriquecimiento si ya existía)
+    # 2) Nuevas: si ya estaba, conservamos la fecha original
     for n in nuevas:
         key = (n['medio'], n['titular'])
         old = idx.get(key)
         if old:
-            n['fecha'] = old.get('fecha', n['fecha'])  # conservar fecha original
-            for campo in ('texto', 'resumen', 'palabras_clave', 'autores', 'fecha_pub'):
-                if not n.get(campo) and old.get(campo):
-                    n[campo] = old[campo]
+            n['fecha'] = old.get('fecha', n['fecha'])
+            if not n.get('fecha_pub') and old.get('fecha_pub'):
+                n['fecha_pub'] = old['fecha_pub']
         idx[key] = n
 
     todos = list(idx.values())
-    todos.sort(key=lambda x: x.get('fecha', ''), reverse=True)
+    todos.sort(key=_fecha_orden, reverse=True)
     return todos
 
 
 # ─────────────────────────────────────────────────────────────
-# FASE 4 · GENERAR SALIDAS
+# FASE 3 · SALIDAS
 # ─────────────────────────────────────────────────────────────
 def generar_json(noticias):
     os.makedirs('public', exist_ok=True)
@@ -291,12 +193,14 @@ def generar_json(noticias):
         'generado':         datetime.now().isoformat(timespec='seconds'),
         'generado_legible': datetime.now().strftime('%d/%m/%Y %H:%M'),
         'dias_retencion':   DIAS_RETENCION,
+        'n_feed':           N_FEED,
         'total':            len(noticias),
         'noticias':         noticias,
     }
     with open(DATOS_PATH, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
-    print(f"[json] {DATOS_PATH} · {os.path.getsize(DATOS_PATH)/1024:.1f} KB")
+    kb = os.path.getsize(DATOS_PATH) / 1024
+    print(f"[json] {DATOS_PATH} · {kb:.1f} KB · {len(noticias)} noticias")
 
 
 def generar_html(fecha, total):
@@ -312,48 +216,50 @@ def generar_html(fecha, total):
 # MAIN
 # ─────────────────────────────────────────────────────────────
 def main():
-    print("── Fase 1: obteniendo titulares ──")
     medios = todos_los_medios()
-    print(f"Medios: {len(medios)}")
 
-    noticias = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS_LINKS) as ex:
-        for r in ex.map(obtener_titular, medios):
-            if r:
-                print(f"✓ {r['medio']} ({r['fuente']}): {r['titular'][:70]}")
-                noticias.append(r)
+    if GRUPOS_INCLUIDOS:
+        medios = [m for m in medios if m['grupo'] in GRUPOS_INCLUIDOS]
+        print(f"[filtro] grupos activos: {GRUPOS_INCLUIDOS}")
 
-    print(f"\n── Fase 1b: decodificando {sum(1 for n in noticias if n['fuente']=='GoogleNews')} enlaces de Google News ──")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS_LINKS) as ex:
-        list(ex.map(decodificar_enlace, noticias))
+    print(f"── Recolectando {len(medios)} medios (hasta {N_FEED} cada uno) ──")
 
-    print("\n── Fase 2: cargando histórico ──")
+    todas = []
+    fuentes = {'RSS': 0, 'Scraping': 0}
+    sin_resultado = []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
+        for medio, noticias, fuente in ex.map(obtener_titulares, medios):
+            if noticias:
+                todas.extend(noticias)
+                fuentes[fuente] = fuentes.get(fuente, 0) + 1
+                print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares")
+            else:
+                sin_resultado.append(medio['n'])
+                print(f"✗ {medio['n']}: sin titulares")
+
+    print(f"\nTitulares brutos: {len(todas)}")
+    print(f"Medios con resultado: {fuentes.get('RSS',0)} por RSS · "
+          f"{fuentes.get('Scraping',0)} por scraping")
+
+    print("\n── Cargando histórico ──")
     historico = cargar_historico()
     print(f"Histórico previo: {len(historico)} noticias")
 
-    corte = datetime.now() - timedelta(days=DIAS_RETENCION)
-    idx_viejas = set()
-    for h in historico:
-        try:
-            if datetime.fromisoformat(h.get('fecha', '')) >= corte:
-                idx_viejas.add((h['medio'], h['titular']))
-        except ValueError:
-            continue
-
-    # 3) Enriquecer solo las nuevas
-    a_enriquecer = [n for n in noticias if (n['medio'], n['titular']) not in idx_viejas]
-    print(f"\n── Fase 3: enriqueciendo {len(a_enriquecer)} noticias nuevas ──")
-    if a_enriquecer:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS_ENRICH) as ex:
-            list(ex.map(enriquecer, a_enriquecer))
-
-    print("\n── Fase 4: fusionando con histórico ──")
-    finales = fusionar_historico(noticias, historico, DIAS_RETENCION)
+    print("\n── Fusionando ──")
+    finales = fusionar_historico(todas, historico, DIAS_RETENCION)
     print(f"Total en histórico: {len(finales)}")
 
     generar_json(finales)
     generar_html(datetime.now().strftime('%d/%m/%Y %H:%M'), len(finales))
-    print("✅ Listo")
+
+    if sin_resultado:
+        print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
+        for n in sin_resultado:
+            print(f"  · {n}")
+        print("  → Añadir feed RSS a KNOWN_FEEDS en medios.py")
+
+    print("\n✅ Listo")
 
 
 if __name__ == '__main__':
