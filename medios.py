@@ -572,6 +572,53 @@ def todos_los_medios():
 def total_medios():
     """Cuenta cuántos medios hay en el catálogo."""
     return sum(len(g['items']) for g in MEDIA_CATALOG)
+from urllib.parse import quote_plus
+
+def google_news_url(domain, lang='es', extra_q=None):
+    """
+    Construye la URL del RSS de búsqueda de Google News para un dominio.
+    extra_q: string opcional con operadores adicionales.
+    """
+    hl, gl, ceid = GN_LOCALE.get(lang, GN_LOCALE['es'])
+    q = f"site:{domain}"
+    if extra_q:
+        q = f"{q} {extra_q}"
+    return (
+        f"https://news.google.com/rss/search?"
+        f"q={quote_plus(q)}&hl={hl}&gl={gl}&ceid={ceid}"
+    )
+
+
+# Dominios que SÍ entran por Google News cuando RSS + scraping fallan.
+# Verificado empíricamente: cada uno devuelve >1 item en 7d con
+# ok_dominio=True desde GH Actions.
+GN_FALLBACK_DOMAINS = {
+    # Nacionales
+    'telecinco.es', 'cuatro.com', 'cadenaser.com', 'efe.com',
+    'estadiodeportivo.com', 'eldesmarque.com', 'eleconomista.es',
+    'hipertextual.com', 'elsaltodiario.com',
+    # Cataluña
+    'elpuntavui.cat', 'acn.cat',
+    # Galicia
+    'elprogreso.es', 'diariodepontevedra.es', 'galiciadigital.com',
+    # Asturias / Madrid
+    'lavozdeasturias.es', 'madridiario.es', 'murciaeconomia.com',
+    # Internacional
+    'thetimes.com', 'reuters.com', 'apnews.com', 'politico.com',
+    'lesechos.fr', 'publico.pt',
+    # Latinoamérica
+    'milenio.com', 'infobae.com', 'elnacional.com', 'univision.com',
+    # Revistas con publicación diaria (excepción a la regla)
+    'ctxt.es', 'expresso.pt',
+    # Euskadi
+    'eitb.eus',
+}
+
+# Ajustes de query específicos por dominio (opcional)
+GN_QUERY_OVERRIDES = {
+    # 'reuters.com': 'site:reuters.com -video',
+    # 'eitb.eus': 'site:eitb.eus inurl:noticias',
+}
 
 
 if __name__ == '__main__':
