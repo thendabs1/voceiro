@@ -25,7 +25,7 @@ import feedparser
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
-
+from zoneinfo import ZoneInfo
 from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
 
 
@@ -36,6 +36,7 @@ N_FEED            = 60      # titulares máximos a leer por medio
 DIAS_RETENCION    = 15      # ventana del histórico en días
 MAX_WORKERS       = 8       # hilos paralelos
 TIMEOUT           = 15      # segundos por petición
+TZ_MADRID = ZoneInfo('Europe/Madrid')
 
 # Opcional: limitar la recolección a ciertos grupos (vacío = todos)
 # Ej: ['Galicia', 'España · Nacionales']
@@ -170,7 +171,7 @@ def obtener_titulares(medio):
     if not items:
         return (medio, [], None)
 
-    ahora = datetime.now().isoformat(timespec='seconds')
+    ahora = datetime.now(TZ_MADRID).astimezone().isoformat(timespec='seconds')
     noticias = [{
         'medio':     medio['n'],
         'dominio':   medio['d'],
@@ -240,9 +241,10 @@ def fusionar_historico(nuevas, viejas, dias):
 # ─────────────────────────────────────────────────────────────
 def generar_json(noticias):
     os.makedirs('public', exist_ok=True)
+    ahora_madrid = datetime.now(TZ_MADRID)
     payload = {
-        'generado':         datetime.now().isoformat(timespec='seconds'),
-        'generado_legible': datetime.now().strftime('%d/%m/%Y %H:%M'),
+        'generado':         ahora_madrid.astimezone().isoformat(timespec='seconds'),
+        'generado_legible': ahora_madrid.strftime('%d/%m/%Y %H:%M'),
         'dias_retencion':   DIAS_RETENCION,
         'n_feed':           N_FEED,
         'total':            len(noticias),
@@ -305,7 +307,7 @@ def main():
     print(f"Total en histórico: {len(finales)}")
 
     generar_json(finales)
-    generar_html(datetime.now().strftime('%d/%m/%Y %H:%M'), len(finales))
+    generar_html(datetime.now(TZ_MADRID).strftime('%d/%m/%Y %H:%M'), len(finales))
 
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
