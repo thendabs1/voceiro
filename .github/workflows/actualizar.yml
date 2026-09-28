@@ -17,30 +17,21 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: pip
-
       - run: pip install -r requirements.txt
-
       - name: Ejecutar recolector
         run: python recolector.py
-
-      # 👇 DEPURACIÓN: esto te dirá si public/ existe y qué contiene
-      - name: Verificar que public/ existe
+      - name: Verificar public/
         run: |
-          echo "=== Contenido de public/ ==="
-          ls -la public/ || echo "ERROR: la carpeta public NO existe"
-          echo "=== Tamaño de index.html ==="
-          wc -c public/index.html || echo "ERROR: index.html NO existe"
-
+          ls -la public/
+          du -h public/datos.json public/index.html
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
