@@ -61,7 +61,6 @@
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
 
-  /* HEADER */
   header h1{
     border-bottom:1px solid var(--border);
     padding-bottom:8px; margin:0 0 4px;
@@ -69,7 +68,6 @@
   }
   header .meta{color:var(--muted); font-size:.72em; margin:0}
 
-  /* TOPBAR */
   .topbar{
     position:sticky; top:0; background:var(--bg);
     z-index:10; padding:10px 0;
@@ -77,7 +75,6 @@
     display:flex; flex-wrap:wrap; gap:8px; align-items:center;
   }
 
-  /* BOTONES */
   button{
     cursor:pointer; padding:8px 14px;
     border:1px solid var(--btn-border);
@@ -110,46 +107,33 @@
     font-family:inherit; font-size:.78em;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     PANELES COMO MODALES
-     ═══════════════════════════════════════════════════════════════ */
+  /* PANELES MODALES */
   .panel{
     position:fixed; inset:0;
     background:rgba(0,0,0,.55);
-    z-index:100;
-    display:none;
-    padding:20px;
+    z-index:100; display:none; padding:20px;
     overflow-y:auto;
   }
   .panel.open{display:flex}
   .panel-inner{
-    background:var(--bg);
-    color:var(--fg);
-    border:1px solid var(--border);
-    border-radius:12px;
+    background:var(--bg); color:var(--fg);
+    border:1px solid var(--border); border-radius:12px;
     padding:20px 24px;
-    max-width:920px;
-    width:100%;
+    max-width:920px; width:100%;
     max-height:calc(100vh - 40px);
     overflow-y:auto;
     box-shadow:0 20px 60px rgba(0,0,0,.4);
-    position:relative;
-    margin:auto;
+    position:relative; margin:auto;
   }
   .panel-header{
     display:flex; justify-content:space-between; align-items:center;
-    gap:12px; margin-bottom:14px;
-    padding-bottom:10px;
+    gap:12px; margin-bottom:14px; padding-bottom:10px;
     border-bottom:1px solid var(--border);
   }
-  .panel-header h2{
-    margin:0; font-size:1em;
-    letter-spacing:.03em;
-  }
+  .panel-header h2{margin:0; font-size:1em; letter-spacing:.03em}
   .panel-close{
     background:transparent; border:1px solid var(--btn-border);
-    padding:4px 10px; font-size:1em; line-height:1;
-    border-radius:6px;
+    padding:4px 10px; font-size:1em; line-height:1; border-radius:6px;
   }
   .panel h3{
     margin:16px 0 6px;
@@ -161,8 +145,7 @@
 
   .opt-row{
     display:flex; align-items:center; gap:14px;
-    padding:8px 0;
-    border-top:1px solid var(--border);
+    padding:8px 0; border-top:1px solid var(--border);
     flex-wrap:wrap;
   }
   .opt-row:first-of-type{border-top:none}
@@ -255,7 +238,6 @@
     border-top:1px solid var(--border);
   }
 
-  /* Sección copia de seguridad */
   .backup-box{
     background:var(--quote-bg);
     border:1px solid var(--border);
@@ -271,7 +253,7 @@
   /* FILTROS */
   .filtros{
     display:grid;
-    grid-template-columns:2.5fr 1fr 1fr 1.2fr .9fr auto;
+    grid-template-columns:2.5fr 1fr 1fr 1.2fr .9fr 1.1fr auto;
     gap:8px;
     padding:10px 0;
     border-bottom:1px solid var(--border);
@@ -329,7 +311,6 @@
     padding:40px 0; font-size:.85em;
   }
 
-  /* TOAST */
   #toast-wrap{
     position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
     z-index:200; display:flex; flex-direction:column; gap:8px;
@@ -375,7 +356,6 @@
   </p>
 </header>
 
-<!-- TOPBAR -->
 <section class="topbar">
   <button id="btn-preset" class="btn-preset" type="button"></button>
   <button id="btn-config" type="button"></button>
@@ -384,9 +364,7 @@
   <button id="btn-acces" type="button"></button>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     MODAL: CONFIGURAR MODO PERSONALIZADO
-     ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: CONFIGURAR MODO PERSONALIZADO -->
 <section id="panel-config" class="panel" role="dialog" aria-modal="true">
   <div class="panel-inner">
     <div class="panel-header">
@@ -428,9 +406,7 @@
   </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     MODAL: ACCESIBILIDAD
-     ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: ACCESIBILIDAD -->
 <section id="panel-acces" class="panel" role="dialog" aria-modal="true">
   <div class="panel-inner">
     <div class="panel-header">
@@ -501,6 +477,10 @@
     <option value="1"></option>
     <option value="2"></option>
     <option value="7"></option>
+  </select>
+  <select id="orden">
+    <option value="recientes"></option>
+    <option value="antiguos"></option>
   </select>
   <button id="limpiar" type="button"></button>
 </section>
@@ -573,6 +553,8 @@ const I18N = {
     flt24h: '24 h',
     flt48h: '48 h',
     flt7d: '7 días',
+    ordenRecientes: '↓ Más recientes',
+    ordenAntiguos: '↑ Más antiguos',
     contador: 'Mostrando {n} de {total} titulares',
     contadorPreset: ' · Modo Personalizado activo',
     vacio: 'Sin resultados',
@@ -639,6 +621,8 @@ const I18N = {
     flt24h: '24 h',
     flt48h: '48 h',
     flt7d: '7 días',
+    ordenRecientes: '↓ Máis recentes',
+    ordenAntiguos: '↑ Máis antigos',
     contador: 'Amosando {n} de {total} titulares',
     contadorPreset: ' · Modo Personalizado activo',
     vacio: 'Sen resultados',
@@ -705,6 +689,8 @@ const I18N = {
     flt24h: '24 h',
     flt48h: '48 h',
     flt7d: '7 dies',
+    ordenRecientes: '↓ Més recents',
+    ordenAntiguos: '↑ Més antics',
     contador: 'Mostrant {n} de {total} titulars',
     contadorPreset: ' · Mode Personalitzat actiu',
     vacio: 'Sense resultats',
@@ -771,6 +757,8 @@ const I18N = {
     flt24h: '24 h',
     flt48h: '48 h',
     flt7d: '7 days',
+    ordenRecientes: '↓ Newest first',
+    ordenAntiguos: '↑ Oldest first',
     contador: 'Showing {n} of {total} headlines',
     contadorPreset: ' · Custom Mode on',
     vacio: 'No results',
@@ -837,6 +825,8 @@ const I18N = {
     flt24h: '24 h',
     flt48h: '48 h',
     flt7d: '7 egun',
+    ordenRecientes: '↓ Berrienak lehenengo',
+    ordenAntiguos: '↑ Zaharrenak lehenengo',
     contador: '{total}tik {n} izenburu erakusten',
     contadorPreset: ' · Modo Pertsonalizatua aktibo',
     vacio: 'Emaitzarik gabe',
@@ -882,6 +872,21 @@ function toast(msg, ms){
     el.classList.remove('show');
     setTimeout(() => el.remove(), 250);
   }, ms);
+}
+
+/* Parser robusto de fechas: intenta ISO, RFC 822 y formatos comunes */
+function parseFecha(s){
+  if (!s) return NaN;
+  // ISO
+  let t = Date.parse(s);
+  if (!isNaN(t)) return t;
+  // "27/9/2026, 19:45:46" o "27/9/2026 19:45:46"
+  const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (m){
+    const [, d, mo, y, h, mi, se] = m;
+    return new Date(+y, +mo - 1, +d, +h, +mi, +(se || 0)).getTime();
+  }
+  return NaN;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -946,7 +951,7 @@ function ajustarWidth(d){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MODO PERSONALIZADO (antes Mi Zona)
+   MODO PERSONALIZADO
    ═══════════════════════════════════════════════════════════════ */
 const PRESET_DEF = {
   grupos:        ['Galicia'],
@@ -1184,7 +1189,7 @@ function resaltar(texto, tokens){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   IDIOMA — aplicar textos
+   IDIOMA
    ═══════════════════════════════════════════════════════════════ */
 const LANG_OPTIONS = [
   { code: 'es', label: 'optLangEs' },
@@ -1217,7 +1222,6 @@ function aplicarTextos(){
   $('#btn-export').title = t('btnExport');
   $('#btn-import').title = t('btnImport');
 
-  // Config
   $('#cfg-title').textContent = t('cfgTitle');
   $('#cfg-grupos').textContent = t('cfgGrupos');
   $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
@@ -1234,7 +1238,6 @@ function aplicarTextos(){
   $('#preset-cancelar').textContent = t('btnCancel');
   $('#preset-guardar').textContent = t('btnSave');
 
-  // Accesibilidad
   $('#ac-title').textContent = t('acTitle');
   $('#ac-tema').textContent = t('acTema');
   $('#ac-fuente').textContent = t('acFuente');
@@ -1256,7 +1259,6 @@ function aplicarTextos(){
     if (bExtra[i]) bExtra[i].textContent = txt;
   });
 
-  // Filtros
   $('#buscar').placeholder = t('fltBuscar');
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
@@ -1266,6 +1268,9 @@ function aplicarTextos(){
   rOpts[1].text = t('flt24h');
   rOpts[2].text = t('flt48h');
   rOpts[3].text = t('flt7d');
+  const oOpts = $('#orden').options;
+  oOpts[0].text = t('ordenRecientes');
+  oOpts[1].text = t('ordenAntiguos');
   $('#limpiar').textContent = t('btnClear');
 
   renderLangSelect();
@@ -1333,7 +1338,7 @@ function importarConfig(file){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FILTRADO + RENDER
+   FILTRADO + ORDENACIÓN + RENDER
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
 let ULT_FILTRADAS = [];
@@ -1345,24 +1350,33 @@ function aplicarFiltros(){
   const t2 = $('#tipo').value;
   const m = $('#medio').value;
   const dias = parseInt($('#rango').value, 10) || 0;
+  const orden = $('#orden').value || 'recientes';
   const tokens = q.split(/\s+/).filter(Boolean);
 
   const ahora = Date.now();
   const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
 
-  const filtradas = NOTICIAS.filter(n => {
+  let filtradas = NOTICIAS.filter(n => {
     if (presetActivo && !cumplePreset(n)) return false;
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
     if (m && n.medio !== m) return false;
     if (limiteMs) {
-      const f = n.fecha_pub || n.fecha;
-      if (f && (ahora - new Date(f).getTime()) > limiteMs) return false;
+      const ts = n._ts; // precalculado en init
+      if (isNaN(ts)) return false; // sin fecha → fuera
+      if (ahora - ts > limiteMs) return false;
     }
     if (tokens.length){
       for (const tok of tokens) if (!n._norm.includes(tok)) return false;
     }
     return true;
+  });
+
+  // ORDENACIÓN CRONOLÓGICA
+  filtradas.sort((a, b) => {
+    const ta = isNaN(a._ts) ? -Infinity : a._ts;
+    const tb = isNaN(b._ts) ? -Infinity : b._ts;
+    return orden === 'antiguos' ? ta - tb : tb - ta;
   });
 
   ULT_FILTRADAS = filtradas;
@@ -1385,8 +1399,8 @@ function renderizar(){
   }
 
   cont.innerHTML = lista.map(n => {
-    const f = n.fecha_pub || n.fecha;
-    const fecha = f ? new Date(f).toLocaleString(ACCES.lang) : '';
+    const ts = n._ts;
+    const fecha = !isNaN(ts) ? new Date(ts).toLocaleString(ACCES.lang) : '';
     const esPreset = presetActivo && cumplePreset(n);
     const tituloHtml = bionicize(resaltar(n.titular, tokens));
     return `
@@ -1410,13 +1424,10 @@ function renderizar(){
 function abrirPanel(id){
   const p = document.getElementById(id);
   if (!p) return;
-  // Cerrar otros
   document.querySelectorAll('.panel.open').forEach(o => { if (o !== p) o.classList.remove('open'); });
   p.classList.add('open');
-  // Asegurar scroll al inicio del panel
   const inner = p.querySelector('.panel-inner');
   if (inner) inner.scrollTop = 0;
-  // Bloquear scroll del body
   document.body.style.overflow = 'hidden';
 }
 function cerrarPanel(id){
@@ -1426,10 +1437,6 @@ function cerrarPanel(id){
   if (!document.querySelector('.panel.open')){
     document.body.style.overflow = '';
   }
-}
-function cerrarTodosPaneles(){
-  document.querySelectorAll('.panel.open').forEach(o => o.classList.remove('open'));
-  document.body.style.overflow = '';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1448,24 +1455,17 @@ function wireStaticEvents(){
     abrirPanel('panel-config');
     escribirPanel(PRESET);
   });
+  $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
 
-  $('#btn-acces').addEventListener('click', () => {
-    abrirPanel('panel-acces');
-  });
-
-  // Cierre por botón X
   document.querySelectorAll('.panel-close').forEach(b => {
     b.addEventListener('click', () => cerrarPanel(b.dataset.close));
   });
-
-  // Cierre por clic fuera
   document.querySelectorAll('.panel').forEach(p => {
     p.addEventListener('click', e => {
       if (e.target === p) cerrarPanel(p.id);
     });
   });
 
-  // Cierre con Escape
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape'){
       const abierto = document.querySelector('.panel.open');
@@ -1544,11 +1544,12 @@ function wireStaticEvents(){
   $('#filtro-medio').addEventListener('input', filtrarMedios);
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
-  ['buscar','grupo','tipo','medio','rango'].forEach(id =>
+  ['buscar','grupo','tipo','medio','rango','orden'].forEach(id =>
     document.getElementById(id).addEventListener('input', aplicarFiltros)
   );
   $('#limpiar').addEventListener('click', () => {
     ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
+    // No reseteamos 'orden' — que conserve la preferencia
     presetActivo = false;
     $('#btn-preset').classList.remove('active');
     renderizar();
@@ -1572,6 +1573,8 @@ async function init(){
   NOTICIAS.forEach(n => {
     n._norm    = normalize(n.titular + ' ' + n.medio);
     n._titNorm = normalize(n.titular);
+    // Precalcular timestamp para ordenación y filtro temporal
+    n._ts = parseFecha(n.fecha_pub) || parseFecha(n.fecha) || NaN;
   });
 
   construirMediosUnicos();
