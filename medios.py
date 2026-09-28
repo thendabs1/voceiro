@@ -562,6 +562,23 @@ KNOWN_FEEDS = {
 }
 
 # ================================================================
+# URLs DE LISTADO POR MEDIO
+# ================================================================
+# Para medios que caen a scraping y cuya home no es buena para
+# extraer titulares, indica aquí la URL del listado de "últimas noticias".
+# Si un dominio no está aquí, se usa https://dominio
+#
+# Ejemplo:
+#   LISTING_URLS = {
+#       'publico.es': 'https://www.publico.es/ultimas-noticias',
+#       'eldiario.es': 'https://www.eldiario.es/ultimas-noticias/',
+#   }
+LISTING_URLS = {
+    # Añade aquí los que necesiten una URL específica.
+    # Déjalo vacío si no es necesario — todo sigue funcionando.
+}
+
+# ================================================================
 # HELPERS (opcionales, útiles para análisis y depuración)
 # ================================================================
 def todos_los_medios():
