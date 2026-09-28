@@ -1,0 +1,45 @@
+name: Check run (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'Modo'
+        required: true
+        default: '--resumen'
+        type: choice
+        options:
+          - '--resumen'
+          - '--sin-titulares'
+          - '--sin-fecha'
+          - '--fallos'
+          - '--test-gn-fechas'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Descargar datos.json del repo
+        run: |
+          # El datos.json está en public/, ya viene con el checkout.
+          # Si no estuviera commiteado, habría que bajarlo del último run.
+          ls -la public/datos.json || echo "No hay datos.json"
+
+      - name: Ejecutar check
+        run: python check_run.py ${{ inputs.modo }} --csv resultado.csv
+
+      - name: Upload CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-result
+          path: resultado.csv
