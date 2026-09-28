@@ -381,7 +381,6 @@ GN_LOCALE = {
 # caerán directamente al scraping.
 KNOWN_FEEDS = {
     # ── España · Nacionales ──
-  
     'elpais.com':           'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
     'elmundo.es':           'https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml',
     'abc.es':               'https://www.abc.es/rss/feeds/abc_ultima.xml',
@@ -403,16 +402,27 @@ KNOWN_FEEDS = {
     'cope.es':              'https://www.cope.es/rss/portada.xml',
     'ondacero.es':          'https://www.ondacero.es/rss/portada.xml',
     'europapress.es':       'https://www.europapress.es/rss/rss.aspx',
+    'que.es':               'https://www.que.es/rss/',
+    'theobjective.com':     'https://www.theobjective.com/rss/',
+    'elindependiente.com':  'https://www.elindependiente.com/rss/',
+    'moncloa.com':          'https://www.moncloa.com/rss/',
+    'servimedia.es':        'https://www.servimedia.es/rss.xml',
 
     # ── España · Deportivos ──
     'marca.com':            'https://e00-marca.uecdn.es/rss/portada.xml',
     'as.com':               'https://feeds.as.com/mrss-s/pages/as/site/as.com/portada',
     'mundodeportivo.com':   'https://www.mundodeportivo.com/rss/portada.xml',
     'sport.es':             'https://www.sport.es/es/rss/portada.xml',
+    'superdeporte.es':      'https://www.superdeporte.es/rss/',
+    'relevo.com':           'https://www.relevo.com/rss/',
+    'palco23.com':          'https://www.palco23.com/rss.xml',
 
     # ── España · Económicos ──
     'expansion.com':        'https://e00-expansion.uecdn.es/rss/portada.xml',
     'eleconomista.es':      'https://www.eleconomista.es/rss/rss-portada.php',
+    'economiadigital.es':   'https://www.economiadigital.es/rss/',
+    'libremercado.com':     'https://www.libremercado.com/rss.xml',
+    'alternativaseconomicas.coop': 'https://www.alternativaseconomicas.coop/rss.xml',
 
     # ── España · Tecnología ──
     'xataka.com':           'https://feeds.weblogssl.com/xataka2',
@@ -420,13 +430,18 @@ KNOWN_FEEDS = {
     'applesfera.com':       'https://feeds.weblogssl.com/applesfera',
     'adslzone.net':         'https://www.adslzone.net/feed/',
 
-    # ── España · Culturales ──
+    # ── España · Culturales y Sociedad ──
     'jotdown.es':           'https://www.jotdown.es/feed/',
     'yorokobu.es':          'https://www.yorokobu.es/feed/',
     'lamarea.com':          'https://www.lamarea.com/feed/',
     'elsaltodiario.com':    'https://www.elsaltodiario.com/rss',
     'ctxt.es':              'https://ctxt.es/es/rss/portada.xml',
     'hipertextual.com':     'https://hipertextual.com/feed',
+    'zendalibros.com':      'https://www.zendalibros.com/rss/',
+    'letraslibres.com':     'https://www.letraslibres.com/rss/',
+    'ethic.es':             'https://www.ethic.es/rss/',
+    'revistamongolia.com':  'https://www.revistamongolia.com/rss.xml',
+    'culturainquieta.com':  'https://www.culturainquieta.com/feed/',
 
     # ── Cataluña ──
     'ara.cat':              'https://www.ara.cat/rss/',
@@ -436,6 +451,7 @@ KNOWN_FEEDS = {
     'elpuntavui.cat':       'https://www.elpuntavui.cat/rss',
     'elmon.cat':            'https://www.elmon.cat/rss',
     'acn.cat':              'https://www.acn.cat/rss',
+    '324.cat':              'https://www.324.cat/rss/portada.xml',
 
     # ── Galicia ──
     'farodevigo.es':        'https://www.farodevigo.es/rss/',
@@ -446,28 +462,65 @@ KNOWN_FEEDS = {
     'ferrol360.es':         'https://www.ferrol360.es/feed/',
     'dxtcampeon.com':       'https://www.dxtcampeon.com/rss/',
     'riazor.org':           'https://www.riazor.org/feed/',
+    'elcorreogallego.es':   'https://www.elcorreogallego.es/rss/',
+    'elprogreso.es':        'https://www.elprogreso.es/rss/',
+    'elidealgallego.com':   'https://www.elidealgallego.com/rss/',
+    'diariodepontevedra.es':'https://www.diariodepontevedra.es/rss/',
+    'diariodeferrol.com':   'https://www.diariodeferrol.com/rss/',
+    'diariodearousa.com':   'https://www.diariodearousa.com/rss/',
+    'galiciaconfidencial.com': 'https://www.galiciaconfidencial.com/rss/portada.xml',
+    'nosdiario.gal':        'https://www.nosdiario.gal/rss/',
+    'galiciapress.es':      'https://www.galiciapress.es/rss/portada.xml',
+    'mundiario.com':        'https://www.mundiario.com/rss/',
 
     # ── País Vasco · Navarra ──
     'deia.eus':             'https://www.deia.eus/rss/',
     'berria.eus':           'https://www.berria.eus/rss/azala.xml',
+    'noticiasdegipuzkoa.eus': 'https://www.noticiasdegipuzkoa.eus/rss/',
+    'noticiasdealava.eus':  'https://www.noticiasdealava.eus/rss/',
+    'diariodenavarra.es':   'https://www.diariodenavarra.es/rss.xml',
 
     # ── Norte ──
     'heraldo.es':           'https://www.heraldo.es/rss/',
     'lne.es':               'https://www.lne.es/rss/',
 
+    # ── Aragón ──
+    'elperiodicodearagon.com': 'https://www.elperiodicodearagon.com/rss/',
+
+    # ── Castilla y León ──
+    'laopiniondezamora.es': 'https://www.laopiniondezamora.es/rss/',
+
+    # ── Castilla-La Mancha ──
+    'lanzadigital.com':     'https://www.lanzadigital.com/rss/',
+    'encastillalamancha.es':'https://www.encastillalamancha.es/rss/',
+
+    # ── Extremadura ──
+    'elperiodicoextremadura.com': 'https://www.elperiodicoextremadura.com/rss/',
+
     # ── Comunidad Valenciana · Murcia ──
     'laopiniondemurcia.es': 'https://www.laopiniondemurcia.es/rss/',
     'valenciaplaza.com':    'https://valenciaplaza.com/rss',
+    'levante-emv.com':      'https://www.levante-emv.com/rss/',
+    'informacion.es':       'https://www.informacion.es/rss/',
+    'elperiodicomediterraneo.com': 'https://www.elperiodicomediterraneo.com/rss/',
 
     # ── Andalucía ──
     'laopiniondemalaga.es': 'https://www.laopiniondemalaga.es/rss/',
     'diariocordoba.com':    'https://www.diariocordoba.com/rss/',
     'granadahoy.com':       'https://www.granadahoy.com/rss/',
     'diariodecadiz.es':     'https://www.diariodecadiz.es/rss/',
+    'diariodesevilla.es':   'https://www.diariodesevilla.es/rss/',
+    'malagahoy.es':         'https://www.malagahoy.es/rss/',
+    'diariodejerez.es':     'https://www.diariodejerez.es/rss/',
+    'elcorreoweb.es':       'https://www.elcorreoweb.es/rss/',
 
     # ── Baleares · Canarias ──
     'laprovincia.es':       'https://www.laprovincia.es/rss/',
     'eldia.es':             'https://www.eldia.es/rss/',
+    'diariodemallorca.es':  'https://www.diariodemallorca.es/rss/',
+    'diariodeibiza.es':     'https://www.diariodeibiza.es/rss/',
+    'canarias7.es':         'https://www.canarias7.es/rss/portada.xml',
+    'diariodeavisos.com':   'https://www.diariodeavisos.com/rss/',
 
     # ── Internacional · USA / UK ──
     'nytimes.com':          'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
@@ -482,6 +535,7 @@ KNOWN_FEEDS = {
     'ft.com':               'https://www.ft.com/?format=rss',
     'economist.com':        'https://www.economist.com/the-world-this-week/rss.xml',
     'npr.org':              'https://feeds.npr.org/1001/rss.xml',
+    'time.com':             'https://www.time.com/rss/',
 
     # ── Internacional · Europa ──
     'lemonde.fr':           'https://www.lemonde.fr/rss/une.xml',
@@ -494,6 +548,7 @@ KNOWN_FEEDS = {
     'corriere.it':          'https://www.corriere.it/rss/homepage.xml',
     'repubblica.it':        'https://www.repubblica.it/rss/homepage/rss2.0.xml',
     'observador.pt':        'https://observador.pt/feed/',
+    'monde-diplomatique.fr':'https://www.monde-diplomatique.fr/rss/',
 
     # ── Latinoamérica ──
     'clarin.com':           'https://www.clarin.com/rss/lo-ultimo/',
@@ -501,8 +556,10 @@ KNOWN_FEEDS = {
     'eltiempo.com':         'https://www.eltiempo.com/rss/colombia.xml',
     'elcomercio.pe':        'https://elcomercio.pe/arcio/rss/',
     'folha.uol.com.br':     'https://feeds.folha.uol.com.br/emcimadahora/rss091.xml',
+    'elespectador.com':     'https://www.elespectador.com/rss/',
+    'latercera.com':        'https://www.latercera.com/rss/',
+    'elnacional.com':       'https://www.elnacional.com/rss/',
 }
-
 
 # ================================================================
 # HELPERS (opcionales, útiles para análisis y depuración)
