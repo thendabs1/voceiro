@@ -35,10 +35,10 @@ from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
 # ─────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────
-N_FEED            = 60      # titulares máximos a leer por medio
-DIAS_RETENCION    = 15      # ventana del histórico en días
-MAX_WORKERS       = 8       # hilos paralelos
-TIMEOUT           = 15      # segundos por petición
+N_FEED            = 60
+DIAS_RETENCION    = 15
+MAX_WORKERS       = 8
+TIMEOUT           = 15
 TZ_MADRID = ZoneInfo('Europe/Madrid')
 
 GRUPOS_INCLUIDOS = []
@@ -50,10 +50,6 @@ DATOS_PATH = 'public/datos.json'
 # SESIÓN HTTP CON SSL PERMISIVO
 # ─────────────────────────────────────────────────────────────
 class LegacySSLAdapter(HTTPAdapter):
-    """
-    Permite TLS con servidores antiguos que Python 3.11+ rechaza por defecto.
-    IMPORTANTE: no bajar de SECLEVEL=1 ni forzar minimum_version=TLSv1.
-    """
     def init_poolmanager(self, *args, **kwargs):
         ctx = create_urllib3_context()
         ctx.check_hostname = False
@@ -170,12 +166,10 @@ def _parse_feed(content):
 
         fecha_pub = ''
 
-        # 1) Intentar con el string de fecha
         raw = e.get('published') or e.get('updated') or ''
         if raw:
             fecha_pub = _rss_date_to_iso(raw)
 
-        # 2) Fallback: usar la versión parseada de feedparser
         if not fecha_pub:
             st = e.get('published_parsed') or e.get('updated_parsed')
             if st:
@@ -193,36 +187,115 @@ def _parse_feed(content):
     return out
 
 
-def _extract_page_date(soup):
+# ─────────────────────────────────────────────────────────────
+# EXTRACCIÓN DE FECHAS POR TITULAR (scraping)
+# ─────────────────────────────────────────────────────────────
+def _extract_item_date(tag):
     """
-    Extrae la fecha de publicación del HTML de una página de portada.
-    Mira meta tags comunes primero, luego <time datetime="...">.
+    Extrae la fecha de un titular concreto durante el scraping.
+    Cascada:
+      1) <time datetime="..."> en el titular o en sus 3 padres
+      2) atributos data-* con fecha/epoch en los 3 niveles
+      3) texto relativo ("hace 2 horas")
+      4) bloque <article> contenedor con <time> o meta[itemprop=datePublished]
     """
-    meta_selectors = [
-        'meta[property="article:published_time"]',
-        'meta[name="article:published_time"]',
-        'meta[property="og:published_time"]',
-        'meta[itemprop="datePublished"]',
-        'meta[name="date"]',
-        'meta[name="pubdate"]',
-        'meta[name="publishdate"]',
-        'meta[name="DC.date"]',
-        'meta[name="dc.date"]',
-        'meta[name="sailthru.date"]',
-        'meta[name="parsely-pub-date"]',
-    ]
-    for sel in meta_selectors:
-        m = soup.select_one(sel)
-        if not m:
-            continue
-        content = (m.get('content') or '').strip()
-        iso = _rss_date_to_iso(content)
-        if iso:
-            return iso
-    for t_el in soup.find_all('time', limit=10):
-        iso = _rss_date_to_iso((t_el.get('datetime') or '').strip())
-        if iso:
-            return iso
+    # ── 1) <time> cercano (3 niveles) ───────────────────
+    node = tag
+    for _ in range(3):
+        if node is None:
+            break
+        try:
+            t_el = node.find('time')
+            if t_el:
+                raw = t_el.get('datetime') or t_el.get_text(' ', strip=True)
+                iso = _rss_date_to_iso(raw)
+                if iso:
+                    return iso
+        except AttributeError:
+            pass
+        node = getattr(node, 'parent', None)
+
+    # ── 2) atributos data-* ─────────────────────────────
+    node = tag
+    for _ in range(3):
+        if node is None or not hasattr(node, 'attrs') or not node.attrs:
+            break
+        for attr in ('data-timestamp', 'data-time', 'data-date',
+                     'data-datetime', 'data-published', 'data-pubdate'):
+            val = node.attrs.get(attr)
+            if not val:
+                continue
+            val_str = str(val).strip()
+            # epoch (segundos o milisegundos)
+            if val_str.isdigit():
+                try:
+                    ts = int(val_str)
+                    if ts > 1e12:
+                        ts = ts / 1000
+                    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                    return _to_iso_madrid(dt)
+                except (ValueError, OSError, OverflowError):
+                    pass
+            else:
+                iso = _rss_date_to_iso(val_str)
+                if iso:
+                    return iso
+        node = getattr(node, 'parent', None)
+
+    # ── 3) texto relativo ───────────────────────────────
+    node = tag
+    for _ in range(3):
+        if node is None:
+            break
+        try:
+            txt = node.get_text(' ', strip=True).lower()
+        except AttributeError:
+            txt = ''
+        m = re.search(
+            r'hace\s+(\d+)\s*'
+            r'(minuto|minutos|min|hora|horas|h|d[ií]a|d[ií]as|d|'
+            r'semana|semanas|mes|meses)',
+            txt
+        )
+        if m:
+            n_val = int(m.group(1))
+            unit = m.group(2)
+            if unit.startswith('min'):
+                delta = timedelta(minutes=n_val)
+            elif unit.startswith('h'):
+                delta = timedelta(hours=n_val)
+            elif unit.startswith('sem'):
+                delta = timedelta(weeks=n_val)
+            elif unit.startswith('mes'):
+                delta = timedelta(days=n_val * 30)
+            else:
+                delta = timedelta(days=n_val)
+            dt = datetime.now(TZ_MADRID) - delta
+            return dt.isoformat(timespec='seconds')
+        node = getattr(node, 'parent', None)
+
+    # ── 4) bloque <article> contenedor ──────────────────
+    node = tag
+    for _ in range(5):
+        if node is None:
+            break
+        if getattr(node, 'name', None) == 'article':
+            # time
+            t_el = node.find('time')
+            if t_el:
+                raw = t_el.get('datetime') or t_el.get_text(' ', strip=True)
+                iso = _rss_date_to_iso(raw)
+                if iso:
+                    return iso
+            # meta itemprop
+            meta_el = node.find('meta', attrs={'itemprop': 'datePublished'})
+            if meta_el and meta_el.get('content'):
+                iso = _rss_date_to_iso(meta_el.get('content'))
+                if iso:
+                    return iso
+            break
+        node = getattr(node, 'parent', None)
+
     return ''
 
 
@@ -244,7 +317,11 @@ def _rss(medio):
 
 
 def _scrape(medio):
-    """Scraping básico: coge titulares de h1/h2/h3 con enlace."""
+    """
+    Scraping básico del listado: extrae titulares de h1/h2/h3 con enlace.
+    La fecha se busca POR TITULAR (nunca se usa la fecha de la portada,
+    porque eso daría la misma hora a todos los ítems).
+    """
     url = f"https://{medio['d']}"
     try:
         r = SESSION.get(url, timeout=TIMEOUT, allow_redirects=True)
@@ -252,9 +329,6 @@ def _scrape(medio):
             print(f"  [SCRAPE {r.status_code}] {medio['n']}")
             return None
         soup = BeautifulSoup(r.text, 'lxml')
-
-        # Fecha "global" de la portada (fallback para todos los ítems)
-        page_date = _extract_page_date(soup)
 
         vistos = set()
         out = []
@@ -276,18 +350,11 @@ def _scrape(medio):
                 continue
             vistos.add(href)
 
-            # Intentar encontrar una fecha local al titular
-            item_date = ''
-            parent = tag.parent
-            if parent:
-                t_el = parent.find('time', attrs={'datetime': True})
-                if t_el:
-                    item_date = _rss_date_to_iso(t_el.get('datetime') or '')
-
+            item_date = _extract_item_date(tag)
             out.append({
                 'titular':   texto,
                 'enlace':    href,
-                'fecha_pub': item_date or page_date,
+                'fecha_pub': item_date,
             })
             if len(out) >= N_FEED:
                 break
@@ -343,7 +410,6 @@ def fusionar_historico(nuevas, viejas, dias):
     corte = datetime.now(TZ_MADRID) - timedelta(days=dias)
     idx = {}
 
-    # 1) Viejas dentro de ventana
     for n in viejas:
         try:
             f = datetime.fromisoformat(n.get('fecha', ''))
@@ -355,14 +421,11 @@ def fusionar_historico(nuevas, viejas, dias):
             continue
         idx[(n['medio'], n['titular'])] = n
 
-    # 2) Nuevas: conservar datos si ya existían
     for n in nuevas:
         key = (n['medio'], n['titular'])
         old = idx.get(key)
         if old:
-            # Conservar la fecha original de recolección
             n['fecha'] = old.get('fecha', n['fecha'])
-            # Si la nueva no trae pub date, usar la del histórico
             if not n.get('fecha_pub') and old.get('fecha_pub'):
                 n['fecha_pub'] = old['fecha_pub']
         idx[key] = n
@@ -417,6 +480,7 @@ def main():
     contador_rss = 0
     contador_scrape = 0
     sin_resultado = []
+    medios_sin_fecha = []      # medios donde ningún titular tiene fecha_pub
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
         for medio, noticias, fuente in ex.map(obtener_titulares, medios):
@@ -426,10 +490,11 @@ def main():
                     contador_rss += 1
                 else:
                     contador_scrape += 1
-                # Log de cuántas tienen fecha real
                 con_fecha = sum(1 for n in noticias if n.get('fecha_pub'))
+                if con_fecha == 0:
+                    medios_sin_fecha.append(medio['n'])
                 print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares"
-                      f" · {con_fecha} con fecha real")
+                      f" · {con_fecha}/{len(noticias)} con fecha real")
             else:
                 sin_resultado.append(medio['n'])
                 print(f"✗ {medio['n']}: sin titulares")
@@ -456,6 +521,12 @@ def main():
         for n in sin_resultado:
             print(f"  · {n}")
         print("  → Añadir feed RSS a KNOWN_FEEDS en medios.py")
+
+    if medios_sin_fecha:
+        print(f"\n── ⚠ Medios con titulares pero sin NINGUNA fecha real ({len(medios_sin_fecha)}) ──")
+        for n in medios_sin_fecha:
+            print(f"  · {n}")
+        print("  → Candidatos a buscar feed RSS específico")
 
     print("\n✅ Listo")
 
