@@ -302,6 +302,22 @@
     border-color:var(--preset);
     color:var(--preset);
   }
+  .badge.futuro{
+    background:#fff3e0;
+    border-color:#ffb74d;
+    color:#b45309;
+  }
+  [data-theme="dark"] .badge.futuro,
+  [data-theme="sepia"] .badge.futuro{
+    background:#3d2f14;
+    border-color:#b58600;
+    color:#ffcc66;
+  }
+  [data-theme="contrast"] .badge.futuro{
+    background:#000;
+    border-color:#ff0;
+    color:#ff0;
+  }
   .noticia a.titular{
     color:var(--accent); text-decoration:none;
     font-weight:600; font-size:1em; display:block; margin-top:2px;
@@ -362,9 +378,7 @@
   .rep-ctx strong{color:var(--muted); font-weight:600; margin-right:4px}
   .rep-ctx.empty{color:var(--muted); font-style:italic; font-family:var(--ff); text-align:center}
 
-  .rep-row{
-    display:grid; gap:6px; margin-bottom:14px;
-  }
+  .rep-row{display:grid; gap:6px; margin-bottom:14px}
   .rep-row label{
     font-size:.7em; color:var(--muted);
     text-transform:uppercase; letter-spacing:.05em;
@@ -390,8 +404,7 @@
   .rep-check input{
     accent-color:var(--accent);
     width:1.15em; height:1.15em;
-    margin-top:.15em;
-    flex-shrink:0;
+    margin-top:.15em; flex-shrink:0;
   }
   .rep-check span{color:var(--muted); line-height:1.5}
 
@@ -569,6 +582,7 @@
         <option value="medio_incorrecto"></option>
         <option value="duplicado"></option>
         <option value="contenido_inapropiado"></option>
+        <option value="fecha_incorrecta"></option>
         <option value="otro"></option>
       </select>
     </div>
@@ -667,31 +681,14 @@ const I18N = {
     cfgResumen: 'Mostrando {vis} de {total} · {inc} forzados · {ign} bloqueados',
     cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
     acTitle: 'Opciones de lectura',
-    acTema: 'Tema',
-    acFuente: 'Fuente',
-    acTamano: 'Tamaño',
-    acAncho: 'Ancho',
-    acExtra: 'Extra',
-    acClaro: '☀ Claro',
-    acSepia: '📖 Sepia',
-    acOscuro: '🌙 Oscuro',
-    acContraste: '◐ Contraste',
-    acSerif: 'Serif',
-    acSans: 'Sans',
-    acDislexia: 'Dislexia',
-    acJustificar: 'Justificar',
-    acBionic: 'Bionic',
-    acFoco: 'Foco',
+    acTema: 'Tema', acFuente: 'Fuente', acTamano: 'Tamaño', acAncho: 'Ancho', acExtra: 'Extra',
+    acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Oscuro', acContraste: '◐ Contraste',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
+    acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Foco',
     fltBuscar: '🔍 Buscar en titulares…',
-    fltGrupo: 'Todos los grupos',
-    fltTipo: 'Todos los tipos',
-    fltMedio: 'Todos los medios',
-    fltTodo: 'Todo',
-    flt24h: '24 h',
-    flt48h: '48 h',
-    flt7d: '7 días',
-    ordenRecientes: '↓ Más recientes',
-    ordenAntiguos: '↑ Más antiguos',
+    fltGrupo: 'Todos los grupos', fltTipo: 'Todos los tipos', fltMedio: 'Todos los medios',
+    fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
+    ordenRecientes: '↓ Más recientes', ordenAntiguos: '↑ Más antiguos',
     contador: 'Mostrando {n} de {total} titulares',
     contadorPreset: ' · Modo Personalizado activo',
     vacio: 'Sin resultados',
@@ -704,6 +701,11 @@ const I18N = {
     presetActivado: 'Modo Personalizado activado',
     presetDesactivado: 'Modo Personalizado desactivado',
     presetGuardadoActivado: 'Configuración guardada · Modo Personalizado activado',
+    fechaAhora: 'ahora',
+    fechaHaceMin: 'hace {n} min',
+    fechaHaceH: 'hace {n} h',
+    fechaHaceD: 'hace {n} d',
+    fechaProgramado: 'programado',
     repBtnTitle: 'Reportar problema con este titular',
     repTitle: 'Reportar un problema',
     repCtxEmpty: '(Sin titular específico — reporte general)',
@@ -714,6 +716,7 @@ const I18N = {
     repMotivoMedioIncorrecto: 'Medio o grupo incorrecto',
     repMotivoDuplicado: 'Noticia duplicada',
     repMotivoContenido: 'Contenido inapropiado',
+    repMotivoFecha: 'Fecha incorrecta o en el futuro',
     repMotivoOtro: 'Otro (describir abajo)',
     repDetallesLbl: 'Detalles (opcional)',
     repDetallesPh: 'Cuéntanos qué pasa con este titular, si quieres con más detalle…',
@@ -724,15 +727,9 @@ const I18N = {
     repCopiado: 'Reporte copiado al portapapeles',
     repErrGithub: 'No se pudo abrir GitHub. Copia el reporte y envíalo por email.',
     repContexto: 'Contexto',
-    repCtxMedio: 'Medio',
-    repCtxGrupo: 'Grupo',
-    repCtxTipo: 'Tipo',
-    repCtxTitular: 'Titular',
-    repCtxEnlace: 'Enlace',
-    repCtxFecha: 'Fecha',
-    repCtxFuente: 'Fuente',
-    repCtxIdioma: 'Idioma activo',
-    repCtxConfig: 'Config',
+    repCtxMedio: 'Medio', repCtxGrupo: 'Grupo', repCtxTipo: 'Tipo',
+    repCtxTitular: 'Titular', repCtxEnlace: 'Enlace', repCtxFecha: 'Fecha',
+    repCtxFuente: 'Fuente', repCtxIdioma: 'Idioma activo', repCtxConfig: 'Config',
     repFecha: 'Fecha del reporte',
   },
   gl: {
@@ -763,11 +760,13 @@ const I18N = {
     presetVacio: 'O Modo Personalizado está baleiro. Configúrao primeiro e despois actívao.',
     presetActivado: 'Modo Personalizado activado', presetDesactivado: 'Modo Personalizado desactivado',
     presetGuardadoActivado: 'Configuración gardada · Modo Personalizado activado',
+    fechaAhora: 'agora', fechaHaceMin: 'hai {n} min', fechaHaceH: 'hai {n} h', fechaHaceD: 'hai {n} d', fechaProgramado: 'programado',
     repBtnTitle: 'Reportar problema con este titular', repTitle: 'Reportar un problema',
     repCtxEmpty: '(Sen titular específico — reporte xeral)', repMotivoLbl: 'Motivo',
     repMotivoNoSeMuestra: 'Non se amosa ou non aparece', repMotivoEnlaceRoto: 'Ligazón rota',
     repMotivoPaywall: 'Require pago ou rexistro', repMotivoMedioIncorrecto: 'Medio ou grupo incorrecto',
-    repMotivoDuplicado: 'Noticia duplicada', repMotivoContenido: 'Contido inapropiado', repMotivoOtro: 'Outro (describir abaixo)',
+    repMotivoDuplicado: 'Noticia duplicada', repMotivoContenido: 'Contido inapropiado',
+    repMotivoFecha: 'Data incorrecta ou no futuro', repMotivoOtro: 'Outro (describir abaixo)',
     repDetallesLbl: 'Detalles (opcional)', repDetallesPh: 'Cóntanos que pasa con este titular, se queres con máis detalle…',
     repConfigLbl: 'Anexar a miña configuración actual (accesibilidade e modo personalizado) ao reporte. Axuda a reproducir o problema.',
     repCopy: '📋 Copiar reporte', repMail: '✉ Enviar por email', repGithub: '🐞 Abrir en GitHub',
@@ -804,11 +803,13 @@ const I18N = {
     presetVacio: 'El Mode Personalitzat està buit. Configura\'l primer i després activa\'l.',
     presetActivado: 'Mode Personalitzat activat', presetDesactivado: 'Mode Personalitzat desactivat',
     presetGuardadoActivado: 'Configuració desada · Mode Personalitzat activat',
+    fechaAhora: 'ara', fechaHaceMin: 'fa {n} min', fechaHaceH: 'fa {n} h', fechaHaceD: 'fa {n} d', fechaProgramado: 'programat',
     repBtnTitle: 'Reportar problema amb aquest titular', repTitle: 'Reportar un problema',
     repCtxEmpty: '(Sense titular específic — report general)', repMotivoLbl: 'Motiu',
     repMotivoNoSeMuestra: 'No es mostra o no apareix', repMotivoEnlaceRoto: 'Enllaç trencat',
     repMotivoPaywall: 'Requereix pagament o registre', repMotivoMedioIncorrecto: 'Mitjà o grup incorrecte',
-    repMotivoDuplicado: 'Notícia duplicada', repMotivoContenido: 'Contingut inapropiat', repMotivoOtro: 'Altre (descriure a baix)',
+    repMotivoDuplicado: 'Notícia duplicada', repMotivoContenido: 'Contingut inapropiat',
+    repMotivoFecha: 'Data incorrecta o al futur', repMotivoOtro: 'Altre (descriure a baix)',
     repDetallesLbl: 'Detalls (opcional)', repDetallesPh: 'Explica\'ns què passa amb aquest titular, si vols amb més detall…',
     repConfigLbl: 'Adjuntar la meva configuració actual (accessibilitat i mode personalitzat) al report. Ajuda a reproduir el problema.',
     repCopy: '📋 Copiar report', repMail: '✉ Enviar per correu', repGithub: '🐞 Obrir a GitHub',
@@ -845,11 +846,13 @@ const I18N = {
     presetVacio: 'Custom Mode is empty. Configure it first, then activate it.',
     presetActivado: 'Custom Mode enabled', presetDesactivado: 'Custom Mode disabled',
     presetGuardadoActivado: 'Settings saved · Custom Mode enabled',
+    fechaAhora: 'now', fechaHaceMin: '{n} min ago', fechaHaceH: '{n} h ago', fechaHaceD: '{n} d ago', fechaProgramado: 'scheduled',
     repBtnTitle: 'Report a problem with this headline', repTitle: 'Report a problem',
     repCtxEmpty: '(No specific headline — general report)', repMotivoLbl: 'Reason',
     repMotivoNoSeMuestra: 'Not showing or missing', repMotivoEnlaceRoto: 'Broken link',
     repMotivoPaywall: 'Requires payment or login', repMotivoMedioIncorrecto: 'Wrong outlet or group',
-    repMotivoDuplicado: 'Duplicate news item', repMotivoContenido: 'Inappropriate content', repMotivoOtro: 'Other (describe below)',
+    repMotivoDuplicado: 'Duplicate news item', repMotivoContenido: 'Inappropriate content',
+    repMotivoFecha: 'Wrong or future date', repMotivoOtro: 'Other (describe below)',
     repDetallesLbl: 'Details (optional)', repDetallesPh: 'Tell us what\'s wrong with this headline, with as much detail as you like…',
     repConfigLbl: 'Attach my current configuration (accessibility and custom mode) to the report. Helps reproduce the issue.',
     repCopy: '📋 Copy report', repMail: '✉ Send by email', repGithub: '🐞 Open in GitHub',
@@ -886,12 +889,14 @@ const I18N = {
     presetVacio: 'Modo Pertsonalizatua hutsik dago. Konfiguratu lehenengo eta gero aktibatu.',
     presetActivado: 'Modo Pertsonalizatua aktibatuta', presetDesactivado: 'Modo Pertsonalizatua desaktibatuta',
     presetGuardadoActivado: 'Konfigurazioa gordeta · Modo Pertsonalizatua aktibatuta',
+    fechaAhora: 'orain', fechaHaceMin: 'duela {n} min', fechaHaceH: 'duela {n} h', fechaHaceD: 'duela {n} e', fechaProgramado: 'programatuta',
     repBtnTitle: 'Izenburu honekin arazo bat jakinarazi', repTitle: 'Arazo bat jakinarazi',
     repCtxEmpty: '(Izenburu zehatzik gabe — txosten orokorra)', repMotivoLbl: 'Arrazoia',
     repMotivoNoSeMuestra: 'Ez da agertzen edo falta da', repMotivoEnlaceRoto: 'Esteka hautsia',
     repMotivoPaywall: 'Ordainketa edo erregistroa behar da', repMotivoMedioIncorrecto: 'Hedabide edo talde okerra',
-    repMotivoDuplicado: 'Albiste bikoiztua', repMotivoContenido: 'Eduki desegokia', repMotivoOtro: 'Beste bat (behean deskribatu)',
-    repDetallesLbl: 'Xehetasunak (aukerakoa)', repDetallesPh: 'Kontatu iezaguzu zer gertatzen den izenburu honekin, xehetasun gehiagorekin nahi baduzu…',
+    repMotivoDuplicado: 'Albiste bikoiztua', repMotivoContenido: 'Eduki desegokia',
+    repMotivoFecha: 'Data okerra edo etorkizunekoa', repMotivoOtro: 'Beste bat (behean deskribatu)',
+    repDetallesLbl: 'Xehetasunak (aukerakoa)', repDetallesPh: 'Kontatu iezaguzu zer gertatzen den izenburu honekin…',
     repConfigLbl: 'Nire uneko konfigurazioa (irisgarritasuna eta modo pertsonalizatua) txostenera erantsi. Arazoa erreproduzitzen laguntzen du.',
     repCopy: '📋 Txostena kopiatu', repMail: '✉ Postaz bidali', repGithub: '🐞 GitHub-en ireki',
     repCopiado: 'Txostena arbelean kopiatu da', repErrGithub: 'Ezin izan da GitHub ireki. Kopiatu txostena eta bidali postaz.',
@@ -933,16 +938,76 @@ function toast(msg, ms){
     setTimeout(() => el.remove(), 250);
   }, ms);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PARSER DE FECHAS ROBUSTO
+   ═══════════════════════════════════════════════════════════════
+   Prioridad:
+     1) DD/MM/YYYY [HH:MM[:SS]] — nuestro formato localizado
+        (¡SIEMPRE antes de Date.parse para evitar que JS lo lea como MM/DD!)
+     2) ISO 8601 con año primero — "2026-09-28T19:25:51+02:00"
+     3) Cualquier otra cosa vía Date.parse (RFC 822, etc.)
+
+   Si una fecha resulta estar a más de FUTURO_MAX_MS en el futuro, se
+   considera error del medio (RSS programado en el futuro) y se sustituye
+   por la fecha de recolección.
+   ─────────────────────────────────────────────────────────── */
+const FUTURO_MAX_MS = 24 * 60 * 60 * 1000; // 24h de margen
+
 function parseFecha(s){
   if (!s) return NaN;
-  let t = Date.parse(s);
-  if (!isNaN(t)) return t;
-  const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const str = String(s).trim();
+
+  // 1) DD/MM/YYYY [HH:MM[:SS]]
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if (m){
-    const [, d, mo, y, h, mi, se] = m;
-    return new Date(+y, +mo - 1, +d, +h, +mi, +(se || 0)).getTime();
+    const [, d, mo, y, h = 0, mi = 0, se = 0] = m;
+    const t = new Date(+y, +mo - 1, +d, +h, +mi, +se).getTime();
+    return isNaN(t) ? NaN : t;
   }
-  return NaN;
+
+  // 2) ISO 8601 con año primero (Date.parse lo maneja bien)
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)){
+    const t = Date.parse(str);
+    if (!isNaN(t)) return t;
+  }
+
+  // 3) Cualquier otro (RFC 822, MM/DD/YYYY gringo, etc.)
+  const t = Date.parse(str);
+  return !isNaN(t) ? t : NaN;
+}
+
+/* Normaliza un timestamp: si está "demasiado" en el futuro, lo trae al presente */
+function sanearTs(ts, fallbackTs){
+  if (isNaN(ts)) return isNaN(fallbackTs) ? NaN : fallbackTs;
+  if (ts - Date.now() > FUTURO_MAX_MS){
+    return isNaN(fallbackTs) ? Date.now() : fallbackTs;
+  }
+  return ts;
+}
+
+/* Formatea una fecha con prefijo relativo si es reciente */
+function formatearFecha(ts){
+  if (isNaN(ts)) return '';
+  const diff = Date.now() - ts;
+  const min = Math.floor(diff / 60000);
+  const hr  = Math.floor(diff / 3600000);
+  const dia = Math.floor(diff / 86400000);
+
+  let rel = '';
+  if (diff < -FUTURO_MAX_MS)       rel = t('fechaProgramado');
+  else if (diff < 0)                rel = t('fechaProgramado');
+  else if (min < 1)                 rel = t('fechaAhora');
+  else if (min < 60)                rel = t('fechaHaceMin', { n: min });
+  else if (hr < 24)                 rel = t('fechaHaceH', { n: hr });
+  else if (dia < 7)                 rel = t('fechaHaceD', { n: dia });
+
+  const abs = new Date(ts).toLocaleString(ACCES.lang, {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  return rel ? `${abs} · ${rel}` : abs;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1409,7 +1474,7 @@ function aplicarTextos(){
   const motivoLabels = [
     t('repMotivoNoSeMuestra'), t('repMotivoEnlaceRoto'), t('repMotivoPaywall'),
     t('repMotivoMedioIncorrecto'), t('repMotivoDuplicado'),
-    t('repMotivoContenido'), t('repMotivoOtro')
+    t('repMotivoContenido'), t('repMotivoFecha'), t('repMotivoOtro')
   ];
   const selMot = $('#rep-motivo');
   [...selMot.options].forEach((o, i) => { if (motivoLabels[i]) o.textContent = motivoLabels[i]; });
@@ -1613,7 +1678,7 @@ function importarConfig(file){
       reconstruirListas();
       actualizarBotonPreset();
       if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
-      aplicarFiltros();  // ← ahora recalcula el filtro tras importar
+      aplicarFiltros();
       toast(t('impOk'), 2200);
     }catch(e){
       toast(t('impErr', { msg: e.message || String(e) }), 3000);
@@ -1685,10 +1750,13 @@ function renderizar(){
     return;
   }
 
+  const ahora = Date.now();
+
   cont.innerHTML = lista.map((n, idx) => {
     const ts = n._ts;
-    const fecha = !isNaN(ts) ? new Date(ts).toLocaleString(ACCES.lang) : '';
+    const fecha = !isNaN(ts) ? formatearFecha(ts) : '';
     const esPreset = presetEfectivo && cumplePreset(n);
+    const esFuturo = !isNaN(ts) && (ts - ahora > FUTURO_MAX_MS);
     const tituloHtml = bionicize(resaltar(n.titular, tokens));
     return `
       <article class="noticia" data-idx="${idx}">
@@ -1696,7 +1764,7 @@ function renderizar(){
           <span class="medio">${escapeHtml(n.medio)}</span>
           <span class="badge">${escapeHtml(n.tipo)}</span>
           <span class="badge${esPreset ? ' preset' : ''}">${escapeHtml(n.grupo)}</span>
-          ${fecha ? `<span>· ${escapeHtml(fecha)}</span>` : ''}
+          ${fecha ? `<span${esFuturo ? ' class="badge futuro"' : ''}>· ${escapeHtml(fecha)}</span>` : ''}
           <button class="btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
         </div>
         <a class="titular" href="${escapeHtml(n.enlace)}" target="_blank" rel="noopener">${tituloHtml}</a>
@@ -1764,7 +1832,7 @@ function wireStaticEvents(){
     presetActivo = !presetActivo;
     guardarPresetActivo();
     actualizarBotonPreset();
-    aplicarFiltros();       // ← BUG FIX: recalcular el filtro, no solo renderizar
+    aplicarFiltros();
     toast(presetActivo ? t('presetActivado') : t('presetDesactivado'), 1500);
   });
 
@@ -1801,7 +1869,7 @@ function wireStaticEvents(){
       presetActivo = !presetActivo;
       guardarPresetActivo();
       actualizarBotonPreset();
-      aplicarFiltros();      // ← BUG FIX
+      aplicarFiltros();
     }
   });
 
@@ -1813,7 +1881,7 @@ function wireStaticEvents(){
     aplicarTextos();
     reconstruirListas();
     if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
-    renderizar();           // ← aquí basta renderizar: no cambia el filtro
+    renderizar();
   });
 
   $('#btn-export').addEventListener('click', exportarConfig);
@@ -1868,7 +1936,7 @@ function wireStaticEvents(){
     actualizarBotonPreset();
 
     cerrarPanel('panel-config');
-    aplicarFiltros();       // ← BUG FIX
+    aplicarFiltros();
   });
 
   $('#preset-cancelar').addEventListener('click', () => {
@@ -1883,7 +1951,7 @@ function wireStaticEvents(){
     guardarPresetActivo();
     actualizarBotonPreset();
     escribirPanel(PRESET);
-    aplicarFiltros();       // ← BUG FIX
+    aplicarFiltros();
   });
 
   $('#filtro-medio').addEventListener('input', filtrarMedios);
@@ -1897,7 +1965,7 @@ function wireStaticEvents(){
     presetActivo = false;
     guardarPresetActivo();
     actualizarBotonPreset();
-    aplicarFiltros();       // ← BUG FIX
+    aplicarFiltros();
   });
 }
 
@@ -1915,10 +1983,15 @@ async function init(){
     NOTICIAS = [];
   }
 
+  // ── Normalización de fechas ────────────────────────────────
   NOTICIAS.forEach(n => {
     n._norm    = normalize(n.titular + ' ' + n.medio);
     n._titNorm = normalize(n.titular);
-    n._ts = parseFecha(n.fecha_pub) || parseFecha(n.fecha) || NaN;
+
+    const tsPub = parseFecha(n.fecha_pub);
+    const tsRec = parseFecha(n.fecha);
+    // Si tsPub no existe o está en el futuro lejano → usar tsRec
+    n._ts = sanearTs(tsPub, tsRec);
   });
 
   construirMediosUnicos();
