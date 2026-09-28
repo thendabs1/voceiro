@@ -16,8 +16,10 @@ NO bajar de SECLEVEL=1 ni forzar TLSv1: rompe muchos medios que sí funcionan.
 
 import json
 import os
+import re
 import ssl
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 import concurrent.futures
 
 import requests
@@ -26,6 +28,7 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
 from zoneinfo import ZoneInfo
+
 from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
 
 
@@ -38,31 +41,23 @@ MAX_WORKERS       = 8       # hilos paralelos
 TIMEOUT           = 15      # segundos por petición
 TZ_MADRID = ZoneInfo('Europe/Madrid')
 
-# Opcional: limitar la recolección a ciertos grupos (vacío = todos)
-# Ej: ['Galicia', 'España · Nacionales']
 GRUPOS_INCLUIDOS = []
 
 DATOS_PATH = 'public/datos.json'
 
 
 # ─────────────────────────────────────────────────────────────
-# SESIÓN HTTP CON SSL PERMISIVO (versión mínima, NO tocar)
+# SESIÓN HTTP CON SSL PERMISIVO
 # ─────────────────────────────────────────────────────────────
 class LegacySSLAdapter(HTTPAdapter):
     """
-    Permite TLS con servidores antiguos que Python 3.11+ rechaza por defecto:
-      - UNSAFE_LEGACY_RENEGOTIATION_DISABLED
-      - SSLV3_ALERT_HANDSHAKE_FAILURE
-      - SSLCertVerificationError (certificados caducados o mal emitidos)
-
+    Permite TLS con servidores antiguos que Python 3.11+ rechaza por defecto.
     IMPORTANTE: no bajar de SECLEVEL=1 ni forzar minimum_version=TLSv1.
-    Hacerlo rompe conexiones con servidores modernos (Marca, Bloomberg, etc.).
     """
     def init_poolmanager(self, *args, **kwargs):
         ctx = create_urllib3_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        # OP_LEGACY_SERVER_CONNECT = 0x4
         try:
             ctx.options |= 0x4
         except Exception:
@@ -88,6 +83,79 @@ SESSION = _crear_sesion()
 
 
 # ─────────────────────────────────────────────────────────────
+# UTILIDADES DE FECHA
+# ─────────────────────────────────────────────────────────────
+def _to_iso_madrid(dt):
+    """Convierte un datetime (naive o aware) a ISO 8601 en hora de Madrid."""
+    if dt is None:
+        return ''
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    try:
+        return dt.astimezone(TZ_MADRID).isoformat(timespec='seconds')
+    except Exception:
+        return ''
+
+
+def _rss_date_to_iso(raw):
+    """
+    Normaliza cualquier cadena de fecha (RFC 822, ISO 8601, formato local)
+    a ISO 8601 con zona horaria de Madrid.
+    """
+    if not raw:
+        return ''
+    raw = str(raw).strip()
+    if not raw:
+        return ''
+
+    # 1) ISO 8601 (2026-09-28T19:30:00Z / +02:00 / sin zona)
+    try:
+        dt = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+        return _to_iso_madrid(dt)
+    except (ValueError, AttributeError):
+        pass
+
+    # 2) RFC 822/2822 (Mon, 28 Sep 2026 19:30:00 GMT)
+    try:
+        dt = parsedate_to_datetime(raw)
+        if dt is not None:
+            return _to_iso_madrid(dt)
+    except (TypeError, ValueError):
+        pass
+
+    # 3) Formato local DD/MM/YYYY [HH:MM[:SS]]
+    m = re.match(r'^(\d{1,2})[/-](\d{1,2})[/-](\d{4})'
+                 r'(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?', raw)
+    if m:
+        d, mo, y, h, mi, se = m.groups()
+        try:
+            dt = datetime(int(y), int(mo), int(d),
+                          int(h or 0), int(mi or 0), int(se or 0),
+                          tzinfo=TZ_MADRID)
+            return _to_iso_madrid(dt)
+        except ValueError:
+            pass
+
+    return ''
+
+
+def _fecha_orden(n):
+    """Clave de ordenación real (datetime aware)."""
+    for key in ('fecha_pub', 'fecha'):
+        val = n.get(key)
+        if not val:
+            continue
+        try:
+            dt = datetime.fromisoformat(val)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=TZ_MADRID)
+            return dt
+        except (ValueError, TypeError):
+            continue
+    return datetime.min.replace(tzinfo=timezone.utc)
+
+
+# ─────────────────────────────────────────────────────────────
 # FASE 1 · OBTENER TITULARES DE UN MEDIO
 # ─────────────────────────────────────────────────────────────
 def _parse_feed(content):
@@ -99,12 +167,63 @@ def _parse_feed(content):
         l = (e.get('link') or '').strip()
         if not t or not l:
             continue
+
+        fecha_pub = ''
+
+        # 1) Intentar con el string de fecha
+        raw = e.get('published') or e.get('updated') or ''
+        if raw:
+            fecha_pub = _rss_date_to_iso(raw)
+
+        # 2) Fallback: usar la versión parseada de feedparser
+        if not fecha_pub:
+            st = e.get('published_parsed') or e.get('updated_parsed')
+            if st:
+                try:
+                    dt = datetime(*st[:6], tzinfo=timezone.utc)
+                    fecha_pub = _to_iso_madrid(dt)
+                except Exception:
+                    pass
+
         out.append({
             'titular':   t,
             'enlace':    l,
-            'fecha_pub': e.get('published') or e.get('updated') or '',
+            'fecha_pub': fecha_pub,
         })
     return out
+
+
+def _extract_page_date(soup):
+    """
+    Extrae la fecha de publicación del HTML de una página de portada.
+    Mira meta tags comunes primero, luego <time datetime="...">.
+    """
+    meta_selectors = [
+        'meta[property="article:published_time"]',
+        'meta[name="article:published_time"]',
+        'meta[property="og:published_time"]',
+        'meta[itemprop="datePublished"]',
+        'meta[name="date"]',
+        'meta[name="pubdate"]',
+        'meta[name="publishdate"]',
+        'meta[name="DC.date"]',
+        'meta[name="dc.date"]',
+        'meta[name="sailthru.date"]',
+        'meta[name="parsely-pub-date"]',
+    ]
+    for sel in meta_selectors:
+        m = soup.select_one(sel)
+        if not m:
+            continue
+        content = (m.get('content') or '').strip()
+        iso = _rss_date_to_iso(content)
+        if iso:
+            return iso
+    for t_el in soup.find_all('time', limit=10):
+        iso = _rss_date_to_iso((t_el.get('datetime') or '').strip())
+        if iso:
+            return iso
+    return ''
 
 
 def _rss(medio):
@@ -133,6 +252,10 @@ def _scrape(medio):
             print(f"  [SCRAPE {r.status_code}] {medio['n']}")
             return None
         soup = BeautifulSoup(r.text, 'lxml')
+
+        # Fecha "global" de la portada (fallback para todos los ítems)
+        page_date = _extract_page_date(soup)
+
         vistos = set()
         out = []
         for tag in soup.find_all(['h1', 'h2', 'h3'], limit=80):
@@ -152,7 +275,20 @@ def _scrape(medio):
             if href in vistos:
                 continue
             vistos.add(href)
-            out.append({'titular': texto, 'enlace': href, 'fecha_pub': ''})
+
+            # Intentar encontrar una fecha local al titular
+            item_date = ''
+            parent = tag.parent
+            if parent:
+                t_el = parent.find('time', attrs={'datetime': True})
+                if t_el:
+                    item_date = _rss_date_to_iso(t_el.get('datetime') or '')
+
+            out.append({
+                'titular':   texto,
+                'enlace':    href,
+                'fecha_pub': item_date or page_date,
+            })
             if len(out) >= N_FEED:
                 break
         return out or None
@@ -171,7 +307,7 @@ def obtener_titulares(medio):
     if not items:
         return (medio, [], None)
 
-    ahora = datetime.now(TZ_MADRID).astimezone().isoformat(timespec='seconds')
+    ahora = datetime.now(TZ_MADRID).isoformat(timespec='seconds')
     noticias = [{
         'medio':     medio['n'],
         'dominio':   medio['d'],
@@ -203,30 +339,30 @@ def cargar_historico():
         return []
 
 
-def _fecha_orden(n):
-    return n.get('fecha_pub') or n.get('fecha') or ''
-
-
 def fusionar_historico(nuevas, viejas, dias):
-    corte = datetime.now() - timedelta(days=dias)
+    corte = datetime.now(TZ_MADRID) - timedelta(days=dias)
     idx = {}
 
     # 1) Viejas dentro de ventana
     for n in viejas:
         try:
             f = datetime.fromisoformat(n.get('fecha', ''))
+            if f.tzinfo is None:
+                f = f.replace(tzinfo=TZ_MADRID)
         except ValueError:
             continue
         if f < corte:
             continue
         idx[(n['medio'], n['titular'])] = n
 
-    # 2) Nuevas: si ya estaba, conservamos la fecha original
+    # 2) Nuevas: conservar datos si ya existían
     for n in nuevas:
         key = (n['medio'], n['titular'])
         old = idx.get(key)
         if old:
+            # Conservar la fecha original de recolección
             n['fecha'] = old.get('fecha', n['fecha'])
+            # Si la nueva no trae pub date, usar la del histórico
             if not n.get('fecha_pub') and old.get('fecha_pub'):
                 n['fecha_pub'] = old['fecha_pub']
         idx[key] = n
@@ -243,7 +379,7 @@ def generar_json(noticias):
     os.makedirs('public', exist_ok=True)
     ahora_madrid = datetime.now(TZ_MADRID)
     payload = {
-        'generado':         ahora_madrid.astimezone().isoformat(timespec='seconds'),
+        'generado':         ahora_madrid.isoformat(timespec='seconds'),
         'generado_legible': ahora_madrid.strftime('%d/%m/%Y %H:%M'),
         'dias_retencion':   DIAS_RETENCION,
         'n_feed':           N_FEED,
@@ -290,13 +426,19 @@ def main():
                     contador_rss += 1
                 else:
                     contador_scrape += 1
-                print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares")
+                # Log de cuántas tienen fecha real
+                con_fecha = sum(1 for n in noticias if n.get('fecha_pub'))
+                print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares"
+                      f" · {con_fecha} con fecha real")
             else:
                 sin_resultado.append(medio['n'])
                 print(f"✗ {medio['n']}: sin titulares")
 
     print(f"\nTitulares brutos: {len(todas)}")
+    con_fecha_total = sum(1 for n in todas if n.get('fecha_pub'))
+    sin_fecha_total = len(todas) - con_fecha_total
     print(f"Medios con resultado: {contador_rss} por RSS · {contador_scrape} por scraping")
+    print(f"Titulares con fecha real: {con_fecha_total} · sin fecha: {sin_fecha_total}")
 
     print("\n── Cargando histórico ──")
     historico = cargar_historico()
