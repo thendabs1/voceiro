@@ -310,7 +310,6 @@
   [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
-  /* BOTÓN DE REPORTE EN CADA NOTICIA */
   .btn-report-item{
     margin-left:auto;
     padding:2px 8px !important;
@@ -349,7 +348,6 @@
   [data-theme="dark"] .toast{background:#eee; color:#222}
   [data-theme="contrast"] .toast{background:#ff0; color:#000; border:2px solid #000}
 
-  /* REPORTER MODAL */
   .rep-ctx{
     background:var(--quote-bg);
     border:1px solid var(--border);
@@ -445,7 +443,6 @@
   <button id="btn-acces" type="button"></button>
 </section>
 
-<!-- MODAL: CONFIGURAR MODO PERSONALIZADO -->
 <section id="panel-config" class="panel" role="dialog" aria-modal="true">
   <div class="panel-inner">
     <div class="panel-header">
@@ -495,7 +492,6 @@
   </div>
 </section>
 
-<!-- MODAL: ACCESIBILIDAD -->
 <section id="panel-acces" class="panel" role="dialog" aria-modal="true">
   <div class="panel-inner">
     <div class="panel-header">
@@ -555,7 +551,6 @@
   </div>
 </section>
 
-<!-- MODAL: REPORTAR PROBLEMA -->
 <section id="panel-reporte" class="panel" role="dialog" aria-modal="true">
   <div class="panel-inner">
     <div class="panel-header">
@@ -563,7 +558,7 @@
       <button class="panel-close" type="button" data-close="panel-reporte">✕</button>
     </div>
 
-    <div id="rep-ctx" class="rep-ctx"></div>
+    <div id="rep-contexto" class="rep-ctx"></div>
 
     <div class="rep-row">
       <label for="rep-motivo" id="rep-motivo-lbl"></label>
@@ -600,7 +595,6 @@
   </div>
 </section>
 
-<!-- FILTROS -->
 <section class="filtros">
   <input type="search" id="buscar" autocomplete="off">
   <select id="grupo"><option value=""></option></select>
@@ -629,8 +623,8 @@
 /* ═══════════════════════════════════════════════════════════════
    CONFIGURACIÓN DE REPORTES
    ═══════════════════════════════════════════════════════════════ */
-const REPORT_REPO  = 'thendabs1/voceiro';       // usuario/repo para abrir issues
-const REPORT_EMAIL = 'thendabs1@gmail.com';     // email para mailto:
+const REPORT_REPO  = 'thendabs1/voceiro';
+const REPORT_EMAIL = 'thendabs1@gmail.com';
 
 /* ═══════════════════════════════════════════════════════════════
    I18N
@@ -710,7 +704,6 @@ const I18N = {
     presetActivado: 'Modo Personalizado activado',
     presetDesactivado: 'Modo Personalizado desactivado',
     presetGuardadoActivado: 'Configuración guardada · Modo Personalizado activado',
-    // Reportes
     repBtnTitle: 'Reportar problema con este titular',
     repTitle: 'Reportar un problema',
     repCtxEmpty: '(Sin titular específico — reporte general)',
@@ -743,423 +736,167 @@ const I18N = {
     repFecha: 'Fecha del reporte',
   },
   gl: {
-    pageTitle: 'Voceiro · Titulares',
-    headerTitle: 'Voceiro',
-    metaPrefix: 'Actualizado:',
-    metaSuffix: 'titulares no histórico',
-    btnPersonalizado: '🏔 Modo Personalizado',
-    btnConfig: '⚙️ Configurar',
-    btnAcces: 'Aa Accesibilidade',
-    btnImport: '↓ Importar',
-    btnExport: '↑ Exportar',
-    btnReset: '↺ Valores por defecto',
-    btnCancel: 'Cancelar',
-    btnSave: 'Gardar',
-    btnClear: 'Limpar',
-    lblIdioma: 'Idioma',
-    optLangEs: 'Castelán',
-    optLangGl: 'Galego',
-    optLangCa: 'Català',
-    optLangEn: 'Inglés',
-    optLangEu: 'Éuscaro',
-    cfgTitle: 'Configurar Modo Personalizado',
-    cfgGrupos: 'Grupos completos',
+    pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro', metaPrefix: 'Actualizado:', metaSuffix: 'titulares no histórico',
+    btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar', btnAcces: 'Aa Accesibilidade',
+    btnImport: '↓ Importar', btnExport: '↑ Exportar', btnReset: '↺ Valores por defecto', btnCancel: 'Cancelar',
+    btnSave: 'Gardar', btnClear: 'Limpar', lblIdioma: 'Idioma',
+    optLangEs: 'Castelán', optLangGl: 'Galego', optLangCa: 'Català', optLangEn: 'Inglés', optLangEu: 'Éuscaro',
+    cfgTitle: 'Configurar Modo Personalizado', cfgGrupos: 'Grupos completos',
     cfgGruposHint: 'Ao marcar un grupo inclúense todos os seus medios. Bloquear un medio (abaixo) ten máis prioridade.',
-    cfgMedios: 'Medios',
-    cfgMediosHint: '✓ incluír sempre · ✗ bloquear sempre · sen marca = neutro.',
-    cfgBuscarMedio: '🔍 Buscar por dominio, nome ou grupo…',
-    cfgTodosGrupos: 'Todos os grupos',
-    cfgPalabras: 'Palabras clave no titular',
-    cfgPalabrasHint: 'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
-    cfgBackup: 'Copia de seguridade',
-    cfgBackupMsg: 'Garda a túa configuración nun ficheiro ou restáuraa noutro navegador.',
-    cfgHelpLbl: 'Axúdanos a mellorar',
-    cfgHelpMsg: '¿Algo non funciona? ¿Un medio non se amosa ou dá erros? Cóntanoslo.',
+    cfgMedios: 'Medios', cfgMediosHint: '✓ incluír sempre · ✗ bloquear sempre · sen marca = neutro.',
+    cfgBuscarMedio: '🔍 Buscar por dominio, nome ou grupo…', cfgTodosGrupos: 'Todos os grupos',
+    cfgPalabras: 'Palabras clave no titular', cfgPalabrasHint: 'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
+    cfgBackup: 'Copia de seguridade', cfgBackupMsg: 'Garda a túa configuración nun ficheiro ou restáuraa noutro navegador.',
+    cfgHelpLbl: 'Axúdanos a mellorar', cfgHelpMsg: '¿Algo non funciona? ¿Un medio non se amosa ou dá erros? Cóntanoslo.',
     cfgHelpBtn: 'Reportar problema',
-    cfgResumen: 'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados',
-    cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
-    acTitle: 'Opcións de lectura',
-    acTema: 'Tema',
-    acFuente: 'Fonte',
-    acTamano: 'Tamaño',
-    acAncho: 'Ancho',
-    acExtra: 'Extra',
-    acClaro: '☀ Claro',
-    acSepia: '📖 Sepia',
-    acOscuro: '🌙 Escuro',
-    acContraste: '◐ Contraste',
-    acSerif: 'Serif',
-    acSans: 'Sans',
-    acDislexia: 'Dislexia',
-    acJustificar: 'Xustificar',
-    acBionic: 'Bionic',
-    acFoco: 'Foco',
-    fltBuscar: '🔍 Buscar nos titulares…',
-    fltGrupo: 'Todos os grupos',
-    fltTipo: 'Todos os tipos',
-    fltMedio: 'Todos os medios',
-    fltTodo: 'Todo',
-    flt24h: '24 h',
-    flt48h: '48 h',
-    flt7d: '7 días',
-    ordenRecientes: '↓ Máis recentes',
-    ordenAntiguos: '↑ Máis antigos',
-    contador: 'Amosando {n} de {total} titulares',
-    contadorPreset: ' · Modo Personalizado activo',
-    vacio: 'Sen resultados',
-    errCarga: 'Erro cargando datos: ',
-    expOk: 'Configuración exportada',
-    impOk: 'Configuración importada correctamente',
-    impErr: 'Erro ao importar: {msg}',
+    cfgResumen: 'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados', cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
+    acTitle: 'Opcións de lectura', acTema: 'Tema', acFuente: 'Fonte', acTamano: 'Tamaño', acAncho: 'Ancho', acExtra: 'Extra',
+    acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Escuro', acContraste: '◐ Contraste',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia', acJustificar: 'Xustificar', acBionic: 'Bionic', acFoco: 'Foco',
+    fltBuscar: '🔍 Buscar nos titulares…', fltGrupo: 'Todos os grupos', fltTipo: 'Todos os tipos', fltMedio: 'Todos os medios',
+    fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
+    ordenRecientes: '↓ Máis recentes', ordenAntiguos: '↑ Máis antigos',
+    contador: 'Amosando {n} de {total} titulares', contadorPreset: ' · Modo Personalizado activo',
+    vacio: 'Sen resultados', errCarga: 'Erro cargando datos: ',
+    expOk: 'Configuración exportada', impOk: 'Configuración importada correctamente', impErr: 'Erro ao importar: {msg}',
     impConfirm: 'Isto substituirá a túa configuración actual. Continuar?',
     presetVacio: 'O Modo Personalizado está baleiro. Configúrao primeiro e despois actívao.',
-    presetActivado: 'Modo Personalizado activado',
-    presetDesactivado: 'Modo Personalizado desactivado',
+    presetActivado: 'Modo Personalizado activado', presetDesactivado: 'Modo Personalizado desactivado',
     presetGuardadoActivado: 'Configuración gardada · Modo Personalizado activado',
-    repBtnTitle: 'Reportar problema con este titular',
-    repTitle: 'Reportar un problema',
-    repCtxEmpty: '(Sen titular específico — reporte xeral)',
-    repMotivoLbl: 'Motivo',
-    repMotivoNoSeMuestra: 'Non se amosa ou non aparece',
-    repMotivoEnlaceRoto: 'Ligazón rota',
-    repMotivoPaywall: 'Require pago ou rexistro',
-    repMotivoMedioIncorrecto: 'Medio ou grupo incorrecto',
-    repMotivoDuplicado: 'Noticia duplicada',
-    repMotivoContenido: 'Contido inapropiado',
-    repMotivoOtro: 'Outro (describir abaixo)',
-    repDetallesLbl: 'Detalles (opcional)',
-    repDetallesPh: 'Cóntanos que pasa con este titular, se queres con máis detalle…',
+    repBtnTitle: 'Reportar problema con este titular', repTitle: 'Reportar un problema',
+    repCtxEmpty: '(Sen titular específico — reporte xeral)', repMotivoLbl: 'Motivo',
+    repMotivoNoSeMuestra: 'Non se amosa ou non aparece', repMotivoEnlaceRoto: 'Ligazón rota',
+    repMotivoPaywall: 'Require pago ou rexistro', repMotivoMedioIncorrecto: 'Medio ou grupo incorrecto',
+    repMotivoDuplicado: 'Noticia duplicada', repMotivoContenido: 'Contido inapropiado', repMotivoOtro: 'Outro (describir abaixo)',
+    repDetallesLbl: 'Detalles (opcional)', repDetallesPh: 'Cóntanos que pasa con este titular, se queres con máis detalle…',
     repConfigLbl: 'Anexar a miña configuración actual (accesibilidade e modo personalizado) ao reporte. Axuda a reproducir o problema.',
-    repCopy: '📋 Copiar reporte',
-    repMail: '✉ Enviar por email',
-    repGithub: '🐞 Abrir en GitHub',
-    repCopiado: 'Reporte copiado ao portapapeis',
-    repErrGithub: 'Non se puido abrir GitHub. Copia o reporte e envíao por email.',
-    repContexto: 'Contexto',
-    repCtxMedio: 'Medio',
-    repCtxGrupo: 'Grupo',
-    repCtxTipo: 'Tipo',
-    repCtxTitular: 'Titular',
-    repCtxEnlace: 'Ligazón',
-    repCtxFecha: 'Data',
-    repCtxFuente: 'Fonte',
-    repCtxIdioma: 'Idioma activo',
-    repCtxConfig: 'Config',
+    repCopy: '📋 Copiar reporte', repMail: '✉ Enviar por email', repGithub: '🐞 Abrir en GitHub',
+    repCopiado: 'Reporte copiado ao portapapeis', repErrGithub: 'Non se puido abrir GitHub. Copia o reporte e envíao por email.',
+    repContexto: 'Contexto', repCtxMedio: 'Medio', repCtxGrupo: 'Grupo', repCtxTipo: 'Tipo', repCtxTitular: 'Titular',
+    repCtxEnlace: 'Ligazón', repCtxFecha: 'Data', repCtxFuente: 'Fonte', repCtxIdioma: 'Idioma activo', repCtxConfig: 'Config',
     repFecha: 'Data do reporte',
   },
   ca: {
-    pageTitle: 'Voceiro · Titulars',
-    headerTitle: 'Voceiro',
-    metaPrefix: 'Actualitzat:',
-    metaSuffix: 'titulars a l\'històric',
-    btnPersonalizado: '🏔 Mode Personalitzat',
-    btnConfig: '⚙️ Configurar',
-    btnAcces: 'Aa Accessibilitat',
-    btnImport: '↓ Importar',
-    btnExport: '↑ Exportar',
-    btnReset: '↺ Valors per defecte',
-    btnCancel: 'Cancel·lar',
-    btnSave: 'Desar',
-    btnClear: 'Netejar',
-    lblIdioma: 'Idioma',
-    optLangEs: 'Castellà',
-    optLangGl: 'Gallec',
-    optLangCa: 'Català',
-    optLangEn: 'Anglès',
-    optLangEu: 'Basc',
-    cfgTitle: 'Configurar Mode Personalitzat',
-    cfgGrupos: 'Grups complets',
+    pageTitle: 'Voceiro · Titulars', headerTitle: 'Voceiro', metaPrefix: 'Actualitzat:', metaSuffix: 'titulars a l\'històric',
+    btnPersonalizado: '🏔 Mode Personalitzat', btnConfig: '⚙️ Configurar', btnAcces: 'Aa Accessibilitat',
+    btnImport: '↓ Importar', btnExport: '↑ Exportar', btnReset: '↺ Valors per defecte', btnCancel: 'Cancel·lar',
+    btnSave: 'Desar', btnClear: 'Netejar', lblIdioma: 'Idioma',
+    optLangEs: 'Castellà', optLangGl: 'Gallec', optLangCa: 'Català', optLangEn: 'Anglès', optLangEu: 'Basc',
+    cfgTitle: 'Configurar Mode Personalitzat', cfgGrupos: 'Grups complets',
     cfgGruposHint: 'En marcar un grup s\'inclouen tots els seus mitjans. Bloquejar un mitjà (a baix) té més prioritat.',
-    cfgMedios: 'Mitjans',
-    cfgMediosHint: '✓ incloure sempre · ✗ bloquejar sempre · sense marca = neutre.',
-    cfgBuscarMedio: '🔍 Cercar per domini, nom o grup…',
-    cfgTodosGrupos: 'Tots els grups',
-    cfgPalabras: 'Paraules clau al titular',
-    cfgPalabrasHint: 'Una per línia o separades per comes. Sense accents, paraula completa.',
-    cfgBackup: 'Còpia de seguretat',
-    cfgBackupMsg: 'Desa la teva configuració en un fitxer o restaura-la en un altre navegador.',
-    cfgHelpLbl: 'Ajuda\'ns a millorar',
-    cfgHelpMsg: 'Alguna cosa no funciona? Un mitjà no es mostra o dóna errors? Explica-nos-ho.',
+    cfgMedios: 'Mitjans', cfgMediosHint: '✓ incloure sempre · ✗ bloquejar sempre · sense marca = neutre.',
+    cfgBuscarMedio: '🔍 Cercar per domini, nom o grup…', cfgTodosGrupos: 'Tots els grups',
+    cfgPalabras: 'Paraules clau al titular', cfgPalabrasHint: 'Una per línia o separades per comes. Sense accents, paraula completa.',
+    cfgBackup: 'Còpia de seguretat', cfgBackupMsg: 'Desa la teva configuració en un fitxer o restaura-la en un altre navegador.',
+    cfgHelpLbl: 'Ajuda\'ns a millorar', cfgHelpMsg: 'Alguna cosa no funciona? Un mitjà no es mostra o dóna errors? Explica-nos-ho.',
     cfgHelpBtn: 'Reportar problema',
-    cfgResumen: 'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats',
-    cfgPalabrasPlaceholder: 'paraula1\nparaula2\nparaula3',
-    acTitle: 'Opcions de lectura',
-    acTema: 'Tema',
-    acFuente: 'Tipus de lletra',
-    acTamano: 'Mida',
-    acAncho: 'Amplada',
-    acExtra: 'Extra',
-    acClaro: '☀ Clar',
-    acSepia: '📖 Sèpia',
-    acOscuro: '🌙 Fosc',
-    acContraste: '◐ Contrast',
-    acSerif: 'Serif',
-    acSans: 'Sans',
-    acDislexia: 'Dislèxia',
-    acJustificar: 'Justificar',
-    acBionic: 'Bionic',
-    acFoco: 'Focus',
-    fltBuscar: '🔍 Cercar als titulars…',
-    fltGrupo: 'Tots els grups',
-    fltTipo: 'Tots els tipus',
-    fltMedio: 'Tots els mitjans',
-    fltTodo: 'Tot',
-    flt24h: '24 h',
-    flt48h: '48 h',
-    flt7d: '7 dies',
-    ordenRecientes: '↓ Més recents',
-    ordenAntiguos: '↑ Més antics',
-    contador: 'Mostrant {n} de {total} titulars',
-    contadorPreset: ' · Mode Personalitzat actiu',
-    vacio: 'Sense resultats',
-    errCarga: 'Error carregant dades: ',
-    expOk: 'Configuració exportada',
-    impOk: 'Configuració importada correctament',
-    impErr: 'Error en importar: {msg}',
+    cfgResumen: 'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats', cfgPalabrasPlaceholder: 'paraula1\nparaula2\nparaula3',
+    acTitle: 'Opcions de lectura', acTema: 'Tema', acFuente: 'Tipus de lletra', acTamano: 'Mida', acAncho: 'Amplada', acExtra: 'Extra',
+    acClaro: '☀ Clar', acSepia: '📖 Sèpia', acOscuro: '🌙 Fosc', acContraste: '◐ Contrast',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislèxia', acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Focus',
+    fltBuscar: '🔍 Cercar als titulars…', fltGrupo: 'Tots els grups', fltTipo: 'Tots els tipus', fltMedio: 'Tots els mitjans',
+    fltTodo: 'Tot', flt24h: '24 h', flt48h: '48 h', flt7d: '7 dies',
+    ordenRecientes: '↓ Més recents', ordenAntiguos: '↑ Més antics',
+    contador: 'Mostrant {n} de {total} titulars', contadorPreset: ' · Mode Personalitzat actiu',
+    vacio: 'Sense resultats', errCarga: 'Error carregant dades: ',
+    expOk: 'Configuració exportada', impOk: 'Configuració importada correctament', impErr: 'Error en importar: {msg}',
     impConfirm: 'Això substituirà la teva configuració actual. Continuar?',
     presetVacio: 'El Mode Personalitzat està buit. Configura\'l primer i després activa\'l.',
-    presetActivado: 'Mode Personalitzat activat',
-    presetDesactivado: 'Mode Personalitzat desactivat',
+    presetActivado: 'Mode Personalitzat activat', presetDesactivado: 'Mode Personalitzat desactivat',
     presetGuardadoActivado: 'Configuració desada · Mode Personalitzat activat',
-    repBtnTitle: 'Reportar problema amb aquest titular',
-    repTitle: 'Reportar un problema',
-    repCtxEmpty: '(Sense titular específic — report general)',
-    repMotivoLbl: 'Motiu',
-    repMotivoNoSeMuestra: 'No es mostra o no apareix',
-    repMotivoEnlaceRoto: 'Enllaç trencat',
-    repMotivoPaywall: 'Requereix pagament o registre',
-    repMotivoMedioIncorrecto: 'Mitjà o grup incorrecte',
-    repMotivoDuplicado: 'Notícia duplicada',
-    repMotivoContenido: 'Contingut inapropiat',
-    repMotivoOtro: 'Altre (descriure a baix)',
-    repDetallesLbl: 'Detalls (opcional)',
-    repDetallesPh: 'Explica\'ns què passa amb aquest titular, si vols amb més detall…',
+    repBtnTitle: 'Reportar problema amb aquest titular', repTitle: 'Reportar un problema',
+    repCtxEmpty: '(Sense titular específic — report general)', repMotivoLbl: 'Motiu',
+    repMotivoNoSeMuestra: 'No es mostra o no apareix', repMotivoEnlaceRoto: 'Enllaç trencat',
+    repMotivoPaywall: 'Requereix pagament o registre', repMotivoMedioIncorrecto: 'Mitjà o grup incorrecte',
+    repMotivoDuplicado: 'Notícia duplicada', repMotivoContenido: 'Contingut inapropiat', repMotivoOtro: 'Altre (descriure a baix)',
+    repDetallesLbl: 'Detalls (opcional)', repDetallesPh: 'Explica\'ns què passa amb aquest titular, si vols amb més detall…',
     repConfigLbl: 'Adjuntar la meva configuració actual (accessibilitat i mode personalitzat) al report. Ajuda a reproduir el problema.',
-    repCopy: '📋 Copiar report',
-    repMail: '✉ Enviar per correu',
-    repGithub: '🐞 Obrir a GitHub',
-    repCopiado: 'Report copiat al porta-retalls',
-    repErrGithub: 'No s\'ha pogut obrir GitHub. Copia el report i envia\'l per correu.',
-    repContexto: 'Context',
-    repCtxMedio: 'Mitjà',
-    repCtxGrupo: 'Grup',
-    repCtxTipo: 'Tipus',
-    repCtxTitular: 'Titular',
-    repCtxEnlace: 'Enllaç',
-    repCtxFecha: 'Data',
-    repCtxFuente: 'Font',
-    repCtxIdioma: 'Idioma actiu',
-    repCtxConfig: 'Config',
+    repCopy: '📋 Copiar report', repMail: '✉ Enviar per correu', repGithub: '🐞 Obrir a GitHub',
+    repCopiado: 'Report copiat al porta-retalls', repErrGithub: 'No s\'ha pogut obrir GitHub. Copia el report i envia\'l per correu.',
+    repContexto: 'Context', repCtxMedio: 'Mitjà', repCtxGrupo: 'Grup', repCtxTipo: 'Tipus', repCtxTitular: 'Titular',
+    repCtxEnlace: 'Enllaç', repCtxFecha: 'Data', repCtxFuente: 'Font', repCtxIdioma: 'Idioma actiu', repCtxConfig: 'Config',
     repFecha: 'Data del report',
   },
   en: {
-    pageTitle: 'Voceiro · Headlines',
-    headerTitle: 'Voceiro',
-    metaPrefix: 'Updated:',
-    metaSuffix: 'headlines in history',
-    btnPersonalizado: '🏔 Custom Mode',
-    btnConfig: '⚙️ Configure',
-    btnAcces: 'Aa Accessibility',
-    btnImport: '↓ Import',
-    btnExport: '↑ Export',
-    btnReset: '↺ Reset defaults',
-    btnCancel: 'Cancel',
-    btnSave: 'Save',
-    btnClear: 'Clear',
-    lblIdioma: 'Language',
-    optLangEs: 'Spanish',
-    optLangGl: 'Galician',
-    optLangCa: 'Catalan',
-    optLangEn: 'English',
-    optLangEu: 'Basque',
-    cfgTitle: 'Configure Custom Mode',
-    cfgGrupos: 'Full groups',
+    pageTitle: 'Voceiro · Headlines', headerTitle: 'Voceiro', metaPrefix: 'Updated:', metaSuffix: 'headlines in history',
+    btnPersonalizado: '🏔 Custom Mode', btnConfig: '⚙️ Configure', btnAcces: 'Aa Accessibility',
+    btnImport: '↓ Import', btnExport: '↑ Export', btnReset: '↺ Reset defaults', btnCancel: 'Cancel',
+    btnSave: 'Save', btnClear: 'Clear', lblIdioma: 'Language',
+    optLangEs: 'Spanish', optLangGl: 'Galician', optLangCa: 'Catalan', optLangEn: 'English', optLangEu: 'Basque',
+    cfgTitle: 'Configure Custom Mode', cfgGrupos: 'Full groups',
     cfgGruposHint: 'Checking a group includes all its outlets. Blocking an outlet (below) takes precedence.',
-    cfgMedios: 'Outlets',
-    cfgMediosHint: '✓ always include · ✗ always block · unchecked = neutral.',
-    cfgBuscarMedio: '🔍 Search by domain, name or group…',
-    cfgTodosGrupos: 'All groups',
-    cfgPalabras: 'Keywords in headline',
-    cfgPalabrasHint: 'One per line or comma-separated. Accent-insensitive, whole word.',
-    cfgBackup: 'Backup',
-    cfgBackupMsg: 'Save your configuration to a file or restore it on another browser.',
-    cfgHelpLbl: 'Help us improve',
-    cfgHelpMsg: 'Something not working? An outlet not showing or throwing errors? Tell us.',
+    cfgMedios: 'Outlets', cfgMediosHint: '✓ always include · ✗ always block · unchecked = neutral.',
+    cfgBuscarMedio: '🔍 Search by domain, name or group…', cfgTodosGrupos: 'All groups',
+    cfgPalabras: 'Keywords in headline', cfgPalabrasHint: 'One per line or comma-separated. Accent-insensitive, whole word.',
+    cfgBackup: 'Backup', cfgBackupMsg: 'Save your configuration to a file or restore it on another browser.',
+    cfgHelpLbl: 'Help us improve', cfgHelpMsg: 'Something not working? An outlet not showing or throwing errors? Tell us.',
     cfgHelpBtn: 'Report a problem',
-    cfgResumen: 'Showing {vis} of {total} · {inc} forced · {ign} blocked',
-    cfgPalabrasPlaceholder: 'keyword1\nkeyword2\nkeyword3',
-    acTitle: 'Reading options',
-    acTema: 'Theme',
-    acFuente: 'Font',
-    acTamano: 'Size',
-    acAncho: 'Width',
-    acExtra: 'Extra',
-    acClaro: '☀ Light',
-    acSepia: '📖 Sepia',
-    acOscuro: '🌙 Dark',
-    acContraste: '◐ Contrast',
-    acSerif: 'Serif',
-    acSans: 'Sans',
-    acDislexia: 'Dyslexic',
-    acJustificar: 'Justify',
-    acBionic: 'Bionic',
-    acFoco: 'Focus',
-    fltBuscar: '🔍 Search headlines…',
-    fltGrupo: 'All groups',
-    fltTipo: 'All types',
-    fltMedio: 'All outlets',
-    fltTodo: 'All',
-    flt24h: '24 h',
-    flt48h: '48 h',
-    flt7d: '7 days',
-    ordenRecientes: '↓ Newest first',
-    ordenAntiguos: '↑ Oldest first',
-    contador: 'Showing {n} of {total} headlines',
-    contadorPreset: ' · Custom Mode on',
-    vacio: 'No results',
-    errCarga: 'Error loading data: ',
-    expOk: 'Settings exported',
-    impOk: 'Settings imported successfully',
-    impErr: 'Import error: {msg}',
+    cfgResumen: 'Showing {vis} of {total} · {inc} forced · {ign} blocked', cfgPalabrasPlaceholder: 'keyword1\nkeyword2\nkeyword3',
+    acTitle: 'Reading options', acTema: 'Theme', acFuente: 'Font', acTamano: 'Size', acAncho: 'Width', acExtra: 'Extra',
+    acClaro: '☀ Light', acSepia: '📖 Sepia', acOscuro: '🌙 Dark', acContraste: '◐ Contrast',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dyslexic', acJustificar: 'Justify', acBionic: 'Bionic', acFoco: 'Focus',
+    fltBuscar: '🔍 Search headlines…', fltGrupo: 'All groups', fltTipo: 'All types', fltMedio: 'All outlets',
+    fltTodo: 'All', flt24h: '24 h', flt48h: '48 h', flt7d: '7 days',
+    ordenRecientes: '↓ Newest first', ordenAntiguos: '↑ Oldest first',
+    contador: 'Showing {n} of {total} headlines', contadorPreset: ' · Custom Mode on',
+    vacio: 'No results', errCarga: 'Error loading data: ',
+    expOk: 'Settings exported', impOk: 'Settings imported successfully', impErr: 'Import error: {msg}',
     impConfirm: 'This will replace your current settings. Continue?',
     presetVacio: 'Custom Mode is empty. Configure it first, then activate it.',
-    presetActivado: 'Custom Mode enabled',
-    presetDesactivado: 'Custom Mode disabled',
+    presetActivado: 'Custom Mode enabled', presetDesactivado: 'Custom Mode disabled',
     presetGuardadoActivado: 'Settings saved · Custom Mode enabled',
-    repBtnTitle: 'Report a problem with this headline',
-    repTitle: 'Report a problem',
-    repCtxEmpty: '(No specific headline — general report)',
-    repMotivoLbl: 'Reason',
-    repMotivoNoSeMuestra: 'Not showing or missing',
-    repMotivoEnlaceRoto: 'Broken link',
-    repMotivoPaywall: 'Requires payment or login',
-    repMotivoMedioIncorrecto: 'Wrong outlet or group',
-    repMotivoDuplicado: 'Duplicate news item',
-    repMotivoContenido: 'Inappropriate content',
-    repMotivoOtro: 'Other (describe below)',
-    repDetallesLbl: 'Details (optional)',
-    repDetallesPh: 'Tell us what\'s wrong with this headline, with as much detail as you like…',
+    repBtnTitle: 'Report a problem with this headline', repTitle: 'Report a problem',
+    repCtxEmpty: '(No specific headline — general report)', repMotivoLbl: 'Reason',
+    repMotivoNoSeMuestra: 'Not showing or missing', repMotivoEnlaceRoto: 'Broken link',
+    repMotivoPaywall: 'Requires payment or login', repMotivoMedioIncorrecto: 'Wrong outlet or group',
+    repMotivoDuplicado: 'Duplicate news item', repMotivoContenido: 'Inappropriate content', repMotivoOtro: 'Other (describe below)',
+    repDetallesLbl: 'Details (optional)', repDetallesPh: 'Tell us what\'s wrong with this headline, with as much detail as you like…',
     repConfigLbl: 'Attach my current configuration (accessibility and custom mode) to the report. Helps reproduce the issue.',
-    repCopy: '📋 Copy report',
-    repMail: '✉ Send by email',
-    repGithub: '🐞 Open in GitHub',
-    repCopiado: 'Report copied to clipboard',
-    repErrGithub: 'Could not open GitHub. Copy the report and send it by email.',
-    repContexto: 'Context',
-    repCtxMedio: 'Outlet',
-    repCtxGrupo: 'Group',
-    repCtxTipo: 'Type',
-    repCtxTitular: 'Headline',
-    repCtxEnlace: 'Link',
-    repCtxFecha: 'Date',
-    repCtxFuente: 'Source',
-    repCtxIdioma: 'Active language',
-    repCtxConfig: 'Config',
+    repCopy: '📋 Copy report', repMail: '✉ Send by email', repGithub: '🐞 Open in GitHub',
+    repCopiado: 'Report copied to clipboard', repErrGithub: 'Could not open GitHub. Copy the report and send it by email.',
+    repContexto: 'Context', repCtxMedio: 'Outlet', repCtxGrupo: 'Group', repCtxTipo: 'Type', repCtxTitular: 'Headline',
+    repCtxEnlace: 'Link', repCtxFecha: 'Date', repCtxFuente: 'Source', repCtxIdioma: 'Active language', repCtxConfig: 'Config',
     repFecha: 'Report date',
   },
   eu: {
-    pageTitle: 'Voceiro · Izenburuak',
-    headerTitle: 'Voceiro',
-    metaPrefix: 'Eguneratuta:',
-    metaSuffix: 'izenburu historian',
-    btnPersonalizado: '🏔 Modo Pertsonalizatua',
-    btnConfig: '⚙️ Konfiguratu',
-    btnAcces: 'Aa Irisgarritasuna',
-    btnImport: '↓ Inportatu',
-    btnExport: '↑ Esportatu',
-    btnReset: '↺ Balio lehenetsiak',
-    btnCancel: 'Utzi',
-    btnSave: 'Gorde',
-    btnClear: 'Garbitu',
-    lblIdioma: 'Hizkuntza',
-    optLangEs: 'Gaztelania',
-    optLangGl: 'Galiziera',
-    optLangCa: 'Katalana',
-    optLangEn: 'Ingelesa',
-    optLangEu: 'Euskara',
-    cfgTitle: 'Modo Pertsonalizatua konfiguratu',
-    cfgGrupos: 'Talde osoak',
+    pageTitle: 'Voceiro · Izenburuak', headerTitle: 'Voceiro', metaPrefix: 'Eguneratuta:', metaSuffix: 'izenburu historian',
+    btnPersonalizado: '🏔 Modo Pertsonalizatua', btnConfig: '⚙️ Konfiguratu', btnAcces: 'Aa Irisgarritasuna',
+    btnImport: '↓ Inportatu', btnExport: '↑ Esportatu', btnReset: '↺ Balio lehenetsiak', btnCancel: 'Utzi',
+    btnSave: 'Gorde', btnClear: 'Garbitu', lblIdioma: 'Hizkuntza',
+    optLangEs: 'Gaztelania', optLangGl: 'Galiziera', optLangCa: 'Katalana', optLangEn: 'Ingelesa', optLangEu: 'Euskara',
+    cfgTitle: 'Modo Pertsonalizatua konfiguratu', cfgGrupos: 'Talde osoak',
     cfgGruposHint: 'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide bat blokeatzeak (behean) lehentasun handiagoa du.',
-    cfgMedios: 'Hedabideak',
-    cfgMediosHint: '✓ beti sartu · ✗ beti blokeatu · markarik gabe = neutroa.',
-    cfgBuscarMedio: '🔍 Bilatu domeinu, izen edo taldearen arabera…',
-    cfgTodosGrupos: 'Talde guztiak',
-    cfgPalabras: 'Hitz gakoak izenburuan',
-    cfgPalabrasHint: 'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
-    cfgBackup: 'Babeskopia',
-    cfgBackupMsg: 'Gorde zure konfigurazioa fitxategi batean edo berreskuratu beste nabigatzaile batean.',
-    cfgHelpLbl: 'Lagun gaitzazu hobetzen',
-    cfgHelpMsg: 'Zerbait ez dabil? Hedabide bat ez da agertzen edo erroreak ematen ditu? Kontatu iezaguzu.',
+    cfgMedios: 'Hedabideak', cfgMediosHint: '✓ beti sartu · ✗ beti blokeatu · markarik gabe = neutroa.',
+    cfgBuscarMedio: '🔍 Bilatu domeinu, izen edo taldearen arabera…', cfgTodosGrupos: 'Talde guztiak',
+    cfgPalabras: 'Hitz gakoak izenburuan', cfgPalabrasHint: 'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
+    cfgBackup: 'Babeskopia', cfgBackupMsg: 'Gorde zure konfigurazioa fitxategi batean edo berreskuratu beste nabigatzaile batean.',
+    cfgHelpLbl: 'Lagun gaitzazu hobetzen', cfgHelpMsg: 'Zerbait ez dabil? Hedabide bat ez da agertzen edo erroreak ematen ditu? Kontatu iezaguzu.',
     cfgHelpBtn: 'Arazo bat jakinarazi',
-    cfgResumen: '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta',
-    cfgPalabrasPlaceholder: 'hitza1\nhitza2\nhitza3',
-    acTitle: 'Irakurketa aukerak',
-    acTema: 'Gaia',
-    acFuente: 'Letra-tipoa',
-    acTamano: 'Tamaina',
-    acAncho: 'Zabalera',
-    acExtra: 'Extra',
-    acClaro: '☀ Argia',
-    acSepia: '📖 Sepia',
-    acOscuro: '🌙 Iluna',
-    acContraste: '◐ Kontrastea',
-    acSerif: 'Serif',
-    acSans: 'Sans',
-    acDislexia: 'Dislexia',
-    acJustificar: 'Justifikatu',
-    acBionic: 'Bionic',
-    acFoco: 'Fokua',
-    fltBuscar: '🔍 Bilatu izenburuetan…',
-    fltGrupo: 'Talde guztiak',
-    fltTipo: 'Mota guztiak',
-    fltMedio: 'Hedabide guztiak',
-    fltTodo: 'Guztia',
-    flt24h: '24 h',
-    flt48h: '48 h',
-    flt7d: '7 egun',
-    ordenRecientes: '↓ Berrienak lehenengo',
-    ordenAntiguos: '↑ Zaharrenak lehenengo',
-    contador: '{total}tik {n} izenburu erakusten',
-    contadorPreset: ' · Modo Pertsonalizatua aktibo',
-    vacio: 'Emaitzarik gabe',
-    errCarga: 'Errorea datuak kargatzean: ',
-    expOk: 'Konfigurazioa esportatu da',
-    impOk: 'Konfigurazioa ondo inportatu da',
-    impErr: 'Inportazio errorea: {msg}',
+    cfgResumen: '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta', cfgPalabrasPlaceholder: 'hitza1\nhitza2\nhitza3',
+    acTitle: 'Irakurketa aukerak', acTema: 'Gaia', acFuente: 'Letra-tipoa', acTamano: 'Tamaina', acAncho: 'Zabalera', acExtra: 'Extra',
+    acClaro: '☀ Argia', acSepia: '📖 Sepia', acOscuro: '🌙 Iluna', acContraste: '◐ Kontrastea',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia', acJustificar: 'Justifikatu', acBionic: 'Bionic', acFoco: 'Fokua',
+    fltBuscar: '🔍 Bilatu izenburuetan…', fltGrupo: 'Talde guztiak', fltTipo: 'Mota guztiak', fltMedio: 'Hedabide guztiak',
+    fltTodo: 'Guztia', flt24h: '24 h', flt48h: '48 h', flt7d: '7 egun',
+    ordenRecientes: '↓ Berrienak lehenengo', ordenAntiguos: '↑ Zaharrenak lehenengo',
+    contador: '{total}tik {n} izenburu erakusten', contadorPreset: ' · Modo Pertsonalizatua aktibo',
+    vacio: 'Emaitzarik gabe', errCarga: 'Errorea datuak kargatzean: ',
+    expOk: 'Konfigurazioa esportatu da', impOk: 'Konfigurazioa ondo inportatu da', impErr: 'Inportazio errorea: {msg}',
     impConfirm: 'Honek zure uneko konfigurazioa ordezkatuko du. Jarraitu?',
     presetVacio: 'Modo Pertsonalizatua hutsik dago. Konfiguratu lehenengo eta gero aktibatu.',
-    presetActivado: 'Modo Pertsonalizatua aktibatuta',
-    presetDesactivado: 'Modo Pertsonalizatua desaktibatuta',
+    presetActivado: 'Modo Pertsonalizatua aktibatuta', presetDesactivado: 'Modo Pertsonalizatua desaktibatuta',
     presetGuardadoActivado: 'Konfigurazioa gordeta · Modo Pertsonalizatua aktibatuta',
-    repBtnTitle: 'Izenburu honekin arazo bat jakinarazi',
-    repTitle: 'Arazo bat jakinarazi',
-    repCtxEmpty: '(Izenburu zehatzik gabe — txosten orokorra)',
-    repMotivoLbl: 'Arrazoia',
-    repMotivoNoSeMuestra: 'Ez da agertzen edo falta da',
-    repMotivoEnlaceRoto: 'Esteka hautsia',
-    repMotivoPaywall: 'Ordainketa edo erregistroa behar da',
-    repMotivoMedioIncorrecto: 'Hedabide edo talde okerra',
-    repMotivoDuplicado: 'Albiste bikoiztua',
-    repMotivoContenido: 'Eduki desegokia',
-    repMotivoOtro: 'Beste bat (behean deskribatu)',
-    repDetallesLbl: 'Xehetasunak (aukerakoa)',
-    repDetallesPh: 'Kontatu iezaguzu zer gertatzen den izenburu honekin, xehetasun gehiagorekin nahi baduzu…',
+    repBtnTitle: 'Izenburu honekin arazo bat jakinarazi', repTitle: 'Arazo bat jakinarazi',
+    repCtxEmpty: '(Izenburu zehatzik gabe — txosten orokorra)', repMotivoLbl: 'Arrazoia',
+    repMotivoNoSeMuestra: 'Ez da agertzen edo falta da', repMotivoEnlaceRoto: 'Esteka hautsia',
+    repMotivoPaywall: 'Ordainketa edo erregistroa behar da', repMotivoMedioIncorrecto: 'Hedabide edo talde okerra',
+    repMotivoDuplicado: 'Albiste bikoiztua', repMotivoContenido: 'Eduki desegokia', repMotivoOtro: 'Beste bat (behean deskribatu)',
+    repDetallesLbl: 'Xehetasunak (aukerakoa)', repDetallesPh: 'Kontatu iezaguzu zer gertatzen den izenburu honekin, xehetasun gehiagorekin nahi baduzu…',
     repConfigLbl: 'Nire uneko konfigurazioa (irisgarritasuna eta modo pertsonalizatua) txostenera erantsi. Arazoa erreproduzitzen laguntzen du.',
-    repCopy: '📋 Txostena kopiatu',
-    repMail: '✉ Postaz bidali',
-    repGithub: '🐞 GitHub-en ireki',
-    repCopiado: 'Txostena arbelean kopiatu da',
-    repErrGithub: 'Ezin izan da GitHub ireki. Kopiatu txostena eta bidali postaz.',
-    repContexto: 'Testuingurua',
-    repCtxMedio: 'Hedabidea',
-    repCtxGrupo: 'Taldea',
-    repCtxTipo: 'Mota',
-    repCtxTitular: 'Izenburua',
-    repCtxEnlace: 'Esteka',
-    repCtxFecha: 'Data',
-    repCtxFuente: 'Iturria',
-    repCtxIdioma: 'Hizkuntza aktiboa',
-    repCtxConfig: 'Konfig',
+    repCopy: '📋 Txostena kopiatu', repMail: '✉ Postaz bidali', repGithub: '🐞 GitHub-en ireki',
+    repCopiado: 'Txostena arbelean kopiatu da', repErrGithub: 'Ezin izan da GitHub ireki. Kopiatu txostena eta bidali postaz.',
+    repContexto: 'Testuingurua', repCtxMedio: 'Hedabidea', repCtxGrupo: 'Taldea', repCtxTipo: 'Mota', repCtxTitular: 'Izenburua',
+    repCtxEnlace: 'Esteka', repCtxFecha: 'Data', repCtxFuente: 'Iturria', repCtxIdioma: 'Hizkuntza aktiboa', repCtxConfig: 'Konfig',
     repFecha: 'Txostenaren data',
   },
 };
@@ -1172,9 +909,6 @@ function t(key, vars){
   return s;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   UTILIDADES
-   ═══════════════════════════════════════════════════════════════ */
 const $ = sel => document.querySelector(sel);
 
 function normalize(s){
@@ -1199,7 +933,6 @@ function toast(msg, ms){
     setTimeout(() => el.remove(), 250);
   }, ms);
 }
-
 function parseFecha(s){
   if (!s) return NaN;
   let t = Date.parse(s);
@@ -1244,8 +977,7 @@ function gruposAfinesAlIdioma(){
    ACCESIBILIDAD
    ═══════════════════════════════════════════════════════════════ */
 const ACCES_DEF = {
-  lang: 'es',
-  tema: 'light', fuente: 'sans',
+  lang: 'es', tema: 'light', fuente: 'sans',
   fs: 18, width: 1100,
   just: false, bionic: false, focus: false,
 };
@@ -1567,9 +1299,6 @@ window.addEventListener('scroll', () => {
   if (ACCES.focus) requestAnimationFrame(updateFocus);
 }, { passive: true });
 
-/* ═══════════════════════════════════════════════════════════════
-   RESALTADO
-   ═══════════════════════════════════════════════════════════════ */
 function resaltar(texto, tokens){
   if (!tokens.length || !texto) return escapeHtml(texto || '');
   const map = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
@@ -1669,7 +1398,6 @@ function aplicarTextos(){
     if (bExtra[i]) bExtra[i].textContent = txt;
   });
 
-  // Reporte
   $('#rep-title').textContent = t('repTitle');
   $('#rep-motivo-lbl').textContent = t('repMotivoLbl');
   $('#rep-detalles-lbl').textContent = t('repDetallesLbl');
@@ -1678,7 +1406,6 @@ function aplicarTextos(){
   $('#rep-copy').textContent = t('repCopy');
   $('#rep-mail').textContent = t('repMail');
   $('#rep-github').textContent = t('repGithub');
-  const motivos = ['no_se_muestra','enlace_roto','paywall','medio_incorrecto','duplicado','contenido_inapropiado','otro'];
   const motivoLabels = [
     t('repMotivoNoSeMuestra'), t('repMotivoEnlaceRoto'), t('repMotivoPaywall'),
     t('repMotivoMedioIncorrecto'), t('repMotivoDuplicado'),
@@ -1707,7 +1434,7 @@ function aplicarTextos(){
 /* ═══════════════════════════════════════════════════════════════
    SISTEMA DE REPORTE
    ═══════════════════════════════════════════════════════════════ */
-let REPORTE_CONTEXTO = null;   // { medio, dominio, grupo, tipo, titular, enlace, fecha, fuente } o null
+let REPORTE_CONTEXTO = null;
 
 function abrirReporte(contexto){
   REPORTE_CONTEXTO = contexto || null;
@@ -1721,7 +1448,7 @@ function abrirReporte(contexto){
     ctxBox.className = 'rep-ctx';
     const rows = [
       ctx.medio     ? `<div><strong>${escapeHtml(t('repCtxMedio'))}:</strong> ${escapeHtml(ctx.medio)}</div>` : '',
-      ctx.dominio   ? `<div><strong>${escapeHtml(t('repCtxGrupo'))}/${escapeHtml(t('repCtxMedio'))}:</strong> ${escapeHtml(ctx.dominio)}</div>` : '',
+      ctx.dominio   ? `<div><strong>Domain:</strong> ${escapeHtml(ctx.dominio)}</div>` : '',
       ctx.grupo     ? `<div><strong>${escapeHtml(t('repCtxGrupo'))}:</strong> ${escapeHtml(ctx.grupo)}</div>` : '',
       ctx.tipo      ? `<div><strong>${escapeHtml(t('repCtxTipo'))}:</strong> ${escapeHtml(ctx.tipo)}</div>` : '',
       ctx.titular   ? `<div><strong>${escapeHtml(t('repCtxTitular'))}:</strong> ${escapeHtml(ctx.titular)}</div>` : '',
@@ -1806,13 +1533,11 @@ function reportarViaGithub(){
     toast(t('repErrGithub'), 3200);
   }
 }
-
 function reportarViaEmail(){
   const subject = encodeURIComponent(construirTituloReporte());
   const body    = encodeURIComponent(construirTextoReporte());
   window.location.href = `mailto:${REPORT_EMAIL}?subject=${subject}&body=${body}`;
 }
-
 function copiarReporte(){
   const texto = construirTextoReporte();
   const done = () => toast(t('repCopiado'), 1800);
@@ -1888,7 +1613,7 @@ function importarConfig(file){
       reconstruirListas();
       actualizarBotonPreset();
       if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
-      renderizar();
+      aplicarFiltros();  // ← ahora recalcula el filtro tras importar
       toast(t('impOk'), 2200);
     }catch(e){
       toast(t('impErr', { msg: e.message || String(e) }), 3000);
@@ -1978,7 +1703,6 @@ function renderizar(){
       </article>`;
   }).join('');
 
-  // Wire botones de reporte
   cont.querySelectorAll('.btn-report-item').forEach(b => {
     b.addEventListener('click', e => {
       e.stopPropagation();
@@ -2040,7 +1764,7 @@ function wireStaticEvents(){
     presetActivo = !presetActivo;
     guardarPresetActivo();
     actualizarBotonPreset();
-    renderizar();
+    aplicarFiltros();       // ← BUG FIX: recalcular el filtro, no solo renderizar
     toast(presetActivo ? t('presetActivado') : t('presetDesactivado'), 1500);
   });
 
@@ -2077,7 +1801,7 @@ function wireStaticEvents(){
       presetActivo = !presetActivo;
       guardarPresetActivo();
       actualizarBotonPreset();
-      renderizar();
+      aplicarFiltros();      // ← BUG FIX
     }
   });
 
@@ -2089,7 +1813,7 @@ function wireStaticEvents(){
     aplicarTextos();
     reconstruirListas();
     if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
-    renderizar();
+    renderizar();           // ← aquí basta renderizar: no cambia el filtro
   });
 
   $('#btn-export').addEventListener('click', exportarConfig);
@@ -2100,10 +1824,7 @@ function wireStaticEvents(){
     e.target.value = '';
   });
 
-  // Reporte: botón genérico
   $('#btn-report-generic').addEventListener('click', () => abrirReporte(null));
-
-  // Reporte: acciones
   $('#rep-copy').addEventListener('click', copiarReporte);
   $('#rep-mail').addEventListener('click', reportarViaEmail);
   $('#rep-github').addEventListener('click', reportarViaGithub);
@@ -2147,7 +1868,7 @@ function wireStaticEvents(){
     actualizarBotonPreset();
 
     cerrarPanel('panel-config');
-    renderizar();
+    aplicarFiltros();       // ← BUG FIX
   });
 
   $('#preset-cancelar').addEventListener('click', () => {
@@ -2162,7 +1883,7 @@ function wireStaticEvents(){
     guardarPresetActivo();
     actualizarBotonPreset();
     escribirPanel(PRESET);
-    renderizar();
+    aplicarFiltros();       // ← BUG FIX
   });
 
   $('#filtro-medio').addEventListener('input', filtrarMedios);
@@ -2176,7 +1897,7 @@ function wireStaticEvents(){
     presetActivo = false;
     guardarPresetActivo();
     actualizarBotonPreset();
-    renderizar();
+    aplicarFiltros();       // ← BUG FIX
   });
 }
 
