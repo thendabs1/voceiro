@@ -381,7 +381,7 @@ GN_LOCALE = {
 # caerán directamente al scraping.
 KNOWN_FEEDS = {
     # ── España · Nacionales ──
-    'elplural.com':         'https://www.elplural.com/uploads/feeds/feed_elplural_es.xml',
+    'elplural.com':         'https://www.elplural.com/feed/',
     'elpais.com':           'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
     'elmundo.es':           'https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml',
     'abc.es':               'https://www.abc.es/rss/feeds/abc_ultima.xml',
