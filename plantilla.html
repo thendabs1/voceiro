@@ -220,7 +220,6 @@
   .medio-fila .celda-grupo{color:var(--muted); font-size:.9em}
   .medio-fila.no-config .celda-dominio{opacity:.75}
 
-  /* Puntito azul "conocido por el plugin" */
   .known-dot{
     display:inline-block;
     width:6px; height:6px; border-radius:50%;
@@ -304,6 +303,7 @@
     margin-bottom:8px;
     transition:opacity .25s;
     position:relative;
+    contain:content;
   }
   .noticia.foco-dim{opacity:.28}
   .noticia.foco-active{opacity:1}
@@ -333,7 +333,6 @@
   }
   [data-theme="contrast"] .badge.futuro{background:#000; border-color:#ff0; color:#ff0}
 
-  /* Badge "Recolectado" para noticias sin fecha real */
   .badge.recolectado{
     background:#fef3c7; border-color:#fbbf24; color:#92400e;
   }
@@ -500,6 +499,11 @@
   @keyframes pulse{
     0%,100%{opacity:1}
     50%{opacity:.4}
+  }
+
+  #render-sentinel{
+    height:1px;
+    margin-top:8px;
   }
 
   @media (max-width:900px){
@@ -1170,11 +1174,35 @@ function toast(msg, ms){
     setTimeout(() => el.remove(), 250);
   }, ms);
 }
+function debounce(fn, ms){
+  let t;
+  return function(){
+    const args = arguments, ctx = this;
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(ctx, args), ms);
+  };
+}
 
 /* ═══════════════════════════════════════════════════════════════
-   FECHAS
+   FECHAS (con Intl cacheado + cache por ts)
    ═══════════════════════════════════════════════════════════════ */
 const FUTURO_MAX_MS = 24 * 60 * 60 * 1000;
+
+let ABS_FMT = null;
+let ABS_FMT_LANG = null;
+const ABS_CACHE = new Map();
+
+function getAbsFmt(){
+  if (ABS_FMT_LANG !== ACCES.lang){
+    ABS_FMT = new Intl.DateTimeFormat(ACCES.lang, {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+    ABS_FMT_LANG = ACCES.lang;
+    ABS_CACHE.clear();
+  }
+  return ABS_FMT;
+}
 
 function parseFecha(s){
   if (!s) return NaN;
@@ -1199,23 +1227,26 @@ function sanearTs(ts, fallbackTs){
   }
   return ts;
 }
+
 function formatearFecha(ts){
   if (isNaN(ts)) return '';
+  let abs = ABS_CACHE.get(ts);
+  if (abs === undefined){
+    abs = getAbsFmt().format(ts);
+    ABS_CACHE.set(ts, abs);
+  }
   const diff = Date.now() - ts;
-  const min = Math.floor(diff / 60000);
-  const hr  = Math.floor(diff / 3600000);
-  const dia = Math.floor(diff / 86400000);
-  let rel = '';
-  if (diff < 0) rel = t('fechaProgramado');
-  else if (min < 1) rel = t('fechaAhora');
+  if (diff < 0) return abs + ' · ' + t('fechaProgramado');
+  if (diff >= 7 * 86400000) return abs;
+  const min = (diff / 60000) | 0;
+  const hr  = (diff / 3600000) | 0;
+  const dia = (diff / 86400000) | 0;
+  let rel;
+  if (min < 1) rel = t('fechaAhora');
   else if (min < 60) rel = t('fechaHaceMin', { n: min });
   else if (hr < 24) rel = t('fechaHaceH', { n: hr });
-  else if (dia < 7) rel = t('fechaHaceD', { n: dia });
-  const abs = new Date(ts).toLocaleString(ACCES.lang, {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
-  return rel ? `${abs} · ${rel}` : abs;
+  else rel = t('fechaHaceD', { n: dia });
+  return abs + ' · ' + rel;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1363,10 +1394,16 @@ function actualizarBotonPreset(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BIONIC + FOCO
+   BIONIC (con cache)
    ═══════════════════════════════════════════════════════════════ */
+const BIONIC_CACHE = new Map();
+const BIONIC_CACHE_MAX = 8000;
+
 function bionicize(html){
   if (!ACCES.bionic) return html;
+  const cached = BIONIC_CACHE.get(html);
+  if (cached !== undefined) return cached;
+  let result = html;
   try{
     const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
     const root = doc.body.firstChild;
@@ -1392,12 +1429,15 @@ function bionicize(html){
       if (last < raw.length) frag.appendChild(doc.createTextNode(raw.slice(last)));
       tn.parentNode.replaceChild(frag, tn);
     });
-    return root.innerHTML;
-  }catch(e){ return html; }
+    result = root.innerHTML;
+  }catch(e){ result = html; }
+  if (BIONIC_CACHE.size >= BIONIC_CACHE_MAX) BIONIC_CACHE.clear();
+  BIONIC_CACHE.set(html, result);
+  return result;
 }
 
 function updateFocus(){
-  const items = Array.from(document.querySelectorAll('.noticia'));
+  const items = document.querySelectorAll('.noticia');
   if (!ACCES.focus){
     items.forEach(el => el.classList.remove('foco-dim','foco-active'));
     return;
@@ -1419,23 +1459,30 @@ window.addEventListener('scroll', () => {
   if (ACCES.focus) requestAnimationFrame(updateFocus);
 }, { passive: true });
 
-function resaltar(texto, tokens){
-  if (!tokens.length || !texto) return escapeHtml(texto || '');
-  const map = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
+/* Regex de resaltado: se construye UNA VEZ por render */
+const ACCENT_MAP = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
+function buildHighlightRegex(tokens){
+  if (!tokens.length) return null;
   const patterns = tokens.map(tok => {
     let p = '';
     for (const c of tok){
       let hit = false;
-      for (const k in map){
-        if (map[k].includes(c)){ p += '[' + map[k] + ']'; hit = true; break; }
+      for (const k in ACCENT_MAP){
+        if (ACCENT_MAP[k].includes(c)){ p += '[' + ACCENT_MAP[k] + ']'; hit = true; break; }
       }
       if (!hit) p += c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     }
     return p;
   });
-  const re = new RegExp('(' + patterns.join('|') + ')', 'gi');
+  return new RegExp('(' + patterns.join('|') + ')', 'gi');
+}
+
+function resaltar(texto, rx, fallbackEsc){
+  if (!rx) return fallbackEsc != null ? fallbackEsc : escapeHtml(texto || '');
+  if (!texto) return '';
   let out = '', last = 0;
-  for (const mm of texto.matchAll(re)){
+  const matches = texto.matchAll(rx);
+  for (const mm of matches){
     out += escapeHtml(texto.slice(last, mm.index));
     out += '<mark>' + escapeHtml(mm[0]) + '</mark>';
     last = mm.index + mm[0].length;
@@ -1775,7 +1822,7 @@ function reconstruirListas(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LISTA DE MEDIOS DEL PANEL (con puntito azul "conocido")
+   LISTA DE MEDIOS DEL PANEL
    ═══════════════════════════════════════════════════════════════ */
 function renderListaMedios(){
   const cont = $('#lista-medios');
@@ -1831,16 +1878,21 @@ function marca(fila){
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
   const g = $('#filtro-grupo-medio').value;
+  let visibles = 0;
   document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
     const okQ = !q || f.dataset.buscar.includes(q);
     const okG = !g || f.dataset.grupo === g;
-    f.style.display = (okQ && okG) ? '' : 'none';
+    const show = okQ && okG;
+    f.style.display = show ? '' : 'none';
+    if (show) visibles++;
   });
-  actualizarResumen();
+  actualizarResumen(visibles);
 }
-function actualizarResumen(){
+function actualizarResumen(visiblesOverride){
   const total = MEDIOS_UNICOS.length;
-  const visibles = document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
+  const visibles = visiblesOverride != null
+    ? visiblesOverride
+    : document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
   const inc = document.querySelectorAll('#lista-medios .chk-incluir:checked').length;
   const ign = document.querySelectorAll('#lista-medios .chk-ignorar:checked').length;
   $('#resumen-medios').textContent = t('cfgResumen', {
@@ -2184,11 +2236,17 @@ function importarConfig(file){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FILTRADO + RENDER
+   FILTRADO + RENDER (con paginación)
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
 let ULT_FILTRADAS = [];
 let ULT_TOKENS = [];
+let ULT_RX = null;
+let ULT_PRESET_EFECTIVO = false;
+
+const RENDER_BATCH = 150;
+let RENDER_OFFSET = 0;
+let SENTINEL_OBSERVER = null;
 
 function aplicarFiltros(){
   const q = normalize($('#buscar').value.trim());
@@ -2204,7 +2262,11 @@ function aplicarFiltros(){
   const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
 
   let filtradas = NOTICIAS.filter(n => {
-    if (presetEfectivo && !cumplePreset(n)) return false;
+    // Preset: calculamos una sola vez y lo guardamos
+    const cumple = presetEfectivo ? cumplePreset(n) : false;
+    n._esPreset = cumple;
+    if (presetEfectivo && !cumple) return false;
+
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
     if (m && n.medio !== m) return false;
@@ -2214,17 +2276,17 @@ function aplicarFiltros(){
       if (ahora - ts > limiteMs) return false;
     }
     if (tokens.length){
-      for (const tok of tokens) if (!n._norm.includes(tok)) return false;
+      for (let i = 0; i < tokens.length; i++){
+        if (n._norm.indexOf(tokens[i]) === -1) return false;
+      }
     }
     return true;
   });
 
   filtradas.sort((a, b) => {
-    /* 1) Los que tienen fecha real van primero */
     if (a._tieneFecha !== b._tieneFecha){
       return a._tieneFecha ? -1 : 1;
     }
-    /* 2) Dentro de cada grupo, por timestamp real (o de recolección) */
     const ta = a._tieneFecha ? a._ts : (a._tsRec || 0);
     const tb = b._tieneFecha ? b._ts : (b._tsRec || 0);
     return orden === 'antiguos' ? ta - tb : tb - ta;
@@ -2232,72 +2294,135 @@ function aplicarFiltros(){
 
   ULT_FILTRADAS = filtradas;
   ULT_TOKENS = tokens;
+  ULT_RX = buildHighlightRegex(tokens);
+  ULT_PRESET_EFECTIVO = presetEfectivo;
+
   renderizar();
 }
 
 function renderizar(){
   const lista = ULT_FILTRADAS;
-  const tokens = ULT_TOKENS;
-  const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
-
   let txt = t('contador', { n: lista.length, total: NOTICIAS.length });
-  if (presetEfectivo) txt += t('contadorPreset');
+  if (ULT_PRESET_EFECTIVO) txt += t('contadorPreset');
   $('#contador').textContent = txt;
 
   const cont = $('#resultados');
+  cont.innerHTML = '';
+  RENDER_OFFSET = 0;
+
   if (!lista.length){
     cont.innerHTML = `<div class="vacio">${escapeHtml(t('vacio'))}</div>`;
+    if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
     return;
   }
 
+  const sentinel = document.createElement('div');
+  sentinel.id = 'render-sentinel';
+  cont.appendChild(sentinel);
+
+  appendBatch();
+
+  if (SENTINEL_OBSERVER) SENTINEL_OBSERVER.disconnect();
+  SENTINEL_OBSERVER = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) appendBatch();
+  }, { rootMargin: '400px' });
+  SENTINEL_OBSERVER.observe(sentinel);
+
+  if (ACCES.focus) requestAnimationFrame(updateFocus);
+}
+
+function renderItemHtml(n, idx){
   const ahora = Date.now();
 
-  cont.innerHTML = lista.map((n, idx) => {
-    /* Fecha: real o "recolectado" */
-    let fecha = '';
-    let sinFechaReal = false;
-    let esFuturo = false;
-    if (n._tieneFecha){
-      fecha = formatearFecha(n._ts);
-      esFuturo = !isNaN(n._ts) && (n._ts - ahora > FUTURO_MAX_MS);
-    } else {
-      sinFechaReal = true;
-      const recTs = n._tsRec;
-      if (!isNaN(recTs)){
-        fecha = `${t('recolectado')} ${formatearFecha(recTs)}`;
-      } else {
-        fecha = t('recolectado');
-      }
+  // Fecha
+  let fechaHtml = '';
+  if (n._tieneFecha){
+    const fecha = formatearFecha(n._ts);
+    const esFuturo = !isNaN(n._ts) && (n._ts - ahora > FUTURO_MAX_MS);
+    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${escapeHtml(fecha)}</span>`;
+  } else {
+    const recTs = n._tsRec;
+    const fecha = !isNaN(recTs)
+      ? `${t('recolectado')} ${formatearFecha(recTs)}`
+      : t('recolectado');
+    fechaHtml = `<span class="badge recolectado">${escapeHtml(fecha)}</span>`;
+  }
+
+  // Titular: highlight + bionic
+  let tituloHtml;
+  if (ULT_RX) tituloHtml = resaltar(n.titular, ULT_RX);
+  else        tituloHtml = n._titularEsc;
+  if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
+
+  // Guardar estado
+  const guardada = PENDIENTES_URLS.has(n.enlace);
+  const item = PENDIENTES_MAP.get(n.enlace);
+  const leida = guardada && item && item.read;
+  const icon = leida ? '✅' : (guardada ? '⏳' : '🕒');
+  const title = leida ? t('markUnread') : (guardada ? t('markRead') : t('saveForLaterTitle'));
+
+  const presetBadge = n._esPreset
+    ? `<span class="badge preset">${n._grupoEsc}</span>`
+    : `<span class="badge">${n._grupoEsc}</span>`;
+
+  return `<article class="noticia" data-idx="${idx}">
+    <div class="cabecera">
+      <span class="medio">${n._medioEsc}</span>
+      <span class="badge">${n._tipoEsc}</span>
+      ${presetBadge}
+      ${fechaHtml}
+      <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
+      <button class="btn-mini btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${icon}</button>
+    </div>
+    <a class="titular" href="${n._enlaceEsc}" target="_blank" rel="noopener">${tituloHtml}</a>
+  </article>`;
+}
+
+function appendBatch(){
+  const cont = $('#resultados');
+  const sentinel = document.getElementById('render-sentinel');
+  if (!sentinel) return;
+
+  const total = ULT_FILTRADAS.length;
+  const end = Math.min(RENDER_OFFSET + RENDER_BATCH, total);
+  if (RENDER_OFFSET >= end) {
+    if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
+    sentinel.remove();
+    return;
+  }
+
+  let html = '';
+  for (let i = RENDER_OFFSET; i < end; i++){
+    html += renderItemHtml(ULT_FILTRADAS[i], i);
+  }
+  sentinel.insertAdjacentHTML('beforebegin', html);
+  RENDER_OFFSET = end;
+
+  if (RENDER_OFFSET >= total){
+    if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
+    sentinel.remove();
+  }
+}
+
+/* Event delegation en #resultados: un solo listener para todos los botones */
+function wireResultadosDelegation(){
+  const cont = $('#resultados');
+  cont.addEventListener('click', e => {
+    const saveBtn = e.target.closest('.btn-save-item');
+    if (saveBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const i = parseInt(saveBtn.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (n) guardarParaLeerDespues(n);
+      return;
     }
-
-    const esPreset = presetEfectivo && cumplePreset(n);
-    const tituloHtml = bionicize(resaltar(n.titular, tokens));
-
-    const guardada = PENDIENTES_URLS.has(n.enlace);
-    const item = PENDIENTES_MAP.get(n.enlace);
-    const leida = guardada && item && item.read;
-    const icon = leida ? '✅' : (guardada ? '⏳' : '🕒');
-    const title = leida ? t('markUnread') : (guardada ? t('markRead') : t('saveForLaterTitle'));
-
-    return `
-      <article class="noticia" data-idx="${idx}">
-        <div class="cabecera">
-          <span class="medio">${escapeHtml(n.medio)}</span>
-          <span class="badge">${escapeHtml(n.tipo)}</span>
-          <span class="badge${esPreset ? ' preset' : ''}">${escapeHtml(n.grupo)}</span>
-          ${fecha ? `<span class="badge${esFuturo ? ' futuro' : ''}${sinFechaReal ? ' recolectado' : ''}">${sinFechaReal ? '' : '· '}${escapeHtml(fecha)}</span>` : ''}
-          <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
-          <button class="btn-mini btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${icon}</button>
-        </div>
-        <a class="titular" href="${escapeHtml(n.enlace)}" target="_blank" rel="noopener">${tituloHtml}</a>
-      </article>`;
-  }).join('');
-
-  cont.querySelectorAll('.btn-report-item').forEach(b => {
-    b.addEventListener('click', e => {
-      e.stopPropagation(); e.preventDefault();
-      const i = parseInt(b.dataset.idx, 10);
-      const n = lista[i];
+    const repBtn = e.target.closest('.btn-report-item');
+    if (repBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const i = parseInt(repBtn.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
       if (!n) return;
       abrirReporte({
         medio:   n.medio,
@@ -2309,20 +2434,8 @@ function renderizar(){
         fecha:   n.fecha_pub || n.fecha || '',
         fuente:  n.fuente || ''
       });
-    });
+    }
   });
-
-  cont.querySelectorAll('.btn-save-item').forEach(b => {
-    b.addEventListener('click', e => {
-      e.stopPropagation(); e.preventDefault();
-      const i = parseInt(b.dataset.idx, 10);
-      const n = lista[i];
-      if (!n) return;
-      guardarParaLeerDespues(n);
-    });
-  });
-
-  if (ACCES.focus) setTimeout(updateFocus, 30);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2596,12 +2709,21 @@ function wireStaticEvents(){
     aplicarFiltros();
   });
 
-  $('#filtro-medio').addEventListener('input', filtrarMedios);
+  // Filtro de medios: debounce
+  const filtrarMediosDebounced = debounce(filtrarMedios, 120);
+  $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
-  ['buscar','grupo','tipo','medio','rango','orden'].forEach(id =>
-    document.getElementById(id).addEventListener('input', aplicarFiltros)
-  );
+  // Filtros principales
+  const aplicarFiltrosDebounced = debounce(aplicarFiltros, 180);
+  $('#buscar').addEventListener('input', aplicarFiltrosDebounced);
+  ['grupo','tipo','medio','rango','orden'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('change', aplicarFiltros);
+    // 'input' también por si el navegador lo dispara (algunos selects modernos)
+    el.addEventListener('input', aplicarFiltros);
+  });
+
   $('#limpiar').addEventListener('click', () => {
     ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
     PRESET_ACTIVO = false;
@@ -2609,6 +2731,8 @@ function wireStaticEvents(){
     actualizarBotonPreset();
     aplicarFiltros();
   });
+
+  wireResultadosDelegation();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2626,9 +2750,17 @@ async function init(){
     NOTICIAS = [];
   }
 
+  // Pre-cómputo de campos inmutables
   NOTICIAS.forEach(n => {
     n._norm    = normalize(n.titular + ' ' + n.medio);
     n._titNorm = normalize(n.titular);
+    n._titularEsc = escapeHtml(n.titular);
+    n._medioEsc = escapeHtml(n.medio);
+    n._tipoEsc  = escapeHtml(n.tipo || '');
+    n._grupoEsc = escapeHtml(n.grupo || '');
+    n._enlaceEsc = escapeHtml(n.enlace);
+    n._esPreset = false;
+
     const tsPub = parseFecha(n.fecha_pub);
     const tsRec = parseFecha(n.fecha);
     if (!isNaN(tsPub)){
