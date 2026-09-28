@@ -5,63 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voceiro · Titulares</title>
 <style>
-  /* ─────────────────────────────────────────────────────────────
-     VARIABLES · Modo lector por defecto
-     ───────────────────────────────────────────────────────────── */
   :root{
     --font-size: 22px;
     --line-height: 1.7;
     --max-width: 820px;
     --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-    --bg: #f4f4f9;
-    --card: #ffffff;
-    --text: #111111;
-    --muted: #666666;
-    --primary: #0056b3;
-    --primary-hover: #e6f2ff;
-    --border: #cccccc;
-    --badge: #eef2ff;
-    --badge-text: #334;
-
-    --preset: #0a7d3f;
-    --preset-hover: #e6f7ec;
-    --mark-bg: #ffe680;
-    --mark-text: #111;
+    --bg: #f4f4f9; --card: #ffffff; --text: #111111; --muted: #666666;
+    --primary: #0056b3; --primary-hover: #e6f2ff; --border: #cccccc;
+    --badge: #eef2ff; --badge-text: #334;
+    --preset: #0a7d3f; --preset-hover: #e6f7ec;
+    --bloquear: #b00020; --bloquear-hover: #fde8ec;
+    --mark-bg: #ffe680; --mark-text: #111;
   }
-
-  /* Tema oscuro */
   [data-tema="oscuro"]{
-    --bg: #16181c;
-    --card: #22252b;
-    --text: #eaeaea;
-    --muted: #a5a5a5;
-    --primary: #6cb3ff;
-    --primary-hover: #1e3550;
-    --border: #3a3d44;
-    --badge: #2c3542;
-    --badge-text: #cfd6e0;
-    --preset: #4cc97a;
-    --preset-hover: #173524;
-    --mark-bg: #b58600;
-    --mark-text: #fff;
+    --bg: #16181c; --card: #22252b; --text: #eaeaea; --muted: #a5a5a5;
+    --primary: #6cb3ff; --primary-hover: #1e3550; --border: #3a3d44;
+    --badge: #2c3542; --badge-text: #cfd6e0;
+    --preset: #4cc97a; --preset-hover: #173524;
+    --bloquear: #ff8a9c; --bloquear-hover: #3d1a20;
+    --mark-bg: #b58600; --mark-text: #fff;
   }
-
-  /* Alto contraste */
   [data-contraste="alto"]{
-    --bg: #000000;
-    --card: #000000;
-    --text: #ffffff;
-    --muted: #ffff00;
-    --primary: #ffff00;
-    --primary-hover: #333300;
-    --border: #ffffff;
-    --badge: #000000;
-    --badge-text: #ffff00;
-    --preset: #00ff00;
-    --preset-hover: #003300;
-    --mark-bg: #ffff00;
-    --mark-text: #000;
+    --bg: #000; --card: #000; --text: #fff; --muted: #ffff00;
+    --primary: #ffff00; --primary-hover: #333300; --border: #fff;
+    --badge: #000; --badge-text: #ffff00;
+    --preset: #00ff00; --preset-hover: #003300;
+    --bloquear: #ff0000; --bloquear-hover: #330000;
+    --mark-bg: #ffff00; --mark-text: #000;
   }
   [data-contraste="alto"] .noticia,
   [data-contraste="alto"] .barra-superior,
@@ -84,35 +55,22 @@
 
   [data-dislexia="on"]{
     --font-family: "Comic Sans MS", "Verdana", "Tahoma", "Trebuchet MS", sans-serif;
-    letter-spacing: 0.05em;
-    word-spacing: 0.15em;
+    letter-spacing: 0.05em; word-spacing: 0.15em;
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     BASE
-     ───────────────────────────────────────────────────────────── */
   *{box-sizing:border-box}
   body{
     font-family: var(--font-family);
-    background: var(--bg);
-    color: var(--text);
-    font-size: var(--font-size);
-    line-height: var(--line-height);
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: 20px;
+    background: var(--bg); color: var(--text);
+    font-size: var(--font-size); line-height: var(--line-height);
+    max-width: var(--max-width); margin: 0 auto; padding: 20px;
     transition: background .15s, color .15s;
   }
-  h1{
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 8px; margin-bottom: 4px;
-    font-size: 1.5em;
-  }
-  .meta{color: var(--muted); font-size: 0.75em; margin-top: 4px}
+  h1{border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:4px; font-size:1.5em}
+  .meta{color:var(--muted); font-size:0.75em; margin-top:4px}
+  code{font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size:0.9em}
 
-  /* ─────────────────────────────────────────────────────────────
-     BARRA SUPERIOR
-     ───────────────────────────────────────────────────────────── */
+  /* ── BARRA SUPERIOR ─────────────────────────────────────── */
   .barra-superior{
     display:flex; flex-wrap:wrap; gap:10px; align-items:center;
     margin:16px 0 8px; padding:12px;
@@ -127,9 +85,7 @@
   .btn-preset:hover{background: var(--preset-hover)}
   .btn-preset.activo{background: var(--preset); color:#fff}
   .btn-preset.activo::after{content:' ✓'}
-  .barra-superior .info{
-    color: var(--muted); font-size:0.7em; flex:1; min-width:160px;
-  }
+  .barra-superior .info{color: var(--muted); font-size:0.7em; flex:1; min-width:160px}
   .btn-acces{
     font-size:0.85em; font-weight:600; padding:10px 14px; border-radius:8px;
     border:2px solid var(--border); background:transparent; color: var(--text);
@@ -137,15 +93,10 @@
   }
   .btn-acces:hover{background: var(--primary-hover)}
 
-  /* ─────────────────────────────────────────────────────────────
-     PANELES (accesibilidad + preset config)
-     ───────────────────────────────────────────────────────────── */
+  /* ── PANELES ─────────────────────────────────────────────── */
   .panel-acces, .panel-preset{
-    background: var(--card);
-    border-radius:8px;
-    padding:16px;
-    margin-bottom:8px;
-    box-shadow:0 1px 3px rgba(0,0,0,.06);
+    background: var(--card); border-radius:8px; padding:16px;
+    margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,.06);
     display:none;
   }
   .panel-acces.abierto, .panel-preset.abierto{display:block}
@@ -153,18 +104,20 @@
     font-size:0.85em; margin:0 0 12px; text-transform:uppercase;
     letter-spacing:.08em; color: var(--muted);
   }
+  .panel-preset h3{
+    font-size:0.78em; margin:18px 0 8px; text-transform:uppercase;
+    letter-spacing:.06em; color: var(--text);
+    border-top:1px solid var(--border); padding-top:14px;
+  }
+  .panel-preset h3:first-of-type{border-top:none; margin-top:0; padding-top:0}
 
   .acces-fila{
-    display:grid;
-    grid-template-columns: 150px 1fr;
+    display:grid; grid-template-columns: 150px 1fr;
     gap:12px; align-items:center;
-    padding:8px 0;
-    border-top:1px solid var(--border);
+    padding:8px 0; border-top:1px solid var(--border);
   }
   .acces-fila:first-of-type{border-top:none}
-  .acces-fila label{
-    font-size:0.78em; color: var(--text); font-weight:600;
-  }
+  .acces-fila label{font-size:0.78em; color: var(--text); font-weight:600}
   .grupo-botones{display:flex; flex-wrap:wrap; gap:6px}
   .grupo-botones button{
     font-size:0.78em; padding:6px 12px; border-radius:6px;
@@ -180,8 +133,8 @@
   }
 
   .acces-acciones{
-    display:flex; justify-content:flex-end; gap:8px;
-    margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+    display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;
+    margin-top:16px; padding-top:12px; border-top:1px solid var(--border);
   }
   .acces-acciones button{
     font-size:0.78em; padding:8px 14px; border-radius:6px;
@@ -193,29 +146,87 @@
     background: var(--primary); color:#fff; border-color: var(--primary);
   }
 
-  /* Panel de configuración del preset */
-  .preset-campo{
-    display:grid; gap:6px; margin-bottom:14px;
-  }
-  .preset-campo label{
-    font-size:0.78em; font-weight:600; color: var(--text);
-  }
-  .preset-campo .ayuda{
-    font-size:0.68em; color: var(--muted); font-weight:normal;
-  }
-  .preset-campo textarea,
-  .preset-campo input[type="text"]{
-    width:100%; padding:10px; border-radius:6px;
-    border:1px solid var(--border);
+  /* ── PANEL MI ZONA · contenido ───────────────────────────── */
+  .preset-texto{
+    width:100%; min-height:70px; padding:10px;
+    border-radius:6px; border:1px solid var(--border);
     background: var(--bg); color: var(--text);
     font-family: var(--font-family); font-size:0.8em;
     line-height:1.5; resize:vertical;
   }
-  .preset-campo textarea{min-height:70px}
 
-  /* ─────────────────────────────────────────────────────────────
-     FILTROS
-     ───────────────────────────────────────────────────────────── */
+  /* Lista de grupos (checkboxes) */
+  .lista-grupos{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:6px;
+    max-height:220px; overflow-y:auto;
+    padding:8px; border:1px solid var(--border); border-radius:6px;
+    background: var(--bg);
+  }
+  .grupo-item{
+    display:flex; align-items:center; gap:8px;
+    font-size:0.78em; cursor:pointer;
+    padding:6px 8px; border-radius:4px;
+  }
+  .grupo-item:hover{background: var(--primary-hover)}
+  .grupo-item input{accent-color: var(--primary); width:1.1em; height:1.1em}
+
+  /* Controles de la lista de medios */
+  .controles-medios{
+    display:grid; grid-template-columns:1fr auto; gap:8px;
+    margin-bottom:8px;
+  }
+  .controles-medios input,
+  .controles-medios select{
+    font-size:0.8em; padding:8px 10px; border-radius:6px;
+    border:1px solid var(--border); background: var(--card); color: var(--text);
+    font-family:inherit;
+  }
+
+  /* Lista de medios */
+  .lista-medios{
+    border:1px solid var(--border); border-radius:6px;
+    background: var(--bg);
+    max-height:340px; overflow-y:auto;
+  }
+  .medio-fila{
+    display:grid;
+    grid-template-columns: 34px 34px minmax(140px,1.2fr) 1.6fr 1.4fr;
+    gap:8px; align-items:center;
+    padding:6px 10px;
+    border-bottom:1px solid var(--border);
+    font-size:0.75em;
+  }
+  .medio-fila:last-child{border-bottom:none}
+  .medio-fila.estado-incluir{background: var(--preset-hover)}
+  .medio-fila.estado-ignorar{background: var(--bloquear-hover)}
+  .medio-fila .celda{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .medio-fila .celda-grupo{
+    font-size:0.85em; color: var(--muted);
+  }
+
+  .chk-medio{
+    display:flex; justify-content:center; align-items:center;
+    cursor:pointer; user-select:none;
+  }
+  .chk-medio input{display:none}
+  .chk-medio span{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:50%;
+    border:1.5px solid var(--border);
+    font-size:0.9em; font-weight:700;
+    background:transparent; color:var(--muted);
+    transition: all .1s;
+  }
+  .chk-medio:hover span{border-color: var(--primary)}
+  .chk-medio.chk-incluir input:checked + span{
+    background: var(--preset); border-color: var(--preset); color:#fff;
+  }
+  .chk-medio.chk-ignorar input:checked + span{
+    background: var(--bloquear); border-color: var(--bloquear); color:#fff;
+  }
+
+  /* ── FILTROS ─────────────────────────────────────────────── */
   .filtros{
     position:sticky; top:0; background: var(--bg);
     padding:12px 0; display:grid;
@@ -232,9 +243,7 @@
   .filtros button:hover{background: var(--primary-hover)}
   #contador{color: var(--muted); font-size:0.7em; margin:8px 0 16px}
 
-  /* ─────────────────────────────────────────────────────────────
-     NOTICIA
-     ───────────────────────────────────────────────────────────── */
+  /* ── NOTICIA ─────────────────────────────────────────────── */
   .noticia{
     background: var(--card); padding:14px 18px; margin-bottom:10px;
     border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08);
@@ -262,16 +271,18 @@
   mark{background: var(--mark-bg); color: var(--mark-text); padding:0 3px; border-radius:2px}
   .vacio{text-align:center; color: var(--muted); padding:40px 0}
 
-  /* ─────────────────────────────────────────────────────────────
-     RESPONSIVE
-     ───────────────────────────────────────────────────────────── */
+  /* ── RESPONSIVE ──────────────────────────────────────────── */
   @media (max-width:850px){
     .filtros{grid-template-columns:1fr 1fr 1fr}
     #buscar{grid-column:1/-1}
     .acces-fila{grid-template-columns:1fr; gap:6px}
+    .medio-fila{grid-template-columns: 34px 34px 1fr 1.3fr}
+    .medio-fila .celda-grupo{display:none}
   }
   @media (max-width:500px){
     .filtros{grid-template-columns:1fr 1fr}
+    .medio-fila{grid-template-columns: 34px 34px 1fr}
+    .medio-fila .celda-nombre{display:none}
   }
 </style>
 </head>
@@ -284,37 +295,52 @@
 
 <!-- BARRA SUPERIOR -->
 <section class="barra-superior">
-  <button id="btn-preset" class="btn-preset" type="button">
-    🏔 Modo Mi Zona
-  </button>
-  <button id="btn-config-preset" class="btn-acces" type="button" aria-expanded="false" aria-controls="panel-preset">
+  <button id="btn-preset" class="btn-preset" type="button">🏔 Modo Mi Zona</button>
+  <button id="btn-config-preset" class="btn-acces" type="button"
+          aria-expanded="false" aria-controls="panel-preset">
     ⚙️ Configurar Mi Zona
   </button>
   <span class="info" id="preset-info"></span>
-  <button id="btn-acces" class="btn-acces" type="button" aria-expanded="false" aria-controls="panel-acces">
+  <button id="btn-acces" class="btn-acces" type="button"
+          aria-expanded="false" aria-controls="panel-acces">
     ♿ Accesibilidad
   </button>
 </section>
 
-<!-- PANEL: CONFIGURAR MI ZONA -->
+<!-- ═══════════════════════════════════════════════════════
+     PANEL: CONFIGURAR MI ZONA
+     ═══════════════════════════════════════════════════════ -->
 <section id="panel-preset" class="panel-preset" role="region" aria-label="Configurar Modo Mi Zona">
   <h2>Configurar Mi Zona</h2>
 
-  <div class="preset-campo">
-    <label for="preset-grupos">Grupos completos <span class="ayuda">(uno por línea o separados por comas)</span></label>
-    <textarea id="preset-grupos" placeholder="Galicia"></textarea>
-  </div>
+  <!-- GRUPOS -->
+  <h3>Grupos completos</h3>
+  <p style="font-size:0.72em; color:var(--muted); margin:0 0 8px;">
+    Al marcar un grupo, se incluyen todos sus medios. Bloquear un medio (abajo) tiene más prioridad.
+  </p>
+  <div id="lista-grupos" class="lista-grupos"></div>
 
-  <div class="preset-campo">
-    <label for="preset-medios">Medios <span class="ayuda">(nombre exacto, uno por línea o separados por comas)</span></label>
-    <textarea id="preset-medios" placeholder="El País&#10;elDiario.es&#10;InfoLibre"></textarea>
+  <!-- MEDIOS -->
+  <h3>Medios</h3>
+  <p style="font-size:0.72em; color:var(--muted); margin:0 0 8px;">
+    <b>✓</b> = incluir siempre este medio · <b>✗</b> = bloquear siempre ·
+    sin marca = ni forzado ni bloqueado.
+  </p>
+  <div class="controles-medios">
+    <input type="search" id="filtro-medio-texto" placeholder="🔍 Buscar por dominio, nombre o grupo…">
+    <select id="filtro-medio-grupo"><option value="">Todos los grupos</option></select>
   </div>
+  <div id="lista-medios" class="lista-medios"></div>
+  <p id="resumen-medios" style="font-size:0.7em; color:var(--muted); margin:6px 0 0;"></p>
 
-  <div class="preset-campo">
-    <label for="preset-palabras">Palabras clave <span class="ayuda">(en el titular; una por línea o separados por comas)</span></label>
-    <textarea id="preset-palabras" placeholder="poio&#10;pontevedra&#10;caldas de reis&#10;galicia"></textarea>
-  </div>
+  <!-- PALABRAS CLAVE -->
+  <h3>Palabras clave en titular</h3>
+  <p style="font-size:0.72em; color:var(--muted); margin:0 0 8px;">
+    Una por línea o separadas por comas. Se busca como palabra completa, sin tildes.
+  </p>
+  <textarea id="preset-palabras" class="preset-texto" placeholder="poio&#10;pontevedra&#10;caldas de reis&#10;galicia"></textarea>
 
+  <!-- ACCIONES -->
   <div class="acces-acciones">
     <button id="preset-reset" type="button">↺ Valores por defecto</button>
     <button id="preset-cancelar" type="button">Cancelar</button>
@@ -322,7 +348,9 @@
   </div>
 </section>
 
-<!-- PANEL: ACCESIBILIDAD -->
+<!-- ═══════════════════════════════════════════════════════
+     PANEL: ACCESIBILIDAD
+     ═══════════════════════════════════════════════════════ -->
 <section id="panel-acces" class="panel-acces" role="region" aria-label="Opciones de accesibilidad">
   <h2>Opciones de lectura</h2>
 
@@ -366,7 +394,7 @@
   </div>
 
   <div class="acces-fila">
-    <label>♿ Fuente para dislexia</label>
+    <label>♿ Fuente dislexia</label>
     <div class="grupo-botones" data-grupo="dislexia">
       <button data-val="off" class="activo">Desactivada</button>
       <button data-val="on">Activada</button>
@@ -398,16 +426,27 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
+   UTILIDADES
+   ═══════════════════════════════════════════════════════════════ */
+const $ = sel => document.querySelector(sel);
+
+function normalize(s){
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function parseLista(txt){
+  return txt.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    ACCESIBILIDAD
    ═══════════════════════════════════════════════════════════════ */
 const ACCES_DEFECTO = {
-  fuente: '22',
-  interlineado: 'normal',
-  ancho: 'normal',
-  tema: 'claro',
-  dislexia: 'off',
+  fuente: '22', interlineado: 'normal', ancho: 'normal',
+  tema: 'claro', dislexia: 'off',
 };
-
 let ACCES = cargarAcces();
 
 function cargarAcces(){
@@ -416,11 +455,9 @@ function cargarAcces(){
     return raw ? { ...ACCES_DEFECTO, ...JSON.parse(raw) } : { ...ACCES_DEFECTO };
   }catch(e){ return { ...ACCES_DEFECTO }; }
 }
-
 function guardarAcces(){
   try{ localStorage.setItem('voceiro-acces', JSON.stringify(ACCES)); }catch(e){}
 }
-
 function aplicarAcces(){
   const html = document.documentElement;
   html.style.setProperty('--font-size', ACCES.fuente + 'px');
@@ -437,17 +474,13 @@ function aplicarAcces(){
     });
   });
 }
-
 function initAcces(){
   aplicarAcces();
-
-  const btn = document.getElementById('btn-acces');
-  const panel = document.getElementById('panel-acces');
+  const btn = $('#btn-acces'), panel = $('#panel-acces');
   btn.addEventListener('click', () => {
-    const abierto = panel.classList.toggle('abierto');
-    btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    const ab = panel.classList.toggle('abierto');
+    btn.setAttribute('aria-expanded', ab ? 'true' : 'false');
   });
-
   document.querySelectorAll('.grupo-botones').forEach(g => {
     const clave = g.dataset.grupo;
     g.addEventListener('click', e => {
@@ -458,8 +491,7 @@ function initAcces(){
       aplicarAcces();
     });
   });
-
-  document.getElementById('acces-reset').addEventListener('click', () => {
+  $('#acces-reset').addEventListener('click', () => {
     ACCES = { ...ACCES_DEFECTO };
     guardarAcces();
     aplicarAcces();
@@ -470,144 +502,305 @@ function initAcces(){
    PRESET "MI ZONA"
    ═══════════════════════════════════════════════════════════════ */
 const PRESET_DEFECTO = {
-  grupos: ['Galicia'],
-  medios: ['El País', 'elDiario.es', 'InfoLibre'],
-  palabras: ['poio', 'pontevedra', 'caldas de reis', 'caldas de rei',
-             'caldas de resi', 'galicia'],
+  grupos:        ['Galicia'],
+  mediosIncluir: ['elpais.com', 'eldiario.es', 'infolibre.es'],
+  mediosIgnorar: [],
+  palabras:      ['poio', 'pontevedra', 'caldas de reis', 'caldas de rei',
+                  'caldas de resi', 'galicia'],
 };
 
-let PRESET = cargarPreset();
+let PRESET = null;             // se carga en initPreset()
 let RX_PRESET = null;
-let PRESET_MEDIOS_SET = new Set();
-let PRESET_GRUPOS_SET = new Set();
+let PRESET_GRUPOS_SET    = new Set();
+let PRESET_INCLUIR_SET   = new Set();
+let PRESET_IGNORAR_SET   = new Set();
 let presetActivo = true;
 
 function cargarPreset(){
   try{
-    const raw = localStorage.getItem('voceiro-preset');
-    if (!raw) return structuredClone(PRESET_DEFECTO);
-    const p = JSON.parse(raw);
-    // Validación mínima
-    return {
-      grupos:   Array.isArray(p.grupos)   ? p.grupos   : PRESET_DEFECTO.grupos,
-      medios:   Array.isArray(p.medios)   ? p.medios   : PRESET_DEFECTO.medios,
-      palabras: Array.isArray(p.palabras) ? p.palabras : PRESET_DEFECTO.palabras,
-    };
+    const raw = localStorage.getItem('voceiro-preset-v2');
+    if (raw){
+      const p = JSON.parse(raw);
+      return {
+        grupos:        Array.isArray(p.grupos)        ? p.grupos        : PRESET_DEFECTO.grupos,
+        mediosIncluir: Array.isArray(p.mediosIncluir) ? p.mediosIncluir : PRESET_DEFECTO.mediosIncluir,
+        mediosIgnorar: Array.isArray(p.mediosIgnorar) ? p.mediosIgnorar : PRESET_DEFECTO.mediosIgnorar,
+        palabras:      Array.isArray(p.palabras)      ? p.palabras      : PRESET_DEFECTO.palabras,
+      };
+    }
+    // Migración desde v1 (medios por nombre) — se completa en migrarPresetV1()
+    return structuredClone(PRESET_DEFECTO);
   }catch(e){ return structuredClone(PRESET_DEFECTO); }
 }
-
 function guardarPreset(){
-  try{ localStorage.setItem('voceiro-preset', JSON.stringify(PRESET)); }catch(e){}
+  try{ localStorage.setItem('voceiro-preset-v2', JSON.stringify(PRESET)); }catch(e){}
 }
-
-function normalize(s){
-  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-}
-
 function recompilarPreset(){
-  PRESET_MEDIOS_SET = new Set(PRESET.medios);
-  PRESET_GRUPOS_SET = new Set(PRESET.grupos);
+  PRESET_GRUPOS_SET  = new Set(PRESET.grupos);
+  PRESET_INCLUIR_SET = new Set(PRESET.mediosIncluir);
+  PRESET_IGNORAR_SET = new Set(PRESET.mediosIgnorar);
 
-  const palabrasNorm = PRESET.palabras
-    .map(p => normalize(p).trim())
-    .filter(Boolean)
+  const palabras = PRESET.palabras.map(p => normalize(p).trim()).filter(Boolean)
     .map(p => p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
-
-  RX_PRESET = palabrasNorm.length
-    ? new RegExp('\\b(' + palabrasNorm.join('|') + ')\\b')
+  RX_PRESET = palabras.length
+    ? new RegExp('\\b(' + palabras.join('|') + ')\\b')
     : null;
 }
-
 function cumplePreset(n){
+  // 1) Bloqueado → fuera siempre
+  if (PRESET_IGNORAR_SET.has(n.dominio)) return false;
+  // 2) Forzado → dentro siempre
+  if (PRESET_INCLUIR_SET.has(n.dominio)) return true;
+  // 3) Grupo entero
   if (PRESET_GRUPOS_SET.has(n.grupo)) return true;
-  if (PRESET_MEDIOS_SET.has(n.medio)) return true;
+  // 4) Palabra clave en titular
   if (RX_PRESET && RX_PRESET.test(n._titNorm)) return true;
   return false;
 }
-
-function textareasAPreset(){
-  const parseLista = txt => txt.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-  return {
-    grupos:   parseLista(document.getElementById('preset-grupos').value),
-    medios:   parseLista(document.getElementById('preset-medios').value),
-    palabras: parseLista(document.getElementById('preset-palabras').value),
-  };
-}
-
-function presetATextareas(p){
-  document.getElementById('preset-grupos').value   = p.grupos.join('\n');
-  document.getElementById('preset-medios').value   = p.medios.join('\n');
-  document.getElementById('preset-palabras').value = p.palabras.join('\n');
-}
-
 function actualizarInfoPreset(){
-  const info = document.getElementById('preset-info');
-  const nGrupos = PRESET.grupos.length;
-  const nMedios = PRESET.medios.length;
-  const nPal    = PRESET.palabras.length;
-  info.textContent = `Mi Zona: ${nGrupos} grupo${nGrupos!==1?'s':''} · `
-                   + `${nMedios} medio${nMedios!==1?'s':''} · `
-                   + `${nPal} palabra${nPal!==1?'s':''}`;
-}
-
-function initPreset(){
-  recompilarPreset();
-  presetATextareas(PRESET);
-  actualizarInfoPreset();
-
-  const btnPreset = document.getElementById('btn-preset');
-  const btnConfig = document.getElementById('btn-config-preset');
-  const panel     = document.getElementById('panel-preset');
-
-  btnPreset.addEventListener('click', () => {
-    presetActivo = !presetActivo;
-    btnPreset.classList.toggle('activo', presetActivo);
-    aplicarFiltros();
-  });
-
-  btnConfig.addEventListener('click', () => {
-    const abierto = panel.classList.toggle('abierto');
-    btnConfig.setAttribute('aria-expanded', abierto ? 'true' : 'false');
-    if (abierto) presetATextareas(PRESET);
-  });
-
-  document.getElementById('preset-guardar').addEventListener('click', () => {
-    PRESET = textareasAPreset();
-    guardarPreset();
-    recompilarPreset();
-    actualizarInfoPreset();
-    panel.classList.remove('abierto');
-    btnConfig.setAttribute('aria-expanded', 'false');
-    aplicarFiltros();
-  });
-
-  document.getElementById('preset-cancelar').addEventListener('click', () => {
-    presetATextareas(PRESET);
-    panel.classList.remove('abierto');
-    btnConfig.setAttribute('aria-expanded', 'false');
-  });
-
-  document.getElementById('preset-reset').addEventListener('click', () => {
-    PRESET = structuredClone(PRESET_DEFECTO);
-    presetATextareas(PRESET);
-    guardarPreset();
-    recompilarPreset();
-    actualizarInfoPreset();
-    aplicarFiltros();
-  });
-
-  // Estado inicial del botón preset
-  btnPreset.classList.toggle('activo', presetActivo);
+  const g = PRESET.grupos.length;
+  const i = PRESET.mediosIncluir.length;
+  const x = PRESET.mediosIgnorar.length;
+  const p = PRESET.palabras.length;
+  $('#preset-info').textContent =
+    `Mi Zona: ${g} grupo${g!==1?'s':''} · ${i} forzado${i!==1?'s':''} · `
+    + `${x} bloqueado${x!==1?'s':''} · ${p} palabra${p!==1?'s':''}`;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   INICIALIZACIÓN
+   PANEL CONFIGURAR MI ZONA · renderizado y edición
+   ═══════════════════════════════════════════════════════════════ */
+let MEDIOS_UNICOS = [];        // [{dominio, medio, grupo}] ordenado
+
+function construirListaMediosUnicos(){
+  const map = {};
+  NOTICIAS.forEach(n => {
+    if (!map[n.dominio]){
+      map[n.dominio] = { dominio: n.dominio, medio: n.medio, grupo: n.grupo };
+    }
+  });
+  MEDIOS_UNICOS = Object.values(map).sort((a,b) =>
+    a.grupo.localeCompare(b.grupo) || a.medio.localeCompare(b.medio)
+  );
+}
+
+function renderListaGrupos(){
+  const cont = $('#lista-grupos');
+  const grupos = [...new Set(NOTICIAS.map(n => n.grupo))].sort();
+  cont.innerHTML = grupos.map(g => `
+    <label class="grupo-item">
+      <input type="checkbox" data-grupo="${escapeHtml(g)}">
+      <span>${escapeHtml(g)}</span>
+    </label>
+  `).join('');
+
+  // Select del filtro de medios
+  const sel = $('#filtro-medio-grupo');
+  [...sel.querySelectorAll('option:not(:first-child)')].forEach(o => o.remove());
+  grupos.forEach(g => sel.add(new Option(g, g)));
+}
+
+function renderListaMedios(){
+  const cont = $('#lista-medios');
+  cont.innerHTML = MEDIOS_UNICOS.map(m => `
+    <div class="medio-fila" data-dominio="${escapeHtml(m.dominio)}"
+         data-grupo="${escapeHtml(m.grupo)}"
+         data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
+      <label class="chk-medio chk-incluir" title="Incluir siempre">
+        <input type="checkbox" class="chk-incluir-input">
+        <span>✓</span>
+      </label>
+      <label class="chk-medio chk-ignorar" title="Bloquear siempre">
+        <input type="checkbox" class="chk-ignorar-input">
+        <span>✗</span>
+      </label>
+      <span class="celda celda-dominio"><code>${escapeHtml(m.dominio)}</code></span>
+      <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
+      <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
+    </div>
+  `).join('');
+
+  // Listeners para los checkboxes mutuamente excluyentes
+  cont.querySelectorAll('.medio-fila').forEach(fila => {
+    const inc = fila.querySelector('.chk-incluir-input');
+    const ign = fila.querySelector('.chk-ignorar-input');
+    inc.addEventListener('change', () => {
+      if (inc.checked) ign.checked = false;
+      actualizarEstiloFila(fila);
+      actualizarResumenMedios();
+    });
+    ign.addEventListener('change', () => {
+      if (ign.checked) inc.checked = false;
+      actualizarEstiloFila(fila);
+      actualizarResumenMedios();
+    });
+  });
+
+  aplicarFiltrosPanelMedios();
+  actualizarResumenMedios();
+}
+
+function actualizarEstiloFila(fila){
+  const inc = fila.querySelector('.chk-incluir-input').checked;
+  const ign = fila.querySelector('.chk-ignorar-input').checked;
+  fila.classList.toggle('estado-incluir', inc);
+  fila.classList.toggle('estado-ignorar', ign);
+}
+
+function aplicarFiltrosPanelMedios(){
+  const q = normalize($('#filtro-medio-texto').value.trim());
+  const g = $('#filtro-medio-grupo').value;
+  let visibles = 0;
+  document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
+    const coincideTexto = !q || f.dataset.buscar.includes(q);
+    const coincideGrupo = !g || f.dataset.grupo === g;
+    const visible = coincideTexto && coincideGrupo;
+    f.style.display = visible ? '' : 'none';
+    if (visible) visibles++;
+  });
+  actualizarResumenMedios(visibles);
+}
+
+function actualizarResumenMedios(visibles){
+  if (visibles === undefined) visibles = document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
+  const total = MEDIOS_UNICOS.length;
+  const marcadosInc = document.querySelectorAll('#lista-medios .chk-incluir-input:checked').length;
+  const marcadosIgn = document.querySelectorAll('#lista-medios .chk-ignorar-input:checked').length;
+  $('#resumen-medios').textContent =
+    `Mostrando ${visibles} de ${total} · ${marcadosInc} forzados · ${marcadosIgn} bloqueados`;
+}
+
+function escribirPresetEnPanel(p){
+  // Grupos
+  const setG = new Set(p.grupos);
+  document.querySelectorAll('#lista-grupos input[data-grupo]').forEach(c => {
+    c.checked = setG.has(c.dataset.grupo);
+  });
+  // Medios
+  const setI = new Set(p.mediosIncluir);
+  const setX = new Set(p.mediosIgnorar);
+  document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
+    const d = f.dataset.dominio;
+    const inc = f.querySelector('.chk-incluir-input');
+    const ign = f.querySelector('.chk-ignorar-input');
+    inc.checked = setI.has(d);
+    ign.checked = setX.has(d);
+    actualizarEstiloFila(f);
+  });
+  // Palabras
+  $('#preset-palabras').value = p.palabras.join('\n');
+
+  // Limpiar filtros del panel
+  $('#filtro-medio-texto').value = '';
+  $('#filtro-medio-grupo').value = '';
+  aplicarFiltrosPanelMedios();
+}
+
+function leerPresetDelPanel(){
+  const grupos = [];
+  document.querySelectorAll('#lista-grupos input[data-grupo]:checked').forEach(c => {
+    grupos.push(c.dataset.grupo);
+  });
+
+  const mediosIncluir = [];
+  const mediosIgnorar = [];
+  document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
+    if (f.querySelector('.chk-incluir-input').checked) mediosIncluir.push(f.dataset.dominio);
+    if (f.querySelector('.chk-ignorar-input').checked) mediosIgnorar.push(f.dataset.dominio);
+  });
+
+  const palabras = parseLista($('#preset-palabras').value);
+
+  return { grupos, mediosIncluir, mediosIgnorar, palabras };
+}
+
+function initPreset(){
+  // 1) Construir lista de medios únicos (necesita NOTICIAS cargadas)
+  construirListaMediosUnicos();
+
+  // 2) Cargar preset
+  PRESET = cargarPreset();
+
+  // 3) Migración desde v1 si existe clave antigua
+  const viejo = localStorage.getItem('voceiro-preset');
+  if (viejo && !localStorage.getItem('voceiro-preset-v2')){
+    try{
+      const v1 = JSON.parse(viejo);
+      if (Array.isArray(v1.medios)){
+        const setNombres = new Set(v1.medios);
+        const dominios = MEDIOS_UNICOS
+          .filter(m => setNombres.has(m.medio))
+          .map(m => m.dominio);
+        if (dominios.length) PRESET.mediosIncluir = dominios;
+      }
+      if (Array.isArray(v1.grupos))   PRESET.grupos   = v1.grupos;
+      if (Array.isArray(v1.palabras)) PRESET.palabras = v1.palabras;
+      guardarPreset();
+    }catch(e){/* ignorar */}
+  }
+
+  // 4) Compilar y reflejar
+  recompilarPreset();
+  renderListaGrupos();
+  renderListaMedios();
+  escribirPresetEnPanel(PRESET);
+  actualizarInfoPreset();
+
+  // 5) Listeners
+  $('#btn-preset').addEventListener('click', () => {
+    presetActivo = !presetActivo;
+    $('#btn-preset').classList.toggle('activo', presetActivo);
+    aplicarFiltros();
+  });
+
+  const btnCfg = $('#btn-config-preset'), panel = $('#panel-preset');
+  btnCfg.addEventListener('click', () => {
+    const ab = panel.classList.toggle('abierto');
+    btnCfg.setAttribute('aria-expanded', ab ? 'true' : 'false');
+    if (ab){
+      escribirPresetEnPanel(PRESET);
+    }
+  });
+
+  $('#preset-guardar').addEventListener('click', () => {
+    PRESET = leerPresetDelPanel();
+    guardarPreset();
+    recompilarPreset();
+    actualizarInfoPreset();
+    panel.classList.remove('abierto');
+    btnCfg.setAttribute('aria-expanded', 'false');
+    aplicarFiltros();
+  });
+
+  $('#preset-cancelar').addEventListener('click', () => {
+    escribirPresetEnPanel(PRESET);
+    panel.classList.remove('abierto');
+    btnCfg.setAttribute('aria-expanded', 'false');
+  });
+
+  $('#preset-reset').addEventListener('click', () => {
+    PRESET = structuredClone(PRESET_DEFECTO);
+    guardarPreset();
+    recompilarPreset();
+    escribirPresetEnPanel(PRESET);
+    actualizarInfoPreset();
+    aplicarFiltros();
+  });
+
+  $('#filtro-medio-texto').addEventListener('input', aplicarFiltrosPanelMedios);
+  $('#filtro-medio-grupo').addEventListener('change', aplicarFiltrosPanelMedios);
+
+  // 6) Estado inicial del botón preset
+  $('#btn-preset').classList.toggle('activo', presetActivo);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INICIALIZACIÓN GLOBAL
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
 
 async function init(){
   initAcces();
-  initPreset();
 
   const res = await fetch('datos.json?' + Date.now());
   const data = await res.json();
@@ -618,13 +811,15 @@ async function init(){
     n._titNorm = normalize(n.titular);
   });
 
-  const selGrupo = document.getElementById('grupo');
+  initPreset();
+
+  const selGrupo = $('#grupo');
   [...new Set(NOTICIAS.map(n=>n.grupo))].sort().forEach(g => selGrupo.add(new Option(g,g)));
 
-  const selTipo = document.getElementById('tipo');
+  const selTipo = $('#tipo');
   [...new Set(NOTICIAS.map(n=>n.tipo).filter(Boolean))].sort().forEach(t => selTipo.add(new Option(t,t)));
 
-  const selMedio = document.getElementById('medio');
+  const selMedio = $('#medio');
   const porGrupo = {};
   NOTICIAS.forEach(n => (porGrupo[n.grupo] = porGrupo[n.grupo] || new Set()).add(n.medio));
   Object.keys(porGrupo).sort().forEach(g => {
@@ -637,10 +832,10 @@ async function init(){
   ['buscar','grupo','tipo','medio','rango'].forEach(id =>
     document.getElementById(id).addEventListener('input', aplicarFiltros)
   );
-  document.getElementById('limpiar').addEventListener('click', () => {
+  $('#limpiar').addEventListener('click', () => {
     ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
     presetActivo = false;
-    document.getElementById('btn-preset').classList.remove('activo');
+    $('#btn-preset').classList.remove('activo');
     aplicarFiltros();
   });
 
@@ -648,14 +843,14 @@ async function init(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FILTRADO
+   FILTRADO PRINCIPAL
    ═══════════════════════════════════════════════════════════════ */
 function aplicarFiltros(){
-  const q = normalize(document.getElementById('buscar').value.trim());
-  const g = document.getElementById('grupo').value;
-  const t = document.getElementById('tipo').value;
-  const m = document.getElementById('medio').value;
-  const dias = parseInt(document.getElementById('rango').value, 10) || 0;
+  const q = normalize($('#buscar').value.trim());
+  const g = $('#grupo').value;
+  const t = $('#tipo').value;
+  const m = $('#medio').value;
+  const dias = parseInt($('#rango').value, 10) || 0;
   const tokens = q.split(/\s+/).filter(Boolean);
 
   const ahora = Date.now();
@@ -682,10 +877,6 @@ function aplicarFiltros(){
 /* ═══════════════════════════════════════════════════════════════
    RESALTADO
    ═══════════════════════════════════════════════════════════════ */
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
 function resaltar(texto, tokens){
   if (!tokens.length || !texto) return escapeHtml(texto || '');
   const map = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
@@ -715,11 +906,11 @@ function resaltar(texto, tokens){
    RENDER
    ═══════════════════════════════════════════════════════════════ */
 function render(lista, tokens){
-  document.getElementById('contador').textContent =
+  $('#contador').textContent =
     `Mostrando ${lista.length} de ${NOTICIAS.length} titulares`
     + (presetActivo ? ' · modo Mi Zona activo' : '');
 
-  const cont = document.getElementById('resultados');
+  const cont = $('#resultados');
   if (!lista.length){
     cont.innerHTML = '<div class="vacio">Sin resultados</div>';
     return;
@@ -744,7 +935,7 @@ function render(lista, tokens){
 }
 
 init().catch(err => {
-  document.getElementById('resultados').innerHTML =
+  $('#resultados').innerHTML =
     '<div class="vacio">Error cargando datos: ' + err.message + '</div>';
 });
 </script>
