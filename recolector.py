@@ -10,8 +10,8 @@ Fases:
   5. Escribir public/datos.json y public/index.html
   6. Reporte final: medios sin titulares (para añadir feeds después)
 
-Incluye parche SSL (OP_LEGACY_SERVER_CONNECT + SECLEVEL=1) para hablar con
-servidores antiguos que Python 3.11+ rechaza por defecto.
+Incluye parche SSL mínimo (OP_LEGACY_SERVER_CONNECT + SECLEVEL=1).
+NO bajar de SECLEVEL=1 ni forzar TLSv1: rompe muchos medios que sí funcionan.
 """
 
 import json
@@ -45,28 +45,32 @@ DATOS_PATH = 'public/datos.json'
 
 
 # ─────────────────────────────────────────────────────────────
-# SESIÓN HTTP CON SSL PERMISIVO
+# SESIÓN HTTP CON SSL PERMISIVO (versión mínima, NO tocar)
 # ─────────────────────────────────────────────────────────────
 class LegacySSLAdapter(HTTPAdapter):
+    """
+    Permite TLS con servidores antiguos que Python 3.11+ rechaza por defecto:
+      - UNSAFE_LEGACY_RENEGOTIATION_DISABLED
+      - SSLV3_ALERT_HANDSHAKE_FAILURE
+      - SSLCertVerificationError (certificados caducados o mal emitidos)
+
+    IMPORTANTE: no bajar de SECLEVEL=1 ni forzar minimum_version=TLSv1.
+    Hacerlo rompe conexiones con servidores modernos (Marca, Bloomberg, etc.).
+    """
     def init_poolmanager(self, *args, **kwargs):
         ctx = create_urllib3_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
+        # OP_LEGACY_SERVER_CONNECT = 0x4
         try:
-            ctx.options |= 0x4  # OP_LEGACY_SERVER_CONNECT
+            ctx.options |= 0x4
         except Exception:
             pass
         try:
-            ctx.set_ciphers('DEFAULT@SECLEVEL=0')
+            ctx.set_ciphers('DEFAULT@SECLEVEL=1')
         except ssl.SSLError:
             pass
-        try:
-            ctx.minimum_version = ssl.TLSVersion.TLSv1  # aceptar TLS 1.0
-        except Exception:
-            pass
         kwargs['ssl_context'] = ctx
-        kwargs['cert_reqs'] = ssl.CERT_NONE          # ← clave
-        kwargs['assert_hostname'] = False             # ← clave
         return super().init_poolmanager(*args, **kwargs)
 
 
