@@ -1,0 +1,44 @@
+name: Test Google News (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dias:
+        description: 'Días de recencia'
+        required: false
+        default: '7'
+      verbose:
+        description: 'Mostrar titulares de muestra'
+        type: boolean
+        default: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Run GN test
+        run: |
+          python test_google_news.py \
+            --todos \
+            --dias ${{ inputs.dias }} \
+            ${{ inputs.verbose && '--verbose' || '' }} \
+            --sleep 0.4 \
+            --save-csv gn_results.csv
+
+      - name: Upload CSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gn-results
+          path: gn_results.csv
