@@ -14,7 +14,7 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     background:var(--bg); color:var(--text);
     max-width:960px; margin:0 auto; padding:20px;
-    line-height:1.55; font-size:18px;
+    line-height:1.5; font-size:18px;
   }
   h1{border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:4px}
   .meta{color:var(--muted); font-size:15px; margin-top:4px}
@@ -34,27 +34,20 @@
   #contador{color:var(--muted); font-size:14px; margin:8px 0 16px}
 
   .noticia{
-    background:var(--card); padding:14px 16px; margin-bottom:10px;
+    background:var(--card); padding:12px 16px; margin-bottom:8px;
     border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08);
   }
   .cabecera{
     display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-    margin-bottom:6px; font-size:12px; color:var(--muted);
+    margin-bottom:5px; font-size:12px; color:var(--muted);
   }
   .badge{background:var(--badge); padding:2px 8px; border-radius:10px; color:#445}
   .medio{font-weight:bold; color:#333; font-size:15px; text-transform:uppercase; letter-spacing:.3px}
-  .titular{color:var(--primary); text-decoration:none; font-weight:600; font-size:19px; display:block; margin-top:2px}
-  .titular:hover{background:var(--primary-hover)}
-  .resumen{color:#333; font-size:16px; margin-top:8px}
-  .texto{color:#444; font-size:15px; margin-top:8px; display:none; white-space:pre-line}
-  .texto.abierto{display:block}
-  .toggle{
-    margin-top:8px; font-size:13px; background:none; border:none;
-    color:var(--primary); cursor:pointer; padding:0;
+  .noticia a{
+    color:var(--primary); text-decoration:none;
+    font-weight:600; font-size:19px; display:block; margin-top:2px;
   }
-  .toggle:hover{text-decoration:underline}
-  .kw{font-size:12px; color:var(--muted); margin-top:6px}
-  .kw span{background:#eef; padding:1px 6px; border-radius:8px; margin-right:4px}
+  .noticia a:hover{background:var(--primary-hover)}
   mark{background:#ffe680; padding:0 2px; border-radius:2px}
   .vacio{text-align:center; color:var(--muted); padding:40px 0}
 
@@ -70,11 +63,11 @@
 <body>
 <header>
   <h1>Voceiro</h1>
-  <p class="meta">Actualizado: <span id="fecha">{{FECHA}}</span> · <span id="total">{{TOTAL}}</span> noticias en histórico</p>
+  <p class="meta">Actualizado: <span id="fecha">{{FECHA}}</span> · <span id="total">{{TOTAL}}</span> titulares en histórico</p>
 </header>
 
 <section class="filtros">
-  <input type="search" id="buscar" placeholder="🔍 Buscar en titular, resumen y texto…" autocomplete="off">
+  <input type="search" id="buscar" placeholder="🔍 Buscar en titulares…" autocomplete="off">
   <select id="grupo"><option value="">Todos los grupos</option></select>
   <select id="tipo"><option value="">Todos los tipos</option></select>
   <select id="medio"><option value="">Todos los medios</option></select>
@@ -105,17 +98,15 @@ async function init(){
   const data = await res.json();
   NOTICIAS = data.noticias || [];
 
-  // Índice de búsqueda precalculado
   NOTICIAS.forEach(n => {
-    n._norm = normalize(n.titular + ' ' + (n.resumen || '') + ' ' + (n.texto || ''));
+    n._norm = normalize(n.titular + ' ' + n.medio);
   });
 
-  // Rellenar selects
   const selGrupo = document.getElementById('grupo');
   [...new Set(NOTICIAS.map(n=>n.grupo))].sort().forEach(g => selGrupo.add(new Option(g,g)));
 
   const selTipo = document.getElementById('tipo');
-  [...new Set(NOTICIAS.map(n=>n.tipo))].sort().forEach(t => selTipo.add(new Option(t,t)));
+  [...new Set(NOTICIAS.map(n=>n.tipo).filter(Boolean))].sort().forEach(t => selTipo.add(new Option(t,t)));
 
   const selMedio = document.getElementById('medio');
   const porGrupo = {};
@@ -153,7 +144,10 @@ function aplicarFiltros(){
     if (g && n.grupo !== g) return false;
     if (t && n.tipo  !== t) return false;
     if (m && n.medio !== m) return false;
-    if (limiteMs && (ahora - new Date(n.fecha).getTime()) > limiteMs) return false;
+    if (limiteMs) {
+      const f = n.fecha_pub || n.fecha;
+      if (f && (ahora - new Date(f).getTime()) > limiteMs) return false;
+    }
     if (tokens.length) {
       for (const tok of tokens) if (!n._norm.includes(tok)) return false;
     }
@@ -190,7 +184,7 @@ function resaltar(texto, tokens){
 
 function render(lista, tokens){
   document.getElementById('contador').textContent =
-    `Mostrando ${lista.length} de ${NOTICIAS.length} noticias`;
+    `Mostrando ${lista.length} de ${NOTICIAS.length} titulares`;
 
   const cont = document.getElementById('resultados');
   if (!lista.length){
@@ -198,22 +192,18 @@ function render(lista, tokens){
     return;
   }
 
-  cont.innerHTML = lista.map((n, i) => {
-    const tieneTexto = (n.texto || '').length > 200;
+  cont.innerHTML = lista.map(n => {
+    const f = n.fecha_pub || n.fecha;
+    const fecha = f ? new Date(f).toLocaleString('es-ES') : '';
     return `
       <article class="noticia">
         <div class="cabecera">
           <span class="medio">${escapeHtml(n.medio)}</span>
           <span class="badge">${escapeHtml(n.tipo)}</span>
           <span class="badge">${escapeHtml(n.grupo)}</span>
-          <span>· ${escapeHtml(n.fuente)}</span>
-          <span>· ${new Date(n.fecha).toLocaleString('es-ES')}</span>
+          ${fecha ? `<span>· ${escapeHtml(fecha)}</span>` : ''}
         </div>
-        <a class="titular" href="${escapeHtml(n.enlace)}" target="_blank" rel="noopener">${resaltar(n.titular, tokens)}</a>
-        ${n.resumen ? `<p class="resumen">${resaltar(n.resumen, tokens)}</p>` : ''}
-        ${tieneTexto ? `<div class="texto" id="t${i}">${resaltar(n.texto, tokens)}</div>` : ''}
-        ${tieneTexto ? `<button class="toggle" type="button" onclick="document.getElementById('t${i}').classList.toggle('abierto'); this.textContent = this.textContent === 'Ver más ▾' ? 'Ver menos ▴' : 'Ver más ▾'">Ver más ▾</button>` : ''}
-        ${n.palabras_clave && n.palabras_clave.length ? `<div class="kw">${n.palabras_clave.map(k=>`<span>${escapeHtml(k)}</span>`).join('')}</div>` : ''}
+        <a href="${escapeHtml(n.enlace)}" target="_blank" rel="noopener">${resaltar(n.titular, tokens)}</a>
       </article>
     `;
   }).join('');
