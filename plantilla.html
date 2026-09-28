@@ -22,16 +22,15 @@
   .filtros{
     position:sticky; top:0; background:var(--bg);
     padding:12px 0; display:grid;
-    grid-template-columns:2fr repeat(3,1fr) auto;
+    grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;
     gap:8px; border-bottom:1px solid var(--border); z-index:10;
   }
   .filtros input, .filtros select, .filtros button{
-    font-size:16px; padding:8px 10px; border:1px solid var(--border);
+    font-size:15px; padding:8px 10px; border:1px solid var(--border);
     border-radius:6px; background:#fff; font-family:inherit;
   }
   .filtros button{cursor:pointer; background:#eee}
   .filtros button:hover{background:#ddd}
-
   #contador{color:var(--muted); font-size:14px; margin:8px 0 16px}
 
   .noticia{
@@ -40,35 +39,51 @@
   }
   .cabecera{
     display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-    margin-bottom:6px; font-size:13px; color:var(--muted);
+    margin-bottom:6px; font-size:12px; color:var(--muted);
   }
-  .badge{background:var(--badge); padding:2px 8px; border-radius:10px; font-size:12px; color:#445}
+  .badge{background:var(--badge); padding:2px 8px; border-radius:10px; color:#445}
   .medio{font-weight:bold; color:#333; font-size:15px; text-transform:uppercase; letter-spacing:.3px}
-  .noticia a{color:var(--primary); text-decoration:none; font-weight:600; font-size:19px; display:block}
-  .noticia a:hover{background:var(--primary-hover)}
+  .titular{color:var(--primary); text-decoration:none; font-weight:600; font-size:19px; display:block; margin-top:2px}
+  .titular:hover{background:var(--primary-hover)}
+  .resumen{color:#333; font-size:16px; margin-top:8px}
+  .texto{color:#444; font-size:15px; margin-top:8px; display:none; white-space:pre-line}
+  .texto.abierto{display:block}
+  .toggle{
+    margin-top:8px; font-size:13px; background:none; border:none;
+    color:var(--primary); cursor:pointer; padding:0;
+  }
+  .toggle:hover{text-decoration:underline}
+  .kw{font-size:12px; color:var(--muted); margin-top:6px}
+  .kw span{background:#eef; padding:1px 6px; border-radius:8px; margin-right:4px}
   mark{background:#ffe680; padding:0 2px; border-radius:2px}
   .vacio{text-align:center; color:var(--muted); padding:40px 0}
 
-  @media (max-width:800px){
-    .filtros{grid-template-columns:1fr 1fr}
-    .filtros #buscar{grid-column:1/-1}
+  @media (max-width:850px){
+    .filtros{grid-template-columns:1fr 1fr 1fr}
+    #buscar{grid-column:1/-1}
   }
   @media (max-width:500px){
-    .filtros{grid-template-columns:1fr}
+    .filtros{grid-template-columns:1fr 1fr}
   }
 </style>
 </head>
 <body>
 <header>
   <h1>Voceiro</h1>
-  <p class="meta">Actualizado: <span id="fecha">{{FECHA}}</span> · <span id="total">{{TOTAL}}</span> titulares</p>
+  <p class="meta">Actualizado: <span id="fecha">{{FECHA}}</span> · <span id="total">{{TOTAL}}</span> noticias en histórico</p>
 </header>
 
 <section class="filtros">
-  <input type="search" id="buscar" placeholder="🔍 Buscar en titulares…" autocomplete="off">
+  <input type="search" id="buscar" placeholder="🔍 Buscar en titular, resumen y texto…" autocomplete="off">
   <select id="grupo"><option value="">Todos los grupos</option></select>
   <select id="tipo"><option value="">Todos los tipos</option></select>
   <select id="medio"><option value="">Todos los medios</option></select>
+  <select id="rango">
+    <option value="">Todo el histórico</option>
+    <option value="1">Últimas 24 h</option>
+    <option value="2">Últimas 48 h</option>
+    <option value="7">Últimos 7 días</option>
+  </select>
   <button id="limpiar" type="button">Limpiar</button>
 </section>
 
@@ -79,23 +94,28 @@
 let NOTICIAS = [];
 
 function normalize(s){
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 async function init(){
   const res = await fetch('datos.json?' + Date.now());
   const data = await res.json();
-  NOTICIAS = data.noticias;
+  NOTICIAS = data.noticias || [];
+
+  // Índice de búsqueda precalculado
+  NOTICIAS.forEach(n => {
+    n._norm = normalize(n.titular + ' ' + (n.resumen || '') + ' ' + (n.texto || ''));
+  });
 
   // Rellenar selects
-  const grupos = [...new Set(NOTICIAS.map(n=>n.grupo))].sort();
-  const tipos  = [...new Set(NOTICIAS.map(n=>n.tipo))].sort();
-
   const selGrupo = document.getElementById('grupo');
-  grupos.forEach(g => selGrupo.add(new Option(g,g)));
+  [...new Set(NOTICIAS.map(n=>n.grupo))].sort().forEach(g => selGrupo.add(new Option(g,g)));
 
   const selTipo = document.getElementById('tipo');
-  tipos.forEach(t => selTipo.add(new Option(t,t)));
+  [...new Set(NOTICIAS.map(n=>n.tipo))].sort().forEach(t => selTipo.add(new Option(t,t)));
 
   const selMedio = document.getElementById('medio');
   const porGrupo = {};
@@ -107,11 +127,11 @@ async function init(){
     selMedio.appendChild(og);
   });
 
-  ['buscar','grupo','tipo','medio'].forEach(id =>
+  ['buscar','grupo','tipo','medio','rango'].forEach(id =>
     document.getElementById(id).addEventListener('input', aplicarFiltros)
   );
   document.getElementById('limpiar').addEventListener('click', () => {
-    ['buscar','grupo','tipo','medio'].forEach(id => document.getElementById(id).value = '');
+    ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
     aplicarFiltros();
   });
 
@@ -123,15 +143,19 @@ function aplicarFiltros(){
   const g = document.getElementById('grupo').value;
   const t = document.getElementById('tipo').value;
   const m = document.getElementById('medio').value;
+  const dias = parseInt(document.getElementById('rango').value, 10) || 0;
   const tokens = q.split(/\s+/).filter(Boolean);
+
+  const ahora = Date.now();
+  const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
 
   const filtradas = NOTICIAS.filter(n => {
     if (g && n.grupo !== g) return false;
     if (t && n.tipo  !== t) return false;
     if (m && n.medio !== m) return false;
-    if (tokens.length){
-      const hay = normalize(n.titular + ' ' + n.medio);
-      if (!tokens.every(tok => hay.includes(tok))) return false;
+    if (limiteMs && (ahora - new Date(n.fecha).getTime()) > limiteMs) return false;
+    if (tokens.length) {
+      for (const tok of tokens) if (!n._norm.includes(tok)) return false;
     }
     return true;
   });
@@ -139,12 +163,8 @@ function aplicarFiltros(){
   render(filtradas, tokens);
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
 function resaltar(texto, tokens){
-  if (!tokens.length) return escapeHtml(texto);
+  if (!tokens.length || !texto) return escapeHtml(texto || '');
   const map = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
   const patterns = tokens.map(tok => {
     let p = '';
@@ -170,7 +190,7 @@ function resaltar(texto, tokens){
 
 function render(lista, tokens){
   document.getElementById('contador').textContent =
-    `Mostrando ${lista.length} de ${NOTICIAS.length} titulares`;
+    `Mostrando ${lista.length} de ${NOTICIAS.length} noticias`;
 
   const cont = document.getElementById('resultados');
   if (!lista.length){
@@ -178,21 +198,25 @@ function render(lista, tokens){
     return;
   }
 
-  lista.sort((a,b) =>
-    a.grupo.localeCompare(b.grupo) || a.medio.localeCompare(b.medio)
-  );
-
-  cont.innerHTML = lista.map(n => `
-    <article class="noticia">
-      <div class="cabecera">
-        <span class="medio">${escapeHtml(n.medio)}</span>
-        <span class="badge">${escapeHtml(n.tipo)}</span>
-        <span class="badge">${escapeHtml(n.grupo)}</span>
-        <span>· ${escapeHtml(n.metodo)}</span>
-      </div>
-      <a href="${escapeHtml(n.enlace)}" target="_blank" rel="noopener">${resaltar(n.titular, tokens)}</a>
-    </article>
-  `).join('');
+  cont.innerHTML = lista.map((n, i) => {
+    const tieneTexto = (n.texto || '').length > 200;
+    return `
+      <article class="noticia">
+        <div class="cabecera">
+          <span class="medio">${escapeHtml(n.medio)}</span>
+          <span class="badge">${escapeHtml(n.tipo)}</span>
+          <span class="badge">${escapeHtml(n.grupo)}</span>
+          <span>· ${escapeHtml(n.fuente)}</span>
+          <span>· ${new Date(n.fecha).toLocaleString('es-ES')}</span>
+        </div>
+        <a class="titular" href="${escapeHtml(n.enlace)}" target="_blank" rel="noopener">${resaltar(n.titular, tokens)}</a>
+        ${n.resumen ? `<p class="resumen">${resaltar(n.resumen, tokens)}</p>` : ''}
+        ${tieneTexto ? `<div class="texto" id="t${i}">${resaltar(n.texto, tokens)}</div>` : ''}
+        ${tieneTexto ? `<button class="toggle" type="button" onclick="document.getElementById('t${i}').classList.toggle('abierto'); this.textContent = this.textContent === 'Ver más ▾' ? 'Ver menos ▴' : 'Ver más ▾'">Ver más ▾</button>` : ''}
+        ${n.palabras_clave && n.palabras_clave.length ? `<div class="kw">${n.palabras_clave.map(k=>`<span>${escapeHtml(k)}</span>`).join('')}</div>` : ''}
+      </article>
+    `;
+  }).join('');
 }
 
 init().catch(err => {
