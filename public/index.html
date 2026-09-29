@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">29/09/2026 17:44</span>
+    <span id="fecha">29/09/2026 17:53</span>
     <span>·</span>
-    <span id="total">22906</span>
+    <span id="total">23136</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -2120,17 +2120,19 @@ function initUserScriptBridge(){
     PENDIENTES_MAP  = new Map();
     items.forEach(i => {
       if (!i || !i.url) return;
-      const main = normalizeUrlForMatch(i.url);
-      PENDIENTES_URLS.add(main);
-      PENDIENTES_MAP.set(main, i);
+      const keys = [i.url];
       if (Array.isArray(i.aliasUrls)){
-        i.aliasUrls.forEach(u => {
-          if (!u) return;
-          const a = normalizeUrlForMatch(u);
-          PENDIENTES_URLS.add(a);
-          if (!PENDIENTES_MAP.has(a)) PENDIENTES_MAP.set(a, i);
-        });
+        i.aliasUrls.forEach(u => { if (u) keys.push(u); });
       }
+      keys.forEach(u => {
+        const k = normalizeUrlForMatch(u);
+        PENDIENTES_URLS.add(k);
+        const existing = PENDIENTES_MAP.get(k);
+        // Preferir el item leído sobre el no leído cuando hay conflicto
+        if (!existing || (!existing.read && i.read)){
+          PENDIENTES_MAP.set(k, i);
+        }
+      });
     });
     renderPendientes(items);
     refrescarBotonesGuardar();
@@ -2143,17 +2145,19 @@ function initUserScriptBridge(){
     PENDIENTES_MAP  = new Map();
     items.forEach(i => {
       if (!i || !i.url) return;
-      const main = normalizeUrlForMatch(i.url);
-      PENDIENTES_URLS.add(main);
-      PENDIENTES_MAP.set(main, i);
+      const keys = [i.url];
       if (Array.isArray(i.aliasUrls)){
-        i.aliasUrls.forEach(u => {
-          if (!u) return;
-          const a = normalizeUrlForMatch(u);
-          PENDIENTES_URLS.add(a);
-          if (!PENDIENTES_MAP.has(a)) PENDIENTES_MAP.set(a, i);
-        });
+        i.aliasUrls.forEach(u => { if (u) keys.push(u); });
       }
+      keys.forEach(u => {
+        const k = normalizeUrlForMatch(u);
+        PENDIENTES_URLS.add(k);
+        const existing = PENDIENTES_MAP.get(k);
+        // Preferir el item leído sobre el no leído cuando hay conflicto
+        if (!existing || (!existing.read && i.read)){
+          PENDIENTES_MAP.set(k, i);
+        }
+      });
     });
     if ($('#panel-pendientes').classList.contains('open')) renderPendientes(items);
     refrescarBotonesGuardar();
