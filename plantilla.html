@@ -124,6 +124,7 @@
     font-family:inherit; font-size:.78em;
   }
 
+  /* ═══ Paneles ═══ */
   .panel{
     position:fixed; inset:0;
     background:rgba(0,0,0,.55);
@@ -134,30 +135,47 @@
   .panel-inner{
     background:var(--bg); color:var(--fg);
     border:1px solid var(--border); border-radius:12px;
-    padding:20px 24px;
-    max-width:920px; width:100%;
+    max-width:1200px; width:100%;
     max-height:calc(100vh - 40px);
-    overflow-y:auto;
     box-shadow:0 20px 60px rgba(0,0,0,.4);
     position:relative; margin:auto;
+    display:flex; flex-direction:column;
+    overflow:hidden;
   }
   .panel-header{
     display:flex; justify-content:space-between; align-items:center;
-    gap:12px; margin-bottom:14px; padding-bottom:10px;
+    gap:12px;
+    padding:18px 24px 12px;
     border-bottom:1px solid var(--border);
+    flex-shrink:0;
   }
   .panel-header h2{margin:0; font-size:1em; letter-spacing:.03em}
   .panel-close{
     background:transparent; border:1px solid var(--btn-border);
     padding:4px 10px; font-size:1em; line-height:1; border-radius:6px;
+    flex-shrink:0;
   }
-  .panel h3{
+  .panel-body{
+    padding:14px 24px 20px;
+    overflow-y:auto;
+    flex:1;
+    min-height:0;
+  }
+  .panel-body h3{
     margin:16px 0 6px;
     font-size:.72em; letter-spacing:.06em; text-transform:uppercase;
     color:var(--muted);
     border-top:1px solid var(--border); padding-top:12px;
   }
-  .panel h3:first-of-type{border-top:none; padding-top:0; margin-top:0}
+  .panel-body h3:first-of-type{border-top:none; padding-top:0; margin-top:0}
+  .panel-acciones{
+    display:flex; justify-content:flex-end; gap:8px;
+    flex-wrap:wrap;
+    padding:12px 24px 18px;
+    border-top:1px solid var(--border);
+    background:var(--bg);
+    flex-shrink:0;
+  }
 
   .opt-row{
     display:flex; align-items:center; gap:14px;
@@ -177,9 +195,9 @@
 
   .list-grupos{
     display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(220px,1fr));
+    grid-template-columns:repeat(auto-fill, minmax(240px,1fr));
     gap:4px;
-    max-height:200px; overflow-y:auto;
+    max-height:260px; overflow-y:auto;
     padding:8px; border:1px solid var(--border); border-radius:6px;
     background:var(--bg);
   }
@@ -209,7 +227,7 @@
   .list-medios{
     border:1px solid var(--border); border-radius:6px;
     background:var(--bg);
-    max-height:340px; overflow-y:auto;
+    max-height:420px; overflow-y:auto;
   }
   .medio-fila{
     display:grid;
@@ -254,18 +272,11 @@
   }
 
   textarea.preset-texto{
-    width:100%; min-height:70px; padding:10px;
+    width:100%; min-height:180px; padding:12px;
     border-radius:6px; border:1px solid var(--border);
     background:var(--bg); color:var(--fg);
-    font-family:var(--ff); font-size:.78em;
-    line-height:1.5; resize:vertical;
-  }
-
-  .panel-acciones{
-    display:flex; justify-content:flex-end; gap:8px;
-    flex-wrap:wrap;
-    margin-top:16px; padding-top:12px;
-    border-top:1px solid var(--border);
+    font-family:var(--ff); font-size:.82em;
+    line-height:1.6; resize:vertical;
   }
 
   .backup-box{
@@ -280,6 +291,7 @@
   .backup-box .msg{color:var(--muted); flex:1; min-width:180px}
   .backup-box .acciones{display:flex; gap:8px; flex-wrap:wrap}
 
+  /* ═══ Filtros ═══ */
   .filtros{
     display:grid;
     grid-template-columns:2.5fr 1fr 1fr 1.2fr .9fr 1.1fr auto;
@@ -296,6 +308,8 @@
     background:var(--bg); color:var(--fg); font-family:inherit;
     min-width:0;
   }
+
+  /* ═══ Chips de filtros activos ═══ */
   .chips-busqueda{
     display:flex; flex-wrap:wrap; gap:6px;
     padding:8px 0 10px;
@@ -326,6 +340,7 @@
   .chip-x:hover{background:rgba(0,0,0,.1)}
   [data-theme="dark"] .chip-x:hover{background:rgba(255,255,255,.15)}
   [data-theme="contrast"] .chip-x:hover{background:#333}
+
   #contador{
     color:var(--muted); font-size:.68em;
     margin:10px 0 14px;
@@ -403,6 +418,7 @@
   [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
+  /* Botones mini (mariquita, bloquear) */
   .btn-mini{
     margin-left:2px;
     padding:2px 8px !important;
@@ -420,9 +436,35 @@
     color:var(--accent) !important;
     border-color:var(--accent) !important;
   }
+  .btn-block-item:hover{
+    color:var(--block) !important;
+    border-color:var(--block) !important;
+  }
   .btn-save-item:hover{
     color:var(--save) !important;
     border-color:var(--save) !important;
+  }
+
+  /* Botón "Guardar" en texto, junto a la fecha */
+  .btn-save-text{
+    margin-left:8px;
+    padding:2px 10px;
+    font-size:.85em;
+    background:transparent;
+    border:1px solid var(--border);
+    border-radius:10px;
+    color:var(--save);
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+    opacity:.85;
+    transition:opacity .15s, background .15s, border-color .15s;
+    line-height:1.3;
+  }
+  .btn-save-text:hover{
+    opacity:1;
+    background:var(--save-bg);
+    border-color:var(--save);
   }
 
   .vacio{
@@ -617,12 +659,15 @@
     .medio-fila .celda-grupo{display:none}
     .opt-row{gap:8px}
     .opt-label{min-width:100%}
+    .panel-inner{max-width:none}
   }
   @media (max-width:560px){
     .filtros{grid-template-columns:1fr 1fr}
     .medio-fila{grid-template-columns:34px 34px 1fr}
     .medio-fila .celda-nombre{display:none}
-    .panel-inner{padding:16px}
+    .panel-header{padding:14px 16px 10px}
+    .panel-body{padding:12px 16px 16px}
+    .panel-acciones{padding:10px 16px 14px}
     .rep-acciones{flex-direction:column}
     .rep-acciones .grupo{width:100%}
     .rep-acciones button{flex:1}
@@ -659,47 +704,47 @@
       <h2 id="cfg-title"></h2>
       <button class="panel-close" type="button" data-close="panel-config">✕</button>
     </div>
+    <div class="panel-body">
+      <div id="sync-banner" class="sync-banner" style="display:none">
+        <span class="sync-dot"></span>
+        <span id="sync-banner-text"></span>
+      </div>
 
-    <div id="sync-banner" class="sync-banner" style="display:none">
-      <span class="sync-dot"></span>
-      <span id="sync-banner-text"></span>
-    </div>
+      <h3 id="cfg-grupos"></h3>
+      <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+      <div id="lista-grupos" class="list-grupos"></div>
 
-    <h3 id="cfg-grupos"></h3>
-    <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-    <div id="lista-grupos" class="list-grupos"></div>
+      <h3 id="cfg-medios"></h3>
+      <p id="cfg-medios-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+      <p id="cfg-medios-legend" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+      <div class="ctrl-medios">
+        <input type="search" id="filtro-medio">
+        <select id="filtro-grupo-medio"><option value=""></option></select>
+      </div>
+      <div id="lista-medios" class="list-medios"></div>
+      <p id="resumen-medios" style="font-size:.68em; color:var(--muted); margin:6px 0 0;"></p>
 
-    <h3 id="cfg-medios"></h3>
-    <p id="cfg-medios-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-    <p id="cfg-medios-legend" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-    <div class="ctrl-medios">
-      <input type="search" id="filtro-medio">
-      <select id="filtro-grupo-medio"><option value=""></option></select>
-    </div>
-    <div id="lista-medios" class="list-medios"></div>
-    <p id="resumen-medios" style="font-size:.68em; color:var(--muted); margin:6px 0 0;"></p>
+      <h3 id="cfg-palabras"></h3>
+      <p id="cfg-palabras-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+      <textarea id="preset-palabras" class="preset-texto"></textarea>
 
-    <h3 id="cfg-palabras"></h3>
-    <p id="cfg-palabras-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-    <textarea id="preset-palabras" class="preset-texto"></textarea>
+      <h3 id="cfg-backup"></h3>
+      <div class="backup-box">
+        <span class="msg" id="cfg-backup-msg"></span>
+        <div class="acciones">
+          <button id="btn-export" type="button"></button>
+          <button id="btn-import" type="button"></button>
+        </div>
+      </div>
 
-    <h3 id="cfg-backup"></h3>
-    <div class="backup-box">
-      <span class="msg" id="cfg-backup-msg"></span>
-      <div class="acciones">
-        <button id="btn-export" type="button"></button>
-        <button id="btn-import" type="button"></button>
+      <h3 id="cfg-help-lbl"></h3>
+      <div class="backup-box">
+        <span class="msg" id="cfg-help-msg"></span>
+        <div class="acciones">
+          <button id="btn-report-generic" type="button">🐞 <span id="cfg-help-btn"></span></button>
+        </div>
       </div>
     </div>
-
-    <h3 id="cfg-help-lbl"></h3>
-    <div class="backup-box">
-      <span class="msg" id="cfg-help-msg"></span>
-      <div class="acciones">
-        <button id="btn-report-generic" type="button">🐞 <span id="cfg-help-btn"></span></button>
-      </div>
-    </div>
-
     <div class="panel-acciones">
       <button id="preset-reset" type="button"></button>
       <button id="preset-cancelar" type="button"></button>
@@ -715,53 +760,53 @@
       <h2 id="ac-title"></h2>
       <button class="panel-close" type="button" data-close="panel-acces">✕</button>
     </div>
+    <div class="panel-body">
+      <div class="opt-row">
+        <span class="opt-label" id="ac-tema"></span>
+        <div class="opt-group" data-grupo="tema">
+          <button data-val="light"></button>
+          <button data-val="sepia"></button>
+          <button data-val="dark"></button>
+          <button data-val="contrast"></button>
+        </div>
+      </div>
 
-    <div class="opt-row">
-      <span class="opt-label" id="ac-tema"></span>
-      <div class="opt-group" data-grupo="tema">
-        <button data-val="light"></button>
-        <button data-val="sepia"></button>
-        <button data-val="dark"></button>
-        <button data-val="contrast"></button>
+      <div class="opt-row">
+        <span class="opt-label" id="ac-fuente"></span>
+        <div class="opt-group" data-grupo="fuente">
+          <button data-val="serif"></button>
+          <button data-val="sans"></button>
+          <button data-val="dyslexic"></button>
+        </div>
+      </div>
+
+      <div class="opt-row">
+        <span class="opt-label" id="ac-tamano"></span>
+        <div class="opt-group">
+          <button id="fs-menos">A−</button>
+          <span class="opt-val" id="fs-val">18</span>
+          <button id="fs-mas">A+</button>
+        </div>
+      </div>
+
+      <div class="opt-row">
+        <span class="opt-label" id="ac-ancho"></span>
+        <div class="opt-group">
+          <button id="w-menos">−</button>
+          <span class="opt-val" id="w-val">1100</span>
+          <button id="w-mas">+</button>
+        </div>
+      </div>
+
+      <div class="opt-row">
+        <span class="opt-label" id="ac-extra"></span>
+        <div class="opt-group" data-grupo="extra">
+          <button data-val="just"></button>
+          <button data-val="bionic"></button>
+          <button data-val="focus"></button>
+        </div>
       </div>
     </div>
-
-    <div class="opt-row">
-      <span class="opt-label" id="ac-fuente"></span>
-      <div class="opt-group" data-grupo="fuente">
-        <button data-val="serif"></button>
-        <button data-val="sans"></button>
-        <button data-val="dyslexic"></button>
-      </div>
-    </div>
-
-    <div class="opt-row">
-      <span class="opt-label" id="ac-tamano"></span>
-      <div class="opt-group">
-        <button id="fs-menos">A−</button>
-        <span class="opt-val" id="fs-val">18</span>
-        <button id="fs-mas">A+</button>
-      </div>
-    </div>
-
-    <div class="opt-row">
-      <span class="opt-label" id="ac-ancho"></span>
-      <div class="opt-group">
-        <button id="w-menos">−</button>
-        <span class="opt-val" id="w-val">1100</span>
-        <button id="w-mas">+</button>
-      </div>
-    </div>
-
-    <div class="opt-row">
-      <span class="opt-label" id="ac-extra"></span>
-      <div class="opt-group" data-grupo="extra">
-        <button data-val="just"></button>
-        <button data-val="bionic"></button>
-        <button data-val="focus"></button>
-      </div>
-    </div>
-
     <div class="panel-acciones">
       <button id="acces-reset" type="button"></button>
     </div>
@@ -775,7 +820,9 @@
       <h2 id="pend-title"></h2>
       <button class="panel-close" type="button" data-close="panel-pendientes">✕</button>
     </div>
-    <div id="pendientes-lista"></div>
+    <div class="panel-body">
+      <div id="pendientes-lista"></div>
+    </div>
     <div class="panel-acciones">
       <button id="pend-refresh" type="button"></button>
     </div>
@@ -789,40 +836,41 @@
       <h2 id="rep-title"></h2>
       <button class="panel-close" type="button" data-close="panel-reporte">✕</button>
     </div>
+    <div class="panel-body">
+      <div id="rep-contexto" class="rep-ctx"></div>
 
-    <div id="rep-contexto" class="rep-ctx"></div>
-
-    <div class="rep-row">
-      <label for="rep-motivo" id="rep-motivo-lbl"></label>
-      <select id="rep-motivo">
-        <option value="no_se_muestra"></option>
-        <option value="enlace_roto"></option>
-        <option value="paywall"></option>
-        <option value="medio_incorrecto"></option>
-        <option value="duplicado"></option>
-        <option value="contenido_inapropiado"></option>
-        <option value="fecha_incorrecta"></option>
-        <option value="otro"></option>
-      </select>
-    </div>
-
-    <div class="rep-row">
-      <label for="rep-detalles" id="rep-detalles-lbl"></label>
-      <textarea id="rep-detalles"></textarea>
-    </div>
-
-    <label class="rep-check">
-      <input type="checkbox" id="rep-config-incluir">
-      <span id="rep-config-lbl"></span>
-    </label>
-
-    <div class="rep-acciones">
-      <div class="grupo">
-        <button id="rep-copy" type="button"></button>
+      <div class="rep-row">
+        <label for="rep-motivo" id="rep-motivo-lbl"></label>
+        <select id="rep-motivo">
+          <option value="no_se_muestra"></option>
+          <option value="enlace_roto"></option>
+          <option value="paywall"></option>
+          <option value="medio_incorrecto"></option>
+          <option value="duplicado"></option>
+          <option value="contenido_inapropiado"></option>
+          <option value="fecha_incorrecta"></option>
+          <option value="otro"></option>
+        </select>
       </div>
-      <div class="grupo">
-        <button id="rep-mail" type="button"></button>
-        <button id="rep-github" type="button" class="primary"></button>
+
+      <div class="rep-row">
+        <label for="rep-detalles" id="rep-detalles-lbl"></label>
+        <textarea id="rep-detalles"></textarea>
+      </div>
+
+      <label class="rep-check">
+        <input type="checkbox" id="rep-config-incluir">
+        <span id="rep-config-lbl"></span>
+      </label>
+
+      <div class="rep-acciones">
+        <div class="grupo">
+          <button id="rep-copy" type="button"></button>
+        </div>
+        <div class="grupo">
+          <button id="rep-mail" type="button"></button>
+          <button id="rep-github" type="button" class="primary"></button>
+        </div>
       </div>
     </div>
   </div>
@@ -835,23 +883,24 @@
       <h2 id="bs-title"></h2>
       <button class="panel-close" type="button" data-close="panel-buscar">✕</button>
     </div>
+    <div class="panel-body">
+      <div class="bs-aviso" id="bs-aviso"></div>
 
-    <div class="bs-aviso" id="bs-aviso"></div>
-
-    <div class="bs-filtros">
-      <input type="search" id="bs-q" autocomplete="off">
-      <div class="bs-fila">
-        <select id="bs-lang" aria-label="Language"></select>
-        <select id="bs-country" aria-label="Country"></select>
-        <select id="bs-date" aria-label="Date"></select>
-        <button id="bs-go" type="button" class="primary"></button>
+      <div class="bs-filtros">
+        <input type="search" id="bs-q" autocomplete="off">
+        <div class="bs-fila">
+          <select id="bs-lang" aria-label="Language"></select>
+          <select id="bs-country" aria-label="Country"></select>
+          <select id="bs-date" aria-label="Date"></select>
+          <button id="bs-go" type="button" class="primary"></button>
+        </div>
       </div>
-    </div>
 
-    <div id="bs-estado" class="bs-estado"></div>
-    <div id="bs-resultados"></div>
-    <div id="bs-mas-wrap" style="display:none">
-      <button id="bs-mas" type="button"></button>
+      <div id="bs-estado" class="bs-estado"></div>
+      <div id="bs-resultados"></div>
+      <div id="bs-mas-wrap" style="display:none">
+        <button id="bs-mas" type="button"></button>
+      </div>
     </div>
   </div>
 </section>
@@ -874,6 +923,7 @@
   </select>
   <button id="limpiar" type="button"></button>
 </section>
+
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 <div id="contador"></div>
 <main id="resultados"></main>
@@ -909,6 +959,7 @@ const I18N = {
     knownInPlugin: 'Configurado en el plugin Lector Universal',
     forceInclude: 'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
     forceExclude: 'Bloquear siempre',
+    blockMedia: 'No mostrar noticias de este medio',
     cfgBuscarMedio: '🔍 Buscar por dominio, nombre o grupo…', cfgTodosGrupos: 'Todos los grupos',
     cfgPalabras: 'Palabras clave en titular',
     cfgPalabrasHint: 'Una por línea o separadas por comas. Sin tildes, palabra completa.',
@@ -924,7 +975,7 @@ const I18N = {
     acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Oscuro', acContraste: '◐ Contraste',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Foco',
-    fltBuscar: '🔍 Buscar… ("elecciones" · "medio:elpais" · "tag:deportes")',
+    fltBuscar: '🔍 Buscar… ("elecciones" · "elpais" · "elpais.com" · "tag:deportes")',
     fltGrupo: 'Todos los grupos', fltTipo: 'Todos los tipos', fltMedio: 'Todos los medios',
     fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
     ordenRecientes: '↓ Más recientes', ordenAntiguos: '↑ Más antiguos',
@@ -1020,6 +1071,7 @@ const I18N = {
     knownInPlugin: 'Configurado no plugin Lector Universal',
     forceInclude: 'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
     forceExclude: 'Bloquear sempre',
+    blockMedia: 'Non amosar noticias deste medio',
     cfgBuscarMedio: '🔍 Buscar por dominio, nome ou grupo…', cfgTodosGrupos: 'Todos os grupos',
     cfgPalabras: 'Palabras clave no titular',
     cfgPalabrasHint: 'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
@@ -1035,7 +1087,7 @@ const I18N = {
     acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Escuro', acContraste: '◐ Contraste',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Xustificar', acBionic: 'Bionic', acFoco: 'Foco',
-    fltBuscar: '🔍 Buscar… ("eleccións" · "medio:elpais" · "tag:deportes")',
+    fltBuscar: '🔍 Buscar… ("eleccións" · "elpais" · "elpais.com" · "tag:deportes")',
     fltGrupo: 'Todos os grupos', fltTipo: 'Todos os tipos', fltMedio: 'Todos os medios',
     fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
     ordenRecientes: '↓ Máis recentes', ordenAntiguos: '↑ Máis antigos',
@@ -1118,6 +1170,7 @@ const I18N = {
     knownInPlugin: 'Configurat al plugin Lector Universal',
     forceInclude: 'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
     forceExclude: 'Bloquejar sempre',
+    blockMedia: 'No mostrar notícies d\'aquest mitjà',
     cfgBuscarMedio: '🔍 Cercar per domini, nom o grup…', cfgTodosGrupos: 'Tots els grups',
     cfgPalabras: 'Paraules clau al titular',
     cfgPalabrasHint: 'Una per línia o separades per comes. Sense accents, paraula completa.',
@@ -1132,7 +1185,7 @@ const I18N = {
     acClaro: '☀ Clar', acSepia: '📖 Sèpia', acOscuro: '🌙 Fosc', acContraste: '◐ Contrast',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislèxia',
     acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Focus',
-    fltBuscar: '🔍 Cercar… ("eleccions" · "medio:elpais" · "tag:deportes")',
+    fltBuscar: '🔍 Cercar… ("eleccions" · "elpais" · "elpais.com" · "tag:deportes")',
     fltGrupo: 'Tots els grups', fltTipo: 'Tots els tipus', fltMedio: 'Tots els mitjans',
     fltTodo: 'Tot', flt24h: '24 h', flt48h: '48 h', flt7d: '7 dies',
     ordenRecientes: '↓ Més recents', ordenAntiguos: '↑ Més antics',
@@ -1215,6 +1268,7 @@ const I18N = {
     knownInPlugin: 'Configured in the Universal Reader plugin',
     forceInclude: 'Always force (include even if group or keywords do not match)',
     forceExclude: 'Always block',
+    blockMedia: 'Hide news from this outlet',
     cfgBuscarMedio: '🔍 Search by domain, name or group…', cfgTodosGrupos: 'All groups',
     cfgPalabras: 'Keywords in headline',
     cfgPalabrasHint: 'One per line or comma-separated. Accent-insensitive, whole word.',
@@ -1229,7 +1283,7 @@ const I18N = {
     acClaro: '☀ Light', acSepia: '📖 Sepia', acOscuro: '🌙 Dark', acContraste: '◐ Contrast',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dyslexic',
     acJustificar: 'Justify', acBionic: 'Bionic', acFoco: 'Focus',
-    fltBuscar: '🔍 Search… ("elections" · "medio:elpais" · "tag:sports")',
+    fltBuscar: '🔍 Search… ("elections" · "elpais" · "elpais.com" · "tag:sports")',
     fltGrupo: 'All groups', fltTipo: 'All types', fltMedio: 'All outlets',
     fltTodo: 'All', flt24h: '24 h', flt48h: '48 h', flt7d: '7 days',
     ordenRecientes: '↓ Newest first', ordenAntiguos: '↑ Oldest first',
@@ -1312,6 +1366,7 @@ const I18N = {
     knownInPlugin: 'Lector Universal pluginean konfiguratuta',
     forceInclude: 'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
     forceExclude: 'Beti blokeatu',
+    blockMedia: 'Ez erakutsi hedabide honetako albisteak',
     cfgBuscarMedio: '🔍 Bilatu domeinu, izen edo taldearen arabera…', cfgTodosGrupos: 'Talde guztiak',
     cfgPalabras: 'Hitz gakoak izenburuan',
     cfgPalabrasHint: 'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
@@ -1326,7 +1381,7 @@ const I18N = {
     acClaro: '☀ Argia', acSepia: '📖 Sepia', acOscuro: '🌙 Iluna', acContraste: '◐ Kontrastea',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Justifikatu', acBionic: 'Bionic', acFoco: 'Fokua',
-    fltBuscar: '🔍 Bilatu… ("hauteskundeak" · "medio:elpais" · "tag:kirolak")',
+    fltBuscar: '🔍 Bilatu… ("hauteskundeak" · "elpais" · "elpais.com" · "tag:kirolak")',
     fltGrupo: 'Talde guztiak', fltTipo: 'Mota guztiak', fltMedio: 'Hedabide guztiak',
     fltTodo: 'Guztia', flt24h: '24 h', flt48h: '48 h', flt7d: '7 egun',
     ordenRecientes: '↓ Berrienak lehenengo', ordenAntiguos: '↑ Zaharrenak lehenengo',
@@ -1417,6 +1472,21 @@ function normDomain(s){
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function limpiarCdata(s){
+  if (!s) return '';
+  let x = String(s).trim();
+  let changed = true;
+  while (changed){
+    changed = false;
+    if (x.startsWith('<![CDATA[')){ x = x.slice(9); changed = true; }
+    if (x.endsWith(']]>')){ x = x.slice(0, -3); changed = true; }
+    x = x.trim();
+  }
+  return x;
+}
+function _escapeRegex(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 function parseLista(txt){
   return txt.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
 }
@@ -1445,8 +1515,7 @@ function debounce(fn, ms){
 /* ═══════════════════════════════════════════════════════════════
    FECHAS
    ═══════════════════════════════════════════════════════════════ */
-// Horizonte de "futuro legítimo" (evento programado). Debe coincidir
-// con HORIZONTE_FUTURO_HORAS del recolector.py
+// Debe coincidir con HORIZONTE_FUTURO_HORAS del recolector.py
 const HORIZONTE_FUTURO_MS = 6 * 60 * 60 * 1000;
 
 let ABS_FMT = null;
@@ -1648,7 +1717,7 @@ function actualizarBotonPreset(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BIONIC (con cache)
+   BIONIC
    ═══════════════════════════════════════════════════════════════ */
 const BIONIC_CACHE = new Map();
 const BIONIC_CACHE_MAX = 8000;
@@ -1766,7 +1835,7 @@ function renderLangSelect(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BRIDGE CON EL LECTOR UNIVERSAL (UserScript)
+   BRIDGE CON EL LECTOR UNIVERSAL
    ═══════════════════════════════════════════════════════════════ */
 let USCRIPT_OK = false;
 let USCRIPT_CHECKED = false;
@@ -1910,13 +1979,13 @@ function refrescarBotonesGuardar(){
     const leida = guardada && item && item.read;
 
     if (leida){
-      b.textContent = '✅';
+      b.textContent = '✅ Leída';
       b.title = t('markUnread');
     } else if (guardada){
-      b.textContent = '⏳';
+      b.textContent = '⏳ Pendiente';
       b.title = t('markRead');
     } else {
-      b.textContent = '🕒';
+      b.textContent = '🕒 Guardar';
       b.title = t('saveForLaterTitle');
     }
   });
@@ -1990,8 +2059,8 @@ function renderPendientes(items){
 /* ═══════════════════════════════════════════════════════════════
    CARGA DE DATOS
    ═══════════════════════════════════════════════════════════════ */
-let MEDIOS = {};       // { dominio: { n, g, t, l, tags } }
-let MEDIOS_UNICOS = []; // array derivado para el panel
+let MEDIOS = {};
+let MEDIOS_UNICOS = [];
 
 async function cargarDatos(){
   const manifestRes = await fetch('datos/manifest.json', { cache: 'no-cache' });
@@ -2041,7 +2110,6 @@ function hidratarNoticias(){
   const horizonte = ahora + HORIZONTE_FUTURO_MS;
 
   for (const n of NOTICIAS){
-    // Compatibilidad de nombres
     if (n.dominio === undefined) n.dominio = n.d || '';
     if (n.titular === undefined) n.titular = n.t || '';
     if (n.enlace === undefined)  n.enlace  = n.u || '';
@@ -2050,7 +2118,9 @@ function hidratarNoticias(){
     if (n.fecha === undefined)  n.fecha = n.c || '';
     if (n.fuente === undefined) n.fuente = n.f || '';
 
-    // Rellenar campos desde la tabla de medios
+    // Limpiar CDATA residual (por si el recolector no lo ha hecho)
+    n.titular = limpiarCdata(n.titular);
+
     const m = MEDIOS[n.dominio] || {};
     if (n.medio === undefined || !n.medio) n.medio = m.n || '';
     if (n.grupo === undefined || !n.grupo) n.grupo = m.g || '';
@@ -2058,7 +2128,6 @@ function hidratarNoticias(){
     if (n.lang  === undefined || !n.lang ) n.lang  = m.l || '';
     if (!Array.isArray(n.tags) || !n.tags.length) n.tags = m.tags || [];
 
-    // Escapes HTML para render
     n._titularEsc = escapeHtml(n.titular);
     n._medioEsc   = escapeHtml(n.medio);
     n._tipoEsc    = escapeHtml(n.tipo);
@@ -2066,18 +2135,17 @@ function hidratarNoticias(){
     n._enlaceEsc  = escapeHtml(n.enlace);
     n._esPreset   = false;
 
-    // Fechas
     const tsPub = parseFecha(n.fecha_pub);
     const tsEst = parseFecha(n.fecha_estimada);
     const tsRec = parseFecha(n.fecha);
 
-    // Fecha para ORDENAR (agrupación): pub no futura > est > rec
+    // Fecha para ORDENAR (pub no futura > est > rec)
     let tsOrden = NaN;
     if (!isNaN(tsPub) && tsPub <= horizonte) tsOrden = tsPub;
     else if (!isNaN(tsEst)) tsOrden = tsEst;
     else if (!isNaN(tsRec)) tsOrden = tsRec;
 
-    // Fecha para MOSTRAR: pub > est > rec
+    // Fecha para MOSTRAR (pub, aunque sea futura > est > rec)
     let tsShow = NaN;
     let tipoShow = 'none';
     if (!isNaN(tsPub)){ tsShow = tsPub; tipoShow = 'pub'; }
@@ -2105,7 +2173,6 @@ function construirMediosUnicos(){
   );
 }
 
-// Índices para autodetección en el buscador
 let MEDIOS_STRICT   = new Map();
 let DOMINIOS_STRICT = new Map();
 let GRUPOS_STRICT   = new Map();
@@ -2130,12 +2197,7 @@ function construirIndicesBusqueda(){
   });
 }
 
-function _escapeRegex(s){
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function parseQuery(raw){
-  // Separa tokens respetando comillas
   const tokens = [];
   const re = /"([^"]+)"|(\S+)/g;
   let m;
@@ -2149,7 +2211,7 @@ function parseQuery(raw){
   for (const tk of tokens){
     const low = tk.text.toLowerCase();
 
-    // ── Prefijos explícitos (todos soportados) ──
+    // Prefijos explícitos
     if (!tk.quoted){
       if (low.startsWith('medio:')){
         const v = normStrict(tk.text.slice(6));
@@ -2183,14 +2245,14 @@ function parseQuery(raw){
       }
     }
 
-    // ── Entre comillas → siempre título literal ──
+    // Comillas → título literal
     if (tk.quoted){
       const n = normalize(tk.text);
       if (n) titulo.push(n);
       continue;
     }
 
-    // ── Autodetección: SOLO dominio y medio ──
+    // Autodetección: SOLO dominio y medio
     if (tk.text.includes('.')){
       const d = normDomain(tk.text).replace(/^www\./, '');
       if (d){
@@ -2206,12 +2268,45 @@ function parseQuery(raw){
       continue;
     }
 
-    // ── Todo lo demás → título ──
+    // Todo lo demás → título
     const n = normalize(tk.text);
     if (n) titulo.push(n);
   }
 
   return { titulo, medios, dominios, grupos, tipos, tags, chips };
+}
+
+function renderChips(parsed, rawQuery){
+  const cont = $('#chips-busqueda');
+  if (!cont) return;
+
+  if (!parsed.chips.length){
+    cont.style.display = 'none';
+    cont.innerHTML = '';
+    return;
+  }
+
+  cont.style.display = '';
+  cont.innerHTML = parsed.chips.map((c, i) =>
+    `<span class="chip">
+      <span class="chip-tipo">${escapeHtml(c.type)}</span>
+      <span>${escapeHtml(c.value)}</span>
+      <button type="button" class="chip-x" data-idx="${i}" title="Convertir a búsqueda literal">×</button>
+    </span>`
+  ).join('');
+
+  cont.querySelectorAll('.chip-x').forEach(b => {
+    b.addEventListener('click', () => {
+      const i = parseInt(b.dataset.idx, 10);
+      const chip = parsed.chips[i];
+      if (!chip) return;
+      const esc = _escapeRegex(chip.raw);
+      const rx = new RegExp('(^|\\s)(' + esc + ')(?=\\s|$)', 'g');
+      const nueva = rawQuery.replace(rx, (m, pre) => pre + '"' + chip.value + '"');
+      $('#buscar').value = nueva;
+      aplicarFiltros();
+    });
+  });
 }
 
 function ordenarGruposPorIdioma(grupos){
@@ -2772,8 +2867,7 @@ function bsPintarSelects(){
 
 function bsLimpiarTitulo(s){
   if (!s) return '';
-  return String(s)
-    .replace(/^\s*<!\[CDATA\[|\]\]>\s*$/g, '')
+  return limpiarCdata(String(s))
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -2965,7 +3059,7 @@ function bsAbrir(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FILTRADO + RENDER (con paginación)
+   FILTRADO + RENDER
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
 let ULT_FILTRADAS = [];
@@ -2976,44 +3070,12 @@ let ULT_PRESET_EFECTIVO = false;
 const RENDER_BATCH = 150;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
-function renderChips(parsed, rawQuery){
-  const cont = $('#chips-busqueda');
-  if (!cont) return;
-
-  if (!parsed.chips.length){
-    cont.style.display = 'none';
-    cont.innerHTML = '';
-    return;
-  }
-
-  cont.style.display = '';
-  cont.innerHTML = parsed.chips.map((c, i) =>
-    `<span class="chip" data-idx="${i}">
-      <span class="chip-tipo">${escapeHtml(c.type)}</span>
-      <span>${escapeHtml(c.value)}</span>
-      <button type="button" class="chip-x" data-idx="${i}" title="Convertir a búsqueda literal">×</button>
-    </span>`
-  ).join('');
-
-  cont.querySelectorAll('.chip-x').forEach(b => {
-    b.addEventListener('click', () => {
-      const i = parseInt(b.dataset.idx, 10);
-      const chip = parsed.chips[i];
-      if (!chip) return;
-      const esc = _escapeRegex(chip.raw);
-      const rx = new RegExp('(^|\\s)(' + esc + ')(?=\\s|$)', 'g');
-      const nueva = rawQuery.replace(rx, (m, pre) => pre + '"' + chip.value + '"');
-      $('#buscar').value = nueva;
-      aplicarFiltros();
-    });
-  });
-}
-
 
 function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(raw);
   renderChips(parsed, raw);
+
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
   const m = $('#medio').value;
@@ -3084,7 +3146,6 @@ function aplicarFiltros(){
     return true;
   });
 
-  // Orden estable: por fecha de agrupación, desempate por dominio y titular
   filtradas.sort((a, b) => {
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
@@ -3138,7 +3199,6 @@ function renderizar(){
 }
 
 function renderItemHtml(n, idx){
-  // Fecha visible según prioridad: pub (incl. futura) > estimada > recolección
   let fechaHtml = '';
   if (n._tipoShow === 'pub'){
     const esFuturo = n._esFuturo;
@@ -3160,12 +3220,24 @@ function renderItemHtml(n, idx){
   const guardada = PENDIENTES_URLS.has(n.enlace);
   const item = PENDIENTES_MAP.get(n.enlace);
   const leida = guardada && item && item.read;
-  const icon = leida ? '✅' : (guardada ? '⏳' : '🕒');
-  const title = leida ? t('markUnread') : (guardada ? t('markRead') : t('saveForLaterTitle'));
+
+  let saveLabel, saveTitle;
+  if (leida){
+    saveLabel = '✅ Leída';
+    saveTitle = t('markUnread');
+  } else if (guardada){
+    saveLabel = '⏳ Pendiente';
+    saveTitle = t('markRead');
+  } else {
+    saveLabel = '🕒 Guardar';
+    saveTitle = t('saveForLaterTitle');
+  }
 
   const presetBadge = n._esPreset
     ? `<span class="badge preset">${n._grupoEsc}</span>`
     : `<span class="badge">${n._grupoEsc}</span>`;
+
+  const blockTitle = t('blockMedia');
 
   return `<article class="noticia" data-idx="${idx}">
     <div class="cabecera">
@@ -3173,8 +3245,9 @@ function renderItemHtml(n, idx){
       <span class="badge">${n._tipoEsc}</span>
       ${presetBadge}
       ${fechaHtml}
+      <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${saveLabel}</button>
+      <button class="btn-mini btn-block-item" type="button" data-idx="${idx}" title="${escapeHtml(blockTitle)}" aria-label="${escapeHtml(blockTitle)}">🚫</button>
       <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
-      <button class="btn-mini btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${icon}</button>
     </div>
     <a class="titular" href="${n._enlaceEsc}" target="_blank" rel="noopener">${tituloHtml}</a>
   </article>`;
@@ -3218,6 +3291,31 @@ function wireResultadosDelegation(){
       if (n) guardarParaLeerDespues(n);
       return;
     }
+
+    const blockBtn = e.target.closest('.btn-block-item');
+    if (blockBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const i = parseInt(blockBtn.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (!n) return;
+
+      // Bloquear el medio: equivale a ✗ en el panel de configuración
+      emitirUpdateSite(n.dominio, { mode: 'off' });
+
+      // Si el Modo Personalizado no estaba activo, activarlo,
+      // porque si no, bloquear no tendría efecto visible.
+      if (!PRESET_ACTIVO){
+        PRESET_ACTIVO = true;
+        guardarPresetActivo();
+        actualizarBotonPreset();
+        toast(t('presetActivado'), 1500);
+      }
+
+      aplicarFiltros();
+      return;
+    }
+
     const repBtn = e.target.closest('.btn-report-item');
     if (repBtn){
       e.preventDefault();
@@ -3247,8 +3345,8 @@ function abrirPanel(id){
   if (!p) return;
   document.querySelectorAll('.panel.open').forEach(o => { if (o !== p) o.classList.remove('open'); });
   p.classList.add('open');
-  const inner = p.querySelector('.panel-inner');
-  if (inner) inner.scrollTop = 0;
+  const body = p.querySelector('.panel-body');
+  if (body) body.scrollTop = 0;
   document.body.style.overflow = 'hidden';
 }
 function cerrarPanel(id){
@@ -3550,23 +3648,17 @@ async function init(){
   aplicarAcces();
   initUserScriptBridge();
 
-  // 1. Cargar datos (manifest con fallback a datos.json)
   await cargarDatos();
-
-  // 2. Hidratar noticias: alias largos, escapes, fechas, tags
   hidratarNoticias();
 
-  // 3. Índices y derivados
   construirMediosUnicos();
   construirIndicesBusqueda();
 
-  // 4. Config local
   PRESET = cargarPreset();
   recompilarPreset();
   PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
   setSitesFromArray(cargarSitesCache());
 
-  // 5. Textos y listas
   aplicarTextos();
 
   const selT = $('#tipo');
