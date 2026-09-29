@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write        # necesitamos escribir en el repo
+  contents: write
   pages: write
   id-token: write
 
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0     # necesario para hacer commit desde el runner
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -36,20 +36,22 @@ jobs:
       - name: Ejecutar recolector
         run: python recolector.py
 
+      - name: Limpiar datos.json obsoleto (formato antiguo)
+        run: rm -f public/datos.json
+
       - name: Verificar public/
         run: |
           ls -la public/
           ls -la public/datos/ 2>/dev/null || echo "⚠ public/datos/ no existe"
-          du -sh public/datos.json public/index.html public/datos/ 2>/dev/null
+          du -sh public/index.html public/datos/ 2>/dev/null
+          [ -f state.json ] && du -sh state.json || echo "(sin state.json)"
 
-      # ═══════════════════════════════════════════════════════════
-      # Persistir el histórico: commitear datos.json + datos/ al repo
-      # ═══════════════════════════════════════════════════════════
       - name: Guardar histórico en el repo
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/datos.json public/datos/
+          git add -A public/
+          if [ -f state.json ]; then git add state.json; fi
           if git diff --staged --quiet; then
             echo "Sin cambios que guardar"
           else
