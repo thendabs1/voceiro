@@ -992,7 +992,7 @@ const I18N = {
     acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Escuro', acContraste: '◐ Contraste',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Xustificar', acBionic: 'Bionic', acFoco: 'Foco',
-    fltBuscar: '🔍 Buscar nos titulares…',
+    fltBuscar: '🔍 Buscar… ("eleccións" · "medio:elpais" · "dominio:eldiario.es")',
     fltGrupo: 'Todos os grupos', fltTipo: 'Todos os tipos', fltMedio: 'Todos os medios',
     fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
     ordenRecientes: '↓ Máis recentes', ordenAntiguos: '↑ Máis antigos',
@@ -1089,7 +1089,7 @@ const I18N = {
     acClaro: '☀ Clar', acSepia: '📖 Sèpia', acOscuro: '🌙 Fosc', acContraste: '◐ Contrast',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislèxia',
     acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Focus',
-    fltBuscar: '🔍 Cercar als titulars…',
+    fltBuscar: '🔍 Cercar… ("eleccions" · "medio:elpais" · "dominio:eldiario.es")',
     fltGrupo: 'Tots els grups', fltTipo: 'Tots els tipus', fltMedio: 'Tots els mitjans',
     fltTodo: 'Tot', flt24h: '24 h', flt48h: '48 h', flt7d: '7 dies',
     ordenRecientes: '↓ Més recents', ordenAntiguos: '↑ Més antics',
@@ -1186,7 +1186,7 @@ const I18N = {
     acClaro: '☀ Light', acSepia: '📖 Sepia', acOscuro: '🌙 Dark', acContraste: '◐ Contrast',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dyslexic',
     acJustificar: 'Justify', acBionic: 'Bionic', acFoco: 'Focus',
-    fltBuscar: '🔍 Search headlines…',
+    fltBuscar: '🔍 Search… ("elections" · "medio:elpais" · "dominio:eldiario.es")',
     fltGrupo: 'All groups', fltTipo: 'All types', fltMedio: 'All outlets',
     fltTodo: 'All', flt24h: '24 h', flt48h: '48 h', flt7d: '7 days',
     ordenRecientes: '↓ Newest first', ordenAntiguos: '↑ Oldest first',
@@ -1283,7 +1283,7 @@ const I18N = {
     acClaro: '☀ Argia', acSepia: '📖 Sepia', acOscuro: '🌙 Iluna', acContraste: '◐ Kontrastea',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Justifikatu', acBionic: 'Bionic', acFoco: 'Fokua',
-    fltBuscar: '🔍 Bilatu izenburuetan…',
+    fltBuscar: '🔍 Bilatu… ("hauteskundeak" · "medio:elpais" · "dominio:eldiario.es")',
     fltGrupo: 'Talde guztiak', fltTipo: 'Mota guztiak', fltMedio: 'Hedabide guztiak',
     fltTodo: 'Guztia', flt24h: '24 h', flt48h: '48 h', flt7d: '7 egun',
     ordenRecientes: '↓ Berrienak lehenengo', ordenAntiguos: '↑ Zaharrenak lehenengo',
@@ -1364,6 +1364,12 @@ const $ = sel => document.querySelector(sel);
 
 function normalize(s){
   return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function normStrict(s){
+  return normalize(s).replace(/[^a-z0-9]/g, '');
+}
+function normDomain(s){
+  return normalize(s).replace(/[^a-z0-9.\-]/g, '');
 }
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1944,9 +1950,10 @@ function renderPendientes(items){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MEDIOS ÚNICOS
+   MEDIOS ÚNICOS + ÍNDICES DE BÚSQUEDA
    ═══════════════════════════════════════════════════════════════ */
 let MEDIOS_UNICOS = [];
+
 function construirMediosUnicos(){
   const map = {};
   NOTICIAS.forEach(n => {
@@ -1955,6 +1962,76 @@ function construirMediosUnicos(){
   MEDIOS_UNICOS = Object.values(map).sort((a,b) =>
     a.grupo.localeCompare(b.grupo) || a.medio.localeCompare(b.medio)
   );
+}
+
+// Índices para autodetección en el buscador
+let MEDIOS_STRICT   = new Map();  // normStrict(medio)   -> medio original
+let DOMINIOS_STRICT = new Map();  // normDomain(dominio) -> dominio original
+let GRUPOS_STRICT   = new Map();  // normStrict(grupo)   -> grupo original
+
+function construirIndicesBusqueda(){
+  MEDIOS_STRICT   = new Map();
+  DOMINIOS_STRICT = new Map();
+  GRUPOS_STRICT   = new Map();
+  MEDIOS_UNICOS.forEach(m => {
+    MEDIOS_STRICT.set(normStrict(m.medio), m.medio);
+    DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
+  });
+  NOTICIAS.forEach(n => {
+    if (n.grupo) GRUPOS_STRICT.set(normStrict(n.grupo), n.grupo);
+  });
+}
+
+function parseQuery(raw){
+  // Separa tokens respetando comillas: 'foo "bar baz" qux' → ['foo', 'bar baz', 'qux']
+  const tokens = [];
+  const re = /"([^"]+)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(raw)) !== null){
+    tokens.push({ text: m[1] != null ? m[1] : m[2], quoted: m[1] != null });
+  }
+
+  const titulo = [], medios = [], dominios = [], grupos = [];
+
+  for (const tk of tokens){
+    const low = tk.text.toLowerCase();
+
+    // Prefijos explícitos (no publicitados, pero soportados)
+    if (!tk.quoted){
+      if (low.startsWith('medio:'))   { const v = normStrict(tk.text.slice(6));  if (v) medios.push(v);   continue; }
+      if (low.startsWith('dominio:')) { const v = normDomain(tk.text.slice(8));  if (v) dominios.push(v); continue; }
+      if (low.startsWith('domain:'))  { const v = normDomain(tk.text.slice(7));  if (v) dominios.push(v); continue; }
+      if (low.startsWith('grupo:'))   { const v = normStrict(tk.text.slice(6));  if (v) grupos.push(v);   continue; }
+    }
+
+    // Entre comillas → siempre título, texto literal
+    if (tk.quoted){
+      const n = normalize(tk.text);
+      if (n) titulo.push(n);
+      continue;
+    }
+
+    // Contiene punto → dominio
+    if (tk.text.includes('.')){
+      const d = normDomain(tk.text).replace(/^www\./, '');
+      if (d) dominios.push(d);
+      continue;
+    }
+
+    // Autodetección contra el catálogo
+    const strict = normStrict(tk.text);
+    if (strict.length >= 3){
+      if (MEDIOS_STRICT.has(strict))   { medios.push(strict);   continue; }
+      if (DOMINIOS_STRICT.has(strict)) { dominios.push(strict); continue; }
+      if (GRUPOS_STRICT.has(strict))   { grupos.push(strict);   continue; }
+    }
+
+    // Nada más → título
+    const n = normalize(tk.text);
+    if (n) titulo.push(n);
+  }
+
+  return { titulo, medios, dominios, grupos };
 }
 
 function ordenarGruposPorIdioma(grupos){
@@ -2436,6 +2513,7 @@ function importarConfig(file){
       aplicarAcces();
       aplicarTextos();
       reconstruirListas();
+      construirIndicesBusqueda();
       actualizarBotonPreset();
       if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
       aplicarFiltros();
@@ -2568,7 +2646,6 @@ async function bsBuscar(reset){
   if (BS_STATE.lang)    params.set('lang', BS_STATE.lang);
   if (BS_STATE.country) params.set('country', BS_STATE.country);
   if (BS_STATE.date)    params.set('date', BS_STATE.date);
-  // Forzar tld hispano si el país es ES para filtrar agregadores basura
   if (BS_STATE.country === 'ES') params.set('tld', 'es,cat,gal');
 
   try{
@@ -2668,7 +2745,6 @@ function bsWireEventos(){
     bsBuscar(false);
   });
 
-  // Delegación: botón guardar en pendientes
   $('#bs-resultados').addEventListener('click', e => {
     const b = e.target.closest('.btn-bs-guardar');
     if (!b) return;
@@ -2751,28 +2827,28 @@ function aplicarFiltros(){
       if (ahora - ts > limiteMs) return false;
     }
 
-    // ── medio (substring sobre el medio normalizado) ──
+    // ── medio (substring sobre medio strict-normalizado) ──
     if (hayMedio){
-      const mn = n._medioNorm || (n._medioNorm = normalize(n.medio));
+      const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
       for (let i = 0; i < parsed.medios.length; i++){
-        if (mn.indexOf(parsed.medios[i]) === -1) return false;
+        if (ms.indexOf(parsed.medios[i]) === -1) return false;
       }
     }
     // ── dominio ──
     if (hayDominio){
-      const dn = n._domNorm || (n._domNorm = normalize(n.dominio));
+      const ds = n._domStrict || (n._domStrict = normDomain(n.dominio));
       for (let i = 0; i < parsed.dominios.length; i++){
-        if (dn.indexOf(parsed.dominios[i]) === -1) return false;
+        if (ds.indexOf(parsed.dominios[i]) === -1) return false;
       }
     }
     // ── grupo ──
     if (hayGrupo){
-      const gn = n._grupoNorm || (n._grupoNorm = normalize(n.grupo));
+      const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
       for (let i = 0; i < parsed.grupos.length; i++){
-        if (gn.indexOf(parsed.grupos[i]) === -1) return false;
+        if (gs.indexOf(parsed.grupos[i]) === -1) return false;
       }
     }
-    // ── título (texto libre) ──
+    // ── título ──
     if (hayTitulo){
       const tn = n._titNorm || (n._titNorm = normalize(n.titular));
       for (let i = 0; i < parsed.titulo.length; i++){
@@ -3129,7 +3205,6 @@ function wireStaticEvents(){
     aplicarTextos();
     reconstruirListas();
     construirIndicesBusqueda();
-    
     if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
     renderizar();
   });
@@ -3276,75 +3351,6 @@ async function init(){
 
   construirMediosUnicos();
   construirIndicesBusqueda();
-  /* ═══════════════════════════════════════════════════════════════
-   ÍNDICES DE BÚSQUEDA (medio / dominio / grupo)
-   ═══════════════════════════════════════════════════════════════ */
-let MEDIOS_NORM  = new Set();
-let DOMINIOS_NORM = new Set();
-let GRUPOS_NORM  = new Set();
-
-function construirIndicesBusqueda(){
-  MEDIOS_NORM  = new Set();
-  DOMINIOS_NORM = new Set();
-  GRUPOS_NORM  = new Set();
-  MEDIOS_UNICOS.forEach(m => {
-    MEDIOS_NORM.add(normalize(m.medio));
-    DOMINIOS_NORM.add(normalize(m.dominio));
-  });
-  NOTICIAS.forEach(n => {
-    if (n.grupo) GRUPOS_NORM.add(normalize(n.grupo));
-  });
-}
-
-function parseQuery(raw){
-  const tokens = raw.trim().split(/\s+/).filter(Boolean);
-  const titulo = [], medios = [], dominios = [], grupos = [];
-
-  for (const tok of tokens){
-    const low = tok.toLowerCase();
-
-    // prefijos explícitos
-    if (low.startsWith('medio:')){
-      const v = normalize(tok.slice(6));  if (v) medios.push(v);
-      continue;
-    }
-    if (low.startsWith('dominio:')){
-      const v = normalize(tok.slice(8));  if (v) dominios.push(v);
-      continue;
-    }
-    if (low.startsWith('domain:')){
-      const v = normalize(tok.slice(7));  if (v) dominios.push(v);
-      continue;
-    }
-    if (low.startsWith('grupo:')){
-      const v = normalize(tok.slice(6));  if (v) grupos.push(v);
-      continue;
-    }
-
-    const n = normalize(tok);
-    if (!n) continue;
-
-    // autodetección: contiene punto → probable dominio
-    if (n.includes('.')){
-      dominios.push(n);
-      continue;
-    }
-    // autodetección: coincide exactamente con un medio conocido
-    if (MEDIOS_NORM.has(n)){
-      medios.push(n);
-      continue;
-    }
-    // autodetección: coincide exactamente con un grupo conocido
-    if (GRUPOS_NORM.has(n)){
-      grupos.push(n);
-      continue;
-    }
-
-    titulo.push(n);
-  }
-
-  return { titulo, medios, dominios, grupos };
-}
 
   PRESET = cargarPreset();
   recompilarPreset();
