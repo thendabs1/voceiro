@@ -112,6 +112,12 @@
   .btn-pendientes:hover{background:var(--save-bg)}
   .btn-pendientes.no-userscript{opacity:.55}
 
+  .btn-buscar{
+    border:2px solid var(--accent); background:transparent; color:var(--accent);
+    font-weight:600;
+  }
+  .btn-buscar:hover{background:var(--quote-bg)}
+
   select.lang-select{
     padding:7px 10px; border:1px solid var(--btn-border);
     background:var(--btn-bg); color:var(--fg); border-radius:6px;
@@ -506,6 +512,61 @@
     margin-top:8px;
   }
 
+  /* ═══ Buscador FreeNewsAPI ═══ */
+  .bs-aviso{
+    background:var(--save-bg); color:var(--save);
+    border:1px solid var(--save); border-radius:6px;
+    padding:8px 12px; font-size:.7em; line-height:1.5;
+    margin-bottom:14px;
+  }
+  .bs-filtros{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
+  .bs-filtros input,
+  .bs-filtros select{
+    font-size:.82em; padding:9px 12px;
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--fg); font-family:inherit;
+  }
+  .bs-fila{display:flex; gap:8px; flex-wrap:wrap}
+  .bs-fila select{flex:1 1 120px; min-width:120px}
+  .bs-estado{
+    font-size:.72em; color:var(--muted);
+    margin-bottom:10px; min-height:1.2em;
+  }
+  .bs-resultado{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-left:3px solid var(--save);
+    border-radius:8px;
+    padding:12px 16px;
+    margin-bottom:8px;
+  }
+  .bs-resultado .bs-meta{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    font-size:.62em; color:var(--muted); margin-bottom:5px;
+  }
+  .bs-resultado .bs-medio{
+    font-weight:bold; color:var(--fg); font-size:1.1em;
+    text-transform:uppercase; letter-spacing:.3px;
+  }
+  .bs-resultado .bs-badge{
+    background:var(--save-bg); border:1px solid var(--save);
+    padding:1px 8px; border-radius:10px; color:var(--save);
+    font-size:.9em;
+  }
+  .bs-resultado a.bs-titular{
+    color:var(--accent); text-decoration:none;
+    font-weight:600; font-size:1em; display:block; margin-top:2px;
+  }
+  .bs-resultado a.bs-titular:hover{text-decoration:underline}
+  .bs-resultado .bs-desc{
+    font-size:.75em; color:var(--muted);
+    margin-top:6px; line-height:1.4;
+  }
+  .bs-resultado .bs-acciones{
+    display:flex; gap:6px; justify-content:flex-end; margin-top:8px;
+  }
+  #bs-mas-wrap{text-align:center; margin-top:14px}
+
   @media (max-width:900px){
     .filtros{grid-template-columns:1fr 1fr 1fr; position:static}
     #buscar{grid-column:1/-1}
@@ -542,6 +603,7 @@
   <button id="btn-preset" class="btn-preset" type="button"></button>
   <button id="btn-config" type="button"></button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
+  <button id="btn-buscar" class="btn-buscar" type="button"></button>
   <span style="flex:1"></span>
   <select id="lang-select" class="lang-select" aria-label="Language"></select>
   <button id="btn-acces" type="button"></button>
@@ -723,6 +785,34 @@
   </div>
 </section>
 
+<!-- BUSCADOR -->
+<section id="panel-buscar" class="panel" role="dialog" aria-modal="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <h2 id="bs-title"></h2>
+      <button class="panel-close" type="button" data-close="panel-buscar">✕</button>
+    </div>
+
+    <div class="bs-aviso" id="bs-aviso"></div>
+
+    <div class="bs-filtros">
+      <input type="search" id="bs-q" autocomplete="off">
+      <div class="bs-fila">
+        <select id="bs-lang" aria-label="Language"></select>
+        <select id="bs-country" aria-label="Country"></select>
+        <select id="bs-date" aria-label="Date"></select>
+        <button id="bs-go" type="button" class="primary"></button>
+      </div>
+    </div>
+
+    <div id="bs-estado" class="bs-estado"></div>
+    <div id="bs-resultados"></div>
+    <div id="bs-mas-wrap" style="display:none">
+      <button id="bs-mas" type="button"></button>
+    </div>
+  </div>
+</section>
+
 <!-- FILTROS -->
 <section class="filtros">
   <input type="search" id="buscar" autocomplete="off">
@@ -846,6 +936,30 @@ const I18N = {
     repContexto: 'Contexto', repCtxMedio: 'Medio', repCtxGrupo: 'Grupo', repCtxTipo: 'Tipo',
     repCtxTitular: 'Titular', repCtxEnlace: 'Enlace', repCtxFecha: 'Fecha', repCtxFuente: 'Fuente',
     repCtxIdioma: 'Idioma activo', repCtxConfig: 'Config', repFecha: 'Fecha del reporte',
+    btnBuscar: '🔎 Investigar',
+    bsTitle: 'Buscar en miles de medios',
+    bsAviso: 'Este buscador cubre medios pequeños y regionales. Los grandes diarios nacionales (El País, El Mundo, ABC…) no están incluidos en su índice.',
+    bsQ: 'Busca cualquier tema…',
+    bsLang: 'Idioma',
+    bsLangAny: 'Cualquier idioma',
+    bsCountry: 'País',
+    bsCountryAny: 'Cualquier país',
+    bsDate: 'Fecha',
+    bsDate24h: 'Últimas 24 h',
+    bsDate48h: 'Últimas 48 h',
+    bsDate7d: 'Últimos 7 días',
+    bsDate30d: 'Últimos 30 días',
+    bsBuscar: 'Buscar',
+    bsCargando: 'Buscando…',
+    bsSinResultados: 'Sin resultados',
+    bsError: 'No se pudo conectar con el buscador externo. Inténtalo más tarde.',
+    bsErrorQ: 'Escribe algo para buscar',
+    bsResultados: '{n} resultados',
+    bsCargados: 'mostrando {n}',
+    bsMas: 'Cargar más',
+    bsFuenteExterna: 'Fuente externa',
+    bsGuardar: '🕒 Guardar',
+    bsVerificado: 'en el catálogo',
   },
   gl: {
     pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro',
@@ -920,6 +1034,30 @@ const I18N = {
     repContexto: 'Contexto', repCtxMedio: 'Medio', repCtxGrupo: 'Grupo', repCtxTipo: 'Tipo',
     repCtxTitular: 'Titular', repCtxEnlace: 'Ligazón', repCtxFecha: 'Data', repCtxFuente: 'Fonte',
     repCtxIdioma: 'Idioma activo', repCtxConfig: 'Config', repFecha: 'Data do reporte',
+    btnBuscar: '🔎 Investigar',
+    bsTitle: 'Buscar en miles de medios',
+    bsAviso: 'Este buscador cobre medios pequenos e rexionais. Os grandes diarios nacionais (El País, El Mundo, ABC…) non están incluídos no seu índice.',
+    bsQ: 'Busca calquera tema…',
+    bsLang: 'Idioma',
+    bsLangAny: 'Calquera idioma',
+    bsCountry: 'País',
+    bsCountryAny: 'Calquera país',
+    bsDate: 'Data',
+    bsDate24h: 'Últimas 24 h',
+    bsDate48h: 'Últimas 48 h',
+    bsDate7d: 'Últimos 7 días',
+    bsDate30d: 'Últimos 30 días',
+    bsBuscar: 'Buscar',
+    bsCargando: 'Buscando…',
+    bsSinResultados: 'Sen resultados',
+    bsError: 'Non se puido conectar co buscador externo. Inténtao máis tarde.',
+    bsErrorQ: 'Escribe algo para buscar',
+    bsResultados: '{n} resultados',
+    bsCargados: 'amosando {n}',
+    bsMas: 'Cargar máis',
+    bsFuenteExterna: 'Fonte externa',
+    bsGuardar: '🕒 Gardar',
+    bsVerificado: 'no catálogo',
   },
   ca: {
     pageTitle: 'Voceiro · Titulars', headerTitle: 'Voceiro',
@@ -993,6 +1131,30 @@ const I18N = {
     repContexto: 'Context', repCtxMedio: 'Mitjà', repCtxGrupo: 'Grup', repCtxTipo: 'Tipus',
     repCtxTitular: 'Titular', repCtxEnlace: 'Enllaç', repCtxFecha: 'Data', repCtxFuente: 'Font',
     repCtxIdioma: 'Idioma actiu', repCtxConfig: 'Config', repFecha: 'Data del report',
+    btnBuscar: '🔎 Investigar',
+    bsTitle: 'Cercar en milers de mitjans',
+    bsAviso: 'Aquest cercador cobreix mitjans petits i regionals. Els grans diaris nacionals (El País, El Mundo, ABC…) no estan inclosos al seu índex.',
+    bsQ: 'Cerca qualsevol tema…',
+    bsLang: 'Idioma',
+    bsLangAny: 'Qualsevol idioma',
+    bsCountry: 'País',
+    bsCountryAny: 'Qualsevol país',
+    bsDate: 'Data',
+    bsDate24h: 'Últimes 24 h',
+    bsDate48h: 'Últimes 48 h',
+    bsDate7d: 'Últims 7 dies',
+    bsDate30d: 'Últims 30 dies',
+    bsBuscar: 'Cercar',
+    bsCargando: 'Cercant…',
+    bsSinResultados: 'Sense resultats',
+    bsError: 'No s\'ha pogut connectar amb el cercador extern. Torna-ho a provar més tard.',
+    bsErrorQ: 'Escriu alguna cosa per cercar',
+    bsResultados: '{n} resultats',
+    bsCargados: 'mostrant {n}',
+    bsMas: 'Carregar més',
+    bsFuenteExterna: 'Font externa',
+    bsGuardar: '🕒 Desar',
+    bsVerificado: 'al catàleg',
   },
   en: {
     pageTitle: 'Voceiro · Headlines', headerTitle: 'Voceiro',
@@ -1066,6 +1228,30 @@ const I18N = {
     repContexto: 'Context', repCtxMedio: 'Outlet', repCtxGrupo: 'Group', repCtxTipo: 'Type',
     repCtxTitular: 'Headline', repCtxEnlace: 'Link', repCtxFecha: 'Date', repCtxFuente: 'Source',
     repCtxIdioma: 'Active language', repCtxConfig: 'Config', repFecha: 'Report date',
+    btnBuscar: '🔎 Investigate',
+    bsTitle: 'Search across thousands of outlets',
+    bsAviso: 'This search covers small and regional outlets. Major national newspapers (El País, El Mundo, ABC…) are not in its index.',
+    bsQ: 'Search any topic…',
+    bsLang: 'Language',
+    bsLangAny: 'Any language',
+    bsCountry: 'Country',
+    bsCountryAny: 'Any country',
+    bsDate: 'Date',
+    bsDate24h: 'Last 24 h',
+    bsDate48h: 'Last 48 h',
+    bsDate7d: 'Last 7 days',
+    bsDate30d: 'Last 30 days',
+    bsBuscar: 'Search',
+    bsCargando: 'Searching…',
+    bsSinResultados: 'No results',
+    bsError: 'Could not connect to the external search. Try again later.',
+    bsErrorQ: 'Type something to search',
+    bsResultados: '{n} results',
+    bsCargados: 'showing {n}',
+    bsMas: 'Load more',
+    bsFuenteExterna: 'External source',
+    bsGuardar: '🕒 Save',
+    bsVerificado: 'in catalog',
   },
   eu: {
     pageTitle: 'Voceiro · Izenburuak', headerTitle: 'Voceiro',
@@ -1139,6 +1325,30 @@ const I18N = {
     repContexto: 'Testuingurua', repCtxMedio: 'Hedabidea', repCtxGrupo: 'Taldea', repCtxTipo: 'Mota',
     repCtxTitular: 'Izenburua', repCtxEnlace: 'Esteka', repCtxFecha: 'Data', repCtxFuente: 'Iturria',
     repCtxIdioma: 'Hizkuntza aktiboa', repCtxConfig: 'Konfig', repFecha: 'Txostenaren data',
+    btnBuscar: '🔎 Ikerkatu',
+    bsTitle: 'Mila hedabide baino gehiagotan bilatu',
+    bsAviso: 'Bilatzaile honek hedabide txikiak eta eskualdekoak biltzen ditu. Estatuko egunkari handiak (El País, El Mundo, ABC…) ez daude bere indizean.',
+    bsQ: 'Bilatu edozein gai…',
+    bsLang: 'Hizkuntza',
+    bsLangAny: 'Edozein hizkuntza',
+    bsCountry: 'Herrialdea',
+    bsCountryAny: 'Edozein herrialde',
+    bsDate: 'Data',
+    bsDate24h: 'Azken 24 h',
+    bsDate48h: 'Azken 48 h',
+    bsDate7d: 'Azken 7 egun',
+    bsDate30d: 'Azken 30 egun',
+    bsBuscar: 'Bilatu',
+    bsCargando: 'Bilatzen…',
+    bsSinResultados: 'Emaitzarik gabe',
+    bsError: 'Ezin izan da kanpoko bilatzailearekin konektatu. Saiatu berriro geroago.',
+    bsErrorQ: 'Idatzi zerbait bilatzeko',
+    bsResultados: '{n} emaitza',
+    bsCargados: '{n} erakusten',
+    bsMas: 'Gehiago kargatu',
+    bsFuenteExterna: 'Kanpoko iturria',
+    bsGuardar: '🕒 Gorde',
+    bsVerificado: 'katalogoan',
   },
 };
 
@@ -2236,6 +2446,264 @@ function importarConfig(file){
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   BUSCADOR (FreeNewsAPI)
+   ═══════════════════════════════════════════════════════════════ */
+const FREENEWS_URL = 'https://freenewsapi.ai/v1/search';
+const BS_SESSION_KEY = 'voceiro-bs-last';
+
+const BS_STATE = {
+  q: '', lang: 'es', country: 'ES', date: '24h',
+  offset: 0, size: 30, total: 0,
+  resultados: [],
+  cargando: false,
+};
+
+function bsPintarSelects(){
+  const selL = $('#bs-lang');
+  selL.innerHTML = [
+    `<option value="">${escapeHtml(t('bsLangAny'))}</option>`,
+    `<option value="es">Español</option>`,
+    `<option value="gl">Galego</option>`,
+    `<option value="ca">Català</option>`,
+    `<option value="en">English</option>`,
+    `<option value="eu">Euskara</option>`,
+    `<option value="fr">Français</option>`,
+    `<option value="de">Deutsch</option>`,
+    `<option value="it">Italiano</option>`,
+    `<option value="pt">Português</option>`,
+  ].join('');
+
+  const selC = $('#bs-country');
+  selC.innerHTML = [
+    `<option value="">${escapeHtml(t('bsCountryAny'))}</option>`,
+    `<option value="ES">España</option>`,
+    `<option value="PT">Portugal</option>`,
+    `<option value="FR">France</option>`,
+    `<option value="IT">Italia</option>`,
+    `<option value="DE">Deutschland</option>`,
+    `<option value="GB">UK</option>`,
+    `<option value="IE">Ireland</option>`,
+    `<option value="US">USA</option>`,
+    `<option value="MX">México</option>`,
+    `<option value="AR">Argentina</option>`,
+    `<option value="CO">Colombia</option>`,
+    `<option value="CL">Chile</option>`,
+    `<option value="PE">Perú</option>`,
+    `<option value="BR">Brasil</option>`,
+  ].join('');
+
+  const selD = $('#bs-date');
+  selD.innerHTML = [
+    `<option value="24h">${escapeHtml(t('bsDate24h'))}</option>`,
+    `<option value="48h">${escapeHtml(t('bsDate48h'))}</option>`,
+    `<option value="7d">${escapeHtml(t('bsDate7d'))}</option>`,
+    `<option value="30d">${escapeHtml(t('bsDate30d'))}</option>`,
+  ].join('');
+
+  $('#bs-q').placeholder   = t('bsQ');
+  $('#bs-go').textContent  = t('bsBuscar');
+  $('#bs-mas').textContent = t('bsMas');
+  $('#bs-title').textContent = t('bsTitle');
+  $('#bs-aviso').textContent = t('bsAviso');
+}
+
+function bsLimpiarTitulo(s){
+  if (!s) return '';
+  return String(s)
+    .replace(/^\s*<!\[CDATA\[|\]\]>\s*$/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+function bsHostLimpio(host){
+  return String(host || '').replace(/^www\./, '').toLowerCase();
+}
+
+function bsFechaRel(iso){
+  if (!iso) return '';
+  try{
+    const d = new Date(iso).getTime();
+    if (isNaN(d)) return '';
+    const diff = Date.now() - d;
+    const min = Math.floor(diff / 60000);
+    const h   = Math.floor(diff / 3600000);
+    if (min < 1)  return t('fechaAhora');
+    if (min < 60) return t('fechaHaceMin', { n: min });
+    if (h   < 24) return t('fechaHaceH',   { n: h });
+    return t('fechaHaceD', { n: Math.floor(h / 24) });
+  }catch(e){ return ''; }
+}
+
+async function bsBuscar(reset){
+  const q = $('#bs-q').value.trim();
+  if (!q){ toast(t('bsErrorQ'), 1800); return; }
+
+  if (reset){
+    BS_STATE.offset = 0;
+    BS_STATE.resultados = [];
+  }
+
+  BS_STATE.q       = q;
+  BS_STATE.lang    = $('#bs-lang').value;
+  BS_STATE.country = $('#bs-country').value;
+  BS_STATE.date    = $('#bs-date').value;
+  BS_STATE.cargando = true;
+
+  const estado = $('#bs-estado');
+  estado.textContent = t('bsCargando');
+  $('#bs-go').disabled = true;
+
+  const params = new URLSearchParams();
+  params.set('q', q);
+  params.set('size', String(BS_STATE.size));
+  params.set('offset', String(BS_STATE.offset));
+  params.set('sort', 'date');
+  if (BS_STATE.lang)    params.set('lang', BS_STATE.lang);
+  if (BS_STATE.country) params.set('country', BS_STATE.country);
+  if (BS_STATE.date)    params.set('date', BS_STATE.date);
+  // Forzar tld hispano si el país es ES para filtrar agregadores basura
+  if (BS_STATE.country === 'ES') params.set('tld', 'es,cat,gal');
+
+  try{
+    const res = await fetch(`${FREENEWS_URL}?${params.toString()}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    BS_STATE.total = data.total || 0;
+    BS_STATE.resultados = BS_STATE.resultados.concat(data.results || []);
+
+    bsRender(reset);
+    try{ sessionStorage.setItem(BS_SESSION_KEY, JSON.stringify(BS_STATE)); }catch(e){}
+  }catch(e){
+    console.error('FreeNews error:', e);
+    estado.textContent = t('bsError');
+    if (reset) $('#bs-resultados').innerHTML = '';
+  }finally{
+    BS_STATE.cargando = false;
+    $('#bs-go').disabled = false;
+  }
+}
+
+function bsRender(esReset){
+  const cont = $('#bs-resultados');
+  const estado = $('#bs-estado');
+
+  if (esReset) cont.innerHTML = '';
+
+  const resultados = BS_STATE.resultados;
+  if (!resultados.length){
+    estado.textContent = t('bsSinResultados');
+    $('#bs-mas-wrap').style.display = 'none';
+    return;
+  }
+
+  estado.textContent = t('bsResultados', { n: BS_STATE.total })
+    + ' · ' + t('bsCargados', { n: resultados.length });
+
+  const offsetActual = esReset ? 0 : resultados.length - BS_STATE.size;
+  const nuevos = esReset ? resultados : resultados.slice(-BS_STATE.size);
+
+  const html = nuevos.map((r, i) => {
+    const idx = offsetActual + i;
+    const host = bsHostLimpio(r.host);
+    const enCatalogo = MEDIOS_UNICOS.some(m => m.dominio === host);
+    const titulo = escapeHtml(bsLimpiarTitulo(r.title));
+    const desc = r.description ? escapeHtml(bsLimpiarTitulo(r.description)) : '';
+    const fechaRel = bsFechaRel(r.published_at);
+
+    return `<article class="bs-resultado" data-idx="${idx}">
+      <div class="bs-meta">
+        <span class="bs-medio">${escapeHtml(host)}</span>
+        ${enCatalogo ? `<span class="bs-badge">✓ ${escapeHtml(t('bsVerificado'))}</span>` : ''}
+        <span class="bs-badge">${escapeHtml(t('bsFuenteExterna'))}</span>
+        ${fechaRel ? `<span>· ${escapeHtml(fechaRel)}</span>` : ''}
+      </div>
+      <a class="bs-titular" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${titulo}</a>
+      ${desc ? `<div class="bs-desc">${desc}</div>` : ''}
+      <div class="bs-acciones">
+        <button class="btn-mini btn-bs-guardar" data-idx="${idx}">${t('bsGuardar')}</button>
+      </div>
+    </article>`;
+  }).join('');
+
+  cont.insertAdjacentHTML('beforeend', html);
+
+  const puedeMas = resultados.length < BS_STATE.total;
+  $('#bs-mas-wrap').style.display = puedeMas ? '' : 'none';
+}
+
+function bsCargarSesion(){
+  try{
+    const raw = sessionStorage.getItem(BS_SESSION_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s || !s.resultados || !s.resultados.length) return;
+    Object.assign(BS_STATE, s);
+    $('#bs-q').value       = s.q       || '';
+    $('#bs-lang').value    = s.lang    || 'es';
+    $('#bs-country').value = s.country || 'ES';
+    $('#bs-date').value    = s.date    || '24h';
+    bsRender(true);
+    $('#bs-estado').textContent = t('bsResultados', { n: s.total })
+      + ' · ' + t('bsCargados', { n: s.resultados.length });
+  }catch(e){}
+}
+
+function bsWireEventos(){
+  $('#bs-go').addEventListener('click', () => bsBuscar(true));
+
+  $('#bs-q').addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); bsBuscar(true); }
+  });
+
+  $('#bs-mas').addEventListener('click', () => {
+    BS_STATE.offset += BS_STATE.size;
+    bsBuscar(false);
+  });
+
+  // Delegación: botón guardar en pendientes
+  $('#bs-resultados').addEventListener('click', e => {
+    const b = e.target.closest('.btn-bs-guardar');
+    if (!b) return;
+    e.preventDefault();
+    const r = BS_STATE.resultados[parseInt(b.dataset.idx, 10)];
+    if (!r) return;
+
+    const titulo = bsLimpiarTitulo(r.title);
+
+    if (!USCRIPT_OK){
+      const texto = `${titulo}\n${r.url}`;
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(texto).then(
+          () => toast(t('saveCopied'), 2400),
+          () => toast('No se pudo copiar', 2000)
+        );
+      }
+      return;
+    }
+
+    document.dispatchEvent(new CustomEvent('voceiro-save-later', {
+      detail: {
+        url: r.url,
+        title: titulo,
+        description: r.description || '',
+        image: r.image || ''
+      }
+    }));
+  });
+}
+
+function bsAbrir(){
+  bsPintarSelects();
+  abrirPanel('panel-buscar');
+  if (!BS_STATE.resultados.length) bsCargarSesion();
+}
+
+/* ═══════════════════════════════════════════════════════════════
    FILTRADO + RENDER (con paginación)
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
@@ -2262,7 +2730,6 @@ function aplicarFiltros(){
   const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
 
   let filtradas = NOTICIAS.filter(n => {
-    // Preset: calculamos una sola vez y lo guardamos
     const cumple = presetEfectivo ? cumplePreset(n) : false;
     n._esPreset = cumple;
     if (presetEfectivo && !cumple) return false;
@@ -2334,7 +2801,6 @@ function renderizar(){
 function renderItemHtml(n, idx){
   const ahora = Date.now();
 
-  // Fecha
   let fechaHtml = '';
   if (n._tieneFecha){
     const fecha = formatearFecha(n._ts);
@@ -2348,13 +2814,11 @@ function renderItemHtml(n, idx){
     fechaHtml = `<span class="badge recolectado">${escapeHtml(fecha)}</span>`;
   }
 
-  // Titular: highlight + bionic
   let tituloHtml;
   if (ULT_RX) tituloHtml = resaltar(n.titular, ULT_RX);
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
 
-  // Guardar estado
   const guardada = PENDIENTES_URLS.has(n.enlace);
   const item = PENDIENTES_MAP.get(n.enlace);
   const leida = guardada && item && item.read;
@@ -2404,7 +2868,6 @@ function appendBatch(){
   }
 }
 
-/* Event delegation en #resultados: un solo listener para todos los botones */
 function wireResultadosDelegation(){
   const cont = $('#resultados');
   cont.addEventListener('click', e => {
@@ -2471,6 +2934,7 @@ function aplicarTextos(){
   $('#btn-preset').textContent = t('btnPersonalizado');
   $('#btn-config').textContent = t('btnConfig');
   $('#btn-pendientes').textContent = t('btnPendientes');
+  $('#btn-buscar').textContent = t('btnBuscar');
   $('#btn-acces').textContent  = t('btnAcces');
   $('#btn-export').textContent = t('btnExport');
   $('#btn-import').textContent = t('btnImport');
@@ -2538,6 +3002,12 @@ function aplicarTextos(){
   const selMot = $('#rep-motivo');
   [...selMot.options].forEach((o, i) => { if (motivoLabels[i]) o.textContent = motivoLabels[i]; });
 
+  $('#bs-title').textContent = t('bsTitle');
+  $('#bs-aviso').textContent = t('bsAviso');
+  $('#bs-go').textContent = t('bsBuscar');
+  $('#bs-mas').textContent = t('bsMas');
+  $('#bs-q').placeholder = t('bsQ');
+
   $('#buscar').placeholder = t('fltBuscar');
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
@@ -2583,6 +3053,7 @@ function wireStaticEvents(){
     if (USCRIPT_OK) document.dispatchEvent(new CustomEvent('voceiro-get-config'));
   });
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
+  $('#btn-buscar').addEventListener('click', bsAbrir);
   $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
 
   document.querySelectorAll('.panel-close').forEach(b => {
@@ -2604,6 +3075,7 @@ function wireStaticEvents(){
     if (e.altKey && e.key.toLowerCase() === 'a'){ e.preventDefault(); abrirPanel('panel-acces'); }
     if (e.altKey && e.key.toLowerCase() === 'c'){ e.preventDefault(); abrirPanel('panel-config'); escribirPanel(PRESET); }
     if (e.altKey && e.key.toLowerCase() === 'p'){ e.preventDefault(); abrirPendientes(); }
+    if (e.altKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); bsAbrir(); }
     if (e.altKey && e.key.toLowerCase() === 'm'){
       e.preventDefault();
       if (!PRESET_ACTIVO && !presetTieneReglas()){
@@ -2709,18 +3181,15 @@ function wireStaticEvents(){
     aplicarFiltros();
   });
 
-  // Filtro de medios: debounce
   const filtrarMediosDebounced = debounce(filtrarMedios, 120);
   $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
-  // Filtros principales
   const aplicarFiltrosDebounced = debounce(aplicarFiltros, 180);
   $('#buscar').addEventListener('input', aplicarFiltrosDebounced);
   ['grupo','tipo','medio','rango','orden'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('change', aplicarFiltros);
-    // 'input' también por si el navegador lo dispara (algunos selects modernos)
     el.addEventListener('input', aplicarFiltros);
   });
 
@@ -2750,7 +3219,6 @@ async function init(){
     NOTICIAS = [];
   }
 
-  // Pre-cómputo de campos inmutables
   NOTICIAS.forEach(n => {
     n._norm    = normalize(n.titular + ' ' + n.medio);
     n._titNorm = normalize(n.titular);
@@ -2791,6 +3259,7 @@ async function init(){
   reconstruirListas();
   escribirPanel(PRESET);
   wireStaticEvents();
+  bsWireEventos();
   aplicarFiltros();
 
   if (!NOTICIAS.length){
