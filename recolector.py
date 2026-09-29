@@ -91,9 +91,9 @@ GN_MAX_ITEMS      = 30
 GN_DIAS_MAX       = 14
 GN_SLEEP          = 0.3
 
-DATOS_PATH        = 'public/datos.json'
 DATOS_DIR         = 'public/datos'
 MANIFEST_PATH     = 'public/datos/manifest.json'
+STATE_PATH        = 'state.json'
 
 
 # ─────────────────────────────────────────────────────────────
@@ -630,18 +630,69 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
 # FASE 2 · HISTÓRICO
 # ─────────────────────────────────────────────────────────────
 def cargar_historico_payload():
-    if not os.path.exists(DATOS_PATH):
-        return {'noticias': [], 'generado': None, 'ultimo_exito_por_medio': {}}
-    try:
-        with open(DATOS_PATH, encoding='utf-8') as f:
-            data = json.load(f)
-            if 'ultimo_exito_por_medio' not in data:
-                data['ultimo_exito_por_medio'] = {}
-            return data
-    except Exception as e:
-        print(f"[historico] no se pudo leer: {e}")
-        return {'noticias': [], 'generado': None, 'ultimo_exito_por_medio': {}}
+    """
+    Carga el histórico desde:
+      - state.json (solo estado: ultimo_exito_por_medio, generado)
+      - public/datos/manifest.json + public/datos/*.json (noticias)
+    Reconstruye las noticias al formato largo.
+    """
+    state = {'generado': None, 'ultimo_exito_por_medio': {}}
+    if os.path.exists(STATE_PATH):
+        try:
+            with open(STATE_PATH, encoding='utf-8') as f:
+                s = json.load(f) or {}
+                state['generado'] = s.get('generado')
+                state['ultimo_exito_por_medio'] = s.get('ultimo_exito_por_medio', {}) or {}
+        except Exception as e:
+            print(f"[state] no se pudo leer: {e}")
 
+    noticias = []
+    if os.path.exists(MANIFEST_PATH):
+        try:
+            with open(MANIFEST_PATH, encoding='utf-8') as f:
+                manifest = json.load(f)
+            if not state['generado']:
+                state['generado'] = manifest.get('generado')
+
+            for f_info in manifest.get('ficheros', []):
+                fn = f_info.get('file')
+                if not fn:
+                    continue
+                path = os.path.join(DATOS_DIR, fn)
+                if not os.path.exists(path):
+                    continue
+                try:
+                    with open(path, encoding='utf-8') as f2:
+                        d = json.load(f2)
+                except Exception:
+                    continue
+                medios_tabla = d.get('medios', {}) or {}
+                for n in d.get('noticias', []) or []:
+                    dom = n.get('d', '')
+                    m_info = medios_tabla.get(dom, {}) or {}
+                    noticias.append({
+                        'medio':          m_info.get('n', ''),
+                        'dominio':        dom,
+                        'grupo':          m_info.get('g', ''),
+                        'tipo':           m_info.get('t', ''),
+                        'lang':           m_info.get('l', ''),
+                        'tags':           m_info.get('tags', []) or [],
+                        'titular':        n.get('t', ''),
+                        'enlace':         n.get('u', ''),
+                        'fecha_pub':      n.get('p', ''),
+                        'fecha_estimada': n.get('e', ''),
+                        'fuente':         n.get('f', ''),
+                        'fecha':          n.get('c', ''),
+                    })
+        except Exception as e:
+            print(f"[historico] no se pudo leer el troceado: {e}")
+
+    print(f"[historico] {len(noticias)} noticias reconstruidas desde {DATOS_DIR}")
+    return {
+        'noticias': noticias,
+        'generado': state['generado'],
+        'ultimo_exito_por_medio': state['ultimo_exito_por_medio'],
+    }
 
 def fusionar_historico(nuevas, viejas, dias):
     """
@@ -682,25 +733,16 @@ def fusionar_historico(nuevas, viejas, dias):
     return todos
 
 
-# ─────────────────────────────────────────────────────────────
-# FASE 3a · SALIDA COMPATIBLE (datos.json formato viejo)
-# ─────────────────────────────────────────────────────────────
-def generar_json_compat(noticias, ultimo_exito_por_medio, ahora):
-    os.makedirs('public', exist_ok=True)
-    payload = {
-        'generado':               ahora.isoformat(timespec='seconds'),
-        'generado_legible':       ahora.strftime('%d/%m/%Y %H:%M'),
-        'dias_retencion':         DIAS_RETENCION,
-        'n_feed':                 N_FEED,
-        'total':                  len(noticias),
-        'ultimo_exito_por_medio': ultimo_exito_por_medio or {},
-        'noticias':               noticias,
-    }
-    with open(DATOS_PATH, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
-    kb = os.path.getsize(DATOS_PATH) / 1024
-    print(f"[compat] {DATOS_PATH} · {kb:.1f} KB · {len(noticias)} noticias")
 
+def guardar_state(generado_iso, ultimo_exito_por_medio):
+    payload = {
+        'generado': generado_iso,
+        'ultimo_exito_por_medio': ultimo_exito_por_medio or {},
+    }
+    with open(STATE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
+    kb = os.path.getsize(STATE_PATH) / 1024
+    print(f"[state] {STATE_PATH} · {kb:.1f} KB")
 
 # ─────────────────────────────────────────────────────────────
 # FASE 3b · SALIDA TROCEADA (datos/manifest.json + días)
@@ -959,8 +1001,8 @@ def main():
 
     # ─── Escribir salidas ───
     print()
-    generar_json_compat(finales, ultimo_exito_nuevo, t_now)
     generar_troceados(finales, t_now)
+    guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
 
     if sin_resultado:
