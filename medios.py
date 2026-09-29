@@ -919,9 +919,27 @@ def google_news_url(domain, lang='es', extra_q=None):
 # Verificado empíricamente: cada uno devuelve >1 item en 7d con
 # ok_dominio=True desde GH Actions.
 GN_FALLBACK_DOMAINS = {
-    # Generado automáticamente por verificar_gn.py
-    # 85 dominios con items recientes del dominio en GN.
-    # (ok = query site:, alt = query libre)
+    # Bloqueados desde GH (403) — van por GN
+    'cuatro.com',
+    'telecinco.es',
+    'niusdiario.es',
+    'eldesmarque.com',
+    'diariocritico.com',
+    'elsiglodeuropa.es',
+    'capitalmadrid.com',
+    'elchapuzasinformatico.com',
+    'nationalgeographic.com.es',
+    'muyinteresante.es',
+    'e-noticies.cat',
+    'diariodepontevedra.es',
+    'elprogreso.es',
+    'granadadigital.es',
+    'sevillaactualidad.com',
+    'madridiario.es',
+    'lastampa.it',
+    'repubblica.it',
+    'france24.com',
+    'elnacional.com',
 
     # ──  ──
     '2playbook.com',
