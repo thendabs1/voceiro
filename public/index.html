@@ -670,6 +670,70 @@
     .rep-acciones .grupo{width:100%}
     .rep-acciones button{flex:1}
   }
+
+  /* ═══ Toggle duplicados + desplegable ═══ */
+  .btn-dup{
+    border:2px solid var(--muted); background:transparent; color:var(--muted);
+    font-weight:600;
+  }
+  .btn-dup:hover{background:var(--quote-bg)}
+  .btn-dup.active{
+    background:var(--save); color:#fff; border-color:var(--save);
+  }
+
+  .dups-details{
+    margin-top:8px;
+    font-size:.72em;
+  }
+  .dups-details summary{
+    cursor:pointer;
+    color:var(--save);
+    font-weight:600;
+    padding:3px 8px;
+    display:inline-block;
+    border:1px solid var(--save);
+    border-radius:10px;
+    background:var(--save-bg);
+    list-style:none;
+    user-select:none;
+  }
+  .dups-details summary::-webkit-details-marker{display:none}
+  .dups-details summary::before{
+    content:'▸ ';
+    display:inline-block;
+    transition:transform .15s;
+  }
+  .dups-details[open] summary::before{content:'▾ '}
+  .dups-details summary:hover{filter:brightness(.95)}
+
+  .dups-list{
+    margin-top:6px;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--quote-bg);
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .dups-list .dup-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:.92em;
+    color:var(--muted);
+  }
+  .dups-list .dup-item .dup-medio{
+    font-weight:600;
+    color:var(--fg);
+  }
+  .dups-list .dup-item a{
+    color:var(--accent);
+    text-decoration:none;
+    font-weight:500;
+    margin-left:auto;
+  }
+  .dups-list .dup-item a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -678,9 +742,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">29/09/2026 13:25</span>
+    <span id="fecha">29/09/2026 14:09</span>
     <span>·</span>
-    <span id="total">17932</span>
+    <span id="total">18815</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -690,6 +754,7 @@
   <button id="btn-config" type="button"></button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
   <button id="btn-buscar" class="btn-buscar" type="button"></button>
+  <button id="btn-dup" class="btn-dup" type="button"></button>
   <span style="flex:1"></span>
   <select id="lang-select" class="lang-select" aria-label="Language"></select>
   <button id="btn-acces" type="button"></button>
@@ -945,6 +1010,10 @@ const I18N = {
     metaPrefix: 'Actualizado:', metaSuffix: 'titulares en histórico',
     btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
     btnPendientes: '📚 Pendientes', btnAcces: 'Aa Accesibilidad',
+    btnDup: '🔁 Ocultar duplicados',
+    btnDupTitle: 'Agrupar titulares repetidos en distintos medios',
+    dupsMore: '🔁 También en {n} medio(s)',
+    dupsTitle: 'También publicado en:',
     btnImport: '↓ Importar', btnExport: '↑ Exportar',
     btnReset: '↺ Valores por defecto', btnCancel: 'Cancelar', btnSave: 'Guardar', btnClear: 'Limpiar',
     lblIdioma: 'Idioma',
@@ -1063,6 +1132,10 @@ const I18N = {
     metaPrefix: 'Actualizado:', metaSuffix: 'titulares no histórico',
     btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
     btnPendientes: '📚 Pendentes', btnAcces: 'Aa Accesibilidade',
+    btnDup: '🔁 Agochar duplicados',
+    btnDupTitle: 'Agrupar titulares repetidos en distintos medios',
+    dupsMore: '🔁 Tamén en {n} medio(s)',
+    dupsTitle: 'Tamén publicado en:',
     btnImport: '↓ Importar', btnExport: '↑ Exportar',
     btnReset: '↺ Valores por defecto', btnCancel: 'Cancelar', btnSave: 'Gardar', btnClear: 'Limpar',
     lblIdioma: 'Idioma',
@@ -1167,6 +1240,10 @@ const I18N = {
     metaPrefix: 'Actualitzat:', metaSuffix: 'titulars a l\'històric',
     btnPersonalizado: '🏔 Mode Personalitzat', btnConfig: '⚙️ Configurar',
     btnPendientes: '📚 Pendents', btnAcces: 'Aa Accessibilitat',
+    btnDup: '🔁 Amagar duplicats',
+    btnDupTitle: 'Agrupar titulars repetits en diferents mitjans',
+    dupsMore: '🔁 També a {n} mitjà(ns)',
+    dupsTitle: 'També publicat a:',
     btnImport: '↓ Importar', btnExport: '↑ Exportar',
     btnReset: '↺ Valors per defecte', btnCancel: 'Cancel·lar', btnSave: 'Desar', btnClear: 'Netejar',
     lblIdioma: 'Idioma',
@@ -1270,6 +1347,10 @@ const I18N = {
     metaPrefix: 'Updated:', metaSuffix: 'headlines in history',
     btnPersonalizado: '🏔 Custom Mode', btnConfig: '⚙️ Configure',
     btnPendientes: '📚 Queue', btnAcces: 'Aa Accessibility',
+    btnDup: '🔁 Hide duplicates',
+    btnDupTitle: 'Group identical headlines across outlets',
+    dupsMore: '🔁 Also in {n} outlet(s)',
+    dupsTitle: 'Also published in:',
     btnImport: '↓ Import', btnExport: '↑ Export',
     btnReset: '↺ Reset defaults', btnCancel: 'Cancel', btnSave: 'Save', btnClear: 'Clear',
     lblIdioma: 'Language',
@@ -1373,6 +1454,10 @@ const I18N = {
     metaPrefix: 'Eguneratuta:', metaSuffix: 'izenburu historian',
     btnPersonalizado: '🏔 Modo Pertsonalizatua', btnConfig: '⚙️ Konfiguratu',
     btnPendientes: '📚 Zain', btnAcces: 'Aa Irisgarritasuna',
+    btnDup: '🔁 Bikoiztuak ezkutatu',
+    btnDupTitle: 'Hedabide ezberdinetan errepikatutako izenburuak batu',
+    dupsMore: '🔁 Beste {n} hedabidetan',
+    dupsTitle: 'Hemen ere argitaratua:',
     btnImport: '↓ Inportatu', btnExport: '↑ Esportatu',
     btnReset: '↺ Balio lehenetsiak', btnCancel: 'Utzi', btnSave: 'Gorde', btnClear: 'Garbitu',
     lblIdioma: 'Hizkuntza',
@@ -1472,7 +1557,6 @@ const I18N = {
     bsVerificado: 'katalogoan',
   },
 };
-
 function t(key, vars){
   const lang = (ACCES && ACCES.lang) || 'es';
   const dict = I18N[lang] || I18N.es;
@@ -1660,6 +1744,7 @@ function ajustarWidth(d){
 const PRESET_KEY = 'voceiro-preset-v3';
 const PRESET_ACTIVO_KEY = 'voceiro-preset-activo';
 const SITES_CACHE_KEY = 'voceiro-sites-cache-v1';
+const DUP_PREF_KEY = 'voceiro-dup-agrupar';
 
 const PRESET_DEF = { grupos: [], palabras: [] };
 
@@ -1667,6 +1752,9 @@ let PRESET = null;
 let PRESET_ACTIVO = false;
 let SITES = new Map();
 let SITES_LIST = [];
+
+let AGRUPAR_DUPS = true;
+let DUP_GROUPS = new Map();
 
 function cargarPreset(){
   try{
@@ -1732,6 +1820,25 @@ function setSitesFromArray(arr){
     });
     SITES_LIST.push({ domain: s.domain, ...SITES.get(s.domain) });
   });
+}
+
+function cargarDupPref(){
+  try {
+    const raw = localStorage.getItem(DUP_PREF_KEY);
+    if (raw === 'false') return false;
+    if (raw === 'true') return true;
+  }catch(e){}
+  return true;
+}
+function guardarDupPref(){
+  try{ localStorage.setItem(DUP_PREF_KEY, AGRUPAR_DUPS ? 'true' : 'false'); }catch(e){}
+}
+function actualizarBotonDup(){
+  const b = $('#btn-dup');
+  if (!b) return;
+  b.classList.toggle('active', AGRUPAR_DUPS);
+  b.textContent = t('btnDup');
+  b.title = t('btnDupTitle');
 }
 
 function actualizarBotonPreset(){
@@ -1803,6 +1910,7 @@ function updateFocus(){
 window.addEventListener('scroll', () => {
   if (ACCES.focus) requestAnimationFrame(updateFocus);
 }, { passive: true });
+
 /* ═══════════════════════════════════════════════════════════════
    REGEX DE RESALTADO + IDIOMA
    ═══════════════════════════════════════════════════════════════ */
@@ -2243,6 +2351,23 @@ function construirMediosUnicos(){
   })).sort((a,b) =>
     a.grupo.localeCompare(b.grupo) || a.medio.localeCompare(b.medio)
   );
+}
+
+function construirGruposDuplicados(){
+  DUP_GROUPS = new Map();
+  for (const n of NOTICIAS){
+    const key = n._titNorm || (n._titNorm = normalize(n.titular));
+    if (!key) continue;
+    if (!DUP_GROUPS.has(key)) DUP_GROUPS.set(key, []);
+    DUP_GROUPS.get(key).push(n);
+  }
+  let grupos = 0, noticias = 0;
+  for (const [key, arr] of DUP_GROUPS){
+    if (arr.length < 2){ DUP_GROUPS.delete(key); continue; }
+    grupos++;
+    noticias += arr.length;
+  }
+  console.log(`[dups] ${grupos} grupos · ${noticias} noticias implicadas`);
 }
 
 let MEDIOS_STRICT   = new Map();
@@ -3204,6 +3329,47 @@ function aplicarFiltros(){
     return true;
   });
 
+  // ─── Agrupación de duplicados exactos ───
+  if (AGRUPAR_DUPS){
+    const gruposActivos = new Map();
+    for (const n of filtradas){
+      const key = n._titNorm;
+      if (key && DUP_GROUPS.has(key)){
+        if (!gruposActivos.has(key)) gruposActivos.set(key, []);
+        gruposActivos.get(key).push(n);
+      }
+    }
+
+    const representantes = new Set();
+    for (const [, grupo] of gruposActivos){
+      // Elegir representante: primero uno no bloqueado, si no el primero
+      let rep = null;
+      for (const n of grupo){
+        const site = SITES.get(n.dominio);
+        const blocked = site && site.mode === 'off';
+        if (!blocked){ rep = n; break; }
+      }
+      if (!rep) rep = grupo[0];
+
+      // Marcar el resto como "ocultos" en este representante
+      rep._dupHidden = grupo.filter(o => o !== rep);
+      // Y limpiar cualquier _dupHidden previo en los demás
+      for (const o of grupo){
+        if (o !== rep) o._dupHidden = null;
+      }
+      representantes.add(rep);
+    }
+
+    filtradas = filtradas.filter(n => {
+      const key = n._titNorm;
+      if (!key || !DUP_GROUPS.has(key)) return true;
+      return representantes.has(n);
+    });
+  } else {
+    // Sin agrupar: limpiar cualquier _dupHidden previo
+    for (const n of filtradas) n._dupHidden = null;
+  }
+
   filtradas.sort((a, b) => {
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
@@ -3296,6 +3462,28 @@ function renderItemHtml(n, idx){
 
   const blockTitle = t('blockMedia');
 
+  // Bloque de duplicados (solo si los hay)
+  let dupsHtml = '';
+  if (n._dupHidden && n._dupHidden.length){
+    const otros = n._dupHidden.map(o => {
+      const m = MEDIOS[o.dominio] || {};
+      const nombre = m.n || o.medio || o.dominio;
+      return `<div class="dup-item">
+        <span class="dup-medio">${escapeHtml(nombre)}</span>
+        <span>· ${escapeHtml(formatearFecha(o._tsShow))}</span>
+        <a href="${o._enlaceEsc}" target="_blank" rel="noopener">Abrir</a>
+      </div>`;
+    }).join('');
+    const nLabel = n._dupHidden.length;
+    dupsHtml = `<details class="dups-details">
+      <summary>${escapeHtml(t('dupsMore', { n: nLabel }))}</summary>
+      <div class="dups-list">
+        <div style="font-size:.85em;color:var(--muted);margin-bottom:4px;">${escapeHtml(t('dupsTitle'))}</div>
+        ${otros}
+      </div>
+    </details>`;
+  }
+
   return `<article class="noticia" data-idx="${idx}">
     <div class="cabecera">
       <span class="medio">${n._medioEsc}</span>
@@ -3308,6 +3496,7 @@ function renderItemHtml(n, idx){
       <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
     </div>
     <a class="titular" href="${n._enlaceEsc}" target="_blank" rel="noopener">${tituloHtml}</a>
+    ${dupsHtml}
   </article>`;
 }
 
@@ -3336,7 +3525,6 @@ function appendBatch(){
     sentinel.remove();
   }
 }
-
 function wireResultadosDelegation(){
   const cont = $('#resultados');
   cont.addEventListener('click', e => {
@@ -3439,6 +3627,8 @@ function aplicarTextos(){
   $('#btn-import').textContent = t('btnImport');
   $('#btn-export').title = t('btnExport');
   $('#btn-import').title = t('btnImport');
+
+  actualizarBotonDup();
 
   $('#cfg-title').textContent = t('cfgTitle');
   $('#cfg-grupos').textContent = t('cfgGrupos');
@@ -3554,6 +3744,14 @@ function wireStaticEvents(){
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', bsAbrir);
   $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
+
+  $('#btn-dup').addEventListener('click', () => {
+    AGRUPAR_DUPS = !AGRUPAR_DUPS;
+    guardarDupPref();
+    actualizarBotonDup();
+    aplicarFiltros();
+    toast(AGRUPAR_DUPS ? t('btnDup') : t('btnDup') + ' ✕', 1200);
+  });
 
   document.querySelectorAll('.panel-close').forEach(b => {
     b.addEventListener('click', () => cerrarPanel(b.dataset.close));
@@ -3716,11 +3914,13 @@ async function init(){
   hidratarNoticias();
 
   construirMediosUnicos();
+  construirGruposDuplicados();
   construirIndicesBusqueda();
 
   PRESET = cargarPreset();
   recompilarPreset();
   PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
+  AGRUPAR_DUPS = cargarDupPref();
 
   const cachedSites = cargarSitesCache();
   setSitesFromArray(cachedSites);
@@ -3762,4 +3962,4 @@ init().catch(err => {
 </body>
 </html>
 
-  
+
