@@ -2102,8 +2102,22 @@ function initUserScriptBridge(){
   document.addEventListener('voceiro-later-list-data', e => {
     const items = (e.detail && e.detail.items) || [];
     PENDIENTES_CACHE = items;
-    PENDIENTES_URLS = new Set(items.map(i => i.url));
-    PENDIENTES_MAP = new Map(items.map(i => [i.url, i]));
+    PENDIENTES_URLS = new Set();
+    PENDIENTES_MAP  = new Map();
+    items.forEach(i => {
+      if (!i || !i.url) return;
+      const main = normalizeUrlForMatch(i.url);
+      PENDIENTES_URLS.add(main);
+      PENDIENTES_MAP.set(main, i);
+      if (Array.isArray(i.aliasUrls)){
+        i.aliasUrls.forEach(u => {
+          if (!u) return;
+          const a = normalizeUrlForMatch(u);
+          PENDIENTES_URLS.add(a);
+          if (!PENDIENTES_MAP.has(a)) PENDIENTES_MAP.set(a, i);
+        });
+      }
+    });
     renderPendientes(items);
     refrescarBotonesGuardar();
   });
@@ -2111,8 +2125,22 @@ function initUserScriptBridge(){
   document.addEventListener('voceiro-later-changed', e => {
     const items = (e.detail && e.detail.items) || [];
     PENDIENTES_CACHE = items;
-    PENDIENTES_URLS = new Set(items.map(i => i.url));
-    PENDIENTES_MAP = new Map(items.map(i => [i.url, i]));
+    PENDIENTES_URLS = new Set();
+    PENDIENTES_MAP  = new Map();
+    items.forEach(i => {
+      if (!i || !i.url) return;
+      const main = normalizeUrlForMatch(i.url);
+      PENDIENTES_URLS.add(main);
+      PENDIENTES_MAP.set(main, i);
+      if (Array.isArray(i.aliasUrls)){
+        i.aliasUrls.forEach(u => {
+          if (!u) return;
+          const a = normalizeUrlForMatch(u);
+          PENDIENTES_URLS.add(a);
+          if (!PENDIENTES_MAP.has(a)) PENDIENTES_MAP.set(a, i);
+        });
+      }
+    });
     if ($('#panel-pendientes').classList.contains('open')) renderPendientes(items);
     refrescarBotonesGuardar();
   });
@@ -3470,8 +3498,9 @@ function renderItemHtml(n, idx){
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
 
-  const guardada = PENDIENTES_URLS.has(n.enlace);
-  const item = PENDIENTES_MAP.get(n.enlace);
+  const key = normalizeUrlForMatch(n.enlace);
+  const guardada = PENDIENTES_URLS.has(key);
+  const item = PENDIENTES_MAP.get(key);
   const leida = guardada && item && item.read;
 
   let saveLabel, saveTitle;
@@ -3556,6 +3585,22 @@ function appendBatch(){
   }
 }
 function wireResultadosDelegation(){
+  const link = e.target.closest('a.titular');
+  if (link){
+    const i = parseInt(link.closest('.noticia').dataset.idx, 10);
+    const n = ULT_FILTRADAS[i];
+    if (n){
+      try {
+        localStorage.setItem('voceiro:lastOpen', JSON.stringify({
+          enlace: n.enlace,
+          titular: n.titular,
+          ts: Date.now()
+        }));
+      } catch(_){}
+    }
+    // No hacemos preventDefault: dejamos que abra normalmente
+    return;
+  }
   const cont = $('#resultados');
   cont.addEventListener('click', e => {
     const saveBtn = e.target.closest('.btn-save-item');
