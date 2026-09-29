@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">29/09/2026 22:24</span>
+    <span id="fecha">29/09/2026 22:52</span>
     <span>·</span>
-    <span id="total">12279</span>
+    <span id="total">12867</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3719,6 +3719,12 @@ function aplicarTextos(){
   [t('acJustificar'), t('acBionic'), t('acFoco')].forEach((txt, i) => {
     if (bExtra[i]) bExtra[i].textContent = txt;
   });
+  const hTitle = document.getElementById('h-title');
+  if (hTitle){
+    hTitle.style.cursor = 'pointer';
+    hTitle.title = 'F5';
+    hTitle.addEventListener('click', () => location.reload());
+  }
 
   $('#pend-title').textContent = t('pendTitle');
   $('#pend-refresh').textContent = t('pendRefresh');
