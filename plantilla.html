@@ -3212,7 +3212,7 @@ async function init(){
   initUserScriptBridge();
 
   try{
-    const res = await fetch('datos.json?' + Date.now());
+    const res = await fetch('datos.json', { cache: 'no-cache' });
     const data = await res.json();
     NOTICIAS = data.noticias || [];
   }catch(e){
