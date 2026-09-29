@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 00:19</span>
+    <span id="fecha">30/09/2026 00:31</span>
     <span>·</span>
-    <span id="total">14070</span>
+    <span id="total">14226</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -779,7 +779,6 @@
 <section class="topbar">
   <button id="btn-preset" class="btn-preset" type="button"></button>
   <button id="btn-config" type="button"></button>
-  <button id="btn-hide-read" type="button" title="Ocultar leídas">👁</button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
   <button id="btn-buscar" class="btn-buscar" type="button"></button>
   <span style="flex:1"></span>
@@ -1018,6 +1017,7 @@
 <div class="contador-row">
   <span id="contador"></span>
   <button id="btn-dup" class="btn-dup-inline" type="button"></button>
+  <button id="btn-hide-read" class="btn-dup-inline" type="button"></button>
 </div>
 <main id="resultados"></main>
 <div id="toast-wrap"></div>
@@ -1039,9 +1039,11 @@ const I18N = {
     metaPrefix: 'Actualizado:', metaSuffix: 'titulares en histórico',
     btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
     btnPendientes: '📚 Pendientes', btnAcces: 'Aa Accesibilidad',
-    btnDup: '🔁 Ocultar duplicados',
+    btnDup: 'Ocultar duplicados',
     btnDupTitle: 'Agrupar titulares repetidos en distintos medios',
     dupsMore: '🔁 También en {n} medio(s)',
+    btnHideRead: 'Ocultar leídas',
+    btnHideReadTitle: 'Ocultar noticias ya leídas',
     dupsTitle: 'También publicado en:',
     btnImport: '↓ Importar', btnExport: '↑ Exportar',
     btnReset: '↺ Valores por defecto', btnCancel: 'Cancelar', btnSave: 'Guardar', btnClear: 'Limpiar',
@@ -1157,6 +1159,7 @@ const I18N = {
     bsVerificado: 'en el catálogo',
   },
   gl: {
+    btnHideRead: 'Agochar lidas',
     pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro',
     metaPrefix: 'Actualizado:', metaSuffix: 'titulares no histórico',
     btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
@@ -1897,7 +1900,15 @@ function actualizarBotonDup(){
   b.setAttribute('aria-label', t('btnDup'));
   b.setAttribute('aria-pressed', AGRUPAR_DUPS ? 'true' : 'false');
 }
-
+function actualizarBotonHideRead(){
+  const b = $('#btn-hide-read');
+  if (!b) return;
+  b.classList.toggle('active', OCULTAR_LEIDAS);
+  b.textContent = t('btnHideRead');
+  b.title = t('btnHideReadTitle');
+  b.setAttribute('aria-label', t('btnHideRead'));
+  b.setAttribute('aria-pressed', OCULTAR_LEIDAS ? 'true' : 'false');
+}
 function actualizarBotonPreset(){
   $('#btn-preset').classList.toggle('active', PRESET_ACTIVO);
 }
@@ -3696,6 +3707,7 @@ function aplicarTextos(){
   $('#btn-import').title = t('btnImport');
 
   actualizarBotonDup();
+  actualizarBotonHideRead();
 
   $('#cfg-title').textContent = t('cfgTitle');
   $('#cfg-grupos').textContent = t('cfgGrupos');
@@ -3808,19 +3820,20 @@ function wireStaticEvents(){
     aplicarFiltros();
     toast(PRESET_ACTIVO ? t('presetActivado') : t('presetDesactivado'), 1500);
   });
+  $('#btn-dup').addEventListener('click', () => {
+    AGRUPAR_DUPS = !AGRUPAR_DUPS;
+    guardarDupPref();
+    actualizarBotonDup();
+    aplicarFiltros();
+    toast(AGRUPAR_DUPS ? t('btnDup') : t('btnDup') + ' ✕', 1200);
+  });
+
   $('#btn-hide-read').addEventListener('click', () => {
     OCULTAR_LEIDAS = !OCULTAR_LEIDAS;
     guardarHideReadPref();
-    $('#btn-hide-read').classList.toggle('active', OCULTAR_LEIDAS);
+    actualizarBotonHideRead();
     aplicarFiltros();
-  });
-
-  // Estado inicial del botón
-  $('#btn-hide-read').classList.toggle('active', OCULTAR_LEIDAS);
-  $('#btn-config').addEventListener('click', () => {
-    abrirPanel('panel-config');
-    escribirPanel(PRESET);
-    if (USCRIPT_OK) document.dispatchEvent(new CustomEvent('voceiro-get-config'));
+    toast(OCULTAR_LEIDAS ? t('btnHideRead') : t('btnHideRead') + ' ✕', 1200);
   });
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', bsAbrir);
