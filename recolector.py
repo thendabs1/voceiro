@@ -141,6 +141,22 @@ def _to_iso_madrid(dt):
     except Exception:
         return ''
 
+def _limpiar_cdata(s):
+    """Quita envoltorios <![CDATA[...]]> que algunos RSS dejan en el título."""
+    if not s:
+        return ''
+    s = str(s).strip()
+    changed = True
+    while changed:
+        changed = False
+        if s.startswith('<![CDATA['):
+            s = s[9:]
+            changed = True
+        if s.endswith(']]>'):
+            s = s[:-3]
+            changed = True
+        s = s.strip()
+    return s
 
 def _rss_date_to_iso(raw):
     if not raw:
@@ -236,7 +252,7 @@ def _parse_feed(content):
     feed = feedparser.parse(content)
     out = []
     for e in feed.entries[:N_FEED]:
-        t = (e.get('title') or '').strip()
+        t = _limpiar_cdata(e.get('title') or '')
         l = (e.get('link') or '').strip()
         if not t or not l:
             continue
@@ -438,7 +454,7 @@ def _parse_gn_feed(content):
     feed = feedparser.parse(content)
     out = []
     for e in feed.entries[:GN_MAX_ITEMS * 2]:
-        t = (e.get('title') or '').strip()
+        t = _limpiar_cdata(e.get('title') or '')
         l = (e.get('link') or '').strip()
         if not t or not l:
             continue
