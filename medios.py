@@ -55,7 +55,6 @@ MEDIA_CATALOG = [
         { 'd':'europapress.es',      'n':'Europa Press',         'lang':'es', 'type':'agencia', 'tags':['agencia','nacional'] },
         { 'd':'huffingtonpost.es',   'n':'El HuffPost',          'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },
         { 'd':'infolibre.es',        'n':'InfoLibre',            'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },
-        { 'd':'kyodonews.net',  'n':'Kyodo News', 'lang':'en','type':'agencia','tags':['agencia','japon'] },  # [TIMEOUT: revisar]
         { 'd':'larazon.es',          'n':'La Razón',             'lang':'es', 'type':'diario',  'tags':['generalista','nacional','conservador'] },
         { 'd':'lasexta.com',         'n':'La Sexta',             'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
         { 'd':'lavanguardia.com',    'n':'La Vanguardia',        'lang':'es', 'type':'diario',  'tags':['generalista','nacional','catalan'] },
@@ -82,6 +81,7 @@ MEDIA_CATALOG = [
         # [CAÍDO-DNS: DNS: [Errno -5] No address associated with hostname] { 'd':'afp.com',        'n':'AFP',        'lang':'en','type':'agencia','tags':['agencia','internacional'] },
         # [CAÍDO-DNS: DNS: [Errno -5] No address associated with hostname] { 'd':'diario16.com',         'n':'Diario16',             'lang':'es','type':'digital','tags':['generalista','digital'] },
         # [CAÍDO-HTTP: HTTPSConnectionPool(host='dpa.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError("HTTPSConn] { 'd':'dpa.com',        'n':'DPA',        'lang':'de','type':'agencia','tags':['agencia','alemania'] },
+        # [CAÍDO-HTTP: HTTPSConnectionPool(host='kyodonews.net', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerific] { 'd':'kyodonews.net',  'n':'Kyodo News', 'lang':'en','type':'agencia','tags':['agencia','japon'] },
         # [CAÍDO-HTTP: HTTP 500] { 'd':'periodismohumano.com', 'n':'Periodismo Humano',    'lang':'es','type':'digital','tags':['generalista','social'] },
     ]},
 
@@ -174,8 +174,7 @@ MEDIA_CATALOG = [
         { 'd':'critic.cat',          'n':'Crític',               'lang':'ca', 'type':'revista', 'tags':['cultural','investigacion'] },  # [SIN-FEED: GN/scraping]
         { 'd':'ctxt.es',             'n':'CTXT',                 'lang':'es', 'type':'revista', 'tags':['cultural','investigacion'] },  # [SIN-FEED: GN/scraping]
         { 'd':'culturainquieta.com', 'n':'Cultura Inquieta',     'lang':'es', 'type':'revista', 'tags':['cultural'] },
-        { 'd':'elcultural.com',      'n':'El Cultural',          'lang':'es', 'type':'revista', 'tags':['cultural'] },
-        { 'd':'elsaltodiario.com',   'n':'El Salto',             'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'elsaltodiario.com',   'n':'El Salto',             'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },  # [TIMEOUT: revisar]
         { 'd':'ethic.es',            'n':'Ethic',                'lang':'es', 'type':'revista', 'tags':['cultural','sociedad'] },
         { 'd':'jotdown.es',          'n':'Jot Down',             'lang':'es', 'type':'revista', 'tags':['cultural','entrevistas'] },
         { 'd':'lamarea.com',         'n':'La Marea',             'lang':'es', 'type':'revista', 'tags':['cultural','progresista'] },
@@ -192,7 +191,6 @@ MEDIA_CATALOG = [
         { 'd':'324.cat',             'n':'324',                  'lang':'ca', 'type':'tv',      'tags':['generalista','tv','publico'] },
         { 'd':'acn.cat',             'n':'Agència Catalana de Notícies', 'lang':'ca', 'type':'agencia', 'tags':['agencia','catalan'] },  # [SIN-FEED: GN/scraping]
         { 'd':'ara.cat',             'n':'Ara',                  'lang':'ca', 'type':'diario',  'tags':['generalista','catalan'] },
-        { 'd':'ccma.cat',            'n':'CCMA',                 'lang':'ca', 'type':'tv',      'tags':['generalista','tv','publico'] },  # [REDIRIGE → 3cat.cat]
         { 'd':'diaridegirona.cat',    'n':'Diari de Girona',      'lang':'ca','type':'diario','tags':['generalista','catalan'] },  # [SIN-FEED: GN/scraping]
         { 'd':'diaridetarragona.com', 'n':'Diari de Tarragona',   'lang':'ca','type':'diario','tags':['generalista','catalan'] },
         { 'd':'directa.cat',          'n':'La Directa',           'lang':'ca','type':'revista','tags':['investigacion','izquierda'] },
@@ -201,7 +199,7 @@ MEDIA_CATALOG = [
         { 'd':'elnacional.cat',      'n':'El Nacional',          'lang':'ca', 'type':'digital', 'tags':['generalista','digital'] },
         { 'd':'elpuntavui.cat',      'n':'El Punt Avui',         'lang':'ca', 'type':'diario',  'tags':['generalista','catalan'] },
         { 'd':'naciodigital.cat',    'n':'Nació Digital',        'lang':'ca', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'rac1.cat',            'n':'RAC1',                 'lang':'ca', 'type':'radio',   'tags':['generalista','radio'] },
+        { 'd':'rac1.cat',            'n':'RAC1',                 'lang':'ca', 'type':'radio',   'tags':['generalista','radio'] },  # [SIN-FEED: GN/scraping]
         { 'd':'regio7.cat',           'n':'Regió7',               'lang':'ca','type':'diario','tags':['generalista','catalan'] },  # [SIN-FEED: GN/scraping]
         { 'd':'reusdigital.cat',      'n':'Reus Digital',         'lang':'ca','type':'digital','tags':['generalista','local'] },
         { 'd':'segre.com',            'n':'Segre',                'lang':'ca','type':'diario','tags':['generalista','catalan'] },
@@ -209,6 +207,7 @@ MEDIA_CATALOG = [
         { 'd':'vilaweb.cat',         'n':'VilaWeb',              'lang':'ca', 'type':'digital', 'tags':['generalista','digital'] },
 
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
+        # [CAÍDO-HTTP: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))] { 'd':'ccma.cat',            'n':'CCMA',                 'lang':'ca', 'type':'tv',      'tags':['generalista','tv','publico'] },
         # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'laronda.cat',          'n':'La Ronda',             'lang':'ca','type':'digital','tags':['generalista','local'] },
         # [CAÍDO-DNS: DNS: [Errno -3] Temporary failure in name resolution] { 'd':'nacio.cat',            'n':'Nació Digital',        'lang':'ca','type':'digital','tags':['generalista','catalan'] },
     ]},
@@ -285,13 +284,11 @@ MEDIA_CATALOG = [
     # AUTONÓMICOS · CASTILLA Y LEÓN
     # ============================================================
     { 'group':'Castilla y León', 'items':[
-        { 'd':'diariodeavila.es',    'n':'Diario de Ávila',      'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'diariodeburgos.es',   'n':'Diario de Burgos',     'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },  # [SIN-FEED: GN/scraping]
         { 'd':'diariodeleon.es',     'n':'Diario de León',       'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
         { 'd':'diariodeleon.es',       'n':'Diario de León',       'lang':'es','type':'diario','tags':['generalista','leon'] },
         { 'd':'diariodevalladolid.es', 'n':'Diario de Valladolid', 'lang':'es','type':'digital','tags':['generalista','valladolid'] },
-        { 'd':'diariopalentino.es',    'n':'Diario Palentino',     'lang':'es','type':'diario','tags':['generalista','paleencia'] },  # [SIN-FEED: GN/scraping]
         { 'd':'elcorreodeburgos.com',  'n':'El Correo de Burgos',  'lang':'es','type':'digital','tags':['generalista','burgos'] },
+        { 'd':'eldiadevalladolid.com', 'n':'El Día de Valladolid', 'lang':'es', 'type':'diario', 'tags':['generalista','castillaleon'] },  # [TIMEOUT: revisar]
         { 'd':'elmirondesoria.es',     'n':'El Mirón de Soria',    'lang':'es','type':'digital','tags':['generalista','soria'] },
         { 'd':'elnortedecastilla.es','n':'El Norte de Castilla', 'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
         { 'd':'lagacetadesalamanca.es', 'n':'La Gaceta de Salamanca', 'lang':'es', 'type':'diario', 'tags':['generalista','castillaleon'] },
@@ -299,7 +296,9 @@ MEDIA_CATALOG = [
         { 'd':'sorianoticias.com',     'n':'Soria Noticias',       'lang':'es','type':'digital','tags':['generalista','soria'] },
 
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.eldiadevalladolid.com', port=443): Read timed out.] { 'd':'eldiadevalladolid.com', 'n':'El Día de Valladolid', 'lang':'es', 'type':'diario', 'tags':['generalista','castillaleon'] },
+        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.diariodeavila.es', port=443): Read timed out.] { 'd':'diariodeavila.es',    'n':'Diario de Ávila',      'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
+        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.diariodeburgos.es', port=443): Read timed out.] { 'd':'diariodeburgos.es',   'n':'Diario de Burgos',     'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
+        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.diariopalentino.es', port=443): Read timed out.] { 'd':'diariopalentino.es',    'n':'Diario Palentino',     'lang':'es','type':'diario','tags':['generalista','paleencia'] },
     ]},
 
     # ============================================================
@@ -308,9 +307,9 @@ MEDIA_CATALOG = [
     { 'group':'Castilla-La Mancha', 'items':[
         { 'd':'encastillalamancha.es', 'n':'En Castilla-La Mancha', 'lang':'es', 'type':'digital', 'tags':['generalista','clm'] },
         { 'd':'lanzadigital.com',    'n':'Lanza Digital',        'lang':'es', 'type':'digital', 'tags':['generalista','clm'] },
+        { 'd':'latribunadealbacete.es', 'n':'La Tribuna de Albacete', 'lang':'es', 'type':'diario', 'tags':['generalista','clm'] },  # [TIMEOUT: revisar]
 
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.latribunadealbacete.es', port=443): Read timed out.] { 'd':'latribunadealbacete.es', 'n':'La Tribuna de Albacete', 'lang':'es', 'type':'diario', 'tags':['generalista','clm'] },
         # [CAÍDO-HTTP: HTTPSConnectionPool(host='latribunadeciudadreal.es', port=443): Read timed out.] { 'd':'latribunadeciudadreal.es', 'n':'La Tribuna de Ciudad Real', 'lang':'es', 'type':'diario', 'tags':['generalista','clm'] },
     ]},
 
@@ -389,7 +388,7 @@ MEDIA_CATALOG = [
     # ============================================================
     { 'group':'Internacional · USA / UK', 'items':[
         # Añadir al grupo 'Internacional · USA / UK'
-        { 'd':'abcnews.go.com',      'n':'ABC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [REDIRIGE → abcnews.com]
+        { 'd':'absnews.com',      'n':'ABC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [REDIRIGE → abcnews.com]
         { 'd':'apnews.com',          'n':'Associated Press',     'lang':'en', 'type':'agencia', 'tags':['agencia','internacional'] },  # [BLOQUEADO: HTTP 403]
         { 'd':'axios.com',           'n':'Axios',                'lang':'en','type':'digital','tags':['politica','usa'] },  # [BLOQUEADO: HTTP 403]
         { 'd':'bbc.com',             'n':'BBC',                  'lang':'en', 'type':'tv',      'tags':['generalista','uk','publico'] },
@@ -397,7 +396,7 @@ MEDIA_CATALOG = [
         { 'd':'businessinsider.com', 'n':'Business Insider',     'lang':'en','type':'digital','tags':['economia','usa'] },
         { 'd':'cbsnews.com',         'n':'CBS News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [SIN-FEED: GN/scraping]
         { 'd':'cnbc.com',            'n':'CNBC',                 'lang':'en','type':'economico','tags':['economia','usa'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'cnn.com',             'n':'CNN',                  'lang':'en', 'type':'tv',      'tags':['generalista','usa','tv'] },  # [REDIRIGE → edition.cnn.com]
+        { 'd':'editiom.cnn.com',             'n':'CNN',                  'lang':'en', 'type':'tv',      'tags':['generalista','usa','tv'] },  # [REDIRIGE → edition.cnn.com]
         { 'd':'dailymail.co.uk',     'n':'Daily Mail',           'lang':'en','type':'diario','tags':['generalista','uk','tabloide'] },
         { 'd':'economist.com',       'n':'The Economist',        'lang':'en', 'type':'revista', 'tags':['economia','internacional'] },
         { 'd':'foreignaffairs.com',  'n':'Foreign Affairs',      'lang':'en','type':'revista','tags':['internacional','usa'] },
@@ -407,7 +406,7 @@ MEDIA_CATALOG = [
         { 'd':'independent.co.uk',   'n':'The Independent',      'lang':'en', 'type':'digital', 'tags':['generalista','uk'] },
         { 'd':'mirror.co.uk',        'n':'The Mirror',           'lang':'en','type':'diario','tags':['generalista','uk','tabloide'] },  # [SIN-FEED: GN/scraping]
         { 'd':'msnbc.com',           'n':'MSNBC',                'lang':'en','type':'tv','tags':['generalista','usa','progresista'] },
-        { 'd':'nbcnews.com',         'n':'NBC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },
+        { 'd':'nbcnews.com',         'n':'NBC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [SIN-FEED: GN/scraping]
         { 'd':'news.sky.com',        'n':'Sky News',             'lang':'en','type':'tv','tags':['generalista','uk'] },  # [BLOQUEADO: HTTP 403]
         { 'd':'newyorker.com',       'n':'The New Yorker',       'lang':'en','type':'revista','tags':['cultural','usa'] },
         { 'd':'npr.org',             'n':'NPR',                  'lang':'en', 'type':'radio',   'tags':['generalista','usa','radio'] },
@@ -442,7 +441,6 @@ MEDIA_CATALOG = [
         { 'd':'independent.ie',      'n':'Irish Independent',    'lang':'en','type':'diario','tags':['generalista','irlanda'] },
         { 'd':'ionline.sapo.pt',     'n':'Jornal i',             'lang':'pt', 'type':'diario',  'tags':['generalista','portugal'] },
         { 'd':'irishtimes.com',      'n':'The Irish Times',      'lang':'en','type':'diario','tags':['generalista','irlanda'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'kyodonews.net',       'n':'Kyodo News',           'lang':'en','type':'agencia','tags':['agencia','japon'] },  # [TIMEOUT: revisar]
         { 'd':'lalibre.be',          'n':'La Libre Belgique',    'lang':'fr','type':'diario','tags':['generalista','belgica'] },
         { 'd':'lastampa.it',         'n':'La Stampa',            'lang':'it','type':'diario','tags':['generalista','italia'] },
         { 'd':'lefigaro.fr',         'n':'Le Figaro',            'lang':'fr', 'type':'diario',  'tags':['generalista','francia'] },
@@ -469,6 +467,7 @@ MEDIA_CATALOG = [
 
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
         # [CAÍDO-HTTP: HTTPSConnectionPool(host='dpa.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError("HTTPSConn] { 'd':'dpa.com',             'n':'DPA',                  'lang':'de','type':'agencia','tags':['agencia','alemania'] },
+        # [CAÍDO-HTTP: HTTPSConnectionPool(host='kyodonews.net', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerific] { 'd':'kyodonews.net',       'n':'Kyodo News',           'lang':'en','type':'agencia','tags':['agencia','japon'] },
     ]},
 
     # ============================================================
@@ -477,11 +476,11 @@ MEDIA_CATALOG = [
     { 'group':'Latinoamérica', 'items':[
         # Añadir al grupo 'Latinoamérica'
         { 'd':'abc.com.py',           'n':'ABC Color',              'lang':'es','type':'diario','tags':['generalista','paraguay'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'biobiochile.cl',       'n':'BioBioChile',            'lang':'es','type':'digital','tags':['generalista','chile'] },
+        { 'd':'biobiochile.cl',       'n':'BioBioChile',            'lang':'es','type':'digital','tags':['generalista','chile'] },  # [TIMEOUT: revisar]
         { 'd':'cartacapital.com.br',  'n':'CartaCapital',           'lang':'pt','type':'revista','tags':['generalista','brasil'] },
         { 'd':'ciperchile.cl',        'n':'CIPER Chile',            'lang':'es','type':'digital','tags':['investigacion','chile'] },
         { 'd':'clarin.com',          'n':'Clarín',               'lang':'es', 'type':'diario',  'tags':['generalista','argentina'] },
-        { 'd':'cooperativa.cl',       'n':'Cooperativa',            'lang':'es','type':'radio','tags':['generalista','chile','radio'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'cooperativa.cl',       'n':'Cooperativa',            'lang':'es','type':'radio','tags':['generalista','chile','radio'] },  # [TIMEOUT: revisar]
         { 'd':'diariolibre.com',      'n':'Diario Libre',           'lang':'es','type':'diario','tags':['generalista','republicadominicana'] },
         { 'd':'elcomercio.com',       'n':'El Comercio (EC)',       'lang':'es','type':'diario','tags':['generalista','ecuador'] },
         { 'd':'elcomercio.pe',       'n':'El Comercio',          'lang':'es', 'type':'diario',  'tags':['generalista','peru'] },
@@ -489,37 +488,37 @@ MEDIA_CATALOG = [
         { 'd':'eldesconcierto.cl',    'n':'El Desconcierto',        'lang':'es','type':'digital','tags':['generalista','chile'] },  # [SIN-FEED: GN/scraping]
         { 'd':'elespectador.com',    'n':'El Espectador',        'lang':'es', 'type':'diario',  'tags':['generalista','colombia'] },
         { 'd':'elfaro.net',           'n':'El Faro',                'lang':'es','type':'digital','tags':['investigacion','salvador'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elheraldo.hn',         'n':'El Heraldo',             'lang':'es','type':'diario','tags':['generalista','honduras'] },  # [TIMEOUT: revisar]
-        { 'd':'elmostrador.cl',       'n':'El Mostrador',           'lang':'es','type':'digital','tags':['generalista','chile'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'elheraldo.hn',         'n':'El Heraldo',             'lang':'es','type':'diario','tags':['generalista','honduras'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'elmostrador.cl',       'n':'El Mostrador',           'lang':'es','type':'digital','tags':['generalista','chile'] },  # [TIMEOUT: revisar]
         { 'd':'elnacional.com',      'n':'El Nacional',          'lang':'es', 'type':'diario',  'tags':['generalista','venezuela'] },
         { 'd':'elnuevoherald.com',    'n':'El Nuevo Herald',        'lang':'es','type':'diario','tags':['generalista','usa','latino'] },  # [TIMEOUT: revisar]
         { 'd':'elobservador.com.uy',  'n':'El Observador',          'lang':'es','type':'diario','tags':['generalista','uruguay'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elpais.com.uy',       'n':'El País (UY)',         'lang':'es', 'type':'diario',  'tags':['generalista','uruguay'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'elpais.com.uy',       'n':'El País (UY)',         'lang':'es', 'type':'diario',  'tags':['generalista','uruguay'] },
         { 'd':'eltiempo.com',        'n':'El Tiempo',            'lang':'es', 'type':'diario',  'tags':['generalista','colombia'] },
-        { 'd':'eluniverso.com',       'n':'El Universo',            'lang':'es','type':'diario','tags':['generalista','ecuador'] },
+        { 'd':'eluniversal.com.mx',  'n':'El Universal',         'lang':'es', 'type':'diario',  'tags':['generalista','mexico'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'eluniverso.com',       'n':'El Universo',            'lang':'es','type':'diario','tags':['generalista','ecuador'] },  # [SIN-FEED: GN/scraping]
         { 'd':'estadao.com.br',       'n':'O Estado de S. Paulo',   'lang':'pt','type':'diario','tags':['generalista','brasil'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'folha.uol.com.br',    'n':'Folha de S.Paulo',     'lang':'pt', 'type':'diario',  'tags':['generalista','brasil'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'folha.uol.com.br',    'n':'Folha de S.Paulo',     'lang':'pt', 'type':'diario',  'tags':['generalista','brasil'] },
         { 'd':'g1.globo.com',         'n':'G1',                     'lang':'pt','type':'digital','tags':['generalista','brasil'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'gestion.pe',           'n':'Gestión',                'lang':'es','type':'economico','tags':['economia','peru'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'gestion.pe',           'n':'Gestión',                'lang':'es','type':'economico','tags':['economia','peru'] },
         { 'd':'infobae.com',         'n':'Infobae',              'lang':'es', 'type':'digital', 'tags':['generalista','argentina'] },
         { 'd':'lanacion.com.ar',     'n':'La Nación',            'lang':'es', 'type':'diario',  'tags':['generalista','argentina'] },
         { 'd':'latercera.com',       'n':'La Tercera',           'lang':'es', 'type':'diario',  'tags':['generalista','chile'] },
         { 'd':'listindiario.com',     'n':'Listín Diario',          'lang':'es','type':'diario','tags':['generalista','republicadominicana'] },
-        { 'd':'lostiempos.com',       'n':'Los Tiempos',            'lang':'es','type':'diario','tags':['generalista','bolivia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'milenio.com',         'n':'Milenio',              'lang':'es', 'type':'diario',  'tags':['generalista','mexico'] },  # [TIMEOUT: revisar]
+        { 'd':'milenio.com',         'n':'Milenio',              'lang':'es', 'type':'diario',  'tags':['generalista','mexico'] },  # [SIN-FEED: GN/scraping]
         { 'd':'nacion.com',           'n':'La Nación (CR)',         'lang':'es','type':'diario','tags':['generalista','costarica'] },
-        { 'd':'oglobo.globo.com',    'n':'O Globo',              'lang':'pt', 'type':'diario',  'tags':['generalista','brasil'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'oglobo.globo.com',    'n':'O Globo',              'lang':'pt', 'type':'diario',  'tags':['generalista','brasil'] },
         { 'd':'prensalibre.com',      'n':'Prensa Libre',           'lang':'es','type':'diario','tags':['generalista','guatemala'] },
         { 'd':'rpp.pe',               'n':'RPP',                    'lang':'es','type':'radio','tags':['generalista','peru','radio'] },
         { 'd':'telemundo.com',       'n':'Telemundo',            'lang':'es', 'type':'tv',      'tags':['generalista','usa','latino'] },  # [SIN-FEED: GN/scraping]
         { 'd':'ultimahora.com',       'n':'Última Hora (PY)',       'lang':'es','type':'diario','tags':['generalista','paraguay'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'univision.com',       'n':'Univisión',            'lang':'es', 'type':'tv',      'tags':['generalista','usa','latino'] },  # [SIN-FEED: GN/scraping]
         { 'd':'veja.abril.com.br',    'n':'Veja',                   'lang':'pt','type':'revista','tags':['generalista','brasil'] },
 
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.eluniversal.com.mx', port=443): Read timed out.] { 'd':'eluniversal.com.mx',  'n':'El Universal',         'lang':'es', 'type':'diario',  'tags':['generalista','mexico'] },
-        # [CAÍDO-HTTP: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))] { 'd':'emol.com',            'n':'Emol',                 'lang':'es', 'type':'digital', 'tags':['generalista','chile'] },
+        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.emol.com', port=443): Read timed out.] { 'd':'emol.com',            'n':'Emol',                 'lang':'es', 'type':'digital', 'tags':['generalista','chile'] },
         # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'laprensa.com.ni',      'n':'La Prensa (NI)',         'lang':'es','type':'diario','tags':['generalista','nicaragua'] },
+        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.lostiempos.com', port=443): Read timed out. (read timeout=8)] { 'd':'lostiempos.com',       'n':'Los Tiempos',            'lang':'es','type':'diario','tags':['generalista','bolivia'] },
+        # [CAÍDO-HTTP: HTTP 404] { 'd':'univision.com',       'n':'Univisión',            'lang':'es', 'type':'tv',      'tags':['generalista','usa','latino'] },
     ]},
     { 'group':'Internacional · Asia · África · Oriente Medio', 'items':[
         { 'd':'africanews.com',        'n':'Africanews',           'lang':'en','type':'tv','tags':['generalista','africa'] },
@@ -530,12 +529,12 @@ MEDIA_CATALOG = [
         { 'd':'jpost.com',             'n':'The Jerusalem Post',   'lang':'en','type':'diario','tags':['generalista','oriente medio'] },  # [SIN-FEED: GN/scraping]
         { 'd':'koreaherald.com',       'n':'The Korea Herald',     'lang':'en','type':'diario','tags':['generalista','asia','corea'] },  # [SIN-FEED: GN/scraping]
         { 'd':'mg.co.za',              'n':'Mail & Guardian',      'lang':'en','type':'diario','tags':['generalista','africa','sudafrica'] },
-        { 'd':'middleeasteye.net',     'n':'Middle East Eye',      'lang':'en','type':'digital','tags':['generalista','oriente medio'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'middleeasteye.net',     'n':'Middle East Eye',      'lang':'en','type':'digital','tags':['generalista','oriente medio'] },
         { 'd':'premiumtimesng.com',    'n':'Premium Times',        'lang':'en','type':'digital','tags':['generalista','africa','nigeria'] },
-        { 'd':'scmp.com',              'n':'South China Morning Post','lang':'en','type':'diario','tags':['generalista','asia','china'] },
+        { 'd':'scmp.com',              'n':'South China Morning Post','lang':'en','type':'diario','tags':['generalista','asia','china'] },  # [SIN-FEED: GN/scraping]
         { 'd':'straitstimes.com',      'n':'The Straits Times',    'lang':'en','type':'diario','tags':['generalista','asia','singapur'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'thehindu.com',          'n':'The Hindu',            'lang':'en','type':'diario','tags':['generalista','india'] },
-        { 'd':'timesofindia.indiatimes.com','n':'Times of India',  'lang':'en','type':'diario','tags':['generalista','india'] },  # [TIMEOUT: revisar]
+        { 'd':'thehindu.com',          'n':'The Hindu',            'lang':'en','type':'diario','tags':['generalista','india'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'timesofindia.indiatimes.com','n':'Times of India',  'lang':'en','type':'diario','tags':['generalista','india'] },  # [SIN-FEED: GN/scraping]
         { 'd':'xinhuanet.com',         'n':'Xinhua',               'lang':'en','type':'agencia','tags':['agencia','china'] },  # [SIN-FEED: GN/scraping]
     ]},
 ]
@@ -578,7 +577,7 @@ GN_LOCALE = {
 # caerán directamente al scraping.
 KNOWN_FEEDS = {
     # Generado automáticamente por auditar_medios.py
-    # 250 feeds verificados (ventana 7 días).
+    # 248 feeds verificados (ventana 7 días).
     # Sólo dominios vivos con items recientes.
 
     # ── Andalucía ──
@@ -589,7 +588,7 @@ KNOWN_FEEDS = {
     'diariodecadiz.es': 'https://www.diariodecadiz.es/rss/',
     'diariodejerez.es': 'https://www.diariodejerez.es/rss/',
     'diariodesevilla.es': 'https://www.diariodesevilla.es/rss/',
-    'diariosur.es': 'https://www.diariosur.es/rss/2.0/?section=/ultima-hora',
+    'diariosur.es': 'https://www.diariosur.es/rss/2.0/?section=',
     'elcorreoweb.es': 'https://www.elcorreoweb.es/rss/',
     'granadadigital.es': 'https://granadadigital.es/feed/',
     'granadahoy.com': 'https://www.granadahoy.com/rss/',
@@ -626,21 +625,20 @@ KNOWN_FEEDS = {
     '324.cat': 'https://api.3cat.cat/noticies?_format=rss&origen=frontal&frontal=n324-portada-noticia&version=2.0',
     'ara.cat': 'https://www.ara.cat/rss/',
     'diaridetarragona.com': 'https://www.diaridetarragona.com/rss/home.xml',
-    'directa.cat': 'https://directa.cat/feed',
+    'directa.cat': 'https://directa.cat/feed/',
     'e-noticies.cat': 'https://e-noticies.cat/rss/cat/politica',
     'elmon.cat': 'https://www.elmon.cat/rss',
     'elnacional.cat': 'https://www.elnacional.cat/uploads/feeds/feed_ca.xml',
     'elpuntavui.cat': 'https://www.elpuntavui.cat/barcelona.feed?type=rss',
     'naciodigital.cat': 'https://www.naciodigital.cat/rss',
-    'rac1.cat': 'https://api.audioteca.rac1.cat/rss/versio',
     'reusdigital.cat': 'https://reusdigital.cat/rss',
     'segre.com': 'https://www.segre.com/ca/rss/home.xml',
-    'viaempresa.cat': 'https://www.viaempresa.cat/uploads/feeds/feed_via-empresa-2024_ca.xml',
+    'viaempresa.cat': 'https://www.viaempresa.cat/uploads/feeds/feed_via-empresa-2024_es.xml',
     'vilaweb.cat': 'https://www.vilaweb.cat/feed/',
 
     # ── Comunidad Valenciana · Murcia ──
     'alicanteplaza.es': 'https://alicanteplaza.es/rss/',
-    'castellonplaza.com': 'https://castellonplaza.com/feed/',
+    'castellonplaza.com': 'https://castellonplaza.com/rss/',
     'elperiodicomediterraneo.com': 'https://www.elperiodicomediterraneo.com/rss/',
     'informacion.es': 'https://www.informacion.es/rss/',
     'informacion.es': 'https://www.informacion.es/rss/',
@@ -660,11 +658,10 @@ KNOWN_FEEDS = {
 
     # ── España · Culturales ──
     'culturainquieta.com': 'https://www.culturainquieta.com/feed/',
-    'elcultural.com': 'https://www.elespanol.com/rss/el-cultural/',
     'ethic.es': 'https://www.ethic.es/rss/',
     'jotdown.es': 'https://www.jotdown.es/feed/',
     'lamarea.com': 'https://www.lamarea.com/feed/',
-    'letraslibres.com': 'https://www.letraslibres.com/rss/',
+    'letraslibres.com': 'https://letraslibres.com/feed/',
     'yorokobu.es': 'https://www.yorokobu.es/feed/',
     'zendalibros.com': 'https://www.zendalibros.com/rss/',
 
@@ -685,7 +682,7 @@ KNOWN_FEEDS = {
     'cincodias.com': 'https://feeds.elpais.com/mrss-s/pages/ep/site/cincodias.elpais.com/portada',
     'dirigentesdigital.com': 'https://theofficer.es/feed/',
     'economiadigital.es': 'https://www.economiadigital.es/rss/',
-    'elblogsalmon.com': 'https://elblogsalmon.com/index.xml',
+    'elblogsalmon.com': 'https://elblogsalmon.com/atom.xml',
     'estrategiasdeinversion.com': 'https://estrategiasdeinversion.com/feed/',
     'expansion.com': 'https://e00-expansion.uecdn.es/rss/portada.xml',
     'finect.com': 'https://www.finect.com/v4/bff/rss/articles.rss',
@@ -709,7 +706,7 @@ KNOWN_FEEDS = {
     'elindependiente.com': 'https://www.elindependiente.com/rss/',
     'elmundo.es': 'https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml',
     'elpais.com': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
-    'elplural.com': 'https://www.elplural.com/feed/',
+    'elplural.com': 'https://www.elplural.com/uploads/feeds/feed_elplural_es.xml',
     'europapress.es': 'https://www.europapress.es/rss/rss.aspx',
     'huffingtonpost.es': 'https://www.huffingtonpost.es/feeds/index.xml',
     'infolibre.es': 'https://www.infolibre.es/rss/',
@@ -723,21 +720,21 @@ KNOWN_FEEDS = {
     'ondacero.es': 'https://www.ondacero.es/rss/8145.xml',
     'periodistadigital.com': 'https://www.periodistadigital.com/feed/',
     'que.es': 'https://www.que.es/rss/',
-    'republica.com': 'https://republica.com/feed/',
+    'republica.com': 'https://republica.com/feed',
     'telecinco.es': 'https://www.telecinco.es/rss.xml',
     'theobjective.com': 'https://www.theobjective.com/rss/',
     'vientosur.info': 'https://vientosur.info/feed/',
 
     # ── España · Tecnología ──
     'adslzone.net': 'https://www.adslzone.net/feed/',
-    'andro4all.com': 'https://andro4all.com/rss',
+    'andro4all.com': 'https://andro4all.com/feed',
     'applesfera.com': 'https://feeds.weblogssl.com/applesfera',
     'computerhoy.com': 'https://computerhoy.20minutos.es/rss/',
     'computerworld.es': 'https://www.computerworld.es/feed/',
     'elandroidelibre.elespanol.com': 'https://www.elespanol.com/rss/elandroidelibre/',
-    'elchapuzasinformatico.com': 'https://elchapuzasinformatico.com/feed/',
-    'hardzone.es': 'https://hardzone.es/feed',
-    'muycomputer.com': 'https://www.muycomputer.com/feed/',
+    'elchapuzasinformatico.com': 'https://elchapuzasinformatico.com/feed',
+    'hardzone.es': 'https://hardzone.es/feed/',
+    'muycomputer.com': 'https://muycomputer.com/feed/',
     'profesionalreview.com': 'https://www.profesionalreview.com/feed/',
     'silicon.es': 'https://silicon.es/feed/',
     'teknofilo.com': 'https://www.teknofilo.com/feed/',
@@ -751,7 +748,7 @@ KNOWN_FEEDS = {
 
     # ── Galicia ──
     'atlantico.net': 'https://www.atlantico.net/rss/',
-    'campogalego.es': 'https://campogalego.es/feed/',
+    'campogalego.es': 'https://campogalego.es/feed',
     'diariodearousa.com': 'https://www.diariodearousa.com/rss/',
     'diariodeferrol.com': 'https://www.diariodeferrol.com/rss/',
     'diariodepontevedra.es': 'https://www.diariodepontevedra.es/rss/',
@@ -778,12 +775,11 @@ KNOWN_FEEDS = {
 
     # ── Internacional · Asia · África · Oriente Medio ──
     'africanews.com': 'https://africanews.com/feed/',
-    'aljazeera.com': 'https://www.aljazeera.com/xml/rss/all.xml',
+    'aljazeera.com': 'https://aljazeera.com/rss',
     'japantimes.co.jp': 'https://japantimes.co.jp/feed/',
     'mg.co.za': 'https://mg.co.za/atom/',
-    'premiumtimesng.com': 'https://premiumtimesng.com/rss/',
-    'scmp.com': 'https://www.scmp.com/rss/feed',
-    'thehindu.com': 'https://www.thehindu.com/feeder/default.rss',
+    'middleeasteye.net': 'https://middleeasteye.net/rss',
+    'premiumtimesng.com': 'https://www.premiumtimesng.com/feed',
 
     # ── Internacional · Europa ──
     'ansa.it': 'https://ansa.it/rss.xml',
@@ -803,7 +799,7 @@ KNOWN_FEEDS = {
     'observador.pt': 'https://observador.pt/feed/',
     'repubblica.it': 'https://www.repubblica.it/rss/homepage/rss2.0.xml',
     'spiegel.de': 'https://www.spiegel.de/schlagzeilen/tops/index.rss',
-    'standaard.be': 'https://standaard.be/rss',
+    'standaard.be': 'https://standaard.be/rss/',
     'sueddeutsche.de': 'https://rss.sueddeutsche.de/rss/Topthemen',
     'telegraaf.nl': 'https://telegraaf.nl/rss/',
     'trouw.nl': 'https://trouw.nl/rss.xml',
@@ -814,15 +810,14 @@ KNOWN_FEEDS = {
     'bbc.com': 'https://feeds.bbci.co.uk/news/rss.xml',
     'bloomberg.com': 'https://feeds.bloomberg.com/markets/news.rss',
     'businessinsider.com': 'https://www.businessinsider.es/rss/',
-    'dailymail.co.uk': 'https://www.dailymail.com/articles.rss',
+    'dailymail.co.uk': 'https://www.dailymail.com/home/index.rss',
     'economist.com': 'https://www.economist.com/the-world-this-week/rss.xml',
     'foreignaffairs.com': 'https://www.foreignaffairs.com/rss.xml',
     'foreignpolicy.com': 'https://foreignpolicy.com/feed/',
-    'foxnews.com': 'https://moxie.foxnews.com/google-publisher/latest.xml',
+    'foxnews.com': 'https://foxnews.com/rss.xml',
     'ft.com': 'https://www.ft.com/?format=rss',
     'independent.co.uk': 'https://www.independent.co.uk/news/rss',
-    'msnbc.com': 'https://www.ms.now/feed',
-    'nbcnews.com': 'https://nbcnews.com/feed/',
+    'msnbc.com': 'https://msnbc.com/feed',
     'newyorker.com': 'https://www.newyorker.com/feed/rss',
     'npr.org': 'https://feeds.npr.org/1001/rss.xml',
     'nytimes.com': 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
@@ -831,26 +826,28 @@ KNOWN_FEEDS = {
     'vox.com': 'https://www.vox.com/rss/index.xml',
 
     # ── Latinoamérica ──
-    'biobiochile.cl': 'https://feeds.feedburner.com/radiobiobio/NNeJ',
     'cartacapital.com.br': 'https://www.cartacapital.com.br/feed/',
-    'ciperchile.cl': 'https://www.ciperchile.cl/comments/feed/',
+    'ciperchile.cl': 'https://www.ciperchile.cl/feed/',
     'clarin.com': 'https://www.clarin.com/rss/lo-ultimo/',
-    'diariolibre.com': 'https://diariolibre.com/rss/actualidad.xml',
+    'diariolibre.com': 'https://diariolibre.com/rss/economia.xml',
     'elcomercio.com': 'https://elcomercio.com/feed/',
     'elcomercio.pe': 'https://elcomercio.pe/arcio/rss/',
     'eldeber.com.bo': 'https://eldeber.com.bo/feed',
     'elespectador.com': 'https://www.elespectador.com/comments/feed/',
     'elnacional.com': 'https://www.elnacional.com/rss/',
+    'elpais.com.uy': 'https://elpais.com.uy/rss',
     'eltiempo.com': 'https://www.eltiempo.com/rss/colombia.xml',
-    'eluniverso.com': 'https://www.eluniverso.com/arc/outboundfeeds/rss/?outputType=xml',
+    'folha.uol.com.br': 'https://feeds.folha.uol.com.br/emcimadahora/rss091.xml',
+    'gestion.pe': 'https://gestion.pe/arcio/rss/',
     'infobae.com': 'https://www.infobae.com/arc/outboundfeeds/rss/category/espana/',
     'lanacion.com.ar': 'https://www.lanacion.com.ar/arc/outboundfeeds/rss/',
     'latercera.com': 'https://www.latercera.com/rss/',
     'listindiario.com': 'https://listindiario.com/rss/home.xml',
     'nacion.com': 'https://nacion.com/rss/',
+    'oglobo.globo.com': 'https://oglobo.globo.com/rss/oglobo',
     'prensalibre.com': 'https://www.prensalibre.com/web-stories/feed/',
-    'rpp.pe': 'https://rpp.pe/rss/',
-    'veja.abril.com.br': 'https://veja.abril.com.br/ultimas-noticias/rss',
+    'rpp.pe': 'https://rpp.pe/feed/',
+    'veja.abril.com.br': 'https://veja.abril.com.br/rss/',
 
     # ── Norte · Aragón · La Rioja · Cantabria · Asturias ──
     'elcomercio.es': 'https://www.elcomercio.es/rss/2.0/?section=',
@@ -885,6 +882,7 @@ KNOWN_FEEDS = {
 #       'eldiario.es': 'https://www.eldiario.es/ultimas-noticias/',
 #   }
 LISTING_URLS = {
+    'publico.es': 'https://www.publico.es/ultimas-noticias',
     # Añade aquí los que necesiten una URL específica.
     # Déjalo vacío si no es necesario — todo sigue funcionando.
 }
@@ -921,25 +919,96 @@ def google_news_url(domain, lang='es', extra_q=None):
 # Verificado empíricamente: cada uno devuelve >1 item en 7d con
 # ok_dominio=True desde GH Actions.
 GN_FALLBACK_DOMAINS = {
-    # Nacionales
-    'telecinco.es', 'cuatro.com', 'cadenaser.com', 'efe.com',
-    'estadiodeportivo.com', 'eldesmarque.com', 'eleconomista.es',
-    'hipertextual.com', 'elsaltodiario.com',
-    # Cataluña
-    'elpuntavui.cat', 'acn.cat',
-    # Galicia
-    'elprogreso.es', 'diariodepontevedra.es', 'galiciadigital.com',
-    # Asturias / Madrid
-    'lavozdeasturias.es', 'madridiario.es', 'murciaeconomia.com',
-    # Internacional
-    'thetimes.com', 'reuters.com', 'apnews.com', 'politico.com',
-    'lesechos.fr', 'publico.pt',
-    # Latinoamérica
-    'milenio.com', 'infobae.com', 'elnacional.com', 'univision.com',
-    # Revistas con publicación diaria (excepción a la regla)
-    'ctxt.es', 'expresso.pt',
-    # Euskadi
+    # Generado automáticamente por verificar_gn.py
+    # 85 dominios con items recientes del dominio en GN.
+    # (ok = query site:, alt = query libre)
+
+    # ──  ──
+    '2playbook.com',
+    'abc.com.py',
+    'acn.cat',
+    'agenciasinc.es',
+    'apnews.com',
+    'axios.com',
+    'biobiochile.cl',
+    'cadenaser.com',
+    'cambio16.com',
+    'cbsnews.com',
+    'cnbc.com',
+    'cnn.com',
+    'cooperativa.cl',
+    'corriere.it',
+    'ctxt.es',
+    'diaridegirona.cat',
+    'dw.com',
+    'efe.com',
     'eitb.eus',
+    'eldesconcierto.cl',
+    'eldiadevalladolid.com',
+    'eleconomista.es',
+    'elfaro.net',
+    'elheraldo.hn',
+    'elmostrador.cl',
+    'elnuevoherald.com',
+    'elobservador.com.uy',
+    'elperiodico.com',
+    'elsaltodiario.com',
+    'eluniversal.com.mx',
+    'eluniverso.com',
+    'elviejotopo.com',
+    'estadao.com.br',
+    'expresso.pt',
+    'g1.globo.com',
+    'galiciadigital.com',
+    'globaltimes.cn',
+    'haaretz.com',
+    'hipertextual.com',
+    'huelvaya.es',
+    'idealista.com',
+    'ilmessaggero.it',
+    'ilsole24ore.com',
+    'irishtimes.com',
+    'ituser.es',
+    'jpost.com',
+    'koreaherald.com',
+    'latribunadealbacete.es',
+    'lesechos.fr',
+    'lesoir.be',
+    'mercadofinanciero.com',
+    'mientrastanto.org',
+    'milenio.com',
+    'mirror.co.uk',
+    'murciaeconomia.com',
+    'nbcnews.com',
+    'news.sky.com',
+    'nuevarevista.net',
+    'politico.com',
+    'publico.es',
+    'publico.pt',
+    'rac1.cat',
+    'regio7.cat',
+    'reuters.com',
+    'rfi.fr',
+    'rte.ie',
+    'rtve.es',
+    'scmp.com',
+    'servimedia.es',
+    'sport.es',
+    'straitstimes.com',
+    'swissinfo.ch',
+    'tass.com',
+    'telegraph.co.uk',
+    'telemadrid.es',
+    'telemundo.com',
+    'theatlantic.com',
+    'thehindu.com',
+    'thetimes.com',
+    'timesofindia.indiatimes.com',
+    'ultimahora.com',
+    'vozpopuli.com',
+    'washingtonpost.com',
+    'wsj.com',
+    'xinhuanet.com',
 }
 
 # Ajustes de query específicos por dominio (opcional)
