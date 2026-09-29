@@ -758,6 +758,71 @@ def cargar_historico_payload():
         'ultimo_exito_por_medio': state['ultimo_exito_por_medio'],
     }
 
+# ─────────────────────────────────────────────────────────────
+# DEDUP EDITORIAL · mismo titular en varios medios del grupo
+# ─────────────────────────────────────────────────────────────
+def deduplicar_editorial(noticias):
+    """
+    Agrupa noticias por titular normalizado. De cada grupo deja un
+    representante (el de mejor fecha) y guarda los demás como campo
+    'alt' compacto: [{'d': dominio, 'u': url}, ...]
+
+    Reduce ~25% el JSON y elimina el trabajo de dedup en el frontend.
+    """
+    import unicodedata
+    from collections import defaultdict
+
+    def norm_tit(s):
+        s = (s or '').lower()
+        s = unicodedata.normalize('NFD', s)
+        s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+        return ''.join(c for c in s if c.isalnum())
+
+    def score(n):
+        # Preferimos: con fecha_pub > con fecha_estimada > con fecha > resto.
+        # Empate → más reciente.
+        tiene_pub = 1 if n.get('fecha_pub') else 0
+        tiene_est = 1 if n.get('fecha_estimada') else 0
+        dt = _fecha_orden(n)
+        ts = dt.timestamp() if dt else 0
+        return (tiene_pub, tiene_est, ts)
+
+    grupos = defaultdict(list)
+    for n in noticias:
+        key = norm_tit(n.get('titular', ''))
+        if not key:
+            # Sin título → no agrupar (id único por objeto)
+            grupos[f'__solo_{id(n)}__'].append(n)
+            continue
+        grupos[key].append(n)
+
+    salida = []
+    grupos_colapsados = 0
+    items_ocultos = 0
+
+    for key, items in grupos.items():
+        if len(items) == 1:
+            salida.append(items[0])
+            continue
+
+        items.sort(key=score, reverse=True)
+        rep = items[0]
+        otros = items[1:]
+
+        rep['alt'] = [
+            {'d': o.get('dominio', ''), 'u': o.get('enlace', '')}
+            for o in otros
+        ]
+        salida.append(rep)
+        grupos_colapsados += 1
+        items_ocultos += len(otros)
+
+    if grupos_colapsados:
+        print(f"[dedup] {grupos_colapsados} titulares colapsados "
+              f"· {items_ocultos} noticias referenciadas como 'alt'")
+
+    return salida
+  
 def fusionar_historico(nuevas, viejas, dias):
     """
     Fusiona nuevas con viejas y filtra por ventana de retención usando la
@@ -821,7 +886,7 @@ def _dia_iso(iso_str, fallback):
 
 
 def _noticia_a_formato_corto(n):
-    return {
+    out = {
         'd': n.get('dominio', ''),
         't': n.get('titular', ''),
         'u': n.get('enlace', ''),
@@ -830,6 +895,10 @@ def _noticia_a_formato_corto(n):
         'c': n.get('fecha', ''),
         'f': n.get('fuente', ''),
     }
+    alt = n.get('alt')
+    if alt:
+        out['a'] = alt
+    return out
 
 
 def _tabla_medios_de(items):
@@ -1034,6 +1103,10 @@ def main():
     print("\n── Fusionando ──")
     finales = fusionar_historico(todas, historico, DIAS_RETENCION)
     print(f"Total en histórico: {len(finales)}")
+
+    print("\n── Deduplicando mismo titular entre medios ──")
+    finales = deduplicar_editorial(finales)
+    print(f"Total tras dedup:   {len(finales)}")
 
     # ─── Estadísticas ───
     con_pub = sum(1 for n in finales if n.get('fecha_pub'))
