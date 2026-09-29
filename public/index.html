@@ -671,14 +671,40 @@
     .rep-acciones button{flex:1}
   }
 
-  /* ═══ Toggle duplicados + desplegable ═══ */
-  .btn-dup{
-    border:2px solid var(--muted); background:transparent; color:var(--muted);
-    font-weight:600;
+  /* ═══ Toggle duplicados (inline junto al contador) + desplegable ═══ */
+  .contador-row{
+    display:flex; align-items:center; gap:10px;
+    flex-wrap:wrap;
+    margin:10px 0 14px;
   }
-  .btn-dup:hover{background:var(--quote-bg)}
-  .btn-dup.active{
-    background:var(--save); color:#fff; border-color:var(--save);
+  .contador-row #contador{margin:0}
+
+  .btn-dup-inline{
+    padding:2px 10px;
+    font-size:.85em;
+    line-height:1.4;
+    border:1px solid var(--border);
+    background:transparent;
+    color:var(--muted);
+    border-radius:10px;
+    cursor:pointer;
+    font-family:inherit;
+    font-weight:500;
+    opacity:.7;
+    transition:opacity .15s, background .15s, color .15s, border-color .15s;
+  }
+  .btn-dup-inline:hover{
+    opacity:1;
+    background:var(--quote-bg);
+    color:var(--accent);
+    border-color:var(--accent);
+  }
+  .btn-dup-inline.active{
+    background:var(--save);
+    color:#fff;
+    border-color:var(--save);
+    opacity:1;
+    font-weight:600;
   }
 
   .dups-details{
@@ -742,9 +768,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">29/09/2026 14:11</span>
+    <span id="fecha">29/09/2026 14:18</span>
     <span>·</span>
-    <span id="total">18861</span>
+    <span id="total">18981</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -754,7 +780,6 @@
   <button id="btn-config" type="button"></button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
   <button id="btn-buscar" class="btn-buscar" type="button"></button>
-  <button id="btn-dup" class="btn-dup" type="button"></button>
   <span style="flex:1"></span>
   <select id="lang-select" class="lang-select" aria-label="Language"></select>
   <button id="btn-acces" type="button"></button>
@@ -988,9 +1013,11 @@
 </section>
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
-<div id="contador"></div>
+<div class="contador-row">
+  <span id="contador"></span>
+  <button id="btn-dup" class="btn-dup-icon" type="button"></button>
+</div>
 <main id="resultados"></main>
-
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
@@ -1839,6 +1866,8 @@ function actualizarBotonDup(){
   b.classList.toggle('active', AGRUPAR_DUPS);
   b.textContent = t('btnDup');
   b.title = t('btnDupTitle');
+  b.setAttribute('aria-label', t('btnDup'));
+  b.setAttribute('aria-pressed', AGRUPAR_DUPS ? 'true' : 'false');
 }
 
 function actualizarBotonPreset(){
