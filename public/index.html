@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 00:08</span>
+    <span id="fecha">30/09/2026 00:19</span>
     <span>·</span>
-    <span id="total">13927</span>
+    <span id="total">14070</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -779,6 +779,7 @@
 <section class="topbar">
   <button id="btn-preset" class="btn-preset" type="button"></button>
   <button id="btn-config" type="button"></button>
+  <button id="btn-hide-read" type="button" title="Ocultar leídas">👁</button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
   <button id="btn-buscar" class="btn-buscar" type="button"></button>
   <span style="flex:1"></span>
@@ -1796,7 +1797,20 @@ let SITES = new Map();
 let SITES_LIST = [];
 
 let AGRUPAR_DUPS = true;
+let OCULTAR_LEIDAS = false;
+const HIDE_READ_KEY = 'voceiro-hide-read';
 
+function cargarHideReadPref(){
+  try {
+    const raw = localStorage.getItem(HIDE_READ_KEY);
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+  }catch(e){}
+  return false;
+}
+function guardarHideReadPref(){
+  try{ localStorage.setItem(HIDE_READ_KEY, OCULTAR_LEIDAS ? 'true' : 'false'); }catch(e){}
+}
 function cargarPreset(){
   try{
     const raw = localStorage.getItem(PRESET_KEY);
@@ -3366,6 +3380,11 @@ function aplicarFiltros(){
       if (isNaN(ts)) return false;
       if (ahora - ts > limiteMs) return false;
     }
+    if (OCULTAR_LEIDAS){
+      const key = normalizeUrlForMatch(n.enlace);
+      const item = PENDIENTES_MAP.get(key);
+      if (item && item.read) return false;
+    }
 
     if (hayMedio){
       const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
@@ -3789,7 +3808,15 @@ function wireStaticEvents(){
     aplicarFiltros();
     toast(PRESET_ACTIVO ? t('presetActivado') : t('presetDesactivado'), 1500);
   });
+  $('#btn-hide-read').addEventListener('click', () => {
+    OCULTAR_LEIDAS = !OCULTAR_LEIDAS;
+    guardarHideReadPref();
+    $('#btn-hide-read').classList.toggle('active', OCULTAR_LEIDAS);
+    aplicarFiltros();
+  });
 
+  // Estado inicial del botón
+  $('#btn-hide-read').classList.toggle('active', OCULTAR_LEIDAS);
   $('#btn-config').addEventListener('click', () => {
     abrirPanel('panel-config');
     escribirPanel(PRESET);
@@ -3975,7 +4002,7 @@ async function init(){
   recompilarPreset();
   PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
   AGRUPAR_DUPS = cargarDupPref();
-
+  OCULTAR_LEIDAS = cargarHideReadPref();
   const cachedSites = cargarSitesCache();
   setSitesFromArray(cachedSites);
   cachedSites.forEach(s => {
