@@ -352,6 +352,19 @@
     background:#000; border-color:#ff0; color:#ff0;
   }
 
+  .badge.estimada{
+    background:#e8f0fe; border-color:#a0c4f8; color:#0d47a1;
+  }
+  [data-theme="dark"] .badge.estimada{
+    background:#1a2d47; border-color:#4a7ab5; color:#a0c4f8;
+  }
+  [data-theme="sepia"] .badge.estimada{
+    background:#dae4ef; border-color:#8fa9c4; color:#2e5a8b;
+  }
+  [data-theme="contrast"] .badge.estimada{
+    background:#003; border-color:#0ff; color:#0ff;
+  }
+
   .noticia a.titular{
     color:var(--accent); text-decoration:none;
     font-weight:600; font-size:1em; display:block; margin-top:2px;
@@ -881,7 +894,7 @@ const I18N = {
     acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Oscuro', acContraste: '◐ Contraste',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Foco',
-    fltBuscar: '🔍 Buscar… ("elecciones" · "medio:elpais" · "dominio:eldiario.es")',
+    fltBuscar: '🔍 Buscar… ("elecciones" · "medio:elpais" · "tag:deportes")',
     fltGrupo: 'Todos los grupos', fltTipo: 'Todos los tipos', fltMedio: 'Todos los medios',
     fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
     ordenRecientes: '↓ Más recientes', ordenAntiguos: '↑ Más antiguos',
@@ -992,7 +1005,7 @@ const I18N = {
     acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Escuro', acContraste: '◐ Contraste',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Xustificar', acBionic: 'Bionic', acFoco: 'Foco',
-    fltBuscar: '🔍 Buscar… ("eleccións" · "medio:elpais" · "dominio:eldiario.es")',
+    fltBuscar: '🔍 Buscar… ("eleccións" · "medio:elpais" · "tag:deportes")',
     fltGrupo: 'Todos os grupos', fltTipo: 'Todos os tipos', fltMedio: 'Todos os medios',
     fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
     ordenRecientes: '↓ Máis recentes', ordenAntiguos: '↑ Máis antigos',
@@ -1089,7 +1102,7 @@ const I18N = {
     acClaro: '☀ Clar', acSepia: '📖 Sèpia', acOscuro: '🌙 Fosc', acContraste: '◐ Contrast',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislèxia',
     acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Focus',
-    fltBuscar: '🔍 Cercar… ("eleccions" · "medio:elpais" · "dominio:eldiario.es")',
+    fltBuscar: '🔍 Cercar… ("eleccions" · "medio:elpais" · "tag:deportes")',
     fltGrupo: 'Tots els grups', fltTipo: 'Tots els tipus', fltMedio: 'Tots els mitjans',
     fltTodo: 'Tot', flt24h: '24 h', flt48h: '48 h', flt7d: '7 dies',
     ordenRecientes: '↓ Més recents', ordenAntiguos: '↑ Més antics',
@@ -1186,7 +1199,7 @@ const I18N = {
     acClaro: '☀ Light', acSepia: '📖 Sepia', acOscuro: '🌙 Dark', acContraste: '◐ Contrast',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dyslexic',
     acJustificar: 'Justify', acBionic: 'Bionic', acFoco: 'Focus',
-    fltBuscar: '🔍 Search… ("elections" · "medio:elpais" · "dominio:eldiario.es")',
+    fltBuscar: '🔍 Search… ("elections" · "medio:elpais" · "tag:sports")',
     fltGrupo: 'All groups', fltTipo: 'All types', fltMedio: 'All outlets',
     fltTodo: 'All', flt24h: '24 h', flt48h: '48 h', flt7d: '7 days',
     ordenRecientes: '↓ Newest first', ordenAntiguos: '↑ Oldest first',
@@ -1283,7 +1296,7 @@ const I18N = {
     acClaro: '☀ Argia', acSepia: '📖 Sepia', acOscuro: '🌙 Iluna', acContraste: '◐ Kontrastea',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Justifikatu', acBionic: 'Bionic', acFoco: 'Fokua',
-    fltBuscar: '🔍 Bilatu… ("hauteskundeak" · "medio:elpais" · "dominio:eldiario.es")',
+    fltBuscar: '🔍 Bilatu… ("hauteskundeak" · "medio:elpais" · "tag:kirolak")',
     fltGrupo: 'Talde guztiak', fltTipo: 'Mota guztiak', fltMedio: 'Hedabide guztiak',
     fltTodo: 'Guztia', flt24h: '24 h', flt48h: '48 h', flt7d: '7 egun',
     ordenRecientes: '↓ Berrienak lehenengo', ordenAntiguos: '↑ Zaharrenak lehenengo',
@@ -1400,9 +1413,11 @@ function debounce(fn, ms){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FECHAS (con Intl cacheado + cache por ts)
+   FECHAS
    ═══════════════════════════════════════════════════════════════ */
-const FUTURO_MAX_MS = 24 * 60 * 60 * 1000;
+// Horizonte de "futuro legítimo" (evento programado). Debe coincidir
+// con HORIZONTE_FUTURO_HORAS del recolector.py
+const HORIZONTE_FUTURO_MS = 6 * 60 * 60 * 1000;
 
 let ABS_FMT = null;
 let ABS_FMT_LANG = null;
@@ -1435,13 +1450,6 @@ function parseFecha(s){
   }
   const t = Date.parse(str);
   return !isNaN(t) ? t : NaN;
-}
-function sanearTs(ts, fallbackTs){
-  if (isNaN(ts)) return isNaN(fallbackTs) ? NaN : fallbackTs;
-  if (ts - Date.now() > FUTURO_MAX_MS){
-    return isNaN(fallbackTs) ? Date.now() : fallbackTs;
-  }
-  return ts;
 }
 
 function formatearFecha(ts){
@@ -1675,7 +1683,7 @@ window.addEventListener('scroll', () => {
   if (ACCES.focus) requestAnimationFrame(updateFocus);
 }, { passive: true });
 
-/* Regex de resaltado: se construye UNA VEZ por render */
+/* Regex de resaltado */
 const ACCENT_MAP = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
 function buildHighlightRegex(tokens){
   if (!tokens.length) return null;
@@ -1950,35 +1958,194 @@ function renderPendientes(items){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MEDIOS ÚNICOS + ÍNDICES DE BÚSQUEDA
+   CARGA DE DATOS
    ═══════════════════════════════════════════════════════════════ */
-let MEDIOS_UNICOS = [];
+let MEDIOS = {};       // { dominio: { n, g, t, l, tags } }
+let MEDIOS_UNICOS = []; // array derivado para el panel
+
+async function cargarDatos(){
+  try{
+    const manifestRes = await fetch('datos/manifest.json', { cache: 'no-cache' });
+    if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
+    const manifest = await manifestRes.json();
+    const ficheros = manifest.ficheros || [];
+    if (!ficheros.length) throw new Error('manifest sin ficheros');
+
+    // Cargar todos los ficheros en paralelo, con tolerancia a fallos
+    const settled = await Promise.allSettled(
+      ficheros.map(f =>
+        fetch(`datos/${f.file}`, { cache: 'default' })
+          .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status} en ${f.file}`);
+            return r.json();
+          })
+      )
+    );
+
+    const fallos = settled.filter(s => s.status === 'rejected');
+    if (fallos.length){
+      console.warn(`[carga] ${fallos.length} ficheros fallaron:`,
+        fallos.map(f => f.reason && f.reason.message));
+    }
+
+    MEDIOS = {};
+    NOTICIAS = [];
+    for (const s of settled){
+      if (s.status !== 'fulfilled') continue;
+      const data = s.value || {};
+      if (data.medios){
+        for (const d in data.medios) MEDIOS[d] = data.medios[d];
+      }
+      if (Array.isArray(data.noticias)){
+        NOTICIAS.push(...data.noticias);
+      }
+    }
+
+    // Si todos los ficheros fallaron, es error total
+    if (fallos.length === ficheros.length){
+      throw new Error('ningún fichero diario se pudo cargar');
+    }
+
+    console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
+    return true;
+  }catch(e){
+    console.warn('[carga] manifest no disponible, probando datos.json:', e.message);
+    return await cargarDatosLegacy();
+  }
+}
+
+async function cargarDatosLegacy(){
+  try{
+    const res = await fetch('datos.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    NOTICIAS = data.noticias || [];
+    MEDIOS = {};
+
+    // Construir MEDIOS a partir de las noticias (formato viejo las tiene embebidas)
+    for (const n of NOTICIAS){
+      const dom = n.dominio || '';
+      if (!dom) continue;
+      if (!MEDIOS[dom]){
+        MEDIOS[dom] = {
+          n: n.medio || '',
+          g: n.grupo || '',
+          t: n.tipo || '',
+          l: n.lang || '',
+          tags: Array.isArray(n.tags) ? n.tags.slice() : [],
+        };
+      }
+      // Añadir alias cortos para hidratación uniforme
+      if (n.d === undefined) n.d = dom;
+      if (n.t === undefined) n.t = n.titular;
+      if (n.u === undefined) n.u = n.enlace;
+      if (n.p === undefined) n.p = n.fecha_pub || '';
+      if (n.e === undefined) n.e = n.fecha_estimada || '';
+      if (n.c === undefined) n.c = n.fecha || '';
+      if (n.f === undefined) n.f = n.fuente || '';
+    }
+
+    console.log(`[carga] ${NOTICIAS.length} titulares desde datos.json (legacy)`);
+    return true;
+  }catch(e){
+    console.error('[carga] error total:', e);
+    NOTICIAS = [];
+    MEDIOS = {};
+    return false;
+  }
+}
+
+function hidratarNoticias(){
+  const ahora = Date.now();
+  const horizonte = ahora + HORIZONTE_FUTURO_MS;
+
+  for (const n of NOTICIAS){
+    // Compatibilidad de nombres
+    if (n.dominio === undefined) n.dominio = n.d || '';
+    if (n.titular === undefined) n.titular = n.t || '';
+    if (n.enlace === undefined)  n.enlace  = n.u || '';
+    if (n.fecha_pub === undefined) n.fecha_pub = n.p || '';
+    if (n.fecha_estimada === undefined) n.fecha_estimada = n.e || '';
+    if (n.fecha === undefined)  n.fecha = n.c || '';
+    if (n.fuente === undefined) n.fuente = n.f || '';
+
+    // Rellenar campos desde la tabla de medios
+    const m = MEDIOS[n.dominio] || {};
+    if (n.medio === undefined || !n.medio) n.medio = m.n || '';
+    if (n.grupo === undefined || !n.grupo) n.grupo = m.g || '';
+    if (n.tipo  === undefined || !n.tipo ) n.tipo  = m.t || '';
+    if (n.lang  === undefined || !n.lang ) n.lang  = m.l || '';
+    if (!Array.isArray(n.tags) || !n.tags.length) n.tags = m.tags || [];
+
+    // Escapes HTML para render
+    n._titularEsc = escapeHtml(n.titular);
+    n._medioEsc   = escapeHtml(n.medio);
+    n._tipoEsc    = escapeHtml(n.tipo);
+    n._grupoEsc   = escapeHtml(n.grupo);
+    n._enlaceEsc  = escapeHtml(n.enlace);
+    n._esPreset   = false;
+
+    // Fechas
+    const tsPub = parseFecha(n.fecha_pub);
+    const tsEst = parseFecha(n.fecha_estimada);
+    const tsRec = parseFecha(n.fecha);
+
+    // Fecha para ORDENAR (agrupación): pub no futura > est > rec
+    let tsOrden = NaN;
+    if (!isNaN(tsPub) && tsPub <= horizonte) tsOrden = tsPub;
+    else if (!isNaN(tsEst)) tsOrden = tsEst;
+    else if (!isNaN(tsRec)) tsOrden = tsRec;
+
+    // Fecha para MOSTRAR: pub > est > rec
+    let tsShow = NaN;
+    let tipoShow = 'none';
+    if (!isNaN(tsPub)){ tsShow = tsPub; tipoShow = 'pub'; }
+    else if (!isNaN(tsEst)){ tsShow = tsEst; tipoShow = 'est'; }
+    else if (!isNaN(tsRec)){ tsShow = tsRec; tipoShow = 'rec'; }
+
+    n._tsOrden    = tsOrden;
+    n._tsShow     = tsShow;
+    n._tipoShow   = tipoShow;
+    n._esFuturo   = !isNaN(tsPub) && (tsPub > horizonte);
+    n._tieneFecha = !isNaN(tsOrden);
+  }
+}
 
 function construirMediosUnicos(){
-  const map = {};
-  NOTICIAS.forEach(n => {
-    if (!map[n.dominio]) map[n.dominio] = { dominio: n.dominio, medio: n.medio, grupo: n.grupo };
-  });
-  MEDIOS_UNICOS = Object.values(map).sort((a,b) =>
+  MEDIOS_UNICOS = Object.entries(MEDIOS).map(([dominio, m]) => ({
+    dominio,
+    medio: m.n || '',
+    grupo: m.g || '',
+    tipo:  m.t || '',
+    lang:  m.l || '',
+    tags:  Array.isArray(m.tags) ? m.tags : [],
+  })).sort((a,b) =>
     a.grupo.localeCompare(b.grupo) || a.medio.localeCompare(b.medio)
   );
 }
 
 // Índices para autodetección en el buscador
-let MEDIOS_STRICT   = new Map();  // normStrict(medio)   -> medio original
-let DOMINIOS_STRICT = new Map();  // normDomain(dominio) -> dominio original
-let GRUPOS_STRICT   = new Map();  // normStrict(grupo)   -> grupo original
+let MEDIOS_STRICT   = new Map();
+let DOMINIOS_STRICT = new Map();
+let GRUPOS_STRICT   = new Map();
+let TIPOS_STRICT    = new Map();
+let TAGS_STRICT     = new Map();
 
 function construirIndicesBusqueda(){
   MEDIOS_STRICT   = new Map();
   DOMINIOS_STRICT = new Map();
   GRUPOS_STRICT   = new Map();
+  TIPOS_STRICT    = new Map();
+  TAGS_STRICT     = new Map();
+
   MEDIOS_UNICOS.forEach(m => {
-    MEDIOS_STRICT.set(normStrict(m.medio), m.medio);
-    DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
-  });
-  NOTICIAS.forEach(n => {
-    if (n.grupo) GRUPOS_STRICT.set(normStrict(n.grupo), n.grupo);
+    if (m.medio)   MEDIOS_STRICT.set(normStrict(m.medio), m.medio);
+    if (m.dominio) DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
+    if (m.grupo)   GRUPOS_STRICT.set(normStrict(m.grupo), m.grupo);
+    if (m.tipo)    TIPOS_STRICT.set(normStrict(m.tipo), m.tipo);
+    (m.tags || []).forEach(tag => {
+      if (tag) TAGS_STRICT.set(normStrict(tag), tag);
+    });
   });
 }
 
@@ -1991,17 +2158,19 @@ function parseQuery(raw){
     tokens.push({ text: m[1] != null ? m[1] : m[2], quoted: m[1] != null });
   }
 
-  const titulo = [], medios = [], dominios = [], grupos = [];
+  const titulo = [], medios = [], dominios = [], grupos = [], tipos = [], tags = [];
 
   for (const tk of tokens){
     const low = tk.text.toLowerCase();
 
-    // Prefijos explícitos (no publicitados, pero soportados)
+    // Prefijos explícitos
     if (!tk.quoted){
       if (low.startsWith('medio:'))   { const v = normStrict(tk.text.slice(6));  if (v) medios.push(v);   continue; }
       if (low.startsWith('dominio:')) { const v = normDomain(tk.text.slice(8));  if (v) dominios.push(v); continue; }
       if (low.startsWith('domain:'))  { const v = normDomain(tk.text.slice(7));  if (v) dominios.push(v); continue; }
       if (low.startsWith('grupo:'))   { const v = normStrict(tk.text.slice(6));  if (v) grupos.push(v);   continue; }
+      if (low.startsWith('tipo:'))    { const v = normStrict(tk.text.slice(5));  if (v) tipos.push(v);    continue; }
+      if (low.startsWith('tag:'))     { const v = normStrict(tk.text.slice(4));  if (v) tags.push(v);     continue; }
     }
 
     // Entre comillas → siempre título, texto literal
@@ -2024,6 +2193,8 @@ function parseQuery(raw){
       if (MEDIOS_STRICT.has(strict))   { medios.push(strict);   continue; }
       if (DOMINIOS_STRICT.has(strict)) { dominios.push(strict); continue; }
       if (GRUPOS_STRICT.has(strict))   { grupos.push(strict);   continue; }
+      if (TIPOS_STRICT.has(strict))    { tipos.push(strict);    continue; }
+      if (TAGS_STRICT.has(strict))     { tags.push(strict);     continue; }
     }
 
     // Nada más → título
@@ -2031,16 +2202,16 @@ function parseQuery(raw){
     if (n) titulo.push(n);
   }
 
-  return { titulo, medios, dominios, grupos };
+  return { titulo, medios, dominios, grupos, tipos, tags };
 }
 
 function ordenarGruposPorIdioma(grupos){
   const target = (ACCES && ACCES.lang) || 'es';
   const stats = {};
-  NOTICIAS.forEach(n => {
-    if (!stats[n.grupo]) stats[n.grupo] = { total: 0, matches: 0 };
-    stats[n.grupo].total++;
-    if (n.lang === target) stats[n.grupo].matches++;
+  MEDIOS_UNICOS.forEach(m => {
+    if (!stats[m.grupo]) stats[m.grupo] = { total: 0, matches: 0 };
+    stats[m.grupo].total++;
+    if (m.lang === target) stats[m.grupo].matches++;
   });
   return grupos.slice().sort((a, b) => {
     const sa = stats[a] || { total: 0, matches: 0 };
@@ -2055,12 +2226,12 @@ function ordenarGruposPorIdioma(grupos){
 function gruposAfinesAlIdioma(){
   const target = (ACCES && ACCES.lang) || 'es';
   const set = new Set();
-  NOTICIAS.forEach(n => { if (n.lang === target) set.add(n.grupo); });
+  MEDIOS_UNICOS.forEach(m => { if (m.lang === target) set.add(m.grupo); });
   return set;
 }
 
 function reconstruirListas(){
-  const grupos = ordenarGruposPorIdioma([...new Set(NOTICIAS.map(n => n.grupo))]);
+  const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
   const afin = gruposAfinesAlIdioma();
 
   const selG_prev = $('#grupo').value;
@@ -2095,7 +2266,9 @@ function reconstruirListas(){
   while (selM.options.length > 1) selM.remove(1);
   if (selM.options[0]) selM.options[0].text = t('fltMedio');
   const porGrupo = {};
-  NOTICIAS.forEach(n => (porGrupo[n.grupo] = porGrupo[n.grupo] || new Set()).add(n.medio));
+  MEDIOS_UNICOS.forEach(m => {
+    (porGrupo[m.grupo] = porGrupo[m.grupo] || new Set()).add(m.medio);
+  });
   grupos.forEach(g => {
     if (!porGrupo[g]) return;
     const og = document.createElement('optgroup');
@@ -2811,6 +2984,8 @@ function aplicarFiltros(){
   const hayMedio   = parsed.medios.length   > 0;
   const hayDominio = parsed.dominios.length > 0;
   const hayGrupo   = parsed.grupos.length   > 0;
+  const hayTipo    = parsed.tipos.length    > 0;
+  const hayTag     = parsed.tags.length     > 0;
   const hayTitulo  = parsed.titulo.length   > 0;
 
   let filtradas = NOTICIAS.filter(n => {
@@ -2822,33 +2997,41 @@ function aplicarFiltros(){
     if (t2 && n.tipo  !== t2) return false;
     if (m && n.medio !== m) return false;
     if (limiteMs){
-      const ts = n._tieneFecha ? n._ts : n._tsRec;
+      const ts = n._tsOrden;
       if (isNaN(ts)) return false;
       if (ahora - ts > limiteMs) return false;
     }
 
-    // ── medio (substring sobre medio strict-normalizado) ──
     if (hayMedio){
       const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
       for (let i = 0; i < parsed.medios.length; i++){
         if (ms.indexOf(parsed.medios[i]) === -1) return false;
       }
     }
-    // ── dominio ──
     if (hayDominio){
       const ds = n._domStrict || (n._domStrict = normDomain(n.dominio));
       for (let i = 0; i < parsed.dominios.length; i++){
         if (ds.indexOf(parsed.dominios[i]) === -1) return false;
       }
     }
-    // ── grupo ──
     if (hayGrupo){
       const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
       for (let i = 0; i < parsed.grupos.length; i++){
         if (gs.indexOf(parsed.grupos[i]) === -1) return false;
       }
     }
-    // ── título ──
+    if (hayTipo){
+      const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
+      for (let i = 0; i < parsed.tipos.length; i++){
+        if (ts.indexOf(parsed.tipos[i]) === -1) return false;
+      }
+    }
+    if (hayTag){
+      const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
+      for (let i = 0; i < parsed.tags.length; i++){
+        if (!tags.some(x => x.indexOf(parsed.tags[i]) !== -1)) return false;
+      }
+    }
     if (hayTitulo){
       const tn = n._titNorm || (n._titNorm = normalize(n.titular));
       for (let i = 0; i < parsed.titulo.length; i++){
@@ -2858,13 +3041,18 @@ function aplicarFiltros(){
     return true;
   });
 
+  // Orden estable: por fecha de agrupación, desempate por dominio y titular
   filtradas.sort((a, b) => {
-    if (a._tieneFecha !== b._tieneFecha){
-      return a._tieneFecha ? -1 : 1;
-    }
-    const ta = a._tieneFecha ? a._ts : (a._tsRec || 0);
-    const tb = b._tieneFecha ? b._ts : (b._tsRec || 0);
-    return orden === 'antiguos' ? ta - tb : tb - ta;
+    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
+    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
+    if (ta !== tb) return orden === 'antiguos' ? ta - tb : tb - ta;
+    const da = a.dominio || '';
+    const db = b.dominio || '';
+    if (da !== db) return da < db ? -1 : 1;
+    const xa = a.titular || '';
+    const xb = b.titular || '';
+    if (xa !== xb) return xa < xb ? -1 : 1;
+    return 0;
   });
 
   ULT_FILTRADAS = filtradas;
@@ -2907,19 +3095,18 @@ function renderizar(){
 }
 
 function renderItemHtml(n, idx){
-  const ahora = Date.now();
-
+  // Fecha visible según prioridad: pub (incl. futura) > estimada > recolección
   let fechaHtml = '';
-  if (n._tieneFecha){
-    const fecha = formatearFecha(n._ts);
-    const esFuturo = !isNaN(n._ts) && (n._ts - ahora > FUTURO_MAX_MS);
-    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${escapeHtml(fecha)}</span>`;
-  } else {
-    const recTs = n._tsRec;
-    const fecha = !isNaN(recTs)
-      ? `${t('recolectado')} ${formatearFecha(recTs)}`
-      : t('recolectado');
+  if (n._tipoShow === 'pub'){
+    const esFuturo = n._esFuturo;
+    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
+  } else if (n._tipoShow === 'est'){
+    fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">🕓 ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
+  } else if (!isNaN(n._tsShow)){
+    const fecha = `${t('recolectado')} ${formatearFecha(n._tsShow)}`;
     fechaHtml = `<span class="badge recolectado">${escapeHtml(fecha)}</span>`;
+  } else {
+    fechaHtml = `<span class="badge recolectado">${escapeHtml(t('recolectado'))}</span>`;
   }
 
   let tituloHtml;
@@ -3002,7 +3189,7 @@ function wireResultadosDelegation(){
         tipo:    n.tipo,
         titular: n.titular,
         enlace:  n.enlace,
-        fecha:   n.fecha_pub || n.fecha || '',
+        fecha:   n.fecha_pub || n.fecha_estimada || n.fecha || '',
         fuente:  n.fuente || ''
       });
     }
@@ -3320,48 +3507,29 @@ async function init(){
   aplicarAcces();
   initUserScriptBridge();
 
-  try{
-    const res = await fetch('datos.json', { cache: 'no-cache' });
-    const data = await res.json();
-    NOTICIAS = data.noticias || [];
-  }catch(e){
-    NOTICIAS = [];
-  }
+  // 1. Cargar datos (manifest con fallback a datos.json)
+  await cargarDatos();
 
-  NOTICIAS.forEach(n => {
-    n._titularEsc = escapeHtml(n.titular);
-    n._medioEsc = escapeHtml(n.medio);
-    n._tipoEsc  = escapeHtml(n.tipo || '');
-    n._grupoEsc = escapeHtml(n.grupo || '');
-    n._enlaceEsc = escapeHtml(n.enlace);
-    n._esPreset = false;
+  // 2. Hidratar noticias: alias largos, escapes, fechas, tags
+  hidratarNoticias();
 
-    const tsPub = parseFecha(n.fecha_pub);
-    const tsRec = parseFecha(n.fecha);
-    if (!isNaN(tsPub)){
-      n._ts = sanearTs(tsPub, tsRec);
-      n._tsRec = tsRec;
-      n._tieneFecha = true;
-    } else {
-      n._ts = NaN;
-      n._tsRec = tsRec;
-      n._tieneFecha = false;
-    }
-  });
-
+  // 3. Índices y derivados
   construirMediosUnicos();
   construirIndicesBusqueda();
 
+  // 4. Config local
   PRESET = cargarPreset();
   recompilarPreset();
   PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
-
   setSitesFromArray(cargarSitesCache());
 
+  // 5. Textos y listas
   aplicarTextos();
 
   const selT = $('#tipo');
-  [...new Set(NOTICIAS.map(n=>n.tipo).filter(Boolean))].sort().forEach(t2 => selT.add(new Option(t2,t2)));
+  while (selT.options.length > 1) selT.remove(1);
+  [...new Set(MEDIOS_UNICOS.map(m => m.tipo).filter(Boolean))].sort()
+    .forEach(t2 => selT.add(new Option(t2, t2)));
   if (selT.options[0]) selT.options[0].text = t('fltTipo');
 
   reconstruirListas();
@@ -3371,7 +3539,7 @@ async function init(){
   aplicarFiltros();
 
   if (!NOTICIAS.length){
-    $('#resultados').innerHTML = `<div class="vacio">${escapeHtml(t('errCarga'))}datos.json</div>`;
+    $('#resultados').innerHTML = `<div class="vacio">${escapeHtml(t('errCarga'))}sin datos</div>`;
   }
 }
 
