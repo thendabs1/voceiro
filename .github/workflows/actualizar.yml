@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write        # ← CAMBIO: necesitamos escribir en el repo
+  contents: write        # necesitamos escribir en el repo
   pages: write
   id-token: write
 
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0     # ← necesario para hacer commit desde el runner
+          fetch-depth: 0     # necesario para hacer commit desde el runner
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -39,18 +39,19 @@ jobs:
       - name: Verificar public/
         run: |
           ls -la public/
-          du -h public/datos.json public/index.html
+          ls -la public/datos/ 2>/dev/null || echo "⚠ public/datos/ no existe"
+          du -sh public/datos.json public/index.html public/datos/ 2>/dev/null
 
       # ═══════════════════════════════════════════════════════════
-      # Persistir el histórico: commitear datos.json de vuelta al repo
+      # Persistir el histórico: commitear datos.json + datos/ al repo
       # ═══════════════════════════════════════════════════════════
       - name: Guardar histórico en el repo
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/datos.json
+          git add public/datos.json public/datos/
           if git diff --staged --quiet; then
-            echo "Sin cambios en datos.json"
+            echo "Sin cambios que guardar"
           else
             git commit -m "Actualizar histórico [skip ci]"
             git push
