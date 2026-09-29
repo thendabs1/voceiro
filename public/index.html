@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">29/09/2026 22:05</span>
+    <span id="fecha">29/09/2026 22:24</span>
     <span>·</span>
-    <span id="total">11961</span>
+    <span id="total">12279</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3562,19 +3562,21 @@ function appendBatch(){
 function wireResultadosDelegation(){
   const cont = $('#resultados');
   cont.addEventListener('click', e => {
-    // 0) Registrar contexto de apertura si es un titular (para alias gnews)
+    // Al clicar un titular: guardar como leída automáticamente
     const link = e.target.closest('a.titular');
     if (link){
       const i = parseInt(link.closest('.noticia').dataset.idx, 10);
       const n = ULT_FILTRADAS[i];
-      if (n){
-        try {
-          localStorage.setItem('voceiro:lastOpen', JSON.stringify({
-            enlace: n.enlace,
-            titular: n.titular,
-            ts: Date.now()
-          }));
-        } catch(_){}
+      if (n && USCRIPT_OK){
+        document.dispatchEvent(new CustomEvent('voceiro-save-later', {
+          detail: {
+            url: n.enlace,
+            title: n.titular,
+            description: n.grupo || '',
+            image: '',
+            read: true
+          }
+        }));
       }
       return;   // dejamos que abra normalmente
     }
