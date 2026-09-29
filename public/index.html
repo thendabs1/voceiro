@@ -1,0 +1,3595 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light" data-font="sans" data-just="0" data-bionic="0" data-focus="0">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voceiro · Titulares</title>
+<style>
+  :root{
+    --bg:#fff; --fg:#222; --muted:#888; --accent:#d32f2f;
+    --border:#eee; --quote-bg:#f9f9f9;
+    --btn-bg:#f7f7f7; --btn-border:#ccc;
+    --shadow:rgba(0,0,0,.08);
+    --fs:18px; --lh:1.55; --w:1100px;
+    --ff:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --preset:#0a7d3f; --preset-bg:#e8f5e9;
+    --block:#b00020; --block-bg:#fde8ec;
+    --save:#1565c0; --save-bg:#e3f2fd;
+    --mark:#ffe680; --mark-fg:#111;
+  }
+  [data-theme="sepia"]{
+    --bg:#f4ecd8; --fg:#3b2f1e; --muted:#8a7a5c; --accent:#a0522d;
+    --border:#e0d5b8; --quote-bg:#ede0c4;
+    --btn-bg:#ede0c4; --btn-border:#c8b88a;
+    --shadow:rgba(59,47,30,.15);
+    --preset:#3e7a2f; --preset-bg:#e4ebd0;
+    --block:#8b2020; --block-bg:#ebd5d0;
+    --save:#2e5a8b; --save-bg:#d8e3ee;
+    --mark:#c9a227; --mark-fg:#2c1c08;
+  }
+  [data-theme="dark"]{
+    --bg:#1a1a1a; --fg:#e0e0e0; --muted:#999; --accent:#ff6b6b;
+    --border:#333; --quote-bg:#252525;
+    --btn-bg:#2a2a2a; --btn-border:#444;
+    --shadow:rgba(0,0,0,.5);
+    --preset:#4cc97a; --preset-bg:#173524;
+    --block:#ff8a9c; --block-bg:#3d1a20;
+    --save:#6cb3ff; --save-bg:#1e3550;
+    --mark:#b58600; --mark-fg:#fff;
+  }
+  [data-theme="contrast"]{
+    --bg:#000; --fg:#fff; --muted:#ff0; --accent:#0ff;
+    --border:#fff; --quote-bg:#111;
+    --btn-bg:#111; --btn-border:#fff;
+    --shadow:rgba(255,255,255,.2);
+    --preset:#0f0; --preset-bg:#003300;
+    --block:#f00; --block-bg:#330000;
+    --save:#0ff; --save-bg:#003333;
+    --mark:#ff0; --mark-fg:#000;
+  }
+  [data-font="serif"]{ --ff: Georgia, "Times New Roman", serif }
+  [data-font="sans"]{ --ff: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif }
+  [data-font="dyslexic"]{
+    --ff: Verdana, Tahoma, "Comic Sans MS", sans-serif;
+    letter-spacing: .03em; word-spacing: .1em;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--ff);
+    background:var(--bg); color:var(--fg);
+    font-size:var(--fs); line-height:var(--lh);
+    max-width:var(--w); margin:0 auto; padding:20px;
+    transition:background .15s, color .15s;
+  }
+  code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
+
+  header h1{
+    border-bottom:1px solid var(--border);
+    padding-bottom:8px; margin:0 0 4px;
+    font-size:1.6em; line-height:1.2;
+  }
+  header .meta{color:var(--muted); font-size:.72em; margin:0}
+
+  .topbar{
+    position:sticky; top:0; background:var(--bg);
+    z-index:10; padding:10px 0;
+    border-bottom:1px solid var(--border);
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  }
+
+  button{
+    cursor:pointer; padding:8px 14px;
+    border:1px solid var(--btn-border);
+    background:var(--btn-bg); color:var(--fg);
+    border-radius:6px;
+    font-family:inherit; font-size:.8em; font-weight:500;
+    transition:filter .1s, background .1s;
+  }
+  button:hover{filter:brightness(.95)}
+  button.primary{
+    background:var(--accent); color:#fff; border-color:var(--accent); font-weight:bold;
+  }
+  button.active{
+    background:var(--accent); color:#fff; border-color:var(--accent);
+  }
+  [data-theme="contrast"] button.active,
+  [data-theme="contrast"] button.primary{color:#000}
+
+  .btn-preset{
+    border:2px solid var(--preset); background:transparent; color:var(--preset);
+    font-weight:600;
+  }
+  .btn-preset:hover{background:var(--preset-bg)}
+  .btn-preset.active{background:var(--preset); color:#fff}
+  .btn-preset.active::after{content:' ✓'}
+
+  .btn-pendientes{
+    border:2px solid var(--save); background:transparent; color:var(--save);
+    font-weight:600;
+  }
+  .btn-pendientes:hover{background:var(--save-bg)}
+  .btn-pendientes.no-userscript{opacity:.55}
+
+  .btn-buscar{
+    border:2px solid var(--accent); background:transparent; color:var(--accent);
+    font-weight:600;
+  }
+  .btn-buscar:hover{background:var(--quote-bg)}
+
+  select.lang-select{
+    padding:7px 10px; border:1px solid var(--btn-border);
+    background:var(--btn-bg); color:var(--fg); border-radius:6px;
+    font-family:inherit; font-size:.78em;
+  }
+
+  .panel{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:100; display:none; padding:20px;
+    overflow-y:auto;
+  }
+  .panel.open{display:flex}
+  .panel-inner{
+    background:var(--bg); color:var(--fg);
+    border:1px solid var(--border); border-radius:12px;
+    padding:20px 24px;
+    max-width:920px; width:100%;
+    max-height:calc(100vh - 40px);
+    overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+    position:relative; margin:auto;
+  }
+  .panel-header{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:12px; margin-bottom:14px; padding-bottom:10px;
+    border-bottom:1px solid var(--border);
+  }
+  .panel-header h2{margin:0; font-size:1em; letter-spacing:.03em}
+  .panel-close{
+    background:transparent; border:1px solid var(--btn-border);
+    padding:4px 10px; font-size:1em; line-height:1; border-radius:6px;
+  }
+  .panel h3{
+    margin:16px 0 6px;
+    font-size:.72em; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--muted);
+    border-top:1px solid var(--border); padding-top:12px;
+  }
+  .panel h3:first-of-type{border-top:none; padding-top:0; margin-top:0}
+
+  .opt-row{
+    display:flex; align-items:center; gap:14px;
+    padding:8px 0; border-top:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .opt-row:first-of-type{border-top:none}
+  .opt-label{
+    color:var(--muted); font-size:.65em; letter-spacing:.05em;
+    text-transform:uppercase; min-width:110px;
+  }
+  .opt-group{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .opt-val{
+    font-weight:bold; min-width:44px; text-align:center;
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em;
+  }
+
+  .list-grupos{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px,1fr));
+    gap:4px;
+    max-height:200px; overflow-y:auto;
+    padding:8px; border:1px solid var(--border); border-radius:6px;
+    background:var(--bg);
+  }
+  .grupo-item{
+    display:flex; align-items:center; gap:8px;
+    font-size:.75em; cursor:pointer;
+    padding:5px 8px; border-radius:4px;
+  }
+  .grupo-item:hover{background:var(--quote-bg)}
+  .grupo-item input{accent-color:var(--accent); width:1.1em; height:1.1em}
+  .grupo-item .flag{
+    font-size:.85em; color:var(--accent); opacity:.7;
+    margin-left:auto; padding-left:6px;
+  }
+
+  .ctrl-medios{
+    display:grid; grid-template-columns:1fr auto; gap:8px;
+    margin-bottom:8px;
+  }
+  .ctrl-medios input,
+  .ctrl-medios select{
+    font-size:.78em; padding:8px 10px;
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--fg); font-family:inherit;
+  }
+
+  .list-medios{
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg);
+    max-height:340px; overflow-y:auto;
+  }
+  .medio-fila{
+    display:grid;
+    grid-template-columns:34px 34px minmax(140px,1.2fr) 1.6fr 1.4fr;
+    gap:8px; align-items:center;
+    padding:6px 10px;
+    border-bottom:1px solid var(--border);
+    font-size:.72em;
+  }
+  .medio-fila:last-child{border-bottom:none}
+  .medio-fila.estado-incluir{background:var(--preset-bg)}
+  .medio-fila.estado-ignorar{background:var(--block-bg)}
+  .medio-fila .celda{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .medio-fila .celda-grupo{color:var(--muted); font-size:.9em}
+  .medio-fila.no-config .celda-dominio{opacity:.75}
+
+  .known-dot{
+    display:inline-block;
+    width:6px; height:6px; border-radius:50%;
+    background:var(--save);
+    margin-right:6px;
+    vertical-align:middle;
+    flex-shrink:0;
+  }
+
+  .chk{display:flex; justify-content:center; align-items:center; cursor:pointer; user-select:none}
+  .chk input{display:none}
+  .chk span{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:50%;
+    border:1.5px solid var(--btn-border);
+    font-size:.9em; font-weight:700;
+    background:transparent; color:var(--muted);
+    transition:all .1s;
+  }
+  .chk:hover span{border-color:var(--accent)}
+  .chk.incluir input:checked + span{
+    background:var(--preset); border-color:var(--preset); color:#fff;
+  }
+  .chk.ignorar input:checked + span{
+    background:var(--block); border-color:var(--block); color:#fff;
+  }
+
+  textarea.preset-texto{
+    width:100%; min-height:70px; padding:10px;
+    border-radius:6px; border:1px solid var(--border);
+    background:var(--bg); color:var(--fg);
+    font-family:var(--ff); font-size:.78em;
+    line-height:1.5; resize:vertical;
+  }
+
+  .panel-acciones{
+    display:flex; justify-content:flex-end; gap:8px;
+    flex-wrap:wrap;
+    margin-top:16px; padding-top:12px;
+    border-top:1px solid var(--border);
+  }
+
+  .backup-box{
+    background:var(--quote-bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:.75em;
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    justify-content:space-between;
+  }
+  .backup-box .msg{color:var(--muted); flex:1; min-width:180px}
+  .backup-box .acciones{display:flex; gap:8px; flex-wrap:wrap}
+
+  .filtros{
+    display:grid;
+    grid-template-columns:2.5fr 1fr 1fr 1.2fr .9fr 1.1fr auto;
+    gap:8px;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+    position:sticky; top:56px; background:var(--bg);
+    z-index:9;
+  }
+  .filtros input,
+  .filtros select{
+    font-size:.78em; padding:8px 10px;
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--fg); font-family:inherit;
+    min-width:0;
+  }
+  .chips-busqueda{
+    display:flex; flex-wrap:wrap; gap:6px;
+    padding:8px 0 10px;
+    border-bottom:1px solid var(--border);
+    font-size:.72em;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:3px 4px 3px 10px;
+    border-radius:12px;
+    background:var(--save-bg); color:var(--save);
+    border:1px solid var(--save);
+    font-weight:500;
+    line-height:1.4;
+  }
+  .chip-tipo{
+    opacity:.75; text-transform:uppercase; letter-spacing:.05em;
+    font-size:.85em;
+  }
+  .chip-x{
+    background:transparent; border:none;
+    color:inherit; cursor:pointer;
+    padding:0 6px; font-size:1.15em; line-height:1;
+    border-radius:8px;
+    font-family:inherit;
+    font-weight:700;
+  }
+  .chip-x:hover{background:rgba(0,0,0,.1)}
+  [data-theme="dark"] .chip-x:hover{background:rgba(255,255,255,.15)}
+  [data-theme="contrast"] .chip-x:hover{background:#333}
+  #contador{
+    color:var(--muted); font-size:.68em;
+    margin:10px 0 14px;
+  }
+
+  .noticia{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 16px;
+    margin-bottom:8px;
+    transition:opacity .25s;
+    position:relative;
+    contain:content;
+  }
+  .noticia.foco-dim{opacity:.28}
+  .noticia.foco-active{opacity:1}
+  .noticia .cabecera{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    margin-bottom:5px; font-size:.62em; color:var(--muted);
+  }
+  .noticia .medio{
+    font-weight:bold; color:var(--fg); font-size:1.1em;
+    text-transform:uppercase; letter-spacing:.3px;
+  }
+  .badge{
+    background:var(--quote-bg); border:1px solid var(--border);
+    padding:1px 8px; border-radius:10px; color:var(--muted);
+  }
+  .badge.preset{
+    background:var(--preset-bg);
+    border-color:var(--preset);
+    color:var(--preset);
+  }
+  .badge.futuro{
+    background:#fff3e0; border-color:#ffb74d; color:#b45309;
+  }
+  [data-theme="dark"] .badge.futuro,
+  [data-theme="sepia"] .badge.futuro{
+    background:#3d2f14; border-color:#b58600; color:#ffcc66;
+  }
+  [data-theme="contrast"] .badge.futuro{background:#000; border-color:#ff0; color:#ff0}
+
+  .badge.recolectado{
+    background:#fef3c7; border-color:#fbbf24; color:#92400e;
+  }
+  [data-theme="dark"] .badge.recolectado{
+    background:#3d2f14; border-color:#b58600; color:#ffcc66;
+  }
+  [data-theme="sepia"] .badge.recolectado{
+    background:#f5e6c3; border-color:#c9a227; color:#5c4a1c;
+  }
+  [data-theme="contrast"] .badge.recolectado{
+    background:#000; border-color:#ff0; color:#ff0;
+  }
+
+  .badge.estimada{
+    background:#e8f0fe; border-color:#a0c4f8; color:#0d47a1;
+  }
+  [data-theme="dark"] .badge.estimada{
+    background:#1a2d47; border-color:#4a7ab5; color:#a0c4f8;
+  }
+  [data-theme="sepia"] .badge.estimada{
+    background:#dae4ef; border-color:#8fa9c4; color:#2e5a8b;
+  }
+  [data-theme="contrast"] .badge.estimada{
+    background:#003; border-color:#0ff; color:#0ff;
+  }
+
+  .noticia a.titular{
+    color:var(--accent); text-decoration:none;
+    font-weight:600; font-size:1em; display:block; margin-top:2px;
+  }
+  .noticia a.titular:hover{text-decoration:underline}
+  [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
+  mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
+
+  .btn-mini{
+    margin-left:2px;
+    padding:2px 8px !important;
+    font-size:.85em !important;
+    background:transparent !important;
+    border:1px solid var(--border) !important;
+    color:var(--muted) !important;
+    line-height:1.2;
+    opacity:.6;
+    transition:opacity .15s, color .15s, border-color .15s;
+  }
+  .btn-mini:first-of-type{margin-left:auto}
+  .btn-mini:hover{
+    opacity:1 !important;
+    color:var(--accent) !important;
+    border-color:var(--accent) !important;
+  }
+  .btn-save-item:hover{
+    color:var(--save) !important;
+    border-color:var(--save) !important;
+  }
+
+  .vacio{
+    text-align:center; color:var(--muted);
+    padding:40px 0; font-size:.85em;
+  }
+
+  .pendiente-item{
+    padding:12px 14px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    margin-bottom:8px;
+    background:var(--bg);
+  }
+  .pendiente-item a{
+    color:var(--accent); text-decoration:none;
+    font-weight:600; font-size:.95em;
+    display:block;
+  }
+  .pendiente-item a:hover{text-decoration:underline}
+  .pendiente-meta{
+    font-size:.65em; color:var(--muted);
+    margin-top:4px;
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .pendiente-actions{
+    display:flex; justify-content:flex-end; gap:6px;
+    margin-top:8px;
+  }
+  .pendiente-actions button{
+    padding:4px 10px; font-size:.75em; border-radius:6px;
+    border:1px solid var(--border); background:var(--btn-bg); color:var(--fg);
+    cursor:pointer; font-family:inherit;
+  }
+  .pendiente-actions button:hover{filter:brightness(.95)}
+  .btn-pend-toggle{border-color:var(--preset) !important; color:var(--preset) !important}
+  .btn-pend-remove{color:var(--block) !important}
+
+  #toast-wrap{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    z-index:200; display:flex; flex-direction:column; gap:8px;
+    pointer-events:none;
+  }
+  .toast{
+    background:#222; color:#fff; padding:10px 16px; border-radius:8px;
+    font-size:.78em; box-shadow:0 6px 20px rgba(0,0,0,.35);
+    opacity:0; transform:translateY(12px);
+    transition:opacity .2s, transform .2s;
+    max-width:90vw;
+  }
+  .toast.show{opacity:1; transform:translateY(0)}
+  [data-theme="dark"] .toast{background:#eee; color:#222}
+  [data-theme="contrast"] .toast{background:#ff0; color:#000; border:2px solid #000}
+
+  .rep-ctx{
+    background:var(--quote-bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:.72em;
+    line-height:1.6;
+    margin-bottom:14px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+    word-break:break-word;
+  }
+  .rep-ctx strong{color:var(--muted); font-weight:600; margin-right:4px}
+  .rep-ctx.empty{color:var(--muted); font-style:italic; font-family:var(--ff); text-align:center}
+
+  .rep-row{display:grid; gap:6px; margin-bottom:14px}
+  .rep-row label{
+    font-size:.7em; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.05em;
+  }
+  .rep-row select,
+  .rep-row textarea{
+    font-size:.8em; padding:9px 12px;
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--fg); font-family:inherit;
+    width:100%;
+  }
+  .rep-row textarea{min-height:80px; resize:vertical; line-height:1.5}
+
+  .rep-check{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px 12px;
+    background:var(--quote-bg);
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:.72em;
+    cursor:pointer;
+  }
+  .rep-check input{
+    accent-color:var(--accent);
+    width:1.15em; height:1.15em;
+    margin-top:.15em; flex-shrink:0;
+  }
+  .rep-check span{color:var(--muted); line-height:1.5}
+
+  .rep-acciones{
+    display:flex; gap:8px; flex-wrap:wrap;
+    justify-content:space-between;
+    margin-top:16px; padding-top:12px;
+    border-top:1px solid var(--border);
+  }
+  .rep-acciones .grupo{display:flex; gap:8px; flex-wrap:wrap}
+
+  .sync-banner{
+    background:#e3f2fd; color:#0d47a1;
+    border:1px solid #90caf9; border-radius:6px;
+    padding:8px 12px; font-size:.72em;
+    margin-bottom:12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  [data-theme="dark"] .sync-banner{background:#0d2a45; color:#90caf9; border-color:#1565c0}
+  [data-theme="sepia"] .sync-banner{background:#d8e3ee; color:#2e5a8b; border-color:#8fa9c4}
+  [data-theme="contrast"] .sync-banner{background:#003; color:#0ff; border-color:#0ff}
+  .sync-dot{
+    width:8px; height:8px; border-radius:50%;
+    background:#4caf50; flex-shrink:0;
+    animation:pulse 2s infinite;
+  }
+  .sync-dot.offline{background:#f44336; animation:none}
+  @keyframes pulse{
+    0%,100%{opacity:1}
+    50%{opacity:.4}
+  }
+
+  #render-sentinel{
+    height:1px;
+    margin-top:8px;
+  }
+
+  /* ═══ Buscador FreeNewsAPI ═══ */
+  .bs-aviso{
+    background:var(--save-bg); color:var(--save);
+    border:1px solid var(--save); border-radius:6px;
+    padding:8px 12px; font-size:.7em; line-height:1.5;
+    margin-bottom:14px;
+  }
+  .bs-filtros{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
+  .bs-filtros input,
+  .bs-filtros select{
+    font-size:.82em; padding:9px 12px;
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--fg); font-family:inherit;
+  }
+  .bs-fila{display:flex; gap:8px; flex-wrap:wrap}
+  .bs-fila select{flex:1 1 120px; min-width:120px}
+  .bs-estado{
+    font-size:.72em; color:var(--muted);
+    margin-bottom:10px; min-height:1.2em;
+  }
+  .bs-resultado{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-left:3px solid var(--save);
+    border-radius:8px;
+    padding:12px 16px;
+    margin-bottom:8px;
+  }
+  .bs-resultado .bs-meta{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    font-size:.62em; color:var(--muted); margin-bottom:5px;
+  }
+  .bs-resultado .bs-medio{
+    font-weight:bold; color:var(--fg); font-size:1.1em;
+    text-transform:uppercase; letter-spacing:.3px;
+  }
+  .bs-resultado .bs-badge{
+    background:var(--save-bg); border:1px solid var(--save);
+    padding:1px 8px; border-radius:10px; color:var(--save);
+    font-size:.9em;
+  }
+  .bs-resultado a.bs-titular{
+    color:var(--accent); text-decoration:none;
+    font-weight:600; font-size:1em; display:block; margin-top:2px;
+  }
+  .bs-resultado a.bs-titular:hover{text-decoration:underline}
+  .bs-resultado .bs-desc{
+    font-size:.75em; color:var(--muted);
+    margin-top:6px; line-height:1.4;
+  }
+  .bs-resultado .bs-acciones{
+    display:flex; gap:6px; justify-content:flex-end; margin-top:8px;
+  }
+  #bs-mas-wrap{text-align:center; margin-top:14px}
+
+  @media (max-width:900px){
+    .filtros{grid-template-columns:1fr 1fr 1fr; position:static}
+    #buscar{grid-column:1/-1}
+    .medio-fila{grid-template-columns:34px 34px 1fr 1.2fr}
+    .medio-fila .celda-grupo{display:none}
+    .opt-row{gap:8px}
+    .opt-label{min-width:100%}
+  }
+  @media (max-width:560px){
+    .filtros{grid-template-columns:1fr 1fr}
+    .medio-fila{grid-template-columns:34px 34px 1fr}
+    .medio-fila .celda-nombre{display:none}
+    .panel-inner{padding:16px}
+    .rep-acciones{flex-direction:column}
+    .rep-acciones .grupo{width:100%}
+    .rep-acciones button{flex:1}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="h-title">Voceiro</h1>
+  <p class="meta">
+    <span id="meta-prefix"></span>
+    <span id="fecha">29/09/2026 12:46</span>
+    <span>·</span>
+    <span id="total">16873</span>
+    <span id="meta-suffix"></span>
+  </p>
+</header>
+
+<section class="topbar">
+  <button id="btn-preset" class="btn-preset" type="button"></button>
+  <button id="btn-config" type="button"></button>
+  <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
+  <button id="btn-buscar" class="btn-buscar" type="button"></button>
+  <span style="flex:1"></span>
+  <select id="lang-select" class="lang-select" aria-label="Language"></select>
+  <button id="btn-acces" type="button"></button>
+</section>
+
+<!-- CONFIG -->
+<section id="panel-config" class="panel" role="dialog" aria-modal="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <h2 id="cfg-title"></h2>
+      <button class="panel-close" type="button" data-close="panel-config">✕</button>
+    </div>
+
+    <div id="sync-banner" class="sync-banner" style="display:none">
+      <span class="sync-dot"></span>
+      <span id="sync-banner-text"></span>
+    </div>
+
+    <h3 id="cfg-grupos"></h3>
+    <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+    <div id="lista-grupos" class="list-grupos"></div>
+
+    <h3 id="cfg-medios"></h3>
+    <p id="cfg-medios-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+    <p id="cfg-medios-legend" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+    <div class="ctrl-medios">
+      <input type="search" id="filtro-medio">
+      <select id="filtro-grupo-medio"><option value=""></option></select>
+    </div>
+    <div id="lista-medios" class="list-medios"></div>
+    <p id="resumen-medios" style="font-size:.68em; color:var(--muted); margin:6px 0 0;"></p>
+
+    <h3 id="cfg-palabras"></h3>
+    <p id="cfg-palabras-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+    <textarea id="preset-palabras" class="preset-texto"></textarea>
+
+    <h3 id="cfg-backup"></h3>
+    <div class="backup-box">
+      <span class="msg" id="cfg-backup-msg"></span>
+      <div class="acciones">
+        <button id="btn-export" type="button"></button>
+        <button id="btn-import" type="button"></button>
+      </div>
+    </div>
+
+    <h3 id="cfg-help-lbl"></h3>
+    <div class="backup-box">
+      <span class="msg" id="cfg-help-msg"></span>
+      <div class="acciones">
+        <button id="btn-report-generic" type="button">🐞 <span id="cfg-help-btn"></span></button>
+      </div>
+    </div>
+
+    <div class="panel-acciones">
+      <button id="preset-reset" type="button"></button>
+      <button id="preset-cancelar" type="button"></button>
+      <button id="preset-guardar" type="button" class="primary"></button>
+    </div>
+  </div>
+</section>
+
+<!-- ACCESIBILIDAD -->
+<section id="panel-acces" class="panel" role="dialog" aria-modal="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <h2 id="ac-title"></h2>
+      <button class="panel-close" type="button" data-close="panel-acces">✕</button>
+    </div>
+
+    <div class="opt-row">
+      <span class="opt-label" id="ac-tema"></span>
+      <div class="opt-group" data-grupo="tema">
+        <button data-val="light"></button>
+        <button data-val="sepia"></button>
+        <button data-val="dark"></button>
+        <button data-val="contrast"></button>
+      </div>
+    </div>
+
+    <div class="opt-row">
+      <span class="opt-label" id="ac-fuente"></span>
+      <div class="opt-group" data-grupo="fuente">
+        <button data-val="serif"></button>
+        <button data-val="sans"></button>
+        <button data-val="dyslexic"></button>
+      </div>
+    </div>
+
+    <div class="opt-row">
+      <span class="opt-label" id="ac-tamano"></span>
+      <div class="opt-group">
+        <button id="fs-menos">A−</button>
+        <span class="opt-val" id="fs-val">18</span>
+        <button id="fs-mas">A+</button>
+      </div>
+    </div>
+
+    <div class="opt-row">
+      <span class="opt-label" id="ac-ancho"></span>
+      <div class="opt-group">
+        <button id="w-menos">−</button>
+        <span class="opt-val" id="w-val">1100</span>
+        <button id="w-mas">+</button>
+      </div>
+    </div>
+
+    <div class="opt-row">
+      <span class="opt-label" id="ac-extra"></span>
+      <div class="opt-group" data-grupo="extra">
+        <button data-val="just"></button>
+        <button data-val="bionic"></button>
+        <button data-val="focus"></button>
+      </div>
+    </div>
+
+    <div class="panel-acciones">
+      <button id="acces-reset" type="button"></button>
+    </div>
+  </div>
+</section>
+
+<!-- PENDIENTES -->
+<section id="panel-pendientes" class="panel" role="dialog" aria-modal="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <h2 id="pend-title"></h2>
+      <button class="panel-close" type="button" data-close="panel-pendientes">✕</button>
+    </div>
+    <div id="pendientes-lista"></div>
+    <div class="panel-acciones">
+      <button id="pend-refresh" type="button"></button>
+    </div>
+  </div>
+</section>
+
+<!-- REPORTE -->
+<section id="panel-reporte" class="panel" role="dialog" aria-modal="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <h2 id="rep-title"></h2>
+      <button class="panel-close" type="button" data-close="panel-reporte">✕</button>
+    </div>
+
+    <div id="rep-contexto" class="rep-ctx"></div>
+
+    <div class="rep-row">
+      <label for="rep-motivo" id="rep-motivo-lbl"></label>
+      <select id="rep-motivo">
+        <option value="no_se_muestra"></option>
+        <option value="enlace_roto"></option>
+        <option value="paywall"></option>
+        <option value="medio_incorrecto"></option>
+        <option value="duplicado"></option>
+        <option value="contenido_inapropiado"></option>
+        <option value="fecha_incorrecta"></option>
+        <option value="otro"></option>
+      </select>
+    </div>
+
+    <div class="rep-row">
+      <label for="rep-detalles" id="rep-detalles-lbl"></label>
+      <textarea id="rep-detalles"></textarea>
+    </div>
+
+    <label class="rep-check">
+      <input type="checkbox" id="rep-config-incluir">
+      <span id="rep-config-lbl"></span>
+    </label>
+
+    <div class="rep-acciones">
+      <div class="grupo">
+        <button id="rep-copy" type="button"></button>
+      </div>
+      <div class="grupo">
+        <button id="rep-mail" type="button"></button>
+        <button id="rep-github" type="button" class="primary"></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BUSCADOR -->
+<section id="panel-buscar" class="panel" role="dialog" aria-modal="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <h2 id="bs-title"></h2>
+      <button class="panel-close" type="button" data-close="panel-buscar">✕</button>
+    </div>
+
+    <div class="bs-aviso" id="bs-aviso"></div>
+
+    <div class="bs-filtros">
+      <input type="search" id="bs-q" autocomplete="off">
+      <div class="bs-fila">
+        <select id="bs-lang" aria-label="Language"></select>
+        <select id="bs-country" aria-label="Country"></select>
+        <select id="bs-date" aria-label="Date"></select>
+        <button id="bs-go" type="button" class="primary"></button>
+      </div>
+    </div>
+
+    <div id="bs-estado" class="bs-estado"></div>
+    <div id="bs-resultados"></div>
+    <div id="bs-mas-wrap" style="display:none">
+      <button id="bs-mas" type="button"></button>
+    </div>
+  </div>
+</section>
+
+<!-- FILTROS -->
+<section class="filtros">
+  <input type="search" id="buscar" autocomplete="off">
+  <select id="grupo"><option value=""></option></select>
+  <select id="tipo"><option value=""></option></select>
+  <select id="medio"><option value=""></option></select>
+  <select id="rango">
+    <option value=""></option>
+    <option value="1"></option>
+    <option value="2"></option>
+    <option value="7"></option>
+  </select>
+  <select id="orden">
+    <option value="recientes"></option>
+    <option value="antiguos"></option>
+  </select>
+  <button id="limpiar" type="button"></button>
+</section>
+<div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
+<div id="contador"></div>
+<main id="resultados"></main>
+
+<div id="toast-wrap"></div>
+<input type="file" id="file-import" accept=".json,application/json" style="display:none">
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════════════ */
+const REPORT_REPO  = 'thendabs1/voceiro';
+const REPORT_EMAIL = 'thendabs1@gmail.com';
+
+/* ═══════════════════════════════════════════════════════════════
+   I18N
+   ═══════════════════════════════════════════════════════════════ */
+const I18N = {
+  es: {
+    pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro',
+    metaPrefix: 'Actualizado:', metaSuffix: 'titulares en histórico',
+    btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
+    btnPendientes: '📚 Pendientes', btnAcces: 'Aa Accesibilidad',
+    btnImport: '↓ Importar', btnExport: '↑ Exportar',
+    btnReset: '↺ Valores por defecto', btnCancel: 'Cancelar', btnSave: 'Guardar', btnClear: 'Limpiar',
+    lblIdioma: 'Idioma',
+    optLangEs: 'Español', optLangGl: 'Galego', optLangCa: 'Català', optLangEn: 'English', optLangEu: 'Euskara',
+    cfgTitle: 'Configurar Modo Personalizado',
+    cfgGrupos: 'Grupos completos',
+    cfgGruposHint: 'Al marcar un grupo se incluyen todos sus medios. Bloquear un medio (abajo) tiene más prioridad.',
+    cfgMedios: 'Medios',
+    cfgMediosHint: '✓ forzar siempre · ✗ bloquear siempre · sin marca = neutro.',
+    knownInPlugin: 'Configurado en el plugin Lector Universal',
+    forceInclude: 'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
+    forceExclude: 'Bloquear siempre',
+    cfgBuscarMedio: '🔍 Buscar por dominio, nombre o grupo…', cfgTodosGrupos: 'Todos los grupos',
+    cfgPalabras: 'Palabras clave en titular',
+    cfgPalabrasHint: 'Una por línea o separadas por comas. Sin tildes, palabra completa.',
+    cfgBackup: 'Copia de seguridad',
+    cfgBackupMsg: 'Exporta tu configuración a un archivo compatible con Voceiro y con el plugin Lector Universal.',
+    cfgHelpLbl: 'Ayúdanos a mejorar',
+    cfgHelpMsg: '¿Algo no funciona? ¿Un medio no se muestra o da errores? Cuéntanoslo.',
+    cfgHelpBtn: 'Reportar problema',
+    cfgResumen: 'Mostrando {vis} de {total} · {inc} forzados · {ign} bloqueados',
+    cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
+    acTitle: 'Opciones de lectura',
+    acTema: 'Tema', acFuente: 'Fuente', acTamano: 'Tamaño', acAncho: 'Ancho', acExtra: 'Extra',
+    acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Oscuro', acContraste: '◐ Contraste',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
+    acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Foco',
+    fltBuscar: '🔍 Buscar… ("elecciones" · "medio:elpais" · "tag:deportes")',
+    fltGrupo: 'Todos los grupos', fltTipo: 'Todos los tipos', fltMedio: 'Todos los medios',
+    fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
+    ordenRecientes: '↓ Más recientes', ordenAntiguos: '↑ Más antiguos',
+    contador: 'Mostrando {n} de {total} titulares', contadorPreset: ' · Modo Personalizado activo',
+    vacio: 'Sin resultados', errCarga: 'Error cargando datos: ',
+    expOk: 'Configuración exportada',
+    impOk: 'Configuración importada correctamente',
+    impFromVoceiro: 'Configuración de Voceiro importada',
+    impFromLector: 'Configuración del lector importada',
+    impErr: 'Error al importar: {msg}',
+    impConfirm: 'Esto reemplazará tu configuración actual. ¿Continuar?',
+    presetVacio: 'El Modo Personalizado está vacío. Configúralo primero y luego actívalo.',
+    presetActivado: 'Modo Personalizado activado', presetDesactivado: 'Modo Personalizado desactivado',
+    presetGuardadoActivado: 'Configuración guardada · Modo Personalizado activado',
+    fechaAhora: 'ahora', fechaHaceMin: 'hace {n} min', fechaHaceH: 'hace {n} h',
+    fechaHaceD: 'hace {n} d', fechaProgramado: 'programado',
+    recolectado: '📥 Recolectado',
+    sinFechaReal: 'Sin fecha exacta del medio',
+    syncOnline: 'Sincronizado con el plugin Lector Universal',
+    syncOffline: 'Sin plugin — cambios guardados solo en este navegador',
+    syncOfflineHint: 'Instala el plugin Lector Universal para sincronizar tu configuración entre dispositivos y compartirla con la lista de sitios.',
+    pendTitle: 'Noticias guardadas para leer después',
+    pendRefresh: '↻ Actualizar',
+    noUserscript: 'Instala el plugin Lector Universal para guardar noticias y verlas aquí.',
+    noPendientes: 'No tienes noticias pendientes.',
+    loading: 'Cargando…',
+    savedToReader: '✅ Guardado para leer después',
+    alreadyInReader: 'ℹ️ Ya estaba en pendientes',
+    saveCopied: '📋 Enlace copiado · Pégalo donde quieras',
+    saveForLaterTitle: 'Guardar para leer después',
+    deletePending: 'Quitar',
+    confirmDeletePending: '¿Quitar esta noticia de pendientes?',
+    readItems: 'Leídas',
+    readItemsNo: 'Pendientes',
+    markRead: 'Marcar como leída',
+    markUnread: 'Marcar como no leída',
+    repBtnTitle: 'Reportar problema con este titular',
+    repTitle: 'Reportar un problema',
+    repCtxEmpty: '(Sin titular específico — reporte general)',
+    repMotivoLbl: 'Motivo',
+    repMotivoNoSeMuestra: 'No se muestra o no aparece',
+    repMotivoEnlaceRoto: 'Enlace roto', repMotivoPaywall: 'Requiere pago o registro',
+    repMotivoMedioIncorrecto: 'Medio o grupo incorrecto', repMotivoDuplicado: 'Noticia duplicada',
+    repMotivoContenido: 'Contenido inapropiado', repMotivoFecha: 'Fecha incorrecta o en el futuro',
+    repMotivoOtro: 'Otro (describir abajo)',
+    repDetallesLbl: 'Detalles (opcional)',
+    repDetallesPh: 'Cuéntanos qué pasa con este titular, si quieres con más detalle…',
+    repConfigLbl: 'Adjuntar mi configuración actual al reporte. Ayuda a reproducir el problema.',
+    repCopy: '📋 Copiar reporte', repMail: '✉ Enviar por email', repGithub: '🐞 Abrir en GitHub',
+    repCopiado: 'Reporte copiado al portapapeles',
+    repErrGithub: 'No se pudo abrir GitHub. Copia el reporte y envíalo por email.',
+    repContexto: 'Contexto', repCtxMedio: 'Medio', repCtxGrupo: 'Grupo', repCtxTipo: 'Tipo',
+    repCtxTitular: 'Titular', repCtxEnlace: 'Enlace', repCtxFecha: 'Fecha', repCtxFuente: 'Fuente',
+    repCtxIdioma: 'Idioma activo', repCtxConfig: 'Config', repFecha: 'Fecha del reporte',
+    btnBuscar: '🔎 Investigar',
+    bsTitle: 'Buscar en miles de medios',
+    bsAviso: 'Este buscador cubre medios pequeños y regionales. Los grandes diarios nacionales (El País, El Mundo, ABC…) no están incluidos en su índice.',
+    bsQ: 'Busca cualquier tema…',
+    bsLang: 'Idioma',
+    bsLangAny: 'Cualquier idioma',
+    bsCountry: 'País',
+    bsCountryAny: 'Cualquier país',
+    bsDate: 'Fecha',
+    bsDate24h: 'Últimas 24 h',
+    bsDate48h: 'Últimas 48 h',
+    bsDate7d: 'Últimos 7 días',
+    bsDate30d: 'Últimos 30 días',
+    bsBuscar: 'Buscar',
+    bsCargando: 'Buscando…',
+    bsSinResultados: 'Sin resultados',
+    bsError: 'No se pudo conectar con el buscador externo. Inténtalo más tarde.',
+    bsErrorQ: 'Escribe algo para buscar',
+    bsResultados: '{n} resultados',
+    bsCargados: 'mostrando {n}',
+    bsMas: 'Cargar más',
+    bsFuenteExterna: 'Fuente externa',
+    bsGuardar: '🕒 Guardar',
+    bsVerificado: 'en el catálogo',
+  },
+  gl: {
+    pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro',
+    metaPrefix: 'Actualizado:', metaSuffix: 'titulares no histórico',
+    btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
+    btnPendientes: '📚 Pendentes', btnAcces: 'Aa Accesibilidade',
+    btnImport: '↓ Importar', btnExport: '↑ Exportar',
+    btnReset: '↺ Valores por defecto', btnCancel: 'Cancelar', btnSave: 'Gardar', btnClear: 'Limpar',
+    lblIdioma: 'Idioma',
+    optLangEs: 'Castelán', optLangGl: 'Galego', optLangCa: 'Català', optLangEn: 'Inglés', optLangEu: 'Éuscaro',
+    cfgTitle: 'Configurar Modo Personalizado', cfgGrupos: 'Grupos completos',
+    cfgGruposHint: 'Ao marcar un grupo inclúense todos os seus medios. Bloquear un medio (abaixo) ten máis prioridade.',
+    cfgMedios: 'Medios',
+    cfgMediosHint: '✓ forzar sempre · ✗ bloquear sempre · sen marca = neutro.',
+    knownInPlugin: 'Configurado no plugin Lector Universal',
+    forceInclude: 'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
+    forceExclude: 'Bloquear sempre',
+    cfgBuscarMedio: '🔍 Buscar por dominio, nome ou grupo…', cfgTodosGrupos: 'Todos os grupos',
+    cfgPalabras: 'Palabras clave no titular',
+    cfgPalabrasHint: 'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
+    cfgBackup: 'Copia de seguridade',
+    cfgBackupMsg: 'Exporta a túa configuración a un ficheiro compatible con Voceiro e co plugin Lector Universal.',
+    cfgHelpLbl: 'Axúdanos a mellorar',
+    cfgHelpMsg: '¿Algo non funciona? ¿Un medio non se amosa ou dá erros? Cóntanoslo.',
+    cfgHelpBtn: 'Reportar problema',
+    cfgResumen: 'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados',
+    cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
+    acTitle: 'Opcións de lectura',
+    acTema: 'Tema', acFuente: 'Fonte', acTamano: 'Tamaño', acAncho: 'Ancho', acExtra: 'Extra',
+    acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Escuro', acContraste: '◐ Contraste',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
+    acJustificar: 'Xustificar', acBionic: 'Bionic', acFoco: 'Foco',
+    fltBuscar: '🔍 Buscar… ("eleccións" · "medio:elpais" · "tag:deportes")',
+    fltGrupo: 'Todos os grupos', fltTipo: 'Todos os tipos', fltMedio: 'Todos os medios',
+    fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
+    ordenRecientes: '↓ Máis recentes', ordenAntiguos: '↑ Máis antigos',
+    contador: 'Amosando {n} de {total} titulares', contadorPreset: ' · Modo Personalizado activo',
+    vacio: 'Sen resultados', errCarga: 'Erro cargando datos: ',
+    expOk: 'Configuración exportada', impOk: 'Configuración importada correctamente',
+    impFromVoceiro: 'Configuración de Voceiro importada', impFromLector: 'Configuración do lector importada',
+    impErr: 'Erro ao importar: {msg}',
+    impConfirm: 'Isto substituirá a túa configuración actual. Continuar?',
+    presetVacio: 'O Modo Personalizado está baleiro. Configúrao primeiro e despois actívao.',
+    presetActivado: 'Modo Personalizado activado', presetDesactivado: 'Modo Personalizado desactivado',
+    presetGuardadoActivado: 'Configuración gardada · Modo Personalizado activado',
+    fechaAhora: 'agora', fechaHaceMin: 'hai {n} min', fechaHaceH: 'hai {n} h',
+    fechaHaceD: 'hai {n} d', fechaProgramado: 'programado',
+    recolectado: '📥 Recollido',
+    sinFechaReal: 'Sen data exacta do medio',
+    syncOnline: 'Sincronizado co plugin Lector Universal',
+    syncOffline: 'Sen plugin — cambios gardados só neste navegador',
+    syncOfflineHint: 'Instala o plugin Lector Universal para sincronizar a túa configuración entre dispositivos.',
+    pendTitle: 'Noticias gardadas para ler despois', pendRefresh: '↻ Actualizar',
+    noUserscript: 'Instala o plugin Lector Universal para gardar noticias e velas aquí.',
+    noPendientes: 'Non tes noticias pendentes.', loading: 'Cargando…',
+    savedToReader: '✅ Gardado para ler despois', alreadyInReader: 'ℹ️ Xa estaba en pendentes',
+    saveCopied: '📋 Ligazón copiada · Pégala onde queiras',
+    saveForLaterTitle: 'Gardar para ler despois',
+    deletePending: 'Quitar', confirmDeletePending: '¿Quitar esta noticia de pendentes?',
+    readItems: 'Lidas', readItemsNo: 'Pendentes',
+    markRead: 'Marcar como lida', markUnread: 'Marcar como non lida',
+    repBtnTitle: 'Reportar problema con este titular', repTitle: 'Reportar un problema',
+    repCtxEmpty: '(Sen titular específico — reporte xeral)', repMotivoLbl: 'Motivo',
+    repMotivoNoSeMuestra: 'Non se amosa ou non aparece', repMotivoEnlaceRoto: 'Ligazón rota',
+    repMotivoPaywall: 'Require pago ou rexistro', repMotivoMedioIncorrecto: 'Medio ou grupo incorrecto',
+    repMotivoDuplicado: 'Noticia duplicada', repMotivoContenido: 'Contido inapropiado',
+    repMotivoFecha: 'Data incorrecta ou no futuro', repMotivoOtro: 'Outro (describir abaixo)',
+    repDetallesLbl: 'Detalles (opcional)', repDetallesPh: 'Cóntanos que pasa con este titular…',
+    repConfigLbl: 'Anexar a miña configuración actual ao reporte. Axuda a reproducir o problema.',
+    repCopy: '📋 Copiar reporte', repMail: '✉ Enviar por email', repGithub: '🐞 Abrir en GitHub',
+    repCopiado: 'Reporte copiado ao portapapeis', repErrGithub: 'Non se puido abrir GitHub.',
+    repContexto: 'Contexto', repCtxMedio: 'Medio', repCtxGrupo: 'Grupo', repCtxTipo: 'Tipo',
+    repCtxTitular: 'Titular', repCtxEnlace: 'Ligazón', repCtxFecha: 'Data', repCtxFuente: 'Fonte',
+    repCtxIdioma: 'Idioma activo', repCtxConfig: 'Config', repFecha: 'Data do reporte',
+    btnBuscar: '🔎 Investigar',
+    bsTitle: 'Buscar en miles de medios',
+    bsAviso: 'Este buscador cobre medios pequenos e rexionais. Os grandes diarios nacionais (El País, El Mundo, ABC…) non están incluídos no seu índice.',
+    bsQ: 'Busca calquera tema…',
+    bsLang: 'Idioma',
+    bsLangAny: 'Calquera idioma',
+    bsCountry: 'País',
+    bsCountryAny: 'Calquera país',
+    bsDate: 'Data',
+    bsDate24h: 'Últimas 24 h',
+    bsDate48h: 'Últimas 48 h',
+    bsDate7d: 'Últimos 7 días',
+    bsDate30d: 'Últimos 30 días',
+    bsBuscar: 'Buscar',
+    bsCargando: 'Buscando…',
+    bsSinResultados: 'Sen resultados',
+    bsError: 'Non se puido conectar co buscador externo. Inténtao máis tarde.',
+    bsErrorQ: 'Escribe algo para buscar',
+    bsResultados: '{n} resultados',
+    bsCargados: 'amosando {n}',
+    bsMas: 'Cargar máis',
+    bsFuenteExterna: 'Fonte externa',
+    bsGuardar: '🕒 Gardar',
+    bsVerificado: 'no catálogo',
+  },
+  ca: {
+    pageTitle: 'Voceiro · Titulars', headerTitle: 'Voceiro',
+    metaPrefix: 'Actualitzat:', metaSuffix: 'titulars a l\'històric',
+    btnPersonalizado: '🏔 Mode Personalitzat', btnConfig: '⚙️ Configurar',
+    btnPendientes: '📚 Pendents', btnAcces: 'Aa Accessibilitat',
+    btnImport: '↓ Importar', btnExport: '↑ Exportar',
+    btnReset: '↺ Valors per defecte', btnCancel: 'Cancel·lar', btnSave: 'Desar', btnClear: 'Netejar',
+    lblIdioma: 'Idioma',
+    optLangEs: 'Castellà', optLangGl: 'Gallec', optLangCa: 'Català', optLangEn: 'Anglès', optLangEu: 'Basc',
+    cfgTitle: 'Configurar Mode Personalitzat', cfgGrupos: 'Grups complets',
+    cfgGruposHint: 'En marcar un grup s\'inclouen tots els seus mitjans. Bloquejar un mitjà (a baix) té més prioritat.',
+    cfgMedios: 'Mitjans',
+    cfgMediosHint: '✓ forçar sempre · ✗ bloquejar sempre · sense marca = neutre.',
+    knownInPlugin: 'Configurat al plugin Lector Universal',
+    forceInclude: 'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
+    forceExclude: 'Bloquejar sempre',
+    cfgBuscarMedio: '🔍 Cercar per domini, nom o grup…', cfgTodosGrupos: 'Tots els grups',
+    cfgPalabras: 'Paraules clau al titular',
+    cfgPalabrasHint: 'Una per línia o separades per comes. Sense accents, paraula completa.',
+    cfgBackup: 'Còpia de seguretat',
+    cfgBackupMsg: 'Exporta la teva configuració a un fitxer compatible amb Voceiro i amb el plugin Lector Universal.',
+    cfgHelpLbl: 'Ajuda\'ns a millorar', cfgHelpMsg: 'Alguna cosa no funciona? Explica-nos-ho.',
+    cfgHelpBtn: 'Reportar problema',
+    cfgResumen: 'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats',
+    cfgPalabrasPlaceholder: 'paraula1\nparaula2\nparaula3',
+    acTitle: 'Opcions de lectura',
+    acTema: 'Tema', acFuente: 'Tipus de lletra', acTamano: 'Mida', acAncho: 'Amplada', acExtra: 'Extra',
+    acClaro: '☀ Clar', acSepia: '📖 Sèpia', acOscuro: '🌙 Fosc', acContraste: '◐ Contrast',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislèxia',
+    acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Focus',
+    fltBuscar: '🔍 Cercar… ("eleccions" · "medio:elpais" · "tag:deportes")',
+    fltGrupo: 'Tots els grups', fltTipo: 'Tots els tipus', fltMedio: 'Tots els mitjans',
+    fltTodo: 'Tot', flt24h: '24 h', flt48h: '48 h', flt7d: '7 dies',
+    ordenRecientes: '↓ Més recents', ordenAntiguos: '↑ Més antics',
+    contador: 'Mostrant {n} de {total} titulars', contadorPreset: ' · Mode Personalitzat actiu',
+    vacio: 'Sense resultats', errCarga: 'Error carregant dades: ',
+    expOk: 'Configuració exportada', impOk: 'Configuració importada correctament',
+    impFromVoceiro: 'Configuració de Voceiro importada', impFromLector: 'Configuració del lector importada',
+    impErr: 'Error en importar: {msg}',
+    impConfirm: 'Això substituirà la teva configuració actual. Continuar?',
+    presetVacio: 'El Mode Personalitzat està buit. Configura\'l primer i després activa\'l.',
+    presetActivado: 'Mode Personalitzat activat', presetDesactivado: 'Mode Personalitzat desactivat',
+    presetGuardadoActivado: 'Configuració desada · Mode Personalitzat activat',
+    fechaAhora: 'ara', fechaHaceMin: 'fa {n} min', fechaHaceH: 'fa {n} h',
+    fechaHaceD: 'fa {n} d', fechaProgramado: 'programat',
+    recolectado: '📥 Recollit',
+    sinFechaReal: 'Sense data exacta del mitjà',
+    syncOnline: 'Sincronitzat amb el plugin Lector Universal',
+    syncOffline: 'Sense plugin — canvis desats només en aquest navegador',
+    syncOfflineHint: 'Instal·la el plugin Lector Universal per sincronitzar la configuració.',
+    pendTitle: 'Notícies desades per llegir després', pendRefresh: '↻ Actualitzar',
+    noUserscript: 'Instal·la el plugin Lector Universal per desar notícies i veure-les aquí.',
+    noPendientes: 'No tens notícies pendents.', loading: 'Carregant…',
+    savedToReader: '✅ Desat per llegir després', alreadyInReader: 'ℹ️ Ja era a pendents',
+    saveCopied: '📋 Enllaç copiat · Enganxa\'l on vulguis',
+    saveForLaterTitle: 'Desar per llegir després',
+    deletePending: 'Treure', confirmDeletePending: 'Treure aquesta notícia de pendents?',
+    readItems: 'Llegides', readItemsNo: 'Pendents',
+    markRead: 'Marcar com llegida', markUnread: 'Marcar com no llegida',
+    repBtnTitle: 'Reportar problema amb aquest titular', repTitle: 'Reportar un problema',
+    repCtxEmpty: '(Sense titular específic — report general)', repMotivoLbl: 'Motiu',
+    repMotivoNoSeMuestra: 'No es mostra o no apareix', repMotivoEnlaceRoto: 'Enllaç trencat',
+    repMotivoPaywall: 'Requereix pagament o registre', repMotivoMedioIncorrecto: 'Mitjà o grup incorrecte',
+    repMotivoDuplicado: 'Notícia duplicada', repMotivoContenido: 'Contingut inapropiat',
+    repMotivoFecha: 'Data incorrecta o al futur', repMotivoOtro: 'Altre (descriure a baix)',
+    repDetallesLbl: 'Detalls (opcional)', repDetallesPh: 'Explica\'ns què passa amb aquest titular…',
+    repConfigLbl: 'Adjuntar la meva configuració actual al report. Ajuda a reproduir el problema.',
+    repCopy: '📋 Copiar report', repMail: '✉ Enviar per correu', repGithub: '🐞 Obrir a GitHub',
+    repCopiado: 'Report copiat al porta-retalls', repErrGithub: 'No s\'ha pogut obrir GitHub.',
+    repContexto: 'Context', repCtxMedio: 'Mitjà', repCtxGrupo: 'Grup', repCtxTipo: 'Tipus',
+    repCtxTitular: 'Titular', repCtxEnlace: 'Enllaç', repCtxFecha: 'Data', repCtxFuente: 'Font',
+    repCtxIdioma: 'Idioma actiu', repCtxConfig: 'Config', repFecha: 'Data del report',
+    btnBuscar: '🔎 Investigar',
+    bsTitle: 'Cercar en milers de mitjans',
+    bsAviso: 'Aquest cercador cobreix mitjans petits i regionals. Els grans diaris nacionals (El País, El Mundo, ABC…) no estan inclosos al seu índex.',
+    bsQ: 'Cerca qualsevol tema…',
+    bsLang: 'Idioma',
+    bsLangAny: 'Qualsevol idioma',
+    bsCountry: 'País',
+    bsCountryAny: 'Qualsevol país',
+    bsDate: 'Data',
+    bsDate24h: 'Últimes 24 h',
+    bsDate48h: 'Últimes 48 h',
+    bsDate7d: 'Últims 7 dies',
+    bsDate30d: 'Últims 30 dies',
+    bsBuscar: 'Cercar',
+    bsCargando: 'Cercant…',
+    bsSinResultados: 'Sense resultats',
+    bsError: 'No s\'ha pogut connectar amb el cercador extern. Torna-ho a provar més tard.',
+    bsErrorQ: 'Escriu alguna cosa per cercar',
+    bsResultados: '{n} resultats',
+    bsCargados: 'mostrant {n}',
+    bsMas: 'Carregar més',
+    bsFuenteExterna: 'Font externa',
+    bsGuardar: '🕒 Desar',
+    bsVerificado: 'al catàleg',
+  },
+  en: {
+    pageTitle: 'Voceiro · Headlines', headerTitle: 'Voceiro',
+    metaPrefix: 'Updated:', metaSuffix: 'headlines in history',
+    btnPersonalizado: '🏔 Custom Mode', btnConfig: '⚙️ Configure',
+    btnPendientes: '📚 Queue', btnAcces: 'Aa Accessibility',
+    btnImport: '↓ Import', btnExport: '↑ Export',
+    btnReset: '↺ Reset defaults', btnCancel: 'Cancel', btnSave: 'Save', btnClear: 'Clear',
+    lblIdioma: 'Language',
+    optLangEs: 'Spanish', optLangGl: 'Galician', optLangCa: 'Catalan', optLangEn: 'English', optLangEu: 'Basque',
+    cfgTitle: 'Configure Custom Mode', cfgGrupos: 'Full groups',
+    cfgGruposHint: 'Checking a group includes all its outlets. Blocking an outlet (below) takes precedence.',
+    cfgMedios: 'Outlets',
+    cfgMediosHint: '✓ always force · ✗ always block · unchecked = neutral.',
+    knownInPlugin: 'Configured in the Universal Reader plugin',
+    forceInclude: 'Always force (include even if group or keywords do not match)',
+    forceExclude: 'Always block',
+    cfgBuscarMedio: '🔍 Search by domain, name or group…', cfgTodosGrupos: 'All groups',
+    cfgPalabras: 'Keywords in headline',
+    cfgPalabrasHint: 'One per line or comma-separated. Accent-insensitive, whole word.',
+    cfgBackup: 'Backup',
+    cfgBackupMsg: 'Export your configuration to a file compatible with Voceiro and the Universal Reader plugin.',
+    cfgHelpLbl: 'Help us improve', cfgHelpMsg: 'Something not working? Tell us.',
+    cfgHelpBtn: 'Report a problem',
+    cfgResumen: 'Showing {vis} of {total} · {inc} forced · {ign} blocked',
+    cfgPalabrasPlaceholder: 'keyword1\nkeyword2\nkeyword3',
+    acTitle: 'Reading options',
+    acTema: 'Theme', acFuente: 'Font', acTamano: 'Size', acAncho: 'Width', acExtra: 'Extra',
+    acClaro: '☀ Light', acSepia: '📖 Sepia', acOscuro: '🌙 Dark', acContraste: '◐ Contrast',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dyslexic',
+    acJustificar: 'Justify', acBionic: 'Bionic', acFoco: 'Focus',
+    fltBuscar: '🔍 Search… ("elections" · "medio:elpais" · "tag:sports")',
+    fltGrupo: 'All groups', fltTipo: 'All types', fltMedio: 'All outlets',
+    fltTodo: 'All', flt24h: '24 h', flt48h: '48 h', flt7d: '7 days',
+    ordenRecientes: '↓ Newest first', ordenAntiguos: '↑ Oldest first',
+    contador: 'Showing {n} of {total} headlines', contadorPreset: ' · Custom Mode on',
+    vacio: 'No results', errCarga: 'Error loading data: ',
+    expOk: 'Settings exported', impOk: 'Settings imported successfully',
+    impFromVoceiro: 'Voceiro configuration imported', impFromLector: 'Reader configuration imported',
+    impErr: 'Import error: {msg}',
+    impConfirm: 'This will replace your current settings. Continue?',
+    presetVacio: 'Custom Mode is empty. Configure it first, then activate it.',
+    presetActivado: 'Custom Mode enabled', presetDesactivado: 'Custom Mode disabled',
+    presetGuardadoActivado: 'Settings saved · Custom Mode enabled',
+    fechaAhora: 'now', fechaHaceMin: '{n} min ago', fechaHaceH: '{n} h ago',
+    fechaHaceD: '{n} d ago', fechaProgramado: 'scheduled',
+    recolectado: '📥 Collected',
+    sinFechaReal: 'No exact date from source',
+    syncOnline: 'Synced with the Universal Reader plugin',
+    syncOffline: 'No plugin — changes saved only in this browser',
+    syncOfflineHint: 'Install the Universal Reader plugin to sync your configuration.',
+    pendTitle: 'News saved for later', pendRefresh: '↻ Refresh',
+    noUserscript: 'Install the Universal Reader plugin to save news and view them here.',
+    noPendientes: 'You have no pending news.', loading: 'Loading…',
+    savedToReader: '✅ Saved for later', alreadyInReader: 'ℹ️ Already in queue',
+    saveCopied: '📋 Link copied · Paste it wherever you like',
+    saveForLaterTitle: 'Save for later',
+    deletePending: 'Remove', confirmDeletePending: 'Remove this news from queue?',
+    readItems: 'Read', readItemsNo: 'Pending',
+    markRead: 'Mark as read', markUnread: 'Mark as unread',
+    repBtnTitle: 'Report a problem with this headline', repTitle: 'Report a problem',
+    repCtxEmpty: '(No specific headline — general report)', repMotivoLbl: 'Reason',
+    repMotivoNoSeMuestra: 'Not showing or missing', repMotivoEnlaceRoto: 'Broken link',
+    repMotivoPaywall: 'Requires payment or login', repMotivoMedioIncorrecto: 'Wrong outlet or group',
+    repMotivoDuplicado: 'Duplicate news item', repMotivoContenido: 'Inappropriate content',
+    repMotivoFecha: 'Wrong or future date', repMotivoOtro: 'Other (describe below)',
+    repDetallesLbl: 'Details (optional)', repDetallesPh: 'Tell us what\'s wrong with this headline…',
+    repConfigLbl: 'Attach my current configuration to the report. Helps reproduce the issue.',
+    repCopy: '📋 Copy report', repMail: '✉ Send by email', repGithub: '🐞 Open in GitHub',
+    repCopiado: 'Report copied to clipboard', repErrGithub: 'Could not open GitHub.',
+    repContexto: 'Context', repCtxMedio: 'Outlet', repCtxGrupo: 'Group', repCtxTipo: 'Type',
+    repCtxTitular: 'Headline', repCtxEnlace: 'Link', repCtxFecha: 'Date', repCtxFuente: 'Source',
+    repCtxIdioma: 'Active language', repCtxConfig: 'Config', repFecha: 'Report date',
+    btnBuscar: '🔎 Investigate',
+    bsTitle: 'Search across thousands of outlets',
+    bsAviso: 'This search covers small and regional outlets. Major national newspapers (El País, El Mundo, ABC…) are not in its index.',
+    bsQ: 'Search any topic…',
+    bsLang: 'Language',
+    bsLangAny: 'Any language',
+    bsCountry: 'Country',
+    bsCountryAny: 'Any country',
+    bsDate: 'Date',
+    bsDate24h: 'Last 24 h',
+    bsDate48h: 'Last 48 h',
+    bsDate7d: 'Last 7 days',
+    bsDate30d: 'Last 30 days',
+    bsBuscar: 'Search',
+    bsCargando: 'Searching…',
+    bsSinResultados: 'No results',
+    bsError: 'Could not connect to the external search. Try again later.',
+    bsErrorQ: 'Type something to search',
+    bsResultados: '{n} results',
+    bsCargados: 'showing {n}',
+    bsMas: 'Load more',
+    bsFuenteExterna: 'External source',
+    bsGuardar: '🕒 Save',
+    bsVerificado: 'in catalog',
+  },
+  eu: {
+    pageTitle: 'Voceiro · Izenburuak', headerTitle: 'Voceiro',
+    metaPrefix: 'Eguneratuta:', metaSuffix: 'izenburu historian',
+    btnPersonalizado: '🏔 Modo Pertsonalizatua', btnConfig: '⚙️ Konfiguratu',
+    btnPendientes: '📚 Zain', btnAcces: 'Aa Irisgarritasuna',
+    btnImport: '↓ Inportatu', btnExport: '↑ Esportatu',
+    btnReset: '↺ Balio lehenetsiak', btnCancel: 'Utzi', btnSave: 'Gorde', btnClear: 'Garbitu',
+    lblIdioma: 'Hizkuntza',
+    optLangEs: 'Gaztelania', optLangGl: 'Galiziera', optLangCa: 'Katalana', optLangEn: 'Ingelesa', optLangEu: 'Euskara',
+    cfgTitle: 'Modo Pertsonalizatua konfiguratu', cfgGrupos: 'Talde osoak',
+    cfgGruposHint: 'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide bat blokeatzeak (behean) lehentasun handiagoa du.',
+    cfgMedios: 'Hedabideak',
+    cfgMediosHint: '✓ beti behartu · ✗ beti blokeatu · markarik gabe = neutroa.',
+    knownInPlugin: 'Lector Universal pluginean konfiguratuta',
+    forceInclude: 'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
+    forceExclude: 'Beti blokeatu',
+    cfgBuscarMedio: '🔍 Bilatu domeinu, izen edo taldearen arabera…', cfgTodosGrupos: 'Talde guztiak',
+    cfgPalabras: 'Hitz gakoak izenburuan',
+    cfgPalabrasHint: 'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
+    cfgBackup: 'Babeskopia',
+    cfgBackupMsg: 'Esportatu zure konfigurazioa Voceiro-rekin eta Lector Universal pluginarekin bateragarria den fitxategi batera.',
+    cfgHelpLbl: 'Lagun gaitzazu hobetzen', cfgHelpMsg: 'Zerbait ez dabil? Kontatu iezaguzu.',
+    cfgHelpBtn: 'Arazo bat jakinarazi',
+    cfgResumen: '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta',
+    cfgPalabrasPlaceholder: 'hitza1\nhitza2\nhitza3',
+    acTitle: 'Irakurketa aukerak',
+    acTema: 'Gaia', acFuente: 'Letra-tipoa', acTamano: 'Tamaina', acAncho: 'Zabalera', acExtra: 'Extra',
+    acClaro: '☀ Argia', acSepia: '📖 Sepia', acOscuro: '🌙 Iluna', acContraste: '◐ Kontrastea',
+    acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
+    acJustificar: 'Justifikatu', acBionic: 'Bionic', acFoco: 'Fokua',
+    fltBuscar: '🔍 Bilatu… ("hauteskundeak" · "medio:elpais" · "tag:kirolak")',
+    fltGrupo: 'Talde guztiak', fltTipo: 'Mota guztiak', fltMedio: 'Hedabide guztiak',
+    fltTodo: 'Guztia', flt24h: '24 h', flt48h: '48 h', flt7d: '7 egun',
+    ordenRecientes: '↓ Berrienak lehenengo', ordenAntiguos: '↑ Zaharrenak lehenengo',
+    contador: '{total}tik {n} izenburu erakusten', contadorPreset: ' · Modo Pertsonalizatua aktibo',
+    vacio: 'Emaitzarik gabe', errCarga: 'Errorea datuak kargatzean: ',
+    expOk: 'Konfigurazioa esportatu da', impOk: 'Konfigurazioa ondo inportatu da',
+    impFromVoceiro: 'Voceiro konfigurazioa inportatu da', impFromLector: 'Irakurgailuaren konfigurazioa inportatu da',
+    impErr: 'Inportazio errorea: {msg}',
+    impConfirm: 'Honek zure uneko konfigurazioa ordezkatuko du. Jarraitu?',
+    presetVacio: 'Modo Pertsonalizatua hutsik dago. Konfiguratu lehenengo eta gero aktibatu.',
+    presetActivado: 'Modo Pertsonalizatua aktibatuta', presetDesactivado: 'Modo Pertsonalizatua desaktibatuta',
+    presetGuardadoActivado: 'Konfigurazioa gordeta · Modo Pertsonalizatua aktibatuta',
+    fechaAhora: 'orain', fechaHaceMin: 'duela {n} min', fechaHaceH: 'duela {n} h',
+    fechaHaceD: 'duela {n} e', fechaProgramado: 'programatuta',
+    recolectado: '📥 Bilduta',
+    sinFechaReal: 'Iturriaren data zehatzik gabe',
+    syncOnline: 'Lector Universal pluginarekin sinkronizatuta',
+    syncOffline: 'Pluginik gabe — aldaketak nabigatzaile honetan bakarrik gordeta',
+    syncOfflineHint: 'Instalatu Lector Universal plugina konfigurazioa sinkronizatzeko.',
+    pendTitle: 'Geroago irakurtzeko gordetako albisteak', pendRefresh: '↻ Eguneratu',
+    noUserscript: 'Instalatu Lector Universal plugina albisteak gordetzeko eta hemen ikusteko.',
+    noPendientes: 'Ez duzu albiste zainik.', loading: 'Kargatzen…',
+    savedToReader: '✅ Geroago irakurtzeko gordeta', alreadyInReader: 'ℹ️ Jadanik zain zegoen',
+    saveCopied: '📋 Esteka kopiatu da · Itsatsi nahi duzun tokian',
+    saveForLaterTitle: 'Geroago irakurtzeko gorde',
+    deletePending: 'Kendu', confirmDeletePending: 'Albiste hau zaintik kendu?',
+    readItems: 'Irakurriak', readItemsNo: 'Zain',
+    markRead: 'Irakurrita markatu', markUnread: 'Irakurri gabe markatu',
+    repBtnTitle: 'Izenburu honekin arazo bat jakinarazi', repTitle: 'Arazo bat jakinarazi',
+    repCtxEmpty: '(Izenburu zehatzik gabe — txosten orokorra)', repMotivoLbl: 'Arrazoia',
+    repMotivoNoSeMuestra: 'Ez da agertzen edo falta da', repMotivoEnlaceRoto: 'Esteka hautsia',
+    repMotivoPaywall: 'Ordainketa edo erregistroa behar da', repMotivoMedioIncorrecto: 'Hedabide edo talde okerra',
+    repMotivoDuplicado: 'Albiste bikoiztua', repMotivoContenido: 'Eduki desegokia',
+    repMotivoFecha: 'Data okerra edo etorkizunekoa', repMotivoOtro: 'Beste bat (behean deskribatu)',
+    repDetallesLbl: 'Xehetasunak (aukerakoa)', repDetallesPh: 'Kontatu iezaguzu zer gertatzen den…',
+    repConfigLbl: 'Nire uneko konfigurazioa txostenera erantsi. Arazoa erreproduzitzen laguntzen du.',
+    repCopy: '📋 Txostena kopiatu', repMail: '✉ Postaz bidali', repGithub: '🐞 GitHub-en ireki',
+    repCopiado: 'Txostena arbelean kopiatu da', repErrGithub: 'Ezin izan da GitHub ireki.',
+    repContexto: 'Testuingurua', repCtxMedio: 'Hedabidea', repCtxGrupo: 'Taldea', repCtxTipo: 'Mota',
+    repCtxTitular: 'Izenburua', repCtxEnlace: 'Esteka', repCtxFecha: 'Data', repCtxFuente: 'Iturria',
+    repCtxIdioma: 'Hizkuntza aktiboa', repCtxConfig: 'Konfig', repFecha: 'Txostenaren data',
+    btnBuscar: '🔎 Ikerkatu',
+    bsTitle: 'Mila hedabide baino gehiagotan bilatu',
+    bsAviso: 'Bilatzaile honek hedabide txikiak eta eskualdekoak biltzen ditu. Estatuko egunkari handiak (El País, El Mundo, ABC…) ez daude bere indizean.',
+    bsQ: 'Bilatu edozein gai…',
+    bsLang: 'Hizkuntza',
+    bsLangAny: 'Edozein hizkuntza',
+    bsCountry: 'Herrialdea',
+    bsCountryAny: 'Edozein herrialde',
+    bsDate: 'Data',
+    bsDate24h: 'Azken 24 h',
+    bsDate48h: 'Azken 48 h',
+    bsDate7d: 'Azken 7 egun',
+    bsDate30d: 'Azken 30 egun',
+    bsBuscar: 'Bilatu',
+    bsCargando: 'Bilatzen…',
+    bsSinResultados: 'Emaitzarik gabe',
+    bsError: 'Ezin izan da kanpoko bilatzailearekin konektatu. Saiatu berriro geroago.',
+    bsErrorQ: 'Idatzi zerbait bilatzeko',
+    bsResultados: '{n} emaitza',
+    bsCargados: '{n} erakusten',
+    bsMas: 'Gehiago kargatu',
+    bsFuenteExterna: 'Kanpoko iturria',
+    bsGuardar: '🕒 Gorde',
+    bsVerificado: 'katalogoan',
+  },
+};
+
+function t(key, vars){
+  const lang = (ACCES && ACCES.lang) || 'es';
+  const dict = I18N[lang] || I18N.es;
+  let s = dict[key] != null ? dict[key] : (I18N.es[key] != null ? I18N.es[key] : key);
+  if (vars) for (const k in vars) s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+  return s;
+}
+
+const $ = sel => document.querySelector(sel);
+
+function normalize(s){
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function normStrict(s){
+  return normalize(s).replace(/[^a-z0-9]/g, '');
+}
+function normDomain(s){
+  return normalize(s).replace(/[^a-z0-9.\-]/g, '');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function parseLista(txt){
+  return txt.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+}
+function toast(msg, ms){
+  ms = ms || 2400;
+  const wrap = $('#toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 250);
+  }, ms);
+}
+function debounce(fn, ms){
+  let t;
+  return function(){
+    const args = arguments, ctx = this;
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(ctx, args), ms);
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FECHAS
+   ═══════════════════════════════════════════════════════════════ */
+// Horizonte de "futuro legítimo" (evento programado). Debe coincidir
+// con HORIZONTE_FUTURO_HORAS del recolector.py
+const HORIZONTE_FUTURO_MS = 6 * 60 * 60 * 1000;
+
+let ABS_FMT = null;
+let ABS_FMT_LANG = null;
+const ABS_CACHE = new Map();
+
+function getAbsFmt(){
+  if (ABS_FMT_LANG !== ACCES.lang){
+    ABS_FMT = new Intl.DateTimeFormat(ACCES.lang, {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+    ABS_FMT_LANG = ACCES.lang;
+    ABS_CACHE.clear();
+  }
+  return ABS_FMT;
+}
+
+function parseFecha(s){
+  if (!s) return NaN;
+  const str = String(s).trim();
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (m){
+    const [, d, mo, y, h = 0, mi = 0, se = 0] = m;
+    const t = new Date(+y, +mo - 1, +d, +h, +mi, +se).getTime();
+    return isNaN(t) ? NaN : t;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)){
+    const t = Date.parse(str);
+    if (!isNaN(t)) return t;
+  }
+  const t = Date.parse(str);
+  return !isNaN(t) ? t : NaN;
+}
+
+function formatearFecha(ts){
+  if (isNaN(ts)) return '';
+  let abs = ABS_CACHE.get(ts);
+  if (abs === undefined){
+    abs = getAbsFmt().format(ts);
+    ABS_CACHE.set(ts, abs);
+  }
+  const diff = Date.now() - ts;
+  if (diff < 0) return abs + ' · ' + t('fechaProgramado');
+  if (diff >= 7 * 86400000) return abs;
+  const min = (diff / 60000) | 0;
+  const hr  = (diff / 3600000) | 0;
+  const dia = (diff / 86400000) | 0;
+  let rel;
+  if (min < 1) rel = t('fechaAhora');
+  else if (min < 60) rel = t('fechaHaceMin', { n: min });
+  else if (hr < 24) rel = t('fechaHaceH', { n: hr });
+  else rel = t('fechaHaceD', { n: dia });
+  return abs + ' · ' + rel;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ACCESIBILIDAD
+   ═══════════════════════════════════════════════════════════════ */
+const ACCES_DEF = {
+  lang: 'es', tema: 'light', fuente: 'sans',
+  fs: 18, width: 1100,
+  just: false, bionic: false, focus: false,
+};
+const LIM = {
+  fs: { min: 14, max: 32, step: 1 },
+  width: { min: 480, max: 1600, step: 40 },
+};
+
+let ACCES = cargarAcces();
+
+function cargarAcces(){
+  try{
+    const raw = localStorage.getItem('voceiro-acces-v2');
+    const o = raw ? { ...ACCES_DEF, ...JSON.parse(raw) } : { ...ACCES_DEF };
+    if (!I18N[o.lang]) o.lang = 'es';
+    return o;
+  }catch(e){ return { ...ACCES_DEF }; }
+}
+function guardarAcces(){
+  try{ localStorage.setItem('voceiro-acces-v2', JSON.stringify(ACCES)); }catch(e){}
+}
+function aplicarAcces(){
+  const h = document.documentElement;
+  h.lang = ACCES.lang;
+  h.dataset.theme  = ACCES.tema;
+  h.dataset.font   = ACCES.fuente;
+  h.dataset.just   = ACCES.just ? '1' : '0';
+  h.dataset.bionic = ACCES.bionic ? '1' : '0';
+  h.dataset.focus  = ACCES.focus ? '1' : '0';
+  h.style.setProperty('--fs', ACCES.fs + 'px');
+  h.style.setProperty('--w', ACCES.width + 'px');
+
+  document.querySelectorAll('.opt-group').forEach(g => {
+    const clave = g.dataset.grupo;
+    if (!clave) return;
+    g.querySelectorAll('button').forEach(b => {
+      if (clave === 'extra') b.classList.toggle('active', !!ACCES[b.dataset.val]);
+      else                   b.classList.toggle('active', b.dataset.val === String(ACCES[clave]));
+    });
+  });
+
+  $('#fs-val').textContent = ACCES.fs;
+  $('#w-val').textContent  = ACCES.width;
+
+  if (ACCES.focus) setTimeout(updateFocus, 30);
+}
+function ajustarFs(d){
+  ACCES.fs = Math.max(LIM.fs.min, Math.min(LIM.fs.max, ACCES.fs + d * LIM.fs.step));
+  guardarAcces(); aplicarAcces();
+}
+function ajustarWidth(d){
+  ACCES.width = Math.max(LIM.width.min, Math.min(LIM.width.max, ACCES.width + d * LIM.width.step));
+  guardarAcces(); aplicarAcces();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODELO DE CONFIGURACIÓN
+   ═══════════════════════════════════════════════════════════════ */
+const PRESET_KEY = 'voceiro-preset-v3';
+const PRESET_ACTIVO_KEY = 'voceiro-preset-activo';
+const SITES_CACHE_KEY = 'voceiro-sites-cache-v1';
+
+const PRESET_DEF = { grupos: [], palabras: [] };
+
+let PRESET = null;
+let PRESET_ACTIVO = false;
+let SITES = new Map();
+let SITES_LIST = [];
+
+function cargarPreset(){
+  try{
+    const raw = localStorage.getItem(PRESET_KEY);
+    if (raw){
+      const p = JSON.parse(raw);
+      return {
+        grupos:   Array.isArray(p.grupos)   ? p.grupos   : [],
+        palabras: Array.isArray(p.palabras) ? p.palabras : [],
+      };
+    }
+  }catch(e){}
+  return structuredClone(PRESET_DEF);
+}
+function guardarPreset(){
+  try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESET)); }catch(e){}
+}
+function cargarPresetActivo(){
+  try{
+    const raw = localStorage.getItem(PRESET_ACTIVO_KEY);
+    if (raw === 'true') return true;
+    if (raw === 'false') return false;
+  }catch(e){}
+  return presetTieneReglas();
+}
+function guardarPresetActivo(){
+  try{ localStorage.setItem(PRESET_ACTIVO_KEY, PRESET_ACTIVO ? 'true' : 'false'); }catch(e){}
+}
+function presetTieneReglas(p){
+  p = p || PRESET;
+  if (!p) return false;
+  return !!(
+    (p.grupos && p.grupos.length) ||
+    (p.palabras && p.palabras.length) ||
+    [...SITES.values()].some(s => s.mode === 'auto' || s.mode === 'off')
+  );
+}
+
+function cargarSitesCache(){
+  try{
+    const raw = localStorage.getItem(SITES_CACHE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function guardarSitesCache(){
+  try{
+    const arr = [...SITES.entries()].map(([d, s]) => ({ domain: d, ...s }));
+    localStorage.setItem(SITES_CACHE_KEY, JSON.stringify(arr));
+  }catch(e){}
+}
+function setSitesFromArray(arr){
+  SITES = new Map();
+  SITES_LIST = [];
+  (arr || []).forEach(s => {
+    if (!s || !s.domain) return;
+    SITES.set(s.domain, {
+      mode: s.mode || 'prompt',
+      lang: s.lang || 'auto',
+      type: s.type || '',
+      tags: Array.isArray(s.tags) ? s.tags.slice() : []
+    });
+    SITES_LIST.push({ domain: s.domain, ...SITES.get(s.domain) });
+  });
+}
+
+function actualizarBotonPreset(){
+  $('#btn-preset').classList.toggle('active', PRESET_ACTIVO);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BIONIC (con cache)
+   ═══════════════════════════════════════════════════════════════ */
+const BIONIC_CACHE = new Map();
+const BIONIC_CACHE_MAX = 8000;
+
+function bionicize(html){
+  if (!ACCES.bionic) return html;
+  const cached = BIONIC_CACHE.get(html);
+  if (cached !== undefined) return cached;
+  let result = html;
+  try{
+    const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+    const root = doc.body.firstChild;
+    const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    const nodes = [];
+    let n; while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(tn => {
+      const raw = tn.textContent;
+      if (!raw || !/[\wÁÉÍÓÚÑáéíóúñ]/.test(raw)) return;
+      const frag = doc.createDocumentFragment();
+      const re = /([\wÁÉÍÓÚÑáéíóúñ]+)/g;
+      let last = 0, m;
+      while ((m = re.exec(raw)) !== null){
+        if (m.index > last) frag.appendChild(doc.createTextNode(raw.slice(last, m.index)));
+        const w = m[1];
+        const half = Math.max(1, Math.ceil(w.length / 2));
+        const b = doc.createElement('b');
+        b.textContent = w.slice(0, half);
+        frag.appendChild(b);
+        frag.appendChild(doc.createTextNode(w.slice(half)));
+        last = m.index + w.length;
+      }
+      if (last < raw.length) frag.appendChild(doc.createTextNode(raw.slice(last)));
+      tn.parentNode.replaceChild(frag, tn);
+    });
+    result = root.innerHTML;
+  }catch(e){ result = html; }
+  if (BIONIC_CACHE.size >= BIONIC_CACHE_MAX) BIONIC_CACHE.clear();
+  BIONIC_CACHE.set(html, result);
+  return result;
+}
+
+function updateFocus(){
+  const items = document.querySelectorAll('.noticia');
+  if (!ACCES.focus){
+    items.forEach(el => el.classList.remove('foco-dim','foco-active'));
+    return;
+  }
+  if (!items.length) return;
+  const mid = window.innerHeight / 2;
+  let best = null, bd = Infinity;
+  items.forEach(el => {
+    const r = el.getBoundingClientRect();
+    const d = Math.abs((r.top + r.bottom) / 2 - mid);
+    if (d < bd){ bd = d; best = el; }
+  });
+  items.forEach(el => {
+    el.classList.toggle('foco-dim', el !== best);
+    el.classList.toggle('foco-active', el === best);
+  });
+}
+window.addEventListener('scroll', () => {
+  if (ACCES.focus) requestAnimationFrame(updateFocus);
+}, { passive: true });
+
+/* Regex de resaltado */
+const ACCENT_MAP = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
+function buildHighlightRegex(tokens){
+  if (!tokens.length) return null;
+  const patterns = tokens.map(tok => {
+    let p = '';
+    for (const c of tok){
+      let hit = false;
+      for (const k in ACCENT_MAP){
+        if (ACCENT_MAP[k].includes(c)){ p += '[' + ACCENT_MAP[k] + ']'; hit = true; break; }
+      }
+      if (!hit) p += c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    }
+    return p;
+  });
+  return new RegExp('(' + patterns.join('|') + ')', 'gi');
+}
+
+function resaltar(texto, rx, fallbackEsc){
+  if (!rx) return fallbackEsc != null ? fallbackEsc : escapeHtml(texto || '');
+  if (!texto) return '';
+  let out = '', last = 0;
+  const matches = texto.matchAll(rx);
+  for (const mm of matches){
+    out += escapeHtml(texto.slice(last, mm.index));
+    out += '<mark>' + escapeHtml(mm[0]) + '</mark>';
+    last = mm.index + mm[0].length;
+  }
+  out += escapeHtml(texto.slice(last));
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IDIOMA
+   ═══════════════════════════════════════════════════════════════ */
+const LANG_OPTIONS = [
+  { code: 'es', label: 'optLangEs' },
+  { code: 'gl', label: 'optLangGl' },
+  { code: 'ca', label: 'optLangCa' },
+  { code: 'en', label: 'optLangEn' },
+  { code: 'eu', label: 'optLangEu' },
+];
+
+function renderLangSelect(){
+  const sel = $('#lang-select');
+  sel.innerHTML = LANG_OPTIONS.map(o =>
+    `<option value="${o.code}">${escapeHtml(t(o.label))}</option>`
+  ).join('');
+  sel.value = ACCES.lang;
+  sel.setAttribute('aria-label', t('lblIdioma'));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BRIDGE CON EL LECTOR UNIVERSAL (UserScript)
+   ═══════════════════════════════════════════════════════════════ */
+let USCRIPT_OK = false;
+let USCRIPT_CHECKED = false;
+let PENDIENTES_CACHE = [];
+let PENDIENTES_URLS = new Set();
+let PENDIENTES_MAP  = new Map();
+
+function actualizarBotonPendientes(){
+  const b = $('#btn-pendientes');
+  b.classList.toggle('no-userscript', USCRIPT_CHECKED && !USCRIPT_OK);
+}
+
+function actualizarSyncBanner(){
+  const banner = $('#sync-banner');
+  const txt = $('#sync-banner-text');
+  if (!banner || !txt) return;
+  banner.style.display = '';
+  banner.querySelector('.sync-dot').classList.toggle('offline', !USCRIPT_OK);
+  txt.textContent = USCRIPT_OK ? t('syncOnline') : t('syncOffline');
+  banner.title = USCRIPT_OK ? '' : t('syncOfflineHint');
+}
+
+function initUserScriptBridge(){
+  document.addEventListener('voceiro-ready', () => {
+    USCRIPT_OK = true; USCRIPT_CHECKED = true;
+    actualizarBotonPendientes();
+    actualizarSyncBanner();
+    document.dispatchEvent(new CustomEvent('voceiro-get-config'));
+    document.dispatchEvent(new CustomEvent('voceiro-later-list'));
+  });
+
+  document.addEventListener('voceiro-pong', () => {
+    USCRIPT_OK = true; USCRIPT_CHECKED = true;
+    actualizarBotonPendientes();
+    actualizarSyncBanner();
+  });
+
+  document.addEventListener('voceiro-config-data', e => {
+    const d = e.detail || {};
+    setSitesFromArray(d.sites);
+    guardarSitesCache();
+    if ($('#panel-config').classList.contains('open')){
+      renderListaMedios();
+    }
+  });
+
+  document.addEventListener('voceiro-config-changed', e => {
+    const d = e.detail || {};
+    setSitesFromArray(d.sites);
+    guardarSitesCache();
+    if ($('#panel-config').classList.contains('open')){
+      renderListaMedios();
+    }
+  });
+
+  document.addEventListener('voceiro-later-list-data', e => {
+    const items = (e.detail && e.detail.items) || [];
+    PENDIENTES_CACHE = items;
+    PENDIENTES_URLS = new Set(items.map(i => i.url));
+    PENDIENTES_MAP = new Map(items.map(i => [i.url, i]));
+    renderPendientes(items);
+    refrescarBotonesGuardar();
+  });
+
+  document.addEventListener('voceiro-later-changed', e => {
+    const items = (e.detail && e.detail.items) || [];
+    PENDIENTES_CACHE = items;
+    PENDIENTES_URLS = new Set(items.map(i => i.url));
+    PENDIENTES_MAP = new Map(items.map(i => [i.url, i]));
+    if ($('#panel-pendientes').classList.contains('open')) renderPendientes(items);
+    refrescarBotonesGuardar();
+  });
+
+  document.addEventListener('voceiro-save-later-done', e => {
+    const d = e.detail || {};
+    if (!d.ok){ toast('No se pudo guardar', 2000); return; }
+    toast(d.added ? t('savedToReader') : t('alreadyInReader'), 1800);
+  });
+
+  document.dispatchEvent(new CustomEvent('voceiro-ping'));
+
+  setTimeout(() => {
+    if (!USCRIPT_CHECKED){
+      USCRIPT_CHECKED = true;
+      actualizarBotonPendientes();
+      actualizarSyncBanner();
+    }
+  }, 900);
+}
+
+function emitirUpdateSite(domain, patch){
+  const prev = SITES.get(domain) || { mode: 'prompt', lang: 'auto', type: '', tags: [] };
+  const next = { ...prev, ...patch };
+  SITES.set(domain, next);
+  const idx = SITES_LIST.findIndex(s => s.domain === domain);
+  if (idx >= 0) SITES_LIST[idx] = { domain, ...next };
+  else SITES_LIST.push({ domain, ...next });
+  guardarSitesCache();
+
+  if (USCRIPT_OK){
+    document.dispatchEvent(new CustomEvent('voceiro-update-site', {
+      detail: { domain, ...patch }
+    }));
+  }
+}
+
+function guardarParaLeerDespues(n){
+  if (!USCRIPT_OK){
+    const texto = `${n.titular}\n${n.enlace}`;
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(texto).then(
+        () => toast(t('saveCopied'), 2400),
+        () => toast('No se pudo copiar', 2000)
+      );
+    } else {
+      toast('No se pudo copiar', 2000);
+    }
+    return;
+  }
+
+  const url = n.enlace;
+  const guardada = PENDIENTES_URLS.has(url);
+
+  if (!guardada){
+    document.dispatchEvent(new CustomEvent('voceiro-save-later', {
+      detail: { url, title: n.titular, description: n.grupo || '', image: '' }
+    }));
+  } else {
+    document.dispatchEvent(new CustomEvent('voceiro-mark-read', { detail: { url } }));
+  }
+}
+
+function refrescarBotonesGuardar(){
+  document.querySelectorAll('.btn-save-item').forEach(b => {
+    const i = parseInt(b.dataset.idx, 10);
+    const n = ULT_FILTRADAS[i];
+    if (!n) return;
+    const url = n.enlace;
+    const guardada = PENDIENTES_URLS.has(url);
+    const item = PENDIENTES_MAP.get(url);
+    const leida = guardada && item && item.read;
+
+    if (leida){
+      b.textContent = '✅';
+      b.title = t('markUnread');
+    } else if (guardada){
+      b.textContent = '⏳';
+      b.title = t('markRead');
+    } else {
+      b.textContent = '🕒';
+      b.title = t('saveForLaterTitle');
+    }
+  });
+}
+
+function abrirPendientes(){
+  abrirPanel('panel-pendientes');
+  const cont = $('#pendientes-lista');
+  if (!USCRIPT_OK){
+    cont.innerHTML = `<div class="vacio">${escapeHtml(t('noUserscript'))}</div>`;
+    return;
+  }
+  cont.innerHTML = `<div class="vacio">${escapeHtml(t('loading'))}</div>`;
+  document.dispatchEvent(new CustomEvent('voceiro-later-list'));
+}
+
+function renderPendientes(items){
+  const cont = $('#pendientes-lista');
+  if (!items || !items.length){
+    cont.innerHTML = `<div class="vacio">${escapeHtml(t('noPendientes'))}</div>`;
+    return;
+  }
+  const noLeidas = items.filter(i => !i.read);
+  const leidas   = items.filter(i => i.read);
+
+  function fila(p, esLeida){
+    const fecha = p.date ? new Date(p.date).toLocaleString(ACCES.lang) : '';
+    return `
+      <div class="pendiente-item" style="${esLeida ? 'opacity:.55' : ''}">
+        <a href="${escapeHtml(p.url)}" target="_blank" rel="noopener" style="${esLeida ? 'text-decoration:line-through' : ''}">${escapeHtml(p.title || p.url)}</a>
+        <div class="pendiente-meta">
+          ${p.domain ? `<span>${escapeHtml(p.domain)}</span>` : ''}
+          ${fecha ? `<span>· ${escapeHtml(fecha)}</span>` : ''}
+          ${esLeida && p.readAt ? `<span>· ✓ ${escapeHtml(p.readAt.slice(0,10))}</span>` : ''}
+        </div>
+        <div class="pendiente-actions">
+          <button class="btn-pend-toggle" data-url="${escapeHtml(p.url)}" title="${esLeida ? escapeHtml(t('markUnread')) : escapeHtml(t('markRead'))}">${esLeida ? '↺' : '✓'}</button>
+          <button class="btn-pend-remove" data-url="${escapeHtml(p.url)}" title="${escapeHtml(t('deletePending'))}">✕</button>
+        </div>
+      </div>`;
+  }
+
+  let html = '';
+  if (noLeidas.length){
+    html += `<div style="font-size:.68em; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:8px 0 6px;">${escapeHtml(t('readItemsNo'))} (${noLeidas.length})</div>`;
+    html += noLeidas.map(p => fila(p, false)).join('');
+  } else {
+    html += `<div class="vacio">${escapeHtml(t('noPendientes'))}</div>`;
+  }
+
+  if (leidas.length){
+    html += `<div style="font-size:.68em; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:18px 0 6px;">${escapeHtml(t('readItems'))} (${leidas.length})</div>`;
+    html += leidas.map(p => fila(p, true)).join('');
+  }
+
+  cont.innerHTML = html;
+
+  cont.querySelectorAll('.btn-pend-toggle').forEach(b => {
+    b.onclick = () => {
+      document.dispatchEvent(new CustomEvent('voceiro-mark-read', { detail: { url: b.dataset.url } }));
+    };
+  });
+  cont.querySelectorAll('.btn-pend-remove').forEach(b => {
+    b.onclick = () => {
+      if (!confirm(t('confirmDeletePending'))) return;
+      document.dispatchEvent(new CustomEvent('voceiro-remove-later', { detail: { url: b.dataset.url } }));
+    };
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARGA DE DATOS
+   ═══════════════════════════════════════════════════════════════ */
+let MEDIOS = {};       // { dominio: { n, g, t, l, tags } }
+let MEDIOS_UNICOS = []; // array derivado para el panel
+
+async function cargarDatos(){
+  const manifestRes = await fetch('datos/manifest.json', { cache: 'no-cache' });
+  if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
+  const manifest = await manifestRes.json();
+  const ficheros = manifest.ficheros || [];
+  if (!ficheros.length) throw new Error('manifest sin ficheros');
+
+  const settled = await Promise.allSettled(
+    ficheros.map(f =>
+      fetch(`datos/${f.file}`, { cache: 'default' })
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status} en ${f.file}`);
+          return r.json();
+        })
+    )
+  );
+
+  const fallos = settled.filter(s => s.status === 'rejected');
+  if (fallos.length){
+    console.warn(`[carga] ${fallos.length} ficheros fallaron:`,
+      fallos.map(f => f.reason && f.reason.message));
+  }
+
+  MEDIOS = {};
+  NOTICIAS = [];
+  for (const s of settled){
+    if (s.status !== 'fulfilled') continue;
+    const data = s.value || {};
+    if (data.medios){
+      for (const d in data.medios) MEDIOS[d] = data.medios[d];
+    }
+    if (Array.isArray(data.noticias)){
+      NOTICIAS.push(...data.noticias);
+    }
+  }
+
+  if (fallos.length === ficheros.length){
+    throw new Error('ningún fichero diario se pudo cargar');
+  }
+
+  console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
+}
+
+function hidratarNoticias(){
+  const ahora = Date.now();
+  const horizonte = ahora + HORIZONTE_FUTURO_MS;
+
+  for (const n of NOTICIAS){
+    // Compatibilidad de nombres
+    if (n.dominio === undefined) n.dominio = n.d || '';
+    if (n.titular === undefined) n.titular = n.t || '';
+    if (n.enlace === undefined)  n.enlace  = n.u || '';
+    if (n.fecha_pub === undefined) n.fecha_pub = n.p || '';
+    if (n.fecha_estimada === undefined) n.fecha_estimada = n.e || '';
+    if (n.fecha === undefined)  n.fecha = n.c || '';
+    if (n.fuente === undefined) n.fuente = n.f || '';
+
+    // Rellenar campos desde la tabla de medios
+    const m = MEDIOS[n.dominio] || {};
+    if (n.medio === undefined || !n.medio) n.medio = m.n || '';
+    if (n.grupo === undefined || !n.grupo) n.grupo = m.g || '';
+    if (n.tipo  === undefined || !n.tipo ) n.tipo  = m.t || '';
+    if (n.lang  === undefined || !n.lang ) n.lang  = m.l || '';
+    if (!Array.isArray(n.tags) || !n.tags.length) n.tags = m.tags || [];
+
+    // Escapes HTML para render
+    n._titularEsc = escapeHtml(n.titular);
+    n._medioEsc   = escapeHtml(n.medio);
+    n._tipoEsc    = escapeHtml(n.tipo);
+    n._grupoEsc   = escapeHtml(n.grupo);
+    n._enlaceEsc  = escapeHtml(n.enlace);
+    n._esPreset   = false;
+
+    // Fechas
+    const tsPub = parseFecha(n.fecha_pub);
+    const tsEst = parseFecha(n.fecha_estimada);
+    const tsRec = parseFecha(n.fecha);
+
+    // Fecha para ORDENAR (agrupación): pub no futura > est > rec
+    let tsOrden = NaN;
+    if (!isNaN(tsPub) && tsPub <= horizonte) tsOrden = tsPub;
+    else if (!isNaN(tsEst)) tsOrden = tsEst;
+    else if (!isNaN(tsRec)) tsOrden = tsRec;
+
+    // Fecha para MOSTRAR: pub > est > rec
+    let tsShow = NaN;
+    let tipoShow = 'none';
+    if (!isNaN(tsPub)){ tsShow = tsPub; tipoShow = 'pub'; }
+    else if (!isNaN(tsEst)){ tsShow = tsEst; tipoShow = 'est'; }
+    else if (!isNaN(tsRec)){ tsShow = tsRec; tipoShow = 'rec'; }
+
+    n._tsOrden    = tsOrden;
+    n._tsShow     = tsShow;
+    n._tipoShow   = tipoShow;
+    n._esFuturo   = !isNaN(tsPub) && (tsPub > horizonte);
+    n._tieneFecha = !isNaN(tsOrden);
+  }
+}
+
+function construirMediosUnicos(){
+  MEDIOS_UNICOS = Object.entries(MEDIOS).map(([dominio, m]) => ({
+    dominio,
+    medio: m.n || '',
+    grupo: m.g || '',
+    tipo:  m.t || '',
+    lang:  m.l || '',
+    tags:  Array.isArray(m.tags) ? m.tags : [],
+  })).sort((a,b) =>
+    a.grupo.localeCompare(b.grupo) || a.medio.localeCompare(b.medio)
+  );
+}
+
+// Índices para autodetección en el buscador
+let MEDIOS_STRICT   = new Map();
+let DOMINIOS_STRICT = new Map();
+let GRUPOS_STRICT   = new Map();
+let TIPOS_STRICT    = new Map();
+let TAGS_STRICT     = new Map();
+
+function construirIndicesBusqueda(){
+  MEDIOS_STRICT   = new Map();
+  DOMINIOS_STRICT = new Map();
+  GRUPOS_STRICT   = new Map();
+  TIPOS_STRICT    = new Map();
+  TAGS_STRICT     = new Map();
+
+  MEDIOS_UNICOS.forEach(m => {
+    if (m.medio)   MEDIOS_STRICT.set(normStrict(m.medio), m.medio);
+    if (m.dominio) DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
+    if (m.grupo)   GRUPOS_STRICT.set(normStrict(m.grupo), m.grupo);
+    if (m.tipo)    TIPOS_STRICT.set(normStrict(m.tipo), m.tipo);
+    (m.tags || []).forEach(tag => {
+      if (tag) TAGS_STRICT.set(normStrict(tag), tag);
+    });
+  });
+}
+
+function _escapeRegex(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function parseQuery(raw){
+  // Separa tokens respetando comillas
+  const tokens = [];
+  const re = /"([^"]+)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(raw)) !== null){
+    tokens.push({ text: m[1] != null ? m[1] : m[2], raw: m[0], quoted: m[1] != null });
+  }
+
+  const titulo = [], medios = [], dominios = [], grupos = [], tipos = [], tags = [];
+  const chips = [];
+
+  for (const tk of tokens){
+    const low = tk.text.toLowerCase();
+
+    // ── Prefijos explícitos (todos soportados) ──
+    if (!tk.quoted){
+      if (low.startsWith('medio:')){
+        const v = normStrict(tk.text.slice(6));
+        if (v){ medios.push(v); chips.push({ type: 'medio', value: tk.text.slice(6), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('dominio:')){
+        const v = normDomain(tk.text.slice(8));
+        if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text.slice(8), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('domain:')){
+        const v = normDomain(tk.text.slice(7));
+        if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text.slice(7), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('grupo:')){
+        const v = normStrict(tk.text.slice(6));
+        if (v){ grupos.push(v); chips.push({ type: 'grupo', value: tk.text.slice(6), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('tipo:')){
+        const v = normStrict(tk.text.slice(5));
+        if (v){ tipos.push(v); chips.push({ type: 'tipo', value: tk.text.slice(5), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('tag:')){
+        const v = normStrict(tk.text.slice(4));
+        if (v){ tags.push(v); chips.push({ type: 'tag', value: tk.text.slice(4), raw: tk.raw }); }
+        continue;
+      }
+    }
+
+    // ── Entre comillas → siempre título literal ──
+    if (tk.quoted){
+      const n = normalize(tk.text);
+      if (n) titulo.push(n);
+      continue;
+    }
+
+    // ── Autodetección: SOLO dominio y medio ──
+    if (tk.text.includes('.')){
+      const d = normDomain(tk.text).replace(/^www\./, '');
+      if (d){
+        dominios.push(d);
+        chips.push({ type: 'dominio', value: tk.text, raw: tk.raw });
+        continue;
+      }
+    }
+    const strict = normStrict(tk.text);
+    if (strict.length >= 3 && MEDIOS_STRICT.has(strict)){
+      medios.push(strict);
+      chips.push({ type: 'medio', value: MEDIOS_STRICT.get(strict), raw: tk.raw });
+      continue;
+    }
+
+    // ── Todo lo demás → título ──
+    const n = normalize(tk.text);
+    if (n) titulo.push(n);
+  }
+
+  return { titulo, medios, dominios, grupos, tipos, tags, chips };
+}
+
+function ordenarGruposPorIdioma(grupos){
+  const target = (ACCES && ACCES.lang) || 'es';
+  const stats = {};
+  MEDIOS_UNICOS.forEach(m => {
+    if (!stats[m.grupo]) stats[m.grupo] = { total: 0, matches: 0 };
+    stats[m.grupo].total++;
+    if (m.lang === target) stats[m.grupo].matches++;
+  });
+  return grupos.slice().sort((a, b) => {
+    const sa = stats[a] || { total: 0, matches: 0 };
+    const sb = stats[b] || { total: 0, matches: 0 };
+    if (sa.matches !== sb.matches) return sb.matches - sa.matches;
+    const ra = sa.total ? sa.matches / sa.total : 0;
+    const rb = sb.total ? sb.matches / sb.total : 0;
+    if (ra !== rb) return rb - ra;
+    return a.localeCompare(b);
+  });
+}
+function gruposAfinesAlIdioma(){
+  const target = (ACCES && ACCES.lang) || 'es';
+  const set = new Set();
+  MEDIOS_UNICOS.forEach(m => { if (m.lang === target) set.add(m.grupo); });
+  return set;
+}
+
+function reconstruirListas(){
+  const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
+  const afin = gruposAfinesAlIdioma();
+
+  const selG_prev = $('#grupo').value;
+  const selM_prev = $('#medio').value;
+  const selFG_prev = $('#filtro-grupo-medio').value;
+
+  const selG = $('#grupo');
+  while (selG.options.length > 1) selG.remove(1);
+  if (selG.options[0]) selG.options[0].text = t('fltGrupo');
+  grupos.forEach(g => selG.add(new Option(g, g)));
+  if (selG_prev && [...selG.options].some(o => o.value === selG_prev)) selG.value = selG_prev;
+
+  const contG = $('#lista-grupos');
+  contG.innerHTML = grupos.map(g => `
+    <label class="grupo-item">
+      <input type="checkbox" data-grupo="${escapeHtml(g)}">
+      <span>${escapeHtml(g)}</span>
+      ${afin.has(g) ? '<span class="flag" title="idioma">●</span>' : ''}
+    </label>`).join('');
+  const gSet = new Set(PRESET.grupos);
+  contG.querySelectorAll('input[data-grupo]').forEach(c => {
+    c.checked = gSet.has(c.dataset.grupo);
+  });
+
+  const selFG = $('#filtro-grupo-medio');
+  while (selFG.options.length > 1) selFG.remove(1);
+  if (selFG.options[0]) selFG.options[0].text = t('cfgTodosGrupos');
+  grupos.forEach(g => selFG.add(new Option(g, g)));
+  if (selFG_prev && [...selFG.options].some(o => o.value === selFG_prev)) selFG.value = selFG_prev;
+
+  const selM = $('#medio');
+  while (selM.options.length > 1) selM.remove(1);
+  if (selM.options[0]) selM.options[0].text = t('fltMedio');
+  const porGrupo = {};
+  MEDIOS_UNICOS.forEach(m => {
+    (porGrupo[m.grupo] = porGrupo[m.grupo] || new Set()).add(m.medio);
+  });
+  grupos.forEach(g => {
+    if (!porGrupo[g]) return;
+    const og = document.createElement('optgroup');
+    og.label = g + (afin.has(g) ? ' ●' : '');
+    [...porGrupo[g]].sort().forEach(m => og.appendChild(new Option(m, m)));
+    selM.appendChild(og);
+  });
+  if (selM_prev && [...selM.options].some(o => o.value === selM_prev)) selM.value = selM_prev;
+
+  renderListaMedios();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LISTA DE MEDIOS DEL PANEL
+   ═══════════════════════════════════════════════════════════════ */
+function renderListaMedios(){
+  const cont = $('#lista-medios');
+  cont.innerHTML = MEDIOS_UNICOS.map(m => {
+    const site  = SITES.get(m.dominio);
+    const known = !!site;
+    const mode  = (site && site.mode) || 'prompt';
+
+    const dotHtml = known
+      ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
+      : '';
+
+    return `
+      <div class="medio-fila ${known ? '' : 'no-config'}" data-dominio="${escapeHtml(m.dominio)}"
+           data-grupo="${escapeHtml(m.grupo)}"
+           data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
+        <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
+          <input type="checkbox" class="chk-incluir" ${mode === 'auto' ? 'checked' : ''}><span>✓</span>
+        </label>
+        <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
+          <input type="checkbox" class="chk-ignorar" ${mode === 'off' ? 'checked' : ''}><span>✗</span>
+        </label>
+        <span class="celda celda-dominio">${dotHtml}<code>${escapeHtml(m.dominio)}</code></span>
+        <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
+        <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
+      </div>`;
+  }).join('');
+
+  cont.querySelectorAll('.medio-fila').forEach(fila => {
+    const inc = fila.querySelector('.chk-incluir');
+    const ign = fila.querySelector('.chk-ignorar');
+    inc.addEventListener('change', () => {
+      if (inc.checked) ign.checked = false;
+      marca(fila);
+      emitirUpdateSite(fila.dataset.dominio, { mode: inc.checked ? 'auto' : 'prompt' });
+    });
+    ign.addEventListener('change', () => {
+      if (ign.checked) inc.checked = false;
+      marca(fila);
+      emitirUpdateSite(fila.dataset.dominio, { mode: ign.checked ? 'off' : 'prompt' });
+    });
+    marca(fila);
+  });
+  filtrarMedios();
+}
+function marca(fila){
+  const inc = fila.querySelector('.chk-incluir').checked;
+  const ign = fila.querySelector('.chk-ignorar').checked;
+  fila.classList.toggle('estado-incluir', inc);
+  fila.classList.toggle('estado-ignorar', ign);
+  actualizarResumen();
+}
+function filtrarMedios(){
+  const q = normalize($('#filtro-medio').value.trim());
+  const g = $('#filtro-grupo-medio').value;
+  let visibles = 0;
+  document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
+    const okQ = !q || f.dataset.buscar.includes(q);
+    const okG = !g || f.dataset.grupo === g;
+    const show = okQ && okG;
+    f.style.display = show ? '' : 'none';
+    if (show) visibles++;
+  });
+  actualizarResumen(visibles);
+}
+function actualizarResumen(visiblesOverride){
+  const total = MEDIOS_UNICOS.length;
+  const visibles = visiblesOverride != null
+    ? visiblesOverride
+    : document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
+  const inc = document.querySelectorAll('#lista-medios .chk-incluir:checked').length;
+  const ign = document.querySelectorAll('#lista-medios .chk-ignorar:checked').length;
+  $('#resumen-medios').textContent = t('cfgResumen', {
+    vis: visibles, total: total, inc: inc, ign: ign
+  });
+}
+function escribirPanel(p){
+  const gSet = new Set(p.grupos);
+  document.querySelectorAll('#lista-grupos input[data-grupo]').forEach(c => {
+    c.checked = gSet.has(c.dataset.grupo);
+  });
+  $('#preset-palabras').value = p.palabras.join('\n');
+  $('#filtro-medio').value = '';
+  $('#filtro-grupo-medio').value = '';
+  renderListaMedios();
+}
+function leerPanel(){
+  const grupos = [];
+  document.querySelectorAll('#lista-grupos input[data-grupo]:checked').forEach(c =>
+    grupos.push(c.dataset.grupo));
+  const palabras = parseLista($('#preset-palabras').value);
+  return { grupos, palabras };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CUMPLE PRESET
+   ═══════════════════════════════════════════════════════════════ */
+let RX_PRESET = null;
+let SET_GRUPOS = new Set();
+
+function recompilarPreset(){
+  SET_GRUPOS = new Set(PRESET.grupos);
+  const words = PRESET.palabras.map(p => normalize(p).trim()).filter(Boolean)
+    .map(p => p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+  RX_PRESET = words.length ? new RegExp('\\b(' + words.join('|') + ')\\b') : null;
+}
+function cumplePreset(n){
+  const site = SITES.get(n.dominio);
+  if (site && site.mode === 'off') return false;
+  if (site && site.mode === 'auto') return true;
+  if (SET_GRUPOS.has(n.grupo)) return true;
+  if (RX_PRESET){
+    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+    if (RX_PRESET.test(tn)) return true;
+  }
+  return false;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REPORTES
+   ═══════════════════════════════════════════════════════════════ */
+let REPORTE_CONTEXTO = null;
+
+function abrirReporte(contexto){
+  REPORTE_CONTEXTO = contexto || null;
+  const ctxBox = $('#rep-contexto');
+  if (!ctxBox) return;
+  const ctx = REPORTE_CONTEXTO;
+  if (!ctx){
+    ctxBox.className = 'rep-ctx empty';
+    ctxBox.textContent = t('repCtxEmpty');
+  } else {
+    ctxBox.className = 'rep-ctx';
+    const rows = [
+      ctx.medio     ? `<div><strong>${escapeHtml(t('repCtxMedio'))}:</strong> ${escapeHtml(ctx.medio)}</div>` : '',
+      ctx.dominio   ? `<div><strong>Domain:</strong> ${escapeHtml(ctx.dominio)}</div>` : '',
+      ctx.grupo     ? `<div><strong>${escapeHtml(t('repCtxGrupo'))}:</strong> ${escapeHtml(ctx.grupo)}</div>` : '',
+      ctx.tipo      ? `<div><strong>${escapeHtml(t('repCtxTipo'))}:</strong> ${escapeHtml(ctx.tipo)}</div>` : '',
+      ctx.titular   ? `<div><strong>${escapeHtml(t('repCtxTitular'))}:</strong> ${escapeHtml(ctx.titular)}</div>` : '',
+      ctx.enlace    ? `<div><strong>${escapeHtml(t('repCtxEnlace'))}:</strong> <a href="${escapeHtml(ctx.enlace)}" target="_blank" rel="noopener" style="color:var(--accent)">${escapeHtml(ctx.enlace)}</a></div>` : '',
+      ctx.fecha     ? `<div><strong>${escapeHtml(t('repCtxFecha'))}:</strong> ${escapeHtml(ctx.fecha)}</div>` : '',
+      ctx.fuente    ? `<div><strong>${escapeHtml(t('repCtxFuente'))}:</strong> ${escapeHtml(ctx.fuente)}</div>` : '',
+    ].filter(Boolean).join('');
+    ctxBox.innerHTML = rows || `<div>${escapeHtml(t('repCtxEmpty'))}</div>`;
+  }
+  $('#rep-motivo').value = 'no_se_muestra';
+  $('#rep-detalles').value = '';
+  abrirPanel('panel-reporte');
+}
+
+function construirTextoReporte(){
+  const motivoSel = $('#rep-motivo');
+  const motivoTxt = motivoSel.options[motivoSel.selectedIndex].textContent;
+  const detalles = $('#rep-detalles').value.trim();
+  const incluirConfig = $('#rep-config-incluir').checked;
+
+  const L = [];
+  L.push(`### ${t('repTitle')}`);
+  L.push('');
+  L.push(`**${t('repMotivoLbl')}:** ${motivoTxt}`);
+  L.push(`**${t('repFecha')}:** ${new Date().toISOString()}`);
+  L.push('');
+
+  if (detalles){
+    L.push(`**${t('repDetallesLbl')}:**`);
+    L.push(detalles);
+    L.push('');
+  }
+
+  if (REPORTE_CONTEXTO){
+    const c = REPORTE_CONTEXTO;
+    L.push(`### ${t('repContexto')}`);
+    if (c.medio)   L.push(`- **${t('repCtxMedio')}:** ${c.medio}`);
+    if (c.dominio) L.push(`- **Domain:** ${c.dominio}`);
+    if (c.grupo)   L.push(`- **${t('repCtxGrupo')}:** ${c.grupo}`);
+    if (c.tipo)    L.push(`- **${t('repCtxTipo')}:** ${c.tipo}`);
+    if (c.fuente)  L.push(`- **${t('repCtxFuente')}:** ${c.fuente}`);
+    if (c.fecha)   L.push(`- **${t('repCtxFecha')}:** ${c.fecha}`);
+    if (c.titular) L.push(`- **${t('repCtxTitular')}:** ${c.titular}`);
+    if (c.enlace)  L.push(`- **${t('repCtxEnlace')}:** ${c.enlace}`);
+    L.push('');
+  }
+
+  L.push(`- **${t('repCtxIdioma')}:** ${ACCES.lang}`);
+
+  if (incluirConfig){
+    L.push('');
+    L.push(`### ${t('repCtxConfig')}`);
+    L.push('```json');
+    L.push(JSON.stringify({
+      acces: ACCES,
+      preset: PRESET,
+      presetActivo: PRESET_ACTIVO,
+      sites: [...SITES.entries()].map(([d, s]) => ({ domain: d, ...s }))
+    }, null, 2));
+    L.push('```');
+  }
+
+  return L.join('\n');
+}
+
+function construirTituloReporte(){
+  const motivoSel = $('#rep-motivo');
+  const motivoTxt = motivoSel.options[motivoSel.selectedIndex].textContent;
+  if (REPORTE_CONTEXTO && REPORTE_CONTEXTO.medio){
+    return `[Reporte] ${motivoTxt} — ${REPORTE_CONTEXTO.medio}${REPORTE_CONTEXTO.grupo ? ' (' + REPORTE_CONTEXTO.grupo + ')' : ''}`;
+  }
+  return `[Reporte] ${motivoTxt}`;
+}
+
+function reportarViaGithub(){
+  const title = encodeURIComponent(construirTituloReporte());
+  const body  = encodeURIComponent(construirTextoReporte());
+  const url = `https://github.com/${REPORT_REPO}/issues/new?title=${title}&body=${body}`;
+  try{
+    const w = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!w) throw new Error('popup blocked');
+  }catch(e){ toast(t('repErrGithub'), 3200); }
+}
+function reportarViaEmail(){
+  const subject = encodeURIComponent(construirTituloReporte());
+  const body    = encodeURIComponent(construirTextoReporte());
+  window.location.href = `mailto:${REPORT_EMAIL}?subject=${subject}&body=${body}`;
+}
+function copiarReporte(){
+  const texto = construirTextoReporte();
+  const done = () => toast(t('repCopiado'), 1800);
+  const fb = () => {
+    const ta = document.createElement('textarea');
+    ta.value = texto; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch(e){ toast('No se pudo copiar', 2000); }
+    ta.remove();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto).then(done, fb);
+  } else fb();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IMPORT / EXPORT
+   ═══════════════════════════════════════════════════════════════ */
+const FONT_MAP_TO_LECTOR = { serif: 'georgia', sans: 'sans', dyslexic: 'dyslexic' };
+const FONT_MAP_FROM_LECTOR = { georgia: 'serif', serif: 'serif', sans: 'sans', dyslexic: 'dyslexic' };
+
+function detectarFormato(data){
+  if (!data || typeof data !== 'object') return 'invalid';
+  if (data._app === 'voceiro') return 'voceiro';
+  if (Array.isArray(data.sites) || data.prefs || Array.isArray(data.disabledDomains)) return 'userscript';
+  if (data.acces || data.preset) return 'voceiro';
+  return 'unknown';
+}
+
+function exportarConfig(){
+  const sitesArr = [...SITES.entries()].map(([d, s]) => ({
+    domain: d, mode: s.mode, ignorePatterns: [], readerSource: 'auto',
+    lang: s.lang || 'auto', type: s.type || '', tags: s.tags || [],
+    textOnly: false
+  }));
+
+  const lectorPrefs = {
+    fs: ACCES.fs,
+    theme: ACCES.tema,
+    width: ACCES.width,
+    font: FONT_MAP_TO_LECTOR[ACCES.fuente] || 'sans',
+    lh: 1.7,
+    just: ACCES.just,
+    bionic: ACCES.bionic,
+    focus: ACCES.focus,
+    img: true,
+    panelText: true,
+    panelActions: false,
+  };
+
+  const payload = {
+    _app: 'voceiro',
+    _version: 5,
+    _format: 'combo',
+    _exported: new Date().toISOString(),
+    acces: ACCES,
+    preset: PRESET,
+    presetActivo: PRESET_ACTIVO,
+    _lectorVersion: '1.1.0',
+    lang: ACCES.lang,
+    sites: sitesArr,
+    disabledDomains: sitesArr.filter(s => s.mode === 'off').map(s => s.domain),
+    prefs: lectorPrefs,
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fecha = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `voceiro-config-${fecha}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast(t('expOk'), 1800);
+}
+
+function importarDesdeFormatoVoceiro(data){
+  if (data.acces && typeof data.acces === 'object'){
+    ACCES = { ...ACCES_DEF, ...data.acces };
+    if (!I18N[ACCES.lang]) ACCES.lang = 'es';
+    guardarAcces();
+  }
+  if (data.preset && typeof data.preset === 'object'){
+    PRESET = {
+      grupos:   Array.isArray(data.preset.grupos)   ? data.preset.grupos   : [],
+      palabras: Array.isArray(data.preset.palabras) ? data.preset.palabras : [],
+    };
+    guardarPreset();
+    recompilarPreset();
+  }
+  if (Array.isArray(data.sites)){
+    setSitesFromArray(data.sites);
+    guardarSitesCache();
+    if (USCRIPT_OK){
+      SITES.forEach((s, d) => {
+        document.dispatchEvent(new CustomEvent('voceiro-update-site', {
+          detail: { domain: d, mode: s.mode, lang: s.lang, type: s.type, tags: s.tags }
+        }));
+      });
+    }
+  }
+  if (typeof data.presetActivo === 'boolean'){
+    PRESET_ACTIVO = data.presetActivo && presetTieneReglas();
+  } else {
+    PRESET_ACTIVO = presetTieneReglas();
+  }
+  guardarPresetActivo();
+}
+
+function importarDesdeFormatoLector(data){
+  if (data.prefs && typeof data.prefs === 'object'){
+    const p = data.prefs;
+    if (['light','sepia','dark','contrast'].includes(p.theme)) ACCES.tema = p.theme;
+    if (FONT_MAP_FROM_LECTOR[p.font]) ACCES.fuente = FONT_MAP_FROM_LECTOR[p.font];
+    if (typeof p.fs === 'number' && p.fs >= LIM.fs.min && p.fs <= LIM.fs.max) ACCES.fs = p.fs;
+    if (typeof p.width === 'number'){
+      ACCES.width = Math.max(LIM.width.min, Math.min(LIM.width.max, p.width));
+    }
+    if (typeof p.just === 'boolean') ACCES.just = p.just;
+    if (typeof p.bionic === 'boolean') ACCES.bionic = p.bionic;
+    if (typeof p.focus === 'boolean') ACCES.focus = p.focus;
+  }
+  if (typeof data.lang === 'string' && I18N[data.lang]) ACCES.lang = data.lang;
+  guardarAcces();
+
+  const known = new Set(MEDIOS_UNICOS.map(m => m.dominio));
+  const arr = [];
+  (data.sites || []).forEach(s => {
+    if (!s || !s.domain) return;
+    const d = String(s.domain).toLowerCase().trim();
+    if (!known.has(d)) return;
+    arr.push({
+      domain: d,
+      mode: s.mode || 'prompt',
+      lang: s.lang || 'auto',
+      type: s.type || '',
+      tags: s.tags || []
+    });
+  });
+  (data.disabledDomains || []).forEach(d0 => {
+    const d = String(d0).toLowerCase().trim();
+    if (!known.has(d)) return;
+    if (!arr.some(x => x.domain === d)){
+      arr.push({ domain: d, mode: 'off', lang: 'auto', type: '', tags: [] });
+    }
+  });
+  setSitesFromArray(arr);
+  guardarSitesCache();
+
+  PRESET_ACTIVO = presetTieneReglas();
+  guardarPresetActivo();
+}
+
+function importarConfig(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if (!data || typeof data !== 'object') throw new Error('JSON inválido');
+      if (!confirm(t('impConfirm'))) return;
+
+      const formato = detectarFormato(data);
+      let msgOk = t('impOk');
+
+      if (formato === 'voceiro' || formato === 'combo'){
+        importarDesdeFormatoVoceiro(data);
+        msgOk = t('impFromVoceiro');
+      } else if (formato === 'userscript'){
+        importarDesdeFormatoLector(data);
+        msgOk = t('impFromLector');
+      } else {
+        throw new Error('Formato no reconocido');
+      }
+
+      aplicarAcces();
+      aplicarTextos();
+      reconstruirListas();
+      construirIndicesBusqueda();
+      actualizarBotonPreset();
+      if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
+      aplicarFiltros();
+      toast(msgOk, 2400);
+    }catch(e){
+      toast(t('impErr', { msg: e.message || String(e) }), 3000);
+    }
+  };
+  reader.onerror = () => toast(t('impErr', { msg: 'read error' }), 3000);
+  reader.readAsText(file);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BUSCADOR (FreeNewsAPI)
+   ═══════════════════════════════════════════════════════════════ */
+const FREENEWS_URL = 'https://freenewsapi.ai/v1/search';
+const BS_SESSION_KEY = 'voceiro-bs-last';
+
+const BS_STATE = {
+  q: '', lang: 'es', country: 'ES', date: '24h',
+  offset: 0, size: 30, total: 0,
+  resultados: [],
+  cargando: false,
+};
+
+function bsPintarSelects(){
+  const selL = $('#bs-lang');
+  selL.innerHTML = [
+    `<option value="">${escapeHtml(t('bsLangAny'))}</option>`,
+    `<option value="es">Español</option>`,
+    `<option value="gl">Galego</option>`,
+    `<option value="ca">Català</option>`,
+    `<option value="en">English</option>`,
+    `<option value="eu">Euskara</option>`,
+    `<option value="fr">Français</option>`,
+    `<option value="de">Deutsch</option>`,
+    `<option value="it">Italiano</option>`,
+    `<option value="pt">Português</option>`,
+  ].join('');
+
+  const selC = $('#bs-country');
+  selC.innerHTML = [
+    `<option value="">${escapeHtml(t('bsCountryAny'))}</option>`,
+    `<option value="ES">España</option>`,
+    `<option value="PT">Portugal</option>`,
+    `<option value="FR">France</option>`,
+    `<option value="IT">Italia</option>`,
+    `<option value="DE">Deutschland</option>`,
+    `<option value="GB">UK</option>`,
+    `<option value="IE">Ireland</option>`,
+    `<option value="US">USA</option>`,
+    `<option value="MX">México</option>`,
+    `<option value="AR">Argentina</option>`,
+    `<option value="CO">Colombia</option>`,
+    `<option value="CL">Chile</option>`,
+    `<option value="PE">Perú</option>`,
+    `<option value="BR">Brasil</option>`,
+  ].join('');
+
+  const selD = $('#bs-date');
+  selD.innerHTML = [
+    `<option value="24h">${escapeHtml(t('bsDate24h'))}</option>`,
+    `<option value="48h">${escapeHtml(t('bsDate48h'))}</option>`,
+    `<option value="7d">${escapeHtml(t('bsDate7d'))}</option>`,
+    `<option value="30d">${escapeHtml(t('bsDate30d'))}</option>`,
+  ].join('');
+
+  $('#bs-q').placeholder   = t('bsQ');
+  $('#bs-go').textContent  = t('bsBuscar');
+  $('#bs-mas').textContent = t('bsMas');
+  $('#bs-title').textContent = t('bsTitle');
+  $('#bs-aviso').textContent = t('bsAviso');
+}
+
+function bsLimpiarTitulo(s){
+  if (!s) return '';
+  return String(s)
+    .replace(/^\s*<!\[CDATA\[|\]\]>\s*$/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+function bsHostLimpio(host){
+  return String(host || '').replace(/^www\./, '').toLowerCase();
+}
+
+function bsFechaRel(iso){
+  if (!iso) return '';
+  try{
+    const d = new Date(iso).getTime();
+    if (isNaN(d)) return '';
+    const diff = Date.now() - d;
+    const min = Math.floor(diff / 60000);
+    const h   = Math.floor(diff / 3600000);
+    if (min < 1)  return t('fechaAhora');
+    if (min < 60) return t('fechaHaceMin', { n: min });
+    if (h   < 24) return t('fechaHaceH',   { n: h });
+    return t('fechaHaceD', { n: Math.floor(h / 24) });
+  }catch(e){ return ''; }
+}
+
+async function bsBuscar(reset){
+  const q = $('#bs-q').value.trim();
+  if (!q){ toast(t('bsErrorQ'), 1800); return; }
+
+  if (reset){
+    BS_STATE.offset = 0;
+    BS_STATE.resultados = [];
+  }
+
+  BS_STATE.q       = q;
+  BS_STATE.lang    = $('#bs-lang').value;
+  BS_STATE.country = $('#bs-country').value;
+  BS_STATE.date    = $('#bs-date').value;
+  BS_STATE.cargando = true;
+
+  const estado = $('#bs-estado');
+  estado.textContent = t('bsCargando');
+  $('#bs-go').disabled = true;
+
+  const params = new URLSearchParams();
+  params.set('q', q);
+  params.set('size', String(BS_STATE.size));
+  params.set('offset', String(BS_STATE.offset));
+  params.set('sort', 'date');
+  if (BS_STATE.lang)    params.set('lang', BS_STATE.lang);
+  if (BS_STATE.country) params.set('country', BS_STATE.country);
+  if (BS_STATE.date)    params.set('date', BS_STATE.date);
+  if (BS_STATE.country === 'ES') params.set('tld', 'es,cat,gal');
+
+  try{
+    const res = await fetch(`${FREENEWS_URL}?${params.toString()}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    BS_STATE.total = data.total || 0;
+    BS_STATE.resultados = BS_STATE.resultados.concat(data.results || []);
+
+    bsRender(reset);
+    try{ sessionStorage.setItem(BS_SESSION_KEY, JSON.stringify(BS_STATE)); }catch(e){}
+  }catch(e){
+    console.error('FreeNews error:', e);
+    estado.textContent = t('bsError');
+    if (reset) $('#bs-resultados').innerHTML = '';
+  }finally{
+    BS_STATE.cargando = false;
+    $('#bs-go').disabled = false;
+  }
+}
+
+function bsRender(esReset){
+  const cont = $('#bs-resultados');
+  const estado = $('#bs-estado');
+
+  if (esReset) cont.innerHTML = '';
+
+  const resultados = BS_STATE.resultados;
+  if (!resultados.length){
+    estado.textContent = t('bsSinResultados');
+    $('#bs-mas-wrap').style.display = 'none';
+    return;
+  }
+
+  estado.textContent = t('bsResultados', { n: BS_STATE.total })
+    + ' · ' + t('bsCargados', { n: resultados.length });
+
+  const offsetActual = esReset ? 0 : resultados.length - BS_STATE.size;
+  const nuevos = esReset ? resultados : resultados.slice(-BS_STATE.size);
+
+  const html = nuevos.map((r, i) => {
+    const idx = offsetActual + i;
+    const host = bsHostLimpio(r.host);
+    const enCatalogo = MEDIOS_UNICOS.some(m => m.dominio === host);
+    const titulo = escapeHtml(bsLimpiarTitulo(r.title));
+    const desc = r.description ? escapeHtml(bsLimpiarTitulo(r.description)) : '';
+    const fechaRel = bsFechaRel(r.published_at);
+
+    return `<article class="bs-resultado" data-idx="${idx}">
+      <div class="bs-meta">
+        <span class="bs-medio">${escapeHtml(host)}</span>
+        ${enCatalogo ? `<span class="bs-badge">✓ ${escapeHtml(t('bsVerificado'))}</span>` : ''}
+        <span class="bs-badge">${escapeHtml(t('bsFuenteExterna'))}</span>
+        ${fechaRel ? `<span>· ${escapeHtml(fechaRel)}</span>` : ''}
+      </div>
+      <a class="bs-titular" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${titulo}</a>
+      ${desc ? `<div class="bs-desc">${desc}</div>` : ''}
+      <div class="bs-acciones">
+        <button class="btn-mini btn-bs-guardar" data-idx="${idx}">${t('bsGuardar')}</button>
+      </div>
+    </article>`;
+  }).join('');
+
+  cont.insertAdjacentHTML('beforeend', html);
+
+  const puedeMas = resultados.length < BS_STATE.total;
+  $('#bs-mas-wrap').style.display = puedeMas ? '' : 'none';
+}
+
+function bsCargarSesion(){
+  try{
+    const raw = sessionStorage.getItem(BS_SESSION_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s || !s.resultados || !s.resultados.length) return;
+    Object.assign(BS_STATE, s);
+    $('#bs-q').value       = s.q       || '';
+    $('#bs-lang').value    = s.lang    || 'es';
+    $('#bs-country').value = s.country || 'ES';
+    $('#bs-date').value    = s.date    || '24h';
+    bsRender(true);
+    $('#bs-estado').textContent = t('bsResultados', { n: s.total })
+      + ' · ' + t('bsCargados', { n: s.resultados.length });
+  }catch(e){}
+}
+
+function bsWireEventos(){
+  $('#bs-go').addEventListener('click', () => bsBuscar(true));
+
+  $('#bs-q').addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); bsBuscar(true); }
+  });
+
+  $('#bs-mas').addEventListener('click', () => {
+    BS_STATE.offset += BS_STATE.size;
+    bsBuscar(false);
+  });
+
+  $('#bs-resultados').addEventListener('click', e => {
+    const b = e.target.closest('.btn-bs-guardar');
+    if (!b) return;
+    e.preventDefault();
+    const r = BS_STATE.resultados[parseInt(b.dataset.idx, 10)];
+    if (!r) return;
+
+    const titulo = bsLimpiarTitulo(r.title);
+
+    if (!USCRIPT_OK){
+      const texto = `${titulo}\n${r.url}`;
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(texto).then(
+          () => toast(t('saveCopied'), 2400),
+          () => toast('No se pudo copiar', 2000)
+        );
+      }
+      return;
+    }
+
+    document.dispatchEvent(new CustomEvent('voceiro-save-later', {
+      detail: {
+        url: r.url,
+        title: titulo,
+        description: r.description || '',
+        image: r.image || ''
+      }
+    }));
+  });
+}
+
+function bsAbrir(){
+  bsPintarSelects();
+  abrirPanel('panel-buscar');
+  if (!BS_STATE.resultados.length) bsCargarSesion();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FILTRADO + RENDER (con paginación)
+   ═══════════════════════════════════════════════════════════════ */
+let NOTICIAS = [];
+let ULT_FILTRADAS = [];
+let ULT_TOKENS = [];
+let ULT_RX = null;
+let ULT_PRESET_EFECTIVO = false;
+
+const RENDER_BATCH = 150;
+let RENDER_OFFSET = 0;
+let SENTINEL_OBSERVER = null;
+function renderChips(parsed, rawQuery){
+  const cont = $('#chips-busqueda');
+  if (!cont) return;
+
+  if (!parsed.chips.length){
+    cont.style.display = 'none';
+    cont.innerHTML = '';
+    return;
+  }
+
+  cont.style.display = '';
+  cont.innerHTML = parsed.chips.map((c, i) =>
+    `<span class="chip" data-idx="${i}">
+      <span class="chip-tipo">${escapeHtml(c.type)}</span>
+      <span>${escapeHtml(c.value)}</span>
+      <button type="button" class="chip-x" data-idx="${i}" title="Convertir a búsqueda literal">×</button>
+    </span>`
+  ).join('');
+
+  cont.querySelectorAll('.chip-x').forEach(b => {
+    b.addEventListener('click', () => {
+      const i = parseInt(b.dataset.idx, 10);
+      const chip = parsed.chips[i];
+      if (!chip) return;
+      const esc = _escapeRegex(chip.raw);
+      const rx = new RegExp('(^|\\s)(' + esc + ')(?=\\s|$)', 'g');
+      const nueva = rawQuery.replace(rx, (m, pre) => pre + '"' + chip.value + '"');
+      $('#buscar').value = nueva;
+      aplicarFiltros();
+    });
+  });
+}
+
+
+function aplicarFiltros(){
+  const raw = $('#buscar').value.trim();
+  const parsed = parseQuery(raw);
+  renderChips(parsed, raw);
+  const g = $('#grupo').value;
+  const t2 = $('#tipo').value;
+  const m = $('#medio').value;
+  const dias = parseInt($('#rango').value, 10) || 0;
+  const orden = $('#orden').value || 'recientes';
+
+  const ahora = Date.now();
+  const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
+  const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
+
+  const hayMedio   = parsed.medios.length   > 0;
+  const hayDominio = parsed.dominios.length > 0;
+  const hayGrupo   = parsed.grupos.length   > 0;
+  const hayTipo    = parsed.tipos.length    > 0;
+  const hayTag     = parsed.tags.length     > 0;
+  const hayTitulo  = parsed.titulo.length   > 0;
+
+  let filtradas = NOTICIAS.filter(n => {
+    const cumple = presetEfectivo ? cumplePreset(n) : false;
+    n._esPreset = cumple;
+    if (presetEfectivo && !cumple) return false;
+
+    if (g && n.grupo !== g) return false;
+    if (t2 && n.tipo  !== t2) return false;
+    if (m && n.medio !== m) return false;
+    if (limiteMs){
+      const ts = n._tsOrden;
+      if (isNaN(ts)) return false;
+      if (ahora - ts > limiteMs) return false;
+    }
+
+    if (hayMedio){
+      const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
+      for (let i = 0; i < parsed.medios.length; i++){
+        if (ms.indexOf(parsed.medios[i]) === -1) return false;
+      }
+    }
+    if (hayDominio){
+      const ds = n._domStrict || (n._domStrict = normDomain(n.dominio));
+      for (let i = 0; i < parsed.dominios.length; i++){
+        if (ds.indexOf(parsed.dominios[i]) === -1) return false;
+      }
+    }
+    if (hayGrupo){
+      const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
+      for (let i = 0; i < parsed.grupos.length; i++){
+        if (gs.indexOf(parsed.grupos[i]) === -1) return false;
+      }
+    }
+    if (hayTipo){
+      const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
+      for (let i = 0; i < parsed.tipos.length; i++){
+        if (ts.indexOf(parsed.tipos[i]) === -1) return false;
+      }
+    }
+    if (hayTag){
+      const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
+      for (let i = 0; i < parsed.tags.length; i++){
+        if (!tags.some(x => x.indexOf(parsed.tags[i]) !== -1)) return false;
+      }
+    }
+    if (hayTitulo){
+      const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+      for (let i = 0; i < parsed.titulo.length; i++){
+        if (tn.indexOf(parsed.titulo[i]) === -1) return false;
+      }
+    }
+    return true;
+  });
+
+  // Orden estable: por fecha de agrupación, desempate por dominio y titular
+  filtradas.sort((a, b) => {
+    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
+    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
+    if (ta !== tb) return orden === 'antiguos' ? ta - tb : tb - ta;
+    const da = a.dominio || '';
+    const db = b.dominio || '';
+    if (da !== db) return da < db ? -1 : 1;
+    const xa = a.titular || '';
+    const xb = b.titular || '';
+    if (xa !== xb) return xa < xb ? -1 : 1;
+    return 0;
+  });
+
+  ULT_FILTRADAS = filtradas;
+  ULT_TOKENS = parsed.titulo;
+  ULT_RX = buildHighlightRegex(parsed.titulo);
+  ULT_PRESET_EFECTIVO = presetEfectivo;
+
+  renderizar();
+}
+
+function renderizar(){
+  const lista = ULT_FILTRADAS;
+  let txt = t('contador', { n: lista.length, total: NOTICIAS.length });
+  if (ULT_PRESET_EFECTIVO) txt += t('contadorPreset');
+  $('#contador').textContent = txt;
+
+  const cont = $('#resultados');
+  cont.innerHTML = '';
+  RENDER_OFFSET = 0;
+
+  if (!lista.length){
+    cont.innerHTML = `<div class="vacio">${escapeHtml(t('vacio'))}</div>`;
+    if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
+    return;
+  }
+
+  const sentinel = document.createElement('div');
+  sentinel.id = 'render-sentinel';
+  cont.appendChild(sentinel);
+
+  appendBatch();
+
+  if (SENTINEL_OBSERVER) SENTINEL_OBSERVER.disconnect();
+  SENTINEL_OBSERVER = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) appendBatch();
+  }, { rootMargin: '400px' });
+  SENTINEL_OBSERVER.observe(sentinel);
+
+  if (ACCES.focus) requestAnimationFrame(updateFocus);
+}
+
+function renderItemHtml(n, idx){
+  // Fecha visible según prioridad: pub (incl. futura) > estimada > recolección
+  let fechaHtml = '';
+  if (n._tipoShow === 'pub'){
+    const esFuturo = n._esFuturo;
+    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
+  } else if (n._tipoShow === 'est'){
+    fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">🕓 ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
+  } else if (!isNaN(n._tsShow)){
+    const fecha = `${t('recolectado')} ${formatearFecha(n._tsShow)}`;
+    fechaHtml = `<span class="badge recolectado">${escapeHtml(fecha)}</span>`;
+  } else {
+    fechaHtml = `<span class="badge recolectado">${escapeHtml(t('recolectado'))}</span>`;
+  }
+
+  let tituloHtml;
+  if (ULT_RX) tituloHtml = resaltar(n.titular, ULT_RX);
+  else        tituloHtml = n._titularEsc;
+  if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
+
+  const guardada = PENDIENTES_URLS.has(n.enlace);
+  const item = PENDIENTES_MAP.get(n.enlace);
+  const leida = guardada && item && item.read;
+  const icon = leida ? '✅' : (guardada ? '⏳' : '🕒');
+  const title = leida ? t('markUnread') : (guardada ? t('markRead') : t('saveForLaterTitle'));
+
+  const presetBadge = n._esPreset
+    ? `<span class="badge preset">${n._grupoEsc}</span>`
+    : `<span class="badge">${n._grupoEsc}</span>`;
+
+  return `<article class="noticia" data-idx="${idx}">
+    <div class="cabecera">
+      <span class="medio">${n._medioEsc}</span>
+      <span class="badge">${n._tipoEsc}</span>
+      ${presetBadge}
+      ${fechaHtml}
+      <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
+      <button class="btn-mini btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${icon}</button>
+    </div>
+    <a class="titular" href="${n._enlaceEsc}" target="_blank" rel="noopener">${tituloHtml}</a>
+  </article>`;
+}
+
+function appendBatch(){
+  const cont = $('#resultados');
+  const sentinel = document.getElementById('render-sentinel');
+  if (!sentinel) return;
+
+  const total = ULT_FILTRADAS.length;
+  const end = Math.min(RENDER_OFFSET + RENDER_BATCH, total);
+  if (RENDER_OFFSET >= end) {
+    if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
+    sentinel.remove();
+    return;
+  }
+
+  let html = '';
+  for (let i = RENDER_OFFSET; i < end; i++){
+    html += renderItemHtml(ULT_FILTRADAS[i], i);
+  }
+  sentinel.insertAdjacentHTML('beforebegin', html);
+  RENDER_OFFSET = end;
+
+  if (RENDER_OFFSET >= total){
+    if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
+    sentinel.remove();
+  }
+}
+
+function wireResultadosDelegation(){
+  const cont = $('#resultados');
+  cont.addEventListener('click', e => {
+    const saveBtn = e.target.closest('.btn-save-item');
+    if (saveBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const i = parseInt(saveBtn.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (n) guardarParaLeerDespues(n);
+      return;
+    }
+    const repBtn = e.target.closest('.btn-report-item');
+    if (repBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const i = parseInt(repBtn.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (!n) return;
+      abrirReporte({
+        medio:   n.medio,
+        dominio: n.dominio,
+        grupo:   n.grupo,
+        tipo:    n.tipo,
+        titular: n.titular,
+        enlace:  n.enlace,
+        fecha:   n.fecha_pub || n.fecha_estimada || n.fecha || '',
+        fuente:  n.fuente || ''
+      });
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODALES
+   ═══════════════════════════════════════════════════════════════ */
+function abrirPanel(id){
+  const p = document.getElementById(id);
+  if (!p) return;
+  document.querySelectorAll('.panel.open').forEach(o => { if (o !== p) o.classList.remove('open'); });
+  p.classList.add('open');
+  const inner = p.querySelector('.panel-inner');
+  if (inner) inner.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+function cerrarPanel(id){
+  const p = document.getElementById(id);
+  if (!p) return;
+  p.classList.remove('open');
+  if (!document.querySelector('.panel.open')){
+    document.body.style.overflow = '';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEXTOS
+   ═══════════════════════════════════════════════════════════════ */
+function aplicarTextos(){
+  document.title = t('pageTitle');
+  $('#h-title').textContent = t('headerTitle');
+  $('#meta-prefix').textContent = t('metaPrefix');
+  $('#meta-suffix').textContent = t('metaSuffix');
+
+  $('#btn-preset').textContent = t('btnPersonalizado');
+  $('#btn-config').textContent = t('btnConfig');
+  $('#btn-pendientes').textContent = t('btnPendientes');
+  $('#btn-buscar').textContent = t('btnBuscar');
+  $('#btn-acces').textContent  = t('btnAcces');
+  $('#btn-export').textContent = t('btnExport');
+  $('#btn-import').textContent = t('btnImport');
+  $('#btn-export').title = t('btnExport');
+  $('#btn-import').title = t('btnImport');
+
+  $('#cfg-title').textContent = t('cfgTitle');
+  $('#cfg-grupos').textContent = t('cfgGrupos');
+  $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
+  $('#cfg-medios').textContent = t('cfgMedios');
+  $('#cfg-medios-hint').textContent = t('cfgMediosHint');
+  $('#cfg-medios-legend').innerHTML =
+    '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
+  $('#filtro-medio').placeholder = t('cfgBuscarMedio');
+  if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
+  $('#cfg-palabras').textContent = t('cfgPalabras');
+  $('#cfg-palabras-hint').textContent = t('cfgPalabrasHint');
+  $('#cfg-backup').textContent = t('cfgBackup');
+  $('#cfg-backup-msg').textContent = t('cfgBackupMsg');
+  $('#cfg-help-lbl').textContent = t('cfgHelpLbl');
+  $('#cfg-help-msg').textContent = t('cfgHelpMsg');
+  $('#cfg-help-btn').textContent = t('cfgHelpBtn');
+  $('#preset-palabras').placeholder = t('cfgPalabrasPlaceholder');
+  $('#preset-reset').textContent = t('btnReset');
+  $('#preset-cancelar').textContent = t('btnCancel');
+  $('#preset-guardar').textContent = t('btnSave');
+
+  $('#ac-title').textContent = t('acTitle');
+  $('#ac-tema').textContent = t('acTema');
+  $('#ac-fuente').textContent = t('acFuente');
+  $('#ac-tamano').textContent = t('acTamano');
+  $('#ac-ancho').textContent = t('acAncho');
+  $('#ac-extra').textContent = t('acExtra');
+  $('#acces-reset').textContent = t('btnReset');
+
+  const bTema = document.querySelectorAll('.opt-group[data-grupo="tema"] button');
+  [t('acClaro'), t('acSepia'), t('acOscuro'), t('acContraste')].forEach((txt, i) => {
+    if (bTema[i]) bTema[i].textContent = txt;
+  });
+  const bFuente = document.querySelectorAll('.opt-group[data-grupo="fuente"] button');
+  [t('acSerif'), t('acSans'), t('acDislexia')].forEach((txt, i) => {
+    if (bFuente[i]) bFuente[i].textContent = txt;
+  });
+  const bExtra = document.querySelectorAll('.opt-group[data-grupo="extra"] button');
+  [t('acJustificar'), t('acBionic'), t('acFoco')].forEach((txt, i) => {
+    if (bExtra[i]) bExtra[i].textContent = txt;
+  });
+
+  $('#pend-title').textContent = t('pendTitle');
+  $('#pend-refresh').textContent = t('pendRefresh');
+
+  $('#rep-title').textContent = t('repTitle');
+  $('#rep-motivo-lbl').textContent = t('repMotivoLbl');
+  $('#rep-detalles-lbl').textContent = t('repDetallesLbl');
+  $('#rep-detalles').placeholder = t('repDetallesPh');
+  $('#rep-config-lbl').textContent = t('repConfigLbl');
+  $('#rep-copy').textContent = t('repCopy');
+  $('#rep-mail').textContent = t('repMail');
+  $('#rep-github').textContent = t('repGithub');
+  const motivoLabels = [
+    t('repMotivoNoSeMuestra'), t('repMotivoEnlaceRoto'), t('repMotivoPaywall'),
+    t('repMotivoMedioIncorrecto'), t('repMotivoDuplicado'),
+    t('repMotivoContenido'), t('repMotivoFecha'), t('repMotivoOtro')
+  ];
+  const selMot = $('#rep-motivo');
+  [...selMot.options].forEach((o, i) => { if (motivoLabels[i]) o.textContent = motivoLabels[i]; });
+
+  $('#bs-title').textContent = t('bsTitle');
+  $('#bs-aviso').textContent = t('bsAviso');
+  $('#bs-go').textContent = t('bsBuscar');
+  $('#bs-mas').textContent = t('bsMas');
+  $('#bs-q').placeholder = t('bsQ');
+
+  $('#buscar').placeholder = t('fltBuscar');
+  if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
+  if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
+  if ($('#medio').options[0]) $('#medio').options[0].text = t('fltMedio');
+  const rOpts = $('#rango').options;
+  rOpts[0].text = t('fltTodo');
+  rOpts[1].text = t('flt24h');
+  rOpts[2].text = t('flt48h');
+  rOpts[3].text = t('flt7d');
+  const oOpts = $('#orden').options;
+  oOpts[0].text = t('ordenRecientes');
+  oOpts[1].text = t('ordenAntiguos');
+  $('#limpiar').textContent = t('btnClear');
+
+  renderLangSelect();
+  actualizarSyncBanner();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EVENTOS
+   ═══════════════════════════════════════════════════════════════ */
+function wireStaticEvents(){
+  const btnP = $('#btn-preset');
+  actualizarBotonPreset();
+
+  btnP.addEventListener('click', () => {
+    if (!PRESET_ACTIVO && !presetTieneReglas()){
+      toast(t('presetVacio'), 3200);
+      abrirPanel('panel-config');
+      escribirPanel(PRESET);
+      return;
+    }
+    PRESET_ACTIVO = !PRESET_ACTIVO;
+    guardarPresetActivo();
+    actualizarBotonPreset();
+    aplicarFiltros();
+    toast(PRESET_ACTIVO ? t('presetActivado') : t('presetDesactivado'), 1500);
+  });
+
+  $('#btn-config').addEventListener('click', () => {
+    abrirPanel('panel-config');
+    escribirPanel(PRESET);
+    if (USCRIPT_OK) document.dispatchEvent(new CustomEvent('voceiro-get-config'));
+  });
+  $('#btn-pendientes').addEventListener('click', abrirPendientes);
+  $('#btn-buscar').addEventListener('click', bsAbrir);
+  $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
+
+  document.querySelectorAll('.panel-close').forEach(b => {
+    b.addEventListener('click', () => cerrarPanel(b.dataset.close));
+  });
+  document.querySelectorAll('.panel').forEach(p => {
+    p.addEventListener('click', e => {
+      if (e.target === p) cerrarPanel(p.id);
+    });
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){
+      const abierto = document.querySelector('.panel.open');
+      if (abierto){ cerrarPanel(abierto.id); return; }
+    }
+    const tg = e.target;
+    if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT')) return;
+    if (e.altKey && e.key.toLowerCase() === 'a'){ e.preventDefault(); abrirPanel('panel-acces'); }
+    if (e.altKey && e.key.toLowerCase() === 'c'){ e.preventDefault(); abrirPanel('panel-config'); escribirPanel(PRESET); }
+    if (e.altKey && e.key.toLowerCase() === 'p'){ e.preventDefault(); abrirPendientes(); }
+    if (e.altKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); bsAbrir(); }
+    if (e.altKey && e.key.toLowerCase() === 'm'){
+      e.preventDefault();
+      if (!PRESET_ACTIVO && !presetTieneReglas()){
+        toast(t('presetVacio'), 3200);
+        return;
+      }
+      PRESET_ACTIVO = !PRESET_ACTIVO;
+      guardarPresetActivo();
+      actualizarBotonPreset();
+      aplicarFiltros();
+    }
+  });
+
+  $('#lang-select').addEventListener('change', e => {
+    const v = e.target.value;
+    if (!I18N[v]) return;
+    ACCES.lang = v;
+    guardarAcces();
+    aplicarTextos();
+    reconstruirListas();
+    construirIndicesBusqueda();
+    if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
+    renderizar();
+  });
+
+  $('#btn-export').addEventListener('click', exportarConfig);
+  $('#btn-import').addEventListener('click', () => $('#file-import').click());
+  $('#file-import').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) importarConfig(f);
+    e.target.value = '';
+  });
+
+  $('#pend-refresh').addEventListener('click', abrirPendientes);
+
+  $('#btn-report-generic').addEventListener('click', () => abrirReporte(null));
+  $('#rep-copy').addEventListener('click', copiarReporte);
+  $('#rep-mail').addEventListener('click', reportarViaEmail);
+  $('#rep-github').addEventListener('click', reportarViaGithub);
+
+  $('#acces-reset').addEventListener('click', () => {
+    const lang = ACCES.lang;
+    ACCES = { ...ACCES_DEF, lang };
+    guardarAcces(); aplicarAcces(); renderizar();
+  });
+
+  document.querySelectorAll('.opt-group[data-grupo]').forEach(g => {
+    const clave = g.dataset.grupo;
+    g.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const v = b.dataset.val;
+      if (clave === 'tema' || clave === 'fuente') ACCES[clave] = v;
+      if (clave === 'extra') ACCES[v] = !ACCES[v];
+      guardarAcces(); aplicarAcces();
+      if (clave === 'extra' && (v === 'focus' || v === 'bionic')) renderizar();
+    });
+  });
+
+  $('#fs-menos').addEventListener('click', () => ajustarFs(-1));
+  $('#fs-mas').addEventListener('click', () => ajustarFs(+1));
+  $('#w-menos').addEventListener('click', () => ajustarWidth(-1));
+  $('#w-mas').addEventListener('click', () => ajustarWidth(+1));
+
+  $('#preset-guardar').addEventListener('click', () => {
+    PRESET = leerPanel();
+    guardarPreset(); recompilarPreset();
+
+    if (presetTieneReglas() && !PRESET_ACTIVO){
+      PRESET_ACTIVO = true;
+      guardarPresetActivo();
+      toast(t('presetGuardadoActivado'), 2200);
+    } else if (!presetTieneReglas() && PRESET_ACTIVO){
+      PRESET_ACTIVO = false;
+      guardarPresetActivo();
+    }
+    actualizarBotonPreset();
+
+    cerrarPanel('panel-config');
+    aplicarFiltros();
+  });
+
+  $('#preset-cancelar').addEventListener('click', () => {
+    escribirPanel(PRESET);
+    cerrarPanel('panel-config');
+  });
+
+  $('#preset-reset').addEventListener('click', () => {
+    PRESET = structuredClone(PRESET_DEF);
+    guardarPreset(); recompilarPreset();
+    if (USCRIPT_OK){
+      [...SITES.entries()].forEach(([d, s]) => {
+        document.dispatchEvent(new CustomEvent('voceiro-update-site', {
+          detail: { domain: d, mode: 'prompt' }
+        }));
+      });
+    }
+    SITES.forEach(s => { s.mode = 'prompt'; });
+    guardarSitesCache();
+    PRESET_ACTIVO = false;
+    guardarPresetActivo();
+    actualizarBotonPreset();
+    escribirPanel(PRESET);
+    aplicarFiltros();
+  });
+
+  const filtrarMediosDebounced = debounce(filtrarMedios, 120);
+  $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
+  $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
+
+  const aplicarFiltrosDebounced = debounce(aplicarFiltros, 180);
+  $('#buscar').addEventListener('input', aplicarFiltrosDebounced);
+  ['grupo','tipo','medio','rango','orden'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('change', aplicarFiltros);
+    el.addEventListener('input', aplicarFiltros);
+  });
+
+  $('#limpiar').addEventListener('click', () => {
+    ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
+    PRESET_ACTIVO = false;
+    guardarPresetActivo();
+    actualizarBotonPreset();
+    aplicarFiltros();
+  });
+
+  wireResultadosDelegation();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INICIALIZACIÓN
+   ═══════════════════════════════════════════════════════════════ */
+async function init(){
+  aplicarAcces();
+  initUserScriptBridge();
+
+  // 1. Cargar datos (manifest con fallback a datos.json)
+  await cargarDatos();
+
+  // 2. Hidratar noticias: alias largos, escapes, fechas, tags
+  hidratarNoticias();
+
+  // 3. Índices y derivados
+  construirMediosUnicos();
+  construirIndicesBusqueda();
+
+  // 4. Config local
+  PRESET = cargarPreset();
+  recompilarPreset();
+  PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
+  setSitesFromArray(cargarSitesCache());
+
+  // 5. Textos y listas
+  aplicarTextos();
+
+  const selT = $('#tipo');
+  while (selT.options.length > 1) selT.remove(1);
+  [...new Set(MEDIOS_UNICOS.map(m => m.tipo).filter(Boolean))].sort()
+    .forEach(t2 => selT.add(new Option(t2, t2)));
+  if (selT.options[0]) selT.options[0].text = t('fltTipo');
+
+  reconstruirListas();
+  escribirPanel(PRESET);
+  wireStaticEvents();
+  bsWireEventos();
+  aplicarFiltros();
+
+  if (!NOTICIAS.length){
+    $('#resultados').innerHTML = `<div class="vacio">${escapeHtml(t('errCarga'))}sin datos</div>`;
+  }
+}
+
+init().catch(err => {
+  $('#resultados').innerHTML =
+    '<div class="vacio">Error cargando datos: ' + escapeHtml(err.message) + '</div>';
+});
+</script>
+</body>
+</html>
