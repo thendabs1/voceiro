@@ -248,6 +248,50 @@ def _fecha_visible_iso(n, ahora=None):
 # ─────────────────────────────────────────────────────────────
 # FASE 1 · OBTENER TITULARES
 # ─────────────────────────────────────────────────────────────
+def _parse_feed_lxml(content):
+    """Fallback: parsea el feed con lxml (más permisivo que feedparser)."""
+    try:
+        from lxml import etree
+    except ImportError:
+        return []
+    try:
+        parser = etree.XMLParser(recover=True, huge_tree=True,
+                                 resolve_entities=False, no_network=True)
+        root = etree.fromstring(content, parser=parser)
+    except Exception:
+        return []
+    if root is None:
+        return []
+
+    def local(tag):
+        return tag.split('}', 1)[1].lower() if '}' in tag else tag.lower()
+
+    tag = local(root.tag)
+    if tag == 'rss' or tag == 'rdf':
+        entries = root.findall('.//item')
+    elif tag == 'feed':
+        entries = [el for el in root.iter() if local(el.tag) == 'entry']
+    else:
+        return []
+
+    out = []
+    for e in entries[:N_FEED]:
+        t = l = raw_date = ''
+        for el in e.iter():
+            ln = local(el.tag)
+            if ln == 'title' and not t:
+                t = _limpiar_cdata(el.text or '')
+            elif ln == 'link' and not l:
+                l = (el.text or '').strip() or el.get('href', '').strip()
+            elif ln in ('pubdate', 'published', 'updated', 'date') and not raw_date:
+                raw_date = (el.text or '').strip()
+        if not t or not l:
+            continue
+        fecha_pub = _rss_date_to_iso(raw_date) if raw_date else ''
+        out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub})
+    return out
+
+
 def _parse_feed(content):
     feed = feedparser.parse(content)
     out = []
@@ -256,7 +300,6 @@ def _parse_feed(content):
         l = (e.get('link') or '').strip()
         if not t or not l:
             continue
-
         fecha_pub = ''
         raw = e.get('published') or e.get('updated') or ''
         if raw:
@@ -269,12 +312,11 @@ def _parse_feed(content):
                     fecha_pub = _to_iso_madrid(dt)
                 except Exception:
                     pass
+        out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub})
 
-        out.append({
-            'titular':   t,
-            'enlace':    l,
-            'fecha_pub': fecha_pub,
-        })
+    # Fallback: si feedparser no sacó nada, intentar lxml
+    if not out:
+        out = _parse_feed_lxml(content)
     return out
 
 
@@ -389,6 +431,12 @@ def _rss(medio):
         items = _parse_feed(r.content)
         if items:
             return items
+        # Diagnóstico: por qué devolvió vacío
+        snippet = (r.content[:200] or b'').decode('utf-8', 'ignore')
+        print(f"  [RSS empty] {medio['n']}: {url}  "
+              f"ctype={r.headers.get('content-type')!r}  "
+              f"bytes={len(r.content)}  head={snippet[:80]!r}")
+        return None
     except Exception as e:
         print(f"  [RSS!] {medio['n']}: {type(e).__name__}: {e}")
     return None
