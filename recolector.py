@@ -69,6 +69,7 @@ except ImportError:
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────
 N_FEED            = 60
+MAX_POR_MEDIO_DIA   = 40 
 DIAS_RETENCION    = 15
 MAX_WORKERS       = 8
 TIMEOUT           = 15
@@ -822,6 +823,40 @@ def deduplicar_editorial(noticias):
               f"· {items_ocultos} noticias referenciadas como 'alt'")
 
     return salida
+def limitar_por_medio_dia(noticias, max_por_medio=MAX_POR_MEDIO_DIA):
+    """
+    Evita que un medio acumule cientos de items en un mismo día.
+    Si un (dominio, día) supera el tope, deja los más recientes según la
+    fecha de agrupación. Los items sin fecha se conservan tal cual.
+    No toca el campo 'alt' de los representantes.
+    """
+    grupos = defaultdict(list)
+    sin_fecha = []
+
+    for n in noticias:
+        dt = _fecha_agrupacion_dt(n)
+        if dt is None:
+            sin_fecha.append(n)
+            continue
+        key = (n.get('dominio', ''), dt.strftime('%Y-%m-%d'))
+        grupos[key].append(n)
+
+    resultado = list(sin_fecha)
+    eliminados = 0
+
+    for key, items in grupos.items():
+        if len(items) <= max_por_medio:
+            resultado.extend(items)
+            continue
+        items.sort(key=_fecha_orden, reverse=True)
+        resultado.extend(items[:max_por_medio])
+        eliminados += len(items) - max_por_medio
+
+    if eliminados:
+        print(f"[tope] {eliminados} items descartados por tope "
+              f"({max_por_medio}/medio/día)")
+
+    return resultado
   
 def fusionar_historico(nuevas, viejas, dias):
     """
@@ -1107,6 +1142,10 @@ def main():
     print("\n── Deduplicando mismo titular entre medios ──")
     finales = deduplicar_editorial(finales)
     print(f"Total tras dedup:   {len(finales)}")
+
+    print("\n── Aplicando tope por medio y día ──")
+    finales = limitar_por_medio_dia(finales)
+    print(f"Total tras tope:    {len(finales)}")
 
     # ─── Estadísticas ───
     con_pub = sum(1 for n in finales if n.get('fecha_pub'))
