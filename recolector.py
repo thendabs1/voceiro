@@ -23,6 +23,13 @@ Formato corto de noticia (ficheros diarios):
 
 Tabla de medios (una por fichero diario, sin duplicación por noticia):
   n: nombre · g: grupo · t: tipo · l: lang · tags: lista
+
+Agrupación por día:
+  - La fecha de agrupación prioriza fecha_pub si NO es futura.
+  - Si fecha_pub es futura (> ahora + 6h) → se usa fecha_estimada o fecha
+    (para no crear ficheros con fechas futuras por eventos programados).
+  - Cualquier noticia con fecha de agrupación fuera de la ventana de
+    retención se descarta.
 """
 
 import hashlib
@@ -71,6 +78,11 @@ TZ_MADRID = ZoneInfo('Europe/Madrid')
 INTERVALO_DEFAULT_SEG = 3600        # 1 hora
 INTERVALO_MIN_SEG     = 60          # no menos de 1 min
 INTERVALO_MAX_SEG     = 24 * 3600   # no más de 24 h
+
+# Horizonte de "futuro legítimo": si fecha_pub está dentro de este margen
+# respecto a ahora, se considera programada. Si está más allá, se
+# considera futura y se usa otra fecha para agrupar.
+HORIZONTE_FUTURO_HORAS = 6
 
 GRUPOS_INCLUIDOS = []
 
@@ -165,19 +177,56 @@ def _rss_date_to_iso(raw):
     return ''
 
 
+def _parse_iso_flexible(val):
+    """Convierte string ISO a datetime con tz. Devuelve None si no se puede."""
+    if not val:
+        return None
+    try:
+        dt = datetime.fromisoformat(val)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=TZ_MADRID)
+        return dt
+    except (ValueError, TypeError):
+        return None
+
+
 def _fecha_orden(n):
+    """Fecha para ordenar visualmente: prioriza pub > estimada > recolección."""
     for key in ('fecha_pub', 'fecha_estimada', 'fecha'):
-        val = n.get(key)
-        if not val:
-            continue
-        try:
-            dt = datetime.fromisoformat(val)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=TZ_MADRID)
+        dt = _parse_iso_flexible(n.get(key))
+        if dt is not None:
             return dt
-        except (ValueError, TypeError):
-            continue
     return datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _fecha_agrupacion_dt(n, ahora=None):
+    """
+    Fecha que determina a qué día pertenece la noticia.
+    - Si fecha_pub existe y NO es futura (> ahora + HORIZONTE) → fecha_pub.
+    - Si fecha_pub es futura → fecha_estimada o fecha.
+    - Si no hay fecha_pub → fecha_estimada o fecha.
+    Devuelve None si no hay ninguna fecha válida.
+    """
+    if ahora is None:
+        ahora = datetime.now(TZ_MADRID)
+    horizonte = ahora + timedelta(hours=HORIZONTE_FUTURO_HORAS)
+
+    for key in ('fecha_pub', 'fecha_estimada', 'fecha'):
+        dt = _parse_iso_flexible(n.get(key))
+        if dt is None:
+            continue
+        if dt > horizonte:
+            continue  # futura → no sirve para agrupar, probar la siguiente
+        return dt
+    return None
+
+
+def _fecha_visible_iso(n, ahora=None):
+    """Fecha de agrupación en ISO. Se usa para decidir el día del fichero."""
+    dt = _fecha_agrupacion_dt(n, ahora)
+    if dt is None:
+        return ''
+    return dt.isoformat(timespec='seconds')
 
 
 # ─────────────────────────────────────────────────────────────
@@ -465,13 +514,8 @@ def _google_news(medio):
         for it in items:
             if not it.get('fecha_pub'):
                 continue
-            try:
-                dt = datetime.fromisoformat(it['fecha_pub'])
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=TZ_MADRID)
-            except (ValueError, TypeError):
-                continue
-            if dt < corte:
+            dt = _parse_iso_flexible(it['fecha_pub'])
+            if dt is None or dt < corte:
                 continue
 
             dom_src = _dominio_de_url(it.get('source_url', ''))
@@ -559,12 +603,7 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
         if dominio:
             iso_prev = ultimo_exito_por_medio.get(dominio)
             if iso_prev:
-                try:
-                    t_prev_medio = datetime.fromisoformat(iso_prev)
-                    if t_prev_medio.tzinfo is None:
-                        t_prev_medio = t_prev_medio.replace(tzinfo=TZ_MADRID)
-                except (ValueError, TypeError):
-                    t_prev_medio = None
+                t_prev_medio = _parse_iso_flexible(iso_prev)
 
         if t_prev_medio is None:
             t_prev_medio = t_prev_global
@@ -605,17 +644,19 @@ def cargar_historico_payload():
 
 
 def fusionar_historico(nuevas, viejas, dias):
+    """
+    Fusiona nuevas con viejas y filtra por ventana de retención usando la
+    fecha de AGRUPACIÓN (no la de recolección). Descarta:
+      - noticias con fecha de agrupación anterior a la ventana
+      - noticias sin ninguna fecha válida
+    """
     corte = datetime.now(TZ_MADRID) - timedelta(days=dias)
     idx = {}
 
+    # Viejas: filtrar por fecha de agrupación
     for n in viejas:
-        try:
-            f = datetime.fromisoformat(n.get('fecha', ''))
-            if f.tzinfo is None:
-                f = f.replace(tzinfo=TZ_MADRID)
-        except ValueError:
-            continue
-        if f < corte:
+        f = _fecha_agrupacion_dt(n)
+        if f is None or f < corte:
             continue
         idx[(n['medio'], n['titular'])] = n
 
@@ -629,6 +670,11 @@ def fusionar_historico(nuevas, viejas, dias):
             if old.get('fecha_estimada') and not n.get('fecha_estimada'):
                 n['fecha_estimada'] = old['fecha_estimada']
         n.pop('_pos', None)
+
+        f = _fecha_agrupacion_dt(n)
+        if f is None or f < corte:
+            continue
+
         idx[key] = n
 
     todos = list(idx.values())
@@ -659,27 +705,13 @@ def generar_json_compat(noticias, ultimo_exito_por_medio, ahora):
 # ─────────────────────────────────────────────────────────────
 # FASE 3b · SALIDA TROCEADA (datos/manifest.json + días)
 # ─────────────────────────────────────────────────────────────
-def _fecha_visible_iso(n):
-    """Devuelve la ISO de la fecha visible (pub > estimada > recolección)."""
-    for key in ('fecha_pub', 'fecha_estimada', 'fecha'):
-        v = n.get(key)
-        if v:
-            return v
-    return ''
-
-
 def _dia_iso(iso_str, fallback):
     """Extrae 'YYYY-MM-DD' en zona Madrid, o `fallback` si no se puede."""
-    if not iso_str:
+    dt = _parse_iso_flexible(iso_str)
+    if dt is None:
         return fallback
-    try:
-        dt = datetime.fromisoformat(iso_str)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=TZ_MADRID)
-        dt = dt.astimezone(TZ_MADRID)
-        return dt.strftime('%Y-%m-%d')
-    except (ValueError, TypeError):
-        return fallback
+    dt = dt.astimezone(TZ_MADRID)
+    return dt.strftime('%Y-%m-%d')
 
 
 def _noticia_a_formato_corto(n):
@@ -695,7 +727,8 @@ def _noticia_a_formato_corto(n):
 
 
 def _tabla_medios_de(items):
-    """Construye la tabla {dominio: {n,g,t,l,tags}} a partir de las noticias."""
+    """Construye la tabla {dominio: {n,g,t,l,tags}} a partir de las noticias.
+    Se devuelve ordenada alfabéticamente por dominio para estabilidad."""
     medios = {}
     for n in items:
         d = n.get('dominio')
@@ -708,7 +741,13 @@ def _tabla_medios_de(items):
             'l':    n.get('lang', ''),
             'tags': n.get('tags', []),
         }
-    return medios
+    return dict(sorted(medios.items()))
+
+
+def _orden_estable(n):
+    """Clave de orden determinista: fecha DESC, luego dominio, luego titular."""
+    dt = _fecha_orden(n)
+    return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
 
 def generar_troceados(noticias, ahora):
@@ -717,11 +756,11 @@ def generar_troceados(noticias, ahora):
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
 
-    # Agrupar por día visible
+    # Agrupar por día de agrupación
     por_dia = defaultdict(list)
     for n in noticias:
-        iso_visible = _fecha_visible_iso(n)
-        dia = _dia_iso(iso_visible, hoy_str)
+        iso_agrup = _fecha_visible_iso(n, ahora)
+        dia = _dia_iso(iso_agrup, hoy_str)
         por_dia[dia].append(n)
 
     ficheros = []
@@ -729,7 +768,7 @@ def generar_troceados(noticias, ahora):
 
     for dia in sorted(por_dia.keys(), reverse=True):
         items = por_dia[dia]
-        items.sort(key=_fecha_orden, reverse=True)
+        items.sort(key=_orden_estable)
 
         payload = {
             'fecha':    dia,
@@ -771,7 +810,7 @@ def generar_troceados(noticias, ahora):
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
 
-    # Limpiar ficheros huérfanos (días fuera de la lista)
+    # Limpiar ficheros huérfanos
     validos = {f['file'] for f in ficheros}
     validos.add('manifest.json')
     eliminados = 0
@@ -853,12 +892,7 @@ def main():
     t_prev_global = None
     generado_prev = payload_prev.get('generado')
     if generado_prev:
-        try:
-            t_prev_global = datetime.fromisoformat(generado_prev)
-            if t_prev_global.tzinfo is None:
-                t_prev_global = t_prev_global.replace(tzinfo=TZ_MADRID)
-        except (ValueError, TypeError):
-            t_prev_global = None
+        t_prev_global = _parse_iso_flexible(generado_prev)
 
     t_now = datetime.now(TZ_MADRID)
     if t_prev_global:
@@ -904,6 +938,11 @@ def main():
     print(f"  Con fecha real:     {con_pub}")
     print(f"  Con fecha estimada: {con_est}")
     print(f"  Sin fecha ninguna:  {sin_fecha}")
+
+    # Cuántas noticias quedan descartadas por fecha fuera de ventana
+    descartadas_ventana = len(todas) - len(finales) if len(todas) > len(finales) else 0
+    if descartadas_ventana > 0:
+        print(f"  Descartadas por fuera de ventana: {descartadas_ventana}")
 
     print(f"\n── Fuentes ──")
     print(f"  RSS:          {contador_rss} medios")
