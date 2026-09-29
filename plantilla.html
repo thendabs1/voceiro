@@ -1604,6 +1604,20 @@ function normStrict(s){
 function normDomain(s){
   return normalize(s).replace(/[^a-z0-9.\-]/g, '');
 }
+function normalizeUrlForMatch(u){
+  try {
+    const url = new URL(u, location.href);
+    url.hash = '';
+    url.hostname = url.hostname.toLowerCase().replace(/^www\./, '');
+    ['utm_source','utm_medium','utm_campaign','utm_term','utm_content',
+     'fbclid','gclid','mc_cid','mc_eid','igshid','_ga','_gl','ref','referrer']
+      .forEach(k => url.searchParams.delete(k));
+    if (url.pathname.length > 1 && url.pathname.endsWith('/')){
+      url.pathname = url.pathname.slice(0, -1);
+    }
+    return url.href;
+  } catch(e){ return String(u || ''); }
+}
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -2197,7 +2211,9 @@ function guardarParaLeerDespues(n){
   }
 
   const url = n.enlace;
-  const guardada = PENDIENTES_URLS.has(url);
+  const key = normalizeUrlForMatch(url);
+  const guardada = PENDIENTES_URLS.has(key);
+  const item = PENDIENTES_MAP.get(key); 
 
   if (!guardada){
     document.dispatchEvent(new CustomEvent('voceiro-save-later', {
@@ -2213,9 +2229,9 @@ function refrescarBotonesGuardar(){
     const i = parseInt(b.dataset.idx, 10);
     const n = ULT_FILTRADAS[i];
     if (!n) return;
-    const url = n.enlace;
-    const guardada = PENDIENTES_URLS.has(url);
-    const item = PENDIENTES_MAP.get(url);
+    const key = normalizeUrlForMatch(n.enlace);
+    const guardada = PENDIENTES_URLS.has(key);
+    const item = PENDIENTES_MAP.get(key);
     const leida = guardada && item && item.read;
 
     if (leida){
@@ -2230,7 +2246,6 @@ function refrescarBotonesGuardar(){
     }
   });
 }
-
 function abrirPendientes(){
   abrirPanel('panel-pendientes');
   const cont = $('#pendientes-lista');
@@ -3585,24 +3600,25 @@ function appendBatch(){
   }
 }
 function wireResultadosDelegation(){
-  const link = e.target.closest('a.titular');
-  if (link){
-    const i = parseInt(link.closest('.noticia').dataset.idx, 10);
-    const n = ULT_FILTRADAS[i];
-    if (n){
-      try {
-        localStorage.setItem('voceiro:lastOpen', JSON.stringify({
-          enlace: n.enlace,
-          titular: n.titular,
-          ts: Date.now()
-        }));
-      } catch(_){}
-    }
-    // No hacemos preventDefault: dejamos que abra normalmente
-    return;
-  }
   const cont = $('#resultados');
   cont.addEventListener('click', e => {
+    // 0) Registrar contexto de apertura si es un titular (para alias gnews)
+    const link = e.target.closest('a.titular');
+    if (link){
+      const i = parseInt(link.closest('.noticia').dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (n){
+        try {
+          localStorage.setItem('voceiro:lastOpen', JSON.stringify({
+            enlace: n.enlace,
+            titular: n.titular,
+            ts: Date.now()
+          }));
+        } catch(_){}
+      }
+      return;   // dejamos que abra normalmente
+    }
+
     const saveBtn = e.target.closest('.btn-save-item');
     if (saveBtn){
       e.preventDefault();
@@ -3624,20 +3640,15 @@ function wireResultadosDelegation(){
       const dominio = n.dominio;
       const medioNombre = n.medio || dominio;
 
-      // 1. Bloquear el medio (mode: off)
       emitirUpdateSite(dominio, { mode: 'off' });
 
-      // 2. Si el Modo Personalizado no está activo, activarlo,
-      //    porque si no, bloquear no tendría efecto visible.
       if (!PRESET_ACTIVO){
         PRESET_ACTIVO = true;
         guardarPresetActivo();
         actualizarBotonPreset();
       }
 
-      // 3. Refrescar filtros (las noticias del medio desaparecen)
       aplicarFiltros();
-
       toast(t('blockMediaDone') + ' · ' + medioNombre, 2000);
       return;
     }
