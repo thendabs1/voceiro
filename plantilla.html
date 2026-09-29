@@ -1796,7 +1796,6 @@ let SITES = new Map();
 let SITES_LIST = [];
 
 let AGRUPAR_DUPS = true;
-let DUP_GROUPS = new Map();
 
 function cargarPreset(){
   try{
@@ -2431,24 +2430,25 @@ function construirMediosUnicos(){
 }
 
 function construirGruposDuplicados(){
-  DUP_GROUPS = new Map();
+  // Ya no agrupamos por título en el cliente — el recolector ha colapsado
+  // los duplicados editoriales y ha dejado las referencias en el campo `a`.
+  let total = 0;
   for (const n of NOTICIAS){
-    const key = n._titNorm || (n._titNorm = normalize(n.titular));
-    if (!key) continue;
-    if (!DUP_GROUPS.has(key)) DUP_GROUPS.set(key, []);
-    DUP_GROUPS.get(key).push(n);
+    if (Array.isArray(n.a) && n.a.length){
+      n._dupHidden = n.a.map(o => ({
+        dominio: o.d || '',
+        medio:   (MEDIOS[o.d] && MEDIOS[o.d].n) || o.d || '',
+        enlace:  o.u || '',
+      }));
+      total += n.a.length;
+    } else {
+      n._dupHidden = null;
+    }
   }
-  let grupos = 0, noticias = 0;
-  for (const [key, arr] of DUP_GROUPS){
-    if (arr.length < 2){ DUP_GROUPS.delete(key); continue; }
-    grupos++;
-    noticias += arr.length;
+  if (total){
+    console.log(`[dups] ${total} noticias referenciadas como 'alt'`);
   }
-  console.log(`[dups] ${grupos} grupos · ${noticias} noticias implicadas`);
 }
-
-let MEDIOS_STRICT   = new Map();
-let DOMINIOS_STRICT = new Map();
 
 function construirIndicesBusqueda(){
   MEDIOS_STRICT   = new Map();
@@ -3406,47 +3406,6 @@ function aplicarFiltros(){
     return true;
   });
 
-  // ─── Agrupación de duplicados exactos ───
-  if (AGRUPAR_DUPS){
-    const gruposActivos = new Map();
-    for (const n of filtradas){
-      const key = n._titNorm;
-      if (key && DUP_GROUPS.has(key)){
-        if (!gruposActivos.has(key)) gruposActivos.set(key, []);
-        gruposActivos.get(key).push(n);
-      }
-    }
-
-    const representantes = new Set();
-    for (const [, grupo] of gruposActivos){
-      // Elegir representante: primero uno no bloqueado, si no el primero
-      let rep = null;
-      for (const n of grupo){
-        const site = SITES.get(n.dominio);
-        const blocked = site && site.mode === 'off';
-        if (!blocked){ rep = n; break; }
-      }
-      if (!rep) rep = grupo[0];
-
-      // Marcar el resto como "ocultos" en este representante
-      rep._dupHidden = grupo.filter(o => o !== rep);
-      // Y limpiar cualquier _dupHidden previo en los demás
-      for (const o of grupo){
-        if (o !== rep) o._dupHidden = null;
-      }
-      representantes.add(rep);
-    }
-
-    filtradas = filtradas.filter(n => {
-      const key = n._titNorm;
-      if (!key || !DUP_GROUPS.has(key)) return true;
-      return representantes.has(n);
-    });
-  } else {
-    // Sin agrupar: limpiar cualquier _dupHidden previo
-    for (const n of filtradas) n._dupHidden = null;
-  }
-
   filtradas.sort((a, b) => {
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
@@ -3540,16 +3499,13 @@ function renderItemHtml(n, idx){
 
   const blockTitle = t('blockMedia');
 
-  // Bloque de duplicados (solo si los hay)
+  // Bloque de duplicados (solo si los hay y AGRUPAR_DUPS está activo)
   let dupsHtml = '';
-  if (n._dupHidden && n._dupHidden.length){
+  if (AGRUPAR_DUPS && n._dupHidden && n._dupHidden.length){
     const otros = n._dupHidden.map(o => {
-      const m = MEDIOS[o.dominio] || {};
-      const nombre = m.n || o.medio || o.dominio;
       return `<div class="dup-item">
-        <span class="dup-medio">${escapeHtml(nombre)}</span>
-        <span>· ${escapeHtml(formatearFecha(o._tsShow))}</span>
-        <a href="${o._enlaceEsc}" target="_blank" rel="noopener">Abrir</a>
+        <span class="dup-medio">${escapeHtml(o.medio)}</span>
+        <a href="${escapeHtml(o.enlace)}" target="_blank" rel="noopener">Abrir</a>
       </div>`;
     }).join('');
     const nLabel = n._dupHidden.length;
