@@ -3719,6 +3719,12 @@ function aplicarTextos(){
   [t('acJustificar'), t('acBionic'), t('acFoco')].forEach((txt, i) => {
     if (bExtra[i]) bExtra[i].textContent = txt;
   });
+  const hTitle = document.getElementById('h-title');
+  if (hTitle){
+    hTitle.style.cursor = 'pointer';
+    hTitle.title = 'F5';
+    hTitle.addEventListener('click', () => location.reload());
+  }
 
   $('#pend-title').textContent = t('pendTitle');
   $('#pend-refresh').textContent = t('pendRefresh');
