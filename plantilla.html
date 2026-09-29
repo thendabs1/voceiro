@@ -296,6 +296,36 @@
     background:var(--bg); color:var(--fg); font-family:inherit;
     min-width:0;
   }
+  .chips-busqueda{
+    display:flex; flex-wrap:wrap; gap:6px;
+    padding:8px 0 10px;
+    border-bottom:1px solid var(--border);
+    font-size:.72em;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:3px 4px 3px 10px;
+    border-radius:12px;
+    background:var(--save-bg); color:var(--save);
+    border:1px solid var(--save);
+    font-weight:500;
+    line-height:1.4;
+  }
+  .chip-tipo{
+    opacity:.75; text-transform:uppercase; letter-spacing:.05em;
+    font-size:.85em;
+  }
+  .chip-x{
+    background:transparent; border:none;
+    color:inherit; cursor:pointer;
+    padding:0 6px; font-size:1.15em; line-height:1;
+    border-radius:8px;
+    font-family:inherit;
+    font-weight:700;
+  }
+  .chip-x:hover{background:rgba(0,0,0,.1)}
+  [data-theme="dark"] .chip-x:hover{background:rgba(255,255,255,.15)}
+  [data-theme="contrast"] .chip-x:hover{background:#333}
   #contador{
     color:var(--muted); font-size:.68em;
     margin:10px 0 14px;
@@ -844,7 +874,7 @@
   </select>
   <button id="limpiar" type="button"></button>
 </section>
-
+<div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 <div id="contador"></div>
 <main id="resultados"></main>
 
@@ -1964,95 +1994,46 @@ let MEDIOS = {};       // { dominio: { n, g, t, l, tags } }
 let MEDIOS_UNICOS = []; // array derivado para el panel
 
 async function cargarDatos(){
-  try{
-    const manifestRes = await fetch('datos/manifest.json', { cache: 'no-cache' });
-    if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
-    const manifest = await manifestRes.json();
-    const ficheros = manifest.ficheros || [];
-    if (!ficheros.length) throw new Error('manifest sin ficheros');
+  const manifestRes = await fetch('datos/manifest.json', { cache: 'no-cache' });
+  if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
+  const manifest = await manifestRes.json();
+  const ficheros = manifest.ficheros || [];
+  if (!ficheros.length) throw new Error('manifest sin ficheros');
 
-    // Cargar todos los ficheros en paralelo, con tolerancia a fallos
-    const settled = await Promise.allSettled(
-      ficheros.map(f =>
-        fetch(`datos/${f.file}`, { cache: 'default' })
-          .then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status} en ${f.file}`);
-            return r.json();
-          })
-      )
-    );
+  const settled = await Promise.allSettled(
+    ficheros.map(f =>
+      fetch(`datos/${f.file}`, { cache: 'default' })
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status} en ${f.file}`);
+          return r.json();
+        })
+    )
+  );
 
-    const fallos = settled.filter(s => s.status === 'rejected');
-    if (fallos.length){
-      console.warn(`[carga] ${fallos.length} ficheros fallaron:`,
-        fallos.map(f => f.reason && f.reason.message));
-    }
-
-    MEDIOS = {};
-    NOTICIAS = [];
-    for (const s of settled){
-      if (s.status !== 'fulfilled') continue;
-      const data = s.value || {};
-      if (data.medios){
-        for (const d in data.medios) MEDIOS[d] = data.medios[d];
-      }
-      if (Array.isArray(data.noticias)){
-        NOTICIAS.push(...data.noticias);
-      }
-    }
-
-    // Si todos los ficheros fallaron, es error total
-    if (fallos.length === ficheros.length){
-      throw new Error('ningún fichero diario se pudo cargar');
-    }
-
-    console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
-    return true;
-  }catch(e){
-    console.warn('[carga] manifest no disponible, probando datos.json:', e.message);
-    return await cargarDatosLegacy();
+  const fallos = settled.filter(s => s.status === 'rejected');
+  if (fallos.length){
+    console.warn(`[carga] ${fallos.length} ficheros fallaron:`,
+      fallos.map(f => f.reason && f.reason.message));
   }
-}
 
-async function cargarDatosLegacy(){
-  try{
-    const res = await fetch('datos.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    NOTICIAS = data.noticias || [];
-    MEDIOS = {};
-
-    // Construir MEDIOS a partir de las noticias (formato viejo las tiene embebidas)
-    for (const n of NOTICIAS){
-      const dom = n.dominio || '';
-      if (!dom) continue;
-      if (!MEDIOS[dom]){
-        MEDIOS[dom] = {
-          n: n.medio || '',
-          g: n.grupo || '',
-          t: n.tipo || '',
-          l: n.lang || '',
-          tags: Array.isArray(n.tags) ? n.tags.slice() : [],
-        };
-      }
-      // Añadir alias cortos para hidratación uniforme
-      if (n.d === undefined) n.d = dom;
-      if (n.t === undefined) n.t = n.titular;
-      if (n.u === undefined) n.u = n.enlace;
-      if (n.p === undefined) n.p = n.fecha_pub || '';
-      if (n.e === undefined) n.e = n.fecha_estimada || '';
-      if (n.c === undefined) n.c = n.fecha || '';
-      if (n.f === undefined) n.f = n.fuente || '';
+  MEDIOS = {};
+  NOTICIAS = [];
+  for (const s of settled){
+    if (s.status !== 'fulfilled') continue;
+    const data = s.value || {};
+    if (data.medios){
+      for (const d in data.medios) MEDIOS[d] = data.medios[d];
     }
-
-    console.log(`[carga] ${NOTICIAS.length} titulares desde datos.json (legacy)`);
-    return true;
-  }catch(e){
-    console.error('[carga] error total:', e);
-    NOTICIAS = [];
-    MEDIOS = {};
-    return false;
+    if (Array.isArray(data.noticias)){
+      NOTICIAS.push(...data.noticias);
+    }
   }
+
+  if (fallos.length === ficheros.length){
+    throw new Error('ningún fichero diario se pudo cargar');
+  }
+
+  console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
 }
 
 function hidratarNoticias(){
@@ -2149,60 +2130,88 @@ function construirIndicesBusqueda(){
   });
 }
 
+function _escapeRegex(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function parseQuery(raw){
-  // Separa tokens respetando comillas: 'foo "bar baz" qux' → ['foo', 'bar baz', 'qux']
+  // Separa tokens respetando comillas
   const tokens = [];
   const re = /"([^"]+)"|(\S+)/g;
   let m;
   while ((m = re.exec(raw)) !== null){
-    tokens.push({ text: m[1] != null ? m[1] : m[2], quoted: m[1] != null });
+    tokens.push({ text: m[1] != null ? m[1] : m[2], raw: m[0], quoted: m[1] != null });
   }
 
   const titulo = [], medios = [], dominios = [], grupos = [], tipos = [], tags = [];
+  const chips = [];
 
   for (const tk of tokens){
     const low = tk.text.toLowerCase();
 
-    // Prefijos explícitos
+    // ── Prefijos explícitos (todos soportados) ──
     if (!tk.quoted){
-      if (low.startsWith('medio:'))   { const v = normStrict(tk.text.slice(6));  if (v) medios.push(v);   continue; }
-      if (low.startsWith('dominio:')) { const v = normDomain(tk.text.slice(8));  if (v) dominios.push(v); continue; }
-      if (low.startsWith('domain:'))  { const v = normDomain(tk.text.slice(7));  if (v) dominios.push(v); continue; }
-      if (low.startsWith('grupo:'))   { const v = normStrict(tk.text.slice(6));  if (v) grupos.push(v);   continue; }
-      if (low.startsWith('tipo:'))    { const v = normStrict(tk.text.slice(5));  if (v) tipos.push(v);    continue; }
-      if (low.startsWith('tag:'))     { const v = normStrict(tk.text.slice(4));  if (v) tags.push(v);     continue; }
+      if (low.startsWith('medio:')){
+        const v = normStrict(tk.text.slice(6));
+        if (v){ medios.push(v); chips.push({ type: 'medio', value: tk.text.slice(6), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('dominio:')){
+        const v = normDomain(tk.text.slice(8));
+        if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text.slice(8), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('domain:')){
+        const v = normDomain(tk.text.slice(7));
+        if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text.slice(7), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('grupo:')){
+        const v = normStrict(tk.text.slice(6));
+        if (v){ grupos.push(v); chips.push({ type: 'grupo', value: tk.text.slice(6), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('tipo:')){
+        const v = normStrict(tk.text.slice(5));
+        if (v){ tipos.push(v); chips.push({ type: 'tipo', value: tk.text.slice(5), raw: tk.raw }); }
+        continue;
+      }
+      if (low.startsWith('tag:')){
+        const v = normStrict(tk.text.slice(4));
+        if (v){ tags.push(v); chips.push({ type: 'tag', value: tk.text.slice(4), raw: tk.raw }); }
+        continue;
+      }
     }
 
-    // Entre comillas → siempre título, texto literal
+    // ── Entre comillas → siempre título literal ──
     if (tk.quoted){
       const n = normalize(tk.text);
       if (n) titulo.push(n);
       continue;
     }
 
-    // Contiene punto → dominio
+    // ── Autodetección: SOLO dominio y medio ──
     if (tk.text.includes('.')){
       const d = normDomain(tk.text).replace(/^www\./, '');
-      if (d) dominios.push(d);
+      if (d){
+        dominios.push(d);
+        chips.push({ type: 'dominio', value: tk.text, raw: tk.raw });
+        continue;
+      }
+    }
+    const strict = normStrict(tk.text);
+    if (strict.length >= 3 && MEDIOS_STRICT.has(strict)){
+      medios.push(strict);
+      chips.push({ type: 'medio', value: MEDIOS_STRICT.get(strict), raw: tk.raw });
       continue;
     }
 
-    // Autodetección contra el catálogo
-    const strict = normStrict(tk.text);
-    if (strict.length >= 3){
-      if (MEDIOS_STRICT.has(strict))   { medios.push(strict);   continue; }
-      if (DOMINIOS_STRICT.has(strict)) { dominios.push(strict); continue; }
-      if (GRUPOS_STRICT.has(strict))   { grupos.push(strict);   continue; }
-      if (TIPOS_STRICT.has(strict))    { tipos.push(strict);    continue; }
-      if (TAGS_STRICT.has(strict))     { tags.push(strict);     continue; }
-    }
-
-    // Nada más → título
+    // ── Todo lo demás → título ──
     const n = normalize(tk.text);
     if (n) titulo.push(n);
   }
 
-  return { titulo, medios, dominios, grupos, tipos, tags };
+  return { titulo, medios, dominios, grupos, tipos, tags, chips };
 }
 
 function ordenarGruposPorIdioma(grupos){
@@ -2967,10 +2976,44 @@ let ULT_PRESET_EFECTIVO = false;
 const RENDER_BATCH = 150;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
+function renderChips(parsed, rawQuery){
+  const cont = $('#chips-busqueda');
+  if (!cont) return;
+
+  if (!parsed.chips.length){
+    cont.style.display = 'none';
+    cont.innerHTML = '';
+    return;
+  }
+
+  cont.style.display = '';
+  cont.innerHTML = parsed.chips.map((c, i) =>
+    `<span class="chip" data-idx="${i}">
+      <span class="chip-tipo">${escapeHtml(c.type)}</span>
+      <span>${escapeHtml(c.value)}</span>
+      <button type="button" class="chip-x" data-idx="${i}" title="Convertir a búsqueda literal">×</button>
+    </span>`
+  ).join('');
+
+  cont.querySelectorAll('.chip-x').forEach(b => {
+    b.addEventListener('click', () => {
+      const i = parseInt(b.dataset.idx, 10);
+      const chip = parsed.chips[i];
+      if (!chip) return;
+      const esc = _escapeRegex(chip.raw);
+      const rx = new RegExp('(^|\\s)(' + esc + ')(?=\\s|$)', 'g');
+      const nueva = rawQuery.replace(rx, (m, pre) => pre + '"' + chip.value + '"');
+      $('#buscar').value = nueva;
+      aplicarFiltros();
+    });
+  });
+}
+
 
 function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(raw);
+  renderChips(parsed, raw);
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
   const m = $('#medio').value;
