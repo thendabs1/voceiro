@@ -881,7 +881,7 @@ const I18N = {
     acClaro: '☀ Claro', acSepia: '📖 Sepia', acOscuro: '🌙 Oscuro', acContraste: '◐ Contraste',
     acSerif: 'Serif', acSans: 'Sans', acDislexia: 'Dislexia',
     acJustificar: 'Justificar', acBionic: 'Bionic', acFoco: 'Foco',
-    fltBuscar: '🔍 Buscar en titulares…',
+    fltBuscar: '🔍 Buscar… ("elecciones" · "medio:elpais" · "dominio:eldiario.es")',
     fltGrupo: 'Todos los grupos', fltTipo: 'Todos los tipos', fltMedio: 'Todos los medios',
     fltTodo: 'Todo', flt24h: '24 h', flt48h: '48 h', flt7d: '7 días',
     ordenRecientes: '↓ Más recientes', ordenAntiguos: '↑ Más antiguos',
@@ -2144,7 +2144,10 @@ function cumplePreset(n){
   if (site && site.mode === 'off') return false;
   if (site && site.mode === 'auto') return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
-  if (RX_PRESET && RX_PRESET.test(n._titNorm)) return true;
+  if (RX_PRESET){
+    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+    if (RX_PRESET.test(tn)) return true;
+  }
   return false;
 }
 
@@ -2717,17 +2720,22 @@ let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
 
 function aplicarFiltros(){
-  const q = normalize($('#buscar').value.trim());
+  const raw = $('#buscar').value.trim();
+  const parsed = parseQuery(raw);
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
   const m = $('#medio').value;
   const dias = parseInt($('#rango').value, 10) || 0;
   const orden = $('#orden').value || 'recientes';
-  const tokens = q.split(/\s+/).filter(Boolean);
 
   const ahora = Date.now();
   const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
   const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
+
+  const hayMedio   = parsed.medios.length   > 0;
+  const hayDominio = parsed.dominios.length > 0;
+  const hayGrupo   = parsed.grupos.length   > 0;
+  const hayTitulo  = parsed.titulo.length   > 0;
 
   let filtradas = NOTICIAS.filter(n => {
     const cumple = presetEfectivo ? cumplePreset(n) : false;
@@ -2737,14 +2745,38 @@ function aplicarFiltros(){
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
     if (m && n.medio !== m) return false;
-    if (limiteMs) {
+    if (limiteMs){
       const ts = n._tieneFecha ? n._ts : n._tsRec;
       if (isNaN(ts)) return false;
       if (ahora - ts > limiteMs) return false;
     }
-    if (tokens.length){
-      for (let i = 0; i < tokens.length; i++){
-        if (n._norm.indexOf(tokens[i]) === -1) return false;
+
+    // ── medio (substring sobre el medio normalizado) ──
+    if (hayMedio){
+      const mn = n._medioNorm || (n._medioNorm = normalize(n.medio));
+      for (let i = 0; i < parsed.medios.length; i++){
+        if (mn.indexOf(parsed.medios[i]) === -1) return false;
+      }
+    }
+    // ── dominio ──
+    if (hayDominio){
+      const dn = n._domNorm || (n._domNorm = normalize(n.dominio));
+      for (let i = 0; i < parsed.dominios.length; i++){
+        if (dn.indexOf(parsed.dominios[i]) === -1) return false;
+      }
+    }
+    // ── grupo ──
+    if (hayGrupo){
+      const gn = n._grupoNorm || (n._grupoNorm = normalize(n.grupo));
+      for (let i = 0; i < parsed.grupos.length; i++){
+        if (gn.indexOf(parsed.grupos[i]) === -1) return false;
+      }
+    }
+    // ── título (texto libre) ──
+    if (hayTitulo){
+      const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+      for (let i = 0; i < parsed.titulo.length; i++){
+        if (tn.indexOf(parsed.titulo[i]) === -1) return false;
       }
     }
     return true;
@@ -2760,8 +2792,8 @@ function aplicarFiltros(){
   });
 
   ULT_FILTRADAS = filtradas;
-  ULT_TOKENS = tokens;
-  ULT_RX = buildHighlightRegex(tokens);
+  ULT_TOKENS = parsed.titulo;
+  ULT_RX = buildHighlightRegex(parsed.titulo);
   ULT_PRESET_EFECTIVO = presetEfectivo;
 
   renderizar();
@@ -3096,6 +3128,8 @@ function wireStaticEvents(){
     guardarAcces();
     aplicarTextos();
     reconstruirListas();
+    construirIndicesBusqueda();
+    
     if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
     renderizar();
   });
@@ -3220,8 +3254,6 @@ async function init(){
   }
 
   NOTICIAS.forEach(n => {
-    n._norm    = normalize(n.titular + ' ' + n.medio);
-    n._titNorm = normalize(n.titular);
     n._titularEsc = escapeHtml(n.titular);
     n._medioEsc = escapeHtml(n.medio);
     n._tipoEsc  = escapeHtml(n.tipo || '');
@@ -3243,6 +3275,76 @@ async function init(){
   });
 
   construirMediosUnicos();
+  construirIndicesBusqueda();
+  /* ═══════════════════════════════════════════════════════════════
+   ÍNDICES DE BÚSQUEDA (medio / dominio / grupo)
+   ═══════════════════════════════════════════════════════════════ */
+let MEDIOS_NORM  = new Set();
+let DOMINIOS_NORM = new Set();
+let GRUPOS_NORM  = new Set();
+
+function construirIndicesBusqueda(){
+  MEDIOS_NORM  = new Set();
+  DOMINIOS_NORM = new Set();
+  GRUPOS_NORM  = new Set();
+  MEDIOS_UNICOS.forEach(m => {
+    MEDIOS_NORM.add(normalize(m.medio));
+    DOMINIOS_NORM.add(normalize(m.dominio));
+  });
+  NOTICIAS.forEach(n => {
+    if (n.grupo) GRUPOS_NORM.add(normalize(n.grupo));
+  });
+}
+
+function parseQuery(raw){
+  const tokens = raw.trim().split(/\s+/).filter(Boolean);
+  const titulo = [], medios = [], dominios = [], grupos = [];
+
+  for (const tok of tokens){
+    const low = tok.toLowerCase();
+
+    // prefijos explícitos
+    if (low.startsWith('medio:')){
+      const v = normalize(tok.slice(6));  if (v) medios.push(v);
+      continue;
+    }
+    if (low.startsWith('dominio:')){
+      const v = normalize(tok.slice(8));  if (v) dominios.push(v);
+      continue;
+    }
+    if (low.startsWith('domain:')){
+      const v = normalize(tok.slice(7));  if (v) dominios.push(v);
+      continue;
+    }
+    if (low.startsWith('grupo:')){
+      const v = normalize(tok.slice(6));  if (v) grupos.push(v);
+      continue;
+    }
+
+    const n = normalize(tok);
+    if (!n) continue;
+
+    // autodetección: contiene punto → probable dominio
+    if (n.includes('.')){
+      dominios.push(n);
+      continue;
+    }
+    // autodetección: coincide exactamente con un medio conocido
+    if (MEDIOS_NORM.has(n)){
+      medios.push(n);
+      continue;
+    }
+    // autodetección: coincide exactamente con un grupo conocido
+    if (GRUPOS_NORM.has(n)){
+      grupos.push(n);
+      continue;
+    }
+
+    titulo.push(n);
+  }
+
+  return { titulo, medios, dominios, grupos };
+}
 
   PRESET = cargarPreset();
   recompilarPreset();
