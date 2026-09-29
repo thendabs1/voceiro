@@ -430,7 +430,6 @@
     opacity:.6;
     transition:opacity .15s, color .15s, border-color .15s;
   }
-  .btn-mini:first-of-type{margin-left:auto}
   .btn-mini:hover{
     opacity:1 !important;
     color:var(--accent) !important;
@@ -440,10 +439,9 @@
     color:var(--block) !important;
     border-color:var(--block) !important;
   }
-  .btn-save-item:hover{
-    color:var(--save) !important;
-    border-color:var(--save) !important;
-  }
+
+  /* Spacer: empuja 🚫 y 🐞 a la derecha */
+  .cab-spacer{flex:1 0 0; min-width:0}
 
   /* Botón "Guardar" en texto, junto a la fecha */
   .btn-save-text{
@@ -680,9 +678,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">29/09/2026 13:08</span>
+    <span id="fecha">29/09/2026 13:25</span>
     <span>·</span>
-    <span id="total">17516</span>
+    <span id="total">17932</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -960,6 +958,11 @@ const I18N = {
     forceInclude: 'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
     forceExclude: 'Bloquear siempre',
     blockMedia: 'No mostrar noticias de este medio',
+    blockMediaDone: 'Medio bloqueado · Modo Personalizado activado',
+    saveLabelSave: '🕒 Guardar',
+    saveLabelPending: '⏳ Pendiente',
+    saveLabelRead: '✅ Leída',
+    chipLiteral: 'Convertir a búsqueda literal',
     cfgBuscarMedio: '🔍 Buscar por dominio, nombre o grupo…', cfgTodosGrupos: 'Todos los grupos',
     cfgPalabras: 'Palabras clave en titular',
     cfgPalabrasHint: 'Una por línea o separadas por comas. Sin tildes, palabra completa.',
@@ -993,7 +996,7 @@ const I18N = {
     fechaAhora: 'ahora', fechaHaceMin: 'hace {n} min', fechaHaceH: 'hace {n} h',
     fechaHaceD: 'hace {n} d', fechaProgramado: 'programado',
     recolectado: '📥 Recolectado',
-    sinFechaReal: 'Sin fecha exacta del medio',
+    sinFechaReal: 'Sin fecha exacta del medio · estimada',
     syncOnline: 'Sincronizado con el plugin Lector Universal',
     syncOffline: 'Sin plugin — cambios guardados solo en este navegador',
     syncOfflineHint: 'Instala el plugin Lector Universal para sincronizar tu configuración entre dispositivos y compartirla con la lista de sitios.',
@@ -1072,6 +1075,11 @@ const I18N = {
     forceInclude: 'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
     forceExclude: 'Bloquear sempre',
     blockMedia: 'Non amosar noticias deste medio',
+    blockMediaDone: 'Medio bloqueado · Modo Personalizado activado',
+    saveLabelSave: '🕒 Gardar',
+    saveLabelPending: '⏳ Pendente',
+    saveLabelRead: '✅ Lida',
+    chipLiteral: 'Converter a busca literal',
     cfgBuscarMedio: '🔍 Buscar por dominio, nome ou grupo…', cfgTodosGrupos: 'Todos os grupos',
     cfgPalabras: 'Palabras clave no titular',
     cfgPalabrasHint: 'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
@@ -1103,7 +1111,7 @@ const I18N = {
     fechaAhora: 'agora', fechaHaceMin: 'hai {n} min', fechaHaceH: 'hai {n} h',
     fechaHaceD: 'hai {n} d', fechaProgramado: 'programado',
     recolectado: '📥 Recollido',
-    sinFechaReal: 'Sen data exacta do medio',
+    sinFechaReal: 'Sen data exacta do medio · estimada',
     syncOnline: 'Sincronizado co plugin Lector Universal',
     syncOffline: 'Sen plugin — cambios gardados só neste navegador',
     syncOfflineHint: 'Instala o plugin Lector Universal para sincronizar a túa configuración entre dispositivos.',
@@ -1171,6 +1179,11 @@ const I18N = {
     forceInclude: 'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
     forceExclude: 'Bloquejar sempre',
     blockMedia: 'No mostrar notícies d\'aquest mitjà',
+    blockMediaDone: 'Mitjà bloquejat · Mode Personalitzat activat',
+    saveLabelSave: '🕒 Desar',
+    saveLabelPending: '⏳ Pendent',
+    saveLabelRead: '✅ Llegida',
+    chipLiteral: 'Convertir a cerca literal',
     cfgBuscarMedio: '🔍 Cercar per domini, nom o grup…', cfgTodosGrupos: 'Tots els grups',
     cfgPalabras: 'Paraules clau al titular',
     cfgPalabrasHint: 'Una per línia o separades per comes. Sense accents, paraula completa.',
@@ -1201,7 +1214,7 @@ const I18N = {
     fechaAhora: 'ara', fechaHaceMin: 'fa {n} min', fechaHaceH: 'fa {n} h',
     fechaHaceD: 'fa {n} d', fechaProgramado: 'programat',
     recolectado: '📥 Recollit',
-    sinFechaReal: 'Sense data exacta del mitjà',
+    sinFechaReal: 'Sense data exacta del mitjà · estimada',
     syncOnline: 'Sincronitzat amb el plugin Lector Universal',
     syncOffline: 'Sense plugin — canvis desats només en aquest navegador',
     syncOfflineHint: 'Instal·la el plugin Lector Universal per sincronitzar la configuració.',
@@ -1269,6 +1282,11 @@ const I18N = {
     forceInclude: 'Always force (include even if group or keywords do not match)',
     forceExclude: 'Always block',
     blockMedia: 'Hide news from this outlet',
+    blockMediaDone: 'Outlet blocked · Custom Mode enabled',
+    saveLabelSave: '🕒 Save',
+    saveLabelPending: '⏳ Pending',
+    saveLabelRead: '✅ Read',
+    chipLiteral: 'Convert to literal search',
     cfgBuscarMedio: '🔍 Search by domain, name or group…', cfgTodosGrupos: 'All groups',
     cfgPalabras: 'Keywords in headline',
     cfgPalabrasHint: 'One per line or comma-separated. Accent-insensitive, whole word.',
@@ -1299,7 +1317,7 @@ const I18N = {
     fechaAhora: 'now', fechaHaceMin: '{n} min ago', fechaHaceH: '{n} h ago',
     fechaHaceD: '{n} d ago', fechaProgramado: 'scheduled',
     recolectado: '📥 Collected',
-    sinFechaReal: 'No exact date from source',
+    sinFechaReal: 'No exact date from source · estimated',
     syncOnline: 'Synced with the Universal Reader plugin',
     syncOffline: 'No plugin — changes saved only in this browser',
     syncOfflineHint: 'Install the Universal Reader plugin to sync your configuration.',
@@ -1367,6 +1385,11 @@ const I18N = {
     forceInclude: 'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
     forceExclude: 'Beti blokeatu',
     blockMedia: 'Ez erakutsi hedabide honetako albisteak',
+    blockMediaDone: 'Hedabidea blokeatuta · Modo Pertsonalizatua aktibatuta',
+    saveLabelSave: '🕒 Gorde',
+    saveLabelPending: '⏳ Zain',
+    saveLabelRead: '✅ Irakurrita',
+    chipLiteral: 'Bilaketa literala bihurtu',
     cfgBuscarMedio: '🔍 Bilatu domeinu, izen edo taldearen arabera…', cfgTodosGrupos: 'Talde guztiak',
     cfgPalabras: 'Hitz gakoak izenburuan',
     cfgPalabrasHint: 'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
@@ -1397,7 +1420,7 @@ const I18N = {
     fechaAhora: 'orain', fechaHaceMin: 'duela {n} min', fechaHaceH: 'duela {n} h',
     fechaHaceD: 'duela {n} e', fechaProgramado: 'programatuta',
     recolectado: '📥 Bilduta',
-    sinFechaReal: 'Iturriaren data zehatzik gabe',
+    sinFechaReal: 'Iturriaren data zehatzik gabe · estimatua',
     syncOnline: 'Lector Universal pluginarekin sinkronizatuta',
     syncOffline: 'Pluginik gabe — aldaketak nabigatzaile honetan bakarrik gordeta',
     syncOfflineHint: 'Instalatu Lector Universal plugina konfigurazioa sinkronizatzeko.',
@@ -1515,7 +1538,6 @@ function debounce(fn, ms){
 /* ═══════════════════════════════════════════════════════════════
    FECHAS
    ═══════════════════════════════════════════════════════════════ */
-// Debe coincidir con HORIZONTE_FUTURO_HORAS del recolector.py
 const HORIZONTE_FUTURO_MS = 6 * 60 * 60 * 1000;
 
 let ABS_FMT = null;
@@ -1781,8 +1803,9 @@ function updateFocus(){
 window.addEventListener('scroll', () => {
   if (ACCES.focus) requestAnimationFrame(updateFocus);
 }, { passive: true });
-
-/* Regex de resaltado */
+/* ═══════════════════════════════════════════════════════════════
+   REGEX DE RESALTADO + IDIOMA
+   ═══════════════════════════════════════════════════════════════ */
 const ACCENT_MAP = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
 function buildHighlightRegex(tokens){
   if (!tokens.length) return null;
@@ -1814,9 +1837,6 @@ function resaltar(texto, rx, fallbackEsc){
   return out;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   IDIOMA
-   ═══════════════════════════════════════════════════════════════ */
 const LANG_OPTIONS = [
   { code: 'es', label: 'optLangEs' },
   { code: 'gl', label: 'optLangGl' },
@@ -1836,12 +1856,68 @@ function renderLangSelect(){
 
 /* ═══════════════════════════════════════════════════════════════
    BRIDGE CON EL LECTOR UNIVERSAL
+   Protección contra sobreescritura: los cambios hechos en esta
+   pestaña (ej. botón 🚫) se protegen durante TTL ms frente a
+   los datos que devuelva el userscript.
    ═══════════════════════════════════════════════════════════════ */
 let USCRIPT_OK = false;
 let USCRIPT_CHECKED = false;
 let PENDIENTES_CACHE = [];
 let PENDIENTES_URLS = new Set();
 let PENDIENTES_MAP  = new Map();
+
+const LOCAL_TOUCH = new Map();
+const LOCAL_TOUCH_TTL = 10000;
+
+function touchLocal(domain){
+  LOCAL_TOUCH.set(domain, Date.now());
+}
+function isLocalTouched(domain){
+  const ts = LOCAL_TOUCH.get(domain);
+  if (!ts) return false;
+  if (Date.now() - ts > LOCAL_TOUCH_TTL){
+    LOCAL_TOUCH.delete(domain);
+    return false;
+  }
+  return true;
+}
+
+function aplicarSitesDesdeUserscript(arr){
+  const incoming = new Map();
+  (arr || []).forEach(s => {
+    if (!s || !s.domain) return;
+    incoming.set(s.domain, {
+      mode: s.mode || 'prompt',
+      lang: s.lang || 'auto',
+      type: s.type || '',
+      tags: Array.isArray(s.tags) ? s.tags.slice() : []
+    });
+  });
+
+  SITES = new Map();
+  SITES_LIST = [];
+
+  incoming.forEach((v, d) => {
+    if (isLocalTouched(d)){
+      const local = window.__lastLocal.get(d);
+      if (local){ SITES.set(d, local); SITES_LIST.push({ domain: d, ...local }); return; }
+    }
+    SITES.set(d, v);
+    SITES_LIST.push({ domain: d, ...v });
+  });
+
+  // Reañadir los que solo existen localmente (creados por 🚫 sin userscript)
+  window.__lastLocal.forEach((v, d) => {
+    if (!SITES.has(d)){
+      SITES.set(d, v);
+      SITES_LIST.push({ domain: d, ...v });
+    }
+  });
+
+  guardarSitesCache();
+}
+
+window.__lastLocal = new Map();
 
 function actualizarBotonPendientes(){
   const b = $('#btn-pendientes');
@@ -1875,20 +1951,14 @@ function initUserScriptBridge(){
 
   document.addEventListener('voceiro-config-data', e => {
     const d = e.detail || {};
-    setSitesFromArray(d.sites);
-    guardarSitesCache();
-    if ($('#panel-config').classList.contains('open')){
-      renderListaMedios();
-    }
+    aplicarSitesDesdeUserscript(d.sites);
+    if ($('#panel-config').classList.contains('open')) renderListaMedios();
   });
 
   document.addEventListener('voceiro-config-changed', e => {
     const d = e.detail || {};
-    setSitesFromArray(d.sites);
-    guardarSitesCache();
-    if ($('#panel-config').classList.contains('open')){
-      renderListaMedios();
-    }
+    aplicarSitesDesdeUserscript(d.sites);
+    if ($('#panel-config').classList.contains('open')) renderListaMedios();
   });
 
   document.addEventListener('voceiro-later-list-data', e => {
@@ -1930,9 +2000,13 @@ function emitirUpdateSite(domain, patch){
   const prev = SITES.get(domain) || { mode: 'prompt', lang: 'auto', type: '', tags: [] };
   const next = { ...prev, ...patch };
   SITES.set(domain, next);
+
   const idx = SITES_LIST.findIndex(s => s.domain === domain);
   if (idx >= 0) SITES_LIST[idx] = { domain, ...next };
   else SITES_LIST.push({ domain, ...next });
+
+  window.__lastLocal.set(domain, next);
+  touchLocal(domain);
   guardarSitesCache();
 
   if (USCRIPT_OK){
@@ -1979,13 +2053,13 @@ function refrescarBotonesGuardar(){
     const leida = guardada && item && item.read;
 
     if (leida){
-      b.textContent = '✅ Leída';
+      b.textContent = t('saveLabelRead');
       b.title = t('markUnread');
     } else if (guardada){
-      b.textContent = '⏳ Pendiente';
+      b.textContent = t('saveLabelPending');
       b.title = t('markRead');
     } else {
-      b.textContent = '🕒 Guardar';
+      b.textContent = t('saveLabelSave');
       b.title = t('saveForLaterTitle');
     }
   });
@@ -2059,6 +2133,7 @@ function renderPendientes(items){
 /* ═══════════════════════════════════════════════════════════════
    CARGA DE DATOS
    ═══════════════════════════════════════════════════════════════ */
+let NOTICIAS = [];
 let MEDIOS = {};
 let MEDIOS_UNICOS = [];
 
@@ -2118,7 +2193,6 @@ function hidratarNoticias(){
     if (n.fecha === undefined)  n.fecha = n.c || '';
     if (n.fuente === undefined) n.fuente = n.f || '';
 
-    // Limpiar CDATA residual (por si el recolector no lo ha hecho)
     n.titular = limpiarCdata(n.titular);
 
     const m = MEDIOS[n.dominio] || {};
@@ -2139,13 +2213,11 @@ function hidratarNoticias(){
     const tsEst = parseFecha(n.fecha_estimada);
     const tsRec = parseFecha(n.fecha);
 
-    // Fecha para ORDENAR (pub no futura > est > rec)
     let tsOrden = NaN;
     if (!isNaN(tsPub) && tsPub <= horizonte) tsOrden = tsPub;
     else if (!isNaN(tsEst)) tsOrden = tsEst;
     else if (!isNaN(tsRec)) tsOrden = tsRec;
 
-    // Fecha para MOSTRAR (pub, aunque sea futura > est > rec)
     let tsShow = NaN;
     let tipoShow = 'none';
     if (!isNaN(tsPub)){ tsShow = tsPub; tipoShow = 'pub'; }
@@ -2175,28 +2247,20 @@ function construirMediosUnicos(){
 
 let MEDIOS_STRICT   = new Map();
 let DOMINIOS_STRICT = new Map();
-let GRUPOS_STRICT   = new Map();
-let TIPOS_STRICT    = new Map();
-let TAGS_STRICT     = new Map();
 
 function construirIndicesBusqueda(){
   MEDIOS_STRICT   = new Map();
   DOMINIOS_STRICT = new Map();
-  GRUPOS_STRICT   = new Map();
-  TIPOS_STRICT    = new Map();
-  TAGS_STRICT     = new Map();
-
   MEDIOS_UNICOS.forEach(m => {
     if (m.medio)   MEDIOS_STRICT.set(normStrict(m.medio), m.medio);
     if (m.dominio) DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
-    if (m.grupo)   GRUPOS_STRICT.set(normStrict(m.grupo), m.grupo);
-    if (m.tipo)    TIPOS_STRICT.set(normStrict(m.tipo), m.tipo);
-    (m.tags || []).forEach(tag => {
-      if (tag) TAGS_STRICT.set(normStrict(tag), tag);
-    });
   });
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   PARSER DE BÚSQUEDA + CHIPS
+   Autodetección: SOLO medio y dominio. Todo lo demás → título.
+   ═══════════════════════════════════════════════════════════════ */
 function parseQuery(raw){
   const tokens = [];
   const re = /"([^"]+)"|(\S+)/g;
@@ -2211,7 +2275,6 @@ function parseQuery(raw){
   for (const tk of tokens){
     const low = tk.text.toLowerCase();
 
-    // Prefijos explícitos
     if (!tk.quoted){
       if (low.startsWith('medio:')){
         const v = normStrict(tk.text.slice(6));
@@ -2245,14 +2308,12 @@ function parseQuery(raw){
       }
     }
 
-    // Comillas → título literal
     if (tk.quoted){
       const n = normalize(tk.text);
       if (n) titulo.push(n);
       continue;
     }
 
-    // Autodetección: SOLO dominio y medio
     if (tk.text.includes('.')){
       const d = normDomain(tk.text).replace(/^www\./, '');
       if (d){
@@ -2268,7 +2329,6 @@ function parseQuery(raw){
       continue;
     }
 
-    // Todo lo demás → título
     const n = normalize(tk.text);
     if (n) titulo.push(n);
   }
@@ -2291,7 +2351,7 @@ function renderChips(parsed, rawQuery){
     `<span class="chip">
       <span class="chip-tipo">${escapeHtml(c.type)}</span>
       <span>${escapeHtml(c.value)}</span>
-      <button type="button" class="chip-x" data-idx="${i}" title="Convertir a búsqueda literal">×</button>
+      <button type="button" class="chip-x" data-idx="${i}" title="${escapeHtml(t('chipLiteral'))}">×</button>
     </span>`
   ).join('');
 
@@ -2309,6 +2369,9 @@ function renderChips(parsed, rawQuery){
   });
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   GRUPOS, LISTAS Y MEDIOS (panel config)
+   ═══════════════════════════════════════════════════════════════ */
 function ordenarGruposPorIdioma(grupos){
   const target = (ACCES && ACCES.lang) || 'es';
   const stats = {};
@@ -2385,9 +2448,6 @@ function reconstruirListas(){
   renderListaMedios();
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LISTA DE MEDIOS DEL PANEL
-   ═══════════════════════════════════════════════════════════════ */
 function renderListaMedios(){
   const cont = $('#lista-medios');
   cont.innerHTML = MEDIOS_UNICOS.map(m => {
@@ -3061,9 +3121,7 @@ function bsAbrir(){
 /* ═══════════════════════════════════════════════════════════════
    FILTRADO + RENDER
    ═══════════════════════════════════════════════════════════════ */
-let NOTICIAS = [];
 let ULT_FILTRADAS = [];
-let ULT_TOKENS = [];
 let ULT_RX = null;
 let ULT_PRESET_EFECTIVO = false;
 
@@ -3160,7 +3218,6 @@ function aplicarFiltros(){
   });
 
   ULT_FILTRADAS = filtradas;
-  ULT_TOKENS = parsed.titulo;
   ULT_RX = buildHighlightRegex(parsed.titulo);
   ULT_PRESET_EFECTIVO = presetEfectivo;
 
@@ -3223,13 +3280,13 @@ function renderItemHtml(n, idx){
 
   let saveLabel, saveTitle;
   if (leida){
-    saveLabel = '✅ Leída';
+    saveLabel = t('saveLabelRead');
     saveTitle = t('markUnread');
   } else if (guardada){
-    saveLabel = '⏳ Pendiente';
+    saveLabel = t('saveLabelPending');
     saveTitle = t('markRead');
   } else {
-    saveLabel = '🕒 Guardar';
+    saveLabel = t('saveLabelSave');
     saveTitle = t('saveForLaterTitle');
   }
 
@@ -3245,7 +3302,8 @@ function renderItemHtml(n, idx){
       <span class="badge">${n._tipoEsc}</span>
       ${presetBadge}
       ${fechaHtml}
-      <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${saveLabel}</button>
+      <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
+      <span class="cab-spacer"></span>
       <button class="btn-mini btn-block-item" type="button" data-idx="${idx}" title="${escapeHtml(blockTitle)}" aria-label="${escapeHtml(blockTitle)}">🚫</button>
       <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
     </div>
@@ -3300,19 +3358,24 @@ function wireResultadosDelegation(){
       const n = ULT_FILTRADAS[i];
       if (!n) return;
 
-      // Bloquear el medio: equivale a ✗ en el panel de configuración
-      emitirUpdateSite(n.dominio, { mode: 'off' });
+      const dominio = n.dominio;
+      const medioNombre = n.medio || dominio;
 
-      // Si el Modo Personalizado no estaba activo, activarlo,
-      // porque si no, bloquear no tendría efecto visible.
+      // 1. Bloquear el medio (mode: off)
+      emitirUpdateSite(dominio, { mode: 'off' });
+
+      // 2. Si el Modo Personalizado no está activo, activarlo,
+      //    porque si no, bloquear no tendría efecto visible.
       if (!PRESET_ACTIVO){
         PRESET_ACTIVO = true;
         guardarPresetActivo();
         actualizarBotonPreset();
-        toast(t('presetActivado'), 1500);
       }
 
+      // 3. Refrescar filtros (las noticias del medio desaparecen)
       aplicarFiltros();
+
+      toast(t('blockMediaDone') + ' · ' + medioNombre, 2000);
       return;
     }
 
@@ -3610,6 +3673,7 @@ function wireStaticEvents(){
       });
     }
     SITES.forEach(s => { s.mode = 'prompt'; });
+    window.__lastLocal.clear();
     guardarSitesCache();
     PRESET_ACTIVO = false;
     guardarPresetActivo();
@@ -3657,7 +3721,19 @@ async function init(){
   PRESET = cargarPreset();
   recompilarPreset();
   PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
-  setSitesFromArray(cargarSitesCache());
+
+  const cachedSites = cargarSitesCache();
+  setSitesFromArray(cachedSites);
+  cachedSites.forEach(s => {
+    if (s && s.domain){
+      window.__lastLocal.set(s.domain, {
+        mode: s.mode || 'prompt',
+        lang: s.lang || 'auto',
+        type: s.type || '',
+        tags: Array.isArray(s.tags) ? s.tags.slice() : []
+      });
+    }
+  });
 
   aplicarTextos();
 
@@ -3685,3 +3761,5 @@ init().catch(err => {
 </script>
 </body>
 </html>
+
+  
