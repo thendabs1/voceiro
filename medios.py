@@ -715,7 +715,7 @@ KNOWN_FEEDS = {
     'lavanguardia.com': 'https://www.lavanguardia.com/rss/home.xml',
     'libertaddigital.com': 'https://feeds.feedburner.com/libertaddigital/portada',
     'moncloa.com': 'https://www.moncloa.com/rss/',
-    'niusdiario.es': 'https://www.telecinco.es/rss.xml',
+    'niusdiario.es': 'https://www.niusdiario.es/rss/',
     'okdiario.com': 'https://okdiario.com/feed/',
     'ondacero.es': 'https://www.ondacero.es/rss/8145.xml',
     'periodistadigital.com': 'https://www.periodistadigital.com/feed/',
