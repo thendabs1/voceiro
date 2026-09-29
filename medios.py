@@ -388,7 +388,7 @@ MEDIA_CATALOG = [
     # ============================================================
     { 'group':'Internacional · USA / UK', 'items':[
         # Añadir al grupo 'Internacional · USA / UK'
-        { 'd':'absnews.com',      'n':'ABC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [REDIRIGE → abcnews.com]
+        { 'd':'abcnews.com',      'n':'ABC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [REDIRIGE → abcnews.com]
         { 'd':'apnews.com',          'n':'Associated Press',     'lang':'en', 'type':'agencia', 'tags':['agencia','internacional'] },  # [BLOQUEADO: HTTP 403]
         { 'd':'axios.com',           'n':'Axios',                'lang':'en','type':'digital','tags':['politica','usa'] },  # [BLOQUEADO: HTTP 403]
         { 'd':'bbc.com',             'n':'BBC',                  'lang':'en', 'type':'tv',      'tags':['generalista','uk','publico'] },
@@ -396,7 +396,7 @@ MEDIA_CATALOG = [
         { 'd':'businessinsider.com', 'n':'Business Insider',     'lang':'en','type':'digital','tags':['economia','usa'] },
         { 'd':'cbsnews.com',         'n':'CBS News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [SIN-FEED: GN/scraping]
         { 'd':'cnbc.com',            'n':'CNBC',                 'lang':'en','type':'economico','tags':['economia','usa'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'editiom.cnn.com',             'n':'CNN',                  'lang':'en', 'type':'tv',      'tags':['generalista','usa','tv'] },  # [REDIRIGE → edition.cnn.com]
+        { 'd':'edition.cnn.com',             'n':'CNN',                  'lang':'en', 'type':'tv',      'tags':['generalista','usa','tv'] },  # [REDIRIGE → edition.cnn.com]
         { 'd':'dailymail.co.uk',     'n':'Daily Mail',           'lang':'en','type':'diario','tags':['generalista','uk','tabloide'] },
         { 'd':'economist.com',       'n':'The Economist',        'lang':'en', 'type':'revista', 'tags':['economia','internacional'] },
         { 'd':'foreignaffairs.com',  'n':'Foreign Affairs',      'lang':'en','type':'revista','tags':['internacional','usa'] },
