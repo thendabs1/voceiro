@@ -10,20 +10,22 @@ Fases:
      (por medio, no global — ver `ultimo_exito_por_medio`)
   5. Deduplicar contra el histórico y fusionar
   6. Podar por ventana de retención
-  7. Escribir public/datos.json y public/index.html
+  7. Escribir:
+        · public/datos.json            (formato viejo, compatibilidad)
+        · public/datos/manifest.json   (índice del troceado nuevo)
+        · public/datos/YYYY-MM-DD.json (un fichero por día, formato corto)
+        · public/index.html
   8. Reporte final
 
-Estimación de fechas para scraping:
-  - Los listados HTML suelen estar ordenados de más nuevo a más viejo.
-  - Si un titular NO estaba en el histórico anterior, apareció entre
-    T_prev y T_now.
-  - Repartimos los K titulares nuevos de cada medio en ese intervalo
-    por su posición, dando fechas plausibles sin inventar intervalos.
-  - T_prev se toma por MEDIO (última vez que ese medio respondió con
-    items), no global, para no comprimir noticias en medios que
-    llevaban horas caídos.
+Formato corto de noticia (ficheros diarios):
+  d: dominio · t: titular · u: enlace · p: fecha_pub
+  e: fecha_estimada · c: fecha recolección · f: fuente
+
+Tabla de medios (una por fichero diario, sin duplicación por noticia):
+  n: nombre · g: grupo · t: tipo · l: lang · tags: lista
 """
 
+import hashlib
 import json
 import os
 import re
@@ -73,11 +75,13 @@ INTERVALO_MAX_SEG     = 24 * 3600   # no más de 24 h
 GRUPOS_INCLUIDOS = []
 
 # Google News fallback
-GN_MAX_ITEMS      = 30              # tope de items que aceptamos por medio
-GN_DIAS_MAX       = 14              # antigüedad máxima aceptada (días)
-GN_SLEEP          = 0.3             # no usar, solo informativo
+GN_MAX_ITEMS      = 30
+GN_DIAS_MAX       = 14
+GN_SLEEP          = 0.3
 
-DATOS_PATH = 'public/datos.json'
+DATOS_PATH        = 'public/datos.json'
+DATOS_DIR         = 'public/datos'
+MANIFEST_PATH     = 'public/datos/manifest.json'
 
 
 # ─────────────────────────────────────────────────────────────
@@ -326,7 +330,6 @@ def _rss(medio):
 
 
 def _scrape(medio):
-    # URL: LISTING_URLS si está definida, si no la home
     url = LISTING_URLS.get(medio['d']) or f"https://{medio['d']}"
     try:
         r = SESSION.get(url, timeout=TIMEOUT, allow_redirects=True)
@@ -374,10 +377,6 @@ def _scrape(medio):
 # FASE 1c · GOOGLE NEWS (fallback)
 # ─────────────────────────────────────────────────────────────
 def _limpiar_titular_gn(titulo, source_name):
-    """
-    Google News suele añadir ' - Nombre del medio' al final del titular.
-    Lo quitamos solo si el sufijo coincide exactamente con el source.
-    """
     if not titulo or not source_name:
         return titulo
     sufijo = ' - ' + source_name
@@ -387,13 +386,9 @@ def _limpiar_titular_gn(titulo, source_name):
 
 
 def _parse_gn_feed(content):
-    """
-    Parsea el XML de Google News. Similar a _parse_feed pero además
-    extrae el <source url> (dominio real del artículo).
-    """
     feed = feedparser.parse(content)
     out = []
-    for e in feed.entries[:GN_MAX_ITEMS * 2]:  # margen, luego filtramos
+    for e in feed.entries[:GN_MAX_ITEMS * 2]:
         t = (e.get('title') or '').strip()
         l = (e.get('link') or '').strip()
         if not t or not l:
@@ -432,7 +427,6 @@ def _parse_gn_feed(content):
 
 
 def _dominio_de_url(url):
-    """Extrae el dominio 'desnudo' (sin www.) de una URL."""
     if not url:
         return ''
     try:
@@ -446,10 +440,6 @@ def _dominio_de_url(url):
 
 
 def _google_news(medio):
-    """
-    Fallback por Google News. Solo se llama si RSS y scraping han fallado
-    Y el dominio está en GN_FALLBACK_DOMAINS.
-    """
     domain = medio['d']
     if domain not in GN_FALLBACK_DOMAINS:
         return None
@@ -484,7 +474,6 @@ def _google_news(medio):
             if dt < corte:
                 continue
 
-            # Verificar que el source apunta al dominio esperado.
             dom_src = _dominio_de_url(it.get('source_url', ''))
             if dom_src and not (
                 dom_src == domain
@@ -507,7 +496,6 @@ def _google_news(medio):
 
 
 def obtener_titulares(medio):
-    """Devuelve (medio, lista_noticias, fuente). No calcula fecha_estimada."""
     items = _rss(medio)
     fuente = 'RSS'
 
@@ -549,16 +537,6 @@ def obtener_titulares(medio):
 # ─────────────────────────────────────────────────────────────
 def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
                               ultimo_exito_por_medio):
-    """
-    Asigna 'fecha_estimada' in-place a los titulares scrapeados que sean
-    nuevos (no en historico_keys) y no tengan fecha_pub.
-
-    Usa como referencia temporal el último run exitoso de CADA medio
-    (no el global), para no comprimir noticias de medios que llevan
-    horas sin responder en una ventana de 15 min.
-
-    Devuelve (total_nuevos, intervalos_por_medio).
-    """
     por_medio = defaultdict(list)
 
     for n in todas:
@@ -578,7 +556,6 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
         dominio = items[0].get('dominio')
         t_prev_medio = None
 
-        # 1) Intentar la marca específica del medio
         if dominio:
             iso_prev = ultimo_exito_por_medio.get(dominio)
             if iso_prev:
@@ -589,11 +566,9 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
                 except (ValueError, TypeError):
                     t_prev_medio = None
 
-        # 2) Fallback al global
         if t_prev_medio is None:
             t_prev_medio = t_prev_global
 
-        # 3) Calcular intervalo
         if t_prev_medio is not None:
             intervalo = (t_now - t_prev_medio).total_seconds()
         else:
@@ -601,7 +576,6 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
         intervalo = max(INTERVALO_MIN_SEG, min(intervalo, INTERVALO_MAX_SEG))
         intervalos_por_medio[medio] = intervalo
 
-        # Ordenar por posición en el listado (0 = más reciente)
         items.sort(key=lambda x: x.get('_pos') if x.get('_pos') is not None else 999)
         K = len(items)
         for i, n in enumerate(items):
@@ -634,7 +608,6 @@ def fusionar_historico(nuevas, viejas, dias):
     corte = datetime.now(TZ_MADRID) - timedelta(days=dias)
     idx = {}
 
-    # 1) Viejas dentro de ventana
     for n in viejas:
         try:
             f = datetime.fromisoformat(n.get('fecha', ''))
@@ -646,7 +619,6 @@ def fusionar_historico(nuevas, viejas, dias):
             continue
         idx[(n['medio'], n['titular'])] = n
 
-    # 2) Nuevas: preservar datos de la versión antigua si coincide
     for n in nuevas:
         key = (n['medio'], n['titular'])
         old = idx.get(key)
@@ -665,14 +637,13 @@ def fusionar_historico(nuevas, viejas, dias):
 
 
 # ─────────────────────────────────────────────────────────────
-# FASE 3 · SALIDAS
+# FASE 3a · SALIDA COMPATIBLE (datos.json formato viejo)
 # ─────────────────────────────────────────────────────────────
-def generar_json(noticias, ultimo_exito_por_medio=None):
+def generar_json_compat(noticias, ultimo_exito_por_medio, ahora):
     os.makedirs('public', exist_ok=True)
-    ahora_madrid = datetime.now(TZ_MADRID)
     payload = {
-        'generado':               ahora_madrid.isoformat(timespec='seconds'),
-        'generado_legible':       ahora_madrid.strftime('%d/%m/%Y %H:%M'),
+        'generado':               ahora.isoformat(timespec='seconds'),
+        'generado_legible':       ahora.strftime('%d/%m/%Y %H:%M'),
         'dias_retencion':         DIAS_RETENCION,
         'n_feed':                 N_FEED,
         'total':                  len(noticias),
@@ -682,9 +653,146 @@ def generar_json(noticias, ultimo_exito_por_medio=None):
     with open(DATOS_PATH, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
     kb = os.path.getsize(DATOS_PATH) / 1024
-    print(f"[json] {DATOS_PATH} · {kb:.1f} KB · {len(noticias)} noticias")
+    print(f"[compat] {DATOS_PATH} · {kb:.1f} KB · {len(noticias)} noticias")
 
 
+# ─────────────────────────────────────────────────────────────
+# FASE 3b · SALIDA TROCEADA (datos/manifest.json + días)
+# ─────────────────────────────────────────────────────────────
+def _fecha_visible_iso(n):
+    """Devuelve la ISO de la fecha visible (pub > estimada > recolección)."""
+    for key in ('fecha_pub', 'fecha_estimada', 'fecha'):
+        v = n.get(key)
+        if v:
+            return v
+    return ''
+
+
+def _dia_iso(iso_str, fallback):
+    """Extrae 'YYYY-MM-DD' en zona Madrid, o `fallback` si no se puede."""
+    if not iso_str:
+        return fallback
+    try:
+        dt = datetime.fromisoformat(iso_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=TZ_MADRID)
+        dt = dt.astimezone(TZ_MADRID)
+        return dt.strftime('%Y-%m-%d')
+    except (ValueError, TypeError):
+        return fallback
+
+
+def _noticia_a_formato_corto(n):
+    return {
+        'd': n.get('dominio', ''),
+        't': n.get('titular', ''),
+        'u': n.get('enlace', ''),
+        'p': n.get('fecha_pub', ''),
+        'e': n.get('fecha_estimada', ''),
+        'c': n.get('fecha', ''),
+        'f': n.get('fuente', ''),
+    }
+
+
+def _tabla_medios_de(items):
+    """Construye la tabla {dominio: {n,g,t,l,tags}} a partir de las noticias."""
+    medios = {}
+    for n in items:
+        d = n.get('dominio')
+        if not d or d in medios:
+            continue
+        medios[d] = {
+            'n':    n.get('medio', ''),
+            'g':    n.get('grupo', ''),
+            't':    n.get('tipo', ''),
+            'l':    n.get('lang', ''),
+            'tags': n.get('tags', []),
+        }
+    return medios
+
+
+def generar_troceados(noticias, ahora):
+    """Genera datos/manifest.json + datos/YYYY-MM-DD.json en formato corto."""
+    os.makedirs(DATOS_DIR, exist_ok=True)
+    hoy_str = ahora.strftime('%Y-%m-%d')
+    generado_iso = ahora.isoformat(timespec='seconds')
+
+    # Agrupar por día visible
+    por_dia = defaultdict(list)
+    for n in noticias:
+        iso_visible = _fecha_visible_iso(n)
+        dia = _dia_iso(iso_visible, hoy_str)
+        por_dia[dia].append(n)
+
+    ficheros = []
+    total_kb = 0.0
+
+    for dia in sorted(por_dia.keys(), reverse=True):
+        items = por_dia[dia]
+        items.sort(key=_fecha_orden, reverse=True)
+
+        payload = {
+            'fecha':    dia,
+            'generado': generado_iso,
+            'medios':   _tabla_medios_de(items),
+            'noticias': [_noticia_a_formato_corto(n) for n in items],
+        }
+
+        blob = json.dumps(payload, ensure_ascii=False,
+                          separators=(',', ':')).encode('utf-8')
+        hash_ = hashlib.md5(blob).hexdigest()[:10]
+
+        filename = f'{dia}.json'
+        path = os.path.join(DATOS_DIR, filename)
+        with open(path, 'wb') as f:
+            f.write(blob)
+
+        size_kb = len(blob) / 1024
+        total_kb += size_kb
+
+        ficheros.append({
+            'fecha':  dia,
+            'file':   filename,
+            'n':      len(items),
+            'hash':   hash_,
+            'kb':     round(size_kb, 1),
+            'es_hoy': dia == hoy_str,
+        })
+
+    manifest = {
+        'generado':         generado_iso,
+        'generado_legible': ahora.strftime('%d/%m/%Y %H:%M'),
+        'dias_retencion':   DIAS_RETENCION,
+        'n_feed':           N_FEED,
+        'total':            len(noticias),
+        'hoy':              hoy_str,
+        'ficheros':         ficheros,
+    }
+    with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
+        json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
+
+    # Limpiar ficheros huérfanos (días fuera de la lista)
+    validos = {f['file'] for f in ficheros}
+    validos.add('manifest.json')
+    eliminados = 0
+    for nombre in os.listdir(DATOS_DIR):
+        if not nombre.endswith('.json'):
+            continue
+        if nombre in validos:
+            continue
+        try:
+            os.remove(os.path.join(DATOS_DIR, nombre))
+            eliminados += 1
+        except OSError:
+            pass
+
+    extra = f" · {eliminados} huérfanos borrados" if eliminados else ""
+    print(f"[troceado] {len(ficheros)} ficheros · {total_kb:.1f} KB total{extra}")
+
+
+# ─────────────────────────────────────────────────────────────
+# FASE 3c · HTML
+# ─────────────────────────────────────────────────────────────
 def generar_html(fecha, total):
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, 'plantilla.html'), encoding='utf-8') as f:
@@ -761,7 +869,7 @@ def main():
 
     historico_keys = {(n['medio'], n['titular']) for n in historico}
 
-    # ─── Asignar fechas estimadas (t_prev por medio) ───
+    # ─── Asignar fechas estimadas ───
     print("\n── Estimando fechas para scraping ──")
     total_estimados, intervalos_por_medio = asignar_fechas_estimadas(
         todas, historico_keys, t_prev_global, t_now, ultimo_exito_prev
@@ -787,16 +895,16 @@ def main():
     finales = fusionar_historico(todas, historico, DIAS_RETENCION)
     print(f"Total en histórico: {len(finales)}")
 
-    # ─── Estadísticas finales ───
+    # ─── Estadísticas ───
     con_pub = sum(1 for n in finales if n.get('fecha_pub'))
-    con_est = sum(1 for n in finales if not n.get('fecha_pub') and n.get('fecha_estimada'))
+    con_est = sum(1 for n in finales
+                  if not n.get('fecha_pub') and n.get('fecha_estimada'))
     sin_fecha = len(finales) - con_pub - con_est
     print(f"\n── Cobertura de fechas ──")
     print(f"  Con fecha real:     {con_pub}")
     print(f"  Con fecha estimada: {con_est}")
     print(f"  Sin fecha ninguna:  {sin_fecha}")
 
-    # ─── Fuentes ───
     print(f"\n── Fuentes ──")
     print(f"  RSS:          {contador_rss} medios")
     print(f"  Scraping:     {contador_scrape} medios")
@@ -810,8 +918,11 @@ def main():
         if dom:
             ultimo_exito_nuevo[dom] = t_now_iso
 
-    generar_json(finales, ultimo_exito_nuevo)
-    generar_html(datetime.now(TZ_MADRID).strftime('%d/%m/%Y %H:%M'), len(finales))
+    # ─── Escribir salidas ───
+    print()
+    generar_json_compat(finales, ultimo_exito_nuevo, t_now)
+    generar_troceados(finales, t_now)
+    generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
 
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
