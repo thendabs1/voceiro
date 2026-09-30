@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 11:47</span>
+    <span id="fecha">30/09/2026 11:55</span>
     <span>·</span>
-    <span id="total">22987</span>
+    <span id="total">23180</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3838,14 +3838,11 @@ function wireStaticEvents(){
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', bsAbrir);
   $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
-
-  $('#btn-dup').addEventListener('click', () => {
-    AGRUPAR_DUPS = !AGRUPAR_DUPS;
-    guardarDupPref();
-    actualizarBotonDup();
-    aplicarFiltros();
-    toast(AGRUPAR_DUPS ? t('btnDup') : t('btnDup') + ' ✕', 1200);
+    $('#btn-config').addEventListener('click', () => {
+    abrirPanel('panel-config');
+    escribirPanel(PRESET);
   });
+
 
   document.querySelectorAll('.panel-close').forEach(b => {
     b.addEventListener('click', () => cerrarPanel(b.dataset.close));
