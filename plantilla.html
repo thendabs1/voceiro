@@ -1791,14 +1791,16 @@ function ajustarWidth(d){
 /* ═══════════════════════════════════════════════════════════════
    MODELO DE CONFIGURACIÓN
    ═══════════════════════════════════════════════════════════════ */
-const PRESET_KEY = 'voceiro-preset-v3';
+const PRESET_KEY = 'voceiro-presets-v4';
 const PRESET_ACTIVO_KEY = 'voceiro-preset-activo';
+const PRESET_ID_KEY = 'voceiro-modo-activo';
 const SITES_CACHE_KEY = 'voceiro-sites-cache-v1';
 const DUP_PREF_KEY = 'voceiro-dup-agrupar';
 
 const PRESET_DEF = { grupos: [], palabras: [] };
-
-let PRESET = null;
+const PRESET_UNICO_DEF = { id: 'general', nombre: 'General', grupos: [], palabras: [], overrides: {} };
+let PRESETS = null;   // { lista: [...], activo: 'id' }
+let PRESET = null; 
 let PRESET_ACTIVO = false;
 let SITES = new Map();
 let SITES_LIST = [];
@@ -1818,21 +1820,50 @@ function cargarHideReadPref(){
 function guardarHideReadPref(){
   try{ localStorage.setItem(HIDE_READ_KEY, OCULTAR_LEIDAS ? 'true' : 'false'); }catch(e){}
 }
-function cargarPreset(){
+function normalizarPreset(p){
+  return {
+    id:        String(p.id || 'general'),
+    nombre:    String(p.nombre || p.id || 'General'),
+    grupos:    Array.isArray(p.grupos)   ? p.grupos   : [],
+    palabras:  Array.isArray(p.palabras) ? p.palabras : [],
+    overrides: (p.overrides && typeof p.overrides === 'object' && !Array.isArray(p.overrides))
+               ? p.overrides : {}
+  };
+}
+
+function cargarPresets(){
   try{
     const raw = localStorage.getItem(PRESET_KEY);
     if (raw){
       const p = JSON.parse(raw);
-      return {
-        grupos:   Array.isArray(p.grupos)   ? p.grupos   : [],
-        palabras: Array.isArray(p.palabras) ? p.palabras : [],
-      };
+      if (p && Array.isArray(p.lista) && p.lista.length){
+        const lista = p.lista.map(normalizarPreset);
+        const activo = (typeof p.activo === 'string' && lista.some(x => x.id === p.activo))
+                       ? p.activo : lista[0].id;
+        return { lista, activo };
+      }
     }
   }catch(e){}
-  return structuredClone(PRESET_DEF);
+  // Sin datos previos → crear "General" vacío
+  return {
+    lista: [ structuredClone(PRESET_UNICO_DEF) ],
+    activo: 'general'
+  };
 }
+
+function guardarPresets(){
+  try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
+  try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
+}
+
+// Compatibilidad: guarda el preset activo en la lista y persiste.
 function guardarPreset(){
-  try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESET)); }catch(e){}
+  if (!PRESETS || !Array.isArray(PRESETS.lista)) return;
+  const idx = PRESETS.lista.findIndex(p => p.id === PRESETS.activo);
+  if (idx >= 0){
+    PRESETS.lista[idx] = { ...PRESETS.lista[idx], ...PRESET };
+  }
+  guardarPresets();
 }
 function cargarPresetActivo(){
   try{
@@ -4165,7 +4196,12 @@ async function init(){
   aplicarAcces();
 
   // ── 1) PRIMERO: leer config local y poblar __lastLocal ──
-  PRESET = cargarPreset();
+  PRESETS = cargarPresets();
+  const _activeId = localStorage.getItem(PRESET_ID_KEY) || PRESETS.activo;
+  const _active = PRESETS.lista.find(p => p.id === _activeId) || PRESETS.lista[0];
+  PRESETS.activo = _active.id;
+  PRESET = _active;
+
   recompilarPreset();
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
   AGRUPAR_DUPS   = cargarDupPref();
