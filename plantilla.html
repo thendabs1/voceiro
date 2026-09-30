@@ -1854,6 +1854,12 @@ function cargarPresets(){
 function guardarPresets(){
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
   try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
+  // Replicar al plugin para sync entre dispositivos
+  if (typeof USCRIPT_OK !== 'undefined' && USCRIPT_OK){
+    document.dispatchEvent(new CustomEvent('voceiro-save-voceiro-state', {
+      detail: { presets: PRESETS.lista }
+    }));
+  }
 }
 
 // Compatibilidad: guarda el preset activo en la lista y persiste.
@@ -1865,6 +1871,44 @@ function guardarPreset(){
   }
   guardarPresets();
 }
+function getOverride(domain){
+  if (!PRESET || !PRESET.overrides) return '';
+  return PRESET.overrides[domain] || '';
+}
+
+function setOverride(domain, value){
+  if (!PRESET) return;
+  if (!PRESET.overrides || typeof PRESET.overrides !== 'object') PRESET.overrides = {};
+  if (!value){
+    delete PRESET.overrides[domain];
+  } else if (value === 'first' || value === 'ignore'){
+    PRESET.overrides[domain] = value;
+  }
+  guardarPreset();
+}
+
+function aplicarPresetsDesdePlugin(d){
+  if (!d || typeof d !== 'object') return false;
+  if (!d.voceiro || typeof d.voceiro !== 'object') return false;
+  const incoming = d.voceiro.presets;
+  if (!Array.isArray(incoming) || !incoming.length) return false;
+
+  const lista = incoming.map(normalizarPreset);
+  const activoLocal = (PRESETS && PRESETS.activo) || 'general';
+  const activoSigue = lista.some(p => p.id === activoLocal);
+  const activoNuevo = activoSigue ? activoLocal : lista[0].id;
+
+  PRESETS = { lista, activo: activoNuevo };
+  PRESET = PRESETS.lista.find(p => p.id === activoNuevo);
+
+  try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
+  try{ localStorage.setItem(PRESET_ID_KEY, activoNuevo); }catch(e){}
+
+  recompilarPreset();
+  actualizarBotonPreset();
+  return true;
+}
+
 function cargarPresetActivo(){
   try{
     const raw = localStorage.getItem(PRESET_ACTIVO_KEY);
@@ -1879,10 +1923,11 @@ function guardarPresetActivo(){
 function presetTieneReglas(p){
   p = p || PRESET;
   if (!p) return false;
+  const ov = p.overrides || {};
   return !!(
     (p.grupos && p.grupos.length) ||
     (p.palabras && p.palabras.length) ||
-    [...SITES.values()].some(s => s.feedMode === 'first' || s.feedMode === 'ignore')
+    Object.keys(ov).some(d => ov[d] === 'first' || ov[d] === 'ignore')
   );
 }
 
@@ -1906,7 +1951,6 @@ function setSitesFromArray(arr){
   (arr || []).forEach(s => {
     if (!s || !s.domain) return;
     SITES.set(s.domain, {
-      feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
       lang: s.lang || 'auto',
       type: s.type || '',
       tags: Array.isArray(s.tags) ? s.tags.slice() : []
@@ -2127,7 +2171,6 @@ function aplicarSitesDesdeUserscript(arr){
   (arr || []).forEach(s => {
     if (!s || !s.domain) return;
     incoming.set(s.domain, {
-      feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
       lang: s.lang || 'auto',
       type: s.type || '',
       tags: Array.isArray(s.tags) ? s.tags.slice() : []
@@ -2199,13 +2242,27 @@ function initUserScriptBridge(){
   document.addEventListener('voceiro-config-data', e => {
     const d = e.detail || {};
     aplicarSitesDesdeUserscript(d.sites);
-    if ($('#panel-config').classList.contains('open')) renderListaMedios();
+    const aplicado = aplicarPresetsDesdePlugin(d);
+    if (aplicado && typeof NOTICIAS !== 'undefined' && NOTICIAS.length){
+      aplicarFiltros();
+    }
+    if ($('#panel-config').classList.contains('open')){
+      renderListaMedios();
+      escribirPanel(PRESET);
+    }
   });
 
   document.addEventListener('voceiro-config-changed', e => {
     const d = e.detail || {};
     aplicarSitesDesdeUserscript(d.sites);
-    if ($('#panel-config').classList.contains('open')) renderListaMedios();
+    const aplicado = aplicarPresetsDesdePlugin(d);
+    if (aplicado && typeof NOTICIAS !== 'undefined' && NOTICIAS.length){
+      aplicarFiltros();
+    }
+    if ($('#panel-config').classList.contains('open')){
+      renderListaMedios();
+      escribirPanel(PRESET);
+    }
   });
 
   document.addEventListener('voceiro-later-list-data', e => {
@@ -2276,7 +2333,8 @@ function initUserScriptBridge(){
 }
 
 function emitirUpdateSite(domain, patch){
-  const prev = SITES.get(domain) || { feedMode: '', lang: 'auto', type: '', tags: [] };  const next = { ...prev, ...patch };
+  const prev = SITES.get(domain) || { lang: 'auto', type: '', tags: [] };
+  const next = { ...prev, ...patch };
   SITES.set(domain, next);
 
   const idx = SITES_LIST.findIndex(s => s.domain === domain);
@@ -2748,7 +2806,7 @@ function renderListaMedios(){
   cont.innerHTML = MEDIOS_UNICOS.map(m => {
     const site  = SITES.get(m.dominio);
     const known = !!site;
-    const mode  = (site && site.feedMode) || '';
+    const mode  = getOverride(m.dominio) || '';
 
     const dotHtml = known
       ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
@@ -2775,13 +2833,13 @@ function renderListaMedios(){
     inc.addEventListener('change', () => {
       if (inc.checked) ign.checked = false;
       marca(fila);
-      emitirUpdateSite(fila.dataset.dominio, { feedMode: inc.checked ? 'first' : '' });    });
+      setOverride(fila.dataset.dominio, inc.checked ? 'first' : '');
+    });
     ign.addEventListener('change', () => {
       if (ign.checked) inc.checked = false;
       marca(fila);
-      emitirUpdateSite(fila.dataset.dominio, { feedMode: ign.checked ? 'ignore' : '' });    });
-    marca(fila);
-  });
+      setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '');
+    });
   filtrarMedios();
 }
 function marca(fila){
@@ -2846,9 +2904,9 @@ function recompilarPreset(){
   RX_PRESET = words.length ? new RegExp('\\b(' + words.join('|') + ')\\b') : null;
 }
 function cumplePreset(n){
-  const site = SITES.get(n.dominio);
-  if (site && site.feedMode === 'ignore') return false;
-  if (site && site.feedMode === 'first')  return true;
+  const ov = getOverride(n.dominio);
+  if (opresetTieneReglasv === 'ignore') return false;
+  if (ov === 'first')  return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
   if (RX_PRESET){
     const tn = n._titNorm || (n._titNorm = normalize(n.titular));
@@ -2995,15 +3053,13 @@ function detectarFormato(data){
 function exportarConfig(){
   const sitesArr = [...SITES.entries()].map(([d, s]) => ({
     domain: d,
-    feedMode: s.feedMode || '',
-    mode: 'prompt',   // ← no exportamos el mode real, que es del plugin
     lang: s.lang || 'auto',
     type: s.type || '',
     tags: s.tags || [],
     ignorePatterns: [],
     readerSource: 'auto',
     textOnly: false
-   }));
+  }));
 
   const lectorPrefs = {
     fs: ACCES.fs,
@@ -3030,7 +3086,7 @@ function exportarConfig(){
     _lectorVersion: '1.1.0',
     lang: ACCES.lang,
     sites: sitesArr,
-    disabledDomains: sitesArr.filter(s => s.feedMode === 'ignore').map(s => s.domain),
+    voceiro: { presets: PRESETS.lista },
     prefs: lectorPrefs,
   };
 
@@ -3067,10 +3123,18 @@ function importarDesdeFormatoVoceiro(data){
     if (USCRIPT_OK){
       SITES.forEach((s, d) => {
         document.dispatchEvent(new CustomEvent('voceiro-update-site', {
-          detail: { domain: d, feedMode: s.feedMode || '', lang: s.lang, type: s.type, tags: s.tags }
+          detail: { domain: d, lang: s.lang, type: s.type, tags: s.tags }
         }));
       });
     }
+  }
+
+  if (data.voceiro && Array.isArray(data.voceiro.presets) && data.voceiro.presets.length){
+    const lista = data.voceiro.presets.map(normalizarPreset);
+    PRESETS = { lista, activo: lista[0].id };
+    PRESET = PRESETS.lista[0];
+    guardarPresets();
+    recompilarPreset();
   }
   if (typeof data.presetActivo === 'boolean'){
     PRESET_ACTIVO = data.presetActivo && presetTieneReglas();
@@ -3104,7 +3168,6 @@ function importarDesdeFormatoLector(data){
     if (!known.has(d)) return;
     arr.push({
       domain: d,
-      feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
       lang: s.lang || 'auto',
       type: s.type || '',
       tags: s.tags || []
@@ -3125,7 +3188,13 @@ function importarDesdeFormatoLector(data){
   });
   setSitesFromArray(arr);
   guardarSitesCache();
-
+  if (data.voceiro && Array.isArray(data.voceiro.presets) && data.voceiro.presets.length){
+    const lista = data.voceiro.presets.map(normalizarPreset);
+    PRESETS = { lista, activo: lista[0].id };
+    PRESET = PRESETS.lista[0];
+    guardarPresets();
+    recompilarPreset();
+  }
   PRESET_ACTIVO = presetTieneReglas();
   guardarPresetActivo();
 }
@@ -3518,10 +3587,10 @@ function aplicarFiltros(){
   filtradas.sort((a, b) => {
     // Favoritos (✓ en Modo Personalizado), solo si son recientes y el modo está activo
     if (presetEfectivo){
-      const aFav = (SITES.get(a.dominio) || {}).feedMode === 'first'
+      const aFav = getOverride(a.dominio) === 'first'
                    && !isNaN(a._tsOrden)
                    && (ahora - a._tsOrden) < FAV_WINDOW_MS;
-      const bFav = (SITES.get(b.dominio) || {}).feedMode === 'first'
+      const bFav = getOverride(b.dominio) === 'first'
                    && !isNaN(b._tsOrden)
                    && (ahora - b._tsOrden) < FAV_WINDOW_MS;
       const fa = aFav ? 1 : 0;
@@ -3763,7 +3832,7 @@ function wireResultadosDelegation(){
       const dominio = n.dominio;
       const medioNombre = n.medio || dominio;
 
-      emitirUpdateSite(dominio, { feedMode: 'ignore' });
+      setOverride(dominio, 'ignore');
       if (!PRESET_ACTIVO){
         PRESET_ACTIVO = true;
         guardarPresetActivo();
@@ -4139,20 +4208,11 @@ function wireStaticEvents(){
     escribirPanel(PRESET);
     cerrarPanel('panel-config');
   });
-
   $('#preset-reset').addEventListener('click', () => {
-    PRESET = structuredClone(PRESET_DEF);
+    const id = PRESET.id;
+    const nombre = PRESET.nombre;
+    PRESET = { id, nombre, grupos: [], palabras: [], overrides: {} };
     guardarPreset(); recompilarPreset();
-    if (USCRIPT_OK){
-      [...SITES.entries()].forEach(([d, s]) => {
-        document.dispatchEvent(new CustomEvent('voceiro-update-site', {
-          detail: { domain: d, feedMode: '' }
-        }));
-      });
-    }
-    SITES.forEach(s => { s.feedMode = ''; });
-    window.__lastLocal.clear();
-    guardarSitesCache();
     PRESET_ACTIVO = false;
     guardarPresetActivo();
     actualizarBotonPreset();
@@ -4212,7 +4272,6 @@ async function init(){
   cachedSites.forEach(s => {
     if (s && s.domain){
       window.__lastLocal.set(s.domain, {
-        feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
         lang: s.lang || 'auto',
         type: s.type || '',
         tags: Array.isArray(s.tags) ? s.tags.slice() : []
