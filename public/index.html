@@ -103,7 +103,62 @@
   }
   .btn-preset:hover{background:var(--preset-bg)}
   .btn-preset.active{background:var(--preset); color:#fff}
-  .btn-preset.active::after{content:' ✓'}
+  .preset-wrap{
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .preset-menu{
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px var(--shadow);
+    min-width: 220px;
+    padding: 6px;
+    z-index: 50;
+  }
+  .preset-item{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: .82em;
+    text-align: left;
+    font-weight: 500;
+  }
+  .preset-item:hover{ background: var(--quote-bg); }
+  .preset-item.active{
+    background: var(--preset-bg);
+    color: var(--preset);
+    font-weight: 600;
+  }
+  .preset-item .preset-check{
+    display: inline-block;
+    width: 14px;
+    flex-shrink: 0;
+    color: var(--preset);
+    opacity: 0;
+  }
+  .preset-item.active .preset-check{ opacity: 1; }
+  .preset-sep{
+    height: 1px;
+    background: var(--border);
+    margin: 4px 6px;
+  }
+  .preset-item.preset-manage{
+    color: var(--muted);
+    font-size: .78em;
+  }
 
   .btn-pendientes{
     border:2px solid var(--save); background:transparent; color:var(--save);
@@ -772,15 +827,18 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 14:52</span>
+    <span id="fecha">30/09/2026 15:18</span>
     <span>·</span>
-    <span id="total">28039</span>
+    <span id="total">28620</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
 
 <section class="topbar">
-  <button id="btn-preset" class="btn-preset" type="button"></button>
+  <span class="preset-wrap">
+    <button id="btn-preset" class="btn-preset" type="button"></button>
+    <div id="preset-menu" class="preset-menu" style="display:none"></div>
+  </span>
   <button id="btn-config" type="button"></button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
   <button id="btn-buscar" class="btn-buscar" type="button"></button>
@@ -1870,6 +1928,7 @@ function guardarPreset(){
     PRESETS.lista[idx] = { ...PRESETS.lista[idx], ...PRESET };
   }
   guardarPresets();
+  actualizarBotonPreset();
 }
 function getOverride(domain){
   if (!PRESET || !PRESET.overrides) return '';
@@ -1989,9 +2048,110 @@ function actualizarBotonHideRead(){
   b.setAttribute('aria-pressed', OCULTAR_LEIDAS ? 'true' : 'false');
 }
 function actualizarBotonPreset(){
-  $('#btn-preset').classList.toggle('active', PRESET_ACTIVO);
+  const btn = $('#btn-preset');
+  if (!btn) return;
+
+  const activo = PRESET_ACTIVO && PRESET;
+  const nombre = activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
+
+  btn.textContent = '🏔 ' + nombre + ' ▾';
+  btn.classList.toggle('active', !!activo);
+
+  const menu = $('#preset-menu');
+  if (menu && menu.style.display !== 'none'){
+    renderPresetMenu();
+  }
+}
+function renderPresetMenu(){
+  const menu = $('#preset-menu');
+  if (!menu) return;
+
+  const lista = (PRESETS && PRESETS.lista) || [];
+  const activo = PRESETS ? PRESETS.activo : '';
+
+  let html = '';
+  lista.forEach(p => {
+    const isActive = PRESET_ACTIVO && p.id === activo;
+    html += `<button type="button" class="preset-item${isActive ? ' active' : ''}" data-preset-id="${escapeHtml(p.id)}">
+      <span class="preset-check">✓</span>
+      <span>${escapeHtml(p.nombre)}</span>
+    </button>`;
+  });
+
+  html += '<div class="preset-sep"></div>';
+  html += `<button type="button" class="preset-item${!PRESET_ACTIVO ? ' active' : ''}" data-preset-id="__sinfiltro">
+    <span class="preset-check">✓</span>
+    <span>${escapeHtml(t('presetSinFiltro'))}</span>
+  </button>`;
+  html += '<div class="preset-sep"></div>';
+  html += `<button type="button" class="preset-item preset-manage" data-preset-id="__gestionar">
+    <span>⚙</span>
+    <span>${escapeHtml(t('presetGestionar'))}</span>
+  </button>`;
+
+  menu.innerHTML = html;
+
+  menu.querySelectorAll('.preset-item').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.presetId;
+      if (id === '__gestionar'){
+        cerrarPresetMenu();
+        abrirPanel('panel-config');
+        escribirPanel(PRESET);
+        return;
+      }
+      if (id === '__sinfiltro'){
+        PRESET_ACTIVO = false;
+        guardarPresetActivo();
+        actualizarBotonPreset();
+        aplicarFiltros();
+        cerrarPresetMenu();
+        return;
+      }
+      const target = PRESETS.lista.find(p => p.id === id);
+      if (!target) return;
+      PRESETS.activo = id;
+      PRESET = target;
+      PRESET_ACTIVO = true;
+      guardarPresets();
+      guardarPresetActivo();
+      recompilarPreset();
+      actualizarBotonPreset();
+      aplicarFiltros();
+      cerrarPresetMenu();
+    });
+  });
 }
 
+function abrirPresetMenu(){
+  const menu = $('#preset-menu');
+  if (!menu) return;
+  renderPresetMenu();
+  menu.style.display = '';
+  setTimeout(() => {
+    document.addEventListener('mousedown', _presetOutsideClick, true);
+    document.addEventListener('keydown', _presetEscKey, true);
+  }, 0);
+}
+
+function cerrarPresetMenu(){
+  const menu = $('#preset-menu');
+  if (!menu) return;
+  menu.style.display = 'none';
+  document.removeEventListener('mousedown', _presetOutsideClick, true);
+  document.removeEventListener('keydown', _presetEscKey, true);
+}
+
+function _presetOutsideClick(e){
+  const wrap = document.querySelector('.preset-wrap');
+  if (wrap && !wrap.contains(e.target)) cerrarPresetMenu();
+}
+
+function _presetEscKey(e){
+  if (e.key === 'Escape'){ e.stopPropagation(); cerrarPresetMenu(); }
+}
+  
 /* ═══════════════════════════════════════════════════════════════
    BIONIC
    ═══════════════════════════════════════════════════════════════ */
@@ -4065,18 +4225,15 @@ function wireStaticEvents(){
   const btnP = $('#btn-preset');
   actualizarBotonPreset();
 
-  btnP.addEventListener('click', () => {
-    if (!PRESET_ACTIVO && !presetTieneReglas()){
-      toast(t('presetVacio'), 3200);
-      abrirPanel('panel-config');
-      escribirPanel(PRESET);
-      return;
+  btnP.addEventListener('click', e => {
+    e.stopPropagation();
+    const menu = $('#preset-menu');
+    if (!menu) return;
+    if (menu.style.display === 'none' || menu.style.display === ''){
+      abrirPresetMenu();
+    } else {
+      cerrarPresetMenu();
     }
-    PRESET_ACTIVO = !PRESET_ACTIVO;
-    guardarPresetActivo();
-    actualizarBotonPreset();
-    aplicarFiltros();
-    toast(PRESET_ACTIVO ? t('presetActivado') : t('presetDesactivado'), 1500);
   });
   $('#btn-dup').addEventListener('click', () => {
     AGRUPAR_DUPS = !AGRUPAR_DUPS;
@@ -4123,6 +4280,13 @@ function wireStaticEvents(){
     if (e.altKey && e.key.toLowerCase() === 'p'){ e.preventDefault(); abrirPendientes(); }
     if (e.altKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); bsAbrir(); }
     if (e.altKey && e.key.toLowerCase() === 'm'){
+      e.preventDefault();
+      // Alterna entre el modo activo y "Sin filtro"
+      PRESET_ACTIVO = !PRESET_ACTIVO;
+      guardarPresetActivo();
+      actualizarBotonPreset();
+      aplicarFiltros();
+    }
       e.preventDefault();
       if (!PRESET_ACTIVO && !presetTieneReglas()){
         toast(t('presetVacio'), 3200);
