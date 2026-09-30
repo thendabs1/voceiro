@@ -358,7 +358,7 @@
   }
   .noticia.foco-dim{opacity:.28}
   .noticia.foco-active{opacity:1}
-  .noticia.vista{opacity:.72}
+  .noticia.vista{opacity:.80}
   .noticia.leida{opacity:.5}
   .noticia.leida a.titular{color:var(--muted)}
   .noticia .cabecera{
@@ -3654,6 +3654,37 @@ function appendBatch(){
 }
 function wireResultadosDelegation(){
   const cont = $('#resultados');
+  // ── Vista por hover ──
+  const VISTA_HOVER_MS = 1200;
+
+  cont.addEventListener('mouseover', e => {
+    const art = e.target.closest('.noticia');
+    if (!art) return;
+    if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+    if (VISTAS_TIMERS.has(art)) return;
+
+    const i = parseInt(art.dataset.idx, 10);
+    const n = ULT_FILTRADAS[i];
+    if (!n) return;
+
+    const tmr = setTimeout(() => {
+      VISTAS_TIMERS.delete(art);
+      if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+      marcarVistaLocal(n.enlace);
+      art.classList.add('vista');
+      persistirVistas();
+    }, VISTA_HOVER_MS);
+    VISTAS_TIMERS.set(art, tmr);
+  });
+
+  cont.addEventListener('mouseout', e => {
+    const art = e.target.closest('.noticia');
+    if (!art) return;
+    // Si el ratón sigue dentro de la tarjeta (movimiento entre hijos), no cancelamos
+    if (e.relatedTarget && art.contains(e.relatedTarget)) return;
+    const tmr = VISTAS_TIMERS.get(art);
+    if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+  });
   cont.addEventListener('click', e => {
     // Al clicar un titular: guardar como leída automáticamente
     const link = e.target.closest('a.titular');
@@ -3760,30 +3791,12 @@ function cancelarVista(art){
 }
 
 function wireVistasObserver(){
-  if (VISTAS_OBSERVER) VISTAS_OBSERVER.disconnect();
-  VISTAS_OBSERVER = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      const art = entry.target;
-      if (art.classList.contains('vista') || art.classList.contains('leida')) return;
-
-      const i = parseInt(art.dataset.idx, 10);
-      const n = ULT_FILTRADAS[i];
-      if (!n) return;
-
-      if (entry.isIntersecting){
-        // Está visible → arrancar timer
-        programarVista(art, n, VISTA_SCROLL_MS);
-      } else {
-        // Ha salido → cancelar (ya no cuenta)
-        cancelarVista(art);
-      }
-    });
-  }, { threshold: 0 });
+  // Desactivado: solo hover.
+  if (VISTAS_OBSERVER){ VISTAS_OBSERVER.disconnect(); VISTAS_OBSERVER = null; }
 }
 
 function observarNoticias(){
-  if (!VISTAS_OBSERVER) return;
-  document.querySelectorAll('.noticia').forEach(el => VISTAS_OBSERVER.observe(el));
+  // Desactivado: solo hover.
 }
 
 /* ═══════════════════════════════════════════════════════════════
