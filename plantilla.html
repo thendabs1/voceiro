@@ -1851,7 +1851,7 @@ function presetTieneReglas(p){
   return !!(
     (p.grupos && p.grupos.length) ||
     (p.palabras && p.palabras.length) ||
-    [...SITES.values()].some(s => s.mode === 'auto' || s.mode === 'off')
+    [...SITES.values()].some(s => s.feedMode === 'first' || s.feedMode === 'ignore')
   );
 }
 
@@ -1875,7 +1875,7 @@ function setSitesFromArray(arr){
   (arr || []).forEach(s => {
     if (!s || !s.domain) return;
     SITES.set(s.domain, {
-      mode: s.mode || 'prompt',
+      feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
       lang: s.lang || 'auto',
       type: s.type || '',
       tags: Array.isArray(s.tags) ? s.tags.slice() : []
@@ -2096,7 +2096,7 @@ function aplicarSitesDesdeUserscript(arr){
   (arr || []).forEach(s => {
     if (!s || !s.domain) return;
     incoming.set(s.domain, {
-      mode: s.mode || 'prompt',
+      feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
       lang: s.lang || 'auto',
       type: s.type || '',
       tags: Array.isArray(s.tags) ? s.tags.slice() : []
@@ -2245,8 +2245,7 @@ function initUserScriptBridge(){
 }
 
 function emitirUpdateSite(domain, patch){
-  const prev = SITES.get(domain) || { mode: 'prompt', lang: 'auto', type: '', tags: [] };
-  const next = { ...prev, ...patch };
+  const prev = SITES.get(domain) || { feedMode: '', lang: 'auto', type: '', tags: [] };  const next = { ...prev, ...patch };
   SITES.set(domain, next);
 
   const idx = SITES_LIST.findIndex(s => s.domain === domain);
@@ -2718,7 +2717,7 @@ function renderListaMedios(){
   cont.innerHTML = MEDIOS_UNICOS.map(m => {
     const site  = SITES.get(m.dominio);
     const known = !!site;
-    const mode  = (site && site.mode) || 'prompt';
+    const mode  = (site && site.feedMode) || '';
 
     const dotHtml = known
       ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
@@ -2729,11 +2728,10 @@ function renderListaMedios(){
            data-grupo="${escapeHtml(m.grupo)}"
            data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
         <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-          <input type="checkbox" class="chk-incluir" ${mode === 'auto' ? 'checked' : ''}><span>✓</span>
+          <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>✓</span>
         </label>
         <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
-          <input type="checkbox" class="chk-ignorar" ${mode === 'off' ? 'checked' : ''}><span>✗</span>
-        </label>
+          <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>✗</span>        </label>
         <span class="celda celda-dominio">${dotHtml}<code>${escapeHtml(m.dominio)}</code></span>
         <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
         <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
@@ -2746,13 +2744,11 @@ function renderListaMedios(){
     inc.addEventListener('change', () => {
       if (inc.checked) ign.checked = false;
       marca(fila);
-      emitirUpdateSite(fila.dataset.dominio, { mode: inc.checked ? 'auto' : 'prompt' });
-    });
+      emitirUpdateSite(fila.dataset.dominio, { feedMode: inc.checked ? 'first' : '' });    });
     ign.addEventListener('change', () => {
       if (ign.checked) inc.checked = false;
       marca(fila);
-      emitirUpdateSite(fila.dataset.dominio, { mode: ign.checked ? 'off' : 'prompt' });
-    });
+      emitirUpdateSite(fila.dataset.dominio, { feedMode: ign.checked ? 'ignore' : '' });    });
     marca(fila);
   });
   filtrarMedios();
@@ -2820,8 +2816,8 @@ function recompilarPreset(){
 }
 function cumplePreset(n){
   const site = SITES.get(n.dominio);
-  if (site && site.mode === 'off') return false;
-  if (site && site.mode === 'auto') return true;
+  if (site && site.feedMode === 'ignore') return false;
+  if (site && site.feedMode === 'first')  return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
   if (RX_PRESET){
     const tn = n._titNorm || (n._titNorm = normalize(n.titular));
@@ -2967,10 +2963,16 @@ function detectarFormato(data){
 
 function exportarConfig(){
   const sitesArr = [...SITES.entries()].map(([d, s]) => ({
-    domain: d, mode: s.mode, ignorePatterns: [], readerSource: 'auto',
-    lang: s.lang || 'auto', type: s.type || '', tags: s.tags || [],
+    domain: d,
+    feedMode: s.feedMode || '',
+    mode: 'prompt',   // ← no exportamos el mode real, que es del plugin
+    lang: s.lang || 'auto',
+    type: s.type || '',
+    tags: s.tags || [],
+    ignorePatterns: [],
+    readerSource: 'auto',
     textOnly: false
-  }));
+   }));
 
   const lectorPrefs = {
     fs: ACCES.fs,
@@ -2997,7 +2999,7 @@ function exportarConfig(){
     _lectorVersion: '1.1.0',
     lang: ACCES.lang,
     sites: sitesArr,
-    disabledDomains: sitesArr.filter(s => s.mode === 'off').map(s => s.domain),
+    disabledDomains: sitesArr.filter(s => s.feedMode === 'ignore').map(s => s.domain),
     prefs: lectorPrefs,
   };
 
@@ -3034,7 +3036,7 @@ function importarDesdeFormatoVoceiro(data){
     if (USCRIPT_OK){
       SITES.forEach((s, d) => {
         document.dispatchEvent(new CustomEvent('voceiro-update-site', {
-          detail: { domain: d, mode: s.mode, lang: s.lang, type: s.type, tags: s.tags }
+          detail: { domain: d, feedMode: s.feedMode || '', lang: s.lang, type: s.type, tags: s.tags }
         }));
       });
     }
@@ -3071,7 +3073,7 @@ function importarDesdeFormatoLector(data){
     if (!known.has(d)) return;
     arr.push({
       domain: d,
-      mode: s.mode || 'prompt',
+      feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
       lang: s.lang || 'auto',
       type: s.type || '',
       tags: s.tags || []
@@ -3081,7 +3083,13 @@ function importarDesdeFormatoLector(data){
     const d = String(d0).toLowerCase().trim();
     if (!known.has(d)) return;
     if (!arr.some(x => x.domain === d)){
-      arr.push({ domain: d, mode: 'off', lang: 'auto', type: '', tags: [] });
+      arr.push({
+        domain: d,
+        feedMode: '',
+        lang: 'auto',
+        type: '',
+        tags: []
+      });
     }
   });
   setSitesFromArray(arr);
@@ -3479,10 +3487,10 @@ function aplicarFiltros(){
   filtradas.sort((a, b) => {
     // Favoritos (✓ en Modo Personalizado), solo si son recientes y el modo está activo
     if (presetEfectivo){
-      const aFav = (SITES.get(a.dominio) || {}).mode === 'auto'
+      const aFav = (SITES.get(a.dominio) || {}).feedMode === 'first'
                    && !isNaN(a._tsOrden)
                    && (ahora - a._tsOrden) < FAV_WINDOW_MS;
-      const bFav = (SITES.get(b.dominio) || {}).mode === 'auto'
+      const bFav = (SITES.get(b.dominio) || {}).feedMode === 'first'
                    && !isNaN(b._tsOrden)
                    && (ahora - b._tsOrden) < FAV_WINDOW_MS;
       const fa = aFav ? 1 : 0;
@@ -3693,8 +3701,7 @@ function wireResultadosDelegation(){
       const dominio = n.dominio;
       const medioNombre = n.medio || dominio;
 
-      emitirUpdateSite(dominio, { mode: 'off' });
-
+      emitirUpdateSite(dominio, { feedMode: 'ignore' });
       if (!PRESET_ACTIVO){
         PRESET_ACTIVO = true;
         guardarPresetActivo();
@@ -4071,11 +4078,11 @@ function wireStaticEvents(){
     if (USCRIPT_OK){
       [...SITES.entries()].forEach(([d, s]) => {
         document.dispatchEvent(new CustomEvent('voceiro-update-site', {
-          detail: { domain: d, mode: 'prompt' }
+          detail: { domain: d, feedMode: '' }
         }));
       });
     }
-    SITES.forEach(s => { s.mode = 'prompt'; });
+    SITES.forEach(s => { s.feedMode = ''; });
     window.__lastLocal.clear();
     guardarSitesCache();
     PRESET_ACTIVO = false;
@@ -4132,7 +4139,7 @@ async function init(){
   cachedSites.forEach(s => {
     if (s && s.domain){
       window.__lastLocal.set(s.domain, {
-        mode: s.mode || 'prompt',
+        feedMode: ['', 'first', 'ignore'].includes(s.feedMode) ? s.feedMode : '',
         lang: s.lang || 'auto',
         type: s.type || '',
         tags: Array.isArray(s.tags) ? s.tags.slice() : []
