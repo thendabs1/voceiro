@@ -772,9 +772,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 12:29</span>
+    <span id="fecha">30/09/2026 12:47</span>
     <span>·</span>
-    <span id="total">24187</span>
+    <span id="total">24639</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -2107,15 +2107,22 @@ function aplicarSitesDesdeUserscript(arr){
   SITES_LIST = [];
 
   incoming.forEach((v, d) => {
+    // Si el dominio fue tocado en esta pestaña hace poco (TTL),
+    // damos prioridad a lo local. Si no, gana el userscript.
     if (isLocalTouched(d)){
       const local = window.__lastLocal.get(d);
-      if (local){ SITES.set(d, local); SITES_LIST.push({ domain: d, ...local }); return; }
+      if (local){
+        SITES.set(d, local);
+        SITES_LIST.push({ domain: d, ...local });
+        return;
+      }
     }
     SITES.set(d, v);
     SITES_LIST.push({ domain: d, ...v });
   });
 
-  // Reañadir los que solo existen localmente (creados por 🚫 sin userscript)
+  // Reañadir los dominios que solo existen localmente
+  // (creados aquí sin userscript, o con el plugin desconectado)
   window.__lastLocal.forEach((v, d) => {
     if (!SITES.has(d)){
       SITES.set(d, v);
@@ -3722,27 +3729,54 @@ function wireResultadosDelegation(){
 let VISTAS_OBSERVER = null;
 const VISTAS_TIMERS = new WeakMap();
 
+const VISTA_HOVER_MS  = 800;   // ratón encima
+const VISTA_SCROLL_MS = 800;   // visible en pantalla
+
+function marcarVista(art, n){
+  const tmr = VISTAS_TIMERS.get(art);
+  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+  marcarVistaLocal(n.enlace);
+  art.classList.add('vista');
+  persistirVistas();
+}
+
+function programarVista(art, n, ms){
+  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+  if (VISTAS_TIMERS.has(art)) return;
+  const tmr = setTimeout(() => marcarVista(art, n), ms);
+  VISTAS_TIMERS.set(art, tmr);
+}
+
+function cancelarVista(art){
+  const tmr = VISTAS_TIMERS.get(art);
+  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+}
+
 function wireVistasObserver(){
   if (VISTAS_OBSERVER) VISTAS_OBSERVER.disconnect();
   VISTAS_OBSERVER = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       const art = entry.target;
+      if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+
+      const i = parseInt(art.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (!n) return;
+
       if (entry.isIntersecting){
-        const i = parseInt(art.dataset.idx, 10);
-        const n = ULT_FILTRADAS[i];
-        if (!n) return;
-        const tmr = setTimeout(() => {
-          marcarVistaLocal(n.enlace);
-          art.classList.add('vista');
-          persistirVistas();
-        }, 1500);
-        VISTAS_TIMERS.set(art, tmr);
+        // Visible → timer corto por si te quedas leyendo
+        programarVista(art, n, VISTA_SCROLL_MS);
       } else {
-        const tmr = VISTAS_TIMERS.get(art);
-        if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+        // Ha salido → cancelar timer
+        cancelarVista(art);
+        // Si salió por ARRIBA, ya pasaste por delante → marcar YA
+        if (entry.boundingClientRect.top < 0){
+          marcarVista(art, n);
+        }
       }
     });
-  }, { threshold: 0.5 });
+  }, { threshold: 0 });   // ← 0 en lugar de 0.5
 }
 
 function observarNoticias(){
@@ -4090,20 +4124,14 @@ function wireStaticEvents(){
    ═══════════════════════════════════════════════════════════════ */
 async function init(){
   aplicarAcces();
-  initUserScriptBridge();
 
-  await cargarDatos();
-  hidratarNoticias();
-
-  construirMediosUnicos();
-  construirGruposDuplicados();
-  construirIndicesBusqueda();
-
+  // ── 1) PRIMERO: leer config local y poblar __lastLocal ──
   PRESET = cargarPreset();
   recompilarPreset();
-  PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
-  AGRUPAR_DUPS = cargarDupPref();
+  PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
+  AGRUPAR_DUPS   = cargarDupPref();
   OCULTAR_LEIDAS = cargarHideReadPref();
+
   const cachedSites = cargarSitesCache();
   setSitesFromArray(cachedSites);
   cachedSites.forEach(s => {
@@ -4116,6 +4144,17 @@ async function init(){
       });
     }
   });
+
+  // ── 2) AHORA el bridge: cuando el plugin responda, el merge ya tiene
+  //       los datos locales en __lastLocal para defenderse ──
+  initUserScriptBridge();
+
+  // ── 3) Datos ──
+  await cargarDatos();
+  hidratarNoticias();
+  construirMediosUnicos();
+  construirGruposDuplicados();
+  construirIndicesBusqueda();
 
   aplicarTextos();
 
