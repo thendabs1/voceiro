@@ -3538,6 +3538,7 @@ function exportarConfig(){
   toast(t('expOk'), 1800);
 }
 
+
 function importarDesdeFormatoVoceiro(data){
   if (data.acces && typeof data.acces === 'object'){
     ACCES = { ...ACCES_DEF, ...data.acces };
@@ -3587,6 +3588,7 @@ function importarDesdeFormatoVoceiro(data){
   }
   guardarPresetActivo();
 }
+
 
 function importarDesdeFormatoLector(data){
   if (data.prefs && typeof data.prefs === 'object'){
