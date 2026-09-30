@@ -772,9 +772,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 13:28</span>
+    <span id="fecha">30/09/2026 13:32</span>
     <span>·</span>
-    <span id="total">25761</span>
+    <span id="total">25935</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3790,13 +3790,37 @@ function cancelarVista(art){
   if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
 }
 
+const VISTAS_SEEN = new WeakSet();
+
 function wireVistasObserver(){
-  // Desactivado: solo hover.
-  if (VISTAS_OBSERVER){ VISTAS_OBSERVER.disconnect(); VISTAS_OBSERVER = null; }
+  if (VISTAS_OBSERVER) VISTAS_OBSERVER.disconnect();
+  VISTAS_OBSERVER = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const art = entry.target;
+      if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+
+      const i = parseInt(art.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (!n) return;
+
+      if (entry.isIntersecting){
+        // La tarjeta ha estado visible al menos una vez → candidata
+        VISTAS_SEEN.add(art);
+      } else {
+        // Solo marcamos si YA había estado visible y sale por ARRIBA
+        if (VISTAS_SEEN.has(art) && entry.boundingClientRect.top < 0){
+          marcarVistaLocal(n.enlace);
+          art.classList.add('vista');
+          persistirVistas();
+        }
+      }
+    });
+  }, { threshold: 0 });
 }
 
 function observarNoticias(){
-  // Desactivado: solo hover.
+  if (!VISTAS_OBSERVER) return;
+  document.querySelectorAll('.noticia').forEach(el => VISTAS_OBSERVER.observe(el));
 }
 
 /* ═══════════════════════════════════════════════════════════════
