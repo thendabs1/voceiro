@@ -2106,18 +2106,28 @@ function aplicarSitesDesdeUserscript(arr){
   SITES = new Map();
   SITES_LIST = [];
 
-  // 1. Añadir lo que venga del userscript
   incoming.forEach((v, d) => {
+    // Si el dominio fue tocado en esta pestaña hace poco (TTL),
+    // damos prioridad a lo local. Si no, gana el userscript.
+    if (isLocalTouched(d)){
+      const local = window.__lastLocal.get(d);
+      if (local){
+        SITES.set(d, local);
+        SITES_LIST.push({ domain: d, ...local });
+        return;
+      }
+    }
     SITES.set(d, v);
     SITES_LIST.push({ domain: d, ...v });
   });
 
-  // 2. Sobrescribir con lo LOCAL — siempre gana
+  // Reañadir los dominios que solo existen localmente
+  // (creados aquí sin userscript, o con el plugin desconectado)
   window.__lastLocal.forEach((v, d) => {
-    SITES.set(d, v);
-    const idx = SITES_LIST.findIndex(s => s.domain === d);
-    if (idx >= 0) SITES_LIST[idx] = { domain: d, ...v };
-    else SITES_LIST.push({ domain: d, ...v });
+    if (!SITES.has(d)){
+      SITES.set(d, v);
+      SITES_LIST.push({ domain: d, ...v });
+    }
   });
 
   guardarSitesCache();
@@ -4115,8 +4125,7 @@ function wireStaticEvents(){
 async function init(){
   aplicarAcces();
 
-  // ── 1) PRIMERO: leer TODO lo persistido en localStorage ──
-  //    (antes que el bridge, para que el userscript no pise el caché)
+  // ── 1) PRIMERO: leer config local y poblar __lastLocal ──
   PRESET = cargarPreset();
   recompilarPreset();
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
@@ -4136,7 +4145,8 @@ async function init(){
     }
   });
 
-  // ── 2) AHORA sí, el bridge con el userscript ──
+  // ── 2) AHORA el bridge: cuando el plugin responda, el merge ya tiene
+  //       los datos locales en __lastLocal para defenderse ──
   initUserScriptBridge();
 
   // ── 3) Datos ──
