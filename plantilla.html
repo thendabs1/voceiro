@@ -2106,21 +2106,18 @@ function aplicarSitesDesdeUserscript(arr){
   SITES = new Map();
   SITES_LIST = [];
 
+  // 1. Añadir lo que venga del userscript
   incoming.forEach((v, d) => {
-    if (isLocalTouched(d)){
-      const local = window.__lastLocal.get(d);
-      if (local){ SITES.set(d, local); SITES_LIST.push({ domain: d, ...local }); return; }
-    }
     SITES.set(d, v);
     SITES_LIST.push({ domain: d, ...v });
   });
 
-  // Reañadir los que solo existen localmente (creados por 🚫 sin userscript)
+  // 2. Sobrescribir con lo LOCAL — siempre gana
   window.__lastLocal.forEach((v, d) => {
-    if (!SITES.has(d)){
-      SITES.set(d, v);
-      SITES_LIST.push({ domain: d, ...v });
-    }
+    SITES.set(d, v);
+    const idx = SITES_LIST.findIndex(s => s.domain === d);
+    if (idx >= 0) SITES_LIST[idx] = { domain: d, ...v };
+    else SITES_LIST.push({ domain: d, ...v });
   });
 
   guardarSitesCache();
@@ -3722,27 +3719,54 @@ function wireResultadosDelegation(){
 let VISTAS_OBSERVER = null;
 const VISTAS_TIMERS = new WeakMap();
 
+const VISTA_HOVER_MS  = 800;   // ratón encima
+const VISTA_SCROLL_MS = 800;   // visible en pantalla
+
+function marcarVista(art, n){
+  const tmr = VISTAS_TIMERS.get(art);
+  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+  marcarVistaLocal(n.enlace);
+  art.classList.add('vista');
+  persistirVistas();
+}
+
+function programarVista(art, n, ms){
+  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+  if (VISTAS_TIMERS.has(art)) return;
+  const tmr = setTimeout(() => marcarVista(art, n), ms);
+  VISTAS_TIMERS.set(art, tmr);
+}
+
+function cancelarVista(art){
+  const tmr = VISTAS_TIMERS.get(art);
+  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+}
+
 function wireVistasObserver(){
   if (VISTAS_OBSERVER) VISTAS_OBSERVER.disconnect();
   VISTAS_OBSERVER = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       const art = entry.target;
+      if (art.classList.contains('vista') || art.classList.contains('leida')) return;
+
+      const i = parseInt(art.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (!n) return;
+
       if (entry.isIntersecting){
-        const i = parseInt(art.dataset.idx, 10);
-        const n = ULT_FILTRADAS[i];
-        if (!n) return;
-        const tmr = setTimeout(() => {
-          marcarVistaLocal(n.enlace);
-          art.classList.add('vista');
-          persistirVistas();
-        }, 1500);
-        VISTAS_TIMERS.set(art, tmr);
+        // Visible → timer corto por si te quedas leyendo
+        programarVista(art, n, VISTA_SCROLL_MS);
       } else {
-        const tmr = VISTAS_TIMERS.get(art);
-        if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+        // Ha salido → cancelar timer
+        cancelarVista(art);
+        // Si salió por ARRIBA, ya pasaste por delante → marcar YA
+        if (entry.boundingClientRect.top < 0){
+          marcarVista(art, n);
+        }
       }
     });
-  }, { threshold: 0.5 });
+  }, { threshold: 0 });   // ← 0 en lugar de 0.5
 }
 
 function observarNoticias(){
@@ -4090,20 +4114,15 @@ function wireStaticEvents(){
    ═══════════════════════════════════════════════════════════════ */
 async function init(){
   aplicarAcces();
-  initUserScriptBridge();
 
-  await cargarDatos();
-  hidratarNoticias();
-
-  construirMediosUnicos();
-  construirGruposDuplicados();
-  construirIndicesBusqueda();
-
+  // ── 1) PRIMERO: leer TODO lo persistido en localStorage ──
+  //    (antes que el bridge, para que el userscript no pise el caché)
   PRESET = cargarPreset();
   recompilarPreset();
-  PRESET_ACTIVO = cargarPresetActivo() && presetTieneReglas();
-  AGRUPAR_DUPS = cargarDupPref();
+  PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
+  AGRUPAR_DUPS   = cargarDupPref();
   OCULTAR_LEIDAS = cargarHideReadPref();
+
   const cachedSites = cargarSitesCache();
   setSitesFromArray(cachedSites);
   cachedSites.forEach(s => {
@@ -4116,6 +4135,16 @@ async function init(){
       });
     }
   });
+
+  // ── 2) AHORA sí, el bridge con el userscript ──
+  initUserScriptBridge();
+
+  // ── 3) Datos ──
+  await cargarDatos();
+  hidratarNoticias();
+  construirMediosUnicos();
+  construirGruposDuplicados();
+  construirIndicesBusqueda();
 
   aplicarTextos();
 
