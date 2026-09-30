@@ -256,6 +256,66 @@
     padding:8px; border:1px solid var(--border); border-radius:6px;
     background:var(--bg);
   }
+  .list-modos{
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg);
+  }
+  .modo-fila{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 12px;
+    border-bottom:1px solid var(--border);
+    font-size:.78em;
+  }
+  .modo-fila:last-child{border-bottom:none}
+  .modo-fila.activo{background:var(--preset-bg);}
+  .modo-fila .modo-nombre{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600;}
+  .modo-fila .modo-acciones{display:flex; gap:4px; flex-shrink:0;}
+  .modo-fila .modo-acciones button{
+    padding:2px 8px; font-size:.85em;
+    background:transparent; border:1px solid var(--border);
+    color:var(--muted); border-radius:6px; cursor:pointer;
+    font-family:inherit;
+  }
+  .modo-fila .modo-acciones button:hover{
+    color:var(--accent); border-color:var(--accent);
+  }
+  .modo-fila .modo-acciones button.danger:hover{
+    color:var(--block); border-color:var(--block);
+  }
+  .ctrl-override{
+    display:grid; grid-template-columns:1fr 40px 40px; gap:6px;
+    margin-bottom:8px;
+  }
+  .ctrl-override input{
+    font-size:.78em; padding:8px 10px;
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--fg); font-family:inherit;
+  }
+  .ctrl-override button{
+    padding:0; font-size:.9em; font-weight:700;
+    border:1px solid var(--border); border-radius:6px;
+    background:transparent; color:var(--muted); cursor:pointer;
+  }
+  .ctrl-override button:hover{ color:var(--accent); border-color:var(--accent); }
+  .ctrl-override button.ignorar:hover{ color:var(--block); border-color:var(--block); }
+  .ov-list{
+    display:flex; flex-wrap:wrap; gap:4px;
+    min-height:24px;
+  }
+  .ov-item{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:2px 4px 2px 10px;
+    border-radius:12px; font-size:.72em;
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+  }
+  .ov-item.first{ background:var(--preset-bg); color:var(--preset); border:1px solid var(--preset); }
+  .ov-item.ignore{ background:var(--block-bg); color:var(--block); border:1px solid var(--block); }
+  .ov-item button{
+    background:transparent; border:none; cursor:pointer;
+    color:inherit; padding:0 6px; font-size:1.1em; line-height:1;
+    border-radius:8px;
+  }
+  .ov-item button:hover{ background:rgba(0,0,0,.08); }
   .grupo-item{
     display:flex; align-items:center; gap:8px;
     font-size:.75em; cursor:pointer;
@@ -860,6 +920,30 @@
         <span id="sync-banner-text"></span>
       </div>
 
+      <h3 id="cfg-modos"></h3>
+      <p id="cfg-modos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+      <div id="lista-modos" class="list-modos"></div>
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="btn-nuevo-modo" type="button" style="font-size:.75em;">+ <span id="btn-nuevo-modo-lbl"></span></button>
+      </div>
+
+      <div id="modo-overrides-wrap" style="margin-top:16px;">
+        <p id="modo-overrides-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+        <div class="ctrl-override">
+          <input type="text" id="ov-domain" placeholder="dominio.com" autocomplete="off">
+          <button id="ov-add-first" type="button" title="first">✓</button>
+          <button id="ov-add-ignore" type="button" title="ignore">✗</button>
+        </div>
+        <div id="ov-list" class="ov-list"></div>
+        <details id="ov-pegar-wrap" style="margin-top:8px;">
+          <summary style="cursor:pointer; color:var(--save); font-size:.75em; font-weight:600;"></summary>
+          <textarea id="ov-pegar" class="preset-texto" style="min-height:80px; font-family:ui-monospace,monospace; font-size:.78em;" placeholder="+ dominio.com&#10;- otro.com"></textarea>
+          <div style="margin-top:6px; display:flex; gap:8px; justify-content:flex-end;">
+            <button id="ov-pegar-aplicar" type="button" class="primary" style="font-size:.75em;"></button>
+          </div>
+        </details>
+      </div>
+
       <h3 id="cfg-grupos"></h3>
       <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
       <div id="lista-grupos" class="list-grupos"></div>
@@ -1097,6 +1181,25 @@ const REPORT_EMAIL = 'thendabs1@gmail.com';
    ═══════════════════════════════════════════════════════════════ */
 const I18N = {
   es: {
+    cfgModos: 'Modos de feed',
+    cfgModosHint: 'Cada modo tiene sus grupos, palabras y excepciones por medio. Al cambiar de modo el feed se reconfigura.',
+    cfgModoActivo: 'activo',
+    cfgModoNuevo: 'Nuevo modo',
+    cfgModoNombrePrompt: 'Nombre del modo:',
+    cfgModoRenombrarPrompt: 'Nuevo nombre para "{X}":',
+    cfgModoDuplicarSufijo: '(copia)',
+    cfgModoConfirmBorrar: '¿Borrar el modo "{X}"?',
+    cfgModoBorrado: 'Modo borrado: {X}',
+    cfgModoUnicoNoBorrar: 'No puedes borrar el único modo. Crea otro antes.',
+    cfgOverrideHint: 'Añade medios a este modo por dominio. ✓ fuerza a mostrarlo arriba; ✗ lo oculta.',
+    cfgOverridePlaceholder: 'dominio.com',
+    cfgOverridePegar: 'Pegar lista de dominios',
+    cfgOverridePegarHint: 'Una línea por dominio. Prefijo "+" para first, "-" para ignore.',
+    cfgOverrideAplicar: 'Aplicar',
+    cfgOverrideBad: 'Dominio no válido: {X}',
+
+    presetSinFiltro: 'Sin filtro',
+    presetGestionar: 'Gestionar modos…',
     pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro',
     metaPrefix: 'Actualizado:', metaSuffix: 'titulares en histórico',
     btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
@@ -3000,6 +3103,7 @@ function renderListaMedios(){
       marca(fila);
       setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '');
     });
+  });
   filtrarMedios();
 }
 function marca(fila){
@@ -3041,6 +3145,7 @@ function escribirPanel(p){
   $('#preset-palabras').value = p.palabras.join('\n');
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
+  renderModosPanel();
   renderListaMedios();
 }
 function leerPanel(){
@@ -3049,6 +3154,176 @@ function leerPanel(){
     grupos.push(c.dataset.grupo));
   const palabras = parseLista($('#preset-palabras').value);
   return { grupos, palabras };
+}
+function renderModosPanel(){
+  const cont = $('#lista-modos');
+  if (!cont) return;
+
+  cont.innerHTML = PRESETS.lista.map(p => {
+    const activo = (p.id === PRESETS.activo);
+    return `<div class="modo-fila${activo ? ' activo' : ''}" data-modo-id="${escapeHtml(p.id)}">
+      <span class="modo-nombre">${escapeHtml(p.nombre)}${activo ? ' · ' + escapeHtml(t('cfgModoActivo')) : ''}</span>
+      <span class="modo-acciones">
+        <button data-accion="activar" title="${escapeHtml(t('cfgModoActivo'))}">▶</button>
+        <button data-accion="renombrar" title="Renombrar">✏</button>
+        <button data-accion="duplicar" title="Duplicar">📄</button>
+        <button data-accion="borrar" class="danger" title="Borrar">🗑</button>
+      </span>
+    </div>`;
+  }).join('');
+
+  cont.querySelectorAll('.modo-fila').forEach(fila => {
+    const id = fila.dataset.modoId;
+    fila.querySelectorAll('button[data-accion]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const accion = btn.dataset.accion;
+        if (accion === 'activar') activarModo(id);
+        else if (accion === 'renombrar') renombrarModo(id);
+        else if (accion === 'duplicar') duplicarModo(id);
+        else if (accion === 'borrar') borrarModo(id);
+      });
+    });
+  });
+
+  const ovList = $('#ov-list');
+  if (ovList){
+    const ov = PRESET.overrides || {};
+    const entries = Object.entries(ov);
+    if (!entries.length){
+      ovList.innerHTML = '';
+    } else {
+      ovList.innerHTML = entries.map(([d, v]) =>
+        `<span class="ov-item ${v}">
+          <span>${escapeHtml(d)}</span>
+          <button data-dom="${escapeHtml(d)}" type="button">×</button>
+        </span>`
+      ).join('');
+      ovList.querySelectorAll('button[data-dom]').forEach(b => {
+        b.addEventListener('click', () => {
+          setOverride(b.dataset.dom, '');
+          renderModosPanel();
+          renderListaMedios();
+        });
+      });
+    }
+  }
+}
+
+function activarModo(id){
+  const target = PRESETS.lista.find(p => p.id === id);
+  if (!target) return;
+  PRESETS.activo = id;
+  PRESET = target;
+  PRESET_ACTIVO = true;
+  guardarPresets();
+  guardarPresetActivo();
+  recompilarPreset();
+  actualizarBotonPreset();
+  renderModosPanel();
+  renderListaMedios();
+  escribirPanel(PRESET);
+  aplicarFiltros();
+}
+
+function renombrarModo(id){
+  const p = PRESETS.lista.find(x => x.id === id);
+  if (!p) return;
+  const nuevo = prompt(t('cfgModoRenombrarPrompt', { X: p.nombre }), p.nombre);
+  if (nuevo == null) return;
+  const limpio = nuevo.trim();
+  if (!limpio) return;
+  p.nombre = limpio;
+  if (PRESET.id === id) PRESET.nombre = limpio;
+  guardarPresets();
+  actualizarBotonPreset();
+  renderModosPanel();
+}
+
+function duplicarModo(id){
+  const p = PRESETS.lista.find(x => x.id === id);
+  if (!p) return;
+  const copia = structuredClone(p);
+  copia.id = 'm-' + Date.now().toString(36);
+  copia.nombre = p.nombre + ' ' + t('cfgModoDuplicarSufijo');
+  PRESETS.lista.push(copia);
+  guardarPresets();
+  renderModosPanel();
+}
+
+function borrarModo(id){
+  if (PRESETS.lista.length <= 1){
+    toast(t('cfgModoUnicoNoBorrar'), 2400);
+    return;
+  }
+  const p = PRESETS.lista.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(t('cfgModoConfirmBorrar', { X: p.nombre }))) return;
+
+  PRESETS.lista = PRESETS.lista.filter(x => x.id !== id);
+  if (PRESETS.activo === id){
+    PRESETS.activo = PRESETS.lista[0].id;
+    PRESET = PRESETS.lista[0];
+  }
+  guardarPresets();
+  actualizarBotonPreset();
+  renderModosPanel();
+  renderListaMedios();
+  escribirPanel(PRESET);
+  aplicarFiltros();
+  toast(t('cfgModoBorrado', { X: p.nombre }), 2000);
+}
+
+function crearModo(){
+  const nombre = prompt(t('cfgModoNombrePrompt'), '');
+  if (nombre == null) return;
+  const limpio = nombre.trim();
+  if (!limpio) return;
+  const nuevo = {
+    id: 'm-' + Date.now().toString(36),
+    nombre: limpio,
+    grupos: [],
+    palabras: [],
+    overrides: {}
+  };
+  PRESETS.lista.push(nuevo);
+  PRESETS.activo = nuevo.id;
+  PRESET = nuevo;
+  PRESET_ACTIVO = true;
+  guardarPresets();
+  guardarPresetActivo();
+  recompilarPreset();
+  actualizarBotonPreset();
+  renderModosPanel();
+  renderListaMedios();
+  escribirPanel(PRESET);
+  aplicarFiltros();
+}
+
+function normalizarDominioInput(s){
+  return String(s || '').trim().toLowerCase()
+    .replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+}
+
+
+
+function aplicarListaOverrides(){
+  const txt = $('#ov-pegar').value || '';
+  const lineas = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let ok = 0, ko = 0;
+  lineas.forEach(l => {
+    const m = l.match(/^([+-]?)\s*(.+)$/);
+    if (!m){ ko++; return; }
+    const signo = m[1] || '-';
+    const d = normalizarDominioInput(m[2]);
+    if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){ ko++; return; }
+    setOverride(d, signo === '+' ? 'first' : 'ignore');
+    ok++;
+  });
+  $('#ov-pegar').value = '';
+  renderModosPanel();
+  renderListaMedios();
+  aplicarFiltros();
+  toast(`OK: ${ok} · KO: ${ko}`, 2200);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -3065,7 +3340,7 @@ function recompilarPreset(){
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
-  if (opresetTieneReglasv === 'ignore') return false;
+  if (ov === 'ignore') return false;
   if (ov === 'first')  return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
   if (RX_PRESET){
@@ -3269,13 +3544,9 @@ function importarDesdeFormatoVoceiro(data){
     if (!I18N[ACCES.lang]) ACCES.lang = 'es';
     guardarAcces();
   }
-  if (data.preset && typeof data.preset === 'object'){
-    PRESET = {
-      grupos:   Array.isArray(data.preset.grupos)   ? data.preset.grupos   : [],
-      palabras: Array.isArray(data.preset.palabras) ? data.preset.palabras : [],
-    };
-    guardarPreset();
     recompilarPreset();
+    renderModosPanel();
+    renderListaMedios();
   }
   if (Array.isArray(data.sites)){
     setSitesFromArray(data.sites);
@@ -3339,7 +3610,6 @@ function importarDesdeFormatoLector(data){
     if (!arr.some(x => x.domain === d)){
       arr.push({
         domain: d,
-        feedMode: '',
         lang: 'auto',
         type: '',
         tags: []
@@ -4122,6 +4392,14 @@ function aplicarTextos(){
   $('#btn-import').textContent = t('btnImport');
   $('#btn-export').title = t('btnExport');
   $('#btn-import').title = t('btnImport');
+  $('#cfg-modos').textContent = t('cfgModos');
+  $('#cfg-modos-hint').textContent = t('cfgModosHint');
+  $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
+  $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
+  $('#ov-domain').placeholder = t('cfgOverridePlaceholder');
+  $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
+  const det = $('#ov-pegar-wrap summary');
+  if (det) det.textContent = t('cfgOverridePegar');
 
   actualizarBotonDup();
   actualizarBotonHideRead();
@@ -4281,13 +4559,6 @@ function wireStaticEvents(){
     if (e.altKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); bsAbrir(); }
     if (e.altKey && e.key.toLowerCase() === 'm'){
       e.preventDefault();
-      // Alterna entre el modo activo y "Sin filtro"
-      PRESET_ACTIVO = !PRESET_ACTIVO;
-      guardarPresetActivo();
-      actualizarBotonPreset();
-      aplicarFiltros();
-    }
-      e.preventDefault();
       if (!PRESET_ACTIVO && !presetTieneReglas()){
         toast(t('presetVacio'), 3200);
         return;
@@ -4351,7 +4622,9 @@ function wireStaticEvents(){
   $('#w-mas').addEventListener('click', () => ajustarWidth(+1));
 
   $('#preset-guardar').addEventListener('click', () => {
-    PRESET = leerPanel();
+    const panel = leerPanel();
+    PRESET.grupos = panel.grupos;
+    PRESET.palabras = panel.palabras;
     guardarPreset(); recompilarPreset();
 
     if (presetTieneReglas() && !PRESET_ACTIVO){
@@ -4409,7 +4682,40 @@ function wireStaticEvents(){
     actualizarBotonPreset();
     aplicarFiltros();
   });
+  const btnNuevoModo = $('#btn-nuevo-modo');
+  if (btnNuevoModo) btnNuevoModo.addEventListener('click', crearModo);
 
+  const ovFirst = $('#ov-add-first');
+  const ovIgnore = $('#ov-add-ignore');
+  const ovDomain = $('#ov-domain');
+  if (ovFirst) ovFirst.addEventListener('click', () => {
+    const v = ovDomain.value;
+    const d = normalizarDominioInput(v);
+    if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){
+      toast(t('cfgOverrideBad', { X: v }), 2400);
+      return;
+    }
+    setOverride(d, 'first');
+    ovDomain.value = '';
+    renderModosPanel();
+    renderListaMedios();
+    aplicarFiltros();
+  });
+  if (ovIgnore) ovIgnore.addEventListener('click', () => {
+    const v = ovDomain.value;
+    const d = normalizarDominioInput(v);
+    if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){
+      toast(t('cfgOverrideBad', { X: v }), 2400);
+      return;
+    }
+    setOverride(d, 'ignore');
+    ovDomain.value = '';
+    renderModosPanel();
+    renderListaMedios();
+    aplicarFiltros();
+  });
+  const ovAplicar = $('#ov-pegar-aplicar');
+  if (ovAplicar) ovAplicar.addEventListener('click', aplicarListaOverrides);
   wireResultadosDelegation();
 }
 
