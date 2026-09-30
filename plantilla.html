@@ -358,6 +358,9 @@
   }
   .noticia.foco-dim{opacity:.28}
   .noticia.foco-active{opacity:1}
+  .noticia.vista{opacity:.72}
+  .noticia.leida{opacity:.5}
+  .noticia.leida a.titular{color:var(--muted)}
   .noticia .cabecera{
     display:flex; flex-wrap:wrap; gap:6px; align-items:center;
     margin-bottom:5px; font-size:.62em; color:var(--muted);
@@ -2037,6 +2040,35 @@ function renderLangSelect(){
    pestaña (ej. botón 🚫) se protegen durante TTL ms frente a
    los datos que devuelva el userscript.
    ═══════════════════════════════════════════════════════════════ */
+const LEIDAS_KEY = 'voceiro-leidas-v1';
+let LEIDAS_LOCAL = new Set();
+try { LEIDAS_LOCAL = new Set(JSON.parse(localStorage.getItem(LEIDAS_KEY) || '[]')); } catch(e){}
+
+function marcarLeidaLocal(url){
+  const k = normalizeUrlForMatch(url);
+  if (!k || LEIDAS_LOCAL.has(k)) return;
+  LEIDAS_LOCAL.add(k);
+  if (LEIDAS_LOCAL.size > 5000) LEIDAS_LOCAL = new Set([...LEIDAS_LOCAL].slice(-4000));
+  try { localStorage.setItem(LEIDAS_KEY, JSON.stringify([...LEIDAS_LOCAL])); } catch(e){}
+}
+
+const VISTAS_KEY = 'voceiro-vistas-v1';
+let VISTAS_LOCAL = new Set();
+try { VISTAS_LOCAL = new Set(JSON.parse(localStorage.getItem(VISTAS_KEY) || '[]')); } catch(e){}
+
+let VISTAS_DIRTY = false;
+function marcarVistaLocal(url){
+  const k = normalizeUrlForMatch(url);
+  if (!k || VISTAS_LOCAL.has(k)) return;
+  VISTAS_LOCAL.add(k);
+  if (VISTAS_LOCAL.size > 10000) VISTAS_LOCAL = new Set([...VISTAS_LOCAL].slice(-8000));
+  VISTAS_DIRTY = true;
+}
+const persistirVistas = debounce(() => {
+  if (!VISTAS_DIRTY) return;
+  try { localStorage.setItem(VISTAS_KEY, JSON.stringify([...VISTAS_LOCAL])); } catch(e){}
+  VISTAS_DIRTY = false;
+}, 1000);
 let USCRIPT_OK = false;
 let USCRIPT_CHECKED = false;
 let PENDIENTES_CACHE = [];
@@ -2261,7 +2293,7 @@ function refrescarBotonesGuardar(){
     const key = normalizeUrlForMatch(n.enlace);
     const guardada = PENDIENTES_URLS.has(key);
     const item = PENDIENTES_MAP.get(key);
-    const leida = guardada && item && item.read;
+    const leida = (guardada && item && item.read) || LEIDAS_LOCAL.has(key);
 
     if (leida){
       b.textContent = t('saveLabelRead');
@@ -3520,11 +3552,11 @@ function renderItemHtml(n, idx){
   if (ULT_RX) tituloHtml = resaltar(n.titular, ULT_RX);
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
-
   const key = normalizeUrlForMatch(n.enlace);
   const guardada = PENDIENTES_URLS.has(key);
   const item = PENDIENTES_MAP.get(key);
-  const leida = guardada && item && item.read;
+  const leida = (guardada && item && item.read) || LEIDAS_LOCAL.has(key);
+  const vista = !leida && VISTAS_LOCAL.has(key);
 
   let saveLabel, saveTitle;
   if (leida){
@@ -3563,7 +3595,7 @@ function renderItemHtml(n, idx){
     </details>`;
   }
 
-  return `<article class="noticia" data-idx="${idx}">
+  return `<article class="noticia${leida ? ' leida' : (vista ? ' vista' : '')}" data-idx="${idx}">
     <div class="cabecera">
       <span class="medio">${n._medioEsc}</span>
       <span class="badge">${n._tipoEsc}</span>
@@ -3598,6 +3630,7 @@ function appendBatch(){
   }
   sentinel.insertAdjacentHTML('beforebegin', html);
   RENDER_OFFSET = end;
+  observarNoticias();
 
   if (RENDER_OFFSET >= total){
     if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
@@ -3610,18 +3643,24 @@ function wireResultadosDelegation(){
     // Al clicar un titular: guardar como leída automáticamente
     const link = e.target.closest('a.titular');
     if (link){
-      const i = parseInt(link.closest('.noticia').dataset.idx, 10);
+      const art = link.closest('.noticia');
+      const i = parseInt(art.dataset.idx, 10);
       const n = ULT_FILTRADAS[i];
-      if (n && USCRIPT_OK){
-        document.dispatchEvent(new CustomEvent('voceiro-save-later', {
-          detail: {
-            url: n.enlace,
-            title: n.titular,
-            description: n.grupo || '',
-            image: '',
-            read: true
-          }
-        }));
+      if (n){
+        marcarLeidaLocal(n.enlace);
+        art.classList.remove('vista');
+        art.classList.add('leida');
+        if (USCRIPT_OK){
+          document.dispatchEvent(new CustomEvent('voceiro-save-later', {
+            detail: {
+              url: n.enlace,
+              title: n.titular,
+              description: n.grupo || '',
+              image: '',
+              read: true
+            }
+          }));
+        }
       }
       return;   // dejamos que abra normalmente
     }
@@ -3679,6 +3718,36 @@ function wireResultadosDelegation(){
       });
     }
   });
+}
+let VISTAS_OBSERVER = null;
+const VISTAS_TIMERS = new WeakMap();
+
+function wireVistasObserver(){
+  if (VISTAS_OBSERVER) VISTAS_OBSERVER.disconnect();
+  VISTAS_OBSERVER = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const art = entry.target;
+      if (entry.isIntersecting){
+        const i = parseInt(art.dataset.idx, 10);
+        const n = ULT_FILTRADAS[i];
+        if (!n) return;
+        const tmr = setTimeout(() => {
+          marcarVistaLocal(n.enlace);
+          art.classList.add('vista');
+          persistirVistas();
+        }, 1500);
+        VISTAS_TIMERS.set(art, tmr);
+      } else {
+        const tmr = VISTAS_TIMERS.get(art);
+        if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
+      }
+    });
+  }, { threshold: 0.5 });
+}
+
+function observarNoticias(){
+  if (!VISTAS_OBSERVER) return;
+  document.querySelectorAll('.noticia').forEach(el => VISTAS_OBSERVER.observe(el));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -4059,6 +4128,7 @@ async function init(){
   reconstruirListas();
   escribirPanel(PRESET);
   wireStaticEvents();
+  wireVistasObserver();
   bsWireEventos();
   aplicarFiltros();
 
