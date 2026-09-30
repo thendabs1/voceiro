@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 11:55</span>
+    <span id="fecha">30/09/2026 12:12</span>
     <span>·</span>
-    <span id="total">23180</span>
+    <span id="total">23743</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3435,7 +3435,23 @@ function aplicarFiltros(){
     return true;
   });
 
+  const FAV_WINDOW_MS = 24 * 3600 * 1000;   // 24 h
+
   filtradas.sort((a, b) => {
+    // Favoritos (✓ en Modo Personalizado), solo si son recientes y el modo está activo
+    if (presetEfectivo){
+      const aFav = (SITES.get(a.dominio) || {}).mode === 'auto'
+                   && !isNaN(a._tsOrden)
+                   && (ahora - a._tsOrden) < FAV_WINDOW_MS;
+      const bFav = (SITES.get(b.dominio) || {}).mode === 'auto'
+                   && !isNaN(b._tsOrden)
+                   && (ahora - b._tsOrden) < FAV_WINDOW_MS;
+      const fa = aFav ? 1 : 0;
+      const fb = bFav ? 1 : 0;
+      if (fa !== fb) return fb - fa;
+    }
+
+    // Orden normal por fecha
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
     if (ta !== tb) return orden === 'antiguos' ? ta - tb : tb - ta;
