@@ -887,9 +887,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 15:24</span>
+    <span id="fecha">30/09/2026 15:30</span>
     <span>·</span>
-    <span id="total">28733</span>
+    <span id="total">28869</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3538,6 +3538,7 @@ function exportarConfig(){
   toast(t('expOk'), 1800);
 }
 
+
 function importarDesdeFormatoVoceiro(data){
   if (data.acces && typeof data.acces === 'object'){
     ACCES = { ...ACCES_DEF, ...data.acces };
@@ -3587,6 +3588,7 @@ function importarDesdeFormatoVoceiro(data){
   }
   guardarPresetActivo();
 }
+
 
 function importarDesdeFormatoLector(data){
   if (data.prefs && typeof data.prefs === 'object'){
