@@ -3544,10 +3544,7 @@ function importarDesdeFormatoVoceiro(data){
     if (!I18N[ACCES.lang]) ACCES.lang = 'es';
     guardarAcces();
   }
-    recompilarPreset();
-    renderModosPanel();
-    renderListaMedios();
-  }
+
   if (Array.isArray(data.sites)){
     setSitesFromArray(data.sites);
     guardarSitesCache();
@@ -3559,6 +3556,22 @@ function importarDesdeFormatoVoceiro(data){
       });
     }
   }
+
+  if (data.voceiro && Array.isArray(data.voceiro.presets) && data.voceiro.presets.length){
+    const lista = data.voceiro.presets.map(normalizarPreset);
+    PRESETS = { lista, activo: lista[0].id };
+    PRESET = PRESETS.lista[0];
+    guardarPresets();
+    recompilarPreset();
+  }
+
+  if (typeof data.presetActivo === 'boolean'){
+    PRESET_ACTIVO = data.presetActivo && presetTieneReglas();
+  } else {
+    PRESET_ACTIVO = presetTieneReglas();
+  }
+  guardarPresetActivo();
+}
 
   if (data.voceiro && Array.isArray(data.voceiro.presets) && data.voceiro.presets.length){
     const lista = data.voceiro.presets.map(normalizarPreset);
