@@ -769,9 +769,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">30/09/2026 11:15</span>
+    <span id="fecha">30/09/2026 11:44</span>
     <span>·</span>
-    <span id="total">22272</span>
+    <span id="total">22870</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -999,7 +999,8 @@
   <input type="search" id="buscar" autocomplete="off">
   <select id="grupo"><option value=""></option></select>
   <select id="tipo"><option value=""></option></select>
-  <select id="medio"><option value=""></option></select>
+  <input type="search" id="medio" list="medio-datalist" autocomplete="off" placeholder="Medio…">
+  <datalist id="medio-datalist"></datalist>
   <select id="rango">
     <option value=""></option>
     <option value="1"></option>
@@ -2649,28 +2650,26 @@ function reconstruirListas(){
   contG.querySelectorAll('input[data-grupo]').forEach(c => {
     c.checked = gSet.has(c.dataset.grupo);
   });
-
   const selFG = $('#filtro-grupo-medio');
   while (selFG.options.length > 1) selFG.remove(1);
   if (selFG.options[0]) selFG.options[0].text = t('cfgTodosGrupos');
   grupos.forEach(g => selFG.add(new Option(g, g)));
   if (selFG_prev && [...selFG.options].some(o => o.value === selFG_prev)) selFG.value = selFG_prev;
 
-  const selM = $('#medio');
-  while (selM.options.length > 1) selM.remove(1);
-  if (selM.options[0]) selM.options[0].text = t('fltMedio');
-  const porGrupo = {};
-  MEDIOS_UNICOS.forEach(m => {
-    (porGrupo[m.grupo] = porGrupo[m.grupo] || new Set()).add(m.medio);
-  });
-  grupos.forEach(g => {
-    if (!porGrupo[g]) return;
-    const og = document.createElement('optgroup');
-    og.label = g + (afin.has(g) ? ' ●' : '');
-    [...porGrupo[g]].sort().forEach(m => og.appendChild(new Option(m, m)));
-    selM.appendChild(og);
-  });
-  if (selM_prev && [...selM.options].some(o => o.value === selM_prev)) selM.value = selM_prev;
+  // ── MEDIO: ahora es un input con datalist, no un <select> ──
+  const dlM = $('#medio-datalist');
+  if (dlM){
+    const setMedios = new Set();
+    MEDIOS_UNICOS.forEach(m => { if (m.medio) setMedios.add(m.medio); });
+    dlM.innerHTML = [...setMedios].sort().map(m =>
+      `<option value="${escapeHtml(m)}"></option>`
+    ).join('');
+  }
+  const inpM = $('#medio');
+  if (inpM){
+    inpM.placeholder = t('fltMedio');
+    if (selM_prev) inpM.value = selM_prev;
+  }
 
   renderListaMedios();
 }
@@ -3385,7 +3384,7 @@ function aplicarFiltros(){
 
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
-    if (m && n.medio !== m) return false;
+    if (m && !(n._medioStrict || (n._medioStrict = normStrict(n.medio))).includes(normStrict(m))) return false;
     if (limiteMs){
       const ts = n._tsOrden;
       if (isNaN(ts)) return false;
@@ -3785,7 +3784,8 @@ function aplicarTextos(){
   $('#buscar').placeholder = t('fltBuscar');
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
-  if ($('#medio').options[0]) $('#medio').options[0].text = t('fltMedio');
+  const elMedioTxt = $('#medio');
+  if (elMedioTxt) elMedioTxt.placeholder = t('fltMedio');
   const rOpts = $('#rango').options;
   rOpts[0].text = t('fltTodo');
   rOpts[1].text = t('flt24h');
@@ -3980,11 +3980,17 @@ function wireStaticEvents(){
 
   const aplicarFiltrosDebounced = debounce(aplicarFiltros, 180);
   $('#buscar').addEventListener('input', aplicarFiltrosDebounced);
-  ['grupo','tipo','medio','rango','orden'].forEach(id => {
-    const el = document.getElementById(id);
-    el.addEventListener('change', aplicarFiltros);
-    el.addEventListener('input', aplicarFiltros);
+  ['grupo','tipo','rango','orden'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', aplicarFiltros);
+  el.addEventListener('input',  aplicarFiltros);
   });
+  const elMedio = document.getElementById('medio');
+  if (elMedio){
+    const debMedio = debounce(aplicarFiltros, 220);
+    elMedio.addEventListener('input',  debMedio);
+    elMedio.addEventListener('change', aplicarFiltros);
+  }
 
   $('#limpiar').addEventListener('click', () => {
     ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
