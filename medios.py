@@ -245,7 +245,7 @@ MEDIA_CATALOG = [
         { 'd':'radiovoz.com',        'n':'Radio Voz',            'lang':'es', 'type':'radio',   'tags':['generalista','privado','galicia'] },  # [SIN-FEED: GN/scraping]
         { 'd':'riazor.org',          'n':'Riazor.org',           'lang':'es', 'type':'deportivo', 'tags':['deportes','galicia','coruña'] },
         { 'd':'vigoe.es',            'n':'Vigoé',                'lang':'es', 'type':'digital', 'tags':['generalista','local','vigo'] },
-        { 'd':'xornaldeferrol.com',   'n':'Xornal de Ferrol',     'lang':'gl','type':'digital','tags':['generalista','ferrol'] },  # [TIMEOUT: revisar]
+        { 'd':'ferrolxal.com',   'n':'FerrolXA',     'lang':'gl','type':'digital','tags':['generalista','ferrol'] },  # [TIMEOUT: revisar]
 
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
         # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'galiciant.com',        'n':'Galicia NT',           'lang':'gl','type':'digital','tags':['generalista','galicia'] },
@@ -949,7 +949,7 @@ GN_FALLBACK_DOMAINS = {
     'revistamongolia.com',
     'crtvg.gal',
     'radiovoz.com',
-    'xornaldeferrol.com',
+    'ferrolxa.com',
     'noticiasdenavarra.com',
     'valenciaactua.es',
     'abcnews.com',
