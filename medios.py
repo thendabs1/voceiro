@@ -74,7 +74,7 @@ MEDIA_CATALOG = [
         { 'd':'theobjective.com',    'n':'The Objective',        'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },
         { 'd':'vientosur.info',       'n':'Viento Sur',           'lang':'es','type':'revista','tags':['politica','izquierda'] },
         { 'd':'vozpopuli.com',       'n':'Vozpópuli',            'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },  # [SIN-FEED: GN/scraping]
-
+        { 'd':'politico.eu',        'n':'PoliticoEU',             'lang':'es', 'type':'digital', 'tags':['politica','EU'] },
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
         # [CAÍDO-DNS: DNS: [Errno -5] No address associated with hostname] { 'd':'afp.com',        'n':'AFP',        'lang':'en','type':'agencia','tags':['agencia','internacional'] },
         # [CAÍDO-DNS: DNS: [Errno -5] No address associated with hostname] { 'd':'diario16.com',         'n':'Diario16',             'lang':'es','type':'digital','tags':['generalista','digital'] },
