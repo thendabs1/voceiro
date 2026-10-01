@@ -155,8 +155,7 @@ MEDIA_CATALOG = [
         { 'd':'agenciasinc.es',        'n':'SINC',                'lang':'es','type':'digital','tags':['ciencia','publico'] },  # [SIN-FEED: GN/scraping]
         { 'd':'consalud.es',           'n':'ConSalud',            'lang':'es','type':'digital','tags':['salud'] },
         { 'd':'diariomedico.com',      'n':'Diario Médico',       'lang':'es','type':'digital','tags':['salud','profesional'] },
-        { 'd':'investigacionyciencia.es','n':'Investigación y Ciencia','lang':'es','type':'revista','tags':['ciencia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'muyinteresante.okdiario.com',     'n':'Muy Interesante',     'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'muyinteresante.okdiario.com',     'n':'Muy Interesante',     'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },
         { 'd':'nationalgeographic.com.es','n':'National Geographic España','lang':'es','type':'revista','tags':['ciencia','naturaleza'] },
         { 'd':'naukas.com',            'n':'Naukas',              'lang':'es','type':'digital','tags':['ciencia','blog'] },
         { 'd':'quo.es',                'n':'Quo',                 'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },
