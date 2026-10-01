@@ -683,10 +683,10 @@ def _wp_api(medio):
                 continue
             fecha_pub = ''
             if date:
-                iso = _rss_date_to_iso(date)
-                if not iso:
-                    iso = _rss_date_to_iso(date + '+02:00')
-                fecha_pub = iso
+    # WP date viene en hora local del servidor (Europe/Madrid)
+              if '+' not in date and 'Z' not in date:
+                  date = date + '+02:00'
+              fecha_pub = _rss_date_to_iso(date)
             out.append({
                 'titular':   _limpiar_cdata(title),
                 'enlace':    link,
@@ -1186,6 +1186,7 @@ def main():
     contador_rss = 0
     contador_scrape = 0
     contador_gn = 0
+    contador_wp = 0
     sin_resultado = []
     medios_sin_fecha = []
 
@@ -1199,6 +1200,8 @@ def main():
                     contador_scrape += 1
                 elif fuente == 'Google News':
                     contador_gn += 1
+                elif fuente == 'WP-API':
+                    contador_wp += 1
                 con_fecha = sum(1 for n in noticias if n.get('fecha_pub'))
                 if con_fecha == 0 and fuente != 'RSS':
                     medios_sin_fecha.append(medio['n'])
@@ -1280,6 +1283,7 @@ def main():
     print(f"\n── Fuentes ──")
     print(f"  RSS:          {contador_rss} medios")
     print(f"  Scraping:     {contador_scrape} medios")
+    print(f"  WP-API:       {contador_wp} medios")
     print(f"  Google News:  {contador_gn} medios")
 
     # ─── Actualizar marcas de último éxito ───
