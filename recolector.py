@@ -112,7 +112,8 @@ RELAY_DOMAINS = {
     'idealista.com',
     'elnacional.com',
     'washingtonpost.com',
-    'politico.eu'
+    'politico.eu',
+    'politico.com',
 }
 # ── Filtros anti-basura para scraping ──
 BAD_WORDS = {
