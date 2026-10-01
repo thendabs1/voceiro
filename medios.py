@@ -156,7 +156,7 @@ MEDIA_CATALOG = [
         { 'd':'consalud.es',           'n':'ConSalud',            'lang':'es','type':'digital','tags':['salud'] },
         { 'd':'diariomedico.com',      'n':'Diario Médico',       'lang':'es','type':'digital','tags':['salud','profesional'] },
         { 'd':'investigacionyciencia.es','n':'Investigación y Ciencia','lang':'es','type':'revista','tags':['ciencia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'muyinteresante.okdiario.coms',     'n':'Muy Interesante',     'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'muyinteresante.okdiario.com',     'n':'Muy Interesante',     'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },  # [SIN-FEED: GN/scraping]
         { 'd':'nationalgeographic.com.es','n':'National Geographic España','lang':'es','type':'revista','tags':['ciencia','naturaleza'] },
         { 'd':'naukas.com',            'n':'Naukas',              'lang':'es','type':'digital','tags':['ciencia','blog'] },
         { 'd':'quo.es',                'n':'Quo',                 'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },
@@ -243,7 +243,7 @@ MEDIA_CATALOG = [
         { 'd':'radiovoz.com',        'n':'Radio Voz',            'lang':'es', 'type':'radio',   'tags':['generalista','privado','galicia'] },  # [SIN-FEED: GN/scraping]
         { 'd':'riazor.org',          'n':'Riazor.org',           'lang':'es', 'type':'deportivo', 'tags':['deportes','galicia','coruña'] },
         { 'd':'vigoe.es',            'n':'Vigoé',                'lang':'es', 'type':'digital', 'tags':['generalista','local','vigo'] },
-        { 'd':'ferrolxal.com',   'n':'FerrolXA',     'lang':'gl','type':'digital','tags':['generalista','ferrol'] },  # [TIMEOUT: revisar]
+        { 'd':'ferrolxa.com',   'n':'FerrolXA',     'lang':'gl','type':'digital','tags':['generalista','ferrol'] },  # [TIMEOUT: revisar]
 
         # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
         # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'galiciant.com',        'n':'Galicia NT',           'lang':'gl','type':'digital','tags':['generalista','galicia'] },
@@ -822,7 +822,7 @@ KNOWN_FEEDS = {
     'theguardian.com': 'https://www.theguardian.com/world/rss',
     'time.com': 'https://www.time.com/rss/',
     'vox.com': 'https://www.vox.com/rss/index.xml',
-
+    'thehindu.com': 'https://www.thehindu.com/feeder/default.rss',
     # ── Latinoamérica ──
     'cartacapital.com.br': 'https://www.cartacapital.com.br/feed/',
     'ciperchile.cl': 'https://www.ciperchile.cl/feed/',
