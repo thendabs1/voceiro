@@ -270,12 +270,40 @@ def e7_enlaces_por_slug(soup, base, dom):
             break
     return _dedup(out)
 
-
+def e8_wp_api(base, dom):
+    """Prueba la API REST de WordPress estándar."""
+    # Extraer el origen del dominio
+    p = urlparse(base)
+    api_url = f"{p.scheme}://{p.netloc}/wp-json/wp/v2/posts?per_page=60"
+    try:
+        r = requests.get(api_url, impersonate="chrome", timeout=TIMEOUT)
+        if r.status_code != 200:
+            return []
+        data = r.json()
+    except Exception:
+        return []
+    out = []
+    for post in data:
+        title = (post.get('title') or {}).get('rendered', '')
+        link = post.get('link', '')
+        date = post.get('date', '')
+        if not title or not link:
+            continue
+        out.append({
+            'titular': _norm(title),
+            'enlace': link,
+            'fecha_pub': date + '+02:00' if date else '',
+        })
+        if len(out) >= N_ITEMS:
+            break
+    return out
+     
 ESTRATEGIAS = [
     ('E1 headings (baseline)', e1_headings),
     ('E2 headings+filtros',    e2_headings_filtros),
     ('E3 article+heading',     e3_articles),
     ('E7 enlaces por slug',    e7_enlaces_por_slug),
+    ('E8 WP API REST',         e8_wp_api),
 ]
 
 
