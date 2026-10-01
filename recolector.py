@@ -110,6 +110,7 @@ RELAY_DOMAINS = {
     'murciaeconomia.com',
     'idealista.com',
     'elnacional.com',
+    'washingtonpost.com',
 }
 # ── Filtros anti-basura para scraping ──
 BAD_WORDS = {
