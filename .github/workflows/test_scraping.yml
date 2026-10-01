@@ -3,14 +3,10 @@ name: Test scraping
 on:
   workflow_dispatch:
     inputs:
-      only:
-        description: 'Dominios separados por coma (vacío = todos)'
-        required: false
-        default: ''
-      limit:
-        description: 'N primeros (0 = todos)'
-        required: false
-        default: '0'
+      url:
+        description: 'URL a probar'
+        required: true
+        default: 'https://www.revistamongolia.com/'
 
 jobs:
   test:
@@ -28,7 +24,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Ejecutar test
-        run: |
-          python test_scraping.py \
-            --only "${{ github.event.inputs.only }}" \
-            --limit "${{ github.event.inputs.limit }}"
+        run: python test_scraping.py "${{ github.event.inputs.url }}"
