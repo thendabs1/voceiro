@@ -48,7 +48,7 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
 from zoneinfo import ZoneInfo
-
+from curl_cffi import requests as curl_requests
 from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
 try:
     from medios import (
@@ -99,28 +99,11 @@ STATE_PATH        = 'state.json'
 # ─────────────────────────────────────────────────────────────
 # SESIÓN HTTP CON SSL PERMISIVO
 # ─────────────────────────────────────────────────────────────
-class LegacySSLAdapter(HTTPAdapter):
-    def init_poolmanager(self, *args, **kwargs):
-        ctx = create_urllib3_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        try:
-            ctx.options |= 0x4
-        except Exception:
-            pass
-        try:
-            ctx.set_ciphers('DEFAULT@SECLEVEL=1')
-        except ssl.SSLError:
-            pass
-        kwargs['ssl_context'] = ctx
-        return super().init_poolmanager(*args, **kwargs)
+
 
 
 def _crear_sesion():
-    s = requests.Session()
-    adapter = LegacySSLAdapter()
-    s.mount('https://', adapter)
-    s.mount('http://', adapter)
+    s = curl_requests.Session(impersonate="chrome")
     s.headers.update(HEADERS)
     return s
 
