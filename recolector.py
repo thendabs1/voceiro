@@ -94,8 +94,7 @@ GN_SLEEP          = 0.3
 DATOS_DIR         = 'public/datos'
 MANIFEST_PATH     = 'public/datos/manifest.json'
 STATE_PATH        = 'state.json'
-
-DENO_RELAY_BASE = 'https://secret-worm-9453.thendabs1.deno.net/'
+DENO_RELAY_BASE = 'https://secret-worm-9453.thendabs1.deno.net/rss?u='
 RELAY_DOMAINS = {
     'diariodepontevedra.es',
     'elprogreso.es',
