@@ -778,6 +778,7 @@ KNOWN_FEEDS = {
     'mg.co.za': 'https://mg.co.za/atom/',
     'middleeasteye.net': 'https://middleeasteye.net/rss',
     'premiumtimesng.com': 'https://www.premiumtimesng.com/feed',
+    'washingtonpost.com': 'https://feeds.washingtonpost.com/rss/national',
 
     # ── Internacional · Europa ──
     'ansa.it': 'https://ansa.it/rss.xml',
