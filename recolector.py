@@ -72,7 +72,7 @@ except ImportError:
 N_FEED            = 60
 DIAS_RETENCION    = 15
 MAX_WORKERS       = 8
-TIMEOUT           = 15
+TIMEOUT           = 25
 TZ_MADRID = ZoneInfo('Europe/Madrid')
 
 # Intervalo por defecto si no hay datos.json previo (primer run)
