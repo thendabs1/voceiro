@@ -514,6 +514,7 @@ def _es_valido(texto, href, dominio):
     if dom_href and dom_href != dominio and not dom_href.endswith('.' + dominio):
         return False
     return True
+  
  def _scrape(medio):
     url = LISTING_URLS.get(medio['d']) or f"https://{medio['d']}"
     try:
