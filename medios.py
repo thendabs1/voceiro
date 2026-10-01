@@ -654,6 +654,8 @@ KNOWN_FEEDS = {
     'quo.es': 'https://quo.eldiario.es/feed',
 
     # ── España · Culturales ──
+    'politico.com': 'https://rss.politico.com/politics-news.xml',
+    'politico.eu': 'https://politico.eu/rss/',
     'culturainquieta.com': 'https://www.culturainquieta.com/feed/',
     'ethic.es': 'https://www.ethic.es/rss/',
     'jotdown.es': 'https://www.jotdown.es/feed/',
@@ -723,6 +725,7 @@ KNOWN_FEEDS = {
     'vientosur.info': 'https://vientosur.info/feed/',
 
     # ── España · Tecnología ──
+  
     'adslzone.net': 'https://www.adslzone.net/feed/',
     'andro4all.com': 'https://andro4all.com/feed',
     'applesfera.com': 'https://feeds.weblogssl.com/applesfera',
