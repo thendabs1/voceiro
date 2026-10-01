@@ -270,9 +270,8 @@ def e7_enlaces_por_slug(soup, base, dom):
             break
     return _dedup(out)
 
-def e8_wp_api(base, dom):
-    """Prueba la API REST de WordPress estándar."""
-    # Extraer el origen del dominio
+def e8_wp_api(soup, base, dom):
+    """Prueba la API REST de WordPress estándar. Ignora soup."""
     p = urlparse(base)
     api_url = f"{p.scheme}://{p.netloc}/wp-json/wp/v2/posts?per_page=60"
     try:
@@ -281,6 +280,8 @@ def e8_wp_api(base, dom):
             return []
         data = r.json()
     except Exception:
+        return []
+    if not isinstance(data, list):
         return []
     out = []
     for post in data:
