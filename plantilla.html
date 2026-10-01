@@ -1145,7 +1145,78 @@
       </label>
 
       <div class="rep-acciones">
-     <div class="panel-body">
+        <div class="grupo">
+          <button id="rep-copy" type="button"></button>
+        </div>
+        <div class="grupo">
+          <button id="rep-mail" type="button"></button>
+          <button id="rep-github" type="button" class="primary"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BUSCADOR -->
+<section id="panel-buscar" class="panel" role="dialog" aria-modal="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <h2 id="bs-title"></h2>
+      <button class="panel-close" type="button" data-close="panel-buscar">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="bs-aviso" id="bs-aviso"></div>
+
+      <div class="bs-filtros">
+        <input type="search" id="bs-q" autocomplete="off">
+        <div class="bs-fila">
+          <select id="bs-lang" aria-label="Language"></select>
+          <select id="bs-country" aria-label="Country"></select>
+          <select id="bs-date" aria-label="Date"></select>
+          <button id="bs-go" type="button" class="primary"></button>
+        </div>
+      </div>
+
+      <div class="bs-fuentes">
+        <label class="bs-fuente-chk">
+          <input type="checkbox" id="bs-f-freenews" checked>
+          <span>FreeNewsAPI</span>
+        </label>
+        <label class="bs-fuente-chk">
+          <input type="checkbox" id="bs-f-gnews" checked>
+          <span>Google News</span>
+        </label>
+      </div>
+
+      <div id="bs-estado" class="bs-estado"></div>
+      <div id="bs-resultados"></div>
+      <div id="bs-mas-wrap" style="display:none">
+        <button id="bs-mas" type="button"></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FILTROS -->
+<section class="filtros">
+  <input type="search" id="buscar" autocomplete="off">
+  <select id="grupo"><option value=""></option></select>
+  <select id="tipo"><option value=""></option></select>
+  <input type="search" id="medio" list="medio-datalist" autocomplete="off" placeholder="Medio…">
+  <datalist id="medio-datalist"></datalist>
+  <select id="rango">
+    <option value=""></option>
+    <option value="1"></option>
+    <option value="2"></option>
+    <option value="7"></option>
+  </select>
+  <select id="orden">
+    <option value="recientes"></option>
+    <option value="antiguos"></option>
+  </select>
+  <button id="limpiar" type="button"></button>
+</section>
+
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 <div class="contador-row">
   <span id="contador"></span>
