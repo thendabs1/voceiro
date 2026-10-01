@@ -941,6 +941,19 @@ GN_FALLBACK_DOMAINS = {
     'france24.com',
     'elnacional.com',
 
+    'colpisa.com',
+    'cuartopoder.es',
+    'diagonalperiodico.net',
+    'investigacionyciencia.es',
+    'critic.cat',
+    'revistamongolia.com',
+    'crtvg.gal',
+    'radiovoz.com',
+    'xornaldeferrol.com',
+    'noticiasdenavarra.es',
+    'valenciaactua.es',
+    'abcnews.com',
+    'edition.cnn.com',   # o cambia el 'd' del medio a 'cnn.com' y ya está en la lista
     # ──  ──
     '2playbook.com',
     'abc.com.py',
