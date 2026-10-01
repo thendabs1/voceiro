@@ -32,12 +32,10 @@ MEDIA_CATALOG = [
         { 'd':'antena3.com',         'n':'Antena 3',             'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
         { 'd':'cadenaser.com',       'n':'Cadena SER',           'lang':'es', 'type':'radio',   'tags':['generalista','radio'] },  # [SIN-FEED: GN/scraping]
         { 'd':'cambio16.com',         'n':'Cambio16',             'lang':'es','type':'digital','tags':['generalista','digital'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'colpisa.com',         'n':'Agencia Colpisa',      'lang':'es', 'type':'agencia', 'tags':['agencia','nacional'] },  # [SIN-FEED: GN/scraping]
         { 'd':'confilegal.com',       'n':'Confilegal',           'lang':'es','type':'digital','tags':['justicia','digital'] },
         { 'd':'cope.es',             'n':'COPE',                 'lang':'es', 'type':'radio',   'tags':['generalista','radio','conservador'] },
         { 'd':'cuartopoder.es',       'n':'Cuarto Poder',         'lang':'es','type':'digital','tags':['generalista','progresista'] },  # [SIN-FEED: GN/scraping]
         { 'd':'cuatro.com',          'n':'Cuatro',               'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
-        { 'd':'diagonalperiodico.net','n':'Diagonal',             'lang':'es','type':'digital','tags':['generalista','izquierda'] },  # [TIMEOUT: revisar]
         { 'd':'diariocritico.com',    'n':'Diario Crítico',       'lang':'es','type':'digital','tags':['generalista','digital'] },
         { 'd':'efe.com',             'n':'Agencia EFE',          'lang':'es', 'type':'agencia', 'tags':['agencia','nacional'] },  # [BLOQUEADO: HTTP 403]
         { 'd':'elboletin.com',        'n':'El Boletín',           'lang':'es','type':'digital','tags':['generalista','digital'] },
@@ -158,7 +156,7 @@ MEDIA_CATALOG = [
         { 'd':'consalud.es',           'n':'ConSalud',            'lang':'es','type':'digital','tags':['salud'] },
         { 'd':'diariomedico.com',      'n':'Diario Médico',       'lang':'es','type':'digital','tags':['salud','profesional'] },
         { 'd':'investigacionyciencia.es','n':'Investigación y Ciencia','lang':'es','type':'revista','tags':['ciencia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'muyinteresante.es',     'n':'Muy Interesante',     'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'muyinteresante.okdiario.coms',     'n':'Muy Interesante',     'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },  # [SIN-FEED: GN/scraping]
         { 'd':'nationalgeographic.com.es','n':'National Geographic España','lang':'es','type':'revista','tags':['ciencia','naturaleza'] },
         { 'd':'naukas.com',            'n':'Naukas',              'lang':'es','type':'digital','tags':['ciencia','blog'] },
         { 'd':'quo.es',                'n':'Quo',                 'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },
@@ -929,7 +927,7 @@ GN_FALLBACK_DOMAINS = {
     'capitalmadrid.com',
     'elchapuzasinformatico.com',
     'nationalgeographic.com.es',
-    'muyinteresante.es',
+    'muyinteresante.okdiario.com',
     'e-noticies.cat',
     'diariodepontevedra.es',
     'elprogreso.es',
@@ -940,10 +938,7 @@ GN_FALLBACK_DOMAINS = {
     'repubblica.it',
     'france24.com',
     'elnacional.com',
-
-    'colpisa.com',
     'cuartopoder.es',
-    'diagonalperiodico.net',
     'investigacionyciencia.es',
     'elcritic.cat',
     'revistamongolia.com',
