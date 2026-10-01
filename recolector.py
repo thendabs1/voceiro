@@ -674,6 +674,7 @@ def _wp_api(medio):
             return None
         data = r.json()
         if not isinstance(data, list):
+            print(f"  [WP-API bad-json] {medio['n']}")
             return None
         out = []
         for post in data:
@@ -684,10 +685,10 @@ def _wp_api(medio):
                 continue
             fecha_pub = ''
             if date:
-    # WP date viene en hora local del servidor (Europe/Madrid)
-              if '+' not in date and 'Z' not in date:
-                  date = date + '+02:00'
-              fecha_pub = _rss_date_to_iso(date)
+                # WP date viene en hora local del servidor (Europe/Madrid)
+                if '+' not in date and 'Z' not in date:
+                    date = date + '+02:00'
+                fecha_pub = _rss_date_to_iso(date)
             out.append({
                 'titular':   _limpiar_cdata(title),
                 'enlace':    link,
@@ -701,7 +702,6 @@ def _wp_api(medio):
     except Exception as e:
         print(f"  [WP-API!] {medio['n']}: {type(e).__name__}: {e}")
     return None
-  
 
 def _google_news(medio):
     domain = medio['d']
