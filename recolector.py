@@ -95,7 +95,21 @@ DATOS_DIR         = 'public/datos'
 MANIFEST_PATH     = 'public/datos/manifest.json'
 STATE_PATH        = 'state.json'
 
-
+DENO_RELAY_BASE = 'https://secret-worm-9453.deno.dev/rss?u='
+RELAY_DOMAINS = {
+    'diariodepontevedra.es',
+    'elprogreso.es',
+    'capitalmadrid.com',
+    'diariocritico.com',
+    'efe.com',
+    'elchapuzasinformatico.com',
+    'hipertextual.com',
+    'ctxt.es',
+    'granadadigital.es',
+    'sevillaactualidad.com',
+    'murciaeconomia.com',
+    'idealista.com',
+}
 # ─────────────────────────────────────────────────────────────
 # SESIÓN HTTP CON SSL PERMISIVO
 # ─────────────────────────────────────────────────────────────
@@ -406,17 +420,24 @@ def _rss(medio):
     url = KNOWN_FEEDS.get(medio['d'])
     if not url:
         return None
+
+    usar_relay = medio['d'] in RELAY_DOMAINS
+    fetch_url = DENO_RELAY_BASE + url if usar_relay else url
+
     try:
-        r = SESSION.get(url, timeout=TIMEOUT)
+        r = SESSION.get(fetch_url, timeout=TIMEOUT)
         if r.status_code != 200:
-            print(f"  [RSS {r.status_code}] {medio['n']}: {url}")
+            tag = 'RELAY' if usar_relay else 'RSS'
+            print(f"  [{tag} {r.status_code}] {medio['n']}: {fetch_url}")
             return None
         items = _parse_feed(r.content)
         if items:
+            if usar_relay:
+                print(f"  [RELAY ok] {medio['n']}: {len(items)} items")
             return items
-        # Diagnóstico: por qué devolvió vacío
         snippet = (r.content[:200] or b'').decode('utf-8', 'ignore')
-        print(f"  [RSS empty] {medio['n']}: {url}  "
+        tag = 'RELAY' if usar_relay else 'RSS'
+        print(f"  [{tag} empty] {medio['n']}: {fetch_url}  "
               f"ctype={r.headers.get('content-type')!r}  "
               f"bytes={len(r.content)}  head={snippet[:80]!r}")
         return None
@@ -590,7 +611,7 @@ def obtener_titulares(medio):
     items = _rss(medio)
     fuente = 'RSS'
 
-    if not items:
+    if not items and medio['d'] not in RELAY_DOMAINS:
         items = _scrape(medio)
         fuente = 'Scraping'
 
