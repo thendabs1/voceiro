@@ -264,7 +264,7 @@ MEDIA_CATALOG = [
         { 'd':'naiz.eus',            'n':'Naiz',                 'lang':'es', 'type':'digital', 'tags':['generalista','euskadi'] },
         { 'd':'noticiasdealava.eus', 'n':'Noticias de Álava',    'lang':'es', 'type':'diario',  'tags':['generalista','euskadi'] },
         { 'd':'noticiasdegipuzkoa.eus', 'n':'Noticias de Gipuzkoa', 'lang':'es', 'type':'diario', 'tags':['generalista','euskadi'] },
-        { 'd':'noticiasdenavarra.es','n':'Noticias de Navarra',  'lang':'es', 'type':'diario',  'tags':['generalista','navarra'] },  # [TIMEOUT: revisar]
+        { 'd':'noticiasdenavarra.com','n':'Noticias de Navarra',  'lang':'es', 'type':'diario',  'tags':['generalista','navarra'] },  # [TIMEOUT: revisar]
     ]},
 
     # ============================================================
@@ -950,7 +950,7 @@ GN_FALLBACK_DOMAINS = {
     'crtvg.gal',
     'radiovoz.com',
     'xornaldeferrol.com',
-    'noticiasdenavarra.es',
+    'noticiasdenavarra.com',
     'valenciaactua.es',
     'abcnews.com',
     'edition.cnn.com',   # o cambia el 'd' del medio a 'cnn.com' y ya está en la lista
