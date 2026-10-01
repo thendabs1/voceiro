@@ -171,7 +171,7 @@ MEDIA_CATALOG = [
     # ============================================================
     { 'group':'España · Culturales', 'items':[
         { 'd':'alternativaseconomicas.coop', 'n':'Alternativas Económicas', 'lang':'es', 'type':'revista', 'tags':['economia','social'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'critic.cat',          'n':'Crític',               'lang':'ca', 'type':'revista', 'tags':['cultural','investigacion'] },  # [SIN-FEED: GN/scraping]
+        { 'd':'elcritic.cat',          'n':'Crític',               'lang':'ca', 'type':'revista', 'tags':['cultural','investigacion'] },  # [SIN-FEED: GN/scraping]
         { 'd':'ctxt.es',             'n':'CTXT',                 'lang':'es', 'type':'revista', 'tags':['cultural','investigacion'] },  # [SIN-FEED: GN/scraping]
         { 'd':'culturainquieta.com', 'n':'Cultura Inquieta',     'lang':'es', 'type':'revista', 'tags':['cultural'] },
         { 'd':'elsaltodiario.com',   'n':'El Salto',             'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },  # [TIMEOUT: revisar]
@@ -740,7 +740,7 @@ KNOWN_FEEDS = {
     'teknofilo.com': 'https://www.teknofilo.com/feed/',
     'xataka.com': 'https://feeds.weblogssl.com/xataka2',
     'xatakamovil.com': 'https://xatakamovil.com/atom.xml',
-
+    'elcritic.cat': 'https://www.elcritic.cat/feed',
     # ── Extremadura · Madrid ──
     'elperiodicoextremadura.com': 'https://www.elperiodicoextremadura.com/rss/',
     'hoy.es': 'https://www.hoy.es/rss/2.0/?section=',
@@ -945,7 +945,7 @@ GN_FALLBACK_DOMAINS = {
     'cuartopoder.es',
     'diagonalperiodico.net',
     'investigacionyciencia.es',
-    'critic.cat',
+    'elcritic.cat',
     'revistamongolia.com',
     'crtvg.gal',
     'radiovoz.com',
