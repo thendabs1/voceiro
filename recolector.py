@@ -37,6 +37,7 @@ import json
 import os
 import re
 import ssl
+import html
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from collections import defaultdict
@@ -173,10 +174,11 @@ def _to_iso_madrid(dt):
         return ''
 
 def _limpiar_cdata(s):
-    """Quita envoltorios <![CDATA[...]]> que algunos RSS dejan en el título."""
+    """Quita <![CDATA[...]]> y decodifica entidades HTML."""
     if not s:
         return ''
     s = str(s).strip()
+    # Quitar CDATA
     changed = True
     while changed:
         changed = False
@@ -187,6 +189,10 @@ def _limpiar_cdata(s):
             s = s[:-3]
             changed = True
         s = s.strip()
+    # Decodificar entidades HTML (&apos; &quot; &amp; &#39; etc.)
+    s = html.unescape(s)
+    # Colapsar espacios múltiples
+    s = re.sub(r'\s+', ' ', s).strip()
     return s
 
 def _rss_date_to_iso(raw):
