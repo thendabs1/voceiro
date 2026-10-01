@@ -47,6 +47,7 @@ import feedparser
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 from curl_cffi import requests as curl_requests
 from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
@@ -108,6 +109,38 @@ RELAY_DOMAINS = {
     'sevillaactualidad.com',
     'murciaeconomia.com',
     'idealista.com',
+}
+# ── Filtros anti-basura para scraping ──
+BAD_WORDS = {
+    'suscríbete', 'suscribete', 'newsletter', 'contacto',
+    'aviso legal', 'privacidad', 'cookies', 'iniciar sesión',
+    'iniciar sesion', 'regístrate', 'registrate', 'publicidad',
+    'quiénes somos', 'quienes somos', 'términos y condiciones',
+    'política de privacidad', 'politica de privacidad',
+    'comentarios', 'comparte', 'compartir', 'síguenos', 'siguenos',
+    'lo más leído', 'lo mas leido', 'más leídas', 'mas leidas',
+    'en directo', 'ver más', 'ver mas', 'leer más', 'leer mas',
+    'ver todos', 'ver todas', 'todos los artículos',
+}
+
+BAD_PATH_SEGMENTS = (
+    '/tag/', '/tags/', '/autor/', '/autores/', '/author/',
+    '/seccion/', '/secciones/', '/category/', '/categoria/',
+    '/newsletter', '/suscri', '/contact', '/contacto',
+    '/aviso-legal', '/privacidad', '/privacy', '/terms',
+    '/login', '/register', '/cuenta', '/perfil',
+    '/comentarios', '/rss', '/publicidad', '/anunciate',
+    '/quienes-somos', '/equipo', '/staff',
+)
+
+# Slug de noticia: minúsculas, números y guiones
+SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9\-]{15,}$')
+
+# Medios que exponen API REST de WordPress (wp-json/wp/v2/posts)
+WP_API_DOMAINS = {
+    'muyinteresante.okdiario.com',
+    'cambio16.com',
+    # Añadir más aquí según se confirmen
 }
 # ─────────────────────────────────────────────────────────────
 # SESIÓN HTTP CON SSL PERMISIVO
@@ -444,8 +477,44 @@ def _rss(medio):
         print(f"  [RSS!] {medio['n']}: {type(e).__name__}: {e}")
     return None
 
+def _dominio_de(url):
+    """Devuelve el dominio sin www."""
+    try:
+        from urllib.parse import urlparse
+        d = urlparse(url).netloc.lower()
+        return d[4:] if d.startswith('www.') else d
+    except Exception:
+        return ''
 
-def _scrape(medio):
+
+def _normalizar_url(href, base_url):
+    """Convierte href relativo a absoluto usando urljoin."""
+    try:
+        from urllib.parse import urljoin
+        return urljoin(base_url, href)
+    except Exception:
+        return href
+
+
+def _es_valido(texto, href, dominio):
+    """Filtro anti-basura: longitud, palabras prohibidas, rutas y dominio."""
+    if len(texto) < 20 or len(texto) > 250:
+        return False
+    if texto.isdigit():
+        return False
+    low = texto.lower()
+    if any(w in low for w in BAD_WORDS):
+        return False
+    if href.startswith('#') or href.startswith('javascript:'):
+        return False
+    low_href = href.lower()
+    if any(seg in low_href for seg in BAD_PATH_SEGMENTS):
+        return False
+    dom_href = _dominio_de(href)
+    if dom_href and dom_href != dominio and not dom_href.endswith('.' + dominio):
+        return False
+    return True
+ def _scrape(medio):
     url = LISTING_URLS.get(medio['d']) or f"https://{medio['d']}"
     try:
         r = SESSION.get(url, timeout=TIMEOUT, allow_redirects=True)
@@ -453,41 +522,77 @@ def _scrape(medio):
             print(f"  [SCRAPE {r.status_code}] {medio['n']}")
             return None
         soup = BeautifulSoup(r.text, 'lxml')
+        dominio = medio['d']
 
-        vistos = set()
-        out = []
-        for tag in soup.find_all(['h1', 'h2', 'h3'], limit=80):
-            a = tag.find('a', href=True)
-            if not a:
-                continue
-            texto = a.get_text(' ', strip=True)
-            if len(texto) < 30:
-                continue
-            href = a['href']
-            if href.startswith('/'):
-                href = url + href
-            elif href.startswith('//'):
-                href = 'https:' + href
-            elif not href.startswith('http'):
-                continue
-            if href in vistos:
-                continue
-            vistos.add(href)
+        items_e1 = _scrape_headings(soup, url, dominio)
+        items_e7 = _scrape_slugs(soup, url, dominio)
 
-            item_date = _extract_item_date(tag)
-            out.append({
-                'titular':   texto,
-                'enlace':    href,
-                'fecha_pub': item_date,
-                'pos':       len(out),
-            })
-            if len(out) >= N_FEED:
-                break
-        return out or None
+        unicos = {}
+        orden = 0
+        for it in items_e1 + items_e7:
+            u = it['enlace']
+            if u not in unicos:
+                it['pos'] = orden
+                orden += 1
+                unicos[u] = it
+            elif not unicos[u].get('fecha_pub') and it.get('fecha_pub'):
+                unicos[u] = it
+
+        out = list(unicos.values())
+        out.sort(key=lambda x: (0 if x.get('fecha_pub') else 1, x.get('pos', 999)))
+        return out[:N_FEED] or None
     except Exception as e:
         print(f"  [SCRAPE!] {medio['n']}: {type(e).__name__}: {e}")
     return None
 
+
+def _scrape_headings(soup, base_url, dominio):
+    """E1: headings h1/h2/h3 con enlace, con filtros anti-basura."""
+    out = []
+    for tag in soup.find_all(['h1', 'h2', 'h3'], limit=150):
+        a = tag.find('a', href=True)
+        if not a:
+            continue
+        texto = a.get_text(' ', strip=True)
+        href = _normalizar_url(a['href'], base_url)
+        if not _es_valido(texto, href, dominio):
+            continue
+        out.append({
+            'titular':   texto,
+            'enlace':    href,
+            'fecha_pub': _extract_item_date(tag),
+        })
+        if len(out) >= N_FEED:
+            break
+    return out
+
+
+def _scrape_slugs(soup, base_url, dominio):
+    """E7: cualquier <a> cuyo href apunte a un slug de noticia."""
+    out = []
+    for a in soup.find_all('a', href=True, limit=600):
+        texto = a.get_text(' ', strip=True)
+        href = _normalizar_url(a['href'], base_url)
+        if not _es_valido(texto, href, dominio):
+            continue
+        path = urlparse(href).path.rstrip('/')
+        if not path:
+            continue
+        slug = path.rsplit('/', 1)[-1]
+        if not SLUG_RE.match(slug):
+            continue
+        if slug.count('-') < 2:
+            continue
+        if slug.replace('-', '').isdigit():
+            continue
+        out.append({
+            'titular':   texto,
+            'enlace':    href,
+            'fecha_pub': _extract_item_date(a),
+        })
+        if len(out) >= N_FEED:
+            break
+    return out
 
 # ─────────────────────────────────────────────────────────────
 # FASE 1c · GOOGLE NEWS (fallback)
@@ -554,6 +659,46 @@ def _dominio_de_url(url):
     except Exception:
         return ''
 
+def _wp_api(medio):
+    """Consulta la API REST de WordPress si el dominio está marcado."""
+    if medio['d'] not in WP_API_DOMAINS:
+        return None
+    url = f"https://{medio['d']}/wp-json/wp/v2/posts?per_page={N_FEED}"
+    try:
+        r = SESSION.get(url, timeout=TIMEOUT)
+        if r.status_code != 200:
+            print(f"  [WP-API {r.status_code}] {medio['n']}")
+            return None
+        data = r.json()
+        if not isinstance(data, list):
+            return None
+        out = []
+        for post in data:
+            title = (post.get('title') or {}).get('rendered', '')
+            link = post.get('link', '')
+            date = post.get('date', '')
+            if not title or not link:
+                continue
+            fecha_pub = ''
+            if date:
+                iso = _rss_date_to_iso(date)
+                if not iso:
+                    iso = _rss_date_to_iso(date + '+02:00')
+                fecha_pub = iso
+            out.append({
+                'titular':   _limpiar_cdata(title),
+                'enlace':    link,
+                'fecha_pub': fecha_pub,
+            })
+            if len(out) >= N_FEED:
+                break
+        if out:
+            print(f"  [WP-API ok] {medio['n']}: {len(out)} items")
+        return out or None
+    except Exception as e:
+        print(f"  [WP-API!] {medio['n']}: {type(e).__name__}: {e}")
+    return None
+  
 
 def _google_news(medio):
     domain = medio['d']
@@ -610,6 +755,11 @@ def obtener_titulares(medio):
     items = _rss(medio)
     fuente = 'RSS'
 
+    if not items:
+        items = _wp_api(medio)
+        if items:
+            fuente = 'WP-API'
+
     if not items and medio['d'] not in RELAY_DOMAINS:
         items = _scrape(medio)
         fuente = 'Scraping'
@@ -641,7 +791,6 @@ def obtener_titulares(medio):
         })
 
     return (medio, noticias, fuente)
-
 
 # ─────────────────────────────────────────────────────────────
 # ASIGNACIÓN DE FECHAS ESTIMADAS
