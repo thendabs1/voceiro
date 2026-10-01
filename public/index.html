@@ -934,9 +934,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">01/10/2026 14:39</span>
+    <span id="fecha">01/10/2026 14:51</span>
     <span>·</span>
-    <span id="total">51868</span>
+    <span id="total">52173</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3878,24 +3878,16 @@ async function bsFetchGnews(){
   const data = await res.json();
   if (data.status !== 'ok') throw new Error('GNews: ' + (data.message || 'error'));
 
-  const nuevos = (data.items || []).map(it => {
-    let titulo = bsLimpiarTitulo(it.title || '');
-    let host = '';
-    const m = titulo.match(/\s-\s([^-]+)$/);
-    if (m){
-      titulo = titulo.slice(0, m.index).trim();
-      host = bsHostLimpio(m[1]);
-    }
-    return {
-      _src: 'gnews',
-      title: titulo,
-      url: it.link,
-      host: host,
-      pubDate: it.pubDate,
-      description: '',
-      image: it.thumbnail || '',
-    };
-  });
+  const nuevos = (data.items || []).map(it => ({
+    _src: 'gnews',
+    title: it.title,                       // ya viene limpio del Worker
+    url: it.link,
+    host: bsHostLimpio(it.source || ''),   // nombre del medio
+    sourceName: it.source || '',           // campo explícito para mostrar
+    pubDate: it.pubDate,
+    description: '',
+    image: '',
+  }));
 
   BS_STATE.gnews.items = bsFiltrarPorFecha(nuevos, BS_STATE.date);
   BS_STATE.gnews.total = BS_STATE.gnews.items.length;
@@ -4012,11 +4004,13 @@ function bsRender(){
 }
 
 function bsRenderItem(r, i){
-  const enCatalogo = r.host && MEDIOS_UNICOS.some(m => m.dominio === r.host);
+  const enCatalogo = r._src === 'freenews'
+    && r.host
+    && MEDIOS_UNICOS.some(m => m.dominio === r.host);
   const fechaRel = bsFechaRel(r.pubDate);
   const srcLabel = r._src === 'freenews' ? 'FreeNews' : 'Google News';
   const srcClass = r._src === 'freenews' ? 'bs-badge-fn' : 'bs-badge-gn';
-  const hostMostrar = r.host || (r._src === 'gnews' ? 'Google News' : '');
+  const hostMostrar = r.sourceName || r.host || (r._src === 'gnews' ? 'Google News' : '');
 
   let dupHtml = '';
   if (r._dup && r._dup.length){
