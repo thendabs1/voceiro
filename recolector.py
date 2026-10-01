@@ -109,6 +109,7 @@ RELAY_DOMAINS = {
     'sevillaactualidad.com',
     'murciaeconomia.com',
     'idealista.com',
+    'elnacional.com',
 }
 # ── Filtros anti-basura para scraping ──
 BAD_WORDS = {
