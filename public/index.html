@@ -1180,9 +1180,9 @@
   </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 15:46</span>
+    <span id="fecha">02/10/2026 16:06</span>
     <span>·</span>
-    <span id="total">82228</span>
+    <span id="total">82752</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -2213,11 +2213,13 @@ function toast(msg, ms){
 }
 function debounce(fn, ms){
   let t;
-  return function(){
+  const wrapped = function(){
     const args = arguments, ctx = this;
     clearTimeout(t);
-    t = setTimeout(() => fn.apply(ctx, args), ms);
+    t = setTimeout(() => { t = null; fn.apply(ctx, args); }, ms);
   };
+  wrapped.cancel = () => { clearTimeout(t); t = null; };
+  return wrapped;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -3290,7 +3292,9 @@ async function cargarDatos(){
 
   MEDIOS = {};
   NOTICIAS = [];
-
+  _hidratadasHasta = 0;
+  _dupsHechosHasta = 0;
+  _dupsLogged = false;
   // ── FASE 1: portada ──
   try {
     const r = await fetch('datos/portada.json', { cache: 'no-cache' });
@@ -3378,7 +3382,8 @@ async function cargarDatos(){
     Array.from({ length: Math.min(CONCURRENCIA, ficherosOrdenados.length) }, worker)
   );
 
-  // Refresco final consolidado (por si el último debounce quedó pendiente)
+  // Cancela el debounce pendiente y refresca una sola vez
+  refrescarDebounced.cancel();
   refrescarVistaCompleta();
   console.log(`[carga] histórico: +${totalAñadidas} noticias · total ${NOTICIAS.length}`);
 }
@@ -3388,7 +3393,7 @@ function refrescarVistaCompleta(){
   construirMediosUnicos();
   construirGruposDuplicados();
   construirIndicesBusqueda();
-  reconstruirListas();
+  reconstruirSelectores();
   aplicarFiltros();
 }
 
@@ -3401,12 +3406,13 @@ function reconstruirFecha(raw, dia){
   }
   return s;
 }
-
+let _hidratadasHasta = 0;
 function hidratarNoticias(){
   const ahora = Date.now();
   const horizonte = ahora + HORIZONTE_FUTURO_MS;
 
-  for (const n of NOTICIAS){
+  for (let i = _hidratadasHasta; i < NOTICIAS.length; i++){
+    const n = NOTICIAS[i];
     if (n._hidratada) continue;
     n._hidratada = true;
     if (n.dominio === undefined) n.dominio = n.d || '';
@@ -3469,6 +3475,7 @@ function hidratarNoticias(){
     n._esFuturo   = !isNaN(tsPub) && (tsPub > horizonte);
     n._tieneFecha = !isNaN(tsOrden);
   }
+  _hidratadasHasta = NOTICIAS.length;
 }
 
 function construirMediosUnicos(){
@@ -3483,12 +3490,17 @@ function construirMediosUnicos(){
     a.grupo.localeCompare(b.grupo) || a.medio.localeCompare(b.medio)
   );
 }
-
+let _dupsHechosHasta = 0;
+let _dupsLogged = false;
 function construirGruposDuplicados(){
   // Ya no agrupamos por título en el cliente — el recolector ha colapsado
   // los duplicados editoriales y ha dejado las referencias en el campo `a`.
   let total = 0;
-  for (const n of NOTICIAS){
+  for (let i = _dupsHechosHasta; i < NOTICIAS.length; i++){
+    const n = NOTICIAS[i];
+    if (n._dupsHecho) continue;
+    n._dupsHecho = true;
+
     if (Array.isArray(n.a) && n.a.length){
       n._dupHidden = n.a.map(o => ({
         dominio: o.d || '',
@@ -3500,8 +3512,11 @@ function construirGruposDuplicados(){
       n._dupHidden = null;
     }
   }
-  if (total){
+  _dupsHechosHasta = NOTICIAS.length;
+
+  if (total && !_dupsLogged){
     console.log(`[dups] ${total} noticias referenciadas como 'alt'`);
+    _dupsLogged = true;
   }
 }
 
@@ -3654,38 +3669,28 @@ function gruposAfinesAlIdioma(){
   return set;
 }
 
-function reconstruirListas(){
+function reconstruirSelectores(){
   const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
-  const afin = gruposAfinesAlIdioma();
 
-  const selG_prev = $('#grupo').value;
-  const selM_prev = $('#medio').value;
+  const selG_prev  = $('#grupo').value;
+  const selM_prev  = $('#medio').value;
   const selFG_prev = $('#filtro-grupo-medio').value;
 
+  // <select id="grupo">
   const selG = $('#grupo');
   while (selG.options.length > 1) selG.remove(1);
   if (selG.options[0]) selG.options[0].text = t('fltGrupo');
   grupos.forEach(g => selG.add(new Option(g, g)));
   if (selG_prev && [...selG.options].some(o => o.value === selG_prev)) selG.value = selG_prev;
 
-  const contG = $('#lista-grupos');
-  contG.innerHTML = grupos.map(g => `
-    <label class="grupo-item">
-      <input type="checkbox" data-grupo="${escapeHtml(g)}">
-      <span>${escapeHtml(g)}</span>
-      ${afin.has(g) ? '<span class="flag" title="idioma">●</span>' : ''}
-    </label>`).join('');
-  const gSet = new Set(PRESET.grupos);
-  contG.querySelectorAll('input[data-grupo]').forEach(c => {
-    c.checked = gSet.has(c.dataset.grupo);
-  });
+  // <select id="filtro-grupo-medio">
   const selFG = $('#filtro-grupo-medio');
   while (selFG.options.length > 1) selFG.remove(1);
   if (selFG.options[0]) selFG.options[0].text = t('cfgTodosGrupos');
   grupos.forEach(g => selFG.add(new Option(g, g)));
   if (selFG_prev && [...selFG.options].some(o => o.value === selFG_prev)) selFG.value = selFG_prev;
 
-  // ── MEDIO: ahora es un input con datalist, no un <select> ──
+  // <datalist id="medio-datalist">
   const dlM = $('#medio-datalist');
   if (dlM){
     const setMedios = new Set();
@@ -3699,9 +3704,22 @@ function reconstruirListas(){
     inpM.placeholder = t('fltMedio');
     if (selM_prev) inpM.value = selM_prev;
   }
-
-  renderListaMedios();
 }
+
+function renderListaGrupos(p){
+  const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
+  const afin   = gruposAfinesAlIdioma();
+  const gSet   = new Set(p.grupos);
+  const contG  = $('#lista-grupos');
+  contG.innerHTML = grupos.map(g => `
+    <label class="grupo-item">
+      <input type="checkbox" data-grupo="${escapeHtml(g)}" ${gSet.has(g) ? 'checked' : ''}>
+      <span>${escapeHtml(g)}</span>
+      ${afin.has(g) ? '<span class="flag" title="idioma">●</span>' : ''}
+    </label>`).join('');
+}
+
+// renderListaMedios() se queda como está
 
 function renderListaMedios(){
   const cont = $('#lista-medios');
@@ -3729,20 +3747,7 @@ function renderListaMedios(){
       </div>`;
   }).join('');
 
-  cont.querySelectorAll('.medio-fila').forEach(fila => {
-    const inc = fila.querySelector('.chk-incluir');
-    const ign = fila.querySelector('.chk-ignorar');
-    inc.addEventListener('change', () => {
-      if (inc.checked) ign.checked = false;
-      marca(fila);
-      setOverride(fila.dataset.dominio, inc.checked ? 'first' : '');
-    });
-    ign.addEventListener('change', () => {
-      if (ign.checked) inc.checked = false;
-      marca(fila);
-      setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '');
-    });
-  });
+
   filtrarMedios();
 }
 function marca(fila){
@@ -3777,10 +3782,7 @@ function actualizarResumen(visiblesOverride){
   });
 }
 function escribirPanel(p){
-  const gSet = new Set(p.grupos);
-  document.querySelectorAll('#lista-grupos input[data-grupo]').forEach(c => {
-    c.checked = gSet.has(c.dataset.grupo);
-  });
+  renderListaGrupos(p);         // ← nuevo: renderiza + marca checkboxes
   $('#preset-palabras').value = p.palabras.join('\n');
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
@@ -4290,7 +4292,7 @@ function importarConfig(file){
 
       aplicarAcces();
       aplicarTextos();
-      reconstruirListas();
+      reconstruirSelectores();
       construirIndicesBusqueda();
       actualizarBotonPreset();
       if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
@@ -5394,7 +5396,7 @@ function wireStaticEvents(){
     ACCES.lang = v;
     guardarAcces();
     aplicarTextos();
-    reconstruirListas();
+    reconstruirSelectores();
     construirIndicesBusqueda();
     if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
     renderizar();
@@ -5534,6 +5536,26 @@ function wireStaticEvents(){
   const ovAplicar = $('#ov-pegar-aplicar');
   if (ovAplicar) ovAplicar.addEventListener('click', aplicarListaOverrides);
   wireResultadosDelegation();
+    // Delegación para #lista-medios (un único listener en todo el contenedor)
+  const contMedios = $('#lista-medios');
+  if (contMedios){
+    contMedios.addEventListener('change', e => {
+      const fila = e.target.closest('.medio-fila');
+      if (!fila) return;
+      const inc = fila.querySelector('.chk-incluir');
+      const ign = fila.querySelector('.chk-ignorar');
+
+      if (e.target === inc){
+        if (inc.checked) ign.checked = false;
+        marca(fila);
+        setOverride(fila.dataset.dominio, inc.checked ? 'first' : '');
+      } else if (e.target === ign){
+        if (ign.checked) inc.checked = false;
+        marca(fila);
+        setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '');
+      }
+    });
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -5586,7 +5608,7 @@ async function init(){
     .forEach(t2 => selT.add(new Option(t2, t2)));
   if (selT.options[0]) selT.options[0].text = t('fltTipo');
 
-  reconstruirListas();
+  reconstruirSelectores();
   escribirPanel(PRESET);
   wireStickyOffsets();
   wireBackToTop();
