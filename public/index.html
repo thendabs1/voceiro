@@ -934,9 +934,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 11:15</span>
+    <span id="fecha">02/10/2026 11:29</span>
     <span>·</span>
-    <span id="total">74667</span>
+    <span id="total">75028</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -2802,48 +2802,95 @@ async function cargarDatos(){
   const ficheros = manifest.ficheros || [];
   if (!ficheros.length) throw new Error('manifest sin ficheros');
 
-  const settled = await Promise.allSettled(
-    ficheros.map(f =>
-      fetch(`datos/${f.file}`, { cache: 'default' })
-        .then(r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status} en ${f.file}`);
-          return r.json();
-        })
-    )
-  );
-
-  const fallos = settled.filter(s => s.status === 'rejected');
-  if (fallos.length){
-    console.warn(`[carga] ${fallos.length} ficheros fallaron:`,
-      fallos.map(f => f.reason && f.reason.message));
-  }
-
   MEDIOS = {};
   NOTICIAS = [];
-  for (const s of settled){
-    if (s.status !== 'fulfilled') continue;
-    const data = s.value || {};
-    const diaFichero = data.fecha || '';
-    const generadoFichero = data.generado || '';
-    if (data.medios){
-      for (const d in data.medios) MEDIOS[d] = data.medios[d];
+
+  // ── FASE 1: portada (rápida, primer render) ──
+  try {
+    const r = await fetch('datos/portada.json', { cache: 'no-cache' });
+    if (r.ok){
+      const data = await r.json();
+      if (data.medios){
+        for (const d in data.medios) MEDIOS[d] = data.medios[d];
+      }
+      const dia = data.generado ? data.generado.slice(0, 10) : '';
+      for (const n of (data.noticias || [])){
+        n._dia = dia;
+        n._generado = data.generado || '';
+        NOTICIAS.push(n);
+      }
+      console.log(`[carga] portada: ${NOTICIAS.length} noticias`);
     }
-    if (Array.isArray(data.noticias)){
-      for (const n of data.noticias){
+  } catch(e){
+    console.warn('[carga] portada falló, sigo con histórico:', e.message);
+  }
+
+  // Set de URLs ya cargadas (para dedup con el histórico)
+  const urlsCargadas = new Set();
+  for (const n of NOTICIAS){
+    const u = n.u || '';
+    if (u){
+      const full = u.startsWith('http') ? u
+                 : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
+      urlsCargadas.add(normalizeUrlForMatch(full));
+    }
+  }
+
+  // ── FASE 2: histórico en background ──
+  const idle = window.requestIdleCallback || (cb => setTimeout(cb, 100));
+  idle(async () => {
+    const settled = await Promise.allSettled(
+      ficheros.map(f =>
+        fetch(`datos/${f.file}`, { cache: 'default' })
+          .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      )
+    );
+
+    let añadidas = 0;
+    let saltadas = 0;
+    for (const s of settled){
+      if (s.status !== 'fulfilled') continue;
+      const data = s.value || {};
+      const diaFichero = data.fecha || '';
+      const generadoFichero = data.generado || '';
+      if (data.medios){
+        for (const d in data.medios) MEDIOS[d] = data.medios[d];
+      }
+      for (const n of (data.noticias || [])){
+        const u = n.u || '';
+        const full = u.startsWith('http') ? u
+                   : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
+        const clave = normalizeUrlForMatch(full);
+        if (urlsCargadas.has(clave)){
+          saltadas++;
+          continue;
+        }
+        urlsCargadas.add(clave);
         n._dia = diaFichero;
         n._generado = generadoFichero;
         NOTICIAS.push(n);
+        añadidas++;
       }
     }
-  }
+    console.log(`[carga] histórico: +${añadidas} noticias · ${saltadas} duplicadas saltadas · total ${NOTICIAS.length}`);
 
-  if (fallos.length === ficheros.length){
-    throw new Error('ningún fichero diario se pudo cargar');
-  }
+    // Refrescar todo lo que depende de NOTICIAS
+    hidratarNoticias();
+    construirMediosUnicos();
+    construirGruposDuplicados();
+    construirIndicesBusqueda();
 
-  console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
+    const selT = $('#tipo');
+    while (selT.options.length > 1) selT.remove(1);
+    [...new Set(MEDIOS_UNICOS.map(m => m.tipo).filter(Boolean))].sort()
+      .forEach(t2 => selT.add(new Option(t2, t2)));
+    if (selT.options[0]) selT.options[0].text = t('fltTipo');
+
+    reconstruirListas();
+    if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
+    aplicarFiltros();
+  });
 }
-
 
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
@@ -2860,6 +2907,8 @@ function hidratarNoticias(){
   const horizonte = ahora + HORIZONTE_FUTURO_MS;
 
   for (const n of NOTICIAS){
+    if (n._hidratada) continue;
+    n._hidratada = true;
     if (n.dominio === undefined) n.dominio = n.d || '';
     if (n.titular === undefined) n.titular = n.t || '';
     if (n.fuente === undefined) n.fuente = n.f || '';
