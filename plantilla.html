@@ -1240,6 +1240,7 @@ const REPORT_EMAIL = 'thendabs1@gmail.com';
 const I18N = {
   es: {
     cfgModos: 'Modos de feed',
+    bsDateTodo: 'Todo',
     cfgModosHint: 'Cada modo tiene sus grupos, palabras y excepciones por medio. Al cambiar de modo el feed se reconfigura.',
     cfgModoActivo: 'activo',
     cfgModoNuevo: 'Nuevo modo',
@@ -1383,6 +1384,7 @@ const I18N = {
   },
   gl: {
     btnHideRead: 'Agochar lidas',
+    bsDateTodo: 'Todo',
     pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro',
     metaPrefix: 'Actualizado:', metaSuffix: 'titulares no histórico',
     btnPersonalizado: '🏔 Modo Personalizado', btnConfig: '⚙️ Configurar',
@@ -1492,6 +1494,7 @@ const I18N = {
   },
   ca: {
     pageTitle: 'Voceiro · Titulars', headerTitle: 'Voceiro',
+    bsDateTodo: 'Tot',
     metaPrefix: 'Actualitzat:', metaSuffix: 'titulars a l\'històric',
     btnPersonalizado: '🏔 Mode Personalitzat', btnConfig: '⚙️ Configurar',
     btnPendientes: '📚 Pendents', btnAcces: 'Aa Accessibilitat',
@@ -1598,6 +1601,7 @@ const I18N = {
     bsVerificado: 'al catàleg',
   },
   en: {
+    bsDateTodo: 'All',
     pageTitle: 'Voceiro · Headlines', headerTitle: 'Voceiro',
     metaPrefix: 'Updated:', metaSuffix: 'headlines in history',
     btnPersonalizado: '🏔 Custom Mode', btnConfig: '⚙️ Configure',
@@ -1705,6 +1709,7 @@ const I18N = {
     bsVerificado: 'in catalog',
   },
   eu: {
+    bsDateTodo: 'Guztia',
     pageTitle: 'Voceiro · Izenburuak', headerTitle: 'Voceiro',
     metaPrefix: 'Eguneratuta:', metaSuffix: 'izenburu historian',
     btnPersonalizado: '🏔 Modo Pertsonalizatua', btnConfig: '⚙️ Konfiguratu',
@@ -2025,19 +2030,23 @@ let SITES = new Map();
 let SITES_LIST = [];
 
 let AGRUPAR_DUPS = true;
-let OCULTAR_LEIDAS = false;
-const HIDE_READ_KEY = 'voceiro-hide-read';
 
-function cargarHideReadPref(){
+const HIDE_MODE_KEY = 'voceiro-hide-mode';
+const HIDE_MODES = ['off', 'read', 'viewed', 'both'];
+let HIDE_MODE = 'off';
+
+function cargarHideMode(){
   try {
-    const raw = localStorage.getItem(HIDE_READ_KEY);
-    if (raw === 'true') return true;
-    if (raw === 'false') return false;
+    const raw = localStorage.getItem(HIDE_MODE_KEY);
+    if (HIDE_MODES.includes(raw)) return raw;
+    // migración desde el booleano antiguo
+    const old = localStorage.getItem('voceiro-hide-read');
+    if (old === 'true') return 'read';
   }catch(e){}
-  return false;
+  return 'off';
 }
-function guardarHideReadPref(){
-  try{ localStorage.setItem(HIDE_READ_KEY, OCULTAR_LEIDAS ? 'true' : 'false'); }catch(e){}
+function guardarHideMode(){
+  try{ localStorage.setItem(HIDE_MODE_KEY, HIDE_MODE); }catch(e){}
 }
 function normalizarPreset(p){
   return {
@@ -2199,14 +2208,24 @@ function actualizarBotonDup(){
   b.setAttribute('aria-label', t('btnDup'));
   b.setAttribute('aria-pressed', AGRUPAR_DUPS ? 'true' : 'false');
 }
+const HIDE_LABEL = {
+  off:    { es: '👁 Ver todo',              gl: '👁 Ver todo',           ca: '👁 Veure tot',           en: '👁 Show all',           eu: '👁 Dena erakutsi' },
+  read:   { es: '👁 Ocultar leídas',        gl: '👁 Agochar lidas',      ca: '👁 Amagar llegides',     en: '👁 Hide read',          eu: '👁 Irakurriak ezkutatu' },
+  viewed: { es: '👁 Ocultar vistas',        gl: '👁 Agochar vistas',     ca: '👁 Amagar vistes',       en: '👁 Hide viewed',        eu: '👁 Ikusiak ezkutatu' },
+  both:   { es: '👁 Ocultar leídas+vistas', gl: '👁 Agochar lidas+vistas', ca: '👁 Amagar llegides+vistes', en: '👁 Hide read+viewed', eu: '👁 Irakurri+ikusiak' },
+};
+
 function actualizarBotonHideRead(){
   const b = $('#btn-hide-read');
   if (!b) return;
-  b.classList.toggle('active', OCULTAR_LEIDAS);
-  b.textContent = t('btnHideRead');
-  b.title = t('btnHideReadTitle');
-  b.setAttribute('aria-label', t('btnHideRead'));
-  b.setAttribute('aria-pressed', OCULTAR_LEIDAS ? 'true' : 'false');
+  const lang = (ACCES && ACCES.lang) || 'es';
+  const label = (HIDE_LABEL[HIDE_MODE] && HIDE_LABEL[HIDE_MODE][lang]) || HIDE_LABEL[HIDE_MODE].es;
+  b.classList.toggle('active', HIDE_MODE !== 'off');
+  b.textContent = label;
+  b.title = label;
+  b.setAttribute('aria-label', label);
+  b.setAttribute('aria-pressed', HIDE_MODE !== 'off' ? 'true' : 'false');
+  b.dataset.mode = HIDE_MODE;
 }
 function actualizarBotonPreset(){
   const btn = $('#btn-preset');
@@ -2379,6 +2398,9 @@ window.addEventListener('scroll', () => {
   if (ACCES.focus) requestAnimationFrame(updateFocus);
 }, { passive: true });
 
+
+
+
 /* ═══════════════════════════════════════════════════════════════
    REGEX DE RESALTADO + IDIOMA
    ═══════════════════════════════════════════════════════════════ */
@@ -2473,6 +2495,20 @@ let PENDIENTES_MAP  = new Map();
 
 const LOCAL_TOUCH = new Map();
 const LOCAL_TOUCH_TTL = 10000;
+const PEND_LOCAL_KEY = 'voceiro-pendientes-local-v1';
+let PENDIENTES_LOCAL = (() => {
+  try {
+    const raw = localStorage.getItem(PEND_LOCAL_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){ return []; }
+})();
+function guardarPendientesLocal(){
+  try { localStorage.setItem(PEND_LOCAL_KEY, JSON.stringify(PENDIENTES_LOCAL)); } catch(e){}
+}
+
+// El plugin ya no escribe directamente: guardamos su último snapshot
+let PENDIENTES_PLUGIN = [];
 
 function touchLocal(domain){
   LOCAL_TOUCH.set(domain, Date.now());
@@ -2545,6 +2581,47 @@ function actualizarSyncBanner(){
   banner.title = USCRIPT_OK ? '' : t('syncOfflineHint');
 }
 
+
+ function rebuildPendientes(){
+  const winner = new Map();
+  function consider(i, src){
+    if (!i || !i.url) return;
+    const k = normalizeUrlForMatch(i.url);
+    const prev = winner.get(k);
+    let gana;
+    if (!prev)                          gana = true;
+    else if (prev.read && !i.read)      gana = false;
+    else if (!prev.read && i.read)      gana = true;
+    else                                gana = (src === 'plugin');
+    if (gana) winner.set(k, { ...i, _src: src });
+  }
+  PENDIENTES_LOCAL.forEach(i => consider(i, 'local'));
+  PENDIENTES_PLUGIN.forEach(i => consider(i, 'plugin'));
+
+  const items = [...winner.values()];
+  PENDIENTES_CACHE = items;
+
+  const map = new Map();
+  items.forEach(i => {
+    map.set(normalizeUrlForMatch(i.url), i);
+    if (Array.isArray(i.aliasUrls)){
+      i.aliasUrls.forEach(u => {
+        if (!u) return;
+        const k = normalizeUrlForMatch(u);
+        const ex = map.get(k);
+        if (!ex || (!ex.read && i.read)) map.set(k, i);
+      });
+    }
+  });
+  PENDIENTES_MAP  = map;
+  PENDIENTES_URLS = new Set(map.keys());
+
+  refrescarBotonesGuardar();
+  if ($('#panel-pendientes').classList.contains('open')){
+    renderPendientes(PENDIENTES_CACHE);
+  }
+}
+
 function initUserScriptBridge(){
   document.addEventListener('voceiro-ready', () => {
     USCRIPT_OK = true; USCRIPT_CHECKED = true;
@@ -2586,55 +2663,17 @@ function initUserScriptBridge(){
     }
   });
 
-  document.addEventListener('voceiro-later-list-data', e => {
-    const items = (e.detail && e.detail.items) || [];
-    PENDIENTES_CACHE = items;
-    PENDIENTES_URLS = new Set();
-    PENDIENTES_MAP  = new Map();
-    items.forEach(i => {
-      if (!i || !i.url) return;
-      const keys = [i.url];
-      if (Array.isArray(i.aliasUrls)){
-        i.aliasUrls.forEach(u => { if (u) keys.push(u); });
-      }
-      keys.forEach(u => {
-        const k = normalizeUrlForMatch(u);
-        PENDIENTES_URLS.add(k);
-        const existing = PENDIENTES_MAP.get(k);
-        // Preferir el item leído sobre el no leído cuando hay conflicto
-        if (!existing || (!existing.read && i.read)){
-          PENDIENTES_MAP.set(k, i);
-        }
-      });
-    });
-    renderPendientes(items);
-    refrescarBotonesGuardar();
-  });
 
-  document.addEventListener('voceiro-later-changed', e => {
-    const items = (e.detail && e.detail.items) || [];
-    PENDIENTES_CACHE = items;
-    PENDIENTES_URLS = new Set();
-    PENDIENTES_MAP  = new Map();
-    items.forEach(i => {
-      if (!i || !i.url) return;
-      const keys = [i.url];
-      if (Array.isArray(i.aliasUrls)){
-        i.aliasUrls.forEach(u => { if (u) keys.push(u); });
-      }
-      keys.forEach(u => {
-        const k = normalizeUrlForMatch(u);
-        PENDIENTES_URLS.add(k);
-        const existing = PENDIENTES_MAP.get(k);
-        // Preferir el item leído sobre el no leído cuando hay conflicto
-        if (!existing || (!existing.read && i.read)){
-          PENDIENTES_MAP.set(k, i);
-        }
-      });
-    });
-    if ($('#panel-pendientes').classList.contains('open')) renderPendientes(items);
-    refrescarBotonesGuardar();
-  });
+document.addEventListener('voceiro-later-list-data', e => {
+  PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
+  rebuildPendientes();
+});
+document.addEventListener('voceiro-later-changed', e => {
+  PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
+  rebuildPendientes();
+});
+
+
 
   document.addEventListener('voceiro-save-later-done', e => {
     const d = e.detail || {};
@@ -2651,6 +2690,45 @@ function initUserScriptBridge(){
       actualizarSyncBanner();
     }
   }, 900);
+}
+function addLocalPendiente({ url, title, description, image }){
+  if (!url) return false;
+  const k = normalizeUrlForMatch(url);
+  if (PENDIENTES_LOCAL.some(i => normalizeUrlForMatch(i.url) === k)) return false;
+  let domain = '';
+  try { domain = new URL(url).hostname.replace(/^www\./, ''); } catch(e){}
+  PENDIENTES_LOCAL.push({
+    url, title: title || '', description: description || '', image: image || '',
+    domain, date: Date.now(), read: false, readAt: null
+  });
+  guardarPendientesLocal();
+  rebuildPendientes();
+  return true;
+}
+function setLocalPendienteRead(url, read){
+  const k = normalizeUrlForMatch(url);
+  let changed = false;
+  PENDIENTES_LOCAL.forEach(i => {
+    if (normalizeUrlForMatch(i.url) === k){
+      i.read = read;
+      i.readAt = read ? new Date().toISOString() : null;
+      changed = true;
+    }
+  });
+  if (changed){ guardarPendientesLocal(); rebuildPendientes(); }
+  return changed;
+}
+function removeLocalPendiente(url){
+  const k = normalizeUrlForMatch(url);
+  const n = PENDIENTES_LOCAL.length;
+  PENDIENTES_LOCAL = PENDIENTES_LOCAL.filter(i => normalizeUrlForMatch(i.url) !== k);
+  if (PENDIENTES_LOCAL.length !== n){ guardarPendientesLocal(); rebuildPendientes(); }
+}
+function desmarcarLeidaLocal(url){
+  const k = normalizeUrlForMatch(url);
+  if (!LEIDAS_LOCAL.has(k)) return;
+  LEIDAS_LOCAL.delete(k);
+  try { localStorage.setItem(LEIDAS_KEY, JSON.stringify([...LEIDAS_LOCAL])); } catch(e){}
 }
 
 function emitirUpdateSite(domain, patch){
@@ -2674,33 +2752,39 @@ function emitirUpdateSite(domain, patch){
 }
 
 function guardarParaLeerDespues(n){
-  if (!USCRIPT_OK){
-    const texto = `${n.titular}\n${n.enlace}`;
-    if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(texto).then(
-        () => toast(t('saveCopied'), 2400),
-        () => toast('No se pudo copiar', 2000)
-      );
+  const url = n.enlace;
+  const key = normalizeUrlForMatch(url);
+  const item = PENDIENTES_MAP.get(key);
+  const guardada = !!item;
+
+  // Caso 1: no está → añadir
+  if (!guardada){
+    if (USCRIPT_OK){
+      document.dispatchEvent(new CustomEvent('voceiro-save-later', {
+        detail: { url, title: n.titular, description: n.grupo || '', image: '' }
+      }));
     } else {
-      toast('No se pudo copiar', 2000);
+      addLocalPendiente({ url, title: n.titular, description: n.grupo || '' });
+      toast(t('savedToReader'), 1800);
     }
     return;
   }
 
-  const url = n.enlace;
-  const key = normalizeUrlForMatch(url);
-  const guardada = PENDIENTES_URLS.has(key);
-  const item = PENDIENTES_MAP.get(key); 
+  // Caso 2: ya está → alternar leída/no leída
+  const nuevaLeida = !item.read;
 
-  if (!guardada){
-    document.dispatchEvent(new CustomEvent('voceiro-save-later', {
-      detail: { url, title: n.titular, description: n.grupo || '', image: '' }
-    }));
-  } else {
+  if (USCRIPT_OK && item._src === 'plugin'){
     document.dispatchEvent(new CustomEvent('voceiro-mark-read', { detail: { url } }));
   }
-}
 
+  // Espejo local siempre (para que LEIDAS_LOCAL y pendientes locales queden coherentes)
+  if (nuevaLeida) marcarLeidaLocal(url);
+  else            desmarcarLeidaLocal(url);
+
+  if (item._src === 'local' || !USCRIPT_OK){
+    setLocalPendienteRead(url, nuevaLeida);
+  }
+}
 function refrescarBotonesGuardar(){
   document.querySelectorAll('.btn-save-item').forEach(b => {
     const i = parseInt(b.dataset.idx, 10);
@@ -2725,19 +2809,18 @@ function refrescarBotonesGuardar(){
 }
 function abrirPendientes(){
   abrirPanel('panel-pendientes');
-  const cont = $('#pendientes-lista');
-  if (!USCRIPT_OK){
-    cont.innerHTML = `<div class="vacio">${escapeHtml(t('noUserscript'))}</div>`;
-    return;
+  renderPendientes(PENDIENTES_CACHE);
+  if (USCRIPT_OK){
+    document.dispatchEvent(new CustomEvent('voceiro-later-list'));
   }
-  cont.innerHTML = `<div class="vacio">${escapeHtml(t('loading'))}</div>`;
-  document.dispatchEvent(new CustomEvent('voceiro-later-list'));
 }
 
 function renderPendientes(items){
   const cont = $('#pendientes-lista');
   if (!items || !items.length){
-    cont.innerHTML = `<div class="vacio">${escapeHtml(t('noPendientes'))}</div>`;
+    const extra = USCRIPT_OK ? '' :
+      `<div style="font-size:.72em;color:var(--muted);margin-top:12px;text-align:center">${escapeHtml(t('syncOfflineHint'))}</div>`;
+    cont.innerHTML = `<div class="vacio">${escapeHtml(t('noPendientes'))}</div>${extra}`;
     return;
   }
   const noLeidas = items.filter(i => !i.read);
@@ -2775,19 +2858,36 @@ function renderPendientes(items){
 
   cont.innerHTML = html;
 
-  cont.querySelectorAll('.btn-pend-toggle').forEach(b => {
-    b.onclick = () => {
-      document.dispatchEvent(new CustomEvent('voceiro-mark-read', { detail: { url: b.dataset.url } }));
-    };
-  });
-  cont.querySelectorAll('.btn-pend-remove').forEach(b => {
-    b.onclick = () => {
-      if (!confirm(t('confirmDeletePending'))) return;
-      document.dispatchEvent(new CustomEvent('voceiro-remove-later', { detail: { url: b.dataset.url } }));
-    };
-  });
-}
+cont.querySelectorAll('.btn-pend-toggle').forEach(b => {
+  b.onclick = () => {
+    const url = b.dataset.url;
+    const item = PENDIENTES_MAP.get(normalizeUrlForMatch(url));
+    const nuevaLeida = !(item && item.read);
 
+    if (USCRIPT_OK && item && item._src === 'plugin'){
+      document.dispatchEvent(new CustomEvent('voceiro-mark-read', { detail: { url } }));
+    }
+    if (nuevaLeida) marcarLeidaLocal(url);
+    else            desmarcarLeidaLocal(url);
+
+    if (!item || item._src === 'local' || !USCRIPT_OK){
+      setLocalPendienteRead(url, nuevaLeida);
+    }
+  };
+});
+cont.querySelectorAll('.btn-pend-remove').forEach(b => {
+  b.onclick = () => {
+    if (!confirm(t('confirmDeletePending'))) return;
+    const url = b.dataset.url;
+    const item = PENDIENTES_MAP.get(normalizeUrlForMatch(url));
+    if (USCRIPT_OK && item && item._src === 'plugin'){
+      document.dispatchEvent(new CustomEvent('voceiro-remove-later', { detail: { url } }));
+    }
+    removeLocalPendiente(url);
+    desmarcarLeidaLocal(url);   // coherencia con LEIDAS_LOCAL
+  };
+});
+}
 /* ═══════════════════════════════════════════════════════════════
    CARGA DE DATOS
    ═══════════════════════════════════════════════════════════════ */
@@ -4223,10 +4323,12 @@ function aplicarFiltros(){
       if (isNaN(ts)) return false;
       if (ahora - ts > limiteMs) return false;
     }
-    if (OCULTAR_LEIDAS){
+    if (HIDE_MODE !== 'off'){
       const key = normalizeUrlForMatch(n.enlace);
-      const item = PENDIENTES_MAP.get(key);
-      if (item && item.read) return false;
+      const pluginItem = PENDIENTES_MAP.get(key);
+      const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
+      if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
+      if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
     }
 
     if (hayMedio){
@@ -4486,6 +4588,7 @@ function wireResultadosDelegation(){
       const n = ULT_FILTRADAS[i];
       if (n){
         marcarLeidaLocal(n.enlace);
+        setLocalPendienteRead(n.enlace, true); 
         art.classList.remove('vista');
         art.classList.add('leida');
         if (USCRIPT_OK){
@@ -4784,11 +4887,12 @@ function wireStaticEvents(){
   });
 
   $('#btn-hide-read').addEventListener('click', () => {
-    OCULTAR_LEIDAS = !OCULTAR_LEIDAS;
-    guardarHideReadPref();
+    const i = HIDE_MODES.indexOf(HIDE_MODE);
+    HIDE_MODE = HIDE_MODES[(i + 1) % HIDE_MODES.length];
+    guardarHideMode();
     actualizarBotonHideRead();
     aplicarFiltros();
-    toast(OCULTAR_LEIDAS ? t('btnHideRead') : t('btnHideRead') + ' ✕', 1200);
+    toast($('#btn-hide-read').textContent, 1200);
   });
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', bsAbrir);
@@ -4987,7 +5091,6 @@ function wireStaticEvents(){
 async function init(){
   aplicarAcces();
 
-  // ── 1) PRIMERO: leer config local y poblar __lastLocal ──
   PRESETS = cargarPresets();
   const _activeId = localStorage.getItem(PRESET_ID_KEY) || PRESETS.activo;
   const _active = PRESETS.lista.find(p => p.id === _activeId) || PRESETS.lista[0];
@@ -4997,7 +5100,9 @@ async function init(){
   recompilarPreset();
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
   AGRUPAR_DUPS   = cargarDupPref();
-  OCULTAR_LEIDAS = cargarHideReadPref();
+  HIDE_MODE      = cargarHideMode();     // ← NUEVO
+
+  rebuildPendientes();
 
   const cachedSites = cargarSitesCache();
   setSitesFromArray(cachedSites);
