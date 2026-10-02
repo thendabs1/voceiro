@@ -1562,16 +1562,32 @@ def _d1_request(sql, params=None):
     if r.status_code != 200:
         raise RuntimeError(f"D1 HTTP {r.status_code}: {r.text[:200]}")
     return r.json()
-
-def insertar_en_d1(noticias, t_now_iso):
-    """Inserta en D1 solo las noticias recolectadas en este run."""
+def insertar_en_d1(noticias, t_prev_iso, t_now_iso):
+    """Inserta en D1 las noticias recolectadas desde el último run."""
     if not (CF_ACCOUNT_ID and CF_D1_TOKEN and CF_D1_DB_ID):
         print("[d1] sin credenciales — saltando")
         return 0
 
-    nuevas = [n for n in noticias if n.get('fecha') == t_now_iso]
+    t_now_dt = _parse_iso_flexible(t_now_iso)
+    t_prev_dt = _parse_iso_flexible(t_prev_iso) if t_prev_iso else None
+
+    if t_now_dt is None:
+        print("[d1] t_now_iso inválido")
+        return 0
+
+    if t_prev_dt is not None:
+        corte = t_prev_dt
+    else:
+        corte = t_now_dt - timedelta(hours=24)
+
+    nuevas = []
+    for n in noticias:
+        f = _parse_iso_flexible(n.get('fecha'))
+        if f is not None and f > corte:
+            nuevas.append(n)
+
     if not nuevas:
-        print("[d1] nada nuevo que insertar")
+        print(f"[d1] nada nuevo (corte {corte.isoformat()})")
         return 0
 
     a_insertar = []
@@ -1604,9 +1620,8 @@ def insertar_en_d1(noticias, t_now_iso):
         except Exception as e:
             print(f"[d1!] batch {i // BATCH}: {e}")
 
-    print(f"[d1] {insertados} intentados (de {len(nuevas)} nuevas)")
+    print(f"[d1] {insertados} insertados (de {len(nuevas)} nuevas desde {corte.isoformat()[:16]})")
     return insertados
-
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1743,7 +1758,7 @@ def main():
         if f.endswith('.json') and f != 'manifest.json':
             ficheros_locales.append(os.path.join(DATOS_DIR, f))
     subir_a_r2(ficheros_locales)
-    insertar_en_d1(finales, t_now_iso)
+    insertar_en_d1(finales, generado_prev, t_now_iso)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
     if sin_resultado:
