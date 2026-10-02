@@ -1101,10 +1101,7 @@ def _url_corta(url, dominio):
     except Exception:
         return url
 
-def _dia_de(n, ahora):
-    """Devuelve 'YYYY-MM-DD' del día de agrupación de la noticia."""
-    iso = _fecha_visible_iso(n, ahora)
-    return _dia_iso(iso, ahora.strftime('%Y-%m-%d'))
+
 
 def _dia_iso(iso_str, fallback):
     """Extrae 'YYYY-MM-DD' en zona Madrid, o `fallback` si no se puede."""
@@ -1115,7 +1112,7 @@ def _dia_iso(iso_str, fallback):
     return dt.strftime('%Y-%m-%d')
 
 
-def _noticia_a_formato_corto(n, dia):
+def _noticia_a_formato_corto(n, dia=None):
     out = {
         'd': n.get('dominio', ''),
         't': n.get('titular', ''),
@@ -1125,21 +1122,24 @@ def _noticia_a_formato_corto(n, dia):
     p_iso = n.get('fecha_pub', '')
     e_iso = n.get('fecha_estimada', '')
 
-    # Si fecha_pub es de otro día, guardar ISO completo
-    p = ''
-    if p_iso:
-        if p_iso[:10] != dia:
-            p = p_iso                       # ISO completo (día + hora)
-        else:
-            p = _hhmm(p_iso)                # solo HH:MM
-
-    e = _hhmm(e_iso) if e_iso else ''
+    if dia is None:
+        # Portada: siempre ISO completo
+        p = p_iso
+        e = e_iso
+    else:
+        # Diario: HH:MM si es del mismo día, ISO completo si no
+        p = ''
+        if p_iso:
+            if p_iso[:10] != dia:
+                p = p_iso
+            else:
+                p = _hhmm(p_iso)
+        e = _hhmm(e_iso) if e_iso else ''
 
     if p:
         out['p'] = p
     if e:
         out['e'] = e
-
     alt = n.get('alt')
     if alt:
         out['a'] = alt
@@ -1266,7 +1266,7 @@ def generar_portada(noticias, ahora, horas=18):
         'generado': generado_iso,
         'horas':    horas,
         'medios':   _tabla_medios_de(recientes),
-        'noticias': [_noticia_a_formato_corto(n, _dia_de(n, ahora)) for n in recientes],
+        'noticias': [_noticia_a_formato_corto(n) for n in recientes],
     }
     path = os.path.join(DATOS_DIR, 'portada.json')
     blob = json.dumps(payload, ensure_ascii=False,
