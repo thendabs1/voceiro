@@ -64,35 +64,49 @@
     transition:background .15s, color .15s;
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
-
+  header{
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+    padding: 12px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
   header .header-top{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    border-bottom:1px solid var(--border);
-    padding-bottom:8px;
-    margin:0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px;
   }
   header .header-top h1{
-    flex:1;
-    min-width:0;
-    margin:0;
-    padding:0;
-    border:none;
-    font-size:1.6em;
-    line-height:1.2;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 1.6em;
+    line-height: 1.2;
   }
   header .header-top .lang-select,
   header .header-top > button{
     flex-shrink: 0;
   }
-  header .meta{color:var(--muted); font-size:.72em; margin:0}
-
-  .topbar{
-    position:sticky; top:0; background:var(--bg);
-    z-index:10; padding:10px 0;
-    border-bottom:1px solid var(--border);
-    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  header .header-actions{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin: 0 0 6px;
+  }
+  header .header-actions button{
+    font-size: .78em;
+    padding: 6px 12px;
+  }
+  header .meta{
+    color: var(--muted);
+    font-size: .72em;
+    margin: 0;
   }
 
   button{
@@ -429,8 +443,10 @@
     gap:8px;
     padding:10px 0;
     border-bottom:1px solid var(--border);
-    position:sticky; top:56px; background:var(--bg);
-    z-index:9;
+    position: sticky;
+    top: var(--header-h, 130px);
+    background: var(--bg);
+    z-index: 9;
   }
   .filtros input,
   .filtros select{
@@ -854,9 +870,13 @@
 
   /* ═══ Toggle duplicados (inline junto al contador) + desplegable ═══ */
   .contador-row{
-    display:flex; align-items:center; gap:10px;
-    flex-wrap:wrap;
-    margin:10px 0 14px;
+    position: sticky;
+    top: calc(var(--header-h, 130px) + var(--filtros-h, 0px));
+    background: var(--bg);
+    z-index: 8;
+    padding: 6px 0;
+    margin: 0 0 14px;
+    border-bottom: 1px solid var(--border);
   }
   .contador-row #contador{margin:0}
 
@@ -1066,26 +1086,24 @@
     <button id="btn-acces" type="button"></button>
     <select id="lang-select" class="lang-select" aria-label="Language"></select>
   </div>
+  <div class="header-actions">
+    <span class="preset-wrap">
+      <button id="btn-preset" class="btn-preset" type="button"
+              aria-expanded="false" aria-haspopup="true"></button>
+      <div id="preset-menu" class="preset-menu" style="display:none"></div>
+    </span>
+    <button id="btn-config" type="button"></button>
+    <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
+    <button id="btn-buscar" class="btn-buscar" type="button"></button>
+  </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 14:18</span>
+    <span id="fecha">02/10/2026 14:20</span>
     <span>·</span>
-    <span id="total">79913</span>
+    <span id="total">79975</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
-
-<section class="topbar">
-  <span class="preset-wrap">
-    <button id="btn-preset" class="btn-preset" type="button"
-            aria-expanded="false" aria-haspopup="true"></button>
-    <div id="preset-menu" class="preset-menu" style="display:none"></div>
-  </span>
-  <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
-  <button id="btn-buscar" class="btn-buscar" type="button"></button>
-  <button id="btn-config" type="button"></button>
-</section>
-
 <!-- CONFIG -->
 <section id="panel-config" class="panel" role="dialog" aria-modal="true">
   <div class="panel-inner">
@@ -3063,6 +3081,21 @@ function refrescarBotonesGuardar(){
       b.title = t('saveForLaterTitle');
     }
   });
+}
+function wireStickyOffsets(){
+  const hd = document.querySelector('header');
+  const fl = document.querySelector('.filtros');
+  if (!hd) return;
+  const apply = () => {
+    document.documentElement.style.setProperty('--header-h', hd.offsetHeight + 'px');
+    document.documentElement.style.setProperty(
+      '--filtros-h', fl ? fl.offsetHeight + 'px' : '0px'
+    );
+  };
+  apply();
+  new ResizeObserver(apply).observe(hd);
+  if (fl) new ResizeObserver(apply).observe(fl);
+  window.addEventListener('resize', apply, { passive: true });
 }
 function abrirPendientes(){
   abrirPanel('panel-pendientes');
@@ -5441,6 +5474,7 @@ async function init(){
 
   reconstruirListas();
   escribirPanel(PRESET);
+  wireStickyOffsets();
   wireStaticEvents();
   wireVistasObserver();
   bsWireEventos();
