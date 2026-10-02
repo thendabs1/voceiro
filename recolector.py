@@ -1301,7 +1301,7 @@ def generar_portada(noticias, ahora, horas=18):
             recientes.append(n)
     recientes.sort(key=_fecha_orden, reverse=True)
     # Tope de seguridad: 800 noticias
-    recientes = recientes[:800]
+    recientes = recientes[:2000]
 
     generado_iso = ahora.isoformat(timespec='seconds')
     payload = {
