@@ -3349,11 +3349,14 @@ function hidratarNoticias(){
     if (n.fuente === undefined) n.fuente = n.f || '';
 
     // ── URL: path (nuevo) o completa (viejo) ──
+        // ── URL: path (nuevo) o completa (viejo) ──
     const u_raw = n.u || '';
     if (u_raw.startsWith('http://') || u_raw.startsWith('https://')){
       n.enlace = u_raw;
     } else if (u_raw.startsWith('/')){
-      n.enlace = `https://${n.dominio}${u_raw}`;
+      const m = MEDIOS[n.dominio] || {};
+      const host = m.h || `www.${n.dominio}`;
+      n.enlace = `https://${host}${u_raw}`;
     } else {
       n.enlace = u_raw;
     }
