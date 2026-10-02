@@ -934,9 +934,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 10:44</span>
+    <span id="fecha">02/10/2026 11:14</span>
     <span>·</span>
-    <span id="total">73830</span>
+    <span id="total">74586</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -2823,11 +2823,17 @@ async function cargarDatos(){
   for (const s of settled){
     if (s.status !== 'fulfilled') continue;
     const data = s.value || {};
+    const diaFichero = data.fecha || '';
+    const generadoFichero = data.generado || '';
     if (data.medios){
       for (const d in data.medios) MEDIOS[d] = data.medios[d];
     }
     if (Array.isArray(data.noticias)){
-      NOTICIAS.push(...data.noticias);
+      for (const n of data.noticias){
+        n._dia = diaFichero;
+        n._generado = generadoFichero;
+        NOTICIAS.push(n);
+      }
     }
   }
 
@@ -2838,6 +2844,17 @@ async function cargarDatos(){
   console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
 }
 
+
+function reconstruirFecha(raw, dia){
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (s.includes('T') && s.length > 10) return s;
+  if (/^\d{2}:\d{2}$/.test(s) && dia){
+    return `${dia}T${s}:00+02:00`;
+  }
+  return s;
+}
+
 function hidratarNoticias(){
   const ahora = Date.now();
   const horizonte = ahora + HORIZONTE_FUTURO_MS;
@@ -2845,11 +2862,23 @@ function hidratarNoticias(){
   for (const n of NOTICIAS){
     if (n.dominio === undefined) n.dominio = n.d || '';
     if (n.titular === undefined) n.titular = n.t || '';
-    if (n.enlace === undefined)  n.enlace  = n.u || '';
-    if (n.fecha_pub === undefined) n.fecha_pub = n.p || '';
-    if (n.fecha_estimada === undefined) n.fecha_estimada = n.e || '';
-    if (n.fecha === undefined)  n.fecha = n.c || '';
     if (n.fuente === undefined) n.fuente = n.f || '';
+
+    // ── URL: path (nuevo) o completa (viejo) ──
+    const u_raw = n.u || '';
+    if (u_raw.startsWith('http://') || u_raw.startsWith('https://')){
+      n.enlace = u_raw;
+    } else if (u_raw.startsWith('/')){
+      n.enlace = `https://${n.dominio}${u_raw}`;
+    } else {
+      n.enlace = u_raw;
+    }
+
+    // ── Fechas: HH:MM (nuevo) o ISO (viejo) ──
+    n.fecha_pub      = reconstruirFecha(n.p, n._dia);
+    n.fecha_estimada = reconstruirFecha(n.e, n._dia);
+    // `c` ya no existe: usamos el `generado` del fichero
+    n.fecha          = n._generado || '';
 
     n.titular = limpiarCdata(n.titular);
 
