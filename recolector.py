@@ -1509,7 +1509,6 @@ def _r2_cache_control(filename):
     return 'public, max-age=3600'
 
 def subir_a_r2(ficheros_locales):
-    """Sube a R2 los ficheros indicados. Solo sube si no existen ya."""
     client = _r2_client()
     if not client:
         print("[r2] sin credenciales — saltando")
@@ -1518,12 +1517,19 @@ def subir_a_r2(ficheros_locales):
     subidos = omitidos = errores = 0
     for path in ficheros_locales:
         nombre = os.path.basename(path)
-        try:
-            client.head_object(Bucket=R2_BUCKET, Key=nombre)
-            omitidos += 1
-            continue
-        except Exception:
-            pass
+
+        # Ficheros volátiles → SIEMPRE sobrescribir
+        siempre_subir = (nombre == 'manifest.json'
+                         or nombre.startswith('portada-'))
+
+        if not siempre_subir:
+            # Ficheros con hash → skip si ya existen
+            try:
+                client.head_object(Bucket=R2_BUCKET, Key=nombre)
+                omitidos += 1
+                continue
+            except Exception:
+                pass
 
         try:
             with open(path, 'rb') as f:
@@ -1532,6 +1538,15 @@ def subir_a_r2(ficheros_locales):
                     ExtraArgs={
                         'ContentType': 'application/json; charset=utf-8',
                         'CacheControl': _r2_cache_control(nombre),
+                    },
+                )
+            subidos += 1
+        except Exception as e:
+            print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
+            errores += 1
+
+    print(f"[r2] {subidos} subidos · {omitidos} omitidos · {errores} errores")
+    return subidos, omitidos, erroresr2_cache_control(nombre),
                     },
                 )
             subidos += 1
