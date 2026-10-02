@@ -1542,6 +1542,79 @@ def subir_a_r2(ficheros_locales):
 
     print(f"[r2] {subidos} subidos · {omitidos} omitidos · {errores} errores")
     return subidos, omitidos, errores
+
+# ─────────────────────────────────────────────────────────────
+# INSERCIÓN EN CLOUDFLARE D1
+# ─────────────────────────────────────────────────────────────
+CF_ACCOUNT_ID  = os.environ.get('CF_ACCOUNT_ID', '')
+CF_D1_TOKEN    = os.environ.get('CF_D1_API_TOKEN', '')
+CF_D1_DB_ID    = os.environ.get('CF_D1_DATABASE_ID', '')
+
+def _d1_request(sql, params=None):
+    """Ejecuta una sentencia SQL contra D1 vía REST API."""
+    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/d1/database/{CF_D1_DB_ID}/raw"
+    headers = {
+        'Authorization': f'Bearer {CF_D1_TOKEN}',
+        'Content-Type': 'application/json',
+    }
+    body = {'sql': sql, 'params': params or []}
+    r = requests.post(url, headers=headers, json=body, timeout=30)
+    if r.status_code != 200:
+        raise RuntimeError(f"D1 HTTP {r.status_code}: {r.text[:200]}")
+    return r.json()
+
+def insertar_en_d1(noticias):
+    """Inserta en D1 solo las noticias de los últimos 2 días (ventana de gracia)."""
+    if not (CF_ACCOUNT_ID and CF_D1_TOKEN and CF_D1_DB_ID):
+        print("[d1] sin credenciales — saltando")
+        return 0
+
+    t_now = datetime.now(TZ_MADRID)
+    hoy = t_now.strftime('%Y-%m-%d')
+    ayer = (t_now - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    a_insertar = []
+    for n in noticias:
+        dia = _dia_iso(_fecha_visible_iso(n), hoy)
+        if dia not in (hoy, ayer):
+            continue
+        a_insertar.append([
+            n.get('dominio', ''),
+            n.get('titular', ''),
+            n.get('enlace', ''),
+            n.get('fecha_pub', ''),
+            n.get('fecha_estimada', ''),
+            n.get('fuente', ''),
+            dia,
+            '',
+        ])
+
+    if not a_insertar:
+        print("[d1] nada que insertar")
+        return 0
+
+    BATCH = 50
+    insertados = 0
+    for i in range(0, len(a_insertar), BATCH):
+        chunk = a_insertar[i:i + BATCH]
+        placeholders = ','.join(['(?,?,?,?,?,?,?,?)'] * len(chunk))
+        sql = f"""INSERT OR IGNORE INTO noticias
+                  (dominio, titular, enlace, fecha_pub, fecha_est, fuente, fecha_dia, hash)
+                  VALUES {placeholders}"""
+        params = []
+        for row in chunk:
+            params.extend(row)
+        try:
+            _d1_request(sql, params)
+            insertados += len(chunk)
+        except Exception as e:
+            print(f"[d1!] batch {i // BATCH}: {e}")
+
+    print(f"[d1] {insertados} insertados (de {len(a_insertar)} intentados)")
+    return insertados
+
+
+
 # ─────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────
@@ -1676,6 +1749,7 @@ def main():
         if f.endswith('.json') and f != 'manifest.json':
             ficheros_locales.append(os.path.join(DATOS_DIR, f))
     subir_a_r2(ficheros_locales)
+    insertar_en_d1(finales)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
     if sin_resultado:
