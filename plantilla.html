@@ -3322,62 +3322,59 @@ async function cargarDatos(){
     }
   }
 
-  // ── FASE 2: histórico en background ──
   const idle = window.requestIdleCallback || (cb => setTimeout(cb, 100));
   idle(async () => {
-    const settled = await Promise.allSettled(
-      ficheros.map(f =>
-        fetch(`datos/${f.file}`, { cache: 'default' })
-          .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      )
+    // El manifest ya viene ordenado por fecha DESC, pero por seguridad:
+    const ficherosOrdenados = [...ficheros].sort((a, b) =>
+      String(b.fecha).localeCompare(String(a.fecha))
     );
-
-    let añadidas = 0;
-    let saltadas = 0;
-    for (const s of settled){
-      if (s.status !== 'fulfilled') continue;
-      const data = s.value || {};
-      const diaFichero = data.fecha || '';
-      const generadoFichero = data.generado || '';
-      if (data.medios){
-        for (const d in data.medios) MEDIOS[d] = data.medios[d];
-      }
-      for (const n of (data.noticias || [])){
-        const u = n.u || '';
-        const full = u.startsWith('http') ? u
-                   : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
-        const clave = normalizeUrlForMatch(full);
-        if (urlsCargadas.has(clave)){
-          saltadas++;
-          continue;
+  
+    let totalAñadidas = 0;
+    for (const f of ficherosOrdenados) {
+      try {
+        const r = await fetch(`datos/${f.file}`, { cache: 'default' });
+        if (!r.ok) continue;
+        const data = await r.json();
+  
+        const diaFichero = data.fecha || '';
+        const generadoFichero = data.generado || '';
+        if (data.medios) {
+          for (const d in data.medios) MEDIOS[d] = data.medios[d];
         }
-        urlsCargadas.add(clave);
-        n._dia = diaFichero;
-        n._generado = generadoFichero;
-        NOTICIAS.push(n);
-        añadidas++;
+  
+        let añadidas = 0;
+        for (const n of (data.noticias || [])) {
+          const u = n.u || '';
+          const full = u.startsWith('http') ? u
+                     : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
+          const clave = normalizeUrlForMatch(full);
+          if (urlsCargadas.has(clave)) continue;
+          urlsCargadas.add(clave);
+          n._dia = diaFichero;
+          n._generado = generadoFichero;
+          NOTICIAS.push(n);
+          añadidas++;
+        }
+        totalAñadidas += añadidas;
+  
+        // En cuanto llega un fichero, refrescamos lo mínimo y re-renderizamos.
+        if (añadidas > 0) {
+          hidratarNoticias();                 // idempotente, solo hidrata nuevas
+          construirMediosUnicos();
+          reconstruirListas();                // rápido: solo grupos/medios
+          construirIndicesBusqueda();         // rápido
+          aplicarFiltrosDebounced();          // coalesce si llegan varios seguidos
+        }
+      } catch (e) {
+        console.warn('[histórico] fallo fichero', f.file, e.message);
+        // seguir con el siguiente
       }
     }
-    console.log(`[carga] histórico: +${añadidas} noticias · ${saltadas} duplicadas saltadas · total ${NOTICIAS.length}`);
-
-    // Refrescar todo lo que depende de NOTICIAS
-    hidratarNoticias();
-    construirMediosUnicos();
+  
     construirGruposDuplicados();
-    construirIndicesBusqueda();
-
-    const selT = $('#tipo');
-    while (selT.options.length > 1) selT.remove(1);
-    [...new Set(MEDIOS_UNICOS.map(m => m.tipo).filter(Boolean))].sort()
-      .forEach(t2 => selT.add(new Option(t2, t2)));
-    if (selT.options[0]) selT.options[0].text = t('fltTipo');
-
-    reconstruirListas();
-    if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
-    aplicarFiltros();
+    console.log(`[carga] histórico: +${totalAñadidas} noticias · total ${NOTICIAS.length}`);
   });
 }
-
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
   const s = String(raw).trim();
@@ -5259,6 +5256,8 @@ function aplicarTextos(){
 /* ═══════════════════════════════════════════════════════════════
    EVENTOS
    ═══════════════════════════════════════════════════════════════ */
+const aplicarFiltrosDebounced = debounce(aplicarFiltros, 180);
+  
 function wireStaticEvents(){
   const btnP = $('#btn-preset');
   actualizarBotonPreset();
@@ -5463,7 +5462,6 @@ function wireStaticEvents(){
   $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
-  const aplicarFiltrosDebounced = debounce(aplicarFiltros, 180);
   $('#buscar').addEventListener('input', aplicarFiltrosDebounced);
   ['grupo','tipo','rango','orden'].forEach(id => {
   const el = document.getElementById(id);
