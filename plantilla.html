@@ -4284,6 +4284,12 @@ function aplicarFiltros(){
       if (fa !== fb) return fb - fa;
     }
 
+    // Programadas lejanas al final (>6h en el futuro)
+    const H6 = 6 * 3600 * 1000;
+    const aLejos = a._esFuturo && !isNaN(a._tsShow) && (a._tsShow - ahora > H6);
+    const bLejos = b._esFuturo && !isNaN(b._tsShow) && (b._tsShow - ahora > H6);
+    if (aLejos !== bLejos) return aLejos - bLejos;
+
     // Orden normal por fecha
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
