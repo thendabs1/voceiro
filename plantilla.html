@@ -2823,19 +2823,30 @@ async function cargarDatos(){
   for (const s of settled){
     if (s.status !== 'fulfilled') continue;
     const data = s.value || {};
+    const diaFichero = data.fecha || '';
+    const generadoFichero = data.generado || '';
     if (data.medios){
       for (const d in data.medios) MEDIOS[d] = data.medios[d];
     }
     if (Array.isArray(data.noticias)){
-      NOTICIAS.push(...data.noticias);
+      for (const n of data.noticias){
+        n._dia = diaFichero;                  // ← día del fichero
+        n._generado = generadoFichero;        // ← hora del run
+        NOTICIAS.push(n);
+      }
     }
   }
 
-  if (fallos.length === ficheros.length){
-    throw new Error('ningún fichero diario se pudo cargar');
+function reconstruirFecha(raw, dia){
+  if (!raw) return '';
+  const s = String(raw).trim();
+  // Formato viejo: ISO completo
+  if (s.includes('T') && s.length > 10) return s;
+  // Formato nuevo: HH:MM
+  if (/^\d{2}:\d{2}$/.test(s) && dia){
+    return `${dia}T${s}:00+02:00`;
   }
-
-  console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
+  return s;
 }
 
 function hidratarNoticias(){
@@ -2845,11 +2856,23 @@ function hidratarNoticias(){
   for (const n of NOTICIAS){
     if (n.dominio === undefined) n.dominio = n.d || '';
     if (n.titular === undefined) n.titular = n.t || '';
-    if (n.enlace === undefined)  n.enlace  = n.u || '';
-    if (n.fecha_pub === undefined) n.fecha_pub = n.p || '';
-    if (n.fecha_estimada === undefined) n.fecha_estimada = n.e || '';
-    if (n.fecha === undefined)  n.fecha = n.c || '';
     if (n.fuente === undefined) n.fuente = n.f || '';
+
+    // ── URL: path (nuevo) o completa (viejo) ──
+    const u_raw = n.u || '';
+    if (u_raw.startsWith('http://') || u_raw.startsWith('https://')){
+      n.enlace = u_raw;
+    } else if (u_raw.startsWith('/')){
+      n.enlace = `https://${n.dominio}${u_raw}`;
+    } else {
+      n.enlace = u_raw;
+    }
+
+    // ── Fechas: HH:MM (nuevo) o ISO (viejo) ──
+    n.fecha_pub      = reconstruirFecha(n.p, n._dia);
+    n.fecha_estimada = reconstruirFecha(n.e, n._dia);
+    // `c` ya no existe: usamos el `generado` del fichero
+    n.fecha          = n._generado || '';
 
     n.titular = limpiarCdata(n.titular);
 
