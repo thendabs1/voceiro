@@ -2243,20 +2243,6 @@ function getAbsFmt(){
   return ABS_FMT;
 }
 
-def _reconstruir_fecha(raw, dia):
-    if not raw:
-        return ''
-    if 'T' in raw and len(raw) > 10:
-        return raw
-    if ':' in raw and len(raw) <= 5:
-        try:
-            naive = datetime.fromisoformat(f"{dia}T{raw}:00")
-            aware = naive.replace(tzinfo=TZ_MADRID)
-            return aware.isoformat(timespec='seconds')
-        except ValueError:
-            return f"{dia}T{raw}:00+02:00"
-    return raw
-
   
 function parseFecha(s){
   if (!s) return NaN;
