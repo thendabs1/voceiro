@@ -1485,6 +1485,11 @@ def _r2_client():
     """Crea un cliente S3 contra R2. Devuelve None si faltan credenciales."""
     if not (R2_ACCOUNT_ID and R2_ACCESS_KEY and R2_SECRET_KEY):
         return None
+    print(f"[r2-debug] account_len={len(R2_ACCOUNT_ID)} "
+      f"account_repr={R2_ACCOUNT_ID!r} "
+      f"key_len={len(R2_ACCESS_KEY)} "
+      f"secret_len={len(R2_SECRET_KEY)}")
+
     return boto3.client(
         service_name='s3',
         endpoint_url=f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com',
