@@ -2243,6 +2243,21 @@ function getAbsFmt(){
   return ABS_FMT;
 }
 
+def _reconstruir_fecha(raw, dia):
+    if not raw:
+        return ''
+    if 'T' in raw and len(raw) > 10:
+        return raw
+    if ':' in raw and len(raw) <= 5:
+        try:
+            naive = datetime.fromisoformat(f"{dia}T{raw}:00")
+            aware = naive.replace(tzinfo=TZ_MADRID)
+            return aware.isoformat(timespec='seconds')
+        except ValueError:
+            return f"{dia}T{raw}:00+02:00"
+    return raw
+
+  
 function parseFecha(s){
   if (!s) return NaN;
   const str = String(s).trim();
@@ -3298,8 +3313,12 @@ async function cargarPortada(){
   _dupsHechosHasta = 0;
   _dupsLogged = false;
 
+  const portadaFile = (_manifest.portada && _manifest.portada.file)
+                      ? _manifest.portada.file
+                      : 'portada.json';   // fallback por si hay manifest viejo cacheado
+
   try {
-    const r = await fetch('datos/portada.json', { cache: 'no-cache' });
+    const r = await fetch('datos/' + portadaFile, { cache: 'no-cache' });
     if (r.ok){
       const data = await r.json();
       if (data.medios) for (const d in data.medios) MEDIOS[d] = data.medios[d];
@@ -3495,8 +3514,6 @@ function construirMediosUnicos(){
 let _dupsHechosHasta = 0;
 let _dupsLogged = false;
 function construirGruposDuplicados(){
-  // Ya no agrupamos por título en el cliente — el recolector ha colapsado
-  // los duplicados editoriales y ha dejado las referencias en el campo `a`.
   let total = 0;
   for (let i = _dupsHechosHasta; i < NOTICIAS.length; i++){
     const n = NOTICIAS[i];
@@ -3504,11 +3521,25 @@ function construirGruposDuplicados(){
     n._dupsHecho = true;
 
     if (Array.isArray(n.a) && n.a.length){
-      n._dupHidden = n.a.map(o => ({
-        dominio: o.d || '',
-        medio:   (MEDIOS[o.d] && MEDIOS[o.d].n) || o.d || '',
-        enlace:  o.u || '',
-      }));
+      n._dupHidden = n.a.map(o => {
+        const dom = o.d || '';
+        const u_raw = o.u || '';
+        let enlace;
+        if (u_raw.startsWith('http://') || u_raw.startsWith('https://')){
+          enlace = u_raw;
+        } else if (u_raw.startsWith('/')){
+          const m = MEDIOS[dom] || {};
+          const host = m.h || `www.${dom}`;
+          enlace = `https://${host}${u_raw}`;
+        } else {
+          enlace = u_raw;
+        }
+        return {
+          dominio: dom,
+          medio:   (MEDIOS[dom] && MEDIOS[dom].n) || dom,
+          enlace:  enlace,
+        };
+      });
       total += n.a.length;
     } else {
       n._dupHidden = null;
