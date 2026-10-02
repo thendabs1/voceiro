@@ -82,8 +82,9 @@
     font-size:1.6em;
     line-height:1.2;
   }
-  header .header-top .lang-select{
-    flex-shrink:0;
+  header .header-top .lang-select,
+  header .header-top > button{
+    flex-shrink: 0;
   }
   header .meta{color:var(--muted); font-size:.72em; margin:0}
 
@@ -1062,13 +1063,14 @@
 <header>
   <div class="header-top">
     <h1 id="h-title">Voceiro</h1>
+    <button id="btn-acces" type="button"></button>
     <select id="lang-select" class="lang-select" aria-label="Language"></select>
   </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 13:35</span>
+    <span id="fecha">02/10/2026 13:44</span>
     <span>·</span>
-    <span id="total">78664</span>
+    <span id="total">78918</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -1079,11 +1081,9 @@
             aria-expanded="false" aria-haspopup="true"></button>
     <div id="preset-menu" class="preset-menu" style="display:none"></div>
   </span>
-  <button id="btn-config" type="button"></button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
   <button id="btn-buscar" class="btn-buscar" type="button"></button>
-  <span style="flex:1"></span>
-  <button id="btn-acces" type="button"></button>
+  <button id="btn-config" type="button"></button>
 </section>
 
 <!-- CONFIG -->
