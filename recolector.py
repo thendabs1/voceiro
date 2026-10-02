@@ -178,6 +178,17 @@ def _to_iso_madrid(dt):
         return dt.astimezone(TZ_MADRID).isoformat(timespec='seconds')
     except Exception:
         return ''
+def _hash_payload(payload):
+    """
+    Hash MD5 corto del payload SIN el campo 'generado' (metadata volátil).
+    El hash refleja SOLO el contenido real (medios + noticias del día).
+    """
+    estatico = {k: v for k, v in payload.items() if k != 'generado'}
+    blob = json.dumps(
+        estatico, ensure_ascii=False, separators=(',', ':'), sort_keys=True
+    ).encode('utf-8')
+    return hashlib.md5(blob).hexdigest()[:10]
+
 
 def _limpiar_cdata(s):
     """Quita <![CDATA[...]]> y decodifica entidades HTML."""
@@ -1036,7 +1047,8 @@ def deduplicar_editorial(noticias):
         otros = items[1:]
 
         rep['alt'] = [
-            {'d': o.get('dominio', ''), 'u': _limpiar_query(o.get('enlace', ''))}
+            {'d': o.get('dominio', ''),
+             'u': _url_corta(o.get('enlace', ''), o.get('dominio', ''))}
             for o in otros
         ]
         salida.append(rep)
@@ -1211,14 +1223,12 @@ def _orden_estable(n):
     dt = _fecha_orden(n)
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
-
 def generar_troceados(noticias, ahora):
-    """Genera datos/manifest.json + datos/YYYY-MM-DD.json en formato corto."""
+    """Genera datos/manifest.json + datos/YYYY-MM-DD-<hash>.json."""
     os.makedirs(DATOS_DIR, exist_ok=True)
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
 
-    # Agrupar por día de agrupación
     por_dia = defaultdict(list)
     for n in noticias:
         iso_agrup = _fecha_visible_iso(n, ahora)
@@ -1227,6 +1237,8 @@ def generar_troceados(noticias, ahora):
 
     ficheros = []
     total_kb = 0.0
+    escritos = 0
+    reusados = 0
 
     for dia in sorted(por_dia.keys(), reverse=True):
         items = por_dia[dia]
@@ -1239,25 +1251,43 @@ def generar_troceados(noticias, ahora):
             'noticias': [_noticia_a_formato_corto(n, dia) for n in items],
         }
 
-        blob = json.dumps(payload, ensure_ascii=False,
-                          separators=(',', ':')).encode('utf-8')
-        hash_ = hashlib.md5(blob).hexdigest()[:10]
+        # Hash del contenido estable (sin 'generado')
+        hash_ = _hash_payload(payload)
 
-        filename = f'{dia}.json'
+        # Nombre del fichero con hash
+        filename = f'{dia}-{hash_}.json'
         path = os.path.join(DATOS_DIR, filename)
-        with open(path, 'wb') as f:
-            f.write(blob)
 
-        size_kb = len(blob) / 1024
-        total_kb += size_kb
+        size_estimado = None
+        if os.path.exists(path):
+            # Mismo contenido que una ejecución previa → no reescribir
+            reusados += 1
+            reusado = True
+        else:
+            blob = json.dumps(payload, ensure_ascii=False,
+                              separators=(',', ':')).encode('utf-8')
+            with open(path, 'wb') as f:
+                f.write(blob)
+            size_estimado = len(blob) / 1024
+            escritos += 1
+            reusado = False
+
+        # Para el manifest: tamaño aproximado (si reusado, lo leemos del disco)
+        if size_estimado is None:
+            try:
+                size_estimado = os.path.getsize(path) / 1024
+            except OSError:
+                size_estimado = 0.0
+        total_kb += size_estimado
 
         ficheros.append({
-            'fecha':  dia,
-            'file':   filename,
-            'n':      len(items),
-            'hash':   hash_,
-            'kb':     round(size_kb, 1),
-            'es_hoy': dia == hoy_str,
+            'fecha':   dia,
+            'file':    filename,
+            'n':       len(items),
+            'hash':    hash_,
+            'kb':      round(size_estimado, 1),
+            'es_hoy':  dia == hoy_str,
+            'reusado': reusado,
         })
 
     manifest = {
@@ -1272,7 +1302,7 @@ def generar_troceados(noticias, ahora):
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
 
-    # Limpiar ficheros huérfanos
+    # ── Limpieza de huérfanos ──
     validos = {f['file'] for f in ficheros}
     validos.add('manifest.json')
     validos.add('portada.json')
@@ -1289,7 +1319,11 @@ def generar_troceados(noticias, ahora):
             pass
 
     extra = f" · {eliminados} huérfanos borrados" if eliminados else ""
-    print(f"[troceado] {len(ficheros)} ficheros · {total_kb:.1f} KB total{extra}")
+    print(f"[troceado] {len(ficheros)} ficheros · "
+          f"{escritos} escritos · {reusados} reusados · "
+          f"{total_kb:.1f} KB total{extra}")
+
+
 
 def generar_portada(noticias, ahora, horas=18):
     """Genera portada.json con las noticias de las últimas N horas."""
