@@ -970,7 +970,7 @@ def cargar_historico_payload():
                     else:
                         u_iso = u_raw
                 
-                                        noticias.append({
+                    noticias.append({
                         'medio':          m_info.get('n', ''),
                         'dominio':        dom,
                         'grupo':          m_info.get('g', ''),
