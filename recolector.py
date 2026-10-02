@@ -1621,13 +1621,50 @@ def insertar_en_d1(noticias, t_prev_iso, t_now_iso):
 
     print(f"[d1] {insertados} insertados (de {len(nuevas)} nuevas desde {corte.isoformat()[:16]})")
     return insertados
+def descargar_historico_desde_r2():
+    """Descarga de R2 los ficheros del manifest actual al disco local.
+    Necesario desde que public/datos/ ya no se commitea a git."""
+    client = _r2_client()
+    if not client:
+        print("[r2-download] sin credenciales — saltando")
+        return 0
 
+    try:
+        obj = client.get_object(Bucket=R2_BUCKET, Key='manifest.json')
+        manifest_bytes = obj['Body'].read()
+        with open(MANIFEST_PATH, 'wb') as f:
+            f.write(manifest_bytes)
+        manifest = json.loads(manifest_bytes)
+    except Exception as e:
+        print(f"[r2-download] no hay manifest en R2: {e}")
+        return 0
+
+    descargados = 0
+    for f_info in manifest.get('ficheros', []):
+        fn = f_info.get('file')
+        if not fn:
+            continue
+        path = os.path.join(DATOS_DIR, fn)
+        if os.path.exists(path):
+            continue
+        try:
+            obj = client.get_object(Bucket=R2_BUCKET, Key=fn)
+            with open(path, 'wb') as f:
+                f.write(obj['Body'].read())
+            descargados += 1
+        except Exception as e:
+            print(f"[r2-download!] {fn}: {e}")
+
+    print(f"[r2-download] {descargados} ficheros descargados de R2")
+    return descargados
+  
 
 # ─────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────
 def main():
     os.makedirs(DATOS_DIR, exist_ok=True)
+    descargar_historico_desde_r2()
     medios = todos_los_medios()
 
     if GRUPOS_INCLUIDOS:
