@@ -1215,6 +1215,7 @@ def generar_troceados(noticias, ahora):
     # Limpiar ficheros huérfanos
     validos = {f['file'] for f in ficheros}
     validos.add('manifest.json')
+    validos.add('portada.json')
     eliminados = 0
     for nombre in os.listdir(DATOS_DIR):
         if not nombre.endswith('.json'):
@@ -1230,6 +1231,31 @@ def generar_troceados(noticias, ahora):
     extra = f" · {eliminados} huérfanos borrados" if eliminados else ""
     print(f"[troceado] {len(ficheros)} ficheros · {total_kb:.1f} KB total{extra}")
 
+def generar_portada(noticias, ahora, horas=18):
+    """Genera portada.json con las noticias de las últimas N horas."""
+    corte = ahora - timedelta(hours=horas)
+    recientes = []
+    for n in noticias:
+        f = _fecha_agrupacion_dt(n, ahora)
+        if f is not None and f >= corte:
+            recientes.append(n)
+    recientes.sort(key=_fecha_orden, reverse=True)
+    # Tope de seguridad: 800 noticias
+    recientes = recientes[:800]
+
+    generado_iso = ahora.isoformat(timespec='seconds')
+    payload = {
+        'generado': generado_iso,
+        'horas':    horas,
+        'medios':   _tabla_medios_de(recientes),
+        'noticias': [_noticia_a_formato_corto(n) for n in recientes],
+    }
+    path = os.path.join(DATOS_DIR, 'portada.json')
+    blob = json.dumps(payload, ensure_ascii=False,
+                      separators=(',', ':')).encode('utf-8')
+    with open(path, 'wb') as f:
+        f.write(blob)
+    print(f"[portada] {len(recientes)} noticias · {len(blob)/1024:.1f} KB")
 
 # ─────────────────────────────────────────────────────────────
 # FASE 3c · HTML
@@ -1370,6 +1396,7 @@ def main():
     # ─── Escribir salidas ───
     print()
     generar_troceados(finales, t_now)
+    generar_portada(finales, t_now, horas=18)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
 
