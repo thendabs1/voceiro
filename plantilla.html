@@ -3291,27 +3291,27 @@ async function cargarDatos(){
   MEDIOS = {};
   NOTICIAS = [];
 
-  // ── FASE 1: portada (rápida, primer render) ──
+  // ── FASE 1: portada ──
   try {
     const r = await fetch('datos/portada.json', { cache: 'no-cache' });
     if (r.ok){
       const data = await r.json();
-      if (data.medios){
-        for (const d in data.medios) MEDIOS[d] = data.medios[d];
-      }
+      if (data.medios) for (const d in data.medios) MEDIOS[d] = data.medios[d];
       const dia = data.generado ? data.generado.slice(0, 10) : '';
       for (const n of (data.noticias || [])){
         n._dia = dia;
         n._generado = data.generado || '';
         NOTICIAS.push(n);
       }
-      console.log(`[carga] portada: ${NOTICIAS.length} noticias`);
     }
   } catch(e){
     console.warn('[carga] portada falló, sigo con histórico:', e.message);
   }
 
-  // Set de URLs ya cargadas (para dedup con el histórico)
+  // Primer render ya, con lo que tenemos
+  refrescarVistaCompleta();
+
+  // Set de URLs ya cargadas (dedup con histórico)
   const urlsCargadas = new Set();
   for (const n of NOTICIAS){
     const u = n.u || '';
@@ -3322,59 +3322,76 @@ async function cargarDatos(){
     }
   }
 
-  const idle = window.requestIdleCallback || (cb => setTimeout(cb, 100));
-  idle(async () => {
-    // El manifest ya viene ordenado por fecha DESC, pero por seguridad:
-    const ficherosOrdenados = [...ficheros].sort((a, b) =>
-      String(b.fecha).localeCompare(String(a.fecha))
-    );
-  
-    let totalAñadidas = 0;
-    for (const f of ficherosOrdenados) {
-      try {
-        const r = await fetch(`datos/${f.file}`, { cache: 'default' });
-        if (!r.ok) continue;
-        const data = await r.json();
-  
-        const diaFichero = data.fecha || '';
-        const generadoFichero = data.generado || '';
-        if (data.medios) {
-          for (const d in data.medios) MEDIOS[d] = data.medios[d];
-        }
-  
-        let añadidas = 0;
-        for (const n of (data.noticias || [])) {
-          const u = n.u || '';
-          const full = u.startsWith('http') ? u
-                     : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
-          const clave = normalizeUrlForMatch(full);
-          if (urlsCargadas.has(clave)) continue;
-          urlsCargadas.add(clave);
-          n._dia = diaFichero;
-          n._generado = generadoFichero;
-          NOTICIAS.push(n);
-          añadidas++;
-        }
-        totalAñadidas += añadidas;
-  
-        // En cuanto llega un fichero, refrescamos lo mínimo y re-renderizamos.
-        if (añadidas > 0) {
-          hidratarNoticias();                 // idempotente, solo hidrata nuevas
-          construirMediosUnicos();
-          reconstruirListas();                // rápido: solo grupos/medios
-          construirIndicesBusqueda();         // rápido
-          aplicarFiltrosDebounced();          // coalesce si llegan varios seguidos
-        }
-      } catch (e) {
-        console.warn('[histórico] fallo fichero', f.file, e.message);
-        // seguir con el siguiente
-      }
+  // ── FASE 2: histórico en paralelo, concurrencia limitada ──
+  const ficherosOrdenados = [...ficheros].sort((a, b) =>
+    String(b.fecha).localeCompare(String(a.fecha))
+  );
+
+  let totalAñadidas = 0;
+  // Un único refresco debounced para toda la fase 2
+  const refrescarDebounced = debounce(refrescarVistaCompleta, 350);
+
+  async function procesarFichero(f){
+    let r;
+    try {
+      r = await fetch(`datos/${f.file}`, { cache: 'default' });
+    } catch(e){ return; }
+    if (!r.ok) return;
+
+    let data;
+    try { data = await r.json(); } catch(e){ return; }
+
+    const diaFichero      = data.fecha    || '';
+    const generadoFichero = data.generado || '';
+    if (data.medios){
+      for (const d in data.medios) MEDIOS[d] = data.medios[d];
     }
-  
-    construirGruposDuplicados();
-    console.log(`[carga] histórico: +${totalAñadidas} noticias · total ${NOTICIAS.length}`);
-  });
+
+    let añadidas = 0;
+    for (const n of (data.noticias || [])){
+      const u = n.u || '';
+      const full = u.startsWith('http') ? u
+                 : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
+      const clave = normalizeUrlForMatch(full);
+      if (urlsCargadas.has(clave)) continue;
+      urlsCargadas.add(clave);
+      n._dia = diaFichero;
+      n._generado = generadoFichero;
+      NOTICIAS.push(n);
+      añadidas++;
+    }
+    totalAñadidas += añadidas;
+    if (añadidas > 0) refrescarDebounced();
+  }
+
+  // Pool de N workers que van tirando de una cola compartida
+  const CONCURRENCIA = 6;
+  const cola = ficherosOrdenados.slice();
+  async function worker(){
+    while (cola.length){
+      const f = cola.shift();
+      if (!f) break;
+      await procesarFichero(f);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCIA, ficherosOrdenados.length) }, worker)
+  );
+
+  // Refresco final consolidado (por si el último debounce quedó pendiente)
+  refrescarVistaCompleta();
+  console.log(`[carga] histórico: +${totalAñadidas} noticias · total ${NOTICIAS.length}`);
 }
+
+function refrescarVistaCompleta(){
+  hidratarNoticias();
+  construirMediosUnicos();
+  construirGruposDuplicados();
+  construirIndicesBusqueda();
+  reconstruirListas();
+  aplicarFiltros();
+}
+
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
   const s = String(raw).trim();
