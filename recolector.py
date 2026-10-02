@@ -970,7 +970,7 @@ def cargar_historico_payload():
                     else:
                         u_iso = u_raw
                 
-                    noticias.append({
+                                        noticias.append({
                         'medio':          m_info.get('n', ''),
                         'dominio':        dom,
                         'grupo':          m_info.get('g', ''),
@@ -985,6 +985,41 @@ def cargar_historico_payload():
                         'fecha':          c_raw,
                         '_host':          m_info.get('h', ''),
                     })
+
+                    # ── Reconstruir los 'alt' como noticias independientes ──
+                    # Sin esto, los titulares repetidos que viven en 'a' se
+                    # pierden entre runs y el día al que pertenecen salta.
+                    for alt_item in (n.get('a') or []):
+                        dom_alt = alt_item.get('d', '')
+                        u_alt   = alt_item.get('u', '')
+                        if not u_alt:
+                            continue
+
+                        m_alt = medios_tabla.get(dom_alt, {}) or {}
+
+                        if u_alt.startswith('http://') or u_alt.startswith('https://'):
+                            enlace_alt = u_alt
+                        elif u_alt.startswith('/'):
+                            host_alt = m_alt.get('h') or f"www.{dom_alt}"
+                            enlace_alt = f"https://{host_alt}{u_alt}"
+                        else:
+                            enlace_alt = u_alt
+
+                        noticias.append({
+                            'medio':          m_alt.get('n', ''),
+                            'dominio':        dom_alt,
+                            'grupo':          m_alt.get('g', ''),
+                            'tipo':           m_alt.get('t', ''),
+                            'lang':           m_alt.get('l', ''),
+                            'tags':           m_alt.get('tags', []) or [],
+                            'titular':        n.get('t', ''),
+                            'enlace':         enlace_alt,
+                            'fecha_pub':      p_iso,
+                            'fecha_estimada': e_iso,
+                            'fuente':         n.get('f', ''),
+                            'fecha':          c_raw,
+                            '_host':          m_alt.get('h', ''),
+                        })
         except Exception as e:
             print(f"[historico] no se pudo leer el troceado: {e}")
 
