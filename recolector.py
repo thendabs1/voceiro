@@ -1414,6 +1414,7 @@ def generar_troceados(noticias, ahora, portada_info=None):
 
 def generar_portada(noticias, ahora, horas=18):
     """Genera portada-<hash>.json y devuelve {file, hash, n, kb}."""
+    os.makedirs(DATOS_DIR, exist_ok=True)
     corte = ahora - timedelta(hours=horas)
     recientes = []
     for n in noticias:
