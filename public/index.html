@@ -877,7 +877,58 @@
     font-size: .68em; color: var(--muted);
     margin-top: 4px; font-style: italic;
   }
-
+  /* ═══ Cabecera en una sola fila en escritorio ═══ */
+  @media (min-width: 820px){
+    header{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    /* Los dos wrappers desaparecen del layout: sus hijos pasan al <header> */
+    header .header-top,
+    header .header-actions{
+      display: contents;
+    }
+    /* Título a la izquierda, ocupando el hueco libre */
+    #h-title{
+      order: 1;
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+      font-size: 1.5em;
+    }
+    /* Orden pedido: Modo · Configurar · Pendientes · Investigar · Accesibilidad · Idioma */
+    header .preset-wrap{ order: 2; }
+    #btn-config     { order: 3; }
+    #btn-pendientes { order: 4; }
+    #btn-buscar     { order: 5; }
+    #btn-acces      { order: 6; }
+    #lang-select    { order: 7; }
+    /* La línea de "Actualizado · N titulares" pasa a su propia fila */
+    header .meta{
+      order: 8;
+      flex-basis: 100%;
+      margin: 4px 0 0;
+    }
+    /* Botones un poco más compactos para que quepan en una sola fila */
+    #btn-preset,
+    #btn-config,
+    #btn-pendientes,
+    #btn-buscar,
+    #btn-acces{
+      font-size: .74em;
+      padding: 6px 10px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    #lang-select{
+      font-size: .74em;
+      padding: 6px 8px;
+      flex-shrink: 0;
+    }
+  }
+  
   @media (max-width:900px){
     .filtros{grid-template-columns:1fr 1fr 1fr; position:static}
     #buscar{grid-column:1/-1}
@@ -1129,9 +1180,9 @@
   </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 15:03</span>
+    <span id="fecha">02/10/2026 15:15</span>
     <span>·</span>
-    <span id="total">81094</span>
+    <span id="total">81461</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
