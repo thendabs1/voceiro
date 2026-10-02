@@ -1593,7 +1593,7 @@ def insertar_en_d1(noticias):
         print("[d1] nada que insertar")
         return 0
 
-    BATCH = 50
+    BATCH = 12
     insertados = 0
     for i in range(0, len(a_insertar), BATCH):
         chunk = a_insertar[i:i + BATCH]
