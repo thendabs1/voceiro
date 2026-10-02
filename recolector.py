@@ -1266,7 +1266,6 @@ def generar_troceados(noticias, ahora, portada_info=None):
     si su contenido cambia. Días más antiguos se congelan: se reutiliza el
     fichero existente sin recalcular hash ni contenido.
     """
-    os.makedirs(DATOS_DIR, exist_ok=True)
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
 
@@ -1414,7 +1413,6 @@ def generar_troceados(noticias, ahora, portada_info=None):
 
 def generar_portada(noticias, ahora, horas=18):
     """Genera portada-<hash>.json y devuelve {file, hash, n, kb}."""
-    os.makedirs(DATOS_DIR, exist_ok=True)
     corte = ahora - timedelta(hours=horas)
     recientes = []
     for n in noticias:
@@ -1629,6 +1627,7 @@ def insertar_en_d1(noticias, t_prev_iso, t_now_iso):
 # MAIN
 # ─────────────────────────────────────────────────────────────
 def main():
+    os.makedirs(DATOS_DIR, exist_ok=True)
     medios = todos_los_medios()
 
     if GRUPOS_INCLUIDOS:
