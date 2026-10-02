@@ -1546,9 +1546,8 @@ def subir_a_r2(ficheros_locales):
             errores += 1
 
     print(f"[r2] {subidos} subidos · {omitidos} omitidos · {errores} errores")
-    return subidos, omitidos, erroresr2_cache_control(nombre),
-                    },
-                )
+    return subidos, omitidos, errores
+
 
 # ─────────────────────────────────────────────────────────────
 # INSERCIÓN EN CLOUDFLARE D1
