@@ -1223,7 +1223,7 @@ def _orden_estable(n):
     dt = _fecha_orden(n)
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
-def generar_troceados(noticias, ahora):
+def generar_troceados(noticias, ahora, portada_info=None):
     """Genera datos/manifest.json + datos/YYYY-MM-DD-<hash>.json."""
     os.makedirs(DATOS_DIR, exist_ok=True)
     hoy_str = ahora.strftime('%Y-%m-%d')
@@ -1299,13 +1299,16 @@ def generar_troceados(noticias, ahora):
         'hoy':              hoy_str,
         'ficheros':         ficheros,
     }
+    if portada_info:
+        manifest['portada'] = portada_info
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
 
     # ── Limpieza de huérfanos ──
     validos = {f['file'] for f in ficheros}
     validos.add('manifest.json')
-    validos.add('portada.json')
+        if portada_info:
+        validos.add(portada_info['file'])
     eliminados = 0
     for nombre in os.listdir(DATOS_DIR):
         if not nombre.endswith('.json'):
@@ -1326,7 +1329,7 @@ def generar_troceados(noticias, ahora):
 
 
 def generar_portada(noticias, ahora, horas=18):
-    """Genera portada.json con las noticias de las últimas N horas."""
+    """Genera portada-<hash>.json y devuelve {file, hash, n, kb}."""
     corte = ahora - timedelta(hours=horas)
     recientes = []
     for n in noticias:
@@ -1334,7 +1337,6 @@ def generar_portada(noticias, ahora, horas=18):
         if f is not None and f >= corte:
             recientes.append(n)
     recientes.sort(key=_fecha_orden, reverse=True)
-    # Tope de seguridad: 800 noticias
     recientes = recientes[:2000]
 
     generado_iso = ahora.isoformat(timespec='seconds')
@@ -1344,12 +1346,34 @@ def generar_portada(noticias, ahora, horas=18):
         'medios':   _tabla_medios_de(recientes),
         'noticias': [_noticia_a_formato_corto(n) for n in recientes],
     }
-    path = os.path.join(DATOS_DIR, 'portada.json')
-    blob = json.dumps(payload, ensure_ascii=False,
-                      separators=(',', ':')).encode('utf-8')
-    with open(path, 'wb') as f:
-        f.write(blob)
-    print(f"[portada] {len(recientes)} noticias · {len(blob)/1024:.1f} KB")
+
+    hash_ = _hash_payload(payload)
+    filename = f'portada-{hash_}.json'
+    path = os.path.join(DATOS_DIR, filename)
+
+    if os.path.exists(path):
+        reusado = True
+    else:
+        blob = json.dumps(payload, ensure_ascii=False,
+                          separators=(',', ':')).encode('utf-8')
+        with open(path, 'wb') as f:
+            f.write(blob)
+        reusado = False
+
+    try:
+        size_kb = os.path.getsize(path) / 1024
+    except OSError:
+        size_kb = 0.0
+
+    estado = "reusada" if reusado else "escrita"
+    print(f"[portada] {len(recientes)} noticias · {size_kb:.1f} KB · {estado}")
+
+    return {
+        'file': filename,
+        'hash': hash_,
+        'n':    len(recientes),
+        'kb':   round(size_kb, 1),
+    }
 
 # ─────────────────────────────────────────────────────────────
 # FASE 3c · HTML
@@ -1490,10 +1514,10 @@ def main():
     # ─── Escribir salidas ───
     print()
     generar_troceados(finales, t_now)
-    generar_portada(finales, t_now, horas=18)
+    
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
-
+    generar_troceados(finales, t_now, portada_info)
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
         for n in sin_resultado:
