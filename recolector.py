@@ -1470,7 +1470,73 @@ def generar_html(fecha, total):
     with open('public/index.html', 'w', encoding='utf-8') as f:
         f.write(html)
 
+# ─────────────────────────────────────────────────────────────
+# SUBIDA A CLOUDFLARE R2
+# ─────────────────────────────────────────────────────────────
+import boto3
+from botocore.config import Config
 
+R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '')
+R2_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY_ID', '')
+R2_SECRET_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '')
+R2_BUCKET     = os.environ.get('R2_BUCKET', 'voceiro-datos')
+
+def _r2_client():
+    """Crea un cliente S3 contra R2. Devuelve None si faltan credenciales."""
+    if not (R2_ACCOUNT_ID and R2_ACCESS_KEY and R2_SECRET_KEY):
+        return None
+    return boto3.client(
+        service_name='s3',
+        endpoint_url=f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com',
+        aws_access_key_id=R2_ACCESS_KEY,
+        aws_secret_access_key=R2_SECRET_KEY,
+        region_name='auto',
+        config=Config(retries={'max_attempts': 3, 'mode': 'standard'}),
+    )
+
+def _r2_cache_control(filename):
+    """Cabecera Cache-Control según el tipo de fichero."""
+    if filename == 'manifest.json':
+        return 'public, max-age=60'
+    if filename.startswith('portada-'):
+        return 'public, max-age=60'
+    if re.match(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$', filename):
+        return 'public, max-age=31536000, immutable'
+    return 'public, max-age=3600'
+
+def subir_a_r2(ficheros_locales):
+    """Sube a R2 los ficheros indicados. Solo sube si no existen ya."""
+    client = _r2_client()
+    if not client:
+        print("[r2] sin credenciales — saltando")
+        return 0, 0, 0
+
+    subidos = omitidos = errores = 0
+    for path in ficheros_locales:
+        nombre = os.path.basename(path)
+        try:
+            client.head_object(Bucket=R2_BUCKET, Key=nombre)
+            omitidos += 1
+            continue
+        except Exception:
+            pass
+
+        try:
+            with open(path, 'rb') as f:
+                client.upload_fileobj(
+                    f, R2_BUCKET, nombre,
+                    ExtraArgs={
+                        'ContentType': 'application/json; charset=utf-8',
+                        'CacheControl': _r2_cache_control(nombre),
+                    },
+                )
+            subidos += 1
+        except Exception as e:
+            print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
+            errores += 1
+
+    print(f"[r2] {subidos} subidos · {omitidos} omitidos · {errores} errores")
+    return subidos, omitidos, errores
 # ─────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────
@@ -1599,6 +1665,12 @@ def main():
     print()
     portada_info = generar_portada(finales, t_now, horas=18)
     generar_troceados(finales, t_now, portada_info)
+      # ─── Subir a R2 ───
+    ficheros_locales = [MANIFEST_PATH]
+    for f in os.listdir(DATOS_DIR):
+        if f.endswith('.json') and f != 'manifest.json':
+            ficheros_locales.append(os.path.join(DATOS_DIR, f))
+    subir_a_r2(ficheros_locales)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
     if sin_resultado:
