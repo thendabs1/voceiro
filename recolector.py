@@ -1109,19 +1109,31 @@ def _dia_iso(iso_str, fallback):
     return dt.strftime('%Y-%m-%d')
 
 
-def _noticia_a_formato_corto(n):
+def _noticia_a_formato_corto(n, dia):
     out = {
         'd': n.get('dominio', ''),
         't': n.get('titular', ''),
         'u': _url_corta(n.get('enlace', ''), n.get('dominio', '')),
         'f': n.get('fuente', ''),
     }
-    p = _hhmm(n.get('fecha_pub'))
+    p_iso = n.get('fecha_pub', '')
+    e_iso = n.get('fecha_estimada', '')
+
+    # Si fecha_pub es de otro día, guardar ISO completo
+    p = ''
+    if p_iso:
+        if p_iso[:10] != dia:
+            p = p_iso                       # ISO completo (día + hora)
+        else:
+            p = _hhmm(p_iso)                # solo HH:MM
+
+    e = _hhmm(e_iso) if e_iso else ''
+
     if p:
         out['p'] = p
-    e = _hhmm(n.get('fecha_estimada'))
     if e:
         out['e'] = e
+
     alt = n.get('alt')
     if alt:
         out['a'] = alt
@@ -1176,7 +1188,7 @@ def generar_troceados(noticias, ahora):
             'fecha':    dia,
             'generado': generado_iso,
             'medios':   _tabla_medios_de(items),
-            'noticias': [_noticia_a_formato_corto(n) for n in items],
+            'noticias': [_noticia_a_formato_corto(n, dia) for n in items],
         }
 
         blob = json.dumps(payload, ensure_ascii=False,
