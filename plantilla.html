@@ -2830,19 +2830,25 @@ async function cargarDatos(){
     }
     if (Array.isArray(data.noticias)){
       for (const n of data.noticias){
-        n._dia = diaFichero;                  // ← día del fichero
-        n._generado = generadoFichero;        // ← hora del run
+        n._dia = diaFichero;
+        n._generado = generadoFichero;
         NOTICIAS.push(n);
       }
     }
   }
 
+  if (fallos.length === ficheros.length){
+    throw new Error('ningún fichero diario se pudo cargar');
+  }
+
+  console.log(`[carga] ${NOTICIAS.length} titulares · ${Object.keys(MEDIOS).length} medios desde manifest`);
+}
+
+
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
   const s = String(raw).trim();
-  // Formato viejo: ISO completo
   if (s.includes('T') && s.length > 10) return s;
-  // Formato nuevo: HH:MM
   if (/^\d{2}:\d{2}$/.test(s) && dia){
     return `${dia}T${s}:00+02:00`;
   }
