@@ -1307,8 +1307,8 @@ def generar_troceados(noticias, ahora, portada_info=None):
     # ── Limpieza de huérfanos ──
     validos = {f['file'] for f in ficheros}
     validos.add('manifest.json')
-        if portada_info:
-        validos.add(portada_info['file'])
+    if portada_info:
+      validos.add(portada_info['file'])
     eliminados = 0
     for nombre in os.listdir(DATOS_DIR):
         if not nombre.endswith('.json'):
@@ -1513,11 +1513,10 @@ def main():
 
     # ─── Escribir salidas ───
     print()
-    generar_troceados(finales, t_now)
-    
+    portada_info = generar_portada(finales, t_now, horas=18)
+    generar_troceados(finales, t_now, portada_info)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
-    generar_troceados(finales, t_now, portada_info)
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
         for n in sin_resultado:
