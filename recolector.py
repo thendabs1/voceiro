@@ -857,6 +857,16 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
 # ─────────────────────────────────────────────────────────────
 # FASE 2 · HISTÓRICO
 # ─────────────────────────────────────────────────────────────
+def _reconstruir_fecha(raw, dia):
+    """Acepta HH:MM (nuevo) o ISO completo (viejo). Devuelve ISO o ''."""
+    if not raw:
+        return ''
+    if 'T' in raw and len(raw) > 10:
+        return raw  # formato viejo, ya es ISO
+    if ':' in raw and len(raw) <= 5:
+        return f"{dia}T{raw}:00+02:00"
+    return raw
+
 def cargar_historico_payload():
     """
     Carga el histórico desde:
@@ -894,10 +904,30 @@ def cargar_historico_payload():
                         d = json.load(f2)
                 except Exception:
                     continue
+                dia = d.get('fecha', '')
+                generado_iso_del_fichero = d.get('generado', '')
                 medios_tabla = d.get('medios', {}) or {}
                 for n in d.get('noticias', []) or []:
                     dom = n.get('d', '')
                     m_info = medios_tabla.get(dom, {}) or {}
+                
+                    # Fecha: formato viejo (ISO completo) o nuevo (HH:MM)
+                    p_raw = n.get('p', '')
+                    e_raw = n.get('e', '')
+                    c_raw = n.get('c', '') or generado_iso_del_fichero
+                
+                    p_iso = _reconstruir_fecha(p_raw, dia)
+                    e_iso = _reconstruir_fecha(e_raw, dia)
+                
+                    # URL: formato viejo (completa) o nuevo (path)
+                    u_raw = n.get('u', '')
+                    if u_raw.startswith('http://') or u_raw.startswith('https://'):
+                        u_iso = u_raw
+                    elif u_raw.startswith('/'):
+                        u_iso = f"https://{dom}{u_raw}"
+                    else:
+                        u_iso = u_raw
+                
                     noticias.append({
                         'medio':          m_info.get('n', ''),
                         'dominio':        dom,
@@ -906,11 +936,11 @@ def cargar_historico_payload():
                         'lang':           m_info.get('l', ''),
                         'tags':           m_info.get('tags', []) or [],
                         'titular':        n.get('t', ''),
-                        'enlace':         n.get('u', ''),
-                        'fecha_pub':      n.get('p', ''),
-                        'fecha_estimada': n.get('e', ''),
+                        'enlace':         u_iso,
+                        'fecha_pub':      p_iso,
+                        'fecha_estimada': e_iso,
                         'fuente':         n.get('f', ''),
-                        'fecha':          n.get('c', ''),
+                        'fecha':          c_raw,
                     })
         except Exception as e:
             print(f"[historico] no se pudo leer el troceado: {e}")
@@ -1040,6 +1070,36 @@ def guardar_state(generado_iso, ultimo_exito_por_medio):
 # ─────────────────────────────────────────────────────────────
 # FASE 3b · SALIDA TROCEADA (datos/manifest.json + días)
 # ─────────────────────────────────────────────────────────────
+def _hhmm(iso):
+    """De '2026-10-01T15:58:22+02:00' devuelve '15:58'. Vacío si no hay."""
+    if not iso:
+        return ''
+    dt = _parse_iso_flexible(iso)
+    if dt is None:
+        return ''
+    try:
+        return dt.astimezone(TZ_MADRID).strftime('%H:%M')
+    except Exception:
+        return ''
+
+
+def _url_corta(url, dominio):
+    """Si la URL es del mismo dominio, devuelve solo el path."""
+    if not url:
+        return ''
+    try:
+        p = urlparse(url)
+        host = (p.netloc or '').lower()
+        if host.startswith('www.'):
+            host = host[4:]
+        if host == dominio or host.endswith('.' + dominio):
+            path = p.path or '/'
+            if p.query:
+                path += '?' + p.query
+            return path
+        return url
+    except Exception:
+        return url
 def _dia_iso(iso_str, fallback):
     """Extrae 'YYYY-MM-DD' en zona Madrid, o `fallback` si no se puede."""
     dt = _parse_iso_flexible(iso_str)
@@ -1053,12 +1113,15 @@ def _noticia_a_formato_corto(n):
     out = {
         'd': n.get('dominio', ''),
         't': n.get('titular', ''),
-        'u': n.get('enlace', ''),
-        'p': n.get('fecha_pub', ''),
-        'e': n.get('fecha_estimada', ''),
-        'c': n.get('fecha', ''),
+        'u': _url_corta(n.get('enlace', ''), n.get('dominio', '')),
         'f': n.get('fuente', ''),
     }
+    p = _hhmm(n.get('fecha_pub'))
+    if p:
+        out['p'] = p
+    e = _hhmm(n.get('fecha_estimada'))
+    if e:
+        out['e'] = e
     alt = n.get('alt')
     if alt:
         out['a'] = alt
