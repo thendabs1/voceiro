@@ -1129,9 +1129,9 @@
   </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 15:01</span>
+    <span id="fecha">02/10/2026 15:03</span>
     <span>·</span>
-    <span id="total">80972</span>
+    <span id="total">81094</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3349,11 +3349,14 @@ function hidratarNoticias(){
     if (n.fuente === undefined) n.fuente = n.f || '';
 
     // ── URL: path (nuevo) o completa (viejo) ──
+        // ── URL: path (nuevo) o completa (viejo) ──
     const u_raw = n.u || '';
     if (u_raw.startsWith('http://') || u_raw.startsWith('https://')){
       n.enlace = u_raw;
     } else if (u_raw.startsWith('/')){
-      n.enlace = `https://${n.dominio}${u_raw}`;
+      const m = MEDIOS[n.dominio] || {};
+      const host = m.h || `www.${n.dominio}`;
+      n.enlace = `https://${host}${u_raw}`;
     } else {
       n.enlace = u_raw;
     }
