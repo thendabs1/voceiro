@@ -72,6 +72,7 @@ except ImportError:
 # ─────────────────────────────────────────────────────────────
 N_FEED            = 60
 DIAS_RETENCION    = 15
+ENTANA_GRACIA_DIAS = 3 #DÍAS PARA METER NOTICIAS NUEVAS EN LOS.JSON que no se cachean
 MAX_WORKERS       = 8
 TIMEOUT           = 25
 TZ_MADRID = ZoneInfo('Europe/Madrid')
@@ -89,7 +90,7 @@ HORIZONTE_FUTURO_HORAS = 6
 GRUPOS_INCLUIDOS = []
 
 # Google News fallback
-GN_MAX_ITEMS      = 30
+GN_MAX_ITEMS      = 80
 GN_DIAS_MAX       = 14
 GN_SLEEP          = 0.3
 
@@ -1259,10 +1260,23 @@ def _orden_estable(n):
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
 def generar_troceados(noticias, ahora, portada_info=None):
-    """Genera datos/manifest.json + datos/YYYY-MM-DD-<hash>.json."""
+    """Genera datos/manifest.json + datos/YYYY-MM-DD-<hash>.json.
+
+    Días dentro de VENTANA_GRACIA_DIAS (hoy + N días atrás) se reescriben
+    si su contenido cambia. Días más antiguos se congelan: se reutiliza el
+    fichero existente sin recalcular hash ni contenido.
+    """
     os.makedirs(DATOS_DIR, exist_ok=True)
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
+
+    # Indexar ficheros existentes por fecha para el freeze
+    # { 'YYYY-MM-DD': ('YYYY-MM-DD-<hash>.json', '<hash>') }
+    existentes_por_dia = {}
+    for nombre in os.listdir(DATOS_DIR):
+        m = re.match(r'^(\d{4}-\d{2}-\d{2})-([a-f0-9]{10})\.json$', nombre)
+        if m:
+            existentes_por_dia[m.group(1)] = (nombre, m.group(2))
 
     por_dia = defaultdict(list)
     for n in noticias:
@@ -1274,11 +1288,49 @@ def generar_troceados(noticias, ahora, portada_info=None):
     total_kb = 0.0
     escritos = 0
     reusados = 0
+    congelados = 0
 
     for dia in sorted(por_dia.keys(), reverse=True):
         items = por_dia[dia]
         items.sort(key=_orden_estable)
 
+        # ¿Está congelado este día?
+        try:
+            fecha_dia = datetime.strptime(dia, '%Y-%m-%d').date()
+            dias_atras = (ahora.date() - fecha_dia).days
+        except ValueError:
+            dias_atras = 0
+        congelado = dias_atras > VENTANA_GRACIA_DIAS
+
+        if congelado and dia in existentes_por_dia:
+            # Reutilizar sin tocar
+            filename, hash_ = existentes_por_dia[dia]
+            path = os.path.join(DATOS_DIR, filename)
+            try:
+                with open(path, encoding='utf-8') as f:
+                    d = json.load(f)
+                n_items = len(d.get('noticias', []))
+            except Exception:
+                n_items = 0
+            try:
+                size_kb = os.path.getsize(path) / 1024
+            except OSError:
+                size_kb = 0.0
+            total_kb += size_kb
+            congelados += 1
+            ficheros.append({
+                'fecha':   dia,
+                'file':    filename,
+                'n':       n_items,
+                'hash':    hash_,
+                'kb':      round(size_kb, 1),
+                'es_hoy':  False,
+                'reusado': True,
+                'congelado': True,
+            })
+            continue
+
+        # Día editable: calcular payload y hash como antes
         payload = {
             'fecha':    dia,
             'generado': generado_iso,
@@ -1286,16 +1338,12 @@ def generar_troceados(noticias, ahora, portada_info=None):
             'noticias': [_noticia_a_formato_corto(n, dia) for n in items],
         }
 
-        # Hash del contenido estable (sin 'generado')
         hash_ = _hash_payload(payload)
-
-        # Nombre del fichero con hash
         filename = f'{dia}-{hash_}.json'
         path = os.path.join(DATOS_DIR, filename)
 
         size_estimado = None
         if os.path.exists(path):
-            # Mismo contenido que una ejecución previa → no reescribir
             reusados += 1
             reusado = True
         else:
@@ -1307,7 +1355,6 @@ def generar_troceados(noticias, ahora, portada_info=None):
             escritos += 1
             reusado = False
 
-        # Para el manifest: tamaño aproximado (si reusado, lo leemos del disco)
         if size_estimado is None:
             try:
                 size_estimado = os.path.getsize(path) / 1024
@@ -1329,6 +1376,7 @@ def generar_troceados(noticias, ahora, portada_info=None):
         'generado':         generado_iso,
         'generado_legible': ahora.strftime('%d/%m/%Y %H:%M'),
         'dias_retencion':   DIAS_RETENCION,
+        'ventana_gracia':   VENTANA_GRACIA_DIAS,
         'n_feed':           N_FEED,
         'total':            len(noticias),
         'hoy':              hoy_str,
@@ -1343,7 +1391,7 @@ def generar_troceados(noticias, ahora, portada_info=None):
     validos = {f['file'] for f in ficheros}
     validos.add('manifest.json')
     if portada_info:
-      validos.add(portada_info['file'])
+        validos.add(portada_info['file'])
     eliminados = 0
     for nombre in os.listdir(DATOS_DIR):
         if not nombre.endswith('.json'):
@@ -1357,8 +1405,9 @@ def generar_troceados(noticias, ahora, portada_info=None):
             pass
 
     extra = f" · {eliminados} huérfanos borrados" if eliminados else ""
+    congel_txt = f" · {congelados} congelados" if congelados else ""
     print(f"[troceado] {len(ficheros)} ficheros · "
-          f"{escritos} escritos · {reusados} reusados · "
+          f"{escritos} escritos · {reusados} reusados{congel_txt} · "
           f"{total_kb:.1f} KB total{extra}")
 
 
