@@ -5195,6 +5195,14 @@ function wireStaticEvents(){
       aplicarFiltros();
     });
   }
+  // ── Botones que abren paneles ──
+  $('#btn-pendientes').addEventListener('click', abrirPendientes);
+  $('#btn-buscar').addEventListener('click', bsAbrir);
+  $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
+  $('#btn-config').addEventListener('click', () => {
+    abrirPanel('panel-config');
+    escribirPanel(PRESET);
+  });
 
 
   document.querySelectorAll('.panel-close').forEach(b => {
