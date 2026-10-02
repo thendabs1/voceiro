@@ -72,7 +72,7 @@ except ImportError:
 # ─────────────────────────────────────────────────────────────
 N_FEED            = 60
 DIAS_RETENCION    = 15
-ENTANA_GRACIA_DIAS = 3 #DÍAS PARA METER NOTICIAS NUEVAS EN LOS.JSON que no se cachean
+VENTANA_GRACIA_DIAS = 3 #DÍAS PARA METER NOTICIAS NUEVAS EN LOS.JSON que no se cachean
 MAX_WORKERS       = 8
 TIMEOUT           = 25
 TZ_MADRID = ZoneInfo('Europe/Madrid')
