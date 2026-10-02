@@ -934,9 +934,9 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 11:49</span>
+    <span id="fecha">02/10/2026 12:07</span>
     <span>·</span>
-    <span id="total">75634</span>
+    <span id="total">76115</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -4283,6 +4283,12 @@ function aplicarFiltros(){
       const fb = bFav ? 1 : 0;
       if (fa !== fb) return fb - fa;
     }
+
+    // Programadas lejanas al final (>6h en el futuro)
+    const H6 = 6 * 3600 * 1000;
+    const aLejos = a._esFuturo && !isNaN(a._tsShow) && (a._tsShow - ahora > H6);
+    const bLejos = b._esFuturo && !isNaN(b._tsShow) && (b._tsShow - ahora > H6);
+    if (aLejos !== bLejos) return aLejos - bLejos;
 
     // Orden normal por fecha
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
