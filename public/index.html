@@ -651,6 +651,37 @@
   .btn-pend-toggle{border-color:var(--preset) !important; color:var(--preset) !important}
   .btn-pend-remove{color:var(--block) !important}
 
+  .btn-top{
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-size: 1.15em;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity .2s, transform .2s, filter .15s;
+    z-index: 80;
+    pointer-events: none;
+  }
+  .btn-top.show{
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .btn-top:hover{ filter: brightness(1.1); }
+  [data-theme="contrast"] .btn-top{
+    background: #ff0;
+    color: #000;
+    border: 2px solid #000;
+  }
   #toast-wrap{
     position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
     z-index:200; display:flex; flex-direction:column; gap:8px;
@@ -1098,9 +1129,9 @@
   </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 14:20</span>
+    <span id="fecha">02/10/2026 14:35</span>
     <span>·</span>
-    <span id="total">79975</span>
+    <span id="total">80350</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -1411,6 +1442,8 @@
   </div>
 </div>
 <main id="resultados"></main>
+<button id="btn-top" class="btn-top" type="button"
+        aria-label="Volver arriba" title="Volver arriba">↑</button>
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
@@ -3096,6 +3129,18 @@ function wireStickyOffsets(){
   new ResizeObserver(apply).observe(hd);
   if (fl) new ResizeObserver(apply).observe(fl);
   window.addEventListener('resize', apply, { passive: true });
+}
+function wireBackToTop(){
+  const b = document.getElementById('btn-top');
+  if (!b) return;
+  const onScroll = () => {
+    b.classList.toggle('show', window.scrollY > 400);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  b.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 function abrirPendientes(){
   abrirPanel('panel-pendientes');
@@ -5475,6 +5520,7 @@ async function init(){
   reconstruirListas();
   escribirPanel(PRESET);
   wireStickyOffsets();
+  wireBackToTop();
   wireStaticEvents();
   wireVistasObserver();
   bsWireEventos();
