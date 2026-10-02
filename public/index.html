@@ -872,7 +872,121 @@
     opacity:1;
     font-weight:600;
   }
+  .view-settings-wrap{
+    position: relative;
+    display: inline-flex;
+  }
+  .btn-view-settings{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-view-settings .vs-count{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--save);
+    color: #fff;
+    font-size: .85em;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .btn-view-settings .vs-count[data-count="0"]{
+    display: none;
+  }
 
+  .view-settings-menu{
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 250px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px var(--shadow);
+    padding: 8px;
+    z-index: 60;
+  }
+  .vs-caret{
+    display: inline-block;
+    font-size: .9em;
+    line-height: 1;
+    transition: transform .18s ease;
+    transform-origin: 50% 45%;
+  }
+  .btn-view-settings[aria-expanded="true"] .vs-caret{
+    transform: rotate(180deg);
+  }
+  .vs-group{ padding: 4px 6px; }
+  .vs-title{
+    font-size: .62em;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .vs-item,
+  .vs-radio{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: .78em;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.3;
+  }
+  .vs-item:hover,
+  .vs-radio:hover{ background: var(--quote-bg); }
+  .vs-item input,
+  .vs-radio input{
+    accent-color: var(--save);
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+    margin: 0;
+  }
+  .vs-radio span{ flex: 1; }
+  .vs-radio small{
+    display: block;
+    font-size: .85em;
+    color: var(--muted);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+  .vs-sep{
+    height: 1px;
+    background: var(--border);
+    margin: 6px 4px;
+  }
+  .vs-reset{
+    width: 100%;
+    padding: 6px 10px;
+    font-size: .74em;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .vs-reset:hover{
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  @media (max-width: 560px){
+    .view-settings-menu{
+      right: auto;
+      left: 0;
+      min-width: 220px;
+    }
+  }
   .dups-details{
     margin-top:8px;
     font-size:.72em;
@@ -934,16 +1048,17 @@
   <h1 id="h-title">Voceiro</h1>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 13:13</span>
+    <span id="fecha">02/10/2026 13:22</span>
     <span>·</span>
-    <span id="total">77957</span>
+    <span id="total">78260</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
 
 <section class="topbar">
   <span class="preset-wrap">
-    <button id="btn-preset" class="btn-preset" type="button"></button>
+    <button id="btn-preset" class="btn-preset" type="button"
+        aria-expanded="false" aria-haspopup="true"></button>
     <div id="preset-menu" class="preset-menu" style="display:none"></div>
   </span>
   <button id="btn-config" type="button"></button>
@@ -1220,8 +1335,45 @@
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 <div class="contador-row">
   <span id="contador"></span>
-  <button id="btn-dup" class="btn-dup-inline" type="button"></button>
-  <button id="btn-hide-read" class="btn-dup-inline" type="button"></button>
+  <div class="view-settings-wrap">
+    <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
+            aria-expanded="false" aria-haspopup="true">
+      <span id="vs-label">⚙ Vista</span>
+      <span id="vs-count" class="vs-count" data-count="0">0</span>
+      <span class="vs-caret">▾</span>
+    </button>
+    <div id="view-settings-menu" class="view-settings-menu" style="display:none">
+      <div class="vs-group">
+        <div class="vs-title" id="vs-title-dup"></div>
+        <label class="vs-item">
+          <input type="checkbox" id="vs-dup">
+          <span id="vs-dup-label"></span>
+        </label>
+      </div>
+      <div class="vs-sep"></div>
+      <div class="vs-group">
+        <div class="vs-title" id="vs-title-hide"></div>
+        <label class="vs-radio">
+          <input type="radio" name="vs-hide" value="off">
+          <span id="vs-hide-off"></span>
+        </label>
+        <label class="vs-radio">
+          <input type="radio" name="vs-hide" value="read">
+          <span id="vs-hide-read"></span>
+        </label>
+        <label class="vs-radio">
+          <input type="radio" name="vs-hide" value="viewed">
+          <span id="vs-hide-viewed"></span>
+        </label>
+        <label class="vs-radio">
+          <input type="radio" name="vs-hide" value="both">
+          <span id="vs-hide-both"></span>
+        </label>
+      </div>
+      <div class="vs-sep"></div>
+      <button class="vs-reset" id="vs-reset" type="button"></button>
+    </div>
+  </div>
 </div>
 <main id="resultados"></main>
 <div id="toast-wrap"></div>
@@ -1381,8 +1533,31 @@ const I18N = {
     bsFuenteExterna: 'Fuente externa',
     bsGuardar: '🕒 Guardar',
     bsVerificado: 'en el catálogo',
+    vsButton:        '⚙ Vista',
+    vsTitleDup:      'Duplicados',
+    vsDup:           'Ocultar duplicados',
+    vsTitleHide:     'Ocultar titulares…',
+    vsHideOff:       'Ver todos',
+    vsHideRead:      'Ya leídos',
+    vsHideReadHint:  'Se ocultan al abrirlos',
+    vsHideViewed:    'Ya vistos',
+    vsHideViewedHint:'Titulares que han pasado por pantalla',
+    vsHideBoth:      'Leídos y vistos',
+    vsReset:         '↺ Restablecer vista',
+    
   },
   gl: {
+    vsButton:        '⚙ Vista',
+    vsTitleDup:      'Duplicados',
+    vsDup:           'Agochar duplicados',
+    vsTitleHide:     'Agochar titulares…',
+    vsHideOff:       'Ver todos',
+    vsHideRead:      'Xa lidos',
+    vsHideReadHint:  'Agóchanse ao abrilos',
+    vsHideViewed:    'Xa vistos',
+    vsHideViewedHint:'Titulares que pasaron pola pantalla',
+    vsHideBoth:      'Lidos e vistos',
+    vsReset:         '↺ Restablecer vista',
     btnHideRead: 'Agochar lidas',
     bsDateTodo: 'Todo',
     pageTitle: 'Voceiro · Titulares', headerTitle: 'Voceiro',
@@ -1493,6 +1668,17 @@ const I18N = {
     bsVerificado: 'no catálogo',
   },
   ca: {
+    vsButton:        '⚙ Vista',
+    vsTitleDup:      'Duplicats',
+    vsDup:           'Amagar duplicats',
+    vsTitleHide:     'Amagar titulars…',
+    vsHideOff:       'Veure tots',
+    vsHideRead:      'Ja llegits',
+    vsHideReadHint:  "S'amaguen en obrir-los",
+    vsHideViewed:    'Ja vistos',
+    vsHideViewedHint:'Titulars que han passat per pantalla',
+    vsHideBoth:      'Llegits i vistos',
+    vsReset:         '↺ Restablir vista',
     pageTitle: 'Voceiro · Titulars', headerTitle: 'Voceiro',
     bsDateTodo: 'Tot',
     metaPrefix: 'Actualitzat:', metaSuffix: 'titulars a l\'històric',
@@ -1601,6 +1787,17 @@ const I18N = {
     bsVerificado: 'al catàleg',
   },
   en: {
+   vsButton:        '⚙ View',
+    vsTitleDup:      'Duplicates',
+    vsDup:           'Hide duplicates',
+    vsTitleHide:     'Hide headlines…',
+    vsHideOff:       'Show all',
+    vsHideRead:      'Already read',
+    vsHideReadHint:  'Hidden once opened',
+    vsHideViewed:    'Already viewed',
+    vsHideViewedHint:'Headlines that scrolled past the screen',
+    vsHideBoth:      'Read and viewed',
+    vsReset:         '↺ Reset view', 
     bsDateTodo: 'All',
     pageTitle: 'Voceiro · Headlines', headerTitle: 'Voceiro',
     metaPrefix: 'Updated:', metaSuffix: 'headlines in history',
@@ -1709,6 +1906,17 @@ const I18N = {
     bsVerificado: 'in catalog',
   },
   eu: {
+    vsButton:        '⚙ Ikusi',
+    vsTitleDup:      'Bikoiztuak',
+    vsDup:           'Bikoiztuak ezkutatu',
+    vsTitleHide:     'Izenburuak ezkutatu…',
+    vsHideOff:       'Dena erakutsi',
+    vsHideRead:      'Irakurriak',
+    vsHideReadHint:  'Irekitzean ezkutatzen dira',
+    vsHideViewed:    'Ikusiak',
+    vsHideViewedHint:'Pantailatik igaro diren izenburuak',
+    vsHideBoth:      'Irakurriak eta ikusiak',
+    vsReset:         '↺ Vista berrezarri',
     bsDateTodo: 'Guztia',
     pageTitle: 'Voceiro · Izenburuak', headerTitle: 'Voceiro',
     metaPrefix: 'Eguneratuta:', metaSuffix: 'izenburu historian',
@@ -2199,34 +2407,63 @@ function cargarDupPref(){
 function guardarDupPref(){
   try{ localStorage.setItem(DUP_PREF_KEY, AGRUPAR_DUPS ? 'true' : 'false'); }catch(e){}
 }
-function actualizarBotonDup(){
-  const b = $('#btn-dup');
-  if (!b) return;
-  b.classList.toggle('active', AGRUPAR_DUPS);
-  b.textContent = t('btnDup');
-  b.title = t('btnDupTitle');
-  b.setAttribute('aria-label', t('btnDup'));
-  b.setAttribute('aria-pressed', AGRUPAR_DUPS ? 'true' : 'false');
-}
-const HIDE_LABEL = {
-  off:    { es: '👁 Ver todo',              gl: '👁 Ver todo',           ca: '👁 Veure tot',           en: '👁 Show all',           eu: '👁 Dena erakutsi' },
-  read:   { es: '👁 Ocultar leídas',        gl: '👁 Agochar lidas',      ca: '👁 Amagar llegides',     en: '👁 Hide read',          eu: '👁 Irakurriak ezkutatu' },
-  viewed: { es: '👁 Ocultar vistas',        gl: '👁 Agochar vistas',     ca: '👁 Amagar vistes',       en: '👁 Hide viewed',        eu: '👁 Ikusiak ezkutatu' },
-  both:   { es: '👁 Ocultar leídas+vistas', gl: '👁 Agochar lidas+vistas', ca: '👁 Amagar llegides+vistes', en: '👁 Hide read+viewed', eu: '👁 Irakurri+ikusiak' },
-};
 
-function actualizarBotonHideRead(){
-  const b = $('#btn-hide-read');
-  if (!b) return;
-  const lang = (ACCES && ACCES.lang) || 'es';
-  const label = (HIDE_LABEL[HIDE_MODE] && HIDE_LABEL[HIDE_MODE][lang]) || HIDE_LABEL[HIDE_MODE].es;
-  b.classList.toggle('active', HIDE_MODE !== 'off');
-  b.textContent = label;
-  b.title = label;
-  b.setAttribute('aria-label', label);
-  b.setAttribute('aria-pressed', HIDE_MODE !== 'off' ? 'true' : 'false');
-  b.dataset.mode = HIDE_MODE;
+function actualizarBotonViewSettings(){
+  const btn = $('#btn-view-settings');
+  const count = $('#vs-count');
+  if (!btn || !count) return;
+
+  let n = 0;
+  if (!AGRUPAR_DUPS) n++;
+  if (HIDE_MODE !== 'off') n++;
+
+  count.textContent = n;
+  count.dataset.count = String(n);
+
+  btn.classList.toggle('active', n > 0);
+  btn.setAttribute('aria-pressed', n > 0 ? 'true' : 'false');
+  btn.title = t('vsButton');
 }
+
+function renderViewSettingsMenu(){
+  const menu = $('#view-settings-menu');
+  if (!menu) return;
+  const dupChk = $('#vs-dup');
+  if (dupChk) dupChk.checked = AGRUPAR_DUPS;
+  menu.querySelectorAll('input[name="vs-hide"]').forEach(r => {
+    r.checked = (r.value === HIDE_MODE);
+  });
+}
+
+function abrirViewSettingsMenu(){
+  const menu = $('#view-settings-menu');
+  const btn  = $('#btn-view-settings');
+  if (!menu) return;
+  renderViewSettingsMenu();
+  menu.style.display = '';
+  if (btn) btn.setAttribute('aria-expanded', 'true');    // ← NUEVO
+  setTimeout(() => {
+    document.addEventListener('mousedown', _vsOutsideClick, true);
+    document.addEventListener('keydown', _vsEscKey, true);
+  }, 0);
+}
+function cerrarViewSettingsMenu(){
+  const menu = $('#view-settings-menu');
+  const btn  = $('#btn-view-settings');
+  if (!menu) return;
+  menu.style.display = 'none';
+  if (btn) btn.setAttribute('aria-expanded', 'false');   // ← NUEVO
+  document.removeEventListener('mousedown', _vsOutsideClick, true);
+  document.removeEventListener('keydown', _vsEscKey, true);
+}
+function _vsOutsideClick(e){
+  const wrap = document.querySelector('.view-settings-wrap');
+  if (wrap && !wrap.contains(e.target)) cerrarViewSettingsMenu();
+}
+function _vsEscKey(e){
+  if (e.key === 'Escape'){ e.stopPropagation(); cerrarViewSettingsMenu(); }
+}
+
 function actualizarBotonPreset(){
   const btn = $('#btn-preset');
   if (!btn) return;
@@ -2306,19 +2543,22 @@ function renderPresetMenu(){
 
 function abrirPresetMenu(){
   const menu = $('#preset-menu');
+  const btn  = $('#btn-preset');
   if (!menu) return;
   renderPresetMenu();
   menu.style.display = '';
+  if (btn) btn.setAttribute('aria-expanded', 'true');
   setTimeout(() => {
     document.addEventListener('mousedown', _presetOutsideClick, true);
     document.addEventListener('keydown', _presetEscKey, true);
   }, 0);
 }
-
 function cerrarPresetMenu(){
   const menu = $('#preset-menu');
+  const btn  = $('#btn-preset');
   if (!menu) return;
   menu.style.display = 'none';
+  if (btn) btn.setAttribute('aria-expanded', 'false');
   document.removeEventListener('mousedown', _presetOutsideClick, true);
   document.removeEventListener('keydown', _presetEscKey, true);
 }
@@ -4766,8 +5006,20 @@ function aplicarTextos(){
   const det = $('#ov-pegar-wrap summary');
   if (det) det.textContent = t('cfgOverridePegar');
 
-  actualizarBotonDup();
-  actualizarBotonHideRead();
+  // Rellenar textos del desplegable de vista
+  $('#vs-label').textContent  = t('vsButton');
+  $('#vs-title-dup').textContent   = t('vsTitleDup');
+  $('#vs-dup-label').textContent   = t('vsDup');
+  $('#vs-title-hide').textContent  = t('vsTitleHide');
+  $('#vs-reset').textContent       = t('vsReset');
+  $('#vs-hide-off').innerHTML    = escapeHtml(t('vsHideOff'));
+  $('#vs-hide-read').innerHTML   = escapeHtml(t('vsHideRead'))
+    + `<small>${escapeHtml(t('vsHideReadHint'))}</small>`;
+  $('#vs-hide-viewed').innerHTML = escapeHtml(t('vsHideViewed'))
+    + `<small>${escapeHtml(t('vsHideViewedHint'))}</small>`;
+  $('#vs-hide-both').innerHTML   = escapeHtml(t('vsHideBoth'));
+
+  actualizarBotonViewSettings();
 
   $('#cfg-title').textContent = t('cfgTitle');
   $('#cfg-grupos').textContent = t('cfgGrupos');
@@ -4868,40 +5120,64 @@ function wireStaticEvents(){
     hTitle.title = 'F5';
     hTitle.addEventListener('click', () => location.reload());
   }
-
+  
   btnP.addEventListener('click', e => {
     e.stopPropagation();
     const menu = $('#preset-menu');
     if (!menu) return;
-    if (menu.style.display === 'none' || menu.style.display === ''){
-      abrirPresetMenu();
-    } else {
+    if (menu.style.display !== 'none'){
       cerrarPresetMenu();
+    } else {
+      abrirPresetMenu();
     }
   });
-  $('#btn-dup').addEventListener('click', () => {
-    AGRUPAR_DUPS = !AGRUPAR_DUPS;
-    guardarDupPref();
-    actualizarBotonDup();
-    aplicarFiltros();
-    toast(AGRUPAR_DUPS ? t('btnDup') : t('btnDup') + ' ✕', 1200);
+  // ── Botón "Vista" + desplegable ──
+  const btnVS = $('#btn-view-settings');
+  if (btnVS){
+    btnVS.addEventListener('click', e => {
+      e.stopPropagation();
+      const menu = $('#view-settings-menu');
+      if (!menu) return;
+      if (menu.style.display !== 'none'){
+        cerrarViewSettingsMenu();
+      } else {
+        abrirViewSettingsMenu();
+      }
+    });
+  }
+
+  const dupChk = $('#vs-dup');
+  if (dupChk){
+    dupChk.addEventListener('change', () => {
+      AGRUPAR_DUPS = dupChk.checked;
+      guardarDupPref();
+      actualizarBotonViewSettings();
+      aplicarFiltros();
+    });
+  }
+
+  document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
+    r.addEventListener('change', () => {
+      if (!r.checked) return;
+      HIDE_MODE = r.value;
+      guardarHideMode();
+      actualizarBotonViewSettings();
+      aplicarFiltros();
+    });
   });
 
-  $('#btn-hide-read').addEventListener('click', () => {
-    const i = HIDE_MODES.indexOf(HIDE_MODE);
-    HIDE_MODE = HIDE_MODES[(i + 1) % HIDE_MODES.length];
-    guardarHideMode();
-    actualizarBotonHideRead();
-    aplicarFiltros();
-    toast($('#btn-hide-read').textContent, 1200);
-  });
-  $('#btn-pendientes').addEventListener('click', abrirPendientes);
-  $('#btn-buscar').addEventListener('click', bsAbrir);
-  $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
-    $('#btn-config').addEventListener('click', () => {
-    abrirPanel('panel-config');
-    escribirPanel(PRESET);
-  });
+  const vsReset = $('#vs-reset');
+  if (vsReset){
+    vsReset.addEventListener('click', () => {
+      AGRUPAR_DUPS = true;
+      HIDE_MODE = 'off';
+      guardarDupPref();
+      guardarHideMode();
+      renderViewSettingsMenu();
+      actualizarBotonViewSettings();
+      aplicarFiltros();
+    });
+  }
 
 
   document.querySelectorAll('.panel-close').forEach(b => {
@@ -4914,10 +5190,12 @@ function wireStaticEvents(){
   });
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape'){
-      const abierto = document.querySelector('.panel.open');
-      if (abierto){ cerrarPanel(abierto.id); return; }
-    }
+      if (e.key === 'Escape'){
+        cerrarPresetMenu();
+        cerrarViewSettingsMenu();
+        const abierto = document.querySelector('.panel.open');
+        if (abierto){ cerrarPanel(abierto.id); return; }
+      }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT')) return;
     if (e.altKey && e.key.toLowerCase() === 'a'){ e.preventDefault(); abrirPanel('panel-acces'); }
