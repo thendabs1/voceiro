@@ -65,10 +65,25 @@
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
 
-  header h1{
+  header .header-top{
+    display:flex;
+    align-items:center;
+    gap:12px;
     border-bottom:1px solid var(--border);
-    padding-bottom:8px; margin:0 0 4px;
-    font-size:1.6em; line-height:1.2;
+    padding-bottom:8px;
+    margin:0 0 4px;
+  }
+  header .header-top h1{
+    flex:1;
+    min-width:0;
+    margin:0;
+    padding:0;
+    border:none;
+    font-size:1.6em;
+    line-height:1.2;
+  }
+  header .header-top .lang-select{
+    flex-shrink:0;
   }
   header .meta{color:var(--muted); font-size:.72em; margin:0}
 
@@ -1045,12 +1060,15 @@
 <body>
 
 <header>
-  <h1 id="h-title">Voceiro</h1>
+  <div class="header-top">
+    <h1 id="h-title">Voceiro</h1>
+    <select id="lang-select" class="lang-select" aria-label="Language"></select>
+  </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">02/10/2026 13:22</span>
+    <span id="fecha">02/10/2026 13:35</span>
     <span>·</span>
-    <span id="total">78260</span>
+    <span id="total">78664</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -1058,14 +1076,13 @@
 <section class="topbar">
   <span class="preset-wrap">
     <button id="btn-preset" class="btn-preset" type="button"
-        aria-expanded="false" aria-haspopup="true"></button>
+            aria-expanded="false" aria-haspopup="true"></button>
     <div id="preset-menu" class="preset-menu" style="display:none"></div>
   </span>
   <button id="btn-config" type="button"></button>
   <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
   <button id="btn-buscar" class="btn-buscar" type="button"></button>
   <span style="flex:1"></span>
-  <select id="lang-select" class="lang-select" aria-label="Language"></select>
   <button id="btn-acces" type="button"></button>
 </section>
 
