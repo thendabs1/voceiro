@@ -1504,7 +1504,7 @@
    ═══════════════════════════════════════════════════════════════ */
 const REPORT_REPO  = 'thendabs1/voceiro';
 const REPORT_EMAIL = 'thendabs1@gmail.com';
-
+const DATA_BASE = 'https://voceiro-datos.toriorecorda.workers.dev';
 /* ═══════════════════════════════════════════════════════════════
    I18N
    ═══════════════════════════════════════════════════════════════ */
@@ -3287,7 +3287,7 @@ let MEDIOS_UNICOS = [];
 let _manifest = null;   // guardamos el manifest para la fase 2
 
 async function cargarPortada(){
-  const manifestRes = await fetch('datos/manifest.json', { cache: 'no-cache' });
+  const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, { cache: 'no-cache' });
   if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
   _manifest = await manifestRes.json();
   const ficheros = _manifest.ficheros || [];
@@ -3304,7 +3304,7 @@ async function cargarPortada(){
                       : 'portada.json';   // fallback por si hay manifest viejo cacheado
 
   try {
-    const r = await fetch('datos/' + portadaFile, { cache: 'no-cache' });
+    const r = await fetch(`${DATA_BASE}/${portadaFile}`, { cache: 'force-cache' });
     if (r.ok){
       const data = await r.json();
       if (data.medios) for (const d in data.medios) MEDIOS[d] = data.medios[d];
@@ -3322,9 +3322,18 @@ async function cargarPortada(){
   refrescarVistaCompleta();
 }
 
+const VENTANA_CLIENTE_HORAS = 72;
+
 function cargarHistoricoEnBackground(){
   if (!_manifest) return;
-  const ficheros = _manifest.ficheros || [];
+  const todos = _manifest.ficheros || [];
+  if (!todos.length) return;
+
+  const corte = Date.now() - VENTANA_CLIENTE_HORAS * 3600 * 1000;
+  const ficheros = todos.filter(f => {
+    const ts = Date.parse(f.fecha + 'T00:00:00+02:00');
+    return !isNaN(ts) && ts >= corte;
+  });
   if (!ficheros.length) return;
 
   const urlsCargadas = new Set();
@@ -3347,7 +3356,7 @@ function cargarHistoricoEnBackground(){
   async function procesarFichero(f){
     let r;
     try {
-      r = await fetch(`datos/${f.file}`, { cache: 'default' });
+      r = await fetch(`${DATA_BASE}/${f.file}`, { cache: 'force-cache' });
     } catch(e){ return; }
     if (!r.ok) return;
 
@@ -4838,10 +4847,15 @@ function aplicarFiltros(){
 
 function renderizar(){
   const lista = ULT_FILTRADAS;
-  let txt = t('contador', { n: lista.length, total: NOTICIAS.length });
+  const totalHistorico = (_manifest && _manifest.total) || NOTICIAS.length;
+  const cargadas = NOTICIAS.length;
+
+  let txt = `Mostrando ${lista.length.toLocaleString()} de ${cargadas.toLocaleString()} cargados`;
+  if (totalHistorico !== cargadas){
+    txt += ` · ${totalHistorico.toLocaleString()} en total`;
+  }
   if (ULT_PRESET_EFECTIVO) txt += t('contadorPreset');
   $('#contador').textContent = txt;
-
   const cont = $('#resultados');
   cont.innerHTML = '';
   RENDER_OFFSET = 0;
