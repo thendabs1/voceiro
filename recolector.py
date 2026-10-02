@@ -127,7 +127,11 @@ BAD_WORDS = {
     'en directo', 'ver más', 'ver mas', 'leer más', 'leer mas',
     'ver todos', 'ver todas', 'todos los artículos',
 }
-
+_QUERY_RUIDO = {
+    'utm_source','utm_medium','utm_campaign','utm_term','utm_content',
+    'fbclid','gclid','mc_cid','mc_eid','igshid','_ga','_gl',
+    'ref','referrer','rss','at_medium','at_campaign',
+}
 BAD_PATH_SEGMENTS = (
     '/tag/', '/tags/', '/autor/', '/autores/', '/author/',
     '/seccion/', '/secciones/', '/category/', '/categoria/',
@@ -496,6 +500,32 @@ def _dominio_de(url):
     except Exception:
         return ''
 
+def _limpiar_query(url):
+    """Quita parámetros de tracking. Mantiene el resto intacto."""
+    if not url:
+        return url
+    try:
+        p = urlparse(url)
+        if not p.query:
+            return url
+        from urllib.parse import parse_qsl, urlencode, urlunparse
+        keep = [(k, v) for k, v in parse_qsl(p.query, keep_blank_values=True)
+                if k.lower() not in _QUERY_RUIDO]
+        if not keep:
+            return urlunparse((p.scheme, p.netloc, p.path, p.params, '', ''))
+        return urlunparse((p.scheme, p.netloc, p.path, p.params, urlencode(keep), ''))
+    except Exception:
+        return url
+def _host_de(url):
+    """Devuelve el netloc tal cual vino (con www si lo traía)."""
+    if not url:
+        return ''
+    try:
+        return (urlparse(url).netloc or '').lower()
+    except Exception:
+        return ''
+
+
 
 def _normalizar_url(href, base_url):
     """Convierte href relativo a absoluto usando urljoin."""
@@ -800,6 +830,7 @@ def obtener_titulares(medio):
             'fuente':         fuente,
             'fecha':          ahora,
             '_pos':           it.get('pos'),
+            '_host':          _host_de(it['enlace']),
         })
 
     return (medio, noticias, fuente)
@@ -941,6 +972,7 @@ def cargar_historico_payload():
                         'fecha_estimada': e_iso,
                         'fuente':         n.get('f', ''),
                         'fecha':          c_raw,
+                        '_host':          m_info.get('h', ''),
                     })
         except Exception as e:
             print(f"[historico] no se pudo leer el troceado: {e}")
@@ -1004,7 +1036,7 @@ def deduplicar_editorial(noticias):
         otros = items[1:]
 
         rep['alt'] = [
-            {'d': o.get('dominio', ''), 'u': o.get('enlace', '')}
+            {'d': o.get('dominio', ''), 'u': _limpiar_query(o.get('enlace', ''))}
             for o in otros
         ]
         salida.append(rep)
@@ -1095,7 +1127,11 @@ def _url_corta(url, dominio):
         if host == dominio or host.endswith('.' + dominio):
             path = p.path or '/'
             if p.query:
-                path += '?' + p.query
+                from urllib.parse import parse_qsl, urlencode
+                keep = [(k, v) for k, v in parse_qsl(p.query, keep_blank_values=True)
+                        if k.lower() not in _QUERY_RUIDO]
+                if keep:
+                    path += '?' + urlencode(keep)
             return path
         return url
     except Exception:
@@ -1147,20 +1183,26 @@ def _noticia_a_formato_corto(n, dia=None):
 
 
 def _tabla_medios_de(items):
-    """Construye la tabla {dominio: {n,g,t,l,tags}} a partir de las noticias.
-    Se devuelve ordenada alfabéticamente por dominio para estabilidad."""
+    """Construye {dominio: {n,g,t,l,tags,h}} a partir de las noticias."""
     medios = {}
+    hosts = {}
     for n in items:
         d = n.get('dominio')
-        if not d or d in medios:
+        if not d:
             continue
-        medios[d] = {
-            'n':    n.get('medio', ''),
-            'g':    n.get('grupo', ''),
-            't':    n.get('tipo', ''),
-            'l':    n.get('lang', ''),
-            'tags': n.get('tags', []),
-        }
+        if d not in medios:
+            medios[d] = {
+                'n':    n.get('medio', ''),
+                'g':    n.get('grupo', ''),
+                't':    n.get('tipo', ''),
+                'l':    n.get('lang', ''),
+                'tags': n.get('tags', []),
+            }
+        h = n.get('_host')
+        if h and d not in hosts:
+            hosts[d] = h
+    for d, h in hosts.items():
+        medios[d]['h'] = h
     return dict(sorted(medios.items()))
 
 
