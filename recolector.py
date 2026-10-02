@@ -858,7 +858,7 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
             continue
         if n.get('fecha_pub'):
             continue
-        key = (n['medio'], n['titular'])
+        key = (n['dominio'], n['titular'])
         if key in historico_keys:
             continue
         por_medio[n['medio']].append(n)
@@ -1111,10 +1111,10 @@ def fusionar_historico(nuevas, viejas, dias):
         f = _fecha_agrupacion_dt(n)
         if f is None or f < corte:
             continue
-        idx[(n['medio'], n['titular'])] = n
+        idx[(n['dominio'], n['titular'])] = n
 
     for n in nuevas:
-        key = (n['medio'], n['titular'])
+        key = (n['dominio'], n['titular'])
         old = idx.get(key)
         if old:
             n['fecha'] = old.get('fecha', n['fecha'])
@@ -1485,7 +1485,7 @@ def main():
     else:
         print("Sin run previo — usando intervalo por defecto")
 
-    historico_keys = {(n['medio'], n['titular']) for n in historico}
+    historico_keys = {(n['dominio'], n['titular']) for n in historico}
 
     # ─── Asignar fechas estimadas ───
     print("\n── Estimando fechas para scraping ──")
