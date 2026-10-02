@@ -1563,21 +1563,19 @@ def _d1_request(sql, params=None):
         raise RuntimeError(f"D1 HTTP {r.status_code}: {r.text[:200]}")
     return r.json()
 
-def insertar_en_d1(noticias):
-    """Inserta en D1 solo las noticias de los últimos 2 días (ventana de gracia)."""
+def insertar_en_d1(noticias, t_now_iso):
+    """Inserta en D1 solo las noticias recolectadas en este run."""
     if not (CF_ACCOUNT_ID and CF_D1_TOKEN and CF_D1_DB_ID):
         print("[d1] sin credenciales — saltando")
         return 0
 
-    t_now = datetime.now(TZ_MADRID)
-    hoy = t_now.strftime('%Y-%m-%d')
-    ayer = (t_now - timedelta(days=1)).strftime('%Y-%m-%d')
+    nuevas = [n for n in noticias if n.get('fecha') == t_now_iso]
+    if not nuevas:
+        print("[d1] nada nuevo que insertar")
+        return 0
 
     a_insertar = []
-    for n in noticias:
-        dia = _dia_iso(_fecha_visible_iso(n), hoy)
-        if dia not in (hoy, ayer):
-            continue
+    for n in nuevas:
         a_insertar.append([
             n.get('dominio', ''),
             n.get('titular', ''),
@@ -1585,15 +1583,11 @@ def insertar_en_d1(noticias):
             n.get('fecha_pub', ''),
             n.get('fecha_estimada', ''),
             n.get('fuente', ''),
-            dia,
+            _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]),
             '',
         ])
 
-    if not a_insertar:
-        print("[d1] nada que insertar")
-        return 0
-
-    BATCH = 12
+    BATCH = 8
     insertados = 0
     for i in range(0, len(a_insertar), BATCH):
         chunk = a_insertar[i:i + BATCH]
@@ -1610,7 +1604,7 @@ def insertar_en_d1(noticias):
         except Exception as e:
             print(f"[d1!] batch {i // BATCH}: {e}")
 
-    print(f"[d1] {insertados} insertados (de {len(a_insertar)} intentados)")
+    print(f"[d1] {insertados} intentados (de {len(nuevas)} nuevas)")
     return insertados
 
 
@@ -1749,7 +1743,7 @@ def main():
         if f.endswith('.json') and f != 'manifest.json':
             ficheros_locales.append(os.path.join(DATOS_DIR, f))
     subir_a_r2(ficheros_locales)
-    insertar_en_d1(finales)
+    insertar_en_d1(finales, t_now_iso)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
     if sin_resultado:
