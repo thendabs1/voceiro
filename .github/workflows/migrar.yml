@@ -1,4 +1,4 @@
-name: Migrar histórico a D1
+name: Migrar histórico a Turso
 
 on:
   workflow_dispatch:
@@ -33,13 +33,13 @@ jobs:
       - name: Ejecutar migración
         run: python migrar_historico.py "${{ github.event.inputs.presupuesto }}"
         env:
+          PYTHONUNBUFFERED: "1"
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_D1_API_TOKEN: ${{ secrets.CF_D1_API_TOKEN }}
-          CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
 
       - name: Guardar progreso
         run: |
@@ -50,7 +50,7 @@ jobs:
             if git diff --staged --quiet; then
               echo "Sin cambios en el estado"
             else
-              git commit -m "Migración D1 [skip ci]"
+              git commit -m "Migración Turso [skip ci]"
               git push
             fi
           fi
