@@ -1642,24 +1642,21 @@ def limpiar_r2_huerfanos(manifest):
 # ─────────────────────────────────────────────────────────────
 # INSERCIÓN EN TURSO
 # ─────────────────────────────────────────────────────────────
-def _turso_client():
-    """Crea un cliente libSQL contra Turso. Devuelve None si faltan credenciales."""
-    if not (TURSO_URL and TURSO_TOKEN):
-        return None
-    return libsql_client.create_client_sync(
-        url=TURSO_URL,
-        auth_token=TURSO_TOKEN,
-    )
+
 
 
 def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
-    """Inserta en Turso las noticias recolectadas desde el último run."""
+    """Inserta en Turso las noticias recolectadas desde el último run.
+
+    Antes de insertar, consulta qué enlaces ya existen para evitar
+    escrituras innecesarias. INSERT OR IGNORE cuenta como escritura
+    aunque ignore la fila, así que reducir intentos reduce la cuota.
+    """
     if not (TURSO_URL and TURSO_TOKEN):
         print("[turso] sin credenciales — saltando")
         return 0
 
     replica_path = os.path.join(tempfile.gettempdir(), "voceiro_replica.db")
-
     conn = libsql.connect(
         database=replica_path,
         sync_url=TURSO_URL,
@@ -1675,24 +1672,60 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
             print("[turso] t_now_iso inválido")
             return 0
 
-        if t_prev_dt is not None:
-            corte = t_prev_dt
-        else:
-            corte = t_now_dt - timedelta(hours=24)
+        corte = t_prev_dt if t_prev_dt is not None else t_now_dt - timedelta(hours=24)
 
-        nuevas = []
+        # 1) Filtrar por fecha de recolección: solo lo de este run
+        candidatas = []
         for n in noticias:
             f = _parse_iso_flexible(n.get('fecha'))
-            if f is not None and f > corte:
-                nuevas.append(n)
+            if f is not None and f > corte and n.get('enlace'):
+                candidatas.append(n)
 
-        if not nuevas:
+        if not candidatas:
             print(f"[turso] nada nuevo (corte {corte.isoformat()})")
             return 0
 
-        a_insertar = []
-        for n in nuevas:
-            a_insertar.append((
+        # 2) Consultar en Turso qué enlaces ya existen
+        cur = conn.cursor()
+        enlaces = [n['enlace'] for n in candidatas]
+        existentes = set()
+        consulta_fallo = False
+        CHUNK = 500  # SQLite tiene límite de variables por consulta
+
+        for i in range(0, len(enlaces), CHUNK):
+            trozo = enlaces[i:i + CHUNK]
+            placeholders = ','.join(['?'] * len(trozo))
+            try:
+                cur.execute(
+                    f"SELECT enlace FROM noticias WHERE enlace IN ({placeholders})",
+                    tuple(trozo),
+                )
+                for row in cur.fetchall():
+                    existentes.add(row[0])
+            except Exception as e:
+                print(f"[turso!] consulta existentes: {e}")
+                consulta_fallo = True
+                break
+
+        # 3) Filtrar candidatas por lo que ya está
+        if consulta_fallo:
+            a_insertar = candidatas   # sin optimización: insertamos todo
+            ya_existian = 0
+        else:
+            a_insertar = [n for n in candidatas if n['enlace'] not in existentes]
+            ya_existian = len(candidatas) - len(a_insertar)
+
+        print(f"[turso] {len(candidatas)} candidatas · "
+              f"{ya_existian} ya en Turso · "
+              f"{len(a_insertar)} nuevas")
+
+        if not a_insertar:
+            return 0
+
+        # 4) Insertar por lotes
+        filas = []
+        for n in a_insertar:
+            filas.append((
                 n.get('dominio', ''),
                 n.get('titular', ''),
                 n.get('enlace', ''),
@@ -1705,9 +1738,8 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
 
         BATCH = 8
         insertados = 0
-        cur = conn.cursor()
-        for i in range(0, len(a_insertar), BATCH):
-            chunk = a_insertar[i:i + BATCH]
+        for i in range(0, len(filas), BATCH):
+            chunk = filas[i:i + BATCH]
             placeholders = ','.join(['(?,?,?,?,?,?,?,?)'] * len(chunk))
             sql = f"""INSERT OR IGNORE INTO noticias
                       (dominio, titular, enlace, fecha_pub, fecha_est, fuente, fecha_dia, hash)
@@ -1722,7 +1754,7 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 print(f"[turso!] batch {i // BATCH}: {e}")
 
         conn.commit()
-        print(f"[turso] {insertados} insertados (de {len(nuevas)} nuevas desde {corte.isoformat()[:16]})")
+        print(f"[turso] {insertados} insertados")
         return insertados
     finally:
         try:
