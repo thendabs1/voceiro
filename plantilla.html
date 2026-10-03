@@ -3344,7 +3344,8 @@ cont.querySelectorAll('.btn-pend-remove').forEach(b => {
 let NOTICIAS = [];
 let MEDIOS = {};
 let MEDIOS_UNICOS = [];
-
+let MEDIOS_STRICT   = new Map();
+let DOMINIOS_STRICT = new Map();
 let _manifest = null;   // guardamos el manifest para la fase 2
 
 async function cargarPortada(){
@@ -3610,8 +3611,8 @@ function construirGruposDuplicados(){
 }
 
 function construirIndicesBusqueda(){
-  MEDIOS_STRICT   = new Map();
-  DOMINIOS_STRICT = new Map();
+  MEDIOS_STRICT.clear();
+  DOMINIOS_STRICT.clear();
   MEDIOS_UNICOS.forEach(m => {
     if (m.medio)   MEDIOS_STRICT.set(normStrict(m.medio), m.medio);
     if (m.dominio) DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
