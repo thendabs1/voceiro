@@ -281,7 +281,6 @@ MEDIA_CATALOG = [
     # AUTONÓMICOS · CASTILLA Y LEÓN
     # ============================================================
     { 'group':'Castilla y León', 'items':[
-        { 'd':'diariodeleon.es',     'n':'Diario de León',       'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
         { 'd':'diariodeleon.es',       'n':'Diario de León',       'lang':'es','type':'diario','tags':['generalista','leon'] },
         { 'd':'diariodevalladolid.es', 'n':'Diario de Valladolid', 'lang':'es','type':'digital','tags':['generalista','valladolid'] },
         { 'd':'elcorreodeburgos.com',  'n':'El Correo de Burgos',  'lang':'es','type':'digital','tags':['generalista','burgos'] },
