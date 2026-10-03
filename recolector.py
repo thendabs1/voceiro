@@ -2115,8 +2115,6 @@ def main():
     finally:
         _turso_close(conn_turso)
 
-    # ─── Cerrar Turso (hace push explícito) ───
-    _turso_close(conn_turso)
 
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
