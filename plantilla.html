@@ -2661,6 +2661,22 @@ function actualizarBotonViewSettings(){
   btn.setAttribute('aria-pressed', n > 0 ? 'true' : 'false');
   btn.title = t('vsButton');
 }
+function actualizarFiltrosCount(){
+  let n = 0;
+  const g = $('#grupo'), tp = $('#tipo'), r = $('#rango'), o = $('#orden');
+  if (g  && g.value)  n++;
+  if (tp && tp.value) n++;
+  if (r  && r.value)  n++;
+  if (o  && o.value === 'antiguos') n++;
+
+  const count = $('#filtros-count');
+  const btn   = $('#btn-filtros');
+  if (count){
+    count.textContent = n;
+    count.dataset.count = String(n);
+  }
+  if (btn) btn.classList.toggle('active', n > 0);
+}
 
 function renderViewSettingsMenu(){
   const menu = $('#view-settings-menu');
@@ -3286,7 +3302,7 @@ function refrescarBotonesGuardar(){
 }
 function wireStickyOffsets(){
   const hd = document.querySelector('header');
-  const fl = document.querySelector('.filtros');
+  const fl = document.querySelector('.filtros-row');
   if (!hd) return;
   const apply = () => {
     document.documentElement.style.setProperty('--header-h', hd.offsetHeight + 'px');
@@ -3908,7 +3924,6 @@ function renderSugerencias(items){
       + (i === SUG_STATE.sel ? ' sel' : '')
       + (s.score === 3 ? ' exact' : '');
     return `<div class="${cls}" data-idx="${i}">
-      <span class="sug-ico">${s.ico}</span>
       <span class="sug-label">${escapeHtml(s.label)}</span>
       ${s.meta ? `<span class="sug-meta">${escapeHtml(s.meta)}</span>` : ''}
       <span class="sug-tipo">${escapeHtml(s.tipo)}</span>
@@ -4085,7 +4100,7 @@ function reconstruirSelectores(){
   if (selFG_prev && [...selFG.options].some(o => o.value === selFG_prev)) selFG.value = selFG_prev;
 
 
-
+}
 function renderListaGrupos(p){
   const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
   const afin   = gruposAfinesAlIdioma();
@@ -5191,7 +5206,7 @@ function aplicarFiltros(){
   ULT_FILTRADAS = filtradas;
   ULT_RX = buildHighlightRegex(parsed.titulo);
   ULT_PRESET_EFECTIVO = presetEfectivo;
-
+  actualizarFiltrosCount();
   renderizar();
 }
 
@@ -5637,6 +5652,7 @@ function aplicarTextos(){
   $('#bs-q').placeholder = t('bsQ');
 
   $('#buscar').placeholder = t('fltBuscar');
+  $('#filtros-label').textContent = '⚙ ' + t('fltBtn');
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
   const rOpts = $('#rango').options;
