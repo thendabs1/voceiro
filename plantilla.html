@@ -3718,7 +3718,41 @@ function parseQuery(raw){
 
   return { titulo, medios, dominios, grupos, tipos, tags, chips };
 }
+/* ═══════════════════════════════════════════════════════════════
+   CHIPS DE FILTROS ACTIVOS
+   ═══════════════════════════════════════════════════════════════ */
+function renderChips(parsed, rawQuery){
+  const cont = $('#chips-busqueda');
+  if (!cont) return;
 
+  if (!parsed.chips.length){
+    cont.style.display = 'none';
+    cont.innerHTML = '';
+    return;
+  }
+
+  cont.style.display = '';
+  cont.innerHTML = parsed.chips.map((c, i) =>
+    `<span class="chip">
+      <span class="chip-tipo">${escapeHtml(c.type)}</span>
+      <span>${escapeHtml(c.value)}</span>
+      <button type="button" class="chip-x" data-idx="${i}" title="${escapeHtml(t('chipLiteral'))}">×</button>
+    </span>`
+  ).join('');
+
+  cont.querySelectorAll('.chip-x').forEach(b => {
+    b.addEventListener('click', () => {
+      const i = parseInt(b.dataset.idx, 10);
+      const chip = parsed.chips[i];
+      if (!chip) return;
+      const esc = _escapeRegex(chip.raw);
+      const rx = new RegExp('(^|\\s)(' + esc + ')(?=\\s|$)', 'g');
+      const nueva = rawQuery.replace(rx, (m, pre) => pre + '"' + chip.value + '"');
+      $('#buscar').value = nueva;
+      aplicarFiltros();
+    });
+  });
+}
 /* ═══════════════════════════════════════════════════════════════
    AUTOCOMPLETE DEL BUSCADOR
    ═══════════════════════════════════════════════════════════════ */
