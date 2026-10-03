@@ -37,6 +37,7 @@ import json
 import os
 import re
 import ssl
+import tempfile
 import html
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -1657,11 +1658,14 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
         print("[turso] sin credenciales — saltando")
         return 0
 
+    replica_path = os.path.join(tempfile.gettempdir(), "voceiro_replica.db")
+
     conn = libsql.connect(
-        database=":memory:",
+        database=replica_path,
         sync_url=TURSO_URL,
         auth_token=TURSO_TOKEN,
     )
+    conn.sync()
 
     try:
         t_now_dt = _parse_iso_flexible(t_now_iso)
