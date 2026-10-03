@@ -1712,7 +1712,7 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
             for row in chunk:
                 params.extend(row)
             try:
-                cur.execute(sql, params)
+                cur.execute(sql, tuple(params))
                 insertados += len(chunk)
             except Exception as e:
                 print(f"[turso!] batch {i // BATCH}: {e}")
