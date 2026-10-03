@@ -621,7 +621,33 @@
   .filtro-buscar-wrap > input{
     width: 100%;
   }
-  
+  .filtro-buscar-wrap > input{
+  width: 100%;
+  /* ↓↓↓ NUEVO: mismo look que los <select> de abajo ↓↓↓ */
+  font-size: .78em;
+  padding: 8px 34px 8px 10px;   /* padding-right extra para la × */
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: inherit;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.filtro-buscar-wrap > input::placeholder{
+  color: var(--muted);
+}
+.filtro-buscar-wrap > input:focus{
+  outline: none;
+  border-color: var(--accent);
+}
+/* La × nativa del type=search no nos interesa: ya tenemos la nuestra */
+.filtro-buscar-wrap > input::-webkit-search-cancel-button{
+  -webkit-appearance: none;
+  appearance: none;
+}
+
   .buscar-sugerencias{
     position: absolute;
     top: calc(100% + 4px);
