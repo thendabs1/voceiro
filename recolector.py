@@ -70,11 +70,12 @@ except ImportError:
 # ─────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────
-N_FEED            = 60
-DIAS_RETENCION    = 15
-VENTANA_GRACIA_DIAS = 3 #DÍAS PARA METER NOTICIAS NUEVAS EN LOS.JSON que no se cachean
-MAX_WORKERS       = 8
-TIMEOUT           = 25
+N_FEED              = 60
+DIAS_RETENCION      = 15    # working set: días que el runner deduplica y reescribe
+DIAS_ARCHIVO        = 365   # entradas que el manifest lista y R2 conserva
+VENTANA_GRACIA_DIAS = 3     # días recientes que se reescriben (hoy + 2)
+MAX_WORKERS         = 8
+TIMEOUT             = 25
 TZ_MADRID = ZoneInfo('Europe/Madrid')
 
 # Intervalo por defecto si no hay datos.json previo (primer run)
@@ -1259,7 +1260,7 @@ def _orden_estable(n):
     dt = _fecha_orden(n)
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
-def generar_troceados(noticias, ahora, portada_info=None):
+def generar_troceados(noticias, ahora, portada_info=None, entradas_archivo=None):
     """Genera datos/manifest.json + datos/YYYY-MM-DD-<hash>.json.
 
     Días dentro de VENTANA_GRACIA_DIAS (hoy + N días atrás) se reescriben
@@ -1371,10 +1372,37 @@ def generar_troceados(noticias, ahora, portada_info=None):
             'reusado': reusado,
         })
 
+    # ── Añadir los días de archivo (fuera de la ventana de trabajo) ──
+    fechas_trabajo = {f['fecha'] for f in ficheros}
+    añadidos_archivo = 0
+    for e in (entradas_archivo or []):
+        if e['fecha'] in fechas_trabajo:
+            continue  # ya lo hemos regenerado arriba
+        ficheros.append({
+            'fecha':     e['fecha'],
+            'file':      e['file'],
+            'n':         e.get('n', 0),
+            'hash':      e.get('hash', ''),
+            'kb':        e.get('kb', 0),
+            'es_hoy':    False,
+            'reusado':   True,
+            'congelado': True,
+            'archivo':   True,
+        })
+        añadidos_archivo += 1
+
+    # Orden descendente por fecha y recorte al techo del archivo
+    ficheros.sort(key=lambda x: x['fecha'], reverse=True)
+    if len(ficheros) > DIAS_ARCHIVO:
+        recortados = len(ficheros) - DIAS_ARCHIVO
+        ficheros = ficheros[:DIAS_ARCHIVO]
+        print(f"[troceado] {recortados} días recortados del archivo (>{DIAS_ARCHIVO})")
+
     manifest = {
         'generado':         generado_iso,
         'generado_legible': ahora.strftime('%d/%m/%Y %H:%M'),
         'dias_retencion':   DIAS_RETENCION,
+        'dias_archivo':     DIAS_ARCHIVO,
         'ventana_gracia':   VENTANA_GRACIA_DIAS,
         'n_feed':           N_FEED,
         'total':            len(noticias),
@@ -1386,7 +1414,7 @@ def generar_troceados(noticias, ahora, portada_info=None):
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
 
-    # ── Limpieza de huérfanos ──
+    # ── Limpieza de huérfanos (local) ──
     validos = {f['file'] for f in ficheros}
     validos.add('manifest.json')
     if portada_info:
@@ -1407,6 +1435,7 @@ def generar_troceados(noticias, ahora, portada_info=None):
     congel_txt = f" · {congelados} congelados" if congelados else ""
     print(f"[troceado] {len(ficheros)} ficheros · "
           f"{escritos} escritos · {reusados} reusados{congel_txt} · "
+          f"{añadidos_archivo} de archivo · "
           f"{total_kb:.1f} KB total{extra}")
 
 
@@ -1550,6 +1579,65 @@ def subir_a_r2(ficheros_locales):
 
 
 # ─────────────────────────────────────────────────────────────
+# LIMPIEZA DE HUÉRFANOS EN R2
+# ─────────────────────────────────────────────────────────────
+def limpiar_r2_huerfanos(manifest):
+    """Borra de R2 los ficheros que ya no están referenciados en el manifest.
+    Version-aware: para cada día conserva solo el hash que aparece en el
+    manifest; borra versiones viejas del mismo día y días fuera de retención.
+    Red de seguridad: solo borra objetos con >1 h de antigüedad."""
+    client = _r2_client()
+    if not client:
+        return 0
+
+    # Mapa fecha → nombre de fichero válido
+    validos_por_dia = {}
+    for f in manifest.get('ficheros', []):
+        validos_por_dia[f['fecha']] = f['file']
+
+    portada_valida = ''
+    if manifest.get('portada') and manifest['portada'].get('file'):
+        portada_valida = manifest['portada']['file']
+
+    limite = datetime.now(timezone.utc) - timedelta(hours=1)
+    re_dia = re.compile(r'^(\d{4}-\d{2}-\d{2})-([a-f0-9]{10})\.json$')
+
+    borrados = 0
+    paginator = client.get_paginator('list_objects_v2')
+    for page in paginator.paginate(Bucket=R2_BUCKET):
+        for obj in page.get('Contents', []):
+            key = obj['Key']
+
+            if key == 'manifest.json':
+                continue
+
+            m = re_dia.match(key)
+            if m:
+                fecha = m.group(1)
+                if validos_por_dia.get(fecha) == key:
+                    continue  # es el vigente de ese día
+                # si no: huérfano (versión vieja o día fuera de retención)
+            elif key.startswith('portada-') and key.endswith('.json'):
+                if key == portada_valida:
+                    continue
+            else:
+                continue  # formato desconocido, no tocar
+
+            lastmod = obj.get('LastModified')
+            if lastmod and lastmod > limite:
+                continue  # <1 h: puede estar sirviéndose ahora mismo
+
+            try:
+                client.delete_object(Bucket=R2_BUCKET, Key=key)
+                borrados += 1
+            except Exception as e:
+                print(f"[r2-clean!] {key}: {e}")
+
+    print(f"[r2-clean] {borrados} huérfanos borrados de R2")
+    return borrados
+
+
+# ─────────────────────────────────────────────────────────────
 # INSERCIÓN EN CLOUDFLARE D1
 # ─────────────────────────────────────────────────────────────
 CF_ACCOUNT_ID  = os.environ.get('CF_ACCOUNT_ID', '')
@@ -1568,6 +1656,7 @@ def _d1_request(sql, params=None):
     if r.status_code != 200:
         raise RuntimeError(f"D1 HTTP {r.status_code}: {r.text[:200]}")
     return r.json()
+
 def insertar_en_d1(noticias, t_prev_iso, t_now_iso):
     """Inserta en D1 las noticias recolectadas desde el último run."""
     if not (CF_ACCOUNT_ID and CF_D1_TOKEN and CF_D1_DB_ID):
@@ -1628,9 +1717,12 @@ def insertar_en_d1(noticias, t_prev_iso, t_now_iso):
 
     print(f"[d1] {insertados} insertados (de {len(nuevas)} nuevas desde {corte.isoformat()[:16]})")
     return insertados
+
+
 def descargar_historico_desde_r2():
-    """Descarga de R2 los ficheros del manifest actual al disco local.
-    Necesario desde que public/datos/ ya no se commitea a git."""
+    """Descarga de R2 el manifest completo y SOLO los ficheros de la
+    ventana de dedup (DIAS_RETENCION). Los días más antiguos quedan en
+    R2 y se conservan en el manifest nuevo, pero no se bajan."""
     client = _r2_client()
     if not client:
         print("[r2-download] sin credenciales — saltando")
@@ -1646,11 +1738,15 @@ def descargar_historico_desde_r2():
         print(f"[r2-download] no hay manifest en R2: {e}")
         return 0
 
+    corte = (datetime.now(TZ_MADRID) - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
+
     descargados = 0
     for f_info in manifest.get('ficheros', []):
         fn = f_info.get('file')
         if not fn:
             continue
+        if f_info.get('fecha', '') < corte:
+            continue  # fuera de ventana: no lo bajamos
         path = os.path.join(DATOS_DIR, fn)
         if os.path.exists(path):
             continue
@@ -1662,7 +1758,9 @@ def descargar_historico_desde_r2():
         except Exception as e:
             print(f"[r2-download!] {fn}: {e}")
 
-    print(f"[r2-download] {descargados} ficheros descargados de R2")
+    total = len(manifest.get('ficheros', []))
+    print(f"[r2-download] {descargados} descargados · "
+          f"{total} en manifest · ventana {DIAS_RETENCION} días")
     return descargados
   
 
@@ -1794,17 +1892,44 @@ def main():
 
     # ─── Escribir salidas ───
     print()
+
+    # Leer manifest previo (el que bajó descargar_historico_desde_r2)
+    # para extraer las entradas de archivo y pasarlas al generador
+    entradas_archivo = []
+    if os.path.exists(MANIFEST_PATH):
+        try:
+            with open(MANIFEST_PATH, encoding='utf-8') as f:
+                manifest_prev = json.load(f)
+            corte_archivo = (t_now - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
+            entradas_archivo = [
+                e for e in manifest_prev.get('ficheros', [])
+                if e.get('fecha', '') < corte_archivo
+            ]
+            print(f"[archivo] {len(entradas_archivo)} entradas fuera de "
+                  f"la ventana de {DIAS_RETENCION} días")
+        except Exception as e:
+            print(f"[archivo] no se pudo leer manifest previo: {e}")
+
     portada_info = generar_portada(finales, t_now, horas=18)
-    generar_troceados(finales, t_now, portada_info)
-      # ─── Subir a R2 ───
+    generar_troceados(finales, t_now, portada_info, entradas_archivo=entradas_archivo)
+
+    # ─── Subir a R2 ───
     ficheros_locales = [MANIFEST_PATH]
     for f in os.listdir(DATOS_DIR):
         if f.endswith('.json') and f != 'manifest.json':
             ficheros_locales.append(os.path.join(DATOS_DIR, f))
     subir_a_r2(ficheros_locales)
+
+    # ─── Limpiar huérfanos en R2 ───
+    with open(MANIFEST_PATH, encoding='utf-8') as f:
+        manifest_actual = json.load(f)
+    limpiar_r2_huerfanos(manifest_actual)
+
+    # ─── Insertar en D1 ───
     insertar_en_d1(finales, generado_prev, t_now_iso)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
+
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
         for n in sin_resultado:
