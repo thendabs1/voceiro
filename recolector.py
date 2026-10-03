@@ -1680,52 +1680,24 @@ def _turso_ensure_schema(conn):
     """Crea tablas e índices. Idempotente. Se llama una sola vez por run."""
     if not conn:
         return
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS medios (
-          dominio        TEXT PRIMARY KEY,
-          nombre         TEXT NOT NULL DEFAULT '',
-          grupo          TEXT NOT NULL DEFAULT '',
-          tipo           TEXT NOT NULL DEFAULT '',
-          lang           TEXT NOT NULL DEFAULT '',
-          tags           TEXT NOT NULL DEFAULT '[]',
-          activo         INTEGER NOT NULL DEFAULT 1,
-          ultimo_run_ts  TEXT NOT NULL DEFAULT '',
-          ultimo_ok_ts   TEXT NOT NULL DEFAULT '',
-          fuente         TEXT NOT NULL DEFAULT '',
-          n_items        INTEGER NOT NULL DEFAULT 0,
-          con_fecha      INTEGER NOT NULL DEFAULT 0,
-          ms             INTEGER NOT NULL DEFAULT 0,
-          error          TEXT NOT NULL DEFAULT ''
-        )
-    """)
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS runs (
-          dominio   TEXT NOT NULL,
-          ts        TEXT NOT NULL,
-          ok        INTEGER NOT NULL,
-          fuente    TEXT NOT NULL DEFAULT '',
-          n_items   INTEGER NOT NULL DEFAULT 0,
-          con_fecha INTEGER NOT NULL DEFAULT 0,
-          ms        INTEGER NOT NULL DEFAULT 0,
-          error     TEXT NOT NULL DEFAULT '',
-          PRIMARY KEY (dominio, ts)
-        )
-    """)
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_ok ON medios(ultimo_ok_ts)")
+    try:
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS medios (...)""")
+        cur.execute("""CREATE TABLE IF NOT EXISTS runs (...)""")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_ok ON medios(ultimo_ok_ts)")
 
-    # Índices sobre noticias (los que faltaban)
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_noticias_enlace ON noticias(enlace)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_noticias_dia_dominio ON noticias(fecha_dia, dominio)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_grupo ON medios(grupo) WHERE activo = 1")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_noticias_enlace ON noticias(enlace)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_noticias_dia_dominio ON noticias(fecha_dia, dominio)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_grupo ON medios(grupo) WHERE activo = 1")
 
-    # Columna activo en instalaciones viejas
-    cols = {row[1] for row in cur.execute("PRAGMA table_info(medios)").fetchall()}
-    if 'activo' not in cols:
-        cur.execute("ALTER TABLE medios ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+        cols = {row[1] for row in cur.execute("PRAGMA table_info(medios)").fetchall()}
+        if 'activo' not in cols:
+            cur.execute("ALTER TABLE medios ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
 
-    conn.commit()
+        conn.commit()
+    except Exception as e:
+        print(f"[turso!] schema: {type(e).__name__}: {e}")
 
 def _turso_setup_catalogo(conn, medios):
     """Sincroniza el catálogo desde medios.py. Marca activo=0 a todos y
@@ -2137,9 +2109,11 @@ def main():
         manifest_actual = json.load(f)
     limpiar_r2_huerfanos(manifest_actual)
 
-    # ─── Insertar en Turso (reutilizando la conexión) ───
-    insertar_en_turso(conn_turso, finales, generado_prev, t_now_iso)
-    _turso_setup_runs(conn_turso, runs_data, t_now_iso)
+    try:
+        insertar_en_turso(conn_turso, finales, generado_prev, t_now_iso)
+        _turso_setup_runs(conn_turso, runs_data, t_now_iso)
+    finally:
+        _turso_close(conn_turso)
 
     # ─── Cerrar Turso (hace push explícito) ───
     _turso_close(conn_turso)
