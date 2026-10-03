@@ -44,7 +44,6 @@ from email.utils import parsedate_to_datetime
 from collections import defaultdict
 import concurrent.futures
 import time
-
 import requests
 import feedparser
 from bs4 import BeautifulSoup
