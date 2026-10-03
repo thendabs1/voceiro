@@ -1503,11 +1503,14 @@ def generar_html(fecha, total):
 # ─────────────────────────────────────────────────────────────
 import boto3
 from botocore.config import Config
+import libsql_client
 
 R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '')
 R2_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY_ID', '')
 R2_SECRET_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '')
 R2_BUCKET     = os.environ.get('R2_BUCKET', 'voceiro-datos')
+TURSO_URL   = os.environ.get('TURSO_DATABASE_URL', '')
+TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN', '')
 
 def _r2_client():
     """Crea un cliente S3 contra R2. Devuelve None si faltan credenciales."""
@@ -1635,89 +1638,86 @@ def limpiar_r2_huerfanos(manifest):
 
     print(f"[r2-clean] {borrados} huérfanos borrados de R2")
     return borrados
-
-
 # ─────────────────────────────────────────────────────────────
-# INSERCIÓN EN CLOUDFLARE D1
+# INSERCIÓN EN TURSO
 # ─────────────────────────────────────────────────────────────
-CF_ACCOUNT_ID  = os.environ.get('CF_ACCOUNT_ID', '')
-CF_D1_TOKEN    = os.environ.get('CF_D1_API_TOKEN', '')
-CF_D1_DB_ID    = os.environ.get('CF_D1_DATABASE_ID', '')
+def _turso_client():
+    """Crea un cliente libSQL contra Turso. Devuelve None si faltan credenciales."""
+    if not (TURSO_URL and TURSO_TOKEN):
+        return None
+    return libsql_client.create_client_sync(
+        url=TURSO_URL,
+        auth_token=TURSO_TOKEN,
+    )
 
-def _d1_request(sql, params=None):
-    """Ejecuta una sentencia SQL contra D1 vía REST API."""
-    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/d1/database/{CF_D1_DB_ID}/raw"
-    headers = {
-        'Authorization': f'Bearer {CF_D1_TOKEN}',
-        'Content-Type': 'application/json',
-    }
-    body = {'sql': sql, 'params': params or []}
-    r = requests.post(url, headers=headers, json=body, timeout=30)
-    if r.status_code != 200:
-        raise RuntimeError(f"D1 HTTP {r.status_code}: {r.text[:200]}")
-    return r.json()
 
-def insertar_en_d1(noticias, t_prev_iso, t_now_iso):
-    """Inserta en D1 las noticias recolectadas desde el último run."""
-    if not (CF_ACCOUNT_ID and CF_D1_TOKEN and CF_D1_DB_ID):
-        print("[d1] sin credenciales — saltando")
+def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
+    """Inserta en Turso las noticias recolectadas desde el último run."""
+    client = _turso_client()
+    if not client:
+        print("[turso] sin credenciales — saltando")
         return 0
 
-    t_now_dt = _parse_iso_flexible(t_now_iso)
-    t_prev_dt = _parse_iso_flexible(t_prev_iso) if t_prev_iso else None
+    try:
+        t_now_dt = _parse_iso_flexible(t_now_iso)
+        t_prev_dt = _parse_iso_flexible(t_prev_iso) if t_prev_iso else None
 
-    if t_now_dt is None:
-        print("[d1] t_now_iso inválido")
-        return 0
+        if t_now_dt is None:
+            print("[turso] t_now_iso inválido")
+            return 0
 
-    if t_prev_dt is not None:
-        corte = t_prev_dt
-    else:
-        corte = t_now_dt - timedelta(hours=24)
+        if t_prev_dt is not None:
+            corte = t_prev_dt
+        else:
+            corte = t_now_dt - timedelta(hours=24)
 
-    nuevas = []
-    for n in noticias:
-        f = _parse_iso_flexible(n.get('fecha'))
-        if f is not None and f > corte:
-            nuevas.append(n)
+        nuevas = []
+        for n in noticias:
+            f = _parse_iso_flexible(n.get('fecha'))
+            if f is not None and f > corte:
+                nuevas.append(n)
 
-    if not nuevas:
-        print(f"[d1] nada nuevo (corte {corte.isoformat()})")
-        return 0
+        if not nuevas:
+            print(f"[turso] nada nuevo (corte {corte.isoformat()})")
+            return 0
 
-    a_insertar = []
-    for n in nuevas:
-        a_insertar.append([
-            n.get('dominio', ''),
-            n.get('titular', ''),
-            n.get('enlace', ''),
-            n.get('fecha_pub', ''),
-            n.get('fecha_estimada', ''),
-            n.get('fuente', ''),
-            _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]),
-            '',
-        ])
+        a_insertar = []
+        for n in nuevas:
+            a_insertar.append([
+                n.get('dominio', ''),
+                n.get('titular', ''),
+                n.get('enlace', ''),
+                n.get('fecha_pub', ''),
+                n.get('fecha_estimada', ''),
+                n.get('fuente', ''),
+                _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]),
+                '',
+            ])
 
-    BATCH = 8
-    insertados = 0
-    for i in range(0, len(a_insertar), BATCH):
-        chunk = a_insertar[i:i + BATCH]
-        placeholders = ','.join(['(?,?,?,?,?,?,?,?)'] * len(chunk))
-        sql = f"""INSERT OR IGNORE INTO noticias
-                  (dominio, titular, enlace, fecha_pub, fecha_est, fuente, fecha_dia, hash)
-                  VALUES {placeholders}"""
-        params = []
-        for row in chunk:
-            params.extend(row)
+        BATCH = 8
+        insertados = 0
+        for i in range(0, len(a_insertar), BATCH):
+            chunk = a_insertar[i:i + BATCH]
+            placeholders = ','.join(['(?,?,?,?,?,?,?,?)'] * len(chunk))
+            sql = f"""INSERT OR IGNORE INTO noticias
+                      (dominio, titular, enlace, fecha_pub, fecha_est, fuente, fecha_dia, hash)
+                      VALUES {placeholders}"""
+            params = []
+            for row in chunk:
+                params.extend(row)
+            try:
+                client.execute(sql, params)
+                insertados += len(chunk)
+            except Exception as e:
+                print(f"[turso!] batch {i // BATCH}: {e}")
+
+        print(f"[turso] {insertados} insertados (de {len(nuevas)} nuevas desde {corte.isoformat()[:16]})")
+        return insertados
+    finally:
         try:
-            _d1_request(sql, params)
-            insertados += len(chunk)
-        except Exception as e:
-            print(f"[d1!] batch {i // BATCH}: {e}")
-
-    print(f"[d1] {insertados} insertados (de {len(nuevas)} nuevas desde {corte.isoformat()[:16]})")
-    return insertados
-
+            client.close()
+        except Exception:
+            pass
 
 def descargar_historico_desde_r2():
     """Descarga de R2 el manifest completo y SOLO los ficheros de la
@@ -1926,7 +1926,7 @@ def main():
     limpiar_r2_huerfanos(manifest_actual)
 
     # ─── Insertar en D1 ───
-    insertar_en_d1(finales, generado_prev, t_now_iso)
+    insertar_en_turso(finales, generado_prev, t_now_iso)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
 
