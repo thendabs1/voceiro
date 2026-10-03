@@ -654,7 +654,6 @@
   .sug-item.sel{ background: var(--save-bg); }
   .sug-item.exact .sug-tipo{ color: var(--save); font-weight: 700; }
   
-  .sug-ico{ flex-shrink: 0; width: 1.3em; text-align: center; color: var(--muted); }
   .sug-label{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sug-meta{
     flex-shrink: 0;
@@ -1034,8 +1033,8 @@
   }
   
   @media (max-width:900px){
-    .filtros{grid-template-columns:1fr 1fr 1fr; position:static}
-    #buscar{grid-column:1/-1}
+.filtros-row{ position: static; }
+.filtros{ grid-template-columns: 1fr 1fr; }
     .medio-fila{grid-template-columns:34px 34px 1fr 1.2fr}
     .medio-fila .celda-grupo{display:none}
     .opt-row{gap:8px}
@@ -1043,7 +1042,7 @@
     .panel-inner{max-width:none}
   }
   @media (max-width:560px){
-    .filtros{grid-template-columns:1fr 1fr}
+    .filtros{ grid-template-columns: 1fr; }
     .medio-fila{grid-template-columns:34px 34px 1fr}
     .medio-fila .celda-nombre{display:none}
     .panel-header{padding:14px 16px 10px}
@@ -4069,7 +4068,6 @@ function reconstruirSelectores(){
   const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
 
   const selG_prev  = $('#grupo').value;
-  const selM_prev  = $('#medio').value;
   const selFG_prev = $('#filtro-grupo-medio').value;
 
   // <select id="grupo">
@@ -4086,21 +4084,7 @@ function reconstruirSelectores(){
   grupos.forEach(g => selFG.add(new Option(g, g)));
   if (selFG_prev && [...selFG.options].some(o => o.value === selFG_prev)) selFG.value = selFG_prev;
 
-  // <datalist id="medio-datalist">
-  const dlM = $('#medio-datalist');
-  if (dlM){
-    const setMedios = new Set();
-    MEDIOS_UNICOS.forEach(m => { if (m.medio) setMedios.add(m.medio); });
-    dlM.innerHTML = [...setMedios].sort().map(m =>
-      `<option value="${escapeHtml(m)}"></option>`
-    ).join('');
-  }
-  const inpM = $('#medio');
-  if (inpM){
-    inpM.placeholder = t('fltMedio');
-    if (selM_prev) inpM.value = selM_prev;
-  }
-}
+
 
 function renderListaGrupos(p){
   const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
@@ -5096,7 +5080,6 @@ function aplicarFiltros(){
 
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
-  const m = $('#medio').value;
   const dias = parseInt($('#rango').value, 10) || 0;
   const orden = $('#orden').value || 'recientes';
 
@@ -5118,7 +5101,6 @@ function aplicarFiltros(){
 
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
-    if (m && !(n._medioStrict || (n._medioStrict = normStrict(n.medio))).includes(normStrict(m))) return false;
     if (limiteMs){
       const ts = n._tsOrden;
       if (isNaN(ts)) return false;
@@ -5657,8 +5639,6 @@ function aplicarTextos(){
   $('#buscar').placeholder = t('fltBuscar');
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
-  const elMedioTxt = $('#medio');
-  if (elMedioTxt) elMedioTxt.placeholder = t('fltMedio');
   const rOpts = $('#rango').options;
   rOpts[0].text = t('fltTodo');
   rOpts[1].text = t('flt24h');
@@ -5666,7 +5646,6 @@ function aplicarTextos(){
   const oOpts = $('#orden').options;
   oOpts[0].text = t('ordenRecientes');
   oOpts[1].text = t('ordenAntiguos');
-  $('#limpiar').textContent = t('btnClear');
 
   renderLangSelect();
   actualizarSyncBanner();
@@ -5887,20 +5866,39 @@ function wireStaticEvents(){
   el.addEventListener('change', aplicarFiltros);
   el.addEventListener('input',  aplicarFiltros);
   });
-  const elMedio = document.getElementById('medio');
-  if (elMedio){
-    const debMedio = debounce(aplicarFiltros, 220);
-    elMedio.addEventListener('input',  debMedio);
-    elMedio.addEventListener('change', aplicarFiltros);
-  }
-
-  $('#limpiar').addEventListener('click', () => {
-    ['buscar','grupo','tipo','medio','rango'].forEach(id => document.getElementById(id).value = '');
-    PRESET_ACTIVO = false;
-    guardarPresetActivo();
-    actualizarBotonPreset();
-    aplicarFiltros();
+// ── Toggle panel de filtros ──
+const btnFiltros   = $('#btn-filtros');
+const filtrosPanel = $('#filtros-panel');
+if (btnFiltros && filtrosPanel){
+  const mqDesktop = window.matchMedia('(min-width: 820px)');
+  const syncPanel = () => {
+    filtrosPanel.hidden = !mqDesktop.matches;
+    btnFiltros.setAttribute('aria-expanded', String(mqDesktop.matches));
+  };
+  syncPanel();
+  btnFiltros.addEventListener('click', e => {
+    e.stopPropagation();
+    const abierto = !filtrosPanel.hidden;
+    filtrosPanel.hidden = abierto;
+    btnFiltros.setAttribute('aria-expanded', String(!abierto));
   });
+  mqDesktop.addEventListener('change', syncPanel);
+  }
+  
+  // ── Clear del buscador ──
+  const buscarInput = $('#buscar');
+  const buscarClear = $('#buscar-clear');
+  if (buscarInput && buscarClear){
+    const syncClear = () => { buscarClear.hidden = !buscarInput.value; };
+    syncClear();
+    buscarInput.addEventListener('input', syncClear);
+    buscarClear.addEventListener('click', () => {
+      buscarInput.value = '';
+      syncClear();
+      aplicarFiltros();
+      buscarInput.focus();
+    });
+  }
   const btnNuevoModo = $('#btn-nuevo-modo');
   if (btnNuevoModo) btnNuevoModo.addEventListener('click', crearModo);
 
