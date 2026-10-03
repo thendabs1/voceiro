@@ -568,6 +568,65 @@
   [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
+  /* ═══ Autocomplete del buscador ═══ */
+  .filtro-buscar-wrap{
+    position: relative;
+    min-width: 0;
+  }
+  .filtro-buscar-wrap > input{
+    width: 100%;
+  }
+  
+  .buscar-sugerencias{
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 340px;
+    max-width: 480px;
+    max-height: 380px;
+    overflow-y: auto;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px var(--shadow);
+    padding: 4px;
+    z-index: 30;
+  }
+  
+  .sug-item{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .78em;
+    line-height: 1.3;
+    color: var(--fg);
+    user-select: none;
+  }
+  .sug-item:hover{ background: var(--quote-bg); }
+  .sug-item.sel{ background: var(--save-bg); }
+  .sug-item.exact .sug-tipo{ color: var(--save); font-weight: 700; }
+  
+  .sug-ico{ flex-shrink: 0; width: 1.3em; text-align: center; color: var(--muted); }
+  .sug-label{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sug-meta{
+    flex-shrink: 0;
+    color: var(--muted);
+    font-size: .9em;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .sug-tipo{
+    flex-shrink: 0;
+    color: var(--muted);
+    font-size: .85em;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding-left: 8px;
+    border-left: 1px solid var(--border);
+    margin-left: 8px;
+  }
   /* Botones mini (mariquita, bloquear) */
   .btn-mini{
     margin-left:2px;
@@ -1431,7 +1490,10 @@
 
 <!-- FILTROS -->
 <section class="filtros">
-  <input type="search" id="buscar" autocomplete="off">
+  <div class="filtro-buscar-wrap">
+    <input type="search" id="buscar" autocomplete="off">
+    <div id="buscar-sugerencias" class="buscar-sugerencias" style="display:none"></div>
+  </div>
   <select id="grupo"><option value=""></option></select>
   <select id="tipo"><option value=""></option></select>
   <input type="search" id="medio" list="medio-datalist" autocomplete="off" placeholder="Medio…">
@@ -3555,64 +3617,86 @@ function construirIndicesBusqueda(){
     if (m.dominio) DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
   });
 }
-
 /* ═══════════════════════════════════════════════════════════════
-   PARSER DE BÚSQUEDA + CHIPS
-   Autodetección: SOLO medio y dominio. Todo lo demás → título.
+   TOKENIZADOR CON SOPORTE DE COMILAS
+   Acepta:  grupo:"España · Nacionales"   "texto exacto"   palabra
    ═══════════════════════════════════════════════════════════════ */
-function parseQuery(raw){
+const PREFIX_ALIASES = {
+  medio: 'medio', medios: 'medio',
+  dominio: 'dominio', domain: 'dominio', dom: 'dominio',
+  grupo: 'grupo', grupos: 'grupo',
+  tipo: 'tipo', tipos: 'tipo',
+  tag: 'tag', tags: 'tag',
+};
+
+function tokenizeQuery(raw){
+  const re = /([a-z][a-z]*):"([^"]*)"|"([^"]*)"|([^\s"]+)/gi;
   const tokens = [];
-  const re = /"([^"]+)"|(\S+)/g;
   let m;
   while ((m = re.exec(raw)) !== null){
-    tokens.push({ text: m[1] != null ? m[1] : m[2], raw: m[0], quoted: m[1] != null });
+    if (m[1] !== undefined){
+      tokens.push({ prefix: m[1].toLowerCase(), text: m[2], raw: m[0], quoted: true });
+    } else if (m[3] !== undefined){
+      tokens.push({ prefix: '', text: m[3], raw: m[0], quoted: true });
+    } else {
+      const word = m[4];
+      const pi = word.indexOf(':');
+      if (pi > 0 && /^[a-z]+$/i.test(word.slice(0, pi))){
+        tokens.push({ prefix: word.slice(0, pi).toLowerCase(), text: word.slice(pi + 1), raw: word, quoted: false });
+      } else {
+        tokens.push({ prefix: '', text: word, raw: word, quoted: false });
+      }
+    }
   }
+  return tokens;
+}
 
+function parseQuery(raw){
+  const tokens = tokenizeQuery(raw);
   const titulo = [], medios = [], dominios = [], grupos = [], tipos = [], tags = [];
   const chips = [];
 
   for (const tk of tokens){
-    const low = tk.text.toLowerCase();
+    const kind = tk.prefix ? PREFIX_ALIASES[tk.prefix] : '';
 
-    if (!tk.quoted){
-      if (low.startsWith('medio:')){
-        const v = normStrict(tk.text.slice(6));
-        if (v){ medios.push(v); chips.push({ type: 'medio', value: tk.text.slice(6), raw: tk.raw }); }
-        continue;
-      }
-      if (low.startsWith('dominio:')){
-        const v = normDomain(tk.text.slice(8));
-        if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text.slice(8), raw: tk.raw }); }
-        continue;
-      }
-      if (low.startsWith('domain:')){
-        const v = normDomain(tk.text.slice(7));
-        if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text.slice(7), raw: tk.raw }); }
-        continue;
-      }
-      if (low.startsWith('grupo:')){
-        const v = normStrict(tk.text.slice(6));
-        if (v){ grupos.push(v); chips.push({ type: 'grupo', value: tk.text.slice(6), raw: tk.raw }); }
-        continue;
-      }
-      if (low.startsWith('tipo:')){
-        const v = normStrict(tk.text.slice(5));
-        if (v){ tipos.push(v); chips.push({ type: 'tipo', value: tk.text.slice(5), raw: tk.raw }); }
-        continue;
-      }
-      if (low.startsWith('tag:')){
-        const v = normStrict(tk.text.slice(4));
-        if (v){ tags.push(v); chips.push({ type: 'tag', value: tk.text.slice(4), raw: tk.raw }); }
-        continue;
-      }
+    // Prefijo desconocido (ej. "foo:bar") → búsqueda literal con el raw entero
+    if (tk.prefix && !kind){
+      titulo.push(normalize(tk.raw));
+      continue;
     }
 
+    if (kind === 'medio'){
+      const v = normStrict(tk.text);
+      if (v){ medios.push(v); chips.push({ type: 'medio', value: tk.text, raw: tk.raw }); }
+      continue;
+    }
+    if (kind === 'dominio'){
+      const v = normDomain(tk.text);
+      if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text, raw: tk.raw }); }
+      continue;
+    }
+    if (kind === 'grupo'){
+      const v = normStrict(tk.text);
+      if (v){ grupos.push(v); chips.push({ type: 'grupo', value: tk.text, raw: tk.raw }); }
+      continue;
+    }
+    if (kind === 'tipo'){
+      const v = normStrict(tk.text);
+      if (v){ tipos.push(v); chips.push({ type: 'tipo', value: tk.text, raw: tk.raw }); }
+      continue;
+    }
+    if (kind === 'tag'){
+      const v = normStrict(tk.text);
+      if (v){ tags.push(v); chips.push({ type: 'tag', value: tk.text, raw: tk.raw }); }
+      continue;
+    }
+
+    // Sin prefijo → heurística (igual que antes)
     if (tk.quoted){
       const n = normalize(tk.text);
       if (n) titulo.push(n);
       continue;
     }
-
     if (tk.text.includes('.')){
       const d = normDomain(tk.text).replace(/^www\./, '');
       if (d){
@@ -3635,38 +3719,7 @@ function parseQuery(raw){
   return { titulo, medios, dominios, grupos, tipos, tags, chips };
 }
 
-function renderChips(parsed, rawQuery){
-  const cont = $('#chips-busqueda');
-  if (!cont) return;
-
-  if (!parsed.chips.length){
-    cont.style.display = 'none';
-    cont.innerHTML = '';
-    return;
-  }
-
-  cont.style.display = '';
-  cont.innerHTML = parsed.chips.map((c, i) =>
-    `<span class="chip">
-      <span class="chip-tipo">${escapeHtml(c.type)}</span>
-      <span>${escapeHtml(c.value)}</span>
-      <button type="button" class="chip-x" data-idx="${i}" title="${escapeHtml(t('chipLiteral'))}">×</button>
-    </span>`
-  ).join('');
-
-  cont.querySelectorAll('.chip-x').forEach(b => {
-    b.addEventListener('click', () => {
-      const i = parseInt(b.dataset.idx, 10);
-      const chip = parsed.chips[i];
-      if (!chip) return;
-      const esc = _escapeRegex(chip.raw);
-      const rx = new RegExp('(^|\\s)(' + esc + ')(?=\\s|$)', 'g');
-      const nueva = rawQuery.replace(rx, (m, pre) => pre + '"' + chip.value + '"');
-      $('#buscar').value = nueva;
-      aplicarFiltros();
-    });
-  });
-}
+  
 
 /* ═══════════════════════════════════════════════════════════════
    GRUPOS, LISTAS Y MEDIOS (panel config)
@@ -5563,10 +5616,12 @@ function wireStaticEvents(){
     renderModosPanel();
     renderListaMedios();
     aplicarFiltros();
+    
   });
   const ovAplicar = $('#ov-pegar-aplicar');
   if (ovAplicar) ovAplicar.addEventListener('click', aplicarListaOverrides);
   wireResultadosDelegation();
+  wireAutocomplete(); 
     // Delegación para #lista-medios (un único listener en todo el contenedor)
   const contMedios = $('#lista-medios');
   if (contMedios){
