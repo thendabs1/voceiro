@@ -1503,7 +1503,7 @@ def generar_html(fecha, total):
 # ─────────────────────────────────────────────────────────────
 import boto3
 from botocore.config import Config
-import libsql_client
+import libsql_experimental as libsql
 
 R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '')
 R2_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY_ID', '')
@@ -1653,10 +1653,15 @@ def _turso_client():
 
 def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
     """Inserta en Turso las noticias recolectadas desde el último run."""
-    client = _turso_client()
-    if not client:
+    if not (TURSO_URL and TURSO_TOKEN):
         print("[turso] sin credenciales — saltando")
         return 0
+
+    conn = libsql.connect(
+        database=":memory:",
+        sync_url=TURSO_URL,
+        auth_token=TURSO_TOKEN,
+    )
 
     try:
         t_now_dt = _parse_iso_flexible(t_now_iso)
@@ -1683,7 +1688,7 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
 
         a_insertar = []
         for n in nuevas:
-            a_insertar.append([
+            a_insertar.append((
                 n.get('dominio', ''),
                 n.get('titular', ''),
                 n.get('enlace', ''),
@@ -1692,10 +1697,11 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 n.get('fuente', ''),
                 _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]),
                 '',
-            ])
+            ))
 
         BATCH = 8
         insertados = 0
+        cur = conn.cursor()
         for i in range(0, len(a_insertar), BATCH):
             chunk = a_insertar[i:i + BATCH]
             placeholders = ','.join(['(?,?,?,?,?,?,?,?)'] * len(chunk))
@@ -1706,16 +1712,17 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
             for row in chunk:
                 params.extend(row)
             try:
-                client.execute(sql, params)
+                cur.execute(sql, params)
                 insertados += len(chunk)
             except Exception as e:
                 print(f"[turso!] batch {i // BATCH}: {e}")
 
+        conn.commit()
         print(f"[turso] {insertados} insertados (de {len(nuevas)} nuevas desde {corte.isoformat()[:16]})")
         return insertados
     finally:
         try:
-            client.close()
+            conn.close()
         except Exception:
             pass
 
