@@ -1743,13 +1743,13 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 params.extend(row)
             try:
                 cur.execute(sql, tuple(params))
-                insertados += cur.rowcount   # ← filas realmente insertadas
+                insertados += len(chunk)   # ← filas realmente insertadas
             except Exception as e:
                 print(f"[turso!] batch {i // BATCH}: {e}")
                 fallos += len(chunk)
 
         conn.commit()
-        print(f"[turso] {insertados} insertados · {fallos} fallos")
+        print(f"[turso] {insertados} intentados · {fallos} fallos")
         return insertados
     finally:
         try:
