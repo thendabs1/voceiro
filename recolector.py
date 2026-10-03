@@ -43,6 +43,7 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from collections import defaultdict
 import concurrent.futures
+import time
 
 import requests
 import feedparser
@@ -1645,7 +1646,167 @@ def limpiar_r2_huerfanos(manifest):
 # ─────────────────────────────────────────────────────────────
 # INSERCIÓN EN TURSO
 # ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# TABLAS DE MEDIOS Y RUNS EN TURSO
+# ─────────────────────────────────────────────────────────────
+def _turso_conectar():
+    """Abre la réplica local de Turso. None si faltan credenciales."""
+    if not (TURSO_URL and TURSO_TOKEN):
+        return None
+    replica_path = os.path.join(tempfile.gettempdir(), "voceiro_replica.db")
+    conn = libsql.connect(
+        database=replica_path,
+        sync_url=TURSO_URL,
+        auth_token=TURSO_TOKEN,
+    )
+    conn.sync()
+    return conn
 
+
+def _turso_setup_catalogo(medios):
+    """Sincroniza el catálogo desde medios.py. No toca estado del último run."""
+    conn = _turso_conectar()
+    if not conn:
+        print("[turso] sin credenciales — saltando catálogo")
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS medios (
+              dominio        TEXT PRIMARY KEY,
+              nombre         TEXT NOT NULL DEFAULT '',
+              grupo          TEXT NOT NULL DEFAULT '',
+              tipo           TEXT NOT NULL DEFAULT '',
+              lang           TEXT NOT NULL DEFAULT '',
+              tags           TEXT NOT NULL DEFAULT '[]',
+              ultimo_run_ts  TEXT NOT NULL DEFAULT '',
+              ultimo_ok_ts   TEXT NOT NULL DEFAULT '',
+              fuente         TEXT NOT NULL DEFAULT '',
+              n_items        INTEGER NOT NULL DEFAULT 0,
+              con_fecha      INTEGER NOT NULL DEFAULT 0,
+              ms             INTEGER NOT NULL DEFAULT 0,
+              error          TEXT NOT NULL DEFAULT ''
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS runs (
+              dominio   TEXT NOT NULL,
+              ts        TEXT NOT NULL,
+              ok        INTEGER NOT NULL,
+              fuente    TEXT NOT NULL DEFAULT '',
+              n_items   INTEGER NOT NULL DEFAULT 0,
+              con_fecha INTEGER NOT NULL DEFAULT 0,
+              ms        INTEGER NOT NULL DEFAULT 0,
+              error     TEXT NOT NULL DEFAULT '',
+              PRIMARY KEY (dominio, ts)
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_ok ON medios(ultimo_ok_ts)")
+
+        for m in medios:
+            cur.execute("""
+                INSERT INTO medios (dominio, nombre, grupo, tipo, lang, tags)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(dominio) DO UPDATE SET
+                    nombre = excluded.nombre,
+                    grupo  = excluded.grupo,
+                    tipo   = excluded.tipo,
+                    lang   = excluded.lang,
+                    tags   = excluded.tags
+            """, (
+                m['d'], m['n'], m['grupo'],
+                m.get('type', ''), m.get('lang', ''),
+                json.dumps(m.get('tags', []), ensure_ascii=False),
+            ))
+        conn.commit()
+        print(f"[turso] catálogo: {len(medios)} medios")
+    except Exception as e:
+        print(f"[turso!] catálogo: {type(e).__name__}: {e}")
+    finally:
+        try: conn.close()
+        except Exception: pass
+
+
+def _turso_setup_runs(runs_data, ahora_iso):
+    """Registra cada intento del ciclo, actualiza la foto y poda >7d."""
+    if not runs_data:
+        return
+    conn = _turso_conectar()
+    if not conn:
+        print("[turso] sin credenciales — saltando runs")
+        return
+    try:
+        cur = conn.cursor()
+
+        # 1) Insertar runs del ciclo
+        for r in runs_data:
+            cur.execute("""
+                INSERT OR REPLACE INTO runs
+                  (dominio, ts, ok, fuente, n_items, con_fecha, ms, error)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                r['dominio'], ahora_iso, int(r['ok']),
+                r['fuente'], r['n_items'], r['con_fecha'],
+                r['ms'], r['error'],
+            ))
+
+        # 2) Actualizar la foto del último run en medios
+        for r in runs_data:
+            if r['ok']:
+                cur.execute("""
+                    UPDATE medios
+                    SET ultimo_run_ts = ?,
+                        ultimo_ok_ts  = ?,
+                        fuente        = ?,
+                        n_items       = ?,
+                        con_fecha     = ?,
+                        ms            = ?,
+                        error         = ''
+                    WHERE dominio = ?
+                """, (
+                    ahora_iso, ahora_iso, r['fuente'], r['n_items'],
+                    r['con_fecha'], r['ms'], r['dominio'],
+                ))
+            else:
+                cur.execute("""
+                    UPDATE medios
+                    SET ultimo_run_ts = ?,
+                        fuente        = ?,
+                        n_items       = 0,
+                        con_fecha     = 0,
+                        ms            = ?,
+                        error         = ?
+                    WHERE dominio = ?
+                """, (
+                    ahora_iso, r['fuente'], r['ms'], r['error'],
+                    r['dominio'],
+                ))
+
+        # 3) Poda
+        cur.execute("DELETE FROM runs WHERE ts < datetime('now', '-7 days')")
+
+        conn.commit()
+        print(f"[turso] runs: {len(runs_data)} registrados · poda >7d aplicada")
+    except Exception as e:
+        print(f"[turso!] runs: {type(e).__name__}: {e}")
+    finally:
+        try: conn.close()
+        except Exception: pass
+
+
+def _timed_obtener(medio):
+    """Envuelve obtener_titulares midiendo duración y capturando excepciones.
+    Devuelve (medio, noticias, fuente, con_fecha, ms, error)."""
+    t0 = time.monotonic()
+    try:
+        m, noticias, fuente = obtener_titulares(medio)
+        ms = int((time.monotonic() - t0) * 1000)
+        con_fecha = sum(1 for n in noticias if n.get('fecha_pub')) if noticias else 0
+        return (m, noticias, fuente or '', con_fecha, ms, '')
+    except Exception as e:
+        ms = int((time.monotonic() - t0) * 1000)
+        return (medio, [], '', 0, ms, f'{type(e).__name__}: {e}')
 
 def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
     """Inserta en Turso las noticias marcadas como nuevas en este run.
@@ -1813,7 +1974,7 @@ def main():
     if GRUPOS_INCLUIDOS:
         medios = [m for m in medios if m['grupo'] in GRUPOS_INCLUIDOS]
         print(f"[filtro] grupos activos: {GRUPOS_INCLUIDOS}")
-
+    _turso_setup_catalogo(medios)
     print(f"── Recolectando {len(medios)} medios (hasta {N_FEED} cada uno) ──")
 
     todas = []
@@ -1823,27 +1984,36 @@ def main():
     contador_wp = 0
     sin_resultado = []
     medios_sin_fecha = []
+    runs_data = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
-        for medio, noticias, fuente in ex.map(obtener_titulares, medios):
+        for medio, noticias, fuente, con_fecha, ms, error in ex.map(_timed_obtener, medios):
+
+            runs_data.append({
+                'dominio':   medio['d'],
+                'ok':        bool(noticias),
+                'fuente':    fuente,
+                'n_items':   len(noticias) if noticias else 0,
+                'con_fecha': con_fecha,
+                'ms':        ms,
+                'error':     error,
+            })
+
             if noticias:
                 todas.extend(noticias)
-                if fuente == 'RSS':
-                    contador_rss += 1
-                elif fuente == 'Scraping':
-                    contador_scrape += 1
-                elif fuente == 'Google News':
-                    contador_gn += 1
-                elif fuente == 'WP-API':
-                    contador_wp += 1
-                con_fecha = sum(1 for n in noticias if n.get('fecha_pub'))
+                if fuente == 'RSS':            contador_rss += 1
+                elif fuente == 'Scraping':     contador_scrape += 1
+                elif fuente == 'Google News':  contador_gn += 1
+                elif fuente == 'WP-API':       contador_wp += 1
                 if con_fecha == 0 and fuente != 'RSS':
                     medios_sin_fecha.append(medio['n'])
                 print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares"
-                      f" · {con_fecha}/{len(noticias)} con fecha real")
+                      f" · {con_fecha}/{len(noticias)} con fecha real"
+                      f" · {ms} ms")
             else:
                 sin_resultado.append(medio['n'])
-                print(f"✗ {medio['n']}: sin titulares")
+                print(f"✗ {medio['n']}: sin titulares ({ms} ms)"
+                      + (f" [{error}]" if error else ""))
 
     print(f"\nTitulares brutos: {len(todas)}")
 
@@ -1965,6 +2135,7 @@ def main():
 
     # ─── Insertar en D1 ───
     insertar_en_turso(finales, generado_prev, t_now_iso)
+    _turso_setup_runs(runs_data, t_now_iso)
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
 
