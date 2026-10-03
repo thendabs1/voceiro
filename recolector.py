@@ -1662,51 +1662,79 @@ def _turso_conectar():
     return conn
 
 
-def _turso_setup_catalogo(medios):
-    """Sincroniza el catálogo desde medios.py. No toca estado del último run."""
-    conn = _turso_conectar()
+def _turso_close(conn):
+    """Cierra la conexión haciendo push explícito al servidor."""
     if not conn:
-        print("[turso] sin credenciales — saltando catálogo")
+        return
+    try:
+        conn.sync()
+    except Exception:
+        pass
+    try:
+        conn.close()
+    except Exception:
+        pass
+
+
+def _turso_ensure_schema(conn):
+    """Crea tablas e índices. Idempotente. Se llama una sola vez por run."""
+    if not conn:
+        return
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS medios (
+          dominio        TEXT PRIMARY KEY,
+          nombre         TEXT NOT NULL DEFAULT '',
+          grupo          TEXT NOT NULL DEFAULT '',
+          tipo           TEXT NOT NULL DEFAULT '',
+          lang           TEXT NOT NULL DEFAULT '',
+          tags           TEXT NOT NULL DEFAULT '[]',
+          activo         INTEGER NOT NULL DEFAULT 1,
+          ultimo_run_ts  TEXT NOT NULL DEFAULT '',
+          ultimo_ok_ts   TEXT NOT NULL DEFAULT '',
+          fuente         TEXT NOT NULL DEFAULT '',
+          n_items        INTEGER NOT NULL DEFAULT 0,
+          con_fecha      INTEGER NOT NULL DEFAULT 0,
+          ms             INTEGER NOT NULL DEFAULT 0,
+          error          TEXT NOT NULL DEFAULT ''
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS runs (
+          dominio   TEXT NOT NULL,
+          ts        TEXT NOT NULL,
+          ok        INTEGER NOT NULL,
+          fuente    TEXT NOT NULL DEFAULT '',
+          n_items   INTEGER NOT NULL DEFAULT 0,
+          con_fecha INTEGER NOT NULL DEFAULT 0,
+          ms        INTEGER NOT NULL DEFAULT 0,
+          error     TEXT NOT NULL DEFAULT '',
+          PRIMARY KEY (dominio, ts)
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_ok ON medios(ultimo_ok_ts)")
+
+    # Índices sobre noticias (los que faltaban)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_noticias_enlace ON noticias(enlace)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_noticias_dia_dominio ON noticias(fecha_dia, dominio)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_grupo ON medios(grupo) WHERE activo = 1")
+
+    # Columna activo en instalaciones viejas
+    cols = {row[1] for row in cur.execute("PRAGMA table_info(medios)").fetchall()}
+    if 'activo' not in cols:
+        cur.execute("ALTER TABLE medios ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+
+    conn.commit()
+
+def _turso_setup_catalogo(conn, medios):
+    """Sincroniza el catálogo desde medios.py. Marca activo=0 a todos y
+    activo=1 solo a los presentes en medios.py. No cierra la conexión."""
+    if not conn:
+        print("[turso] sin conexión — saltando catálogo")
         return
     try:
         cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS medios (
-              dominio        TEXT PRIMARY KEY,
-              nombre         TEXT NOT NULL DEFAULT '',
-              grupo          TEXT NOT NULL DEFAULT '',
-              tipo           TEXT NOT NULL DEFAULT '',
-              lang           TEXT NOT NULL DEFAULT '',
-              tags           TEXT NOT NULL DEFAULT '[]',
-              activo         INTEGER NOT NULL DEFAULT 1,
-              ultimo_run_ts  TEXT NOT NULL DEFAULT '',
-              ultimo_ok_ts   TEXT NOT NULL DEFAULT '',
-              fuente         TEXT NOT NULL DEFAULT '',
-              n_items        INTEGER NOT NULL DEFAULT 0,
-              con_fecha      INTEGER NOT NULL DEFAULT 0,
-              ms             INTEGER NOT NULL DEFAULT 0,
-              error          TEXT NOT NULL DEFAULT ''
-            )
-        """)
-        try:
-            cur.execute("ALTER TABLE medios ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
-        except Exception:
-            pass  # ya existe → ignorar
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS runs (
-              dominio   TEXT NOT NULL,
-              ts        TEXT NOT NULL,
-              ok        INTEGER NOT NULL,
-              fuente    TEXT NOT NULL DEFAULT '',
-              n_items   INTEGER NOT NULL DEFAULT 0,
-              con_fecha INTEGER NOT NULL DEFAULT 0,
-              ms        INTEGER NOT NULL DEFAULT 0,
-              error     TEXT NOT NULL DEFAULT '',
-              PRIMARY KEY (dominio, ts)
-            )
-        """)
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_ok ON medios(ultimo_ok_ts)")
         cur.execute("UPDATE medios SET activo = 0")
         for m in medios:
             cur.execute("""
@@ -1725,28 +1753,18 @@ def _turso_setup_catalogo(medios):
                 json.dumps(m.get('tags', []), ensure_ascii=False),
             ))
         conn.commit()
-        print(f"[turso] catálogo: {len(medios)} medios")
+        print(f"[turso] catálogo: {len(medios)} activos")
     except Exception as e:
         print(f"[turso!] catálogo: {type(e).__name__}: {e}")
-    finally:
-        try: conn.close()
-        except Exception: pass
 
 
-def _turso_setup_runs(runs_data, ahora_iso):
+def _turso_setup_runs(conn, runs_data, ahora_iso):
     """Registra cada intento del ciclo, actualiza la foto y poda >7d."""
-    if not runs_data:
+    if not runs_data or not conn:
         return
-    conn = _turso_conectar()
-
-    if not conn:
-        print("[turso] sin credenciales — saltando runs")
-        return
-    corte = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(timespec='seconds')
     try:
         cur = conn.cursor()
 
-        # 1) Insertar runs del ciclo
         for r in runs_data:
             cur.execute("""
                 INSERT OR REPLACE INTO runs
@@ -1758,7 +1776,6 @@ def _turso_setup_runs(runs_data, ahora_iso):
                 r['ms'], r['error'],
             ))
 
-        # 2) Actualizar la foto del último run en medios
         for r in runs_data:
             if r['ok']:
                 cur.execute("""
@@ -1790,17 +1807,13 @@ def _turso_setup_runs(runs_data, ahora_iso):
                     r['dominio'],
                 ))
 
-        # 3) Poda
+        corte = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(timespec='seconds')
         cur.execute("DELETE FROM runs WHERE ts < ?", (corte,))
 
         conn.commit()
         print(f"[turso] runs: {len(runs_data)} registrados · poda >7d aplicada")
     except Exception as e:
         print(f"[turso!] runs: {type(e).__name__}: {e}")
-    finally:
-        try: conn.close()
-        except Exception: pass
-
 
 def _timed_obtener(medio):
     """Envuelve obtener_titulares midiendo duración y capturando excepciones.
@@ -1815,19 +1828,12 @@ def _timed_obtener(medio):
         ms = int((time.monotonic() - t0) * 1000)
         return (medio, [], '', 0, ms, f'{type(e).__name__}: {e}')
 
-def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
-    """Inserta en Turso las noticias marcadas como nuevas en este run.
-
-    Solo se consideran las noticias con `_nueva=True`, que son las que no
-    estaban en el histórico previo (marcadas en fusionar_historico).
-    Además, se consulta Turso para verificar cuáles ya existen (por si hay
-    drift entre R2 y Turso: R2 puede tener 15 días, Turso toda la historia).
-    """
-    if not (TURSO_URL and TURSO_TOKEN):
-        print("[turso] sin credenciales — saltando")
+def insertar_en_turso(conn, noticias, t_prev_iso, t_now_iso):
+    """Inserta en Turso las noticias nuevas. Usa la conexión recibida."""
+    if not conn:
+        print("[turso] sin conexión — saltando noticias")
         return 0
 
-    # 1) Candidatas: solo las marcadas como nuevas en fusionar_historico
     candidatas = [n for n in noticias
                   if n.get('_nueva') and n.get('enlace')]
 
@@ -1835,22 +1841,13 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
         print("[turso] nada nuevo en este run")
         return 0
 
-    replica_path = os.path.join(tempfile.gettempdir(), "voceiro_replica.db")
-    conn = libsql.connect(
-        database=replica_path,
-        sync_url=TURSO_URL,
-        auth_token=TURSO_TOKEN,
-    )
-    conn.sync()
-
     try:
         cur = conn.cursor()
 
-        # 2) Pre-check: consultar qué enlaces ya existen en Turso
         enlaces = [n['enlace'] for n in candidatas]
         existentes = set()
         consulta_fallo = False
-        CHUNK = 500  # SQLite permite hasta 999 variables por consulta
+        CHUNK = 500
 
         for i in range(0, len(enlaces), CHUNK):
             trozo = enlaces[i:i + CHUNK]
@@ -1867,9 +1864,8 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 consulta_fallo = True
                 break
 
-        # 3) Filtrar las que ya están en Turso
         if consulta_fallo:
-            a_insertar = candidatas       # fallback: intentamos todo
+            a_insertar = candidatas
             ya_existian = 0
         else:
             a_insertar = [n for n in candidatas if n['enlace'] not in existentes]
@@ -1882,7 +1878,6 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
         if not a_insertar:
             return 0
 
-        # 4) Construir filas (forzando '' para columnas NOT NULL)
         filas = []
         for n in a_insertar:
             filas.append((
@@ -1896,8 +1891,7 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 '',
             ))
 
-        # 5) Insertar por lotes
-        BATCH = 8
+        BATCH = 100
         insertados = 0
         fallos = 0
         for i in range(0, len(filas), BATCH):
@@ -1911,7 +1905,7 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 params.extend(row)
             try:
                 cur.execute(sql, tuple(params))
-                insertados += len(chunk)   # ← filas realmente insertadas
+                insertados += len(chunk)
             except Exception as e:
                 print(f"[turso!] batch {i // BATCH}: {e}")
                 fallos += len(chunk)
@@ -1919,11 +1913,9 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
         conn.commit()
         print(f"[turso] {insertados} intentados · {fallos} fallos")
         return insertados
-    finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+    except Exception as e:
+        print(f"[turso!] insertar: {type(e).__name__}: {e}")
+        return 0
 
 def descargar_historico_desde_r2():
     """Descarga de R2 el manifest completo y SOLO los ficheros de la
@@ -1977,15 +1969,16 @@ def main():
     os.makedirs(DATOS_DIR, exist_ok=True)
     descargar_historico_desde_r2()
     medios = todos_los_medios()
-    
-    # Siempre: catálogo completo a Turso
-    _turso_setup_catalogo(medios)
-    
-    # Después: filtro solo para el bucle
+
+    # ── Turso: UNA conexión para todo el run ──
+    conn_turso = _turso_conectar()
+    _turso_ensure_schema(conn_turso)
+    _turso_setup_catalogo(conn_turso, medios)
+
     if GRUPOS_INCLUIDOS:
         medios = [m for m in medios if m['grupo'] in GRUPOS_INCLUIDOS]
         print(f"[filtro] grupos activos: {GRUPOS_INCLUIDOS} — {len(medios)} medios")
-    
+
     print(f"── Recolectando {len(medios)} medios ──")
 
     todas = []
@@ -2144,9 +2137,13 @@ def main():
         manifest_actual = json.load(f)
     limpiar_r2_huerfanos(manifest_actual)
 
-    # ─── Insertar en D1 ───
-    insertar_en_turso(finales, generado_prev, t_now_iso)
-    _turso_setup_runs(runs_data, t_now_iso)
+    # ─── Insertar en Turso (reutilizando la conexión) ───
+    insertar_en_turso(conn_turso, finales, generado_prev, t_now_iso)
+    _turso_setup_runs(conn_turso, runs_data, t_now_iso)
+
+    # ─── Cerrar Turso (hace push explícito) ───
+    _turso_close(conn_turso)
+
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
 
