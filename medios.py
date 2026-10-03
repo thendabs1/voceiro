@@ -69,7 +69,6 @@ MEDIA_CATALOG = [
         { 'd':'republica.com',        'n':'Republica.com',        'lang':'es','type':'digital','tags':['generalista','digital'] },
         { 'd':'rtve.es',             'n':'RTVE',                 'lang':'es', 'type':'tv',      'tags':['generalista','publico','tv','radio'] },  # [SIN-FEED: GN/scraping]
         { 'd':'servimedia.es',       'n':'Servimedia',           'lang':'es', 'type':'agencia', 'tags':['agencia','social'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'tass.com',       'n':'TASS',       'lang':'en','type':'agencia','tags':['agencia','rusia'] },  # [SIN-FEED: GN/scraping]
         { 'd':'telecinco.es',        'n':'Telecinco',            'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
         { 'd':'theobjective.com',    'n':'The Objective',        'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },
         { 'd':'vientosur.info',       'n':'Viento Sur',           'lang':'es','type':'revista','tags':['politica','izquierda'] },
@@ -316,7 +315,6 @@ MEDIA_CATALOG = [
         { 'd':'alicanteplaza.es',      'n':'Alicante Plaza',       'lang':'es','type':'digital','tags':['generalista','alicante'] },
         { 'd':'castellonplaza.com',    'n':'Castellón Plaza',      'lang':'es','type':'digital','tags':['generalista','castellon'] },
         { 'd':'elperiodicomediterraneo.com', 'n':'El Periódico Mediterráneo', 'lang':'es', 'type':'diario', 'tags':['generalista','castellon'] },
-        { 'd':'informacion.es',      'n':'Información',          'lang':'es', 'type':'diario',  'tags':['generalista','alicante'] },
         { 'd':'informacion.es',        'n':'Información',          'lang':'es','type':'diario','tags':['generalista','alicante'] },
         { 'd':'laopiniondemurcia.es','n':'La Opinión de Murcia', 'lang':'es', 'type':'diario',  'tags':['generalista','murcia'] },
         { 'd':'lasprovincias.es',    'n':'Las Provincias',       'lang':'es', 'type':'diario',  'tags':['generalista','valencia'] },
