@@ -1733,9 +1733,11 @@ def _turso_setup_runs(runs_data, ahora_iso):
     if not runs_data:
         return
     conn = _turso_conectar()
+
     if not conn:
         print("[turso] sin credenciales — saltando runs")
         return
+    corte = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(timespec='seconds')
     try:
         cur = conn.cursor()
 
@@ -1784,7 +1786,7 @@ def _turso_setup_runs(runs_data, ahora_iso):
                 ))
 
         # 3) Poda
-        cur.execute("DELETE FROM runs WHERE ts < datetime('now', '-7 days')")
+        cur.execute("DELETE FROM runs WHERE ts < ?", (corte,))
 
         conn.commit()
         print(f"[turso] runs: {len(runs_data)} registrados · poda >7d aplicada")
@@ -1970,12 +1972,16 @@ def main():
     os.makedirs(DATOS_DIR, exist_ok=True)
     descargar_historico_desde_r2()
     medios = todos_los_medios()
-
+    
+    # Siempre: catálogo completo a Turso
+    _turso_setup_catalogo(medios)
+    
+    # Después: filtro solo para el bucle
     if GRUPOS_INCLUIDOS:
         medios = [m for m in medios if m['grupo'] in GRUPOS_INCLUIDOS]
-        print(f"[filtro] grupos activos: {GRUPOS_INCLUIDOS}")
-    _turso_setup_catalogo(medios)
-    print(f"── Recolectando {len(medios)} medios (hasta {N_FEED} cada uno) ──")
+        print(f"[filtro] grupos activos: {GRUPOS_INCLUIDOS} — {len(medios)} medios")
+    
+    print(f"── Recolectando {len(medios)} medios ──")
 
     todas = []
     contador_rss = 0
