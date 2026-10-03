@@ -39,6 +39,7 @@ jobs:
       - name: Ejecutar recolector
         run: python recolector.py
         env:
+          PYTHONUNBUFFERED: "1"
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
