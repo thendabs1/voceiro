@@ -1125,6 +1125,9 @@ def fusionar_historico(nuevas, viejas, dias):
                 n['fecha_pub'] = old['fecha_pub']
             if old.get('fecha_estimada') and not n.get('fecha_estimada'):
                 n['fecha_estimada'] = old['fecha_estimada']
+            n['_nueva'] = False          # ← ya existía
+        else:
+            n['_nueva'] = True           # ← primera vez que la vemos
         n.pop('_pos', None)
 
         f = _fecha_agrupacion_dt(n)
@@ -1644,16 +1647,24 @@ def limpiar_r2_huerfanos(manifest):
 # ─────────────────────────────────────────────────────────────
 
 
-
 def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
-    """Inserta en Turso las noticias recolectadas desde el último run.
+    """Inserta en Turso las noticias marcadas como nuevas en este run.
 
-    Antes de insertar, consulta qué enlaces ya existen para evitar
-    escrituras innecesarias. INSERT OR IGNORE cuenta como escritura
-    aunque ignore la fila, así que reducir intentos reduce la cuota.
+    Solo se consideran las noticias con `_nueva=True`, que son las que no
+    estaban en el histórico previo (marcadas en fusionar_historico).
+    Además, se consulta Turso para verificar cuáles ya existen (por si hay
+    drift entre R2 y Turso: R2 puede tener 15 días, Turso toda la historia).
     """
     if not (TURSO_URL and TURSO_TOKEN):
         print("[turso] sin credenciales — saltando")
+        return 0
+
+    # 1) Candidatas: solo las marcadas como nuevas en fusionar_historico
+    candidatas = [n for n in noticias
+                  if n.get('_nueva') and n.get('enlace')]
+
+    if not candidatas:
+        print("[turso] nada nuevo en este run")
         return 0
 
     replica_path = os.path.join(tempfile.gettempdir(), "voceiro_replica.db")
@@ -1665,32 +1676,13 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
     conn.sync()
 
     try:
-        t_now_dt = _parse_iso_flexible(t_now_iso)
-        t_prev_dt = _parse_iso_flexible(t_prev_iso) if t_prev_iso else None
-
-        if t_now_dt is None:
-            print("[turso] t_now_iso inválido")
-            return 0
-
-        corte = t_prev_dt if t_prev_dt is not None else t_now_dt - timedelta(hours=24)
-
-        # 1) Filtrar por fecha de recolección: solo lo de este run
-        candidatas = []
-        for n in noticias:
-            f = _parse_iso_flexible(n.get('fecha'))
-            if f is not None and f > corte and n.get('enlace'):
-                candidatas.append(n)
-
-        if not candidatas:
-            print(f"[turso] nada nuevo (corte {corte.isoformat()})")
-            return 0
-
-        # 2) Consultar en Turso qué enlaces ya existen
         cur = conn.cursor()
+
+        # 2) Pre-check: consultar qué enlaces ya existen en Turso
         enlaces = [n['enlace'] for n in candidatas]
         existentes = set()
         consulta_fallo = False
-        CHUNK = 500  # SQLite tiene límite de variables por consulta
+        CHUNK = 500  # SQLite permite hasta 999 variables por consulta
 
         for i in range(0, len(enlaces), CHUNK):
             trozo = enlaces[i:i + CHUNK]
@@ -1707,9 +1699,9 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 consulta_fallo = True
                 break
 
-        # 3) Filtrar candidatas por lo que ya está
+        # 3) Filtrar las que ya están en Turso
         if consulta_fallo:
-            a_insertar = candidatas   # sin optimización: insertamos todo
+            a_insertar = candidatas       # fallback: intentamos todo
             ya_existian = 0
         else:
             a_insertar = [n for n in candidatas if n['enlace'] not in existentes]
@@ -1717,27 +1709,29 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
 
         print(f"[turso] {len(candidatas)} candidatas · "
               f"{ya_existian} ya en Turso · "
-              f"{len(a_insertar)} nuevas")
+              f"{len(a_insertar)} a insertar")
 
         if not a_insertar:
             return 0
 
-        # 4) Insertar por lotes
+        # 4) Construir filas (forzando '' para columnas NOT NULL)
         filas = []
         for n in a_insertar:
             filas.append((
-                n.get('dominio', ''),
-                n.get('titular', ''),
-                n.get('enlace', ''),
-                n.get('fecha_pub', ''),
-                n.get('fecha_estimada', ''),
-                n.get('fuente', ''),
-                _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]),
+                n.get('dominio', '')        or '',
+                n.get('titular', '')        or '',
+                n.get('enlace', '')         or '',
+                n.get('fecha_pub', '')      or '',
+                n.get('fecha_estimada', '') or '',
+                n.get('fuente', '')         or '',
+                _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]) or '',
                 '',
             ))
 
+        # 5) Insertar por lotes
         BATCH = 8
         insertados = 0
+        fallos = 0
         for i in range(0, len(filas), BATCH):
             chunk = filas[i:i + BATCH]
             placeholders = ','.join(['(?,?,?,?,?,?,?,?)'] * len(chunk))
@@ -1749,12 +1743,13 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
                 params.extend(row)
             try:
                 cur.execute(sql, tuple(params))
-                insertados += len(chunk)
+                insertados += cur.rowcount   # ← filas realmente insertadas
             except Exception as e:
                 print(f"[turso!] batch {i // BATCH}: {e}")
+                fallos += len(chunk)
 
         conn.commit()
-        print(f"[turso] {insertados} insertados")
+        print(f"[turso] {insertados} insertados · {fallos} fallos")
         return insertados
     finally:
         try:
