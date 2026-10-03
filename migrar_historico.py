@@ -141,56 +141,36 @@ def _url_completa(u_raw, dominio, medios_tabla):
         return f"https://{host}{u_raw}"
     return u_raw
 
-
 def extraer_filas(dia_data):
     """Convierte el JSON del día a filas para Turso.
-    Expande los 'alt' como noticias propias."""
+    NO expande los 'alt' (ahorro de espacio; el titular ya está representado)."""
     dia = dia_data.get('fecha', '')
     medios_tabla = dia_data.get('medios', {}) or {}
     filas = []
 
     for n in dia_data.get('noticias', []):
         dom = n.get('d', '')
-        titular = n.get('t', '')
-        p_iso = _reconstruir_fecha(n.get('p', ''), dia)
-        e_iso = _reconstruir_fecha(n.get('e', ''), dia)
-        fuente = n.get('f', '')
+        u_raw = n.get('u', '')
+        if not u_raw:
+            continue
 
-        # Noticia principal
-        u_principal = _url_completa(n.get('u', ''), dom, medios_tabla)
-        if u_principal:
-            filas.append([
-                dom,
-                titular,
-                u_principal,
-                p_iso,
-                e_iso,
-                fuente,
-                dia,
-                '',
-            ])
+        u_completa = _url_completa(u_raw, dom, medios_tabla)
+        if not u_completa:
+            continue
 
-        # Alts (duplicados entre medios)
-        for alt in (n.get('a') or []):
-            dom_alt = alt.get('d', '')
-            if not dom_alt:
-                continue
-            u_alt = _url_completa(alt.get('u', ''), dom_alt, medios_tabla)
-            if not u_alt:
-                continue
-            filas.append([
-                dom_alt,
-                titular,
-                u_alt,
-                p_iso,
-                e_iso,
-                fuente,
-                dia,
-                '',
-            ])
+        filas.append([
+            dom,
+            n.get('t', ''),
+            u_completa,
+            _reconstruir_fecha(n.get('p', ''), dia),
+            _reconstruir_fecha(n.get('e', ''), dia),
+            n.get('f', ''),
+            dia,
+            '',
+        ])
+        # NO bucle de alts
 
     return filas
-
 
 # ─────────────────────────────────────────────────────────────
 # Inserción
