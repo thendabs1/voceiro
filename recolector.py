@@ -1678,6 +1678,7 @@ def _turso_setup_catalogo(medios):
               tipo           TEXT NOT NULL DEFAULT '',
               lang           TEXT NOT NULL DEFAULT '',
               tags           TEXT NOT NULL DEFAULT '[]',
+              activo         INTEGER NOT NULL DEFAULT 1,
               ultimo_run_ts  TEXT NOT NULL DEFAULT '',
               ultimo_ok_ts   TEXT NOT NULL DEFAULT '',
               fuente         TEXT NOT NULL DEFAULT '',
@@ -1687,6 +1688,10 @@ def _turso_setup_catalogo(medios):
               error          TEXT NOT NULL DEFAULT ''
             )
         """)
+        try:
+            cur.execute("ALTER TABLE medios ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+        except Exception:
+            pass  # ya existe → ignorar
         cur.execute("""
             CREATE TABLE IF NOT EXISTS runs (
               dominio   TEXT NOT NULL,
@@ -1702,17 +1707,18 @@ def _turso_setup_catalogo(medios):
         """)
         cur.execute("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_medios_ok ON medios(ultimo_ok_ts)")
-
+        cur.execute("UPDATE medios SET activo = 0")
         for m in medios:
             cur.execute("""
-                INSERT INTO medios (dominio, nombre, grupo, tipo, lang, tags)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO medios (dominio, nombre, grupo, tipo, lang, tags, activo)
+                VALUES (?, ?, ?, ?, ?, ?, 1)
                 ON CONFLICT(dominio) DO UPDATE SET
                     nombre = excluded.nombre,
                     grupo  = excluded.grupo,
                     tipo   = excluded.tipo,
                     lang   = excluded.lang,
-                    tags   = excluded.tags
+                    tags   = excluded.tags,
+                    activo = 1
             """, (
                 m['d'], m['n'], m['grupo'],
                 m.get('type', ''), m.get('lang', ''),
