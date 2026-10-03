@@ -1649,17 +1649,41 @@ def limpiar_r2_huerfanos(manifest):
 # TABLAS DE MEDIOS Y RUNS EN TURSO
 # ─────────────────────────────────────────────────────────────
 def _turso_conectar():
-    """Abre la réplica local de Turso. None si faltan credenciales."""
+    """Abre la réplica local de Turso. None si faltan credenciales.
+    Si la réplica está corrupta, la borra y reintenta una vez."""
     if not (TURSO_URL and TURSO_TOKEN):
         return None
+
     replica_path = os.path.join(tempfile.gettempdir(), "voceiro_replica.db")
-    conn = libsql.connect(
-        database=replica_path,
-        sync_url=TURSO_URL,
-        auth_token=TURSO_TOKEN,
-    )
-    conn.sync()
-    return conn
+
+    def _limpiar_replica():
+        for suffix in ('', '-wal', '-shm', '-journal'):
+            try:
+                os.remove(replica_path + suffix)
+            except FileNotFoundError:
+                pass
+            except Exception as e:
+                print(f"[turso] no se pudo borrar réplica{suffix}: {e}")
+
+    def _intentar():
+        c = libsql.connect(
+            database=replica_path,
+            sync_url=TURSO_URL,
+            auth_token=TURSO_TOKEN,
+        )
+        c.sync()
+        return c
+
+    try:
+        return _intentar()
+    except Exception as e:
+        print(f"[turso] sync falló ({type(e).__name__}: {e}) — borrando réplica y reintentando")
+        _limpiar_replica()
+        try:
+            return _intentar()
+        except Exception as e2:
+            print(f"[turso!] reintento también falló: {type(e2).__name__}: {e2}")
+            return None
 
 
 def _turso_close(conn):
