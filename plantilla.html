@@ -3306,6 +3306,23 @@ function actualizarBotonPendientes(){
   countEl.dataset.count = String(n);
   b.classList.toggle('has-pendientes', n > 0);
 }
+function actualizarBotonViewSettings(){
+  const btn = $('#btn-view-settings');
+  const count = $('#vs-count');
+  if (!btn || !count) return;
+
+  let n = 0;
+  if (!AGRUPAR_DUPS) n++;
+  if (HIDE_MODE !== 'off') n++;
+
+  count.textContent = n;
+  count.dataset.count = String(n);
+
+  btn.classList.toggle('active', n > 0);
+  btn.setAttribute('aria-pressed', n > 0 ? 'true' : 'false');
+  btn.title = t('vsButton');
+}
+
 function actualizarFiltrosCount(){
   let n = 0;
   const g = $('#grupo'), tp = $('#tipo'), r = $('#rango'), o = $('#orden');
@@ -4184,6 +4201,7 @@ function refrescarVistaCompleta(){
   construirIndicesBusqueda();
   reconstruirSelectores();
   aplicarFiltros();
+  actualizarFiltrosCount(); 
 }
 
 function reconstruirFecha(raw, dia){
