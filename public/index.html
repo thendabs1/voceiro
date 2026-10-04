@@ -107,6 +107,13 @@
     color: var(--muted);
     font-size: .72em;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  header .meta .view-settings-wrap{
+    font-size: 1.15em;   /* el botón Vista no se vea diminuto */
   }
 
   button{
@@ -196,7 +203,32 @@
   }
   .btn-pendientes:hover{background:var(--save-bg)}
   .btn-pendientes.no-userscript{opacity:.55}
-
+  .btn-pendientes{
+    position: relative;
+  }
+  .pend-count{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 4px;
+    border-radius: 8px;
+    background: var(--save);
+    color: #fff;
+    font-size: .85em;
+    font-weight: 700;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .pend-count[data-count="0"]{ display: none; }
+  .btn-pendientes.has-pendientes{
+    background: var(--save-bg);
+  }
+  .btn-pendientes.no-userscript.has-pendientes{
+    opacity: 1;   /* si hay pendientes, no lo atenuamos aunque no haya plugin */
+  }
   .btn-buscar{
     border:2px solid var(--accent); background:transparent; color:var(--accent);
     font-weight:600;
@@ -534,8 +566,8 @@
   [data-theme="contrast"] .chip-x:hover{background:#333}
 
   #contador{
-    color:var(--muted); font-size:.68em;
-    margin:10px 0 14px;
+    font-size: 1em;   /* igual que el meta */
+    margin: 0;
   }
 
   .noticia{
@@ -1077,19 +1109,11 @@
     .rep-acciones{flex-direction:column}
     .rep-acciones .grupo{width:100%}
     .rep-acciones button{flex:1}
+    header .meta{
+      justify-content: flex-start;
+      gap: 6px;
+    }
   }
-
-  /* ═══ Toggle duplicados (inline junto al contador) + desplegable ═══ */
-  .contador-row{
-    position: sticky;
-    top: calc(var(--header-h, 130px) + var(--filtros-h, 0px));
-    background: var(--bg);
-    z-index: 8;
-    padding: 6px 0;
-    margin: 0 0 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .contador-row #contador{margin:0}
 
   .btn-dup-inline{
     padding:1px 7px;
@@ -1308,11 +1332,49 @@
     <button id="btn-buscar" class="btn-buscar" type="button"></button>
   </div>
   <p class="meta">
+    <span class="view-settings-wrap">
+      <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
+              aria-expanded="false" aria-haspopup="true">
+        <span id="vs-label">⚙ Vista</span>
+        <span id="vs-count" class="vs-count" data-count="0">0</span>
+        <span class="vs-caret">▾</span>
+      </button>
+      <div id="view-settings-menu" class="view-settings-menu" style="display:none">
+        <div class="vs-group">
+          <div class="vs-title" id="vs-title-dup"></div>
+          <label class="vs-item">
+            <input type="checkbox" id="vs-dup">
+            <span id="vs-dup-label"></span>
+          </label>
+        </div>
+        <div class="vs-sep"></div>
+        <div class="vs-group">
+          <div class="vs-title" id="vs-title-hide"></div>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="off">
+            <span id="vs-hide-off"></span>
+          </label>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="read">
+            <span id="vs-hide-read"></span>
+          </label>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="viewed">
+            <span id="vs-hide-viewed"></span>
+          </label>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="both">
+            <span id="vs-hide-both"></span>
+          </label>
+        </div>
+        <div class="vs-sep"></div>
+        <button class="vs-reset" id="vs-reset" type="button"></button>
+      </div>
+    </span>
     <span id="meta-prefix"></span>
-    <span id="fecha">04/10/2026 18:43</span>
+    <span id="fecha">04/10/2026 19:09</span>
     <span>·</span>
-    <span id="total">125972</span>
-    <span id="meta-suffix"></span>
+    <span id="contador"></span>
   </p>
 </header>
 <!-- CONFIG -->
@@ -1591,48 +1653,7 @@
 </section>
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
-<div class="contador-row">
-  <span id="contador"></span>
-  <div class="view-settings-wrap">
-    <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
-            aria-expanded="false" aria-haspopup="true">
-      <span id="vs-label">⚙ Vista</span>
-      <span id="vs-count" class="vs-count" data-count="0">0</span>
-      <span class="vs-caret">▾</span>
-    </button>
-    <div id="view-settings-menu" class="view-settings-menu" style="display:none">
-      <div class="vs-group">
-        <div class="vs-title" id="vs-title-dup"></div>
-        <label class="vs-item">
-          <input type="checkbox" id="vs-dup">
-          <span id="vs-dup-label"></span>
-        </label>
-      </div>
-      <div class="vs-sep"></div>
-      <div class="vs-group">
-        <div class="vs-title" id="vs-title-hide"></div>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="off">
-          <span id="vs-hide-off"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="read">
-          <span id="vs-hide-read"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="viewed">
-          <span id="vs-hide-viewed"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="both">
-          <span id="vs-hide-both"></span>
-        </label>
-      </div>
-      <div class="vs-sep"></div>
-      <button class="vs-reset" id="vs-reset" type="button"></button>
-    </div>
-  </div>
-</div>
+
 <main id="resultados"></main>
 <button id="btn-top" class="btn-top" type="button"
         aria-label="Volver arriba" title="Volver arriba">↑</button>
@@ -1665,7 +1686,7 @@ const I18N = {
     cfgModoConfirmBorrar:   '¿Borrar el modo "{X}"?',
     cfgModoBorrado:         'Modo borrado: {X}',
     cfgModoUnicoNoBorrar:   'No puedes borrar el único modo. Crea otro antes.',
-
+    fltBtn: 'Filtros', 
     /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Añade medios a este modo por dominio. ✓ fuerza a mostrarlo arriba; ✗ lo oculta.',
     cfgOverridePlaceholder: 'dominio.com',
@@ -1899,6 +1920,7 @@ const I18N = {
   },
 
   gl: {
+    fltBtn: 'Filtros', 
     /* ── Modos de feed ── */
     cfgModos:               'Modos de feed',
     cfgModosHint:           'Cada modo ten os seus grupos, palabras e excepcións por medio. Ao cambiar de modo o feed reconfigúrase.',
@@ -2144,6 +2166,7 @@ const I18N = {
   },
 
   ca: {
+    fltBtn: 'Filtres', 
     /* ── Modos de feed ── */
     cfgModos:               'Modes de feed',
     cfgModosHint:           'Cada mode té els seus grups, paraules i excepcions per mitjà. En canviar de mode el feed es reconfigura.',
@@ -2631,9 +2654,12 @@ const I18N = {
     vsHideViewedHint:       'Headlines that scrolled past the screen',
     vsHideBoth:             'Read and viewed',
     vsReset:                '↺ Reset view',
+    fltBtn: 'Filters', 
+    
   },
 
   eu: {
+    fltBtn: 'Iragazkiak',
     /* ── Feed moduak ── */
     cfgModos:               'Feed moduak',
     cfgModosHint:           'Modu bakoitzak bere taldeak, hitzak eta hedabideen salbuespenak ditu. Modua aldatzean feed-a birkonfiguratzen da.',
@@ -3266,21 +3292,19 @@ function guardarDupPref(){
   try{ localStorage.setItem(DUP_PREF_KEY, AGRUPAR_DUPS ? 'true' : 'false'); }catch(e){}
 }
 
-function actualizarBotonViewSettings(){
-  const btn = $('#btn-view-settings');
-  const count = $('#vs-count');
-  if (!btn || !count) return;
+function actualizarBotonPendientes(){
+  const b = $('#btn-pendientes');
+  if (!b) return;
 
-  let n = 0;
-  if (!AGRUPAR_DUPS) n++;
-  if (HIDE_MODE !== 'off') n++;
+  b.classList.toggle('no-userscript', USCRIPT_CHECKED && !USCRIPT_OK);
 
-  count.textContent = n;
-  count.dataset.count = String(n);
+  const countEl = b.querySelector('.pend-count');
+  if (!countEl) return;
 
-  btn.classList.toggle('active', n > 0);
-  btn.setAttribute('aria-pressed', n > 0 ? 'true' : 'false');
-  btn.title = t('vsButton');
+  const n = (PENDIENTES_CACHE || []).filter(i => !i.read).length;
+  countEl.textContent = n;
+  countEl.dataset.count = String(n);
+  b.classList.toggle('has-pendientes', n > 0);
 }
 function actualizarFiltrosCount(){
   let n = 0;
@@ -3680,11 +3704,6 @@ function aplicarSitesDesdeUserscript(arr){
 
 window.__lastLocal = new Map();
 
-function actualizarBotonPendientes(){
-  const b = $('#btn-pendientes');
-  b.classList.toggle('no-userscript', USCRIPT_CHECKED && !USCRIPT_OK);
-}
-
 function actualizarSyncBanner(){
   const banner = $('#sync-banner');
   const txt = $('#sync-banner-text');
@@ -3731,6 +3750,7 @@ function actualizarSyncBanner(){
   PENDIENTES_URLS = new Set(map.keys());
 
   refrescarBotonesGuardar();
+  actualizarBotonPendientes();
   if ($('#panel-pendientes').classList.contains('open')){
     renderPendientes(PENDIENTES_CACHE);
   }
@@ -5834,12 +5854,8 @@ function aplicarFiltros(){
 function renderizar(){
   const lista = ULT_FILTRADAS;
   const totalHistorico = (_manifest && _manifest.total) || NOTICIAS.length;
-  const cargadas = NOTICIAS.length;
 
-  let txt = `Mostrando ${lista.length.toLocaleString()} de ${cargadas.toLocaleString()} cargados`;
-  if (totalHistorico !== cargadas){
-    txt += ` · ${totalHistorico.toLocaleString()} en total`;
-  }
+  let txt = `Mostrando ${lista.length.toLocaleString()} de ${totalHistorico.toLocaleString()} titulares`;
   if (ULT_PRESET_EFECTIVO) txt += t('contadorPreset');
   $('#contador').textContent = txt;
   const cont = $('#resultados');
@@ -6175,11 +6191,12 @@ function aplicarTextos(){
   document.title = t('pageTitle');
   $('#h-title').textContent = t('headerTitle');
   $('#meta-prefix').textContent = t('metaPrefix');
-  $('#meta-suffix').textContent = t('metaSuffix');
 
   $('#btn-preset').textContent = t('btnPersonalizado');
   $('#btn-config').textContent = t('btnConfig');
-  $('#btn-pendientes').textContent = t('btnPendientes');
+  $('#btn-pendientes').innerHTML =
+    escapeHtml(t('btnPendientes')) +
+    ' <span class="pend-count" data-count="0">0</span>';
   $('#btn-buscar').textContent = t('btnBuscar');
   $('#btn-acces').textContent  = t('btnAcces');
   $('#btn-export').textContent = t('btnExport');
@@ -6291,6 +6308,7 @@ function aplicarTextos(){
 
   renderLangSelect();
   actualizarSyncBanner();
+  actualizarBotonPendientes();
 }
 
 /* ═══════════════════════════════════════════════════════════════
