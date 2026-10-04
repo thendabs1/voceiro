@@ -438,6 +438,10 @@
 
   /* ═══ Filtros ═══ */
 .filtros-wrap{
+  position: sticky;
+  top: var(--header-h, 130px);
+  background: var(--bg);
+  z-index: 9;
   padding: 10px 0 0;
   border-bottom: 1px solid var(--border);
 }
@@ -446,10 +450,6 @@
   grid-template-columns: 1fr auto;
   gap: 8px;
   align-items: center;
-  position: sticky;
-  top: var(--header-h, 130px);
-  background: var(--bg);
-  z-index: 9;
   padding-bottom: 10px;
 }
 .filtros-panel{
@@ -3923,7 +3923,7 @@ function refrescarBotonesGuardar(){
 }
 function wireStickyOffsets(){
   const hd = document.querySelector('header');
-  const fl = document.querySelector('.filtros-row');
+  const fl = document.querySelector('.filtros-wrap');
   if (!hd) return;
   const apply = () => {
     document.documentElement.style.setProperty('--header-h', hd.offsetHeight + 'px');
