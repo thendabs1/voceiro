@@ -70,9 +70,7 @@
     top: 0;
     background: var(--bg);
     z-index: 10;
-    padding: 12px 0 6px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 4px;
+    padding: 12px 0 0;
   }
   header .header-top{
     display: flex;
@@ -130,6 +128,7 @@
   }
   header .meta .view-settings-wrap{
     flex: 0 0 auto;
+   /* margin-left: auto;   /* ← empuja el botón al extremo derecho */
     font-size: 1.15em;
   }
   header .meta .meta-text{
@@ -497,8 +496,7 @@
   top: var(--header-h, 130px);
   background: var(--bg);
   z-index: 9;
-  padding: 10px 0 0;
-  border-bottom: 1px solid var(--border);
+  padding: 6px 0 0;
 }
 .filtros-row{
   display: grid;
@@ -1328,6 +1326,12 @@
     </div>
   </div>
   <p class="meta">
+    <span class="meta-text">
+      <span id="meta-prefix"></span>
+      <span id="fecha">04/10/2026 21:54</span>
+      <span>·</span>
+      <span id="contador"></span>
+    </span>
     <span class="view-settings-wrap">
       <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
               aria-expanded="false" aria-haspopup="true">
@@ -1354,12 +1358,6 @@
         <div class="vs-sep"></div>
         <button class="vs-reset" id="vs-reset" type="button"></button>
       </div>
-    </span>
-    <span class="meta-text">
-      <span id="meta-prefix"></span>
-      <span id="fecha">04/10/2026 21:14</span>
-      <span>·</span>
-      <span id="contador"></span>
     </span>
   </p>
 </header>
@@ -3342,27 +3340,20 @@ function abrirViewSettingsMenu(){
   if (!menu) return;
   renderViewSettingsMenu();
   menu.style.display = '';
-  if (btn) btn.setAttribute('aria-expanded', 'true');    // ← NUEVO
-  setTimeout(() => {
-    document.addEventListener('mousedown', _vsOutsideClick, true);
-    document.addEventListener('keydown', _vsEscKey, true);
-  }, 0);
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  document.addEventListener('click', _vsOutsideClick);
 }
 function cerrarViewSettingsMenu(){
   const menu = $('#view-settings-menu');
   const btn  = $('#btn-view-settings');
   if (!menu) return;
   menu.style.display = 'none';
-  if (btn) btn.setAttribute('aria-expanded', 'false');   // ← NUEVO
-  document.removeEventListener('mousedown', _vsOutsideClick, true);
-  document.removeEventListener('keydown', _vsEscKey, true);
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('click', _vsOutsideClick);
 }
 function _vsOutsideClick(e){
   const wrap = document.querySelector('.view-settings-wrap');
   if (wrap && !wrap.contains(e.target)) cerrarViewSettingsMenu();
-}
-function _vsEscKey(e){
-  if (e.key === 'Escape'){ e.stopPropagation(); cerrarViewSettingsMenu(); }
 }
 
 function actualizarBotonPreset(){
@@ -6342,18 +6333,20 @@ function wireStaticEvents(){
     }
   });
   // ── Botón "Vista" + desplegable ──
-  const btnVS = $('#btn-view-settings');
-  if (btnVS){
+  const btnVS  = $('#btn-view-settings');
+  const menuVS = $('#view-settings-menu');
+  if (btnVS && menuVS){
     btnVS.addEventListener('click', e => {
       e.stopPropagation();
-      const menu = $('#view-settings-menu');
-      if (!menu) return;
-      if (menu.style.display !== 'none'){
+      if (menuVS.style.display !== 'none'){
         cerrarViewSettingsMenu();
       } else {
         abrirViewSettingsMenu();
       }
     });
+
+    // Que un clic dentro del menú NO llegue a document (si no, se cerraría)
+    menuVS.addEventListener('click', e => e.stopPropagation());
   }
 
   const dupChk = $('#vs-dup');
