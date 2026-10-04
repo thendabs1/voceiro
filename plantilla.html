@@ -1057,7 +1057,20 @@
     flex-shrink: 0;
   }
 }
-  
+/* ═══ Cabecera en móvil/tablet: título → meta → botones ═══ */
+@media (max-width: 820px){
+  header{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "title"
+      "meta"
+      "actions";
+  }
+  header .header-actions{
+    justify-self: stretch;
+    justify-content: flex-start;
+  }
+}
   @media (max-width:900px){
 .filtros-row{ position: static; }
 .filtros{ grid-template-columns: 1fr 1fr; }
