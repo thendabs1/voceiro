@@ -1076,18 +1076,10 @@
   }
 }
 @media (max-width: 820px){
-  header{
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "title"
-      "meta"
-      "left"
-      "right";
-  }
-  header .header-actions-left,
+  /* En móvil el grupo derecho ya no se empuja a la derecha:
+     si cae a una fila nueva, se alinea a la izquierda como el resto */
   header .header-actions-right{
-    justify-self: stretch;
-    justify-content: flex-start;
+    margin-left: 0;
   }
   header .header-actions-left .btn-preset{
     max-width: none;   /* en móvil no truncamos: hay ancho de sobra */
