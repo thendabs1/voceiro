@@ -64,49 +64,66 @@
     transition:background .15s, color .15s;
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
-  header{
-    position: sticky;
-    top: 0;
-    background: var(--bg);
-    z-index: 10;
-    padding: 12px 0 6px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 4px;
-  
-    display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-      "title actions"
-      "meta  meta";
-    align-items: center;
-    column-gap: 12px;
-    row-gap: 4px;
-  }
-  header #h-title{
-    grid-area: title;
-    margin: 0;
-    padding: 0;
-    border: none;
-    font-size: 1.6em;
-    line-height: 1.2;
-    min-width: 0;
-  }
-  header .header-actions{
-    grid-area: actions;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    justify-content: flex-end;
-    justify-self: end;
-  }
-  header .header-actions button{
-    font-size: .78em;
-    padding: 6px 12px;
-  }
-  header .header-actions .lang-select{
-    flex-shrink: 0;
-  }
+header{
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+  padding: 12px 0 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  grid-template-areas:
+    "title left  right"
+    "meta  meta  meta";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+header #h-title{
+  grid-area: title;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 1.6em;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+header .header-actions{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+header .header-actions button{
+  font-size: .78em;
+  padding: 6px 12px;
+}
+header .header-actions .lang-select{
+  flex-shrink: 0;
+}
+header .header-actions-left{
+  grid-area: left;
+  justify-self: start;
+  min-width: 0;
+}
+header .header-actions-right{
+  grid-area: right;
+  justify-self: end;
+}
+
+/* El botón de Modo Personalizado puede ser muy ancho si el nombre es largo:
+   limitamos y truncamos con "…" para que no empuje los botones de la derecha */
+header .header-actions-left .btn-preset{
+  flex-shrink: 1;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
   header .meta{
     grid-area: meta;
     color: var(--muted);
@@ -1067,18 +1084,22 @@
     flex-shrink: 0;
   }
 }
-/* ═══ Cabecera en móvil/tablet: título → meta → botones ═══ */
 @media (max-width: 820px){
   header{
     grid-template-columns: 1fr;
     grid-template-areas:
       "title"
       "meta"
-      "actions";
+      "left"
+      "right";
   }
-  header .header-actions{
+  header .header-actions-left,
+  header .header-actions-right{
     justify-self: stretch;
     justify-content: flex-start;
+  }
+  header .header-actions-left .btn-preset{
+    max-width: none;   /* en móvil no truncamos: hay ancho de sobra */
   }
 }
   @media (max-width:900px){
@@ -1307,65 +1328,42 @@
 <body>
 <header>
   <h1 id="h-title">Voceiro</h1>
-  <div class="header-actions">
+
+  <div class="header-actions header-actions-left">
     <span class="preset-wrap">
       <button id="btn-preset" class="btn-preset" type="button"
               aria-expanded="false" aria-haspopup="true"></button>
       <div id="preset-menu" class="preset-menu" style="display:none"></div>
     </span>
-    <button id="btn-config" type="button"></button>
     <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
+  </div>
+
+  <div class="header-actions header-actions-right">
+    <button id="btn-config" type="button"></button>
     <button id="btn-buscar" class="btn-buscar" type="button"></button>
     <button id="btn-acces" type="button"></button>
     <select id="lang-select" class="lang-select" aria-label="Language"></select>
   </div>
-<p class="meta">
-  <span class="view-settings-wrap">
-    <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
-            aria-expanded="false" aria-haspopup="true">
-      <span id="vs-label">⚙ Vista</span>
-      <span id="vs-count" class="vs-count" data-count="0">0</span>
-      <span class="vs-caret">▾</span>
-    </button>
-    <div id="view-settings-menu" class="view-settings-menu" style="display:none">
-      <div class="vs-group">
-        <div class="vs-title" id="vs-title-dup"></div>
-        <label class="vs-item">
-          <input type="checkbox" id="vs-dup">
-          <span id="vs-dup-label"></span>
-        </label>
+
+  <p class="meta">
+    <span class="view-settings-wrap">
+      <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
+              aria-expanded="false" aria-haspopup="true">
+        <span id="vs-label">⚙ Vista</span>
+        <span id="vs-count" class="vs-count" data-count="0">0</span>
+        <span class="vs-caret">▾</span>
+      </button>
+      <div id="view-settings-menu" class="view-settings-menu" style="display:none">
+        <!-- ← el menú completo, tal como lo tienes ahora -->
       </div>
-      <div class="vs-sep"></div>
-      <div class="vs-group">
-        <div class="vs-title" id="vs-title-hide"></div>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="off">
-          <span id="vs-hide-off"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="read">
-          <span id="vs-hide-read"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="viewed">
-          <span id="vs-hide-viewed"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="both">
-          <span id="vs-hide-both"></span>
-        </label>
-      </div>
-      <div class="vs-sep"></div>
-      <button class="vs-reset" id="vs-reset" type="button"></button>
-    </div>
-  </span>
-  <span class="meta-text">
-    <span id="meta-prefix"></span>
-    <span id="fecha">{{FECHA}}</span>
-    <span>·</span>
-    <span id="contador"></span>
-  </span>
-</p>
+    </span>
+    <span class="meta-text">
+      <span id="meta-prefix"></span>
+      <span id="fecha">{{FECHA}}</span>
+      <span>·</span>
+      <span id="contador"></span>
+    </span>
+  </p>
 </header>
 <!-- CONFIG -->
 <section id="panel-config" class="panel" role="dialog" aria-modal="true">
