@@ -566,8 +566,8 @@
   [data-theme="contrast"] .chip-x:hover{background:#333}
 
   #contador{
-    color:var(--muted); font-size:.68em;
-    margin:10px 0 14px;
+    font-size: 1em;   /* igual que el meta */
+    margin: 0;
   }
 
   .noticia{
@@ -1109,12 +1109,11 @@
     .rep-acciones{flex-direction:column}
     .rep-acciones .grupo{width:100%}
     .rep-acciones button{flex:1}
-  }
     header .meta{
       justify-content: flex-start;
       gap: 6px;
     }
-
+  }
 
   .btn-dup-inline{
     padding:1px 7px;
@@ -1687,7 +1686,7 @@ const I18N = {
     cfgModoConfirmBorrar:   '¿Borrar el modo "{X}"?',
     cfgModoBorrado:         'Modo borrado: {X}',
     cfgModoUnicoNoBorrar:   'No puedes borrar el único modo. Crea otro antes.',
-
+    fltBtn: 'Filtros', 
     /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Añade medios a este modo por dominio. ✓ fuerza a mostrarlo arriba; ✗ lo oculta.',
     cfgOverridePlaceholder: 'dominio.com',
@@ -1921,6 +1920,7 @@ const I18N = {
   },
 
   gl: {
+    fltBtn: 'Filtros', 
     /* ── Modos de feed ── */
     cfgModos:               'Modos de feed',
     cfgModosHint:           'Cada modo ten os seus grupos, palabras e excepcións por medio. Ao cambiar de modo o feed reconfigúrase.',
@@ -2166,6 +2166,7 @@ const I18N = {
   },
 
   ca: {
+    fltBtn: 'Filtres', 
     /* ── Modos de feed ── */
     cfgModos:               'Modes de feed',
     cfgModosHint:           'Cada mode té els seus grups, paraules i excepcions per mitjà. En canviar de mode el feed es reconfigura.',
@@ -2653,9 +2654,12 @@ const I18N = {
     vsHideViewedHint:       'Headlines that scrolled past the screen',
     vsHideBoth:             'Read and viewed',
     vsReset:                '↺ Reset view',
+    fltBtn: 'Filters', 
+    
   },
 
   eu: {
+    fltBtn: 'Iragazkiak',
     /* ── Feed moduak ── */
     cfgModos:               'Feed moduak',
     cfgModosHint:           'Modu bakoitzak bere taldeak, hitzak eta hedabideen salbuespenak ditu. Modua aldatzean feed-a birkonfiguratzen da.',
@@ -3699,11 +3703,6 @@ function aplicarSitesDesdeUserscript(arr){
 }
 
 window.__lastLocal = new Map();
-
-function actualizarBotonPendientes(){
-  const b = $('#btn-pendientes');
-  b.classList.toggle('no-userscript', USCRIPT_CHECKED && !USCRIPT_OK);
-}
 
 function actualizarSyncBanner(){
   const banner = $('#sync-banner');
