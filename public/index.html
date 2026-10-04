@@ -438,6 +438,10 @@
 
   /* ═══ Filtros ═══ */
 .filtros-wrap{
+  position: sticky;
+  top: var(--header-h, 130px);
+  background: var(--bg);
+  z-index: 9;
   padding: 10px 0 0;
   border-bottom: 1px solid var(--border);
 }
@@ -446,10 +450,6 @@
   grid-template-columns: 1fr auto;
   gap: 8px;
   align-items: center;
-  position: sticky;
-  top: var(--header-h, 130px);
-  background: var(--bg);
-  z-index: 9;
   padding-bottom: 10px;
 }
 .filtros-panel{
@@ -1309,9 +1309,9 @@
   </div>
   <p class="meta">
     <span id="meta-prefix"></span>
-    <span id="fecha">04/10/2026 18:01</span>
+    <span id="fecha">04/10/2026 18:43</span>
     <span>·</span>
-    <span id="total">125311</span>
+    <span id="total">125972</span>
     <span id="meta-suffix"></span>
   </p>
 </header>
@@ -3923,7 +3923,7 @@ function refrescarBotonesGuardar(){
 }
 function wireStickyOffsets(){
   const hd = document.querySelector('header');
-  const fl = document.querySelector('.filtros-row');
+  const fl = document.querySelector('.filtros-wrap');
   if (!hd) return;
   const apply = () => {
     document.documentElement.style.setProperty('--header-h', hd.offsetHeight + 'px');
@@ -6015,6 +6015,11 @@ function wireResultadosDelegation(){
         setLocalPendienteRead(n.enlace, true); 
         art.classList.remove('vista');
         art.classList.add('leida');
+        const saveBtnInCard = art.querySelector('.btn-save-item');
+        if (saveBtnInCard){
+          saveBtnInCard.textContent = t('saveLabelRead');
+          saveBtnInCard.title = t('markUnread');
+        }
         if (USCRIPT_OK){
           document.dispatchEvent(new CustomEvent('voceiro-save-later', {
             detail: {
