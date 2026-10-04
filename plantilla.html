@@ -196,7 +196,32 @@
   }
   .btn-pendientes:hover{background:var(--save-bg)}
   .btn-pendientes.no-userscript{opacity:.55}
-
+  .btn-pendientes{
+    position: relative;
+  }
+  .pend-count{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 4px;
+    border-radius: 8px;
+    background: var(--save);
+    color: #fff;
+    font-size: .85em;
+    font-weight: 700;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .pend-count[data-count="0"]{ display: none; }
+  .btn-pendientes.has-pendientes{
+    background: var(--save-bg);
+  }
+  .btn-pendientes.no-userscript.has-pendientes{
+    opacity: 1;   /* si hay pendientes, no lo atenuamos aunque no haya plugin */
+  }
   .btn-buscar{
     border:2px solid var(--accent); background:transparent; color:var(--accent);
     font-weight:600;
@@ -3266,21 +3291,19 @@ function guardarDupPref(){
   try{ localStorage.setItem(DUP_PREF_KEY, AGRUPAR_DUPS ? 'true' : 'false'); }catch(e){}
 }
 
-function actualizarBotonViewSettings(){
-  const btn = $('#btn-view-settings');
-  const count = $('#vs-count');
-  if (!btn || !count) return;
+function actualizarBotonPendientes(){
+  const b = $('#btn-pendientes');
+  if (!b) return;
 
-  let n = 0;
-  if (!AGRUPAR_DUPS) n++;
-  if (HIDE_MODE !== 'off') n++;
+  b.classList.toggle('no-userscript', USCRIPT_CHECKED && !USCRIPT_OK);
 
-  count.textContent = n;
-  count.dataset.count = String(n);
+  const countEl = b.querySelector('.pend-count');
+  if (!countEl) return;
 
-  btn.classList.toggle('active', n > 0);
-  btn.setAttribute('aria-pressed', n > 0 ? 'true' : 'false');
-  btn.title = t('vsButton');
+  const n = (PENDIENTES_CACHE || []).filter(i => !i.read).length;
+  countEl.textContent = n;
+  countEl.dataset.count = String(n);
+  b.classList.toggle('has-pendientes', n > 0);
 }
 function actualizarFiltrosCount(){
   let n = 0;
@@ -3731,6 +3754,7 @@ function actualizarSyncBanner(){
   PENDIENTES_URLS = new Set(map.keys());
 
   refrescarBotonesGuardar();
+  actualizarBotonPendientes();
   if ($('#panel-pendientes').classList.contains('open')){
     renderPendientes(PENDIENTES_CACHE);
   }
@@ -6179,7 +6203,9 @@ function aplicarTextos(){
 
   $('#btn-preset').textContent = t('btnPersonalizado');
   $('#btn-config').textContent = t('btnConfig');
-  $('#btn-pendientes').textContent = t('btnPendientes');
+  $('#btn-pendientes').innerHTML =
+    escapeHtml(t('btnPendientes')) +
+    ' <span class="pend-count" data-count="0">0</span>';
   $('#btn-buscar').textContent = t('btnBuscar');
   $('#btn-acces').textContent  = t('btnAcces');
   $('#btn-export').textContent = t('btnExport');
@@ -6291,6 +6317,7 @@ function aplicarTextos(){
 
   renderLangSelect();
   actualizarSyncBanner();
+  actualizarBotonPendientes();
 }
 
 /* ═══════════════════════════════════════════════════════════════
