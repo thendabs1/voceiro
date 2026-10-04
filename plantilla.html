@@ -1295,7 +1295,6 @@
 </style>
 </head>
 <body>
-
 <header>
   <h1 id="h-title">Voceiro</h1>
   <div class="header-actions">
@@ -1319,7 +1318,35 @@
         <span class="vs-caret">▾</span>
       </button>
       <div id="view-settings-menu" class="view-settings-menu" style="display:none">
-        <!-- … el contenido interno NO cambia … -->
+        <div class="vs-group">
+          <div class="vs-title" id="vs-title-dup"></div>
+          <label class="vs-item">
+            <input type="checkbox" id="vs-dup">
+            <span id="vs-dup-label"></span>
+          </label>
+        </div>
+        <div class="vs-sep"></div>
+        <div class="vs-group">
+          <div class="vs-title" id="vs-title-hide"></div>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="off">
+            <span id="vs-hide-off"></span>
+          </label>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="read">
+            <span id="vs-hide-read"></span>
+          </label>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="viewed">
+            <span id="vs-hide-viewed"></span>
+          </label>
+          <label class="vs-radio">
+            <input type="radio" name="vs-hide" value="both">
+            <span id="vs-hide-both"></span>
+          </label>
+        </div>
+        <div class="vs-sep"></div>
+        <button class="vs-reset" id="vs-reset" type="button"></button>
       </div>
     </span>
     <span id="meta-prefix"></span>
