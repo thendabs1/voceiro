@@ -6015,6 +6015,11 @@ function wireResultadosDelegation(){
         setLocalPendienteRead(n.enlace, true); 
         art.classList.remove('vista');
         art.classList.add('leida');
+        const saveBtnInCard = art.querySelector('.btn-save-item');
+        if (saveBtnInCard){
+          saveBtnInCard.textContent = t('saveLabelRead');
+          saveBtnInCard.title = t('markUnread');
+        }
         if (USCRIPT_OK){
           document.dispatchEvent(new CustomEvent('voceiro-save-later', {
             detail: {
