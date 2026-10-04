@@ -167,7 +167,14 @@ def _crear_sesion():
 
 
 SESSION = _crear_sesion()
-
+def _hash_titular(titular):
+    """Hash normalizado de titular (mismo que deduplicar_editorial)."""
+    import hashlib, unicodedata
+    s = (titular or '').lower()
+    s = unicodedata.normalize('NFD', s)
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+    s = ''.join(c for c in s if c.isalnum())
+    return hashlib.md5(s.encode('utf-8')).hexdigest()[:16]
 
 # ─────────────────────────────────────────────────────────────
 # UTILIDADES DE FECHA
@@ -1507,7 +1514,6 @@ def generar_html(fecha, total):
 # ─────────────────────────────────────────────────────────────
 import boto3
 from botocore.config import Config
-import libsql_experimental as libsql
 
 R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '')
 R2_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY_ID', '')
@@ -1645,117 +1651,312 @@ def limpiar_r2_huerfanos(manifest):
 # ─────────────────────────────────────────────────────────────
 # INSERCIÓN EN TURSO
 # ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# TURSO HTTP v2 (sin réplica local, sin sync)
+# ─────────────────────────────────────────────────────────────
+TURSO_HTTP_URL = (TURSO_URL or "").replace("libsql://", "https://")
+
+def _t_arg(v):
+    """Convierte un valor Python en un arg HTTP v2 de Turso."""
+    if v is None:
+        return {"type": "null"}
+    if isinstance(v, bool):
+        return {"type": "integer", "value": "1" if v else "0"}
+    if isinstance(v, int):
+        return {"type": "integer", "value": str(v)}
+    if isinstance(v, float):
+        return {"type": "float", "value": str(v)}
+    if isinstance(v, (bytes, bytearray)):
+        import base64
+        return {"type": "blob", "value": base64.b64encode(v).decode()}
+    return {"type": "text", "value": str(v)}
+
+
+def _t_stmt(sql, args=None):
+    """Construye un statement HTTP v2 para Turso."""
+    s = {"sql": sql}
+    if args is not None:
+        s["args"] = [_t_arg(a) for a in args]
+    return {"type": "execute", "stmt": s}
+
+
+def turso_pipeline(statements, timeout=60):
+    """Manda un batch a Turso HTTP v2. Devuelve la lista de results.
+    Devuelve None si hay error de red o de SQL."""
+    if not (TURSO_HTTP_URL and TURSO_TOKEN):
+        print("[turso] sin credenciales — saltando")
+        return None
+
+    payload = {"requests": list(statements) + [{"type": "close"}]}
+    try:
+        r = requests.post(
+            TURSO_HTTP_URL + "/v2/pipeline",
+            headers={
+                "Authorization": f"Bearer {TURSO_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=timeout,
+        )
+    except requests.RequestException as e:
+        print(f"[turso!] HTTP: {type(e).__name__}: {e}")
+        return None
+
+    if r.status_code != 200:
+        print(f"[turso!] HTTP {r.status_code}: {r.text[:300]}")
+        return None
+
+    data = r.json()
+    results = data.get("results", [])
+    for res in results:
+        if res.get("type") == "error":
+            err = res.get("error", {})
+            print(f"[turso!] {err.get('code')} · {err.get('message','')[:200]}")
+            return None
+    return results
+
+
+def _t_val(cell):
+    """Convierte una celda de Turso HTTP v2 a un valor Python."""
+    if not isinstance(cell, dict):
+        return cell
+    t = cell.get("type")
+    v = cell.get("value")
+    if t == "null" or v is None:
+        return None
+    if t == "integer":
+        return int(v)
+    if t == "float":
+        return float(v)
+    if t == "blob":
+        import base64
+        return base64.b64decode(v)
+    return v
+
+
+def _t_rows(results, idx=0):
+    """Extrae las filas de un result de Turso como listas de Python."""
+    if not results or idx >= len(results):
+        return []
+    r = results[idx]
+    if r.get("type") != "ok":
+        return []
+    resp = r.get("response", {})
+    if resp.get("type") != "execute":
+        return []
+    result = resp.get("result", {})
+    out = []
+    for row in result.get("rows", []):
+        out.append([_t_val(cell) for cell in row])
+    return out
+def _turso_ensure_schema():
+    """Crea tablas e índices si no existen. Idempotente."""
+    if not (TURSO_HTTP_URL and TURSO_TOKEN):
+        return
+    stmts = [
+        _t_stmt("""CREATE TABLE IF NOT EXISTS noticias (
+              enlace        TEXT PRIMARY KEY,
+              dominio       TEXT NOT NULL,
+              titular       TEXT NOT NULL,
+              fecha_pub     TEXT NOT NULL DEFAULT '',
+              fecha_est     TEXT NOT NULL DEFAULT '',
+              fecha_dia     TEXT NOT NULL,
+              fuente        TEXT NOT NULL DEFAULT '',
+              hash_titular  TEXT NOT NULL DEFAULT '',
+              creado_ts     TEXT NOT NULL,
+              actualizado_ts TEXT NOT NULL
+            ) WITHOUT ROWID"""),
+        _t_stmt("CREATE INDEX IF NOT EXISTS idx_noticias_dia ON noticias(fecha_dia DESC)"),
+        _t_stmt("CREATE INDEX IF NOT EXISTS idx_noticias_dominio ON noticias(dominio)"),
+        _t_stmt("CREATE INDEX IF NOT EXISTS idx_noticias_hash ON noticias(hash_titular)"),
+        _t_stmt("""CREATE TABLE IF NOT EXISTS medios (
+              dominio        TEXT PRIMARY KEY,
+              nombre         TEXT NOT NULL DEFAULT '',
+              grupo          TEXT NOT NULL DEFAULT '',
+              tipo           TEXT NOT NULL DEFAULT '',
+              lang           TEXT NOT NULL DEFAULT '',
+              tags           TEXT NOT NULL DEFAULT '[]',
+              ultimo_run_ts  TEXT NOT NULL DEFAULT '',
+              ultimo_ok_ts   TEXT NOT NULL DEFAULT '',
+              fuente         TEXT NOT NULL DEFAULT '',
+              n_items        INTEGER NOT NULL DEFAULT 0,
+              con_fecha      INTEGER NOT NULL DEFAULT 0,
+              ms             INTEGER NOT NULL DEFAULT 0,
+              error          TEXT NOT NULL DEFAULT ''
+            ) WITHOUT ROWID"""),
+        _t_stmt("""CREATE TABLE IF NOT EXISTS runs (
+              dominio    TEXT NOT NULL,
+              ts         TEXT NOT NULL,
+              ok         INTEGER NOT NULL,
+              fuente     TEXT NOT NULL DEFAULT '',
+              n_items    INTEGER NOT NULL DEFAULT 0,
+              con_fecha  INTEGER NOT NULL DEFAULT 0,
+              ms         INTEGER NOT NULL DEFAULT 0,
+              error      TEXT NOT NULL DEFAULT '',
+              PRIMARY KEY (dominio, ts)
+            ) WITHOUT ROWID"""),
+        _t_stmt("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)"),
+    ]
+    results = turso_pipeline(stmts, timeout=30)
+    if results is None:
+        print("[turso!] ensure_schema falló")
+
+
+def _timed_obtener(medio):
+    """Envuelve obtener_titulares midiendo duración y capturando excepciones.
+    Devuelve (medio, noticias, fuente, con_fecha, ms, error)."""
+    import time as _time
+    t0 = _time.monotonic()
+    try:
+        m, noticias, fuente = obtener_titulares(medio)
+        ms = int((_time.monotonic() - t0) * 1000)
+        con_fecha = sum(1 for n in noticias if n.get('fecha_pub')) if noticias else 0
+        return (m, noticias or [], fuente or '', con_fecha, ms, '')
+    except Exception as e:
+        ms = int((_time.monotonic() - t0) * 1000)
+        return (medio, [], '', 0, ms, f'{type(e).__name__}: {e}')
+
+
+def _turso_setup_medios(medios, runs_data, ts_iso):
+    """Upsert catálogo completo + stats del último run por medio."""
+    if not (TURSO_HTTP_URL and TURSO_TOKEN) or not medios:
+        return
+
+    stats = {r['dominio']: r for r in runs_data}
+    stmts = []
+    for m in medios:
+        dom = m['d']
+        s = stats.get(dom, {})
+        ok = bool(s.get('ok'))
+        stmts.append(_t_stmt("""
+            INSERT INTO medios
+              (dominio, nombre, grupo, tipo, lang, tags,
+               ultimo_run_ts, ultimo_ok_ts, fuente, n_items,
+               con_fecha, ms, error)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(dominio) DO UPDATE SET
+                nombre        = excluded.nombre,
+                grupo         = excluded.grupo,
+                tipo          = excluded.tipo,
+                lang          = excluded.lang,
+                tags          = excluded.tags,
+                ultimo_run_ts = excluded.ultimo_run_ts,
+                ultimo_ok_ts  = CASE WHEN excluded.ultimo_ok_ts != ''
+                                     THEN excluded.ultimo_ok_ts
+                                     ELSE medios.ultimo_ok_ts END,
+                fuente        = excluded.fuente,
+                n_items       = excluded.n_items,
+                con_fecha     = excluded.con_fecha,
+                ms            = excluded.ms,
+                error         = excluded.error
+        """, (
+            dom,
+            m.get('n', ''),
+            m.get('grupo', ''),
+            m.get('type', ''),
+            m.get('lang', ''),
+            json.dumps(m.get('tags', []), ensure_ascii=False),
+            ts_iso,
+            ts_iso if ok else '',
+            s.get('fuente', ''),
+            s.get('n_items', 0),
+            s.get('con_fecha', 0),
+            s.get('ms', 0),
+            s.get('error', ''),
+        ))
+
+    # Enviar en lotes de 300 por si el catálogo crece mucho
+    BATCH = 300
+    total_ok = 0
+    for i in range(0, len(stmts), BATCH):
+        results = turso_pipeline(stmts[i:i + BATCH])
+        if results is not None:
+            total_ok += len(stmts[i:i + BATCH])
+    print(f"[turso] medios: {total_ok}/{len(stmts)} upserts OK")
+
+
+def _turso_setup_runs(runs_data, ts_iso):
+    """Inserta intentos del run + poda >30 días."""
+    if not (TURSO_HTTP_URL and TURSO_TOKEN) or not runs_data:
+        return
+
+    stmts = []
+    for r in runs_data:
+        stmts.append(_t_stmt("""
+            INSERT OR REPLACE INTO runs
+              (dominio, ts, ok, fuente, n_items, con_fecha, ms, error)
+            VALUES (?,?,?,?,?,?,?,?)
+        """, (
+            r['dominio'], ts_iso, 1 if r.get('ok') else 0,
+            r.get('fuente', ''), r.get('n_items', 0),
+            r.get('con_fecha', 0), r.get('ms', 0), r.get('error', ''),
+        )))
+
+    corte = (datetime.now(TZ_MADRID) - timedelta(days=30)).isoformat(timespec='seconds')
+    stmts.append(_t_stmt("DELETE FROM runs WHERE ts < ?", (corte,)))
+
+    results = turso_pipeline(stmts)
+    if results is not None:
+        print(f"[turso] runs: {len(runs_data)} registrados + poda 30d OK")
 
 
 def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
     """Inserta en Turso las noticias marcadas como nuevas en este run.
 
-    Solo se consideran las noticias con `_nueva=True`, que son las que no
-    estaban en el histórico previo (marcadas en fusionar_historico).
-    Además, se consulta Turso para verificar cuáles ya existen (por si hay
-    drift entre R2 y Turso: R2 puede tener 15 días, Turso toda la historia).
+    HTTP v2 · sin réplica local · sin sync.
+    INSERT OR IGNORE con `enlace` como PRIMARY KEY → idempotente.
     """
-    if not (TURSO_URL and TURSO_TOKEN):
+    if not (TURSO_HTTP_URL and TURSO_TOKEN):
         print("[turso] sin credenciales — saltando")
         return 0
 
-    # 1) Candidatas: solo las marcadas como nuevas en fusionar_historico
-    candidatas = [n for n in noticias
-                  if n.get('_nueva') and n.get('enlace')]
-
+    candidatas = [n for n in noticias if n.get('_nueva') and n.get('enlace')]
     if not candidatas:
         print("[turso] nada nuevo en este run")
         return 0
 
-    replica_path = os.path.join(tempfile.gettempdir(), "voceiro_replica.db")
-    conn = libsql.connect(
-        database=replica_path,
-        sync_url=TURSO_URL,
-        auth_token=TURSO_TOKEN,
-    )
-    conn.sync()
+    # Construir filas
+    filas = []
+    for n in candidatas:
+        filas.append((
+            n.get('enlace', '')         or '',
+            n.get('dominio', '')        or '',
+            n.get('titular', '')        or '',
+            n.get('fecha_pub', '')      or '',
+            n.get('fecha_estimada', '') or '',
+            _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]) or '',
+            n.get('fuente', '')         or '',
+            _hash_titular(n.get('titular', '')),
+            t_now_iso,
+            t_now_iso,
+        ))
 
-    try:
-        cur = conn.cursor()
+    # Enviar por lotes de 500
+    BATCH = 500
+    total = len(filas)
+    insertados = 0
+    fallos = 0
 
-        # 2) Pre-check: consultar qué enlaces ya existen en Turso
-        enlaces = [n['enlace'] for n in candidatas]
-        existentes = set()
-        consulta_fallo = False
-        CHUNK = 500  # SQLite permite hasta 999 variables por consulta
-
-        for i in range(0, len(enlaces), CHUNK):
-            trozo = enlaces[i:i + CHUNK]
-            placeholders = ','.join(['?'] * len(trozo))
-            try:
-                cur.execute(
-                    f"SELECT enlace FROM noticias WHERE enlace IN ({placeholders})",
-                    tuple(trozo),
-                )
-                for row in cur.fetchall():
-                    existentes.add(row[0])
-            except Exception as e:
-                print(f"[turso!] consulta existentes: {e}")
-                consulta_fallo = True
-                break
-
-        # 3) Filtrar las que ya están en Turso
-        if consulta_fallo:
-            a_insertar = candidatas       # fallback: intentamos todo
-            ya_existian = 0
+    for i in range(0, total, BATCH):
+        lote = filas[i:i + BATCH]
+        stmts = [
+            _t_stmt(
+                """INSERT OR IGNORE INTO noticias
+                   (enlace, dominio, titular, fecha_pub, fecha_est,
+                    fecha_dia, fuente, hash_titular, creado_ts, actualizado_ts)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                row,
+            )
+            for row in lote
+        ]
+        results = turso_pipeline(stmts)
+        if results is None:
+            fallos += len(lote)
         else:
-            a_insertar = [n for n in candidatas if n['enlace'] not in existentes]
-            ya_existian = len(candidatas) - len(a_insertar)
+            insertados += len(lote)
 
-        print(f"[turso] {len(candidatas)} candidatas · "
-              f"{ya_existian} ya en Turso · "
-              f"{len(a_insertar)} a insertar")
-
-        if not a_insertar:
-            return 0
-
-        # 4) Construir filas (forzando '' para columnas NOT NULL)
-        filas = []
-        for n in a_insertar:
-            filas.append((
-                n.get('dominio', '')        or '',
-                n.get('titular', '')        or '',
-                n.get('enlace', '')         or '',
-                n.get('fecha_pub', '')      or '',
-                n.get('fecha_estimada', '') or '',
-                n.get('fuente', '')         or '',
-                _dia_iso(_fecha_visible_iso(n), t_now_iso[:10]) or '',
-                '',
-            ))
-
-        # 5) Insertar por lotes
-        BATCH = 8
-        insertados = 0
-        fallos = 0
-        for i in range(0, len(filas), BATCH):
-            chunk = filas[i:i + BATCH]
-            placeholders = ','.join(['(?,?,?,?,?,?,?,?)'] * len(chunk))
-            sql = f"""INSERT OR IGNORE INTO noticias
-                      (dominio, titular, enlace, fecha_pub, fecha_est, fuente, fecha_dia, hash)
-                      VALUES {placeholders}"""
-            params = []
-            for row in chunk:
-                params.extend(row)
-            try:
-                cur.execute(sql, tuple(params))
-                insertados += len(chunk)   # ← filas realmente insertadas
-            except Exception as e:
-                print(f"[turso!] batch {i // BATCH}: {e}")
-                fallos += len(chunk)
-
-        conn.commit()
-        print(f"[turso] {insertados} intentados · {fallos} fallos")
-        return insertados
-    finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+    print(f"[turso] {total} candidatas · {insertados} enviadas · {fallos} fallos")
+    return insertados
 
 def descargar_historico_desde_r2():
     """Descarga de R2 el manifest completo y SOLO los ficheros de la
@@ -1808,8 +2009,8 @@ def descargar_historico_desde_r2():
 def main():
     os.makedirs(DATOS_DIR, exist_ok=True)
     descargar_historico_desde_r2()
-    medios = todos_los_medios()
-
+    medios_completos = todos_los_medios()
+    medios = medios_completos
     if GRUPOS_INCLUIDOS:
         medios = [m for m in medios if m['grupo'] in GRUPOS_INCLUIDOS]
         print(f"[filtro] grupos activos: {GRUPOS_INCLUIDOS}")
@@ -1824,8 +2025,19 @@ def main():
     sin_resultado = []
     medios_sin_fecha = []
 
+    runs_data = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
-        for medio, noticias, fuente in ex.map(obtener_titulares, medios):
+        for medio, noticias, fuente, con_fecha, ms, error in ex.map(_timed_obtener, medios):
+            runs_data.append({
+                'dominio':   medio['d'],
+                'ok':        bool(noticias),
+                'fuente':    fuente,
+                'n_items':   len(noticias),
+                'con_fecha': con_fecha,
+                'ms':        ms,
+                'error':     error,
+            })
+
             if noticias:
                 todas.extend(noticias)
                 if fuente == 'RSS':
@@ -1836,14 +2048,14 @@ def main():
                     contador_gn += 1
                 elif fuente == 'WP-API':
                     contador_wp += 1
-                con_fecha = sum(1 for n in noticias if n.get('fecha_pub'))
                 if con_fecha == 0 and fuente != 'RSS':
                     medios_sin_fecha.append(medio['n'])
                 print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares"
-                      f" · {con_fecha}/{len(noticias)} con fecha real")
+                      f" · {con_fecha}/{len(noticias)} con fecha real · {ms}ms")
             else:
                 sin_resultado.append(medio['n'])
-                print(f"✗ {medio['n']}: sin titulares")
+                print(f"✗ {medio['n']}: sin titulares ({ms}ms)"
+                      + (f" · {error}" if error else ""))
 
     print(f"\nTitulares brutos: {len(todas)}")
 
@@ -1963,11 +2175,14 @@ def main():
         manifest_actual = json.load(f)
     limpiar_r2_huerfanos(manifest_actual)
 
-    # ─── Insertar en D1 ───
+    # ─── Turso (HTTP v2) ───
+    _turso_ensure_schema()
+    _turso_setup_medios(medios_completos, runs_data, t_now_iso)
     insertar_en_turso(finales, generado_prev, t_now_iso)
+    _turso_setup_runs(runs_data, t_now_iso)
+
     guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
-
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
         for n in sin_resultado:
