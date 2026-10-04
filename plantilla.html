@@ -6319,7 +6319,12 @@ function wireStaticEvents(){
   if (hTitle){
     hTitle.style.cursor = 'pointer';
     hTitle.title = 'F5';
-    hTitle.addEventListener('click', () => location.reload());
+    hTitle.addEventListener('click', () => {
+      if ('scrollRestoration' in history){
+        history.scrollRestoration = 'manual';
+      }
+      location.reload();
+    });
   }
   
   btnP.addEventListener('click', e => {
