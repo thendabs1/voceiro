@@ -5860,7 +5860,7 @@ function renderizar(){
   const totalHistorico = (_manifest && _manifest.total) || NOTICIAS.length;
 
   let txt = `Mostrando ${lista.length.toLocaleString()} de ${totalHistorico.toLocaleString()} titulares`;
-  if (ULT_PRESET_EFECTIVO) txt += t('contadorPreset');
+
   $('#contador').textContent = txt;
   const cont = $('#resultados');
   cont.innerHTML = '';
@@ -6534,20 +6534,35 @@ function wireStaticEvents(){
 const btnFiltros   = $('#btn-filtros');
 const filtrosPanel = $('#filtros-panel');
 if (btnFiltros && filtrosPanel){
+  const FILTROS_OPEN_KEY = 'voceiro-filtros-abierto';
   const mqDesktop = window.matchMedia('(min-width: 820px)');
+
+  // Preferencia guardada por el usuario; si no hay, usa el valor por defecto (abierto en desktop)
+  let filtrosAbierto;
+  try {
+    const raw = localStorage.getItem(FILTROS_OPEN_KEY);
+    filtrosAbierto = raw === 'true'  ? true
+                   : raw === 'false' ? false
+                   : mqDesktop.matches;
+  } catch(e){
+    filtrosAbierto = mqDesktop.matches;
+  }
+
   const syncPanel = () => {
-    filtrosPanel.hidden = !mqDesktop.matches;
-    btnFiltros.setAttribute('aria-expanded', String(mqDesktop.matches));
+    filtrosPanel.hidden = !filtrosAbierto;
+    btnFiltros.setAttribute('aria-expanded', String(filtrosAbierto));
   };
   syncPanel();
+
   btnFiltros.addEventListener('click', e => {
     e.stopPropagation();
-    const abierto = !filtrosPanel.hidden;
-    filtrosPanel.hidden = abierto;
-    btnFiltros.setAttribute('aria-expanded', String(!abierto));
+    filtrosAbierto = !filtrosAbierto;
+    try { localStorage.setItem(FILTROS_OPEN_KEY, String(filtrosAbierto)); } catch(e){}
+    syncPanel();
   });
-  mqDesktop.addEventListener('change', syncPanel);
-  }
+
+  // Sin listener de cambio de media query: respetamos la elección del usuario.
+}
   
   // ── Clear del buscador ──
   const buscarInput = $('#buscar');
