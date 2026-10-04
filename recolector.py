@@ -1863,7 +1863,7 @@ def _turso_setup_medios(medios, runs_data, ts_iso):
             s.get('con_fecha', 0),
             s.get('ms', 0),
             s.get('error', ''),
-        ))
+        )))
 
     # Enviar en lotes de 300 por si el catálogo crece mucho
     BATCH = 300
