@@ -64,68 +64,61 @@
     transition:background .15s, color .15s;
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
-header{
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 10;
-  padding: 12px 0 6px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
-
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  grid-template-areas:
-    "title left  right"
-    "meta  meta  meta";
-  align-items: center;
-  column-gap: 12px;
-  row-gap: 4px;
-}
-header #h-title{
-  grid-area: title;
-  margin: 0;
-  padding: 0;
-  border: none;
-  font-size: 1.6em;
-  line-height: 1.2;
-  min-width: 0;
-}
-
-header .header-actions{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-header .header-actions button{
-  font-size: .78em;
-  padding: 6px 12px;
-}
-header .header-actions .lang-select{
-  flex-shrink: 0;
-}
-header .header-actions-left{
-  grid-area: left;
-  justify-self: start;
-  min-width: 0;
-}
-header .header-actions-right{
-  grid-area: right;
-  justify-self: end;
-}
-
-/* El botón de Modo Personalizado puede ser muy ancho si el nombre es largo:
-   limitamos y truncamos con "…" para que no empuje los botones de la derecha */
-header .header-actions-left .btn-preset{
-  flex-shrink: 1;
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  /* ═══ Cabecera ═══ */
+  header{
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+    padding: 12px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  header .header-top{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin-bottom: 4px;
+  }
+  header #h-title{
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 1.6em;
+    line-height: 1.2;
+    flex: 0 0 auto;
+  }
+  header .header-actions{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  header .header-actions button{
+    font-size: .78em;
+    padding: 6px 12px;
+  }
+  header .header-actions .lang-select{
+    flex-shrink: 0;
+  }
+  header .header-actions-left{
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  header .header-actions-right{
+    flex: 0 0 auto;
+    margin-left: auto;   /* ← empuja el grupo a la derecha */
+  }
+  header .header-actions-left .btn-preset{
+    flex-shrink: 1;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
   header .meta{
-    grid-area: meta;
     color: var(--muted);
     font-size: .72em;
     margin: 0;
@@ -133,20 +126,18 @@ header .header-actions-left .btn-preset{
     align-items: center;
     gap: 10px;
     flex-wrap: nowrap;
+    min-width: 0;
   }
   header .meta .view-settings-wrap{
-    font-size: 1.15em;   /* el botón Vista no se vea diminuto */
+    flex: 0 0 auto;
+    font-size: 1.15em;
   }
   header .meta .meta-text{
     flex: 1 1 auto;
-    min-width: 0;           /* el texto puede envolver dentro de sí mismo */
+    min-width: 0;
   }
   header .meta .meta-text > span{
-    margin-right: 4px;      /* pequeño aire cuando envuelva */
-  }
-  header .meta .view-settings-wrap{
-    flex: 0 0 auto;         /* el botón no se encoge nunca */
-    font-size: 1.15em;
+    margin-right: 4px;
   }
   button{
     cursor:pointer; padding:8px 14px;
@@ -1327,71 +1318,58 @@ header .header-actions-left .btn-preset{
 </head>
 <body>
 <header>
-  <h1 id="h-title">Voceiro</h1>
-
-  <div class="header-actions header-actions-left">
-    <span class="preset-wrap">
-      <button id="btn-preset" class="btn-preset" type="button"
-              aria-expanded="false" aria-haspopup="true"></button>
-      <div id="preset-menu" class="preset-menu" style="display:none"></div>
-    </span>
-    <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
-  </div>
-
-  <div class="header-actions header-actions-right">
-    <button id="btn-config" type="button"></button>
-    <button id="btn-buscar" class="btn-buscar" type="button"></button>
-    <button id="btn-acces" type="button"></button>
-    <select id="lang-select" class="lang-select" aria-label="Language"></select>
-  </div>
-
-<p class="meta">
-  <span class="view-settings-wrap">
-    <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
-            aria-expanded="false" aria-haspopup="true">
-      <span id="vs-label">⚙ Vista</span>
-      <span id="vs-count" class="vs-count" data-count="0">0</span>
-      <span class="vs-caret">▾</span>
-    </button>
-    <div id="view-settings-menu" class="view-settings-menu" style="display:none">
-      <div class="vs-group">
-        <div class="vs-title" id="vs-title-dup"></div>
-        <label class="vs-item">
-          <input type="checkbox" id="vs-dup">
-          <span id="vs-dup-label"></span>
-        </label>
-      </div>
-      <div class="vs-sep"></div>
-      <div class="vs-group">
-        <div class="vs-title" id="vs-title-hide"></div>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="off">
-          <span id="vs-hide-off"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="read">
-          <span id="vs-hide-read"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="viewed">
-          <span id="vs-hide-viewed"></span>
-        </label>
-        <label class="vs-radio">
-          <input type="radio" name="vs-hide" value="both">
-          <span id="vs-hide-both"></span>
-        </label>
-      </div>
-      <div class="vs-sep"></div>
-      <button class="vs-reset" id="vs-reset" type="button"></button>
+  <div class="header-top">
+    <h1 id="h-title">Voceiro</h1>
+    <div class="header-actions header-actions-left">
+      <span class="preset-wrap">
+        <button id="btn-preset" class="btn-preset" type="button"
+                aria-expanded="false" aria-haspopup="true"></button>
+        <div id="preset-menu" class="preset-menu" style="display:none"></div>
+      </span>
+      <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
     </div>
-  </span>
-  <span class="meta-text">
-    <span id="meta-prefix"></span>
-    <span id="fecha">{{FECHA}}</span>
-    <span>·</span>
-    <span id="contador"></span>
-  </span>
-</p>
+    <div class="header-actions header-actions-right">
+      <button id="btn-config" type="button"></button>
+      <button id="btn-buscar" class="btn-buscar" type="button"></button>
+      <button id="btn-acces" type="button"></button>
+      <select id="lang-select" class="lang-select" aria-label="Language"></select>
+    </div>
+  </div>
+  <p class="meta">
+    <span class="view-settings-wrap">
+      <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
+              aria-expanded="false" aria-haspopup="true">
+        <span id="vs-label">⚙ Vista</span>
+        <span id="vs-count" class="vs-count" data-count="0">0</span>
+        <span class="vs-caret">▾</span>
+      </button>
+      <div id="view-settings-menu" class="view-settings-menu" style="display:none">
+        <div class="vs-group">
+          <div class="vs-title" id="vs-title-dup"></div>
+          <label class="vs-item">
+            <input type="checkbox" id="vs-dup">
+            <span id="vs-dup-label"></span>
+          </label>
+        </div>
+        <div class="vs-sep"></div>
+        <div class="vs-group">
+          <div class="vs-title" id="vs-title-hide"></div>
+          <label class="vs-radio"><input type="radio" name="vs-hide" value="off">   <span id="vs-hide-off"></span></label>
+          <label class="vs-radio"><input type="radio" name="vs-hide" value="read">  <span id="vs-hide-read"></span></label>
+          <label class="vs-radio"><input type="radio" name="vs-hide" value="viewed"><span id="vs-hide-viewed"></span></label>
+          <label class="vs-radio"><input type="radio" name="vs-hide" value="both">  <span id="vs-hide-both"></span></label>
+        </div>
+        <div class="vs-sep"></div>
+        <button class="vs-reset" id="vs-reset" type="button"></button>
+      </div>
+    </span>
+    <span class="meta-text">
+      <span id="meta-prefix"></span>
+      <span id="fecha">{{FECHA}}</span>
+      <span>·</span>
+      <span id="contador"></span>
+    </span>
+  </p>
 </header>
 <!-- CONFIG -->
 <section id="panel-config" class="panel" role="dialog" aria-modal="true">
