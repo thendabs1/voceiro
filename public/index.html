@@ -1328,7 +1328,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">04/10/2026 22:01</span>
+      <span id="fecha">04/10/2026 23:01</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -6319,7 +6319,12 @@ function wireStaticEvents(){
   if (hTitle){
     hTitle.style.cursor = 'pointer';
     hTitle.title = 'F5';
-    hTitle.addEventListener('click', () => location.reload());
+    hTitle.addEventListener('click', () => {
+      if ('scrollRestoration' in history){
+        history.scrollRestoration = 'manual';
+      }
+      location.reload();
+    });
   }
   
   btnP.addEventListener('click', e => {
