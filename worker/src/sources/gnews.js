@@ -76,17 +76,10 @@ function _buildQuery(parsed){
     else if (dias <= 7) partes.push('when:7d');
     else if (dias <= 30) partes.push('when:30d');
   }
+  if (parsed.hasta) partes.push('before:' + parsed.hasta);  // ← NUEVO
   return partes.join(' ').trim();
 }
 
-function _diasDesde(iso){
-  if (!iso) return 0;
-  try {
-    const d = new Date(iso + 'T00:00:00');
-    if (isNaN(d)) return 0;
-    return Math.max(1, Math.round((Date.now() - d.getTime()) / 86400000));
-  } catch(e){ return 0; }
-}
 
 function _dominioDe(name){
   if (!name) return '';
