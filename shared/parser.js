@@ -1,9 +1,10 @@
 // Parser de query compartido front + Worker.
-// Convierte "sanchez dominio:elpais.com desde:7d" en objeto estructurado.
+// Convierte "sanchez web:elpais.com desde:7d" en objeto estructurado.
 
 const PREFIX_ALIASES = {
   medio: 'medio', medios: 'medio',
   dominio: 'dominio', domain: 'dominio', dom: 'dominio',
+  web: 'dominio', webs: 'dominio',
   grupo: 'grupo', grupos: 'grupo',
   tipo: 'tipo', tipos: 'tipo',
   tag: 'tag', tags: 'tag',
@@ -44,26 +45,70 @@ export function tokenizeQuery(raw) {
   return tokens;
 }
 
+// Comprueba que (y, mo, d) forman una fecha real del calendario.
+// Rechaza 31/02, 30/02, etc.
+function fechaReal(y, mo, d) {
+  if (y < 1900 || y > 2100) return false;
+  if (mo < 1 || mo > 12)    return false;
+  if (d  < 1 || d  > 31)    return false;
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d;
+}
+
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function parseRelativeDate(s) {
   const v = (s || '').trim().toLowerCase();
   if (!v) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
 
+  // ── ISO: 2026-10-05 ──
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const [y, mo, d] = v.split('-').map(Number);
+    if (!fechaReal(y, mo, d)) return null;
+    return v;
+  }
+
+  // ── DD/MM/YYYY o DD-MM-YYYY (año de 2 o 4 cifras) ──
+  let m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})$/);
+  if (m) {
+    const d  = +m[1], mo = +m[2];
+    const y  = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+    if (!fechaReal(y, mo, d)) return null;
+    return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+
+  // ── DD/MM o DD-MM (sin año → año actual) ──
+  m = v.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const d  = +m[1], mo = +m[2];
+    const y  = new Date().getFullYear();
+    if (!fechaReal(y, mo, d)) return null;
+    return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+
+  // ── YYYY/MM/DD ──
+  m = v.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if (!fechaReal(y, mo, d)) return null;
+    return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+
+  // ── Relativos y palabras clave ──
   const now = new Date();
-  if (v === 'hoy') return fmtDate(now);
+  if (v === 'hoy')  return fmtDate(now);
   if (v === 'ayer') { const d = new Date(now); d.setDate(d.getDate() - 1); return fmtDate(d); }
 
-  const m = v.match(/^(\d+)([dhm])$/);
+  m = v.match(/^(\d+)([dhm])$/);
   if (!m) return null;
   const n = parseInt(m[1], 10);
   const d = new Date(now);
-  if (m[2] === 'd') d.setDate(d.getDate() - n);
+  if      (m[2] === 'd') d.setDate(d.getDate() - n);
   else if (m[2] === 'h') d.setHours(d.getHours() - n);
   else if (m[2] === 'm') d.setMinutes(d.getMinutes() - n);
   return fmtDate(d);
-}
-function fmtDate(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 export function parseQuery(raw) {
@@ -83,17 +128,65 @@ export function parseQuery(raw) {
     if (tk.prefix && !kind) { out.titulo.push(normalize(tk.raw)); continue; }
 
     switch (kind) {
-      case 'medio':   out.medios.push(normStrict(tk.text));   out.chips.push({ type:'medio',   value: tk.text, raw: tk.raw }); break;
-      case 'dominio': out.dominios.push(tk.text.replace(/^www\./,'').toLowerCase()); out.chips.push({ type:'dominio', value: tk.text, raw: tk.raw }); break;
-      case 'grupo':   out.grupos.push(tk.text);               out.chips.push({ type:'grupo',   value: tk.text, raw: tk.raw }); break;
-      case 'tipo':    out.tipos.push(normStrict(tk.text));    out.chips.push({ type:'tipo',    value: tk.text, raw: tk.raw }); break;
-      case 'tag':     out.tags.push(normStrict(tk.text));     out.chips.push({ type:'tag',     value: tk.text, raw: tk.raw }); break;
-      case 'desde':   out.desde = parseRelativeDate(tk.text); out.chips.push({ type:'desde',   value: tk.text, raw: tk.raw }); break;
-      case 'hasta':   out.hasta = parseRelativeDate(tk.text); out.chips.push({ type:'hasta',   value: tk.text, raw: tk.raw }); break;
-      case 'fuentes': out.fuentes = tk.text.split(',').map(s => s.trim()).filter(Boolean); break;
-      case 'order':   if (['recientes','antiguos','relevancia'].includes(tk.text)) out.order = tk.text; break;
-      case 'limit':   out.limit  = Math.min(parseInt(tk.text, 10) || 50, 200); break;
-      case 'offset':  out.offset = Math.max(parseInt(tk.text, 10) || 0, 0); break;
+      case 'medio':
+        out.medios.push(normStrict(tk.text));
+        out.chips.push({ type:'medio', value: tk.text, raw: tk.raw });
+        break;
+
+      case 'dominio':
+        out.dominios.push(tk.text.replace(/^www\./,'').toLowerCase());
+        out.chips.push({ type:'dominio', value: tk.text, raw: tk.raw });
+        break;
+
+      case 'grupo':
+        out.grupos.push(tk.text);
+        out.chips.push({ type:'grupo', value: tk.text, raw: tk.raw });
+        break;
+
+      case 'tipo':
+        out.tipos.push(normStrict(tk.text));
+        out.chips.push({ type:'tipo', value: tk.text, raw: tk.raw });
+        break;
+
+      case 'tag':
+        out.tags.push(normStrict(tk.text));
+        out.chips.push({ type:'tag', value: tk.text, raw: tk.raw });
+        break;
+
+      case 'desde': {
+        const v = parseRelativeDate(tk.text);
+        if (v) {
+          out.desde = v;
+          out.chips.push({ type:'desde', value: tk.text, raw: tk.raw });
+        }
+        break;
+      }
+
+      case 'hasta': {
+        const v = parseRelativeDate(tk.text);
+        if (v) {
+          out.hasta = v;
+          out.chips.push({ type:'hasta', value: tk.text, raw: tk.raw });
+        }
+        break;
+      }
+
+      case 'fuentes':
+        out.fuentes = tk.text.split(',').map(s => s.trim()).filter(Boolean);
+        break;
+
+      case 'order':
+        if (['recientes','antiguos','relevancia'].includes(tk.text)) out.order = tk.text;
+        break;
+
+      case 'limit':
+        out.limit = Math.min(parseInt(tk.text, 10) || 50, 200);
+        break;
+
+      case 'offset':
+        out.offset = Math.max(parseInt(tk.text, 10) || 0, 0);
+        break;
+
       default:
         // Token sin prefijo. ¿Es un dominio?
         if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) {
