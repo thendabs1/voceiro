@@ -1,7 +1,10 @@
+// worker/src/index.js
 import { parseQuery } from '../../shared/parser.js';
 import { turso } from './sources/turso.js';
+import { gnews } from './sources/gnews.js';
+import { freenews } from './sources/freenews.js';
 
-const ADAPTERS = { turso };
+const ADAPTERS = { turso, gnews, freenews };
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +31,7 @@ async function handleBuscar(request, env, ctx, url) {
   const raw = url.searchParams.get('raw') ?? url.searchParams.get('q') ?? '';
   const parsed = parseQuery(raw);
 
+  // Overrides desde query string
   const fuentesQ = url.searchParams.get('fuentes');
   if (fuentesQ) parsed.fuentes = fuentesQ.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -40,9 +44,13 @@ async function handleBuscar(request, env, ctx, url) {
   const orderQ = url.searchParams.get('order');
   if (orderQ && ['recientes','antiguos','relevancia'].includes(orderQ)) parsed.order = orderQ;
 
+  // Solo fuentes conocidas
   const activas = parsed.fuentes.filter(f => ADAPTERS[f]);
-  if (!activas.length) return json({ total: 0, items: [], next_offset: null, fuentes: [] }, CORS);
+  if (!activas.length) {
+    return json({ total: 0, items: [], next_offset: null, fuentes: [] }, CORS);
+  }
 
+  // ── Cache ──
   const cacheKeyUrl = new URL(request.url);
   cacheKeyUrl.searchParams.set('fuentes', [...activas].sort().join(','));
   cacheKeyUrl.searchParams.set('limit',  String(parsed.limit));
@@ -57,6 +65,7 @@ async function handleBuscar(request, env, ctx, url) {
     return r;
   }
 
+  // ── Fan-out paralelo con tolerancia a fallos ──
   const t0 = Date.now();
   const settled = await Promise.allSettled(
     activas.map(name => ADAPTERS[name].search(parsed, env))
@@ -71,14 +80,20 @@ async function handleBuscar(request, env, ctx, url) {
   settled.forEach((r, i) => {
     const name = activas[i];
     if (r.status === 'fulfilled') {
-      itemsAll.push(...(r.value.items || []));
+      const items = r.value.items || [];
+      // Los adaptadores externos ya traen _src; turso no. Rellenamos por si acaso.
+      for (const it of items){
+        if (!it._src) it._src = name;
+      }
+      itemsAll.push(...items);
       fuentesOk.push(name);
-      if (name === 'turso') totalTurso = r.value.total ?? r.value.items?.length ?? 0;
+      if (name === 'turso') totalTurso = r.value.total ?? items.length;
     } else {
       fuentesErr[name] = String(r.reason?.message || r.reason).slice(0, 200);
     }
   });
 
+  // ── Dedup por URL normalizada ──
   const seen = new Set();
   const deduped = [];
   for (const item of itemsAll) {
@@ -88,6 +103,7 @@ async function handleBuscar(request, env, ctx, url) {
     deduped.push(item);
   }
 
+  // ── Orden final ──
   if (parsed.order !== 'relevancia') {
     deduped.sort((a, b) => {
       const ta = Date.parse(a.p) || 0;
@@ -96,6 +112,7 @@ async function handleBuscar(request, env, ctx, url) {
     });
   }
 
+  // ── next_offset: solo si Turso va solo ──
   const soloTurso = activas.length === 1 && activas[0] === 'turso';
   const next_offset = (soloTurso && parsed.offset + parsed.limit < totalTurso)
     ? parsed.offset + parsed.limit
@@ -110,6 +127,7 @@ async function handleBuscar(request, env, ctx, url) {
   };
   if (Object.keys(fuentesErr).length) body._errores = fuentesErr;
 
+  // ── No cachear si hay errores ──
   const tieneErrores = Object.keys(fuentesErr).length > 0;
   const response = json(body, {
     ...CORS,
@@ -123,6 +141,7 @@ async function handleBuscar(request, env, ctx, url) {
   }
   return response;
 }
+
 function normalizeUrl(u, d) {
   if (!u) return '';
   let full = u;
