@@ -529,6 +529,127 @@
   font-family: inherit;
   min-width: 0;
 }
+/* ═══ Prensa externa en el panel ═══ */
+.filtros-sep{
+  height: 1px;
+  background: var(--border);
+  margin: 10px 0 8px;
+}
+.filtros-prensa{
+  font-size: .78em;
+}
+.chk-prensa{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.chk-prensa input{
+  accent-color: var(--save);
+  width: 1.1em;
+  height: 1.1em;
+  margin: 0;
+  cursor: pointer;
+}
+.chk-prensa input:checked + span{
+  color: var(--fg);
+  font-weight: 600;
+}
+.filtros-prensa-selects{
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--quote-bg);
+}
+.filtros-prensa-selects[hidden]{ display: none; }
+.filtros-prensa-selects > label{
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.filtros-prensa-selects > label > span{
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: .85em;
+  letter-spacing: .05em;
+  font-weight: 600;
+}
+.fp-chks{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 5px 0;
+}
+.fp-chk{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.fp-chk input{
+  accent-color: var(--save);
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  cursor: pointer;
+}
+.fp-chk input:checked + span{
+  color: var(--fg);
+  font-weight: 600;
+}
+.filtros-prensa-selects select{
+  font-size: 1em;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: inherit;
+  width: 100%;
+  min-width: 0;
+}
+.prensa-reset{
+  padding: 6px 10px;
+  font-size: 1.1em;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color .15s, border-color .15s;
+  align-self: end;
+}
+.prensa-reset:hover{
+  color: var(--accent);
+  border-color: var(--accent);
+}
+@media (max-width: 560px){
+  .filtros-prensa-selects{
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .fp-fuentes{
+    grid-column: 1 / -1;
+  }
+  .prensa-reset{
+    grid-column: 2 / 3;
+    justify-self: end;
+  }
+}
 .buscar-clear{
   position: absolute;
   right: 8px;
@@ -1702,6 +1823,44 @@
         <option value="antiguos"></option>
       </select>
     </div>
+
+    <div class="filtros-sep"></div>
+
+    <div class="filtros-prensa">
+      <label class="chk-prensa">
+        <input type="checkbox" id="prensa-panel-toggle">
+        <span id="prensa-panel-label">🌐 Prensa externa</span>
+      </label>
+
+      <div class="filtros-prensa-selects" id="prensa-selects" hidden>
+        <label class="fp-fuentes">
+          <span id="prensa-fuentes-label">Fuentes</span>
+          <div class="fp-chks">
+            <label class="fp-chk">
+              <input type="checkbox" id="prensa-f-gnews" checked>
+              <span>Google News</span>
+            </label>
+            <label class="fp-chk">
+              <input type="checkbox" id="prensa-f-freenews" checked>
+              <span>FreeNews</span>
+            </label>
+          </div>
+        </label>
+
+        <label class="fp-lang">
+          <span id="prensa-lang-label">Idioma</span>
+          <select id="prensa-lang"></select>
+        </label>
+
+        <label class="fp-region">
+          <span id="prensa-region-label">País</span>
+          <select id="prensa-region"></select>
+        </label>
+
+        <button type="button" id="prensa-reset" class="prensa-reset"
+                title="Restablecer prensa">↺</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1735,6 +1894,28 @@ let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
 let PRENSA_PARSED = null;
 let PRENSA_USER_MANUAL_OFF = false;
+let PRENSA_FUENTES = { gnews: true, freenews: true };
+let PRENSA_LANG = 'es';
+let PRENSA_PAIS = 'ES';
+
+// Listas de opciones para los selects de prensa externa
+const PRENSA_LANGS = [
+  { code: 'es', labelKey: 'optLangEs' },
+  { code: 'gl', labelKey: 'optLangGl' },
+  { code: 'ca', labelKey: 'optLangCa' },
+  { code: 'eu', labelKey: 'optLangEu' },
+  { code: 'en', labelKey: 'optLangEn' },
+];
+
+const PRENSA_PAISES = [
+  { code: 'ES', labelKey: 'prensaPaisES' },
+  { code: 'MX', labelKey: 'prensaPaisMX' },
+  { code: 'AR', labelKey: 'prensaPaisAR' },
+  { code: 'CO', labelKey: 'prensaPaisCO' },
+  { code: 'CL', labelKey: 'prensaPaisCL' },
+  { code: 'UK', labelKey: 'prensaPaisUK', gnewsGl: 'GB' },
+  { code: 'US', labelKey: 'prensaPaisUS' },
+];
 /* ═══════════════════════════════════════════════════════════════
    I18N
    ═══════════════════════════════════════════════════════════════ */
@@ -1743,6 +1924,19 @@ let PRENSA_USER_MANUAL_OFF = false;
    ═══════════════════════════════════════════════════════════════ */
 const I18N = {
   es: {
+        /* ── Prensa externa (panel) ── */
+    prensaPanelLabel:  '🌐 Prensa externa',
+    prensaFuentes:     'Fuentes',
+    prensaLang:        'Idioma',
+    prensaPais:        'País',
+    prensaReset:       'Restablecer prensa',
+    prensaPaisES:      'España',
+    prensaPaisMX:      'México',
+    prensaPaisAR:      'Argentina',
+    prensaPaisCO:      'Colombia',
+    prensaPaisCL:      'Chile',
+    prensaPaisUK:      'Reino Unido',
+    prensaPaisUS:      'Estados Unidos',
     /* ── Modos de feed ── */
     cfgModos:               'Modos de feed',
     cfgModosHint:           'Cada modo tiene sus grupos, palabras y excepciones por medio. Al cambiar de modo el feed se reconfigura.',
@@ -1988,6 +2182,18 @@ const I18N = {
   },
 
   gl: {
+        prensaPanelLabel:  '🌐 Prensa externa',
+    prensaFuentes:     'Fontes',
+    prensaLang:        'Idioma',
+    prensaPais:        'País',
+    prensaReset:       'Restablecer prensa',
+    prensaPaisES:      'España',
+    prensaPaisMX:      'México',
+    prensaPaisAR:      'Arxentina',
+    prensaPaisCO:      'Colombia',
+    prensaPaisCL:      'Chile',
+    prensaPaisUK:      'Reino Unido',
+    prensaPaisUS:      'Estados Unidos',
     fltBtn: 'Filtros', 
     /* ── Modos de feed ── */
     cfgModos:               'Modos de feed',
@@ -2234,6 +2440,18 @@ const I18N = {
   },
 
   ca: {
+        prensaPanelLabel:  '🌐 Premsa externa',
+    prensaFuentes:     'Fonts',
+    prensaLang:        'Idioma',
+    prensaPais:        'País',
+    prensaReset:       'Restablir premsa',
+    prensaPaisES:      'Espanya',
+    prensaPaisMX:      'Mèxic',
+    prensaPaisAR:      'Argentina',
+    prensaPaisCO:      'Colòmbia',
+    prensaPaisCL:      'Xile',
+    prensaPaisUK:      'Regne Unit',
+    prensaPaisUS:      'Estats Units',
     fltBtn: 'Filtres', 
     /* ── Modos de feed ── */
     cfgModos:               'Modes de feed',
@@ -2480,6 +2698,18 @@ const I18N = {
   },
 
   en: {
+        prensaPanelLabel:  '🌐 External press',
+    prensaFuentes:     'Sources',
+    prensaLang:        'Language',
+    prensaPais:        'Country',
+    prensaReset:       'Reset press',
+    prensaPaisES:      'Spain',
+    prensaPaisMX:      'Mexico',
+    prensaPaisAR:      'Argentina',
+    prensaPaisCO:      'Colombia',
+    prensaPaisCL:      'Chile',
+    prensaPaisUK:      'United Kingdom',
+    prensaPaisUS:      'United States',
     /* ── Feed modes ── */
     cfgModos:               'Feed modes',
     cfgModosHint:           'Each mode has its own groups, keywords and per-outlet exceptions. Switching modes reconfigures the feed.',
@@ -2727,6 +2957,18 @@ const I18N = {
   },
 
   eu: {
+        prensaPanelLabel:  '🌐 Kanpoko prentsa',
+    prensaFuentes:     'Iturriak',
+    prensaLang:        'Hizkuntza',
+    prensaPais:        'Herrialdea',
+    prensaReset:       'Prentsa berrezarri',
+    prensaPaisES:      'Espainia',
+    prensaPaisMX:      'Mexiko',
+    prensaPaisAR:      'Argentina',
+    prensaPaisCO:      'Kolonbia',
+    prensaPaisCL:      'Txile',
+    prensaPaisUK:      'Erresuma Batua',
+    prensaPaisUS:      'Estatu Batuak',
     fltBtn: 'Iragazkiak',
     /* ── Feed moduak ── */
     cfgModos:               'Feed moduak',
@@ -3876,14 +4118,14 @@ function initUserScriptBridge(){
   });
 
 
-document.addEventListener('voceiro-later-list-data', e => {
-  PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
-  rebuildPendientes();
-});
-document.addEventListener('voceiro-later-changed', e => {
-  PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
-  rebuildPendientes();
-});
+  document.addEventListener('voceiro-later-list-data', e => {
+    PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
+    rebuildPendientes();
+  });
+  document.addEventListener('voceiro-later-changed', e => {
+    PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
+    rebuildPendientes();
+  });
 
 
 
@@ -6023,6 +6265,109 @@ function prensaCacheGet(rawQuery){
     return entry.items;
   } catch(e){ return null; }
 }
+/* ─── Control de estado de prensa externa ─── */
+function setPrensaActiva(valor, { persistir = true } = {}){
+  PRENSA_ACTIVA = !!valor;
+  const btn = document.getElementById('btn-prensa');
+  const chk = document.getElementById('prensa-panel-toggle');
+  const sel = document.getElementById('prensa-selects');
+  if (btn) btn.classList.toggle('active', PRENSA_ACTIVA);
+  if (chk) chk.checked = PRENSA_ACTIVA;
+  if (sel) sel.hidden = !PRENSA_ACTIVA;
+  if (persistir){
+    try { localStorage.setItem('voceiro-prensa-activa', PRENSA_ACTIVA ? '1' : '0'); } catch(e){}
+  }
+}
+
+function setPrensaFuente(nombre, activa, { persistir = true } = {}){
+  if (!PRENSA_FUENTES.hasOwnProperty(nombre)) return;
+  PRENSA_FUENTES[nombre] = !!activa;
+  const chk = document.getElementById('prensa-f-' + nombre);
+  if (chk) chk.checked = PRENSA_FUENTES[nombre];
+  if (persistir){
+    try { localStorage.setItem('voceiro-prensa-' + nombre, PRENSA_FUENTES[nombre] ? '1' : '0'); } catch(e){}
+  }
+}
+
+function setPrensaLang(valor, { persistir = true } = {}){
+  PRENSA_LANG = valor || 'es';
+  const sel = document.getElementById('prensa-lang');
+  if (sel) sel.value = PRENSA_LANG;
+  if (persistir){
+    try { localStorage.setItem('voceiro-prensa-lang', PRENSA_LANG); } catch(e){}
+  }
+}
+
+function setPrensaPais(valor, { persistir = true } = {}){
+  PRENSA_PAIS = valor || 'ES';
+  const sel = document.getElementById('prensa-region');
+  if (sel) sel.value = PRENSA_PAIS;
+  if (persistir){
+    try { localStorage.setItem('voceiro-prensa-pais', PRENSA_PAIS); } catch(e){}
+  }
+}
+
+function resetPrensa(){
+  setPrensaFuente('gnews', true);
+  setPrensaFuente('freenews', true);
+  setPrensaLang('es');
+  setPrensaPais('ES');
+  aplicarFiltros();
+}
+
+function prensaFuentesActivas(){
+  const out = [];
+  if (PRENSA_FUENTES.gnews)    out.push('gnews');
+  if (PRENSA_FUENTES.freenews) out.push('freenews');
+  return out;
+}
+
+function prensaCacheKey(rawQuery){
+  const fuentes = prensaFuentesActivas().join(',');
+  return `${rawQuery}|${PRENSA_LANG}|${PRENSA_PAIS}|${fuentes}`;
+}
+
+function pintarSelectsPrensa(){
+  const selL = document.getElementById('prensa-lang');
+  if (selL && !selL.options.length){
+    selL.innerHTML = PRENSA_LANGS.map(o =>
+      `<option value="${o.code}">${escapeHtml(t(o.labelKey))}</option>`
+    ).join('');
+  }
+
+  const selP = document.getElementById('prensa-region');
+  if (selP && !selP.options.length){
+    selP.innerHTML = PRENSA_PAISES.map(o =>
+      `<option value="${o.code}">${escapeHtml(t(o.labelKey))}</option>`
+    ).join('');
+  }
+
+  // Sincronizar valores
+  if (selL) selL.value = PRENSA_LANG;
+  if (selP) selP.value = PRENSA_PAIS;
+
+  const chkG = document.getElementById('prensa-f-gnews');
+  const chkF = document.getElementById('prensa-f-freenews');
+  if (chkG) chkG.checked = PRENSA_FUENTES.gnews;
+  if (chkF) chkF.checked = PRENSA_FUENTES.freenews;
+}
+
+function cargarPrensaDeLocalStorage(){
+  try {
+    const activa  = localStorage.getItem('voceiro-prensa-activa') === '1';
+    const gnews   = localStorage.getItem('voceiro-prensa-gnews')   !== '0';
+    const freenews= localStorage.getItem('voceiro-prensa-freenews')!== '0';
+    const lang    = localStorage.getItem('voceiro-prensa-lang')  || 'es';
+    const pais    = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
+
+    PRENSA_ACTIVA = activa;
+    PRENSA_USER_MANUAL_OFF = !activa;
+    PRENSA_FUENTES.gnews    = gnews;
+    PRENSA_FUENTES.freenews = freenews;
+    PRENSA_LANG = lang;
+    PRENSA_PAIS = pais;
+  } catch(e){}
+}
 function prensaCacheSet(rawQuery, items){
   try {
     let cache = {};
@@ -6039,8 +6384,12 @@ function prensaCacheSet(rawQuery, items){
 }
 
 async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
+  const fuentes = prensaFuentesActivas();
+  if (!fuentes.length) return { items: [] };
+
   // Cache primero
-  const cached = prensaCacheGet(rawQuery);
+  const cacheKey = prensaCacheKey(rawQuery);
+  const cached = prensaCacheGet(cacheKey);
   if (cached) return { items: cached, _cache: true };
 
   if (PRENSA_ABORT) PRENSA_ABORT.abort();
@@ -6048,9 +6397,11 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
 
   const params = new URLSearchParams();
   params.set('raw', rawQuery || '');
-  params.set('fuentes', 'gnews,freenews');
+  params.set('fuentes', fuentes.join(','));
   params.set('limit', '40');
   params.set('offset', '0');
+  params.set('lang', PRENSA_LANG);
+  params.set('region', PRENSA_PAIS);
 
   try {
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, {
@@ -6059,7 +6410,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     const items = data.items || [];
-    prensaCacheSet(rawQuery, items);
+    prensaCacheSet(cacheKey, items);
     return { items };
   } catch (e) {
     if (e.name === 'AbortError') return null;
@@ -6068,7 +6419,6 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
     return null;
   }
 }
-
 function mergePrensa(locales, prensaItems){
   if (!prensaItems || !prensaItems.length) return locales;
 
@@ -6908,6 +7258,27 @@ function aplicarTextos(){
   $('#ac-extra').textContent = t('acExtra');
   $('#acces-reset').textContent = t('btnReset');
 
+  // Prensa externa (panel)
+  const pl = document.getElementById('prensa-panel-label');
+  if (pl) pl.textContent = t('prensaPanelLabel');
+  const plf = document.getElementById('prensa-fuentes-label');
+  if (plf) plf.textContent = t('prensaFuentes');
+  const pll = document.getElementById('prensa-lang-label');
+  if (pll) pll.textContent = t('prensaLang');
+  const plp = document.getElementById('prensa-region-label');
+  if (plp) plp.textContent = t('prensaPais');
+  const prst = document.getElementById('prensa-reset');
+  if (prst){
+    prst.title = t('prensaReset');
+    prst.setAttribute('aria-label', t('prensaReset'));
+  }
+
+  // Repoblar los selects si el idioma de UI cambia
+  const selPrensaL = document.getElementById('prensa-lang');
+  const selPrensaP = document.getElementById('prensa-region');
+  if (selPrensaL) selPrensaL.innerHTML = '';
+  if (selPrensaP) selPrensaP.innerHTML = '';
+  pintarSelectsPrensa();
   const bTema = document.querySelectorAll('.opt-group[data-grupo="tema"] button');
   [t('acClaro'), t('acSepia'), t('acOscuro'), t('acContraste')].forEach((txt, i) => {
     if (bTema[i]) bTema[i].textContent = txt;
@@ -7046,17 +7417,69 @@ function wireStaticEvents(){
       aplicarFiltros();
     });
   }
-    // ── Toggle prensa ──
+    // ── Toggle prensa (botón de la barra) ──
   const btnPrensa = $('#btn-prensa');
   if (btnPrensa){
     btnPrensa.addEventListener('click', () => {
-      PRENSA_ACTIVA = !PRENSA_ACTIVA;
-      PRENSA_USER_MANUAL_OFF = !PRENSA_ACTIVA;   // ← nuevo
-      btnPrensa.classList.toggle('active', PRENSA_ACTIVA);
-      try { localStorage.setItem('voceiro-prensa-activa', PRENSA_ACTIVA ? '1' : '0'); } catch(e){}
+      const nuevo = !PRENSA_ACTIVA;
+      PRENSA_USER_MANUAL_OFF = !nuevo;
+      setPrensaActiva(nuevo);
       aplicarFiltros();
     });
   }
+
+  // ── Checkbox del panel de filtros ──
+  const chkPrensaPanel = $('#prensa-panel-toggle');
+  if (chkPrensaPanel){
+    chkPrensaPanel.addEventListener('change', () => {
+      const nuevo = chkPrensaPanel.checked;
+      PRENSA_USER_MANUAL_OFF = !nuevo;
+      setPrensaActiva(nuevo);
+      aplicarFiltros();
+    });
+  }
+
+  // ── Checkboxes de fuentes ──
+  const chkGnews = $('#prensa-f-gnews');
+  if (chkGnews){
+    chkGnews.addEventListener('change', () => {
+      setPrensaFuente('gnews', chkGnews.checked);
+      aplicarFiltros();
+    });
+  }
+  const chkFree = $('#prensa-f-freenews');
+  if (chkFree){
+    chkFree.addEventListener('change', () => {
+      setPrensaFuente('freenews', chkFree.checked);
+      aplicarFiltros();
+    });
+  }
+
+  // ── Selects de idioma y país ──
+  const selPrensaLang = $('#prensa-lang');
+  if (selPrensaLang){
+    selPrensaLang.addEventListener('change', () => {
+      setPrensaLang(selPrensaLang.value);
+      aplicarFiltros();
+    });
+  }
+  const selPrensaPais = $('#prensa-region');
+  if (selPrensaPais){
+    selPrensaPais.addEventListener('change', () => {
+      setPrensaPais(selPrensaPais.value);
+      aplicarFiltros();
+    });
+  }
+
+  // ── Botón reset ──
+  const btnResetPrensa = $('#prensa-reset');
+  if (btnResetPrensa){
+    btnResetPrensa.addEventListener('click', resetPrensa);
+  }
+
+  // ── Poblar los selects la primera vez ──
+  pintarSelectsPrensa();
+  setPrensaActiva(PRENSA_ACTIVA, { persistir: false });
   // ── Botones que abren paneles ──
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', bsAbrir);
@@ -7323,15 +7746,8 @@ async function init(){
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
-    // Preferencia del toggle prensa
-  try {
-    if (localStorage.getItem('voceiro-prensa-activa') === '1'){
-      PRENSA_ACTIVA = true;
-      PRENSA_USER_MANUAL_OFF = false;
-    } else {
-      PRENSA_USER_MANUAL_OFF = true;   // ← si estaba apagado, no re-auto-activar
-    }
-  } catch(e){}
+    // Preferencias de prensa externa
+  cargarPrensaDeLocalStorage();
   rebuildPendientes();
 
   const cachedSites = cargarSitesCache();
