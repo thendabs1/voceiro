@@ -70,13 +70,8 @@ function _buildQuery(parsed){
     const sites = parsed.dominios.slice(0, 3).map(d => 'site:' + d);
     partes.push(sites.length === 1 ? sites[0] : '(' + sites.join(' OR ') + ')');
   }
-  const dias = _diasDesde(parsed.desde);
-  if (dias){
-    if (dias <= 1) partes.push('when:1d');
-    else if (dias <= 7) partes.push('when:7d');
-    else if (dias <= 30) partes.push('when:30d');
-  }
-  if (parsed.hasta) partes.push('before:' + parsed.hasta);  // ← NUEVO
+  if (parsed.desde) partes.push('after:' + parsed.desde);   // ← cambia esto
+  if (parsed.hasta) partes.push('before:' + parsed.hasta);
   return partes.join(' ').trim();
 }
 
