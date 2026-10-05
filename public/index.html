@@ -500,7 +500,7 @@
 }
 .filtros-row{
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 8px;
   align-items: center;
   padding-bottom: 10px;
@@ -657,7 +657,18 @@
   [data-theme="contrast"] .badge.estimada{
     background:#003; border-color:#0ff; color:#0ff;
   }
-
+  .badge.prensa{
+    background:#fef3c7; border-color:#f59e0b; color:#92400e;
+  }
+  [data-theme="dark"] .badge.prensa{
+    background:#3d2f14; border-color:#b58600; color:#ffcc66;
+  }
+  [data-theme="sepia"] .badge.prensa{
+    background:#f5e6c3; border-color:#c9a227; color:#5c4a1c;
+  }
+  [data-theme="contrast"] .badge.prensa{
+    background:#000; border-color:#ff0; color:#ff0;
+  }
   .noticia a.titular{
     color:var(--accent); text-decoration:none;
     font-weight:600; font-size:1em; display:block; margin-top:2px;
@@ -762,6 +773,7 @@
     opacity:.6;
     transition:opacity .15s, color .15s, border-color .15s;
   }
+
   .btn-mini:hover{
     opacity:1 !important;
     color:var(--accent) !important;
@@ -771,7 +783,20 @@
     color:var(--block) !important;
     border-color:var(--block) !important;
   }
-
+  #btn-cargar-mas {
+    background: var(--save-bg) !important;
+    color: var(--save) !important;
+    border-color: var(--save) !important;
+    font-weight: 600;
+    opacity: 1 !important;
+  }
+  #btn-cargar-mas:hover {
+    filter: brightness(.95);
+  }
+  #btn-cargar-mas:disabled {
+    opacity: .6 !important;
+    cursor: wait;
+  }
   /* Spacer: empuja 🚫 y 🐞 a la derecha */
   .cab-spacer{flex:1 0 0; min-width:0}
 
@@ -1136,6 +1161,47 @@
     opacity:1;
     font-weight:600;
   }
+  .btn-prensa{
+    padding: 6px 12px;
+    font-size: .74em;
+    line-height: 1.3;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 9px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: .01em;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .btn-prensa:hover{
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .btn-prensa.active{
+    background: var(--save);
+    color: #fff;
+    border-color: var(--save);
+  }
+  .btn-prensa.cargando{
+    opacity: .65;
+    cursor: wait;
+  }
+  .btn-prensa.auto-activada{
+    animation: prensa-pulse .8s ease-out;
+  }
+  @keyframes prensa-pulse {
+    0%   { box-shadow: 0 0 0 0 var(--save); }
+    70%  { box-shadow: 0 0 0 6px rgba(0,0,0,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+  }
+
+  @media (max-width: 560px){
+    .btn-prensa span { font-size: .95em; }
+    .btn-prensa { padding: 6px 8px; }
+  }
   .view-settings-wrap{
     position: relative;
     display: inline-flex;
@@ -1328,7 +1394,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">05/10/2026 13:51</span>
+      <span id="fecha">05/10/2026 13:55</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -1612,6 +1678,9 @@
       <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×">×</button>
       <div id="buscar-sugerencias" class="buscar-sugerencias" style="display:none"></div>
     </div>
+    <button id="btn-prensa" class="btn-prensa" type="button" title="Buscar también en prensa externa">
+      <span>🌐 prensa</span>
+    </button>
     <button id="btn-filtros" class="btn-dup-inline btn-view-settings" type="button"
             aria-expanded="false" aria-haspopup="true" aria-controls="filtros-panel">
       <span id="filtros-label"></span>
@@ -1642,6 +1711,9 @@
 <button id="btn-top" class="btn-top" type="button"
         aria-label="Volver arriba" title="Volver arriba">↑</button>
 <div id="toast-wrap"></div>
+<div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
+  <button id="btn-cargar-mas" class="btn-mini" type="button" style="padding:10px 20px; font-size:.85em;"></button>
+</div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
 <script>
@@ -1651,6 +1723,18 @@
 const REPORT_REPO  = 'thendabs1/voceiro';
 const REPORT_EMAIL = 'thendabs1@gmail.com';
 const DATA_BASE = 'https://voceiro-datos.toriorecorda.workers.dev';
+const WORKER_BUSCAR = 'https://voceiro-buscar.toriorecorda.workers.dev';
+const HISTORICO_MIN_LOCALES = 20;
+const PRENSA_CACHE_KEY = 'voceiro-prensa-cache-v1';
+const PRENSA_CACHE_TTL_MS = 30 * 60 * 1000;
+const PRENSA_MIN_RESULTADOS = 5;
+const PRENSA_DEBOUNCE_MS = 1500;
+
+let PRENSA_ACTIVA = false;
+let PRENSA_ABORT = null;
+let PRENSA_TIMER = null;
+let PRENSA_PARSED = null;
+let PRENSA_USER_MANUAL_OFF = false;
 /* ═══════════════════════════════════════════════════════════════
    I18N
    ═══════════════════════════════════════════════════════════════ */
@@ -1806,7 +1890,7 @@ const I18N = {
     fechaHaceH:             'hace {n} h',
     fechaHaceD:             'hace {n} d',
     fechaProgramado:        'programado',
-    recolectado:            '📥 Recolectado',
+    recolectado:            'Recolectado',
     sinFechaReal:           'Sin fecha exacta del medio · estimada',
 
     /* ── Sync ── */
@@ -4316,12 +4400,24 @@ function construirGruposDuplicados(){
   }
 }
 
+const MEDIOS_POR_NOMBRE = new Map();
+
 function construirIndicesBusqueda(){
   MEDIOS_STRICT.clear();
   DOMINIOS_STRICT.clear();
+  MEDIOS_POR_NOMBRE.clear();
+
   MEDIOS_UNICOS.forEach(m => {
     if (m.medio)   MEDIOS_STRICT.set(normStrict(m.medio), m.medio);
     if (m.dominio) DOMINIOS_STRICT.set(normDomain(m.dominio), m.dominio);
+    if (m.medio && m.dominio){
+      const clave = normStrict(m.medio);
+      // Guarda anti-colisión: nombres de menos de 4 letras no entran
+      // (Vox, EFE, ABC... son ambiguos y colisionan con partidos, siglas, etc.)
+      if (clave.length >= 4 && !MEDIOS_POR_NOMBRE.has(clave)){
+        MEDIOS_POR_NOMBRE.set(clave, m.dominio);
+      }
+    }
   });
 }
 /* ═══════════════════════════════════════════════════════════════
@@ -4331,9 +4427,12 @@ function construirIndicesBusqueda(){
 const PREFIX_ALIASES = {
   medio: 'medio', medios: 'medio',
   dominio: 'dominio', domain: 'dominio', dom: 'dominio',
+  web: 'dominio', webs: 'dominio',
   grupo: 'grupo', grupos: 'grupo',
   tipo: 'tipo', tipos: 'tipo',
   tag: 'tag', tags: 'tag',
+  desde: 'desde',
+  hasta: 'hasta',
 };
 
 function tokenizeQuery(raw){
@@ -4358,11 +4457,36 @@ function tokenizeQuery(raw){
   return tokens;
 }
 
+function parseRelDate(s){
+  const v = String(s || '').trim().toLowerCase();
+  if (!v) return null;
+  // ISO: 2026-10-05
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+  const now = new Date();
+  if (v === 'hoy'){
+    return now.toISOString().slice(0, 10);
+  }
+  if (v === 'ayer'){
+    const d = new Date(now); d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+  // Relativo: 7d, 24h, 30m
+  const m = v.match(/^(\d+)([dhm])$/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  const d = new Date(now);
+  if (m[2] === 'd') d.setDate(d.getDate() - n);
+  else if (m[2] === 'h') d.setHours(d.getHours() - n);
+  else if (m[2] === 'm') d.setMinutes(d.getMinutes() - n);
+  return d.toISOString().slice(0, 10);
+}
+
 function parseQuery(raw){
   const tokens = tokenizeQuery(raw);
   const titulo = [], medios = [], dominios = [], grupos = [], tipos = [], tags = [];
   const chips = [];
-
+  let desde = null, hasta = null;
   for (const tk of tokens){
     const kind = tk.prefix ? PREFIX_ALIASES[tk.prefix] : '';
 
@@ -4379,7 +4503,10 @@ function parseQuery(raw){
     }
     if (kind === 'dominio'){
       const v = normDomain(tk.text);
-      if (v){ dominios.push(v); chips.push({ type: 'dominio', value: tk.text, raw: tk.raw }); }
+      if (v){
+        dominios.push(v);
+        chips.push({ type: 'web', value: tk.text, raw: tk.raw });   // ← antes 'dominio'
+      }
       continue;
     }
     if (kind === 'grupo'){
@@ -4392,12 +4519,28 @@ function parseQuery(raw){
       if (v){ tipos.push(v); chips.push({ type: 'tipo', value: tk.text, raw: tk.raw }); }
       continue;
     }
+
     if (kind === 'tag'){
       const v = normStrict(tk.text);
       if (v){ tags.push(v); chips.push({ type: 'tag', value: tk.text, raw: tk.raw }); }
       continue;
     }
-
+    if (kind === 'desde'){
+      const v = parseRelDate(tk.text);
+      if (v){
+        desde = v;
+        chips.push({ type: 'desde', value: v, raw: tk.raw });
+      }
+      continue;
+    }
+    if (kind === 'hasta'){
+      const v = parseRelDate(tk.text);
+      if (v){
+        hasta = v;
+        chips.push({ type: 'hasta', value: v, raw: tk.raw });
+      }
+      continue;
+    }
     // Sin prefijo → heurística (igual que antes)
     if (tk.quoted){
       const n = normalize(tk.text);
@@ -4408,7 +4551,7 @@ function parseQuery(raw){
       const d = normDomain(tk.text).replace(/^www\./, '');
       if (d){
         dominios.push(d);
-        chips.push({ type: 'dominio', value: tk.text, raw: tk.raw });
+        chips.push({ type: 'web', value: tk.text, raw: tk.raw });   // ← antes 'dominio'
         continue;
       }
     }
@@ -4423,7 +4566,7 @@ function parseQuery(raw){
     if (n) titulo.push(n);
   }
 
-  return { titulo, medios, dominios, grupos, tipos, tags, chips };
+  return { titulo, medios, dominios, grupos, tipos, tags, desde, hasta, chips };
 }
 /* ═══════════════════════════════════════════════════════════════
    CHIPS DE FILTROS ACTIVOS
@@ -4599,25 +4742,50 @@ function aplicarSugerencia(idx){
     return;
   }
 
-  const raw = input.value.replace(/\s+$/, '');
-  const idxUlt = raw.lastIndexOf(' ');
-  const antes = idxUlt >= 0 ? raw.slice(0, idxUlt + 1) : '';
-
+  // Token a insertar
   let token;
   if (s.kind === 'grupo'){
     token = 'grupo:"' + s.value + '"';
   } else if (s.kind === 'dominio'){
-    token = 'dominio:' + s.value;
+    token = 'web:' + s.value;
   } else {
     token = s.value;
   }
 
-  input.value = antes + token + ' ';
+  const raw = input.value.replace(/\s+$/, '');
+  const palabrasInput = raw ? raw.split(/\s+/) : [];
+  const palabrasLabel = (s.label || '').split(/\s+/).filter(Boolean);
+
+  // Buscar la coincidencia más larga entre el final del input
+  // y el principio del label. Ej: input="diario de arousa", label="Diario de Arousa"
+  // → match de 3 palabras → reemplazamos las 3 por el token.
+  let mejorMatch = 0;
+  const maxN = Math.min(palabrasLabel.length, palabrasInput.length);
+  for (let n = maxN; n >= 1; n--){
+    const tail = palabrasInput.slice(-n).join(' ');
+    const head = palabrasLabel.slice(0, n).join(' ');
+    if (normalize(tail) === normalize(head)){
+      mejorMatch = n;
+      break;
+    }
+  }
+
+  let nuevoRaw;
+  if (mejorMatch > 0){
+    const antes = palabrasInput.slice(0, -mejorMatch).join(' ');
+    nuevoRaw = antes ? antes + ' ' + token : token;
+  } else {
+    // Fallback: reemplaza solo la última palabra (comportamiento anterior)
+    const idxUlt = raw.lastIndexOf(' ');
+    const antes = idxUlt >= 0 ? raw.slice(0, idxUlt + 1) : '';
+    nuevoRaw = antes + token;
+  }
+
+  input.value = nuevoRaw + ' ';
   cerrarSugerencias();
   input.focus();
   aplicarFiltros();
 }
-
 function wireAutocomplete(){
   const input = document.getElementById('buscar');
   const cont  = document.getElementById('buscar-sugerencias');
@@ -5723,9 +5891,329 @@ let ULT_FILTRADAS = [];
 let ULT_RX = null;
 let ULT_PRESET_EFECTIVO = false;
 
-const RENDER_BATCH = 150;
+const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
+
+/* ───────────────────────────────────────────────────────────
+   Búsqueda en histórico (Turso vía Worker /buscar)
+   ─────────────────────────────────────────────────────────── */
+let HISTORICO_ABORT = null;
+let ULT_HISTORICO_PARSED = null;
+let HISTORICO_PAG = {
+  parsed: null,       // snapshot con el que se paginó
+  raw: '',            // raw original
+  offset: 0,          // offset actual
+  total: 0,           // total que dijo el Worker
+  next: null,         // siguiente offset o null
+  cargando: false,
+  agotado: false,     // true cuando no hay más
+};
+
+
+async function buscarEnHistorico(parsed, rawQuery, { silent = false, offset = 0 } = {}) {
+  if (HISTORICO_ABORT) HISTORICO_ABORT.abort();
+  HISTORICO_ABORT = new AbortController();
+
+  const params = new URLSearchParams();
+  params.set('raw', rawQuery || '');
+  params.set('limit', '30');
+  params.set('offset', String(offset));
+  params.set('order', parsed.titulo.length ? 'relevancia' : 'recientes');
+
+  try {
+    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, {
+      signal: HISTORICO_ABORT.signal,
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch (e) {
+    if (e.name === 'AbortError') return null;
+    console.warn('[historico]', e.message);
+    if (!silent) toast(`Error buscando en histórico: ${e.message}`, 2600);
+    return null;
+  }
+}
+
+function mergeHistorico(locales, historicoItems) {
+  if (!historicoItems || !historicoItems.length) return locales;
+
+  const yaVistas = new Set(locales.map(n => normalizeUrlForMatch(n.enlace)));
+  const nuevos = [];
+  const horizonte = Date.now() + HORIZONTE_FUTURO_MS;
+
+  for (const it of historicoItems) {
+    // Convertir URL corta del Worker a URL completa
+    const u_raw = it.u || '';
+    let enlace;
+    if (u_raw.startsWith('http://') || u_raw.startsWith('https://')) {
+      enlace = u_raw;
+    } else if (u_raw.startsWith('/')) {
+      const m = MEDIOS[it.d] || {};
+      const host = m.h || `www.${it.d}`;
+      enlace = `https://${host}${u_raw}`;
+    } else {
+      enlace = u_raw;
+    }
+
+    const key = normalizeUrlForMatch(enlace);
+    if (yaVistas.has(key)) continue;
+    yaVistas.add(key);
+
+    const m = MEDIOS[it.d] || {};
+    const n = {
+      dominio: it.d || '',
+      titular: limpiarCdata(it.t || ''),
+      enlace: enlace,
+      fecha_pub: it.p || '',
+      fecha_estimada: it.e || '',
+      fecha: '',
+      fuente: it.f || 'TURSO',
+      medio: m.n || it.d,
+      grupo: m.g || '',
+      tipo:  m.t || '',
+      lang:  m.l || '',
+      tags:  m.tags || [],
+      _desdeHistorico: true,
+    };
+
+    n._titularEsc = escapeHtml(n.titular);
+    n._medioEsc   = escapeHtml(n.medio);
+    n._tipoEsc    = escapeHtml(n.tipo);
+    n._grupoEsc   = escapeHtml(n.grupo);
+    n._enlaceEsc  = escapeHtml(n.enlace);
+
+    const tsPub = parseFecha(n.fecha_pub);
+    const tsEst = parseFecha(n.fecha_estimada);
+
+    n._tsShow   = !isNaN(tsPub) ? tsPub : (!isNaN(tsEst) ? tsEst : NaN);
+    n._tsOrden  = (!isNaN(tsPub) && tsPub <= horizonte) ? tsPub
+                : (!isNaN(tsEst) ? tsEst : NaN);
+    n._tipoShow = !isNaN(tsPub) ? 'pub' : (!isNaN(tsEst) ? 'est' : 'none');
+    n._esFuturo = !isNaN(tsPub) && (tsPub > horizonte);
+    n._tieneFecha = !isNaN(n._tsOrden);
+    n._esPreset = false;
+    n._dupHidden = null;
+
+    nuevos.push(n);
+  }
+
+  if (!nuevos.length) return locales;
+
+  const merged = locales.concat(nuevos);
+  merged.sort((a, b) => {
+    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
+    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
+    return tb - ta;
+  });
+  return merged;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRENSA EXTERNA (vía Worker: gnews + freenews)
+   ═══════════════════════════════════════════════════════════════ */
+function prensaCacheGet(rawQuery){
+  try {
+    const raw = sessionStorage.getItem(PRENSA_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw);
+    const entry = cache[rawQuery];
+    if (!entry) return null;
+    if (Date.now() - entry.ts > PRENSA_CACHE_TTL_MS) return null;
+    return entry.items;
+  } catch(e){ return null; }
+}
+function prensaCacheSet(rawQuery, items){
+  try {
+    let cache = {};
+    const raw = sessionStorage.getItem(PRENSA_CACHE_KEY);
+    if (raw) cache = JSON.parse(raw);
+    cache[rawQuery] = { ts: Date.now(), items };
+    const keys = Object.keys(cache);
+    if (keys.length > 20){
+      const oldest = keys.sort((a, b) => cache[a].ts - cache[b].ts)[0];
+      delete cache[oldest];
+    }
+    sessionStorage.setItem(PRENSA_CACHE_KEY, JSON.stringify(cache));
+  } catch(e){}
+}
+
+async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
+  // Cache primero
+  const cached = prensaCacheGet(rawQuery);
+  if (cached) return { items: cached, _cache: true };
+
+  if (PRENSA_ABORT) PRENSA_ABORT.abort();
+  PRENSA_ABORT = new AbortController();
+
+  const params = new URLSearchParams();
+  params.set('raw', rawQuery || '');
+  params.set('fuentes', 'gnews,freenews');
+  params.set('limit', '40');
+  params.set('offset', '0');
+
+  try {
+    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, {
+      signal: PRENSA_ABORT.signal,
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    const items = data.items || [];
+    prensaCacheSet(rawQuery, items);
+    return { items };
+  } catch (e) {
+    if (e.name === 'AbortError') return null;
+    console.warn('[prensa]', e.message);
+    if (!silent) toast(`Error buscando en prensa: ${e.message}`, 2600);
+    return null;
+  }
+}
+
+function mergePrensa(locales, prensaItems){
+  if (!prensaItems || !prensaItems.length) return locales;
+
+  const yaVistas = new Set(locales.map(n => normalizeUrlForMatch(n.enlace)));
+  const nuevos = [];
+  const horizonte = Date.now() + HORIZONTE_FUTURO_MS;
+
+  for (const it of prensaItems){
+    if (!it.u) continue;
+
+    // ── 1er intento: match por dominio (FreeNews) ──
+    let dom = it.d || '';
+    let m = MEDIOS[dom] || {};
+
+    // ── 2º intento: match por nombre (GNews) ──
+    // Solo si no hubo match por dominio y tenemos nombre de medio.
+    if (!m.n && it._src === 'gnews' && it.f){
+      const clave = normStrict(it.f);
+      // Mínimo 4 letras para evitar colisiones ("Vox", "ABC", "EFE"...)
+      if (clave.length >= 4){
+        const domPorNombre = MEDIOS_POR_NOMBRE.get(clave);
+        if (domPorNombre && MEDIOS[domPorNombre]){
+          dom = domPorNombre;
+          m = MEDIOS[dom];
+        }
+      }
+    }
+
+    // Nombre a mostrar (orden de preferencia):
+    //   1. Nombre del catálogo (match correcto)
+    //   2. Nombre crudo de GNews (sin match)
+    //   3. Dominio (para FreeNews sin match)
+    //   4. Fallback
+    const nombreMostrar = m.n
+      || (it._src === 'gnews' ? it.f : '')
+      || dom
+      || 'Prensa';
+
+    // Reconstruir URL si viene como path relativo
+    let enlace = it.u;
+    if (it.u.startsWith('/')){
+      const host = m.h || `www.${dom}`;
+      enlace = `https://${host}${it.u}`;
+    }
+
+    const key = normalizeUrlForMatch(enlace);
+    if (yaVistas.has(key)) continue;
+    yaVistas.add(key);
+
+    const n = {
+      dominio: dom,                        // puede ser "elpais.com" si hubo match
+      titular: limpiarCdata(it.t || ''),
+      enlace: enlace,
+      fecha_pub: it.p || '',
+      fecha_estimada: '',
+      fecha: '',
+      fuente: it.f || 'prensa',
+      medio: nombreMostrar,
+      grupo: m.g || '',                    // del catálogo si hubo match
+      tipo:  m.t || '',
+      lang:  m.l || '',
+      tags:  Array.isArray(m.tags) ? m.tags : [],
+      _desdePrensa: true,
+      _prensaSrc: it._src || '',
+      _enCatalogo: !!m.n,                  // ← flag útil para el badge "?"
+    };
+
+    n._titularEsc = escapeHtml(n.titular);
+    n._medioEsc   = escapeHtml(n.medio);
+    n._tipoEsc    = escapeHtml(n.tipo);
+    n._grupoEsc   = escapeHtml(n.grupo);
+    n._enlaceEsc  = escapeHtml(n.enlace);
+
+    const tsPub = parseFecha(n.fecha_pub);
+    n._tsShow     = !isNaN(tsPub) ? tsPub : NaN;
+    n._tsOrden    = (!isNaN(tsPub) && tsPub <= horizonte) ? tsPub : NaN;
+    n._tipoShow   = !isNaN(tsPub) ? 'pub' : 'none';
+    n._esFuturo   = !isNaN(tsPub) && (tsPub > horizonte);
+    n._tieneFecha = !isNaN(n._tsOrden);
+    n._esPreset   = false;
+    n._dupHidden  = null;
+
+    nuevos.push(n);
+  }
+
+  if (!nuevos.length) return locales;
+
+  const merged = locales.concat(nuevos);
+  merged.sort((a, b) => {
+    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
+    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
+    return tb - ta;
+  });
+  return merged;
+}
+
+function programarPrensa(parsed, rawQuery, nLocales){
+  if (PRENSA_TIMER){ clearTimeout(PRENSA_TIMER); PRENSA_TIMER = null; }
+
+  const tieneQuery = parsed.titulo.length || parsed.dominios.length || parsed.medios.length;
+  if (!tieneQuery){
+    PRENSA_PARSED = null;
+    return;
+  }
+
+  const pocos = nLocales < PRENSA_MIN_RESULTADOS;
+  const forzar = PRENSA_ACTIVA;
+  if (!forzar && !pocos) return;
+
+  // Auto-activación si hay pocos resultados
+  if (pocos && !PRENSA_ACTIVA && !PRENSA_USER_MANUAL_OFF){   // ← añadir condición
+    PRENSA_ACTIVA = true;
+    const btn = document.getElementById('btn-prensa');
+    if (btn){
+      btn.classList.add('active', 'auto-activada');
+      setTimeout(() => btn.classList.remove('auto-activada'), 900);
+    }
+    try { localStorage.setItem('voceiro-prensa-activa', '1'); } catch(e){}
+  }
+
+  PRENSA_PARSED = parsed;
+
+  PRENSA_TIMER = setTimeout(() => {
+    PRENSA_TIMER = null;
+    if (PRENSA_PARSED !== parsed) return;
+
+    const btn = document.getElementById('btn-prensa');
+    if (btn) btn.classList.add('cargando');
+
+    buscarEnPrensa(parsed, rawQuery, { silent: true }).then(res => {
+      if (btn) btn.classList.remove('cargando');
+      if (!res || !res.items || !res.items.length) return;
+      if (PRENSA_PARSED !== parsed) return;
+
+      const antes = ULT_FILTRADAS.length;
+      const merged = mergePrensa(ULT_FILTRADAS, res.items);
+      const nuevas = merged.length - antes;
+      if (nuevas <= 0) return;
+
+      ULT_FILTRADAS = merged;
+      renderizar();
+      actualizarFiltrosCount();
+    });
+  }, PRENSA_DEBOUNCE_MS);
+}
 
 function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
@@ -5759,6 +6247,18 @@ function aplicarFiltros(){
       const ts = n._tsOrden;
       if (isNaN(ts)) return false;
       if (ahora - ts > limiteMs) return false;
+    }
+        if (parsed.desde){
+      const ts = n._tsOrden;
+      if (isNaN(ts)) return false;
+      const corte = new Date(parsed.desde + 'T00:00:00').getTime();
+      if (ts < corte) return false;
+    }
+    if (parsed.hasta){
+      const ts = n._tsOrden;
+      if (isNaN(ts)) return false;
+      const corte = new Date(parsed.hasta + 'T23:59:59').getTime();
+      if (ts > corte) return false;
     }
     if (HIDE_MODE !== 'off'){
       const key = normalizeUrlForMatch(n.enlace);
@@ -5846,7 +6346,115 @@ function aplicarFiltros(){
   ULT_RX = buildHighlightRegex(parsed.titulo);
   ULT_PRESET_EFECTIVO = presetEfectivo;
   actualizarFiltrosCount();
-  renderizar();
+  requestAnimationFrame(renderizar);
+
+  ULT_HISTORICO_PARSED = null;
+  HISTORICO_PAG = { parsed: null, raw: '', offset: 0, total: 0, next: null, cargando: false, agotado: false };
+
+  // Condición ampliada: hay texto O hay dominio/medio
+  const quiereHistorico = (parsed.titulo.length || parsed.dominios.length || parsed.medios.length)
+                          && filtradas.length < HISTORICO_MIN_LOCALES;
+
+  if (quiereHistorico) {
+    ULT_HISTORICO_PARSED = parsed;
+    buscarEnHistorico(parsed, raw, { silent: true }).then(res => {
+      if (!res || !res.items || !res.items.length) return;
+      if (ULT_HISTORICO_PARSED !== parsed) return;
+
+      const antes = ULT_FILTRADAS.length;
+      const merged = mergeHistorico(ULT_FILTRADAS, res.items);
+      const nuevas = merged.length - antes;
+
+      if (nuevas > 0){
+        ULT_FILTRADAS = merged;
+        renderizar();
+      }
+
+      // Setear la paginación SIEMPRE, aunque no haya items nuevos
+      HISTORICO_PAG.parsed = parsed;
+      HISTORICO_PAG.raw = raw;
+      HISTORICO_PAG.offset = res.items.length;
+      HISTORICO_PAG.total = res.total || 0;
+      HISTORICO_PAG.next = res.next_offset;
+
+      actualizarFiltrosCount();
+      actualizarBotonCargarMas();
+    });
+  }
+
+  // ── Búsqueda en prensa externa ──
+  programarPrensa(parsed, raw, filtradas.length);
+}
+
+function actualizarBotonCargarMas() {
+  const wrap = document.getElementById('cargar-mas-wrap');
+  const btn  = document.getElementById('btn-cargar-mas');
+  if (!wrap || !btn) return;
+
+  // Ocultar si no hay paginación activa
+  if (!HISTORICO_PAG.parsed || !HISTORICO_PAG.next) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = '';
+  if (HISTORICO_PAG.cargando) {
+    btn.textContent = 'Cargando…';
+    btn.disabled = true;
+  } else {
+    const dom = HISTORICO_PAG.parsed.dominios[0]
+             || HISTORICO_PAG.parsed.medios[0]
+             || 'resultados';
+    const cargados = ULT_FILTRADAS.filter(n => n._desdeHistorico).length;
+    btn.textContent = `📥 Cargar más de ${dom} (${cargados} cargados)`;
+    btn.disabled = false;
+  }
+}
+
+async function cargarMasDeHistorico() {
+  if (HISTORICO_PAG.cargando) return;
+  if (!HISTORICO_PAG.next) return;
+  if (!HISTORICO_PAG.parsed) return;
+
+  HISTORICO_PAG.cargando = true;
+  actualizarBotonCargarMas();
+
+  const parsedSnap = HISTORICO_PAG.parsed;
+  const offsetSnap = HISTORICO_PAG.next;
+
+  try {
+    const res = await buscarEnHistorico(parsedSnap, HISTORICO_PAG.raw, {
+      silent: true, offset: offsetSnap,
+    });
+
+    // Si el usuario cambió de búsqueda mientras cargábamos, ignorar
+    if (HISTORICO_PAG.parsed !== parsedSnap) return;
+    if (!res || !res.items || !res.items.length) {
+      HISTORICO_PAG.agotado = true;
+      HISTORICO_PAG.next = null;
+      return;
+    }
+
+    const antes = ULT_FILTRADAS.length;
+    const merged = mergeHistorico(ULT_FILTRADAS, res.items);
+    const nuevas = merged.length - antes;
+
+    ULT_FILTRADAS = merged;
+    HISTORICO_PAG.offset += res.items.length;
+    HISTORICO_PAG.next = res.next_offset;
+    if (!res.next_offset) HISTORICO_PAG.agotado = true;
+
+    // Solo añade al DOM las nuevas, no re-renderiza todo
+    if (nuevas > 0) {
+      appendBatchDesdeOffset(antes, merged.length);
+    }
+    actualizarFiltrosCount();
+  } catch(e) {
+    console.warn('[cargar-mas]', e.message);
+  } finally {
+    HISTORICO_PAG.cargando = false;
+    actualizarBotonCargarMas();
+  }
 }
 
 function renderizar(){
@@ -5921,6 +6529,10 @@ function renderItemHtml(n, idx){
     ? `<span class="badge preset">${n._grupoEsc}</span>`
     : `<span class="badge">${n._grupoEsc}</span>`;
 
+  const prensaBadge = n._desdePrensa
+    ? `<span class="badge prensa" title="Encontrado en prensa externa">🌐 prensa</span>`
+    : '';
+
   const blockTitle = t('blockMedia');
 
   // Bloque de duplicados (solo si los hay y AGRUPAR_DUPS está activo)
@@ -5947,6 +6559,7 @@ function renderItemHtml(n, idx){
       <span class="medio">${n._medioEsc}</span>
       <span class="badge">${n._tipoEsc}</span>
       ${presetBadge}
+      ${prensaBadge}
       ${fechaHtml}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
       <span class="cab-spacer"></span>
@@ -5984,6 +6597,24 @@ function appendBatch(){
     sentinel.remove();
   }
 }
+function appendBatchDesdeOffset(desde, hasta) {
+  const cont = $('#resultados');
+  const sentinel = document.getElementById('render-sentinel');
+
+  let html = '';
+  for (let i = desde; i < hasta; i++) {
+    html += renderItemHtml(ULT_FILTRADAS[i], i);
+  }
+
+  if (sentinel) {
+    sentinel.insertAdjacentHTML('beforebegin', html);
+  } else {
+    cont.insertAdjacentHTML('beforeend', html);
+  }
+  RENDER_OFFSET = hasta;
+  observarNoticias();
+}
+
 function wireResultadosDelegation(){
   const cont = $('#resultados');
   // ── Vista por hover ──
@@ -6129,6 +6760,29 @@ function cancelarVista(art){
 }
 
 const VISTAS_SEEN = new WeakSet();
+
+function wireCargarMasAuto() {
+  const btn = document.getElementById('btn-cargar-mas');
+  if (!btn) return;
+
+  const io = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    // Pequeño delay: si el usuario scrollea rapidísimo, no disparamos 3 veces
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => {
+      if (HISTORICO_PAG.next && !HISTORICO_PAG.cargando) {
+        cargarMasDeHistorico();
+      }
+    }, 400);
+  }, { rootMargin: '300px' });
+
+  io.observe(btn);
+
+  btn.addEventListener('click', () => {
+    if (!HISTORICO_PAG.cargando) cargarMasDeHistorico();
+  });
+}
+
 
 function wireVistasObserver(){
   if (VISTAS_OBSERVER) VISTAS_OBSERVER.disconnect();
@@ -6296,6 +6950,9 @@ function aplicarTextos(){
   $('#filtros-label').textContent = '⚙ ' + t('fltBtn');
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
+
+  const btnPrensaEl = $('#btn-prensa');
+  if (btnPrensaEl) btnPrensaEl.classList.toggle('active', PRENSA_ACTIVA);
   const rOpts = $('#rango').options;
   rOpts[0].text = t('fltTodo');
   rOpts[1].text = t('flt24h');
@@ -6312,7 +6969,7 @@ function aplicarTextos(){
 /* ═══════════════════════════════════════════════════════════════
    EVENTOS
    ═══════════════════════════════════════════════════════════════ */
-const aplicarFiltrosDebounced = debounce(aplicarFiltros, 180);
+const aplicarFiltrosDebounced = debounce(aplicarFiltros, 350);
   
 function wireStaticEvents(){
   const btnP = $('#btn-preset');
@@ -6386,6 +7043,17 @@ function wireStaticEvents(){
       guardarHideMode();
       renderViewSettingsMenu();
       actualizarBotonViewSettings();
+      aplicarFiltros();
+    });
+  }
+    // ── Toggle prensa ──
+  const btnPrensa = $('#btn-prensa');
+  if (btnPrensa){
+    btnPrensa.addEventListener('click', () => {
+      PRENSA_ACTIVA = !PRENSA_ACTIVA;
+      PRENSA_USER_MANUAL_OFF = !PRENSA_ACTIVA;   // ← nuevo
+      btnPrensa.classList.toggle('active', PRENSA_ACTIVA);
+      try { localStorage.setItem('voceiro-prensa-activa', PRENSA_ACTIVA ? '1' : '0'); } catch(e){}
       aplicarFiltros();
     });
   }
@@ -6655,7 +7323,15 @@ async function init(){
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
-
+    // Preferencia del toggle prensa
+  try {
+    if (localStorage.getItem('voceiro-prensa-activa') === '1'){
+      PRENSA_ACTIVA = true;
+      PRENSA_USER_MANUAL_OFF = false;
+    } else {
+      PRENSA_USER_MANUAL_OFF = true;   // ← si estaba apagado, no re-auto-activar
+    }
+  } catch(e){}
   rebuildPendientes();
 
   const cachedSites = cargarSitesCache();
@@ -6676,6 +7352,7 @@ async function init(){
   wireBackToTop();
   wireStaticEvents();
   wireVistasObserver();
+  wireCargarMasAuto();
   bsWireEventos();
 
   // ── 1) Bridge con el plugin ──
