@@ -44,6 +44,13 @@ async function handleBuscar(request, env, ctx, url) {
   const orderQ = url.searchParams.get('order');
   if (orderQ && ['recientes','antiguos','relevancia'].includes(orderQ)) parsed.order = orderQ;
 
+  // Overrides de idioma y región (front → Worker)
+  const langQ = url.searchParams.get('lang');
+  if (langQ && !parsed.lang) parsed.lang = langQ;
+
+  const regionQ = url.searchParams.get('region');
+  if (regionQ && !parsed.region) parsed.region = regionQ;
+
   // Solo fuentes conocidas
   const activas = parsed.fuentes.filter(f => ADAPTERS[f]);
   if (!activas.length) {

@@ -14,7 +14,7 @@ export const gnews = {
     if (!q) return { items: [], total: 0 };
 
     const lang = parsed.lang || 'es';
-    const country = parsed.country || 'ES';
+    const country = parsed.region || 'ES';
     const feedUrl = 'https://news.google.com/rss/search?q='
       + encodeURIComponent(q)
       + '&hl=' + lang + '&gl=' + country + '&ceid=' + country + ':' + lang;

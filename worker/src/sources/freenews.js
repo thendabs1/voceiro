@@ -28,15 +28,22 @@ export const freenews = {
       else if (dias <= 30) p.set('date', '30d');
     }
 
-    // Dominio específico → tld
+    // Filtro por dominio concreto → host (con y sin www.)
+    // FreeNews guarda el host exacto tal como aparece en la URL.
+    // Probamos ambas variantes separadas por coma (OR lógico).
     if (parsed.dominios.length === 1){
-      p.set('tld', parsed.dominios[0]);
+      const dom = parsed.dominios[0];
+      p.set('host', `www.${dom},${dom}`);
+    } else if (parsed.dominios.length > 1){
+      const hosts = [];
+      for (const d of parsed.dominios.slice(0, 5)){
+        hosts.push(`www.${d}`, d);
+      }
+      p.set('host', hosts.join(','));
     } else {
-      p.set('country', parsed.country || 'ES');
-      p.set('tld', 'es,cat,gal');
+      if (parsed.region) p.set('country', parsed.region);
+      if (parsed.lang)   p.set('lang', parsed.lang);
     }
-
-    if (parsed.lang) p.set('lang', parsed.lang);
 
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), FN_TIMEOUT_MS);
@@ -53,9 +60,9 @@ export const freenews = {
     let data;
     try { data = await res.json(); } catch(e){ throw new Error('FreeNews: JSON inválido'); }
 
-        const items = (data.results || [])
-        .map(r => ({
-            t: _limpiarCdata(r.title),
+    const items = (data.results || [])
+      .map(r => ({
+        t: _limpiarCdata(r.title),
         u: String(r.url || '').trim(),
         d: _cleanHost(r.host),
         p: String(r.published_at || ''),
@@ -82,6 +89,7 @@ function _diasDesde(iso){
 function _cleanHost(h){
   return String(h || '').replace(/^www\./, '').toLowerCase();
 }
+
 function _limpiarCdata(s){
   if (!s) return '';
   let x = String(s).trim();
@@ -92,7 +100,6 @@ function _limpiarCdata(s){
     if (x.endsWith(']]>')){ x = x.slice(0, -3); changed = true; }
     x = x.trim();
   }
-  // Entidades HTML
   x = x.replace(/&amp;/g, '&')
        .replace(/&lt;/g, '<')
        .replace(/&gt;/g, '>')
@@ -100,7 +107,6 @@ function _limpiarCdata(s){
        .replace(/&#39;/g, "'")
        .replace(/&apos;/g, "'")
        .replace(/&nbsp;/g, ' ');
-  // Colapsar espacios
   x = x.replace(/\s+/g, ' ').trim();
   return x;
 }
