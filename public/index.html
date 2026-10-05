@@ -1328,7 +1328,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">05/10/2026 12:01</span>
+      <span id="fecha">05/10/2026 12:18</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -4452,9 +4452,12 @@ function renderChips(parsed, rawQuery){
       const i = parseInt(b.dataset.idx, 10);
       const chip = parsed.chips[i];
       if (!chip) return;
+
+      // Quitar el token exacto y colapsar espacios sobrantes
       const esc = _escapeRegex(chip.raw);
-      const rx = new RegExp('(^|\\s)(' + esc + ')(?=\\s|$)', 'g');
-      const nueva = rawQuery.replace(rx, (m, pre) => pre + '"' + chip.value + '"');
+      const rx = new RegExp('(^|\\s)' + esc + '(?=\\s|$)', 'g');
+      const nueva = rawQuery.replace(rx, ' ').replace(/\s+/g, ' ').trim();
+
       $('#buscar').value = nueva;
       aplicarFiltros();
     });
