@@ -5907,10 +5907,10 @@ async function bsFetchGnews(){
 
   const nuevos = (data.items || []).map(it => ({
     _src: 'gnews',
-    title: it.title,                       // ya viene limpio del Worker
+    title: it.title,
     url: it.link,
-    host: bsHostLimpio(it.source || ''),   // nombre del medio
-    sourceName: it.source || '',           // campo explícito para mostrar
+    host: it.source || '',        // ← era bsHostLimpio(...): corrompía el nombre
+    sourceName: it.source || '',
     pubDate: it.pubDate,
     description: '',
     image: '',
@@ -6875,9 +6875,11 @@ function renderItemHtml(n, idx){
     saveTitle = t('saveForLaterTitle');
   }
 
-  const presetBadge = n._esPreset
-    ? `<span class="badge preset">${n._grupoEsc}</span>`
-    : `<span class="badge">${n._grupoEsc}</span>`;
+  const presetBadge = n.grupo
+    ? (n._esPreset
+        ? `<span class="badge preset">${n._grupoEsc}</span>`
+        : `<span class="badge">${n._grupoEsc}</span>`)
+    : '';
 
   const prensaBadge = n._desdePrensa
     ? `<span class="badge prensa" title="Encontrado en prensa externa">🌐 prensa</span>`
@@ -6907,7 +6909,7 @@ function renderItemHtml(n, idx){
   return `<article class="noticia${leida ? ' leida' : (vista ? ' vista' : '')}" data-idx="${idx}">
     <div class="cabecera">
       <span class="medio">${n._medioEsc}</span>
-      <span class="badge">${n._tipoEsc}</span>
+      ${n.tipo ? `<span class="badge">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
       ${prensaBadge}
       ${fechaHtml}
