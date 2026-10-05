@@ -1,0 +1,125 @@
+// Parser de query compartido front + Worker.
+// Convierte "sanchez dominio:elpais.com desde:7d" en objeto estructurado.
+
+const PREFIX_ALIASES = {
+  medio: 'medio', medios: 'medio',
+  dominio: 'dominio', domain: 'dominio', dom: 'dominio',
+  grupo: 'grupo', grupos: 'grupo',
+  tipo: 'tipo', tipos: 'tipo',
+  tag: 'tag', tags: 'tag',
+  desde: 'desde',
+  hasta: 'hasta',
+  fuentes: 'fuentes',
+  order: 'order',
+  limit: 'limit',
+  offset: 'offset',
+};
+
+export function normalize(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+export function normStrict(s) {
+  return normalize(s).replace(/[^a-z0-9]/g, '');
+}
+
+export function tokenizeQuery(raw) {
+  const re = /([a-z][a-z]*):"([^"]*)"|"([^"]*)"|([^\s"]+)/gi;
+  const tokens = [];
+  let m;
+  while ((m = re.exec(raw)) !== null) {
+    if (m[1] !== undefined) {
+      tokens.push({ prefix: m[1].toLowerCase(), text: m[2], raw: m[0], quoted: true });
+    } else if (m[3] !== undefined) {
+      tokens.push({ prefix: '', text: m[3], raw: m[0], quoted: true });
+    } else {
+      const word = m[4];
+      const pi = word.indexOf(':');
+      if (pi > 0 && /^[a-z]+$/i.test(word.slice(0, pi))) {
+        tokens.push({ prefix: word.slice(0, pi).toLowerCase(), text: word.slice(pi + 1), raw: word, quoted: false });
+      } else {
+        tokens.push({ prefix: '', text: word, raw: word, quoted: false });
+      }
+    }
+  }
+  return tokens;
+}
+
+function parseRelativeDate(s) {
+  const v = (s || '').trim().toLowerCase();
+  if (!v) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+  const now = new Date();
+  if (v === 'hoy') return fmtDate(now);
+  if (v === 'ayer') { const d = new Date(now); d.setDate(d.getDate() - 1); return fmtDate(d); }
+
+  const m = v.match(/^(\d+)([dhm])$/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  const d = new Date(now);
+  if (m[2] === 'd') d.setDate(d.getDate() - n);
+  else if (m[2] === 'h') d.setHours(d.getHours() - n);
+  else if (m[2] === 'm') d.setMinutes(d.getMinutes() - n);
+  return fmtDate(d);
+}
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+export function parseQuery(raw) {
+  const tokens = tokenizeQuery(raw || '');
+  const out = {
+    q: '', titulo: [],
+    dominios: [], medios: [], grupos: [], tipos: [], tags: [],
+    desde: null, hasta: null,
+    fuentes: ['turso'],
+    order: 'recientes',
+    limit: 50, offset: 0,
+    chips: [],
+  };
+
+  for (const tk of tokens) {
+    const kind = tk.prefix ? PREFIX_ALIASES[tk.prefix] : '';
+    if (tk.prefix && !kind) { out.titulo.push(normalize(tk.raw)); continue; }
+
+    switch (kind) {
+      case 'medio':   out.medios.push(normStrict(tk.text));   out.chips.push({ type:'medio',   value: tk.text, raw: tk.raw }); break;
+      case 'dominio': out.dominios.push(tk.text.replace(/^www\./,'').toLowerCase()); out.chips.push({ type:'dominio', value: tk.text, raw: tk.raw }); break;
+      case 'grupo':   out.grupos.push(tk.text);               out.chips.push({ type:'grupo',   value: tk.text, raw: tk.raw }); break;
+      case 'tipo':    out.tipos.push(normStrict(tk.text));    out.chips.push({ type:'tipo',    value: tk.text, raw: tk.raw }); break;
+      case 'tag':     out.tags.push(normStrict(tk.text));     out.chips.push({ type:'tag',     value: tk.text, raw: tk.raw }); break;
+      case 'desde':   out.desde = parseRelativeDate(tk.text); out.chips.push({ type:'desde',   value: tk.text, raw: tk.raw }); break;
+      case 'hasta':   out.hasta = parseRelativeDate(tk.text); out.chips.push({ type:'hasta',   value: tk.text, raw: tk.raw }); break;
+      case 'fuentes': out.fuentes = tk.text.split(',').map(s => s.trim()).filter(Boolean); break;
+      case 'order':   if (['recientes','antiguos','relevancia'].includes(tk.text)) out.order = tk.text; break;
+      case 'limit':   out.limit  = Math.min(parseInt(tk.text, 10) || 50, 200); break;
+      case 'offset':  out.offset = Math.max(parseInt(tk.text, 10) || 0, 0); break;
+      default:
+        // Token sin prefijo. ¿Es un dominio?
+        if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) {
+          out.dominios.push(tk.text.replace(/^www\./,'').toLowerCase());
+          out.chips.push({ type:'dominio', value: tk.text, raw: tk.raw });
+        } else {
+          out.titulo.push(normalize(tk.text));
+        }
+    }
+  }
+
+  out.q = out.titulo.join(' ');
+  return out;
+}
+
+// Convierte tokens de título en query FTS5 segura.
+// "sanchez feijoo" → '"sanchez" AND "feijoo"'
+// "\"cambio climatico\"" → '"cambio climatico"' (frase)
+// "eleccion*" → '"eleccion"*' (prefijo)
+export function buildFtsQuery(titulo) {
+  if (!titulo || !titulo.length) return '';
+  const parts = titulo.map(t => {
+    const hasStar = t.endsWith('*') && t.length > 1;
+    const clean = hasStar ? t.slice(0, -1) : t;
+    const safe = '"' + clean.replace(/"/g, '""') + '"';
+    return hasStar ? safe + '*' : safe;
+  });
+  return parts.join(' AND ');
+}

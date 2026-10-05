@@ -25,3 +25,10 @@ migration_state.json
 .vscode/
 .idea/
 .DS_Store
+.env
+worker/.dev.vars
+node_modules/worker/.wrangler/
+worker/node_modules/
+tools/
+worker/.wrangler/
+worker/node_modules/
