@@ -1,1 +1,27 @@
+# Ignorar la carpeta de datos generados
 public/datos/
+
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Entornos / secretos
+.env
+.env.*
+*.env
+
+# Estado de scripts
+state.json
+migration_state.json
+.migracion_ckpt.txt
+.migracion_r2_state.json
+
+# Editores / OS
+.vscode/
+.idea/
+.DS_Store
