@@ -7445,10 +7445,13 @@ function renderItemHtml(n, idx){
   // ── Botón ➕ Añadir al modo ──
   //   Si ya está forzado en el modo activo → muestro ✓ (spa, no pulsable)
   //   En cualquier otro caso → botón ➕ normal
+  // ── Botón ➕ Añadir al modo ──
+  //   Si el medio ya está forzado en el modo activo → no mostramos nada.
+  //   En cualquier otro caso → botón ➕ normal.
   const yaForzado = PRESET_ACTIVO && getOverride(n.dominio) === 'first';
 
   const addBtnHtml = yaForzado
-    ? `<span class="btn-mini btn-add-item is-added" title="${escapeHtml(t('addToModoTitle'))}" style="opacity:1;color:var(--preset);border-color:var(--preset)">✓</span>`
+    ? ''
     : `<button class="btn-mini btn-add-item" type="button" data-idx="${idx}" title="${escapeHtml(t('addToModoTitle'))}" aria-label="${escapeHtml(t('addToModoTitle'))}">➕</button>`;
 
   // Bloque de duplicados (solo si los hay y AGRUPAR_DUPS está activo)
