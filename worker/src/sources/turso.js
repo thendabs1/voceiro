@@ -63,9 +63,9 @@ export const turso = {
     if (parsed.order === 'relevancia' && ftsQ) {
       orderBy = 'ORDER BY bm25(noticias_fts) ASC';
     } else if (parsed.order === 'antiguos') {
-      orderBy = 'ORDER BY n.fecha_pub ASC, f.enlace ASC';
+      orderBy = 'ORDER BY f.fecha_dia ASC, n.fecha_pub ASC, f.enlace ASC';
     } else {
-      orderBy = 'ORDER BY n.fecha_pub DESC, f.enlace ASC';
+      orderBy = 'ORDER BY f.fecha_dia DESC, n.fecha_pub DESC, f.enlace ASC';
     }
 
     const sql = `
