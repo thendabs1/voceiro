@@ -4951,6 +4951,19 @@ let MEDIOS_STRICT   = new Map();
 let DOMINIOS_STRICT = new Map();
 let _manifest = null;   // guardamos el manifest para la fase 2
 
+function pintarFechaCabecera(iso){
+  const el = document.getElementById('fecha');
+  if (!el) return;
+  if (!iso) { el.textContent = ''; return; }
+  const ts = parseFecha(iso);
+  if (isNaN(ts)) { el.textContent = ''; return; }
+  try {
+    el.textContent = getAbsFmt().format(ts);
+  } catch(e){
+    el.textContent = new Date(ts).toLocaleString();
+  }
+}
+
 async function cargarPortada(){
   const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, { cache: 'no-cache' });
   if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
@@ -4979,6 +4992,7 @@ async function cargarPortada(){
         n._generado = data.generado || '';
         NOTICIAS.push(n);
       }
+      pintarFechaCabecera(data.generado);
     }
   } catch(e){
     console.warn('[carga] portada falló, sigo con histórico:', e.message);
@@ -7522,8 +7536,10 @@ function renderPresetBanner(){
 
 function renderizar(){
   const lista = ULT_FILTRADAS;
-  const totalHistorico = (_manifest && _manifest.total) || NOTICIAS.length;
-
+  const totalHistorico = Math.max(
+    (_manifest && _manifest.total) || 0,
+    NOTICIAS.length
+  );
   let txt = `Mostrando ${lista.length.toLocaleString()} de ${totalHistorico.toLocaleString()} titulares`;
 
   $('#contador').textContent = txt;
