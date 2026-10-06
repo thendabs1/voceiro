@@ -516,10 +516,20 @@
 }
 .filtros{
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr;
   gap: 8px;
 }
 .filtros select{
+  font-size: .78em;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: inherit;
+  min-width: 0;
+}
+.filtros input[type="date"]{
   font-size: .78em;
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -1515,7 +1525,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">06/10/2026 11:57</span>
+      <span id="fecha">06/10/2026 12:11</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -1822,6 +1832,8 @@
         <option value="recientes"></option>
         <option value="antiguos"></option>
       </select>
+      <input type="date" id="fecha-desde" aria-label="Desde">
+      <input type="date" id="fecha-hasta" aria-label="Hasta">
     </div>
 
     <div class="filtros-sep"></div>
@@ -4668,6 +4680,112 @@ function construirIndicesBusqueda(){
     }
   });
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS DE UNIFICACIÓN DE FILTROS
+   Los selectores del panel escriben tokens en #buscar. #buscar es
+   el estado único. aplicarFiltros lee solo de parseQuery.
+   ═══════════════════════════════════════════════════════════════ */
+
+// Reescribe #buscar: quita todos los tokens del prefijo indicado
+// y añade uno nuevo si `value` es no vacío. Devuelve el nuevo string.
+function rebuildInput(raw, prefix, value) {
+  const tokens = tokenizeQuery(raw);
+  const kept = tokens.filter(tk => (tk.prefix || '').toLowerCase() !== prefix);
+  const parts = kept.map(tk => tk.raw);
+  if (value !== null && value !== '' && value !== undefined) {
+    const necesitaComillas = /\s/.test(value);
+    parts.push(prefix + ':' + (necesitaComillas ? '"' + value + '"' : value));
+  }
+  return parts.join(' ');
+}
+
+// Aplica un cambio desde un selector al input y refiltra.
+function writeFilterToInput(prefix, value) {
+  aplicarFiltrosDebounced.cancel();
+  const nuevo = rebuildInput($('#buscar').value, prefix, value);
+  $('#buscar').value = nuevo;
+  const clearBtn = $('#buscar-clear');
+  if (clearBtn) clearBtn.hidden = !nuevo;
+  aplicarFiltros();
+}
+
+// Lee de parsed el primer valor de un prefijo (o null).
+// parsed.grupos → prefijo 'grupo'; parsed.tipos → 'tipo'; parsed.order → 'order' (string)
+function getParsedFirst(parsed, prefix) {
+  switch (prefix) {
+    case 'grupo':  return parsed.grupos[0] || null;   // normalizado
+    case 'tipo':   return parsed.tipos[0]  || null;   // normalizado
+    case 'lang':   return parsed.lang[0]   || null;   // normalizado
+    case 'desde':  return parsed.desde     || null;   // ISO
+    case 'hasta':  return parsed.hasta     || null;   // ISO
+    case 'order':  return (parsed.order && parsed.order !== 'recientes') ? parsed.order : null;
+    default:       return null;
+  }
+}
+// Sincroniza los controles del panel con el estado de parsed.
+// No dispara 'change' (usa .value = ...), así que no rebota.
+function syncPanelFromParsed(parsed) {
+  // Grupo: parsed.grupos[0] está normalizado ("espananacionales").
+  // El select tiene valores display ("España · Nacionales"). Buscamos por normStrict.
+  const gVal = getParsedFirst(parsed, 'grupo');
+  const selG = $('#grupo');
+  if (selG) {
+    let match = '';
+    if (gVal) {
+      for (const opt of selG.options) {
+        if (opt.value && normStrict(opt.value) === gVal) { match = opt.value; break; }
+      }
+    }
+    if (selG.value !== match) selG.value = match;
+  }
+
+  // Tipo: parsed.tipos[0] normalizado, opciones display.
+  const tVal = getParsedFirst(parsed, 'tipo');
+  const selT = $('#tipo');
+  if (selT) {
+    let match = '';
+    if (tVal) {
+      for (const opt of selT.options) {
+        if (opt.value && normStrict(opt.value) === tVal) { match = opt.value; break; }
+      }
+    }
+    if (selT.value !== match) selT.value = match;
+  }
+
+  // Orden
+  const oVal = getParsedFirst(parsed, 'order') || 'recientes';
+  const selO = $('#orden');
+  if (selO && selO.value !== oVal) selO.value = oVal;
+
+  // Fechas (los <input type="date">)
+  // NOTA: aquí SOLO sincronizamos valores. Los listeners 'change' van
+  // en wireStaticEvents, porque esta función se llama en cada aplicarFiltros
+  // y acumularía listeners (uno por tecla).
+  const desde = getParsedFirst(parsed, 'desde') || '';
+  const hasta = getParsedFirst(parsed, 'hasta') || '';
+  const fD = $('#fecha-desde');
+  const fH = $('#fecha-hasta');
+  if (fD && fD.value !== desde) fD.value = desde;
+  if (fH && fH.value !== hasta) fH.value = hasta;
+
+  // Rango: si el desde coincide con hoy-1d → "1"; hoy-2d → "2"; si no, "Todo"
+  const selR = $('#rango');
+  if (selR) {
+    let rMatch = '';
+    if (desde) {
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const d = new Date(desde + 'T00:00:00');
+      const diff = Math.round((hoy - d) / 86400000);
+      if (diff === 0) rMatch = '1';       // hoy (equivalente a 24h)
+      else if (diff === 1) rMatch = '1';  // ayer
+      else if (diff === 2) rMatch = '2';
+    }
+    if (selR.value !== rMatch) selR.value = rMatch;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    PREPROCESAR INPUT
    El parser shared no conoce el catálogo (MEDIOS_POR_NOMBRE) — es
@@ -4680,27 +4798,21 @@ function preprocesarInput(raw) {
   const tokens = tokenizeQuery(raw);
   const out = [];
   for (const tk of tokens) {
-    // Solo reescribimos tokens SIN prefijo y SIN comillas.
-    // Lo demás lo entiende el parser tal cual.
-    if (tk.prefix || tk.quoted) {
-      out.push(tk.raw);
-      continue;
-    }
-    // ¿Ya parece dominio? Lo dejamos.
-    if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) {
-      out.push(tk.raw);
-      continue;
-    }
-    // ¿Coincide con un medio del catálogo?
+    if (tk.prefix || tk.quoted) { out.push(tk.raw); continue; }
+    if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) { out.push(tk.raw); continue; }
+
     const strict = normStrict(tk.text);
     if (strict.length >= 3) {
-      const dom = MEDIOS_POR_NOMBRE.get(strict);
-      if (dom) {
-        out.push('web:' + dom);
-        continue;
+      // 1) Match exacto
+      let dom = MEDIOS_POR_NOMBRE.get(strict);
+      // 2) Match por prefijo (mínimo 4 letras para evitar ruido)
+      if (!dom && strict.length >= 4) {
+        for (const [k, v] of MEDIOS_POR_NOMBRE) {
+          if (k.startsWith(strict)) { dom = v; break; }
+        }
       }
+      if (dom) { out.push('web:' + dom); continue; }
     }
-    // Si no, dejar el token tal cual
     out.push(tk.raw);
   }
   return out.join(' ');
@@ -6463,8 +6575,10 @@ function programarPrensa(parsed, rawQuery, nLocales){
 function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
-  const parsed = parseQuery(raw);
+  const parsed = parseQuery(rawProcesado);
   renderChips(parsed, raw);
+  syncPanelFromParsed(parsed); 
+
 
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
@@ -7515,11 +7629,37 @@ function wireStaticEvents(){
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
   $('#buscar').addEventListener('input', aplicarFiltrosDebounced);
-  ['grupo','tipo','rango','orden'].forEach(id => {
-  const el = document.getElementById(id);
-  el.addEventListener('change', aplicarFiltros);
-  el.addEventListener('input',  aplicarFiltros);
+  // Cada select escribe su token en #buscar.
+  // #buscar es la fuente única; aplicarFiltros lee de ahí.
+  const selG = $('#grupo');
+  if (selG) selG.addEventListener('change', () => writeFilterToInput('grupo', selG.value));
+
+  const selT = $('#tipo');
+  if (selT) selT.addEventListener('change', () => writeFilterToInput('tipo', selT.value));
+
+  const selO = $('#orden');
+  if (selO) selO.addEventListener('change', () => {
+    // "recientes" es el default → no escribimos token
+    const v = selO.value === 'recientes' ? null : selO.value;
+    writeFilterToInput('order', v);
   });
+
+  const selR = $('#rango');
+  if (selR) selR.addEventListener('change', () => {
+    // Traducimos "24h"/"48h" al token desde:1d / desde:2d.
+    // "Todo" quita el desde.
+    if (selR.value === '1')      writeFilterToInput('desde', '1d');
+    else if (selR.value === '2') writeFilterToInput('desde', '2d');
+    else                         writeFilterToInput('desde', null);
+  });
+    // Inputs de fecha — se enganchan una sola vez al arrancar.
+  // Si estuvieran en syncPanelFromParsed se acumularían (esa función
+  // se llama en cada aplicarFiltros).
+  const fD = $('#fecha-desde');
+  if (fD) fD.addEventListener('change', () => writeFilterToInput('desde', fD.value));
+
+  const fH = $('#fecha-hasta');
+  if (fH) fH.addEventListener('change', () => writeFilterToInput('hasta', fH.value));
 // ── Toggle panel de filtros ──
 const btnFiltros   = $('#btn-filtros');
 const filtrosPanel = $('#filtros-panel');
