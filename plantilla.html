@@ -1907,6 +1907,7 @@ import {
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
 const REPORT_EMAIL = 'thendabs1@gmail.com';
+const REPORT_REPO = 'thendabs1/voceiro';
 const DATA_BASE = 'https://voceiro-datos.toriorecorda.workers.dev';
 const WORKER_BUSCAR = 'https://voceiro-buscar.toriorecorda.workers.dev';
 const HISTORICO_MIN_LOCALES = 20;
@@ -5417,7 +5418,30 @@ function aplicarListaOverrides(){
   aplicarFiltros();
   toast(`OK: ${ok} · KO: ${ko}`, 2200);
 }
+/* ═══════════════════════════════════════════════════════════════
+   TIER 3 · Preferencias del usuario (preset, overrides, hide mode)
+   Se aplica SIEMPRE al final, después de cada merge con resultados
+   del worker (histórico Turso + prensa externa). No depende del
+   worker: son preferencias locales.
+   ═══════════════════════════════════════════════════════════════ */
+function aplicarTier3(items){
+  const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
+  return items.filter(n => {
+    // Overrides + preset
+    if (presetEfectivo && !cumplePreset(n)) return false;
 
+    // HIDE_MODE
+    if (HIDE_MODE !== 'off'){
+      const key = normalizeUrlForMatch(n.enlace);
+      const pluginItem = PENDIENTES_MAP.get(key);
+      const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
+      if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
+      if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
+    }
+    n._esPreset = presetEfectivo ? cumplePreset(n) : false;
+    return true;
+  });
+}
 /* ═══════════════════════════════════════════════════════════════
    CUMPLE PRESET
    ═══════════════════════════════════════════════════════════════ */
@@ -6562,10 +6586,11 @@ function programarPrensa(parsed, rawQuery, nLocales){
 
       const antes = ULT_FILTRADAS.length;
       const merged = mergePrensa(ULT_FILTRADAS, res.items);
-      const nuevas = merged.length - antes;
+      const filtrado = aplicarTier3(merged);       // ← nuevo
+      const nuevas = filtrado.length - antes;
       if (nuevas <= 0) return;
 
-      ULT_FILTRADAS = merged;
+      ULT_FILTRADAS = filtrado;                    // ← filtrado
       renderizar();
       actualizarFiltrosCount();
     });
@@ -6723,10 +6748,11 @@ function aplicarFiltros(){
 
       const antes = ULT_FILTRADAS.length;
       const merged = mergeHistorico(ULT_FILTRADAS, res.items);
-      const nuevas = merged.length - antes;
+      const filtrado = aplicarTier3(merged);       // ← nuevo
+      const nuevas = filtrado.length - antes;
 
       if (nuevas > 0){
-        ULT_FILTRADAS = merged;
+        ULT_FILTRADAS = filtrado;                  // ← filtrado, no merged
         renderizar();
       }
 
@@ -6741,6 +6767,9 @@ function aplicarFiltros(){
       actualizarBotonCargarMas();
     });
   }
+
+  // Persistir el estado del buscador para que sobreviva a un reload.
+  try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
 
   // ── Búsqueda en prensa externa ──
   programarPrensa(parsed, raw, filtradas.length);
@@ -6797,16 +6826,17 @@ async function cargarMasDeHistorico() {
 
     const antes = ULT_FILTRADAS.length;
     const merged = mergeHistorico(ULT_FILTRADAS, res.items);
-    const nuevas = merged.length - antes;
+    const filtrado = aplicarTier3(merged);       // ← nuevo
+    const nuevas = filtrado.length - antes;
 
-    ULT_FILTRADAS = merged;
+    ULT_FILTRADAS = filtrado;                    // ← filtrado
     HISTORICO_PAG.offset += res.items.length;
     HISTORICO_PAG.next = res.next_offset;
     if (!res.next_offset) HISTORICO_PAG.agotado = true;
 
     // Solo añade al DOM las nuevas, no re-renderiza todo
     if (nuevas > 0) {
-      appendBatchDesdeOffset(antes, merged.length);
+      appendBatchDesdeOffset(antes, filtrado.length);
     }
     actualizarFiltrosCount();
   } catch(e) {
@@ -7827,6 +7857,18 @@ async function init(){
   [...new Set(MEDIOS_UNICOS.map(m => m.tipo).filter(Boolean))].sort()
     .forEach(t2 => selT.add(new Option(t2, t2)));
   if (selT.options[0]) selT.options[0].text = t('fltTipo');
+
+  // Restaurar búsqueda previa (si la había) ANTES de aplicar filtros.
+  // Si no, aplicarFiltros guardaría '' y perderíamos el estado.
+  try {
+    const savedBuscar = localStorage.getItem('voceiro-buscar');
+    if (savedBuscar){
+      const input = $('#buscar');
+      input.value = savedBuscar;
+      const clearBtn = $('#buscar-clear');
+      if (clearBtn) clearBtn.hidden = !savedBuscar;
+    }
+  } catch(e){}
 
   reconstruirSelectores();
   aplicarFiltros();
