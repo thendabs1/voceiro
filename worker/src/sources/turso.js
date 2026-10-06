@@ -85,11 +85,14 @@ export const turso = {
     `;
 
     const countSql = `
-      SELECT COUNT(*) AS n
-      FROM noticias_fts f
-      JOIN noticias n ON n.enlace = f.enlace
-      ${needsJoin ? 'JOIN medios m ON m.dominio = f.dominio' : ''}
-      WHERE ${where}
+      SELECT COUNT(*) AS n FROM (
+        SELECT 1
+        FROM noticias_fts f
+        JOIN noticias n ON n.enlace = f.enlace
+        ${needsJoin ? 'JOIN medios m ON m.dominio = f.dominio' : ''}
+        WHERE ${where}
+        LIMIT 5001
+      )
     `;
 
     const itemArgs = [...args, parsed.limit, parsed.offset];
@@ -135,7 +138,8 @@ export const turso = {
     }
 
     const rows = parseRows(results[0]);
-    const total = parseScalar(results[1]) ?? rows.length;
+    let total = parseScalar(results[1]) ?? rows.length;   
+    if (total > 5000) total = 5000;                        
 
     const items = rows.map(r => ({
       t: r[0] || '',
