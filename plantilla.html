@@ -1611,6 +1611,56 @@
     .cfg-tab{ padding: 10px 10px; font-size: .78em; }
   }
 
+  /* ═══ Destino inline (➕ / 🚫 sin modo activo) ═══ */
+  .destino-inline{
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--quote-bg);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    font-size: .72em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .destino-inline[hidden]{ display: none; }
+  .destino-inline .destino-lbl{
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .destino-inline .destino-btn{
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1em;
+    line-height: 1.3;
+  }
+  .destino-inline .destino-btn:hover{
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .destino-inline .destino-btn.activo{
+    background: var(--preset-bg);
+    border-color: var(--preset);
+    color: var(--preset);
+    font-weight: 600;
+  }
+  .destino-inline .destino-btn.nuevo{
+    border-style: dashed;
+    color: var(--save);
+  }
+  .destino-inline .destino-btn.nuevo:hover{
+    border-color: var(--save);
+    background: var(--save-bg);
+  }
 
 
 
@@ -1641,7 +1691,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">{{FECHA}}</span>
+      <span id="fecha">06/10/2026 15:21</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -2135,9 +2185,7 @@ const I18N = {
 
     /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Añade medios a este modo por dominio. ✓ fuerza a mostrarlo arriba; ✗ lo oculta.',
-    cfgOverridePlaceholder: 'dominio.com',
     cfgOverridePegar:       'Pegar lista de dominios',
-    cfgOverridePegarHint:   'Una línea por dominio. Prefijo "+" para first, "-" para ignore.',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio no válido: {X}',
 
@@ -2145,6 +2193,16 @@ const I18N = {
     cfgMedioAddLabel:       'Sin coincidencias. ¿Añadir {X} al modo?',
     cfgMedioAddForce:       '✓ Forzar',
     cfgMedioAddIgnore:      '✗ Ignorar',
+
+    /* ── Destino inline (➕ / 🚫) ── */
+    addToModoTitle:      'Añadir este medio al modo',
+    destinoAnadirA:      'Añadir a…',
+    destinoBloquearEn:   'Bloquear en…',
+    destinoNuevoModo:    'Crear nuevo modo…',
+    destinoOkAnadido:    'Añadido al modo',
+    destinoOkBloqueado:  'Bloqueado en el modo',
+    destinoOkAnadidoEn:  'Añadido a',
+    destinoOkBloqueadoEn:'Bloqueado en',
 
     /* ── Menú del botón Modo Personalizado ── */
     presetSinFiltro:        'Sin filtro',
@@ -2410,9 +2468,7 @@ const I18N = {
 
     /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Engade medios a este modo por dominio. ✓ forza a amosalo arriba; ✗ ocúltao.',
-    cfgOverridePlaceholder: 'dominio.com',
     cfgOverridePegar:       'Pegar lista de dominios',
-    cfgOverridePegarHint:   'Unha liña por dominio. Prefixo "+" para first, "-" para ignore.',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio non válido: {X}',
 
@@ -2420,6 +2476,16 @@ const I18N = {
     cfgMedioAddLabel:       'Sen coincidencias. ¿Engadir {X} ao modo?',
     cfgMedioAddForce:       '✓ Forzar',
     cfgMedioAddIgnore:      '✗ Ignorar',
+
+    /* ── Destino inline (➕ / 🚫) ── */
+    addToModoTitle:      'Engadir este medio ao modo',
+    destinoAnadirA:      'Engadir a…',
+    destinoBloquearEn:   'Bloquear en…',
+    destinoNuevoModo:    'Crear novo modo…',
+    destinoOkAnadido:    'Engadido ao modo',
+    destinoOkBloqueado:  'Bloqueado no modo',
+    destinoOkAnadidoEn:  'Engadido a',
+    destinoOkBloqueadoEn:'Bloqueado en',
 
     /* ── Menú do botón Modo Personalizado ── */
     presetSinFiltro:        'Sen filtro',
@@ -2685,9 +2751,7 @@ const I18N = {
 
     /* ── Overrides per domini ── */
     cfgOverrideHint:        "Afegeix mitjans a aquest mode per domini. ✓ força a mostrar-lo a dalt; ✗ l'oculta.",
-    cfgOverridePlaceholder: 'domini.com',
     cfgOverridePegar:       'Enganxar llista de dominis',
-    cfgOverridePegarHint:   'Una línia per domini. Prefix "+" per first, "-" per ignore.',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Domini no vàlid: {X}',
 
@@ -2695,6 +2759,16 @@ const I18N = {
     cfgMedioAddLabel:       "Sense coincidències. Afegir {X} al mode?",
     cfgMedioAddForce:       '✓ Forçar',
     cfgMedioAddIgnore:      '✗ Ignorar',
+
+    /* ── Destí inline (➕ / 🚫) ── */
+    addToModoTitle:      'Afegir aquest mitjà al mode',
+    destinoAnadirA:      'Afegir a…',
+    destinoBloquearEn:   'Bloquejar a…',
+    destinoNuevoModo:    'Crear un mode nou…',
+    destinoOkAnadido:    'Afegit al mode',
+    destinoOkBloqueado:  'Bloquejat al mode',
+    destinoOkAnadidoEn:  'Afegit a',
+    destinoOkBloqueadoEn:'Bloquejat a',
 
     /* ── Menú del botó Mode Personalitzat ── */
     presetSinFiltro:        'Sense filtre',
@@ -2960,9 +3034,7 @@ const I18N = {
 
     /* ── Per-domain overrides ── */
     cfgOverrideHint:        'Add outlets to this mode by domain. ✓ forces showing it at top; ✗ hides it.',
-    cfgOverridePlaceholder: 'domain.com',
     cfgOverridePegar:       'Paste list of domains',
-    cfgOverridePegarHint:   'One per line. Prefix "+" for first, "-" for ignore.',
     cfgOverrideAplicar:     'Apply',
     cfgOverrideBad:         'Invalid domain: {X}',
 
@@ -2970,6 +3042,16 @@ const I18N = {
     cfgMedioAddLabel:       'No matches. Add {X} to this mode?',
     cfgMedioAddForce:       '✓ Force',
     cfgMedioAddIgnore:      '✗ Ignore',
+
+    /* ── Inline destination (➕ / 🚫) ── */
+    addToModoTitle:      'Add this outlet to a mode',
+    destinoAnadirA:      'Add to…',
+    destinoBloquearEn:   'Block in…',
+    destinoNuevoModo:    'Create new mode…',
+    destinoOkAnadido:    'Added to mode',
+    destinoOkBloqueado:  'Blocked in mode',
+    destinoOkAnadidoEn:  'Added to',
+    destinoOkBloqueadoEn:'Blocked in',
 
     /* ── Custom Mode button menu ── */
     presetSinFiltro:        'No filter',
@@ -3235,9 +3317,7 @@ const I18N = {
 
     /* ── Domeinu bidezko overrideak ── */
     cfgOverrideHint:        'Gehitu hedabideak modu honi domeinuaren arabera. ✓ goian erakustera behartzen du; ✗ ezkutatzen du.',
-    cfgOverridePlaceholder: 'domeinua.com',
     cfgOverridePegar:       'Itsatsi domeinuen zerrenda',
-    cfgOverridePegarHint:   'Domeinu bat lerro bakoitzeko. "+" aurrizkia first-entzat, "-" ignore-entzat.',
     cfgOverrideAplicar:     'Aplikatu',
     cfgOverrideBad:         'Domeinu baliogabea: {X}',
 
@@ -3245,6 +3325,16 @@ const I18N = {
     cfgMedioAddLabel:       'Bat-etortzerik ez. {X} modura gehitu?',
     cfgMedioAddForce:       '✓ Behartu',
     cfgMedioAddIgnore:      '✗ Ezkutatu',
+
+    /* ── Destinoa inline (➕ / 🚫) ── */
+    addToModoTitle:      'Gehitu hedabide hau modu batera',
+    destinoAnadirA:      'Gehitu honi…',
+    destinoBloquearEn:   'Blokeatu honetan…',
+    destinoNuevoModo:    'Modu berria sortu…',
+    destinoOkAnadido:    'Modura gehituta',
+    destinoOkBloqueado:  'Moduan blokeatuta',
+    destinoOkAnadidoEn:  'Gehituta:',
+    destinoOkBloqueadoEn:'Blokeatuta:',
 
     /* ── Modo Pertsonalizatua botoiaren menua ── */
     presetSinFiltro:        'Iragazkirik gabe',
@@ -3469,7 +3559,8 @@ const I18N = {
     vsHideBoth:             'Irakurriak eta ikusiak',
     vsReset:                '↺ Vista berrezarri',
   },
-};  
+};
+
 function t(key, vars){
   const lang = (ACCES && ACCES.lang) || 'es';
   const dict = I18N[lang] || I18N.es;
@@ -4055,7 +4146,114 @@ function _presetOutsideClick(e){
 function _presetEscKey(e){
   if (e.key === 'Escape'){ e.stopPropagation(); cerrarPresetMenu(); }
 }
-  
+/* ═══════════════════════════════════════════════════════════════
+   DESTINO DE OVERRIDE (➕ / 🚫) CUANDO NO HAY MODO ACTIVO
+   Fila expandida dentro de la propia tarjeta
+   ═══════════════════════════════════════════════════════════════ */
+let _destinoIdxAbierto = -1;
+
+function cerrarDestinoInline(){
+  if (_destinoIdxAbierto < 0) return;
+  const el = document.querySelector('.destino-inline[data-idx="' + _destinoIdxAbierto + '"]');
+  if (el){ el.hidden = true; el.innerHTML = ''; }
+  _destinoIdxAbierto = -1;
+}
+
+function abrirDestinoInline(idx, accion){
+  // Toggle: si ya estaba abierto en esta tarjeta, cerrar
+  if (_destinoIdxAbierto === idx){
+    cerrarDestinoInline();
+    return;
+  }
+  cerrarDestinoInline();
+
+  const cont = document.querySelector('.destino-inline[data-idx="' + idx + '"]');
+  if (!cont) return;
+
+  const activoId = PRESET_ACTIVO && PRESETS ? PRESETS.activo : null;
+
+  let html = `<span class="destino-lbl">${
+    escapeHtml(accion === 'first' ? t('destinoAnadirA') : t('destinoBloquearEn'))
+  }</span>`;
+
+  PRESETS.lista.forEach(p => {
+    const activo = p.id === activoId;
+    html += `<button type="button" class="destino-btn${activo ? ' activo' : ''}"
+                    data-destino-id="${escapeHtml(p.id)}">${escapeHtml(p.nombre)}</button>`;
+  });
+
+  html += `<button type="button" class="destino-btn nuevo" data-destino-id="__nuevo">+ ${escapeHtml(t('destinoNuevoModo'))}</button>`;
+
+  cont.innerHTML = html;
+  cont.hidden = false;
+  _destinoIdxAbierto = idx;
+
+  cont.querySelectorAll('.destino-btn').forEach(b => {
+    b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const id = b.dataset.destinoId;
+      const n = ULT_FILTRADAS[idx];
+      if (!n) { cerrarDestinoInline(); return; }
+
+      if (id === '__nuevo'){
+        const nuevo = crearModoYDevolver();
+        if (nuevo) aplicarOverrideEnModo(nuevo, accion, n.dominio, n.medio || n.dominio);
+        cerrarDestinoInline();
+        return;
+      }
+      const target = PRESETS.lista.find(p => p.id === id);
+      if (target) aplicarOverrideEnModo(target, accion, n.dominio, n.medio || n.dominio);
+      cerrarDestinoInline();
+    });
+  });
+}
+
+function aplicarOverrideEnModo(targetPreset, accion, dominio, medioNombre){
+  if (!targetPreset) return;
+
+  if (targetPreset === PRESET){
+    // Ruta normal: reusa setOverride (persiste, refresca botón de preset)
+    setOverride(dominio, accion);
+  } else {
+    if (!targetPreset.overrides || typeof targetPreset.overrides !== 'object'){
+      targetPreset.overrides = {};
+    }
+    targetPreset.overrides[dominio] = accion;
+    guardarPresets();
+  }
+
+  renderModosPanel();
+  renderListaMedios();
+
+  if (PRESET_ACTIVO && targetPreset === PRESET){
+    aplicarFiltros();
+    const ok = accion === 'first' ? t('destinoOkAnadido') : t('destinoOkBloqueado');
+    toast(`${ok} · ${medioNombre}`, 2000);
+  } else {
+    const ok = accion === 'first' ? t('destinoOkAnadidoEn') : t('destinoOkBloqueadoEn');
+    toast(`${ok} «${targetPreset.nombre}» · ${medioNombre}`, 2400);
+  }
+}
+
+function crearModoYDevolver(){
+  const nombre = prompt(t('cfgModoNombrePrompt'), '');
+  if (nombre == null) return null;
+  const limpio = nombre.trim();
+  if (!limpio) return null;
+
+  const nuevo = {
+    id: 'm-' + Date.now().toString(36),
+    nombre: limpio,
+    grupos: [],
+    palabras: [],
+    overrides: {},
+  };
+  PRESETS.lista.push(nuevo);
+  guardarPresets();
+  renderModosPanel();
+  return nuevo;
+} 
 /* ═══════════════════════════════════════════════════════════════
    BIONIC
    ═══════════════════════════════════════════════════════════════ */
@@ -7232,11 +7430,13 @@ function renderItemHtml(n, idx){
       ${fechaHtml}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
       <span class="cab-spacer"></span>
+      <button class="btn-mini btn-add-item" type="button" data-idx="${idx}" title="${escapeHtml(t('addToModoTitle'))}" aria-label="${escapeHtml(t('addToModoTitle'))}">➕</button>
       <button class="btn-mini btn-block-item" type="button" data-idx="${idx}" title="${escapeHtml(blockTitle)}" aria-label="${escapeHtml(blockTitle)}">🚫</button>
       <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
     </div>
     <a class="titular" href="${n._enlaceEsc}" target="_blank" rel="noopener">${tituloHtml}</a>
     ${dupsHtml}
+    <div class="destino-inline" hidden data-idx="${idx}"></div>
   </article>`;
 }
 
@@ -7317,7 +7517,15 @@ function wireResultadosDelegation(){
     const tmr = VISTAS_TIMERS.get(art);
     if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
   });
+
   cont.addEventListener('click', e => {
+    // Cerrar fila destino si el clic no es en ella ni en ➕/🚫
+    if (!e.target.closest('.destino-inline') &&
+        !e.target.closest('.btn-add-item') &&
+        !e.target.closest('.btn-block-item')){
+      cerrarDestinoInline();
+    }
+
     // Al clicar un titular: guardar como leída automáticamente
     const link = e.target.closest('a.titular');
     if (link){
@@ -7326,7 +7534,7 @@ function wireResultadosDelegation(){
       const n = ULT_FILTRADAS[i];
       if (n){
         marcarLeidaLocal(n.enlace);
-        setLocalPendienteRead(n.enlace, true); 
+        setLocalPendienteRead(n.enlace, true);
         art.classList.remove('vista');
         art.classList.add('leida');
         const saveBtnInCard = art.querySelector('.btn-save-item');
@@ -7359,6 +7567,33 @@ function wireResultadosDelegation(){
       return;
     }
 
+    // ➕ Añadir al modo activo (o elegir destino si no hay)
+    const addBtn = e.target.closest('.btn-add-item');
+    if (addBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const i = parseInt(addBtn.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (!n) return;
+
+      const dom    = n.dominio;
+      const nombre = n.medio || dom;
+
+      if (PRESET_ACTIVO && PRESET){
+        setOverride(dom, 'first');
+        aplicarFiltros();
+        toast(`${t('destinoOkAnadido')} · ${nombre}`, 2000);
+        return;
+      }
+      if (PRESETS.lista.length === 1){
+        aplicarOverrideEnModo(PRESETS.lista[0], 'first', dom, nombre);
+        return;
+      }
+      abrirDestinoInline(i, 'first');
+      return;
+    }
+
+    // 🚫 Bloquear del modo activo (o elegir destino si no hay)
     const blockBtn = e.target.closest('.btn-block-item');
     if (blockBtn){
       e.preventDefault();
@@ -7367,18 +7602,20 @@ function wireResultadosDelegation(){
       const n = ULT_FILTRADAS[i];
       if (!n) return;
 
-      const dominio = n.dominio;
-      const medioNombre = n.medio || dominio;
+      const dom    = n.dominio;
+      const nombre = n.medio || dom;
 
-      setOverride(dominio, 'ignore');
-      if (!PRESET_ACTIVO){
-        PRESET_ACTIVO = true;
-        guardarPresetActivo();
-        actualizarBotonPreset();
+      if (PRESET_ACTIVO && PRESET){
+        setOverride(dom, 'ignore');
+        aplicarFiltros();
+        toast(`${t('destinoOkBloqueado')} · ${nombre}`, 2000);
+        return;
       }
-
-      aplicarFiltros();
-      toast(t('blockMediaDone') + ' · ' + medioNombre, 2000);
+      if (PRESETS.lista.length === 1){
+        aplicarOverrideEnModo(PRESETS.lista[0], 'ignore', dom, nombre);
+        return;
+      }
+      abrirDestinoInline(i, 'ignore');
       return;
     }
 
@@ -7402,6 +7639,9 @@ function wireResultadosDelegation(){
     }
   });
 }
+
+
+
 let VISTAS_OBSERVER = null;
 const VISTAS_TIMERS = new WeakMap();
 
