@@ -7401,17 +7401,28 @@ function renderItemHtml(n, idx){
   if (ULT_RX) tituloHtml = resaltar(n.titular, ULT_RX);
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
-  const key = normalizeUrlForMatch(n.enlace);
-  const guardada = PENDIENTES_URLS.has(key);
-  const item = PENDIENTES_MAP.get(key);
-  const leida = (guardada && item && item.read) || LEIDAS_LOCAL.has(key);
-  const vista = !leida && VISTAS_LOCAL.has(key);
 
+  const key = normalizeUrlForMatch(n.enlace);
+
+  // ── Estado del guardado / lectura ──
+  //   enCola  = está en la lista de pendientes (plugin o local)
+  //   leida   = marcada como leída (por estar en cola + leída, o por LEIDAS_LOCAL)
+  //   vista   = pasó por pantalla sin marcarse como leída
+  const enCola = PENDIENTES_URLS.has(key);
+  const item   = PENDIENTES_MAP.get(key);
+  const enColaLeida = enCola && item && item.read;
+  const leida  = enColaLeida || LEIDAS_LOCAL.has(key);
+  const vista  = !leida && VISTAS_LOCAL.has(key);
+
+  // ── Botón Guardar ──
+  //   - En cola + leída    → "Leída"     (click → marcar como no leída)
+  //   - En cola + pendiente → "Pendiente" (click → marcar como leída)
+  //   - No en cola          → "Guardar"   (click → añadir a pendientes)
   let saveLabel, saveTitle;
-  if (leida){
+  if (enColaLeida){
     saveLabel = t('saveLabelRead');
     saveTitle = t('markUnread');
-  } else if (guardada){
+  } else if (enCola){
     saveLabel = t('saveLabelPending');
     saveTitle = t('markRead');
   } else {
@@ -7430,6 +7441,15 @@ function renderItemHtml(n, idx){
     : '';
 
   const blockTitle = t('blockMedia');
+
+  // ── Botón ➕ Añadir al modo ──
+  //   Si ya está forzado en el modo activo → muestro ✓ (spa, no pulsable)
+  //   En cualquier otro caso → botón ➕ normal
+  const yaForzado = PRESET_ACTIVO && getOverride(n.dominio) === 'first';
+
+  const addBtnHtml = yaForzado
+    ? `<span class="btn-mini btn-add-item is-added" title="${escapeHtml(t('addToModoTitle'))}" style="opacity:1;color:var(--preset);border-color:var(--preset)">✓</span>`
+    : `<button class="btn-mini btn-add-item" type="button" data-idx="${idx}" title="${escapeHtml(t('addToModoTitle'))}" aria-label="${escapeHtml(t('addToModoTitle'))}">➕</button>`;
 
   // Bloque de duplicados (solo si los hay y AGRUPAR_DUPS está activo)
   let dupsHtml = '';
@@ -7459,7 +7479,7 @@ function renderItemHtml(n, idx){
       ${fechaHtml}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
       <span class="cab-spacer"></span>
-      <button class="btn-mini btn-add-item" type="button" data-idx="${idx}" title="${escapeHtml(t('addToModoTitle'))}" aria-label="${escapeHtml(t('addToModoTitle'))}">➕</button>
+      ${addBtnHtml}
       <button class="btn-mini btn-block-item" type="button" data-idx="${idx}" title="${escapeHtml(blockTitle)}" aria-label="${escapeHtml(blockTitle)}">🚫</button>
       <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
     </div>
@@ -7468,7 +7488,6 @@ function renderItemHtml(n, idx){
     <div class="destino-inline" hidden data-idx="${idx}"></div>
   </article>`;
 }
-
 function appendBatch(){
   const cont = $('#resultados');
   const sentinel = document.getElementById('render-sentinel');
