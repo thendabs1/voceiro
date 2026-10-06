@@ -81,6 +81,7 @@ async function handleBuscar(request, env, ctx, url) {
 
   const itemsAll = [];
   let totalTurso = 0;
+  let hayMasTurso = false;
   const fuentesOk = [];
   const fuentesErr = {};
 
@@ -88,13 +89,15 @@ async function handleBuscar(request, env, ctx, url) {
     const name = activas[i];
     if (r.status === 'fulfilled') {
       const items = r.value.items || [];
-      // Los adaptadores externos ya traen _src; turso no. Rellenamos por si acaso.
       for (const it of items){
         if (!it._src) it._src = name;
       }
       itemsAll.push(...items);
       fuentesOk.push(name);
-      if (name === 'turso') totalTurso = r.value.total ?? items.length;
+      if (name === 'turso') {
+        totalTurso = r.value.total ?? items.length;
+        hayMasTurso = r.value.hayMas ?? false;
+      }
     } else {
       fuentesErr[name] = String(r.reason?.message || r.reason).slice(0, 200);
     }
@@ -121,7 +124,7 @@ async function handleBuscar(request, env, ctx, url) {
 
   // ── next_offset: solo si Turso va solo ──
   const soloTurso = activas.length === 1 && activas[0] === 'turso';
-  const next_offset = (soloTurso && parsed.offset + parsed.limit < totalTurso)
+  const next_offset = (soloTurso && hayMasTurso)
     ? parsed.offset + parsed.limit
     : null;
 

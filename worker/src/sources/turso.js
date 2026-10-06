@@ -19,15 +19,13 @@ export const turso = {
     if (parsed.desde) { conditions.push('f.fecha_dia >= ?'); args.push(parsed.desde); }
     if (parsed.hasta) { conditions.push('f.fecha_dia <= ?'); args.push(parsed.hasta); }
 
-    // ── Dominios: exacta (valores cortos, sin ambigüedad) ──
+    // ── Dominios: exacta ──
     if (parsed.dominios.length) {
       conditions.push(`f.dominio IN (${parsed.dominios.map(() => '?').join(',')})`);
       args.push(...parsed.dominios);
     }
 
     // ── Grupos / tipos: LIKE sobre la clave normalizada ──
-    // LIKE permite "grupo:nacionales" matchear "espananacionales",
-    // y "grupo:espana" matchear todos los grupos españoles.
     const needsJoin = parsed.grupos.length
                    || parsed.tipos.length
                    || (parsed.lang?.length ?? 0) > 0;
@@ -45,16 +43,13 @@ export const turso = {
       }
     }
 
-    // ── Lang: exacta (es/gl/ca/eu/en, sin ambigüedad) ──
+    // ── Lang: exacta ──
     if (parsed.lang?.length) {
       conditions.push(`m.lang_norm IN (${parsed.lang.map(() => '?').join(',')})`);
       args.push(...parsed.lang);
     }
 
     // ── Tags: LIKE sobre el string JSON de medios.tags ──
-    // Los tags viven en medios.tags como '["politica","deportes"]'.
-    // LIKE es suficiente para el volumen actual; si algún día crece,
-    // migrar a tabla medios_tags(dominio, tag_norm).
     if (parsed.tags?.length) {
       for (const tg of parsed.tags) {
         conditions.push(`m.tags LIKE '%' || ? || '%' ESCAPE '\\'`);
@@ -98,13 +93,22 @@ export const turso = {
     const itemArgs = [...args, parsed.limit, parsed.offset];
     const countArgs = args;
 
-    const payload = {
-      requests: [
-        { type: 'execute', stmt: { sql,       args: itemArgs.map(toArg)  } },
-        { type: 'execute', stmt: { sql: countSql, args: countArgs.map(toArg) } },
-        { type: 'close' }
-      ]
-    };
+    // ── Solo hacemos COUNT si hay búsqueda por texto (FTS) ──
+    // Sin FTS, la query es un full scan de noticias_fts y el COUNT
+    // puede tardar >10s. Turso ejecuta el pipeline en serie: si el
+    // COUNT timeoutea, arrastra también a los items, que ya estarían
+    // listos. Por eso el COUNT es condicional.
+    const hacerCount = !!ftsQ;
+
+    const requests = [
+      { type: 'execute', stmt: { sql, args: itemArgs.map(toArg) } },
+    ];
+    if (hacerCount) {
+      requests.push({ type: 'execute', stmt: { sql: countSql, args: countArgs.map(toArg) } });
+    }
+    requests.push({ type: 'close' });
+
+    const payload = { requests };
 
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), TURSO_TIMEOUT_MS);
@@ -138,8 +142,14 @@ export const turso = {
     }
 
     const rows = parseRows(results[0]);
-    let total = parseScalar(results[1]) ?? rows.length;   
-    if (total > 5000) total = 5000;                        
+    let total = rows.length;
+    if (hacerCount) {
+      total = parseScalar(results[1]) ?? rows.length;
+      if (total > 5000) total = 5000;
+    }
+
+    // Heurística: si devolvió página completa, probablemente hay más.
+    const hayMas = rows.length === parsed.limit;
 
     const items = rows.map(r => ({
       t: r[0] || '',
@@ -150,7 +160,7 @@ export const turso = {
       f: r[5] || 'TURSO',
     }));
 
-    return { items, total };
+    return { items, total, hayMas };
   }
 };
 
