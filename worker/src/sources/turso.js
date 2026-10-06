@@ -12,23 +12,24 @@ export const turso = {
 
     const ftsQ = buildFtsQuery(parsed.titulo);
     if (ftsQ) {
-      conditions.push('noticias_fts MATCH ?');
+      conditions.push('f MATCH ?');
       args.push(ftsQ);
     }
 
-    if (parsed.desde) { conditions.push('f.fecha_dia >= ?'); args.push(parsed.desde); }
-    if (parsed.hasta) { conditions.push('f.fecha_dia <= ?'); args.push(parsed.hasta); }
+    if (parsed.desde) { conditions.push('n.fecha_dia >= ?'); args.push(parsed.desde); }
+    if (parsed.hasta) { conditions.push('n.fecha_dia <= ?'); args.push(parsed.hasta); }
 
     // ── Dominios: exacta ──
     if (parsed.dominios.length) {
-      conditions.push(`f.dominio IN (${parsed.dominios.map(() => '?').join(',')})`);
+      conditions.push(`n.dominio IN (${parsed.dominios.map(() => '?').join(',')})`);
       args.push(...parsed.dominios);
     }
 
-    // ── Grupos / tipos: LIKE sobre la clave normalizada ──
+    // ── Grupos / tipos / lang: requieren JOIN con medios ──
     const needsJoin = parsed.grupos.length
                    || parsed.tipos.length
-                   || (parsed.lang?.length ?? 0) > 0;
+                   || (parsed.lang?.length ?? 0) > 0
+                   || (parsed.tags?.length ?? 0) > 0;
 
     if (parsed.grupos.length) {
       for (const g of parsed.grupos) {
@@ -42,14 +43,10 @@ export const turso = {
         args.push(escapeLike(t));
       }
     }
-
-    // ── Lang: exacta ──
     if (parsed.lang?.length) {
       conditions.push(`m.lang_norm IN (${parsed.lang.map(() => '?').join(',')})`);
       args.push(...parsed.lang);
     }
-
-    // ── Tags: LIKE sobre el string JSON de medios.tags ──
     if (parsed.tags?.length) {
       for (const tg of parsed.tags) {
         conditions.push(`m.tags LIKE '%' || ? || '%' ESCAPE '\\'`);
@@ -57,47 +54,81 @@ export const turso = {
       }
     }
 
-    const where = conditions.length ? conditions.join(' AND ') : '1=1';
-
-    let orderBy;
-    if (parsed.order === 'relevancia' && ftsQ) {
-      orderBy = 'ORDER BY bm25(noticias_fts) ASC';
-    } else if (parsed.order === 'antiguos') {
-      orderBy = 'ORDER BY f.fecha_dia ASC, n.fecha_pub ASC, f.enlace ASC';
-    } else {
-      orderBy = 'ORDER BY f.fecha_dia DESC, n.fecha_pub DESC, f.enlace ASC';
+    // ── Ventana por defecto cuando no hay FTS ni rango explícito ──
+    // Sin texto, el usuario navega el catálogo por grupo/tipo/lang.
+    // 30 días es suficiente y el índice idx_noticias_dia lo resuelve.
+    if (!ftsQ && !parsed.desde && !parsed.hasta) {
+      const hace30 = new Date(Date.now() - 30 * 86400 * 1000)
+        .toISOString().slice(0, 10);
+      conditions.push('n.fecha_dia >= ?');
+      args.push(hace30);
     }
 
-    const sql = `
-      SELECT f.titular, f.enlace, f.dominio,
-             n.fecha_pub, n.fecha_est, n.fuente, f.fecha_dia
-      FROM noticias_fts f
-      JOIN noticias n ON n.enlace = f.enlace
-      ${needsJoin ? 'JOIN medios m ON m.dominio = f.dominio' : ''}
-      WHERE ${where}
-      ${orderBy}
-      LIMIT ? OFFSET ?
-    `;
+    const where = conditions.length ? conditions.join(' AND ') : '1=1';
 
-    const countSql = `
-      SELECT COUNT(*) AS n FROM (
-        SELECT 1
+    // ── ORDER BY ──
+    // fecha_dia primero: tiene índice (idx_noticias_dia). fecha_pub desempata
+    // dentro del día. enlace desempata totalmente (paginación determinista).
+    const orderByItems = parsed.order === 'antiguos'
+      ? 'ORDER BY n.fecha_dia ASC,  n.fecha_pub ASC,  n.enlace ASC'
+      : 'ORDER BY n.fecha_dia DESC, n.fecha_pub DESC, n.enlace ASC';
+
+    const orderByFts = (parsed.order === 'relevancia' && ftsQ)
+      ? 'ORDER BY bm25(f) ASC'
+      : orderByItems;
+
+    // ── Dos caminos ──
+    // Con FTS: noticias_fts MATCH para filtrar, JOIN a noticias por enlace.
+    // Sin FTS: noticias directo. noticias_fts es standalone (sin índices
+    //          B-tree), escanearla sin MATCH es el cuello de botella.
+    const sql = ftsQ
+      ? `
+        SELECT n.titular, n.enlace, n.dominio,
+               n.fecha_pub, n.fecha_est, n.fuente, n.fecha_dia
         FROM noticias_fts f
         JOIN noticias n ON n.enlace = f.enlace
-        ${needsJoin ? 'JOIN medios m ON m.dominio = f.dominio' : ''}
+        ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
         WHERE ${where}
-        LIMIT 5001
-      )
-    `;
+        ${orderByFts}
+        LIMIT ? OFFSET ?
+      `
+      : `
+        SELECT n.titular, n.enlace, n.dominio,
+               n.fecha_pub, n.fecha_est, n.fuente, n.fecha_dia
+        FROM noticias n
+        ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
+        WHERE ${where}
+        ${orderByItems}
+        LIMIT ? OFFSET ?
+      `;
+
+    const countSql = ftsQ
+      ? `
+        SELECT COUNT(*) AS n FROM (
+          SELECT 1
+          FROM noticias_fts f
+          JOIN noticias n ON n.enlace = f.enlace
+          ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
+          WHERE ${where}
+          LIMIT 5001
+        )
+      `
+      : `
+        SELECT COUNT(*) AS n FROM (
+          SELECT 1
+          FROM noticias n
+          ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
+          WHERE ${where}
+          LIMIT 5001
+        )
+      `;
 
     const itemArgs = [...args, parsed.limit, parsed.offset];
     const countArgs = args;
 
-    // ── Solo hacemos COUNT si hay búsqueda por texto (FTS) ──
-    // Sin FTS, la query es un full scan de noticias_fts y el COUNT
-    // puede tardar >10s. Turso ejecuta el pipeline en serie: si el
-    // COUNT timeoutea, arrastra también a los items, que ya estarían
-    // listos. Por eso el COUNT es condicional.
+    // ── Solo COUNT si hay FTS ──
+    // Sin FTS no lo necesitamos (el usuario está navegando el catálogo, no
+    // buscando algo concreto). Con FTS el MATCH filtra mucho y es rápido.
     const hacerCount = !!ftsQ;
 
     const requests = [
@@ -148,7 +179,6 @@ export const turso = {
       if (total > 5000) total = 5000;
     }
 
-    // Heurística: si devolvió página completa, probablemente hay más.
     const hayMas = rows.length === parsed.limit;
 
     const items = rows.map(r => ({
