@@ -1,6 +1,6 @@
 // worker/src/index.js
 import { parseQuery } from '../../shared/parser.js';
-import parserSource from '../../shared/parser.js?raw';
+import { PARSER_SOURCE } from './parser-source.js';
 import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';
 import { freenews } from './sources/freenews.js';
@@ -26,7 +26,7 @@ export default {
     //   import { parseQuery } from 'https://.../parser.js'
     // Esto es lo que cierra el problema del parser duplicado.
     if (url.pathname === '/parser.js') {
-      return new Response(parserSource, {
+      return new Response(PARSER_SOURCE, {
         headers: {
           'Content-Type': 'application/javascript; charset=utf-8',
           'Access-Control-Allow-Origin': '*',
