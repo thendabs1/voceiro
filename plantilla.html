@@ -568,6 +568,34 @@
   color: var(--fg);
   font-weight: 600;
 }
+.cfg-toggle{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--quote-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: .78em;
+  margin-bottom: 8px;
+}
+.cfg-toggle input{
+  accent-color: var(--save);
+  width: 1.1em;
+  height: 1.1em;
+  margin-top: .15em;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.cfg-toggle .cfg-toggle-txt{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cfg-toggle .cfg-toggle-title{ font-weight: 600; color: var(--fg); }
+.cfg-toggle .cfg-toggle-hint{ color: var(--muted); font-size: .9em; line-height: 1.4; }
 .filtros-prensa-selects{
   display: grid;
   grid-template-columns: auto 1fr 1fr auto;
@@ -1595,6 +1623,53 @@
         </details>
       </div>
 
+      <h3 id="cfg-feed"></h3>
+      <p id="cfg-feed-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+
+      <label class="cfg-toggle">
+        <input type="checkbox" id="cfg-recordar-filtros">
+        <span class="cfg-toggle-txt">
+          <span class="cfg-toggle-title" id="cfg-recordar-filtros-lbl"></span>
+          <span class="cfg-toggle-hint"  id="cfg-recordar-filtros-hint"></span>
+        </span>
+      </label>
+
+      <div class="filtros-prensa" style="margin-top:10px;">
+        <label class="chk-prensa">
+          <input type="checkbox" id="prensa-panel-toggle">
+          <span id="prensa-panel-label">🌐 Prensa externa</span>
+        </label>
+
+        <div class="filtros-prensa-selects" id="prensa-selects" hidden>
+          <label class="fp-fuentes">
+            <span id="prensa-fuentes-label">Fuentes</span>
+            <div class="fp-chks">
+              <label class="fp-chk">
+                <input type="checkbox" id="prensa-f-gnews" checked>
+                <span>Google News</span>
+              </label>
+              <label class="fp-chk">
+                <input type="checkbox" id="prensa-f-freenews" checked>
+                <span>FreeNews</span>
+              </label>
+            </div>
+          </label>
+
+          <label class="fp-lang">
+            <span id="prensa-lang-label">Idioma</span>
+            <select id="prensa-lang"></select>
+          </label>
+
+          <label class="fp-region">
+            <span id="prensa-region-label">País</span>
+            <select id="prensa-region"></select>
+          </label>
+
+          <button type="button" id="prensa-reset" class="prensa-reset"
+                  title="Restablecer prensa">↺</button>
+        </div>
+      </div>
+
       <h3 id="cfg-grupos"></h3>
       <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
       <div id="lista-grupos" class="list-grupos"></div>
@@ -1836,45 +1911,6 @@
       <input type="date" id="fecha-hasta" aria-label="Hasta">
     </div>
 
-    <div class="filtros-sep"></div>
-
-    <div class="filtros-prensa">
-      <label class="chk-prensa">
-        <input type="checkbox" id="prensa-panel-toggle">
-        <span id="prensa-panel-label">🌐 Prensa externa</span>
-      </label>
-
-      <div class="filtros-prensa-selects" id="prensa-selects" hidden>
-        <label class="fp-fuentes">
-          <span id="prensa-fuentes-label">Fuentes</span>
-          <div class="fp-chks">
-            <label class="fp-chk">
-              <input type="checkbox" id="prensa-f-gnews" checked>
-              <span>Google News</span>
-            </label>
-            <label class="fp-chk">
-              <input type="checkbox" id="prensa-f-freenews" checked>
-              <span>FreeNews</span>
-            </label>
-          </div>
-        </label>
-
-        <label class="fp-lang">
-          <span id="prensa-lang-label">Idioma</span>
-          <select id="prensa-lang"></select>
-        </label>
-
-        <label class="fp-region">
-          <span id="prensa-region-label">País</span>
-          <select id="prensa-region"></select>
-        </label>
-
-        <button type="button" id="prensa-reset" class="prensa-reset"
-                title="Restablecer prensa">↺</button>
-      </div>
-    </div>
-  </div>
-</section>
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 
@@ -1952,6 +1988,10 @@ const PRENSA_PAISES = [
 const I18N = {
   es: {
         /* ── Prensa externa (panel) ── */
+    cfgFeed:                 'Feed',
+    cfgFeedHint:             'Carga del feed y prensa externa.',
+    cfgRecordarFiltros:      'Recordar filtros al recargar',
+    cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
     prensaPanelLabel:  '🌐 Prensa externa',
     prensaFuentes:     'Fuentes',
     prensaLang:        'Idioma',
@@ -2209,7 +2249,12 @@ const I18N = {
   },
 
   gl: {
-        prensaPanelLabel:  '🌐 Prensa externa',
+    cfgFeed:                 'Feed',
+    cfgFeedHint:             'Carga do feed e prensa externa.',
+    cfgRecordarFiltros:      'Lembrar filtros ao recargar',
+    cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
+
+    prensaPanelLabel:  '🌐 Prensa externa',
     prensaFuentes:     'Fontes',
     prensaLang:        'Idioma',
     prensaPais:        'País',
@@ -2467,7 +2512,11 @@ const I18N = {
   },
 
   ca: {
-        prensaPanelLabel:  '🌐 Premsa externa',
+    cfgFeed:                 'Feed',
+    cfgFeedHint:             "Càrrega del feed i premsa externa.",
+    cfgRecordarFiltros:      'Recordar filtres en recarregar',
+    cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
+    prensaPanelLabel:  '🌐 Premsa externa',
     prensaFuentes:     'Fonts',
     prensaLang:        'Idioma',
     prensaPais:        'País',
@@ -3455,6 +3504,26 @@ let AGRUPAR_DUPS = true;
 const HIDE_MODE_KEY = 'voceiro-hide-mode';
 const HIDE_MODES = ['off', 'read', 'viewed', 'both'];
 let HIDE_MODE = 'off';
+const RECORDAR_FILTROS_KEY = 'voceiro-recordar-filtros';
+let RECORDAR_FILTROS = true;
+let APP_LISTA = false;
+
+function cargarRecordarFiltros(){
+  try {
+    const raw = localStorage.getItem(RECORDAR_FILTROS_KEY);
+    if (raw === 'false') return false;
+    if (raw === 'true')  return true;
+  } catch(e){}
+  return true;   // por defecto, sí recordamos
+}
+function guardarRecordarFiltros(){
+  try { localStorage.setItem(RECORDAR_FILTROS_KEY, RECORDAR_FILTROS ? 'true' : 'false'); } catch(e){}
+  // Si el usuario desactiva la opción, limpiamos lo guardado para
+  // que no reaparezca si la vuelve a activar.
+  if (!RECORDAR_FILTROS){
+    try { localStorage.removeItem('voceiro-buscar'); } catch(e){}
+  }
+}
 
 function cargarHideMode(){
   try {
@@ -6768,9 +6837,13 @@ function aplicarFiltros(){
     });
   }
 
-  // Persistir el estado del buscador para que sobreviva a un reload.
-  try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
-
+  // Persistir el estado del buscador solo si la app ya está lista
+  // y el usuario ha activado "recordar filtros". Si no, las primeras
+  // llamadas (cargarPortada → refrescarVistaCompleta) pisarían con ''
+  // lo que había guardado el usuario.
+  if (APP_LISTA && RECORDAR_FILTROS){
+    try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
+  }
   // ── Búsqueda en prensa externa ──
   programarPrensa(parsed, raw, filtradas.length);
 }
@@ -7275,6 +7348,10 @@ function aplicarTextos(){
   $('#cfg-grupos').textContent = t('cfgGrupos');
   $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
   $('#cfg-medios').textContent = t('cfgMedios');
+  $('#cfg-feed').textContent = t('cfgFeed');
+  $('#cfg-feed-hint').textContent = t('cfgFeedHint');
+  $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
+  $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#cfg-medios-legend').innerHTML =
     '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
@@ -7457,6 +7534,19 @@ function wireStaticEvents(){
       renderViewSettingsMenu();
       actualizarBotonViewSettings();
       aplicarFiltros();
+    });
+  }
+    // ── Toggle "Recordar filtros" ──
+  const chkRec = $('#cfg-recordar-filtros');
+  if (chkRec){
+    chkRec.checked = RECORDAR_FILTROS;
+    chkRec.addEventListener('change', () => {
+      RECORDAR_FILTROS = chkRec.checked;
+      guardarRecordarFiltros();
+      toast(
+        (RECORDAR_FILTROS ? '✓ ' : '✕ ') + t('cfgRecordarFiltros'),
+        1600
+      );
     });
   }
     // ── Toggle prensa (botón de la barra) ──
@@ -7814,6 +7904,7 @@ async function init(){
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
+  RECORDAR_FILTROS = cargarRecordarFiltros();
     // Preferencias de prensa externa
   cargarPrensaDeLocalStorage();
   rebuildPendientes();
@@ -7839,10 +7930,22 @@ async function init(){
   wireCargarMasAuto();
   bsWireEventos();
 
-  // ── 1) Bridge con el plugin ──
   initUserScriptBridge();
 
-  // ── 2) Portada (await): primer render real de noticias ──
+  // ── 1.5) Restaurar búsqueda ANTES de tocar datos ──
+  if (RECORDAR_FILTROS){
+    try {
+      const savedBuscar = localStorage.getItem('voceiro-buscar');
+      if (savedBuscar){
+        const input = $('#buscar');
+        input.value = savedBuscar;
+        const clearBtn = $('#buscar-clear');
+        if (clearBtn) clearBtn.hidden = !savedBuscar;
+      }
+    } catch(e){}
+  }
+
+  // ── 2) Portada (await) ──
   try {
     await cargarPortada();
   } catch(err){
@@ -7851,41 +7954,20 @@ async function init(){
     return;
   }
 
-  // ── 3) Tipos (ahora sí tenemos MEDIOS_UNICOS) ──
+  // ── 3) Tipos ──
   const selT = $('#tipo');
   while (selT.options.length > 1) selT.remove(1);
   [...new Set(MEDIOS_UNICOS.map(m => m.tipo).filter(Boolean))].sort()
     .forEach(t2 => selT.add(new Option(t2, t2)));
   if (selT.options[0]) selT.options[0].text = t('fltTipo');
 
-  // Restaurar búsqueda previa (si la había) ANTES de aplicar filtros.
-  // Si no, aplicarFiltros guardaría '' y perderíamos el estado.
-  try {
-    const savedBuscar = localStorage.getItem('voceiro-buscar');
-    if (savedBuscar){
-      const input = $('#buscar');
-      input.value = savedBuscar;
-      const clearBtn = $('#buscar-clear');
-      if (clearBtn) clearBtn.hidden = !savedBuscar;
-    }
-  } catch(e){}
-
-  // Restaurar búsqueda previa (si la había) ANTES de aplicar filtros.
-  // Si no, aplicarFiltros guardaría '' y perderíamos el estado.
-  try {
-    const savedBuscar = localStorage.getItem('voceiro-buscar');
-    if (savedBuscar){
-      const input = $('#buscar');
-      input.value = savedBuscar;
-      const clearBtn = $('#buscar-clear');
-      if (clearBtn) clearBtn.hidden = !savedBuscar;
-    }
-  } catch(e){}
-
   reconstruirSelectores();
   aplicarFiltros();
 
-  // ── 4) Histórico en background (no bloquea la UI) ──
+  // ── 4) A partir de aquí aplicarFiltros() ya puede persistir ──
+  APP_LISTA = true;
+
+  // ── 5) Histórico en background ──
   cargarHistoricoEnBackground();
 }
 
