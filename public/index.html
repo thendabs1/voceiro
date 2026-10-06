@@ -1525,7 +1525,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">06/10/2026 12:43</span>
+      <span id="fecha">06/10/2026 12:52</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -7857,6 +7857,18 @@ async function init(){
   [...new Set(MEDIOS_UNICOS.map(m => m.tipo).filter(Boolean))].sort()
     .forEach(t2 => selT.add(new Option(t2, t2)));
   if (selT.options[0]) selT.options[0].text = t('fltTipo');
+
+  // Restaurar búsqueda previa (si la había) ANTES de aplicar filtros.
+  // Si no, aplicarFiltros guardaría '' y perderíamos el estado.
+  try {
+    const savedBuscar = localStorage.getItem('voceiro-buscar');
+    if (savedBuscar){
+      const input = $('#buscar');
+      input.value = savedBuscar;
+      const clearBtn = $('#buscar-clear');
+      if (clearBtn) clearBtn.hidden = !savedBuscar;
+    }
+  } catch(e){}
 
   // Restaurar búsqueda previa (si la había) ANTES de aplicar filtros.
   // Si no, aplicarFiltros guardaría '' y perderíamos el estado.
