@@ -4669,10 +4669,42 @@ function construirIndicesBusqueda(){
   });
 }
 /* ═══════════════════════════════════════════════════════════════
-   TOKENIZADOR CON SOPORTE DE COMILAS
-   Acepta:  grupo:"España · Nacionales"   "texto exacto"   palabra
+   PREPROCESAR INPUT
+   El parser shared no conoce el catálogo (MEDIOS_POR_NOMBRE) — es
+   frontend-only. Aquí convertimos palabras sueltas que coincidan con
+   un medio del catálogo a su token canónico "web:dominio", antes de
+   pasarlas al parser. Así "elpais" funciona igual que "web:elpais.com".
    ═══════════════════════════════════════════════════════════════ */
-
+function preprocesarInput(raw) {
+  if (!raw) return raw;
+  const tokens = tokenizeQuery(raw);
+  const out = [];
+  for (const tk of tokens) {
+    // Solo reescribimos tokens SIN prefijo y SIN comillas.
+    // Lo demás lo entiende el parser tal cual.
+    if (tk.prefix || tk.quoted) {
+      out.push(tk.raw);
+      continue;
+    }
+    // ¿Ya parece dominio? Lo dejamos.
+    if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) {
+      out.push(tk.raw);
+      continue;
+    }
+    // ¿Coincide con un medio del catálogo?
+    const strict = normStrict(tk.text);
+    if (strict.length >= 3) {
+      const dom = MEDIOS_POR_NOMBRE.get(strict);
+      if (dom) {
+        out.push('web:' + dom);
+        continue;
+      }
+    }
+    // Si no, dejar el token tal cual
+    out.push(tk.raw);
+  }
+  return out.join(' ');
+}
 /* ═══════════════════════════════════════════════════════════════
    CHIPS DE FILTROS ACTIVOS
    ═══════════════════════════════════════════════════════════════ */
@@ -6430,6 +6462,7 @@ function programarPrensa(parsed, rawQuery, nLocales){
 
 function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
+  const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(raw);
   renderChips(parsed, raw);
 
