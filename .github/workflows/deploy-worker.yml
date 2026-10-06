@@ -6,6 +6,7 @@ on:
     paths:
       - 'worker/**'
       - 'shared/**'
+      - 'scripts/build-parser-source.mjs'
       - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 
@@ -15,6 +16,9 @@ jobs:
     name: Deploy a Cloudflare
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate parser source
+        run: node scripts/build-parser-source.mjs
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
