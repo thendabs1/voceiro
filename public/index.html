@@ -2184,11 +2184,14 @@ const I18N = {
 
     /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Añade medios a este modo por dominio. ✓ fuerza a mostrarlo arriba; ✗ lo oculta.',
-    cfgOverridePlaceholder: 'dominio.com',
     cfgOverridePegar:       'Pegar lista de dominios',
-    cfgOverridePegarHint:   'Una línea por dominio. Prefijo "+" para first, "-" para ignore.',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio no válido: {X}',
+
+    /* ── Añadir dominio desde el buscador ── */
+    cfgMedioAddLabel:       'Añadir {X} a este modo:',
+    cfgMedioAddForce:       '✓ Forzar',
+    cfgMedioAddIgnore:      '✗ Bloquear',
 
     /* ── Menú del botón Modo Personalizado ── */
     presetSinFiltro:        'Sin filtro',
@@ -2454,11 +2457,14 @@ const I18N = {
 
     /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Engade medios a este modo por dominio. ✓ forza a amosalo arriba; ✗ ocúltao.',
-    cfgOverridePlaceholder: 'dominio.com',
     cfgOverridePegar:       'Pegar lista de dominios',
-    cfgOverridePegarHint:   'Unha liña por dominio. Prefixo "+" para first, "-" para ignore.',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio non válido: {X}',
+
+    /* ── Engadir dominio desde o buscador ── */
+    cfgMedioAddLabel:       'Engadir {X} a este modo:',
+    cfgMedioAddForce:       '✓ Forzar',
+    cfgMedioAddIgnore:      '✗ Bloquear',
 
     /* ── Menú do botón Modo Personalizado ── */
     presetSinFiltro:        'Sen filtro',
@@ -2724,11 +2730,14 @@ const I18N = {
 
     /* ── Overrides per domini ── */
     cfgOverrideHint:        "Afegeix mitjans a aquest mode per domini. ✓ força a mostrar-lo a dalt; ✗ l'oculta.",
-    cfgOverridePlaceholder: 'domini.com',
     cfgOverridePegar:       'Enganxar llista de dominis',
-    cfgOverridePegarHint:   'Una línia per domini. Prefix "+" per first, "-" per ignore.',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Domini no vàlid: {X}',
+
+    /* ── Afegir domini des del cercador ── */
+    cfgMedioAddLabel:       'Afegir {X} a aquest mode:',
+    cfgMedioAddForce:       '✓ Forçar',
+    cfgMedioAddIgnore:      '✗ Bloquejar',
 
     /* ── Menú del botó Mode Personalitzat ── */
     presetSinFiltro:        'Sense filtre',
@@ -2994,11 +3003,14 @@ const I18N = {
 
     /* ── Per-domain overrides ── */
     cfgOverrideHint:        'Add outlets to this mode by domain. ✓ forces showing it at top; ✗ hides it.',
-    cfgOverridePlaceholder: 'domain.com',
     cfgOverridePegar:       'Paste list of domains',
-    cfgOverridePegarHint:   'One per line. Prefix "+" for first, "-" for ignore.',
     cfgOverrideAplicar:     'Apply',
     cfgOverrideBad:         'Invalid domain: {X}',
+
+    /* ── Add domain from search ── */
+    cfgMedioAddLabel:       'Add {X} to this mode:',
+    cfgMedioAddForce:       '✓ Force',
+    cfgMedioAddIgnore:      '✗ Block',
 
     /* ── Custom Mode button menu ── */
     presetSinFiltro:        'No filter',
@@ -3264,11 +3276,14 @@ const I18N = {
 
     /* ── Domeinu bidezko overrideak ── */
     cfgOverrideHint:        'Gehitu hedabideak modu honi domeinuaren arabera. ✓ goian erakustera behartzen du; ✗ ezkutatzen du.',
-    cfgOverridePlaceholder: 'domeinua.com',
     cfgOverridePegar:       'Itsatsi domeinuen zerrenda',
-    cfgOverridePegarHint:   'Domeinu bat lerro bakoitzeko. "+" aurrizkia first-entzat, "-" ignore-entzat.',
     cfgOverrideAplicar:     'Aplikatu',
     cfgOverrideBad:         'Domeinu baliogabea: {X}',
+
+    /* ── Gehitu domeinua bilatzailetik ── */
+    cfgMedioAddLabel:       'Gehitu {X} modu honi:',
+    cfgMedioAddForce:       '✓ Behartu',
+    cfgMedioAddIgnore:      '✗ Blokeatu',
 
     /* ── Modo Pertsonalizatua botoiaren menua ── */
     presetSinFiltro:        'Iragazkirik gabe',
@@ -3494,7 +3509,6 @@ const I18N = {
     vsReset:                '↺ Vista berrezarri',
   },
 };
-  
 function t(key, vars){
   const lang = (ACCES && ACCES.lang) || 'es';
   const dict = I18N[lang] || I18N.es;
