@@ -167,6 +167,22 @@ def _crear_sesion():
 
 
 SESSION = _crear_sesion()
+
+import unicodedata  # ya está importado arriba, verificar
+
+def _norm_strict(s):
+    """Equivalente a normStrict de shared/parser.js.
+    'España · Nacionales' → 'espanaacionales'
+    """
+    if not s:
+        return ''
+    s = str(s).lower()
+    s = unicodedata.normalize('NFD', s)
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+    return ''.join(c for c in s if c.isascii() and c.isalnum())
+
+
+
 def _hash_titular(titular):
     """Hash normalizado de titular (mismo que deduplicar_editorial)."""
     import hashlib, unicodedata
@@ -1749,6 +1765,7 @@ def _t_rows(results, idx=0):
     for row in result.get("rows", []):
         out.append([_t_val(cell) for cell in row])
     return out
+
 def _turso_ensure_schema():
     """Crea tablas e índices si no existen. Idempotente."""
     if not (TURSO_HTTP_URL and TURSO_TOKEN):
@@ -1776,6 +1793,9 @@ def _turso_ensure_schema():
               tipo           TEXT NOT NULL DEFAULT '',
               lang           TEXT NOT NULL DEFAULT '',
               tags           TEXT NOT NULL DEFAULT '[]',
+              grupo_norm     TEXT NOT NULL DEFAULT '',
+              tipo_norm      TEXT NOT NULL DEFAULT '',
+              lang_norm      TEXT NOT NULL DEFAULT '',
               ultimo_run_ts  TEXT NOT NULL DEFAULT '',
               ultimo_ok_ts   TEXT NOT NULL DEFAULT '',
               fuente         TEXT NOT NULL DEFAULT '',
@@ -1800,7 +1820,35 @@ def _turso_ensure_schema():
     results = turso_pipeline(stmts, timeout=30)
     if results is None:
         print("[turso!] ensure_schema falló")
+        return
 
+    # ── Migración: añadir columnas *_norm a instalaciones existentes ──
+    _turso_migrar_medios_norm()
+
+
+def _turso_migrar_medios_norm():
+    """Añade grupo_norm/tipo_norm/lang_norm a `medios` si no existen.
+    Idempotente: consulta PRAGMA table_info antes de cada ALTER."""
+    cols_deseadas = ['grupo_norm', 'tipo_norm', 'lang_norm']
+
+    results = turso_pipeline([_t_stmt("PRAGMA table_info(medios)")], timeout=15)
+    if results is None:
+        print("[turso!] PRAGMA table_info(medios) falló")
+        return
+    filas = _t_rows(results, 0)
+    cols_existentes = {r[1] for r in filas}  # r[1] = column name
+
+    faltan = [c for c in cols_deseadas if c not in cols_existentes]
+    if not faltan:
+        return
+
+    for col in faltan:
+        sql = f"ALTER TABLE medios ADD COLUMN {col} TEXT NOT NULL DEFAULT ''"
+        res = turso_pipeline([_t_stmt(sql)], timeout=15)
+        if res is None:
+            print(f"[turso!] ALTER TABLE medios ADD COLUMN {col} falló")
+        else:
+            print(f"[turso] migración: añadida columna medios.{col}")
 
 def _timed_obtener(medio):
     """Envuelve obtener_titulares midiendo duración y capturando excepciones.
@@ -1831,15 +1879,19 @@ def _turso_setup_medios(medios, runs_data, ts_iso):
         stmts.append(_t_stmt("""
             INSERT INTO medios
               (dominio, nombre, grupo, tipo, lang, tags,
+               grupo_norm, tipo_norm, lang_norm,
                ultimo_run_ts, ultimo_ok_ts, fuente, n_items,
                con_fecha, ms, error)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ON CONFLICT(dominio) DO UPDATE SET
                 nombre        = excluded.nombre,
                 grupo         = excluded.grupo,
                 tipo          = excluded.tipo,
                 lang          = excluded.lang,
                 tags          = excluded.tags,
+                grupo_norm    = excluded.grupo_norm,
+                tipo_norm     = excluded.tipo_norm,
+                lang_norm     = excluded.lang_norm,
                 ultimo_run_ts = excluded.ultimo_run_ts,
                 ultimo_ok_ts  = CASE WHEN excluded.ultimo_ok_ts != ''
                                      THEN excluded.ultimo_ok_ts
@@ -1856,6 +1908,9 @@ def _turso_setup_medios(medios, runs_data, ts_iso):
             m.get('type', ''),
             m.get('lang', ''),
             json.dumps(m.get('tags', []), ensure_ascii=False),
+            _norm_strict(m.get('grupo', '')),
+            _norm_strict(m.get('type', '')),
+            _norm_strict(m.get('lang', '')),
             ts_iso,
             ts_iso if ok else '',
             s.get('fuente', ''),

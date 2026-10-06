@@ -24,14 +24,21 @@ export const turso = {
       args.push(...parsed.dominios);
     }
 
-    const needsJoin = parsed.grupos.length || parsed.tipos.length;
+    const needsJoin = parsed.grupos.length
+                   || parsed.tipos.length
+                   || (parsed.lang?.length ?? 0) > 0;
+
     if (parsed.grupos.length) {
-      conditions.push(`m.grupo IN (${parsed.grupos.map(() => '?').join(',')})`);
+      conditions.push(`m.grupo_norm IN (${parsed.grupos.map(() => '?').join(',')})`);
       args.push(...parsed.grupos);
     }
     if (parsed.tipos.length) {
-      conditions.push(`m.tipo IN (${parsed.tipos.map(() => '?').join(',')})`);
+      conditions.push(`m.tipo_norm IN (${parsed.tipos.map(() => '?').join(',')})`);
       args.push(...parsed.tipos);
+    }
+    if (parsed.lang?.length) {
+      conditions.push(`m.lang_norm IN (${parsed.lang.map(() => '?').join(',')})`);
+      args.push(...parsed.lang);
     }
 
     const where = conditions.length ? conditions.join(' AND ') : '1=1';

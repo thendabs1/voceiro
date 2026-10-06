@@ -1,5 +1,24 @@
+// shared/parser.js
 // Parser de query compartido front + Worker.
 // Convierte "sanchez web:elpais.com desde:7d" en objeto estructurado.
+//
+// Campos que este parser NO produce intencionadamente:
+//   region:  parámetro de los adapters externos (GNews hl/gl), no un filtro
+//            del catálogo. No lo produce el parser.
+//   pais:    idem.
+//
+// Normalización:
+//   dominios → normDomain (lowercase, sin acentos, sin símbolos raros)
+//   medios   → normStrict
+//   grupos   → normStrict
+//   tipos    → normStrict
+//   tags     → normStrict
+//   lang     → normStrict
+//   titulo   → normalize (lowercase + sin acentos, conserva espacios)
+//
+// El chip siempre lleva el valor tal cual lo escribió el usuario (`value`
+// y `raw`), para poder mostrarlo en la UI. La resolución a valor canónico
+// vive en los campos del objeto `parsed`, no en el chip.
 
 const PREFIX_ALIASES = {
   medio: 'medio', medios: 'medio',
@@ -8,6 +27,7 @@ const PREFIX_ALIASES = {
   grupo: 'grupo', grupos: 'grupo',
   tipo: 'tipo', tipos: 'tipo',
   tag: 'tag', tags: 'tag',
+  lang: 'lang', idioma: 'lang', idiomas: 'lang',
   desde: 'desde',
   hasta: 'hasta',
   fuentes: 'fuentes',
@@ -19,8 +39,13 @@ const PREFIX_ALIASES = {
 export function normalize(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
+
 export function normStrict(s) {
   return normalize(s).replace(/[^a-z0-9]/g, '');
+}
+
+export function normDomain(s) {
+  return normalize(s).replace(/[^a-z0-9.\-]/g, '');
 }
 
 export function tokenizeQuery(raw) {
@@ -59,7 +84,7 @@ function fmtDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function parseRelativeDate(s) {
+export function parseRelativeDate(s) {
   const v = (s || '').trim().toLowerCase();
   if (!v) return null;
 
@@ -115,7 +140,7 @@ export function parseQuery(raw) {
   const tokens = tokenizeQuery(raw || '');
   const out = {
     q: '', titulo: [],
-    dominios: [], medios: [], grupos: [], tipos: [], tags: [],
+    dominios: [], medios: [], grupos: [], tipos: [], tags: [], lang: [],
     desde: null, hasta: null,
     fuentes: ['turso'],
     order: 'recientes',
@@ -134,12 +159,12 @@ export function parseQuery(raw) {
         break;
 
       case 'dominio':
-        out.dominios.push(tk.text.replace(/^www\./,'').toLowerCase());
+        out.dominios.push(normDomain(tk.text));
         out.chips.push({ type:'dominio', value: tk.text, raw: tk.raw });
         break;
 
       case 'grupo':
-        out.grupos.push(tk.text);
+        out.grupos.push(normStrict(tk.text));
         out.chips.push({ type:'grupo', value: tk.text, raw: tk.raw });
         break;
 
@@ -151,6 +176,11 @@ export function parseQuery(raw) {
       case 'tag':
         out.tags.push(normStrict(tk.text));
         out.chips.push({ type:'tag', value: tk.text, raw: tk.raw });
+        break;
+
+      case 'lang':
+        out.lang.push(normStrict(tk.text));
+        out.chips.push({ type:'lang', value: tk.text, raw: tk.raw });
         break;
 
       case 'desde': {
@@ -190,7 +220,7 @@ export function parseQuery(raw) {
       default:
         // Token sin prefijo. ¿Es un dominio?
         if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) {
-          out.dominios.push(tk.text.replace(/^www\./,'').toLowerCase());
+          out.dominios.push(normDomain(tk.text));
           out.chips.push({ type:'dominio', value: tk.text, raw: tk.raw });
         } else {
           out.titulo.push(normalize(tk.text));
