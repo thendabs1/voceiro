@@ -1816,6 +1816,9 @@ def _turso_ensure_schema():
               PRIMARY KEY (dominio, ts)
             ) WITHOUT ROWID"""),
         _t_stmt("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)"),
+        _t_stmt("CREATE INDEX IF NOT EXISTS idx_medios_grupo_norm ON medios(grupo_norm)"),
+        _t_stmt("CREATE INDEX IF NOT EXISTS idx_medios_tipo_norm  ON medios(tipo_norm)"),
+        _t_stmt("CREATE INDEX IF NOT EXISTS idx_medios_lang_norm  ON medios(lang_norm)"),
     ]
     results = turso_pipeline(stmts, timeout=30)
     if results is None:

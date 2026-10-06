@@ -19,26 +19,47 @@ export const turso = {
     if (parsed.desde) { conditions.push('f.fecha_dia >= ?'); args.push(parsed.desde); }
     if (parsed.hasta) { conditions.push('f.fecha_dia <= ?'); args.push(parsed.hasta); }
 
+    // ── Dominios: exacta (valores cortos, sin ambigüedad) ──
     if (parsed.dominios.length) {
       conditions.push(`f.dominio IN (${parsed.dominios.map(() => '?').join(',')})`);
       args.push(...parsed.dominios);
     }
 
+    // ── Grupos / tipos: LIKE sobre la clave normalizada ──
+    // LIKE permite "grupo:nacionales" matchear "espananacionales",
+    // y "grupo:espana" matchear todos los grupos españoles.
     const needsJoin = parsed.grupos.length
                    || parsed.tipos.length
                    || (parsed.lang?.length ?? 0) > 0;
 
     if (parsed.grupos.length) {
-      conditions.push(`m.grupo_norm IN (${parsed.grupos.map(() => '?').join(',')})`);
-      args.push(...parsed.grupos);
+      for (const g of parsed.grupos) {
+        conditions.push(`m.grupo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
+        args.push(escapeLike(g));
+      }
     }
     if (parsed.tipos.length) {
-      conditions.push(`m.tipo_norm IN (${parsed.tipos.map(() => '?').join(',')})`);
-      args.push(...parsed.tipos);
+      for (const t of parsed.tipos) {
+        conditions.push(`m.tipo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
+        args.push(escapeLike(t));
+      }
     }
+
+    // ── Lang: exacta (es/gl/ca/eu/en, sin ambigüedad) ──
     if (parsed.lang?.length) {
       conditions.push(`m.lang_norm IN (${parsed.lang.map(() => '?').join(',')})`);
       args.push(...parsed.lang);
+    }
+
+    // ── Tags: LIKE sobre el string JSON de medios.tags ──
+    // Los tags viven en medios.tags como '["politica","deportes"]'.
+    // LIKE es suficiente para el volumen actual; si algún día crece,
+    // migrar a tabla medios_tags(dominio, tag_norm).
+    if (parsed.tags?.length) {
+      for (const tg of parsed.tags) {
+        conditions.push(`m.tags LIKE '%' || ? || '%' ESCAPE '\\'`);
+        args.push(escapeLike(tg));
+      }
     }
 
     const where = conditions.length ? conditions.join(' AND ') : '1=1';
@@ -107,7 +128,6 @@ export const turso = {
     const data = await res.json();
     const results = data.results || [];
 
-    // Chequear errores por statement
     for (const r of results) {
       if (r.type === 'error') {
         throw new Error(`Turso: ${r.error?.message || JSON.stringify(r.error).slice(0, 200)}`);
@@ -121,14 +141,22 @@ export const turso = {
       t: r[0] || '',
       u: shortenUrl(r[1], r[2]),
       d: r[2] || '',
-      p: r[3] || '',            // fecha_pub (ISO completo)
-      e: r[4] || '',            // fecha_est
-      f: r[5] || 'TURSO',       // fuente original
+      p: r[3] || '',
+      e: r[4] || '',
+      f: r[5] || 'TURSO',
     }));
 
     return { items, total };
   }
 };
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
+function escapeLike(s) {
+  return String(s).replace(/[\\%_]/g, c => '\\' + c);
+}
 
 function toArg(v) {
   if (v === null || v === undefined) return { type: 'null' };
