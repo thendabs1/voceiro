@@ -65,7 +65,7 @@ export const turso = {
     // Sin texto, el usuario navega el catálogo. 7 días es lo que cabe en
     // "portada del feed" sin obligar a escanear todo el histórico.
     if (!ftsQ && !parsed.desde && !parsed.hasta) {
-      const hace7 = new Date(Date.now() - 20 * 86400 * 1000)
+      const hace7 = new Date(Date.now() - 8 * 86400 * 1000)
         .toISOString().slice(0, 10);
       conditions.push('n.fecha_dia >= ?');
       args.push(hace7);
