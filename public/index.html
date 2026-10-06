@@ -422,7 +422,50 @@
     border:1px solid var(--border); border-radius:6px;
     background:var(--bg); color:var(--fg); font-family:inherit;
   }
-
+  .filtro-medio-add{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -2px 0 8px;
+    padding: 8px 10px;
+    background: var(--quote-bg);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    font-size: .78em;
+  }
+  .filtro-medio-add-label{
+    flex: 1;
+    color: var(--muted);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .filtro-medio-add-label code{
+    color: var(--fg);
+    font-weight: 600;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .filtro-medio-add-btn{
+    padding: 4px 12px;
+    font-size: .9em;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    background: transparent;
+    white-space: nowrap;
+  }
+  .filtro-medio-add-btn.force{
+    border: 1px solid var(--preset);
+    color: var(--preset);
+  }
+  .filtro-medio-add-btn.force:hover{ background: var(--preset-bg); }
+  .filtro-medio-add-btn.ignore{
+    border: 1px solid var(--block);
+    color: var(--block);
+  }
+  .filtro-medio-add-btn.ignore:hover{ background: var(--block-bg); }
   .list-medios{
     border:1px solid var(--border); border-radius:6px;
     background:var(--bg);
@@ -1647,7 +1690,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">06/10/2026 13:52</span>
+      <span id="fecha">06/10/2026 15:12</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -1710,22 +1753,7 @@
           <button id="btn-nuevo-modo" type="button" style="font-size:.75em;">+ <span id="btn-nuevo-modo-lbl"></span></button>
         </div>
 
-        <div id="modo-overrides-wrap" style="margin-top:16px;">
-          <p id="modo-overrides-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-          <div class="ctrl-override">
-            <input type="text" id="ov-domain" placeholder="dominio.com" autocomplete="off">
-            <button id="ov-add-first" type="button" title="first">✓</button>
-            <button id="ov-add-ignore" type="button" title="ignore">✗</button>
-          </div>
-          <div id="ov-list" class="ov-list"></div>
-          <details id="ov-pegar-wrap" style="margin-top:8px;">
-            <summary style="cursor:pointer; color:var(--save); font-size:.75em; font-weight:600;"></summary>
-            <textarea id="ov-pegar" class="preset-texto" style="min-height:80px; font-family:ui-monospace,monospace; font-size:.78em;" placeholder="+ dominio.com&#10;- otro.com"></textarea>
-            <div style="margin-top:6px; display:flex; gap:8px; justify-content:flex-end;">
-              <button id="ov-pegar-aplicar" type="button" class="primary" style="font-size:.75em;"></button>
-            </div>
-          </details>
-        </div>
+
 
         <h3 id="cfg-palabras"></h3>
         <p id="cfg-palabras-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
@@ -1783,19 +1811,36 @@
       <!-- ═══════════ TAB: MEDIOS ═══════════ -->
       <div class="cfg-tabpanel" data-panel="medios" hidden>
 
-        <h3 id="cfg-grupos"></h3>
-        <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <div id="lista-grupos" class="list-grupos"></div>
+        <div id="modo-overrides-wrap">
+          <p id="modo-overrides-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+          <div id="ov-list" class="ov-list"></div>
+          <details id="ov-pegar-wrap" style="margin-top:8px;">
+            <summary style="cursor:pointer; color:var(--save); font-size:.75em; font-weight:600;"></summary>
+            <textarea id="ov-pegar" class="preset-texto" style="min-height:80px; font-family:ui-monospace,monospace; font-size:.78em;" placeholder="+ dominio.com&#10;- otro.com"></textarea>
+            <div style="margin-top:6px; display:flex; gap:8px; justify-content:flex-end;">
+              <button id="ov-pegar-aplicar" type="button" class="primary" style="font-size:.75em;"></button>
+            </div>
+          </details>
+        </div>
 
         <h3 id="cfg-medios"></h3>
         <p id="cfg-medios-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
         <p id="cfg-medios-legend" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
         <div class="ctrl-medios">
-          <input type="search" id="filtro-medio">
+          <input type="search" id="filtro-medio" autocomplete="off">
           <select id="filtro-grupo-medio"><option value=""></option></select>
+        </div>
+        <div id="filtro-medio-add" class="filtro-medio-add" hidden>
+          <span class="filtro-medio-add-label" id="filtro-medio-add-label"></span>
+          <button id="ov-add-first"  type="button" class="filtro-medio-add-btn force"></button>
+          <button id="ov-add-ignore" type="button" class="filtro-medio-add-btn ignore"></button>
         </div>
         <div id="lista-medios" class="list-medios"></div>
         <p id="resumen-medios" style="font-size:.68em; color:var(--muted); margin:6px 0 0;"></p>
+
+        <h3 id="cfg-grupos"></h3>
+        <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+        <div id="lista-grupos" class="list-grupos"></div>
 
       </div>
 
@@ -2145,16 +2190,6 @@ const I18N = {
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio no válido: {X}',
 
-    /* ── Destino inline y modos (➕ / 🚫) ── */
-    addToModoTitle:      'Añadir este medio al modo',
-    destinoAnadirA:      'Añadir a…',
-    destinoBloquearEn:   'Bloquear en…',
-    destinoNuevoModo:    'Crear nuevo modo…',
-    destinoOkAnadido:    'Añadido al modo',
-    destinoOkBloqueado:  'Bloqueado en el modo',
-    destinoOkAnadidoEn:  'Añadido a',
-    destinoOkBloqueadoEn:'Bloqueado en',
-
     /* ── Menú del botón Modo Personalizado ── */
     presetSinFiltro:        'Sin filtro',
     presetGestionar:        'Gestionar modos…',
@@ -2213,7 +2248,7 @@ const I18N = {
     saveLabelPending:       'Pendiente',
     saveLabelRead:          'Leída',
     chipLiteral:            'Convertir a búsqueda literal',
-    cfgBuscarMedio:         'Buscar por dominio, nombre o grupo…',
+    cfgBuscarMedio:         'Buscar o añadir dominio…',
     cfgTodosGrupos:         'Todos los grupos',
     cfgPalabras:            'Palabras clave en titular',
     cfgPalabrasHint:        'Una por línea o separadas por comas. Sin tildes, palabra completa.',
@@ -2425,16 +2460,6 @@ const I18N = {
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio non válido: {X}',
 
-    /* ── Destino inline e modos (➕ / 🚫) ── */
-    addToModoTitle:      'Engadir este medio ao modo',
-    destinoAnadirA:      'Engadir a…',
-    destinoBloquearEn:   'Bloquear en…',
-    destinoNuevoModo:    'Crear novo modo…',
-    destinoOkAnadido:    'Engadido ao modo',
-    destinoOkBloqueado:  'Bloqueado no modo',
-    destinoOkAnadidoEn:  'Engadido a',
-    destinoOkBloqueadoEn:'Bloqueado en',
-
     /* ── Menú do botón Modo Personalizado ── */
     presetSinFiltro:        'Sen filtro',
     presetGestionar:        'Xestionar modos…',
@@ -2493,7 +2518,7 @@ const I18N = {
     saveLabelPending:       'Pendente',
     saveLabelRead:          'Lida',
     chipLiteral:            'Converter a busca literal',
-    cfgBuscarMedio:         'Buscar por dominio, nome ou grupo…',
+    cfgBuscarMedio:         'Buscar ou engadir dominio…',
     cfgTodosGrupos:         'Todos os grupos',
     cfgPalabras:            'Palabras clave no titular',
     cfgPalabrasHint:        'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
@@ -2705,16 +2730,6 @@ const I18N = {
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Domini no vàlid: {X}',
 
-    /* ── Destinació inline i modes (➕ / 🚫) ── */
-    addToModoTitle:      'Afegir aquest mitjà al mode',
-    destinoAnadirA:      'Afegir a…',
-    destinoBloquearEn:   'Bloquejar a…',
-    destinoNuevoModo:    'Crear un mode nou…',
-    destinoOkAnadido:    'Afegit al mode',
-    destinoOkBloqueado:  'Bloquejat al mode',
-    destinoOkAnadidoEn:  'Afegit a',
-    destinoOkBloqueadoEn:'Bloquejat a',
-
     /* ── Menú del botó Mode Personalitzat ── */
     presetSinFiltro:        'Sense filtre',
     presetGestionar:        'Gestionar modes…',
@@ -2773,7 +2788,7 @@ const I18N = {
     saveLabelPending:       'Pendent',
     saveLabelRead:          'Llegida',
     chipLiteral:            'Convertir a cerca literal',
-    cfgBuscarMedio:         'Cercar per domini, nom o grup…',
+    cfgBuscarMedio:         'Cercar o afegir domini…',
     cfgTodosGrupos:         'Tots els grups',
     cfgPalabras:            'Paraules clau al titular',
     cfgPalabrasHint:        'Una per línia o separades per comes. Sense accents, paraula completa.',
@@ -2985,16 +3000,6 @@ const I18N = {
     cfgOverrideAplicar:     'Apply',
     cfgOverrideBad:         'Invalid domain: {X}',
 
-    /* ── Inline destination and modes (➕ / 🚫) ── */
-    addToModoTitle:      'Add this outlet to a mode',
-    destinoAnadirA:      'Add to…',
-    destinoBloquearEn:   'Block in…',
-    destinoNuevoModo:    'Create new mode…',
-    destinoOkAnadido:    'Added to mode',
-    destinoOkBloqueado:  'Blocked in mode',
-    destinoOkAnadidoEn:  'Added to',
-    destinoOkBloqueadoEn:'Blocked in',
-
     /* ── Custom Mode button menu ── */
     presetSinFiltro:        'No filter',
     presetGestionar:        'Manage modes…',
@@ -3053,7 +3058,7 @@ const I18N = {
     saveLabelPending:       'Pending',
     saveLabelRead:          'Read',
     chipLiteral:            'Convert to literal search',
-    cfgBuscarMedio:         'Search by domain, name or group…',
+    cfgBuscarMedio:         'Search or add a domain…',
     cfgTodosGrupos:         'All groups',
     cfgPalabras:            'Keywords in headline',
     cfgPalabrasHint:        'One per line or comma-separated. Accent-insensitive, whole word.',
@@ -3265,16 +3270,6 @@ const I18N = {
     cfgOverrideAplicar:     'Aplikatu',
     cfgOverrideBad:         'Domeinu baliogabea: {X}',
 
-    /* ── Destinoa inline eta moduak (➕ / 🚫) ── */
-    addToModoTitle:      'Gehitu hedabide hau modu batera',
-    destinoAnadirA:      'Gehitu honi…',
-    destinoBloquearEn:   'Blokeatu honetan…',
-    destinoNuevoModo:    'Modu berria sortu…',
-    destinoOkAnadido:    'Modura gehituta',
-    destinoOkBloqueado:  'Moduan blokeatuta',
-    destinoOkAnadidoEn:  'Gehituta:',
-    destinoOkBloqueadoEn:'Blokeatuta:',
-
     /* ── Modo Pertsonalizatua botoiaren menua ── */
     presetSinFiltro:        'Iragazkirik gabe',
     presetGestionar:        'Moduak kudeatu…',
@@ -3333,7 +3328,7 @@ const I18N = {
     saveLabelPending:       'Zain',
     saveLabelRead:          'Irakurrita',
     chipLiteral:            'Bilaketa literala bihurtu',
-    cfgBuscarMedio:         'Bilatu domeinu, izen edo taldearen arabera…',
+    cfgBuscarMedio:         'Bilatu edo domeinua gehitu…',
     cfgTodosGrupos:         'Talde guztiak',
     cfgPalabras:            'Hitz gakoak izenburuan',
     cfgPalabrasHint:        'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
@@ -3499,7 +3494,7 @@ const I18N = {
     vsReset:                '↺ Vista berrezarri',
   },
 };
-
+  
 function t(key, vars){
   const lang = (ACCES && ACCES.lang) || 'es';
   const dict = I18N[lang] || I18N.es;
@@ -5606,6 +5601,32 @@ function filtrarMedios(){
     if (show) visibles++;
   });
   actualizarResumen(visibles);
+  actualizarAddBar(visibles);
+}
+
+function actualizarAddBar(visibles){
+  const bar   = $('#filtro-medio-add');
+  const label = $('#filtro-medio-add-label');
+  if (!bar || !label) return;
+
+  const raw = $('#filtro-medio').value.trim();
+  const dom = normalizarDominioInput(raw);
+
+  // Solo ofrecemos añadir si:
+  //  - hay texto
+  //  - parece un dominio válido
+  //  - no hay ningún medio visible
+  //  - ese dominio no está ya como override
+  const esValido = /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(dom);
+  const yaEsta   = !!(PRESET && PRESET.overrides && PRESET.overrides[dom]);
+
+  if (!raw || !esValido || visibles > 0 || yaEsta){
+    bar.hidden = true;
+    return;
+  }
+
+  label.innerHTML = t('cfgMedioAddLabel', { X: '<code>' + escapeHtml(dom) + '</code>' });
+  bar.hidden = false;
 }
 function actualizarResumen(visiblesOverride){
   const total = MEDIOS_UNICOS.length;
@@ -7682,7 +7703,8 @@ function aplicarTextos(){
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
   $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
   $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
-  $('#ov-domain').placeholder = t('cfgOverridePlaceholder');
+  $('#ov-add-first').textContent  = t('cfgMedioAddForce');
+  $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
   const det = $('#ov-pegar-wrap summary');
   if (det) det.textContent = t('cfgOverridePegar');
@@ -8223,36 +8245,27 @@ if (btnFiltros && filtrosPanel){
   const btnNuevoModo = $('#btn-nuevo-modo');
   if (btnNuevoModo) btnNuevoModo.addEventListener('click', crearModo);
 
-  const ovFirst = $('#ov-add-first');
+  const ovFirst  = $('#ov-add-first');
   const ovIgnore = $('#ov-add-ignore');
-  const ovDomain = $('#ov-domain');
-  if (ovFirst) ovFirst.addEventListener('click', () => {
-    const v = ovDomain.value;
+
+  function aplicarOverrideDesdeBuscador(tipo){
+    const v = $('#filtro-medio').value.trim();
     const d = normalizarDominioInput(v);
     if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){
       toast(t('cfgOverrideBad', { X: v }), 2400);
       return;
     }
-    setOverride(d, 'first');
-    ovDomain.value = '';
+    setOverride(d, tipo);
+    $('#filtro-medio').value = '';
+    $('#filtro-medio-add').hidden = true;
     renderModosPanel();
     renderListaMedios();
     aplicarFiltros();
-  });
-  if (ovIgnore) ovIgnore.addEventListener('click', () => {
-    const v = ovDomain.value;
-    const d = normalizarDominioInput(v);
-    if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){
-      toast(t('cfgOverrideBad', { X: v }), 2400);
-      return;
-    }
-    setOverride(d, 'ignore');
-    ovDomain.value = '';
-    renderModosPanel();
-    renderListaMedios();
-    aplicarFiltros();
-    
-  });
+  }
+
+  if (ovFirst)  ovFirst.addEventListener('click',  () => aplicarOverrideDesdeBuscador('first'));
+  if (ovIgnore) ovIgnore.addEventListener('click', () => aplicarOverrideDesdeBuscador('ignore'));
+
   const ovAplicar = $('#ov-pegar-aplicar');
   if (ovAplicar) ovAplicar.addEventListener('click', aplicarListaOverrides);
   wireResultadosDelegation();
