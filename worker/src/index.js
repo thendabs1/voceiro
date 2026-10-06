@@ -1,5 +1,6 @@
 // worker/src/index.js
 import { parseQuery } from '../../shared/parser.js';
+import parserSource from '../../shared/parser.js?raw';
 import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';
 import { freenews } from './sources/freenews.js';
@@ -18,6 +19,21 @@ export default {
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS });
+    }
+
+    // ── Parser compartido servido como módulo ES ──
+    // El frontend hace:
+    //   import { parseQuery } from 'https://.../parser.js'
+    // Esto es lo que cierra el problema del parser duplicado.
+    if (url.pathname === '/parser.js') {
+      return new Response(parserSource, {
+        headers: {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Cache-Control': 'public, max-age=300',
+        },
+      });
     }
 
     if (url.pathname === '/buscar') return handleBuscar(request, env, ctx, url);
@@ -44,14 +60,12 @@ async function handleBuscar(request, env, ctx, url) {
   const orderQ = url.searchParams.get('order');
   if (orderQ && ['recientes','antiguos','relevancia'].includes(orderQ)) parsed.order = orderQ;
 
-  // Overrides de idioma y región (front → Worker)
   const langQ = url.searchParams.get('lang');
-  if (langQ && !parsed.lang) parsed.lang = langQ;
+  if (langQ && !parsed.lang?.length) parsed.lang = [langQ];
 
   const regionQ = url.searchParams.get('region');
   if (regionQ && !parsed.region) parsed.region = regionQ;
 
-  // Solo fuentes conocidas
   const activas = parsed.fuentes.filter(f => ADAPTERS[f]);
   if (!activas.length) {
     return json({ total: 0, items: [], next_offset: null, fuentes: [] }, CORS);
@@ -72,7 +86,7 @@ async function handleBuscar(request, env, ctx, url) {
     return r;
   }
 
-  // ── Fan-out paralelo con tolerancia a fallos ──
+  // ── Fan-out paralelo ──
   const t0 = Date.now();
   const settled = await Promise.allSettled(
     activas.map(name => ADAPTERS[name].search(parsed, env))
@@ -122,7 +136,6 @@ async function handleBuscar(request, env, ctx, url) {
     });
   }
 
-  // ── next_offset: solo si Turso va solo ──
   const soloTurso = activas.length === 1 && activas[0] === 'turso';
   const next_offset = (soloTurso && hayMasTurso)
     ? parsed.offset + parsed.limit
@@ -137,7 +150,6 @@ async function handleBuscar(request, env, ctx, url) {
   };
   if (Object.keys(fuentesErr).length) body._errores = fuentesErr;
 
-  // ── No cachear si hay errores ──
   const tieneErrores = Object.keys(fuentesErr).length > 0;
   const response = json(body, {
     ...CORS,
