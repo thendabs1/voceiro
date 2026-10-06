@@ -12,7 +12,7 @@ export const turso = {
 
     const ftsQ = buildFtsQuery(parsed.titulo);
     if (ftsQ) {
-      conditions.push('f MATCH ?');
+      conditions.push('noticias_fts MATCH ?');
       args.push(ftsQ);
     }
 
@@ -25,38 +25,44 @@ export const turso = {
       args.push(...parsed.dominios);
     }
 
-    // ── Grupos / tipos / lang: requieren JOIN con medios ──
-    const needsJoin = parsed.grupos.length
-                   || parsed.tipos.length
-                   || (parsed.lang?.length ?? 0) > 0
-                   || (parsed.tags?.length ?? 0) > 0;
+    // ── Filtros de medios: UNA subquery en vez de JOIN ──
+    // Con JOIN, SQLite no puede usar idx_noticias_dia para el ORDER BY
+    // (el JOIN fuerza un plan distinto y ordena en memoria). Con subquery,
+    // noticias se itera por fecha_dia (índice) y se filtra por dominio.
+    const mediosConds = [];
+    const mediosArgs = [];
 
     if (parsed.grupos.length) {
       for (const g of parsed.grupos) {
-        conditions.push(`m.grupo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
-        args.push(escapeLike(g));
+        mediosConds.push(`grupo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
+        mediosArgs.push(escapeLike(g));
       }
     }
     if (parsed.tipos.length) {
       for (const t of parsed.tipos) {
-        conditions.push(`m.tipo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
-        args.push(escapeLike(t));
+        mediosConds.push(`tipo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
+        mediosArgs.push(escapeLike(t));
       }
     }
     if (parsed.lang?.length) {
-      conditions.push(`m.lang_norm IN (${parsed.lang.map(() => '?').join(',')})`);
-      args.push(...parsed.lang);
+      mediosConds.push(`lang_norm IN (${parsed.lang.map(() => '?').join(',')})`);
+      mediosArgs.push(...parsed.lang);
     }
     if (parsed.tags?.length) {
       for (const tg of parsed.tags) {
-        conditions.push(`m.tags LIKE '%' || ? || '%' ESCAPE '\\'`);
-        args.push(escapeLike(tg));
+        mediosConds.push(`tags LIKE '%' || ? || '%' ESCAPE '\\'`);
+        mediosArgs.push(escapeLike(tg));
       }
     }
 
+    if (mediosConds.length) {
+      conditions.push(
+        `n.dominio IN (SELECT dominio FROM medios WHERE ${mediosConds.join(' AND ')})`
+      );
+      args.push(...mediosArgs);
+    }
+
     // ── Ventana por defecto cuando no hay FTS ni rango explícito ──
-    // Sin texto, el usuario navega el catálogo por grupo/tipo/lang.
-    // 30 días es suficiente y el índice idx_noticias_dia lo resuelve.
     if (!ftsQ && !parsed.desde && !parsed.hasta) {
       const hace30 = new Date(Date.now() - 30 * 86400 * 1000)
         .toISOString().slice(0, 10);
@@ -67,27 +73,23 @@ export const turso = {
     const where = conditions.length ? conditions.join(' AND ') : '1=1';
 
     // ── ORDER BY ──
-    // fecha_dia primero: tiene índice (idx_noticias_dia). fecha_pub desempata
-    // dentro del día. enlace desempata totalmente (paginación determinista).
+    // fecha_dia primero: usa idx_noticias_dia. fecha_pub desempata dentro
+    // del día. enlace desempata totalmente (paginación determinista).
     const orderByItems = parsed.order === 'antiguos'
       ? 'ORDER BY n.fecha_dia ASC,  n.fecha_pub ASC,  n.enlace ASC'
       : 'ORDER BY n.fecha_dia DESC, n.fecha_pub DESC, n.enlace ASC';
 
     const orderByFts = (parsed.order === 'relevancia' && ftsQ)
-      ? 'ORDER BY bm25(f) ASC'
+      ? 'ORDER BY bm25(noticias_fts) ASC'
       : orderByItems;
 
     // ── Dos caminos ──
-    // Con FTS: noticias_fts MATCH para filtrar, JOIN a noticias por enlace.
-    // Sin FTS: noticias directo. noticias_fts es standalone (sin índices
-    //          B-tree), escanearla sin MATCH es el cuello de botella.
     const sql = ftsQ
       ? `
         SELECT n.titular, n.enlace, n.dominio,
                n.fecha_pub, n.fecha_est, n.fuente, n.fecha_dia
         FROM noticias_fts f
         JOIN noticias n ON n.enlace = f.enlace
-        ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
         WHERE ${where}
         ${orderByFts}
         LIMIT ? OFFSET ?
@@ -96,7 +98,6 @@ export const turso = {
         SELECT n.titular, n.enlace, n.dominio,
                n.fecha_pub, n.fecha_est, n.fuente, n.fecha_dia
         FROM noticias n
-        ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
         WHERE ${where}
         ${orderByItems}
         LIMIT ? OFFSET ?
@@ -108,7 +109,6 @@ export const turso = {
           SELECT 1
           FROM noticias_fts f
           JOIN noticias n ON n.enlace = f.enlace
-          ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
           WHERE ${where}
           LIMIT 5001
         )
@@ -117,7 +117,6 @@ export const turso = {
         SELECT COUNT(*) AS n FROM (
           SELECT 1
           FROM noticias n
-          ${needsJoin ? 'JOIN medios m ON m.dominio = n.dominio' : ''}
           WHERE ${where}
           LIMIT 5001
         )
@@ -126,9 +125,6 @@ export const turso = {
     const itemArgs = [...args, parsed.limit, parsed.offset];
     const countArgs = args;
 
-    // ── Solo COUNT si hay FTS ──
-    // Sin FTS no lo necesitamos (el usuario está navegando el catálogo, no
-    // buscando algo concreto). Con FTS el MATCH filtra mucho y es rápido.
     const hacerCount = !!ftsQ;
 
     const requests = [
