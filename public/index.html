@@ -755,6 +755,40 @@
   background: var(--quote-bg);
   color: var(--fg);
 }
+/* ═══ Banner de preset activo en búsqueda ═══ */
+.preset-aviso{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 8px 0 4px;
+  background: var(--preset-bg);
+  border: 1px solid var(--preset);
+  border-radius: 6px;
+  font-size: .75em;
+  color: var(--preset);
+  line-height: 1.4;
+}
+.preset-aviso[hidden]{ display: none; }
+.preset-aviso-txt{
+  flex: 1;
+  min-width: 0;
+}
+.preset-aviso button{
+  flex-shrink: 0;
+  background: var(--preset);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .95em;
+  transition: filter .15s;
+}
+.preset-aviso button:hover{ filter: brightness(.92); }
+[data-theme="contrast"] .preset-aviso button{ color: #000; }
 
   /* ═══ Chips de filtros activos ═══ */
   .chips-busqueda{
@@ -1764,10 +1798,10 @@
         <p id="cfg-feed-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
 
         <label class="cfg-toggle">
-          <input type="checkbox" id="cfg-recordar-filtros">
+          <input type="checkbox" id="cfg-preset-busqueda">
           <span class="cfg-toggle-txt">
-            <span class="cfg-toggle-title" id="cfg-recordar-filtros-lbl"></span>
-            <span class="cfg-toggle-hint"  id="cfg-recordar-filtros-hint"></span>
+            <span class="cfg-toggle-title" id="cfg-preset-busqueda-lbl"></span>
+            <span class="cfg-toggle-hint"  id="cfg-preset-busqueda-hint"></span>
           </span>
         </label>
 
@@ -2078,6 +2112,11 @@
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 
+<div id="preset-aviso" class="preset-aviso" hidden>
+  <span class="preset-aviso-txt" id="preset-aviso-txt"></span>
+  <button id="preset-aviso-ampliar" type="button"></button>
+</div>
+
 <main id="resultados"></main>
 <button id="btn-top" class="btn-top" type="button"
         aria-label="Volver arriba" title="Volver arriba">↑</button>
@@ -2116,6 +2155,10 @@ const PRENSA_CACHE_TTL_MS = 30 * 60 * 1000;
 const PRENSA_MIN_RESULTADOS = 5;
 const PRENSA_DEBOUNCE_MS = 1500;
 
+
+const PUEDE_COMPARTIR =   //dejar vacío para autodetectar, poner true para TEST.
+  typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
 let PRENSA_ACTIVA = false;
 let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
@@ -2149,12 +2192,19 @@ const I18N = {
     /* ── Pestañas del panel ── */
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
+    presetBannerExtra:       'en histórico',
+    presetBannerZero:        'Ningún titular del modo «{X}» coincide con tu búsqueda',
+    presetBannerWithin:      'Mostrando {n} titulares del modo «{X}»',
+    presetBannerOutside:     '{n} fuera del modo',
+    presetVerTodos:          'Ver todos',
 
     /* ── Feed (bloque nuevo) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga del feed y prensa externa.',
     cfgRecordarFiltros:      'Recordar filtros al recargar',
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
+    cfgPresetBusqueda:       'Buscar sólo dentro del modo',
+    cfgPresetBusquedaHint:   'Si está activo, la búsqueda se limita a los titulares que cumplen el modo. Desactívalo para ampliar.',
 
     /* ── Prensa externa ── */
     prensaPanelLabel:  'Prensa externa',
@@ -2348,6 +2398,7 @@ const I18N = {
     alreadyInReader:        'Ya estaba en pendientes',
     saveCopied:             'Enlace copiado · Pégalo donde quieras',
     saveForLaterTitle:      'Guardar para leer después',
+    shareTitle:             'Compartir esta noticia',
     deletePending:          'Quitar',
     confirmDeletePending:   '¿Quitar esta noticia de pendientes?',
     readItems:              'Leídas',
@@ -2432,12 +2483,19 @@ const I18N = {
     /* ── Pestanas do panel ── */
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
+    presetBannerExtra:       'no histórico',
+    presetBannerZero:        'Ningún titular do modo «{X}» coincide coa túa busca',
+    presetBannerWithin:      'Amosando {n} titulares do modo «{X}»',
+    presetBannerOutside:     '{n} fóra do modo',
+    presetVerTodos:          'Ver todos',
 
     /* ── Feed (bloque novo) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga do feed e prensa externa.',
     cfgRecordarFiltros:      'Lembrar filtros ao recargar',
     cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
+    cfgPresetBusqueda:       'Buscar só dentro do modo',
+    cfgPresetBusquedaHint:   'Se está activo, a busca limítase aos titulares que cumpren o modo. Desactívao para ampliar.',
 
     /* ── Prensa externa ── */
     prensaPanelLabel:  'Prensa externa',
@@ -2631,6 +2689,7 @@ const I18N = {
     alreadyInReader:        'Xa estaba en pendentes',
     saveCopied:             'Ligazón copiada · Pégala onde queiras',
     saveForLaterTitle:      'Gardar para ler despois',
+    shareTitle:             'Compartir esta noticia',
     deletePending:          'Quitar',
     confirmDeletePending:   '¿Quitar esta noticia de pendentes?',
     readItems:              'Lidas',
@@ -2715,12 +2774,19 @@ const I18N = {
     /* ── Pestanyes del panell ── */
     tabMedios:               'Mitjans',
     tabAvanzado:             'Avançat',
+    presetBannerExtra:       "a l'històric",
+    presetBannerZero:        'Cap titular del mode «{X}» coincideix amb la teva cerca',
+    presetBannerWithin:      'Mostrant {n} titulars del mode «{X}»',
+    presetBannerOutside:     '{n} fora del mode',
+    presetVerTodos:          'Veure tots',
 
     /* ── Feed (bloc nou) ── */
     cfgFeed:                 'Feed',
-    cfgFeedHint:             "Càrrega del feed i premsa externa.",
+    cfgFeedHint:             'Càrrega del feed i premsa externa.',
     cfgRecordarFiltros:      'Recordar filtres en recarregar',
     cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
+    cfgPresetBusqueda:       'Cercar només dins del mode',
+    cfgPresetBusquedaHint:   "Si està actiu, la cerca es limita als titulars que compleixen el mode. Desactiva'l per ampliar.",
 
     /* ── Premsa externa ── */
     prensaPanelLabel:  'Premsa externa',
@@ -2914,6 +2980,7 @@ const I18N = {
     alreadyInReader:        'Ja era a pendents',
     saveCopied:             "Enllaç copiat · Enganxa'l on vulguis",
     saveForLaterTitle:      'Desar per llegir després',
+    shareTitle:             'Compartir aquesta notícia',
     deletePending:          'Treure',
     confirmDeletePending:   'Treure aquesta notícia de pendents?',
     readItems:              'Llegides',
@@ -2998,12 +3065,19 @@ const I18N = {
     /* ── Config panel tabs ── */
     tabMedios:               'Outlets',
     tabAvanzado:             'Advanced',
+    presetBannerExtra:       'in history',
+    presetBannerZero:        'No headlines from the "{X}" mode match your search',
+    presetBannerWithin:      'Showing {n} headlines from the "{X}" mode',
+    presetBannerOutside:     '{n} outside the mode',
+    presetVerTodos:          'View all',
 
     /* ── Feed (new block) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feed loading and external press.',
     cfgRecordarFiltros:      'Remember filters on reload',
     cfgRecordarFiltrosHint:  'Restores the active search and filters when you return.',
+    cfgPresetBusqueda:       'Search only within the mode',
+    cfgPresetBusquedaHint:   'When active, search is limited to headlines matching the mode. Disable to widen.',
 
     /* ── External press ── */
     prensaPanelLabel:  'External press',
@@ -3197,6 +3271,7 @@ const I18N = {
     alreadyInReader:        'Already in queue',
     saveCopied:             'Link copied · Paste it wherever you like',
     saveForLaterTitle:      'Save for later',
+    shareTitle:             'Share this news item',
     deletePending:          'Remove',
     confirmDeletePending:   'Remove this news from queue?',
     readItems:              'Read',
@@ -3281,12 +3356,19 @@ const I18N = {
     /* ── Konfigurazio panelaren fitxak ── */
     tabMedios:               'Hedabideak',
     tabAvanzado:             'Aurreratua',
+    presetBannerExtra:       'historialean',
+    presetBannerZero:        '«{X}» moduko izenbururik ez dator bat zure bilaketarekin',
+    presetBannerWithin:      '«{X}» moduko {n} izenburu erakusten',
+    presetBannerOutside:     '{n} modutik kanpo',
+    presetVerTodos:          'Dena ikusi',
 
     /* ── Feed (bloke berria) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feedaren karga eta kanpoko prentsa.',
     cfgRecordarFiltros:      'Gogoratu iragazkiak berriz kargatzean',
     cfgRecordarFiltrosHint:  'Bilaketa eta iragazki aktiboak berreskuratzen ditu itzultzean.',
+    cfgPresetBusqueda:       'Moduaren barruan soilik bilatu',
+    cfgPresetBusquedaHint:   'Aktibo badago, bilaketa modua betetzen duten izenburuetara mugatzen da. Desaktibatu zabaltzeko.',
 
     /* ── Kanpoko prentsa ── */
     prensaPanelLabel:  'Kanpoko prentsa',
@@ -3480,6 +3562,7 @@ const I18N = {
     alreadyInReader:        'Jadanik zain zegoen',
     saveCopied:             'Esteka kopiatu da · Itsatsi nahi duzun tokian',
     saveForLaterTitle:      'Geroago irakurtzeko gorde',
+    shareTitle:             'Albiste hau partekatu',
     deletePending:          'Kendu',
     confirmDeletePending:   'Albiste hau zaintik kendu?',
     readItems:              'Irakurriak',
@@ -3774,6 +3857,9 @@ const HIDE_MODE_KEY = 'voceiro-hide-mode';
 const HIDE_MODES = ['off', 'read', 'viewed', 'both'];
 let HIDE_MODE = 'off';
 const RECORDAR_FILTROS_KEY = 'voceiro-recordar-filtros';
+const PRESET_BUSQUEDA_KEY = 'voceiro-preset-busqueda-estricto';
+let PRESET_BUSQUEDA_ESTRICTO = true;
+let PRESET_AMPLIADO_TEMP = false;
 let RECORDAR_FILTROS = true;
 let APP_LISTA = false;
 
@@ -3785,6 +3871,18 @@ function cargarRecordarFiltros(){
   } catch(e){}
   return true;   // por defecto, sí recordamos
 }
+function cargarPresetBusquedaEstricto(){
+  try {
+    const raw = localStorage.getItem(PRESET_BUSQUEDA_KEY);
+    if (raw === '0') return false;
+    if (raw === '1') return true;
+  } catch(e){}
+  return true;
+}
+function guardarPresetBusquedaEstricto(){
+  try { localStorage.setItem(PRESET_BUSQUEDA_KEY, PRESET_BUSQUEDA_ESTRICTO ? '1' : '0'); } catch(e){}
+}
+
 function guardarRecordarFiltros(){
   try { localStorage.setItem(RECORDAR_FILTROS_KEY, RECORDAR_FILTROS ? 'true' : 'false'); } catch(e){}
   // Si el usuario desactiva la opción, limpiamos lo guardado para
@@ -5925,7 +6023,7 @@ function aplicarListaOverrides(){
    worker: son preferencias locales.
    ═══════════════════════════════════════════════════════════════ */
 function aplicarTier3(items){
-  const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
+  const presetEfectivo = ULT_PRESET_EFECTIVO;
   return items.filter(n => {
     // Overrides + preset
     if (presetEfectivo && !cumplePreset(n)) return false;
@@ -5938,7 +6036,7 @@ function aplicarTier3(items){
       if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
       if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
     }
-    n._esPreset = presetEfectivo ? cumplePreset(n) : false;
+    n._esPreset = false;
     return true;
   });
 }
@@ -6663,6 +6761,8 @@ function bsAbrir(){
 let ULT_FILTRADAS = [];
 let ULT_RX = null;
 let ULT_PRESET_EFECTIVO = false;
+let ULT_BANNER_INFO = null;
+let ULT_BANNER_HISTORICO_EXTRA = 0;
 
 const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
@@ -7102,8 +7202,7 @@ function aplicarFiltros(){
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   renderChips(parsed, raw);
-  syncPanelFromParsed(parsed); 
-
+  syncPanelFromParsed(parsed);
 
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
@@ -7112,7 +7211,6 @@ function aplicarFiltros(){
 
   const ahora = Date.now();
   const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
-  const presetEfectivo = PRESET_ACTIVO && presetTieneReglas();
 
   const hayMedio   = parsed.medios.length   > 0;
   const hayDominio = parsed.dominios.length > 0;
@@ -7121,11 +7219,27 @@ function aplicarFiltros(){
   const hayTag     = parsed.tags.length     > 0;
   const hayTitulo  = parsed.titulo.length   > 0;
 
-  let filtradas = NOTICIAS.filter(n => {
-    const cumple = presetEfectivo ? cumplePreset(n) : false;
-    n._esPreset = cumple;
-    if (presetEfectivo && !cumple) return false;
+  // ── ¿Qué está pidiendo el usuario? ──
+  // Fuente explícita = dominio o medio. Siempre salta el preset.
+  const hayFuenteExplicita = hayDominio || hayMedio;
 
+  // Búsqueda activa = texto libre, tokens, o filtros del panel.
+  const hayBusquedaActiva =
+    hayTitulo || hayGrupo || hayTipo || hayTag ||
+    !!g || !!t2 || !!dias || !!parsed.desde || !!parsed.hasta;
+
+  // ── Reglas del preset ──
+  const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
+  const presetEfectivo =
+    presetConReglas &&
+    !hayFuenteExplicita &&
+    !PRESET_AMPLIADO_TEMP &&
+    (!hayBusquedaActiva || PRESET_BUSQUEDA_ESTRICTO);
+
+  let fueraDelPreset = 0;
+
+  let filtradas = NOTICIAS.filter(n => {
+    // 1) Todos los filtros EXCEPTO el preset
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
     if (limiteMs){
@@ -7133,7 +7247,7 @@ function aplicarFiltros(){
       if (isNaN(ts)) return false;
       if (ahora - ts > limiteMs) return false;
     }
-        if (parsed.desde){
+    if (parsed.desde){
       const ts = n._tsOrden;
       if (isNaN(ts)) return false;
       const corte = new Date(parsed.desde + 'T00:00:00').getTime();
@@ -7152,7 +7266,6 @@ function aplicarFiltros(){
       if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
       if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
     }
-
     if (hayMedio){
       const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
       for (let i = 0; i < parsed.medios.length; i++){
@@ -7189,13 +7302,21 @@ function aplicarFiltros(){
         if (tn.indexOf(parsed.titulo[i]) === -1) return false;
       }
     }
+
+    // 2) Ahora el preset, al final
+    if (presetEfectivo){
+      const cumple = cumplePreset(n);
+      n._esPreset = cumple;
+      if (!cumple){ fueraDelPreset++; return false; }
+      return true;
+    }
+    n._esPreset = false;
     return true;
   });
 
-  const FAV_WINDOW_MS = 24 * 3600 * 1000;   // 24 h
+  const FAV_WINDOW_MS = 24 * 3600 * 1000;
 
   filtradas.sort((a, b) => {
-    // Favoritos (✓ en Modo Personalizado), solo si son recientes y el modo está activo
     if (presetEfectivo){
       const aFav = getOverride(a.dominio) === 'first'
                    && !isNaN(a._tsOrden)
@@ -7207,14 +7328,10 @@ function aplicarFiltros(){
       const fb = bFav ? 1 : 0;
       if (fa !== fb) return fb - fa;
     }
-
-    // Programadas lejanas al final (>6h en el futuro)
     const H6 = 6 * 3600 * 1000;
     const aLejos = a._esFuturo && !isNaN(a._tsShow) && (a._tsShow - ahora > H6);
     const bLejos = b._esFuturo && !isNaN(b._tsShow) && (b._tsShow - ahora > H6);
     if (aLejos !== bLejos) return aLejos - bLejos;
-
-    // Orden normal por fecha
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
     if (ta !== tb) return orden === 'antiguos' ? ta - tb : tb - ta;
@@ -7230,13 +7347,24 @@ function aplicarFiltros(){
   ULT_FILTRADAS = filtradas;
   ULT_RX = buildHighlightRegex(parsed.titulo);
   ULT_PRESET_EFECTIVO = presetEfectivo;
+
+  // ── Banner del preset ──
+  ULT_BANNER_HISTORICO_EXTRA = 0;
+  ULT_BANNER_INFO = {
+    nDentro: filtradas.length,
+    nFuera: fueraDelPreset,
+    presetConReglas,
+    hayFuenteExplicita,
+    hayBusquedaActiva,
+  };
+  renderPresetBanner();
+
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
 
   ULT_HISTORICO_PARSED = null;
   HISTORICO_PAG = { parsed: null, raw: '', offset: 0, total: 0, next: null, cargando: false, agotado: false };
 
-  // Condición ampliada: hay texto O hay dominio/medio
   const quiereHistorico = (parsed.titulo.length || parsed.dominios.length || parsed.medios.length)
                           && filtradas.length < HISTORICO_MIN_LOCALES;
 
@@ -7245,40 +7373,32 @@ function aplicarFiltros(){
     buscarEnHistorico(parsed, raw, { silent: true }).then(res => {
       if (!res || !res.items || !res.items.length) return;
       if (ULT_HISTORICO_PARSED !== parsed) return;
-
       const antes = ULT_FILTRADAS.length;
       const merged = mergeHistorico(ULT_FILTRADAS, res.items);
-      const filtrado = aplicarTier3(merged);       // ← nuevo
+      const filtrado = aplicarTier3(merged);
       const nuevas = filtrado.length - antes;
-
       if (nuevas > 0){
-        ULT_FILTRADAS = filtrado;                  // ← filtrado, no merged
+        ULT_FILTRADAS = filtrado;
         renderizar();
+        ULT_BANNER_HISTORICO_EXTRA += nuevas;
+        if (ULT_BANNER_INFO) ULT_BANNER_INFO.nDentro = ULT_FILTRADAS.length;
+        renderPresetBanner();
       }
-
-      // Setear la paginación SIEMPRE, aunque no haya items nuevos
       HISTORICO_PAG.parsed = parsed;
       HISTORICO_PAG.raw = raw;
       HISTORICO_PAG.offset = res.items.length;
       HISTORICO_PAG.total = res.total || 0;
       HISTORICO_PAG.next = res.next_offset;
-
       actualizarFiltrosCount();
       actualizarBotonCargarMas();
     });
   }
 
-  // Persistir el estado del buscador solo si la app ya está lista
-  // y el usuario ha activado "recordar filtros". Si no, las primeras
-  // llamadas (cargarPortada → refrescarVistaCompleta) pisarían con ''
-  // lo que había guardado el usuario.
   if (APP_LISTA && RECORDAR_FILTROS){
     try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
   }
-  // ── Búsqueda en prensa externa ──
   programarPrensa(parsed, raw, filtradas.length);
 }
-
 function actualizarBotonCargarMas() {
   const wrap = document.getElementById('cargar-mas-wrap');
   const btn  = document.getElementById('btn-cargar-mas');
@@ -7327,13 +7447,12 @@ async function cargarMasDeHistorico() {
       HISTORICO_PAG.next = null;
       return;
     }
-
     const antes = ULT_FILTRADAS.length;
     const merged = mergeHistorico(ULT_FILTRADAS, res.items);
-    const filtrado = aplicarTier3(merged);       // ← nuevo
+    const filtrado = aplicarTier3(merged);
     const nuevas = filtrado.length - antes;
 
-    ULT_FILTRADAS = filtrado;                    // ← filtrado
+    ULT_FILTRADAS = filtrado;
     HISTORICO_PAG.offset += res.items.length;
     HISTORICO_PAG.next = res.next_offset;
     if (!res.next_offset) HISTORICO_PAG.agotado = true;
@@ -7341,6 +7460,9 @@ async function cargarMasDeHistorico() {
     // Solo añade al DOM las nuevas, no re-renderiza todo
     if (nuevas > 0) {
       appendBatchDesdeOffset(antes, filtrado.length);
+      ULT_BANNER_HISTORICO_EXTRA += nuevas;
+      if (ULT_BANNER_INFO) ULT_BANNER_INFO.nDentro = ULT_FILTRADAS.length;
+      renderPresetBanner();
     }
     actualizarFiltrosCount();
   } catch(e) {
@@ -7349,6 +7471,43 @@ async function cargarMasDeHistorico() {
     HISTORICO_PAG.cargando = false;
     actualizarBotonCargarMas();
   }
+}
+function renderPresetBanner(){
+  const aviso = document.getElementById('preset-aviso');
+  if (!aviso) return;
+
+  const info = ULT_BANNER_INFO;
+  if (!info){ aviso.hidden = true; return; }
+
+  const mostrar =
+    info.presetConReglas &&
+    PRESET_BUSQUEDA_ESTRICTO &&
+    !PRESET_AMPLIADO_TEMP &&
+    !info.hayFuenteExplicita &&
+    info.hayBusquedaActiva &&
+    (info.nDentro === 0 || info.nFuera > 0);
+
+  if (!mostrar){ aviso.hidden = true; return; }
+
+  const nombre = (PRESET && PRESET.nombre) || 'General';
+  let txt;
+  if (info.nDentro === 0){
+    txt = t('presetBannerZero', { X: nombre });
+  } else {
+    txt = t('presetBannerWithin', { X: nombre, n: info.nDentro });
+  }
+  if (info.nFuera > 0){
+    txt += ' · ' + t('presetBannerOutside', { n: info.nFuera });
+  }
+  if (ULT_BANNER_HISTORICO_EXTRA > 0){
+    txt += ' · +' + ULT_BANNER_HISTORICO_EXTRA + ' ' + t('presetBannerExtra');
+  }
+
+  const txtEl = document.getElementById('preset-aviso-txt');
+  const btnEl = document.getElementById('preset-aviso-ampliar');
+  if (txtEl) txtEl.textContent = txt;
+  if (btnEl) btnEl.textContent = t('presetVerTodos');
+  aviso.hidden = false;
 }
 
 function renderizar(){
@@ -7381,6 +7540,21 @@ function renderizar(){
   SENTINEL_OBSERVER.observe(sentinel);
 
   if (ACCES.focus) requestAnimationFrame(updateFocus);
+}
+async function compartirNoticia(n){
+  if (!PUEDE_COMPARTIR || !n) return;
+  try {
+    await navigator.share({
+      title: n.titular,
+      url:   n.enlace,
+    });
+  } catch (err) {
+    // AbortError = el usuario canceló → silencio total
+    // Cualquier otro error, lo dejamos en consola y no molestamos
+    if (err && err.name !== 'AbortError') {
+      console.warn('[share]', err);
+    }
+  }
 }
 
 function renderItemHtml(n, idx){
@@ -7453,7 +7627,9 @@ function renderItemHtml(n, idx){
   const addBtnHtml = yaForzado
     ? ''
     : `<button class="btn-mini btn-add-item" type="button" data-idx="${idx}" title="${escapeHtml(t('addToModoTitle'))}" aria-label="${escapeHtml(t('addToModoTitle'))}">➕</button>`;
-
+  const shareBtnHtml = PUEDE_COMPARTIR
+    ? `<button class="btn-mini btn-share-item" type="button" data-idx="${idx}" title="${escapeHtml(t('shareTitle'))}" aria-label="${escapeHtml(t('shareTitle'))}">🔗</button>`
+    : '';
   // Bloque de duplicados (solo si los hay y AGRUPAR_DUPS está activo)
   let dupsHtml = '';
   if (AGRUPAR_DUPS && n._dupHidden && n._dupHidden.length){
@@ -7483,6 +7659,7 @@ function renderItemHtml(n, idx){
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
       <span class="cab-spacer"></span>
       ${addBtnHtml}
+      ${shareBtnHtml}
       <button class="btn-mini btn-block-item" type="button" data-idx="${idx}" title="${escapeHtml(blockTitle)}" aria-label="${escapeHtml(blockTitle)}">🚫</button>
       <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
     </div>
@@ -7576,7 +7753,15 @@ function wireResultadosDelegation(){
         !e.target.closest('.btn-block-item')){
       cerrarDestinoInline();
     }
-
+    const shareBtn = e.target.closest('.btn-share-item');
+    if (shareBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const i = parseInt(shareBtn.dataset.idx, 10);
+      const n = ULT_FILTRADAS[i];
+      if (n) compartirNoticia(n);
+      return;
+    }
     // Al clicar un titular: guardar como leída automáticamente
     const link = e.target.closest('a.titular');
     if (link){
@@ -7849,8 +8034,10 @@ function aplicarTextos(){
   $('#cfg-medios').textContent = t('cfgMedios');
   $('#cfg-feed').textContent = t('cfgFeed');
   $('#cfg-feed-hint').textContent = t('cfgFeedHint');
-  $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
-  $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
+  const lblPreset = $('#cfg-preset-busqueda-lbl');
+  if (lblPreset) lblPreset.textContent = t('cfgPresetBusqueda');
+  const hintPreset = $('#cfg-preset-busqueda-hint');
+  if (hintPreset) hintPreset.textContent = t('cfgPresetBusquedaHint');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#cfg-medios-legend').innerHTML =
     '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
@@ -8082,6 +8269,26 @@ function wireStaticEvents(){
       );
     });
   }
+  // ── Toggle "Buscar sólo dentro del modo activo" ──
+  const chkPreset = $('#cfg-preset-busqueda');
+  if (chkPreset){
+    chkPreset.checked = PRESET_BUSQUEDA_ESTRICTO;
+    chkPreset.addEventListener('change', () => {
+      PRESET_BUSQUEDA_ESTRICTO = chkPreset.checked;
+      guardarPresetBusquedaEstricto();
+      PRESET_AMPLIADO_TEMP = false;
+      aplicarFiltros();
+    });
+  }
+
+  // ── Banner del preset ──
+  const btnPresetAmpliar = $('#preset-aviso-ampliar');
+  if (btnPresetAmpliar){
+    btnPresetAmpliar.addEventListener('click', () => {
+      PRESET_AMPLIADO_TEMP = true;
+      aplicarFiltros();
+    });
+  }
     // ── Toggle prensa (botón de la barra) ──
   const btnPrensa = $('#btn-prensa');
   if (btnPrensa){
@@ -8281,7 +8488,10 @@ function wireStaticEvents(){
   $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
-  $('#buscar').addEventListener('input', aplicarFiltrosDebounced);
+  $('#buscar').addEventListener('input', () => {
+    PRESET_AMPLIADO_TEMP = false;
+    aplicarFiltrosDebounced();
+  });
   // Cada select escribe su token en #buscar.
   // #buscar es la fuente única; aplicarFiltros lee de ahí.
   const selG = $('#grupo');
@@ -8429,6 +8639,7 @@ async function init(){
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
   RECORDAR_FILTROS = cargarRecordarFiltros();
+  PRESET_BUSQUEDA_ESTRICTO = cargarPresetBusquedaEstricto();
     // Preferencias de prensa externa
   cargarPrensaDeLocalStorage();
   rebuildPendientes();
