@@ -7870,6 +7870,18 @@ async function init(){
     }
   } catch(e){}
 
+  // Restaurar búsqueda previa (si la había) ANTES de aplicar filtros.
+  // Si no, aplicarFiltros guardaría '' y perderíamos el estado.
+  try {
+    const savedBuscar = localStorage.getItem('voceiro-buscar');
+    if (savedBuscar){
+      const input = $('#buscar');
+      input.value = savedBuscar;
+      const clearBtn = $('#buscar-clear');
+      if (clearBtn) clearBtn.hidden = !savedBuscar;
+    }
+  } catch(e){}
+
   reconstruirSelectores();
   aplicarFiltros();
 
