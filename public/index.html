@@ -1515,7 +1515,7 @@
   <p class="meta">
     <span class="meta-text">
       <span id="meta-prefix"></span>
-      <span id="fecha">06/10/2026 10:42</span>
+      <span id="fecha">06/10/2026 11:39</span>
       <span>·</span>
       <span id="contador"></span>
     </span>
@@ -1875,11 +1875,25 @@
 </div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script>
+<script type="module">
+/* ═══════════════════════════════════════════════════════════════
+   IMPORTS COMPARTIDOS
+   El parser vive en shared/parser.js y se sirve desde el worker.
+   Fuente única para frontend y worker. No duplicar.
+   ═══════════════════════════════════════════════════════════════ */
+import {
+  parseQuery,
+  buildFtsQuery,
+  parseRelativeDate,
+  normalize,
+  normStrict,
+  normDomain,
+  tokenizeQuery,
+} from 'https://voceiro-buscar.toriorecorda.workers.dev/parser.js';
+
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
-const REPORT_REPO  = 'thendabs1/voceiro';
 const REPORT_EMAIL = 'thendabs1@gmail.com';
 const DATA_BASE = 'https://voceiro-datos.toriorecorda.workers.dev';
 const WORKER_BUSCAR = 'https://voceiro-buscar.toriorecorda.workers.dev';
@@ -3226,15 +3240,7 @@ function t(key, vars){
 
 const $ = sel => document.querySelector(sel);
 
-function normalize(s){
-  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-}
-function normStrict(s){
-  return normalize(s).replace(/[^a-z0-9]/g, '');
-}
-function normDomain(s){
-  return normalize(s).replace(/[^a-z0-9.\-]/g, '');
-}
+
 function normalizeUrlForMatch(u){
   try {
     const url = new URL(u, location.href);
@@ -4666,150 +4672,7 @@ function construirIndicesBusqueda(){
    TOKENIZADOR CON SOPORTE DE COMILAS
    Acepta:  grupo:"España · Nacionales"   "texto exacto"   palabra
    ═══════════════════════════════════════════════════════════════ */
-const PREFIX_ALIASES = {
-  medio: 'medio', medios: 'medio',
-  dominio: 'dominio', domain: 'dominio', dom: 'dominio',
-  web: 'dominio', webs: 'dominio',
-  grupo: 'grupo', grupos: 'grupo',
-  tipo: 'tipo', tipos: 'tipo',
-  tag: 'tag', tags: 'tag',
-  desde: 'desde',
-  hasta: 'hasta',
-};
 
-function tokenizeQuery(raw){
-  const re = /([a-z][a-z]*):"([^"]*)"|"([^"]*)"|([^\s"]+)/gi;
-  const tokens = [];
-  let m;
-  while ((m = re.exec(raw)) !== null){
-    if (m[1] !== undefined){
-      tokens.push({ prefix: m[1].toLowerCase(), text: m[2], raw: m[0], quoted: true });
-    } else if (m[3] !== undefined){
-      tokens.push({ prefix: '', text: m[3], raw: m[0], quoted: true });
-    } else {
-      const word = m[4];
-      const pi = word.indexOf(':');
-      if (pi > 0 && /^[a-z]+$/i.test(word.slice(0, pi))){
-        tokens.push({ prefix: word.slice(0, pi).toLowerCase(), text: word.slice(pi + 1), raw: word, quoted: false });
-      } else {
-        tokens.push({ prefix: '', text: word, raw: word, quoted: false });
-      }
-    }
-  }
-  return tokens;
-}
-
-function parseRelDate(s){
-  const v = String(s || '').trim().toLowerCase();
-  if (!v) return null;
-  // ISO: 2026-10-05
-  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-
-  const now = new Date();
-  if (v === 'hoy'){
-    return now.toISOString().slice(0, 10);
-  }
-  if (v === 'ayer'){
-    const d = new Date(now); d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
-  }
-  // Relativo: 7d, 24h, 30m
-  const m = v.match(/^(\d+)([dhm])$/);
-  if (!m) return null;
-  const n = parseInt(m[1], 10);
-  const d = new Date(now);
-  if (m[2] === 'd') d.setDate(d.getDate() - n);
-  else if (m[2] === 'h') d.setHours(d.getHours() - n);
-  else if (m[2] === 'm') d.setMinutes(d.getMinutes() - n);
-  return d.toISOString().slice(0, 10);
-}
-
-function parseQuery(raw){
-  const tokens = tokenizeQuery(raw);
-  const titulo = [], medios = [], dominios = [], grupos = [], tipos = [], tags = [];
-  const chips = [];
-  let desde = null, hasta = null;
-  for (const tk of tokens){
-    const kind = tk.prefix ? PREFIX_ALIASES[tk.prefix] : '';
-
-    // Prefijo desconocido (ej. "foo:bar") → búsqueda literal con el raw entero
-    if (tk.prefix && !kind){
-      titulo.push(normalize(tk.raw));
-      continue;
-    }
-
-    if (kind === 'medio'){
-      const v = normStrict(tk.text);
-      if (v){ medios.push(v); chips.push({ type: 'medio', value: tk.text, raw: tk.raw }); }
-      continue;
-    }
-    if (kind === 'dominio'){
-      const v = normDomain(tk.text);
-      if (v){
-        dominios.push(v);
-        chips.push({ type: 'web', value: tk.text, raw: tk.raw });   // ← antes 'dominio'
-      }
-      continue;
-    }
-    if (kind === 'grupo'){
-      const v = normStrict(tk.text);
-      if (v){ grupos.push(v); chips.push({ type: 'grupo', value: tk.text, raw: tk.raw }); }
-      continue;
-    }
-    if (kind === 'tipo'){
-      const v = normStrict(tk.text);
-      if (v){ tipos.push(v); chips.push({ type: 'tipo', value: tk.text, raw: tk.raw }); }
-      continue;
-    }
-
-    if (kind === 'tag'){
-      const v = normStrict(tk.text);
-      if (v){ tags.push(v); chips.push({ type: 'tag', value: tk.text, raw: tk.raw }); }
-      continue;
-    }
-    if (kind === 'desde'){
-      const v = parseRelDate(tk.text);
-      if (v){
-        desde = v;
-        chips.push({ type: 'desde', value: v, raw: tk.raw });
-      }
-      continue;
-    }
-    if (kind === 'hasta'){
-      const v = parseRelDate(tk.text);
-      if (v){
-        hasta = v;
-        chips.push({ type: 'hasta', value: v, raw: tk.raw });
-      }
-      continue;
-    }
-    // Sin prefijo → heurística (igual que antes)
-    if (tk.quoted){
-      const n = normalize(tk.text);
-      if (n) titulo.push(n);
-      continue;
-    }
-    if (tk.text.includes('.')){
-      const d = normDomain(tk.text).replace(/^www\./, '');
-      if (d){
-        dominios.push(d);
-        chips.push({ type: 'web', value: tk.text, raw: tk.raw });   // ← antes 'dominio'
-        continue;
-      }
-    }
-    const strict = normStrict(tk.text);
-    if (strict.length >= 3 && MEDIOS_STRICT.has(strict)){
-      medios.push(strict);
-      chips.push({ type: 'medio', value: MEDIOS_STRICT.get(strict), raw: tk.raw });
-      continue;
-    }
-
-    const n = normalize(tk.text);
-    if (n) titulo.push(n);
-  }
-
-  return { titulo, medios, dominios, grupos, tipos, tags, desde, hasta, chips };
-}
 /* ═══════════════════════════════════════════════════════════════
    CHIPS DE FILTROS ACTIVOS
    ═══════════════════════════════════════════════════════════════ */
