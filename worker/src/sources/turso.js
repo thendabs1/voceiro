@@ -26,9 +26,8 @@ export const turso = {
     }
 
     // ── Filtros de medios: UNA subquery en vez de JOIN ──
-    // Con JOIN, SQLite no puede usar idx_noticias_dia para el ORDER BY
-    // (el JOIN fuerza un plan distinto y ordena en memoria). Con subquery,
-    // noticias se itera por fecha_dia (índice) y se filtra por dominio.
+    // Con JOIN, SQLite no puede usar idx_noticias_dia para el ORDER BY.
+    // Con subquery, noticias se itera por fecha_dia (índice) y se filtra.
     const mediosConds = [];
     const mediosArgs = [];
 
@@ -63,27 +62,33 @@ export const turso = {
     }
 
     // ── Ventana por defecto cuando no hay FTS ni rango explícito ──
+    // Sin texto, el usuario navega el catálogo. 7 días es lo que cabe en
+    // "portada del feed" sin obligar a escanear todo el histórico.
     if (!ftsQ && !parsed.desde && !parsed.hasta) {
-      const hace30 = new Date(Date.now() - 30 * 86400 * 1000)
+      const hace7 = new Date(Date.now() - 7 * 86400 * 1000)
         .toISOString().slice(0, 10);
       conditions.push('n.fecha_dia >= ?');
-      args.push(hace30);
+      args.push(hace7);
     }
 
     const where = conditions.length ? conditions.join(' AND ') : '1=1';
 
     // ── ORDER BY ──
-    // fecha_dia primero: usa idx_noticias_dia. fecha_pub desempata dentro
-    // del día. enlace desempata totalmente (paginación determinista).
+    // Dos columnas: fecha_dia (indexado) + enlace (PK de noticias, único).
+    // NO añadir fecha_pub en medio: rompe la coincidencia con idx_noticias_dia
+    // y SQLite cae a USE TEMP B-TREE FOR ORDER BY (materializa todo).
     const orderByItems = parsed.order === 'antiguos'
-      ? 'ORDER BY n.fecha_dia ASC,  n.fecha_pub ASC,  n.enlace ASC'
-      : 'ORDER BY n.fecha_dia DESC, n.fecha_pub DESC, n.enlace ASC';
+      ? 'ORDER BY n.fecha_dia ASC,  n.enlace ASC'
+      : 'ORDER BY n.fecha_dia DESC, n.enlace ASC';
 
     const orderByFts = (parsed.order === 'relevancia' && ftsQ)
       ? 'ORDER BY bm25(noticias_fts) ASC'
       : orderByItems;
 
     // ── Dos caminos ──
+    // Con FTS: noticias_fts MATCH + JOIN a noticias.
+    // Sin FTS: noticias directo, con INDEXED BY para forzar el uso de
+    //          idx_noticias_dia y así evitar USE TEMP B-TREE FOR ORDER BY.
     const sql = ftsQ
       ? `
         SELECT n.titular, n.enlace, n.dominio,
@@ -97,7 +102,7 @@ export const turso = {
       : `
         SELECT n.titular, n.enlace, n.dominio,
                n.fecha_pub, n.fecha_est, n.fuente, n.fecha_dia
-        FROM noticias n
+        FROM noticias n INDEXED BY idx_noticias_dia
         WHERE ${where}
         ${orderByItems}
         LIMIT ? OFFSET ?
@@ -116,7 +121,7 @@ export const turso = {
       : `
         SELECT COUNT(*) AS n FROM (
           SELECT 1
-          FROM noticias n
+          FROM noticias n INDEXED BY idx_noticias_dia
           WHERE ${where}
           LIMIT 5001
         )
