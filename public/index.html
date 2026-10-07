@@ -6835,7 +6835,13 @@ async function buscarEnHistorico(parsed, rawQuery, { silent = false, offset = 0 
 function mergeHistorico(locales, historicoItems) {
   if (!historicoItems || !historicoItems.length) return locales;
 
-  const yaVistas = new Set(locales.map(n => normalizeUrlForMatch(n.enlace)));
+  const yaVistas = new Set();
+  const titulosVistos = new Set();
+  for (const n of locales){
+    yaVistas.add(normalizeUrlForMatch(n.enlace));
+    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+    if (tn) titulosVistos.add(tn);
+  }
   const nuevos = [];
   const horizonte = Date.now() + HORIZONTE_FUTURO_MS;
 
@@ -6855,7 +6861,14 @@ function mergeHistorico(locales, historicoItems) {
 
     const key = normalizeUrlForMatch(enlace);
     if (yaVistas.has(key)) continue;
+
+    // Mismo caso que en mergePrensa: noticias de GNews guardadas en
+    // Turso pueden volver con un redirect distinto al de la portada.
+    const titNorm = normalize(it.t || '');
+    if (titNorm && titulosVistos.has(titNorm)) continue;
+
     yaVistas.add(key);
+    if (titNorm) titulosVistos.add(titNorm);
 
     const m = MEDIOS[it.d] || {};
     const n = {
@@ -7077,7 +7090,13 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
 function mergePrensa(locales, prensaItems){
   if (!prensaItems || !prensaItems.length) return locales;
 
-  const yaVistas = new Set(locales.map(n => normalizeUrlForMatch(n.enlace)));
+  const yaVistas = new Set();
+  const titulosVistos = new Set();
+  for (const n of locales){
+    yaVistas.add(normalizeUrlForMatch(n.enlace));
+    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+    if (tn) titulosVistos.add(tn);
+  }
   const nuevos = [];
   const horizonte = Date.now() + HORIZONTE_FUTURO_MS;
 
@@ -7121,7 +7140,15 @@ function mergePrensa(locales, prensaItems){
 
     const key = normalizeUrlForMatch(enlace);
     if (yaVistas.has(key)) continue;
+
+    // GNews devuelve redirects de Google cuya URL rota entre fetches.
+    // La canónica que tenemos en portada/Turso nunca coincide, así que
+    // sin esto la misma noticia entra dos veces (una con badge 🌐 prensa).
+    const titNorm = normalize(it.t || '');
+    if (titNorm && titulosVistos.has(titNorm)) continue;
+
     yaVistas.add(key);
+    if (titNorm) titulosVistos.add(titNorm);
 
     const n = {
       dominio: dom,                        // puede ser "elpais.com" si hubo match
