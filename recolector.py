@@ -154,6 +154,10 @@ WP_API_DOMAINS = {
     'cambio16.com',
     # Añadir más aquí según se confirmen
 }
+
+
+
+
 # ─────────────────────────────────────────────────────────────
 # SESIÓN HTTP CON SSL PERMISIVO
 # ─────────────────────────────────────────────────────────────
@@ -191,6 +195,119 @@ def _hash_titular(titular):
     s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
     s = ''.join(c for c in s if c.isalnum())
     return hashlib.md5(s.encode('utf-8')).hexdigest()[:16]
+
+
+#HELPERS FEED
+# Cache global del catálogo
+_MEDIOS_POR_DOMINIO = None
+
+def _init_medios_por_dominio():
+    global _MEDIOS_POR_DOMINIO
+    if _MEDIOS_POR_DOMINIO is not None:
+        return
+    _MEDIOS_POR_DOMINIO = {m['d']: m for m in todos_los_medios()}
+
+
+def _slug_grupo(grupo):
+    """'España · Nacionales' → 'espana-nacionales'."""
+    s = (grupo or '').lower()
+    s = unicodedata.normalize('NFD', s)
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+    s = re.sub(r'[^a-z0-9]+', '-', s).strip('-')
+    return s or 'sin-grupo'
+
+
+def _tabla_medios_slice(items):
+    """Tabla {dominio: {n,g,t,l,tags,h}} para un slice.
+    Incluye dominios referenciados en 'alt'."""
+    _init_medios_por_dominio()
+    medios = {}
+    hosts = {}
+
+    def _reg(d, nombre='', grupo='', tipo='', lang='', tags=None, host=''):
+        if not d:
+            return
+        if d not in medios:
+            medios[d] = {
+                'n': nombre, 'g': grupo, 't': tipo,
+                'l': lang, 'tags': tags or [],
+            }
+        if host and d not in hosts:
+            hosts[d] = host
+
+    for n in items:
+        _reg(n.get('dominio',''), n.get('medio',''), n.get('grupo',''),
+             n.get('tipo',''), n.get('lang',''), n.get('tags', []),
+             n.get('_host',''))
+        for alt in (n.get('alt') or []):
+            d_alt = alt.get('d','')
+            if not d_alt:
+                continue
+            m = _MEDIOS_POR_DOMINIO.get(d_alt, {})
+            _reg(d_alt,
+                 m.get('n',''), m.get('grupo',''),
+                 m.get('type',''), m.get('lang',''), m.get('tags', []),
+                 '')  # sin host; el cliente cae al fallback `www.<dominio>`
+
+    for d, h in hosts.items():
+        medios[d]['h'] = h
+    return dict(sorted(medios.items()))
+
+
+def _generar_slice(items, fecha, sufijo, ahora):
+    """Slice genérico para 'all' y 'g-<grupo>'.
+    sufijo = '' → nombre 'YYYY-MM-DD-<hash>.json'
+    sufijo = 'g-galicia' → 'YYYY-MM-DD-g-galicia-<hash>.json'
+    """
+    items_dedup = deduplicar_editorial(items)
+    payload = {
+        'fecha': fecha,
+        'generado': ahora.isoformat(timespec='seconds'),
+        'medios': _tabla_medios_slice(items_dedup),
+        'noticias': [_noticia_a_formato_corto(n, fecha) for n in items_dedup],
+    }
+    hash_ = _hash_payload(payload)
+    if sufijo:
+        filename = f'{fecha}-{sufijo}-{hash_}.json'
+    else:
+        filename = f'{fecha}-{hash_}.json'
+    return filename, hash_, payload, len(items_dedup)
+
+
+def _generar_slice_dominio(items, fecha, dominio, ahora):
+    """Slice por dominio. Nombre estable, sin hash."""
+    items_dedup = deduplicar_editorial(items)
+    payload = {
+        'fecha': fecha,
+        'generado': ahora.isoformat(timespec='seconds'),
+        'medios': _tabla_medios_slice(items_dedup),
+        'noticias': [_noticia_a_formato_corto(n, fecha) for n in items_dedup],
+    }
+    hash_ = _hash_payload(payload)
+    filename = f'd-{dominio}-{fecha}.json'
+    return filename, hash_, payload, len(items_dedup)
+
+
+def _escribir_slice_si_hace_falta(path, payload):
+    """Escribe si no existe o si cambió. Devuelve (size_kb, reusado)."""
+    if os.path.exists(path):
+        try:
+            with open(path, encoding='utf-8') as f:
+                previo = json.load(f)
+            # Compara sin 'generado' (que cambia siempre)
+            previo_sin_gen = {k: v for k, v in previo.items() if k != 'generado'}
+            nuevo_sin_gen  = {k: v for k, v in payload.items() if k != 'generado'}
+            if previo_sin_gen == nuevo_sin_gen:
+                size_kb = os.path.getsize(path) / 1024
+                return size_kb, True
+        except Exception:
+            pass
+
+    blob = json.dumps(payload, ensure_ascii=False,
+                      separators=(',', ':')).encode('utf-8')
+    with open(path, 'wb') as f:
+        f.write(blob)
+    return len(blob) / 1024, False
 
 # ─────────────────────────────────────────────────────────────
 # UTILIDADES DE FECHA
@@ -942,13 +1059,18 @@ def cargar_historico_payload():
       - public/datos/manifest.json + public/datos/*.json (noticias)
     Reconstruye las noticias al formato largo.
     """
-    state = {'generado': None, 'ultimo_exito_por_medio': {}}
+    state = {
+        'generado': None,
+        'ultimo_exito_por_medio': {},
+        'hashes_dominios': {},
+    }
     if os.path.exists(STATE_PATH):
         try:
             with open(STATE_PATH, encoding='utf-8') as f:
                 s = json.load(f) or {}
                 state['generado'] = s.get('generado')
                 state['ultimo_exito_por_medio'] = s.get('ultimo_exito_por_medio', {}) or {}
+                state['hashes_dominios'] = s.get('hashes_dominios', {}) or {}
         except Exception as e:
             print(f"[state] no se pudo leer: {e}")
 
@@ -960,7 +1082,16 @@ def cargar_historico_payload():
             if not state['generado']:
                 state['generado'] = manifest.get('generado')
 
-            for f_info in manifest.get('ficheros', []):
+            # Recolectar ficheros 'all' por día desde 'dias[]'
+            ficheros_a_leer = []
+            for d_info in manifest.get('dias', []):
+                if d_info.get('all') and d_info['all'].get('file'):
+                    ficheros_a_leer.append(d_info['all'])
+            # Compat: si no hay 'dias', usar 'ficheros'
+            if not ficheros_a_leer:
+                ficheros_a_leer = manifest.get('ficheros', [])
+
+            for f_info in ficheros_a_leer:
                 fn = f_info.get('file')
                 if not fn:
                     continue
@@ -1054,6 +1185,7 @@ def cargar_historico_payload():
         'noticias': noticias,
         'generado': state['generado'],
         'ultimo_exito_por_medio': state['ultimo_exito_por_medio'],
+        'hashes_dominios': state['hashes_dominios'],
     }
 
 # ─────────────────────────────────────────────────────────────
@@ -1165,11 +1297,17 @@ def fusionar_historico(nuevas, viejas, dias):
 
 
 
-def guardar_state(generado_iso, ultimo_exito_por_medio):
+def guardar_state(generado_iso, ultimo_exito_por_medio, dominios_hashes=None):
     payload = {
         'generado': generado_iso,
         'ultimo_exito_por_medio': ultimo_exito_por_medio or {},
     }
+    if dominios_hashes:
+        # Solo días dentro de la ventana de retención
+        corte = (datetime.now(TZ_MADRID) - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
+        payload['hashes_dominios'] = {
+            dia: h for dia, h in dominios_hashes.items() if dia >= corte
+        }
     with open(STATE_PATH, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
     kb = os.path.getsize(STATE_PATH) / 1024
@@ -1287,41 +1425,61 @@ def _orden_estable(n):
     dt = _fecha_orden(n)
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
-def generar_troceados(noticias, ahora, portada_info=None, entradas_archivo=None):
-    """Genera datos/manifest.json + datos/YYYY-MM-DD-<hash>.json.
-
-    Días dentro de VENTANA_GRACIA_DIAS (hoy + N días atrás) se reescriben
-    si su contenido cambia. Días más antiguos se congelan: se reutiliza el
-    fichero existente sin recalcular hash ni contenido.
+def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
+                      state_prev=None, manifest_prev=None):
     """
+    Genera:
+      · public/datos/manifest.json
+      · public/datos/YYYY-MM-DD-<hash>.json           (all)
+      · public/datos/YYYY-MM-DD-g-<grupo>-<hash>.json (grupo)
+      · public/datos/d-<dominio>-<fecha>.json         (dominio)
+
+    noticias_pre_dedup: noticias SIN dedup editorial. La dedup se
+    aplica DENTRO de cada slice para no perder noticias que viven en
+    slices distintos.
+
+    manifest_prev: manifest del run anterior (o None). Se usa para:
+      - Copiar tal cual los días congelados (all + grupos + dominios).
+      - Copiar tal cual los días fuera de retención (entradas de archivo).
+
+    Devuelve:
+      manifest (dict), dominios_hashes_new (dict)
+    """
+    state_prev = state_prev or {}
+    manifest_prev = manifest_prev or {}
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
+    dominios_hashes_new = {}
+    # ── Compat: migrar manifest previo del formato viejo ──
+    if manifest_prev and not manifest_prev.get('dias') and manifest_prev.get('ficheros'):
+        print(f"[compat] migrando manifest previo ({len(manifest_prev['ficheros'])} ficheros)")
+        dias_migrados = []
+        for f in manifest_prev['ficheros']:
+            dias_migrados.append({
+                'fecha': f.get('fecha', ''),
+                'all': {'file': f.get('file', ''), 'n': f.get('n', 0),
+                        'hash': f.get('hash', ''), 'kb': f.get('kb', 0)},
+                'grupos': {},
+                'dominios': {},
+                'archivo': True,
+            })
+        manifest_prev = {'dias': dias_migrados}
+    # ── Indexar entradas previas por fecha (del manifest previo) ──
+    entradas_prev = {d['fecha']: d for d in manifest_prev.get('dias', [])}
 
-    # Indexar ficheros existentes por fecha para el freeze
-    # { 'YYYY-MM-DD': ('YYYY-MM-DD-<hash>.json', '<hash>') }
-    existentes_por_dia = {}
-    for nombre in os.listdir(DATOS_DIR):
-        m = re.match(r'^(\d{4}-\d{2}-\d{2})-([a-f0-9]{10})\.json$', nombre)
-        if m:
-            existentes_por_dia[m.group(1)] = (nombre, m.group(2))
-
+    # ── Agrupar por día ──
     por_dia = defaultdict(list)
-    for n in noticias:
-        iso_agrup = _fecha_visible_iso(n, ahora)
-        dia = _dia_iso(iso_agrup, hoy_str)
+    for n in noticias_pre_dedup:
+        dia = _dia_iso(_fecha_visible_iso(n, ahora), hoy_str)
         por_dia[dia].append(n)
 
-    ficheros = []
+    dias_manifest = []
+    ficheros_viejos = []   # compat, quitar en 1 semana
     total_kb = 0.0
-    escritos = 0
-    reusados = 0
-    congelados = 0
+    escritos = reusados = congelados = 0
 
     for dia in sorted(por_dia.keys(), reverse=True):
-        items = por_dia[dia]
-        items.sort(key=_orden_estable)
-
-        # ¿Está congelado este día?
+        items_dia = por_dia[dia]
         try:
             fecha_dia = datetime.strptime(dia, '%Y-%m-%d').date()
             dias_atras = (ahora.date() - fecha_dia).days
@@ -1329,123 +1487,138 @@ def generar_troceados(noticias, ahora, portada_info=None, entradas_archivo=None)
             dias_atras = 0
         congelado = dias_atras > VENTANA_GRACIA_DIAS
 
-        if congelado and dia in existentes_por_dia:
-            # Reutilizar sin tocar
-            filename, hash_ = existentes_por_dia[dia]
-            path = os.path.join(DATOS_DIR, filename)
-            try:
-                with open(path, encoding='utf-8') as f:
-                    d = json.load(f)
-                n_items = len(d.get('noticias', []))
-            except Exception:
-                n_items = 0
-            try:
-                size_kb = os.path.getsize(path) / 1024
-            except OSError:
-                size_kb = 0.0
-            total_kb += size_kb
+        # ── Día congelado: copiar entrada previa tal cual ──
+        if congelado and dia in entradas_prev:
+            entrada_dia = entradas_prev[dia]
+            dias_manifest.append(entrada_dia)
             congelados += 1
-            ficheros.append({
-                'fecha':   dia,
-                'file':    filename,
-                'n':       n_items,
-                'hash':    hash_,
-                'kb':      round(size_kb, 1),
-                'es_hoy':  False,
-                'reusado': True,
-                'congelado': True,
-            })
+            # Sumar KB al log
+            for f in [entrada_dia.get('all')] \
+                    + list(entrada_dia.get('grupos', {}).values()) \
+                    + list(entrada_dia.get('dominios', {}).values()):
+                if f:
+                    total_kb += f.get('kb', 0)
             continue
 
-        # Día editable: calcular payload y hash como antes
-        payload = {
-            'fecha':    dia,
-            'generado': generado_iso,
-            'medios':   _tabla_medios_de(items),
-            'noticias': [_noticia_a_formato_corto(n, dia) for n in items],
+        # ── Día editable (o congelado sin entrada previa: regenerar) ──
+        items_dia.sort(key=_orden_estable)
+
+        # ALL
+        fn_all, h_all, pl_all, n_all = _generar_slice(items_dia, dia, '', ahora)
+        size_all, reusado_all = _escribir_slice_si_hace_falta(
+            os.path.join(DATOS_DIR, fn_all), pl_all)
+        escritos += 0 if reusado_all else 1
+        reusados += 1 if reusado_all else 0
+        total_kb += size_all
+
+        entrada_dia = {
+            'fecha': dia,
+            'all': {'file': fn_all, 'n': n_all, 'hash': h_all, 'kb': round(size_all, 1)},
+            'grupos': {},
+            'dominios': {},
         }
+        ficheros_viejos.append({'fecha': dia, 'file': fn_all, 'n': n_all,
+                                'hash': h_all, 'kb': round(size_all, 1),
+                                'es_hoy': dia == hoy_str})
 
-        hash_ = _hash_payload(payload)
-        filename = f'{dia}-{hash_}.json'
-        path = os.path.join(DATOS_DIR, filename)
+        # GRUPOS
+        por_grupo = defaultdict(list)
+        for n in items_dia:
+            g = n.get('grupo', '')
+            if g:
+                por_grupo[g].append(n)
 
-        size_estimado = None
-        if os.path.exists(path):
-            reusados += 1
-            reusado = True
-        else:
-            blob = json.dumps(payload, ensure_ascii=False,
-                              separators=(',', ':')).encode('utf-8')
-            with open(path, 'wb') as f:
-                f.write(blob)
-            size_estimado = len(blob) / 1024
-            escritos += 1
-            reusado = False
+        for grupo, items_g in por_grupo.items():
+            sufijo = f'g-{_slug_grupo(grupo)}'
+            fn_g, h_g, pl_g, n_g = _generar_slice(items_g, dia, sufijo, ahora)
+            size_g, reusado_g = _escribir_slice_si_hace_falta(
+                os.path.join(DATOS_DIR, fn_g), pl_g)
+            escritos += 0 if reusado_g else 1
+            reusados += 1 if reusado_g else 0
+            total_kb += size_g
+            entrada_dia['grupos'][grupo] = {
+                'file': fn_g, 'n': n_g, 'hash': h_g, 'kb': round(size_g, 1),
+            }
+            ficheros_viejos.append({'fecha': dia, 'file': fn_g, 'n': n_g,
+                                    'hash': h_g, 'kb': round(size_g, 1),
+                                    'es_hoy': dia == hoy_str})
 
-        if size_estimado is None:
-            try:
-                size_estimado = os.path.getsize(path) / 1024
-            except OSError:
-                size_estimado = 0.0
-        total_kb += size_estimado
+        # DOMINIOS
+        por_dominio = defaultdict(list)
+        for n in items_dia:
+            d = n.get('dominio', '')
+            if d:
+                por_dominio[d].append(n)
 
-        ficheros.append({
-            'fecha':   dia,
-            'file':    filename,
-            'n':       len(items),
-            'hash':    hash_,
-            'kb':      round(size_estimado, 1),
-            'es_hoy':  dia == hoy_str,
-            'reusado': reusado,
-        })
+        dominios_hashes_new[dia] = {}
+        for dominio, items_d in por_dominio.items():
+            fn_d, h_d, pl_d, n_d = _generar_slice_dominio(items_d, dia, dominio, ahora)
+            size_d, reusado_d = _escribir_slice_si_hace_falta(
+                os.path.join(DATOS_DIR, fn_d), pl_d)
+            escritos += 0 if reusado_d else 1
+            reusados += 1 if reusado_d else 0
+            total_kb += size_d
+            dominios_hashes_new[dia][dominio] = h_d
+            entrada_dia['dominios'][dominio] = {
+                'file': fn_d, 'n': n_d, 'hash': h_d, 'kb': round(size_d, 1),
+            }
+            ficheros_viejos.append({'fecha': dia, 'file': fn_d, 'n': n_d,
+                                    'hash': h_d, 'kb': round(size_d, 1),
+                                    'es_hoy': dia == hoy_str})
 
-    # ── Añadir los días de archivo (fuera de la ventana de trabajo) ──
-    fechas_trabajo = {f['fecha'] for f in ficheros}
-    añadidos_archivo = 0
-    for e in (entradas_archivo or []):
-        if e['fecha'] in fechas_trabajo:
-            continue  # ya lo hemos regenerado arriba
-        ficheros.append({
-            'fecha':     e['fecha'],
-            'file':      e['file'],
-            'n':         e.get('n', 0),
-            'hash':      e.get('hash', ''),
-            'kb':        e.get('kb', 0),
-            'es_hoy':    False,
-            'reusado':   True,
-            'congelado': True,
-            'archivo':   True,
-        })
-        añadidos_archivo += 1
+        dias_manifest.append(entrada_dia)
 
-    # Orden descendente por fecha y recorte al techo del archivo
-    ficheros.sort(key=lambda x: x['fecha'], reverse=True)
-    if len(ficheros) > DIAS_ARCHIVO:
-        recortados = len(ficheros) - DIAS_ARCHIVO
-        ficheros = ficheros[:DIAS_ARCHIVO]
-        print(f"[troceado] {recortados} días recortados del archivo (>{DIAS_ARCHIVO})")
+    # ── Añadir días del manifest previo que no estén ya (fuera de retención) ──
+    fechas_presentes = {d['fecha'] for d in dias_manifest}
+    for d_prev in manifest_prev.get('dias', []):
+        if d_prev['fecha'] in fechas_presentes:
+            continue
+        dias_manifest.append(d_prev)
 
+    dias_manifest.sort(key=lambda x: x['fecha'], reverse=True)
+    if len(dias_manifest) > DIAS_ARCHIVO:
+        dias_manifest = dias_manifest[:DIAS_ARCHIVO]
+
+    # ── Manifest final ──
     manifest = {
-        'generado':         generado_iso,
+        'generado': generado_iso,
         'generado_legible': ahora.strftime('%d/%m/%Y %H:%M'),
-        'dias_retencion':   DIAS_RETENCION,
-        'dias_archivo':     DIAS_ARCHIVO,
-        'ventana_gracia':   VENTANA_GRACIA_DIAS,
-        'n_feed':           N_FEED,
-        'total':            len(noticias),
-        'hoy':              hoy_str,
-        'ficheros':         ficheros,
+        'dias_retencion': DIAS_RETENCION,
+        'dias_archivo': DIAS_ARCHIVO,
+        'ventana_gracia': VENTANA_GRACIA_DIAS,
+        'n_feed': N_FEED,
+        'total': len(noticias_pre_dedup),
+        'hoy': hoy_str,
+        'dias': dias_manifest,
+        'ficheros': ficheros_viejos,   # compat, quitar en 1 semana
     }
     if portada_info:
         manifest['portada'] = portada_info
+
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
 
-    # ── Limpieza de huérfanos (local) ──
-    validos = {f['file'] for f in ficheros}
-    validos.add('manifest.json')
+    _limpiar_huerfanos_locales(manifest, portada_info)
+
+    print(f"[troceado] {len(dias_manifest)} días · "
+          f"{escritos} escritos · {reusados} reusados · "
+          f"{congelados} congelados · {total_kb:.1f} KB")
+
+    return manifest, dominios_hashes_new
+
+
+def _limpiar_huerfanos_locales(manifest, portada_info):
+    validos = {'manifest.json'}
     if portada_info:
         validos.add(portada_info['file'])
+    for d in manifest['dias']:
+        if d.get('all'):
+            validos.add(d['all']['file'])
+        for g in d.get('grupos', {}).values():
+            validos.add(g['file'])
+        for dd in d.get('dominios', {}).values():
+            validos.add(dd['file'])
+
     eliminados = 0
     for nombre in os.listdir(DATOS_DIR):
         if not nombre.endswith('.json'):
@@ -1457,26 +1630,19 @@ def generar_troceados(noticias, ahora, portada_info=None, entradas_archivo=None)
             eliminados += 1
         except OSError:
             pass
-
-    extra = f" · {eliminados} huérfanos borrados" if eliminados else ""
-    congel_txt = f" · {congelados} congelados" if congelados else ""
-    print(f"[troceado] {len(ficheros)} ficheros · "
-          f"{escritos} escritos · {reusados} reusados{congel_txt} · "
-          f"{añadidos_archivo} de archivo · "
-          f"{total_kb:.1f} KB total{extra}")
-
-
+    if eliminados:
+        print(f"[troceado] {eliminados} huérfanos locales borrados")
 
 def generar_portada(noticias, ahora, horas=18):
-    """Genera portada-<hash>.json y devuelve {file, hash, n, kb}."""
     corte = ahora - timedelta(hours=horas)
-    recientes = []
-    for n in noticias:
-        f = _fecha_agrupacion_dt(n, ahora)
-        if f is not None and f >= corte:
-            recientes.append(n)
+    recientes = [n for n in noticias
+                 if (_fecha_agrupacion_dt(n, ahora) or corte) >= corte]
     recientes.sort(key=_fecha_orden, reverse=True)
     recientes = recientes[:2000]
+
+    # ── NUEVO: dedup local para la portada ──
+    recientes = deduplicar_editorial(recientes)
+    # ─────────────────────────────────────
 
     generado_iso = ahora.isoformat(timespec='seconds')
     payload = {
@@ -1558,78 +1724,163 @@ def _r2_client():
 
 def _r2_cache_control(filename):
     """Cabecera Cache-Control según el tipo de fichero."""
+    # Índice general: 60s
     if filename == 'manifest.json':
         return 'public, max-age=60'
+    # Portada rodante: 60s
     if filename.startswith('portada-'):
         return 'public, max-age=60'
+    # Slice por dominio, nombre estable: 60s (coherente con el manifest)
+    if re.match(r'^d-[a-z0-9.-]+-\d{4}-\d{2}-\d{2}\.json$', filename):
+        return 'public, max-age=60'
+    # Día completo "all": YYYY-MM-DD-<hash>.json → inmutable
     if re.match(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$', filename):
         return 'public, max-age=31536000, immutable'
+    # Slice por grupo: YYYY-MM-DD-g-<slug>-<hash>.json → inmutable
+    if re.match(r'^\d{4}-\d{2}-\d{2}-g-[a-z0-9-]+-[a-f0-9]{10}\.json$', filename):
+        return 'public, max-age=31536000, immutable'
+    # Fallback
     return 'public, max-age=3600'
 
-def subir_a_r2(ficheros_locales):
+def subir_a_r2(ficheros_locales, dominios_hashes_prev=None, dominios_hashes_new=None):
+    """
+    Sube a R2 los ficheros locales.
+
+    - manifest.json y portada-*: siempre (contenido volátil).
+    - YYYY-MM-DD-<hash>.json y YYYY-MM-DD-g-*-<hash>.json: HEAD previo
+      (si ya existe la key, skip).
+    - d-<dominio>-<fecha>.json: skip si el hash no cambió respecto al
+      state previo. Si no hay state (primer run o pérdida), sube.
+    """
     client = _r2_client()
     if not client:
         print("[r2] sin credenciales — saltando")
         return 0, 0, 0
 
+    dominios_hashes_prev = dominios_hashes_prev or {}
+    dominios_hashes_new = dominios_hashes_new or {}
+
     subidos = omitidos = errores = 0
+
     for path in ficheros_locales:
         nombre = os.path.basename(path)
 
-        # Ficheros volátiles → SIEMPRE sobrescribir
-        siempre_subir = (nombre == 'manifest.json'
-                         or nombre.startswith('portada-'))
+        # ── Manifest y portada: siempre suben ──
+        if nombre == 'manifest.json' or nombre.startswith('portada-'):
+            try:
+                with open(path, 'rb') as f:
+                    client.upload_fileobj(
+                        f, R2_BUCKET, nombre,
+                        ExtraArgs={
+                            'ContentType': 'application/json; charset=utf-8',
+                            'CacheControl': _r2_cache_control(nombre),
+                        },
+                    )
+                subidos += 1
+            except Exception as e:
+                print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
+                errores += 1
+            continue
 
-        if not siempre_subir:
-            # Ficheros con hash → skip si ya existen
+        # ── Slice por dominio: skip si hash no cambió ──
+        m_dom = re.match(r'^d-([a-z0-9.-]+)-(\d{4}-\d{2}-\d{2})\.json$', nombre)
+        if m_dom:
+            dominio = m_dom.group(1)
+            fecha = m_dom.group(2)
+            hash_prev = dominios_hashes_prev.get(fecha, {}).get(dominio, '')
+            hash_new = dominios_hashes_new.get(fecha, {}).get(dominio, '')
+            # Si tenemos hash previo y no cambió → skip
+            if hash_prev and hash_new and hash_prev == hash_new:
+                omitidos += 1
+                continue
+            try:
+                with open(path, 'rb') as f:
+                    client.upload_fileobj(
+                        f, R2_BUCKET, nombre,
+                        ExtraArgs={
+                            'ContentType': 'application/json; charset=utf-8',
+                            'CacheControl': _r2_cache_control(nombre),
+                        },
+                    )
+                subidos += 1
+            except Exception as e:
+                print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
+                errores += 1
+            continue
+
+        # ── Slices con hash (all y grupo): HEAD previo ──
+        if (re.match(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$', nombre)
+                or re.match(r'^\d{4}-\d{2}-\d{2}-g-[a-z0-9-]+-[a-f0-9]{10}\.json$', nombre)):
             try:
                 client.head_object(Bucket=R2_BUCKET, Key=nombre)
                 omitidos += 1
                 continue
             except Exception:
                 pass
+            try:
+                with open(path, 'rb') as f:
+                    client.upload_fileobj(
+                        f, R2_BUCKET, nombre,
+                        ExtraArgs={
+                            'ContentType': 'application/json; charset=utf-8',
+                            'CacheControl': _r2_cache_control(nombre),
+                        },
+                    )
+                subidos += 1
+            except Exception as e:
+                print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
+                errores += 1
+            continue
 
-        try:
-            with open(path, 'rb') as f:
-                client.upload_fileobj(
-                    f, R2_BUCKET, nombre,
-                    ExtraArgs={
-                        'ContentType': 'application/json; charset=utf-8',
-                        'CacheControl': _r2_cache_control(nombre),
-                    },
-                )
-            subidos += 1
-        except Exception as e:
-            print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
-            errores += 1
+        # Formato desconocido: ignorar
+        print(f"[r2?] formato no reconocido, saltando: {nombre}")
 
     print(f"[r2] {subidos} subidos · {omitidos} omitidos · {errores} errores")
     return subidos, omitidos, errores
-
 
 # ─────────────────────────────────────────────────────────────
 # LIMPIEZA DE HUÉRFANOS EN R2
 # ─────────────────────────────────────────────────────────────
 def limpiar_r2_huerfanos(manifest):
-    """Borra de R2 los ficheros que ya no están referenciados en el manifest.
-    Version-aware: para cada día conserva solo el hash que aparece en el
-    manifest; borra versiones viejas del mismo día y días fuera de retención.
-    Red de seguridad: solo borra objetos con >1 h de antigüedad."""
+    """
+    Borra de R2 los ficheros que ya no están referenciados en el manifest.
+
+    - YYYY-MM-DD-<hash>.json y YYYY-MM-DD-g-<slug>-<hash>.json: para cada
+      día + tipo, conserva solo la key vigente; borra versiones viejas.
+    - d-<dominio>-<fecha>.json: conserva solo si (dominio, fecha) está en
+      el manifest. El resto son huérfanos.
+    - portada-<hash>.json: conserva solo la vigente.
+
+    Red de seguridad: solo borra objetos con >1 h de antigüedad.
+    """
     client = _r2_client()
     if not client:
         return 0
 
-    # Mapa fecha → nombre de fichero válido
-    validos_por_dia = {}
-    for f in manifest.get('ficheros', []):
-        validos_por_dia[f['fecha']] = f['file']
-
+    # ── Keys válidas por tipo ──
+    all_validos = set()         # 'YYYY-MM-DD-<hash>.json'
+    grupo_validos = set()       # 'YYYY-MM-DD-g-<slug>-<hash>.json'
+    dominio_validos = set()     # 'd-<dominio>-<fecha>.json'
     portada_valida = ''
+
+    for d in manifest.get('dias', []):
+        if d.get('all') and d['all'].get('file'):
+            all_validos.add(d['all']['file'])
+        for g in d.get('grupos', {}).values():
+            if g.get('file'):
+                grupo_validos.add(g['file'])
+        for dd in d.get('dominios', {}).values():
+            if dd.get('file'):
+                dominio_validos.add(dd['file'])
+
     if manifest.get('portada') and manifest['portada'].get('file'):
         portada_valida = manifest['portada']['file']
 
     limite = datetime.now(timezone.utc) - timedelta(hours=1)
-    re_dia = re.compile(r'^(\d{4}-\d{2}-\d{2})-([a-f0-9]{10})\.json$')
+
+    re_all     = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$')
+    re_grupo   = re.compile(r'^\d{4}-\d{2}-\d{2}-g-[a-z0-9-]+-[a-f0-9]{10}\.json$')
+    re_dominio = re.compile(r'^d-[a-z0-9.-]+-\d{4}-\d{2}-\d{2}\.json$')
 
     borrados = 0
     paginator = client.get_paginator('list_objects_v2')
@@ -1640,21 +1891,24 @@ def limpiar_r2_huerfanos(manifest):
             if key == 'manifest.json':
                 continue
 
-            m = re_dia.match(key)
-            if m:
-                fecha = m.group(1)
-                if validos_por_dia.get(fecha) == key:
-                    continue  # es el vigente de ese día
-                # si no: huérfano (versión vieja o día fuera de retención)
+            es_valido = False
+            if re_all.match(key):
+                es_valido = key in all_validos
+            elif re_grupo.match(key):
+                es_valido = key in grupo_validos
+            elif re_dominio.match(key):
+                es_valido = key in dominio_validos
             elif key.startswith('portada-') and key.endswith('.json'):
-                if key == portada_valida:
-                    continue
+                es_valido = (key == portada_valida)
             else:
-                continue  # formato desconocido, no tocar
+                continue   # formato desconocido, no tocar
+
+            if es_valido:
+                continue
 
             lastmod = obj.get('LastModified')
             if lastmod and lastmod > limite:
-                continue  # <1 h: puede estar sirviéndose ahora mismo
+                continue   # <1 h: puede estar sirviéndose ahora mismo
 
             try:
                 client.delete_object(Bucket=R2_BUCKET, Key=key)
@@ -1664,10 +1918,7 @@ def limpiar_r2_huerfanos(manifest):
 
     print(f"[r2-clean] {borrados} huérfanos borrados de R2")
     return borrados
-# ─────────────────────────────────────────────────────────────
-# INSERCIÓN EN TURSO
-# ─────────────────────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
+#─────────────────────────────────────────────────────────
 # TURSO HTTP v2 (sin réplica local, sin sync)
 # ─────────────────────────────────────────────────────────────
 TURSO_HTTP_URL = (TURSO_URL or "").replace("libsql://", "https://")
@@ -2037,13 +2288,25 @@ def descargar_historico_desde_r2():
 
     corte = (datetime.now(TZ_MADRID) - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
 
+    # Recolectar ficheros a bajar: 'all' de cada día dentro de retención
+    ficheros_a_bajar = []
+    for d_info in manifest.get('dias', []):
+        if d_info.get('fecha', '') < corte:
+            continue
+        if d_info.get('all') and d_info['all'].get('file'):
+            ficheros_a_bajar.append(d_info['all'])
+    # Compat con manifests viejos
+    if not ficheros_a_bajar:
+        ficheros_a_bajar = [
+            f for f in manifest.get('ficheros', [])
+            if f.get('fecha', '') >= corte
+        ]
+
     descargados = 0
-    for f_info in manifest.get('ficheros', []):
+    for f_info in ficheros_a_bajar:
         fn = f_info.get('file')
         if not fn:
             continue
-        if f_info.get('fecha', '') < corte:
-            continue  # fuera de ventana: no lo bajamos
         path = os.path.join(DATOS_DIR, fn)
         if os.path.exists(path):
             continue
@@ -2055,7 +2318,7 @@ def descargar_historico_desde_r2():
         except Exception as e:
             print(f"[r2-download!] {fn}: {e}")
 
-    total = len(manifest.get('ficheros', []))
+    total = len(manifest.get('dias', []))
     print(f"[r2-download] {descargados} descargados · "
           f"{total} en manifest · ventana {DIAS_RETENCION} días")
     return descargados
@@ -2160,27 +2423,26 @@ def main():
             for m, seg in sorted(raros.items(), key=lambda x: -x[1])[:10]:
                 print(f"  · {m}: {seg/60:.1f} min")
 
-    # ─── Fusionar con histórico ───
+    # ─── Fusionar con histórico (sin dedup editorial todavía) ───
     print("\n── Fusionando ──")
-    finales = fusionar_historico(todas, historico, DIAS_RETENCION)
-    print(f"Total en histórico: {len(finales)}")
-
-    print("\n── Deduplicando mismo titular entre medios ──")
-    finales = deduplicar_editorial(finales)
-    print(f"Total tras dedup:   {len(finales)}")
+    finales_pre = fusionar_historico(todas, historico, DIAS_RETENCION)
+    print(f"Total en histórico (pre-dedup): {len(finales_pre)}")
+    # La dedup editorial se aplica DENTRO de cada slice en generar_troceados(),
+    # y también para la portada. Así no perdemos noticias que solo viven en
+    # un slice concreto.
 
     # ─── Estadísticas ───
-    con_pub = sum(1 for n in finales if n.get('fecha_pub'))
-    con_est = sum(1 for n in finales
+    con_pub = sum(1 for n in finales_pre if n.get('fecha_pub'))
+    con_est = sum(1 for n in finales_pre
                   if not n.get('fecha_pub') and n.get('fecha_estimada'))
-    sin_fecha = len(finales) - con_pub - con_est
+    sin_fecha = len(finales_pre) - con_pub - con_est
     print(f"\n── Cobertura de fechas ──")
     print(f"  Con fecha real:     {con_pub}")
     print(f"  Con fecha estimada: {con_est}")
     print(f"  Sin fecha ninguna:  {sin_fecha}")
 
     # Cuántas noticias quedan descartadas por fecha fuera de ventana
-    descartadas_ventana = len(todas) - len(finales) if len(todas) > len(finales) else 0
+    descartadas_ventana = len(todas) - len(finales_pre) if len(todas) > len(finales_pre) else 0
     if descartadas_ventana > 0:
         print(f"  Descartadas por fuera de ventana: {descartadas_ventana}")
 
@@ -2202,45 +2464,57 @@ def main():
     print()
 
     # Leer manifest previo (el que bajó descargar_historico_desde_r2)
-    # para extraer las entradas de archivo y pasarlas al generador
-    entradas_archivo = []
+    manifest_prev = None
     if os.path.exists(MANIFEST_PATH):
         try:
             with open(MANIFEST_PATH, encoding='utf-8') as f:
                 manifest_prev = json.load(f)
-            corte_archivo = (t_now - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
-            entradas_archivo = [
-                e for e in manifest_prev.get('ficheros', [])
-                if e.get('fecha', '') < corte_archivo
-            ]
-            print(f"[archivo] {len(entradas_archivo)} entradas fuera de "
-                  f"la ventana de {DIAS_RETENCION} días")
+            n_dias_prev = len(manifest_prev.get('dias', []))
+            print(f"[manifest-prev] {n_dias_prev} días en manifest previo")
         except Exception as e:
-            print(f"[archivo] no se pudo leer manifest previo: {e}")
+            print(f"[manifest-prev] no se pudo leer: {e}")
 
-    portada_info = generar_portada(finales, t_now, horas=18)
-    generar_troceados(finales, t_now, portada_info, entradas_archivo=entradas_archivo)
+    # Portada (dedup interno)
+    portada_info = generar_portada(finales_pre, t_now, horas=18)
+
+    # Trocear: all + grupos + dominios
+    state_prev = {
+        'hashes_dominios': (payload_prev.get('hashes_dominios') or {}),
+    }
+    manifest_actual, dominios_hashes_new = generar_troceados(
+        finales_pre, t_now, portada_info,
+        state_prev=state_prev,
+        manifest_prev=manifest_prev,
+    )
 
     # ─── Subir a R2 ───
     ficheros_locales = [MANIFEST_PATH]
     for f in os.listdir(DATOS_DIR):
         if f.endswith('.json') and f != 'manifest.json':
             ficheros_locales.append(os.path.join(DATOS_DIR, f))
-    subir_a_r2(ficheros_locales)
+    subir_a_r2(
+        ficheros_locales,
+        dominios_hashes_prev=state_prev['hashes_dominios'],
+        dominios_hashes_new=dominios_hashes_new,
+    )
 
     # ─── Limpiar huérfanos en R2 ───
-    with open(MANIFEST_PATH, encoding='utf-8') as f:
-        manifest_actual = json.load(f)
     limpiar_r2_huerfanos(manifest_actual)
 
     # ─── Turso (HTTP v2) ───
     _turso_ensure_schema()
     _turso_setup_medios(medios_completos, runs_data, t_now_iso)
-    insertar_en_turso(finales, generado_prev, t_now_iso)
+    insertar_en_turso(finales_pre, generado_prev, t_now_iso)
     _turso_setup_runs(runs_data, t_now_iso)
 
-    guardar_state(t_now.isoformat(timespec='seconds'), ultimo_exito_nuevo)
-    generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales))
+    # ─── State con hashes de dominios ───
+    guardar_state(
+        t_now.isoformat(timespec='seconds'),
+        ultimo_exito_nuevo,
+        dominios_hashes_new,
+    )
+
+    generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales_pre))
     if sin_resultado:
         print(f"\n── ⚠ Medios sin titulares ({len(sin_resultado)}) ──")
         for n in sin_resultado:
