@@ -1082,14 +1082,24 @@ def cargar_historico_payload():
             if not state['generado']:
                 state['generado'] = manifest.get('generado')
 
-            # Recolectar ficheros 'all' por día desde 'dias[]'
+            # Recolectar ficheros 'all' de los días dentro de la ventana de
+            # retención. Los días más antiguos quedan en R2 pero no se
+            # reconstruyen en memoria (serían descartados por el merge).
+            corte = (datetime.now(TZ_MADRID)
+                     - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
+
             ficheros_a_leer = []
             for d_info in manifest.get('dias', []):
+                if d_info.get('fecha', '') < corte:
+                    continue
                 if d_info.get('all') and d_info['all'].get('file'):
                     ficheros_a_leer.append(d_info['all'])
-            # Compat: si no hay 'dias', usar 'ficheros'
+            # Compat: si no hay 'dias', usar 'ficheros' filtrado
             if not ficheros_a_leer:
-                ficheros_a_leer = manifest.get('ficheros', [])
+                ficheros_a_leer = [
+                    f for f in manifest.get('ficheros', [])
+                    if f.get('fecha', '') >= corte
+                ]
 
             for f_info in ficheros_a_leer:
                 fn = f_info.get('file')
@@ -1188,6 +1198,22 @@ def cargar_historico_payload():
         'hashes_dominios': state['hashes_dominios'],
     }
 
+# ── Contadores globales de dedup (una línea por run en vez de ~75) ──
+_DEDUP_STATS = {'colapsados': 0, 'alt': 0, 'slices': 0}
+_DEDUP_VERBOSE = os.environ.get('VOCEIRO_DEBUG') == '1'
+
+def _dedup_reset():
+    _DEDUP_STATS['colapsados'] = 0
+    _DEDUP_STATS['alt'] = 0
+    _DEDUP_STATS['slices'] = 0
+
+def _dedup_resumen():
+    s = _DEDUP_STATS
+    return (f"{s['colapsados']} titulares colapsados en {s['slices']} slices"
+            f" · {s['alt']} alt")
+
+
+
 # ─────────────────────────────────────────────────────────────
 # DEDUP EDITORIAL · mismo titular en varios medios del grupo
 # ─────────────────────────────────────────────────────────────
@@ -1249,8 +1275,12 @@ def deduplicar_editorial(noticias):
         items_ocultos += len(otros)
 
     if grupos_colapsados:
-        print(f"[dedup] {grupos_colapsados} titulares colapsados "
-              f"· {items_ocultos} noticias referenciadas como 'alt'")
+        _DEDUP_STATS['colapsados'] += grupos_colapsados
+        _DEDUP_STATS['alt'] += items_ocultos
+        _DEDUP_STATS['slices'] += 1
+        if _DEDUP_VERBOSE:
+            print(f"[dedup] {grupos_colapsados} titulares colapsados "
+                  f"· {items_ocultos} noticias referenciadas como 'alt'")
 
     return salida
   
@@ -1488,6 +1518,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         congelado = dias_atras > VENTANA_GRACIA_DIAS
 
         # ── Día congelado: copiar entrada previa tal cual ──
+        if congelado and dia in entradas_prev: tal cual ──
         if congelado and dia in entradas_prev:
             entrada_dia = entradas_prev[dia]
             dias_manifest.append(entrada_dia)
@@ -1602,7 +1633,8 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
     print(f"[troceado] {len(dias_manifest)} días · "
           f"{escritos} escritos · {reusados} reusados · "
-          f"{congelados} congelados · {total_kb:.1f} KB")
+          f"{congelados} congelados · {total_kb:.1f} KB · "
+          f"{_dedup_resumen()}")
 
     return manifest, dominios_hashes_new
 
@@ -2475,6 +2507,7 @@ def main():
             print(f"[manifest-prev] no se pudo leer: {e}")
 
     # Portada (dedup interno)
+    _dedup_reset()
     portada_info = generar_portada(finales_pre, t_now, horas=18)
 
     # Trocear: all + grupos + dominios
