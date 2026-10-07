@@ -287,42 +287,23 @@ def _generar_slice_dominio(items, fecha, dominio, ahora):
     filename = f'd-{dominio}-{fecha}.json'
     return filename, hash_, payload, len(items_dedup)
 
-
-def _escribir_slice_si_hace_falta(path, payload, hash_actual, hash_previo=None):
+def _escribir_slice_si_hace_falta(path, payload, hash_actual, hash_previo=''):
     """
-    Escribe si:
-      - El fichero no existe en disco, o
-      - El hash previo es distinto del actual.
-
-    hash_previo se obtiene:
-      - Para 'all' y 'g-*': None. El hash va en el nombre del fichero, así
-        que si el fichero existe → contenido idéntico → reusar.
-      - Para 'd-*': el hash guardado en state.json del run anterior.
-
+    Escribe solo si el contenido cambió respecto al run anterior.
+    Si hash_previo == hash_actual → no toca disco.
     Devuelve (size_kb, reusado).
     """
-    existe = os.path.exists(path)
-
-    if hash_previo is None:
-        # all/g-*: el nombre del fichero contiene el hash.
-        if existe:
-            try:
-                return os.path.getsize(path) / 1024, True
-            except OSError:
-                pass
-    else:
-        # d-*: comparar hash guardado.
-        if existe and hash_previo == hash_actual:
-            try:
-                return os.path.getsize(path) / 1024, True
-            except OSError:
-                pass
-
     blob = json.dumps(payload, ensure_ascii=False,
                       separators=(',', ':')).encode('utf-8')
+    size_kb = len(blob) / 1024
+
+    if hash_previo and hash_previo == hash_actual:
+        return size_kb, True
+
     with open(path, 'wb') as f:
         f.write(blob)
-    return len(blob) / 1024, False
+    return size_kb, False
+
 # ─────────────────────────────────────────────────────────────
 # UTILIDADES DE FECHA
 # ─────────────────────────────────────────────────────────────
@@ -1076,7 +1057,6 @@ def cargar_historico_payload():
     state = {
         'generado': None,
         'ultimo_exito_por_medio': {},
-        'hashes_dominios': {},
     }
     if os.path.exists(STATE_PATH):
         try:
@@ -1084,7 +1064,6 @@ def cargar_historico_payload():
                 s = json.load(f) or {}
                 state['generado'] = s.get('generado')
                 state['ultimo_exito_por_medio'] = s.get('ultimo_exito_por_medio', {}) or {}
-                state['hashes_dominios'] = s.get('hashes_dominios', {}) or {}
         except Exception as e:
             print(f"[state] no se pudo leer: {e}")
 
@@ -1209,7 +1188,6 @@ def cargar_historico_payload():
         'noticias': noticias,
         'generado': state['generado'],
         'ultimo_exito_por_medio': state['ultimo_exito_por_medio'],
-        'hashes_dominios': state['hashes_dominios'],
     }
 
 # ── Contadores globales de dedup (una línea por run en vez de ~75) ──
@@ -1341,22 +1319,15 @@ def fusionar_historico(nuevas, viejas, dias):
 
 
 
-def guardar_state(generado_iso, ultimo_exito_por_medio, dominios_hashes=None):
+def guardar_state(generado_iso, ultimo_exito_por_medio):
     payload = {
         'generado': generado_iso,
         'ultimo_exito_por_medio': ultimo_exito_por_medio or {},
     }
-    if dominios_hashes:
-        # Solo días dentro de la ventana de retención
-        corte = (datetime.now(TZ_MADRID) - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
-        payload['hashes_dominios'] = {
-            dia: h for dia, h in dominios_hashes.items() if dia >= corte
-        }
     with open(STATE_PATH, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
     kb = os.path.getsize(STATE_PATH) / 1024
     print(f"[state] {STATE_PATH} · {kb:.1f} KB")
-
 # ─────────────────────────────────────────────────────────────
 # FASE 3b · SALIDA TROCEADA (datos/manifest.json + días)
 # ─────────────────────────────────────────────────────────────
@@ -1469,33 +1440,37 @@ def _orden_estable(n):
     dt = _fecha_orden(n)
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
+def _build_hashes_prev(manifest_prev):
+    """Devuelve {(fecha, tipo) → hash} desde el manifest previo.
+    tipo: 'all' | 'g-<slug>' | 'd-<dominio>'."""
+    out = {}
+    for d in (manifest_prev or {}).get('dias', []):
+        fecha = d.get('fecha', '')
+        if not fecha:
+            continue
+        if d.get('all') and d['all'].get('hash'):
+            out[(fecha, 'all')] = d['all']['hash']
+        for grupo, g in (d.get('grupos') or {}).items():
+            if g.get('hash'):
+                out[(fecha, f'g-{_slug_grupo(grupo)}')] = g['hash']
+        for dom, dd in (d.get('dominios') or {}).items():
+            if dd.get('hash'):
+                out[(fecha, f'd-{dom}')] = dd['hash']
+    return out
+
+
 def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
-                      state_prev=None, manifest_prev=None):
+                      manifest_prev=None):
     """
-    Genera:
-      · public/datos/manifest.json
-      · public/datos/YYYY-MM-DD-<hash>.json           (all)
-      · public/datos/YYYY-MM-DD-g-<grupo>-<hash>.json (grupo)
-      · public/datos/d-<dominio>-<fecha>.json         (dominio)
+    Genera manifest.json + slices. Los slices cuyo hash coincida con el
+    del manifest previo no se escriben (por tanto no se subirán a R2).
 
-    noticias_pre_dedup: noticias SIN dedup editorial. La dedup se
-    aplica DENTRO de cada slice para no perder noticias que viven en
-    slices distintos.
-
-    manifest_prev: manifest del run anterior (o None). Se usa para:
-      - Copiar tal cual los días congelados (all + grupos + dominios).
-      - Copiar tal cual los días fuera de retención (entradas de archivo).
-
-    Devuelve:
-      manifest (dict), dominios_hashes_new (dict)
+    Devuelve: manifest (dict)
     """
-    state_prev = state_prev or {}
-    hashes_prev = (state_prev or {}).get('hashes_dominios', {}) or {}
     manifest_prev = manifest_prev or {}
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
-    dominios_hashes_new = {}
-    hashes_prev = (state_prev or {}).get('hashes_dominios', {}) or {}
+
     # ── Compat: migrar manifest previo del formato viejo ──
     if manifest_prev and not manifest_prev.get('dias') and manifest_prev.get('ficheros'):
         print(f"[compat] migrando manifest previo ({len(manifest_prev['ficheros'])} ficheros)")
@@ -1510,17 +1485,17 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
                 'archivo': True,
             })
         manifest_prev = {'dias': dias_migrados}
-    # ── Indexar entradas previas por fecha (del manifest previo) ──
+
+    hashes_prev = _build_hashes_prev(manifest_prev)
     entradas_prev = {d['fecha']: d for d in manifest_prev.get('dias', [])}
 
-    # ── Agrupar por día ──
     por_dia = defaultdict(list)
     for n in noticias_pre_dedup:
         dia = _dia_iso(_fecha_visible_iso(n, ahora), hoy_str)
         por_dia[dia].append(n)
 
     dias_manifest = []
-    ficheros_viejos = []   # compat, quitar en 1 semana
+    ficheros_viejos = []
     total_kb = 0.0
     escritos = reusados = congelados = 0
 
@@ -1533,12 +1508,10 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
             dias_atras = 0
         congelado = dias_atras > VENTANA_GRACIA_DIAS
 
-        # ── Día congelado: copiar entrada previa tal cual ──
         if congelado and dia in entradas_prev:
             entrada_dia = entradas_prev[dia]
             dias_manifest.append(entrada_dia)
             congelados += 1
-            # Sumar KB al log
             for f in [entrada_dia.get('all')] \
                     + list(entrada_dia.get('grupos', {}).values()) \
                     + list(entrada_dia.get('dominios', {}).values()):
@@ -1546,13 +1519,13 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
                     total_kb += f.get('kb', 0)
             continue
 
-        # ── Día editable (o congelado sin entrada previa: regenerar) ──
         items_dia.sort(key=_orden_estable)
 
         # ALL
         fn_all, h_all, pl_all, n_all = _generar_slice(items_dia, dia, '', ahora)
+        h_prev_all = hashes_prev.get((dia, 'all'), '')
         size_all, reusado_all = _escribir_slice_si_hace_falta(
-            os.path.join(DATOS_DIR, fn_all), pl_all, h_all, hash_previo=None)
+            os.path.join(DATOS_DIR, fn_all), pl_all, h_all, h_prev_all)
         escritos += 0 if reusado_all else 1
         reusados += 1 if reusado_all else 0
         total_kb += size_all
@@ -1577,8 +1550,9 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         for grupo, items_g in por_grupo.items():
             sufijo = f'g-{_slug_grupo(grupo)}'
             fn_g, h_g, pl_g, n_g = _generar_slice(items_g, dia, sufijo, ahora)
+            h_prev_g = hashes_prev.get((dia, sufijo), '')
             size_g, reusado_g = _escribir_slice_si_hace_falta(
-                os.path.join(DATOS_DIR, fn_g), pl_g, h_g, hash_previo=None)
+                os.path.join(DATOS_DIR, fn_g), pl_g, h_g, h_prev_g)
             escritos += 0 if reusado_g else 1
             reusados += 1 if reusado_g else 0
             total_kb += size_g
@@ -1593,25 +1567,20 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
             if d:
                 por_dominio[d].append(n)
 
-        dominios_hashes_new[dia] = {}
         for dominio, items_d in por_dominio.items():
             fn_d, h_d, pl_d, n_d = _generar_slice_dominio(items_d, dia, dominio, ahora)
-            hash_previo_d = hashes_prev.get(dia, {}).get(dominio, '')
+            h_prev_d = hashes_prev.get((dia, f'd-{dominio}'), '')
             size_d, reusado_d = _escribir_slice_si_hace_falta(
-                os.path.join(DATOS_DIR, fn_d), pl_d, h_d,
-                hash_previo=hash_previo_d)
+                os.path.join(DATOS_DIR, fn_d), pl_d, h_d, h_prev_d)
             escritos += 0 if reusado_d else 1
             reusados += 1 if reusado_d else 0
             total_kb += size_d
-            dominios_hashes_new[dia][dominio] = h_d
             entrada_dia['dominios'][dominio] = {
                 'file': fn_d, 'n': n_d, 'hash': h_d, 'kb': round(size_d, 1),
             }
 
-
         dias_manifest.append(entrada_dia)
 
-    # ── Añadir días del manifest previo que no estén ya (fuera de retención) ──
     fechas_presentes = {d['fecha'] for d in dias_manifest}
     for d_prev in manifest_prev.get('dias', []):
         if d_prev['fecha'] in fechas_presentes:
@@ -1622,7 +1591,6 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
     if len(dias_manifest) > DIAS_ARCHIVO:
         dias_manifest = dias_manifest[:DIAS_ARCHIVO]
 
-    # ── Manifest final ──
     manifest = {
         'generado': generado_iso,
         'generado_legible': ahora.strftime('%d/%m/%Y %H:%M'),
@@ -1633,7 +1601,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         'total': len(noticias_pre_dedup),
         'hoy': hoy_str,
         'dias': dias_manifest,
-        'ficheros': ficheros_viejos,   # compat, quitar en 1 semana
+        'ficheros': ficheros_viejos,
     }
     if portada_info:
         manifest['portada'] = portada_info
@@ -1648,8 +1616,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
           f"{congelados} congelados · {total_kb:.1f} KB · "
           f"{_dedup_resumen()}")
 
-    return manifest, dominios_hashes_new
-
+    return manifest
 
 def _limpiar_huerfanos_locales(manifest, portada_info):
     validos = {'manifest.json'}
@@ -1786,102 +1753,40 @@ def _r2_cache_control(filename):
     # Fallback
     return 'public, max-age=3600'
 
-def subir_a_r2(ficheros_locales, dominios_hashes_prev=None, dominios_hashes_new=None):
+def subir_a_r2(ficheros_locales):
     """
-    Sube a R2 los ficheros locales.
-
-    - manifest.json y portada-*: siempre (contenido volátil).
-    - YYYY-MM-DD-<hash>.json y YYYY-MM-DD-g-*-<hash>.json: HEAD previo
-      (si ya existe la key, skip).
-    - d-<dominio>-<fecha>.json: skip si el hash no cambió respecto al
-      state previo. Si no hay state (primer run o pérdida), sube.
+    Sube a R2 los ficheros que cambiaron. Solo recibe lo que se escribió
+    en disco este run (los que no cambiaron nunca llegaron a disco).
+    Sin HEADs, sin comprobaciones.
     """
     client = _r2_client()
     if not client:
         print("[r2] sin credenciales — saltando")
         return 0, 0, 0
 
-    dominios_hashes_prev = dominios_hashes_prev or {}
-    dominios_hashes_new = dominios_hashes_new or {}
-
-    subidos = omitidos = errores = 0
+    subidos = errores = 0
 
     for path in ficheros_locales:
         nombre = os.path.basename(path)
-
-        # ── Manifest y portada: siempre suben ──
-        if nombre == 'manifest.json' or nombre.startswith('portada-'):
-            try:
-                with open(path, 'rb') as f:
-                    client.upload_fileobj(
-                        f, R2_BUCKET, nombre,
-                        ExtraArgs={
-                            'ContentType': 'application/json; charset=utf-8',
-                            'CacheControl': _r2_cache_control(nombre),
-                        },
-                    )
-                subidos += 1
-            except Exception as e:
-                print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
-                errores += 1
+        if not nombre.endswith('.json'):
             continue
 
-        # ── Slice por dominio: skip si hash no cambió ──
-        m_dom = re.match(r'^d-([a-z0-9.-]+)-(\d{4}-\d{2}-\d{2})\.json$', nombre)
-        if m_dom:
-            dominio = m_dom.group(1)
-            fecha = m_dom.group(2)
-            hash_prev = dominios_hashes_prev.get(fecha, {}).get(dominio, '')
-            hash_new = dominios_hashes_new.get(fecha, {}).get(dominio, '')
-            # Si tenemos hash previo y no cambió → skip
-            if hash_prev and hash_new and hash_prev == hash_new:
-                omitidos += 1
-                continue
-            try:
-                with open(path, 'rb') as f:
-                    client.upload_fileobj(
-                        f, R2_BUCKET, nombre,
-                        ExtraArgs={
-                            'ContentType': 'application/json; charset=utf-8',
-                            'CacheControl': _r2_cache_control(nombre),
-                        },
-                    )
-                subidos += 1
-            except Exception as e:
-                print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
-                errores += 1
-            continue
+        try:
+            with open(path, 'rb') as f:
+                client.upload_fileobj(
+                    f, R2_BUCKET, nombre,
+                    ExtraArgs={
+                        'ContentType': 'application/json; charset=utf-8',
+                        'CacheControl': _r2_cache_control(nombre),
+                    },
+                )
+            subidos += 1
+        except Exception as e:
+            print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
+            errores += 1
 
-        # ── Slices con hash (all y grupo): HEAD previo ──
-        if (re.match(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$', nombre)
-                or re.match(r'^\d{4}-\d{2}-\d{2}-g-[a-z0-9-]+-[a-f0-9]{10}\.json$', nombre)):
-            try:
-                client.head_object(Bucket=R2_BUCKET, Key=nombre)
-                omitidos += 1
-                continue
-            except Exception:
-                pass
-            try:
-                with open(path, 'rb') as f:
-                    client.upload_fileobj(
-                        f, R2_BUCKET, nombre,
-                        ExtraArgs={
-                            'ContentType': 'application/json; charset=utf-8',
-                            'CacheControl': _r2_cache_control(nombre),
-                        },
-                    )
-                subidos += 1
-            except Exception as e:
-                print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
-                errores += 1
-            continue
-
-        # Formato desconocido: ignorar
-        print(f"[r2?] formato no reconocido, saltando: {nombre}")
-
-    print(f"[r2] {subidos} subidos · {omitidos} omitidos · {errores} errores")
-    return subidos, omitidos, errores
-
+    print(f"[r2] {subidos} subidos · 0 omitidos · {errores} errores")
+    return subidos, 0, errores
 # ─────────────────────────────────────────────────────────────
 # LIMPIEZA DE HUÉRFANOS EN R2
 # ─────────────────────────────────────────────────────────────
@@ -2523,14 +2428,17 @@ def main():
     portada_info = generar_portada(finales_pre, t_now, horas=18)
 
     # Trocear: all + grupos + dominios
-    state_prev = {
-        'hashes_dominios': (payload_prev.get('hashes_dominios') or {}),
-    }
-    manifest_actual, dominios_hashes_new = generar_troceados(
+    manifest_actual = generar_troceados(
         finales_pre, t_now, portada_info,
-        state_prev=state_prev,
         manifest_prev=manifest_prev,
     )
+
+    # ─── Subir a R2 (solo lo que cambió, ya está en disco) ───
+    ficheros_locales = [MANIFEST_PATH]
+    for f in os.listdir(DATOS_DIR):
+        if f.endswith('.json') and f != 'manifest.json':
+            ficheros_locales.append(os.path.join(DATOS_DIR, f))
+    subir_a_r2(ficheros_locales)
 
     # ─── Subir a R2 ───
     ficheros_locales = [MANIFEST_PATH]
@@ -2552,11 +2460,10 @@ def main():
     insertar_en_turso(finales_pre, generado_prev, t_now_iso)
     _turso_setup_runs(runs_data, t_now_iso)
 
-    # ─── State con hashes de dominios ───
+    # ─── State ───
     guardar_state(
         t_now.isoformat(timespec='seconds'),
         ultimo_exito_nuevo,
-        dominios_hashes_new,
     )
 
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales_pre))
