@@ -1495,6 +1495,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
     dominios_hashes_new = {}
+    hashes_prev = (state_prev or {}).get('hashes_dominios', {}) or {}
     # ── Compat: migrar manifest previo del formato viejo ──
     if manifest_prev and not manifest_prev.get('dias') and manifest_prev.get('ficheros'):
         print(f"[compat] migrando manifest previo ({len(manifest_prev['ficheros'])} ficheros)")
@@ -1550,6 +1551,8 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
         # ALL
         fn_all, h_all, pl_all, n_all = _generar_slice(items_dia, dia, '', ahora)
+        size_all, reusado_all = _escribir_slice_si_hace_falta(
+            os.path.join(DATOS_DIR, fn_all), pl_all, h_all, hash_previo=None)
         escritos += 0 if reusado_all else 1
         reusados += 1 if reusado_all else 0
         total_kb += size_all
