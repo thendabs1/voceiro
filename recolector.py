@@ -1585,9 +1585,6 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
             entrada_dia['grupos'][grupo] = {
                 'file': fn_g, 'n': n_g, 'hash': h_g, 'kb': round(size_g, 1),
             }
-            ficheros_viejos.append({'fecha': dia, 'file': fn_g, 'n': n_g,
-                                    'hash': h_g, 'kb': round(size_g, 1),
-                                    'es_hoy': dia == hoy_str})
 
         # DOMINIOS
         por_dominio = defaultdict(list)
@@ -1610,9 +1607,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
             entrada_dia['dominios'][dominio] = {
                 'file': fn_d, 'n': n_d, 'hash': h_d, 'kb': round(size_d, 1),
             }
-            ficheros_viejos.append({'fecha': dia, 'file': fn_d, 'n': n_d,
-                                    'hash': h_d, 'kb': round(size_d, 1),
-                                    'es_hoy': dia == hoy_str})
+
 
         dias_manifest.append(entrada_dia)
 
