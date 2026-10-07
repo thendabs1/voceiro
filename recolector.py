@@ -2440,16 +2440,7 @@ def main():
             ficheros_locales.append(os.path.join(DATOS_DIR, f))
     subir_a_r2(ficheros_locales)
 
-    # ─── Subir a R2 ───
-    ficheros_locales = [MANIFEST_PATH]
-    for f in os.listdir(DATOS_DIR):
-        if f.endswith('.json') and f != 'manifest.json':
-            ficheros_locales.append(os.path.join(DATOS_DIR, f))
-    subir_a_r2(
-        ficheros_locales,
-        dominios_hashes_prev=state_prev['hashes_dominios'],
-        dominios_hashes_new=dominios_hashes_new,
-    )
+
 
     # ─── Limpiar huérfanos en R2 ───
     limpiar_r2_huerfanos(manifest_actual)
