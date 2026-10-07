@@ -1518,7 +1518,6 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         congelado = dias_atras > VENTANA_GRACIA_DIAS
 
         # ── Día congelado: copiar entrada previa tal cual ──
-        if congelado and dia in entradas_prev: tal cual ──
         if congelado and dia in entradas_prev:
             entrada_dia = entradas_prev[dia]
             dias_manifest.append(entrada_dia)
