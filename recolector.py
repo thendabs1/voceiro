@@ -288,27 +288,41 @@ def _generar_slice_dominio(items, fecha, dominio, ahora):
     return filename, hash_, payload, len(items_dedup)
 
 
-def _escribir_slice_si_hace_falta(path, payload):
-    """Escribe si no existe o si cambió. Devuelve (size_kb, reusado)."""
-    if os.path.exists(path):
-        try:
-            with open(path, encoding='utf-8') as f:
-                previo = json.load(f)
-            # Compara sin 'generado' (que cambia siempre)
-            previo_sin_gen = {k: v for k, v in previo.items() if k != 'generado'}
-            nuevo_sin_gen  = {k: v for k, v in payload.items() if k != 'generado'}
-            if previo_sin_gen == nuevo_sin_gen:
-                size_kb = os.path.getsize(path) / 1024
-                return size_kb, True
-        except Exception:
-            pass
+def _escribir_slice_si_hace_falta(path, payload, hash_actual, hash_previo=None):
+    """
+    Escribe si:
+      - El fichero no existe en disco, o
+      - El hash previo es distinto del actual.
+
+    hash_previo se obtiene:
+      - Para 'all' y 'g-*': None. El hash va en el nombre del fichero, así
+        que si el fichero existe → contenido idéntico → reusar.
+      - Para 'd-*': el hash guardado en state.json del run anterior.
+
+    Devuelve (size_kb, reusado).
+    """
+    existe = os.path.exists(path)
+
+    if hash_previo is None:
+        # all/g-*: el nombre del fichero contiene el hash.
+        if existe:
+            try:
+                return os.path.getsize(path) / 1024, True
+            except OSError:
+                pass
+    else:
+        # d-*: comparar hash guardado.
+        if existe and hash_previo == hash_actual:
+            try:
+                return os.path.getsize(path) / 1024, True
+            except OSError:
+                pass
 
     blob = json.dumps(payload, ensure_ascii=False,
                       separators=(',', ':')).encode('utf-8')
     with open(path, 'wb') as f:
         f.write(blob)
     return len(blob) / 1024, False
-
 # ─────────────────────────────────────────────────────────────
 # UTILIDADES DE FECHA
 # ─────────────────────────────────────────────────────────────
@@ -1476,6 +1490,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
       manifest (dict), dominios_hashes_new (dict)
     """
     state_prev = state_prev or {}
+    hashes_prev = (state_prev or {}).get('hashes_dominios', {}) or {}
     manifest_prev = manifest_prev or {}
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
@@ -1535,8 +1550,6 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
         # ALL
         fn_all, h_all, pl_all, n_all = _generar_slice(items_dia, dia, '', ahora)
-        size_all, reusado_all = _escribir_slice_si_hace_falta(
-            os.path.join(DATOS_DIR, fn_all), pl_all)
         escritos += 0 if reusado_all else 1
         reusados += 1 if reusado_all else 0
         total_kb += size_all
@@ -1562,7 +1575,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
             sufijo = f'g-{_slug_grupo(grupo)}'
             fn_g, h_g, pl_g, n_g = _generar_slice(items_g, dia, sufijo, ahora)
             size_g, reusado_g = _escribir_slice_si_hace_falta(
-                os.path.join(DATOS_DIR, fn_g), pl_g)
+                os.path.join(DATOS_DIR, fn_g), pl_g, h_g, hash_previo=None)
             escritos += 0 if reusado_g else 1
             reusados += 1 if reusado_g else 0
             total_kb += size_g
@@ -1583,8 +1596,10 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         dominios_hashes_new[dia] = {}
         for dominio, items_d in por_dominio.items():
             fn_d, h_d, pl_d, n_d = _generar_slice_dominio(items_d, dia, dominio, ahora)
+            hash_previo_d = hashes_prev.get(dia, {}).get(dominio, '')
             size_d, reusado_d = _escribir_slice_si_hace_falta(
-                os.path.join(DATOS_DIR, fn_d), pl_d)
+                os.path.join(DATOS_DIR, fn_d), pl_d, h_d,
+                hash_previo=hash_previo_d)
             escritos += 0 if reusado_d else 1
             reusados += 1 if reusado_d else 0
             total_kb += size_d
