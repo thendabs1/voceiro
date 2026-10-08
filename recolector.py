@@ -1909,7 +1909,7 @@ def _t_stmt(sql, args=None):
     return {"type": "execute", "stmt": s}
 
 
-def turso_pipeline(statements, timeout=60):
+def turso_pipeline(statements, timeout=90):
     """Manda un batch a Turso HTTP v2. Devuelve la lista de results.
     Devuelve None si hay error de red o de SQL."""
     if not (TURSO_HTTP_URL and TURSO_TOKEN):
@@ -2203,7 +2203,7 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
         ))
 
     # Enviar por lotes de 500
-    BATCH = 500
+    BATCH = 100
     total = len(filas)
     insertados = 0
     fallos = 0
