@@ -1468,7 +1468,7 @@ def _build_hashes_prev(manifest_prev):
 
 
 def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
-                      manifest_prev=None, portada_mini_info=None):
+                      manifest_prev=None):
     """
     Genera manifest.json + slices. Los slices cuyo hash coincida con el
     del manifest previo no se escriben (por tanto no se subirán a R2).
@@ -1616,8 +1616,6 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
     }
     if portada_info:
         manifest['portada'] = portada_info
-    if portada_mini_info:
-        manifest['portada_mini'] = portada_mini_info
 
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
@@ -1635,8 +1633,6 @@ def _limpiar_huerfanos_locales(manifest, portada_info):
     validos = {'manifest.json'}
     if portada_info:
         validos.add(portada_info['file'])
-    if manifest.get('portada_mini') and manifest['portada_mini'].get('file'):
-        validos.add(manifest['portada_mini']['file'])
     for d in manifest['dias']:
         if d.get('all'):
             validos.add(d['all']['file'])
@@ -1832,8 +1828,6 @@ def _ficheros_de_manifest(manifest):
                 out.add(dd['file'])
     if manifest.get('portada') and manifest['portada'].get('file'):
         out.add(manifest['portada']['file'])
-    if manifest.get('portada_mini') and manifest['portada_mini'].get('file'):
-        out.add(manifest['portada_mini']['file'])
     return out
 
 
@@ -1888,7 +1882,6 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None):
     grupo_validos = set()
     dominio_validos = set()
     portada_valida = ''
-    portada_mini_valida = ''
 
     for d in manifest.get('dias', []):
         if d.get('all') and d['all'].get('file'):
@@ -1901,8 +1894,6 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None):
                 dominio_validos.add(dd['file'])
     if manifest.get('portada') and manifest['portada'].get('file'):
         portada_valida = manifest['portada']['file']
-    if manifest.get('portada_mini') and manifest['portada_mini'].get('file'):
-        portada_mini_valida = manifest['portada_mini']['file']
 
     limite = datetime.now(timezone.utc) - timedelta(hours=1)
     re_all     = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$')
@@ -1925,8 +1916,7 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None):
             elif re_dominio.match(key):
                 es_valido = key in dominio_validos
             elif key.startswith('portada-') and key.endswith('.json'):
-                es_valido = (key == portada_valida or
-                             key == portada_mini_valida)
+                es_valido = (key == portada_valida)
             else:
                 continue
 
@@ -2501,18 +2491,15 @@ def main():
         except Exception as e:
             print(f"[manifest-prev] no se pudo leer: {e}")
 
-    # Portadas (dedup interno en cada una)
+    # Portada (dedup interno)
     _dedup_reset()
     portada_info = generar_portada(
         finales_pre, t_now, horas=18, max_items=2000, prefix='portada')
-    portada_mini_info = generar_portada(
-        finales_pre, t_now, horas=2, max_items=400, prefix='portada-mini')
 
     # Trocear: all + grupos + dominios
     manifest_actual = generar_troceados(
         finales_pre, t_now, portada_info,
         manifest_prev=manifest_prev,
-        portada_mini_info=portada_mini_info,
     )
 
     # ─── Subir a R2 (solo lo que cambió, ya está en disco) ───
