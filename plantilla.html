@@ -2233,6 +2233,8 @@ const PRENSA_PAISES = [
 const I18N = {
   es: {
     /* ── Pestañas del panel ── */
+
+    contadorFueraModo:      ' · {n} fuera del modo',
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
     presetBannerExtra:       'en histórico',
@@ -4110,6 +4112,7 @@ function _vsOutsideClick(e){
   if (wrap && !wrap.contains(e.target)) cerrarViewSettingsMenu();
 }
 /* ── Fase 2 · relanzar carga (cambio de días o de preset) ── */
+
 let _relanzarTimer = null;
 function relanzarCarga() {
   if (_relanzarTimer) clearTimeout(_relanzarTimer);
@@ -4119,7 +4122,9 @@ function relanzarCarga() {
     if (cont) cont.innerHTML = '<div class="vacio">Cargando…</div>';
     try {
       await cargarScope();
-      aplicarFiltros();
+      // Tras cargar, reaplicar filtros pero SIN relanzar (evitar bucle)
+      const raw = $('#buscar').value.trim();
+      _aplicarFiltrosInterno(raw);
     } catch(e) {
       console.error('[relanzar]', e);
       if (cont) cont.innerHTML = '<div class="vacio">Error: ' + escapeHtml(e.message) + '</div>';
@@ -7416,7 +7421,34 @@ function programarPrensa(parsed, rawQuery, nLocales){
   }, PRENSA_DEBOUNCE_MS);
 }
 
+/* ── Fase 2 · detección de cambio de scope ── */
+function _scopeEquals(a, b) {
+  if (!a || !b) return false;
+  if (a.tipo !== b.tipo) return false;
+  if (a.tipo === 'all') return true;
+  const aG = (a.grupos || []).slice().sort().join('|');
+  const bG = (b.grupos || []).slice().sort().join('|');
+  const aO = (a.overrides || []).slice().sort().join('|');
+  const bO = (b.overrides || []).slice().sort().join('|');
+  return aG === bG && aO === bO;
+}
+
+let _scopePendiente = null;
+function _programarRelanzarSiCambiaScope() {
+  const nuevo = decidirScope();
+  if (_scopeEquals(nuevo, _scopeActual)) return;
+  _scopePendiente = nuevo;
+  clearTimeout(_scopePendiente._t);
+  _scopePendiente._t = setTimeout(() => {
+    _scopePendiente = null;
+    relanzarCarga();
+  }, 200);
+}
+
 function aplicarFiltros(){
+  // Detectar cambio de scope antes de filtrar
+  _programarRelanzarSiCambiaScope();
+
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
@@ -7618,6 +7650,16 @@ function aplicarFiltros(){
   }
   programarPrensa(parsed, raw, filtradas.length);
 }
+
+/* ── Renombrada: cuerpo de aplicarFiltros sin el trigger de scope ── */
+function _aplicarFiltrosInterno(raw) {
+  // Reusa toda la lógica de aplicarFiltros pero sin volver a disparar scope.
+  // Truco simple: guardamos el flag para que _programarRelanzarSiCambiaScope no actúe.
+  const _scopeSnap = _scopeActual;
+  _scopeActual = decidirScope();   // ahora coincide
+  aplicarFiltros();
+  _scopeActual = _scopeSnap;
+}
 function actualizarBotonCargarMas() {
   const wrap = document.getElementById('cargar-mas-wrap');
   const btn  = document.getElementById('btn-cargar-mas');
@@ -7737,9 +7779,14 @@ function renderizar(){
   // En scope: "Mostrando N de TOTAL en modo activo"
   // En all:   "Mostrando N de TOTAL titulares"
   const enScope = _scopeActual && _scopeActual.tipo !== 'all';
-  const txt = enScope
+  let txt = enScope
     ? t('contadorScope', { n: nMostrados.toLocaleString(), total: nCargados.toLocaleString() })
     : t('contador', { n: nMostrados.toLocaleString(), total: nCargados.toLocaleString() });
+
+  // Indicador "fuera del modo"
+  if (enScope && ULT_BANNER_INFO && ULT_BANNER_INFO.nFuera > 0){
+    t('contadorFueraModo', { n: ULT_BANNER_INFO.nFuera.toLocaleString() })
+  }
 
   $('#contador').textContent = txt;
   const cont = $('#resultados');
