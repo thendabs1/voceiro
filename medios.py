@@ -14,524 +14,751 @@ Añadir/editar medios NO requiere tocar la lógica de recolector.py.
 # ================================================================
 # CATÁLOGO DE MEDIOS
 # ================================================================
+# ================================================================
+# CATÁLOGO DE MEDIOS
+# ================================================================
 MEDIA_CATALOG = [
-    # ============================================================
-    # ESPAÑA · NACIONALES GENERALISTAS
-    # ============================================================
-    { 'group':'España · Nacionales', 'items':[
-
-        # Nativos digitales
-
-        # TV y Radio
-
-        # Agencias
-        # Añadir al grupo donde prefieras (o crear grupo 'Agencias internacionales')
-        { 'd':'20minutos.es',        'n':'20 Minutos',           'lang':'es', 'type':'diario',  'tags':['generalista','gratuito'] },
-        { 'd':'abc.es',              'n':'ABC',                  'lang':'es', 'type':'diario',  'tags':['generalista','nacional','conservador'] },
-        { 'd':'ansa.it',        'n':'ANSA',       'lang':'it','type':'agencia','tags':['agencia','italia'] },
-        { 'd':'antena3.com',         'n':'Antena 3',             'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
-        { 'd':'cadenaser.com',       'n':'Cadena SER',           'lang':'es', 'type':'radio',   'tags':['generalista','radio'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'cambio16.com',         'n':'Cambio16',             'lang':'es','type':'digital','tags':['generalista','digital'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'confilegal.com',       'n':'Confilegal',           'lang':'es','type':'digital','tags':['justicia','digital'] },
-        { 'd':'cope.es',             'n':'COPE',                 'lang':'es', 'type':'radio',   'tags':['generalista','radio','conservador'] },
-        { 'd':'cuartopoder.es',       'n':'Cuarto Poder',         'lang':'es','type':'digital','tags':['generalista','progresista'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'cuatro.com',          'n':'Cuatro',               'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
-        { 'd':'diariocritico.com',    'n':'Diario Crítico',       'lang':'es','type':'digital','tags':['generalista','digital'] },
-        { 'd':'efe.com',             'n':'Agencia EFE',          'lang':'es', 'type':'agencia', 'tags':['agencia','nacional'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'elboletin.com',        'n':'El Boletín',           'lang':'es','type':'digital','tags':['generalista','digital'] },
-        { 'd':'elconfidencial.com',  'n':'El Confidencial',      'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'eldebate.com',        'n':'El Debate',            'lang':'es', 'type':'digital', 'tags':['generalista','digital','conservador'] },
-        { 'd':'eldiario.es',         'n':'elDiario.es',          'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },
-        { 'd':'elespanol.com',       'n':'El Español',           'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'elindependiente.com', 'n':'El Independiente',     'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'elmundo.es',          'n':'El Mundo',             'lang':'es', 'type':'diario',  'tags':['generalista','nacional'] },
-        { 'd':'elpais.com',          'n':'El País',              'lang':'es', 'type':'diario',  'tags':['generalista','nacional'] },
-        { 'd':'elperiodico.com',     'n':'El Periódico',         'lang':'es', 'type':'diario',  'tags':['generalista','nacional','catalan'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elplural.com',        'n':'El Plural',            'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },
-        { 'd':'elsiglodeuropa.es',    'n':'El Siglo de Europa',   'lang':'es','type':'digital','tags':['generalista','digital'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elviejotopo.com',      'n':'El Viejo Topo',        'lang':'es','type':'revista','tags':['cultural','izquierda'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'europapress.es',      'n':'Europa Press',         'lang':'es', 'type':'agencia', 'tags':['agencia','nacional'] },
-        { 'd':'huffingtonpost.es',   'n':'El HuffPost',          'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },
-        { 'd':'infolibre.es',        'n':'InfoLibre',            'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },
-        { 'd':'larazon.es',          'n':'La Razón',             'lang':'es', 'type':'diario',  'tags':['generalista','nacional','conservador'] },
-        { 'd':'lasexta.com',         'n':'La Sexta',             'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
-        { 'd':'lavanguardia.com',    'n':'La Vanguardia',        'lang':'es', 'type':'diario',  'tags':['generalista','nacional','catalan'] },
-        { 'd':'libertaddigital.com', 'n':'Libertad Digital',     'lang':'es', 'type':'digital', 'tags':['generalista','digital','liberal'] },
-        { 'd':'mientrastanto.org',    'n':'Mientras Tanto',       'lang':'es','type':'revista','tags':['politica','izquierda'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'moncloa.com',         'n':'Moncloa',              'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'niusdiario.es',        'n':'Nius',                 'lang':'es','type':'digital','tags':['generalista','digital'] },
-        { 'd':'nuevarevista.net',     'n':'Nueva Revista',        'lang':'es','type':'revista','tags':['cultural','ideas'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'okdiario.com',        'n':'OK Diario',            'lang':'es', 'type':'digital', 'tags':['generalista','digital','conservador'] },
-        { 'd':'ondacero.es',         'n':'Onda Cero',            'lang':'es', 'type':'radio',   'tags':['generalista','radio'] },
-        { 'd':'periodistadigital.com','n':'Periodista Digital',   'lang':'es','type':'digital','tags':['generalista','digital'] },
-        { 'd':'publico.es',          'n':'Público',              'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'que.es',              'n':'Qué!',                 'lang':'es', 'type':'diario',  'tags':['generalista','gratuito'] },
-        { 'd':'republica.com',        'n':'Republica.com',        'lang':'es','type':'digital','tags':['generalista','digital'] },
-        { 'd':'rtve.es',             'n':'RTVE',                 'lang':'es', 'type':'tv',      'tags':['generalista','publico','tv','radio'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'servimedia.es',       'n':'Servimedia',           'lang':'es', 'type':'agencia', 'tags':['agencia','social'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'telecinco.es',        'n':'Telecinco',            'lang':'es', 'type':'tv',      'tags':['generalista','privado','tv'] },
-        { 'd':'theobjective.com',    'n':'The Objective',        'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'vientosur.info',       'n':'Viento Sur',           'lang':'es','type':'revista','tags':['politica','izquierda'] },
-        { 'd':'vozpopuli.com',       'n':'Vozpópuli',            'lang':'es', 'type':'digital', 'tags':['generalista','digital'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'politico.eu',        'n':'PoliticoEU',             'lang':'es', 'type':'digital', 'tags':['politica','EU'] },
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-DNS: DNS: [Errno -5] No address associated with hostname] { 'd':'afp.com',        'n':'AFP',        'lang':'en','type':'agencia','tags':['agencia','internacional'] },
-        # [CAÍDO-DNS: DNS: [Errno -5] No address associated with hostname] { 'd':'diario16.com',         'n':'Diario16',             'lang':'es','type':'digital','tags':['generalista','digital'] },
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='dpa.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError("HTTPSConn] { 'd':'dpa.com',        'n':'DPA',        'lang':'de','type':'agencia','tags':['agencia','alemania'] },
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='kyodonews.net', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerific] { 'd':'kyodonews.net',  'n':'Kyodo News', 'lang':'en','type':'agencia','tags':['agencia','japon'] },
-        # [CAÍDO-HTTP: HTTP 500] { 'd':'periodismohumano.com', 'n':'Periodismo Humano',    'lang':'es','type':'digital','tags':['generalista','social'] },
+    # ═══════════════════════════════════════════════════════════════
+    # DEPORTES
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Deportes', 'items':[
+        { 'd':'2playbook.com','n':'2Playbook','type':'digital','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','negocio'] },
+        { 'd':'as.com','n':'Diario AS','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','futbol'] },
+        { 'd':'eldesmarque.com','n':'El Desmarque','type':'digital','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','digital'] },
+        { 'd':'estadiodeportivo.com','n':'Estadio Deportivo','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','andalucia'] },
+        { 'd':'marca.com','n':'Marca','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','futbol'] },
+        { 'd':'mundodeportivo.com','n':'Mundo Deportivo','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','futbol','catalan'] },
+        { 'd':'palco23.com','n':'Palco23','type':'digital','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','negocio'] },
+        { 'd':'relevo.com','n':'Relevo','type':'digital','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','digital'] },
+        { 'd':'sport.es','n':'Sport','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','futbol','catalan'] },
+        { 'd':'superdeporte.es','n':'Superdeporte','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','valencia'] },
     ]},
 
-    # ============================================================
-    # ESPAÑA · DEPORTIVOS
-    # ============================================================
-    { 'group':'España · Deportivos', 'items':[
-        { 'd':'2playbook.com',       'n':'2Playbook',            'lang':'es', 'type':'deportivo', 'tags':['deportes','negocio'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'as.com',              'n':'Diario AS',            'lang':'es', 'type':'deportivo', 'tags':['deportes','futbol'] },
-        { 'd':'eldesmarque.com',     'n':'El Desmarque',         'lang':'es', 'type':'deportivo', 'tags':['deportes','digital'] },
-        { 'd':'estadiodeportivo.com','n':'Estadio Deportivo',    'lang':'es', 'type':'deportivo', 'tags':['deportes','andalucia'] },
-        { 'd':'marca.com',           'n':'Marca',                'lang':'es', 'type':'deportivo', 'tags':['deportes','futbol'] },
-        { 'd':'mundodeportivo.com',  'n':'Mundo Deportivo',      'lang':'es', 'type':'deportivo', 'tags':['deportes','futbol','catalan'] },
-        { 'd':'palco23.com',         'n':'Palco23',              'lang':'es', 'type':'deportivo', 'tags':['deportes','negocio'] },
-        { 'd':'relevo.com',          'n':'Relevo',               'lang':'es', 'type':'deportivo', 'tags':['deportes','digital'] },
-        { 'd':'sport.es',            'n':'Sport',                'lang':'es', 'type':'deportivo', 'tags':['deportes','futbol','catalan'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'superdeporte.es',     'n':'Superdeporte',         'lang':'es', 'type':'deportivo', 'tags':['deportes','valencia'] },
+    # ═══════════════════════════════════════════════════════════════
+    # ECONOMÍA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Economía', 'items':[
+        { 'd':'bolsamania.com','n':'Bolsamania','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','mercados'] },
+        { 'd':'brainsre.news','n':'Brains RE','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','inmobiliario'] },
+        { 'd':'capitalmadrid.com','n':'Capital Madrid','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','finanzas'] },
+        { 'd':'cincodias.com','n':'Cinco Días','type':'diario','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','negocios'] },
+        { 'd':'dirigentesdigital.com','n':'Dirigentes Digital','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','negocios'] },
+        { 'd':'economiadigital.es','n':'Economía Digital','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','digital'] },
+        { 'd':'elblogsalmon.com','n':'El Blog Salmón','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','blog'] },
+        { 'd':'eleconomista.es','n':'El Economista','type':'diario','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','negocios'] },
+        { 'd':'estrategiasdeinversion.com','n':'Estrategias de Inversión','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','inversion'] },
+        { 'd':'expansion.com','n':'Expansión','type':'diario','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','negocios'] },
+        { 'd':'finect.com','n':'Finect','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','finanzas'] },
+        { 'd':'idealista.com','n':'Idealista News','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','vivienda'] },
+        { 'd':'invertia.com','n':'Invertia','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','mercados'] },
+        { 'd':'libremercado.com','n':'Libre Mercado','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','liberal'] },
+        { 'd':'mercadofinanciero.com','n':'Mercado Financiero','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','mercados'] },
+        { 'd':'murciaeconomia.com','n':'Murcia Economía','type':'digital','sector':'economia','ambito':'regional','region':'murcia','pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','murcia'] },
+        { 'd':'valenciaplaza.com','n':'Valencia Plaza','type':'digital','sector':'economia','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','valencia'] },
+        { 'd':'viaempresa.cat','n':'Via Empresa','type':'digital','sector':'economia','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['economia'] },
     ]},
 
-    # ============================================================
-    # ESPAÑA · ECONÓMICOS
-    # ============================================================
-    { 'group':'España · Económicos', 'items':[
-        { 'd':'bolsamania.com',      'n':'Bolsamania',           'lang':'es', 'type':'economico', 'tags':['economia','mercados'] },
-        { 'd':'brainsre.news',         'n':'Brains RE',             'lang':'es','type':'economico','tags':['economia','inmobiliario'] },
-        { 'd':'capitalmadrid.com',     'n':'Capital Madrid',        'lang':'es','type':'economico','tags':['economia','finanzas'] },
-        { 'd':'cincodias.com',       'n':'Cinco Días',           'lang':'es', 'type':'economico', 'tags':['economia','negocios'] },
-        { 'd':'dirigentesdigital.com', 'n':'Dirigentes Digital',    'lang':'es','type':'economico','tags':['economia','negocios'] },
-        { 'd':'economiadigital.es',  'n':'Economía Digital',     'lang':'es', 'type':'economico', 'tags':['economia','digital'] },
-        { 'd':'elblogsalmon.com',      'n':'El Blog Salmón',        'lang':'es','type':'economico','tags':['economia','blog'] },
-        { 'd':'eleconomista.es',     'n':'El Economista',        'lang':'es', 'type':'economico', 'tags':['economia','negocios'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'estrategiasdeinversion.com','n':'Estrategias de Inversión','lang':'es','type':'economico','tags':['economia','inversion'] },
-        { 'd':'expansion.com',       'n':'Expansión',            'lang':'es', 'type':'economico', 'tags':['economia','negocios'] },
-        { 'd':'finect.com',            'n':'Finect',                'lang':'es','type':'economico','tags':['economia','finanzas'] },
-        { 'd':'idealista.com',         'n':'Idealista News',        'lang':'es','type':'economico','tags':['economia','vivienda'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'invertia.com',        'n':'Invertia',             'lang':'es', 'type':'economico', 'tags':['economia','mercados'] },
-        { 'd':'libremercado.com',    'n':'Libre Mercado',        'lang':'es', 'type':'economico', 'tags':['economia','liberal'] },
-        { 'd':'mercadofinanciero.com', 'n':'Mercado Financiero',    'lang':'es','type':'economico','tags':['economia','mercados'] },  # [SIN-FEED: GN/scraping]
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTP 410] { 'd':'lainformacion.com',   'n':'La Información',       'lang':'es', 'type':'digital',   'tags':['economico','digital'] },
+    # ═══════════════════════════════════════════════════════════════
+    # TECNOLOGÍA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Tecnología', 'items':[
+        { 'd':'adslzone.net','n':'ADSLZone','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','internet'] },
+        { 'd':'andro4all.com','n':'Andro4all','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','android'] },
+        { 'd':'applesfera.com','n':'Applesfera','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','apple'] },
+        { 'd':'computerhoy.com','n':'Computer Hoy','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia'] },
+        { 'd':'computerworld.es','n':'Computerworld España','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','empresa'] },
+        { 'd':'elandroidelibre.elespanol.com','n':'El Androide Libre','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','android'] },
+        { 'd':'elchapuzasinformatico.com','n':'El Chapuzas Informático','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'] },
+        { 'd':'genbeta.com','n':'Genbeta','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','software'] },
+        { 'd':'hardzone.es','n':'HardZone','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'] },
+        { 'd':'hipertextual.com','n':'Hipertextual','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','cultura'] },
+        { 'd':'ituser.es','n':'IT User','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','empresa'] },
+        { 'd':'muycomputer.com','n':'MuyComputer','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'] },
+        { 'd':'profesionalreview.com','n':'Profesional Review','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'] },
+        { 'd':'silicon.es','n':'Silicon','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','empresa'] },
+        { 'd':'teknofilo.com','n':'Teknófilo','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','movil'] },
+        { 'd':'xataka.com','n':'Xataka','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','gadgets'] },
+        { 'd':'xatakaciencia.com','n':'Xataka Ciencia','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['ciencia','tecnologia'] },
+        { 'd':'xatakamovil.com','n':'Xataka Móvil','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','movil'] },
     ]},
 
-    # ============================================================
-    # ESPAÑA · TECNOLOGÍA
-    # ============================================================
-    { 'group':'España · Tecnología', 'items':[
-        { 'd':'adslzone.net',        'n':'ADSLZone',             'lang':'es', 'type':'tecnologia', 'tags':['tecnologia','internet'] },
-        { 'd':'andro4all.com',         'n':'Andro4all',             'lang':'es','type':'tecnologia','tags':['tecnologia','android'] },
-        { 'd':'applesfera.com',      'n':'Applesfera',           'lang':'es', 'type':'tecnologia', 'tags':['tecnologia','apple'] },
-        { 'd':'computerhoy.com',     'n':'Computer Hoy',         'lang':'es', 'type':'tecnologia', 'tags':['tecnologia'] },
-        { 'd':'computerworld.es',      'n':'Computerworld España',  'lang':'es','type':'tecnologia','tags':['tecnologia','empresa'] },
-        { 'd':'elandroidelibre.elespanol.com','n':'El Androide Libre','lang':'es','type':'tecnologia','tags':['tecnologia','android'] },
-        { 'd':'elchapuzasinformatico.com','n':'El Chapuzas Informático','lang':'es','type':'tecnologia','tags':['tecnologia','hardware'] },
-        { 'd':'genbeta.com',         'n':'Genbeta',              'lang':'es', 'type':'tecnologia', 'tags':['tecnologia','software'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'hardzone.es',           'n':'HardZone',              'lang':'es','type':'tecnologia','tags':['tecnologia','hardware'] },
-        { 'd':'hipertextual.com',    'n':'Hipertextual',         'lang':'es', 'type':'tecnologia', 'tags':['tecnologia','cultura'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'ituser.es',             'n':'IT User',               'lang':'es','type':'tecnologia','tags':['tecnologia','empresa'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'muycomputer.com',       'n':'MuyComputer',           'lang':'es','type':'tecnologia','tags':['tecnologia','hardware'] },
-        { 'd':'profesionalreview.com', 'n':'Profesional Review',    'lang':'es','type':'tecnologia','tags':['tecnologia','hardware'] },
-        { 'd':'silicon.es',            'n':'Silicon',               'lang':'es','type':'tecnologia','tags':['tecnologia','empresa'] },
-        { 'd':'teknofilo.com',         'n':'Teknófilo',             'lang':'es','type':'tecnologia','tags':['tecnologia','movil'] },
-        { 'd':'xataka.com',          'n':'Xataka',               'lang':'es', 'type':'tecnologia', 'tags':['tecnologia','gadgets'] },
-        { 'd':'xatakaciencia.com',     'n':'Xataka Ciencia',        'lang':'es','type':'tecnologia','tags':['ciencia','tecnologia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'xatakamovil.com',       'n':'Xataka Móvil',          'lang':'es','type':'tecnologia','tags':['tecnologia','movil'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='omicrono.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError("HTTP] { 'd':'omicrono.com',          'n':'Omicrono',              'lang':'es','type':'tecnologia','tags':['tecnologia','ciencia'] },
-        # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'wwhatsnew.com',         'n':'WWWhat\'s New',         'lang':'es','type':'tecnologia','tags':['tecnologia','apps'] },
-    ]},
-    
-    { 'group':'España · Ciencia y Salud', 'items':[
-        { 'd':'agenciasinc.es',        'n':'SINC',                'lang':'es','type':'digital','tags':['ciencia','publico'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'consalud.es',           'n':'ConSalud',            'lang':'es','type':'digital','tags':['salud'] },
-        { 'd':'diariomedico.com',      'n':'Diario Médico',       'lang':'es','type':'digital','tags':['salud','profesional'] },
-        { 'd':'muyinteresante.okdiario.com',     'n':'Muy Interesante',     'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },
-        { 'd':'nationalgeographic.com.es','n':'National Geographic España','lang':'es','type':'revista','tags':['ciencia','naturaleza'] },
-        { 'd':'naukas.com',            'n':'Naukas',              'lang':'es','type':'digital','tags':['ciencia','blog'] },
-        { 'd':'quo.es',                'n':'Quo',                 'lang':'es','type':'revista','tags':['ciencia','divulgacion'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='redaccionmedica.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertV] { 'd':'redaccionmedica.com',   'n':'Redacción Médica',    'lang':'es','type':'digital','tags':['salud','profesional'] },
-    ]},
-    # ============================================================
-    # ESPAÑA · CULTURALES / REVISTAS
-    # ============================================================
-    { 'group':'España · Culturales', 'items':[
-        { 'd':'alternativaseconomicas.coop', 'n':'Alternativas Económicas', 'lang':'es', 'type':'revista', 'tags':['economia','social'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elcritic.cat',          'n':'Crític',               'lang':'ca', 'type':'revista', 'tags':['cultural','investigacion'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'ctxt.es',             'n':'CTXT',                 'lang':'es', 'type':'revista', 'tags':['cultural','investigacion'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'culturainquieta.com', 'n':'Cultura Inquieta',     'lang':'es', 'type':'revista', 'tags':['cultural'] },
-        { 'd':'elsaltodiario.com',   'n':'El Salto',             'lang':'es', 'type':'digital', 'tags':['generalista','digital','progresista'] },  # [TIMEOUT: revisar]
-        { 'd':'ethic.es',            'n':'Ethic',                'lang':'es', 'type':'revista', 'tags':['cultural','sociedad'] },
-        { 'd':'jotdown.es',          'n':'Jot Down',             'lang':'es', 'type':'revista', 'tags':['cultural','entrevistas'] },
-        { 'd':'lamarea.com',         'n':'La Marea',             'lang':'es', 'type':'revista', 'tags':['cultural','progresista'] },
-        { 'd':'letraslibres.com',    'n':'Letras Libres',        'lang':'es', 'type':'revista', 'tags':['cultural','literatura'] },
-        { 'd':'revistamongolia.com', 'n':'Mongolia',             'lang':'es', 'type':'revista', 'tags':['cultural','humor'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'yorokobu.es',         'n':'Yorokobu',             'lang':'es', 'type':'revista', 'tags':['cultural','creatividad'] },
-        { 'd':'zendalibros.com',     'n':'Zenda Libros',         'lang':'es', 'type':'revista', 'tags':['cultural','libros'] },
+    # ═══════════════════════════════════════════════════════════════
+    # CIENCIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Ciencia', 'items':[
+        { 'd':'agenciasinc.es','n':'SINC','type':'digital','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['ciencia','publico'] },
+        { 'd':'consalud.es','n':'ConSalud','type':'digital','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['salud'] },
+        { 'd':'diariomedico.com','n':'Diario Médico','type':'digital','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['salud','profesional'] },
+        { 'd':'muyinteresante.okdiario.com','n':'Muy Interesante','type':'revista','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['ciencia','divulgacion'] },
+        { 'd':'nationalgeographic.com.es','n':'National Geographic España','type':'revista','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['ciencia','naturaleza'] },
+        { 'd':'naukas.com','n':'Naukas','type':'digital','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['ciencia','blog'] },
+        { 'd':'quo.es','n':'Quo','type':'revista','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['ciencia','divulgacion'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · CATALUÑA
-    # ============================================================
-    { 'group':'Cataluña', 'items':[
-        { 'd':'324.cat',             'n':'324',                  'lang':'ca', 'type':'tv',      'tags':['generalista','tv','publico'] },
-        { 'd':'acn.cat',             'n':'Agència Catalana de Notícies', 'lang':'ca', 'type':'agencia', 'tags':['agencia','catalan'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'ara.cat',             'n':'Ara',                  'lang':'ca', 'type':'diario',  'tags':['generalista','catalan'] },
-        { 'd':'diaridegirona.cat',    'n':'Diari de Girona',      'lang':'ca','type':'diario','tags':['generalista','catalan'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'diaridetarragona.com', 'n':'Diari de Tarragona',   'lang':'ca','type':'diario','tags':['generalista','catalan'] },
-        { 'd':'directa.cat',          'n':'La Directa',           'lang':'ca','type':'revista','tags':['investigacion','izquierda'] },
-        { 'd':'e-noticies.cat',       'n':'e-Notícies',           'lang':'ca','type':'digital','tags':['generalista','catalan'] },
-        { 'd':'elmon.cat',           'n':'El Món',               'lang':'ca', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'elnacional.cat',      'n':'El Nacional',          'lang':'ca', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'elpuntavui.cat',      'n':'El Punt Avui',         'lang':'ca', 'type':'diario',  'tags':['generalista','catalan'] },
-        { 'd':'naciodigital.cat',    'n':'Nació Digital',        'lang':'ca', 'type':'digital', 'tags':['generalista','digital'] },
-        { 'd':'rac1.cat',            'n':'RAC1',                 'lang':'ca', 'type':'radio',   'tags':['generalista','radio'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'regio7.cat',           'n':'Regió7',               'lang':'ca','type':'diario','tags':['generalista','catalan'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'reusdigital.cat',      'n':'Reus Digital',         'lang':'ca','type':'digital','tags':['generalista','local'] },
-        { 'd':'segre.com',            'n':'Segre',                'lang':'ca','type':'diario','tags':['generalista','catalan'] },
-        { 'd':'viaempresa.cat',      'n':'Via Empresa',          'lang':'ca', 'type':'economico', 'tags':['economia'] },
-        { 'd':'vilaweb.cat',         'n':'VilaWeb',              'lang':'ca', 'type':'digital', 'tags':['generalista','digital'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))] { 'd':'ccma.cat',            'n':'CCMA',                 'lang':'ca', 'type':'tv',      'tags':['generalista','tv','publico'] },
-        # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'laronda.cat',          'n':'La Ronda',             'lang':'ca','type':'digital','tags':['generalista','local'] },
-        # [CAÍDO-DNS: DNS: [Errno -3] Temporary failure in name resolution] { 'd':'nacio.cat',            'n':'Nació Digital',        'lang':'ca','type':'digital','tags':['generalista','catalan'] },
+    # ═══════════════════════════════════════════════════════════════
+    # CULTURA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Cultura', 'items':[
+        { 'd':'alternativaseconomicas.coop','n':'Alternativas Económicas','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','social'] },
+        { 'd':'elcritic.cat','n':'Crític','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['ca'],'lang_principal':'ca','tags':['cultural','investigacion'] },
+        { 'd':'ctxt.es','n':'CTXT','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','investigacion'] },
+        { 'd':'culturainquieta.com','n':'Cultura Inquieta','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural'] },
+        { 'd':'elsaltodiario.com','n':'El Salto','type':'digital','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'] },
+        { 'd':'ethic.es','n':'Ethic','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','sociedad'] },
+        { 'd':'jotdown.es','n':'Jot Down','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','entrevistas'] },
+        { 'd':'lamarea.com','n':'La Marea','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','progresista'] },
+        { 'd':'letraslibres.com','n':'Letras Libres','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','literatura'] },
+        { 'd':'revistamongolia.com','n':'Mongolia','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','humor'] },
+        { 'd':'yorokobu.es','n':'Yorokobu','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','creatividad'] },
+        { 'd':'zendalibros.com','n':'Zenda Libros','type':'revista','sector':'cultura','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','libros'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · GALICIA (VERIFICADOS Y AMPLIADOS)
-    # ============================================================
-    { 'group':'Galicia', 'items':[
-        { 'd':'atlantico.net',       'n':'Atlántico',            'lang':'es', 'type':'diario',  'tags':['generalista','galicia','vigo'] },
-        { 'd':'campogalego.es',       'n':'Campo Galego',         'lang':'gl','type':'revista','tags':['agro','galicia'] },
-        { 'd':'crtvg.gal',           'n':'CRTVG (TVG y Radio Galega)', 'lang':'gl', 'type':'tv', 'tags':['generalista','publico','galicia','radio'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'diariodearousa.com',  'n':'Diario de Arousa',     'lang':'es', 'type':'diario',  'tags':['generalista','galicia','arousa'] },
-        { 'd':'diariodeferrol.com',  'n':'Diario de Ferrol',     'lang':'es', 'type':'diario',  'tags':['generalista','galicia','ferrol'] },
-        { 'd':'diariodepontevedra.es', 'n':'Diario de Pontevedra', 'lang':'es', 'type':'diario', 'tags':['generalista','galicia','pontevedra'] },
-        { 'd':'diariodevigo.com',     'n':'Diario de Vigo',       'lang':'es','type':'digital','tags':['generalista','vigo'] },
-        { 'd':'dxtcampeon.com',      'n':'DxT Campeón',          'lang':'es', 'type':'deportivo', 'tags':['deportes','galicia','coruña'] },
-        { 'd':'elcorreogallego.es',  'n':'El Correo Gallego',    'lang':'es', 'type':'diario',  'tags':['generalista','galicia'] },
-        { 'd':'elidealgallego.com',  'n':'El Ideal Gallego',     'lang':'es', 'type':'diario',  'tags':['generalista','galicia','coruña'] },
-        { 'd':'elprogreso.es',       'n':'El Progreso',          'lang':'es', 'type':'diario',  'tags':['generalista','galicia','lugo'] },
-        { 'd':'farodevigo.es',       'n':'Faro de Vigo',         'lang':'es', 'type':'diario',  'tags':['generalista','galicia'] },
-        { 'd':'ferrol360.es',        'n':'Ferrol 360',           'lang':'es', 'type':'digital', 'tags':['generalista','local','ferrol'] },
-        { 'd':'galiciaconfidencial.com', 'n':'Galicia Confidencial', 'lang':'gl', 'type':'digital', 'tags':['generalista','galicia'] },
-        { 'd':'galiciadigital.com',  'n':'Galicia Digital',      'lang':'es', 'type':'digital', 'tags':['generalista','galicia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'galiciae.com',         'n':'Galiciae',             'lang':'gl','type':'digital','tags':['generalista','galicia'] },
-        { 'd':'galiciapress.es',     'n':'Galicia Press',        'lang':'es', 'type':'digital', 'tags':['generalista','galicia'] },
-        { 'd':'galiciaunica.es',      'n':'Galicia Única',        'lang':'es','type':'digital','tags':['generalista','galicia'] },
-        { 'd':'laopinioncoruna.es',  'n':'La Opinión A Coruña',  'lang':'es', 'type':'diario',  'tags':['generalista','galicia','coruña'] },
-        { 'd':'laregion.es',         'n':'La Región',            'lang':'es', 'type':'diario',  'tags':['generalista','galicia','ourense'] },
-        { 'd':'lavozdegalicia.es',   'n':'La Voz de Galicia',    'lang':'es', 'type':'diario',  'tags':['generalista','galicia'] },
-        { 'd':'metropolitano.gal',   'n':'Metropolitano',        'lang':'es', 'type':'digital', 'tags':['generalista','local','vigo'] },
-        { 'd':'mundiario.com',       'n':'Mundiario',            'lang':'es', 'type':'digital', 'tags':['generalista','galicia'] },
-        { 'd':'nosdiario.gal',       'n':'Nós Diario',           'lang':'gl', 'type':'digital', 'tags':['generalista','galicia'] },
-        { 'd':'pontevedraviva.com',  'n':'Pontevedra Viva',      'lang':'es', 'type':'digital', 'tags':['generalista','local','pontevedra'] },
-        { 'd':'praza.gal',           'n':'Praza Pública',        'lang':'gl', 'type':'digital', 'tags':['generalista','galicia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'radiovoz.com',        'n':'Radio Voz',            'lang':'es', 'type':'radio',   'tags':['generalista','privado','galicia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'riazor.org',          'n':'Riazor.org',           'lang':'es', 'type':'deportivo', 'tags':['deportes','galicia','coruña'] },
-        { 'd':'vigoe.es',            'n':'Vigoé',                'lang':'es', 'type':'digital', 'tags':['generalista','local','vigo'] },
-        { 'd':'ferrolxa.com',   'n':'FerrolXA',     'lang':'gl','type':'digital','tags':['generalista','ferrol'] },  # [TIMEOUT: revisar]
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'galiciant.com',        'n':'Galicia NT',           'lang':'gl','type':'digital','tags':['generalista','galicia'] },
+    # ═══════════════════════════════════════════════════════════════
+    # NACIONAL
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Nacional', 'items':[
+        { 'd':'20minutos.es','n':'20 Minutos','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','gratuito'] },
+        { 'd':'abc.es','n':'ABC','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional','conservador'] },
+        { 'd':'antena3.com','n':'Antena 3','type':'tv','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','privado','tv'] },
+        { 'd':'cadenaser.com','n':'Cadena SER','type':'radio','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','radio'] },
+        { 'd':'cambio16.com','n':'Cambio16','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'confilegal.com','n':'Confilegal','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['justicia','digital'] },
+        { 'd':'cope.es','n':'COPE','type':'radio','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','radio','conservador'] },
+        { 'd':'cuartopoder.es','n':'Cuarto Poder','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','progresista'] },
+        { 'd':'cuatro.com','n':'Cuatro','type':'tv','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','privado','tv'] },
+        { 'd':'diariocritico.com','n':'Diario Crítico','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'efe.com','n':'Agencia EFE','type':'agencia','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['agencia','nacional'] },
+        { 'd':'elboletin.com','n':'El Boletín','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'elconfidencial.com','n':'El Confidencial','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'eldebate.com','n':'El Debate','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','conservador'] },
+        { 'd':'eldiario.es','n':'elDiario.es','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'] },
+        { 'd':'elespanol.com','n':'El Español','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'elindependiente.com','n':'El Independiente','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'elmundo.es','n':'El Mundo','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional'] },
+        { 'd':'elpais.com','n':'El País','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional'] },
+        { 'd':'elperiodico.com','n':'El Periódico','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional','catalan'] },
+        { 'd':'elplural.com','n':'El Plural','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'] },
+        { 'd':'elsiglodeuropa.es','n':'El Siglo de Europa','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'elviejotopo.com','n':'El Viejo Topo','type':'revista','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','izquierda'] },
+        { 'd':'europapress.es','n':'Europa Press','type':'agencia','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['agencia','nacional'] },
+        { 'd':'huffingtonpost.es','n':'El HuffPost','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'] },
+        { 'd':'infolibre.es','n':'InfoLibre','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'] },
+        { 'd':'larazon.es','n':'La Razón','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional','conservador'] },
+        { 'd':'lasexta.com','n':'La Sexta','type':'tv','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','privado','tv'] },
+        { 'd':'lavanguardia.com','n':'La Vanguardia','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional','catalan'] },
+        { 'd':'libertaddigital.com','n':'Libertad Digital','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','liberal'] },
+        { 'd':'mientrastanto.org','n':'Mientras Tanto','type':'revista','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['politica','izquierda'] },
+        { 'd':'moncloa.com','n':'Moncloa','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'niusdiario.es','n':'Nius','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'nuevarevista.net','n':'Nueva Revista','type':'revista','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','ideas'] },
+        { 'd':'okdiario.com','n':'OK Diario','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','conservador'] },
+        { 'd':'ondacero.es','n':'Onda Cero','type':'radio','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','radio'] },
+        { 'd':'periodistadigital.com','n':'Periodista Digital','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'publico.es','n':'Público','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'] },
+        { 'd':'que.es','n':'Qué!','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','gratuito'] },
+        { 'd':'republica.com','n':'Republica.com','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'rtve.es','n':'RTVE','type':'tv','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','publico','tv','radio'] },
+        { 'd':'servimedia.es','n':'Servimedia','type':'agencia','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['agencia','social'] },
+        { 'd':'telecinco.es','n':'Telecinco','type':'tv','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','privado','tv'] },
+        { 'd':'theobjective.com','n':'The Objective','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
+        { 'd':'vientosur.info','n':'Viento Sur','type':'revista','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['politica','izquierda'] },
+        { 'd':'vozpopuli.com','n':'Vozpópuli','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · PAÍS VASCO / NAVARRA
-    # ============================================================
-    { 'group':'País Vasco · Navarra', 'items':[
-        { 'd':'berria.eus',          'n':'Berria',               'lang':'eu', 'type':'diario',  'tags':['generalista','euskadi'] },
-        { 'd':'deia.eus',            'n':'Deia',                 'lang':'es', 'type':'diario',  'tags':['generalista','euskadi'] },
-        { 'd':'diariodenavarra.es',  'n':'Diario de Navarra',    'lang':'es', 'type':'diario',  'tags':['generalista','navarra'] },
-        { 'd':'diariovasco.com',     'n':'Diario Vasco',         'lang':'es', 'type':'diario',  'tags':['generalista','euskadi'] },
-        { 'd':'eitb.eus',            'n':'EITB',                 'lang':'eu', 'type':'tv',      'tags':['generalista','tv','publico'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elcorreo.com',        'n':'El Correo',            'lang':'es', 'type':'diario',  'tags':['generalista','euskadi'] },
-        { 'd':'naiz.eus',            'n':'Naiz',                 'lang':'es', 'type':'digital', 'tags':['generalista','euskadi'] },
-        { 'd':'noticiasdealava.eus', 'n':'Noticias de Álava',    'lang':'es', 'type':'diario',  'tags':['generalista','euskadi'] },
-        { 'd':'noticiasdegipuzkoa.eus', 'n':'Noticias de Gipuzkoa', 'lang':'es', 'type':'diario', 'tags':['generalista','euskadi'] },
-        { 'd':'noticiasdenavarra.com','n':'Noticias de Navarra',  'lang':'es', 'type':'diario',  'tags':['generalista','navarra'] },  # [TIMEOUT: revisar]
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · ANDALUCÍA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Andalucía', 'items':[
+        { 'd':'andaluciainformacion.es','n':'Andalucía Información','type':'digital','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'cordopolis.eldiario.es','n':'Cordópolis','type':'digital','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','cordoba'] },
+        { 'd':'diariocordoba.com','n':'Diario Córdoba','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'diariodealmeria.es','n':'Diario de Almería','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','almeria'] },
+        { 'd':'diariodecadiz.es','n':'Diario de Cádiz','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'diariodejerez.es','n':'Diario de Jerez','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'diariodesevilla.es','n':'Diario de Sevilla','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'diariosur.es','n':'Diario Sur','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'elcorreoweb.es','n':'El Correo de Andalucía','type':'digital','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'granadadigital.es','n':'Granada Digital','type':'digital','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','granada'] },
+        { 'd':'granadahoy.com','n':'Granada Hoy','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'huelvaya.es','n':'Huelva Ya','type':'digital','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','huelva'] },
+        { 'd':'ideal.es','n':'Ideal','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'laopiniondemalaga.es','n':'La Opinión de Málaga','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'malagahoy.es','n':'Málaga Hoy','type':'diario','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','andalucia'] },
+        { 'd':'sevillaactualidad.com','n':'Sevilla Actualidad','type':'digital','sector':'generalista','ambito':'regional','region':'andalucia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','sevilla'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · ARAGÓN · LA RIOJA · CANTABRIA · ASTURIAS
-    # ============================================================
-    { 'group':'Norte · Aragón · La Rioja · Cantabria · Asturias', 'items':[
-        { 'd':'elcomercio.es',       'n':'El Comercio',          'lang':'es', 'type':'diario',  'tags':['generalista','asturias'] },
-        { 'd':'eldiariomontanes.es', 'n':'El Diario Montañés',   'lang':'es', 'type':'diario',  'tags':['generalista','cantabria'] },
-        { 'd':'elperiodicodearagon.com', 'n':'El Periódico de Aragón', 'lang':'es', 'type':'diario', 'tags':['generalista','aragon'] },
-        { 'd':'heraldo.es',          'n':'Heraldo de Aragón',    'lang':'es', 'type':'diario',  'tags':['generalista','aragon'] },
-        { 'd':'larioja.com',         'n':'La Rioja',             'lang':'es', 'type':'diario',  'tags':['generalista','rioja'] },
-        { 'd':'lavozdeasturias.es',  'n':'La Voz de Asturias',   'lang':'es', 'type':'digital', 'tags':['generalista','asturias'] },
-        { 'd':'lne.es',              'n':'La Nueva España',      'lang':'es', 'type':'diario',  'tags':['generalista','asturias'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · ARAGÓN
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Aragón', 'items':[
+        { 'd':'elperiodicodearagon.com','n':'El Periódico de Aragón','type':'diario','sector':'generalista','ambito':'regional','region':'aragon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','aragon'] },
+        { 'd':'heraldo.es','n':'Heraldo de Aragón','type':'diario','sector':'generalista','ambito':'regional','region':'aragon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','aragon'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · CASTILLA Y LEÓN
-    # ============================================================
-    { 'group':'Castilla y León', 'items':[
-        { 'd':'diariodeleon.es',       'n':'Diario de León',       'lang':'es','type':'diario','tags':['generalista','leon'] },
-        { 'd':'diariodevalladolid.es', 'n':'Diario de Valladolid', 'lang':'es','type':'digital','tags':['generalista','valladolid'] },
-        { 'd':'elcorreodeburgos.com',  'n':'El Correo de Burgos',  'lang':'es','type':'digital','tags':['generalista','burgos'] },
-        { 'd':'eldiadevalladolid.com', 'n':'El Día de Valladolid', 'lang':'es', 'type':'diario', 'tags':['generalista','castillaleon'] },  # [TIMEOUT: revisar]
-        { 'd':'elmirondesoria.es',     'n':'El Mirón de Soria',    'lang':'es','type':'digital','tags':['generalista','soria'] },
-        { 'd':'elnortedecastilla.es','n':'El Norte de Castilla', 'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
-        { 'd':'lagacetadesalamanca.es', 'n':'La Gaceta de Salamanca', 'lang':'es', 'type':'diario', 'tags':['generalista','castillaleon'] },
-        { 'd':'laopiniondezamora.es','n':'La Opinión de Zamora', 'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
-        { 'd':'sorianoticias.com',     'n':'Soria Noticias',       'lang':'es','type':'digital','tags':['generalista','soria'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.diariodeavila.es', port=443): Read timed out.] { 'd':'diariodeavila.es',    'n':'Diario de Ávila',      'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.diariodeburgos.es', port=443): Read timed out.] { 'd':'diariodeburgos.es',   'n':'Diario de Burgos',     'lang':'es', 'type':'diario',  'tags':['generalista','castillaleon'] },
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.diariopalentino.es', port=443): Read timed out.] { 'd':'diariopalentino.es',    'n':'Diario Palentino',     'lang':'es','type':'diario','tags':['generalista','paleencia'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · ASTURIAS
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Asturias', 'items':[
+        { 'd':'elcomercio.es','n':'El Comercio','type':'diario','sector':'generalista','ambito':'regional','region':'asturias','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','asturias'] },
+        { 'd':'lavozdeasturias.es','n':'La Voz de Asturias','type':'digital','sector':'generalista','ambito':'regional','region':'asturias','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','asturias'] },
+        { 'd':'lne.es','n':'La Nueva España','type':'diario','sector':'generalista','ambito':'regional','region':'asturias','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','asturias'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · CASTILLA-LA MANCHA
-    # ============================================================
-    { 'group':'Castilla-La Mancha', 'items':[
-        { 'd':'encastillalamancha.es', 'n':'En Castilla-La Mancha', 'lang':'es', 'type':'digital', 'tags':['generalista','clm'] },
-        { 'd':'lanzadigital.com',    'n':'Lanza Digital',        'lang':'es', 'type':'digital', 'tags':['generalista','clm'] },
-        { 'd':'latribunadealbacete.es', 'n':'La Tribuna de Albacete', 'lang':'es', 'type':'diario', 'tags':['generalista','clm'] },  # [TIMEOUT: revisar]
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='latribunadeciudadreal.es', port=443): Read timed out.] { 'd':'latribunadeciudadreal.es', 'n':'La Tribuna de Ciudad Real', 'lang':'es', 'type':'diario', 'tags':['generalista','clm'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · BALEARES
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Baleares', 'items':[
+        { 'd':'diariodeibiza.es','n':'Diario de Ibiza','type':'diario','sector':'generalista','ambito':'regional','region':'baleares','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','baleares'] },
+        { 'd':'diariodemallorca.es','n':'Diario de Mallorca','type':'diario','sector':'generalista','ambito':'regional','region':'baleares','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','baleares'] },
+        { 'd':'ultimahora.es','n':'Última Hora','type':'diario','sector':'generalista','ambito':'regional','region':'baleares','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','baleares'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · COMUNIDAD VALENCIANA · MURCIA
-    # ============================================================
-    { 'group':'Comunidad Valenciana · Murcia', 'items':[
-        { 'd':'alicanteplaza.es',      'n':'Alicante Plaza',       'lang':'es','type':'digital','tags':['generalista','alicante'] },
-        { 'd':'castellonplaza.com',    'n':'Castellón Plaza',      'lang':'es','type':'digital','tags':['generalista','castellon'] },
-        { 'd':'elperiodicomediterraneo.com', 'n':'El Periódico Mediterráneo', 'lang':'es', 'type':'diario', 'tags':['generalista','castellon'] },
-        { 'd':'informacion.es',        'n':'Información',          'lang':'es','type':'diario','tags':['generalista','alicante'] },
-        { 'd':'laopiniondemurcia.es','n':'La Opinión de Murcia', 'lang':'es', 'type':'diario',  'tags':['generalista','murcia'] },
-        { 'd':'lasprovincias.es',    'n':'Las Provincias',       'lang':'es', 'type':'diario',  'tags':['generalista','valencia'] },
-        { 'd':'laverdad.es',         'n':'La Verdad',            'lang':'es', 'type':'diario',  'tags':['generalista','murcia'] },
-        { 'd':'levante-emv.com',     'n':'Levante-EMV',          'lang':'es', 'type':'diario',  'tags':['generalista','valencia'] },
-        { 'd':'murciaeconomia.com',  'n':'Murcia Economía',      'lang':'es', 'type':'economico', 'tags':['economia','murcia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'valenciaactua.es',      'n':'Valencia Actúa',       'lang':'es','type':'digital','tags':['generalista','valencia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'valenciaextra.com',     'n':'Valencia Extra',       'lang':'es','type':'digital','tags':['generalista','valencia'] },
-        { 'd':'valenciaplaza.com',   'n':'Valencia Plaza',       'lang':'es', 'type':'digital', 'tags':['economia','valencia'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'diariocv.es',           'n':'Diario CV',            'lang':'es','type':'digital','tags':['generalista','valencia'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · CANARIAS
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Canarias', 'items':[
+        { 'd':'canarias7.es','n':'Canarias 7','type':'diario','sector':'generalista','ambito':'regional','region':'canarias','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','canarias'] },
+        { 'd':'diariodeavisos.com','n':'Diario de Avisos','type':'diario','sector':'generalista','ambito':'regional','region':'canarias','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','canarias'] },
+        { 'd':'eldia.es','n':'El Día','type':'diario','sector':'generalista','ambito':'regional','region':'canarias','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','canarias'] },
+        { 'd':'laprovincia.es','n':'La Provincia','type':'diario','sector':'generalista','ambito':'regional','region':'canarias','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','canarias'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · ANDALUCÍA
-    # ============================================================
-    { 'group':'Andalucía', 'items':[
-        { 'd':'andaluciainformacion.es','n':'Andalucía Información','lang':'es','type':'digital','tags':['generalista','andalucia'] },
-        { 'd':'cordopolis.eldiario.es','n':'Cordópolis',           'lang':'es','type':'digital','tags':['generalista','cordoba'] },
-        { 'd':'diariocordoba.com',   'n':'Diario Córdoba',       'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'diariodealmeria.es',    'n':'Diario de Almería',    'lang':'es','type':'diario','tags':['generalista','almeria'] },
-        { 'd':'diariodecadiz.es',    'n':'Diario de Cádiz',      'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'diariodejerez.es',    'n':'Diario de Jerez',      'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'diariodesevilla.es',  'n':'Diario de Sevilla',    'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'diariosur.es',        'n':'Diario Sur',           'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'elcorreoweb.es',      'n':'El Correo de Andalucía', 'lang':'es', 'type':'digital', 'tags':['generalista','andalucia'] },
-        { 'd':'granadadigital.es',     'n':'Granada Digital',      'lang':'es','type':'digital','tags':['generalista','granada'] },
-        { 'd':'granadahoy.com',      'n':'Granada Hoy',          'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'huelvaya.es',           'n':'Huelva Ya',            'lang':'es','type':'digital','tags':['generalista','huelva'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'ideal.es',            'n':'Ideal',                'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'laopiniondemalaga.es','n':'La Opinión de Málaga', 'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'malagahoy.es',        'n':'Málaga Hoy',           'lang':'es', 'type':'diario',  'tags':['generalista','andalucia'] },
-        { 'd':'sevillaactualidad.com', 'n':'Sevilla Actualidad',   'lang':'es','type':'digital','tags':['generalista','sevilla'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'diariodeponiente.es',   'n':'Diario de Poniente',   'lang':'es','type':'digital','tags':['generalista','almeria'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · CANTABRIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Cantabria', 'items':[
+        { 'd':'eldiariomontanes.es','n':'El Diario Montañés','type':'diario','sector':'generalista','ambito':'regional','region':'cantabria','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','cantabria'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · EXTREMADURA · MADRID
-    # ============================================================
-    { 'group':'Extremadura · Madrid', 'items':[
-        { 'd':'elperiodicoextremadura.com', 'n':'El Periódico Extremadura', 'lang':'es', 'type':'diario', 'tags':['generalista','extremadura'] },
-        { 'd':'hoy.es',              'n':'Hoy',                  'lang':'es', 'type':'diario',  'tags':['generalista','extremadura'] },
-        { 'd':'madridiario.es',      'n':'Madridiario',          'lang':'es', 'type':'digital', 'tags':['generalista','madrid'] },
-        { 'd':'telemadrid.es',       'n':'Telemadrid',           'lang':'es', 'type':'tv',      'tags':['generalista','tv','publico'] },  # [SIN-FEED: GN/scraping]
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · CASTILLA-LA MANCHA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Castilla-La Mancha', 'items':[
+        { 'd':'encastillalamancha.es','n':'En Castilla-La Mancha','type':'digital','sector':'generalista','ambito':'regional','region':'castilla-la-mancha','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','clm'] },
+        { 'd':'lanzadigital.com','n':'Lanza Digital','type':'digital','sector':'generalista','ambito':'regional','region':'castilla-la-mancha','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','clm'] },
+        { 'd':'latribunadealbacete.es','n':'La Tribuna de Albacete','type':'diario','sector':'generalista','ambito':'regional','region':'castilla-la-mancha','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','clm'] },
     ]},
 
-    # ============================================================
-    # AUTONÓMICOS · BALEARES · CANARIAS
-    # ============================================================
-    { 'group':'Baleares · Canarias', 'items':[
-        { 'd':'canarias7.es',        'n':'Canarias 7',           'lang':'es', 'type':'diario',  'tags':['generalista','canarias'] },
-        { 'd':'diariodeavisos.com',  'n':'Diario de Avisos',     'lang':'es', 'type':'diario',  'tags':['generalista','canarias'] },
-        { 'd':'diariodeibiza.es',    'n':'Diario de Ibiza',      'lang':'es', 'type':'diario',  'tags':['generalista','baleares'] },
-        { 'd':'diariodemallorca.es', 'n':'Diario de Mallorca',   'lang':'es', 'type':'diario',  'tags':['generalista','baleares'] },
-        { 'd':'eldia.es',            'n':'El Día',               'lang':'es', 'type':'diario',  'tags':['generalista','canarias'] },
-        { 'd':'laprovincia.es',      'n':'La Provincia',         'lang':'es', 'type':'diario',  'tags':['generalista','canarias'] },
-        { 'd':'ultimahora.es',       'n':'Última Hora',          'lang':'es', 'type':'diario',  'tags':['generalista','baleares'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · CASTILLA Y LEÓN
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Castilla y León', 'items':[
+        { 'd':'diariodeleon.es','n':'Diario de León','type':'diario','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','leon'] },
+        { 'd':'diariodevalladolid.es','n':'Diario de Valladolid','type':'digital','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','valladolid'] },
+        { 'd':'elcorreodeburgos.com','n':'El Correo de Burgos','type':'digital','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','burgos'] },
+        { 'd':'eldiadevalladolid.com','n':'El Día de Valladolid','type':'diario','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','castillaleon'] },
+        { 'd':'elmirondesoria.es','n':'El Mirón de Soria','type':'digital','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','soria'] },
+        { 'd':'elnortedecastilla.es','n':'El Norte de Castilla','type':'diario','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','castillaleon'] },
+        { 'd':'lagacetadesalamanca.es','n':'La Gaceta de Salamanca','type':'diario','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','castillaleon'] },
+        { 'd':'laopiniondezamora.es','n':'La Opinión de Zamora','type':'diario','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','castillaleon'] },
+        { 'd':'sorianoticias.com','n':'Soria Noticias','type':'digital','sector':'generalista','ambito':'regional','region':'castilla-y-leon','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','soria'] },
     ]},
 
-    # ============================================================
-    # INTERNACIONAL · USA / UK
-    # ============================================================
-    { 'group':'Internacional · USA / UK', 'items':[
-        # Añadir al grupo 'Internacional · USA / UK'
-        { 'd':'abcnews.com',      'n':'ABC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [REDIRIGE → abcnews.com]
-        { 'd':'apnews.com',          'n':'Associated Press',     'lang':'en', 'type':'agencia', 'tags':['agencia','internacional'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'axios.com',           'n':'Axios',                'lang':'en','type':'digital','tags':['politica','usa'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'bbc.com',             'n':'BBC',                  'lang':'en', 'type':'tv',      'tags':['generalista','uk','publico'] },
-        { 'd':'bloomberg.com',       'n':'Bloomberg',            'lang':'en', 'type':'economico', 'tags':['economia','internacional'] },
-        { 'd':'businessinsider.com', 'n':'Business Insider',     'lang':'en','type':'digital','tags':['economia','usa'] },
-        { 'd':'cbsnews.com',         'n':'CBS News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'cnbc.com',            'n':'CNBC',                 'lang':'en','type':'economico','tags':['economia','usa'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'edition.cnn.com',             'n':'CNN',                  'lang':'en', 'type':'tv',      'tags':['generalista','usa','tv'] },  # [REDIRIGE → edition.cnn.com]
-        { 'd':'dailymail.co.uk',     'n':'Daily Mail',           'lang':'en','type':'diario','tags':['generalista','uk','tabloide'] },
-        { 'd':'economist.com',       'n':'The Economist',        'lang':'en', 'type':'revista', 'tags':['economia','internacional'] },
-        { 'd':'foreignaffairs.com',  'n':'Foreign Affairs',      'lang':'en','type':'revista','tags':['internacional','usa'] },
-        { 'd':'foreignpolicy.com',   'n':'Foreign Policy',       'lang':'en','type':'revista','tags':['internacional','usa'] },
-        { 'd':'foxnews.com',         'n':'Fox News',             'lang':'en','type':'tv','tags':['generalista','usa','conservador'] },
-        { 'd':'ft.com',              'n':'Financial Times',      'lang':'en', 'type':'economico', 'tags':['economia','uk'] },
-        { 'd':'independent.co.uk',   'n':'The Independent',      'lang':'en', 'type':'digital', 'tags':['generalista','uk'] },
-        { 'd':'mirror.co.uk',        'n':'The Mirror',           'lang':'en','type':'diario','tags':['generalista','uk','tabloide'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'msnbc.com',           'n':'MSNBC',                'lang':'en','type':'tv','tags':['generalista','usa','progresista'] },
-        { 'd':'nbcnews.com',         'n':'NBC News',             'lang':'en','type':'tv','tags':['generalista','usa'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'news.sky.com',        'n':'Sky News',             'lang':'en','type':'tv','tags':['generalista','uk'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'newyorker.com',       'n':'The New Yorker',       'lang':'en','type':'revista','tags':['cultural','usa'] },
-        { 'd':'npr.org',             'n':'NPR',                  'lang':'en', 'type':'radio',   'tags':['generalista','usa','radio'] },
-        { 'd':'nytimes.com',         'n':'The New York Times',   'lang':'en', 'type':'diario',  'tags':['generalista','usa','referencia'] },
-        { 'd':'politico.com',        'n':'Politico',             'lang':'en', 'type':'digital', 'tags':['politica','usa'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'reuters.com',         'n':'Reuters',              'lang':'en', 'type':'agencia', 'tags':['agencia','internacional'] },  # [BLOQUEADO: HTTP 401]
-        { 'd':'telegraph.co.uk',     'n':'The Telegraph',        'lang':'en', 'type':'diario',  'tags':['generalista','uk'] },  # [BLOQUEADO: HTTP 402]
-        { 'd':'theatlantic.com',     'n':'The Atlantic',         'lang':'en','type':'revista','tags':['cultural','usa'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'theguardian.com',     'n':'The Guardian',         'lang':'en', 'type':'diario',  'tags':['generalista','uk'] },
-        { 'd':'thetimes.com',        'n':'The Times',            'lang':'en', 'type':'diario',  'tags':['generalista','uk'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'time.com',            'n':'Time',                 'lang':'en', 'type':'revista', 'tags':['generalista','usa'] },
-        { 'd':'vox.com',             'n':'Vox',                  'lang':'en','type':'digital','tags':['generalista','usa'] },
-        { 'd':'washingtonpost.com',  'n':'The Washington Post',  'lang':'en', 'type':'diario',  'tags':['generalista','usa'] },  # [TIMEOUT: revisar]
-        { 'd':'wsj.com',             'n':'The Wall Street Journal', 'lang':'en', 'type':'economico', 'tags':['economia','usa'] },  # [BLOQUEADO: HTTP 401]
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · CATALUÑA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Cataluña', 'items':[
+        { 'd':'324.cat','n':'324','type':'tv','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','tv','publico'] },
+        { 'd':'acn.cat','n':'Agència Catalana de Notícies','type':'agencia','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['agencia','catalan'] },
+        { 'd':'ara.cat','n':'Ara','type':'diario','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'] },
+        { 'd':'diaridegirona.cat','n':'Diari de Girona','type':'diario','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'] },
+        { 'd':'diaridetarragona.com','n':'Diari de Tarragona','type':'diario','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'] },
+        { 'd':'directa.cat','n':'La Directa','type':'revista','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['investigacion','izquierda'] },
+        { 'd':'e-noticies.cat','n':'e-Notícies','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'] },
+        { 'd':'elmon.cat','n':'El Món','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','digital'] },
+        { 'd':'elnacional.cat','n':'El Nacional','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','digital'] },
+        { 'd':'elpuntavui.cat','n':'El Punt Avui','type':'diario','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'] },
+        { 'd':'naciodigital.cat','n':'Nació Digital','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','digital'] },
+        { 'd':'rac1.cat','n':'RAC1','type':'radio','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','radio'] },
+        { 'd':'regio7.cat','n':'Regió7','type':'diario','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'] },
+        { 'd':'reusdigital.cat','n':'Reus Digital','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','local'] },
+        { 'd':'segre.com','n':'Segre','type':'diario','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'] },
+        { 'd':'vilaweb.cat','n':'VilaWeb','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca','es'],'lang_principal':'ca','tags':['generalista','digital'] },
     ]},
 
-    # ============================================================
-    # INTERNACIONAL · FRANCIA, ALEMANIA, ITALIA, PORTUGAL
-    # ============================================================
-    { 'group':'Internacional · Europa', 'items':[
-        # Añadir al grupo 'Internacional · Europa'
-        { 'd':'ansa.it',             'n':'ANSA',                 'lang':'it','type':'agencia','tags':['agencia','italia'] },
-        { 'd':'corriere.it',         'n':'Corriere della Sera',  'lang':'it', 'type':'diario',  'tags':['generalista','italia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'dw.com',              'n':'Deutsche Welle',       'lang':'de','type':'tv','tags':['generalista','alemania','publico'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'euronews.com',        'n':'Euronews',             'lang':'en','type':'tv','tags':['generalista','europa'] },
-        { 'd':'expresso.pt',         'n':'Expresso',             'lang':'pt', 'type':'revista', 'tags':['generalista','portugal'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'faz.net',             'n':'FAZ',                  'lang':'de', 'type':'diario',  'tags':['generalista','alemania'] },
-        { 'd':'france24.com',        'n':'France 24',            'lang':'fr','type':'tv','tags':['generalista','francia','publico'] },
-        { 'd':'ilfattoquotidiano.it','n':'Il Fatto Quotidiano',  'lang':'it','type':'digital','tags':['generalista','italia'] },
-        { 'd':'ilmessaggero.it',     'n':'Il Messaggero',        'lang':'it','type':'diario','tags':['generalista','italia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'ilsole24ore.com',     'n':'Il Sole 24 Ore',       'lang':'it', 'type':'economico', 'tags':['economia','italia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'independent.ie',      'n':'Irish Independent',    'lang':'en','type':'diario','tags':['generalista','irlanda'] },
-        { 'd':'ionline.sapo.pt',     'n':'Jornal i',             'lang':'pt', 'type':'diario',  'tags':['generalista','portugal'] },
-        { 'd':'irishtimes.com',      'n':'The Irish Times',      'lang':'en','type':'diario','tags':['generalista','irlanda'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'lalibre.be',          'n':'La Libre Belgique',    'lang':'fr','type':'diario','tags':['generalista','belgica'] },
-        { 'd':'lastampa.it',         'n':'La Stampa',            'lang':'it','type':'diario','tags':['generalista','italia'] },
-        { 'd':'lefigaro.fr',         'n':'Le Figaro',            'lang':'fr', 'type':'diario',  'tags':['generalista','francia'] },
-        { 'd':'lemonde.fr',          'n':'Le Monde',             'lang':'fr', 'type':'diario',  'tags':['generalista','francia'] },
-        { 'd':'lesechos.fr',         'n':'Les Échos',            'lang':'fr', 'type':'economico', 'tags':['economia','francia'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'lesoir.be',           'n':'Le Soir',              'lang':'fr','type':'diario','tags':['generalista','belgica'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'liberation.fr',       'n':'Libération',           'lang':'fr', 'type':'diario',  'tags':['generalista','francia'] },
-        { 'd':'monde-diplomatique.fr', 'n':'Le Monde Diplomatique', 'lang':'fr', 'type':'revista', 'tags':['generalista','francia'] },
-        { 'd':'nrc.nl',              'n':'NRC Handelsblad',      'lang':'nl','type':'diario','tags':['generalista','paisesbajos'] },
-        { 'd':'observador.pt',       'n':'Observador',           'lang':'pt', 'type':'digital', 'tags':['generalista','portugal'] },
-        { 'd':'publico.pt',          'n':'Público',              'lang':'pt', 'type':'diario',  'tags':['generalista','portugal'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'repubblica.it',       'n':'La Repubblica',        'lang':'it', 'type':'diario',  'tags':['generalista','italia'] },
-        { 'd':'rfi.fr',              'n':'RFI',                  'lang':'fr','type':'radio','tags':['generalista','francia','publico'] },  # [BLOQUEADO: HTTP 403]
-        { 'd':'rte.ie',              'n':'RTÉ',                  'lang':'en','type':'tv','tags':['generalista','irlanda','publico'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'spiegel.de',          'n':'Der Spiegel',          'lang':'de', 'type':'revista', 'tags':['generalista','alemania'] },
-        { 'd':'standaard.be',        'n':'De Standaard',         'lang':'nl','type':'diario','tags':['generalista','belgica'] },
-        { 'd':'sueddeutsche.de',     'n':'Süddeutsche Zeitung',  'lang':'de', 'type':'diario',  'tags':['generalista','alemania'] },
-        { 'd':'swissinfo.ch',        'n':'SWI swissinfo.ch',     'lang':'es','type':'digital','tags':['generalista','suiza','publico'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'tass.com',            'n':'TASS',                 'lang':'en','type':'agencia','tags':['agencia','rusia'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'telegraaf.nl',        'n':'De Telegraaf',         'lang':'nl','type':'diario','tags':['generalista','paisesbajos'] },
-        { 'd':'trouw.nl',            'n':'Trouw',                'lang':'nl','type':'diario','tags':['generalista','paisesbajos'] },
-        { 'd':'volkskrant.nl',       'n':'de Volkskrant',        'lang':'nl','type':'diario','tags':['generalista','paisesbajos'] },
-        { 'd':'zeit.de',             'n':'Die Zeit',             'lang':'de', 'type':'diario',  'tags':['generalista','alemania'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='dpa.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError("HTTPSConn] { 'd':'dpa.com',             'n':'DPA',                  'lang':'de','type':'agencia','tags':['agencia','alemania'] },
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='kyodonews.net', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerific] { 'd':'kyodonews.net',       'n':'Kyodo News',           'lang':'en','type':'agencia','tags':['agencia','japon'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · COMUNIDAD VALENCIANA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Comunidad Valenciana', 'items':[
+        { 'd':'alicanteplaza.es','n':'Alicante Plaza','type':'digital','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','alicante'] },
+        { 'd':'castellonplaza.com','n':'Castellón Plaza','type':'digital','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','castellon'] },
+        { 'd':'elperiodicomediterraneo.com','n':'El Periódico Mediterráneo','type':'diario','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','castellon'] },
+        { 'd':'informacion.es','n':'Información','type':'diario','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','alicante'] },
+        { 'd':'lasprovincias.es','n':'Las Provincias','type':'diario','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','valencia'] },
+        { 'd':'levante-emv.com','n':'Levante-EMV','type':'diario','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','valencia'] },
+        { 'd':'valenciaactua.es','n':'Valencia Actúa','type':'digital','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','valencia'] },
+        { 'd':'valenciaextra.com','n':'Valencia Extra','type':'digital','sector':'generalista','ambito':'regional','region':'comunidad-valenciana','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','valencia'] },
     ]},
 
-    # ============================================================
-    # LATINOAMÉRICA
-    # ============================================================
-    { 'group':'Latinoamérica', 'items':[
-        # Añadir al grupo 'Latinoamérica'
-        { 'd':'abc.com.py',           'n':'ABC Color',              'lang':'es','type':'diario','tags':['generalista','paraguay'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'biobiochile.cl',       'n':'BioBioChile',            'lang':'es','type':'digital','tags':['generalista','chile'] },  # [TIMEOUT: revisar]
-        { 'd':'cartacapital.com.br',  'n':'CartaCapital',           'lang':'pt','type':'revista','tags':['generalista','brasil'] },
-        { 'd':'ciperchile.cl',        'n':'CIPER Chile',            'lang':'es','type':'digital','tags':['investigacion','chile'] },
-        { 'd':'clarin.com',          'n':'Clarín',               'lang':'es', 'type':'diario',  'tags':['generalista','argentina'] },
-        { 'd':'cooperativa.cl',       'n':'Cooperativa',            'lang':'es','type':'radio','tags':['generalista','chile','radio'] },  # [TIMEOUT: revisar]
-        { 'd':'diariolibre.com',      'n':'Diario Libre',           'lang':'es','type':'diario','tags':['generalista','republicadominicana'] },
-        { 'd':'elcomercio.com',       'n':'El Comercio (EC)',       'lang':'es','type':'diario','tags':['generalista','ecuador'] },
-        { 'd':'elcomercio.pe',       'n':'El Comercio',          'lang':'es', 'type':'diario',  'tags':['generalista','peru'] },
-        { 'd':'eldeber.com.bo',       'n':'El Deber',               'lang':'es','type':'diario','tags':['generalista','bolivia'] },
-        { 'd':'eldesconcierto.cl',    'n':'El Desconcierto',        'lang':'es','type':'digital','tags':['generalista','chile'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elespectador.com',    'n':'El Espectador',        'lang':'es', 'type':'diario',  'tags':['generalista','colombia'] },
-        { 'd':'elfaro.net',           'n':'El Faro',                'lang':'es','type':'digital','tags':['investigacion','salvador'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elheraldo.hn',         'n':'El Heraldo',             'lang':'es','type':'diario','tags':['generalista','honduras'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elmostrador.cl',       'n':'El Mostrador',           'lang':'es','type':'digital','tags':['generalista','chile'] },  # [TIMEOUT: revisar]
-        { 'd':'elnacional.com',      'n':'El Nacional',          'lang':'es', 'type':'diario',  'tags':['generalista','venezuela'] },
-        { 'd':'elnuevoherald.com',    'n':'El Nuevo Herald',        'lang':'es','type':'diario','tags':['generalista','usa','latino'] },  # [TIMEOUT: revisar]
-        { 'd':'elobservador.com.uy',  'n':'El Observador',          'lang':'es','type':'diario','tags':['generalista','uruguay'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'elpais.com.uy',       'n':'El País (UY)',         'lang':'es', 'type':'diario',  'tags':['generalista','uruguay'] },
-        { 'd':'eltiempo.com',        'n':'El Tiempo',            'lang':'es', 'type':'diario',  'tags':['generalista','colombia'] },
-        { 'd':'eluniversal.com.mx',  'n':'El Universal',         'lang':'es', 'type':'diario',  'tags':['generalista','mexico'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'eluniverso.com',       'n':'El Universo',            'lang':'es','type':'diario','tags':['generalista','ecuador'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'estadao.com.br',       'n':'O Estado de S. Paulo',   'lang':'pt','type':'diario','tags':['generalista','brasil'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'folha.uol.com.br',    'n':'Folha de S.Paulo',     'lang':'pt', 'type':'diario',  'tags':['generalista','brasil'] },
-        { 'd':'g1.globo.com',         'n':'G1',                     'lang':'pt','type':'digital','tags':['generalista','brasil'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'gestion.pe',           'n':'Gestión',                'lang':'es','type':'economico','tags':['economia','peru'] },
-        { 'd':'infobae.com',         'n':'Infobae',              'lang':'es', 'type':'digital', 'tags':['generalista','argentina'] },
-        { 'd':'lanacion.com.ar',     'n':'La Nación',            'lang':'es', 'type':'diario',  'tags':['generalista','argentina'] },
-        { 'd':'latercera.com',       'n':'La Tercera',           'lang':'es', 'type':'diario',  'tags':['generalista','chile'] },
-        { 'd':'listindiario.com',     'n':'Listín Diario',          'lang':'es','type':'diario','tags':['generalista','republicadominicana'] },
-        { 'd':'milenio.com',         'n':'Milenio',              'lang':'es', 'type':'diario',  'tags':['generalista','mexico'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'nacion.com',           'n':'La Nación (CR)',         'lang':'es','type':'diario','tags':['generalista','costarica'] },
-        { 'd':'oglobo.globo.com',    'n':'O Globo',              'lang':'pt', 'type':'diario',  'tags':['generalista','brasil'] },
-        { 'd':'prensalibre.com',      'n':'Prensa Libre',           'lang':'es','type':'diario','tags':['generalista','guatemala'] },
-        { 'd':'rpp.pe',               'n':'RPP',                    'lang':'es','type':'radio','tags':['generalista','peru','radio'] },
-        { 'd':'telemundo.com',       'n':'Telemundo',            'lang':'es', 'type':'tv',      'tags':['generalista','usa','latino'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'ultimahora.com',       'n':'Última Hora (PY)',       'lang':'es','type':'diario','tags':['generalista','paraguay'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'veja.abril.com.br',    'n':'Veja',                   'lang':'pt','type':'revista','tags':['generalista','brasil'] },
-
-        # ─── Descartados por auditoría (no eliminar, revisar a mano) ───
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.emol.com', port=443): Read timed out.] { 'd':'emol.com',            'n':'Emol',                 'lang':'es', 'type':'digital', 'tags':['generalista','chile'] },
-        # [CAÍDO-DNS: DNS: [Errno -2] Name or service not known] { 'd':'laprensa.com.ni',      'n':'La Prensa (NI)',         'lang':'es','type':'diario','tags':['generalista','nicaragua'] },
-        # [CAÍDO-HTTP: HTTPSConnectionPool(host='www.lostiempos.com', port=443): Read timed out. (read timeout=8)] { 'd':'lostiempos.com',       'n':'Los Tiempos',            'lang':'es','type':'diario','tags':['generalista','bolivia'] },
-        # [CAÍDO-HTTP: HTTP 404] { 'd':'univision.com',       'n':'Univisión',            'lang':'es', 'type':'tv',      'tags':['generalista','usa','latino'] },
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · EXTREMADURA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Extremadura', 'items':[
+        { 'd':'elperiodicoextremadura.com','n':'El Periódico Extremadura','type':'diario','sector':'generalista','ambito':'regional','region':'extremadura','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','extremadura'] },
+        { 'd':'hoy.es','n':'Hoy','type':'diario','sector':'generalista','ambito':'regional','region':'extremadura','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','extremadura'] },
     ]},
-    { 'group':'Internacional · Asia · África · Oriente Medio', 'items':[
-        { 'd':'africanews.com',        'n':'Africanews',           'lang':'en','type':'tv','tags':['generalista','africa'] },
-        { 'd':'aljazeera.com',         'n':'Al Jazeera',           'lang':'en','type':'tv','tags':['generalista','oriente medio'] },
-        { 'd':'globaltimes.cn',        'n':'Global Times',         'lang':'en','type':'diario','tags':['generalista','china'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'haaretz.com',           'n':'Haaretz',              'lang':'en','type':'diario','tags':['generalista','oriente medio'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'japantimes.co.jp',      'n':'The Japan Times',      'lang':'en','type':'diario','tags':['generalista','asia','japon'] },
-        { 'd':'jpost.com',             'n':'The Jerusalem Post',   'lang':'en','type':'diario','tags':['generalista','oriente medio'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'koreaherald.com',       'n':'The Korea Herald',     'lang':'en','type':'diario','tags':['generalista','asia','corea'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'mg.co.za',              'n':'Mail & Guardian',      'lang':'en','type':'diario','tags':['generalista','africa','sudafrica'] },
-        { 'd':'middleeasteye.net',     'n':'Middle East Eye',      'lang':'en','type':'digital','tags':['generalista','oriente medio'] },
-        { 'd':'premiumtimesng.com',    'n':'Premium Times',        'lang':'en','type':'digital','tags':['generalista','africa','nigeria'] },
-        { 'd':'scmp.com',              'n':'South China Morning Post','lang':'en','type':'diario','tags':['generalista','asia','china'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'straitstimes.com',      'n':'The Straits Times',    'lang':'en','type':'diario','tags':['generalista','asia','singapur'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'thehindu.com',          'n':'The Hindu',            'lang':'en','type':'diario','tags':['generalista','india'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'timesofindia.indiatimes.com','n':'Times of India',  'lang':'en','type':'diario','tags':['generalista','india'] },  # [SIN-FEED: GN/scraping]
-        { 'd':'xinhuanet.com',         'n':'Xinhua',               'lang':'en','type':'agencia','tags':['agencia','china'] },  # [SIN-FEED: GN/scraping]
+
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · GALICIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Galicia', 'items':[
+        { 'd':'atlantico.net','n':'Atlántico','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','vigo'] },
+        { 'd':'campogalego.es','n':'Campo Galego','type':'revista','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['gl'],'lang_principal':'gl','tags':['agro','galicia'] },
+        { 'd':'crtvg.gal','n':'CRTVG (TVG y Radio Galega)','type':'tv','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['gl'],'lang_principal':'gl','tags':['generalista','publico','galicia','radio'] },
+        { 'd':'diariodearousa.com','n':'Diario de Arousa','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','arousa'] },
+        { 'd':'diariodeferrol.com','n':'Diario de Ferrol','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','ferrol'] },
+        { 'd':'diariodepontevedra.es','n':'Diario de Pontevedra','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','pontevedra'] },
+        { 'd':'diariodevigo.com','n':'Diario de Vigo','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','vigo'] },
+        { 'd':'dxtcampeon.com','n':'DxT Campeón','type':'digital','sector':'deportes','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','galicia','coruña'] },
+        { 'd':'elcorreogallego.es','n':'El Correo Gallego','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia'] },
+        { 'd':'elidealgallego.com','n':'El Ideal Gallego','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','coruña'] },
+        { 'd':'elprogreso.es','n':'El Progreso','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','lugo'] },
+        { 'd':'farodevigo.es','n':'Faro de Vigo','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia'] },
+        { 'd':'ferrol360.es','n':'Ferrol 360','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','local','ferrol'] },
+        { 'd':'ferrolxa.com','n':'FerrolXA','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['gl'],'lang_principal':'gl','tags':['generalista','ferrol'] },
+        { 'd':'galiciaconfidencial.com','n':'Galicia Confidencial','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['gl'],'lang_principal':'gl','tags':['generalista','galicia'] },
+        { 'd':'galiciadigital.com','n':'Galicia Digital','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia'] },
+        { 'd':'galiciae.com','n':'Galiciae','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['gl'],'lang_principal':'gl','tags':['generalista','galicia'] },
+        { 'd':'galiciapress.es','n':'Galicia Press','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia'] },
+        { 'd':'galiciaunica.es','n':'Galicia Única','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia'] },
+        { 'd':'laopinioncoruna.es','n':'La Opinión A Coruña','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','coruña'] },
+        { 'd':'laregion.es','n':'La Región','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia','ourense'] },
+        { 'd':'lavozdegalicia.es','n':'La Voz de Galicia','type':'diario','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia'] },
+        { 'd':'metropolitano.gal','n':'Metropolitano','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','local','vigo'] },
+        { 'd':'mundiario.com','n':'Mundiario','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','galicia'] },
+        { 'd':'nosdiario.gal','n':'Nós Diario','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['gl'],'lang_principal':'gl','tags':['generalista','galicia'] },
+        { 'd':'pontevedraviva.com','n':'Pontevedra Viva','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','local','pontevedra'] },
+        { 'd':'praza.gal','n':'Praza Pública','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['gl'],'lang_principal':'gl','tags':['generalista','galicia'] },
+        { 'd':'radiovoz.com','n':'Radio Voz','type':'radio','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','privado','galicia'] },
+        { 'd':'riazor.org','n':'Riazor.org','type':'digital','sector':'deportes','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','galicia','coruña'] },
+        { 'd':'vigoe.es','n':'Vigoé','type':'digital','sector':'generalista','ambito':'regional','region':'galicia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','local','vigo'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · LA RIOJA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · La Rioja', 'items':[
+        { 'd':'larioja.com','n':'La Rioja','type':'diario','sector':'generalista','ambito':'regional','region':'la-rioja','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','rioja'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · MADRID
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Madrid', 'items':[
+        { 'd':'madridiario.es','n':'Madridiario','type':'digital','sector':'generalista','ambito':'regional','region':'madrid','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','madrid'] },
+        { 'd':'telemadrid.es','n':'Telemadrid','type':'tv','sector':'generalista','ambito':'regional','region':'madrid','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','tv','publico'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · MURCIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Murcia', 'items':[
+        { 'd':'laopiniondemurcia.es','n':'La Opinión de Murcia','type':'diario','sector':'generalista','ambito':'regional','region':'murcia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','murcia'] },
+        { 'd':'laverdad.es','n':'La Verdad','type':'diario','sector':'generalista','ambito':'regional','region':'murcia','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','murcia'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · NAVARRA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · Navarra', 'items':[
+        { 'd':'diariodenavarra.es','n':'Diario de Navarra','type':'diario','sector':'generalista','ambito':'regional','region':'navarra','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','navarra'] },
+        { 'd':'noticiasdenavarra.com','n':'Noticias de Navarra','type':'diario','sector':'generalista','ambito':'regional','region':'navarra','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','navarra'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # REGIONAL · PAÍS VASCO
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Regional · País Vasco', 'items':[
+        { 'd':'berria.eus','n':'Berria','type':'diario','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['eu'],'lang_principal':'eu','tags':['generalista','euskadi'] },
+        { 'd':'deia.eus','n':'Deia','type':'diario','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','euskadi'] },
+        { 'd':'diariovasco.com','n':'Diario Vasco','type':'diario','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','euskadi'] },
+        { 'd':'eitb.eus','n':'EITB','type':'tv','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['eu'],'lang_principal':'eu','tags':['generalista','tv','publico'] },
+        { 'd':'elcorreo.com','n':'El Correo','type':'diario','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','euskadi'] },
+        { 'd':'naiz.eus','n':'Naiz','type':'digital','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','euskadi'] },
+        { 'd':'noticiasdealava.eus','n':'Noticias de Álava','type':'diario','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','euskadi'] },
+        { 'd':'noticiasdegipuzkoa.eus','n':'Noticias de Gipuzkoa','type':'diario','sector':'generalista','ambito':'regional','region':'pais-vasco','pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','euskadi'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · ALEMANIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Alemania', 'items':[
+        { 'd':'dw.com','n':'Deutsche Welle','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'alemania','langs':['de'],'lang_principal':'de','tags':['generalista','alemania','publico'] },
+        { 'd':'faz.net','n':'FAZ','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'alemania','langs':['de'],'lang_principal':'de','tags':['generalista','alemania'] },
+        { 'd':'spiegel.de','n':'Der Spiegel','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'alemania','langs':['de'],'lang_principal':'de','tags':['generalista','alemania'] },
+        { 'd':'sueddeutsche.de','n':'Süddeutsche Zeitung','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'alemania','langs':['de'],'lang_principal':'de','tags':['generalista','alemania'] },
+        { 'd':'zeit.de','n':'Die Zeit','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'alemania','langs':['de'],'lang_principal':'de','tags':['generalista','alemania'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · ARGENTINA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Argentina', 'items':[
+        { 'd':'clarin.com','n':'Clarín','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'argentina','langs':['es'],'lang_principal':'es','tags':['generalista','argentina'] },
+        { 'd':'infobae.com','n':'Infobae','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'argentina','langs':['es'],'lang_principal':'es','tags':['generalista','argentina'] },
+        { 'd':'lanacion.com.ar','n':'La Nación','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'argentina','langs':['es'],'lang_principal':'es','tags':['generalista','argentina'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · BOLIVIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Bolivia', 'items':[
+        { 'd':'eldeber.com.bo','n':'El Deber','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'bolivia','langs':['es'],'lang_principal':'es','tags':['generalista','bolivia'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · BRASIL
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Brasil', 'items':[
+        { 'd':'cartacapital.com.br','n':'CartaCapital','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'brasil','langs':['pt'],'lang_principal':'pt','tags':['generalista','brasil'] },
+        { 'd':'estadao.com.br','n':'O Estado de S. Paulo','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'brasil','langs':['pt'],'lang_principal':'pt','tags':['generalista','brasil'] },
+        { 'd':'folha.uol.com.br','n':'Folha de S.Paulo','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'brasil','langs':['pt'],'lang_principal':'pt','tags':['generalista','brasil'] },
+        { 'd':'g1.globo.com','n':'G1','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'brasil','langs':['pt'],'lang_principal':'pt','tags':['generalista','brasil'] },
+        { 'd':'oglobo.globo.com','n':'O Globo','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'brasil','langs':['pt'],'lang_principal':'pt','tags':['generalista','brasil'] },
+        { 'd':'veja.abril.com.br','n':'Veja','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'brasil','langs':['pt'],'lang_principal':'pt','tags':['generalista','brasil'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · BÉLGICA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Bélgica', 'items':[
+        { 'd':'lalibre.be','n':'La Libre Belgique','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'belgica','langs':['fr'],'lang_principal':'fr','tags':['generalista','belgica'] },
+        { 'd':'lesoir.be','n':'Le Soir','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'belgica','langs':['fr'],'lang_principal':'fr','tags':['generalista','belgica'] },
+        { 'd':'politico.eu','n':'PoliticoEU','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'belgica','langs':['es'],'lang_principal':'es','tags':['politica','EU'] },
+        { 'd':'standaard.be','n':'De Standaard','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'belgica','langs':['nl'],'lang_principal':'nl','tags':['generalista','belgica'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · CATAR
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Catar', 'items':[
+        { 'd':'aljazeera.com','n':'Al Jazeera','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'qatar','langs':['en'],'lang_principal':'en','tags':['generalista','oriente medio'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · CHILE
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Chile', 'items':[
+        { 'd':'biobiochile.cl','n':'BioBioChile','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'chile','langs':['es'],'lang_principal':'es','tags':['generalista','chile'] },
+        { 'd':'ciperchile.cl','n':'CIPER Chile','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'chile','langs':['es'],'lang_principal':'es','tags':['investigacion','chile'] },
+        { 'd':'cooperativa.cl','n':'Cooperativa','type':'radio','sector':'generalista','ambito':'internacional','region':None,'pais':'chile','langs':['es'],'lang_principal':'es','tags':['generalista','chile','radio'] },
+        { 'd':'eldesconcierto.cl','n':'El Desconcierto','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'chile','langs':['es'],'lang_principal':'es','tags':['generalista','chile'] },
+        { 'd':'elmostrador.cl','n':'El Mostrador','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'chile','langs':['es'],'lang_principal':'es','tags':['generalista','chile'] },
+        { 'd':'latercera.com','n':'La Tercera','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'chile','langs':['es'],'lang_principal':'es','tags':['generalista','chile'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · CHINA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · China', 'items':[
+        { 'd':'globaltimes.cn','n':'Global Times','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'china','langs':['en'],'lang_principal':'en','tags':['generalista','china'] },
+        { 'd':'scmp.com','n':'South China Morning Post','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'china','langs':['en'],'lang_principal':'en','tags':['generalista','asia','china'] },
+        { 'd':'xinhuanet.com','n':'Xinhua','type':'agencia','sector':'generalista','ambito':'internacional','region':None,'pais':'china','langs':['en'],'lang_principal':'en','tags':['agencia','china'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · COLOMBIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Colombia', 'items':[
+        { 'd':'elespectador.com','n':'El Espectador','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'colombia','langs':['es'],'lang_principal':'es','tags':['generalista','colombia'] },
+        { 'd':'eltiempo.com','n':'El Tiempo','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'colombia','langs':['es'],'lang_principal':'es','tags':['generalista','colombia'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · COREA DEL SUR
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Corea del Sur', 'items':[
+        { 'd':'koreaherald.com','n':'The Korea Herald','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'corea-del-sur','langs':['en'],'lang_principal':'en','tags':['generalista','asia','corea'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · COSTA RICA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Costa Rica', 'items':[
+        { 'd':'nacion.com','n':'La Nación (CR)','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'costa-rica','langs':['es'],'lang_principal':'es','tags':['generalista','costarica'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · EE.UU.
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · EE.UU.', 'items':[
+        { 'd':'abcnews.com','n':'ABC News','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa'] },
+        { 'd':'apnews.com','n':'Associated Press','type':'agencia','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['agencia','internacional'] },
+        { 'd':'axios.com','n':'Axios','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['politica','usa'] },
+        { 'd':'bloomberg.com','n':'Bloomberg','type':'digital','sector':'economia','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['economia','internacional'] },
+        { 'd':'businessinsider.com','n':'Business Insider','type':'digital','sector':'economia','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['economia','usa'] },
+        { 'd':'cbsnews.com','n':'CBS News','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa'] },
+        { 'd':'cnbc.com','n':'CNBC','type':'tv','sector':'economia','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['economia','usa'] },
+        { 'd':'edition.cnn.com','n':'CNN','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa','tv'] },
+        { 'd':'elnuevoherald.com','n':'El Nuevo Herald','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['es'],'lang_principal':'es','tags':['generalista','usa','latino'] },
+        { 'd':'foreignaffairs.com','n':'Foreign Affairs','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['internacional','usa'] },
+        { 'd':'foreignpolicy.com','n':'Foreign Policy','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['internacional','usa'] },
+        { 'd':'foxnews.com','n':'Fox News','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa','conservador'] },
+        { 'd':'msnbc.com','n':'MSNBC','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa','progresista'] },
+        { 'd':'nbcnews.com','n':'NBC News','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa'] },
+        { 'd':'newyorker.com','n':'The New Yorker','type':'revista','sector':'cultura','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['cultural','usa'] },
+        { 'd':'npr.org','n':'NPR','type':'radio','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa','radio'] },
+        { 'd':'nytimes.com','n':'The New York Times','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa','referencia'] },
+        { 'd':'politico.com','n':'Politico','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['politica','usa'] },
+        { 'd':'telemundo.com','n':'Telemundo','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['es'],'lang_principal':'es','tags':['generalista','usa','latino'] },
+        { 'd':'theatlantic.com','n':'The Atlantic','type':'revista','sector':'cultura','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['cultural','usa'] },
+        { 'd':'time.com','n':'Time','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa'] },
+        { 'd':'vox.com','n':'Vox','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa'] },
+        { 'd':'washingtonpost.com','n':'The Washington Post','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['generalista','usa'] },
+        { 'd':'wsj.com','n':'The Wall Street Journal','type':'diario','sector':'economia','ambito':'internacional','region':None,'pais':'eeuu','langs':['en'],'lang_principal':'en','tags':['economia','usa'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · ECUADOR
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Ecuador', 'items':[
+        { 'd':'elcomercio.com','n':'El Comercio (EC)','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'ecuador','langs':['es'],'lang_principal':'es','tags':['generalista','ecuador'] },
+        { 'd':'eluniverso.com','n':'El Universo','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'ecuador','langs':['es'],'lang_principal':'es','tags':['generalista','ecuador'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · EL SALVADOR
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · El Salvador', 'items':[
+        { 'd':'elfaro.net','n':'El Faro','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'el-salvador','langs':['es'],'lang_principal':'es','tags':['investigacion','salvador'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · FRANCIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Francia', 'items':[
+        { 'd':'euronews.com','n':'Euronews','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'francia','langs':['en'],'lang_principal':'en','tags':['generalista','europa'] },
+        { 'd':'france24.com','n':'France 24','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'francia','langs':['fr'],'lang_principal':'fr','tags':['generalista','francia','publico'] },
+        { 'd':'lefigaro.fr','n':'Le Figaro','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'francia','langs':['fr'],'lang_principal':'fr','tags':['generalista','francia'] },
+        { 'd':'lemonde.fr','n':'Le Monde','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'francia','langs':['fr'],'lang_principal':'fr','tags':['generalista','francia'] },
+        { 'd':'lesechos.fr','n':'Les Échos','type':'diario','sector':'economia','ambito':'internacional','region':None,'pais':'francia','langs':['fr'],'lang_principal':'fr','tags':['economia','francia'] },
+        { 'd':'liberation.fr','n':'Libération','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'francia','langs':['fr'],'lang_principal':'fr','tags':['generalista','francia'] },
+        { 'd':'monde-diplomatique.fr','n':'Le Monde Diplomatique','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'francia','langs':['fr'],'lang_principal':'fr','tags':['generalista','francia'] },
+        { 'd':'rfi.fr','n':'RFI','type':'radio','sector':'generalista','ambito':'internacional','region':None,'pais':'francia','langs':['fr'],'lang_principal':'fr','tags':['generalista','francia','publico'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · GUATEMALA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Guatemala', 'items':[
+        { 'd':'prensalibre.com','n':'Prensa Libre','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'guatemala','langs':['es'],'lang_principal':'es','tags':['generalista','guatemala'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · HONDURAS
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Honduras', 'items':[
+        { 'd':'elheraldo.hn','n':'El Heraldo','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'honduras','langs':['es'],'lang_principal':'es','tags':['generalista','honduras'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · INDIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · India', 'items':[
+        { 'd':'thehindu.com','n':'The Hindu','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'india','langs':['en'],'lang_principal':'en','tags':['generalista','india'] },
+        { 'd':'timesofindia.indiatimes.com','n':'Times of India','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'india','langs':['en'],'lang_principal':'en','tags':['generalista','india'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · IRLANDA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Irlanda', 'items':[
+        { 'd':'independent.ie','n':'Irish Independent','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'irlanda','langs':['en'],'lang_principal':'en','tags':['generalista','irlanda'] },
+        { 'd':'irishtimes.com','n':'The Irish Times','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'irlanda','langs':['en'],'lang_principal':'en','tags':['generalista','irlanda'] },
+        { 'd':'rte.ie','n':'RTÉ','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'irlanda','langs':['en'],'lang_principal':'en','tags':['generalista','irlanda','publico'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · ISRAEL
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Israel', 'items':[
+        { 'd':'haaretz.com','n':'Haaretz','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'israel','langs':['en'],'lang_principal':'en','tags':['generalista','oriente medio'] },
+        { 'd':'jpost.com','n':'The Jerusalem Post','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'israel','langs':['en'],'lang_principal':'en','tags':['generalista','oriente medio'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · ITALIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Italia', 'items':[
+        { 'd':'ansa.it','n':'ANSA','type':'agencia','sector':'generalista','ambito':'internacional','region':None,'pais':'italia','langs':['it'],'lang_principal':'it','tags':['agencia','italia'] },
+        { 'd':'corriere.it','n':'Corriere della Sera','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'italia','langs':['it'],'lang_principal':'it','tags':['generalista','italia'] },
+        { 'd':'ilfattoquotidiano.it','n':'Il Fatto Quotidiano','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'italia','langs':['it'],'lang_principal':'it','tags':['generalista','italia'] },
+        { 'd':'ilmessaggero.it','n':'Il Messaggero','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'italia','langs':['it'],'lang_principal':'it','tags':['generalista','italia'] },
+        { 'd':'ilsole24ore.com','n':'Il Sole 24 Ore','type':'diario','sector':'economia','ambito':'internacional','region':None,'pais':'italia','langs':['it'],'lang_principal':'it','tags':['economia','italia'] },
+        { 'd':'lastampa.it','n':'La Stampa','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'italia','langs':['it'],'lang_principal':'it','tags':['generalista','italia'] },
+        { 'd':'repubblica.it','n':'La Repubblica','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'italia','langs':['it'],'lang_principal':'it','tags':['generalista','italia'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · JAPÓN
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Japón', 'items':[
+        { 'd':'japantimes.co.jp','n':'The Japan Times','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'japon','langs':['en'],'lang_principal':'en','tags':['generalista','asia','japon'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · MÉXICO
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · México', 'items':[
+        { 'd':'eluniversal.com.mx','n':'El Universal','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'mexico','langs':['es'],'lang_principal':'es','tags':['generalista','mexico'] },
+        { 'd':'milenio.com','n':'Milenio','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'mexico','langs':['es'],'lang_principal':'es','tags':['generalista','mexico'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · NIGERIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Nigeria', 'items':[
+        { 'd':'premiumtimesng.com','n':'Premium Times','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'nigeria','langs':['en'],'lang_principal':'en','tags':['generalista','africa','nigeria'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · PAÍSES BAJOS
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Países Bajos', 'items':[
+        { 'd':'nrc.nl','n':'NRC Handelsblad','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'paises-bajos','langs':['nl'],'lang_principal':'nl','tags':['generalista','paisesbajos'] },
+        { 'd':'telegraaf.nl','n':'De Telegraaf','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'paises-bajos','langs':['nl'],'lang_principal':'nl','tags':['generalista','paisesbajos'] },
+        { 'd':'trouw.nl','n':'Trouw','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'paises-bajos','langs':['nl'],'lang_principal':'nl','tags':['generalista','paisesbajos'] },
+        { 'd':'volkskrant.nl','n':'de Volkskrant','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'paises-bajos','langs':['nl'],'lang_principal':'nl','tags':['generalista','paisesbajos'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · PARAGUAY
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Paraguay', 'items':[
+        { 'd':'abc.com.py','n':'ABC Color','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'paraguay','langs':['es'],'lang_principal':'es','tags':['generalista','paraguay'] },
+        { 'd':'ultimahora.com','n':'Última Hora (PY)','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'paraguay','langs':['es'],'lang_principal':'es','tags':['generalista','paraguay'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · PERÚ
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Perú', 'items':[
+        { 'd':'elcomercio.pe','n':'El Comercio','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'peru','langs':['es'],'lang_principal':'es','tags':['generalista','peru'] },
+        { 'd':'gestion.pe','n':'Gestión','type':'diario','sector':'economia','ambito':'internacional','region':None,'pais':'peru','langs':['es'],'lang_principal':'es','tags':['economia','peru'] },
+        { 'd':'rpp.pe','n':'RPP','type':'radio','sector':'generalista','ambito':'internacional','region':None,'pais':'peru','langs':['es'],'lang_principal':'es','tags':['generalista','peru','radio'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · PORTUGAL
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Portugal', 'items':[
+        { 'd':'expresso.pt','n':'Expresso','type':'revista','sector':'generalista','ambito':'internacional','region':None,'pais':'portugal','langs':['pt'],'lang_principal':'pt','tags':['generalista','portugal'] },
+        { 'd':'ionline.sapo.pt','n':'Jornal i','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'portugal','langs':['pt'],'lang_principal':'pt','tags':['generalista','portugal'] },
+        { 'd':'observador.pt','n':'Observador','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'portugal','langs':['pt'],'lang_principal':'pt','tags':['generalista','portugal'] },
+        { 'd':'publico.pt','n':'Público','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'portugal','langs':['pt'],'lang_principal':'pt','tags':['generalista','portugal'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · REINO UNIDO
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Reino Unido', 'items':[
+        { 'd':'bbc.com','n':'BBC','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk','publico'] },
+        { 'd':'dailymail.co.uk','n':'Daily Mail','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk','tabloide'] },
+        { 'd':'economist.com','n':'The Economist','type':'revista','sector':'economia','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['economia','internacional'] },
+        { 'd':'ft.com','n':'Financial Times','type':'diario','sector':'economia','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['economia','uk'] },
+        { 'd':'independent.co.uk','n':'The Independent','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk'] },
+        { 'd':'middleeasteye.net','n':'Middle East Eye','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','oriente medio'] },
+        { 'd':'mirror.co.uk','n':'The Mirror','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk','tabloide'] },
+        { 'd':'news.sky.com','n':'Sky News','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk'] },
+        { 'd':'reuters.com','n':'Reuters','type':'agencia','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['agencia','internacional'] },
+        { 'd':'telegraph.co.uk','n':'The Telegraph','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk'] },
+        { 'd':'theguardian.com','n':'The Guardian','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk'] },
+        { 'd':'thetimes.com','n':'The Times','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · REPÚBLICA DOMINICANA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · República Dominicana', 'items':[
+        { 'd':'diariolibre.com','n':'Diario Libre','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'republica-dominicana','langs':['es'],'lang_principal':'es','tags':['generalista','republicadominicana'] },
+        { 'd':'listindiario.com','n':'Listín Diario','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'republica-dominicana','langs':['es'],'lang_principal':'es','tags':['generalista','republicadominicana'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · RUSIA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Rusia', 'items':[
+        { 'd':'tass.com','n':'TASS','type':'agencia','sector':'generalista','ambito':'internacional','region':None,'pais':'rusia','langs':['en'],'lang_principal':'en','tags':['agencia','rusia'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · SINGAPUR
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Singapur', 'items':[
+        { 'd':'straitstimes.com','n':'The Straits Times','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'singapur','langs':['en'],'lang_principal':'en','tags':['generalista','asia','singapur'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · SUDÁFRICA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Sudáfrica', 'items':[
+        { 'd':'mg.co.za','n':'Mail & Guardian','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'sudafrica','langs':['en'],'lang_principal':'en','tags':['generalista','africa','sudafrica'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · SUIZA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Suiza', 'items':[
+        { 'd':'swissinfo.ch','n':'SWI swissinfo.ch','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'suiza','langs':['es'],'lang_principal':'es','tags':['generalista','suiza','publico'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · URUGUAY
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Uruguay', 'items':[
+        { 'd':'elobservador.com.uy','n':'El Observador','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'uruguay','langs':['es'],'lang_principal':'es','tags':['generalista','uruguay'] },
+        { 'd':'elpais.com.uy','n':'El País (UY)','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'uruguay','langs':['es'],'lang_principal':'es','tags':['generalista','uruguay'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · VENEZUELA
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · Venezuela', 'items':[
+        { 'd':'elnacional.com','n':'El Nacional','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'venezuela','langs':['es'],'lang_principal':'es','tags':['generalista','venezuela'] },
+    ]},
+
+    # ═══════════════════════════════════════════════════════════════
+    # INTERNACIONAL · ÁFRICA (pan-regional)
+    # ═══════════════════════════════════════════════════════════════
+    { 'group':'Internacional · África', 'items':[
+        { 'd':'africanews.com','n':'Africanews','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'africa','langs':['en'],'lang_principal':'en','tags':['generalista','africa','panafricano'] },
     ]},
 ]
+
+
+# ================================================================
+# HELPERS
+# ================================================================
+SECTOR_DISPLAY = {
+    'deportes':'Deportes', 'economia':'Economía', 'tecnologia':'Tecnología',
+    'ciencia':'Ciencia', 'cultura':'Cultura',
+}
+REGION_DISPLAY = {
+    'andalucia':'Andalucía','aragon':'Aragón','asturias':'Asturias',
+    'baleares':'Baleares','canarias':'Canarias','cantabria':'Cantabria',
+    'castilla-la-mancha':'Castilla-La Mancha','castilla-y-leon':'Castilla y León',
+    'cataluna':'Cataluña','ceuta':'Ceuta','comunidad-valenciana':'Comunidad Valenciana',
+    'extremadura':'Extremadura','galicia':'Galicia','la-rioja':'La Rioja',
+    'madrid':'Madrid','melilla':'Melilla','murcia':'Murcia','navarra':'Navarra',
+    'pais-vasco':'País Vasco',
+}
+COUNTRY_DISPLAY = {
+    'eeuu':'EE.UU.','reino-unido':'Reino Unido','francia':'Francia',
+    'alemania':'Alemania','italia':'Italia','portugal':'Portugal',
+    'irlanda':'Irlanda','belgica':'Bélgica','paises-bajos':'Países Bajos',
+    'suiza':'Suiza','rusia':'Rusia','china':'China','japon':'Japón',
+    'india':'India','mexico':'México','argentina':'Argentina','brasil':'Brasil',
+    'chile':'Chile','colombia':'Colombia','peru':'Perú','venezuela':'Venezuela',
+    'uruguay':'Uruguay','ecuador':'Ecuador','bolivia':'Bolivia',
+    'paraguay':'Paraguay','costa-rica':'Costa Rica','guatemala':'Guatemala',
+    'honduras':'Honduras','el-salvador':'El Salvador',
+    'republica-dominicana':'República Dominicana',
+    'sudafrica':'Sudáfrica','nigeria':'Nigeria','israel':'Israel',
+    'qatar':'Catar','corea-del-sur':'Corea del Sur','singapur':'Singapur',
+    'africa':'África',
+}
+
+
 
 # ================================================================
 # CABECERAS HTTP
@@ -888,16 +1115,7 @@ LISTING_URLS = {
 # ================================================================
 # HELPERS (opcionales, útiles para análisis y depuración)
 # ================================================================
-def todos_los_medios():
-    """Devuelve una lista plana de medios con su grupo inyectado."""
-    return [{**it, 'grupo': g['group']} for g in MEDIA_CATALOG for it in g['items']]
-
-
-def total_medios():
-    """Cuenta cuántos medios hay en el catálogo."""
-    return sum(len(g['items']) for g in MEDIA_CATALOG)
 from urllib.parse import quote_plus
-
 def google_news_url(domain, lang='es', extra_q=None):
     """
     Construye la URL del RSS de búsqueda de Google News para un dominio.
@@ -1042,7 +1260,62 @@ GN_QUERY_OVERRIDES = {
     # 'reuters.com': 'site:reuters.com -video',
     # 'eitb.eus': 'site:eitb.eus inurl:noticias',
 }
+def _derivar_grupo(m):
+    """Deriva el nombre del grupo a partir de sector y ámbito."""
+    s = m['sector']; a = m['ambito']
+    if s != 'generalista':
+        return SECTOR_DISPLAY.get(s, s.replace('-', ' ').title())
+    if a == 'nacional':
+        return 'Nacional'
+    if a == 'regional':
+        return f"Regional · {REGION_DISPLAY.get(m['region'], m['region'])}"
+    if a == 'internacional':
+        return f"Internacional · {COUNTRY_DISPLAY.get(m['pais'], m['pais'])}"
+    return 'Otros'
 
+
+def todos_los_medios():
+    """Aplana el catálogo y deriva el grupo."""
+    return [
+        {**it, 'grupo': _derivar_grupo(it), 'lang': it['lang_principal']}
+        for g in MEDIA_CATALOG for it in g['items']
+    ]
+
+
+def total_medios():
+    return sum(len(g['items']) for g in MEDIA_CATALOG)
+
+
+def _validar_catalogo():
+    """Verifica consistencia del catálogo. Imprime warnings."""
+    import warnings
+    TIPOS = {'diario', 'digital', 'radio', 'tv', 'agencia', 'revista'}
+    SECTORES = {'generalista', 'deportes', 'economia', 'tecnologia', 'cultura', 'ciencia'}
+    AMBITOS = {'nacional', 'regional', 'internacional'}
+    vistos = set()
+    for it in todos_los_medios():
+        d = it['d']
+        if d in vistos:
+            warnings.warn(f"Dominio duplicado: {d}")
+        vistos.add(d)
+        if it['type'] not in TIPOS:
+            warnings.warn(f"{d}: type '{it['type']}' fuera de {TIPOS}")
+        if it['sector'] not in SECTORES:
+            warnings.warn(f"{d}: sector '{it['sector']}' fuera de {SECTORES}")
+        if it['ambito'] not in AMBITOS:
+            warnings.warn(f"{d}: ambito '{it['ambito']}' fuera de {AMBITOS}")
+        a, r, p = it['ambito'], it.get('region'), it.get('pais')
+        if a == 'regional' and not r:
+            warnings.warn(f"{d}: regional sin region")
+        if a == 'internacional' and not p:
+            warnings.warn(f"{d}: internacional sin pais")
+        if a == 'nacional' and (r or p):
+            warnings.warn(f"{d}: nacional con region/pais")
+        if it['lang_principal'] not in it['langs']:
+            warnings.warn(f"{d}: lang_principal '{it['lang_principal']}' no está en langs {it['langs']}")
+
+
+_validar_catalogo()
 
 if __name__ == '__main__':
     print(f"Total de grupos: {len(MEDIA_CATALOG)}")
