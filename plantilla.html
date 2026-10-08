@@ -7673,19 +7673,6 @@ function renderizar(){
   actualizarBotonCargarMas();
 }
 
-async function compartirNoticia(n){
-  if (!PUEDE_COMPARTIR || !n) return;
-  try {
-    await navigator.share({
-      title: n.titular,
-      url:   n.enlace,
-    });
-  } catch (err) {
-    if (err && err.name !== 'AbortError') {
-      console.warn('[share]', err);
-    }
-  }
-}
 
 async function compartirNoticia(n){
   if (!PUEDE_COMPARTIR || !n) return;
