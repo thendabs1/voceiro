@@ -1460,7 +1460,7 @@ def _build_hashes_prev(manifest_prev):
 
 
 def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
-                      manifest_prev=None):
+                      manifest_prev=None, portada_mini_info=None):
     """
     Genera manifest.json + slices. Los slices cuyo hash coincida con el
     del manifest previo no se escriben (por tanto no se subirán a R2).
@@ -1605,6 +1605,8 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
     }
     if portada_info:
         manifest['portada'] = portada_info
+    if portada_mini_info:
+        manifest['portada_mini'] = portada_mini_info
 
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
@@ -1622,6 +1624,8 @@ def _limpiar_huerfanos_locales(manifest, portada_info):
     validos = {'manifest.json'}
     if portada_info:
         validos.add(portada_info['file'])
+    if manifest.get('portada_mini') and manifest['portada_mini'].get('file'):
+        validos.add(manifest['portada_mini']['file'])
     for d in manifest['dias']:
         if d.get('all'):
             validos.add(d['all']['file'])
@@ -1644,16 +1648,21 @@ def _limpiar_huerfanos_locales(manifest, portada_info):
     if eliminados:
         print(f"[troceado] {eliminados} huérfanos locales borrados")
 
-def generar_portada(noticias, ahora, horas=18):
+def generar_portada(noticias, ahora, horas=18, max_items=2000, prefix='portada'):
+    """
+    Genera portada-<hash>.json o portada-mini-<hash>.json según el prefijo.
+
+    - prefix='portada'       → fichero de 18h, hasta 2000 items
+    - prefix='portada-mini'  → fichero de 2h, hasta 400 items
+    """
     corte = ahora - timedelta(hours=horas)
     recientes = [n for n in noticias
                  if (_fecha_agrupacion_dt(n, ahora) or corte) >= corte]
     recientes.sort(key=_fecha_orden, reverse=True)
-    recientes = recientes[:2000]
+    recientes = recientes[:max_items]
 
-    # ── NUEVO: dedup local para la portada ──
+    # Dedup editorial (mismo comportamiento que la portada completa)
     recientes = deduplicar_editorial(recientes)
-    # ─────────────────────────────────────
 
     generado_iso = ahora.isoformat(timespec='seconds')
     payload = {
@@ -1664,7 +1673,7 @@ def generar_portada(noticias, ahora, horas=18):
     }
 
     hash_ = _hash_payload(payload)
-    filename = f'portada-{hash_}.json'
+    filename = f'{prefix}-{hash_}.json'
     path = os.path.join(DATOS_DIR, filename)
 
     if os.path.exists(path):
@@ -1682,7 +1691,7 @@ def generar_portada(noticias, ahora, horas=18):
         size_kb = 0.0
 
     estado = "reusada" if reusado else "escrita"
-    print(f"[portada] {len(recientes)} noticias · {size_kb:.1f} KB · {estado}")
+    print(f"[{prefix}] {len(recientes)} noticias · {size_kb:.1f} KB · {estado}")
 
     return {
         'file': filename,
@@ -1690,7 +1699,6 @@ def generar_portada(noticias, ahora, horas=18):
         'n':    len(recientes),
         'kb':   round(size_kb, 1),
     }
-
 # ─────────────────────────────────────────────────────────────
 # FASE 3c · HTML
 # ─────────────────────────────────────────────────────────────
@@ -1825,6 +1833,10 @@ def limpiar_r2_huerfanos(manifest):
     if manifest.get('portada') and manifest['portada'].get('file'):
         portada_valida = manifest['portada']['file']
 
+    portada_mini_valida = ''
+    if manifest.get('portada_mini') and manifest['portada_mini'].get('file'):
+        portada_mini_valida = manifest['portada_mini']['file']
+
     limite = datetime.now(timezone.utc) - timedelta(hours=1)
 
     re_all     = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$')
@@ -1848,7 +1860,8 @@ def limpiar_r2_huerfanos(manifest):
             elif re_dominio.match(key):
                 es_valido = key in dominio_validos
             elif key.startswith('portada-') and key.endswith('.json'):
-                es_valido = (key == portada_valida)
+                es_valido = (key == portada_valida or
+                             key == portada_mini_valida)
             else:
                 continue   # formato desconocido, no tocar
 
@@ -2423,14 +2436,18 @@ def main():
         except Exception as e:
             print(f"[manifest-prev] no se pudo leer: {e}")
 
-    # Portada (dedup interno)
+    # Portadas (dedup interno en cada una)
     _dedup_reset()
-    portada_info = generar_portada(finales_pre, t_now, horas=18)
+    portada_info = generar_portada(
+        finales_pre, t_now, horas=18, max_items=2000, prefix='portada')
+    portada_mini_info = generar_portada(
+        finales_pre, t_now, horas=2, max_items=400, prefix='portada-mini')
 
     # Trocear: all + grupos + dominios
     manifest_actual = generar_troceados(
         finales_pre, t_now, portada_info,
         manifest_prev=manifest_prev,
+        portada_mini_info=portada_mini_info,
     )
 
     # ─── Subir a R2 (solo lo que cambió, ya está en disco) ───
