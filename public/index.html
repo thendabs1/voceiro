@@ -4941,15 +4941,13 @@ function necesitaTurso(parsed) {
   if (parsed.lang.length)   return true;
   if (parsed.desde || parsed.hasta) return true;
 
-  // Dominios y medios: Turso aporta histórico (aunque R2 tenga slice)
-  if ((parsed.dominios || []).length) return true;
-  if ((parsed.medios || []).length)   return true;
-
   // Grupos sin slice en manifest → Turso
   if ((parsed.grupos || []).some(g => !_grupoTieneSlice(g))) return true;
 
+  // Dominios y medios: NO van a Turso. R2 cubre esto con paginación.
   return false;
 }
+
 function _grupoTieneSlice(nombreGrupo) {
   if (!_manifest || !_manifest.dias || !_manifest.dias.length) return false;
   const dia0 = _manifest.dias[0];
@@ -5082,7 +5080,7 @@ async function extenderCapasR2(capas, desde, hasta) {
 
     const cola = files.slice();
     const nuevos = [];
-    const workers = Array.from({ length: Math.min(5, cola.length) }, async () => {
+    const workers = Array.from({ length: Math.min(8, cola.length) }, async () => {
       while (cola.length) {
         const f = cola.shift();
         const data = await _fetchJSON(`${DATA_BASE}/${f}`);
@@ -6994,17 +6992,18 @@ let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
 let ULT_CTX = null;                // contexto para append incremental
 
+
 // ── Paginación R2 + Turso ──
 let DIAS_ACTUAL = 0;               // días cargados vía R2 para la query actual
-const DIAS_R2_MAX = 90;            // tope práctico antes de saltar a Turso
-const DIAS_R2_STEP = 10;           // días por click en "Cargar más"
+const DIAS_R2_STEP = 30;           // días por click en "Cargar más"
+// Sin tope: se extiende hasta agotar el manifest.
 
 let TURSO_OFFSET = 0;              // próximo offset a pedir
 let TURSO_HAY_MAS = false;
 let TURSO_ACTIVO = false;          // true cuando ya estamos paginando Turso
 let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llevar cutoff)
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
-
+let _cargandoMas  = false; 
 /* ═══════════════════════════════════════════════════════════════
    PRENSA EXTERNA (vía Worker: gnews + freenews)
    ═══════════════════════════════════════════════════════════════ */
@@ -7199,17 +7198,6 @@ async function buscarEnWorker(parsed, rawQuery, { offset = 0, limit = 50 } = {})
 }
 
 
-// Añade un cutoff `hasta:` al raw si vamos a Turso tras haber
-// cargado días vía R2. Evita que Turso devuelva los mismos items
-// que ya están en memoria (los dedup silenciosos harían que el
-// primer click en "Cargar más" no mostrara nada nuevo).
-function _rawParaTurso(raw, parsed, diasR2) {
-  if (parsed.hasta) return raw;    // usuario ya filtró por fecha
-  if (diasR2 <= 0)  return raw;    // sin R2 previo → sin corte
-  const cutoff = new Date(Date.now() - diasR2 * 86400000);
-  const hasta = cutoff.toISOString().slice(0, 10);
-  return raw + ' hasta:' + hasta;
-}
 
 
 function mergePrensa(locales, prensaItems){
@@ -7406,9 +7394,11 @@ function aplicarFiltros(){
     });
   }
 
-  // Disparo Turso (si procede y no estamos ya paginando)
+  // Disparo Turso SOLO si no hay capas R2 que cubran la query.
+  // (Con la nueva necesitaTurso, esto solo ocurre para texto/tag/tipo/lang/fechas
+  //  o grupos sin slice.)
   if (usarTurso && !TURSO_RAW) {
-    TURSO_RAW = _rawParaTurso(raw, parsed, DIAS_ACTUAL);
+    TURSO_RAW = raw;   // sin cutoff: no hay R2 previo, queremos todo
     TURSO_OFFSET = 0;
 
     buscarEnWorker(parsed, TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
@@ -7659,7 +7649,23 @@ function renderizar(){
 
   if (SENTINEL_OBSERVER) SENTINEL_OBSERVER.disconnect();
   SENTINEL_OBSERVER = new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting) appendBatch();
+    if (!entries[0].isIntersecting) return;
+
+    // Si aún quedan items filtrados sin renderizar → siguiente batch
+    if (RENDER_OFFSET < ULT_FILTRADAS.length) {
+      appendBatch();
+      return;
+    }
+
+    // Lista agotada → pedir más (R2 días o Turso página) si hay
+    if (_cargandoMas) return;
+    const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
+    const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
+    const puedeR2 = capas.size > 0 && DIAS_ACTUAL < totalDias;
+    if (puedeR2 || TURSO_HAY_MAS) {
+      _cargandoMas = true;
+      cargarMas().finally(() => { _cargandoMas = false; });
+    }
   }, { rootMargin: '400px' });
   SENTINEL_OBSERVER.observe(sentinel);
 
@@ -7667,7 +7673,19 @@ function renderizar(){
   actualizarBotonCargarMas();
 }
 
-
+async function compartirNoticia(n){
+  if (!PUEDE_COMPARTIR || !n) return;
+  try {
+    await navigator.share({
+      title: n.titular,
+      url:   n.enlace,
+    });
+  } catch (err) {
+    if (err && err.name !== 'AbortError') {
+      console.warn('[share]', err);
+    }
+  }
+}
 
 async function compartirNoticia(n){
   if (!PUEDE_COMPARTIR || !n) return;
@@ -7961,33 +7979,30 @@ function appendBatchDesdeOffset(desde, hasta) {
   observarNoticias();
 }
 
-// ─── Dispatcher del botón "Cargar más" ───
 async function cargarMas() {
-  const raw = $('#buscar').value.trim();
-  const parsed = parseQuery(preprocesarInput(raw));
-  const capas = capasRequeridas(parsed);
-  const tieneR2 = capas.size > 0;
-
-  // Modo R2: extender días
-  if (tieneR2 && !TURSO_ACTIVO && DIAS_ACTUAL < DIAS_R2_MAX) {
-    const desde = DIAS_ACTUAL;
-    const hasta = Math.min(DIAS_ACTUAL + DIAS_R2_STEP, DIAS_R2_MAX);
-    const btn = document.getElementById('btn-cargar-mas');
-    if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
-    await extenderCapasR2(capas, desde, hasta);
-    DIAS_ACTUAL = hasta;
-    if (DIAS_ACTUAL >= DIAS_R2_MAX) TURSO_ACTIVO = true;
-    if (btn) btn.disabled = false;
-    aplicarFiltros();
+  if (TURSO_HAY_MAS) {
+    await cargarMasDeTurso();
     return;
   }
 
-  // Modo Turso: paginar
-  if (!TURSO_RAW) {
-    TURSO_RAW = _rawParaTurso(raw, parsed, DIAS_ACTUAL);
-    TURSO_OFFSET = 0;
-  }
-  await cargarMasDeTurso();
+  const raw = $('#buscar').value.trim();
+  const parsed = parseQuery(preprocesarInput(raw));
+  const capas = capasRequeridas(parsed);
+  if (!capas.size) return;
+
+  const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
+  if (DIAS_ACTUAL >= totalDias) return;
+
+  const desde = DIAS_ACTUAL;
+  const hasta = Math.min(DIAS_ACTUAL + DIAS_R2_STEP, totalDias);
+  const btn = document.getElementById('btn-cargar-mas');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
+
+  await extenderCapasR2(capas, desde, hasta);
+  DIAS_ACTUAL = hasta;
+
+  if (btn) btn.disabled = false;
+  aplicarFiltros();
 }
 
 // ─── Paginación Turso ───
@@ -8029,24 +8044,12 @@ async function cargarMasDeTurso() {
   }
 }
 
-// ─── Estado del botón ───
 function actualizarBotonCargarMas() {
   const wrap = document.getElementById('cargar-mas-wrap');
   const btn  = document.getElementById('btn-cargar-mas');
   if (!wrap || !btn) return;
 
-  const raw = $('#buscar').value.trim();
-  const parsed = parseQuery(preprocesarInput(raw));
-  const tieneR2 = capasRequeridas(parsed).size > 0;
-  const modoR2 = tieneR2 && !TURSO_ACTIVO && DIAS_ACTUAL < DIAS_R2_MAX;
-
-  if (modoR2) {
-    wrap.style.display = '';
-    btn.textContent = `Cargar más · ${DIAS_ACTUAL} días`;
-    btn.disabled = false;
-    return;
-  }
-
+  // 1) Turso tiene prioridad si hay más páginas (texto/tag/tipo)
   if (TURSO_HAY_MAS) {
     wrap.style.display = '';
     btn.textContent = 'Cargar más · histórico';
@@ -8054,9 +8057,22 @@ function actualizarBotonCargarMas() {
     return;
   }
 
+  // 2) Modo R2: extender días si quedan en el manifest
+  const raw = $('#buscar').value.trim();
+  const parsed = parseQuery(preprocesarInput(raw));
+  const capas = capasRequeridas(parsed);
+  if (capas.size) {
+    const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
+    if (DIAS_ACTUAL < totalDias) {
+      wrap.style.display = '';
+      btn.textContent = `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
+      btn.disabled = false;
+      return;
+    }
+  }
+
   wrap.style.display = 'none';
 }
-
 
 
 function wireResultadosDelegation(){
@@ -8755,7 +8771,11 @@ function wireStaticEvents(){
   // ── Botones que abren paneles ──
   // ── Botón "Cargar más" (paginación R2 + Turso) ──
   const btnCargarMas = document.getElementById('btn-cargar-mas');
-  if (btnCargarMas) btnCargarMas.addEventListener('click', cargarMas);
+  if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
+    if (_cargandoMas) return;
+    _cargandoMas = true;
+    cargarMas().finally(() => { _cargandoMas = false; });
+  });
 
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', bsAbrir);
