@@ -4915,11 +4915,11 @@ function _buscarGrupoEnDia(diaGrupos, nombreGrupo) {
 function capasRequeridas(parsed) {
   const set = new Set();
 
-  // 1) Preset activo → sus grupos + overrides 'first'
+    // 1) Preset activo → sus grupos + overrides 'first'
   if (PRESET_ACTIVO && presetTieneReglas()) {
-    (PRESET.grupos || []).forEach(g => set.add('grupo:' + g));
+    (PRESET.grupos || []).forEach(g => set.add('grupo:' + normStrict(g)));
     Object.entries(PRESET.overrides || {}).forEach(([d, v]) => {
-      if (v === 'first') set.add('dominio:' + d);
+      if (v === 'first') set.add('dominio:' + normDomain(d));
     });
   }
 
@@ -5004,6 +5004,7 @@ function _mergearItemsEnNoticias(items, capaKey) {
 
 // ─── Cargar una capa desde R2 ───
 async function _cargarCapa(key, signal) {
+  console.count('capa ' + key);
   const [tipo, valor] = key.split(':', 2);
   if (!_manifest || !_manifest.dias || !_manifest.dias.length) return 0;
 
@@ -5047,6 +5048,7 @@ async function _cargarCapa(key, signal) {
   await Promise.all(workers);
 
   const añadidos = _mergearItemsEnNoticias(nuevos, key);
+  if (añadidos > 0) hidratarNoticias();     // ← AÑADIR
   LAYERS.set(key, {
     files,
     cargada: Date.now(),
@@ -5100,36 +5102,49 @@ async function extenderCapasR2(capas, desde, hasta) {
     await Promise.all(workers);
 
     const añadidos = _mergearItemsEnNoticias(nuevos, key);
+    if (añadidos > 0) hidratarNoticias();     // ← AÑADIR
     _itemsCargadosDeCapas += añadidos;
   }
 }
 
 
-// ─── Asegurar capas: carga las que falten, respeta el cap ───
 async function asegurarCapas(capas, signal) {
   const faltantes = [...capas].filter(k => !LAYERS.has(k));
   if (!faltantes.length) return false;
+
+  // Si ya hay una carga en curso, nos colgamos de ella. Cuando termine,
+  // re-evaluamos: puede que ya no falte nada (caso típico: aplicarFiltros
+  // se dispara dos veces seguidas por el evento del userscript).
+  if (_capaEnVuelo) {
+    try { await _capaEnVuelo; } catch(e){}
+    return asegurarCapas(capas, signal);
+  }
 
   if (_itemsCargadosDeCapas >= LAYER_MAX_ITEMS) {
     toast('Límite de capas alcanzado. Recarga la página para resetear.', 3200);
     return false;
   }
 
-  // Fetch en serie, una por una, para que el cap se respete
-  let total = 0;
-  for (const key of faltantes) {
-    if (signal.aborted) return total > 0;
-    if (_itemsCargadosDeCapas >= LAYER_MAX_ITEMS) break;
-    try {
-      const n = await _cargarCapa(key, signal);
-      total += n;
-    } catch(e) {
-      if (e.name !== 'AbortError') console.warn('[capa]', key, e.message);
+  _capaEnVuelo = (async () => {
+    let total = 0;
+    for (const key of faltantes) {
+      if (signal.aborted) return total;
+      if (_itemsCargadosDeCapas >= LAYER_MAX_ITEMS) break;
+      try {
+        total += await _cargarCapa(key, signal);
+      } catch(e) {
+        if (e.name !== 'AbortError') console.warn('[capa]', key, e.message);
+      }
     }
-  }
-  return total > 0;
-}
+    return total;
+  })();
 
+  try {
+    return (await _capaEnVuelo) > 0;
+  } finally {
+    _capaEnVuelo = null;
+  }
+}
 // ─── Cargar base (portada) ───
 async function cargarBase() {
   _cargandoScope = true;
@@ -5252,6 +5267,7 @@ const LAYERS = new Map();
 
 const LAYER_MAX_ITEMS = 40000;   // cap de items únicos cargados desde capas
 let _itemsCargadosDeCapas = 0;
+let _capaEnVuelo = null;
 
 // Índice inverso: url/título → item en NOTICIAS. Para añadir capas sin duplicar.
 const _itemPorUrl = new Map();
@@ -7368,29 +7384,42 @@ function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
+  console.log('[aplicarFiltros]',
+    'raw=', JSON.stringify(raw.slice(0, 60)),
+    'capas=', [...capasRequeridas(parseQuery(preprocesarInput(raw)))],
+    'DIAS_ACTUAL=', DIAS_ACTUAL,
+    'DIAS_MEMORIA=', DIAS_MEMORIA); 
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
 
-  // ── Detectar cambio de query y resetear paginación ──
-  if (raw !== ULT_QUERY_KEY) {
-    ULT_QUERY_KEY = raw;
-    const capas = capasRequeridas(parsed);
-    DIAS_ACTUAL   = capas.size ? DIAS_MEMORIA : 0;
-    TURSO_OFFSET  = 0;
-    TURSO_HAY_MAS = false;
-    TURSO_ACTIVO  = !capas.size;   // sin R2 → vamos directos a Turso
-    TURSO_RAW     = '';
-  }
+const capas = capasRequeridas(parsed);
+const usarTurso = necesitaTurso(parsed);
 
-  const capas = capasRequeridas(parsed);
-  const usarTurso = necesitaTurso(parsed);
+// Reset solo si cambia la query (Turso no debe re-dispararse por otras razones)
+if (raw !== ULT_QUERY_KEY) {
+  ULT_QUERY_KEY = raw;
+  TURSO_OFFSET  = 0;
+  TURSO_HAY_MAS = false;
+  TURSO_ACTIVO  = !capas.size;
+  TURSO_RAW     = '';
+}
 
-  // Disparo R2 en background
+// DIAS_ACTUAL se recalcula SIEMPRE a partir de las capas activas.
+// No depende del cambio de query: si hay capas, tiene que haber al menos
+// DIAS_MEMORIA días cargados (o los que haya en el manifest).
+if (!capas.size) {
+  DIAS_ACTUAL = 0;
+} else {
+  const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
+  const objetivo  = Math.min(DIAS_MEMORIA, totalDias);
+  if (DIAS_ACTUAL < objetivo) DIAS_ACTUAL = objetivo;
+  if (DIAS_ACTUAL > totalDias) DIAS_ACTUAL = totalDias;
+}
+    // Disparo R2 en background
   if (capas.size) {
     const signal = new AbortController().signal;
     asegurarCapas(capas, signal).then(trajo => {
-      if (myGen !== _genAplicar) return;
-      if (trajo) aplicarFiltros();
+      if (trajo) aplicarFiltros();     // ← sin `if (myGen !== _genAplicar)`
     });
   }
 
@@ -8017,7 +8046,6 @@ async function cargarMasDeTurso() {
 
   const nuevos = _mergearItemsEnNoticias(res.items, 'turso');
   if (nuevos > 0) {
-    _hidratadasHasta = 0;
     hidratarNoticias();
     if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
       aplicarFiltros();
@@ -8531,14 +8559,20 @@ function wireDiasSelector() {
     const b = e.target.closest('button[data-val]');
     if (!b || b.disabled) return;
     const v = parseInt(b.dataset.val, 10);
+    if (v === DIAS_MEMORIA) return;
+
     setDiasMemoria(v);
-    // Recargar capas: borrar y volver a pedir
+
+    // Reset total del estado de capas para que se vuelvan a pedir con el
+    // nuevo DIAS_MEMORIA
     LAYERS.clear();
     _itemsCargadosDeCapas = 0;
-    const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
-    asegurarCapas(capas, new AbortController().signal).then(trajo => {
-      if (trajo) aplicarFiltros();
-    });
+    DIAS_ACTUAL = 0;
+    ULT_QUERY_KEY = '';       // fuerza el reset en el siguiente aplicarFiltros
+    _hidratadasHasta = 0;
+    _dupsHechosHasta = 0;
+
+    aplicarFiltros();
   });
 
   renderDiasSelector();
@@ -9119,6 +9153,11 @@ async function init(){
     get ULT_FILTRADAS(){ return ULT_FILTRADAS; },
     get MEDIOS()       { return MEDIOS; },
     get LAYERS()       { return LAYERS; },
+    get PRESET()       { return PRESET; },
+    get PRESET_ACTIVO(){ return PRESET_ACTIVO; },
+    get SET_GRUPOS()   { return SET_GRUPOS; },
+    get RX_PRESET()    { return RX_PRESET; },
+    get _manifest()    { return _manifest; },
   };
 
   // ── 5) Histórico en background ──
