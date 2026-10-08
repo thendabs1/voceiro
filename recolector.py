@@ -43,7 +43,7 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from collections import defaultdict
 import concurrent.futures
-
+import threading
 import requests
 import feedparser
 from bs4 import BeautifulSoup
@@ -97,6 +97,11 @@ GN_DIAS_MAX       = 14
 GN_SLEEP          = 0.3
 
 DATOS_DIR         = 'public/datos'
+# ── Registro de ficheros escritos en ESTE run (para subir solo esos a R2) ──
+_FICHEROS_ESCRITOS = set()
+
+def _marcar_escrito(path):
+    _FICHEROS_ESCRITOS.add(os.path.abspath(path))
 MANIFEST_PATH     = 'public/datos/manifest.json'
 STATE_PATH        = 'state.json'
 DENO_RELAY_BASE = 'https://secret-worm-9453.thendabs1.deno.net/rss?u='
@@ -287,22 +292,25 @@ def _generar_slice_dominio(items, fecha, dominio, ahora):
     filename = f'd-{dominio}-{fecha}.json'
     return filename, hash_, payload, len(items_dedup)
 
-def _escribir_slice_si_hace_falta(path, payload, hash_actual, hash_previo=''):
+def _escribir_slice_si_hace_falta(path, hash_actual, hash_previo='',
+                                  payload=None, kb_previo=0.0):
     """
     Escribe solo si el contenido cambió respecto al run anterior.
-    Si hash_previo == hash_actual → no toca disco.
-    Devuelve (size_kb, reusado).
+    Si hash_previo == hash_actual → no serializa, no escribe, devuelve
+    el kb previo del manifest.
     """
+    if hash_previo and hash_previo == hash_actual:
+        return kb_previo, True
+
+    if payload is None:
+        raise ValueError("payload requerido cuando hay que escribir")
+
     blob = json.dumps(payload, ensure_ascii=False,
                       separators=(',', ':')).encode('utf-8')
-    size_kb = len(blob) / 1024
-
-    if hash_previo and hash_previo == hash_actual:
-        return size_kb, True
-
     with open(path, 'wb') as f:
         f.write(blob)
-    return size_kb, False
+    _marcar_escrito(path)
+    return len(blob) / 1024, False
 
 # ─────────────────────────────────────────────────────────────
 # UTILIDADES DE FECHA
@@ -1441,7 +1449,7 @@ def _orden_estable(n):
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
 def _build_hashes_prev(manifest_prev):
-    """Devuelve {(fecha, tipo) → hash} desde el manifest previo.
+    """Devuelve {(fecha, tipo) → (hash, kb)} desde el manifest previo.
     tipo: 'all' | 'g-<slug>' | 'd-<dominio>'."""
     out = {}
     for d in (manifest_prev or {}).get('dias', []):
@@ -1449,13 +1457,13 @@ def _build_hashes_prev(manifest_prev):
         if not fecha:
             continue
         if d.get('all') and d['all'].get('hash'):
-            out[(fecha, 'all')] = d['all']['hash']
+            out[(fecha, 'all')] = (d['all']['hash'], d['all'].get('kb', 0.0))
         for grupo, g in (d.get('grupos') or {}).items():
             if g.get('hash'):
-                out[(fecha, f'g-{_slug_grupo(grupo)}')] = g['hash']
+                out[(fecha, f'g-{_slug_grupo(grupo)}')] = (g['hash'], g.get('kb', 0.0))
         for dom, dd in (d.get('dominios') or {}).items():
             if dd.get('hash'):
-                out[(fecha, f'd-{dom}')] = dd['hash']
+                out[(fecha, f'd-{dom}')] = (dd['hash'], dd.get('kb', 0.0))
     return out
 
 
@@ -1523,9 +1531,10 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
         # ALL
         fn_all, h_all, pl_all, n_all = _generar_slice(items_dia, dia, '', ahora)
-        h_prev_all = hashes_prev.get((dia, 'all'), '')
+        h_prev_all, kb_prev_all = hashes_prev.get((dia, 'all'), ('', 0.0))
         size_all, reusado_all = _escribir_slice_si_hace_falta(
-            os.path.join(DATOS_DIR, fn_all), pl_all, h_all, h_prev_all)
+            os.path.join(DATOS_DIR, fn_all), h_all, h_prev_all,
+            payload=pl_all, kb_previo=kb_prev_all)
         escritos += 0 if reusado_all else 1
         reusados += 1 if reusado_all else 0
         total_kb += size_all
@@ -1550,9 +1559,10 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         for grupo, items_g in por_grupo.items():
             sufijo = f'g-{_slug_grupo(grupo)}'
             fn_g, h_g, pl_g, n_g = _generar_slice(items_g, dia, sufijo, ahora)
-            h_prev_g = hashes_prev.get((dia, sufijo), '')
+            h_prev_g, kb_prev_g = hashes_prev.get((dia, sufijo), ('', 0.0))
             size_g, reusado_g = _escribir_slice_si_hace_falta(
-                os.path.join(DATOS_DIR, fn_g), pl_g, h_g, h_prev_g)
+                os.path.join(DATOS_DIR, fn_g), h_g, h_prev_g,
+                payload=pl_g, kb_previo=kb_prev_g)
             escritos += 0 if reusado_g else 1
             reusados += 1 if reusado_g else 0
             total_kb += size_g
@@ -1569,9 +1579,10 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
         for dominio, items_d in por_dominio.items():
             fn_d, h_d, pl_d, n_d = _generar_slice_dominio(items_d, dia, dominio, ahora)
-            h_prev_d = hashes_prev.get((dia, f'd-{dominio}'), '')
+            h_prev_d, kb_prev_d = hashes_prev.get((dia, f'd-{dominio}'), ('', 0.0))
             size_d, reusado_d = _escribir_slice_si_hace_falta(
-                os.path.join(DATOS_DIR, fn_d), pl_d, h_d, h_prev_d)
+                os.path.join(DATOS_DIR, fn_d), h_d, h_prev_d,
+                payload=pl_d, kb_previo=kb_prev_d)
             escritos += 0 if reusado_d else 1
             reusados += 1 if reusado_d else 0
             total_kb += size_d
@@ -1610,7 +1621,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
-
+    _marcar_escrito(MANIFEST_PATH)
     _limpiar_huerfanos_locales(manifest, portada_info)
 
     print(f"[troceado] {len(dias_manifest)} días · "
@@ -1683,6 +1694,7 @@ def generar_portada(noticias, ahora, horas=18, max_items=2000, prefix='portada')
                           separators=(',', ':')).encode('utf-8')
         with open(path, 'wb') as f:
             f.write(blob)
+        _marcar_escrito(path)
         reusado = False
 
     try:
@@ -1763,22 +1775,25 @@ def _r2_cache_control(filename):
 
 def subir_a_r2(ficheros_locales):
     """
-    Sube a R2 los ficheros que cambiaron. Solo recibe lo que se escribió
-    en disco este run (los que no cambiaron nunca llegaron a disco).
-    Sin HEADs, sin comprobaciones.
+    Sube a R2 SOLO los ficheros escritos en este run.
+    Paralelizado con ThreadPoolExecutor (boto3 es thread-safe).
     """
     client = _r2_client()
     if not client:
         print("[r2] sin credenciales — saltando")
         return 0, 0, 0
 
+    lista = [p for p in ficheros_locales if p.endswith('.json')]
+    if not lista:
+        print("[r2] nada nuevo que subir")
+        return 0, 0, 0
+
     subidos = errores = 0
+    lock = threading.Lock()
 
-    for path in ficheros_locales:
+    def _subir_uno(path):
+        nonlocal subidos, errores
         nombre = os.path.basename(path)
-        if not nombre.endswith('.json'):
-            continue
-
         try:
             with open(path, 'rb') as f:
                 client.upload_fileobj(
@@ -1788,37 +1803,92 @@ def subir_a_r2(ficheros_locales):
                         'CacheControl': _r2_cache_control(nombre),
                     },
                 )
-            subidos += 1
+            with lock:
+                subidos += 1
         except Exception as e:
+            with lock:
+                errores += 1
             print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
-            errores += 1
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+        list(ex.map(_subir_uno, lista))
 
     print(f"[r2] {subidos} subidos · 0 omitidos · {errores} errores")
     return subidos, 0, errores
 # ─────────────────────────────────────────────────────────────
 # LIMPIEZA DE HUÉRFANOS EN R2
 # ─────────────────────────────────────────────────────────────
-def limpiar_r2_huerfanos(manifest):
+def _ficheros_de_manifest(manifest):
+    """Set con todos los nombres de fichero referenciados por un manifest."""
+    out = set()
+    for d in (manifest or {}).get('dias', []):
+        if d.get('all') and d['all'].get('file'):
+            out.add(d['all']['file'])
+        for g in (d.get('grupos') or {}).values():
+            if g.get('file'):
+                out.add(g['file'])
+        for dd in (d.get('dominios') or {}).values():
+            if dd.get('file'):
+                out.add(dd['file'])
+    if manifest.get('portada') and manifest['portada'].get('file'):
+        out.add(manifest['portada']['file'])
+    if manifest.get('portada_mini') and manifest['portada_mini'].get('file'):
+        out.add(manifest['portada_mini']['file'])
+    return out
+
+
+def limpiar_r2_huerfanos(manifest, manifest_prev=None):
     """
-    Borra de R2 los ficheros que ya no están referenciados en el manifest.
+    Borra de R2 los ficheros que ya no están referenciados.
 
-    - YYYY-MM-DD-<hash>.json y YYYY-MM-DD-g-<slug>-<hash>.json: para cada
-      día + tipo, conserva solo la key vigente; borra versiones viejas.
-    - d-<dominio>-<fecha>.json: conserva solo si (dominio, fecha) está en
-      el manifest. El resto son huérfanos.
-    - portada-<hash>.json: conserva solo la vigente.
+    Camino rápido (diff): compara el set de ficheros del manifest previo
+    con el nuevo. Solo borra los que desaparecieron. No lista el bucket.
 
-    Red de seguridad: solo borra objetos con >1 h de antigüedad.
+    Fallback: si no hay manifest previo, hace un scan completo con
+    paginación (solo primera vez tras un reset o primer run).
     """
     client = _r2_client()
     if not client:
         return 0
 
-    # ── Keys válidas por tipo ──
-    all_validos = set()         # 'YYYY-MM-DD-<hash>.json'
-    grupo_validos = set()       # 'YYYY-MM-DD-g-<slug>-<hash>.json'
-    dominio_validos = set()     # 'd-<dominio>-<fecha>.json'
+    # ── Camino rápido: diff de manifests ──
+    if manifest_prev and manifest_prev.get('dias'):
+        prev_files = _ficheros_de_manifest(manifest_prev)
+        curr_files = _ficheros_de_manifest(manifest)
+        candidatos = prev_files - curr_files
+
+        if not candidatos:
+            print("[r2-clean] nada que borrar (diff de manifests)")
+            return 0
+
+        limite = datetime.now(timezone.utc) - timedelta(hours=1)
+        borrados = 0
+        for key in candidatos:
+            try:
+                head = client.head_object(Bucket=R2_BUCKET, Key=key)
+                lastmod = head.get('LastModified')
+                if lastmod and lastmod > limite:
+                    continue           # <1h: puede estar sirviéndose
+                client.delete_object(Bucket=R2_BUCKET, Key=key)
+                borrados += 1
+            except Exception as e:
+                code = ''
+                if hasattr(e, 'response'):
+                    code = e.response.get('Error', {}).get('Code', '')
+                if code in ('404', 'NoSuchKey'):
+                    continue           # ya no existe
+                print(f"[r2-clean!] {key}: {type(e).__name__}: {e}")
+
+        print(f"[r2-clean] {borrados} borrados de {len(candidatos)} candidatos (diff)")
+        return borrados
+
+    # ── Fallback: scan completo (sin manifest previo) ──
+    print("[r2-clean] sin manifest previo — scan completo")
+    all_validos = set()
+    grupo_validos = set()
+    dominio_validos = set()
     portada_valida = ''
+    portada_mini_valida = ''
 
     for d in manifest.get('dias', []):
         if d.get('all') and d['all'].get('file'):
@@ -1829,16 +1899,12 @@ def limpiar_r2_huerfanos(manifest):
         for dd in d.get('dominios', {}).values():
             if dd.get('file'):
                 dominio_validos.add(dd['file'])
-
     if manifest.get('portada') and manifest['portada'].get('file'):
         portada_valida = manifest['portada']['file']
-
-    portada_mini_valida = ''
     if manifest.get('portada_mini') and manifest['portada_mini'].get('file'):
         portada_mini_valida = manifest['portada_mini']['file']
 
     limite = datetime.now(timezone.utc) - timedelta(hours=1)
-
     re_all     = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$')
     re_grupo   = re.compile(r'^\d{4}-\d{2}-\d{2}-g-[a-z0-9-]+-[a-f0-9]{10}\.json$')
     re_dominio = re.compile(r'^d-[a-z0-9.-]+-\d{4}-\d{2}-\d{2}\.json$')
@@ -1848,7 +1914,6 @@ def limpiar_r2_huerfanos(manifest):
     for page in paginator.paginate(Bucket=R2_BUCKET):
         for obj in page.get('Contents', []):
             key = obj['Key']
-
             if key == 'manifest.json':
                 continue
 
@@ -1863,23 +1928,22 @@ def limpiar_r2_huerfanos(manifest):
                 es_valido = (key == portada_valida or
                              key == portada_mini_valida)
             else:
-                continue   # formato desconocido, no tocar
+                continue
 
             if es_valido:
                 continue
-
             lastmod = obj.get('LastModified')
             if lastmod and lastmod > limite:
-                continue   # <1 h: puede estar sirviéndose ahora mismo
-
+                continue
             try:
                 client.delete_object(Bucket=R2_BUCKET, Key=key)
                 borrados += 1
             except Exception as e:
                 print(f"[r2-clean!] {key}: {e}")
 
-    print(f"[r2-clean] {borrados} huérfanos borrados de R2")
+    print(f"[r2-clean] {borrados} huérfanos borrados (scan completo)")
     return borrados
+
 #─────────────────────────────────────────────────────────
 # TURSO HTTP v2 (sin réplica local, sin sync)
 # ─────────────────────────────────────────────────────────────
@@ -2291,6 +2355,7 @@ def descargar_historico_desde_r2():
 # ─────────────────────────────────────────────────────────────
 def main():
     os.makedirs(DATOS_DIR, exist_ok=True)
+    _FICHEROS_ESCRITOS.clear()
     descargar_historico_desde_r2()
     medios_completos = todos_los_medios()
     medios = medios_completos
@@ -2451,16 +2516,11 @@ def main():
     )
 
     # ─── Subir a R2 (solo lo que cambió, ya está en disco) ───
-    ficheros_locales = [MANIFEST_PATH]
-    for f in os.listdir(DATOS_DIR):
-        if f.endswith('.json') and f != 'manifest.json':
-            ficheros_locales.append(os.path.join(DATOS_DIR, f))
-    subir_a_r2(ficheros_locales)
 
-
+    subir_a_r2(list(_FICHEROS_ESCRITOS))
 
     # ─── Limpiar huérfanos en R2 ───
-    limpiar_r2_huerfanos(manifest_actual)
+    limpiar_r2_huerfanos(manifest_actual, manifest_prev)
 
     # ─── Turso (HTTP v2) ───
     _turso_ensure_schema()
