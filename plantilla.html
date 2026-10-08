@@ -2169,6 +2169,29 @@ const PRENSA_DEBOUNCE_MS = 1500;
 const PUEDE_COMPARTIR =   //dejar vacío para autodetectar, poner true para TEST.
   typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
+/* ── Fase 2 · días en memoria ── */
+const DIAS_MEMORIA_KEY = 'voceiro-dias-memoria';
+const DIAS_MEMORIA_DEF = 3;
+const DIAS_MEMORIA_VALIDOS = [1, 3, 7, 20];
+const DIAS_MEMORIA_MAX_ALL = 3;
+const DIAS_MEMORIA_MAX_SCOPE = 20;
+
+function cargarDiasMemoria() {
+  try {
+    const raw = localStorage.getItem(DIAS_MEMORIA_KEY);
+    const n = parseInt(raw, 10);
+    if (DIAS_MEMORIA_VALIDOS.includes(n)) return n;
+  } catch(e){}
+  return DIAS_MEMORIA_DEF;
+}
+
+let DIAS_MEMORIA = cargarDiasMemoria();
+
+function diasEfectivos(scope) {
+  const max = (scope.tipo === 'all') ? DIAS_MEMORIA_MAX_ALL : DIAS_MEMORIA_MAX_SCOPE;
+  return Math.min(DIAS_MEMORIA, max);
+}
+
 let PRENSA_ACTIVA = false;
 let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
@@ -4942,6 +4965,104 @@ cont.querySelectorAll('.btn-pend-remove').forEach(b => {
 });
 }
 /* ═══════════════════════════════════════════════════════════════
+   FASE 2 · SCOPE · decidirScope + slicesDelScope
+   Funciones puras: no tocan estado, no hacen fetch.
+   Devuelven estructuras que cargarScope() consumirá.
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Decide qué scope toca según el preset activo.
+ * Devuelve uno de:
+ *   { tipo: 'all' }
+ *   { tipo: 'grupos+dominios', grupos: [...], overrides: [...] }
+ */
+function decidirScope() {
+  const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
+  if (!presetConReglas) {
+    return { tipo: 'all' };
+  }
+
+  // 1. Todos los grupos del preset
+  const grupos = Array.isArray(PRESET.grupos) ? PRESET.grupos.slice() : [];
+  const gruposNorm = new Set(grupos.map(normStrict));
+
+  // 2. Overrides 'first' que NO estén cubiertos por los grupos activos
+  const overrides = [];
+  const ov = PRESET.overrides || {};
+  for (const [dom, v] of Object.entries(ov)) {
+    if (v !== 'first') continue;
+    const m = MEDIOS[dom];
+    if (m && m.g && gruposNorm.has(normStrict(m.g))) {
+      continue;   // ya cubierto por un grupo activo → no duplicar
+    }
+    overrides.push(dom);
+  }
+
+  return { tipo: 'grupos+dominios', grupos, overrides };
+}
+
+/**
+ * Busca un grupo en el bloque dias[i].grupos del manifest.
+ * Match robusto por normStrict: 'Galicia' == 'Regional · Galicia' == 'regional-galicia'.
+ */
+function _buscarGrupoEnDia(diaGrupos, nombreGrupo) {
+  if (!diaGrupos) return null;
+  const objetivo = normStrict(nombreGrupo);
+  for (const [k, v] of Object.entries(diaGrupos)) {
+    if (normStrict(k) === objetivo) return v;
+  }
+  return null;
+}
+
+/**
+ * Construye la lista de slices a pedir según el scope y los días.
+ *
+ * Entrada:
+ *   manifest: manifest actual (con dias[].all / grupos / dominios)
+ *   scope:    resultado de decidirScope()
+ *   diasMax:  cuántos días cargar (1, 3, 7, 20)
+ *
+ * Salida: array de
+ *   { tipo: 'all'|'grupo'|'dominio', fecha, file, dia, [grupo|dominio] }
+ */
+function slicesDelScope(manifest, scope, diasMax) {
+  const out = [];
+  if (!manifest || !Array.isArray(manifest.dias)) return out;
+
+  const dias = manifest.dias.slice(0, diasMax);
+
+  for (const dia of dias) {
+    const fecha = dia.fecha;
+
+    if (scope.tipo === 'all') {
+      if (dia.all && dia.all.file) {
+        out.push({ tipo: 'all', fecha, file: dia.all.file, dia });
+      }
+      continue;
+    }
+
+    // Scope con grupos
+    for (const grupo of scope.grupos) {
+      const g = _buscarGrupoEnDia(dia.grupos, grupo);
+      if (g && g.file) {
+        out.push({ tipo: 'grupo', grupo, fecha, file: g.file, dia });
+      }
+    }
+
+    // Scope con overrides
+    for (const dom of scope.overrides) {
+      const d = dia.dominios && dia.dominios[dom];
+      if (d && d.file) {
+        out.push({ tipo: 'dominio', dominio: dom, fecha, file: d.file, dia });
+      }
+    }
+  }
+
+  return out;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
    CARGA DE DATOS
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
@@ -4964,122 +5085,213 @@ function pintarFechaCabecera(iso){
   }
 }
 
-async function cargarPortada(){
+/* ═══════════════════════════════════════════════════════════════
+   FASE 2 · CARGA POR SCOPE
+   ═══════════════════════════════════════════════════════════════ */
+
+// Estado de dedup a nivel módulo (compartido entre cargas)
+let _urlsCargadas = new Set();
+let _titulosCargados = new Set();
+
+// Fuente: 'all' | 'scope'
+let _scopeActual = null;
+
+/**
+ * Punto de entrada. Reemplaza a cargarPortada().
+ * Descarga el manifest, decide el scope y lanza la carga.
+ */
+async function cargarScope() {
+  // 1) manifest
   const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, { cache: 'no-cache' });
   if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
   _manifest = await manifestRes.json();
-  const ficheros = _manifest.ficheros || [];
-  if (!ficheros.length) throw new Error('manifest sin ficheros');
 
+  // 2) decidir scope
+  const scope = decidirScope();
+  _scopeActual = scope;
+
+  // 3) reset del estado
   MEDIOS = {};
   NOTICIAS = [];
   _hidratadasHasta = 0;
   _dupsHechosHasta = 0;
   _dupsLogged = false;
+  _urlsCargadas = new Set();
+  _titulosCargados = new Set();
 
-  const portadaFile = (_manifest.portada && _manifest.portada.file)
-                      ? _manifest.portada.file
-                      : 'portada.json';   // fallback por si hay manifest viejo cacheado
-
-  try {
-    const r = await fetch(`${DATA_BASE}/${portadaFile}`, { cache: 'force-cache' });
-    if (r.ok){
-      const data = await r.json();
-      if (data.medios) for (const d in data.medios) MEDIOS[d] = data.medios[d];
-      const dia = data.generado ? data.generado.slice(0, 10) : '';
-      for (const n of (data.noticias || [])){
-        n._dia = dia;
-        n._generado = data.generado || '';
-        NOTICIAS.push(n);
-      }
-      pintarFechaCabecera(data.generado);
-    }
-  } catch(e){
-    console.warn('[carga] portada falló, sigo con histórico:', e.message);
+  // 4) carga según scope
+  if (scope.tipo === 'all') {
+    await _cargarInicialAll();
+    _programarAllRestante();
+  } else {
+    await _cargarInicialScope(scope);
+    _programarScopeRestante(scope);
+    _programarPortadaMini();
   }
 
   refrescarVistaCompleta();
 }
 
-const VENTANA_CLIENTE_HORAS = 72;
+/* ── Helpers de merge ── */
 
-function cargarHistoricoEnBackground(){
-  if (!_manifest) return;
-  const todos = _manifest.ficheros || [];
-  if (!todos.length) return;
+function _claveUrl(u, dominio) {
+  const full = u.startsWith('http') ? u
+             : (u.startsWith('/') ? `https://${dominio || ''}${u}` : u);
+  return normalizeUrlForMatch(full);
+}
 
-  const corte = Date.now() - VENTANA_CLIENTE_HORAS * 3600 * 1000;
-  const ficheros = todos.filter(f => {
-    const ts = Date.parse(f.fecha + 'T00:00:00+02:00');
-    return !isNaN(ts) && ts >= corte;
-  });
-  if (!ficheros.length) return;
+async function _fetchJSON(url) {
+  try {
+    const r = await fetch(url, { cache: 'force-cache' });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) {
+    return null;
+  }
+}
 
-  const urlsCargadas = new Set();
-  for (const n of NOTICIAS){
+/**
+ * Mergea un slice/portada en NOTICIAS con dedup por URL + título.
+ * Devuelve cuántas noticias se añadieron.
+ */
+function _mergearSliceData(data) {
+  if (!data) return 0;
+
+  if (data.medios) {
+    for (const d in data.medios) MEDIOS[d] = data.medios[d];
+  }
+
+  const diaFecha = data.fecha || (data.generado ? data.generado.slice(0, 10) : '');
+  const generadoIso = data.generado || '';
+  let añadidas = 0;
+
+  for (const n of (data.noticias || [])) {
     const u = n.u || '';
-    if (u){
-      const full = u.startsWith('http') ? u
-                 : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
-      urlsCargadas.add(normalizeUrlForMatch(full));
+    const dom = n.d || '';
+    const keyUrl = _claveUrl(u, dom);
+
+    if (keyUrl && _urlsCargadas.has(keyUrl)) continue;
+
+    const tit = n.t || '';
+    const keyTit = tit ? normalize(tit) : '';
+    if (keyTit && _titulosCargados.has(keyTit)) continue;
+
+    if (keyUrl) _urlsCargadas.add(keyUrl);
+    if (keyTit) _titulosCargados.add(keyTit);
+
+    n._dia = diaFecha;
+    n._generado = generadoIso;
+    NOTICIAS.push(n);
+    añadidas++;
+  }
+
+  return añadidas;
+}
+
+/* ── Camino "all" ── */
+
+async function _cargarInicialAll() {
+  const portadaFile = (_manifest.portada && _manifest.portada.file)
+                      ? _manifest.portada.file : 'portada.json';
+  const data = await _fetchJSON(`${DATA_BASE}/${portadaFile}`);
+  if (data) {
+    _mergearSliceData(data);
+    pintarFechaCabecera(data.generado);
+  }
+}
+
+function _programarAllRestante() {
+  const n = diasEfectivos({ tipo: 'all' });
+  if (n <= 1) return;
+
+  const dias = (_manifest.dias || []).slice(1, n);
+  if (!dias.length) return;
+
+  const cola = dias.slice();
+  const CONCURRENCIA = 3;
+  const refrescarDeb = debounce(refrescarVistaCompleta, 350);
+
+  async function worker() {
+    while (cola.length) {
+      const dia = cola.shift();
+      if (!dia || !dia.all || !dia.all.file) continue;
+      const data = await _fetchJSON(`${DATA_BASE}/${dia.all.file}`);
+      if (!data) continue;
+      const añadidas = _mergearSliceData(data);
+      if (añadidas > 0) refrescarDeb();
     }
   }
 
-  const ficherosOrdenados = [...ficheros].sort((a, b) =>
-    String(b.fecha).localeCompare(String(a.fecha))
+  Promise.all(
+    Array.from({ length: Math.min(CONCURRENCIA, dias.length) }, worker)
+  ).then(() => {
+    refrescarDeb.cancel();
+    refrescarVistaCompleta();
+  });
+}
+
+/* ── Camino "scope" ── */
+
+async function _cargarInicialScope(scope) {
+  const dias = (_manifest.dias || []).slice(0, 1);   // día 0
+  if (!dias.length) return;
+
+  const urls = slicesDelScope({ dias }, scope, 1);
+  if (!urls.length) return;
+
+  const results = await Promise.all(
+    urls.map(u => _fetchJSON(`${DATA_BASE}/${u.file}`))
   );
 
-  let totalAñadidas = 0;
-  const refrescarDebounced = debounce(refrescarVistaCompleta, 350);
-
-  async function procesarFichero(f){
-    let r;
-    try {
-      r = await fetch(`${DATA_BASE}/${f.file}`, { cache: 'force-cache' });
-    } catch(e){ return; }
-    if (!r.ok) return;
-
-    let data;
-    try { data = await r.json(); } catch(e){ return; }
-
-    const diaFichero      = data.fecha    || '';
-    const generadoFichero = data.generado || '';
-    if (data.medios){
-      for (const d in data.medios) MEDIOS[d] = data.medios[d];
-    }
-
-    let añadidas = 0;
-    for (const n of (data.noticias || [])){
-      const u = n.u || '';
-      const full = u.startsWith('http') ? u
-                 : (u.startsWith('/') ? `https://${n.d || ''}${u}` : u);
-      const clave = normalizeUrlForMatch(full);
-      if (urlsCargadas.has(clave)) continue;
-      urlsCargadas.add(clave);
-      n._dia = diaFichero;
-      n._generado = generadoFichero;
-      NOTICIAS.push(n);
-      añadidas++;
-    }
-    totalAñadidas += añadidas;
-    if (añadidas > 0) refrescarDebounced();
+  let generado = '';
+  for (const data of results) {
+    if (!data) continue;
+    _mergearSliceData(data);
+    if (!generado && data.generado) generado = data.generado;
   }
 
-  const CONCURRENCIA = 6;
-  const cola = ficherosOrdenados.slice();
-  async function worker(){
-    while (cola.length){
-      const f = cola.shift();
-      if (!f) break;
-      await procesarFichero(f);
+  if (generado) pintarFechaCabecera(generado);
+}
+
+function _programarScopeRestante(scope) {
+  const n = diasEfectivos(scope);
+  if (n <= 1) return;
+
+  const dias = (_manifest.dias || []).slice(1, n);
+  if (!dias.length) return;
+
+  const urls = slicesDelScope({ dias }, scope, n - 1);
+  if (!urls.length) return;
+
+  const cola = urls.slice();
+  const CONCURRENCIA = 2;
+  const refrescarDeb = debounce(refrescarVistaCompleta, 350);
+
+  async function worker() {
+    while (cola.length) {
+      const u = cola.shift();
+      if (!u) continue;
+      const data = await _fetchJSON(`${DATA_BASE}/${u.file}`);
+      if (!data) continue;
+      const añadidas = _mergearSliceData(data);
+      if (añadidas > 0) refrescarDeb();
     }
   }
+
   Promise.all(
-    Array.from({ length: Math.min(CONCURRENCIA, ficherosOrdenados.length) }, worker)
+    Array.from({ length: Math.min(CONCURRENCIA, urls.length) }, worker)
   ).then(() => {
-    refrescarDebounced.cancel();
+    refrescarDeb.cancel();
     refrescarVistaCompleta();
-    console.log(`[carga] histórico: +${totalAñadidas} noticias · total ${NOTICIAS.length}`);
+  });
+}
+
+function _programarPortadaMini() {
+  if (!_manifest.portada_mini || !_manifest.portada_mini.file) return;
+  _fetchJSON(`${DATA_BASE}/${_manifest.portada_mini.file}`).then(data => {
+    if (!data) return;
+    const añadidas = _mergearSliceData(data);
+    if (añadidas > 0) refrescarVistaCompleta();
   });
 }
 
@@ -8736,9 +8948,9 @@ async function init(){
     } catch(e){}
   }
 
-  // ── 2) Portada (await) ──
+  // ── 2) Carga inicial (await) ──
   try {
-    await cargarPortada();
+    await cargarScope();
   } catch(err){
     $('#resultados').innerHTML =
       '<div class="vacio">Error cargando datos: ' + escapeHtml(err.message) + '</div>';
@@ -8759,7 +8971,7 @@ async function init(){
   APP_LISTA = true;
 
   // ── 5) Histórico en background ──
-  cargarHistoricoEnBackground();
+  // (cargarScope ya lo programa internamente)
 }
 
 init().catch(err => {
