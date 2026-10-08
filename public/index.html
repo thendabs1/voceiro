@@ -1019,20 +1019,7 @@
     color:var(--block) !important;
     border-color:var(--block) !important;
   }
-  #btn-cargar-mas {
-    background: var(--save-bg) !important;
-    color: var(--save) !important;
-    border-color: var(--save) !important;
-    font-weight: 600;
-    opacity: 1 !important;
-  }
-  #btn-cargar-mas:hover {
-    filter: brightness(.95);
-  }
-  #btn-cargar-mas:disabled {
-    opacity: .6 !important;
-    cursor: wait;
-  }
+
   /* Spacer: empuja 🚫 y 🐞 a la derecha */
   .cab-spacer{flex:1 0 0; min-width:0}
 
@@ -2141,9 +2128,6 @@
 <button id="btn-top" class="btn-top" type="button"
         aria-label="Volver arriba" title="Volver arriba">↑</button>
 <div id="toast-wrap"></div>
-<div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
-  <button id="btn-cargar-mas" class="btn-mini" type="button" style="padding:10px 20px; font-size:.85em;"></button>
-</div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
 <script type="module">
@@ -2169,7 +2153,6 @@ const REPORT_EMAIL = 'thendabs1@gmail.com';
 const REPORT_REPO = 'thendabs1/voceiro';
 const DATA_BASE = 'https://voceiro-datos.toriorecorda.workers.dev';
 const WORKER_BUSCAR = 'https://voceiro-buscar.toriorecorda.workers.dev';
-const HISTORICO_MIN_LOCALES = 20;
 const PRENSA_CACHE_KEY = 'voceiro-prensa-cache-v1';
 const PRENSA_CACHE_TTL_MS = 30 * 60 * 1000;
 const PRENSA_MIN_RESULTADOS = 5;
@@ -4114,23 +4097,7 @@ function _vsOutsideClick(e){
 /* ── Fase 2 · relanzar carga (cambio de días o de preset) ── */
 
 let _relanzarTimer = null;
-function relanzarCarga() {
-  if (_relanzarTimer) clearTimeout(_relanzarTimer);
-  _relanzarTimer = setTimeout(async () => {
-    _relanzarTimer = null;
-    const cont = $('#resultados');
-    if (cont) cont.innerHTML = '<div class="vacio">Cargando…</div>';
-    try {
-      await cargarScope();
-      // Tras cargar, reaplicar filtros pero SIN relanzar (evitar bucle)
-      const raw = $('#buscar').value.trim();
-      _aplicarFiltrosInterno(raw);
-    } catch(e) {
-      console.error('[relanzar]', e);
-      if (cont) cont.innerHTML = '<div class="vacio">Error: ' + escapeHtml(e.message) + '</div>';
-    }
-  }, 150);
-}
+
 function actualizarBotonPreset(){
   const btn = $('#btn-preset');
   if (!btn) return;
@@ -4925,42 +4892,6 @@ cont.querySelectorAll('.btn-pend-remove').forEach(b => {
   };
 });
 }
-/* ═══════════════════════════════════════════════════════════════
-   FASE 2 · SCOPE · decidirScope + slicesDelScope
-   Funciones puras: no tocan estado, no hacen fetch.
-   Devuelven estructuras que cargarScope() consumirá.
-   ═══════════════════════════════════════════════════════════════ */
-
-/**
- * Decide qué scope toca según el preset activo.
- * Devuelve uno de:
- *   { tipo: 'all' }
- *   { tipo: 'grupos+dominios', grupos: [...], overrides: [...] }
- */
-function decidirScope() {
-  const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
-  if (!presetConReglas) {
-    return { tipo: 'all' };
-  }
-
-  // 1. Todos los grupos del preset
-  const grupos = Array.isArray(PRESET.grupos) ? PRESET.grupos.slice() : [];
-  const gruposNorm = new Set(grupos.map(normStrict));
-
-  // 2. Overrides 'first' que NO estén cubiertos por los grupos activos
-  const overrides = [];
-  const ov = PRESET.overrides || {};
-  for (const [dom, v] of Object.entries(ov)) {
-    if (v !== 'first') continue;
-    const m = MEDIOS[dom];
-    if (m && m.g && gruposNorm.has(normStrict(m.g))) {
-      continue;   // ya cubierto por un grupo activo → no duplicar
-    }
-    overrides.push(dom);
-  }
-
-  return { tipo: 'grupos+dominios', grupos, overrides };
-}
 
 /**
  * Busca un grupo en el bloque dias[i].grupos del manifest.
@@ -4975,54 +4906,243 @@ function _buscarGrupoEnDia(diaGrupos, nombreGrupo) {
   return null;
 }
 
-/**
- * Construye la lista de slices a pedir según el scope y los días.
- *
- * Entrada:
- *   manifest: manifest actual (con dias[].all / grupos / dominios)
- *   scope:    resultado de decidirScope()
- *   diasMax:  cuántos días cargar (1, 3, 7, 20)
- *
- * Salida: array de
- *   { tipo: 'all'|'grupo'|'dominio', fecha, file, dia, [grupo|dominio] }
- */
-function slicesDelScope(manifest, scope, diasMax) {
-  const out = [];
-  if (!manifest || !Array.isArray(manifest.dias)) return out;
 
-  const dias = manifest.dias.slice(0, diasMax);
+// ─── Decidir qué capas necesita el estado actual ───
+function capasRequeridas(parsed) {
+  const set = new Set();
+
+  // 1) Preset activo → sus grupos + overrides 'first'
+  if (PRESET_ACTIVO && presetTieneReglas()) {
+    (PRESET.grupos || []).forEach(g => set.add('grupo:' + g));
+    Object.entries(PRESET.overrides || {}).forEach(([d, v]) => {
+      if (v === 'first') set.add('dominio:' + d);
+    });
+  }
+
+  // 2) Filtros explícitos del usuario
+  (parsed.grupos || []).forEach(g => set.add('grupo:' + g));
+  (parsed.dominios || []).forEach(d => set.add('dominio:' + d));
+  (parsed.medios || []).forEach(m => {
+    const dom = MEDIOS_POR_NOMBRE.get(m);   // m ya viene normStrict
+    if (dom) set.add('dominio:' + dom);
+  });
+
+  return set;
+}
+
+// ─── ¿Hay que consultar Turso? ───
+function necesitaTurso(parsed) {
+  if (parsed.titulo.length) return true;
+  if (parsed.tipos.length)  return true;
+  if (parsed.tags.length)   return true;
+  if (parsed.lang.length)   return true;
+  if (parsed.desde || parsed.hasta) return true;
+  // Grupos/dominios sin slice en manifest → Turso
+  if ((parsed.grupos || []).some(g => !_grupoTieneSlice(g))) return true;
+  if ((parsed.dominios || []).some(d => !_dominioTieneSlice(d))) return true;
+  // Medios por nombre: siempre Turso
+  if ((parsed.medios || []).length) return true;
+  return false;
+}
+
+function _grupoTieneSlice(nombreGrupo) {
+  if (!_manifest || !_manifest.dias || !_manifest.dias.length) return false;
+  const dia0 = _manifest.dias[0];
+  return !!(dia0.grupos && _buscarGrupoEnDia(dia0.grupos, nombreGrupo));
+}
+
+function _dominioTieneSlice(dom) {
+  if (!_manifest || !_manifest.dias || !_manifest.dias.length) return false;
+  const dia0 = _manifest.dias[0];
+  return !!(dia0.dominios && dia0.dominios[dom]);
+}
+
+// ─── Mergear items de una capa/base en NOTICIAS con dedup global ───
+// Devuelve cuántos items NUEVOS se añadieron.
+function _mergearItemsEnNoticias(items, capaKey) {
+  let añadidos = 0;
+
+  for (const n of items) {
+    const u = _claveUrl(n.u || '', n.d || '');
+    const t = n.t ? normalize(n.t) : '';
+
+    // ¿Ya existe por URL?
+    if (u) {
+      const existente = _itemPorUrl.get(u);
+      if (existente) {
+        existente._capas.add(capaKey);
+        continue;
+      }
+    }
+    // ¿Ya existe por título?
+    if (t) {
+      const existente = _itemPorTitulo.get(t);
+      if (existente) {
+        existente._capas.add(capaKey);
+        continue;
+      }
+    }
+
+    // Es nuevo
+    if (u) _urlsCargadas.add(u);
+    if (t) _titulosCargados.add(t);
+
+    n._capas = new Set([capaKey]);
+    n._dia = n._dia || '';
+    n._generado = n._generado || '';
+    NOTICIAS.push(n);
+    if (u) _itemPorUrl.set(u, n);
+    if (t) _itemPorTitulo.set(t, n);
+    añadidos++;
+  }
+
+  return añadidos;
+}
+
+// ─── Cargar una capa desde R2 ───
+async function _cargarCapa(key, signal) {
+  const [tipo, valor] = key.split(':', 2);
+  if (!_manifest || !_manifest.dias || !_manifest.dias.length) return 0;
+
+  const diasMax = Math.min(DIAS_MEMORIA, DIAS_MEMORIA_MAX_SCOPE);
+  const dias = _manifest.dias.slice(0, diasMax);  
+  const files = [];
 
   for (const dia of dias) {
-    const fecha = dia.fecha;
-
-    if (scope.tipo === 'all') {
-      if (dia.all && dia.all.file) {
-        out.push({ tipo: 'all', fecha, file: dia.all.file, dia });
-      }
-      continue;
-    }
-
-    // Scope con grupos
-    for (const grupo of scope.grupos) {
-      const g = _buscarGrupoEnDia(dia.grupos, grupo);
-      if (g && g.file) {
-        out.push({ tipo: 'grupo', grupo, fecha, file: g.file, dia });
-      }
-    }
-
-    // Scope con overrides
-    for (const dom of scope.overrides) {
-      const d = dia.dominios && dia.dominios[dom];
-      if (d && d.file) {
-        out.push({ tipo: 'dominio', dominio: dom, fecha, file: d.file, dia });
-      }
+    if (tipo === 'grupo') {
+      const g = _buscarGrupoEnDia(dia.grupos, valor);
+      if (g && g.file) files.push(g.file);
+    } else if (tipo === 'dominio') {
+      const d = dia.dominios && dia.dominios[valor];
+      if (d && d.file) files.push(d.file);
     }
   }
 
-  return out;
+  if (!files.length) return 0;
+
+  // Fetch con concurrencia 3
+  const cola = files.slice();
+  const nuevos = [];
+  const workers = Array.from({ length: Math.min(3, cola.length) }, async () => {
+    while (cola.length) {
+      if (signal.aborted) return;
+      const f = cola.shift();
+      const data = await _fetchJSON(`${DATA_BASE}/${f}`, signal);
+      if (!data) continue;
+      if (data.medios) {
+        for (const d in data.medios) MEDIOS[d] = data.medios[d];
+      }
+      const diaFecha = data.fecha || '';
+      const generadoIso = data.generado || '';
+      for (const n of (data.noticias || [])) {
+        n._dia = diaFecha;
+        n._generado = generadoIso;
+        nuevos.push(n);
+      }
+    }
+  });
+  await Promise.all(workers);
+
+  const añadidos = _mergearItemsEnNoticias(nuevos, key);
+  LAYERS.set(key, {
+    files,
+    cargada: Date.now(),
+    lastUse: Date.now(),
+    n: añadidos,
+  });
+  _itemsCargadosDeCapas += añadidos;
+  return añadidos;
 }
 
+// ─── Asegurar capas: carga las que falten, respeta el cap ───
+async function asegurarCapas(capas, signal) {
+  const faltantes = [...capas].filter(k => !LAYERS.has(k));
+  if (!faltantes.length) return false;
 
+  if (_itemsCargadosDeCapas >= LAYER_MAX_ITEMS) {
+    toast('Límite de capas alcanzado. Recarga la página para resetear.', 3200);
+    return false;
+  }
+
+  // Fetch en serie, una por una, para que el cap se respete
+  let total = 0;
+  for (const key of faltantes) {
+    if (signal.aborted) return total > 0;
+    if (_itemsCargadosDeCapas >= LAYER_MAX_ITEMS) break;
+    try {
+      const n = await _cargarCapa(key, signal);
+      total += n;
+    } catch(e) {
+      if (e.name !== 'AbortError') console.warn('[capa]', key, e.message);
+    }
+  }
+  return total > 0;
+}
+
+// ─── Cargar base (portada) ───
+async function cargarBase() {
+  _cargandoScope = true;
+  let myGen = 0;
+  try {
+    if (_scopeAbort) _scopeAbort.abort();
+    _scopeAbort = new AbortController();
+    myGen = ++_scopeGeneration;
+    const signal = _scopeAbort.signal;
+
+    // 1) Manifest
+    const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, {
+      cache: 'no-cache', signal
+    });
+    if (myGen !== _scopeGeneration) return;
+    if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
+    _manifest = await manifestRes.json();
+    if (myGen !== _scopeGeneration) return;
+
+    // 2) Reset
+    MEDIOS = {};
+    NOTICIAS = [];
+    BASE.items = [];
+    BASE.cargada = false;
+    LAYERS.clear();
+    _itemsCargadosDeCapas = 0;
+    _itemPorUrl.clear();
+    _itemPorTitulo.clear();
+    _urlsCargadas = new Set();
+    _titulosCargados = new Set();
+    _hidratadasHasta = 0;
+    _dupsHechosHasta = 0;
+    _dupsLogged = false;
+
+    // 3) Base = portada
+    const portadaFile = (_manifest.portada && _manifest.portada.file)
+                        ? _manifest.portada.file : 'portada.json';
+    const data = await _fetchJSON(`${DATA_BASE}/${portadaFile}`, signal);
+    if (data) {
+      if (data.medios) {
+        for (const d in data.medios) MEDIOS[d] = data.medios[d];
+      }
+      const generado = data.generado || '';
+      for (const n of (data.noticias || [])) {
+        n._dia = data.fecha || '';
+        n._generado = generado;
+        BASE.items.push(n);
+      }
+      BASE.cargada = true;
+      BASE.generado = generado;
+      _mergearItemsEnNoticias(BASE.items, 'base');
+      pintarFechaCabecera(generado);
+    }
+
+    if (myGen === _scopeGeneration) refrescarVistaCompleta();
+  } catch(e) {
+    if (e.name === 'AbortError') return;
+    throw e;
+  } finally {
+    if (myGen === _scopeGeneration) {
+      _cargandoScope = false;
+    }
+  }
+}
 /* ═══════════════════════════════════════════════════════════════
    CARGA DE DATOS
    ═══════════════════════════════════════════════════════════════ */
@@ -5064,69 +5184,30 @@ let _scopeActual = null;
 let _scopeAbort = null;
 let _scopeGeneration = 0;
 
-async function cargarScope() {
-  // Marcar como "cargando" durante toda la operación.
-  // Sin esto, aplicarFiltros() (que se llama en cada refrescarVistaCompleta)
-  // dispara nuevos relanzarCarga en cascada → 354 requests.
-  _cargandoScope = true;
-  let myGen = 0;
-  try {
-    // Cancelar cualquier carga anterior en curso
-    if (_scopeAbort) _scopeAbort.abort();
-    _scopeAbort = new AbortController();
-    myGen = ++_scopeGeneration;
-    const signal = _scopeAbort.signal;
 
-    // 1) manifest
-    const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, {
-      cache: 'no-cache', signal
-    });
-    if (myGen !== _scopeGeneration) return;
-    if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
-    _manifest = await manifestRes.json();
-    if (myGen !== _scopeGeneration) return;
 
-    // 2) decidir scope y actualizarlo YA (antes de seguir)
-    const scope = decidirScope();
-    _scopeActual = scope;
+// ═══════════════════════════════════════════════════════════════
+// MODELO BASE + CAPAS
+// BASE  = portada (siempre cargada)
+// LAYER = slice (grupo o dominio) cargado on-demand
+// NOTICIAS = vista materializada (BASE ∪ LAYERS)
+// ═══════════════════════════════════════════════════════════════
 
-    // 3) reset del estado
-    MEDIOS = {};
-    NOTICIAS = [];
-    _hidratadasHasta = 0;
-    _dupsHechosHasta = 0;
-    _dupsLogged = false;
-    _urlsCargadas = new Set();
-    _titulosCargados = new Set();
+const BASE = { items: [], cargada: false, generado: '' };
 
-    // 4) carga según scope
-    if (scope.tipo === 'all') {
-      await _cargarInicialAll(signal);
-      _programarAllRestante(signal);
-    } else {
-      await _cargarInicialScope(scope, signal);
-      _programarScopeRestante(scope, signal);
-      _programarPortadaMini(signal);
-    }
+// key: 'grupo:nacional' | 'dominio:elpais.com'
+// { items, files: [urls], cargada: ts, lastUse: ts }
+const LAYERS = new Map();
 
-    if (myGen === _scopeGeneration) refrescarVistaCompleta();
-    // NO anulamos _scopeAbort. Dejamos que el siguiente cargarScope lo aborte.
-  } catch(e) {
-    // Si fuimos abortados por una carga más reciente, silencio total:
-    // el nuevo cargarScope ya está pintando lo suyo.
-    if (e.name === 'AbortError') return;
-    throw e;
-  } finally {
-    // Solo el cargarScope más reciente puede resetear _cargandoScope
-    // y programar relanzar. Si fuimos abortados por otro, no tocamos nada
-    // (el nuevo cargarScope se encargará al terminar).
-    if (myGen === _scopeGeneration) {
-      _cargandoScope = false;
-      _programarRelanzarSiCambiaScope();
-    }
-  }
-}
+const LAYER_MAX_ITEMS = 40000;   // cap de items únicos cargados desde capas
+let _itemsCargadosDeCapas = 0;
 
+// Índice inverso: url/título → item en NOTICIAS. Para añadir capas sin duplicar.
+const _itemPorUrl = new Map();
+const _itemPorTitulo = new Map();
+
+// Contador de generación para aplicarFiltros (race conditions)
+let _genAplicar = 0;
 
 /* ── Helpers de merge ── */
 
@@ -5150,151 +5231,6 @@ async function _fetchJSON(url, signal) {
  * Mergea un slice/portada en NOTICIAS con dedup por URL + título.
  * Devuelve cuántas noticias se añadieron.
  */
-function _mergearSliceData(data, signal) {
-  if (signal && signal.aborted) return 0;
-  if (!data) return 0;
-
-  if (data.medios) {
-    for (const d in data.medios) MEDIOS[d] = data.medios[d];
-  }
-
-  const diaFecha = data.fecha || (data.generado ? data.generado.slice(0, 10) : '');
-  const generadoIso = data.generado || '';
-  let añadidas = 0;
-
-  for (const n of (data.noticias || [])) {
-    const u = n.u || '';
-    const dom = n.d || '';
-    const keyUrl = _claveUrl(u, dom);
-
-    if (keyUrl && _urlsCargadas.has(keyUrl)) continue;
-
-    const tit = n.t || '';
-    const keyTit = tit ? normalize(tit) : '';
-    if (keyTit && _titulosCargados.has(keyTit)) continue;
-
-    if (keyUrl) _urlsCargadas.add(keyUrl);
-    if (keyTit) _titulosCargados.add(keyTit);
-
-    n._dia = diaFecha;
-    n._generado = generadoIso;
-    NOTICIAS.push(n);
-    añadidas++;
-  }
-
-  return añadidas;
-}
-
-/* ── Camino "all" ── */
-
-async function _cargarInicialAll(signal) {
-  const portadaFile = (_manifest.portada && _manifest.portada.file)
-                      ? _manifest.portada.file : 'portada.json';
-  const data = await _fetchJSON(`${DATA_BASE}/${portadaFile}`, signal);
-  if (data) {
-    _mergearSliceData(data);
-    pintarFechaCabecera(data.generado);
-  }
-}
-
-function _programarAllRestante(signal) {
-  const n = diasEfectivos({ tipo: 'all' });
-  if (n <= 1) return;
-
-  const dias = (_manifest.dias || []).slice(1, n);
-  if (!dias.length) return;
-
-  const cola = dias.slice();
-  const CONCURRENCIA = 3;
-  const refrescarDeb = debounce(refrescarVistaCompleta, 350);
-
-  async function worker() {
-    while (cola.length) {
-      if (signal.aborted) return;   // ← NUEVO
-      const dia = cola.shift();
-      if (!dia || !dia.all || !dia.all.file) continue;
-      const data = await _fetchJSON(`${DATA_BASE}/${dia.all.file}`, signal);
-      if (!data) continue;
-      const añadidas = _mergearSliceData(data);
-      if (añadidas > 0) refrescarDeb();
-    }
-  }
-
-  Promise.all(
-    Array.from({ length: Math.min(CONCURRENCIA, dias.length) }, worker)
-  ).then(() => {
-    refrescarDeb.cancel();
-    refrescarVistaCompleta();
-  });
-}
-
-/* ── Camino "scope" ── */
-
-async function _cargarInicialScope(scope, signal) {
-  const dias = (_manifest.dias || []).slice(0, 1);   // día 0
-  if (!dias.length) return;
-
-  const urls = slicesDelScope({ dias }, scope, 1);
-  if (!urls.length) return;
-
-  const results = await Promise.all(
-    urls.map(u => _fetchJSON(`${DATA_BASE}/${u.file}`, signal))
-  );
-
-  let generado = '';
-  for (const data of results) {
-    if (!data) continue;
-    _mergearSliceData(data);
-    if (!generado && data.generado) generado = data.generado;
-  }
-
-  if (generado) pintarFechaCabecera(generado);
-}
-
-function _programarScopeRestante(scope, signal) {
-  const n = diasEfectivos(scope);
-  if (n <= 1) return;
-
-  const dias = (_manifest.dias || []).slice(1, n);
-  if (!dias.length) return;
-
-  const urls = slicesDelScope({ dias }, scope, n - 1);
-  if (!urls.length) return;
-
-  const cola = urls.slice();
-  const CONCURRENCIA = 2;
-  const refrescarDeb = debounce(refrescarVistaCompleta, 350);
-
-  async function worker() {
-    while (cola.length) {
-      if (signal.aborted) return;
-      const u = cola.shift();
-      if (!u) continue;
-      const data = await _fetchJSON(`${DATA_BASE}/${u.file}`, signal);
-      if (!data) continue;
-      const añadidas = _mergearSliceData(data);
-      if (añadidas > 0) refrescarDeb();
-    }
-  }
-
-  Promise.all(
-    Array.from({ length: Math.min(CONCURRENCIA, urls.length) }, worker)
-  ).then(() => {
-    refrescarDeb.cancel();
-    refrescarVistaCompleta();
-  });
-}
-
-function _programarPortadaMini(signal) {
-  if (!_manifest.portada_mini || !_manifest.portada_mini.file) return;
-  _fetchJSON(`${DATA_BASE}/${_manifest.portada_mini.file}`, signal).then(data => {
-    if (signal.aborted) return;
-    if (!data) return;
-    const añadidas = _mergearSliceData(data);
-    if (añadidas > 0) refrescarVistaCompleta();
-  });
-}
-
 
 function refrescarVistaCompleta(){
   hidratarNoticias();
@@ -6999,138 +6935,11 @@ let ULT_FILTRADAS = [];
 let ULT_RX = null;
 let ULT_PRESET_EFECTIVO = false;
 let ULT_BANNER_INFO = null;
-let ULT_BANNER_HISTORICO_EXTRA = 0;
 
 const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
 
-/* ───────────────────────────────────────────────────────────
-   Búsqueda en histórico (Turso vía Worker /buscar)
-   ─────────────────────────────────────────────────────────── */
-let HISTORICO_ABORT = null;
-let ULT_HISTORICO_PARSED = null;
-let HISTORICO_PAG = {
-  parsed: null,       // snapshot con el que se paginó
-  raw: '',            // raw original
-  offset: 0,          // offset actual
-  total: 0,           // total que dijo el Worker
-  next: null,         // siguiente offset o null
-  cargando: false,
-  agotado: false,     // true cuando no hay más
-};
-
-
-async function buscarEnHistorico(parsed, rawQuery, { silent = false, offset = 0 } = {}) {
-  if (HISTORICO_ABORT) HISTORICO_ABORT.abort();
-  HISTORICO_ABORT = new AbortController();
-
-  const params = new URLSearchParams();
-  params.set('raw', rawQuery || '');
-  params.set('limit', '30');
-  params.set('offset', String(offset));
-  params.set('order', parsed.titulo.length ? 'relevancia' : 'recientes');
-
-  try {
-    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, {
-      signal: HISTORICO_ABORT.signal,
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  } catch (e) {
-    if (e.name === 'AbortError') return null;
-    console.warn('[historico]', e.message);
-    if (!silent) toast(`Error buscando en histórico: ${e.message}`, 2600);
-    return null;
-  }
-}
-
-function mergeHistorico(locales, historicoItems) {
-  if (!historicoItems || !historicoItems.length) return locales;
-
-  const yaVistas = new Set();
-  const titulosVistos = new Set();
-  for (const n of locales){
-    yaVistas.add(normalizeUrlForMatch(n.enlace));
-    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-    if (tn) titulosVistos.add(tn);
-  }
-  const nuevos = [];
-  const horizonte = Date.now() + HORIZONTE_FUTURO_MS;
-
-  for (const it of historicoItems) {
-    // Convertir URL corta del Worker a URL completa
-    const u_raw = it.u || '';
-    let enlace;
-    if (u_raw.startsWith('http://') || u_raw.startsWith('https://')) {
-      enlace = u_raw;
-    } else if (u_raw.startsWith('/')) {
-      const m = MEDIOS[it.d] || {};
-      const host = m.h || `www.${it.d}`;
-      enlace = `https://${host}${u_raw}`;
-    } else {
-      enlace = u_raw;
-    }
-
-    const key = normalizeUrlForMatch(enlace);
-    if (yaVistas.has(key)) continue;
-
-    // Mismo caso que en mergePrensa: noticias de GNews guardadas en
-    // Turso pueden volver con un redirect distinto al de la portada.
-    const titNorm = normalize(it.t || '');
-    if (titNorm && titulosVistos.has(titNorm)) continue;
-
-    yaVistas.add(key);
-    if (titNorm) titulosVistos.add(titNorm);
-
-    const m = MEDIOS[it.d] || {};
-    const n = {
-      dominio: it.d || '',
-      titular: limpiarCdata(it.t || ''),
-      enlace: enlace,
-      fecha_pub: it.p || '',
-      fecha_estimada: it.e || '',
-      fecha: '',
-      fuente: it.f || 'TURSO',
-      medio: m.n || it.d,
-      grupo: m.g || '',
-      tipo:  m.t || '',
-      lang:  m.l || '',
-      tags:  m.tags || [],
-      _desdeHistorico: true,
-    };
-
-    n._titularEsc = escapeHtml(n.titular);
-    n._medioEsc   = escapeHtml(n.medio);
-    n._tipoEsc    = escapeHtml(n.tipo);
-    n._grupoEsc   = escapeHtml(n.grupo);
-    n._enlaceEsc  = escapeHtml(n.enlace);
-
-    const tsPub = parseFecha(n.fecha_pub);
-    const tsEst = parseFecha(n.fecha_estimada);
-
-    n._tsShow   = !isNaN(tsPub) ? tsPub : (!isNaN(tsEst) ? tsEst : NaN);
-    n._tsOrden  = (!isNaN(tsPub) && tsPub <= horizonte) ? tsPub
-                : (!isNaN(tsEst) ? tsEst : NaN);
-    n._tipoShow = !isNaN(tsPub) ? 'pub' : (!isNaN(tsEst) ? 'est' : 'none');
-    n._esFuturo = !isNaN(tsPub) && (tsPub > horizonte);
-    n._tieneFecha = !isNaN(n._tsOrden);
-    n._esPreset = false;
-    n._dupHidden = null;
-
-    nuevos.push(n);
-  }
-
-  if (!nuevos.length) return locales;
-
-  const merged = locales.concat(nuevos);
-  merged.sort((a, b) => {
-    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
-    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
-    return tb - ta;
-  });
-  return merged;
-}
 
 /* ═══════════════════════════════════════════════════════════════
    PRENSA EXTERNA (vía Worker: gnews + freenews)
@@ -7300,6 +7109,29 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
     return null;
   }
 }
+
+async function buscarEnWorker(parsed, rawQuery) {
+  const params = new URLSearchParams();
+  params.set('raw', rawQuery || '');
+  params.set('limit', '50');
+  params.set('offset', '0');
+  params.set('fuentes', 'turso');
+  try {
+    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    // Convertir items del worker al formato interno
+    return (data.items || []).map(it => ({
+      u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
+      _src: 'turso',
+    }));
+  } catch(e) {
+    if (e.name !== 'AbortError') console.warn('[worker]', e.message);
+    return [];
+  }
+}
+
+
 function mergePrensa(locales, prensaItems){
   if (!prensaItems || !prensaItems.length) return locales;
 
@@ -7461,41 +7293,43 @@ function programarPrensa(parsed, rawQuery, nLocales){
   }, PRENSA_DEBOUNCE_MS);
 }
 
-/* ── Fase 2 · detección de cambio de scope ── */
-function _scopeEquals(a, b) {
-  if (!a || !b) return false;
-  if (a.tipo !== b.tipo) return false;
-  if (a.tipo === 'all') return true;
-  const aG = (a.grupos || []).slice().sort().join('|');
-  const bG = (b.grupos || []).slice().sort().join('|');
-  const aO = (a.overrides || []).slice().sort().join('|');
-  const bO = (b.overrides || []).slice().sort().join('|');
-  return aG === bG && aO === bO;
-}
 
-let _scopePendiente = null;
-let _scopeTimer = null;
-function _programarRelanzarSiCambiaScope() {
-  if (_cargandoScope) return;
-  const nuevo = decidirScope();
-  if (_scopeEquals(nuevo, _scopeActual)) return;
-  _scopePendiente = nuevo;
-  if (_scopeTimer) clearTimeout(_scopeTimer);
-  _scopeTimer = setTimeout(() => {
-    _scopePendiente = null;
-    _scopeTimer = null;
-    relanzarCarga();
-  }, 300);
-}
 function aplicarFiltros(){
-  // Detectar cambio de scope antes de filtrar
-  _programarRelanzarSiCambiaScope();
+  const myGen = ++_genAplicar;
 
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
+
+  // ── Decidir fuentes ──
+  const capas = capasRequeridas(parsed);
+  const usarTurso = necesitaTurso(parsed);
+
+  // Disparo R2 en background
+  if (capas.size) {
+    const signal = new AbortController().signal;
+    asegurarCapas(capas, signal).then(trajo => {
+      if (myGen !== _genAplicar) return;   // respuesta vieja
+      if (trajo) aplicarFiltros();
+    });
+  }
+
+  // Disparo Turso en paralelo si aplica
+  if (usarTurso) {
+    buscarEnWorker(parsed, raw).then(items => {
+      if (myGen !== _genAplicar) return;   // respuesta vieja
+      if (!items || !items.length) return;
+      const nuevos = _mergearItemsEnNoticias(items, 'turso');
+      if (nuevos > 0) {
+        // Reset hidratación y re-filtrar
+        _hidratadasHasta = 0;
+        hidratarNoticias();
+        aplicarFiltros();
+      }
+    });
+  }
 
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
@@ -7642,7 +7476,6 @@ function aplicarFiltros(){
   ULT_PRESET_EFECTIVO = presetEfectivo;
 
   // ── Banner del preset ──
-  ULT_BANNER_HISTORICO_EXTRA = 0;
   ULT_BANNER_INFO = {
     nDentro: filtradas.length,
     nFuera: fueraDelPreset,
@@ -7655,37 +7488,6 @@ function aplicarFiltros(){
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
 
-  ULT_HISTORICO_PARSED = null;
-  HISTORICO_PAG = { parsed: null, raw: '', offset: 0, total: 0, next: null, cargando: false, agotado: false };
-
-  const quiereHistorico = (parsed.titulo.length || parsed.dominios.length || parsed.medios.length)
-                          && filtradas.length < HISTORICO_MIN_LOCALES;
-
-  if (quiereHistorico) {
-    ULT_HISTORICO_PARSED = parsed;
-    buscarEnHistorico(parsed, raw, { silent: true }).then(res => {
-      if (!res || !res.items || !res.items.length) return;
-      if (ULT_HISTORICO_PARSED !== parsed) return;
-      const antes = ULT_FILTRADAS.length;
-      const merged = mergeHistorico(ULT_FILTRADAS, res.items);
-      const filtrado = aplicarTier3(merged);
-      const nuevas = filtrado.length - antes;
-      if (nuevas > 0){
-        ULT_FILTRADAS = filtrado;
-        renderizar();
-        ULT_BANNER_HISTORICO_EXTRA += nuevas;
-        if (ULT_BANNER_INFO) ULT_BANNER_INFO.nDentro = ULT_FILTRADAS.length;
-        renderPresetBanner();
-      }
-      HISTORICO_PAG.parsed = parsed;
-      HISTORICO_PAG.raw = raw;
-      HISTORICO_PAG.offset = res.items.length;
-      HISTORICO_PAG.total = res.total || 0;
-      HISTORICO_PAG.next = res.next_offset;
-      actualizarFiltrosCount();
-      actualizarBotonCargarMas();
-    });
-  }
 
   if (APP_LISTA && RECORDAR_FILTROS){
     try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
@@ -7695,105 +7497,9 @@ function aplicarFiltros(){
 
 /* ── Renombrada: cuerpo de aplicarFiltros sin el trigger de scope ── */
 let _cargandoScope = false;
-function _aplicarFiltrosInterno(raw) {
-  _cargandoScope = true;
-  try {
-    aplicarFiltros();
-  } finally {
-    _cargandoScope = false;
-  }
-}
-function actualizarBotonCargarMas() {
-  const wrap = document.getElementById('cargar-mas-wrap');
-  const btn  = document.getElementById('btn-cargar-mas');
-  if (!wrap || !btn) return;
 
-  // Ocultar si no hay paginación activa
-  if (!HISTORICO_PAG.parsed || !HISTORICO_PAG.next) {
-    wrap.style.display = 'none';
-    return;
-  }
 
-  wrap.style.display = '';
-  if (HISTORICO_PAG.cargando) {
-    btn.textContent = 'Cargando…';
-    btn.disabled = true;
-  } else {
-    const dom = HISTORICO_PAG.parsed.dominios[0]
-             || HISTORICO_PAG.parsed.medios[0]
-             || 'resultados';
-    const cargados = ULT_FILTRADAS.filter(n => n._desdeHistorico).length;
-    btn.textContent = `📥 Cargar más de ${dom} (${cargados} cargados)`;
-    btn.disabled = false;
-  }
-}
 
-async function cargarMasDeHistorico() {
-  if (HISTORICO_PAG.cargando) return;
-  if (!HISTORICO_PAG.next) return;
-  if (!HISTORICO_PAG.parsed) return;
-
-  HISTORICO_PAG.cargando = true;
-  actualizarBotonCargarMas();
-
-  const parsedSnap = HISTORICO_PAG.parsed;
-  const offsetSnap = HISTORICO_PAG.next;
-
-  try {
-    const res = await buscarEnHistorico(parsedSnap, HISTORICO_PAG.raw, {
-      silent: true, offset: offsetSnap,
-    });
-
-    if (HISTORICO_PAG.parsed !== parsedSnap) return;
-    if (!res || !res.items || !res.items.length) {
-      HISTORICO_PAG.agotado = true;
-      HISTORICO_PAG.next = null;
-      return;
-    }
-
-    // Guardamos referencia al array viejo ANTES del merge.
-    // mergeHistorico hace concat + sort, pero conserva las referencias
-    // de los items viejos → podemos comparar por identidad.
-    const arrayViejo = ULT_FILTRADAS;
-    const antes = arrayViejo.length;
-
-    const merged = mergeHistorico(arrayViejo, res.items);
-    const filtrado = aplicarTier3(merged);
-    const nuevas = filtrado.length - antes;
-
-    ULT_FILTRADAS = filtrado;
-    HISTORICO_PAG.offset += res.items.length;
-    HISTORICO_PAG.next = res.next_offset;
-    if (!res.next_offset) HISTORICO_PAG.agotado = true;
-
-    if (nuevas > 0) {
-      // ¿Los items viejos siguen ocupando las mismas posiciones [0..antes-1]?
-      // Si sí → append limpio (rápido, sin scroll jump).
-      // Si no → algún item nuevo se ha colado en medio → render completo.
-      let esAppendLimpio = true;
-      for (let i = 0; i < antes; i++) {
-        if (filtrado[i] !== arrayViejo[i]) { esAppendLimpio = false; break; }
-      }
-
-      if (esAppendLimpio) {
-        appendBatchDesdeOffset(antes, filtrado.length);
-      } else {
-        renderizar();
-      }
-
-      ULT_BANNER_HISTORICO_EXTRA += nuevas;
-      if (ULT_BANNER_INFO) ULT_BANNER_INFO.nDentro = ULT_FILTRADAS.length;
-      renderPresetBanner();
-    }
-
-    actualizarFiltrosCount();
-  } catch(e) {
-    console.warn('[cargar-mas]', e.message);
-  } finally {
-    HISTORICO_PAG.cargando = false;
-    actualizarBotonCargarMas();
-  }
-}
 function renderPresetBanner(){
   const aviso = document.getElementById('preset-aviso');
   if (!aviso) return;
@@ -7821,10 +7527,6 @@ function renderPresetBanner(){
   if (info.nFuera > 0){
     txt += ' · ' + t('presetBannerOutside', { n: info.nFuera });
   }
-  if (ULT_BANNER_HISTORICO_EXTRA > 0){
-    txt += ' · +' + ULT_BANNER_HISTORICO_EXTRA + ' ' + t('presetBannerExtra');
-  }
-
   const txtEl = document.getElementById('preset-aviso-txt');
   const btnEl = document.getElementById('preset-aviso-ampliar');
   if (txtEl) txtEl.textContent = txt;
@@ -7837,17 +7539,10 @@ function renderizar(){
   const nMostrados = lista.length;
   const nCargados = NOTICIAS.length;
 
-  // En scope: "Mostrando N de TOTAL en modo activo"
-  // En all:   "Mostrando N de TOTAL titulares"
-  const enScope = _scopeActual && _scopeActual.tipo !== 'all';
-  let txt = enScope
-    ? t('contadorScope', { n: nMostrados.toLocaleString(), total: nCargados.toLocaleString() })
-    : t('contador', { n: nMostrados.toLocaleString(), total: nCargados.toLocaleString() });
-
-  // Indicador "fuera del modo"
-  if (enScope && ULT_BANNER_INFO && ULT_BANNER_INFO.nFuera > 0){
-    txt += t('contadorFueraModo', { n: ULT_BANNER_INFO.nFuera.toLocaleString() });
-  }
+  const txt = t('contador', {
+    n: nMostrados.toLocaleString(),
+    total: nCargados.toLocaleString()
+  });
 
   $('#contador').textContent = txt;
   const cont = $('#resultados');
@@ -7874,6 +7569,9 @@ function renderizar(){
 
   if (ACCES.focus) requestAnimationFrame(updateFocus);
 }
+
+
+
 async function compartirNoticia(n){
   if (!PUEDE_COMPARTIR || !n) return;
   try {
@@ -8027,23 +7725,7 @@ function appendBatch(){
     sentinel.remove();
   }
 }
-function appendBatchDesdeOffset(desde, hasta) {
-  const cont = $('#resultados');
-  const sentinel = document.getElementById('render-sentinel');
 
-  let html = '';
-  for (let i = desde; i < hasta; i++) {
-    html += renderItemHtml(ULT_FILTRADAS[i], i);
-  }
-
-  if (sentinel) {
-    sentinel.insertAdjacentHTML('beforebegin', html);
-  } else {
-    cont.insertAdjacentHTML('beforeend', html);
-  }
-  RENDER_OFFSET = hasta;
-  observarNoticias();
-}
 
 function wireResultadosDelegation(){
   const cont = $('#resultados');
@@ -8239,27 +7921,6 @@ function cancelarVista(art){
 
 const VISTAS_SEEN = new WeakSet();
 
-function wireCargarMasAuto() {
-  const btn = document.getElementById('btn-cargar-mas');
-  if (!btn) return;
-
-  const io = new IntersectionObserver(entries => {
-    if (!entries[0].isIntersecting) return;
-    // Pequeño delay: si el usuario scrollea rapidísimo, no disparamos 3 veces
-    clearTimeout(btn._t);
-    btn._t = setTimeout(() => {
-      if (HISTORICO_PAG.next && !HISTORICO_PAG.cargando) {
-        cargarMasDeHistorico();
-      }
-    }, 400);
-  }, { rootMargin: '300px' });
-
-  io.observe(btn);
-
-  btn.addEventListener('click', () => {
-    if (!HISTORICO_PAG.cargando) cargarMasDeHistorico();
-  });
-}
 
 
 function wireVistasObserver(){
@@ -8536,8 +8197,13 @@ function wireDiasSelector() {
     if (!b || b.disabled) return;
     const v = parseInt(b.dataset.val, 10);
     setDiasMemoria(v);
-    // Relanzar la carga con el nuevo N
-    relanzarCarga();
+    // Recargar capas: borrar y volver a pedir
+    LAYERS.clear();
+    _itemsCargadosDeCapas = 0;
+    const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
+    asegurarCapas(capas, new AbortController().signal).then(trajo => {
+      if (trajo) aplicarFiltros();
+    });
   });
 
   renderDiasSelector();
@@ -9065,7 +8731,6 @@ async function init(){
   wireStaticEvents();
   wireCfgTabs();
   wireVistasObserver();
-  wireCargarMasAuto();
   bsWireEventos();
 
   initUserScriptBridge();
@@ -9085,7 +8750,7 @@ async function init(){
 
   // ── 2) Carga inicial (await) ──
   try {
-    await cargarScope();
+    await cargarBase();
   } catch(err){
     $('#resultados').innerHTML =
       '<div class="vacio">Error cargando datos: ' + escapeHtml(err.message) + '</div>';
