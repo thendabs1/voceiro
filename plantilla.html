@@ -7364,7 +7364,7 @@ function programarPrensa(parsed, rawQuery, nLocales){
 
 function aplicarFiltros(){
   const myGen = ++_genAplicar;
-
+  hidratarNoticias();
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
@@ -9113,9 +9113,17 @@ async function init(){
   // ── 4) A partir de aquí aplicarFiltros() ya puede persistir ──
   APP_LISTA = true;
 
+  // ── DIAG TEMPORAL ──
+  window.__diag = {
+    get NOTICIAS()     { return NOTICIAS; },
+    get ULT_FILTRADAS(){ return ULT_FILTRADAS; },
+    get MEDIOS()       { return MEDIOS; },
+    get LAYERS()       { return LAYERS; },
+  };
+
   // ── 5) Histórico en background ──
-  // (cargarScope ya lo programa internamente)
-}
+  }
+
 
 init().catch(err => {
   $('#resultados').innerHTML =
