@@ -1809,6 +1809,7 @@
           <button type="button" data-val="3"></button>
           <button type="button" data-val="7"></button>
           <button type="button" data-val="20"></button>
+          <button type="button" data-val="30"></button>
         </div>
         <p id="cfg-dias-aviso" style="font-size:.68em; color:var(--muted); margin:6px 0 8px; display:none;"></p>
 
@@ -2125,6 +2126,9 @@
 </div>
 
 <main id="resultados"></main>
+<div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
+  <button id="btn-cargar-mas" type="button" style="padding:10px 20px; font-size:.85em;"></button>
+</div>
 <button id="btn-top" class="btn-top" type="button"
         aria-label="Volver arriba" title="Volver arriba">↑</button>
 <div id="toast-wrap"></div>
@@ -2165,9 +2169,9 @@ const PUEDE_COMPARTIR =   //dejar vacío para autodetectar, poner true para TEST
 /* ── Fase 2 · días en memoria ── */
 const DIAS_MEMORIA_KEY = 'voceiro-dias-memoria';
 const DIAS_MEMORIA_DEF = 3;
-const DIAS_MEMORIA_VALIDOS = [1, 3, 7, 20];
+const DIAS_MEMORIA_VALIDOS = [1, 3, 7, 20, 30];
+const DIAS_MEMORIA_MAX_SCOPE = 30;
 const DIAS_MEMORIA_MAX_ALL = 3;
-const DIAS_MEMORIA_MAX_SCOPE = 20;
 
 function cargarDiasMemoria() {
   try {
@@ -4930,21 +4934,22 @@ function capasRequeridas(parsed) {
   return set;
 }
 
-// ─── ¿Hay que consultar Turso? ───
 function necesitaTurso(parsed) {
   if (parsed.titulo.length) return true;
   if (parsed.tipos.length)  return true;
   if (parsed.tags.length)   return true;
   if (parsed.lang.length)   return true;
   if (parsed.desde || parsed.hasta) return true;
-  // Grupos/dominios sin slice en manifest → Turso
+
+  // Dominios y medios: Turso aporta histórico (aunque R2 tenga slice)
+  if ((parsed.dominios || []).length) return true;
+  if ((parsed.medios || []).length)   return true;
+
+  // Grupos sin slice en manifest → Turso
   if ((parsed.grupos || []).some(g => !_grupoTieneSlice(g))) return true;
-  if ((parsed.dominios || []).some(d => !_dominioTieneSlice(d))) return true;
-  // Medios por nombre: siempre Turso
-  if ((parsed.medios || []).length) return true;
+
   return false;
 }
-
 function _grupoTieneSlice(nombreGrupo) {
   if (!_manifest || !_manifest.dias || !_manifest.dias.length) return false;
   const dia0 = _manifest.dias[0];
@@ -5053,6 +5058,54 @@ async function _cargarCapa(key, signal) {
   _itemsCargadosDeCapas += añadidos;
   return añadidos;
 }
+
+// Extiende una o varias capas pidiendo días [desde, hasta) desde el manifest.
+// Diferencia con _cargarCapa: aquella carga [0, DIAS_MEMORIA), esta carga
+// un rango arbitrario para paginación.
+async function extenderCapasR2(capas, desde, hasta) {
+  for (const key of capas) {
+    const [tipo, valor] = key.split(':', 2);
+    const dias = (_manifest.dias || []).slice(desde, hasta);
+    if (!dias.length) continue;
+
+    const files = [];
+    for (const dia of dias) {
+      if (tipo === 'grupo') {
+        const g = _buscarGrupoEnDia(dia.grupos, valor);
+        if (g && g.file) files.push(g.file);
+      } else if (tipo === 'dominio') {
+        const d = dia.dominios && dia.dominios[valor];
+        if (d && d.file) files.push(d.file);
+      }
+    }
+    if (!files.length) continue;
+
+    const cola = files.slice();
+    const nuevos = [];
+    const workers = Array.from({ length: Math.min(5, cola.length) }, async () => {
+      while (cola.length) {
+        const f = cola.shift();
+        const data = await _fetchJSON(`${DATA_BASE}/${f}`);
+        if (!data) continue;
+        if (data.medios) {
+          for (const d in data.medios) MEDIOS[d] = data.medios[d];
+        }
+        const diaFecha = data.fecha || '';
+        const generadoIso = data.generado || '';
+        for (const n of (data.noticias || [])) {
+          n._dia = diaFecha;
+          n._generado = generadoIso;
+          nuevos.push(n);
+        }
+      }
+    });
+    await Promise.all(workers);
+
+    const añadidos = _mergearItemsEnNoticias(nuevos, key);
+    _itemsCargadosDeCapas += añadidos;
+  }
+}
+
 
 // ─── Asegurar capas: carga las que falten, respeta el cap ───
 async function asegurarCapas(capas, signal) {
@@ -6939,7 +6992,18 @@ let ULT_BANNER_INFO = null;
 const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
+let ULT_CTX = null;                // contexto para append incremental
 
+// ── Paginación R2 + Turso ──
+let DIAS_ACTUAL = 0;               // días cargados vía R2 para la query actual
+const DIAS_R2_MAX = 90;            // tope práctico antes de saltar a Turso
+const DIAS_R2_STEP = 10;           // días por click en "Cargar más"
+
+let TURSO_OFFSET = 0;              // próximo offset a pedir
+let TURSO_HAY_MAS = false;
+let TURSO_ACTIVO = false;          // true cuando ya estamos paginando Turso
+let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llevar cutoff)
+let ULT_QUERY_KEY = '';            // para detectar cambio de query
 
 /* ═══════════════════════════════════════════════════════════════
    PRENSA EXTERNA (vía Worker: gnews + freenews)
@@ -7110,25 +7174,41 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   }
 }
 
-async function buscarEnWorker(parsed, rawQuery) {
+async function buscarEnWorker(parsed, rawQuery, { offset = 0, limit = 50 } = {}) {
   const params = new URLSearchParams();
   params.set('raw', rawQuery || '');
-  params.set('limit', '50');
-  params.set('offset', '0');
+  params.set('limit', String(limit));
+  params.set('offset', String(offset));
   params.set('fuentes', 'turso');
   try {
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
-    // Convertir items del worker al formato interno
-    return (data.items || []).map(it => ({
-      u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
-      _src: 'turso',
-    }));
+    return {
+      items: (data.items || []).map(it => ({
+        u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
+        _src: 'turso',
+      })),
+      total: data.total || 0,
+      nextOffset: data.next_offset ?? null,
+    };
   } catch(e) {
     if (e.name !== 'AbortError') console.warn('[worker]', e.message);
-    return [];
+    return { items: [], total: 0, nextOffset: null };
   }
+}
+
+
+// Añade un cutoff `hasta:` al raw si vamos a Turso tras haber
+// cargado días vía R2. Evita que Turso devuelva los mismos items
+// que ya están en memoria (los dedup silenciosos harían que el
+// primer click en "Cargar más" no mostrara nada nuevo).
+function _rawParaTurso(raw, parsed, diasR2) {
+  if (parsed.hasta) return raw;    // usuario ya filtró por fecha
+  if (diasR2 <= 0)  return raw;    // sin R2 previo → sin corte
+  const cutoff = new Date(Date.now() - diasR2 * 86400000);
+  const hasta = cutoff.toISOString().slice(0, 10);
+  return raw + ' hasta:' + hasta;
 }
 
 
@@ -7303,7 +7383,17 @@ function aplicarFiltros(){
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
 
-  // ── Decidir fuentes ──
+  // ── Detectar cambio de query y resetear paginación ──
+  if (raw !== ULT_QUERY_KEY) {
+    ULT_QUERY_KEY = raw;
+    const capas = capasRequeridas(parsed);
+    DIAS_ACTUAL   = capas.size ? DIAS_MEMORIA : 0;
+    TURSO_OFFSET  = 0;
+    TURSO_HAY_MAS = false;
+    TURSO_ACTIVO  = !capas.size;   // sin R2 → vamos directos a Turso
+    TURSO_RAW     = '';
+  }
+
   const capas = capasRequeridas(parsed);
   const usarTurso = necesitaTurso(parsed);
 
@@ -7311,26 +7401,38 @@ function aplicarFiltros(){
   if (capas.size) {
     const signal = new AbortController().signal;
     asegurarCapas(capas, signal).then(trajo => {
-      if (myGen !== _genAplicar) return;   // respuesta vieja
+      if (myGen !== _genAplicar) return;
       if (trajo) aplicarFiltros();
     });
   }
 
-  // Disparo Turso en paralelo si aplica
-  if (usarTurso) {
-    buscarEnWorker(parsed, raw).then(items => {
-      if (myGen !== _genAplicar) return;   // respuesta vieja
-      if (!items || !items.length) return;
-      const nuevos = _mergearItemsEnNoticias(items, 'turso');
+  // Disparo Turso (si procede y no estamos ya paginando)
+  if (usarTurso && !TURSO_RAW) {
+    TURSO_RAW = _rawParaTurso(raw, parsed, DIAS_ACTUAL);
+    TURSO_OFFSET = 0;
+
+    buscarEnWorker(parsed, TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
+      if (myGen !== _genAplicar) return;
+      if (!res.items || !res.items.length) {
+        TURSO_HAY_MAS = false;
+        actualizarBotonCargarMas();
+        return;
+      }
+      TURSO_OFFSET  = (res.nextOffset ?? res.items.length);
+      TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
+
+      const nuevos = _mergearItemsEnNoticias(res.items, 'turso');
       if (nuevos > 0) {
-        // Reset hidratación y re-filtrar
         _hidratadasHasta = 0;
         hidratarNoticias();
         aplicarFiltros();
+      } else {
+        actualizarBotonCargarMas();
       }
     });
   }
 
+  // ── Filtrado ──
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
   const dias = parseInt($('#rango').value, 10) || 0;
@@ -7346,16 +7448,11 @@ function aplicarFiltros(){
   const hayTag     = parsed.tags.length     > 0;
   const hayTitulo  = parsed.titulo.length   > 0;
 
-  // ── ¿Qué está pidiendo el usuario? ──
-  // Fuente explícita = dominio o medio. Siempre salta el preset.
   const hayFuenteExplicita = hayDominio || hayMedio;
-
-  // Búsqueda activa = texto libre, tokens, o filtros del panel.
   const hayBusquedaActiva =
     hayTitulo || hayGrupo || hayTipo || hayTag ||
     !!g || !!t2 || !!dias || !!parsed.desde || !!parsed.hasta;
 
-  // ── Reglas del preset ──
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
   const presetEfectivo =
     presetConReglas &&
@@ -7366,7 +7463,6 @@ function aplicarFiltros(){
   let fueraDelPreset = 0;
 
   let filtradas = NOTICIAS.filter(n => {
-    // 1) Todos los filtros EXCEPTO el preset
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
     if (limiteMs){
@@ -7429,8 +7525,6 @@ function aplicarFiltros(){
         if (tn.indexOf(parsed.titulo[i]) === -1) return false;
       }
     }
-
-    // 2) Ahora el preset, al final
     if (presetEfectivo){
       const cumple = cumplePreset(n);
       n._esPreset = cumple;
@@ -7442,7 +7536,6 @@ function aplicarFiltros(){
   });
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
-
   filtradas.sort((a, b) => {
     if (presetEfectivo){
       const aFav = getOverride(a.dominio) === 'first'
@@ -7475,7 +7568,9 @@ function aplicarFiltros(){
   ULT_RX = buildHighlightRegex(parsed.titulo);
   ULT_PRESET_EFECTIVO = presetEfectivo;
 
-  // ── Banner del preset ──
+  // Contexto para el append incremental
+  ULT_CTX = { g, t2, limiteMs, ahora, parsed, presetEfectivo, orden, HIDE_MODE };
+
   ULT_BANNER_INFO = {
     nDentro: filtradas.length,
     nFuera: fueraDelPreset,
@@ -7488,12 +7583,12 @@ function aplicarFiltros(){
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
 
-
   if (APP_LISTA && RECORDAR_FILTROS){
     try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
   }
   programarPrensa(parsed, raw, filtradas.length);
 }
+
 
 /* ── Renombrada: cuerpo de aplicarFiltros sin el trigger de scope ── */
 let _cargandoScope = false;
@@ -7552,6 +7647,7 @@ function renderizar(){
   if (!lista.length){
     cont.innerHTML = `<div class="vacio">${escapeHtml(t('vacio'))}</div>`;
     if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
+    actualizarBotonCargarMas();
     return;
   }
 
@@ -7568,6 +7664,7 @@ function renderizar(){
   SENTINEL_OBSERVER.observe(sentinel);
 
   if (ACCES.focus) requestAnimationFrame(updateFocus);
+  actualizarBotonCargarMas();
 }
 
 
@@ -7725,6 +7822,241 @@ function appendBatch(){
     sentinel.remove();
   }
 }
+
+// Comprueba si una noticia pasa los filtros guardados en ctx.
+// ctx = ULT_CTX (mismo shape que el de aplicarFiltros).
+function _pasaFiltroIndividual(n, ctx) {
+  const { g, t2, limiteMs, ahora, parsed, presetEfectivo, HIDE_MODE: hm } = ctx;
+
+  if (g && n.grupo !== g) return false;
+  if (t2 && n.tipo  !== t2) return false;
+  if (limiteMs){
+    const ts = n._tsOrden;
+    if (isNaN(ts) || ahora - ts > limiteMs) return false;
+  }
+  if (parsed.desde){
+    const ts = n._tsOrden;
+    if (isNaN(ts)) return false;
+    if (ts < new Date(parsed.desde + 'T00:00:00').getTime()) return false;
+  }
+  if (parsed.hasta){
+    const ts = n._tsOrden;
+    if (isNaN(ts)) return false;
+    if (ts > new Date(parsed.hasta + 'T23:59:59').getTime()) return false;
+  }
+  if (hm !== 'off'){
+    const key = normalizeUrlForMatch(n.enlace);
+    const pluginItem = PENDIENTES_MAP.get(key);
+    const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
+    if ((hm === 'read' || hm === 'both') && esLeida) return false;
+    if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
+  }
+  if (parsed.medios.length){
+    const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
+    for (let i = 0; i < parsed.medios.length; i++){
+      if (ms.indexOf(parsed.medios[i]) === -1) return false;
+    }
+  }
+  if (parsed.dominios.length){
+    const ds = n._domStrict || (n._domStrict = normDomain(n.dominio));
+    for (let i = 0; i < parsed.dominios.length; i++){
+      if (ds.indexOf(parsed.dominios[i]) === -1) return false;
+    }
+  }
+  if (parsed.grupos.length){
+    const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
+    for (let i = 0; i < parsed.grupos.length; i++){
+      if (gs.indexOf(parsed.grupos[i]) === -1) return false;
+    }
+  }
+  if (parsed.tipos.length){
+    const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
+    for (let i = 0; i < parsed.tipos.length; i++){
+      if (ts.indexOf(parsed.tipos[i]) === -1) return false;
+    }
+  }
+  if (parsed.tags.length){
+    const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
+    for (let i = 0; i < parsed.tags.length; i++){
+      if (!tags.some(x => x.indexOf(parsed.tags[i]) !== -1)) return false;
+    }
+  }
+  if (parsed.titulo.length){
+    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+    for (let i = 0; i < parsed.titulo.length; i++){
+      if (tn.indexOf(parsed.titulo[i]) === -1) return false;
+    }
+  }
+  if (presetEfectivo){
+    const cumple = cumplePreset(n);
+    n._esPreset = cumple;
+    if (!cumple) return false;
+  } else {
+    n._esPreset = false;
+  }
+  return true;
+}
+
+// Añade items nuevos al final del DOM sin re-render completo.
+// Devuelve true si el append fue limpio, false si hay que re-renderizar.
+function _anexarItemsIncremental(items, ctx) {
+  if (!items.length || !ctx) return false;
+
+  // Filtrar los nuevos que pasan los filtros actuales
+  const nuevos = [];
+  for (const n of items) {
+    const u = _claveUrl(n.u || '', n.d || '');
+    if (u && _itemPorUrl.has(u)) {
+      const ex = _itemPorUrl.get(u);
+      if (ULT_FILTRADAS.includes(ex)) continue;   // ya está renderizado
+    }
+    if (_pasaFiltroIndividual(n, ctx)) nuevos.push(n);
+  }
+  if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
+
+  const orden = ctx.orden || 'recientes';
+
+  // ¿Todos los nuevos van DESPUÉS del último renderizado?
+  const ultimo = ULT_FILTRADAS[ULT_FILTRADAS.length - 1];
+  if (!ultimo) return false;
+
+  const tsUlt = isNaN(ultimo._tsOrden) ? 0 : ultimo._tsOrden;
+
+  for (const n of nuevos) {
+    const ts = isNaN(n._tsOrden) ? 0 : n._tsOrden;
+    const vaDespues = orden === 'antiguos' ? (ts >= tsUlt) : (ts <= tsUlt);
+    if (!vaDespues) return false;
+  }
+
+  // Los nuevos van al final → append limpio
+  const desde = ULT_FILTRADAS.length;
+  ULT_FILTRADAS.push(...nuevos);
+  // Ordenar solo por si acaso
+  ULT_FILTRADAS.sort((a, b) => {
+    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
+    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
+    return orden === 'antiguos' ? ta - tb : tb - ta;
+  });
+
+  appendBatchDesdeOffset(desde, ULT_FILTRADAS.length);
+  return true;
+}
+
+// Añade al DOM las tarjetas [desde, hasta) sin tocar las que ya hay.
+function appendBatchDesdeOffset(desde, hasta) {
+  const cont = $('#resultados');
+  const sentinel = document.getElementById('render-sentinel');
+
+  let html = '';
+  for (let i = desde; i < hasta; i++) {
+    html += renderItemHtml(ULT_FILTRADAS[i], i);
+  }
+
+  if (sentinel) {
+    sentinel.insertAdjacentHTML('beforebegin', html);
+  } else {
+    cont.insertAdjacentHTML('beforeend', html);
+  }
+  RENDER_OFFSET = Math.max(RENDER_OFFSET, hasta);
+  observarNoticias();
+}
+
+// ─── Dispatcher del botón "Cargar más" ───
+async function cargarMas() {
+  const raw = $('#buscar').value.trim();
+  const parsed = parseQuery(preprocesarInput(raw));
+  const capas = capasRequeridas(parsed);
+  const tieneR2 = capas.size > 0;
+
+  // Modo R2: extender días
+  if (tieneR2 && !TURSO_ACTIVO && DIAS_ACTUAL < DIAS_R2_MAX) {
+    const desde = DIAS_ACTUAL;
+    const hasta = Math.min(DIAS_ACTUAL + DIAS_R2_STEP, DIAS_R2_MAX);
+    const btn = document.getElementById('btn-cargar-mas');
+    if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
+    await extenderCapasR2(capas, desde, hasta);
+    DIAS_ACTUAL = hasta;
+    if (DIAS_ACTUAL >= DIAS_R2_MAX) TURSO_ACTIVO = true;
+    if (btn) btn.disabled = false;
+    aplicarFiltros();
+    return;
+  }
+
+  // Modo Turso: paginar
+  if (!TURSO_RAW) {
+    TURSO_RAW = _rawParaTurso(raw, parsed, DIAS_ACTUAL);
+    TURSO_OFFSET = 0;
+  }
+  await cargarMasDeTurso();
+}
+
+// ─── Paginación Turso ───
+async function cargarMasDeTurso() {
+  if (!TURSO_HAY_MAS || !TURSO_RAW) return;
+  const btn = document.getElementById('btn-cargar-mas');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
+
+  const parsed = parseQuery(preprocesarInput(TURSO_RAW));
+  const res = await buscarEnWorker(parsed, TURSO_RAW, {
+    offset: TURSO_OFFSET,
+    limit: 50
+  });
+
+  if (btn) btn.disabled = false;
+
+  if (!res.items || !res.items.length) {
+    TURSO_HAY_MAS = false;
+    actualizarBotonCargarMas();
+    return;
+  }
+
+  TURSO_OFFSET  = (res.nextOffset ?? (TURSO_OFFSET + res.items.length));
+  TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
+
+  const nuevos = _mergearItemsEnNoticias(res.items, 'turso');
+  if (nuevos > 0) {
+    _hidratadasHasta = 0;
+    hidratarNoticias();
+    if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
+      aplicarFiltros();
+    } else {
+      renderPresetBanner();
+      actualizarFiltrosCount();
+      actualizarBotonCargarMas();
+    }
+  } else {
+    actualizarBotonCargarMas();
+  }
+}
+
+// ─── Estado del botón ───
+function actualizarBotonCargarMas() {
+  const wrap = document.getElementById('cargar-mas-wrap');
+  const btn  = document.getElementById('btn-cargar-mas');
+  if (!wrap || !btn) return;
+
+  const raw = $('#buscar').value.trim();
+  const parsed = parseQuery(preprocesarInput(raw));
+  const tieneR2 = capasRequeridas(parsed).size > 0;
+  const modoR2 = tieneR2 && !TURSO_ACTIVO && DIAS_ACTUAL < DIAS_R2_MAX;
+
+  if (modoR2) {
+    wrap.style.display = '';
+    btn.textContent = `Cargar más · ${DIAS_ACTUAL} días`;
+    btn.disabled = false;
+    return;
+  }
+
+  if (TURSO_HAY_MAS) {
+    wrap.style.display = '';
+    btn.textContent = 'Cargar más · histórico';
+    btn.disabled = false;
+    return;
+  }
+
+  wrap.style.display = 'none';
+}
+
 
 
 function wireResultadosDelegation(){
@@ -8421,6 +8753,10 @@ function wireStaticEvents(){
   pintarSelectsPrensa();
   setPrensaActiva(PRENSA_ACTIVA, { persistir: false });
   // ── Botones que abren paneles ──
+  // ── Botón "Cargar más" (paginación R2 + Turso) ──
+  const btnCargarMas = document.getElementById('btn-cargar-mas');
+  if (btnCargarMas) btnCargarMas.addEventListener('click', cargarMas);
+
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', bsAbrir);
   $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
