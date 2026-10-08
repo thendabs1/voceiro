@@ -1815,6 +1815,16 @@
           </span>
         </label>
 
+        <h3 id="cfg-dias"></h3>
+        <p id="cfg-dias-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+        <div class="opt-group" data-dias data-grupo="dias">
+          <button type="button" data-val="1"></button>
+          <button type="button" data-val="3"></button>
+          <button type="button" data-val="7"></button>
+          <button type="button" data-val="20"></button>
+        </div>
+        <p id="cfg-dias-aviso" style="font-size:.68em; color:var(--muted); margin:6px 0 8px; display:none;"></p>
+
         <div class="filtros-prensa" style="margin-top:10px;">
           <label class="chk-prensa">
             <input type="checkbox" id="prensa-panel-toggle">
@@ -2231,13 +2241,19 @@ const I18N = {
     presetBannerOutside:     '{n} fuera del modo',
     presetVerTodos:          'Ver todos',
 
-    /* ── Feed (bloque nuevo) ── */
+    /* ── Feed ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga del feed y prensa externa.',
     cfgRecordarFiltros:      'Recordar filtros al recargar',
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
     cfgPresetBusqueda:       'Buscar sólo dentro del modo',
     cfgPresetBusquedaHint:   'Si está activo, la búsqueda se limita a los titulares que cumplen el modo. Desactívalo para ampliar.',
+
+    /* ── Días en memoria ── */
+    cfgDias:                 'Días en memoria',
+    cfgDiasHint:             'Cuántos días de titulares se cargan en el navegador. Más días = más corpus para el buscador, más consumo de red.',
+    cfgDiasAvisoAll:         'En modo sin filtro el máximo es {n} días. Se aplicará al recargar.',
+    cfgDiasAvisoScope:       'En modo con filtro puedes cargar hasta {n} días.',
 
     /* ── Prensa externa ── */
     prensaPanelLabel:  'Prensa externa',
@@ -2389,6 +2405,7 @@ const I18N = {
 
     /* ── Contador / vacío / errores ── */
     contador:               'Mostrando {n} de {total} titulares',
+    contadorScope:          'Mostrando {n} de {total} en modo activo',
     contadorPreset:         ' · Modo Personalizado activo',
     vacio:                  'Sin resultados',
     errCarga:               'Error cargando datos: ',
@@ -2498,7 +2515,7 @@ const I18N = {
     bsGuardar:              'Guardar',
     bsVerificado:           'en el catálogo',
 
-    /* ── Menú Vista (duplicados / ocultar) ── */
+    /* ── Menú Vista ── */
     vsButton:               'Vista',
     vsTitleDup:             'Duplicados',
     vsDup:                  'Ocultar duplicados',
@@ -2513,7 +2530,6 @@ const I18N = {
   },
 
   gl: {
-    /* ── Pestanas do panel ── */
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
     presetBannerExtra:       'no histórico',
@@ -2522,7 +2538,6 @@ const I18N = {
     presetBannerOutside:     '{n} fóra do modo',
     presetVerTodos:          'Ver todos',
 
-    /* ── Feed (bloque novo) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga do feed e prensa externa.',
     cfgRecordarFiltros:      'Lembrar filtros ao recargar',
@@ -2530,7 +2545,12 @@ const I18N = {
     cfgPresetBusqueda:       'Buscar só dentro do modo',
     cfgPresetBusquedaHint:   'Se está activo, a busca limítase aos titulares que cumpren o modo. Desactívao para ampliar.',
 
-    /* ── Prensa externa ── */
+    /* ── Días na memoria ── */
+    cfgDias:                 'Días na memoria',
+    cfgDiasHint:             'Cantos días de titulares se cargan no navegador. Máis días = máis corpus para o buscador, máis consumo de rede.',
+    cfgDiasAvisoAll:         'En modo sen filtro o máximo é {n} días. Aplicarase ao recargar.',
+    cfgDiasAvisoScope:       'En modo con filtro podes cargar ata {n} días.',
+
     prensaPanelLabel:  'Prensa externa',
     prensaFuentes:     'Fontes',
     prensaLang:        'Idioma',
@@ -2545,7 +2565,6 @@ const I18N = {
     prensaPaisUS:      'Estados Unidos',
     fltBtn: 'Filtros',
 
-    /* ── Modos de feed ── */
     cfgModos:               'Modos de feed',
     cfgModosHint:           'Cada modo ten os seus grupos, palabras e excepcións por medio. Ao cambiar de modo o feed reconfigúrase.',
     cfgModoActivo:          'activo',
@@ -2557,18 +2576,15 @@ const I18N = {
     cfgModoBorrado:         'Modo borrado: {X}',
     cfgModoUnicoNoBorrar:   'Non podes borrar o único modo. Crea outro antes.',
 
-    /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Engade medios a este modo por dominio. ✓ forza a amosalo arriba; ✗ ocúltao.',
     cfgOverridePegar:       'Pegar lista de dominios',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio non válido: {X}',
 
-    /* ── Buscador de medios (add-bar) ── */
     cfgMedioAddLabel:       'Sen coincidencias. ¿Engadir {X} ao modo?',
     cfgMedioAddForce:       '✓ Forzar',
     cfgMedioAddIgnore:      '✗ Ignorar',
 
-    /* ── Destino inline (➕ / 🚫) ── */
     addToModoTitle:      'Engadir este medio ao modo',
     destinoAnadirA:      'Engadir a…',
     destinoBloquearEn:   'Bloquear en…',
@@ -2578,34 +2594,28 @@ const I18N = {
     destinoOkAnadidoEn:  'Engadido a',
     destinoOkBloqueadoEn:'Bloqueado en',
 
-    /* ── Menú do botón Modo Personalizado ── */
     presetSinFiltro:        'Sen filtro',
     presetGestionar:        'Xestionar modos…',
 
-    /* ── Página / cabecera ── */
     pageTitle:              'Voceiro · Titulares',
     headerTitle:            'Voceiro',
     metaPrefix:             'Actualizado:',
     metaSuffix:             'titulares no histórico',
 
-    /* ── Botóns principais ── */
     btnPersonalizado:       'Modo Personalizado',
     btnConfig:              'Configurar',
     btnPendientes:          'Pendentes',
     btnAcces:               'Aa Accesibilidade',
     btnBuscar:              'Investigar',
 
-    /* ── Duplicados ── */
     btnDup:                 'Agochar duplicados',
     btnDupTitle:            'Agrupar titulares repetidos en distintos medios',
     dupsMore:               'Tamén en {n} medio(s)',
     dupsTitle:              'Tamén publicado en:',
 
-    /* ── Agochar lidas ── */
     btnHideRead:            'Agochar lidas',
     btnHideReadTitle:       'Agochar noticias xa lidas',
 
-    /* ── Import/export/reset ── */
     btnImport:              '↓ Importar',
     btnExport:              '↑ Exportar',
     btnReset:               '↺ Valores por defecto',
@@ -2613,7 +2623,6 @@ const I18N = {
     btnSave:                'Gardar',
     btnClear:               'Limpar',
 
-    /* ── Idiomas ── */
     lblIdioma:              'Idioma',
     optLangEs:              'Castelán',
     optLangGl:              'Galego',
@@ -2621,7 +2630,6 @@ const I18N = {
     optLangEn:              'Inglés',
     optLangEu:              'Éuscaro',
 
-    /* ── Panel de configuración ── */
     cfgTitle:               'Configurar Modo Personalizado',
     cfgGrupos:              'Grupos completos',
     cfgGruposHint:          'Ao marcar un grupo inclúense todos os seus medios. Bloquear un medio (abaixo) ten máis prioridade.',
@@ -2648,7 +2656,6 @@ const I18N = {
     cfgResumen:             'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados',
     cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
 
-    /* ── Accesibilidade ── */
     acTitle:                'Opcións de lectura',
     acTema:                 'Tema',
     acFuente:               'Fonte',
@@ -2666,7 +2673,6 @@ const I18N = {
     acBionic:               'Bionic',
     acFoco:                 'Foco',
 
-    /* ── Filtros ── */
     fltBuscar:              'Buscar… ("eleccións" · "elpais" · "elpais.com" · "tag:deportes")',
     fltGrupo:               'Todos os grupos',
     fltTipo:                'Todos os tipos',
@@ -2678,14 +2684,13 @@ const I18N = {
     ordenRecientes:         '↓ Máis recentes',
     ordenAntiguos:          '↑ Máis antigos',
 
-    /* ── Contador / baleiro / erros ── */
     contador:               'Amosando {n} de {total} titulares',
+    contadorScope:          'Amosando {n} de {total} en modo activo',
     contadorPreset:         ' · Modo Personalizado activo',
     vacio:                  'Sen resultados',
     errCarga:               'Erro cargando datos: ',
     loading:                'Cargando…',
 
-    /* ── Import/export mensaxes ── */
     expOk:                  'Configuración exportada',
     impOk:                  'Configuración importada correctamente',
     impFromVoceiro:         'Configuración de Voceiro importada',
@@ -2693,13 +2698,11 @@ const I18N = {
     impErr:                 'Erro ao importar: {msg}',
     impConfirm:             'Isto substituirá a túa configuración actual. Continuar?',
 
-    /* ── Modo Personalizado ── */
     presetVacio:            'O Modo Personalizado está baleiro. Configúrao primeiro e despois actívao.',
     presetActivado:         'Modo Personalizado activado',
     presetDesactivado:      'Modo Personalizado desactivado',
     presetGuardadoActivado: 'Configuración gardada · Modo Personalizado activado',
 
-    /* ── Datas ── */
     fechaAhora:             'agora',
     fechaHaceMin:           'hai {n} min',
     fechaHaceH:             'hai {n} h',
@@ -2708,12 +2711,10 @@ const I18N = {
     recolectado:            'Recollido',
     sinFechaReal:           'Sen data exacta do medio · estimada',
 
-    /* ── Sync ── */
     syncOnline:             'Sincronizado co plugin Lector Universal',
     syncOffline:            'Sen plugin — cambios gardados só neste navegador',
     syncOfflineHint:        'Instala o plugin Lector Universal para sincronizar a túa configuración entre dispositivos.',
 
-    /* ── Pendentes ── */
     pendTitle:              'Noticias gardadas para ler despois',
     pendRefresh:            '↻ Actualizar',
     noUserscript:           'Instala o plugin Lector Universal para gardar noticias e velas aquí.',
@@ -2730,7 +2731,6 @@ const I18N = {
     markRead:               'Marcar como lida',
     markUnread:             'Marcar como non lida',
 
-    /* ── Reportes ── */
     repBtnTitle:            'Reportar problema con este titular',
     repTitle:               'Reportar un problema',
     repCtxEmpty:            '(Sen titular específico — reporte xeral)',
@@ -2763,7 +2763,6 @@ const I18N = {
     repCtxConfig:           'Config',
     repFecha:               'Data do reporte',
 
-    /* ── Buscador FreeNews / Google News ── */
     bsTitle:                'Buscar en miles de medios',
     bsAviso:                'Este buscador cobre medios pequenos e rexionais. Os grandes diarios nacionais (El País, El Mundo, ABC…) non están incluídos no seu índice.',
     bsQ:                    'Busca calquera tema…',
@@ -2789,7 +2788,6 @@ const I18N = {
     bsGuardar:              'Gardar',
     bsVerificado:           'no catálogo',
 
-    /* ── Menú Vista ── */
     vsButton:               'Vista',
     vsTitleDup:             'Duplicados',
     vsDup:                  'Agochar duplicados',
@@ -2804,7 +2802,6 @@ const I18N = {
   },
 
   ca: {
-    /* ── Pestanyes del panell ── */
     tabMedios:               'Mitjans',
     tabAvanzado:             'Avançat',
     presetBannerExtra:       "a l'històric",
@@ -2813,7 +2810,6 @@ const I18N = {
     presetBannerOutside:     '{n} fora del mode',
     presetVerTodos:          'Veure tots',
 
-    /* ── Feed (bloc nou) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Càrrega del feed i premsa externa.',
     cfgRecordarFiltros:      'Recordar filtres en recarregar',
@@ -2821,7 +2817,12 @@ const I18N = {
     cfgPresetBusqueda:       'Cercar només dins del mode',
     cfgPresetBusquedaHint:   "Si està actiu, la cerca es limita als titulars que compleixen el mode. Desactiva'l per ampliar.",
 
-    /* ── Premsa externa ── */
+    /* ── Dies en memòria ── */
+    cfgDias:                 'Dies en memòria',
+    cfgDiasHint:             "Quants dies de titulars es carreguen al navegador. Més dies = més corpus per al cercador, més consum de xarxa.",
+    cfgDiasAvisoAll:         "En mode sense filtre el màxim és {n} dies. S'aplicarà en recarregar.",
+    cfgDiasAvisoScope:       'En mode amb filtre pots carregar fins a {n} dies.',
+
     prensaPanelLabel:  'Premsa externa',
     prensaFuentes:     'Fonts',
     prensaLang:        'Idioma',
@@ -2836,7 +2837,6 @@ const I18N = {
     prensaPaisUS:      'Estats Units',
     fltBtn: 'Filtres',
 
-    /* ── Modes de feed ── */
     cfgModos:               'Modes de feed',
     cfgModosHint:           'Cada mode té els seus grups, paraules i excepcions per mitjà. En canviar de mode el feed es reconfigura.',
     cfgModoActivo:          'actiu',
@@ -2848,18 +2848,15 @@ const I18N = {
     cfgModoBorrado:         'Mode esborrat: {X}',
     cfgModoUnicoNoBorrar:   "No pots esborrar l'únic mode. Crea'n un altre abans.",
 
-    /* ── Overrides per domini ── */
     cfgOverrideHint:        "Afegeix mitjans a aquest mode per domini. ✓ força a mostrar-lo a dalt; ✗ l'oculta.",
     cfgOverridePegar:       'Enganxar llista de dominis',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Domini no vàlid: {X}',
 
-    /* ── Cercador de mitjans (add-bar) ── */
     cfgMedioAddLabel:       "Sense coincidències. Afegir {X} al mode?",
     cfgMedioAddForce:       '✓ Forçar',
     cfgMedioAddIgnore:      '✗ Ignorar',
 
-    /* ── Destí inline (➕ / 🚫) ── */
     addToModoTitle:      'Afegir aquest mitjà al mode',
     destinoAnadirA:      'Afegir a…',
     destinoBloquearEn:   'Bloquejar a…',
@@ -2869,34 +2866,28 @@ const I18N = {
     destinoOkAnadidoEn:  'Afegit a',
     destinoOkBloqueadoEn:'Bloquejat a',
 
-    /* ── Menú del botó Mode Personalitzat ── */
     presetSinFiltro:        'Sense filtre',
     presetGestionar:        'Gestionar modes…',
 
-    /* ── Pàgina / capçalera ── */
     pageTitle:              'Voceiro · Titulars',
     headerTitle:            'Voceiro',
     metaPrefix:             'Actualitzat:',
     metaSuffix:             "titulars a l'històric",
 
-    /* ── Botons principals ── */
     btnPersonalizado:       'Mode Personalitzat',
     btnConfig:              'Configurar',
     btnPendientes:          'Pendents',
     btnAcces:               'Aa Accessibilitat',
     btnBuscar:              'Investigar',
 
-    /* ── Duplicats ── */
     btnDup:                 'Amagar duplicats',
     btnDupTitle:            'Agrupar titulars repetits en diferents mitjans',
     dupsMore:               'També a {n} mitjà(ns)',
     dupsTitle:              'També publicat a:',
 
-    /* ── Amagar llegides ── */
     btnHideRead:            'Amagar llegides',
     btnHideReadTitle:       'Amagar notícies ja llegides',
 
-    /* ── Import/export/reset ── */
     btnImport:              '↓ Importar',
     btnExport:              '↑ Exportar',
     btnReset:               '↺ Valors per defecte',
@@ -2904,7 +2895,6 @@ const I18N = {
     btnSave:                'Desar',
     btnClear:               'Netejar',
 
-    /* ── Idiomes ── */
     lblIdioma:              'Idioma',
     optLangEs:              'Castellà',
     optLangGl:              'Gallec',
@@ -2912,7 +2902,6 @@ const I18N = {
     optLangEn:              'Anglès',
     optLangEu:              'Basc',
 
-    /* ── Panell de configuració ── */
     cfgTitle:               'Configurar Mode Personalitzat',
     cfgGrupos:              'Grups complets',
     cfgGruposHint:          "En marcar un grup s'inclouen tots els seus mitjans. Bloquejar un mitjà (a baix) té més prioritat.",
@@ -2939,7 +2928,6 @@ const I18N = {
     cfgResumen:             'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats',
     cfgPalabrasPlaceholder: 'paraula1\nparaula2\nparaula3',
 
-    /* ── Accessibilitat ── */
     acTitle:                'Opcions de lectura',
     acTema:                 'Tema',
     acFuente:               'Tipus de lletra',
@@ -2957,7 +2945,6 @@ const I18N = {
     acBionic:               'Bionic',
     acFoco:                 'Focus',
 
-    /* ── Filtres ── */
     fltBuscar:              'Cercar… ("eleccions" · "elpais" · "elpais.com" · "tag:deportes")',
     fltGrupo:               'Tots els grups',
     fltTipo:                'Tots els tipus',
@@ -2969,14 +2956,13 @@ const I18N = {
     ordenRecientes:         '↓ Més recents',
     ordenAntiguos:          '↑ Més antics',
 
-    /* ── Comptador / buit / errors ── */
     contador:               'Mostrant {n} de {total} titulars',
+    contadorScope:          'Mostrant {n} de {total} en mode actiu',
     contadorPreset:         ' · Mode Personalitzat actiu',
     vacio:                  'Sense resultats',
     errCarga:               'Error carregant dades: ',
     loading:                'Carregant…',
 
-    /* ── Missatges import/export ── */
     expOk:                  'Configuració exportada',
     impOk:                  'Configuració importada correctament',
     impFromVoceiro:         'Configuració de Voceiro importada',
@@ -2984,13 +2970,11 @@ const I18N = {
     impErr:                 'Error en importar: {msg}',
     impConfirm:             'Això substituirà la teva configuració actual. Continuar?',
 
-    /* ── Mode Personalitzat ── */
     presetVacio:            "El Mode Personalitzat està buit. Configura'l primer i després activa'l.",
     presetActivado:         'Mode Personalitzat activat',
     presetDesactivado:      'Mode Personalitzat desactivat',
     presetGuardadoActivado: 'Configuració desada · Mode Personalitzat activat',
 
-    /* ── Dates ── */
     fechaAhora:             'ara',
     fechaHaceMin:           'fa {n} min',
     fechaHaceH:             'fa {n} h',
@@ -2999,12 +2983,10 @@ const I18N = {
     recolectado:            'Recollit',
     sinFechaReal:           'Sense data exacta del mitjà · estimada',
 
-    /* ── Sync ── */
     syncOnline:             'Sincronitzat amb el plugin Lector Universal',
     syncOffline:            'Sense plugin — canvis desats només en aquest navegador',
     syncOfflineHint:        'Instal·la el plugin Lector Universal per sincronitzar la configuració.',
 
-    /* ── Pendents ── */
     pendTitle:              'Notícies desades per llegir després',
     pendRefresh:            '↻ Actualitzar',
     noUserscript:           'Instal·la el plugin Lector Universal per desar notícies i veure-les aquí.',
@@ -3021,7 +3003,6 @@ const I18N = {
     markRead:               'Marcar com llegida',
     markUnread:             'Marcar com no llegida',
 
-    /* ── Informes ── */
     repBtnTitle:            'Reportar problema amb aquest titular',
     repTitle:               'Reportar un problema',
     repCtxEmpty:            '(Sense titular específic — report general)',
@@ -3054,7 +3035,6 @@ const I18N = {
     repCtxConfig:           'Config',
     repFecha:               'Data del report',
 
-    /* ── Cercador FreeNews / Google News ── */
     bsTitle:                'Cercar en milers de mitjans',
     bsAviso:                'Aquest cercador cobreix mitjans petits i regionals. Els grans diaris nacionals (El País, El Mundo, ABC…) no estan inclosos al seu índex.',
     bsQ:                    'Cerca qualsevol tema…',
@@ -3080,7 +3060,6 @@ const I18N = {
     bsGuardar:              'Desar',
     bsVerificado:           'al catàleg',
 
-    /* ── Menú Vista ── */
     vsButton:               'Vista',
     vsTitleDup:             'Duplicats',
     vsDup:                  'Amagar duplicats',
@@ -3095,7 +3074,6 @@ const I18N = {
   },
 
   en: {
-    /* ── Config panel tabs ── */
     tabMedios:               'Outlets',
     tabAvanzado:             'Advanced',
     presetBannerExtra:       'in history',
@@ -3104,7 +3082,6 @@ const I18N = {
     presetBannerOutside:     '{n} outside the mode',
     presetVerTodos:          'View all',
 
-    /* ── Feed (new block) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feed loading and external press.',
     cfgRecordarFiltros:      'Remember filters on reload',
@@ -3112,7 +3089,12 @@ const I18N = {
     cfgPresetBusqueda:       'Search only within the mode',
     cfgPresetBusquedaHint:   'When active, search is limited to headlines matching the mode. Disable to widen.',
 
-    /* ── External press ── */
+    /* ── Days in memory ── */
+    cfgDias:                 'Days in memory',
+    cfgDiasHint:             'How many days of headlines are loaded in the browser. More days = more corpus for search, more network usage.',
+    cfgDiasAvisoAll:         'In no-filter mode the maximum is {n} days. Will apply on reload.',
+    cfgDiasAvisoScope:       'In filter mode you can load up to {n} days.',
+
     prensaPanelLabel:  'External press',
     prensaFuentes:     'Sources',
     prensaLang:        'Language',
@@ -3127,7 +3109,6 @@ const I18N = {
     prensaPaisUS:      'United States',
     fltBtn: 'Filters',
 
-    /* ── Feed modes ── */
     cfgModos:               'Feed modes',
     cfgModosHint:           'Each mode has its own groups, keywords and per-outlet exceptions. Switching modes reconfigures the feed.',
     cfgModoActivo:          'active',
@@ -3139,18 +3120,15 @@ const I18N = {
     cfgModoBorrado:         'Mode deleted: {X}',
     cfgModoUnicoNoBorrar:   'You cannot delete the only mode. Create another one first.',
 
-    /* ── Per-domain overrides ── */
     cfgOverrideHint:        'Add outlets to this mode by domain. ✓ forces showing it at top; ✗ hides it.',
     cfgOverridePegar:       'Paste list of domains',
     cfgOverrideAplicar:     'Apply',
     cfgOverrideBad:         'Invalid domain: {X}',
 
-    /* ── Outlet search (add-bar) ── */
     cfgMedioAddLabel:       'No matches. Add {X} to this mode?',
     cfgMedioAddForce:       '✓ Force',
     cfgMedioAddIgnore:      '✗ Ignore',
 
-    /* ── Inline destination (➕ / 🚫) ── */
     addToModoTitle:      'Add this outlet to a mode',
     destinoAnadirA:      'Add to…',
     destinoBloquearEn:   'Block in…',
@@ -3160,34 +3138,28 @@ const I18N = {
     destinoOkAnadidoEn:  'Added to',
     destinoOkBloqueadoEn:'Blocked in',
 
-    /* ── Custom Mode button menu ── */
     presetSinFiltro:        'No filter',
     presetGestionar:        'Manage modes…',
 
-    /* ── Page / header ── */
     pageTitle:              'Voceiro · Headlines',
     headerTitle:            'Voceiro',
     metaPrefix:             'Updated:',
     metaSuffix:             'headlines in history',
 
-    /* ── Main buttons ── */
     btnPersonalizado:       'Custom Mode',
     btnConfig:              'Configure',
     btnPendientes:          'Queue',
     btnAcces:               'Aa Accessibility',
     btnBuscar:              'Investigate',
 
-    /* ── Duplicates ── */
     btnDup:                 'Hide duplicates',
     btnDupTitle:            'Group identical headlines across outlets',
     dupsMore:               'Also in {n} outlet(s)',
     dupsTitle:              'Also published in:',
 
-    /* ── Hide read ── */
     btnHideRead:            'Hide read',
     btnHideReadTitle:       'Hide already read news',
 
-    /* ── Import/export/reset ── */
     btnImport:              '↓ Import',
     btnExport:              '↑ Export',
     btnReset:               '↺ Reset defaults',
@@ -3195,7 +3167,6 @@ const I18N = {
     btnSave:                'Save',
     btnClear:               'Clear',
 
-    /* ── Languages ── */
     lblIdioma:              'Language',
     optLangEs:              'Spanish',
     optLangGl:              'Galician',
@@ -3203,7 +3174,6 @@ const I18N = {
     optLangEn:              'English',
     optLangEu:              'Basque',
 
-    /* ── Config panel ── */
     cfgTitle:               'Configure Custom Mode',
     cfgGrupos:              'Full groups',
     cfgGruposHint:          'Checking a group includes all its outlets. Blocking an outlet (below) takes precedence.',
@@ -3230,7 +3200,6 @@ const I18N = {
     cfgResumen:             'Showing {vis} of {total} · {inc} forced · {ign} blocked',
     cfgPalabrasPlaceholder: 'keyword1\nkeyword2\nkeyword3',
 
-    /* ── Accessibility ── */
     acTitle:                'Reading options',
     acTema:                 'Theme',
     acFuente:               'Font',
@@ -3248,7 +3217,6 @@ const I18N = {
     acBionic:               'Bionic',
     acFoco:                 'Focus',
 
-    /* ── Filters ── */
     fltBuscar:              'Search… ("elections" · "elpais" · "elpais.com" · "tag:sports")',
     fltGrupo:               'All groups',
     fltTipo:                'All types',
@@ -3260,14 +3228,13 @@ const I18N = {
     ordenRecientes:         '↓ Newest first',
     ordenAntiguos:          '↑ Oldest first',
 
-    /* ── Counter / empty / errors ── */
     contador:               'Showing {n} of {total} headlines',
+    contadorScope:          'Showing {n} of {total} in active mode',
     contadorPreset:         ' · Custom Mode on',
     vacio:                  'No results',
     errCarga:               'Error loading data: ',
     loading:                'Loading…',
 
-    /* ── Import/export messages ── */
     expOk:                  'Settings exported',
     impOk:                  'Settings imported successfully',
     impFromVoceiro:         'Voceiro configuration imported',
@@ -3275,13 +3242,11 @@ const I18N = {
     impErr:                 'Import error: {msg}',
     impConfirm:             'This will replace your current settings. Continue?',
 
-    /* ── Custom Mode ── */
     presetVacio:            'Custom Mode is empty. Configure it first, then activate it.',
     presetActivado:         'Custom Mode enabled',
     presetDesactivado:      'Custom Mode disabled',
     presetGuardadoActivado: 'Settings saved · Custom Mode enabled',
 
-    /* ── Dates ── */
     fechaAhora:             'now',
     fechaHaceMin:           '{n} min ago',
     fechaHaceH:             '{n} h ago',
@@ -3290,12 +3255,10 @@ const I18N = {
     recolectado:            'Collected',
     sinFechaReal:           'No exact date from source · estimated',
 
-    /* ── Sync ── */
     syncOnline:             'Synced with the Universal Reader plugin',
     syncOffline:            'No plugin — changes saved only in this browser',
     syncOfflineHint:        'Install the Universal Reader plugin to sync your configuration.',
 
-    /* ── Queue ── */
     pendTitle:              'News saved for later',
     pendRefresh:            '↻ Refresh',
     noUserscript:           'Install the Universal Reader plugin to save news and view them here.',
@@ -3312,7 +3275,6 @@ const I18N = {
     markRead:               'Mark as read',
     markUnread:             'Mark as unread',
 
-    /* ── Reports ── */
     repBtnTitle:            'Report a problem with this headline',
     repTitle:               'Report a problem',
     repCtxEmpty:            '(No specific headline — general report)',
@@ -3345,7 +3307,6 @@ const I18N = {
     repCtxConfig:           'Config',
     repFecha:               'Report date',
 
-    /* ── Search (FreeNews / Google News) ── */
     bsTitle:                'Search across thousands of outlets',
     bsAviso:                'This search covers small and regional outlets. Major national newspapers (El País, El Mundo, ABC…) are not in its index.',
     bsQ:                    'Search any topic…',
@@ -3371,7 +3332,6 @@ const I18N = {
     bsGuardar:              'Save',
     bsVerificado:           'in catalog',
 
-    /* ── View menu ── */
     vsButton:               'View',
     vsTitleDup:             'Duplicates',
     vsDup:                  'Hide duplicates',
@@ -3386,7 +3346,6 @@ const I18N = {
   },
 
   eu: {
-    /* ── Konfigurazio panelaren fitxak ── */
     tabMedios:               'Hedabideak',
     tabAvanzado:             'Aurreratua',
     presetBannerExtra:       'historialean',
@@ -3395,7 +3354,6 @@ const I18N = {
     presetBannerOutside:     '{n} modutik kanpo',
     presetVerTodos:          'Dena ikusi',
 
-    /* ── Feed (bloke berria) ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feedaren karga eta kanpoko prentsa.',
     cfgRecordarFiltros:      'Gogoratu iragazkiak berriz kargatzean',
@@ -3403,7 +3361,12 @@ const I18N = {
     cfgPresetBusqueda:       'Moduaren barruan soilik bilatu',
     cfgPresetBusquedaHint:   'Aktibo badago, bilaketa modua betetzen duten izenburuetara mugatzen da. Desaktibatu zabaltzeko.',
 
-    /* ── Kanpoko prentsa ── */
+    /* ── Memoriako egunak ── */
+    cfgDias:                 'Memoriako egunak',
+    cfgDiasHint:             'Zenbat eguneko izenburuak kargatzen diren nabigatzailean. Egun gehiago = corpus gehiago bilatzeko, sare-kontsumo gehiago.',
+    cfgDiasAvisoAll:         'Iragazkirik gabeko moduan gehienez {n} egun. Berriz kargatzean aplikatuko da.',
+    cfgDiasAvisoScope:       'Iragazki-moduan {n} egun arte kargatu ditzakezu.',
+
     prensaPanelLabel:  'Kanpoko prentsa',
     prensaFuentes:     'Iturriak',
     prensaLang:        'Hizkuntza',
@@ -3418,7 +3381,6 @@ const I18N = {
     prensaPaisUS:      'Estatu Batuak',
     fltBtn: 'Iragazkiak',
 
-    /* ── Feed moduak ── */
     cfgModos:               'Feed moduak',
     cfgModosHint:           'Modu bakoitzak bere taldeak, hitzak eta hedabideen salbuespenak ditu. Modua aldatzean feed-a birkonfiguratzen da.',
     cfgModoActivo:          'aktibo',
@@ -3430,18 +3392,15 @@ const I18N = {
     cfgModoBorrado:         'Modua ezabatuta: {X}',
     cfgModoUnicoNoBorrar:   'Ezin duzu modu bakarra ezabatu. Sortu beste bat lehenago.',
 
-    /* ── Domeinu bidezko overrideak ── */
     cfgOverrideHint:        'Gehitu hedabideak modu honi domeinuaren arabera. ✓ goian erakustera behartzen du; ✗ ezkutatzen du.',
     cfgOverridePegar:       'Itsatsi domeinuen zerrenda',
     cfgOverrideAplicar:     'Aplikatu',
     cfgOverrideBad:         'Domeinu baliogabea: {X}',
 
-    /* ── Hedabide bilatzailea (add-bar) ── */
     cfgMedioAddLabel:       'Bat-etortzerik ez. {X} modura gehitu?',
     cfgMedioAddForce:       '✓ Behartu',
     cfgMedioAddIgnore:      '✗ Ezkutatu',
 
-    /* ── Destinoa inline (➕ / 🚫) ── */
     addToModoTitle:      'Gehitu hedabide hau modu batera',
     destinoAnadirA:      'Gehitu honi…',
     destinoBloquearEn:   'Blokeatu honetan…',
@@ -3451,34 +3410,28 @@ const I18N = {
     destinoOkAnadidoEn:  'Gehituta:',
     destinoOkBloqueadoEn:'Blokeatuta:',
 
-    /* ── Modo Pertsonalizatua botoiaren menua ── */
     presetSinFiltro:        'Iragazkirik gabe',
     presetGestionar:        'Moduak kudeatu…',
 
-    /* ── Orria / goiburua ── */
     pageTitle:              'Voceiro · Izenburuak',
     headerTitle:            'Voceiro',
     metaPrefix:             'Eguneratuta:',
     metaSuffix:             'izenburu historian',
 
-    /* ── Botoi nagusiak ── */
     btnPersonalizado:       'Modo Pertsonalizatua',
     btnConfig:              'Konfiguratu',
     btnPendientes:          'Zain',
     btnAcces:               'Aa Irisgarritasuna',
     btnBuscar:              'Ikerkatu',
 
-    /* ── Bikoiztuak ── */
     btnDup:                 'Bikoiztuak ezkutatu',
     btnDupTitle:            'Hedabide ezberdinetan errepikatutako izenburuak batu',
     dupsMore:               'Beste {n} hedabidetan',
     dupsTitle:              'Hemen ere argitaratua:',
 
-    /* ── Irakurritakoak ezkutatu ── */
     btnHideRead:            'Irakurritakoak ezkutatu',
     btnHideReadTitle:       'Irakurritako albisteak ezkutatu',
 
-    /* ── Inportatu/Esportatu/Berrezarri ── */
     btnImport:              '↓ Inportatu',
     btnExport:              '↑ Esportatu',
     btnReset:               '↺ Balio lehenetsiak',
@@ -3486,7 +3439,6 @@ const I18N = {
     btnSave:                'Gorde',
     btnClear:               'Garbitu',
 
-    /* ── Hizkuntzak ── */
     lblIdioma:              'Hizkuntza',
     optLangEs:              'Gaztelania',
     optLangGl:              'Galiziera',
@@ -3494,7 +3446,6 @@ const I18N = {
     optLangEn:              'Ingelesa',
     optLangEu:              'Euskara',
 
-    /* ── Konfigurazio panela ── */
     cfgTitle:               'Modo Pertsonalizatua konfiguratu',
     cfgGrupos:              'Talde osoak',
     cfgGruposHint:          'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide bat blokeatzeak (behean) lehentasun handiagoa du.',
@@ -3521,7 +3472,6 @@ const I18N = {
     cfgResumen:             '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta',
     cfgPalabrasPlaceholder: 'hitza1\nhitza2\nhitza3',
 
-    /* ── Irisgarritasuna ── */
     acTitle:                'Irakurketa aukerak',
     acTema:                 'Gaia',
     acFuente:               'Letra-tipoa',
@@ -3539,7 +3489,6 @@ const I18N = {
     acBionic:               'Bionic',
     acFoco:                 'Fokua',
 
-    /* ── Iragazkiak ── */
     fltBuscar:              'Bilatu… ("hauteskundeak" · "elpais" · "elpais.com" · "tag:kirolak")',
     fltGrupo:               'Talde guztiak',
     fltTipo:                'Mota guztiak',
@@ -3551,14 +3500,13 @@ const I18N = {
     ordenRecientes:         '↓ Berrienak lehenengo',
     ordenAntiguos:          '↑ Zaharrenak lehenengo',
 
-    /* ── Kontagailua / hutsa / erroreak ── */
     contador:               '{total}tik {n} izenburu erakusten',
+    contadorScope:          '{total}etik {n} erakusten modu aktiboan',
     contadorPreset:         ' · Modo Pertsonalizatua aktibo',
     vacio:                  'Emaitzarik gabe',
     errCarga:               'Errorea datuak kargatzean: ',
     loading:                'Kargatzen…',
 
-    /* ── Inportatu/Esportatu mezuak ── */
     expOk:                  'Konfigurazioa esportatu da',
     impOk:                  'Konfigurazioa ondo inportatu da',
     impFromVoceiro:         'Voceiro konfigurazioa inportatu da',
@@ -3566,13 +3514,11 @@ const I18N = {
     impErr:                 'Inportazio errorea: {msg}',
     impConfirm:             'Honek zure uneko konfigurazioa ordezkatuko du. Jarraitu?',
 
-    /* ── Modo Pertsonalizatua ── */
     presetVacio:            'Modo Pertsonalizatua hutsik dago. Konfiguratu lehenengo eta gero aktibatu.',
     presetActivado:         'Modo Pertsonalizatua aktibatuta',
     presetDesactivado:      'Modo Pertsonalizatua desaktibatuta',
     presetGuardadoActivado: 'Konfigurazioa gordeta · Modo Pertsonalizatua aktibatuta',
 
-    /* ── Datak ── */
     fechaAhora:             'orain',
     fechaHaceMin:           'duela {n} min',
     fechaHaceH:             'duela {n} h',
@@ -3581,12 +3527,10 @@ const I18N = {
     recolectado:            'Bilduta',
     sinFechaReal:           'Iturriaren data zehatzik gabe · estimatua',
 
-    /* ── Sinkronizazioa ── */
     syncOnline:             'Lector Universal pluginarekin sinkronizatuta',
     syncOffline:            'Pluginik gabe — aldaketak nabigatzaile honetan bakarrik gordeta',
     syncOfflineHint:        'Instalatu Lector Universal plugina konfigurazioa sinkronizatzeko.',
 
-    /* ── Zain ── */
     pendTitle:              'Geroago irakurtzeko gordetako albisteak',
     pendRefresh:            '↻ Eguneratu',
     noUserscript:           'Instalatu Lector Universal plugina albisteak gordetzeko eta hemen ikusteko.',
@@ -3603,7 +3547,6 @@ const I18N = {
     markRead:               'Irakurrita markatu',
     markUnread:             'Irakurri gabe markatu',
 
-    /* ── Txostenak ── */
     repBtnTitle:            'Izenburu honekin arazo bat jakinarazi',
     repTitle:               'Arazo bat jakinarazi',
     repCtxEmpty:            '(Izenburu zehatzik gabe — txosten orokorra)',
@@ -3636,7 +3579,6 @@ const I18N = {
     repCtxConfig:           'Konfig',
     repFecha:               'Txostenaren data',
 
-    /* ── Bilatzailea (FreeNews / Google News) ── */
     bsTitle:                'Mila hedabide baino gehiagotan bilatu',
     bsAviso:                'Bilatzaile honek hedabide txikiak eta eskualdekoak biltzen ditu. Estatuko egunkari handiak (El País, El Mundo, ABC…) ez daude bere indizean.',
     bsQ:                    'Bilatu edozein gai…',
@@ -3662,7 +3604,6 @@ const I18N = {
     bsGuardar:              'Gorde',
     bsVerificado:           'katalogoan',
 
-    /* ── Ikusi menua ── */
     vsButton:               'Ikusi',
     vsTitleDup:             'Bikoiztuak',
     vsDup:                  'Bikoiztuak ezkutatu',
@@ -3676,7 +3617,6 @@ const I18N = {
     vsReset:                '↺ Vista berrezarri',
   },
 };
-
 function t(key, vars){
   const lang = (ACCES && ACCES.lang) || 'es';
   const dict = I18N[lang] || I18N.es;
@@ -4169,7 +4109,23 @@ function _vsOutsideClick(e){
   const wrap = document.querySelector('.view-settings-wrap');
   if (wrap && !wrap.contains(e.target)) cerrarViewSettingsMenu();
 }
-
+/* ── Fase 2 · relanzar carga (cambio de días o de preset) ── */
+let _relanzarTimer = null;
+function relanzarCarga() {
+  if (_relanzarTimer) clearTimeout(_relanzarTimer);
+  _relanzarTimer = setTimeout(async () => {
+    _relanzarTimer = null;
+    const cont = $('#resultados');
+    if (cont) cont.innerHTML = '<div class="vacio">Cargando…</div>';
+    try {
+      await cargarScope();
+      aplicarFiltros();
+    } catch(e) {
+      console.error('[relanzar]', e);
+      if (cont) cont.innerHTML = '<div class="vacio">Error: ' + escapeHtml(e.message) + '</div>';
+    }
+  }, 150);
+}
 function actualizarBotonPreset(){
   const btn = $('#btn-preset');
   if (!btn) return;
@@ -7775,11 +7731,15 @@ function renderPresetBanner(){
 
 function renderizar(){
   const lista = ULT_FILTRADAS;
-  const totalHistorico = Math.max(
-    (_manifest && _manifest.total) || 0,
-    NOTICIAS.length
-  );
-  let txt = `Mostrando ${lista.length.toLocaleString()} de ${totalHistorico.toLocaleString()} titulares`;
+  const nMostrados = lista.length;
+  const nCargados = NOTICIAS.length;
+
+  // En scope: "Mostrando N de TOTAL en modo activo"
+  // En all:   "Mostrando N de TOTAL titulares"
+  const enScope = _scopeActual && _scopeActual.tipo !== 'all';
+  const txt = enScope
+    ? t('contadorScope', { n: nMostrados.toLocaleString(), total: nCargados.toLocaleString() })
+    : t('contador', { n: nMostrados.toLocaleString(), total: nCargados.toLocaleString() });
 
   $('#contador').textContent = txt;
   const cont = $('#resultados');
@@ -8299,6 +8259,14 @@ function aplicarTextos(){
   $('#cfg-medios').textContent = t('cfgMedios');
   $('#cfg-feed').textContent = t('cfgFeed');
   $('#cfg-feed-hint').textContent = t('cfgFeedHint');
+  const elDias = $('#cfg-dias'); if (elDias) elDias.textContent = t('cfgDias');
+  const elDiasHint = $('#cfg-dias-hint'); if (elDiasHint) elDiasHint.textContent = t('cfgDiasHint');
+  const grupoDias = document.querySelector('.opt-group[data-dias]');
+  if (grupoDias){
+    grupoDias.querySelectorAll('button[data-val]').forEach(b => {
+      b.textContent = b.dataset.val;
+    });
+  }
   $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
   $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
   const lblPreset = $('#cfg-preset-busqueda-lbl');
@@ -8408,6 +8376,65 @@ function aplicarTextos(){
   actualizarSyncBanner();
   actualizarBotonPendientes();
 }
+
+/* ── Fase 2 · selector de días ── */
+function renderDiasSelector() {
+  const grupo = document.querySelector('.opt-group[data-dias]');
+  if (!grupo) return;
+
+  // Sincronizar botones activos
+  grupo.querySelectorAll('button[data-val]').forEach(b => {
+    const v = parseInt(b.dataset.val, 10);
+    b.classList.toggle('active', v === DIAS_MEMORIA);
+  });
+
+  // Deshabilitar 7 y 20 cuando no hay preset con reglas
+  const conPreset = PRESET_ACTIVO && presetTieneReglas();
+  grupo.querySelectorAll('button[data-val]').forEach(b => {
+    const v = parseInt(b.dataset.val, 10);
+    const disabled = !conPreset && v > DIAS_MEMORIA_MAX_ALL;
+    b.disabled = disabled;
+    b.style.opacity = disabled ? '.4' : '';
+    b.style.cursor = disabled ? 'not-allowed' : '';
+  });
+
+  // Aviso
+  const aviso = document.getElementById('cfg-dias-aviso');
+  if (aviso){
+    if (!conPreset && DIAS_MEMORIA > DIAS_MEMORIA_MAX_ALL){
+      aviso.textContent = t('cfgDiasAvisoAll', { n: DIAS_MEMORIA_MAX_ALL });
+      aviso.style.display = '';
+    } else {
+      aviso.style.display = 'none';
+    }
+  }
+}
+
+function setDiasMemoria(n, { persistir = true } = {}) {
+  if (!DIAS_MEMORIA_VALIDOS.includes(n)) return;
+  DIAS_MEMORIA = n;
+  if (persistir){
+    try { localStorage.setItem(DIAS_MEMORIA_KEY, String(n)); } catch(e){}
+  }
+  renderDiasSelector();
+}
+
+function wireDiasSelector() {
+  const grupo = document.querySelector('.opt-group[data-dias]');
+  if (!grupo) return;
+
+  grupo.addEventListener('click', e => {
+    const b = e.target.closest('button[data-val]');
+    if (!b || b.disabled) return;
+    const v = parseInt(b.dataset.val, 10);
+    setDiasMemoria(v);
+    // Relanzar la carga con el nuevo N
+    relanzarCarga();
+  });
+
+  renderDiasSelector();
+}
+
 function wireCfgTabs(){
   const tabs   = document.querySelectorAll('.cfg-tab');
   const panels = document.querySelectorAll('.cfg-tabpanel');
@@ -8451,7 +8478,7 @@ const aplicarFiltrosDebounced = debounce(aplicarFiltros, 350);
 function wireStaticEvents(){
   const btnP = $('#btn-preset');
   actualizarBotonPreset();
-
+  wireDiasSelector();
   const hTitle = document.getElementById('h-title');
   if (hTitle){
     hTitle.style.cursor = 'pointer';
