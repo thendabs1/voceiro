@@ -5061,37 +5061,72 @@ let _scopeActual = null;
  * Punto de entrada. Reemplaza a cargarPortada().
  * Descarga el manifest, decide el scope y lanza la carga.
  */
+let _scopeAbort = null;
+let _scopeGeneration = 0;
+
 async function cargarScope() {
-  // 1) manifest
-  const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, { cache: 'no-cache' });
-  if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
-  _manifest = await manifestRes.json();
+  // Marcar como "cargando" durante toda la operación.
+  // Sin esto, aplicarFiltros() (que se llama en cada refrescarVistaCompleta)
+  // dispara nuevos relanzarCarga en cascada → 354 requests.
+  _cargandoScope = true;
+  let myGen = 0;
+  try {
+    // Cancelar cualquier carga anterior en curso
+    if (_scopeAbort) _scopeAbort.abort();
+    _scopeAbort = new AbortController();
+    myGen = ++_scopeGeneration;
+    const signal = _scopeAbort.signal;
 
-  // 2) decidir scope
-  const scope = decidirScope();
-  _scopeActual = scope;
+    // 1) manifest
+    const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, {
+      cache: 'no-cache', signal
+    });
+    if (myGen !== _scopeGeneration) return;
+    if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
+    _manifest = await manifestRes.json();
+    if (myGen !== _scopeGeneration) return;
 
-  // 3) reset del estado
-  MEDIOS = {};
-  NOTICIAS = [];
-  _hidratadasHasta = 0;
-  _dupsHechosHasta = 0;
-  _dupsLogged = false;
-  _urlsCargadas = new Set();
-  _titulosCargados = new Set();
+    // 2) decidir scope y actualizarlo YA (antes de seguir)
+    const scope = decidirScope();
+    _scopeActual = scope;
 
-  // 4) carga según scope
-  if (scope.tipo === 'all') {
-    await _cargarInicialAll();
-    _programarAllRestante();
-  } else {
-    await _cargarInicialScope(scope);
-    _programarScopeRestante(scope);
-    _programarPortadaMini();
+    // 3) reset del estado
+    MEDIOS = {};
+    NOTICIAS = [];
+    _hidratadasHasta = 0;
+    _dupsHechosHasta = 0;
+    _dupsLogged = false;
+    _urlsCargadas = new Set();
+    _titulosCargados = new Set();
+
+    // 4) carga según scope
+    if (scope.tipo === 'all') {
+      await _cargarInicialAll(signal);
+      _programarAllRestante(signal);
+    } else {
+      await _cargarInicialScope(scope, signal);
+      _programarScopeRestante(scope, signal);
+      _programarPortadaMini(signal);
+    }
+
+    if (myGen === _scopeGeneration) refrescarVistaCompleta();
+    // NO anulamos _scopeAbort. Dejamos que el siguiente cargarScope lo aborte.
+  } catch(e) {
+    // Si fuimos abortados por una carga más reciente, silencio total:
+    // el nuevo cargarScope ya está pintando lo suyo.
+    if (e.name === 'AbortError') return;
+    throw e;
+  } finally {
+    // Solo el cargarScope más reciente puede resetear _cargandoScope
+    // y programar relanzar. Si fuimos abortados por otro, no tocamos nada
+    // (el nuevo cargarScope se encargará al terminar).
+    if (myGen === _scopeGeneration) {
+      _cargandoScope = false;
+      _programarRelanzarSiCambiaScope();
+    }
   }
-
-  refrescarVistaCompleta();
 }
+
 
 /* ── Helpers de merge ── */
 
@@ -5101,9 +5136,9 @@ function _claveUrl(u, dominio) {
   return normalizeUrlForMatch(full);
 }
 
-async function _fetchJSON(url) {
+async function _fetchJSON(url, signal) {
   try {
-    const r = await fetch(url, { cache: 'force-cache' });
+    const r = await fetch(url, { cache: 'force-cache', signal });
     if (!r.ok) return null;
     return await r.json();
   } catch(e) {
@@ -5115,7 +5150,8 @@ async function _fetchJSON(url) {
  * Mergea un slice/portada en NOTICIAS con dedup por URL + título.
  * Devuelve cuántas noticias se añadieron.
  */
-function _mergearSliceData(data) {
+function _mergearSliceData(data, signal) {
+  if (signal && signal.aborted) return 0;
   if (!data) return 0;
 
   if (data.medios) {
@@ -5151,17 +5187,17 @@ function _mergearSliceData(data) {
 
 /* ── Camino "all" ── */
 
-async function _cargarInicialAll() {
+async function _cargarInicialAll(signal) {
   const portadaFile = (_manifest.portada && _manifest.portada.file)
                       ? _manifest.portada.file : 'portada.json';
-  const data = await _fetchJSON(`${DATA_BASE}/${portadaFile}`);
+  const data = await _fetchJSON(`${DATA_BASE}/${portadaFile}`, signal);
   if (data) {
     _mergearSliceData(data);
     pintarFechaCabecera(data.generado);
   }
 }
 
-function _programarAllRestante() {
+function _programarAllRestante(signal) {
   const n = diasEfectivos({ tipo: 'all' });
   if (n <= 1) return;
 
@@ -5174,9 +5210,10 @@ function _programarAllRestante() {
 
   async function worker() {
     while (cola.length) {
+      if (signal.aborted) return;   // ← NUEVO
       const dia = cola.shift();
       if (!dia || !dia.all || !dia.all.file) continue;
-      const data = await _fetchJSON(`${DATA_BASE}/${dia.all.file}`);
+      const data = await _fetchJSON(`${DATA_BASE}/${dia.all.file}`, signal);
       if (!data) continue;
       const añadidas = _mergearSliceData(data);
       if (añadidas > 0) refrescarDeb();
@@ -5193,7 +5230,7 @@ function _programarAllRestante() {
 
 /* ── Camino "scope" ── */
 
-async function _cargarInicialScope(scope) {
+async function _cargarInicialScope(scope, signal) {
   const dias = (_manifest.dias || []).slice(0, 1);   // día 0
   if (!dias.length) return;
 
@@ -5201,7 +5238,7 @@ async function _cargarInicialScope(scope) {
   if (!urls.length) return;
 
   const results = await Promise.all(
-    urls.map(u => _fetchJSON(`${DATA_BASE}/${u.file}`))
+    urls.map(u => _fetchJSON(`${DATA_BASE}/${u.file}`, signal))
   );
 
   let generado = '';
@@ -5214,7 +5251,7 @@ async function _cargarInicialScope(scope) {
   if (generado) pintarFechaCabecera(generado);
 }
 
-function _programarScopeRestante(scope) {
+function _programarScopeRestante(scope, signal) {
   const n = diasEfectivos(scope);
   if (n <= 1) return;
 
@@ -5230,9 +5267,10 @@ function _programarScopeRestante(scope) {
 
   async function worker() {
     while (cola.length) {
+      if (signal.aborted) return;
       const u = cola.shift();
       if (!u) continue;
-      const data = await _fetchJSON(`${DATA_BASE}/${u.file}`);
+      const data = await _fetchJSON(`${DATA_BASE}/${u.file}`, signal);
       if (!data) continue;
       const añadidas = _mergearSliceData(data);
       if (añadidas > 0) refrescarDeb();
@@ -5247,14 +5285,16 @@ function _programarScopeRestante(scope) {
   });
 }
 
-function _programarPortadaMini() {
+function _programarPortadaMini(signal) {
   if (!_manifest.portada_mini || !_manifest.portada_mini.file) return;
-  _fetchJSON(`${DATA_BASE}/${_manifest.portada_mini.file}`).then(data => {
+  _fetchJSON(`${DATA_BASE}/${_manifest.portada_mini.file}`, signal).then(data => {
+    if (signal.aborted) return;
     if (!data) return;
     const añadidas = _mergearSliceData(data);
     if (añadidas > 0) refrescarVistaCompleta();
   });
 }
+
 
 function refrescarVistaCompleta(){
   hidratarNoticias();
@@ -7434,17 +7474,19 @@ function _scopeEquals(a, b) {
 }
 
 let _scopePendiente = null;
+let _scopeTimer = null;
 function _programarRelanzarSiCambiaScope() {
+  if (_cargandoScope) return;
   const nuevo = decidirScope();
   if (_scopeEquals(nuevo, _scopeActual)) return;
   _scopePendiente = nuevo;
-  clearTimeout(_scopePendiente._t);
-  _scopePendiente._t = setTimeout(() => {
+  if (_scopeTimer) clearTimeout(_scopeTimer);
+  _scopeTimer = setTimeout(() => {
     _scopePendiente = null;
+    _scopeTimer = null;
     relanzarCarga();
-  }, 200);
+  }, 300);
 }
-
 function aplicarFiltros(){
   // Detectar cambio de scope antes de filtrar
   _programarRelanzarSiCambiaScope();
@@ -7652,13 +7694,14 @@ function aplicarFiltros(){
 }
 
 /* ── Renombrada: cuerpo de aplicarFiltros sin el trigger de scope ── */
+let _cargandoScope = false;
 function _aplicarFiltrosInterno(raw) {
-  // Reusa toda la lógica de aplicarFiltros pero sin volver a disparar scope.
-  // Truco simple: guardamos el flag para que _programarRelanzarSiCambiaScope no actúe.
-  const _scopeSnap = _scopeActual;
-  _scopeActual = decidirScope();   // ahora coincide
-  aplicarFiltros();
-  _scopeActual = _scopeSnap;
+  _cargandoScope = true;
+  try {
+    aplicarFiltros();
+  } finally {
+    _cargandoScope = false;
+  }
 }
 function actualizarBotonCargarMas() {
   const wrap = document.getElementById('cargar-mas-wrap');
@@ -7701,15 +7744,20 @@ async function cargarMasDeHistorico() {
       silent: true, offset: offsetSnap,
     });
 
-    // Si el usuario cambió de búsqueda mientras cargábamos, ignorar
     if (HISTORICO_PAG.parsed !== parsedSnap) return;
     if (!res || !res.items || !res.items.length) {
       HISTORICO_PAG.agotado = true;
       HISTORICO_PAG.next = null;
       return;
     }
-    const antes = ULT_FILTRADAS.length;
-    const merged = mergeHistorico(ULT_FILTRADAS, res.items);
+
+    // Guardamos referencia al array viejo ANTES del merge.
+    // mergeHistorico hace concat + sort, pero conserva las referencias
+    // de los items viejos → podemos comparar por identidad.
+    const arrayViejo = ULT_FILTRADAS;
+    const antes = arrayViejo.length;
+
+    const merged = mergeHistorico(arrayViejo, res.items);
     const filtrado = aplicarTier3(merged);
     const nuevas = filtrado.length - antes;
 
@@ -7718,13 +7766,26 @@ async function cargarMasDeHistorico() {
     HISTORICO_PAG.next = res.next_offset;
     if (!res.next_offset) HISTORICO_PAG.agotado = true;
 
-    // Solo añade al DOM las nuevas, no re-renderiza todo
     if (nuevas > 0) {
-      appendBatchDesdeOffset(antes, filtrado.length);
+      // ¿Los items viejos siguen ocupando las mismas posiciones [0..antes-1]?
+      // Si sí → append limpio (rápido, sin scroll jump).
+      // Si no → algún item nuevo se ha colado en medio → render completo.
+      let esAppendLimpio = true;
+      for (let i = 0; i < antes; i++) {
+        if (filtrado[i] !== arrayViejo[i]) { esAppendLimpio = false; break; }
+      }
+
+      if (esAppendLimpio) {
+        appendBatchDesdeOffset(antes, filtrado.length);
+      } else {
+        renderizar();
+      }
+
       ULT_BANNER_HISTORICO_EXTRA += nuevas;
       if (ULT_BANNER_INFO) ULT_BANNER_INFO.nDentro = ULT_FILTRADAS.length;
       renderPresetBanner();
     }
+
     actualizarFiltrosCount();
   } catch(e) {
     console.warn('[cargar-mas]', e.message);
@@ -7785,7 +7846,7 @@ function renderizar(){
 
   // Indicador "fuera del modo"
   if (enScope && ULT_BANNER_INFO && ULT_BANNER_INFO.nFuera > 0){
-    t('contadorFueraModo', { n: ULT_BANNER_INFO.nFuera.toLocaleString() })
+    txt += t('contadorFueraModo', { n: ULT_BANNER_INFO.nFuera.toLocaleString() });
   }
 
   $('#contador').textContent = txt;
