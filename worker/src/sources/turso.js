@@ -30,28 +30,33 @@ export const turso = {
     // Con subquery, noticias se itera por fecha_dia (índice) y se filtra.
     const mediosConds = [];
     const mediosArgs = [];
-
+    // ── Filtros de facet: OR dentro del facet, AND entre facets ──
+    // Ver shared/parser.js y la nota de semántica del frontend.
     if (parsed.grupos.length) {
-      for (const g of parsed.grupos) {
-        mediosConds.push(`grupo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
-        mediosArgs.push(escapeLike(g));
-      }
+      const ors = parsed.grupos.map(
+        () => `grupo_norm LIKE '%' || ? || '%' ESCAPE '\\'`
+      );
+      mediosConds.push(`(${ors.join(' OR ')})`);
+      mediosArgs.push(...parsed.grupos.map(escapeLike));
     }
     if (parsed.tipos.length) {
-      for (const t of parsed.tipos) {
-        mediosConds.push(`tipo_norm LIKE '%' || ? || '%' ESCAPE '\\'`);
-        mediosArgs.push(escapeLike(t));
-      }
+      const ors = parsed.tipos.map(
+        () => `tipo_norm LIKE '%' || ? || '%' ESCAPE '\\'`
+      );
+      mediosConds.push(`(${ors.join(' OR ')})`);
+      mediosArgs.push(...parsed.tipos.map(escapeLike));
     }
     if (parsed.lang?.length) {
+      // IN = OR. Ya estaba bien.
       mediosConds.push(`lang_norm IN (${parsed.lang.map(() => '?').join(',')})`);
       mediosArgs.push(...parsed.lang);
     }
     if (parsed.tags?.length) {
-      for (const tg of parsed.tags) {
-        mediosConds.push(`tags LIKE '%' || ? || '%' ESCAPE '\\'`);
-        mediosArgs.push(escapeLike(tg));
-      }
+      const ors = parsed.tags.map(
+        () => `tags LIKE '%' || ? || '%' ESCAPE '\\'`
+      );
+      mediosConds.push(`(${ors.join(' OR ')})`);
+      mediosArgs.push(...parsed.tags.map(escapeLike));
     }
 
     if (mediosConds.length) {
