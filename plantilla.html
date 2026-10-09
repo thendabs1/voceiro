@@ -5083,7 +5083,14 @@ async function _cargarCapa(key, signal) {
   await Promise.all(workers);
 
   const añadidos = _mergearItemsEnNoticias(nuevos, key);
-  if (añadidos > 0) hidratarNoticias();     // ← AÑADIR
+  if (añadidos > 0) {
+    hidratarNoticias();
+    construirMediosUnicos();
+    construirIndicesBusqueda();
+    if ($('#panel-config')?.classList.contains('open')) {
+      renderListaMedios();
+    }
+  }
   LAYERS.set(key, {
     files,
     cargada: Date.now(),
@@ -5137,7 +5144,14 @@ async function extenderCapasR2(capas, desde, hasta) {
     await Promise.all(workers);
 
     const añadidos = _mergearItemsEnNoticias(nuevos, key);
-    if (añadidos > 0) hidratarNoticias();     // ← AÑADIR
+    if (añadidos > 0) {
+      hidratarNoticias();
+      construirMediosUnicos();
+      construirIndicesBusqueda();
+      if ($('#panel-config')?.classList.contains('open')) {
+        renderListaMedios();
+      }
+    }
     _itemsCargadosDeCapas += añadidos;
   }
 }
@@ -5213,6 +5227,15 @@ async function cargarBase() {
     _hidratadasHasta = 0;
     _dupsHechosHasta = 0;
     _dupsLogged = false;
+
+    // 2.5) Catálogo completo (346 medios desde el manifest)
+    //      Va antes de la portada para que MEDIOS_UNICOS arranque completo.
+    //      La portada luego sobreescribe con datos frescos (mismos valores).
+    if (_manifest.catalogo) {
+      for (const d in _manifest.catalogo) {
+        MEDIOS[d] = _manifest.catalogo[d];
+      }
+    }
 
     // 3) Base = portada
     const portadaFile = (_manifest.portada && _manifest.portada.file)

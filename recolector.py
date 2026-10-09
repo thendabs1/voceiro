@@ -1442,6 +1442,22 @@ def _tabla_medios_de(items):
         medios[d]['h'] = h
     return dict(sorted(medios.items()))
 
+def _catalogo_completo():
+    """Catálogo COMPLETO de medios (los 346 de medios.py), independiente
+    de lo que se haya recolectado este run. Se embebe en el manifest para
+    que el frontend pueda poblar MEDIOS_UNICOS sin depender de la portada.
+    """
+    _init_medios_por_dominio()
+    out = {}
+    for d, m in _MEDIOS_POR_DOMINIO.items():
+        out[d] = {
+            'n':    m.get('n', ''),
+            'g':    m.get('grupo', ''),
+            't':    m.get('type', ''),
+            'l':    m.get('lang', ''),
+            'tags': m.get('tags', []),
+        }
+    return dict(sorted(out.items()))
 
 def _orden_estable(n):
     """Clave de orden determinista: fecha DESC, luego dominio, luego titular."""
@@ -1613,6 +1629,7 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         'hoy': hoy_str,
         'dias': dias_manifest,
         'ficheros': ficheros_viejos,
+        'catalogo': _catalogo_completo(),
     }
     if portada_info:
         manifest['portada'] = portada_info
