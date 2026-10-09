@@ -7338,7 +7338,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   }
 }
 
-async function buscarEnWorker(parsed, rawQuery, { offset = 0, limit = 50 } = {}) {
+async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
   const params = new URLSearchParams();
   params.set('raw', rawQuery || '');
   params.set('limit', String(limit));
@@ -7576,10 +7576,10 @@ if (!capas.size) {
   // (Con la nueva necesitaTurso, esto solo ocurre para texto/tag/tipo/lang/fechas
   //  o grupos sin slice.)
   if (usarTurso && !TURSO_RAW) {
-    TURSO_RAW = raw;   // sin cutoff: no hay R2 previo, queremos todo
+    TURSO_RAW = rawProcesado;  // sin cutoff: no hay R2 previo, queremos todo
     TURSO_OFFSET = 0;
 
-    buscarEnWorker(parsed, TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
+    buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
       if (myGen !== _genAplicar) return;
       if (!res.items || !res.items.length) {
         TURSO_HAY_MAS = false;
@@ -8176,8 +8176,7 @@ async function cargarMasDeTurso() {
   const btn = document.getElementById('btn-cargar-mas');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
-  const parsed = parseQuery(preprocesarInput(TURSO_RAW));
-  const res = await buscarEnWorker(parsed, TURSO_RAW, {
+  const res = await buscarEnWorker(TURSO_RAW, {
     offset: TURSO_OFFSET,
     limit: 50
   });
