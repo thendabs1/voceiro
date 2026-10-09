@@ -411,7 +411,29 @@
     font-size:.85em; color:var(--accent); opacity:.7;
     margin-left:auto; padding-left:6px;
   }
-
+/* ── Cabeceras de super-grupo (lista de grupos) ── */
+.grupo-cat-header{
+  grid-column: 1 / -1;
+  padding: 8px 8px 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.grupo-cat-header:first-child{ border-top: none; margin-top: 0; }
+.grupo-cat-toggle-wrap{
+  display: flex; align-items: center; gap: 8px;
+  font-size: .78em; color: var(--muted);
+  cursor: pointer; user-select: none;
+}
+.grupo-cat-toggle-wrap input{ accent-color: var(--accent); }
+.grupo-cat-toggle-wrap strong{ color: var(--fg); }
+.grupo-cat-count{
+  background: var(--quote-bg);
+  border: 1px solid var(--border);
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: .85em;
+  color: var(--muted);
+}
   .ctrl-medios{
     display:grid; grid-template-columns:1fr auto; gap:8px;
     margin-bottom:8px;
@@ -485,7 +507,20 @@
   .medio-fila .celda{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .medio-fila .celda-grupo{color:var(--muted); font-size:.9em}
   .medio-fila.no-config .celda-dominio{opacity:.75}
-
+/* ── Cabeceras de super-grupo (lista de medios) ── */
+.medio-cat-header{
+  padding: 10px 10px 4px;
+  font-size: .68em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  background: var(--quote-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
   .known-dot{
     display:inline-block;
     width:6px; height:6px; border-radius:50%;
@@ -5920,6 +5955,41 @@ function wireAutocomplete(){
   });
 }
 
+
+/* ── Super-grupos (prefijo antes de " · ") ── */
+function superGrupo(grupo){
+  if (!grupo) return 'Otros';
+  const i = grupo.indexOf(' · ');
+  return i > 0 ? grupo.slice(0, i) : grupo;
+}
+
+const ORDEN_SUPER = [
+  'Nacional',
+  'Deportes', 'Economía', 'Tecnología', 'Ciencia', 'Cultura',
+  'Regional',
+  'Internacional',      // ← al final
+];
+
+function ordenSuper(s){
+  const i = ORDEN_SUPER.indexOf(s);
+  return i >= 0 ? i : 999;
+}
+
+// Bucketea `items` por super-grupo usando `keyFn(item)` como clave.
+// Devuelve { buckets: Map<super, items[]>, supers: string[] ordenados }.
+function bucketPorSuper(items, keyFn){
+  const buckets = new Map();
+  items.forEach(it => {
+    const s = superGrupo(keyFn(it));
+    if (!buckets.has(s)) buckets.set(s, []);
+    buckets.get(s).push(it);
+  });
+  const supers = [...buckets.keys()]
+    .sort((a, b) => ordenSuper(a) - ordenSuper(b) || a.localeCompare(b));
+  return { buckets, supers };
+}
+
+
 /* ═══════════════════════════════════════════════════════════════
    GRUPOS, LISTAS Y MEDIOS (panel config)
    ═══════════════════════════════════════════════════════════════ */
@@ -5950,70 +6020,133 @@ function gruposAfinesAlIdioma(){
 
 function reconstruirSelectores(){
   const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
+  const { buckets, supers } = bucketPorSuper(grupos, g => g);
 
-  const selG_prev  = $('#grupo').value;
-  const selFG_prev = $('#filtro-grupo-medio').value;
+  const poblar = (sel, labelTodo) => {
+    const prev = sel.value;
 
-  // <select id="grupo">
-  const selG = $('#grupo');
-  while (selG.options.length > 1) selG.remove(1);
-  if (selG.options[0]) selG.options[0].text = t('fltGrupo');
-  grupos.forEach(g => selG.add(new Option(g, g)));
-  if (selG_prev && [...selG.options].some(o => o.value === selG_prev)) selG.value = selG_prev;
+    // ── Limpieza TOTAL: options + optgroups ──
+    sel.innerHTML = '';
+    sel.appendChild(new Option(labelTodo, ''));
 
-  // <select id="filtro-grupo-medio">
-  const selFG = $('#filtro-grupo-medio');
-  while (selFG.options.length > 1) selFG.remove(1);
-  if (selFG.options[0]) selFG.options[0].text = t('cfgTodosGrupos');
-  grupos.forEach(g => selFG.add(new Option(g, g)));
-  if (selFG_prev && [...selFG.options].some(o => o.value === selFG_prev)) selFG.value = selFG_prev;
+    supers.forEach(s => {
+      const enCat = buckets.get(s);
 
+      // Si la categoría tiene un único grupo que se llama igual
+      // (Nacional, Deportes, Economía…), la mostramos como opción
+      // top-level. Sin optgroup redundante → sin "Deportes / Deportes".
+      if (enCat.length === 1 && enCat[0] === s){
+        sel.appendChild(new Option(s, s));
+        return;
+      }
 
+      const og = document.createElement('optgroup');
+      og.label = s;
+      enCat.forEach(g => og.appendChild(new Option(g, g)));
+      sel.appendChild(og);
+    });
+
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  };
+
+  poblar($('#grupo'), t('fltGrupo'));
+  poblar($('#filtro-grupo-medio'), t('cfgTodosGrupos'));
 }
 function renderListaGrupos(p){
+  const contG = $('#lista-grupos');
   const grupos = ordenarGruposPorIdioma([...new Set(MEDIOS_UNICOS.map(m => m.grupo))]);
   const afin   = gruposAfinesAlIdioma();
   const gSet   = new Set(p.grupos);
-  const contG  = $('#lista-grupos');
-  contG.innerHTML = grupos.map(g => `
-    <label class="grupo-item">
-      <input type="checkbox" data-grupo="${escapeHtml(g)}" ${gSet.has(g) ? 'checked' : ''}>
-      <span>${escapeHtml(g)}</span>
-      ${afin.has(g) ? '<span class="flag" title="idioma">●</span>' : ''}
-    </label>`).join('');
-}
+  const { buckets, supers } = bucketPorSuper(grupos, g => g);
 
+  let html = '';
+  supers.forEach(s => {
+    const enCat   = buckets.get(s);
+    const todos   = enCat.every(g => gSet.has(g));
+    const algunos = !todos && enCat.some(g => gSet.has(g));
+
+    // Si el grupo se llama igual que la categoría, no pintamos cabecera
+    const esRedundante = enCat.length === 1 && enCat[0] === s;
+    if (!esRedundante){
+      html += `<div class="grupo-cat-header" data-cat="${escapeHtml(s)}">
+        <label class="grupo-cat-toggle-wrap">
+          <input type="checkbox" class="grupo-cat-toggle"
+                ${todos ? 'checked' : ''}
+                ${algunos ? 'data-indeterminate="1"' : ''}>
+          <strong>${escapeHtml(s)}</strong>
+          <span class="grupo-cat-count">${enCat.length}</span>
+        </label>
+      </div>`;
+    }
+    enCat.forEach(g => {
+      html += `<label class="grupo-item" data-cat="${escapeHtml(s)}">
+        <input type="checkbox" data-grupo="${escapeHtml(g)}" ${gSet.has(g) ? 'checked' : ''}>
+        <span>${escapeHtml(g)}</span>
+        ${afin.has(g) ? '<span class="flag" title="idioma">●</span>' : ''}
+      </label>`;
+    });
+  });
+  contG.innerHTML = html;
+
+  // Estado indeterminado (algunos pero no todos)
+  contG.querySelectorAll('.grupo-cat-toggle[data-indeterminate="1"]')
+    .forEach(chk => { chk.indeterminate = true; });
+
+  // Toggle de categoría completa
+  contG.querySelectorAll('.grupo-cat-toggle').forEach(chk => {
+    chk.addEventListener('change', () => {
+      const cat = chk.closest('.grupo-cat-header').dataset.cat;
+      contG.querySelectorAll(`.grupo-item[data-cat="${CSS.escape(cat)}"] input[data-grupo]`)
+        .forEach(g => { g.checked = chk.checked; });
+    });
+  });
+}
 // renderListaMedios() se queda como está
 
 function renderListaMedios(){
   const cont = $('#lista-medios');
-  cont.innerHTML = MEDIOS_UNICOS.map(m => {
-    const site  = SITES.get(m.dominio);
-    const known = !!site;
-    const mode  = getOverride(m.dominio) || '';
+  const { buckets, supers } = bucketPorSuper(MEDIOS_UNICOS, m => m.grupo);
 
-    const dotHtml = known
-      ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
-      : '';
+  let html = '';
+  supers.forEach(s => {
+    const enCat = buckets.get(s);
 
-    return `
-      <div class="medio-fila ${known ? '' : 'no-config'}" data-dominio="${escapeHtml(m.dominio)}"
-           data-grupo="${escapeHtml(m.grupo)}"
-           data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
-        <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-          <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>✓</span>
-        </label>
-        <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
-          <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>✗</span>        </label>
-        <span class="celda celda-dominio">${dotHtml}<code>${escapeHtml(m.dominio)}</code></span>
-        <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
-        <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
-      </div>`;
-  }).join('');
+    // Si el grupo se llama igual que la categoría (Deportes, Economía,
+    // Nacional…), no pintamos cabecera: sería una línea redundante.
+    const esRedundante = enCat.length === 1 && enCat[0].grupo === s;
+    if (!esRedundante){
+      html += `<div class="medio-cat-header" data-cat="${escapeHtml(s)}">${escapeHtml(s)}</div>`;
+    }
 
-
+    enCat.forEach(m => {
+      const site  = SITES.get(m.dominio);
+      const known = !!site;
+      const mode  = getOverride(m.dominio) || '';
+      const dotHtml = known
+        ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
+        : '';
+      html += `
+        <div class="medio-fila ${known ? '' : 'no-config'}"
+             data-dominio="${escapeHtml(m.dominio)}"
+             data-grupo="${escapeHtml(m.grupo)}"
+             data-cat="${escapeHtml(s)}"
+             data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
+          <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
+            <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>✓</span>
+          </label>
+          <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
+            <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>✗</span>
+          </label>
+          <span class="celda celda-dominio">${dotHtml}<code>${escapeHtml(m.dominio)}</code></span>
+          <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
+          <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
+        </div>`;
+    });
+  });
+  cont.innerHTML = html;
   filtrarMedios();
 }
+
 function marca(fila){
   const inc = fila.querySelector('.chk-incluir').checked;
   const ign = fila.querySelector('.chk-ignorar').checked;
@@ -6025,6 +6158,7 @@ function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
   const g = $('#filtro-grupo-medio').value;
   let visibles = 0;
+
   document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
     const okQ = !q || f.dataset.buscar.includes(q);
     const okG = !g || f.dataset.grupo === g;
@@ -6032,6 +6166,21 @@ function filtrarMedios(){
     f.style.display = show ? '' : 'none';
     if (show) visibles++;
   });
+
+  // Ocultar cabeceras de categoría sin filas visibles
+  document.querySelectorAll('#lista-medios .medio-cat-header').forEach(hdr => {
+    let sib = hdr.nextElementSibling;
+    let hasVisible = false;
+    while (sib && !sib.classList.contains('medio-cat-header')){
+      if (sib.classList.contains('medio-fila') && sib.style.display !== 'none'){
+        hasVisible = true;
+        break;
+      }
+      sib = sib.nextElementSibling;
+    }
+    hdr.style.display = hasVisible ? '' : 'none';
+  });
+
   actualizarResumen(visibles);
   actualizarAddBar(visibles);
 }
