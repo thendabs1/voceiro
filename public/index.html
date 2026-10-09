@@ -3810,7 +3810,7 @@ function aplicarAcces(){
 
   document.querySelectorAll('.opt-group').forEach(g => {
     const clave = g.dataset.grupo;
-    if (!clave) return;
+    if (clave !== 'tema' && clave !== 'fuente' && clave !== 'extra') return;
     g.querySelectorAll('button').forEach(b => {
       if (clave === 'extra') b.classList.toggle('active', !!ACCES[b.dataset.val]);
       else                   b.classList.toggle('active', b.dataset.val === String(ACCES[clave]));
@@ -5083,7 +5083,14 @@ async function _cargarCapa(key, signal) {
   await Promise.all(workers);
 
   const añadidos = _mergearItemsEnNoticias(nuevos, key);
-  if (añadidos > 0) hidratarNoticias();     // ← AÑADIR
+  if (añadidos > 0) {
+    hidratarNoticias();
+    construirMediosUnicos();
+    construirIndicesBusqueda();
+    if ($('#panel-config')?.classList.contains('open')) {
+      renderListaMedios();
+    }
+  }
   LAYERS.set(key, {
     files,
     cargada: Date.now(),
@@ -5137,7 +5144,14 @@ async function extenderCapasR2(capas, desde, hasta) {
     await Promise.all(workers);
 
     const añadidos = _mergearItemsEnNoticias(nuevos, key);
-    if (añadidos > 0) hidratarNoticias();     // ← AÑADIR
+    if (añadidos > 0) {
+      hidratarNoticias();
+      construirMediosUnicos();
+      construirIndicesBusqueda();
+      if ($('#panel-config')?.classList.contains('open')) {
+        renderListaMedios();
+      }
+    }
     _itemsCargadosDeCapas += añadidos;
   }
 }
@@ -5213,6 +5227,15 @@ async function cargarBase() {
     _hidratadasHasta = 0;
     _dupsHechosHasta = 0;
     _dupsLogged = false;
+
+    // 2.5) Catálogo completo (346 medios desde el manifest)
+    //      Va antes de la portada para que MEDIOS_UNICOS arranque completo.
+    //      La portada luego sobreescribe con datos frescos (mismos valores).
+    if (_manifest.catalogo) {
+      for (const d in _manifest.catalogo) {
+        MEDIOS[d] = _manifest.catalogo[d];
+      }
+    }
 
     // 3) Base = portada
     const portadaFile = (_manifest.portada && _manifest.portada.file)
@@ -5617,14 +5640,23 @@ function preprocesarInput(raw) {
   const tokens = tokenizeQuery(raw);
   const out = [];
   for (const tk of tokens) {
+
+    // ── NUEVO: medio:elpais → web:elpais.com ──
+    // Convierte el prefijo medio: en su dominio canónico. Así
+    // el worker lo trata como dominio (que ya soporta OR via IN).
+    if (tk.prefix === 'medio' || tk.prefix === 'medios'){
+      const strict = normStrict(tk.text);
+      const dom = MEDIOS_POR_NOMBRE.get(strict);
+      if (dom){ out.push('web:' + dom); continue; }
+      // si no hay match, cae al push normal (queda como medio:foo)
+    }
+
     if (tk.prefix || tk.quoted) { out.push(tk.raw); continue; }
     if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) { out.push(tk.raw); continue; }
 
     const strict = normStrict(tk.text);
     if (strict.length >= 3) {
-      // 1) Match exacto
       let dom = MEDIOS_POR_NOMBRE.get(strict);
-      // 2) Match por prefijo (mínimo 4 letras para evitar ruido)
       if (!dom && strict.length >= 4) {
         for (const [k, v] of MEDIOS_POR_NOMBRE) {
           if (k.startsWith(strict)) { dom = v; break; }
@@ -7629,7 +7661,25 @@ if (!capas.size) {
     (!hayBusquedaActiva || PRESET_BUSQUEDA_ESTRICTO);
 
   let fueraDelPreset = 0;
+/* ═══════════════════════════════════════════════════════════════
+   SEMÁNTICA DE FILTROS (faceted search)
 
+   - Dentro del mismo facet (grupo, tipo, medio, dominio, tag, lang): OR.
+       "grupo:regional grupo:nacional"  →  regionales O nacionales.
+   - Entre facets distintos: AND.
+       "grupo:regional tipo:diario"    →  regionales Y diarios.
+   - Texto libre: AND palabra por palabra.
+       "elecciones sanchez"            →  contiene "elecciones" Y "sanchez".
+
+   Justificación: los valores de un mismo facet son mutuamente
+   excluyentes en un ítem (una noticia tiene un único grupo). El OR
+   es la única semántica útil al combinar valores del mismo facet:
+   AND dentro del facet daría siempre 0 resultados.
+
+   El parser (shared/parser.js) no participa: solo produce arrays por
+   facet. La semántica la aplica el consumidor (este filtro o el
+   worker de Turso).
+   ═══════════════════════════════════════════════════════════════ */
   let filtradas = NOTICIAS.filter(n => {
     if (g && n.grupo !== g) return false;
     if (t2 && n.tipo  !== t2) return false;
@@ -7657,42 +7707,47 @@ if (!capas.size) {
       if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
       if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
     }
-    if (hayMedio){
+    // ── Filtrado por facet: OR dentro del facet, AND entre facets. ──
+    // Ver nota de semántica al principio del archivo.
+    if (hayMedio || hayDominio){
+      const ds = n._domStrict  || (n._domStrict  = normDomain(n.dominio));
       const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
-      for (let i = 0; i < parsed.medios.length; i++){
-        if (ms.indexOf(parsed.medios[i]) === -1) return false;
-      }
-    }
-    if (hayDominio){
-      const ds = n._domStrict || (n._domStrict = normDomain(n.dominio));
+      let ok = false;
       for (let i = 0; i < parsed.dominios.length; i++){
-        if (ds.indexOf(parsed.dominios[i]) === -1) return false;
+        if (ds.indexOf(parsed.dominios[i]) !== -1){ ok = true; break; }
       }
+      if (!ok){
+        for (let i = 0; i < parsed.medios.length; i++){
+          if (ms.indexOf(parsed.medios[i]) !== -1){ ok = true; break; }
+        }
+      }
+      if (!ok) return false;
     }
     if (hayGrupo){
       const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
+      let ok = false;
       for (let i = 0; i < parsed.grupos.length; i++){
-        if (gs.indexOf(parsed.grupos[i]) === -1) return false;
+        if (gs.indexOf(parsed.grupos[i]) !== -1){ ok = true; break; }
       }
+      if (!ok) return false;
     }
     if (hayTipo){
       const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
+      let ok = false;
       for (let i = 0; i < parsed.tipos.length; i++){
-        if (ts.indexOf(parsed.tipos[i]) === -1) return false;
+        if (ts.indexOf(parsed.tipos[i]) !== -1){ ok = true; break; }
       }
+      if (!ok) return false;
     }
     if (hayTag){
       const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
+      let ok = false;
       for (let i = 0; i < parsed.tags.length; i++){
-        if (!tags.some(x => x.indexOf(parsed.tags[i]) !== -1)) return false;
+        if (tags.some(x => x.indexOf(parsed.tags[i]) !== -1)){ ok = true; break; }
       }
+      if (!ok) return false;
     }
-    if (hayTitulo){
-      const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-      for (let i = 0; i < parsed.titulo.length; i++){
-        if (tn.indexOf(parsed.titulo[i]) === -1) return false;
-      }
-    }
+    // ── Fin facet ──
     if (presetEfectivo){
       const cumple = cumplePreset(n);
       n._esPreset = cumple;
@@ -8034,41 +8089,43 @@ function _pasaFiltroIndividual(n, ctx) {
     if ((hm === 'read' || hm === 'both') && esLeida) return false;
     if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
   }
-  if (parsed.medios.length){
+  if (parsed.medios.length || parsed.dominios.length){
+    const ds = n._domStrict  || (n._domStrict  = normDomain(n.dominio));
     const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
-    for (let i = 0; i < parsed.medios.length; i++){
-      if (ms.indexOf(parsed.medios[i]) === -1) return false;
-    }
-  }
-  if (parsed.dominios.length){
-    const ds = n._domStrict || (n._domStrict = normDomain(n.dominio));
+    let ok = false;
     for (let i = 0; i < parsed.dominios.length; i++){
-      if (ds.indexOf(parsed.dominios[i]) === -1) return false;
+      if (ds.indexOf(parsed.dominios[i]) !== -1){ ok = true; break; }
     }
+    if (!ok){
+      for (let i = 0; i < parsed.medios.length; i++){
+        if (ms.indexOf(parsed.medios[i]) !== -1){ ok = true; break; }
+      }
+    }
+    if (!ok) return false;
   }
   if (parsed.grupos.length){
     const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
+    let ok = false;
     for (let i = 0; i < parsed.grupos.length; i++){
-      if (gs.indexOf(parsed.grupos[i]) === -1) return false;
+      if (gs.indexOf(parsed.grupos[i]) !== -1){ ok = true; break; }
     }
+    if (!ok) return false;
   }
   if (parsed.tipos.length){
     const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
+    let ok = false;
     for (let i = 0; i < parsed.tipos.length; i++){
-      if (ts.indexOf(parsed.tipos[i]) === -1) return false;
+      if (ts.indexOf(parsed.tipos[i]) !== -1){ ok = true; break; }
     }
+    if (!ok) return false;
   }
   if (parsed.tags.length){
     const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
+    let ok = false;
     for (let i = 0; i < parsed.tags.length; i++){
-      if (!tags.some(x => x.indexOf(parsed.tags[i]) !== -1)) return false;
+      if (tags.some(x => x.indexOf(parsed.tags[i]) !== -1)){ ok = true; break; }
     }
-  }
-  if (parsed.titulo.length){
-    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-    for (let i = 0; i < parsed.titulo.length; i++){
-      if (tn.indexOf(parsed.titulo[i]) === -1) return false;
-    }
+    if (!ok) return false;
   }
   if (presetEfectivo){
     const cumple = cumplePreset(n);
@@ -9025,6 +9082,7 @@ function wireStaticEvents(){
 
   document.querySelectorAll('.opt-group[data-grupo]').forEach(g => {
     const clave = g.dataset.grupo;
+    if (clave !== 'tema' && clave !== 'fuente' && clave !== 'extra') return;
     g.addEventListener('click', e => {
       const b = e.target.closest('button');
       if (!b) return;
