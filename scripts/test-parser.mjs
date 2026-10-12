@@ -20,7 +20,7 @@ console.log(`shared/parser.js: ${shared.length} bytes\n`);
 console.log('Copias byte-idénticas:');
 for (const rel of [
   'public/parser.js',
-  'worker-deno/src/shared/parser.js',
+  'workers/deno-buscar/src/shared/parser.js',
 ]) {
   try {
     const copy = readFileSync(resolve(ROOT, rel), 'utf-8');
@@ -46,8 +46,8 @@ export const PARSER_SOURCE = \`${escaped}\`;
 
 console.log('\nparser-source.js (string embebido):');
 for (const rel of [
-  'worker/src/parser-source.js',
-  'worker-deno/src/parser-source.js',
+  'workers/cf-buscar/src/parser-source.js',
+  'workers/deno-buscar/src/parser-source.js',
 ]) {
   try {
     const actual = readFileSync(resolve(ROOT, rel), 'utf-8');

@@ -1,4 +1,4 @@
-import { buildFtsQuery } from '../../../shared/parser.js';
+import { buildFtsQuery } from '../../../../shared/parser.js';
 
 const TURSO_TIMEOUT_MS = 10000;
 

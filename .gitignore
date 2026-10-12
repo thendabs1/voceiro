@@ -26,9 +26,9 @@ migration_state.json
 .idea/
 .DS_Store
 .env
-worker/.dev.vars
-node_modules/worker/.wrangler/
-worker/node_modules/
+workers/cf-buscar/.dev.vars
+workers/cf-buscar/node_modules/
+workers/cf-buscar/node_modules/
 tools/
-worker/.wrangler/
-worker/node_modules/
+workers/cf-buscar/.wrangler/
+workers/cf-buscar/node_modules/

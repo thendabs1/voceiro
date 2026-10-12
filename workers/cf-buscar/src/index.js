@@ -1,5 +1,5 @@
 // worker/src/index.js
-import { parseQuery } from '../../shared/parser.js';
+import { parseQuery } from '../../../shared/parser.js';
 import { PARSER_SOURCE } from './parser-source.js';
 import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';

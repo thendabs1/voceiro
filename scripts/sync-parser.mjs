@@ -1,9 +1,9 @@
 // scripts/sync-parser.mjs
 // Sincroniza shared/parser.js con todas sus copias:
 //   1. public/parser.js                     (GitHub Pages, lo importa el frontend)
-//   2. worker-deno/src/shared/parser.js     (import relativo del worker Deno)
-//   3. worker/src/parser-source.js          (string embebido, CF)
-//   4. worker-deno/src/parser-source.js     (string embebido, Deno)
+//   2. workers/deno-buscar/src/shared/parser.js  (import relativo del worker Deno)
+//   3. workers/cf-buscar/src/parser-source.js    (string embebido, CF)
+//   4. workers/deno-buscar/src/parser-source.js  (string embebido, Deno)
 //
 // Fuente de verdad: shared/parser.js. Nada más se edita a mano.
 // Uso: node scripts/sync-parser.mjs
@@ -24,12 +24,12 @@ const src  = readFileSync(SRC, 'utf-8');
   console.log(`✓ public/parser.js (${src.length} bytes)`);
 }
 
-// ── 2. worker-deno/src/shared/parser.js ──
+// ── 2. workers/deno-buscar/src/shared/parser.js ──
 {
-  const dst = resolve(ROOT, 'worker-deno/src/shared/parser.js');
+  const dst = resolve(ROOT, 'workers/deno-buscar/src/shared/parser.js');
   mkdirSync(dirname(dst), { recursive: true });
   writeFileSync(dst, src, 'utf-8');
-  console.log(`✓ worker-deno/src/shared/parser.js (${src.length} bytes)`);
+  console.log(`✓ workers/deno-buscar/src/shared/parser.js (${src.length} bytes)`);
 }
 
 // ── 3 y 4. parser-source.js (string embebido, escapado) ──
@@ -45,7 +45,7 @@ const parserSource =
 export const PARSER_SOURCE = \`${escaped}\`;
 `;
 
-for (const rel of ['worker/src/parser-source.js', 'worker-deno/src/parser-source.js']) {
+for (const rel of ['workers/cf-buscar/src/parser-source.js', 'workers/deno-buscar/src/parser-source.js']) {
   const dst = resolve(ROOT, rel);
   mkdirSync(dirname(dst), { recursive: true });
   writeFileSync(dst, parserSource, 'utf-8');
