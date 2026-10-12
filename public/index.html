@@ -2190,12 +2190,145 @@ import {
    ═══════════════════════════════════════════════════════════════ */
 const REPORT_EMAIL = 'thendabs1@gmail.com';
 const REPORT_REPO = 'thendabs1/voceiro';
-const DATA_BASE = 'https://voceiro-datos.toriorecorda.workers.dev';
-const WORKER_BUSCAR = 'https://voceiro-buscar.toriorecorda.workers.dev';
+
+
+// ── Backends (switch CF ↔ Deno) ──
+const BACKENDS = {
+  cf:   { data: 'https://voceiro-datos.toriorecorda.workers.dev',
+          buscar: 'https://voceiro-buscar.toriorecorda.workers.dev' },
+  deno: { data: 'https://voceiro-datos.thendabs1.deno.net',
+          buscar: 'https://voceiro-buscar.thendabs1.deno.net' },
+};
+const BACKEND_KEY = 'voceiro-backend-v1';
+const BACKEND_TIMEOUT_MANIFEST_MS = 5000;
+const BACKEND_TIMEOUT_CF_MS = 10000;
+const BACKEND_RECHECK_MS = 5 * 60 * 1000;
+
+let BACKEND_ACTIVO = 'cf';
+let DATA_BASE     = BACKENDS.cf.data;
+let WORKER_BUSCAR = BACKENDS.cf.buscar;
+let _ultimoRecheckCF = 0;
+let _conmutacionEnCurso = null;
+
+
+
+
 const PRENSA_CACHE_KEY = 'voceiro-prensa-cache-v1';
 const PRENSA_CACHE_TTL_MS = 30 * 60 * 1000;
 const PRENSA_MIN_RESULTADOS = 5;
 const PRENSA_DEBOUNCE_MS = 1500;
+
+
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SWITCH DE BACKEND (CF ↔ Deno)
+   - Al arrancar, intenta el backend guardado (por defecto CF).
+   - Si el manifest falla, conmuta al otro backend.
+   - Si un fetch falla mid-sesión estando en CF, conmuta a Deno y reintenta.
+   - Al volver a la pestaña tras >5 min oculta, re-prueba CF si estamos en Deno.
+   ═══════════════════════════════════════════════════════════════ */
+
+function _leerBackendGuardado(){
+  try {
+    const v = localStorage.getItem(BACKEND_KEY);
+    if (v === 'cf' || v === 'deno') return v;
+  } catch(e){}
+  return 'cf';
+}
+
+function _guardarBackend(nombre){
+  try { localStorage.setItem(BACKEND_KEY, nombre); } catch(e){}
+}
+
+function _aplicarBackend(nombre){
+  if (nombre !== 'cf' && nombre !== 'deno') nombre = 'cf';
+  BACKEND_ACTIVO = nombre;
+  DATA_BASE     = BACKENDS[nombre].data;
+  WORKER_BUSCAR = BACKENDS[nombre].buscar;
+}
+
+function _otroBackend(){
+  return BACKEND_ACTIVO === 'cf' ? 'deno' : 'cf';
+}
+
+// Combina un signal externo con timeout si estamos en CF.
+function _signalConTimeout(signal, timeoutMs){
+  if (BACKEND_ACTIVO !== 'cf' || !timeoutMs) return signal;
+  const t = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([signal, t]) : t;
+}
+
+// Conmuta al otro backend una sola vez por ráfaga de fallos.
+async function _conmutarBackendPorFallo(){
+  if (_conmutacionEnCurso) return _conmutacionEnCurso;
+  const nuevo = _otroBackend();
+  _conmutacionEnCurso = (async () => {
+    console.info(`[backend] fallo en ${BACKEND_ACTIVO} → conmutando a ${nuevo}`);
+    _aplicarBackend(nuevo);
+    _guardarBackend(nuevo);
+    setTimeout(() => { _conmutacionEnCurso = null; }, 5000);
+  })();
+  return _conmutacionEnCurso;
+}
+
+// Probe silencioso a CF. No bloquea, no avisa.
+async function _probarCFEnBackground(){
+  _ultimoRecheckCF = Date.now();
+  try {
+    const r = await fetch(`${BACKENDS.cf.data}/manifest.json`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(2500),
+    });
+    if (!r.ok) return false;
+    if (BACKEND_ACTIVO === 'deno'){
+      console.info('[backend] CF responde de nuevo → volviendo a CF');
+      _aplicarBackend('cf');
+      _guardarBackend('cf');
+    }
+    return true;
+  } catch(e){
+    return false;
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (BACKEND_ACTIVO !== 'deno') return;
+  if (Date.now() - _ultimoRecheckCF < BACKEND_RECHECK_MS) return;
+  _probarCFEnBackground();
+});
+
+// Manifest con timeout y fallback automático.
+// Devuelve el objeto parseado, o lanza si ambos backends fallan.
+async function _fetchManifestConFallback(signal){
+  const intentar = async (nombre) => {
+    const url = `${BACKENDS[nombre].data}/manifest.json`;
+    let sig = signal;
+    if (nombre === 'cf'){
+      const t = AbortSignal.timeout(BACKEND_TIMEOUT_MANIFEST_MS);
+      sig = signal ? AbortSignal.any([signal, t]) : t;
+    }
+    const r = await fetch(url, { cache: 'no-cache', signal: sig });
+    if (!r.ok) throw new Error('manifest HTTP ' + r.status);
+    return await r.json();
+  };
+
+  const principal = _leerBackendGuardado();
+  _aplicarBackend(principal);
+
+  try {
+    return await intentar(principal);
+  } catch(e){
+    if (signal && signal.aborted) throw e;   // abort real del caller
+    const otro = principal === 'cf' ? 'deno' : 'cf';
+    console.info(`[backend] ${principal} falló (${e.message}) → probando ${otro}`);
+    const data = await intentar(otro);
+    _aplicarBackend(otro);
+    _guardarBackend(otro);
+    return data;
+  }
+}
 
 
 const PUEDE_COMPARTIR =   //dejar vacío para autodetectar, poner true para TEST.
@@ -5066,7 +5199,7 @@ async function _cargarCapa(key, signal) {
     while (cola.length) {
       if (signal.aborted) return;
       const f = cola.shift();
-      const data = await _fetchJSON(`${DATA_BASE}/${f}`, signal);
+      const data = await _fetchJSON(f, signal);
       if (!data) continue;
       if (data.medios) {
         for (const d in data.medios) MEDIOS[d] = data.medios[d];
@@ -5127,7 +5260,7 @@ async function extenderCapasR2(capas, desde, hasta) {
     const workers = Array.from({ length: Math.min(8, cola.length) }, async () => {
       while (cola.length) {
         const f = cola.shift();
-        const data = await _fetchJSON(`${DATA_BASE}/${f}`);
+        const data = await _fetchJSON(f);
         if (!data) continue;
         if (data.medios) {
           for (const d in data.medios) MEDIOS[d] = data.medios[d];
@@ -5204,14 +5337,9 @@ async function cargarBase() {
     myGen = ++_scopeGeneration;
     const signal = _scopeAbort.signal;
 
-    // 1) Manifest
-    const manifestRes = await fetch(`${DATA_BASE}/manifest.json`, {
-      cache: 'no-cache', signal
-    });
+    _manifest = await _fetchManifestConFallback(signal);
     if (myGen !== _scopeGeneration) return;
-    if (!manifestRes.ok) throw new Error('manifest HTTP ' + manifestRes.status);
-    _manifest = await manifestRes.json();
-    if (myGen !== _scopeGeneration) return;
+    if (BACKEND_ACTIVO === 'deno') _probarCFEnBackground();
 
     // 2) Reset
     MEDIOS = {};
@@ -5240,7 +5368,7 @@ async function cargarBase() {
     // 3) Base = portada
     const portadaFile = (_manifest.portada && _manifest.portada.file)
                         ? _manifest.portada.file : 'portada.json';
-    const data = await _fetchJSON(`${DATA_BASE}/${portadaFile}`, signal);
+    const data = await _fetchJSON(portadaFile, signal);
     if (data) {
       if (data.medios) {
         for (const d in data.medios) MEDIOS[d] = data.medios[d];
@@ -5267,6 +5395,7 @@ async function cargarBase() {
     }
   }
 }
+
 /* ═══════════════════════════════════════════════════════════════
    CARGA DE DATOS
    ═══════════════════════════════════════════════════════════════ */
@@ -5342,13 +5471,23 @@ function _claveUrl(u, dominio) {
   return normalizeUrlForMatch(full);
 }
 
-async function _fetchJSON(url, signal) {
-  try {
-    const r = await fetch(url, { cache: 'force-cache', signal });
-    if (!r.ok) return null;
+async function _fetchJSON(path, signal) {
+  const intentar = async () => {
+    const url = `${DATA_BASE}/${path}`;
+    const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
+    const r = await fetch(url, { cache: 'force-cache', signal: sig });
+    if (r.status >= 400 && r.status < 500) return null;   // 4xx: no retry
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     return await r.json();
-  } catch(e) {
-    return null;
+  };
+
+  try {
+    return await intentar();
+  } catch(e){
+    if (signal && signal.aborted) return null;   // cancelado por el caller
+    if (BACKEND_ACTIVO !== 'cf') return null;    // ya en Deno y falla: nada más
+    await _conmutarBackendPorFallo();
+    try { return await intentar(); } catch { return null; }
   }
 }
 
@@ -7353,17 +7492,32 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   params.set('lang', PRENSA_LANG);
   params.set('region', PRENSA_PAIS);
 
-  try {
-    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, {
-      signal: PRENSA_ABORT.signal,
-    });
+  const signal = PRENSA_ABORT.signal;
+  const intentar = async () => {
+    const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
+    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
+    return await r.json();
+  };
+
+  try {
+    const data = await intentar();
     const items = data.items || [];
     prensaCacheSet(cacheKey, items);
     return { items };
   } catch (e) {
     if (e.name === 'AbortError') return null;
+    if (BACKEND_ACTIVO === 'cf'){
+      await _conmutarBackendPorFallo();
+      try {
+        const data = await intentar();
+        const items = data.items || [];
+        prensaCacheSet(cacheKey, items);
+        return { items };
+      } catch(e2){
+        if (e2.name === 'AbortError') return null;
+      }
+    }
     console.warn('[prensa]', e.message);
     if (!silent) toast(`Error buscando en prensa: ${e.message}`, 2600);
     return null;
@@ -7376,24 +7530,34 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
   params.set('limit', String(limit));
   params.set('offset', String(offset));
   params.set('fuentes', 'turso');
-  try {
-    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`);
+
+  const mapear = (data) => ({
+    items: (data.items || []).map(it => ({
+      u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
+      _src: 'turso',
+    })),
+    total: data.total || 0,
+    nextOffset: data.next_offset ?? null,
+  });
+
+  const intentar = async () => {
+    const sig = _signalConTimeout(null, BACKEND_TIMEOUT_CF_MS);
+    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    return {
-      items: (data.items || []).map(it => ({
-        u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
-        _src: 'turso',
-      })),
-      total: data.total || 0,
-      nextOffset: data.next_offset ?? null,
-    };
+    return await r.json();
+  };
+
+  try {
+    return mapear(await intentar());
   } catch(e) {
     if (e.name !== 'AbortError') console.warn('[worker]', e.message);
+    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError'){
+      await _conmutarBackendPorFallo();
+      try { return mapear(await intentar()); } catch(e2){ /* fall through */ }
+    }
     return { items: [], total: 0, nextOffset: null };
   }
 }
-
 
 
 
