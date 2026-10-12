@@ -1,0 +1,25 @@
+name: Deploy Worker Datos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker-datos/**'
+      - '.github/workflows/deploy-worker-datos.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy a Cloudflare
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: 'worker-datos'
+          command: deploy
+
