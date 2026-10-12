@@ -150,6 +150,50 @@ BAD_PATH_SEGMENTS = (
     '/quienes-somos', '/equipo', '/staff',
 )
 
+
+# ─────────────────────────────────────────────────────────────
+# FILTROS DE PLANTILLA · titulares programáticos que no entran
+# ─────────────────────────────────────────────────────────────
+# Cada patrón describe una familia de titulares generados a partir de
+# plantilla (meteo por localidad, etc.). Se aplican en `fusionar_historico`
+# para cubrir TODAS las fuentes (RSS, scraping, WP-API, Google News) y
+# limpiar también lo que ya esté en R2 de runs anteriores.
+#
+# Importante: los patrones deben ser ESTRECHOS. "el tiempo" a secas
+# mataría noticias reales tipo "El buen tiempo llena Ourense de visitantes".
+DROP_PATTERNS = [
+    ('meteo_localidad', re.compile(
+        r'^el tiempo en .+?:\s*previsi[oó]n meteorol[oó]gica\s+'
+        r'para\s+(?:hoy|mañana)\b',
+        re.IGNORECASE)),
+]
+
+_DROP_STATS = {nombre: 0 for nombre, _ in DROP_PATTERNS}
+
+
+def _descartar_por_plantilla(n):
+    """Devuelve True si el titular del item casa con alguna plantilla."""
+    tit = (n.get('titular') or '').strip()
+    if not tit:
+        return False
+    for nombre, rx in DROP_PATTERNS:
+        if rx.match(tit):
+            _DROP_STATS[nombre] += 1
+            return True
+    return False
+
+
+def _drop_reset():
+    for k in _DROP_STATS:
+        _DROP_STATS[k] = 0
+
+
+def _drop_resumen():
+    partes = [f"{k}: {v}" for k, v in _DROP_STATS.items() if v]
+    return ' · '.join(partes) if partes else ''
+
+
+
 # Slug de noticia: minúsculas, números y guiones
 SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9\-]{15,}$')
 
@@ -1288,20 +1332,25 @@ def fusionar_historico(nuevas, viejas, dias):
     """
     Fusiona nuevas con viejas y filtra por ventana de retención usando la
     fecha de AGRUPACIÓN (no la de recolección). Descarta:
+      - noticias que casan con DROP_PATTERNS (meteo por localidad, etc.)
       - noticias con fecha de agrupación anterior a la ventana
       - noticias sin ninguna fecha válida
     """
     corte = datetime.now(TZ_MADRID) - timedelta(days=dias)
     idx = {}
 
-    # Viejas: filtrar por fecha de agrupación
+    # Viejas: filtrar por plantilla y por fecha de agrupación
     for n in viejas:
+        if _descartar_por_plantilla(n):
+            continue
         f = _fecha_agrupacion_dt(n)
         if f is None or f < corte:
             continue
         idx[(n['dominio'], n['titular'])] = n
 
     for n in nuevas:
+        if _descartar_por_plantilla(n):
+            continue
         key = (n['dominio'], n['titular'])
         old = idx.get(key)
         if old:
@@ -1310,9 +1359,9 @@ def fusionar_historico(nuevas, viejas, dias):
                 n['fecha_pub'] = old['fecha_pub']
             if old.get('fecha_estimada') and not n.get('fecha_estimada'):
                 n['fecha_estimada'] = old['fecha_estimada']
-            n['_nueva'] = False          # ← ya existía
+            n['_nueva'] = False
         else:
-            n['_nueva'] = True           # ← primera vez que la vemos
+            n['_nueva'] = True
         n.pop('_pos', None)
 
         f = _fecha_agrupacion_dt(n)
@@ -2459,8 +2508,12 @@ def main():
 
     # ─── Fusionar con histórico (sin dedup editorial todavía) ───
     print("\n── Fusionando ──")
+    _drop_reset()
     finales_pre = fusionar_historico(todas, historico, DIAS_RETENCION)
     print(f"Total en histórico (pre-dedup): {len(finales_pre)}")
+    resumen_drop = _drop_resumen()
+    if resumen_drop:
+        print(f"  Descartadas por plantilla: {resumen_drop}")
     # La dedup editorial se aplica DENTRO de cada slice en generar_troceados(),
     # y también para la portada. Así no perdemos noticias que solo viven en
     # un slice concreto.
