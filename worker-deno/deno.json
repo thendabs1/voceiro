@@ -1,0 +1,8 @@
+{
+  "deploy": {
+    "project": "voceiro-buscar",
+    "entrypoint": "src/index.js",
+    "include": ["src/**/*.js"]
+  }
+}
+
