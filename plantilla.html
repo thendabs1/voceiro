@@ -2172,8 +2172,8 @@
 <script type="module">
 /* ═══════════════════════════════════════════════════════════════
    IMPORTS COMPARTIDOS
-   El parser vive en shared/parser.js y se sirve desde el worker.
-   Fuente única para frontend y worker. No duplicar.
+   El parser vive en shared/parser.js y se copia a public/parser.js
+   (mismo origen que este HTML, servido por GitHub Pages).   Fuente única para frontend y worker. No duplicar.
    ═══════════════════════════════════════════════════════════════ */
 import {
   parseQuery,
@@ -2183,7 +2183,7 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from 'https://voceiro-buscar.toriorecorda.workers.dev/parser.js';
+} from './parser.js';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG

@@ -36,6 +36,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import ssl
 import tempfile
 import html
@@ -1781,8 +1782,12 @@ def generar_html(fecha, total):
     with open(os.path.join(here, 'plantilla.html'), encoding='utf-8') as f:
         html = f.read()
     html = html.replace('{{FECHA}}', fecha).replace('{{TOTAL}}', str(total))
+    os.makedirs('public', exist_ok=True)
     with open('public/index.html', 'w', encoding='utf-8') as f:
         f.write(html)
+    # El parser viaja junto al HTML, mismo origen (GitHub Pages).
+    # Sin CORS, sin workers, sin bloqueos de operador.
+    shutil.copyfile(os.path.join(here, 'shared/parser.js'), 'public/parser.js')
 
 # ─────────────────────────────────────────────────────────────
 # SUBIDA A CLOUDFLARE R2
