@@ -6,6 +6,7 @@ on:
     paths:
       - 'shared/parser.js'
       - 'scripts/sync-parser.mjs'
+      - 'scripts/test-parser.mjs'
       - '.github/workflows/sync-parser.yml'
   workflow_dispatch:
 
@@ -26,6 +27,9 @@ jobs:
 
       - name: Sincronizar parser
         run: node scripts/sync-parser.mjs
+
+      - name: Verificar sincronización
+        run: node scripts/test-parser.mjs
 
       - name: Commit si hay cambios
         run: |
