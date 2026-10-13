@@ -1295,107 +1295,65 @@
     margin-top:8px;
   }
 
-  /* ═══ Buscador FreeNewsAPI ═══ */
-  .bs-aviso{
-    background:var(--save-bg); color:var(--save);
-    border:1px solid var(--save); border-radius:6px;
-    padding:8px 12px; font-size:.7em; line-height:1.5;
-    margin-bottom:14px;
+  /* ═══ Investigar empresas (OpenMercantil) ═══ */
+  .em-aviso{
+    font-size:.72em; color:var(--muted); line-height:1.5;
+    margin:0 0 12px;
   }
-  .bs-filtros{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
-  .bs-filtros input,
-  .bs-filtros select{
+  .em-filtros{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .em-filtros input,
+  .em-filtros select{
     font-size:.82em; padding:9px 12px;
     border:1px solid var(--border); border-radius:6px;
     background:var(--bg); color:var(--fg); font-family:inherit;
   }
-  .bs-fila{display:flex; gap:8px; flex-wrap:wrap}
-  .bs-fila select{flex:1 1 120px; min-width:120px}
-  .bs-estado{
-    font-size:.72em; color:var(--muted);
-    margin-bottom:10px; min-height:1.2em;
+  .em-filtros input{flex:1 1 200px; min-width:0}
+  .em-estado{
+    font-size:.72em; color:var(--muted); line-height:1.5;
+    margin:0 0 10px; min-height:1.2em;
   }
-  .bs-resultado{
-    background:var(--bg);
-    border:1px solid var(--border);
-    border-left:3px solid var(--save);
-    border-radius:8px;
-    padding:12px 16px;
-    margin-bottom:8px;
+  .em-item{
+    display:block; width:100%; text-align:left;
+    background:var(--bg); color:var(--fg);
+    border:1px solid var(--border); border-radius:8px;
+    padding:10px 14px; margin-bottom:6px;
+    font:inherit; cursor:pointer;
   }
-  .bs-resultado .bs-meta{
-    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-    font-size:.62em; color:var(--muted); margin-bottom:5px;
-  }
-  .bs-resultado .bs-medio{
-    font-weight:bold; color:var(--fg); font-size:1.1em;
+  .em-item:hover{border-color:var(--accent)}
+  .em-nombre{font-weight:600; font-size:.86em}
+  .em-meta{font-size:.68em; color:var(--muted); margin-top:3px; line-height:1.5}
+  .em-meta a{color:var(--accent)}
+  .em-volver{margin-bottom:10px}
+  .em-ficha h3{font-size:1em; margin:2px 0 4px}
+  .em-ficha h4{
+    font-size:.7em; margin:18px 0 6px; color:var(--muted);
     text-transform:uppercase; letter-spacing:.3px;
   }
-  .bs-resultado .bs-badge{
-    background:var(--save-bg); border:1px solid var(--save);
-    padding:1px 8px; border-radius:10px; color:var(--save);
-    font-size:.9em;
+  .em-ficha .em-aviso{margin-top:10px}
+  .em-voceiro{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    margin:12px 0; padding:10px 12px;
+    border:1px solid var(--border); border-radius:8px;
   }
-  .bs-resultado a.bs-titular{
-    color:var(--accent); text-decoration:none;
-    font-weight:600; font-size:1em; display:block; margin-top:2px;
+  .em-voceiro label{flex:1 1 100%; font-size:.7em; color:var(--muted)}
+  .em-voceiro input{
+    flex:1 1 160px; min-width:0;
+    font-size:.82em; padding:7px 10px;
+    border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--fg); font-family:inherit;
   }
-  .bs-resultado a.bs-titular:hover{text-decoration:underline}
-  .bs-resultado .bs-desc{
-    font-size:.75em; color:var(--muted);
-    margin-top:6px; line-height:1.4;
+  .em-lista{list-style:none; margin:0 0 8px; padding:0; font-size:.76em}
+  .em-lista li{padding:6px 0; border-bottom:1px solid var(--border); line-height:1.45}
+  .em-lista a{color:var(--accent)}
+  .em-rol{color:var(--muted)}
+  .em-detalle{color:var(--muted); font-size:.92em; margin-top:2px; overflow-wrap:anywhere}
+  .em-link{
+    background:none; border:0; padding:0; margin:0;
+    color:var(--accent); font:inherit; cursor:pointer; text-align:left;
   }
-  .bs-resultado .bs-acciones{
-    display:flex; gap:6px; justify-content:flex-end; margin-top:8px;
-  }
-  #bs-mas-wrap{text-align:center; margin-top:14px}
-  .bs-fuentes {
-  display: flex; gap: 16px; flex-wrap: wrap;
-  margin: 4px 0 12px;
-  font-size: .78em;
-  }
-  .bs-fuente-chk {
-    display: flex; align-items: center; gap: 6px;
-    cursor: pointer; user-select: none;
-    color: var(--muted);
-  }
-  .bs-fuente-chk input {
-    accent-color: var(--save);
-    width: 1.1em; height: 1.1em;
-  }
-  .bs-fuente-chk input:checked + span {
-    color: var(--fg);
-    font-weight: 600;
-  }
-  
-  .bs-badge-fn {
-    background: #e8f5e9; color: #2e7d32; border-color: #66bb6a;
-  }
-  .bs-badge-gn {
-    background: #e3f2fd; color: #1565c0; border-color: #64b5f6;
-  }
-  [data-theme="dark"] .bs-badge-fn {
-    background: #1b3a1e; color: #81c784; border-color: #4caf50;
-  }
-  [data-theme="dark"] .bs-badge-gn {
-    background: #1a2d47; color: #90caf9; border-color: #1976d2;
-  }
-  [data-theme="sepia"] .bs-badge-fn {
-    background: #e4ebd0; color: #3e7a2f; border-color: #8fa9c4;
-  }
-  [data-theme="sepia"] .bs-badge-gn {
-    background: #d8e3ee; color: #2e5a8b; border-color: #8fa9c4;
-  }
-  [data-theme="contrast"] .bs-badge-fn {
-    background: #003300; color: #0f0; border-color: #0f0;
-  }
-  [data-theme="contrast"] .bs-badge-gn {
-    background: #003; color: #0ff; border-color: #0ff;
-  }
-  .bs-dup {
-    font-size: .68em; color: var(--muted);
-    margin-top: 4px; font-style: italic;
-  }
+  .em-link:hover{text-decoration:underline}
+  .em-pie{font-size:.62em; color:var(--muted); margin-top:18px; line-height:1.5}
+  .em-pie a{color:inherit}
   /* ═══ Cabecera en una sola fila en escritorio ═══ */
 @media (min-width: 820px){
   header .header-actions button{
@@ -2145,38 +2103,21 @@
 <section id="panel-buscar" class="panel" role="dialog" aria-modal="true">
   <div class="panel-inner">
     <div class="panel-header">
-      <h2 id="bs-title"></h2>
+      <h2 id="em-title"></h2>
       <button class="panel-close" type="button" data-close="panel-buscar">✕</button>
     </div>
     <div class="panel-body">
-      <div class="bs-aviso" id="bs-aviso"></div>
+      <p class="em-aviso" id="em-aviso"></p>
 
-      <div class="bs-filtros">
-        <input type="search" id="bs-q" autocomplete="off">
-        <div class="bs-fila">
-          <select id="bs-lang" aria-label="Language"></select>
-          <select id="bs-country" aria-label="Country"></select>
-          <select id="bs-date" aria-label="Date"></select>
-          <button id="bs-go" type="button" class="primary"></button>
-        </div>
+      <div class="em-filtros">
+        <select id="em-tipo" aria-label="Tipo"></select>
+        <input type="search" id="em-q" autocomplete="off">
+        <button id="em-go" type="button" class="primary"></button>
       </div>
 
-      <div class="bs-fuentes">
-        <label class="bs-fuente-chk">
-          <input type="checkbox" id="bs-f-freenews" checked>
-          <span>FreeNewsAPI</span>
-        </label>
-        <label class="bs-fuente-chk">
-          <input type="checkbox" id="bs-f-gnews" checked>
-          <span>Google News</span>
-        </label>
-      </div>
-
-      <div id="bs-estado" class="bs-estado"></div>
-      <div id="bs-resultados"></div>
-      <div id="bs-mas-wrap" style="display:none">
-        <button id="bs-mas" type="button"></button>
-      </div>
+      <p id="em-estado" class="em-estado" aria-live="polite"></p>
+      <div id="em-vista"></div>
+      <p class="em-pie" id="em-pie"></p>
     </div>
   </div>
 </section>
@@ -2731,31 +2672,42 @@ const I18N = {
     repCtxConfig:           'Config',
     repFecha:               'Fecha del reporte',
 
-    /* ── Buscador FreeNews / Google News ── */
-    bsTitle:                'Buscar en miles de medios',
-    bsAviso:                'Este buscador cubre medios pequeños y regionales. Los grandes diarios nacionales (El País, El Mundo, ABC…) no están incluidos en su índice.',
-    bsQ:                    'Busca cualquier tema…',
-    bsLang:                 'Idioma',
-    bsLangAny:              'Cualquier idioma',
-    bsCountry:              'País',
-    bsCountryAny:           'Cualquier país',
-    bsDate:                 'Fecha',
-    bsDateTodo:             'Todo',
-    bsDate24h:              'Últimas 24 h',
-    bsDate48h:              'Últimas 48 h',
-    bsDate7d:               'Últimos 7 días',
-    bsDate30d:              'Últimos 30 días',
-    bsBuscar:               'Buscar',
-    bsCargando:             'Buscando…',
-    bsSinResultados:        'Sin resultados',
-    bsError:                'No se pudo conectar con el buscador externo. Inténtalo más tarde.',
-    bsErrorQ:               'Escribe algo para buscar',
-    bsResultados:           '{n} resultados',
-    bsCargados:             'mostrando {n}',
-    bsMas:                  'Cargar más',
-    bsFuenteExterna:        'Fuente externa',
-    bsGuardar:              'Guardar',
-    bsVerificado:           'en el catálogo',
+    /* ── Investigar empresas (OpenMercantil) ── */
+    emTitle:                'Investigar empresas',
+    emAviso:                'Sociedades y cargos publicados en el Boletín Oficial del Registro Mercantil (BORME). Las empresas se buscan por el inicio de la razón social o por el CIF, y las personas por los apellidos.',
+    emTipoEmpresas:         'Empresas',
+    emTipoPersonas:         'Personas',
+    emQEmpresas:            'Razón social o CIF…',
+    emQPersonas:            'Apellidos y nombre…',
+    emBuscar:               'Buscar',
+    emCargando:             'Buscando…',
+    emErrorQ:               'Escribe al menos {n} caracteres',
+    emResultados:           '{n} resultados',
+    emSinResultados:        'Sin resultados.',
+    emCobertura:            'El índice de OpenMercantil no está completo: algunas empresas grandes (Inditex, por ejemplo) no aparecen.',
+    emError:                'No se pudo consultar OpenMercantil. Inténtalo más tarde.',
+    emLimite:               'Has llegado al límite gratuito de OpenMercantil (200 consultas al día por conexión). Vuelve a probar a partir de las {hora}.',
+    emLimiteSinHora:        'Has llegado al límite gratuito de OpenMercantil (200 consultas al día por conexión). Vuelve a probar más tarde.',
+    emVolver:               '← Volver',
+    emActosN:               '{n} actos',
+    emEmpresasN:            '{n} empresas',
+    emActosResumen:         '{n} actos en el BORME · {desde} – {hasta}',
+    emBuscarComo:           'Buscar en Voceiro como',
+    emVerNoticias:          'Ver noticias',
+    emSeguir:               'Seguir',
+    emSeguirTitle:          'Añadir como tema del modo activo',
+    emSiguiendo:            'Añadido a los temas de «{modo}»',
+    emYaSigues:             'Ya está en los temas de «{modo}»',
+    emCargosVigentes:       'Cargos vigentes',
+    emCargosAnteriores:     'Cargos anteriores',
+    emActos:                'Actos',
+    emVerMas:               'Ver más ({n})',
+    emBormeDia:             'BORME de ese día',
+    emPersonaAviso:         'Menciones en el BORME. Puede haber homónimos y no se comprueba que los cargos sigan vigentes.',
+    emPersonaResumen:       '{n} empresas · {desde} – {hasta}',
+    emPosAbiertas:          'Sin cese publicado',
+    emPosCerradas:          'Con cese publicado',
+    emAtribucion:           'Datos: OpenMercantil (CC BY 4.0), basado en datos de la Agencia Estatal Boletín Oficial del Estado. No es una fuente oficial.',
 
     /* ── Menú Vista ── */
     vsButton:               'Vista',
@@ -3018,30 +2970,42 @@ const I18N = {
     repCtxConfig:           'Config',
     repFecha:               'Data do reporte',
 
-    bsTitle:                'Buscar en miles de medios',
-    bsAviso:                'Este buscador cobre medios pequenos e rexionais. Os grandes diarios nacionais (El País, El Mundo, ABC…) non están incluídos no seu índice.',
-    bsQ:                    'Busca calquera tema…',
-    bsLang:                 'Idioma',
-    bsLangAny:              'Calquera idioma',
-    bsCountry:              'País',
-    bsCountryAny:           'Calquera país',
-    bsDate:                 'Data',
-    bsDateTodo:             'Todo',
-    bsDate24h:              'Últimas 24 h',
-    bsDate48h:              'Últimas 48 h',
-    bsDate7d:               'Últimos 7 días',
-    bsDate30d:              'Últimos 30 días',
-    bsBuscar:               'Buscar',
-    bsCargando:             'Buscando…',
-    bsSinResultados:        'Sen resultados',
-    bsError:                'Non se puido conectar co buscador externo. Inténtao máis tarde.',
-    bsErrorQ:               'Escribe algo para buscar',
-    bsResultados:           '{n} resultados',
-    bsCargados:             'amosando {n}',
-    bsMas:                  'Cargar máis',
-    bsFuenteExterna:        'Fonte externa',
-    bsGuardar:              'Gardar',
-    bsVerificado:           'no catálogo',
+    /* ── Investigar empresas (OpenMercantil) ── */
+    emTitle:                'Investigar empresas',
+    emAviso:                'Sociedades e cargos publicados no Boletín Oficial do Rexistro Mercantil (BORME). As empresas búscanse polo inicio da razón social ou polo CIF, e as persoas polos apelidos.',
+    emTipoEmpresas:         'Empresas',
+    emTipoPersonas:         'Persoas',
+    emQEmpresas:            'Razón social ou CIF…',
+    emQPersonas:            'Apelidos e nome…',
+    emBuscar:               'Buscar',
+    emCargando:             'Buscando…',
+    emErrorQ:               'Escribe polo menos {n} caracteres',
+    emResultados:           '{n} resultados',
+    emSinResultados:        'Sen resultados.',
+    emCobertura:            'O índice de OpenMercantil non está completo: algunhas empresas grandes (Inditex, por exemplo) non aparecen.',
+    emError:                'Non se puido consultar OpenMercantil. Inténtao máis tarde.',
+    emLimite:               'Chegaches ao límite gratuíto de OpenMercantil (200 consultas ao día por conexión). Volve probar a partir das {hora}.',
+    emLimiteSinHora:        'Chegaches ao límite gratuíto de OpenMercantil (200 consultas ao día por conexión). Volve probar máis tarde.',
+    emVolver:               '← Volver',
+    emActosN:               '{n} actos',
+    emEmpresasN:            '{n} empresas',
+    emActosResumen:         '{n} actos no BORME · {desde} – {hasta}',
+    emBuscarComo:           'Buscar en Voceiro como',
+    emVerNoticias:          'Ver noticias',
+    emSeguir:               'Seguir',
+    emSeguirTitle:          'Engadir como tema do modo activo',
+    emSiguiendo:            'Engadido aos temas de «{modo}»',
+    emYaSigues:             'Xa está nos temas de «{modo}»',
+    emCargosVigentes:       'Cargos vixentes',
+    emCargosAnteriores:     'Cargos anteriores',
+    emActos:                'Actos',
+    emVerMas:               'Ver máis ({n})',
+    emBormeDia:             'BORME dese día',
+    emPersonaAviso:         'Mencións no BORME. Pode haber homónimos e non se comproba que os cargos sigan vixentes.',
+    emPersonaResumen:       '{n} empresas · {desde} – {hasta}',
+    emPosAbiertas:          'Sen cesamento publicado',
+    emPosCerradas:          'Con cesamento publicado',
+    emAtribucion:           'Datos: OpenMercantil (CC BY 4.0), baseado en datos da Axencia Estatal Boletín Oficial del Estado. Non é unha fonte oficial.',
 
     vsButton:               'Vista',
     vsTitleDup:             'Duplicados',
@@ -3303,30 +3267,42 @@ const I18N = {
     repCtxConfig:           'Config',
     repFecha:               'Data del report',
 
-    bsTitle:                'Cercar en milers de mitjans',
-    bsAviso:                'Aquest cercador cobreix mitjans petits i regionals. Els grans diaris nacionals (El País, El Mundo, ABC…) no estan inclosos al seu índex.',
-    bsQ:                    'Cerca qualsevol tema…',
-    bsLang:                 'Idioma',
-    bsLangAny:              'Qualsevol idioma',
-    bsCountry:              'País',
-    bsCountryAny:           'Qualsevol país',
-    bsDate:                 'Data',
-    bsDateTodo:             'Tot',
-    bsDate24h:              'Últimes 24 h',
-    bsDate48h:              'Últimes 48 h',
-    bsDate7d:               'Últims 7 dies',
-    bsDate30d:              'Últims 30 dies',
-    bsBuscar:               'Cercar',
-    bsCargando:             'Cercant…',
-    bsSinResultados:        'Sense resultats',
-    bsError:                "No s'ha pogut connectar amb el cercador extern. Torna-ho a provar més tard.",
-    bsErrorQ:               'Escriu alguna cosa per cercar',
-    bsResultados:           '{n} resultats',
-    bsCargados:             'mostrant {n}',
-    bsMas:                  'Carregar més',
-    bsFuenteExterna:        'Font externa',
-    bsGuardar:              'Desar',
-    bsVerificado:           'al catàleg',
+    /* ── Investigar empresas (OpenMercantil) ── */
+    emTitle:                'Investigar empreses',
+    emAviso:                'Societats i càrrecs publicats al Butlletí Oficial del Registre Mercantil (BORME). Les empreses es cerquen per l’inici de la raó social o pel CIF, i les persones pels cognoms.',
+    emTipoEmpresas:         'Empreses',
+    emTipoPersonas:         'Persones',
+    emQEmpresas:            'Raó social o CIF…',
+    emQPersonas:            'Cognoms i nom…',
+    emBuscar:               'Cercar',
+    emCargando:             'Cercant…',
+    emErrorQ:               'Escriu almenys {n} caràcters',
+    emResultados:           '{n} resultats',
+    emSinResultados:        'Sense resultats.',
+    emCobertura:            'L’índex d’OpenMercantil no és complet: algunes empreses grans (Inditex, per exemple) no hi apareixen.',
+    emError:                'No s’ha pogut consultar OpenMercantil. Torna-ho a provar més tard.',
+    emLimite:               'Has arribat al límit gratuït d’OpenMercantil (200 consultes al dia per connexió). Torna-ho a provar a partir de les {hora}.',
+    emLimiteSinHora:        'Has arribat al límit gratuït d’OpenMercantil (200 consultes al dia per connexió). Torna-ho a provar més tard.',
+    emVolver:               '← Tornar',
+    emActosN:               '{n} actes',
+    emEmpresasN:            '{n} empreses',
+    emActosResumen:         '{n} actes al BORME · {desde} – {hasta}',
+    emBuscarComo:           'Cercar a Voceiro com a',
+    emVerNoticias:          'Veure notícies',
+    emSeguir:               'Seguir',
+    emSeguirTitle:          'Afegir com a tema del mode actiu',
+    emSiguiendo:            'Afegit als temes de «{modo}»',
+    emYaSigues:             'Ja és als temes de «{modo}»',
+    emCargosVigentes:       'Càrrecs vigents',
+    emCargosAnteriores:     'Càrrecs anteriors',
+    emActos:                'Actes',
+    emVerMas:               'Veure’n més ({n})',
+    emBormeDia:             'BORME d’aquell dia',
+    emPersonaAviso:         'Mencions al BORME. Hi pot haver homònims i no es comprova que els càrrecs continuïn vigents.',
+    emPersonaResumen:       '{n} empreses · {desde} – {hasta}',
+    emPosAbiertas:          'Sense cessament publicat',
+    emPosCerradas:          'Amb cessament publicat',
+    emAtribucion:           'Dades: OpenMercantil (CC BY 4.0), basat en dades de l’Agència Estatal Butlletí Oficial de l’Estat. No és una font oficial.',
 
     vsButton:               'Vista',
     vsTitleDup:             'Duplicats',
@@ -3588,30 +3564,42 @@ const I18N = {
     repCtxConfig:           'Config',
     repFecha:               'Report date',
 
-    bsTitle:                'Search across thousands of outlets',
-    bsAviso:                'This search covers small and regional outlets. Major national newspapers (El País, El Mundo, ABC…) are not in its index.',
-    bsQ:                    'Search any topic…',
-    bsLang:                 'Language',
-    bsLangAny:              'Any language',
-    bsCountry:              'Country',
-    bsCountryAny:           'Any country',
-    bsDate:                 'Date',
-    bsDateTodo:             'All',
-    bsDate24h:              'Last 24 h',
-    bsDate48h:              'Last 48 h',
-    bsDate7d:               'Last 7 days',
-    bsDate30d:              'Last 30 days',
-    bsBuscar:               'Search',
-    bsCargando:             'Searching…',
-    bsSinResultados:        'No results',
-    bsError:                'Could not connect to the external search. Try again later.',
-    bsErrorQ:               'Type something to search',
-    bsResultados:           '{n} results',
-    bsCargados:             'showing {n}',
-    bsMas:                  'Load more',
-    bsFuenteExterna:        'External source',
-    bsGuardar:              'Save',
-    bsVerificado:           'in catalog',
+    /* ── Investigar empresas (OpenMercantil) ── */
+    emTitle:                'Investigate companies',
+    emAviso:                'Companies and officers published in the Official Gazette of the Spanish Commercial Registry (BORME). Search companies by the start of their legal name or by CIF, and people by surname.',
+    emTipoEmpresas:         'Companies',
+    emTipoPersonas:         'People',
+    emQEmpresas:            'Legal name or CIF…',
+    emQPersonas:            'Surnames and name…',
+    emBuscar:               'Search',
+    emCargando:             'Searching…',
+    emErrorQ:               'Type at least {n} characters',
+    emResultados:           '{n} results',
+    emSinResultados:        'No results.',
+    emCobertura:            'The OpenMercantil index is incomplete: some large companies (Inditex, for example) are missing.',
+    emError:                'Could not reach OpenMercantil. Try again later.',
+    emLimite:               'You have reached the OpenMercantil free limit (200 queries a day per connection). Try again after {hora}.',
+    emLimiteSinHora:        'You have reached the OpenMercantil free limit (200 queries a day per connection). Try again later.',
+    emVolver:               '← Back',
+    emActosN:               '{n} entries',
+    emEmpresasN:            '{n} companies',
+    emActosResumen:         '{n} BORME entries · {desde} – {hasta}',
+    emBuscarComo:           'Search Voceiro for',
+    emVerNoticias:          'See news',
+    emSeguir:               'Follow',
+    emSeguirTitle:          'Add as a topic of the active mode',
+    emSiguiendo:            'Added to the topics of “{modo}”',
+    emYaSigues:             'Already in the topics of “{modo}”',
+    emCargosVigentes:       'Current officers',
+    emCargosAnteriores:     'Former officers',
+    emActos:                'Entries',
+    emVerMas:               'Show more ({n})',
+    emBormeDia:             'BORME for that day',
+    emPersonaAviso:         'Mentions in the BORME. There may be namesakes, and it is not checked whether the positions are still held.',
+    emPersonaResumen:       '{n} companies · {desde} – {hasta}',
+    emPosAbiertas:          'No published cessation',
+    emPosCerradas:          'Published cessation',
+    emAtribucion:           'Data: OpenMercantil (CC BY 4.0), based on data from the Agencia Estatal Boletín Oficial del Estado. Not an official source.',
 
     vsButton:               'View',
     vsTitleDup:             'Duplicates',
@@ -3873,30 +3861,42 @@ const I18N = {
     repCtxConfig:           'Konfig',
     repFecha:               'Txostenaren data',
 
-    bsTitle:                'Mila hedabide baino gehiagotan bilatu',
-    bsAviso:                'Bilatzaile honek hedabide txikiak eta eskualdekoak biltzen ditu. Estatuko egunkari handiak (El País, El Mundo, ABC…) ez daude bere indizean.',
-    bsQ:                    'Bilatu edozein gai…',
-    bsLang:                 'Hizkuntza',
-    bsLangAny:              'Edozein hizkuntza',
-    bsCountry:              'Herrialdea',
-    bsCountryAny:           'Edozein herrialde',
-    bsDate:                 'Data',
-    bsDateTodo:             'Guztia',
-    bsDate24h:              'Azken 24 h',
-    bsDate48h:              'Azken 48 h',
-    bsDate7d:               'Azken 7 egun',
-    bsDate30d:              'Azken 30 egun',
-    bsBuscar:               'Bilatu',
-    bsCargando:             'Bilatzen…',
-    bsSinResultados:        'Emaitzarik gabe',
-    bsError:                'Ezin izan da kanpoko bilatzailearekin konektatu. Saiatu berriro geroago.',
-    bsErrorQ:               'Idatzi zerbait bilatzeko',
-    bsResultados:           '{n} emaitza',
-    bsCargados:             '{n} erakusten',
-    bsMas:                  'Gehiago kargatu',
-    bsFuenteExterna:        'Kanpoko iturria',
-    bsGuardar:              'Gorde',
-    bsVerificado:           'katalogoan',
+    /* ── Investigar empresas (OpenMercantil) ── */
+    emTitle:                'Enpresak ikertu',
+    emAviso:                'Merkataritza Erregistroko Aldizkari Ofizialean (BORME) argitaratutako sozietateak eta karguak. Enpresak sozietate-izenaren hasieraz edo IFKz bilatzen dira, eta pertsonak abizenez.',
+    emTipoEmpresas:         'Enpresak',
+    emTipoPersonas:         'Pertsonak',
+    emQEmpresas:            'Sozietate-izena edo IFK…',
+    emQPersonas:            'Abizenak eta izena…',
+    emBuscar:               'Bilatu',
+    emCargando:             'Bilatzen…',
+    emErrorQ:               'Idatzi gutxienez {n} karaktere',
+    emResultados:           '{n} emaitza',
+    emSinResultados:        'Ez dago emaitzarik.',
+    emCobertura:            'OpenMercantil-en aurkibidea ez dago osatuta: enpresa handi batzuk (Inditex, adibidez) ez dira agertzen.',
+    emError:                'Ezin izan da OpenMercantil kontsultatu. Saiatu berriro geroago.',
+    emLimite:               'OpenMercantil-en doako mugara iritsi zara (200 kontsulta egunean konexio bakoitzeko). Saiatu berriro ordu honetatik aurrera: {hora}.',
+    emLimiteSinHora:        'OpenMercantil-en doako mugara iritsi zara (200 kontsulta egunean konexio bakoitzeko). Saiatu berriro geroago.',
+    emVolver:               '← Itzuli',
+    emActosN:               '{n} egintza',
+    emEmpresasN:            '{n} enpresa',
+    emActosResumen:         '{n} egintza BORMEn · {desde} – {hasta}',
+    emBuscarComo:           'Bilatu Voceiron honela',
+    emVerNoticias:          'Ikusi albisteak',
+    emSeguir:               'Jarraitu',
+    emSeguirTitle:          'Gehitu modu aktiboaren gai gisa',
+    emSiguiendo:            '«{modo}» moduaren gaietan gehitu da',
+    emYaSigues:             'Dagoeneko «{modo}» moduaren gaietan dago',
+    emCargosVigentes:       'Indarreko karguak',
+    emCargosAnteriores:     'Aurreko karguak',
+    emActos:                'Egintzak',
+    emVerMas:               'Ikusi gehiago ({n})',
+    emBormeDia:             'Egun hartako BORMEa',
+    emPersonaAviso:         'BORMEko aipamenak. Izen bereko pertsonak egon daitezke, eta ez da egiaztatzen karguek indarrean jarraitzen duten.',
+    emPersonaResumen:       '{n} enpresa · {desde} – {hasta}',
+    emPosAbiertas:          'Kargu-uztea argitaratu gabe',
+    emPosCerradas:          'Kargu-uztea argitaratuta',
+    emAtribucion:           'Datuak: OpenMercantil (CC BY 4.0), Estatuko Aldizkari Ofiziala Estatu Agentziaren datuetan oinarrituta. Ez da iturri ofiziala.',
 
     vsButton:               'Ikusi',
     vsTitleDup:             'Bikoiztuak',
@@ -7339,381 +7339,352 @@ function importarConfig(file){
   reader.readAsText(file);
 }
 /* ═══════════════════════════════════════════════════════════════
-   BUSCADOR UNIFICADO (FreeNewsAPI + Google News RSS)
+   INVESTIGAR EMPRESAS (OpenMercantil, datos del BORME)
+   Se consulta directamente desde el navegador: sin clave, con CORS
+   abierto y 200 peticiones al día por IP del visitante. Por eso solo se
+   pide al pulsar Buscar o al abrir una ficha, nunca al teclear.
+   Nada se guarda: el estado vive en memoria (hay nombres de personas).
    ═══════════════════════════════════════════════════════════════ */
-const FREENEWS_URL = 'https://freenewsapi.ai/v1/search';
-const GNEWS_PROXY  = 'https://silly-snail-8721.thendabs1.deno.net/?url=';
-const BS_SESSION_KEY = 'voceiro-bs-last';
+const EM_API = 'https://openmercantil.es/api/v1';
+const EM_ACTOS_PAGINA = 20;
 
-const BS_STATE = {
-  q: '', lang: 'es', country: 'ES', date: '24h',
-  size: 30,
+const EM_STATE = {
+  tipo: 'empresas',   // 'empresas' | 'personas'
   cargando: false,
-  fuentes: { freenews: true, gnews: true },
-  freenews: { items: [], total: 0, offset: 0, hayMas: false },
-  gnews:    { items: [], total: 0 },
-  resultados: [],
+  turno: 0,           // descarta respuestas que llegan tarde
+  pila: [],           // vistas: { vista: 'lista'|'empresa'|'persona', ... }
 };
 
-/* ─── Selects y textos ─── */
-function bsPintarSelects(){
-  const selL = document.getElementById('bs-lang');
-  selL.innerHTML = [
-    `<option value="">${escapeHtml(t('bsLangAny'))}</option>`,
-    `<option value="es">Español</option>`,
-    `<option value="gl">Galego</option>`,
-    `<option value="ca">Català</option>`,
-    `<option value="en">English</option>`,
-    `<option value="eu">Euskara</option>`,
-    `<option value="fr">Français</option>`,
-    `<option value="de">Deutsch</option>`,
-    `<option value="it">Italiano</option>`,
-    `<option value="pt">Português</option>`,
-  ].join('');
+/* ─── Nombre para buscar en Voceiro ─── */
+// Formas jurídicas que se quitan al final del nombre, sin puntos ni tildes.
+const EM_FORMAS = new Set([
+  'sa', 'sl', 'slu', 'sau', 'sll', 'sal', 'slne', 'slp', 'scoop', 'coop', 's coop',
+  'sociedad anonima', 'sociedad limitada', 'sociedad cooperativa',
+  'sociedad anonima unipersonal', 'sociedad limitada unipersonal',
+  'sociedad anonima laboral', 'sociedad limitada laboral',
+  'sociedad limitada nueva empresa', 'sociedad limitada profesional',
+  'en liquidacion',
+]);
+const EM_MINUSCULAS = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'i', 'da', 'do', 'das', 'dos']);
 
-  const selC = document.getElementById('bs-country');
-  selC.innerHTML = [
-    `<option value="">${escapeHtml(t('bsCountryAny'))}</option>`,
-    `<option value="ES">España</option>`,
-    `<option value="PT">Portugal</option>`,
-    `<option value="FR">France</option>`,
-    `<option value="IT">Italia</option>`,
-    `<option value="DE">Deutschland</option>`,
-    `<option value="GB">UK</option>`,
-    `<option value="IE">Ireland</option>`,
-    `<option value="US">USA</option>`,
-    `<option value="MX">México</option>`,
-    `<option value="AR">Argentina</option>`,
-    `<option value="CO">Colombia</option>`,
-    `<option value="CL">Chile</option>`,
-    `<option value="PE">Perú</option>`,
-    `<option value="BR">Brasil</option>`,
-  ].join('');
-
-  const selD = document.getElementById('bs-date');
-  selD.innerHTML = [
-    `<option value="todo">${escapeHtml(t('bsDateTodo'))}</option>`,
-    `<option value="24h">${escapeHtml(t('bsDate24h'))}</option>`,
-    `<option value="48h">${escapeHtml(t('bsDate48h'))}</option>`,
-    `<option value="7d">${escapeHtml(t('bsDate7d'))}</option>`,
-    `<option value="30d">${escapeHtml(t('bsDate30d'))}</option>`,
-  ].join('');
-
-  document.getElementById('bs-q').placeholder = t('bsQ');
-  document.getElementById('bs-go').textContent = t('bsBuscar');
-  document.getElementById('bs-mas').textContent = t('bsMas');
-  document.getElementById('bs-title').textContent = t('bsTitle');
-  document.getElementById('bs-aviso').textContent = t('bsAviso');
+function emPlano(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\./g, '');
+}
+function emSinForma(s){
+  // Fuera paréntesis («(R.M. A CORUÑA)»), comas (parseLista corta por ellas) y guiones al inicio.
+  const palabras = String(s || '').replace(/\([^)]*\)?/g, ' ').replace(/[,;]/g, ' ')
+    .trim().replace(/^-+/, '').split(/\s+/).filter(Boolean);
+  let quitado = true;
+  while (quitado){
+    quitado = false;
+    for (let n = Math.min(4, palabras.length - 1); n >= 1; n--){
+      if (EM_FORMAS.has(emPlano(palabras.slice(-n).join(' ')))){
+        palabras.splice(-n);
+        quitado = true;
+        break;
+      }
+    }
+  }
+  return palabras.join(' ');
+}
+function emCapitalizar(s){
+  return s.split(' ').map((p, i) => {
+    const l = p.toLowerCase();
+    if (i > 0 && EM_MINUSCULAS.has(l)) return l;
+    return l.charAt(0).toUpperCase() + l.slice(1);
+  }).join(' ');
+}
+// El alias más corto sin forma jurídica; si no hay alias, la razón social.
+function nombreDeBusqueda(company){
+  const candidatos = [...(company.aliases || []), company.name || '']
+    .map(emSinForma).filter(Boolean);
+  if (!candidatos.length) return '';
+  candidatos.sort((a, b) => a.length - b.length);
+  const n = candidatos[0];
+  return (n === n.toUpperCase() || n === n.toLowerCase()) ? emCapitalizar(n) : n;
 }
 
 /* ─── Utilidades ─── */
-function bsLimpiarTitulo(s){
-  if (!s) return '';
-  return limpiarCdata(String(s))
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+function emFecha(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
 }
-function bsHostLimpio(host){
-  return String(host || '').replace(/^www\./, '').toLowerCase();
+function emBormeDia(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? `https://www.boe.es/borme/dias/${m[1]}/${m[2]}/${m[3]}/` : '';
 }
-function bsFechaRel(iso){
-  if (!iso) return '';
+function emWeb(w){
+  const host = String(w || '').trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host) ? host : '';
+}
+
+async function emPedir(ruta){
+  const r = await fetch(EM_API + ruta);
+  if (r.status === 429){
+    const err = new Error('429');
+    err.limite = true;
+    const reset = parseInt(r.headers.get('X-RateLimit-Reset') || '', 10);
+    const espera = parseInt(r.headers.get('Retry-After') || '', 10);
+    if (reset > 0) err.hasta = reset * 1000;
+    else if (espera > 0) err.hasta = Date.now() + espera * 1000;
+    throw err;
+  }
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+// Lanza una petición y pinta el resultado; ignora la respuesta si mientras
+// tanto se hizo otra.
+async function emCargar(ruta, alLlegar){
+  const turno = ++EM_STATE.turno;
+  EM_STATE.cargando = true;
+  $('#em-go').disabled = true;
+  $('#em-estado').textContent = t('emCargando');
   try{
-    const d = Date.parse(iso);
-    if (isNaN(d)) return '';
-    const diff = Date.now() - d;
-    const min = Math.floor(diff / 60000);
-    const h   = Math.floor(diff / 3600000);
-    if (min < 1)  return t('fechaAhora');
-    if (min < 60) return t('fechaHaceMin', { n: min });
-    if (h   < 24) return t('fechaHaceH',   { n: h });
-    return t('fechaHaceD', { n: Math.floor(h / 24) });
-  }catch(e){ return ''; }
-}
-function bsFiltrarPorFecha(items, rango){
-  if (!rango || rango === 'todo') return items;
-  const ahora = Date.now();
-  let ms = 0;
-  if (rango === '24h') ms = 24 * 3600 * 1000;
-  else if (rango === '48h') ms = 48 * 3600 * 1000;
-  else if (rango === '7d')  ms = 7 * 24 * 3600 * 1000;
-  else if (rango === '30d') ms = 30 * 24 * 3600 * 1000;
-  if (!ms) return items;
-  return items.filter(it => {
-    const x = Date.parse(it.pubDate);
-    if (isNaN(x)) return true;
-    return (ahora - x) <= ms;
-  });
-}
-
-/* ─── Fetch FreeNewsAPI ─── */
-async function bsFetchFreenews(reset){
-  const params = new URLSearchParams();
-  params.set('q', BS_STATE.q);
-  params.set('size', String(BS_STATE.size));
-  params.set('offset', String(reset ? 0 : BS_STATE.freenews.offset));
-  params.set('sort', 'date');
-  if (BS_STATE.lang)    params.set('lang', BS_STATE.lang);
-  if (BS_STATE.country) params.set('country', BS_STATE.country);
-  if (BS_STATE.date && BS_STATE.date !== 'todo') params.set('date', BS_STATE.date);
-  if (BS_STATE.country === 'ES') params.set('tld', 'es,cat,gal');
-
-  const res = await fetch(`${FREENEWS_URL}?${params.toString()}`);
-  if (!res.ok) throw new Error('FreeNews HTTP ' + res.status);
-  const data = await res.json();
-
-  const nuevos = (data.results || []).map(r => ({
-    _src: 'freenews',
-    title: bsLimpiarTitulo(r.title),
-    url: r.url,
-    host: bsHostLimpio(r.host),
-    pubDate: r.published_at,
-    description: r.description || '',
-    image: r.image || '',
-  }));
-
-  BS_STATE.freenews.items = BS_STATE.freenews.items.concat(nuevos);
-  BS_STATE.freenews.total = data.total || 0;
-  BS_STATE.freenews.offset = (reset ? 0 : BS_STATE.freenews.offset) + nuevos.length;
-  BS_STATE.freenews.hayMas = BS_STATE.freenews.offset < BS_STATE.freenews.total;
-}
-
-/* ─── Fetch Google News (vía rss2json) ─── */
-async function bsFetchGnews(){
-  const lang = BS_STATE.lang || 'es';
-  const country = BS_STATE.country || 'ES';
-  const ceid = country + ':' + lang;
-
-  const feedUrl = 'https://news.google.com/rss/search?q='
-    + encodeURIComponent(BS_STATE.q)
-    + '&hl=' + lang + '&gl=' + country + '&ceid=' + ceid;
-
-  const url = GNEWS_PROXY + encodeURIComponent(feedUrl);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('GNews HTTP ' + res.status);
-  const data = await res.json();
-  if (data.status !== 'ok') throw new Error('GNews: ' + (data.message || 'error'));
-
-  const nuevos = (data.items || []).map(it => ({
-    _src: 'gnews',
-    title: it.title,
-    url: it.link,
-    host: it.source || '',        // ← era bsHostLimpio(...): corrompía el nombre
-    sourceName: it.source || '',
-    pubDate: it.pubDate,
-    description: '',
-    image: '',
-  }));
-
-  BS_STATE.gnews.items = bsFiltrarPorFecha(nuevos, BS_STATE.date);
-  BS_STATE.gnews.total = BS_STATE.gnews.items.length;
-}
-
-/* ─── Dedup por título normalizado ─── */
-function bsDedup(items){
-  const visto = new Map();
-  const out = [];
-  for (const item of items){
-    const key = normStrict(item.title);
-    if (!key){ out.push(item); continue; }
-    const existente = visto.get(key);
-    if (!existente){
-      visto.set(key, item);
-      out.push(item);
-      continue;
-    }
-    // Preferimos FreeNewsAPI (URL directa) sobre Google News (redirect)
-    if (existente._src === 'gnews' && item._src === 'freenews'){
-      const idx = out.indexOf(existente);
-      if (idx >= 0){
-        item._dup = item._dup || [];
-        item._dup.push(existente);
-        out[idx] = item;
-        visto.set(key, item);
-      }
+    const datos = await emPedir(ruta);
+    if (turno !== EM_STATE.turno) return;
+    $('#em-estado').textContent = '';
+    alLlegar(datos);
+    emRender();
+  }catch(e){
+    if (turno !== EM_STATE.turno) return;
+    if (e.limite){
+      $('#em-estado').textContent = e.hasta
+        ? t('emLimite', { hora: new Date(e.hasta).toLocaleTimeString(ACCES.lang, { hour: '2-digit', minute: '2-digit' }) })
+        : t('emLimiteSinHora');
     } else {
-      existente._dup = existente._dup || [];
-      existente._dup.push(item);
+      console.error('OpenMercantil:', e);
+      $('#em-estado').textContent = t('emError');
+    }
+  }finally{
+    if (turno === EM_STATE.turno){
+      EM_STATE.cargando = false;
+      $('#em-go').disabled = false;
     }
   }
-  return out;
 }
 
-/* ─── Buscar ─── */
-async function bsBuscar(reset){
-  const q = document.getElementById('bs-q').value.trim();
-  if (!q){ toast(t('bsErrorQ'), 1800); return; }
-  if (BS_STATE.cargando) return;
-
-  BS_STATE.q       = q;
-  BS_STATE.lang    = document.getElementById('bs-lang').value;
-  BS_STATE.country = document.getElementById('bs-country').value;
-  BS_STATE.date    = document.getElementById('bs-date').value;
-  BS_STATE.fuentes.freenews = document.getElementById('bs-f-freenews').checked;
-  BS_STATE.fuentes.gnews    = document.getElementById('bs-f-gnews').checked;
-
-  if (reset){
-    BS_STATE.freenews = { items: [], total: 0, offset: 0, hayMas: false };
-    BS_STATE.gnews    = { items: [], total: 0 };
-  }
-
-  BS_STATE.cargando = true;
-  const estado = document.getElementById('bs-estado');
-  estado.textContent = t('bsCargando');
-  document.getElementById('bs-go').disabled = true;
-
-  const promesas = [];
-  if (BS_STATE.fuentes.freenews) promesas.push(bsFetchFreenews(reset));
-  if (BS_STATE.fuentes.gnews && reset) promesas.push(bsFetchGnews());
-
-  const settled = await Promise.allSettled(promesas);
-  settled.forEach(s => { if (s.status === 'rejected') console.error('Fuente falló:', s.reason); });
-
-  bsCombinarYRender();
-
-  BS_STATE.cargando = false;
-  document.getElementById('bs-go').disabled = false;
-}
-
-/* ─── Combinar + ordenar + dedup + render ─── */
-function bsCombinarYRender(){
-  const todos = [...BS_STATE.freenews.items, ...BS_STATE.gnews.items];
-
-  todos.sort((a, b) => {
-    const ta = Date.parse(a.pubDate) || 0;
-    const tb = Date.parse(b.pubDate) || 0;
-    return tb - ta;
+/* ─── Acciones ─── */
+function emBuscar(){
+  const q = $('#em-q').value.trim();
+  const tipo = $('#em-tipo').value === 'personas' ? 'personas' : 'empresas';
+  const minimo = tipo === 'personas' ? 3 : 2;
+  if (q.length < minimo){ toast(t('emErrorQ', { n: minimo }), 1800); return; }
+  EM_STATE.tipo = tipo;
+  const ruta = (tipo === 'personas' ? '/person/search' : '/search')
+    + '?q=' + encodeURIComponent(q) + '&limit=50';
+  emCargar(ruta, d => {
+    EM_STATE.pila = [{ vista: 'lista', tipo, items: Array.isArray(d.items) ? d.items : [], total: d.count || 0 }];
   });
-
-  BS_STATE.resultados = bsDedup(todos);
-
-  bsRender();
-  try{ sessionStorage.setItem(BS_SESSION_KEY, JSON.stringify({
-    q: BS_STATE.q, lang: BS_STATE.lang, country: BS_STATE.country, date: BS_STATE.date,
-    fuentes: BS_STATE.fuentes,
-    freenews: BS_STATE.freenews,
-    gnews: BS_STATE.gnews
-  })); }catch(e){}
 }
-
-function bsRender(){
-  const cont = document.getElementById('bs-resultados');
-  const estado = document.getElementById('bs-estado');
-  const resultados = BS_STATE.resultados;
-
-  if (!resultados.length){
-    cont.innerHTML = '';
-    estado.textContent = t('bsSinResultados');
-    document.getElementById('bs-mas-wrap').style.display = 'none';
+function emAbrirEmpresa(slug){
+  emCargar('/company/' + encodeURIComponent(slug), d => {
+    EM_STATE.pila.push({ vista: 'empresa', d, actos: EM_ACTOS_PAGINA });
+  });
+}
+function emAbrirPersona(slug){
+  emCargar('/person/' + encodeURIComponent(slug), d => {
+    EM_STATE.pila.push({ vista: 'persona', d });
+  });
+}
+function emNombreEditado(){
+  const inp = $('#em-nombre');
+  const nombre = inp ? emSinForma(inp.value) : '';
+  if (!nombre) toast(t('emErrorQ', { n: 2 }), 1800);
+  return nombre;
+}
+function emVerNoticias(){
+  const nombre = emNombreEditado();
+  if (!nombre) return;
+  cerrarPanel('panel-buscar');
+  const inp = $('#buscar');
+  inp.value = nombre;
+  const clearBtn = $('#buscar-clear');
+  if (clearBtn) clearBtn.hidden = false;
+  aplicarFiltros();
+  inp.focus();
+}
+// Seguir = una línea más en los temas del modo activo.
+function emSeguir(){
+  const nombre = emNombreEditado();
+  if (!nombre) return;
+  const modo = PRESET.nombre || 'General';
+  const palabras = PRESET.palabras || [];
+  if (palabras.some(l => normStrict(l) === normStrict(nombre))){
+    toast(t('emYaSigues', { modo }), 2400);
     return;
   }
-
-  const total = resultados.length;
-  const dupCount = (BS_STATE.freenews.total + BS_STATE.gnews.total) - total;
-  estado.textContent = t('bsResultados', { n: total })
-    + (dupCount > 0 ? ' · ' + dupCount + ' duplicados' : '');
-
-  cont.innerHTML = resultados.map((r, i) => bsRenderItem(r, i)).join('');
-
-  const puedeMas = BS_STATE.fuentes.freenews && BS_STATE.freenews.hayMas;
-  document.getElementById('bs-mas-wrap').style.display = puedeMas ? '' : 'none';
+  PRESET.palabras = [...palabras, nombre];
+  guardarPreset();
+  recompilarPreset();
+  if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
+  aplicarFiltros();
+  toast(t('emSiguiendo', { modo }), 2400);
 }
 
-function bsRenderItem(r, i){
-  const enCatalogo = r._src === 'freenews'
-    && r.host
-    && MEDIOS_UNICOS.some(m => m.dominio === r.host);
-  const fechaRel = bsFechaRel(r.pubDate);
-  const srcLabel = r._src === 'freenews' ? 'FreeNews' : 'Google News';
-  const srcClass = r._src === 'freenews' ? 'bs-badge-fn' : 'bs-badge-gn';
-  const hostMostrar = r.sourceName || r.host || (r._src === 'gnews' ? 'Google News' : '');
+/* ─── Render ─── */
+function emRender(){
+  const cont = $('#em-vista');
+  const actual = EM_STATE.pila[EM_STATE.pila.length - 1];
+  if (!actual){ cont.innerHTML = ''; return; }
+  const volver = EM_STATE.pila.length > 1
+    ? `<button type="button" class="btn-mini em-volver" data-accion="volver">${escapeHtml(t('emVolver'))}</button>`
+    : '';
+  let html = '';
+  if (actual.vista === 'lista') html = emRenderLista(actual);
+  else if (actual.vista === 'empresa') html = emRenderEmpresa(actual);
+  else if (actual.vista === 'persona') html = emRenderPersona(actual);
+  cont.innerHTML = volver + html;
+}
 
-  let dupHtml = '';
-  if (r._dup && r._dup.length){
-    const etiquetas = r._dup.map(d => d.host || (d._src === 'freenews' ? 'FreeNews' : 'Google News')).join(', ');
-    dupHtml = `<div class="bs-dup">🔁 También en: ${escapeHtml(etiquetas)}</div>`;
+function emRenderLista(v){
+  if (!v.items.length){
+    const extra = v.tipo === 'empresas' ? ' ' + t('emCobertura') : '';
+    return `<p class="em-estado">${escapeHtml(t('emSinResultados') + extra)}</p>`;
   }
-
-  const desc = r.description ? `<div class="bs-desc">${escapeHtml(bsLimpiarTitulo(r.description))}</div>` : '';
-
-  return `<article class="bs-resultado" data-idx="${i}">
-    <div class="bs-meta">
-      <span class="bs-medio">${escapeHtml(hostMostrar)}</span>
-      ${enCatalogo ? `<span class="bs-badge">✓ ${escapeHtml(t('bsVerificado'))}</span>` : ''}
-      <span class="bs-badge ${srcClass}">${escapeHtml(srcLabel)}</span>
-      ${fechaRel ? `<span>· ${escapeHtml(fechaRel)}</span>` : ''}
-    </div>
-    <a class="bs-titular" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title)}</a>
-    ${desc}
-    ${dupHtml}
-    <div class="bs-acciones">
-      <button class="btn-mini btn-bs-guardar" data-idx="${i}">${t('bsGuardar')}</button>
-    </div>
-  </article>`;
+  const items = v.items.map(it => {
+    if (v.tipo === 'personas'){
+      const meta = [t('emEmpresasN', { n: it.companies_count || 0 }),
+        [emFecha(it.first_seen), emFecha(it.last_seen)].filter(Boolean).join(' – ')].filter(Boolean).join(' · ');
+      return `<button type="button" class="em-item" data-persona="${escapeHtml(it.slug)}">
+        <div class="em-nombre">${escapeHtml(it.name)}</div>
+        <div class="em-meta">${escapeHtml(meta)}</div>
+      </button>`;
+    }
+    const meta = [it.cif, it.province, t('emActosN', { n: it.acts_count || 0 })].filter(Boolean).join(' · ');
+    return `<button type="button" class="em-item" data-empresa="${escapeHtml(it.slug)}">
+      <div class="em-nombre">${escapeHtml(it.name)}</div>
+      <div class="em-meta">${escapeHtml(meta)}</div>
+    </button>`;
+  }).join('');
+  return `<p class="em-estado">${escapeHtml(t('emResultados', { n: v.total || v.items.length }))}</p>${items}`;
 }
 
-/* ─── Sesión ─── */
-function bsCargarSesion(){
-  try{
-    const raw = sessionStorage.getItem(BS_SESSION_KEY);
-    if (!raw) return;
-    const s = JSON.parse(raw);
-    if (!s) return;
-    if (s.freenews) BS_STATE.freenews = s.freenews;
-    if (s.gnews)    BS_STATE.gnews = s.gnews;
-    if (s.q)        document.getElementById('bs-q').value = s.q;
-    if (s.lang)     document.getElementById('bs-lang').value = s.lang;
-    if (s.country)  document.getElementById('bs-country').value = s.country;
-    if (s.date)     document.getElementById('bs-date').value = s.date;
-    if (s.fuentes){
-      document.getElementById('bs-f-freenews').checked = s.fuentes.freenews !== false;
-      document.getElementById('bs-f-gnews').checked    = s.fuentes.gnews !== false;
-    }
-    if (BS_STATE.freenews.items.length || BS_STATE.gnews.items.length){
-      bsCombinarYRender();
-    }
-  }catch(e){}
+function emRenderCargo(o, vigente){
+  const nombre = o.person_slug
+    ? `<button type="button" class="em-link" data-persona="${escapeHtml(o.person_slug)}">${escapeHtml(o.name)}</button>`
+    : escapeHtml(o.name);
+  const fecha = vigente ? (o.since ? emFecha(o.since) + ' →' : '') : (o.until ? '→ ' + emFecha(o.until) : '');
+  return `<li><span class="em-rol">${escapeHtml(o.role || '')}</span> · ${nombre}${fecha ? ` <span class="em-rol">· ${escapeHtml(fecha)}</span>` : ''}</li>`;
 }
 
-/* ─── Eventos ─── */
-function bsWireEventos(){
-  document.getElementById('bs-go').addEventListener('click', () => bsBuscar(true));
-  document.getElementById('bs-q').addEventListener('keydown', e => {
-    if (e.key === 'Enter'){ e.preventDefault(); bsBuscar(true); }
+function emRenderEmpresa(v){
+  const c = v.d.company || {};
+  const k = v.d.kpis || {};
+  const officers = v.d.officers || {};
+  const actuales = officers.current || [];
+  const anteriores = officers.historical || [];
+  const actos = v.d.events || [];
+  const web = emWeb(c.website);
+
+  const meta = [c.cif, c.company_type, c.status].filter(Boolean).map(escapeHtml);
+  if (web) meta.push(`<a href="https://${escapeHtml(web)}" target="_blank" rel="noopener">${escapeHtml(web)}</a>`);
+  const resumen = t('emActosResumen', {
+    n: k.acts_count || actos.length, desde: emFecha(k.first_seen), hasta: emFecha(k.last_seen),
   });
-  document.getElementById('bs-mas').addEventListener('click', () => bsBuscar(false));
 
-  document.getElementById('bs-f-freenews').addEventListener('change', () => bsBuscar(true));
-  document.getElementById('bs-f-gnews').addEventListener('change',    () => bsBuscar(true));
+  const lista = (items, fn) => items.length ? `<ul class="em-lista">${items.map(fn).join('')}</ul>` : '';
+  const actosHtml = lista(actos.slice(0, v.actos), a => {
+    const dia = emBormeDia(a.date);
+    const fecha = dia
+      ? `<a href="${escapeHtml(dia)}" target="_blank" rel="noopener" title="${escapeHtml(t('emBormeDia'))}">${escapeHtml(emFecha(a.date))}</a>`
+      : escapeHtml(emFecha(a.date));
+    return `<li>${fecha} · <span class="em-rol">${escapeHtml([a.type, a.province].filter(Boolean).join(' · '))}</span>
+      ${a.details ? `<div class="em-detalle">${escapeHtml(a.details)}</div>` : ''}</li>`;
+  });
+  const quedan = actos.length - v.actos;
+  const mas = quedan > 0
+    ? `<button type="button" class="btn-mini" data-accion="mas">${escapeHtml(t('emVerMas', { n: quedan }))}</button>`
+    : '';
 
-  document.getElementById('bs-resultados').addEventListener('click', e => {
-    const b = e.target.closest('.btn-bs-guardar');
-    if (!b) return;
-    e.preventDefault();
-    const r = BS_STATE.resultados[parseInt(b.dataset.idx, 10)];
-    if (!r) return;
+  return `<div class="em-ficha">
+    <h3>${escapeHtml(c.name || '')}</h3>
+    <div class="em-meta">${meta.join(' · ')}</div>
+    <div class="em-meta">${escapeHtml(resumen)}</div>
+    <div class="em-voceiro">
+      <label for="em-nombre">${escapeHtml(t('emBuscarComo'))}</label>
+      <input type="text" id="em-nombre" value="${escapeHtml(nombreDeBusqueda(c))}" autocomplete="off">
+      <button type="button" class="primary" data-accion="noticias">${escapeHtml(t('emVerNoticias'))}</button>
+      <button type="button" data-accion="seguir" title="${escapeHtml(t('emSeguirTitle'))}">${escapeHtml(t('emSeguir'))}</button>
+    </div>
+    ${actuales.length ? `<h4>${escapeHtml(t('emCargosVigentes'))}</h4>${lista(actuales, o => emRenderCargo(o, true))}` : ''}
+    ${anteriores.length ? `<h4>${escapeHtml(t('emCargosAnteriores'))}</h4>${lista(anteriores, o => emRenderCargo(o, false))}` : ''}
+    ${actos.length ? `<h4>${escapeHtml(t('emActos'))}</h4>${actosHtml}${mas}` : ''}
+  </div>`;
+}
 
-    if (!USCRIPT_OK){
-      const texto = `${r.title}\n${r.url}`;
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(texto).then(
-          () => toast(t('saveCopied'), 2400),
-          () => toast('No se pudo copiar', 2000)
-        );
-      }
-      return;
+function emRenderPersona(v){
+  const p = v.d || {};
+  const abiertas = p.active_positions || [];
+  const cerradas = p.inactive_positions || [];
+  const resumen = t('emPersonaResumen', {
+    n: p.companies_count || 0, desde: emFecha(p.first_seen), hasta: emFecha(p.last_seen),
+  });
+  const cargo = (o, abierta) => {
+    const nombre = o.company_name || o.company || '';
+    const empresa = o.company_slug
+      ? `<button type="button" class="em-link" data-empresa="${escapeHtml(o.company_slug)}">${escapeHtml(nombre)}</button>`
+      : escapeHtml(nombre);
+    const fecha = abierta ? (o.since ? emFecha(o.since) + ' →' : '') : (o.until ? '→ ' + emFecha(o.until) : '');
+    return `<li><span class="em-rol">${escapeHtml(o.role || '')}</span> · ${empresa}${fecha ? ` <span class="em-rol">· ${escapeHtml(fecha)}</span>` : ''}</li>`;
+  };
+  const lista = (items, abierta) => `<ul class="em-lista">${items.map(o => cargo(o, abierta)).join('')}</ul>`;
+  return `<div class="em-ficha">
+    <h3>${escapeHtml(p.name || '')}</h3>
+    <div class="em-meta">${escapeHtml(resumen)}</div>
+    <p class="em-aviso">${escapeHtml(t('emPersonaAviso'))}</p>
+    ${abiertas.length ? `<h4>${escapeHtml(t('emPosAbiertas'))}</h4>${lista(abiertas, true)}` : ''}
+    ${cerradas.length ? `<h4>${escapeHtml(t('emPosCerradas'))}</h4>${lista(cerradas, false)}` : ''}
+  </div>`;
+}
+
+/* ─── Textos y eventos ─── */
+function emTextos(){
+  $('#em-title').textContent = t('emTitle');
+  $('#em-aviso').textContent = t('emAviso');
+  $('#em-go').textContent = t('emBuscar');
+  const sel = $('#em-tipo');
+  const tipo = sel.value || EM_STATE.tipo;
+  sel.innerHTML = `<option value="empresas">${escapeHtml(t('emTipoEmpresas'))}</option>`
+    + `<option value="personas">${escapeHtml(t('emTipoPersonas'))}</option>`;
+  sel.value = tipo;
+  $('#em-q').placeholder = t(tipo === 'personas' ? 'emQPersonas' : 'emQEmpresas');
+  $('#em-pie').innerHTML = escapeHtml(t('emAtribucion'))
+    + ' <a href="https://openmercantil.es" target="_blank" rel="noopener">OpenMercantil</a>'
+    + ' · <a href="https://www.boe.es/diario_borme/" target="_blank" rel="noopener">BORME</a>';
+  emRender();
+}
+
+function emWireEventos(){
+  $('#em-go').addEventListener('click', emBuscar);
+  $('#em-q').addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); emBuscar(); }
+  });
+  $('#em-tipo').addEventListener('change', () => {
+    $('#em-q').placeholder = t($('#em-tipo').value === 'personas' ? 'emQPersonas' : 'emQEmpresas');
+  });
+  $('#em-vista').addEventListener('click', e => {
+    const el = e.target.closest('[data-empresa], [data-persona], [data-accion]');
+    if (!el || EM_STATE.cargando) return;
+    if (el.dataset.empresa) return emAbrirEmpresa(el.dataset.empresa);
+    if (el.dataset.persona) return emAbrirPersona(el.dataset.persona);
+    const accion = el.dataset.accion;
+    if (accion === 'volver'){ EM_STATE.pila.pop(); $('#em-estado').textContent = ''; emRender(); }
+    else if (accion === 'mas'){
+      const v = EM_STATE.pila[EM_STATE.pila.length - 1];
+      if (v && v.vista === 'empresa'){ v.actos += EM_ACTOS_PAGINA; emRender(); }
     }
-
-    document.dispatchEvent(new CustomEvent('voceiro-save-later', {
-      detail: { url: r.url, title: r.title, description: r.description || '', image: r.image || '' }
-    }));
+    else if (accion === 'noticias') emVerNoticias();
+    else if (accion === 'seguir') emSeguir();
+  });
+  $('#em-vista').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.id === 'em-nombre'){ e.preventDefault(); emVerNoticias(); }
   });
 }
 
-function bsAbrir(){
-  bsPintarSelects();
+function emAbrir(){
   abrirPanel('panel-buscar');
-  if (!BS_STATE.resultados.length) bsCargarSesion();
+  if (!EM_STATE.pila.length) setTimeout(() => $('#em-q').focus(), 50);
 }
 /* ═══════════════════════════════════════════════════════════════
    FILTRADO + RENDER
@@ -9400,11 +9371,7 @@ function aplicarTextos(){
   const selMot = $('#rep-motivo');
   [...selMot.options].forEach((o, i) => { if (motivoLabels[i]) o.textContent = motivoLabels[i]; });
 
-  $('#bs-title').textContent = t('bsTitle');
-  $('#bs-aviso').textContent = t('bsAviso');
-  $('#bs-go').textContent = t('bsBuscar');
-  $('#bs-mas').textContent = t('bsMas');
-  $('#bs-q').placeholder = t('bsQ');
+  emTextos();
 
   $('#buscar').placeholder = t('fltBuscar');
   $('#filtros-label').textContent = '⚙ ' + t('fltBtn');
@@ -9741,7 +9708,7 @@ function wireStaticEvents(){
   });
 
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
-  $('#btn-buscar').addEventListener('click', bsAbrir);
+  $('#btn-buscar').addEventListener('click', emAbrir);
   $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
   $('#btn-config').addEventListener('click', () => {
     abrirPanel('panel-config');
@@ -9770,7 +9737,7 @@ function wireStaticEvents(){
     if (e.altKey && e.key.toLowerCase() === 'a'){ e.preventDefault(); abrirPanel('panel-acces'); }
     if (e.altKey && e.key.toLowerCase() === 'c'){ e.preventDefault(); abrirPanel('panel-config'); escribirPanel(PRESET); }
     if (e.altKey && e.key.toLowerCase() === 'p'){ e.preventDefault(); abrirPendientes(); }
-    if (e.altKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); bsAbrir(); }
+    if (e.altKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); emAbrir(); }
     if (e.altKey && e.key.toLowerCase() === 'm'){
       e.preventDefault();
       if (!PRESET_ACTIVO && !presetTieneReglas()){
@@ -10055,7 +10022,7 @@ async function init(){
   wireStaticEvents();
   wireCfgTabs();
   wireVistasObserver();
-  bsWireEventos();
+  emWireEventos();
 
   initUserScriptBridge();
 
