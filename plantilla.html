@@ -5114,8 +5114,12 @@ function _dominioTieneSlice(dom) {
 
 // ─── Mergear items de una capa/base en NOTICIAS con dedup global ───
 // Devuelve cuántos items NUEVOS se añadieron.
-function _mergearItemsEnNoticias(items, capaKey) {
+// clave: consulta que trajo los items (solo Turso). Un item que solo viene
+// de Turso se ve únicamente mientras esa consulta esté activa (_pasaVista):
+// así una búsqueda no deja sus resultados en el feed ni en la siguiente.
+function _mergearItemsEnNoticias(items, capaKey, clave = null) {
   let añadidos = 0;
+  const marcar = n => { if (clave) (n._consultas || (n._consultas = new Set())).add(clave); };
 
   for (const n of items) {
     const u = _claveUrl(n.u || '', n.d || '');
@@ -5126,6 +5130,7 @@ function _mergearItemsEnNoticias(items, capaKey) {
       const existente = _itemPorUrl.get(u);
       if (existente) {
         existente._capas.add(capaKey);
+        marcar(existente);
         continue;
       }
     }
@@ -5134,6 +5139,7 @@ function _mergearItemsEnNoticias(items, capaKey) {
       const existente = _itemPorTitulo.get(t);
       if (existente) {
         existente._capas.add(capaKey);
+        marcar(existente);
         continue;
       }
     }
@@ -5143,6 +5149,7 @@ function _mergearItemsEnNoticias(items, capaKey) {
     if (t) _titulosCargados.add(t);
 
     n._capas = new Set([capaKey]);
+    marcar(n);
     n._dia = n._dia || '';
     n._generado = n._generado || '';
     NOTICIAS.push(n);
@@ -7354,6 +7361,10 @@ let TURSO_OFFSET = 0;              // próximo offset a pedir
 let TURSO_HAY_MAS = false;
 let TURSO_ACTIVO = false;          // true cuando ya estamos paginando Turso
 let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llevar cutoff)
+// El archivo se consulta tras una pausa sin cambios (regla 3), no en cada
+// pausa del debounce al teclear: menos peticiones y menos respuestas tiradas.
+const ARCHIVO_PAUSA_MS = 700;
+let _archivoTimer = null;
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false; 
 /* ═══════════════════════════════════════════════════════════════
@@ -7811,6 +7822,8 @@ function _pasaVista(n, ctx){
     if ((hm === 'read' || hm === 'both') && esLeida) return false;
     if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
   }
+  if (n._capas && n._capas.size === 1 && n._capas.has('turso')
+      && !(n._consultas && n._consultas.has(consulta.clave))) return false;
   if (!_pasaConsulta(n, consulta)) return false;
   if (presetEfectivo){
     const cumple = cumplePreset(n);
@@ -7896,25 +7909,31 @@ if (!capas.size) {
     // a aplicarFiltros (un espacio, una capa R2, un toggle…): si no, la
     // respuesta se perdía y no se volvía a pedir.
     const claveTurso = TURSO_RAW;
-    buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
-      if (TURSO_RAW !== claveTurso) return;
-      if (!res.items || !res.items.length) {
-        TURSO_HAY_MAS = false;
-        actualizarBotonCargarMas();
-        return;
-      }
-      TURSO_OFFSET  = (res.nextOffset ?? res.items.length);
-      TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
+    const claveConsulta = consulta.clave;
+    if (_archivoTimer) clearTimeout(_archivoTimer);
+    _archivoTimer = setTimeout(() => {
+      _archivoTimer = null;
+      if (TURSO_RAW !== claveTurso) return;      // la consulta cambió durante la pausa
+      buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
+        if (TURSO_RAW !== claveTurso) return;
+        if (!res.items || !res.items.length) {
+          TURSO_HAY_MAS = false;
+          actualizarBotonCargarMas();
+          return;
+        }
+        TURSO_OFFSET  = (res.nextOffset ?? res.items.length);
+        TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
 
-      const nuevos = _mergearItemsEnNoticias(res.items, 'turso');
-      if (nuevos > 0) {
-        _hidratadasHasta = 0;
-        hidratarNoticias();
+        // Se repinta aunque no haya items nuevos: los que ya estaban en
+        // NOTICIAS (de otra búsqueda) pasan a ser visibles para esta.
+        const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta);
+        if (nuevos > 0) {
+          _hidratadasHasta = 0;
+          hidratarNoticias();
+        }
         aplicarFiltros();
-      } else {
-        actualizarBotonCargarMas();
-      }
-    });
+      });
+    }, ARCHIVO_PAUSA_MS);
   }
 
   // ── Filtrado ──
@@ -8365,6 +8384,7 @@ async function cargarMasDeTurso() {
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
   const claveTurso = TURSO_RAW;
+  const claveConsulta = ULT_QUERY_KEY;
   const offsetPedido = TURSO_OFFSET;
   const res = await buscarEnWorker(TURSO_RAW, {
     offset: TURSO_OFFSET,
@@ -8384,17 +8404,15 @@ async function cargarMasDeTurso() {
   TURSO_OFFSET  = (res.nextOffset ?? (TURSO_OFFSET + res.items.length));
   TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
 
-  const nuevos = _mergearItemsEnNoticias(res.items, 'turso');
-  if (nuevos > 0) {
-    hidratarNoticias();
-    if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
-      aplicarFiltros();
-    } else {
-      renderPresetBanner();
-      actualizarFiltrosCount();
-      actualizarBotonCargarMas();
-    }
+  // Como en la primera página: también los items ya cargados cuentan para
+  // esta consulta, así que se anexan aunque no haya ninguno nuevo.
+  const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta);
+  if (nuevos > 0) hidratarNoticias();
+  if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
+    aplicarFiltros();
   } else {
+    renderPresetBanner();
+    actualizarFiltrosCount();
     actualizarBotonCargarMas();
   }
 }
