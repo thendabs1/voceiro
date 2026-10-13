@@ -15,18 +15,18 @@
 //     que empiezan por x.
 //   - lang: idioma principal del medio, por código exacto.
 
-import { tokenizar, coincide } from './texto.js';
+import { palabrasDe, coincide } from './texto.js';
 
 const _termino = valor => ({
-  incluir: [{ partes: tokenizar(valor).map(x => x.t), prefijo: true }],
+  incluir: [{ partes: palabrasDe(valor).map(x => x.t), prefijo: true }],
   excluir: [],
 });
-const _compacto = s => tokenizar(s).map(x => x.t).join('');
+const _compacto = s => palabrasDe(s).map(x => x.t).join('');
 
 function _casaNombre(nombre, valor) {
   const t = _termino(valor);
   if (!t.incluir[0].partes.length) return false;
-  return coincide(tokenizar(nombre || ''), t);
+  return coincide(palabrasDe(nombre || ''), t);
 }
 
 export function limpiarDominio(d) {

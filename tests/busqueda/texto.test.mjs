@@ -130,3 +130,11 @@ test('equivalencia con FTS5: compilarFts + MATCH == coincide', () => {
     assert.deepEqual(remoto, local, `consulta ${q} → ${fts}`);
   }
 });
+
+test('palabrasDe (rápida, para filtrar) parte igual que tokenizar', async () => {
+  const { palabrasDe } = await import('../../shared/busqueda/texto.js');
+  const extra = ['Incêndio destrói mercado', 'Çà et là: l’été', 'Ñandú—pingüino…  ¡ya!', 'İstanbul ß ǅ', 'Covid-19/2026_x', ''];
+  for (const t of [...TITULARES, ...extra]) {
+    assert.deepEqual(palabrasDe(t).map(x => x.t), tokenizar(t).map(x => x.t), t);
+  }
+});

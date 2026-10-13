@@ -41,7 +41,18 @@ export function tokenizar(texto) {
   return out;
 }
 
-const _partes = s => tokenizar(s).map(x => x.t).filter(Boolean);
+// Versión rápida para filtrar (sin posiciones): normaliza y parte el texto
+// entero de una vez. Parte igual que tokenizar (hay un test que lo comprueba);
+// tokenizar queda para el resaltado, que necesita las posiciones.
+const SEPARADOR = /[^\p{L}\p{N}]+/u;
+export function palabrasDe(texto) {
+  const s = (texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const out = [];
+  for (const t of s.split(SEPARADOR)) if (t) out.push({ t });
+  return out;
+}
+
+const _partes = s => palabrasDe(s).map(x => x.t);
 
 // tokens: salida de tokenizeQuery (shared/parser.js) SIN prefijo, es decir,
 // los que el parser trata como texto libre.
@@ -93,7 +104,7 @@ function _buscar(palabras, termino) {
   return -1;
 }
 
-// palabras: tokenizar(titular) (se puede cachear por item).
+// palabras: palabrasDe(titular) o tokenizar(titular) (se puede cachear por item).
 export function coincide(palabras, compilado) {
   if (textoVacio(compilado)) return true;
   for (const t of compilado.incluir) if (_buscar(palabras, t) < 0) return false;

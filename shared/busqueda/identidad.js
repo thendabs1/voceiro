@@ -11,7 +11,7 @@
 // Ojo: las claves de leídas/vistas siguen usando normalizeUrlForMatch de la
 // plantilla; urlCanonica es solo para deduplicar y no las sustituye.
 
-import { tokenizar } from './texto.js';
+import { palabrasDe } from './texto.js';
 import { limpiarDominio } from './filtros.js';
 
 // Unión de las listas del front (normalizeUrlForMatch) y del recolector (_QUERY_RUIDO).
@@ -52,7 +52,7 @@ export function urlCanonica(u, dominio = '') {
 }
 
 export function titularNormalizado(titular) {
-  return tokenizar(titular).map(x => x.t).join(' ');
+  return palabrasDe(titular).map(x => x.t).join(' ');
 }
 
 // Nombre de fuente (p. ej. el que da Google News: "El País") → dominio del
@@ -60,10 +60,10 @@ export function titularNormalizado(titular) {
 export function crearIndiceNombres(catalogo) {
   const idx = new Map();
   for (const d of Object.keys(catalogo || {})) {
-    const k = tokenizar(catalogo[d].n || '').map(x => x.t).join('');
+    const k = palabrasDe(catalogo[d].n || '').map(x => x.t).join('');
     if (k && !idx.has(k)) idx.set(k, limpiarDominio(d));
   }
-  return nombre => idx.get(tokenizar(nombre || '').map(x => x.t).join('')) || '';
+  return nombre => idx.get(palabrasDe(nombre || '').map(x => x.t).join('')) || '';
 }
 
 // Deduplicador incremental: añadir(item, { url, dominio, titular }) devuelve

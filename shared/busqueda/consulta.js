@@ -5,11 +5,12 @@
 //
 //   const c = interpretarConsulta(raw, { catalogo, ahora });
 //   c.pasa({ dominio, titular, ts, palabras })  → ¿entra en la lista?
+//     (palabras = palabrasDe(titular), opcional; conviene cachearlo por item)
 //   c.clave                                      → identidad de la búsqueda
 //   paraArchivo(c) / paraPrensa(c)               → texto para /buscar?raw=
 
 import { parseQuery, tokenizeQuery } from '../parser.js';
-import { compilarTexto, coincide, tokenizar, textoVacio } from './texto.js';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from './texto.js';
 import { resolverMedios, pasaMedios } from './filtros.js';
 import { resolverVentana, pasaVentana, hayVentana } from './tiempo.js';
 
@@ -31,14 +32,14 @@ export function interpretarConsulta(raw, { catalogo = {}, ahora = Date.now() } =
   // Clave estable: lo que el usuario pidió, no los instantes ya resueltos
   // (desde:3h no cambia de clave con el paso del tiempo; un espacio tampoco).
   const filtros = parsed.chips
-    .map(ch => `${ch.type}:${tokenizar(ch.value).map(x => x.t).join(' ')}`)
+    .map(ch => `${ch.type}:${palabrasDe(ch.value).map(x => x.t).join(' ')}`)
     .sort();
   const clave = JSON.stringify([texto.incluir, texto.excluir, filtros, orden]);
 
   const pasa = ({ dominio, titular, ts, palabras }) =>
     pasaMedios(dominio, medios)
     && pasaVentana(ts, ventana)
-    && coincide(palabras || tokenizar(titular), texto);
+    && coincide(palabras || palabrasDe(titular), texto);
 
   return {
     raw: raw || '', parsed, texto, medios, ventana, orden, clave, pasa,
