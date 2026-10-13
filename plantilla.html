@@ -864,6 +864,18 @@
   background: var(--preset);
   color: #fff;
 }
+/* Fila de temas bajo la de modos: sangrada y atenuada; el pulsado, como siempre. */
+.temas-chips-fila.hija{ padding-left: 4px; }
+.temas-chips-fila.hija::before{
+  content: '↳';
+  flex: none;
+  align-self: center;
+  color: var(--muted);
+}
+.temas-chips-fila.hija button:not([aria-pressed="true"]){
+  color: var(--muted);
+  border-color: var(--border);
+}
 [data-theme="contrast"] .temas-chips button[aria-pressed="true"]{ color: #000; }
 
   /* ═══ Chips de filtros activos ═══ */
@@ -8393,6 +8405,8 @@ if (!capas.size) {
         }
       }
       if (!vistaTemas && _modoTieneMedios()) nMedios = lista.filter(_entraPorMedios).length;
+      // Si todo lo del modo entra por sus medios, el chip es igual que «Todo».
+      if (nMedios === lista.length) nMedios = null;
       if (CHIP_TEMA && (CHIP_TEMA.medios ? nMedios === null : !porTema.has(CHIP_TEMA.etiqueta))) CHIP_TEMA = null;
     }
     if (porModo || porTema) infoChips = { total, porModo, modo: modo ? modo.id : null, totalModo: lista.length, porTema, nMedios };
@@ -8537,7 +8551,8 @@ function renderChipsTemas(){
     }
     filas.push(html);
   }
-  el.innerHTML = filas.map(h => `<div class="temas-chips-fila">${h}</div>`).join('');
+  // Con dos filas, la de temas cuelga del modo elegido: va sangrada.
+  el.innerHTML = filas.map((h, i) => `<div class="temas-chips-fila${i ? ' hija' : ''}">${h}</div>`).join('');
   el.hidden = false;
 }
 
