@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.2
+// @version      2.0.4
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -27,7 +27,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.2';
+const SCRIPT_VERSION = '2.0.4';
 const AUTO_MIN_RATIO = 0.80;
 const AUTO_MIN_RICH  = 3;
 const AUTO_MIN_LEN   = 300;
@@ -223,6 +223,101 @@ function limpiarPerfil(p){
 
 function fusionarPerfil(a, b){
   return masReciente(limpiarPerfil(a), limpiarPerfil(b));
+}
+
+// ── Sincronización entre dispositivos: el documento entero ──────────
+// El documento que se guarda (cifrado) en el servidor reúne Pendientes,
+// leídas, perfil, modos y el bloque del lector. Su fusión es simétrica:
+// da lo mismo en qué orden se junten, para que dos dispositivos no se
+// pisen en bucle. La cortesía de «lo que nadie ha tocado (sello 0) no se
+// impone» se aplica al volcarlo en cada dispositivo, no aquí.
+
+const LEIDAS_MAX = 5000;
+const MODO_BORRADO_DIAS = 365;
+
+function canonico(x){
+  if (Array.isArray(x)) return x.map(canonico);
+  if (x && typeof x === 'object'){
+    const o = {};
+    for (const k of Object.keys(x).sort()) o[k] = canonico(x[k]);
+    return o;
+  }
+  return x;
+}
+
+// Huella que no depende del orden de las claves.
+function huellaCanonica(x){
+  return JSON.stringify(canonico(x === undefined ? null : x));
+}
+
+// Huella de un modo sin su sello: sirve para saber si cambió.
+function huellaModo(m){
+  if (!m || typeof m !== 'object') return '';
+  const { actualizado, ...resto } = m;
+  return huellaCanonica(resto);
+}
+
+// Leídas: { url: ms }. Gana la fecha más reciente y se quedan las
+// LEIDAS_MAX más recientes. (Desmarcar no viaja: una leída de más no estorba.)
+function fusionarLeidas(a, b){
+  const m = new Map();
+  for (const o of [a, b]){
+    if (!o || typeof o !== 'object' || Array.isArray(o)) continue;
+    for (const [k, v] of Object.entries(o)){
+      const t = fusionMs(v);
+      if (!m.has(k) || t > m.get(k)) m.set(k, t);
+    }
+  }
+  const porClave = (x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0);
+  const recientes = [...m.entries()]
+    .sort((x, y) => (y[1] - x[1]) || porClave(x, y))
+    .slice(0, LEIDAS_MAX)
+    .sort(porClave);
+  return Object.fromEntries(recientes);
+}
+
+// Modos: { lista: [modo con id y actualizado], borrados: { id: ms } }.
+// Por modo gana el más reciente (en empate, un orden fijo) y un borrado gana
+// a lo anterior o igual. La lista sale ordenada por id: quien la vuelca le
+// pone su orden.
+function fusionarModos(a, b, ahora = Date.now()){
+  const vivos = new Map(), borrados = new Map();
+  for (const x of [a, b]){
+    if (!x || typeof x !== 'object') continue;
+    for (const m of (Array.isArray(x.lista) ? x.lista : [])){
+      if (!m || typeof m !== 'object' || !m.id) continue;
+      const t = fusionMs(m.actualizado);
+      const prev = vivos.get(m.id);
+      if (!prev || t > prev.t || (t === prev.t && huellaModo(m) > huellaModo(prev.m))){
+        vivos.set(m.id, { m, t });
+      }
+    }
+    for (const [id, v] of Object.entries(x.borrados || {})){
+      const t = fusionMs(v);
+      if (!borrados.has(id) || t > borrados.get(id)) borrados.set(id, t);
+    }
+  }
+  const caduca = ahora - MODO_BORRADO_DIAS * DIA_MS;
+  const lista = [], quedan = {};
+  for (const id of [...new Set([...vivos.keys(), ...borrados.keys()])].sort()){
+    const v = vivos.get(id), tb = borrados.get(id);
+    if (v && (tb === undefined || v.t > tb)) lista.push({ ...v.m, actualizado: v.t });
+    else if (tb !== undefined && tb >= caduca) quedan[id] = tb;
+  }
+  return { lista, borrados: quedan };
+}
+
+function fusionarDocumento(a, b, ahora = Date.now()){
+  a = a && typeof a === 'object' ? a : {};
+  b = b && typeof b === 'object' ? b : {};
+  return {
+    v: 1,
+    pendientes: fusionarPendientes(a.pendientes, b.pendientes, ahora),
+    leidas: fusionarLeidas(a.leidas, b.leidas),
+    perfil: fusionarPerfil(a.perfil, b.perfil),
+    modos: fusionarModos(a.modos, b.modos, ahora),
+    lector: masReciente(a.lector || null, b.lector || null),
+  };
 }
 
 /* ============================================================
@@ -1876,6 +1971,7 @@ const DEFAULT_CFG = {
   customCatalog: [],
   readLater: [],
   perfilActualizado: 0,
+  configActualizado: 0,
   readerAutoAll: false,
   readerSettings: {
     keepReadItems: true
@@ -2029,6 +2125,7 @@ function migrateCfg(cfg){
 
   cfg.readLater = fusionarPendientes(Array.isArray(cfg.readLater) ? cfg.readLater : [], []);
   if (typeof cfg.perfilActualizado !== 'number') cfg.perfilActualizado = 0;
+  if (typeof cfg.configActualizado !== 'number') cfg.configActualizado = 0;
 
   if (!cfg.readerSettings || typeof cfg.readerSettings !== 'object'){
     cfg.readerSettings = { keepReadItems: true };
@@ -2139,14 +2236,65 @@ function aplicarPerfilAlLector(perfil){
   __perfilFirma = firmaPerfilLector(CFG);   // ya sellado: no es un cambio de aquí
 }
 
+// Configuración propia del lector que viaja a otros dispositivos (por
+// Voceiro y su sincronización): reglas por sitio, catálogo propio,
+// diccionarios, servicios de «Abrir en…», atajos… Todo menos Pendientes, el
+// perfil común (va aparte), los sellos y la posición de los botones.
+const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab'];
+const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
+let __configFirma = null;
+
+function configCompartida(cfg){
+  const out = {};
+  for (const k of Object.keys(cfg)){
+    if (!CFG_NO_VIAJA.includes(k)) out[k] = cfg[k];
+  }
+  if (out.prefs){
+    const p = { ...out.prefs };
+    PREFS_DEL_PERFIL.forEach(k => delete p[k]);
+    out.prefs = p;
+  }
+  return JSON.parse(JSON.stringify(out));
+}
+function firmaConfig(cfg){
+  return huellaCanonica(configCompartida(cfg));
+}
+function bloqueConfigLector(){
+  return { datos: configCompartida(CFG), actualizado: CFG.configActualizado || 0 };
+}
+// Adopta la configuración que llega de otro dispositivo (ya sellada).
+function aplicarBloqueConfig(bloque){
+  const d = (bloque && bloque.datos) || {};
+  for (const k of Object.keys(d)){
+    if (CFG_NO_VIAJA.includes(k)) continue;
+    if (k === 'prefs'){
+      const p = { ...(CFG.prefs || {}) };
+      for (const [pk, pv] of Object.entries(d.prefs || {})){
+        if (!PREFS_DEL_PERFIL.includes(pk)) p[pk] = pv;
+      }
+      CFG.prefs = p;
+    } else {
+      CFG[k] = d[k];
+    }
+  }
+  CFG = migrateCfg(CFG);
+  CFG.configActualizado = bloque.actualizado;
+  __configFirma = firmaConfig(CFG);    // ya sellado: no es un cambio de aquí
+  __perfilFirma = firmaPerfilLector(CFG);
+}
+
 function saveCfg(cfg){
   const firma = firmaPerfilLector(cfg);
   if (__perfilFirma !== null && firma !== __perfilFirma) cfg.perfilActualizado = Date.now();
   __perfilFirma = firma;
+  const firmaC = firmaConfig(cfg);
+  if (__configFirma !== null && firmaC !== __configFirma) cfg.configActualizado = Date.now();
+  __configFirma = firmaC;
   PLATAFORMA.guardar(CFG_KEY, cfg);
 }
 let CFG = loadCfg();
 __perfilFirma = firmaPerfilLector(CFG);
+__configFirma = firmaConfig(CFG);
 let __sessionSourceOverride = null;
 
 function t(k){ const L = I18N[CFG.lang] || I18N.es; return L[k] || I18N.es[k] || k; }
@@ -6545,27 +6693,20 @@ document.addEventListener('keydown', globalKeyHandler, true);
    sentido para que nadie se oiga a sí mismo:
      · 'voceiro-ping'   Voceiro → lector; se responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
-     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, modos}.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector}.
      · 'lector-estado'  lector → Voceiro, igual.
-   Pendientes y perfil se fusionan con shared/sync/fusion.js. Los modos
-   son de Voceiro: el lector solo los guarda (para llevarlos a otros
-   dispositivos) y adopta los de Voceiro salvo que los suyos sean más
-   nuevos. Cada lado contesta una vez, si lo suyo no coincide y el
-   mensaje no era ya una respuesta: tras ese ida y vuelta, coinciden.
+   Pendientes y perfil se fusionan con shared/sync/fusion.js. «lector» es
+   la configuración propia del lector: Voceiro la guarda sin mirarla y la
+   lleva a otros dispositivos con su sincronización; gana la más reciente.
+   Cada lado contesta una vez, si lo suyo no coincide y el mensaje no era
+   ya una respuesta: tras ese ida y vuelta, coinciden.
    ─────────────────────────────────────────────────────────────── */
 const PUENTE_V = 2;
-
-function modosDelLector(){
-  const m = CFG.voceiro || {};
-  return Array.isArray(m.presets) && m.presets.length
-    ? { presets: m.presets, actualizado: m.actualizado || 0 }
-    : null;
-}
 
 function estadoDelLector(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
-    pendientes: CFG.readLater || [], perfil: perfilDelLector(), modos: modosDelLector()
+    pendientes: CFG.readLater || [], perfil: perfilDelLector(), lector: bloqueConfigLector()
   };
 }
 
@@ -6573,7 +6714,7 @@ function comparableEstado(d){
   return huella({
     pendientes: fusionarPendientes(d && d.pendientes, []),
     perfil: limpiarPerfil(d && d.perfil),
-    modos: d && d.modos ? { presets: d.modos.presets, actualizado: d.modos.actualizado || 0 } : null
+    lector: d && d.lector ? { datos: d.lector.datos, actualizado: d.lector.actualizado || 0 } : null
   });
 }
 
@@ -6595,6 +6736,7 @@ function enviarEstado(respuesta){
   PLATAFORMA.alCambiar(CFG_KEY, nuevo => {
     CFG = mergeCfg(DEFAULT_CFG, nuevo);
     __perfilFirma = firmaPerfilLector(CFG);
+    __configFirma = firmaConfig(CFG);
     enviarEstado(false);
   });
 
@@ -6616,10 +6758,11 @@ function enviarEstado(respuesta){
     const perfil = fusionarPerfil(mio, d.perfil);
     if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilAlLector(perfil);
 
-    const misModos = modosDelLector();
-    if (d.modos && Array.isArray(d.modos.presets) &&
-        (!misModos || (d.modos.actualizado || 0) >= misModos.actualizado)){
-      CFG.voceiro = { presets: d.modos.presets, actualizado: d.modos.actualizado || 0 };
+    // Configuración que llega de otro dispositivo: solo si es más nueva.
+    const mia = bloqueConfigLector();
+    const llega = d.lector;
+    if (llega && llega.datos && (llega.actualizado || 0) > (mia.actualizado || 0)){
+      aplicarBloqueConfig(llega);
     }
 
     saveCfg(CFG);

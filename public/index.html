@@ -1716,6 +1716,16 @@
   .aj-pagina[hidden]{ display:none; }
   .aj-cuerpo h3:first-child{ border-top:none; padding-top:0; margin-top:0; }
   .aj-hint{ font-size:.68em; color:var(--muted); margin:0 0 8px; line-height:1.45; }
+  .sync-acciones{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
+  .sync-unir-codigo{ flex:1 1 16em; min-width:0; padding:8px 10px; font:inherit; font-size:.85em;
+    font-family:ui-monospace, Menlo, Consolas, monospace; text-transform:uppercase;
+    border:1px solid var(--btn-border); border-radius:6px; background:var(--bg); color:var(--fg); }
+  .sync-codigo{ margin:4px 0 8px; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+    background:var(--quote-bg); font-family:ui-monospace, Menlo, Consolas, monospace;
+    font-size:1.05em; letter-spacing:.05em; word-break:break-all; user-select:all; }
+  .sync-qr svg{ display:block; width:200px; max-width:100%; height:auto; background:#fff;
+    padding:8px; border-radius:8px; margin:0 0 12px; }
+  .sync-error{ color:var(--accent); }
   .aj-fila-fin{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
   .aj-mono{ min-height:80px; font-family:ui-monospace,monospace; font-size:.78em; }
 
@@ -1927,6 +1937,9 @@
   <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></symbol>
   <symbol id="i-circle-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></symbol>
   <symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></symbol>
+  <symbol id="i-qr-code" viewBox="0 0 24 24"><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path d="M21 12v.01" /><path d="M12 21v-1" /></symbol>
 </svg>
 <header>
   <div class="header-top">
@@ -2002,6 +2015,7 @@
         <button type="button" data-ir="modos"><svg class="ico" aria-hidden="true"><use href="#i-layers"/></svg><span id="aj-nav-modos"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="lectura"><span class="aj-aa" aria-hidden="true">Aa</span><span id="aj-nav-lectura"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="feed"><svg class="ico" aria-hidden="true"><use href="#i-newspaper"/></svg><span id="aj-nav-feed"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button type="button" data-ir="sync"><svg class="ico" aria-hidden="true"><use href="#i-cloud"/></svg><span id="aj-nav-sync"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="avanzado"><svg class="ico" aria-hidden="true"><use href="#i-wrench"/></svg><span id="aj-nav-avanzado"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="ayuda"><svg class="ico" aria-hidden="true"><use href="#i-circle-help"/></svg><span id="aj-nav-ayuda"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
       </div>
@@ -2186,6 +2200,47 @@
               <button id="dias-cargar" type="button" class="primary"></button>
             </div>
           </div>
+        </div>
+
+        <!-- ═══════════ SINCRONIZACIÓN ═══════════ -->
+        <div class="aj-pagina" data-pagina="sync" hidden>
+          <p id="sync-intro" class="aj-hint"></p>
+
+          <div id="sync-off">
+            <div class="sync-acciones">
+              <button id="sync-activar" type="button" class="primary con-ico"><svg class="ico" aria-hidden="true"><use href="#i-cloud"/></svg><span id="sync-activar-lbl"></span></button>
+            </div>
+            <h3 id="sync-unir-tit"></h3>
+            <p id="sync-unir-hint" class="aj-hint"></p>
+            <div class="sync-acciones">
+              <input id="sync-unir-codigo" class="sync-unir-codigo" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-labelledby="sync-unir-tit">
+              <button id="sync-unir" type="button"></button>
+            </div>
+            <p id="sync-unir-error" class="aj-hint sync-error" role="alert" hidden></p>
+          </div>
+
+          <div id="sync-on" hidden>
+            <h3 id="sync-codigo-tit"></h3>
+            <p id="sync-codigo" class="sync-codigo"></p>
+            <p id="sync-codigo-hint" class="aj-hint"></p>
+            <div class="sync-acciones">
+              <button id="sync-copiar" type="button" class="con-ico"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg><span id="sync-copiar-lbl"></span></button>
+              <button id="sync-enlace" type="button" class="con-ico"><svg class="ico" aria-hidden="true"><use href="#i-link"/></svg><span id="sync-enlace-lbl"></span></button>
+              <button id="sync-qr-btn" type="button" class="con-ico" aria-expanded="false" aria-controls="sync-qr"><svg class="ico" aria-hidden="true"><use href="#i-qr-code"/></svg><span id="sync-qr-lbl"></span></button>
+            </div>
+            <div id="sync-qr" class="sync-qr" hidden></div>
+            <p id="sync-estado" class="aj-hint" role="status" aria-live="polite"></p>
+            <div class="sync-acciones">
+              <button id="sync-ahora" type="button" class="con-ico"><svg class="ico" aria-hidden="true"><use href="#i-refresh-cw"/></svg><span id="sync-ahora-lbl"></span></button>
+            </div>
+            <h3 id="sync-quitar-tit"></h3>
+            <div class="sync-acciones">
+              <button id="sync-desvincular" type="button"></button>
+              <button id="sync-borrar" type="button" class="con-ico"><svg class="ico" aria-hidden="true"><use href="#i-trash-2"/></svg><span id="sync-borrar-lbl"></span></button>
+            </div>
+          </div>
+
+          <p id="sync-privacidad" class="aj-hint"></p>
         </div>
 
         <!-- ═══════════ AVANZADO ═══════════ -->
@@ -2432,17 +2487,21 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=af36ec8658';
+} from './parser.js?v=bdc045d449';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=af36ec8658';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=af36ec8658';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=af36ec8658';
-import { comparador } from './busqueda/orden.js?v=af36ec8658';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=bdc045d449';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=bdc045d449';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=bdc045d449';
+import { comparador } from './busqueda/orden.js?v=bdc045d449';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
-  huella, CAMPOS_PERFIL,
-} from './sync/fusion.js?v=af36ec8658';
+  fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
+  CAMPOS_PERFIL, LEIDAS_MAX,
+} from './sync/fusion.js?v=bdc045d449';
+// Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
+import { crearCliente } from './sync/cliente.js?v=bdc045d449';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=bdc045d449';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -2841,9 +2900,9 @@ const I18N = {
     sinFechaReal:           'Sin fecha exacta del medio · estimada',
 
     /* ── Sync ── */
-    syncOnline:             'Sincronizado con el plugin Lector Universal',
-    syncOffline:            'Sin plugin — cambios guardados solo en este navegador',
-    syncOfflineHint:        'Instala el plugin Lector Universal para sincronizar tu configuración entre dispositivos y compartirla con la lista de sitios.',
+    syncOnline:             'Conectado con el lector',
+    syncOffline:            'Sin el lector en este navegador',
+    syncOfflineHint:        'Con el lector instalado, las noticias se abren en modo lectura y Pendientes y el perfil de lectura se comparten con él.',
     syncLectorViejo:        'Lector desactualizado: instala la versión nueva desde Avanzado',
 
     /* ── Pendientes ── */
@@ -2856,7 +2915,7 @@ const I18N = {
     pistaEditarModo:        'Editar modo',
     pistaVerTodo:           'Ver todo',
     pendVacioPista:         'Pulsa «Guardar» en un titular para leerlo después.',
-    pendLocalHint:          'Se guardan en este navegador. Con el plugin Lector Universal se sincronizan entre dispositivos.',
+    pendLocalHint:          'Se guardan en este navegador. Para tenerlos en tus otros dispositivos, activa Ajustes › Sincronización.',
     savedToReader:          'Guardado para leer después',
     alreadyInReader:        'Ya estaba en pendientes',
     saveCopied:             'Enlace copiado · Pégalo donde quieras',
@@ -2978,9 +3037,38 @@ const I18N = {
     ajInvestigarLbl:        'Mostrar el botón Investigar',
     ajInvestigarHint:       'Busca empresas y cargos en el BORME con OpenMercantil. También se abre con Alt+B.',
     ajPrensaActivar:        'Buscar también en Google News y FreeNews',
-    ajPluginTit:            'Plugin Lector Universal',
+    ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalar el lector',
     ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
+    ajSync:                 'Sincronización',
+    syncIntro:              'Lleva tus modos, Pendientes, lo que has leído, tu perfil de lectura y la configuración del lector a tus otros dispositivos. Sin cuentas: basta un código que solo tienen tus dispositivos.',
+    syncActivar:            'Activar en este dispositivo',
+    syncUnirTit:            '¿Ya la usas en otro dispositivo?',
+    syncUnirHint:           'Escribe aquí su código, o abre en este dispositivo el enlace o el QR del otro.',
+    syncUnir:               'Unir este dispositivo',
+    syncCodigoInvalido:     'Ese código no vale: son 25 letras y números.',
+    syncCodigoTit:          'Tu código',
+    syncCodigoHint:         'Guárdalo como una contraseña: quien lo tenga puede ver y cambiar tus datos. Si lo pierdes junto con todos tus dispositivos, no se puede recuperar.',
+    syncCopiar:             'Copiar código',
+    syncCopiado:            'Código copiado',
+    syncEnlace:             'Copiar enlace',
+    syncEnlaceCopiado:      'Enlace copiado: ábrelo en tu otro dispositivo',
+    syncQr:                 'Mostrar QR',
+    syncQrAlt:              'Código QR para unir otro dispositivo',
+    syncQrError:            'No se pudo mostrar el QR',
+    syncAhora:              'Sincronizar ahora',
+    syncSincronizando:      'Sincronizando…',
+    syncUltima:             'Última sincronización: {X}',
+    syncNunca:              'Aún sin sincronizar',
+    syncError:              'No se pudo sincronizar ({X}). Se volverá a intentar; lo de este dispositivo sigue aquí.',
+    syncQuitarTit:          'Dejar de sincronizar',
+    syncDesvincular:        'Desvincular este dispositivo',
+    syncDesvincularConfirm: 'Este dispositivo dejará de sincronizar. Sus datos se quedan aquí y en el servidor. ¿Seguir?',
+    syncBorrar:             'Borrar mis datos del servidor',
+    syncBorrarConfirm:      'Se borrará lo guardado en el servidor y este dispositivo dejará de sincronizar; los demás dejarán de recibir cambios. Lo de cada dispositivo se queda en él. ¿Seguir?',
+    syncBorrado:            'Datos borrados del servidor',
+    syncUnirConfirm:        '¿Unir este dispositivo a tu sincronización? Sus modos, Pendientes y ajustes de lectura se juntarán con los de tus otros dispositivos.',
+    syncPrivacidad:         'Todo se cifra en este navegador antes de salir: el servidor guarda un bloque que no puede leer y lo borra si pasa un año sin usarse.',
     ajAtajosTit:            'Atajos de teclado',
     ajAtajos:               'Alt+M|Activar o quitar el modo\nAlt+C|Ajustes\nAlt+A|Lectura\nAlt+P|Pendientes\nAlt+B|Investigar empresas\nEsc|Cerrar',
     acReset:                'Restablecer lectura',
@@ -3162,9 +3250,9 @@ const I18N = {
     recolectado:            'Recollido',
     sinFechaReal:           'Sen data exacta do medio · estimada',
 
-    syncOnline:             'Sincronizado co plugin Lector Universal',
-    syncOffline:            'Sen plugin — cambios gardados só neste navegador',
-    syncOfflineHint:        'Instala o plugin Lector Universal para sincronizar a túa configuración entre dispositivos.',
+    syncOnline:             'Conectado co lector',
+    syncOffline:            'Sen o lector neste navegador',
+    syncOfflineHint:        'Co lector instalado, as noticias ábrense en modo lectura e Pendentes e o perfil de lectura compártense con el.',
     syncLectorViejo:        'Lector desactualizado: instala a versión nova desde Avanzado',
 
     pendTitle:              'Noticias gardadas para ler despois',
@@ -3176,7 +3264,7 @@ const I18N = {
     pistaEditarModo:        'Editar modo',
     pistaVerTodo:           'Ver todo',
     pendVacioPista:         'Preme «Gardar» nun titular para lelo despois.',
-    pendLocalHint:          'Gárdanse neste navegador. Co plugin Lector Universal sincronízanse entre dispositivos.',
+    pendLocalHint:          'Gárdanse neste navegador. Para telos nos teus outros dispositivos, activa Axustes › Sincronización.',
     savedToReader:          'Gardado para ler despois',
     alreadyInReader:        'Xa estaba en pendentes',
     saveCopied:             'Ligazón copiada · Pégala onde queiras',
@@ -3296,9 +3384,38 @@ const I18N = {
     ajInvestigarLbl:        'Amosar o botón Investigar',
     ajInvestigarHint:       'Busca empresas e cargos no BORME con OpenMercantil. Tamén se abre con Alt+B.',
     ajPrensaActivar:        'Buscar tamén en Google News e FreeNews',
-    ajPluginTit:            'Plugin Lector Universal',
+    ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalar o lector',
     ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
+    ajSync:                 'Sincronización',
+    syncIntro:              'Leva os teus modos, Pendentes, o que liches, o teu perfil de lectura e a configuración do lector aos teus outros dispositivos. Sen contas: abonda un código que só teñen os teus dispositivos.',
+    syncActivar:            'Activar neste dispositivo',
+    syncUnirTit:            'Xa a usas noutro dispositivo?',
+    syncUnirHint:           'Escribe aquí o seu código, ou abre neste dispositivo a ligazón ou o QR do outro.',
+    syncUnir:               'Unir este dispositivo',
+    syncCodigoInvalido:     'Ese código non vale: son 25 letras e números.',
+    syncCodigoTit:          'O teu código',
+    syncCodigoHint:         'Gárdao coma un contrasinal: quen o teña pode ver e cambiar os teus datos. Se o perdes xunto con todos os teus dispositivos, non se pode recuperar.',
+    syncCopiar:             'Copiar código',
+    syncCopiado:            'Código copiado',
+    syncEnlace:             'Copiar ligazón',
+    syncEnlaceCopiado:      'Ligazón copiada: ábrea no teu outro dispositivo',
+    syncQr:                 'Amosar QR',
+    syncQrAlt:              'Código QR para unir outro dispositivo',
+    syncQrError:            'Non se puido amosar o QR',
+    syncAhora:              'Sincronizar agora',
+    syncSincronizando:      'Sincronizando…',
+    syncUltima:             'Última sincronización: {X}',
+    syncNunca:              'Aínda sen sincronizar',
+    syncError:              'Non se puido sincronizar ({X}). Volverase tentar; o deste dispositivo segue aquí.',
+    syncQuitarTit:          'Deixar de sincronizar',
+    syncDesvincular:        'Desvincular este dispositivo',
+    syncDesvincularConfirm: 'Este dispositivo deixará de sincronizar. Os seus datos quedan aquí e no servidor. Seguir?',
+    syncBorrar:             'Borrar os meus datos do servidor',
+    syncBorrarConfirm:      'Borrarase o gardado no servidor e este dispositivo deixará de sincronizar; os demais deixarán de recibir cambios. O de cada dispositivo queda nel. Seguir?',
+    syncBorrado:            'Datos borrados do servidor',
+    syncUnirConfirm:        'Unir este dispositivo á túa sincronización? Os seus modos, Pendentes e axustes de lectura xuntaranse cos dos teus outros dispositivos.',
+    syncPrivacidad:         'Todo se cifra neste navegador antes de saír: o servidor garda un bloque que non pode ler e bórrao se pasa un ano sen usarse.',
     ajAtajosTit:            'Atallos de teclado',
     ajAtajos:               'Alt+M|Activar ou quitar o modo\nAlt+C|Axustes\nAlt+A|Lectura\nAlt+P|Pendentes\nAlt+B|Investigar empresas\nEsc|Pechar',
     acReset:                'Restablecer lectura',
@@ -3480,9 +3597,9 @@ const I18N = {
     recolectado:            'Recollit',
     sinFechaReal:           'Sense data exacta del mitjà · estimada',
 
-    syncOnline:             'Sincronitzat amb el plugin Lector Universal',
-    syncOffline:            'Sense plugin — canvis desats només en aquest navegador',
-    syncOfflineHint:        'Instal·la el plugin Lector Universal per sincronitzar la configuració.',
+    syncOnline:             'Connectat amb el lector',
+    syncOffline:            'Sense el lector en aquest navegador',
+    syncOfflineHint:        "Amb el lector instal·lat, les notícies s'obren en mode lectura i Pendents i el perfil de lectura es comparteixen amb ell.",
     syncLectorViejo:        "Lector desactualitzat: instal·la la versió nova des d'Avançat",
 
     pendTitle:              'Notícies desades per llegir després',
@@ -3494,7 +3611,7 @@ const I18N = {
     pistaEditarModo:        'Editar el mode',
     pistaVerTodo:           'Veure-ho tot',
     pendVacioPista:         'Prem «Desar» en un titular per llegir-lo després.',
-    pendLocalHint:          'Es desen en aquest navegador. Amb el plugin Lector Universal es sincronitzen entre dispositius.',
+    pendLocalHint:          'Es desen en aquest navegador. Per tenir-los als teus altres dispositius, activa Configuració › Sincronització.',
     savedToReader:          'Desat per llegir després',
     alreadyInReader:        'Ja era a pendents',
     saveCopied:             "Enllaç copiat · Enganxa'l on vulguis",
@@ -3614,9 +3731,38 @@ const I18N = {
     ajInvestigarLbl:        'Mostrar el botó Investigar',
     ajInvestigarHint:       "Cerca empreses i càrrecs al BORME amb OpenMercantil. També s'obre amb Alt+B.",
     ajPrensaActivar:        'Cercar també a Google News i FreeNews',
-    ajPluginTit:            'Plugin Lector Universal',
+    ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instal·la el lector',
     ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
+    ajSync:                 'Sincronització',
+    syncIntro:              "Porta els teus modes, Pendents, el que has llegit, el teu perfil de lectura i la configuració del lector als teus altres dispositius. Sense comptes: n'hi ha prou amb un codi que només tenen els teus dispositius.",
+    syncActivar:            'Activa en aquest dispositiu',
+    syncUnirTit:            'Ja la fas servir en un altre dispositiu?',
+    syncUnirHint:           "Escriu-hi el seu codi, o obre en aquest dispositiu l'enllaç o el QR de l'altre.",
+    syncUnir:               'Uneix aquest dispositiu',
+    syncCodigoInvalido:     'Aquest codi no és vàlid: són 25 lletres i números.',
+    syncCodigoTit:          'El teu codi',
+    syncCodigoHint:         "Desa'l com una contrasenya: qui el tingui pot veure i canviar les teves dades. Si el perds juntament amb tots els teus dispositius, no es pot recuperar.",
+    syncCopiar:             'Copia el codi',
+    syncCopiado:            'Codi copiat',
+    syncEnlace:             "Copia l'enllaç",
+    syncEnlaceCopiado:      "Enllaç copiat: obre'l a l'altre dispositiu",
+    syncQr:                 'Mostra el QR',
+    syncQrAlt:              'Codi QR per unir un altre dispositiu',
+    syncQrError:            "No s'ha pogut mostrar el QR",
+    syncAhora:              'Sincronitza ara',
+    syncSincronizando:      'Sincronitzant…',
+    syncUltima:             'Última sincronització: {X}',
+    syncNunca:              'Encara sense sincronitzar',
+    syncError:              "No s'ha pogut sincronitzar ({X}). Es tornarà a provar; el d'aquest dispositiu continua aquí.",
+    syncQuitarTit:          'Deixa de sincronitzar',
+    syncDesvincular:        'Desvincula aquest dispositiu',
+    syncDesvincularConfirm: 'Aquest dispositiu deixarà de sincronitzar. Les seves dades es queden aquí i al servidor. Vols continuar?',
+    syncBorrar:             'Esborra les meves dades del servidor',
+    syncBorrarConfirm:      "S'esborrarà el que hi ha desat al servidor i aquest dispositiu deixarà de sincronitzar; els altres deixaran de rebre canvis. El de cada dispositiu s'hi queda. Vols continuar?",
+    syncBorrado:            'Dades esborrades del servidor',
+    syncUnirConfirm:        "Vols unir aquest dispositiu a la teva sincronització? Els seus modes, Pendents i ajustos de lectura s'ajuntaran amb els dels teus altres dispositius.",
+    syncPrivacidad:         "Tot es xifra en aquest navegador abans de sortir: el servidor desa un bloc que no pot llegir i l'esborra si passa un any sense fer-se servir.",
     ajAtajosTit:            'Dreceres de teclat',
     ajAtajos:               'Alt+M|Activar o treure el mode\nAlt+C|Configuració\nAlt+A|Lectura\nAlt+P|Pendents\nAlt+B|Investigar empreses\nEsc|Tancar',
     acReset:                'Restablir la lectura',
@@ -3798,9 +3944,9 @@ const I18N = {
     recolectado:            'Collected',
     sinFechaReal:           'No exact date from source · estimated',
 
-    syncOnline:             'Synced with the Universal Reader plugin',
-    syncOffline:            'No plugin — changes saved only in this browser',
-    syncOfflineHint:        'Install the Universal Reader plugin to sync your configuration.',
+    syncOnline:             'Connected to the reader',
+    syncOffline:            'No reader in this browser',
+    syncOfflineHint:        'With the reader installed, news open in reading mode, and the Queue and reading profile are shared with it.',
     syncLectorViejo:        'Reader out of date: install the new version from Advanced',
 
     pendTitle:              'News saved for later',
@@ -3812,7 +3958,7 @@ const I18N = {
     pistaEditarModo:        'Edit mode',
     pistaVerTodo:           'Show everything',
     pendVacioPista:         'Tap “Save” on a headline to read it later.',
-    pendLocalHint:          'They are stored in this browser. With the Universal Reader plugin they sync across devices.',
+    pendLocalHint:          'Saved in this browser. To have them on your other devices, turn on Settings › Sync.',
     savedToReader:          'Saved for later',
     alreadyInReader:        'Already in queue',
     saveCopied:             'Link copied · Paste it wherever you like',
@@ -3932,9 +4078,38 @@ const I18N = {
     ajInvestigarLbl:        'Show the Investigate button',
     ajInvestigarHint:       'Look up companies and officers in the BORME with OpenMercantil. Also opens with Alt+B.',
     ajPrensaActivar:        'Also search Google News and FreeNews',
-    ajPluginTit:            'Universal Reader plugin',
+    ajPluginTit:            'Universal Reader',
     ajLectorInstalar:       'Install the reader',
     ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
+    ajSync:                 'Sync',
+    syncIntro:              'Take your modes, Queue, what you have read, your reading profile and the reader settings to your other devices. No accounts: a code that only your devices have is enough.',
+    syncActivar:            'Turn on for this device',
+    syncUnirTit:            'Already using it on another device?',
+    syncUnirHint:           "Type its code here, or open the other device's link or QR on this one.",
+    syncUnir:               'Join this device',
+    syncCodigoInvalido:     'That code is not valid: it has 25 letters and digits.',
+    syncCodigoTit:          'Your code',
+    syncCodigoHint:         'Keep it like a password: whoever has it can see and change your data. If you lose it along with all your devices, it cannot be recovered.',
+    syncCopiar:             'Copy code',
+    syncCopiado:            'Code copied',
+    syncEnlace:             'Copy link',
+    syncEnlaceCopiado:      'Link copied: open it on your other device',
+    syncQr:                 'Show QR',
+    syncQrAlt:              'QR code to join another device',
+    syncQrError:            'Could not show the QR',
+    syncAhora:              'Sync now',
+    syncSincronizando:      'Syncing…',
+    syncUltima:             'Last sync: {X}',
+    syncNunca:              'Not synced yet',
+    syncError:              'Could not sync ({X}). It will try again; everything on this device stays here.',
+    syncQuitarTit:          'Stop syncing',
+    syncDesvincular:        'Unlink this device',
+    syncDesvincularConfirm: 'This device will stop syncing. Its data stays here and on the server. Continue?',
+    syncBorrar:             'Delete my data from the server',
+    syncBorrarConfirm:      'What is stored on the server will be deleted and this device will stop syncing; the others will stop receiving changes. Each device keeps its own data. Continue?',
+    syncBorrado:            'Data deleted from the server',
+    syncUnirConfirm:        'Join this device to your sync? Its modes, Queue and reading settings will be merged with those of your other devices.',
+    syncPrivacidad:         'Everything is encrypted in this browser before it leaves: the server stores a block it cannot read and deletes it after a year without use.',
     ajAtajosTit:            'Keyboard shortcuts',
     ajAtajos:               'Alt+M|Turn the mode on or off\nAlt+C|Settings\nAlt+A|Reading\nAlt+P|Queue\nAlt+B|Investigate companies\nEsc|Close',
     acReset:                'Reset reading',
@@ -4116,9 +4291,9 @@ const I18N = {
     recolectado:            'Bilduta',
     sinFechaReal:           'Iturriaren data zehatzik gabe · estimatua',
 
-    syncOnline:             'Lector Universal pluginarekin sinkronizatuta',
-    syncOffline:            'Pluginik gabe — aldaketak nabigatzaile honetan bakarrik gordeta',
-    syncOfflineHint:        'Instalatu Lector Universal plugina konfigurazioa sinkronizatzeko.',
+    syncOnline:             'Irakurgailuarekin konektatuta',
+    syncOffline:            'Irakurgailurik ez nabigatzaile honetan',
+    syncOfflineHint:        'Irakurgailua instalatuta, albisteak irakurketa moduan irekitzen dira, eta Zain zerrenda eta irakurketa-profila harekin partekatzen dira.',
     syncLectorViejo:        'Irakurgailua zaharkituta: instalatu bertsio berria Aurreratua ataletik',
 
     pendTitle:              'Geroago irakurtzeko gordetako albisteak',
@@ -4130,7 +4305,7 @@ const I18N = {
     pistaEditarModo:        'Modua editatu',
     pistaVerTodo:           'Dena ikusi',
     pendVacioPista:         'Sakatu «Gorde» izenburu batean geroago irakurtzeko.',
-    pendLocalHint:          'Nabigatzaile honetan gordetzen dira. Lector Universal pluginarekin gailuen artean sinkronizatzen dira.',
+    pendLocalHint:          'Nabigatzaile honetan gordetzen dira. Zure beste gailuetan izateko, aktibatu Ezarpenak › Sinkronizazioa.',
     savedToReader:          'Geroago irakurtzeko gordeta',
     alreadyInReader:        'Jadanik zain zegoen',
     saveCopied:             'Esteka kopiatu da · Itsatsi nahi duzun tokian',
@@ -4250,9 +4425,38 @@ const I18N = {
     ajInvestigarLbl:        'Ikertu botoia erakutsi',
     ajInvestigarHint:       'Bilatu enpresak eta karguak BORMEn OpenMercantil-ekin. Alt+B teklarekin ere irekitzen da.',
     ajPrensaActivar:        'Bilatu Google News eta FreeNews-en ere',
-    ajPluginTit:            'Lector Universal plugina',
+    ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalatu irakurgailua',
     ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
+    ajSync:                 'Sinkronizazioa',
+    syncIntro:              'Eraman zure moduak, Zain zerrenda, irakurri duzuna, irakurketa-profila eta irakurgailuaren ezarpenak zure beste gailuetara. Konturik gabe: zure gailuek bakarrik duten kode bat nahikoa da.',
+    syncActivar:            'Aktibatu gailu honetan',
+    syncUnirTit:            'Beste gailu batean erabiltzen duzu dagoeneko?',
+    syncUnirHint:           'Idatzi hemen haren kodea, edo ireki gailu honetan besteko esteka edo QRa.',
+    syncUnir:               'Batu gailu hau',
+    syncCodigoInvalido:     'Kode hori ez da baliozkoa: 25 letra eta zenbaki dira.',
+    syncCodigoTit:          'Zure kodea',
+    syncCodigoHint:         'Gorde pasahitz bat bezala: duenak zure datuak ikusi eta alda ditzake. Gailu guztiekin batera galtzen baduzu, ezin da berreskuratu.',
+    syncCopiar:             'Kopiatu kodea',
+    syncCopiado:            'Kodea kopiatuta',
+    syncEnlace:             'Kopiatu esteka',
+    syncEnlaceCopiado:      'Esteka kopiatuta: ireki zure beste gailuan',
+    syncQr:                 'Erakutsi QRa',
+    syncQrAlt:              'Beste gailu bat batzeko QR kodea',
+    syncQrError:            'Ezin izan da QRa erakutsi',
+    syncAhora:              'Sinkronizatu orain',
+    syncSincronizando:      'Sinkronizatzen…',
+    syncUltima:             'Azken sinkronizazioa: {X}',
+    syncNunca:              'Oraindik sinkronizatu gabe',
+    syncError:              'Ezin izan da sinkronizatu ({X}). Berriro saiatuko da; gailu honetakoa hemen dago oraindik.',
+    syncQuitarTit:          'Utzi sinkronizatzeari',
+    syncDesvincular:        'Askatu gailu hau',
+    syncDesvincularConfirm: 'Gailu honek sinkronizatzeari utziko dio. Bere datuak hemen eta zerbitzarian geratzen dira. Jarraitu?',
+    syncBorrar:             'Ezabatu nire datuak zerbitzaritik',
+    syncBorrarConfirm:      'Zerbitzarian gordetakoa ezabatuko da eta gailu honek sinkronizatzeari utziko dio; besteek ez dute aldaketarik jasoko. Gailu bakoitzak berea gordetzen du. Jarraitu?',
+    syncBorrado:            'Datuak zerbitzaritik ezabatuta',
+    syncUnirConfirm:        'Gailu hau zure sinkronizaziora batu? Bere moduak, Zain zerrenda eta irakurketa-ezarpenak zure beste gailuetakoekin batuko dira.',
+    syncPrivacidad:         'Dena nabigatzaile honetan zifratzen da irten aurretik: zerbitzariak irakurri ezin duen bloke bat gordetzen du, eta urtebete erabili gabe igarotzen bada ezabatu egiten du.',
     ajAtajosTit:            'Teklatuko lasterbideak',
     ajAtajos:               'Alt+M|Modua aktibatu edo kendu\nAlt+C|Ezarpenak\nAlt+A|Irakurketa\nAlt+P|Zain\nAlt+B|Enpresak ikertu\nEsc|Itxi',
     acReset:                'Irakurketa berrezarri',
@@ -4478,6 +4682,7 @@ function guardarAcces(){
     ACCES.actualizado = Date.now();
     _firmaPerfilVoceiro = firma;
     enviarEstadoAlLector();
+    sincronizarPronto();
   }
   try{ localStorage.setItem('voceiro-acces-v2', JSON.stringify(ACCES)); }catch(e){}
 }
@@ -4527,7 +4732,8 @@ const AJ_SECCION_KEY = 'voceiro-aj-seccion';   // última sección de Ajustes (e
 const INVESTIGAR_KEY = 'voceiro-investigar';     // botón Investigar en la cabecera
 const PRESET_DEF = { grupos: [], palabras: [] };
 const PRESET_UNICO_DEF = { id: 'general', nombre: 'General', grupos: [], palabras: [], overrides: {} };
-let PRESETS = null;   // { lista: [...], activo: 'id' }
+let PRESETS = null;   // { lista: [...], activo: 'id', borrados: { id: ms } }
+let _huellasModos = null;   // id → huella de cada modo al guardar (sellarModos)
 let PRESET = null; 
 let PRESET_ACTIVO = false;
 // Vista 🔖 Temas: el feed muestra lo que casa con algún tema de cualquier
@@ -4605,7 +4811,9 @@ function normalizarPreset(p){
     grupos:    Array.isArray(p.grupos)   ? p.grupos   : [],
     palabras:  Array.isArray(p.palabras) ? p.palabras : [],
     overrides: (p.overrides && typeof p.overrides === 'object' && !Array.isArray(p.overrides))
-               ? p.overrides : {}
+               ? p.overrides : {},
+    // Fecha del último cambio de este modo (la pone sellarModos).
+    ...(Number(p.actualizado) > 0 ? { actualizado: Number(p.actualizado) } : {})
   };
 }
 
@@ -4618,25 +4826,49 @@ function cargarPresets(){
         const lista = p.lista.map(normalizarPreset);
         const activo = (typeof p.activo === 'string' && lista.some(x => x.id === p.activo))
                        ? p.activo : lista[0].id;
-        return { lista, activo, actualizado: Number(p.actualizado) || 0 };
+        const borrados = (p.borrados && typeof p.borrados === 'object') ? p.borrados : {};
+        return { lista, activo, borrados };
       }
     }
   }catch(e){}
   // Sin datos previos → crear "General" vacío
   return {
     lista: [ structuredClone(PRESET_UNICO_DEF) ],
-    activo: 'general'
+    activo: 'general',
+    borrados: {}
   };
 }
 
 function guardarPresets(){
   recompilarTemas();
-  // La fecha decide qué copia gana cuando llegan los modos del plugin.
-  PRESETS.actualizado = Date.now();
+  if (sellarModos()) sincronizarPronto();
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
   try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
-  // Al lector, que los guarda para llevarlos a otros dispositivos.
-  enviarEstadoAlLector();
+}
+
+// Cada modo lleva la fecha de su último cambio y cada borrado la suya: así
+// la sincronización junta los modos de varios dispositivos uno a uno.
+function huellasDeModos(){
+  return new Map(((PRESETS && PRESETS.lista) || []).map(m => [m.id, huellaModo(m)]));
+}
+// Sella los modos que cambiaron desde el último guardado y apunta los que
+// desaparecieron. Devuelve si hubo algún cambio.
+function sellarModos(){
+  const antes = _huellasModos || huellasDeModos();
+  const ahora = Date.now();
+  if (!PRESETS.borrados || typeof PRESETS.borrados !== 'object') PRESETS.borrados = {};
+  let cambio = false;
+  const vivos = new Set();
+  PRESETS.lista.forEach(m => {
+    vivos.add(m.id);
+    if (antes.get(m.id) !== huellaModo(m)){ m.actualizado = ahora; cambio = true; }
+    delete PRESETS.borrados[m.id];
+  });
+  antes.forEach((h, id) => {
+    if (!vivos.has(id)){ PRESETS.borrados[id] = ahora; cambio = true; }
+  });
+  _huellasModos = huellasDeModos();
+  return cambio;
 }
 
 // Guarda el modo activo. PRESET es el mismo objeto que su entrada en la
@@ -4666,37 +4898,6 @@ function setOverride(domain, value, modo = PRESET){
   }
   if (modo === PRESET) guardarPreset();
   else guardarPresets();
-}
-
-function aplicarPresetsDesdePlugin(d){
-  if (!d || typeof d !== 'object') return false;
-  if (!d.voceiro || typeof d.voceiro !== 'object') return false;
-  const incoming = d.voceiro.presets;
-  if (!Array.isArray(incoming) || !incoming.length) return false;
-
-  // Solo se adopta la copia del plugin si es más nueva que la local, o si
-  // este navegador nunca guardó modos (dispositivo nuevo). Si no, lo editado
-  // aquí con el plugin desconectado se perdería al conectar.
-  const entrante = Number(d.voceiro.actualizado) || 0;
-  const local = (PRESETS && PRESETS.actualizado) || 0;
-  let nuncaGuardados = false;
-  try{ nuncaGuardados = !localStorage.getItem(PRESET_KEY); }catch(e){}
-  if (!nuncaGuardados && entrante <= local) return false;
-
-  const lista = incoming.map(normalizarPreset);
-  const activoLocal = (PRESETS && PRESETS.activo) || 'general';
-  const activoSigue = lista.some(p => p.id === activoLocal);
-  const activoNuevo = activoSigue ? activoLocal : lista[0].id;
-
-  PRESETS = { lista, activo: activoNuevo, actualizado: entrante };
-  PRESET = PRESETS.lista.find(p => p.id === activoNuevo);
-
-  try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
-  try{ localStorage.setItem(PRESET_ID_KEY, activoNuevo); }catch(e){}
-
-  recompilarPreset();
-  actualizarBotonPreset();
-  return true;
 }
 
 function cargarPresetActivo(){
@@ -5288,16 +5489,32 @@ function renderLangSelect(){
    Leídas y vistas son de esta página; Pendientes, el perfil de
    lectura y los modos se comparten con el lector por el puente.
    ═══════════════════════════════════════════════════════════════ */
-const LEIDAS_KEY = 'voceiro-leidas-v1';
-let LEIDAS_LOCAL = new Set();
-try { LEIDAS_LOCAL = new Set(JSON.parse(localStorage.getItem(LEIDAS_KEY) || '[]')); } catch(e){}
+// Leídas: URL → cuándo (ms). Con fecha, para juntarlas entre dispositivos
+// y quedarse con las más recientes.
+const LEIDAS_KEY = 'voceiro-leidas-v2';
+const LEIDAS_KEY_V1 = 'voceiro-leidas-v1';
+let LEIDAS_LOCAL = cargarLeidas();
 
+function cargarLeidas(){
+  try {
+    const raw = localStorage.getItem(LEIDAS_KEY);
+    if (raw) return new Map(JSON.parse(raw));
+    const v1 = JSON.parse(localStorage.getItem(LEIDAS_KEY_V1) || '[]');
+    return new Map((Array.isArray(v1) ? v1 : []).map(u => [u, 0]));
+  } catch(e){ return new Map(); }
+}
+function guardarLeidas(){
+  try { localStorage.setItem(LEIDAS_KEY, JSON.stringify([...LEIDAS_LOCAL])); } catch(e){}
+}
 function marcarLeidaLocal(url){
   const k = normalizeUrlForMatch(url);
   if (!k || LEIDAS_LOCAL.has(k)) return;
-  LEIDAS_LOCAL.add(k);
-  if (LEIDAS_LOCAL.size > 5000) LEIDAS_LOCAL = new Set([...LEIDAS_LOCAL].slice(-4000));
-  try { localStorage.setItem(LEIDAS_KEY, JSON.stringify([...LEIDAS_LOCAL])); } catch(e){}
+  LEIDAS_LOCAL.set(k, Date.now());
+  if (LEIDAS_LOCAL.size > LEIDAS_MAX){
+    LEIDAS_LOCAL = new Map([...LEIDAS_LOCAL].sort((a, b) => b[1] - a[1]).slice(0, LEIDAS_MAX - 1000));
+  }
+  guardarLeidas();
+  sincronizarPronto();
 }
 
 const VISTAS_KEY = 'voceiro-vistas-v1';
@@ -5386,6 +5603,7 @@ function cambiarPendientes(nueva){
   guardarPendientes();
   rebuildPendientes();
   enviarEstadoAlLector();
+  sincronizarPronto();
 }
 function buscarPendiente(url){
   const k = normalizeUrlForMatch(url);
@@ -5442,7 +5660,7 @@ function desmarcarLeidaLocal(url){
   const k = normalizeUrlForMatch(url);
   if (!LEIDAS_LOCAL.has(k)) return;
   LEIDAS_LOCAL.delete(k);
-  try { localStorage.setItem(LEIDAS_KEY, JSON.stringify([...LEIDAS_LOCAL])); } catch(e){}
+  guardarLeidas();
 }
 
 /* ── Perfil de lectura común con el lector ──
@@ -5477,29 +5695,35 @@ function aplicarPerfilEnVoceiro(p){
    Eventos en document, uno por sentido para que nadie se oiga a sí mismo:
      · 'voceiro-ping'   Voceiro → lector; responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
-     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, modos}.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector}.
      · 'lector-estado'  lector → Voceiro, igual.
    Cada lado fusiona lo que le llega y, si lo suyo no coincide y el mensaje
    no era ya una respuesta, contesta una vez con lo suyo. Como fusionar da
    lo mismo en cualquier orden, tras ese ida y vuelta los dos coinciden. */
-// Si este navegador nunca guardó modos, no se mandan: los «de fábrica»
-// pisarían los que trae el lector de otro dispositivo.
-function modosDeVoceiro(){
-  let guardados = false;
-  try{ guardados = !!localStorage.getItem(PRESET_KEY); }catch(e){}
-  return guardados ? { presets: PRESETS.lista, actualizado: PRESETS.actualizado || 0 } : null;
+// Configuración propia del lector (reglas por sitio, diccionarios, servicios
+// de «Abrir en…»…): Voceiro la guarda tal cual, sin mirarla, para llevarla a
+// otros dispositivos con la sincronización. { datos, actualizado }.
+const LECTOR_BLOQUE_KEY = 'voceiro-lector-bloque';
+function cargarBloqueLector(){
+  try {
+    const b = JSON.parse(localStorage.getItem(LECTOR_BLOQUE_KEY) || 'null');
+    return b && typeof b === 'object' ? b : null;
+  } catch(e){ return null; }
+}
+function guardarBloqueLector(b){
+  try { localStorage.setItem(LECTOR_BLOQUE_KEY, JSON.stringify(b)); } catch(e){}
 }
 function estadoDeVoceiro(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
-    pendientes: PENDIENTES, perfil: perfilDeVoceiro(), modos: modosDeVoceiro()
+    pendientes: PENDIENTES, perfil: perfilDeVoceiro(), lector: cargarBloqueLector()
   };
 }
 function comparable(d){
   return huella({
     pendientes: fusionarPendientes(d && d.pendientes, []),
     perfil: limpiarPerfil(d && d.perfil),
-    modos: d && d.modos ? { presets: d.modos.presets, actualizado: d.modos.actualizado || 0 } : null
+    lector: d && d.lector ? { datos: d.lector.datos, actualizado: d.lector.actualizado || 0 } : null
   });
 }
 function enviarEstadoAhora(respuesta){
@@ -5523,16 +5747,23 @@ function recibirEstadoDelLector(d){
     PENDIENTES = fusion;
     guardarPendientes();
     rebuildPendientes();
+    sincronizarPronto();
   }
   // Un perfil sin sellar (nadie lo ha cambiado desde que se comparten) no
   // se impone: se unifican con el primer cambio, en cualquiera de los dos.
   const mio = perfilDeVoceiro();
   const perfil = fusionarPerfil(mio, d.perfil);
-  if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilEnVoceiro(perfil);
+  if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)){
+    aplicarPerfilEnVoceiro(perfil);
+    sincronizarPronto();
+  }
 
-  if (d.modos && aplicarPresetsDesdePlugin({ voceiro: d.modos })){
-    if (typeof NOTICIAS !== 'undefined' && NOTICIAS.length) aplicarFiltros();
-    ajRefrescar();
+  // Configuración del lector: se guarda la más reciente, para el servidor.
+  const bloque = cargarBloqueLector();
+  const elegido = masReciente(bloque, d.lector || null);
+  if (elegido && ((elegido.actualizado || 0) > 0 || !bloque) && huella(elegido) !== huella(bloque)){
+    guardarBloqueLector(elegido);
+    sincronizarPronto();
   }
   if (!d.respuesta && comparable(estadoDeVoceiro()) !== comparable(d)) enviarEstadoAhora(true);
 }
@@ -5592,6 +5823,361 @@ function guardarParaLeerDespues(n){
   else            desmarcarLeidaLocal(url);
   setPendienteRead(url, nuevaLeida);
 }
+/* ═══════════════════════════════════════════════════════════════
+   SINCRONIZACIÓN ENTRE DISPOSITIVOS
+   Sin cuentas: un código que solo tienen tus dispositivos. Todo se cifra
+   aquí (shared/sync/cripto.js) y el servidor (workers/cf-sync) guarda un
+   bloque que no puede leer. Viajan Pendientes, leídas, perfil de lectura,
+   modos y la configuración del lector. La fusión es la de
+   shared/sync/fusion.js; aquí se decide cuándo y se vuelca el resultado.
+   ═══════════════════════════════════════════════════════════════ */
+const SYNC_SERVIDORES = ['https://voceiro-sync.toriorecorda.workers.dev'];
+const SYNC_CODIGO_KEY = 'voceiro-sync-codigo';
+const SYNC_ULTIMA_KEY = 'voceiro-sync-ultima';
+const SYNC_UNIRSE_KEY = 'voceiro-sync-unirse';   // hasta la primera sincronización
+const SYNC_QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+// var: guardarPresets, marcarLeidaLocal… pueden llamar a sincronizarPronto
+// antes de que este bloque se haya evaluado.
+var SYNC_CODIGO = null;
+var _sync = { enCurso: null, otraVez: false, ultima: 0, error: '', espera: 0,
+              diferido: null, reintento: null, volcando: false, cliente: null, unirse: false };
+
+function cargarSync(){
+  try {
+    SYNC_CODIGO = limpiarCodigo(localStorage.getItem(SYNC_CODIGO_KEY) || '') || null;
+    _sync.ultima = Number(localStorage.getItem(SYNC_ULTIMA_KEY)) || 0;
+    _sync.unirse = localStorage.getItem(SYNC_UNIRSE_KEY) === '1';
+  } catch(e){}
+}
+
+// Un cambio de aquí: se sube a los pocos segundos, juntando los seguidos.
+function sincronizarPronto(){
+  if (!SYNC_CODIGO || _sync.volcando) return;
+  clearTimeout(_sync.diferido);
+  _sync.diferido = setTimeout(sincronizarAhora, 4000);
+}
+
+function documentoLocal(){
+  const doc = {
+    v: 1,
+    pendientes: PENDIENTES,
+    leidas: Object.fromEntries(LEIDAS_LOCAL),
+    perfil: perfilDeVoceiro(),
+    modos: { lista: PRESETS.lista, borrados: PRESETS.borrados || {} },
+    lector: cargarBloqueLector(),
+  };
+  // Al unir este dispositivo, lo que nadie ha tocado aquí (sin sello) cede
+  // ante lo que ya hay en los otros: se trae, en vez de juntarse a ciegas.
+  if (_sync.unirse){
+    if (!(doc.perfil && doc.perfil.actualizado > 0)) doc.perfil = null;
+    doc.modos = { lista: PRESETS.lista.filter(m => m.actualizado > 0), borrados: doc.modos.borrados };
+    if (!(doc.lector && doc.lector.actualizado > 0)) doc.lector = null;
+  }
+  return doc;
+}
+
+async function sincronizarAhora(){
+  if (!SYNC_CODIGO) return;
+  if (_sync.enCurso){ _sync.otraVez = true; return _sync.enCurso; }
+  clearTimeout(_sync.diferido);
+  clearTimeout(_sync.reintento);
+  if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SYNC_SERVIDORES });
+  _sync.enCurso = (async () => {
+    try {
+      const { documento } = await _sync.cliente.sincronizar(SYNC_CODIGO, documentoLocal());
+      const eraUnirse = _sync.unirse;
+      volcarDocumento(documento);
+      _sync.ultima = Date.now();
+      _sync.error = '';
+      _sync.espera = 0;
+      _sync.unirse = false;
+      // Lo de aquí que no se mandó al unirse (modos sin sello nuevos) sube ahora.
+      if (eraUnirse) sincronizarPronto();
+      try {
+        localStorage.setItem(SYNC_ULTIMA_KEY, String(_sync.ultima));
+        localStorage.removeItem(SYNC_UNIRSE_KEY);
+      } catch(e){}
+    } catch (e){
+      // Sin red, servidor caído (p. ej. Cloudflare bloqueado durante un
+      // partido)…: no pasa nada, todo sigue aquí; se reintenta con calma.
+      _sync.error = (e && e.message) || String(e);
+      _sync.espera = Math.min((_sync.espera || 15000) * 2, 15 * 60000);
+      _sync.reintento = setTimeout(sincronizarAhora, _sync.espera);
+    } finally {
+      _sync.enCurso = null;
+      ajPintarSyncEstado();
+      if (_sync.otraVez){ _sync.otraVez = false; sincronizarPronto(); }
+    }
+  })();
+  return _sync.enCurso;
+}
+
+// Vuelca aquí lo que viene del servidor, fusionándolo con lo que haya ahora
+// (puede haber cambiado mientras iba y venía). Lo que nadie ha tocado
+// (sello 0) no se impone sobre lo de este dispositivo.
+function volcarDocumento(doc){
+  const unirse = _sync.unirse;
+  _sync.volcando = true;
+  try {
+    let refiltrar = false;
+
+    const pendientes = fusionarPendientes(PENDIENTES, doc.pendientes);
+    if (huella(pendientes) !== huella(PENDIENTES)){
+      PENDIENTES = pendientes;
+      guardarPendientes();
+      rebuildPendientes();
+      enviarEstadoAlLector();
+    }
+
+    const leidas = fusionarLeidas(Object.fromEntries(LEIDAS_LOCAL), doc.leidas);
+    if (Object.keys(leidas).length !== LEIDAS_LOCAL.size ||
+        Object.entries(leidas).some(([k, v]) => LEIDAS_LOCAL.get(k) !== v)){
+      LEIDAS_LOCAL = new Map(Object.entries(leidas));
+      guardarLeidas();
+      refiltrar = true;
+    }
+
+    // Al unirse, lo que llega se adopta y se sella ahora: así llega también
+    // al lector de este dispositivo y a los demás.
+    const mio = perfilDeVoceiro();
+    let perfil = unirse ? (doc.perfil || null) : fusionarPerfil(mio, doc.perfil);
+    if (perfil && unirse && !(perfil.actualizado > 0)) perfil = { ...perfil, actualizado: Date.now() };
+    if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)){
+      aplicarPerfilEnVoceiro(perfil);
+      enviarEstadoAlLector();
+    }
+
+    const misModos = unirse ? PRESETS.lista.filter(m => m.actualizado > 0) : PRESETS.lista;
+    if (volcarModos(fusionarModos({ lista: misModos, borrados: PRESETS.borrados || {} }, doc.modos), unirse)){
+      refiltrar = true;
+    }
+
+    const bloque = cargarBloqueLector();
+    let elegido = unirse ? (doc.lector || bloque) : masReciente(bloque, doc.lector || null);
+    if (elegido && unirse && elegido !== bloque && !(elegido.actualizado > 0)){
+      elegido = { ...elegido, actualizado: Date.now() };
+    }
+    if (elegido && (elegido.actualizado || 0) > 0 && huella(elegido) !== huella(bloque)){
+      guardarBloqueLector(elegido);
+      enviarEstadoAlLector();
+    }
+
+    if (refiltrar){
+      refrescarBotonesGuardar();
+      if (typeof NOTICIAS !== 'undefined' && NOTICIAS.length) aplicarFiltros();
+    }
+  } finally {
+    _sync.volcando = false;
+  }
+}
+
+// Modos que llegan: cada uno sustituye al de aquí salvo que ninguno de los
+// dos esté sellado; los nuevos se añaden al final y los borrados se quitan.
+// El orden de la lista es el de este dispositivo.
+function volcarModos(m, unirse){
+  if (!m || !Array.isArray(m.lista)) return false;
+  const llegan = new Map(m.lista.map(x => [x.id, x]));
+  const borrados = m.borrados || {};
+  const nueva = [];
+  let cambio = false;
+  for (const local of PRESETS.lista){
+    const r = llegan.get(local.id);
+    if (r){
+      llegan.delete(local.id);
+      const sinSello = !(local.actualizado > 0) && !(r.actualizado > 0);
+      if ((sinSello && !unirse) || huellaModo(r) === huellaModo(local)){ nueva.push(local); continue; }
+      nueva.push(normalizarPreset(r));
+      cambio = true;
+    } else if (borrados[local.id] !== undefined){
+      cambio = true;
+    } else {
+      nueva.push(local);
+    }
+  }
+  for (const r of llegan.values()){ nueva.push(normalizarPreset(r)); cambio = true; }
+  const borradosAntes = huella(PRESETS.borrados || {});
+  PRESETS.borrados = { ...borrados };
+  if (!cambio){
+    if (huella(PRESETS.borrados) !== borradosAntes){
+      try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
+    }
+    return false;
+  }
+  if (!nueva.length) nueva.push(structuredClone(PRESET_UNICO_DEF));
+  PRESETS.lista = nueva;
+  if (!nueva.some(x => x.id === PRESETS.activo)) PRESETS.activo = nueva[0].id;
+  PRESET = PRESETS.lista.find(x => x.id === PRESETS.activo);
+  _huellasModos = huellasDeModos();   // lo que llega no se vuelve a sellar
+  try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
+  try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
+  recompilarPreset();
+  actualizarBotonPreset();
+  ajRefrescar();
+  return true;
+}
+
+// unirse: el código ya existe (otro dispositivo); si no, es uno nuevo.
+function activarSync(codigo, unirse){
+  SYNC_CODIGO = codigo;
+  _sync.error = '';
+  _sync.unirse = !!unirse;
+  try {
+    localStorage.setItem(SYNC_CODIGO_KEY, codigo);
+    if (unirse) localStorage.setItem(SYNC_UNIRSE_KEY, '1');
+    else localStorage.removeItem(SYNC_UNIRSE_KEY);
+  } catch(e){}
+  ajPintarSync();
+  sincronizarAhora();
+}
+function olvidarSync(){
+  SYNC_CODIGO = null;
+  _sync.ultima = 0;
+  _sync.error = '';
+  _sync.unirse = false;
+  clearTimeout(_sync.diferido);
+  clearTimeout(_sync.reintento);
+  try {
+    localStorage.removeItem(SYNC_CODIGO_KEY);
+    localStorage.removeItem(SYNC_ULTIMA_KEY);
+    localStorage.removeItem(SYNC_UNIRSE_KEY);
+  } catch(e){}
+  ajPintarSync();
+}
+function enlaceSync(){
+  return location.origin + location.pathname + '#sync=' + formatearCodigo(SYNC_CODIGO);
+}
+
+// Enlace …/voceiro/#sync=CÓDIGO (lo de tras # no llega a ningún servidor):
+// se quita de la barra de direcciones y se pregunta antes de unirse.
+function leerEnlaceSync(){
+  const m = location.hash.match(/^#sync=([A-Za-z0-9-]+)$/);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  const c = limpiarCodigo(m[1]);
+  if (!c || c === SYNC_CODIGO) return;
+  if (!confirm(t('syncUnirConfirm'))) return;
+  activarSync(c, true);
+  abrirAjustes('sync');
+}
+
+async function copiarTexto(texto, aviso){
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast(aviso, 2000);
+  } catch(e){
+    prompt('', texto);
+  }
+}
+
+let _qrCargando = null;
+function cargarLibQr(){
+  if (window.qrcode) return Promise.resolve();
+  if (!_qrCargando){
+    _qrCargando = new Promise((ok, mal) => {
+      const s = document.createElement('script');
+      s.src = SYNC_QR_LIB;
+      s.async = true;
+      s.onload = ok;
+      s.onerror = () => { _qrCargando = null; mal(new Error('qr')); };
+      document.head.appendChild(s);
+    });
+  }
+  return _qrCargando;
+}
+async function alternarQr(){
+  const caja = $('#sync-qr'), btn = $('#sync-qr-btn');
+  if (!caja.hidden){
+    caja.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    return;
+  }
+  try {
+    await cargarLibQr();
+    const qr = window.qrcode(0, 'M');
+    qr.addData(enlaceSync());
+    qr.make();
+    caja.innerHTML = qr.createSvgTag(4, 2);
+    const svg = caja.querySelector('svg');
+    if (svg){
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', t('syncQrAlt'));
+    }
+    caja.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+  } catch(e){
+    toast(t('syncQrError'), 2400);
+  }
+}
+
+function haceCuanto(ms){
+  const rtf = new Intl.RelativeTimeFormat(ACCES.lang, { numeric: 'auto' });
+  const seg = Math.round((ms - Date.now()) / 1000);
+  if (Math.abs(seg) < 60) return rtf.format(seg, 'second');
+  const min = Math.round(seg / 60);
+  if (Math.abs(min) < 60) return rtf.format(min, 'minute');
+  const h = Math.round(min / 60);
+  if (Math.abs(h) < 24) return rtf.format(h, 'hour');
+  return rtf.format(Math.round(h / 24), 'day');
+}
+
+// Ajustes › Sincronización
+function ajPintarSync(){
+  const on = !!SYNC_CODIGO;
+  $('#sync-off').hidden = on;
+  $('#sync-on').hidden = !on;
+  if (on) $('#sync-codigo').textContent = formatearCodigo(SYNC_CODIGO);
+  else { $('#sync-qr').hidden = true; $('#sync-qr-btn').setAttribute('aria-expanded', 'false'); }
+  ajPintarSyncEstado();
+}
+function ajPintarSyncEstado(){
+  const el = $('#sync-estado');
+  if (!el || !SYNC_CODIGO) return;
+  el.textContent = _sync.enCurso ? t('syncSincronizando')
+    : _sync.error ? t('syncError', { X: _sync.error })
+    : _sync.ultima ? t('syncUltima', { X: haceCuanto(_sync.ultima) })
+    : t('syncNunca');
+}
+
+function wireSync(){
+  $('#sync-activar').addEventListener('click', () => activarSync(limpiarCodigo(generarCodigo())));
+  const unir = () => {
+    const c = limpiarCodigo($('#sync-unir-codigo').value);
+    const error = $('#sync-unir-error');
+    if (!c){
+      error.textContent = t('syncCodigoInvalido');
+      error.hidden = false;
+      return;
+    }
+    error.hidden = true;
+    $('#sync-unir-codigo').value = '';
+    activarSync(c, true);
+  };
+  $('#sync-unir').addEventListener('click', unir);
+  $('#sync-unir-codigo').addEventListener('keydown', e => { if (e.key === 'Enter') unir(); });
+  $('#sync-copiar').addEventListener('click', () => copiarTexto(formatearCodigo(SYNC_CODIGO), t('syncCopiado')));
+  $('#sync-enlace').addEventListener('click', () => copiarTexto(enlaceSync(), t('syncEnlaceCopiado')));
+  $('#sync-qr-btn').addEventListener('click', alternarQr);
+  $('#sync-ahora').addEventListener('click', () => { sincronizarAhora(); ajPintarSyncEstado(); });
+  $('#sync-desvincular').addEventListener('click', () => {
+    if (confirm(t('syncDesvincularConfirm'))) olvidarSync();
+  });
+  $('#sync-borrar').addEventListener('click', async () => {
+    if (!confirm(t('syncBorrarConfirm'))) return;
+    try {
+      if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SYNC_SERVIDORES });
+      await _sync.cliente.borrar(SYNC_CODIGO);
+      olvidarSync();
+      toast(t('syncBorrado'), 2400);
+    } catch(e){
+      toast(t('syncError', { X: (e && e.message) || e }), 3200);
+    }
+  });
+  // Al volver a la pestaña, lo último de los otros dispositivos.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && SYNC_CODIGO && Date.now() - _sync.ultima > 60000) sincronizarAhora();
+  });
+}
+
 function refrescarBotonesGuardar(){
   document.querySelectorAll('.btn-save-item').forEach(b => {
     const i = parseInt(b.dataset.idx, 10);
@@ -7173,10 +7759,10 @@ function actualizarResumen(visiblesOverride){
    Rutas: '' (lista de secciones, solo en móvil), 'modos', 'modo' (el de
    MODO_EDITADO), 'lectura', 'feed', 'avanzado', 'ayuda'.
    ═══════════════════════════════════════════════════════════════ */
-const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'avanzado', 'ayuda'];
+const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
   '': 'ajTitulo', modos: 'ajModos', lectura: 'ajLectura',
-  feed: 'ajFeed', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
+  feed: 'ajFeed', sync: 'ajSync', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
 };
 let AJ_PILA = [];             // vacía = Ajustes cerrado
 let MODO_EDITADO = null;      // id del modo de la página 'modo'
@@ -7313,6 +7899,7 @@ function ajRefrescar(){
   if (ruta === 'modos') renderListaModos();
   else if (ruta === 'modo') pintarModo();
   else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); renderDiasSelector(); }
+  else if (ruta === 'sync') ajPintarSync();
   else if (ruta === 'avanzado'){
     $('#aj-investigar').checked = INVESTIGAR_ON;
     actualizarSyncBanner();
@@ -9997,6 +10584,24 @@ function aplicarTextos(){
   $('#aj-lector-instalar-lbl').textContent = t('ajLectorInstalar');
   $('#aj-lector-hint').textContent = t('ajLectorHint');
 
+  // Sincronización
+  $('#sync-intro').textContent = t('syncIntro');
+  $('#sync-activar-lbl').textContent = t('syncActivar');
+  $('#sync-unir-tit').textContent = t('syncUnirTit');
+  $('#sync-unir-hint').textContent = t('syncUnirHint');
+  $('#sync-unir-codigo').placeholder = 'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX';
+  $('#sync-unir').textContent = t('syncUnir');
+  $('#sync-codigo-tit').textContent = t('syncCodigoTit');
+  $('#sync-codigo-hint').textContent = t('syncCodigoHint');
+  $('#sync-copiar-lbl').textContent = t('syncCopiar');
+  $('#sync-enlace-lbl').textContent = t('syncEnlace');
+  $('#sync-qr-lbl').textContent = t('syncQr');
+  $('#sync-ahora-lbl').textContent = t('syncAhora');
+  $('#sync-quitar-tit').textContent = t('syncQuitarTit');
+  $('#sync-desvincular').textContent = t('syncDesvincular');
+  $('#sync-borrar-lbl').textContent = t('syncBorrar');
+  $('#sync-privacidad').textContent = t('syncPrivacidad');
+
   // Ayuda
   $('#cfg-help-lbl').textContent = t('cfgHelpLbl');
   $('#cfg-help-msg').textContent = t('cfgHelpMsg');
@@ -10695,6 +11300,8 @@ async function init(){
   aplicarAcces();
 
   PRESETS = cargarPresets();
+  _huellasModos = huellasDeModos();
+  cargarSync();
   const _activeId = localStorage.getItem(PRESET_ID_KEY) || PRESETS.activo;
   const _active = PRESETS.lista.find(p => p.id === _activeId) || PRESETS.lista[0];
   PRESETS.activo = _active.id;
@@ -10721,10 +11328,13 @@ async function init(){
   wireBackToTop();
   wireStaticEvents();
   wireAjustes();
+  wireSync();
   wireVistasObserver();
   emWireEventos();
 
   initUserScriptBridge();
+  leerEnlaceSync();
+  if (SYNC_CODIGO) sincronizarAhora();
 
   // ── 1.5) Restaurar búsqueda ANTES de tocar datos ──
   if (RECORDAR_FILTROS){
