@@ -4,7 +4,7 @@ scripts/sync_relay.py — Genera la allowlist del relay de Deno a partir del
 catálogo: los hosts de todas las fuentes con la opción 'relay' en medios.py.
 
 Fuente de verdad: medios.py. workers/deno-relay/src/permitidos.json no se
-edita a mano; lo regenera sync-relay.yml tras cada merge que toque medios.py.
+edita a mano; lo regenera deploy-deno-relay.yml tras cada merge que toque medios.py.
 
 Uso: python scripts/sync_relay.py
 """

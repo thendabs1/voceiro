@@ -3,6 +3,16 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-13 — Deno Deploy desde GitHub Actions
+
+### Cambiado
+- Las apps de Deno (`voceiro-relay`, `voceiro-buscar`, `voceiro-datos`) se despliegan
+  desde `deploy-deno-*.yml` con `deno deploy` y el secret `DENO_DEPLOY_TOKEN`, solo
+  cuando cambia su carpeta. La integración Git de Deno desplegaba las 3 en cada
+  commit, también en las ramas de PR, y agotaba el límite de 15 por hora.
+- `sync-relay.yml` pasa a ser `deploy-deno-relay.yml`: regenera la allowlist y
+  despliega si cambió. Un cambio en `medios.py` que no la toca no despliega.
+
 ## 2026-10-13 — Runs encolados sin conflicto en state.json
 
 ### Corregido
