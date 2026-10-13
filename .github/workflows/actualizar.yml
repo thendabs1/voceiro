@@ -73,12 +73,14 @@ jobs:
           # Módulos del núcleo: hacen falta en el repo para poder publicar el
           # front anterior si fallan los tests.
           if [ -d public/busqueda ]; then git add public/busqueda; fi
-          git add state.json
           if [ -f state.json ]; then git add state.json; fi
           if git diff --staged --quiet; then
             echo "Sin cambios que guardar"
           else
             git commit -m "Actualizar histórico [skip ci]"
+            # Si se ha mergeado algo mientras corría el run, el push se
+            # rechazaría sin esto.
+            git pull --rebase origin main
             git push
             echo "Histórico guardado en el repo"
           fi

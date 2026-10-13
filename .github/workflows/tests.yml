@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'shared/**'
+      - 'tests/**'
+      - 'public/**'
+      - 'workers/**'
+      - 'scripts/**'
+      - '.github/workflows/tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Tests del buscador
+        run: node --test 'tests/**/*.test.mjs'
+
+      # Las copias del parser las sincroniza sync-parser.yml tras el merge;
+      # aquí se sincroniza en local para comprobar que el script sigue
+      # dejándolas idénticas.
+      - name: Sincronizar y verificar parser
+        run: |
+          node scripts/sync-parser.mjs
+          node scripts/test-parser.mjs
