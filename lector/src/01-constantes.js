@@ -1,0 +1,35 @@
+/* ============================================================
+   1. CONSTANTES
+   ============================================================ */
+const SCRIPT_VERSION = '{{VERSION}}';
+const AUTO_MIN_RATIO = 0.80;
+const AUTO_MIN_RICH  = 3;
+const AUTO_MIN_LEN   = 300;
+const READER_SOURCES = ['auto','jsonld','readability','custom'];
+const SITE_LANGS     = ['auto','es','gl','ca','en','eu','fr','de','it','pt'];
+const UI_LANGS       = ['es','gl','ca','en','eu'];
+const EXTRACTION_MODES = ['auto','selector','all'];
+
+const SITE_TYPE_IDS = [
+  'diario','digital','revista','deportivo','economico',
+  'tecnologia','cultural','tv','radio','agencia','otro'
+];
+
+const UI = {
+  fsMin: 14, fsMax: 32,
+  wMin: 480, wMax: 1400, wStep: 40,
+  rsvpWPL: 8, rsvpWpmMin: 100, rsvpWpmMax: 1000, rsvpWpmStep: 50,
+  fabSize: 52, fabMargin: 24, fabGap: 12,
+  extractMinChars: 100
+};
+
+// Voceiro. El puente y sus eventos solo existen en su página: en el resto
+// de webs, ningún script ajeno puede pedir ni recibir la configuración.
+const VOCEIRO_URL = 'https://thendabs1.github.io/voceiro/';
+function esVoceiro(){
+  return location.origin === 'https://thendabs1.github.io' &&
+         /^\/voceiro(\/|$)/.test(location.pathname);
+}
+// Pendientes que viajan por el puente (los mismos en cada evento).
+const PENDIENTES_PUENTE_MAX = 500;
+
