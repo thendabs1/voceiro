@@ -5019,7 +5019,15 @@ function _buscarGrupoEnDia(diaGrupos, nombreGrupo) {
 
 
 // ─── Decidir qué capas necesita el estado actual ───
-function capasRequeridas(parsed) {
+// Con más dominios que esto, no se cargan ficheros por medio (sería
+// demasiado): se filtra solo lo ya cargado.
+const CAPAS_MAX_DOMINIOS = 12;
+
+// Capas de R2 que necesita la consulta. Los filtros explícitos salen de lo
+// que el núcleo ya resolvió (consulta.medios), así que coinciden con la
+// lista: grupo:galicia carga «Regional · Galicia» (antes buscaba un grupo
+// llamado 'galicia' y no cargaba nada).
+function capasRequeridas(parsed, consulta = ULT_CTX && ULT_CTX.consulta) {
   const set = new Set();
 
     // 1) Preset activo → sus grupos + overrides 'first'
@@ -5031,40 +5039,20 @@ function capasRequeridas(parsed) {
   }
 
   // 2) Filtros explícitos del usuario
-  (parsed.grupos || []).forEach(g => set.add('grupo:' + g));
-  (parsed.dominios || []).forEach(d => set.add('dominio:' + d));
-  (parsed.medios || []).forEach(m => {
-    const dom = MEDIOS_POR_NOMBRE.get(m);   // m ya viene normStrict
-    if (dom) set.add('dominio:' + dom);
-  });
+  const doms = consulta && consulta.medios.dominios;
+  if (doms && doms.size){
+    if ((parsed.grupos || []).length){
+      // Ficheros por grupo (uno por grupo y día), con el nombre real.
+      for (const d of doms){
+        const g = MEDIOS[d] && MEDIOS[d].g;
+        if (g) set.add('grupo:' + normStrict(g));
+      }
+    } else if (doms.size <= CAPAS_MAX_DOMINIOS){
+      for (const d of doms) set.add('dominio:' + d);
+    }
+  }
 
   return set;
-}
-
-function necesitaTurso(parsed) {
-  if (parsed.titulo.length) return true;
-  if (parsed.tipos.length)  return true;
-  if (parsed.tags.length)   return true;
-  if (parsed.lang.length)   return true;
-  if (parsed.desde || parsed.hasta) return true;
-
-  // Grupos sin slice en manifest → Turso
-  if ((parsed.grupos || []).some(g => !_grupoTieneSlice(g))) return true;
-
-  // Dominios y medios: NO van a Turso. R2 cubre esto con paginación.
-  return false;
-}
-
-function _grupoTieneSlice(nombreGrupo) {
-  if (!_manifest || !_manifest.dias || !_manifest.dias.length) return false;
-  const dia0 = _manifest.dias[0];
-  return !!(dia0.grupos && _buscarGrupoEnDia(dia0.grupos, nombreGrupo));
-}
-
-function _dominioTieneSlice(dom) {
-  if (!_manifest || !_manifest.dias || !_manifest.dias.length) return false;
-  const dia0 = _manifest.dias[0];
-  return !!(dia0.dominios && dia0.dominios[dom]);
 }
 
 // ─── Mergear items de una capa/base en NOTICIAS con dedup global ───
@@ -7324,6 +7312,10 @@ let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llev
 // El archivo se consulta tras una pausa sin cambios (regla 3), no en cada
 // pausa del debounce al teclear: menos peticiones y menos respuestas tiradas.
 const ARCHIVO_PAUSA_MS = 700;
+// TEMPORAL (13-10-2026): Turso sin cuota de lecturas. Con false no se pide
+// nada al archivo (ni búsqueda ni «Cargar más»); lo cargado, R2 y la prensa
+// siguen igual. Volver a true cuando se restablezca la cuota.
+const ARCHIVO_ACTIVO = false;
 let _archivoTimer = null;
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false; 
@@ -7846,16 +7838,13 @@ function aplicarFiltros(){
   // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
   // Se interpreta una vez y la usan el filtro, Turso y la prensa.
   const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
-  console.log('[aplicarFiltros]',
-    'raw=', JSON.stringify(raw.slice(0, 60)),
-    'capas=', [...capasRequeridas(parseQuery(preprocesarInput(raw)))],
-    'DIAS_ACTUAL=', DIAS_ACTUAL,
-    'DIAS_MEMORIA=', DIAS_MEMORIA); 
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
 
-const capas = capasRequeridas(parsed);
-const usarTurso = necesitaTurso(parsed);
+const capas = capasRequeridas(parsed, consulta);
+// El archivo (Turso) es para búsquedas concretas: solo con texto. Un medio,
+// grupo, tag… sin texto se sirve de lo cargado y de R2.
+const usarTurso = consulta.texto.incluir.length > 0;
 
 // Reset solo si cambia la consulta (por su clave: un espacio o cambiar
 // 'Sánchez' por 'sanchez' no es otra búsqueda).
@@ -7886,13 +7875,12 @@ if (!capas.size) {
     });
   }
 
-  // Disparo Turso SOLO si no hay capas R2 que cubran la query.
-  // (Con la nueva necesitaTurso, esto solo ocurre para texto/tag/tipo/lang/fechas
-  //  o grupos sin slice.)
+  // Archivo (Turso): solo con texto (usarTurso), primera página automática
+  // tras la pausa; las siguientes, solo con el botón «Buscar más en el archivo».
   // Al archivo se le manda la consulta ya interpretada (inicio de palabra,
   // dominios exactos, días de Madrid): el worker no tiene que reinterpretar.
   const rawArchivo = consulta.imposible ? '' : paraArchivo(consulta);
-  if (usarTurso && rawArchivo && !TURSO_RAW) {
+  if (ARCHIVO_ACTIVO && usarTurso && rawArchivo && !TURSO_RAW) {
     TURSO_RAW = rawArchivo;
     TURSO_OFFSET = 0;
 
@@ -8083,7 +8071,7 @@ function renderizar(){
     const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
     const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
     const puedeR2 = capas.size > 0 && DIAS_ACTUAL < totalDias;
-    if (puedeR2 || TURSO_HAY_MAS) {
+    if (puedeR2) {
       _cargandoMas = true;
       cargarMas().finally(() => { _cargandoMas = false; });
     }
@@ -8320,12 +8308,11 @@ function appendBatchDesdeOffset(desde, hasta) {
   observarNoticias();
 }
 
+// Scroll infinito y «Cargar más»: solo R2 (ficheros estáticos: gratis y sin
+// cuota). El archivo se pagina únicamente con el botón «Buscar más en el
+// archivo» (cargarMasDeTurso), nunca solo: así no puede recorrerse entero
+// en bucle si sus páginas no añaden nada visible.
 async function cargarMas() {
-  if (TURSO_HAY_MAS) {
-    await cargarMasDeTurso();
-    return;
-  }
-
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
   const capas = capasRequeridas(parsed);
@@ -8348,7 +8335,7 @@ async function cargarMas() {
 
 // ─── Paginación Turso ───
 async function cargarMasDeTurso() {
-  if (!TURSO_HAY_MAS || !TURSO_RAW) return;
+  if (!ARCHIVO_ACTIVO || !TURSO_HAY_MAS || !TURSO_RAW) return;
   const btn = document.getElementById('btn-cargar-mas');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
@@ -8391,15 +8378,7 @@ function actualizarBotonCargarMas() {
   const btn  = document.getElementById('btn-cargar-mas');
   if (!wrap || !btn) return;
 
-  // 1) Turso tiene prioridad si hay más páginas (texto/tag/tipo)
-  if (TURSO_HAY_MAS) {
-    wrap.style.display = '';
-    btn.textContent = 'Cargar más · histórico';
-    btn.disabled = false;
-    return;
-  }
-
-  // 2) Modo R2: extender días si quedan en el manifest
+  // 1) R2: extender días si quedan en el manifest
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
   const capas = capasRequeridas(parsed);
@@ -8408,9 +8387,19 @@ function actualizarBotonCargarMas() {
     if (DIAS_ACTUAL < totalDias) {
       wrap.style.display = '';
       btn.textContent = `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
+      btn.dataset.modo = 'r2';
       btn.disabled = false;
       return;
     }
+  }
+
+  // 2) Archivo: solo a mano, cuando R2 no da más y la búsqueda tiene más páginas.
+  if (ARCHIVO_ACTIVO && TURSO_HAY_MAS) {
+    wrap.style.display = '';
+    btn.textContent = 'Buscar más en el archivo';
+    btn.dataset.modo = 'archivo';
+    btn.disabled = false;
+    return;
   }
 
   wrap.style.display = 'none';
@@ -9109,7 +9098,8 @@ function wireStaticEvents(){
   if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
     if (_cargandoMas) return;
     _cargandoMas = true;
-    cargarMas().finally(() => { _cargandoMas = false; });
+    const pedir = btnCargarMas.dataset.modo === 'archivo' ? cargarMasDeTurso : cargarMas;
+    pedir().finally(() => { _cargandoMas = false; });
   });
 
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
