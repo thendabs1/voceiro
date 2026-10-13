@@ -1,8 +1,6 @@
 {
   "deploy": {
-    "project": "voceiro-datos",
-    "entrypoint": "src/index.js",
-    "include": ["src/**/*.js"]
+    "org": "thendabs1",
+    "app": "voceiro-datos"
   }
 }
-

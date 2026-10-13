@@ -1,7 +1,6 @@
 {
   "deploy": {
-    "project": "voceiro-relay",
-    "entrypoint": "src/index.ts",
-    "include": ["src/**/*.ts", "src/**/*.json"]
+    "org": "thendabs1",
+    "app": "voceiro-relay"
   }
 }

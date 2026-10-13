@@ -12,6 +12,8 @@ Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
   commit, también en las ramas de PR, y agotaba el límite de 15 por hora.
 - `sync-relay.yml` pasa a ser `deploy-deno-relay.yml`: regenera la allowlist y
   despliega si cambió. Un cambio en `medios.py` que no la toca no despliega.
+- `workers/deno-*/deno.json`: la sección `deploy` pasa al formato del Deploy nuevo
+  (`org` + `app`); el CLI rechazaba la de Deploy Classic (`project`, `include`).
 
 ## 2026-10-13 — Runs encolados sin conflicto en state.json
 
