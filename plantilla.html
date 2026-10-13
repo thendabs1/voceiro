@@ -555,6 +555,22 @@
     font-family:var(--ff); font-size:.82em;
     line-height:1.6; resize:vertical;
   }
+  /* ═══ Pestaña Temas de la configuración: una caja por modo ═══ */
+  .temas-ayuda{ margin:0 0 12px; font-size:.72em; color:var(--muted); }
+  .temas-ayuda summary{ cursor:pointer; list-style:none; }
+  .temas-ayuda summary::-webkit-details-marker{ display:none; }
+  .temas-ayuda-q{
+    display:inline-block; width:1.5em; height:1.5em; line-height:1.4em;
+    margin-left:4px; text-align:center;
+    border:1px solid var(--border); border-radius:50%;
+  }
+  .temas-ayuda[open] .temas-ayuda-q{ background:var(--quote-bg); color:var(--fg); }
+  .temas-ayuda ul{ margin:6px 0 0; padding-left:1.2em; line-height:1.7; }
+  .temas-ayuda code{ background:var(--quote-bg); color:var(--fg); padding:0 4px; border-radius:3px; }
+  .temas-modo{ margin:0 0 12px; }
+  .temas-modo-nombre{ display:block; font-weight:600; font-size:.8em; margin:0 0 4px; }
+  .temas-modo-nombre .n{ color:var(--muted); font-weight:400; }
+  .temas-modo textarea.preset-texto{ min-height:84px; padding:8px 10px; }
 
   .backup-box{
     background:var(--quote-bg);
@@ -1824,6 +1840,7 @@
     <div class="cfg-tabs" role="tablist">
       <button class="cfg-tab active" id="tab-feed"     type="button" role="tab" data-tab="feed"     aria-selected="true"></button>
       <button class="cfg-tab"        id="tab-medios"   type="button" role="tab" data-tab="medios"   aria-selected="false"></button>
+      <button class="cfg-tab"        id="tab-temas"    type="button" role="tab" data-tab="temas"    aria-selected="false"></button>
       <button class="cfg-tab"        id="tab-avanzado" type="button" role="tab" data-tab="avanzado" aria-selected="false"></button>
     </div>
 
@@ -1846,8 +1863,7 @@
 
 
         <h3 id="cfg-palabras"></h3>
-        <p id="cfg-palabras-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <textarea id="preset-palabras" class="preset-texto"></textarea>
+        <button id="btn-editar-temas" type="button" style="font-size:.75em;"></button>
 
         <h3 id="cfg-feed"></h3>
         <p id="cfg-feed-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
@@ -1946,6 +1962,16 @@
         <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
         <div id="lista-grupos" class="list-grupos"></div>
 
+      </div>
+
+      <!-- ═══════════ TAB: TEMAS ═══════════ -->
+      <div class="cfg-tabpanel" data-panel="temas" hidden>
+        <h3 id="cfg-temas"></h3>
+        <details class="temas-ayuda">
+          <summary><span id="cfg-palabras-hint"></span><span class="temas-ayuda-q" aria-hidden="true">?</span></summary>
+          <ul id="cfg-temas-ayuda"></ul>
+        </details>
+        <div id="lista-temas-modos"></div>
       </div>
 
       <!-- ═══════════ TAB: AVANZADO ═══════════ -->
@@ -2551,15 +2577,17 @@ const I18N = {
     chipLiteral:            'Convertir a búsqueda literal',
     cfgBuscarMedio:         'Buscar o añadir dominio…',
     cfgTodosGrupos:         'Todos los grupos',
-    cfgPalabras:            'Palabras clave en titular',
-    cfgPalabrasHint:        'Una por línea o separadas por comas. Sin tildes, palabra completa.',
+    cfgPalabras:            'Temas',
+    cfgPalabrasHint:        'Una línea = un tema',
+    cfgEditarTemas:         'Editar temas →',
+    cfgTemasAyuda:          'incendio|también «incendios»\nsan salvador|las dos palabras, en cualquier orden\n"san salvador"|frase exacta\nPP|sigla: palabra entera\ngalicia -feijoo|«galicia», pero sin «feijoo»',
     cfgBackup:              'Copia de seguridad',
     cfgBackupMsg:           'Exporta tu configuración a un archivo compatible con Voceiro y con el plugin Lector Universal.',
     cfgHelpLbl:             'Ayúdanos a mejorar',
     cfgHelpMsg:             '¿Algo no funciona? ¿Un medio no se muestra o da errores? Cuéntanoslo.',
     cfgHelpBtn:             'Reportar problema',
     cfgResumen:             'Mostrando {vis} de {total} · {inc} forzados · {ign} bloqueados',
-    cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
+    cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
     /* ── Accesibilidad ── */
     acTitle:                'Opciones de lectura',
@@ -2836,15 +2864,17 @@ const I18N = {
     chipLiteral:            'Converter a busca literal',
     cfgBuscarMedio:         'Buscar ou engadir dominio…',
     cfgTodosGrupos:         'Todos os grupos',
-    cfgPalabras:            'Palabras clave no titular',
-    cfgPalabrasHint:        'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
+    cfgPalabras:            'Temas',
+    cfgPalabrasHint:        'Unha liña = un tema',
+    cfgEditarTemas:         'Editar temas →',
+    cfgTemasAyuda:          'incendio|tamén «incendios»\nsan salvador|as dúas palabras, en calquera orde\n"san salvador"|frase exacta\nPP|sigla: palabra enteira\ngalicia -feijoo|«galicia», pero sen «feijoo»',
     cfgBackup:              'Copia de seguridade',
     cfgBackupMsg:           'Exporta a túa configuración a un ficheiro compatible con Voceiro e co plugin Lector Universal.',
     cfgHelpLbl:             'Axúdanos a mellorar',
     cfgHelpMsg:             '¿Algo non funciona? ¿Un medio non se amosa ou dá erros? Cóntanoslo.',
     cfgHelpBtn:             'Reportar problema',
     cfgResumen:             'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados',
-    cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
+    cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
     acTitle:                'Opcións de lectura',
     acTema:                 'Tema',
@@ -3110,15 +3140,17 @@ const I18N = {
     chipLiteral:            'Convertir a cerca literal',
     cfgBuscarMedio:         'Cercar o afegir domini…',
     cfgTodosGrupos:         'Tots els grups',
-    cfgPalabras:            'Paraules clau al titular',
-    cfgPalabrasHint:        'Una per línia o separades per comes. Sense accents, paraula completa.',
+    cfgPalabras:            'Temes',
+    cfgPalabrasHint:        'Una línia = un tema',
+    cfgEditarTemas:         'Editar temes →',
+    cfgTemasAyuda:          'incendi|també «incendis»\nsant salvador|les dues paraules, en qualsevol ordre\n"sant salvador"|frase exacta\nPP|sigla: paraula sencera\ncatalunya -illa|«catalunya», però sense «illa»',
     cfgBackup:              'Còpia de seguretat',
     cfgBackupMsg:           'Exporta la teva configuració a un fitxer compatible amb Voceiro i amb el plugin Lector Universal.',
     cfgHelpLbl:             "Ajuda'ns a millorar",
     cfgHelpMsg:             'Alguna cosa no funciona? Explica-nos-ho.',
     cfgHelpBtn:             'Reportar problema',
     cfgResumen:             'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats',
-    cfgPalabrasPlaceholder: 'paraula1\nparaula2\nparaula3',
+    cfgPalabrasPlaceholder: 'incendi\n"sant salvador"\nPP',
 
     acTitle:                'Opcions de lectura',
     acTema:                 'Tema',
@@ -3384,15 +3416,17 @@ const I18N = {
     chipLiteral:            'Convert to literal search',
     cfgBuscarMedio:         'Search or add a domain…',
     cfgTodosGrupos:         'All groups',
-    cfgPalabras:            'Keywords in headline',
-    cfgPalabrasHint:        'One per line or comma-separated. Accent-insensitive, whole word.',
+    cfgPalabras:            'Topics',
+    cfgPalabrasHint:        'One line = one topic',
+    cfgEditarTemas:         'Edit topics →',
+    cfgTemasAyuda:          'fire|also «fires»\nsan salvador|both words, in any order\n"san salvador"|exact phrase\nUK|acronym: whole word\ngalicia -feijoo|«galicia», but not «feijoo»',
     cfgBackup:              'Backup',
     cfgBackupMsg:           'Export your configuration to a file compatible with Voceiro and the Universal Reader plugin.',
     cfgHelpLbl:             'Help us improve',
     cfgHelpMsg:             'Something not working? Tell us.',
     cfgHelpBtn:             'Report a problem',
     cfgResumen:             'Showing {vis} of {total} · {inc} forced · {ign} blocked',
-    cfgPalabrasPlaceholder: 'keyword1\nkeyword2\nkeyword3',
+    cfgPalabrasPlaceholder: 'fire\n"san salvador"\nUK',
 
     acTitle:                'Reading options',
     acTema:                 'Theme',
@@ -3658,15 +3692,17 @@ const I18N = {
     chipLiteral:            'Bilaketa literala bihurtu',
     cfgBuscarMedio:         'Bilatu edo domeinua gehitu…',
     cfgTodosGrupos:         'Talde guztiak',
-    cfgPalabras:            'Hitz gakoak izenburuan',
-    cfgPalabrasHint:        'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
+    cfgPalabras:            'Gaiak',
+    cfgPalabrasHint:        'Lerro bat = gai bat',
+    cfgEditarTemas:         'Gaiak editatu →',
+    cfgTemasAyuda:          'sute|baita «suteak» ere\nsan salvador|bi hitzak, edozein ordenatan\n"san salvador"|esaldi zehatza\nPP|sigla: hitz osoa\ngalizia -feijoo|«galizia», baina «feijoo» gabe',
     cfgBackup:              'Babeskopia',
     cfgBackupMsg:           'Esportatu zure konfigurazioa Voceiro-rekin eta Lector Universal pluginarekin bateragarria den fitxategi batera.',
     cfgHelpLbl:             'Lagun gaitzazu hobetzen',
     cfgHelpMsg:             'Zerbait ez dabil? Kontatu iezaguzu.',
     cfgHelpBtn:             'Arazo bat jakinarazi',
     cfgResumen:             '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta',
-    cfgPalabrasPlaceholder: 'hitza1\nhitza2\nhitza3',
+    cfgPalabrasPlaceholder: 'sute\n"san salvador"\nPP',
 
     acTitle:                'Irakurketa aukerak',
     acTema:                 'Gaia',
@@ -6503,22 +6539,48 @@ function actualizarResumen(visiblesOverride){
 }
 function escribirPanel(p){
   renderListaGrupos(p);         // ← nuevo: renderiza + marca checkboxes
-  $('#preset-palabras').value = p.palabras.join('\n');
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
   renderModosPanel();
+  renderTemasPanel(false);
   renderListaMedios();
 }
 function leerPanel(){
   const grupos = [];
   document.querySelectorAll('#lista-grupos input[data-grupo]:checked').forEach(c =>
     grupos.push(c.dataset.grupo));
-  const palabras = parseLista($('#preset-palabras').value);
-  return { grupos, palabras };
+  // Temas de cada modo (pestaña Temas); los del modo activo van también en palabras.
+  const temasPorModo = new Map();
+  document.querySelectorAll('#lista-temas-modos textarea[data-modo-id]').forEach(ta =>
+    temasPorModo.set(ta.dataset.modoId, parseLista(ta.value)));
+  const palabras = temasPorModo.get(PRESET.id) || PRESET.palabras;
+  return { grupos, palabras, temasPorModo };
+}
+// Pestaña Temas: una caja por modo, en el orden de la lista. Con conservar,
+// se mantiene lo que ya se ha escrito (renombrar o duplicar un modo vuelve a
+// pintar la lista sin perder lo que aún no se ha guardado).
+function renderTemasPanel(conservar){
+  const cont = $('#lista-temas-modos');
+  if (!cont) return;
+  const escrito = new Map();
+  if (conservar){
+    cont.querySelectorAll('textarea[data-modo-id]').forEach(ta => escrito.set(ta.dataset.modoId, ta.value));
+  }
+  cont.innerHTML = PRESETS.lista.map(p => {
+    const guardado = ((p.id === PRESET.id ? PRESET : p).palabras || []).join('\n');
+    const texto = escrito.has(p.id) ? escrito.get(p.id) : guardado;
+    const id = 'temas-' + p.id;
+    return `<div class="temas-modo">
+      <label class="temas-modo-nombre" for="${escapeHtml(id)}">${escapeHtml(p.nombre)} <span class="n">· ${compilarTemas(parseLista(texto)).length}</span></label>
+      <textarea id="${escapeHtml(id)}" class="preset-texto" data-modo-id="${escapeHtml(p.id)}"
+                placeholder="${escapeHtml(t('cfgPalabrasPlaceholder'))}">${escapeHtml(texto)}</textarea>
+    </div>`;
+  }).join('');
 }
 function renderModosPanel(){
   const cont = $('#lista-modos');
   if (!cont) return;
+  renderTemasPanel(true);
 
   cont.innerHTML = PRESETS.lista.map(p => {
     const activo = (p.id === PRESETS.activo);
@@ -8960,6 +9022,7 @@ function aplicarTextos(){
   $('#cfg-modos').textContent = t('cfgModos');
   $('#tab-feed').textContent     = t('cfgFeed');
   $('#tab-medios').textContent   = t('tabMedios');
+  $('#tab-temas').textContent    = '🔖 ' + t('presetVistaTemas');
   $('#tab-avanzado').textContent = t('tabAvanzado');
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
   $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
@@ -9008,12 +9071,18 @@ function aplicarTextos(){
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-palabras').textContent = t('cfgPalabras');
   $('#cfg-palabras-hint').textContent = t('cfgPalabrasHint');
+  $('#cfg-temas').textContent = t('cfgPalabras');
+  $('#btn-editar-temas').textContent = t('cfgEditarTemas');
+  // Ejemplos: una línea por ejemplo, «tema|qué casa».
+  $('#cfg-temas-ayuda').innerHTML = t('cfgTemasAyuda').split('\n').map(l => {
+    const [ej, txt] = l.split('|');
+    return `<li><code>${escapeHtml(ej)}</code> → ${escapeHtml(txt || '')}</li>`;
+  }).join('');
   $('#cfg-backup').textContent = t('cfgBackup');
   $('#cfg-backup-msg').textContent = t('cfgBackupMsg');
   $('#cfg-help-lbl').textContent = t('cfgHelpLbl');
   $('#cfg-help-msg').textContent = t('cfgHelpMsg');
   $('#cfg-help-btn').textContent = t('cfgHelpBtn');
-  $('#preset-palabras').placeholder = t('cfgPalabrasPlaceholder');
   $('#preset-reset').textContent = t('btnReset');
   $('#preset-cancelar').textContent = t('btnCancel');
   $('#preset-guardar').textContent = t('btnSave');
@@ -9303,6 +9372,16 @@ function wireStaticEvents(){
       );
     });
   }
+  // ── Configuración › Temas ──
+  $('#btn-editar-temas').addEventListener('click', () => {
+    const tab = document.querySelector('.cfg-tab[data-tab="temas"]');
+    if (tab) tab.click();
+  });
+  $('#lista-temas-modos').addEventListener('input', e => {
+    const ta = e.target.closest('textarea[data-modo-id]');
+    const n = ta && ta.parentElement.querySelector('.n');
+    if (n) n.textContent = '· ' + compilarTemas(parseLista(ta.value)).length;
+  });
   // ── Chips de la vista Temas ──
   const chipsTemas = $('#temas-chips');
   if (chipsTemas){
@@ -9494,9 +9573,13 @@ function wireStaticEvents(){
 
   $('#preset-guardar').addEventListener('click', () => {
     const panel = leerPanel();
+    for (const p of PRESETS.lista){
+      if (p.id !== PRESET.id && panel.temasPorModo.has(p.id)) p.palabras = panel.temasPorModo.get(p.id);
+    }
     PRESET.grupos = panel.grupos;
     PRESET.palabras = panel.palabras;
     guardarPreset(); recompilarPreset();
+    if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
 
     if (presetTieneReglas() && !PRESET_ACTIVO && !vistaTemasActiva()){
       PRESET_ACTIVO = true;
