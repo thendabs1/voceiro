@@ -5460,8 +5460,6 @@ let _capaEnVuelo = null;
 const _itemPorUrl = new Map();
 const _itemPorTitulo = new Map();
 
-// Contador de generación para aplicarFiltros (race conditions)
-let _genAplicar = 0;
 
 /* ── Helpers de merge ── */
 
@@ -7737,7 +7735,6 @@ function _pasaTexto(n, titulo){
 }
 
 function aplicarFiltros(){
-  const myGen = ++_genAplicar;
   hidratarNoticias();
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
@@ -7777,7 +7774,7 @@ if (!capas.size) {
   if (capas.size) {
     const signal = new AbortController().signal;
     asegurarCapas(capas, signal).then(trajo => {
-      if (trajo) aplicarFiltros();     // ← sin `if (myGen !== _genAplicar)`
+      if (trajo) aplicarFiltros();
     });
   }
 
@@ -7788,8 +7785,12 @@ if (!capas.size) {
     TURSO_RAW = rawProcesado;  // sin cutoff: no hay R2 previo, queremos todo
     TURSO_OFFSET = 0;
 
+    // Se descarta solo si la consulta cambió, no por cualquier otra llamada
+    // a aplicarFiltros (un espacio, una capa R2, un toggle…): si no, la
+    // respuesta se perdía y no se volvía a pedir.
+    const claveTurso = TURSO_RAW;
     buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
-      if (myGen !== _genAplicar) return;
+      if (TURSO_RAW !== claveTurso) return;
       if (!res.items || !res.items.length) {
         TURSO_HAY_MAS = false;
         actualizarBotonCargarMas();
@@ -8412,12 +8413,16 @@ async function cargarMasDeTurso() {
   const btn = document.getElementById('btn-cargar-mas');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
+  const claveTurso = TURSO_RAW;
+  const offsetPedido = TURSO_OFFSET;
   const res = await buscarEnWorker(TURSO_RAW, {
     offset: TURSO_OFFSET,
     limit: 50
   });
 
   if (btn) btn.disabled = false;
+  // La consulta cambió (o ya se cargó esta página) mientras esperábamos.
+  if (TURSO_RAW !== claveTurso || TURSO_OFFSET !== offsetPedido) return;
 
   if (!res.items || !res.items.length) {
     TURSO_HAY_MAS = false;
