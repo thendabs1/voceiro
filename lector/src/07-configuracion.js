@@ -67,6 +67,7 @@ const DEFAULT_CFG = {
   disabledDomains: [],
   customCatalog: [],
   readLater: [],
+  perfilActualizado: 0,
   readerAutoAll: false,
   readerSettings: {
     keepReadItems: true
@@ -169,9 +170,6 @@ function migrateCfg(cfg){
     delete s.customSelector;
     if (!s.readerSource || !READER_SOURCES.includes(s.readerSource)) s.readerSource = 'auto';
 
-    // ── NUEVO: feedMode exclusivo de Voceiro ──
-    if (typeof s.feedMode !== 'string') s.feedMode = '';
-    if (!['', 'first', 'ignore'].includes(s.feedMode)) s.feedMode = '';
   });
   cfg.sites = cfg.sites.filter(s => s.domain);
 
@@ -221,11 +219,8 @@ function migrateCfg(cfg){
     }
   });
 
-  if (!Array.isArray(cfg.readLater)) cfg.readLater = [];
-  cfg.readLater = cfg.readLater.filter(r => r && r.url);
-  cfg.readLater.forEach(r => {
-    if (typeof r.read !== 'boolean') r.read = false;
-  });
+  cfg.readLater = fusionarPendientes(Array.isArray(cfg.readLater) ? cfg.readLater : [], []);
+  if (typeof cfg.perfilActualizado !== 'number') cfg.perfilActualizado = 0;
 
   if (!cfg.readerSettings || typeof cfg.readerSettings !== 'object'){
     cfg.readerSettings = { keepReadItems: true };
@@ -309,53 +304,41 @@ function loadCfg(){
   } catch(e){ return migrateCfg(deepClone(DEFAULT_CFG)); }
 }
 
-let __lastSitesSerialized = null;
-
-function currentConfigSnapshot(cfg){
-  return {
-    sites:           cfg.sites || [],
-    prefs:           cfg.prefs || {},
-    lang:            cfg.lang || 'gl',
-    disabledDomains: cfg.disabledDomains || [],
-    siteTypes:       cfg.siteTypes || [],
-    siteTags:        cfg.siteTags || [],
-    customCatalog:   cfg.customCatalog || [],
-    readLater:       cfg.readLater || [],
-    readerSettings:  cfg.readerSettings || { keepReadItems: true },
-    readerAutoAll:   !!cfg.readerAutoAll,
-    voceiro:         cfg.voceiro || { presets: [] },
-  };
+// Perfil de lectura común con Voceiro: idioma, tema, fuente, tamaño,
+// justificado, biónica y foco. Cuando cambia, se sella perfilActualizado:
+// decide qué perfil gana al juntarse con el de Voceiro.
+let __perfilFirma = null;
+function firmaPerfilLector(cfg){
+  const p = cfg.prefs || {};
+  return JSON.stringify([cfg.lang, p.theme, p.font, p.fs, !!p.just, !!p.bionic, !!p.focus]);
 }
-
-function notifyConfigChanged(){
-  if (!esVoceiro()) return;
-  try {
-    document.dispatchEvent(new CustomEvent('voceiro-config-changed', {
-      detail: currentConfigSnapshot(CFG)
-    }));
-  } catch(e){}
+function perfilDelLector(){
+  const p = CFG.prefs || {};
+  return limpiarPerfil({
+    lang: CFG.lang, tema: p.theme, fuente: p.font === 'georgia' ? 'serif' : p.font,
+    fs: p.fs, just: !!p.just, bionic: !!p.bionic, focus: !!p.focus,
+    actualizado: CFG.perfilActualizado || 0
+  });
+}
+function aplicarPerfilAlLector(perfil){
+  const p = CFG.prefs;
+  if (UI_LANGS.includes(perfil.lang)) CFG.lang = perfil.lang;
+  if (['light', 'sepia', 'dark', 'contrast'].includes(perfil.tema)) p.theme = perfil.tema;
+  if (perfil.fuente) p.font = perfil.fuente === 'serif' ? 'georgia' : perfil.fuente;
+  if (typeof perfil.fs === 'number') p.fs = Math.min(UI.fsMax, Math.max(UI.fsMin, perfil.fs));
+  ['just', 'bionic', 'focus'].forEach(k => { if (perfil[k] !== undefined) p[k] = !!perfil[k]; });
+  CFG.perfilActualizado = perfil.actualizado;
+  __perfilFirma = firmaPerfilLector(CFG);   // ya sellado: no es un cambio de aquí
 }
 
 function saveCfg(cfg){
-  try {
-    PLATAFORMA.guardar(CFG_KEY, cfg);
-
-    try {
-      const payload = JSON.stringify({
-        sites: cfg.sites || [],
-        readerAutoAll: !!cfg.readerAutoAll,
-        disabledDomains: cfg.disabledDomains || [],
-      });
-      if (__lastSitesSerialized === null){
-        __lastSitesSerialized = payload;
-      } else if (__lastSitesSerialized !== payload){
-        __lastSitesSerialized = payload;
-        notifyConfigChanged();
-      }
-    } catch(e){}
-  } catch(e){}
+  const firma = firmaPerfilLector(cfg);
+  if (__perfilFirma !== null && firma !== __perfilFirma) cfg.perfilActualizado = Date.now();
+  __perfilFirma = firma;
+  PLATAFORMA.guardar(CFG_KEY, cfg);
 }
 let CFG = loadCfg();
+__perfilFirma = firmaPerfilLector(CFG);
 let __sessionSourceOverride = null;
 
 function t(k){ const L = I18N[CFG.lang] || I18N.es; return L[k] || I18N.es[k] || k; }

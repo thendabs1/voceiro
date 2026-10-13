@@ -30,6 +30,4 @@ function esVoceiro(){
   return location.origin === 'https://thendabs1.github.io' &&
          /^\/voceiro(\/|$)/.test(location.pathname);
 }
-// Pendientes que viajan por el puente (los mismos en cada evento).
-const PENDIENTES_PUENTE_MAX = 500;
 
