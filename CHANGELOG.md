@@ -3,6 +3,23 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-13 — Panel Investigar: empresas y personas del BORME
+
+### Cambiado
+- El panel Investigar (`#panel-buscar`, Alt+B) deja de buscar prensa externa
+  (FreeNewsAPI y Google News, que el botón «🌐 prensa» ya cubre) y pasa a buscar
+  empresas (por el inicio de la razón social o por CIF) y personas del BORME en
+  OpenMercantil. Muestra la ficha con los cargos vigentes y anteriores y los actos
+  (cada uno enlazado al BORME de ese día), además del perfil de la persona.
+- La consulta se hace desde el navegador (sin clave, CORS abierto, 200 consultas al
+  día por IP) y solo al pulsar. No se guarda nada en `localStorage` ni en
+  `sessionStorage`.
+- Desde la ficha: «Ver noticias» lanza la búsqueda normal con el nombre, que se
+  puede editar, y «Seguir» lo añade como línea a los temas del modo activo.
+
+### Quitado
+- `FREENEWS_URL`, `GNEWS_PROXY`, las funciones `bs*`, su CSS y sus textos.
+
 ## 2026-10-13 — Deno Deploy desde GitHub Actions
 
 ### Cambiado
