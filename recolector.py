@@ -1794,6 +1794,12 @@ def generar_portada(noticias, ahora, horas=18, max_items=2000, prefix='portada')
 # FASE 3c · HTML
 # ─────────────────────────────────────────────────────────────
 def generar_html(fecha, total):
+    # Si fallan los tests del buscador, el workflow pone esta variable: los
+    # datos se publican igual, pero el front (index.html y módulos) se queda
+    # en la última versión buena, la que está en el repo.
+    if os.environ.get('VOCEIRO_FRONT_CONGELADO') == '1':
+        print('[front] tests en rojo: se mantiene el front anterior')
+        return
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, 'plantilla.html'), encoding='utf-8') as f:
         html = f.read()
