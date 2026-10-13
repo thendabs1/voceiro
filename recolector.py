@@ -40,6 +40,7 @@ import shutil
 import ssl
 import tempfile
 import html
+import time
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from collections import defaultdict
@@ -97,6 +98,9 @@ GRUPOS_INCLUIDOS = []
 # cuente de verdad y que entren todos los medios que publicaron en ella.
 PORTADA_HORAS = 24
 PORTADA_MAX   = 2000
+
+# Tiempo máximo del barrido completo de R2 por run (el job tiene 15 min).
+R2_SCAN_MAX_SEG = 180
 
 # Ediciones: portadas complementarias que el front carga además de la
 # general (por dominio, ?ed= o elección del usuario). Filtro sobre el
@@ -2048,10 +2052,13 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
     forzar_scan. El diff se salta lo que tiene menos de 1 h y no lo vuelve
     a ver (en el run siguiente ya no es candidato); con runs cada pocos
     minutos eso deja huérfanos. main() fuerza el scan una vez al día.
+
+    Devuelve True si la limpieza terminó (el scan completo puede cortarse
+    por tiempo).
     """
     client = _r2_client()
     if not client:
-        return 0
+        return False
 
     # ── Camino rápido: diff de manifests ──
     if manifest_prev and manifest_prev.get('dias') and not forzar_scan:
@@ -2061,7 +2068,7 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
 
         if not candidatos:
             print("[r2-clean] nada que borrar (diff de manifests)")
-            return 0
+            return True
 
         limite = datetime.now(timezone.utc) - timedelta(hours=1)
         borrados = 0
@@ -2082,7 +2089,7 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
                 print(f"[r2-clean!] {key}: {type(e).__name__}: {e}")
 
         print(f"[r2-clean] {borrados} borrados de {len(candidatos)} candidatos (diff)")
-        return borrados
+        return True
 
     # ── Fallback: scan completo (sin manifest previo) ──
     print("[r2-clean] scan completo"
@@ -2107,9 +2114,36 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
     re_grupo   = re.compile(r'^\d{4}-\d{2}-\d{2}-g-[a-z0-9-]+-[a-f0-9]{10}\.json$')
     re_dominio = re.compile(r'^d-[a-z0-9.-]+-\d{4}-\d{2}-\d{2}\.json$')
 
+    # Borrado por lotes (delete_objects, hasta 1000 claves por petición) y
+    # con presupuesto de tiempo: de uno en uno, un bucket con muchos
+    # huérfanos acumulados no termina antes del timeout del job. Si se
+    # agota, lo que quede se borra en el siguiente run.
+    t0 = time.monotonic()
     borrados = 0
+    lote = []
+
+    def _vaciar_lote():
+        nonlocal borrados
+        if not lote:
+            return
+        try:
+            r = client.delete_objects(
+                Bucket=R2_BUCKET,
+                Delete={'Objects': [{'Key': k} for k in lote], 'Quiet': True})
+            errores = r.get('Errors') or []
+            for err in errores[:5]:
+                print(f"[r2-clean!] {err.get('Key')}: {err.get('Code')} {err.get('Message')}")
+            borrados += len(lote) - len(errores)
+        except Exception as e:
+            print(f"[r2-clean!] lote de {len(lote)}: {type(e).__name__}: {e}")
+        lote.clear()
+
+    completo = True
     paginator = client.get_paginator('list_objects_v2')
     for page in paginator.paginate(Bucket=R2_BUCKET):
+        if time.monotonic() - t0 > R2_SCAN_MAX_SEG:
+            completo = False
+            break
         for obj in page.get('Contents', []):
             key = obj['Key']
             if key == 'manifest.json':
@@ -2132,14 +2166,14 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
             lastmod = obj.get('LastModified')
             if lastmod and lastmod > limite:
                 continue
-            try:
-                client.delete_object(Bucket=R2_BUCKET, Key=key)
-                borrados += 1
-            except Exception as e:
-                print(f"[r2-clean!] {key}: {e}")
+            lote.append(key)
+            if len(lote) >= 1000:
+                _vaciar_lote()
+    _vaciar_lote()
 
-    print(f"[r2-clean] {borrados} huérfanos borrados (scan completo)")
-    return borrados
+    estado = '' if completo else f' · tiempo agotado ({R2_SCAN_MAX_SEG}s), sigue en el próximo run'
+    print(f"[r2-clean] {borrados} huérfanos borrados (scan completo){estado}")
+    return completo
 
 #─────────────────────────────────────────────────────────
 # TURSO HTTP v2 (sin réplica local, sin sync)
@@ -2722,21 +2756,23 @@ def main():
 
     subir_a_r2(list(_FICHEROS_ESCRITOS))
 
-    # ─── Limpiar huérfanos en R2 ───
-    # Una vez al día, scan completo: el diff no recoge lo que sustituye
-    # un run a menos de 1 h del anterior.
-    hoy_madrid = t_now.strftime('%Y-%m-%d')
-    ultimo_barrido = payload_prev.get('ultimo_barrido_r2', '')
-    barrido_hoy = ultimo_barrido != hoy_madrid and _r2_client() is not None
-    limpiar_r2_huerfanos(manifest_actual, manifest_prev, forzar_scan=barrido_hoy)
-    if barrido_hoy:
-        ultimo_barrido = hoy_madrid
-
     # ─── Turso (HTTP v2) ───
     _turso_ensure_schema()
     _turso_setup_medios(medios_completos, runs_data, t_now_iso)
     insertar_en_turso(finales_pre, generado_prev, t_now_iso)
     _turso_setup_runs(runs_data, t_now_iso)
+
+    # ─── Limpiar huérfanos en R2 ───
+    # Después de Turso: si se alarga, que no se quede sin hacer lo demás.
+    # Una vez al día, scan completo: el diff no recoge lo que sustituye
+    # un run a menos de 1 h del anterior. Solo se marca el día si termina.
+    hoy_madrid = t_now.strftime('%Y-%m-%d')
+    ultimo_barrido = payload_prev.get('ultimo_barrido_r2', '')
+    barrido_hoy = ultimo_barrido != hoy_madrid and _r2_client() is not None
+    completo = limpiar_r2_huerfanos(manifest_actual, manifest_prev,
+                                    forzar_scan=barrido_hoy)
+    if barrido_hoy and completo:
+        ultimo_barrido = hoy_madrid
 
     # ─── State ───
     guardar_state(
