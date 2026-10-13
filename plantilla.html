@@ -7723,6 +7723,17 @@ function programarPrensa(parsed, rawQuery, nLocales){
 }
 
 
+// Texto libre: AND palabra por palabra sobre el titular normalizado.
+// Única definición; la usan aplicarFiltros y _pasaFiltroIndividual.
+function _pasaTexto(n, titulo){
+  if (!titulo.length) return true;
+  const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+  for (let i = 0; i < titulo.length; i++){
+    if (tn.indexOf(titulo[i]) === -1) return false;
+  }
+  return true;
+}
+
 function aplicarFiltros(){
   const myGen = ++_genAplicar;
   hidratarNoticias();
@@ -7912,6 +7923,7 @@ if (!capas.size) {
       if (!ok) return false;
     }
     // ── Fin facet ──
+    if (!_pasaTexto(n, parsed.titulo)) return false;
     if (presetEfectivo){
       const cumple = cumplePreset(n);
       n._esPreset = cumple;
@@ -8291,6 +8303,7 @@ function _pasaFiltroIndividual(n, ctx) {
     }
     if (!ok) return false;
   }
+  if (!_pasaTexto(n, parsed.titulo)) return false;
   if (presetEfectivo){
     const cumple = cumplePreset(n);
     n._esPreset = cumple;
