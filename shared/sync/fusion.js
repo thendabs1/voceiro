@@ -127,3 +127,93 @@ export function limpiarPerfil(p){
 export function fusionarPerfil(a, b){
   return masReciente(limpiarPerfil(a), limpiarPerfil(b));
 }
+
+// ── Sincronización entre dispositivos: el documento entero ──────────
+// El documento que se guarda (cifrado) en el servidor reúne Pendientes,
+// leídas, perfil, modos y el bloque del lector. Su fusión es simétrica:
+// da lo mismo en qué orden se junten, para que dos dispositivos no se
+// pisen en bucle. La cortesía de «lo que nadie ha tocado (sello 0) no se
+// impone» se aplica al volcarlo en cada dispositivo, no aquí.
+
+export const LEIDAS_MAX = 5000;
+export const MODO_BORRADO_DIAS = 365;
+
+function canonico(x){
+  if (Array.isArray(x)) return x.map(canonico);
+  if (x && typeof x === 'object'){
+    const o = {};
+    for (const k of Object.keys(x).sort()) o[k] = canonico(x[k]);
+    return o;
+  }
+  return x;
+}
+
+// Huella de un modo sin su sello: sirve para saber si cambió.
+export function huellaModo(m){
+  if (!m || typeof m !== 'object') return '';
+  const { actualizado, ...resto } = m;
+  return JSON.stringify(canonico(resto));
+}
+
+// Leídas: { url: ms }. Gana la fecha más reciente y se quedan las
+// LEIDAS_MAX más recientes. (Desmarcar no viaja: una leída de más no estorba.)
+export function fusionarLeidas(a, b){
+  const m = new Map();
+  for (const o of [a, b]){
+    if (!o || typeof o !== 'object' || Array.isArray(o)) continue;
+    for (const [k, v] of Object.entries(o)){
+      const t = fusionMs(v);
+      if (!m.has(k) || t > m.get(k)) m.set(k, t);
+    }
+  }
+  const porClave = (x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0);
+  const recientes = [...m.entries()]
+    .sort((x, y) => (y[1] - x[1]) || porClave(x, y))
+    .slice(0, LEIDAS_MAX)
+    .sort(porClave);
+  return Object.fromEntries(recientes);
+}
+
+// Modos: { lista: [modo con id y actualizado], borrados: { id: ms } }.
+// Por modo gana el más reciente (en empate, un orden fijo) y un borrado gana
+// a lo anterior o igual. La lista sale ordenada por id: quien la vuelca le
+// pone su orden.
+export function fusionarModos(a, b, ahora = Date.now()){
+  const vivos = new Map(), borrados = new Map();
+  for (const x of [a, b]){
+    if (!x || typeof x !== 'object') continue;
+    for (const m of (Array.isArray(x.lista) ? x.lista : [])){
+      if (!m || typeof m !== 'object' || !m.id) continue;
+      const t = fusionMs(m.actualizado);
+      const prev = vivos.get(m.id);
+      if (!prev || t > prev.t || (t === prev.t && huellaModo(m) > huellaModo(prev.m))){
+        vivos.set(m.id, { m, t });
+      }
+    }
+    for (const [id, v] of Object.entries(x.borrados || {})){
+      const t = fusionMs(v);
+      if (!borrados.has(id) || t > borrados.get(id)) borrados.set(id, t);
+    }
+  }
+  const caduca = ahora - MODO_BORRADO_DIAS * DIA_MS;
+  const lista = [], quedan = {};
+  for (const id of [...new Set([...vivos.keys(), ...borrados.keys()])].sort()){
+    const v = vivos.get(id), tb = borrados.get(id);
+    if (v && (tb === undefined || v.t > tb)) lista.push({ ...v.m, actualizado: v.t });
+    else if (tb !== undefined && tb >= caduca) quedan[id] = tb;
+  }
+  return { lista, borrados: quedan };
+}
+
+export function fusionarDocumento(a, b, ahora = Date.now()){
+  a = a && typeof a === 'object' ? a : {};
+  b = b && typeof b === 'object' ? b : {};
+  return {
+    v: 1,
+    pendientes: fusionarPendientes(a.pendientes, b.pendientes, ahora),
+    leidas: fusionarLeidas(a.leidas, b.leidas),
+    perfil: fusionarPerfil(a.perfil, b.perfil),
+    modos: fusionarModos(a.modos, b.modos, ahora),
+    lector: masReciente(a.lector || null, b.lector || null),
+  };
+}
