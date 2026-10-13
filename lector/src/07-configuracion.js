@@ -68,6 +68,7 @@ const DEFAULT_CFG = {
   customCatalog: [],
   readLater: [],
   perfilActualizado: 0,
+  configActualizado: 0,
   readerAutoAll: false,
   readerSettings: {
     keepReadItems: true
@@ -221,6 +222,7 @@ function migrateCfg(cfg){
 
   cfg.readLater = fusionarPendientes(Array.isArray(cfg.readLater) ? cfg.readLater : [], []);
   if (typeof cfg.perfilActualizado !== 'number') cfg.perfilActualizado = 0;
+  if (typeof cfg.configActualizado !== 'number') cfg.configActualizado = 0;
 
   if (!cfg.readerSettings || typeof cfg.readerSettings !== 'object'){
     cfg.readerSettings = { keepReadItems: true };
@@ -331,14 +333,65 @@ function aplicarPerfilAlLector(perfil){
   __perfilFirma = firmaPerfilLector(CFG);   // ya sellado: no es un cambio de aquí
 }
 
+// Configuración propia del lector que viaja a otros dispositivos (por
+// Voceiro y su sincronización): reglas por sitio, catálogo propio,
+// diccionarios, servicios de «Abrir en…», atajos… Todo menos Pendientes, el
+// perfil común (va aparte), los sellos y la posición de los botones.
+const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab'];
+const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
+let __configFirma = null;
+
+function configCompartida(cfg){
+  const out = {};
+  for (const k of Object.keys(cfg)){
+    if (!CFG_NO_VIAJA.includes(k)) out[k] = cfg[k];
+  }
+  if (out.prefs){
+    const p = { ...out.prefs };
+    PREFS_DEL_PERFIL.forEach(k => delete p[k]);
+    out.prefs = p;
+  }
+  return JSON.parse(JSON.stringify(out));
+}
+function firmaConfig(cfg){
+  return huellaCanonica(configCompartida(cfg));
+}
+function bloqueConfigLector(){
+  return { datos: configCompartida(CFG), actualizado: CFG.configActualizado || 0 };
+}
+// Adopta la configuración que llega de otro dispositivo (ya sellada).
+function aplicarBloqueConfig(bloque){
+  const d = (bloque && bloque.datos) || {};
+  for (const k of Object.keys(d)){
+    if (CFG_NO_VIAJA.includes(k)) continue;
+    if (k === 'prefs'){
+      const p = { ...(CFG.prefs || {}) };
+      for (const [pk, pv] of Object.entries(d.prefs || {})){
+        if (!PREFS_DEL_PERFIL.includes(pk)) p[pk] = pv;
+      }
+      CFG.prefs = p;
+    } else {
+      CFG[k] = d[k];
+    }
+  }
+  CFG = migrateCfg(CFG);
+  CFG.configActualizado = bloque.actualizado;
+  __configFirma = firmaConfig(CFG);    // ya sellado: no es un cambio de aquí
+  __perfilFirma = firmaPerfilLector(CFG);
+}
+
 function saveCfg(cfg){
   const firma = firmaPerfilLector(cfg);
   if (__perfilFirma !== null && firma !== __perfilFirma) cfg.perfilActualizado = Date.now();
   __perfilFirma = firma;
+  const firmaC = firmaConfig(cfg);
+  if (__configFirma !== null && firmaC !== __configFirma) cfg.configActualizado = Date.now();
+  __configFirma = firmaC;
   PLATAFORMA.guardar(CFG_KEY, cfg);
 }
 let CFG = loadCfg();
 __perfilFirma = firmaPerfilLector(CFG);
+__configFirma = firmaConfig(CFG);
 let __sessionSourceOverride = null;
 
 function t(k){ const L = I18N[CFG.lang] || I18N.es; return L[k] || I18N.es[k] || k; }

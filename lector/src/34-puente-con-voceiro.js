@@ -5,27 +5,20 @@
    sentido para que nadie se oiga a sí mismo:
      · 'voceiro-ping'   Voceiro → lector; se responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
-     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, modos}.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector}.
      · 'lector-estado'  lector → Voceiro, igual.
-   Pendientes y perfil se fusionan con shared/sync/fusion.js. Los modos
-   son de Voceiro: el lector solo los guarda (para llevarlos a otros
-   dispositivos) y adopta los de Voceiro salvo que los suyos sean más
-   nuevos. Cada lado contesta una vez, si lo suyo no coincide y el
-   mensaje no era ya una respuesta: tras ese ida y vuelta, coinciden.
+   Pendientes y perfil se fusionan con shared/sync/fusion.js. «lector» es
+   la configuración propia del lector: Voceiro la guarda sin mirarla y la
+   lleva a otros dispositivos con su sincronización; gana la más reciente.
+   Cada lado contesta una vez, si lo suyo no coincide y el mensaje no era
+   ya una respuesta: tras ese ida y vuelta, coinciden.
    ─────────────────────────────────────────────────────────────── */
 const PUENTE_V = 2;
-
-function modosDelLector(){
-  const m = CFG.voceiro || {};
-  return Array.isArray(m.presets) && m.presets.length
-    ? { presets: m.presets, actualizado: m.actualizado || 0 }
-    : null;
-}
 
 function estadoDelLector(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
-    pendientes: CFG.readLater || [], perfil: perfilDelLector(), modos: modosDelLector()
+    pendientes: CFG.readLater || [], perfil: perfilDelLector(), lector: bloqueConfigLector()
   };
 }
 
@@ -33,7 +26,7 @@ function comparableEstado(d){
   return huella({
     pendientes: fusionarPendientes(d && d.pendientes, []),
     perfil: limpiarPerfil(d && d.perfil),
-    modos: d && d.modos ? { presets: d.modos.presets, actualizado: d.modos.actualizado || 0 } : null
+    lector: d && d.lector ? { datos: d.lector.datos, actualizado: d.lector.actualizado || 0 } : null
   });
 }
 
@@ -55,6 +48,7 @@ function enviarEstado(respuesta){
   PLATAFORMA.alCambiar(CFG_KEY, nuevo => {
     CFG = mergeCfg(DEFAULT_CFG, nuevo);
     __perfilFirma = firmaPerfilLector(CFG);
+    __configFirma = firmaConfig(CFG);
     enviarEstado(false);
   });
 
@@ -76,10 +70,11 @@ function enviarEstado(respuesta){
     const perfil = fusionarPerfil(mio, d.perfil);
     if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilAlLector(perfil);
 
-    const misModos = modosDelLector();
-    if (d.modos && Array.isArray(d.modos.presets) &&
-        (!misModos || (d.modos.actualizado || 0) >= misModos.actualizado)){
-      CFG.voceiro = { presets: d.modos.presets, actualizado: d.modos.actualizado || 0 };
+    // Configuración que llega de otro dispositivo: solo si es más nueva.
+    const mia = bloqueConfigLector();
+    const llega = d.lector;
+    if (llega && llega.datos && (llega.actualizado || 0) > (mia.actualizado || 0)){
+      aplicarBloqueConfig(llega);
     }
 
     saveCfg(CFG);
