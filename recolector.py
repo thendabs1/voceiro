@@ -119,7 +119,9 @@ def _marcar_escrito(path):
     _FICHEROS_ESCRITOS.add(os.path.abspath(path))
 MANIFEST_PATH     = 'public/datos/manifest.json'
 STATE_PATH        = 'state.json'
-DENO_RELAY_BASE = 'https://secret-worm-9453.thendabs1.deno.net/rss?u='
+# Relay del recolector: app de Deno Deploy enlazada a workers/deno-relay.
+# (El playground secret-worm-9453 es otro: lo usa el front para Google News.)
+DENO_RELAY_BASE = 'https://voceiro-relay-hzvcanr0wjdj.thendabs1.deno.net/rss?u='
 # ── Filtros anti-basura para scraping ──
 BAD_WORDS = {
     'suscríbete', 'suscribete', 'newsletter', 'contacto',
