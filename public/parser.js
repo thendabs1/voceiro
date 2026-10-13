@@ -31,10 +31,25 @@ const PREFIX_ALIASES = {
   desde: 'desde',
   hasta: 'hasta',
   fuentes: 'fuentes',
-  order: 'order',
+  order: 'order', orden: 'order',
   limit: 'limit',
   offset: 'offset',
 };
+
+// Terminaciones de dominio que se aceptan para tratar una palabra suelta
+// como dominio (las del catálogo de medios más algunas comunes). Sin esta
+// lista, cualquier cosa con punto era un dominio: 'EE.UU' daba 0 resultados.
+const TLDS = new Set([
+  'com','es','cat','net','eus','fr','it','cl','gal','br','nl','pt','uk','org',
+  'de','be','pe','ie','uy','news','coop','info','ar','bo','eu','cn','hn','jp',
+  'mx','py','za','ch','io','tv','me','co','us','ca','au','at','pl','se','no',
+  'dk','fi','gr','ru','ma','ve','ec','cr','gt','do','cu','pr','sv','ni','pa',
+]);
+
+export function pareceDominio(texto) {
+  if (!/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(texto)) return false;
+  return TLDS.has(texto.toLowerCase().split('.').pop());
+}
 
 export function normalize(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -218,8 +233,8 @@ export function parseQuery(raw) {
         break;
 
       default:
-        // Token sin prefijo. ¿Es un dominio?
-        if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) {
+        // Token sin prefijo. ¿Es un dominio? Nunca entre comillas.
+        if (!tk.quoted && pareceDominio(tk.text)) {
           out.dominios.push(normDomain(tk.text));
           out.chips.push({ type:'dominio', value: tk.text, raw: tk.raw });
         } else {

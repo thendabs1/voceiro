@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'workers/cf-buscar/**'
+      # El worker empaqueta ../../../shared/parser.js (y shared/busqueda/):
+      # un cambio solo en shared/ también tiene que redesplegar CF.
+      - 'shared/**'
       - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 

@@ -31,9 +31,23 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
+      - name: Setup Node (tests del buscador)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # Si fallan, no se para el run: los datos se siguen publicando, pero
+      # el recolector no regenera el front (VOCEIRO_FRONT_CONGELADO) y se
+      # publica el último front bueno, el que está en el repo.
+      - name: Tests del buscador
+        id: tests
+        continue-on-error: true
+        run: node --test 'tests/**/*.test.mjs'
+
       - name: Ejecutar recolector
         run: python recolector.py
         env:
+          VOCEIRO_FRONT_CONGELADO: ${{ steps.tests.outcome == 'failure' && '1' || '' }}
           PYTHONUNBUFFERED: "1"
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -55,7 +69,10 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/index.html
+          git add public/index.html public/parser.js
+          # Módulos del núcleo: hacen falta en el repo para poder publicar el
+          # front anterior si fallan los tests.
+          if [ -d public/busqueda ]; then git add public/busqueda; fi
           git add state.json
           if [ -f state.json ]; then git add state.json; fi
           if git diff --staged --quiet; then
