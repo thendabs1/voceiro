@@ -7443,14 +7443,17 @@ function pintarSelectsPrensa(){
 
 function cargarPrensaDeLocalStorage(){
   try {
-    const activa  = localStorage.getItem('voceiro-prensa-activa') === '1';
+    const guardado = localStorage.getItem('voceiro-prensa-activa');
+    const activa  = guardado === '1';
     const gnews   = localStorage.getItem('voceiro-prensa-gnews')   !== '0';
     const freenews= localStorage.getItem('voceiro-prensa-freenews')!== '0';
     const lang    = localStorage.getItem('voceiro-prensa-lang')  || 'es';
     const pais    = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
 
     PRENSA_ACTIVA = activa;
-    PRENSA_USER_MANUAL_OFF = !activa;
+    // Solo cuenta como apagado manual si el usuario lo apagó ('0');
+    // sin clave guardada, la autoactivación por pocos resultados sigue viva.
+    PRENSA_USER_MANUAL_OFF = guardado === '0';
     PRENSA_FUENTES.gnews    = gnews;
     PRENSA_FUENTES.freenews = freenews;
     PRENSA_LANG = lang;
@@ -7692,7 +7695,6 @@ function programarPrensa(parsed, rawQuery, nLocales){
       btn.classList.add('active', 'auto-activada');
       setTimeout(() => btn.classList.remove('auto-activada'), 900);
     }
-    try { localStorage.setItem('voceiro-prensa-activa', '1'); } catch(e){}
   }
 
   PRENSA_PARSED = parsed;
