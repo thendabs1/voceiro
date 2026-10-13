@@ -52,7 +52,7 @@ import feedparser
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from zoneinfo import ZoneInfo
 from curl_cffi import requests as curl_requests
 from medios import (
@@ -780,7 +780,9 @@ def _extract_item_date(tag):
 def _get_xml(medio, url, relay, tag):
     """GET de un feed o sitemap, directo o por el relay de Deno.
     Devuelve (respuesta, None) o (None, estado)."""
-    fetch_url = DENO_RELAY_BASE + url if relay else url
+    # El relay lee el destino con searchParams.get("u"), que decodifica:
+    # sin codificar, una URL con &/? propios se cortaría.
+    fetch_url = DENO_RELAY_BASE + quote(url, safe='') if relay else url
     if relay:
         tag = 'RELAY'
     try:
