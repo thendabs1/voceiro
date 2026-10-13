@@ -148,11 +148,16 @@ function canonico(x){
   return x;
 }
 
+// Huella que no depende del orden de las claves.
+export function huellaCanonica(x){
+  return JSON.stringify(canonico(x === undefined ? null : x));
+}
+
 // Huella de un modo sin su sello: sirve para saber si cambió.
 export function huellaModo(m){
   if (!m || typeof m !== 'object') return '';
   const { actualizado, ...resto } = m;
-  return JSON.stringify(canonico(resto));
+  return huellaCanonica(resto);
 }
 
 // Leídas: { url: ms }. Gana la fecha más reciente y se quedan las
