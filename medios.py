@@ -26,6 +26,7 @@ Añadir/editar medios NO requiere tocar la lógica de recolector.py.
 #   ('wp',)                   API REST de WordPress (/wp-json/wp/v2/posts)
 #   ('scrape',)               scraping de la home
 #   ('scrape', url)           scraping de un listado concreto
+#   ('scrape', url, 'relay')  ídem, pedido a través del relay de Deno
 #   ('gn',)                   búsqueda site:dominio en Google News
 #   ('gn', query)             ídem con operadores extra en la query
 MEDIA_CATALOG = [
@@ -236,7 +237,7 @@ MEDIA_CATALOG = [
         { 'd':'elplural.com','n':'El Plural','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'],
           'fuentes':[('rss', 'https://www.elplural.com/uploads/feeds/feed_elplural_es.xml'), ('scrape',)] },
         { 'd':'elsiglodeuropa.es','n':'El Siglo de Europa','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'],
-          'fuentes':[('scrape',), ('gn',)] },
+          'fuentes':[('scrape', 'https://elsiglodeuropa.es', 'relay'), ('gn',)] },
         { 'd':'elviejotopo.com','n':'El Viejo Topo','type':'revista','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','izquierda'],
           'fuentes':[('rss', 'https://www.elviejotopo.com/feed/'), ('scrape',), ('gn',)] },
         { 'd':'europapress.es','n':'Europa Press','type':'agencia','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['agencia','nacional'],
@@ -920,7 +921,7 @@ MEDIA_CATALOG = [
         { 'd':'eluniversal.com.mx','n':'El Universal','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'mexico','langs':['es'],'lang_principal':'es','tags':['generalista','mexico'],
           'fuentes':[('rss', 'https://www.eluniversal.com.mx/arc/outboundfeeds/rss/?outputType=xml'), ('scrape',), ('gn',)] },
         { 'd':'milenio.com','n':'Milenio','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'mexico','langs':['es'],'lang_principal':'es','tags':['generalista','mexico'],
-          'fuentes':[('scrape',), ('gn',)] },
+          'fuentes':[('scrape', 'https://www.milenio.com', 'relay'), ('gn',)] },
     ]},
 
     # ═══════════════════════════════════════════════════════════════
@@ -1000,7 +1001,7 @@ MEDIA_CATALOG = [
         { 'd':'mirror.co.uk','n':'The Mirror','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk','tabloide'],
           'fuentes':[('sitemap', 'https://www.mirror.co.uk/map_news.xml'), ('scrape',), ('gn',)] },
         { 'd':'news.sky.com','n':'Sky News','type':'tv','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk'],
-          'fuentes':[('scrape',), ('gn',)] },
+          'fuentes':[('scrape', 'https://news.sky.com', 'relay'), ('gn',)] },
         { 'd':'reuters.com','n':'Reuters','type':'agencia','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['agencia','internacional'],
           'fuentes':[('sitemap', 'https://www.reuters.com/arc/outboundfeeds/news-sitemap/?outputType=xml'), ('scrape',), ('gn',)] },
         { 'd':'telegraph.co.uk','n':'The Telegraph','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'reino-unido','langs':['en'],'lang_principal':'en','tags':['generalista','uk'],
@@ -1221,7 +1222,7 @@ def _validar_catalogo():
 
 # Aridad válida por tipo de fuente (sin contar el tipo): (mín, máx)
 _ARIDAD_FUENTE = {'rss': (1, 2), 'sitemap': (1, 2), 'wp': (0, 0),
-                  'scrape': (0, 1), 'gn': (0, 1)}
+                  'scrape': (0, 2), 'gn': (0, 1)}
 
 
 def _fuente_invalida(f):
@@ -1231,7 +1232,7 @@ def _fuente_invalida(f):
     args = f[1:]
     if not lo <= len(args) <= hi:
         return True
-    if f[0] in ('rss', 'sitemap'):
+    if f[0] in ('rss', 'sitemap') or (f[0] == 'scrape' and args):
         if not str(args[0]).startswith('http'):
             return True
         if len(args) == 2 and args[1] != 'relay':

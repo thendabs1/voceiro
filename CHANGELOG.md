@@ -3,6 +3,17 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-13 — Scraping por el relay y migración de Turso sin lecturas
+
+### Añadido
+- Fuente `('scrape', url, 'relay')`: scraping de la home pedido a través del relay.
+  El Siglo de Europa, Milenio y Sky News daban 403 desde GH; Google News sigue detrás.
+
+### Corregido
+- Con la cuota de lecturas agotada, `PRAGMA table_info` fallaba, la migración no
+  añadía `intentos` y fallaban todos los upserts de `medios` y `runs`. Ahora, si
+  la lectura falla, se lanzan los `ALTER` a ciegas y se ignora «duplicate column».
+
 ## 2026-10-13 — Relay de Deno en el repo
 
 ### Añadido
