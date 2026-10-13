@@ -230,6 +230,7 @@
     background: var(--border);
     margin: 4px 6px;
   }
+  .preset-item.preset-empezar{ color:var(--save); font-weight:600; }
   .preset-item.preset-manage{
     color: var(--muted);
     font-size: .78em;
@@ -240,7 +241,6 @@
     font-weight:600;
   }
   .btn-pendientes:hover{background:var(--save-bg)}
-  .btn-pendientes.no-userscript{opacity:.55}
   .btn-pendientes{
     position: relative;
   }
@@ -263,9 +263,6 @@
   .pend-count[data-count="0"]{ display: none; }
   .btn-pendientes.has-pendientes{
     background: var(--save-bg);
-  }
-  .btn-pendientes.no-userscript.has-pendientes{
-    opacity: 1;   /* si hay pendientes, no lo atenuamos aunque no haya plugin */
   }
   .btn-buscar{
     border:2px solid var(--accent); background:transparent; color:var(--accent);
@@ -1159,7 +1156,10 @@
     text-align:center; color:var(--muted);
     padding:40px 0; font-size:.85em;
   }
+  .vacio-pista{ margin:10px auto 0; max-width:36em; line-height:1.5; }
+  .vacio-acciones{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
 
+  .pend-local{ font-size:.68em; color:var(--muted); text-align:center; margin:14px 0 0; }
   .pendiente-item{
     padding:12px 14px;
     border:1px solid var(--border);
@@ -1746,6 +1746,10 @@
   /* Un modo */
   .aj-modo-cab{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; font-size:.95em; }
   .aj-modo-cab .aj-activo{ font-size:.72em; }
+  .aj-pista{
+    margin:0 0 12px; padding:10px 12px; border-radius:6px;
+    background:var(--save-bg); color:var(--fg); font-size:.75em; line-height:1.5;
+  }
   .aj-bloque{ border:1px solid var(--border); border-radius:8px; margin-bottom:10px; padding:0 14px 14px; }
   .aj-bloque:not([open]){ padding-bottom:0; }
   .aj-bloque > summary{
@@ -2029,6 +2033,7 @@
             <button id="aj-modo-duplicar" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg><span id="aj-modo-duplicar-lbl"></span></button>
           </div>
 
+          <p id="aj-modo-pista" class="aj-pista" hidden></p>
           <details class="aj-bloque" id="aj-bloque-temas" open>
             <summary><span id="aj-temas-tit"></span><span class="aj-n" id="aj-temas-n"></span></summary>
             <textarea id="aj-temas" class="preset-texto" spellcheck="false"></textarea>
@@ -2837,8 +2842,14 @@ const I18N = {
     /* ── Pendientes ── */
     pendTitle:              'Noticias guardadas para leer después',
     pendRefresh:            'Actualizar',
-    noUserscript:           'Instala el plugin Lector Universal para guardar noticias y verlas aquí.',
     noPendientes:           'No tienes noticias pendientes.',
+    pistaEmpezar:           'Elige temas y medios para tu feed',
+    pistaModoVacio:         'Este modo aún está vacío. Escribe temas (uno por línea), marca medios o elige grupos completos: el feed mostrará solo lo que encaje.',
+    pistaModoSinResultados: 'El modo «{X}» no tiene titulares en los días cargados.',
+    pistaEditarModo:        'Editar modo',
+    pistaVerTodo:           'Ver todo',
+    pendVacioPista:         'Pulsa «Guardar» en un titular para leerlo después.',
+    pendLocalHint:          'Se guardan en este navegador. Con el plugin Lector Universal se sincronizan entre dispositivos.',
     savedToReader:          'Guardado para leer después',
     alreadyInReader:        'Ya estaba en pendientes',
     saveCopied:             'Enlace copiado · Pégalo donde quieras',
@@ -3149,8 +3160,14 @@ const I18N = {
 
     pendTitle:              'Noticias gardadas para ler despois',
     pendRefresh:            'Actualizar',
-    noUserscript:           'Instala o plugin Lector Universal para gardar noticias e velas aquí.',
     noPendientes:           'Non tes noticias pendentes.',
+    pistaEmpezar:           'Escolle temas e medios para o teu feed',
+    pistaModoVacio:         'Este modo aínda está baleiro. Escribe temas (un por liña), marca medios ou escolle grupos completos: o feed amosará só o que encaixe.',
+    pistaModoSinResultados: 'O modo «{X}» non ten titulares nos días cargados.',
+    pistaEditarModo:        'Editar modo',
+    pistaVerTodo:           'Ver todo',
+    pendVacioPista:         'Preme «Gardar» nun titular para lelo despois.',
+    pendLocalHint:          'Gárdanse neste navegador. Co plugin Lector Universal sincronízanse entre dispositivos.',
     savedToReader:          'Gardado para ler despois',
     alreadyInReader:        'Xa estaba en pendentes',
     saveCopied:             'Ligazón copiada · Pégala onde queiras',
@@ -3459,8 +3476,14 @@ const I18N = {
 
     pendTitle:              'Notícies desades per llegir després',
     pendRefresh:            'Actualitzar',
-    noUserscript:           'Instal·la el plugin Lector Universal per desar notícies i veure-les aquí.',
     noPendientes:           'No tens notícies pendents.',
+    pistaEmpezar:           'Tria temes i mitjans per al teu feed',
+    pistaModoVacio:         'Aquest mode encara és buit. Escriu temes (un per línia), marca mitjans o tria grups sencers: el feed mostrarà només el que hi encaixi.',
+    pistaModoSinResultados: 'El mode «{X}» no té titulars als dies carregats.',
+    pistaEditarModo:        'Editar el mode',
+    pistaVerTodo:           'Veure-ho tot',
+    pendVacioPista:         'Prem «Desar» en un titular per llegir-lo després.',
+    pendLocalHint:          'Es desen en aquest navegador. Amb el plugin Lector Universal es sincronitzen entre dispositius.',
     savedToReader:          'Desat per llegir després',
     alreadyInReader:        'Ja era a pendents',
     saveCopied:             "Enllaç copiat · Enganxa'l on vulguis",
@@ -3769,8 +3792,14 @@ const I18N = {
 
     pendTitle:              'News saved for later',
     pendRefresh:            'Refresh',
-    noUserscript:           'Install the Universal Reader plugin to save news and view them here.',
     noPendientes:           'You have no pending news.',
+    pistaEmpezar:           'Pick topics and outlets for your feed',
+    pistaModoVacio:         'This mode is still empty. Write topics (one per line), mark outlets or pick whole groups: the feed will show only what matches.',
+    pistaModoSinResultados: 'The “{X}” mode has no headlines in the loaded days.',
+    pistaEditarModo:        'Edit mode',
+    pistaVerTodo:           'Show everything',
+    pendVacioPista:         'Tap “Save” on a headline to read it later.',
+    pendLocalHint:          'They are stored in this browser. With the Universal Reader plugin they sync across devices.',
     savedToReader:          'Saved for later',
     alreadyInReader:        'Already in queue',
     saveCopied:             'Link copied · Paste it wherever you like',
@@ -4079,8 +4108,14 @@ const I18N = {
 
     pendTitle:              'Geroago irakurtzeko gordetako albisteak',
     pendRefresh:            'Eguneratu',
-    noUserscript:           'Instalatu Lector Universal plugina albisteak gordetzeko eta hemen ikusteko.',
     noPendientes:           'Ez duzu albiste zainik.',
+    pistaEmpezar:           'Aukeratu gaiak eta hedabideak zure feed-erako',
+    pistaModoVacio:         'Modu hau hutsik dago oraindik. Idatzi gaiak (lerro bakoitzeko bat), markatu hedabideak edo aukeratu talde osoak: feed-ak bat datorrena bakarrik erakutsiko du.',
+    pistaModoSinResultados: '«{X}» moduak ez du izenbururik kargatutako egunetan.',
+    pistaEditarModo:        'Modua editatu',
+    pistaVerTodo:           'Dena ikusi',
+    pendVacioPista:         'Sakatu «Gorde» izenburu batean geroago irakurtzeko.',
+    pendLocalHint:          'Nabigatzaile honetan gordetzen dira. Lector Universal pluginarekin gailuen artean sinkronizatzen dira.',
     savedToReader:          'Geroago irakurtzeko gordeta',
     alreadyInReader:        'Jadanik zain zegoen',
     saveCopied:             'Esteka kopiatu da · Itsatsi nahi duzun tokian',
@@ -4410,10 +4445,26 @@ let ACCES = cargarAcces();
 function cargarAcces(){
   try{
     const raw = localStorage.getItem('voceiro-acces-v2');
-    const o = raw ? { ...ACCES_DEF, ...JSON.parse(raw) } : { ...ACCES_DEF };
+    const o = raw ? { ...ACCES_DEF, ...JSON.parse(raw) } : accesPrimeraVisita();
     if (!I18N[o.lang]) o.lang = 'es';
     return o;
   }catch(e){ return { ...ACCES_DEF }; }
+}
+// Primera visita (ninguna clave voceiro- guardada): idioma y tema claro u
+// oscuro del navegador. Se guarda ya, para que no cambie en la siguiente
+// visita; a quien ya usaba la web sin tocar nada no se le cambia.
+function accesPrimeraVisita(){
+  const o = { ...ACCES_DEF };
+  if (Object.keys(localStorage).some(k => k.startsWith('voceiro-'))) return o;
+  const langs = navigator.languages && navigator.languages.length
+    ? navigator.languages : [navigator.language || ''];
+  for (const l of langs){
+    const c = String(l).toLowerCase().split('-')[0];
+    if (I18N[c]){ o.lang = c; break; }
+  }
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) o.tema = 'dark';
+  localStorage.setItem('voceiro-acces-v2', JSON.stringify(o));
+  return o;
 }
 function guardarAcces(){
   try{ localStorage.setItem('voceiro-acces-v2', JSON.stringify(ACCES)); }catch(e){}
@@ -4710,7 +4761,9 @@ function actualizarBotonPendientes(){
   const b = $('#btn-pendientes');
   if (!b) return;
 
-  b.classList.toggle('no-userscript', USCRIPT_CHECKED && !USCRIPT_OK);
+  // Sin plugin, Pendientes guarda en este navegador: solo sobra «Actualizar».
+  const refrescar = $('#pend-refresh');
+  if (refrescar) refrescar.hidden = !USCRIPT_OK;
 
   const countEl = b.querySelector('.pend-count');
   if (!countEl) return;
@@ -4848,6 +4901,11 @@ function renderPresetMenu(){
     </button>`;
   });
 
+  if (!lista.some(p => presetTieneReglas(p))){
+    html += `<button type="button" class="preset-item preset-empezar" data-preset-id="__empezar">
+      ${ico('plus')}<span>${escapeHtml(t('pistaEmpezar'))}</span>
+    </button>`;
+  }
   html += '<div class="preset-sep"></div>';
   const enTemas = vistaTemasActiva();
   if (TEMAS_TODOS.length){
@@ -4875,6 +4933,12 @@ function renderPresetMenu(){
       if (id === '__gestionar'){
         cerrarPresetMenu();
         abrirAjustes('modos');
+        return;
+      }
+      if (id === '__empezar'){
+        cerrarPresetMenu();
+        MODO_EDITADO = PRESETS.activo;
+        abrirAjustes('modo');
         return;
       }
       if (id === '__temas'){
@@ -5582,10 +5646,10 @@ function abrirPendientes(){
 
 function renderPendientes(items){
   const cont = $('#pendientes-lista');
+  const local = USCRIPT_OK ? '' : `<p class="pend-local">${escapeHtml(t('pendLocalHint'))}</p>`;
   if (!items || !items.length){
-    const extra = USCRIPT_OK ? '' :
-      `<div style="font-size:.72em;color:var(--muted);margin-top:12px;text-align:center">${escapeHtml(t('syncOfflineHint'))}</div>`;
-    cont.innerHTML = `<div class="vacio">${escapeHtml(t('noPendientes'))}</div>${extra}`;
+    cont.innerHTML = `<div class="vacio">${escapeHtml(t('noPendientes'))}
+      <p class="vacio-pista">${escapeHtml(t('pendVacioPista'))}</p></div>${local}`;
     return;
   }
   const noLeidas = items.filter(i => !i.read);
@@ -5621,7 +5685,7 @@ function renderPendientes(items){
     html += leidas.map(p => fila(p, true)).join('');
   }
 
-  cont.innerHTML = html;
+  cont.innerHTML = html + local;
 
 cont.querySelectorAll('.btn-pend-toggle').forEach(b => {
   b.onclick = () => {
@@ -7313,6 +7377,9 @@ function pintarModo(){
   estado.textContent = t('ajModoActivo');
   estado.hidden = !activo;
   $('#aj-modo-activar').hidden = activo;
+  const pista = $('#aj-modo-pista');
+  pista.textContent = t('pistaModoVacio');
+  pista.hidden = presetTieneReglas(modo);
   // No se pisa lo que se está escribiendo.
   const ta = $('#aj-temas');
   if (document.activeElement !== ta || ta.dataset.modoId !== modo.id){
@@ -7359,7 +7426,10 @@ function ajModoCambiado(modo){
   if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
   actualizarBotonPreset();
   _ajFiltrar();
-  if (ajRuta() === 'modo') ajContadores(modo);
+  if (ajRuta() === 'modo'){
+    ajContadores(modo);
+    $('#aj-modo-pista').hidden = presetTieneReglas(modo);
+  }
 }
 
 // Temas: se guardan al dejar de escribir y al salir de la caja. La caja
@@ -9159,7 +9229,14 @@ function renderizar(){
   RENDER_OFFSET = 0;
 
   if (!lista.length){
-    cont.innerHTML = `<div class="vacio">${escapeHtml(t('vacio'))}</div>`;
+    // Con un modo activo y sin búsqueda, se ofrece editarlo o verlo todo.
+    const pista = PRESET_ACTIVO && !$('#buscar').value.trim();
+    cont.innerHTML = `<div class="vacio">${escapeHtml(t('vacio'))}${pista ? `
+      <p class="vacio-pista">${escapeHtml(t('pistaModoSinResultados', { X: PRESET.nombre }))}</p>
+      <div class="vacio-acciones">
+        <button type="button" data-vacio="editar">${escapeHtml(t('pistaEditarModo'))}</button>
+        <button type="button" data-vacio="todo">${escapeHtml(t('pistaVerTodo'))}</button>
+      </div>` : ''}</div>`;
     if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
     actualizarBotonCargarMas();
     return;
@@ -9588,6 +9665,19 @@ function wireResultadosDelegation(){
   });
 
   cont.addEventListener('click', e => {
+    const vacioBtn = e.target.closest('[data-vacio]');
+    if (vacioBtn){
+      if (vacioBtn.dataset.vacio === 'editar'){
+        MODO_EDITADO = PRESETS.activo;
+        abrirAjustes('modo');
+      } else {
+        PRESET_ACTIVO = false;
+        guardarPresetActivo();
+        actualizarBotonPreset();
+        aplicarFiltros();
+      }
+      return;
+    }
     const masBtn = e.target.closest('.btn-mas-item');
     if (masBtn){
       e.preventDefault();
