@@ -2184,6 +2184,9 @@ import {
   normDomain,
   tokenizeQuery,
 } from './parser.js';
+// Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
+import { interpretarConsulta } from './busqueda/consulta.js';
+import { palabrasDe } from './busqueda/texto.js';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -7784,15 +7787,56 @@ function programarPrensa(parsed, rawQuery, nLocales){
 }
 
 
-// Texto libre: AND palabra por palabra sobre el titular normalizado.
-// Única definición; la usan aplicarFiltros y _pasaFiltroIndividual.
-function _pasaTexto(n, titulo){
-  if (!titulo.length) return true;
-  const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-  for (let i = 0; i < titulo.length; i++){
-    if (tn.indexOf(titulo[i]) === -1) return false;
+// Texto, medios y fechas: lo decide el núcleo (shared/busqueda/consulta.js).
+function _pasaConsulta(n, consulta){
+  return consulta.pasa({
+    dominio: n.dominio,
+    titular: n.titular,
+    ts: n._tsOrden,
+    palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
+  });
+}
+
+// Predicado único de la lista (antes había dos copias: el filtro de
+// aplicarFiltros y _pasaFiltroIndividual). Encima de la consulta solo quedan
+// filtros de vista del cliente: selects, rango móvil, ocultar leídas/vistas
+// y preset. Devuelve true, false o 'fuera-preset' (para el banner).
+function _pasaVista(n, ctx){
+  const { g, t2, limiteMs, ahora, consulta, presetEfectivo, HIDE_MODE: hm } = ctx;
+  if (g && n.grupo !== g) return false;
+  if (t2 && n.tipo  !== t2) return false;
+  if (limiteMs){
+    const ts = n._tsOrden;
+    if (isNaN(ts) || ahora - ts > limiteMs) return false;
   }
+  if (hm !== 'off'){
+    const key = normalizeUrlForMatch(n.enlace);
+    const pluginItem = PENDIENTES_MAP.get(key);
+    const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
+    if ((hm === 'read' || hm === 'both') && esLeida) return false;
+    if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
+  }
+  if (!_pasaConsulta(n, consulta)) return false;
+  if (presetEfectivo){
+    const cumple = cumplePreset(n);
+    n._esPreset = cumple;
+    return cumple ? true : 'fuera-preset';
+  }
+  n._esPreset = false;
   return true;
+}
+
+// Aviso de medio desconocido (medio:noexiste → 0 resultados). Con retardo,
+// para no avisar de cada prefijo mientras se teclea.
+let _avisoMedioTimer = null;
+function _avisarMediosDesconocidos(consulta){
+  if (_avisoMedioTimer){ clearTimeout(_avisoMedioTimer); _avisoMedioTimer = null; }
+  const desc = consulta.medios.desconocidos;
+  if (!desc.length) return;
+  _avisoMedioTimer = setTimeout(() => {
+    _avisoMedioTimer = null;
+    toast(`Sin medios para: ${desc.map(d => d.valor).join(', ')}`, 3000);
+  }, 1500);
 }
 
 function aplicarFiltros(){
@@ -7899,103 +7943,16 @@ if (!capas.size) {
     !PRESET_AMPLIADO_TEMP &&
     (!hayBusquedaActiva || PRESET_BUSQUEDA_ESTRICTO);
 
+  // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
+  const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora });
+  _avisarMediosDesconocidos(consulta);
+  const ctx = { g, t2, limiteMs, ahora, parsed, consulta, presetEfectivo, orden, HIDE_MODE };
+
   let fueraDelPreset = 0;
-/* ═══════════════════════════════════════════════════════════════
-   SEMÁNTICA DE FILTROS (faceted search)
-
-   - Dentro del mismo facet (grupo, tipo, medio, dominio, tag, lang): OR.
-       "grupo:regional grupo:nacional"  →  regionales O nacionales.
-   - Entre facets distintos: AND.
-       "grupo:regional tipo:diario"    →  regionales Y diarios.
-   - Texto libre: AND palabra por palabra.
-       "elecciones sanchez"            →  contiene "elecciones" Y "sanchez".
-
-   Justificación: los valores de un mismo facet son mutuamente
-   excluyentes en un ítem (una noticia tiene un único grupo). El OR
-   es la única semántica útil al combinar valores del mismo facet:
-   AND dentro del facet daría siempre 0 resultados.
-
-   El parser (shared/parser.js) no participa: solo produce arrays por
-   facet. La semántica la aplica el consumidor (este filtro o el
-   worker de Turso).
-   ═══════════════════════════════════════════════════════════════ */
   let filtradas = NOTICIAS.filter(n => {
-    if (g && n.grupo !== g) return false;
-    if (t2 && n.tipo  !== t2) return false;
-    if (limiteMs){
-      const ts = n._tsOrden;
-      if (isNaN(ts)) return false;
-      if (ahora - ts > limiteMs) return false;
-    }
-    if (parsed.desde){
-      const ts = n._tsOrden;
-      if (isNaN(ts)) return false;
-      const corte = new Date(parsed.desde + 'T00:00:00').getTime();
-      if (ts < corte) return false;
-    }
-    if (parsed.hasta){
-      const ts = n._tsOrden;
-      if (isNaN(ts)) return false;
-      const corte = new Date(parsed.hasta + 'T23:59:59').getTime();
-      if (ts > corte) return false;
-    }
-    if (HIDE_MODE !== 'off'){
-      const key = normalizeUrlForMatch(n.enlace);
-      const pluginItem = PENDIENTES_MAP.get(key);
-      const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-      if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
-      if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
-    }
-    // ── Filtrado por facet: OR dentro del facet, AND entre facets. ──
-    // Ver nota de semántica al principio del archivo.
-    if (hayMedio || hayDominio){
-      const ds = n._domStrict  || (n._domStrict  = normDomain(n.dominio));
-      const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
-      let ok = false;
-      for (let i = 0; i < parsed.dominios.length; i++){
-        if (ds.indexOf(parsed.dominios[i]) !== -1){ ok = true; break; }
-      }
-      if (!ok){
-        for (let i = 0; i < parsed.medios.length; i++){
-          if (ms.indexOf(parsed.medios[i]) !== -1){ ok = true; break; }
-        }
-      }
-      if (!ok) return false;
-    }
-    if (hayGrupo){
-      const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
-      let ok = false;
-      for (let i = 0; i < parsed.grupos.length; i++){
-        if (gs.indexOf(parsed.grupos[i]) !== -1){ ok = true; break; }
-      }
-      if (!ok) return false;
-    }
-    if (hayTipo){
-      const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
-      let ok = false;
-      for (let i = 0; i < parsed.tipos.length; i++){
-        if (ts.indexOf(parsed.tipos[i]) !== -1){ ok = true; break; }
-      }
-      if (!ok) return false;
-    }
-    if (hayTag){
-      const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
-      let ok = false;
-      for (let i = 0; i < parsed.tags.length; i++){
-        if (tags.some(x => x.indexOf(parsed.tags[i]) !== -1)){ ok = true; break; }
-      }
-      if (!ok) return false;
-    }
-    // ── Fin facet ──
-    if (!_pasaTexto(n, parsed.titulo)) return false;
-    if (presetEfectivo){
-      const cumple = cumplePreset(n);
-      n._esPreset = cumple;
-      if (!cumple){ fueraDelPreset++; return false; }
-      return true;
-    }
-    n._esPreset = false;
-    return true;
+    const r = _pasaVista(n, ctx);
+    if (r === 'fuera-preset'){ fueraDelPreset++; return false; }
+    return r === true;
   });
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
@@ -8032,7 +7989,7 @@ if (!capas.size) {
   ULT_PRESET_EFECTIVO = presetEfectivo;
 
   // Contexto para el append incremental
-  ULT_CTX = { g, t2, limiteMs, ahora, parsed, presetEfectivo, orden, HIDE_MODE };
+  ULT_CTX = ctx;
 
   ULT_BANNER_INFO = {
     nDentro: filtradas.length,
@@ -8301,83 +8258,6 @@ function appendBatch(){
   }
 }
 
-// Comprueba si una noticia pasa los filtros guardados en ctx.
-// ctx = ULT_CTX (mismo shape que el de aplicarFiltros).
-function _pasaFiltroIndividual(n, ctx) {
-  const { g, t2, limiteMs, ahora, parsed, presetEfectivo, HIDE_MODE: hm } = ctx;
-
-  if (g && n.grupo !== g) return false;
-  if (t2 && n.tipo  !== t2) return false;
-  if (limiteMs){
-    const ts = n._tsOrden;
-    if (isNaN(ts) || ahora - ts > limiteMs) return false;
-  }
-  if (parsed.desde){
-    const ts = n._tsOrden;
-    if (isNaN(ts)) return false;
-    if (ts < new Date(parsed.desde + 'T00:00:00').getTime()) return false;
-  }
-  if (parsed.hasta){
-    const ts = n._tsOrden;
-    if (isNaN(ts)) return false;
-    if (ts > new Date(parsed.hasta + 'T23:59:59').getTime()) return false;
-  }
-  if (hm !== 'off'){
-    const key = normalizeUrlForMatch(n.enlace);
-    const pluginItem = PENDIENTES_MAP.get(key);
-    const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-    if ((hm === 'read' || hm === 'both') && esLeida) return false;
-    if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
-  }
-  if (parsed.medios.length || parsed.dominios.length){
-    const ds = n._domStrict  || (n._domStrict  = normDomain(n.dominio));
-    const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
-    let ok = false;
-    for (let i = 0; i < parsed.dominios.length; i++){
-      if (ds.indexOf(parsed.dominios[i]) !== -1){ ok = true; break; }
-    }
-    if (!ok){
-      for (let i = 0; i < parsed.medios.length; i++){
-        if (ms.indexOf(parsed.medios[i]) !== -1){ ok = true; break; }
-      }
-    }
-    if (!ok) return false;
-  }
-  if (parsed.grupos.length){
-    const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
-    let ok = false;
-    for (let i = 0; i < parsed.grupos.length; i++){
-      if (gs.indexOf(parsed.grupos[i]) !== -1){ ok = true; break; }
-    }
-    if (!ok) return false;
-  }
-  if (parsed.tipos.length){
-    const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
-    let ok = false;
-    for (let i = 0; i < parsed.tipos.length; i++){
-      if (ts.indexOf(parsed.tipos[i]) !== -1){ ok = true; break; }
-    }
-    if (!ok) return false;
-  }
-  if (parsed.tags.length){
-    const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
-    let ok = false;
-    for (let i = 0; i < parsed.tags.length; i++){
-      if (tags.some(x => x.indexOf(parsed.tags[i]) !== -1)){ ok = true; break; }
-    }
-    if (!ok) return false;
-  }
-  if (!_pasaTexto(n, parsed.titulo)) return false;
-  if (presetEfectivo){
-    const cumple = cumplePreset(n);
-    n._esPreset = cumple;
-    if (!cumple) return false;
-  } else {
-    n._esPreset = false;
-  }
-  return true;
-}
-
 // Añade items nuevos al final del DOM sin re-render completo.
 // Devuelve true si el append fue limpio, false si hay que re-renderizar.
 function _anexarItemsIncremental(items, ctx) {
@@ -8396,7 +8276,7 @@ function _anexarItemsIncremental(items, ctx) {
               || n;
     if (vistos.has(real) || ULT_FILTRADAS.includes(real)) continue;
     vistos.add(real);
-    if (_pasaFiltroIndividual(real, ctx)) nuevos.push(real);
+    if (_pasaVista(real, ctx) === true) nuevos.push(real);
   }
   if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
 
