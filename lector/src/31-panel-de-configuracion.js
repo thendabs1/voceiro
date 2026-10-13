@@ -757,8 +757,8 @@ function openSettings(initialTab){
 
   function renderPendientesTab(){
     const keepRead = !(CFG.readerSettings && CFG.readerSettings.keepReadItems === false);
-    const noLeidas = CFG.readLater.filter(r => !r.read);
-    const leidas   = CFG.readLater.filter(r => r.read);
+    const noLeidas = pendientesVisibles().filter(r => !r.read);
+    const leidas   = pendientesVisibles().filter(r => r.read);
 
     function fila(r, esLeida){
       return '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eee' +
@@ -821,19 +821,13 @@ function openSettings(initialTab){
         CFG.readerSettings = CFG.readerSettings || {};
         CFG.readerSettings.keepReadItems = chk.checked;
         saveCfg(CFG);
-        if (!chk.checked && CFG.readLater.some(r => r.read)){
-          CFG.readLater = CFG.readLater.filter(r => !r.read);
-          saveCfg(CFG);
-          notifyLaterChanged();
-        }
+        if (!chk.checked && pendientesVisibles().some(r => r.read)) borrarLeidos();
         render();
       };
       const clr = box.querySelector('.il-clear-read');
       if (clr) clr.onclick = () => {
         if (!confirm(t('clearReadConfirm'))) return;
-        CFG.readLater = CFG.readLater.filter(r => !r.read);
-        saveCfg(CFG);
-        notifyLaterChanged();
+        borrarLeidos();
         render();
       };
     }

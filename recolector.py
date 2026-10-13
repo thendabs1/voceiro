@@ -2123,16 +2123,19 @@ def generar_html(fecha, total):
     html = html.replace('{{FECHA}}', fecha).replace('{{TOTAL}}', str(total))
     os.makedirs('public', exist_ok=True)
 
-    # Los módulos compartidos (parser + núcleo de búsqueda) viajan junto al
-    # HTML, mismo origen (GitHub Pages): sin CORS, sin workers, sin bloqueos.
+    # Los módulos compartidos (parser, núcleo de búsqueda y fusión de datos
+    # con el lector) viajan junto al HTML, mismo origen (GitHub Pages): sin
+    # CORS, sin workers, sin bloqueos.
     #   shared/parser.js        → public/parser.js
     #   shared/busqueda/*.js    → public/busqueda/*.js
+    #   shared/sync/*.js        → public/sync/*.js
     modulos = {'parser.js': os.path.join(here, 'shared/parser.js')}
-    dir_busqueda = os.path.join(here, 'shared/busqueda')
-    if os.path.isdir(dir_busqueda):
-        for nombre in sorted(os.listdir(dir_busqueda)):
-            if nombre.endswith('.js'):
-                modulos[f'busqueda/{nombre}'] = os.path.join(dir_busqueda, nombre)
+    for carpeta in ('busqueda', 'sync'):
+        dir_mod = os.path.join(here, 'shared', carpeta)
+        if os.path.isdir(dir_mod):
+            for nombre in sorted(os.listdir(dir_mod)):
+                if nombre.endswith('.js'):
+                    modulos[f'{carpeta}/{nombre}'] = os.path.join(dir_mod, nombre)
     fuentes = {}
     for rel, ruta in modulos.items():
         with open(ruta, encoding='utf-8') as f:

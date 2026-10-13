@@ -37,11 +37,29 @@ function version(){
   }
 }
 
+// Módulos compartidos con Voceiro que entran en el lector, sin los
+// `export`, justo después de la plataforma. No pueden importar nada.
+const COMPARTIDOS = ['../shared/sync/fusion.js'];
+const TRAS = '02-plataforma.js';
+
+function compartido(rel){
+  const fuente = readFileSync(resolve(raiz, rel), 'utf8');
+  if (/^\s*import\b/m.test(fuente)) throw new Error(`${rel}: un módulo compartido no puede importar`);
+  const codigo = fuente.replace(/^export\s+(?=(?:async\s+)?function\b|const\b|let\b|class\b)/gm, '');
+  if (/^\s*export\b/m.test(codigo)) throw new Error(`${rel}: hay un export que no se sabe quitar`);
+  return `/* ── ${rel.replace(/^\.\.\//, '')} (compartido con Voceiro) ── */\n${codigo}\n`;
+}
+
 const v = version();
 const partes = readdirSync(src).filter(f => f.endsWith('.js')).sort();
-const codigo = partes.map(f => readFileSync(join(src, f), 'utf8')).join('')
-  .replaceAll('{{VERSION}}', v);
+if (!partes.includes(TRAS)) throw new Error(`falta src/${TRAS}`);
+const trozos = [];
+for (const f of partes){
+  trozos.push(readFileSync(join(src, f), 'utf8'));
+  if (f === TRAS) trozos.push(...COMPARTIDOS.map(compartido));
+}
+const codigo = trozos.join('').replaceAll('{{VERSION}}', v);
 
 mkdirSync(dirname(salida), { recursive: true });
 writeFileSync(salida, codigo);
-console.log(`${salida} · versión ${v} · ${partes.length} partes · ${codigo.length} caracteres`);
+console.log(`${salida} · versión ${v} · ${partes.length} partes + ${COMPARTIDOS.length} compartidos · ${codigo.length} caracteres`);
