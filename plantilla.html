@@ -150,7 +150,7 @@
     margin-right: 4px;
   }
   #total-r2{ font-weight: bold; }
-  button{
+  button, a.boton{
     cursor:pointer; padding:8px 14px;
     border:1px solid var(--btn-border);
     background:var(--btn-bg); color:var(--fg);
@@ -158,7 +158,8 @@
     font-family:inherit; font-size:.8em; font-weight:500;
     transition:filter .1s, background .1s;
   }
-  button:hover{filter:brightness(.95)}
+  button:hover, a.boton:hover{filter:brightness(.95)}
+  a.boton{ text-decoration:none; }
   button.primary{
     background:var(--accent); color:#fff; border-color:var(--accent); font-weight:bold;
   }
@@ -2260,6 +2261,10 @@
             <span id="sync-banner-text"></span>
           </div>
           <p id="aj-plugin-hint" class="aj-hint"></p>
+          <p>
+            <a id="aj-lector-instalar" class="boton con-ico" href="lector.user.js" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span id="aj-lector-instalar-lbl"></span></a>
+          </p>
+          <p id="aj-lector-hint" class="aj-hint"></p>
         </div>
 
         <!-- ═══════════ AYUDA ═══════════ -->
@@ -2979,6 +2984,8 @@ const I18N = {
     ajInvestigarHint:       'Busca empresas y cargos en el BORME con OpenMercantil. También se abre con Alt+B.',
     ajPrensaActivar:        'Buscar también en Google News y FreeNews',
     ajPluginTit:            'Plugin Lector Universal',
+    ajLectorInstalar:       'Instalar el lector',
+    ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
     ajAtajosTit:            'Atajos de teclado',
     ajAtajos:               'Alt+M|Activar o quitar el modo\nAlt+C|Ajustes\nAlt+A|Lectura\nAlt+P|Pendientes\nAlt+B|Investigar empresas\nEsc|Cerrar',
     acReset:                'Restablecer lectura',
@@ -3295,6 +3302,8 @@ const I18N = {
     ajInvestigarHint:       'Busca empresas e cargos no BORME con OpenMercantil. Tamén se abre con Alt+B.',
     ajPrensaActivar:        'Buscar tamén en Google News e FreeNews',
     ajPluginTit:            'Plugin Lector Universal',
+    ajLectorInstalar:       'Instalar o lector',
+    ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
     ajAtajosTit:            'Atallos de teclado',
     ajAtajos:               'Alt+M|Activar ou quitar o modo\nAlt+C|Axustes\nAlt+A|Lectura\nAlt+P|Pendentes\nAlt+B|Investigar empresas\nEsc|Pechar',
     acReset:                'Restablecer lectura',
@@ -3611,6 +3620,8 @@ const I18N = {
     ajInvestigarHint:       "Cerca empreses i càrrecs al BORME amb OpenMercantil. També s'obre amb Alt+B.",
     ajPrensaActivar:        'Cercar també a Google News i FreeNews',
     ajPluginTit:            'Plugin Lector Universal',
+    ajLectorInstalar:       'Instal·la el lector',
+    ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
     ajAtajosTit:            'Dreceres de teclat',
     ajAtajos:               'Alt+M|Activar o treure el mode\nAlt+C|Configuració\nAlt+A|Lectura\nAlt+P|Pendents\nAlt+B|Investigar empreses\nEsc|Tancar',
     acReset:                'Restablir la lectura',
@@ -3927,6 +3938,8 @@ const I18N = {
     ajInvestigarHint:       'Look up companies and officers in the BORME with OpenMercantil. Also opens with Alt+B.',
     ajPrensaActivar:        'Also search Google News and FreeNews',
     ajPluginTit:            'Universal Reader plugin',
+    ajLectorInstalar:       'Install the reader',
+    ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
     ajAtajosTit:            'Keyboard shortcuts',
     ajAtajos:               'Alt+M|Turn the mode on or off\nAlt+C|Settings\nAlt+A|Reading\nAlt+P|Queue\nAlt+B|Investigate companies\nEsc|Close',
     acReset:                'Reset reading',
@@ -4243,6 +4256,8 @@ const I18N = {
     ajInvestigarHint:       'Bilatu enpresak eta karguak BORMEn OpenMercantil-ekin. Alt+B teklarekin ere irekitzen da.',
     ajPrensaActivar:        'Bilatu Google News eta FreeNews-en ere',
     ajPluginTit:            'Lector Universal plugina',
+    ajLectorInstalar:       'Instalatu irakurgailua',
+    ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
     ajAtajosTit:            'Teklatuko lasterbideak',
     ajAtajos:               'Alt+M|Modua aktibatu edo kendu\nAlt+C|Ezarpenak\nAlt+A|Irakurketa\nAlt+P|Zain\nAlt+B|Enpresak ikertu\nEsc|Itxi',
     acReset:                'Irakurketa berrezarri',
@@ -10045,6 +10060,8 @@ function aplicarTextos(){
   $('#btn-import-lbl').textContent = t('btnImport');
   $('#aj-plugin-tit').textContent = t('ajPluginTit');
   $('#aj-plugin-hint').textContent = t('syncOfflineHint');
+  $('#aj-lector-instalar-lbl').textContent = t('ajLectorInstalar');
+  $('#aj-lector-hint').textContent = t('ajLectorHint');
 
   // Ayuda
   $('#cfg-help-lbl').textContent = t('cfgHelpLbl');

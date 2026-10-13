@@ -59,6 +59,19 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      # El lector (lector/) se sirve en Pages: …/voceiro/lector.user.js, y
+      # Violentmonkey lo actualiza solo desde ahí. Solo se sustituye si se
+      # construye y pasa las comprobaciones; si no, se publica el anterior.
+      - name: Construir el lector
+        run: |
+          if node lector/build.mjs "$RUNNER_TEMP/lector.user.js" \
+             && node --check "$RUNNER_TEMP/lector.user.js" \
+             && node lector/comprobar.mjs "$RUNNER_TEMP/lector.user.js"; then
+            cp "$RUNNER_TEMP/lector.user.js" public/lector.user.js
+          else
+            echo "::warning::El lector no pasó las comprobaciones; se publica el anterior"
+          fi
+
       - name: Limpiar datos.json obsoleto (formato antiguo)
         run: rm -f public/datos.json
 
@@ -77,6 +90,7 @@ jobs:
           # Módulos del núcleo: hacen falta en el repo para poder publicar el
           # front anterior si fallan los tests.
           if [ -d public/busqueda ]; then git add public/busqueda; fi
+          if [ -f public/lector.user.js ]; then git add public/lector.user.js; fi
           if [ -f state.json ]; then git add state.json; fi
           if git diff --staged --quiet; then
             echo "Sin cambios que guardar"
