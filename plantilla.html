@@ -8322,15 +8322,20 @@ function _pasaFiltroIndividual(n, ctx) {
 function _anexarItemsIncremental(items, ctx) {
   if (!items.length || !ctx) return false;
 
-  // Filtrar los nuevos que pasan los filtros actuales
+  // Filtrar los nuevos que pasan los filtros actuales. Se trabaja siempre
+  // con el objeto que vive en NOTICIAS (hidratado): si el item de Turso era
+  // un duplicado por URL o por título, el crudo no tiene titular ni fecha
+  // y acabaría como tarjeta vacía.
   const nuevos = [];
+  const vistos = new Set();
   for (const n of items) {
     const u = _claveUrl(n.u || '', n.d || '');
-    if (u && _itemPorUrl.has(u)) {
-      const ex = _itemPorUrl.get(u);
-      if (ULT_FILTRADAS.includes(ex)) continue;   // ya está renderizado
-    }
-    if (_pasaFiltroIndividual(n, ctx)) nuevos.push(n);
+    const real = (u && _itemPorUrl.get(u))
+              || (n.t && _itemPorTitulo.get(normalize(n.t)))
+              || n;
+    if (vistos.has(real) || ULT_FILTRADAS.includes(real)) continue;
+    vistos.add(real);
+    if (_pasaFiltroIndividual(real, ctx)) nuevos.push(real);
   }
   if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
 
@@ -8348,15 +8353,20 @@ function _anexarItemsIncremental(items, ctx) {
     if (!vaDespues) return false;
   }
 
-  // Los nuevos van al final → append limpio
-  const desde = ULT_FILTRADAS.length;
-  ULT_FILTRADAS.push(...nuevos);
-  // Ordenar solo por si acaso
-  ULT_FILTRADAS.sort((a, b) => {
+  // Los nuevos van al final → append limpio. Se ordenan solo ellos: la
+  // lista ya pintada NO se reordena, porque las tarjetas guardan su índice
+  // (data-idx) y las acciones (leída, guardar, ➕/🚫) lo usan.
+  nuevos.sort((a, b) => {
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
     return orden === 'antiguos' ? ta - tb : tb - ta;
   });
+  const desde = ULT_FILTRADAS.length;
+  ULT_FILTRADAS.push(...nuevos);
+
+  // Si aún quedaban tarjetas sin pintar, el scroll infinito las pintará en
+  // orden (incluidas estas); pintar desde 'desde' se saltaría las del medio.
+  if (RENDER_OFFSET < desde) return true;
 
   appendBatchDesdeOffset(desde, ULT_FILTRADAS.length);
   return true;
