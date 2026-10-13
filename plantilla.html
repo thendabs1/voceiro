@@ -4613,7 +4613,7 @@ function cargarPresets(){
         const lista = p.lista.map(normalizarPreset);
         const activo = (typeof p.activo === 'string' && lista.some(x => x.id === p.activo))
                        ? p.activo : lista[0].id;
-        return { lista, activo };
+        return { lista, activo, actualizado: Number(p.actualizado) || 0 };
       }
     }
   }catch(e){}
@@ -4626,12 +4626,14 @@ function cargarPresets(){
 
 function guardarPresets(){
   recompilarTemas();
+  // La fecha decide qué copia gana cuando llegan los modos del plugin.
+  PRESETS.actualizado = Date.now();
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
   try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
   // Replicar al plugin para sync entre dispositivos
   if (typeof USCRIPT_OK !== 'undefined' && USCRIPT_OK){
     document.dispatchEvent(new CustomEvent('voceiro-save-voceiro-state', {
-      detail: { presets: PRESETS.lista }
+      detail: { presets: PRESETS.lista, actualizado: PRESETS.actualizado }
     }));
   }
 }
@@ -4671,12 +4673,21 @@ function aplicarPresetsDesdePlugin(d){
   const incoming = d.voceiro.presets;
   if (!Array.isArray(incoming) || !incoming.length) return false;
 
+  // Solo se adopta la copia del plugin si es más nueva que la local, o si
+  // este navegador nunca guardó modos (dispositivo nuevo). Si no, lo editado
+  // aquí con el plugin desconectado se perdería al conectar.
+  const entrante = Number(d.voceiro.actualizado) || 0;
+  const local = (PRESETS && PRESETS.actualizado) || 0;
+  let nuncaGuardados = false;
+  try{ nuncaGuardados = !localStorage.getItem(PRESET_KEY); }catch(e){}
+  if (!nuncaGuardados && entrante <= local) return false;
+
   const lista = incoming.map(normalizarPreset);
   const activoLocal = (PRESETS && PRESETS.activo) || 'general';
   const activoSigue = lista.some(p => p.id === activoLocal);
   const activoNuevo = activoSigue ? activoLocal : lista[0].id;
 
-  PRESETS = { lista, activo: activoNuevo };
+  PRESETS = { lista, activo: activoNuevo, actualizado: entrante };
   PRESET = PRESETS.lista.find(p => p.id === activoNuevo);
 
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
