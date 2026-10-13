@@ -64,6 +64,15 @@
     transition:background .15s, color .15s;
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
+  /* Iconos del sprite: miden lo que la letra y toman su color */
+  .ico{
+    width:1.15em; height:1.15em; flex-shrink:0;
+    fill:none; stroke:currentColor; stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round;
+    vertical-align:-.2em;
+  }
+  /* Botón con icono y texto */
+  .con-ico{ display:inline-flex; align-items:center; gap:.4em; }
   /* ═══ Cabecera ═══ */
   header{
     position: sticky;
@@ -160,6 +169,10 @@
   .btn-preset{
     border:2px solid var(--preset); background:transparent; color:var(--preset);
     font-weight:600;
+    display:inline-flex; align-items:center; gap:.35em;
+  }
+  .btn-preset .preset-nombre{
+    min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .btn-preset:hover{background:var(--preset-bg)}
   .btn-preset.active{background:var(--preset); color:#fff}
@@ -203,8 +216,8 @@
     font-weight: 600;
   }
   .preset-item .preset-check{
-    display: inline-block;
-    width: 14px;
+    display: inline-flex;
+    width: 1.15em;
     flex-shrink: 0;
     color: var(--preset);
     opacity: 0;
@@ -1099,10 +1112,11 @@
     border-left: 1px solid var(--border);
     margin-left: 8px;
   }
-  /* Botones mini (mariquita, bloquear) */
+  /* Botones mini de la tarjeta (compartir, ⋯) */
   .btn-mini{
+    display:inline-flex; align-items:center;
     margin-left:2px;
-    padding:2px 8px !important;
+    padding:3px 8px !important;
     font-size:.85em !important;
     background:transparent !important;
     border:1px solid var(--border) !important;
@@ -1117,13 +1131,34 @@
     color:var(--accent) !important;
     border-color:var(--accent) !important;
   }
-  .btn-block-item:hover{
-    color:var(--block) !important;
-    border-color:var(--block) !important;
+  .btn-mini[aria-expanded="true"]{
+    opacity:1 !important;
+    color:var(--accent) !important;
+    border-color:var(--accent) !important;
   }
 
-  /* Spacer: empuja 🚫 y 🐞 a la derecha */
+  /* Spacer: empuja compartir y ⋯ a la derecha */
   .cab-spacer{flex:1 0 0; min-width:0}
+
+  /* Menú ⋯ de un titular. Vive en #resultados y no en la tarjeta: .noticia
+     lleva contain:content y recortaría lo que sobresale. */
+  #resultados{position:relative}
+  .menu-mas{
+    position:absolute; z-index:20;
+    min-width:200px; padding:6px;
+    background:var(--bg); color:var(--fg);
+    border:1px solid var(--border); border-radius:8px;
+    box-shadow:0 8px 24px var(--shadow);
+  }
+  .menu-mas button{
+    display:flex; align-items:center; gap:10px;
+    width:100%; padding:9px 12px;
+    border:none; border-radius:6px; background:transparent; color:var(--fg);
+    font-family:inherit; font-size:.8em; text-align:left; font-weight:500;
+  }
+  .menu-mas button:hover, .menu-mas button:focus-visible{ background:var(--quote-bg); }
+  .menu-mas button .ico{ color:var(--muted); flex-shrink:0; }
+  .menu-mas .btn-block-item:hover .ico{ color:var(--block); }
 
   /* Botón "Guardar" en texto, junto a la fecha */
   .btn-save-text{
@@ -1195,6 +1230,10 @@
     border: none;
     font-size: 1.15em;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(0,0,0,.3);
     opacity: 0;
@@ -1445,6 +1484,9 @@
     font-weight:600;
   }
   .btn-prensa{
+    display: inline-flex;
+    align-items: center;
+    gap: .35em;
     padding: 6px 12px;
     font-size: .74em;
     line-height: 1.3;
@@ -1580,6 +1622,7 @@
   }
   .vs-reset{
     width: 100%;
+    justify-content: center;
     padding: 6px 10px;
     font-size: .74em;
     background: transparent;
@@ -1751,6 +1794,41 @@
 </style>
 </head>
 <body>
+<!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
+     Se usan con ico('nombre') o <svg class="ico"><use href="#i-nombre"/></svg>.
+     Trazados de Lucide (lucide-static 0.460.0, https://lucide.dev):
+     ISC License
+     Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as
+     part of Feather (MIT). All other copyright (c) for Lucide are held by
+     Lucide Contributors 2022.
+     Permission to use, copy, modify, and/or distribute this software for any
+     purpose with or without fee is hereby granted, provided that the above
+     copyright notice and this permission notice appear in all copies.
+     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+     WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+     MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+     ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+     WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+     ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. -->
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+  <symbol id="i-ellipsis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M12 5v14" /></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" /></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" x2="4" y1="22" y2="15" /></symbol>
+  <symbol id="i-share-2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" /></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+  <symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></symbol>
+  <symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></symbol>
+</svg>
 <header>
   <div class="header-top">
     <h1 id="h-title">Voceiro</h1>
@@ -1781,9 +1859,10 @@
     <span class="view-settings-wrap">
       <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
               aria-expanded="false" aria-haspopup="true">
-        <span id="vs-label">⚙ Vista</span>
+        <svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg>
+        <span id="vs-label">Vista</span>
         <span id="vs-count" class="vs-count" data-count="0">0</span>
-        <span class="vs-caret">▾</span>
+        <span class="vs-caret"><svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></span>
       </button>
       <div id="view-settings-menu" class="view-settings-menu" style="display:none">
         <div class="vs-group">
@@ -1802,7 +1881,7 @@
           <label class="vs-radio"><input type="radio" name="vs-hide" value="both">  <span id="vs-hide-both"></span></label>
         </div>
         <div class="vs-sep"></div>
-        <button class="vs-reset" id="vs-reset" type="button"></button>
+        <button class="vs-reset con-ico" id="vs-reset" type="button"></button>
       </div>
     </span>
   </p>
@@ -1812,7 +1891,7 @@
   <div class="panel-inner">
     <div class="panel-header">
       <h2 id="cfg-title"></h2>
-      <button class="panel-close" type="button" data-close="panel-config">✕</button>
+      <button class="panel-close" type="button" data-close="panel-config"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
 
     <div class="cfg-tabs" role="tablist">
@@ -1994,7 +2073,7 @@
   <div class="panel-inner">
     <div class="panel-header">
       <h2 id="ac-title"></h2>
-      <button class="panel-close" type="button" data-close="panel-acces">✕</button>
+      <button class="panel-close" type="button" data-close="panel-acces"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="panel-body">
       <div class="opt-row">
@@ -2054,13 +2133,13 @@
   <div class="panel-inner">
     <div class="panel-header">
       <h2 id="pend-title"></h2>
-      <button class="panel-close" type="button" data-close="panel-pendientes">✕</button>
+      <button class="panel-close" type="button" data-close="panel-pendientes"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="panel-body">
       <div id="pendientes-lista"></div>
     </div>
     <div class="panel-acciones">
-      <button id="pend-refresh" type="button"></button>
+      <button id="pend-refresh" class="con-ico" type="button"></button>
     </div>
   </div>
 </section>
@@ -2070,7 +2149,7 @@
   <div class="panel-inner">
     <div class="panel-header">
       <h2 id="rep-title"></h2>
-      <button class="panel-close" type="button" data-close="panel-reporte">✕</button>
+      <button class="panel-close" type="button" data-close="panel-reporte"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="panel-body">
       <div id="rep-contexto" class="rep-ctx"></div>
@@ -2117,7 +2196,7 @@
   <div class="panel-inner">
     <div class="panel-header">
       <h2 id="em-title"></h2>
-      <button class="panel-close" type="button" data-close="panel-buscar">✕</button>
+      <button class="panel-close" type="button" data-close="panel-buscar"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="panel-body">
       <p class="em-aviso" id="em-aviso"></p>
@@ -2140,17 +2219,19 @@
   <div class="filtros-row">
     <div class="filtro-buscar-wrap">
       <input type="search" id="buscar" autocomplete="off">
-      <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×">×</button>
+      <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
       <div id="buscar-sugerencias" class="buscar-sugerencias" style="display:none"></div>
     </div>
     <button id="btn-prensa" class="btn-prensa" type="button" title="Buscar también en prensa externa">
-      <span>🌐 prensa</span>
+      <svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>
+      <span>prensa</span>
     </button>
     <button id="btn-filtros" class="btn-dup-inline btn-view-settings" type="button"
             aria-expanded="false" aria-haspopup="true" aria-controls="filtros-panel">
+      <svg class="ico" aria-hidden="true"><use href="#i-filter"/></svg>
       <span id="filtros-label"></span>
       <span id="filtros-count" class="vs-count" data-count="0">0</span>
-      <span class="vs-caret">▾</span>
+      <span class="vs-caret"><svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></span>
     </button>
   </div>
   <div id="filtros-panel" class="filtros-panel" hidden>
@@ -2186,7 +2267,7 @@
   <button id="btn-cargar-mas" type="button" style="padding:10px 20px; font-size:.85em;"></button>
 </div>
 <button id="btn-top" class="btn-top" type="button"
-        aria-label="Volver arriba" title="Volver arriba">↑</button>
+        aria-label="Volver arriba" title="Volver arriba"><svg class="ico" aria-hidden="true"><use href="#i-arrow-up"/></svg></button>
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
@@ -2592,9 +2673,9 @@ const I18N = {
     flt24h:                 '24 h',
     flt48h:                 '48 h',
     flt7d:                  '7 días',
-    ordenRecientes:         '↓ Más recientes',
-    ordenAntiguos:          '↑ Más antiguos',
-    ordenRelevancia:         '★ Relevancia',
+    ordenRecientes:         'Más recientes',
+    ordenAntiguos:          'Más antiguos',
+    ordenRelevancia:         'Relevancia',
 
     /* ── Contador / vacío / errores ── */
     contador:               'Mostrando {n} de {total} titulares',
@@ -2636,7 +2717,7 @@ const I18N = {
 
     /* ── Pendientes ── */
     pendTitle:              'Noticias guardadas para leer después',
-    pendRefresh:            '↻ Actualizar',
+    pendRefresh:            'Actualizar',
     noUserscript:           'Instala el plugin Lector Universal para guardar noticias y verlas aquí.',
     noPendientes:           'No tienes noticias pendientes.',
     savedToReader:          'Guardado para leer después',
@@ -2654,6 +2735,8 @@ const I18N = {
 
     /* ── Reportes ── */
     repBtnTitle:            'Reportar problema con este titular',
+    btnCerrar:              'Cerrar',
+    masAcciones:            'Más acciones',
     repTitle:               'Reportar un problema',
     repCtxEmpty:            '(Sin titular específico — reporte general)',
     repMotivoLbl:           'Motivo',
@@ -2733,7 +2816,7 @@ const I18N = {
     vsHideViewed:           'Ya vistos',
     vsHideViewedHint:       'Titulares que han pasado por pantalla',
     vsHideBoth:             'Leídos y vistos',
-    vsReset:                '↺ Restablecer vista',
+    vsReset:                'Restablecer vista',
   },
 
   gl: {
@@ -2897,9 +2980,9 @@ const I18N = {
     flt24h:                 '24 h',
     flt48h:                 '48 h',
     flt7d:                  '7 días',
-    ordenRecientes:         '↓ Máis recentes',
-    ordenAntiguos:          '↑ Máis antigos',
-    ordenRelevancia:         '★ Relevancia',
+    ordenRecientes:         'Máis recentes',
+    ordenAntiguos:          'Máis antigos',
+    ordenRelevancia:         'Relevancia',
 
     contador:               'Amosando {n} de {total} titulares',
     contadorScope:          'Amosando {n} de {total} en modo activo',
@@ -2935,7 +3018,7 @@ const I18N = {
     syncOfflineHint:        'Instala o plugin Lector Universal para sincronizar a túa configuración entre dispositivos.',
 
     pendTitle:              'Noticias gardadas para ler despois',
-    pendRefresh:            '↻ Actualizar',
+    pendRefresh:            'Actualizar',
     noUserscript:           'Instala o plugin Lector Universal para gardar noticias e velas aquí.',
     noPendientes:           'Non tes noticias pendentes.',
     savedToReader:          'Gardado para ler despois',
@@ -2952,6 +3035,8 @@ const I18N = {
     markUnread:             'Marcar como non lida',
 
     repBtnTitle:            'Reportar problema con este titular',
+    btnCerrar:              'Pechar',
+    masAcciones:            'Máis accións',
     repTitle:               'Reportar un problema',
     repCtxEmpty:            '(Sen titular específico — reporte xeral)',
     repMotivoLbl:           'Motivo',
@@ -3030,7 +3115,7 @@ const I18N = {
     vsHideViewed:           'Xa vistos',
     vsHideViewedHint:       'Titulares que pasaron pola pantalla',
     vsHideBoth:             'Lidos e vistos',
-    vsReset:                '↺ Restablecer vista',
+    vsReset:                'Restablecer vista',
   },
 
   ca: {
@@ -3194,9 +3279,9 @@ const I18N = {
     flt24h:                 '24 h',
     flt48h:                 '48 h',
     flt7d:                  '7 dies',
-    ordenRecientes:         '↓ Més recents',
-    ordenAntiguos:          '↑ Més antics',
-    ordenRelevancia:         '★ Rellevància',
+    ordenRecientes:         'Més recents',
+    ordenAntiguos:          'Més antics',
+    ordenRelevancia:         'Rellevància',
 
     contador:               'Mostrant {n} de {total} titulars',
     contadorScope:          'Mostrant {n} de {total} en mode actiu',
@@ -3232,7 +3317,7 @@ const I18N = {
     syncOfflineHint:        'Instal·la el plugin Lector Universal per sincronitzar la configuració.',
 
     pendTitle:              'Notícies desades per llegir després',
-    pendRefresh:            '↻ Actualitzar',
+    pendRefresh:            'Actualitzar',
     noUserscript:           'Instal·la el plugin Lector Universal per desar notícies i veure-les aquí.',
     noPendientes:           'No tens notícies pendents.',
     savedToReader:          'Desat per llegir després',
@@ -3249,6 +3334,8 @@ const I18N = {
     markUnread:             'Marcar com no llegida',
 
     repBtnTitle:            'Reportar problema amb aquest titular',
+    btnCerrar:              'Tancar',
+    masAcciones:            'Més accions',
     repTitle:               'Reportar un problema',
     repCtxEmpty:            '(Sense titular específic — report general)',
     repMotivoLbl:           'Motiu',
@@ -3327,7 +3414,7 @@ const I18N = {
     vsHideViewed:           'Ja vistos',
     vsHideViewedHint:       'Titulars que han passat per pantalla',
     vsHideBoth:             'Llegits i vistos',
-    vsReset:                '↺ Restablir vista',
+    vsReset:                'Restablir vista',
   },
 
   en: {
@@ -3491,9 +3578,9 @@ const I18N = {
     flt24h:                 '24 h',
     flt48h:                 '48 h',
     flt7d:                  '7 days',
-    ordenRecientes:         '↓ Newest first',
-    ordenAntiguos:          '↑ Oldest first',
-    ordenRelevancia:         '★ Relevance',
+    ordenRecientes:         'Newest first',
+    ordenAntiguos:          'Oldest first',
+    ordenRelevancia:         'Relevance',
 
     contador:               'Showing {n} of {total} headlines',
     contadorScope:          'Showing {n} of {total} in active mode',
@@ -3529,7 +3616,7 @@ const I18N = {
     syncOfflineHint:        'Install the Universal Reader plugin to sync your configuration.',
 
     pendTitle:              'News saved for later',
-    pendRefresh:            '↻ Refresh',
+    pendRefresh:            'Refresh',
     noUserscript:           'Install the Universal Reader plugin to save news and view them here.',
     noPendientes:           'You have no pending news.',
     savedToReader:          'Saved for later',
@@ -3546,6 +3633,8 @@ const I18N = {
     markUnread:             'Mark as unread',
 
     repBtnTitle:            'Report a problem with this headline',
+    btnCerrar:              'Close',
+    masAcciones:            'More actions',
     repTitle:               'Report a problem',
     repCtxEmpty:            '(No specific headline — general report)',
     repMotivoLbl:           'Reason',
@@ -3624,7 +3713,7 @@ const I18N = {
     vsHideViewed:           'Already viewed',
     vsHideViewedHint:       'Headlines that scrolled past the screen',
     vsHideBoth:             'Read and viewed',
-    vsReset:                '↺ Reset view',
+    vsReset:                'Reset view',
   },
 
   eu: {
@@ -3788,9 +3877,9 @@ const I18N = {
     flt24h:                 '24 h',
     flt48h:                 '48 h',
     flt7d:                  '7 egun',
-    ordenRecientes:         '↓ Berrienak lehenengo',
-    ordenAntiguos:          '↑ Zaharrenak lehenengo',
-    ordenRelevancia:         '★ Garrantzia',
+    ordenRecientes:         'Berrienak lehenengo',
+    ordenAntiguos:          'Zaharrenak lehenengo',
+    ordenRelevancia:         'Garrantzia',
 
     contador:               '{total}tik {n} izenburu erakusten',
     contadorScope:          '{total}etik {n} erakusten modu aktiboan',
@@ -3826,7 +3915,7 @@ const I18N = {
     syncOfflineHint:        'Instalatu Lector Universal plugina konfigurazioa sinkronizatzeko.',
 
     pendTitle:              'Geroago irakurtzeko gordetako albisteak',
-    pendRefresh:            '↻ Eguneratu',
+    pendRefresh:            'Eguneratu',
     noUserscript:           'Instalatu Lector Universal plugina albisteak gordetzeko eta hemen ikusteko.',
     noPendientes:           'Ez duzu albiste zainik.',
     savedToReader:          'Geroago irakurtzeko gordeta',
@@ -3843,6 +3932,8 @@ const I18N = {
     markUnread:             'Irakurri gabe markatu',
 
     repBtnTitle:            'Izenburu honekin arazo bat jakinarazi',
+    btnCerrar:              'Itxi',
+    masAcciones:            'Ekintza gehiago',
     repTitle:               'Arazo bat jakinarazi',
     repCtxEmpty:            '(Izenburu zehatzik gabe — txosten orokorra)',
     repMotivoLbl:           'Arrazoia',
@@ -3921,7 +4012,7 @@ const I18N = {
     vsHideViewed:           'Ikusiak',
     vsHideViewedHint:       'Pantailatik igaro diren izenburuak',
     vsHideBoth:             'Irakurriak eta ikusiak',
-    vsReset:                '↺ Vista berrezarri',
+    vsReset:                'Vista berrezarri',
   },
 };
 function t(key, vars){
@@ -3951,6 +4042,10 @@ function normalizeUrlForMatch(u){
 }
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Icono del sprite (ver <svg class="sprite"> al principio del body).
+function ico(nombre){
+  return `<svg class="ico" aria-hidden="true"><use href="#i-${nombre}"/></svg>`;
 }
 function limpiarCdata(s){
   if (!s) return '';
@@ -4487,7 +4582,8 @@ function actualizarBotonPreset(){
   const nombre = temas  ? t('presetVistaTemas')
                : activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
 
-  btn.textContent = (temas ? '🔖 ' : '🏔 ') + nombre + ' ▾';
+  btn.innerHTML = (temas ? ico('hash') : '')
+    + `<span class="preset-nombre">${escapeHtml(nombre)}</span>` + ico('chevron-down');
   btn.classList.toggle('active', !!activo || temas);
 
   const menu = $('#preset-menu');
@@ -4506,7 +4602,7 @@ function renderPresetMenu(){
   lista.forEach(p => {
     const isActive = PRESET_ACTIVO && p.id === activo;
     html += `<button type="button" class="preset-item${isActive ? ' active' : ''}" data-preset-id="${escapeHtml(p.id)}">
-      <span class="preset-check">✓</span>
+      <span class="preset-check">${ico('check')}</span>
       <span>${escapeHtml(p.nombre)}</span>
     </button>`;
   });
@@ -4515,17 +4611,17 @@ function renderPresetMenu(){
   const enTemas = vistaTemasActiva();
   if (TEMAS_TODOS.length){
     html += `<button type="button" class="preset-item${enTemas ? ' active' : ''}" data-preset-id="__temas">
-    <span class="preset-check">✓</span>
-    <span>🔖 ${escapeHtml(t('presetVistaTemas'))}</span>
+    <span class="preset-check">${ico('check')}</span>
+    ${ico('hash')}<span>${escapeHtml(t('presetVistaTemas'))}</span>
   </button>`;
   }
   html += `<button type="button" class="preset-item${!PRESET_ACTIVO && !enTemas ? ' active' : ''}" data-preset-id="__sinfiltro">
-    <span class="preset-check">✓</span>
+    <span class="preset-check">${ico('check')}</span>
     <span>${escapeHtml(t('presetSinFiltro'))}</span>
   </button>`;
   html += '<div class="preset-sep"></div>';
   html += `<button type="button" class="preset-item preset-manage" data-preset-id="__gestionar">
-    <span>⚙</span>
+    ${ico('settings')}
     <span>${escapeHtml(t('presetGestionar'))}</span>
   </button>`;
 
@@ -4604,6 +4700,58 @@ function _presetOutsideClick(e){
 function _presetEscKey(e){
   if (e.key === 'Escape'){ e.stopPropagation(); cerrarPresetMenu(); }
 }
+/* ═══════════════════════════════════════════════════════════════
+   MENÚ ⋯ DE CADA TITULAR
+   Uno solo, dentro de #resultados. Sus botones llevan las clases y el
+   data-idx que antes estaban en la tarjeta (.btn-add-item, .btn-block-item,
+   .btn-report-item), así que wireResultadosDelegation los atiende igual.
+   ═══════════════════════════════════════════════════════════════ */
+function cerrarMenuMas(){
+  // Quitar el listener siempre: un repintado del feed borra el menú sin pasar por aquí.
+  document.removeEventListener('pointerdown', _menuMasFuera, true);
+  const m = document.getElementById('menu-mas');
+  if (!m) return;
+  m.remove();
+  document.querySelectorAll('.btn-mas-item[aria-expanded="true"]')
+    .forEach(b => b.setAttribute('aria-expanded', 'false'));
+}
+function _menuMasFuera(e){
+  if (e.target.closest('#menu-mas') || e.target.closest('.btn-mas-item')) return;
+  cerrarMenuMas();
+}
+function abrirMenuMas(btn){
+  const idx = btn.dataset.idx;
+  const abierto = document.getElementById('menu-mas');
+  cerrarMenuMas();
+  if (abierto && abierto.dataset.idx === idx) return;   // segundo clic: cierra
+  const n = ULT_FILTRADAS[parseInt(idx, 10)];
+  const cont = $('#resultados');
+  if (!n || !cont) return;
+
+  // Si el medio ya está forzado en el modo activo, «Añadir» no tiene sentido.
+  const yaForzado = PRESET_ACTIVO && getOverride(n.dominio) === 'first';
+  const item = (cls, icono, texto) =>
+    `<button type="button" role="menuitem" class="${cls}" data-idx="${idx}">${ico(icono)}<span>${escapeHtml(texto)}</span></button>`;
+  const m = document.createElement('div');
+  m.id = 'menu-mas';
+  m.className = 'menu-mas';
+  m.dataset.idx = idx;
+  m.setAttribute('role', 'menu');
+  m.innerHTML =
+    (yaForzado ? '' : item('btn-add-item', 'plus', t('addToModoTitle')))
+    + item('btn-block-item', 'ban', t('blockMedia'))
+    + item('btn-report-item', 'flag', t('repBtnTitle'));
+  cont.appendChild(m);
+
+  // Bajo el botón, alineado por la derecha con él.
+  const rb = btn.getBoundingClientRect();
+  const rc = cont.getBoundingClientRect();
+  m.style.top   = (rb.bottom - rc.top + 4) + 'px';
+  m.style.right = Math.max(0, rc.right - rb.right) + 'px';
+  btn.setAttribute('aria-expanded', 'true');
+  document.addEventListener('pointerdown', _menuMasFuera, true);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    DESTINO DE OVERRIDE (➕ / 🚫) CUANDO NO HAY MODO ACTIVO
    Fila expandida dentro de la propia tarjeta
@@ -5218,11 +5366,11 @@ function renderPendientes(items){
         <div class="pendiente-meta">
           ${p.domain ? `<span>${escapeHtml(p.domain)}</span>` : ''}
           ${fecha ? `<span>· ${escapeHtml(fecha)}</span>` : ''}
-          ${esLeida && p.readAt ? `<span>· ✓ ${escapeHtml(p.readAt.slice(0,10))}</span>` : ''}
+          ${esLeida && p.readAt ? `<span>· ${ico('check')} ${escapeHtml(p.readAt.slice(0,10))}</span>` : ''}
         </div>
         <div class="pendiente-actions">
-          <button class="btn-pend-toggle" data-url="${escapeHtml(p.url)}" title="${esLeida ? escapeHtml(t('markUnread')) : escapeHtml(t('markRead'))}">${esLeida ? '↺' : '✓'}</button>
-          <button class="btn-pend-remove" data-url="${escapeHtml(p.url)}" title="${escapeHtml(t('deletePending'))}">✕</button>
+          <button class="btn-pend-toggle" data-url="${escapeHtml(p.url)}" title="${esLeida ? escapeHtml(t('markUnread')) : escapeHtml(t('markRead'))}" aria-label="${esLeida ? escapeHtml(t('markUnread')) : escapeHtml(t('markRead'))}">${ico(esLeida ? 'rotate-ccw' : 'check')}</button>
+          <button class="btn-pend-remove" data-url="${escapeHtml(p.url)}" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
         </div>
       </div>`;
   }
@@ -6251,7 +6399,6 @@ function sugerenciasBuscar(raw){
       kind: 'titulo',
       value: frag.text,
       label: `Buscar "${frag.text}" en el titular`,
-      ico: '🔍',
       tipo: 'texto',
     });
   }
@@ -6269,7 +6416,7 @@ function sugerenciasBuscar(raw){
     const n = MEDIOS_UNICOS.filter(m => m.grupo === g).length;
     out.push({
       kind: 'grupo', value: g, label: g, meta: `${n} medios`,
-      ico: '📁', tipo: 'grupo', score,
+      tipo: 'grupo', score,
     });
   });
 
@@ -6285,7 +6432,7 @@ function sugerenciasBuscar(raw){
     yaDominios.add(m.dominio);
     out.push({
       kind: 'dominio', value: m.dominio, label: m.medio, meta: m.dominio,
-      ico: '📰', tipo: 'medio', score,
+      tipo: 'medio', score,
     });
   });
 
@@ -6298,7 +6445,7 @@ function sugerenciasBuscar(raw){
   domHits.forEach(({ m, score }) => {
     out.push({
       kind: 'dominio', value: m.dominio, label: m.medio || m.dominio, meta: m.dominio,
-      ico: '🌐', tipo: 'dominio', score,
+      tipo: 'dominio', score,
     });
   });
 
@@ -8670,7 +8817,7 @@ function renderItemHtml(n, idx){
     const esFuturo = n._esFuturo;
     fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
   } else if (n._tipoShow === 'est'){
-    fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">🕓 ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
+    fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">≈ ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
   } else if (!isNaN(n._tsShow)){
     const fecha = `${t('recolectado')} ${formatearFecha(n._tsShow)}`;
     fechaHtml = `<span class="badge recolectado">${escapeHtml(fecha)}</span>`;
@@ -8728,24 +8875,12 @@ function renderItemHtml(n, idx){
     ? `<button class="medio" type="button" data-dominio="${escapeHtml(n.dominio)}" title="${escapeHtml(t('medioFiltrarTitle', { medio: n.medio || n.dominio }))}">${n._medioEsc}</button>`
     : `<span class="medio">${n._medioEsc}</span>`;
   const prensaBadge = n._desdePrensa
-    ? `<span class="badge prensa" title="Encontrado en prensa externa">🌐 prensa</span>`
+    ? `<span class="badge prensa" title="Encontrado en prensa externa">${ico('globe')} prensa</span>`
     : '';
 
-  const blockTitle = t('blockMedia');
-
-  // ── Botón ➕ Añadir al modo ──
-  //   Si ya está forzado en el modo activo → muestro ✓ (spa, no pulsable)
-  //   En cualquier otro caso → botón ➕ normal
-  // ── Botón ➕ Añadir al modo ──
-  //   Si el medio ya está forzado en el modo activo → no mostramos nada.
-  //   En cualquier otro caso → botón ➕ normal.
-  const yaForzado = PRESET_ACTIVO && getOverride(n.dominio) === 'first';
-
-  const addBtnHtml = yaForzado
-    ? ''
-    : `<button class="btn-mini btn-add-item" type="button" data-idx="${idx}" title="${escapeHtml(t('addToModoTitle'))}" aria-label="${escapeHtml(t('addToModoTitle'))}">➕</button>`;
+  // Añadir al modo, bloquear y reportar van en el menú ⋯ (abrirMenuMas).
   const shareBtnHtml = PUEDE_COMPARTIR
-    ? `<button class="btn-mini btn-share-item" type="button" data-idx="${idx}" title="${escapeHtml(t('shareTitle'))}" aria-label="${escapeHtml(t('shareTitle'))}">🔗</button>`
+    ? `<button class="btn-mini btn-share-item" type="button" data-idx="${idx}" title="${escapeHtml(t('shareTitle'))}" aria-label="${escapeHtml(t('shareTitle'))}">${ico('share-2')}</button>`
     : '';
   // Bloque de duplicados (solo si los hay y AGRUPAR_DUPS está activo)
   let dupsHtml = '';
@@ -8776,10 +8911,8 @@ function renderItemHtml(n, idx){
       ${fechaHtml}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
       <span class="cab-spacer"></span>
-      ${addBtnHtml}
       ${shareBtnHtml}
-      <button class="btn-mini btn-block-item" type="button" data-idx="${idx}" title="${escapeHtml(blockTitle)}" aria-label="${escapeHtml(blockTitle)}">🚫</button>
-      <button class="btn-mini btn-report-item" type="button" data-idx="${idx}" title="${escapeHtml(t('repBtnTitle'))}" aria-label="${escapeHtml(t('repBtnTitle'))}">🐞</button>
+      <button class="btn-mini btn-mas-item" type="button" data-idx="${idx}" title="${escapeHtml(t('masAcciones'))}" aria-label="${escapeHtml(t('masAcciones'))}" aria-haspopup="menu" aria-expanded="false">${ico('ellipsis')}</button>
     </div>
     <a class="titular" href="${n._enlaceEsc}" target="_blank" rel="noopener">${tituloHtml}</a>
     ${dupsHtml}
@@ -9017,6 +9150,17 @@ function wireResultadosDelegation(){
   });
 
   cont.addEventListener('click', e => {
+    const masBtn = e.target.closest('.btn-mas-item');
+    if (masBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      abrirMenuMas(masBtn);
+      return;
+    }
+    // Una opción del menú ⋯ se atiende abajo como si fuera de la tarjeta;
+    // el menú se cierra en cuanto termina.
+    if (e.target.closest('#menu-mas')) queueMicrotask(cerrarMenuMas);
+
     // Cerrar fila destino si el clic no es en ella ni en ➕/🚫
     if (!e.target.closest('.destino-inline') &&
         !e.target.closest('.btn-add-item') &&
@@ -9244,7 +9388,7 @@ function aplicarTextos(){
   $('#h-title').textContent = t('headerTitle');
   $('#meta-prefix').textContent = t('metaPrefix');
 
-  $('#btn-preset').textContent = t('btnPersonalizado');
+  actualizarBotonPreset();
   $('#btn-config').textContent = t('btnConfig');
   $('#btn-pendientes').innerHTML =
     escapeHtml(t('btnPendientes')) +
@@ -9258,7 +9402,7 @@ function aplicarTextos(){
   $('#cfg-modos').textContent = t('cfgModos');
   $('#tab-feed').textContent     = t('cfgFeed');
   $('#tab-medios').textContent   = t('tabMedios');
-  $('#tab-temas').textContent    = '🔖 ' + t('presetVistaTemas');
+  $('#tab-temas').innerHTML      = ico('hash') + ' ' + escapeHtml(t('presetVistaTemas'));
   $('#tab-avanzado').textContent = t('tabAvanzado');
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
   $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
@@ -9274,7 +9418,7 @@ function aplicarTextos(){
   $('#vs-title-dup').textContent   = t('vsTitleDup');
   $('#vs-dup-label').textContent   = t('vsDup');
   $('#vs-title-hide').textContent  = t('vsTitleHide');
-  $('#vs-reset').textContent       = t('vsReset');
+  $('#vs-reset').innerHTML         = ico('rotate-ccw') + `<span>${escapeHtml(t('vsReset'))}</span>`;
   $('#vs-hide-off').innerHTML    = escapeHtml(t('vsHideOff'));
   $('#vs-hide-read').innerHTML   = escapeHtml(t('vsHideRead'))
     + `<small>${escapeHtml(t('vsHideReadHint'))}</small>`;
@@ -9369,7 +9513,7 @@ function aplicarTextos(){
   });
 
   $('#pend-title').textContent = t('pendTitle');
-  $('#pend-refresh').textContent = t('pendRefresh');
+  $('#pend-refresh').innerHTML = ico('refresh-cw') + `<span>${escapeHtml(t('pendRefresh'))}</span>`;
 
   $('#rep-title').textContent = t('repTitle');
   $('#rep-motivo-lbl').textContent = t('repMotivoLbl');
@@ -9390,7 +9534,11 @@ function aplicarTextos(){
   emTextos();
 
   $('#buscar').placeholder = t('fltBuscar');
-  $('#filtros-label').textContent = '⚙ ' + t('fltBtn');
+  $('#filtros-label').textContent = t('fltBtn');
+  document.querySelectorAll('.panel-close').forEach(b => {
+    b.title = t('btnCerrar');
+    b.setAttribute('aria-label', t('btnCerrar'));
+  });
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
 
@@ -9745,6 +9893,7 @@ function wireStaticEvents(){
       if (e.key === 'Escape'){
         cerrarPresetMenu();
         cerrarViewSettingsMenu();
+        cerrarMenuMas();
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
       }
