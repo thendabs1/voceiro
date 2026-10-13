@@ -1,0 +1,7 @@
+{
+  "deploy": {
+    "project": "secret-worm-9453",
+    "entrypoint": "src/index.ts",
+    "include": ["src/**/*.ts", "src/**/*.json"]
+  }
+}

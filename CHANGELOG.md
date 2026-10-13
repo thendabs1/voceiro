@@ -3,6 +3,19 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-13 — Relay de Deno en el repo
+
+### Añadido
+- `workers/deno-relay/`: el relay pasa al repo. Su allowlist (`permitidos.json`) la
+  genera `scripts/sync_relay.py` desde las fuentes con `'relay'` de `medios.py`;
+  `sync-relay.yml` la regenera y commitea tras cada merge que toque el catálogo.
+
+### Cambiado
+- AP (sitemap), e-Notícies y Ferrol 360 (RSS) pasan por el relay: daban 403 desde
+  GH, también en scraping, que se quita de su lista.
+- Capital Madrid y Granada Digital dan 403 también por el relay: solo Google News.
+- La URL destino se codifica al pasarla al relay.
+
 ## 2026-10-13 — Fuentes por medio, sitemaps de Google News e intentos en Turso
 
 ### Añadido
