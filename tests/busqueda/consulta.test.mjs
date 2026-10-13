@@ -107,3 +107,13 @@ test('paraArchivo / paraPrensa: medios como dominios exactos, fechas absolutas d
   assert.equal(p.desde, '2026-10-13');
   assert.equal(paraPrensa(interpretarConsulta('incendio -forestal')), 'incendio -forestal');
 });
+
+test('29 · prensa externa: medios y fechas estrictos, texto no', () => {
+  const c = interpretarConsulta('sanchez grupo:galicia desde:hoy', { catalogo: CATALOGO, ahora: A });
+  assert.ok(c.pasaFiltros({ dominio: 'praza.gal', ts: A - 60e3 }));
+  assert.ok(!c.pasaFiltros({ dominio: 'elpais.com', ts: A - 60e3 }));       // otro medio
+  assert.ok(!c.pasaFiltros({ dominio: 'news.google.com', ts: A - 60e3 }));  // medio no resuelto
+  assert.ok(!c.pasaFiltros({ dominio: 'praza.gal', ts: NaN }));             // sin fecha, con filtro de fecha
+  const sinFiltros = interpretarConsulta('sanchez', { catalogo: CATALOGO, ahora: A });
+  assert.ok(sinFiltros.pasaFiltros({ dominio: 'news.google.com', ts: NaN }));
+});

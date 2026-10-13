@@ -2185,7 +2185,7 @@ import {
   tokenizeQuery,
 } from './parser.js';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta } from './busqueda/consulta.js';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js';
 import { palabrasDe, rangosResaltado } from './busqueda/texto.js';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2363,7 +2363,7 @@ function diasEfectivos(scope) {
 let PRENSA_ACTIVA = false;
 let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
-let PRENSA_PARSED = null;
+let PRENSA_CLAVE = null;   // clave de la consulta con prensa pendiente
 let PRENSA_USER_MANUAL_OFF = false;
 let PRENSA_FUENTES = { gnews: true, freenews: true };
 let PRENSA_LANG = 'es';
@@ -7607,7 +7607,7 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
 
 
 
-function mergePrensa(locales, prensaItems){
+function mergePrensa(locales, prensaItems, consulta = null){
   if (!prensaItems || !prensaItems.length) return locales;
 
   const yaVistas = new Set();
@@ -7703,6 +7703,11 @@ function mergePrensa(locales, prensaItems){
     n._esPreset   = false;
     n._dupHidden  = null;
 
+    // Medios y fechas de la búsqueda, estrictos; el texto no (el proveedor
+    // busca también en el cuerpo). Con filtro de medio, un resultado cuyo
+    // medio no se pudo resolver queda fuera: no se puede comprobar.
+    if (consulta && !consulta.pasaFiltros({ dominio: dom, ts: n._tsOrden })) continue;
+
     nuevos.push(n);
   }
 
@@ -7717,12 +7722,18 @@ function mergePrensa(locales, prensaItems){
   return merged;
 }
 
-function programarPrensa(parsed, rawQuery, nLocales){
+function programarPrensa(consulta, nLocales){
   if (PRENSA_TIMER){ clearTimeout(PRENSA_TIMER); PRENSA_TIMER = null; }
 
-  const tieneQuery = parsed.titulo.length || parsed.dominios.length || parsed.medios.length;
+  // Con un filtro de medios de más de 3 dominios (p. ej. grupo:galicia) la
+  // prensa no puede acotarse (site: admite 3) y lo que trae no pasa el
+  // filtro de medios: medido, 0 de 100. No se pide.
+  const dominios = consulta.medios.dominios;
+  const tieneQuery = !consulta.imposible
+    && (consulta.texto.incluir.length || dominios !== null)
+    && !(dominios && dominios.size > 3);
   if (!tieneQuery){
-    PRENSA_PARSED = null;
+    PRENSA_CLAVE = null;
     return;
   }
 
@@ -7740,22 +7751,25 @@ function programarPrensa(parsed, rawQuery, nLocales){
     }
   }
 
-  PRENSA_PARSED = parsed;
+  // Se compara por clave: cada aplicarFiltros crea un parsed nuevo y antes
+  // cualquier repintado anulaba la búsqueda de prensa pendiente.
+  const clave = consulta.clave;
+  PRENSA_CLAVE = clave;
 
   PRENSA_TIMER = setTimeout(() => {
     PRENSA_TIMER = null;
-    if (PRENSA_PARSED !== parsed) return;
+    if (PRENSA_CLAVE !== clave) return;
 
     const btn = document.getElementById('btn-prensa');
     if (btn) btn.classList.add('cargando');
 
-    buscarEnPrensa(parsed, rawQuery, { silent: true }).then(res => {
+    buscarEnPrensa(consulta.parsed, paraPrensa(consulta), { silent: true }).then(res => {
       if (btn) btn.classList.remove('cargando');
       if (!res || !res.items || !res.items.length) return;
-      if (PRENSA_PARSED !== parsed) return;
+      if (PRENSA_CLAVE !== clave) return;
 
       const antes = ULT_FILTRADAS.length;
-      const merged = mergePrensa(ULT_FILTRADAS, res.items);
+      const merged = mergePrensa(ULT_FILTRADAS, res.items, consulta);
       const filtrado = aplicarTier3(merged);       // ← nuevo
       const nuevas = filtrado.length - antes;
       if (nuevas <= 0) return;
@@ -7825,6 +7839,9 @@ function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
+  // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
+  // Se interpreta una vez y la usan el filtro, Turso y la prensa.
+  const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
   console.log('[aplicarFiltros]',
     'raw=', JSON.stringify(raw.slice(0, 60)),
     'capas=', [...capasRequeridas(parseQuery(preprocesarInput(raw)))],
@@ -7836,9 +7853,10 @@ function aplicarFiltros(){
 const capas = capasRequeridas(parsed);
 const usarTurso = necesitaTurso(parsed);
 
-// Reset solo si cambia la query (Turso no debe re-dispararse por otras razones)
-if (raw !== ULT_QUERY_KEY) {
-  ULT_QUERY_KEY = raw;
+// Reset solo si cambia la consulta (por su clave: un espacio o cambiar
+// 'Sánchez' por 'sanchez' no es otra búsqueda).
+if (consulta.clave !== ULT_QUERY_KEY) {
+  ULT_QUERY_KEY = consulta.clave;
   TURSO_OFFSET  = 0;
   TURSO_HAY_MAS = false;
   TURSO_ACTIVO  = !capas.size;
@@ -7867,8 +7885,11 @@ if (!capas.size) {
   // Disparo Turso SOLO si no hay capas R2 que cubran la query.
   // (Con la nueva necesitaTurso, esto solo ocurre para texto/tag/tipo/lang/fechas
   //  o grupos sin slice.)
-  if (usarTurso && !TURSO_RAW) {
-    TURSO_RAW = rawProcesado;  // sin cutoff: no hay R2 previo, queremos todo
+  // Al archivo se le manda la consulta ya interpretada (inicio de palabra,
+  // dominios exactos, días de Madrid): el worker no tiene que reinterpretar.
+  const rawArchivo = consulta.imposible ? '' : paraArchivo(consulta);
+  if (usarTurso && rawArchivo && !TURSO_RAW) {
+    TURSO_RAW = rawArchivo;
     TURSO_OFFSET = 0;
 
     // Se descarta solo si la consulta cambió, no por cualquier otra llamada
@@ -7924,8 +7945,6 @@ if (!capas.size) {
     !PRESET_AMPLIADO_TEMP &&
     (!hayBusquedaActiva || PRESET_BUSQUEDA_ESTRICTO);
 
-  // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
-  const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora });
   _avisarMediosDesconocidos(consulta);
   const ctx = { g, t2, limiteMs, ahora, parsed, consulta, presetEfectivo, orden, HIDE_MODE };
 
@@ -7987,7 +8006,7 @@ if (!capas.size) {
   if (APP_LISTA && RECORDAR_FILTROS){
     try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
   }
-  programarPrensa(parsed, raw, filtradas.length);
+  programarPrensa(consulta, filtradas.length);
 }
 
 

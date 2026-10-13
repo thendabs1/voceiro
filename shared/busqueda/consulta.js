@@ -41,8 +41,13 @@ export function interpretarConsulta(raw, { catalogo = {}, ahora = Date.now() } =
     && pasaVentana(ts, ventana)
     && coincide(palabras || palabrasDe(titular), texto);
 
+  // Para fuentes externas (prensa): medios y fechas sí, el texto no, porque
+  // el proveedor busca también en el cuerpo y exigir las palabras en el
+  // titular descartaría resultados buenos.
+  const pasaFiltros = ({ dominio, ts }) => pasaMedios(dominio, medios) && pasaVentana(ts, ventana);
+
   return {
-    raw: raw || '', parsed, texto, medios, ventana, orden, clave, pasa,
+    raw: raw || '', parsed, texto, medios, ventana, orden, clave, pasa, pasaFiltros,
     vacia: textoVacio(texto) && medios.dominios === null && !hayVentana(ventana),
     // Un filtro de medio sin coincidencias (medio:noexiste) da 0 resultados:
     // no hay que pedir nada fuera (sin web: el worker devolvería de todo).
