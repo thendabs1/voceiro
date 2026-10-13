@@ -2129,6 +2129,7 @@
       <select id="orden">
         <option value="recientes"></option>
         <option value="antiguos"></option>
+        <option value="relevancia"></option>
       </select>
       <input type="date" id="fecha-desde" aria-label="Desde">
       <input type="date" id="fecha-hasta" aria-label="Hasta">
@@ -2170,6 +2171,7 @@ import {
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
 import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=2b0fc10b35';
 import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=2b0fc10b35';
+import { comparador } from './busqueda/orden.js?v=2b0fc10b35';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -2540,6 +2542,7 @@ const I18N = {
     flt7d:                  '7 días',
     ordenRecientes:         '↓ Más recientes',
     ordenAntiguos:          '↑ Más antiguos',
+    ordenRelevancia:         '★ Relevancia',
 
     /* ── Contador / vacío / errores ── */
     contador:               'Mostrando {n} de {total} titulares',
@@ -2816,6 +2819,7 @@ const I18N = {
     flt7d:                  '7 días',
     ordenRecientes:         '↓ Máis recentes',
     ordenAntiguos:          '↑ Máis antigos',
+    ordenRelevancia:         '★ Relevancia',
 
     contador:               'Amosando {n} de {total} titulares',
     contadorScope:          'Amosando {n} de {total} en modo activo',
@@ -3083,6 +3087,7 @@ const I18N = {
     flt7d:                  '7 dies',
     ordenRecientes:         '↓ Més recents',
     ordenAntiguos:          '↑ Més antics',
+    ordenRelevancia:         '★ Rellevància',
 
     contador:               'Mostrant {n} de {total} titulars',
     contadorScope:          'Mostrant {n} de {total} en mode actiu',
@@ -3350,6 +3355,7 @@ const I18N = {
     flt7d:                  '7 days',
     ordenRecientes:         '↓ Newest first',
     ordenAntiguos:          '↑ Oldest first',
+    ordenRelevancia:         '★ Relevance',
 
     contador:               'Showing {n} of {total} headlines',
     contadorScope:          'Showing {n} of {total} in active mode',
@@ -3617,6 +3623,7 @@ const I18N = {
     flt7d:                  '7 egun',
     ordenRecientes:         '↓ Berrienak lehenengo',
     ordenAntiguos:          '↑ Zaharrenak lehenengo',
+    ordenRelevancia:         '★ Garrantzia',
 
     contador:               '{total}tik {n} izenburu erakusten',
     contadorScope:          '{total}etik {n} erakusten modu aktiboan',
@@ -4175,7 +4182,7 @@ function actualizarFiltrosCount(){
   if (g  && g.value)  n++;
   if (tp && tp.value) n++;
   if (r  && r.value)  n++;
-  if (o  && o.value === 'antiguos') n++;
+  if (o  && o.value && o.value !== 'recientes') n++;
 
   const count = $('#filtros-count');
   const btn   = $('#btn-filtros');
@@ -5065,11 +5072,20 @@ function _dominioTieneSlice(dom) {
 // clave: consulta que trajo los items (solo Turso). Un item que solo viene
 // de Turso se ve únicamente mientras esa consulta esté activa (_pasaVista):
 // así una búsqueda no deja sus resultados en el feed ni en la siguiente.
-function _mergearItemsEnNoticias(items, capaKey, clave = null) {
+// rangoBase: posición del primer item en la respuesta del archivo (offset);
+// con order:relevancia el worker los devuelve por bm25 y esa posición es el rango.
+function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null) {
   let añadidos = 0;
-  const marcar = n => { if (clave) (n._consultas || (n._consultas = new Set())).add(clave); };
+  let pos = 0;
+  let rango = null;
+  const marcar = n => {
+    if (!clave) return;
+    (n._consultas || (n._consultas = new Set())).add(clave);
+    if (rango !== null) n._rango = { clave, valor: rango };
+  };
 
   for (const n of items) {
+    rango = rangoBase === null ? null : rangoBase + pos++;
     const u = _claveUrl(n.u || '', n.d || '');
     const t = n.t ? normalize(n.t) : '';
 
@@ -6559,14 +6575,7 @@ function aplicarTier3(items){
     // Overrides + preset
     if (presetEfectivo && !cumplePreset(n)) return false;
 
-    // HIDE_MODE
-    if (HIDE_MODE !== 'off'){
-      const key = normalizeUrlForMatch(n.enlace);
-      const pluginItem = PENDIENTES_MAP.get(key);
-      const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-      if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
-      if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
-    }
+    if (_ocultaPorLectura(n, HIDE_MODE)) return false;
     // Se recorre toda la lista (locales + prensa): antes ponía _esPreset a
     // false a todo y las marcas del modo desaparecían al llegar la prensa.
     n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumplePreset(n) : false;
@@ -7675,12 +7684,13 @@ function mergePrensa(locales, prensaItems, consulta = null){
 
   if (!nuevos.length) return locales;
 
+  // Mismo orden que la lista (antes siempre 'recientes' y sin fecha como 0).
+  // Solo hay prensa con búsqueda, así que no hay bloque de favoritos que respetar.
   const merged = locales.concat(nuevos);
-  merged.sort((a, b) => {
-    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
-    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
-    return tb - ta;
-  });
+  const ctx = ULT_CTX;
+  const clave = ctx && ctx.consulta ? ctx.consulta.clave : '';
+  const cmp = comparador(ctx ? ctx.orden : 'recientes');
+  merged.sort((a, b) => cmp(_paraOrden(a, clave), _paraOrden(b, clave)));
   return merged;
 }
 
@@ -7731,8 +7741,21 @@ function programarPrensa(consulta, nLocales){
       if (PRENSA_CLAVE !== clave) return;
 
       const antes = ULT_FILTRADAS.length;
+      const previos = new Set(ULT_FILTRADAS);
       const merged = mergePrensa(ULT_FILTRADAS, res.items, consulta);
-      const filtrado = aplicarTier3(merged);       // ← nuevo
+
+      // Pestañas: la prensa cuenta en las dos, se vea o no en la pestaña
+      // actual (en «Modo» no se muestra la que no es del modo, pero suma en
+      // «Todo»). Cada aplicarFiltros recalcula los números desde cero, así
+      // que no se cuenta dos veces.
+      if (ULT_PESTANAS){
+        const enTodo = merged.filter(n => !previos.has(n) && !_ocultaPorLectura(n, HIDE_MODE));
+        ULT_PESTANAS.nTodo += enTodo.length;
+        ULT_PESTANAS.nModo += enTodo.filter(n => cumplePreset(n)).length;
+        renderPestanasPreset();
+      }
+
+      const filtrado = aplicarTier3(merged);
       const nuevas = filtrado.length - antes;
       if (nuevas <= 0) return;
 
@@ -7754,6 +7777,29 @@ function _pasaConsulta(n, consulta){
   });
 }
 
+// Vista de un item para el comparador del núcleo (shared/busqueda/orden.js).
+// El rango (relevancia) solo vale para la consulta que lo produjo.
+function _paraOrden(n, clave){
+  return {
+    ts: n._tsOrden,
+    dominio: n.dominio,
+    titular: n.titular,
+    rango: (n._rango && n._rango.clave === clave) ? n._rango.valor : NaN,
+  };
+}
+
+// Ocultar leídas / vistas (HIDE_MODE). Una sola copia: la usan la lista,
+// la prensa (aplicarTier3) y el recuento de las pestañas.
+function _ocultaPorLectura(n, hm){
+  if (hm === 'off') return false;
+  const key = normalizeUrlForMatch(n.enlace);
+  const pluginItem = PENDIENTES_MAP.get(key);
+  const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
+  if ((hm === 'read' || hm === 'both') && esLeida) return true;
+  if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return true;
+  return false;
+}
+
 // Predicado único de la lista (antes había dos copias: el filtro de
 // aplicarFiltros y _pasaFiltroIndividual). Encima de la consulta solo quedan
 // filtros de vista del cliente: selects, rango móvil, ocultar leídas/vistas
@@ -7766,13 +7812,7 @@ function _pasaVista(n, ctx){
     const ts = n._tsOrden;
     if (isNaN(ts) || ahora - ts > limiteMs) return false;
   }
-  if (hm !== 'off'){
-    const key = normalizeUrlForMatch(n.enlace);
-    const pluginItem = PENDIENTES_MAP.get(key);
-    const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-    if ((hm === 'read' || hm === 'both') && esLeida) return false;
-    if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
-  }
+  if (_ocultaPorLectura(n, hm)) return false;
   if (n._capas && n._capas.size === 1 && n._capas.has('turso')
       && !(n._consultas && n._consultas.has(consulta.clave))) return false;
   if (!_pasaConsulta(n, consulta)) return false;
@@ -7877,7 +7917,7 @@ if (!capas.size) {
 
         // Se repinta aunque no haya items nuevos: los que ya estaban en
         // NOTICIAS (de otra búsqueda) pasan a ser visibles para esta.
-        const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta);
+        const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta, 0);
         if (nuevos > 0) {
           _hidratadasHasta = 0;
           hidratarNoticias();
@@ -7891,7 +7931,7 @@ if (!capas.size) {
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
   const dias = parseInt($('#rango').value, 10) || 0;
-  const orden = $('#orden').value || 'recientes';
+  const orden = $('#orden').value || 'recientes';   // sincronizado con order:/orden: de la consulta
 
   const ahora = Date.now();
   const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
@@ -7935,6 +7975,7 @@ if (!capas.size) {
   }
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
+  const cmpNucleo = comparador(orden);
   filtradas.sort((a, b) => {
     if (presetEfectivo){
       const aFav = getOverride(a.dominio) === 'first'
@@ -7951,16 +7992,10 @@ if (!capas.size) {
     const aLejos = a._esFuturo && !isNaN(a._tsShow) && (a._tsShow - ahora > H6);
     const bLejos = b._esFuturo && !isNaN(b._tsShow) && (b._tsShow - ahora > H6);
     if (aLejos !== bLejos) return aLejos - bLejos;
-    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
-    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
-    if (ta !== tb) return orden === 'antiguos' ? ta - tb : tb - ta;
-    const da = a.dominio || '';
-    const db = b.dominio || '';
-    if (da !== db) return da < db ? -1 : 1;
-    const xa = a.titular || '';
-    const xb = b.titular || '';
-    if (xa !== xb) return xa < xb ? -1 : 1;
-    return 0;
+    // El resto lo decide el núcleo: fecha según el orden, sin fecha siempre
+    // al final (antes, con 'antiguos', salían las primeras) y relevancia
+    // por el rango que dio el archivo para esta consulta.
+    return cmpNucleo(_paraOrden(a, consulta.clave), _paraOrden(b, consulta.clave));
   });
 
   ULT_FILTRADAS = filtradas;
@@ -8253,11 +8288,8 @@ function _anexarItemsIncremental(items, ctx) {
   // Los nuevos van al final → append limpio. Se ordenan solo ellos: la
   // lista ya pintada NO se reordena, porque las tarjetas guardan su índice
   // (data-idx) y las acciones (leída, guardar, ➕/🚫) lo usan.
-  nuevos.sort((a, b) => {
-    const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
-    const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
-    return orden === 'antiguos' ? ta - tb : tb - ta;
-  });
+  const cmp = comparador(orden);
+  nuevos.sort((a, b) => cmp(_paraOrden(a, ctx.consulta.clave), _paraOrden(b, ctx.consulta.clave)));
   const desde = ULT_FILTRADAS.length;
   ULT_FILTRADAS.push(...nuevos);
 
@@ -8343,7 +8375,7 @@ async function cargarMasDeTurso() {
 
   // Como en la primera página: también los items ya cargados cuentan para
   // esta consulta, así que se anexan aunque no haya ninguno nuevo.
-  const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta);
+  const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta, offsetPedido);
   if (nuevos > 0) hidratarNoticias();
   if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
     aplicarFiltros();
@@ -8794,6 +8826,7 @@ function aplicarTextos(){
   const oOpts = $('#orden').options;
   oOpts[0].text = t('ordenRecientes');
   oOpts[1].text = t('ordenAntiguos');
+  oOpts[2].text = t('ordenRelevancia');
 
   renderLangSelect();
   actualizarSyncBanner();
