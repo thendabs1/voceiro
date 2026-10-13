@@ -6575,14 +6575,7 @@ function aplicarTier3(items){
     // Overrides + preset
     if (presetEfectivo && !cumplePreset(n)) return false;
 
-    // HIDE_MODE
-    if (HIDE_MODE !== 'off'){
-      const key = normalizeUrlForMatch(n.enlace);
-      const pluginItem = PENDIENTES_MAP.get(key);
-      const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-      if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
-      if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
-    }
+    if (_ocultaPorLectura(n, HIDE_MODE)) return false;
     // Se recorre toda la lista (locales + prensa): antes ponía _esPreset a
     // false a todo y las marcas del modo desaparecían al llegar la prensa.
     n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumplePreset(n) : false;
@@ -7748,8 +7741,21 @@ function programarPrensa(consulta, nLocales){
       if (PRENSA_CLAVE !== clave) return;
 
       const antes = ULT_FILTRADAS.length;
+      const previos = new Set(ULT_FILTRADAS);
       const merged = mergePrensa(ULT_FILTRADAS, res.items, consulta);
-      const filtrado = aplicarTier3(merged);       // ← nuevo
+
+      // Pestañas: la prensa cuenta en las dos, se vea o no en la pestaña
+      // actual (en «Modo» no se muestra la que no es del modo, pero suma en
+      // «Todo»). Cada aplicarFiltros recalcula los números desde cero, así
+      // que no se cuenta dos veces.
+      if (ULT_PESTANAS){
+        const enTodo = merged.filter(n => !previos.has(n) && !_ocultaPorLectura(n, HIDE_MODE));
+        ULT_PESTANAS.nTodo += enTodo.length;
+        ULT_PESTANAS.nModo += enTodo.filter(n => cumplePreset(n)).length;
+        renderPestanasPreset();
+      }
+
+      const filtrado = aplicarTier3(merged);
       const nuevas = filtrado.length - antes;
       if (nuevas <= 0) return;
 
@@ -7782,6 +7788,18 @@ function _paraOrden(n, clave){
   };
 }
 
+// Ocultar leídas / vistas (HIDE_MODE). Una sola copia: la usan la lista,
+// la prensa (aplicarTier3) y el recuento de las pestañas.
+function _ocultaPorLectura(n, hm){
+  if (hm === 'off') return false;
+  const key = normalizeUrlForMatch(n.enlace);
+  const pluginItem = PENDIENTES_MAP.get(key);
+  const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
+  if ((hm === 'read' || hm === 'both') && esLeida) return true;
+  if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return true;
+  return false;
+}
+
 // Predicado único de la lista (antes había dos copias: el filtro de
 // aplicarFiltros y _pasaFiltroIndividual). Encima de la consulta solo quedan
 // filtros de vista del cliente: selects, rango móvil, ocultar leídas/vistas
@@ -7794,13 +7812,7 @@ function _pasaVista(n, ctx){
     const ts = n._tsOrden;
     if (isNaN(ts) || ahora - ts > limiteMs) return false;
   }
-  if (hm !== 'off'){
-    const key = normalizeUrlForMatch(n.enlace);
-    const pluginItem = PENDIENTES_MAP.get(key);
-    const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-    if ((hm === 'read' || hm === 'both') && esLeida) return false;
-    if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
-  }
+  if (_ocultaPorLectura(n, hm)) return false;
   if (n._capas && n._capas.size === 1 && n._capas.has('turso')
       && !(n._consultas && n._consultas.has(consulta.clave))) return false;
   if (!_pasaConsulta(n, consulta)) return false;
