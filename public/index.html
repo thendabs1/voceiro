@@ -790,40 +790,30 @@
   background: var(--quote-bg);
   color: var(--fg);
 }
-/* ═══ Banner de preset activo en búsqueda ═══ */
-.preset-aviso{
+/* ═══ Pestañas de búsqueda con modo activo: «Modo · N» / «Todo · M» ═══ */
+.preset-pestanas{
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 6px;
   margin: 8px 0 4px;
-  background: var(--preset-bg);
-  border: 1px solid var(--preset);
-  border-radius: 6px;
   font-size: .75em;
+}
+.preset-pestanas[hidden]{ display: none; }
+.preset-pestanas button{
+  background: transparent;
   color: var(--preset);
-  line-height: 1.4;
-}
-.preset-aviso[hidden]{ display: none; }
-.preset-aviso-txt{
-  flex: 1;
-  min-width: 0;
-}
-.preset-aviso button{
-  flex-shrink: 0;
-  background: var(--preset);
-  color: #fff;
-  border: none;
+  border: 1px solid var(--preset);
   border-radius: 6px;
   padding: 4px 12px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   font-size: .95em;
-  transition: filter .15s;
 }
-.preset-aviso button:hover{ filter: brightness(.92); }
-[data-theme="contrast"] .preset-aviso button{ color: #000; }
+.preset-pestanas button[aria-selected="true"]{
+  background: var(--preset);
+  color: #fff;
+}
+[data-theme="contrast"] .preset-pestanas button[aria-selected="true"]{ color: #000; }
 
   /* ═══ Chips de filtros activos ═══ */
   .chips-busqueda{
@@ -1829,13 +1819,6 @@
 
 
 
-        <label class="cfg-toggle">
-          <input type="checkbox" id="cfg-preset-busqueda">
-          <span class="cfg-toggle-txt">
-            <span class="cfg-toggle-title" id="cfg-preset-busqueda-lbl"></span>
-            <span class="cfg-toggle-hint"  id="cfg-preset-busqueda-hint"></span>
-          </span>
-        </label>
 
         <h3 id="cfg-dias"></h3>
         <p id="cfg-dias-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
@@ -2155,9 +2138,9 @@
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 
-<div id="preset-aviso" class="preset-aviso" hidden>
-  <span class="preset-aviso-txt" id="preset-aviso-txt"></span>
-  <button id="preset-aviso-ampliar" type="button"></button>
+<div id="preset-pestanas" class="preset-pestanas" role="tablist" hidden>
+  <button type="button" role="tab" data-pestana="modo"></button>
+  <button type="button" role="tab" data-pestana="todo"></button>
 </div>
 
 <main id="resultados"></main>
@@ -2183,7 +2166,10 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js';
+} from './parser.js?v=2b0fc10b35';
+// Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=2b0fc10b35';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=2b0fc10b35';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -2360,7 +2346,7 @@ function diasEfectivos(scope) {
 let PRENSA_ACTIVA = false;
 let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
-let PRENSA_PARSED = null;
+let PRENSA_CLAVE = null;   // clave de la consulta con prensa pendiente
 let PRENSA_USER_MANUAL_OFF = false;
 let PRENSA_FUENTES = { gnews: true, freenews: true };
 let PRENSA_LANG = 'es';
@@ -2392,19 +2378,14 @@ const I18N = {
     contadorFueraModo:      ' · {n} fuera del modo',
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
-    presetBannerExtra:       'en histórico',
-    presetBannerZero:        'Ningún titular del modo «{X}» coincide con tu búsqueda',
-    presetBannerWithin:      'Mostrando {n} titulares del modo «{X}»',
-    presetBannerOutside:     '{n} fuera del modo',
-    presetVerTodos:          'Ver todos',
 
     /* ── Feed ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga del feed y prensa externa.',
     cfgRecordarFiltros:      'Recordar filtros al recargar',
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
-    cfgPresetBusqueda:       'Buscar sólo dentro del modo',
-    cfgPresetBusquedaHint:   'Si está activo, la búsqueda se limita a los titulares que cumplen el modo. Desactívalo para ampliar.',
+    presetPestanaModo:       'Modo «{X}» · {n}',
+    presetPestanaTodo:       'Todo · {n}',
 
     /* ── Días en memoria ── */
     cfgDias:                 'Días en memoria',
@@ -2689,18 +2670,13 @@ const I18N = {
   gl: {
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
-    presetBannerExtra:       'no histórico',
-    presetBannerZero:        'Ningún titular do modo «{X}» coincide coa túa busca',
-    presetBannerWithin:      'Amosando {n} titulares do modo «{X}»',
-    presetBannerOutside:     '{n} fóra do modo',
-    presetVerTodos:          'Ver todos',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga do feed e prensa externa.',
     cfgRecordarFiltros:      'Lembrar filtros ao recargar',
     cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
-    cfgPresetBusqueda:       'Buscar só dentro do modo',
-    cfgPresetBusquedaHint:   'Se está activo, a busca limítase aos titulares que cumpren o modo. Desactívao para ampliar.',
+    presetPestanaModo:       'Modo «{X}» · {n}',
+    presetPestanaTodo:       'Todo · {n}',
 
     /* ── Días na memoria ── */
     cfgDias:                 'Días na memoria',
@@ -2961,18 +2937,13 @@ const I18N = {
   ca: {
     tabMedios:               'Mitjans',
     tabAvanzado:             'Avançat',
-    presetBannerExtra:       "a l'històric",
-    presetBannerZero:        'Cap titular del mode «{X}» coincideix amb la teva cerca',
-    presetBannerWithin:      'Mostrant {n} titulars del mode «{X}»',
-    presetBannerOutside:     '{n} fora del mode',
-    presetVerTodos:          'Veure tots',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Càrrega del feed i premsa externa.',
     cfgRecordarFiltros:      'Recordar filtres en recarregar',
     cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
-    cfgPresetBusqueda:       'Cercar només dins del mode',
-    cfgPresetBusquedaHint:   "Si està actiu, la cerca es limita als titulars que compleixen el mode. Desactiva'l per ampliar.",
+    presetPestanaModo:       'Mode «{X}» · {n}',
+    presetPestanaTodo:       'Tot · {n}',
 
     /* ── Dies en memòria ── */
     cfgDias:                 'Dies en memòria',
@@ -3233,18 +3204,13 @@ const I18N = {
   en: {
     tabMedios:               'Outlets',
     tabAvanzado:             'Advanced',
-    presetBannerExtra:       'in history',
-    presetBannerZero:        'No headlines from the "{X}" mode match your search',
-    presetBannerWithin:      'Showing {n} headlines from the "{X}" mode',
-    presetBannerOutside:     '{n} outside the mode',
-    presetVerTodos:          'View all',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feed loading and external press.',
     cfgRecordarFiltros:      'Remember filters on reload',
     cfgRecordarFiltrosHint:  'Restores the active search and filters when you return.',
-    cfgPresetBusqueda:       'Search only within the mode',
-    cfgPresetBusquedaHint:   'When active, search is limited to headlines matching the mode. Disable to widen.',
+    presetPestanaModo:       '"{X}" mode · {n}',
+    presetPestanaTodo:       'All · {n}',
 
     /* ── Days in memory ── */
     cfgDias:                 'Days in memory',
@@ -3505,18 +3471,13 @@ const I18N = {
   eu: {
     tabMedios:               'Hedabideak',
     tabAvanzado:             'Aurreratua',
-    presetBannerExtra:       'historialean',
-    presetBannerZero:        '«{X}» moduko izenbururik ez dator bat zure bilaketarekin',
-    presetBannerWithin:      '«{X}» moduko {n} izenburu erakusten',
-    presetBannerOutside:     '{n} modutik kanpo',
-    presetVerTodos:          'Dena ikusi',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feedaren karga eta kanpoko prentsa.',
     cfgRecordarFiltros:      'Gogoratu iragazkiak berriz kargatzean',
     cfgRecordarFiltrosHint:  'Bilaketa eta iragazki aktiboak berreskuratzen ditu itzultzean.',
-    cfgPresetBusqueda:       'Moduaren barruan soilik bilatu',
-    cfgPresetBusquedaHint:   'Aktibo badago, bilaketa modua betetzen duten izenburuetara mugatzen da. Desaktibatu zabaltzeko.',
+    presetPestanaModo:       '«{X}» modua · {n}',
+    presetPestanaTodo:       'Dena · {n}',
 
     /* ── Memoriako egunak ── */
     cfgDias:                 'Memoriako egunak',
@@ -3987,9 +3948,11 @@ const HIDE_MODE_KEY = 'voceiro-hide-mode';
 const HIDE_MODES = ['off', 'read', 'viewed', 'both'];
 let HIDE_MODE = 'off';
 const RECORDAR_FILTROS_KEY = 'voceiro-recordar-filtros';
-const PRESET_BUSQUEDA_KEY = 'voceiro-preset-busqueda-estricto';
-let PRESET_BUSQUEDA_ESTRICTO = true;
-let PRESET_AMPLIADO_TEMP = false;
+// Pestaña de resultados al buscar con un modo activo. null = automática
+// (Modo, o Todo si el modo no tiene resultados). Se reinicia al cambiar de
+// búsqueda; si el usuario elige una, se respeta para esa búsqueda.
+let PESTANA_BUSQUEDA = null;
+let PESTANA_CLAVE = '';
 let RECORDAR_FILTROS = true;
 let APP_LISTA = false;
 
@@ -4001,18 +3964,6 @@ function cargarRecordarFiltros(){
   } catch(e){}
   return true;   // por defecto, sí recordamos
 }
-function cargarPresetBusquedaEstricto(){
-  try {
-    const raw = localStorage.getItem(PRESET_BUSQUEDA_KEY);
-    if (raw === '0') return false;
-    if (raw === '1') return true;
-  } catch(e){}
-  return true;
-}
-function guardarPresetBusquedaEstricto(){
-  try { localStorage.setItem(PRESET_BUSQUEDA_KEY, PRESET_BUSQUEDA_ESTRICTO ? '1' : '0'); } catch(e){}
-}
-
 function guardarRecordarFiltros(){
   try { localStorage.setItem(RECORDAR_FILTROS_KEY, RECORDAR_FILTROS ? 'true' : 'false'); } catch(e){}
   // Si el usuario desactiva la opción, limpiamos lo guardado para
@@ -4555,37 +4506,18 @@ window.addEventListener('scroll', () => {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   REGEX DE RESALTADO + IDIOMA
+   RESALTADO + IDIOMA
+   El resaltado marca exactamente lo que casó con el texto de la búsqueda
+   (rangosResaltado, shared/busqueda/texto.js): misma regla que el filtro.
    ═══════════════════════════════════════════════════════════════ */
-const ACCENT_MAP = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
-function buildHighlightRegex(tokens){
-  if (!tokens.length) return null;
-  const patterns = tokens.map(tok => {
-    let p = '';
-    for (const c of tok){
-      let hit = false;
-      for (const k in ACCENT_MAP){
-        if (ACCENT_MAP[k].includes(c)){ p += '[' + ACCENT_MAP[k] + ']'; hit = true; break; }
-      }
-      if (!hit) p += c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    }
-    return p;
-  });
-  return new RegExp('(' + patterns.join('|') + ')', 'gi');
-}
-
-function resaltar(texto, rx, fallbackEsc){
-  if (!rx) return fallbackEsc != null ? fallbackEsc : escapeHtml(texto || '');
+function resaltarTitular(texto, compilado){
   if (!texto) return '';
   let out = '', last = 0;
-  const matches = texto.matchAll(rx);
-  for (const mm of matches){
-    out += escapeHtml(texto.slice(last, mm.index));
-    out += '<mark>' + escapeHtml(mm[0]) + '</mark>';
-    last = mm.index + mm[0].length;
+  for (const [i, j] of rangosResaltado(texto, compilado)){
+    out += escapeHtml(texto.slice(last, i)) + '<mark>' + escapeHtml(texto.slice(i, j)) + '</mark>';
+    last = j;
   }
-  out += escapeHtml(texto.slice(last));
-  return out;
+  return out + escapeHtml(texto.slice(last));
 }
 
 const LANG_OPTIONS = [
@@ -5130,8 +5062,12 @@ function _dominioTieneSlice(dom) {
 
 // ─── Mergear items de una capa/base en NOTICIAS con dedup global ───
 // Devuelve cuántos items NUEVOS se añadieron.
-function _mergearItemsEnNoticias(items, capaKey) {
+// clave: consulta que trajo los items (solo Turso). Un item que solo viene
+// de Turso se ve únicamente mientras esa consulta esté activa (_pasaVista):
+// así una búsqueda no deja sus resultados en el feed ni en la siguiente.
+function _mergearItemsEnNoticias(items, capaKey, clave = null) {
   let añadidos = 0;
+  const marcar = n => { if (clave) (n._consultas || (n._consultas = new Set())).add(clave); };
 
   for (const n of items) {
     const u = _claveUrl(n.u || '', n.d || '');
@@ -5142,6 +5078,7 @@ function _mergearItemsEnNoticias(items, capaKey) {
       const existente = _itemPorUrl.get(u);
       if (existente) {
         existente._capas.add(capaKey);
+        marcar(existente);
         continue;
       }
     }
@@ -5150,6 +5087,7 @@ function _mergearItemsEnNoticias(items, capaKey) {
       const existente = _itemPorTitulo.get(t);
       if (existente) {
         existente._capas.add(capaKey);
+        marcar(existente);
         continue;
       }
     }
@@ -5159,6 +5097,7 @@ function _mergearItemsEnNoticias(items, capaKey) {
     if (t) _titulosCargados.add(t);
 
     n._capas = new Set([capaKey]);
+    marcar(n);
     n._dia = n._dia || '';
     n._generado = n._generado || '';
     NOTICIAS.push(n);
@@ -6628,7 +6567,9 @@ function aplicarTier3(items){
       if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
       if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
     }
-    n._esPreset = false;
+    // Se recorre toda la lista (locales + prensa): antes ponía _esPreset a
+    // false a todo y las marcas del modo desaparecían al llegar la prensa.
+    n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumplePreset(n) : false;
     return true;
   });
 }
@@ -7351,9 +7292,10 @@ function bsAbrir(){
    FILTRADO + RENDER
    ═══════════════════════════════════════════════════════════════ */
 let ULT_FILTRADAS = [];
-let ULT_RX = null;
+let ULT_TEXTO = null;   // texto compilado de la búsqueda actual (para resaltar)
 let ULT_PRESET_EFECTIVO = false;
-let ULT_BANNER_INFO = null;
+let ULT_MARCAR_PRESET = false;   // buscando con modo activo: marcar lo del modo
+let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañas
 
 const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
@@ -7370,6 +7312,10 @@ let TURSO_OFFSET = 0;              // próximo offset a pedir
 let TURSO_HAY_MAS = false;
 let TURSO_ACTIVO = false;          // true cuando ya estamos paginando Turso
 let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llevar cutoff)
+// El archivo se consulta tras una pausa sin cambios (regla 3), no en cada
+// pausa del debounce al teclear: menos peticiones y menos respuestas tiradas.
+const ARCHIVO_PAUSA_MS = 700;
+let _archivoTimer = null;
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false; 
 /* ═══════════════════════════════════════════════════════════════
@@ -7623,7 +7569,7 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
 
 
 
-function mergePrensa(locales, prensaItems){
+function mergePrensa(locales, prensaItems, consulta = null){
   if (!prensaItems || !prensaItems.length) return locales;
 
   const yaVistas = new Set();
@@ -7719,6 +7665,11 @@ function mergePrensa(locales, prensaItems){
     n._esPreset   = false;
     n._dupHidden  = null;
 
+    // Medios y fechas de la búsqueda, estrictos; el texto no (el proveedor
+    // busca también en el cuerpo). Con filtro de medio, un resultado cuyo
+    // medio no se pudo resolver queda fuera: no se puede comprobar.
+    if (consulta && !consulta.pasaFiltros({ dominio: dom, ts: n._tsOrden })) continue;
+
     nuevos.push(n);
   }
 
@@ -7733,12 +7684,18 @@ function mergePrensa(locales, prensaItems){
   return merged;
 }
 
-function programarPrensa(parsed, rawQuery, nLocales){
+function programarPrensa(consulta, nLocales){
   if (PRENSA_TIMER){ clearTimeout(PRENSA_TIMER); PRENSA_TIMER = null; }
 
-  const tieneQuery = parsed.titulo.length || parsed.dominios.length || parsed.medios.length;
+  // Con un filtro de medios de más de 3 dominios (p. ej. grupo:galicia) la
+  // prensa no puede acotarse (site: admite 3) y lo que trae no pasa el
+  // filtro de medios: medido, 0 de 100. No se pide.
+  const dominios = consulta.medios.dominios;
+  const tieneQuery = !consulta.imposible
+    && (consulta.texto.incluir.length || dominios !== null)
+    && !(dominios && dominios.size > 3);
   if (!tieneQuery){
-    PRENSA_PARSED = null;
+    PRENSA_CLAVE = null;
     return;
   }
 
@@ -7756,22 +7713,25 @@ function programarPrensa(parsed, rawQuery, nLocales){
     }
   }
 
-  PRENSA_PARSED = parsed;
+  // Se compara por clave: cada aplicarFiltros crea un parsed nuevo y antes
+  // cualquier repintado anulaba la búsqueda de prensa pendiente.
+  const clave = consulta.clave;
+  PRENSA_CLAVE = clave;
 
   PRENSA_TIMER = setTimeout(() => {
     PRENSA_TIMER = null;
-    if (PRENSA_PARSED !== parsed) return;
+    if (PRENSA_CLAVE !== clave) return;
 
     const btn = document.getElementById('btn-prensa');
     if (btn) btn.classList.add('cargando');
 
-    buscarEnPrensa(parsed, rawQuery, { silent: true }).then(res => {
+    buscarEnPrensa(consulta.parsed, paraPrensa(consulta), { silent: true }).then(res => {
       if (btn) btn.classList.remove('cargando');
       if (!res || !res.items || !res.items.length) return;
-      if (PRENSA_PARSED !== parsed) return;
+      if (PRENSA_CLAVE !== clave) return;
 
       const antes = ULT_FILTRADAS.length;
-      const merged = mergePrensa(ULT_FILTRADAS, res.items);
+      const merged = mergePrensa(ULT_FILTRADAS, res.items, consulta);
       const filtrado = aplicarTier3(merged);       // ← nuevo
       const nuevas = filtrado.length - antes;
       if (nuevas <= 0) return;
@@ -7784,15 +7744,58 @@ function programarPrensa(parsed, rawQuery, nLocales){
 }
 
 
-// Texto libre: AND palabra por palabra sobre el titular normalizado.
-// Única definición; la usan aplicarFiltros y _pasaFiltroIndividual.
-function _pasaTexto(n, titulo){
-  if (!titulo.length) return true;
-  const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-  for (let i = 0; i < titulo.length; i++){
-    if (tn.indexOf(titulo[i]) === -1) return false;
+// Texto, medios y fechas: lo decide el núcleo (shared/busqueda/consulta.js).
+function _pasaConsulta(n, consulta){
+  return consulta.pasa({
+    dominio: n.dominio,
+    titular: n.titular,
+    ts: n._tsOrden,
+    palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
+  });
+}
+
+// Predicado único de la lista (antes había dos copias: el filtro de
+// aplicarFiltros y _pasaFiltroIndividual). Encima de la consulta solo quedan
+// filtros de vista del cliente: selects, rango móvil, ocultar leídas/vistas
+// y modo (preset). Devuelve true, false o 'fuera-preset'.
+function _pasaVista(n, ctx){
+  const { g, t2, limiteMs, ahora, consulta, presetEfectivo, soloPreset, marcarPreset, HIDE_MODE: hm } = ctx;
+  if (g && n.grupo !== g) return false;
+  if (t2 && n.tipo  !== t2) return false;
+  if (limiteMs){
+    const ts = n._tsOrden;
+    if (isNaN(ts) || ahora - ts > limiteMs) return false;
   }
+  if (hm !== 'off'){
+    const key = normalizeUrlForMatch(n.enlace);
+    const pluginItem = PENDIENTES_MAP.get(key);
+    const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
+    if ((hm === 'read' || hm === 'both') && esLeida) return false;
+    if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
+  }
+  if (n._capas && n._capas.size === 1 && n._capas.has('turso')
+      && !(n._consultas && n._consultas.has(consulta.clave))) return false;
+  if (!_pasaConsulta(n, consulta)) return false;
+  if (presetEfectivo || soloPreset){
+    const cumple = cumplePreset(n);
+    n._esPreset = cumple;
+    return cumple ? true : 'fuera-preset';
+  }
+  n._esPreset = marcarPreset ? cumplePreset(n) : false;
   return true;
+}
+
+// Aviso de medio desconocido (medio:noexiste → 0 resultados). Con retardo,
+// para no avisar de cada prefijo mientras se teclea.
+let _avisoMedioTimer = null;
+function _avisarMediosDesconocidos(consulta){
+  if (_avisoMedioTimer){ clearTimeout(_avisoMedioTimer); _avisoMedioTimer = null; }
+  const desc = consulta.medios.desconocidos;
+  if (!desc.length) return;
+  _avisoMedioTimer = setTimeout(() => {
+    _avisoMedioTimer = null;
+    toast(`Sin medios para: ${desc.map(d => d.valor).join(', ')}`, 3000);
+  }, 1500);
 }
 
 function aplicarFiltros(){
@@ -7800,6 +7803,9 @@ function aplicarFiltros(){
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
+  // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
+  // Se interpreta una vez y la usan el filtro, Turso y la prensa.
+  const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
   console.log('[aplicarFiltros]',
     'raw=', JSON.stringify(raw.slice(0, 60)),
     'capas=', [...capasRequeridas(parseQuery(preprocesarInput(raw)))],
@@ -7811,9 +7817,10 @@ function aplicarFiltros(){
 const capas = capasRequeridas(parsed);
 const usarTurso = necesitaTurso(parsed);
 
-// Reset solo si cambia la query (Turso no debe re-dispararse por otras razones)
-if (raw !== ULT_QUERY_KEY) {
-  ULT_QUERY_KEY = raw;
+// Reset solo si cambia la consulta (por su clave: un espacio o cambiar
+// 'Sánchez' por 'sanchez' no es otra búsqueda).
+if (consulta.clave !== ULT_QUERY_KEY) {
+  ULT_QUERY_KEY = consulta.clave;
   TURSO_OFFSET  = 0;
   TURSO_HAY_MAS = false;
   TURSO_ACTIVO  = !capas.size;
@@ -7842,33 +7849,42 @@ if (!capas.size) {
   // Disparo Turso SOLO si no hay capas R2 que cubran la query.
   // (Con la nueva necesitaTurso, esto solo ocurre para texto/tag/tipo/lang/fechas
   //  o grupos sin slice.)
-  if (usarTurso && !TURSO_RAW) {
-    TURSO_RAW = rawProcesado;  // sin cutoff: no hay R2 previo, queremos todo
+  // Al archivo se le manda la consulta ya interpretada (inicio de palabra,
+  // dominios exactos, días de Madrid): el worker no tiene que reinterpretar.
+  const rawArchivo = consulta.imposible ? '' : paraArchivo(consulta);
+  if (usarTurso && rawArchivo && !TURSO_RAW) {
+    TURSO_RAW = rawArchivo;
     TURSO_OFFSET = 0;
 
     // Se descarta solo si la consulta cambió, no por cualquier otra llamada
     // a aplicarFiltros (un espacio, una capa R2, un toggle…): si no, la
     // respuesta se perdía y no se volvía a pedir.
     const claveTurso = TURSO_RAW;
-    buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
-      if (TURSO_RAW !== claveTurso) return;
-      if (!res.items || !res.items.length) {
-        TURSO_HAY_MAS = false;
-        actualizarBotonCargarMas();
-        return;
-      }
-      TURSO_OFFSET  = (res.nextOffset ?? res.items.length);
-      TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
+    const claveConsulta = consulta.clave;
+    if (_archivoTimer) clearTimeout(_archivoTimer);
+    _archivoTimer = setTimeout(() => {
+      _archivoTimer = null;
+      if (TURSO_RAW !== claveTurso) return;      // la consulta cambió durante la pausa
+      buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
+        if (TURSO_RAW !== claveTurso) return;
+        if (!res.items || !res.items.length) {
+          TURSO_HAY_MAS = false;
+          actualizarBotonCargarMas();
+          return;
+        }
+        TURSO_OFFSET  = (res.nextOffset ?? res.items.length);
+        TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
 
-      const nuevos = _mergearItemsEnNoticias(res.items, 'turso');
-      if (nuevos > 0) {
-        _hidratadasHasta = 0;
-        hidratarNoticias();
+        // Se repinta aunque no haya items nuevos: los que ya estaban en
+        // NOTICIAS (de otra búsqueda) pasan a ser visibles para esta.
+        const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta);
+        if (nuevos > 0) {
+          _hidratadasHasta = 0;
+          hidratarNoticias();
+        }
         aplicarFiltros();
-      } else {
-        actualizarBotonCargarMas();
-      }
-    });
+      });
+    }, ARCHIVO_PAUSA_MS);
   }
 
   // ── Filtrado ──
@@ -7893,110 +7909,30 @@ if (!capas.size) {
     !!g || !!t2 || !!dias || !!parsed.desde || !!parsed.hasta;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
-  const presetEfectivo =
-    presetConReglas &&
-    !hayFuenteExplicita &&
-    !PRESET_AMPLIADO_TEMP &&
-    (!hayBusquedaActiva || PRESET_BUSQUEDA_ESTRICTO);
+  // Sin búsqueda, el modo filtra el feed (es tu forma de leerlo). Buscando,
+  // el modo no esconde nada: los resultados se separan en dos pestañas,
+  // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
+  // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
+  const presetEfectivo = presetConReglas && !hayFuenteExplicita && !hayBusquedaActiva;
+  const conPestanas    = presetConReglas && !hayFuenteExplicita &&  hayBusquedaActiva;
 
-  let fueraDelPreset = 0;
-/* ═══════════════════════════════════════════════════════════════
-   SEMÁNTICA DE FILTROS (faceted search)
+  _avisarMediosDesconocidos(consulta);
+  const ctx = {
+    g, t2, limiteMs, ahora, parsed, consulta, orden, HIDE_MODE,
+    presetEfectivo, marcarPreset: conPestanas, soloPreset: false,
+  };
 
-   - Dentro del mismo facet (grupo, tipo, medio, dominio, tag, lang): OR.
-       "grupo:regional grupo:nacional"  →  regionales O nacionales.
-   - Entre facets distintos: AND.
-       "grupo:regional tipo:diario"    →  regionales Y diarios.
-   - Texto libre: AND palabra por palabra.
-       "elecciones sanchez"            →  contiene "elecciones" Y "sanchez".
+  let filtradas = NOTICIAS.filter(n => _pasaVista(n, ctx) === true);
 
-   Justificación: los valores de un mismo facet son mutuamente
-   excluyentes en un ítem (una noticia tiene un único grupo). El OR
-   es la única semántica útil al combinar valores del mismo facet:
-   AND dentro del facet daría siempre 0 resultados.
-
-   El parser (shared/parser.js) no participa: solo produce arrays por
-   facet. La semántica la aplica el consumidor (este filtro o el
-   worker de Turso).
-   ═══════════════════════════════════════════════════════════════ */
-  let filtradas = NOTICIAS.filter(n => {
-    if (g && n.grupo !== g) return false;
-    if (t2 && n.tipo  !== t2) return false;
-    if (limiteMs){
-      const ts = n._tsOrden;
-      if (isNaN(ts)) return false;
-      if (ahora - ts > limiteMs) return false;
-    }
-    if (parsed.desde){
-      const ts = n._tsOrden;
-      if (isNaN(ts)) return false;
-      const corte = new Date(parsed.desde + 'T00:00:00').getTime();
-      if (ts < corte) return false;
-    }
-    if (parsed.hasta){
-      const ts = n._tsOrden;
-      if (isNaN(ts)) return false;
-      const corte = new Date(parsed.hasta + 'T23:59:59').getTime();
-      if (ts > corte) return false;
-    }
-    if (HIDE_MODE !== 'off'){
-      const key = normalizeUrlForMatch(n.enlace);
-      const pluginItem = PENDIENTES_MAP.get(key);
-      const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-      if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
-      if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
-    }
-    // ── Filtrado por facet: OR dentro del facet, AND entre facets. ──
-    // Ver nota de semántica al principio del archivo.
-    if (hayMedio || hayDominio){
-      const ds = n._domStrict  || (n._domStrict  = normDomain(n.dominio));
-      const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
-      let ok = false;
-      for (let i = 0; i < parsed.dominios.length; i++){
-        if (ds.indexOf(parsed.dominios[i]) !== -1){ ok = true; break; }
-      }
-      if (!ok){
-        for (let i = 0; i < parsed.medios.length; i++){
-          if (ms.indexOf(parsed.medios[i]) !== -1){ ok = true; break; }
-        }
-      }
-      if (!ok) return false;
-    }
-    if (hayGrupo){
-      const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
-      let ok = false;
-      for (let i = 0; i < parsed.grupos.length; i++){
-        if (gs.indexOf(parsed.grupos[i]) !== -1){ ok = true; break; }
-      }
-      if (!ok) return false;
-    }
-    if (hayTipo){
-      const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
-      let ok = false;
-      for (let i = 0; i < parsed.tipos.length; i++){
-        if (ts.indexOf(parsed.tipos[i]) !== -1){ ok = true; break; }
-      }
-      if (!ok) return false;
-    }
-    if (hayTag){
-      const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
-      let ok = false;
-      for (let i = 0; i < parsed.tags.length; i++){
-        if (tags.some(x => x.indexOf(parsed.tags[i]) !== -1)){ ok = true; break; }
-      }
-      if (!ok) return false;
-    }
-    // ── Fin facet ──
-    if (!_pasaTexto(n, parsed.titulo)) return false;
-    if (presetEfectivo){
-      const cumple = cumplePreset(n);
-      n._esPreset = cumple;
-      if (!cumple){ fueraDelPreset++; return false; }
-      return true;
-    }
-    n._esPreset = false;
-    return true;
-  });
+  let infoPestanas = null;
+  if (conPestanas){
+    // Una búsqueda nueva vuelve a la pestaña automática.
+    if (PESTANA_CLAVE !== consulta.clave){ PESTANA_CLAVE = consulta.clave; PESTANA_BUSQUEDA = null; }
+    const delModo = filtradas.filter(n => n._esPreset);
+    const pestana = PESTANA_BUSQUEDA || (delModo.length ? 'modo' : 'todo');
+    infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length };
+    if (pestana === 'modo'){ filtradas = delModo; ctx.soloPreset = true; }
+  }
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
   filtradas.sort((a, b) => {
@@ -8028,20 +7964,15 @@ if (!capas.size) {
   });
 
   ULT_FILTRADAS = filtradas;
-  ULT_RX = buildHighlightRegex(parsed.titulo);
-  ULT_PRESET_EFECTIVO = presetEfectivo;
+  ULT_TEXTO = consulta.texto.incluir.length ? consulta.texto : null;
+  ULT_PRESET_EFECTIVO = presetEfectivo || ctx.soloPreset;
+  ULT_MARCAR_PRESET = conPestanas;
 
   // Contexto para el append incremental
-  ULT_CTX = { g, t2, limiteMs, ahora, parsed, presetEfectivo, orden, HIDE_MODE };
+  ULT_CTX = ctx;
 
-  ULT_BANNER_INFO = {
-    nDentro: filtradas.length,
-    nFuera: fueraDelPreset,
-    presetConReglas,
-    hayFuenteExplicita,
-    hayBusquedaActiva,
-  };
-  renderPresetBanner();
+  ULT_PESTANAS = infoPestanas;
+  renderPestanasPreset();
 
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
@@ -8049,7 +7980,7 @@ if (!capas.size) {
   if (APP_LISTA && RECORDAR_FILTROS){
     try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
   }
-  programarPrensa(parsed, raw, filtradas.length);
+  programarPrensa(consulta, filtradas.length);
 }
 
 
@@ -8058,38 +7989,20 @@ let _cargandoScope = false;
 
 
 
-function renderPresetBanner(){
-  const aviso = document.getElementById('preset-aviso');
-  if (!aviso) return;
-
-  const info = ULT_BANNER_INFO;
-  if (!info){ aviso.hidden = true; return; }
-
-  const mostrar =
-    info.presetConReglas &&
-    PRESET_BUSQUEDA_ESTRICTO &&
-    !PRESET_AMPLIADO_TEMP &&
-    !info.hayFuenteExplicita &&
-    info.hayBusquedaActiva &&
-    (info.nDentro === 0 || info.nFuera > 0);
-
-  if (!mostrar){ aviso.hidden = true; return; }
-
+function renderPestanasPreset(){
+  const el = document.getElementById('preset-pestanas');
+  if (!el) return;
+  const info = ULT_PESTANAS;
+  if (!info){ el.hidden = true; return; }
   const nombre = (PRESET && PRESET.nombre) || 'General';
-  let txt;
-  if (info.nDentro === 0){
-    txt = t('presetBannerZero', { X: nombre });
-  } else {
-    txt = t('presetBannerWithin', { X: nombre, n: info.nDentro });
+  for (const b of el.querySelectorAll('button[data-pestana]')){
+    const esModo = b.dataset.pestana === 'modo';
+    b.textContent = esModo
+      ? t('presetPestanaModo', { X: nombre, n: info.nModo.toLocaleString() })
+      : t('presetPestanaTodo', { n: info.nTodo.toLocaleString() });
+    b.setAttribute('aria-selected', String(b.dataset.pestana === info.pestana));
   }
-  if (info.nFuera > 0){
-    txt += ' · ' + t('presetBannerOutside', { n: info.nFuera });
-  }
-  const txtEl = document.getElementById('preset-aviso-txt');
-  const btnEl = document.getElementById('preset-aviso-ampliar');
-  if (txtEl) txtEl.textContent = txt;
-  if (btnEl) btnEl.textContent = t('presetVerTodos');
-  aviso.hidden = false;
+  el.hidden = false;
 }
 
 function renderizar(){
@@ -8178,7 +8091,7 @@ function renderItemHtml(n, idx){
   }
 
   let tituloHtml;
-  if (ULT_RX) tituloHtml = resaltar(n.titular, ULT_RX);
+  if (ULT_TEXTO) tituloHtml = resaltarTitular(n.titular, ULT_TEXTO);
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
 
@@ -8301,83 +8214,6 @@ function appendBatch(){
   }
 }
 
-// Comprueba si una noticia pasa los filtros guardados en ctx.
-// ctx = ULT_CTX (mismo shape que el de aplicarFiltros).
-function _pasaFiltroIndividual(n, ctx) {
-  const { g, t2, limiteMs, ahora, parsed, presetEfectivo, HIDE_MODE: hm } = ctx;
-
-  if (g && n.grupo !== g) return false;
-  if (t2 && n.tipo  !== t2) return false;
-  if (limiteMs){
-    const ts = n._tsOrden;
-    if (isNaN(ts) || ahora - ts > limiteMs) return false;
-  }
-  if (parsed.desde){
-    const ts = n._tsOrden;
-    if (isNaN(ts)) return false;
-    if (ts < new Date(parsed.desde + 'T00:00:00').getTime()) return false;
-  }
-  if (parsed.hasta){
-    const ts = n._tsOrden;
-    if (isNaN(ts)) return false;
-    if (ts > new Date(parsed.hasta + 'T23:59:59').getTime()) return false;
-  }
-  if (hm !== 'off'){
-    const key = normalizeUrlForMatch(n.enlace);
-    const pluginItem = PENDIENTES_MAP.get(key);
-    const esLeida = LEIDAS_LOCAL.has(key) || (pluginItem && pluginItem.read);
-    if ((hm === 'read' || hm === 'both') && esLeida) return false;
-    if ((hm === 'viewed' || hm === 'both') && VISTAS_LOCAL.has(key)) return false;
-  }
-  if (parsed.medios.length || parsed.dominios.length){
-    const ds = n._domStrict  || (n._domStrict  = normDomain(n.dominio));
-    const ms = n._medioStrict || (n._medioStrict = normStrict(n.medio));
-    let ok = false;
-    for (let i = 0; i < parsed.dominios.length; i++){
-      if (ds.indexOf(parsed.dominios[i]) !== -1){ ok = true; break; }
-    }
-    if (!ok){
-      for (let i = 0; i < parsed.medios.length; i++){
-        if (ms.indexOf(parsed.medios[i]) !== -1){ ok = true; break; }
-      }
-    }
-    if (!ok) return false;
-  }
-  if (parsed.grupos.length){
-    const gs = n._grupoStrict || (n._grupoStrict = normStrict(n.grupo));
-    let ok = false;
-    for (let i = 0; i < parsed.grupos.length; i++){
-      if (gs.indexOf(parsed.grupos[i]) !== -1){ ok = true; break; }
-    }
-    if (!ok) return false;
-  }
-  if (parsed.tipos.length){
-    const ts = n._tipoStrict || (n._tipoStrict = normStrict(n.tipo));
-    let ok = false;
-    for (let i = 0; i < parsed.tipos.length; i++){
-      if (ts.indexOf(parsed.tipos[i]) !== -1){ ok = true; break; }
-    }
-    if (!ok) return false;
-  }
-  if (parsed.tags.length){
-    const tags = n._tagsStrict || (n._tagsStrict = (n.tags || []).map(normStrict));
-    let ok = false;
-    for (let i = 0; i < parsed.tags.length; i++){
-      if (tags.some(x => x.indexOf(parsed.tags[i]) !== -1)){ ok = true; break; }
-    }
-    if (!ok) return false;
-  }
-  if (!_pasaTexto(n, parsed.titulo)) return false;
-  if (presetEfectivo){
-    const cumple = cumplePreset(n);
-    n._esPreset = cumple;
-    if (!cumple) return false;
-  } else {
-    n._esPreset = false;
-  }
-  return true;
-}
-
 // Añade items nuevos al final del DOM sin re-render completo.
 // Devuelve true si el append fue limpio, false si hay que re-renderizar.
 function _anexarItemsIncremental(items, ctx) {
@@ -8396,7 +8232,7 @@ function _anexarItemsIncremental(items, ctx) {
               || n;
     if (vistos.has(real) || ULT_FILTRADAS.includes(real)) continue;
     vistos.add(real);
-    if (_pasaFiltroIndividual(real, ctx)) nuevos.push(real);
+    if (_pasaVista(real, ctx) === true) nuevos.push(real);
   }
   if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
 
@@ -8485,6 +8321,7 @@ async function cargarMasDeTurso() {
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
   const claveTurso = TURSO_RAW;
+  const claveConsulta = ULT_QUERY_KEY;
   const offsetPedido = TURSO_OFFSET;
   const res = await buscarEnWorker(TURSO_RAW, {
     offset: TURSO_OFFSET,
@@ -8504,17 +8341,15 @@ async function cargarMasDeTurso() {
   TURSO_OFFSET  = (res.nextOffset ?? (TURSO_OFFSET + res.items.length));
   TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
 
-  const nuevos = _mergearItemsEnNoticias(res.items, 'turso');
-  if (nuevos > 0) {
-    hidratarNoticias();
-    if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
-      aplicarFiltros();
-    } else {
-      renderPresetBanner();
-      actualizarFiltrosCount();
-      actualizarBotonCargarMas();
-    }
+  // Como en la primera página: también los items ya cargados cuentan para
+  // esta consulta, así que se anexan aunque no haya ninguno nuevo.
+  const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta);
+  if (nuevos > 0) hidratarNoticias();
+  if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
+    aplicarFiltros();
   } else {
+    renderPestanasPreset();
+    actualizarFiltrosCount();
     actualizarBotonCargarMas();
   }
 }
@@ -8861,10 +8696,6 @@ function aplicarTextos(){
   }
   $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
   $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
-  const lblPreset = $('#cfg-preset-busqueda-lbl');
-  if (lblPreset) lblPreset.textContent = t('cfgPresetBusqueda');
-  const hintPreset = $('#cfg-preset-busqueda-hint');
-  if (hintPreset) hintPreset.textContent = t('cfgPresetBusquedaHint');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#cfg-medios-legend').innerHTML =
     '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
@@ -9166,23 +8997,13 @@ function wireStaticEvents(){
       );
     });
   }
-  // ── Toggle "Buscar sólo dentro del modo activo" ──
-  const chkPreset = $('#cfg-preset-busqueda');
-  if (chkPreset){
-    chkPreset.checked = PRESET_BUSQUEDA_ESTRICTO;
-    chkPreset.addEventListener('change', () => {
-      PRESET_BUSQUEDA_ESTRICTO = chkPreset.checked;
-      guardarPresetBusquedaEstricto();
-      PRESET_AMPLIADO_TEMP = false;
-      aplicarFiltros();
-    });
-  }
-
-  // ── Banner del preset ──
-  const btnPresetAmpliar = $('#preset-aviso-ampliar');
-  if (btnPresetAmpliar){
-    btnPresetAmpliar.addEventListener('click', () => {
-      PRESET_AMPLIADO_TEMP = true;
+  // ── Pestañas Modo / Todo ──
+  const pestanas = $('#preset-pestanas');
+  if (pestanas){
+    pestanas.addEventListener('click', e => {
+      const b = e.target.closest('button[data-pestana]');
+      if (!b) return;
+      PESTANA_BUSQUEDA = b.dataset.pestana;
       aplicarFiltros();
     });
   }
@@ -9395,7 +9216,6 @@ function wireStaticEvents(){
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
   $('#buscar').addEventListener('input', () => {
-    PRESET_AMPLIADO_TEMP = false;
     aplicarFiltrosDebounced();
   });
   // Cada select escribe su token en #buscar.
@@ -9545,7 +9365,6 @@ async function init(){
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
   RECORDAR_FILTROS = cargarRecordarFiltros();
-  PRESET_BUSQUEDA_ESTRICTO = cargarPresetBusquedaEstricto();
     // Preferencias de prensa externa
   cargarPrensaDeLocalStorage();
   rebuildPendientes();
