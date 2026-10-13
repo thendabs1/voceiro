@@ -1415,6 +1415,13 @@
     clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
   }
 }
+/* Móvil estrecho: título e iconos arriba; el modo, abajo con todo el ancho
+   (en una fila se quedaría en «Ge… ▾»). */
+@media (max-width: 480px){
+  header .header-top{ flex-wrap: wrap; row-gap: 6px; }
+  header .header-actions-right{ order: 1; margin-left: auto; }
+  header .header-actions-left{ order: 2; flex: 1 1 100%; }
+}
   @media (max-width:900px){
 .filtros-row{ position: static; }
 .filtros{ grid-template-columns: 1fr 1fr; }
