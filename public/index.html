@@ -150,7 +150,7 @@
     margin-right: 4px;
   }
   #total-r2{ font-weight: bold; }
-  button{
+  button, a.boton{
     cursor:pointer; padding:8px 14px;
     border:1px solid var(--btn-border);
     background:var(--btn-bg); color:var(--fg);
@@ -158,7 +158,8 @@
     font-family:inherit; font-size:.8em; font-weight:500;
     transition:filter .1s, background .1s;
   }
-  button:hover{filter:brightness(.95)}
+  button:hover, a.boton:hover{filter:brightness(.95)}
+  a.boton{ text-decoration:none; }
   button.primary{
     background:var(--accent); color:#fff; border-color:var(--accent); font-weight:bold;
   }
@@ -493,7 +494,6 @@
   .medio-fila.estado-ignorar{background:var(--block-bg)}
   .medio-fila .celda{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .medio-fila .celda-grupo{color:var(--muted); font-size:.9em}
-  .medio-fila.no-config .celda-dominio{opacity:.75}
 /* ── Cabeceras de super-grupo (lista de medios) ── */
 .medio-cat-header{
   padding: 10px 10px 4px;
@@ -508,14 +508,6 @@
   top: 0;
   z-index: 1;
 }
-  .known-dot{
-    display:inline-block;
-    width:6px; height:6px; border-radius:50%;
-    background:var(--save);
-    margin-right:6px;
-    vertical-align:middle;
-    flex-shrink:0;
-  }
 
   .chk{display:flex; justify-content:center; align-items:center; cursor:pointer; user-select:none}
   .chk input{display:none}
@@ -2064,7 +2056,6 @@
               </details>
             </div>
             <p id="cfg-medios-hint" class="aj-hint"></p>
-            <p id="cfg-medios-legend" class="aj-hint"></p>
             <div class="ctrl-medios">
               <input type="search" id="filtro-medio" autocomplete="off">
               <select id="filtro-grupo-medio"><option value=""></option></select>
@@ -2260,6 +2251,10 @@
             <span id="sync-banner-text"></span>
           </div>
           <p id="aj-plugin-hint" class="aj-hint"></p>
+          <p>
+            <a id="aj-lector-instalar" class="boton con-ico" href="lector.user.js" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span id="aj-lector-instalar-lbl"></span></a>
+          </p>
+          <p id="aj-lector-hint" class="aj-hint"></p>
         </div>
 
         <!-- ═══════════ AYUDA ═══════════ -->
@@ -2437,12 +2432,17 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=e2f7dd3b76';
+} from './parser.js?v=af36ec8658';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=e2f7dd3b76';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e2f7dd3b76';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e2f7dd3b76';
-import { comparador } from './busqueda/orden.js?v=e2f7dd3b76';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=af36ec8658';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=af36ec8658';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=af36ec8658';
+import { comparador } from './busqueda/orden.js?v=af36ec8658';
+// Datos compartidos con el lector (shared/sync/): una regla de fusión.
+import {
+  normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
+  huella, CAMPOS_PERFIL,
+} from './sync/fusion.js?v=af36ec8658';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -2760,7 +2760,6 @@ const I18N = {
     cfgGruposHint:          'Al marcar un grupo se incluyen todos sus medios. Un medio bloqueado no se muestra aunque su grupo esté marcado.',
     cfgMedios:              'Medios',
     cfgMediosHint:          'Forzar: siempre se muestra. Bloquear: nunca. Sin marcar: según los grupos y los temas.',
-    knownInPlugin:          'Configurado en el plugin Lector Universal',
     forceInclude:           'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
     forceExclude:           'Bloquear siempre',
     blockMedia:             'No mostrar noticias de este medio',
@@ -2845,6 +2844,7 @@ const I18N = {
     syncOnline:             'Sincronizado con el plugin Lector Universal',
     syncOffline:            'Sin plugin — cambios guardados solo en este navegador',
     syncOfflineHint:        'Instala el plugin Lector Universal para sincronizar tu configuración entre dispositivos y compartirla con la lista de sitios.',
+    syncLectorViejo:        'Lector desactualizado: instala la versión nueva desde Avanzado',
 
     /* ── Pendientes ── */
     pendTitle:              'Noticias guardadas para leer después',
@@ -2979,6 +2979,8 @@ const I18N = {
     ajInvestigarHint:       'Busca empresas y cargos en el BORME con OpenMercantil. También se abre con Alt+B.',
     ajPrensaActivar:        'Buscar también en Google News y FreeNews',
     ajPluginTit:            'Plugin Lector Universal',
+    ajLectorInstalar:       'Instalar el lector',
+    ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
     ajAtajosTit:            'Atajos de teclado',
     ajAtajos:               'Alt+M|Activar o quitar el modo\nAlt+C|Ajustes\nAlt+A|Lectura\nAlt+P|Pendientes\nAlt+B|Investigar empresas\nEsc|Cerrar',
     acReset:                'Restablecer lectura',
@@ -3086,7 +3088,6 @@ const I18N = {
     cfgGruposHint:          'Ao marcar un grupo inclúense todos os seus medios. Un medio bloqueado non se amosa aínda que o seu grupo estea marcado.',
     cfgMedios:              'Medios',
     cfgMediosHint:          'Forzar: amósase sempre. Bloquear: nunca. Sen marcar: segundo os grupos e os temas.',
-    knownInPlugin:          'Configurado no plugin Lector Universal',
     forceInclude:           'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
     forceExclude:           'Bloquear sempre',
     blockMedia:             'Non amosar noticias deste medio',
@@ -3164,6 +3165,7 @@ const I18N = {
     syncOnline:             'Sincronizado co plugin Lector Universal',
     syncOffline:            'Sen plugin — cambios gardados só neste navegador',
     syncOfflineHint:        'Instala o plugin Lector Universal para sincronizar a túa configuración entre dispositivos.',
+    syncLectorViejo:        'Lector desactualizado: instala a versión nova desde Avanzado',
 
     pendTitle:              'Noticias gardadas para ler despois',
     pendRefresh:            'Actualizar',
@@ -3295,6 +3297,8 @@ const I18N = {
     ajInvestigarHint:       'Busca empresas e cargos no BORME con OpenMercantil. Tamén se abre con Alt+B.',
     ajPrensaActivar:        'Buscar tamén en Google News e FreeNews',
     ajPluginTit:            'Plugin Lector Universal',
+    ajLectorInstalar:       'Instalar o lector',
+    ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
     ajAtajosTit:            'Atallos de teclado',
     ajAtajos:               'Alt+M|Activar ou quitar o modo\nAlt+C|Axustes\nAlt+A|Lectura\nAlt+P|Pendentes\nAlt+B|Investigar empresas\nEsc|Pechar',
     acReset:                'Restablecer lectura',
@@ -3402,7 +3406,6 @@ const I18N = {
     cfgGruposHint:          "En marcar un grup s'hi inclouen tots els mitjans. Un mitjà bloquejat no es mostra encara que el seu grup estigui marcat.",
     cfgMedios:              'Mitjans',
     cfgMediosHint:          'Forçar: sempre es mostra. Bloquejar: mai. Sense marcar: segons els grups i els temes.',
-    knownInPlugin:          'Configurat al plugin Lector Universal',
     forceInclude:           'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
     forceExclude:           'Bloquejar sempre',
     blockMedia:             "No mostrar notícies d'aquest mitjà",
@@ -3480,6 +3483,7 @@ const I18N = {
     syncOnline:             'Sincronitzat amb el plugin Lector Universal',
     syncOffline:            'Sense plugin — canvis desats només en aquest navegador',
     syncOfflineHint:        'Instal·la el plugin Lector Universal per sincronitzar la configuració.',
+    syncLectorViejo:        "Lector desactualitzat: instal·la la versió nova des d'Avançat",
 
     pendTitle:              'Notícies desades per llegir després',
     pendRefresh:            'Actualitzar',
@@ -3611,6 +3615,8 @@ const I18N = {
     ajInvestigarHint:       "Cerca empreses i càrrecs al BORME amb OpenMercantil. També s'obre amb Alt+B.",
     ajPrensaActivar:        'Cercar també a Google News i FreeNews',
     ajPluginTit:            'Plugin Lector Universal',
+    ajLectorInstalar:       'Instal·la el lector',
+    ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
     ajAtajosTit:            'Dreceres de teclat',
     ajAtajos:               'Alt+M|Activar o treure el mode\nAlt+C|Configuració\nAlt+A|Lectura\nAlt+P|Pendents\nAlt+B|Investigar empreses\nEsc|Tancar',
     acReset:                'Restablir la lectura',
@@ -3718,7 +3724,6 @@ const I18N = {
     cfgGruposHint:          'Checking a group includes all its outlets. A blocked outlet stays hidden even if its group is checked.',
     cfgMedios:              'Outlets',
     cfgMediosHint:          'Force: always shown. Block: never. Unchecked: depends on groups and topics.',
-    knownInPlugin:          'Configured in the Universal Reader plugin',
     forceInclude:           'Always force (include even if group or keywords do not match)',
     forceExclude:           'Always block',
     blockMedia:             'Hide news from this outlet',
@@ -3796,6 +3801,7 @@ const I18N = {
     syncOnline:             'Synced with the Universal Reader plugin',
     syncOffline:            'No plugin — changes saved only in this browser',
     syncOfflineHint:        'Install the Universal Reader plugin to sync your configuration.',
+    syncLectorViejo:        'Reader out of date: install the new version from Advanced',
 
     pendTitle:              'News saved for later',
     pendRefresh:            'Refresh',
@@ -3927,6 +3933,8 @@ const I18N = {
     ajInvestigarHint:       'Look up companies and officers in the BORME with OpenMercantil. Also opens with Alt+B.',
     ajPrensaActivar:        'Also search Google News and FreeNews',
     ajPluginTit:            'Universal Reader plugin',
+    ajLectorInstalar:       'Install the reader',
+    ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
     ajAtajosTit:            'Keyboard shortcuts',
     ajAtajos:               'Alt+M|Turn the mode on or off\nAlt+C|Settings\nAlt+A|Reading\nAlt+P|Queue\nAlt+B|Investigate companies\nEsc|Close',
     acReset:                'Reset reading',
@@ -4034,7 +4042,6 @@ const I18N = {
     cfgGruposHint:          'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide blokeatu bat ez da erakusten, bere taldea markatuta egon arren.',
     cfgMedios:              'Hedabideak',
     cfgMediosHint:          'Behartu: beti erakusten da. Blokeatu: inoiz ez. Markatu gabe: taldeen eta gaien arabera.',
-    knownInPlugin:          'Lector Universal pluginean konfiguratuta',
     forceInclude:           'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
     forceExclude:           'Beti blokeatu',
     blockMedia:             'Ez erakutsi hedabide honetako albisteak',
@@ -4112,6 +4119,7 @@ const I18N = {
     syncOnline:             'Lector Universal pluginarekin sinkronizatuta',
     syncOffline:            'Pluginik gabe — aldaketak nabigatzaile honetan bakarrik gordeta',
     syncOfflineHint:        'Instalatu Lector Universal plugina konfigurazioa sinkronizatzeko.',
+    syncLectorViejo:        'Irakurgailua zaharkituta: instalatu bertsio berria Aurreratua ataletik',
 
     pendTitle:              'Geroago irakurtzeko gordetako albisteak',
     pendRefresh:            'Eguneratu',
@@ -4243,6 +4251,8 @@ const I18N = {
     ajInvestigarHint:       'Bilatu enpresak eta karguak BORMEn OpenMercantil-ekin. Alt+B teklarekin ere irekitzen da.',
     ajPrensaActivar:        'Bilatu Google News eta FreeNews-en ere',
     ajPluginTit:            'Lector Universal plugina',
+    ajLectorInstalar:       'Instalatu irakurgailua',
+    ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
     ajAtajosTit:            'Teklatuko lasterbideak',
     ajAtajos:               'Alt+M|Modua aktibatu edo kendu\nAlt+C|Ezarpenak\nAlt+A|Irakurketa\nAlt+P|Zain\nAlt+B|Enpresak ikertu\nEsc|Itxi',
     acReset:                'Irakurketa berrezarri',
@@ -4259,20 +4269,6 @@ function t(key, vars){
 const $ = sel => document.querySelector(sel);
 
 
-function normalizeUrlForMatch(u){
-  try {
-    const url = new URL(u, location.href);
-    url.hash = '';
-    url.hostname = url.hostname.toLowerCase().replace(/^www\./, '');
-    ['utm_source','utm_medium','utm_campaign','utm_term','utm_content',
-     'fbclid','gclid','mc_cid','mc_eid','igshid','_ga','_gl','ref','referrer']
-      .forEach(k => url.searchParams.delete(k));
-    if (url.pathname.length > 1 && url.pathname.endsWith('/')){
-      url.pathname = url.pathname.slice(0, -1);
-    }
-    return url.href;
-  } catch(e){ return String(u || ''); }
-}
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -4447,7 +4443,9 @@ function guardarPortadasActivas(){
 }
 let PORTADAS_ACTIVAS = cargarPortadasActivas();
 
+let _firmaPerfilVoceiro = null;   // campos comunes con el lector, al guardar
 let ACCES = cargarAcces();
+_firmaPerfilVoceiro = firmaPerfil(ACCES);
 
 function cargarAcces(){
   try{
@@ -4474,6 +4472,13 @@ function accesPrimeraVisita(){
   return o;
 }
 function guardarAcces(){
+  // Si cambia algo del perfil común con el lector, se sella y se le manda.
+  const firma = firmaPerfil(ACCES);
+  if (firma !== _firmaPerfilVoceiro){
+    ACCES.actualizado = Date.now();
+    _firmaPerfilVoceiro = firma;
+    enviarEstadoAlLector();
+  }
   try{ localStorage.setItem('voceiro-acces-v2', JSON.stringify(ACCES)); }catch(e){}
 }
 function aplicarAcces(){
@@ -4613,7 +4618,7 @@ function cargarPresets(){
         const lista = p.lista.map(normalizarPreset);
         const activo = (typeof p.activo === 'string' && lista.some(x => x.id === p.activo))
                        ? p.activo : lista[0].id;
-        return { lista, activo };
+        return { lista, activo, actualizado: Number(p.actualizado) || 0 };
       }
     }
   }catch(e){}
@@ -4626,14 +4631,12 @@ function cargarPresets(){
 
 function guardarPresets(){
   recompilarTemas();
+  // La fecha decide qué copia gana cuando llegan los modos del plugin.
+  PRESETS.actualizado = Date.now();
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
   try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
-  // Replicar al plugin para sync entre dispositivos
-  if (typeof USCRIPT_OK !== 'undefined' && USCRIPT_OK){
-    document.dispatchEvent(new CustomEvent('voceiro-save-voceiro-state', {
-      detail: { presets: PRESETS.lista }
-    }));
-  }
+  // Al lector, que los guarda para llevarlos a otros dispositivos.
+  enviarEstadoAlLector();
 }
 
 // Guarda el modo activo. PRESET es el mismo objeto que su entrada en la
@@ -4671,12 +4674,21 @@ function aplicarPresetsDesdePlugin(d){
   const incoming = d.voceiro.presets;
   if (!Array.isArray(incoming) || !incoming.length) return false;
 
+  // Solo se adopta la copia del plugin si es más nueva que la local, o si
+  // este navegador nunca guardó modos (dispositivo nuevo). Si no, lo editado
+  // aquí con el plugin desconectado se perdería al conectar.
+  const entrante = Number(d.voceiro.actualizado) || 0;
+  const local = (PRESETS && PRESETS.actualizado) || 0;
+  let nuncaGuardados = false;
+  try{ nuncaGuardados = !localStorage.getItem(PRESET_KEY); }catch(e){}
+  if (!nuncaGuardados && entrante <= local) return false;
+
   const lista = incoming.map(normalizarPreset);
   const activoLocal = (PRESETS && PRESETS.activo) || 'general';
   const activoSigue = lista.some(p => p.id === activoLocal);
   const activoNuevo = activoSigue ? activoLocal : lista[0].id;
 
-  PRESETS = { lista, activo: activoNuevo };
+  PRESETS = { lista, activo: activoNuevo, actualizado: entrante };
   PRESET = PRESETS.lista.find(p => p.id === activoNuevo);
 
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
@@ -5272,10 +5284,9 @@ function renderLangSelect(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BRIDGE CON EL LECTOR UNIVERSAL
-   Protección contra sobreescritura: los cambios hechos en esta
-   pestaña (ej. botón 🚫) se protegen durante TTL ms frente a
-   los datos que devuelva el userscript.
+   LECTOR UNIVERSAL: PENDIENTES, PERFIL Y PUENTE
+   Leídas y vistas son de esta página; Pendientes, el perfil de
+   lectura y los modos se comparten con el lector por el puente.
    ═══════════════════════════════════════════════════════════════ */
 const LEIDAS_KEY = 'voceiro-leidas-v1';
 let LEIDAS_LOCAL = new Set();
@@ -5306,84 +5317,41 @@ const persistirVistas = debounce(() => {
   try { localStorage.setItem(VISTAS_KEY, JSON.stringify([...VISTAS_LOCAL])); } catch(e){}
   VISTAS_DIRTY = false;
 }, 1000);
+/* Lector conectado a esta página. USCRIPT_OK: hay lector con el puente v2.
+   LECTOR_VIEJO: responde, pero con el puente antiguo (hay que actualizarlo). */
+const PUENTE_V = 2;
 let USCRIPT_OK = false;
 let USCRIPT_CHECKED = false;
+let LECTOR_VIEJO = false;
+
+/* ── Pendientes: una sola lista, compartida con el lector ──
+   PENDIENTES guarda también lo borrado (marcado, caduca solo): así el
+   borrado viaja al lector. PENDIENTES_CACHE es lo que se ve. La fusión con
+   lo del lector está en shared/sync/fusion.js. */
+const PEND_KEY = 'voceiro-pendientes-v2';
+const PEND_KEY_V1 = 'voceiro-pendientes-local-v1';
+let PENDIENTES = cargarPendientes();
 let PENDIENTES_CACHE = [];
 let PENDIENTES_URLS = new Set();
 let PENDIENTES_MAP  = new Map();
 
-const LOCAL_TOUCH = new Map();
-const LOCAL_TOUCH_TTL = 10000;
-const PEND_LOCAL_KEY = 'voceiro-pendientes-local-v1';
-let PENDIENTES_LOCAL = (() => {
+function cargarPendientes(){
   try {
-    const raw = localStorage.getItem(PEND_LOCAL_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
+    const raw = localStorage.getItem(PEND_KEY);
+    if (raw){
+      const arr = JSON.parse(raw);
+      return fusionarPendientes(Array.isArray(arr) ? arr : [], []);
+    }
+    // Primera vez con la lista nueva: se trae la de este navegador.
+    const v1 = JSON.parse(localStorage.getItem(PEND_KEY_V1) || '[]');
+    const lista = fusionarPendientes(Array.isArray(v1) ? v1 : [], []);
+    localStorage.setItem(PEND_KEY, JSON.stringify(lista));
+    return lista;
   } catch(e){ return []; }
-})();
-function guardarPendientesLocal(){
-  try { localStorage.setItem(PEND_LOCAL_KEY, JSON.stringify(PENDIENTES_LOCAL)); } catch(e){}
 }
-
-// El plugin ya no escribe directamente: guardamos su último snapshot
-let PENDIENTES_PLUGIN = [];
-
-function touchLocal(domain){
-  LOCAL_TOUCH.set(domain, Date.now());
+function guardarPendientes(){
+  try { localStorage.setItem(PEND_KEY, JSON.stringify(PENDIENTES)); } catch(e){}
 }
-function isLocalTouched(domain){
-  const ts = LOCAL_TOUCH.get(domain);
-  if (!ts) return false;
-  if (Date.now() - ts > LOCAL_TOUCH_TTL){
-    LOCAL_TOUCH.delete(domain);
-    return false;
-  }
-  return true;
-}
-
-function aplicarSitesDesdeUserscript(arr){
-  const incoming = new Map();
-  (arr || []).forEach(s => {
-    if (!s || !s.domain) return;
-    incoming.set(s.domain, {
-      lang: s.lang || 'auto',
-      type: s.type || '',
-      tags: Array.isArray(s.tags) ? s.tags.slice() : []
-    });
-  });
-
-  SITES = new Map();
-  SITES_LIST = [];
-
-  incoming.forEach((v, d) => {
-    // Si el dominio fue tocado en esta pestaña hace poco (TTL),
-    // damos prioridad a lo local. Si no, gana el userscript.
-    if (isLocalTouched(d)){
-      const local = window.__lastLocal.get(d);
-      if (local){
-        SITES.set(d, local);
-        SITES_LIST.push({ domain: d, ...local });
-        return;
-      }
-    }
-    SITES.set(d, v);
-    SITES_LIST.push({ domain: d, ...v });
-  });
-
-  // Reañadir los dominios que solo existen localmente
-  // (creados aquí sin userscript, o con el plugin desconectado)
-  window.__lastLocal.forEach((v, d) => {
-    if (!SITES.has(d)){
-      SITES.set(d, v);
-      SITES_LIST.push({ domain: d, ...v });
-    }
-  });
-
-  guardarSitesCache();
-}
-
-window.__lastLocal = new Map();
 
 function actualizarSyncBanner(){
   const banner = $('#sync-banner');
@@ -5391,42 +5359,17 @@ function actualizarSyncBanner(){
   if (!banner || !txt) return;
   banner.style.display = '';
   banner.querySelector('.sync-dot').classList.toggle('offline', !USCRIPT_OK);
-  txt.textContent = USCRIPT_OK ? t('syncOnline') : t('syncOffline');
+  txt.textContent = USCRIPT_OK ? t('syncOnline')
+                  : LECTOR_VIEJO ? t('syncLectorViejo')
+                  : t('syncOffline');
   banner.title = USCRIPT_OK ? '' : t('syncOfflineHint');
 }
 
-
- function rebuildPendientes(){
-  const winner = new Map();
-  function consider(i, src){
-    if (!i || !i.url) return;
-    const k = normalizeUrlForMatch(i.url);
-    const prev = winner.get(k);
-    let gana;
-    if (!prev)                          gana = true;
-    else if (prev.read && !i.read)      gana = false;
-    else if (!prev.read && i.read)      gana = true;
-    else                                gana = (src === 'plugin');
-    if (gana) winner.set(k, { ...i, _src: src });
-  }
-  PENDIENTES_LOCAL.forEach(i => consider(i, 'local'));
-  PENDIENTES_PLUGIN.forEach(i => consider(i, 'plugin'));
-
-  const items = [...winner.values()];
-  PENDIENTES_CACHE = items;
-
+function rebuildPendientes(){
+  const visibles = PENDIENTES.filter(i => !i.borrado);
+  PENDIENTES_CACHE = visibles;
   const map = new Map();
-  items.forEach(i => {
-    map.set(normalizeUrlForMatch(i.url), i);
-    if (Array.isArray(i.aliasUrls)){
-      i.aliasUrls.forEach(u => {
-        if (!u) return;
-        const k = normalizeUrlForMatch(u);
-        const ex = map.get(k);
-        if (!ex || (!ex.read && i.read)) map.set(k, i);
-      });
-    }
-  });
+  visibles.forEach(i => map.set(normalizeUrlForMatch(i.url), i));
   PENDIENTES_MAP  = map;
   PENDIENTES_URLS = new Set(map.keys());
 
@@ -5437,57 +5380,188 @@ function actualizarSyncBanner(){
   }
 }
 
+// Sustituye la lista, la guarda, la repinta y se la manda al lector.
+function cambiarPendientes(nueva){
+  PENDIENTES = fusionarPendientes(nueva, []);
+  guardarPendientes();
+  rebuildPendientes();
+  enviarEstadoAlLector();
+}
+function buscarPendiente(url){
+  const k = normalizeUrlForMatch(url);
+  return PENDIENTES.find(i => normalizeUrlForMatch(i.url) === k) || null;
+}
+function dominioDe(url){
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch(e){ return ''; }
+}
+
+// Guarda un titular para después (si estaba borrado, vuelve).
+function addPendiente({ url, title, description, image }){
+  if (!url) return false;
+  const previo = buscarPendiente(url);
+  if (previo && !previo.borrado) return false;
+  const ahora = Date.now();
+  cambiarPendientes([...PENDIENTES, {
+    url, title: title || '', description: description || '', image: image || '',
+    domain: dominioDe(url), date: ahora, read: false, readAt: null, actualizado: ahora
+  }]);
+  return true;
+}
+function setPendienteRead(url, read){
+  const previo = buscarPendiente(url);
+  if (!previo || previo.borrado || previo.read === !!read) return false;
+  const ahora = Date.now();
+  cambiarPendientes([...PENDIENTES.filter(i => i !== previo), {
+    ...previo, read: !!read, readAt: read ? ahora : null, actualizado: ahora
+  }]);
+  return true;
+}
+function removePendiente(url){
+  const previo = buscarPendiente(url);
+  if (!previo || previo.borrado) return false;
+  cambiarPendientes([...PENDIENTES.filter(i => i !== previo),
+                     { ...previo, borrado: true, actualizado: Date.now() }]);
+  return true;
+}
+// Al abrir un titular queda en Pendientes como leído: es el historial de
+// lo leído que ya llevaba el lector, ahora el mismo con o sin él.
+function registrarLeido(n){
+  const previo = buscarPendiente(n.enlace);
+  if (previo && !previo.borrado){
+    setPendienteRead(n.enlace, true);
+    return;
+  }
+  const ahora = Date.now();
+  cambiarPendientes([...PENDIENTES.filter(i => i !== previo), {
+    url: n.enlace, title: n.titular || '', description: n.grupo || '', image: '',
+    domain: dominioDe(n.enlace), date: ahora, read: true, readAt: ahora, actualizado: ahora
+  }]);
+}
+
+function desmarcarLeidaLocal(url){
+  const k = normalizeUrlForMatch(url);
+  if (!LEIDAS_LOCAL.has(k)) return;
+  LEIDAS_LOCAL.delete(k);
+  try { localStorage.setItem(LEIDAS_KEY, JSON.stringify([...LEIDAS_LOCAL])); } catch(e){}
+}
+
+/* ── Perfil de lectura común con el lector ──
+   Idioma, tema, fuente, tamaño, justificado, biónica y foco; el ancho es de
+   cada uno. ACCES.actualizado sella el último cambio de esos campos
+   (guardarAcces) y decide qué perfil gana. */
+function firmaPerfil(o){
+  return huella(CAMPOS_PERFIL.map(k => o[k]));
+}
+function perfilDeVoceiro(){
+  return limpiarPerfil({ ...ACCES, actualizado: ACCES.actualizado || 0 });
+}
+function aplicarPerfilEnVoceiro(p){
+  const langAntes = ACCES.lang;
+  CAMPOS_PERFIL.forEach(k => { if (p[k] !== undefined) ACCES[k] = p[k]; });
+  if (!I18N[ACCES.lang]) ACCES.lang = langAntes;
+  ACCES.fs = Math.min(LIM.fs.max, Math.max(LIM.fs.min, Number(ACCES.fs) || ACCES_DEF.fs));
+  ACCES.actualizado = p.actualizado;
+  _firmaPerfilVoceiro = firmaPerfil(ACCES);   // ya sellado: no es un cambio de aquí
+  try{ localStorage.setItem('voceiro-acces-v2', JSON.stringify(ACCES)); }catch(e){}
+  aplicarAcces();
+  if (ACCES.lang !== langAntes){
+    aplicarTextos();
+    reconstruirSelectores();
+    construirIndicesBusqueda();
+    ajRefrescar();
+  }
+  renderizar();
+}
+
+/* ── Puente con el lector (v2) ──
+   Eventos en document, uno por sentido para que nadie se oiga a sí mismo:
+     · 'voceiro-ping'   Voceiro → lector; responde 'voceiro-pong' {v}.
+     · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, modos}.
+     · 'lector-estado'  lector → Voceiro, igual.
+   Cada lado fusiona lo que le llega y, si lo suyo no coincide y el mensaje
+   no era ya una respuesta, contesta una vez con lo suyo. Como fusionar da
+   lo mismo en cualquier orden, tras ese ida y vuelta los dos coinciden. */
+// Si este navegador nunca guardó modos, no se mandan: los «de fábrica»
+// pisarían los que trae el lector de otro dispositivo.
+function modosDeVoceiro(){
+  let guardados = false;
+  try{ guardados = !!localStorage.getItem(PRESET_KEY); }catch(e){}
+  return guardados ? { presets: PRESETS.lista, actualizado: PRESETS.actualizado || 0 } : null;
+}
+function estadoDeVoceiro(respuesta){
+  return {
+    v: PUENTE_V, respuesta: !!respuesta,
+    pendientes: PENDIENTES, perfil: perfilDeVoceiro(), modos: modosDeVoceiro()
+  };
+}
+function comparable(d){
+  return huella({
+    pendientes: fusionarPendientes(d && d.pendientes, []),
+    perfil: limpiarPerfil(d && d.perfil),
+    modos: d && d.modos ? { presets: d.modos.presets, actualizado: d.modos.actualizado || 0 } : null
+  });
+}
+function enviarEstadoAhora(respuesta){
+  if (!USCRIPT_OK) return;
+  try {
+    document.dispatchEvent(new CustomEvent('voceiro-estado', {
+      detail: structuredClone(estadoDeVoceiro(respuesta))
+    }));
+  } catch(e){}
+}
+// Cambios de aquí: se juntan los de unos instantes en un solo envío.
+var _enviarEstadoDiferido;
+function enviarEstadoAlLector(){
+  if (!_enviarEstadoDiferido) _enviarEstadoDiferido = debounce(() => enviarEstadoAhora(false), 300);
+  _enviarEstadoDiferido();
+}
+
+function recibirEstadoDelLector(d){
+  const fusion = fusionarPendientes(PENDIENTES, d.pendientes);
+  if (huella(fusion) !== huella(PENDIENTES)){
+    PENDIENTES = fusion;
+    guardarPendientes();
+    rebuildPendientes();
+  }
+  // Un perfil sin sellar (nadie lo ha cambiado desde que se comparten) no
+  // se impone: se unifican con el primer cambio, en cualquiera de los dos.
+  const mio = perfilDeVoceiro();
+  const perfil = fusionarPerfil(mio, d.perfil);
+  if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilEnVoceiro(perfil);
+
+  if (d.modos && aplicarPresetsDesdePlugin({ voceiro: d.modos })){
+    if (typeof NOTICIAS !== 'undefined' && NOTICIAS.length) aplicarFiltros();
+    ajRefrescar();
+  }
+  if (!d.respuesta && comparable(estadoDeVoceiro()) !== comparable(d)) enviarEstadoAhora(true);
+}
+
 function initUserScriptBridge(){
-  document.addEventListener('voceiro-ready', () => {
-    USCRIPT_OK = true; USCRIPT_CHECKED = true;
+  rebuildPendientes();
+
+  const conectar = e => {
+    const v = e.detail && e.detail.v;
+    USCRIPT_CHECKED = true;
+    if (v === PUENTE_V){
+      const primera = !USCRIPT_OK;
+      USCRIPT_OK = true;
+      LECTOR_VIEJO = false;
+      if (primera) enviarEstadoAhora(false);
+    } else if (!USCRIPT_OK){
+      LECTOR_VIEJO = true;
+    }
     actualizarBotonPendientes();
     actualizarSyncBanner();
-    document.dispatchEvent(new CustomEvent('voceiro-get-config'));
-    document.dispatchEvent(new CustomEvent('voceiro-later-list'));
-  });
+  };
+  document.addEventListener('voceiro-ready', conectar);
+  document.addEventListener('voceiro-pong', conectar);
 
-  document.addEventListener('voceiro-pong', () => {
-    USCRIPT_OK = true; USCRIPT_CHECKED = true;
-    actualizarBotonPendientes();
-    actualizarSyncBanner();
-  });
-
-  document.addEventListener('voceiro-config-data', e => {
-    const d = e.detail || {};
-    aplicarSitesDesdeUserscript(d.sites);
-    const aplicado = aplicarPresetsDesdePlugin(d);
-    if (aplicado && typeof NOTICIAS !== 'undefined' && NOTICIAS.length){
-      aplicarFiltros();
-    }
-    ajRefrescar();
-  });
-
-  document.addEventListener('voceiro-config-changed', e => {
-    const d = e.detail || {};
-    aplicarSitesDesdeUserscript(d.sites);
-    const aplicado = aplicarPresetsDesdePlugin(d);
-    if (aplicado && typeof NOTICIAS !== 'undefined' && NOTICIAS.length){
-      aplicarFiltros();
-    }
-    ajRefrescar();
-  });
-
-
-  document.addEventListener('voceiro-later-list-data', e => {
-    PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
-    rebuildPendientes();
-  });
-  document.addEventListener('voceiro-later-changed', e => {
-    PENDIENTES_PLUGIN = (e.detail && e.detail.items) || [];
-    rebuildPendientes();
-  });
-
-
-
-  document.addEventListener('voceiro-save-later-done', e => {
-    const d = e.detail || {};
-    if (!d.ok){ toast('No se pudo guardar', 2000); return; }
-    toast(d.added ? t('savedToReader') : t('alreadyInReader'), 1800);
+  document.addEventListener('lector-estado', e => {
+    const d = e.detail;
+    if (!d || typeof d !== 'object' || d.v !== PUENTE_V) return;
+    if (!USCRIPT_OK) conectar({ detail: { v: PUENTE_V } });
+    recibirEstadoDelLector(d);
   });
 
   document.dispatchEvent(new CustomEvent('voceiro-ping'));
@@ -5500,99 +5574,23 @@ function initUserScriptBridge(){
     }
   }, 900);
 }
-function addLocalPendiente({ url, title, description, image }){
-  if (!url) return false;
-  const k = normalizeUrlForMatch(url);
-  if (PENDIENTES_LOCAL.some(i => normalizeUrlForMatch(i.url) === k)) return false;
-  let domain = '';
-  try { domain = new URL(url).hostname.replace(/^www\./, ''); } catch(e){}
-  PENDIENTES_LOCAL.push({
-    url, title: title || '', description: description || '', image: image || '',
-    domain, date: Date.now(), read: false, readAt: null
-  });
-  guardarPendientesLocal();
-  rebuildPendientes();
-  return true;
-}
-function setLocalPendienteRead(url, read){
-  const k = normalizeUrlForMatch(url);
-  let changed = false;
-  PENDIENTES_LOCAL.forEach(i => {
-    if (normalizeUrlForMatch(i.url) === k){
-      i.read = read;
-      i.readAt = read ? new Date().toISOString() : null;
-      changed = true;
-    }
-  });
-  if (changed){ guardarPendientesLocal(); rebuildPendientes(); }
-  return changed;
-}
-function removeLocalPendiente(url){
-  const k = normalizeUrlForMatch(url);
-  const n = PENDIENTES_LOCAL.length;
-  PENDIENTES_LOCAL = PENDIENTES_LOCAL.filter(i => normalizeUrlForMatch(i.url) !== k);
-  if (PENDIENTES_LOCAL.length !== n){ guardarPendientesLocal(); rebuildPendientes(); }
-}
-function desmarcarLeidaLocal(url){
-  const k = normalizeUrlForMatch(url);
-  if (!LEIDAS_LOCAL.has(k)) return;
-  LEIDAS_LOCAL.delete(k);
-  try { localStorage.setItem(LEIDAS_KEY, JSON.stringify([...LEIDAS_LOCAL])); } catch(e){}
-}
-
-function emitirUpdateSite(domain, patch){
-  const prev = SITES.get(domain) || { lang: 'auto', type: '', tags: [] };
-  const next = { ...prev, ...patch };
-  SITES.set(domain, next);
-
-  const idx = SITES_LIST.findIndex(s => s.domain === domain);
-  if (idx >= 0) SITES_LIST[idx] = { domain, ...next };
-  else SITES_LIST.push({ domain, ...next });
-
-  window.__lastLocal.set(domain, next);
-  touchLocal(domain);
-  guardarSitesCache();
-
-  if (USCRIPT_OK){
-    document.dispatchEvent(new CustomEvent('voceiro-update-site', {
-      detail: { domain, ...patch }
-    }));
-  }
-}
 
 function guardarParaLeerDespues(n){
   const url = n.enlace;
-  const key = normalizeUrlForMatch(url);
-  const item = PENDIENTES_MAP.get(key);
-  const guardada = !!item;
+  const item = PENDIENTES_MAP.get(normalizeUrlForMatch(url));
 
-  // Caso 1: no está → añadir
-  if (!guardada){
-    if (USCRIPT_OK){
-      document.dispatchEvent(new CustomEvent('voceiro-save-later', {
-        detail: { url, title: n.titular, description: n.grupo || '', image: '' }
-      }));
-    } else {
-      addLocalPendiente({ url, title: n.titular, description: n.grupo || '' });
-      toast(t('savedToReader'), 1800);
-    }
+  // No está → se añade
+  if (!item){
+    addPendiente({ url, title: n.titular, description: n.grupo || '' });
+    toast(t('savedToReader'), 1800);
     return;
   }
 
-  // Caso 2: ya está → alternar leída/no leída
+  // Ya está → alterna leída / no leída
   const nuevaLeida = !item.read;
-
-  if (USCRIPT_OK && item._src === 'plugin'){
-    document.dispatchEvent(new CustomEvent('voceiro-mark-read', { detail: { url } }));
-  }
-
-  // Espejo local siempre (para que LEIDAS_LOCAL y pendientes locales queden coherentes)
   if (nuevaLeida) marcarLeidaLocal(url);
   else            desmarcarLeidaLocal(url);
-
-  if (item._src === 'local' || !USCRIPT_OK){
-    setLocalPendienteRead(url, nuevaLeida);
-  }
+  setPendienteRead(url, nuevaLeida);
 }
 function refrescarBotonesGuardar(){
   document.querySelectorAll('.btn-save-item').forEach(b => {
@@ -5646,9 +5644,7 @@ function wireBackToTop(){
 function abrirPendientes(){
   abrirPanel('panel-pendientes');
   renderPendientes(PENDIENTES_CACHE);
-  if (USCRIPT_OK){
-    document.dispatchEvent(new CustomEvent('voceiro-later-list'));
-  }
+  enviarEstadoAhora(false);   // el lector contesta si tiene algo nuevo
 }
 
 function renderPendientes(items){
@@ -5699,27 +5695,16 @@ cont.querySelectorAll('.btn-pend-toggle').forEach(b => {
     const url = b.dataset.url;
     const item = PENDIENTES_MAP.get(normalizeUrlForMatch(url));
     const nuevaLeida = !(item && item.read);
-
-    if (USCRIPT_OK && item && item._src === 'plugin'){
-      document.dispatchEvent(new CustomEvent('voceiro-mark-read', { detail: { url } }));
-    }
     if (nuevaLeida) marcarLeidaLocal(url);
     else            desmarcarLeidaLocal(url);
-
-    if (!item || item._src === 'local' || !USCRIPT_OK){
-      setLocalPendienteRead(url, nuevaLeida);
-    }
+    setPendienteRead(url, nuevaLeida);
   };
 });
 cont.querySelectorAll('.btn-pend-remove').forEach(b => {
   b.onclick = () => {
     if (!confirm(t('confirmDeletePending'))) return;
     const url = b.dataset.url;
-    const item = PENDIENTES_MAP.get(normalizeUrlForMatch(url));
-    if (USCRIPT_OK && item && item._src === 'plugin'){
-      document.dispatchEvent(new CustomEvent('voceiro-remove-later', { detail: { url } }));
-    }
-    removeLocalPendiente(url);
+    removePendiente(url);
     desmarcarLeidaLocal(url);   // coherencia con LEIDAS_LOCAL
   };
 });
@@ -7083,14 +7068,9 @@ function renderListaMedios(){
     }
 
     enCat.forEach(m => {
-      const site  = SITES.get(m.dominio);
-      const known = !!site;
       const mode  = getOverride(m.dominio, modo) || '';
-      const dotHtml = known
-        ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
-        : '';
       html += `
-        <div class="medio-fila ${known ? '' : 'no-config'}"
+        <div class="medio-fila"
              data-dominio="${escapeHtml(m.dominio)}"
              data-grupo="${escapeHtml(m.grupo)}"
              data-cat="${escapeHtml(s)}"
@@ -7101,7 +7081,7 @@ function renderListaMedios(){
           <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
             <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>${ico('ban')}</span>
           </label>
-          <span class="celda celda-dominio">${dotHtml}<code>${escapeHtml(m.dominio)}</code></span>
+          <span class="celda celda-dominio"><code>${escapeHtml(m.dominio)}</code></span>
           <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
           <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
         </div>`;
@@ -7898,13 +7878,6 @@ function importarDesdeFormatoVoceiro(data){
   if (Array.isArray(data.sites)){
     setSitesFromArray(data.sites);
     guardarSitesCache();
-    if (USCRIPT_OK){
-      SITES.forEach((s, d) => {
-        document.dispatchEvent(new CustomEvent('voceiro-update-site', {
-          detail: { domain: d, lang: s.lang, type: s.type, tags: s.tags }
-        }));
-      });
-    }
   }
 
   if (data.voceiro && Array.isArray(data.voceiro.presets) && data.voceiro.presets.length){
@@ -9725,24 +9698,13 @@ function wireResultadosDelegation(){
       const n = ULT_FILTRADAS[i];
       if (n){
         marcarLeidaLocal(n.enlace);
-        setLocalPendienteRead(n.enlace, true);
+        registrarLeido(n);
         art.classList.remove('vista');
         art.classList.add('leida');
         const saveBtnInCard = art.querySelector('.btn-save-item');
         if (saveBtnInCard){
           saveBtnInCard.textContent = t('saveLabelRead');
           saveBtnInCard.title = t('markUnread');
-        }
-        if (USCRIPT_OK){
-          document.dispatchEvent(new CustomEvent('voceiro-save-later', {
-            detail: {
-              url: n.enlace,
-              title: n.titular,
-              description: n.grupo || '',
-              image: '',
-              read: true
-            }
-          }));
         }
       }
       return;   // dejamos que abra normalmente
@@ -9982,8 +9944,6 @@ function aplicarTextos(){
   const det = $('#ov-pegar-wrap summary');
   if (det) det.textContent = t('cfgOverridePegar');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
-  $('#cfg-medios-legend').innerHTML =
-    '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
   $('#filtro-medio').placeholder = t('cfgBuscarMedio');
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-grupos').textContent = t('cfgGrupos');
@@ -10034,6 +9994,8 @@ function aplicarTextos(){
   $('#btn-import-lbl').textContent = t('btnImport');
   $('#aj-plugin-tit').textContent = t('ajPluginTit');
   $('#aj-plugin-hint').textContent = t('syncOfflineHint');
+  $('#aj-lector-instalar-lbl').textContent = t('ajLectorInstalar');
+  $('#aj-lector-hint').textContent = t('ajLectorHint');
 
   // Ayuda
   $('#cfg-help-lbl').textContent = t('cfgHelpLbl');
@@ -10564,7 +10526,7 @@ function wireStaticEvents(){
 
   $('#acces-reset').addEventListener('click', () => {
     const lang = ACCES.lang;
-    ACCES = { ...ACCES_DEF, lang };
+    ACCES = { ...ACCES_DEF, lang, actualizado: ACCES.actualizado };
     guardarAcces(); aplicarAcces(); renderizar();
   });
 
@@ -10750,17 +10712,7 @@ async function init(){
   cargarPrensaDeLocalStorage();
   rebuildPendientes();
 
-  const cachedSites = cargarSitesCache();
-  setSitesFromArray(cachedSites);
-  cachedSites.forEach(s => {
-    if (s && s.domain){
-      window.__lastLocal.set(s.domain, {
-        lang: s.lang || 'auto',
-        type: s.type || '',
-        tags: Array.isArray(s.tags) ? s.tags.slice() : []
-      });
-    }
-  });
+  setSitesFromArray(cargarSitesCache());
 
   // Textos + listeners: ya con esto la UI está viva y clicable
   aplicarTextos();

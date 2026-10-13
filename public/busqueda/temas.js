@@ -10,8 +10,8 @@
 // Una línea sin nada que incluir (solo -excluir, o solo prefijos medio:…) no
 // es un tema: no casaría nada.
 
-import { tokenizeQuery } from '../parser.js?v=e2f7dd3b76';
-import { compilarTexto, coincide, palabrasDe } from './texto.js?v=e2f7dd3b76';
+import { tokenizeQuery } from '../parser.js?v=af36ec8658';
+import { compilarTexto, coincide, palabrasDe } from './texto.js?v=af36ec8658';
 
 const MIN_LONGITUD = 3;   // la de texto.js: por debajo, compilarTexto la ignora
 
