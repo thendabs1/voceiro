@@ -5831,19 +5831,10 @@ function preprocesarInput(raw) {
       // si no hay match, cae al push normal (queda como medio:foo)
     }
 
-    if (tk.prefix || tk.quoted) { out.push(tk.raw); continue; }
-    if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) { out.push(tk.raw); continue; }
-
-    const strict = normStrict(tk.text);
-    if (strict.length >= 3) {
-      let dom = MEDIOS_POR_NOMBRE.get(strict);
-      if (!dom && strict.length >= 4) {
-        for (const [k, v] of MEDIOS_POR_NOMBRE) {
-          if (k.startsWith(strict)) { dom = v; break; }
-        }
-      }
-      if (dom) { out.push('web:' + dom); continue; }
-    }
+    // Las palabras sueltas se quedan como texto. Antes, cualquier palabra
+    // de 4+ letras que fuera prefijo de un medio se convertía en web:dominio
+    // ('economia', 'madrid', 'vigo'…), y 'crisis economia' buscaba solo en
+    // un medio. Para filtrar por medio: medio:X, web:X o el autocompletado.
     out.push(tk.raw);
   }
   return out.join(' ');
@@ -5877,7 +5868,7 @@ function renderChips(parsed, rawQuery){
       if (!chip || !chip.raw) return;
 
       // Reconstruimos el input quitando el token que corresponde a este chip.
-      // Como el parser preprocesa cada token individualmente (elpais → web:elpais.com),
+      // Como el parser preprocesa cada token individualmente (medio:elpais → web:elpais.com),
       // comparamos cada token del input crudo contra el chip tras pasarlo por
       // el mismo preprocesador. Así encontramos el que le corresponde.
       const tokensRaw = tokenizeQuery(rawQuery);
