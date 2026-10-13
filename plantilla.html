@@ -2186,7 +2186,7 @@ import {
 } from './parser.js';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
 import { interpretarConsulta } from './busqueda/consulta.js';
-import { palabrasDe } from './busqueda/texto.js';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -4558,37 +4558,18 @@ window.addEventListener('scroll', () => {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   REGEX DE RESALTADO + IDIOMA
+   RESALTADO + IDIOMA
+   El resaltado marca exactamente lo que casó con el texto de la búsqueda
+   (rangosResaltado, shared/busqueda/texto.js): misma regla que el filtro.
    ═══════════════════════════════════════════════════════════════ */
-const ACCENT_MAP = {a:'aáàäâ', e:'eéèëê', i:'iíìïî', o:'oóòöô', u:'uúùüû', n:'nñ'};
-function buildHighlightRegex(tokens){
-  if (!tokens.length) return null;
-  const patterns = tokens.map(tok => {
-    let p = '';
-    for (const c of tok){
-      let hit = false;
-      for (const k in ACCENT_MAP){
-        if (ACCENT_MAP[k].includes(c)){ p += '[' + ACCENT_MAP[k] + ']'; hit = true; break; }
-      }
-      if (!hit) p += c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    }
-    return p;
-  });
-  return new RegExp('(' + patterns.join('|') + ')', 'gi');
-}
-
-function resaltar(texto, rx, fallbackEsc){
-  if (!rx) return fallbackEsc != null ? fallbackEsc : escapeHtml(texto || '');
+function resaltarTitular(texto, compilado){
   if (!texto) return '';
   let out = '', last = 0;
-  const matches = texto.matchAll(rx);
-  for (const mm of matches){
-    out += escapeHtml(texto.slice(last, mm.index));
-    out += '<mark>' + escapeHtml(mm[0]) + '</mark>';
-    last = mm.index + mm[0].length;
+  for (const [i, j] of rangosResaltado(texto, compilado)){
+    out += escapeHtml(texto.slice(last, i)) + '<mark>' + escapeHtml(texto.slice(i, j)) + '</mark>';
+    last = j;
   }
-  out += escapeHtml(texto.slice(last));
-  return out;
+  return out + escapeHtml(texto.slice(last));
 }
 
 const LANG_OPTIONS = [
@@ -7354,7 +7335,7 @@ function bsAbrir(){
    FILTRADO + RENDER
    ═══════════════════════════════════════════════════════════════ */
 let ULT_FILTRADAS = [];
-let ULT_RX = null;
+let ULT_TEXTO = null;   // texto compilado de la búsqueda actual (para resaltar)
 let ULT_PRESET_EFECTIVO = false;
 let ULT_BANNER_INFO = null;
 
@@ -7985,7 +7966,7 @@ if (!capas.size) {
   });
 
   ULT_FILTRADAS = filtradas;
-  ULT_RX = buildHighlightRegex(parsed.titulo);
+  ULT_TEXTO = consulta.texto.incluir.length ? consulta.texto : null;
   ULT_PRESET_EFECTIVO = presetEfectivo;
 
   // Contexto para el append incremental
@@ -8135,7 +8116,7 @@ function renderItemHtml(n, idx){
   }
 
   let tituloHtml;
-  if (ULT_RX) tituloHtml = resaltar(n.titular, ULT_RX);
+  if (ULT_TEXTO) tituloHtml = resaltarTitular(n.titular, ULT_TEXTO);
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
 
