@@ -1,0 +1,39 @@
+name: Lector
+
+# Comprobaciones del lector (lector/). Va aparte de los tests del buscador
+# para que un fallo del lector no congele el front de Voceiro.
+on:
+  pull_request:
+    paths:
+      - 'lector/**'
+      - 'shared/sync/**'
+      - '.github/workflows/lector.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lector/**'
+      - 'shared/sync/**'
+      - '.github/workflows/lector.yml'
+  workflow_dispatch:
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # La versión (2.0.N) sale de contar commits.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Construir
+        run: node lector/build.mjs
+
+      - name: Sintaxis
+        run: node --check lector/dist/lector.user.js
+
+      - name: Cabecera y dominios permitidos
+        run: node lector/comprobar.mjs

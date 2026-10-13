@@ -1,0 +1,41 @@
+# Dominios a los que puede enlazar el lector, uno por línea.
+# Añadir uno es una decisión consciente: el lector no trae más servicios
+# externos que estos. Los de «Abrir en…» los pone cada persona (son datos,
+# no código).
+
+# Voceiro y el repositorio
+thendabs1.github.io
+github.com
+
+# Readability (@require)
+cdn.jsdelivr.net
+
+# Diccionarios por defecto
+dle.rae.es
+academia.gal
+www.estraviz.org
+sli.uvigo.es
+rinoceronte.gal
+digalego.xunta.gal
+dlc.iec.cat
+www.diccionari.cat
+ca.wiktionary.org
+hiztegiak.elhuyar.eus
+www.euskaltzaindia.eus
+eu.wiktionary.org
+dictionary.cambridge.org
+www.merriam-webster.com
+www.collinsdictionary.com
+en.wiktionary.org
+www.larousse.fr
+www.cnrtl.fr
+fr.wiktionary.org
+www.duden.de
+www.dwds.de
+de.wiktionary.org
+www.treccani.it
+www.garzantilinguistica.it
+it.wiktionary.org
+dicionario.priberam.org
+www.infopedia.pt
+pt.wiktionary.org
