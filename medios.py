@@ -432,7 +432,7 @@ MEDIA_CATALOG = [
         { 'd':'directa.cat','n':'La Directa','type':'revista','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['investigacion','izquierda'],
           'fuentes':[('rss', 'https://directa.cat/feed/'), ('scrape',)] },
         { 'd':'e-noticies.cat','n':'e-Notícies','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','catalan'],
-          'fuentes':[('rss', 'https://e-noticies.cat/rss/cat/politica', 'relay'), ('gn',)] },
+          'fuentes':[('gn',)] },
         { 'd':'elmon.cat','n':'El Món','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','digital'],
           'fuentes':[('rss', 'https://www.elmon.cat/rss'), ('scrape',)] },
         { 'd':'elnacional.cat','n':'El Nacional','type':'digital','sector':'generalista','ambito':'regional','region':'cataluna','pais':None,'langs':['ca'],'lang_principal':'ca','tags':['generalista','digital'],

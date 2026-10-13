@@ -1,6 +1,6 @@
 {
   "deploy": {
-    "project": "secret-worm-9453",
+    "project": "voceiro-relay",
     "entrypoint": "src/index.ts",
     "include": ["src/**/*.ts", "src/**/*.json"]
   }
