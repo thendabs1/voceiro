@@ -7324,6 +7324,10 @@ let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llev
 // El archivo se consulta tras una pausa sin cambios (regla 3), no en cada
 // pausa del debounce al teclear: menos peticiones y menos respuestas tiradas.
 const ARCHIVO_PAUSA_MS = 700;
+// TEMPORAL (13-10-2026): Turso sin cuota de lecturas. Con false no se pide
+// nada al archivo (ni búsqueda ni «Cargar más»); lo cargado, R2 y la prensa
+// siguen igual. Volver a true cuando se restablezca la cuota.
+const ARCHIVO_ACTIVO = false;
 let _archivoTimer = null;
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false; 
@@ -7892,7 +7896,7 @@ if (!capas.size) {
   // Al archivo se le manda la consulta ya interpretada (inicio de palabra,
   // dominios exactos, días de Madrid): el worker no tiene que reinterpretar.
   const rawArchivo = consulta.imposible ? '' : paraArchivo(consulta);
-  if (usarTurso && rawArchivo && !TURSO_RAW) {
+  if (ARCHIVO_ACTIVO && usarTurso && rawArchivo && !TURSO_RAW) {
     TURSO_RAW = rawArchivo;
     TURSO_OFFSET = 0;
 
@@ -8348,7 +8352,7 @@ async function cargarMas() {
 
 // ─── Paginación Turso ───
 async function cargarMasDeTurso() {
-  if (!TURSO_HAY_MAS || !TURSO_RAW) return;
+  if (!ARCHIVO_ACTIVO || !TURSO_HAY_MAS || !TURSO_RAW) return;
   const btn = document.getElementById('btn-cargar-mas');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
