@@ -1,0 +1,33 @@
+name: Deploy Deno datos
+
+# Despliega voceiro-datos en Deno Deploy solo cuando cambia el worker. La
+# integración Git de Deno desplegaba en cada commit y agotaba el límite de 15
+# despliegues por hora.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/deno-datos/**'
+      - '.github/workflows/deploy-deno-datos.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-deno-datos
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Deploy
+        working-directory: workers/deno-datos
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+        run: deno deploy --org thendabs1 --app voceiro-datos --prod
