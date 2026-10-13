@@ -555,6 +555,22 @@
     font-family:var(--ff); font-size:.82em;
     line-height:1.6; resize:vertical;
   }
+  /* ═══ Pestaña Temas de la configuración: una caja por modo ═══ */
+  .temas-ayuda{ margin:0 0 12px; font-size:.72em; color:var(--muted); }
+  .temas-ayuda summary{ cursor:pointer; list-style:none; }
+  .temas-ayuda summary::-webkit-details-marker{ display:none; }
+  .temas-ayuda-q{
+    display:inline-block; width:1.5em; height:1.5em; line-height:1.4em;
+    margin-left:4px; text-align:center;
+    border:1px solid var(--border); border-radius:50%;
+  }
+  .temas-ayuda[open] .temas-ayuda-q{ background:var(--quote-bg); color:var(--fg); }
+  .temas-ayuda ul{ margin:6px 0 0; padding-left:1.2em; line-height:1.7; }
+  .temas-ayuda code{ background:var(--quote-bg); color:var(--fg); padding:0 4px; border-radius:3px; }
+  .temas-modo{ margin:0 0 12px; }
+  .temas-modo-nombre{ display:block; font-weight:600; font-size:.8em; margin:0 0 4px; }
+  .temas-modo-nombre .n{ color:var(--muted); font-weight:400; }
+  .temas-modo textarea.preset-texto{ min-height:84px; padding:8px 10px; }
 
   .backup-box{
     background:var(--quote-bg);
@@ -814,6 +830,34 @@
   color: #fff;
 }
 [data-theme="contrast"] .preset-pestanas button[aria-selected="true"]{ color: #000; }
+/* ═══ Chips de la vista Temas: «Todo · N» / «Política · M»… ═══ */
+.temas-chips{
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 4px;
+  font-size: .72em;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.temas-chips::-webkit-scrollbar{ display: none; }
+.temas-chips[hidden]{ display: none; }
+.temas-chips button{
+  flex: none;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--preset);
+  border: 1px solid var(--preset);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .95em;
+}
+.temas-chips button[aria-pressed="true"]{
+  background: var(--preset);
+  color: #fff;
+}
+[data-theme="contrast"] .temas-chips button[aria-pressed="true"]{ color: #000; }
 
   /* ═══ Chips de filtros activos ═══ */
   .chips-busqueda{
@@ -891,6 +935,12 @@
     border-color:var(--preset);
     color:var(--preset);
   }
+  /* Tema que casó (vista Temas): mismo color que el resaltado del titular */
+  .badge.tema{
+    display:inline-flex; max-width:16em; min-width:0;
+    background:var(--mark); border-color:var(--mark); color:var(--mark-fg);
+  }
+  .badge.tema .tema-txt{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .badge.futuro{
     background:#fff3e0; border-color:#ffb74d; color:#b45309;
   }
@@ -1790,6 +1840,7 @@
     <div class="cfg-tabs" role="tablist">
       <button class="cfg-tab active" id="tab-feed"     type="button" role="tab" data-tab="feed"     aria-selected="true"></button>
       <button class="cfg-tab"        id="tab-medios"   type="button" role="tab" data-tab="medios"   aria-selected="false"></button>
+      <button class="cfg-tab"        id="tab-temas"    type="button" role="tab" data-tab="temas"    aria-selected="false"></button>
       <button class="cfg-tab"        id="tab-avanzado" type="button" role="tab" data-tab="avanzado" aria-selected="false"></button>
     </div>
 
@@ -1812,8 +1863,7 @@
 
 
         <h3 id="cfg-palabras"></h3>
-        <p id="cfg-palabras-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <textarea id="preset-palabras" class="preset-texto"></textarea>
+        <button id="btn-editar-temas" type="button" style="font-size:.75em;"></button>
 
         <h3 id="cfg-feed"></h3>
         <p id="cfg-feed-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
@@ -1912,6 +1962,16 @@
         <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
         <div id="lista-grupos" class="list-grupos"></div>
 
+      </div>
+
+      <!-- ═══════════ TAB: TEMAS ═══════════ -->
+      <div class="cfg-tabpanel" data-panel="temas" hidden>
+        <h3 id="cfg-temas"></h3>
+        <details class="temas-ayuda">
+          <summary><span id="cfg-palabras-hint"></span><span class="temas-ayuda-q" aria-hidden="true">?</span></summary>
+          <ul id="cfg-temas-ayuda"></ul>
+        </details>
+        <div id="lista-temas-modos"></div>
       </div>
 
       <!-- ═══════════ TAB: AVANZADO ═══════════ -->
@@ -2152,6 +2212,7 @@
   <button type="button" role="tab" data-pestana="modo"></button>
   <button type="button" role="tab" data-pestana="todo"></button>
 </div>
+<div id="temas-chips" class="temas-chips" role="toolbar" hidden></div>
 
 <main id="resultados"></main>
 <div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
@@ -2176,11 +2237,12 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=2b0fc10b35';
+} from './parser.js?v=e2f7dd3b76';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=2b0fc10b35';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=2b0fc10b35';
-import { comparador } from './busqueda/orden.js?v=2b0fc10b35';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=e2f7dd3b76';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e2f7dd3b76';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e2f7dd3b76';
+import { comparador } from './busqueda/orden.js?v=e2f7dd3b76';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -2397,6 +2459,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
     presetPestanaModo:       'Modo «{X}» · {n}',
     presetPestanaTodo:       'Todo · {n}',
+    presetPestanaTemas:      'Temas · {n}',
+    presetVistaTemas:        'Temas',
+    temaChipTodo:            'Todo',
 
     /* ── Días en memoria ── */
     cfgDias:                 'Días en memoria',
@@ -2512,15 +2577,17 @@ const I18N = {
     chipLiteral:            'Convertir a búsqueda literal',
     cfgBuscarMedio:         'Buscar o añadir dominio…',
     cfgTodosGrupos:         'Todos los grupos',
-    cfgPalabras:            'Palabras clave en titular',
-    cfgPalabrasHint:        'Una por línea o separadas por comas. Sin tildes, palabra completa.',
+    cfgPalabras:            'Temas',
+    cfgPalabrasHint:        'Una línea = un tema',
+    cfgEditarTemas:         'Editar temas →',
+    cfgTemasAyuda:          'incendio|también «incendios»\nsan salvador|las dos palabras, en cualquier orden\n"san salvador"|frase exacta\nPP|sigla: palabra entera\ngalicia -feijoo|«galicia», pero sin «feijoo»',
     cfgBackup:              'Copia de seguridad',
     cfgBackupMsg:           'Exporta tu configuración a un archivo compatible con Voceiro y con el plugin Lector Universal.',
     cfgHelpLbl:             'Ayúdanos a mejorar',
     cfgHelpMsg:             '¿Algo no funciona? ¿Un medio no se muestra o da errores? Cuéntanoslo.',
     cfgHelpBtn:             'Reportar problema',
     cfgResumen:             'Mostrando {vis} de {total} · {inc} forzados · {ign} bloqueados',
-    cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
+    cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
     /* ── Accesibilidad ── */
     acTitle:                'Opciones de lectura',
@@ -2692,6 +2759,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
     presetPestanaModo:       'Modo «{X}» · {n}',
     presetPestanaTodo:       'Todo · {n}',
+    presetPestanaTemas:      'Temas · {n}',
+    presetVistaTemas:        'Temas',
+    temaChipTodo:            'Todo',
 
     /* ── Días na memoria ── */
     cfgDias:                 'Días na memoria',
@@ -2794,15 +2864,17 @@ const I18N = {
     chipLiteral:            'Converter a busca literal',
     cfgBuscarMedio:         'Buscar ou engadir dominio…',
     cfgTodosGrupos:         'Todos os grupos',
-    cfgPalabras:            'Palabras clave no titular',
-    cfgPalabrasHint:        'Unha por liña ou separadas por comas. Sen tildes, palabra completa.',
+    cfgPalabras:            'Temas',
+    cfgPalabrasHint:        'Unha liña = un tema',
+    cfgEditarTemas:         'Editar temas →',
+    cfgTemasAyuda:          'incendio|tamén «incendios»\nsan salvador|as dúas palabras, en calquera orde\n"san salvador"|frase exacta\nPP|sigla: palabra enteira\ngalicia -feijoo|«galicia», pero sen «feijoo»',
     cfgBackup:              'Copia de seguridade',
     cfgBackupMsg:           'Exporta a túa configuración a un ficheiro compatible con Voceiro e co plugin Lector Universal.',
     cfgHelpLbl:             'Axúdanos a mellorar',
     cfgHelpMsg:             '¿Algo non funciona? ¿Un medio non se amosa ou dá erros? Cóntanoslo.',
     cfgHelpBtn:             'Reportar problema',
     cfgResumen:             'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados',
-    cfgPalabrasPlaceholder: 'palabra1\npalabra2\npalabra3',
+    cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
     acTitle:                'Opcións de lectura',
     acTema:                 'Tema',
@@ -2963,6 +3035,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
     presetPestanaModo:       'Mode «{X}» · {n}',
     presetPestanaTodo:       'Tot · {n}',
+    presetPestanaTemas:      'Temes · {n}',
+    presetVistaTemas:        'Temes',
+    temaChipTodo:            'Tot',
 
     /* ── Dies en memòria ── */
     cfgDias:                 'Dies en memòria',
@@ -3065,15 +3140,17 @@ const I18N = {
     chipLiteral:            'Convertir a cerca literal',
     cfgBuscarMedio:         'Cercar o afegir domini…',
     cfgTodosGrupos:         'Tots els grups',
-    cfgPalabras:            'Paraules clau al titular',
-    cfgPalabrasHint:        'Una per línia o separades per comes. Sense accents, paraula completa.',
+    cfgPalabras:            'Temes',
+    cfgPalabrasHint:        'Una línia = un tema',
+    cfgEditarTemas:         'Editar temes →',
+    cfgTemasAyuda:          'incendi|també «incendis»\nsant salvador|les dues paraules, en qualsevol ordre\n"sant salvador"|frase exacta\nPP|sigla: paraula sencera\ncatalunya -illa|«catalunya», però sense «illa»',
     cfgBackup:              'Còpia de seguretat',
     cfgBackupMsg:           'Exporta la teva configuració a un fitxer compatible amb Voceiro i amb el plugin Lector Universal.',
     cfgHelpLbl:             "Ajuda'ns a millorar",
     cfgHelpMsg:             'Alguna cosa no funciona? Explica-nos-ho.',
     cfgHelpBtn:             'Reportar problema',
     cfgResumen:             'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats',
-    cfgPalabrasPlaceholder: 'paraula1\nparaula2\nparaula3',
+    cfgPalabrasPlaceholder: 'incendi\n"sant salvador"\nPP',
 
     acTitle:                'Opcions de lectura',
     acTema:                 'Tema',
@@ -3234,6 +3311,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restores the active search and filters when you return.',
     presetPestanaModo:       '"{X}" mode · {n}',
     presetPestanaTodo:       'All · {n}',
+    presetPestanaTemas:      'Topics · {n}',
+    presetVistaTemas:        'Topics',
+    temaChipTodo:            'All',
 
     /* ── Days in memory ── */
     cfgDias:                 'Days in memory',
@@ -3336,15 +3416,17 @@ const I18N = {
     chipLiteral:            'Convert to literal search',
     cfgBuscarMedio:         'Search or add a domain…',
     cfgTodosGrupos:         'All groups',
-    cfgPalabras:            'Keywords in headline',
-    cfgPalabrasHint:        'One per line or comma-separated. Accent-insensitive, whole word.',
+    cfgPalabras:            'Topics',
+    cfgPalabrasHint:        'One line = one topic',
+    cfgEditarTemas:         'Edit topics →',
+    cfgTemasAyuda:          'fire|also «fires»\nsan salvador|both words, in any order\n"san salvador"|exact phrase\nUK|acronym: whole word\ngalicia -feijoo|«galicia», but not «feijoo»',
     cfgBackup:              'Backup',
     cfgBackupMsg:           'Export your configuration to a file compatible with Voceiro and the Universal Reader plugin.',
     cfgHelpLbl:             'Help us improve',
     cfgHelpMsg:             'Something not working? Tell us.',
     cfgHelpBtn:             'Report a problem',
     cfgResumen:             'Showing {vis} of {total} · {inc} forced · {ign} blocked',
-    cfgPalabrasPlaceholder: 'keyword1\nkeyword2\nkeyword3',
+    cfgPalabrasPlaceholder: 'fire\n"san salvador"\nUK',
 
     acTitle:                'Reading options',
     acTema:                 'Theme',
@@ -3505,6 +3587,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Bilaketa eta iragazki aktiboak berreskuratzen ditu itzultzean.',
     presetPestanaModo:       '«{X}» modua · {n}',
     presetPestanaTodo:       'Dena · {n}',
+    presetPestanaTemas:      'Gaiak · {n}',
+    presetVistaTemas:        'Gaiak',
+    temaChipTodo:            'Dena',
 
     /* ── Memoriako egunak ── */
     cfgDias:                 'Memoriako egunak',
@@ -3607,15 +3692,17 @@ const I18N = {
     chipLiteral:            'Bilaketa literala bihurtu',
     cfgBuscarMedio:         'Bilatu edo domeinua gehitu…',
     cfgTodosGrupos:         'Talde guztiak',
-    cfgPalabras:            'Hitz gakoak izenburuan',
-    cfgPalabrasHint:        'Bat lerro bakoitzeko edo komaz banatuta. Azenturik gabe, hitz osoa.',
+    cfgPalabras:            'Gaiak',
+    cfgPalabrasHint:        'Lerro bat = gai bat',
+    cfgEditarTemas:         'Gaiak editatu →',
+    cfgTemasAyuda:          'sute|baita «suteak» ere\nsan salvador|bi hitzak, edozein ordenatan\n"san salvador"|esaldi zehatza\nPP|sigla: hitz osoa\ngalizia -feijoo|«galizia», baina «feijoo» gabe',
     cfgBackup:              'Babeskopia',
     cfgBackupMsg:           'Esportatu zure konfigurazioa Voceiro-rekin eta Lector Universal pluginarekin bateragarria den fitxategi batera.',
     cfgHelpLbl:             'Lagun gaitzazu hobetzen',
     cfgHelpMsg:             'Zerbait ez dabil? Kontatu iezaguzu.',
     cfgHelpBtn:             'Arazo bat jakinarazi',
     cfgResumen:             '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta',
-    cfgPalabrasPlaceholder: 'hitza1\nhitza2\nhitza3',
+    cfgPalabrasPlaceholder: 'sute\n"san salvador"\nPP',
 
     acTitle:                'Irakurketa aukerak',
     acTema:                 'Gaia',
@@ -3970,6 +4057,11 @@ const PRESET_UNICO_DEF = { id: 'general', nombre: 'General', grupos: [], palabra
 let PRESETS = null;   // { lista: [...], activo: 'id' }
 let PRESET = null; 
 let PRESET_ACTIVO = false;
+// Vista 🔖 Temas: el feed muestra lo que casa con algún tema de cualquier
+// modo. Es local (no viaja con el sync de los modos) y excluye al modo activo.
+const VISTA_TEMAS_KEY = 'voceiro-vista-temas';
+let VISTA_TEMAS = false;
+let CHIP_TEMAS = null;   // modo del chip elegido en la vista; null = todos
 let SITES = new Map();
 let SITES_LIST = [];
 
@@ -4049,6 +4141,7 @@ function cargarPresets(){
 }
 
 function guardarPresets(){
+  recompilarTemas();
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
   try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
   // Replicar al plugin para sync entre dispositivos
@@ -4117,6 +4210,20 @@ function cargarPresetActivo(){
 }
 function guardarPresetActivo(){
   try{ localStorage.setItem(PRESET_ACTIVO_KEY, PRESET_ACTIVO ? 'true' : 'false'); }catch(e){}
+  // Activar un modo (menú, Alt+M, configuración…) sale de la vista Temas.
+  if (PRESET_ACTIVO && VISTA_TEMAS) ponerVistaTemas(false);
+}
+function cargarVistaTemas(){
+  try{ return localStorage.getItem(VISTA_TEMAS_KEY) === 'true'; }catch(e){ return false; }
+}
+function ponerVistaTemas(on){
+  VISTA_TEMAS = !!on;
+  CHIP_TEMAS = null;
+  try{ localStorage.setItem(VISTA_TEMAS_KEY, VISTA_TEMAS ? 'true' : 'false'); }catch(e){}
+}
+// La vista solo existe si hay temas, y nunca a la vez que un modo.
+function vistaTemasActiva(){
+  return VISTA_TEMAS && !PRESET_ACTIVO && TEMAS_TODOS.length > 0;
 }
 function presetTieneReglas(p){
   p = p || PRESET;
@@ -4257,10 +4364,12 @@ function actualizarBotonPreset(){
   if (!btn) return;
 
   const activo = PRESET_ACTIVO && PRESET;
-  const nombre = activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
+  const temas = vistaTemasActiva();
+  const nombre = temas  ? t('presetVistaTemas')
+               : activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
 
-  btn.textContent = '🏔 ' + nombre + ' ▾';
-  btn.classList.toggle('active', !!activo);
+  btn.textContent = (temas ? '🔖 ' : '🏔 ') + nombre + ' ▾';
+  btn.classList.toggle('active', !!activo || temas);
 
   const menu = $('#preset-menu');
   if (menu && menu.style.display !== 'none'){
@@ -4284,7 +4393,14 @@ function renderPresetMenu(){
   });
 
   html += '<div class="preset-sep"></div>';
-  html += `<button type="button" class="preset-item${!PRESET_ACTIVO ? ' active' : ''}" data-preset-id="__sinfiltro">
+  const enTemas = vistaTemasActiva();
+  if (TEMAS_TODOS.length){
+    html += `<button type="button" class="preset-item${enTemas ? ' active' : ''}" data-preset-id="__temas">
+    <span class="preset-check">✓</span>
+    <span>🔖 ${escapeHtml(t('presetVistaTemas'))}</span>
+  </button>`;
+  }
+  html += `<button type="button" class="preset-item${!PRESET_ACTIVO && !enTemas ? ' active' : ''}" data-preset-id="__sinfiltro">
     <span class="preset-check">✓</span>
     <span>${escapeHtml(t('presetSinFiltro'))}</span>
   </button>`;
@@ -4306,9 +4422,19 @@ function renderPresetMenu(){
         escribirPanel(PRESET);
         return;
       }
+      if (id === '__temas'){
+        PRESET_ACTIVO = false;
+        guardarPresetActivo();
+        ponerVistaTemas(true);
+        actualizarBotonPreset();
+        aplicarFiltros();
+        cerrarPresetMenu();
+        return;
+      }
       if (id === '__sinfiltro'){
         PRESET_ACTIVO = false;
         guardarPresetActivo();
+        ponerVistaTemas(false);
         actualizarBotonPreset();
         aplicarFiltros();
         cerrarPresetMenu();
@@ -6413,22 +6539,48 @@ function actualizarResumen(visiblesOverride){
 }
 function escribirPanel(p){
   renderListaGrupos(p);         // ← nuevo: renderiza + marca checkboxes
-  $('#preset-palabras').value = p.palabras.join('\n');
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
   renderModosPanel();
+  renderTemasPanel(false);
   renderListaMedios();
 }
 function leerPanel(){
   const grupos = [];
   document.querySelectorAll('#lista-grupos input[data-grupo]:checked').forEach(c =>
     grupos.push(c.dataset.grupo));
-  const palabras = parseLista($('#preset-palabras').value);
-  return { grupos, palabras };
+  // Temas de cada modo (pestaña Temas); los del modo activo van también en palabras.
+  const temasPorModo = new Map();
+  document.querySelectorAll('#lista-temas-modos textarea[data-modo-id]').forEach(ta =>
+    temasPorModo.set(ta.dataset.modoId, parseLista(ta.value)));
+  const palabras = temasPorModo.get(PRESET.id) || PRESET.palabras;
+  return { grupos, palabras, temasPorModo };
+}
+// Pestaña Temas: una caja por modo, en el orden de la lista. Con conservar,
+// se mantiene lo que ya se ha escrito (renombrar o duplicar un modo vuelve a
+// pintar la lista sin perder lo que aún no se ha guardado).
+function renderTemasPanel(conservar){
+  const cont = $('#lista-temas-modos');
+  if (!cont) return;
+  const escrito = new Map();
+  if (conservar){
+    cont.querySelectorAll('textarea[data-modo-id]').forEach(ta => escrito.set(ta.dataset.modoId, ta.value));
+  }
+  cont.innerHTML = PRESETS.lista.map(p => {
+    const guardado = ((p.id === PRESET.id ? PRESET : p).palabras || []).join('\n');
+    const texto = escrito.has(p.id) ? escrito.get(p.id) : guardado;
+    const id = 'temas-' + p.id;
+    return `<div class="temas-modo">
+      <label class="temas-modo-nombre" for="${escapeHtml(id)}">${escapeHtml(p.nombre)} <span class="n">· ${compilarTemas(parseLista(texto)).length}</span></label>
+      <textarea id="${escapeHtml(id)}" class="preset-texto" data-modo-id="${escapeHtml(p.id)}"
+                placeholder="${escapeHtml(t('cfgPalabrasPlaceholder'))}">${escapeHtml(texto)}</textarea>
+    </div>`;
+  }).join('');
 }
 function renderModosPanel(){
   const cont = $('#lista-modos');
   if (!cont) return;
+  renderTemasPanel(true);
 
   cont.innerHTML = PRESETS.lista.map(p => {
     const activo = (p.id === PRESETS.activo);
@@ -6534,6 +6686,7 @@ function borrarModo(id){
   if (PRESETS.activo === id){
     PRESETS.activo = PRESETS.lista[0].id;
     PRESET = PRESETS.lista[0];
+    recompilarPreset();
   }
   guardarPresets();
   actualizarBotonPreset();
@@ -6606,37 +6759,74 @@ function aplicarTier3(items){
   const presetEfectivo = ULT_PRESET_EFECTIVO;
   return items.filter(n => {
     // Overrides + preset
-    if (presetEfectivo && !cumplePreset(n)) return false;
+    if (presetEfectivo && !cumpleFiltro(n, ULT_CTX)) return false;
 
     if (_ocultaPorLectura(n, HIDE_MODE)) return false;
     // Se recorre toda la lista (locales + prensa): antes ponía _esPreset a
     // false a todo y las marcas del modo desaparecían al llegar la prensa.
-    n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumplePreset(n) : false;
+    n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumpleFiltro(n, ULT_CTX) : false;
     return true;
   });
 }
 /* ═══════════════════════════════════════════════════════════════
    CUMPLE PRESET
    ═══════════════════════════════════════════════════════════════ */
-let RX_PRESET = null;
 let SET_GRUPOS = new Set();
+// Temas: las palabras de cada modo, una búsqueda pequeña por línea
+// (shared/busqueda/temas.js). Se compilan los de TODOS los modos: el modo
+// activo los usa para ampliar su feed y la vista 🔖 Temas los junta.
+// TEMAS_VER invalida la caché de cada noticia (n._temas) al recompilar.
+let TEMAS_TODOS = [];   // [{ id, nombre, temas, ignorar: Set(dominios) }]
+let TEMAS_VER = 0;
 
 function recompilarPreset(){
   SET_GRUPOS = new Set(PRESET.grupos);
-  const words = PRESET.palabras.map(p => normalize(p).trim()).filter(Boolean)
-    .map(p => p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
-  RX_PRESET = words.length ? new RegExp('\\b(' + words.join('|') + ')\\b') : null;
+  recompilarTemas();
+}
+// Depende de toda la lista de modos: la llaman recompilarPreset y
+// guardarPresets (renombrar, duplicar, borrar, silenciar un medio…).
+function recompilarTemas(){
+  const lista = (PRESETS && PRESETS.lista) || [];
+  TEMAS_TODOS = lista.map(p => {
+    const ov = p.overrides || {};
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      temas: compilarTemas(p.palabras),
+      ignorar: new Set(Object.keys(ov).filter(d => ov[d] === 'ignore')),
+    };
+  }).filter(m => m.temas.length);
+  TEMAS_VER++;
+}
+// Temas que casan con la noticia, de todos los modos: [{ id, etiqueta }].
+// Un modo no aporta temas en los medios que tiene silenciados.
+function _temasDe(n){
+  if (n._temasVer === TEMAS_VER) return n._temas;
+  const palabras = n._palabras || (n._palabras = palabrasDe(n.titular));
+  const out = [];
+  for (const m of TEMAS_TODOS){
+    if (m.ignorar.has(n.dominio)) continue;
+    for (const etiqueta of temasQueCasan(palabras, m.temas)) out.push({ id: m.id, etiqueta });
+  }
+  n._temas = out;
+  n._temasVer = TEMAS_VER;
+  return out;
+}
+// Lo que filtra el feed: los temas en la vista 🔖 Temas (con el chip, si
+// hay), o el modo activo.
+function cumpleFiltro(n, ctx){
+  if (ctx && ctx.vistaTemas){
+    const ts = _temasDe(n);
+    return ctx.chipTemas ? ts.some(x => x.id === ctx.chipTemas) : ts.length > 0;
+  }
+  return cumplePreset(n);
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
   if (ov === 'ignore') return false;
   if (ov === 'first')  return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
-  if (RX_PRESET){
-    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-    if (RX_PRESET.test(tn)) return true;
-  }
-  return false;
+  return _temasDe(n).some(x => x.id === PRESET.id);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -7337,6 +7527,7 @@ let ULT_FILTRADAS = [];
 let ULT_TEXTO = null;   // texto compilado de la búsqueda actual (para resaltar)
 let ULT_PRESET_EFECTIVO = false;
 let ULT_MARCAR_PRESET = false;   // buscando con modo activo: marcar lo del modo
+let ULT_CHIPS = null;      // { total, porModo } en la vista Temas, o null
 let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañas
 
 const RENDER_BATCH = 60;
@@ -7854,11 +8045,11 @@ function _pasaVista(n, ctx){
       && !(n._consultas && n._consultas.has(consulta.clave))) return false;
   if (!_pasaConsulta(n, consulta)) return false;
   if (presetEfectivo || soloPreset){
-    const cumple = cumplePreset(n);
+    const cumple = cumpleFiltro(n, ctx);
     n._esPreset = cumple;
     return cumple ? true : 'fuera-preset';
   }
-  n._esPreset = marcarPreset ? cumplePreset(n) : false;
+  n._esPreset = marcarPreset ? cumpleFiltro(n, ctx) : false;
   return true;
 }
 
@@ -7982,20 +8173,39 @@ if (!capas.size) {
     !!g || !!t2 || !!dias || !!parsed.desde || !!parsed.hasta;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
+  // La vista 🔖 Temas filtra como un modo, con los temas de todos los modos.
+  const vistaTemas = vistaTemasActiva();
+  if (CHIP_TEMAS && !TEMAS_TODOS.some(m => m.id === CHIP_TEMAS)) CHIP_TEMAS = null;
+  const conFiltro = presetConReglas || vistaTemas;
   // Sin búsqueda, el modo filtra el feed (es tu forma de leerlo). Buscando,
   // el modo no esconde nada: los resultados se separan en dos pestañas,
   // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
   // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
-  const presetEfectivo = presetConReglas && !hayFuenteExplicita && !hayBusquedaActiva;
-  const conPestanas    = presetConReglas && !hayFuenteExplicita &&  hayBusquedaActiva;
+  const presetEfectivo = conFiltro && !hayFuenteExplicita && !hayBusquedaActiva;
+  const conPestanas    = conFiltro && !hayFuenteExplicita &&  hayBusquedaActiva;
 
   _avisarMediosDesconocidos(consulta);
   const ctx = {
     g, t2, limiteMs, ahora, parsed, consulta, orden, HIDE_MODE,
     presetEfectivo, marcarPreset: conPestanas, soloPreset: false,
+    vistaTemas, chipTemas: null,
   };
 
   let filtradas = NOTICIAS.filter(n => _pasaVista(n, ctx) === true);
+
+  // Chips de la vista Temas: cuántas hay de cada modo y, con un chip
+  // elegido, solo las de ese modo. El chip pasa al ctx para que el añadido
+  // incremental (ULT_CTX) lo respete.
+  let infoChips = null;
+  const filtrarPorChip = lista => {
+    const porModo = new Map();
+    for (const n of lista){
+      for (const id of new Set(_temasDe(n).map(x => x.id))) porModo.set(id, (porModo.get(id) || 0) + 1);
+    }
+    infoChips = { total: lista.length, porModo };
+    ctx.chipTemas = CHIP_TEMAS;
+    return CHIP_TEMAS ? lista.filter(n => _temasDe(n).some(x => x.id === CHIP_TEMAS)) : lista;
+  };
 
   let infoPestanas = null;
   if (conPestanas){
@@ -8003,14 +8213,19 @@ if (!capas.size) {
     if (PESTANA_CLAVE !== consulta.clave){ PESTANA_CLAVE = consulta.clave; PESTANA_BUSQUEDA = null; }
     const delModo = filtradas.filter(n => n._esPreset);
     const pestana = PESTANA_BUSQUEDA || (delModo.length ? 'modo' : 'todo');
-    infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length };
-    if (pestana === 'modo'){ filtradas = delModo; ctx.soloPreset = true; }
+    infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length, temas: vistaTemas };
+    if (pestana === 'modo'){
+      filtradas = vistaTemas ? filtrarPorChip(delModo) : delModo;
+      ctx.soloPreset = true;
+    }
+  } else if (presetEfectivo && vistaTemas){
+    filtradas = filtrarPorChip(filtradas);
   }
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
   const cmpNucleo = comparador(orden);
   filtradas.sort((a, b) => {
-    if (presetEfectivo){
+    if (presetEfectivo && !vistaTemas){
       const aFav = getOverride(a.dominio) === 'first'
                    && !isNaN(a._tsOrden)
                    && (ahora - a._tsOrden) < FAV_WINDOW_MS;
@@ -8041,6 +8256,8 @@ if (!capas.size) {
 
   ULT_PESTANAS = infoPestanas;
   renderPestanasPreset();
+  ULT_CHIPS = infoChips;
+  renderChipsTemas();
 
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
@@ -8065,9 +8282,11 @@ function renderPestanasPreset(){
   const nombre = (PRESET && PRESET.nombre) || 'General';
   for (const b of el.querySelectorAll('button[data-pestana]')){
     const esModo = b.dataset.pestana === 'modo';
-    b.textContent = esModo
-      ? t('presetPestanaModo', { X: nombre, n: info.nModo.toLocaleString() })
-      : t('presetPestanaTodo', { n: info.nTodo.toLocaleString() });
+    b.textContent = !esModo
+      ? t('presetPestanaTodo', { n: info.nTodo.toLocaleString() })
+      : info.temas
+        ? t('presetPestanaTemas', { n: info.nModo.toLocaleString() })
+        : t('presetPestanaModo', { X: nombre, n: info.nModo.toLocaleString() });
     b.setAttribute('aria-selected', String(b.dataset.pestana === info.pestana));
   }
   el.hidden = false;
@@ -8086,6 +8305,24 @@ function renderTotalR2(){
   const [a, m, d] = (dias[dias.length - 1].fecha || '').split('-');
   el.textContent = t('contadorR2', { n: n.toLocaleString() });
   el.title = t('contadorR2Title', { dias: dias.length, desde: a ? `${d}/${m}/${a}` : '?' });
+}
+
+// Chips de la vista Temas: «Todo» y un chip por modo con noticias. Con un
+// solo modo con temas no aportan nada y no se muestran.
+function renderChipsTemas(){
+  const el = document.getElementById('temas-chips');
+  if (!el) return;
+  const info = ULT_CHIPS;
+  if (!info || TEMAS_TODOS.length < 2){ el.hidden = true; el.innerHTML = ''; return; }
+  const chip = (id, label, n) =>
+    `<button type="button" data-chip="${escapeHtml(id)}" aria-pressed="${String((CHIP_TEMAS || '') === id)}">${escapeHtml(label)} · ${n.toLocaleString()}</button>`;
+  let html = chip('', t('temaChipTodo'), info.total);
+  for (const m of TEMAS_TODOS){
+    const n = info.porModo.get(m.id) || 0;
+    if (n || m.id === CHIP_TEMAS) html += chip(m.id, m.nombre, n);
+  }
+  el.innerHTML = html;
+  el.hidden = false;
 }
 
 function renderizar(){
@@ -8160,6 +8397,37 @@ async function compartirNoticia(n){
   }
 }
 
+// Temas que se marcan en la tarjeta: en la vista Temas, todos los que
+// casaron (o los del modo del chip); en un modo, los de ese modo.
+function _temasMarcados(n){
+  if (!TEMAS_TODOS.length) return [];
+  if (vistaTemasActiva()){
+    const chip = ULT_CTX && ULT_CTX.chipTemas;
+    return chip ? _temasDe(n).filter(x => x.id === chip) : _temasDe(n);
+  }
+  if (!PRESET_ACTIVO) return [];
+  return _temasDe(n).filter(x => x.id === PRESET.id);
+}
+// Etiqueta de la vista Temas: «tema · Modo», +N si casan más.
+function _badgeTema(marcados){
+  if (!marcados.length) return '';
+  const nombreDe = id => (TEMAS_TODOS.find(m => m.id === id) || {}).nombre || '';
+  const txt = x => etiquetaVisible(x.etiqueta) + ' · ' + nombreDe(x.id);
+  const extra = marcados.length > 1 ? ` +${marcados.length - 1}` : '';
+  const title = marcados.map(x => x.etiqueta + ' · ' + nombreDe(x.id)).join('\n');
+  return `<span class="badge tema" title="${escapeHtml(title)}"><span class="tema-txt">${escapeHtml(txt(marcados[0]))}</span>${extra}</span>`;
+}
+// Lo que se resalta en el titular: el texto de la búsqueda y los temas
+// marcados (sus términos incluidos). null si no hay nada que resaltar.
+function _compiladoMarcas(marcados){
+  const incluir = ULT_TEXTO ? [...ULT_TEXTO.incluir] : [];
+  for (const m of TEMAS_TODOS){
+    const etiquetas = marcados.filter(x => x.id === m.id).map(x => x.etiqueta);
+    if (etiquetas.length) incluir.push(...compiladoDeTemas(m.temas, etiquetas).incluir);
+  }
+  return incluir.length ? { incluir, excluir: [] } : null;
+}
+
 function renderItemHtml(n, idx){
   let fechaHtml = '';
   if (n._tipoShow === 'pub'){
@@ -8174,8 +8442,11 @@ function renderItemHtml(n, idx){
     fechaHtml = `<span class="badge recolectado">${escapeHtml(t('recolectado'))}</span>`;
   }
 
+  const marcados = _temasMarcados(n);
+  const enVistaTemas = vistaTemasActiva();
+  const marcas = _compiladoMarcas(marcados);
   let tituloHtml;
-  if (ULT_TEXTO) tituloHtml = resaltarTitular(n.titular, ULT_TEXTO);
+  if (marcas) tituloHtml = resaltarTitular(n.titular, marcas);
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
 
@@ -8207,11 +8478,13 @@ function renderItemHtml(n, idx){
     saveTitle = t('saveForLaterTitle');
   }
 
+  // En la vista Temas el grupo no es «el modo»: va sin color y la marca es el tema.
   const presetBadge = n.grupo
-    ? (n._esPreset
+    ? (n._esPreset && !enVistaTemas
         ? `<span class="badge preset">${n._grupoEsc}</span>`
         : `<span class="badge">${n._grupoEsc}</span>`)
     : '';
+  const temaBadge = enVistaTemas ? _badgeTema(marcados) : '';
 
   // Solo los medios del catálogo: los de prensa sin identificar (news.google.com…)
   // no tienen un dominio por el que filtrar.
@@ -8262,6 +8535,7 @@ function renderItemHtml(n, idx){
       ${medioHtml}
       ${n.tipo ? `<span class="badge">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
+      ${temaBadge}
       ${prensaBadge}
       ${fechaHtml}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
@@ -8748,6 +9022,7 @@ function aplicarTextos(){
   $('#cfg-modos').textContent = t('cfgModos');
   $('#tab-feed').textContent     = t('cfgFeed');
   $('#tab-medios').textContent   = t('tabMedios');
+  $('#tab-temas').textContent    = '🔖 ' + t('presetVistaTemas');
   $('#tab-avanzado').textContent = t('tabAvanzado');
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
   $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
@@ -8796,12 +9071,18 @@ function aplicarTextos(){
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-palabras').textContent = t('cfgPalabras');
   $('#cfg-palabras-hint').textContent = t('cfgPalabrasHint');
+  $('#cfg-temas').textContent = t('cfgPalabras');
+  $('#btn-editar-temas').textContent = t('cfgEditarTemas');
+  // Ejemplos: una línea por ejemplo, «tema|qué casa».
+  $('#cfg-temas-ayuda').innerHTML = t('cfgTemasAyuda').split('\n').map(l => {
+    const [ej, txt] = l.split('|');
+    return `<li><code>${escapeHtml(ej)}</code> → ${escapeHtml(txt || '')}</li>`;
+  }).join('');
   $('#cfg-backup').textContent = t('cfgBackup');
   $('#cfg-backup-msg').textContent = t('cfgBackupMsg');
   $('#cfg-help-lbl').textContent = t('cfgHelpLbl');
   $('#cfg-help-msg').textContent = t('cfgHelpMsg');
   $('#cfg-help-btn').textContent = t('cfgHelpBtn');
-  $('#preset-palabras').placeholder = t('cfgPalabrasPlaceholder');
   $('#preset-reset').textContent = t('btnReset');
   $('#preset-cancelar').textContent = t('btnCancel');
   $('#preset-guardar').textContent = t('btnSave');
@@ -9091,6 +9372,26 @@ function wireStaticEvents(){
       );
     });
   }
+  // ── Configuración › Temas ──
+  $('#btn-editar-temas').addEventListener('click', () => {
+    const tab = document.querySelector('.cfg-tab[data-tab="temas"]');
+    if (tab) tab.click();
+  });
+  $('#lista-temas-modos').addEventListener('input', e => {
+    const ta = e.target.closest('textarea[data-modo-id]');
+    const n = ta && ta.parentElement.querySelector('.n');
+    if (n) n.textContent = '· ' + compilarTemas(parseLista(ta.value)).length;
+  });
+  // ── Chips de la vista Temas ──
+  const chipsTemas = $('#temas-chips');
+  if (chipsTemas){
+    chipsTemas.addEventListener('click', e => {
+      const b = e.target.closest('button[data-chip]');
+      if (!b) return;
+      CHIP_TEMAS = b.dataset.chip || null;
+      aplicarFiltros();
+    });
+  }
   // ── Pestañas Modo / Todo ──
   const pestanas = $('#preset-pestanas');
   if (pestanas){
@@ -9272,11 +9573,15 @@ function wireStaticEvents(){
 
   $('#preset-guardar').addEventListener('click', () => {
     const panel = leerPanel();
+    for (const p of PRESETS.lista){
+      if (p.id !== PRESET.id && panel.temasPorModo.has(p.id)) p.palabras = panel.temasPorModo.get(p.id);
+    }
     PRESET.grupos = panel.grupos;
     PRESET.palabras = panel.palabras;
     guardarPreset(); recompilarPreset();
+    if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
 
-    if (presetTieneReglas() && !PRESET_ACTIVO){
+    if (presetTieneReglas() && !PRESET_ACTIVO && !vistaTemasActiva()){
       PRESET_ACTIVO = true;
       guardarPresetActivo();
       toast(t('presetGuardadoActivado'), 2200);
@@ -9457,6 +9762,8 @@ async function init(){
 
   recompilarPreset();
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
+  VISTA_TEMAS    = !PRESET_ACTIVO && cargarVistaTemas();
+  if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
   RECORDAR_FILTROS = cargarRecordarFiltros();
@@ -9531,7 +9838,7 @@ async function init(){
     get PRESET()       { return PRESET; },
     get PRESET_ACTIVO(){ return PRESET_ACTIVO; },
     get SET_GRUPOS()   { return SET_GRUPOS; },
-    get RX_PRESET()    { return RX_PRESET; },
+    get TEMAS_TODOS()  { return TEMAS_TODOS; },
     get _manifest()    { return _manifest; },
   };
 
