@@ -3,6 +3,14 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-13 — Runs encolados sin conflicto en state.json
+
+### Corregido
+- `actualizar.yml`: un run encolado hacía checkout del commit del lanzamiento, no
+  de la punta de main, y al guardar chocaba en `state.json` con el run anterior.
+  Ahora parte de la punta de la rama y, si aun así hay conflicto, gana lo de este
+  run (`pull --rebase -X theirs`, hasta 3 intentos).
+
 ## 2026-10-13 — Scraping por el relay y migración de Turso sin lecturas
 
 ### Añadido

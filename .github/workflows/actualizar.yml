@@ -20,6 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # La punta de la rama al empezar, no el commit del lanzamiento: un
+          # run encolado tras otro (cron cada 10 min) partiría del
+          # state.json anterior al del run que le precede.
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Setup Python
@@ -79,9 +83,18 @@ jobs:
           else
             git commit -m "Actualizar histórico [skip ci]"
             # Si se ha mergeado algo mientras corría el run, el push se
-            # rechazaría sin esto.
-            git pull --rebase origin main
-            git push
+            # rechazaría sin el pull. En conflicto gana lo de este run (en
+            # un rebase, -X theirs es el commit que se reaplica): state.json
+            # y el front que acaba de generar son lo más reciente.
+            guardado=
+            for i in 1 2 3; do
+              if git pull --rebase -X theirs origin main && git push; then
+                guardado=1; break
+              fi
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
+            [ -n "$guardado" ] || { echo "No se pudo guardar el histórico"; exit 1; }
             echo "Histórico guardado en el repo"
           fi
 
