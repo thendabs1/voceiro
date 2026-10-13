@@ -92,6 +92,23 @@ HORIZONTE_FUTURO_HORAS = 6
 
 GRUPOS_INCLUIDOS = []
 
+# Portada: ventana y tope. Con ~20 000 noticias al día el tope manda: el
+# reparto con cupo por medio (_seleccionar_con_cupo) hace que la ventana
+# cuente de verdad y que entren todos los medios que publicaron en ella.
+PORTADA_HORAS = 24
+PORTADA_MAX   = 2000
+
+# Ediciones: portadas complementarias que el front carga además de la
+# general (por dominio, ?ed= o elección del usuario). Filtro sobre el
+# catálogo por 'regiones' o 'ambito'; 'max' es el tope de la portada.
+EDICIONES = {
+    'gal': {'regiones': ['galicia'], 'max': 1500},
+    'cat': {'regiones': ['cataluna', 'baleares', 'comunidad-valenciana'], 'max': 1500},
+    'eus': {'regiones': ['pais-vasco', 'navarra'], 'max': 1500},
+    'nac': {'ambito': 'nacional', 'max': 3000},
+    'int': {'ambito': 'internacional', 'max': 2000},
+}
+
 # Google News fallback
 GN_MAX_ITEMS      = 80
 GN_DIAS_MAX       = 14
@@ -1119,13 +1136,15 @@ def _reconstruir_fecha(raw, dia):
 def cargar_historico_payload():
     """
     Carga el histórico desde:
-      - state.json (solo estado: ultimo_exito_por_medio, generado)
+      - state.json (solo estado: ultimo_exito_por_medio, generado,
+        ultimo_barrido_r2)
       - public/datos/manifest.json + public/datos/*.json (noticias)
     Reconstruye las noticias al formato largo.
     """
     state = {
         'generado': None,
         'ultimo_exito_por_medio': {},
+        'ultimo_barrido_r2': '',
     }
     if os.path.exists(STATE_PATH):
         try:
@@ -1133,6 +1152,7 @@ def cargar_historico_payload():
                 s = json.load(f) or {}
                 state['generado'] = s.get('generado')
                 state['ultimo_exito_por_medio'] = s.get('ultimo_exito_por_medio', {}) or {}
+                state['ultimo_barrido_r2'] = s.get('ultimo_barrido_r2', '') or ''
         except Exception as e:
             print(f"[state] no se pudo leer: {e}")
 
@@ -1257,6 +1277,7 @@ def cargar_historico_payload():
         'noticias': noticias,
         'generado': state['generado'],
         'ultimo_exito_por_medio': state['ultimo_exito_por_medio'],
+        'ultimo_barrido_r2': state['ultimo_barrido_r2'],
     }
 
 # ── Contadores globales de dedup (una línea por run en vez de ~75) ──
@@ -1393,10 +1414,11 @@ def fusionar_historico(nuevas, viejas, dias):
 
 
 
-def guardar_state(generado_iso, ultimo_exito_por_medio):
+def guardar_state(generado_iso, ultimo_exito_por_medio, ultimo_barrido_r2=''):
     payload = {
         'generado': generado_iso,
         'ultimo_exito_por_medio': ultimo_exito_por_medio or {},
+        'ultimo_barrido_r2': ultimo_barrido_r2 or '',
     }
     with open(STATE_PATH, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
@@ -1550,7 +1572,7 @@ def _build_hashes_prev(manifest_prev):
 
 
 def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
-                      manifest_prev=None):
+                      manifest_prev=None, portadas_info=None):
     """
     Genera manifest.json + slices. Los slices cuyo hash coincida con el
     del manifest previo no se escriben (por tanto no se subirán a R2).
@@ -1699,11 +1721,13 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
     }
     if portada_info:
         manifest['portada'] = portada_info
+    if portadas_info:
+        manifest['portadas'] = portadas_info
 
     with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
     _marcar_escrito(MANIFEST_PATH)
-    _limpiar_huerfanos_locales(manifest, portada_info)
+    _limpiar_huerfanos_locales(manifest)
 
     print(f"[troceado] {len(dias_manifest)} días · "
           f"{escritos} escritos · {reusados} reusados · "
@@ -1712,10 +1736,20 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
     return manifest
 
-def _limpiar_huerfanos_locales(manifest, portada_info):
-    validos = {'manifest.json'}
-    if portada_info:
-        validos.add(portada_info['file'])
+def _ficheros_portada(manifest):
+    """Ficheros de portada que referencia un manifest: general + ediciones."""
+    out = set()
+    p = (manifest or {}).get('portada')
+    if p and p.get('file'):
+        out.add(p['file'])
+    for e in ((manifest or {}).get('portadas') or {}).values():
+        if e and e.get('file'):
+            out.add(e['file'])
+    return out
+
+
+def _limpiar_huerfanos_locales(manifest):
+    validos = {'manifest.json'} | _ficheros_portada(manifest)
     for d in manifest['dias']:
         if d.get('all'):
             validos.add(d['all']['file'])
@@ -1738,18 +1772,69 @@ def _limpiar_huerfanos_locales(manifest, portada_info):
     if eliminados:
         print(f"[troceado] {eliminados} huérfanos locales borrados")
 
-def generar_portada(noticias, ahora, horas=18, max_items=2000, prefix='portada'):
+def _seleccionar_con_cupo(items, max_items, clave):
     """
-    Genera portada-<hash>.json o portada-mini-<hash>.json según el prefijo.
+    Elige hasta max_items repartiendo entre medios: cada medio aporta sus K
+    noticias más recientes, con K el mayor que cabe; el hueco que quede se
+    rellena con la siguiente de cada medio, por recencia.
 
-    - prefix='portada'       → fichero de 18h, hasta 2000 items
-    - prefix='portada-mini'  → fichero de 2h, hasta 400 items
+    Cortar por recencia sin más deja la portada en la última hora y en manos
+    de los medios que más publican (o de un feed sin fechas que entra entero
+    como «de ahora»). Con cupo entran todos los que publicaron en la ventana.
+    """
+    if len(items) <= max_items:
+        return sorted(items, key=clave, reverse=True)
+
+    por_medio = defaultdict(list)
+    for n in items:
+        por_medio[n.get('dominio', '')].append(n)
+    listas = list(por_medio.values())
+    for v in listas:
+        v.sort(key=clave, reverse=True)
+
+    k = 0
+    while sum(min(len(v), k + 1) for v in listas) <= max_items:
+        k += 1
+    elegidas = [n for v in listas for n in v[:k]]
+    siguientes = sorted((v[k] for v in listas if len(v) > k),
+                        key=clave, reverse=True)
+    elegidas.extend(siguientes[:max_items - len(elegidas)])
+    elegidas.sort(key=clave, reverse=True)
+    return elegidas
+
+
+def _filtrar_edicion(noticias, edicion):
+    """Noticias de los medios que entran en una edición (ver EDICIONES)."""
+    _init_medios_por_dominio()
+    regiones = set(edicion.get('regiones') or [])
+    ambito = edicion.get('ambito')
+    out = []
+    for n in noticias:
+        m = _MEDIOS_POR_DOMINIO.get(n.get('dominio', ''))
+        if not m:
+            continue
+        if regiones and m.get('region') in regiones:
+            out.append(n)
+        elif ambito and m.get('ambito') == ambito:
+            out.append(n)
+    return out
+
+
+def generar_portada(noticias, ahora, horas=PORTADA_HORAS, max_items=PORTADA_MAX,
+                    prefix='portada'):
+    """
+    Genera <prefix>-<hash>.json con las noticias de las últimas `horas`,
+    hasta `max_items` repartidas con cupo por medio.
+
+    - prefix='portada'          → portada general
+    - prefix='portada-<slug>'   → portada de una edición (EDICIONES)
     """
     corte = ahora - timedelta(hours=horas)
-    recientes = [n for n in noticias
-                 if (_fecha_agrupacion_dt(n, ahora) or corte) >= corte]
-    recientes.sort(key=_fecha_orden, reverse=True)
-    recientes = recientes[:max_items]
+    # Misma fecha para filtrar y para ordenar: con _fecha_orden las noticias
+    # con fecha futura (mal fechadas por el medio) se colaban arriba.
+    clave = lambda n: _fecha_agrupacion_dt(n, ahora) or corte
+    recientes = [n for n in noticias if clave(n) >= corte]
+    recientes = _seleccionar_con_cupo(recientes, max_items, clave)
 
     # Dedup editorial (mismo comportamiento que la portada completa)
     recientes = deduplicar_editorial(recientes)
@@ -1948,27 +2033,28 @@ def _ficheros_de_manifest(manifest):
         for dd in (d.get('dominios') or {}).values():
             if dd.get('file'):
                 out.add(dd['file'])
-    if manifest.get('portada') and manifest['portada'].get('file'):
-        out.add(manifest['portada']['file'])
+    out |= _ficheros_portada(manifest)
     return out
 
 
-def limpiar_r2_huerfanos(manifest, manifest_prev=None):
+def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
     """
     Borra de R2 los ficheros que ya no están referenciados.
 
     Camino rápido (diff): compara el set de ficheros del manifest previo
     con el nuevo. Solo borra los que desaparecieron. No lista el bucket.
 
-    Fallback: si no hay manifest previo, hace un scan completo con
-    paginación (solo primera vez tras un reset o primer run).
+    Scan completo con paginación: si no hay manifest previo o si
+    forzar_scan. El diff se salta lo que tiene menos de 1 h y no lo vuelve
+    a ver (en el run siguiente ya no es candidato); con runs cada pocos
+    minutos eso deja huérfanos. main() fuerza el scan una vez al día.
     """
     client = _r2_client()
     if not client:
         return 0
 
     # ── Camino rápido: diff de manifests ──
-    if manifest_prev and manifest_prev.get('dias'):
+    if manifest_prev and manifest_prev.get('dias') and not forzar_scan:
         prev_files = _ficheros_de_manifest(manifest_prev)
         curr_files = _ficheros_de_manifest(manifest)
         candidatos = prev_files - curr_files
@@ -1999,11 +2085,12 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None):
         return borrados
 
     # ── Fallback: scan completo (sin manifest previo) ──
-    print("[r2-clean] sin manifest previo — scan completo")
+    print("[r2-clean] scan completo"
+          + (" (barrido diario)" if forzar_scan else " (sin manifest previo)"))
     all_validos = set()
     grupo_validos = set()
     dominio_validos = set()
-    portada_valida = ''
+    portadas_validas = _ficheros_portada(manifest)
 
     for d in manifest.get('dias', []):
         if d.get('all') and d['all'].get('file'):
@@ -2014,8 +2101,6 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None):
         for dd in d.get('dominios', {}).values():
             if dd.get('file'):
                 dominio_validos.add(dd['file'])
-    if manifest.get('portada') and manifest['portada'].get('file'):
-        portada_valida = manifest['portada']['file']
 
     limite = datetime.now(timezone.utc) - timedelta(hours=1)
     re_all     = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$')
@@ -2038,7 +2123,7 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None):
             elif re_dominio.match(key):
                 es_valido = key in dominio_validos
             elif key.startswith('portada-') and key.endswith('.json'):
-                es_valido = (key == portada_valida)
+                es_valido = key in portadas_validas
             else:
                 continue
 
@@ -2617,15 +2702,20 @@ def main():
         except Exception as e:
             print(f"[manifest-prev] no se pudo leer: {e}")
 
-    # Portada (dedup interno)
+    # Portada general y ediciones (dedup interno)
     _dedup_reset()
-    portada_info = generar_portada(
-        finales_pre, t_now, horas=18, max_items=2000, prefix='portada')
+    portada_info = generar_portada(finales_pre, t_now, prefix='portada')
+    portadas_info = {}
+    for slug, edicion in EDICIONES.items():
+        portadas_info[slug] = generar_portada(
+            _filtrar_edicion(finales_pre, edicion), t_now,
+            max_items=edicion['max'], prefix=f'portada-{slug}')
 
     # Trocear: all + grupos + dominios
     manifest_actual = generar_troceados(
         finales_pre, t_now, portada_info,
         manifest_prev=manifest_prev,
+        portadas_info=portadas_info,
     )
 
     # ─── Subir a R2 (solo lo que cambió, ya está en disco) ───
@@ -2633,7 +2723,14 @@ def main():
     subir_a_r2(list(_FICHEROS_ESCRITOS))
 
     # ─── Limpiar huérfanos en R2 ───
-    limpiar_r2_huerfanos(manifest_actual, manifest_prev)
+    # Una vez al día, scan completo: el diff no recoge lo que sustituye
+    # un run a menos de 1 h del anterior.
+    hoy_madrid = t_now.strftime('%Y-%m-%d')
+    ultimo_barrido = payload_prev.get('ultimo_barrido_r2', '')
+    barrido_hoy = ultimo_barrido != hoy_madrid and _r2_client() is not None
+    limpiar_r2_huerfanos(manifest_actual, manifest_prev, forzar_scan=barrido_hoy)
+    if barrido_hoy:
+        ultimo_barrido = hoy_madrid
 
     # ─── Turso (HTTP v2) ───
     _turso_ensure_schema()
@@ -2645,6 +2742,7 @@ def main():
     guardar_state(
         t_now.isoformat(timespec='seconds'),
         ultimo_exito_nuevo,
+        ultimo_barrido,
     )
 
     generar_html(t_now.strftime('%d/%m/%Y %H:%M'), len(finales_pre))
