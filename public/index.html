@@ -1882,6 +1882,12 @@
           </span>
         </label>
 
+        <div id="cfg-portadas-bloque" hidden>
+          <h3 id="cfg-portadas"></h3>
+          <p id="cfg-portadas-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
+          <div id="lista-portadas"></div>
+        </div>
+
 
 
 
@@ -2464,6 +2470,14 @@ const I18N = {
     cfgFeedHint:             'Carga del feed y prensa externa.',
     cfgRecordarFiltros:      'Recordar filtros al recargar',
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
+    cfgPortadas:             'Portadas adicionales',
+    cfgPortadasHint:         'Se cargan junto a la portada general. Más portadas = más titulares de esa zona, más consumo de red.',
+    cfgPortadaN:             '{n} titulares de las últimas 24 h',
+    portadaGal:              'Galicia',
+    portadaCat:              'Cataluña, Baleares y C. Valenciana',
+    portadaEus:              'País Vasco y Navarra',
+    portadaNac:              'Nacional',
+    portadaInt:              'Internacional',
     presetPestanaModo:       'Modo «{X}» · {n}',
     presetPestanaTodo:       'Todo · {n}',
     presetPestanaTemas:      'Temas · {n}',
@@ -2765,6 +2779,14 @@ const I18N = {
     cfgFeedHint:             'Carga do feed e prensa externa.',
     cfgRecordarFiltros:      'Lembrar filtros ao recargar',
     cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
+    cfgPortadas:             'Portadas adicionais',
+    cfgPortadasHint:         'Cárganse xunto á portada xeral. Máis portadas = máis titulares desa zona, máis consumo de rede.',
+    cfgPortadaN:             '{n} titulares das últimas 24 h',
+    portadaGal:              'Galicia',
+    portadaCat:              'Cataluña, Baleares e C. Valenciana',
+    portadaEus:              'País Vasco e Navarra',
+    portadaNac:              'Estatal',
+    portadaInt:              'Internacional',
     presetPestanaModo:       'Modo «{X}» · {n}',
     presetPestanaTodo:       'Todo · {n}',
     presetPestanaTemas:      'Temas · {n}',
@@ -3042,6 +3064,14 @@ const I18N = {
     cfgFeedHint:             'Càrrega del feed i premsa externa.',
     cfgRecordarFiltros:      'Recordar filtres en recarregar',
     cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
+    cfgPortadas:             'Portades addicionals',
+    cfgPortadasHint:         "Es carreguen amb la portada general. Més portades = més titulars d'aquesta zona, més consum de xarxa.",
+    cfgPortadaN:             '{n} titulars de les últimes 24 h',
+    portadaGal:              'Galícia',
+    portadaCat:              'Catalunya, Illes Balears i Comunitat Valenciana',
+    portadaEus:              'País Basc i Navarra',
+    portadaNac:              'Estatal',
+    portadaInt:              'Internacional',
     presetPestanaModo:       'Mode «{X}» · {n}',
     presetPestanaTodo:       'Tot · {n}',
     presetPestanaTemas:      'Temes · {n}',
@@ -3319,6 +3349,14 @@ const I18N = {
     cfgFeedHint:             'Feed loading and external press.',
     cfgRecordarFiltros:      'Remember filters on reload',
     cfgRecordarFiltrosHint:  'Restores the active search and filters when you return.',
+    cfgPortadas:             'Extra front pages',
+    cfgPortadasHint:         'Loaded alongside the main front page. More front pages = more headlines from that area, more network usage.',
+    cfgPortadaN:             '{n} headlines from the last 24 h',
+    portadaGal:              'Galicia',
+    portadaCat:              'Catalonia, Balearic Islands and Valencia',
+    portadaEus:              'Basque Country and Navarre',
+    portadaNac:              'Spain (national)',
+    portadaInt:              'International',
     presetPestanaModo:       '"{X}" mode · {n}',
     presetPestanaTodo:       'All · {n}',
     presetPestanaTemas:      'Topics · {n}',
@@ -3596,6 +3634,14 @@ const I18N = {
     cfgFeedHint:             'Feedaren karga eta kanpoko prentsa.',
     cfgRecordarFiltros:      'Gogoratu iragazkiak berriz kargatzean',
     cfgRecordarFiltrosHint:  'Bilaketa eta iragazki aktiboak berreskuratzen ditu itzultzean.',
+    cfgPortadas:             'Azal gehigarriak',
+    cfgPortadasHint:         'Azal nagusiarekin batera kargatzen dira. Azal gehiago = eremu horretako izenburu gehiago, sare-kontsumo gehiago.',
+    cfgPortadaN:             'Azken 24 orduetako {n} izenburu',
+    portadaGal:              'Galizia',
+    portadaCat:              'Katalunia, Balear Uharteak eta Valentziako Erkidegoa',
+    portadaEus:              'Euskadi eta Nafarroa',
+    portadaNac:              'Estatukoa',
+    portadaInt:              'Nazioartekoa',
     presetPestanaModo:       '«{X}» modua · {n}',
     presetPestanaTodo:       'Dena · {n}',
     presetPestanaTemas:      'Gaiak · {n}',
@@ -4007,6 +4053,49 @@ const LIM = {
   fs: { min: 14, max: 32, step: 1 },
   width: { min: 480, max: 1600, step: 40 },
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   EDICIONES
+   Portadas complementarias por dominio. El recolector las publica en
+   manifest.portadas (EDICIONES en recolector.py); aquí cada edición
+   dice qué idioma toma por defecto y qué portadas añade a la general.
+   ═══════════════════════════════════════════════════════════════ */
+const EDICIONES_FRONT = {
+  gal: { lang: 'gl', portadas: ['gal'] },
+  cat: { lang: 'ca', portadas: ['cat'] },
+  eus: { lang: 'eu', portadas: ['eus'] },
+  es:  { lang: 'es', portadas: ['nac'] },
+  en:  { lang: 'en', portadas: ['int'] },
+};
+// hostname (sin www.) → edición. Se rellena al tener los dominios.
+const HOST_EDICION = {};
+
+// ?ed= (solo esa carga, para probar en cualquier dominio) → hostname → ninguna.
+function resolverEdicion(){
+  try {
+    const ed = new URLSearchParams(location.search).get('ed');
+    if (ed && EDICIONES_FRONT[ed]) return ed;
+  } catch(e){}
+  return HOST_EDICION[location.hostname.replace(/^www\./, '')] || '';
+}
+const EDICION = resolverEdicion();
+// Idioma por defecto de la edición; si el usuario guardó uno, manda el suyo.
+if (EDICION) ACCES_DEF.lang = EDICIONES_FRONT[EDICION].lang;
+
+// Portadas adicionales activas: la elección guardada o, si no hay, las de
+// la edición.
+const PORTADAS_KEY = 'voceiro-portadas-v1';
+function cargarPortadasActivas(){
+  try {
+    const a = JSON.parse(localStorage.getItem(PORTADAS_KEY) || 'null');
+    if (Array.isArray(a)) return a;
+  } catch(e){}
+  return EDICION ? [...EDICIONES_FRONT[EDICION].portadas] : [];
+}
+function guardarPortadasActivas(){
+  try { localStorage.setItem(PORTADAS_KEY, JSON.stringify(PORTADAS_ACTIVAS)); } catch(e){}
+}
+let PORTADAS_ACTIVAS = cargarPortadasActivas();
 
 let ACCES = cargarAcces();
 
@@ -5475,9 +5564,11 @@ async function cargarBase() {
       }
     }
 
-    // 3) Base = portada
+    // 3) Base = portada general + portadas adicionales activas, pedidas
+    //    en paralelo y mezcladas en orden (primero la general).
     const portadaFile = (_manifest.portada && _manifest.portada.file)
                         ? _manifest.portada.file : 'portada.json';
+    const pExtras = _fetchPortadasExtra(PORTADAS_ACTIVAS, signal);
     const data = await _fetchJSON(portadaFile, signal);
     if (data) {
       if (data.medios) {
@@ -5494,6 +5585,8 @@ async function cargarBase() {
       _mergearItemsEnNoticias(BASE.items, 'base');
       pintarFechaCabecera(generado);
     }
+    _mergearPortadasExtra(await pExtras);
+    renderListaPortadas();
 
     if (myGen === _scopeGeneration) refrescarVistaCompleta();
   } catch(e) {
@@ -5504,6 +5597,78 @@ async function cargarBase() {
       _cargandoScope = false;
     }
   }
+}
+
+// ─── Portadas adicionales (ediciones) ───
+// Pide las portadas de edición que existan en el manifest. Nunca falla:
+// una portada que no llega se queda en data null y se ignora al mezclar.
+function _fetchPortadasExtra(slugs, signal) {
+  const portadas = (_manifest && _manifest.portadas) || {};
+  const pedidas = slugs.filter(s => portadas[s] && portadas[s].file);
+  return Promise.all(pedidas.map(slug =>
+    _fetchJSON(portadas[slug].file, signal).then(data => ({ slug, data }))));
+}
+
+// Mezcla en NOTICIAS lo que trajo _fetchPortadasExtra. Devuelve cuántas
+// noticias nuevas entraron (las que ya estaban en la general no cuentan).
+function _mergearPortadasExtra(lista) {
+  let añadidos = 0;
+  for (const { slug, data } of lista) {
+    if (!data) continue;
+    if (data.medios) {
+      for (const d in data.medios) MEDIOS[d] = data.medios[d];
+    }
+    const items = data.noticias || [];
+    for (const n of items) {
+      n._dia = data.fecha || '';
+      n._generado = data.generado || '';
+    }
+    añadidos += _mergearItemsEnNoticias(items, 'portada:' + slug);
+  }
+  return añadidos;
+}
+
+// Casillas del panel: una por portada de edición que publique el manifest.
+function renderListaPortadas() {
+  const cont = $('#lista-portadas');
+  if (!cont) return;
+  const portadas = (_manifest && _manifest.portadas) || {};
+  const slugs = Object.keys(portadas);
+  $('#cfg-portadas-bloque').hidden = !slugs.length;
+  cont.innerHTML = slugs.map(slug => {
+    const clave = 'portada' + slug.charAt(0).toUpperCase() + slug.slice(1);
+    const nombre = t(clave) === clave ? slug : t(clave);
+    const marcada = PORTADAS_ACTIVAS.includes(slug) ? ' checked' : '';
+    return `<label class="cfg-toggle">
+      <input type="checkbox" data-portada="${escapeHtml(slug)}"${marcada}>
+      <span class="cfg-toggle-txt">
+        <span class="cfg-toggle-title">${escapeHtml(nombre)}</span>
+        <span class="cfg-toggle-hint">${escapeHtml(t('cfgPortadaN', { n: portadas[slug].n || 0 }))}</span>
+      </span>
+    </label>`;
+  }).join('');
+}
+
+// Activar una portada la añade sin recargar; quitarla obliga a rehacer la
+// base, porque sus noticias ya están mezcladas en NOTICIAS.
+function wirePortadas() {
+  const cont = $('#lista-portadas');
+  if (!cont) return;
+  cont.addEventListener('change', async e => {
+    const chk = e.target.closest('input[data-portada]');
+    if (!chk) return;
+    const slug = chk.dataset.portada;
+    PORTADAS_ACTIVAS = PORTADAS_ACTIVAS.filter(s => s !== slug);
+    if (chk.checked) PORTADAS_ACTIVAS.push(slug);
+    guardarPortadasActivas();
+    if (chk.checked) {
+      if (_mergearPortadasExtra(await _fetchPortadasExtra([slug]))) {
+        refrescarVistaCompleta();
+      }
+    } else {
+      await cargarBase();
+    }
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -9148,6 +9313,9 @@ function aplicarTextos(){
   }
   $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
   $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
+  $('#cfg-portadas').textContent = t('cfgPortadas');
+  $('#cfg-portadas-hint').textContent = t('cfgPortadasHint');
+  renderListaPortadas();
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#cfg-medios-legend').innerHTML =
     '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
@@ -9456,6 +9624,7 @@ function wireStaticEvents(){
       );
     });
   }
+  wirePortadas();
   // ── Configuración › Temas ──
   $('#btn-editar-temas').addEventListener('click', () => {
     const tab = document.querySelector('.cfg-tab[data-tab="temas"]');
