@@ -875,6 +875,13 @@
     font-weight:bold; color:var(--fg); font-size:1.1em;
     text-transform:uppercase; letter-spacing:.3px;
   }
+  /* Nombre del medio como enlace: filtra la lista por ese medio */
+  .noticia button.medio{
+    background:none; border:0; padding:0; margin:0;
+    font-family:inherit; line-height:inherit; cursor:pointer; text-align:left;
+  }
+  .noticia button.medio:hover,
+  .noticia button.medio:focus-visible{text-decoration:underline}
   .badge{
     background:var(--quote-bg); border:1px solid var(--border);
     padding:1px 8px; border-radius:10px; color:var(--muted);
@@ -2594,6 +2601,7 @@ const I18N = {
     saveCopied:             'Enlace copiado · Pégalo donde quieras',
     saveForLaterTitle:      'Guardar para leer después',
     shareTitle:             'Compartir esta noticia',
+    medioFiltrarTitle:      'Ver noticias de {medio}',
     deletePending:          'Quitar',
     confirmDeletePending:   '¿Quitar esta noticia de pendientes?',
     readItems:              'Leídas',
@@ -2867,6 +2875,7 @@ const I18N = {
     saveCopied:             'Ligazón copiada · Pégala onde queiras',
     saveForLaterTitle:      'Gardar para ler despois',
     shareTitle:             'Compartir esta noticia',
+    medioFiltrarTitle:      'Ver novas de {medio}',
     deletePending:          'Quitar',
     confirmDeletePending:   '¿Quitar esta noticia de pendentes?',
     readItems:              'Lidas',
@@ -3137,6 +3146,7 @@ const I18N = {
     saveCopied:             "Enllaç copiat · Enganxa'l on vulguis",
     saveForLaterTitle:      'Desar per llegir després',
     shareTitle:             'Compartir aquesta notícia',
+    medioFiltrarTitle:      'Veure notícies de {medio}',
     deletePending:          'Treure',
     confirmDeletePending:   'Treure aquesta notícia de pendents?',
     readItems:              'Llegides',
@@ -3407,6 +3417,7 @@ const I18N = {
     saveCopied:             'Link copied · Paste it wherever you like',
     saveForLaterTitle:      'Save for later',
     shareTitle:             'Share this news item',
+    medioFiltrarTitle:      'See news from {medio}',
     deletePending:          'Remove',
     confirmDeletePending:   'Remove this news from queue?',
     readItems:              'Read',
@@ -3677,6 +3688,7 @@ const I18N = {
     saveCopied:             'Esteka kopiatu da · Itsatsi nahi duzun tokian',
     saveForLaterTitle:      'Geroago irakurtzeko gorde',
     shareTitle:             'Albiste hau partekatu',
+    medioFiltrarTitle:      '{medio}(r)en albisteak ikusi',
     deletePending:          'Kendu',
     confirmDeletePending:   'Albiste hau zaintik kendu?',
     readItems:              'Irakurriak',
@@ -5686,6 +5698,27 @@ function writeFilterToInput(prefix, value) {
   const clearBtn = $('#buscar-clear');
   if (clearBtn) clearBtn.hidden = !nuevo;
   aplicarFiltros();
+}
+
+// Clic en el nombre del medio de una tarjeta: afina la búsqueda actual a
+// ese medio. Se conservan el texto, las fechas y el resto de filtros; los
+// filtros de medio (medio:, web:, grupo:, y un dominio escrito suelto) se
+// sustituyen por web:<dominio>.
+function filtrarPorMedio(dominio) {
+  if (!dominio) return;
+  aplicarFiltrosDebounced.cancel();
+  const raw = $('#buscar').value;
+  const deMedio = new Set(parseQuery(raw).chips
+    .filter(ch => ch.type === 'medio' || ch.type === 'dominio' || ch.type === 'grupo')
+    .map(ch => ch.raw));
+  const parts = tokenizeQuery(raw).filter(tk => !deMedio.has(tk.raw)).map(tk => tk.raw);
+  parts.push('web:' + dominio);
+  const nuevo = parts.join(' ');
+  $('#buscar').value = nuevo;
+  const clearBtn = $('#buscar-clear');
+  if (clearBtn) clearBtn.hidden = !nuevo;
+  aplicarFiltros();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Lee de parsed el primer valor de un prefijo (o null).
@@ -8180,6 +8213,11 @@ function renderItemHtml(n, idx){
         : `<span class="badge">${n._grupoEsc}</span>`)
     : '';
 
+  // Solo los medios del catálogo: los de prensa sin identificar (news.google.com…)
+  // no tienen un dominio por el que filtrar.
+  const medioHtml = (n.dominio && MEDIOS[n.dominio])
+    ? `<button class="medio" type="button" data-dominio="${escapeHtml(n.dominio)}" title="${escapeHtml(t('medioFiltrarTitle', { medio: n.medio || n.dominio }))}">${n._medioEsc}</button>`
+    : `<span class="medio">${n._medioEsc}</span>`;
   const prensaBadge = n._desdePrensa
     ? `<span class="badge prensa" title="Encontrado en prensa externa">🌐 prensa</span>`
     : '';
@@ -8221,7 +8259,7 @@ function renderItemHtml(n, idx){
 
   return `<article class="noticia${leida ? ' leida' : (vista ? ' vista' : '')}" data-idx="${idx}">
     <div class="cabecera">
-      <span class="medio">${n._medioEsc}</span>
+      ${medioHtml}
       ${n.tipo ? `<span class="badge">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
       ${prensaBadge}
@@ -8482,6 +8520,12 @@ function wireResultadosDelegation(){
       const i = parseInt(shareBtn.dataset.idx, 10);
       const n = ULT_FILTRADAS[i];
       if (n) compartirNoticia(n);
+      return;
+    }
+    const medioBtn = e.target.closest('button.medio');
+    if (medioBtn){
+      e.preventDefault();
+      filtrarPorMedio(medioBtn.dataset.dominio);
       return;
     }
     // Al clicar un titular: guardar como leída automáticamente
