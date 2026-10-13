@@ -8,6 +8,11 @@ Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 ### Añadido
 - Fuente `('scrape', url, 'relay')`: scraping de la home pedido a través del relay.
   El Siglo de Europa, Milenio y Sky News daban 403 desde GH; Google News sigue detrás.
+- Fuente `('scrape', url, 'noverify')`: sin verificar el certificado TLS. CRTVG no
+  manda la cadena intermedia y fallaba con `CertificateVerifyError`.
+
+### Eliminado
+- Valencia Actúa: ni scraping ni Google News devolvían nada.
 
 ### Corregido
 - Con la cuota de lecturas agotada, `PRAGMA table_info` fallaba, la migración no

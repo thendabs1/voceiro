@@ -953,13 +953,14 @@ def _es_valido(texto, href, dominio):
     return True
 
 
-def _scrape(medio, url=None, relay=False):
+def _scrape(medio, url=None, relay=False, verify=True):
     url = url or f"https://{medio['d']}"
     # Por el relay, `url` sigue siendo la base para resolver los enlaces
     fetch_url = DENO_RELAY_BASE + quote(url, safe='') if relay else url
     tag = 'SCRAPE RELAY' if relay else 'SCRAPE'
     try:
-        r = SESSION.get(fetch_url, timeout=TIMEOUT, allow_redirects=True)
+        r = SESSION.get(fetch_url, timeout=TIMEOUT, allow_redirects=True,
+                        verify=verify)
         if r.status_code != 200:
             print(f"  [{tag} {r.status_code}] {medio['n']}")
             return None, f'HTTP {r.status_code}'
@@ -1211,7 +1212,8 @@ ETIQUETA_FUENTE = {
 
 
 def _probar_fuente(medio, f):
-    """Ejecuta una fuente ('rss', url[, 'relay']), ('scrape'[, url[, 'relay']])…"""
+    """Ejecuta una fuente ('rss', url[, 'relay']),
+    ('scrape'[, url[, 'relay' | 'noverify']])…"""
     tipo, args = f[0], f[1:]
     relay = 'relay' in args[1:]
     if tipo == 'rss':
@@ -1221,7 +1223,8 @@ def _probar_fuente(medio, f):
     if tipo == 'wp':
         return _wp_api(medio)
     if tipo == 'scrape':
-        return _scrape(medio, args[0] if args else None, relay)
+        return _scrape(medio, args[0] if args else None, relay,
+                       verify='noverify' not in args[1:])
     if tipo == 'gn':
         return _google_news(medio, args[0] if args else None)
     return None, f'tipo desconocido {tipo!r}'
