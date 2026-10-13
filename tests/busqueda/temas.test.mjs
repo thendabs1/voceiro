@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { palabrasDe, rangosResaltado } from '../../shared/busqueda/texto.js';
 import {
-  compilarTemas, temasQueCasan, compiladoDeTemas,
+  compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible,
 } from '../../shared/busqueda/temas.js';
 
 const casan = (lineas, titular) => temasQueCasan(palabrasDe(titular), compilarTemas(lineas));
@@ -75,4 +75,10 @@ test('resaltado: solo los términos incluidos de los temas que casaron', () => {
   const soloPP = rangosResaltado(titular, compiladoDeTemas(temas, ['PP']));
   assert.deepEqual(soloPP.map(([i, j]) => titular.slice(i, j)), ['PP']);
   assert.deepEqual(compiladoDeTemas(temas, []).incluir, []);
+});
+
+test('etiqueta visible: sin exclusiones ni prefijos', () => {
+  assert.equal(etiquetaVisible('incendio -forestal'), 'incendio');
+  assert.equal(etiquetaVisible('"san salvador"  poio'), '"san salvador" poio');
+  assert.equal(etiquetaVisible('galicia -PP medio:lavoz.es'), 'galicia');
 });

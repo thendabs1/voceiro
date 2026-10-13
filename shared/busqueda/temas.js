@@ -47,6 +47,15 @@ export function compilarTemas(lineas) {
   return out;
 }
 
+// Etiqueta para mostrar: la línea sin exclusiones ni prefijos
+// («incendio -forestal» → «incendio»).
+export function etiquetaVisible(etiqueta) {
+  return tokenizeQuery(etiqueta || '')
+    .filter(tk => !tk.prefix && (tk.quoted || !(tk.text.length > 1 && tk.text[0] === '-')))
+    .map(tk => tk.raw)
+    .join(' ');
+}
+
 // palabras: palabrasDe(titular) o tokenizar(titular).
 // Devuelve las etiquetas de los temas que casan, en el orden de las líneas.
 export function temasQueCasan(palabras, temas) {

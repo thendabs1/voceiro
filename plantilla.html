@@ -814,6 +814,34 @@
   color: #fff;
 }
 [data-theme="contrast"] .preset-pestanas button[aria-selected="true"]{ color: #000; }
+/* ═══ Chips de la vista Temas: «Todo · N» / «Política · M»… ═══ */
+.temas-chips{
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 4px;
+  font-size: .72em;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.temas-chips::-webkit-scrollbar{ display: none; }
+.temas-chips[hidden]{ display: none; }
+.temas-chips button{
+  flex: none;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--preset);
+  border: 1px solid var(--preset);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .95em;
+}
+.temas-chips button[aria-pressed="true"]{
+  background: var(--preset);
+  color: #fff;
+}
+[data-theme="contrast"] .temas-chips button[aria-pressed="true"]{ color: #000; }
 
   /* ═══ Chips de filtros activos ═══ */
   .chips-busqueda{
@@ -891,6 +919,12 @@
     border-color:var(--preset);
     color:var(--preset);
   }
+  /* Tema que casó (vista Temas): mismo color que el resaltado del titular */
+  .badge.tema{
+    display:inline-flex; max-width:16em; min-width:0;
+    background:var(--mark); border-color:var(--mark); color:var(--mark-fg);
+  }
+  .badge.tema .tema-txt{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .badge.futuro{
     background:#fff3e0; border-color:#ffb74d; color:#b45309;
   }
@@ -2152,6 +2186,7 @@
   <button type="button" role="tab" data-pestana="modo"></button>
   <button type="button" role="tab" data-pestana="todo"></button>
 </div>
+<div id="temas-chips" class="temas-chips" role="toolbar" hidden></div>
 
 <main id="resultados"></main>
 <div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
@@ -2180,7 +2215,7 @@ import {
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
 import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js';
 import { palabrasDe, rangosResaltado } from './busqueda/texto.js';
-import { compilarTemas, temasQueCasan, compiladoDeTemas } from './busqueda/temas.js';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js';
 import { comparador } from './busqueda/orden.js';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2398,6 +2433,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
     presetPestanaModo:       'Modo «{X}» · {n}',
     presetPestanaTodo:       'Todo · {n}',
+    presetPestanaTemas:      'Temas · {n}',
+    presetVistaTemas:        'Temas',
+    temaChipTodo:            'Todo',
 
     /* ── Días en memoria ── */
     cfgDias:                 'Días en memoria',
@@ -2693,6 +2731,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
     presetPestanaModo:       'Modo «{X}» · {n}',
     presetPestanaTodo:       'Todo · {n}',
+    presetPestanaTemas:      'Temas · {n}',
+    presetVistaTemas:        'Temas',
+    temaChipTodo:            'Todo',
 
     /* ── Días na memoria ── */
     cfgDias:                 'Días na memoria',
@@ -2964,6 +3005,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
     presetPestanaModo:       'Mode «{X}» · {n}',
     presetPestanaTodo:       'Tot · {n}',
+    presetPestanaTemas:      'Temes · {n}',
+    presetVistaTemas:        'Temes',
+    temaChipTodo:            'Tot',
 
     /* ── Dies en memòria ── */
     cfgDias:                 'Dies en memòria',
@@ -3235,6 +3279,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Restores the active search and filters when you return.',
     presetPestanaModo:       '"{X}" mode · {n}',
     presetPestanaTodo:       'All · {n}',
+    presetPestanaTemas:      'Topics · {n}',
+    presetVistaTemas:        'Topics',
+    temaChipTodo:            'All',
 
     /* ── Days in memory ── */
     cfgDias:                 'Days in memory',
@@ -3506,6 +3553,9 @@ const I18N = {
     cfgRecordarFiltrosHint:  'Bilaketa eta iragazki aktiboak berreskuratzen ditu itzultzean.',
     presetPestanaModo:       '«{X}» modua · {n}',
     presetPestanaTodo:       'Dena · {n}',
+    presetPestanaTemas:      'Gaiak · {n}',
+    presetVistaTemas:        'Gaiak',
+    temaChipTodo:            'Dena',
 
     /* ── Memoriako egunak ── */
     cfgDias:                 'Memoriako egunak',
@@ -3971,6 +4021,11 @@ const PRESET_UNICO_DEF = { id: 'general', nombre: 'General', grupos: [], palabra
 let PRESETS = null;   // { lista: [...], activo: 'id' }
 let PRESET = null; 
 let PRESET_ACTIVO = false;
+// Vista 🔖 Temas: el feed muestra lo que casa con algún tema de cualquier
+// modo. Es local (no viaja con el sync de los modos) y excluye al modo activo.
+const VISTA_TEMAS_KEY = 'voceiro-vista-temas';
+let VISTA_TEMAS = false;
+let CHIP_TEMAS = null;   // modo del chip elegido en la vista; null = todos
 let SITES = new Map();
 let SITES_LIST = [];
 
@@ -4119,6 +4174,20 @@ function cargarPresetActivo(){
 }
 function guardarPresetActivo(){
   try{ localStorage.setItem(PRESET_ACTIVO_KEY, PRESET_ACTIVO ? 'true' : 'false'); }catch(e){}
+  // Activar un modo (menú, Alt+M, configuración…) sale de la vista Temas.
+  if (PRESET_ACTIVO && VISTA_TEMAS) ponerVistaTemas(false);
+}
+function cargarVistaTemas(){
+  try{ return localStorage.getItem(VISTA_TEMAS_KEY) === 'true'; }catch(e){ return false; }
+}
+function ponerVistaTemas(on){
+  VISTA_TEMAS = !!on;
+  CHIP_TEMAS = null;
+  try{ localStorage.setItem(VISTA_TEMAS_KEY, VISTA_TEMAS ? 'true' : 'false'); }catch(e){}
+}
+// La vista solo existe si hay temas, y nunca a la vez que un modo.
+function vistaTemasActiva(){
+  return VISTA_TEMAS && !PRESET_ACTIVO && TEMAS_TODOS.length > 0;
 }
 function presetTieneReglas(p){
   p = p || PRESET;
@@ -4259,10 +4328,12 @@ function actualizarBotonPreset(){
   if (!btn) return;
 
   const activo = PRESET_ACTIVO && PRESET;
-  const nombre = activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
+  const temas = vistaTemasActiva();
+  const nombre = temas  ? t('presetVistaTemas')
+               : activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
 
-  btn.textContent = '🏔 ' + nombre + ' ▾';
-  btn.classList.toggle('active', !!activo);
+  btn.textContent = (temas ? '🔖 ' : '🏔 ') + nombre + ' ▾';
+  btn.classList.toggle('active', !!activo || temas);
 
   const menu = $('#preset-menu');
   if (menu && menu.style.display !== 'none'){
@@ -4286,7 +4357,14 @@ function renderPresetMenu(){
   });
 
   html += '<div class="preset-sep"></div>';
-  html += `<button type="button" class="preset-item${!PRESET_ACTIVO ? ' active' : ''}" data-preset-id="__sinfiltro">
+  const enTemas = vistaTemasActiva();
+  if (TEMAS_TODOS.length){
+    html += `<button type="button" class="preset-item${enTemas ? ' active' : ''}" data-preset-id="__temas">
+    <span class="preset-check">✓</span>
+    <span>🔖 ${escapeHtml(t('presetVistaTemas'))}</span>
+  </button>`;
+  }
+  html += `<button type="button" class="preset-item${!PRESET_ACTIVO && !enTemas ? ' active' : ''}" data-preset-id="__sinfiltro">
     <span class="preset-check">✓</span>
     <span>${escapeHtml(t('presetSinFiltro'))}</span>
   </button>`;
@@ -4308,9 +4386,19 @@ function renderPresetMenu(){
         escribirPanel(PRESET);
         return;
       }
+      if (id === '__temas'){
+        PRESET_ACTIVO = false;
+        guardarPresetActivo();
+        ponerVistaTemas(true);
+        actualizarBotonPreset();
+        aplicarFiltros();
+        cerrarPresetMenu();
+        return;
+      }
       if (id === '__sinfiltro'){
         PRESET_ACTIVO = false;
         guardarPresetActivo();
+        ponerVistaTemas(false);
         actualizarBotonPreset();
         aplicarFiltros();
         cerrarPresetMenu();
@@ -6609,12 +6697,12 @@ function aplicarTier3(items){
   const presetEfectivo = ULT_PRESET_EFECTIVO;
   return items.filter(n => {
     // Overrides + preset
-    if (presetEfectivo && !cumplePreset(n)) return false;
+    if (presetEfectivo && !cumpleFiltro(n, ULT_CTX)) return false;
 
     if (_ocultaPorLectura(n, HIDE_MODE)) return false;
     // Se recorre toda la lista (locales + prensa): antes ponía _esPreset a
     // false a todo y las marcas del modo desaparecían al llegar la prensa.
-    n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumplePreset(n) : false;
+    n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumpleFiltro(n, ULT_CTX) : false;
     return true;
   });
 }
@@ -6661,6 +6749,15 @@ function _temasDe(n){
   n._temas = out;
   n._temasVer = TEMAS_VER;
   return out;
+}
+// Lo que filtra el feed: los temas en la vista 🔖 Temas (con el chip, si
+// hay), o el modo activo.
+function cumpleFiltro(n, ctx){
+  if (ctx && ctx.vistaTemas){
+    const ts = _temasDe(n);
+    return ctx.chipTemas ? ts.some(x => x.id === ctx.chipTemas) : ts.length > 0;
+  }
+  return cumplePreset(n);
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
@@ -7368,6 +7465,7 @@ let ULT_FILTRADAS = [];
 let ULT_TEXTO = null;   // texto compilado de la búsqueda actual (para resaltar)
 let ULT_PRESET_EFECTIVO = false;
 let ULT_MARCAR_PRESET = false;   // buscando con modo activo: marcar lo del modo
+let ULT_CHIPS = null;      // { total, porModo } en la vista Temas, o null
 let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañas
 
 const RENDER_BATCH = 60;
@@ -7885,11 +7983,11 @@ function _pasaVista(n, ctx){
       && !(n._consultas && n._consultas.has(consulta.clave))) return false;
   if (!_pasaConsulta(n, consulta)) return false;
   if (presetEfectivo || soloPreset){
-    const cumple = cumplePreset(n);
+    const cumple = cumpleFiltro(n, ctx);
     n._esPreset = cumple;
     return cumple ? true : 'fuera-preset';
   }
-  n._esPreset = marcarPreset ? cumplePreset(n) : false;
+  n._esPreset = marcarPreset ? cumpleFiltro(n, ctx) : false;
   return true;
 }
 
@@ -8013,20 +8111,39 @@ if (!capas.size) {
     !!g || !!t2 || !!dias || !!parsed.desde || !!parsed.hasta;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
+  // La vista 🔖 Temas filtra como un modo, con los temas de todos los modos.
+  const vistaTemas = vistaTemasActiva();
+  if (CHIP_TEMAS && !TEMAS_TODOS.some(m => m.id === CHIP_TEMAS)) CHIP_TEMAS = null;
+  const conFiltro = presetConReglas || vistaTemas;
   // Sin búsqueda, el modo filtra el feed (es tu forma de leerlo). Buscando,
   // el modo no esconde nada: los resultados se separan en dos pestañas,
   // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
   // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
-  const presetEfectivo = presetConReglas && !hayFuenteExplicita && !hayBusquedaActiva;
-  const conPestanas    = presetConReglas && !hayFuenteExplicita &&  hayBusquedaActiva;
+  const presetEfectivo = conFiltro && !hayFuenteExplicita && !hayBusquedaActiva;
+  const conPestanas    = conFiltro && !hayFuenteExplicita &&  hayBusquedaActiva;
 
   _avisarMediosDesconocidos(consulta);
   const ctx = {
     g, t2, limiteMs, ahora, parsed, consulta, orden, HIDE_MODE,
     presetEfectivo, marcarPreset: conPestanas, soloPreset: false,
+    vistaTemas, chipTemas: null,
   };
 
   let filtradas = NOTICIAS.filter(n => _pasaVista(n, ctx) === true);
+
+  // Chips de la vista Temas: cuántas hay de cada modo y, con un chip
+  // elegido, solo las de ese modo. El chip pasa al ctx para que el añadido
+  // incremental (ULT_CTX) lo respete.
+  let infoChips = null;
+  const filtrarPorChip = lista => {
+    const porModo = new Map();
+    for (const n of lista){
+      for (const id of new Set(_temasDe(n).map(x => x.id))) porModo.set(id, (porModo.get(id) || 0) + 1);
+    }
+    infoChips = { total: lista.length, porModo };
+    ctx.chipTemas = CHIP_TEMAS;
+    return CHIP_TEMAS ? lista.filter(n => _temasDe(n).some(x => x.id === CHIP_TEMAS)) : lista;
+  };
 
   let infoPestanas = null;
   if (conPestanas){
@@ -8034,14 +8151,19 @@ if (!capas.size) {
     if (PESTANA_CLAVE !== consulta.clave){ PESTANA_CLAVE = consulta.clave; PESTANA_BUSQUEDA = null; }
     const delModo = filtradas.filter(n => n._esPreset);
     const pestana = PESTANA_BUSQUEDA || (delModo.length ? 'modo' : 'todo');
-    infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length };
-    if (pestana === 'modo'){ filtradas = delModo; ctx.soloPreset = true; }
+    infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length, temas: vistaTemas };
+    if (pestana === 'modo'){
+      filtradas = vistaTemas ? filtrarPorChip(delModo) : delModo;
+      ctx.soloPreset = true;
+    }
+  } else if (presetEfectivo && vistaTemas){
+    filtradas = filtrarPorChip(filtradas);
   }
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
   const cmpNucleo = comparador(orden);
   filtradas.sort((a, b) => {
-    if (presetEfectivo){
+    if (presetEfectivo && !vistaTemas){
       const aFav = getOverride(a.dominio) === 'first'
                    && !isNaN(a._tsOrden)
                    && (ahora - a._tsOrden) < FAV_WINDOW_MS;
@@ -8072,6 +8194,8 @@ if (!capas.size) {
 
   ULT_PESTANAS = infoPestanas;
   renderPestanasPreset();
+  ULT_CHIPS = infoChips;
+  renderChipsTemas();
 
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
@@ -8096,9 +8220,11 @@ function renderPestanasPreset(){
   const nombre = (PRESET && PRESET.nombre) || 'General';
   for (const b of el.querySelectorAll('button[data-pestana]')){
     const esModo = b.dataset.pestana === 'modo';
-    b.textContent = esModo
-      ? t('presetPestanaModo', { X: nombre, n: info.nModo.toLocaleString() })
-      : t('presetPestanaTodo', { n: info.nTodo.toLocaleString() });
+    b.textContent = !esModo
+      ? t('presetPestanaTodo', { n: info.nTodo.toLocaleString() })
+      : info.temas
+        ? t('presetPestanaTemas', { n: info.nModo.toLocaleString() })
+        : t('presetPestanaModo', { X: nombre, n: info.nModo.toLocaleString() });
     b.setAttribute('aria-selected', String(b.dataset.pestana === info.pestana));
   }
   el.hidden = false;
@@ -8117,6 +8243,24 @@ function renderTotalR2(){
   const [a, m, d] = (dias[dias.length - 1].fecha || '').split('-');
   el.textContent = t('contadorR2', { n: n.toLocaleString() });
   el.title = t('contadorR2Title', { dias: dias.length, desde: a ? `${d}/${m}/${a}` : '?' });
+}
+
+// Chips de la vista Temas: «Todo» y un chip por modo con noticias. Con un
+// solo modo con temas no aportan nada y no se muestran.
+function renderChipsTemas(){
+  const el = document.getElementById('temas-chips');
+  if (!el) return;
+  const info = ULT_CHIPS;
+  if (!info || TEMAS_TODOS.length < 2){ el.hidden = true; el.innerHTML = ''; return; }
+  const chip = (id, label, n) =>
+    `<button type="button" data-chip="${escapeHtml(id)}" aria-pressed="${String((CHIP_TEMAS || '') === id)}">${escapeHtml(label)} · ${n.toLocaleString()}</button>`;
+  let html = chip('', t('temaChipTodo'), info.total);
+  for (const m of TEMAS_TODOS){
+    const n = info.porModo.get(m.id) || 0;
+    if (n || m.id === CHIP_TEMAS) html += chip(m.id, m.nombre, n);
+  }
+  el.innerHTML = html;
+  el.hidden = false;
 }
 
 function renderizar(){
@@ -8191,10 +8335,25 @@ async function compartirNoticia(n){
   }
 }
 
-// Temas que se marcan en la tarjeta: los del modo activo que casaron.
+// Temas que se marcan en la tarjeta: en la vista Temas, todos los que
+// casaron (o los del modo del chip); en un modo, los de ese modo.
 function _temasMarcados(n){
-  if (!PRESET_ACTIVO || !TEMAS_TODOS.length) return [];
+  if (!TEMAS_TODOS.length) return [];
+  if (vistaTemasActiva()){
+    const chip = ULT_CTX && ULT_CTX.chipTemas;
+    return chip ? _temasDe(n).filter(x => x.id === chip) : _temasDe(n);
+  }
+  if (!PRESET_ACTIVO) return [];
   return _temasDe(n).filter(x => x.id === PRESET.id);
+}
+// Etiqueta de la vista Temas: «tema · Modo», +N si casan más.
+function _badgeTema(marcados){
+  if (!marcados.length) return '';
+  const nombreDe = id => (TEMAS_TODOS.find(m => m.id === id) || {}).nombre || '';
+  const txt = x => etiquetaVisible(x.etiqueta) + ' · ' + nombreDe(x.id);
+  const extra = marcados.length > 1 ? ` +${marcados.length - 1}` : '';
+  const title = marcados.map(x => x.etiqueta + ' · ' + nombreDe(x.id)).join('\n');
+  return `<span class="badge tema" title="${escapeHtml(title)}"><span class="tema-txt">${escapeHtml(txt(marcados[0]))}</span>${extra}</span>`;
 }
 // Lo que se resalta en el titular: el texto de la búsqueda y los temas
 // marcados (sus términos incluidos). null si no hay nada que resaltar.
@@ -8221,7 +8380,9 @@ function renderItemHtml(n, idx){
     fechaHtml = `<span class="badge recolectado">${escapeHtml(t('recolectado'))}</span>`;
   }
 
-  const marcas = _compiladoMarcas(_temasMarcados(n));
+  const marcados = _temasMarcados(n);
+  const enVistaTemas = vistaTemasActiva();
+  const marcas = _compiladoMarcas(marcados);
   let tituloHtml;
   if (marcas) tituloHtml = resaltarTitular(n.titular, marcas);
   else        tituloHtml = n._titularEsc;
@@ -8255,11 +8416,13 @@ function renderItemHtml(n, idx){
     saveTitle = t('saveForLaterTitle');
   }
 
+  // En la vista Temas el grupo no es «el modo»: va sin color y la marca es el tema.
   const presetBadge = n.grupo
-    ? (n._esPreset
+    ? (n._esPreset && !enVistaTemas
         ? `<span class="badge preset">${n._grupoEsc}</span>`
         : `<span class="badge">${n._grupoEsc}</span>`)
     : '';
+  const temaBadge = enVistaTemas ? _badgeTema(marcados) : '';
 
   // Solo los medios del catálogo: los de prensa sin identificar (news.google.com…)
   // no tienen un dominio por el que filtrar.
@@ -8310,6 +8473,7 @@ function renderItemHtml(n, idx){
       ${medioHtml}
       ${n.tipo ? `<span class="badge">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
+      ${temaBadge}
       ${prensaBadge}
       ${fechaHtml}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
@@ -9139,6 +9303,16 @@ function wireStaticEvents(){
       );
     });
   }
+  // ── Chips de la vista Temas ──
+  const chipsTemas = $('#temas-chips');
+  if (chipsTemas){
+    chipsTemas.addEventListener('click', e => {
+      const b = e.target.closest('button[data-chip]');
+      if (!b) return;
+      CHIP_TEMAS = b.dataset.chip || null;
+      aplicarFiltros();
+    });
+  }
   // ── Pestañas Modo / Todo ──
   const pestanas = $('#preset-pestanas');
   if (pestanas){
@@ -9324,7 +9498,7 @@ function wireStaticEvents(){
     PRESET.palabras = panel.palabras;
     guardarPreset(); recompilarPreset();
 
-    if (presetTieneReglas() && !PRESET_ACTIVO){
+    if (presetTieneReglas() && !PRESET_ACTIVO && !vistaTemasActiva()){
       PRESET_ACTIVO = true;
       guardarPresetActivo();
       toast(t('presetGuardadoActivado'), 2200);
@@ -9505,6 +9679,8 @@ async function init(){
 
   recompilarPreset();
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
+  VISTA_TEMAS    = !PRESET_ACTIVO && cargarVistaTemas();
+  if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
   RECORDAR_FILTROS = cargarRecordarFiltros();
