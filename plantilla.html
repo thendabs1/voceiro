@@ -5504,12 +5504,55 @@ function refrescarVistaCompleta(){
   actualizarFiltrosCount(); 
 }
 
+// Offset de Europe/Madrid ('+02:00' o '+01:00') para una hora local dada.
+// Las HH:MM de los ficheros se escriben en hora de Madrid (recolector _hhmm),
+// así que un '+02:00' fijo desplaza 1 h todo lo publicado en horario de
+// invierno. Cacheado por día+hora: se llama por cada item al hidratar.
+const _OFFSET_MADRID = new Map();
+const _FMT_MADRID = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Madrid', hourCycle: 'h23',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit',
+});
+function _horaMadridComoUTC(t){
+  const p = {};
+  for (const x of _FMT_MADRID.formatToParts(new Date(t))) p[x.type] = x.value;
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+}
+function _offsetMadrid(dia, hhmm){
+  const clave = dia + 'T' + hhmm;
+  const enCache = _OFFSET_MADRID.get(clave);
+  if (enCache) return enCache;
+  const [y, m, d] = dia.split('-').map(Number);
+  const [h, mi] = hhmm.split(':').map(Number);
+  const local = Date.UTC(y, m - 1, d, h, mi);
+  // Candidatos: los offsets de 12 h antes y después (uno a cada lado de un
+  // posible cambio de hora) y el del instante corregido. Gana el mayor que
+  // reproduce la hora local: en la hora ambigua de octubre es la primera
+  // aparición, como zoneinfo con fold=0 en el recolector. Si la hora no
+  // existe (marzo), queda el offset de antes del cambio, también como fold=0.
+  const offEn = t => _horaMadridComoUTC(t) - t;
+  const o1 = offEn(local);
+  const o2 = offEn(local - o1);
+  const candidatos = [...new Set([
+    offEn(local - 12 * 3600e3), offEn(local + 12 * 3600e3), o1, o2,
+  ])].sort((a, b) => b - a);
+  const ms = candidatos.find(o => _horaMadridComoUTC(local - o) === local) ?? o2;
+  const mins = Math.round(ms / 60000);
+  const abs = Math.abs(mins);
+  const off = (mins >= 0 ? '+' : '-')
+            + String(Math.floor(abs / 60)).padStart(2, '0') + ':'
+            + String(abs % 60).padStart(2, '0');
+  _OFFSET_MADRID.set(clave, off);
+  return off;
+}
+
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
   const s = String(raw).trim();
   if (s.includes('T') && s.length > 10) return s;
   if (/^\d{2}:\d{2}$/.test(s) && dia){
-    return `${dia}T${s}:00+02:00`;
+    return `${dia}T${s}:00${_offsetMadrid(dia, s)}`;
   }
   return s;
 }
