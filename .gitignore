@@ -32,3 +32,6 @@ workers/cf-buscar/node_modules/
 tools/
 workers/cf-buscar/.wrangler/
 workers/cf-buscar/node_modules/
+
+# Cachés locales de wrangler (id y nombre de la cuenta)
+workers/*/.wrangler/
