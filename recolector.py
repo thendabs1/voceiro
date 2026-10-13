@@ -953,12 +953,16 @@ def _es_valido(texto, href, dominio):
     return True
 
 
-def _scrape(medio, url=None):
+def _scrape(medio, url=None, relay=False, verify=True):
     url = url or f"https://{medio['d']}"
+    # Por el relay, `url` sigue siendo la base para resolver los enlaces
+    fetch_url = DENO_RELAY_BASE + quote(url, safe='') if relay else url
+    tag = 'SCRAPE RELAY' if relay else 'SCRAPE'
     try:
-        r = SESSION.get(url, timeout=TIMEOUT, allow_redirects=True)
+        r = SESSION.get(fetch_url, timeout=TIMEOUT, allow_redirects=True,
+                        verify=verify)
         if r.status_code != 200:
-            print(f"  [SCRAPE {r.status_code}] {medio['n']}")
+            print(f"  [{tag} {r.status_code}] {medio['n']}")
             return None, f'HTTP {r.status_code}'
         soup = BeautifulSoup(r.text, 'lxml')
         dominio = medio['d']
@@ -989,7 +993,7 @@ def _scrape(medio, url=None):
             return out[:N_FEED], 'ok'
         return None, 'vacío'
     except Exception as e:
-        print(f"  [SCRAPE!] {medio['n']}: {type(e).__name__}: {e}")
+        print(f"  [{tag}!] {medio['n']}: {type(e).__name__}: {e}")
         return None, type(e).__name__
 
 
@@ -1208,7 +1212,8 @@ ETIQUETA_FUENTE = {
 
 
 def _probar_fuente(medio, f):
-    """Ejecuta una fuente ('rss', url[, 'relay']), ('scrape'[, url])…"""
+    """Ejecuta una fuente ('rss', url[, 'relay']),
+    ('scrape'[, url[, 'relay' | 'noverify']])…"""
     tipo, args = f[0], f[1:]
     relay = 'relay' in args[1:]
     if tipo == 'rss':
@@ -1218,7 +1223,8 @@ def _probar_fuente(medio, f):
     if tipo == 'wp':
         return _wp_api(medio)
     if tipo == 'scrape':
-        return _scrape(medio, args[0] if args else None)
+        return _scrape(medio, args[0] if args else None, relay,
+                       verify='noverify' not in args[1:])
     if tipo == 'gn':
         return _google_news(medio, args[0] if args else None)
     return None, f'tipo desconocido {tipo!r}'
@@ -2426,9 +2432,10 @@ def _t_stmt(sql, args=None):
     return {"type": "execute", "stmt": s}
 
 
-def turso_pipeline(statements, timeout=90):
+def turso_pipeline(statements, timeout=90, errores_ok=()):
     """Manda un batch a Turso HTTP v2. Devuelve la lista de results.
-    Devuelve None si hay error de red o de SQL."""
+    Devuelve None si hay error de red o de SQL, salvo los errores cuyo
+    mensaje contenga alguno de `errores_ok`, que se dan por buenos."""
     if not (TURSO_HTTP_URL and TURSO_TOKEN):
         print("[turso] sin credenciales — saltando")
         return None
@@ -2457,6 +2464,8 @@ def turso_pipeline(statements, timeout=90):
     for res in results:
         if res.get("type") == "error":
             err = res.get("error", {})
+            if any(e in err.get('message', '') for e in errores_ok):
+                continue
             print(f"[turso!] {err.get('code')} · {err.get('message','')[:200]}")
             return None
     return results
@@ -2565,24 +2574,25 @@ def _turso_ensure_schema():
 
 def _turso_migrar_columnas(tabla, cols_deseadas):
     """Añade a `tabla` las columnas TEXT que falten.
-    Idempotente: consulta PRAGMA table_info antes de cada ALTER."""
+    Idempotente: consulta PRAGMA table_info antes de cada ALTER. Si la
+    lectura falla (con la cuota agotada Turso bloquea las lecturas pero no
+    las escrituras), lanza los ALTER a ciegas y da por buena la columna
+    que ya existía."""
     results = turso_pipeline([_t_stmt(f"PRAGMA table_info({tabla})")], timeout=15)
     if results is None:
-        print(f"[turso!] PRAGMA table_info({tabla}) falló")
-        return
-    filas = _t_rows(results, 0)
-    cols_existentes = {r[1] for r in filas}  # r[1] = column name
-
-    faltan = [c for c in cols_deseadas if c not in cols_existentes]
-    if not faltan:
-        return
+        print(f"[turso!] PRAGMA table_info({tabla}) falló · ALTER a ciegas")
+        faltan = cols_deseadas
+    else:
+        cols_existentes = {r[1] for r in _t_rows(results, 0)}  # r[1] = nombre
+        faltan = [c for c in cols_deseadas if c not in cols_existentes]
 
     for col in faltan:
         sql = f"ALTER TABLE {tabla} ADD COLUMN {col} TEXT NOT NULL DEFAULT ''"
-        res = turso_pipeline([_t_stmt(sql)], timeout=15)
+        res = turso_pipeline([_t_stmt(sql)], timeout=15,
+                             errores_ok=('duplicate column name',))
         if res is None:
             print(f"[turso!] ALTER TABLE {tabla} ADD COLUMN {col} falló")
-        else:
+        elif res and res[0].get("type") == "ok":
             print(f"[turso] migración: añadida columna {tabla}.{col}")
 
 def _timed_obtener(medio):
