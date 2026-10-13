@@ -55,6 +55,8 @@
   }
 
   *{box-sizing:border-box}
+  /* hidden gana siempre, también a clases con display:flex */
+  [hidden]{display:none !important}
   html,body{margin:0;padding:0}
   body{
     font-family:var(--ff);
@@ -354,32 +356,6 @@
     padding:8px; border:1px solid var(--border); border-radius:6px;
     background:var(--bg);
   }
-  .list-modos{
-    border:1px solid var(--border); border-radius:6px;
-    background:var(--bg);
-  }
-  .modo-fila{
-    display:flex; align-items:center; gap:8px;
-    padding:8px 12px;
-    border-bottom:1px solid var(--border);
-    font-size:.78em;
-  }
-  .modo-fila:last-child{border-bottom:none}
-  .modo-fila.activo{background:var(--preset-bg);}
-  .modo-fila .modo-nombre{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600;}
-  .modo-fila .modo-acciones{display:flex; gap:4px; flex-shrink:0;}
-  .modo-fila .modo-acciones button{
-    padding:2px 8px; font-size:.85em;
-    background:transparent; border:1px solid var(--border);
-    color:var(--muted); border-radius:6px; cursor:pointer;
-    font-family:inherit;
-  }
-  .modo-fila .modo-acciones button:hover{
-    color:var(--accent); border-color:var(--accent);
-  }
-  .modo-fila .modo-acciones button.danger:hover{
-    color:var(--block); border-color:var(--block);
-  }
   .ctrl-override{
     display:grid; grid-template-columns:1fr 40px 40px; gap:6px;
     margin-bottom:8px;
@@ -555,6 +531,7 @@
     transition:all .1s;
   }
   .chk:hover span{border-color:var(--accent)}
+  .chk span .ico{ width:14px; height:14px; }
   .chk.incluir input:checked + span{
     background:var(--preset); border-color:var(--preset); color:#fff;
   }
@@ -581,10 +558,6 @@
   .temas-ayuda[open] .temas-ayuda-q{ background:var(--quote-bg); color:var(--fg); }
   .temas-ayuda ul{ margin:6px 0 0; padding-left:1.2em; line-height:1.7; }
   .temas-ayuda code{ background:var(--quote-bg); color:var(--fg); padding:0 4px; border-radius:3px; }
-  .temas-modo{ margin:0 0 12px; }
-  .temas-modo-nombre{ display:block; font-weight:600; font-size:.8em; margin:0 0 4px; }
-  .temas-modo-nombre .n{ color:var(--muted); font-weight:400; }
-  .temas-modo textarea.preset-texto{ min-height:84px; padding:8px 10px; }
 
   .backup-box{
     background:var(--quote-bg);
@@ -1266,6 +1239,11 @@
     max-width:90vw;
   }
   .toast.show{opacity:1; transform:translateY(0)}
+  .toast-accion{
+    pointer-events:auto; margin-left:12px; padding:2px 10px;
+    background:transparent; color:inherit; border:1px solid currentColor;
+    border-radius:6px; font-size:1em; font-weight:700;
+  }
   [data-theme="dark"] .toast{background:#eee; color:#222}
   [data-theme="contrast"] .toast{background:#ff0; color:#000; border:2px solid #000}
 
@@ -1420,14 +1398,21 @@
     flex-shrink: 0;
   }
 }
-@media (max-width: 820px){
-  /* En móvil el grupo derecho ya no se empuja a la derecha:
-     si cae a una fila nueva, se alinea a la izquierda como el resto */
-  header .header-actions-right{
-    margin-left: 0;
+/* Botones de la cabecera: icono y palabra; en móvil, solo el icono (la
+   palabra sigue ahí para lectores de pantalla). */
+.btn-cab{ display:inline-flex; align-items:center; gap:.4em; }
+@media (max-width: 640px){
+  header #h-title{ font-size: 1.3em; }
+  header .header-top{ flex-wrap: nowrap; }
+  header .header-actions-left{ flex: 1 1 auto; flex-wrap: nowrap; }
+  header .preset-wrap{ min-width: 0; max-width: 100%; }
+  header .header-actions-left .btn-preset{ max-width: 100%; min-width: 0; }
+  header .header-actions .btn-cab{
+    min-width: 40px; min-height: 40px; padding: 6px 9px; justify-content: center;
   }
-  header .header-actions-left .btn-preset{
-    max-width: none;   /* en móvil no truncamos: hay ancho de sobra */
+  .btn-cab .cab-txt{
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
   }
 }
   @media (max-width:900px){
@@ -1696,43 +1681,128 @@
     margin-left:auto;
   }
   .dups-list .dup-item a:hover{text-decoration:underline}
-  /* ═══ Pestañas del panel de configuración ═══ */
-  .cfg-tabs{
-    display: flex;
-    gap: 2px;
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    flex-shrink: 0;
-    background: var(--bg);
-    overflow-x: auto;
-    scrollbar-width: none;
+  /* ═══ Ajustes ═══
+     Móvil: pantalla completa, o la lista de secciones o una página.
+     Escritorio y tablet (≥ 820 px): panel lateral con el feed visible detrás. */
+  .panel-ajustes{ padding:0; overflow:hidden; }
+  .panel-ajustes .aj-inner{
+    max-width:none; width:100%; margin:0;
+    height:100vh; height:100dvh; max-height:none;
+    border:none; border-radius:0;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    flex-direction:row;
   }
-  .cfg-tabs::-webkit-scrollbar{ display: none; }
-  .cfg-tab{
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    padding: 10px 14px;
-    font-size: .82em;
-    font-weight: 600;
-    font-family: inherit;
-    color: var(--muted);
-    cursor: pointer;
-    margin-bottom: -1px;
-    white-space: nowrap;
-    transition: color .15s, border-color .15s;
+  .aj-nav, .aj-contenido{ display:flex; flex-direction:column; min-height:0; min-width:0; }
+  .aj-nav{ flex:1; }
+  .aj-contenido{ flex:1; }
+  .aj-secciones{ display:flex; flex-direction:column; gap:2px; padding:10px 8px; overflow-y:auto; }
+  .aj-secciones button{
+    display:flex; align-items:center; gap:12px;
+    width:100%; padding:13px 14px;
+    border:none; border-radius:8px; background:transparent; color:var(--fg);
+    font-size:.9em; font-weight:500; text-align:left;
   }
-  .cfg-tab:hover{ color: var(--fg); filter: none; }
-  .cfg-tab.active{
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-    background: transparent;
+  .aj-secciones button:hover{ background:var(--quote-bg); filter:none; }
+  .aj-secciones button[aria-current="page"]{ background:var(--quote-bg); font-weight:700; }
+  .aj-secciones .aj-flecha{ margin-left:auto; color:var(--muted); }
+  .aj-aa, .cab-aa{ font-weight:700; letter-spacing:-.02em; line-height:1; width:1.15em; text-align:center; flex-shrink:0; }
+  .panel-ajustes .panel-header{ min-height:58px; }
+  .aj-cabecera{ justify-content:flex-start; }
+  .aj-cabecera h2{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .aj-atras{
+    display:inline-flex; align-items:center; gap:2px;
+    padding:4px 8px 4px 2px; border:none; background:transparent; color:var(--accent);
+    font-size:.85em; flex-shrink:0;
   }
-  .cfg-tabpanel[hidden]{ display: none; }
-  @media (max-width: 560px){
-    .cfg-tabs{ padding: 0 16px; }
-    .cfg-tab{ padding: 10px 10px; font-size: .78em; }
+  .aj-pagina[hidden]{ display:none; }
+  .aj-cuerpo h3:first-child{ border-top:none; padding-top:0; margin-top:0; }
+  .aj-hint{ font-size:.68em; color:var(--muted); margin:0 0 8px; line-height:1.45; }
+  .aj-fila-fin{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+  .aj-mono{ min-height:80px; font-family:ui-monospace,monospace; font-size:.78em; }
+
+  /* Lista de modos */
+  .aj-lista-modos{ border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:10px; }
+  .aj-modo-fila{
+    display:flex; align-items:center; gap:10px;
+    width:100%; padding:12px 14px;
+    border:none; border-bottom:1px solid var(--border); border-radius:0;
+    background:transparent; color:var(--fg); text-align:left; font-size:.85em;
+  }
+  .aj-modo-fila:last-child{ border-bottom:none; }
+  .aj-modo-fila:hover{ background:var(--quote-bg); filter:none; }
+  .aj-modo-txt{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+  .aj-modo-nombre{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .aj-modo-resumen{ font-size:.82em; color:var(--muted); }
+  .aj-modo-fila > .ico{ color:var(--muted); }
+  .aj-activo{
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 8px; border-radius:10px;
+    background:var(--preset-bg); color:var(--preset);
+    font-size:.75em; font-weight:700; flex-shrink:0;
+  }
+  .aj-activo::before{ content:''; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .aj-nuevo{ font-size:.8em; }
+
+  /* Un modo */
+  .aj-modo-cab{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; font-size:.95em; }
+  .aj-modo-cab .aj-activo{ font-size:.72em; }
+  .aj-bloque{ border:1px solid var(--border); border-radius:8px; margin-bottom:10px; padding:0 14px 14px; }
+  .aj-bloque:not([open]){ padding-bottom:0; }
+  .aj-bloque > summary{
+    display:flex; align-items:center; gap:8px;
+    margin:0 -14px; padding:12px 14px; cursor:pointer; list-style:none;
+    font-size:.82em; font-weight:700;
+  }
+  .aj-bloque > summary::-webkit-details-marker{ display:none; }
+  .aj-bloque > summary::after{
+    content:''; margin-left:auto; width:.5em; height:.5em;
+    border-right:2px solid var(--muted); border-bottom:2px solid var(--muted);
+    transform:rotate(45deg); transition:transform .15s;
+  }
+  .aj-bloque[open] > summary::after{ transform:rotate(-135deg); }
+  .aj-n{ color:var(--muted); font-weight:400; }
+  .aj-bloque textarea.preset-texto{ min-height:110px; padding:8px 10px; margin-bottom:8px; }
+  .aj-pegar{ margin:8px 0; }
+  .aj-pegar > summary{ cursor:pointer; color:var(--save); font-size:.75em; font-weight:600; }
+  .aj-resumen{ margin-top:6px; }
+  .aj-zona-peligro{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:16px; }
+  .aj-zona-peligro button{ font-size:.75em; }
+  .aj-zona-peligro button.danger{ color:var(--block); border-color:var(--block); }
+  .aj-zona-peligro button.danger:hover{ background:var(--block-bg); }
+
+  /* Feed */
+  .aj-radios{
+    display:flex; flex-direction:column; gap:2px;
+    padding:10px 12px; margin-bottom:8px;
+    background:var(--quote-bg); border:1px solid var(--border); border-radius:6px;
+    font-size:.78em;
+  }
+  .aj-radios-tit{ font-weight:600; margin-bottom:4px; }
+  .aj-radios label{ display:flex; align-items:flex-start; gap:8px; padding:3px 0; cursor:pointer; }
+  .aj-radios input{ accent-color:var(--save); margin-top:.2em; }
+  .aj-radios small{ display:block; color:var(--muted); font-size:.9em; }
+
+  /* Ayuda */
+  .aj-atajos{ display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:.78em; margin:0; }
+  .aj-atajos dt{ font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:700; }
+  .aj-atajos dd{ margin:0; color:var(--muted); }
+
+  @media (max-width: 819.98px){
+    .panel-ajustes[data-ruta=""] .aj-contenido{ display:none; }
+    .panel-ajustes:not([data-ruta=""]) .aj-nav{ display:none; }
+  }
+  @media (min-width: 820px){
+    .panel-ajustes{ background:rgba(0,0,0,.25); }
+    .panel-ajustes .aj-inner{
+      width:min(780px, 100vw); margin:0 0 0 auto;
+      border-left:1px solid var(--border);
+      box-shadow:-12px 0 40px rgba(0,0,0,.25);
+    }
+    .aj-nav{ flex:0 0 210px; border-right:1px solid var(--border); }
+    .aj-nav .panel-close{ display:none; }
+    .aj-secciones .aj-flecha{ display:none; }
+    .aj-atras{ display:none; }
+    .panel-ajustes[data-ruta="modo"] .aj-atras{ display:inline-flex; }
   }
 
   /* ═══ Destino inline (➕ / 🚫 sin modo activo) ═══ */
@@ -1828,6 +1898,19 @@
   <symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></symbol>
   <symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol>
+  <symbol id="i-trash-2" viewBox="0 0 24 24"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></symbol>
+  <symbol id="i-building-2" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" /></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" /><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" /><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" /></symbol>
+  <symbol id="i-newspaper" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /><path d="M18 14h-8" /><path d="M15 18h-5" /><path d="M10 6h8v4h-8V6Z" /></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></symbol>
+  <symbol id="i-circle-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></symbol>
 </svg>
 <header>
   <div class="header-top">
@@ -1838,13 +1921,12 @@
                 aria-expanded="false" aria-haspopup="true"></button>
         <div id="preset-menu" class="preset-menu" style="display:none"></div>
       </span>
-      <button id="btn-pendientes" class="btn-pendientes" type="button"></button>
     </div>
     <div class="header-actions header-actions-right">
-      <button id="btn-config" type="button"></button>
-      <button id="btn-buscar" class="btn-buscar" type="button"></button>
-      <button id="btn-acces" type="button"></button>
-      <select id="lang-select" class="lang-select" aria-label="Language"></select>
+      <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
+      <button id="btn-buscar" class="btn-buscar btn-cab" type="button" hidden></button>
+      <button id="btn-acces" class="btn-cab" type="button"></button>
+      <button id="btn-config" class="btn-cab" type="button"></button>
     </div>
   </div>
   <p class="meta">
@@ -1886,244 +1968,282 @@
     </span>
   </p>
 </header>
-<!-- CONFIG -->
-<section id="panel-config" class="panel" role="dialog" aria-modal="true">
-  <div class="panel-inner">
-    <div class="panel-header">
-      <h2 id="cfg-title"></h2>
-      <button class="panel-close" type="button" data-close="panel-config"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
-    </div>
+<!-- AJUSTES
+     Una sola ventana. Escritorio y tablet: panel lateral con las secciones a
+     la izquierda y el feed visible detrás. Móvil: lista de secciones →
+     subpantalla. data-ruta dice qué página se ve ('' = la lista, en móvil).
+     Todo se guarda al momento. -->
+<section id="panel-ajustes" class="panel panel-ajustes" role="dialog" aria-modal="true"
+         aria-labelledby="aj-titulo" data-ruta="">
+  <div class="panel-inner aj-inner">
 
-    <div class="cfg-tabs" role="tablist">
-      <button class="cfg-tab active" id="tab-feed"     type="button" role="tab" data-tab="feed"     aria-selected="true"></button>
-      <button class="cfg-tab"        id="tab-medios"   type="button" role="tab" data-tab="medios"   aria-selected="false"></button>
-      <button class="cfg-tab"        id="tab-temas"    type="button" role="tab" data-tab="temas"    aria-selected="false"></button>
-      <button class="cfg-tab"        id="tab-avanzado" type="button" role="tab" data-tab="avanzado" aria-selected="false"></button>
-    </div>
+    <nav class="aj-nav">
+      <div class="panel-header">
+        <h2 id="aj-titulo"></h2>
+        <button class="panel-close" type="button" data-close="panel-ajustes"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="aj-secciones">
+        <button type="button" data-ir="modos"><svg class="ico" aria-hidden="true"><use href="#i-layers"/></svg><span id="aj-nav-modos"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button type="button" data-ir="lectura"><span class="aj-aa" aria-hidden="true">Aa</span><span id="aj-nav-lectura"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button type="button" data-ir="feed"><svg class="ico" aria-hidden="true"><use href="#i-newspaper"/></svg><span id="aj-nav-feed"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button type="button" data-ir="avanzado"><svg class="ico" aria-hidden="true"><use href="#i-wrench"/></svg><span id="aj-nav-avanzado"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button type="button" data-ir="ayuda"><svg class="ico" aria-hidden="true"><use href="#i-circle-help"/></svg><span id="aj-nav-ayuda"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+      </div>
+    </nav>
 
-    <div class="panel-body">
-      <div id="sync-banner" class="sync-banner" style="display:none">
-        <span class="sync-dot"></span>
-        <span id="sync-banner-text"></span>
+    <div class="aj-contenido">
+      <div class="panel-header aj-cabecera">
+        <button type="button" class="aj-atras" id="aj-atras"><svg class="ico" aria-hidden="true"><use href="#i-chevron-left"/></svg><span id="aj-atras-lbl"></span></button>
+        <h2 id="aj-titulo-pagina"></h2>
+        <button class="panel-close" type="button" data-close="panel-ajustes"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
 
-      <!-- ═══════════ TAB: FEED ═══════════ -->
-      <div class="cfg-tabpanel" data-panel="feed">
+      <div class="panel-body aj-cuerpo">
 
-        <h3 id="cfg-modos"></h3>
-        <p id="cfg-modos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <div id="lista-modos" class="list-modos"></div>
-        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button id="btn-nuevo-modo" type="button" style="font-size:.75em;">+ <span id="btn-nuevo-modo-lbl"></span></button>
+        <!-- ═══════════ MODOS ═══════════ -->
+        <div class="aj-pagina" data-pagina="modos" hidden>
+          <p class="aj-hint" id="cfg-modos-hint"></p>
+          <div id="lista-modos" class="aj-lista-modos"></div>
+          <button id="btn-nuevo-modo" class="con-ico aj-nuevo" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg><span id="btn-nuevo-modo-lbl"></span></button>
         </div>
 
+        <!-- ═══════════ UN MODO (el de MODO_EDITADO) ═══════════ -->
+        <div class="aj-pagina" data-pagina="modo" hidden>
+          <div class="aj-modo-cab">
+            <span id="aj-modo-estado" class="aj-activo" hidden></span>
+            <button id="aj-modo-activar" class="primary con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span id="aj-modo-activar-lbl"></span></button>
+            <button id="aj-modo-renombrar" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg><span id="aj-modo-renombrar-lbl"></span></button>
+            <button id="aj-modo-duplicar" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg><span id="aj-modo-duplicar-lbl"></span></button>
+          </div>
 
+          <details class="aj-bloque" id="aj-bloque-temas" open>
+            <summary><span id="aj-temas-tit"></span><span class="aj-n" id="aj-temas-n"></span></summary>
+            <textarea id="aj-temas" class="preset-texto" spellcheck="false"></textarea>
+            <details class="temas-ayuda">
+              <summary><span id="cfg-palabras-hint"></span><span class="temas-ayuda-q" aria-hidden="true">?</span></summary>
+              <ul id="cfg-temas-ayuda"></ul>
+            </details>
+          </details>
 
-        <h3 id="cfg-palabras"></h3>
-        <button id="btn-editar-temas" type="button" style="font-size:.75em;"></button>
+          <details class="aj-bloque" id="aj-bloque-medios">
+            <summary><span id="cfg-medios"></span><span class="aj-n" id="aj-medios-n"></span></summary>
+            <div id="modo-overrides-wrap">
+              <p id="modo-overrides-hint" class="aj-hint"></p>
+              <div id="ov-list" class="ov-list"></div>
+              <details id="ov-pegar-wrap" class="aj-pegar">
+                <summary></summary>
+                <textarea id="ov-pegar" class="preset-texto aj-mono" placeholder="+ dominio.com&#10;- otro.com"></textarea>
+                <div class="aj-fila-fin">
+                  <button id="ov-pegar-aplicar" type="button" class="primary"></button>
+                </div>
+              </details>
+            </div>
+            <p id="cfg-medios-hint" class="aj-hint"></p>
+            <p id="cfg-medios-legend" class="aj-hint"></p>
+            <div class="ctrl-medios">
+              <input type="search" id="filtro-medio" autocomplete="off">
+              <select id="filtro-grupo-medio"><option value=""></option></select>
+            </div>
+            <div id="filtro-medio-add" class="filtro-medio-add" hidden>
+              <span class="filtro-medio-add-label" id="filtro-medio-add-label"></span>
+              <button id="ov-add-first"  type="button" class="filtro-medio-add-btn force"></button>
+              <button id="ov-add-ignore" type="button" class="filtro-medio-add-btn ignore"></button>
+            </div>
+            <div id="lista-medios" class="list-medios"></div>
+            <p id="resumen-medios" class="aj-hint aj-resumen"></p>
+          </details>
 
-        <h3 id="cfg-feed"></h3>
-        <p id="cfg-feed-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <label class="cfg-toggle">
-          <input type="checkbox" id="cfg-recordar-filtros">
-          <span class="cfg-toggle-txt">
-            <span class="cfg-toggle-title" id="cfg-recordar-filtros-lbl"></span>
-            <span class="cfg-toggle-hint"  id="cfg-recordar-filtros-hint"></span>
-          </span>
-        </label>
+          <details class="aj-bloque" id="aj-bloque-grupos">
+            <summary><span id="cfg-grupos"></span><span class="aj-n" id="aj-grupos-n"></span></summary>
+            <p id="cfg-grupos-hint" class="aj-hint"></p>
+            <div id="lista-grupos" class="list-grupos"></div>
+          </details>
 
-        <div id="cfg-portadas-bloque" hidden>
-          <h3 id="cfg-portadas"></h3>
-          <p id="cfg-portadas-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-          <div id="lista-portadas"></div>
+          <div class="aj-zona-peligro">
+            <button id="aj-modo-vaciar" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-rotate-ccw"/></svg><span id="aj-modo-vaciar-lbl"></span></button>
+            <button id="aj-modo-borrar" class="con-ico danger" type="button"><svg class="ico" aria-hidden="true"><use href="#i-trash-2"/></svg><span id="aj-modo-borrar-lbl"></span></button>
+          </div>
         </div>
 
+        <!-- ═══════════ LECTURA ═══════════ -->
+        <div class="aj-pagina" data-pagina="lectura" hidden>
+          <div class="opt-row">
+            <span class="opt-label" id="ac-tema"></span>
+            <div class="opt-group" data-grupo="tema">
+              <button type="button" data-val="light"></button>
+              <button type="button" data-val="sepia"></button>
+              <button type="button" data-val="dark"></button>
+              <button type="button" data-val="contrast"></button>
+            </div>
+          </div>
 
+          <div class="opt-row">
+            <span class="opt-label" id="ac-fuente"></span>
+            <div class="opt-group" data-grupo="fuente">
+              <button type="button" data-val="serif"></button>
+              <button type="button" data-val="sans"></button>
+              <button type="button" data-val="dyslexic"></button>
+            </div>
+          </div>
 
+          <div class="opt-row">
+            <span class="opt-label" id="ac-tamano"></span>
+            <div class="opt-group">
+              <button type="button" id="fs-menos">A−</button>
+              <span class="opt-val" id="fs-val">18</span>
+              <button type="button" id="fs-mas">A+</button>
+            </div>
+          </div>
 
+          <div class="opt-row">
+            <span class="opt-label" id="ac-ancho"></span>
+            <div class="opt-group">
+              <button type="button" id="w-menos">−</button>
+              <span class="opt-val" id="w-val">1100</span>
+              <button type="button" id="w-mas">+</button>
+            </div>
+          </div>
 
-        <h3 id="cfg-dias"></h3>
-        <p id="cfg-dias-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <div class="opt-group" data-dias data-grupo="dias">
-          <button type="button" data-val="1"></button>
-          <button type="button" data-val="3"></button>
-          <button type="button" data-val="7"></button>
-          <button type="button" data-val="20"></button>
-          <button type="button" data-val="30"></button>
+          <div class="opt-row">
+            <span class="opt-label" id="ac-extra"></span>
+            <div class="opt-group" data-grupo="extra">
+              <button type="button" data-val="just"></button>
+              <button type="button" data-val="bionic"></button>
+              <button type="button" data-val="focus"></button>
+            </div>
+          </div>
+
+          <div class="opt-row">
+            <label class="opt-label" id="ac-idioma" for="lang-select"></label>
+            <select id="lang-select" class="lang-select"></select>
+          </div>
+
+          <div class="aj-fila-fin">
+            <button id="acces-reset" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-rotate-ccw"/></svg><span id="acces-reset-lbl"></span></button>
+          </div>
         </div>
-        <p id="cfg-dias-aviso" style="font-size:.68em; color:var(--muted); margin:6px 0 8px; display:none;"></p>
 
-        <div class="filtros-prensa" style="margin-top:10px;">
-          <label class="chk-prensa">
-            <input type="checkbox" id="prensa-panel-toggle">
-            <span id="prensa-panel-label">🌐 Prensa externa</span>
+        <!-- ═══════════ FEED ═══════════ -->
+        <div class="aj-pagina" data-pagina="feed" hidden>
+          <h3 id="aj-vista-tit"></h3>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="aj-dup">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="aj-dup-lbl"></span>
+            </span>
+          </label>
+          <div class="aj-radios" role="radiogroup" aria-labelledby="aj-hide-tit">
+            <span class="aj-radios-tit" id="aj-hide-tit"></span>
+            <label><input type="radio" name="aj-hide" value="off"><span data-txt="vsHideOff"></span></label>
+            <label><input type="radio" name="aj-hide" value="read"><span data-txt="vsHideRead" data-hint="vsHideReadHint"></span></label>
+            <label><input type="radio" name="aj-hide" value="viewed"><span data-txt="vsHideViewed" data-hint="vsHideViewedHint"></span></label>
+            <label><input type="radio" name="aj-hide" value="both"><span data-txt="vsHideBoth"></span></label>
+          </div>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="cfg-recordar-filtros">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="cfg-recordar-filtros-lbl"></span>
+              <span class="cfg-toggle-hint"  id="cfg-recordar-filtros-hint"></span>
+            </span>
           </label>
 
-          <div class="filtros-prensa-selects" id="prensa-selects" hidden>
-            <label class="fp-fuentes">
-              <span id="prensa-fuentes-label">Fuentes</span>
-              <div class="fp-chks">
-                <label class="fp-chk">
-                  <input type="checkbox" id="prensa-f-gnews" checked>
-                  <span>Google News</span>
-                </label>
-                <label class="fp-chk">
-                  <input type="checkbox" id="prensa-f-freenews" checked>
-                  <span>FreeNews</span>
-                </label>
-              </div>
-            </label>
-
-            <label class="fp-lang">
-              <span id="prensa-lang-label">Idioma</span>
-              <select id="prensa-lang"></select>
-            </label>
-
-            <label class="fp-region">
-              <span id="prensa-region-label">País</span>
-              <select id="prensa-region"></select>
-            </label>
-
-            <button type="button" id="prensa-reset" class="prensa-reset"
-                    title="Restablecer prensa">↺</button>
+          <div id="cfg-portadas-bloque" hidden>
+            <h3 id="cfg-portadas"></h3>
+            <p id="cfg-portadas-hint" class="aj-hint"></p>
+            <div id="lista-portadas"></div>
           </div>
+
+          <h3 id="cfg-dias"></h3>
+          <p id="cfg-dias-hint" class="aj-hint"></p>
+          <div class="opt-group" data-dias data-grupo="dias">
+            <button type="button" data-val="1"></button>
+            <button type="button" data-val="3"></button>
+            <button type="button" data-val="7"></button>
+            <button type="button" data-val="20"></button>
+            <button type="button" data-val="30"></button>
+          </div>
+          <p id="cfg-dias-aviso" class="aj-hint" style="margin-top:6px; display:none;"></p>
         </div>
 
-      </div>
+        <!-- ═══════════ AVANZADO ═══════════ -->
+        <div class="aj-pagina" data-pagina="avanzado" hidden>
+          <h3 id="aj-inv-tit"></h3>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="aj-investigar">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="aj-investigar-lbl"></span>
+              <span class="cfg-toggle-hint"  id="aj-investigar-hint"></span>
+            </span>
+          </label>
 
-      <!-- ═══════════ TAB: MEDIOS ═══════════ -->
-      <div class="cfg-tabpanel" data-panel="medios" hidden>
+          <h3 id="aj-prensa-tit"></h3>
+          <div class="filtros-prensa">
+            <label class="chk-prensa">
+              <input type="checkbox" id="prensa-panel-toggle">
+              <span id="prensa-panel-label"></span>
+            </label>
 
-        <div id="modo-overrides-wrap">
-          <p id="modo-overrides-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-          <div id="ov-list" class="ov-list"></div>
-          <details id="ov-pegar-wrap" style="margin-top:8px;">
-            <summary style="cursor:pointer; color:var(--save); font-size:.75em; font-weight:600;"></summary>
-            <textarea id="ov-pegar" class="preset-texto" style="min-height:80px; font-family:ui-monospace,monospace; font-size:.78em;" placeholder="+ dominio.com&#10;- otro.com"></textarea>
-            <div style="margin-top:6px; display:flex; gap:8px; justify-content:flex-end;">
-              <button id="ov-pegar-aplicar" type="button" class="primary" style="font-size:.75em;"></button>
+            <div class="filtros-prensa-selects" id="prensa-selects" hidden>
+              <label class="fp-fuentes">
+                <span id="prensa-fuentes-label">Fuentes</span>
+                <div class="fp-chks">
+                  <label class="fp-chk">
+                    <input type="checkbox" id="prensa-f-gnews" checked>
+                    <span>Google News</span>
+                  </label>
+                  <label class="fp-chk">
+                    <input type="checkbox" id="prensa-f-freenews" checked>
+                    <span>FreeNews</span>
+                  </label>
+                </div>
+              </label>
+
+              <label class="fp-lang">
+                <span id="prensa-lang-label">Idioma</span>
+                <select id="prensa-lang"></select>
+              </label>
+
+              <label class="fp-region">
+                <span id="prensa-region-label">País</span>
+                <select id="prensa-region"></select>
+              </label>
+
+              <button type="button" id="prensa-reset" class="prensa-reset"
+                      title="Restablecer prensa"><svg class="ico" aria-hidden="true"><use href="#i-rotate-ccw"/></svg></button>
             </div>
-          </details>
-        </div>
-
-        <h3 id="cfg-medios"></h3>
-        <p id="cfg-medios-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <p id="cfg-medios-legend" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <div class="ctrl-medios">
-          <input type="search" id="filtro-medio" autocomplete="off">
-          <select id="filtro-grupo-medio"><option value=""></option></select>
-        </div>
-        <div id="filtro-medio-add" class="filtro-medio-add" hidden>
-          <span class="filtro-medio-add-label" id="filtro-medio-add-label"></span>
-          <button id="ov-add-first"  type="button" class="filtro-medio-add-btn force"></button>
-          <button id="ov-add-ignore" type="button" class="filtro-medio-add-btn ignore"></button>
-        </div>
-        <div id="lista-medios" class="list-medios"></div>
-        <p id="resumen-medios" style="font-size:.68em; color:var(--muted); margin:6px 0 0;"></p>
-
-        <h3 id="cfg-grupos"></h3>
-        <p id="cfg-grupos-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
-        <div id="lista-grupos" class="list-grupos"></div>
-
-      </div>
-
-      <!-- ═══════════ TAB: TEMAS ═══════════ -->
-      <div class="cfg-tabpanel" data-panel="temas" hidden>
-        <h3 id="cfg-temas"></h3>
-        <details class="temas-ayuda">
-          <summary><span id="cfg-palabras-hint"></span><span class="temas-ayuda-q" aria-hidden="true">?</span></summary>
-          <ul id="cfg-temas-ayuda"></ul>
-        </details>
-        <div id="lista-temas-modos"></div>
-      </div>
-
-      <!-- ═══════════ TAB: AVANZADO ═══════════ -->
-      <div class="cfg-tabpanel" data-panel="avanzado" hidden>
-
-        <h3 id="cfg-backup"></h3>
-        <div class="backup-box">
-          <span class="msg" id="cfg-backup-msg"></span>
-          <div class="acciones">
-            <button id="btn-export" type="button"></button>
-            <button id="btn-import" type="button"></button>
           </div>
-        </div>
 
-        <h3 id="cfg-help-lbl"></h3>
-        <div class="backup-box">
-          <span class="msg" id="cfg-help-msg"></span>
-          <div class="acciones">
-            <button id="btn-report-generic" type="button">🐞 <span id="cfg-help-btn"></span></button>
+          <h3 id="cfg-backup"></h3>
+          <div class="backup-box">
+            <span class="msg" id="cfg-backup-msg"></span>
+            <div class="acciones">
+              <button id="btn-export" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg><span id="btn-export-lbl"></span></button>
+              <button id="btn-import" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span id="btn-import-lbl"></span></button>
+            </div>
           </div>
+
+          <h3 id="aj-plugin-tit"></h3>
+          <div id="sync-banner" class="sync-banner" style="display:none">
+            <span class="sync-dot"></span>
+            <span id="sync-banner-text"></span>
+          </div>
+          <p id="aj-plugin-hint" class="aj-hint"></p>
+        </div>
+
+        <!-- ═══════════ AYUDA ═══════════ -->
+        <div class="aj-pagina" data-pagina="ayuda" hidden>
+          <h3 id="cfg-help-lbl"></h3>
+          <div class="backup-box">
+            <span class="msg" id="cfg-help-msg"></span>
+            <div class="acciones">
+              <button id="btn-report-generic" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-flag"/></svg><span id="cfg-help-btn"></span></button>
+            </div>
+          </div>
+          <h3 id="aj-atajos-tit"></h3>
+          <dl id="aj-atajos" class="aj-atajos"></dl>
         </div>
 
       </div>
-    </div>
-
-    <div class="panel-acciones">
-      <button id="preset-reset" type="button"></button>
-      <button id="preset-cancelar" type="button"></button>
-      <button id="preset-guardar" type="button" class="primary"></button>
-    </div>
-  </div>
-</section>
-
-<!-- ACCESIBILIDAD -->
-<section id="panel-acces" class="panel" role="dialog" aria-modal="true">
-  <div class="panel-inner">
-    <div class="panel-header">
-      <h2 id="ac-title"></h2>
-      <button class="panel-close" type="button" data-close="panel-acces"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
-    </div>
-    <div class="panel-body">
-      <div class="opt-row">
-        <span class="opt-label" id="ac-tema"></span>
-        <div class="opt-group" data-grupo="tema">
-          <button data-val="light"></button>
-          <button data-val="sepia"></button>
-          <button data-val="dark"></button>
-          <button data-val="contrast"></button>
-        </div>
-      </div>
-
-      <div class="opt-row">
-        <span class="opt-label" id="ac-fuente"></span>
-        <div class="opt-group" data-grupo="fuente">
-          <button data-val="serif"></button>
-          <button data-val="sans"></button>
-          <button data-val="dyslexic"></button>
-        </div>
-      </div>
-
-      <div class="opt-row">
-        <span class="opt-label" id="ac-tamano"></span>
-        <div class="opt-group">
-          <button id="fs-menos">A−</button>
-          <span class="opt-val" id="fs-val">18</span>
-          <button id="fs-mas">A+</button>
-        </div>
-      </div>
-
-      <div class="opt-row">
-        <span class="opt-label" id="ac-ancho"></span>
-        <div class="opt-group">
-          <button id="w-menos">−</button>
-          <span class="opt-val" id="w-val">1100</span>
-          <button id="w-mas">+</button>
-        </div>
-      </div>
-
-      <div class="opt-row">
-        <span class="opt-label" id="ac-extra"></span>
-        <div class="opt-group" data-grupo="extra">
-          <button data-val="just"></button>
-          <button data-val="bionic"></button>
-          <button data-val="focus"></button>
-        </div>
-      </div>
-    </div>
-    <div class="panel-acciones">
-      <button id="acces-reset" type="button"></button>
     </div>
   </div>
 </section>
@@ -2497,12 +2617,8 @@ const I18N = {
     /* ── Pestañas del panel ── */
 
     contadorFueraModo:      ' · {n} fuera del modo',
-    tabMedios:               'Medios',
-    tabAvanzado:             'Avanzado',
 
     /* ── Feed ── */
-    cfgFeed:                 'Feed',
-    cfgFeedHint:             'Carga del feed y prensa externa.',
     cfgRecordarFiltros:      'Recordar filtros al recargar',
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
     cfgPortadas:             'Portadas adicionales',
@@ -2541,9 +2657,7 @@ const I18N = {
     prensaPaisUS:      'Estados Unidos',
 
     /* ── Modos de feed ── */
-    cfgModos:               'Modos de feed',
-    cfgModosHint:           'Cada modo tiene sus grupos, palabras y excepciones por medio. Al cambiar de modo el feed se reconfigura.',
-    cfgModoActivo:          'activo',
+    cfgModosHint:           'Cada modo es un feed a tu medida, con sus temas, medios y grupos. Toca uno para editarlo.',
     cfgModoNuevo:           'Nuevo modo',
     cfgModoNombrePrompt:    'Nombre del modo:',
     cfgModoRenombrarPrompt: 'Nuevo nombre para "{X}":',
@@ -2554,15 +2668,15 @@ const I18N = {
     fltBtn: 'Filtros',
 
     /* ── Overrides por dominio ── */
-    cfgOverrideHint:        'Añade medios a este modo por dominio. ✓ fuerza a mostrarlo arriba; ✗ lo oculta.',
+    cfgOverrideHint:        'Medios que este modo fuerza o bloquea. Para añadir uno que no está en la lista, escribe su dominio en el buscador de abajo.',
     cfgOverridePegar:       'Pegar lista de dominios',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio no válido: {X}',
 
     /* ── Buscador de medios (add-bar) ── */
     cfgMedioAddLabel:       'Sin coincidencias. ¿Añadir {X} al modo?',
-    cfgMedioAddForce:       '✓ Forzar',
-    cfgMedioAddIgnore:      '✗ Ignorar',
+    cfgMedioAddForce:       'Forzar',
+    cfgMedioAddIgnore:      'Bloquear',
 
     /* ── Destino inline (➕ / 🚫) ── */
     addToModoTitle:      'Añadir este medio al modo',
@@ -2585,10 +2699,7 @@ const I18N = {
     metaSuffix:             'titulares en histórico',
 
     /* ── Botones principales ── */
-    btnPersonalizado:       'Modo Personalizado',
-    btnConfig:              'Configurar',
     btnPendientes:          'Pendientes',
-    btnAcces:               'Aa Accesibilidad',
     btnBuscar:              'Investigar',
 
     /* ── Duplicados ── */
@@ -2602,12 +2713,8 @@ const I18N = {
     btnHideReadTitle:       'Ocultar noticias ya leídas',
 
     /* ── Import/export/reset ── */
-    btnImport:              '↓ Importar',
-    btnExport:              '↑ Exportar',
-    btnReset:               '↺ Valores por defecto',
-    btnCancel:              'Cancelar',
-    btnSave:                'Guardar',
-    btnClear:               'Limpiar',
+    btnImport:              'Importar',
+    btnExport:              'Exportar',
 
     /* ── Idiomas ── */
     lblIdioma:              'Idioma',
@@ -2618,16 +2725,14 @@ const I18N = {
     optLangEu:              'Euskara',
 
     /* ── Panel de configuración ── */
-    cfgTitle:               'Configurar Modo Personalizado',
     cfgGrupos:              'Grupos completos',
-    cfgGruposHint:          'Al marcar un grupo se incluyen todos sus medios. Bloquear un medio (abajo) tiene más prioridad.',
+    cfgGruposHint:          'Al marcar un grupo se incluyen todos sus medios. Un medio bloqueado no se muestra aunque su grupo esté marcado.',
     cfgMedios:              'Medios',
-    cfgMediosHint:          '✓ forzar siempre · ✗ bloquear siempre · sin marca = neutro.',
+    cfgMediosHint:          'Forzar: siempre se muestra. Bloquear: nunca. Sin marcar: según los grupos y los temas.',
     knownInPlugin:          'Configurado en el plugin Lector Universal',
     forceInclude:           'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
     forceExclude:           'Bloquear siempre',
     blockMedia:             'No mostrar noticias de este medio',
-    blockMediaDone:         'Medio bloqueado · Modo Personalizado activado',
     saveLabelSave:          'Guardar',
     saveLabelPending:       'Pendiente',
     saveLabelRead:          'Leída',
@@ -2636,7 +2741,6 @@ const I18N = {
     cfgTodosGrupos:         'Todos los grupos',
     cfgPalabras:            'Temas',
     cfgPalabrasHint:        'Una línea = un tema',
-    cfgEditarTemas:         'Editar temas →',
     cfgTemasAyuda:          'incendio|también «incendios»\nsan salvador|las dos palabras, en cualquier orden\n"san salvador"|frase exacta\nPP|sigla: palabra entera\ngalicia -feijoo|«galicia», pero sin «feijoo»',
     cfgBackup:              'Copia de seguridad',
     cfgBackupMsg:           'Exporta tu configuración a un archivo compatible con Voceiro y con el plugin Lector Universal.',
@@ -2647,7 +2751,6 @@ const I18N = {
     cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
     /* ── Accesibilidad ── */
-    acTitle:                'Opciones de lectura',
     acTema:                 'Tema',
     acFuente:               'Fuente',
     acTamano:               'Tamaño',
@@ -2682,7 +2785,6 @@ const I18N = {
     contadorScope:          'Mostrando {n} de {total} en modo activo',
     contadorR2:             '{n} en total',
     contadorR2Title:        'Noticias guardadas en R2: {dias} días, desde el {desde}',
-    contadorPreset:         ' · Modo Personalizado activo',
     vacio:                  'Sin resultados',
     errCarga:               'Error cargando datos: ',
     loading:                'Cargando…',
@@ -2696,10 +2798,8 @@ const I18N = {
     impConfirm:             'Esto reemplazará tu configuración actual. ¿Continuar?',
 
     /* ── Modo Personalizado ── */
-    presetVacio:            'El Modo Personalizado está vacío. Configúralo primero y luego actívalo.',
-    presetActivado:         'Modo Personalizado activado',
-    presetDesactivado:      'Modo Personalizado desactivado',
-    presetGuardadoActivado: 'Configuración guardada · Modo Personalizado activado',
+    presetVacio:            'Este modo está vacío: añade temas, medios o grupos y luego actívalo.',
+    presetGuardadoActivado: 'Modo «{X}» activado',
 
     /* ── Fechas ── */
     fechaAhora:             'ahora',
@@ -2817,14 +2917,38 @@ const I18N = {
     vsHideViewedHint:       'Titulares que han pasado por pantalla',
     vsHideBoth:             'Leídos y vistos',
     vsReset:                'Restablecer vista',
+    /* ── Ajustes ── */
+    ajTitulo:               'Ajustes',
+    ajModos:                'Modos',
+    ajLectura:              'Lectura',
+    ajFeed:                 'Feed',
+    ajAvanzado:             'Avanzado',
+    ajAyuda:                'Ayuda',
+    ajAtras:                'Atrás',
+    ajModoActivo:           'Activo',
+    ajModoActivar:          'Activar',
+    ajModoRenombrar:        'Renombrar',
+    ajModoDuplicar:         'Duplicar',
+    ajModoVaciar:           'Vaciar modo',
+    ajModoBorrar:           'Borrar modo',
+    ajModoConfirmVaciar:    '¿Vaciar el modo «{X}»? Se quitan sus temas, medios y grupos.',
+    ajModoVaciado:          'Modo vaciado: {X}',
+    ajDeshacer:             'Deshacer',
+    ajModoVacio:            'Sin configurar',
+    ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
+    ajMediosN:              '{f} forzados · {b} bloqueados',
+    ajVistaTit:             'Vista del feed',
+    ajInvestigarLbl:        'Mostrar el botón Investigar',
+    ajInvestigarHint:       'Busca empresas y cargos en el BORME con OpenMercantil. También se abre con Alt+B.',
+    ajPrensaActivar:        'Buscar también en Google News y FreeNews',
+    ajPluginTit:            'Plugin Lector Universal',
+    ajAtajosTit:            'Atajos de teclado',
+    ajAtajos:               'Alt+M|Activar o quitar el modo\nAlt+C|Ajustes\nAlt+A|Lectura\nAlt+P|Pendientes\nAlt+B|Investigar empresas\nEsc|Cerrar',
+    acReset:                'Restablecer lectura',
   },
 
   gl: {
-    tabMedios:               'Medios',
-    tabAvanzado:             'Avanzado',
 
-    cfgFeed:                 'Feed',
-    cfgFeedHint:             'Carga do feed e prensa externa.',
     cfgRecordarFiltros:      'Lembrar filtros ao recargar',
     cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
     cfgPortadas:             'Portadas adicionais',
@@ -2862,9 +2986,7 @@ const I18N = {
     prensaPaisUS:      'Estados Unidos',
     fltBtn: 'Filtros',
 
-    cfgModos:               'Modos de feed',
-    cfgModosHint:           'Cada modo ten os seus grupos, palabras e excepcións por medio. Ao cambiar de modo o feed reconfigúrase.',
-    cfgModoActivo:          'activo',
+    cfgModosHint:           'Cada modo é un feed á túa medida, cos seus temas, medios e grupos. Toca un para editalo.',
     cfgModoNuevo:           'Novo modo',
     cfgModoNombrePrompt:    'Nome do modo:',
     cfgModoRenombrarPrompt: 'Novo nome para "{X}":',
@@ -2873,14 +2995,14 @@ const I18N = {
     cfgModoBorrado:         'Modo borrado: {X}',
     cfgModoUnicoNoBorrar:   'Non podes borrar o único modo. Crea outro antes.',
 
-    cfgOverrideHint:        'Engade medios a este modo por dominio. ✓ forza a amosalo arriba; ✗ ocúltao.',
+    cfgOverrideHint:        'Medios que este modo forza ou bloquea. Para engadir un que non está na lista, escribe o seu dominio no buscador de abaixo.',
     cfgOverridePegar:       'Pegar lista de dominios',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio non válido: {X}',
 
     cfgMedioAddLabel:       'Sen coincidencias. ¿Engadir {X} ao modo?',
-    cfgMedioAddForce:       '✓ Forzar',
-    cfgMedioAddIgnore:      '✗ Ignorar',
+    cfgMedioAddForce:       'Forzar',
+    cfgMedioAddIgnore:      'Bloquear',
 
     addToModoTitle:      'Engadir este medio ao modo',
     destinoAnadirA:      'Engadir a…',
@@ -2899,10 +3021,7 @@ const I18N = {
     metaPrefix:             'Actualizado:',
     metaSuffix:             'titulares no histórico',
 
-    btnPersonalizado:       'Modo Personalizado',
-    btnConfig:              'Configurar',
     btnPendientes:          'Pendentes',
-    btnAcces:               'Aa Accesibilidade',
     btnBuscar:              'Investigar',
 
     btnDup:                 'Agochar duplicados',
@@ -2913,12 +3032,8 @@ const I18N = {
     btnHideRead:            'Agochar lidas',
     btnHideReadTitle:       'Agochar noticias xa lidas',
 
-    btnImport:              '↓ Importar',
-    btnExport:              '↑ Exportar',
-    btnReset:               '↺ Valores por defecto',
-    btnCancel:              'Cancelar',
-    btnSave:                'Gardar',
-    btnClear:               'Limpar',
+    btnImport:              'Importar',
+    btnExport:              'Exportar',
 
     lblIdioma:              'Idioma',
     optLangEs:              'Castelán',
@@ -2927,16 +3042,14 @@ const I18N = {
     optLangEn:              'Inglés',
     optLangEu:              'Éuscaro',
 
-    cfgTitle:               'Configurar Modo Personalizado',
     cfgGrupos:              'Grupos completos',
-    cfgGruposHint:          'Ao marcar un grupo inclúense todos os seus medios. Bloquear un medio (abaixo) ten máis prioridade.',
+    cfgGruposHint:          'Ao marcar un grupo inclúense todos os seus medios. Un medio bloqueado non se amosa aínda que o seu grupo estea marcado.',
     cfgMedios:              'Medios',
-    cfgMediosHint:          '✓ forzar sempre · ✗ bloquear sempre · sen marca = neutro.',
+    cfgMediosHint:          'Forzar: amósase sempre. Bloquear: nunca. Sen marcar: segundo os grupos e os temas.',
     knownInPlugin:          'Configurado no plugin Lector Universal',
     forceInclude:           'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
     forceExclude:           'Bloquear sempre',
     blockMedia:             'Non amosar noticias deste medio',
-    blockMediaDone:         'Medio bloqueado · Modo Personalizado activado',
     saveLabelSave:          'Gardar',
     saveLabelPending:       'Pendente',
     saveLabelRead:          'Lida',
@@ -2945,7 +3058,6 @@ const I18N = {
     cfgTodosGrupos:         'Todos os grupos',
     cfgPalabras:            'Temas',
     cfgPalabrasHint:        'Unha liña = un tema',
-    cfgEditarTemas:         'Editar temas →',
     cfgTemasAyuda:          'incendio|tamén «incendios»\nsan salvador|as dúas palabras, en calquera orde\n"san salvador"|frase exacta\nPP|sigla: palabra enteira\ngalicia -feijoo|«galicia», pero sen «feijoo»',
     cfgBackup:              'Copia de seguridade',
     cfgBackupMsg:           'Exporta a túa configuración a un ficheiro compatible con Voceiro e co plugin Lector Universal.',
@@ -2955,7 +3067,6 @@ const I18N = {
     cfgResumen:             'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados',
     cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
-    acTitle:                'Opcións de lectura',
     acTema:                 'Tema',
     acFuente:               'Fonte',
     acTamano:               'Tamaño',
@@ -2988,7 +3099,6 @@ const I18N = {
     contadorScope:          'Amosando {n} de {total} en modo activo',
     contadorR2:             '{n} en total',
     contadorR2Title:        'Novas gardadas en R2: {dias} días, dende o {desde}',
-    contadorPreset:         ' · Modo Personalizado activo',
     vacio:                  'Sen resultados',
     errCarga:               'Erro cargando datos: ',
     loading:                'Cargando…',
@@ -3000,10 +3110,8 @@ const I18N = {
     impErr:                 'Erro ao importar: {msg}',
     impConfirm:             'Isto substituirá a túa configuración actual. Continuar?',
 
-    presetVacio:            'O Modo Personalizado está baleiro. Configúrao primeiro e despois actívao.',
-    presetActivado:         'Modo Personalizado activado',
-    presetDesactivado:      'Modo Personalizado desactivado',
-    presetGuardadoActivado: 'Configuración gardada · Modo Personalizado activado',
+    presetVacio:            'Este modo está baleiro: engade temas, medios ou grupos e despois actívao.',
+    presetGuardadoActivado: 'Modo «{X}» activado',
 
     fechaAhora:             'agora',
     fechaHaceMin:           'hai {n} min',
@@ -3116,14 +3224,38 @@ const I18N = {
     vsHideViewedHint:       'Titulares que pasaron pola pantalla',
     vsHideBoth:             'Lidos e vistos',
     vsReset:                'Restablecer vista',
+    /* ── Ajustes ── */
+    ajTitulo:               'Axustes',
+    ajModos:                'Modos',
+    ajLectura:              'Lectura',
+    ajFeed:                 'Feed',
+    ajAvanzado:             'Avanzado',
+    ajAyuda:                'Axuda',
+    ajAtras:                'Atrás',
+    ajModoActivo:           'Activo',
+    ajModoActivar:          'Activar',
+    ajModoRenombrar:        'Renomear',
+    ajModoDuplicar:         'Duplicar',
+    ajModoVaciar:           'Baleirar modo',
+    ajModoBorrar:           'Borrar modo',
+    ajModoConfirmVaciar:    'Baleirar o modo «{X}»? Quítanse os seus temas, medios e grupos.',
+    ajModoVaciado:          'Modo baleirado: {X}',
+    ajDeshacer:             'Desfacer',
+    ajModoVacio:            'Sen configurar',
+    ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
+    ajMediosN:              '{f} forzados · {b} bloqueados',
+    ajVistaTit:             'Vista do feed',
+    ajInvestigarLbl:        'Amosar o botón Investigar',
+    ajInvestigarHint:       'Busca empresas e cargos no BORME con OpenMercantil. Tamén se abre con Alt+B.',
+    ajPrensaActivar:        'Buscar tamén en Google News e FreeNews',
+    ajPluginTit:            'Plugin Lector Universal',
+    ajAtajosTit:            'Atallos de teclado',
+    ajAtajos:               'Alt+M|Activar ou quitar o modo\nAlt+C|Axustes\nAlt+A|Lectura\nAlt+P|Pendentes\nAlt+B|Investigar empresas\nEsc|Pechar',
+    acReset:                'Restablecer lectura',
   },
 
   ca: {
-    tabMedios:               'Mitjans',
-    tabAvanzado:             'Avançat',
 
-    cfgFeed:                 'Feed',
-    cfgFeedHint:             'Càrrega del feed i premsa externa.',
     cfgRecordarFiltros:      'Recordar filtres en recarregar',
     cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
     cfgPortadas:             'Portades addicionals',
@@ -3161,9 +3293,7 @@ const I18N = {
     prensaPaisUS:      'Estats Units',
     fltBtn: 'Filtres',
 
-    cfgModos:               'Modes de feed',
-    cfgModosHint:           'Cada mode té els seus grups, paraules i excepcions per mitjà. En canviar de mode el feed es reconfigura.',
-    cfgModoActivo:          'actiu',
+    cfgModosHint:           "Cada mode és un feed a la teva mida, amb els seus temes, mitjans i grups. Toca'n un per editar-lo.",
     cfgModoNuevo:           'Nou mode',
     cfgModoNombrePrompt:    'Nom del mode:',
     cfgModoRenombrarPrompt: 'Nou nom per a "{X}":',
@@ -3172,14 +3302,14 @@ const I18N = {
     cfgModoBorrado:         'Mode esborrat: {X}',
     cfgModoUnicoNoBorrar:   "No pots esborrar l'únic mode. Crea'n un altre abans.",
 
-    cfgOverrideHint:        "Afegeix mitjans a aquest mode per domini. ✓ força a mostrar-lo a dalt; ✗ l'oculta.",
+    cfgOverrideHint:        'Mitjans que aquest mode força o bloqueja. Per afegir-ne un que no és a la llista, escriu el seu domini al cercador de sota.',
     cfgOverridePegar:       'Enganxar llista de dominis',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Domini no vàlid: {X}',
 
     cfgMedioAddLabel:       "Sense coincidències. Afegir {X} al mode?",
-    cfgMedioAddForce:       '✓ Forçar',
-    cfgMedioAddIgnore:      '✗ Ignorar',
+    cfgMedioAddForce:       'Forçar',
+    cfgMedioAddIgnore:      'Bloquejar',
 
     addToModoTitle:      'Afegir aquest mitjà al mode',
     destinoAnadirA:      'Afegir a…',
@@ -3198,10 +3328,7 @@ const I18N = {
     metaPrefix:             'Actualitzat:',
     metaSuffix:             "titulars a l'històric",
 
-    btnPersonalizado:       'Mode Personalitzat',
-    btnConfig:              'Configurar',
     btnPendientes:          'Pendents',
-    btnAcces:               'Aa Accessibilitat',
     btnBuscar:              'Investigar',
 
     btnDup:                 'Amagar duplicats',
@@ -3212,12 +3339,8 @@ const I18N = {
     btnHideRead:            'Amagar llegides',
     btnHideReadTitle:       'Amagar notícies ja llegides',
 
-    btnImport:              '↓ Importar',
-    btnExport:              '↑ Exportar',
-    btnReset:               '↺ Valors per defecte',
-    btnCancel:              'Cancel·lar',
-    btnSave:                'Desar',
-    btnClear:               'Netejar',
+    btnImport:              'Importar',
+    btnExport:              'Exportar',
 
     lblIdioma:              'Idioma',
     optLangEs:              'Castellà',
@@ -3226,16 +3349,14 @@ const I18N = {
     optLangEn:              'Anglès',
     optLangEu:              'Basc',
 
-    cfgTitle:               'Configurar Mode Personalitzat',
     cfgGrupos:              'Grups complets',
-    cfgGruposHint:          "En marcar un grup s'inclouen tots els seus mitjans. Bloquejar un mitjà (a baix) té més prioritat.",
+    cfgGruposHint:          "En marcar un grup s'hi inclouen tots els mitjans. Un mitjà bloquejat no es mostra encara que el seu grup estigui marcat.",
     cfgMedios:              'Mitjans',
-    cfgMediosHint:          '✓ forçar sempre · ✗ bloquejar sempre · sense marca = neutre.',
+    cfgMediosHint:          'Forçar: sempre es mostra. Bloquejar: mai. Sense marcar: segons els grups i els temes.',
     knownInPlugin:          'Configurat al plugin Lector Universal',
     forceInclude:           'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
     forceExclude:           'Bloquejar sempre',
     blockMedia:             "No mostrar notícies d'aquest mitjà",
-    blockMediaDone:         'Mitjà bloquejat · Mode Personalitzat activat',
     saveLabelSave:          'Desar',
     saveLabelPending:       'Pendent',
     saveLabelRead:          'Llegida',
@@ -3244,7 +3365,6 @@ const I18N = {
     cfgTodosGrupos:         'Tots els grups',
     cfgPalabras:            'Temes',
     cfgPalabrasHint:        'Una línia = un tema',
-    cfgEditarTemas:         'Editar temes →',
     cfgTemasAyuda:          'incendi|també «incendis»\nsant salvador|les dues paraules, en qualsevol ordre\n"sant salvador"|frase exacta\nPP|sigla: paraula sencera\ncatalunya -illa|«catalunya», però sense «illa»',
     cfgBackup:              'Còpia de seguretat',
     cfgBackupMsg:           'Exporta la teva configuració a un fitxer compatible amb Voceiro i amb el plugin Lector Universal.',
@@ -3254,7 +3374,6 @@ const I18N = {
     cfgResumen:             'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats',
     cfgPalabrasPlaceholder: 'incendi\n"sant salvador"\nPP',
 
-    acTitle:                'Opcions de lectura',
     acTema:                 'Tema',
     acFuente:               'Tipus de lletra',
     acTamano:               'Mida',
@@ -3287,7 +3406,6 @@ const I18N = {
     contadorScope:          'Mostrant {n} de {total} en mode actiu',
     contadorR2:             '{n} en total',
     contadorR2Title:        'Notícies desades a R2: {dias} dies, des del {desde}',
-    contadorPreset:         ' · Mode Personalitzat actiu',
     vacio:                  'Sense resultats',
     errCarga:               'Error carregant dades: ',
     loading:                'Carregant…',
@@ -3299,10 +3417,8 @@ const I18N = {
     impErr:                 'Error en importar: {msg}',
     impConfirm:             'Això substituirà la teva configuració actual. Continuar?',
 
-    presetVacio:            "El Mode Personalitzat està buit. Configura'l primer i després activa'l.",
-    presetActivado:         'Mode Personalitzat activat',
-    presetDesactivado:      'Mode Personalitzat desactivat',
-    presetGuardadoActivado: 'Configuració desada · Mode Personalitzat activat',
+    presetVacio:            "Aquest mode és buit: afegeix temes, mitjans o grups i després activa'l.",
+    presetGuardadoActivado: 'Mode «{X}» activat',
 
     fechaAhora:             'ara',
     fechaHaceMin:           'fa {n} min',
@@ -3415,14 +3531,38 @@ const I18N = {
     vsHideViewedHint:       'Titulars que han passat per pantalla',
     vsHideBoth:             'Llegits i vistos',
     vsReset:                'Restablir vista',
+    /* ── Ajustes ── */
+    ajTitulo:               'Configuració',
+    ajModos:                'Modes',
+    ajLectura:              'Lectura',
+    ajFeed:                 'Feed',
+    ajAvanzado:             'Avançat',
+    ajAyuda:                'Ajuda',
+    ajAtras:                'Enrere',
+    ajModoActivo:           'Actiu',
+    ajModoActivar:          'Activar',
+    ajModoRenombrar:        'Canviar el nom',
+    ajModoDuplicar:         'Duplicar',
+    ajModoVaciar:           'Buidar el mode',
+    ajModoBorrar:           'Esborrar el mode',
+    ajModoConfirmVaciar:    "Vols buidar el mode «{X}»? Se n'eliminen els temes, els mitjans i els grups.",
+    ajModoVaciado:          'Mode buidat: {X}',
+    ajDeshacer:             'Desfés',
+    ajModoVacio:            'Sense configurar',
+    ajResumenModo:          '{t} temes · {g} grups · {m} mitjans',
+    ajMediosN:              '{f} forçats · {b} bloquejats',
+    ajVistaTit:             'Vista del feed',
+    ajInvestigarLbl:        'Mostrar el botó Investigar',
+    ajInvestigarHint:       "Cerca empreses i càrrecs al BORME amb OpenMercantil. També s'obre amb Alt+B.",
+    ajPrensaActivar:        'Cercar també a Google News i FreeNews',
+    ajPluginTit:            'Plugin Lector Universal',
+    ajAtajosTit:            'Dreceres de teclat',
+    ajAtajos:               'Alt+M|Activar o treure el mode\nAlt+C|Configuració\nAlt+A|Lectura\nAlt+P|Pendents\nAlt+B|Investigar empreses\nEsc|Tancar',
+    acReset:                'Restablir la lectura',
   },
 
   en: {
-    tabMedios:               'Outlets',
-    tabAvanzado:             'Advanced',
 
-    cfgFeed:                 'Feed',
-    cfgFeedHint:             'Feed loading and external press.',
     cfgRecordarFiltros:      'Remember filters on reload',
     cfgRecordarFiltrosHint:  'Restores the active search and filters when you return.',
     cfgPortadas:             'Extra front pages',
@@ -3460,9 +3600,7 @@ const I18N = {
     prensaPaisUS:      'United States',
     fltBtn: 'Filters',
 
-    cfgModos:               'Feed modes',
-    cfgModosHint:           'Each mode has its own groups, keywords and per-outlet exceptions. Switching modes reconfigures the feed.',
-    cfgModoActivo:          'active',
+    cfgModosHint:           'Each mode is a feed made to measure, with its own topics, outlets and groups. Tap one to edit it.',
     cfgModoNuevo:           'New mode',
     cfgModoNombrePrompt:    'Mode name:',
     cfgModoRenombrarPrompt: 'New name for "{X}":',
@@ -3471,14 +3609,14 @@ const I18N = {
     cfgModoBorrado:         'Mode deleted: {X}',
     cfgModoUnicoNoBorrar:   'You cannot delete the only mode. Create another one first.',
 
-    cfgOverrideHint:        'Add outlets to this mode by domain. ✓ forces showing it at top; ✗ hides it.',
+    cfgOverrideHint:        'Outlets this mode forces or blocks. To add one that is not on the list, type its domain in the search box below.',
     cfgOverridePegar:       'Paste list of domains',
     cfgOverrideAplicar:     'Apply',
     cfgOverrideBad:         'Invalid domain: {X}',
 
     cfgMedioAddLabel:       'No matches. Add {X} to this mode?',
-    cfgMedioAddForce:       '✓ Force',
-    cfgMedioAddIgnore:      '✗ Ignore',
+    cfgMedioAddForce:       'Force',
+    cfgMedioAddIgnore:      'Block',
 
     addToModoTitle:      'Add this outlet to a mode',
     destinoAnadirA:      'Add to…',
@@ -3497,10 +3635,7 @@ const I18N = {
     metaPrefix:             'Updated:',
     metaSuffix:             'headlines in history',
 
-    btnPersonalizado:       'Custom Mode',
-    btnConfig:              'Configure',
     btnPendientes:          'Queue',
-    btnAcces:               'Aa Accessibility',
     btnBuscar:              'Investigate',
 
     btnDup:                 'Hide duplicates',
@@ -3511,12 +3646,8 @@ const I18N = {
     btnHideRead:            'Hide read',
     btnHideReadTitle:       'Hide already read news',
 
-    btnImport:              '↓ Import',
-    btnExport:              '↑ Export',
-    btnReset:               '↺ Reset defaults',
-    btnCancel:              'Cancel',
-    btnSave:                'Save',
-    btnClear:               'Clear',
+    btnImport:              'Import',
+    btnExport:              'Export',
 
     lblIdioma:              'Language',
     optLangEs:              'Spanish',
@@ -3525,16 +3656,14 @@ const I18N = {
     optLangEn:              'English',
     optLangEu:              'Basque',
 
-    cfgTitle:               'Configure Custom Mode',
     cfgGrupos:              'Full groups',
-    cfgGruposHint:          'Checking a group includes all its outlets. Blocking an outlet (below) takes precedence.',
+    cfgGruposHint:          'Checking a group includes all its outlets. A blocked outlet stays hidden even if its group is checked.',
     cfgMedios:              'Outlets',
-    cfgMediosHint:          '✓ always force · ✗ always block · unchecked = neutral.',
+    cfgMediosHint:          'Force: always shown. Block: never. Unchecked: depends on groups and topics.',
     knownInPlugin:          'Configured in the Universal Reader plugin',
     forceInclude:           'Always force (include even if group or keywords do not match)',
     forceExclude:           'Always block',
     blockMedia:             'Hide news from this outlet',
-    blockMediaDone:         'Outlet blocked · Custom Mode enabled',
     saveLabelSave:          'Save',
     saveLabelPending:       'Pending',
     saveLabelRead:          'Read',
@@ -3543,7 +3672,6 @@ const I18N = {
     cfgTodosGrupos:         'All groups',
     cfgPalabras:            'Topics',
     cfgPalabrasHint:        'One line = one topic',
-    cfgEditarTemas:         'Edit topics →',
     cfgTemasAyuda:          'fire|also «fires»\nsan salvador|both words, in any order\n"san salvador"|exact phrase\nUK|acronym: whole word\ngalicia -feijoo|«galicia», but not «feijoo»',
     cfgBackup:              'Backup',
     cfgBackupMsg:           'Export your configuration to a file compatible with Voceiro and the Universal Reader plugin.',
@@ -3553,7 +3681,6 @@ const I18N = {
     cfgResumen:             'Showing {vis} of {total} · {inc} forced · {ign} blocked',
     cfgPalabrasPlaceholder: 'fire\n"san salvador"\nUK',
 
-    acTitle:                'Reading options',
     acTema:                 'Theme',
     acFuente:               'Font',
     acTamano:               'Size',
@@ -3586,7 +3713,6 @@ const I18N = {
     contadorScope:          'Showing {n} of {total} in active mode',
     contadorR2:             '{n} in total',
     contadorR2Title:        'News stored in R2: {dias} days, since {desde}',
-    contadorPreset:         ' · Custom Mode on',
     vacio:                  'No results',
     errCarga:               'Error loading data: ',
     loading:                'Loading…',
@@ -3598,10 +3724,8 @@ const I18N = {
     impErr:                 'Import error: {msg}',
     impConfirm:             'This will replace your current settings. Continue?',
 
-    presetVacio:            'Custom Mode is empty. Configure it first, then activate it.',
-    presetActivado:         'Custom Mode enabled',
-    presetDesactivado:      'Custom Mode disabled',
-    presetGuardadoActivado: 'Settings saved · Custom Mode enabled',
+    presetVacio:            'This mode is empty: add topics, outlets or groups, then activate it.',
+    presetGuardadoActivado: '"{X}" mode on',
 
     fechaAhora:             'now',
     fechaHaceMin:           '{n} min ago',
@@ -3714,14 +3838,38 @@ const I18N = {
     vsHideViewedHint:       'Headlines that scrolled past the screen',
     vsHideBoth:             'Read and viewed',
     vsReset:                'Reset view',
+    /* ── Ajustes ── */
+    ajTitulo:               'Settings',
+    ajModos:                'Modes',
+    ajLectura:              'Reading',
+    ajFeed:                 'Feed',
+    ajAvanzado:             'Advanced',
+    ajAyuda:                'Help',
+    ajAtras:                'Back',
+    ajModoActivo:           'Active',
+    ajModoActivar:          'Activate',
+    ajModoRenombrar:        'Rename',
+    ajModoDuplicar:         'Duplicate',
+    ajModoVaciar:           'Clear mode',
+    ajModoBorrar:           'Delete mode',
+    ajModoConfirmVaciar:    'Clear the "{X}" mode? Its topics, outlets and groups will be removed.',
+    ajModoVaciado:          'Mode cleared: {X}',
+    ajDeshacer:             'Undo',
+    ajModoVacio:            'Not set up',
+    ajResumenModo:          '{t} topics · {g} groups · {m} outlets',
+    ajMediosN:              '{f} forced · {b} blocked',
+    ajVistaTit:             'Feed view',
+    ajInvestigarLbl:        'Show the Investigate button',
+    ajInvestigarHint:       'Look up companies and officers in the BORME with OpenMercantil. Also opens with Alt+B.',
+    ajPrensaActivar:        'Also search Google News and FreeNews',
+    ajPluginTit:            'Universal Reader plugin',
+    ajAtajosTit:            'Keyboard shortcuts',
+    ajAtajos:               'Alt+M|Turn the mode on or off\nAlt+C|Settings\nAlt+A|Reading\nAlt+P|Queue\nAlt+B|Investigate companies\nEsc|Close',
+    acReset:                'Reset reading',
   },
 
   eu: {
-    tabMedios:               'Hedabideak',
-    tabAvanzado:             'Aurreratua',
 
-    cfgFeed:                 'Feed',
-    cfgFeedHint:             'Feedaren karga eta kanpoko prentsa.',
     cfgRecordarFiltros:      'Gogoratu iragazkiak berriz kargatzean',
     cfgRecordarFiltrosHint:  'Bilaketa eta iragazki aktiboak berreskuratzen ditu itzultzean.',
     cfgPortadas:             'Azal gehigarriak',
@@ -3759,9 +3907,7 @@ const I18N = {
     prensaPaisUS:      'Estatu Batuak',
     fltBtn: 'Iragazkiak',
 
-    cfgModos:               'Feed moduak',
-    cfgModosHint:           'Modu bakoitzak bere taldeak, hitzak eta hedabideen salbuespenak ditu. Modua aldatzean feed-a birkonfiguratzen da.',
-    cfgModoActivo:          'aktibo',
+    cfgModosHint:           'Modu bakoitza zure neurriko feed bat da, bere gai, hedabide eta taldeekin. Ukitu bat editatzeko.',
     cfgModoNuevo:           'Modu berria',
     cfgModoNombrePrompt:    'Moduaren izena:',
     cfgModoRenombrarPrompt: '"{X}"-(r)en izen berria:',
@@ -3770,14 +3916,14 @@ const I18N = {
     cfgModoBorrado:         'Modua ezabatuta: {X}',
     cfgModoUnicoNoBorrar:   'Ezin duzu modu bakarra ezabatu. Sortu beste bat lehenago.',
 
-    cfgOverrideHint:        'Gehitu hedabideak modu honi domeinuaren arabera. ✓ goian erakustera behartzen du; ✗ ezkutatzen du.',
+    cfgOverrideHint:        'Modu honek behartzen edo blokeatzen dituen hedabideak. Zerrendan ez dagoen bat gehitzeko, idatzi bere domeinua beheko bilatzailean.',
     cfgOverridePegar:       'Itsatsi domeinuen zerrenda',
     cfgOverrideAplicar:     'Aplikatu',
     cfgOverrideBad:         'Domeinu baliogabea: {X}',
 
     cfgMedioAddLabel:       'Bat-etortzerik ez. {X} modura gehitu?',
-    cfgMedioAddForce:       '✓ Behartu',
-    cfgMedioAddIgnore:      '✗ Ezkutatu',
+    cfgMedioAddForce:       'Behartu',
+    cfgMedioAddIgnore:      'Blokeatu',
 
     addToModoTitle:      'Gehitu hedabide hau modu batera',
     destinoAnadirA:      'Gehitu honi…',
@@ -3796,10 +3942,7 @@ const I18N = {
     metaPrefix:             'Eguneratuta:',
     metaSuffix:             'izenburu historian',
 
-    btnPersonalizado:       'Modo Pertsonalizatua',
-    btnConfig:              'Konfiguratu',
     btnPendientes:          'Zain',
-    btnAcces:               'Aa Irisgarritasuna',
     btnBuscar:              'Ikerkatu',
 
     btnDup:                 'Bikoiztuak ezkutatu',
@@ -3810,12 +3953,8 @@ const I18N = {
     btnHideRead:            'Irakurritakoak ezkutatu',
     btnHideReadTitle:       'Irakurritako albisteak ezkutatu',
 
-    btnImport:              '↓ Inportatu',
-    btnExport:              '↑ Esportatu',
-    btnReset:               '↺ Balio lehenetsiak',
-    btnCancel:              'Utzi',
-    btnSave:                'Gorde',
-    btnClear:               'Garbitu',
+    btnImport:              'Inportatu',
+    btnExport:              'Esportatu',
 
     lblIdioma:              'Hizkuntza',
     optLangEs:              'Gaztelania',
@@ -3824,16 +3963,14 @@ const I18N = {
     optLangEn:              'Ingelesa',
     optLangEu:              'Euskara',
 
-    cfgTitle:               'Modo Pertsonalizatua konfiguratu',
     cfgGrupos:              'Talde osoak',
-    cfgGruposHint:          'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide bat blokeatzeak (behean) lehentasun handiagoa du.',
+    cfgGruposHint:          'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide blokeatu bat ez da erakusten, bere taldea markatuta egon arren.',
     cfgMedios:              'Hedabideak',
-    cfgMediosHint:          '✓ beti behartu · ✗ beti blokeatu · markarik gabe = neutroa.',
+    cfgMediosHint:          'Behartu: beti erakusten da. Blokeatu: inoiz ez. Markatu gabe: taldeen eta gaien arabera.',
     knownInPlugin:          'Lector Universal pluginean konfiguratuta',
     forceInclude:           'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
     forceExclude:           'Beti blokeatu',
     blockMedia:             'Ez erakutsi hedabide honetako albisteak',
-    blockMediaDone:         'Hedabidea blokeatuta · Modo Pertsonalizatua aktibatuta',
     saveLabelSave:          'Gorde',
     saveLabelPending:       'Zain',
     saveLabelRead:          'Irakurrita',
@@ -3842,7 +3979,6 @@ const I18N = {
     cfgTodosGrupos:         'Talde guztiak',
     cfgPalabras:            'Gaiak',
     cfgPalabrasHint:        'Lerro bat = gai bat',
-    cfgEditarTemas:         'Gaiak editatu →',
     cfgTemasAyuda:          'sute|baita «suteak» ere\nsan salvador|bi hitzak, edozein ordenatan\n"san salvador"|esaldi zehatza\nPP|sigla: hitz osoa\ngalizia -feijoo|«galizia», baina «feijoo» gabe',
     cfgBackup:              'Babeskopia',
     cfgBackupMsg:           'Esportatu zure konfigurazioa Voceiro-rekin eta Lector Universal pluginarekin bateragarria den fitxategi batera.',
@@ -3852,7 +3988,6 @@ const I18N = {
     cfgResumen:             '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta',
     cfgPalabrasPlaceholder: 'sute\n"san salvador"\nPP',
 
-    acTitle:                'Irakurketa aukerak',
     acTema:                 'Gaia',
     acFuente:               'Letra-tipoa',
     acTamano:               'Tamaina',
@@ -3885,7 +4020,6 @@ const I18N = {
     contadorScope:          '{total}etik {n} erakusten modu aktiboan',
     contadorR2:             '{n} guztira',
     contadorR2Title:        'R2n gordetako albisteak: {dias} egun, {desde}tik',
-    contadorPreset:         ' · Modo Pertsonalizatua aktibo',
     vacio:                  'Emaitzarik gabe',
     errCarga:               'Errorea datuak kargatzean: ',
     loading:                'Kargatzen…',
@@ -3897,10 +4031,8 @@ const I18N = {
     impErr:                 'Inportazio errorea: {msg}',
     impConfirm:             'Honek zure uneko konfigurazioa ordezkatuko du. Jarraitu?',
 
-    presetVacio:            'Modo Pertsonalizatua hutsik dago. Konfiguratu lehenengo eta gero aktibatu.',
-    presetActivado:         'Modo Pertsonalizatua aktibatuta',
-    presetDesactivado:      'Modo Pertsonalizatua desaktibatuta',
-    presetGuardadoActivado: 'Konfigurazioa gordeta · Modo Pertsonalizatua aktibatuta',
+    presetVacio:            'Modu hau hutsik dago: gehitu gaiak, hedabideak edo taldeak eta gero aktibatu.',
+    presetGuardadoActivado: '«{X}» modua aktibatuta',
 
     fechaAhora:             'orain',
     fechaHaceMin:           'duela {n} min',
@@ -4013,6 +4145,34 @@ const I18N = {
     vsHideViewedHint:       'Pantailatik igaro diren izenburuak',
     vsHideBoth:             'Irakurriak eta ikusiak',
     vsReset:                'Vista berrezarri',
+    /* ── Ajustes ── */
+    ajTitulo:               'Ezarpenak',
+    ajModos:                'Moduak',
+    ajLectura:              'Irakurketa',
+    ajFeed:                 'Feed-a',
+    ajAvanzado:             'Aurreratua',
+    ajAyuda:                'Laguntza',
+    ajAtras:                'Atzera',
+    ajModoActivo:           'Aktibo',
+    ajModoActivar:          'Aktibatu',
+    ajModoRenombrar:        'Berrizendatu',
+    ajModoDuplicar:         'Bikoiztu',
+    ajModoVaciar:           'Modua hustu',
+    ajModoBorrar:           'Modua ezabatu',
+    ajModoConfirmVaciar:    '«{X}» modua hustu? Haren gaiak, hedabideak eta taldeak kenduko dira.',
+    ajModoVaciado:          'Modua hustuta: {X}',
+    ajDeshacer:             'Desegin',
+    ajModoVacio:            'Konfiguratu gabe',
+    ajResumenModo:          '{t} gai · {g} talde · {m} hedabide',
+    ajMediosN:              '{f} behartuta · {b} blokeatuta',
+    ajVistaTit:             'Feed-aren ikuspegia',
+    ajInvestigarLbl:        'Ikertu botoia erakutsi',
+    ajInvestigarHint:       'Bilatu enpresak eta karguak BORMEn OpenMercantil-ekin. Alt+B teklarekin ere irekitzen da.',
+    ajPrensaActivar:        'Bilatu Google News eta FreeNews-en ere',
+    ajPluginTit:            'Lector Universal plugina',
+    ajAtajosTit:            'Teklatuko lasterbideak',
+    ajAtajos:               'Alt+M|Modua aktibatu edo kendu\nAlt+C|Ezarpenak\nAlt+A|Irakurketa\nAlt+P|Zain\nAlt+B|Enpresak ikertu\nEsc|Itxi',
+    acReset:                'Irakurketa berrezarri',
   },
 };
 function t(key, vars){
@@ -4065,12 +4225,21 @@ function _escapeRegex(s){
 function parseLista(txt){
   return txt.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
 }
-function toast(msg, ms){
+// accion (opcional): { texto, fn } → botón dentro del aviso, p. ej. «Deshacer».
+function toast(msg, ms, accion){
   ms = ms || 2400;
   const wrap = $('#toast-wrap');
   const el = document.createElement('div');
   el.className = 'toast';
   el.textContent = msg;
+  if (accion){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toast-accion';
+    b.textContent = accion.texto;
+    b.addEventListener('click', () => { el.remove(); accion.fn(); }, { once: true });
+    el.appendChild(b);
+  }
   wrap.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => {
@@ -4260,7 +4429,8 @@ const PRESET_ACTIVO_KEY = 'voceiro-preset-activo';
 const PRESET_ID_KEY = 'voceiro-modo-activo';
 const SITES_CACHE_KEY = 'voceiro-sites-cache-v1';
 const DUP_PREF_KEY = 'voceiro-dup-agrupar';
-const CFG_TAB_KEY = 'voceiro-cfg-tab';
+const AJ_SECCION_KEY = 'voceiro-aj-seccion';   // última sección de Ajustes (escritorio)
+const INVESTIGAR_KEY = 'voceiro-investigar';     // botón Investigar en la cabecera
 const PRESET_DEF = { grupos: [], palabras: [] };
 const PRESET_UNICO_DEF = { id: 'general', nombre: 'General', grupos: [], palabras: [], overrides: {} };
 let PRESETS = null;   // { lista: [...], activo: 'id' }
@@ -4284,6 +4454,18 @@ const HIDE_MODE_KEY = 'voceiro-hide-mode';
 const HIDE_MODES = ['off', 'read', 'viewed', 'both'];
 let HIDE_MODE = 'off';
 const RECORDAR_FILTROS_KEY = 'voceiro-recordar-filtros';
+// Investigar empresas es una función avanzada: su botón solo sale en la
+// cabecera si se enciende en Ajustes › Avanzado. Alt+B la abre siempre.
+let INVESTIGAR_ON = false;
+function cargarInvestigar(){
+  try { return localStorage.getItem(INVESTIGAR_KEY) === '1'; } catch(e){ return false; }
+}
+function aplicarInvestigar(){
+  const b = $('#btn-buscar');
+  if (b) b.hidden = !INVESTIGAR_ON;
+  const c = $('#aj-investigar');
+  if (c) c.checked = INVESTIGAR_ON;
+}
 // Pestaña de resultados al buscar con un modo activo. null = automática
 // (Modo, o Todo si el modo no tiene resultados). Se reinicia al cambiar de
 // búsqueda; si el usuario elige una, se respeta para esa búsqueda.
@@ -4365,30 +4547,33 @@ function guardarPresets(){
   }
 }
 
-// Compatibilidad: guarda el preset activo en la lista y persiste.
+// Guarda el modo activo. PRESET es el mismo objeto que su entrada en la
+// lista (Ajustes edita la entrada y cuenta con ello).
 function guardarPreset(){
   if (!PRESETS || !Array.isArray(PRESETS.lista)) return;
   const idx = PRESETS.lista.findIndex(p => p.id === PRESETS.activo);
-  if (idx >= 0){
-    PRESETS.lista[idx] = { ...PRESETS.lista[idx], ...PRESET };
+  if (idx >= 0 && PRESETS.lista[idx] !== PRESET){
+    PRESET = Object.assign(PRESETS.lista[idx], PRESET);
   }
   guardarPresets();
   actualizarBotonPreset();
 }
-function getOverride(domain){
-  if (!PRESET || !PRESET.overrides) return '';
-  return PRESET.overrides[domain] || '';
+// Excepción por dominio de un modo (por defecto, el activo).
+function getOverride(domain, modo = PRESET){
+  if (!modo || !modo.overrides) return '';
+  return modo.overrides[domain] || '';
 }
 
-function setOverride(domain, value){
-  if (!PRESET) return;
-  if (!PRESET.overrides || typeof PRESET.overrides !== 'object') PRESET.overrides = {};
+function setOverride(domain, value, modo = PRESET){
+  if (!modo) return;
+  if (!modo.overrides || typeof modo.overrides !== 'object') modo.overrides = {};
   if (!value){
-    delete PRESET.overrides[domain];
+    delete modo.overrides[domain];
   } else if (value === 'first' || value === 'ignore'){
-    PRESET.overrides[domain] = value;
+    modo.overrides[domain] = value;
   }
-  guardarPreset();
+  if (modo === PRESET) guardarPreset();
+  else guardarPresets();
 }
 
 function aplicarPresetsDesdePlugin(d){
@@ -4548,6 +4733,31 @@ function renderViewSettingsMenu(){
   });
 }
 
+// Duplicados y ocultar leídos se cambian desde el menú Vista y desde
+// Ajustes › Feed; estas funciones guardan y repintan los dos sitios.
+function ponerAgruparDups(v){
+  AGRUPAR_DUPS = !!v;
+  guardarDupPref();
+  renderViewSettingsMenu();
+  ajPintarVista();
+  actualizarBotonViewSettings();
+  aplicarFiltros();
+}
+function ponerHideMode(v){
+  if (!HIDE_MODES.includes(v)) return;
+  HIDE_MODE = v;
+  guardarHideMode();
+  renderViewSettingsMenu();
+  ajPintarVista();
+  actualizarBotonViewSettings();
+  aplicarFiltros();
+}
+function ajPintarVista(){
+  const dup = $('#aj-dup');
+  if (dup) dup.checked = AGRUPAR_DUPS;
+  document.querySelectorAll('input[name="aj-hide"]').forEach(r => { r.checked = r.value === HIDE_MODE; });
+}
+
 function abrirViewSettingsMenu(){
   const menu = $('#view-settings-menu');
   const btn  = $('#btn-view-settings');
@@ -4633,8 +4843,7 @@ function renderPresetMenu(){
       const id = btn.dataset.presetId;
       if (id === '__gestionar'){
         cerrarPresetMenu();
-        abrirPanel('panel-config');
-        escribirPanel(PRESET);
+        abrirAjustes('modos');
         return;
       }
       if (id === '__temas'){
@@ -4829,8 +5038,7 @@ function aplicarOverrideEnModo(targetPreset, accion, dominio, medioNombre){
     guardarPresets();
   }
 
-  renderModosPanel();
-  renderListaMedios();
+  ajRefrescar();
 
   if (PRESET_ACTIVO && targetPreset === PRESET){
     aplicarFiltros();
@@ -4857,7 +5065,7 @@ function crearModoYDevolver(){
   };
   PRESETS.lista.push(nuevo);
   guardarPresets();
-  renderModosPanel();
+  ajRefrescar();
   return nuevo;
 } 
 /* ═══════════════════════════════════════════════════════════════
@@ -5149,10 +5357,7 @@ function initUserScriptBridge(){
     if (aplicado && typeof NOTICIAS !== 'undefined' && NOTICIAS.length){
       aplicarFiltros();
     }
-    if ($('#panel-config').classList.contains('open')){
-      renderListaMedios();
-      escribirPanel(PRESET);
-    }
+    ajRefrescar();
   });
 
   document.addEventListener('voceiro-config-changed', e => {
@@ -5162,10 +5367,7 @@ function initUserScriptBridge(){
     if (aplicado && typeof NOTICIAS !== 'undefined' && NOTICIAS.length){
       aplicarFiltros();
     }
-    if ($('#panel-config').classList.contains('open')){
-      renderListaMedios();
-      escribirPanel(PRESET);
-    }
+    ajRefrescar();
   });
 
 
@@ -5580,7 +5782,7 @@ async function _cargarCapa(key, signal) {
     hidratarNoticias();
     construirMediosUnicos();
     construirIndicesBusqueda();
-    if ($('#panel-config')?.classList.contains('open')) {
+    if (ajRuta() === 'modo') {
       renderListaMedios();
     }
   }
@@ -5641,7 +5843,7 @@ async function extenderCapasR2(capas, desde, hasta) {
       hidratarNoticias();
       construirMediosUnicos();
       construirIndicesBusqueda();
-      if ($('#panel-config')?.classList.contains('open')) {
+      if (ajRuta() === 'modo') {
         renderListaMedios();
       }
     }
@@ -5938,6 +6140,7 @@ function refrescarVistaCompleta(){
   reconstruirSelectores();
   aplicarFiltros();
   actualizarFiltrosCount(); 
+  ajRefrescar();   // Ajustes abierto antes de que llegaran los datos
 }
 
 // Offset de Europe/Madrid ('+02:00' o '+01:00') para una hora local dada.
@@ -6760,10 +6963,10 @@ function renderListaGrupos(p){
     });
   });
 }
-// renderListaMedios() se queda como está
-
+// Medios del modo que se edita en Ajustes, con su ✓ (forzar) o ⊘ (bloquear).
 function renderListaMedios(){
   const cont = $('#lista-medios');
+  const modo = modoEnPanel();
   const { buckets, supers } = bucketPorSuper(MEDIOS_UNICOS, m => m.grupo);
 
   let html = '';
@@ -6780,7 +6983,7 @@ function renderListaMedios(){
     enCat.forEach(m => {
       const site  = SITES.get(m.dominio);
       const known = !!site;
-      const mode  = getOverride(m.dominio) || '';
+      const mode  = getOverride(m.dominio, modo) || '';
       const dotHtml = known
         ? '<span class="known-dot" title="' + escapeHtml(t('knownInPlugin')) + '"></span>'
         : '';
@@ -6791,10 +6994,10 @@ function renderListaMedios(){
              data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
           <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-            <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>✓</span>
+            <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>${ico('check')}</span>
           </label>
           <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
-            <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>✗</span>
+            <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>${ico('ban')}</span>
           </label>
           <span class="celda celda-dominio">${dotHtml}<code>${escapeHtml(m.dominio)}</code></span>
           <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
@@ -6858,7 +7061,8 @@ function actualizarAddBar(visibles){
   //  - no hay ningún medio visible
   //  - ese dominio no está ya como override
   const esValido = /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(dom);
-  const yaEsta   = !!(PRESET && PRESET.overrides && PRESET.overrides[dom]);
+  const modo     = modoEnPanel();
+  const yaEsta   = !!(modo && modo.overrides && modo.overrides[dom]);
 
   if (!raw || !esValido || visibles > 0 || yaEsta){
     bar.hidden = true;
@@ -6879,104 +7083,313 @@ function actualizarResumen(visiblesOverride){
     vis: visibles, total: total, inc: inc, ign: ign
   });
 }
-function escribirPanel(p){
-  renderListaGrupos(p);         // ← nuevo: renderiza + marca checkboxes
-  $('#filtro-medio').value = '';
-  $('#filtro-grupo-medio').value = '';
-  renderModosPanel();
-  renderTemasPanel(false);
-  renderListaMedios();
+/* ═══════════════════════════════════════════════════════════════
+   AJUSTES · navegación
+   AJ_PILA son las páginas abiertas, de la primera a la visible. Cada una
+   tiene su paso en el historial (history.pushState): el botón atrás del
+   móvil sube un nivel y al final cierra Ajustes, en vez de salir de la web.
+   Rutas: '' (lista de secciones, solo en móvil), 'modos', 'modo' (el de
+   MODO_EDITADO), 'lectura', 'feed', 'avanzado', 'ayuda'.
+   ═══════════════════════════════════════════════════════════════ */
+const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'avanzado', 'ayuda'];
+const AJ_TITULOS = {
+  '': 'ajTitulo', modos: 'ajModos', lectura: 'ajLectura',
+  feed: 'ajFeed', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
+};
+let AJ_PILA = [];             // vacía = Ajustes cerrado
+let MODO_EDITADO = null;      // id del modo de la página 'modo'
+let _ajPendiente = null;      // sección que mostrar al volver atrás en el historial
+let _ajSinReglas = new Set(); // modos vacíos al abrir (ver ajActivarAlCerrar)
+
+function ajEsMovil(){ return window.matchMedia('(max-width: 819.98px)').matches; }
+function ajAbierto(){ return AJ_PILA.length > 0; }
+function ajRuta(){ return AJ_PILA.length ? AJ_PILA[AJ_PILA.length - 1] : null; }
+function modoEnPanel(){
+  return (PRESETS && PRESETS.lista.find(p => p.id === MODO_EDITADO)) || null;
 }
-function leerPanel(){
-  const grupos = [];
-  document.querySelectorAll('#lista-grupos input[data-grupo]:checked').forEach(c =>
-    grupos.push(c.dataset.grupo));
-  // Temas de cada modo (pestaña Temas); los del modo activo van también en palabras.
-  const temasPorModo = new Map();
-  document.querySelectorAll('#lista-temas-modos textarea[data-modo-id]').forEach(ta =>
-    temasPorModo.set(ta.dataset.modoId, parseLista(ta.value)));
-  const palabras = temasPorModo.get(PRESET.id) || PRESET.palabras;
-  return { grupos, palabras, temasPorModo };
+function ajSeccionGuardada(){
+  let r = null;
+  try { r = localStorage.getItem(AJ_SECCION_KEY); } catch(e){}
+  return AJ_SECCIONES.includes(r) ? r : 'modos';
 }
-// Pestaña Temas: una caja por modo, en el orden de la lista. Con conservar,
-// se mantiene lo que ya se ha escrito (renombrar o duplicar un modo vuelve a
-// pintar la lista sin perder lo que aún no se ha guardado).
-function renderTemasPanel(conservar){
-  const cont = $('#lista-temas-modos');
-  if (!cont) return;
-  const escrito = new Map();
-  if (conservar){
-    cont.querySelectorAll('textarea[data-modo-id]').forEach(ta => escrito.set(ta.dataset.modoId, ta.value));
+
+// Abre Ajustes en una ruta, o cambia de sección si ya está abierto. Sin
+// ruta: en móvil, la lista de secciones; en escritorio, la última vista.
+function abrirAjustes(ruta){
+  if (ruta == null) ruta = ajEsMovil() ? '' : ajSeccionGuardada();
+  if (ajAbierto()){
+    if (ruta === 'modo') ajEmpujar('modo');
+    else ajIrSeccion(ruta);
+    return;
   }
-  cont.innerHTML = PRESETS.lista.map(p => {
-    const guardado = ((p.id === PRESET.id ? PRESET : p).palabras || []).join('\n');
-    const texto = escrito.has(p.id) ? escrito.get(p.id) : guardado;
-    const id = 'temas-' + p.id;
-    return `<div class="temas-modo">
-      <label class="temas-modo-nombre" for="${escapeHtml(id)}">${escapeHtml(p.nombre)} <span class="n">· ${compilarTemas(parseLista(texto)).length}</span></label>
-      <textarea id="${escapeHtml(id)}" class="preset-texto" data-modo-id="${escapeHtml(p.id)}"
-                placeholder="${escapeHtml(t('cfgPalabrasPlaceholder'))}">${escapeHtml(texto)}</textarea>
-    </div>`;
-  }).join('');
+  abrirPanel('panel-ajustes');
+  AJ_PILA = [ruta];
+  if (ruta !== 'modo') MODO_EDITADO = null;
+  _ajSinReglas = new Set(PRESETS.lista.filter(p => !presetTieneReglas(p)).map(p => p.id));
+  history.pushState({ aj: 1 }, '');
+  ajPintar();
 }
-function renderModosPanel(){
+
+// Un nivel más: una sección desde la lista (móvil) o un modo desde Modos.
+function ajEmpujar(ruta){
+  ajGuardarTemas();
+  AJ_PILA.push(ruta);
+  history.pushState({ aj: AJ_PILA.length }, '');
+  ajPintar();
+}
+
+// Sección elegida en la lista (móvil) o en la barra lateral (escritorio).
+function ajIrSeccion(ruta){
+  ajGuardarTemas();
+  if (ajRuta() === ruta) return;
+  if (ajEsMovil()){
+    if (ajRuta() === '') ajEmpujar(ruta);
+    else { AJ_PILA[AJ_PILA.length - 1] = ruta; ajPintar(); }
+    return;
+  }
+  if (AJ_PILA.length > 1){
+    // Dentro de un modo: se vuelve al primer paso del historial y ahí se
+    // muestra la sección, para que atrás no lleve a páginas viejas.
+    _ajPendiente = ruta;
+    history.go(-(AJ_PILA.length - 1));
+    return;
+  }
+  AJ_PILA[0] = ruta;
+  ajPintar();
+}
+
+// Botón «‹» de la cabecera: de un modo a Modos; de una sección a la lista.
+function ajAtras(){
+  ajGuardarTemas();
+  const padre = ajRuta() === 'modo' ? 'modos' : '';
+  if (AJ_PILA.length > 1 && AJ_PILA[AJ_PILA.length - 2] === padre){
+    history.back();
+    return;
+  }
+  AJ_PILA[AJ_PILA.length - 1] = padre;   // sin paso previo: se sustituye
+  ajPintar();
+}
+
+function ajPopstate(e){
+  if (!ajAbierto()) return;
+  const d = (e.state && e.state.aj) || 0;
+  ajGuardarTemas();
+  if (d <= 0){ ajCerrarVista(); return; }
+  if (d < AJ_PILA.length) AJ_PILA.length = d;
+  if (_ajPendiente != null){
+    AJ_PILA[AJ_PILA.length - 1] = _ajPendiente;
+    _ajPendiente = null;
+  }
+  ajPintar();
+}
+
+function cerrarAjustes(){
+  if (!ajAbierto()) return;
+  const pasos = AJ_PILA.length;
+  ajCerrarVista();
+  history.go(-pasos);   // el popstate llega con Ajustes ya cerrado y se ignora
+}
+function ajCerrarVista(){
+  ajGuardarTemas();
+  AJ_PILA = [];
+  _ajPendiente = null;
+  cerrarPanel('panel-ajustes');
+  ajActivarAlCerrar();
+}
+
+// Muestra la página de la ruta visible y la rellena.
+function ajPintar(){
+  const panel = $('#panel-ajustes');
+  if (!panel || !ajAbierto()) return;
+  let ruta = ajRuta();
+  if (ruta === '' && !ajEsMovil()) ruta = AJ_PILA[AJ_PILA.length - 1] = ajSeccionGuardada();
+  if (ruta === 'modo' && !modoEnPanel()) ruta = AJ_PILA[AJ_PILA.length - 1] = 'modos';
+  panel.dataset.ruta = ruta;
+  const seccion = ruta === 'modo' ? 'modos' : ruta;
+  panel.querySelectorAll('.aj-secciones button').forEach(b => {
+    if (b.dataset.ir === seccion) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  panel.querySelectorAll('.aj-pagina').forEach(p => { p.hidden = p.dataset.pagina !== ruta; });
+  if (AJ_SECCIONES.includes(ruta)){
+    try { localStorage.setItem(AJ_SECCION_KEY, ruta); } catch(e){}
+  }
+  const cuerpo = panel.querySelector('.aj-cuerpo');
+  if (cuerpo) cuerpo.scrollTop = 0;
+  ajRefrescar();
+}
+
+// Repinta la página visible con los datos actuales. Se llama tras cualquier
+// cambio que venga de fuera (plugin, importar, titulares, idioma…).
+function ajRefrescar(){
+  if (!ajAbierto()) return;
+  const ruta = ajRuta();
+  if (ruta === 'modo' && !modoEnPanel()){ ajPintar(); return; }
+  const modo = modoEnPanel();
+  $('#aj-titulo-pagina').textContent = ruta === 'modo' ? modo.nombre : t(AJ_TITULOS[ruta] || 'ajTitulo');
+  $('#aj-atras-lbl').textContent = t(ruta === 'modo' ? 'ajModos' : 'ajTitulo');
+  if (ruta === 'modos') renderListaModos();
+  else if (ruta === 'modo') pintarModo();
+  else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); renderDiasSelector(); }
+  else if (ruta === 'avanzado'){
+    $('#aj-investigar').checked = INVESTIGAR_ON;
+    actualizarSyncBanner();
+    $('#aj-plugin-hint').hidden = USCRIPT_OK;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AJUSTES · modos
+   Se edita cualquier modo, no solo el activo, y todo se guarda al momento.
+   Si el modo editado es el activo, el feed se reconfigura detrás.
+   ═══════════════════════════════════════════════════════════════ */
+function resumenModo(p){
+  if (!presetTieneReglas(p)) return t('ajModoVacio');
+  return t('ajResumenModo', {
+    t: compilarTemas(p.palabras || []).length,
+    g: (p.grupos || []).length,
+    m: Object.keys(p.overrides || {}).length,
+  });
+}
+function renderListaModos(){
   const cont = $('#lista-modos');
   if (!cont) return;
-  renderTemasPanel(true);
-
   cont.innerHTML = PRESETS.lista.map(p => {
-    const activo = (p.id === PRESETS.activo);
-    return `<div class="modo-fila${activo ? ' activo' : ''}" data-modo-id="${escapeHtml(p.id)}">
-      <span class="modo-nombre">${escapeHtml(p.nombre)}${activo ? ' · ' + escapeHtml(t('cfgModoActivo')) : ''}</span>
-      <span class="modo-acciones">
-        <button data-accion="activar" title="${escapeHtml(t('cfgModoActivo'))}">▶</button>
-        <button data-accion="renombrar" title="Renombrar">✏</button>
-        <button data-accion="duplicar" title="Duplicar">📄</button>
-        <button data-accion="borrar" class="danger" title="Borrar">🗑</button>
+    const activo = PRESET_ACTIVO && p.id === PRESETS.activo;
+    return `<button type="button" class="aj-modo-fila" data-modo-id="${escapeHtml(p.id)}">
+      <span class="aj-modo-txt">
+        <span class="aj-modo-nombre">${escapeHtml(p.nombre)}</span>
+        <span class="aj-modo-resumen">${escapeHtml(resumenModo(p))}</span>
       </span>
-    </div>`;
+      ${activo ? `<span class="aj-activo">${escapeHtml(t('ajModoActivo'))}</span>` : ''}
+      ${ico('chevron-right')}
+    </button>`;
   }).join('');
+}
+function ajEditarModo(id){
+  MODO_EDITADO = id;
+  $('#filtro-medio').value = '';
+  $('#filtro-grupo-medio').value = '';
+  if (ajRuta() === 'modo') ajPintar();
+  else ajEmpujar('modo');
+}
 
-  cont.querySelectorAll('.modo-fila').forEach(fila => {
-    const id = fila.dataset.modoId;
-    fila.querySelectorAll('button[data-accion]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const accion = btn.dataset.accion;
-        if (accion === 'activar') activarModo(id);
-        else if (accion === 'renombrar') renombrarModo(id);
-        else if (accion === 'duplicar') duplicarModo(id);
-        else if (accion === 'borrar') borrarModo(id);
-      });
-    });
-  });
-
+function pintarModo(){
+  const modo = modoEnPanel();
+  if (!modo) return;
+  const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
+  const estado = $('#aj-modo-estado');
+  estado.textContent = t('ajModoActivo');
+  estado.hidden = !activo;
+  $('#aj-modo-activar').hidden = activo;
+  // No se pisa lo que se está escribiendo.
+  const ta = $('#aj-temas');
+  if (document.activeElement !== ta || ta.dataset.modoId !== modo.id){
+    ta.value = (modo.palabras || []).join('\n');
+    ta.dataset.modoId = modo.id;
+  }
+  renderListaGrupos(modo);
+  renderOverridesModo(modo);
+  renderListaMedios();
+  ajContadores(modo);
+}
+function renderOverridesModo(modo){
   const ovList = $('#ov-list');
-  if (ovList){
-    const ov = PRESET.overrides || {};
-    const entries = Object.entries(ov);
-    if (!entries.length){
-      ovList.innerHTML = '';
-    } else {
-      ovList.innerHTML = entries.map(([d, v]) =>
-        `<span class="ov-item ${v}">
-          <span>${escapeHtml(d)}</span>
-          <button data-dom="${escapeHtml(d)}" type="button">×</button>
-        </span>`
-      ).join('');
-      ovList.querySelectorAll('button[data-dom]').forEach(b => {
-        b.addEventListener('click', () => {
-          setOverride(b.dataset.dom, '');
-          renderModosPanel();
-          renderListaMedios();
-        });
-      });
+  if (!ovList) return;
+  ovList.innerHTML = Object.entries(modo.overrides || {}).map(([d, v]) =>
+    `<span class="ov-item ${v}">
+      <span>${escapeHtml(d)}</span>
+      <button data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
+    </span>`
+  ).join('');
+}
+function ajContadores(modo){
+  $('#aj-temas-n').textContent = '· ' + compilarTemas(parseLista($('#aj-temas').value)).length;
+  const ov = Object.values(modo.overrides || {});
+  $('#aj-medios-n').textContent = '· ' + t('ajMediosN', {
+    f: ov.filter(v => v === 'first').length,
+    b: ov.filter(v => v === 'ignore').length,
+  });
+  $('#aj-grupos-n').textContent = '· ' + (modo.grupos || []).length;
+}
+
+// Tras guardar un cambio de un modo. Si es el activo, se recompila; el feed
+// se vuelve a filtrar con espera, para agrupar clics y teclas seguidos.
+const _ajFiltrar = debounce(() => aplicarFiltros(), 400);
+function ajModoCambiado(modo){
+  if (modo.id === PRESETS.activo){
+    PRESET = modo;
+    recompilarPreset();
+    if (PRESET_ACTIVO && !presetTieneReglas()){
+      PRESET_ACTIVO = false;
+      guardarPresetActivo();
     }
   }
+  if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
+  actualizarBotonPreset();
+  _ajFiltrar();
+  if (ajRuta() === 'modo') ajContadores(modo);
+}
+
+// Temas: se guardan al dejar de escribir y al salir de la caja. La caja
+// lleva el id de su modo por si se cambia de modo con algo sin guardar.
+let _ajTemasTimer = 0;
+function ajGuardarTemas(){
+  clearTimeout(_ajTemasTimer);
+  _ajTemasTimer = 0;
+  const ta = $('#aj-temas');
+  if (!ta || !ta.dataset.modoId || !PRESETS) return;
+  const modo = PRESETS.lista.find(p => p.id === ta.dataset.modoId);
+  if (!modo) return;
+  const nuevas = parseLista(ta.value);
+  const antes = modo.palabras || [];
+  if (nuevas.length === antes.length && nuevas.every((x, i) => x === antes[i])) return;
+  modo.palabras = nuevas;
+  guardarPresets();
+  ajModoCambiado(modo);
+}
+
+// Lo que antes hacía «Guardar»: si el modo editado ha pasado de vacío a
+// tener reglas y no hay modo activo ni vista Temas, se activa al cerrar.
+function ajActivarAlCerrar(){
+  const modo = modoEnPanel();
+  if (!modo || PRESET_ACTIVO || vistaTemasActiva()) return;
+  if (!_ajSinReglas.has(modo.id) || !presetTieneReglas(modo)) return;
+  PRESETS.activo = modo.id;
+  PRESET = modo;
+  PRESET_ACTIVO = true;
+  guardarPresets();
+  guardarPresetActivo();
+  recompilarPreset();
+  actualizarBotonPreset();
+  aplicarFiltros();
+  toast(t('presetGuardadoActivado', { X: modo.nombre }), 2600);
+}
+
+// Copia para «Deshacer» (vaciar o borrar un modo).
+function ajCapturar(){
+  return { presets: structuredClone(PRESETS), activo: PRESET_ACTIVO };
+}
+function ajRestaurar(copia){
+  PRESETS = copia.presets;
+  PRESET = PRESETS.lista.find(p => p.id === PRESETS.activo) || PRESETS.lista[0];
+  PRESETS.activo = PRESET.id;
+  PRESET_ACTIVO = copia.activo && presetTieneReglas();
+  guardarPresets();
+  guardarPresetActivo();
+  recompilarPreset();
+  actualizarBotonPreset();
+  aplicarFiltros();
+  ajRefrescar();
 }
 
 function activarModo(id){
   const target = PRESETS.lista.find(p => p.id === id);
   if (!target) return;
+  if (!presetTieneReglas(target)){
+    toast(t('presetVacio'), 3200);
+    return;
+  }
   PRESETS.activo = id;
   PRESET = target;
   PRESET_ACTIVO = true;
@@ -6984,9 +7397,7 @@ function activarModo(id){
   guardarPresetActivo();
   recompilarPreset();
   actualizarBotonPreset();
-  renderModosPanel();
-  renderListaMedios();
-  escribirPanel(PRESET);
+  ajRefrescar();
   aplicarFiltros();
 }
 
@@ -6998,21 +7409,39 @@ function renombrarModo(id){
   const limpio = nuevo.trim();
   if (!limpio) return;
   p.nombre = limpio;
-  if (PRESET.id === id) PRESET.nombre = limpio;
   guardarPresets();
   actualizarBotonPreset();
-  renderModosPanel();
+  ajRefrescar();
 }
 
 function duplicarModo(id){
   const p = PRESETS.lista.find(x => x.id === id);
-  if (!p) return;
+  if (!p) return null;
+  ajGuardarTemas();
   const copia = structuredClone(p);
   copia.id = 'm-' + Date.now().toString(36);
   copia.nombre = p.nombre + ' ' + t('cfgModoDuplicarSufijo');
   PRESETS.lista.push(copia);
   guardarPresets();
-  renderModosPanel();
+  ajRefrescar();
+  return copia;
+}
+
+function vaciarModo(id){
+  const modo = PRESETS.lista.find(p => p.id === id);
+  if (!modo) return;
+  if (!confirm(t('ajModoConfirmVaciar', { X: modo.nombre }))) return;
+  const copia = ajCapturar();
+  modo.grupos = [];
+  modo.palabras = [];
+  modo.overrides = {};
+  const ta = $('#aj-temas');
+  if (ta && ta.dataset.modoId === id) ta.value = '';
+  guardarPresets();
+  ajModoCambiado(modo);
+  ajRefrescar();
+  toast(t('ajModoVaciado', { X: modo.nombre }), 6000,
+        { texto: t('ajDeshacer'), fn: () => ajRestaurar(copia) });
 }
 
 function borrarModo(id){
@@ -7023,46 +7452,23 @@ function borrarModo(id){
   const p = PRESETS.lista.find(x => x.id === id);
   if (!p) return;
   if (!confirm(t('cfgModoConfirmBorrar', { X: p.nombre }))) return;
+  const copia = ajCapturar();
 
   PRESETS.lista = PRESETS.lista.filter(x => x.id !== id);
   if (PRESETS.activo === id){
     PRESETS.activo = PRESETS.lista[0].id;
     PRESET = PRESETS.lista[0];
+    PRESET_ACTIVO = PRESET_ACTIVO && presetTieneReglas();
+    guardarPresetActivo();
     recompilarPreset();
   }
   guardarPresets();
   actualizarBotonPreset();
-  renderModosPanel();
-  renderListaMedios();
-  escribirPanel(PRESET);
   aplicarFiltros();
-  toast(t('cfgModoBorrado', { X: p.nombre }), 2000);
-}
-
-function crearModo(){
-  const nombre = prompt(t('cfgModoNombrePrompt'), '');
-  if (nombre == null) return;
-  const limpio = nombre.trim();
-  if (!limpio) return;
-  const nuevo = {
-    id: 'm-' + Date.now().toString(36),
-    nombre: limpio,
-    grupos: [],
-    palabras: [],
-    overrides: {}
-  };
-  PRESETS.lista.push(nuevo);
-  PRESETS.activo = nuevo.id;
-  PRESET = nuevo;
-  PRESET_ACTIVO = true;
-  guardarPresets();
-  guardarPresetActivo();
-  recompilarPreset();
-  actualizarBotonPreset();
-  renderModosPanel();
-  renderListaMedios();
-  escribirPanel(PRESET);
-  aplicarFiltros();
+  if (ajRuta() === 'modo' && MODO_EDITADO === id) ajAtras();
+  else ajRefrescar();
+  toast(t('cfgModoBorrado', { X: p.nombre }), 6000,
+        { texto: t('ajDeshacer'), fn: () => ajRestaurar(copia) });
 }
 
 function normalizarDominioInput(s){
@@ -7073,6 +7479,8 @@ function normalizarDominioInput(s){
 
 
 function aplicarListaOverrides(){
+  const modo = modoEnPanel();
+  if (!modo) return;
   const txt = $('#ov-pegar').value || '';
   const lineas = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   let ok = 0, ko = 0;
@@ -7082,13 +7490,12 @@ function aplicarListaOverrides(){
     const signo = m[1] || '-';
     const d = normalizarDominioInput(m[2]);
     if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){ ko++; return; }
-    setOverride(d, signo === '+' ? 'first' : 'ignore');
+    setOverride(d, signo === '+' ? 'first' : 'ignore', modo);
     ok++;
   });
   $('#ov-pegar').value = '';
-  renderModosPanel();
-  renderListaMedios();
-  aplicarFiltros();
+  ajModoCambiado(modo);
+  pintarModo();
   toast(`OK: ${ok} · KO: ${ko}`, 2200);
 }
 /* ═══════════════════════════════════════════════════════════════
@@ -7488,7 +7895,7 @@ function importarConfig(file){
       reconstruirSelectores();
       construirIndicesBusqueda();
       actualizarBotonPreset();
-      if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
+      ajRefrescar();
       aplicarFiltros();
       toast(msgOk, 2400);
     }catch(e){
@@ -7677,7 +8084,7 @@ function emSeguir(){
   PRESET.palabras = [...palabras, nombre];
   guardarPreset();
   recompilarPreset();
-  if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
+  ajRefrescar();
   aplicarFiltros();
   toast(t('emSiguiendo', { modo }), 2400);
 }
@@ -9365,6 +9772,7 @@ function observarNoticias(){
 function abrirPanel(id){
   const p = document.getElementById(id);
   if (!p) return;
+  if (id !== 'panel-ajustes' && ajAbierto()) cerrarAjustes();
   document.querySelectorAll('.panel.open').forEach(o => { if (o !== p) o.classList.remove('open'); });
   p.classList.add('open');
   const body = p.querySelector('.panel-body');
@@ -9372,6 +9780,7 @@ function abrirPanel(id){
   document.body.style.overflow = 'hidden';
 }
 function cerrarPanel(id){
+  if (id === 'panel-ajustes' && ajAbierto()){ cerrarAjustes(); return; }
   const p = document.getElementById(id);
   if (!p) return;
   p.classList.remove('open');
@@ -9389,29 +9798,17 @@ function aplicarTextos(){
   $('#meta-prefix').textContent = t('metaPrefix');
 
   actualizarBotonPreset();
-  $('#btn-config').textContent = t('btnConfig');
-  $('#btn-pendientes').innerHTML =
-    escapeHtml(t('btnPendientes')) +
-    ' <span class="pend-count" data-count="0">0</span>';
-  $('#btn-buscar').textContent = t('btnBuscar');
-  $('#btn-acces').textContent  = t('btnAcces');
-  $('#btn-export').textContent = t('btnExport');
-  $('#btn-import').textContent = t('btnImport');
-  $('#btn-export').title = t('btnExport');
-  $('#btn-import').title = t('btnImport');
-  $('#cfg-modos').textContent = t('cfgModos');
-  $('#tab-feed').textContent     = t('cfgFeed');
-  $('#tab-medios').textContent   = t('tabMedios');
-  $('#tab-temas').innerHTML      = ico('hash') + ' ' + escapeHtml(t('presetVistaTemas'));
-  $('#tab-avanzado').textContent = t('tabAvanzado');
-  $('#cfg-modos-hint').textContent = t('cfgModosHint');
-  $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
-  $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
-  $('#ov-add-first').textContent  = t('cfgMedioAddForce');
-  $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
-  $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
-  const det = $('#ov-pegar-wrap summary');
-  if (det) det.textContent = t('cfgOverridePegar');
+  // Cabecera: icono y palabra (en móvil la palabra se oculta, ver .cab-txt).
+  const cab = (sel, icono, clave) => {
+    const b = $(sel);
+    b.innerHTML = icono + `<span class="cab-txt">${escapeHtml(t(clave))}</span>`;
+    b.title = t(clave);
+  };
+  cab('#btn-config', ico('settings'), 'ajTitulo');
+  cab('#btn-acces', '<span class="cab-aa" aria-hidden="true">Aa</span>', 'ajLectura');
+  cab('#btn-buscar', ico('building-2'), 'btnBuscar');
+  cab('#btn-pendientes', ico('bookmark'), 'btnPendientes');
+  $('#btn-pendientes').insertAdjacentHTML('beforeend', '<span class="pend-count" data-count="0">0</span>');
 
   // Rellenar textos del desplegable de vista
   $('#vs-label').textContent  = t('vsButton');
@@ -9428,12 +9825,64 @@ function aplicarTextos(){
 
   actualizarBotonViewSettings();
 
-  $('#cfg-title').textContent = t('cfgTitle');
+  // ── Ajustes ──
+  $('#aj-titulo').textContent = t('ajTitulo');
+  ['modos', 'lectura', 'feed', 'avanzado', 'ayuda'].forEach(s =>
+    $('#aj-nav-' + s).textContent = t(AJ_TITULOS[s]));
+
+  // Modos
+  $('#cfg-modos-hint').textContent = t('cfgModosHint');
+  $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
+  $('#aj-modo-activar-lbl').textContent   = t('ajModoActivar');
+  $('#aj-modo-renombrar-lbl').textContent = t('ajModoRenombrar');
+  $('#aj-modo-duplicar-lbl').textContent  = t('ajModoDuplicar');
+  $('#aj-modo-vaciar-lbl').textContent    = t('ajModoVaciar');
+  $('#aj-modo-borrar-lbl').textContent    = t('ajModoBorrar');
+  $('#aj-temas-tit').textContent = t('cfgPalabras');
+  $('#aj-temas').placeholder = t('cfgPalabrasPlaceholder');
+  $('#cfg-palabras-hint').textContent = t('cfgPalabrasHint');
+  // Ejemplos: una línea por ejemplo, «tema|qué casa».
+  $('#cfg-temas-ayuda').innerHTML = t('cfgTemasAyuda').split('\n').map(l => {
+    const [ej, txt] = l.split('|');
+    return `<li><code>${escapeHtml(ej)}</code> → ${escapeHtml(txt || '')}</li>`;
+  }).join('');
+  $('#cfg-medios').textContent = t('cfgMedios');
+  $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
+  $('#ov-add-first').textContent  = t('cfgMedioAddForce');
+  $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
+  $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
+  const det = $('#ov-pegar-wrap summary');
+  if (det) det.textContent = t('cfgOverridePegar');
+  $('#cfg-medios-hint').textContent = t('cfgMediosHint');
+  $('#cfg-medios-legend').innerHTML =
+    '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
+  $('#filtro-medio').placeholder = t('cfgBuscarMedio');
+  if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-grupos').textContent = t('cfgGrupos');
   $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
-  $('#cfg-medios').textContent = t('cfgMedios');
-  $('#cfg-feed').textContent = t('cfgFeed');
-  $('#cfg-feed-hint').textContent = t('cfgFeedHint');
+
+  // Lectura
+  $('#ac-tema').textContent = t('acTema');
+  $('#ac-fuente').textContent = t('acFuente');
+  $('#ac-tamano').textContent = t('acTamano');
+  $('#ac-ancho').textContent = t('acAncho');
+  $('#ac-extra').textContent = t('acExtra');
+  $('#ac-idioma').textContent = t('lblIdioma');
+  $('#acces-reset-lbl').textContent = t('acReset');
+
+  // Feed
+  $('#aj-vista-tit').textContent = t('ajVistaTit');
+  $('#aj-dup-lbl').textContent = t('vsDup');
+  $('#aj-hide-tit').textContent = t('vsTitleHide');
+  document.querySelectorAll('.aj-radios span[data-txt]').forEach(sp => {
+    sp.innerHTML = escapeHtml(t(sp.dataset.txt))
+      + (sp.dataset.hint ? `<small>${escapeHtml(t(sp.dataset.hint))}</small>` : '');
+  });
+  $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
+  $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
+  $('#cfg-portadas').textContent = t('cfgPortadas');
+  $('#cfg-portadas-hint').textContent = t('cfgPortadasHint');
+  renderListaPortadas();
   const elDias = $('#cfg-dias'); if (elDias) elDias.textContent = t('cfgDias');
   const elDiasHint = $('#cfg-dias-hint'); if (elDiasHint) elDiasHint.textContent = t('cfgDiasHint');
   const grupoDias = document.querySelector('.opt-group[data-dias]');
@@ -9442,45 +9891,32 @@ function aplicarTextos(){
       b.textContent = b.dataset.val;
     });
   }
-  $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
-  $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
-  $('#cfg-portadas').textContent = t('cfgPortadas');
-  $('#cfg-portadas-hint').textContent = t('cfgPortadasHint');
-  renderListaPortadas();
-  $('#cfg-medios-hint').textContent = t('cfgMediosHint');
-  $('#cfg-medios-legend').innerHTML =
-    '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
-  $('#filtro-medio').placeholder = t('cfgBuscarMedio');
-  if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
-  $('#cfg-palabras').textContent = t('cfgPalabras');
-  $('#cfg-palabras-hint').textContent = t('cfgPalabrasHint');
-  $('#cfg-temas').textContent = t('cfgPalabras');
-  $('#btn-editar-temas').textContent = t('cfgEditarTemas');
-  // Ejemplos: una línea por ejemplo, «tema|qué casa».
-  $('#cfg-temas-ayuda').innerHTML = t('cfgTemasAyuda').split('\n').map(l => {
-    const [ej, txt] = l.split('|');
-    return `<li><code>${escapeHtml(ej)}</code> → ${escapeHtml(txt || '')}</li>`;
-  }).join('');
+
+  // Avanzado
+  $('#aj-inv-tit').textContent = t('emTitle');
+  $('#aj-investigar-lbl').textContent = t('ajInvestigarLbl');
+  $('#aj-investigar-hint').textContent = t('ajInvestigarHint');
+  $('#aj-prensa-tit').textContent = t('prensaPanelLabel');
   $('#cfg-backup').textContent = t('cfgBackup');
   $('#cfg-backup-msg').textContent = t('cfgBackupMsg');
+  $('#btn-export-lbl').textContent = t('btnExport');
+  $('#btn-import-lbl').textContent = t('btnImport');
+  $('#aj-plugin-tit').textContent = t('ajPluginTit');
+  $('#aj-plugin-hint').textContent = t('syncOfflineHint');
+
+  // Ayuda
   $('#cfg-help-lbl').textContent = t('cfgHelpLbl');
   $('#cfg-help-msg').textContent = t('cfgHelpMsg');
   $('#cfg-help-btn').textContent = t('cfgHelpBtn');
-  $('#preset-reset').textContent = t('btnReset');
-  $('#preset-cancelar').textContent = t('btnCancel');
-  $('#preset-guardar').textContent = t('btnSave');
-
-  $('#ac-title').textContent = t('acTitle');
-  $('#ac-tema').textContent = t('acTema');
-  $('#ac-fuente').textContent = t('acFuente');
-  $('#ac-tamano').textContent = t('acTamano');
-  $('#ac-ancho').textContent = t('acAncho');
-  $('#ac-extra').textContent = t('acExtra');
-  $('#acces-reset').textContent = t('btnReset');
+  $('#aj-atajos-tit').textContent = t('ajAtajosTit');
+  $('#aj-atajos').innerHTML = t('ajAtajos').split('\n').map(l => {
+    const [tecla, txt] = l.split('|');
+    return `<dt>${escapeHtml(tecla)}</dt><dd>${escapeHtml(txt || '')}</dd>`;
+  }).join('');
 
   // Prensa externa (panel)
   const pl = document.getElementById('prensa-panel-label');
-  if (pl) pl.textContent = t('prensaPanelLabel');
+  if (pl) pl.textContent = t('ajPrensaActivar');
   const plf = document.getElementById('prensa-fuentes-label');
   if (plf) plf.textContent = t('prensaFuentes');
   const pll = document.getElementById('prensa-lang-label');
@@ -9627,39 +10063,77 @@ function wireDiasSelector() {
   renderDiasSelector();
 }
 
-function wireCfgTabs(){
-  const tabs   = document.querySelectorAll('.cfg-tab');
-  const panels = document.querySelectorAll('.cfg-tabpanel');
-  if (!tabs.length) return;
+function wireAjustes(){
+  const panel = $('#panel-ajustes');
+  if (!panel) return;
+  window.addEventListener('popstate', ajPopstate);
+  // Si se recargó con Ajustes abierto, el paso del historial queda huérfano.
+  if (history.state && history.state.aj) history.replaceState(null, '');
 
-  const activar = (name) => {
-    tabs.forEach(t => {
-      const on = t.dataset.tab === name;
-      t.classList.toggle('active', on);
-      t.setAttribute('aria-selected', String(on));
-    });
-    panels.forEach(p => {
-      p.hidden = p.dataset.panel !== name;
-    });
-  };
+  panel.querySelectorAll('.aj-secciones button[data-ir]').forEach(b =>
+    b.addEventListener('click', () => ajIrSeccion(b.dataset.ir)));
+  $('#aj-atras').addEventListener('click', ajAtras);
 
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const name = tab.dataset.tab;
-      activar(name);
-      try { localStorage.setItem(CFG_TAB_KEY, name); } catch(e){}
-    });
+  // ── Modos ──
+  $('#lista-modos').addEventListener('click', e => {
+    const fila = e.target.closest('[data-modo-id]');
+    if (fila) ajEditarModo(fila.dataset.modoId);
+  });
+  $('#btn-nuevo-modo').addEventListener('click', () => {
+    const nuevo = crearModoYDevolver();
+    if (nuevo) ajEditarModo(nuevo.id);
+  });
+  $('#aj-modo-activar').addEventListener('click', () => activarModo(MODO_EDITADO));
+  $('#aj-modo-renombrar').addEventListener('click', () => renombrarModo(MODO_EDITADO));
+  $('#aj-modo-duplicar').addEventListener('click', () => {
+    const copia = duplicarModo(MODO_EDITADO);
+    if (copia) ajEditarModo(copia.id);
+  });
+  $('#aj-modo-vaciar').addEventListener('click', () => vaciarModo(MODO_EDITADO));
+  $('#aj-modo-borrar').addEventListener('click', () => borrarModo(MODO_EDITADO));
+
+  const ta = $('#aj-temas');
+  ta.addEventListener('input', () => {
+    $('#aj-temas-n').textContent = '· ' + compilarTemas(parseLista(ta.value)).length;
+    clearTimeout(_ajTemasTimer);
+    _ajTemasTimer = setTimeout(ajGuardarTemas, 600);
+  });
+  ta.addEventListener('blur', ajGuardarTemas);
+
+  $('#lista-grupos').addEventListener('change', () => {
+    const modo = modoEnPanel();
+    if (!modo) return;
+    modo.grupos = [...document.querySelectorAll('#lista-grupos input[data-grupo]:checked')]
+      .map(c => c.dataset.grupo);
+    guardarPresets();
+    ajModoCambiado(modo);
+  });
+  $('#ov-list').addEventListener('click', e => {
+    const b = e.target.closest('button[data-dom]');
+    const modo = modoEnPanel();
+    if (!b || !modo) return;
+    setOverride(b.dataset.dom, '', modo);
+    ajModoCambiado(modo);
+    pintarModo();
   });
 
-  // Restaurar última pestaña activa
-  let inicial = 'feed';
-  try {
-    const saved = localStorage.getItem(CFG_TAB_KEY);
-    if (saved && document.querySelector('.cfg-tab[data-tab="' + saved + '"]')) {
-      inicial = saved;
-    }
-  } catch(e){}
-  activar(inicial);
+  // ── Feed: mismo estado que el menú Vista ──
+  $('#aj-dup').addEventListener('change', e => ponerAgruparDups(e.target.checked));
+  document.querySelectorAll('input[name="aj-hide"]').forEach(r =>
+    r.addEventListener('change', () => { if (r.checked) ponerHideMode(r.value); }));
+
+  // ── Avanzado: Investigar empresas ──
+  $('#aj-investigar').addEventListener('change', e => {
+    INVESTIGAR_ON = e.target.checked;
+    try { localStorage.setItem(INVESTIGAR_KEY, INVESTIGAR_ON ? '1' : '0'); } catch(err){}
+    aplicarInvestigar();
+  });
+
+  // ── Ayuda ──
+  $('#btn-report-generic').addEventListener('click', () => {
+    cerrarAjustes();
+    abrirReporte(null);
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -9712,22 +10186,11 @@ function wireStaticEvents(){
 
   const dupChk = $('#vs-dup');
   if (dupChk){
-    dupChk.addEventListener('change', () => {
-      AGRUPAR_DUPS = dupChk.checked;
-      guardarDupPref();
-      actualizarBotonViewSettings();
-      aplicarFiltros();
-    });
+    dupChk.addEventListener('change', () => ponerAgruparDups(dupChk.checked));
   }
 
   document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
-    r.addEventListener('change', () => {
-      if (!r.checked) return;
-      HIDE_MODE = r.value;
-      guardarHideMode();
-      actualizarBotonViewSettings();
-      aplicarFiltros();
-    });
+    r.addEventListener('change', () => { if (r.checked) ponerHideMode(r.value); });
   });
 
   const vsReset = $('#vs-reset');
@@ -9738,6 +10201,7 @@ function wireStaticEvents(){
       guardarDupPref();
       guardarHideMode();
       renderViewSettingsMenu();
+      ajPintarVista();
       actualizarBotonViewSettings();
       aplicarFiltros();
     });
@@ -9749,23 +10213,9 @@ function wireStaticEvents(){
     chkRec.addEventListener('change', () => {
       RECORDAR_FILTROS = chkRec.checked;
       guardarRecordarFiltros();
-      toast(
-        (RECORDAR_FILTROS ? '✓ ' : '✕ ') + t('cfgRecordarFiltros'),
-        1600
-      );
     });
   }
   wirePortadas();
-  // ── Configuración › Temas ──
-  $('#btn-editar-temas').addEventListener('click', () => {
-    const tab = document.querySelector('.cfg-tab[data-tab="temas"]');
-    if (tab) tab.click();
-  });
-  $('#lista-temas-modos').addEventListener('input', e => {
-    const ta = e.target.closest('textarea[data-modo-id]');
-    const n = ta && ta.parentElement.querySelector('.n');
-    if (n) n.textContent = '· ' + compilarTemas(parseLista(ta.value)).length;
-  });
   // ── Chips de modo y de tema ──
   // Elegir un modo quita el chip de tema; pulsar el tema elegido lo quita.
   const chipsTemas = $('#temas-chips');
@@ -9873,11 +10323,8 @@ function wireStaticEvents(){
 
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-buscar').addEventListener('click', emAbrir);
-  $('#btn-acces').addEventListener('click', () => abrirPanel('panel-acces'));
-  $('#btn-config').addEventListener('click', () => {
-    abrirPanel('panel-config');
-    escribirPanel(PRESET);
-  });
+  $('#btn-acces').addEventListener('click', () => abrirAjustes('lectura'));
+  $('#btn-config').addEventListener('click', () => abrirAjustes());
 
 
   document.querySelectorAll('.panel-close').forEach(b => {
@@ -9899,8 +10346,8 @@ function wireStaticEvents(){
       }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT')) return;
-    if (e.altKey && e.key.toLowerCase() === 'a'){ e.preventDefault(); abrirPanel('panel-acces'); }
-    if (e.altKey && e.key.toLowerCase() === 'c'){ e.preventDefault(); abrirPanel('panel-config'); escribirPanel(PRESET); }
+    if (e.altKey && e.key.toLowerCase() === 'a'){ e.preventDefault(); abrirAjustes('lectura'); }
+    if (e.altKey && e.key.toLowerCase() === 'c'){ e.preventDefault(); abrirAjustes(); }
     if (e.altKey && e.key.toLowerCase() === 'p'){ e.preventDefault(); abrirPendientes(); }
     if (e.altKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); emAbrir(); }
     if (e.altKey && e.key.toLowerCase() === 'm'){
@@ -9924,7 +10371,7 @@ function wireStaticEvents(){
     aplicarTextos();
     reconstruirSelectores();
     construirIndicesBusqueda();
-    if (MEDIOS_UNICOS.length) escribirPanel(PRESET);
+    ajRefrescar();
     renderizar();
   });
 
@@ -9938,7 +10385,6 @@ function wireStaticEvents(){
 
   $('#pend-refresh').addEventListener('click', abrirPendientes);
 
-  $('#btn-report-generic').addEventListener('click', () => abrirReporte(null));
   $('#rep-copy').addEventListener('click', copiarReporte);
   $('#rep-mail').addEventListener('click', reportarViaEmail);
   $('#rep-github').addEventListener('click', reportarViaGithub);
@@ -9967,46 +10413,6 @@ function wireStaticEvents(){
   $('#fs-mas').addEventListener('click', () => ajustarFs(+1));
   $('#w-menos').addEventListener('click', () => ajustarWidth(-1));
   $('#w-mas').addEventListener('click', () => ajustarWidth(+1));
-
-  $('#preset-guardar').addEventListener('click', () => {
-    const panel = leerPanel();
-    for (const p of PRESETS.lista){
-      if (p.id !== PRESET.id && panel.temasPorModo.has(p.id)) p.palabras = panel.temasPorModo.get(p.id);
-    }
-    PRESET.grupos = panel.grupos;
-    PRESET.palabras = panel.palabras;
-    guardarPreset(); recompilarPreset();
-    if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
-
-    if (presetTieneReglas() && !PRESET_ACTIVO && !vistaTemasActiva()){
-      PRESET_ACTIVO = true;
-      guardarPresetActivo();
-      toast(t('presetGuardadoActivado'), 2200);
-    } else if (!presetTieneReglas() && PRESET_ACTIVO){
-      PRESET_ACTIVO = false;
-      guardarPresetActivo();
-    }
-    actualizarBotonPreset();
-
-    cerrarPanel('panel-config');
-    aplicarFiltros();
-  });
-
-  $('#preset-cancelar').addEventListener('click', () => {
-    escribirPanel(PRESET);
-    cerrarPanel('panel-config');
-  });
-  $('#preset-reset').addEventListener('click', () => {
-    const id = PRESET.id;
-    const nombre = PRESET.nombre;
-    PRESET = { id, nombre, grupos: [], palabras: [], overrides: {} };
-    guardarPreset(); recompilarPreset();
-    PRESET_ACTIVO = false;
-    guardarPresetActivo();
-    actualizarBotonPreset();
-    escribirPanel(PRESET);
-    aplicarFiltros();
-  });
 
   const filtrarMediosDebounced = debounce(filtrarMedios, 120);
   $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
@@ -10094,8 +10500,6 @@ if (btnFiltros && filtrosPanel){
       buscarInput.focus();
     });
   }
-  const btnNuevoModo = $('#btn-nuevo-modo');
-  if (btnNuevoModo) btnNuevoModo.addEventListener('click', crearModo);
 
   const ovFirst  = $('#ov-add-first');
   const ovIgnore = $('#ov-add-ignore');
@@ -10107,12 +10511,13 @@ if (btnFiltros && filtrosPanel){
       toast(t('cfgOverrideBad', { X: v }), 2400);
       return;
     }
-    setOverride(d, tipo);
+    const modo = modoEnPanel();
+    if (!modo) return;
+    setOverride(d, tipo, modo);
     $('#filtro-medio').value = '';
     $('#filtro-medio-add').hidden = true;
-    renderModosPanel();
-    renderListaMedios();
-    aplicarFiltros();
+    ajModoCambiado(modo);
+    pintarModo();
   }
 
   if (ovFirst)  ovFirst.addEventListener('click',  () => aplicarOverrideDesdeBuscador('first'));
@@ -10127,19 +10532,22 @@ if (btnFiltros && filtrosPanel){
   if (contMedios){
     contMedios.addEventListener('change', e => {
       const fila = e.target.closest('.medio-fila');
-      if (!fila) return;
+      const modo = modoEnPanel();
+      if (!fila || !modo) return;
       const inc = fila.querySelector('.chk-incluir');
       const ign = fila.querySelector('.chk-ignorar');
 
       if (e.target === inc){
         if (inc.checked) ign.checked = false;
         marca(fila);
-        setOverride(fila.dataset.dominio, inc.checked ? 'first' : '');
+        setOverride(fila.dataset.dominio, inc.checked ? 'first' : '', modo);
       } else if (e.target === ign){
         if (ign.checked) inc.checked = false;
         marca(fila);
-        setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '');
-      }
+        setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '', modo);
+      } else return;
+      renderOverridesModo(modo);
+      ajModoCambiado(modo);
     });
   }
 }
@@ -10164,6 +10572,7 @@ async function init(){
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
   RECORDAR_FILTROS = cargarRecordarFiltros();
+  INVESTIGAR_ON  = cargarInvestigar();
     // Preferencias de prensa externa
   cargarPrensaDeLocalStorage();
   rebuildPendientes();
@@ -10182,10 +10591,11 @@ async function init(){
 
   // Textos + listeners: ya con esto la UI está viva y clicable
   aplicarTextos();
+  aplicarInvestigar();
   wireStickyOffsets();
   wireBackToTop();
   wireStaticEvents();
-  wireCfgTabs();
+  wireAjustes();
   wireVistasObserver();
   emWireEventos();
 
