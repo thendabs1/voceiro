@@ -1740,6 +1740,8 @@
       <span id="fecha">06/10/2026 15:21</span>
       <span>·</span>
       <span id="contador"></span>
+      <span id="total-r2-sep" hidden>·</span>
+      <span id="total-r2" hidden></span>
     </span>
     <span class="view-settings-wrap">
       <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
@@ -2547,6 +2549,8 @@ const I18N = {
     /* ── Contador / vacío / errores ── */
     contador:               'Mostrando {n} de {total} titulares',
     contadorScope:          'Mostrando {n} de {total} en modo activo',
+    contadorR2:             '{n} en total',
+    contadorR2Title:        'Noticias guardadas en R2: {dias} días, desde el {desde}',
     contadorPreset:         ' · Modo Personalizado activo',
     vacio:                  'Sin resultados',
     errCarga:               'Error cargando datos: ',
@@ -2823,6 +2827,8 @@ const I18N = {
 
     contador:               'Amosando {n} de {total} titulares',
     contadorScope:          'Amosando {n} de {total} en modo activo',
+    contadorR2:             '{n} en total',
+    contadorR2Title:        'Novas gardadas en R2: {dias} días, dende o {desde}',
     contadorPreset:         ' · Modo Personalizado activo',
     vacio:                  'Sen resultados',
     errCarga:               'Erro cargando datos: ',
@@ -3091,6 +3097,8 @@ const I18N = {
 
     contador:               'Mostrant {n} de {total} titulars',
     contadorScope:          'Mostrant {n} de {total} en mode actiu',
+    contadorR2:             '{n} en total',
+    contadorR2Title:        'Notícies desades a R2: {dias} dies, des del {desde}',
     contadorPreset:         ' · Mode Personalitzat actiu',
     vacio:                  'Sense resultats',
     errCarga:               'Error carregant dades: ',
@@ -3359,6 +3367,8 @@ const I18N = {
 
     contador:               'Showing {n} of {total} headlines',
     contadorScope:          'Showing {n} of {total} in active mode',
+    contadorR2:             '{n} in total',
+    contadorR2Title:        'News stored in R2: {dias} days, since {desde}',
     contadorPreset:         ' · Custom Mode on',
     vacio:                  'No results',
     errCarga:               'Error loading data: ',
@@ -3627,6 +3637,8 @@ const I18N = {
 
     contador:               '{total}tik {n} izenburu erakusten',
     contadorScope:          '{total}etik {n} erakusten modu aktiboan',
+    contadorR2:             '{n} guztira',
+    contadorR2Title:        'R2n gordetako albisteak: {dias} egun, {desde}tik',
     contadorPreset:         ' · Modo Pertsonalizatua aktibo',
     vacio:                  'Emaitzarik gabe',
     errCarga:               'Errorea datuak kargatzean: ',
@@ -8028,6 +8040,21 @@ function renderPestanasPreset(){
   el.hidden = false;
 }
 
+// Total de noticias guardadas en R2: suma de los ficheros diarios del
+// manifest (all.n, ya sin duplicados). manifest.total no sirve: es el
+// conjunto de trabajo del recolector antes de deduplicar.
+function renderTotalR2(){
+  const el = $('#total-r2'), sep = $('#total-r2-sep');
+  if (!el) return;
+  const dias = (_manifest && _manifest.dias) || [];
+  const n = dias.reduce((s, d) => s + ((d.all && d.all.n) || 0), 0);
+  el.hidden = sep.hidden = !n;
+  if (!n) return;
+  const [a, m, d] = (dias[dias.length - 1].fecha || '').split('-');
+  el.textContent = t('contadorR2', { n: n.toLocaleString() });
+  el.title = t('contadorR2Title', { dias: dias.length, desde: a ? `${d}/${m}/${a}` : '?' });
+}
+
 function renderizar(){
   const lista = ULT_FILTRADAS;
   const nMostrados = lista.length;
@@ -8039,6 +8066,7 @@ function renderizar(){
   });
 
   $('#contador').textContent = txt;
+  renderTotalR2();
   const cont = $('#resultados');
   cont.innerHTML = '';
   RENDER_OFFSET = 0;
