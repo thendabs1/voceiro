@@ -922,13 +922,23 @@ def _wp_api(medio):
             title = (post.get('title') or {}).get('rendered', '')
             link = post.get('link', '')
             date = post.get('date', '')
+            date_gmt = post.get('date_gmt', '')
             if not title or not link:
                 continue
             fecha_pub = ''
-            if date:
-                # WP date viene en hora local del servidor (Europe/Madrid)
+            if date_gmt:
+                # date_gmt viene en UTC sin zona; _rss_date_to_iso trata lo
+                # naive como UTC, que es justo lo correcto aquí.
+                fecha_pub = _rss_date_to_iso(date_gmt)
+            elif date:
+                # date viene en hora local (Europe/Madrid): offset real del
+                # día (CEST o CET), no un '+02:00' fijo.
                 if '+' not in date and 'Z' not in date:
-                    date = date + '+02:00'
+                    try:
+                        date = datetime.fromisoformat(date).replace(
+                            tzinfo=TZ_MADRID).isoformat()
+                    except ValueError:
+                        pass
                 fecha_pub = _rss_date_to_iso(date)
             out.append({
                 'titular':   _limpiar_cdata(title),
@@ -1097,7 +1107,13 @@ def _reconstruir_fecha(raw, dia):
     if 'T' in raw and len(raw) > 10:
         return raw  # formato viejo, ya es ISO
     if ':' in raw and len(raw) <= 5:
-        return f"{dia}T{raw}:00+02:00"
+        # HH:MM se escribe en hora de Madrid (_hhmm): offset real de esa
+        # fecha (CEST o CET), no un '+02:00' fijo.
+        try:
+            return datetime.fromisoformat(f"{dia}T{raw}:00").replace(
+                tzinfo=TZ_MADRID).isoformat()
+        except ValueError:
+            return ''
     return raw
 
 def cargar_historico_payload():

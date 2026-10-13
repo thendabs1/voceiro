@@ -5460,8 +5460,6 @@ let _capaEnVuelo = null;
 const _itemPorUrl = new Map();
 const _itemPorTitulo = new Map();
 
-// Contador de generación para aplicarFiltros (race conditions)
-let _genAplicar = 0;
 
 /* ── Helpers de merge ── */
 
@@ -5506,12 +5504,55 @@ function refrescarVistaCompleta(){
   actualizarFiltrosCount(); 
 }
 
+// Offset de Europe/Madrid ('+02:00' o '+01:00') para una hora local dada.
+// Las HH:MM de los ficheros se escriben en hora de Madrid (recolector _hhmm),
+// así que un '+02:00' fijo desplaza 1 h todo lo publicado en horario de
+// invierno. Cacheado por día+hora: se llama por cada item al hidratar.
+const _OFFSET_MADRID = new Map();
+const _FMT_MADRID = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Madrid', hourCycle: 'h23',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit',
+});
+function _horaMadridComoUTC(t){
+  const p = {};
+  for (const x of _FMT_MADRID.formatToParts(new Date(t))) p[x.type] = x.value;
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+}
+function _offsetMadrid(dia, hhmm){
+  const clave = dia + 'T' + hhmm;
+  const enCache = _OFFSET_MADRID.get(clave);
+  if (enCache) return enCache;
+  const [y, m, d] = dia.split('-').map(Number);
+  const [h, mi] = hhmm.split(':').map(Number);
+  const local = Date.UTC(y, m - 1, d, h, mi);
+  // Candidatos: los offsets de 12 h antes y después (uno a cada lado de un
+  // posible cambio de hora) y el del instante corregido. Gana el mayor que
+  // reproduce la hora local: en la hora ambigua de octubre es la primera
+  // aparición, como zoneinfo con fold=0 en el recolector. Si la hora no
+  // existe (marzo), queda el offset de antes del cambio, también como fold=0.
+  const offEn = t => _horaMadridComoUTC(t) - t;
+  const o1 = offEn(local);
+  const o2 = offEn(local - o1);
+  const candidatos = [...new Set([
+    offEn(local - 12 * 3600e3), offEn(local + 12 * 3600e3), o1, o2,
+  ])].sort((a, b) => b - a);
+  const ms = candidatos.find(o => _horaMadridComoUTC(local - o) === local) ?? o2;
+  const mins = Math.round(ms / 60000);
+  const abs = Math.abs(mins);
+  const off = (mins >= 0 ? '+' : '-')
+            + String(Math.floor(abs / 60)).padStart(2, '0') + ':'
+            + String(abs % 60).padStart(2, '0');
+  _OFFSET_MADRID.set(clave, off);
+  return off;
+}
+
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
   const s = String(raw).trim();
   if (s.includes('T') && s.length > 10) return s;
   if (/^\d{2}:\d{2}$/.test(s) && dia){
-    return `${dia}T${s}:00+02:00`;
+    return `${dia}T${s}:00${_offsetMadrid(dia, s)}`;
   }
   return s;
 }
@@ -5790,19 +5831,10 @@ function preprocesarInput(raw) {
       // si no hay match, cae al push normal (queda como medio:foo)
     }
 
-    if (tk.prefix || tk.quoted) { out.push(tk.raw); continue; }
-    if (/^[a-z0-9.\-]+\.[a-z]{2,}$/i.test(tk.text)) { out.push(tk.raw); continue; }
-
-    const strict = normStrict(tk.text);
-    if (strict.length >= 3) {
-      let dom = MEDIOS_POR_NOMBRE.get(strict);
-      if (!dom && strict.length >= 4) {
-        for (const [k, v] of MEDIOS_POR_NOMBRE) {
-          if (k.startsWith(strict)) { dom = v; break; }
-        }
-      }
-      if (dom) { out.push('web:' + dom); continue; }
-    }
+    // Las palabras sueltas se quedan como texto. Antes, cualquier palabra
+    // de 4+ letras que fuera prefijo de un medio se convertía en web:dominio
+    // ('economia', 'madrid', 'vigo'…), y 'crisis economia' buscaba solo en
+    // un medio. Para filtrar por medio: medio:X, web:X o el autocompletado.
     out.push(tk.raw);
   }
   return out.join(' ');
@@ -5836,7 +5868,7 @@ function renderChips(parsed, rawQuery){
       if (!chip || !chip.raw) return;
 
       // Reconstruimos el input quitando el token que corresponde a este chip.
-      // Como el parser preprocesa cada token individualmente (elpais → web:elpais.com),
+      // Como el parser preprocesa cada token individualmente (medio:elpais → web:elpais.com),
       // comparamos cada token del input crudo contra el chip tras pasarlo por
       // el mismo preprocesador. Así encontramos el que le corresponde.
       const tokensRaw = tokenizeQuery(rawQuery);
@@ -7443,14 +7475,17 @@ function pintarSelectsPrensa(){
 
 function cargarPrensaDeLocalStorage(){
   try {
-    const activa  = localStorage.getItem('voceiro-prensa-activa') === '1';
+    const guardado = localStorage.getItem('voceiro-prensa-activa');
+    const activa  = guardado === '1';
     const gnews   = localStorage.getItem('voceiro-prensa-gnews')   !== '0';
     const freenews= localStorage.getItem('voceiro-prensa-freenews')!== '0';
     const lang    = localStorage.getItem('voceiro-prensa-lang')  || 'es';
     const pais    = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
 
     PRENSA_ACTIVA = activa;
-    PRENSA_USER_MANUAL_OFF = !activa;
+    // Solo cuenta como apagado manual si el usuario lo apagó ('0');
+    // sin clave guardada, la autoactivación por pocos resultados sigue viva.
+    PRENSA_USER_MANUAL_OFF = guardado === '0';
     PRENSA_FUENTES.gnews    = gnews;
     PRENSA_FUENTES.freenews = freenews;
     PRENSA_LANG = lang;
@@ -7470,6 +7505,25 @@ function prensaCacheSet(rawQuery, items){
     }
     sessionStorage.setItem(PRENSA_CACHE_KEY, JSON.stringify(cache));
   } catch(e){}
+}
+
+// El worker responde 200 aunque falle una fuente y pone el motivo en
+// _errores. Sin esto, una fuente caída se ve como "0 resultados".
+// Se avisa como mucho una vez por minuto y fuente.
+const _ERRORES_AVISADOS = new Map();
+function _avisarErroresFuente(data){
+  const errs = data && data._errores;
+  if (!errs) return false;
+  const ahora = Date.now();
+  for (const fuente in errs){
+    const ult = _ERRORES_AVISADOS.get(fuente) || 0;
+    if (ahora - ult < 60000) continue;
+    _ERRORES_AVISADOS.set(fuente, ahora);
+    const nombre = fuente === 'turso' ? 'Archivo' : fuente;
+    console.warn(`[${fuente}]`, errs[fuente]);
+    toast(`${nombre} no disponible: ${String(errs[fuente]).slice(0, 120)}`, 4000);
+  }
+  return true;
 }
 
 async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
@@ -7500,20 +7554,22 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
     return await r.json();
   };
 
-  try {
-    const data = await intentar();
+  // No se cachea una respuesta con fuentes fallidas: si no, el fallo
+  // se serviría como "0 resultados" durante toda la vida de la caché.
+  const procesar = (data) => {
     const items = data.items || [];
-    prensaCacheSet(cacheKey, items);
+    if (!_avisarErroresFuente(data)) prensaCacheSet(cacheKey, items);
     return { items };
+  };
+
+  try {
+    return procesar(await intentar());
   } catch (e) {
     if (e.name === 'AbortError') return null;
     if (BACKEND_ACTIVO === 'cf'){
       await _conmutarBackendPorFallo();
       try {
-        const data = await intentar();
-        const items = data.items || [];
-        prensaCacheSet(cacheKey, items);
-        return { items };
+        return procesar(await intentar());
       } catch(e2){
         if (e2.name === 'AbortError') return null;
       }
@@ -7548,12 +7604,18 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
   };
 
   try {
-    return mapear(await intentar());
+    const data = await intentar();
+    _avisarErroresFuente(data);
+    return mapear(data);
   } catch(e) {
     if (e.name !== 'AbortError') console.warn('[worker]', e.message);
     if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError'){
       await _conmutarBackendPorFallo();
-      try { return mapear(await intentar()); } catch(e2){ /* fall through */ }
+      try {
+        const data = await intentar();
+        _avisarErroresFuente(data);
+        return mapear(data);
+      } catch(e2){ /* fall through */ }
     }
     return { items: [], total: 0, nextOffset: null };
   }
@@ -7692,7 +7754,6 @@ function programarPrensa(parsed, rawQuery, nLocales){
       btn.classList.add('active', 'auto-activada');
       setTimeout(() => btn.classList.remove('auto-activada'), 900);
     }
-    try { localStorage.setItem('voceiro-prensa-activa', '1'); } catch(e){}
   }
 
   PRENSA_PARSED = parsed;
@@ -7723,8 +7784,18 @@ function programarPrensa(parsed, rawQuery, nLocales){
 }
 
 
+// Texto libre: AND palabra por palabra sobre el titular normalizado.
+// Única definición; la usan aplicarFiltros y _pasaFiltroIndividual.
+function _pasaTexto(n, titulo){
+  if (!titulo.length) return true;
+  const tn = n._titNorm || (n._titNorm = normalize(n.titular));
+  for (let i = 0; i < titulo.length; i++){
+    if (tn.indexOf(titulo[i]) === -1) return false;
+  }
+  return true;
+}
+
 function aplicarFiltros(){
-  const myGen = ++_genAplicar;
   hidratarNoticias();
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
@@ -7764,7 +7835,7 @@ if (!capas.size) {
   if (capas.size) {
     const signal = new AbortController().signal;
     asegurarCapas(capas, signal).then(trajo => {
-      if (trajo) aplicarFiltros();     // ← sin `if (myGen !== _genAplicar)`
+      if (trajo) aplicarFiltros();
     });
   }
 
@@ -7775,8 +7846,12 @@ if (!capas.size) {
     TURSO_RAW = rawProcesado;  // sin cutoff: no hay R2 previo, queremos todo
     TURSO_OFFSET = 0;
 
+    // Se descarta solo si la consulta cambió, no por cualquier otra llamada
+    // a aplicarFiltros (un espacio, una capa R2, un toggle…): si no, la
+    // respuesta se perdía y no se volvía a pedir.
+    const claveTurso = TURSO_RAW;
     buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
-      if (myGen !== _genAplicar) return;
+      if (TURSO_RAW !== claveTurso) return;
       if (!res.items || !res.items.length) {
         TURSO_HAY_MAS = false;
         actualizarBotonCargarMas();
@@ -7912,6 +7987,7 @@ if (!capas.size) {
       if (!ok) return false;
     }
     // ── Fin facet ──
+    if (!_pasaTexto(n, parsed.titulo)) return false;
     if (presetEfectivo){
       const cumple = cumplePreset(n);
       n._esPreset = cumple;
@@ -8291,6 +8367,7 @@ function _pasaFiltroIndividual(n, ctx) {
     }
     if (!ok) return false;
   }
+  if (!_pasaTexto(n, parsed.titulo)) return false;
   if (presetEfectivo){
     const cumple = cumplePreset(n);
     n._esPreset = cumple;
@@ -8306,15 +8383,20 @@ function _pasaFiltroIndividual(n, ctx) {
 function _anexarItemsIncremental(items, ctx) {
   if (!items.length || !ctx) return false;
 
-  // Filtrar los nuevos que pasan los filtros actuales
+  // Filtrar los nuevos que pasan los filtros actuales. Se trabaja siempre
+  // con el objeto que vive en NOTICIAS (hidratado): si el item de Turso era
+  // un duplicado por URL o por título, el crudo no tiene titular ni fecha
+  // y acabaría como tarjeta vacía.
   const nuevos = [];
+  const vistos = new Set();
   for (const n of items) {
     const u = _claveUrl(n.u || '', n.d || '');
-    if (u && _itemPorUrl.has(u)) {
-      const ex = _itemPorUrl.get(u);
-      if (ULT_FILTRADAS.includes(ex)) continue;   // ya está renderizado
-    }
-    if (_pasaFiltroIndividual(n, ctx)) nuevos.push(n);
+    const real = (u && _itemPorUrl.get(u))
+              || (n.t && _itemPorTitulo.get(normalize(n.t)))
+              || n;
+    if (vistos.has(real) || ULT_FILTRADAS.includes(real)) continue;
+    vistos.add(real);
+    if (_pasaFiltroIndividual(real, ctx)) nuevos.push(real);
   }
   if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
 
@@ -8332,15 +8414,20 @@ function _anexarItemsIncremental(items, ctx) {
     if (!vaDespues) return false;
   }
 
-  // Los nuevos van al final → append limpio
-  const desde = ULT_FILTRADAS.length;
-  ULT_FILTRADAS.push(...nuevos);
-  // Ordenar solo por si acaso
-  ULT_FILTRADAS.sort((a, b) => {
+  // Los nuevos van al final → append limpio. Se ordenan solo ellos: la
+  // lista ya pintada NO se reordena, porque las tarjetas guardan su índice
+  // (data-idx) y las acciones (leída, guardar, ➕/🚫) lo usan.
+  nuevos.sort((a, b) => {
     const ta = isNaN(a._tsOrden) ? 0 : a._tsOrden;
     const tb = isNaN(b._tsOrden) ? 0 : b._tsOrden;
     return orden === 'antiguos' ? ta - tb : tb - ta;
   });
+  const desde = ULT_FILTRADAS.length;
+  ULT_FILTRADAS.push(...nuevos);
+
+  // Si aún quedaban tarjetas sin pintar, el scroll infinito las pintará en
+  // orden (incluidas estas); pintar desde 'desde' se saltaría las del medio.
+  if (RENDER_OFFSET < desde) return true;
 
   appendBatchDesdeOffset(desde, ULT_FILTRADAS.length);
   return true;
@@ -8397,12 +8484,16 @@ async function cargarMasDeTurso() {
   const btn = document.getElementById('btn-cargar-mas');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
+  const claveTurso = TURSO_RAW;
+  const offsetPedido = TURSO_OFFSET;
   const res = await buscarEnWorker(TURSO_RAW, {
     offset: TURSO_OFFSET,
     limit: 50
   });
 
   if (btn) btn.disabled = false;
+  // La consulta cambió (o ya se cargó esta página) mientras esperábamos.
+  if (TURSO_RAW !== claveTurso || TURSO_OFFSET !== offsetPedido) return;
 
   if (!res.items || !res.items.length) {
     TURSO_HAY_MAS = false;
