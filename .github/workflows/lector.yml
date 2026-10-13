@@ -7,12 +7,14 @@ on:
     paths:
       - 'lector/**'
       - 'shared/sync/**'
+      - 'medios.py'
       - '.github/workflows/lector.yml'
   push:
     branches: [main]
     paths:
       - 'lector/**'
       - 'shared/sync/**'
+      - 'medios.py'
       - '.github/workflows/lector.yml'
   workflow_dispatch:
 

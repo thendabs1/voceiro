@@ -4,8 +4,11 @@
 //
 // Uso: node build.mjs [salida]   (por defecto, dist/lector.user.js)
 //
-// Versión: 2.0.N, con N = número de commits que han tocado este directorio
-// (y shared/sync, si está en el mismo repo). Así sube sola con cada cambio y
+// Catálogo de medios: el de Voceiro, sacado de medios.py con catalogo.py
+// (necesita python3) y puesto en src/03 en lugar de /*{{CATALOGO}}*/[].
+//
+// Versión: 2.0.N, con N = número de commits que han tocado este directorio,
+// shared/sync o medios.py (si están en el mismo repo). Así sube sola con cada cambio y
 // Violentmonkey ve la actualización. LECTOR_VERSION la fuerza. Necesita la
 // historia completa: en CI, checkout con fetch-depth: 0.
 import { execFileSync } from 'node:child_process';
@@ -27,9 +30,8 @@ function version(){
   try {
     const top = git('rev-parse', '--show-toplevel');
     const rutas = ['.'];
-    const compartido = resolve(raiz, '..', 'shared', 'sync');
-    if (existsSync(compartido) && !relative(top, compartido).startsWith('..')){
-      rutas.push(relative(raiz, compartido));
+    for (const otra of [resolve(raiz, '..', 'shared', 'sync'), resolve(raiz, '..', 'medios.py')]){
+      if (existsSync(otra) && !relative(top, otra).startsWith('..')) rutas.push(relative(raiz, otra));
     }
     return '2.0.' + git('rev-list', '--count', 'HEAD', '--', ...rutas);
   } catch(e){
@@ -50,6 +52,10 @@ function compartido(rel){
   return `/* ── ${rel.replace(/^\.\.\//, '')} (compartido con Voceiro) ── */\n${codigo}\n`;
 }
 
+const catalogo = execFileSync('python3', ['-I', join(raiz, 'catalogo.py')],
+  { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+if (!Array.isArray(JSON.parse(catalogo))) throw new Error('catálogo de medios vacío');
+
 const v = version();
 const partes = readdirSync(src).filter(f => f.endsWith('.js')).sort();
 if (!partes.includes(TRAS)) throw new Error(`falta src/${TRAS}`);
@@ -58,7 +64,8 @@ for (const f of partes){
   trozos.push(readFileSync(join(src, f), 'utf8'));
   if (f === TRAS) trozos.push(...COMPARTIDOS.map(compartido));
 }
-const codigo = trozos.join('').replaceAll('{{VERSION}}', v);
+const codigo = trozos.join('').replaceAll('{{VERSION}}', v)
+  .replace('/*{{CATALOGO}}*/[]', () => catalogo);
 
 mkdirSync(dirname(salida), { recursive: true });
 writeFileSync(salida, codigo);
