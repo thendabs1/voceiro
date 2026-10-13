@@ -2180,6 +2180,7 @@ import {
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
 import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js';
 import { palabrasDe, rangosResaltado } from './busqueda/texto.js';
+import { compilarTemas, temasQueCasan, compiladoDeTemas } from './busqueda/temas.js';
 import { comparador } from './busqueda/orden.js';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -4049,6 +4050,7 @@ function cargarPresets(){
 }
 
 function guardarPresets(){
+  recompilarTemas();
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
   try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
   // Replicar al plugin para sync entre dispositivos
@@ -6534,6 +6536,7 @@ function borrarModo(id){
   if (PRESETS.activo === id){
     PRESETS.activo = PRESETS.lista[0].id;
     PRESET = PRESETS.lista[0];
+    recompilarPreset();
   }
   guardarPresets();
   actualizarBotonPreset();
@@ -6618,25 +6621,53 @@ function aplicarTier3(items){
 /* ═══════════════════════════════════════════════════════════════
    CUMPLE PRESET
    ═══════════════════════════════════════════════════════════════ */
-let RX_PRESET = null;
 let SET_GRUPOS = new Set();
+// Temas: las palabras de cada modo, una búsqueda pequeña por línea
+// (shared/busqueda/temas.js). Se compilan los de TODOS los modos: el modo
+// activo los usa para ampliar su feed y la vista 🔖 Temas los junta.
+// TEMAS_VER invalida la caché de cada noticia (n._temas) al recompilar.
+let TEMAS_TODOS = [];   // [{ id, nombre, temas, ignorar: Set(dominios) }]
+let TEMAS_VER = 0;
 
 function recompilarPreset(){
   SET_GRUPOS = new Set(PRESET.grupos);
-  const words = PRESET.palabras.map(p => normalize(p).trim()).filter(Boolean)
-    .map(p => p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
-  RX_PRESET = words.length ? new RegExp('\\b(' + words.join('|') + ')\\b') : null;
+  recompilarTemas();
+}
+// Depende de toda la lista de modos: la llaman recompilarPreset y
+// guardarPresets (renombrar, duplicar, borrar, silenciar un medio…).
+function recompilarTemas(){
+  const lista = (PRESETS && PRESETS.lista) || [];
+  TEMAS_TODOS = lista.map(p => {
+    const ov = p.overrides || {};
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      temas: compilarTemas(p.palabras),
+      ignorar: new Set(Object.keys(ov).filter(d => ov[d] === 'ignore')),
+    };
+  }).filter(m => m.temas.length);
+  TEMAS_VER++;
+}
+// Temas que casan con la noticia, de todos los modos: [{ id, etiqueta }].
+// Un modo no aporta temas en los medios que tiene silenciados.
+function _temasDe(n){
+  if (n._temasVer === TEMAS_VER) return n._temas;
+  const palabras = n._palabras || (n._palabras = palabrasDe(n.titular));
+  const out = [];
+  for (const m of TEMAS_TODOS){
+    if (m.ignorar.has(n.dominio)) continue;
+    for (const etiqueta of temasQueCasan(palabras, m.temas)) out.push({ id: m.id, etiqueta });
+  }
+  n._temas = out;
+  n._temasVer = TEMAS_VER;
+  return out;
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
   if (ov === 'ignore') return false;
   if (ov === 'first')  return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
-  if (RX_PRESET){
-    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-    if (RX_PRESET.test(tn)) return true;
-  }
-  return false;
+  return _temasDe(n).some(x => x.id === PRESET.id);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -8160,6 +8191,22 @@ async function compartirNoticia(n){
   }
 }
 
+// Temas que se marcan en la tarjeta: los del modo activo que casaron.
+function _temasMarcados(n){
+  if (!PRESET_ACTIVO || !TEMAS_TODOS.length) return [];
+  return _temasDe(n).filter(x => x.id === PRESET.id);
+}
+// Lo que se resalta en el titular: el texto de la búsqueda y los temas
+// marcados (sus términos incluidos). null si no hay nada que resaltar.
+function _compiladoMarcas(marcados){
+  const incluir = ULT_TEXTO ? [...ULT_TEXTO.incluir] : [];
+  for (const m of TEMAS_TODOS){
+    const etiquetas = marcados.filter(x => x.id === m.id).map(x => x.etiqueta);
+    if (etiquetas.length) incluir.push(...compiladoDeTemas(m.temas, etiquetas).incluir);
+  }
+  return incluir.length ? { incluir, excluir: [] } : null;
+}
+
 function renderItemHtml(n, idx){
   let fechaHtml = '';
   if (n._tipoShow === 'pub'){
@@ -8174,8 +8221,9 @@ function renderItemHtml(n, idx){
     fechaHtml = `<span class="badge recolectado">${escapeHtml(t('recolectado'))}</span>`;
   }
 
+  const marcas = _compiladoMarcas(_temasMarcados(n));
   let tituloHtml;
-  if (ULT_TEXTO) tituloHtml = resaltarTitular(n.titular, ULT_TEXTO);
+  if (marcas) tituloHtml = resaltarTitular(n.titular, marcas);
   else        tituloHtml = n._titularEsc;
   if (ACCES.bionic) tituloHtml = bionicize(tituloHtml);
 
@@ -9531,7 +9579,7 @@ async function init(){
     get PRESET()       { return PRESET; },
     get PRESET_ACTIVO(){ return PRESET_ACTIVO; },
     get SET_GRUPOS()   { return SET_GRUPOS; },
-    get RX_PRESET()    { return RX_PRESET; },
+    get TEMAS_TODOS()  { return TEMAS_TODOS; },
     get _manifest()    { return _manifest; },
   };
 
