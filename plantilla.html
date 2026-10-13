@@ -790,40 +790,30 @@
   background: var(--quote-bg);
   color: var(--fg);
 }
-/* ═══ Banner de preset activo en búsqueda ═══ */
-.preset-aviso{
+/* ═══ Pestañas de búsqueda con modo activo: «Modo · N» / «Todo · M» ═══ */
+.preset-pestanas{
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 6px;
   margin: 8px 0 4px;
-  background: var(--preset-bg);
-  border: 1px solid var(--preset);
-  border-radius: 6px;
   font-size: .75em;
+}
+.preset-pestanas[hidden]{ display: none; }
+.preset-pestanas button{
+  background: transparent;
   color: var(--preset);
-  line-height: 1.4;
-}
-.preset-aviso[hidden]{ display: none; }
-.preset-aviso-txt{
-  flex: 1;
-  min-width: 0;
-}
-.preset-aviso button{
-  flex-shrink: 0;
-  background: var(--preset);
-  color: #fff;
-  border: none;
+  border: 1px solid var(--preset);
   border-radius: 6px;
   padding: 4px 12px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   font-size: .95em;
-  transition: filter .15s;
 }
-.preset-aviso button:hover{ filter: brightness(.92); }
-[data-theme="contrast"] .preset-aviso button{ color: #000; }
+.preset-pestanas button[aria-selected="true"]{
+  background: var(--preset);
+  color: #fff;
+}
+[data-theme="contrast"] .preset-pestanas button[aria-selected="true"]{ color: #000; }
 
   /* ═══ Chips de filtros activos ═══ */
   .chips-busqueda{
@@ -1829,13 +1819,6 @@
 
 
 
-        <label class="cfg-toggle">
-          <input type="checkbox" id="cfg-preset-busqueda">
-          <span class="cfg-toggle-txt">
-            <span class="cfg-toggle-title" id="cfg-preset-busqueda-lbl"></span>
-            <span class="cfg-toggle-hint"  id="cfg-preset-busqueda-hint"></span>
-          </span>
-        </label>
 
         <h3 id="cfg-dias"></h3>
         <p id="cfg-dias-hint" style="font-size:.68em; color:var(--muted); margin:0 0 8px;"></p>
@@ -2155,9 +2138,9 @@
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 
-<div id="preset-aviso" class="preset-aviso" hidden>
-  <span class="preset-aviso-txt" id="preset-aviso-txt"></span>
-  <button id="preset-aviso-ampliar" type="button"></button>
+<div id="preset-pestanas" class="preset-pestanas" role="tablist" hidden>
+  <button type="button" role="tab" data-pestana="modo"></button>
+  <button type="button" role="tab" data-pestana="todo"></button>
 </div>
 
 <main id="resultados"></main>
@@ -2395,19 +2378,14 @@ const I18N = {
     contadorFueraModo:      ' · {n} fuera del modo',
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
-    presetBannerExtra:       'en histórico',
-    presetBannerZero:        'Ningún titular del modo «{X}» coincide con tu búsqueda',
-    presetBannerWithin:      'Mostrando {n} titulares del modo «{X}»',
-    presetBannerOutside:     '{n} fuera del modo',
-    presetVerTodos:          'Ver todos',
 
     /* ── Feed ── */
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga del feed y prensa externa.',
     cfgRecordarFiltros:      'Recordar filtros al recargar',
     cfgRecordarFiltrosHint:  'Restaura la búsqueda y los filtros activos al volver.',
-    cfgPresetBusqueda:       'Buscar sólo dentro del modo',
-    cfgPresetBusquedaHint:   'Si está activo, la búsqueda se limita a los titulares que cumplen el modo. Desactívalo para ampliar.',
+    presetPestanaModo:       'Modo «{X}» · {n}',
+    presetPestanaTodo:       'Todo · {n}',
 
     /* ── Días en memoria ── */
     cfgDias:                 'Días en memoria',
@@ -2692,18 +2670,13 @@ const I18N = {
   gl: {
     tabMedios:               'Medios',
     tabAvanzado:             'Avanzado',
-    presetBannerExtra:       'no histórico',
-    presetBannerZero:        'Ningún titular do modo «{X}» coincide coa túa busca',
-    presetBannerWithin:      'Amosando {n} titulares do modo «{X}»',
-    presetBannerOutside:     '{n} fóra do modo',
-    presetVerTodos:          'Ver todos',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Carga do feed e prensa externa.',
     cfgRecordarFiltros:      'Lembrar filtros ao recargar',
     cfgRecordarFiltrosHint:  'Restaura a busca e os filtros activos ao volver.',
-    cfgPresetBusqueda:       'Buscar só dentro do modo',
-    cfgPresetBusquedaHint:   'Se está activo, a busca limítase aos titulares que cumpren o modo. Desactívao para ampliar.',
+    presetPestanaModo:       'Modo «{X}» · {n}',
+    presetPestanaTodo:       'Todo · {n}',
 
     /* ── Días na memoria ── */
     cfgDias:                 'Días na memoria',
@@ -2964,18 +2937,13 @@ const I18N = {
   ca: {
     tabMedios:               'Mitjans',
     tabAvanzado:             'Avançat',
-    presetBannerExtra:       "a l'històric",
-    presetBannerZero:        'Cap titular del mode «{X}» coincideix amb la teva cerca',
-    presetBannerWithin:      'Mostrant {n} titulars del mode «{X}»',
-    presetBannerOutside:     '{n} fora del mode',
-    presetVerTodos:          'Veure tots',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Càrrega del feed i premsa externa.',
     cfgRecordarFiltros:      'Recordar filtres en recarregar',
     cfgRecordarFiltrosHint:  'Restaura la cerca i els filtres actius en tornar.',
-    cfgPresetBusqueda:       'Cercar només dins del mode',
-    cfgPresetBusquedaHint:   "Si està actiu, la cerca es limita als titulars que compleixen el mode. Desactiva'l per ampliar.",
+    presetPestanaModo:       'Mode «{X}» · {n}',
+    presetPestanaTodo:       'Tot · {n}',
 
     /* ── Dies en memòria ── */
     cfgDias:                 'Dies en memòria',
@@ -3236,18 +3204,13 @@ const I18N = {
   en: {
     tabMedios:               'Outlets',
     tabAvanzado:             'Advanced',
-    presetBannerExtra:       'in history',
-    presetBannerZero:        'No headlines from the "{X}" mode match your search',
-    presetBannerWithin:      'Showing {n} headlines from the "{X}" mode',
-    presetBannerOutside:     '{n} outside the mode',
-    presetVerTodos:          'View all',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feed loading and external press.',
     cfgRecordarFiltros:      'Remember filters on reload',
     cfgRecordarFiltrosHint:  'Restores the active search and filters when you return.',
-    cfgPresetBusqueda:       'Search only within the mode',
-    cfgPresetBusquedaHint:   'When active, search is limited to headlines matching the mode. Disable to widen.',
+    presetPestanaModo:       '"{X}" mode · {n}',
+    presetPestanaTodo:       'All · {n}',
 
     /* ── Days in memory ── */
     cfgDias:                 'Days in memory',
@@ -3508,18 +3471,13 @@ const I18N = {
   eu: {
     tabMedios:               'Hedabideak',
     tabAvanzado:             'Aurreratua',
-    presetBannerExtra:       'historialean',
-    presetBannerZero:        '«{X}» moduko izenbururik ez dator bat zure bilaketarekin',
-    presetBannerWithin:      '«{X}» moduko {n} izenburu erakusten',
-    presetBannerOutside:     '{n} modutik kanpo',
-    presetVerTodos:          'Dena ikusi',
 
     cfgFeed:                 'Feed',
     cfgFeedHint:             'Feedaren karga eta kanpoko prentsa.',
     cfgRecordarFiltros:      'Gogoratu iragazkiak berriz kargatzean',
     cfgRecordarFiltrosHint:  'Bilaketa eta iragazki aktiboak berreskuratzen ditu itzultzean.',
-    cfgPresetBusqueda:       'Moduaren barruan soilik bilatu',
-    cfgPresetBusquedaHint:   'Aktibo badago, bilaketa modua betetzen duten izenburuetara mugatzen da. Desaktibatu zabaltzeko.',
+    presetPestanaModo:       '«{X}» modua · {n}',
+    presetPestanaTodo:       'Dena · {n}',
 
     /* ── Memoriako egunak ── */
     cfgDias:                 'Memoriako egunak',
@@ -3990,9 +3948,11 @@ const HIDE_MODE_KEY = 'voceiro-hide-mode';
 const HIDE_MODES = ['off', 'read', 'viewed', 'both'];
 let HIDE_MODE = 'off';
 const RECORDAR_FILTROS_KEY = 'voceiro-recordar-filtros';
-const PRESET_BUSQUEDA_KEY = 'voceiro-preset-busqueda-estricto';
-let PRESET_BUSQUEDA_ESTRICTO = true;
-let PRESET_AMPLIADO_TEMP = false;
+// Pestaña de resultados al buscar con un modo activo. null = automática
+// (Modo, o Todo si el modo no tiene resultados). Se reinicia al cambiar de
+// búsqueda; si el usuario elige una, se respeta para esa búsqueda.
+let PESTANA_BUSQUEDA = null;
+let PESTANA_CLAVE = '';
 let RECORDAR_FILTROS = true;
 let APP_LISTA = false;
 
@@ -4004,18 +3964,6 @@ function cargarRecordarFiltros(){
   } catch(e){}
   return true;   // por defecto, sí recordamos
 }
-function cargarPresetBusquedaEstricto(){
-  try {
-    const raw = localStorage.getItem(PRESET_BUSQUEDA_KEY);
-    if (raw === '0') return false;
-    if (raw === '1') return true;
-  } catch(e){}
-  return true;
-}
-function guardarPresetBusquedaEstricto(){
-  try { localStorage.setItem(PRESET_BUSQUEDA_KEY, PRESET_BUSQUEDA_ESTRICTO ? '1' : '0'); } catch(e){}
-}
-
 function guardarRecordarFiltros(){
   try { localStorage.setItem(RECORDAR_FILTROS_KEY, RECORDAR_FILTROS ? 'true' : 'false'); } catch(e){}
   // Si el usuario desactiva la opción, limpiamos lo guardado para
@@ -6619,7 +6567,9 @@ function aplicarTier3(items){
       if ((HIDE_MODE === 'read' || HIDE_MODE === 'both') && esLeida) return false;
       if ((HIDE_MODE === 'viewed' || HIDE_MODE === 'both') && VISTAS_LOCAL.has(key)) return false;
     }
-    n._esPreset = false;
+    // Se recorre toda la lista (locales + prensa): antes ponía _esPreset a
+    // false a todo y las marcas del modo desaparecían al llegar la prensa.
+    n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumplePreset(n) : false;
     return true;
   });
 }
@@ -7344,7 +7294,8 @@ function bsAbrir(){
 let ULT_FILTRADAS = [];
 let ULT_TEXTO = null;   // texto compilado de la búsqueda actual (para resaltar)
 let ULT_PRESET_EFECTIVO = false;
-let ULT_BANNER_INFO = null;
+let ULT_MARCAR_PRESET = false;   // buscando con modo activo: marcar lo del modo
+let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañas
 
 const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
@@ -7806,9 +7757,9 @@ function _pasaConsulta(n, consulta){
 // Predicado único de la lista (antes había dos copias: el filtro de
 // aplicarFiltros y _pasaFiltroIndividual). Encima de la consulta solo quedan
 // filtros de vista del cliente: selects, rango móvil, ocultar leídas/vistas
-// y preset. Devuelve true, false o 'fuera-preset' (para el banner).
+// y modo (preset). Devuelve true, false o 'fuera-preset'.
 function _pasaVista(n, ctx){
-  const { g, t2, limiteMs, ahora, consulta, presetEfectivo, HIDE_MODE: hm } = ctx;
+  const { g, t2, limiteMs, ahora, consulta, presetEfectivo, soloPreset, marcarPreset, HIDE_MODE: hm } = ctx;
   if (g && n.grupo !== g) return false;
   if (t2 && n.tipo  !== t2) return false;
   if (limiteMs){
@@ -7825,12 +7776,12 @@ function _pasaVista(n, ctx){
   if (n._capas && n._capas.size === 1 && n._capas.has('turso')
       && !(n._consultas && n._consultas.has(consulta.clave))) return false;
   if (!_pasaConsulta(n, consulta)) return false;
-  if (presetEfectivo){
+  if (presetEfectivo || soloPreset){
     const cumple = cumplePreset(n);
     n._esPreset = cumple;
     return cumple ? true : 'fuera-preset';
   }
-  n._esPreset = false;
+  n._esPreset = marcarPreset ? cumplePreset(n) : false;
   return true;
 }
 
@@ -7958,21 +7909,30 @@ if (!capas.size) {
     !!g || !!t2 || !!dias || !!parsed.desde || !!parsed.hasta;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
-  const presetEfectivo =
-    presetConReglas &&
-    !hayFuenteExplicita &&
-    !PRESET_AMPLIADO_TEMP &&
-    (!hayBusquedaActiva || PRESET_BUSQUEDA_ESTRICTO);
+  // Sin búsqueda, el modo filtra el feed (es tu forma de leerlo). Buscando,
+  // el modo no esconde nada: los resultados se separan en dos pestañas,
+  // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
+  // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
+  const presetEfectivo = presetConReglas && !hayFuenteExplicita && !hayBusquedaActiva;
+  const conPestanas    = presetConReglas && !hayFuenteExplicita &&  hayBusquedaActiva;
 
   _avisarMediosDesconocidos(consulta);
-  const ctx = { g, t2, limiteMs, ahora, parsed, consulta, presetEfectivo, orden, HIDE_MODE };
+  const ctx = {
+    g, t2, limiteMs, ahora, parsed, consulta, orden, HIDE_MODE,
+    presetEfectivo, marcarPreset: conPestanas, soloPreset: false,
+  };
 
-  let fueraDelPreset = 0;
-  let filtradas = NOTICIAS.filter(n => {
-    const r = _pasaVista(n, ctx);
-    if (r === 'fuera-preset'){ fueraDelPreset++; return false; }
-    return r === true;
-  });
+  let filtradas = NOTICIAS.filter(n => _pasaVista(n, ctx) === true);
+
+  let infoPestanas = null;
+  if (conPestanas){
+    // Una búsqueda nueva vuelve a la pestaña automática.
+    if (PESTANA_CLAVE !== consulta.clave){ PESTANA_CLAVE = consulta.clave; PESTANA_BUSQUEDA = null; }
+    const delModo = filtradas.filter(n => n._esPreset);
+    const pestana = PESTANA_BUSQUEDA || (delModo.length ? 'modo' : 'todo');
+    infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length };
+    if (pestana === 'modo'){ filtradas = delModo; ctx.soloPreset = true; }
+  }
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
   filtradas.sort((a, b) => {
@@ -8005,19 +7965,14 @@ if (!capas.size) {
 
   ULT_FILTRADAS = filtradas;
   ULT_TEXTO = consulta.texto.incluir.length ? consulta.texto : null;
-  ULT_PRESET_EFECTIVO = presetEfectivo;
+  ULT_PRESET_EFECTIVO = presetEfectivo || ctx.soloPreset;
+  ULT_MARCAR_PRESET = conPestanas;
 
   // Contexto para el append incremental
   ULT_CTX = ctx;
 
-  ULT_BANNER_INFO = {
-    nDentro: filtradas.length,
-    nFuera: fueraDelPreset,
-    presetConReglas,
-    hayFuenteExplicita,
-    hayBusquedaActiva,
-  };
-  renderPresetBanner();
+  ULT_PESTANAS = infoPestanas;
+  renderPestanasPreset();
 
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
@@ -8034,38 +7989,20 @@ let _cargandoScope = false;
 
 
 
-function renderPresetBanner(){
-  const aviso = document.getElementById('preset-aviso');
-  if (!aviso) return;
-
-  const info = ULT_BANNER_INFO;
-  if (!info){ aviso.hidden = true; return; }
-
-  const mostrar =
-    info.presetConReglas &&
-    PRESET_BUSQUEDA_ESTRICTO &&
-    !PRESET_AMPLIADO_TEMP &&
-    !info.hayFuenteExplicita &&
-    info.hayBusquedaActiva &&
-    (info.nDentro === 0 || info.nFuera > 0);
-
-  if (!mostrar){ aviso.hidden = true; return; }
-
+function renderPestanasPreset(){
+  const el = document.getElementById('preset-pestanas');
+  if (!el) return;
+  const info = ULT_PESTANAS;
+  if (!info){ el.hidden = true; return; }
   const nombre = (PRESET && PRESET.nombre) || 'General';
-  let txt;
-  if (info.nDentro === 0){
-    txt = t('presetBannerZero', { X: nombre });
-  } else {
-    txt = t('presetBannerWithin', { X: nombre, n: info.nDentro });
+  for (const b of el.querySelectorAll('button[data-pestana]')){
+    const esModo = b.dataset.pestana === 'modo';
+    b.textContent = esModo
+      ? t('presetPestanaModo', { X: nombre, n: info.nModo.toLocaleString() })
+      : t('presetPestanaTodo', { n: info.nTodo.toLocaleString() });
+    b.setAttribute('aria-selected', String(b.dataset.pestana === info.pestana));
   }
-  if (info.nFuera > 0){
-    txt += ' · ' + t('presetBannerOutside', { n: info.nFuera });
-  }
-  const txtEl = document.getElementById('preset-aviso-txt');
-  const btnEl = document.getElementById('preset-aviso-ampliar');
-  if (txtEl) txtEl.textContent = txt;
-  if (btnEl) btnEl.textContent = t('presetVerTodos');
-  aviso.hidden = false;
+  el.hidden = false;
 }
 
 function renderizar(){
@@ -8411,7 +8348,7 @@ async function cargarMasDeTurso() {
   if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
     aplicarFiltros();
   } else {
-    renderPresetBanner();
+    renderPestanasPreset();
     actualizarFiltrosCount();
     actualizarBotonCargarMas();
   }
@@ -8759,10 +8696,6 @@ function aplicarTextos(){
   }
   $('#cfg-recordar-filtros-lbl').textContent = t('cfgRecordarFiltros');
   $('#cfg-recordar-filtros-hint').textContent = t('cfgRecordarFiltrosHint');
-  const lblPreset = $('#cfg-preset-busqueda-lbl');
-  if (lblPreset) lblPreset.textContent = t('cfgPresetBusqueda');
-  const hintPreset = $('#cfg-preset-busqueda-hint');
-  if (hintPreset) hintPreset.textContent = t('cfgPresetBusquedaHint');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#cfg-medios-legend').innerHTML =
     '<span class="known-dot" style="margin-right:4px"></span>' + escapeHtml(t('knownInPlugin'));
@@ -9064,23 +8997,13 @@ function wireStaticEvents(){
       );
     });
   }
-  // ── Toggle "Buscar sólo dentro del modo activo" ──
-  const chkPreset = $('#cfg-preset-busqueda');
-  if (chkPreset){
-    chkPreset.checked = PRESET_BUSQUEDA_ESTRICTO;
-    chkPreset.addEventListener('change', () => {
-      PRESET_BUSQUEDA_ESTRICTO = chkPreset.checked;
-      guardarPresetBusquedaEstricto();
-      PRESET_AMPLIADO_TEMP = false;
-      aplicarFiltros();
-    });
-  }
-
-  // ── Banner del preset ──
-  const btnPresetAmpliar = $('#preset-aviso-ampliar');
-  if (btnPresetAmpliar){
-    btnPresetAmpliar.addEventListener('click', () => {
-      PRESET_AMPLIADO_TEMP = true;
+  // ── Pestañas Modo / Todo ──
+  const pestanas = $('#preset-pestanas');
+  if (pestanas){
+    pestanas.addEventListener('click', e => {
+      const b = e.target.closest('button[data-pestana]');
+      if (!b) return;
+      PESTANA_BUSQUEDA = b.dataset.pestana;
       aplicarFiltros();
     });
   }
@@ -9293,7 +9216,6 @@ function wireStaticEvents(){
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
 
   $('#buscar').addEventListener('input', () => {
-    PRESET_AMPLIADO_TEMP = false;
     aplicarFiltrosDebounced();
   });
   // Cada select escribe su token en #buscar.
@@ -9443,7 +9365,6 @@ async function init(){
   AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
   RECORDAR_FILTROS = cargarRecordarFiltros();
-  PRESET_BUSQUEDA_ESTRICTO = cargarPresetBusquedaEstricto();
     // Preferencias de prensa externa
   cargarPrensaDeLocalStorage();
   rebuildPendientes();
