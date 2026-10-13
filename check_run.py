@@ -43,8 +43,7 @@ except ImportError:
 
 try:
     from medios import (
-        todos_los_medios, HEADERS, GN_LOCALE,
-        GN_FALLBACK_DOMAINS, GN_QUERY_OVERRIDES,
+        todos_los_medios, HEADERS, GN_LOCALE, fuentes_de,
     )
 except ImportError:
     print("No se pudo importar medios.py. Ejecuta desde la raíz del repo.")
@@ -114,8 +113,18 @@ def gn_url(domain, lang='es', extra_q=None):
     )
 
 
+def _gn_query_extra(domain):
+    """Query extra de la fuente ('gn', query) del medio, si la tiene."""
+    for m in todos_los_medios():
+        if m['d'] == domain:
+            for f in fuentes_de(m):
+                if f[0] == 'gn' and len(f) > 1:
+                    return f[1]
+    return None
+
+
 def fetch_gn(domain, lang='es'):
-    extra = GN_QUERY_OVERRIDES.get(domain)
+    extra = _gn_query_extra(domain)
     url = gn_url(domain, lang, extra)
     r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
     r.raise_for_status()

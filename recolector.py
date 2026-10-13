@@ -3,9 +3,10 @@
 Recolector de titulares de Voceiro.
 
 Fases:
-  1. Pedir el RSS oficial de cada medio (KNOWN_FEEDS) → hasta N_FEED titulares
-  2. Si no hay feed, scraping del listado (LISTING_URLS o home)
-  3. Fallback a Google News si RSS y scraping fallan (GN_FALLBACK_DOMAINS)
+  1-3. Probar en orden las 'fuentes' de cada medio (medios.py): RSS,
+     sitemap de Google News, API de WordPress, scraping o búsqueda en
+     Google News → hasta N_FEED titulares. Cada intento queda registrado
+     en Turso (columna `intentos`).
   4. Estimar fecha de los scrapeados nuevos usando el intervalo entre runs
      (por medio, no global — ver `ultimo_exito_por_medio`)
   5. Deduplicar contra el histórico y fusionar
@@ -54,26 +55,18 @@ from urllib3.util.ssl_ import create_urllib3_context
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 from curl_cffi import requests as curl_requests
-from medios import MEDIA_CATALOG, HEADERS, KNOWN_FEEDS, todos_los_medios
-try:
-    from medios import (
-        LISTING_URLS,
-        google_news_url,
-        GN_FALLBACK_DOMAINS,
-        GN_QUERY_OVERRIDES,
-    )
-except ImportError:
-    LISTING_URLS = {}
-    GN_FALLBACK_DOMAINS = set()
-    GN_QUERY_OVERRIDES = {}
-    def google_news_url(d, lang='es', extra_q=None):
-        return None
+from medios import (
+    MEDIA_CATALOG, HEADERS, todos_los_medios, fuentes_de, google_news_url,
+)
 
 
 # ─────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────
 N_FEED              = 60
+# Una fuente que trae menos titulares que esto no se da por buena: se
+# prueba la siguiente y, si ninguna llega, se usa la que más trajo.
+MIN_ITEMS_FUENTE    = 5
 DIAS_RETENCION      = 15    # working set: días que el runner deduplica y reescribe
 DIAS_ARCHIVO        = 365   # entradas que el manifest lista y R2 conserva
 VENTANA_GRACIA_DIAS = 3     # días recientes que se reescriben (hoy + 2)
@@ -127,24 +120,6 @@ def _marcar_escrito(path):
 MANIFEST_PATH     = 'public/datos/manifest.json'
 STATE_PATH        = 'state.json'
 DENO_RELAY_BASE = 'https://secret-worm-9453.thendabs1.deno.net/rss?u='
-RELAY_DOMAINS = {
-    'diariodepontevedra.es',
-    'elprogreso.es',
-    'capitalmadrid.com',
-    'diariocritico.com',
-    'efe.com',
-    'elchapuzasinformatico.com',
-    'hipertextual.com',
-    'ctxt.es',
-    'granadadigital.es',
-    'sevillaactualidad.com',
-    'murciaeconomia.com',
-    'idealista.com',
-    'elnacional.com',
-    'washingtonpost.com',
-    'politico.eu',
-    'politico.com',
-}
 # ── Filtros anti-basura para scraping ──
 BAD_WORDS = {
     'suscríbete', 'suscribete', 'newsletter', 'contacto',
@@ -218,13 +193,6 @@ def _drop_resumen():
 
 # Slug de noticia: minúsculas, números y guiones
 SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9\-]{15,}$')
-
-# Medios que exponen API REST de WordPress (wp-json/wp/v2/posts)
-WP_API_DOMAINS = {
-    'muyinteresante.okdiario.com',
-    'cambio16.com',
-    # Añadir más aquí según se confirmen
-}
 
 
 
@@ -424,6 +392,26 @@ def _limpiar_cdata(s):
     s = re.sub(r'\s+', ' ', s).strip()
     return s
 
+# Prefijo de 3 letras del mes (es, pt, ca, it, fr sin ambigüedad, en) → inglés
+_MESES = {
+    'jan': 'Jan', 'ene': 'Jan', 'gen': 'Jan',
+    'feb': 'Feb', 'fev': 'Feb', 'fév': 'Feb',
+    'mar': 'Mar',
+    'apr': 'Apr', 'abr': 'Apr', 'avr': 'Apr',
+    'may': 'May', 'mai': 'May', 'mag': 'May',
+    'jun': 'Jun', 'giu': 'Jun',
+    'jul': 'Jul', 'lug': 'Jul',
+    'aug': 'Aug', 'ago': 'Aug', 'aoû': 'Aug',
+    'sep': 'Sep', 'set': 'Sep',
+    'oct': 'Oct', 'out': 'Oct', 'ott': 'Oct',
+    'nov': 'Nov',
+    'dec': 'Dec', 'dic': 'Dec', 'dez': 'Dec', 'des': 'Dec', 'déc': 'Dec',
+}
+_FECHA_LOCALIZADA_RE = re.compile(
+    r'(\d{1,2})\s+(?:de\s+)?([^\W\d_]{3,})\.?\s+(?:de\s+)?(\d{4})[,\s]+'
+    r'(\d{1,2}:\d{2}(?::\d{2})?)\s*([+-]\d{4}|gmt|utc|z)?')
+
+
 def _rss_date_to_iso(raw):
     if not raw:
         return ''
@@ -443,6 +431,21 @@ def _rss_date_to_iso(raw):
             return _to_iso_madrid(dt)
     except (TypeError, ValueError):
         pass
+
+    # RFC 822 con día y mes en otro idioma: 'terça, 13 out. 2026 12:27:51 +0100'
+    m = _FECHA_LOCALIZADA_RE.search(raw.lower())
+    if m:
+        d, mes, y, hms, tz = m.groups()
+        mes_en = _MESES.get(mes[:3])
+        if mes_en:
+            try:
+                dt = parsedate_to_datetime(
+                    f"{d} {mes_en} {y} {hms}" + (f" {tz.upper()}" if tz else ''))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=TZ_MADRID)
+                return _to_iso_madrid(dt)
+            except (TypeError, ValueError):
+                pass
 
     m = re.match(r'^(\d{1,2})[/-](\d{1,2})[/-](\d{4})'
                  r'(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?', raw)
@@ -586,6 +589,109 @@ def _parse_feed(content):
     return out
 
 
+# Tiempo relativo: 'hace 3 horas', 'há 2 dias', 'fa 5 minuts', 'hai 1 hora'
+# (prefijo) o '3 hours ago', '2 ore fa' (sufijo).
+_UNIDAD_REL = (r'(min(?:uto|uti|ute|ut)?s?|h(?:ora|our)?s?|hores|ore|'
+               r'd[ií]as?|days?|giorn[oi]|dies|d|'
+               r'semanas?|weeks?|settiman[ae]|setmanes|setmana|'
+               r'mes(?:es)?|months?|mes[ei])')
+_REL_PREFIJO_RE = re.compile(
+    r'\b(?:hace|há|fa|hai)\s+(\d+)\s*' + _UNIDAD_REL + r'\b')
+_REL_SUFIJO_RE = re.compile(
+    r'\b(\d+)\s*' + _UNIDAD_REL + r'\s+(?:ago|fa)\b')
+
+
+def _delta_relativo(txt):
+    """timedelta de un texto relativo ('hace 3 horas', '2 hours ago'…)."""
+    m = _REL_PREFIJO_RE.search(txt) or _REL_SUFIJO_RE.search(txt)
+    if not m:
+        return None
+    n_val = int(m.group(1))
+    unit = m.group(2)
+    if unit.startswith('min'):
+        return timedelta(minutes=n_val)
+    if unit.startswith('h') or unit == 'ore':
+        return timedelta(hours=n_val)
+    if unit.startswith(('sem', 'week', 'sett', 'setm')):
+        return timedelta(weeks=n_val)
+    if unit.startswith(('mes', 'month')):
+        return timedelta(days=n_val * 30)
+    return timedelta(days=n_val)
+
+
+# Fecha en la ruta de la URL: /2026/10/13/, /2026-10-13/, /20261013/
+_FECHA_URL_RES = (
+    re.compile(r'/(20\d{2})[/-](0?[1-9]|1[0-2])[/-](0?[1-9]|[12]\d|3[01])(?=[/\-_.]|$)'),
+    re.compile(r'[/_-](20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?=[/\-_.]|$)'),
+)
+
+
+def _dia_de_url(href):
+    """Día de publicación que viene en la URL ('YYYY-MM-DD') o ''."""
+    try:
+        path = urlparse(href).path
+    except Exception:
+        return ''
+    hoy = datetime.now(TZ_MADRID).date()
+    for rx in _FECHA_URL_RES:
+        m = rx.search(path)
+        if not m:
+            continue
+        try:
+            dia = datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).date()
+        except ValueError:
+            continue
+        if hoy - timedelta(days=366) <= dia <= hoy:
+            return dia.isoformat()
+    return ''
+
+
+def _fechas_jsonld(soup):
+    """{url normalizada: fecha ISO} sacado de los bloques JSON-LD de la página
+    (NewsArticle, ItemList…): muchas portadas lo traen aunque no pinten fecha."""
+    out = {}
+
+    def visitar(o):
+        if isinstance(o, list):
+            for x in o:
+                visitar(x)
+            return
+        if not isinstance(o, dict):
+            return
+        fecha = o.get('datePublished') or o.get('dateCreated')
+        url = o.get('url') or o.get('@id')
+        if isinstance(o.get('mainEntityOfPage'), dict):
+            url = url or o['mainEntityOfPage'].get('@id')
+        elif isinstance(o.get('mainEntityOfPage'), str):
+            url = url or o['mainEntityOfPage']
+        if isinstance(fecha, str) and isinstance(url, str):
+            iso = _rss_date_to_iso(fecha)
+            if iso:
+                out.setdefault(_clave_url(url), iso)
+        for v in o.values():
+            if isinstance(v, (list, dict)):
+                visitar(v)
+
+    for sc in soup.find_all('script', type='application/ld+json'):
+        try:
+            visitar(json.loads(sc.string or ''))
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
+def _clave_url(url):
+    """URL sin esquema, www, query ni barra final: para cruzar enlaces."""
+    try:
+        p = urlparse(url)
+    except Exception:
+        return url
+    host = (p.netloc or '').lower()
+    if host.startswith('www.'):
+        host = host[4:]
+    return host + p.path.rstrip('/')
+
+
 def _extract_item_date(tag):
     """Intenta extraer la fecha real de un titular concreto del listado."""
     # <time> cercano
@@ -639,25 +745,8 @@ def _extract_item_date(tag):
             txt = node.get_text(' ', strip=True).lower()
         except AttributeError:
             txt = ''
-        m = re.search(
-            r'hace\s+(\d+)\s*'
-            r'(minuto|minutos|min|hora|horas|h|d[ií]a|d[ií]as|d|'
-            r'semana|semanas|mes|meses)',
-            txt
-        )
-        if m:
-            n_val = int(m.group(1))
-            unit = m.group(2)
-            if unit.startswith('min'):
-                delta = timedelta(minutes=n_val)
-            elif unit.startswith('h'):
-                delta = timedelta(hours=n_val)
-            elif unit.startswith('sem'):
-                delta = timedelta(weeks=n_val)
-            elif unit.startswith('mes'):
-                delta = timedelta(days=n_val * 30)
-            else:
-                delta = timedelta(days=n_val)
+        delta = _delta_relativo(txt)
+        if delta is not None:
             dt = datetime.now(TZ_MADRID) - delta
             return dt.isoformat(timespec='seconds')
         node = getattr(node, 'parent', None)
@@ -685,34 +774,115 @@ def _extract_item_date(tag):
     return ''
 
 
-def _rss(medio):
-    url = KNOWN_FEEDS.get(medio['d'])
-    if not url:
-        return None
-
-    usar_relay = medio['d'] in RELAY_DOMAINS
-    fetch_url = DENO_RELAY_BASE + url if usar_relay else url
-
+# Cada fuente devuelve (items, estado). `estado` es lo que queda en la
+# columna `intentos` de Turso cuando la fuente no trae nada: 'HTTP 403',
+# 'vacío', el nombre de la excepción…
+def _get_xml(medio, url, relay, tag):
+    """GET de un feed o sitemap, directo o por el relay de Deno.
+    Devuelve (respuesta, None) o (None, estado)."""
+    fetch_url = DENO_RELAY_BASE + url if relay else url
+    if relay:
+        tag = 'RELAY'
     try:
         r = SESSION.get(fetch_url, timeout=TIMEOUT)
-        if r.status_code != 200:
-            tag = 'RELAY' if usar_relay else 'RSS'
-            print(f"  [{tag} {r.status_code}] {medio['n']}: {fetch_url}")
-            return None
+    except Exception as e:
+        print(f"  [{tag}!] {medio['n']}: {type(e).__name__}: {e}")
+        return None, type(e).__name__
+    if r.status_code != 200:
+        print(f"  [{tag} {r.status_code}] {medio['n']}: {fetch_url}")
+        return None, f'HTTP {r.status_code}'
+    return r, None
+
+
+def _log_vacio(medio, tag, r):
+    snippet = (r.content[:200] or b'').decode('utf-8', 'ignore')
+    print(f"  [{tag} empty] {medio['n']}: {r.url}  "
+          f"ctype={r.headers.get('content-type')!r}  "
+          f"bytes={len(r.content)}  head={snippet[:80]!r}")
+
+
+def _rss(medio, url, relay=False):
+    r, estado = _get_xml(medio, url, relay, 'RSS')
+    if r is None:
+        return None, estado
+    try:
         items = _parse_feed(r.content)
-        if items:
-            if usar_relay:
-                print(f"  [RELAY ok] {medio['n']}: {len(items)} items")
-            return items
-        snippet = (r.content[:200] or b'').decode('utf-8', 'ignore')
-        tag = 'RELAY' if usar_relay else 'RSS'
-        print(f"  [{tag} empty] {medio['n']}: {fetch_url}  "
-              f"ctype={r.headers.get('content-type')!r}  "
-              f"bytes={len(r.content)}  head={snippet[:80]!r}")
-        return None
     except Exception as e:
         print(f"  [RSS!] {medio['n']}: {type(e).__name__}: {e}")
-    return None
+        return None, type(e).__name__
+    if items:
+        if relay:
+            print(f"  [RELAY ok] {medio['n']}: {len(items)} items")
+        return items, 'ok'
+    _log_vacio(medio, 'RELAY' if relay else 'RSS', r)
+    return None, 'vacío'
+
+
+def _parse_news_sitemap(content):
+    """Sitemap de Google News → items. Si es un índice, devuelve
+    ('index', [urls hijas]) para que el llamante siga el de noticias."""
+    try:
+        from lxml import etree
+        parser = etree.XMLParser(recover=True, huge_tree=True,
+                                 resolve_entities=False, no_network=True)
+        root = etree.fromstring(content, parser=parser)
+    except Exception:
+        return []
+    if root is None:
+        return []
+
+    def local(tag):
+        return tag.split('}', 1)[1] if isinstance(tag, str) and '}' in tag else tag
+
+    tag = local(root.tag)
+    if tag == 'sitemapindex':
+        locs = [el.text.strip() for el in root.iter()
+                if local(el.tag) == 'loc' and el.text]
+        return ('index', locs)
+    if tag != 'urlset':
+        return []
+
+    out = []
+    for u in root:
+        if local(u.tag) != 'url':
+            continue
+        loc = tit = fecha = ''
+        for el in u.iter():
+            ln = local(el.tag)
+            if ln == 'loc' and not loc:
+                loc = (el.text or '').strip()
+            elif ln == 'title' and not tit:
+                tit = _limpiar_cdata(el.text or '')
+            elif ln == 'publication_date' and not fecha:
+                fecha = _rss_date_to_iso(el.text or '')
+        if loc and tit:
+            out.append({'titular': tit, 'enlace': loc, 'fecha_pub': fecha})
+    # Los sitemaps no garantizan orden: más recientes primero
+    out.sort(key=lambda x: x['fecha_pub'] or '', reverse=True)
+    return out[:N_FEED]
+
+
+def _news_sitemap(medio, url, relay=False):
+    r, estado = _get_xml(medio, url, relay, 'SITEMAP')
+    if r is None:
+        return None, estado
+    items = _parse_news_sitemap(r.content)
+    if isinstance(items, tuple):
+        hijos = items[1]
+        hijo = next((h for h in hijos if 'news' in h.lower()),
+                    hijos[0] if hijos else None)
+        if not hijo:
+            return None, 'índice vacío'
+        r, estado = _get_xml(medio, hijo, relay, 'SITEMAP')
+        if r is None:
+            return None, estado
+        items = _parse_news_sitemap(r.content)
+        if isinstance(items, tuple):
+            return None, 'índice anidado'
+    if items:
+        return items, 'ok'
+    _log_vacio(medio, 'SITEMAP', r)
+    return None, 'vacío'
 
 def _dominio_de(url):
     """Devuelve el dominio sin www."""
@@ -779,13 +949,13 @@ def _es_valido(texto, href, dominio):
     return True
 
 
-def _scrape(medio):
-    url = LISTING_URLS.get(medio['d']) or f"https://{medio['d']}"
+def _scrape(medio, url=None):
+    url = url or f"https://{medio['d']}"
     try:
         r = SESSION.get(url, timeout=TIMEOUT, allow_redirects=True)
         if r.status_code != 200:
             print(f"  [SCRAPE {r.status_code}] {medio['n']}")
-            return None
+            return None, f'HTTP {r.status_code}'
         soup = BeautifulSoup(r.text, 'lxml')
         dominio = medio['d']
 
@@ -804,11 +974,19 @@ def _scrape(medio):
                 unicos[u] = it
 
         out = list(unicos.values())
+        fechas_ld = _fechas_jsonld(soup)
+        for it in out:
+            if not it.get('fecha_pub'):
+                it['fecha_pub'] = fechas_ld.get(_clave_url(it['enlace']), '')
+            # Solo el día: no es fecha real, pero acota la estimada
+            it['dia_url'] = _dia_de_url(it['enlace'])
         out.sort(key=lambda x: (0 if x.get('fecha_pub') else 1, x.get('pos', 999)))
-        return out[:N_FEED] or None
+        if out:
+            return out[:N_FEED], 'ok'
+        return None, 'vacío'
     except Exception as e:
         print(f"  [SCRAPE!] {medio['n']}: {type(e).__name__}: {e}")
-    return None
+        return None, type(e).__name__
 
 
 def _scrape_headings(soup, base_url, dominio):
@@ -925,19 +1103,17 @@ def _dominio_de_url(url):
         return ''
 
 def _wp_api(medio):
-    """Consulta la API REST de WordPress si el dominio está marcado."""
-    if medio['d'] not in WP_API_DOMAINS:
-        return None
+    """Consulta la API REST de WordPress del medio."""
     url = f"https://{medio['d']}/wp-json/wp/v2/posts?per_page={N_FEED}"
     try:
         r = SESSION.get(url, timeout=TIMEOUT)
         if r.status_code != 200:
             print(f"  [WP-API {r.status_code}] {medio['n']}")
-            return None
+            return None, f'HTTP {r.status_code}'
         data = r.json()
         if not isinstance(data, list):
             print(f"  [WP-API bad-json] {medio['n']}")
-            return None
+            return None, 'JSON inesperado'
         out = []
         for post in data:
             title = (post.get('title') or {}).get('rendered', '')
@@ -970,31 +1146,26 @@ def _wp_api(medio):
                 break
         if out:
             print(f"  [WP-API ok] {medio['n']}: {len(out)} items")
-        return out or None
+            return out, 'ok'
+        return None, 'vacío'
     except Exception as e:
         print(f"  [WP-API!] {medio['n']}: {type(e).__name__}: {e}")
-    return None
+        return None, type(e).__name__
 
-def _google_news(medio):
+def _google_news(medio, extra_q=None):
     domain = medio['d']
-    if domain not in GN_FALLBACK_DOMAINS:
-        return None
-
     lang = medio.get('lang', 'es')
-    extra_q = GN_QUERY_OVERRIDES.get(domain)
     url = google_news_url(domain, lang, extra_q)
-    if not url:
-        return None
 
     try:
         r = SESSION.get(url, timeout=TIMEOUT)
         if r.status_code != 200:
             print(f"  [GN {r.status_code}] {medio['n']}")
-            return None
+            return None, f'HTTP {r.status_code}'
         items = _parse_gn_feed(r.content)
         if not items:
             print(f"  [GN empty] {medio['n']}")
-            return None
+            return None, 'vacío'
 
         corte = datetime.now(TZ_MADRID) - timedelta(days=GN_DIAS_MAX)
         filtrados = []
@@ -1018,33 +1189,61 @@ def _google_news(medio):
                 break
 
         if not filtrados:
-            return None
-        return filtrados
+            return None, 'sin recientes del dominio'
+        return filtrados, 'ok'
 
     except Exception as e:
         print(f"  [GN!] {medio['n']}: {type(e).__name__}: {e}")
-        return None
+        return None, type(e).__name__
+
+
+ETIQUETA_FUENTE = {
+    'rss': 'RSS', 'sitemap': 'Sitemap', 'wp': 'WP-API',
+    'scrape': 'Scraping', 'gn': 'Google News',
+}
+
+
+def _probar_fuente(medio, f):
+    """Ejecuta una fuente ('rss', url[, 'relay']), ('scrape'[, url])…"""
+    tipo, args = f[0], f[1:]
+    relay = 'relay' in args[1:]
+    if tipo == 'rss':
+        return _rss(medio, args[0], relay)
+    if tipo == 'sitemap':
+        return _news_sitemap(medio, args[0], relay)
+    if tipo == 'wp':
+        return _wp_api(medio)
+    if tipo == 'scrape':
+        return _scrape(medio, args[0] if args else None)
+    if tipo == 'gn':
+        return _google_news(medio, args[0] if args else None)
+    return None, f'tipo desconocido {tipo!r}'
 
 
 def obtener_titulares(medio):
-    items = _rss(medio)
-    fuente = 'RSS'
+    """Prueba las fuentes del medio en orden. Devuelve
+    (medio, noticias, fuente, intentos), con `intentos` del tipo
+    'RSS:HTTP 403 > Scraping:3 > Google News:ok'."""
+    intentos = []
+    items, fuente = None, None
+    for f in fuentes_de(medio):
+        etiqueta = ETIQUETA_FUENTE.get(f[0], f[0])
+        got, estado = _probar_fuente(medio, f)
+        if got and len(got) >= MIN_ITEMS_FUENTE:
+            intentos.append(f'{etiqueta}:ok')
+            items, fuente = got, etiqueta
+            break
+        if got:
+            # Pocos titulares: nos lo guardamos por si nada lo mejora
+            intentos.append(f'{etiqueta}:{len(got)}')
+            if not items or len(got) > len(items):
+                items, fuente = got, etiqueta
+        else:
+            intentos.append(f'{etiqueta}:{estado}')
+    intentos = ' > '.join(intentos)
 
     if not items:
-        items = _wp_api(medio)
-        if items:
-            fuente = 'WP-API'
-
-    if not items and medio['d'] not in RELAY_DOMAINS:
-        items = _scrape(medio)
-        fuente = 'Scraping'
-
-    if not items:
-        items = _google_news(medio)
-        fuente = 'Google News'
-
-    if not items:
-        return (medio, [], None)
+        return (medio, [], None, intentos)
 
     ahora = datetime.now(TZ_MADRID).isoformat(timespec='seconds')
     noticias = []
@@ -1063,14 +1262,31 @@ def obtener_titulares(medio):
             'fuente':         fuente,
             'fecha':          ahora,
             '_pos':           it.get('pos'),
+            '_dia_url':       it.get('dia_url', ''),
             '_host':          _host_de(it['enlace']),
         })
 
-    return (medio, noticias, fuente)
+    return (medio, noticias, fuente, intentos)
 
 # ─────────────────────────────────────────────────────────────
 # ASIGNACIÓN DE FECHAS ESTIMADAS
 # ─────────────────────────────────────────────────────────────
+def _acotar_por_dia_url(fecha, dia_url):
+    """Si la URL dice que la noticia es de un día anterior al estimado
+    (p. ej. la primera vez que vemos una portada con piezas de ayer), la
+    estimada pasa a las 12:00 de ese día: mejor el día correcto con hora
+    aproximada que hoy con una hora inventada."""
+    if not dia_url:
+        return fecha
+    try:
+        dia = datetime.fromisoformat(dia_url).date()
+    except ValueError:
+        return fecha
+    if dia >= fecha.astimezone(TZ_MADRID).date():
+        return fecha
+    return datetime(dia.year, dia.month, dia.day, 12, 0, tzinfo=TZ_MADRID)
+
+
 def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
                               ultimo_exito_por_medio):
     por_medio = defaultdict(list)
@@ -1112,6 +1328,7 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
         for i, n in enumerate(items):
             offset_seg = intervalo * (i + 1) / (K + 1)
             fecha = t_now - timedelta(seconds=offset_seg)
+            fecha = _acotar_por_dia_url(fecha, n.get('_dia_url'))
             n['fecha_estimada'] = fecha.isoformat(timespec='seconds')
             total_nuevos += 1
 
@@ -1405,6 +1622,7 @@ def fusionar_historico(nuevas, viejas, dias):
         else:
             n['_nueva'] = True
         n.pop('_pos', None)
+        n.pop('_dia_url', None)
 
         f = _fecha_agrupacion_dt(n)
         if f is None or f < corte:
@@ -2310,7 +2528,8 @@ def _turso_ensure_schema():
               n_items        INTEGER NOT NULL DEFAULT 0,
               con_fecha      INTEGER NOT NULL DEFAULT 0,
               ms             INTEGER NOT NULL DEFAULT 0,
-              error          TEXT NOT NULL DEFAULT ''
+              error          TEXT NOT NULL DEFAULT '',
+              intentos       TEXT NOT NULL DEFAULT ''
             ) WITHOUT ROWID"""),
         _t_stmt("""CREATE TABLE IF NOT EXISTS runs (
               dominio    TEXT NOT NULL,
@@ -2321,6 +2540,7 @@ def _turso_ensure_schema():
               con_fecha  INTEGER NOT NULL DEFAULT 0,
               ms         INTEGER NOT NULL DEFAULT 0,
               error      TEXT NOT NULL DEFAULT '',
+              intentos   TEXT NOT NULL DEFAULT '',
               PRIMARY KEY (dominio, ts)
             ) WITHOUT ROWID"""),
         _t_stmt("CREATE INDEX IF NOT EXISTS idx_runs_ts ON runs(ts DESC)"),
@@ -2333,18 +2553,18 @@ def _turso_ensure_schema():
         print("[turso!] ensure_schema falló")
         return
 
-    # ── Migración: añadir columnas *_norm a instalaciones existentes ──
-    _turso_migrar_medios_norm()
+    # ── Migración: columnas nuevas en instalaciones existentes ──
+    _turso_migrar_columnas('medios',
+                           ['grupo_norm', 'tipo_norm', 'lang_norm', 'intentos'])
+    _turso_migrar_columnas('runs', ['intentos'])
 
 
-def _turso_migrar_medios_norm():
-    """Añade grupo_norm/tipo_norm/lang_norm a `medios` si no existen.
+def _turso_migrar_columnas(tabla, cols_deseadas):
+    """Añade a `tabla` las columnas TEXT que falten.
     Idempotente: consulta PRAGMA table_info antes de cada ALTER."""
-    cols_deseadas = ['grupo_norm', 'tipo_norm', 'lang_norm']
-
-    results = turso_pipeline([_t_stmt("PRAGMA table_info(medios)")], timeout=15)
+    results = turso_pipeline([_t_stmt(f"PRAGMA table_info({tabla})")], timeout=15)
     if results is None:
-        print("[turso!] PRAGMA table_info(medios) falló")
+        print(f"[turso!] PRAGMA table_info({tabla}) falló")
         return
     filas = _t_rows(results, 0)
     cols_existentes = {r[1] for r in filas}  # r[1] = column name
@@ -2354,26 +2574,26 @@ def _turso_migrar_medios_norm():
         return
 
     for col in faltan:
-        sql = f"ALTER TABLE medios ADD COLUMN {col} TEXT NOT NULL DEFAULT ''"
+        sql = f"ALTER TABLE {tabla} ADD COLUMN {col} TEXT NOT NULL DEFAULT ''"
         res = turso_pipeline([_t_stmt(sql)], timeout=15)
         if res is None:
-            print(f"[turso!] ALTER TABLE medios ADD COLUMN {col} falló")
+            print(f"[turso!] ALTER TABLE {tabla} ADD COLUMN {col} falló")
         else:
-            print(f"[turso] migración: añadida columna medios.{col}")
+            print(f"[turso] migración: añadida columna {tabla}.{col}")
 
 def _timed_obtener(medio):
     """Envuelve obtener_titulares midiendo duración y capturando excepciones.
-    Devuelve (medio, noticias, fuente, con_fecha, ms, error)."""
+    Devuelve (medio, noticias, fuente, con_fecha, ms, error, intentos)."""
     import time as _time
     t0 = _time.monotonic()
     try:
-        m, noticias, fuente = obtener_titulares(medio)
+        m, noticias, fuente, intentos = obtener_titulares(medio)
         ms = int((_time.monotonic() - t0) * 1000)
         con_fecha = sum(1 for n in noticias if n.get('fecha_pub')) if noticias else 0
-        return (m, noticias or [], fuente or '', con_fecha, ms, '')
+        return (m, noticias or [], fuente or '', con_fecha, ms, '', intentos)
     except Exception as e:
         ms = int((_time.monotonic() - t0) * 1000)
-        return (medio, [], '', 0, ms, f'{type(e).__name__}: {e}')
+        return (medio, [], '', 0, ms, f'{type(e).__name__}: {e}', '')
 
 
 def _turso_setup_medios(medios, runs_data, ts_iso):
@@ -2392,8 +2612,8 @@ def _turso_setup_medios(medios, runs_data, ts_iso):
               (dominio, nombre, grupo, tipo, lang, tags,
                grupo_norm, tipo_norm, lang_norm,
                ultimo_run_ts, ultimo_ok_ts, fuente, n_items,
-               con_fecha, ms, error)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               con_fecha, ms, error, intentos)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ON CONFLICT(dominio) DO UPDATE SET
                 nombre        = excluded.nombre,
                 grupo         = excluded.grupo,
@@ -2411,7 +2631,8 @@ def _turso_setup_medios(medios, runs_data, ts_iso):
                 n_items       = excluded.n_items,
                 con_fecha     = excluded.con_fecha,
                 ms            = excluded.ms,
-                error         = excluded.error
+                error         = excluded.error,
+                intentos      = excluded.intentos
         """, (
             dom,
             m.get('n', ''),
@@ -2429,6 +2650,7 @@ def _turso_setup_medios(medios, runs_data, ts_iso):
             s.get('con_fecha', 0),
             s.get('ms', 0),
             s.get('error', ''),
+            s.get('intentos', ''),
         )))
 
     # Enviar en lotes de 300 por si el catálogo crece mucho
@@ -2450,12 +2672,13 @@ def _turso_setup_runs(runs_data, ts_iso):
     for r in runs_data:
         stmts.append(_t_stmt("""
             INSERT OR REPLACE INTO runs
-              (dominio, ts, ok, fuente, n_items, con_fecha, ms, error)
-            VALUES (?,?,?,?,?,?,?,?)
+              (dominio, ts, ok, fuente, n_items, con_fecha, ms, error, intentos)
+            VALUES (?,?,?,?,?,?,?,?,?)
         """, (
             r['dominio'], ts_iso, 1 if r.get('ok') else 0,
             r.get('fuente', ''), r.get('n_items', 0),
             r.get('con_fecha', 0), r.get('ms', 0), r.get('error', ''),
+            r.get('intentos', ''),
         )))
 
     corte = (datetime.now(TZ_MADRID) - timedelta(days=30)).isoformat(timespec='seconds')
@@ -2601,12 +2824,14 @@ def main():
     contador_scrape = 0
     contador_gn = 0
     contador_wp = 0
+    contador_sitemap = 0
     sin_resultado = []
     medios_sin_fecha = []
 
     runs_data = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
-        for medio, noticias, fuente, con_fecha, ms, error in ex.map(_timed_obtener, medios):
+        for (medio, noticias, fuente, con_fecha, ms, error,
+             intentos) in ex.map(_timed_obtener, medios):
             runs_data.append({
                 'dominio':   medio['d'],
                 'ok':        bool(noticias),
@@ -2615,7 +2840,10 @@ def main():
                 'con_fecha': con_fecha,
                 'ms':        ms,
                 'error':     error,
+                'intentos':  intentos,
             })
+            # La cadena solo aporta si hubo más de un intento
+            cadena = f" · {intentos}" if ' > ' in intentos else ''
 
             if noticias:
                 todas.extend(noticias)
@@ -2627,14 +2855,18 @@ def main():
                     contador_gn += 1
                 elif fuente == 'WP-API':
                     contador_wp += 1
+                elif fuente == 'Sitemap':
+                    contador_sitemap += 1
                 if con_fecha == 0 and fuente != 'RSS':
                     medios_sin_fecha.append(medio['n'])
                 print(f"✓ {medio['n']} ({fuente}): {len(noticias)} titulares"
-                      f" · {con_fecha}/{len(noticias)} con fecha real · {ms}ms")
+                      f" · {con_fecha}/{len(noticias)} con fecha real · {ms}ms"
+                      + cadena)
             else:
                 sin_resultado.append(medio['n'])
                 print(f"✗ {medio['n']}: sin titulares ({ms}ms)"
-                      + (f" · {error}" if error else ""))
+                      + (f" · {error}" if error else "")
+                      + (f" · {intentos}" if intentos else ""))
 
     print(f"\nTitulares brutos: {len(todas)}")
 
@@ -2710,6 +2942,7 @@ def main():
 
     print(f"\n── Fuentes ──")
     print(f"  RSS:          {contador_rss} medios")
+    print(f"  Sitemap:      {contador_sitemap} medios")
     print(f"  Scraping:     {contador_scrape} medios")
     print(f"  WP-API:       {contador_wp} medios")
     print(f"  Google News:  {contador_gn} medios")

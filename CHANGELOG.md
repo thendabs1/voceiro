@@ -3,6 +3,38 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-13 — Fuentes por medio, sitemaps de Google News e intentos en Turso
+
+### Añadido
+- `medios.py`: cada medio lleva `'fuentes'`, lista ordenada de tuplas
+  (`rss`, `sitemap`, `wp`, `scrape`, `gn`, con opción `'relay'`). Sustituye a
+  `KNOWN_FEEDS`, `LISTING_URLS`, `GN_FALLBACK_DOMAINS`, `GN_QUERY_OVERRIDES`,
+  `RELAY_DOMAINS` y `WP_API_DOMAINS`. Sin fallback implícito.
+- Fuente `sitemap`: sitemaps de Google News (`news:title` + `news:publication_date`).
+  Fecha exacta y URL real: Reuters, AP, WSJ, Expresso, Mirror, El Periódico, Sport…
+- ~34 medios que iban por scraping o Google News pasan a RSS (Cadena SER, CBS, NBC,
+  Telegraph, Irish Times, G1, Diari de Girona, Regió7…).
+- Columna `intentos` en `medios` y `runs` de Turso: `RSS:HTTP 403 > Google News:ok`.
+  Muestra feeds caídos aunque el medio acabe entrando por otra fuente.
+- `MIN_ITEMS_FUENTE` (5): una fuente con menos titulares no se da por buena y se
+  prueba la siguiente; si ninguna llega, se usa la que más trajo.
+- `salud_fuentes.py` + workflow `test_feeds.yml` (renombrado «Salud de fuentes»):
+  prueba las fuentes del catálogo desde la IP de GitHub.
+- Scraping: fecha desde JSON-LD de la página, tiempo relativo en es/pt/ca/gl/it/en
+  («há 2 dias», «2 hours ago», «2 ore fa»…) y día de la URL (`/20261013/`) para
+  acotar la fecha estimada.
+
+### Cambiado
+- Dirigentes Digital → The Officer (`theofficer.es`); Jornal i → SOL (`sol.iol.pt`):
+  los dominios viejos redirigen enteros.
+- Quitado Nius (`niusdiario.es` redirige a telecinco.es/noticias).
+
+### Corregido
+- El Espectador metía comentarios de lectores (`/comments/feed/`) como titulares.
+- Prensa Libre leía `/web-stories/feed/` en vez del feed de noticias.
+- Fechas RFC 822 con día y mes en otro idioma (`terça, 13 out. 2026 …`): SOL
+  pasaba 0/50 titulares con fecha.
+
 ## 2026-10-13 — Portada con cupo por medio + ediciones
 
 ### Añadido
