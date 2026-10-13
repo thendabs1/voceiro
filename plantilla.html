@@ -830,17 +830,24 @@
   color: #fff;
 }
 [data-theme="contrast"] .preset-pestanas button[aria-selected="true"]{ color: #000; }
-/* ═══ Chips de la vista Temas: «Todo · N» / «Política · M»… ═══ */
+/* ═══ Chips de modo y de tema: «Todo · N» / «Política · M» / «incendio · K»…
+   Una fila por nivel; cada fila hace scroll horizontal en móvil. ═══ */
 .temas-chips{
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   margin: 6px 0 4px;
   font-size: .72em;
+}
+.temas-chips-fila{
+  display: flex;
+  gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
 }
-.temas-chips::-webkit-scrollbar{ display: none; }
+.temas-chips-fila::-webkit-scrollbar{ display: none; }
 .temas-chips[hidden]{ display: none; }
+.temas-chips button.cero{ opacity: .45; cursor: default; }
 .temas-chips button{
   flex: none;
   white-space: nowrap;
@@ -2462,6 +2469,7 @@ const I18N = {
     presetPestanaTemas:      'Temas · {n}',
     presetVistaTemas:        'Temas',
     temaChipTodo:            'Todo',
+    temaChipMedios:          'Medios del modo',
 
     /* ── Días en memoria ── */
     cfgDias:                 'Días en memoria',
@@ -2762,6 +2770,7 @@ const I18N = {
     presetPestanaTemas:      'Temas · {n}',
     presetVistaTemas:        'Temas',
     temaChipTodo:            'Todo',
+    temaChipMedios:          'Medios do modo',
 
     /* ── Días na memoria ── */
     cfgDias:                 'Días na memoria',
@@ -3038,6 +3047,7 @@ const I18N = {
     presetPestanaTemas:      'Temes · {n}',
     presetVistaTemas:        'Temes',
     temaChipTodo:            'Tot',
+    temaChipMedios:          'Mitjans del mode',
 
     /* ── Dies en memòria ── */
     cfgDias:                 'Dies en memòria',
@@ -3314,6 +3324,7 @@ const I18N = {
     presetPestanaTemas:      'Topics · {n}',
     presetVistaTemas:        'Topics',
     temaChipTodo:            'All',
+    temaChipMedios:          'Mode sources',
 
     /* ── Days in memory ── */
     cfgDias:                 'Days in memory',
@@ -3590,6 +3601,7 @@ const I18N = {
     presetPestanaTemas:      'Gaiak · {n}',
     presetVistaTemas:        'Gaiak',
     temaChipTodo:            'Dena',
+    temaChipMedios:          'Moduaren hedabideak',
 
     /* ── Memoriako egunak ── */
     cfgDias:                 'Memoriako egunak',
@@ -4062,6 +4074,10 @@ let PRESET_ACTIVO = false;
 const VISTA_TEMAS_KEY = 'voceiro-vista-temas';
 let VISTA_TEMAS = false;
 let CHIP_TEMAS = null;   // modo del chip elegido en la vista; null = todos
+// Chip de tema, en la vista Temas o en un modo: { modo, etiqueta } o
+// { modo, medios: true } («Medios del modo»); null = todos. Lleva el modo
+// para caducar solo al cambiar de modo.
+let CHIP_TEMA = null;
 let SITES = new Map();
 let SITES_LIST = [];
 
@@ -4219,6 +4235,7 @@ function cargarVistaTemas(){
 function ponerVistaTemas(on){
   VISTA_TEMAS = !!on;
   CHIP_TEMAS = null;
+  CHIP_TEMA = null;
   try{ localStorage.setItem(VISTA_TEMAS_KEY, VISTA_TEMAS ? 'true' : 'false'); }catch(e){}
 }
 // La vista solo existe si hay temas, y nunca a la vez que un modo.
@@ -6812,14 +6829,27 @@ function _temasDe(n){
   n._temasVer = TEMAS_VER;
   return out;
 }
-// Lo que filtra el feed: los temas en la vista 🔖 Temas (con el chip, si
-// hay), o el modo activo.
+// Lo que filtra el feed: los temas en la vista 🔖 Temas (con el chip de
+// modo, si hay), o el modo activo; y encima, el chip de tema.
 function cumpleFiltro(n, ctx){
   if (ctx && ctx.vistaTemas){
     const ts = _temasDe(n);
-    return ctx.chipTemas ? ts.some(x => x.id === ctx.chipTemas) : ts.length > 0;
-  }
-  return cumplePreset(n);
+    if (!(ctx.chipTemas ? ts.some(x => x.id === ctx.chipTemas) : ts.length > 0)) return false;
+  } else if (!cumplePreset(n)) return false;
+  return !(ctx && ctx.chipTema) || _pasaChipTema(n, ctx.chipTema);
+}
+function _pasaChipTema(n, chip){
+  if (chip.medios) return _entraPorMedios(n);
+  return _temasDe(n).some(x => x.id === chip.modo && x.etiqueta === chip.etiqueta);
+}
+// Lo que entra en el modo activo por sus medios (grupos o «primero»), no
+// por sus temas.
+function _entraPorMedios(n){
+  return getOverride(n.dominio) === 'first' || SET_GRUPOS.has(n.grupo);
+}
+function _modoTieneMedios(){
+  const ov = PRESET.overrides || {};
+  return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => ov[d] === 'first');
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
@@ -7527,7 +7557,7 @@ let ULT_FILTRADAS = [];
 let ULT_TEXTO = null;   // texto compilado de la búsqueda actual (para resaltar)
 let ULT_PRESET_EFECTIVO = false;
 let ULT_MARCAR_PRESET = false;   // buscando con modo activo: marcar lo del modo
-let ULT_CHIPS = null;      // { total, porModo } en la vista Temas, o null
+let ULT_CHIPS = null;      // { total, porModo, modo, totalModo, porTema, nMedios } o null
 let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañas
 
 const RENDER_BATCH = 60;
@@ -7979,7 +8009,8 @@ function programarPrensa(consulta, nLocales){
       if (ULT_PESTANAS){
         const enTodo = merged.filter(n => !previos.has(n) && !_ocultaPorLectura(n, HIDE_MODE));
         ULT_PESTANAS.nTodo += enTodo.length;
-        ULT_PESTANAS.nModo += enTodo.filter(n => cumplePreset(n)).length;
+        // Sin chips: «Temas · N» / «Modo · N» cuentan antes del chip.
+        ULT_PESTANAS.nModo += enTodo.filter(n => cumpleFiltro(n, { vistaTemas: ULT_PESTANAS.temas })).length;
         renderPestanasPreset();
       }
 
@@ -8188,23 +8219,49 @@ if (!capas.size) {
   const ctx = {
     g, t2, limiteMs, ahora, parsed, consulta, orden, HIDE_MODE,
     presetEfectivo, marcarPreset: conPestanas, soloPreset: false,
-    vistaTemas, chipTemas: null,
+    vistaTemas, chipTemas: null, chipTema: null,
   };
 
   let filtradas = NOTICIAS.filter(n => _pasaVista(n, ctx) === true);
 
-  // Chips de la vista Temas: cuántas hay de cada modo y, con un chip
-  // elegido, solo las de ese modo. El chip pasa al ctx para que el añadido
-  // incremental (ULT_CTX) lo respete.
+  // Chips. En la vista Temas, uno por modo; con un modo elegido (o si solo
+  // hay uno), uno por cada tema suyo. En un modo con temas, «Medios del
+  // modo» y uno por tema. Se cuenta sobre la lista sin el chip y luego se
+  // filtra. Los chips pasan al ctx para que el añadido incremental
+  // (ULT_CTX) los respete.
   let infoChips = null;
-  const filtrarPorChip = lista => {
-    const porModo = new Map();
-    for (const n of lista){
-      for (const id of new Set(_temasDe(n).map(x => x.id))) porModo.set(id, (porModo.get(id) || 0) + 1);
+  const filtrarPorChips = lista => {
+    const total = lista.length;
+    let porModo = null;
+    if (vistaTemas){
+      porModo = new Map();
+      for (const n of lista){
+        for (const id of new Set(_temasDe(n).map(x => x.id))) porModo.set(id, (porModo.get(id) || 0) + 1);
+      }
+      ctx.chipTemas = CHIP_TEMAS;
+      if (CHIP_TEMAS) lista = lista.filter(n => _temasDe(n).some(x => x.id === CHIP_TEMAS));
     }
-    infoChips = { total: lista.length, porModo };
-    ctx.chipTemas = CHIP_TEMAS;
-    return CHIP_TEMAS ? lista.filter(n => _temasDe(n).some(x => x.id === CHIP_TEMAS)) : lista;
+    const idModo = vistaTemas
+      ? CHIP_TEMAS || (TEMAS_TODOS.length === 1 ? TEMAS_TODOS[0].id : null)
+      : PRESET.id;
+    const modo = idModo && TEMAS_TODOS.find(m => m.id === idModo);
+    if (CHIP_TEMA && (!modo || CHIP_TEMA.modo !== modo.id)) CHIP_TEMA = null;
+    let porTema = null, nMedios = null;
+    if (modo){
+      // Todos los temas del modo, también los que no casan con nada (a 0):
+      // así se ve si una palabra recién añadida no está trayendo noticias.
+      porTema = new Map(modo.temas.map(x => [x.etiqueta, 0]));
+      for (const n of lista){
+        for (const e of new Set(_temasDe(n).filter(x => x.id === modo.id).map(x => x.etiqueta))){
+          porTema.set(e, porTema.get(e) + 1);
+        }
+      }
+      if (!vistaTemas && _modoTieneMedios()) nMedios = lista.filter(_entraPorMedios).length;
+      if (CHIP_TEMA && (CHIP_TEMA.medios ? nMedios === null : !porTema.has(CHIP_TEMA.etiqueta))) CHIP_TEMA = null;
+    }
+    if (porModo || porTema) infoChips = { total, porModo, modo: modo ? modo.id : null, totalModo: lista.length, porTema, nMedios };
+    ctx.chipTema = CHIP_TEMA;
+    return CHIP_TEMA ? lista.filter(n => _pasaChipTema(n, CHIP_TEMA)) : lista;
   };
 
   let infoPestanas = null;
@@ -8215,11 +8272,11 @@ if (!capas.size) {
     const pestana = PESTANA_BUSQUEDA || (delModo.length ? 'modo' : 'todo');
     infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length, temas: vistaTemas };
     if (pestana === 'modo'){
-      filtradas = vistaTemas ? filtrarPorChip(delModo) : delModo;
+      filtradas = filtrarPorChips(delModo);
       ctx.soloPreset = true;
     }
-  } else if (presetEfectivo && vistaTemas){
-    filtradas = filtrarPorChip(filtradas);
+  } else if (presetEfectivo){
+    filtradas = filtrarPorChips(filtradas);
   }
 
   const FAV_WINDOW_MS = 8 * 3600 * 1000;
@@ -8307,21 +8364,44 @@ function renderTotalR2(){
   el.title = t('contadorR2Title', { dias: dias.length, desde: a ? `${d}/${m}/${a}` : '?' });
 }
 
-// Chips de la vista Temas: «Todo» y un chip por modo con noticias. Con un
-// solo modo con temas no aportan nada y no se muestran.
+// Chips, en una o dos filas. Fila de modos (vista Temas, si hay temas en
+// dos modos o más): «Todo» y un chip por modo con noticias. Fila de temas
+// (un modo elegido, o el único): un chip por tema, también a 0 (atenuado),
+// y en un modo, «Medios del modo». Lleva su propio «Todo» solo si va sola;
+// con dos filas se vuelve a todos con el chip del modo.
 function renderChipsTemas(){
   const el = document.getElementById('temas-chips');
   if (!el) return;
   const info = ULT_CHIPS;
-  if (!info || TEMAS_TODOS.length < 2){ el.hidden = true; el.innerHTML = ''; return; }
-  const chip = (id, label, n) =>
-    `<button type="button" data-chip="${escapeHtml(id)}" aria-pressed="${String((CHIP_TEMAS || '') === id)}">${escapeHtml(label)} · ${n.toLocaleString()}</button>`;
-  let html = chip('', t('temaChipTodo'), info.total);
-  for (const m of TEMAS_TODOS){
-    const n = info.porModo.get(m.id) || 0;
-    if (n || m.id === CHIP_TEMAS) html += chip(m.id, m.nombre, n);
+  if (!info){ el.hidden = true; el.innerHTML = ''; return; }
+  // Solo un chip de tema se atenúa a 0: los «Todo» y los de modo, nunca.
+  const chip = (attrs, label, n, pulsado, title, atenuable = false) =>
+    `<button type="button" ${attrs} aria-pressed="${String(pulsado)}"`
+    + (n || pulsado || !atenuable ? '' : ' class="cero" disabled')
+    + (title ? ` title="${escapeHtml(title)}"` : '')
+    + `>${escapeHtml(label)} · ${n.toLocaleString()}</button>`;
+  const filas = [];
+  if (info.porModo && TEMAS_TODOS.length >= 2){
+    let html = chip('data-chip=""', t('temaChipTodo'), info.total, !CHIP_TEMAS);
+    for (const m of TEMAS_TODOS){
+      const n = info.porModo.get(m.id) || 0;
+      if (n || m.id === CHIP_TEMAS) html += chip(`data-chip="${escapeHtml(m.id)}"`, m.nombre, n, m.id === CHIP_TEMAS);
+    }
+    filas.push(html);
   }
-  el.innerHTML = html;
+  if (info.porTema){
+    const modo = `data-modo="${escapeHtml(info.modo)}"`;
+    let html = '';
+    if (!filas.length) html += chip(`data-tema="" ${modo}`, t('temaChipTodo'), info.totalModo, !CHIP_TEMA);
+    if (info.nMedios !== null){
+      html += chip(`data-medios="1" ${modo}`, t('temaChipMedios'), info.nMedios, !!(CHIP_TEMA && CHIP_TEMA.medios));
+    }
+    for (const [e, n] of info.porTema){
+      html += chip(`data-tema="${escapeHtml(e)}" ${modo}`, etiquetaVisible(e), n, !!(CHIP_TEMA && CHIP_TEMA.etiqueta === e), e, true);
+    }
+    filas.push(html);
+  }
+  el.innerHTML = filas.map(h => `<div class="temas-chips-fila">${h}</div>`).join('');
   el.hidden = false;
 }
 
@@ -8398,15 +8478,19 @@ async function compartirNoticia(n){
 }
 
 // Temas que se marcan en la tarjeta: en la vista Temas, todos los que
-// casaron (o los del modo del chip); en un modo, los de ese modo.
+// casaron (o los del modo del chip); en un modo, los de ese modo. Con un
+// chip de tema, solo ese.
 function _temasMarcados(n){
   if (!TEMAS_TODOS.length) return [];
+  const ctx = ULT_CTX || {};
+  let ts;
   if (vistaTemasActiva()){
-    const chip = ULT_CTX && ULT_CTX.chipTemas;
-    return chip ? _temasDe(n).filter(x => x.id === chip) : _temasDe(n);
-  }
-  if (!PRESET_ACTIVO) return [];
-  return _temasDe(n).filter(x => x.id === PRESET.id);
+    ts = ctx.chipTemas ? _temasDe(n).filter(x => x.id === ctx.chipTemas) : _temasDe(n);
+  } else if (PRESET_ACTIVO){
+    ts = _temasDe(n).filter(x => x.id === PRESET.id);
+  } else return [];
+  const c = ctx.chipTema;
+  return (c && !c.medios) ? ts.filter(x => x.id === c.modo && x.etiqueta === c.etiqueta) : ts;
 }
 // Etiqueta de la vista Temas: «tema · Modo», +N si casan más.
 function _badgeTema(marcados){
@@ -9382,13 +9466,25 @@ function wireStaticEvents(){
     const n = ta && ta.parentElement.querySelector('.n');
     if (n) n.textContent = '· ' + compilarTemas(parseLista(ta.value)).length;
   });
-  // ── Chips de la vista Temas ──
+  // ── Chips de modo y de tema ──
+  // Elegir un modo quita el chip de tema; pulsar el tema elegido lo quita.
   const chipsTemas = $('#temas-chips');
   if (chipsTemas){
     chipsTemas.addEventListener('click', e => {
-      const b = e.target.closest('button[data-chip]');
-      if (!b) return;
-      CHIP_TEMAS = b.dataset.chip || null;
+      const b = e.target.closest('button');
+      if (!b || b.disabled) return;
+      const d = b.dataset;
+      if (d.chip !== undefined){
+        CHIP_TEMAS = d.chip || null;
+        CHIP_TEMA = null;
+      } else {
+        const nuevo = d.medios ? { modo: d.modo, medios: true }
+                    : d.tema   ? { modo: d.modo, etiqueta: d.tema }
+                    : null;
+        const igual = nuevo && CHIP_TEMA && CHIP_TEMA.modo === nuevo.modo
+          && !!CHIP_TEMA.medios === !!nuevo.medios && CHIP_TEMA.etiqueta === nuevo.etiqueta;
+        CHIP_TEMA = igual ? null : nuevo;
+      }
       aplicarFiltros();
     });
   }
