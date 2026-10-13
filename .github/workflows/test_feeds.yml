@@ -1,21 +1,38 @@
-name: Test feeds 403
+name: Salud de fuentes
+
+# Prueba las fuentes del catálogo desde la IP de GitHub Actions con la
+# misma lógica que el recolector. Tabla en el resumen del run.
+# Para probar una rama: gh workflow run test_feeds.yml --ref <rama>
 
 on:
   workflow_dispatch:
+    inputs:
+      tipos:
+        description: 'Tipos de fuente (rss,sitemap,wp,scrape,gn)'
+        required: false
+        default: 'rss,sitemap,wp'
+      dominios:
+        description: 'Limitar a estos dominios (coma; vacío = todos)'
+        required: false
+        default: ''
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
+          cache: pip
 
       - name: Instalar dependencias
-        run: |
-          pip install requests curl-cffi feedparser
+        run: pip install -r requirements.txt
 
-      - name: Ejecutar test
-        run: python test_feeds.py
+      - name: Probar fuentes
+        run: python salud_fuentes.py --tipos "$TIPOS" --dominios "$DOMINIOS"
+        env:
+          TIPOS: ${{ inputs.tipos }}
+          DOMINIOS: ${{ inputs.dominios }}
