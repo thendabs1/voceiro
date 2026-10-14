@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.39
+// @version      2.0.223
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -27,7 +27,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.39';
+const SCRIPT_VERSION = '2.0.223';
 const AUTO_MIN_RATIO = 0.80;
 const AUTO_MIN_RICH  = 3;
 const AUTO_MIN_LEN   = 300;
@@ -1904,9 +1904,11 @@ function aplicarPerfilAlLector(perfil){
 // Configuración propia del lector que viaja a otros dispositivos (por
 // Voceiro y su sincronización): reglas por sitio, catálogo propio,
 // diccionarios, servicios de «Abrir en…», atajos… Todo menos Pendientes, el
-// perfil común (va aparte), los sellos y la posición de los botones.
+// perfil común (va aparte), los sellos, la posición de los botones y qué
+// paneles del lector están abiertos (abrir uno no es un cambio que viaje).
 const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab'];
 const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
+const PREFS_LOCALES = ['panelText', 'panelActions'];
 let __configFirma = null;
 
 function configCompartida(cfg){
@@ -1916,7 +1918,7 @@ function configCompartida(cfg){
   }
   if (out.prefs){
     const p = { ...out.prefs };
-    PREFS_DEL_PERFIL.forEach(k => delete p[k]);
+    [...PREFS_DEL_PERFIL, ...PREFS_LOCALES].forEach(k => delete p[k]);
     out.prefs = p;
   }
   return JSON.parse(JSON.stringify(out));
@@ -1935,7 +1937,7 @@ function aplicarBloqueConfig(bloque){
     if (k === 'prefs'){
       const p = { ...(CFG.prefs || {}) };
       for (const [pk, pv] of Object.entries(d.prefs || {})){
-        if (!PREFS_DEL_PERFIL.includes(pk)) p[pk] = pv;
+        if (!PREFS_DEL_PERFIL.includes(pk) && !PREFS_LOCALES.includes(pk)) p[pk] = pv;
       }
       CFG.prefs = p;
     } else {
@@ -3320,10 +3322,58 @@ function ensureReaderFAB(){
    ============================================================ */
 function buildReaderCSS(){
   return `
-#il-full{--bg:#fff;--fg:#222;--muted:#888;--accent:#d32f2f;--border:#eee;--quote-bg:#f9f9f9;--btn-bg:#f7f7f7;--btn-border:#ccc;--shadow:rgba(0,0,0,.08);--ambi-op:.25;position:fixed;inset:0;background:var(--bg);color:var(--fg);z-index:2147483646;overflow:auto;-webkit-text-size-adjust:100%}
-#il-full[data-theme="sepia"]{--bg:#f4ecd8;--fg:#3b2f1e;--muted:#8a7a5c;--accent:#a0522d;--border:#e0d5b8;--quote-bg:#ede0c4;--btn-bg:#ede0c4;--btn-border:#c8b88a;--shadow:rgba(59,47,30,.15)}
-#il-full[data-theme="dark"]{--bg:#1a1a1a;--fg:#e0e0e0;--muted:#999;--accent:#ff6b6b;--border:#333;--quote-bg:#252525;--btn-bg:#2a2a2a;--btn-border:#444;--shadow:rgba(0,0,0,.5);--ambi-op:.4}
-#il-full[data-theme="contrast"]{--bg:#000;--fg:#fff;--muted:#ff0;--accent:#0ff;--border:#fff;--quote-bg:#111;--btn-bg:#111;--btn-border:#fff;--shadow:rgba(255,255,255,.2);--ambi-op:.5}
+#il-full{
+    color-scheme:light;
+    --bg:#fff; --fg:#222; --muted:#6b6b6b; --accent:#d32f2f;
+    --border:#eee; --quote-bg:#f9f9f9;
+    --btn-bg:#f7f7f7; --btn-border:#8a8a8a;
+    --shadow:rgba(0,0,0,.08);
+    --preset:#0a7d3f; --preset-bg:#e8f5e9;
+    --block:#b00020; --block-bg:#fde8ec;
+    --save:#1565c0; --save-bg:#e3f2fd;
+    --mark:#ffe680; --mark-fg:#111;
+    --on-solid:#fff; --focus:#1565c0;
+  }
+#il-full[data-theme="sepia"]{
+    color-scheme:light;
+    --bg:#f4ecd8; --fg:#3b2f1e; --muted:#6b5a3c; --accent:#8f4523;
+    --border:#e0d5b8; --quote-bg:#ede0c4;
+    --btn-bg:#ede0c4; --btn-border:#8c7c58;
+    --shadow:rgba(59,47,30,.15);
+    --preset:#33682a; --preset-bg:#e4ebd0;
+    --block:#8b2020; --block-bg:#ebd5d0;
+    --save:#2e5a8b; --save-bg:#d8e3ee;
+    --mark:#c9a227; --mark-fg:#2c1c08;
+    --on-solid:#fff; --focus:#2e5a8b;
+  }
+#il-full[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#1a1a1a; --fg:#e0e0e0; --muted:#999; --accent:#ff6b6b;
+    --border:#333; --quote-bg:#252525;
+    --btn-bg:#2a2a2a; --btn-border:#787878;
+    --shadow:rgba(0,0,0,.5);
+    --preset:#4cc97a; --preset-bg:#173524;
+    --block:#ff8a9c; --block-bg:#3d1a20;
+    --save:#6cb3ff; --save-bg:#1e3550;
+    --mark:#b58600; --mark-fg:#111;
+    --on-solid:#111; --focus:#6cb3ff;
+  }
+#il-full[data-theme="contrast"]{
+    color-scheme:dark;
+    --bg:#000; --fg:#fff; --muted:#ff0; --accent:#0ff;
+    --border:#fff; --quote-bg:#111;
+    --btn-bg:#111; --btn-border:#fff;
+    --shadow:rgba(255,255,255,.2);
+    --preset:#0f0; --preset-bg:#003300;
+    --block:#f00; --block-bg:#330000;
+    --save:#0ff; --save-bg:#003333;
+    --mark:#ff0; --mark-fg:#000;
+    --on-solid:#000; --focus:#ff0;
+  }
+#il-full{--ambi-op:.25;position:fixed;inset:0;background:var(--bg);color:var(--fg);z-index:2147483646;overflow:auto;-webkit-text-size-adjust:100%}
+#il-full[data-theme="dark"]{--ambi-op:.4}
+#il-full[data-theme="contrast"]{--ambi-op:.5}
+#il-full :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 #il-full *{box-sizing:border-box}
 #il-ambi-img{position:fixed;inset:-15%;width:130%;height:130%;object-fit:cover;filter:blur(40px);opacity:var(--ambi-op);z-index:0;pointer-events:none;user-select:none}
 #il-full .il-progress{position:fixed;top:0;left:0;right:0;height:4px;background:var(--border);z-index:12;pointer-events:none}
@@ -3343,8 +3393,10 @@ function buildReaderCSS(){
 #il-full .il-group>label{color:var(--muted);font-size:12px;margin-right:4px;text-transform:uppercase;letter-spacing:.5px}
 #il-full button{cursor:pointer;padding:8px 14px;border:1px solid var(--btn-border);background:var(--btn-bg);color:var(--fg);border-radius:6px;font-family:inherit;font-size:14px;font-weight:500;transition:all .1s}
 #il-full button:hover{filter:brightness(.95)}
-#il-full button.il-primary{background:var(--accent);color:#fff;border-color:var(--accent);font-size:15px;font-weight:bold}
-#il-full button.il-active{background:var(--accent);color:#fff;border-color:var(--accent)}
+#il-full button.il-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);font-size:15px;font-weight:bold}
+#il-full button.il-active{background:var(--accent);color:var(--on-solid);border-color:var(--accent)}
+#il-full button.il-guardada{background:var(--save);color:var(--on-solid);border-color:var(--save)}
+#il-full button.il-leida{background:var(--preset);color:var(--on-solid);border-color:var(--preset)}
 #il-full .il-wrap{max-width:var(--w,720px);margin:0 auto;padding:32px 20px 80px;position:relative;z-index:2}
 #il-full .il-content{font-family:Georgia,"Times New Roman",serif;font-size:var(--fs,18px);line-height:var(--lh,1.7)}
 #il-full[data-font="sans"] .il-content{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
@@ -3385,8 +3437,8 @@ function buildReaderCSS(){
 #il-full .il-footer{color:var(--muted);font-size:.8em;margin-top:20px;padding-top:14px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-footer-top,#il-full .il-footer-back{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
 #il-full .il-dict-hint{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
-#il-full .il-source-badge{color:var(--muted);opacity:.75;margin-left:4px}
-#il-full .il-top-btn{position:fixed;bottom:24px;right:24px;z-index:20;width:48px;height:48px;padding:0;border-radius:50%;font-size:22px;line-height:1;background:var(--accent);color:#fff;border:1px solid var(--accent);box-shadow:0 4px 12px var(--shadow);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .25s,transform .25s}
+#il-full .il-source-badge{color:var(--muted);margin-left:4px}
+#il-full .il-top-btn{position:fixed;bottom:24px;right:24px;z-index:20;width:48px;height:48px;padding:0;border-radius:50%;font-size:22px;line-height:1;background:var(--accent);color:var(--on-solid);border:1px solid var(--accent);box-shadow:0 4px 12px var(--shadow);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .25s,transform .25s}
 #il-full .il-top-btn.il-show{opacity:1;pointer-events:auto;transform:translateY(0)}
 #il-full .il-dict-popup{position:fixed;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:30;padding:8px;display:flex;flex-direction:column;gap:4px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;min-width:180px}
 #il-full .il-dict-popup-title{padding:6px 10px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px}
@@ -3727,10 +3779,15 @@ function openExtractionTool(siteIdx, onClose){
 /* ============================================================
    19. LECTOR
    ============================================================ */
+// El lector abierto, si lo hay: el puente lo avisa cuando la configuración
+// cambia en otra pestaña (o llega de Voceiro) para que se repinte.
+let __lectorAbierto = null;
+
 function openReader(art){
   if (document.getElementById('il-full')) return;
 
-  const prefs = CFG.prefs;
+  // let: CFG se sustituye entero cuando cambia en otra pestaña (refrescar).
+  let prefs = CFG.prefs;
   const pageLang = detectPageLang();
   const defaultDict = getDefaultDict(pageLang);
   const defaultDictName = defaultDict ? defaultDict.name : '—';
@@ -3929,7 +3986,8 @@ function openReader(art){
     return !!(rule && rule.textOnly);
   }
 
-  function applyPrefs(){
+  // Pinta las preferencias; applyPrefs, además, las guarda.
+  function pintarPrefs(){
     ov.setAttribute('data-theme', prefs.theme);
     ov.setAttribute('data-font', prefs.font);
     ov.setAttribute('data-just', prefs.just ? '1' : '0');
@@ -3967,8 +4025,29 @@ function openReader(art){
     pAct.style.display = prefs.panelActions ? 'flex' : 'none';
     bText.classList.toggle('il-active', prefs.panelText);
     bAct.classList.toggle('il-active', prefs.panelActions);
-    saveCfg(CFG);
     if (prefs.focus) setTimeout(updateFocus, 60);
+  }
+  function applyPrefs(){
+    pintarPrefs();
+    saveCfg(CFG);
+  }
+
+  // La configuración ha cambiado fuera (otra pestaña, Voceiro): se toma la
+  // nueva y se repinta, sin guardar (guardar aquí la volvería a mandar).
+  // Los paneles abiertos son de esta pestaña y se quedan como estaban.
+  function refrescar(){
+    if (document.getElementById('il-full') !== ov){ __lectorAbierto = null; return; }
+    const { panelText, panelActions } = prefs;
+    const bionicAntes = !!prefs.bionic;
+    prefs = CFG.prefs;
+    prefs.panelText = panelText;
+    prefs.panelActions = panelActions;
+    if (!!prefs.bionic !== bionicAntes){
+      ov.querySelector('.il-body').innerHTML = renderBody();
+      wireImages();
+    }
+    pintarPrefs();
+    pintarBotonGuardar();
   }
 
   function saveScroll(){
@@ -4019,7 +4098,7 @@ function openReader(art){
     });
   }
 
-  applyPrefs();
+  pintarPrefs();
   wireImages();
 
 
@@ -4053,6 +4132,7 @@ function openReader(art){
   function closeOverlay(){
     saveScroll();
     document.removeEventListener('keydown', keyHandler);
+    __lectorAbierto = null;
     ov.remove();
     setTimeout(() => ensureReaderFAB(), 100);
   }
@@ -4085,7 +4165,7 @@ function openReader(art){
     applyPrefs();
   };
   ov.querySelector('.il-wrap').addEventListener('click', e => {
-    if (!(e.ctrlKey || e.metaKey)){
+    if (!(e.ctrlKey || e.metaKey) && prefs.panelActions){
       prefs.panelActions = false;
       applyPrefs();
     }
@@ -4245,29 +4325,15 @@ function openReader(art){
     if (CFG.dict.mode === 'popup'){ showDictPopup(w, ov); }
     else { openDictionary(defaultDict, w); }
   });
-    function pintarBotonGuardar(){
+  // Sin guardar → neutro; pendiente → color de guardar; leída → verde
+  // (se puede devolver a pendientes). Colores del tema, con su contraste.
+  function pintarBotonGuardar(){
     const btn = ov.querySelector('.il-save-meta');
     if (!btn) return;
     const ex = findLaterItem(location.href);
-    if (!ex){
-      // No está → neutro
-      btn.style.background = '';
-      btn.style.color = '';
-      btn.style.borderColor = '';
-      btn.textContent = '🕒 ' + t('saveLater');
-    } else if (ex.read){
-      // Leída → verde (puedes volver a pendientes)
-      btn.style.background = '#0a7d00';
-      btn.style.color = '#fff';
-      btn.style.borderColor = '#0a7d00';
-      btn.textContent = '🕒 ' + t('saveToPending');
-    } else {
-      // Pendiente → naranja (ya está en cola)
-      btn.style.background = '#e67e22';
-      btn.style.color = '#fff';
-      btn.style.borderColor = '#e67e22';
-      btn.textContent = '🕒 ' + t('saveRemove');
-    }
+    btn.classList.toggle('il-guardada', !!ex && !ex.read);
+    btn.classList.toggle('il-leida', !!ex && !!ex.read);
+    btn.textContent = '🕒 ' + t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove');
   }
 
   ov.querySelector('.il-save-meta').onclick = function(){
@@ -4277,6 +4343,7 @@ function openReader(art){
 
   // Estado inicial al abrir el lector
   pintarBotonGuardar();
+  __lectorAbierto = { refrescar };
 
   function showDictPopup(word, parentEl){
     const existing = parentEl.querySelector('.il-dict-popup');
@@ -6402,6 +6469,7 @@ function enviarEstado(respuesta){
     CFG = mergeCfg(DEFAULT_CFG, nuevo);
     __perfilFirma = firmaPerfilLector(CFG);
     __configFirma = firmaConfig(CFG);
+    if (__lectorAbierto) __lectorAbierto.refrescar();
     enviarEstado(false);
   });
 
@@ -6431,6 +6499,7 @@ function enviarEstado(respuesta){
     }
 
     saveCfg(CFG);
+    if (__lectorAbierto) __lectorAbierto.refrescar();
     if (!d.respuesta && comparableEstado(estadoDelLector()) !== comparableEstado(d)){
       enviarEstado(true);
     }
