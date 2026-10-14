@@ -1188,6 +1188,8 @@
     display:block;
   }
   .pendiente-item a:hover{text-decoration:underline}
+  /* Leída: tachada y en gris, sin transparencia (con ella no llegaba a 3:1) */
+  .pendiente-item.leida a{color:var(--muted); text-decoration:line-through}
   .pendiente-meta{
     font-size:.65em; color:var(--muted);
     margin-top:4px;
@@ -6270,8 +6272,8 @@ function renderPendientes(items){
   function fila(p, esLeida){
     const fecha = p.date ? new Date(p.date).toLocaleString(ACCES.lang) : '';
     return `
-      <div class="pendiente-item" style="${esLeida ? 'opacity:.55' : ''}">
-        <a href="${escapeHtml(p.url)}" target="_blank" rel="noopener" style="${esLeida ? 'text-decoration:line-through' : ''}">${escapeHtml(p.title || p.url)}</a>
+      <div class="pendiente-item${esLeida ? ' leida' : ''}">
+        <a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.title || p.url)}</a>
         <div class="pendiente-meta">
           ${p.domain ? `<span>${escapeHtml(p.domain)}</span>` : ''}
           ${fecha ? `<span>· ${escapeHtml(fecha)}</span>` : ''}
