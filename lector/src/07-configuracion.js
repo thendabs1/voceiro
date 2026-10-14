@@ -336,9 +336,11 @@ function aplicarPerfilAlLector(perfil){
 // Configuración propia del lector que viaja a otros dispositivos (por
 // Voceiro y su sincronización): reglas por sitio, catálogo propio,
 // diccionarios, servicios de «Abrir en…», atajos… Todo menos Pendientes, el
-// perfil común (va aparte), los sellos y la posición de los botones.
+// perfil común (va aparte), los sellos, la posición de los botones y qué
+// paneles del lector están abiertos (abrir uno no es un cambio que viaje).
 const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab'];
 const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
+const PREFS_LOCALES = ['panelText', 'panelActions'];
 let __configFirma = null;
 
 function configCompartida(cfg){
@@ -348,7 +350,7 @@ function configCompartida(cfg){
   }
   if (out.prefs){
     const p = { ...out.prefs };
-    PREFS_DEL_PERFIL.forEach(k => delete p[k]);
+    [...PREFS_DEL_PERFIL, ...PREFS_LOCALES].forEach(k => delete p[k]);
     out.prefs = p;
   }
   return JSON.parse(JSON.stringify(out));
@@ -367,7 +369,7 @@ function aplicarBloqueConfig(bloque){
     if (k === 'prefs'){
       const p = { ...(CFG.prefs || {}) };
       for (const [pk, pv] of Object.entries(d.prefs || {})){
-        if (!PREFS_DEL_PERFIL.includes(pk)) p[pk] = pv;
+        if (!PREFS_DEL_PERFIL.includes(pk) && !PREFS_LOCALES.includes(pk)) p[pk] = pv;
       }
       CFG.prefs = p;
     } else {

@@ -7,14 +7,18 @@
 // Catálogo de medios: el de Voceiro, sacado de medios.py con catalogo.py
 // (necesita python3) y puesto en src/03 en lugar de /*{{CATALOGO}}*/[].
 //
+// Paleta de colores: la de Voceiro, sacada de plantilla.html (paleta.mjs) y
+// puesta en src/20 en lugar de /*{{PALETA}}*/.
+//
 // Versión: 2.0.N, con N = número de commits que han tocado este directorio,
-// shared/sync o medios.py (si están en el mismo repo). Así sube sola con cada cambio y
+// shared/sync, medios.py o plantilla.html (si están en el mismo repo). Así sube sola con cada cambio y
 // Violentmonkey ve la actualización. LECTOR_VERSION la fuerza. Necesita la
 // historia completa: en CI, checkout con fetch-depth: 0.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { leerPaleta, paletaParaLector } from './paleta.mjs';
 
 const raiz = dirname(fileURLToPath(import.meta.url));
 const src = join(raiz, 'src');
@@ -30,7 +34,8 @@ function version(){
   try {
     const top = git('rev-parse', '--show-toplevel');
     const rutas = ['.'];
-    for (const otra of [resolve(raiz, '..', 'shared', 'sync'), resolve(raiz, '..', 'medios.py')]){
+    for (const otra of [resolve(raiz, '..', 'shared', 'sync'), resolve(raiz, '..', 'medios.py'),
+                        resolve(raiz, '..', 'plantilla.html')]){
       if (existsSync(otra) && !relative(top, otra).startsWith('..')) rutas.push(relative(raiz, otra));
     }
     return '2.0.' + git('rev-list', '--count', 'HEAD', '--', ...rutas);
@@ -56,6 +61,8 @@ const catalogo = execFileSync('python3', ['-I', join(raiz, 'catalogo.py')],
   { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 if (!Array.isArray(JSON.parse(catalogo))) throw new Error('catálogo de medios vacío');
 
+const paleta = paletaParaLector(leerPaleta(readFileSync(resolve(raiz, '..', 'plantilla.html'), 'utf8')));
+
 const v = version();
 const partes = readdirSync(src).filter(f => f.endsWith('.js')).sort();
 if (!partes.includes(TRAS)) throw new Error(`falta src/${TRAS}`);
@@ -64,8 +71,11 @@ for (const f of partes){
   trozos.push(readFileSync(join(src, f), 'utf8'));
   if (f === TRAS) trozos.push(...COMPARTIDOS.map(compartido));
 }
-const codigo = trozos.join('').replaceAll('{{VERSION}}', v)
-  .replace('/*{{CATALOGO}}*/[]', () => catalogo);
+let codigo = trozos.join('').replaceAll('{{VERSION}}', v);
+for (const [hueco, valor] of [['/*{{CATALOGO}}*/[]', catalogo], ['/*{{PALETA}}*/', paleta]]){
+  if (!codigo.includes(hueco)) throw new Error(`falta ${hueco} en src/`);
+  codigo = codigo.replace(hueco, () => valor);
+}
 
 mkdirSync(dirname(salida), { recursive: true });
 writeFileSync(salida, codigo);

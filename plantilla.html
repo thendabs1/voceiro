@@ -5,39 +5,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voceiro · Titulares</title>
 <style>
+  /* ═══ PALETA ═══
+     Común con el lector: lector/build.mjs copia este bloque (entre PALETA y
+     FIN DE LA PALETA) y cambia :root por #il-full. Solo colores.
+     tests/tema/paleta.test.mjs comprueba los contrastes (WCAG 2.2 AA).
+     --on-solid es el texto sobre un fondo de color (--accent, --preset,
+     --block, --save); --focus, el anillo de foco. ═══ */
   :root{
-    --bg:#fff; --fg:#222; --muted:#888; --accent:#d32f2f;
+    color-scheme:light;
+    --bg:#fff; --fg:#222; --muted:#6b6b6b; --accent:#d32f2f;
     --border:#eee; --quote-bg:#f9f9f9;
-    --btn-bg:#f7f7f7; --btn-border:#ccc;
+    --btn-bg:#f7f7f7; --btn-border:#8a8a8a;
     --shadow:rgba(0,0,0,.08);
-    --fs:18px; --lh:1.55; --w:1100px;
-    --ff:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     --preset:#0a7d3f; --preset-bg:#e8f5e9;
     --block:#b00020; --block-bg:#fde8ec;
     --save:#1565c0; --save-bg:#e3f2fd;
     --mark:#ffe680; --mark-fg:#111;
+    --on-solid:#fff; --focus:#1565c0;
   }
   [data-theme="sepia"]{
-    --bg:#f4ecd8; --fg:#3b2f1e; --muted:#8a7a5c; --accent:#a0522d;
+    color-scheme:light;
+    --bg:#f4ecd8; --fg:#3b2f1e; --muted:#6b5a3c; --accent:#8f4523;
     --border:#e0d5b8; --quote-bg:#ede0c4;
-    --btn-bg:#ede0c4; --btn-border:#c8b88a;
+    --btn-bg:#ede0c4; --btn-border:#8c7c58;
     --shadow:rgba(59,47,30,.15);
-    --preset:#3e7a2f; --preset-bg:#e4ebd0;
+    --preset:#33682a; --preset-bg:#e4ebd0;
     --block:#8b2020; --block-bg:#ebd5d0;
     --save:#2e5a8b; --save-bg:#d8e3ee;
     --mark:#c9a227; --mark-fg:#2c1c08;
+    --on-solid:#fff; --focus:#2e5a8b;
   }
   [data-theme="dark"]{
+    color-scheme:dark;
     --bg:#1a1a1a; --fg:#e0e0e0; --muted:#999; --accent:#ff6b6b;
     --border:#333; --quote-bg:#252525;
-    --btn-bg:#2a2a2a; --btn-border:#444;
+    --btn-bg:#2a2a2a; --btn-border:#787878;
     --shadow:rgba(0,0,0,.5);
     --preset:#4cc97a; --preset-bg:#173524;
     --block:#ff8a9c; --block-bg:#3d1a20;
     --save:#6cb3ff; --save-bg:#1e3550;
-    --mark:#b58600; --mark-fg:#fff;
+    --mark:#b58600; --mark-fg:#111;
+    --on-solid:#111; --focus:#6cb3ff;
   }
   [data-theme="contrast"]{
+    color-scheme:dark;
     --bg:#000; --fg:#fff; --muted:#ff0; --accent:#0ff;
     --border:#fff; --quote-bg:#111;
     --btn-bg:#111; --btn-border:#fff;
@@ -46,6 +57,12 @@
     --block:#f00; --block-bg:#330000;
     --save:#0ff; --save-bg:#003333;
     --mark:#ff0; --mark-fg:#000;
+    --on-solid:#000; --focus:#ff0;
+  }
+  /* ═══ FIN DE LA PALETA ═══ */
+  :root{
+    --fs:18px; --lh:1.55; --w:1100px;
+    --ff:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   }
   [data-font="serif"]{ --ff: Georgia, "Times New Roman", serif }
   [data-font="sans"]{ --ff: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif }
@@ -66,6 +83,10 @@
     transition:background .15s, color .15s;
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
+  /* Enlaces y foco con los colores del tema: los del navegador (azul,
+     morado) casi no se ven en los temas oscuros */
+  a{color:var(--accent)}
+  :focus-visible{outline:2px solid var(--focus); outline-offset:2px}
   /* Iconos del sprite: miden lo que la letra y toman su color */
   .ico{
     width:1.15em; height:1.15em; flex-shrink:0;
@@ -161,13 +182,11 @@
   button:hover, a.boton:hover{filter:brightness(.95)}
   a.boton{ text-decoration:none; }
   button.primary{
-    background:var(--accent); color:#fff; border-color:var(--accent); font-weight:bold;
+    background:var(--accent); color:var(--on-solid); border-color:var(--accent); font-weight:bold;
   }
   button.active{
-    background:var(--accent); color:#fff; border-color:var(--accent);
+    background:var(--accent); color:var(--on-solid); border-color:var(--accent);
   }
-  [data-theme="contrast"] button.active,
-  [data-theme="contrast"] button.primary{color:#000}
 
   .btn-preset{
     border:2px solid var(--preset); background:transparent; color:var(--preset);
@@ -178,7 +197,7 @@
     min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .btn-preset:hover{background:var(--preset-bg)}
-  .btn-preset.active{background:var(--preset); color:#fff}
+  .btn-preset.active{background:var(--preset); color:var(--on-solid)}
   .preset-wrap{
     position: relative;
     display: inline-flex;
@@ -255,7 +274,7 @@
     margin-left: 4px;
     border-radius: 8px;
     background: var(--save);
-    color: #fff;
+    color: var(--on-solid);
     font-size: .85em;
     font-weight: 700;
     line-height: 1;
@@ -522,10 +541,10 @@
   .chk:hover span{border-color:var(--accent)}
   .chk span .ico{ width:14px; height:14px; }
   .chk.incluir input:checked + span{
-    background:var(--preset); border-color:var(--preset); color:#fff;
+    background:var(--preset); border-color:var(--preset); color:var(--on-solid);
   }
   .chk.ignorar input:checked + span{
-    background:var(--block); border-color:var(--block); color:#fff;
+    background:var(--block); border-color:var(--block); color:var(--on-solid);
   }
 
   textarea.preset-texto{
@@ -803,7 +822,7 @@
 }
 .preset-pestanas button[aria-selected="true"]{
   background: var(--preset);
-  color: #fff;
+  color: var(--on-solid);
 }
 [data-theme="contrast"] .preset-pestanas button[aria-selected="true"]{ color: #000; }
 /* ═══ Chips de modo y de tema: «Todo · N» / «Política · M» / «incendio · K»…
@@ -838,7 +857,7 @@
 }
 .temas-chips button[aria-pressed="true"]{
   background: var(--preset);
-  color: #fff;
+  color: var(--on-solid);
 }
 /* Fila de temas bajo la de modos: sangrada y atenuada; el pulsado, como siempre. */
 .temas-chips-fila.hija{ padding-left: 4px; }
@@ -904,8 +923,10 @@
   .noticia.foco-dim{opacity:.28}
   .noticia.foco-active{opacity:1}
   .noticia.vista{opacity:.80}
-  .noticia.leida{opacity:.5}
-  .noticia.leida a.titular{color:var(--muted)}
+  /* Leída: gris legible y una marca, sin transparencia (con opacidad el
+     gris no llegaba ni a 2:1) */
+  .noticia.leida a.titular{color:var(--muted); font-weight:500}
+  .noticia.leida a.titular::before{content:"✓ "; content:"✓ " / ""}
   .noticia .cabecera{
     display:flex; flex-wrap:wrap; gap:6px; align-items:center;
     margin-bottom:5px; font-size:.62em; color:var(--muted);
@@ -1191,7 +1212,7 @@
     height: 44px;
     border-radius: 50%;
     background: var(--accent);
-    color: #fff;
+    color: var(--on-solid);
     border: none;
     font-size: 1.15em;
     font-weight: 700;
@@ -1462,7 +1483,7 @@
   }
   .btn-dup-inline.active{
     background:var(--save);
-    color:#fff;
+    color:var(--on-solid);
     border-color:var(--save);
     opacity:1;
     font-weight:600;
@@ -1491,7 +1512,7 @@
   }
   .btn-prensa.active{
     background: var(--save);
-    color: #fff;
+    color: var(--on-solid);
     border-color: var(--save);
   }
   .btn-prensa.cargando{
@@ -1529,7 +1550,7 @@
     padding: 0 4px;
     border-radius: 8px;
     background: var(--save);
-    color: #fff;
+    color: var(--on-solid);
     font-size: .85em;
     font-weight: 700;
     line-height: 1;
