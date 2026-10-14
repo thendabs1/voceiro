@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.230
+// @version      2.0.232
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,10 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.230';
-const AUTO_MIN_RATIO = 0.80;
-const AUTO_MIN_RICH  = 3;
-const AUTO_MIN_LEN   = 300;
+const SCRIPT_VERSION = '2.0.232';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 const SITE_LANGS     = ['auto','es','gl','ca','en','eu','fr','de','it','pt'];
 const UI_LANGS       = ['es','gl','ca','en','eu'];
@@ -435,6 +432,236 @@ function paletaPersonalizada(colores){
 const VARS_PERSONALIZADAS = ['bg', 'fg', 'accent', 'titulos', 'muted', 'border', 'quote-bg',
   'btn-bg', 'btn-border', 'on-solid', 'focus', 'shadow'];
 
+/* ── lector/modulos/codigo-incrustado.js ── */
+// Código incrustado en el articleBody del JSON-LD.
+//
+// Algunos CMS sacan el articleBody quitando las etiquetas al HTML del
+// cuerpo, pero sin quitar antes <style> ni <script>. Así, el CSS y el JS de
+// un gráfico interactivo acaban dentro del texto, en la misma línea que la
+// prosa (Onm, en Nós Diario). Aquí se quitan esos tramos.
+//
+// Un tramo empieza en algo que solo puede ser código: una regla CSS
+// («sel{prop:»), «(function(», «var x =» o «function f(». Termina cuando,
+// fuera de cadenas y con todo cerrado, vienen palabras sin símbolos de
+// código. Hay que seguir las comillas porque el JS lleva prosa en sus
+// cadenas ('Pasa o rato polo gráfico…'), y esa prosa, sola, parece texto.
+//
+// Sin DOM ni nada de fuera: lector/build.mjs lo mete tal cual en el lector
+// y tests/lector lo prueba con node --test.
+
+// Una palabra (lo que hay entre espacios) que delata código.
+const SIMBOLOS = /[{}=<>[\]]|;\S|\(\)|=>|&&|\|\||^(?:var|function|return|if|const|let|else)$|[a-z]\(|\d+px|:#|--\w|[+,([]'|'[,)+\];]/;
+// Dónde empieza un tramo; el grupo 1 es el código, sin el espacio de antes.
+const INICIO = /(?:^|\s)((?:[.#@*>][\w.#:>*-]*,?\s+)*[.#@]?[\w.#:>*-]+\{[\w-]+:|\(function\s*\(|var \w+\s*=|function \w+\s*\()/gi;
+const PALABRAS_LIMPIAS = 6;   // las que cierran un tramo
+const PROSA_LARGA = 12;       // respaldo si las llaves o las comillas no cuadran
+
+function esCodigo(palabra){ return SIMBOLOS.test(palabra); }
+
+function sigueProsa(texto, desde){
+  return !texto.slice(desde, desde + 400).split(/\s+/).filter(Boolean)
+    .slice(0, PALABRAS_LIMPIAS).some(esCodigo);
+}
+
+// Si nada cuadra (una comilla o una llave sin cerrar), el tramo acaba en la
+// última palabra de código antes de PROSA_LARGA palabras limpias seguidas.
+function finPorPalabras(texto, inicio){
+  const re = /\S+/g;
+  re.lastIndex = inicio;
+  let ultimo = inicio, limpias = 0, m;
+  while ((m = re.exec(texto))){
+    if (esCodigo(m[0])){ ultimo = m.index + m[0].length; limpias = 0; }
+    else if (++limpias >= PROSA_LARGA) break;
+  }
+  return ultimo;
+}
+
+function finDelTramo(texto, inicio){
+  let abiertas = 0, comilla = null;
+  for (let j = inicio; j < texto.length; j++){
+    const ch = texto[j];
+    if (comilla){
+      if (ch === '\\') j++;
+      else if (ch === comilla) comilla = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'"){ comilla = ch; continue; }
+    if (ch === '{' || ch === '(' || ch === '['){ abiertas++; continue; }
+    if (ch === '}' || ch === ')' || ch === ']') abiertas = Math.max(0, abiertas - 1);
+    if (abiertas === 0 && (ch === ';' || ch === '}' || ch === ')')){
+      let k = j + 1;
+      while (texto[k] === ';') k++;
+      if (sigueProsa(texto, k)) return k;
+    }
+  }
+  return finPorPalabras(texto, inicio);
+}
+
+function limpiarCodigoIncrustado(texto){
+  texto = String(texto || '');
+  const re = new RegExp(INICIO.source, INICIO.flags);
+  const trozos = [];
+  let pos = 0, m;
+  while ((m = re.exec(texto))){
+    const ini = m.index + m[0].length - m[1].length;
+    const fin = finDelTramo(texto, ini);
+    if (fin <= ini){ re.lastIndex = ini + 1; continue; }
+    trozos.push(texto.slice(pos, ini));
+    pos = re.lastIndex = fin;
+  }
+  if (!trozos.length) return texto;
+  trozos.push(texto.slice(pos));
+  return trozos.join('').replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+\n/g, '\n').trim();
+}
+
+/* ── lector/modulos/mixto.js ── */
+// Modo mixto y limpieza de bloques del lector.
+//
+// El JSON-LD trae el texto bueno del artículo, pero sin estructura.
+// Readability trae la estructura (intertítulos, figuras, listas) y también
+// lo que se le cuela: newsletters, relacionados, avisos de carga. El modo
+// mixto se queda con los bloques de Readability cuyo texto está en el
+// JSON. Se compara por «tejas» (grupos de K palabras seguidas, ya
+// normalizadas), así que comillas, espacios o entidades distintas no
+// importan. Con artículos reales la cobertura sale binaria: cada bloque
+// está entero en el JSON (100 %) o no está (0 %).
+//
+// Los bloques son los de 16-bloques.js ({tipo, html, src, items…}).
+// Quien llama pasa textoDe(bloque) → texto plano, porque aquí no hay DOM.
+// lector/build.mjs lo mete tal cual en el lector y tests/lector lo prueba.
+
+const K = 5;
+const UMBRAL_BLOQUE = 0.5;   // parte del bloque que tiene que estar en el JSON
+const UMBRAL_JSON = 0.8;     // parte del JSON que tiene que estar en Readability
+const PARRAFO_LARGO = 40;    // palabras; dos así seguidos tras el final del JSON = JSON recortado
+
+function normalizar(texto){
+  return String(texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+function tejas(texto){
+  const p = normalizar(texto).split(' ').filter(Boolean);
+  const out = [];
+  for (let i = 0; i + K <= p.length; i++) out.push(p.slice(i, i + K).join(' '));
+  return out;
+}
+function palabras(texto){ return normalizar(texto).split(' ').filter(Boolean).length; }
+
+const DE_TEXTO = new Set(['p', 'q', 'h', 'list', 'pre']);
+function esDeTexto(b){ return !!b && DE_TEXTO.has(b.tipo); }
+
+// Parte del texto que está en el JSON. Lo que no llega a K palabras (un
+// intertítulo corto) cuenta si aparece tal cual.
+function cobertura(texto, tejasJson, jsonNorm){
+  const t = tejas(texto);
+  if (t.length) return t.filter(x => tejasJson.has(x)).length / t.length;
+  const n = normalizar(texto);
+  return n && jsonNorm.includes(' ' + n + ' ') ? 1 : 0;
+}
+
+// origen: 'mixto' (conservar = índices de los bloques que se quedan),
+// 'jsonld' (Readability no tiene el artículo entero: el DOM está recortado
+// o ha cogido otra cosa) o 'readability' (no hay JSON, el JSON está
+// recortado o no sobra nada).
+function decidirMixto(bloques, textoJson, textoDe){
+  const jsonNorm = ' ' + normalizar(textoJson) + ' ';
+  const tejasJson = new Set(tejas(textoJson));
+  if (!tejasJson.size) return { origen: 'readability' };
+
+  const textos = bloques.map(b => esDeTexto(b) ? textoDe(b) : '');
+  const tejasR = new Set(tejas(textos.join(' ')));
+  let enR = 0;
+  tejasJson.forEach(x => { if (tejasR.has(x)) enR++; });
+  if (enR / tejasJson.size < UMBRAL_JSON) return { origen: 'jsonld' };
+
+  const dentro = bloques.map((b, i) => esDeTexto(b) && cobertura(textos[i], tejasJson, jsonNorm) >= UMBRAL_BLOQUE);
+  const ultimo = dentro.lastIndexOf(true);
+  if (ultimo < 0) return { origen: 'jsonld' };
+
+  // JSON recortado (muro de pago en el JSON-LD): tras su último bloque
+  // siguen párrafos largos que no están. Lo que se cuela suele ser corto.
+  let largos = 0;
+  for (let i = ultimo + 1; i < bloques.length; i++){
+    if (bloques[i].tipo === 'p' && palabras(textos[i]) >= PARRAFO_LARGO) largos++;
+  }
+  if (largos >= 2) return { origen: 'readability' };
+
+  // Una imagen (o un separador) se queda si el bloque de texto que la sigue
+  // se queda; si no hay texto después, mira el de antes.
+  const conservar = [];
+  bloques.forEach((b, i) => {
+    if (esDeTexto(b)){ if (dentro[i]) conservar.push(i); return; }
+    let j = i + 1;
+    while (j < bloques.length && !esDeTexto(bloques[j])) j++;
+    if (j < bloques.length){ if (dentro[j]) conservar.push(i); return; }
+    j = i - 1;
+    while (j >= 0 && !esDeTexto(bloques[j])) j--;
+    if (j >= 0 && dentro[j]) conservar.push(i);
+  });
+  if (conservar.length === bloques.length) return { origen: 'readability' };
+  return { origen: 'mixto', conservar };
+}
+
+// La misma foto en tamaños distintos: «…_1200.jpg», «…_600.jpg»,
+// «…_orig.jpg», «…-1024x768.webp», «…_320w_0.webp», ?w=… La clave es el
+// UUID si lo hay (Prensa Ibérica, La Región) o la ruta sin extensión ni
+// sufijos de tamaño.
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const SUFIJO = /(?:[_-](?:\d{2,4}w?|\d{2,4}x\d{2,4}|orig|original|large|medium|small|thumb|default|scaled)|@\dx)$/i;
+function claveImagen(url){
+  let ruta = String(url || '').trim();
+  if (!ruta) return '';
+  ruta = ruta.replace(/^(?:[a-z]+:)?\/\/[^/]+/i, '').split(/[?#]/)[0];
+  const uuid = ruta.match(UUID);
+  if (uuid) return uuid[0].toLowerCase();
+  const corte = ruta.lastIndexOf('/');
+  let nombre = ruta.slice(corte + 1).replace(/\.(?:jpe?g|png|webp|gif|avif)$/i, '');
+  let antes;
+  do { antes = nombre; nombre = nombre.replace(SUFIJO, ''); } while (nombre && nombre !== antes);
+  return (ruta.slice(0, corte + 1) + nombre).toLowerCase();
+}
+
+// Fuera las imágenes que repiten una anterior (galerías que traen la misma
+// foto en otro tamaño). Si la repetida trae pie y la primera no, se lo pasa.
+function sinImagenesRepetidas(bloques){
+  const vistas = new Map();
+  return bloques.filter(b => {
+    if (b.tipo !== 'img') return true;
+    const k = claveImagen(b.src);
+    if (!k) return true;
+    const primera = vistas.get(k);
+    if (!primera){ vistas.set(k, b); return true; }
+    if (!primera.caption && b.caption) primera.caption = b.caption;
+    return false;
+  });
+}
+
+// Promociones del medio al principio o al final del texto: «¿Ya nos
+// sigues?», newsletters, «Si deseas leer más artículos…». Solo en los
+// bordes y solo bloques cortos, para no tocar el artículo.
+const PROMO = new RegExp([
+  'newsletter', 'bolet[ií]n', 'suscr[ií]b', 'subscri', 'ap[uú]nta', 'an[oó]ta(te|nos)',
+  'm[aá]rcanos', '(medio|fuente) preferente', 'ya nos sigues', 's[ií]gu?enos', 'seg[uú]enos',
+  'si deseas leer m[aá]s', 'te puede interesar', 'lee tambi[eé]n', 'noticias relacionadas',
+  'reg[ií]strate', 'rex[ií]strate', 'descarga (la|nuestra) app', 'canal de (whatsapp|telegram)',
+  'follow us', 'sign up'
+].join('|'), 'i');
+const PROMO_MAX = 60;   // palabras
+function sinPromosEnBordes(bloques, textoDe){
+  const esPromo = b => esDeTexto(b) && palabras(textoDe(b)) <= PROMO_MAX && PROMO.test(textoDe(b));
+  const fuera = new Set();
+  for (const orden of [bloques.map((_, i) => i), bloques.map((_, i) => bloques.length - 1 - i)]){
+    let quitados = 0;
+    for (const i of orden){
+      const b = bloques[i];
+      if (!esDeTexto(b)) continue;   // las imágenes del borde se quedan
+      if (quitados >= 3 || !esPromo(b)) break;
+      fuera.add(i); quitados++;
+    }
+  }
+  return fuera.size ? bloques.filter((_, i) => !fuera.has(i)) : bloques;
+}
+
 /* ============================================================
    1c. CATÁLOGO DE MEDIOS
    ------------------------------------------------------------
@@ -594,7 +821,7 @@ const I18N = {
     textOnlyOff: 'Imágenes activadas en este medio', mediasShort: 'Lista de medios',
     visitSite: 'Ir al sitio',
     theme: 'Tema', font: 'Fuente', size: 'Tamaño', width: 'Ancho', extra: 'Extra',
-    source: 'Origen', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS',
+    source: 'Origen', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS', srcMixto: 'Mixto',
     sourceLabel: 'Fuente', words: 'palabras', imageLabel: 'Imagen',
     coverImage: 'Portada', coverImageTitle: 'Mostrar/ocultar imagen de portada',
     justify: 'Justificar', bionic: 'Bionic', focus: 'Foco',
@@ -815,7 +1042,7 @@ const I18N = {
     textOnlyOff: 'Imaxes activadas neste medio', mediasShort: 'Lista de medios',
     visitSite: 'Ir ao sitio',
     theme: 'Tema', font: 'Fonte', size: 'Tamaño', width: 'Ancho', extra: 'Extra',
-    source: 'Orixe', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS',
+    source: 'Orixe', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS', srcMixto: 'Mixto',
     sourceLabel: 'Fonte', words: 'palabras', imageLabel: 'Imaxe',
     coverImage: 'Portada', coverImageTitle: 'Amosar/agochar imaxe de portada',
     justify: 'Xustificar', bionic: 'Bionic', focus: 'Foco',
@@ -1041,7 +1268,7 @@ const I18N = {
     textOnlyOff: 'Imatges activades en aquest mitjà', mediasShort: 'Llista de mitjans',
     visitSite: 'Anar al lloc',
     theme: 'Tema', font: 'Tipus de lletra', size: 'Mida', width: 'Amplada', extra: 'Extra',
-    source: 'Origen', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS',
+    source: 'Origen', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS', srcMixto: 'Mixt',
     sourceLabel: 'Font', words: 'paraules', imageLabel: 'Imatge',
     coverImage: 'Portada', coverImageTitle: 'Mostrar/amagar imatge de portada',
     justify: 'Justificar', bionic: 'Bionic', focus: 'Focus',
@@ -1257,7 +1484,7 @@ const I18N = {
     textOnlyOff: 'Images enabled on this site', mediasShort: 'Sites list',
     visitSite: 'Go to site',
     theme: 'Theme', font: 'Font', size: 'Size', width: 'Width', extra: 'Extra',
-    source: 'Source', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Reader', srcCustom: 'CSS',
+    source: 'Source', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Reader', srcCustom: 'CSS', srcMixto: 'Mixed',
     sourceLabel: 'Source', words: 'words', imageLabel: 'Image',
     coverImage: 'Cover', coverImageTitle: 'Show/hide cover image',
     justify: 'Justify', bionic: 'Bionic', focus: 'Focus',
@@ -1478,7 +1705,7 @@ const I18N = {
     textOnlyOff: 'Irudiak gaituta hedabide honetan', mediasShort: 'Hedabide zerrenda',
     visitSite: 'Gunera joan',
     theme: 'Gaia', font: 'Letra-tipoa', size: 'Tamaina', width: 'Zabalera', extra: 'Extra',
-    source: 'Iturria', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Irakurgailua', srcCustom: 'CSS',
+    source: 'Iturria', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Irakurgailua', srcCustom: 'CSS', srcMixto: 'Mistoa',
     sourceLabel: 'Iturria', words: 'hitza', imageLabel: 'Irudia',
     coverImage: 'Azala', coverImageTitle: 'Azaleko irudia erakutsi/ezkutatu',
     justify: 'Justifikatu', bionic: 'Bionikoa', focus: 'Fokua',
@@ -2750,21 +2977,6 @@ function stripTags(html){
   } catch(e){ return String(html).replace(/<[^>]+>/g, ''); }
 }
 function countWords(s){ return String(s || '').split(/\s+/).filter(Boolean).length; }
-function countRichElements(html){
-  if (!html) return 0;
-  try {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    let n = 0;
-    n += doc.querySelectorAll('b,strong').length;
-    n += doc.querySelectorAll('i,em').length;
-    n += doc.querySelectorAll('a[href]').length;
-    n += doc.querySelectorAll('h2,h3,h4').length;
-    n += doc.querySelectorAll('ul,ol').length;
-    n += doc.querySelectorAll('blockquote').length;
-    n += doc.querySelectorAll('img').length;
-    return n;
-  } catch(e){ return 0; }
-}
 function absUrl(u){
   if (!u) return '';
   try { return new URL(u, location.href).href; } catch(e){ return u; }
@@ -3014,6 +3226,10 @@ function extractBlocks(root){
   walk(root);
   return out;
 }
+// Texto plano de un bloque (para comparar con el JSON o contar palabras).
+function textoDeBloque(b){
+  return b.tipo === 'list' ? b.items.map(stripTags).join(' ') : stripTags(b.html || '');
+}
 function buildBlocksFromHTML(html){
   const sanitized = sanitizeHTML(html);
   if (!sanitized) return [];
@@ -3105,6 +3321,13 @@ function normAuth(a){
   if (typeof a === 'string') return [a];
   return [(a && a.name) || ''].filter(Boolean);
 }
+// De varias imágenes (suelen ser la misma en tamaños distintos), la más ancha.
+function imagenPrincipal(im){
+  if (!Array.isArray(im)) return im;
+  const conAncho = im.filter(x => x && typeof x === 'object' && Number(x.width) > 0);
+  if (!conAncho.length) return im[0];
+  return conAncho.reduce((a, b) => Number(b.width) > Number(a.width) ? b : a);
+}
 function imgUrlFrom(im){
   if (!im) return '';
   if (typeof im === 'string') return im;
@@ -3133,23 +3356,44 @@ function metaContent(sel){
   return el ? (el.getAttribute('content') || '') : '';
 }
 function buildFromJSONLD(ld){
+  const im = imagenPrincipal(ld.image);
   return {
     headline: decodeEnt(ld.headline || ''),
     description: decodeEnt(ld.description || ''),
     articleSection: decodeEnt(ld.articleSection || ''),
     autores: decodeEnt(normAuth(ld.author).join(', ')),
-    rawBody: decodeEnt(String(ld.articleBody || '')),
+    // Hay CMS que dejan dentro el CSS y el JS de los gráficos (Onm).
+    rawBody: limpiarCodigoIncrustado(decodeEnt(String(ld.articleBody || ''))),
     rawHTML: '',
-    image: imgUrlFrom(ld.image),
-    imageCaption: decodeEnt(imgCaptionFrom(ld.image)),
-    imageAuthor: decodeEnt(imgAuthorFrom(ld.image)),
+    image: imgUrlFrom(im),
+    imageCaption: decodeEnt(imgCaptionFrom(im)),
+    imageAuthor: decodeEnt(imgAuthorFrom(im)),
     datePublished: ld.datePublished || ''
   };
 }
+// Publicidad metida entre los párrafos (Nós Diario: div.ad-slot con un GIF
+// enlazado a /ads/): Readability la deja pasar y el modo mixto también,
+// porque va entre bloques que se quedan. Se quita antes.
+const SEL_PUBLICIDAD = [
+  '.ad-slot', '[data-mark^="Publici"]', 'a[href*="/ads/"]', 'ins.adsbygoogle', '[id^="div-gpt-ad"]',
+  '[class*="outbrain"]', '[id*="outbrain"]', '[class*="taboola"]', '[id*="taboola"]',
+  '[class~="publicidad"]', '[class~="publicidade"]', '[class~="publicitat"]', '[class~="advertisement"]'
+].join(',');
+const ALT_PUBLICIDAD = /^\s*(publicidad|publicidade|publicitat|advertisement|anuncio)\b/i;
+function limpiarPublicidad(doc){
+  try {
+    doc.querySelectorAll(SEL_PUBLICIDAD).forEach(n => n.remove());
+    doc.querySelectorAll('img[alt]').forEach(im => {
+      if (ALT_PUBLICIDAD.test(im.getAttribute('alt') || '')) (im.closest('a') || im).remove();
+    });
+  } catch(e){}
+  return doc;
+}
+
 function extractFromReadability(){
   if (typeof Readability !== 'function') return null;
   try {
-    const clone = document.cloneNode(true);
+    const clone = limpiarPublicidad(document.cloneNode(true));
     const reader = new Readability(clone);
     const art = reader.parse();
     if (!art || !art.textContent || art.textContent.trim().length < 200) return null;
@@ -3261,7 +3505,7 @@ function collectAllText(){
 function extractFromAll(){
   try {
     if (typeof Readability === 'function'){
-      const clone = document.cloneNode(true);
+      const clone = limpiarPublicidad(document.cloneNode(true));
       clone.querySelectorAll('script,style,iframe,noscript,svg,canvas,video,audio,form,button,select,textarea,input,nav,header,footer,aside,[role="navigation"],[role="banner"],[role="complementary"]').forEach(n => n.remove());
       const reader = new Readability(clone);
       const art = reader.parse();
@@ -3305,17 +3549,20 @@ function extractAuto(){
   if (!jsonArt && !readArt) return null;
   if (!jsonArt){ readArt._source = 'readability'; return readArt; }
   if (!readArt){ jsonArt._source = 'jsonld'; return jsonArt; }
-  const lJson = (jsonArt.rawBody || '').trim().length;
-  const lRead = (readArt.rawBody || '').trim().length;
-  const rich  = countRichElements(readArt.rawHTML);
-  if (lJson < AUTO_MIN_LEN && lRead < AUTO_MIN_LEN){
-    if (lRead > lJson){ readArt._source = 'readability'; return readArt; }
-    jsonArt._source = 'jsonld'; return jsonArt;
-  }
-  if (lRead >= AUTO_MIN_RATIO * lJson && rich >= AUTO_MIN_RICH){
-    readArt._source = 'readability'; return readArt;
-  }
-  jsonArt._source = 'jsonld'; return jsonArt;
+  // Mixto (lector/modulos/mixto.js): los bloques de Readability que están
+  // en el JSON. Los metadatos (autor, sección, pie de la portada) son los
+  // del JSON, que suelen ser mejores.
+  const bloques = buildBlocksFromHTML(readArt.rawHTML);
+  const d = decidirMixto(bloques, jsonArt.rawBody, textoDeBloque);
+  if (d.origen === 'jsonld'){ jsonArt._source = 'jsonld'; return jsonArt; }
+  if (d.origen === 'readability'){ readArt._source = 'readability'; return readArt; }
+  const elegidos = d.conservar.map(i => bloques[i]);
+  return Object.assign({}, jsonArt, {
+    bloques: elegidos,
+    rawBody: elegidos.filter(esDeTexto).map(textoDeBloque).join('\n\n'),
+    rawHTML: '',
+    _source: 'mixto'
+  });
 }
 
 function extractArticleWithConfig(extraction, overrideSrc){
@@ -4158,13 +4405,19 @@ function openReader(art){
     if (tEl) fecha = (tEl.getAttribute('datetime') || '').slice(0,10);
   }
 
-  const parrafos = useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody);
   const srcKey = art._source || (rawHTML ? 'readability' : 'jsonld');
   const srcName = srcKey === 'jsonld' ? t('srcJsonld')
+                : srcKey === 'mixto' ? t('srcMixto')
                 : srcKey === 'custom' ? t('srcCustom')
                 : srcKey === 'all' ? t('extractionModeAll')
                 : t('srcReadability');
-  const wordsCount = countWords(plainBody);
+  // Fuera las imágenes repetidas y, si viene del DOM, las promociones del
+  // medio al principio y al final («¿Ya nos sigues?», newsletters…).
+  let parrafos = art.bloques || (useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody));
+  parrafos = sinImagenesRepetidas(parrafos);
+  if (srcKey !== 'jsonld') parrafos = sinPromosEnBordes(parrafos, textoDeBloque);
+  // Las palabras del texto que se ve, no las de lo que se ha quitado.
+  const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
   const iu = String(art.image || '');
   const iuHi = iu.replace('_16-9-discover-', '_source-');
@@ -4172,6 +4425,10 @@ function openReader(art){
   const iuFallback = iuHi !== iu ? iu : '';
   const cap = art.imageCaption || '';
   const auImg = art.imageAuthor || '';
+  // La portada repetida como primera imagen del cuerpo sale una sola vez,
+  // en el cuerpo y con su pie.
+  const enCuerpo = iu ? parrafos.find(b => b.tipo === 'img' && claveImagen(b.src) === claveImagen(iu)) : null;
+  if (enCuerpo && !enCuerpo.caption && cap) enCuerpo.caption = cap;
 
   function renderBlock(b){
     const process = html => prefs.bionic ? bionicizeHTML(html) : html;
@@ -4325,7 +4582,7 @@ function openReader(art){
       panelAa + menuMasHTML +
     '</div>';
 
-  const figura = iuFinal
+  const figura = iuFinal && !enCuerpo
     ? '<figure class="il-figure"><img src="' + esc(iuFinal) + '"' +
       (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') +
       ' alt="' + esc(headline) + '" loading="lazy"><figcaption>' +
