@@ -15,6 +15,10 @@ Con un gestor de userscripts (Violentmonkey, Tampermonkey…), abre
   tamaño, ancho, interlineado, lectura biónica y foco.
 - Pendientes, diccionarios por idioma, lectura rápida (RSVP) y extracción
   asistida por sitio.
+- Al final del artículo: «Leída · volver a Voceiro» (cierra la pestaña;
+  necesita `@grant window.close`), «Siguiente pendiente» (la abre con el lector
+  ya abierto), guardar para luego y subir. Llegar al final la marca como leída,
+  en Pendientes y en Voceiro, y se puede deshacer.
 - «Abrir en…»: servicios a los que mandar la página que estás leyendo. Viene
   vacío; cada persona añade los suyos o importa una lista en JSON:
 
@@ -41,12 +45,14 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
 (`00-inicio.js` … `99-fin.js`). Algunas piezas:
 
 - `02-plataforma.js`: lo único que depende del gestor de userscripts (`GM_*`).
-- `04-servicios.js`, `21-desplegable-servicios.js`, `27-fab-servicios.js`:
-  «Abrir en…».
+- `04-servicios.js`, `21-desplegable-servicios.js`: «Abrir en…».
+- `26-boton-flotante.js`: el botón flotante, uno solo y en un Shadow DOM.
+  `actualizarBoton()` lo pone, lo cambia o lo quita según la página.
 - `34-puente-con-voceiro.js`: el puente con Voceiro.
-- `paleta.mjs`: los colores de los temas son los de Voceiro. `build.mjs` copia
-  el bloque PALETA de `plantilla.html` en `20-css-del-lector.js` (en lugar de
-  `/*{{PALETA}}*/`) y `tests/tema/paleta.test.mjs` comprueba sus contrastes.
+- `plantilla.mjs`: la paleta y los iconos son los de Voceiro. `build.mjs` saca
+  de `plantilla.html` el bloque PALETA y los `<symbol>` del sprite (solo los que
+  usa el lector con `icono('…')`) y los pone en `20-css-del-lector.js`;
+  `tests/tema/paleta.test.mjs` comprueba los contrastes de la paleta.
 
 ## Reglas
 

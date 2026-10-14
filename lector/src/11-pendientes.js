@@ -102,3 +102,86 @@ function findLaterItem(url){
 
 
 
+/* ── Al terminar de leer ──
+   Voceiro cuenta como leído lo que se abre desde allí; lo que se termina
+   aquí (abierto desde donde sea) se le avisa por el puente: leidasParaVoceiro
+   es una lista corta de { url, fecha, quitar? } que Voceiro confirma con
+   leidasHasta (la fecha más nueva que ya tiene). No viaja a otros
+   dispositivos: allí ya llega por la sincronización de Voceiro. */
+const LEIDAS_AVISO_MAX = 200;
+
+function avisarLeida(url, quitar){
+  const ahora = Date.now();
+  const aviso = { url: String(url), fecha: ahora };
+  if (quitar) aviso.quitar = true;
+  CFG.leidasParaVoceiro = [...(CFG.leidasParaVoceiro || []), aviso].slice(-LEIDAS_AVISO_MAX);
+}
+
+// Lo que Voceiro ya tiene (fecha <= hasta) se quita de la lista.
+function leidasConfirmadas(hasta){
+  const antes = CFG.leidasParaVoceiro || [];
+  const quedan = antes.filter(l => l.fecha > (hasta || 0));
+  if (quedan.length !== antes.length) CFG.leidasParaVoceiro = quedan;
+}
+function hayLeidasSinAvisar(hasta){
+  return (CFG.leidasParaVoceiro || []).some(l => l.fecha > (hasta || 0));
+}
+
+// Marca esta página como leída: en Pendientes, si está (respetando «guardar
+// leídas»), y para Voceiro. Devuelve con qué deshacerlo, o null si ya lo
+// estaba y no había nada que hacer.
+function marcarLeidaAlTerminar(){
+  const url = location.href;
+  const item = findLaterItem(url);
+  const antes = item ? { ...item } : null;
+  if (item && !item.read){
+    const keepRead = !(CFG.readerSettings && CFG.readerSettings.keepReadItems === false);
+    CFG.readLater = conCambio(item, keepRead ? { read: true, readAt: Date.now() } : { borrado: true });
+  }
+  avisarLeida(url);
+  CFG.readLater = fusionarPendientes(CFG.readLater, []);
+  saveCfg(CFG);
+  enviarEstado(false);
+  return () => {
+    if (antes && !antes.read){
+      const ahora = findLaterItem(url) || (CFG.readLater || []).find(r => r.url === antes.url);
+      if (ahora) CFG.readLater = conCambio(ahora, { read: false, readAt: null, borrado: false });
+    }
+    avisarLeida(url, true);
+    CFG.readLater = fusionarPendientes(CFG.readLater, []);
+    saveCfg(CFG);
+    enviarEstado(false);
+  };
+}
+
+// La siguiente pendiente sin leer, en el orden de la lista (más recientes
+// primero): la que va detrás de esta o, si esta no está, la primera.
+function siguientePendiente(url){
+  const sinLeer = pendientesVisibles().filter(r => !r.read);
+  const aqui = normalizeUrlForMatch(url || location.href);
+  const i = sinLeer.findIndex(r => normalizeUrlForMatch(r.url) === aqui);
+  const resto = i < 0 ? sinLeer : [...sinLeer.slice(i + 1), ...sinLeer.slice(0, i)];
+  return resto.find(r => normalizeUrlForMatch(r.url) !== aqui) || null;
+}
+
+/* ── Abrir la siguiente con el lector ya abierto ──
+   Antes de ir se apunta adónde (SIGUIENTE_KEY, aparte de CFG: no es
+   configuración); al llegar, init lo ve y abre el lector. Vale la misma
+   dirección o el mismo medio (por si redirige), durante dos minutos. */
+const SIGUIENTE_KEY = 'lector-abrir-al-llegar';
+
+function irASiguientePendiente(siguiente){
+  PLATAFORMA.guardar(SIGUIENTE_KEY, { url: siguiente.url, t: Date.now() });
+  location.href = siguiente.url;
+}
+
+function llegaDeSiguientePendiente(){
+  const f = PLATAFORMA.leer(SIGUIENTE_KEY, null);
+  if (!f || !f.url) return false;
+  if (Date.now() - (f.t || 0) > 2 * 60 * 1000){ PLATAFORMA.guardar(SIGUIENTE_KEY, null); return false; }
+  let mismoMedio = false;
+  try { mismoMedio = normalizeDomain(new URL(f.url).hostname) === normalizeDomain(location.hostname); } catch(e){}
+  if (!mismoMedio && normalizeUrlForMatch(f.url) !== normalizeUrlForMatch(location.href)) return false;
+  PLATAFORMA.guardar(SIGUIENTE_KEY, null);
+  return true;
+}

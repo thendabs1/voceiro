@@ -7,8 +7,10 @@
 // Catálogo de medios: el de Voceiro, sacado de medios.py con catalogo.py
 // (necesita python3) y puesto en src/03 en lugar de /*{{CATALOGO}}*/[].
 //
-// Paleta de colores: la de Voceiro, sacada de plantilla.html (paleta.mjs) y
-// puesta en src/20 en lugar de /*{{PALETA}}*/.
+// Paleta e iconos: los de Voceiro, sacados de plantilla.html (plantilla.mjs)
+// y puestos en src/20 en lugar de /*{{PALETA}}*/{} y /*{{ICONOS}}*/{}. De
+// los iconos van solo los que usa el lector (icono('…')); si falta alguno en
+// el sprite de Voceiro, no se construye.
 //
 // Versión: 2.0.N, con N = número de commits que han tocado este directorio,
 // shared/sync, medios.py o plantilla.html (si están en el mismo repo). Así sube sola con cada cambio y
@@ -18,7 +20,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { leerPaleta, paletaParaLector } from './paleta.mjs';
+import { leerIconos, leerPaleta, temasDePaleta } from './plantilla.mjs';
 
 const raiz = dirname(fileURLToPath(import.meta.url));
 const src = join(raiz, 'src');
@@ -61,7 +63,8 @@ const catalogo = execFileSync('python3', ['-I', join(raiz, 'catalogo.py')],
   { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 if (!Array.isArray(JSON.parse(catalogo))) throw new Error('catálogo de medios vacío');
 
-const paleta = paletaParaLector(leerPaleta(readFileSync(resolve(raiz, '..', 'plantilla.html'), 'utf8')));
+const plantilla = readFileSync(resolve(raiz, '..', 'plantilla.html'), 'utf8');
+const paleta = JSON.stringify(temasDePaleta(leerPaleta(plantilla)));
 
 const v = version();
 const partes = readdirSync(src).filter(f => f.endsWith('.js')).sort();
@@ -72,7 +75,15 @@ for (const f of partes){
   if (f === TRAS) trozos.push(...COMPARTIDOS.map(compartido));
 }
 let codigo = trozos.join('').replaceAll('{{VERSION}}', v);
-for (const [hueco, valor] of [['/*{{CATALOGO}}*/[]', catalogo], ['/*{{PALETA}}*/', paleta]]){
+
+const sprite = leerIconos(plantilla);
+const usados = [...new Set([...codigo.matchAll(/\bicono\('([a-z0-9-]+)'/g)].map(m => m[1]))].sort();
+const faltan = usados.filter(n => !sprite[n]);
+if (faltan.length) throw new Error(`iconos que no están en el sprite de plantilla.html: ${faltan.join(', ')}`);
+const iconos = JSON.stringify(Object.fromEntries(usados.map(n => [n, sprite[n]])));
+
+for (const [hueco, valor] of [['/*{{CATALOGO}}*/[]', catalogo], ['/*{{PALETA}}*/{}', paleta],
+                              ['/*{{ICONOS}}*/{}', iconos]]){
   if (!codigo.includes(hueco)) throw new Error(`falta ${hueco} en src/`);
   codigo = codigo.replace(hueco, () => valor);
 }

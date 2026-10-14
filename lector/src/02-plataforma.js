@@ -29,6 +29,16 @@ const PLATAFORMA = {
       });
     } catch(e){}
   },
+  // Cerrar esta pestaña: con @grant window.close el gestor la cierra aunque
+  // no la haya abierto un script. Puede no conseguirlo: quien llama lo mira.
+  cerrarPestana(){
+    try { window.close(); } catch(e){}
+  },
+  // Traer esta pestaña al frente (@grant window.focus); si el gestor no
+  // sabe, no pasa nada.
+  enfocarPestana(){
+    try { window.focus(); } catch(e){}
+  },
   hayMenu(){ return typeof GM_registerMenuCommand === 'function'; },
   menu(texto, fn){
     if (typeof GM_registerMenuCommand === 'function') GM_registerMenuCommand(texto, fn);

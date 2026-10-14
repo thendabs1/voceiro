@@ -85,72 +85,101 @@ function openReader(art){
 
   // «Abrir en…»: los servicios que haya configurado cada persona.
   const servicios = serviciosConfigurados();
-  const serviciosHTML = servicios.map(svc =>
-    '<button class="il-servicio" data-servicio="' + esc(svc.id) + '">' + esc(svc.nombre) + '</button>'
-  ).join('');
+
+  // Una opción del panel Apariencia: radio o casilla nativos (teclado y
+  // lectores de pantalla de serie) con su texto; el ✓ dice cuál está
+  // elegida, no solo el color.
+  function opcion(tipo, nombre, valor, texto, muestra){
+    const p = muestra ? (PALETA[muestra] || {}) : null;
+    return '<label class="il-opcion' + (p ? ' il-muestra' : '') + '"' +
+      (p ? ' style="' + esc('--muestra-bg:' + p.bg + ';--muestra-fg:' + p.fg + ';--muestra-borde:' + p['btn-border']) + '"' : '') + '>' +
+      '<input type="' + tipo + '" name="' + nombre + '" value="' + esc(valor) + '">' +
+      '<span>' + esc(texto) + '</span></label>';
+  }
+  function paso(clase, etiqueta, menos, mas){
+    return '<div class="il-paso" role="group" aria-labelledby="il-paso-' + clase + '">' +
+      '<span class="il-paso-etq" id="il-paso-' + clase + '">' + esc(etiqueta) + '</span>' +
+      '<button type="button" class="il-' + clase + '-minus" aria-label="' + esc(menos) + '">' + icono('minus') + '</button>' +
+      '<output class="il-' + clase + '-val" aria-live="polite"></output>' +
+      '<button type="button" class="il-' + clase + '-plus" aria-label="' + esc(mas) + '">' + icono('plus') + '</button>' +
+    '</div>';
+  }
+  const panelAa =
+    '<div id="il-panel-aa" class="il-panel" role="dialog" aria-label="' + esc(t('apariencia')) + '" hidden>' +
+      '<fieldset><legend>' + esc(t('theme')) + '</legend>' +
+        opcion('radio', 'il-tema', 'light', t('light'), 'light') +
+        opcion('radio', 'il-tema', 'sepia', t('sepia'), 'sepia') +
+        opcion('radio', 'il-tema', 'dark', t('dark'), 'dark') +
+        opcion('radio', 'il-tema', 'contrast', t('contrast'), 'contrast') +
+      '</fieldset>' +
+      '<fieldset><legend>' + esc(t('font')) + '</legend>' +
+        opcion('radio', 'il-letra', 'georgia', t('serif')) +
+        opcion('radio', 'il-letra', 'sans', t('sans')) +
+        opcion('radio', 'il-letra', 'dyslexic', t('dyslexic')) +
+      '</fieldset>' +
+      paso('fs', t('size'), t('letraMenor'), t('letraMayor')) +
+      paso('w', t('width'), t('masEstrecho'), t('masAncho')) +
+      '<fieldset><legend>' + esc(t('extra')) + '</legend>' +
+        opcion('checkbox', 'il-pref', 'just', t('justify')) +
+        opcion('checkbox', 'il-pref', 'bionic', t('bionic')) +
+        opcion('checkbox', 'il-pref', 'focus', t('focus')) +
+        opcion('checkbox', 'il-pref', 'img', t('coverImage')) +
+        opcion('checkbox', 'il-pref', 'textonly', t('sinImagenesMedio')) +
+      '</fieldset>' +
+      '<fieldset><legend>' + esc(t('source')) + '</legend>' +
+        opcion('radio', 'il-origen', 'auto', t('srcAuto')) +
+        opcion('radio', 'il-origen', 'jsonld', t('srcJsonld')) +
+        opcion('radio', 'il-origen', 'readability', t('srcReadability')) +
+      '</fieldset>' +
+    '</div>';
+
+  function itemMenu(clase, ico, texto){
+    return '<button type="button" role="menuitem" tabindex="-1" class="' + clase + '">' +
+      ico + '<span>' + esc(texto) + '</span></button>';
+  }
+  const menuMasHTML =
+    '<div id="il-menu-mas" class="il-menu" role="menu" aria-label="' + esc(t('masAcciones')) + '" hidden>' +
+      (servicios.length
+        ? '<div role="group" aria-label="' + esc(t('abrirEn')) + '">' +
+            '<div class="il-menu-grupo" aria-hidden="true">' + esc(t('abrirEn')) + '</div>' +
+            servicios.map(svc =>
+              '<button type="button" role="menuitem" tabindex="-1" class="il-servicio" data-servicio="' + esc(svc.id) + '">' +
+                icono('external-link') + '<span>' + esc(svc.nombre) + '</span></button>').join('') +
+          '</div><div role="separator"></div>'
+        : '') +
+      itemMenu('il-copytxt', icono('copy'), sinSimbolo(t('copyText'))) +
+      itemMenu('il-rsvp-menu', icono('zap'), sinSimbolo(t('teleprompter'))) +
+      itemMenu('il-print', icono('printer'), sinSimbolo(t('print'))) +
+      itemMenu('il-mail', icono('mail'), sinSimbolo(t('email'))) +
+      itemMenu('il-share', icono('share-2'), sinSimbolo(t('share'))) +
+      '<div role="separator"></div>' +
+      itemMenu('il-ignore-section', icono('ban'), sinSimbolo(t('ignoreSection'))) +
+      itemMenu('il-settings-btn', icono('settings'), sinSimbolo(t('settingsShort'))) +
+    '</div>';
 
   const progressHTML =
-    '<div class="il-progress"><div class="il-progress-bar"></div></div>';
+    '<div class="il-progress" aria-hidden="true"><div class="il-progress-bar"></div></div>';
 
+  // Barra: volver a Voceiro (cierra la pestaña) · Apariencia · Pendientes ·
+  // Más · Salir del lector. En pantallas estrechas solo se ven los iconos;
+  // los textos siguen ahí para los lectores de pantalla.
   const toolbarHTML =
     progressHTML +
     '<div class="il-topbar">' +
       '<div class="il-nav-row">' +
-        '<button class="il-back il-primary">' + esc(t('back')) + '</button>' +
-        '<button class="il-voceiro-btn il-primary">' + esc(t('btnTitulares')) + '</button>' +
-        '<button class="il-toggle-text">' + esc(t('options')) + '</button>' +
-        '<button class="il-toggle-actions">' + esc(t('actions')) + '</button>' +
-        '<button class="il-textonly-btn" title="' + esc(t('textOnlyShort')) + '">🖼</button>' +
-        '<button class="il-pendientes-btn" title="' + esc(t('pendientesShort')) + '">📚</button>' +
-        (servicios.length
-          ? '<button class="il-servicios-btn" title="' + esc(t('abrirEn')) + '" aria-label="' + esc(t('abrirEn')) + '">↗</button>'
-          : '') +
-        '<button class="il-settings-btn" title="' + esc(t('settingsShort')) + '">⚙️</button>' +
-        '<button class="il-close-tab" title="' + esc(t('closeTab')) + '">✕</button>' +
-        '<button class="il-close il-primary">' + esc(t('close')) + '</button>' +
+        '<button type="button" class="il-voceiro-btn" aria-label="' + esc(t('volverVoceiro')) + '">' +
+          icono('arrow-left') + '<span class="il-lbl">Voceiro</span></button>' +
+        '<span class="il-nav-espacio"></span>' +
+        '<button type="button" class="il-aa-btn" aria-expanded="false" aria-controls="il-panel-aa">' +
+          icono('a-large-small') + '<span class="il-lbl">' + esc(t('apariencia')) + '</span></button>' +
+        '<button type="button" class="il-pendientes-btn">' +
+          icono('library') + '<span class="il-lbl">' + esc(t('pendientesShort')) + '</span></button>' +
+        '<button type="button" class="il-mas-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="il-menu-mas" aria-label="' + esc(t('masAcciones')) + '">' +
+          icono('ellipsis') + '<span class="il-lbl">' + esc(t('mas')) + '</span></button>' +
+        '<button type="button" class="il-close">' +
+          icono('x') + '<span class="il-lbl">' + esc(sinSimbolo(t('close'))) + '</span></button>' +
       '</div>' +
-      '<div class="il-settings-bar" id="il-panel-text" style="display:none">' +
-        '<div class="il-group"><label>' + esc(t('theme')) + '</label>' +
-          '<button data-set-theme="light" title="' + esc(t('light')) + '">☀</button>' +
-          '<button data-set-theme="sepia" title="' + esc(t('sepia')) + '">📖</button>' +
-          '<button data-set-theme="dark" title="' + esc(t('dark')) + '">🌙</button>' +
-          '<button data-set-theme="contrast" title="' + esc(t('contrast')) + '">◐</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('font')) + '</label>' +
-          '<button data-set-font="georgia">' + esc(t('serif')) + '</button>' +
-          '<button data-set-font="sans">' + esc(t('sans')) + '</button>' +
-          '<button data-set-font="dyslexic">' + esc(t('dyslexic')) + '</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('size')) + '</label>' +
-          '<button class="il-fs-minus">A−</button>' +
-          '<span class="il-fs-val" style="font-weight:bold;margin:0 4px">' + prefs.fs + '</span>' +
-          '<button class="il-fs-plus">A+</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('width')) + '</label>' +
-          '<button class="il-w-minus">−</button>' +
-          '<span class="il-w-val" style="font-weight:bold;margin:0 4px">' + prefs.width + '</span>' +
-          '<button class="il-w-plus">+</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('extra')) + '</label>' +
-          '<button class="il-toggle" data-pref="just">' + esc(t('justify')) + '</button>' +
-          '<button class="il-toggle" data-pref="bionic">' + esc(t('bionic')) + '</button>' +
-          '<button class="il-toggle" data-pref="focus">' + esc(t('focus')) + '</button>' +
-          '<button class="il-toggle" data-pref="img" title="' + esc(t('coverImageTitle')) + '">' + esc(t('coverImage')) + '</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('source')) + '</label>' +
-          '<button class="il-source" data-src="auto">' + esc(t('srcAuto')) + '</button>' +
-          '<button class="il-source" data-src="jsonld">' + esc(t('srcJsonld')) + '</button>' +
-          '<button class="il-source" data-src="readability">' + esc(t('srcReadability')) + '</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="il-settings-bar" id="il-panel-actions" style="display:none;background:var(--quote-bg)">' +
-        serviciosHTML +
-        '<button class="il-copytxt">' + esc(t('copyText')) + '</button>' +
-        '<button class="il-print">' + esc(t('print')) + '</button>' +
-        '<button class="il-mail">' + esc(t('email')) + '</button>' +
-        '<button class="il-share">' + esc(t('share')) + '</button>' +
-        '<button class="il-ignore-section">' + esc(t('ignoreSection')) + '</button>' +
-      '</div>' +
+      panelAa + menuMasHTML +
     '</div>';
 
   const figura = iuFinal
@@ -167,13 +196,13 @@ function openReader(art){
 
   const metaActions =
     '<div class="il-meta-actions">' +
-      '<button class="il-save-meta" title="' + esc(t('saveLater')) + '">🕒 ' + esc(t('saveLater')) + '</button>' +
-      '<button class="il-rsvp-meta" title="' + esc(t('teleprompter')) + '">' + esc(t('teleprompter')) + '</button>' +
+      '<button type="button" class="il-save-meta"></button>' +
+      '<button type="button" class="il-rsvp-meta">' + icono('zap') + '<span>' + esc(sinSimbolo(t('teleprompter'))) + '</span></button>' +
     '</div>';
 
   const contentHTML =
-    '<div class="il-wrap"><div class="il-content">' +
-      '<h1>' + esc(headline) + '</h1>' +
+    '<div class="il-wrap"><div class="il-content" lang="' + esc(pageLang) + '">' +
+      '<h1 id="il-titulo" tabindex="-1">' + esc(headline) + '</h1>' +
       (description ? '<p class="il-desc">' + esc(description) + '</p>' : '') +
       '<div class="il-meta">' + esc(fecha) +
         (articleSection ? ' · ' + esc(articleSection) : '') +
@@ -182,9 +211,20 @@ function openReader(art){
       metaActions +
       figura +
       '<div class="il-body">' + renderBody() + '</div>' +
+      // Final: volver a Voceiro (marcándola leída), la siguiente pendiente,
+      // guardarla para luego o subir. Al llegar aquí se marca leída sola.
+      '<section class="il-fin">' +
+        '<div class="il-fin-acciones">' +
+          '<button type="button" class="il-fin-volver il-primary">' + esc(t('finVolver')) + '</button>' +
+          '<button type="button" class="il-fin-siguiente" hidden>' +
+            '<span>' + esc(t('finSiguiente')) + '</span><span class="il-fin-sig-titulo"></span>' +
+          '</button>' +
+          '<button type="button" class="il-fin-guardar"></button>' +
+          '<button type="button" class="il-fin-arriba">' + esc(t('up')) + '</button>' +
+        '</div>' +
+        '<p class="il-fin-estado" role="status" aria-live="polite"></p>' +
+      '</section>' +
       '<div class="il-footer">' +
-        '<button class="il-footer-top">' + esc(t('up')) + '</button> · ' +
-        '<button class="il-footer-back">' + esc(t('back')) + '</button> · ' +
         '<button class="il-dict-hint">' + esc(t('raeHint')) + ' ' + esc(defaultDictName) + '</button>' +
         sourceBadge +
       '</div>' +
@@ -193,15 +233,22 @@ function openReader(art){
   const ambi = iuFinal ? '<img id="il-ambi-img" src="' + esc(iuFinal) + '"' +
     (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') + ' alt="">' : '';
 
-  const full = '<div id="il-full" data-theme="' + prefs.theme + '" data-font="' + prefs.font +
+  const full = '<div id="il-full" role="dialog" aria-modal="true" aria-labelledby="il-titulo"' +
+    ' data-theme="' + esc(prefs.theme) + '" data-font="' + esc(prefs.font) +
     '" data-just="' + (prefs.just ? '1' : '0') + '">' +
     '<style>' + buildReaderCSS() + '</style>' + ambi +
     '<div style="position:relative;z-index:1">' + toolbarHTML + contentHTML + '</div>' +
-    '<button class="il-top-btn" title="' + esc(t('up')) + '">↑</button>' +
+    '<button type="button" class="il-top-btn" aria-label="' + esc(sinSimbolo(t('up'))) + '">' + icono('arrow-up') + '</button>' +
     '</div>';
 
+  // Lo que tenía el foco (el botón del lector, normalmente) lo recupera al
+  // salir. La página de debajo queda inerte mientras: ni el teclado ni los
+  // lectores de pantalla se meten en lo que no se ve.
+  const focoAntes = document.activeElement;
   document.body.insertAdjacentHTML('beforeend', full);
   const ov = document.getElementById('il-full');
+  const inertes = [...document.body.children].filter(el => el !== ov && !el.inert);
+  inertes.forEach(el => { el.inert = true; });
 
   function currentSiteTextOnly(){
     const rule = findSiteRule();
@@ -221,32 +268,16 @@ function openReader(art){
     const siteTextOnly = currentSiteTextOnly();
     ov.classList.toggle('il-textonly', siteTextOnly);
 
-    const toBtn = ov.querySelector('.il-textonly-btn');
-    if (toBtn){
-      toBtn.textContent = siteTextOnly ? '📝' : '🖼';
-      toBtn.title = siteTextOnly ? t('textOnlyOn') : t('textOnlyOff');
-      toBtn.classList.toggle('il-active', siteTextOnly);
-    }
-
     ov.querySelector('.il-fs-val').textContent = prefs.fs;
     ov.querySelector('.il-w-val').textContent = prefs.width;
-    ov.querySelectorAll('[data-set-theme]').forEach(b =>
-      b.classList.toggle('il-active', b.getAttribute('data-set-theme') === prefs.theme));
-    ov.querySelectorAll('[data-set-font]').forEach(b =>
-      b.classList.toggle('il-active', b.getAttribute('data-set-font') === prefs.font));
-    ov.querySelectorAll('.il-toggle').forEach(b =>
-      b.classList.toggle('il-active', !!prefs[b.getAttribute('data-pref')]));
-    const srcCurrent = currentReaderSource();
-    ov.querySelectorAll('.il-source').forEach(b =>
-      b.classList.toggle('il-active', b.getAttribute('data-src') === srcCurrent));
-    const pText = ov.querySelector('#il-panel-text');
-    const pAct = ov.querySelector('#il-panel-actions');
-    const bText = ov.querySelector('.il-toggle-text');
-    const bAct = ov.querySelector('.il-toggle-actions');
-    pText.style.display = prefs.panelText ? 'flex' : 'none';
-    pAct.style.display = prefs.panelActions ? 'flex' : 'none';
-    bText.classList.toggle('il-active', prefs.panelText);
-    bAct.classList.toggle('il-active', prefs.panelActions);
+    const marcar = (nombre, valor) =>
+      ov.querySelectorAll('input[name="' + nombre + '"]').forEach(r => { r.checked = r.value === valor; });
+    marcar('il-tema', prefs.theme);
+    marcar('il-letra', prefs.font);
+    marcar('il-origen', currentReaderSource());
+    ov.querySelectorAll('input[name="il-pref"]').forEach(c => {
+      c.checked = c.value === 'textonly' ? siteTextOnly : !!prefs[c.value];
+    });
     if (prefs.focus) setTimeout(updateFocus, 60);
   }
   function applyPrefs(){
@@ -256,20 +287,17 @@ function openReader(art){
 
   // La configuración ha cambiado fuera (otra pestaña, Voceiro): se toma la
   // nueva y se repinta, sin guardar (guardar aquí la volvería a mandar).
-  // Los paneles abiertos son de esta pestaña y se quedan como estaban.
   function refrescar(){
     if (document.getElementById('il-full') !== ov){ __lectorAbierto = null; return; }
-    const { panelText, panelActions } = prefs;
     const bionicAntes = !!prefs.bionic;
     prefs = CFG.prefs;
-    prefs.panelText = panelText;
-    prefs.panelActions = panelActions;
     if (!!prefs.bionic !== bionicAntes){
       ov.querySelector('.il-body').innerHTML = renderBody();
       wireImages();
     }
     pintarPrefs();
     pintarBotonGuardar();
+    pintarSiguiente();
   }
 
   function saveScroll(){
@@ -305,16 +333,32 @@ function openReader(art){
         else this.style.display = 'none';
       });
       if (im.closest('.il-figure') || im.closest('.il-inline-figure')){
-        im.addEventListener('click', function(){
+        const alt = im.getAttribute('alt') || '';
+        im.tabIndex = 0;
+        im.setAttribute('role', 'button');
+        im.setAttribute('aria-label', (alt ? alt + ' — ' : '') + t('ampliarImagen'));
+        const ampliar = function(){
           const lb = document.createElement('div');
+          lb.className = 'il-ampliada';
+          lb.tabIndex = -1;
+          lb.setAttribute('role', 'dialog');
+          lb.setAttribute('aria-label', alt || t('ampliarImagen'));
           lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:30;' +
             'display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px';
           const big = document.createElement('img');
-          big.src = this.src;
+          big.src = im.src;
+          big.alt = alt;
           big.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain';
           lb.appendChild(big);
-          lb.onclick = () => lb.remove();
+          const cerrar = () => { lb.remove(); im.focus(); };
+          lb.onclick = cerrar;
+          lb.onkeydown = e => { if (e.key === 'Escape' || e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); cerrar(); } };
           ov.appendChild(lb);
+          lb.focus();
+        };
+        im.addEventListener('click', ampliar);
+        im.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ampliar(); }
         });
       }
     });
@@ -322,11 +366,14 @@ function openReader(art){
 
   pintarPrefs();
   wireImages();
+  // El foco entra en el lector por el título: el lector de pantalla lo lee
+  // y el teclado empieza aquí.
+  try { ov.querySelector('#il-titulo').focus({ preventScroll: true }); } catch(e){}
 
 
 
   const topBtn = ov.querySelector('.il-top-btn');
-  topBtn.onclick = () => ov.scrollTo({ top: 0, behavior: 'smooth' });
+  topBtn.onclick = () => ov.scrollTo({ top: 0, behavior: desplazar() });
 
   let stm, focusTimer = null, lastScroll = 0;
   const topbarEl = ov.querySelector('.il-topbar');
@@ -354,76 +401,94 @@ function openReader(art){
   function closeOverlay(){
     saveScroll();
     document.removeEventListener('keydown', keyHandler);
+    if (finObservador) finObservador.disconnect();
     __lectorAbierto = null;
+    inertes.forEach(el => { el.inert = false; });
     ov.remove();
-    setTimeout(() => ensureReaderFAB(), 100);
+    if (focoAntes && focoAntes.isConnected){
+      if (focoAntes.__enfocar) focoAntes.__enfocar();
+      else if (focoAntes.focus) focoAntes.focus();
+    }
+    setTimeout(() => actualizarBoton(), 100);
   }
 
-  function goBack(){
-    saveScroll();
-    const before = location.href;
-    if (history.length > 1){
-      history.back();
-      setTimeout(() => {
-        if (location.href === before && document.getElementById('il-full')) closeOverlay();
-      }, 250);
-    } else {
-      closeOverlay();
-    }
+  // ── Apariencia y Más: uno abierto a la vez. Esc o pulsar fuera los
+  // cierra y, con Esc, el foco vuelve a su botón. ──
+  const desplegables = [
+    { boton: ov.querySelector('.il-aa-btn'), caja: ov.querySelector('#il-panel-aa') },
+    { boton: ov.querySelector('.il-mas-btn'), caja: ov.querySelector('#il-menu-mas'), menu: true },
+  ];
+  const desplegableAbierto = () => desplegables.find(d => !d.caja.hidden) || null;
+  function cerrarDesplegable(devolverFoco){
+    const d = desplegableAbierto();
+    if (!d) return false;
+    d.caja.hidden = true;
+    d.boton.setAttribute('aria-expanded', 'false');
+    ov.classList.remove('il-desplegado');
+    if (devolverFoco) d.boton.focus();
+    return true;
   }
-
-  const bText = ov.querySelector('.il-toggle-text');
-  const bAct = ov.querySelector('.il-toggle-actions');
-  bText.onclick = function(e){
-    e.stopPropagation();
-    prefs.panelText = !prefs.panelText;
-    prefs.panelActions = false;
-    applyPrefs();
-  };
-  bAct.onclick = function(e){
-    e.stopPropagation();
-    prefs.panelActions = !prefs.panelActions;
-    prefs.panelText = false;
-    applyPrefs();
-  };
-  ov.querySelector('.il-wrap').addEventListener('click', e => {
-    if (!(e.ctrlKey || e.metaKey) && prefs.panelActions){
-      prefs.panelActions = false;
-      applyPrefs();
-    }
+  function abrirDesplegable(d){
+    cerrarDesplegable(false);
+    d.caja.hidden = false;
+    d.boton.setAttribute('aria-expanded', 'true');
+    ov.classList.add('il-desplegado');
+    const primero = d.menu
+      ? d.caja.querySelector('[role="menuitem"]')
+      : (d.caja.querySelector('input:checked') || d.caja.querySelector('input, button'));
+    if (primero) primero.focus();
+  }
+  desplegables.forEach(d => {
+    d.boton.onclick = e => {
+      e.stopPropagation();
+      if (d.caja.hidden) abrirDesplegable(d);
+      else cerrarDesplegable(true);
+    };
+  });
+  ov.addEventListener('pointerdown', e => {
+    const d = desplegableAbierto();
+    if (d && !d.caja.contains(e.target) && !d.boton.contains(e.target)) cerrarDesplegable(false);
+  });
+  // Menú: flechas, Inicio y Fin para moverse; Tab lo cierra; elegir, también.
+  const menuMas = ov.querySelector('#il-menu-mas');
+  menuMas.addEventListener('keydown', e => {
+    const items = [...menuMas.querySelectorAll('[role="menuitem"]')];
+    const i = items.indexOf(document.activeElement);
+    let j = null;
+    if (e.key === 'ArrowDown') j = (i + 1) % items.length;
+    else if (e.key === 'ArrowUp') j = (i - 1 + items.length) % items.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = items.length - 1;
+    else if (e.key === 'Tab'){ cerrarDesplegable(false); return; }
+    if (j === null) return;
+    e.preventDefault();
+    items[j].focus();
+  });
+  menuMas.addEventListener('click', e => {
+    if (e.target.closest('[role="menuitem"]')) cerrarDesplegable(false);
   });
 
   ov.querySelectorAll('.il-close').forEach(b => b.onclick = closeOverlay);
-  ov.querySelector('.il-close-tab').onclick = () => {
-    // 1. Intentar cerrar la pestaña
-    try { window.close(); } catch(e){}
-    // 2. Si en 200 ms sigue abierta, volver a Voceiro
+  // Cerrar la pestaña y que quede delante Voceiro (VOLVER_KEY: la pestaña de
+  // Voceiro se pone delante al enterarse). Si el navegador no deja cerrarla:
+  // si ya estás en Voceiro, se sale del lector sin más; si no, esta misma
+  // pestaña va a Voceiro.
+  function volverAVoceiro(){
+    saveScroll();
+    PLATAFORMA.guardar(VOLVER_KEY, Date.now());
+    // Un respiro para que lo guardado llegue al gestor antes de cerrar.
+    setTimeout(() => PLATAFORMA.cerrarPestana(), 120);
     setTimeout(() => {
-      if (!window.closed){
-        location.href = VOCEIRO_URL;
-      }
-    }, 200);
-  };
-  ov.querySelectorAll('.il-back').forEach(b => b.onclick = goBack);
+      if (document.visibilityState === 'hidden') closeOverlay();
+      else location.href = VOCEIRO_URL;
+    }, 600);
+  }
+  ov.querySelector('.il-voceiro-btn').onclick = volverAVoceiro;
   ov.querySelector('.il-settings-btn').onclick = (e) => { e.stopPropagation(); openSettings('sites'); };
   ov.querySelector('.il-pendientes-btn').onclick = (e) => { e.stopPropagation(); openSettings('pendientes'); };
-  ov.querySelector('.il-voceiro-btn').onclick = (e) => {
-    e.stopPropagation();
-    window.open(VOCEIRO_URL, '_blank', 'noopener,noreferrer');
-  };
 
-  ov.querySelector('.il-textonly-btn').onclick = (e) => {
-    e.stopPropagation();
-    const rule = ensureSiteRule();
-    rule.textOnly = !rule.textOnly;
-    saveCfg(CFG);
-    applyPrefs();
-    toast(rule.textOnly ? t('textOnlyOn') : t('textOnlyOff'), 1500);
-  };
-
-  function copyText(txt, btn, label){
-    const orig = btn.textContent;
-    const done = () => { btn.textContent = '✅ ' + label; setTimeout(() => btn.textContent = orig, 1500); };
+  function copyText(txt){
+    const done = () => toast('✓ ' + t('copied'), 1500);
     const fb = () => {
       const ta = document.createElement('textarea');
       ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0';
@@ -434,10 +499,9 @@ function openReader(art){
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fb);
     else fb();
   }
-  ov.querySelector('.il-copytxt').onclick = function(){ copyText(buildText(), this, t('copied')); };
+  ov.querySelector('.il-copytxt').onclick = () => copyText(buildText());
   ov.querySelector('.il-print').onclick = () => window.print();
-  ov.querySelector('.il-footer-top').onclick = () => ov.scrollTo({ top: 0, behavior: 'smooth' });
-  ov.querySelector('.il-footer-back').onclick = goBack;
+  ov.querySelector('.il-fin-arriba').onclick = () => ov.scrollTo({ top: 0, behavior: desplazar() });
   ov.querySelector('.il-mail').onclick = () => {
     const txt = buildText();
     const subj = encodeURIComponent(headline || t('news'));
@@ -461,39 +525,28 @@ function openReader(art){
     if (svc) btn.onclick = () => abrirEnServicio(svc);
   });
 
-  const btnServicios = ov.querySelector('.il-servicios-btn');
-  if (btnServicios) btnServicios.onclick = (e) => {
-    e.stopPropagation();
-    const existing = ov.querySelector('.il-servicios-dropdown');
-    if (existing){ existing.remove(); return; }
-    const dd = crearDesplegableServicios({ position: 'fixed-top-right', onClose: () => dd.remove() });
-    ov.appendChild(dd);
-    setTimeout(() => {
-      const close = (ev) => {
-        if (!dd.contains(ev.target)){
-          dd.remove();
-          document.removeEventListener('mousedown', close);
-        }
-      };
-      document.addEventListener('mousedown', close);
-    }, 0);
-  };
-
   ov.querySelector('.il-ignore-section').onclick = () => { ignoreCurrentSection(); };
   ov.querySelector('.il-rsvp-meta').onclick = () => openRSVP(ov, rawBody);
+  ov.querySelector('.il-rsvp-menu').onclick = () => openRSVP(ov, rawBody);
   ov.querySelector('.il-dict-hint').onclick = () => { openSettings('dict'); };
 
-  ov.querySelectorAll('[data-set-theme]').forEach(b =>
-    b.onclick = () => { prefs.theme = b.getAttribute('data-set-theme'); applyPrefs(); });
-  ov.querySelectorAll('[data-set-font]').forEach(b =>
-    b.onclick = () => { prefs.font = b.getAttribute('data-set-font'); applyPrefs(); });
+  ov.querySelectorAll('input[name="il-tema"]').forEach(r =>
+    r.onchange = () => { prefs.theme = r.value; applyPrefs(); });
+  ov.querySelectorAll('input[name="il-letra"]').forEach(r =>
+    r.onchange = () => { prefs.font = r.value; applyPrefs(); });
   ov.querySelector('.il-fs-minus').onclick = () => { prefs.fs = Math.max(UI.fsMin, prefs.fs - 1); applyPrefs(); };
   ov.querySelector('.il-fs-plus').onclick  = () => { prefs.fs = Math.min(UI.fsMax, prefs.fs + 1); applyPrefs(); };
   ov.querySelector('.il-w-minus').onclick  = () => { prefs.width = Math.max(UI.wMin, prefs.width - UI.wStep); applyPrefs(); };
   ov.querySelector('.il-w-plus').onclick   = () => { prefs.width = Math.min(UI.wMax, prefs.width + UI.wStep); applyPrefs(); };
-  ov.querySelectorAll('.il-toggle').forEach(b => b.onclick = () => {
-    const p = b.getAttribute('data-pref');
-    prefs[p] = !prefs[p];
+  ov.querySelectorAll('input[name="il-pref"]').forEach(c => c.onchange = () => {
+    const p = c.value;
+    if (p === 'textonly'){
+      // Sin imágenes va por medio, en su regla.
+      ensureSiteRule().textOnly = c.checked;
+      applyPrefs();
+      return;
+    }
+    prefs[p] = c.checked;
     if (p === 'bionic'){
       ov.querySelector('.il-body').innerHTML = renderBody();
       wireImages();
@@ -501,8 +554,8 @@ function openReader(art){
     applyPrefs();
   });
 
-  ov.querySelectorAll('.il-source').forEach(b => b.onclick = async () => {
-    const v = b.getAttribute('data-src');
+  ov.querySelectorAll('input[name="il-origen"]').forEach(r => r.onchange = async () => {
+    const v = r.value;
     if (!READER_SOURCES.includes(v)) return;
     if (v === currentReaderSource()) return;
     const labels = { auto: t('srcAuto'), jsonld: t('srcJsonld'), readability: t('srcReadability'), custom: t('srcCustom') };
@@ -517,7 +570,7 @@ function openReader(art){
         return;
       }
       const choice = await showAddSiteDialog(domain, srcLabel, ov);
-      if (choice === 'cancel') return;
+      if (choice === 'cancel'){ pintarPrefs(); return; }
       if (choice === 'add'){
         setReaderSourceForCurrentSite(v);
         toast(t('siteAddedToast').replace('{X}', domain).replace('{Y}', srcLabel), 6000,
@@ -549,22 +602,89 @@ function openReader(art){
   });
   // Sin guardar → neutro; pendiente → color de guardar; leída → verde
   // (se puede devolver a pendientes). Colores del tema, con su contraste.
+  // Hay dos: arriba, junto al título, y en el final.
   function pintarBotonGuardar(){
-    const btn = ov.querySelector('.il-save-meta');
-    if (!btn) return;
     const ex = findLaterItem(location.href);
-    btn.classList.toggle('il-guardada', !!ex && !ex.read);
-    btn.classList.toggle('il-leida', !!ex && !!ex.read);
-    btn.textContent = '🕒 ' + t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove');
+    ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => {
+      btn.classList.toggle('il-guardada', !!ex && !ex.read);
+      btn.classList.toggle('il-leida', !!ex && !!ex.read);
+      btn.innerHTML = (ex ? icono('bookmark-check') : icono('bookmark')) +
+        '<span>' + esc(t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove')) + '</span>';
+    });
   }
 
-  ov.querySelector('.il-save-meta').onclick = function(){
+  ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => btn.onclick = function(){
     saveForLater(art);
+    // Si vuelve a pendientes, ya no cuenta como leída aquí.
+    const ex = findLaterItem(location.href);
+    if (estadoLeida === 'marcada' && ex && !ex.read){ estadoLeida = 'deshecha'; finEstado.textContent = ''; }
     pintarBotonGuardar();
+    pintarSiguiente();
+  });
+
+  // ── Final del artículo ──
+  // estadoLeida: 'no' (aún no), 'marcada' (se puede deshacer) o 'deshecha'
+  // (la persona dijo que no: ya no se marca sola).
+  let estadoLeida = 'no', deshacerLeida = null, finObservador = null;
+  const finEstado = ov.querySelector('.il-fin-estado');
+
+  function marcarLeida(){
+    if (estadoLeida === 'marcada') return;
+    estadoLeida = 'marcada';
+    deshacerLeida = marcarLeidaAlTerminar();
+    pintarBotonGuardar();
+    pintarSiguiente();
+    finEstado.textContent = '';
+    const txt = document.createElement('span');
+    txt.textContent = '✓ ' + t('finMarcada') + ' · ';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'il-fin-deshacer';
+    btn.textContent = t('btnUndo');
+    btn.onclick = () => {
+      if (deshacerLeida) deshacerLeida();
+      deshacerLeida = null;
+      estadoLeida = 'deshecha';
+      finEstado.textContent = '';
+      pintarBotonGuardar();
+      pintarSiguiente();
+    };
+    finEstado.append(txt, btn);
+  }
+
+  function pintarSiguiente(){
+    const b = ov.querySelector('.il-fin-siguiente');
+    const sig = siguientePendiente(location.href);
+    b.hidden = !sig;
+    if (!sig) return;
+    const titulo = sig.title || sig.url;
+    b.querySelector('.il-fin-sig-titulo').textContent = titulo;
+    b.setAttribute('aria-label', t('finSiguienteDe').replace('{X}', titulo));
+    b.onclick = () => {
+      if (estadoLeida !== 'marcada') marcarLeida();
+      saveScroll();
+      irASiguientePendiente(sig);
+    };
+  }
+
+  ov.querySelector('.il-fin-volver').onclick = () => {
+    if (estadoLeida !== 'marcada') marcarLeida();
+    volverAVoceiro();
   };
+
+  // Llegar al final cuenta como leída, si se ha bajado hasta allí (un
+  // artículo que cabe entero en pantalla no se marca solo).
+  if ('IntersectionObserver' in window){
+    finObservador = new IntersectionObserver(entradas => {
+      if (estadoLeida !== 'no' || ov.scrollTop <= 0) return;
+      if (entradas.some(en => en.isIntersecting)) marcarLeida();
+    }, { root: ov, threshold: 0.5 });
+    finObservador.observe(ov.querySelector('.il-fin-acciones'));
+  }
 
   // Estado inicial al abrir el lector
   pintarBotonGuardar();
+  pintarSiguiente();
   __lectorAbierto = { refrescar };
 
   function showDictPopup(word, parentEl){
@@ -604,8 +724,8 @@ function openReader(art){
       case 'fontIncrease': prefs.fs = Math.min(UI.fsMax, prefs.fs + 1); applyPrefs(); break;
       case 'fontDecrease': prefs.fs = Math.max(UI.fsMin, prefs.fs - 1); applyPrefs(); break;
       case 'toggleTheme':  prefs.theme = prefs.theme === 'dark' ? 'light' : 'dark'; applyPrefs(); break;
-      case 'scrollTop':    ov.scrollTo({ top: 0, behavior: 'smooth' }); break;
-      case 'scrollBottom': ov.scrollTo({ top: ov.scrollHeight, behavior: 'smooth' }); break;
+      case 'scrollTop':    ov.scrollTo({ top: 0, behavior: desplazar() }); break;
+      case 'scrollBottom': ov.scrollTo({ top: ov.scrollHeight, behavior: desplazar() }); break;
       case 'toggleBionic':
         prefs.bionic = !prefs.bionic;
         ov.querySelector('.il-body').innerHTML = renderBody();
@@ -621,7 +741,7 @@ function openReader(art){
       case 'openQueue':     openSettings('pendientes'); break;
       case 'openRSVP':      openRSVP(ov, rawBody); break;
       case 'copyText':
-        copyText(buildText(), ov.querySelector('.il-copytxt'), t('copied'));
+        copyText(buildText());
         break;
     }
   }
@@ -631,10 +751,12 @@ function openReader(art){
     if (document.getElementById('il-settings')) return;
     if (document.getElementById('il-extract-tool')) return;
     if (isPickerActive()) return;
+    const nk = normalizeKey(e);
+    // Esc cierra primero Apariencia o Más, también desde sus casillas.
+    if (nk === 'escape' && cerrarDesplegable(true)){ e.preventDefault(); return; }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
 
-    const nk = normalizeKey(e);
     if (nk === 'escape'){ closeOverlay(); return; }
 
     const action = findActionByKey('reader', nk);

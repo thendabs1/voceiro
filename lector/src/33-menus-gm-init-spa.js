@@ -26,10 +26,7 @@ function registerMenus(){
     });
     saveCfg(CFG);
     toast(t('addedTo') + ' ' + d);
-    const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-    if (!isPlainDomain() && !isIgnoredSection(findSiteRule())) createFAB();
-    if (!document.getElementById('il-servicios-fab') && debeMostrarFabServicios()) crearFabServicios();
-    repositionStackFABs();
+    actualizarBoton();
   });
   PLATAFORMA.menu(t('removeCurrent'), () => {
     const d = normalizeDomain(location.hostname);
@@ -39,10 +36,7 @@ function registerMenus(){
       disableDomain(d);
       saveCfg(CFG);
       toast(t('removedFrom') + ' ' + d);
-      const f = document.getElementById('il-fab'); if (f) f.remove();
-      const bf = document.getElementById('il-servicios-fab'); if (bf) bf.remove();
-      ensureAddFAB();
-      repositionStackFABs();
+      actualizarBoton();
     } else {
       toast(t('notInList'));
     }
@@ -52,14 +46,13 @@ function registerMenus(){
     CFG.serviciosFab = CFG.serviciosFab || { oculto: false };
     CFG.serviciosFab.oculto = !CFG.serviciosFab.oculto;
     saveCfg(CFG);
-    if (CFG.serviciosFab.oculto){
-      const el = document.getElementById('il-servicios-fab');
-      if (el) el.remove();
-      toast(t('serviciosFabOculto'), 2000);
-    } else {
-      crearFabServicios();
-      toast(t('serviciosFabVisible'), 2000);
-    }
+    actualizarBoton();
+    toast(t(CFG.serviciosFab.oculto ? 'serviciosFabOculto' : 'serviciosFabVisible'), 2000);
+  });
+  // El botón se oculta por medio desde su propio menú; aquí se recupera.
+  PLATAFORMA.menu(t('fabMostrarAqui'), () => {
+    ocultarBotonAqui(false);
+    if (!document.getElementById(FAB_ID)) toast(t('fabNadaAqui'), 2400);
   });
 }
 
@@ -78,32 +71,17 @@ function shouldActivateHere(){
   return !!(rule && rule.mode === 'auto');
 }
 
-function ensureSettingsFAB(){
-  if (document.getElementById('il-settings-fab')) return;
-  if (isDomainDisabled(location.hostname)) return;
-  if (!isKnownMediaDomain(location.hostname) && !findSiteRule()) return;
-  createSettingsFAB();
-}
-
 function init(){
   registerMenus();
 
   if (isDomainDisabled(location.hostname)) return;
-  if (!isPlainDomain()) ensureSettingsFAB();
 
-  if (debeMostrarFabServicios()){
-    const goServicios = () => crearFabServicios();
-    if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(goServicios, 300);
-    else window.addEventListener('load', () => setTimeout(goServicios, 300));
-  }
+  const goBoton = () => actualizarBoton();
+  if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(goBoton, 250);
+  else window.addEventListener('load', () => setTimeout(goBoton, 250));
 
-  if (shouldShowReaderFAB()){
-    const goFab = () => ensureReaderFAB();
-    if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(goFab, 250);
-    else window.addEventListener('load', () => setTimeout(goFab, 250));
-  }
-
-  if (shouldActivateHere()){
+  // Llegando desde «Siguiente pendiente», el lector se abre solo.
+  if (llegaDeSiguientePendiente() || shouldActivateHere()){
     const go = () => activateReader();
     if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(go, 400);
     else window.addEventListener('load', () => setTimeout(go, 400));
@@ -115,27 +93,12 @@ function checkUrlChange(){
   if (location.href === __lastHref) return;
   __lastHref = location.href;
   if (document.getElementById('il-full')) return;
-  const fab = document.getElementById('il-fab');
-  if (fab) fab.remove();
-  const bfab = document.getElementById('il-servicios-fab');
-  if (bfab) bfab.remove();
-  const sfab = document.getElementById('il-settings-fab');
-  if (sfab) sfab.remove();
-  const afab = document.getElementById('il-add-fab');
-  if (afab) afab.remove();
+  actualizarBoton();
 
   const attempt = (delay) => setTimeout(() => {
     if (document.getElementById('il-full')) return;
+    actualizarBoton();
     if (isDomainDisabled(location.hostname)) return;
-    if (!isPlainDomain() && !document.getElementById('il-settings-fab')){
-      ensureSettingsFAB();
-    }
-    if (!isPlainDomain()) ensureAddFAB();
-    if (debeMostrarFabServicios() && !document.getElementById('il-servicios-fab')){
-      crearFabServicios();
-    }
-    ensureReaderFAB();
-    repositionStackFABs();
     if (shouldActivateHere()) init();
   }, delay);
   attempt(400);

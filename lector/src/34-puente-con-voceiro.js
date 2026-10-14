@@ -5,8 +5,10 @@
    sentido para que nadie se oiga a sí mismo:
      · 'voceiro-ping'   Voceiro → lector; se responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
-     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector}.
-     · 'lector-estado'  lector → Voceiro, igual.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
+                        leidasHasta}.
+     · 'lector-estado'  lector → Voceiro {…, leidas}: lo terminado en el lector
+                        (11-pendientes.js); Voceiro lo confirma con leidasHasta.
    Pendientes y perfil se fusionan con shared/sync/fusion.js. «lector» es
    la configuración propia del lector: Voceiro la guarda sin mirarla y la
    lleva a otros dispositivos con su sincronización; gana la más reciente.
@@ -18,7 +20,8 @@ const PUENTE_V = 2;
 function estadoDelLector(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
-    pendientes: CFG.readLater || [], perfil: perfilDelLector(), lector: bloqueConfigLector()
+    pendientes: CFG.readLater || [], perfil: perfilDelLector(), lector: bloqueConfigLector(),
+    leidas: CFG.leidasParaVoceiro || []
   };
 }
 
@@ -39,6 +42,10 @@ function enviarEstado(respuesta){
   } catch(e){}
 }
 
+// Volver a Voceiro: la pestaña que se cierra lo apunta aquí y la de Voceiro,
+// al enterarse, se pone delante (si el gestor sabe hacerlo).
+const VOLVER_KEY = 'lector-volver-a-voceiro';
+
 (function initVoceiroBridge(){
   if (window.__voceiroBridgeReady) return;
   window.__voceiroBridgeReady = true;
@@ -50,11 +57,14 @@ function enviarEstado(respuesta){
     __perfilFirma = firmaPerfilLector(CFG);
     __configFirma = firmaConfig(CFG);
     if (__lectorAbierto) __lectorAbierto.refrescar();
+    actualizarBoton();
     enviarEstado(false);
   });
 
   // Lo demás solo existe en Voceiro.
   if (!esVoceiro()) return;
+
+  PLATAFORMA.alCambiar(VOLVER_KEY, () => PLATAFORMA.enfocarPestana());
 
   document.addEventListener('voceiro-ping', () => {
     document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: { v: PUENTE_V } }));
@@ -78,9 +88,13 @@ function enviarEstado(respuesta){
       aplicarBloqueConfig(llega);
     }
 
+    // Leídas que Voceiro ya tiene: fuera. Si quedan, se le vuelven a mandar.
+    leidasConfirmadas(d.leidasHasta);
+
     saveCfg(CFG);
     if (__lectorAbierto) __lectorAbierto.refrescar();
-    if (!d.respuesta && comparableEstado(estadoDelLector()) !== comparableEstado(d)){
+    if (!d.respuesta && (comparableEstado(estadoDelLector()) !== comparableEstado(d) ||
+                         hayLeidasSinAvisar(d.leidasHasta))){
       enviarEstado(true);
     }
   });

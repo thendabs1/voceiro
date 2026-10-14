@@ -3,6 +3,84 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Un solo botón flotante
+
+### Cambiado
+- Los cuatro botones flotantes (📖 lector, ⚙️ ajustes, ＋ añadir medio y ↗ «Abrir
+  en…») pasan a ser uno. Con artículo, el botón grande abre el lector y el pequeño
+  (⋯) despliega el resto; sin artículo, el grande despliega el menú: modo lectura,
+  añadir este medio, «Abrir en…» (los servicios), ajustes y ocultar el botón en
+  este medio.
+- Neutro y con los colores del tema del perfil, en vez del degradado rojo. El
+  lector automático se ve como un punto verde y se dice en su nombre.
+- Dentro de un Shadow DOM: el CSS del medio no le llega.
+- Se arrastra y al soltarlo se pega al borde más cercano; recuerda el lado y la
+  altura (`CFG.fab.lado` y `top`; la posición de antes se traduce sola).
+- «Ocultar el botón en este medio» se deshace desde el aviso o desde el menú del
+  gestor («Mostrar el botón en este medio»). Clic derecho o pulsación larga ya no
+  lo ocultan: abren el menú.
+- La opción «Abrir en…» de los ajustes decide ahora si los servicios salen en el
+  menú del botón.
+- `actualizarBoton()` sustituye a las funciones de cada botón: unas cuarenta
+  llamadas repartidas que los quitaban y ponían uno a uno.
+
+### Accesibilidad
+- Nombres accesibles en los dos botones, menú con `role="menu"` y teclado
+  (flechas, Inicio, Fin, Esc, Tab) y foco visible con el color del tema.
+- Al salir del lector, el foco vuelve al botón.
+
+## 2026-10-14 — Barra y menús del lector, con iconos y accesibles
+
+### Cambiado
+- Barra del lector: «← Voceiro» (cierra la pestaña y vuelve), Apariencia,
+  Pendientes, Más y Salir. En pantallas estrechas solo se ven los iconos; los
+  textos siguen para los lectores de pantalla. Se van «Atrás», «Titulares» (abría
+  otra pestaña de Voceiro), «Opciones», «Acciones» y los botones sueltos de
+  imágenes, «Abrir en…» y ajustes.
+- Apariencia: tema (con muestras de color), letra, tamaño, ancho, extras, «Sin
+  imágenes en este medio» y origen, con radios y casillas nativos y una ✓ en lo
+  elegido. Más: «Abrir en…» (los servicios), copiar, lectura rápida, imprimir,
+  correo, compartir, ignorar sección y ajustes; se maneja con flechas, Inicio y
+  Fin. En el móvil, los dos salen como hoja desde abajo. Esc o pulsar fuera los
+  cierra.
+- Iconos SVG del sprite de Voceiro: `lector/plantilla.mjs` saca del sprite solo
+  los que usa el lector; si falta alguno, no se construye. Se añaden 14 al sprite
+  (Lucide 0.460.0).
+- La paleta llega al lector como datos y el lector genera su CSS donde la
+  necesite (`cssPaleta`).
+
+### Accesibilidad
+- El lector es un diálogo modal (`role="dialog"`, `aria-modal`, con el título
+  como nombre). Al abrirlo el foco va al título y la página de debajo queda
+  `inert`; al cerrarlo, el foco vuelve a donde estaba.
+- El artículo lleva el `lang` de la página.
+- Botones de al menos 44 px. La barra no se esconde mientras tenga el foco o un
+  desplegable abierto.
+- Las imágenes se amplían también con el teclado (Intro o espacio) y la
+  ampliación se cierra con Esc.
+- `prefers-reduced-motion`: sin transiciones ni desplazamientos suaves.
+
+## 2026-10-14 — Final del artículo en el lector
+
+### Añadido
+- Bloque final en el lector: «✓ Leída · volver a Voceiro», «Siguiente pendiente →»
+  (con su título; la abre en la misma pestaña con el lector ya abierto), guardar
+  para luego y subir.
+- Llegar al final marca el artículo como leído: en Pendientes, si está, y en
+  Voceiro, aunque no se abriera desde allí. Se puede deshacer y entonces ya no se
+  marca sola.
+- Puente: el lector manda a Voceiro lo terminado (`leidas`) y Voceiro lo confirma
+  con `leidasHasta`; las tarjetas se repintan sin rehacer la lista.
+
+### Cambiado
+- Volver a Voceiro cierra la pestaña (`@grant window.close`) y pone delante la de
+  Voceiro (`@grant window.focus`, avisando por el almacén del gestor). Si no se
+  puede cerrar: si Voceiro ya está delante, solo se sale del lector; si no, la
+  pestaña va a Voceiro. La ✕ de arriba hace lo mismo.
+
+### Quitado
+- «↑ Subir · ← Atrás» del pie del artículo (los sustituye el bloque final).
+
 ## 2026-10-14 — Paleta accesible y lector que se entera de los cambios
 
 ### Cambiado
