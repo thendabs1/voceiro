@@ -172,14 +172,35 @@ ${cssPaleta('#il-full')}
 #il-full[data-just="1"] .il-body p{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
 #il-full[data-imagenes="ninguna"] .il-figure,
 #il-full[data-imagenes="ninguna"] .il-inline-figure,
+#il-full[data-imagenes="ninguna"] .il-galeria,
 #il-full[data-imagenes="ninguna"] .il-body img,
 #il-full[data-imagenes="ninguna"] .il-miniatura,
 #il-full[data-imagenes="ninguna"] #il-ambi-img{display:none!important}
 #il-full[data-imagenes="conPie"] .il-figure:not(.il-con-pie),
 #il-full[data-imagenes="conPie"] .il-inline-figure:not(.il-con-pie),
+#il-full[data-imagenes="conPie"] .il-galeria:not(.il-con-pie),
 #il-full[data-imagenes="conPie"] .il-miniatura:not(.il-con-pie){display:none}
 #il-full .il-miniatura{float:right;width:96px;height:96px;margin:4px 0 12px 18px;padding:0;border:1px solid var(--btn-border);border-radius:8px;overflow:hidden;background:var(--quote-bg);cursor:pointer}
 #il-full .il-miniatura img{width:100%;height:100%;object-fit:cover;display:block}
+#il-full .il-galeria{margin:2em 0}
+#il-full .il-galeria-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+#il-full .il-body .il-galeria-rejilla img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:4px;margin:0;cursor:zoom-in}
+#il-full .il-galeria figcaption{font-size:.85em;color:var(--muted);text-align:center;padding:8px 14px 0;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#il-full .il-embed{margin:1.6em 0;padding:12px 16px;border:1px solid var(--btn-border);border-left:4px solid var(--accent);border-radius:6px;background:var(--quote-bg);font-size:.92em}
+#il-full .il-embed-red{margin:0 0 4px;font-size:.78em;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#il-full .il-embed-texto{margin:0 0 6px}
+#il-full .il-embed a{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+#il-full .il-embed .il-ico{width:16px;height:16px}
+#il-full .il-visor{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 64px 16px;cursor:zoom-out}
+#il-full .il-visor-img{max-width:100%;max-height:calc(100% - 60px);object-fit:contain}
+#il-full .il-visor-pie{color:#eee;margin:12px 0 0;max-width:60em;text-align:center;font:14px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;cursor:default}
+#il-full .il-visor button{position:absolute;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#il-full .il-visor button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#il-full .il-visor .il-ico{width:24px;height:24px}
+#il-full .il-visor-cerrar{top:8px;right:8px}
+#il-full .il-visor-ant{left:8px;top:50%;transform:translateY(-50%)}
+#il-full .il-visor-sig{right:8px;top:50%;transform:translateY(-50%)}
+@media (max-width:560px){#il-full .il-visor{padding:56px 8px 16px}#il-full .il-visor-ant,#il-full .il-visor-sig{top:auto;bottom:12px;transform:none}}
 @media (max-width:560px){#il-full .il-miniatura{width:64px;height:64px;margin-left:12px}}
 #il-full.il-focus .il-body>*{opacity:.22;transition:opacity .3s}
 #il-full.il-focus .il-body>.il-active{opacity:1}

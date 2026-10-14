@@ -4,7 +4,7 @@
 // reales (Atlántico, La Opinión, Nós Diario, Ecología Verde).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { decidirMixto, claveImagen, sinImagenesRepetidas, sinPromosEnBordes } from '../../lector/modulos/mixto.js';
+import { decidirMixto, claveImagen, sinImagenesRepetidas, sinPromosEnBordes, agruparGalerias } from '../../lector/modulos/mixto.js';
 
 const textoDe = b => b.tipo === 'list' ? b.items.join(' ') : (b.html || '');
 const p = html => ({ tipo: 'p', html });
@@ -87,4 +87,12 @@ test('sinPromosEnBordes: quita las promos cortas del principio y del final, no l
 test('sinPromosEnBordes: un artículo sin promos no cambia', () => {
   const bloques = [p(P1), p(P2)];
   assert.equal(sinPromosEnBordes(bloques, textoDe), bloques);
+});
+
+test('agruparGalerias: tres imágenes seguidas o más son una galería; dos, no', () => {
+  const a = img('https://x.com/a.jpg'), b = img('https://x.com/b.jpg'), c = img('https://x.com/c.jpg'), d = img('https://x.com/d.jpg');
+  const r = agruparGalerias([p(P1), a, b, c, p(P2), d, a, p(P3)]);
+  assert.deepEqual(r.map(x => x.tipo), ['p', 'galeria', 'p', 'img', 'img', 'p']);
+  assert.deepEqual(r[1].imagenes, [a, b, c]);
+  assert.deepEqual(agruparGalerias([p(P1), a, b, c, d]).map(x => x.tipo), ['p', 'galeria']);
 });

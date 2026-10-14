@@ -15,6 +15,15 @@ function extractBlocks(root){
       }
       if (child.nodeType !== 1) continue;
       const tag = child.tagName;
+      if (tag === 'P' && child.hasAttribute('data-il-embed')){
+        push('embed', {
+          red: child.getAttribute('data-il-embed'),
+          url: child.getAttribute('data-il-url') || '',
+          // «·» es el relleno para que Readability no tire el párrafo vacío.
+          texto: (child.textContent || '').replace(/\s+/g,' ').trim().replace(/^·$/, '')
+        });
+        continue;
+      }
       if (tag === 'P'){
         const imgs = child.querySelectorAll('img');
         const txtContent = (child.textContent || '').replace(/\s+/g,' ').trim();

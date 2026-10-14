@@ -34,6 +34,10 @@ function sanitizeNode(node){
           child.setAttribute('src', absUrl(a.value));
         } else if (tag === 'IMG' && a.name === 'alt'){
           // keep
+        } else if (tag === 'P' && a.name === 'data-il-embed' && /^[a-z]+$/.test(a.value)){
+          // keep: embebido marcado en 17-extractores
+        } else if (tag === 'P' && a.name === 'data-il-url' && /^https?:\/\//i.test(a.value)){
+          // keep
         } else {
           child.removeAttribute(a.name);
         }
