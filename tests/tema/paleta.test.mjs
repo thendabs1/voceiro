@@ -29,6 +29,7 @@ const TEXTO = 4.5, CONTROL = 3;
 // [texto o borde, fondo, mínimo]
 const PARES = [
   ['fg', 'bg', TEXTO], ['fg', 'btn-bg', TEXTO], ['fg', 'quote-bg', TEXTO],
+  ['titulos', 'bg', TEXTO],
   ['muted', 'bg', TEXTO], ['muted', 'btn-bg', TEXTO], ['muted', 'quote-bg', TEXTO],
   ['accent', 'bg', TEXTO], ['accent', 'btn-bg', TEXTO],
   ['preset', 'bg', TEXTO], ['preset', 'preset-bg', TEXTO],

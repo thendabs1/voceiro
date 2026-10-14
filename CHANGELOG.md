@@ -3,6 +3,23 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Tema «Personalizado»
+
+### Añadido
+- Quinto tema, «Personalizado», en Voceiro (Ajustes › Lectura) y en el lector
+  (Apariencia). Se eligen cuatro colores (fondo, texto, enlaces y títulos) y el
+  resto sale de ellos (`shared/tema/personalizado.js`), con el contraste de lo
+  derivado garantizado: gris secundario a 4,5:1, bordes a 3:1 y texto sobre
+  color a 4,5:1. Los colores de estado vienen del tema base, claro u oscuro según
+  el fondo.
+- Junto a cada color se ve su contraste con el fondo, con aviso si baja de 4,5:1.
+  Lo elegido no se corrige solo.
+- Los colores viajan con el perfil de lectura (`colores` en `CAMPOS_PERFIL`,
+  normalizados con `limpiarColores`): Voceiro, el lector y los otros dispositivos
+  usan los mismos.
+- Al elegirlo la primera vez se parte de los colores del tema que había.
+- `--titulos` en la paleta: el color de los títulos en los cinco temas.
+
 ## 2026-10-14 — Ajustes › Lector en Voceiro
 
 ### Añadido

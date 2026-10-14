@@ -38,6 +38,32 @@ function sinSimbolo(s){
   return String(s || '').replace(/^[^\p{L}\p{N}]+/u, '');
 }
 
+// El tema del perfil en un elemento: data-theme y, con el personalizado
+// (shared/tema/personalizado.js), su base clara u oscura y encima, en línea,
+// las variables que salen de los colores elegidos.
+function aplicarTema(el){
+  const p = CFG.prefs || {};
+  VARS_PERSONALIZADAS.forEach(k => el.style.removeProperty('--' + k));
+  el.style.removeProperty('color-scheme');
+  const colores = p.theme === 'custom' ? limpiarColores(p.colores) : null;
+  if (!colores){
+    el.setAttribute('data-theme', p.theme && p.theme !== 'custom' ? p.theme : 'light');
+    return;
+  }
+  const { base, vars } = paletaPersonalizada(colores);
+  el.setAttribute('data-theme', base);
+  for (const [k, v] of Object.entries(vars)) el.style.setProperty(k === 'color-scheme' ? k : '--' + k, v);
+}
+// Para «Personalizado» la primera vez: los colores del tema que hay.
+function coloresDelTema(tema){
+  const p = PALETA[tema] || PALETA.light || {};
+  return limpiarColores({ fondo: hex6(p.bg), texto: hex6(p.fg), enlaces: hex6(p.accent), titulos: hex6(p.titulos || p.fg) });
+}
+function hex6(v){
+  v = String(v || '').trim().toLowerCase();
+  return /^#[0-9a-f]{3}$/.test(v) ? '#' + [...v.slice(1)].map(c => c + c).join('') : v;
+}
+
 // Lo que el lector pinta fuera de #il-full (Ajustes, avisos, diálogos,
 // desplegables, herramientas) lleva la clase il-tema y el tema del perfil.
 // La paleta para .il-tema va en una sola hoja, que se pone la primera vez.
@@ -50,7 +76,7 @@ function temaDe(el){
     (document.head || document.documentElement).appendChild(st);
   }
   el.classList.add('il-tema');
-  el.setAttribute('data-theme', (CFG.prefs && CFG.prefs.theme) || 'light');
+  aplicarTema(el);
   return el;
 }
 
@@ -118,7 +144,7 @@ ${cssPaleta('#il-full')}
 #il-full .il-content{font-family:Georgia,"Times New Roman",serif;font-size:var(--fs,18px);line-height:var(--lh,1.7)}
 #il-full[data-font="sans"] .il-content{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 #il-full[data-font="dyslexic"] .il-content{font-family:Verdana,Tahoma,sans-serif;letter-spacing:.03em;word-spacing:.1em}
-#il-full .il-content h1{font-size:1.8em;line-height:1.25;margin:0 0 12px}
+#il-full .il-content h1{font-size:1.8em;line-height:1.25;margin:0 0 12px;color:var(--titulos)}
 #il-full .il-desc{font-size:1.1em;color:var(--muted);font-style:italic;margin:0 0 20px}
 #il-full .il-meta{color:var(--muted);font-size:.85em;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-meta-actions{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 28px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -126,7 +152,12 @@ ${cssPaleta('#il-full')}
 #il-full .il-meta-actions .il-ico{width:18px;height:18px}
 #il-full .il-body p{margin:1.2em 0}
 #il-full .il-body blockquote{margin:1.5em 0;padding:1em 1.5em;border-left:4px solid var(--accent);background:var(--quote-bg);font-style:italic}
-#il-full .il-body h2,#il-full .il-body h3,#il-full .il-body h4{margin:1.6em 0 .6em;line-height:1.3}
+#il-full .il-body h2,#il-full .il-body h3,#il-full .il-body h4{margin:1.6em 0 .6em;line-height:1.3;color:var(--titulos)}
+#il-full .il-colores{gap:10px}
+#il-full .il-color{display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap}
+#il-full .il-color input{width:44px;height:44px;padding:2px;border:1px solid var(--btn-border);border-radius:8px;background:var(--btn-bg);cursor:pointer}
+#il-full .il-color .il-cr{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+#il-full .il-color .il-cr.il-poco{color:var(--block);font-weight:600}
 #il-full .il-body h2{font-size:1.4em}
 #il-full .il-body h3{font-size:1.2em}
 #il-full .il-body h4{font-size:1.05em}

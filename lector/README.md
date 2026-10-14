@@ -46,6 +46,9 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
 
 - `02-plataforma.js`: lo único que depende del gestor de userscripts (`GM_*`).
 - `04-servicios.js`, `21-desplegable-servicios.js`: «Abrir en…».
+- Módulos compartidos con Voceiro, metidos tal cual al construir:
+  `shared/sync/fusion.js` (Pendientes y perfil) y `shared/tema/personalizado.js`
+  (tema personalizado). No pueden importar nada.
 - `26-boton-flotante.js`: el botón flotante, uno solo y en un Shadow DOM.
   `actualizarBoton()` lo pone, lo cambia o lo quita según la página.
 - `34-puente-con-voceiro.js`: el puente con Voceiro.

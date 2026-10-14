@@ -13,7 +13,7 @@
 // el sprite de Voceiro, no se construye.
 //
 // Versión: 2.0.N, con N = número de commits que han tocado este directorio,
-// shared/sync, medios.py o plantilla.html (si están en el mismo repo). Así sube sola con cada cambio y
+// shared/sync, shared/tema, medios.py o plantilla.html (si están en el mismo repo). Así sube sola con cada cambio y
 // Violentmonkey ve la actualización. LECTOR_VERSION la fuerza. Necesita la
 // historia completa: en CI, checkout con fetch-depth: 0.
 import { execFileSync } from 'node:child_process';
@@ -36,8 +36,8 @@ function version(){
   try {
     const top = git('rev-parse', '--show-toplevel');
     const rutas = ['.'];
-    for (const otra of [resolve(raiz, '..', 'shared', 'sync'), resolve(raiz, '..', 'medios.py'),
-                        resolve(raiz, '..', 'plantilla.html')]){
+    for (const otra of [resolve(raiz, '..', 'shared', 'sync'), resolve(raiz, '..', 'shared', 'tema'),
+                        resolve(raiz, '..', 'medios.py'), resolve(raiz, '..', 'plantilla.html')]){
       if (existsSync(otra) && !relative(top, otra).startsWith('..')) rutas.push(relative(raiz, otra));
     }
     return '2.0.' + git('rev-list', '--count', 'HEAD', '--', ...rutas);
@@ -48,7 +48,7 @@ function version(){
 
 // Módulos compartidos con Voceiro que entran en el lector, sin los
 // `export`, justo después de la plataforma. No pueden importar nada.
-const COMPARTIDOS = ['../shared/sync/fusion.js'];
+const COMPARTIDOS = ['../shared/sync/fusion.js', '../shared/tema/personalizado.js'];
 const TRAS = '02-plataforma.js';
 
 function compartido(rel){

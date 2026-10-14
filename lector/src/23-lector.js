@@ -90,11 +90,20 @@ function openReader(art){
   // lectores de pantalla de serie) con su texto; el ✓ dice cuál está
   // elegida, no solo el color.
   function opcion(tipo, nombre, valor, texto, muestra){
-    const p = muestra ? (PALETA[muestra] || {}) : null;
+    const p = muestra ? (typeof muestra === 'object' ? muestra : (PALETA[muestra] || {})) : null;
     return '<label class="il-opcion' + (p ? ' il-muestra' : '') + '"' +
       (p ? ' style="' + esc('--muestra-bg:' + p.bg + ';--muestra-fg:' + p.fg + ';--muestra-borde:' + p['btn-border']) + '"' : '') + '>' +
       '<input type="' + tipo + '" name="' + nombre + '" value="' + esc(valor) + '">' +
       '<span>' + esc(texto) + '</span></label>';
+  }
+  function muestraPersonalizada(){
+    const c = limpiarColores(prefs.colores) || coloresDelTema(prefs.theme) || {};
+    return { bg: c.fondo, fg: c.texto, 'btn-border': c.texto };
+  }
+  function colorHTML(clave, etiqueta){
+    return '<div class="il-color"><input type="color" id="il-color-' + clave + '" data-color="' + clave + '">' +
+      '<label for="il-color-' + clave + '">' + esc(etiqueta) + '</label>' +
+      (clave === 'fondo' ? '' : '<span class="il-cr" data-cr="' + clave + '"></span>') + '</div>';
   }
   function paso(clase, etiqueta, menos, mas){
     return '<div class="il-paso" role="group" aria-labelledby="il-paso-' + clase + '">' +
@@ -111,6 +120,13 @@ function openReader(art){
         opcion('radio', 'il-tema', 'sepia', t('sepia'), 'sepia') +
         opcion('radio', 'il-tema', 'dark', t('dark'), 'dark') +
         opcion('radio', 'il-tema', 'contrast', t('contrast'), 'contrast') +
+        opcion('radio', 'il-tema', 'custom', t('personalizado'), muestraPersonalizada()) +
+      '</fieldset>' +
+      // Tema personalizado: cuatro colores (shared/tema/personalizado.js saca
+      // el resto) y el contraste de cada uno con el fondo.
+      '<fieldset class="il-colores" hidden><legend>' + esc(t('personalizado')) + '</legend>' +
+        colorHTML('fondo', t('colorFondo')) + colorHTML('texto', t('colorTexto')) +
+        colorHTML('enlaces', t('colorEnlaces')) + colorHTML('titulos', t('colorTitulos')) +
       '</fieldset>' +
       '<fieldset><legend>' + esc(t('font')) + '</legend>' +
         opcion('radio', 'il-letra', 'georgia', t('serif')) +
@@ -257,7 +273,7 @@ function openReader(art){
 
   // Pinta las preferencias; applyPrefs, además, las guarda.
   function pintarPrefs(){
-    ov.setAttribute('data-theme', prefs.theme);
+    aplicarTema(ov);
     ov.setAttribute('data-font', prefs.font);
     ov.setAttribute('data-just', prefs.just ? '1' : '0');
     ov.style.setProperty('--w', prefs.width + 'px');
@@ -278,11 +294,33 @@ function openReader(art){
     ov.querySelectorAll('input[name="il-pref"]').forEach(c => {
       c.checked = c.value === 'textonly' ? siteTextOnly : !!prefs[c.value];
     });
+    pintarColores();
     if (prefs.focus) setTimeout(updateFocus, 60);
   }
   function applyPrefs(){
     pintarPrefs();
     saveCfg(CFG);
+  }
+
+  // Editor del tema personalizado: se ve con ese tema y dice el contraste de
+  // cada color con el fondo (aviso si baja de 4,5:1).
+  function pintarColores(){
+    const caja = ov.querySelector('.il-colores');
+    const colores = prefs.theme === 'custom' ? limpiarColores(prefs.colores) : null;
+    caja.hidden = !colores;
+    const m = muestraPersonalizada();
+    const lbl = ov.querySelector('input[name="il-tema"][value="custom"]').closest('.il-opcion');
+    lbl.style.setProperty('--muestra-bg', m.bg);
+    lbl.style.setProperty('--muestra-fg', m.fg);
+    lbl.style.setProperty('--muestra-borde', m['btn-border']);
+    if (!colores) return;
+    CLAVES_COLORES.forEach(k => { const inp = ov.querySelector('#il-color-' + k); if (inp.value !== colores[k]) inp.value = colores[k]; });
+    caja.querySelectorAll('.il-cr').forEach(sp => {
+      const r = contraste(colores[sp.dataset.cr], colores.fondo);
+      sp.classList.toggle('il-poco', r < 4.5);
+      sp.textContent = r.toLocaleString(CFG.lang, { maximumFractionDigits: 1 }) + ':1' +
+        (r < 4.5 ? ' · ⚠ ' + t('pocoContraste') : ' ✓');
+    });
   }
 
   // La configuración ha cambiado fuera (otra pestaña, Voceiro): se toma la
@@ -531,7 +569,19 @@ function openReader(art){
   ov.querySelector('.il-dict-hint').onclick = () => { openSettings('dict'); };
 
   ov.querySelectorAll('input[name="il-tema"]').forEach(r =>
-    r.onchange = () => { prefs.theme = r.value; applyPrefs(); });
+    r.onchange = () => {
+      if (r.value === 'custom' && !limpiarColores(prefs.colores)) prefs.colores = coloresDelTema(prefs.theme);
+      prefs.theme = r.value;
+      applyPrefs();
+    });
+  // Al mover un color se ve al momento; al soltarlo se guarda (y viaja).
+  ov.querySelectorAll('.il-colores input[type="color"]').forEach(inp => {
+    inp.oninput = () => {
+      prefs.colores = limpiarColores({ ...(limpiarColores(prefs.colores) || coloresDelTema('light')), [inp.dataset.color]: inp.value });
+      pintarPrefs();
+    };
+    inp.onchange = () => applyPrefs();
+  });
   ov.querySelectorAll('input[name="il-letra"]').forEach(r =>
     r.onchange = () => { prefs.font = r.value; applyPrefs(); });
   ov.querySelector('.il-fs-minus').onclick = () => { prefs.fs = Math.max(UI.fsMin, prefs.fs - 1); applyPrefs(); };
