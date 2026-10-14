@@ -6,9 +6,14 @@ const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
 const IMAGENES = ['todas','conPie','ninguna'];
-// Nombres de las redes de los embebidos (tarjeta con enlace).
+// Nombres de las redes y servicios de los embebidos (tarjeta con enlace).
 const NOMBRES_REDES = { x: 'X', youtube: 'YouTube', vimeo: 'Vimeo', instagram: 'Instagram',
-                        tiktok: 'TikTok', bluesky: 'Bluesky', facebook: 'Facebook' };
+                        tiktok: 'TikTok', bluesky: 'Bluesky', facebook: 'Facebook',
+                        datawrapper: 'Datawrapper', flourish: 'Flourish', infogram: 'Infogram',
+                        genially: 'Genially', tableau: 'Tableau Public', arcgis: 'ArcGIS',
+                        googlemaps: 'Google Maps', umap: 'uMap', googlesheets: 'Google Sheets' };
+// Qué es el embebido, si se sabe (data-il-clase): sale en la tarjeta.
+const CLASES_EMBEBIDO = { tabla: 'tabla', grafico: 'grafico', mapa: 'mapa' };
 const SITE_LANGS     = ['auto','es','gl','ca','en','eu','fr','de','it','pt'];
 const UI_LANGS       = ['es','gl','ca','en','eu'];
 const EXTRACTION_MODES = ['auto','selector','all'];

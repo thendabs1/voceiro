@@ -4,7 +4,8 @@
 const ALLOWED_TAGS = new Set([
   'B','STRONG','I','EM','U','S','SUP','SUB','CODE','MARK','A','BR','SPAN',
   'P','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE','HR',
-  'DIV','SECTION','ARTICLE','FIGURE','FIGCAPTION','IMG'
+  'DIV','SECTION','ARTICLE','FIGURE','FIGCAPTION','IMG',
+  'TABLE','CAPTION','THEAD','TBODY','TFOOT','TR','TH','TD'
 ]);
 const DROP_TAGS = new Set(['SCRIPT','STYLE','IFRAME','FORM','INPUT','SVG','NOSCRIPT','OBJECT','EMBED',
                            'VIDEO','AUDIO','CANVAS','BUTTON','SELECT','TEXTAREA','SOURCE']);
@@ -37,6 +38,12 @@ function sanitizeNode(node){
         } else if (tag === 'P' && a.name === 'data-il-embed' && /^[a-z]+$/.test(a.value)){
           // keep: embebido marcado en 17-extractores
         } else if (tag === 'P' && a.name === 'data-il-url' && /^https?:\/\//i.test(a.value)){
+          // keep
+        } else if (tag === 'P' && a.name === 'data-il-clase' && /^[a-z]+$/.test(a.value)){
+          // keep
+        } else if ((tag === 'TD' || tag === 'TH') && (a.name === 'colspan' || a.name === 'rowspan') && /^[1-9]\d?$/.test(a.value)){
+          // keep: celdas unidas
+        } else if (tag === 'TH' && a.name === 'scope' && /^(row|col|rowgroup|colgroup)$/.test(a.value)){
           // keep
         } else {
           child.removeAttribute(a.name);

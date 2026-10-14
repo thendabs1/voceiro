@@ -191,6 +191,12 @@ ${cssPaleta('#il-full')}
 #il-full .il-embed-texto{margin:0 0 6px}
 #il-full .il-embed a{display:inline-flex;align-items:center;gap:6px;min-height:44px}
 #il-full .il-embed .il-ico{width:16px;height:16px}
+#il-full .il-tabla{margin:1.6em 0;overflow-x:auto;border:1px solid var(--btn-border);border-radius:6px}
+#il-full .il-tabla table{border-collapse:collapse;width:100%;font-size:.86em;line-height:1.45;font-variant-numeric:tabular-nums}
+#il-full .il-tabla caption{caption-side:top;text-align:left;font-weight:600;padding:10px 12px 6px}
+#il-full .il-tabla th,#il-full .il-tabla td{padding:6px 12px;border-top:1px solid var(--border);text-align:left;vertical-align:top}
+#il-full .il-tabla th{font-weight:600;background:var(--quote-bg)}
+#il-full .il-body .il-tabla p{margin:0;text-align:left;hyphens:manual}
 #il-full .il-visor{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 64px 16px;cursor:zoom-out}
 #il-full .il-visor-img{max-width:100%;max-height:calc(100% - 60px);object-fit:contain}
 #il-full .il-visor-pie{color:#eee;margin:12px 0 0;max-width:60em;text-align:center;font:14px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;cursor:default}

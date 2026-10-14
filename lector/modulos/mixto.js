@@ -51,7 +51,9 @@ export function decidirMixto(bloques, textoJson, textoDe){
   const tejasJson = new Set(tejas(textoJson));
   if (!tejasJson.size) return { origen: 'readability' };
 
-  const textos = bloques.map(b => esDeTexto(b) ? textoDe(b) : '');
+  // Las tablas van con el texto de al lado, como las imágenes, pero su
+  // texto cuenta para ver si Readability tiene el JSON entero.
+  const textos = bloques.map(b => esDeTexto(b) || b.tipo === 'tabla' ? textoDe(b) : '');
   const tejasR = new Set(tejas(textos.join(' ')));
   let enR = 0;
   tejasJson.forEach(x => { if (tejasR.has(x)) enR++; });

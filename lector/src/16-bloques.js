@@ -19,6 +19,7 @@ function extractBlocks(root){
         push('embed', {
           red: child.getAttribute('data-il-embed'),
           url: child.getAttribute('data-il-url') || '',
+          clase: child.getAttribute('data-il-clase') || '',
           // «·» es el relleno para que Readability no tire el párrafo vacío.
           texto: (child.textContent || '').replace(/\s+/g,' ').trim().replace(/^·$/, '')
         });
@@ -34,6 +35,12 @@ function extractBlocks(root){
         const h = child.innerHTML.trim();
         if (h) push('p', { html: h });
       } else if (tag === 'FIGURE'){
+        const tabla = child.querySelector(':scope > table');
+        if (tabla && esTablaDeDatos(tabla)){
+          const capEl = child.querySelector(':scope > figcaption');
+          push('tabla', bloqueTabla(tabla, capEl ? capEl.textContent : ''));
+          continue;
+        }
         const img = child.querySelector('img');
         if (img && isValidImage(img)){
           const capEl = child.querySelector('figcaption');
@@ -70,6 +77,8 @@ function extractBlocks(root){
             });
           }
         }
+      } else if (tag === 'TABLE' && esTablaDeDatos(child)){
+        push('tabla', bloqueTabla(child, ''));
       } else if (tag === 'HR'){
         push('hr');
       } else if (tag === 'PRE'){
@@ -83,8 +92,42 @@ function extractBlocks(root){
   walk(root);
   return out;
 }
+// Tabla de datos o de maquetación (CMS viejos que meten el artículo en una
+// tabla, que se recorre como hasta ahora). De datos: sin otra tabla dentro,
+// al menos 2 × 2 y sin texto largo ni intertítulos en las celdas.
+function esTablaDeDatos(tabla){
+  if (tabla.querySelector('table')) return false;
+  const filas = Array.from(tabla.rows);
+  if (filas.length < 2 || !filas.some(f => f.cells.length >= 2)) return false;
+  return filas.every(f => Array.from(f.cells).every(c =>
+    (c.textContent || '').replace(/\s+/g,' ').trim().length <= 300 &&
+    !c.querySelector('h1,h2,h3,h4,h5,h6,blockquote,figure,pre')));
+}
+// {html, caption}: la tabla ya saneada. Si no trae caption y su figure
+// tiene pie, el pie pasa a caption. Las imágenes de las celdas (banderas,
+// escudos) se quedan en su texto alternativo.
+function bloqueTabla(tabla, pieFigura){
+  const t = tabla.cloneNode(true);
+  t.querySelectorAll('img').forEach(im => im.replaceWith(im.getAttribute('alt') || ''));
+  let cap = t.querySelector('caption');
+  const pie = (pieFigura || '').replace(/\s+/g,' ').trim();
+  if (!cap && pie){
+    cap = t.ownerDocument.createElement('caption');
+    cap.textContent = pie;
+    t.insertBefore(cap, t.firstChild);
+  }
+  return { html: t.outerHTML, caption: cap ? (cap.textContent || '').replace(/\s+/g,' ').trim() : '' };
+}
+// Texto plano de una tabla, fila a fila (copiar el texto).
+function textoDeTabla(b){
+  const doc = new DOMParser().parseFromString(b.html || '', 'text/html');
+  const filas = Array.from(doc.querySelectorAll('tr')).map(tr =>
+    Array.from(tr.cells).map(c => (c.textContent || '').replace(/\s+/g,' ').trim()).join(' | '));
+  return (b.caption ? b.caption + '\n' : '') + filas.join('\n');
+}
 // Texto plano de un bloque (para comparar con el JSON o contar palabras).
 function textoDeBloque(b){
+  if (b.tipo === 'tabla') return textoDeTabla(b);
   return b.tipo === 'list' ? b.items.map(stripTags).join(' ') : stripTags(b.html || '');
 }
 function buildBlocksFromHTML(html){

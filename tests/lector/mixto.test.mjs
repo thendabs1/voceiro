@@ -35,6 +35,17 @@ test('el aviso de carga de un gráfico, entre dos párrafos, sale', () => {
   assert.deepEqual(r, { origen: 'mixto', conservar: [0, 2] });
 });
 
+test('una tabla con texto del JSON cuenta para la cobertura y se queda con sus párrafos', () => {
+  // El JSON trae las celdas como texto; sin contarlas, a Readability le
+  // faltaría más del 20 % del JSON y saldría «jsonld», sin la tabla.
+  const CELDAS = 'Muíños Requiás 22,8 hectáreas A Laracha Caión 33,49 hectáreas Ourol O Sisto 32,83 hectáreas ' +
+    'Carballo Noicela 186,5 hectáreas Arbo Cabeiras 33 hectáreas Rodeiro A Portela 15,16 hectáreas';
+  const tabla = { tipo: 'tabla', html: '<table>…</table>', caption: '', texto: CELDAS };
+  const deTexto = b => b.tipo === 'tabla' ? b.texto : textoDe(b);
+  const r = decidirMixto([p(P1), tabla, p(P2), p('¡Anótate a las newsletters de Atlántico!')], `${P1} ${CELDAS} ${P2}`, deTexto);
+  assert.deepEqual(r, { origen: 'mixto', conservar: [0, 1, 2] });
+});
+
 test('si no sobra nada, es Readability', () => {
   assert.equal(decidirMixto([p(P1), p(P2)], `${P1} ${P2}`, textoDe).origen, 'readability');
 });
