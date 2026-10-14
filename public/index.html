@@ -1983,6 +1983,8 @@
   <symbol id="i-bookmark-check" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z" /><path d="m9 10 2 2 4-4" /></symbol>
   <symbol id="i-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></symbol>
   <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></symbol>
+  <symbol id="i-captions" viewBox="0 0 24 24"><rect width="18" height="14" x="3" y="5" rx="2" ry="2" /><path d="M7 15h4M15 15h2M7 11h2M13 11h4" /></symbol>
   <symbol id="i-image-off" viewBox="0 0 24 24"><line x1="2" x2="22" y1="2" y2="22" /><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83" /><line x1="13.5" x2="6" y1="13.5" y2="21" /><line x1="18" x2="21" y1="12" y2="15" /><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59" /><path d="M21 15V5a2 2 0 0 0-2-2H9" /></symbol>
   <symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></symbol>
@@ -2891,6 +2893,7 @@ const I18N = {
     forceInclude:           'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
     forceExclude:           'Bloquear siempre',
     blockMedia:             'No mostrar noticias de este medio',
+    comoLeerlo:             'Cómo leer este medio',
     saveLabelSave:          'Guardar',
     saveLabelPending:       'Pendiente',
     saveLabelRead:          'Leída',
@@ -3256,6 +3259,7 @@ const I18N = {
     forceInclude:           'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
     forceExclude:           'Bloquear sempre',
     blockMedia:             'Non amosar noticias deste medio',
+    comoLeerlo:             'Como ler este medio',
     saveLabelSave:          'Gardar',
     saveLabelPending:       'Pendente',
     saveLabelRead:          'Lida',
@@ -3611,6 +3615,7 @@ const I18N = {
     forceInclude:           'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
     forceExclude:           'Bloquejar sempre',
     blockMedia:             "No mostrar notícies d'aquest mitjà",
+    comoLeerlo:             "Com llegir aquest mitjà",
     saveLabelSave:          'Desar',
     saveLabelPending:       'Pendent',
     saveLabelRead:          'Llegida',
@@ -3966,6 +3971,7 @@ const I18N = {
     forceInclude:           'Always force (include even if group or keywords do not match)',
     forceExclude:           'Always block',
     blockMedia:             'Hide news from this outlet',
+    comoLeerlo:             'How to read this outlet',
     saveLabelSave:          'Save',
     saveLabelPending:       'Pending',
     saveLabelRead:          'Read',
@@ -4321,6 +4327,7 @@ const I18N = {
     forceInclude:           'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
     forceExclude:           'Beti blokeatu',
     blockMedia:             'Ez erakutsi hedabide honetako albisteak',
+    comoLeerlo:             'Nola irakurri hedabide hau',
     saveLabelSave:          'Gorde',
     saveLabelPending:       'Zain',
     saveLabelRead:          'Irakurrita',
@@ -5416,6 +5423,8 @@ function abrirMenuMas(btn){
   m.innerHTML =
     (yaForzado ? '' : item('btn-add-item', 'plus', t('addToModoTitle')))
     + item('btn-block-item', 'ban', t('blockMedia'))
+    // Cómo se lee este medio en el lector: su regla, en Ajustes › Lector.
+    + (USCRIPT_OK ? item('btn-leer-item', 'book-open-text', t('comoLeerlo')) : '')
     + item('btn-report-item', 'flag', t('repBtnTitle'));
   cont.appendChild(m);
 
@@ -8117,14 +8126,19 @@ function ajRefrescar(){
 
 // Página Lector: el panel lo pinta el propio lector en #aj-lector-panel; aquí
 // solo se le avisa (lo ignora si ya está). Al salir de la página se vacía.
+// AJ_LECTOR_DOMINIO: el medio de «Cómo leerlo»; el lector lo pone delante.
+let AJ_LECTOR_DOMINIO = '';
 function ajPintarLector(){
   actualizarSyncBanner();
   $('#aj-plugin-hint').hidden = USCRIPT_OK;
   $('#aj-lector-instalar').hidden = USCRIPT_OK;
   $('#aj-lector-hint').hidden = USCRIPT_OK;
   if (!USCRIPT_OK){ ajVaciarLector(); return; }
+  const dominio = AJ_LECTOR_DOMINIO;
+  AJ_LECTOR_DOMINIO = '';
   try {
-    document.dispatchEvent(new CustomEvent('voceiro-ajustes-lector', { detail: { v: PUENTE_V } }));
+    document.dispatchEvent(new CustomEvent('voceiro-ajustes-lector',
+      { detail: dominio ? { v: PUENTE_V, dominio } : { v: PUENTE_V } }));
   } catch(e){}
 }
 function ajVaciarLector(){
@@ -10581,6 +10595,19 @@ function wireResultadosDelegation(){
         return;
       }
       abrirDestinoInline(i, 'ignore');
+      return;
+    }
+
+    // Cómo leerlo: Ajustes › Lector con la regla de ese medio delante.
+    const leerBtn = e.target.closest('.btn-leer-item');
+    if (leerBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const n = ULT_FILTRADAS[parseInt(leerBtn.dataset.idx, 10)];
+      if (!n) return;
+      AJ_LECTOR_DOMINIO = n.dominio;
+      if (ajAbierto() && ajRuta() === 'lector') ajPintarLector();
+      else abrirAjustes('lector');
       return;
     }
 

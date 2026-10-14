@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.232
+// @version      2.0.235
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,8 +29,14 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.232';
+const SCRIPT_VERSION = '2.0.235';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
+// Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
+// valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
+const IMAGENES = ['todas','conPie','ninguna'];
+// Nombres de las redes de los embebidos (tarjeta con enlace).
+const NOMBRES_REDES = { x: 'X', youtube: 'YouTube', vimeo: 'Vimeo', instagram: 'Instagram',
+                        tiktok: 'TikTok', bluesky: 'Bluesky', facebook: 'Facebook' };
 const SITE_LANGS     = ['auto','es','gl','ca','en','eu','fr','de','it','pt'];
 const UI_LANGS       = ['es','gl','ca','en','eu'];
 const EXTRACTION_MODES = ['auto','selector','all'];
@@ -662,14 +668,35 @@ function sinPromosEnBordes(bloques, textoDe){
   return fuera.size ? bloques.filter((_, i) => !fuera.has(i)) : bloques;
 }
 
+// Tres o más imágenes seguidas, sin texto entre ellas, forman una galería
+// ({tipo: 'galeria', imagenes}): el lector las pinta en rejilla y el visor
+// las recorre con ← →.
+const MIN_GALERIA = 3;
+function agruparGalerias(bloques){
+  const out = [];
+  let tanda = [];
+  const cerrar = () => {
+    if (tanda.length >= MIN_GALERIA) out.push({ tipo: 'galeria', imagenes: tanda });
+    else out.push(...tanda);
+    tanda = [];
+  };
+  for (const b of bloques){
+    if (b.tipo === 'img') tanda.push(b);
+    else { cerrar(); out.push(b); }
+  }
+  cerrar();
+  return out;
+}
+
 /* ============================================================
    1c. CATÁLOGO DE MEDIOS
    ------------------------------------------------------------
    Es el de Voceiro: build.mjs lo saca de medios.py (con
-   lector/catalogo.py) y lo pone aquí. Un solo catálogo; los medios
-   que añada cada persona van en su customCatalog.
+   lector/catalogo.py) y lo pone aquí: {d, n, lang}. Los medios que
+   añade cada persona son reglas suyas (CFG.sites), no catálogo.
+   isKnownMediaDomain y getCatalogEntry están en 09.
    ============================================================ */
-const MEDIA_CATALOG = [{"group":"Deportes","items":[{"d":"2playbook.com","n":"2Playbook","lang":"es","type":"digital","tags":["deportes","negocio","nacional"]},{"d":"as.com","n":"Diario AS","lang":"es","type":"diario","tags":["deportes","futbol","nacional"]},{"d":"eldesmarque.com","n":"El Desmarque","lang":"es","type":"digital","tags":["deportes","digital","nacional"]},{"d":"estadiodeportivo.com","n":"Estadio Deportivo","lang":"es","type":"diario","tags":["deportes","andalucia","nacional"]},{"d":"marca.com","n":"Marca","lang":"es","type":"diario","tags":["deportes","futbol","nacional"]},{"d":"mundodeportivo.com","n":"Mundo Deportivo","lang":"es","type":"diario","tags":["deportes","futbol","catalan","nacional"]},{"d":"palco23.com","n":"Palco23","lang":"es","type":"digital","tags":["deportes","negocio","nacional"]},{"d":"relevo.com","n":"Relevo","lang":"es","type":"digital","tags":["deportes","digital","nacional"]},{"d":"sport.es","n":"Sport","lang":"es","type":"diario","tags":["deportes","futbol","catalan","nacional"]},{"d":"superdeporte.es","n":"Superdeporte","lang":"es","type":"diario","tags":["deportes","valencia","nacional"]}]},{"group":"Economía","items":[{"d":"bolsamania.com","n":"Bolsamania","lang":"es","type":"digital","tags":["economia","mercados","nacional"]},{"d":"brainsre.news","n":"Brains RE","lang":"es","type":"digital","tags":["economia","inmobiliario","nacional"]},{"d":"capitalmadrid.com","n":"Capital Madrid","lang":"es","type":"digital","tags":["economia","finanzas","nacional"]},{"d":"cincodias.com","n":"Cinco Días","lang":"es","type":"diario","tags":["economia","negocios","nacional"]},{"d":"theofficer.es","n":"The Officer","lang":"es","type":"digital","tags":["economia","negocios","nacional"]},{"d":"economiadigital.es","n":"Economía Digital","lang":"es","type":"digital","tags":["economia","digital","nacional"]},{"d":"elblogsalmon.com","n":"El Blog Salmón","lang":"es","type":"digital","tags":["economia","blog","nacional"]},{"d":"eleconomista.es","n":"El Economista","lang":"es","type":"diario","tags":["economia","negocios","nacional"]},{"d":"estrategiasdeinversion.com","n":"Estrategias de Inversión","lang":"es","type":"digital","tags":["economia","inversion","nacional"]},{"d":"expansion.com","n":"Expansión","lang":"es","type":"diario","tags":["economia","negocios","nacional"]},{"d":"finect.com","n":"Finect","lang":"es","type":"digital","tags":["economia","finanzas","nacional"]},{"d":"idealista.com","n":"Idealista News","lang":"es","type":"digital","tags":["economia","vivienda","nacional"]},{"d":"invertia.com","n":"Invertia","lang":"es","type":"digital","tags":["economia","mercados","nacional"]},{"d":"libremercado.com","n":"Libre Mercado","lang":"es","type":"digital","tags":["economia","liberal","nacional"]},{"d":"mercadofinanciero.com","n":"Mercado Financiero","lang":"es","type":"digital","tags":["economia","mercados","nacional"]},{"d":"murciaeconomia.com","n":"Murcia Economía","lang":"es","type":"digital","tags":["economia","murcia","regional"]},{"d":"valenciaplaza.com","n":"Valencia Plaza","lang":"es","type":"digital","tags":["economia","valencia","regional","comunidad-valenciana"]},{"d":"viaempresa.cat","n":"Via Empresa","lang":"ca","type":"digital","tags":["economia","regional","cataluna"]}]},{"group":"Tecnología","items":[{"d":"adslzone.net","n":"ADSLZone","lang":"es","type":"digital","tags":["tecnologia","internet","nacional"]},{"d":"andro4all.com","n":"Andro4all","lang":"es","type":"digital","tags":["tecnologia","android","nacional"]},{"d":"applesfera.com","n":"Applesfera","lang":"es","type":"digital","tags":["tecnologia","apple","nacional"]},{"d":"computerhoy.com","n":"Computer Hoy","lang":"es","type":"digital","tags":["tecnologia","nacional"]},{"d":"computerworld.es","n":"Computerworld España","lang":"es","type":"digital","tags":["tecnologia","empresa","nacional"]},{"d":"elandroidelibre.elespanol.com","n":"El Androide Libre","lang":"es","type":"digital","tags":["tecnologia","android","nacional"]},{"d":"elchapuzasinformatico.com","n":"El Chapuzas Informático","lang":"es","type":"digital","tags":["tecnologia","hardware","nacional"]},{"d":"genbeta.com","n":"Genbeta","lang":"es","type":"digital","tags":["tecnologia","software","nacional"]},{"d":"hardzone.es","n":"HardZone","lang":"es","type":"digital","tags":["tecnologia","hardware","nacional"]},{"d":"hipertextual.com","n":"Hipertextual","lang":"es","type":"digital","tags":["tecnologia","cultura","nacional"]},{"d":"ituser.es","n":"IT User","lang":"es","type":"digital","tags":["tecnologia","empresa","nacional"]},{"d":"muycomputer.com","n":"MuyComputer","lang":"es","type":"digital","tags":["tecnologia","hardware","nacional"]},{"d":"profesionalreview.com","n":"Profesional Review","lang":"es","type":"digital","tags":["tecnologia","hardware","nacional"]},{"d":"silicon.es","n":"Silicon","lang":"es","type":"digital","tags":["tecnologia","empresa","nacional"]},{"d":"teknofilo.com","n":"Teknófilo","lang":"es","type":"digital","tags":["tecnologia","movil","nacional"]},{"d":"xataka.com","n":"Xataka","lang":"es","type":"digital","tags":["tecnologia","gadgets","nacional"]},{"d":"xatakaciencia.com","n":"Xataka Ciencia","lang":"es","type":"digital","tags":["ciencia","tecnologia","nacional"]},{"d":"xatakamovil.com","n":"Xataka Móvil","lang":"es","type":"digital","tags":["tecnologia","movil","nacional"]}]},{"group":"Ciencia","items":[{"d":"agenciasinc.es","n":"SINC","lang":"es","type":"digital","tags":["ciencia","publico","nacional"]},{"d":"consalud.es","n":"ConSalud","lang":"es","type":"digital","tags":["salud","ciencia","nacional"]},{"d":"diariomedico.com","n":"Diario Médico","lang":"es","type":"digital","tags":["salud","profesional","ciencia","nacional"]},{"d":"muyinteresante.okdiario.com","n":"Muy Interesante","lang":"es","type":"revista","tags":["ciencia","divulgacion","nacional"]},{"d":"nationalgeographic.com.es","n":"National Geographic España","lang":"es","type":"revista","tags":["ciencia","naturaleza","nacional"]},{"d":"naukas.com","n":"Naukas","lang":"es","type":"digital","tags":["ciencia","blog","nacional"]},{"d":"quo.es","n":"Quo","lang":"es","type":"revista","tags":["ciencia","divulgacion","nacional"]}]},{"group":"Cultura","items":[{"d":"alternativaseconomicas.coop","n":"Alternativas Económicas","lang":"es","type":"revista","tags":["economia","social","cultura","nacional"]},{"d":"elcritic.cat","n":"Crític","lang":"ca","type":"revista","tags":["cultural","investigacion","cultura","nacional"]},{"d":"ctxt.es","n":"CTXT","lang":"es","type":"revista","tags":["cultural","investigacion","cultura","nacional"]},{"d":"culturainquieta.com","n":"Cultura Inquieta","lang":"es","type":"revista","tags":["cultural","cultura","nacional"]},{"d":"elsaltodiario.com","n":"El Salto","lang":"es","type":"digital","tags":["generalista","digital","progresista","cultura","nacional"]},{"d":"ethic.es","n":"Ethic","lang":"es","type":"revista","tags":["cultural","sociedad","cultura","nacional"]},{"d":"jotdown.es","n":"Jot Down","lang":"es","type":"revista","tags":["cultural","entrevistas","cultura","nacional"]},{"d":"lamarea.com","n":"La Marea","lang":"es","type":"revista","tags":["cultural","progresista","cultura","nacional"]},{"d":"letraslibres.com","n":"Letras Libres","lang":"es","type":"revista","tags":["cultural","literatura","cultura","nacional"]},{"d":"revistamongolia.com","n":"Mongolia","lang":"es","type":"revista","tags":["cultural","humor","cultura","nacional"]},{"d":"yorokobu.es","n":"Yorokobu","lang":"es","type":"revista","tags":["cultural","creatividad","cultura","nacional"]},{"d":"zendalibros.com","n":"Zenda Libros","lang":"es","type":"revista","tags":["cultural","libros","cultura","nacional"]}]},{"group":"Nacional","items":[{"d":"20minutos.es","n":"20 Minutos","lang":"es","type":"diario","tags":["generalista","gratuito","nacional"]},{"d":"abc.es","n":"ABC","lang":"es","type":"diario","tags":["generalista","nacional","conservador"]},{"d":"antena3.com","n":"Antena 3","lang":"es","type":"tv","tags":["generalista","privado","tv","nacional"]},{"d":"cadenaser.com","n":"Cadena SER","lang":"es","type":"radio","tags":["generalista","radio","nacional"]},{"d":"cambio16.com","n":"Cambio16","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"confilegal.com","n":"Confilegal","lang":"es","type":"digital","tags":["justicia","digital","generalista","nacional"]},{"d":"cope.es","n":"COPE","lang":"es","type":"radio","tags":["generalista","radio","conservador","nacional"]},{"d":"cuartopoder.es","n":"Cuarto Poder","lang":"es","type":"digital","tags":["generalista","progresista","nacional"]},{"d":"cuatro.com","n":"Cuatro","lang":"es","type":"tv","tags":["generalista","privado","tv","nacional"]},{"d":"diariocritico.com","n":"Diario Crítico","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"efe.com","n":"Agencia EFE","lang":"es","type":"agencia","tags":["agencia","nacional","generalista"]},{"d":"elboletin.com","n":"El Boletín","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"elconfidencial.com","n":"El Confidencial","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"eldebate.com","n":"El Debate","lang":"es","type":"digital","tags":["generalista","digital","conservador","nacional"]},{"d":"eldiario.es","n":"elDiario.es","lang":"es","type":"digital","tags":["generalista","digital","progresista","nacional"]},{"d":"elespanol.com","n":"El Español","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"elindependiente.com","n":"El Independiente","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"elmundo.es","n":"El Mundo","lang":"es","type":"diario","tags":["generalista","nacional"]},{"d":"elpais.com","n":"El País","lang":"es","type":"diario","tags":["generalista","nacional"]},{"d":"elperiodico.com","n":"El Periódico","lang":"es","type":"diario","tags":["generalista","nacional","catalan"]},{"d":"elplural.com","n":"El Plural","lang":"es","type":"digital","tags":["generalista","digital","progresista","nacional"]},{"d":"elsiglodeuropa.es","n":"El Siglo de Europa","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"elviejotopo.com","n":"El Viejo Topo","lang":"es","type":"revista","tags":["cultural","izquierda","generalista","nacional"]},{"d":"europapress.es","n":"Europa Press","lang":"es","type":"agencia","tags":["agencia","nacional","generalista"]},{"d":"huffingtonpost.es","n":"El HuffPost","lang":"es","type":"digital","tags":["generalista","digital","progresista","nacional"]},{"d":"infolibre.es","n":"InfoLibre","lang":"es","type":"digital","tags":["generalista","digital","progresista","nacional"]},{"d":"larazon.es","n":"La Razón","lang":"es","type":"diario","tags":["generalista","nacional","conservador"]},{"d":"lasexta.com","n":"La Sexta","lang":"es","type":"tv","tags":["generalista","privado","tv","nacional"]},{"d":"lavanguardia.com","n":"La Vanguardia","lang":"es","type":"diario","tags":["generalista","nacional","catalan"]},{"d":"libertaddigital.com","n":"Libertad Digital","lang":"es","type":"digital","tags":["generalista","digital","liberal","nacional"]},{"d":"mientrastanto.org","n":"Mientras Tanto","lang":"es","type":"revista","tags":["politica","izquierda","generalista","nacional"]},{"d":"moncloa.com","n":"Moncloa","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"nuevarevista.net","n":"Nueva Revista","lang":"es","type":"revista","tags":["cultural","ideas","generalista","nacional"]},{"d":"okdiario.com","n":"OK Diario","lang":"es","type":"digital","tags":["generalista","digital","conservador","nacional"]},{"d":"ondacero.es","n":"Onda Cero","lang":"es","type":"radio","tags":["generalista","radio","nacional"]},{"d":"periodistadigital.com","n":"Periodista Digital","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"publico.es","n":"Público","lang":"es","type":"digital","tags":["generalista","digital","progresista","nacional"]},{"d":"que.es","n":"Qué!","lang":"es","type":"diario","tags":["generalista","gratuito","nacional"]},{"d":"republica.com","n":"Republica.com","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"rtve.es","n":"RTVE","lang":"es","type":"tv","tags":["generalista","publico","tv","radio","nacional"]},{"d":"servimedia.es","n":"Servimedia","lang":"es","type":"agencia","tags":["agencia","social","generalista","nacional"]},{"d":"telecinco.es","n":"Telecinco","lang":"es","type":"tv","tags":["generalista","privado","tv","nacional"]},{"d":"theobjective.com","n":"The Objective","lang":"es","type":"digital","tags":["generalista","digital","nacional"]},{"d":"vientosur.info","n":"Viento Sur","lang":"es","type":"revista","tags":["politica","izquierda","generalista","nacional"]},{"d":"vozpopuli.com","n":"Vozpópuli","lang":"es","type":"digital","tags":["generalista","digital","nacional"]}]},{"group":"Regional · Andalucía","items":[{"d":"andaluciainformacion.es","n":"Andalucía Información","lang":"es","type":"digital","tags":["generalista","andalucia","regional"]},{"d":"cordopolis.eldiario.es","n":"Cordópolis","lang":"es","type":"digital","tags":["generalista","cordoba","regional","andalucia"]},{"d":"diariocordoba.com","n":"Diario Córdoba","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"diariodealmeria.es","n":"Diario de Almería","lang":"es","type":"diario","tags":["generalista","almeria","regional","andalucia"]},{"d":"diariodecadiz.es","n":"Diario de Cádiz","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"diariodejerez.es","n":"Diario de Jerez","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"diariodesevilla.es","n":"Diario de Sevilla","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"diariosur.es","n":"Diario Sur","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"elcorreoweb.es","n":"El Correo de Andalucía","lang":"es","type":"digital","tags":["generalista","andalucia","regional"]},{"d":"granadadigital.es","n":"Granada Digital","lang":"es","type":"digital","tags":["generalista","granada","regional","andalucia"]},{"d":"granadahoy.com","n":"Granada Hoy","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"huelvaya.es","n":"Huelva Ya","lang":"es","type":"digital","tags":["generalista","huelva","regional","andalucia"]},{"d":"ideal.es","n":"Ideal","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"laopiniondemalaga.es","n":"La Opinión de Málaga","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"malagahoy.es","n":"Málaga Hoy","lang":"es","type":"diario","tags":["generalista","andalucia","regional"]},{"d":"sevillaactualidad.com","n":"Sevilla Actualidad","lang":"es","type":"digital","tags":["generalista","sevilla","regional","andalucia"]}]},{"group":"Regional · Aragón","items":[{"d":"elperiodicodearagon.com","n":"El Periódico de Aragón","lang":"es","type":"diario","tags":["generalista","aragon","regional"]},{"d":"heraldo.es","n":"Heraldo de Aragón","lang":"es","type":"diario","tags":["generalista","aragon","regional"]}]},{"group":"Regional · Asturias","items":[{"d":"elcomercio.es","n":"El Comercio","lang":"es","type":"diario","tags":["generalista","asturias","regional"]},{"d":"lavozdeasturias.es","n":"La Voz de Asturias","lang":"es","type":"digital","tags":["generalista","asturias","regional"]},{"d":"lne.es","n":"La Nueva España","lang":"es","type":"diario","tags":["generalista","asturias","regional"]}]},{"group":"Regional · Baleares","items":[{"d":"diariodeibiza.es","n":"Diario de Ibiza","lang":"es","type":"diario","tags":["generalista","baleares","regional"]},{"d":"diariodemallorca.es","n":"Diario de Mallorca","lang":"es","type":"diario","tags":["generalista","baleares","regional"]},{"d":"ultimahora.es","n":"Última Hora","lang":"es","type":"diario","tags":["generalista","baleares","regional"]}]},{"group":"Regional · Canarias","items":[{"d":"canarias7.es","n":"Canarias 7","lang":"es","type":"diario","tags":["generalista","canarias","regional"]},{"d":"diariodeavisos.com","n":"Diario de Avisos","lang":"es","type":"diario","tags":["generalista","canarias","regional"]},{"d":"eldia.es","n":"El Día","lang":"es","type":"diario","tags":["generalista","canarias","regional"]},{"d":"laprovincia.es","n":"La Provincia","lang":"es","type":"diario","tags":["generalista","canarias","regional"]}]},{"group":"Regional · Cantabria","items":[{"d":"eldiariomontanes.es","n":"El Diario Montañés","lang":"es","type":"diario","tags":["generalista","cantabria","regional"]}]},{"group":"Regional · Castilla-La Mancha","items":[{"d":"encastillalamancha.es","n":"En Castilla-La Mancha","lang":"es","type":"digital","tags":["generalista","clm","regional","castilla-la-mancha"]},{"d":"lanzadigital.com","n":"Lanza Digital","lang":"es","type":"digital","tags":["generalista","clm","regional","castilla-la-mancha"]},{"d":"latribunadealbacete.es","n":"La Tribuna de Albacete","lang":"es","type":"diario","tags":["generalista","clm","regional","castilla-la-mancha"]}]},{"group":"Regional · Castilla y León","items":[{"d":"diariodeleon.es","n":"Diario de León","lang":"es","type":"diario","tags":["generalista","leon","regional","castilla-y-leon"]},{"d":"diariodevalladolid.es","n":"Diario de Valladolid","lang":"es","type":"digital","tags":["generalista","valladolid","regional","castilla-y-leon"]},{"d":"elcorreodeburgos.com","n":"El Correo de Burgos","lang":"es","type":"digital","tags":["generalista","burgos","regional","castilla-y-leon"]},{"d":"eldiadevalladolid.com","n":"El Día de Valladolid","lang":"es","type":"diario","tags":["generalista","castillaleon","regional","castilla-y-leon"]},{"d":"elmirondesoria.es","n":"El Mirón de Soria","lang":"es","type":"digital","tags":["generalista","soria","regional","castilla-y-leon"]},{"d":"elnortedecastilla.es","n":"El Norte de Castilla","lang":"es","type":"diario","tags":["generalista","castillaleon","regional","castilla-y-leon"]},{"d":"lagacetadesalamanca.es","n":"La Gaceta de Salamanca","lang":"es","type":"diario","tags":["generalista","castillaleon","regional","castilla-y-leon"]},{"d":"laopiniondezamora.es","n":"La Opinión de Zamora","lang":"es","type":"diario","tags":["generalista","castillaleon","regional","castilla-y-leon"]},{"d":"sorianoticias.com","n":"Soria Noticias","lang":"es","type":"digital","tags":["generalista","soria","regional","castilla-y-leon"]}]},{"group":"Regional · Cataluña","items":[{"d":"324.cat","n":"324","lang":"ca","type":"tv","tags":["generalista","tv","publico","regional","cataluna"]},{"d":"acn.cat","n":"Agència Catalana de Notícies","lang":"ca","type":"agencia","tags":["agencia","catalan","generalista","regional","cataluna"]},{"d":"ara.cat","n":"Ara","lang":"ca","type":"diario","tags":["generalista","catalan","regional","cataluna"]},{"d":"diaridegirona.cat","n":"Diari de Girona","lang":"ca","type":"diario","tags":["generalista","catalan","regional","cataluna"]},{"d":"diaridetarragona.com","n":"Diari de Tarragona","lang":"ca","type":"diario","tags":["generalista","catalan","regional","cataluna"]},{"d":"directa.cat","n":"La Directa","lang":"ca","type":"revista","tags":["investigacion","izquierda","generalista","regional","cataluna"]},{"d":"e-noticies.cat","n":"e-Notícies","lang":"ca","type":"digital","tags":["generalista","catalan","regional","cataluna"]},{"d":"elmon.cat","n":"El Món","lang":"ca","type":"digital","tags":["generalista","digital","regional","cataluna"]},{"d":"elnacional.cat","n":"El Nacional","lang":"ca","type":"digital","tags":["generalista","digital","regional","cataluna"]},{"d":"elpuntavui.cat","n":"El Punt Avui","lang":"ca","type":"diario","tags":["generalista","catalan","regional","cataluna"]},{"d":"naciodigital.cat","n":"Nació Digital","lang":"ca","type":"digital","tags":["generalista","digital","regional","cataluna"]},{"d":"rac1.cat","n":"RAC1","lang":"ca","type":"radio","tags":["generalista","radio","regional","cataluna"]},{"d":"regio7.cat","n":"Regió7","lang":"ca","type":"diario","tags":["generalista","catalan","regional","cataluna"]},{"d":"reusdigital.cat","n":"Reus Digital","lang":"ca","type":"digital","tags":["generalista","local","regional","cataluna"]},{"d":"segre.com","n":"Segre","lang":"ca","type":"diario","tags":["generalista","catalan","regional","cataluna"]},{"d":"vilaweb.cat","n":"VilaWeb","lang":"ca","type":"digital","tags":["generalista","digital","regional","cataluna"]}]},{"group":"Regional · Comunidad Valenciana","items":[{"d":"alicanteplaza.es","n":"Alicante Plaza","lang":"es","type":"digital","tags":["generalista","alicante","regional","comunidad-valenciana"]},{"d":"castellonplaza.com","n":"Castellón Plaza","lang":"es","type":"digital","tags":["generalista","castellon","regional","comunidad-valenciana"]},{"d":"elperiodicomediterraneo.com","n":"El Periódico Mediterráneo","lang":"es","type":"diario","tags":["generalista","castellon","regional","comunidad-valenciana"]},{"d":"informacion.es","n":"Información","lang":"es","type":"diario","tags":["generalista","alicante","regional","comunidad-valenciana"]},{"d":"lasprovincias.es","n":"Las Provincias","lang":"es","type":"diario","tags":["generalista","valencia","regional","comunidad-valenciana"]},{"d":"levante-emv.com","n":"Levante-EMV","lang":"es","type":"diario","tags":["generalista","valencia","regional","comunidad-valenciana"]},{"d":"valenciaextra.com","n":"Valencia Extra","lang":"es","type":"digital","tags":["generalista","valencia","regional","comunidad-valenciana"]}]},{"group":"Regional · Extremadura","items":[{"d":"elperiodicoextremadura.com","n":"El Periódico Extremadura","lang":"es","type":"diario","tags":["generalista","extremadura","regional"]},{"d":"hoy.es","n":"Hoy","lang":"es","type":"diario","tags":["generalista","extremadura","regional"]}]},{"group":"Regional · Galicia","items":[{"d":"atlantico.net","n":"Atlántico","lang":"es","type":"diario","tags":["generalista","galicia","vigo","regional"]},{"d":"campogalego.es","n":"Campo Galego","lang":"gl","type":"revista","tags":["agro","galicia","generalista","regional"]},{"d":"crtvg.gal","n":"CRTVG (TVG y Radio Galega)","lang":"gl","type":"tv","tags":["generalista","publico","galicia","radio","regional"]},{"d":"diariodearousa.com","n":"Diario de Arousa","lang":"es","type":"diario","tags":["generalista","galicia","arousa","regional"]},{"d":"diariodeferrol.com","n":"Diario de Ferrol","lang":"es","type":"diario","tags":["generalista","galicia","ferrol","regional"]},{"d":"diariodepontevedra.es","n":"Diario de Pontevedra","lang":"es","type":"diario","tags":["generalista","galicia","pontevedra","regional"]},{"d":"diariodevigo.com","n":"Diario de Vigo","lang":"es","type":"digital","tags":["generalista","vigo","regional","galicia"]},{"d":"dxtcampeon.com","n":"DxT Campeón","lang":"es","type":"digital","tags":["deportes","galicia","coruña","regional"]},{"d":"elcorreogallego.es","n":"El Correo Gallego","lang":"es","type":"diario","tags":["generalista","galicia","regional"]},{"d":"elidealgallego.com","n":"El Ideal Gallego","lang":"es","type":"diario","tags":["generalista","galicia","coruña","regional"]},{"d":"elprogreso.es","n":"El Progreso","lang":"es","type":"diario","tags":["generalista","galicia","lugo","regional"]},{"d":"farodevigo.es","n":"Faro de Vigo","lang":"es","type":"diario","tags":["generalista","galicia","regional"]},{"d":"ferrol360.es","n":"Ferrol 360","lang":"es","type":"digital","tags":["generalista","local","ferrol","regional","galicia"]},{"d":"ferrolxa.com","n":"FerrolXA","lang":"gl","type":"digital","tags":["generalista","ferrol","regional","galicia"]},{"d":"galiciaconfidencial.com","n":"Galicia Confidencial","lang":"gl","type":"digital","tags":["generalista","galicia","regional"]},{"d":"galiciadigital.com","n":"Galicia Digital","lang":"es","type":"digital","tags":["generalista","galicia","regional"]},{"d":"galiciae.com","n":"Galiciae","lang":"gl","type":"digital","tags":["generalista","galicia","regional"]},{"d":"galiciapress.es","n":"Galicia Press","lang":"es","type":"digital","tags":["generalista","galicia","regional"]},{"d":"galiciaunica.es","n":"Galicia Única","lang":"es","type":"digital","tags":["generalista","galicia","regional"]},{"d":"laopinioncoruna.es","n":"La Opinión A Coruña","lang":"es","type":"diario","tags":["generalista","galicia","coruña","regional"]},{"d":"laregion.es","n":"La Región","lang":"es","type":"diario","tags":["generalista","galicia","ourense","regional"]},{"d":"lavozdegalicia.es","n":"La Voz de Galicia","lang":"es","type":"diario","tags":["generalista","galicia","regional"]},{"d":"metropolitano.gal","n":"Metropolitano","lang":"es","type":"digital","tags":["generalista","local","vigo","regional","galicia"]},{"d":"mundiario.com","n":"Mundiario","lang":"es","type":"digital","tags":["generalista","galicia","regional"]},{"d":"nosdiario.gal","n":"Nós Diario","lang":"gl","type":"digital","tags":["generalista","galicia","regional"]},{"d":"pontevedraviva.com","n":"Pontevedra Viva","lang":"es","type":"digital","tags":["generalista","local","pontevedra","regional","galicia"]},{"d":"praza.gal","n":"Praza Pública","lang":"gl","type":"digital","tags":["generalista","galicia","regional"]},{"d":"radiovoz.com","n":"Radio Voz","lang":"es","type":"radio","tags":["generalista","privado","galicia","regional"]},{"d":"riazor.org","n":"Riazor.org","lang":"es","type":"digital","tags":["deportes","galicia","coruña","regional"]},{"d":"vigoe.es","n":"Vigoé","lang":"es","type":"digital","tags":["generalista","local","vigo","regional","galicia"]}]},{"group":"Regional · La Rioja","items":[{"d":"larioja.com","n":"La Rioja","lang":"es","type":"diario","tags":["generalista","rioja","regional","la-rioja"]}]},{"group":"Regional · Madrid","items":[{"d":"madridiario.es","n":"Madridiario","lang":"es","type":"digital","tags":["generalista","madrid","regional"]},{"d":"telemadrid.es","n":"Telemadrid","lang":"es","type":"tv","tags":["generalista","tv","publico","regional","madrid"]}]},{"group":"Regional · Murcia","items":[{"d":"laopiniondemurcia.es","n":"La Opinión de Murcia","lang":"es","type":"diario","tags":["generalista","murcia","regional"]},{"d":"laverdad.es","n":"La Verdad","lang":"es","type":"diario","tags":["generalista","murcia","regional"]}]},{"group":"Regional · Navarra","items":[{"d":"diariodenavarra.es","n":"Diario de Navarra","lang":"es","type":"diario","tags":["generalista","navarra","regional"]},{"d":"noticiasdenavarra.com","n":"Noticias de Navarra","lang":"es","type":"diario","tags":["generalista","navarra","regional"]}]},{"group":"Regional · País Vasco","items":[{"d":"berria.eus","n":"Berria","lang":"eu","type":"diario","tags":["generalista","euskadi","regional","pais-vasco"]},{"d":"deia.eus","n":"Deia","lang":"es","type":"diario","tags":["generalista","euskadi","regional","pais-vasco"]},{"d":"diariovasco.com","n":"Diario Vasco","lang":"es","type":"diario","tags":["generalista","euskadi","regional","pais-vasco"]},{"d":"eitb.eus","n":"EITB","lang":"eu","type":"tv","tags":["generalista","tv","publico","regional","pais-vasco"]},{"d":"elcorreo.com","n":"El Correo","lang":"es","type":"diario","tags":["generalista","euskadi","regional","pais-vasco"]},{"d":"naiz.eus","n":"Naiz","lang":"es","type":"digital","tags":["generalista","euskadi","regional","pais-vasco"]},{"d":"noticiasdealava.eus","n":"Noticias de Álava","lang":"es","type":"diario","tags":["generalista","euskadi","regional","pais-vasco"]},{"d":"noticiasdegipuzkoa.eus","n":"Noticias de Gipuzkoa","lang":"es","type":"diario","tags":["generalista","euskadi","regional","pais-vasco"]}]},{"group":"Internacional · Alemania","items":[{"d":"dw.com","n":"Deutsche Welle","lang":"de","type":"tv","tags":["generalista","alemania","publico","internacional"]},{"d":"faz.net","n":"FAZ","lang":"de","type":"diario","tags":["generalista","alemania","internacional"]},{"d":"spiegel.de","n":"Der Spiegel","lang":"de","type":"revista","tags":["generalista","alemania","internacional"]},{"d":"sueddeutsche.de","n":"Süddeutsche Zeitung","lang":"de","type":"diario","tags":["generalista","alemania","internacional"]},{"d":"zeit.de","n":"Die Zeit","lang":"de","type":"diario","tags":["generalista","alemania","internacional"]}]},{"group":"Internacional · Argentina","items":[{"d":"clarin.com","n":"Clarín","lang":"es","type":"diario","tags":["generalista","argentina","internacional"]},{"d":"infobae.com","n":"Infobae","lang":"es","type":"digital","tags":["generalista","argentina","internacional"]},{"d":"lanacion.com.ar","n":"La Nación","lang":"es","type":"diario","tags":["generalista","argentina","internacional"]}]},{"group":"Internacional · Bolivia","items":[{"d":"eldeber.com.bo","n":"El Deber","lang":"es","type":"diario","tags":["generalista","bolivia","internacional"]}]},{"group":"Internacional · Brasil","items":[{"d":"cartacapital.com.br","n":"CartaCapital","lang":"pt","type":"revista","tags":["generalista","brasil","internacional"]},{"d":"estadao.com.br","n":"O Estado de S. Paulo","lang":"pt","type":"diario","tags":["generalista","brasil","internacional"]},{"d":"folha.uol.com.br","n":"Folha de S.Paulo","lang":"pt","type":"diario","tags":["generalista","brasil","internacional"]},{"d":"g1.globo.com","n":"G1","lang":"pt","type":"digital","tags":["generalista","brasil","internacional"]},{"d":"oglobo.globo.com","n":"O Globo","lang":"pt","type":"diario","tags":["generalista","brasil","internacional"]},{"d":"veja.abril.com.br","n":"Veja","lang":"pt","type":"revista","tags":["generalista","brasil","internacional"]}]},{"group":"Internacional · Bélgica","items":[{"d":"lalibre.be","n":"La Libre Belgique","lang":"fr","type":"diario","tags":["generalista","belgica","internacional"]},{"d":"lesoir.be","n":"Le Soir","lang":"fr","type":"diario","tags":["generalista","belgica","internacional"]},{"d":"politico.eu","n":"PoliticoEU","lang":"es","type":"digital","tags":["politica","EU","generalista","internacional"]},{"d":"standaard.be","n":"De Standaard","lang":"nl","type":"diario","tags":["generalista","belgica","internacional"]}]},{"group":"Internacional · Catar","items":[{"d":"aljazeera.com","n":"Al Jazeera","lang":"en","type":"tv","tags":["generalista","oriente medio","internacional"]}]},{"group":"Internacional · Chile","items":[{"d":"biobiochile.cl","n":"BioBioChile","lang":"es","type":"digital","tags":["generalista","chile","internacional"]},{"d":"ciperchile.cl","n":"CIPER Chile","lang":"es","type":"digital","tags":["investigacion","chile","generalista","internacional"]},{"d":"cooperativa.cl","n":"Cooperativa","lang":"es","type":"radio","tags":["generalista","chile","radio","internacional"]},{"d":"eldesconcierto.cl","n":"El Desconcierto","lang":"es","type":"digital","tags":["generalista","chile","internacional"]},{"d":"elmostrador.cl","n":"El Mostrador","lang":"es","type":"digital","tags":["generalista","chile","internacional"]},{"d":"latercera.com","n":"La Tercera","lang":"es","type":"diario","tags":["generalista","chile","internacional"]}]},{"group":"Internacional · China","items":[{"d":"globaltimes.cn","n":"Global Times","lang":"en","type":"diario","tags":["generalista","china","internacional"]},{"d":"scmp.com","n":"South China Morning Post","lang":"en","type":"diario","tags":["generalista","asia","china","internacional"]},{"d":"xinhuanet.com","n":"Xinhua","lang":"en","type":"agencia","tags":["agencia","china","generalista","internacional"]}]},{"group":"Internacional · Colombia","items":[{"d":"elespectador.com","n":"El Espectador","lang":"es","type":"diario","tags":["generalista","colombia","internacional"]},{"d":"eltiempo.com","n":"El Tiempo","lang":"es","type":"diario","tags":["generalista","colombia","internacional"]}]},{"group":"Internacional · Corea del Sur","items":[{"d":"koreaherald.com","n":"The Korea Herald","lang":"en","type":"diario","tags":["generalista","asia","corea","internacional"]}]},{"group":"Internacional · Costa Rica","items":[{"d":"nacion.com","n":"La Nación (CR)","lang":"es","type":"diario","tags":["generalista","costarica","internacional"]}]},{"group":"Internacional · EE.UU.","items":[{"d":"abcnews.com","n":"ABC News","lang":"en","type":"tv","tags":["generalista","usa","internacional"]},{"d":"apnews.com","n":"Associated Press","lang":"en","type":"agencia","tags":["agencia","internacional","generalista"]},{"d":"axios.com","n":"Axios","lang":"en","type":"digital","tags":["politica","usa","generalista","internacional"]},{"d":"bloomberg.com","n":"Bloomberg","lang":"en","type":"digital","tags":["economia","internacional"]},{"d":"businessinsider.com","n":"Business Insider","lang":"en","type":"digital","tags":["economia","usa","internacional"]},{"d":"cbsnews.com","n":"CBS News","lang":"en","type":"tv","tags":["generalista","usa","internacional"]},{"d":"cnbc.com","n":"CNBC","lang":"en","type":"tv","tags":["economia","usa","internacional"]},{"d":"edition.cnn.com","n":"CNN","lang":"en","type":"tv","tags":["generalista","usa","tv","internacional"]},{"d":"elnuevoherald.com","n":"El Nuevo Herald","lang":"es","type":"diario","tags":["generalista","usa","latino","internacional"]},{"d":"foreignaffairs.com","n":"Foreign Affairs","lang":"en","type":"revista","tags":["internacional","usa","generalista"]},{"d":"foreignpolicy.com","n":"Foreign Policy","lang":"en","type":"revista","tags":["internacional","usa","generalista"]},{"d":"foxnews.com","n":"Fox News","lang":"en","type":"tv","tags":["generalista","usa","conservador","internacional"]},{"d":"msnbc.com","n":"MSNBC","lang":"en","type":"tv","tags":["generalista","usa","progresista","internacional"]},{"d":"nbcnews.com","n":"NBC News","lang":"en","type":"tv","tags":["generalista","usa","internacional"]},{"d":"newyorker.com","n":"The New Yorker","lang":"en","type":"revista","tags":["cultural","usa","cultura","internacional"]},{"d":"npr.org","n":"NPR","lang":"en","type":"radio","tags":["generalista","usa","radio","internacional"]},{"d":"nytimes.com","n":"The New York Times","lang":"en","type":"diario","tags":["generalista","usa","referencia","internacional"]},{"d":"politico.com","n":"Politico","lang":"en","type":"digital","tags":["politica","usa","generalista","internacional"]},{"d":"telemundo.com","n":"Telemundo","lang":"es","type":"tv","tags":["generalista","usa","latino","internacional"]},{"d":"theatlantic.com","n":"The Atlantic","lang":"en","type":"revista","tags":["cultural","usa","cultura","internacional"]},{"d":"time.com","n":"Time","lang":"en","type":"revista","tags":["generalista","usa","internacional"]},{"d":"vox.com","n":"Vox","lang":"en","type":"digital","tags":["generalista","usa","internacional"]},{"d":"washingtonpost.com","n":"The Washington Post","lang":"en","type":"diario","tags":["generalista","usa","internacional"]},{"d":"wsj.com","n":"The Wall Street Journal","lang":"en","type":"diario","tags":["economia","usa","internacional"]}]},{"group":"Internacional · Ecuador","items":[{"d":"elcomercio.com","n":"El Comercio (EC)","lang":"es","type":"diario","tags":["generalista","ecuador","internacional"]},{"d":"eluniverso.com","n":"El Universo","lang":"es","type":"diario","tags":["generalista","ecuador","internacional"]}]},{"group":"Internacional · El Salvador","items":[{"d":"elfaro.net","n":"El Faro","lang":"es","type":"digital","tags":["investigacion","salvador","generalista","internacional"]}]},{"group":"Internacional · Francia","items":[{"d":"euronews.com","n":"Euronews","lang":"en","type":"tv","tags":["generalista","europa","internacional"]},{"d":"france24.com","n":"France 24","lang":"fr","type":"tv","tags":["generalista","francia","publico","internacional"]},{"d":"lefigaro.fr","n":"Le Figaro","lang":"fr","type":"diario","tags":["generalista","francia","internacional"]},{"d":"lemonde.fr","n":"Le Monde","lang":"fr","type":"diario","tags":["generalista","francia","internacional"]},{"d":"lesechos.fr","n":"Les Échos","lang":"fr","type":"diario","tags":["economia","francia","internacional"]},{"d":"liberation.fr","n":"Libération","lang":"fr","type":"diario","tags":["generalista","francia","internacional"]},{"d":"monde-diplomatique.fr","n":"Le Monde Diplomatique","lang":"fr","type":"revista","tags":["generalista","francia","internacional"]},{"d":"rfi.fr","n":"RFI","lang":"fr","type":"radio","tags":["generalista","francia","publico","internacional"]}]},{"group":"Internacional · Guatemala","items":[{"d":"prensalibre.com","n":"Prensa Libre","lang":"es","type":"diario","tags":["generalista","guatemala","internacional"]}]},{"group":"Internacional · Honduras","items":[{"d":"elheraldo.hn","n":"El Heraldo","lang":"es","type":"diario","tags":["generalista","honduras","internacional"]}]},{"group":"Internacional · India","items":[{"d":"thehindu.com","n":"The Hindu","lang":"en","type":"diario","tags":["generalista","india","internacional"]},{"d":"timesofindia.indiatimes.com","n":"Times of India","lang":"en","type":"diario","tags":["generalista","india","internacional"]}]},{"group":"Internacional · Irlanda","items":[{"d":"independent.ie","n":"Irish Independent","lang":"en","type":"diario","tags":["generalista","irlanda","internacional"]},{"d":"irishtimes.com","n":"The Irish Times","lang":"en","type":"diario","tags":["generalista","irlanda","internacional"]},{"d":"rte.ie","n":"RTÉ","lang":"en","type":"tv","tags":["generalista","irlanda","publico","internacional"]}]},{"group":"Internacional · Israel","items":[{"d":"haaretz.com","n":"Haaretz","lang":"en","type":"diario","tags":["generalista","oriente medio","internacional"]},{"d":"jpost.com","n":"The Jerusalem Post","lang":"en","type":"diario","tags":["generalista","oriente medio","internacional"]}]},{"group":"Internacional · Italia","items":[{"d":"ansa.it","n":"ANSA","lang":"it","type":"agencia","tags":["agencia","italia","generalista","internacional"]},{"d":"corriere.it","n":"Corriere della Sera","lang":"it","type":"diario","tags":["generalista","italia","internacional"]},{"d":"ilfattoquotidiano.it","n":"Il Fatto Quotidiano","lang":"it","type":"digital","tags":["generalista","italia","internacional"]},{"d":"ilmessaggero.it","n":"Il Messaggero","lang":"it","type":"diario","tags":["generalista","italia","internacional"]},{"d":"ilsole24ore.com","n":"Il Sole 24 Ore","lang":"it","type":"diario","tags":["economia","italia","internacional"]},{"d":"lastampa.it","n":"La Stampa","lang":"it","type":"diario","tags":["generalista","italia","internacional"]},{"d":"repubblica.it","n":"La Repubblica","lang":"it","type":"diario","tags":["generalista","italia","internacional"]}]},{"group":"Internacional · Japón","items":[{"d":"japantimes.co.jp","n":"The Japan Times","lang":"en","type":"diario","tags":["generalista","asia","japon","internacional"]}]},{"group":"Internacional · México","items":[{"d":"eluniversal.com.mx","n":"El Universal","lang":"es","type":"diario","tags":["generalista","mexico","internacional"]},{"d":"milenio.com","n":"Milenio","lang":"es","type":"diario","tags":["generalista","mexico","internacional"]}]},{"group":"Internacional · Nigeria","items":[{"d":"premiumtimesng.com","n":"Premium Times","lang":"en","type":"digital","tags":["generalista","africa","nigeria","internacional"]}]},{"group":"Internacional · Países Bajos","items":[{"d":"nrc.nl","n":"NRC Handelsblad","lang":"nl","type":"diario","tags":["generalista","paisesbajos","internacional"]},{"d":"telegraaf.nl","n":"De Telegraaf","lang":"nl","type":"diario","tags":["generalista","paisesbajos","internacional"]},{"d":"trouw.nl","n":"Trouw","lang":"nl","type":"diario","tags":["generalista","paisesbajos","internacional"]},{"d":"volkskrant.nl","n":"de Volkskrant","lang":"nl","type":"diario","tags":["generalista","paisesbajos","internacional"]}]},{"group":"Internacional · Paraguay","items":[{"d":"abc.com.py","n":"ABC Color","lang":"es","type":"diario","tags":["generalista","paraguay","internacional"]},{"d":"ultimahora.com","n":"Última Hora (PY)","lang":"es","type":"diario","tags":["generalista","paraguay","internacional"]}]},{"group":"Internacional · Perú","items":[{"d":"elcomercio.pe","n":"El Comercio","lang":"es","type":"diario","tags":["generalista","peru","internacional"]},{"d":"gestion.pe","n":"Gestión","lang":"es","type":"diario","tags":["economia","peru","internacional"]},{"d":"rpp.pe","n":"RPP","lang":"es","type":"radio","tags":["generalista","peru","radio","internacional"]}]},{"group":"Internacional · Portugal","items":[{"d":"expresso.pt","n":"Expresso","lang":"pt","type":"revista","tags":["generalista","portugal","internacional"]},{"d":"sol.iol.pt","n":"SOL","lang":"pt","type":"diario","tags":["generalista","portugal","internacional"]},{"d":"observador.pt","n":"Observador","lang":"pt","type":"digital","tags":["generalista","portugal","internacional"]},{"d":"publico.pt","n":"Público","lang":"pt","type":"diario","tags":["generalista","portugal","internacional"]}]},{"group":"Internacional · Reino Unido","items":[{"d":"bbc.com","n":"BBC","lang":"en","type":"tv","tags":["generalista","uk","publico","internacional"]},{"d":"dailymail.co.uk","n":"Daily Mail","lang":"en","type":"diario","tags":["generalista","uk","tabloide","internacional"]},{"d":"economist.com","n":"The Economist","lang":"en","type":"revista","tags":["economia","internacional"]},{"d":"ft.com","n":"Financial Times","lang":"en","type":"diario","tags":["economia","uk","internacional"]},{"d":"independent.co.uk","n":"The Independent","lang":"en","type":"digital","tags":["generalista","uk","internacional"]},{"d":"middleeasteye.net","n":"Middle East Eye","lang":"en","type":"digital","tags":["generalista","oriente medio","internacional"]},{"d":"mirror.co.uk","n":"The Mirror","lang":"en","type":"diario","tags":["generalista","uk","tabloide","internacional"]},{"d":"news.sky.com","n":"Sky News","lang":"en","type":"tv","tags":["generalista","uk","internacional"]},{"d":"reuters.com","n":"Reuters","lang":"en","type":"agencia","tags":["agencia","internacional","generalista"]},{"d":"telegraph.co.uk","n":"The Telegraph","lang":"en","type":"diario","tags":["generalista","uk","internacional"]},{"d":"theguardian.com","n":"The Guardian","lang":"en","type":"diario","tags":["generalista","uk","internacional"]},{"d":"thetimes.com","n":"The Times","lang":"en","type":"diario","tags":["generalista","uk","internacional"]}]},{"group":"Internacional · República Dominicana","items":[{"d":"diariolibre.com","n":"Diario Libre","lang":"es","type":"diario","tags":["generalista","republicadominicana","internacional"]},{"d":"listindiario.com","n":"Listín Diario","lang":"es","type":"diario","tags":["generalista","republicadominicana","internacional"]}]},{"group":"Internacional · Rusia","items":[{"d":"tass.com","n":"TASS","lang":"en","type":"agencia","tags":["agencia","rusia","generalista","internacional"]}]},{"group":"Internacional · Singapur","items":[{"d":"straitstimes.com","n":"The Straits Times","lang":"en","type":"diario","tags":["generalista","asia","singapur","internacional"]}]},{"group":"Internacional · Sudáfrica","items":[{"d":"mg.co.za","n":"Mail & Guardian","lang":"en","type":"diario","tags":["generalista","africa","sudafrica","internacional"]}]},{"group":"Internacional · Suiza","items":[{"d":"swissinfo.ch","n":"SWI swissinfo.ch","lang":"es","type":"digital","tags":["generalista","suiza","publico","internacional"]}]},{"group":"Internacional · Uruguay","items":[{"d":"elobservador.com.uy","n":"El Observador","lang":"es","type":"diario","tags":["generalista","uruguay","internacional"]},{"d":"elpais.com.uy","n":"El País (UY)","lang":"es","type":"diario","tags":["generalista","uruguay","internacional"]}]},{"group":"Internacional · Venezuela","items":[{"d":"elnacional.com","n":"El Nacional","lang":"es","type":"diario","tags":["generalista","venezuela","internacional"]}]},{"group":"Internacional · África","items":[{"d":"africanews.com","n":"Africanews","lang":"en","type":"tv","tags":["generalista","africa","panafricano","internacional"]}]}];
+const MEDIA_CATALOG = [{"group":"Deportes","items":[{"d":"2playbook.com","n":"2Playbook","lang":"es"},{"d":"as.com","n":"Diario AS","lang":"es"},{"d":"eldesmarque.com","n":"El Desmarque","lang":"es"},{"d":"estadiodeportivo.com","n":"Estadio Deportivo","lang":"es"},{"d":"marca.com","n":"Marca","lang":"es"},{"d":"mundodeportivo.com","n":"Mundo Deportivo","lang":"es"},{"d":"palco23.com","n":"Palco23","lang":"es"},{"d":"relevo.com","n":"Relevo","lang":"es"},{"d":"sport.es","n":"Sport","lang":"es"},{"d":"superdeporte.es","n":"Superdeporte","lang":"es"}]},{"group":"Economía","items":[{"d":"bolsamania.com","n":"Bolsamania","lang":"es"},{"d":"brainsre.news","n":"Brains RE","lang":"es"},{"d":"capitalmadrid.com","n":"Capital Madrid","lang":"es"},{"d":"cincodias.com","n":"Cinco Días","lang":"es"},{"d":"theofficer.es","n":"The Officer","lang":"es"},{"d":"economiadigital.es","n":"Economía Digital","lang":"es"},{"d":"elblogsalmon.com","n":"El Blog Salmón","lang":"es"},{"d":"eleconomista.es","n":"El Economista","lang":"es"},{"d":"estrategiasdeinversion.com","n":"Estrategias de Inversión","lang":"es"},{"d":"expansion.com","n":"Expansión","lang":"es"},{"d":"finect.com","n":"Finect","lang":"es"},{"d":"idealista.com","n":"Idealista News","lang":"es"},{"d":"invertia.com","n":"Invertia","lang":"es"},{"d":"libremercado.com","n":"Libre Mercado","lang":"es"},{"d":"mercadofinanciero.com","n":"Mercado Financiero","lang":"es"},{"d":"murciaeconomia.com","n":"Murcia Economía","lang":"es"},{"d":"valenciaplaza.com","n":"Valencia Plaza","lang":"es"},{"d":"viaempresa.cat","n":"Via Empresa","lang":"ca"}]},{"group":"Tecnología","items":[{"d":"adslzone.net","n":"ADSLZone","lang":"es"},{"d":"andro4all.com","n":"Andro4all","lang":"es"},{"d":"applesfera.com","n":"Applesfera","lang":"es"},{"d":"computerhoy.com","n":"Computer Hoy","lang":"es"},{"d":"computerworld.es","n":"Computerworld España","lang":"es"},{"d":"elandroidelibre.elespanol.com","n":"El Androide Libre","lang":"es"},{"d":"elchapuzasinformatico.com","n":"El Chapuzas Informático","lang":"es"},{"d":"genbeta.com","n":"Genbeta","lang":"es"},{"d":"hardzone.es","n":"HardZone","lang":"es"},{"d":"hipertextual.com","n":"Hipertextual","lang":"es"},{"d":"ituser.es","n":"IT User","lang":"es"},{"d":"muycomputer.com","n":"MuyComputer","lang":"es"},{"d":"profesionalreview.com","n":"Profesional Review","lang":"es"},{"d":"silicon.es","n":"Silicon","lang":"es"},{"d":"teknofilo.com","n":"Teknófilo","lang":"es"},{"d":"xataka.com","n":"Xataka","lang":"es"},{"d":"xatakaciencia.com","n":"Xataka Ciencia","lang":"es"},{"d":"xatakamovil.com","n":"Xataka Móvil","lang":"es"}]},{"group":"Ciencia","items":[{"d":"agenciasinc.es","n":"SINC","lang":"es"},{"d":"consalud.es","n":"ConSalud","lang":"es"},{"d":"diariomedico.com","n":"Diario Médico","lang":"es"},{"d":"muyinteresante.okdiario.com","n":"Muy Interesante","lang":"es"},{"d":"nationalgeographic.com.es","n":"National Geographic España","lang":"es"},{"d":"naukas.com","n":"Naukas","lang":"es"},{"d":"quo.es","n":"Quo","lang":"es"}]},{"group":"Cultura","items":[{"d":"alternativaseconomicas.coop","n":"Alternativas Económicas","lang":"es"},{"d":"elcritic.cat","n":"Crític","lang":"ca"},{"d":"ctxt.es","n":"CTXT","lang":"es"},{"d":"culturainquieta.com","n":"Cultura Inquieta","lang":"es"},{"d":"elsaltodiario.com","n":"El Salto","lang":"es"},{"d":"ethic.es","n":"Ethic","lang":"es"},{"d":"jotdown.es","n":"Jot Down","lang":"es"},{"d":"lamarea.com","n":"La Marea","lang":"es"},{"d":"letraslibres.com","n":"Letras Libres","lang":"es"},{"d":"revistamongolia.com","n":"Mongolia","lang":"es"},{"d":"yorokobu.es","n":"Yorokobu","lang":"es"},{"d":"zendalibros.com","n":"Zenda Libros","lang":"es"}]},{"group":"Nacional","items":[{"d":"20minutos.es","n":"20 Minutos","lang":"es"},{"d":"abc.es","n":"ABC","lang":"es"},{"d":"antena3.com","n":"Antena 3","lang":"es"},{"d":"cadenaser.com","n":"Cadena SER","lang":"es"},{"d":"cambio16.com","n":"Cambio16","lang":"es"},{"d":"confilegal.com","n":"Confilegal","lang":"es"},{"d":"cope.es","n":"COPE","lang":"es"},{"d":"cuartopoder.es","n":"Cuarto Poder","lang":"es"},{"d":"cuatro.com","n":"Cuatro","lang":"es"},{"d":"diariocritico.com","n":"Diario Crítico","lang":"es"},{"d":"efe.com","n":"Agencia EFE","lang":"es"},{"d":"elboletin.com","n":"El Boletín","lang":"es"},{"d":"elconfidencial.com","n":"El Confidencial","lang":"es"},{"d":"eldebate.com","n":"El Debate","lang":"es"},{"d":"eldiario.es","n":"elDiario.es","lang":"es"},{"d":"elespanol.com","n":"El Español","lang":"es"},{"d":"elindependiente.com","n":"El Independiente","lang":"es"},{"d":"elmundo.es","n":"El Mundo","lang":"es"},{"d":"elpais.com","n":"El País","lang":"es"},{"d":"elperiodico.com","n":"El Periódico","lang":"es"},{"d":"elplural.com","n":"El Plural","lang":"es"},{"d":"elsiglodeuropa.es","n":"El Siglo de Europa","lang":"es"},{"d":"elviejotopo.com","n":"El Viejo Topo","lang":"es"},{"d":"europapress.es","n":"Europa Press","lang":"es"},{"d":"huffingtonpost.es","n":"El HuffPost","lang":"es"},{"d":"infolibre.es","n":"InfoLibre","lang":"es"},{"d":"larazon.es","n":"La Razón","lang":"es"},{"d":"lasexta.com","n":"La Sexta","lang":"es"},{"d":"lavanguardia.com","n":"La Vanguardia","lang":"es"},{"d":"libertaddigital.com","n":"Libertad Digital","lang":"es"},{"d":"mientrastanto.org","n":"Mientras Tanto","lang":"es"},{"d":"moncloa.com","n":"Moncloa","lang":"es"},{"d":"nuevarevista.net","n":"Nueva Revista","lang":"es"},{"d":"okdiario.com","n":"OK Diario","lang":"es"},{"d":"ondacero.es","n":"Onda Cero","lang":"es"},{"d":"periodistadigital.com","n":"Periodista Digital","lang":"es"},{"d":"publico.es","n":"Público","lang":"es"},{"d":"que.es","n":"Qué!","lang":"es"},{"d":"republica.com","n":"Republica.com","lang":"es"},{"d":"rtve.es","n":"RTVE","lang":"es"},{"d":"servimedia.es","n":"Servimedia","lang":"es"},{"d":"telecinco.es","n":"Telecinco","lang":"es"},{"d":"theobjective.com","n":"The Objective","lang":"es"},{"d":"vientosur.info","n":"Viento Sur","lang":"es"},{"d":"vozpopuli.com","n":"Vozpópuli","lang":"es"}]},{"group":"Regional · Andalucía","items":[{"d":"andaluciainformacion.es","n":"Andalucía Información","lang":"es"},{"d":"cordopolis.eldiario.es","n":"Cordópolis","lang":"es"},{"d":"diariocordoba.com","n":"Diario Córdoba","lang":"es"},{"d":"diariodealmeria.es","n":"Diario de Almería","lang":"es"},{"d":"diariodecadiz.es","n":"Diario de Cádiz","lang":"es"},{"d":"diariodejerez.es","n":"Diario de Jerez","lang":"es"},{"d":"diariodesevilla.es","n":"Diario de Sevilla","lang":"es"},{"d":"diariosur.es","n":"Diario Sur","lang":"es"},{"d":"elcorreoweb.es","n":"El Correo de Andalucía","lang":"es"},{"d":"granadadigital.es","n":"Granada Digital","lang":"es"},{"d":"granadahoy.com","n":"Granada Hoy","lang":"es"},{"d":"huelvaya.es","n":"Huelva Ya","lang":"es"},{"d":"ideal.es","n":"Ideal","lang":"es"},{"d":"laopiniondemalaga.es","n":"La Opinión de Málaga","lang":"es"},{"d":"malagahoy.es","n":"Málaga Hoy","lang":"es"},{"d":"sevillaactualidad.com","n":"Sevilla Actualidad","lang":"es"}]},{"group":"Regional · Aragón","items":[{"d":"elperiodicodearagon.com","n":"El Periódico de Aragón","lang":"es"},{"d":"heraldo.es","n":"Heraldo de Aragón","lang":"es"}]},{"group":"Regional · Asturias","items":[{"d":"elcomercio.es","n":"El Comercio","lang":"es"},{"d":"lavozdeasturias.es","n":"La Voz de Asturias","lang":"es"},{"d":"lne.es","n":"La Nueva España","lang":"es"}]},{"group":"Regional · Baleares","items":[{"d":"diariodeibiza.es","n":"Diario de Ibiza","lang":"es"},{"d":"diariodemallorca.es","n":"Diario de Mallorca","lang":"es"},{"d":"ultimahora.es","n":"Última Hora","lang":"es"}]},{"group":"Regional · Canarias","items":[{"d":"canarias7.es","n":"Canarias 7","lang":"es"},{"d":"diariodeavisos.com","n":"Diario de Avisos","lang":"es"},{"d":"eldia.es","n":"El Día","lang":"es"},{"d":"laprovincia.es","n":"La Provincia","lang":"es"}]},{"group":"Regional · Cantabria","items":[{"d":"eldiariomontanes.es","n":"El Diario Montañés","lang":"es"}]},{"group":"Regional · Castilla-La Mancha","items":[{"d":"encastillalamancha.es","n":"En Castilla-La Mancha","lang":"es"},{"d":"lanzadigital.com","n":"Lanza Digital","lang":"es"},{"d":"latribunadealbacete.es","n":"La Tribuna de Albacete","lang":"es"}]},{"group":"Regional · Castilla y León","items":[{"d":"diariodeleon.es","n":"Diario de León","lang":"es"},{"d":"diariodevalladolid.es","n":"Diario de Valladolid","lang":"es"},{"d":"elcorreodeburgos.com","n":"El Correo de Burgos","lang":"es"},{"d":"eldiadevalladolid.com","n":"El Día de Valladolid","lang":"es"},{"d":"elmirondesoria.es","n":"El Mirón de Soria","lang":"es"},{"d":"elnortedecastilla.es","n":"El Norte de Castilla","lang":"es"},{"d":"lagacetadesalamanca.es","n":"La Gaceta de Salamanca","lang":"es"},{"d":"laopiniondezamora.es","n":"La Opinión de Zamora","lang":"es"},{"d":"sorianoticias.com","n":"Soria Noticias","lang":"es"}]},{"group":"Regional · Cataluña","items":[{"d":"324.cat","n":"324","lang":"ca"},{"d":"acn.cat","n":"Agència Catalana de Notícies","lang":"ca"},{"d":"ara.cat","n":"Ara","lang":"ca"},{"d":"diaridegirona.cat","n":"Diari de Girona","lang":"ca"},{"d":"diaridetarragona.com","n":"Diari de Tarragona","lang":"ca"},{"d":"directa.cat","n":"La Directa","lang":"ca"},{"d":"e-noticies.cat","n":"e-Notícies","lang":"ca"},{"d":"elmon.cat","n":"El Món","lang":"ca"},{"d":"elnacional.cat","n":"El Nacional","lang":"ca"},{"d":"elpuntavui.cat","n":"El Punt Avui","lang":"ca"},{"d":"naciodigital.cat","n":"Nació Digital","lang":"ca"},{"d":"rac1.cat","n":"RAC1","lang":"ca"},{"d":"regio7.cat","n":"Regió7","lang":"ca"},{"d":"reusdigital.cat","n":"Reus Digital","lang":"ca"},{"d":"segre.com","n":"Segre","lang":"ca"},{"d":"vilaweb.cat","n":"VilaWeb","lang":"ca"}]},{"group":"Regional · Comunidad Valenciana","items":[{"d":"alicanteplaza.es","n":"Alicante Plaza","lang":"es"},{"d":"castellonplaza.com","n":"Castellón Plaza","lang":"es"},{"d":"elperiodicomediterraneo.com","n":"El Periódico Mediterráneo","lang":"es"},{"d":"informacion.es","n":"Información","lang":"es"},{"d":"lasprovincias.es","n":"Las Provincias","lang":"es"},{"d":"levante-emv.com","n":"Levante-EMV","lang":"es"},{"d":"valenciaextra.com","n":"Valencia Extra","lang":"es"}]},{"group":"Regional · Extremadura","items":[{"d":"elperiodicoextremadura.com","n":"El Periódico Extremadura","lang":"es"},{"d":"hoy.es","n":"Hoy","lang":"es"}]},{"group":"Regional · Galicia","items":[{"d":"atlantico.net","n":"Atlántico","lang":"es"},{"d":"campogalego.es","n":"Campo Galego","lang":"gl"},{"d":"crtvg.gal","n":"CRTVG (TVG y Radio Galega)","lang":"gl"},{"d":"diariodearousa.com","n":"Diario de Arousa","lang":"es"},{"d":"diariodeferrol.com","n":"Diario de Ferrol","lang":"es"},{"d":"diariodepontevedra.es","n":"Diario de Pontevedra","lang":"es"},{"d":"diariodevigo.com","n":"Diario de Vigo","lang":"es"},{"d":"dxtcampeon.com","n":"DxT Campeón","lang":"es"},{"d":"elcorreogallego.es","n":"El Correo Gallego","lang":"es"},{"d":"elidealgallego.com","n":"El Ideal Gallego","lang":"es"},{"d":"elprogreso.es","n":"El Progreso","lang":"es"},{"d":"farodevigo.es","n":"Faro de Vigo","lang":"es"},{"d":"ferrol360.es","n":"Ferrol 360","lang":"es"},{"d":"ferrolxa.com","n":"FerrolXA","lang":"gl"},{"d":"galiciaconfidencial.com","n":"Galicia Confidencial","lang":"gl"},{"d":"galiciadigital.com","n":"Galicia Digital","lang":"es"},{"d":"galiciae.com","n":"Galiciae","lang":"gl"},{"d":"galiciapress.es","n":"Galicia Press","lang":"es"},{"d":"galiciaunica.es","n":"Galicia Única","lang":"es"},{"d":"laopinioncoruna.es","n":"La Opinión A Coruña","lang":"es"},{"d":"laregion.es","n":"La Región","lang":"es"},{"d":"lavozdegalicia.es","n":"La Voz de Galicia","lang":"es"},{"d":"metropolitano.gal","n":"Metropolitano","lang":"es"},{"d":"mundiario.com","n":"Mundiario","lang":"es"},{"d":"nosdiario.gal","n":"Nós Diario","lang":"gl"},{"d":"pontevedraviva.com","n":"Pontevedra Viva","lang":"es"},{"d":"praza.gal","n":"Praza Pública","lang":"gl"},{"d":"radiovoz.com","n":"Radio Voz","lang":"es"},{"d":"riazor.org","n":"Riazor.org","lang":"es"},{"d":"vigoe.es","n":"Vigoé","lang":"es"}]},{"group":"Regional · La Rioja","items":[{"d":"larioja.com","n":"La Rioja","lang":"es"}]},{"group":"Regional · Madrid","items":[{"d":"madridiario.es","n":"Madridiario","lang":"es"},{"d":"telemadrid.es","n":"Telemadrid","lang":"es"}]},{"group":"Regional · Murcia","items":[{"d":"laopiniondemurcia.es","n":"La Opinión de Murcia","lang":"es"},{"d":"laverdad.es","n":"La Verdad","lang":"es"}]},{"group":"Regional · Navarra","items":[{"d":"diariodenavarra.es","n":"Diario de Navarra","lang":"es"},{"d":"noticiasdenavarra.com","n":"Noticias de Navarra","lang":"es"}]},{"group":"Regional · País Vasco","items":[{"d":"berria.eus","n":"Berria","lang":"eu"},{"d":"deia.eus","n":"Deia","lang":"es"},{"d":"diariovasco.com","n":"Diario Vasco","lang":"es"},{"d":"eitb.eus","n":"EITB","lang":"eu"},{"d":"elcorreo.com","n":"El Correo","lang":"es"},{"d":"naiz.eus","n":"Naiz","lang":"es"},{"d":"noticiasdealava.eus","n":"Noticias de Álava","lang":"es"},{"d":"noticiasdegipuzkoa.eus","n":"Noticias de Gipuzkoa","lang":"es"}]},{"group":"Internacional · Alemania","items":[{"d":"dw.com","n":"Deutsche Welle","lang":"de"},{"d":"faz.net","n":"FAZ","lang":"de"},{"d":"spiegel.de","n":"Der Spiegel","lang":"de"},{"d":"sueddeutsche.de","n":"Süddeutsche Zeitung","lang":"de"},{"d":"zeit.de","n":"Die Zeit","lang":"de"}]},{"group":"Internacional · Argentina","items":[{"d":"clarin.com","n":"Clarín","lang":"es"},{"d":"infobae.com","n":"Infobae","lang":"es"},{"d":"lanacion.com.ar","n":"La Nación","lang":"es"}]},{"group":"Internacional · Bolivia","items":[{"d":"eldeber.com.bo","n":"El Deber","lang":"es"}]},{"group":"Internacional · Brasil","items":[{"d":"cartacapital.com.br","n":"CartaCapital","lang":"pt"},{"d":"estadao.com.br","n":"O Estado de S. Paulo","lang":"pt"},{"d":"folha.uol.com.br","n":"Folha de S.Paulo","lang":"pt"},{"d":"g1.globo.com","n":"G1","lang":"pt"},{"d":"oglobo.globo.com","n":"O Globo","lang":"pt"},{"d":"veja.abril.com.br","n":"Veja","lang":"pt"}]},{"group":"Internacional · Bélgica","items":[{"d":"lalibre.be","n":"La Libre Belgique","lang":"fr"},{"d":"lesoir.be","n":"Le Soir","lang":"fr"},{"d":"politico.eu","n":"PoliticoEU","lang":"es"},{"d":"standaard.be","n":"De Standaard","lang":"nl"}]},{"group":"Internacional · Catar","items":[{"d":"aljazeera.com","n":"Al Jazeera","lang":"en"}]},{"group":"Internacional · Chile","items":[{"d":"biobiochile.cl","n":"BioBioChile","lang":"es"},{"d":"ciperchile.cl","n":"CIPER Chile","lang":"es"},{"d":"cooperativa.cl","n":"Cooperativa","lang":"es"},{"d":"eldesconcierto.cl","n":"El Desconcierto","lang":"es"},{"d":"elmostrador.cl","n":"El Mostrador","lang":"es"},{"d":"latercera.com","n":"La Tercera","lang":"es"}]},{"group":"Internacional · China","items":[{"d":"globaltimes.cn","n":"Global Times","lang":"en"},{"d":"scmp.com","n":"South China Morning Post","lang":"en"},{"d":"xinhuanet.com","n":"Xinhua","lang":"en"}]},{"group":"Internacional · Colombia","items":[{"d":"elespectador.com","n":"El Espectador","lang":"es"},{"d":"eltiempo.com","n":"El Tiempo","lang":"es"}]},{"group":"Internacional · Corea del Sur","items":[{"d":"koreaherald.com","n":"The Korea Herald","lang":"en"}]},{"group":"Internacional · Costa Rica","items":[{"d":"nacion.com","n":"La Nación (CR)","lang":"es"}]},{"group":"Internacional · EE.UU.","items":[{"d":"abcnews.com","n":"ABC News","lang":"en"},{"d":"apnews.com","n":"Associated Press","lang":"en"},{"d":"axios.com","n":"Axios","lang":"en"},{"d":"bloomberg.com","n":"Bloomberg","lang":"en"},{"d":"businessinsider.com","n":"Business Insider","lang":"en"},{"d":"cbsnews.com","n":"CBS News","lang":"en"},{"d":"cnbc.com","n":"CNBC","lang":"en"},{"d":"edition.cnn.com","n":"CNN","lang":"en"},{"d":"elnuevoherald.com","n":"El Nuevo Herald","lang":"es"},{"d":"foreignaffairs.com","n":"Foreign Affairs","lang":"en"},{"d":"foreignpolicy.com","n":"Foreign Policy","lang":"en"},{"d":"foxnews.com","n":"Fox News","lang":"en"},{"d":"msnbc.com","n":"MSNBC","lang":"en"},{"d":"nbcnews.com","n":"NBC News","lang":"en"},{"d":"newyorker.com","n":"The New Yorker","lang":"en"},{"d":"npr.org","n":"NPR","lang":"en"},{"d":"nytimes.com","n":"The New York Times","lang":"en"},{"d":"politico.com","n":"Politico","lang":"en"},{"d":"telemundo.com","n":"Telemundo","lang":"es"},{"d":"theatlantic.com","n":"The Atlantic","lang":"en"},{"d":"time.com","n":"Time","lang":"en"},{"d":"vox.com","n":"Vox","lang":"en"},{"d":"washingtonpost.com","n":"The Washington Post","lang":"en"},{"d":"wsj.com","n":"The Wall Street Journal","lang":"en"}]},{"group":"Internacional · Ecuador","items":[{"d":"elcomercio.com","n":"El Comercio (EC)","lang":"es"},{"d":"eluniverso.com","n":"El Universo","lang":"es"}]},{"group":"Internacional · El Salvador","items":[{"d":"elfaro.net","n":"El Faro","lang":"es"}]},{"group":"Internacional · Francia","items":[{"d":"euronews.com","n":"Euronews","lang":"en"},{"d":"france24.com","n":"France 24","lang":"fr"},{"d":"lefigaro.fr","n":"Le Figaro","lang":"fr"},{"d":"lemonde.fr","n":"Le Monde","lang":"fr"},{"d":"lesechos.fr","n":"Les Échos","lang":"fr"},{"d":"liberation.fr","n":"Libération","lang":"fr"},{"d":"monde-diplomatique.fr","n":"Le Monde Diplomatique","lang":"fr"},{"d":"rfi.fr","n":"RFI","lang":"fr"}]},{"group":"Internacional · Guatemala","items":[{"d":"prensalibre.com","n":"Prensa Libre","lang":"es"}]},{"group":"Internacional · Honduras","items":[{"d":"elheraldo.hn","n":"El Heraldo","lang":"es"}]},{"group":"Internacional · India","items":[{"d":"thehindu.com","n":"The Hindu","lang":"en"},{"d":"timesofindia.indiatimes.com","n":"Times of India","lang":"en"}]},{"group":"Internacional · Irlanda","items":[{"d":"independent.ie","n":"Irish Independent","lang":"en"},{"d":"irishtimes.com","n":"The Irish Times","lang":"en"},{"d":"rte.ie","n":"RTÉ","lang":"en"}]},{"group":"Internacional · Israel","items":[{"d":"haaretz.com","n":"Haaretz","lang":"en"},{"d":"jpost.com","n":"The Jerusalem Post","lang":"en"}]},{"group":"Internacional · Italia","items":[{"d":"ansa.it","n":"ANSA","lang":"it"},{"d":"corriere.it","n":"Corriere della Sera","lang":"it"},{"d":"ilfattoquotidiano.it","n":"Il Fatto Quotidiano","lang":"it"},{"d":"ilmessaggero.it","n":"Il Messaggero","lang":"it"},{"d":"ilsole24ore.com","n":"Il Sole 24 Ore","lang":"it"},{"d":"lastampa.it","n":"La Stampa","lang":"it"},{"d":"repubblica.it","n":"La Repubblica","lang":"it"}]},{"group":"Internacional · Japón","items":[{"d":"japantimes.co.jp","n":"The Japan Times","lang":"en"}]},{"group":"Internacional · México","items":[{"d":"eluniversal.com.mx","n":"El Universal","lang":"es"},{"d":"milenio.com","n":"Milenio","lang":"es"}]},{"group":"Internacional · Nigeria","items":[{"d":"premiumtimesng.com","n":"Premium Times","lang":"en"}]},{"group":"Internacional · Países Bajos","items":[{"d":"nrc.nl","n":"NRC Handelsblad","lang":"nl"},{"d":"telegraaf.nl","n":"De Telegraaf","lang":"nl"},{"d":"trouw.nl","n":"Trouw","lang":"nl"},{"d":"volkskrant.nl","n":"de Volkskrant","lang":"nl"}]},{"group":"Internacional · Paraguay","items":[{"d":"abc.com.py","n":"ABC Color","lang":"es"},{"d":"ultimahora.com","n":"Última Hora (PY)","lang":"es"}]},{"group":"Internacional · Perú","items":[{"d":"elcomercio.pe","n":"El Comercio","lang":"es"},{"d":"gestion.pe","n":"Gestión","lang":"es"},{"d":"rpp.pe","n":"RPP","lang":"es"}]},{"group":"Internacional · Portugal","items":[{"d":"expresso.pt","n":"Expresso","lang":"pt"},{"d":"sol.iol.pt","n":"SOL","lang":"pt"},{"d":"observador.pt","n":"Observador","lang":"pt"},{"d":"publico.pt","n":"Público","lang":"pt"}]},{"group":"Internacional · Reino Unido","items":[{"d":"bbc.com","n":"BBC","lang":"en"},{"d":"dailymail.co.uk","n":"Daily Mail","lang":"en"},{"d":"economist.com","n":"The Economist","lang":"en"},{"d":"ft.com","n":"Financial Times","lang":"en"},{"d":"independent.co.uk","n":"The Independent","lang":"en"},{"d":"middleeasteye.net","n":"Middle East Eye","lang":"en"},{"d":"mirror.co.uk","n":"The Mirror","lang":"en"},{"d":"news.sky.com","n":"Sky News","lang":"en"},{"d":"reuters.com","n":"Reuters","lang":"en"},{"d":"telegraph.co.uk","n":"The Telegraph","lang":"en"},{"d":"theguardian.com","n":"The Guardian","lang":"en"},{"d":"thetimes.com","n":"The Times","lang":"en"}]},{"group":"Internacional · República Dominicana","items":[{"d":"diariolibre.com","n":"Diario Libre","lang":"es"},{"d":"listindiario.com","n":"Listín Diario","lang":"es"}]},{"group":"Internacional · Rusia","items":[{"d":"tass.com","n":"TASS","lang":"en"}]},{"group":"Internacional · Singapur","items":[{"d":"straitstimes.com","n":"The Straits Times","lang":"en"}]},{"group":"Internacional · Sudáfrica","items":[{"d":"mg.co.za","n":"Mail & Guardian","lang":"en"}]},{"group":"Internacional · Suiza","items":[{"d":"swissinfo.ch","n":"SWI swissinfo.ch","lang":"es"}]},{"group":"Internacional · Uruguay","items":[{"d":"elobservador.com.uy","n":"El Observador","lang":"es"},{"d":"elpais.com.uy","n":"El País (UY)","lang":"es"}]},{"group":"Internacional · Venezuela","items":[{"d":"elnacional.com","n":"El Nacional","lang":"es"}]},{"group":"Internacional · África","items":[{"d":"africanews.com","n":"Africanews","lang":"en"}]}];
 
 
 // ============================================================
@@ -689,53 +716,6 @@ const CATALOG_BY_DOMAIN = (() => {
   CATALOG_FLAT.forEach(it => m.set(it.d, it));
   return m;
 })();
-
-const CATALOG_TOTAL = CATALOG_FLAT.length;
-
-function isKnownMediaDomain(host){
-  host = String(host || '').toLowerCase();
-  if (!host) return false;
-  if (CATALOG_BY_DOMAIN.has(host)) return true;
-  let idx = host.indexOf('.');
-  while (idx !== -1){
-    const suf = host.slice(idx + 1);
-    if (CATALOG_BY_DOMAIN.has(suf)) return true;
-    idx = host.indexOf('.', idx + 1);
-  }
-  return false;
-}
-
-function getCatalogEntry(host){
-  host = String(host || '').toLowerCase();
-  if (!host) return null;
-  if (CATALOG_BY_DOMAIN.has(host)) return CATALOG_BY_DOMAIN.get(host);
-  let idx = host.indexOf('.');
-  while (idx !== -1){
-    const suf = host.slice(idx + 1);
-    if (CATALOG_BY_DOMAIN.has(suf)) return CATALOG_BY_DOMAIN.get(suf);
-    idx = host.indexOf('.', idx + 1);
-  }
-  return null;
-}
-
-const CATALOG_TYPES = (() => {
-  const s = new Set();
-  CATALOG_FLAT.forEach(it => { if (it.type) s.add(it.type); });
-  return Array.from(s).sort();
-})();
-
-const CATALOG_TAGS = (() => {
-  const s = new Set();
-  CATALOG_FLAT.forEach(it => (it.tags||[]).forEach(tg => s.add(tg)));
-  return Array.from(s).sort();
-})();
-
-const CATALOG_LANGS = (() => {
-  const s = new Set();
-  CATALOG_FLAT.forEach(it => { if (it.lang) s.add(it.lang); });
-  return Array.from(s).sort();
-})();
-
 /* ============================================================
    2. SERVICIOS EXTERNOS («Abrir en…»)
    ------------------------------------------------------------
@@ -814,21 +794,19 @@ const I18N = {
     saveRemove: 'Quitar de pendientes',
     movedToPending: 'Movida a pendientes',
     movedToRead: 'Movida a leídas',
-    fabTitle: 'Modo lectura', options: 'Aa Opciones', actions: '📤 Acciones',
-    back: '← Atrás', close: '✕ Salir', closeTab: 'Cerrar pestaña',
+    fabTitle: 'Modo lectura', 
+    close: '✕ Salir', 
     settingsShort: 'Configuración y medios', pendientesShort: 'Pendientes',
-    textOnlyShort: 'Solo texto', textOnlyOn: 'Solo texto activado en este medio',
-    textOnlyOff: 'Imágenes activadas en este medio', mediasShort: 'Lista de medios',
-    visitSite: 'Ir al sitio',
+    textOnlyOn: 'Solo texto activado en este medio',
+    textOnlyOff: 'Imágenes activadas en este medio', 
     theme: 'Tema', font: 'Fuente', size: 'Tamaño', width: 'Ancho', extra: 'Extra',
     source: 'Origen', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS', srcMixto: 'Mixto',
     sourceLabel: 'Fuente', words: 'palabras', imageLabel: 'Imagen',
-    coverImage: 'Portada', coverImageTitle: 'Mostrar/ocultar imagen de portada',
     justify: 'Justificar', bionic: 'Bionic', focus: 'Foco',
     teleprompter: '⚡ Teleprompter',
     copyText: '📋 Copiar texto', print: '🖨 Imprimir', email: '✉ Enviar email', share: '📤 Compartir',
     ignoreSection: '🚫 Ignorar esta sección', saveLater: 'Guardar para más tarde',
-    savedLater: 'Guardado en pendientes', alreadySaved: 'Ya estaba en pendientes',
+    savedLater: 'Guardado en pendientes', 
     markRead: 'Marcar como leída', markUnread: 'Marcar como no leída',
     finVolver: '✓ Leída · volver a Voceiro', finSiguiente: 'Siguiente pendiente →',
     finSiguienteDe: 'Siguiente pendiente: {X}', finMarcada: 'Marcada como leída',
@@ -841,8 +819,8 @@ const I18N = {
     mas: 'Más', masAcciones: 'Más acciones',
     letraMenor: 'Letra más pequeña', letraMayor: 'Letra más grande',
     masEstrecho: 'Más estrecho', masAncho: 'Más ancho',
-    sinImagenesMedio: 'Sin imágenes en este medio', ampliarImagen: 'Ampliar imagen',
-    readItems: 'Leídas', readItemsNo: 'Pendientes',
+    imgTodas: 'Con imágenes', imgConPie: 'Solo con pie', imgNinguna: 'Sin imágenes', imgMedio: 'Imágenes en este medio', imgComoSiempre: 'Como en todos los medios', imgEnEsteMedio: 'en este medio', imgCambiarA: 'Pulsa para pasar a', verPortada: 'Ver la portada en el artículo', embebidoDe: 'Contenido de {X}', verEn: 'Ver en {X}', galeria: '{N} imágenes', galeriaPulsa: 'pulsa una para verlas en grande', visorAnterior: 'Imagen anterior', visorSiguiente: 'Imagen siguiente', sitesHint: 'Medios con ajustes propios: si el lector se abre solo, de dónde saca el texto, las imágenes y las secciones que se ignoran. Los demás medios usan lo de siempre.', medioSinReglas: 'Este medio aún no tiene ajustes propios', ampliarImagen: 'Ampliar imagen',
+    readItems: 'Leídas', 
     keepReadItems: 'Guardar historial de leídas',
     clearRead: 'Borrar leídas',
     clearReadConfirm: '¿Borrar todas las noticias marcadas como leídas?',
@@ -879,11 +857,11 @@ const I18N = {
     dictDefaultEn: 'Diccionario inglés predeterminado',
     dictDefaultFr: 'Diccionario francés predeterminado', dictDefaultDe: 'Diccionario alemán predeterminado',
     dictDefaultIt: 'Diccionario italiano predeterminado', dictDefaultPt: 'Diccionario portugués predeterminado',
-    dictAdd: 'Añadir diccionario', dictName: 'Nombre', dictUrl: 'URL de búsqueda (usa {palabra})',
-    dictUrlHint: 'Usa {palabra} donde debe ir el término buscado', dictCustom: 'Personalizado', dictRemove: 'Eliminar',
+    dictName: 'Nombre', dictUrl: 'URL de búsqueda (usa {palabra})',
+    dictUrlHint: 'Usa {palabra} donde debe ir el término buscado', 
     sites: 'Medios', pendientes: 'Pendientes', readLater: 'Guardados para más tarde',
-    noReadLater: 'No hay artículos pendientes.', removeFromLater: 'Quitar de pendientes',
-    addSite: 'Añadir sitio', domainPh: 'dominio (ej. elpais.com)',
+    noReadLater: 'No hay artículos pendientes.', 
+    domainPh: 'dominio (ej. elpais.com)',
     modeOff: 'Desactivado', modePrompt: 'Botón', modeAuto: 'Automático', add: 'Añadir', remove: 'Eliminar',
     importBtn: 'Importar', exportBtn: 'Exportar', resetBtn: 'Restablecer',
     noSites: 'No hay sitios configurados.', confirmReset: '¿Restablecer toda la configuración?',
@@ -894,47 +872,24 @@ const I18N = {
     removeCurrent: 'Quitar sitio actual de la lista', ignoreSectionMenu: 'Ignorar esta sección (aquí)',
     openSettings: 'Abrir configuración', openMedias: 'Abrir lista de medios',
     alreadyInList: 'Ya estaba en la lista.', addedTo: 'Añadido:', removedFrom: 'Eliminado:',
-    notInList: 'El sitio actual no está en la lista.', fabHidden: 'Icono oculto hasta recargar.',
+    notInList: 'El sitio actual no está en la lista.', 
     ignoredSections: 'Secciones ignoradas', noIgnoredSections: 'Ninguna',
     sectionIgnored: 'Sección ignorada:', sectionAlreadyIgnored: 'Esa sección ya estaba ignorada.',
     cannotIgnoreSection: 'No se puede ignorar (URL sin sección clara).',
     siteAddedForIgnore: 'Sitio añadido a la lista con la sección ignorada.',
     dictNotFound: 'Diccionario no encontrado', dictSearchIn: 'Buscar en:',
     dictNoDefault: 'No hay diccionario configurado para este idioma.',
-    colSite: 'Sitio', colMode: 'Modo', colSource: 'Origen',
-    colLang: 'Idioma', colType: 'Tipo', colTags: 'Etiquetas',
+    colLang: 'Idioma', 
     searchPlaceholder: 'Buscar medio...', filterAll: 'Todos',
-    filterLang: 'Idioma', filterType: 'Tipo', filterTag: 'Etiqueta',
+    filterLang: 'Idioma', 
     langAuto: 'Auto', langEs: 'Español', langGl: 'Gallego', langCa: 'Catalán',
     langEn: 'Inglés', langEu: 'Euskera', langFr: 'Francés', langDe: 'Alemán',
     langIt: 'Italiano', langPt: 'Portugués',
-    openSite: 'Abrir sitio', siteLang: 'Idioma del sitio', siteType: 'Tipo de medio',
-    siteTags: 'Etiquetas (separadas por comas)', saveBtn: 'Guardar', cancelBtn: 'Cancelar',
-    typesAndTags: 'Tipos y etiquetas', typesSection: 'Tipos de medio', tagsSection: 'Etiquetas',
-    newTypePh: 'Nuevo tipo (ej. Podcast)', newTagPh: 'Nueva etiqueta (ej. política)',
-    deleteTypeConfirm: '¿Borrar el tipo "{X}"? {N} sitio(s) lo usan y quedarán sin tipo.',
-    deleteTagConfirm: '¿Borrar la etiqueta "{X}"? Se quitará de {N} sitio(s).',
-    typeDeleted: 'Tipo borrado: {X} ({N} sitios afectados)',
-    tagDeleted: 'Etiqueta borrada: {X} ({N} sitios afectados)',
-    noTypes: 'No hay tipos configurados.', noTags: 'No hay etiquetas configuradas.',
-    typeAlreadyExists: 'Ese tipo ya existe.', tagAlreadyExists: 'Esa etiqueta ya existe.',
-    typeInvalid: 'Nombre de tipo no válido.', tagInvalid: 'Nombre de etiqueta no válido.',
-    typesHint: 'Los tipos predefinidos tienen un ID fijo en todos los idiomas; puedes cambiar su etiqueta visible o crear tipos nuevos.',
-    tagsHint: 'Al escribir una etiqueta nueva en un sitio, se añadirá automáticamente aquí.',
-    typeLabelCol: 'Etiqueta', typeIdCol: 'ID',
-    defaultTypes: 'Predefinidos', customTypes: 'Personalizados',
+    openSite: 'Abrir sitio', 
     exportWarningVersion: 'El archivo importado es de una versión distinta. Se intentará importar de todos modos.',
     settingsFabTitle: 'Configuración y medios',
     addFabTitle: 'Añadir este medio a la lista',
-    catalog: 'Catálogo',
-    catalogInfo: 'Explora los {N} medios predefinidos. Puedes añadirlos a tu lista, abrirlos en una pestaña nueva, o bloquearlos para que no aparezcan los botones flotantes. También puedes añadir medios propios.',
-    filterAdded: 'Añadidos', filterNotAdded: 'No añadidos', filterBlocked: 'Bloqueados',
-    searchCatalog: 'Buscar dominio o nombre…',
-    inYourList: 'En tu lista', blocked: 'Bloqueado', unblock: 'Desbloquear',
-    addToMyList: 'Añadir a mi lista', visitSite: 'Visitar',
-    yourList: 'Tu lista', allMedia: 'Todos los medios',
-    catalogSubMedia: 'Medios', catalogSubTypes: 'Tipos y etiquetas',
-    extraction: 'Extracción',
+    blocked: 'Bloqueado', unblock: 'Desbloquear',
     extractionTitle: 'Análisis de extracción',
     extractionMode: 'Método de extracción',
     extractionModeAuto: 'Automático (recomendado)',
@@ -949,7 +904,6 @@ const I18N = {
     extractionExcludePh: 'ej. .ad, .banner, aside, .newsletter',
     extractionMinChars: 'Mínimo de caracteres',
     extractionPickBtn: '🎯 Elegir elemento',
-    extractionExtractAllBtn: 'Extraer todo el texto',
     extractionDiagnoseBtn: '🔄 Analizar página',
     extractionDiagnostics: 'Diagnóstico de la página',
     extractionTitleLbl: 'Título',
@@ -971,7 +925,6 @@ const I18N = {
     extractionSaved: 'Extracción guardada para {X}',
     extractionTestFailed: 'No se pudo extraer contenido con esta configuración.',
     extractionUseThis: 'Usar este',
-    extractionClear: 'Limpiar',
     extractionSourcePrefix: 'Fuente',
     extractionCharsShort: 'chars',
     shortcuts: 'Atajos', shortcutReader: 'Atajos del lector', shortcutGlobal: 'Atajos globales',
@@ -986,7 +939,6 @@ const I18N = {
     shortcutConflict: 'Esa combinación ya está asignada a "{X}".',
     shortcutReservedKey: 'Esa combinación está reservada por el navegador.',
     shortcutNeedsModifier: 'Los atajos globales requieren Ctrl, Alt o Meta.',
-    shortcutInvalid: 'Combinación no válida.',
     shortcutCleared: 'Atajo eliminado.',
     shortcutSaved: 'Atajo guardado: {X}',
     shortcutEmpty: 'Sin asignar',
@@ -1028,28 +980,25 @@ const I18N = {
     serviciosFabMenu: 'mostrar u ocultar en el botón flotante',
     serviciosFabOculto: '«Abrir en…» oculto en el botón flotante',
     serviciosFabVisible: '«Abrir en…» visible en el botón flotante',
-    btnTitulares: 'TITULARES',
   },
   gl: {
     saveToPending: 'Gardar en pendentes',
     saveRemove: 'Quitar de pendentes',
     movedToPending: 'Movida a pendentes',
     movedToRead: 'Movida a lidas',
-    fabTitle: 'Modo lectura', options: 'Aa Opcións', actions: '📤 Accións',
-    back: '← Atrás', close: '✕ Saír', closeTab: 'Pechar lapela',
+    fabTitle: 'Modo lectura', 
+    close: '✕ Saír', 
     settingsShort: 'Configuración e medios', pendientesShort: 'Pendentes',
-    textOnlyShort: 'Só texto', textOnlyOn: 'Só texto activado neste medio',
-    textOnlyOff: 'Imaxes activadas neste medio', mediasShort: 'Lista de medios',
-    visitSite: 'Ir ao sitio',
+    textOnlyOn: 'Só texto activado neste medio',
+    textOnlyOff: 'Imaxes activadas neste medio', 
     theme: 'Tema', font: 'Fonte', size: 'Tamaño', width: 'Ancho', extra: 'Extra',
     source: 'Orixe', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS', srcMixto: 'Mixto',
     sourceLabel: 'Fonte', words: 'palabras', imageLabel: 'Imaxe',
-    coverImage: 'Portada', coverImageTitle: 'Amosar/agochar imaxe de portada',
     justify: 'Xustificar', bionic: 'Bionic', focus: 'Foco',
     teleprompter: '⚡ Teleprompter',
     copyText: '📋 Copiar texto', print: '🖨 Imprimir', email: '✉ Enviar email', share: '📤 Compartir',
     ignoreSection: '🚫 Ignorar esta sección', saveLater: 'Gardar para máis tarde',
-    savedLater: 'Gardado en pendentes', alreadySaved: 'Xa estaba en pendentes',
+    savedLater: 'Gardado en pendentes', 
     markRead: 'Marcar como lida', markUnread: 'Marcar como non lida',
     finVolver: '✓ Lida · volver a Voceiro', finSiguiente: 'Seguinte pendente →',
     finSiguienteDe: 'Seguinte pendente: {X}', finMarcada: 'Marcada como lida',
@@ -1062,8 +1011,8 @@ const I18N = {
     mas: 'Máis', masAcciones: 'Máis accións',
     letraMenor: 'Letra máis pequena', letraMayor: 'Letra máis grande',
     masEstrecho: 'Máis estreito', masAncho: 'Máis ancho',
-    sinImagenesMedio: 'Sen imaxes neste medio', ampliarImagen: 'Ampliar imaxe',
-    readItems: 'Lidas', readItemsNo: 'Pendentes',
+    imgTodas: 'Con imaxes', imgConPie: 'Só con pé', imgNinguna: 'Sen imaxes', imgMedio: 'Imaxes neste medio', imgComoSiempre: 'Como en todos os medios', imgEnEsteMedio: 'neste medio', imgCambiarA: 'Preme para pasar a', verPortada: 'Ver a portada no artigo', embebidoDe: 'Contido de {X}', verEn: 'Ver en {X}', galeria: '{N} imaxes', galeriaPulsa: 'preme nunha para velas en grande', visorAnterior: 'Imaxe anterior', visorSiguiente: 'Imaxe seguinte', sitesHint: 'Medios con axustes propios: se o lector se abre só, de onde colle o texto, as imaxes e as seccións que se ignoran. Os demais medios usan o de sempre.', medioSinReglas: 'Este medio aínda non ten axustes propios', ampliarImagen: 'Ampliar imaxe',
+    readItems: 'Lidas', 
     keepReadItems: 'Gardar historial de lidas',
     clearRead: 'Borrar lidas',
     clearReadConfirm: '¿Borrar todas as noticias marcadas como lidas?',
@@ -1100,11 +1049,11 @@ const I18N = {
     dictDefaultEn: 'Dicionario inglés predeterminado',
     dictDefaultFr: 'Dicionario francés predeterminado', dictDefaultDe: 'Dicionario alemán predeterminado',
     dictDefaultIt: 'Dicionario italiano predeterminado', dictDefaultPt: 'Dicionario portugués predeterminado',
-    dictAdd: 'Engadir dicionario', dictName: 'Nome', dictUrl: 'URL de busca (usa {palabra})',
-    dictUrlHint: 'Usa {palabra} onde debe ir o termo buscado', dictCustom: 'Personalizado', dictRemove: 'Eliminar',
+    dictName: 'Nome', dictUrl: 'URL de busca (usa {palabra})',
+    dictUrlHint: 'Usa {palabra} onde debe ir o termo buscado', 
     sites: 'Medios', pendientes: 'Pendentes', readLater: 'Gardados para máis tarde',
-    noReadLater: 'Non hai artigos pendentes.', removeFromLater: 'Quitar de pendentes',
-    addSite: 'Engadir sitio', domainPh: 'dominio (ex. elpais.com)',
+    noReadLater: 'Non hai artigos pendentes.', 
+    domainPh: 'dominio (ex. elpais.com)',
     modeOff: 'Desactivado', modePrompt: 'Botón', modeAuto: 'Automático', add: 'Engadir', remove: 'Eliminar',
     importBtn: 'Importar', exportBtn: 'Exportar', resetBtn: 'Restablecer',
     noSites: 'Non hai sitios configurados.', confirmReset: '¿Restablecer toda a configuración?',
@@ -1115,47 +1064,24 @@ const I18N = {
     removeCurrent: 'Quitar sitio actual da lista', ignoreSectionMenu: 'Ignorar esta sección (aquí)',
     openSettings: 'Abrir configuración', openMedias: 'Abrir lista de medios',
     alreadyInList: 'Xa estaba na lista.', addedTo: 'Engadido:', removedFrom: 'Eliminado:',
-    notInList: 'O sitio actual non está na lista.', fabHidden: 'Icona agochada ata recargar.',
+    notInList: 'O sitio actual non está na lista.', 
     ignoredSections: 'Seccións ignoradas', noIgnoredSections: 'Ningunha',
     sectionIgnored: 'Sección ignorada:', sectionAlreadyIgnored: 'Esa sección xa estaba ignorada.',
     cannotIgnoreSection: 'Non se pode ignorar (URL sen sección clara).',
     siteAddedForIgnore: 'Sitio engadido á lista coa sección ignorada.',
     dictNotFound: 'Dicionario non atopado', dictSearchIn: 'Buscar en:',
     dictNoDefault: 'Non hai dicionario configurado para este idioma.',
-    colSite: 'Sitio', colMode: 'Modo', colSource: 'Orixe',
-    colLang: 'Idioma', colType: 'Tipo', colTags: 'Etiquetas',
+    colLang: 'Idioma', 
     searchPlaceholder: 'Buscar medio...', filterAll: 'Todos',
-    filterLang: 'Idioma', filterType: 'Tipo', filterTag: 'Etiqueta',
+    filterLang: 'Idioma', 
     langAuto: 'Auto', langEs: 'Español', langGl: 'Galego', langCa: 'Català',
     langEn: 'Inglés', langEu: 'Éuscaro', langFr: 'Francés', langDe: 'Alemán',
     langIt: 'Italiano', langPt: 'Portugués',
-    openSite: 'Abrir sitio', siteLang: 'Idioma do sitio', siteType: 'Tipo de medio',
-    siteTags: 'Etiquetas (separadas por comas)', saveBtn: 'Gardar', cancelBtn: 'Cancelar',
-    typesAndTags: 'Tipos e etiquetas', typesSection: 'Tipos de medio', tagsSection: 'Etiquetas',
-    newTypePh: 'Novo tipo (ex. Podcast)', newTagPh: 'Nova etiqueta (ex. política)',
-    deleteTypeConfirm: '¿Borrar o tipo "{X}"? {N} sitio(s) úsano e quedarán sen tipo.',
-    deleteTagConfirm: '¿Borrar a etiqueta "{X}"? Quitarase de {N} sitio(s).',
-    typeDeleted: 'Tipo borrado: {X} ({N} sitios afectados)',
-    tagDeleted: 'Etiqueta borrada: {X} ({N} sitios afectados)',
-    noTypes: 'Non hai tipos configurados.', noTags: 'Non hai etiquetas configuradas.',
-    typeAlreadyExists: 'Ese tipo xa existe.', tagAlreadyExists: 'Esa etiqueta xa existe.',
-    typeInvalid: 'Nome de tipo non válido.', tagInvalid: 'Nome de etiqueta non válido.',
-    typesHint: 'Os tipos predefinidos teñen un ID fixo en todos os idiomas; podes cambiar a súa etiqueta visible ou crear tipos novos.',
-    tagsHint: 'Ao escribir unha etiqueta nova nun sitio, engadirase automaticamente aquí.',
-    typeLabelCol: 'Etiqueta', typeIdCol: 'ID',
-    defaultTypes: 'Predefinidos', customTypes: 'Personalizados',
+    openSite: 'Abrir sitio', 
     exportWarningVersion: 'O ficheiro importado é dunha versión distinta. Intentarase importar de todos xeitos.',
     settingsFabTitle: 'Configuración e medios',
     addFabTitle: 'Engadir este medio á lista',
-    catalog: 'Catálogo',
-    catalogInfo: 'Explora os {N} medios predefinidos. Podes engadilos á túa lista, abrilos nunha pestana nova, ou bloquealos para que non aparezan os botóns flotantes. Tamén podes engadir medios propios.',
-    filterAdded: 'Engadidos', filterNotAdded: 'Non engadidos', filterBlocked: 'Bloqueados',
-    searchCatalog: 'Buscar dominio ou nome…',
-    inYourList: 'Na túa lista', blocked: 'Bloqueado', unblock: 'Desbloquear',
-    addToMyList: 'Engadir á miña lista', visitSite: 'Visitar',
-    yourList: 'A túa lista', allMedia: 'Todos os medios',
-    catalogSubMedia: 'Medios', catalogSubTypes: 'Tipos e etiquetas',
-    extraction: 'Extracción',
+    blocked: 'Bloqueado', unblock: 'Desbloquear',
     extractionTitle: 'Análise de extracción',
     extractionMode: 'Método de extracción',
     extractionModeAuto: 'Automático (recomendado)',
@@ -1170,7 +1096,6 @@ const I18N = {
     extractionExcludePh: 'ex. .ad, .banner, aside, .newsletter',
     extractionMinChars: 'Mínimo de caracteres',
     extractionPickBtn: '🎯 Elixir elemento',
-    extractionExtractAllBtn: 'Extraer todo o texto',
     extractionDiagnoseBtn: '🔄 Analizar páxina',
     extractionDiagnostics: 'Diagnóstico da páxina',
     extractionTitleLbl: 'Título',
@@ -1192,7 +1117,6 @@ const I18N = {
     extractionSaved: 'Extracción gardada para {X}',
     extractionTestFailed: 'Non se puido extraer contido con esta configuración.',
     extractionUseThis: 'Usar este',
-    extractionClear: 'Limpar',
     extractionSourcePrefix: 'Fonte',
     extractionCharsShort: 'chars',
     shortcuts: 'Atallos', shortcutReader: 'Atallos do lector', shortcutGlobal: 'Atallos globais',
@@ -1207,7 +1131,6 @@ const I18N = {
     shortcutConflict: 'Esa combinación xa está asignada a "{X}".',
     shortcutReservedKey: 'Esa combinación está reservada polo navegador.',
     shortcutNeedsModifier: 'Os atallos globais requiren Ctrl, Alt ou Meta.',
-    shortcutInvalid: 'Combinación non válida.',
     shortcutCleared: 'Atallo eliminado.',
     shortcutSaved: 'Atallo gardado: {X}',
     shortcutEmpty: 'Sen asignar',
@@ -1249,7 +1172,6 @@ const I18N = {
     serviciosFabMenu: 'amosar ou agochar no botón flotante',
     serviciosFabOculto: '«Abrir en…» agochado no botón flotante',
     serviciosFabVisible: '«Abrir en…» visible no botón flotante',
-    btnTitulares: 'TITULARES',
   },
   ca: {
     saveToPending: 'Tornar a pendents',
@@ -1261,21 +1183,19 @@ const I18N = {
     readerAutoAllHint:  "Obre el lector automàticament en entrar a qualsevol mitjà conegut o pàgina d'article. Respecta els dominis desactivats i les seccions ignorades.",
     readerAutoAllOn:    'Mode lector automàtic global activat',
     readerAutoAllOff:   'Mode lector automàtic global desactivat',
-    fabTitle: 'Mode lectura', options: 'Aa Opcions', actions: '📤 Accions',
-    back: '← Enrere', close: '✕ Tancar', closeTab: 'Tancar pestanya',
+    fabTitle: 'Mode lectura', 
+    close: '✕ Tancar', 
     settingsShort: 'Configuració i mitjans', pendientesShort: 'Pendents',
-    textOnlyShort: 'Només text', textOnlyOn: 'Només text activat en aquest mitjà',
-    textOnlyOff: 'Imatges activades en aquest mitjà', mediasShort: 'Llista de mitjans',
-    visitSite: 'Anar al lloc',
+    textOnlyOn: 'Només text activat en aquest mitjà',
+    textOnlyOff: 'Imatges activades en aquest mitjà', 
     theme: 'Tema', font: 'Tipus de lletra', size: 'Mida', width: 'Amplada', extra: 'Extra',
     source: 'Origen', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Lector', srcCustom: 'CSS', srcMixto: 'Mixt',
     sourceLabel: 'Font', words: 'paraules', imageLabel: 'Imatge',
-    coverImage: 'Portada', coverImageTitle: 'Mostrar/amagar imatge de portada',
     justify: 'Justificar', bionic: 'Bionic', focus: 'Focus',
     teleprompter: '⚡ Teleprompter',
     copyText: '📋 Copiar text', print: '🖨 Imprimir', email: '✉ Enviar correu', share: '📤 Compartir',
     ignoreSection: '🚫 Ignorar aquesta secció', saveLater: 'Desar per a més tard',
-    savedLater: 'Desat a pendents', alreadySaved: 'Ja era a pendents',
+    savedLater: 'Desat a pendents', 
     markRead: 'Marcar com llegida', markUnread: 'Marcar com no llegida',
     finVolver: '✓ Llegida · tornar a Voceiro', finSiguiente: 'Següent pendent →',
     finSiguienteDe: 'Següent pendent: {X}', finMarcada: 'Marcada com a llegida',
@@ -1288,8 +1208,8 @@ const I18N = {
     mas: 'Més', masAcciones: 'Més accions',
     letraMenor: 'Lletra més petita', letraMayor: 'Lletra més grossa',
     masEstrecho: 'Més estret', masAncho: 'Més ample',
-    sinImagenesMedio: 'Sense imatges en aquest mitjà', ampliarImagen: 'Amplia la imatge',
-    readItems: 'Llegides', readItemsNo: 'Pendents',
+    imgTodas: 'Amb imatges', imgConPie: 'Només amb peu', imgNinguna: 'Sense imatges', imgMedio: 'Imatges en aquest mitjà', imgComoSiempre: 'Com a tots els mitjans', imgEnEsteMedio: 'en aquest mitjà', imgCambiarA: 'Prem per passar a', verPortada: 'Veure la portada a l\'article', embebidoDe: 'Contingut de {X}', verEn: 'Veure a {X}', galeria: '{N} imatges', galeriaPulsa: 'prem-ne una per veure-les en gran', visorAnterior: 'Imatge anterior', visorSiguiente: 'Imatge següent', sitesHint: 'Mitjans amb ajustos propis: si el lector s\'obre sol, d\'on treu el text, les imatges i les seccions que s\'ignoren. La resta de mitjans fan servir el de sempre.', medioSinReglas: 'Aquest mitjà encara no té ajustos propis', ampliarImagen: 'Amplia la imatge',
+    readItems: 'Llegides', 
     keepReadItems: 'Desar historial de llegides',
     clearRead: 'Esborrar llegides',
     clearReadConfirm: 'Esborrar totes les notícies marcades com llegides?',
@@ -1321,11 +1241,11 @@ const I18N = {
     dictDefaultEn: 'Diccionari anglès predeterminat',
     dictDefaultFr: 'Diccionari francès predeterminat', dictDefaultDe: 'Diccionari alemany predeterminat',
     dictDefaultIt: 'Diccionari italià predeterminat', dictDefaultPt: 'Diccionari portuguès predeterminat',
-    dictAdd: 'Afegir diccionari', dictName: 'Nom', dictUrl: 'URL de cerca (usa {palabra})',
-    dictUrlHint: "Usa {palabra} on ha d'anar el terme cercat", dictCustom: 'Personalitzat', dictRemove: 'Eliminar',
+    dictName: 'Nom', dictUrl: 'URL de cerca (usa {palabra})',
+    dictUrlHint: "Usa {palabra} on ha d'anar el terme cercat", 
     sites: 'Mitjans', pendientes: 'Pendents', readLater: 'Desats per a més tard',
-    noReadLater: 'No hi ha articles pendents.', removeFromLater: 'Treure de pendents',
-    addSite: 'Afegir lloc', domainPh: 'domini (ex. elpais.com)',
+    noReadLater: 'No hi ha articles pendents.', 
+    domainPh: 'domini (ex. elpais.com)',
     modeOff: 'Desactivat', modePrompt: 'Botó', modeAuto: 'Automàtic', add: 'Afegir', remove: 'Eliminar',
     importBtn: 'Importar', exportBtn: 'Exportar', resetBtn: 'Restablir',
     noSites: 'No hi ha llocs configurats.', confirmReset: 'Restablir tota la configuració?',
@@ -1336,47 +1256,24 @@ const I18N = {
     removeCurrent: 'Treure lloc actual de la llista', ignoreSectionMenu: 'Ignorar aquesta secció (aquí)',
     openSettings: 'Obrir configuració', openMedias: 'Obrir llista de mitjans',
     alreadyInList: 'Ja era a la llista.', addedTo: 'Afegit:', removedFrom: 'Eliminat:',
-    notInList: 'El lloc actual no és a la llista.', fabHidden: 'Icona amagada fins a recarregar.',
+    notInList: 'El lloc actual no és a la llista.', 
     ignoredSections: 'Seccions ignorades', noIgnoredSections: 'Cap',
     sectionIgnored: 'Secció ignorada:', sectionAlreadyIgnored: 'Aquesta secció ja estava ignorada.',
     cannotIgnoreSection: 'No es pot ignorar (URL sense secció clara).',
     siteAddedForIgnore: 'Lloc afegit a la llista amb la secció ignorada.',
     dictNotFound: 'Diccionari no trobat', dictSearchIn: 'Cercar a:',
     dictNoDefault: 'No hi ha diccionari configurat per a aquest idioma.',
-    colSite: 'Lloc', colMode: 'Mode', colSource: 'Origen',
-    colLang: 'Idioma', colType: 'Tipus', colTags: 'Etiquetes',
+    colLang: 'Idioma', 
     searchPlaceholder: 'Cercar mitjà...', filterAll: 'Tots',
-    filterLang: 'Idioma', filterType: 'Tipus', filterTag: 'Etiqueta',
+    filterLang: 'Idioma', 
     langAuto: 'Auto', langEs: 'Castellà', langGl: 'Gallec', langCa: 'Català',
     langEn: 'Anglès', langEu: 'Basc', langFr: 'Francès', langDe: 'Alemany',
     langIt: 'Italià', langPt: 'Portuguès',
-    openSite: 'Obrir lloc', siteLang: 'Idioma del lloc', siteType: 'Tipus de mitjà',
-    siteTags: 'Etiquetes (separades per comes)', saveBtn: 'Desar', cancelBtn: 'Cancel·lar',
-    typesAndTags: 'Tipus i etiquetes', typesSection: 'Tipus de mitjà', tagsSection: 'Etiquetes',
-    newTypePh: 'Nou tipus (ex. Podcast)', newTagPh: 'Nova etiqueta (ex. política)',
-    deleteTypeConfirm: 'Esborrar el tipus "{X}"? {N} lloc(s) l\'usen i quedaran sense tipus.',
-    deleteTagConfirm: 'Esborrar l\'etiqueta "{X}"? Es traurà de {N} lloc(s).',
-    typeDeleted: 'Tipus esborrat: {X} ({N} llocs afectats)',
-    tagDeleted: 'Etiqueta esborrada: {X} ({N} llocs afectats)',
-    noTypes: 'No hi ha tipus configurats.', noTags: 'No hi ha etiquetes configurades.',
-    typeAlreadyExists: 'Aquest tipus ja existeix.', tagAlreadyExists: 'Aquesta etiqueta ja existeix.',
-    typeInvalid: 'Nom de tipus no vàlid.', tagInvalid: "Nom d'etiqueta no vàlid.",
-    typesHint: 'Els tipus predefinits tenen un ID fix a tots els idiomes; pots canviar-ne l\'etiqueta visible o crear tipus nous.',
-    tagsHint: "En escriure una etiqueta nova en un lloc, s'afegirà automàticament aquí.",
-    typeLabelCol: 'Etiqueta', typeIdCol: 'ID',
-    defaultTypes: 'Predefinits', customTypes: 'Personalitzats',
+    openSite: 'Obrir lloc', 
     exportWarningVersion: "El fitxer importat és d'una versió diferent. S'intentarà importar igualment.",
     settingsFabTitle: 'Configuració i mitjans',
     addFabTitle: 'Afegir aquest mitjà a la llista',
-    catalog: 'Catàleg',
-    catalogInfo: 'Explora els {N} mitjans predefinits. Pots afegir-los a la teva llista, obrir-los en una pestanya nova, o bloquejar-los perquè no apareguin els botons flotants. També pots afegir mitjans propis.',
-    filterAdded: 'Afegits', filterNotAdded: 'No afegits', filterBlocked: 'Bloquejats',
-    searchCatalog: 'Cercar domini o nom…',
-    inYourList: 'A la teva llista', blocked: 'Bloquejat', unblock: 'Desbloquejar',
-    addToMyList: 'Afegir a la meva llista', visitSite: 'Visitar',
-    yourList: 'La teva llista', allMedia: 'Tots els mitjans',
-    catalogSubMedia: 'Mitjans', catalogSubTypes: 'Tipus i etiquetes',
-    extraction: 'Extracció',
+    blocked: 'Bloquejat', unblock: 'Desbloquejar',
     extractionTitle: "Anàlisi d'extracció",
     extractionMode: "Mètode d'extracció",
     extractionModeAuto: 'Automàtic (recomanat)',
@@ -1391,7 +1288,6 @@ const I18N = {
     extractionExcludePh: 'ex. .ad, .banner, aside, .newsletter',
     extractionMinChars: 'Mínim de caràcters',
     extractionPickBtn: '🎯 Triar element',
-    extractionExtractAllBtn: 'Extreure tot el text',
     extractionDiagnoseBtn: '🔄 Analitzar pàgina',
     extractionDiagnostics: 'Diagnòstic de la pàgina',
     extractionTitleLbl: 'Títol',
@@ -1413,7 +1309,6 @@ const I18N = {
     extractionSaved: 'Extracció desada per a {X}',
     extractionTestFailed: "No s'ha pogut extreure contingut amb aquesta configuració.",
     extractionUseThis: 'Usar aquest',
-    extractionClear: 'Netejar',
     extractionSourcePrefix: 'Font',
     extractionCharsShort: 'chars',
     shortcuts: 'Dreceres', shortcutReader: 'Dreceres del lector', shortcutGlobal: 'Dreceres globals',
@@ -1428,7 +1323,6 @@ const I18N = {
     shortcutConflict: 'Aquesta combinació ja està assignada a "{X}".',
     shortcutReservedKey: 'Aquesta combinació està reservada pel navegador.',
     shortcutNeedsModifier: 'Les dreceres globals requereixen Ctrl, Alt o Meta.',
-    shortcutInvalid: 'Combinació no vàlida.',
     shortcutCleared: 'Drecera eliminada.',
     shortcutSaved: 'Drecera desada: {X}',
     shortcutEmpty: 'Sense assignar',
@@ -1470,28 +1364,25 @@ const I18N = {
     serviciosFabMenu: 'mostra o amaga al botó flotant',
     serviciosFabOculto: '«Obre a…» amagat al botó flotant',
     serviciosFabVisible: '«Obre a…» visible al botó flotant',
-    btnTitulares: 'TITULARS',
   },
   en: {
     saveToPending: 'Move to queue',
     saveRemove: 'Remove from queue',
     movedToPending: 'Moved to queue',
     movedToRead: 'Moved to read',
-    fabTitle: 'Reading mode', options: 'Aa Options', actions: '📤 Actions',
-    back: '← Back', close: '✕ Close', closeTab: 'Close tab',
+    fabTitle: 'Reading mode', 
+    close: '✕ Close', 
     settingsShort: 'Settings & sites', pendientesShort: 'Queue',
-    textOnlyShort: 'Text only', textOnlyOn: 'Text only enabled on this site',
-    textOnlyOff: 'Images enabled on this site', mediasShort: 'Sites list',
-    visitSite: 'Go to site',
+    textOnlyOn: 'Text only enabled on this site',
+    textOnlyOff: 'Images enabled on this site', 
     theme: 'Theme', font: 'Font', size: 'Size', width: 'Width', extra: 'Extra',
     source: 'Source', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Reader', srcCustom: 'CSS', srcMixto: 'Mixed',
     sourceLabel: 'Source', words: 'words', imageLabel: 'Image',
-    coverImage: 'Cover', coverImageTitle: 'Show/hide cover image',
     justify: 'Justify', bionic: 'Bionic', focus: 'Focus',
     teleprompter: '⚡ Teleprompter',
     copyText: '📋 Copy text', print: '🖨 Print', email: '✉ Send email', share: '📤 Share',
     ignoreSection: '🚫 Ignore this section', saveLater: 'Save for later',
-    savedLater: 'Saved to queue', alreadySaved: 'Already in queue',
+    savedLater: 'Saved to queue', 
     markRead: 'Mark as read', markUnread: 'Mark as unread',
     finVolver: '✓ Read · back to Voceiro', finSiguiente: 'Next in queue →',
     finSiguienteDe: 'Next in queue: {X}', finMarcada: 'Marked as read',
@@ -1504,8 +1395,8 @@ const I18N = {
     mas: 'More', masAcciones: 'More actions',
     letraMenor: 'Smaller text', letraMayor: 'Larger text',
     masEstrecho: 'Narrower', masAncho: 'Wider',
-    sinImagenesMedio: 'No images on this site', ampliarImagen: 'Enlarge image',
-    readItems: 'Read', readItemsNo: 'Pending',
+    imgTodas: 'With images', imgConPie: 'Captioned only', imgNinguna: 'No images', imgMedio: 'Images on this site', imgComoSiempre: 'Same as all sites', imgEnEsteMedio: 'on this site', imgCambiarA: 'Press to switch to', verPortada: 'See the cover in the article', embebidoDe: 'Content from {X}', verEn: 'View on {X}', galeria: '{N} images', galeriaPulsa: 'press one to see them full size', visorAnterior: 'Previous image', visorSiguiente: 'Next image', sitesHint: 'Sites with their own settings: whether the reader opens by itself, where the text comes from, images and ignored sections. Other sites use the defaults.', medioSinReglas: 'This site has no settings of its own yet', ampliarImagen: 'Enlarge image',
+    readItems: 'Read', 
     keepReadItems: 'Keep history of read items',
     clearRead: 'Clear read',
     clearReadConfirm: 'Delete all news marked as read?',
@@ -1542,11 +1433,11 @@ const I18N = {
     dictDefaultEn: 'Default English dictionary',
     dictDefaultFr: 'Default French dictionary', dictDefaultDe: 'Default German dictionary',
     dictDefaultIt: 'Default Italian dictionary', dictDefaultPt: 'Default Portuguese dictionary',
-    dictAdd: 'Add dictionary', dictName: 'Name', dictUrl: 'Search URL (use {palabra})',
-    dictUrlHint: 'Use {palabra} where the search term should go', dictCustom: 'Custom', dictRemove: 'Remove',
+    dictName: 'Name', dictUrl: 'Search URL (use {palabra})',
+    dictUrlHint: 'Use {palabra} where the search term should go', 
     sites: 'Sites', pendientes: 'Queue', readLater: 'Saved for later',
-    noReadLater: 'No pending articles.', removeFromLater: 'Remove from queue',
-    addSite: 'Add site', domainPh: 'domain (e.g. elpais.com)',
+    noReadLater: 'No pending articles.', 
+    domainPh: 'domain (e.g. elpais.com)',
     modeOff: 'Disabled', modePrompt: 'Button', modeAuto: 'Auto', add: 'Add', remove: 'Remove',
     importBtn: 'Import', exportBtn: 'Export', resetBtn: 'Reset',
     noSites: 'No sites configured.', confirmReset: 'Reset all settings?',
@@ -1557,47 +1448,24 @@ const I18N = {
     removeCurrent: 'Remove current site from list', ignoreSectionMenu: 'Ignore this section (here)',
     openSettings: 'Open settings', openMedias: 'Open sites list',
     alreadyInList: 'Already in the list.', addedTo: 'Added:', removedFrom: 'Removed:',
-    notInList: 'Current site is not in the list.', fabHidden: 'Icon hidden until reload.',
+    notInList: 'Current site is not in the list.', 
     ignoredSections: 'Ignored sections', noIgnoredSections: 'None',
     sectionIgnored: 'Section ignored:', sectionAlreadyIgnored: 'That section was already ignored.',
     cannotIgnoreSection: 'Cannot ignore (URL has no clear section).',
     siteAddedForIgnore: 'Site added to list with ignored section.',
     dictNotFound: 'Dictionary not found', dictSearchIn: 'Search in:',
     dictNoDefault: 'No dictionary configured for this language.',
-    colSite: 'Site', colMode: 'Mode', colSource: 'Source',
-    colLang: 'Language', colType: 'Type', colTags: 'Tags',
+    colLang: 'Language', 
     searchPlaceholder: 'Search site...', filterAll: 'All',
-    filterLang: 'Language', filterType: 'Type', filterTag: 'Tag',
+    filterLang: 'Language', 
     langAuto: 'Auto', langEs: 'Spanish', langGl: 'Galician', langCa: 'Catalan',
     langEn: 'English', langEu: 'Basque', langFr: 'French', langDe: 'German',
     langIt: 'Italian', langPt: 'Portuguese',
-    openSite: 'Open site', siteLang: 'Site language', siteType: 'Site type',
-    siteTags: 'Tags (comma separated)', saveBtn: 'Save', cancelBtn: 'Cancel',
-    typesAndTags: 'Types & tags', typesSection: 'Site types', tagsSection: 'Tags',
-    newTypePh: 'New type (e.g. Podcast)', newTagPh: 'New tag (e.g. politics)',
-    deleteTypeConfirm: 'Delete type "{X}"? {N} site(s) use it and will be left without type.',
-    deleteTagConfirm: 'Delete tag "{X}"? It will be removed from {N} site(s).',
-    typeDeleted: 'Type deleted: {X} ({N} sites affected)',
-    tagDeleted: 'Tag deleted: {X} ({N} sites affected)',
-    noTypes: 'No types configured.', noTags: 'No tags configured.',
-    typeAlreadyExists: 'That type already exists.', tagAlreadyExists: 'That tag already exists.',
-    typeInvalid: 'Invalid type name.', tagInvalid: 'Invalid tag name.',
-    typesHint: 'Predefined types have a fixed ID across languages; you can change their visible label or create new types.',
-    tagsHint: 'When typing a new tag on a site, it will be added here automatically.',
-    typeLabelCol: 'Label', typeIdCol: 'ID',
-    defaultTypes: 'Built-in', customTypes: 'Custom',
+    openSite: 'Open site', 
     exportWarningVersion: 'The imported file is from a different version. Import will be attempted anyway.',
     settingsFabTitle: 'Settings & sites',
     addFabTitle: 'Add this site to the list',
-    catalog: 'Catalog',
-    catalogInfo: 'Browse the {N} predefined media. You can add them to your list, open them in a new tab, or block them so the floating buttons don\'t appear. You can also add your own media.',
-    filterAdded: 'Added', filterNotAdded: 'Not added', filterBlocked: 'Blocked',
-    searchCatalog: 'Search domain or name…',
-    inYourList: 'In your list', blocked: 'Blocked', unblock: 'Unblock',
-    addToMyList: 'Add to my list', visitSite: 'Visit',
-    yourList: 'Your list', allMedia: 'All media',
-    catalogSubMedia: 'Sites', catalogSubTypes: 'Types & tags',
-    extraction: 'Extraction',
+    blocked: 'Blocked', unblock: 'Unblock',
     extractionTitle: 'Extraction analysis',
     extractionMode: 'Extraction method',
     extractionModeAuto: 'Automatic (recommended)',
@@ -1612,7 +1480,6 @@ const I18N = {
     extractionExcludePh: 'e.g. .ad, .banner, aside, .newsletter',
     extractionMinChars: 'Minimum characters',
     extractionPickBtn: '🎯 Pick element',
-    extractionExtractAllBtn: 'Extract all text',
     extractionDiagnoseBtn: '🔄 Analyze page',
     extractionDiagnostics: 'Page diagnostics',
     extractionTitleLbl: 'Title',
@@ -1634,7 +1501,6 @@ const I18N = {
     extractionSaved: 'Extraction saved for {X}',
     extractionTestFailed: 'Could not extract content with this configuration.',
     extractionUseThis: 'Use this',
-    extractionClear: 'Clear',
     extractionSourcePrefix: 'Source',
     extractionCharsShort: 'chars',
     shortcuts: 'Shortcuts', shortcutReader: 'Reader shortcuts', shortcutGlobal: 'Global shortcuts',
@@ -1649,7 +1515,6 @@ const I18N = {
     shortcutConflict: 'That combo is already assigned to "{X}".',
     shortcutReservedKey: 'That combo is reserved by the browser.',
     shortcutNeedsModifier: 'Global shortcuts require Ctrl, Alt or Meta.',
-    shortcutInvalid: 'Invalid combo.',
     shortcutCleared: 'Shortcut cleared.',
     shortcutSaved: 'Shortcut saved: {X}',
     shortcutEmpty: 'Unassigned',
@@ -1691,28 +1556,25 @@ const I18N = {
     serviciosFabMenu: 'show or hide in the floating button',
     serviciosFabOculto: '“Open in…” hidden in the floating button',
     serviciosFabVisible: '“Open in…” shown in the floating button',
-    btnTitulares: 'HEADLINES',
   },
   eu: {
     saveToPending: 'Zainera itzuli',
     saveRemove: 'Zainetik kendu',
     movedToPending: 'Zainera mugitua',
     movedToRead: 'Irakurrietara mugitua',
-    fabTitle: 'Irakurketa modua', options: 'Aa Aukerak', actions: '📤 Ekintzak',
-    back: '← Atzera', close: '✕ Itxi', closeTab: 'Itxi fitxa',
+    fabTitle: 'Irakurketa modua', 
+    close: '✕ Itxi', 
     settingsShort: 'Ezarpenak eta hedabideak', pendientesShort: 'Zain',
-    textOnlyShort: 'Testua soilik', textOnlyOn: 'Testua soilik gaituta hedabide honetan',
-    textOnlyOff: 'Irudiak gaituta hedabide honetan', mediasShort: 'Hedabide zerrenda',
-    visitSite: 'Gunera joan',
+    textOnlyOn: 'Testua soilik gaituta hedabide honetan',
+    textOnlyOff: 'Irudiak gaituta hedabide honetan', 
     theme: 'Gaia', font: 'Letra-tipoa', size: 'Tamaina', width: 'Zabalera', extra: 'Extra',
     source: 'Iturria', srcAuto: 'Auto', srcJsonld: 'JSON', srcReadability: 'Irakurgailua', srcCustom: 'CSS', srcMixto: 'Mistoa',
     sourceLabel: 'Iturria', words: 'hitza', imageLabel: 'Irudia',
-    coverImage: 'Azala', coverImageTitle: 'Azaleko irudia erakutsi/ezkutatu',
     justify: 'Justifikatu', bionic: 'Bionikoa', focus: 'Fokua',
     teleprompter: '⚡ Teleprompter',
     copyText: '📋 Testua kopiatu', print: '🖨 Inprimatu', email: '✉ Posta bidali', share: '📤 Partekatu',
     ignoreSection: '🚫 Atal hau ez ikusi', saveLater: 'Geroagorako gorde',
-    savedLater: 'Zain gordeta', alreadySaved: 'Jada zegoen zain',
+    savedLater: 'Zain gordeta', 
     markRead: 'Irakurrita markatu', markUnread: 'Irakurri gabe markatu',
     finVolver: '✓ Irakurrita · itzuli Voceirora', finSiguiente: 'Zain dagoen hurrengoa →',
     finSiguienteDe: 'Zain dagoen hurrengoa: {X}', finMarcada: 'Irakurrita markatua',
@@ -1725,8 +1587,8 @@ const I18N = {
     mas: 'Gehiago', masAcciones: 'Ekintza gehiago',
     letraMenor: 'Letra txikiagoa', letraMayor: 'Letra handiagoa',
     masEstrecho: 'Estuagoa', masAncho: 'Zabalagoa',
-    sinImagenesMedio: 'Irudirik gabe hedabide honetan', ampliarImagen: 'Irudia handitu',
-    readItems: 'Irakurriak', readItemsNo: 'Zain',
+    imgTodas: 'Irudiekin', imgConPie: 'Oinarekin soilik', imgNinguna: 'Irudirik gabe', imgMedio: 'Irudiak hedabide honetan', imgComoSiempre: 'Hedabide guztietan bezala', imgEnEsteMedio: 'hedabide honetan', imgCambiarA: 'Sakatu hona aldatzeko', verPortada: 'Ikusi azala artikuluan', embebidoDe: '{X} edukia', verEn: 'Ikusi {X}-n', galeria: '{N} irudi', galeriaPulsa: 'sakatu bat handian ikusteko', visorAnterior: 'Aurreko irudia', visorSiguiente: 'Hurrengo irudia', sitesHint: 'Ezarpen propioak dituzten hedabideak: irakurgailua bere kabuz irekitzen den, testua nondik ateratzen duen, irudiak eta alde batera uzten diren atalak. Gainerakoek ohikoa erabiltzen dute.', medioSinReglas: 'Hedabide honek ez du oraindik ezarpen propiorik', ampliarImagen: 'Irudia handitu',
+    readItems: 'Irakurriak', 
     keepReadItems: 'Irakurrien historia gorde',
     clearRead: 'Irakurriak ezabatu',
     clearReadConfirm: 'Irakurrita markatutako albiste guztiak ezabatu?',
@@ -1763,11 +1625,11 @@ const I18N = {
     dictDefaultEn: 'Ingelesezko hiztegi lehenetsia',
     dictDefaultFr: 'Frantsesezko hiztegi lehenetsia', dictDefaultDe: 'Alemanezko hiztegi lehenetsia',
     dictDefaultIt: 'Italierazko hiztegi lehenetsia', dictDefaultPt: 'Portugesezko hiztegi lehenetsia',
-    dictAdd: 'Hiztegia gehitu', dictName: 'Izena', dictUrl: 'Bilaketa URLa ({palabra} erabili)',
-    dictUrlHint: 'Erabili {palabra} bilatutako terminoa joan behar den tokian', dictCustom: 'Pertsonalizatua', dictRemove: 'Ezabatu',
+    dictName: 'Izena', dictUrl: 'Bilaketa URLa ({palabra} erabili)',
+    dictUrlHint: 'Erabili {palabra} bilatutako terminoa joan behar den tokian', 
     sites: 'Hedabideak', pendientes: 'Zain', readLater: 'Geroagorako gordeta',
-    noReadLater: 'Ez dago artikulu zainenik.', removeFromLater: 'Zaindik kendu',
-    addSite: 'Gunea gehitu', domainPh: 'domeinua (adib. elpais.com)',
+    noReadLater: 'Ez dago artikulu zainenik.', 
+    domainPh: 'domeinua (adib. elpais.com)',
     modeOff: 'Desgaituta', modePrompt: 'Botoia', modeAuto: 'Automatikoa', add: 'Gehitu', remove: 'Ezabatu',
     importBtn: 'Inportatu', exportBtn: 'Esportatu', resetBtn: 'Berrezarri',
     noSites: 'Ez dago gunerik konfiguratuta.', confirmReset: 'Konfigurazio osoa berrezarri?',
@@ -1778,47 +1640,24 @@ const I18N = {
     removeCurrent: 'Oraingo gunea zerrendatik kendu', ignoreSectionMenu: 'Atal hau ez ikusi (hemen)',
     openSettings: 'Ezarpenak ireki', openMedias: 'Hedabide zerrenda ireki',
     alreadyInList: 'Jada zerrendan zegoen.', addedTo: 'Gehituta:', removedFrom: 'Ezabatuta:',
-    notInList: 'Oraingo gunea ez dago zerrendan.', fabHidden: 'Ikonoa ezkutatuta birkargatu arte.',
+    notInList: 'Oraingo gunea ez dago zerrendan.', 
     ignoredSections: 'Ez ikusitako atalak', noIgnoredSections: 'Bat ere ez',
     sectionIgnored: 'Atala ez ikusia:', sectionAlreadyIgnored: 'Atal hori jada ez ikusia zegoen.',
     cannotIgnoreSection: 'Ezin da ez ikusi (URLak ez du atal argirik).',
     siteAddedForIgnore: 'Gunea zerrendara gehituta atal ez ikusiarekin.',
     dictNotFound: 'Hiztegia ez da aurkitu', dictSearchIn: 'Bilatu hemen:',
     dictNoDefault: 'Ez dago hiztegirik konfiguratuta hizkuntza honetarako.',
-    colSite: 'Gunea', colMode: 'Modua', colSource: 'Iturria',
-    colLang: 'Hizkuntza', colType: 'Mota', colTags: 'Etiketak',
+    colLang: 'Hizkuntza', 
     searchPlaceholder: 'Bilatu hedabidea...', filterAll: 'Guztiak',
-    filterLang: 'Hizkuntza', filterType: 'Mota', filterTag: 'Etiketa',
+    filterLang: 'Hizkuntza', 
     langAuto: 'Auto', langEs: 'Gaztelania', langGl: 'Galiziera', langCa: 'Katalana',
     langEn: 'Ingelesa', langEu: 'Euskara', langFr: 'Frantsesa', langDe: 'Alemana',
     langIt: 'Italiera', langPt: 'Portugesa',
-    openSite: 'Gunea ireki', siteLang: 'Gunearen hizkuntza', siteType: 'Hedabide mota',
-    siteTags: 'Etiketak (komaz banatuta)', saveBtn: 'Gorde', cancelBtn: 'Utzi',
-    typesAndTags: 'Motak eta etiketak', typesSection: 'Hedabide motak', tagsSection: 'Etiketak',
-    newTypePh: 'Mota berria (adib. Podcast)', newTagPh: 'Etiketa berria (adib. politika)',
-    deleteTypeConfirm: '"{X}" mota ezabatu? {N} gune(k) erabiltzen dute eta motarik gabe geratuko dira.',
-    deleteTagConfirm: '"{X}" etiketa ezabatu? {N} gune(eta)tik kenduko da.',
-    typeDeleted: 'Mota ezabatuta: {X} ({N} gune kaltetuta)',
-    tagDeleted: 'Etiketa ezabatuta: {X} ({N} gune kaltetuta)',
-    noTypes: 'Ez dago motarik konfiguratuta.', noTags: 'Ez dago etiketarik konfiguratuta.',
-    typeAlreadyExists: 'Mota hori jada existitzen da.', tagAlreadyExists: 'Etiketa hori jada existitzen da.',
-    typeInvalid: 'Mota izen baliogabea.', tagInvalid: 'Etiketa izen baliogabea.',
-    typesHint: 'Mota lehenetsiek ID finkoa dute hizkuntza guztietan; haien etiketa ikusgai aldatu edo mota berriak sor ditzakezu.',
-    tagsHint: 'Gune batean etiketa berri bat idazterakoan, automatikoki gehituko da hemen.',
-    typeLabelCol: 'Etiketa', typeIdCol: 'ID',
-    defaultTypes: 'Lehenetsiak', customTypes: 'Pertsonalizatuak',
+    openSite: 'Gunea ireki', 
     exportWarningVersion: 'Inportatutako fitxategia beste bertsio batekoa da. Dena den inportatzen saiatuko da.',
     settingsFabTitle: 'Ezarpenak eta hedabideak',
     addFabTitle: 'Gehitu hedabide hau zerrendara',
-    catalog: 'Katalogoa',
-    catalogInfo: 'Arakatu {N} hedabide aurrez zehaztuak. Zure zerrendara gehitu, fitxa berri batean ireki, edo blokeatu ditzakezu, botoi flotagarriak ager ez daitezen. Zure hedabideak ere gehi ditzakezu.',
-    filterAdded: 'Gehituta', filterNotAdded: 'Gehitu gabe', filterBlocked: 'Blokeatuta',
-    searchCatalog: 'Bilatu domeinua edo izena…',
-    inYourList: 'Zure zerrendan', blocked: 'Blokeatuta', unblock: 'Desblokeatu',
-    addToMyList: 'Nire zerrendara gehitu', visitSite: 'Bisitatu',
-    yourList: 'Zure zerrenda', allMedia: 'Hedabide guztiak',
-    catalogSubMedia: 'Hedabideak', catalogSubTypes: 'Motak eta etiketak',
-    extraction: 'Erauzketa',
+    blocked: 'Blokeatuta', unblock: 'Desblokeatu',
     extractionTitle: 'Erauzketa analisia',
     extractionMode: 'Erauzketa metodoa',
     extractionModeAuto: 'Automatikoa (gomendatua)',
@@ -1833,7 +1672,6 @@ const I18N = {
     extractionExcludePh: 'adib. .ad, .banner, aside, .newsletter',
     extractionMinChars: 'Gutxieneko karaktereak',
     extractionPickBtn: '🎯 Elementua aukeratu',
-    extractionExtractAllBtn: 'Testu osoa atera',
     extractionDiagnoseBtn: '🔄 Orria aztertu',
     extractionDiagnostics: 'Orriaren diagnostikoa',
     extractionTitleLbl: 'Izenburua',
@@ -1855,7 +1693,6 @@ const I18N = {
     extractionSaved: 'Erauzketa gordeta {X}-(r)entzat',
     extractionTestFailed: 'Ezin izan da edukirik atera konfigurazio honekin.',
     extractionUseThis: 'Hau erabili',
-    extractionClear: 'Garbitu',
     extractionSourcePrefix: 'Iturria',
     extractionCharsShort: 'kar',
     shortcuts: 'Laster-teklak', shortcutReader: 'Irakurgailuaren laster-teklak', shortcutGlobal: 'Laster-tekla orokorrak',
@@ -1870,7 +1707,6 @@ const I18N = {
     shortcutConflict: 'Konbinazio hori "{X}"-(r)i esleituta dago jada.',
     shortcutReservedKey: 'Konbinazio hori nabigatzaileak gordeta du.',
     shortcutNeedsModifier: 'Laster-tekla orokorrek Ctrl, Alt edo Meta behar dute.',
-    shortcutInvalid: 'Konbinazio baliogabea.',
     shortcutCleared: 'Laster-tekla ezabatuta.',
     shortcutSaved: 'Laster-tekla gordeta: {X}',
     shortcutEmpty: 'Esleitu gabe',
@@ -1912,61 +1748,8 @@ const I18N = {
     serviciosFabMenu: 'erakutsi edo ezkutatu botoi mugikorrean',
     serviciosFabOculto: '«Ireki honekin…» ezkutatuta botoi mugikorrean',
     serviciosFabVisible: '«Ireki honekin…» ikusgai botoi mugikorrean',
-    btnTitulares: 'IZENBURUAK',
   }
 };
-
-/* ============================================================
-   4. TIPOS DE SITIO POR DEFECTO
-   ============================================================ */
-const DEFAULT_SITE_TYPES = {
-  es: [
-    { id:'diario',     label:'Diario' },     { id:'digital',   label:'Digital' },
-    { id:'revista',    label:'Revista' },    { id:'deportivo', label:'Deportivo' },
-    { id:'economico',  label:'Económico' },  { id:'tecnologia',label:'Tecnología' },
-    { id:'cultural',   label:'Cultural' },   { id:'tv',        label:'TV' },
-    { id:'radio',      label:'Radio' },      { id:'agencia',   label:'Agencia' },
-    { id:'otro',       label:'Otro' }
-  ],
-  gl: [
-    { id:'diario',     label:'Diario' },     { id:'digital',   label:'Dixital' },
-    { id:'revista',    label:'Revista' },    { id:'deportivo', label:'Deportivo' },
-    { id:'economico',  label:'Económico' },  { id:'tecnologia',label:'Tecnoloxía' },
-    { id:'cultural',   label:'Cultural' },   { id:'tv',        label:'TV' },
-    { id:'radio',      label:'Radio' },      { id:'agencia',   label:'Axencia' },
-    { id:'otro',       label:'Outro' }
-  ],
-  ca: [
-    { id:'diario',     label:'Diari' },      { id:'digital',   label:'Digital' },
-    { id:'revista',    label:'Revista' },    { id:'deportivo', label:'Esportiu' },
-    { id:'economico',  label:'Econòmic' },   { id:'tecnologia',label:'Tecnologia' },
-    { id:'cultural',   label:'Cultural' },   { id:'tv',        label:'TV' },
-    { id:'radio',      label:'Ràdio' },      { id:'agencia',   label:'Agència' },
-    { id:'otro',       label:'Altre' }
-  ],
-  en: [
-    { id:'diario',     label:'Newspaper' },  { id:'digital',   label:'Digital' },
-    { id:'revista',    label:'Magazine' },   { id:'deportivo', label:'Sports' },
-    { id:'economico',  label:'Business' },   { id:'tecnologia',label:'Tech' },
-    { id:'cultural',   label:'Culture' },    { id:'tv',        label:'TV' },
-    { id:'radio',      label:'Radio' },      { id:'agencia',   label:'Agency' },
-    { id:'otro',       label:'Other' }
-  ],
-  eu: [
-    { id:'diario',     label:'Egunkaria' },  { id:'digital',   label:'Digitala' },
-    { id:'revista',    label:'Aldizkaria' }, { id:'deportivo', label:'Kirola' },
-    { id:'economico',  label:'Ekonomia' },   { id:'tecnologia',label:'Teknologia' },
-    { id:'cultural',   label:'Kultura' },    { id:'tv',        label:'TB' },
-    { id:'radio',      label:'Irratia' },    { id:'agencia',   label:'Agentzia' },
-    { id:'otro',       label:'Bestea' }
-  ]
-};
-
-function defaultLabelForType(id, lang){
-  const map = DEFAULT_SITE_TYPES[lang] || DEFAULT_SITE_TYPES.es;
-  const found = map.find(tt => tt.id === id);
-  return found ? found.label : id;
-}
 
 /* ============================================================
    5. CONFIGURACIÓN
@@ -2032,10 +1815,7 @@ const DEFAULT_EXTRACTION = { mode: 'auto', root: '', exclude: '', minChars: 100 
 const DEFAULT_CFG = {
   lang: 'es',
   sites: [],
-  siteTypes: null,
-  siteTags: [],
   disabledDomains: [],
-  customCatalog: [],
   readLater: [],
   perfilActualizado: 0,
   configActualizado: 0,
@@ -2049,7 +1829,7 @@ const DEFAULT_CFG = {
   serviciosFab: { oculto: false },
   prefs: {
     fs: 18, theme: 'light', width: 720, font: 'georgia', lh: 1.7,
-    just: false, bionic: false, focus: false, img: true,
+    just: false, bionic: false, focus: false, imagenes: 'todas',
     panelText: true, panelActions: false
   },
   dict: {
@@ -2118,25 +1898,30 @@ function migrateCfg(cfg){
     .replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]).filter(Boolean);
   cfg.disabledDomains = Array.from(new Set(cfg.disabledDomains));
 
-  if (!Array.isArray(cfg.customCatalog)) cfg.customCatalog = [];
-  cfg.customCatalog.forEach(it => {
-    if (!it.d) it.d = '';
-    if (!it.n) it.n = it.d;
-    if (!it.lang) it.lang = 'auto';
-    if (!it.type) it.type = '';
-    if (!Array.isArray(it.tags)) it.tags = [];
-    if (!it.group) it.group = 'Personalizados';
-  });
-  cfg.customCatalog = cfg.customCatalog.filter(it => it.d);
+  // Los medios propios (customCatalog) pasan a ser reglas: con eso ya sale
+  // el botón. Tipos y etiquetas se van: no cambiaban nada.
+  if (Array.isArray(cfg.customCatalog)){
+    cfg.customCatalog.forEach(it => {
+      const d = it && String(it.d || '').toLowerCase();
+      if (!d || cfg.sites.some(s => s.domain === d) || (cfg.disabledDomains || []).includes(d)) return;
+      cfg.sites.push({ domain: d, mode: 'prompt', lang: it.lang || 'auto' });
+    });
+  }
+  delete cfg.customCatalog;
+  delete cfg.siteTypes;
+  delete cfg.siteTags;
 
   cfg.sites.forEach(s => {
     if (!Array.isArray(s.ignorePatterns)) s.ignorePatterns = [];
     if (!s.mode) s.mode = 'prompt';
     if (!s.domain) s.domain = '';
     if (!s.lang || !SITE_LANGS.includes(s.lang)) s.lang = 'auto';
-    if (!s.type) s.type = '';
-    if (!Array.isArray(s.tags)) s.tags = [];
-    if (typeof s.textOnly !== 'boolean') s.textOnly = false;
+    delete s.type;
+    delete s.tags;
+    // «Sin imágenes en este medio» (textOnly) pasa a imagenes: 'ninguna'.
+    if (s.textOnly === true && !s.imagenes) s.imagenes = 'ninguna';
+    delete s.textOnly;
+    if (s.imagenes !== undefined && !IMAGENES.includes(s.imagenes)) delete s.imagenes;
     const oldSel = typeof s.customSelector === 'string' ? s.customSelector : '';
     s.extraction = normalizeExtraction(s.extraction, oldSel);
     delete s.customSelector;
@@ -2145,51 +1930,7 @@ function migrateCfg(cfg){
   });
   cfg.sites = cfg.sites.filter(s => s.domain);
 
-  if (!Array.isArray(cfg.siteTags)) cfg.siteTags = [];
-  cfg.siteTags = Array.from(new Set(cfg.siteTags.map(x => String(x).trim()).filter(Boolean)));
-
-  const langKey = (DEFAULT_SITE_TYPES[cfg.lang] ? cfg.lang : 'es');
-  const userTypes = Array.isArray(cfg.siteTypes) ? cfg.siteTypes.slice() : [];
-  const existingById = new Map();
-  userTypes.forEach(tt => {
-    if (!tt.id) tt.id = 't-' + Math.random().toString(36).slice(2, 8);
-    if (!tt.label) tt.label = tt.id;
-    if (!existingById.has(tt.id)) existingById.set(tt.id, tt);
-  });
-
-  const universalTypes = DEFAULT_SITE_TYPES[langKey];
-  universalTypes.forEach(def => {
-    if (!existingById.has(def.id)){
-      existingById.set(def.id, { id: def.id, label: def.label, builtin: true });
-    } else {
-      const cur = existingById.get(def.id);
-      if (!cur.builtin) cur.builtin = true;
-    }
-  });
-
-  cfg.siteTypes = Array.from(existingById.values());
-
-  const baseDomains = new Set(CATALOG_FLAT.map(x => x.d));
-  const customDomains = new Set(cfg.customCatalog.map(x => x.d));
-  cfg.sites.forEach(s => {
-    if (!baseDomains.has(s.domain) && !customDomains.has(s.domain)){
-      cfg.customCatalog.push({
-        d: s.domain, n: s.domain, lang: s.lang || 'auto',
-        type: s.type || '', tags: (s.tags||[]).slice(),
-        group: 'Personalizados'
-      });
-      customDomains.add(s.domain);
-    }
-  });
-  cfg.disabledDomains.forEach(d => {
-    if (!baseDomains.has(d) && !customDomains.has(d)){
-      cfg.customCatalog.push({
-        d, n: d, lang: 'auto', type: '', tags: [],
-        group: 'Personalizados'
-      });
-      customDomains.add(d);
-    }
-  });
+  cfg.sites.sort((a, b) => a.domain.localeCompare(b.domain));
 
   cfg.readLater = fusionarPendientes(Array.isArray(cfg.readLater) ? cfg.readLater : [], []);
   if (typeof cfg.perfilActualizado !== 'number') cfg.perfilActualizado = 0;
@@ -2206,6 +1947,9 @@ function migrateCfg(cfg){
   if (cfg.prefs.panelText === undefined) cfg.prefs.panelText = true;
   if (cfg.prefs.panelActions === undefined) cfg.prefs.panelActions = false;
   if ('readerSource' in cfg.prefs) delete cfg.prefs.readerSource;
+  // «Portada» (img) pasa a imagenes; quien la ocultaba, ve solo las que tienen pie.
+  if (!IMAGENES.includes(cfg.prefs.imagenes)) cfg.prefs.imagenes = cfg.prefs.img === false ? 'conPie' : 'todas';
+  delete cfg.prefs.img;
 
   cfg.servicios = normalizarServicios(cfg.servicios);
   if (!cfg.serviciosFab || typeof cfg.serviciosFab !== 'object') cfg.serviciosFab = { oculto: false };
@@ -2447,9 +2191,6 @@ function isKnownMediaDomain(host){
     if (CATALOG_BY_DOMAIN.has(suf)) return true;
     idx = host.indexOf('.', idx + 1);
   }
-  for (const it of (CFG.customCatalog || [])){
-    if (domainMatches(host, it.d)) return true;
-  }
   for (const s of (CFG.sites || [])){
     if (domainMatches(host, s.domain)) return true;
   }
@@ -2466,60 +2207,10 @@ function getCatalogEntry(host){
     if (CATALOG_BY_DOMAIN.has(suf)) return CATALOG_BY_DOMAIN.get(suf);
     idx = host.indexOf('.', idx + 1);
   }
-  for (const it of (CFG.customCatalog || [])){
-    if (domainMatches(host, it.d)) return it;
-  }
   for (const s of (CFG.sites || [])){
-    if (domainMatches(host, s.domain)){
-      return { d: s.domain, n: s.domain, lang: s.lang, type: s.type, tags: s.tags };
-    }
+    if (domainMatches(host, s.domain)) return { d: s.domain, n: s.domain, lang: s.lang };
   }
   return null;
-}
-
-function getCustomCatalogEntry(domain){
-  const d = normalizeDomain(domain);
-  if (!d) return null;
-  return (CFG.customCatalog || []).find(x => x.d === d) || null;
-}
-function addOrUpdateCustomCatalogEntry(domain, opts){
-  const d = normalizeDomain(domain);
-  if (!d) return;
-  opts = opts || {};
-  if (!Array.isArray(CFG.customCatalog)) CFG.customCatalog = [];
-  const existing = CFG.customCatalog.find(x => x.d === d);
-  if (existing){
-    if (opts.lang) existing.lang = opts.lang;
-    if (opts.type !== undefined) existing.type = opts.type;
-    if (opts.tags) existing.tags = opts.tags.slice();
-    if (opts.n) existing.n = opts.n;
-  } else {
-    CFG.customCatalog.push({
-      d: d,
-      n: opts.n || d,
-      lang: opts.lang || 'auto',
-      type: opts.type || '',
-      tags: Array.isArray(opts.tags) ? opts.tags.slice() : [],
-      group: 'Personalizados'
-    });
-  }
-}
-function removeCustomCatalogEntry(domain){
-  const d = normalizeDomain(domain);
-  if (!d) return;
-  CFG.customCatalog = (CFG.customCatalog || []).filter(x => x.d !== d);
-}
-function isBaseCatalogDomain(domain){
-  const d = normalizeDomain(domain);
-  if (!d) return false;
-  if (CATALOG_BY_DOMAIN.has(d)) return true;
-  let idx = d.indexOf('.');
-  while (idx !== -1){
-    const suf = d.slice(idx + 1);
-    if (CATALOG_BY_DOMAIN.has(suf)) return true;
-    idx = d.indexOf('.', idx + 1);
-  }
-  return false;
 }
 
 function findSiteRule(){
@@ -2541,8 +2232,8 @@ function ensureSiteRule(){
   if (rule) return rule;
   const d = normalizeDomain(location.hostname);
   rule = {
-    domain: d, mode: 'prompt', ignorePatterns: [], readerSource: 'auto', lang: 'auto',
-    type: '', tags: [], textOnly: false,
+    domain: d, mode: 'prompt', ignorePatterns: [], readerSource: 'auto',
+    lang: (getCatalogEntry(d) || {}).lang || 'auto',
     extraction: deepClone(DEFAULT_EXTRACTION)
   };
   CFG.sites.push(rule);
@@ -2567,18 +2258,6 @@ function removeSiteRule(domain){
   }
   return false;
 }
-function getTypeLabel(id){
-  if (!id) return '';
-  const tt = (CFG.siteTypes || []).find(x => x.id === id);
-  return tt ? tt.label : id;
-}
-function getAllKnownTags(){
-  const set = new Set(CFG.siteTags || []);
-  CFG.sites.forEach(s => (s.tags || []).forEach(tg => set.add(tg)));
-  (CFG.customCatalog || []).forEach(it => (it.tags || []).forEach(tg => set.add(tg)));
-  return Array.from(set).sort();
-}
-
 function isDomainDisabled(host){
   host = String(host || '').toLowerCase();
   if (!host) return false;
@@ -2602,32 +2281,6 @@ function removeSiteForDomain(domain){
   return CFG.sites.length < before;
 }
 
-function addSiteFromCatalog(entry){
-  const d = normalizeDomain(entry.d);
-  if (!d) return false;
-  if (CFG.sites.some(s => s.domain === d)) return false;
-  CFG.sites.push({
-    domain: d,
-    mode: 'prompt',
-    ignorePatterns: [],
-    readerSource: 'auto',
-    lang: entry.lang || 'auto',
-    type: entry.type || '',
-    tags: Array.isArray(entry.tags) ? entry.tags.slice() : [],
-    textOnly: false,
-    extraction: deepClone(DEFAULT_EXTRACTION)
-  });
-  CFG.sites.sort((a, b) => a.domain.localeCompare(b.domain));
-  enableDomain(d);
-  if (!isBaseCatalogDomain(d)){
-    addOrUpdateCustomCatalogEntry(d, {
-      n: entry.n || d, lang: entry.lang || 'auto',
-      type: entry.type || '', tags: entry.tags || []
-    });
-  }
-  return true;
-}
-
 function addSiteAnywhere(domain, opts){
   opts = opts || {};
   const d = normalizeDomain(domain);
@@ -2640,20 +2293,10 @@ function addSiteAnywhere(domain, opts){
     ignorePatterns: [],
     readerSource: 'auto',
     lang: opts.lang || cat.lang || 'auto',
-    type: opts.type !== undefined ? opts.type : (cat.type || ''),
-    tags: opts.tags || (cat.tags ? cat.tags.slice() : []),
-    textOnly: false,
     extraction: deepClone(DEFAULT_EXTRACTION)
   });
   CFG.sites.sort((a, b) => a.domain.localeCompare(b.domain));
   enableDomain(d);
-  if (!isBaseCatalogDomain(d)){
-    addOrUpdateCustomCatalogEntry(d, {
-      n: opts.n || d, lang: opts.lang || cat.lang || 'auto',
-      type: opts.type !== undefined ? opts.type : (cat.type || ''),
-      tags: opts.tags || (cat.tags ? cat.tags.slice() : [])
-    });
-  }
   return true;
 }
 
@@ -3132,6 +2775,10 @@ function sanitizeNode(node){
           child.setAttribute('src', absUrl(a.value));
         } else if (tag === 'IMG' && a.name === 'alt'){
           // keep
+        } else if (tag === 'P' && a.name === 'data-il-embed' && /^[a-z]+$/.test(a.value)){
+          // keep: embebido marcado en 17-extractores
+        } else if (tag === 'P' && a.name === 'data-il-url' && /^https?:\/\//i.test(a.value)){
+          // keep
         } else {
           child.removeAttribute(a.name);
         }
@@ -3167,6 +2814,15 @@ function extractBlocks(root){
       }
       if (child.nodeType !== 1) continue;
       const tag = child.tagName;
+      if (tag === 'P' && child.hasAttribute('data-il-embed')){
+        push('embed', {
+          red: child.getAttribute('data-il-embed'),
+          url: child.getAttribute('data-il-url') || '',
+          // «·» es el relleno para que Readability no tire el párrafo vacío.
+          texto: (child.textContent || '').replace(/\s+/g,' ').trim().replace(/^·$/, '')
+        });
+        continue;
+      }
       if (tag === 'P'){
         const imgs = child.querySelectorAll('img');
         const txtContent = (child.textContent || '').replace(/\s+/g,' ').trim();
@@ -3390,10 +3046,76 @@ function limpiarPublicidad(doc){
   return doc;
 }
 
+// Embebidos (tweets, vídeos…): el sanitizador quita los iframes y
+// Readability se deja muchos, así que desaparecían sin rastro. Antes de
+// extraer se cambian por un párrafo marcado (data-il-embed, data-il-url)
+// que llega a los bloques como tarjeta con enlace al original. No se carga
+// nada de terceros.
+function textoPlano(el){ return el ? (el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+function enlaceQueCasa(el, re){
+  const a = [...el.querySelectorAll('a[href]')].reverse().find(x => re.test(x.getAttribute('href')));
+  return a ? a.getAttribute('href') : '';
+}
+function parametro(url, nombre){
+  try { return new URL(url, location.href).searchParams.get(nombre) || ''; } catch(e){ return ''; }
+}
+const fuenteDe = el => el.getAttribute('src') || el.getAttribute('data-src') || '';
+const EMBEBIDOS = [
+  { red: 'x', sel: 'blockquote.twitter-tweet',
+    url: el => enlaceQueCasa(el, /\/status\/\d+/), texto: el => textoPlano(el.querySelector('p')) },
+  { red: 'x', sel: 'iframe[src*="platform.twitter.com/embed"],iframe[data-tweet-id]',
+    url: el => { const id = el.getAttribute('data-tweet-id') || parametro(fuenteDe(el), 'id');
+                 return /^\d+$/.test(id) ? 'https://x.com/i/status/' + id : ''; } },
+  { red: 'youtube', sel: 'iframe[src*="youtube.com/embed/"],iframe[src*="youtube-nocookie.com/embed/"],iframe[data-src*="youtube.com/embed/"]',
+    url: el => { const m = fuenteDe(el).match(/\/embed\/([\w-]{6,})/); return m ? 'https://www.youtube.com/watch?v=' + m[1] : ''; },
+    texto: el => el.getAttribute('title') || '' },
+  { red: 'youtube', sel: 'lite-youtube[videoid]',
+    url: el => 'https://www.youtube.com/watch?v=' + encodeURIComponent(el.getAttribute('videoid')),
+    texto: el => el.getAttribute('playlabel') || '' },
+  { red: 'vimeo', sel: 'iframe[src*="player.vimeo.com/video/"]',
+    url: el => { const m = fuenteDe(el).match(/\/video\/(\d+)/); return m ? 'https://vimeo.com/' + m[1] : ''; },
+    texto: el => el.getAttribute('title') || '' },
+  { red: 'instagram', sel: 'blockquote.instagram-media,iframe[src*="instagram.com/p/"],iframe[src*="instagram.com/reel/"]',
+    url: el => (el.getAttribute('data-instgrm-permalink') || enlaceQueCasa(el, /instagram\.com\/(p|reel)\//) || fuenteDe(el))
+                 .replace(/\/embed.*$/, '/').split('?')[0] },
+  { red: 'tiktok', sel: 'blockquote.tiktok-embed',
+    url: el => el.getAttribute('cite') || enlaceQueCasa(el, /tiktok\.com\/.+\/video\//),
+    texto: el => textoPlano(el.querySelector('section > p') || el.querySelector('p')) },
+  { red: 'bluesky', sel: 'blockquote.bluesky-embed,iframe[src*="embed.bsky.app/embed/"]',
+    url: el => enlaceQueCasa(el, /bsky\.app\/profile\/.+\/post\//) ||
+               fuenteDe(el).replace(/^.*\/embed\/([^/]+)\/app\.bsky\.feed\.post\/([\w]+).*$/, 'https://bsky.app/profile/$1/post/$2'),
+    texto: el => textoPlano(el.querySelector('p')) },
+  { red: 'facebook', sel: 'iframe[src*="facebook.com/plugins/"]', url: el => parametro(fuenteDe(el), 'href') }
+];
+// raiz: un documento (clonado) o un elemento (modo selector).
+function marcarEmbebidos(raiz){
+  const doc = raiz.ownerDocument || raiz;
+  const tope = raiz.body || raiz;
+  try {
+    EMBEBIDOS.forEach(e => raiz.querySelectorAll(e.sel).forEach(el => {
+      if (!el.isConnected) return;
+      const url = absUrl(e.url(el) || '');
+      if (!/^https?:\/\//i.test(url)) return;
+      // Se sube por los envoltorios que no tienen nada más: Readability tira
+      // los div con clases como «media» o «widget» aunque lleven el párrafo.
+      let caja = el;
+      while (caja.parentElement && caja.parentElement !== tope && caja.parentElement.children.length === 1 &&
+             !/^(ARTICLE|MAIN|SECTION)$/.test(caja.parentElement.tagName) &&
+             textoPlano(caja.parentElement) === textoPlano(caja)) caja = caja.parentElement;
+      const p = doc.createElement('p');
+      p.setAttribute('data-il-embed', e.red);
+      p.setAttribute('data-il-url', url);
+      p.textContent = (e.texto ? e.texto(el) : '').slice(0, 500) || '·';
+      caja.replaceWith(p);
+    }));
+  } catch(e){}
+  return raiz;
+}
+
 function extractFromReadability(){
   if (typeof Readability !== 'function') return null;
   try {
-    const clone = limpiarPublicidad(document.cloneNode(true));
+    const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
     const reader = new Readability(clone);
     const art = reader.parse();
     if (!art || !art.textContent || art.textContent.trim().length < 200) return null;
@@ -3422,6 +3144,7 @@ function extractFromSelector(rootSel, excludeSel, minChars){
   try { root = document.querySelector(rootSel); } catch(e){ return null; }
   if (!root) return null;
   const clone = root.cloneNode(true);
+  marcarEmbebidos(clone);
   clone.querySelectorAll('script,style,noscript').forEach(n => n.remove());
   if (excludeSel){
     try { clone.querySelectorAll(excludeSel).forEach(n => n.remove()); } catch(e){}
@@ -3505,7 +3228,7 @@ function collectAllText(){
 function extractFromAll(){
   try {
     if (typeof Readability === 'function'){
-      const clone = limpiarPublicidad(document.cloneNode(true));
+      const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
       clone.querySelectorAll('script,style,iframe,noscript,svg,canvas,video,audio,form,button,select,textarea,input,nav,header,footer,aside,[role="navigation"],[role="banner"],[role="complementary"]').forEach(n => n.remove());
       const reader = new Readability(clone);
       const art = reader.parse();
@@ -3862,7 +3585,7 @@ function cssPaleta(base, selTema){
 // granted, provided that the above copyright notice and this permission
 // notice appear in all copies. THE SOFTWARE IS PROVIDED "AS IS" AND THE
 // AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
-const ICONOS = {"a-large-small":"<path d=\"M21 14h-5\" /><path d=\"M16 16v-3.5a2.5 2.5 0 0 1 5 0V16\" /><path d=\"M4.5 13h6\" /><path d=\"m3 16 4.5-9 4.5 9\" />","arrow-left":"<path d=\"m12 19-7-7 7-7\" /><path d=\"M19 12H5\" />","arrow-up":"<path d=\"m5 12 7-7 7 7\" /><path d=\"M12 19V5\" />","ban":"<circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"m4.9 4.9 14.2 14.2\" />","book-open-text":"<path d=\"M12 7v14\" /><path d=\"M16 12h2\" /><path d=\"M16 8h2\" /><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\" /><path d=\"M6 12h2\" /><path d=\"M6 8h2\" />","bookmark":"<path d=\"m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z\" />","bookmark-check":"<path d=\"m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z\" /><path d=\"m9 10 2 2 4-4\" />","copy":"<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />","ellipsis":"<circle cx=\"12\" cy=\"12\" r=\"1\" /><circle cx=\"19\" cy=\"12\" r=\"1\" /><circle cx=\"5\" cy=\"12\" r=\"1\" />","external-link":"<path d=\"M15 3h6v6\" /><path d=\"M10 14 21 3\" /><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />","eye-off":"<path d=\"M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49\" /><path d=\"M14.084 14.158a3 3 0 0 1-4.242-4.242\" /><path d=\"M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143\" /><path d=\"m2 2 20 20\" />","library":"<path d=\"m16 6 4 14\" /><path d=\"M12 6v14\" /><path d=\"M8 8v12\" /><path d=\"M4 4v16\" />","mail":"<rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\" /><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\" />","minus":"<path d=\"M5 12h14\" />","plus":"<path d=\"M5 12h14\" /><path d=\"M12 5v14\" />","printer":"<path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\" /><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\" /><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\" />","settings":"<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />","share-2":"<circle cx=\"18\" cy=\"5\" r=\"3\" /><circle cx=\"6\" cy=\"12\" r=\"3\" /><circle cx=\"18\" cy=\"19\" r=\"3\" /><line x1=\"8.59\" x2=\"15.42\" y1=\"13.51\" y2=\"17.49\" /><line x1=\"15.41\" x2=\"8.59\" y1=\"6.51\" y2=\"10.49\" />","x":"<path d=\"M18 6 6 18\" /><path d=\"m6 6 12 12\" />","zap":"<path d=\"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z\" />"};
+const ICONOS = {"a-large-small":"<path d=\"M21 14h-5\" /><path d=\"M16 16v-3.5a2.5 2.5 0 0 1 5 0V16\" /><path d=\"M4.5 13h6\" /><path d=\"m3 16 4.5-9 4.5 9\" />","arrow-left":"<path d=\"m12 19-7-7 7-7\" /><path d=\"M19 12H5\" />","arrow-up":"<path d=\"m5 12 7-7 7 7\" /><path d=\"M12 19V5\" />","ban":"<circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"m4.9 4.9 14.2 14.2\" />","book-open-text":"<path d=\"M12 7v14\" /><path d=\"M16 12h2\" /><path d=\"M16 8h2\" /><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\" /><path d=\"M6 12h2\" /><path d=\"M6 8h2\" />","bookmark":"<path d=\"m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z\" />","bookmark-check":"<path d=\"m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z\" /><path d=\"m9 10 2 2 4-4\" />","captions":"<rect width=\"18\" height=\"14\" x=\"3\" y=\"5\" rx=\"2\" ry=\"2\" /><path d=\"M7 15h4M15 15h2M7 11h2M13 11h4\" />","chevron-left":"<path d=\"m15 18-6-6 6-6\" />","chevron-right":"<path d=\"m9 18 6-6-6-6\" />","copy":"<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />","ellipsis":"<circle cx=\"12\" cy=\"12\" r=\"1\" /><circle cx=\"19\" cy=\"12\" r=\"1\" /><circle cx=\"5\" cy=\"12\" r=\"1\" />","external-link":"<path d=\"M15 3h6v6\" /><path d=\"M10 14 21 3\" /><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />","eye-off":"<path d=\"M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49\" /><path d=\"M14.084 14.158a3 3 0 0 1-4.242-4.242\" /><path d=\"M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143\" /><path d=\"m2 2 20 20\" />","image":"<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\" /><circle cx=\"9\" cy=\"9\" r=\"2\" /><path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\" />","image-off":"<line x1=\"2\" x2=\"22\" y1=\"2\" y2=\"22\" /><path d=\"M10.41 10.41a2 2 0 1 1-2.83-2.83\" /><line x1=\"13.5\" x2=\"6\" y1=\"13.5\" y2=\"21\" /><line x1=\"18\" x2=\"21\" y1=\"12\" y2=\"15\" /><path d=\"M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59\" /><path d=\"M21 15V5a2 2 0 0 0-2-2H9\" />","library":"<path d=\"m16 6 4 14\" /><path d=\"M12 6v14\" /><path d=\"M8 8v12\" /><path d=\"M4 4v16\" />","mail":"<rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\" /><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\" />","minus":"<path d=\"M5 12h14\" />","plus":"<path d=\"M5 12h14\" /><path d=\"M12 5v14\" />","printer":"<path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\" /><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\" /><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\" />","settings":"<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />","share-2":"<circle cx=\"18\" cy=\"5\" r=\"3\" /><circle cx=\"6\" cy=\"12\" r=\"3\" /><circle cx=\"18\" cy=\"19\" r=\"3\" /><line x1=\"8.59\" x2=\"15.42\" y1=\"13.51\" y2=\"17.49\" /><line x1=\"15.41\" x2=\"8.59\" y1=\"6.51\" y2=\"10.49\" />","x":"<path d=\"M18 6 6 18\" /><path d=\"m6 6 12 12\" />","zap":"<path d=\"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z\" />"};
 function icono(id){
   return '<svg class="il-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
     (ICONOS[id] || '') + '</svg>';
@@ -4006,11 +3729,38 @@ ${cssPaleta('#il-full')}
 #il-full .il-body hr{border:none;border-top:1px solid var(--border);margin:2em 0}
 #il-full .il-body img{max-width:100%;height:auto;display:block;margin:0 auto;border-radius:6px}
 #il-full[data-just="1"] .il-body p{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
-#il-full.il-hideimg .il-figure{display:none}
-#il-full.il-textonly .il-figure,
-#il-full.il-textonly .il-inline-figure,
-#il-full.il-textonly .il-body img,
-#il-full.il-textonly #il-ambi-img{display:none!important}
+#il-full[data-imagenes="ninguna"] .il-figure,
+#il-full[data-imagenes="ninguna"] .il-inline-figure,
+#il-full[data-imagenes="ninguna"] .il-galeria,
+#il-full[data-imagenes="ninguna"] .il-body img,
+#il-full[data-imagenes="ninguna"] .il-miniatura,
+#il-full[data-imagenes="ninguna"] #il-ambi-img{display:none!important}
+#il-full[data-imagenes="conPie"] .il-figure:not(.il-con-pie),
+#il-full[data-imagenes="conPie"] .il-inline-figure:not(.il-con-pie),
+#il-full[data-imagenes="conPie"] .il-galeria:not(.il-con-pie),
+#il-full[data-imagenes="conPie"] .il-miniatura:not(.il-con-pie){display:none}
+#il-full .il-miniatura{float:right;width:96px;height:96px;margin:4px 0 12px 18px;padding:0;border:1px solid var(--btn-border);border-radius:8px;overflow:hidden;background:var(--quote-bg);cursor:pointer}
+#il-full .il-miniatura img{width:100%;height:100%;object-fit:cover;display:block}
+#il-full .il-galeria{margin:2em 0}
+#il-full .il-galeria-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+#il-full .il-body .il-galeria-rejilla img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:4px;margin:0;cursor:zoom-in}
+#il-full .il-galeria figcaption{font-size:.85em;color:var(--muted);text-align:center;padding:8px 14px 0;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#il-full .il-embed{margin:1.6em 0;padding:12px 16px;border:1px solid var(--btn-border);border-left:4px solid var(--accent);border-radius:6px;background:var(--quote-bg);font-size:.92em}
+#il-full .il-embed-red{margin:0 0 4px;font-size:.78em;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+#il-full .il-embed-texto{margin:0 0 6px}
+#il-full .il-embed a{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+#il-full .il-embed .il-ico{width:16px;height:16px}
+#il-full .il-visor{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 64px 16px;cursor:zoom-out}
+#il-full .il-visor-img{max-width:100%;max-height:calc(100% - 60px);object-fit:contain}
+#il-full .il-visor-pie{color:#eee;margin:12px 0 0;max-width:60em;text-align:center;font:14px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;cursor:default}
+#il-full .il-visor button{position:absolute;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#il-full .il-visor button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#il-full .il-visor .il-ico{width:24px;height:24px}
+#il-full .il-visor-cerrar{top:8px;right:8px}
+#il-full .il-visor-ant{left:8px;top:50%;transform:translateY(-50%)}
+#il-full .il-visor-sig{right:8px;top:50%;transform:translateY(-50%)}
+@media (max-width:560px){#il-full .il-visor{padding:56px 8px 16px}#il-full .il-visor-ant,#il-full .il-visor-sig{top:auto;bottom:12px;transform:none}}
+@media (max-width:560px){#il-full .il-miniatura{width:64px;height:64px;margin-left:12px}}
 #il-full.il-focus .il-body>*{opacity:.22;transition:opacity .3s}
 #il-full.il-focus .il-body>.il-active{opacity:1}
 #il-full .il-figure,
@@ -4416,6 +4166,7 @@ function openReader(art){
   let parrafos = art.bloques || (useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody));
   parrafos = sinImagenesRepetidas(parrafos);
   if (srcKey !== 'jsonld') parrafos = sinPromosEnBordes(parrafos, textoDeBloque);
+  parrafos = agruparGalerias(parrafos);
   // Las palabras del texto que se ve, no las de lo que se ha quitado.
   const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
@@ -4427,16 +4178,35 @@ function openReader(art){
   const auImg = art.imageAuthor || '';
   // La portada repetida como primera imagen del cuerpo sale una sola vez,
   // en el cuerpo y con su pie.
-  const enCuerpo = iu ? parrafos.find(b => b.tipo === 'img' && claveImagen(b.src) === claveImagen(iu)) : null;
+  const imagenesCuerpo = parrafos.flatMap(b => b.tipo === 'galeria' ? b.imagenes : b.tipo === 'img' ? [b] : []);
+  const enCuerpo = iu ? imagenesCuerpo.find(b => claveImagen(b.src) === claveImagen(iu)) : null;
   if (enCuerpo && !enCuerpo.caption && cap) enCuerpo.caption = cap;
 
   function renderBlock(b){
     const process = html => prefs.bionic ? bionicizeHTML(html) : html;
     if (b.tipo === 'img'){
-      return '<figure class="il-inline-figure">' +
+      return '<figure class="il-inline-figure' + (b.caption ? ' il-con-pie' : '') + '"' +
+        (b === enCuerpo ? ' id="il-portada"' : '') + '>' +
         '<img src="' + esc(b.src) + '" alt="' + esc(b.alt || '') + '" loading="lazy">' +
         (b.caption ? '<figcaption>' + esc(b.caption) + '</figcaption>' : '') +
       '</figure>';
+    }
+    if (b.tipo === 'galeria'){
+      const n = b.imagenes.length;
+      return '<figure class="il-galeria' + (b.imagenes.some(x => x.caption) ? ' il-con-pie' : '') + '">' +
+        '<div class="il-galeria-rejilla">' + b.imagenes.map(x =>
+          '<img src="' + esc(x.src) + '" alt="' + esc(x.alt || '') + '" loading="lazy"' +
+          (x.caption ? ' data-pie="' + esc(x.caption) + '"' : '') + (x === enCuerpo ? ' id="il-portada"' : '') + '>').join('') +
+        '</div><figcaption>' + esc(t('galeria').replace('{N}', n)) + ' · ' + esc(t('galeriaPulsa')) + '</figcaption></figure>';
+    }
+    if (b.tipo === 'embed'){
+      // Tarjeta con enlace al original: no se carga nada de terceros.
+      const nombre = NOMBRES_REDES[b.red] || b.red;
+      return '<aside class="il-embed" aria-label="' + esc(t('embebidoDe').replace('{X}', nombre)) + '">' +
+        '<p class="il-embed-red">' + esc(nombre) + '</p>' +
+        (b.texto ? '<p class="il-embed-texto">' + process(esc(b.texto)) + '</p>' : '') +
+        '<a href="' + esc(b.url) + '" target="_blank" rel="noopener noreferrer">' + icono('external-link') +
+        '<span>' + esc(t('verEn').replace('{X}', nombre)) + '</span></a></aside>';
     }
     if (b.tipo === 'q') return '<blockquote>' + process(b.html || '') + '</blockquote>';
     if (b.tipo === 'h') return '<h' + b.level + '>' + process(b.html || '') + '</h' + b.level + '>';
@@ -4454,6 +4224,8 @@ function openReader(art){
     const lines = parrafos.map(b => {
       if (b.tipo === 'hr') return '---';
       if (b.tipo === 'img') return '[' + t('imageLabel') + (b.caption ? ': ' + b.caption : '') + ']';
+      if (b.tipo === 'galeria') return '[' + t('galeria').replace('{N}', b.imagenes.length) + ']';
+      if (b.tipo === 'embed') return '[' + (NOMBRES_REDES[b.red] || b.red) + (b.texto ? ': ' + b.texto : '') + ' — ' + b.url + ']';
       if (b.tipo === 'list') return b.items.map(i => '- ' + stripTags(i)).join('\n');
       if (b.tipo === 'h') return stripTags(b.html || '');
       if (b.tipo === 'q') return '> ' + stripTags(b.html || '');
@@ -4523,8 +4295,12 @@ function openReader(art){
         opcion('checkbox', 'il-pref', 'just', t('justify')) +
         opcion('checkbox', 'il-pref', 'bionic', t('bionic')) +
         opcion('checkbox', 'il-pref', 'focus', t('focus')) +
-        opcion('checkbox', 'il-pref', 'img', t('coverImage')) +
-        opcion('checkbox', 'il-pref', 'textonly', t('sinImagenesMedio')) +
+      '</fieldset>' +
+      '<fieldset><legend>' + esc(t('imgMedio')) + '</legend>' +
+        opcion('radio', 'il-img-medio', '', t('imgComoSiempre')) +
+        opcion('radio', 'il-img-medio', 'todas', t('imgTodas')) +
+        opcion('radio', 'il-img-medio', 'conPie', t('imgConPie')) +
+        opcion('radio', 'il-img-medio', 'ninguna', t('imgNinguna')) +
       '</fieldset>' +
       '<fieldset><legend>' + esc(t('source')) + '</legend>' +
         opcion('radio', 'il-origen', 'auto', t('srcAuto')) +
@@ -4583,7 +4359,7 @@ function openReader(art){
     '</div>';
 
   const figura = iuFinal && !enCuerpo
-    ? '<figure class="il-figure"><img src="' + esc(iuFinal) + '"' +
+    ? '<figure class="il-figure' + (cap || auImg ? ' il-con-pie' : '') + '"><img src="' + esc(iuFinal) + '"' +
       (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') +
       ' alt="' + esc(headline) + '" loading="lazy"><figcaption>' +
       esc(cap) + (auImg ? (cap ? ' — ' : '') + esc(auImg) : '') +
@@ -4597,11 +4373,16 @@ function openReader(art){
   const metaActions =
     '<div class="il-meta-actions">' +
       '<button type="button" class="il-save-meta"></button>' +
+      '<button type="button" class="il-img-meta"></button>' +
       '<button type="button" class="il-rsvp-meta">' + icono('zap') + '<span>' + esc(sinSimbolo(t('teleprompter'))) + '</span></button>' +
     '</div>';
 
   const contentHTML =
     '<div class="il-wrap"><div class="il-content" lang="' + esc(pageLang) + '">' +
+      // La portada que se repite en el cuerpo: miniatura que lleva hasta ella.
+      (enCuerpo && iuFinal ? '<button type="button" class="il-miniatura' + (enCuerpo.caption ? ' il-con-pie' : '') + '"' +
+        ' aria-label="' + esc(t('verPortada')) + '"><img src="' + esc(iuFinal) + '"' +
+        (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') + ' alt=""></button>' : '') +
       '<h1 id="il-titulo" tabindex="-1">' + esc(headline) + '</h1>' +
       (description ? '<p class="il-desc">' + esc(description) + '</p>' : '') +
       '<div class="il-meta">' + esc(fecha) +
@@ -4650,9 +4431,36 @@ function openReader(art){
   const inertes = [...document.body.children].filter(el => el !== ov && !el.inert);
   inertes.forEach(el => { el.inert = true; });
 
-  function currentSiteTextOnly(){
+  // Imágenes: lo del medio, si tiene; si no, lo de todos los medios.
+  function imagenesDelMedio(){
     const rule = findSiteRule();
-    return !!(rule && rule.textOnly);
+    return rule && IMAGENES.includes(rule.imagenes) ? rule.imagenes : '';
+  }
+  function imagenesEfectivas(){
+    return imagenesDelMedio() || (IMAGENES.includes(prefs.imagenes) ? prefs.imagenes : 'todas');
+  }
+  // Escritos tal cual: build.mjs solo mete los iconos que ve como icono('…').
+  const ICONO_IMAGENES = { todas: icono('image'), conPie: icono('captions'), ninguna: icono('image-off') };
+  const TEXTO_IMAGENES = { todas: 'imgTodas', conPie: 'imgConPie', ninguna: 'imgNinguna' };
+  const siguienteImagenes = v => IMAGENES[(IMAGENES.indexOf(v) + 1) % IMAGENES.length];
+  function pintarImagenes(){
+    const v = imagenesEfectivas();
+    const delMedio = imagenesDelMedio();
+    ov.setAttribute('data-imagenes', v);
+    const b = ov.querySelector('.il-img-meta');
+    b.innerHTML = ICONO_IMAGENES[v] + '<span>' + esc(t(TEXTO_IMAGENES[v])) + '</span>';
+    b.setAttribute('aria-label', t(TEXTO_IMAGENES[v]) + (delMedio ? ' (' + t('imgEnEsteMedio') + ')' : '') +
+      '. ' + t('imgCambiarA') + ': ' + t(TEXTO_IMAGENES[siguienteImagenes(v)]));
+    ov.querySelectorAll('input[name="il-img-medio"]').forEach(r => { r.checked = r.value === delMedio; });
+  }
+  // El botón y la tecla pasan al siguiente estado: el del medio si tiene
+  // uno propio; si no, el de todos los medios.
+  function cambiarImagenes(){
+    const sig = siguienteImagenes(imagenesEfectivas());
+    const delMedio = !!imagenesDelMedio();
+    if (delMedio) findSiteRule().imagenes = sig; else prefs.imagenes = sig;
+    applyPrefs();
+    toast(t(TEXTO_IMAGENES[sig]) + (delMedio ? ' · ' + t('imgEnEsteMedio') : ''), 1400);
   }
 
   // Pinta las preferencias; applyPrefs, además, las guarda.
@@ -4663,10 +4471,8 @@ function openReader(art){
     ov.style.setProperty('--w', prefs.width + 'px');
     ov.style.setProperty('--fs', prefs.fs + 'px');
     ov.style.setProperty('--lh', prefs.lh);
-    ov.classList.toggle('il-hideimg', !prefs.img);
     ov.classList.toggle('il-focus', prefs.focus);
-    const siteTextOnly = currentSiteTextOnly();
-    ov.classList.toggle('il-textonly', siteTextOnly);
+    pintarImagenes();
 
     ov.querySelector('.il-fs-val').textContent = prefs.fs;
     ov.querySelector('.il-w-val').textContent = prefs.width;
@@ -4675,9 +4481,7 @@ function openReader(art){
     marcar('il-tema', prefs.theme);
     marcar('il-letra', prefs.font);
     marcar('il-origen', currentReaderSource());
-    ov.querySelectorAll('input[name="il-pref"]').forEach(c => {
-      c.checked = c.value === 'textonly' ? siteTextOnly : !!prefs[c.value];
-    });
+    ov.querySelectorAll('input[name="il-pref"]').forEach(c => { c.checked = !!prefs[c.value]; });
     pintarColores();
     if (prefs.focus) setTimeout(updateFocus, 60);
   }
@@ -4745,8 +4549,59 @@ function openReader(art){
     els.forEach(el => el.classList.toggle('il-active', el === best));
   }
 
+  // Visor: la imagen en grande, con su pie, y ← → para recorrer todas las
+  // que se ven en el artículo (sueltas y de galerías).
+  function pieDe(im){
+    if (im.hasAttribute('data-pie')) return im.getAttribute('data-pie');
+    const fc = im.closest('figure') && im.closest('figure').querySelector('figcaption');
+    return fc && !im.closest('.il-galeria') ? (fc.textContent || '').trim() : '';
+  }
+  function abrirVisor(desde){
+    const lista = [...ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img')]
+      .filter(x => x.getClientRects().length && x.style.display !== 'none');
+    let i = Math.max(0, lista.indexOf(desde));
+    const lb = document.createElement('div');
+    lb.className = 'il-visor';
+    lb.tabIndex = -1;
+    lb.setAttribute('role', 'dialog');
+    lb.setAttribute('aria-modal', 'true');
+    const varias = lista.length > 1;
+    lb.innerHTML =
+      '<img class="il-visor-img" alt="">' +
+      '<p class="il-visor-pie" aria-live="polite"></p>' +
+      '<button type="button" class="il-visor-cerrar" aria-label="' + esc(sinSimbolo(t('close'))) + '">' + icono('x') + '</button>' +
+      (varias ? '<button type="button" class="il-visor-ant" aria-label="' + esc(t('visorAnterior')) + '">' + icono('chevron-left') + '</button>' +
+                '<button type="button" class="il-visor-sig" aria-label="' + esc(t('visorSiguiente')) + '">' + icono('chevron-right') + '</button>' : '');
+    const big = lb.querySelector('.il-visor-img');
+    const pie = lb.querySelector('.il-visor-pie');
+    function mostrar(n){
+      i = (n + lista.length) % lista.length;
+      const x = lista[i];
+      big.src = x.currentSrc || x.src;
+      big.alt = x.alt || '';
+      const texto = pieDe(x);
+      pie.textContent = (varias ? (i + 1) + ' / ' + lista.length + (texto ? ' · ' : '') : '') + texto;
+      lb.setAttribute('aria-label', x.alt || texto || t('ampliarImagen'));
+    }
+    const cerrar = () => { lb.remove(); (lista[i] || desde).focus(); };
+    lb.onclick = e => { if (e.target === lb || e.target === big) cerrar(); };
+    lb.querySelector('.il-visor-cerrar').onclick = cerrar;
+    if (varias){
+      lb.querySelector('.il-visor-ant').onclick = () => mostrar(i - 1);
+      lb.querySelector('.il-visor-sig').onclick = () => mostrar(i + 1);
+    }
+    lb.onkeydown = e => {
+      if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cerrar(); }
+      else if (varias && e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); mostrar(i - 1); }
+      else if (varias && e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); mostrar(i + 1); }
+    };
+    mostrar(i);
+    ov.appendChild(lb);
+    lb.focus();
+  }
+
   function wireImages(){
-    ov.querySelectorAll('.il-figure img, .il-inline-figure img, #il-ambi-img').forEach(im => {
+    ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img, #il-ambi-img').forEach(im => {
       if (im.dataset.ilWired === '1') return;
       im.dataset.ilWired = '1';
       im.addEventListener('error', function(){
@@ -4754,30 +4609,12 @@ function openReader(art){
         if (fb && this.src !== fb){ this.removeAttribute('data-fallback'); this.src = fb; }
         else this.style.display = 'none';
       });
-      if (im.closest('.il-figure') || im.closest('.il-inline-figure')){
+      if (im.closest('.il-figure') || im.closest('.il-inline-figure') || im.closest('.il-galeria')){
         const alt = im.getAttribute('alt') || '';
         im.tabIndex = 0;
         im.setAttribute('role', 'button');
         im.setAttribute('aria-label', (alt ? alt + ' — ' : '') + t('ampliarImagen'));
-        const ampliar = function(){
-          const lb = document.createElement('div');
-          lb.className = 'il-ampliada';
-          lb.tabIndex = -1;
-          lb.setAttribute('role', 'dialog');
-          lb.setAttribute('aria-label', alt || t('ampliarImagen'));
-          lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:30;' +
-            'display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px';
-          const big = document.createElement('img');
-          big.src = im.src;
-          big.alt = alt;
-          big.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain';
-          lb.appendChild(big);
-          const cerrar = () => { lb.remove(); im.focus(); };
-          lb.onclick = cerrar;
-          lb.onkeydown = e => { if (e.key === 'Escape' || e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); cerrar(); } };
-          ov.appendChild(lb);
-          lb.focus();
-        };
+        const ampliar = () => abrirVisor(im);
         im.addEventListener('click', ampliar);
         im.addEventListener('keydown', e => {
           if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ampliar(); }
@@ -4974,12 +4811,6 @@ function openReader(art){
   ov.querySelector('.il-w-plus').onclick   = () => { prefs.width = Math.min(UI.wMax, prefs.width + UI.wStep); applyPrefs(); };
   ov.querySelectorAll('input[name="il-pref"]').forEach(c => c.onchange = () => {
     const p = c.value;
-    if (p === 'textonly'){
-      // Sin imágenes va por medio, en su regla.
-      ensureSiteRule().textOnly = c.checked;
-      applyPrefs();
-      return;
-    }
     prefs[p] = c.checked;
     if (p === 'bionic'){
       ov.querySelector('.il-body').innerHTML = renderBody();
@@ -4987,6 +4818,22 @@ function openReader(art){
     }
     applyPrefs();
   });
+
+  // Imágenes en este medio: '' quita lo del medio y vale lo de todos.
+  ov.querySelectorAll('input[name="il-img-medio"]').forEach(r => r.onchange = () => {
+    if (r.value) ensureSiteRule().imagenes = r.value;
+    else { const rule = findSiteRule(); if (rule) delete rule.imagenes; }
+    applyPrefs();
+  });
+  ov.querySelector('.il-img-meta').onclick = cambiarImagenes;
+  const miniatura = ov.querySelector('.il-miniatura');
+  if (miniatura) miniatura.onclick = () => {
+    const fig = ov.querySelector('#il-portada');
+    if (!fig) return;
+    fig.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const im = fig.tagName === 'IMG' ? fig : fig.querySelector('img');
+    if (im) im.focus({ preventScroll: true });
+  };
 
   ov.querySelectorAll('input[name="il-origen"]').forEach(r => r.onchange = async () => {
     const v = r.value;
@@ -5168,7 +5015,7 @@ function openReader(art){
         break;
       case 'toggleFocus':   prefs.focus = !prefs.focus; applyPrefs(); break;
       case 'toggleJustify': prefs.just  = !prefs.just;  applyPrefs(); break;
-      case 'toggleImages':  prefs.img   = !prefs.img;   applyPrefs(); break;
+      case 'toggleImages':  cambiarImagenes(); break;
       case 'toggleWide':    prefs.width = prefs.width >= 900 ? 720 : 1100; applyPrefs(); break;
       case 'saveLater':     saveForLater(art); break;
       case 'openSites':     openSettings('sites'); break;
@@ -5185,6 +5032,7 @@ function openReader(art){
     if (document.getElementById('il-settings')) return;
     if (document.getElementById('il-extract-tool')) return;
     if (isPickerActive()) return;
+    if (document.querySelector('#il-full .il-visor')) return;   // el visor lleva sus teclas
     const nk = normalizeKey(e);
     // Esc cierra primero Apariencia o Más, también desde sus casillas.
     if (nk === 'escape' && cerrarDesplegable(true)){ e.preventDefault(); return; }
@@ -5405,8 +5253,7 @@ function anadirSitioActual(){
   const d = normalizeDomain(location.hostname);
   if (!d) return;
   if (CFG.sites.some(s => s.domain === d)){ toast(t('alreadyInList')); actualizarBoton(); return; }
-  const cat = getCatalogEntry(d) || {};
-  addSiteAnywhere(d, { n: cat.n || d, lang: cat.lang || 'auto', type: cat.type || '', tags: cat.tags || [] });
+  addSiteAnywhere(d);
   saveCfg(CFG);
   actualizarBoton();
   toast(t('addedTo') + ' ' + d, 6000, { label: t('btnUndo'), onClick: () => {
@@ -5690,6 +5537,8 @@ function activateReader(){
    ============================================================ */
 // opts.dentro: un elemento de la página donde pintar el panel, sin fondo ni
 // diálogo (la página Lector de Ajustes de Voceiro, que lo abre y lo cierra).
+// opts.dominio: el medio que se enseña en Medios en lugar del de la página
+// («Cómo leerlo», desde un titular de Voceiro).
 function openSettings(initialTab, opts){
   const dentro = opts && opts.dentro;
   if (dentro ? dentro.querySelector('.il-settings-dentro') : document.getElementById('il-settings')) return;
@@ -5717,16 +5566,11 @@ function openSettings(initialTab, opts){
   root.appendChild(box);
   (dentro || document.body).appendChild(root);
 
-  let activeSection = initialTab || 'sites';
-  let activeCatalogSub = 'media';
+  // «catalog» era la pestaña del catálogo, que ya no existe.
+  let activeSection = initialTab && initialTab !== 'catalog' ? initialTab : 'sites';
   let searchQuery = '';
   let filterLang = '';
-  let filterType = '';
-  let filterTag = '';
-  let catalogQuery = '';
-  let catalogFilter = 'all';
-  let catalogLangFilter = '';
-  let catalogTypeFilter = '';
+  const dominioPedido = opts && opts.dominio ? normalizeDomain(opts.dominio) : '';
   const scState = { capture: null };
   let scListener = null;
 
@@ -5779,14 +5623,6 @@ function openSettings(initialTab, opts){
       (activeSection === id ? 'var(--accent)' : 'var(--muted)') + '">' + esc(label) + '</button>';
   }
 
-  function subTabBtn(parent, id, label){
-    const active = activeCatalogSub === id;
-    return '<button class="il-cat-subtab" data-subtab="' + id + '" style="padding:6px 14px;border:1px solid ' +
-      (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
-      ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;' +
-      'margin-right:6px">' + esc(label) + '</button>';
-  }
-
   function extractionBadge(ex){
     if (!ex || ex.mode === 'auto') return '';
     const label = ex.mode === 'selector' ? '🎯' : ex.mode === 'all' ? '📄' : '';
@@ -5803,17 +5639,14 @@ function openSettings(initialTab, opts){
   }
 
   function renderSitesTab(){
-    const currentDomain = normalizeDomain(location.hostname);
+    const currentDomain = dominioPedido || (dentro ? '' : normalizeDomain(location.hostname));
     const currentDomainInList = currentDomain && CFG.sites.some(s => s.domain === currentDomain);
 
     const sitesFiltered = CFG.sites.filter(s => {
       if (searchQuery && !s.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (filterLang && s.lang !== filterLang) return false;
-      if (filterType && s.type !== filterType) return false;
-      if (filterTag && !(s.tags || []).includes(filterTag)) return false;
       return true;
     });
-    const knownTags = getAllKnownTags();
 
     const siteRows = sitesFiltered.map((s) => {
       const realIdx = CFG.sites.indexOf(s);
@@ -5828,9 +5661,8 @@ function openSettings(initialTab, opts){
         '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('ignoredSections')) + ':</span> ' +
         (pats || '<span style="color:var(--muted)">' + esc(t('noIgnoredSections')) + '</span>') +
       '</div>';
-      const tagsStr = (s.tags || []).join(', ');
-      const typeLabel = s.type ? getTypeLabel(s.type) : '—';
-      const textOnlyBadge = s.textOnly ? ' · <span style="color:var(--accent);font-weight:bold">📝</span>' : '';
+      const textOnlyBadge = s.imagenes === 'ninguna' ? ' · <span style="color:var(--accent);font-weight:bold" title="' + esc(t('imgNinguna')) + '">📝</span>'
+                          : s.imagenes === 'conPie' ? ' · <span style="color:var(--accent)" title="' + esc(t('imgConPie')) + '">🖼✎</span>' : '';
       const exBadge = extractionBadge(s.extraction);
       return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
@@ -5852,14 +5684,10 @@ function openSettings(initialTab, opts){
             'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-visit" title="' + esc(t('openSite')) + '" ' +
             'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔗</button>' +
-          '<button data-idx="' + realIdx + '" class="il-set-edit" title="Editar" ' +
-            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">✏️</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🗑</button>' +
         '</div>' +
         '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
           '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colLang')) + ':</span> ' + esc(langLabel(s.lang)) +
-          ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colType')) + ':</span> ' + esc(typeLabel) +
-          (tagsStr ? ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colTags')) + ':</span> ' + esc(tagsStr) : '') +
           textOnlyBadge + exBadge +
         '</div>' +
         patBlock +
@@ -5868,28 +5696,37 @@ function openSettings(initialTab, opts){
 
     const langFilterOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterLang')) + '</option>' +
       SITE_LANGS.map(l => '<option value="' + l + '"' + (filterLang===l?' selected':'') + '>' + esc(langLabel(l)) + '</option>').join('');
-    const typeFilterOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterType')) + '</option>' +
-      CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (filterType===tt.id?' selected':'') + '>' + esc(tt.label) + '</option>').join('');
-    const tagFilterOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterTag')) + '</option>' +
-      knownTags.map(tg => '<option value="' + esc(tg) + '"' + (filterTag===tg?' selected':'') + '>' + esc(tg) + '</option>').join('');
+    // Bloqueados: los medios que se han quitado de la lista (o desactivado);
+    // en ellos no sale el botón. Aquí se desbloquean.
+    const bloqueados = (CFG.disabledDomains || []).slice().sort();
+    const bloqueadosHTML = bloqueados.length
+      ? '<div style="margin:0 0 18px;font-size:12px;color:var(--muted)">' +
+          '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('blocked')) + ':</span> ' +
+          bloqueados.map(d =>
+            '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);border-radius:12px;' +
+              'padding:2px 4px 2px 10px;font-family:monospace;font-size:12px;margin:2px 4px 2px 0">' + esc(d) +
+              '<button class="il-set-unblock" data-d="' + esc(d) + '" aria-label="' + esc(t('unblock') + ' ' + d) + '" ' +
+                'style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:2px 6px;color:var(--accent)">' + esc(t('unblock')) + '</button>' +
+            '</span>').join('') +
+        '</div>'
+      : '';
 
     const addCurrentBanner = currentDomain && !currentDomainInList
       ? '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
           'margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap">' +
-          '<span style="flex:1;min-width:140px">📍 ' + esc(t('currentSiteHint')) + ': <strong style="font-family:monospace">' + esc(currentDomain) + '</strong></span>' +
+          '<span style="flex:1;min-width:140px">📍 ' + esc(dominioPedido ? t('medioSinReglas') : t('currentSiteHint')) + ': <strong style="font-family:monospace">' + esc(currentDomain) + '</strong></span>' +
           '<button class="il-set-add-current" style="padding:6px 14px;background:var(--preset);color:var(--on-solid);border:none;' +
             'border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;white-space:nowrap">+ ' + esc(t('addCurrentShort')) + '</button>' +
         '</div>'
       : '';
 
     const html =
+      '<p style="margin:0 0 12px;font-size:13px;color:var(--muted)">' + esc(t('sitesHint')) + '</p>' +
       addCurrentBanner +
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
         '<input class="il-set-search" placeholder="' + esc(t('searchPlaceholder')) + '" value="' + esc(searchQuery) + '" ' +
           'style="flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
         '<select class="il-filter-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langFilterOpts + '</select>' +
-        '<select class="il-filter-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeFilterOpts + '</select>' +
-        '<select class="il-filter-tag" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + tagFilterOpts + '</select>' +
       '</div>' +
       '<div style="margin-bottom:10px">' +
         '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:340px;overflow:auto">' +
@@ -5904,7 +5741,8 @@ function openSettings(initialTab, opts){
           '<option value="off">' + esc(t('modeOff')) + '</option>' +
         '</select>' +
         '<button class="il-set-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
-      '</div>';
+      '</div>' +
+      bloqueadosHTML;
 
     function wire(){
       const searchInput = box.querySelector('.il-set-search');
@@ -5919,10 +5757,9 @@ function openSettings(initialTab, opts){
       }
       const langSel = box.querySelector('.il-filter-lang');
       if (langSel) langSel.onchange = e => { filterLang = e.target.value; render(); };
-      const typeSel = box.querySelector('.il-filter-type');
-      if (typeSel) typeSel.onchange = e => { filterType = e.target.value; render(); };
-      const tagSel = box.querySelector('.il-filter-tag');
-      if (tagSel) tagSel.onchange = e => { filterTag = e.target.value; render(); };
+      box.querySelectorAll('.il-set-unblock').forEach(b => {
+        b.onclick = () => { enableDomain(b.dataset.d); saveCfg(CFG); render(); actualizarBoton(); };
+      });
 
       box.querySelectorAll('.il-set-mode').forEach(sel => {
         sel.onchange = () => { CFG.sites[+sel.dataset.idx].mode = sel.value; saveCfg(CFG); };
@@ -5940,15 +5777,6 @@ function openSettings(initialTab, opts){
           const idx = +sel.dataset.idx;
           CFG.sites[idx].lang = sel.value;
           saveCfg(CFG);
-          if (!isBaseCatalogDomain(CFG.sites[idx].domain)){
-            addOrUpdateCustomCatalogEntry(CFG.sites[idx].domain, {
-              lang: CFG.sites[idx].lang,
-              type: CFG.sites[idx].type,
-              tags: CFG.sites[idx].tags,
-              n: CFG.sites[idx].domain
-            });
-            saveCfg(CFG);
-          }
         };
       });
       box.querySelectorAll('.il-set-extract').forEach(btn => {
@@ -5964,65 +5792,13 @@ function openSettings(initialTab, opts){
           if (site) window.open('https://' + site.domain, '_blank', 'noopener');
         };
       });
-      box.querySelectorAll('.il-set-edit').forEach(btn => {
-        btn.onclick = e => {
-          e.stopPropagation();
-          const idx = +btn.dataset.idx;
-          const site = CFG.sites[idx];
-          if (!site) return;
-          const row = box.querySelector('.il-site-row[data-idx="' + idx + '"]');
-          if (!row) return;
-          const existing = row.querySelector('.il-edit-block');
-          if (existing) { existing.remove(); return; }
-          const block = document.createElement('div');
-          block.className = 'il-edit-block';
-          block.style.cssText = 'margin-top:8px;padding:10px;background:var(--quote-bg);border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
-          const typeOpts = '<option value=""' + (!site.type?' selected':'') + '>—</option>' +
-            CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (site.type===tt.id?' selected':'') + '>' + esc(tt.label) + '</option>').join('');
-          const datalistId = 'il-known-tags-' + idx;
-          const datalist = '<datalist id="' + datalistId + '">' +
-            getAllKnownTags().map(tg => '<option value="' + esc(tg) + '"></option>').join('') + '</datalist>';
-          block.innerHTML =
-            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteType')) + '</label>' +
-            '<select class="il-edit-type" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' + typeOpts + '</select>' +
-            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteTags')) + '</label>' +
-            '<input class="il-edit-tags" list="' + datalistId + '" value="' + esc((site.tags||[]).join(', ')) + '" ' +
-              'style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' +
-            datalist +
-            '<button class="il-edit-save" style="padding:6px 10px;background:var(--accent);color:var(--on-solid);border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-left:auto">' + esc(t('saveBtn')) + '</button>' +
-            '<button class="il-edit-cancel" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:4px;cursor:pointer;font-size:12px">' + esc(t('cancelBtn')) + '</button>';
-          row.appendChild(block);
-          block.querySelector('.il-edit-save').onclick = () => {
-            const type = block.querySelector('.il-edit-type').value;
-            const rawTags = block.querySelector('.il-edit-tags').value.split(',').map(x => x.trim()).filter(Boolean);
-            const uniqueTags = Array.from(new Set(rawTags));
-            CFG.sites[idx].type = type;
-            CFG.sites[idx].tags = uniqueTags;
-            const global = new Set(CFG.siteTags || []);
-            uniqueTags.forEach(tg => global.add(tg));
-            CFG.siteTags = Array.from(global).sort();
-            if (!isBaseCatalogDomain(CFG.sites[idx].domain)){
-              addOrUpdateCustomCatalogEntry(CFG.sites[idx].domain, {
-                lang: CFG.sites[idx].lang, type: type, tags: uniqueTags,
-                n: CFG.sites[idx].domain
-              });
-            }
-            saveCfg(CFG);
-            render();
-          };
-          block.querySelector('.il-edit-cancel').onclick = () => block.remove();
-        };
-      });
       box.querySelectorAll('.il-set-del').forEach(btn => {
         btn.onclick = e => {
           e.stopPropagation();
           const removed = CFG.sites[+btn.dataset.idx];
           CFG.sites.splice(+btn.dataset.idx, 1);
-          if (removed && isBaseCatalogDomain(removed.domain)){
-            disableDomain(removed.domain);
-          } else if (removed){
-            disableDomain(removed.domain);
-          }
+          // Quitar un medio lo bloquea (sin botón); se desbloquea abajo.
+          if (removed) disableDomain(removed.domain);
           saveCfg(CFG); render();
           if (removed && removed.domain === currentDomain) actualizarBoton();
         };
@@ -6048,13 +5824,7 @@ function openSettings(initialTab, opts){
       if (addCurrentBtn) addCurrentBtn.onclick = () => {
         if (!currentDomain) return;
         if (CFG.sites.some(s => s.domain === currentDomain)){ toast(t('siteAlready')); return; }
-        const cat = getCatalogEntry(currentDomain) || {};
-        addSiteAnywhere(currentDomain, {
-          n: cat.n || currentDomain,
-          lang: cat.lang || 'auto',
-          type: cat.type || '',
-          tags: cat.tags || []
-        });
+        addSiteAnywhere(currentDomain);
         saveCfg(CFG);
         toast(t('addedTo') + ' ' + currentDomain);
         render();
@@ -6068,13 +5838,7 @@ function openSettings(initialTab, opts){
         const d = normalizeDomain(inp.value);
         if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){ toast(t('siteInvalid')); return; }
         if (CFG.sites.some(s => s.domain === d)){ toast(t('siteAlready')); return; }
-        const cat = getCatalogEntry(d) || {};
-        addSiteAnywhere(d, {
-          mode: mode, n: cat.n || d,
-          lang: cat.lang || 'auto',
-          type: cat.type || '',
-          tags: cat.tags || []
-        });
+        addSiteAnywhere(d, { mode: mode });
         saveCfg(CFG);
         render();
         if (d === currentDomain) actualizarBoton();
@@ -6100,339 +5864,6 @@ function openSettings(initialTab, opts){
           }, 3000);
         }, 80);
       }
-    }
-
-    return { html, wire };
-  }
-
-  function renderCatalogTab(){
-    const currentDomain = normalizeDomain(location.hostname);
-
-    const subTabsHTML =
-      '<div style="margin-bottom:14px">' +
-        subTabBtn('catalog', 'media', '📚 ' + t('catalogSubMedia')) +
-        subTabBtn('catalog', 'types', '🏷 ' + t('catalogSubTypes')) +
-      '</div>';
-
-    function renderCatalogMedia(){
-      const allGroups = MEDIA_CATALOG.map(g => ({ group: g.group, items: g.items.slice() }));
-      if ((CFG.customCatalog || []).length){
-        allGroups.push({ group: 'Personalizados', items: CFG.customCatalog.slice() });
-      }
-
-      const filteredGroups = allGroups.map(g => {
-        const items = g.items.filter(it => {
-          if (catalogLangFilter && it.lang !== catalogLangFilter) return false;
-          if (catalogTypeFilter && it.type !== catalogTypeFilter) return false;
-          if (catalogQuery){
-            const q = catalogQuery.toLowerCase();
-            if (!it.d.toLowerCase().includes(q) && !(it.n||'').toLowerCase().includes(q)) return false;
-          }
-          const inList = CFG.sites.some(s => s.domain === it.d);
-          const isBlocked = isDomainDisabled(it.d);
-          if (catalogFilter === 'added' && !inList) return false;
-          if (catalogFilter === 'notadded' && inList) return false;
-          if (catalogFilter === 'blocked' && !isBlocked) return false;
-          return true;
-        });
-        return { group: g.group, items };
-      }).filter(g => g.items.length);
-
-      const totalShown = filteredGroups.reduce((a, g) => a + g.items.length, 0);
-      const totalBase = CATALOG_TOTAL + (CFG.customCatalog||[]).length;
-
-      const langOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterLang')) + '</option>' +
-        CATALOG_LANGS.map(l => '<option value="' + esc(l) + '"' + (catalogLangFilter===l?' selected':'') + '>' +
-          esc(l.toUpperCase()) + '</option>').join('');
-      const typeOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterType')) + '</option>' +
-        CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (catalogTypeFilter===tt.id?' selected':'') + '>' +
-          esc(tt.label) + '</option>').join('');
-      const filterBtns =
-        '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' +
-          ['all','notadded','added','blocked'].map(f => {
-            const labels = { all: t('allMedia'), notadded: t('filterNotAdded'), added: t('filterAdded'), blocked: t('filterBlocked') };
-            const active = catalogFilter === f;
-            return '<button class="il-cat-filter" data-filter="' + f + '" style="padding:6px 12px;border:1px solid ' +
-              (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
-              ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px">' +
-              esc(labels[f]) + '</button>';
-          }).join('') +
-        '</div>';
-
-      const groupsHTML = filteredGroups.map(g => {
-        const rows = g.items.map(it => {
-          const inList = CFG.sites.some(s => s.domain === it.d);
-          const isBlocked = isDomainDisabled(it.d);
-          const isCurrent = it.d === currentDomain;
-
-          let actionBtns = '';
-          if (inList){
-            actionBtns =
-              '<button class="il-cat-remove" data-d="' + esc(it.d) + '" title="' + esc(t('remove')) + '" ' +
-                'style="padding:4px 10px;border:1px solid var(--block);background:var(--bg);color:var(--block);border-radius:5px;cursor:pointer;font-size:12px">✕</button>';
-          } else if (isBlocked){
-            actionBtns =
-              '<button class="il-cat-unblock" data-d="' + esc(it.d) + '" title="' + esc(t('unblock')) + '" ' +
-                'style="padding:4px 10px;border:1px solid var(--preset);background:var(--bg);color:var(--preset);border-radius:5px;cursor:pointer;font-size:12px">↺</button>';
-          } else {
-            actionBtns =
-              '<button class="il-cat-add" data-d="' + esc(it.d) + '" title="' + esc(t('addToMyList')) + '" ' +
-                'style="padding:4px 10px;border:none;background:var(--preset);color:var(--on-solid);border-radius:5px;cursor:pointer;font-size:12px;font-weight:bold">＋</button>';
-          }
-
-          const statusBadge = inList
-            ? '<span style="color:var(--preset);font-size:11px;font-weight:bold">✅ ' + esc(t('inYourList')) + '</span>'
-            : isBlocked
-            ? '<span style="color:var(--block);font-size:11px;font-weight:bold">🚫 ' + esc(t('blocked')) + '</span>'
-            : '';
-
-          return '<div class="il-cat-row" data-d="' + esc(it.d) + '" style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--border)' + (isCurrent ? ';background:var(--quote-bg)' : '') + '">' +
-            '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:monospace;font-size:12px;font-weight:bold;color:var(--fg)">' + esc(it.d) + (isCurrent ? ' 📍' : '') + '</div>' +
-              '<div style="font-size:11px;color:var(--muted)">' + esc(it.n || '') +
-                ' · ' + esc((it.lang||'').toUpperCase()) +
-                (it.type ? ' · ' + esc(getTypeLabel(it.type)) : '') +
-                ((it.tags||[]).length ? ' · ' + esc(it.tags.join(', ')) : '') +
-              '</div>' +
-            '</div>' +
-            statusBadge +
-            '<button class="il-cat-visit" data-d="' + esc(it.d) + '" title="' + esc(t('visitSite')) + '" ' +
-              'style="padding:4px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:5px;cursor:pointer;font-size:12px">🔗</button>' +
-            actionBtns +
-          '</div>';
-        }).join('');
-        return '<div style="margin-bottom:18px">' +
-          '<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:bold">' +
-            esc(g.group) + ' <span style="color:var(--muted)">(' + g.items.length + ')</span></div>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 10px">' + rows + '</div>' +
-        '</div>';
-      }).join('');
-
-      const html =
-        '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:14px;font-size:12px;color:var(--fg);line-height:1.5">' +
-          '💡 ' + esc(t('catalogInfo').replace('{N}', totalBase)) +
-        '</div>' +
-        '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
-          '<input class="il-cat-search" placeholder="' + esc(t('searchCatalog')) + '" value="' + esc(catalogQuery) + '" ' +
-            'style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
-          '<select class="il-cat-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langOpts + '</select>' +
-          '<select class="il-cat-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeOpts + '</select>' +
-        '</div>' +
-        filterBtns +
-        '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
-          totalShown + ' / ' + totalBase + ' ' + esc(t('allMedia').toLowerCase()) +
-        '</div>' +
-        (groupsHTML || '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px">—</div>');
-
-      function wire(){
-        const searchInp = box.querySelector('.il-cat-search');
-        if (searchInp) searchInp.oninput = e => {
-          const pos = e.target.selectionStart;
-          catalogQuery = e.target.value;
-          render();
-          const ni = box.querySelector('.il-cat-search');
-          if (ni){ ni.focus(); ni.setSelectionRange(pos, pos); }
-        };
-        const langSel = box.querySelector('.il-cat-lang');
-        if (langSel) langSel.onchange = e => { catalogLangFilter = e.target.value; render(); };
-        const typeSel = box.querySelector('.il-cat-type');
-        if (typeSel) typeSel.onchange = e => { catalogTypeFilter = e.target.value; render(); };
-
-        box.querySelectorAll('.il-cat-filter').forEach(b => {
-          b.onclick = () => { catalogFilter = b.dataset.filter; render(); };
-        });
-        box.querySelectorAll('.il-cat-visit').forEach(b => {
-          b.onclick = () => window.open('https://' + b.dataset.d, '_blank', 'noopener');
-        });
-        box.querySelectorAll('.il-cat-add').forEach(b => {
-          b.onclick = () => {
-            const d = b.dataset.d;
-            const entry = getCatalogEntry(d) || (CFG.customCatalog||[]).find(x => x.d === d);
-            if (!entry) return;
-            if (addSiteFromCatalog(entry)){
-              saveCfg(CFG);
-              toast(t('addedTo') + ' ' + entry.d, 2000);
-              render();
-              if (entry.d === currentDomain) actualizarBoton();
-            }
-          };
-        });
-        box.querySelectorAll('.il-cat-remove').forEach(b => {
-          b.onclick = () => {
-            const d = b.dataset.d;
-            if (removeSiteForDomain(d)){
-              disableDomain(d);
-              saveCfg(CFG);
-              toast(t('removedFrom') + ' ' + d, 2000);
-              render();
-              if (d === currentDomain) actualizarBoton();
-            }
-          };
-        });
-        box.querySelectorAll('.il-cat-unblock').forEach(b => {
-          b.onclick = () => {
-            enableDomain(b.dataset.d);
-            saveCfg(CFG);
-            toast(t('unblock') + ': ' + b.dataset.d, 1800);
-            render();
-          };
-        });
-      }
-
-      return { html, wire };
-    }
-
-    function renderCatalogTypes(){
-      const builtin = (CFG.siteTypes || []).filter(tt => tt.builtin);
-      const custom = (CFG.siteTypes || []).filter(tt => !tt.builtin);
-
-      function typeRow(tt){
-        const idx = CFG.siteTypes.indexOf(tt);
-        const affected = CFG.sites.filter(s => s.type === tt.id).length;
-        return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
-          '<code style="font-size:11px;color:var(--muted);min-width:90px">' + esc(tt.id) + '</code>' +
-          '<input class="il-type-label" data-idx="' + idx + '" value="' + esc(tt.label) + '" ' +
-            'style="flex:1;padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
-          '<span style="font-size:11px;color:var(--muted);min-width:80px;text-align:right">' +
-            (affected ? affected + ' sitios' : '') + '</span>' +
-          (tt.builtin
-            ? '<span style="font-size:11px;color:var(--muted);min-width:24px;text-align:center" title="Predefinido">🔒</span>'
-            : '<button class="il-type-del" data-idx="' + idx + '" ' +
-                'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
-          ) +
-        '</div>';
-      }
-
-      const builtinRows = builtin.map(typeRow).join('');
-      const customRows = custom.map(typeRow).join('');
-
-      const tagChips = (CFG.siteTags || []).map((tg, i) =>
-        '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);border-radius:12px;padding:3px 4px 3px 10px;font-size:12px;margin:3px 4px 3px 0">' +
-          esc(tg) +
-          '<button class="il-tag-del" data-idx="' + i + '" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:var(--block)">✕</button>' +
-        '</span>').join('');
-
-      const html =
-        '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.5">' +
-          esc(t('typesHint')) +
-        '</div>' +
-        '<div style="margin-bottom:22px">' +
-          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('defaultTypes')) + ' <span style="color:var(--muted)">(' + builtin.length + ')</span></label>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:12px">' +
-            (builtinRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
-          '</div>' +
-          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('customTypes')) + ' <span style="color:var(--muted)">(' + custom.length + ')</span></label>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:8px">' +
-            (customRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
-          '</div>' +
-          '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-type" placeholder="' + esc(t('newTypePh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
-            '<button class="il-add-type" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
-          '</div>' +
-        '</div>' +
-        '<div style="border-top:1px solid var(--border);padding-top:16px">' +
-          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('tagsSection')) + ' <span style="color:var(--muted)">(' + (CFG.siteTags||[]).length + ')</span></label>' +
-          '<div style="background:var(--quote-bg);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--muted)">' +
-            esc(t('tagsHint')) +
-          '</div>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;min-height:40px">' +
-            (tagChips || '<div style="color:var(--muted);font-size:13px">' + esc(t('noTags')) + '</div>') +
-          '</div>' +
-          '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-tag" placeholder="' + esc(t('newTagPh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
-            '<button class="il-add-tag" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
-          '</div>' +
-        '</div>';
-
-      function wire(){
-        box.querySelectorAll('.il-type-label').forEach(inp => {
-          inp.onchange = () => {
-            const idx = +inp.dataset.idx;
-            const val = inp.value.trim();
-            if (!val){ toast(t('typeInvalid')); inp.value = CFG.siteTypes[idx].label; return; }
-            CFG.siteTypes[idx].label = val;
-            saveCfg(CFG);
-          };
-        });
-        box.querySelectorAll('.il-type-del').forEach(btn => {
-          btn.onclick = () => {
-            const idx = +btn.dataset.idx;
-            const tt = CFG.siteTypes[idx];
-            if (!tt || tt.builtin) return;
-            const affected = CFG.sites.filter(s => s.type === tt.id).length;
-            const msg = t('deleteTypeConfirm').replace('{X}', tt.label).replace('{N}', affected);
-            if (!confirm(msg)) return;
-            CFG.sites.forEach(s => { if (s.type === tt.id) s.type = ''; });
-            CFG.siteTypes.splice(idx, 1);
-            saveCfg(CFG);
-            toast(t('typeDeleted').replace('{X}', tt.label).replace('{N}', affected), 2400);
-            render();
-          };
-        });
-        const addTypeBtn = box.querySelector('.il-add-type');
-        if (addTypeBtn) addTypeBtn.onclick = () => {
-          const inp = box.querySelector('.il-new-type');
-          const label = inp.value.trim();
-          if (!label){ toast(t('typeInvalid')); return; }
-          const exists = (CFG.siteTypes || []).some(tt => tt.label.toLowerCase() === label.toLowerCase());
-          if (exists){ toast(t('typeAlreadyExists')); return; }
-          const slug = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-            .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || ('t-' + Date.now().toString(36));
-          if ((CFG.siteTypes || []).some(tt => tt.id === slug)){
-            CFG.siteTypes.push({ id: 't-' + Date.now().toString(36), label: label });
-          } else {
-            CFG.siteTypes.push({ id: slug, label: label });
-          }
-          saveCfg(CFG);
-          render();
-        };
-        box.querySelectorAll('.il-tag-del').forEach(btn => {
-          btn.onclick = () => {
-            const idx = +btn.dataset.idx;
-            const tg = CFG.siteTags[idx];
-            if (tg == null) return;
-            const affected = CFG.sites.filter(s => (s.tags || []).includes(tg)).length;
-            const msg = t('deleteTagConfirm').replace('{X}', tg).replace('{N}', affected);
-            if (!confirm(msg)) return;
-            CFG.sites.forEach(s => { s.tags = (s.tags || []).filter(x => x !== tg); });
-            (CFG.customCatalog || []).forEach(it => {
-              it.tags = (it.tags || []).filter(x => x !== tg);
-            });
-            CFG.siteTags.splice(idx, 1);
-            saveCfg(CFG);
-            toast(t('tagDeleted').replace('{X}', tg).replace('{N}', affected), 2400);
-            render();
-          };
-        });
-        const addTagBtn = box.querySelector('.il-add-tag');
-        if (addTagBtn) addTagBtn.onclick = () => {
-          const inp = box.querySelector('.il-new-tag');
-          const tag = inp.value.trim();
-          if (!tag){ toast(t('tagInvalid')); return; }
-          if ((CFG.siteTags || []).includes(tag)){ toast(t('tagAlreadyExists')); return; }
-          CFG.siteTags.push(tag);
-          CFG.siteTags.sort();
-          saveCfg(CFG);
-          render();
-        };
-      }
-
-      return { html, wire };
-    }
-
-    const inner = activeCatalogSub === 'types' ? renderCatalogTypes() : renderCatalogMedia();
-    const html = subTabsHTML + inner.html;
-
-    function wire(){
-      box.querySelectorAll('.il-cat-subtab').forEach(b => {
-        b.onclick = () => { activeCatalogSub = b.dataset.subtab; render(); };
-      });
-      inner.wire();
     }
 
     return { html, wire };
@@ -6865,14 +6296,7 @@ function openSettings(initialTab, opts){
     function wire(){
       const appLangSel = box.querySelector('.il-set-lang-app');
       if (appLangSel) appLangSel.onchange = e => {
-        const newLang = e.target.value;
-        if (DEFAULT_SITE_TYPES[newLang]){
-          const map = new Map(DEFAULT_SITE_TYPES[newLang].map(tt => [tt.id, tt.label]));
-          (CFG.siteTypes || []).forEach(tt => {
-            if (tt.builtin && map.has(tt.id)) tt.label = map.get(tt.id);
-          });
-        }
-        CFG.lang = newLang;
+        CFG.lang = e.target.value;
         saveCfg(CFG);
         render();
         actualizarBoton();
@@ -6950,7 +6374,6 @@ function openSettings(initialTab, opts){
     const tabsHTML =
       '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap">' +
         tabBtn('sites', t('sites')) +
-        tabBtn('catalog', t('catalog')) +
         tabBtn('pendientes', t('pendientes')) +
         tabBtn('dict', t('dictionaries')) +
         tabBtn('servicios', t('abrirEn')) +
@@ -6966,7 +6389,6 @@ function openSettings(initialTab, opts){
 
     let payload;
     if (activeSection === 'sites')         payload = renderSitesTab();
-    else if (activeSection === 'catalog')  payload = renderCatalogTab();
     else if (activeSection === 'pendientes') payload = renderPendientesTab();
     else if (activeSection === 'dict')       payload = renderDictTab();
     else if (activeSection === 'servicios')  payload = renderServiciosTab();
@@ -7019,20 +6441,13 @@ function executeGlobalAction(action){
       break;
     }
     case 'toggleTextOnly': {
+      // Sin imágenes en este medio, o vuelta a lo de todos los medios.
       const rule = ensureSiteRule();
-      rule.textOnly = !rule.textOnly;
+      const sinImagenes = rule.imagenes !== 'ninguna';
+      if (sinImagenes) rule.imagenes = 'ninguna'; else delete rule.imagenes;
       saveCfg(CFG);
-      const ov2 = document.getElementById('il-full');
-      if (ov2){
-        ov2.classList.toggle('il-textonly', rule.textOnly);
-        const btn = ov2.querySelector('.il-textonly-btn');
-        if (btn){
-          btn.textContent = rule.textOnly ? '📝' : '🖼';
-          btn.title = rule.textOnly ? t('textOnlyOn') : t('textOnlyOff');
-          btn.classList.toggle('il-active', rule.textOnly);
-        }
-      }
-      toast(rule.textOnly ? t('textOnlyOn') : t('textOnlyOff'), 1500);
+      if (__lectorAbierto) __lectorAbierto.refrescar();
+      toast(sinImagenes ? t('textOnlyOn') : t('textOnlyOff'), 1500);
       break;
     }
     case 'openVoceiro': {
@@ -7075,19 +6490,12 @@ function registerMenus(){
   });
   PLATAFORMA.menu(t('openReader'), () => activateReader());
   PLATAFORMA.menu(t('openMedias'), () => openSettings('sites'));
-  PLATAFORMA.menu(t('catalog'), () => openSettings('catalog'));
   PLATAFORMA.menu(t('pendientes'), () => openSettings('pendientes'));
   PLATAFORMA.menu(t('openSettings'), () => openSettings());
   PLATAFORMA.menu(t('addCurrent'), () => {
     const d = normalizeDomain(location.hostname);
     if (CFG.sites.some(s => s.domain === d)){ toast(t('alreadyInList')); return; }
-    const cat = getCatalogEntry(d) || {};
-    addSiteAnywhere(d, {
-      n: cat.n || d,
-      lang: cat.lang || 'auto',
-      type: cat.type || '',
-      tags: cat.tags || []
-    });
+    addSiteAnywhere(d);
     saveCfg(CFG);
     toast(t('addedTo') + ' ' + d);
     actualizarBoton();
@@ -7191,8 +6599,9 @@ document.addEventListener('keydown', globalKeyHandler, true);
                         leidasHasta}.
      · 'lector-estado'  lector → Voceiro {…, leidas}: lo terminado en el lector
                         (11-pendientes.js); Voceiro lo confirma con leidasHasta.
-     · 'voceiro-ajustes-lector' Voceiro → lector {v}: pinta tus ajustes en
-                        #aj-lector-panel (página Lector de Ajustes).
+     · 'voceiro-ajustes-lector' Voceiro → lector {v, dominio?}: pinta tus
+                        ajustes en #aj-lector-panel (página Lector de Ajustes);
+                        con dominio («Cómo leerlo»), en Medios y con ese medio.
    Pendientes y perfil se fusionan con shared/sync/fusion.js. «lector» es
    la configuración propia del lector: Voceiro la guarda sin mirarla y la
    lleva a otros dispositivos con su sincronización; gana la más reciente.
@@ -7252,11 +6661,18 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
 
   // Página Lector de Ajustes de Voceiro: deja un hueco y avisa; el panel de
   // ajustes del lector se pinta ahí (una vez: si ya está, no se repite).
+  // Con dominio se vuelve a pintar, en Medios y con ese medio delante.
   document.addEventListener('voceiro-ajustes-lector', e => {
     const d = e.detail;
     if (!d || d.v !== PUENTE_V) return;
     const hueco = document.getElementById('aj-lector-panel');
-    if (hueco) openSettings('sites', { dentro: hueco });
+    if (!hueco) return;
+    const dominio = typeof d.dominio === 'string' ? normalizeDomain(d.dominio) : '';
+    if (dominio){
+      const viejo = hueco.querySelector('.il-settings-dentro');
+      if (viejo) viejo.remove();
+    }
+    openSettings('sites', { dentro: hueco, dominio });
   });
 
   document.addEventListener('voceiro-ping', () => {
