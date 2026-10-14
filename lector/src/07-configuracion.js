@@ -62,10 +62,7 @@ const DEFAULT_EXTRACTION = { mode: 'auto', root: '', exclude: '', minChars: 100 
 const DEFAULT_CFG = {
   lang: 'es',
   sites: [],
-  siteTypes: null,
-  siteTags: [],
   disabledDomains: [],
-  customCatalog: [],
   readLater: [],
   perfilActualizado: 0,
   configActualizado: 0,
@@ -148,24 +145,26 @@ function migrateCfg(cfg){
     .replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]).filter(Boolean);
   cfg.disabledDomains = Array.from(new Set(cfg.disabledDomains));
 
-  if (!Array.isArray(cfg.customCatalog)) cfg.customCatalog = [];
-  cfg.customCatalog.forEach(it => {
-    if (!it.d) it.d = '';
-    if (!it.n) it.n = it.d;
-    if (!it.lang) it.lang = 'auto';
-    if (!it.type) it.type = '';
-    if (!Array.isArray(it.tags)) it.tags = [];
-    if (!it.group) it.group = 'Personalizados';
-  });
-  cfg.customCatalog = cfg.customCatalog.filter(it => it.d);
+  // Los medios propios (customCatalog) pasan a ser reglas: con eso ya sale
+  // el botón. Tipos y etiquetas se van: no cambiaban nada.
+  if (Array.isArray(cfg.customCatalog)){
+    cfg.customCatalog.forEach(it => {
+      const d = it && String(it.d || '').toLowerCase();
+      if (!d || cfg.sites.some(s => s.domain === d) || (cfg.disabledDomains || []).includes(d)) return;
+      cfg.sites.push({ domain: d, mode: 'prompt', lang: it.lang || 'auto' });
+    });
+  }
+  delete cfg.customCatalog;
+  delete cfg.siteTypes;
+  delete cfg.siteTags;
 
   cfg.sites.forEach(s => {
     if (!Array.isArray(s.ignorePatterns)) s.ignorePatterns = [];
     if (!s.mode) s.mode = 'prompt';
     if (!s.domain) s.domain = '';
     if (!s.lang || !SITE_LANGS.includes(s.lang)) s.lang = 'auto';
-    if (!s.type) s.type = '';
-    if (!Array.isArray(s.tags)) s.tags = [];
+    delete s.type;
+    delete s.tags;
     // «Sin imágenes en este medio» (textOnly) pasa a imagenes: 'ninguna'.
     if (s.textOnly === true && !s.imagenes) s.imagenes = 'ninguna';
     delete s.textOnly;
@@ -178,51 +177,7 @@ function migrateCfg(cfg){
   });
   cfg.sites = cfg.sites.filter(s => s.domain);
 
-  if (!Array.isArray(cfg.siteTags)) cfg.siteTags = [];
-  cfg.siteTags = Array.from(new Set(cfg.siteTags.map(x => String(x).trim()).filter(Boolean)));
-
-  const langKey = (DEFAULT_SITE_TYPES[cfg.lang] ? cfg.lang : 'es');
-  const userTypes = Array.isArray(cfg.siteTypes) ? cfg.siteTypes.slice() : [];
-  const existingById = new Map();
-  userTypes.forEach(tt => {
-    if (!tt.id) tt.id = 't-' + Math.random().toString(36).slice(2, 8);
-    if (!tt.label) tt.label = tt.id;
-    if (!existingById.has(tt.id)) existingById.set(tt.id, tt);
-  });
-
-  const universalTypes = DEFAULT_SITE_TYPES[langKey];
-  universalTypes.forEach(def => {
-    if (!existingById.has(def.id)){
-      existingById.set(def.id, { id: def.id, label: def.label, builtin: true });
-    } else {
-      const cur = existingById.get(def.id);
-      if (!cur.builtin) cur.builtin = true;
-    }
-  });
-
-  cfg.siteTypes = Array.from(existingById.values());
-
-  const baseDomains = new Set(CATALOG_FLAT.map(x => x.d));
-  const customDomains = new Set(cfg.customCatalog.map(x => x.d));
-  cfg.sites.forEach(s => {
-    if (!baseDomains.has(s.domain) && !customDomains.has(s.domain)){
-      cfg.customCatalog.push({
-        d: s.domain, n: s.domain, lang: s.lang || 'auto',
-        type: s.type || '', tags: (s.tags||[]).slice(),
-        group: 'Personalizados'
-      });
-      customDomains.add(s.domain);
-    }
-  });
-  cfg.disabledDomains.forEach(d => {
-    if (!baseDomains.has(d) && !customDomains.has(d)){
-      cfg.customCatalog.push({
-        d, n: d, lang: 'auto', type: '', tags: [],
-        group: 'Personalizados'
-      });
-      customDomains.add(d);
-    }
-  });
+  cfg.sites.sort((a, b) => a.domain.localeCompare(b.domain));
 
   cfg.readLater = fusionarPendientes(Array.isArray(cfg.readLater) ? cfg.readLater : [], []);
   if (typeof cfg.perfilActualizado !== 'number') cfg.perfilActualizado = 0;

@@ -11,19 +11,12 @@ function registerMenus(){
   });
   PLATAFORMA.menu(t('openReader'), () => activateReader());
   PLATAFORMA.menu(t('openMedias'), () => openSettings('sites'));
-  PLATAFORMA.menu(t('catalog'), () => openSettings('catalog'));
   PLATAFORMA.menu(t('pendientes'), () => openSettings('pendientes'));
   PLATAFORMA.menu(t('openSettings'), () => openSettings());
   PLATAFORMA.menu(t('addCurrent'), () => {
     const d = normalizeDomain(location.hostname);
     if (CFG.sites.some(s => s.domain === d)){ toast(t('alreadyInList')); return; }
-    const cat = getCatalogEntry(d) || {};
-    addSiteAnywhere(d, {
-      n: cat.n || d,
-      lang: cat.lang || 'auto',
-      type: cat.type || '',
-      tags: cat.tags || []
-    });
+    addSiteAnywhere(d);
     saveCfg(CFG);
     toast(t('addedTo') + ' ' + d);
     actualizarBoton();

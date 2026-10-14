@@ -3,6 +3,8 @@
    ============================================================ */
 // opts.dentro: un elemento de la página donde pintar el panel, sin fondo ni
 // diálogo (la página Lector de Ajustes de Voceiro, que lo abre y lo cierra).
+// opts.dominio: el medio que se enseña en Medios en lugar del de la página
+// («Cómo leerlo», desde un titular de Voceiro).
 function openSettings(initialTab, opts){
   const dentro = opts && opts.dentro;
   if (dentro ? dentro.querySelector('.il-settings-dentro') : document.getElementById('il-settings')) return;
@@ -30,16 +32,11 @@ function openSettings(initialTab, opts){
   root.appendChild(box);
   (dentro || document.body).appendChild(root);
 
-  let activeSection = initialTab || 'sites';
-  let activeCatalogSub = 'media';
+  // «catalog» era la pestaña del catálogo, que ya no existe.
+  let activeSection = initialTab && initialTab !== 'catalog' ? initialTab : 'sites';
   let searchQuery = '';
   let filterLang = '';
-  let filterType = '';
-  let filterTag = '';
-  let catalogQuery = '';
-  let catalogFilter = 'all';
-  let catalogLangFilter = '';
-  let catalogTypeFilter = '';
+  const dominioPedido = opts && opts.dominio ? normalizeDomain(opts.dominio) : '';
   const scState = { capture: null };
   let scListener = null;
 
@@ -92,14 +89,6 @@ function openSettings(initialTab, opts){
       (activeSection === id ? 'var(--accent)' : 'var(--muted)') + '">' + esc(label) + '</button>';
   }
 
-  function subTabBtn(parent, id, label){
-    const active = activeCatalogSub === id;
-    return '<button class="il-cat-subtab" data-subtab="' + id + '" style="padding:6px 14px;border:1px solid ' +
-      (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
-      ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;' +
-      'margin-right:6px">' + esc(label) + '</button>';
-  }
-
   function extractionBadge(ex){
     if (!ex || ex.mode === 'auto') return '';
     const label = ex.mode === 'selector' ? '🎯' : ex.mode === 'all' ? '📄' : '';
@@ -116,17 +105,14 @@ function openSettings(initialTab, opts){
   }
 
   function renderSitesTab(){
-    const currentDomain = normalizeDomain(location.hostname);
+    const currentDomain = dominioPedido || (dentro ? '' : normalizeDomain(location.hostname));
     const currentDomainInList = currentDomain && CFG.sites.some(s => s.domain === currentDomain);
 
     const sitesFiltered = CFG.sites.filter(s => {
       if (searchQuery && !s.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (filterLang && s.lang !== filterLang) return false;
-      if (filterType && s.type !== filterType) return false;
-      if (filterTag && !(s.tags || []).includes(filterTag)) return false;
       return true;
     });
-    const knownTags = getAllKnownTags();
 
     const siteRows = sitesFiltered.map((s) => {
       const realIdx = CFG.sites.indexOf(s);
@@ -141,8 +127,6 @@ function openSettings(initialTab, opts){
         '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('ignoredSections')) + ':</span> ' +
         (pats || '<span style="color:var(--muted)">' + esc(t('noIgnoredSections')) + '</span>') +
       '</div>';
-      const tagsStr = (s.tags || []).join(', ');
-      const typeLabel = s.type ? getTypeLabel(s.type) : '—';
       const textOnlyBadge = s.imagenes === 'ninguna' ? ' · <span style="color:var(--accent);font-weight:bold" title="' + esc(t('imgNinguna')) + '">📝</span>'
                           : s.imagenes === 'conPie' ? ' · <span style="color:var(--accent)" title="' + esc(t('imgConPie')) + '">🖼✎</span>' : '';
       const exBadge = extractionBadge(s.extraction);
@@ -166,14 +150,10 @@ function openSettings(initialTab, opts){
             'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-visit" title="' + esc(t('openSite')) + '" ' +
             'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔗</button>' +
-          '<button data-idx="' + realIdx + '" class="il-set-edit" title="Editar" ' +
-            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">✏️</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🗑</button>' +
         '</div>' +
         '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
           '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colLang')) + ':</span> ' + esc(langLabel(s.lang)) +
-          ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colType')) + ':</span> ' + esc(typeLabel) +
-          (tagsStr ? ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colTags')) + ':</span> ' + esc(tagsStr) : '') +
           textOnlyBadge + exBadge +
         '</div>' +
         patBlock +
@@ -182,28 +162,37 @@ function openSettings(initialTab, opts){
 
     const langFilterOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterLang')) + '</option>' +
       SITE_LANGS.map(l => '<option value="' + l + '"' + (filterLang===l?' selected':'') + '>' + esc(langLabel(l)) + '</option>').join('');
-    const typeFilterOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterType')) + '</option>' +
-      CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (filterType===tt.id?' selected':'') + '>' + esc(tt.label) + '</option>').join('');
-    const tagFilterOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterTag')) + '</option>' +
-      knownTags.map(tg => '<option value="' + esc(tg) + '"' + (filterTag===tg?' selected':'') + '>' + esc(tg) + '</option>').join('');
+    // Bloqueados: los medios que se han quitado de la lista (o desactivado);
+    // en ellos no sale el botón. Aquí se desbloquean.
+    const bloqueados = (CFG.disabledDomains || []).slice().sort();
+    const bloqueadosHTML = bloqueados.length
+      ? '<div style="margin:0 0 18px;font-size:12px;color:var(--muted)">' +
+          '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('blocked')) + ':</span> ' +
+          bloqueados.map(d =>
+            '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);border-radius:12px;' +
+              'padding:2px 4px 2px 10px;font-family:monospace;font-size:12px;margin:2px 4px 2px 0">' + esc(d) +
+              '<button class="il-set-unblock" data-d="' + esc(d) + '" aria-label="' + esc(t('unblock') + ' ' + d) + '" ' +
+                'style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:2px 6px;color:var(--accent)">' + esc(t('unblock')) + '</button>' +
+            '</span>').join('') +
+        '</div>'
+      : '';
 
     const addCurrentBanner = currentDomain && !currentDomainInList
       ? '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
           'margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap">' +
-          '<span style="flex:1;min-width:140px">📍 ' + esc(t('currentSiteHint')) + ': <strong style="font-family:monospace">' + esc(currentDomain) + '</strong></span>' +
+          '<span style="flex:1;min-width:140px">📍 ' + esc(dominioPedido ? t('medioSinReglas') : t('currentSiteHint')) + ': <strong style="font-family:monospace">' + esc(currentDomain) + '</strong></span>' +
           '<button class="il-set-add-current" style="padding:6px 14px;background:var(--preset);color:var(--on-solid);border:none;' +
             'border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;white-space:nowrap">+ ' + esc(t('addCurrentShort')) + '</button>' +
         '</div>'
       : '';
 
     const html =
+      '<p style="margin:0 0 12px;font-size:13px;color:var(--muted)">' + esc(t('sitesHint')) + '</p>' +
       addCurrentBanner +
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
         '<input class="il-set-search" placeholder="' + esc(t('searchPlaceholder')) + '" value="' + esc(searchQuery) + '" ' +
           'style="flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
         '<select class="il-filter-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langFilterOpts + '</select>' +
-        '<select class="il-filter-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeFilterOpts + '</select>' +
-        '<select class="il-filter-tag" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + tagFilterOpts + '</select>' +
       '</div>' +
       '<div style="margin-bottom:10px">' +
         '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:340px;overflow:auto">' +
@@ -218,7 +207,8 @@ function openSettings(initialTab, opts){
           '<option value="off">' + esc(t('modeOff')) + '</option>' +
         '</select>' +
         '<button class="il-set-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
-      '</div>';
+      '</div>' +
+      bloqueadosHTML;
 
     function wire(){
       const searchInput = box.querySelector('.il-set-search');
@@ -233,10 +223,9 @@ function openSettings(initialTab, opts){
       }
       const langSel = box.querySelector('.il-filter-lang');
       if (langSel) langSel.onchange = e => { filterLang = e.target.value; render(); };
-      const typeSel = box.querySelector('.il-filter-type');
-      if (typeSel) typeSel.onchange = e => { filterType = e.target.value; render(); };
-      const tagSel = box.querySelector('.il-filter-tag');
-      if (tagSel) tagSel.onchange = e => { filterTag = e.target.value; render(); };
+      box.querySelectorAll('.il-set-unblock').forEach(b => {
+        b.onclick = () => { enableDomain(b.dataset.d); saveCfg(CFG); render(); actualizarBoton(); };
+      });
 
       box.querySelectorAll('.il-set-mode').forEach(sel => {
         sel.onchange = () => { CFG.sites[+sel.dataset.idx].mode = sel.value; saveCfg(CFG); };
@@ -254,15 +243,6 @@ function openSettings(initialTab, opts){
           const idx = +sel.dataset.idx;
           CFG.sites[idx].lang = sel.value;
           saveCfg(CFG);
-          if (!isBaseCatalogDomain(CFG.sites[idx].domain)){
-            addOrUpdateCustomCatalogEntry(CFG.sites[idx].domain, {
-              lang: CFG.sites[idx].lang,
-              type: CFG.sites[idx].type,
-              tags: CFG.sites[idx].tags,
-              n: CFG.sites[idx].domain
-            });
-            saveCfg(CFG);
-          }
         };
       });
       box.querySelectorAll('.il-set-extract').forEach(btn => {
@@ -278,65 +258,13 @@ function openSettings(initialTab, opts){
           if (site) window.open('https://' + site.domain, '_blank', 'noopener');
         };
       });
-      box.querySelectorAll('.il-set-edit').forEach(btn => {
-        btn.onclick = e => {
-          e.stopPropagation();
-          const idx = +btn.dataset.idx;
-          const site = CFG.sites[idx];
-          if (!site) return;
-          const row = box.querySelector('.il-site-row[data-idx="' + idx + '"]');
-          if (!row) return;
-          const existing = row.querySelector('.il-edit-block');
-          if (existing) { existing.remove(); return; }
-          const block = document.createElement('div');
-          block.className = 'il-edit-block';
-          block.style.cssText = 'margin-top:8px;padding:10px;background:var(--quote-bg);border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
-          const typeOpts = '<option value=""' + (!site.type?' selected':'') + '>—</option>' +
-            CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (site.type===tt.id?' selected':'') + '>' + esc(tt.label) + '</option>').join('');
-          const datalistId = 'il-known-tags-' + idx;
-          const datalist = '<datalist id="' + datalistId + '">' +
-            getAllKnownTags().map(tg => '<option value="' + esc(tg) + '"></option>').join('') + '</datalist>';
-          block.innerHTML =
-            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteType')) + '</label>' +
-            '<select class="il-edit-type" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' + typeOpts + '</select>' +
-            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteTags')) + '</label>' +
-            '<input class="il-edit-tags" list="' + datalistId + '" value="' + esc((site.tags||[]).join(', ')) + '" ' +
-              'style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' +
-            datalist +
-            '<button class="il-edit-save" style="padding:6px 10px;background:var(--accent);color:var(--on-solid);border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-left:auto">' + esc(t('saveBtn')) + '</button>' +
-            '<button class="il-edit-cancel" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:4px;cursor:pointer;font-size:12px">' + esc(t('cancelBtn')) + '</button>';
-          row.appendChild(block);
-          block.querySelector('.il-edit-save').onclick = () => {
-            const type = block.querySelector('.il-edit-type').value;
-            const rawTags = block.querySelector('.il-edit-tags').value.split(',').map(x => x.trim()).filter(Boolean);
-            const uniqueTags = Array.from(new Set(rawTags));
-            CFG.sites[idx].type = type;
-            CFG.sites[idx].tags = uniqueTags;
-            const global = new Set(CFG.siteTags || []);
-            uniqueTags.forEach(tg => global.add(tg));
-            CFG.siteTags = Array.from(global).sort();
-            if (!isBaseCatalogDomain(CFG.sites[idx].domain)){
-              addOrUpdateCustomCatalogEntry(CFG.sites[idx].domain, {
-                lang: CFG.sites[idx].lang, type: type, tags: uniqueTags,
-                n: CFG.sites[idx].domain
-              });
-            }
-            saveCfg(CFG);
-            render();
-          };
-          block.querySelector('.il-edit-cancel').onclick = () => block.remove();
-        };
-      });
       box.querySelectorAll('.il-set-del').forEach(btn => {
         btn.onclick = e => {
           e.stopPropagation();
           const removed = CFG.sites[+btn.dataset.idx];
           CFG.sites.splice(+btn.dataset.idx, 1);
-          if (removed && isBaseCatalogDomain(removed.domain)){
-            disableDomain(removed.domain);
-          } else if (removed){
-            disableDomain(removed.domain);
-          }
+          // Quitar un medio lo bloquea (sin botón); se desbloquea abajo.
+          if (removed) disableDomain(removed.domain);
           saveCfg(CFG); render();
           if (removed && removed.domain === currentDomain) actualizarBoton();
         };
@@ -362,13 +290,7 @@ function openSettings(initialTab, opts){
       if (addCurrentBtn) addCurrentBtn.onclick = () => {
         if (!currentDomain) return;
         if (CFG.sites.some(s => s.domain === currentDomain)){ toast(t('siteAlready')); return; }
-        const cat = getCatalogEntry(currentDomain) || {};
-        addSiteAnywhere(currentDomain, {
-          n: cat.n || currentDomain,
-          lang: cat.lang || 'auto',
-          type: cat.type || '',
-          tags: cat.tags || []
-        });
+        addSiteAnywhere(currentDomain);
         saveCfg(CFG);
         toast(t('addedTo') + ' ' + currentDomain);
         render();
@@ -382,13 +304,7 @@ function openSettings(initialTab, opts){
         const d = normalizeDomain(inp.value);
         if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){ toast(t('siteInvalid')); return; }
         if (CFG.sites.some(s => s.domain === d)){ toast(t('siteAlready')); return; }
-        const cat = getCatalogEntry(d) || {};
-        addSiteAnywhere(d, {
-          mode: mode, n: cat.n || d,
-          lang: cat.lang || 'auto',
-          type: cat.type || '',
-          tags: cat.tags || []
-        });
+        addSiteAnywhere(d, { mode: mode });
         saveCfg(CFG);
         render();
         if (d === currentDomain) actualizarBoton();
@@ -414,339 +330,6 @@ function openSettings(initialTab, opts){
           }, 3000);
         }, 80);
       }
-    }
-
-    return { html, wire };
-  }
-
-  function renderCatalogTab(){
-    const currentDomain = normalizeDomain(location.hostname);
-
-    const subTabsHTML =
-      '<div style="margin-bottom:14px">' +
-        subTabBtn('catalog', 'media', '📚 ' + t('catalogSubMedia')) +
-        subTabBtn('catalog', 'types', '🏷 ' + t('catalogSubTypes')) +
-      '</div>';
-
-    function renderCatalogMedia(){
-      const allGroups = MEDIA_CATALOG.map(g => ({ group: g.group, items: g.items.slice() }));
-      if ((CFG.customCatalog || []).length){
-        allGroups.push({ group: 'Personalizados', items: CFG.customCatalog.slice() });
-      }
-
-      const filteredGroups = allGroups.map(g => {
-        const items = g.items.filter(it => {
-          if (catalogLangFilter && it.lang !== catalogLangFilter) return false;
-          if (catalogTypeFilter && it.type !== catalogTypeFilter) return false;
-          if (catalogQuery){
-            const q = catalogQuery.toLowerCase();
-            if (!it.d.toLowerCase().includes(q) && !(it.n||'').toLowerCase().includes(q)) return false;
-          }
-          const inList = CFG.sites.some(s => s.domain === it.d);
-          const isBlocked = isDomainDisabled(it.d);
-          if (catalogFilter === 'added' && !inList) return false;
-          if (catalogFilter === 'notadded' && inList) return false;
-          if (catalogFilter === 'blocked' && !isBlocked) return false;
-          return true;
-        });
-        return { group: g.group, items };
-      }).filter(g => g.items.length);
-
-      const totalShown = filteredGroups.reduce((a, g) => a + g.items.length, 0);
-      const totalBase = CATALOG_TOTAL + (CFG.customCatalog||[]).length;
-
-      const langOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterLang')) + '</option>' +
-        CATALOG_LANGS.map(l => '<option value="' + esc(l) + '"' + (catalogLangFilter===l?' selected':'') + '>' +
-          esc(l.toUpperCase()) + '</option>').join('');
-      const typeOpts = '<option value="">' + esc(t('filterAll')) + ' ' + esc(t('filterType')) + '</option>' +
-        CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (catalogTypeFilter===tt.id?' selected':'') + '>' +
-          esc(tt.label) + '</option>').join('');
-      const filterBtns =
-        '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' +
-          ['all','notadded','added','blocked'].map(f => {
-            const labels = { all: t('allMedia'), notadded: t('filterNotAdded'), added: t('filterAdded'), blocked: t('filterBlocked') };
-            const active = catalogFilter === f;
-            return '<button class="il-cat-filter" data-filter="' + f + '" style="padding:6px 12px;border:1px solid ' +
-              (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
-              ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px">' +
-              esc(labels[f]) + '</button>';
-          }).join('') +
-        '</div>';
-
-      const groupsHTML = filteredGroups.map(g => {
-        const rows = g.items.map(it => {
-          const inList = CFG.sites.some(s => s.domain === it.d);
-          const isBlocked = isDomainDisabled(it.d);
-          const isCurrent = it.d === currentDomain;
-
-          let actionBtns = '';
-          if (inList){
-            actionBtns =
-              '<button class="il-cat-remove" data-d="' + esc(it.d) + '" title="' + esc(t('remove')) + '" ' +
-                'style="padding:4px 10px;border:1px solid var(--block);background:var(--bg);color:var(--block);border-radius:5px;cursor:pointer;font-size:12px">✕</button>';
-          } else if (isBlocked){
-            actionBtns =
-              '<button class="il-cat-unblock" data-d="' + esc(it.d) + '" title="' + esc(t('unblock')) + '" ' +
-                'style="padding:4px 10px;border:1px solid var(--preset);background:var(--bg);color:var(--preset);border-radius:5px;cursor:pointer;font-size:12px">↺</button>';
-          } else {
-            actionBtns =
-              '<button class="il-cat-add" data-d="' + esc(it.d) + '" title="' + esc(t('addToMyList')) + '" ' +
-                'style="padding:4px 10px;border:none;background:var(--preset);color:var(--on-solid);border-radius:5px;cursor:pointer;font-size:12px;font-weight:bold">＋</button>';
-          }
-
-          const statusBadge = inList
-            ? '<span style="color:var(--preset);font-size:11px;font-weight:bold">✅ ' + esc(t('inYourList')) + '</span>'
-            : isBlocked
-            ? '<span style="color:var(--block);font-size:11px;font-weight:bold">🚫 ' + esc(t('blocked')) + '</span>'
-            : '';
-
-          return '<div class="il-cat-row" data-d="' + esc(it.d) + '" style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--border)' + (isCurrent ? ';background:var(--quote-bg)' : '') + '">' +
-            '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:monospace;font-size:12px;font-weight:bold;color:var(--fg)">' + esc(it.d) + (isCurrent ? ' 📍' : '') + '</div>' +
-              '<div style="font-size:11px;color:var(--muted)">' + esc(it.n || '') +
-                ' · ' + esc((it.lang||'').toUpperCase()) +
-                (it.type ? ' · ' + esc(getTypeLabel(it.type)) : '') +
-                ((it.tags||[]).length ? ' · ' + esc(it.tags.join(', ')) : '') +
-              '</div>' +
-            '</div>' +
-            statusBadge +
-            '<button class="il-cat-visit" data-d="' + esc(it.d) + '" title="' + esc(t('visitSite')) + '" ' +
-              'style="padding:4px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:5px;cursor:pointer;font-size:12px">🔗</button>' +
-            actionBtns +
-          '</div>';
-        }).join('');
-        return '<div style="margin-bottom:18px">' +
-          '<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:bold">' +
-            esc(g.group) + ' <span style="color:var(--muted)">(' + g.items.length + ')</span></div>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 10px">' + rows + '</div>' +
-        '</div>';
-      }).join('');
-
-      const html =
-        '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:14px;font-size:12px;color:var(--fg);line-height:1.5">' +
-          '💡 ' + esc(t('catalogInfo').replace('{N}', totalBase)) +
-        '</div>' +
-        '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
-          '<input class="il-cat-search" placeholder="' + esc(t('searchCatalog')) + '" value="' + esc(catalogQuery) + '" ' +
-            'style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
-          '<select class="il-cat-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langOpts + '</select>' +
-          '<select class="il-cat-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeOpts + '</select>' +
-        '</div>' +
-        filterBtns +
-        '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
-          totalShown + ' / ' + totalBase + ' ' + esc(t('allMedia').toLowerCase()) +
-        '</div>' +
-        (groupsHTML || '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px">—</div>');
-
-      function wire(){
-        const searchInp = box.querySelector('.il-cat-search');
-        if (searchInp) searchInp.oninput = e => {
-          const pos = e.target.selectionStart;
-          catalogQuery = e.target.value;
-          render();
-          const ni = box.querySelector('.il-cat-search');
-          if (ni){ ni.focus(); ni.setSelectionRange(pos, pos); }
-        };
-        const langSel = box.querySelector('.il-cat-lang');
-        if (langSel) langSel.onchange = e => { catalogLangFilter = e.target.value; render(); };
-        const typeSel = box.querySelector('.il-cat-type');
-        if (typeSel) typeSel.onchange = e => { catalogTypeFilter = e.target.value; render(); };
-
-        box.querySelectorAll('.il-cat-filter').forEach(b => {
-          b.onclick = () => { catalogFilter = b.dataset.filter; render(); };
-        });
-        box.querySelectorAll('.il-cat-visit').forEach(b => {
-          b.onclick = () => window.open('https://' + b.dataset.d, '_blank', 'noopener');
-        });
-        box.querySelectorAll('.il-cat-add').forEach(b => {
-          b.onclick = () => {
-            const d = b.dataset.d;
-            const entry = getCatalogEntry(d) || (CFG.customCatalog||[]).find(x => x.d === d);
-            if (!entry) return;
-            if (addSiteFromCatalog(entry)){
-              saveCfg(CFG);
-              toast(t('addedTo') + ' ' + entry.d, 2000);
-              render();
-              if (entry.d === currentDomain) actualizarBoton();
-            }
-          };
-        });
-        box.querySelectorAll('.il-cat-remove').forEach(b => {
-          b.onclick = () => {
-            const d = b.dataset.d;
-            if (removeSiteForDomain(d)){
-              disableDomain(d);
-              saveCfg(CFG);
-              toast(t('removedFrom') + ' ' + d, 2000);
-              render();
-              if (d === currentDomain) actualizarBoton();
-            }
-          };
-        });
-        box.querySelectorAll('.il-cat-unblock').forEach(b => {
-          b.onclick = () => {
-            enableDomain(b.dataset.d);
-            saveCfg(CFG);
-            toast(t('unblock') + ': ' + b.dataset.d, 1800);
-            render();
-          };
-        });
-      }
-
-      return { html, wire };
-    }
-
-    function renderCatalogTypes(){
-      const builtin = (CFG.siteTypes || []).filter(tt => tt.builtin);
-      const custom = (CFG.siteTypes || []).filter(tt => !tt.builtin);
-
-      function typeRow(tt){
-        const idx = CFG.siteTypes.indexOf(tt);
-        const affected = CFG.sites.filter(s => s.type === tt.id).length;
-        return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
-          '<code style="font-size:11px;color:var(--muted);min-width:90px">' + esc(tt.id) + '</code>' +
-          '<input class="il-type-label" data-idx="' + idx + '" value="' + esc(tt.label) + '" ' +
-            'style="flex:1;padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
-          '<span style="font-size:11px;color:var(--muted);min-width:80px;text-align:right">' +
-            (affected ? affected + ' sitios' : '') + '</span>' +
-          (tt.builtin
-            ? '<span style="font-size:11px;color:var(--muted);min-width:24px;text-align:center" title="Predefinido">🔒</span>'
-            : '<button class="il-type-del" data-idx="' + idx + '" ' +
-                'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
-          ) +
-        '</div>';
-      }
-
-      const builtinRows = builtin.map(typeRow).join('');
-      const customRows = custom.map(typeRow).join('');
-
-      const tagChips = (CFG.siteTags || []).map((tg, i) =>
-        '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);border-radius:12px;padding:3px 4px 3px 10px;font-size:12px;margin:3px 4px 3px 0">' +
-          esc(tg) +
-          '<button class="il-tag-del" data-idx="' + i + '" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:var(--block)">✕</button>' +
-        '</span>').join('');
-
-      const html =
-        '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.5">' +
-          esc(t('typesHint')) +
-        '</div>' +
-        '<div style="margin-bottom:22px">' +
-          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('defaultTypes')) + ' <span style="color:var(--muted)">(' + builtin.length + ')</span></label>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:12px">' +
-            (builtinRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
-          '</div>' +
-          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('customTypes')) + ' <span style="color:var(--muted)">(' + custom.length + ')</span></label>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:8px">' +
-            (customRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
-          '</div>' +
-          '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-type" placeholder="' + esc(t('newTypePh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
-            '<button class="il-add-type" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
-          '</div>' +
-        '</div>' +
-        '<div style="border-top:1px solid var(--border);padding-top:16px">' +
-          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('tagsSection')) + ' <span style="color:var(--muted)">(' + (CFG.siteTags||[]).length + ')</span></label>' +
-          '<div style="background:var(--quote-bg);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--muted)">' +
-            esc(t('tagsHint')) +
-          '</div>' +
-          '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;min-height:40px">' +
-            (tagChips || '<div style="color:var(--muted);font-size:13px">' + esc(t('noTags')) + '</div>') +
-          '</div>' +
-          '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-tag" placeholder="' + esc(t('newTagPh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
-            '<button class="il-add-tag" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
-          '</div>' +
-        '</div>';
-
-      function wire(){
-        box.querySelectorAll('.il-type-label').forEach(inp => {
-          inp.onchange = () => {
-            const idx = +inp.dataset.idx;
-            const val = inp.value.trim();
-            if (!val){ toast(t('typeInvalid')); inp.value = CFG.siteTypes[idx].label; return; }
-            CFG.siteTypes[idx].label = val;
-            saveCfg(CFG);
-          };
-        });
-        box.querySelectorAll('.il-type-del').forEach(btn => {
-          btn.onclick = () => {
-            const idx = +btn.dataset.idx;
-            const tt = CFG.siteTypes[idx];
-            if (!tt || tt.builtin) return;
-            const affected = CFG.sites.filter(s => s.type === tt.id).length;
-            const msg = t('deleteTypeConfirm').replace('{X}', tt.label).replace('{N}', affected);
-            if (!confirm(msg)) return;
-            CFG.sites.forEach(s => { if (s.type === tt.id) s.type = ''; });
-            CFG.siteTypes.splice(idx, 1);
-            saveCfg(CFG);
-            toast(t('typeDeleted').replace('{X}', tt.label).replace('{N}', affected), 2400);
-            render();
-          };
-        });
-        const addTypeBtn = box.querySelector('.il-add-type');
-        if (addTypeBtn) addTypeBtn.onclick = () => {
-          const inp = box.querySelector('.il-new-type');
-          const label = inp.value.trim();
-          if (!label){ toast(t('typeInvalid')); return; }
-          const exists = (CFG.siteTypes || []).some(tt => tt.label.toLowerCase() === label.toLowerCase());
-          if (exists){ toast(t('typeAlreadyExists')); return; }
-          const slug = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-            .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || ('t-' + Date.now().toString(36));
-          if ((CFG.siteTypes || []).some(tt => tt.id === slug)){
-            CFG.siteTypes.push({ id: 't-' + Date.now().toString(36), label: label });
-          } else {
-            CFG.siteTypes.push({ id: slug, label: label });
-          }
-          saveCfg(CFG);
-          render();
-        };
-        box.querySelectorAll('.il-tag-del').forEach(btn => {
-          btn.onclick = () => {
-            const idx = +btn.dataset.idx;
-            const tg = CFG.siteTags[idx];
-            if (tg == null) return;
-            const affected = CFG.sites.filter(s => (s.tags || []).includes(tg)).length;
-            const msg = t('deleteTagConfirm').replace('{X}', tg).replace('{N}', affected);
-            if (!confirm(msg)) return;
-            CFG.sites.forEach(s => { s.tags = (s.tags || []).filter(x => x !== tg); });
-            (CFG.customCatalog || []).forEach(it => {
-              it.tags = (it.tags || []).filter(x => x !== tg);
-            });
-            CFG.siteTags.splice(idx, 1);
-            saveCfg(CFG);
-            toast(t('tagDeleted').replace('{X}', tg).replace('{N}', affected), 2400);
-            render();
-          };
-        });
-        const addTagBtn = box.querySelector('.il-add-tag');
-        if (addTagBtn) addTagBtn.onclick = () => {
-          const inp = box.querySelector('.il-new-tag');
-          const tag = inp.value.trim();
-          if (!tag){ toast(t('tagInvalid')); return; }
-          if ((CFG.siteTags || []).includes(tag)){ toast(t('tagAlreadyExists')); return; }
-          CFG.siteTags.push(tag);
-          CFG.siteTags.sort();
-          saveCfg(CFG);
-          render();
-        };
-      }
-
-      return { html, wire };
-    }
-
-    const inner = activeCatalogSub === 'types' ? renderCatalogTypes() : renderCatalogMedia();
-    const html = subTabsHTML + inner.html;
-
-    function wire(){
-      box.querySelectorAll('.il-cat-subtab').forEach(b => {
-        b.onclick = () => { activeCatalogSub = b.dataset.subtab; render(); };
-      });
-      inner.wire();
     }
 
     return { html, wire };
@@ -1179,14 +762,7 @@ function openSettings(initialTab, opts){
     function wire(){
       const appLangSel = box.querySelector('.il-set-lang-app');
       if (appLangSel) appLangSel.onchange = e => {
-        const newLang = e.target.value;
-        if (DEFAULT_SITE_TYPES[newLang]){
-          const map = new Map(DEFAULT_SITE_TYPES[newLang].map(tt => [tt.id, tt.label]));
-          (CFG.siteTypes || []).forEach(tt => {
-            if (tt.builtin && map.has(tt.id)) tt.label = map.get(tt.id);
-          });
-        }
-        CFG.lang = newLang;
+        CFG.lang = e.target.value;
         saveCfg(CFG);
         render();
         actualizarBoton();
@@ -1264,7 +840,6 @@ function openSettings(initialTab, opts){
     const tabsHTML =
       '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap">' +
         tabBtn('sites', t('sites')) +
-        tabBtn('catalog', t('catalog')) +
         tabBtn('pendientes', t('pendientes')) +
         tabBtn('dict', t('dictionaries')) +
         tabBtn('servicios', t('abrirEn')) +
@@ -1280,7 +855,6 @@ function openSettings(initialTab, opts){
 
     let payload;
     if (activeSection === 'sites')         payload = renderSitesTab();
-    else if (activeSection === 'catalog')  payload = renderCatalogTab();
     else if (activeSection === 'pendientes') payload = renderPendientesTab();
     else if (activeSection === 'dict')       payload = renderDictTab();
     else if (activeSection === 'servicios')  payload = renderServiciosTab();
