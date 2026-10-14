@@ -56,8 +56,7 @@ function anadirSitioActual(){
   const d = normalizeDomain(location.hostname);
   if (!d) return;
   if (CFG.sites.some(s => s.domain === d)){ toast(t('alreadyInList')); actualizarBoton(); return; }
-  const cat = getCatalogEntry(d) || {};
-  addSiteAnywhere(d, { n: cat.n || d, lang: cat.lang || 'auto', type: cat.type || '', tags: cat.tags || [] });
+  addSiteAnywhere(d);
   saveCfg(CFG);
   actualizarBoton();
   toast(t('addedTo') + ' ' + d, 6000, { label: t('btnUndo'), onClick: () => {

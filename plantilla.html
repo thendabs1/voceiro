@@ -2893,6 +2893,7 @@ const I18N = {
     forceInclude:           'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
     forceExclude:           'Bloquear siempre',
     blockMedia:             'No mostrar noticias de este medio',
+    comoLeerlo:             'Cómo leer este medio',
     saveLabelSave:          'Guardar',
     saveLabelPending:       'Pendiente',
     saveLabelRead:          'Leída',
@@ -3258,6 +3259,7 @@ const I18N = {
     forceInclude:           'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
     forceExclude:           'Bloquear sempre',
     blockMedia:             'Non amosar noticias deste medio',
+    comoLeerlo:             'Como ler este medio',
     saveLabelSave:          'Gardar',
     saveLabelPending:       'Pendente',
     saveLabelRead:          'Lida',
@@ -3613,6 +3615,7 @@ const I18N = {
     forceInclude:           'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
     forceExclude:           'Bloquejar sempre',
     blockMedia:             "No mostrar notícies d'aquest mitjà",
+    comoLeerlo:             "Com llegir aquest mitjà",
     saveLabelSave:          'Desar',
     saveLabelPending:       'Pendent',
     saveLabelRead:          'Llegida',
@@ -3968,6 +3971,7 @@ const I18N = {
     forceInclude:           'Always force (include even if group or keywords do not match)',
     forceExclude:           'Always block',
     blockMedia:             'Hide news from this outlet',
+    comoLeerlo:             'How to read this outlet',
     saveLabelSave:          'Save',
     saveLabelPending:       'Pending',
     saveLabelRead:          'Read',
@@ -4323,6 +4327,7 @@ const I18N = {
     forceInclude:           'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
     forceExclude:           'Beti blokeatu',
     blockMedia:             'Ez erakutsi hedabide honetako albisteak',
+    comoLeerlo:             'Nola irakurri hedabide hau',
     saveLabelSave:          'Gorde',
     saveLabelPending:       'Zain',
     saveLabelRead:          'Irakurrita',
@@ -5418,6 +5423,8 @@ function abrirMenuMas(btn){
   m.innerHTML =
     (yaForzado ? '' : item('btn-add-item', 'plus', t('addToModoTitle')))
     + item('btn-block-item', 'ban', t('blockMedia'))
+    // Cómo se lee este medio en el lector: su regla, en Ajustes › Lector.
+    + (USCRIPT_OK ? item('btn-leer-item', 'book-open-text', t('comoLeerlo')) : '')
     + item('btn-report-item', 'flag', t('repBtnTitle'));
   cont.appendChild(m);
 
@@ -8119,14 +8126,19 @@ function ajRefrescar(){
 
 // Página Lector: el panel lo pinta el propio lector en #aj-lector-panel; aquí
 // solo se le avisa (lo ignora si ya está). Al salir de la página se vacía.
+// AJ_LECTOR_DOMINIO: el medio de «Cómo leerlo»; el lector lo pone delante.
+let AJ_LECTOR_DOMINIO = '';
 function ajPintarLector(){
   actualizarSyncBanner();
   $('#aj-plugin-hint').hidden = USCRIPT_OK;
   $('#aj-lector-instalar').hidden = USCRIPT_OK;
   $('#aj-lector-hint').hidden = USCRIPT_OK;
   if (!USCRIPT_OK){ ajVaciarLector(); return; }
+  const dominio = AJ_LECTOR_DOMINIO;
+  AJ_LECTOR_DOMINIO = '';
   try {
-    document.dispatchEvent(new CustomEvent('voceiro-ajustes-lector', { detail: { v: PUENTE_V } }));
+    document.dispatchEvent(new CustomEvent('voceiro-ajustes-lector',
+      { detail: dominio ? { v: PUENTE_V, dominio } : { v: PUENTE_V } }));
   } catch(e){}
 }
 function ajVaciarLector(){
@@ -10583,6 +10595,19 @@ function wireResultadosDelegation(){
         return;
       }
       abrirDestinoInline(i, 'ignore');
+      return;
+    }
+
+    // Cómo leerlo: Ajustes › Lector con la regla de ese medio delante.
+    const leerBtn = e.target.closest('.btn-leer-item');
+    if (leerBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const n = ULT_FILTRADAS[parseInt(leerBtn.dataset.idx, 10)];
+      if (!n) return;
+      AJ_LECTOR_DOMINIO = n.dominio;
+      if (ajAbierto() && ajRuta() === 'lector') ajPintarLector();
+      else abrirAjustes('lector');
       return;
     }
 
