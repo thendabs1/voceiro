@@ -7,6 +7,13 @@
 thendabs1.github.io
 github.com
 
+# Originales de tweets y vídeos embebidos: la tarjeta del lector enlaza a
+# ellos (no carga nada de terceros).
+x.com
+www.youtube.com
+vimeo.com
+bsky.app
+
 # Readability (@require)
 cdn.jsdelivr.net
 

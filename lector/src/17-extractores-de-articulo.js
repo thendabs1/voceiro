@@ -97,10 +97,76 @@ function limpiarPublicidad(doc){
   return doc;
 }
 
+// Embebidos (tweets, vídeos…): el sanitizador quita los iframes y
+// Readability se deja muchos, así que desaparecían sin rastro. Antes de
+// extraer se cambian por un párrafo marcado (data-il-embed, data-il-url)
+// que llega a los bloques como tarjeta con enlace al original. No se carga
+// nada de terceros.
+function textoPlano(el){ return el ? (el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+function enlaceQueCasa(el, re){
+  const a = [...el.querySelectorAll('a[href]')].reverse().find(x => re.test(x.getAttribute('href')));
+  return a ? a.getAttribute('href') : '';
+}
+function parametro(url, nombre){
+  try { return new URL(url, location.href).searchParams.get(nombre) || ''; } catch(e){ return ''; }
+}
+const fuenteDe = el => el.getAttribute('src') || el.getAttribute('data-src') || '';
+const EMBEBIDOS = [
+  { red: 'x', sel: 'blockquote.twitter-tweet',
+    url: el => enlaceQueCasa(el, /\/status\/\d+/), texto: el => textoPlano(el.querySelector('p')) },
+  { red: 'x', sel: 'iframe[src*="platform.twitter.com/embed"],iframe[data-tweet-id]',
+    url: el => { const id = el.getAttribute('data-tweet-id') || parametro(fuenteDe(el), 'id');
+                 return /^\d+$/.test(id) ? 'https://x.com/i/status/' + id : ''; } },
+  { red: 'youtube', sel: 'iframe[src*="youtube.com/embed/"],iframe[src*="youtube-nocookie.com/embed/"],iframe[data-src*="youtube.com/embed/"]',
+    url: el => { const m = fuenteDe(el).match(/\/embed\/([\w-]{6,})/); return m ? 'https://www.youtube.com/watch?v=' + m[1] : ''; },
+    texto: el => el.getAttribute('title') || '' },
+  { red: 'youtube', sel: 'lite-youtube[videoid]',
+    url: el => 'https://www.youtube.com/watch?v=' + encodeURIComponent(el.getAttribute('videoid')),
+    texto: el => el.getAttribute('playlabel') || '' },
+  { red: 'vimeo', sel: 'iframe[src*="player.vimeo.com/video/"]',
+    url: el => { const m = fuenteDe(el).match(/\/video\/(\d+)/); return m ? 'https://vimeo.com/' + m[1] : ''; },
+    texto: el => el.getAttribute('title') || '' },
+  { red: 'instagram', sel: 'blockquote.instagram-media,iframe[src*="instagram.com/p/"],iframe[src*="instagram.com/reel/"]',
+    url: el => (el.getAttribute('data-instgrm-permalink') || enlaceQueCasa(el, /instagram\.com\/(p|reel)\//) || fuenteDe(el))
+                 .replace(/\/embed.*$/, '/').split('?')[0] },
+  { red: 'tiktok', sel: 'blockquote.tiktok-embed',
+    url: el => el.getAttribute('cite') || enlaceQueCasa(el, /tiktok\.com\/.+\/video\//),
+    texto: el => textoPlano(el.querySelector('section > p') || el.querySelector('p')) },
+  { red: 'bluesky', sel: 'blockquote.bluesky-embed,iframe[src*="embed.bsky.app/embed/"]',
+    url: el => enlaceQueCasa(el, /bsky\.app\/profile\/.+\/post\//) ||
+               fuenteDe(el).replace(/^.*\/embed\/([^/]+)\/app\.bsky\.feed\.post\/([\w]+).*$/, 'https://bsky.app/profile/$1/post/$2'),
+    texto: el => textoPlano(el.querySelector('p')) },
+  { red: 'facebook', sel: 'iframe[src*="facebook.com/plugins/"]', url: el => parametro(fuenteDe(el), 'href') }
+];
+// raiz: un documento (clonado) o un elemento (modo selector).
+function marcarEmbebidos(raiz){
+  const doc = raiz.ownerDocument || raiz;
+  const tope = raiz.body || raiz;
+  try {
+    EMBEBIDOS.forEach(e => raiz.querySelectorAll(e.sel).forEach(el => {
+      if (!el.isConnected) return;
+      const url = absUrl(e.url(el) || '');
+      if (!/^https?:\/\//i.test(url)) return;
+      // Se sube por los envoltorios que no tienen nada más: Readability tira
+      // los div con clases como «media» o «widget» aunque lleven el párrafo.
+      let caja = el;
+      while (caja.parentElement && caja.parentElement !== tope && caja.parentElement.children.length === 1 &&
+             !/^(ARTICLE|MAIN|SECTION)$/.test(caja.parentElement.tagName) &&
+             textoPlano(caja.parentElement) === textoPlano(caja)) caja = caja.parentElement;
+      const p = doc.createElement('p');
+      p.setAttribute('data-il-embed', e.red);
+      p.setAttribute('data-il-url', url);
+      p.textContent = (e.texto ? e.texto(el) : '').slice(0, 500) || '·';
+      caja.replaceWith(p);
+    }));
+  } catch(e){}
+  return raiz;
+}
+
 function extractFromReadability(){
   if (typeof Readability !== 'function') return null;
   try {
-    const clone = limpiarPublicidad(document.cloneNode(true));
+    const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
     const reader = new Readability(clone);
     const art = reader.parse();
     if (!art || !art.textContent || art.textContent.trim().length < 200) return null;
@@ -129,6 +195,7 @@ function extractFromSelector(rootSel, excludeSel, minChars){
   try { root = document.querySelector(rootSel); } catch(e){ return null; }
   if (!root) return null;
   const clone = root.cloneNode(true);
+  marcarEmbebidos(clone);
   clone.querySelectorAll('script,style,noscript').forEach(n => n.remove());
   if (excludeSel){
     try { clone.querySelectorAll(excludeSel).forEach(n => n.remove()); } catch(e){}
@@ -212,7 +279,7 @@ function collectAllText(){
 function extractFromAll(){
   try {
     if (typeof Readability === 'function'){
-      const clone = limpiarPublicidad(document.cloneNode(true));
+      const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
       clone.querySelectorAll('script,style,iframe,noscript,svg,canvas,video,audio,form,button,select,textarea,input,nav,header,footer,aside,[role="navigation"],[role="banner"],[role="complementary"]').forEach(n => n.remove());
       const reader = new Readability(clone);
       const art = reader.parse();

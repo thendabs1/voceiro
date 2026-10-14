@@ -42,6 +42,7 @@ function openReader(art){
   let parrafos = art.bloques || (useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody));
   parrafos = sinImagenesRepetidas(parrafos);
   if (srcKey !== 'jsonld') parrafos = sinPromosEnBordes(parrafos, textoDeBloque);
+  parrafos = agruparGalerias(parrafos);
   // Las palabras del texto que se ve, no las de lo que se ha quitado.
   const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
@@ -53,7 +54,8 @@ function openReader(art){
   const auImg = art.imageAuthor || '';
   // La portada repetida como primera imagen del cuerpo sale una sola vez,
   // en el cuerpo y con su pie.
-  const enCuerpo = iu ? parrafos.find(b => b.tipo === 'img' && claveImagen(b.src) === claveImagen(iu)) : null;
+  const imagenesCuerpo = parrafos.flatMap(b => b.tipo === 'galeria' ? b.imagenes : b.tipo === 'img' ? [b] : []);
+  const enCuerpo = iu ? imagenesCuerpo.find(b => claveImagen(b.src) === claveImagen(iu)) : null;
   if (enCuerpo && !enCuerpo.caption && cap) enCuerpo.caption = cap;
 
   function renderBlock(b){
@@ -64,6 +66,23 @@ function openReader(art){
         '<img src="' + esc(b.src) + '" alt="' + esc(b.alt || '') + '" loading="lazy">' +
         (b.caption ? '<figcaption>' + esc(b.caption) + '</figcaption>' : '') +
       '</figure>';
+    }
+    if (b.tipo === 'galeria'){
+      const n = b.imagenes.length;
+      return '<figure class="il-galeria' + (b.imagenes.some(x => x.caption) ? ' il-con-pie' : '') + '">' +
+        '<div class="il-galeria-rejilla">' + b.imagenes.map(x =>
+          '<img src="' + esc(x.src) + '" alt="' + esc(x.alt || '') + '" loading="lazy"' +
+          (x.caption ? ' data-pie="' + esc(x.caption) + '"' : '') + (x === enCuerpo ? ' id="il-portada"' : '') + '>').join('') +
+        '</div><figcaption>' + esc(t('galeria').replace('{N}', n)) + ' · ' + esc(t('galeriaPulsa')) + '</figcaption></figure>';
+    }
+    if (b.tipo === 'embed'){
+      // Tarjeta con enlace al original: no se carga nada de terceros.
+      const nombre = NOMBRES_REDES[b.red] || b.red;
+      return '<aside class="il-embed" aria-label="' + esc(t('embebidoDe').replace('{X}', nombre)) + '">' +
+        '<p class="il-embed-red">' + esc(nombre) + '</p>' +
+        (b.texto ? '<p class="il-embed-texto">' + process(esc(b.texto)) + '</p>' : '') +
+        '<a href="' + esc(b.url) + '" target="_blank" rel="noopener noreferrer">' + icono('external-link') +
+        '<span>' + esc(t('verEn').replace('{X}', nombre)) + '</span></a></aside>';
     }
     if (b.tipo === 'q') return '<blockquote>' + process(b.html || '') + '</blockquote>';
     if (b.tipo === 'h') return '<h' + b.level + '>' + process(b.html || '') + '</h' + b.level + '>';
@@ -81,6 +100,8 @@ function openReader(art){
     const lines = parrafos.map(b => {
       if (b.tipo === 'hr') return '---';
       if (b.tipo === 'img') return '[' + t('imageLabel') + (b.caption ? ': ' + b.caption : '') + ']';
+      if (b.tipo === 'galeria') return '[' + t('galeria').replace('{N}', b.imagenes.length) + ']';
+      if (b.tipo === 'embed') return '[' + (NOMBRES_REDES[b.red] || b.red) + (b.texto ? ': ' + b.texto : '') + ' — ' + b.url + ']';
       if (b.tipo === 'list') return b.items.map(i => '- ' + stripTags(i)).join('\n');
       if (b.tipo === 'h') return stripTags(b.html || '');
       if (b.tipo === 'q') return '> ' + stripTags(b.html || '');
@@ -404,8 +425,59 @@ function openReader(art){
     els.forEach(el => el.classList.toggle('il-active', el === best));
   }
 
+  // Visor: la imagen en grande, con su pie, y ← → para recorrer todas las
+  // que se ven en el artículo (sueltas y de galerías).
+  function pieDe(im){
+    if (im.hasAttribute('data-pie')) return im.getAttribute('data-pie');
+    const fc = im.closest('figure') && im.closest('figure').querySelector('figcaption');
+    return fc && !im.closest('.il-galeria') ? (fc.textContent || '').trim() : '';
+  }
+  function abrirVisor(desde){
+    const lista = [...ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img')]
+      .filter(x => x.getClientRects().length && x.style.display !== 'none');
+    let i = Math.max(0, lista.indexOf(desde));
+    const lb = document.createElement('div');
+    lb.className = 'il-visor';
+    lb.tabIndex = -1;
+    lb.setAttribute('role', 'dialog');
+    lb.setAttribute('aria-modal', 'true');
+    const varias = lista.length > 1;
+    lb.innerHTML =
+      '<img class="il-visor-img" alt="">' +
+      '<p class="il-visor-pie" aria-live="polite"></p>' +
+      '<button type="button" class="il-visor-cerrar" aria-label="' + esc(sinSimbolo(t('close'))) + '">' + icono('x') + '</button>' +
+      (varias ? '<button type="button" class="il-visor-ant" aria-label="' + esc(t('visorAnterior')) + '">' + icono('chevron-left') + '</button>' +
+                '<button type="button" class="il-visor-sig" aria-label="' + esc(t('visorSiguiente')) + '">' + icono('chevron-right') + '</button>' : '');
+    const big = lb.querySelector('.il-visor-img');
+    const pie = lb.querySelector('.il-visor-pie');
+    function mostrar(n){
+      i = (n + lista.length) % lista.length;
+      const x = lista[i];
+      big.src = x.currentSrc || x.src;
+      big.alt = x.alt || '';
+      const texto = pieDe(x);
+      pie.textContent = (varias ? (i + 1) + ' / ' + lista.length + (texto ? ' · ' : '') : '') + texto;
+      lb.setAttribute('aria-label', x.alt || texto || t('ampliarImagen'));
+    }
+    const cerrar = () => { lb.remove(); (lista[i] || desde).focus(); };
+    lb.onclick = e => { if (e.target === lb || e.target === big) cerrar(); };
+    lb.querySelector('.il-visor-cerrar').onclick = cerrar;
+    if (varias){
+      lb.querySelector('.il-visor-ant').onclick = () => mostrar(i - 1);
+      lb.querySelector('.il-visor-sig').onclick = () => mostrar(i + 1);
+    }
+    lb.onkeydown = e => {
+      if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cerrar(); }
+      else if (varias && e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); mostrar(i - 1); }
+      else if (varias && e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); mostrar(i + 1); }
+    };
+    mostrar(i);
+    ov.appendChild(lb);
+    lb.focus();
+  }
+
   function wireImages(){
-    ov.querySelectorAll('.il-figure img, .il-inline-figure img, #il-ambi-img').forEach(im => {
+    ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img, #il-ambi-img').forEach(im => {
       if (im.dataset.ilWired === '1') return;
       im.dataset.ilWired = '1';
       im.addEventListener('error', function(){
@@ -413,30 +485,12 @@ function openReader(art){
         if (fb && this.src !== fb){ this.removeAttribute('data-fallback'); this.src = fb; }
         else this.style.display = 'none';
       });
-      if (im.closest('.il-figure') || im.closest('.il-inline-figure')){
+      if (im.closest('.il-figure') || im.closest('.il-inline-figure') || im.closest('.il-galeria')){
         const alt = im.getAttribute('alt') || '';
         im.tabIndex = 0;
         im.setAttribute('role', 'button');
         im.setAttribute('aria-label', (alt ? alt + ' — ' : '') + t('ampliarImagen'));
-        const ampliar = function(){
-          const lb = document.createElement('div');
-          lb.className = 'il-ampliada';
-          lb.tabIndex = -1;
-          lb.setAttribute('role', 'dialog');
-          lb.setAttribute('aria-label', alt || t('ampliarImagen'));
-          lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:30;' +
-            'display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px';
-          const big = document.createElement('img');
-          big.src = im.src;
-          big.alt = alt;
-          big.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain';
-          lb.appendChild(big);
-          const cerrar = () => { lb.remove(); im.focus(); };
-          lb.onclick = cerrar;
-          lb.onkeydown = e => { if (e.key === 'Escape' || e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); cerrar(); } };
-          ov.appendChild(lb);
-          lb.focus();
-        };
+        const ampliar = () => abrirVisor(im);
         im.addEventListener('click', ampliar);
         im.addEventListener('keydown', e => {
           if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ampliar(); }
@@ -653,7 +707,7 @@ function openReader(art){
     const fig = ov.querySelector('#il-portada');
     if (!fig) return;
     fig.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const im = fig.querySelector('img');
+    const im = fig.tagName === 'IMG' ? fig : fig.querySelector('img');
     if (im) im.focus({ preventScroll: true });
   };
 
@@ -854,6 +908,7 @@ function openReader(art){
     if (document.getElementById('il-settings')) return;
     if (document.getElementById('il-extract-tool')) return;
     if (isPickerActive()) return;
+    if (document.querySelector('#il-full .il-visor')) return;   // el visor lleva sus teclas
     const nk = normalizeKey(e);
     // Esc cierra primero Apariencia o Más, también desde sus casillas.
     if (nk === 'escape' && cerrarDesplegable(true)){ e.preventDefault(); return; }

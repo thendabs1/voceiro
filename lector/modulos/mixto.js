@@ -144,3 +144,23 @@ export function sinPromosEnBordes(bloques, textoDe){
   }
   return fuera.size ? bloques.filter((_, i) => !fuera.has(i)) : bloques;
 }
+
+// Tres o más imágenes seguidas, sin texto entre ellas, forman una galería
+// ({tipo: 'galeria', imagenes}): el lector las pinta en rejilla y el visor
+// las recorre con ← →.
+const MIN_GALERIA = 3;
+export function agruparGalerias(bloques){
+  const out = [];
+  let tanda = [];
+  const cerrar = () => {
+    if (tanda.length >= MIN_GALERIA) out.push({ tipo: 'galeria', imagenes: tanda });
+    else out.push(...tanda);
+    tanda = [];
+  };
+  for (const b of bloques){
+    if (b.tipo === 'img') tanda.push(b);
+    else { cerrar(); out.push(b); }
+  }
+  cerrar();
+  return out;
+}
