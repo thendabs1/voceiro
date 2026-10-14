@@ -10,7 +10,9 @@
      FIN DE LA PALETA) y cambia :root por #il-full. Solo colores.
      tests/tema/paleta.test.mjs comprueba los contrastes (WCAG 2.2 AA).
      --on-solid es el texto sobre un fondo de color (--accent, --preset,
-     --block, --save); --focus, el anillo de foco. ═══ */
+     --block, --save); --focus, el anillo de foco; --titulos, el de los
+     títulos. El tema «Personalizado» (shared/tema/personalizado.js) pone
+     encima, en línea, las variables que salen de los colores elegidos. ═══ */
   :root{
     color-scheme:light;
     --bg:#fff; --fg:#222; --muted:#6b6b6b; --accent:#d32f2f;
@@ -21,7 +23,7 @@
     --block:#b00020; --block-bg:#fde8ec;
     --save:#1565c0; --save-bg:#e3f2fd;
     --mark:#ffe680; --mark-fg:#111;
-    --on-solid:#fff; --focus:#1565c0;
+    --on-solid:#fff; --focus:#1565c0; --titulos:#222;
   }
   [data-theme="sepia"]{
     color-scheme:light;
@@ -33,7 +35,7 @@
     --block:#8b2020; --block-bg:#ebd5d0;
     --save:#2e5a8b; --save-bg:#d8e3ee;
     --mark:#c9a227; --mark-fg:#2c1c08;
-    --on-solid:#fff; --focus:#2e5a8b;
+    --on-solid:#fff; --focus:#2e5a8b; --titulos:#3b2f1e;
   }
   [data-theme="dark"]{
     color-scheme:dark;
@@ -45,7 +47,7 @@
     --block:#ff8a9c; --block-bg:#3d1a20;
     --save:#6cb3ff; --save-bg:#1e3550;
     --mark:#b58600; --mark-fg:#111;
-    --on-solid:#111; --focus:#6cb3ff;
+    --on-solid:#111; --focus:#6cb3ff; --titulos:#e0e0e0;
   }
   [data-theme="contrast"]{
     color-scheme:dark;
@@ -57,7 +59,7 @@
     --block:#f00; --block-bg:#330000;
     --save:#0ff; --save-bg:#003333;
     --mark:#ff0; --mark-fg:#000;
-    --on-solid:#000; --focus:#ff0;
+    --on-solid:#000; --focus:#ff0; --titulos:#fff;
   }
   /* ═══ FIN DE LA PALETA ═══ */
   :root{
@@ -86,6 +88,7 @@
   /* Enlaces y foco con los colores del tema: los del navegador (azul,
      morado) casi no se ven en los temas oscuros */
   a{color:var(--accent)}
+  h1, h2, h3, h4{color:var(--titulos)}
   :focus-visible{outline:2px solid var(--focus); outline-offset:2px}
   /* Iconos del sprite: miden lo que la letra y toman su color */
   .ico{
@@ -360,6 +363,11 @@
     text-transform:uppercase; min-width:110px;
   }
   .opt-group{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .ac-colores{margin:-4px 0 14px; display:flex; flex-direction:column; gap:8px}
+  .ac-color{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:.8em}
+  .ac-color input[type="color"]{width:44px; height:44px; padding:2px; border:1px solid var(--btn-border); border-radius:8px; background:var(--btn-bg); cursor:pointer}
+  .ac-contraste{color:var(--muted); font-variant-numeric:tabular-nums}
+  .ac-contraste.poco{color:var(--block); font-weight:600}
   .opt-val{
     font-weight:bold; min-width:44px; text-align:center;
     font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em;
@@ -1741,6 +1749,8 @@
   .aj-pagina[hidden]{ display:none; }
   .aj-cuerpo h3:first-child{ border-top:none; padding-top:0; margin-top:0; }
   .aj-hint{ font-size:.68em; color:var(--muted); margin:0 0 8px; line-height:1.45; }
+  /* Hueco donde el lector pinta su panel de ajustes (página Lector) */
+  .aj-lector-panel{ margin-top:12px; font-size:16px; }
   .sync-acciones{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
   .sync-unir-codigo{ flex:1 1 16em; min-width:0; padding:8px 10px; font:inherit; font-size:.85em;
     font-family:ui-monospace, Menlo, Consolas, monospace; text-transform:uppercase;
@@ -2055,6 +2065,7 @@
         <button type="button" data-ir="lectura"><span class="aj-aa" aria-hidden="true">Aa</span><span id="aj-nav-lectura"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="feed"><svg class="ico" aria-hidden="true"><use href="#i-newspaper"/></svg><span id="aj-nav-feed"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="sync"><svg class="ico" aria-hidden="true"><use href="#i-cloud"/></svg><span id="aj-nav-sync"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button type="button" data-ir="lector"><svg class="ico" aria-hidden="true"><use href="#i-book-open-text"/></svg><span id="aj-nav-lector"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="avanzado"><svg class="ico" aria-hidden="true"><use href="#i-wrench"/></svg><span id="aj-nav-avanzado"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="ayuda"><svg class="ico" aria-hidden="true"><use href="#i-circle-help"/></svg><span id="aj-nav-ayuda"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
       </div>
@@ -2143,7 +2154,17 @@
               <button type="button" data-val="sepia"></button>
               <button type="button" data-val="dark"></button>
               <button type="button" data-val="contrast"></button>
+              <button type="button" data-val="custom"></button>
             </div>
+          </div>
+          <!-- Tema personalizado: cuatro colores (shared/tema/personalizado.js
+               saca el resto) y el contraste de cada uno con el fondo. -->
+          <div class="ac-colores" id="ac-colores" hidden>
+            <p class="aj-hint" id="ac-colores-pista"></p>
+            <div class="ac-color"><input type="color" id="ac-color-fondo" data-color="fondo"><label for="ac-color-fondo" id="ac-color-fondo-lbl"></label></div>
+            <div class="ac-color"><input type="color" id="ac-color-texto" data-color="texto"><label for="ac-color-texto" id="ac-color-texto-lbl"></label><span class="ac-contraste" data-cr="texto"></span></div>
+            <div class="ac-color"><input type="color" id="ac-color-enlaces" data-color="enlaces"><label for="ac-color-enlaces" id="ac-color-enlaces-lbl"></label><span class="ac-contraste" data-cr="enlaces"></span></div>
+            <div class="ac-color"><input type="color" id="ac-color-titulos" data-color="titulos"><label for="ac-color-titulos" id="ac-color-titulos-lbl"></label><span class="ac-contraste" data-cr="titulos"></span></div>
           </div>
 
           <div class="opt-row">
@@ -2339,6 +2360,13 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- ═══════════ LECTOR ═══════════
+             Con el lector instalado, su propio panel de ajustes se pinta en
+             #aj-lector-panel (lo pone el lector: Voceiro solo deja el hueco y
+             le avisa con 'voceiro-ajustes-lector'). Sin él, cómo instalarlo. -->
+        <div class="aj-pagina" data-pagina="lector" hidden>
           <h3 id="aj-plugin-tit"></h3>
           <div id="sync-banner" class="sync-banner" style="display:none">
             <span class="sync-dot"></span>
@@ -2349,6 +2377,7 @@
             <a id="aj-lector-instalar" class="boton con-ico" href="lector.user.js" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span id="aj-lector-instalar-lbl"></span></a>
           </p>
           <p id="aj-lector-hint" class="aj-hint"></p>
+          <div id="aj-lector-panel" class="aj-lector-panel"></div>
         </div>
 
         <!-- ═══════════ AYUDA ═══════════ -->
@@ -2526,21 +2555,22 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=bdc045d449';
+} from './parser.js?v=d5d61e5060';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=bdc045d449';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=bdc045d449';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=bdc045d449';
-import { comparador } from './busqueda/orden.js?v=bdc045d449';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=d5d61e5060';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=d5d61e5060';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=d5d61e5060';
+import { comparador } from './busqueda/orden.js?v=d5d61e5060';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
-  CAMPOS_PERFIL, LEIDAS_MAX,
-} from './sync/fusion.js?v=bdc045d449';
+  CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
+} from './sync/fusion.js?v=d5d61e5060';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=d5d61e5060';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=bdc045d449';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=bdc045d449';
+import { crearCliente } from './sync/cliente.js?v=d5d61e5060';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=d5d61e5060';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -2888,6 +2918,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Oscuro',
     acContraste:            'Contraste',
+    acPersonalizado:        'Personalizado',
+    acColorFondo:           'Fondo',
+    acColorTexto:           'Texto',
+    acColorEnlaces:         'Enlaces',
+    acColorTitulos:         'Títulos',
+    acColoresPista:         'Elige cuatro colores; el resto se calcula a partir de ellos. Se comparte con el lector.',
+    acPocoContraste:        'poco contraste',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislexia',
@@ -3080,6 +3117,7 @@ const I18N = {
     ajLectorInstalar:       'Instalar el lector',
     ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
     ajSync:                 'Sincronización',
+    ajLector:               'Lector',
     syncIntro:              'Lleva tus modos, Pendientes, lo que has leído, tu perfil de lectura y la configuración del lector a tus otros dispositivos. Sin cuentas: basta un código que solo tienen tus dispositivos.',
     syncActivar:            'Activar en este dispositivo',
     syncUnirTit:            '¿Ya la usas en otro dispositivo?',
@@ -3244,6 +3282,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Escuro',
     acContraste:            'Contraste',
+    acPersonalizado:        'Personalizado',
+    acColorFondo:           'Fondo',
+    acColorTexto:           'Texto',
+    acColorEnlaces:         'Ligazóns',
+    acColorTitulos:         'Títulos',
+    acColoresPista:         'Escolle catro cores; o resto calcúlase a partir delas. Compártese co lector.',
+    acPocoContraste:        'pouco contraste',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislexia',
@@ -3427,6 +3472,7 @@ const I18N = {
     ajLectorInstalar:       'Instalar o lector',
     ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
     ajSync:                 'Sincronización',
+    ajLector:               'Lector',
     syncIntro:              'Leva os teus modos, Pendentes, o que liches, o teu perfil de lectura e a configuración do lector aos teus outros dispositivos. Sen contas: abonda un código que só teñen os teus dispositivos.',
     syncActivar:            'Activar neste dispositivo',
     syncUnirTit:            'Xa a usas noutro dispositivo?',
@@ -3591,6 +3637,13 @@ const I18N = {
     acSepia:                'Sèpia',
     acOscuro:               'Fosc',
     acContraste:            'Contrast',
+    acPersonalizado:        'Personalitzat',
+    acColorFondo:           'Fons',
+    acColorTexto:           'Text',
+    acColorEnlaces:         'Enllaços',
+    acColorTitulos:         'Títols',
+    acColoresPista:         'Tria quatre colors; la resta es calcula a partir d’aquests. Es comparteix amb el lector.',
+    acPocoContraste:        'poc contrast',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislèxia',
@@ -3774,6 +3827,7 @@ const I18N = {
     ajLectorInstalar:       'Instal·la el lector',
     ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
     ajSync:                 'Sincronització',
+    ajLector:               'Lector',
     syncIntro:              "Porta els teus modes, Pendents, el que has llegit, el teu perfil de lectura i la configuració del lector als teus altres dispositius. Sense comptes: n'hi ha prou amb un codi que només tenen els teus dispositius.",
     syncActivar:            'Activa en aquest dispositiu',
     syncUnirTit:            'Ja la fas servir en un altre dispositiu?',
@@ -3938,6 +3992,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Dark',
     acContraste:            'Contrast',
+    acPersonalizado:        'Custom',
+    acColorFondo:           'Background',
+    acColorTexto:           'Text',
+    acColorEnlaces:         'Links',
+    acColorTitulos:         'Headings',
+    acColoresPista:         'Pick four colours; the rest are worked out from them. Shared with the reader.',
+    acPocoContraste:        'low contrast',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dyslexic',
@@ -4121,6 +4182,7 @@ const I18N = {
     ajLectorInstalar:       'Install the reader',
     ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
     ajSync:                 'Sync',
+    ajLector:               'Reader',
     syncIntro:              'Take your modes, Queue, what you have read, your reading profile and the reader settings to your other devices. No accounts: a code that only your devices have is enough.',
     syncActivar:            'Turn on for this device',
     syncUnirTit:            'Already using it on another device?',
@@ -4285,6 +4347,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Iluna',
     acContraste:            'Kontrastea',
+    acPersonalizado:        'Pertsonalizatua',
+    acColorFondo:           'Atzealdea',
+    acColorTexto:           'Testua',
+    acColorEnlaces:         'Estekak',
+    acColorTitulos:         'Izenburuak',
+    acColoresPista:         'Aukeratu lau kolore; gainerakoak haietatik kalkulatzen dira. Irakurgailuarekin partekatzen da.',
+    acPocoContraste:        'kontraste gutxi',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislexia',
@@ -4468,6 +4537,7 @@ const I18N = {
     ajLectorInstalar:       'Instalatu irakurgailua',
     ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
     ajSync:                 'Sinkronizazioa',
+    ajLector:               'Irakurgailua',
     syncIntro:              'Eraman zure moduak, Zain zerrenda, irakurri duzuna, irakurketa-profila eta irakurgailuaren ezarpenak zure beste gailuetara. Konturik gabe: zure gailuek bakarrik duten kode bat nahikoa da.',
     syncActivar:            'Aktibatu gailu honetan',
     syncUnirTit:            'Beste gailu batean erabiltzen duzu dagoeneko?',
@@ -4725,10 +4795,52 @@ function guardarAcces(){
   }
   try{ localStorage.setItem('voceiro-acces-v2', JSON.stringify(ACCES)); }catch(e){}
 }
+// Tema personalizado: data-theme es su base (claro u oscuro, por los colores
+// de estado) y encima, en línea, las variables que salen de sus colores.
+function aplicarTemaPersonalizado(h){
+  VARS_PERSONALIZADAS.forEach(k => h.style.removeProperty('--' + k));
+  h.style.removeProperty('color-scheme');
+  const colores = ACCES.tema === 'custom' ? limpiarColores(ACCES.colores) : null;
+  if (!colores) return null;
+  const { base, vars } = paletaPersonalizada(colores);
+  for (const [k, v] of Object.entries(vars)) h.style.setProperty(k === 'color-scheme' ? k : '--' + k, v);
+  return base;
+}
+// Al elegir «Personalizado» la primera vez se parte de los colores que hay.
+function coloresDelTemaActual(){
+  const cs = getComputedStyle(document.documentElement);
+  const hex6 = v => {
+    v = String(v || '').trim().toLowerCase();
+    if (/^#[0-9a-f]{3}$/.test(v)) v = '#' + [...v.slice(1)].map(c => c + c).join('');
+    return /^#[0-9a-f]{6}$/.test(v) ? v : null;
+  };
+  return limpiarColores({
+    fondo: hex6(cs.getPropertyValue('--bg')) || '#ffffff',
+    texto: hex6(cs.getPropertyValue('--fg')) || '#222222',
+    enlaces: hex6(cs.getPropertyValue('--accent')) || '#d32f2f',
+    titulos: hex6(cs.getPropertyValue('--titulos')) || '#222222',
+  });
+}
+function pintarEditorColores(){
+  const caja = $('#ac-colores');
+  if (!caja) return;
+  const colores = ACCES.tema === 'custom' ? limpiarColores(ACCES.colores) : null;
+  caja.hidden = !colores;
+  if (!colores) return;
+  CLAVES_COLORES.forEach(k => { const inp = $('#ac-color-' + k); if (inp && inp.value !== colores[k]) inp.value = colores[k]; });
+  caja.querySelectorAll('.ac-contraste').forEach(sp => {
+    const r = contraste(colores[sp.dataset.cr], colores.fondo);
+    const poco = r < 4.5;
+    sp.classList.toggle('poco', poco);
+    sp.textContent = r.toLocaleString(ACCES.lang, { maximumFractionDigits: 1 }) + ':1' +
+      (poco ? ' · ⚠ ' + t('acPocoContraste') : ' ✓');
+  });
+}
+
 function aplicarAcces(){
   const h = document.documentElement;
   h.lang = ACCES.lang;
-  h.dataset.theme  = ACCES.tema;
+  h.dataset.theme  = aplicarTemaPersonalizado(h) || ACCES.tema;
   h.dataset.font   = ACCES.fuente;
   h.dataset.just   = ACCES.just ? '1' : '0';
   h.dataset.bionic = ACCES.bionic ? '1' : '0';
@@ -4747,6 +4859,7 @@ function aplicarAcces(){
 
   $('#fs-val').textContent = ACCES.fs;
   $('#w-val').textContent  = ACCES.width;
+  pintarEditorColores();
 
   if (ACCES.focus) setTimeout(updateFocus, 30);
 }
@@ -5879,6 +5992,7 @@ function initUserScriptBridge(){
     }
     actualizarBotonPendientes();
     actualizarSyncBanner();
+    if (ajRuta() === 'lector') ajPintarLector();
   };
   document.addEventListener('voceiro-ready', conectar);
   document.addEventListener('voceiro-pong', conectar);
@@ -7854,10 +7968,10 @@ function actualizarResumen(visiblesOverride){
    Rutas: '' (lista de secciones, solo en móvil), 'modos', 'modo' (el de
    MODO_EDITADO), 'lectura', 'feed', 'avanzado', 'ayuda'.
    ═══════════════════════════════════════════════════════════════ */
-const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'avanzado', 'ayuda'];
+const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
   '': 'ajTitulo', modos: 'ajModos', lectura: 'ajLectura',
-  feed: 'ajFeed', sync: 'ajSync', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
+  feed: 'ajFeed', sync: 'ajSync', lector: 'ajLector', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
 };
 let AJ_PILA = [];             // vacía = Ajustes cerrado
 let MODO_EDITADO = null;      // id del modo de la página 'modo'
@@ -7954,6 +8068,7 @@ function cerrarAjustes(){
 }
 function ajCerrarVista(){
   ajGuardarTemas();
+  ajVaciarLector();
   AJ_PILA = [];
   _ajPendiente = null;
   cerrarPanel('panel-ajustes');
@@ -7974,6 +8089,7 @@ function ajPintar(){
     else b.removeAttribute('aria-current');
   });
   panel.querySelectorAll('.aj-pagina').forEach(p => { p.hidden = p.dataset.pagina !== ruta; });
+  if (ruta !== 'lector') ajVaciarLector();
   if (AJ_SECCIONES.includes(ruta)){
     try { localStorage.setItem(AJ_SECCION_KEY, ruta); } catch(e){}
   }
@@ -7995,11 +8111,25 @@ function ajRefrescar(){
   else if (ruta === 'modo') pintarModo();
   else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); renderDiasSelector(); }
   else if (ruta === 'sync') ajPintarSync();
-  else if (ruta === 'avanzado'){
-    $('#aj-investigar').checked = INVESTIGAR_ON;
-    actualizarSyncBanner();
-    $('#aj-plugin-hint').hidden = USCRIPT_OK;
-  }
+  else if (ruta === 'lector') ajPintarLector();
+  else if (ruta === 'avanzado') $('#aj-investigar').checked = INVESTIGAR_ON;
+}
+
+// Página Lector: el panel lo pinta el propio lector en #aj-lector-panel; aquí
+// solo se le avisa (lo ignora si ya está). Al salir de la página se vacía.
+function ajPintarLector(){
+  actualizarSyncBanner();
+  $('#aj-plugin-hint').hidden = USCRIPT_OK;
+  $('#aj-lector-instalar').hidden = USCRIPT_OK;
+  $('#aj-lector-hint').hidden = USCRIPT_OK;
+  if (!USCRIPT_OK){ ajVaciarLector(); return; }
+  try {
+    document.dispatchEvent(new CustomEvent('voceiro-ajustes-lector', { detail: { v: PUENTE_V } }));
+  } catch(e){}
+}
+function ajVaciarLector(){
+  const c = document.getElementById('aj-lector-panel');
+  if (c) c.replaceChildren();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -10599,7 +10729,7 @@ function aplicarTextos(){
 
   // ── Ajustes ──
   $('#aj-titulo').textContent = t('ajTitulo');
-  ['modos', 'lectura', 'feed', 'avanzado', 'ayuda'].forEach(s =>
+  ['modos', 'lectura', 'feed', 'lector', 'avanzado', 'ayuda'].forEach(s =>
     $('#aj-nav-' + s).textContent = t(AJ_TITULOS[s]));
 
   // Modos
@@ -10729,8 +10859,12 @@ function aplicarTextos(){
   if (selPrensaP) selPrensaP.innerHTML = '';
   pintarSelectsPrensa();
   const bTema = document.querySelectorAll('.opt-group[data-grupo="tema"] button');
-  [t('acClaro'), t('acSepia'), t('acOscuro'), t('acContraste')].forEach((txt, i) => {
+  [t('acClaro'), t('acSepia'), t('acOscuro'), t('acContraste'), t('acPersonalizado')].forEach((txt, i) => {
     if (bTema[i]) bTema[i].textContent = txt;
+  });
+  $('#ac-colores-pista').textContent = t('acColoresPista');
+  CLAVES_COLORES.forEach(k => {
+    $('#ac-color-' + k + '-lbl').textContent = t('acColor' + k[0].toUpperCase() + k.slice(1));
   });
   const bFuente = document.querySelectorAll('.opt-group[data-grupo="fuente"] button');
   [t('acSerif'), t('acSans'), t('acDislexia')].forEach((txt, i) => {
@@ -11237,11 +11371,22 @@ function wireStaticEvents(){
       const b = e.target.closest('button');
       if (!b) return;
       const v = b.dataset.val;
+      if (clave === 'tema' && v === 'custom' && !limpiarColores(ACCES.colores)) ACCES.colores = coloresDelTemaActual();
       if (clave === 'tema' || clave === 'fuente') ACCES[clave] = v;
       if (clave === 'extra') ACCES[v] = !ACCES[v];
       guardarAcces(); aplicarAcces();
       if (clave === 'extra' && (v === 'focus' || v === 'bionic')) renderizar();
     });
+  });
+  // Tema personalizado: se ve al momento al mover el color; se guarda (y
+  // viaja al lector y a otros dispositivos) al soltarlo.
+  document.querySelectorAll('#ac-colores input[type="color"]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const antes = limpiarColores(ACCES.colores) || coloresDelTemaActual();
+      ACCES.colores = limpiarColores({ ...antes, [inp.dataset.color]: inp.value });
+      aplicarAcces();
+    });
+    inp.addEventListener('change', () => guardarAcces());
   });
 
   $('#fs-menos').addEventListener('click', () => ajustarFs(-1));

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.227
+// @version      2.0.230
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.227';
+const SCRIPT_VERSION = '2.0.230';
 const AUTO_MIN_RATIO = 0.80;
 const AUTO_MIN_RICH  = 3;
 const AUTO_MIN_LEN   = 300;
@@ -123,7 +123,7 @@ const PLATAFORMA = {
 const BORRADO_DIAS = 60;
 const PENDIENTES_MAX = 1000;   // sin leer que se conservan
 const LEIDOS_MAX = 300;        // leídos que se conservan
-const CAMPOS_PERFIL = ['lang', 'tema', 'fuente', 'fs', 'just', 'bionic', 'focus'];
+const CAMPOS_PERFIL = ['lang', 'tema', 'fuente', 'fs', 'just', 'bionic', 'focus', 'colores'];
 
 const DIA_MS = 86400000;
 
@@ -224,11 +224,31 @@ function masReciente(a, b){
   return huella(a) >= huella(b) ? a : b;
 }
 
+// Colores del tema personalizado: siempre las mismas cuatro claves, en el
+// mismo orden (la huella del perfil depende de él) y como #rrggbb.
+const CLAVES_COLORES = ['fondo', 'texto', 'enlaces', 'titulos'];
+function limpiarColores(c){
+  if (!c || typeof c !== 'object') return null;
+  const out = {};
+  for (const k of CLAVES_COLORES){
+    const v = String(c[k] || '').trim().toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(v)) return null;
+    out[k] = v;
+  }
+  return out;
+}
+
 // Perfil de lectura común: los campos de CAMPOS_PERFIL más `actualizado`.
 function limpiarPerfil(p){
   if (!p || typeof p !== 'object') return null;
   const out = {};
-  for (const k of CAMPOS_PERFIL) if (p[k] !== undefined) out[k] = p[k];
+  for (const k of CAMPOS_PERFIL){
+    if (p[k] === undefined) continue;
+    if (k === 'colores'){
+      const c = limpiarColores(p[k]);
+      if (c) out.colores = c;
+    } else out[k] = p[k];
+  }
   out.actualizado = fusionMs(p.actualizado);
   return out;
 }
@@ -331,6 +351,89 @@ function fusionarDocumento(a, b, ahora = Date.now()){
     lector: masReciente(a.lector || null, b.lector || null),
   };
 }
+
+/* ── shared/tema/personalizado.js (compartido con Voceiro) ── */
+// Tema personalizado, común a Voceiro y al lector (lector/build.mjs lo
+// incluye). La persona elige cuatro colores (fondo, texto, enlaces y títulos,
+// ya limpios con limpiarColores de shared/sync/fusion.js) y de ellos sale el
+// resto de la paleta, con el contraste de lo derivado garantizado: gris
+// secundario a 4,5:1, bordes a 3:1, texto sobre color a 4,5:1. Lo elegido no
+// se corrige: quien lo pinta avisa si baja de 4,5:1 (contraste()).
+// Los colores de estado (modos, guardar, bloquear, resaltado) vienen del tema
+// base, claro u oscuro según el fondo: quien lo aplica pone ese data-theme y
+// encima estas variables.
+// No puede importar nada (el lector lo mete tal cual).
+
+function canales(hex){
+  const h = String(hex).replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+}
+function aHex(rgb){
+  return '#' + rgb.map(c => Math.round(Math.max(0, Math.min(255, c))).toString(16).padStart(2, '0')).join('');
+}
+
+function luminancia(hex){
+  const [r, g, b] = canales(hex).map(c => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+// Contraste WCAG entre dos #rrggbb (1 a 21).
+function contraste(a, b){
+  const [x, y] = [luminancia(a), luminancia(b)].sort((m, n) => n - m);
+  return (x + 0.05) / (y + 0.05);
+}
+
+// De a hacia b: t = 0 es a; t = 1, b.
+function mezcla(a, b, t){
+  const ca = canales(a), cb = canales(b);
+  return aHex(ca.map((c, i) => c + (cb[i] - c) * t));
+}
+
+// Negro o blanco, lo que más contraste con c.
+function extremo(c){
+  return contraste('#000000', c) >= contraste('#ffffff', c) ? '#000000' : '#ffffff';
+}
+
+// Acerca color hacia el texto hasta que contraste con el fondo lo pedido; si
+// ni el texto llega (lo eligió con poco contraste), hacia el negro o el blanco.
+function hastaContraste(color, fondo, minimo, hacia){
+  for (const destino of [hacia, extremo(fondo)]){
+    for (let i = 0; i <= 20; i++){
+      const c = mezcla(color, destino, i / 20);
+      if (contraste(c, fondo) >= minimo) return c;
+    }
+  }
+  return extremo(fondo);
+}
+
+// { base: 'light' | 'dark', vars: { bg, fg, accent, titulos, muted, … } }.
+// 'color-scheme' va entre las vars: quien la aplica la pone como propiedad.
+function paletaPersonalizada(colores){
+  const { fondo, texto, enlaces, titulos } = colores;
+  const oscuro = luminancia(fondo) < 0.18;
+  return {
+    base: oscuro ? 'dark' : 'light',
+    vars: {
+      'color-scheme': oscuro ? 'dark' : 'light',
+      bg: fondo, fg: texto, accent: enlaces, titulos,
+      muted: hastaContraste(mezcla(texto, fondo, 0.35), fondo, 4.5, texto),
+      border: mezcla(fondo, texto, 0.15),
+      'quote-bg': mezcla(fondo, texto, 0.05),
+      'btn-bg': mezcla(fondo, texto, 0.06),
+      'btn-border': hastaContraste(mezcla(fondo, texto, 0.45), fondo, 3, texto),
+      'on-solid': extremo(enlaces),
+      focus: contraste(enlaces, fondo) >= 3 ? enlaces : texto,
+      shadow: oscuro ? 'rgba(0,0,0,.5)' : 'rgba(0,0,0,.08)',
+    }
+  };
+}
+
+// Variables que pone el tema personalizado (para quitarlas al cambiar de tema).
+const VARS_PERSONALIZADAS = ['bg', 'fg', 'accent', 'titulos', 'muted', 'border', 'quote-bg',
+  'btn-bg', 'btn-border', 'on-solid', 'focus', 'shadow'];
 
 /* ============================================================
    1c. CATÁLOGO DE MEDIOS
@@ -502,6 +605,8 @@ const I18N = {
     markRead: 'Marcar como leída', markUnread: 'Marcar como no leída',
     finVolver: '✓ Leída · volver a Voceiro', finSiguiente: 'Siguiente pendiente →',
     finSiguienteDe: 'Siguiente pendiente: {X}', finMarcada: 'Marcada como leída',
+    personalizado: 'Personalizado', colorFondo: 'Fondo', colorTexto: 'Texto',
+    colorEnlaces: 'Enlaces', colorTitulos: 'Títulos', pocoContraste: 'poco contraste',
     fabMenu: 'Más opciones del lector', fabOcultarAqui: 'Ocultar el botón en este medio',
     fabOcultoAqui: 'Botón oculto en este medio', fabMostrarAqui: 'Mostrar el botón en este medio',
     fabNadaAqui: 'Aquí el botón no tiene nada que ofrecer', fabAutomatico: 'lector automático',
@@ -721,6 +826,8 @@ const I18N = {
     markRead: 'Marcar como lida', markUnread: 'Marcar como non lida',
     finVolver: '✓ Lida · volver a Voceiro', finSiguiente: 'Seguinte pendente →',
     finSiguienteDe: 'Seguinte pendente: {X}', finMarcada: 'Marcada como lida',
+    personalizado: 'Personalizado', colorFondo: 'Fondo', colorTexto: 'Texto',
+    colorEnlaces: 'Ligazóns', colorTitulos: 'Títulos', pocoContraste: 'pouco contraste',
     fabMenu: 'Máis opcións do lector', fabOcultarAqui: 'Agochar o botón neste medio',
     fabOcultoAqui: 'Botón agochado neste medio', fabMostrarAqui: 'Amosar o botón neste medio',
     fabNadaAqui: 'Aquí o botón non ten nada que ofrecer', fabAutomatico: 'lector automático',
@@ -945,6 +1052,8 @@ const I18N = {
     markRead: 'Marcar com llegida', markUnread: 'Marcar com no llegida',
     finVolver: '✓ Llegida · tornar a Voceiro', finSiguiente: 'Següent pendent →',
     finSiguienteDe: 'Següent pendent: {X}', finMarcada: 'Marcada com a llegida',
+    personalizado: 'Personalitzat', colorFondo: 'Fons', colorTexto: 'Text',
+    colorEnlaces: 'Enllaços', colorTitulos: 'Títols', pocoContraste: 'poc contrast',
     fabMenu: 'Més opcions del lector', fabOcultarAqui: 'Amaga el botó en aquest mitjà',
     fabOcultoAqui: 'Botó amagat en aquest mitjà', fabMostrarAqui: 'Mostra el botó en aquest mitjà',
     fabNadaAqui: 'Aquí el botó no té res a oferir', fabAutomatico: 'lector automàtic',
@@ -1159,6 +1268,8 @@ const I18N = {
     markRead: 'Mark as read', markUnread: 'Mark as unread',
     finVolver: '✓ Read · back to Voceiro', finSiguiente: 'Next in queue →',
     finSiguienteDe: 'Next in queue: {X}', finMarcada: 'Marked as read',
+    personalizado: 'Custom', colorFondo: 'Background', colorTexto: 'Text',
+    colorEnlaces: 'Links', colorTitulos: 'Headings', pocoContraste: 'low contrast',
     fabMenu: 'More reader options', fabOcultarAqui: 'Hide the button on this site',
     fabOcultoAqui: 'Button hidden on this site', fabMostrarAqui: 'Show the button on this site',
     fabNadaAqui: 'The button has nothing to offer here', fabAutomatico: 'automatic reader',
@@ -1378,6 +1489,8 @@ const I18N = {
     markRead: 'Irakurrita markatu', markUnread: 'Irakurri gabe markatu',
     finVolver: '✓ Irakurrita · itzuli Voceirora', finSiguiente: 'Zain dagoen hurrengoa →',
     finSiguienteDe: 'Zain dagoen hurrengoa: {X}', finMarcada: 'Irakurrita markatua',
+    personalizado: 'Pertsonalizatua', colorFondo: 'Atzealdea', colorTexto: 'Testua',
+    colorEnlaces: 'Estekak', colorTitulos: 'Izenburuak', pocoContraste: 'kontraste gutxi',
     fabMenu: 'Irakurgailuaren aukera gehiago', fabOcultarAqui: 'Ezkutatu botoia hedabide honetan',
     fabOcultoAqui: 'Botoia ezkutatuta hedabide honetan', fabMostrarAqui: 'Erakutsi botoia hedabide honetan',
     fabNadaAqui: 'Botoiak ez du ezer eskaintzeko hemen', fabAutomatico: 'irakurgailu automatikoa',
@@ -1943,20 +2056,22 @@ function loadCfg(){
 let __perfilFirma = null;
 function firmaPerfilLector(cfg){
   const p = cfg.prefs || {};
-  return JSON.stringify([cfg.lang, p.theme, p.font, p.fs, !!p.just, !!p.bionic, !!p.focus]);
+  return JSON.stringify([cfg.lang, p.theme, p.font, p.fs, !!p.just, !!p.bionic, !!p.focus, limpiarColores(p.colores)]);
 }
 function perfilDelLector(){
   const p = CFG.prefs || {};
   return limpiarPerfil({
     lang: CFG.lang, tema: p.theme, fuente: p.font === 'georgia' ? 'serif' : p.font,
     fs: p.fs, just: !!p.just, bionic: !!p.bionic, focus: !!p.focus,
+    colores: p.colores || undefined,
     actualizado: CFG.perfilActualizado || 0
   });
 }
 function aplicarPerfilAlLector(perfil){
   const p = CFG.prefs;
   if (UI_LANGS.includes(perfil.lang)) CFG.lang = perfil.lang;
-  if (['light', 'sepia', 'dark', 'contrast'].includes(perfil.tema)) p.theme = perfil.tema;
+  if (['light', 'sepia', 'dark', 'contrast', 'custom'].includes(perfil.tema)) p.theme = perfil.tema;
+  if (limpiarColores(perfil.colores)) p.colores = limpiarColores(perfil.colores);
   if (perfil.fuente) p.font = perfil.fuente === 'serif' ? 'georgia' : perfil.fuente;
   if (typeof perfil.fs === 'number') p.fs = Math.min(UI.fsMax, Math.max(UI.fsMin, perfil.fs));
   ['just', 'bionic', 'focus'].forEach(k => { if (perfil[k] !== undefined) p[k] = !!perfil[k]; });
@@ -1972,7 +2087,7 @@ function aplicarPerfilAlLector(perfil){
 // los avisos de leídas para el Voceiro de este navegador.
 const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab',
                      'leidasParaVoceiro'];
-const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
+const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus', 'colores'];
 const PREFS_LOCALES = ['panelText', 'panelActions'];
 let __configFirma = null;
 
@@ -2016,13 +2131,17 @@ function aplicarBloqueConfig(bloque){
 }
 
 function saveCfg(cfg){
+  let cambio = false;
   const firma = firmaPerfilLector(cfg);
-  if (__perfilFirma !== null && firma !== __perfilFirma) cfg.perfilActualizado = Date.now();
+  if (__perfilFirma !== null && firma !== __perfilFirma){ cfg.perfilActualizado = Date.now(); cambio = true; }
   __perfilFirma = firma;
   const firmaC = firmaConfig(cfg);
-  if (__configFirma !== null && firmaC !== __configFirma) cfg.configActualizado = Date.now();
+  if (__configFirma !== null && firmaC !== __configFirma){ cfg.configActualizado = Date.now(); cambio = true; }
   __configFirma = firmaC;
   PLATAFORMA.guardar(CFG_KEY, cfg);
+  // En la página de Voceiro (sus Ajustes › Lector), un cambio de aquí no
+  // llega por alCambiar, que solo oye otras pestañas: se manda directamente.
+  if (cambio && esVoceiro()) setTimeout(() => enviarEstado(false), 0);
 }
 let CFG = loadCfg();
 __perfilFirma = firmaPerfilLector(CFG);
@@ -2539,9 +2658,12 @@ function llegaDeSiguientePendiente(){
 function toast(msg, ms, action){
   ms = ms || 2400;
   if (action) ms = Math.max(ms, 6000);
-  const el = document.createElement('div');
+  // Colores invertidos del tema (fondo = texto): se ve sobre cualquier
+  // página. role=status: los lectores de pantalla lo leen sin mover el foco.
+  const el = temaDe(document.createElement('div'));
+  el.setAttribute('role', 'status');
   el.style.cssText = 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);' +
-    'background:#222;color:#fff;padding:12px 18px;border-radius:8px;' +
+    'background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:8px;' +
     'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;' +
     'z-index:2147483647;box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;' +
     'transition:opacity .2s,transform .2s;max-width:90vw;' +
@@ -2554,8 +2676,9 @@ function toast(msg, ms, action){
   if (action){
     const btn = document.createElement('button');
     btn.textContent = action.label;
-    btn.style.cssText = 'background:transparent;color:#ffb4b4;border:1px solid #ffb4b4;' +
-      'padding:4px 10px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;' +
+    btn.type = 'button';
+    btn.style.cssText = 'background:transparent;color:var(--bg);border:1px solid var(--bg);text-decoration:underline;' +
+      'min-height:32px;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;' +
       'font-family:inherit;flex:0 0 auto';
     btn.onclick = () => { try { action.onClick(); } catch(e){} el.remove(); };
     el.appendChild(btn);
@@ -2570,22 +2693,26 @@ function toast(msg, ms, action){
 
 function showAddSiteDialog(domain, srcLabel, parentEl){
   return new Promise(resolve => {
-    const overlay = document.createElement('div');
+    const overlay = temaDe(document.createElement('div'));
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2147483647;' +
       'display:flex;align-items:center;justify-content:center;padding:20px;' +
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+    const focoAntes = document.activeElement;
     const box = document.createElement('div');
-    box.style.cssText = 'background:#fff;color:#222;border-radius:12px;max-width:460px;width:100%;' +
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'il-dlg-titulo');
+    box.style.cssText = 'background:var(--bg);color:var(--fg);border-radius:12px;max-width:460px;width:100%;' +
       'padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)';
     box.innerHTML =
-      '<h3 style="margin:0 0 10px;font-size:17px">' + esc(t('addSiteTitle')) + '</h3>' +
-      '<p style="margin:0 0 18px;font-size:14px;line-height:1.5;color:#444">' +
+      '<h3 id="il-dlg-titulo" style="margin:0 0 10px;font-size:17px">' + esc(t('addSiteTitle')) + '</h3>' +
+      '<p style="margin:0 0 18px;font-size:14px;line-height:1.5;color:var(--fg)">' +
         esc(t('addSiteQuestion').replace('{X}', domain).replace('{Y}', srcLabel)) +
       '</p>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end">' +
-        '<button class="il-dlg-cancel" style="padding:9px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;font-size:14px">' + esc(t('btnCancel')) + '</button>' +
-        '<button class="il-dlg-once" style="padding:9px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;font-size:14px">' + esc(t('btnOnlyOnce')) + '</button>' +
-        '<button class="il-dlg-add" style="padding:9px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:bold">' + esc(t('btnAddList')) + '</button>' +
+        '<button class="il-dlg-cancel" style="padding:9px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;font-size:14px">' + esc(t('btnCancel')) + '</button>' +
+        '<button class="il-dlg-once" style="padding:9px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;font-size:14px">' + esc(t('btnOnlyOnce')) + '</button>' +
+        '<button class="il-dlg-add" style="padding:9px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:bold">' + esc(t('btnAddList')) + '</button>' +
       '</div>';
     overlay.appendChild(box);
     (parentEl || document.body).appendChild(overlay);
@@ -2595,6 +2722,7 @@ function showAddSiteDialog(domain, srcLabel, parentEl){
       resolved = true;
       document.removeEventListener('keydown', escCapture, true);
       overlay.remove();
+      if (focoAntes && focoAntes.isConnected && focoAntes.focus) focoAntes.focus();
       resolve(val);
     }
     function escCapture(e){
@@ -2604,6 +2732,7 @@ function showAddSiteDialog(domain, srcLabel, parentEl){
     box.querySelector('.il-dlg-cancel').onclick = () => cleanup('cancel');
     box.querySelector('.il-dlg-once').onclick   = () => cleanup('once');
     box.querySelector('.il-dlg-add').onclick    = () => cleanup('add');
+    box.querySelector('.il-dlg-add').focus();
     overlay.addEventListener('click', e => { if (e.target === overlay) cleanup('cancel'); });
   });
 }
@@ -3355,12 +3484,14 @@ function startVisualPicker(onPick, onCancel){
 
   const style = document.createElement('style');
   style.id = 'il-picker-style';
-  style.textContent = '.il-picker-hover{outline:2px dashed #d32f2f !important;outline-offset:-2px !important;background:rgba(211,47,47,.08) !important;cursor:crosshair !important}';
+  style.textContent = '.il-picker-hover{outline:2px dashed var(--accent) !important;outline-offset:-2px !important;background:rgba(211,47,47,.08) !important;cursor:crosshair !important}';
   document.head.appendChild(style);
 
   const bar = document.createElement('div');
   bar.id = 'il-picker-bar';
-  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#222;color:#fff;' +
+  temaDe(bar);
+  bar.setAttribute('role', 'status');
+  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--fg);color:var(--bg);' +
     'padding:12px 16px;z-index:2147483647;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
     'text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.3)';
   bar.textContent = '🎯 ' + t('extractionPickerHint');
@@ -3461,7 +3592,7 @@ function shouldShowReaderFAB(){
    ============================================================ */
 // Paleta de Voceiro (plantilla.html, bloque PALETA), puesta aquí por
 // build.mjs: { light: {bg:'#fff', …, 'color-scheme':'light'}, sepia: {…}, … }.
-const PALETA = {"light":{"bg":"#fff","fg":"#222","muted":"#6b6b6b","accent":"#d32f2f","border":"#eee","quote-bg":"#f9f9f9","btn-bg":"#f7f7f7","btn-border":"#8a8a8a","shadow":"rgba(0,0,0,.08)","preset":"#0a7d3f","preset-bg":"#e8f5e9","block":"#b00020","block-bg":"#fde8ec","save":"#1565c0","save-bg":"#e3f2fd","mark":"#ffe680","mark-fg":"#111","on-solid":"#fff","focus":"#1565c0","color-scheme":"light"},"sepia":{"bg":"#f4ecd8","fg":"#3b2f1e","muted":"#6b5a3c","accent":"#8f4523","border":"#e0d5b8","quote-bg":"#ede0c4","btn-bg":"#ede0c4","btn-border":"#8c7c58","shadow":"rgba(59,47,30,.15)","preset":"#33682a","preset-bg":"#e4ebd0","block":"#8b2020","block-bg":"#ebd5d0","save":"#2e5a8b","save-bg":"#d8e3ee","mark":"#c9a227","mark-fg":"#2c1c08","on-solid":"#fff","focus":"#2e5a8b","color-scheme":"light"},"dark":{"bg":"#1a1a1a","fg":"#e0e0e0","muted":"#999","accent":"#ff6b6b","border":"#333","quote-bg":"#252525","btn-bg":"#2a2a2a","btn-border":"#787878","shadow":"rgba(0,0,0,.5)","preset":"#4cc97a","preset-bg":"#173524","block":"#ff8a9c","block-bg":"#3d1a20","save":"#6cb3ff","save-bg":"#1e3550","mark":"#b58600","mark-fg":"#111","on-solid":"#111","focus":"#6cb3ff","color-scheme":"dark"},"contrast":{"bg":"#000","fg":"#fff","muted":"#ff0","accent":"#0ff","border":"#fff","quote-bg":"#111","btn-bg":"#111","btn-border":"#fff","shadow":"rgba(255,255,255,.2)","preset":"#0f0","preset-bg":"#003300","block":"#f00","block-bg":"#330000","save":"#0ff","save-bg":"#003333","mark":"#ff0","mark-fg":"#000","on-solid":"#000","focus":"#ff0","color-scheme":"dark"}};
+const PALETA = {"light":{"bg":"#fff","fg":"#222","muted":"#6b6b6b","accent":"#d32f2f","border":"#eee","quote-bg":"#f9f9f9","btn-bg":"#f7f7f7","btn-border":"#8a8a8a","shadow":"rgba(0,0,0,.08)","preset":"#0a7d3f","preset-bg":"#e8f5e9","block":"#b00020","block-bg":"#fde8ec","save":"#1565c0","save-bg":"#e3f2fd","mark":"#ffe680","mark-fg":"#111","on-solid":"#fff","focus":"#1565c0","titulos":"#222","color-scheme":"light"},"sepia":{"bg":"#f4ecd8","fg":"#3b2f1e","muted":"#6b5a3c","accent":"#8f4523","border":"#e0d5b8","quote-bg":"#ede0c4","btn-bg":"#ede0c4","btn-border":"#8c7c58","shadow":"rgba(59,47,30,.15)","preset":"#33682a","preset-bg":"#e4ebd0","block":"#8b2020","block-bg":"#ebd5d0","save":"#2e5a8b","save-bg":"#d8e3ee","mark":"#c9a227","mark-fg":"#2c1c08","on-solid":"#fff","focus":"#2e5a8b","titulos":"#3b2f1e","color-scheme":"light"},"dark":{"bg":"#1a1a1a","fg":"#e0e0e0","muted":"#999","accent":"#ff6b6b","border":"#333","quote-bg":"#252525","btn-bg":"#2a2a2a","btn-border":"#787878","shadow":"rgba(0,0,0,.5)","preset":"#4cc97a","preset-bg":"#173524","block":"#ff8a9c","block-bg":"#3d1a20","save":"#6cb3ff","save-bg":"#1e3550","mark":"#b58600","mark-fg":"#111","on-solid":"#111","focus":"#6cb3ff","titulos":"#e0e0e0","color-scheme":"dark"},"contrast":{"bg":"#000","fg":"#fff","muted":"#ff0","accent":"#0ff","border":"#fff","quote-bg":"#111","btn-bg":"#111","btn-border":"#fff","shadow":"rgba(255,255,255,.2)","preset":"#0f0","preset-bg":"#003300","block":"#f00","block-bg":"#330000","save":"#0ff","save-bg":"#003333","mark":"#ff0","mark-fg":"#000","on-solid":"#000","focus":"#ff0","titulos":"#fff","color-scheme":"dark"}};
 
 // CSS de la paleta para un sitio: base lleva el tema claro y cada tema, su
 // selector (por defecto, base[data-theme="…"]; en un Shadow DOM, :host(…)).
@@ -3494,6 +3625,48 @@ function icono(id){
 // sobra.
 function sinSimbolo(s){
   return String(s || '').replace(/^[^\p{L}\p{N}]+/u, '');
+}
+
+// El tema del perfil en un elemento: data-theme y, con el personalizado
+// (shared/tema/personalizado.js), su base clara u oscura y encima, en línea,
+// las variables que salen de los colores elegidos.
+function aplicarTema(el){
+  const p = CFG.prefs || {};
+  VARS_PERSONALIZADAS.forEach(k => el.style.removeProperty('--' + k));
+  el.style.removeProperty('color-scheme');
+  const colores = p.theme === 'custom' ? limpiarColores(p.colores) : null;
+  if (!colores){
+    el.setAttribute('data-theme', p.theme && p.theme !== 'custom' ? p.theme : 'light');
+    return;
+  }
+  const { base, vars } = paletaPersonalizada(colores);
+  el.setAttribute('data-theme', base);
+  for (const [k, v] of Object.entries(vars)) el.style.setProperty(k === 'color-scheme' ? k : '--' + k, v);
+}
+// Para «Personalizado» la primera vez: los colores del tema que hay.
+function coloresDelTema(tema){
+  const p = PALETA[tema] || PALETA.light || {};
+  return limpiarColores({ fondo: hex6(p.bg), texto: hex6(p.fg), enlaces: hex6(p.accent), titulos: hex6(p.titulos || p.fg) });
+}
+function hex6(v){
+  v = String(v || '').trim().toLowerCase();
+  return /^#[0-9a-f]{3}$/.test(v) ? '#' + [...v.slice(1)].map(c => c + c).join('') : v;
+}
+
+// Lo que el lector pinta fuera de #il-full (Ajustes, avisos, diálogos,
+// desplegables, herramientas) lleva la clase il-tema y el tema del perfil.
+// La paleta para .il-tema va en una sola hoja, que se pone la primera vez.
+function temaDe(el){
+  if (!document.getElementById('il-tema-css')){
+    const st = document.createElement('style');
+    st.id = 'il-tema-css';
+    st.textContent = cssPaleta('.il-tema') +
+      '\n.il-tema :focus-visible{outline:2px solid var(--focus);outline-offset:2px}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  el.classList.add('il-tema');
+  aplicarTema(el);
+  return el;
 }
 
 // Desplazamientos suaves, salvo si la persona ha pedido menos movimiento.
@@ -3560,7 +3733,7 @@ ${cssPaleta('#il-full')}
 #il-full .il-content{font-family:Georgia,"Times New Roman",serif;font-size:var(--fs,18px);line-height:var(--lh,1.7)}
 #il-full[data-font="sans"] .il-content{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 #il-full[data-font="dyslexic"] .il-content{font-family:Verdana,Tahoma,sans-serif;letter-spacing:.03em;word-spacing:.1em}
-#il-full .il-content h1{font-size:1.8em;line-height:1.25;margin:0 0 12px}
+#il-full .il-content h1{font-size:1.8em;line-height:1.25;margin:0 0 12px;color:var(--titulos)}
 #il-full .il-desc{font-size:1.1em;color:var(--muted);font-style:italic;margin:0 0 20px}
 #il-full .il-meta{color:var(--muted);font-size:.85em;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-meta-actions{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 28px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -3568,7 +3741,12 @@ ${cssPaleta('#il-full')}
 #il-full .il-meta-actions .il-ico{width:18px;height:18px}
 #il-full .il-body p{margin:1.2em 0}
 #il-full .il-body blockquote{margin:1.5em 0;padding:1em 1.5em;border-left:4px solid var(--accent);background:var(--quote-bg);font-style:italic}
-#il-full .il-body h2,#il-full .il-body h3,#il-full .il-body h4{margin:1.6em 0 .6em;line-height:1.3}
+#il-full .il-body h2,#il-full .il-body h3,#il-full .il-body h4{margin:1.6em 0 .6em;line-height:1.3;color:var(--titulos)}
+#il-full .il-colores{gap:10px}
+#il-full .il-color{display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap}
+#il-full .il-color input{width:44px;height:44px;padding:2px;border:1px solid var(--btn-border);border-radius:8px;background:var(--btn-bg);cursor:pointer}
+#il-full .il-color .il-cr{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+#il-full .il-color .il-cr.il-poco{color:var(--block);font-weight:600}
 #il-full .il-body h2{font-size:1.4em}
 #il-full .il-body h3{font-size:1.2em}
 #il-full .il-body h4{font-size:1.05em}
@@ -3621,21 +3799,21 @@ ${cssPaleta('#il-full')}
    ============================================================ */
 function crearDesplegableServicios(opts){
   opts = opts || {};
-  const dd = document.createElement('div');
-  dd.className = 'il-servicios-dropdown';
+  const dd = temaDe(document.createElement('div'));
+  dd.classList.add('il-servicios-dropdown');
   dd.setAttribute('role', 'menu');
   if (opts.position === 'fixed-top-right'){
     dd.style.cssText = 'position:fixed;top:60px;right:20px;' +
-      'background:var(--bg,#fff);color:var(--fg,#222);border:1px solid var(--border,#ddd);' +
+      'background:var(--bg,var(--bg));color:var(--fg,var(--fg));border:1px solid var(--border,var(--btn-border));' +
       'border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);padding:6px;' +
       'z-index:2147483647;min-width:210px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
   } else if (opts.position === 'below-left'){
-    dd.style.cssText = 'position:absolute;top:' + (UI.fabSize + 12) + 'px;left:0;background:#fff;color:#222;' +
-      'border:1px solid #ddd;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);' +
+    dd.style.cssText = 'position:absolute;top:' + (UI.fabSize + 12) + 'px;left:0;background:var(--bg);color:var(--fg);' +
+      'border:1px solid var(--btn-border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);' +
       'padding:6px;min-width:210px;z-index:2147483647;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
   } else {
-    dd.style.cssText = 'position:absolute;bottom:64px;left:0;background:#fff;color:#222;' +
-      'border:1px solid #ddd;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);' +
+    dd.style.cssText = 'position:absolute;bottom:64px;left:0;background:var(--bg);color:var(--fg);' +
+      'border:1px solid var(--btn-border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);' +
       'padding:6px;min-width:210px;z-index:2147483647;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
   }
 
@@ -3647,8 +3825,8 @@ function crearDesplegableServicios(opts){
     btn.style.cssText = 'display:block;width:100%;text-align:left;padding:8px 12px;' +
       'border:none;background:transparent;color:inherit;cursor:pointer;' +
       'border-radius:6px;font-size:' + (secundario ? '13px' : '14px') + ';font-family:inherit;' +
-      'font-weight:' + (secundario ? '400' : '500') + (secundario ? ';opacity:.75' : '');
-    btn.onmouseenter = () => { btn.style.background = 'rgba(0,0,0,.06)'; };
+      'font-weight:' + (secundario ? '400' : '500') + (secundario ? ';color:var(--muted)' : '');
+    btn.onmouseenter = () => { btn.style.background = 'var(--quote-bg)'; };
     btn.onmouseleave = () => { btn.style.background = 'transparent'; };
     btn.onclick = (e) => {
       e.stopPropagation();
@@ -3662,7 +3840,7 @@ function crearDesplegableServicios(opts){
   if (!servicios.length){
     const vacio = document.createElement('div');
     vacio.textContent = t('serviciosVacio');
-    vacio.style.cssText = 'padding:8px 12px;font-size:13px;opacity:.75;max-width:260px';
+    vacio.style.cssText = 'padding:8px 12px;font-size:13px;color:var(--muted);max-width:260px';
     dd.appendChild(vacio);
   }
   servicios.forEach(svc => dd.appendChild(boton(svc.nombre, () => abrirEnServicio(svc))));
@@ -3686,13 +3864,16 @@ function openExtractionTool(siteIdx, onClose){
   let lastExtraction = null;
   let lastError = '';
 
-  const root = document.createElement('div');
+  const root = temaDe(document.createElement('div'));
   root.id = 'il-extract-tool';
   root.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2147483647;' +
     'display:flex;align-items:center;justify-content:center;padding:20px;' +
     'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
   const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;color:#222;border-radius:12px;max-width:1000px;width:100%;' +
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-label', t('extractionTitle'));
+  box.style.cssText = 'background:var(--bg);color:var(--fg);border-radius:12px;max-width:1000px;width:100%;' +
     'max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:24px';
   root.appendChild(box);
   document.body.appendChild(root);
@@ -3718,45 +3899,45 @@ function openExtractionTool(siteIdx, onClose){
   function renderDiagnosticsHTML(diag){
     const cand = (diag.candidates || []).length
       ? diag.candidates.map(c =>
-          '<tr style="border-bottom:1px solid #f0f0f0">' +
-            '<td style="padding:6px 8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:#0a7d00">' + esc(c.selector) + '</td>' +
+          '<tr style="border-bottom:1px solid var(--border)">' +
+            '<td style="padding:6px 8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--preset)">' + esc(c.selector) + '</td>' +
             '<td style="padding:6px 8px;text-align:right">' + c.count + '</td>' +
             '<td style="padding:6px 8px;text-align:right">' + c.words + ' ' + esc(t('extractionWordsShort')) + '</td>' +
             '<td style="padding:6px 8px;text-align:right">' + c.imgs + ' ' + esc(t('extractionImgsShort')) + '</td>' +
             '<td style="padding:6px 8px"><button class="il-diag-use" data-sel="' + esc(c.selector) + '" ' +
-              'style="padding:3px 8px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer;font-size:11px">' +
+              'style="padding:3px 8px;border:1px solid var(--btn-border);background:var(--bg);border-radius:4px;cursor:pointer;font-size:11px">' +
               esc(t('extractionUseThis')) + '</button></td>' +
           '</tr>').join('')
-      : '<tr><td colspan="5" style="padding:12px;color:#888;font-size:12px;text-align:center">' + esc(t('extractionNoCandidates')) + '</td></tr>';
+      : '<tr><td colspan="5" style="padding:12px;color:var(--muted);font-size:12px;text-align:center">' + esc(t('extractionNoCandidates')) + '</td></tr>';
     const overlays = (diag.overlays || []).length
-      ? diag.overlays.map(o => '<code style="font-size:11px;background:#f4f4f4;padding:2px 6px;border-radius:3px;margin:2px 4px 2px 0;display:inline-block">' +
+      ? diag.overlays.map(o => '<code style="font-size:11px;background:var(--quote-bg);padding:2px 6px;border-radius:3px;margin:2px 4px 2px 0;display:inline-block">' +
           esc(o.tag + (o.id ? '#' + o.id : '') + (o.cls ? '.' + o.cls.split(/\s+/)[0] : '')) + ' (z-index: ' + esc(o.zIndex) + ')</code>').join('')
-      : '<span style="color:#888;font-size:12px">—</span>';
+      : '<span style="color:var(--muted);font-size:12px">—</span>';
     const paywall = diag.paywall.detected
-      ? '<span style="color:#c00;font-weight:bold">' + esc(t('extractionPaywallYes')) + '</span>' +
-        ' <span style="color:#888;font-size:12px">(' + diag.paywall.indicators.map(esc).join(', ') + ')</span>'
-      : '<span style="color:#0a7d00;font-weight:bold">' + esc(t('extractionPaywallNo')) + '</span>';
+      ? '<span style="color:var(--block);font-weight:bold">' + esc(t('extractionPaywallYes')) + '</span>' +
+        ' <span style="color:var(--muted);font-size:12px">(' + diag.paywall.indicators.map(esc).join(', ') + ')</span>'
+      : '<span style="color:var(--preset);font-weight:bold">' + esc(t('extractionPaywallNo')) + '</span>';
 
     return (
-      '<div style="border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:16px;background:#fafafa">' +
-        '<h4 style="margin:0 0 10px;font-size:13px;color:#666;text-transform:uppercase;letter-spacing:.5px">' +
+      '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;background:var(--quote-bg)">' +
+        '<h4 style="margin:0 0 10px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
           esc(t('extractionDiagnostics')) + '</h4>' +
         '<div style="font-size:13px;line-height:1.9">' +
           '<strong>' + esc(t('extractionTitleLbl')) + ':</strong> ' + esc(diag.title.text) +
-            ' <span style="color:#888;font-size:11px">(' + esc(diag.title.source) + ')</span><br>' +
+            ' <span style="color:var(--muted);font-size:11px">(' + esc(diag.title.source) + ')</span><br>' +
           '<strong>' + esc(t('extractionMetricsLbl')) + ':</strong> ' +
             diag.metrics.p + ' &lt;p&gt; · ' + diag.metrics.img + ' img · ' +
             diag.metrics.words + ' ' + esc(t('extractionWordsShort')) + ' · ' +
             diag.metrics.textLen + ' ' + esc(t('extractionCharsShort')) + '<br>' +
           '<strong>' + esc(t('extractionPaywallLbl')) + ':</strong> ' + paywall + '<br>' +
           '<strong>' + esc(t('extractionOverlaysLbl')) + ':</strong> ' +
-            (diag.overlays.length ? diag.overlays.length + ' ' + overlays : '<span style="color:#888;font-size:12px">—</span>') +
+            (diag.overlays.length ? diag.overlays.length + ' ' + overlays : '<span style="color:var(--muted);font-size:12px">—</span>') +
         '</div>' +
         '<div style="margin-top:12px">' +
-          '<div style="font-size:12px;color:#666;margin-bottom:6px"><strong>' + esc(t('extractionCandidatesLbl')) + '</strong></div>' +
-          '<div style="border:1px solid #eee;border-radius:6px;background:#fff;overflow:hidden">' +
+          '<div style="font-size:12px;color:var(--muted);margin-bottom:6px"><strong>' + esc(t('extractionCandidatesLbl')) + '</strong></div>' +
+          '<div style="border:1px solid var(--border);border-radius:6px;background:var(--bg);overflow:hidden">' +
             '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
-              '<thead><tr style="background:#f7f7f7;font-size:11px;color:#666">' +
+              '<thead><tr style="background:var(--btn-bg);font-size:11px;color:var(--muted)">' +
                 '<th style="text-align:left;padding:6px 8px">Selector</th>' +
                 '<th style="text-align:right;padding:6px 8px">n</th>' +
                 '<th style="text-align:right;padding:6px 8px">' + esc(t('extractionWordsShort')) + '</th>' +
@@ -3774,7 +3955,7 @@ function openExtractionTool(siteIdx, onClose){
   function renderPreviewHTML(){
     const art = runExtractionPreview();
     if (!art){
-      return '<div style="border:1px dashed #ccc;border-radius:8px;padding:16px;color:#888;font-size:13px;text-align:center">' +
+      return '<div style="border:1px dashed var(--btn-border);border-radius:8px;padding:16px;color:var(--muted);font-size:13px;text-align:center">' +
         esc(t('extractionPreviewEmpty')) + (lastError ? ' · ' + esc(lastError) : '') +
       '</div>';
     }
@@ -3782,13 +3963,13 @@ function openExtractionTool(siteIdx, onClose){
     const chars = art.rawBody.length;
     const preview = art.rawBody.slice(0, 800).replace(/\s+/g,' ').trim() + (art.rawBody.length > 800 ? '…' : '');
     return (
-      '<div style="border:1px solid #eee;border-radius:8px;padding:14px;background:#fff">' +
-        '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#666;margin-bottom:8px">' +
+      '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--bg)">' +
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px">' +
           '<span><strong>' + esc(t('extractionTitleLbl')) + ':</strong> ' + esc(art.headline || '—') + '</span>' +
           '<span><strong>' + esc(t('extractionMetricsLbl')) + ':</strong> ' + words + ' ' + esc(t('extractionWordsShort')) + ' · ' + chars + ' ' + esc(t('extractionCharsShort')) + '</span>' +
           '<span><strong>' + esc(t('extractionSourcePrefix')) + ':</strong> ' + esc(art._source || '—') + '</span>' +
         '</div>' +
-        '<div style="font-size:13px;line-height:1.5;color:#333;max-height:180px;overflow:auto;padding:10px;background:#fafafa;border-radius:6px;white-space:pre-wrap">' +
+        '<div style="font-size:13px;line-height:1.5;color:var(--fg);max-height:180px;overflow:auto;padding:10px;background:var(--quote-bg);border-radius:6px;white-space:pre-wrap">' +
           esc(preview) +
         '</div>' +
       '</div>'
@@ -3801,74 +3982,74 @@ function openExtractionTool(siteIdx, onClose){
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
         '<div>' +
           '<h2 style="margin:0;font-size:20px">' + esc(t('extractionTitle')) + '</h2>' +
-          '<div style="font-size:12px;color:#666;margin-top:2px">' + esc(site.domain) + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + esc(site.domain) + '</div>' +
         '</div>' +
-        '<button class="il-et-close" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' + esc(t('close')) + '</button>' +
+        '<button class="il-et-close" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('close')) + '</button>' +
       '</div>' +
 
       '<div style="margin-bottom:16px">' +
-        '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' + esc(t('extractionMode')) + '</label>' +
+        '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' + esc(t('extractionMode')) + '</label>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<button class="il-et-mode" data-mode="auto" style="flex:1;min-width:180px;text-align:left;padding:10px 12px;' +
-            (work.mode === 'auto' ? 'border:2px solid #d32f2f;' : 'border:1px solid #ccc;') +
-            'background:#fff;border-radius:8px;cursor:pointer">' +
+            (work.mode === 'auto' ? 'border:2px solid var(--accent);' : 'border:1px solid var(--btn-border);') +
+            'background:var(--bg);border-radius:8px;cursor:pointer">' +
             '<div style="font-weight:bold;font-size:13px">' + esc(t('extractionModeAuto')) + '</div>' +
-            '<div style="font-size:11px;color:#666;margin-top:3px">' + esc(t('extractionHintAuto')) + '</div>' +
+            '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + esc(t('extractionHintAuto')) + '</div>' +
           '</button>' +
           '<button class="il-et-mode" data-mode="selector" style="flex:1;min-width:180px;text-align:left;padding:10px 12px;' +
-            (work.mode === 'selector' ? 'border:2px solid #d32f2f;' : 'border:1px solid #ccc;') +
-            'background:#fff;border-radius:8px;cursor:pointer">' +
+            (work.mode === 'selector' ? 'border:2px solid var(--accent);' : 'border:1px solid var(--btn-border);') +
+            'background:var(--bg);border-radius:8px;cursor:pointer">' +
             '<div style="font-weight:bold;font-size:13px">' + esc(t('extractionModeSelector')) + '</div>' +
-            '<div style="font-size:11px;color:#666;margin-top:3px">' + esc(t('extractionHintSelector')) + '</div>' +
+            '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + esc(t('extractionHintSelector')) + '</div>' +
           '</button>' +
           '<button class="il-et-mode" data-mode="all" style="flex:1;min-width:180px;text-align:left;padding:10px 12px;' +
-            (work.mode === 'all' ? 'border:2px solid #d32f2f;' : 'border:1px solid #ccc;') +
-            'background:#fff;border-radius:8px;cursor:pointer">' +
+            (work.mode === 'all' ? 'border:2px solid var(--accent);' : 'border:1px solid var(--btn-border);') +
+            'background:var(--bg);border-radius:8px;cursor:pointer">' +
             '<div style="font-weight:bold;font-size:13px">' + esc(t('extractionModeAll')) + '</div>' +
-            '<div style="font-size:11px;color:#666;margin-top:3px">' + esc(t('extractionHintAll')) + '</div>' +
+            '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + esc(t('extractionHintAll')) + '</div>' +
           '</button>' +
         '</div>' +
       '</div>' +
 
       (work.mode === 'selector' ?
-      '<div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:16px">' +
+      '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px">' +
         '<div style="margin-bottom:10px">' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:4px">' + esc(t('extractionRoot')) + '</label>' +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">' + esc(t('extractionRoot')) + '</label>' +
           '<div style="display:flex;gap:6px">' +
             '<input class="il-et-root" value="' + esc(work.root) + '" placeholder="' + esc(t('extractionRootPh')) + '" ' +
-              'style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px">' +
-            '<button class="il-et-pick" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">' +
+              'style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px">' +
+            '<button class="il-et-pick" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer;white-space:nowrap">' +
               esc(t('extractionPickBtn')) + '</button>' +
           '</div>' +
         '</div>' +
         '<div style="margin-bottom:10px">' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:4px">' + esc(t('extractionExclude')) + '</label>' +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">' + esc(t('extractionExclude')) + '</label>' +
           '<input class="il-et-exclude" value="' + esc(work.exclude) + '" placeholder="' + esc(t('extractionExcludePh')) + '" ' +
-            'style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px">' +
+            'style="width:100%;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px">' +
         '</div>' +
         '<div>' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:4px">' + esc(t('extractionMinChars')) + '</label>' +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">' + esc(t('extractionMinChars')) + '</label>' +
           '<input type="number" class="il-et-min" value="' + work.minChars + '" min="20" max="10000" ' +
-            'style="width:120px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px">' +
+            'style="width:120px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
         '</div>' +
       '</div>' : '') +
 
       renderDiagnosticsHTML(diag) +
 
       '<div style="margin-bottom:10px">' +
-        '<div style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">' +
+        '<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">' +
           esc(t('extractionPreviewLbl')) + '</div>' +
         renderPreviewHTML() +
       '</div>' +
 
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px;border-top:1px solid #eee;padding-top:14px">' +
-        '<button class="il-et-refresh" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px;border-top:1px solid var(--border);padding-top:14px">' +
+        '<button class="il-et-refresh" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' +
           esc(t('extractionDiagnoseBtn')) + '</button>' +
-        '<button class="il-et-test" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' +
+        '<button class="il-et-test" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' +
           esc(t('extractionTestBtn')) + '</button>' +
-        '<button class="il-et-cancel" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' +
+        '<button class="il-et-cancel" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' +
           esc(t('extractionCancelBtn')) + '</button>' +
-        '<button class="il-et-save" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold">' +
+        '<button class="il-et-save" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer;font-weight:bold">' +
           esc(t('extractionSaveBtn')) + '</button>' +
       '</div>';
 
@@ -4036,11 +4217,20 @@ function openReader(art){
   // lectores de pantalla de serie) con su texto; el ✓ dice cuál está
   // elegida, no solo el color.
   function opcion(tipo, nombre, valor, texto, muestra){
-    const p = muestra ? (PALETA[muestra] || {}) : null;
+    const p = muestra ? (typeof muestra === 'object' ? muestra : (PALETA[muestra] || {})) : null;
     return '<label class="il-opcion' + (p ? ' il-muestra' : '') + '"' +
       (p ? ' style="' + esc('--muestra-bg:' + p.bg + ';--muestra-fg:' + p.fg + ';--muestra-borde:' + p['btn-border']) + '"' : '') + '>' +
       '<input type="' + tipo + '" name="' + nombre + '" value="' + esc(valor) + '">' +
       '<span>' + esc(texto) + '</span></label>';
+  }
+  function muestraPersonalizada(){
+    const c = limpiarColores(prefs.colores) || coloresDelTema(prefs.theme) || {};
+    return { bg: c.fondo, fg: c.texto, 'btn-border': c.texto };
+  }
+  function colorHTML(clave, etiqueta){
+    return '<div class="il-color"><input type="color" id="il-color-' + clave + '" data-color="' + clave + '">' +
+      '<label for="il-color-' + clave + '">' + esc(etiqueta) + '</label>' +
+      (clave === 'fondo' ? '' : '<span class="il-cr" data-cr="' + clave + '"></span>') + '</div>';
   }
   function paso(clase, etiqueta, menos, mas){
     return '<div class="il-paso" role="group" aria-labelledby="il-paso-' + clase + '">' +
@@ -4057,6 +4247,13 @@ function openReader(art){
         opcion('radio', 'il-tema', 'sepia', t('sepia'), 'sepia') +
         opcion('radio', 'il-tema', 'dark', t('dark'), 'dark') +
         opcion('radio', 'il-tema', 'contrast', t('contrast'), 'contrast') +
+        opcion('radio', 'il-tema', 'custom', t('personalizado'), muestraPersonalizada()) +
+      '</fieldset>' +
+      // Tema personalizado: cuatro colores (shared/tema/personalizado.js saca
+      // el resto) y el contraste de cada uno con el fondo.
+      '<fieldset class="il-colores" hidden><legend>' + esc(t('personalizado')) + '</legend>' +
+        colorHTML('fondo', t('colorFondo')) + colorHTML('texto', t('colorTexto')) +
+        colorHTML('enlaces', t('colorEnlaces')) + colorHTML('titulos', t('colorTitulos')) +
       '</fieldset>' +
       '<fieldset><legend>' + esc(t('font')) + '</legend>' +
         opcion('radio', 'il-letra', 'georgia', t('serif')) +
@@ -4203,7 +4400,7 @@ function openReader(art){
 
   // Pinta las preferencias; applyPrefs, además, las guarda.
   function pintarPrefs(){
-    ov.setAttribute('data-theme', prefs.theme);
+    aplicarTema(ov);
     ov.setAttribute('data-font', prefs.font);
     ov.setAttribute('data-just', prefs.just ? '1' : '0');
     ov.style.setProperty('--w', prefs.width + 'px');
@@ -4224,11 +4421,33 @@ function openReader(art){
     ov.querySelectorAll('input[name="il-pref"]').forEach(c => {
       c.checked = c.value === 'textonly' ? siteTextOnly : !!prefs[c.value];
     });
+    pintarColores();
     if (prefs.focus) setTimeout(updateFocus, 60);
   }
   function applyPrefs(){
     pintarPrefs();
     saveCfg(CFG);
+  }
+
+  // Editor del tema personalizado: se ve con ese tema y dice el contraste de
+  // cada color con el fondo (aviso si baja de 4,5:1).
+  function pintarColores(){
+    const caja = ov.querySelector('.il-colores');
+    const colores = prefs.theme === 'custom' ? limpiarColores(prefs.colores) : null;
+    caja.hidden = !colores;
+    const m = muestraPersonalizada();
+    const lbl = ov.querySelector('input[name="il-tema"][value="custom"]').closest('.il-opcion');
+    lbl.style.setProperty('--muestra-bg', m.bg);
+    lbl.style.setProperty('--muestra-fg', m.fg);
+    lbl.style.setProperty('--muestra-borde', m['btn-border']);
+    if (!colores) return;
+    CLAVES_COLORES.forEach(k => { const inp = ov.querySelector('#il-color-' + k); if (inp.value !== colores[k]) inp.value = colores[k]; });
+    caja.querySelectorAll('.il-cr').forEach(sp => {
+      const r = contraste(colores[sp.dataset.cr], colores.fondo);
+      sp.classList.toggle('il-poco', r < 4.5);
+      sp.textContent = r.toLocaleString(CFG.lang, { maximumFractionDigits: 1 }) + ':1' +
+        (r < 4.5 ? ' · ⚠ ' + t('pocoContraste') : ' ✓');
+    });
   }
 
   // La configuración ha cambiado fuera (otra pestaña, Voceiro): se toma la
@@ -4477,7 +4696,19 @@ function openReader(art){
   ov.querySelector('.il-dict-hint').onclick = () => { openSettings('dict'); };
 
   ov.querySelectorAll('input[name="il-tema"]').forEach(r =>
-    r.onchange = () => { prefs.theme = r.value; applyPrefs(); });
+    r.onchange = () => {
+      if (r.value === 'custom' && !limpiarColores(prefs.colores)) prefs.colores = coloresDelTema(prefs.theme);
+      prefs.theme = r.value;
+      applyPrefs();
+    });
+  // Al mover un color se ve al momento; al soltarlo se guarda (y viaja).
+  ov.querySelectorAll('.il-colores input[type="color"]').forEach(inp => {
+    inp.oninput = () => {
+      prefs.colores = limpiarColores({ ...(limpiarColores(prefs.colores) || coloresDelTema('light')), [inp.dataset.color]: inp.value });
+      pintarPrefs();
+    };
+    inp.onchange = () => applyPrefs();
+  });
   ov.querySelectorAll('input[name="il-letra"]').forEach(r =>
     r.onchange = () => { prefs.font = r.value; applyPrefs(); });
   ov.querySelector('.il-fs-minus').onclick = () => { prefs.fs = Math.max(UI.fsMin, prefs.fs - 1); applyPrefs(); };
@@ -5124,7 +5355,7 @@ function crearBoton(){
 
   host.__pintar = o => {
     oferta = o;
-    host.setAttribute('data-theme', (CFG.prefs && CFG.prefs.theme) || 'light');
+    aplicarTema(host);
     const auto = !!(o.lector && CFG.readerAutoAll);
     const nombre = o.lector ? t('fabTitle') + (auto ? ' (' + t('fabAutomatico') + ')' : '') : t('fabMenu');
     principal.innerHTML = (o.lector ? icono('book-open-text') : icono('ellipsis')) + (auto ? '<span class="auto"></span>' : '');
@@ -5200,18 +5431,34 @@ function activateReader(){
 /* ============================================================
    24. PANEL DE CONFIGURACIÓN
    ============================================================ */
-function openSettings(initialTab){
-  if (document.getElementById('il-settings')) return;
-  const root = document.createElement('div');
-  root.id = 'il-settings';
-  root.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2147483647;' +
-    'display:flex;align-items:center;justify-content:center;padding:20px;' +
-    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+// opts.dentro: un elemento de la página donde pintar el panel, sin fondo ni
+// diálogo (la página Lector de Ajustes de Voceiro, que lo abre y lo cierra).
+function openSettings(initialTab, opts){
+  const dentro = opts && opts.dentro;
+  if (dentro ? dentro.querySelector('.il-settings-dentro') : document.getElementById('il-settings')) return;
+  // Con el tema del perfil; diálogo modal: el foco entra y, al cerrar,
+  // vuelve a donde estaba.
+  const focoAntes = document.activeElement;
+  const root = temaDe(document.createElement('div'));
   const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;color:#222;border-radius:12px;max-width:960px;width:100%;' +
-    'max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:24px';
+  if (dentro){
+    root.classList.add('il-settings-dentro');
+    root.style.cssText = 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+    box.style.cssText = 'background:var(--bg);color:var(--fg)';
+  } else {
+    root.id = 'il-settings';
+    root.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2147483647;' +
+      'display:flex;align-items:center;justify-content:center;padding:20px;' +
+      'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-label', t('settingsShort'));
+    box.tabIndex = -1;
+    box.style.cssText = 'background:var(--bg);color:var(--fg);border-radius:12px;max-width:960px;width:100%;' +
+      'max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:24px';
+  }
   root.appendChild(box);
-  document.body.appendChild(root);
+  (dentro || document.body).appendChild(root);
 
   let activeSection = initialTab || 'sites';
   let activeCatalogSub = 'media';
@@ -5234,6 +5481,11 @@ function openSettings(initialTab){
     scState.capture = null;
     root.remove();
     document.removeEventListener('keydown', escHandler, true);
+    if (dentro) return;
+    if (focoAntes && focoAntes.isConnected){
+      if (focoAntes.__enfocar) focoAntes.__enfocar();
+      else if (focoAntes.focus) focoAntes.focus();
+    }
   };
   const escHandler = e => {
     if (e.key === 'Escape'){
@@ -5245,33 +5497,36 @@ function openSettings(initialTab){
       closeSettings();
     }
   };
-  document.addEventListener('keydown', escHandler, true);
-  root.addEventListener('click', e => { if (e.target === root) closeSettings(); });
+  // Dentro de Voceiro, Esc y el cierre son cosa de su página de Ajustes.
+  if (!dentro){
+    document.addEventListener('keydown', escHandler, true);
+    root.addEventListener('click', e => { if (e.target === root) closeSettings(); });
+  }
 
   function dictRow(d, lang, isDefault, isBuiltin){
     const canDelete = !isBuiltin;
-    return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">' +
+    return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
       '<div style="flex:1;font-size:13px">' + esc(d.name) + '</div>' +
-      '<div style="font-size:11px;color:#888;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(d.url) + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(d.url) + '</div>' +
       '<input type="radio" name="def-' + lang + '" value="' + esc(d.id) + '"' + (isDefault ? ' checked' : '') +
         ' data-lang="' + lang + '" class="il-dict-setdef" style="cursor:pointer" title="Predeterminado">' +
       (canDelete ? '<button data-lang="' + lang + '" data-id="' + esc(d.id) + '" class="il-dict-del" ' +
-        'style="border:none;background:transparent;cursor:pointer;color:#c00;font-size:12px;padding:2px 6px">🗑</button>' : '') +
+        'style="border:none;background:transparent;cursor:pointer;color:var(--block);font-size:12px;padding:2px 6px">🗑</button>' : '') +
     '</div>';
   }
 
   function tabBtn(id, label){
     return '<button class="il-set-tab" data-tab="' + id + '" style="padding:8px 16px;border:none;' +
-      'border-bottom:2px solid ' + (activeSection === id ? '#d32f2f' : 'transparent') + ';' +
+      'border-bottom:2px solid ' + (activeSection === id ? 'var(--accent)' : 'transparent') + ';' +
       'background:transparent;cursor:pointer;font-weight:bold;color:' +
-      (activeSection === id ? '#d32f2f' : '#666') + '">' + esc(label) + '</button>';
+      (activeSection === id ? 'var(--accent)' : 'var(--muted)') + '">' + esc(label) + '</button>';
   }
 
   function subTabBtn(parent, id, label){
     const active = activeCatalogSub === id;
     return '<button class="il-cat-subtab" data-subtab="' + id + '" style="padding:6px 14px;border:1px solid ' +
-      (active ? '#d32f2f' : '#ccc') + ';background:' + (active ? '#d32f2f' : '#fff') +
-      ';color:' + (active ? '#fff' : '#444') + ';border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;' +
+      (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
+      ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;' +
       'margin-right:6px">' + esc(label) + '</button>';
   }
 
@@ -5281,7 +5536,7 @@ function openSettings(initialTab){
     const title = ex.mode === 'selector' ? ('Selector: ' + (ex.root || '—'))
                 : ex.mode === 'all' ? 'Todo el texto'
                 : '';
-    return ' · <span style="color:#0a7d00;font-weight:bold" title="' + esc(title) + '">' + label + '</span>';
+    return ' · <span style="color:var(--preset);font-weight:bold" title="' + esc(title) + '">' + label + '</span>';
   }
 
   function langLabel(lang){
@@ -5306,45 +5561,45 @@ function openSettings(initialTab){
     const siteRows = sitesFiltered.map((s) => {
       const realIdx = CFG.sites.indexOf(s);
       const pats = (s.ignorePatterns || []).map((p, pi) =>
-        '<span style="display:inline-flex;align-items:center;gap:4px;background:#f1f1f1;' +
+        '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);' +
           'border-radius:12px;padding:2px 4px 2px 10px;font-family:monospace;font-size:11px;margin:2px 4px 2px 0">' +
           esc(p) +
           '<button data-idx="' + realIdx + '" data-pi="' + pi + '" class="il-set-delpat" ' +
-            'style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:#c00">✕</button>' +
+            'style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:var(--block)">✕</button>' +
         '</span>').join('');
-      const patBlock = '<div style="margin-top:4px;font-size:11px;color:#666">' +
+      const patBlock = '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
         '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('ignoredSections')) + ':</span> ' +
-        (pats || '<span style="color:#aaa">' + esc(t('noIgnoredSections')) + '</span>') +
+        (pats || '<span style="color:var(--muted)">' + esc(t('noIgnoredSections')) + '</span>') +
       '</div>';
       const tagsStr = (s.tags || []).join(', ');
       const typeLabel = s.type ? getTypeLabel(s.type) : '—';
-      const textOnlyBadge = s.textOnly ? ' · <span style="color:#d32f2f;font-weight:bold">📝</span>' : '';
+      const textOnlyBadge = s.textOnly ? ' · <span style="color:var(--accent);font-weight:bold">📝</span>' : '';
       const exBadge = extractionBadge(s.extraction);
-      return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid #eee;cursor:pointer">' +
+      return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
           '<div style="flex:1;min-width:140px;font-family:monospace;font-size:13px">' + esc(s.domain) + '</div>' +
-          '<select data-idx="' + realIdx + '" class="il-set-mode" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px">' +
+          '<select data-idx="' + realIdx + '" class="il-set-mode" style="padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
             '<option value="off"'    + (s.mode==='off'   ?' selected':'') + '>' + esc(t('modeOff'))    + '</option>' +
             '<option value="prompt"' + (s.mode==='prompt'?' selected':'') + '>' + esc(t('modePrompt')) + '</option>' +
             '<option value="auto"'   + (s.mode==='auto'  ?' selected':'') + '>' + esc(t('modeAuto'))   + '</option>' +
           '</select>' +
-          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px">' +
+          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
             '<option value="auto"' + (s.readerSource==='auto'?' selected':'') + '>' + esc(t('srcAuto')) + '</option>' +
             '<option value="jsonld"' + (s.readerSource==='jsonld'?' selected':'') + '>' + esc(t('srcJsonld')) + '</option>' +
             '<option value="readability"' + (s.readerSource==='readability'?' selected':'') + '>' + esc(t('srcReadability')) + '</option>' +
           '</select>' +
-          '<select data-idx="' + realIdx + '" class="il-set-lang" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px">' +
+          '<select data-idx="' + realIdx + '" class="il-set-lang" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
             SITE_LANGS.map(l => '<option value="' + l + '"' + (s.lang===l?' selected':'') + '>' + esc(langLabel(l)) + '</option>').join('') +
           '</select>' +
           '<button data-idx="' + realIdx + '" class="il-set-extract" title="' + esc(t('extractionTitle')) + '" ' +
-            'style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">🔬</button>' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-visit" title="' + esc(t('openSite')) + '" ' +
-            'style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">🔗</button>' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔗</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-edit" title="Editar" ' +
-            'style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">✏️</button>' +
-          '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">🗑</button>' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">✏️</button>' +
+          '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🗑</button>' +
         '</div>' +
-        '<div style="margin-top:4px;font-size:11px;color:#666">' +
+        '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
           '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colLang')) + ':</span> ' + esc(langLabel(s.lang)) +
           ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colType')) + ':</span> ' + esc(typeLabel) +
           (tagsStr ? ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colTags')) + ':</span> ' + esc(tagsStr) : '') +
@@ -5362,10 +5617,10 @@ function openSettings(initialTab){
       knownTags.map(tg => '<option value="' + esc(tg) + '"' + (filterTag===tg?' selected':'') + '>' + esc(tg) + '</option>').join('');
 
     const addCurrentBanner = currentDomain && !currentDomainInList
-      ? '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;' +
+      ? '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
           'margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap">' +
           '<span style="flex:1;min-width:140px">📍 ' + esc(t('currentSiteHint')) + ': <strong style="font-family:monospace">' + esc(currentDomain) + '</strong></span>' +
-          '<button class="il-set-add-current" style="padding:6px 14px;background:#0a7d00;color:#fff;border:none;' +
+          '<button class="il-set-add-current" style="padding:6px 14px;background:var(--preset);color:var(--on-solid);border:none;' +
             'border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;white-space:nowrap">+ ' + esc(t('addCurrentShort')) + '</button>' +
         '</div>'
       : '';
@@ -5374,24 +5629,24 @@ function openSettings(initialTab){
       addCurrentBanner +
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
         '<input class="il-set-search" placeholder="' + esc(t('searchPlaceholder')) + '" value="' + esc(searchQuery) + '" ' +
-          'style="flex:1;min-width:140px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<select class="il-filter-lang" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + langFilterOpts + '</select>' +
-        '<select class="il-filter-type" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + typeFilterOpts + '</select>' +
-        '<select class="il-filter-tag" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + tagFilterOpts + '</select>' +
+          'style="flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<select class="il-filter-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langFilterOpts + '</select>' +
+        '<select class="il-filter-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeFilterOpts + '</select>' +
+        '<select class="il-filter-tag" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + tagFilterOpts + '</select>' +
       '</div>' +
       '<div style="margin-bottom:10px">' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;max-height:340px;overflow:auto">' +
-          (siteRows || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noSites')) + '</div>') +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:340px;overflow:auto">' +
+          (siteRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noSites')) + '</div>') +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">' +
-        '<input class="il-set-domain" placeholder="' + esc(t('domainPh')) + '" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<select class="il-set-newmode" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+        '<input class="il-set-domain" placeholder="' + esc(t('domainPh')) + '" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<select class="il-set-newmode" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
           '<option value="prompt" selected>' + esc(t('modePrompt')) + '</option>' +
           '<option value="auto">' + esc(t('modeAuto')) + '</option>' +
           '<option value="off">' + esc(t('modeOff')) + '</option>' +
         '</select>' +
-        '<button class="il-set-add" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+        '<button class="il-set-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
       '</div>';
 
     function wire(){
@@ -5464,21 +5719,21 @@ function openSettings(initialTab){
           if (existing) { existing.remove(); return; }
           const block = document.createElement('div');
           block.className = 'il-edit-block';
-          block.style.cssText = 'margin-top:8px;padding:10px;background:#f9f9f9;border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
+          block.style.cssText = 'margin-top:8px;padding:10px;background:var(--quote-bg);border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
           const typeOpts = '<option value=""' + (!site.type?' selected':'') + '>—</option>' +
             CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (site.type===tt.id?' selected':'') + '>' + esc(tt.label) + '</option>').join('');
           const datalistId = 'il-known-tags-' + idx;
           const datalist = '<datalist id="' + datalistId + '">' +
             getAllKnownTags().map(tg => '<option value="' + esc(tg) + '"></option>').join('') + '</datalist>';
           block.innerHTML =
-            '<label style="font-size:11px;color:#666;text-transform:uppercase">' + esc(t('siteType')) + '</label>' +
-            '<select class="il-edit-type" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px">' + typeOpts + '</select>' +
-            '<label style="font-size:11px;color:#666;text-transform:uppercase">' + esc(t('siteTags')) + '</label>' +
+            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteType')) + '</label>' +
+            '<select class="il-edit-type" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' + typeOpts + '</select>' +
+            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteTags')) + '</label>' +
             '<input class="il-edit-tags" list="' + datalistId + '" value="' + esc((site.tags||[]).join(', ')) + '" ' +
-              'style="flex:1;min-width:140px;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px">' +
+              'style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' +
             datalist +
-            '<button class="il-edit-save" style="padding:6px 10px;background:#d32f2f;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-left:auto">' + esc(t('saveBtn')) + '</button>' +
-            '<button class="il-edit-cancel" style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer;font-size:12px">' + esc(t('cancelBtn')) + '</button>';
+            '<button class="il-edit-save" style="padding:6px 10px;background:var(--accent);color:var(--on-solid);border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-left:auto">' + esc(t('saveBtn')) + '</button>' +
+            '<button class="il-edit-cancel" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:4px;cursor:pointer;font-size:12px">' + esc(t('cancelBtn')) + '</button>';
           row.appendChild(block);
           block.querySelector('.il-edit-save').onclick = () => {
             const type = block.querySelector('.il-edit-type').value;
@@ -5578,8 +5833,8 @@ function openSettings(initialTab){
           const prevShadow = row.style.boxShadow;
           const prevRadius = row.style.borderRadius;
           row.style.transition = 'background .3s, box-shadow .3s';
-          row.style.background = '#fffbe6';
-          row.style.boxShadow = '0 0 0 2px #d32f2f inset';
+          row.style.background = 'var(--quote-bg)';
+          row.style.boxShadow = '0 0 0 2px var(--accent) inset';
           row.style.borderRadius = '6px';
           setTimeout(() => {
             row.style.background = prevBg || '';
@@ -5641,8 +5896,8 @@ function openSettings(initialTab){
             const labels = { all: t('allMedia'), notadded: t('filterNotAdded'), added: t('filterAdded'), blocked: t('filterBlocked') };
             const active = catalogFilter === f;
             return '<button class="il-cat-filter" data-filter="' + f + '" style="padding:6px 12px;border:1px solid ' +
-              (active ? '#d32f2f' : '#ccc') + ';background:' + (active ? '#d32f2f' : '#fff') +
-              ';color:' + (active ? '#fff' : '#444') + ';border-radius:6px;cursor:pointer;font-size:12px">' +
+              (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
+              ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px">' +
               esc(labels[f]) + '</button>';
           }).join('') +
         '</div>';
@@ -5657,27 +5912,27 @@ function openSettings(initialTab){
           if (inList){
             actionBtns =
               '<button class="il-cat-remove" data-d="' + esc(it.d) + '" title="' + esc(t('remove')) + '" ' +
-                'style="padding:4px 10px;border:1px solid #c00;background:#fff;color:#c00;border-radius:5px;cursor:pointer;font-size:12px">✕</button>';
+                'style="padding:4px 10px;border:1px solid var(--block);background:var(--bg);color:var(--block);border-radius:5px;cursor:pointer;font-size:12px">✕</button>';
           } else if (isBlocked){
             actionBtns =
               '<button class="il-cat-unblock" data-d="' + esc(it.d) + '" title="' + esc(t('unblock')) + '" ' +
-                'style="padding:4px 10px;border:1px solid #0a7d00;background:#fff;color:#0a7d00;border-radius:5px;cursor:pointer;font-size:12px">↺</button>';
+                'style="padding:4px 10px;border:1px solid var(--preset);background:var(--bg);color:var(--preset);border-radius:5px;cursor:pointer;font-size:12px">↺</button>';
           } else {
             actionBtns =
               '<button class="il-cat-add" data-d="' + esc(it.d) + '" title="' + esc(t('addToMyList')) + '" ' +
-                'style="padding:4px 10px;border:none;background:#0a7d00;color:#fff;border-radius:5px;cursor:pointer;font-size:12px;font-weight:bold">＋</button>';
+                'style="padding:4px 10px;border:none;background:var(--preset);color:var(--on-solid);border-radius:5px;cursor:pointer;font-size:12px;font-weight:bold">＋</button>';
           }
 
           const statusBadge = inList
-            ? '<span style="color:#0a7d00;font-size:11px;font-weight:bold">✅ ' + esc(t('inYourList')) + '</span>'
+            ? '<span style="color:var(--preset);font-size:11px;font-weight:bold">✅ ' + esc(t('inYourList')) + '</span>'
             : isBlocked
-            ? '<span style="color:#c00;font-size:11px;font-weight:bold">🚫 ' + esc(t('blocked')) + '</span>'
+            ? '<span style="color:var(--block);font-size:11px;font-weight:bold">🚫 ' + esc(t('blocked')) + '</span>'
             : '';
 
-          return '<div class="il-cat-row" data-d="' + esc(it.d) + '" style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #f0f0f0' + (isCurrent ? ';background:#fffbe6' : '') + '">' +
+          return '<div class="il-cat-row" data-d="' + esc(it.d) + '" style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--border)' + (isCurrent ? ';background:var(--quote-bg)' : '') + '">' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:monospace;font-size:12px;font-weight:bold;color:#222">' + esc(it.d) + (isCurrent ? ' 📍' : '') + '</div>' +
-              '<div style="font-size:11px;color:#666">' + esc(it.n || '') +
+              '<div style="font-family:monospace;font-size:12px;font-weight:bold;color:var(--fg)">' + esc(it.d) + (isCurrent ? ' 📍' : '') + '</div>' +
+              '<div style="font-size:11px;color:var(--muted)">' + esc(it.n || '') +
                 ' · ' + esc((it.lang||'').toUpperCase()) +
                 (it.type ? ' · ' + esc(getTypeLabel(it.type)) : '') +
                 ((it.tags||[]).length ? ' · ' + esc(it.tags.join(', ')) : '') +
@@ -5685,33 +5940,33 @@ function openSettings(initialTab){
             '</div>' +
             statusBadge +
             '<button class="il-cat-visit" data-d="' + esc(it.d) + '" title="' + esc(t('visitSite')) + '" ' +
-              'style="padding:4px 10px;border:1px solid #ccc;background:#fff;border-radius:5px;cursor:pointer;font-size:12px">🔗</button>' +
+              'style="padding:4px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:5px;cursor:pointer;font-size:12px">🔗</button>' +
             actionBtns +
           '</div>';
         }).join('');
         return '<div style="margin-bottom:18px">' +
-          '<div style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:bold">' +
-            esc(g.group) + ' <span style="color:#aaa">(' + g.items.length + ')</span></div>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:4px 10px">' + rows + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:bold">' +
+            esc(g.group) + ' <span style="color:var(--muted)">(' + g.items.length + ')</span></div>' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 10px">' + rows + '</div>' +
         '</div>';
       }).join('');
 
       const html =
-        '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:14px;font-size:12px;color:#333;line-height:1.5">' +
+        '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
+          'margin-bottom:14px;font-size:12px;color:var(--fg);line-height:1.5">' +
           '💡 ' + esc(t('catalogInfo').replace('{N}', totalBase)) +
         '</div>' +
         '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
           '<input class="il-cat-search" placeholder="' + esc(t('searchCatalog')) + '" value="' + esc(catalogQuery) + '" ' +
-            'style="flex:1;min-width:180px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-          '<select class="il-cat-lang" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + langOpts + '</select>' +
-          '<select class="il-cat-type" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + typeOpts + '</select>' +
+            'style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+          '<select class="il-cat-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langOpts + '</select>' +
+          '<select class="il-cat-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeOpts + '</select>' +
         '</div>' +
         filterBtns +
-        '<div style="font-size:11px;color:#888;margin-bottom:10px">' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
           totalShown + ' / ' + totalBase + ' ' + esc(t('allMedia').toLowerCase()) +
         '</div>' +
-        (groupsHTML || '<div style="color:#888;padding:20px;text-align:center;font-size:13px">—</div>');
+        (groupsHTML || '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px">—</div>');
 
       function wire(){
         const searchInp = box.querySelector('.il-cat-search');
@@ -5778,16 +6033,16 @@ function openSettings(initialTab){
       function typeRow(tt){
         const idx = CFG.siteTypes.indexOf(tt);
         const affected = CFG.sites.filter(s => s.type === tt.id).length;
-        return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">' +
-          '<code style="font-size:11px;color:#999;min-width:90px">' + esc(tt.id) + '</code>' +
+        return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
+          '<code style="font-size:11px;color:var(--muted);min-width:90px">' + esc(tt.id) + '</code>' +
           '<input class="il-type-label" data-idx="' + idx + '" value="' + esc(tt.label) + '" ' +
-            'style="flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px">' +
-          '<span style="font-size:11px;color:#888;min-width:80px;text-align:right">' +
+            'style="flex:1;padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
+          '<span style="font-size:11px;color:var(--muted);min-width:80px;text-align:right">' +
             (affected ? affected + ' sitios' : '') + '</span>' +
           (tt.builtin
-            ? '<span style="font-size:11px;color:#999;min-width:24px;text-align:center" title="Predefinido">🔒</span>'
+            ? '<span style="font-size:11px;color:var(--muted);min-width:24px;text-align:center" title="Predefinido">🔒</span>'
             : '<button class="il-type-del" data-idx="' + idx + '" ' +
-                'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
+                'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
           ) +
         '</div>';
       }
@@ -5796,44 +6051,44 @@ function openSettings(initialTab){
       const customRows = custom.map(typeRow).join('');
 
       const tagChips = (CFG.siteTags || []).map((tg, i) =>
-        '<span style="display:inline-flex;align-items:center;gap:4px;background:#f1f1f1;border-radius:12px;padding:3px 4px 3px 10px;font-size:12px;margin:3px 4px 3px 0">' +
+        '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);border-radius:12px;padding:3px 4px 3px 10px;font-size:12px;margin:3px 4px 3px 0">' +
           esc(tg) +
-          '<button class="il-tag-del" data-idx="' + i + '" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:#c00">✕</button>' +
+          '<button class="il-tag-del" data-idx="' + i + '" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:var(--block)">✕</button>' +
         '</span>').join('');
 
       const html =
-        '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:16px;font-size:12px;color:#555;line-height:1.5">' +
+        '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:10px 14px;' +
+          'margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.5">' +
           esc(t('typesHint')) +
         '</div>' +
         '<div style="margin-bottom:22px">' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('defaultTypes')) + ' <span style="color:#aaa">(' + builtin.length + ')</span></label>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:4px 12px;margin-bottom:12px">' +
-            (builtinRows || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
+            esc(t('defaultTypes')) + ' <span style="color:var(--muted)">(' + builtin.length + ')</span></label>' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:12px">' +
+            (builtinRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
           '</div>' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('customTypes')) + ' <span style="color:#aaa">(' + custom.length + ')</span></label>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:4px 12px;margin-bottom:8px">' +
-            (customRows || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
+            esc(t('customTypes')) + ' <span style="color:var(--muted)">(' + custom.length + ')</span></label>' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:8px">' +
+            (customRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
           '</div>' +
           '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-type" placeholder="' + esc(t('newTypePh')) + '" style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-            '<button class="il-add-type" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+            '<input class="il-new-type" placeholder="' + esc(t('newTypePh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+            '<button class="il-add-type" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
           '</div>' +
         '</div>' +
-        '<div style="border-top:1px solid #eee;padding-top:16px">' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('tagsSection')) + ' <span style="color:#aaa">(' + (CFG.siteTags||[]).length + ')</span></label>' +
-          '<div style="background:#f9f9f9;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#666">' +
+        '<div style="border-top:1px solid var(--border);padding-top:16px">' +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
+            esc(t('tagsSection')) + ' <span style="color:var(--muted)">(' + (CFG.siteTags||[]).length + ')</span></label>' +
+          '<div style="background:var(--quote-bg);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--muted)">' +
             esc(t('tagsHint')) +
           '</div>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:10px 12px;margin-bottom:8px;min-height:40px">' +
-            (tagChips || '<div style="color:#888;font-size:13px">' + esc(t('noTags')) + '</div>') +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;min-height:40px">' +
+            (tagChips || '<div style="color:var(--muted);font-size:13px">' + esc(t('noTags')) + '</div>') +
           '</div>' +
           '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-tag" placeholder="' + esc(t('newTagPh')) + '" style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-            '<button class="il-add-tag" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+            '<input class="il-new-tag" placeholder="' + esc(t('newTagPh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+            '<button class="il-add-tag" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
           '</div>' +
         '</div>';
 
@@ -5932,22 +6187,22 @@ function openSettings(initialTab){
     const leidas   = pendientesVisibles().filter(r => r.read);
 
     function fila(r, esLeida){
-      return '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eee' +
-        (esLeida ? ';opacity:.55' : '') + '">' +
+      // Leída: gris y tachada, sin transparencia (con ella no llegaba a 3:1).
+      return '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">' +
           '<div style="flex:1;min-width:0">' +
             '<a href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer" ' +
-              'style="color:#d32f2f;text-decoration:none;font-weight:bold;font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' +
+              'style="color:' + (esLeida ? 'var(--muted)' : 'var(--accent)') + ';text-decoration:none;font-weight:bold;font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' +
               (esLeida ? ';text-decoration:line-through' : '') + '">' + esc(r.title || r.url) + '</a>' +
-            '<div style="font-size:11px;color:#888;margin-top:2px">' +
+            '<div style="font-size:11px;color:var(--muted);margin-top:2px">' +
               esc(r.domain || '') + ' · ' + esc((r.date || '').slice(0,10)) +
               (esLeida && r.readAt ? ' · ✓ ' + esc(r.readAt.slice(0,10)) : '') +
             '</div>' +
           '</div>' +
           '<button data-url="' + esc(r.url) + '" class="il-rl-toggle" title="' + esc(esLeida ? t('markUnread') : t('markRead')) + '" ' +
-            'style="border:1px solid #0a7d00;background:#fff;color:#0a7d00;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">' +
+            'style="border:1px solid var(--preset);background:var(--bg);color:var(--preset);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">' +
             (esLeida ? '↺' : '✓') + '</button>' +
           '<button data-url="' + esc(r.url) + '" class="il-rl-del" title="' + esc(t('remove')) + '" ' +
-            'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✕</button>' +
+            'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✕</button>' +
         '</div>';
     }
 
@@ -5956,26 +6211,26 @@ function openSettings(initialTab){
 
     const html =
       '<div style="margin-bottom:14px">' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;max-height:400px;overflow:auto">' +
-          (rowsNoLeidas || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noReadLater')) + '</div>') +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:400px;overflow:auto">' +
+          (rowsNoLeidas || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noReadLater')) + '</div>') +
         '</div>' +
       '</div>' +
       (keepRead && leidas.length ?
         '<div style="margin-bottom:14px">' +
-          '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">' +
             esc(t('readItems')) + ' (' + leidas.length + ')</div>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;max-height:200px;overflow:auto;background:#fafafa">' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:200px;overflow:auto;background:var(--quote-bg)">' +
             rowsLeidas +
           '</div>' +
         '</div>'
         : '') +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
-        '<label style="font-size:12px;color:#666;display:flex;align-items:center;gap:6px;cursor:pointer">' +
+        '<label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer">' +
           '<input type="checkbox" class="il-keep-read"' + (keepRead ? ' checked' : '') + '>' +
           esc(t('keepReadItems')) +
         '</label>' +
         (keepRead && leidas.length ?
-          '<button class="il-clear-read" style="padding:6px 12px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;color:#c00">' +
+          '<button class="il-clear-read" style="padding:6px 12px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;font-size:12px;color:var(--block)">' +
             esc(t('clearRead')) + '</button>'
           : '') +
       '</div>';
@@ -6023,30 +6278,30 @@ function openSettings(initialTab){
       const defaultId = getDefaultDictId(l.code);
       const rows = dicts.map(d => dictRow(d, l.code, d.id === defaultId, !!d.builtin)).join('');
       return '<div style="margin-bottom:16px">' +
-        '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' + esc(l.label) + '</label>' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px">' + rows + '</div>' +
+        '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' + esc(l.label) + '</label>' +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px">' + rows + '</div>' +
       '</div>';
     }).join('');
 
     const html =
       '<div style="margin-bottom:16px">' +
-        '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' + esc(t('dictMode')) + '</label>' +
-        '<select class="il-dict-mode" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px;width:100%">' +
+        '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' + esc(t('dictMode')) + '</label>' +
+        '<select class="il-dict-mode" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;width:100%">' +
           '<option value="direct"' + (CFG.dict.mode === 'direct' ? ' selected' : '') + '>' + esc(t('dictModeDirect')) + '</option>' +
           '<option value="popup"' + (CFG.dict.mode === 'popup' ? ' selected' : '') + '>' + esc(t('dictModePopup')) + '</option>' +
         '</select>' +
       '</div>' +
       blocks +
-      '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#666">' +
+      '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted)">' +
         esc(t('dictUrlHint')) +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
-        '<input class="il-dict-new-name" placeholder="' + esc(t('dictName')) + '" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<input class="il-dict-new-url" placeholder="' + esc(t('dictUrl')) + '" style="flex:2;min-width:200px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<select class="il-dict-new-lang" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+        '<input class="il-dict-new-name" placeholder="' + esc(t('dictName')) + '" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<input class="il-dict-new-url" placeholder="' + esc(t('dictUrl')) + '" style="flex:2;min-width:200px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<select class="il-dict-new-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
           langs.map(l => '<option value="' + l.code + '">' + l.code.toUpperCase() + '</option>').join('') +
         '</select>' +
-        '<button class="il-dict-add" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+        '<button class="il-dict-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
       '</div>';
 
     function wire(){
@@ -6091,28 +6346,28 @@ function openSettings(initialTab){
   function renderServiciosTab(){
     const servicios = serviciosConfigurados();
     const filas = servicios.map(svc =>
-      '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">' +
+      '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
         '<div style="flex:1;font-size:13px">' + esc(svc.nombre) + '</div>' +
-        '<div style="flex:2;font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' +
+        '<div style="flex:2;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' +
           esc(svc.plantilla) + '">' + esc(svc.plantilla) + '</div>' +
         '<button data-id="' + esc(svc.id) + '" class="il-svc-del" title="' + esc(t('serviciosQuitar')) +
           '" aria-label="' + esc(t('serviciosQuitar')) + '" ' +
-          'style="border:none;background:transparent;cursor:pointer;color:#c00;font-size:12px;padding:2px 6px">🗑</button>' +
+          'style="border:none;background:transparent;cursor:pointer;color:var(--block);font-size:12px;padding:2px 6px">🗑</button>' +
       '</div>'
     ).join('');
 
     const html =
-      '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px;margin-bottom:16px;' +
-        'font-size:12px;color:#666;line-height:1.6">' + esc(t('serviciosAyuda')) + '</div>' +
-      '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;margin-bottom:16px">' +
-        (filas || '<div style="padding:8px 0;font-size:13px;color:#999">' + esc(t('serviciosVacio')) + '</div>') +
+      '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:12px;margin-bottom:16px;' +
+        'font-size:12px;color:var(--muted);line-height:1.6">' + esc(t('serviciosAyuda')) + '</div>' +
+      '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:16px">' +
+        (filas || '<div style="padding:8px 0;font-size:13px;color:var(--muted)">' + esc(t('serviciosVacio')) + '</div>') +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
         '<input class="il-svc-nombre" placeholder="' + esc(t('serviciosNombre')) + '" ' +
-          'style="flex:1;min-width:120px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+          'style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
         '<input class="il-svc-plantilla" placeholder="https://…{url}" ' +
-          'style="flex:2;min-width:200px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<button class="il-svc-add" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' +
+          'style="flex:2;min-width:200px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<button class="il-svc-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' +
           esc(t('add')) + '</button>' +
       '</div>' +
       '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:16px;cursor:pointer">' +
@@ -6120,9 +6375,9 @@ function openSettings(initialTab){
         esc(t('serviciosFab')) +
       '</label>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-        '<button class="il-svc-import" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' +
+        '<button class="il-svc-import" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' +
           esc(t('serviciosImportar')) + '</button>' +
-        '<button class="il-svc-export" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer"' +
+        '<button class="il-svc-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer"' +
           (servicios.length ? '' : ' disabled') + '>' + esc(t('serviciosExportar')) + '</button>' +
       '</div>';
 
@@ -6179,11 +6434,11 @@ function openSettings(initialTab){
   function renderShortcutsTab(){
     function keysHTML(keys){
       if (!Array.isArray(keys) || !keys.length){
-        return '<em style="color:#999">' + esc(t('shortcutEmpty')) + '</em>';
+        return '<em style="color:var(--muted)">' + esc(t('shortcutEmpty')) + '</em>';
       }
       return keys.map(k =>
-        '<kbd style="display:inline-block;padding:2px 7px;border:1px solid #ccc;border-radius:4px;' +
-        'background:#f7f7f7;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0 4px 0 0">' +
+        '<kbd style="display:inline-block;padding:2px 7px;border:1px solid var(--btn-border);border-radius:4px;' +
+        'background:var(--btn-bg);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0 4px 0 0">' +
         esc(formatShortcut(k)) + '</kbd>'
       ).join('');
     }
@@ -6195,18 +6450,18 @@ function openSettings(initialTab){
         && scState.capture.scope === scope
         && scState.capture.action === action;
       const display = isCapturing
-        ? '<em style="color:#d32f2f">' + esc(t('shortcutCapture')) + '</em>'
+        ? '<em style="color:var(--accent)">' + esc(t('shortcutCapture')) + '</em>'
         : keysHTML(keys);
       return '<div class="il-sc-row" data-scope="' + scope + '" data-action="' + action + '" ' +
-        'style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0">' +
+        'style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
         '<div style="flex:1;font-size:13px">' + esc(shortcutActionLabel(action)) + '</div>' +
         '<div style="flex:1;text-align:right">' + display + '</div>' +
         (isReserved
-          ? '<span style="font-size:11px;color:#999;min-width:180px">' + esc(t('shortcutReservedNote')) + '</span>'
+          ? '<span style="font-size:11px;color:var(--muted);min-width:180px">' + esc(t('shortcutReservedNote')) + '</span>'
           : '<button class="il-sc-edit" data-scope="' + scope + '" data-action="' + action + '" ' +
-              'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✏️</button>' +
+              'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✏️</button>' +
             '<button class="il-sc-del" data-scope="' + scope + '" data-action="' + action + '" ' +
-              'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
+              'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
         ) +
       '</div>';
     }
@@ -6215,8 +6470,8 @@ function openSettings(initialTab){
     const globalActions = Object.keys(DEFAULT_CFG.shortcuts.global);
 
     const html =
-      '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px;' +
-        'margin-bottom:16px;font-size:12px;color:#555;line-height:1.7">' +
+      '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:12px;' +
+        'margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7">' +
         '<strong>' + esc(t('shortcutNoteTitle')) + '</strong><br>' +
         '• ' + esc(t('shortcutNoteReader')) + '<br>' +
         '• ' + esc(t('shortcutNoteGlobal')) + '<br>' +
@@ -6224,20 +6479,20 @@ function openSettings(initialTab){
         '• ' + esc(t('shortcutReservedNote')) +
       '</div>' +
       '<div style="display:flex;justify-content:flex-end;margin-bottom:16px">' +
-        '<button class="il-sc-reset" style="padding:6px 12px;border:1px solid #ccc;background:#fff;' +
-          'border-radius:6px;cursor:pointer;font-size:12px;color:#c00">' + esc(t('shortcutReset')) + '</button>' +
+        '<button class="il-sc-reset" style="padding:6px 12px;border:1px solid var(--btn-border);background:var(--bg);' +
+          'border-radius:6px;cursor:pointer;font-size:12px;color:var(--block)">' + esc(t('shortcutReset')) + '</button>' +
       '</div>' +
       '<div style="margin-bottom:22px">' +
-        '<h3 style="font-size:13px;margin:0 0 8px;color:#666;text-transform:uppercase;letter-spacing:.5px">' +
+        '<h3 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
           esc(t('shortcutReader')) + '</h3>' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:0 12px">' +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:0 12px">' +
           readerActions.map(a => rowHTML('reader', a)).join('') +
         '</div>' +
       '</div>' +
       '<div>' +
-        '<h3 style="font-size:13px;margin:0 0 8px;color:#666;text-transform:uppercase;letter-spacing:.5px">' +
+        '<h3 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
           esc(t('shortcutGlobal')) + '</h3>' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:0 12px">' +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:0 12px">' +
           globalActions.map(a => rowHTML('global', a)).join('') +
         '</div>' +
       '</div>';
@@ -6323,8 +6578,8 @@ function openSettings(initialTab){
   function renderGeneralTab(){
     const html =
       '<div style="margin-bottom:18px">' +
-        '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' + esc(t('language')) + '</label>' +
-        '<select class="il-set-lang-app" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+        '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' + esc(t('language')) + '</label>' +
+        '<select class="il-set-lang-app" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
           '<option value="es"' + (CFG.lang==='es'?' selected':'') + '>Español</option>' +
           '<option value="gl"' + (CFG.lang==='gl'?' selected':'') + '>Galego</option>' +
           '<option value="ca"' + (CFG.lang==='ca'?' selected':'') + '>Català</option>' +
@@ -6332,22 +6587,22 @@ function openSettings(initialTab){
           '<option value="eu"' + (CFG.lang==='eu'?' selected':'') + '>Euskara</option>' +
         '</select>' +
       '</div>' +
-      '<div style="margin-bottom:18px;padding:14px;border:2px solid ' + (CFG.readerAutoAll ? '#43a047' : '#ccc') + ';border-radius:8px;background:' + (CFG.readerAutoAll ? '#e8f5e9' : '#fafafa') + '">' +
+      '<div style="margin-bottom:18px;padding:14px;border:2px solid ' + (CFG.readerAutoAll ? 'var(--preset)' : 'var(--btn-border)') + ';border-radius:8px;background:' + (CFG.readerAutoAll ? 'var(--preset-bg)' : 'var(--quote-bg)') + '">' +
         '<label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer">' +
           '<input type="checkbox" class="il-set-auto-all"' + (CFG.readerAutoAll ? ' checked' : '') + ' style="margin-top:3px;width:18px;height:18px;cursor:pointer;flex:0 0 auto">' +
           '<span>' +
-            '<span style="display:block;font-weight:bold;font-size:14px;color:' + (CFG.readerAutoAll ? '#1b5e20' : '#222') + '">' +
+            '<span style="display:block;font-weight:bold;font-size:14px;color:' + (CFG.readerAutoAll ? 'var(--preset)' : 'var(--fg)') + '">' +
               (CFG.readerAutoAll ? '🟢 ACTIVADO — ' : '⚪ DESACTIVADO — ') +
               esc(t('readerAutoAllLabel')) +
             '</span>' +
-            '<span style="display:block;font-size:12px;color:#555;margin-top:4px">' + esc(t('readerAutoAllHint')) + '</span>' +
+            '<span style="display:block;font-size:12px;color:var(--muted);margin-top:4px">' + esc(t('readerAutoAllHint')) + '</span>' +
           '</span>' +
         '</label>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #eee;padding-top:14px">' +
-        '<button class="il-set-export" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
-        '<button class="il-set-import" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' + esc(t('importBtn')) + '</button>' +
-        '<button class="il-set-reset"  style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;color:#c00;margin-left:auto">' + esc(t('resetBtn')) + '</button>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px">' +
+        '<button class="il-set-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
+        '<button class="il-set-import" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('importBtn')) + '</button>' +
+        '<button class="il-set-reset"  style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;color:var(--block);margin-left:auto">' + esc(t('resetBtn')) + '</button>' +
       '</div>';
 
     function wire(){
@@ -6436,7 +6691,7 @@ function openSettings(initialTab){
 
   function render(){
     const tabsHTML =
-      '<div style="display:flex;gap:4px;border-bottom:1px solid #eee;margin-bottom:18px;flex-wrap:wrap">' +
+      '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap">' +
         tabBtn('sites', t('sites')) +
         tabBtn('catalog', t('catalog')) +
         tabBtn('pendientes', t('pendientes')) +
@@ -6446,10 +6701,10 @@ function openSettings(initialTab){
         tabBtn('general', t('settings')) +
       '</div>';
 
-    const headerHTML =
+    const headerHTML = dentro ? '' :
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
         '<h2 style="margin:0;font-size:20px">' + esc(t('settings')) + '</h2>' +
-        '<button class="il-set-close" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' + esc(t('close')) + '</button>' +
+        '<button class="il-set-close" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('close')) + '</button>' +
       '</div>';
 
     let payload;
@@ -6463,7 +6718,8 @@ function openSettings(initialTab){
 
     box.innerHTML = headerHTML + tabsHTML + payload.html;
 
-    box.querySelector('.il-set-close').onclick = closeSettings;
+    const cerrar = box.querySelector('.il-set-close');
+    if (cerrar) cerrar.onclick = closeSettings;
     box.querySelectorAll('.il-set-tab').forEach(b => {
       b.onclick = () => { activeSection = b.dataset.tab; render(); };
     });
@@ -6472,6 +6728,7 @@ function openSettings(initialTab){
   }
 
   render();
+  if (!dentro) box.focus({ preventScroll: true });
 }
 
 /* ============================================================
@@ -6677,6 +6934,8 @@ document.addEventListener('keydown', globalKeyHandler, true);
                         leidasHasta}.
      · 'lector-estado'  lector → Voceiro {…, leidas}: lo terminado en el lector
                         (11-pendientes.js); Voceiro lo confirma con leidasHasta.
+     · 'voceiro-ajustes-lector' Voceiro → lector {v}: pinta tus ajustes en
+                        #aj-lector-panel (página Lector de Ajustes).
    Pendientes y perfil se fusionan con shared/sync/fusion.js. «lector» es
    la configuración propia del lector: Voceiro la guarda sin mirarla y la
    lleva a otros dispositivos con su sincronización; gana la más reciente.
@@ -6733,6 +6992,15 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   if (!esVoceiro()) return;
 
   PLATAFORMA.alCambiar(VOLVER_KEY, () => PLATAFORMA.enfocarPestana());
+
+  // Página Lector de Ajustes de Voceiro: deja un hueco y avisa; el panel de
+  // ajustes del lector se pinta ahí (una vez: si ya está, no se repite).
+  document.addEventListener('voceiro-ajustes-lector', e => {
+    const d = e.detail;
+    if (!d || d.v !== PUENTE_V) return;
+    const hueco = document.getElementById('aj-lector-panel');
+    if (hueco) openSettings('sites', { dentro: hueco });
+  });
 
   document.addEventListener('voceiro-ping', () => {
     document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: { v: PUENTE_V } }));

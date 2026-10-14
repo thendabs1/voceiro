@@ -14,7 +14,7 @@
 export const BORRADO_DIAS = 60;
 export const PENDIENTES_MAX = 1000;   // sin leer que se conservan
 export const LEIDOS_MAX = 300;        // leídos que se conservan
-export const CAMPOS_PERFIL = ['lang', 'tema', 'fuente', 'fs', 'just', 'bionic', 'focus'];
+export const CAMPOS_PERFIL = ['lang', 'tema', 'fuente', 'fs', 'just', 'bionic', 'focus', 'colores'];
 
 const DIA_MS = 86400000;
 
@@ -115,11 +115,31 @@ export function masReciente(a, b){
   return huella(a) >= huella(b) ? a : b;
 }
 
+// Colores del tema personalizado: siempre las mismas cuatro claves, en el
+// mismo orden (la huella del perfil depende de él) y como #rrggbb.
+export const CLAVES_COLORES = ['fondo', 'texto', 'enlaces', 'titulos'];
+export function limpiarColores(c){
+  if (!c || typeof c !== 'object') return null;
+  const out = {};
+  for (const k of CLAVES_COLORES){
+    const v = String(c[k] || '').trim().toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(v)) return null;
+    out[k] = v;
+  }
+  return out;
+}
+
 // Perfil de lectura común: los campos de CAMPOS_PERFIL más `actualizado`.
 export function limpiarPerfil(p){
   if (!p || typeof p !== 'object') return null;
   const out = {};
-  for (const k of CAMPOS_PERFIL) if (p[k] !== undefined) out[k] = p[k];
+  for (const k of CAMPOS_PERFIL){
+    if (p[k] === undefined) continue;
+    if (k === 'colores'){
+      const c = limpiarColores(p[k]);
+      if (c) out.colores = c;
+    } else out[k] = p[k];
+  }
   out.actualizado = fusionMs(p.actualizado);
   return out;
 }
