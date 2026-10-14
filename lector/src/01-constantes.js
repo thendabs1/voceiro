@@ -2,9 +2,6 @@
    1. CONSTANTES
    ============================================================ */
 const SCRIPT_VERSION = '{{VERSION}}';
-const AUTO_MIN_RATIO = 0.80;
-const AUTO_MIN_RICH  = 3;
-const AUTO_MIN_LEN   = 300;
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 const SITE_LANGS     = ['auto','es','gl','ca','en','eu','fr','de','it','pt'];
 const UI_LANGS       = ['es','gl','ca','en','eu'];

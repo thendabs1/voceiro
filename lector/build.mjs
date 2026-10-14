@@ -51,7 +51,7 @@ function version(){
 // Voceiro; los de modulos/ son solo del lector, pero aparte para probarlos
 // con node --test (tests/lector).
 const COMPARTIDOS = ['../shared/sync/fusion.js', '../shared/tema/personalizado.js',
-                     'modulos/codigo-incrustado.js'];
+                     'modulos/codigo-incrustado.js', 'modulos/mixto.js'];
 const TRAS = '02-plataforma.js';
 
 function compartido(rel){
