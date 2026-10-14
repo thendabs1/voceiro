@@ -3,13 +3,20 @@
    ============================================================ */
 function openSettings(initialTab){
   if (document.getElementById('il-settings')) return;
-  const root = document.createElement('div');
+  // Con el tema del perfil; diálogo modal: el foco entra y, al cerrar,
+  // vuelve a donde estaba.
+  const focoAntes = document.activeElement;
+  const root = temaDe(document.createElement('div'));
   root.id = 'il-settings';
   root.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2147483647;' +
     'display:flex;align-items:center;justify-content:center;padding:20px;' +
     'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
   const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;color:#222;border-radius:12px;max-width:960px;width:100%;' +
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-label', t('settingsShort'));
+  box.tabIndex = -1;
+  box.style.cssText = 'background:var(--bg);color:var(--fg);border-radius:12px;max-width:960px;width:100%;' +
     'max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:24px';
   root.appendChild(box);
   document.body.appendChild(root);
@@ -35,6 +42,10 @@ function openSettings(initialTab){
     scState.capture = null;
     root.remove();
     document.removeEventListener('keydown', escHandler, true);
+    if (focoAntes && focoAntes.isConnected){
+      if (focoAntes.__enfocar) focoAntes.__enfocar();
+      else if (focoAntes.focus) focoAntes.focus();
+    }
   };
   const escHandler = e => {
     if (e.key === 'Escape'){
@@ -51,28 +62,28 @@ function openSettings(initialTab){
 
   function dictRow(d, lang, isDefault, isBuiltin){
     const canDelete = !isBuiltin;
-    return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">' +
+    return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
       '<div style="flex:1;font-size:13px">' + esc(d.name) + '</div>' +
-      '<div style="font-size:11px;color:#888;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(d.url) + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(d.url) + '</div>' +
       '<input type="radio" name="def-' + lang + '" value="' + esc(d.id) + '"' + (isDefault ? ' checked' : '') +
         ' data-lang="' + lang + '" class="il-dict-setdef" style="cursor:pointer" title="Predeterminado">' +
       (canDelete ? '<button data-lang="' + lang + '" data-id="' + esc(d.id) + '" class="il-dict-del" ' +
-        'style="border:none;background:transparent;cursor:pointer;color:#c00;font-size:12px;padding:2px 6px">🗑</button>' : '') +
+        'style="border:none;background:transparent;cursor:pointer;color:var(--block);font-size:12px;padding:2px 6px">🗑</button>' : '') +
     '</div>';
   }
 
   function tabBtn(id, label){
     return '<button class="il-set-tab" data-tab="' + id + '" style="padding:8px 16px;border:none;' +
-      'border-bottom:2px solid ' + (activeSection === id ? '#d32f2f' : 'transparent') + ';' +
+      'border-bottom:2px solid ' + (activeSection === id ? 'var(--accent)' : 'transparent') + ';' +
       'background:transparent;cursor:pointer;font-weight:bold;color:' +
-      (activeSection === id ? '#d32f2f' : '#666') + '">' + esc(label) + '</button>';
+      (activeSection === id ? 'var(--accent)' : 'var(--muted)') + '">' + esc(label) + '</button>';
   }
 
   function subTabBtn(parent, id, label){
     const active = activeCatalogSub === id;
     return '<button class="il-cat-subtab" data-subtab="' + id + '" style="padding:6px 14px;border:1px solid ' +
-      (active ? '#d32f2f' : '#ccc') + ';background:' + (active ? '#d32f2f' : '#fff') +
-      ';color:' + (active ? '#fff' : '#444') + ';border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;' +
+      (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
+      ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;' +
       'margin-right:6px">' + esc(label) + '</button>';
   }
 
@@ -82,7 +93,7 @@ function openSettings(initialTab){
     const title = ex.mode === 'selector' ? ('Selector: ' + (ex.root || '—'))
                 : ex.mode === 'all' ? 'Todo el texto'
                 : '';
-    return ' · <span style="color:#0a7d00;font-weight:bold" title="' + esc(title) + '">' + label + '</span>';
+    return ' · <span style="color:var(--preset);font-weight:bold" title="' + esc(title) + '">' + label + '</span>';
   }
 
   function langLabel(lang){
@@ -107,45 +118,45 @@ function openSettings(initialTab){
     const siteRows = sitesFiltered.map((s) => {
       const realIdx = CFG.sites.indexOf(s);
       const pats = (s.ignorePatterns || []).map((p, pi) =>
-        '<span style="display:inline-flex;align-items:center;gap:4px;background:#f1f1f1;' +
+        '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);' +
           'border-radius:12px;padding:2px 4px 2px 10px;font-family:monospace;font-size:11px;margin:2px 4px 2px 0">' +
           esc(p) +
           '<button data-idx="' + realIdx + '" data-pi="' + pi + '" class="il-set-delpat" ' +
-            'style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:#c00">✕</button>' +
+            'style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:var(--block)">✕</button>' +
         '</span>').join('');
-      const patBlock = '<div style="margin-top:4px;font-size:11px;color:#666">' +
+      const patBlock = '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
         '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('ignoredSections')) + ':</span> ' +
-        (pats || '<span style="color:#aaa">' + esc(t('noIgnoredSections')) + '</span>') +
+        (pats || '<span style="color:var(--muted)">' + esc(t('noIgnoredSections')) + '</span>') +
       '</div>';
       const tagsStr = (s.tags || []).join(', ');
       const typeLabel = s.type ? getTypeLabel(s.type) : '—';
-      const textOnlyBadge = s.textOnly ? ' · <span style="color:#d32f2f;font-weight:bold">📝</span>' : '';
+      const textOnlyBadge = s.textOnly ? ' · <span style="color:var(--accent);font-weight:bold">📝</span>' : '';
       const exBadge = extractionBadge(s.extraction);
-      return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid #eee;cursor:pointer">' +
+      return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
           '<div style="flex:1;min-width:140px;font-family:monospace;font-size:13px">' + esc(s.domain) + '</div>' +
-          '<select data-idx="' + realIdx + '" class="il-set-mode" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px">' +
+          '<select data-idx="' + realIdx + '" class="il-set-mode" style="padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
             '<option value="off"'    + (s.mode==='off'   ?' selected':'') + '>' + esc(t('modeOff'))    + '</option>' +
             '<option value="prompt"' + (s.mode==='prompt'?' selected':'') + '>' + esc(t('modePrompt')) + '</option>' +
             '<option value="auto"'   + (s.mode==='auto'  ?' selected':'') + '>' + esc(t('modeAuto'))   + '</option>' +
           '</select>' +
-          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px">' +
+          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
             '<option value="auto"' + (s.readerSource==='auto'?' selected':'') + '>' + esc(t('srcAuto')) + '</option>' +
             '<option value="jsonld"' + (s.readerSource==='jsonld'?' selected':'') + '>' + esc(t('srcJsonld')) + '</option>' +
             '<option value="readability"' + (s.readerSource==='readability'?' selected':'') + '>' + esc(t('srcReadability')) + '</option>' +
           '</select>' +
-          '<select data-idx="' + realIdx + '" class="il-set-lang" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px">' +
+          '<select data-idx="' + realIdx + '" class="il-set-lang" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
             SITE_LANGS.map(l => '<option value="' + l + '"' + (s.lang===l?' selected':'') + '>' + esc(langLabel(l)) + '</option>').join('') +
           '</select>' +
           '<button data-idx="' + realIdx + '" class="il-set-extract" title="' + esc(t('extractionTitle')) + '" ' +
-            'style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">🔬</button>' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-visit" title="' + esc(t('openSite')) + '" ' +
-            'style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">🔗</button>' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔗</button>' +
           '<button data-idx="' + realIdx + '" class="il-set-edit" title="Editar" ' +
-            'style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">✏️</button>' +
-          '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">🗑</button>' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">✏️</button>' +
+          '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🗑</button>' +
         '</div>' +
-        '<div style="margin-top:4px;font-size:11px;color:#666">' +
+        '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
           '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colLang')) + ':</span> ' + esc(langLabel(s.lang)) +
           ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colType')) + ':</span> ' + esc(typeLabel) +
           (tagsStr ? ' · <span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colTags')) + ':</span> ' + esc(tagsStr) : '') +
@@ -163,10 +174,10 @@ function openSettings(initialTab){
       knownTags.map(tg => '<option value="' + esc(tg) + '"' + (filterTag===tg?' selected':'') + '>' + esc(tg) + '</option>').join('');
 
     const addCurrentBanner = currentDomain && !currentDomainInList
-      ? '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;' +
+      ? '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
           'margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap">' +
           '<span style="flex:1;min-width:140px">📍 ' + esc(t('currentSiteHint')) + ': <strong style="font-family:monospace">' + esc(currentDomain) + '</strong></span>' +
-          '<button class="il-set-add-current" style="padding:6px 14px;background:#0a7d00;color:#fff;border:none;' +
+          '<button class="il-set-add-current" style="padding:6px 14px;background:var(--preset);color:var(--on-solid);border:none;' +
             'border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold;white-space:nowrap">+ ' + esc(t('addCurrentShort')) + '</button>' +
         '</div>'
       : '';
@@ -175,24 +186,24 @@ function openSettings(initialTab){
       addCurrentBanner +
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
         '<input class="il-set-search" placeholder="' + esc(t('searchPlaceholder')) + '" value="' + esc(searchQuery) + '" ' +
-          'style="flex:1;min-width:140px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<select class="il-filter-lang" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + langFilterOpts + '</select>' +
-        '<select class="il-filter-type" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + typeFilterOpts + '</select>' +
-        '<select class="il-filter-tag" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + tagFilterOpts + '</select>' +
+          'style="flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<select class="il-filter-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langFilterOpts + '</select>' +
+        '<select class="il-filter-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeFilterOpts + '</select>' +
+        '<select class="il-filter-tag" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + tagFilterOpts + '</select>' +
       '</div>' +
       '<div style="margin-bottom:10px">' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;max-height:340px;overflow:auto">' +
-          (siteRows || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noSites')) + '</div>') +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:340px;overflow:auto">' +
+          (siteRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noSites')) + '</div>') +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">' +
-        '<input class="il-set-domain" placeholder="' + esc(t('domainPh')) + '" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<select class="il-set-newmode" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+        '<input class="il-set-domain" placeholder="' + esc(t('domainPh')) + '" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<select class="il-set-newmode" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
           '<option value="prompt" selected>' + esc(t('modePrompt')) + '</option>' +
           '<option value="auto">' + esc(t('modeAuto')) + '</option>' +
           '<option value="off">' + esc(t('modeOff')) + '</option>' +
         '</select>' +
-        '<button class="il-set-add" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+        '<button class="il-set-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
       '</div>';
 
     function wire(){
@@ -265,21 +276,21 @@ function openSettings(initialTab){
           if (existing) { existing.remove(); return; }
           const block = document.createElement('div');
           block.className = 'il-edit-block';
-          block.style.cssText = 'margin-top:8px;padding:10px;background:#f9f9f9;border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
+          block.style.cssText = 'margin-top:8px;padding:10px;background:var(--quote-bg);border-radius:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
           const typeOpts = '<option value=""' + (!site.type?' selected':'') + '>—</option>' +
             CFG.siteTypes.map(tt => '<option value="' + esc(tt.id) + '"' + (site.type===tt.id?' selected':'') + '>' + esc(tt.label) + '</option>').join('');
           const datalistId = 'il-known-tags-' + idx;
           const datalist = '<datalist id="' + datalistId + '">' +
             getAllKnownTags().map(tg => '<option value="' + esc(tg) + '"></option>').join('') + '</datalist>';
           block.innerHTML =
-            '<label style="font-size:11px;color:#666;text-transform:uppercase">' + esc(t('siteType')) + '</label>' +
-            '<select class="il-edit-type" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px">' + typeOpts + '</select>' +
-            '<label style="font-size:11px;color:#666;text-transform:uppercase">' + esc(t('siteTags')) + '</label>' +
+            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteType')) + '</label>' +
+            '<select class="il-edit-type" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' + typeOpts + '</select>' +
+            '<label style="font-size:11px;color:var(--muted);text-transform:uppercase">' + esc(t('siteTags')) + '</label>' +
             '<input class="il-edit-tags" list="' + datalistId + '" value="' + esc((site.tags||[]).join(', ')) + '" ' +
-              'style="flex:1;min-width:140px;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px">' +
+              'style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--btn-border);border-radius:4px;font-size:13px">' +
             datalist +
-            '<button class="il-edit-save" style="padding:6px 10px;background:#d32f2f;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-left:auto">' + esc(t('saveBtn')) + '</button>' +
-            '<button class="il-edit-cancel" style="padding:6px 10px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer;font-size:12px">' + esc(t('cancelBtn')) + '</button>';
+            '<button class="il-edit-save" style="padding:6px 10px;background:var(--accent);color:var(--on-solid);border:none;border-radius:4px;cursor:pointer;font-size:12px;margin-left:auto">' + esc(t('saveBtn')) + '</button>' +
+            '<button class="il-edit-cancel" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:4px;cursor:pointer;font-size:12px">' + esc(t('cancelBtn')) + '</button>';
           row.appendChild(block);
           block.querySelector('.il-edit-save').onclick = () => {
             const type = block.querySelector('.il-edit-type').value;
@@ -379,8 +390,8 @@ function openSettings(initialTab){
           const prevShadow = row.style.boxShadow;
           const prevRadius = row.style.borderRadius;
           row.style.transition = 'background .3s, box-shadow .3s';
-          row.style.background = '#fffbe6';
-          row.style.boxShadow = '0 0 0 2px #d32f2f inset';
+          row.style.background = 'var(--quote-bg)';
+          row.style.boxShadow = '0 0 0 2px var(--accent) inset';
           row.style.borderRadius = '6px';
           setTimeout(() => {
             row.style.background = prevBg || '';
@@ -442,8 +453,8 @@ function openSettings(initialTab){
             const labels = { all: t('allMedia'), notadded: t('filterNotAdded'), added: t('filterAdded'), blocked: t('filterBlocked') };
             const active = catalogFilter === f;
             return '<button class="il-cat-filter" data-filter="' + f + '" style="padding:6px 12px;border:1px solid ' +
-              (active ? '#d32f2f' : '#ccc') + ';background:' + (active ? '#d32f2f' : '#fff') +
-              ';color:' + (active ? '#fff' : '#444') + ';border-radius:6px;cursor:pointer;font-size:12px">' +
+              (active ? 'var(--accent)' : 'var(--btn-border)') + ';background:' + (active ? 'var(--accent)' : 'var(--bg)') +
+              ';color:' + (active ? 'var(--on-solid)' : 'var(--fg)') + ';border-radius:6px;cursor:pointer;font-size:12px">' +
               esc(labels[f]) + '</button>';
           }).join('') +
         '</div>';
@@ -458,27 +469,27 @@ function openSettings(initialTab){
           if (inList){
             actionBtns =
               '<button class="il-cat-remove" data-d="' + esc(it.d) + '" title="' + esc(t('remove')) + '" ' +
-                'style="padding:4px 10px;border:1px solid #c00;background:#fff;color:#c00;border-radius:5px;cursor:pointer;font-size:12px">✕</button>';
+                'style="padding:4px 10px;border:1px solid var(--block);background:var(--bg);color:var(--block);border-radius:5px;cursor:pointer;font-size:12px">✕</button>';
           } else if (isBlocked){
             actionBtns =
               '<button class="il-cat-unblock" data-d="' + esc(it.d) + '" title="' + esc(t('unblock')) + '" ' +
-                'style="padding:4px 10px;border:1px solid #0a7d00;background:#fff;color:#0a7d00;border-radius:5px;cursor:pointer;font-size:12px">↺</button>';
+                'style="padding:4px 10px;border:1px solid var(--preset);background:var(--bg);color:var(--preset);border-radius:5px;cursor:pointer;font-size:12px">↺</button>';
           } else {
             actionBtns =
               '<button class="il-cat-add" data-d="' + esc(it.d) + '" title="' + esc(t('addToMyList')) + '" ' +
-                'style="padding:4px 10px;border:none;background:#0a7d00;color:#fff;border-radius:5px;cursor:pointer;font-size:12px;font-weight:bold">＋</button>';
+                'style="padding:4px 10px;border:none;background:var(--preset);color:var(--on-solid);border-radius:5px;cursor:pointer;font-size:12px;font-weight:bold">＋</button>';
           }
 
           const statusBadge = inList
-            ? '<span style="color:#0a7d00;font-size:11px;font-weight:bold">✅ ' + esc(t('inYourList')) + '</span>'
+            ? '<span style="color:var(--preset);font-size:11px;font-weight:bold">✅ ' + esc(t('inYourList')) + '</span>'
             : isBlocked
-            ? '<span style="color:#c00;font-size:11px;font-weight:bold">🚫 ' + esc(t('blocked')) + '</span>'
+            ? '<span style="color:var(--block);font-size:11px;font-weight:bold">🚫 ' + esc(t('blocked')) + '</span>'
             : '';
 
-          return '<div class="il-cat-row" data-d="' + esc(it.d) + '" style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #f0f0f0' + (isCurrent ? ';background:#fffbe6' : '') + '">' +
+          return '<div class="il-cat-row" data-d="' + esc(it.d) + '" style="display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--border)' + (isCurrent ? ';background:var(--quote-bg)' : '') + '">' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:monospace;font-size:12px;font-weight:bold;color:#222">' + esc(it.d) + (isCurrent ? ' 📍' : '') + '</div>' +
-              '<div style="font-size:11px;color:#666">' + esc(it.n || '') +
+              '<div style="font-family:monospace;font-size:12px;font-weight:bold;color:var(--fg)">' + esc(it.d) + (isCurrent ? ' 📍' : '') + '</div>' +
+              '<div style="font-size:11px;color:var(--muted)">' + esc(it.n || '') +
                 ' · ' + esc((it.lang||'').toUpperCase()) +
                 (it.type ? ' · ' + esc(getTypeLabel(it.type)) : '') +
                 ((it.tags||[]).length ? ' · ' + esc(it.tags.join(', ')) : '') +
@@ -486,33 +497,33 @@ function openSettings(initialTab){
             '</div>' +
             statusBadge +
             '<button class="il-cat-visit" data-d="' + esc(it.d) + '" title="' + esc(t('visitSite')) + '" ' +
-              'style="padding:4px 10px;border:1px solid #ccc;background:#fff;border-radius:5px;cursor:pointer;font-size:12px">🔗</button>' +
+              'style="padding:4px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:5px;cursor:pointer;font-size:12px">🔗</button>' +
             actionBtns +
           '</div>';
         }).join('');
         return '<div style="margin-bottom:18px">' +
-          '<div style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:bold">' +
-            esc(g.group) + ' <span style="color:#aaa">(' + g.items.length + ')</span></div>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:4px 10px">' + rows + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:bold">' +
+            esc(g.group) + ' <span style="color:var(--muted)">(' + g.items.length + ')</span></div>' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 10px">' + rows + '</div>' +
         '</div>';
       }).join('');
 
       const html =
-        '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:14px;font-size:12px;color:#333;line-height:1.5">' +
+        '<div style="background:var(--preset-bg);border:1px solid var(--preset);border-radius:8px;padding:10px 14px;' +
+          'margin-bottom:14px;font-size:12px;color:var(--fg);line-height:1.5">' +
           '💡 ' + esc(t('catalogInfo').replace('{N}', totalBase)) +
         '</div>' +
         '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
           '<input class="il-cat-search" placeholder="' + esc(t('searchCatalog')) + '" value="' + esc(catalogQuery) + '" ' +
-            'style="flex:1;min-width:180px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-          '<select class="il-cat-lang" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + langOpts + '</select>' +
-          '<select class="il-cat-type" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' + typeOpts + '</select>' +
+            'style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+          '<select class="il-cat-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + langOpts + '</select>' +
+          '<select class="il-cat-type" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' + typeOpts + '</select>' +
         '</div>' +
         filterBtns +
-        '<div style="font-size:11px;color:#888;margin-bottom:10px">' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
           totalShown + ' / ' + totalBase + ' ' + esc(t('allMedia').toLowerCase()) +
         '</div>' +
-        (groupsHTML || '<div style="color:#888;padding:20px;text-align:center;font-size:13px">—</div>');
+        (groupsHTML || '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px">—</div>');
 
       function wire(){
         const searchInp = box.querySelector('.il-cat-search');
@@ -579,16 +590,16 @@ function openSettings(initialTab){
       function typeRow(tt){
         const idx = CFG.siteTypes.indexOf(tt);
         const affected = CFG.sites.filter(s => s.type === tt.id).length;
-        return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">' +
-          '<code style="font-size:11px;color:#999;min-width:90px">' + esc(tt.id) + '</code>' +
+        return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
+          '<code style="font-size:11px;color:var(--muted);min-width:90px">' + esc(tt.id) + '</code>' +
           '<input class="il-type-label" data-idx="' + idx + '" value="' + esc(tt.label) + '" ' +
-            'style="flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px">' +
-          '<span style="font-size:11px;color:#888;min-width:80px;text-align:right">' +
+            'style="flex:1;padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
+          '<span style="font-size:11px;color:var(--muted);min-width:80px;text-align:right">' +
             (affected ? affected + ' sitios' : '') + '</span>' +
           (tt.builtin
-            ? '<span style="font-size:11px;color:#999;min-width:24px;text-align:center" title="Predefinido">🔒</span>'
+            ? '<span style="font-size:11px;color:var(--muted);min-width:24px;text-align:center" title="Predefinido">🔒</span>'
             : '<button class="il-type-del" data-idx="' + idx + '" ' +
-                'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
+                'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
           ) +
         '</div>';
       }
@@ -597,44 +608,44 @@ function openSettings(initialTab){
       const customRows = custom.map(typeRow).join('');
 
       const tagChips = (CFG.siteTags || []).map((tg, i) =>
-        '<span style="display:inline-flex;align-items:center;gap:4px;background:#f1f1f1;border-radius:12px;padding:3px 4px 3px 10px;font-size:12px;margin:3px 4px 3px 0">' +
+        '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--quote-bg);border-radius:12px;padding:3px 4px 3px 10px;font-size:12px;margin:3px 4px 3px 0">' +
           esc(tg) +
-          '<button class="il-tag-del" data-idx="' + i + '" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:#c00">✕</button>' +
+          '<button class="il-tag-del" data-idx="' + i + '" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 4px;color:var(--block)">✕</button>' +
         '</span>').join('');
 
       const html =
-        '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:10px 14px;' +
-          'margin-bottom:16px;font-size:12px;color:#555;line-height:1.5">' +
+        '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:10px 14px;' +
+          'margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.5">' +
           esc(t('typesHint')) +
         '</div>' +
         '<div style="margin-bottom:22px">' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('defaultTypes')) + ' <span style="color:#aaa">(' + builtin.length + ')</span></label>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:4px 12px;margin-bottom:12px">' +
-            (builtinRows || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
+            esc(t('defaultTypes')) + ' <span style="color:var(--muted)">(' + builtin.length + ')</span></label>' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:12px">' +
+            (builtinRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
           '</div>' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('customTypes')) + ' <span style="color:#aaa">(' + custom.length + ')</span></label>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:4px 12px;margin-bottom:8px">' +
-            (customRows || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
+            esc(t('customTypes')) + ' <span style="color:var(--muted)">(' + custom.length + ')</span></label>' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:4px 12px;margin-bottom:8px">' +
+            (customRows || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noTypes')) + '</div>') +
           '</div>' +
           '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-type" placeholder="' + esc(t('newTypePh')) + '" style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-            '<button class="il-add-type" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+            '<input class="il-new-type" placeholder="' + esc(t('newTypePh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+            '<button class="il-add-type" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
           '</div>' +
         '</div>' +
-        '<div style="border-top:1px solid #eee;padding-top:16px">' +
-          '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' +
-            esc(t('tagsSection')) + ' <span style="color:#aaa">(' + (CFG.siteTags||[]).length + ')</span></label>' +
-          '<div style="background:#f9f9f9;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#666">' +
+        '<div style="border-top:1px solid var(--border);padding-top:16px">' +
+          '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' +
+            esc(t('tagsSection')) + ' <span style="color:var(--muted)">(' + (CFG.siteTags||[]).length + ')</span></label>' +
+          '<div style="background:var(--quote-bg);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--muted)">' +
             esc(t('tagsHint')) +
           '</div>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:10px 12px;margin-bottom:8px;min-height:40px">' +
-            (tagChips || '<div style="color:#888;font-size:13px">' + esc(t('noTags')) + '</div>') +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;min-height:40px">' +
+            (tagChips || '<div style="color:var(--muted);font-size:13px">' + esc(t('noTags')) + '</div>') +
           '</div>' +
           '<div style="display:flex;gap:8px">' +
-            '<input class="il-new-tag" placeholder="' + esc(t('newTagPh')) + '" style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-            '<button class="il-add-tag" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+            '<input class="il-new-tag" placeholder="' + esc(t('newTagPh')) + '" style="flex:1;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+            '<button class="il-add-tag" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
           '</div>' +
         '</div>';
 
@@ -733,22 +744,22 @@ function openSettings(initialTab){
     const leidas   = pendientesVisibles().filter(r => r.read);
 
     function fila(r, esLeida){
-      return '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eee' +
-        (esLeida ? ';opacity:.55' : '') + '">' +
+      // Leída: gris y tachada, sin transparencia (con ella no llegaba a 3:1).
+      return '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">' +
           '<div style="flex:1;min-width:0">' +
             '<a href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer" ' +
-              'style="color:#d32f2f;text-decoration:none;font-weight:bold;font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' +
+              'style="color:' + (esLeida ? 'var(--muted)' : 'var(--accent)') + ';text-decoration:none;font-weight:bold;font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' +
               (esLeida ? ';text-decoration:line-through' : '') + '">' + esc(r.title || r.url) + '</a>' +
-            '<div style="font-size:11px;color:#888;margin-top:2px">' +
+            '<div style="font-size:11px;color:var(--muted);margin-top:2px">' +
               esc(r.domain || '') + ' · ' + esc((r.date || '').slice(0,10)) +
               (esLeida && r.readAt ? ' · ✓ ' + esc(r.readAt.slice(0,10)) : '') +
             '</div>' +
           '</div>' +
           '<button data-url="' + esc(r.url) + '" class="il-rl-toggle" title="' + esc(esLeida ? t('markUnread') : t('markRead')) + '" ' +
-            'style="border:1px solid #0a7d00;background:#fff;color:#0a7d00;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">' +
+            'style="border:1px solid var(--preset);background:var(--bg);color:var(--preset);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">' +
             (esLeida ? '↺' : '✓') + '</button>' +
           '<button data-url="' + esc(r.url) + '" class="il-rl-del" title="' + esc(t('remove')) + '" ' +
-            'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✕</button>' +
+            'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✕</button>' +
         '</div>';
     }
 
@@ -757,26 +768,26 @@ function openSettings(initialTab){
 
     const html =
       '<div style="margin-bottom:14px">' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;max-height:400px;overflow:auto">' +
-          (rowsNoLeidas || '<div style="color:#888;padding:8px 0;font-size:13px">' + esc(t('noReadLater')) + '</div>') +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:400px;overflow:auto">' +
+          (rowsNoLeidas || '<div style="color:var(--muted);padding:8px 0;font-size:13px">' + esc(t('noReadLater')) + '</div>') +
         '</div>' +
       '</div>' +
       (keepRead && leidas.length ?
         '<div style="margin-bottom:14px">' +
-          '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">' +
             esc(t('readItems')) + ' (' + leidas.length + ')</div>' +
-          '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;max-height:200px;overflow:auto;background:#fafafa">' +
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:200px;overflow:auto;background:var(--quote-bg)">' +
             rowsLeidas +
           '</div>' +
         '</div>'
         : '') +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
-        '<label style="font-size:12px;color:#666;display:flex;align-items:center;gap:6px;cursor:pointer">' +
+        '<label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer">' +
           '<input type="checkbox" class="il-keep-read"' + (keepRead ? ' checked' : '') + '>' +
           esc(t('keepReadItems')) +
         '</label>' +
         (keepRead && leidas.length ?
-          '<button class="il-clear-read" style="padding:6px 12px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;color:#c00">' +
+          '<button class="il-clear-read" style="padding:6px 12px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;font-size:12px;color:var(--block)">' +
             esc(t('clearRead')) + '</button>'
           : '') +
       '</div>';
@@ -824,30 +835,30 @@ function openSettings(initialTab){
       const defaultId = getDefaultDictId(l.code);
       const rows = dicts.map(d => dictRow(d, l.code, d.id === defaultId, !!d.builtin)).join('');
       return '<div style="margin-bottom:16px">' +
-        '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' + esc(l.label) + '</label>' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px">' + rows + '</div>' +
+        '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' + esc(l.label) + '</label>' +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px">' + rows + '</div>' +
       '</div>';
     }).join('');
 
     const html =
       '<div style="margin-bottom:16px">' +
-        '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' + esc(t('dictMode')) + '</label>' +
-        '<select class="il-dict-mode" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px;width:100%">' +
+        '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' + esc(t('dictMode')) + '</label>' +
+        '<select class="il-dict-mode" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;width:100%">' +
           '<option value="direct"' + (CFG.dict.mode === 'direct' ? ' selected' : '') + '>' + esc(t('dictModeDirect')) + '</option>' +
           '<option value="popup"' + (CFG.dict.mode === 'popup' ? ' selected' : '') + '>' + esc(t('dictModePopup')) + '</option>' +
         '</select>' +
       '</div>' +
       blocks +
-      '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#666">' +
+      '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted)">' +
         esc(t('dictUrlHint')) +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
-        '<input class="il-dict-new-name" placeholder="' + esc(t('dictName')) + '" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<input class="il-dict-new-url" placeholder="' + esc(t('dictUrl')) + '" style="flex:2;min-width:200px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<select class="il-dict-new-lang" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+        '<input class="il-dict-new-name" placeholder="' + esc(t('dictName')) + '" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<input class="il-dict-new-url" placeholder="' + esc(t('dictUrl')) + '" style="flex:2;min-width:200px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<select class="il-dict-new-lang" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
           langs.map(l => '<option value="' + l.code + '">' + l.code.toUpperCase() + '</option>').join('') +
         '</select>' +
-        '<button class="il-dict-add" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
+        '<button class="il-dict-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' + esc(t('add')) + '</button>' +
       '</div>';
 
     function wire(){
@@ -892,28 +903,28 @@ function openSettings(initialTab){
   function renderServiciosTab(){
     const servicios = serviciosConfigurados();
     const filas = servicios.map(svc =>
-      '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">' +
+      '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">' +
         '<div style="flex:1;font-size:13px">' + esc(svc.nombre) + '</div>' +
-        '<div style="flex:2;font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' +
+        '<div style="flex:2;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' +
           esc(svc.plantilla) + '">' + esc(svc.plantilla) + '</div>' +
         '<button data-id="' + esc(svc.id) + '" class="il-svc-del" title="' + esc(t('serviciosQuitar')) +
           '" aria-label="' + esc(t('serviciosQuitar')) + '" ' +
-          'style="border:none;background:transparent;cursor:pointer;color:#c00;font-size:12px;padding:2px 6px">🗑</button>' +
+          'style="border:none;background:transparent;cursor:pointer;color:var(--block);font-size:12px;padding:2px 6px">🗑</button>' +
       '</div>'
     ).join('');
 
     const html =
-      '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px;margin-bottom:16px;' +
-        'font-size:12px;color:#666;line-height:1.6">' + esc(t('serviciosAyuda')) + '</div>' +
-      '<div style="border:1px solid #eee;border-radius:8px;padding:8px 12px;margin-bottom:16px">' +
-        (filas || '<div style="padding:8px 0;font-size:13px;color:#999">' + esc(t('serviciosVacio')) + '</div>') +
+      '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:12px;margin-bottom:16px;' +
+        'font-size:12px;color:var(--muted);line-height:1.6">' + esc(t('serviciosAyuda')) + '</div>' +
+      '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:16px">' +
+        (filas || '<div style="padding:8px 0;font-size:13px;color:var(--muted)">' + esc(t('serviciosVacio')) + '</div>') +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
         '<input class="il-svc-nombre" placeholder="' + esc(t('serviciosNombre')) + '" ' +
-          'style="flex:1;min-width:120px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+          'style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
         '<input class="il-svc-plantilla" placeholder="https://…{url}" ' +
-          'style="flex:2;min-width:200px;padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
-        '<button class="il-svc-add" style="padding:8px 14px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer">' +
+          'style="flex:2;min-width:200px;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
+        '<button class="il-svc-add" style="padding:8px 14px;background:var(--accent);color:var(--on-solid);border:none;border-radius:6px;cursor:pointer">' +
           esc(t('add')) + '</button>' +
       '</div>' +
       '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:16px;cursor:pointer">' +
@@ -921,9 +932,9 @@ function openSettings(initialTab){
         esc(t('serviciosFab')) +
       '</label>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-        '<button class="il-svc-import" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' +
+        '<button class="il-svc-import" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' +
           esc(t('serviciosImportar')) + '</button>' +
-        '<button class="il-svc-export" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer"' +
+        '<button class="il-svc-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer"' +
           (servicios.length ? '' : ' disabled') + '>' + esc(t('serviciosExportar')) + '</button>' +
       '</div>';
 
@@ -980,11 +991,11 @@ function openSettings(initialTab){
   function renderShortcutsTab(){
     function keysHTML(keys){
       if (!Array.isArray(keys) || !keys.length){
-        return '<em style="color:#999">' + esc(t('shortcutEmpty')) + '</em>';
+        return '<em style="color:var(--muted)">' + esc(t('shortcutEmpty')) + '</em>';
       }
       return keys.map(k =>
-        '<kbd style="display:inline-block;padding:2px 7px;border:1px solid #ccc;border-radius:4px;' +
-        'background:#f7f7f7;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0 4px 0 0">' +
+        '<kbd style="display:inline-block;padding:2px 7px;border:1px solid var(--btn-border);border-radius:4px;' +
+        'background:var(--btn-bg);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;margin:0 4px 0 0">' +
         esc(formatShortcut(k)) + '</kbd>'
       ).join('');
     }
@@ -996,18 +1007,18 @@ function openSettings(initialTab){
         && scState.capture.scope === scope
         && scState.capture.action === action;
       const display = isCapturing
-        ? '<em style="color:#d32f2f">' + esc(t('shortcutCapture')) + '</em>'
+        ? '<em style="color:var(--accent)">' + esc(t('shortcutCapture')) + '</em>'
         : keysHTML(keys);
       return '<div class="il-sc-row" data-scope="' + scope + '" data-action="' + action + '" ' +
-        'style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0">' +
+        'style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
         '<div style="flex:1;font-size:13px">' + esc(shortcutActionLabel(action)) + '</div>' +
         '<div style="flex:1;text-align:right">' + display + '</div>' +
         (isReserved
-          ? '<span style="font-size:11px;color:#999;min-width:180px">' + esc(t('shortcutReservedNote')) + '</span>'
+          ? '<span style="font-size:11px;color:var(--muted);min-width:180px">' + esc(t('shortcutReservedNote')) + '</span>'
           : '<button class="il-sc-edit" data-scope="' + scope + '" data-action="' + action + '" ' +
-              'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✏️</button>' +
+              'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">✏️</button>' +
             '<button class="il-sc-del" data-scope="' + scope + '" data-action="' + action + '" ' +
-              'style="border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
+              'style="border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:12px">🗑</button>'
         ) +
       '</div>';
     }
@@ -1016,8 +1027,8 @@ function openSettings(initialTab){
     const globalActions = Object.keys(DEFAULT_CFG.shortcuts.global);
 
     const html =
-      '<div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px;' +
-        'margin-bottom:16px;font-size:12px;color:#555;line-height:1.7">' +
+      '<div style="background:var(--quote-bg);border:1px solid var(--mark);border-radius:8px;padding:12px;' +
+        'margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7">' +
         '<strong>' + esc(t('shortcutNoteTitle')) + '</strong><br>' +
         '• ' + esc(t('shortcutNoteReader')) + '<br>' +
         '• ' + esc(t('shortcutNoteGlobal')) + '<br>' +
@@ -1025,20 +1036,20 @@ function openSettings(initialTab){
         '• ' + esc(t('shortcutReservedNote')) +
       '</div>' +
       '<div style="display:flex;justify-content:flex-end;margin-bottom:16px">' +
-        '<button class="il-sc-reset" style="padding:6px 12px;border:1px solid #ccc;background:#fff;' +
-          'border-radius:6px;cursor:pointer;font-size:12px;color:#c00">' + esc(t('shortcutReset')) + '</button>' +
+        '<button class="il-sc-reset" style="padding:6px 12px;border:1px solid var(--btn-border);background:var(--bg);' +
+          'border-radius:6px;cursor:pointer;font-size:12px;color:var(--block)">' + esc(t('shortcutReset')) + '</button>' +
       '</div>' +
       '<div style="margin-bottom:22px">' +
-        '<h3 style="font-size:13px;margin:0 0 8px;color:#666;text-transform:uppercase;letter-spacing:.5px">' +
+        '<h3 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
           esc(t('shortcutReader')) + '</h3>' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:0 12px">' +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:0 12px">' +
           readerActions.map(a => rowHTML('reader', a)).join('') +
         '</div>' +
       '</div>' +
       '<div>' +
-        '<h3 style="font-size:13px;margin:0 0 8px;color:#666;text-transform:uppercase;letter-spacing:.5px">' +
+        '<h3 style="font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
           esc(t('shortcutGlobal')) + '</h3>' +
-        '<div style="border:1px solid #eee;border-radius:8px;padding:0 12px">' +
+        '<div style="border:1px solid var(--border);border-radius:8px;padding:0 12px">' +
           globalActions.map(a => rowHTML('global', a)).join('') +
         '</div>' +
       '</div>';
@@ -1124,8 +1135,8 @@ function openSettings(initialTab){
   function renderGeneralTab(){
     const html =
       '<div style="margin-bottom:18px">' +
-        '<label style="display:block;font-size:12px;color:#666;text-transform:uppercase;margin-bottom:6px">' + esc(t('language')) + '</label>' +
-        '<select class="il-set-lang-app" style="padding:8px 12px;border:1px solid #ccc;border-radius:6px">' +
+        '<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">' + esc(t('language')) + '</label>' +
+        '<select class="il-set-lang-app" style="padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px">' +
           '<option value="es"' + (CFG.lang==='es'?' selected':'') + '>Español</option>' +
           '<option value="gl"' + (CFG.lang==='gl'?' selected':'') + '>Galego</option>' +
           '<option value="ca"' + (CFG.lang==='ca'?' selected':'') + '>Català</option>' +
@@ -1133,22 +1144,22 @@ function openSettings(initialTab){
           '<option value="eu"' + (CFG.lang==='eu'?' selected':'') + '>Euskara</option>' +
         '</select>' +
       '</div>' +
-      '<div style="margin-bottom:18px;padding:14px;border:2px solid ' + (CFG.readerAutoAll ? '#43a047' : '#ccc') + ';border-radius:8px;background:' + (CFG.readerAutoAll ? '#e8f5e9' : '#fafafa') + '">' +
+      '<div style="margin-bottom:18px;padding:14px;border:2px solid ' + (CFG.readerAutoAll ? 'var(--preset)' : 'var(--btn-border)') + ';border-radius:8px;background:' + (CFG.readerAutoAll ? 'var(--preset-bg)' : 'var(--quote-bg)') + '">' +
         '<label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer">' +
           '<input type="checkbox" class="il-set-auto-all"' + (CFG.readerAutoAll ? ' checked' : '') + ' style="margin-top:3px;width:18px;height:18px;cursor:pointer;flex:0 0 auto">' +
           '<span>' +
-            '<span style="display:block;font-weight:bold;font-size:14px;color:' + (CFG.readerAutoAll ? '#1b5e20' : '#222') + '">' +
+            '<span style="display:block;font-weight:bold;font-size:14px;color:' + (CFG.readerAutoAll ? 'var(--preset)' : 'var(--fg)') + '">' +
               (CFG.readerAutoAll ? '🟢 ACTIVADO — ' : '⚪ DESACTIVADO — ') +
               esc(t('readerAutoAllLabel')) +
             '</span>' +
-            '<span style="display:block;font-size:12px;color:#555;margin-top:4px">' + esc(t('readerAutoAllHint')) + '</span>' +
+            '<span style="display:block;font-size:12px;color:var(--muted);margin-top:4px">' + esc(t('readerAutoAllHint')) + '</span>' +
           '</span>' +
         '</label>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #eee;padding-top:14px">' +
-        '<button class="il-set-export" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
-        '<button class="il-set-import" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' + esc(t('importBtn')) + '</button>' +
-        '<button class="il-set-reset"  style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;color:#c00;margin-left:auto">' + esc(t('resetBtn')) + '</button>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px">' +
+        '<button class="il-set-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
+        '<button class="il-set-import" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('importBtn')) + '</button>' +
+        '<button class="il-set-reset"  style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer;color:var(--block);margin-left:auto">' + esc(t('resetBtn')) + '</button>' +
       '</div>';
 
     function wire(){
@@ -1237,7 +1248,7 @@ function openSettings(initialTab){
 
   function render(){
     const tabsHTML =
-      '<div style="display:flex;gap:4px;border-bottom:1px solid #eee;margin-bottom:18px;flex-wrap:wrap">' +
+      '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap">' +
         tabBtn('sites', t('sites')) +
         tabBtn('catalog', t('catalog')) +
         tabBtn('pendientes', t('pendientes')) +
@@ -1250,7 +1261,7 @@ function openSettings(initialTab){
     const headerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
         '<h2 style="margin:0;font-size:20px">' + esc(t('settings')) + '</h2>' +
-        '<button class="il-set-close" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer">' + esc(t('close')) + '</button>' +
+        '<button class="il-set-close" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('close')) + '</button>' +
       '</div>';
 
     let payload;
@@ -1273,5 +1284,6 @@ function openSettings(initialTab){
   }
 
   render();
+  box.focus({ preventScroll: true });
 }
 

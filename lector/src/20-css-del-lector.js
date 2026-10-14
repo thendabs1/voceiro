@@ -38,6 +38,22 @@ function sinSimbolo(s){
   return String(s || '').replace(/^[^\p{L}\p{N}]+/u, '');
 }
 
+// Lo que el lector pinta fuera de #il-full (Ajustes, avisos, diálogos,
+// desplegables, herramientas) lleva la clase il-tema y el tema del perfil.
+// La paleta para .il-tema va en una sola hoja, que se pone la primera vez.
+function temaDe(el){
+  if (!document.getElementById('il-tema-css')){
+    const st = document.createElement('style');
+    st.id = 'il-tema-css';
+    st.textContent = cssPaleta('.il-tema') +
+      '\n.il-tema :focus-visible{outline:2px solid var(--focus);outline-offset:2px}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  el.classList.add('il-tema');
+  el.setAttribute('data-theme', (CFG.prefs && CFG.prefs.theme) || 'light');
+  return el;
+}
+
 // Desplazamientos suaves, salvo si la persona ha pedido menos movimiento.
 function desplazar(){
   try { return matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'; }
