@@ -49,6 +49,7 @@ function enviarEstado(respuesta){
     CFG = mergeCfg(DEFAULT_CFG, nuevo);
     __perfilFirma = firmaPerfilLector(CFG);
     __configFirma = firmaConfig(CFG);
+    if (__lectorAbierto) __lectorAbierto.refrescar();
     enviarEstado(false);
   });
 
@@ -78,6 +79,7 @@ function enviarEstado(respuesta){
     }
 
     saveCfg(CFG);
+    if (__lectorAbierto) __lectorAbierto.refrescar();
     if (!d.respuesta && comparableEstado(estadoDelLector()) !== comparableEstado(d)){
       enviarEstado(true);
     }

@@ -8,6 +8,7 @@ on:
       - 'lector/**'
       - 'shared/sync/**'
       - 'medios.py'
+      - 'plantilla.html'
       - '.github/workflows/lector.yml'
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - 'lector/**'
       - 'shared/sync/**'
       - 'medios.py'
+      - 'plantilla.html'
       - '.github/workflows/lector.yml'
   workflow_dispatch:
 

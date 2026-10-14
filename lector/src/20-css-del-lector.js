@@ -3,10 +3,11 @@
    ============================================================ */
 function buildReaderCSS(){
   return `
-#il-full{--bg:#fff;--fg:#222;--muted:#888;--accent:#d32f2f;--border:#eee;--quote-bg:#f9f9f9;--btn-bg:#f7f7f7;--btn-border:#ccc;--shadow:rgba(0,0,0,.08);--ambi-op:.25;position:fixed;inset:0;background:var(--bg);color:var(--fg);z-index:2147483646;overflow:auto;-webkit-text-size-adjust:100%}
-#il-full[data-theme="sepia"]{--bg:#f4ecd8;--fg:#3b2f1e;--muted:#8a7a5c;--accent:#a0522d;--border:#e0d5b8;--quote-bg:#ede0c4;--btn-bg:#ede0c4;--btn-border:#c8b88a;--shadow:rgba(59,47,30,.15)}
-#il-full[data-theme="dark"]{--bg:#1a1a1a;--fg:#e0e0e0;--muted:#999;--accent:#ff6b6b;--border:#333;--quote-bg:#252525;--btn-bg:#2a2a2a;--btn-border:#444;--shadow:rgba(0,0,0,.5);--ambi-op:.4}
-#il-full[data-theme="contrast"]{--bg:#000;--fg:#fff;--muted:#ff0;--accent:#0ff;--border:#fff;--quote-bg:#111;--btn-bg:#111;--btn-border:#fff;--shadow:rgba(255,255,255,.2);--ambi-op:.5}
+/*{{PALETA}}*/
+#il-full{--ambi-op:.25;position:fixed;inset:0;background:var(--bg);color:var(--fg);z-index:2147483646;overflow:auto;-webkit-text-size-adjust:100%}
+#il-full[data-theme="dark"]{--ambi-op:.4}
+#il-full[data-theme="contrast"]{--ambi-op:.5}
+#il-full :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 #il-full *{box-sizing:border-box}
 #il-ambi-img{position:fixed;inset:-15%;width:130%;height:130%;object-fit:cover;filter:blur(40px);opacity:var(--ambi-op);z-index:0;pointer-events:none;user-select:none}
 #il-full .il-progress{position:fixed;top:0;left:0;right:0;height:4px;background:var(--border);z-index:12;pointer-events:none}
@@ -26,8 +27,10 @@ function buildReaderCSS(){
 #il-full .il-group>label{color:var(--muted);font-size:12px;margin-right:4px;text-transform:uppercase;letter-spacing:.5px}
 #il-full button{cursor:pointer;padding:8px 14px;border:1px solid var(--btn-border);background:var(--btn-bg);color:var(--fg);border-radius:6px;font-family:inherit;font-size:14px;font-weight:500;transition:all .1s}
 #il-full button:hover{filter:brightness(.95)}
-#il-full button.il-primary{background:var(--accent);color:#fff;border-color:var(--accent);font-size:15px;font-weight:bold}
-#il-full button.il-active{background:var(--accent);color:#fff;border-color:var(--accent)}
+#il-full button.il-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);font-size:15px;font-weight:bold}
+#il-full button.il-active{background:var(--accent);color:var(--on-solid);border-color:var(--accent)}
+#il-full button.il-guardada{background:var(--save);color:var(--on-solid);border-color:var(--save)}
+#il-full button.il-leida{background:var(--preset);color:var(--on-solid);border-color:var(--preset)}
 #il-full .il-wrap{max-width:var(--w,720px);margin:0 auto;padding:32px 20px 80px;position:relative;z-index:2}
 #il-full .il-content{font-family:Georgia,"Times New Roman",serif;font-size:var(--fs,18px);line-height:var(--lh,1.7)}
 #il-full[data-font="sans"] .il-content{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
@@ -68,8 +71,8 @@ function buildReaderCSS(){
 #il-full .il-footer{color:var(--muted);font-size:.8em;margin-top:20px;padding-top:14px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-footer-top,#il-full .il-footer-back{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
 #il-full .il-dict-hint{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
-#il-full .il-source-badge{color:var(--muted);opacity:.75;margin-left:4px}
-#il-full .il-top-btn{position:fixed;bottom:24px;right:24px;z-index:20;width:48px;height:48px;padding:0;border-radius:50%;font-size:22px;line-height:1;background:var(--accent);color:#fff;border:1px solid var(--accent);box-shadow:0 4px 12px var(--shadow);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .25s,transform .25s}
+#il-full .il-source-badge{color:var(--muted);margin-left:4px}
+#il-full .il-top-btn{position:fixed;bottom:24px;right:24px;z-index:20;width:48px;height:48px;padding:0;border-radius:50%;font-size:22px;line-height:1;background:var(--accent);color:var(--on-solid);border:1px solid var(--accent);box-shadow:0 4px 12px var(--shadow);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .25s,transform .25s}
 #il-full .il-top-btn.il-show{opacity:1;pointer-events:auto;transform:translateY(0)}
 #il-full .il-dict-popup{position:fixed;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:30;padding:8px;display:flex;flex-direction:column;gap:4px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;min-width:180px}
 #il-full .il-dict-popup-title{padding:6px 10px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px}

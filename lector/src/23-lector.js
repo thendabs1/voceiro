@@ -1,10 +1,15 @@
 /* ============================================================
    19. LECTOR
    ============================================================ */
+// El lector abierto, si lo hay: el puente lo avisa cuando la configuración
+// cambia en otra pestaña (o llega de Voceiro) para que se repinte.
+let __lectorAbierto = null;
+
 function openReader(art){
   if (document.getElementById('il-full')) return;
 
-  const prefs = CFG.prefs;
+  // let: CFG se sustituye entero cuando cambia en otra pestaña (refrescar).
+  let prefs = CFG.prefs;
   const pageLang = detectPageLang();
   const defaultDict = getDefaultDict(pageLang);
   const defaultDictName = defaultDict ? defaultDict.name : '—';
@@ -203,7 +208,8 @@ function openReader(art){
     return !!(rule && rule.textOnly);
   }
 
-  function applyPrefs(){
+  // Pinta las preferencias; applyPrefs, además, las guarda.
+  function pintarPrefs(){
     ov.setAttribute('data-theme', prefs.theme);
     ov.setAttribute('data-font', prefs.font);
     ov.setAttribute('data-just', prefs.just ? '1' : '0');
@@ -241,8 +247,29 @@ function openReader(art){
     pAct.style.display = prefs.panelActions ? 'flex' : 'none';
     bText.classList.toggle('il-active', prefs.panelText);
     bAct.classList.toggle('il-active', prefs.panelActions);
-    saveCfg(CFG);
     if (prefs.focus) setTimeout(updateFocus, 60);
+  }
+  function applyPrefs(){
+    pintarPrefs();
+    saveCfg(CFG);
+  }
+
+  // La configuración ha cambiado fuera (otra pestaña, Voceiro): se toma la
+  // nueva y se repinta, sin guardar (guardar aquí la volvería a mandar).
+  // Los paneles abiertos son de esta pestaña y se quedan como estaban.
+  function refrescar(){
+    if (document.getElementById('il-full') !== ov){ __lectorAbierto = null; return; }
+    const { panelText, panelActions } = prefs;
+    const bionicAntes = !!prefs.bionic;
+    prefs = CFG.prefs;
+    prefs.panelText = panelText;
+    prefs.panelActions = panelActions;
+    if (!!prefs.bionic !== bionicAntes){
+      ov.querySelector('.il-body').innerHTML = renderBody();
+      wireImages();
+    }
+    pintarPrefs();
+    pintarBotonGuardar();
   }
 
   function saveScroll(){
@@ -293,7 +320,7 @@ function openReader(art){
     });
   }
 
-  applyPrefs();
+  pintarPrefs();
   wireImages();
 
 
@@ -327,6 +354,7 @@ function openReader(art){
   function closeOverlay(){
     saveScroll();
     document.removeEventListener('keydown', keyHandler);
+    __lectorAbierto = null;
     ov.remove();
     setTimeout(() => ensureReaderFAB(), 100);
   }
@@ -359,7 +387,7 @@ function openReader(art){
     applyPrefs();
   };
   ov.querySelector('.il-wrap').addEventListener('click', e => {
-    if (!(e.ctrlKey || e.metaKey)){
+    if (!(e.ctrlKey || e.metaKey) && prefs.panelActions){
       prefs.panelActions = false;
       applyPrefs();
     }
@@ -519,29 +547,15 @@ function openReader(art){
     if (CFG.dict.mode === 'popup'){ showDictPopup(w, ov); }
     else { openDictionary(defaultDict, w); }
   });
-    function pintarBotonGuardar(){
+  // Sin guardar → neutro; pendiente → color de guardar; leída → verde
+  // (se puede devolver a pendientes). Colores del tema, con su contraste.
+  function pintarBotonGuardar(){
     const btn = ov.querySelector('.il-save-meta');
     if (!btn) return;
     const ex = findLaterItem(location.href);
-    if (!ex){
-      // No está → neutro
-      btn.style.background = '';
-      btn.style.color = '';
-      btn.style.borderColor = '';
-      btn.textContent = '🕒 ' + t('saveLater');
-    } else if (ex.read){
-      // Leída → verde (puedes volver a pendientes)
-      btn.style.background = '#0a7d00';
-      btn.style.color = '#fff';
-      btn.style.borderColor = '#0a7d00';
-      btn.textContent = '🕒 ' + t('saveToPending');
-    } else {
-      // Pendiente → naranja (ya está en cola)
-      btn.style.background = '#e67e22';
-      btn.style.color = '#fff';
-      btn.style.borderColor = '#e67e22';
-      btn.textContent = '🕒 ' + t('saveRemove');
-    }
+    btn.classList.toggle('il-guardada', !!ex && !ex.read);
+    btn.classList.toggle('il-leida', !!ex && !!ex.read);
+    btn.textContent = '🕒 ' + t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove');
   }
 
   ov.querySelector('.il-save-meta').onclick = function(){
@@ -551,6 +565,7 @@ function openReader(art){
 
   // Estado inicial al abrir el lector
   pintarBotonGuardar();
+  __lectorAbierto = { refrescar };
 
   function showDictPopup(word, parentEl){
     const existing = parentEl.querySelector('.il-dict-popup');

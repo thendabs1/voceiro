@@ -3,6 +3,34 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Paleta accesible y lector que se entera de los cambios
+
+### Cambiado
+- Una sola paleta para Voceiro y el lector: vive en `plantilla.html` (bloque
+  PALETA) y `lector/build.mjs` la copia al construir. `tests/tema/paleta.test.mjs`
+  comprueba los contrastes de los cuatro temas (WCAG 2.2 AA); si fallan, el front
+  se queda congelado como con el resto de tests.
+- Contrastes: gris secundario más oscuro en claro y sepia; acento y verde de los
+  modos algo más oscuros en sepia; bordes de los botones a 3:1; texto del
+  resaltado en oscuro.
+- Nuevo `--on-solid` para el texto sobre fondos de color (botón activo, modo
+  activo, guardar, bloquear): blanco en claro y sepia, oscuro en oscuro y negro en
+  contraste. Antes, en oscuro y contraste, ese texto blanco no llegaba a 3:1.
+- `color-scheme` en cada tema: controles, barras de scroll y enlaces del navegador
+  se pintan oscuros en los temas oscuros. Enlaces con el color del tema y anillo
+  de foco propio (`--focus`).
+- Titulares leídos: gris legible con una ✓, sin la transparencia que los dejaba
+  por debajo de 2:1. Los vistos (mirados sin abrir) pierden también la
+  transparencia y se distinguen por una letra algo menos gruesa.
+- Lector: el botón «Guardar» usa los colores del tema (el naranja no llegaba a 3:1).
+
+### Arreglado
+- El lector abierto no se enteraba de los cambios de perfil hechos en Voceiro (u
+  otra pestaña) y, desde ese momento, lo que se cambiaba en él no se guardaba.
+  Ahora se repinta al momento.
+- Abrir o cerrar los paneles del lector ya no cuenta como cambio de configuración
+  que viaje a otros dispositivos.
+
 ## 2026-10-13 — Panel Investigar: empresas y personas del BORME
 
 ### Cambiado

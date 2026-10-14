@@ -32,8 +32,8 @@ node lector/build.mjs        # → lector/dist/lector.user.js
 node lector/comprobar.mjs    # cabecera y dominios permitidos
 ```
 
-La versión es `2.0.N`, con N = número de commits que han tocado `lector/` (y
-`shared/sync/`). Necesita la historia completa de git.
+La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
+`shared/sync/`, `medios.py` o `plantilla.html`. Necesita la historia completa de git.
 
 ## Estructura
 
@@ -44,6 +44,9 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/` (y
 - `04-servicios.js`, `21-desplegable-servicios.js`, `27-fab-servicios.js`:
   «Abrir en…».
 - `34-puente-con-voceiro.js`: el puente con Voceiro.
+- `paleta.mjs`: los colores de los temas son los de Voceiro. `build.mjs` copia
+  el bloque PALETA de `plantilla.html` en `20-css-del-lector.js` (en lugar de
+  `/*{{PALETA}}*/`) y `tests/tema/paleta.test.mjs` comprueba sus contrastes.
 
 ## Reglas
 
