@@ -3,6 +3,37 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Barra y menús del lector, con iconos y accesibles
+
+### Cambiado
+- Barra del lector: «← Voceiro» (cierra la pestaña y vuelve), Apariencia,
+  Pendientes, Más y Salir. En pantallas estrechas solo se ven los iconos; los
+  textos siguen para los lectores de pantalla. Se van «Atrás», «Titulares» (abría
+  otra pestaña de Voceiro), «Opciones», «Acciones» y los botones sueltos de
+  imágenes, «Abrir en…» y ajustes.
+- Apariencia: tema (con muestras de color), letra, tamaño, ancho, extras, «Sin
+  imágenes en este medio» y origen, con radios y casillas nativos y una ✓ en lo
+  elegido. Más: «Abrir en…» (los servicios), copiar, lectura rápida, imprimir,
+  correo, compartir, ignorar sección y ajustes; se maneja con flechas, Inicio y
+  Fin. En el móvil, los dos salen como hoja desde abajo. Esc o pulsar fuera los
+  cierra.
+- Iconos SVG del sprite de Voceiro: `lector/plantilla.mjs` saca del sprite solo
+  los que usa el lector; si falta alguno, no se construye. Se añaden 14 al sprite
+  (Lucide 0.460.0).
+- La paleta llega al lector como datos y el lector genera su CSS donde la
+  necesite (`cssPaleta`).
+
+### Accesibilidad
+- El lector es un diálogo modal (`role="dialog"`, `aria-modal`, con el título
+  como nombre). Al abrirlo el foco va al título y la página de debajo queda
+  `inert`; al cerrarlo, el foco vuelve a donde estaba.
+- El artículo lleva el `lang` de la página.
+- Botones de al menos 44 px. La barra no se esconde mientras tenga el foco o un
+  desplegable abierto.
+- Las imágenes se amplían también con el teclado (Intro o espacio) y la
+  ampliación se cierra con Esc.
+- `prefers-reduced-motion`: sin transiciones ni desplazamientos suaves.
+
 ## 2026-10-14 — Final del artículo en el lector
 
 ### Añadido

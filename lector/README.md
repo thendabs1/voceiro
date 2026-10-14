@@ -48,9 +48,10 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
 - `04-servicios.js`, `21-desplegable-servicios.js`, `27-fab-servicios.js`:
   «Abrir en…».
 - `34-puente-con-voceiro.js`: el puente con Voceiro.
-- `paleta.mjs`: los colores de los temas son los de Voceiro. `build.mjs` copia
-  el bloque PALETA de `plantilla.html` en `20-css-del-lector.js` (en lugar de
-  `/*{{PALETA}}*/`) y `tests/tema/paleta.test.mjs` comprueba sus contrastes.
+- `plantilla.mjs`: la paleta y los iconos son los de Voceiro. `build.mjs` saca
+  de `plantilla.html` el bloque PALETA y los `<symbol>` del sprite (solo los que
+  usa el lector con `icono('…')`) y los pone en `20-css-del-lector.js`;
+  `tests/tema/paleta.test.mjs` comprueba los contrastes de la paleta.
 
 ## Reglas
 

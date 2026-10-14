@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { leerPaleta, paletaParaLector, temasDePaleta } from '../../lector/paleta.mjs';
+import { leerIconos, leerPaleta, temasDePaleta } from '../../lector/plantilla.mjs';
 
 const html = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
 const bloque = leerPaleta(html);
@@ -61,9 +61,13 @@ for (const [nombre, t] of Object.entries(temas)){
   });
 }
 
-test('el lector recibe la paleta colgada de #il-full', () => {
-  const css = paletaParaLector(bloque);
-  assert.ok(!css.includes(':root'));
-  assert.match(css, /^#il-full\{/);
-  for (const t of ['sepia', 'dark', 'contrast']) assert.ok(css.includes(`#il-full[data-theme="${t}"]{`));
+test('todos los temas definen las mismas variables', () => {
+  const claves = t => Object.keys(t).sort().join(' ');
+  for (const [nombre, t] of Object.entries(temas)) assert.equal(claves(t), claves(temas.light), nombre);
+});
+
+test('el sprite de iconos se puede pasar al lector', () => {
+  const iconos = leerIconos(html);
+  assert.ok(Object.keys(iconos).length >= 40);
+  for (const n of ['book-open-text', 'a-large-small', 'ellipsis', 'x', 'arrow-left']) assert.ok(iconos[n], n);
 });
