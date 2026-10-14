@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.223
+// @version      2.0.227
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -16,6 +16,8 @@
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_addValueChangeListener
+// @grant        window.close
+// @grant        window.focus
 // @require      https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js
 // @run-at       document-idle
 // @noframes
@@ -27,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.223';
+const SCRIPT_VERSION = '2.0.227';
 const AUTO_MIN_RATIO = 0.80;
 const AUTO_MIN_RICH  = 3;
 const AUTO_MIN_LEN   = 300;
@@ -87,6 +89,16 @@ const PLATAFORMA = {
         if (remoto) fn(nuevo);
       });
     } catch(e){}
+  },
+  // Cerrar esta pestaña: con @grant window.close el gestor la cierra aunque
+  // no la haya abierto un script. Puede no conseguirlo: quien llama lo mira.
+  cerrarPestana(){
+    try { window.close(); } catch(e){}
+  },
+  // Traer esta pestaña al frente (@grant window.focus); si el gestor no
+  // sabe, no pasa nada.
+  enfocarPestana(){
+    try { window.focus(); } catch(e){}
   },
   hayMenu(){ return typeof GM_registerMenuCommand === 'function'; },
   menu(texto, fn){
@@ -488,6 +500,16 @@ const I18N = {
     ignoreSection: '🚫 Ignorar esta sección', saveLater: 'Guardar para más tarde',
     savedLater: 'Guardado en pendientes', alreadySaved: 'Ya estaba en pendientes',
     markRead: 'Marcar como leída', markUnread: 'Marcar como no leída',
+    finVolver: '✓ Leída · volver a Voceiro', finSiguiente: 'Siguiente pendiente →',
+    finSiguienteDe: 'Siguiente pendiente: {X}', finMarcada: 'Marcada como leída',
+    fabMenu: 'Más opciones del lector', fabOcultarAqui: 'Ocultar el botón en este medio',
+    fabOcultoAqui: 'Botón oculto en este medio', fabMostrarAqui: 'Mostrar el botón en este medio',
+    fabNadaAqui: 'Aquí el botón no tiene nada que ofrecer', fabAutomatico: 'lector automático',
+    volverVoceiro: 'Volver a Voceiro', apariencia: 'Apariencia',
+    mas: 'Más', masAcciones: 'Más acciones',
+    letraMenor: 'Letra más pequeña', letraMayor: 'Letra más grande',
+    masEstrecho: 'Más estrecho', masAncho: 'Más ancho',
+    sinImagenesMedio: 'Sin imágenes en este medio', ampliarImagen: 'Ampliar imagen',
     readItems: 'Leídas', readItemsNo: 'Pendientes',
     keepReadItems: 'Guardar historial de leídas',
     clearRead: 'Borrar leídas',
@@ -670,10 +692,10 @@ const I18N = {
     serviciosFormato: 'El archivo no tiene una lista de servicios válida.',
     serviciosInvalido: 'Revisa el nombre y la dirección: debe empezar por https:// y llevar {url} o {url_cod}.',
     serviciosRepetido: 'Ese servicio ya está en la lista.',
-    serviciosFab: 'Botón flotante «Abrir en…» en las noticias',
-    serviciosFabMenu: 'mostrar u ocultar el botón',
-    serviciosFabOculto: 'Botón «Abrir en…» oculto',
-    serviciosFabVisible: 'Botón «Abrir en…» visible',
+    serviciosFab: '«Abrir en…» en el menú del botón flotante',
+    serviciosFabMenu: 'mostrar u ocultar en el botón flotante',
+    serviciosFabOculto: '«Abrir en…» oculto en el botón flotante',
+    serviciosFabVisible: '«Abrir en…» visible en el botón flotante',
     btnTitulares: 'TITULARES',
   },
   gl: {
@@ -697,6 +719,16 @@ const I18N = {
     ignoreSection: '🚫 Ignorar esta sección', saveLater: 'Gardar para máis tarde',
     savedLater: 'Gardado en pendentes', alreadySaved: 'Xa estaba en pendentes',
     markRead: 'Marcar como lida', markUnread: 'Marcar como non lida',
+    finVolver: '✓ Lida · volver a Voceiro', finSiguiente: 'Seguinte pendente →',
+    finSiguienteDe: 'Seguinte pendente: {X}', finMarcada: 'Marcada como lida',
+    fabMenu: 'Máis opcións do lector', fabOcultarAqui: 'Agochar o botón neste medio',
+    fabOcultoAqui: 'Botón agochado neste medio', fabMostrarAqui: 'Amosar o botón neste medio',
+    fabNadaAqui: 'Aquí o botón non ten nada que ofrecer', fabAutomatico: 'lector automático',
+    volverVoceiro: 'Volver a Voceiro', apariencia: 'Aparencia',
+    mas: 'Máis', masAcciones: 'Máis accións',
+    letraMenor: 'Letra máis pequena', letraMayor: 'Letra máis grande',
+    masEstrecho: 'Máis estreito', masAncho: 'Máis ancho',
+    sinImagenesMedio: 'Sen imaxes neste medio', ampliarImagen: 'Ampliar imaxe',
     readItems: 'Lidas', readItemsNo: 'Pendentes',
     keepReadItems: 'Gardar historial de lidas',
     clearRead: 'Borrar lidas',
@@ -879,10 +911,10 @@ const I18N = {
     serviciosFormato: 'O ficheiro non ten unha lista de servizos válida.',
     serviciosInvalido: 'Revisa o nome e o enderezo: debe comezar por https:// e levar {url} ou {url_cod}.',
     serviciosRepetido: 'Ese servizo xa está na lista.',
-    serviciosFab: 'Botón flotante «Abrir en…» nas noticias',
-    serviciosFabMenu: 'amosar ou agochar o botón',
-    serviciosFabOculto: 'Botón «Abrir en…» agochado',
-    serviciosFabVisible: 'Botón «Abrir en…» visible',
+    serviciosFab: '«Abrir en…» no menú do botón flotante',
+    serviciosFabMenu: 'amosar ou agochar no botón flotante',
+    serviciosFabOculto: '«Abrir en…» agochado no botón flotante',
+    serviciosFabVisible: '«Abrir en…» visible no botón flotante',
     btnTitulares: 'TITULARES',
   },
   ca: {
@@ -911,6 +943,16 @@ const I18N = {
     ignoreSection: '🚫 Ignorar aquesta secció', saveLater: 'Desar per a més tard',
     savedLater: 'Desat a pendents', alreadySaved: 'Ja era a pendents',
     markRead: 'Marcar com llegida', markUnread: 'Marcar com no llegida',
+    finVolver: '✓ Llegida · tornar a Voceiro', finSiguiente: 'Següent pendent →',
+    finSiguienteDe: 'Següent pendent: {X}', finMarcada: 'Marcada com a llegida',
+    fabMenu: 'Més opcions del lector', fabOcultarAqui: 'Amaga el botó en aquest mitjà',
+    fabOcultoAqui: 'Botó amagat en aquest mitjà', fabMostrarAqui: 'Mostra el botó en aquest mitjà',
+    fabNadaAqui: 'Aquí el botó no té res a oferir', fabAutomatico: 'lector automàtic',
+    volverVoceiro: 'Tornar a Voceiro', apariencia: 'Aparença',
+    mas: 'Més', masAcciones: 'Més accions',
+    letraMenor: 'Lletra més petita', letraMayor: 'Lletra més grossa',
+    masEstrecho: 'Més estret', masAncho: 'Més ample',
+    sinImagenesMedio: 'Sense imatges en aquest mitjà', ampliarImagen: 'Amplia la imatge',
     readItems: 'Llegides', readItemsNo: 'Pendents',
     keepReadItems: 'Desar historial de llegides',
     clearRead: 'Esborrar llegides',
@@ -1088,10 +1130,10 @@ const I18N = {
     serviciosFormato: 'El fitxer no té una llista de serveis vàlida.',
     serviciosInvalido: "Revisa el nom i l'adreça: ha de començar per https:// i dur {url} o {url_cod}.",
     serviciosRepetido: 'Aquest servei ja és a la llista.',
-    serviciosFab: 'Botó flotant «Obre a…» a les notícies',
-    serviciosFabMenu: 'mostra o amaga el botó',
-    serviciosFabOculto: 'Botó «Obre a…» amagat',
-    serviciosFabVisible: 'Botó «Obre a…» visible',
+    serviciosFab: '«Obre a…» al menú del botó flotant',
+    serviciosFabMenu: 'mostra o amaga al botó flotant',
+    serviciosFabOculto: '«Obre a…» amagat al botó flotant',
+    serviciosFabVisible: '«Obre a…» visible al botó flotant',
     btnTitulares: 'TITULARS',
   },
   en: {
@@ -1115,6 +1157,16 @@ const I18N = {
     ignoreSection: '🚫 Ignore this section', saveLater: 'Save for later',
     savedLater: 'Saved to queue', alreadySaved: 'Already in queue',
     markRead: 'Mark as read', markUnread: 'Mark as unread',
+    finVolver: '✓ Read · back to Voceiro', finSiguiente: 'Next in queue →',
+    finSiguienteDe: 'Next in queue: {X}', finMarcada: 'Marked as read',
+    fabMenu: 'More reader options', fabOcultarAqui: 'Hide the button on this site',
+    fabOcultoAqui: 'Button hidden on this site', fabMostrarAqui: 'Show the button on this site',
+    fabNadaAqui: 'The button has nothing to offer here', fabAutomatico: 'automatic reader',
+    volverVoceiro: 'Back to Voceiro', apariencia: 'Appearance',
+    mas: 'More', masAcciones: 'More actions',
+    letraMenor: 'Smaller text', letraMayor: 'Larger text',
+    masEstrecho: 'Narrower', masAncho: 'Wider',
+    sinImagenesMedio: 'No images on this site', ampliarImagen: 'Enlarge image',
     readItems: 'Read', readItemsNo: 'Pending',
     keepReadItems: 'Keep history of read items',
     clearRead: 'Clear read',
@@ -1297,10 +1349,10 @@ const I18N = {
     serviciosFormato: 'The file does not contain a valid list of services.',
     serviciosInvalido: 'Check the name and address: it must start with https:// and contain {url} or {url_cod}.',
     serviciosRepetido: 'That service is already on the list.',
-    serviciosFab: 'Floating “Open in…” button on news pages',
-    serviciosFabMenu: 'show or hide the button',
-    serviciosFabOculto: '“Open in…” button hidden',
-    serviciosFabVisible: '“Open in…” button shown',
+    serviciosFab: '“Open in…” in the floating button menu',
+    serviciosFabMenu: 'show or hide in the floating button',
+    serviciosFabOculto: '“Open in…” hidden in the floating button',
+    serviciosFabVisible: '“Open in…” shown in the floating button',
     btnTitulares: 'HEADLINES',
   },
   eu: {
@@ -1324,6 +1376,16 @@ const I18N = {
     ignoreSection: '🚫 Atal hau ez ikusi', saveLater: 'Geroagorako gorde',
     savedLater: 'Zain gordeta', alreadySaved: 'Jada zegoen zain',
     markRead: 'Irakurrita markatu', markUnread: 'Irakurri gabe markatu',
+    finVolver: '✓ Irakurrita · itzuli Voceirora', finSiguiente: 'Zain dagoen hurrengoa →',
+    finSiguienteDe: 'Zain dagoen hurrengoa: {X}', finMarcada: 'Irakurrita markatua',
+    fabMenu: 'Irakurgailuaren aukera gehiago', fabOcultarAqui: 'Ezkutatu botoia hedabide honetan',
+    fabOcultoAqui: 'Botoia ezkutatuta hedabide honetan', fabMostrarAqui: 'Erakutsi botoia hedabide honetan',
+    fabNadaAqui: 'Botoiak ez du ezer eskaintzeko hemen', fabAutomatico: 'irakurgailu automatikoa',
+    volverVoceiro: 'Itzuli Voceirora', apariencia: 'Itxura',
+    mas: 'Gehiago', masAcciones: 'Ekintza gehiago',
+    letraMenor: 'Letra txikiagoa', letraMayor: 'Letra handiagoa',
+    masEstrecho: 'Estuagoa', masAncho: 'Zabalagoa',
+    sinImagenesMedio: 'Irudirik gabe hedabide honetan', ampliarImagen: 'Irudia handitu',
     readItems: 'Irakurriak', readItemsNo: 'Zain',
     keepReadItems: 'Irakurrien historia gorde',
     clearRead: 'Irakurriak ezabatu',
@@ -1506,10 +1568,10 @@ const I18N = {
     serviciosFormato: 'Fitxategiak ez du zerbitzu-zerrenda baliodunik.',
     serviciosInvalido: 'Berrikusi izena eta helbidea: https://-rekin hasi behar da eta {url} edo {url_cod} eraman behar du.',
     serviciosRepetido: 'Zerbitzu hori zerrendan dago jada.',
-    serviciosFab: '«Ireki honekin…» botoi mugikorra albisteetan',
-    serviciosFabMenu: 'erakutsi edo ezkutatu botoia',
-    serviciosFabOculto: '«Ireki honekin…» botoia ezkutatuta',
-    serviciosFabVisible: '«Ireki honekin…» botoia ikusgai',
+    serviciosFab: '«Ireki honekin…» botoi mugikorraren menuan',
+    serviciosFabMenu: 'erakutsi edo ezkutatu botoi mugikorrean',
+    serviciosFabOculto: '«Ireki honekin…» ezkutatuta botoi mugikorrean',
+    serviciosFabVisible: '«Ireki honekin…» ikusgai botoi mugikorrean',
     btnTitulares: 'IZENBURUAK',
   }
 };
@@ -1641,7 +1703,8 @@ const DEFAULT_CFG = {
   readerSettings: {
     keepReadItems: true
   },
-  fab: { left: null, top: null },
+  // Botón flotante: lado ('izq'/'der'), altura y medios donde se ha ocultado.
+  fab: { lado: null, top: null, ocultoEn: [] },
   servicios: [],
   serviciosFab: { oculto: false },
   prefs: {
@@ -1904,9 +1967,11 @@ function aplicarPerfilAlLector(perfil){
 // Configuración propia del lector que viaja a otros dispositivos (por
 // Voceiro y su sincronización): reglas por sitio, catálogo propio,
 // diccionarios, servicios de «Abrir en…», atajos… Todo menos Pendientes, el
-// perfil común (va aparte), los sellos, la posición de los botones y qué
-// paneles del lector están abiertos (abrir uno no es un cambio que viaje).
-const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab'];
+// perfil común (va aparte), los sellos, la posición de los botones, qué
+// paneles del lector están abiertos (abrir uno no es un cambio que viaje) y
+// los avisos de leídas para el Voceiro de este navegador.
+const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab',
+                     'leidasParaVoceiro'];
 const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
 const PREFS_LOCALES = ['panelText', 'panelActions'];
 let __configFirma = null;
@@ -2151,7 +2216,7 @@ function removeSiteRule(domain){
   CFG.sites = CFG.sites.filter(s => s.domain !== d);
   if (CFG.sites.length < before){
     saveCfg(CFG);
-    const f = document.getElementById('il-fab'); if (f) f.remove();
+    actualizarBoton();
     return true;
   }
   return false;
@@ -2277,10 +2342,7 @@ function ignoreCurrentSection(){
   rule.ignorePatterns.push(pattern);
   CFG.sites.sort((a, b) => a.domain.localeCompare(b.domain));
   saveCfg(CFG);
-  const fab = document.getElementById('il-fab'); if (fab) fab.remove();
-  const bfab = document.getElementById('il-servicios-fab'); if (bfab) bfab.remove();
-  const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-  repositionStackFABs();
+  actualizarBoton();
   toast((existedBefore ? '' : t('siteAddedForIgnore') + '\n') + t('sectionIgnored') + ' ' + pattern);
 }
 
@@ -2388,6 +2450,89 @@ function findLaterItem(url){
 
 
 
+/* ── Al terminar de leer ──
+   Voceiro cuenta como leído lo que se abre desde allí; lo que se termina
+   aquí (abierto desde donde sea) se le avisa por el puente: leidasParaVoceiro
+   es una lista corta de { url, fecha, quitar? } que Voceiro confirma con
+   leidasHasta (la fecha más nueva que ya tiene). No viaja a otros
+   dispositivos: allí ya llega por la sincronización de Voceiro. */
+const LEIDAS_AVISO_MAX = 200;
+
+function avisarLeida(url, quitar){
+  const ahora = Date.now();
+  const aviso = { url: String(url), fecha: ahora };
+  if (quitar) aviso.quitar = true;
+  CFG.leidasParaVoceiro = [...(CFG.leidasParaVoceiro || []), aviso].slice(-LEIDAS_AVISO_MAX);
+}
+
+// Lo que Voceiro ya tiene (fecha <= hasta) se quita de la lista.
+function leidasConfirmadas(hasta){
+  const antes = CFG.leidasParaVoceiro || [];
+  const quedan = antes.filter(l => l.fecha > (hasta || 0));
+  if (quedan.length !== antes.length) CFG.leidasParaVoceiro = quedan;
+}
+function hayLeidasSinAvisar(hasta){
+  return (CFG.leidasParaVoceiro || []).some(l => l.fecha > (hasta || 0));
+}
+
+// Marca esta página como leída: en Pendientes, si está (respetando «guardar
+// leídas»), y para Voceiro. Devuelve con qué deshacerlo, o null si ya lo
+// estaba y no había nada que hacer.
+function marcarLeidaAlTerminar(){
+  const url = location.href;
+  const item = findLaterItem(url);
+  const antes = item ? { ...item } : null;
+  if (item && !item.read){
+    const keepRead = !(CFG.readerSettings && CFG.readerSettings.keepReadItems === false);
+    CFG.readLater = conCambio(item, keepRead ? { read: true, readAt: Date.now() } : { borrado: true });
+  }
+  avisarLeida(url);
+  CFG.readLater = fusionarPendientes(CFG.readLater, []);
+  saveCfg(CFG);
+  enviarEstado(false);
+  return () => {
+    if (antes && !antes.read){
+      const ahora = findLaterItem(url) || (CFG.readLater || []).find(r => r.url === antes.url);
+      if (ahora) CFG.readLater = conCambio(ahora, { read: false, readAt: null, borrado: false });
+    }
+    avisarLeida(url, true);
+    CFG.readLater = fusionarPendientes(CFG.readLater, []);
+    saveCfg(CFG);
+    enviarEstado(false);
+  };
+}
+
+// La siguiente pendiente sin leer, en el orden de la lista (más recientes
+// primero): la que va detrás de esta o, si esta no está, la primera.
+function siguientePendiente(url){
+  const sinLeer = pendientesVisibles().filter(r => !r.read);
+  const aqui = normalizeUrlForMatch(url || location.href);
+  const i = sinLeer.findIndex(r => normalizeUrlForMatch(r.url) === aqui);
+  const resto = i < 0 ? sinLeer : [...sinLeer.slice(i + 1), ...sinLeer.slice(0, i)];
+  return resto.find(r => normalizeUrlForMatch(r.url) !== aqui) || null;
+}
+
+/* ── Abrir la siguiente con el lector ya abierto ──
+   Antes de ir se apunta adónde (SIGUIENTE_KEY, aparte de CFG: no es
+   configuración); al llegar, init lo ve y abre el lector. Vale la misma
+   dirección o el mismo medio (por si redirige), durante dos minutos. */
+const SIGUIENTE_KEY = 'lector-abrir-al-llegar';
+
+function irASiguientePendiente(siguiente){
+  PLATAFORMA.guardar(SIGUIENTE_KEY, { url: siguiente.url, t: Date.now() });
+  location.href = siguiente.url;
+}
+
+function llegaDeSiguientePendiente(){
+  const f = PLATAFORMA.leer(SIGUIENTE_KEY, null);
+  if (!f || !f.url) return false;
+  if (Date.now() - (f.t || 0) > 2 * 60 * 1000){ PLATAFORMA.guardar(SIGUIENTE_KEY, null); return false; }
+  let mismoMedio = false;
+  try { mismoMedio = normalizeDomain(new URL(f.url).hostname) === normalizeDomain(location.hostname); } catch(e){}
+  if (!mismoMedio && normalizeUrlForMatch(f.url) !== normalizeUrlForMatch(location.href)) return false;
+  PLATAFORMA.guardar(SIGUIENTE_KEY, null);
+  return true;
+}
 /* ============================================================
    10. TOAST + DIÁLOGO
    ============================================================ */
@@ -3310,66 +3455,56 @@ function shouldShowReaderFAB(){
   return isArticlePage();
 }
 
-function ensureReaderFAB(){
-  if (!shouldShowReaderFAB()) return;
-  if (document.getElementById('il-fab')) return;
-  if (document.getElementById('il-full')) return;
-  createFAB();
-}
 
 /* ============================================================
-   16. CSS DEL LECTOR
+   16. ASPECTO: PALETA, ICONOS Y CSS DEL LECTOR
    ============================================================ */
+// Paleta de Voceiro (plantilla.html, bloque PALETA), puesta aquí por
+// build.mjs: { light: {bg:'#fff', …, 'color-scheme':'light'}, sepia: {…}, … }.
+const PALETA = {"light":{"bg":"#fff","fg":"#222","muted":"#6b6b6b","accent":"#d32f2f","border":"#eee","quote-bg":"#f9f9f9","btn-bg":"#f7f7f7","btn-border":"#8a8a8a","shadow":"rgba(0,0,0,.08)","preset":"#0a7d3f","preset-bg":"#e8f5e9","block":"#b00020","block-bg":"#fde8ec","save":"#1565c0","save-bg":"#e3f2fd","mark":"#ffe680","mark-fg":"#111","on-solid":"#fff","focus":"#1565c0","color-scheme":"light"},"sepia":{"bg":"#f4ecd8","fg":"#3b2f1e","muted":"#6b5a3c","accent":"#8f4523","border":"#e0d5b8","quote-bg":"#ede0c4","btn-bg":"#ede0c4","btn-border":"#8c7c58","shadow":"rgba(59,47,30,.15)","preset":"#33682a","preset-bg":"#e4ebd0","block":"#8b2020","block-bg":"#ebd5d0","save":"#2e5a8b","save-bg":"#d8e3ee","mark":"#c9a227","mark-fg":"#2c1c08","on-solid":"#fff","focus":"#2e5a8b","color-scheme":"light"},"dark":{"bg":"#1a1a1a","fg":"#e0e0e0","muted":"#999","accent":"#ff6b6b","border":"#333","quote-bg":"#252525","btn-bg":"#2a2a2a","btn-border":"#787878","shadow":"rgba(0,0,0,.5)","preset":"#4cc97a","preset-bg":"#173524","block":"#ff8a9c","block-bg":"#3d1a20","save":"#6cb3ff","save-bg":"#1e3550","mark":"#b58600","mark-fg":"#111","on-solid":"#111","focus":"#6cb3ff","color-scheme":"dark"},"contrast":{"bg":"#000","fg":"#fff","muted":"#ff0","accent":"#0ff","border":"#fff","quote-bg":"#111","btn-bg":"#111","btn-border":"#fff","shadow":"rgba(255,255,255,.2)","preset":"#0f0","preset-bg":"#003300","block":"#f00","block-bg":"#330000","save":"#0ff","save-bg":"#003333","mark":"#ff0","mark-fg":"#000","on-solid":"#000","focus":"#ff0","color-scheme":"dark"}};
+
+// CSS de la paleta para un sitio: base lleva el tema claro y cada tema, su
+// selector (por defecto, base[data-theme="…"]; en un Shadow DOM, :host(…)).
+function cssPaleta(base, selTema){
+  selTema = selTema || (t => base + '[data-theme="' + t + '"]');
+  const reglas = t => Object.entries(PALETA[t] || {})
+    .map(([k, v]) => (k === 'color-scheme' ? k : '--' + k) + ':' + v).join(';');
+  return [base + '{' + reglas('light') + '}']
+    .concat(Object.keys(PALETA).filter(t => t !== 'light').map(t => selTema(t) + '{' + reglas(t) + '}'))
+    .join('\n');
+}
+
+// Iconos del sprite de Voceiro: solo los que se usan aquí, con icono('…')
+// escrito tal cual (build.mjs los busca así; un nombre calculado no lo ve).
+// Trazados de Lucide (lucide-static 0.460.0, lucide.dev), ISC License.
+// Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as
+// part of Feather (MIT). All other copyright (c) for Lucide are held by
+// Lucide Contributors 2022. Permission to use, copy, modify, and/or
+// distribute this software for any purpose with or without fee is hereby
+// granted, provided that the above copyright notice and this permission
+// notice appear in all copies. THE SOFTWARE IS PROVIDED "AS IS" AND THE
+// AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
+const ICONOS = {"a-large-small":"<path d=\"M21 14h-5\" /><path d=\"M16 16v-3.5a2.5 2.5 0 0 1 5 0V16\" /><path d=\"M4.5 13h6\" /><path d=\"m3 16 4.5-9 4.5 9\" />","arrow-left":"<path d=\"m12 19-7-7 7-7\" /><path d=\"M19 12H5\" />","arrow-up":"<path d=\"m5 12 7-7 7 7\" /><path d=\"M12 19V5\" />","ban":"<circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"m4.9 4.9 14.2 14.2\" />","book-open-text":"<path d=\"M12 7v14\" /><path d=\"M16 12h2\" /><path d=\"M16 8h2\" /><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\" /><path d=\"M6 12h2\" /><path d=\"M6 8h2\" />","bookmark":"<path d=\"m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z\" />","bookmark-check":"<path d=\"m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z\" /><path d=\"m9 10 2 2 4-4\" />","copy":"<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />","ellipsis":"<circle cx=\"12\" cy=\"12\" r=\"1\" /><circle cx=\"19\" cy=\"12\" r=\"1\" /><circle cx=\"5\" cy=\"12\" r=\"1\" />","external-link":"<path d=\"M15 3h6v6\" /><path d=\"M10 14 21 3\" /><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />","eye-off":"<path d=\"M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49\" /><path d=\"M14.084 14.158a3 3 0 0 1-4.242-4.242\" /><path d=\"M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143\" /><path d=\"m2 2 20 20\" />","library":"<path d=\"m16 6 4 14\" /><path d=\"M12 6v14\" /><path d=\"M8 8v12\" /><path d=\"M4 4v16\" />","mail":"<rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\" /><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\" />","minus":"<path d=\"M5 12h14\" />","plus":"<path d=\"M5 12h14\" /><path d=\"M12 5v14\" />","printer":"<path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\" /><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\" /><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\" />","settings":"<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />","share-2":"<circle cx=\"18\" cy=\"5\" r=\"3\" /><circle cx=\"6\" cy=\"12\" r=\"3\" /><circle cx=\"18\" cy=\"19\" r=\"3\" /><line x1=\"8.59\" x2=\"15.42\" y1=\"13.51\" y2=\"17.49\" /><line x1=\"15.41\" x2=\"8.59\" y1=\"6.51\" y2=\"10.49\" />","x":"<path d=\"M18 6 6 18\" /><path d=\"m6 6 12 12\" />","zap":"<path d=\"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z\" />"};
+function icono(id){
+  return '<svg class="il-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    (ICONOS[id] || '') + '</svg>';
+}
+
+// Los textos antiguos traen su emoji delante («📋 Copiar texto»); con icono
+// sobra.
+function sinSimbolo(s){
+  return String(s || '').replace(/^[^\p{L}\p{N}]+/u, '');
+}
+
+// Desplazamientos suaves, salvo si la persona ha pedido menos movimiento.
+function desplazar(){
+  try { return matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'; }
+  catch(e){ return 'smooth'; }
+}
+
 function buildReaderCSS(){
   return `
-#il-full{
-    color-scheme:light;
-    --bg:#fff; --fg:#222; --muted:#6b6b6b; --accent:#d32f2f;
-    --border:#eee; --quote-bg:#f9f9f9;
-    --btn-bg:#f7f7f7; --btn-border:#8a8a8a;
-    --shadow:rgba(0,0,0,.08);
-    --preset:#0a7d3f; --preset-bg:#e8f5e9;
-    --block:#b00020; --block-bg:#fde8ec;
-    --save:#1565c0; --save-bg:#e3f2fd;
-    --mark:#ffe680; --mark-fg:#111;
-    --on-solid:#fff; --focus:#1565c0;
-  }
-#il-full[data-theme="sepia"]{
-    color-scheme:light;
-    --bg:#f4ecd8; --fg:#3b2f1e; --muted:#6b5a3c; --accent:#8f4523;
-    --border:#e0d5b8; --quote-bg:#ede0c4;
-    --btn-bg:#ede0c4; --btn-border:#8c7c58;
-    --shadow:rgba(59,47,30,.15);
-    --preset:#33682a; --preset-bg:#e4ebd0;
-    --block:#8b2020; --block-bg:#ebd5d0;
-    --save:#2e5a8b; --save-bg:#d8e3ee;
-    --mark:#c9a227; --mark-fg:#2c1c08;
-    --on-solid:#fff; --focus:#2e5a8b;
-  }
-#il-full[data-theme="dark"]{
-    color-scheme:dark;
-    --bg:#1a1a1a; --fg:#e0e0e0; --muted:#999; --accent:#ff6b6b;
-    --border:#333; --quote-bg:#252525;
-    --btn-bg:#2a2a2a; --btn-border:#787878;
-    --shadow:rgba(0,0,0,.5);
-    --preset:#4cc97a; --preset-bg:#173524;
-    --block:#ff8a9c; --block-bg:#3d1a20;
-    --save:#6cb3ff; --save-bg:#1e3550;
-    --mark:#b58600; --mark-fg:#111;
-    --on-solid:#111; --focus:#6cb3ff;
-  }
-#il-full[data-theme="contrast"]{
-    color-scheme:dark;
-    --bg:#000; --fg:#fff; --muted:#ff0; --accent:#0ff;
-    --border:#fff; --quote-bg:#111;
-    --btn-bg:#111; --btn-border:#fff;
-    --shadow:rgba(255,255,255,.2);
-    --preset:#0f0; --preset-bg:#003300;
-    --block:#f00; --block-bg:#330000;
-    --save:#0ff; --save-bg:#003333;
-    --mark:#ff0; --mark-fg:#000;
-    --on-solid:#000; --focus:#ff0;
-  }
+${cssPaleta('#il-full')}
 #il-full{--ambi-op:.25;position:fixed;inset:0;background:var(--bg);color:var(--fg);z-index:2147483646;overflow:auto;-webkit-text-size-adjust:100%}
 #il-full[data-theme="dark"]{--ambi-op:.4}
 #il-full[data-theme="contrast"]{--ambi-op:.5}
@@ -3378,19 +3513,43 @@ function buildReaderCSS(){
 #il-ambi-img{position:fixed;inset:-15%;width:130%;height:130%;object-fit:cover;filter:blur(40px);opacity:var(--ambi-op);z-index:0;pointer-events:none;user-select:none}
 #il-full .il-progress{position:fixed;top:0;left:0;right:0;height:4px;background:var(--border);z-index:12;pointer-events:none}
 #il-full .il-progress-bar{height:100%;background:var(--accent);width:0%;transition:width .15s linear}
+#il-full .il-ico{width:20px;height:20px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#il-full .il-vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 #il-full .il-topbar{position:sticky;top:0;background:var(--bg);z-index:10;padding-top:4px;box-shadow:0 4px 10px var(--shadow);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;transition:transform .3s cubic-bezier(.4,0,.2,1)}
 #il-full .il-topbar.il-hidden{transform:translateY(-100%)}
-#il-full .il-nav-row{display:flex;justify-content:center;align-items:center;padding:10px 12px;gap:8px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-#il-full .il-nav-row::-webkit-scrollbar{display:none}
-#il-full .il-nav-row button{flex:0 0 auto}
-@media (max-width:520px){
-  #il-full .il-nav-row{padding:8px;gap:6px}
-  #il-full .il-nav-row button{padding:7px 10px;font-size:13px}
+#il-full .il-topbar:focus-within,#il-full.il-desplegado .il-topbar{transform:none}
+#il-full.il-desplegado .il-top-btn{opacity:0;pointer-events:none}
+#il-full .il-nav-row{display:flex;align-items:center;gap:6px;padding:8px 12px}
+#il-full .il-nav-espacio{flex:1}
+#il-full .il-nav-row button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:8px 12px}
+#il-full .il-nav-row button[aria-expanded="true"]{background:var(--accent);color:var(--on-solid);border-color:var(--accent)}
+@media (max-width:600px){
+  #il-full .il-nav-row{padding:6px 8px}
+  #il-full .il-nav-row .il-lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  #il-full .il-nav-row button{padding:8px}
 }
-#il-full .il-settings-bar{display:flex;background:var(--bg);padding:12px 14px 16px;border-top:1px solid var(--border);flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;font-size:14px}
-#il-full .il-group{display:flex;align-items:center;gap:6px;padding:4px 12px;border-right:1px solid var(--border)}
-#il-full .il-group:last-child{border-right:none}
-#il-full .il-group>label{color:var(--muted);font-size:12px;margin-right:4px;text-transform:uppercase;letter-spacing:.5px}
+#il-full .il-panel,#il-full .il-menu{position:absolute;top:100%;right:12px;max-width:calc(100vw - 24px);max-height:calc(100vh - 90px);overflow:auto;background:var(--bg);color:var(--fg);border:1px solid var(--btn-border);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.3);font-size:15px;z-index:11}
+#il-full .il-panel{width:440px;padding:16px;display:flex;flex-direction:column;gap:16px}
+#il-full .il-menu{min-width:250px;padding:6px;display:flex;flex-direction:column}
+@media (max-width:600px){
+  #il-full .il-panel,#il-full .il-menu{position:fixed;top:auto;bottom:0;left:0;right:0;width:auto;max-width:none;max-height:75vh;border-radius:16px 16px 0 0;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+}
+#il-full .il-panel fieldset,#il-full .il-paso{border:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#il-full .il-panel legend,#il-full .il-paso-etq{width:100%;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 6px;padding:0}
+#il-full .il-opcion{position:relative;display:inline-flex;cursor:pointer}
+#il-full .il-opcion input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+#il-full .il-opcion span{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 14px;border:1px solid var(--btn-border);border-radius:8px;background:var(--btn-bg);color:var(--fg);font-weight:500}
+#il-full .il-opcion input:checked+span{background:var(--accent);color:var(--on-solid);border-color:var(--accent)}
+#il-full .il-opcion input:checked+span::before{content:"✓";font-weight:700}
+#il-full .il-opcion input:focus-visible+span{outline:2px solid var(--focus);outline-offset:2px}
+#il-full .il-opcion.il-muestra input:checked+span{background:var(--muestra-bg);color:var(--muestra-fg);border-color:var(--muestra-fg);box-shadow:0 0 0 3px var(--accent)}
+#il-full .il-opcion.il-muestra span{background:var(--muestra-bg);color:var(--muestra-fg);border-color:var(--muestra-borde)}
+#il-full .il-paso output{min-width:4ch;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+#il-full .il-paso button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:8px}
+#il-full .il-menu [role="menuitem"]{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 12px;border:none;background:transparent;border-radius:8px;text-align:left;font-size:15px}
+#il-full .il-menu [role="menuitem"]:hover,#il-full .il-menu [role="menuitem"]:focus{background:var(--quote-bg);filter:none}
+#il-full .il-menu-grupo{font-size:12px;font-weight:600;color:var(--muted);padding:8px 12px 2px}
+#il-full .il-menu [role="separator"]{border-top:1px solid var(--border);margin:4px 0}
 #il-full button{cursor:pointer;padding:8px 14px;border:1px solid var(--btn-border);background:var(--btn-bg);color:var(--fg);border-radius:6px;font-family:inherit;font-size:14px;font-weight:500;transition:all .1s}
 #il-full button:hover{filter:brightness(.95)}
 #il-full button.il-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);font-size:15px;font-weight:bold}
@@ -3405,7 +3564,8 @@ function buildReaderCSS(){
 #il-full .il-desc{font-size:1.1em;color:var(--muted);font-style:italic;margin:0 0 20px}
 #il-full .il-meta{color:var(--muted);font-size:.85em;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-meta-actions{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 28px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
-#il-full .il-meta-actions button{padding:7px 12px;font-size:13px}
+#il-full .il-meta-actions button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:7px 12px;font-size:14px}
+#il-full .il-meta-actions .il-ico{width:18px;height:18px}
 #il-full .il-body p{margin:1.2em 0}
 #il-full .il-body blockquote{margin:1.5em 0;padding:1em 1.5em;border-left:4px solid var(--accent);background:var(--quote-bg);font-style:italic}
 #il-full .il-body h2,#il-full .il-body h3,#il-full .il-body h4{margin:1.6em 0 .6em;line-height:1.3}
@@ -3435,16 +3595,24 @@ function buildReaderCSS(){
 #il-full .il-figure figcaption,
 #il-full .il-inline-figure figcaption{font-size:.85em;color:var(--muted);text-align:center;padding:10px 14px;line-height:1.4;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-footer{color:var(--muted);font-size:.8em;margin-top:20px;padding-top:14px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
-#il-full .il-footer-top,#il-full .il-footer-back{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
+#il-full [hidden]{display:none!important}
+#il-full .il-fin{margin:48px 0 8px;padding-top:24px;border-top:1px solid var(--border);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#il-full .il-fin-acciones{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+#il-full .il-fin-acciones button{min-height:44px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;max-width:100%}
+#il-full .il-fin-volver{flex:1 1 100%;font-size:16px}
+#il-full .il-fin-sig-titulo{font-size:12px;font-weight:400;max-width:30ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#il-full .il-fin-estado{min-height:1.5em;margin:12px 0 0;text-align:center;color:var(--muted);font-size:14px}
+#il-full .il-fin-deshacer{background:none;border:none;color:var(--accent);text-decoration:underline;padding:4px 6px;font-size:inherit;font-weight:bold}
 #il-full .il-dict-hint{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
 #il-full .il-source-badge{color:var(--muted);margin-left:4px}
-#il-full .il-top-btn{position:fixed;bottom:24px;right:24px;z-index:20;width:48px;height:48px;padding:0;border-radius:50%;font-size:22px;line-height:1;background:var(--accent);color:var(--on-solid);border:1px solid var(--accent);box-shadow:0 4px 12px var(--shadow);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .25s,transform .25s}
+#il-full .il-top-btn{position:fixed;bottom:24px;right:24px;z-index:20;width:48px;height:48px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:var(--on-solid);border:1px solid var(--accent);box-shadow:0 4px 12px var(--shadow);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .25s,transform .25s}
 #il-full .il-top-btn.il-show{opacity:1;pointer-events:auto;transform:translateY(0)}
 #il-full .il-dict-popup{position:fixed;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:30;padding:8px;display:flex;flex-direction:column;gap:4px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;min-width:180px}
 #il-full .il-dict-popup-title{padding:6px 10px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px}
 #il-full .il-dict-popup button{text-align:left;padding:8px 10px;border:none;background:transparent;color:var(--fg);cursor:pointer;border-radius:4px;font-size:14px;font-family:inherit}
 #il-full .il-dict-popup button:hover{background:var(--quote-bg)}
-@media print{#il-full .il-top-btn{display:none!important}}
+@media print{#il-full .il-top-btn,#il-full .il-fin,#il-full .il-topbar,#il-full .il-progress{display:none!important}}
+@media (prefers-reduced-motion:reduce){#il-full,#il-full *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 `;
 }
 
@@ -3863,72 +4031,101 @@ function openReader(art){
 
   // «Abrir en…»: los servicios que haya configurado cada persona.
   const servicios = serviciosConfigurados();
-  const serviciosHTML = servicios.map(svc =>
-    '<button class="il-servicio" data-servicio="' + esc(svc.id) + '">' + esc(svc.nombre) + '</button>'
-  ).join('');
+
+  // Una opción del panel Apariencia: radio o casilla nativos (teclado y
+  // lectores de pantalla de serie) con su texto; el ✓ dice cuál está
+  // elegida, no solo el color.
+  function opcion(tipo, nombre, valor, texto, muestra){
+    const p = muestra ? (PALETA[muestra] || {}) : null;
+    return '<label class="il-opcion' + (p ? ' il-muestra' : '') + '"' +
+      (p ? ' style="' + esc('--muestra-bg:' + p.bg + ';--muestra-fg:' + p.fg + ';--muestra-borde:' + p['btn-border']) + '"' : '') + '>' +
+      '<input type="' + tipo + '" name="' + nombre + '" value="' + esc(valor) + '">' +
+      '<span>' + esc(texto) + '</span></label>';
+  }
+  function paso(clase, etiqueta, menos, mas){
+    return '<div class="il-paso" role="group" aria-labelledby="il-paso-' + clase + '">' +
+      '<span class="il-paso-etq" id="il-paso-' + clase + '">' + esc(etiqueta) + '</span>' +
+      '<button type="button" class="il-' + clase + '-minus" aria-label="' + esc(menos) + '">' + icono('minus') + '</button>' +
+      '<output class="il-' + clase + '-val" aria-live="polite"></output>' +
+      '<button type="button" class="il-' + clase + '-plus" aria-label="' + esc(mas) + '">' + icono('plus') + '</button>' +
+    '</div>';
+  }
+  const panelAa =
+    '<div id="il-panel-aa" class="il-panel" role="dialog" aria-label="' + esc(t('apariencia')) + '" hidden>' +
+      '<fieldset><legend>' + esc(t('theme')) + '</legend>' +
+        opcion('radio', 'il-tema', 'light', t('light'), 'light') +
+        opcion('radio', 'il-tema', 'sepia', t('sepia'), 'sepia') +
+        opcion('radio', 'il-tema', 'dark', t('dark'), 'dark') +
+        opcion('radio', 'il-tema', 'contrast', t('contrast'), 'contrast') +
+      '</fieldset>' +
+      '<fieldset><legend>' + esc(t('font')) + '</legend>' +
+        opcion('radio', 'il-letra', 'georgia', t('serif')) +
+        opcion('radio', 'il-letra', 'sans', t('sans')) +
+        opcion('radio', 'il-letra', 'dyslexic', t('dyslexic')) +
+      '</fieldset>' +
+      paso('fs', t('size'), t('letraMenor'), t('letraMayor')) +
+      paso('w', t('width'), t('masEstrecho'), t('masAncho')) +
+      '<fieldset><legend>' + esc(t('extra')) + '</legend>' +
+        opcion('checkbox', 'il-pref', 'just', t('justify')) +
+        opcion('checkbox', 'il-pref', 'bionic', t('bionic')) +
+        opcion('checkbox', 'il-pref', 'focus', t('focus')) +
+        opcion('checkbox', 'il-pref', 'img', t('coverImage')) +
+        opcion('checkbox', 'il-pref', 'textonly', t('sinImagenesMedio')) +
+      '</fieldset>' +
+      '<fieldset><legend>' + esc(t('source')) + '</legend>' +
+        opcion('radio', 'il-origen', 'auto', t('srcAuto')) +
+        opcion('radio', 'il-origen', 'jsonld', t('srcJsonld')) +
+        opcion('radio', 'il-origen', 'readability', t('srcReadability')) +
+      '</fieldset>' +
+    '</div>';
+
+  function itemMenu(clase, ico, texto){
+    return '<button type="button" role="menuitem" tabindex="-1" class="' + clase + '">' +
+      ico + '<span>' + esc(texto) + '</span></button>';
+  }
+  const menuMasHTML =
+    '<div id="il-menu-mas" class="il-menu" role="menu" aria-label="' + esc(t('masAcciones')) + '" hidden>' +
+      (servicios.length
+        ? '<div role="group" aria-label="' + esc(t('abrirEn')) + '">' +
+            '<div class="il-menu-grupo" aria-hidden="true">' + esc(t('abrirEn')) + '</div>' +
+            servicios.map(svc =>
+              '<button type="button" role="menuitem" tabindex="-1" class="il-servicio" data-servicio="' + esc(svc.id) + '">' +
+                icono('external-link') + '<span>' + esc(svc.nombre) + '</span></button>').join('') +
+          '</div><div role="separator"></div>'
+        : '') +
+      itemMenu('il-copytxt', icono('copy'), sinSimbolo(t('copyText'))) +
+      itemMenu('il-rsvp-menu', icono('zap'), sinSimbolo(t('teleprompter'))) +
+      itemMenu('il-print', icono('printer'), sinSimbolo(t('print'))) +
+      itemMenu('il-mail', icono('mail'), sinSimbolo(t('email'))) +
+      itemMenu('il-share', icono('share-2'), sinSimbolo(t('share'))) +
+      '<div role="separator"></div>' +
+      itemMenu('il-ignore-section', icono('ban'), sinSimbolo(t('ignoreSection'))) +
+      itemMenu('il-settings-btn', icono('settings'), sinSimbolo(t('settingsShort'))) +
+    '</div>';
 
   const progressHTML =
-    '<div class="il-progress"><div class="il-progress-bar"></div></div>';
+    '<div class="il-progress" aria-hidden="true"><div class="il-progress-bar"></div></div>';
 
+  // Barra: volver a Voceiro (cierra la pestaña) · Apariencia · Pendientes ·
+  // Más · Salir del lector. En pantallas estrechas solo se ven los iconos;
+  // los textos siguen ahí para los lectores de pantalla.
   const toolbarHTML =
     progressHTML +
     '<div class="il-topbar">' +
       '<div class="il-nav-row">' +
-        '<button class="il-back il-primary">' + esc(t('back')) + '</button>' +
-        '<button class="il-voceiro-btn il-primary">' + esc(t('btnTitulares')) + '</button>' +
-        '<button class="il-toggle-text">' + esc(t('options')) + '</button>' +
-        '<button class="il-toggle-actions">' + esc(t('actions')) + '</button>' +
-        '<button class="il-textonly-btn" title="' + esc(t('textOnlyShort')) + '">🖼</button>' +
-        '<button class="il-pendientes-btn" title="' + esc(t('pendientesShort')) + '">📚</button>' +
-        (servicios.length
-          ? '<button class="il-servicios-btn" title="' + esc(t('abrirEn')) + '" aria-label="' + esc(t('abrirEn')) + '">↗</button>'
-          : '') +
-        '<button class="il-settings-btn" title="' + esc(t('settingsShort')) + '">⚙️</button>' +
-        '<button class="il-close-tab" title="' + esc(t('closeTab')) + '">✕</button>' +
-        '<button class="il-close il-primary">' + esc(t('close')) + '</button>' +
+        '<button type="button" class="il-voceiro-btn" aria-label="' + esc(t('volverVoceiro')) + '">' +
+          icono('arrow-left') + '<span class="il-lbl">Voceiro</span></button>' +
+        '<span class="il-nav-espacio"></span>' +
+        '<button type="button" class="il-aa-btn" aria-expanded="false" aria-controls="il-panel-aa">' +
+          icono('a-large-small') + '<span class="il-lbl">' + esc(t('apariencia')) + '</span></button>' +
+        '<button type="button" class="il-pendientes-btn">' +
+          icono('library') + '<span class="il-lbl">' + esc(t('pendientesShort')) + '</span></button>' +
+        '<button type="button" class="il-mas-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="il-menu-mas" aria-label="' + esc(t('masAcciones')) + '">' +
+          icono('ellipsis') + '<span class="il-lbl">' + esc(t('mas')) + '</span></button>' +
+        '<button type="button" class="il-close">' +
+          icono('x') + '<span class="il-lbl">' + esc(sinSimbolo(t('close'))) + '</span></button>' +
       '</div>' +
-      '<div class="il-settings-bar" id="il-panel-text" style="display:none">' +
-        '<div class="il-group"><label>' + esc(t('theme')) + '</label>' +
-          '<button data-set-theme="light" title="' + esc(t('light')) + '">☀</button>' +
-          '<button data-set-theme="sepia" title="' + esc(t('sepia')) + '">📖</button>' +
-          '<button data-set-theme="dark" title="' + esc(t('dark')) + '">🌙</button>' +
-          '<button data-set-theme="contrast" title="' + esc(t('contrast')) + '">◐</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('font')) + '</label>' +
-          '<button data-set-font="georgia">' + esc(t('serif')) + '</button>' +
-          '<button data-set-font="sans">' + esc(t('sans')) + '</button>' +
-          '<button data-set-font="dyslexic">' + esc(t('dyslexic')) + '</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('size')) + '</label>' +
-          '<button class="il-fs-minus">A−</button>' +
-          '<span class="il-fs-val" style="font-weight:bold;margin:0 4px">' + prefs.fs + '</span>' +
-          '<button class="il-fs-plus">A+</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('width')) + '</label>' +
-          '<button class="il-w-minus">−</button>' +
-          '<span class="il-w-val" style="font-weight:bold;margin:0 4px">' + prefs.width + '</span>' +
-          '<button class="il-w-plus">+</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('extra')) + '</label>' +
-          '<button class="il-toggle" data-pref="just">' + esc(t('justify')) + '</button>' +
-          '<button class="il-toggle" data-pref="bionic">' + esc(t('bionic')) + '</button>' +
-          '<button class="il-toggle" data-pref="focus">' + esc(t('focus')) + '</button>' +
-          '<button class="il-toggle" data-pref="img" title="' + esc(t('coverImageTitle')) + '">' + esc(t('coverImage')) + '</button>' +
-        '</div>' +
-        '<div class="il-group"><label>' + esc(t('source')) + '</label>' +
-          '<button class="il-source" data-src="auto">' + esc(t('srcAuto')) + '</button>' +
-          '<button class="il-source" data-src="jsonld">' + esc(t('srcJsonld')) + '</button>' +
-          '<button class="il-source" data-src="readability">' + esc(t('srcReadability')) + '</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="il-settings-bar" id="il-panel-actions" style="display:none;background:var(--quote-bg)">' +
-        serviciosHTML +
-        '<button class="il-copytxt">' + esc(t('copyText')) + '</button>' +
-        '<button class="il-print">' + esc(t('print')) + '</button>' +
-        '<button class="il-mail">' + esc(t('email')) + '</button>' +
-        '<button class="il-share">' + esc(t('share')) + '</button>' +
-        '<button class="il-ignore-section">' + esc(t('ignoreSection')) + '</button>' +
-      '</div>' +
+      panelAa + menuMasHTML +
     '</div>';
 
   const figura = iuFinal
@@ -3945,13 +4142,13 @@ function openReader(art){
 
   const metaActions =
     '<div class="il-meta-actions">' +
-      '<button class="il-save-meta" title="' + esc(t('saveLater')) + '">🕒 ' + esc(t('saveLater')) + '</button>' +
-      '<button class="il-rsvp-meta" title="' + esc(t('teleprompter')) + '">' + esc(t('teleprompter')) + '</button>' +
+      '<button type="button" class="il-save-meta"></button>' +
+      '<button type="button" class="il-rsvp-meta">' + icono('zap') + '<span>' + esc(sinSimbolo(t('teleprompter'))) + '</span></button>' +
     '</div>';
 
   const contentHTML =
-    '<div class="il-wrap"><div class="il-content">' +
-      '<h1>' + esc(headline) + '</h1>' +
+    '<div class="il-wrap"><div class="il-content" lang="' + esc(pageLang) + '">' +
+      '<h1 id="il-titulo" tabindex="-1">' + esc(headline) + '</h1>' +
       (description ? '<p class="il-desc">' + esc(description) + '</p>' : '') +
       '<div class="il-meta">' + esc(fecha) +
         (articleSection ? ' · ' + esc(articleSection) : '') +
@@ -3960,9 +4157,20 @@ function openReader(art){
       metaActions +
       figura +
       '<div class="il-body">' + renderBody() + '</div>' +
+      // Final: volver a Voceiro (marcándola leída), la siguiente pendiente,
+      // guardarla para luego o subir. Al llegar aquí se marca leída sola.
+      '<section class="il-fin">' +
+        '<div class="il-fin-acciones">' +
+          '<button type="button" class="il-fin-volver il-primary">' + esc(t('finVolver')) + '</button>' +
+          '<button type="button" class="il-fin-siguiente" hidden>' +
+            '<span>' + esc(t('finSiguiente')) + '</span><span class="il-fin-sig-titulo"></span>' +
+          '</button>' +
+          '<button type="button" class="il-fin-guardar"></button>' +
+          '<button type="button" class="il-fin-arriba">' + esc(t('up')) + '</button>' +
+        '</div>' +
+        '<p class="il-fin-estado" role="status" aria-live="polite"></p>' +
+      '</section>' +
       '<div class="il-footer">' +
-        '<button class="il-footer-top">' + esc(t('up')) + '</button> · ' +
-        '<button class="il-footer-back">' + esc(t('back')) + '</button> · ' +
         '<button class="il-dict-hint">' + esc(t('raeHint')) + ' ' + esc(defaultDictName) + '</button>' +
         sourceBadge +
       '</div>' +
@@ -3971,15 +4179,22 @@ function openReader(art){
   const ambi = iuFinal ? '<img id="il-ambi-img" src="' + esc(iuFinal) + '"' +
     (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') + ' alt="">' : '';
 
-  const full = '<div id="il-full" data-theme="' + prefs.theme + '" data-font="' + prefs.font +
+  const full = '<div id="il-full" role="dialog" aria-modal="true" aria-labelledby="il-titulo"' +
+    ' data-theme="' + esc(prefs.theme) + '" data-font="' + esc(prefs.font) +
     '" data-just="' + (prefs.just ? '1' : '0') + '">' +
     '<style>' + buildReaderCSS() + '</style>' + ambi +
     '<div style="position:relative;z-index:1">' + toolbarHTML + contentHTML + '</div>' +
-    '<button class="il-top-btn" title="' + esc(t('up')) + '">↑</button>' +
+    '<button type="button" class="il-top-btn" aria-label="' + esc(sinSimbolo(t('up'))) + '">' + icono('arrow-up') + '</button>' +
     '</div>';
 
+  // Lo que tenía el foco (el botón del lector, normalmente) lo recupera al
+  // salir. La página de debajo queda inerte mientras: ni el teclado ni los
+  // lectores de pantalla se meten en lo que no se ve.
+  const focoAntes = document.activeElement;
   document.body.insertAdjacentHTML('beforeend', full);
   const ov = document.getElementById('il-full');
+  const inertes = [...document.body.children].filter(el => el !== ov && !el.inert);
+  inertes.forEach(el => { el.inert = true; });
 
   function currentSiteTextOnly(){
     const rule = findSiteRule();
@@ -3999,32 +4214,16 @@ function openReader(art){
     const siteTextOnly = currentSiteTextOnly();
     ov.classList.toggle('il-textonly', siteTextOnly);
 
-    const toBtn = ov.querySelector('.il-textonly-btn');
-    if (toBtn){
-      toBtn.textContent = siteTextOnly ? '📝' : '🖼';
-      toBtn.title = siteTextOnly ? t('textOnlyOn') : t('textOnlyOff');
-      toBtn.classList.toggle('il-active', siteTextOnly);
-    }
-
     ov.querySelector('.il-fs-val').textContent = prefs.fs;
     ov.querySelector('.il-w-val').textContent = prefs.width;
-    ov.querySelectorAll('[data-set-theme]').forEach(b =>
-      b.classList.toggle('il-active', b.getAttribute('data-set-theme') === prefs.theme));
-    ov.querySelectorAll('[data-set-font]').forEach(b =>
-      b.classList.toggle('il-active', b.getAttribute('data-set-font') === prefs.font));
-    ov.querySelectorAll('.il-toggle').forEach(b =>
-      b.classList.toggle('il-active', !!prefs[b.getAttribute('data-pref')]));
-    const srcCurrent = currentReaderSource();
-    ov.querySelectorAll('.il-source').forEach(b =>
-      b.classList.toggle('il-active', b.getAttribute('data-src') === srcCurrent));
-    const pText = ov.querySelector('#il-panel-text');
-    const pAct = ov.querySelector('#il-panel-actions');
-    const bText = ov.querySelector('.il-toggle-text');
-    const bAct = ov.querySelector('.il-toggle-actions');
-    pText.style.display = prefs.panelText ? 'flex' : 'none';
-    pAct.style.display = prefs.panelActions ? 'flex' : 'none';
-    bText.classList.toggle('il-active', prefs.panelText);
-    bAct.classList.toggle('il-active', prefs.panelActions);
+    const marcar = (nombre, valor) =>
+      ov.querySelectorAll('input[name="' + nombre + '"]').forEach(r => { r.checked = r.value === valor; });
+    marcar('il-tema', prefs.theme);
+    marcar('il-letra', prefs.font);
+    marcar('il-origen', currentReaderSource());
+    ov.querySelectorAll('input[name="il-pref"]').forEach(c => {
+      c.checked = c.value === 'textonly' ? siteTextOnly : !!prefs[c.value];
+    });
     if (prefs.focus) setTimeout(updateFocus, 60);
   }
   function applyPrefs(){
@@ -4034,20 +4233,17 @@ function openReader(art){
 
   // La configuración ha cambiado fuera (otra pestaña, Voceiro): se toma la
   // nueva y se repinta, sin guardar (guardar aquí la volvería a mandar).
-  // Los paneles abiertos son de esta pestaña y se quedan como estaban.
   function refrescar(){
     if (document.getElementById('il-full') !== ov){ __lectorAbierto = null; return; }
-    const { panelText, panelActions } = prefs;
     const bionicAntes = !!prefs.bionic;
     prefs = CFG.prefs;
-    prefs.panelText = panelText;
-    prefs.panelActions = panelActions;
     if (!!prefs.bionic !== bionicAntes){
       ov.querySelector('.il-body').innerHTML = renderBody();
       wireImages();
     }
     pintarPrefs();
     pintarBotonGuardar();
+    pintarSiguiente();
   }
 
   function saveScroll(){
@@ -4083,16 +4279,32 @@ function openReader(art){
         else this.style.display = 'none';
       });
       if (im.closest('.il-figure') || im.closest('.il-inline-figure')){
-        im.addEventListener('click', function(){
+        const alt = im.getAttribute('alt') || '';
+        im.tabIndex = 0;
+        im.setAttribute('role', 'button');
+        im.setAttribute('aria-label', (alt ? alt + ' — ' : '') + t('ampliarImagen'));
+        const ampliar = function(){
           const lb = document.createElement('div');
+          lb.className = 'il-ampliada';
+          lb.tabIndex = -1;
+          lb.setAttribute('role', 'dialog');
+          lb.setAttribute('aria-label', alt || t('ampliarImagen'));
           lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:30;' +
             'display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px';
           const big = document.createElement('img');
-          big.src = this.src;
+          big.src = im.src;
+          big.alt = alt;
           big.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain';
           lb.appendChild(big);
-          lb.onclick = () => lb.remove();
+          const cerrar = () => { lb.remove(); im.focus(); };
+          lb.onclick = cerrar;
+          lb.onkeydown = e => { if (e.key === 'Escape' || e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); cerrar(); } };
           ov.appendChild(lb);
+          lb.focus();
+        };
+        im.addEventListener('click', ampliar);
+        im.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ampliar(); }
         });
       }
     });
@@ -4100,11 +4312,14 @@ function openReader(art){
 
   pintarPrefs();
   wireImages();
+  // El foco entra en el lector por el título: el lector de pantalla lo lee
+  // y el teclado empieza aquí.
+  try { ov.querySelector('#il-titulo').focus({ preventScroll: true }); } catch(e){}
 
 
 
   const topBtn = ov.querySelector('.il-top-btn');
-  topBtn.onclick = () => ov.scrollTo({ top: 0, behavior: 'smooth' });
+  topBtn.onclick = () => ov.scrollTo({ top: 0, behavior: desplazar() });
 
   let stm, focusTimer = null, lastScroll = 0;
   const topbarEl = ov.querySelector('.il-topbar');
@@ -4132,76 +4347,94 @@ function openReader(art){
   function closeOverlay(){
     saveScroll();
     document.removeEventListener('keydown', keyHandler);
+    if (finObservador) finObservador.disconnect();
     __lectorAbierto = null;
+    inertes.forEach(el => { el.inert = false; });
     ov.remove();
-    setTimeout(() => ensureReaderFAB(), 100);
+    if (focoAntes && focoAntes.isConnected){
+      if (focoAntes.__enfocar) focoAntes.__enfocar();
+      else if (focoAntes.focus) focoAntes.focus();
+    }
+    setTimeout(() => actualizarBoton(), 100);
   }
 
-  function goBack(){
-    saveScroll();
-    const before = location.href;
-    if (history.length > 1){
-      history.back();
-      setTimeout(() => {
-        if (location.href === before && document.getElementById('il-full')) closeOverlay();
-      }, 250);
-    } else {
-      closeOverlay();
-    }
+  // ── Apariencia y Más: uno abierto a la vez. Esc o pulsar fuera los
+  // cierra y, con Esc, el foco vuelve a su botón. ──
+  const desplegables = [
+    { boton: ov.querySelector('.il-aa-btn'), caja: ov.querySelector('#il-panel-aa') },
+    { boton: ov.querySelector('.il-mas-btn'), caja: ov.querySelector('#il-menu-mas'), menu: true },
+  ];
+  const desplegableAbierto = () => desplegables.find(d => !d.caja.hidden) || null;
+  function cerrarDesplegable(devolverFoco){
+    const d = desplegableAbierto();
+    if (!d) return false;
+    d.caja.hidden = true;
+    d.boton.setAttribute('aria-expanded', 'false');
+    ov.classList.remove('il-desplegado');
+    if (devolverFoco) d.boton.focus();
+    return true;
   }
-
-  const bText = ov.querySelector('.il-toggle-text');
-  const bAct = ov.querySelector('.il-toggle-actions');
-  bText.onclick = function(e){
-    e.stopPropagation();
-    prefs.panelText = !prefs.panelText;
-    prefs.panelActions = false;
-    applyPrefs();
-  };
-  bAct.onclick = function(e){
-    e.stopPropagation();
-    prefs.panelActions = !prefs.panelActions;
-    prefs.panelText = false;
-    applyPrefs();
-  };
-  ov.querySelector('.il-wrap').addEventListener('click', e => {
-    if (!(e.ctrlKey || e.metaKey) && prefs.panelActions){
-      prefs.panelActions = false;
-      applyPrefs();
-    }
+  function abrirDesplegable(d){
+    cerrarDesplegable(false);
+    d.caja.hidden = false;
+    d.boton.setAttribute('aria-expanded', 'true');
+    ov.classList.add('il-desplegado');
+    const primero = d.menu
+      ? d.caja.querySelector('[role="menuitem"]')
+      : (d.caja.querySelector('input:checked') || d.caja.querySelector('input, button'));
+    if (primero) primero.focus();
+  }
+  desplegables.forEach(d => {
+    d.boton.onclick = e => {
+      e.stopPropagation();
+      if (d.caja.hidden) abrirDesplegable(d);
+      else cerrarDesplegable(true);
+    };
+  });
+  ov.addEventListener('pointerdown', e => {
+    const d = desplegableAbierto();
+    if (d && !d.caja.contains(e.target) && !d.boton.contains(e.target)) cerrarDesplegable(false);
+  });
+  // Menú: flechas, Inicio y Fin para moverse; Tab lo cierra; elegir, también.
+  const menuMas = ov.querySelector('#il-menu-mas');
+  menuMas.addEventListener('keydown', e => {
+    const items = [...menuMas.querySelectorAll('[role="menuitem"]')];
+    const i = items.indexOf(document.activeElement);
+    let j = null;
+    if (e.key === 'ArrowDown') j = (i + 1) % items.length;
+    else if (e.key === 'ArrowUp') j = (i - 1 + items.length) % items.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = items.length - 1;
+    else if (e.key === 'Tab'){ cerrarDesplegable(false); return; }
+    if (j === null) return;
+    e.preventDefault();
+    items[j].focus();
+  });
+  menuMas.addEventListener('click', e => {
+    if (e.target.closest('[role="menuitem"]')) cerrarDesplegable(false);
   });
 
   ov.querySelectorAll('.il-close').forEach(b => b.onclick = closeOverlay);
-  ov.querySelector('.il-close-tab').onclick = () => {
-    // 1. Intentar cerrar la pestaña
-    try { window.close(); } catch(e){}
-    // 2. Si en 200 ms sigue abierta, volver a Voceiro
+  // Cerrar la pestaña y que quede delante Voceiro (VOLVER_KEY: la pestaña de
+  // Voceiro se pone delante al enterarse). Si el navegador no deja cerrarla:
+  // si ya estás en Voceiro, se sale del lector sin más; si no, esta misma
+  // pestaña va a Voceiro.
+  function volverAVoceiro(){
+    saveScroll();
+    PLATAFORMA.guardar(VOLVER_KEY, Date.now());
+    // Un respiro para que lo guardado llegue al gestor antes de cerrar.
+    setTimeout(() => PLATAFORMA.cerrarPestana(), 120);
     setTimeout(() => {
-      if (!window.closed){
-        location.href = VOCEIRO_URL;
-      }
-    }, 200);
-  };
-  ov.querySelectorAll('.il-back').forEach(b => b.onclick = goBack);
+      if (document.visibilityState === 'hidden') closeOverlay();
+      else location.href = VOCEIRO_URL;
+    }, 600);
+  }
+  ov.querySelector('.il-voceiro-btn').onclick = volverAVoceiro;
   ov.querySelector('.il-settings-btn').onclick = (e) => { e.stopPropagation(); openSettings('sites'); };
   ov.querySelector('.il-pendientes-btn').onclick = (e) => { e.stopPropagation(); openSettings('pendientes'); };
-  ov.querySelector('.il-voceiro-btn').onclick = (e) => {
-    e.stopPropagation();
-    window.open(VOCEIRO_URL, '_blank', 'noopener,noreferrer');
-  };
 
-  ov.querySelector('.il-textonly-btn').onclick = (e) => {
-    e.stopPropagation();
-    const rule = ensureSiteRule();
-    rule.textOnly = !rule.textOnly;
-    saveCfg(CFG);
-    applyPrefs();
-    toast(rule.textOnly ? t('textOnlyOn') : t('textOnlyOff'), 1500);
-  };
-
-  function copyText(txt, btn, label){
-    const orig = btn.textContent;
-    const done = () => { btn.textContent = '✅ ' + label; setTimeout(() => btn.textContent = orig, 1500); };
+  function copyText(txt){
+    const done = () => toast('✓ ' + t('copied'), 1500);
     const fb = () => {
       const ta = document.createElement('textarea');
       ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0';
@@ -4212,10 +4445,9 @@ function openReader(art){
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fb);
     else fb();
   }
-  ov.querySelector('.il-copytxt').onclick = function(){ copyText(buildText(), this, t('copied')); };
+  ov.querySelector('.il-copytxt').onclick = () => copyText(buildText());
   ov.querySelector('.il-print').onclick = () => window.print();
-  ov.querySelector('.il-footer-top').onclick = () => ov.scrollTo({ top: 0, behavior: 'smooth' });
-  ov.querySelector('.il-footer-back').onclick = goBack;
+  ov.querySelector('.il-fin-arriba').onclick = () => ov.scrollTo({ top: 0, behavior: desplazar() });
   ov.querySelector('.il-mail').onclick = () => {
     const txt = buildText();
     const subj = encodeURIComponent(headline || t('news'));
@@ -4239,39 +4471,28 @@ function openReader(art){
     if (svc) btn.onclick = () => abrirEnServicio(svc);
   });
 
-  const btnServicios = ov.querySelector('.il-servicios-btn');
-  if (btnServicios) btnServicios.onclick = (e) => {
-    e.stopPropagation();
-    const existing = ov.querySelector('.il-servicios-dropdown');
-    if (existing){ existing.remove(); return; }
-    const dd = crearDesplegableServicios({ position: 'fixed-top-right', onClose: () => dd.remove() });
-    ov.appendChild(dd);
-    setTimeout(() => {
-      const close = (ev) => {
-        if (!dd.contains(ev.target)){
-          dd.remove();
-          document.removeEventListener('mousedown', close);
-        }
-      };
-      document.addEventListener('mousedown', close);
-    }, 0);
-  };
-
   ov.querySelector('.il-ignore-section').onclick = () => { ignoreCurrentSection(); };
   ov.querySelector('.il-rsvp-meta').onclick = () => openRSVP(ov, rawBody);
+  ov.querySelector('.il-rsvp-menu').onclick = () => openRSVP(ov, rawBody);
   ov.querySelector('.il-dict-hint').onclick = () => { openSettings('dict'); };
 
-  ov.querySelectorAll('[data-set-theme]').forEach(b =>
-    b.onclick = () => { prefs.theme = b.getAttribute('data-set-theme'); applyPrefs(); });
-  ov.querySelectorAll('[data-set-font]').forEach(b =>
-    b.onclick = () => { prefs.font = b.getAttribute('data-set-font'); applyPrefs(); });
+  ov.querySelectorAll('input[name="il-tema"]').forEach(r =>
+    r.onchange = () => { prefs.theme = r.value; applyPrefs(); });
+  ov.querySelectorAll('input[name="il-letra"]').forEach(r =>
+    r.onchange = () => { prefs.font = r.value; applyPrefs(); });
   ov.querySelector('.il-fs-minus').onclick = () => { prefs.fs = Math.max(UI.fsMin, prefs.fs - 1); applyPrefs(); };
   ov.querySelector('.il-fs-plus').onclick  = () => { prefs.fs = Math.min(UI.fsMax, prefs.fs + 1); applyPrefs(); };
   ov.querySelector('.il-w-minus').onclick  = () => { prefs.width = Math.max(UI.wMin, prefs.width - UI.wStep); applyPrefs(); };
   ov.querySelector('.il-w-plus').onclick   = () => { prefs.width = Math.min(UI.wMax, prefs.width + UI.wStep); applyPrefs(); };
-  ov.querySelectorAll('.il-toggle').forEach(b => b.onclick = () => {
-    const p = b.getAttribute('data-pref');
-    prefs[p] = !prefs[p];
+  ov.querySelectorAll('input[name="il-pref"]').forEach(c => c.onchange = () => {
+    const p = c.value;
+    if (p === 'textonly'){
+      // Sin imágenes va por medio, en su regla.
+      ensureSiteRule().textOnly = c.checked;
+      applyPrefs();
+      return;
+    }
+    prefs[p] = c.checked;
     if (p === 'bionic'){
       ov.querySelector('.il-body').innerHTML = renderBody();
       wireImages();
@@ -4279,8 +4500,8 @@ function openReader(art){
     applyPrefs();
   });
 
-  ov.querySelectorAll('.il-source').forEach(b => b.onclick = async () => {
-    const v = b.getAttribute('data-src');
+  ov.querySelectorAll('input[name="il-origen"]').forEach(r => r.onchange = async () => {
+    const v = r.value;
     if (!READER_SOURCES.includes(v)) return;
     if (v === currentReaderSource()) return;
     const labels = { auto: t('srcAuto'), jsonld: t('srcJsonld'), readability: t('srcReadability'), custom: t('srcCustom') };
@@ -4295,7 +4516,7 @@ function openReader(art){
         return;
       }
       const choice = await showAddSiteDialog(domain, srcLabel, ov);
-      if (choice === 'cancel') return;
+      if (choice === 'cancel'){ pintarPrefs(); return; }
       if (choice === 'add'){
         setReaderSourceForCurrentSite(v);
         toast(t('siteAddedToast').replace('{X}', domain).replace('{Y}', srcLabel), 6000,
@@ -4327,22 +4548,89 @@ function openReader(art){
   });
   // Sin guardar → neutro; pendiente → color de guardar; leída → verde
   // (se puede devolver a pendientes). Colores del tema, con su contraste.
+  // Hay dos: arriba, junto al título, y en el final.
   function pintarBotonGuardar(){
-    const btn = ov.querySelector('.il-save-meta');
-    if (!btn) return;
     const ex = findLaterItem(location.href);
-    btn.classList.toggle('il-guardada', !!ex && !ex.read);
-    btn.classList.toggle('il-leida', !!ex && !!ex.read);
-    btn.textContent = '🕒 ' + t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove');
+    ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => {
+      btn.classList.toggle('il-guardada', !!ex && !ex.read);
+      btn.classList.toggle('il-leida', !!ex && !!ex.read);
+      btn.innerHTML = (ex ? icono('bookmark-check') : icono('bookmark')) +
+        '<span>' + esc(t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove')) + '</span>';
+    });
   }
 
-  ov.querySelector('.il-save-meta').onclick = function(){
+  ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => btn.onclick = function(){
     saveForLater(art);
+    // Si vuelve a pendientes, ya no cuenta como leída aquí.
+    const ex = findLaterItem(location.href);
+    if (estadoLeida === 'marcada' && ex && !ex.read){ estadoLeida = 'deshecha'; finEstado.textContent = ''; }
     pintarBotonGuardar();
+    pintarSiguiente();
+  });
+
+  // ── Final del artículo ──
+  // estadoLeida: 'no' (aún no), 'marcada' (se puede deshacer) o 'deshecha'
+  // (la persona dijo que no: ya no se marca sola).
+  let estadoLeida = 'no', deshacerLeida = null, finObservador = null;
+  const finEstado = ov.querySelector('.il-fin-estado');
+
+  function marcarLeida(){
+    if (estadoLeida === 'marcada') return;
+    estadoLeida = 'marcada';
+    deshacerLeida = marcarLeidaAlTerminar();
+    pintarBotonGuardar();
+    pintarSiguiente();
+    finEstado.textContent = '';
+    const txt = document.createElement('span');
+    txt.textContent = '✓ ' + t('finMarcada') + ' · ';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'il-fin-deshacer';
+    btn.textContent = t('btnUndo');
+    btn.onclick = () => {
+      if (deshacerLeida) deshacerLeida();
+      deshacerLeida = null;
+      estadoLeida = 'deshecha';
+      finEstado.textContent = '';
+      pintarBotonGuardar();
+      pintarSiguiente();
+    };
+    finEstado.append(txt, btn);
+  }
+
+  function pintarSiguiente(){
+    const b = ov.querySelector('.il-fin-siguiente');
+    const sig = siguientePendiente(location.href);
+    b.hidden = !sig;
+    if (!sig) return;
+    const titulo = sig.title || sig.url;
+    b.querySelector('.il-fin-sig-titulo').textContent = titulo;
+    b.setAttribute('aria-label', t('finSiguienteDe').replace('{X}', titulo));
+    b.onclick = () => {
+      if (estadoLeida !== 'marcada') marcarLeida();
+      saveScroll();
+      irASiguientePendiente(sig);
+    };
+  }
+
+  ov.querySelector('.il-fin-volver').onclick = () => {
+    if (estadoLeida !== 'marcada') marcarLeida();
+    volverAVoceiro();
   };
+
+  // Llegar al final cuenta como leída, si se ha bajado hasta allí (un
+  // artículo que cabe entero en pantalla no se marca solo).
+  if ('IntersectionObserver' in window){
+    finObservador = new IntersectionObserver(entradas => {
+      if (estadoLeida !== 'no' || ov.scrollTop <= 0) return;
+      if (entradas.some(en => en.isIntersecting)) marcarLeida();
+    }, { root: ov, threshold: 0.5 });
+    finObservador.observe(ov.querySelector('.il-fin-acciones'));
+  }
 
   // Estado inicial al abrir el lector
   pintarBotonGuardar();
+  pintarSiguiente();
   __lectorAbierto = { refrescar };
 
   function showDictPopup(word, parentEl){
@@ -4382,8 +4670,8 @@ function openReader(art){
       case 'fontIncrease': prefs.fs = Math.min(UI.fsMax, prefs.fs + 1); applyPrefs(); break;
       case 'fontDecrease': prefs.fs = Math.max(UI.fsMin, prefs.fs - 1); applyPrefs(); break;
       case 'toggleTheme':  prefs.theme = prefs.theme === 'dark' ? 'light' : 'dark'; applyPrefs(); break;
-      case 'scrollTop':    ov.scrollTo({ top: 0, behavior: 'smooth' }); break;
-      case 'scrollBottom': ov.scrollTo({ top: ov.scrollHeight, behavior: 'smooth' }); break;
+      case 'scrollTop':    ov.scrollTo({ top: 0, behavior: desplazar() }); break;
+      case 'scrollBottom': ov.scrollTo({ top: ov.scrollHeight, behavior: desplazar() }); break;
       case 'toggleBionic':
         prefs.bionic = !prefs.bionic;
         ov.querySelector('.il-body').innerHTML = renderBody();
@@ -4399,7 +4687,7 @@ function openReader(art){
       case 'openQueue':     openSettings('pendientes'); break;
       case 'openRSVP':      openRSVP(ov, rawBody); break;
       case 'copyText':
-        copyText(buildText(), ov.querySelector('.il-copytxt'), t('copied'));
+        copyText(buildText());
         break;
     }
   }
@@ -4409,10 +4697,12 @@ function openReader(art){
     if (document.getElementById('il-settings')) return;
     if (document.getElementById('il-extract-tool')) return;
     if (isPickerActive()) return;
+    const nk = normalizeKey(e);
+    // Esc cierra primero Apariencia o Más, también desde sus casillas.
+    if (nk === 'escape' && cerrarDesplegable(true)){ e.preventDefault(); return; }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
 
-    const nk = normalizeKey(e);
     if (nk === 'escape'){ closeOverlay(); return; }
 
     const action = findActionByKey('reader', nk);
@@ -4570,259 +4860,291 @@ function openRSVP(ov, rawBody){
 }
 
 /* ============================================================
-   20b. HELPERS DE POSICIONAMIENTO DE FABs
+   21. BOTÓN FLOTANTE
+   ------------------------------------------------------------
+   Uno solo, dentro de un Shadow DOM: el CSS del medio no le llega. Si
+   en la página hay artículo, el botón grande abre el lector y el pequeño
+   (⋯) despliega lo demás; si no, el grande despliega el menú. Se arrastra
+   y al soltarlo se pega al borde más cercano; recuerda el lado y la
+   altura (CFG.fab, que no viaja a otros dispositivos).
+   actualizarBoton() lo pone, lo cambia o lo quita según la página: se
+   llama cada vez que cambia algo que le afecta.
    ============================================================ */
-const STACK_FAB_IDS = ['il-settings-fab', 'il-add-fab'];
+const FAB_ID = 'il-fab';
 
-function countStackFABs(){
-  return STACK_FAB_IDS.filter(id => document.getElementById(id)).length;
+function botonOcultoAqui(){
+  const d = normalizeDomain(location.hostname);
+  return !!(CFG.fab && Array.isArray(CFG.fab.ocultoEn) && CFG.fab.ocultoEn.includes(d));
+}
+function ocultarBotonAqui(ocultar){
+  const d = normalizeDomain(location.hostname);
+  if (!d) return;
+  CFG.fab = CFG.fab || {};
+  const lista = (Array.isArray(CFG.fab.ocultoEn) ? CFG.fab.ocultoEn : []).filter(x => x !== d);
+  if (ocultar) lista.push(d);
+  CFG.fab.ocultoEn = lista;
+  saveCfg(CFG);
+  actualizarBoton();
 }
 
-function repositionStackFABs(){
-  const M = UI.fabMargin, S = UI.fabSize, GAP = UI.fabGap;
-  let offset = 0;
-  for (const id of STACK_FAB_IDS){
-    const el = document.getElementById(id);
-    if (!el) continue;
-    el.style.bottom = (M + offset * (S + GAP)) + 'px';
-    el.style.left = M + 'px';
-    offset++;
-  }
+function puedeAnadirSitio(){
+  return !findSiteRule() && !isDomainDisabled(location.hostname) && !isPlainDomain() &&
+         isKnownMediaDomain(location.hostname);
 }
 
-/* ============================================================
-   21. FAB (lector)
-   ============================================================ */
-function paintReaderFAB(){
-  const fab = document.getElementById('il-fab');
-  if (!fab) return;
-  if (CFG.readerAutoAll){
-    fab.style.setProperty('background', 'linear-gradient(135deg,#43a047,#1b5e20)', 'important');
-    fab.style.setProperty('box-shadow', '0 4px 14px rgba(67,160,71,.65)', 'important');
-  } else {
-    fab.style.setProperty('background', 'linear-gradient(135deg,#d32f2f,#b71c1c)', 'important');
-    fab.style.setProperty('box-shadow', '0 4px 14px rgba(0,0,0,.3)', 'important');
-  }
-}
-function createFAB(){
-  if (document.getElementById('il-fab')) return;
-  const fab = document.createElement('button');
-  fab.id = 'il-fab';
-  fab.title = t('fabTitle') + '\n' + t('fabHidden');
-  fab.textContent = '📖';
-  fab.style.cssText = 'position:fixed;z-index:2147483645;width:' + UI.fabSize + 'px;height:' + UI.fabSize + 'px;' +
-    'border-radius:50%;border:none;' +
-    'background:linear-gradient(135deg,#d32f2f,#b71c1c);color:#fff;font-size:24px;cursor:grab;' +
-    'box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;' +
-    'user-select:none;touch-action:none;transition:transform .15s,box-shadow .15s;font-family:-apple-system,sans-serif;padding:0';
-  document.body.appendChild(fab);
-
-  const M = UI.fabMargin, S = UI.fabSize, GAP = UI.fabGap;
-  let left, top;
-  if (CFG.fab.left == null || CFG.fab.top == null){
-    left = M;
-    const n = countStackFABs();
-    top  = window.innerHeight - M - S - n * (S + GAP);
-  } else { left = CFG.fab.left; top = CFG.fab.top; }
-  const clamp = () => {
-    left = Math.max(4, Math.min(window.innerWidth  - S - 4, left));
-    top  = Math.max(4, Math.min(window.innerHeight - S - 4, top));
+// Lo que ofrece el botón en esta página, o null si nada.
+function ofertaDelBoton(){
+  if (isDomainDisabled(location.hostname) || isPlainDomain()) return null;
+  const o = {
+    lector: shouldShowReaderFAB(),
+    anadir: puedeAnadirSitio(),
+    ajustes: isKnownMediaDomain(location.hostname) || !!findSiteRule(),
+    servicios: debeMostrarFabServicios() ? serviciosConfigurados() : []
   };
-  clamp();
-  fab.style.left = left + 'px';
-  fab.style.top  = top  + 'px';
-
-  let dragging = false, moved = false, startX = 0, startY = 0, offX = 0, offY = 0;
-  function onDown(e){
-    const p = e.touches ? e.touches[0] : e;
-    dragging = true; moved = false;
-    startX = p.clientX; startY = p.clientY;
-    offX = p.clientX - left; offY = p.clientY - top;
-    fab.style.cursor = 'grabbing';
-    fab.style.transition = 'none';
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('touchend', onUp);
-  }
-  function onMove(e){
-    if (!dragging) return;
-    const p = e.touches ? e.touches[0] : e;
-    if (Math.abs(p.clientX - startX) > 4 || Math.abs(p.clientY - startY) > 4) moved = true;
-    left = p.clientX - offX; top = p.clientY - offY;
-    clamp();
-    fab.style.left = left + 'px';
-    fab.style.top  = top  + 'px';
-    if (e.cancelable) e.preventDefault();
-  }
-  function onUp(){
-    if (!dragging) return;
-    dragging = false;
-    fab.style.cursor = 'grab';
-    fab.style.transition = 'transform .15s,box-shadow .15s';
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-    document.removeEventListener('touchmove', onMove);
-    document.removeEventListener('touchend', onUp);
-    if (moved){ CFG.fab.left = left; CFG.fab.top = top; saveCfg(CFG); }
-    else activateReader();
-  }
-  fab.addEventListener('mousedown', onDown);
-  fab.addEventListener('touchstart', onDown, { passive: true });
-  fab.addEventListener('contextmenu', e => { e.preventDefault(); fab.remove(); toast(t('fabHidden')); });
-  window.addEventListener('resize', () => {
-    clamp();
-    fab.style.left = left + 'px';
-    fab.style.top  = top  + 'px';
-  });
-
-  paintReaderFAB();   // ← AQUÍ, al final de todo
+  return (o.lector || o.anadir || o.ajustes || o.servicios.length) ? o : null;
 }
 
-/* ============================================================
-   22. FAB «Abrir en…» (arriba-izquierda)
-   Solo aparece si hay servicios configurados. Clic derecho: ocultar.
-   ============================================================ */
-function crearFabServicios(){
-  if (document.getElementById('il-servicios-fab')) return;
-  if (!debeMostrarFabServicios()) return;
+function actualizarBoton(){
+  if (!document.body) return;
+  const o = botonOcultoAqui() ? null : ofertaDelBoton();
+  let host = document.getElementById(FAB_ID);
+  if (!o){ if (host) host.remove(); return; }
+  if (!host || !host.__pintar){ if (host) host.remove(); host = crearBoton(); }
+  host.__pintar(o);
+}
 
-  const container = document.createElement('div');
-  container.id = 'il-servicios-fab';
-  container.style.cssText = 'position:fixed;top:' + UI.fabMargin + 'px;left:' + UI.fabMargin + 'px;' +
-    'z-index:2147483644;' +
-    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+function anadirSitioActual(){
+  const d = normalizeDomain(location.hostname);
+  if (!d) return;
+  if (CFG.sites.some(s => s.domain === d)){ toast(t('alreadyInList')); actualizarBoton(); return; }
+  const cat = getCatalogEntry(d) || {};
+  addSiteAnywhere(d, { n: cat.n || d, lang: cat.lang || 'auto', type: cat.type || '', tags: cat.tags || [] });
+  saveCfg(CFG);
+  actualizarBoton();
+  toast(t('addedTo') + ' ' + d, 6000, { label: t('btnUndo'), onClick: () => {
+    if (removeSiteRule(d)) toast(t('siteRemovedToast').replace('{X}', d), 1800);
+    actualizarBoton();
+  } });
+}
 
-  const dd = crearDesplegableServicios({ position: 'below-left' });
-  dd.id = 'il-servicios-dd';
-  dd.style.display = 'none';
+function cssBoton(){
+  return `
+${cssPaleta(':host', t => ':host([data-theme="' + t + '"])')}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.caja{position:relative;display:flex;align-items:center;gap:6px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.3}
+.caja.derecha{flex-direction:row-reverse}
+button{font:inherit;color:var(--fg);background:var(--btn-bg);border:1px solid var(--btn-border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0}
+button:hover{filter:brightness(.96)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.principal{position:relative;width:${UI.fabSize}px;height:${UI.fabSize}px;border-radius:50%;box-shadow:0 4px 14px rgba(0,0,0,.3);touch-action:none;cursor:grab}
+.principal svg{width:26px;height:26px}
+.principal .auto{position:absolute;top:3px;right:3px;width:12px;height:12px;border-radius:50%;background:var(--preset);border:2px solid var(--btn-bg)}
+.mas{width:32px;height:32px;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mas svg{width:18px;height:18px}
+.menu{position:absolute;bottom:calc(100% + 8px);left:0;width:max-content;min-width:240px;max-width:calc(100vw - 24px);max-height:60vh;overflow:auto;background:var(--bg);color:var(--fg);border:1px solid var(--btn-border);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.3);padding:6px}
+.caja.abajo .menu{bottom:auto;top:calc(100% + 8px)}
+.caja.derecha .menu{left:auto;right:0}
+[role="menuitem"]{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 12px;border:none;background:transparent;border-radius:8px;text-align:left}
+[role="menuitem"]:hover,[role="menuitem"]:focus{background:var(--quote-bg);filter:none}
+[role="menuitem"] svg{width:20px;height:20px}
+.grupo{font-size:12px;font-weight:600;color:var(--muted);padding:8px 12px 2px}
+[role="separator"]{border-top:1px solid var(--border);margin:4px 0}
+@media print{:host{display:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+`;
+}
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.id = 'il-servicios-btn';
-  button.title = t('abrirEn');
-  button.setAttribute('aria-label', t('abrirEn'));
-  button.textContent = '↗';
-  button.style.cssText = 'width:' + UI.fabSize + 'px;height:' + UI.fabSize + 'px;border-radius:50%;border:none;' +
-    'background:linear-gradient(135deg,#555,#222);color:#fff;font-size:22px;cursor:pointer;' +
-    'box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;' +
-    'user-select:none;transition:transform .15s,box-shadow .15s;padding:0';
-  button.onmouseenter = () => { button.style.transform = 'scale(1.08)'; };
-  button.onmouseleave = () => { button.style.transform = 'scale(1)'; };
-  button.onclick = e => {
-    e.stopPropagation();
-    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
-  };
-  button.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    CFG.serviciosFab = CFG.serviciosFab || {};
-    CFG.serviciosFab.oculto = true;
-    saveCfg(CFG);
-    document.removeEventListener('mousedown', closeHandler);
-    container.remove();
-    toast(t('serviciosFabOculto'), 2000);
-  });
+function crearBoton(){
+  const host = document.createElement('div');
+  host.id = FAB_ID;
+  // El host vive en la página: se le quita todo lo que pudiera heredar.
+  host.style.cssText = 'all:initial';
+  host.style.setProperty('position', 'fixed', 'important');
+  host.style.setProperty('z-index', '2147483645', 'important');
+  const raiz = host.attachShadow({ mode: 'closed' });
+  raiz.innerHTML = '<style>' + cssBoton() + '</style>' +
+    '<div class="caja">' +
+      '<button type="button" class="principal"></button>' +
+      '<button type="button" class="mas" aria-haspopup="menu" aria-expanded="false">' + icono('ellipsis') + '</button>' +
+      '<div class="menu" role="menu" hidden></div>' +
+    '</div>';
+  document.body.appendChild(host);
 
-  container.appendChild(dd);
-  container.appendChild(button);
-  document.body.appendChild(container);
+  const caja = raiz.querySelector('.caja');
+  const principal = raiz.querySelector('.principal');
+  const mas = raiz.querySelector('.mas');
+  const menu = raiz.querySelector('.menu');
+  let oferta = null;
 
-  function closeHandler(e){
-    if (!container.contains(e.target)) dd.style.display = 'none';
+  // ── Posición: un lado (izq/der) y una altura. Lo de antes (left/top)
+  // se traduce al lado más cercano. ──
+  const M = UI.fabMargin, S = UI.fabSize;
+  let lado = CFG.fab && CFG.fab.lado;
+  let top = CFG.fab && typeof CFG.fab.top === 'number' ? CFG.fab.top : null;
+  if (lado !== 'izq' && lado !== 'der'){
+    lado = CFG.fab && typeof CFG.fab.left === 'number' && CFG.fab.left > window.innerWidth / 2 ? 'der' : 'izq';
   }
-  document.addEventListener('mousedown', closeHandler);
-}
+  if (top === null) top = window.innerHeight - M - S;
+  function colocar(x){
+    const ancho = caja.offsetWidth || S;
+    top = Math.max(M / 2, Math.min(window.innerHeight - S - M / 2, top));
+    const left = x !== undefined ? x : (lado === 'der' ? window.innerWidth - ancho - M : M);
+    host.style.setProperty('left', Math.max(0, Math.min(window.innerWidth - ancho, left)) + 'px', 'important');
+    host.style.setProperty('top', top + 'px', 'important');
+    caja.classList.toggle('derecha', lado === 'der');
+    caja.classList.toggle('abajo', top < window.innerHeight / 2);
+  }
 
-/* ============================================================
-   22b. FAB settings
-   ============================================================ */
-function createSettingsFAB(){
-  if (document.getElementById('il-settings-fab')) return;
-  if (isDomainDisabled(location.hostname)) return;
-  if (!isKnownMediaDomain(location.hostname) && !findSiteRule()) return;
-
-  const fab = document.createElement('button');
-  fab.id = 'il-settings-fab';
-  fab.type = 'button';
-  fab.title = t('settingsFabTitle');
-  fab.textContent = '⚙️';
-  fab.style.cssText = 'position:fixed;bottom:' + UI.fabMargin + 'px;left:' + UI.fabMargin + 'px;' +
-    'z-index:2147483644;width:' + UI.fabSize + 'px;height:' + UI.fabSize + 'px;border-radius:50%;border:none;' +
-    'background:linear-gradient(135deg,#4a4a4a,#1f1f1f);color:#fff;font-size:22px;cursor:pointer;' +
-    'box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;' +
-    'user-select:none;transition:transform .15s,box-shadow .15s;padding:0;' +
-    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
-  fab.onmouseenter = () => { fab.style.transform = 'scale(1.08)'; };
-  fab.onmouseleave = () => { fab.style.transform = 'scale(1)'; };
-  fab.onclick = () => openSettings('sites');
-  document.body.appendChild(fab);
-  repositionStackFABs();
-}
-
-/* ============================================================
-   22c. FAB añadir sitio actual
-   ============================================================ */
-function createAddFAB(){
-  if (document.getElementById('il-add-fab')) return;
-  if (findSiteRule()) return;
-  if (isDomainDisabled(location.hostname)) return;
-  if (isPlainDomain()) return;
-  if (!isKnownMediaDomain(location.hostname)) return;
-
-  const fab = document.createElement('button');
-  fab.id = 'il-add-fab';
-  fab.type = 'button';
-  fab.title = t('addFabTitle');
-  fab.textContent = '＋';
-  fab.style.cssText = 'position:fixed;bottom:' + UI.fabMargin + 'px;left:' + UI.fabMargin + 'px;' +
-    'z-index:2147483644;width:' + UI.fabSize + 'px;height:' + UI.fabSize + 'px;border-radius:50%;border:none;' +
-    'background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;font-size:26px;cursor:pointer;' +
-    'box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;' +
-    'user-select:none;transition:transform .15s,box-shadow .15s;padding:0;line-height:1;' +
-    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-weight:bold';
-  fab.onmouseenter = () => { fab.style.transform = 'scale(1.08)'; };
-  fab.onmouseleave = () => { fab.style.transform = 'scale(1)'; };
-  fab.onclick = () => {
-    const d = normalizeDomain(location.hostname);
-    if (!d) return;
-    if (CFG.sites.some(s => s.domain === d)){
-      toast(t('alreadyInList'));
-      fab.remove(); repositionStackFABs();
-      return;
+  // ── Menú ──
+  function item(accion, ico, texto, extra){
+    return '<button type="button" role="menuitem" tabindex="-1" data-accion="' + accion + '"' +
+      (extra ? ' data-id="' + esc(extra) + '"' : '') + '>' + ico + '<span>' + esc(texto) + '</span></button>';
+  }
+  function pintarMenu(){
+    const o = oferta;
+    let h = '';
+    if (o.lector) h += item('lector', icono('book-open-text'), t('fabTitle'));
+    if (o.anadir) h += item('anadir', icono('plus'), t('addFabTitle'));
+    if (o.servicios.length){
+      h += '<div role="separator"></div><div role="group" aria-label="' + esc(t('abrirEn')) + '">' +
+        '<div class="grupo" aria-hidden="true">' + esc(t('abrirEn')) + '</div>' +
+        o.servicios.map(svc => item('servicio', icono('external-link'), svc.nombre, svc.id)).join('') + '</div>';
     }
-    const cat = getCatalogEntry(d) || {};
-    addSiteAnywhere(d, {
-      n: cat.n || d,
-      lang: cat.lang || 'auto',
-      type: cat.type || '',
-      tags: cat.tags || []
-    });
+    h += '<div role="separator"></div>';
+    if (o.ajustes) h += item('ajustes', icono('settings'), t('settingsFabTitle'));
+    h += item('ocultar', icono('eye-off'), t('fabOcultarAqui'));
+    menu.innerHTML = h;
+  }
+  const conmutador = () => oferta && oferta.lector ? mas : principal;
+  function abrirMenu(){
+    menu.hidden = false;
+    conmutador().setAttribute('aria-expanded', 'true');
+    const primero = menu.querySelector('[role="menuitem"]');
+    if (primero) primero.focus();
+  }
+  function cerrarMenu(devolverFoco){
+    if (menu.hidden) return;
+    menu.hidden = true;
+    conmutador().setAttribute('aria-expanded', 'false');
+    if (devolverFoco) conmutador().focus();
+  }
+  menu.addEventListener('keydown', e => {
+    const items = [...menu.querySelectorAll('[role="menuitem"]')];
+    const i = items.indexOf(raiz.activeElement);
+    let j = null;
+    if (e.key === 'ArrowDown') j = (i + 1) % items.length;
+    else if (e.key === 'ArrowUp') j = (i - 1 + items.length) % items.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = items.length - 1;
+    else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cerrarMenu(true); return; }
+    else if (e.key === 'Tab'){ cerrarMenu(false); return; }
+    if (j === null) return;
+    e.preventDefault();
+    items[j].focus();
+  });
+  menu.addEventListener('click', e => {
+    const b = e.target.closest('[role="menuitem"]');
+    if (!b) return;
+    cerrarMenu(false);
+    const accion = b.dataset.accion;
+    if (accion === 'lector') activateReader();
+    else if (accion === 'anadir') anadirSitioActual();
+    else if (accion === 'ajustes') openSettings('sites');
+    else if (accion === 'servicio'){
+      const svc = oferta.servicios.find(s => s.id === b.dataset.id);
+      if (svc) abrirEnServicio(svc);
+    } else if (accion === 'ocultar'){
+      ocultarBotonAqui(true);
+      toast(t('fabOcultoAqui'), 6000, { label: t('btnUndo'), onClick: () => ocultarBotonAqui(false) });
+    }
+  });
+  // Pulsar fuera lo cierra (desde fuera, los clics llegan con el host como
+  // destino). Los escuchadores de la página se quitan solos si el botón ya
+  // no está.
+  function fuera(e){
+    if (!host.isConnected){ document.removeEventListener('pointerdown', fuera, true); return; }
+    if (!menu.hidden && !e.composedPath().includes(host)) cerrarMenu(false);
+  }
+  document.addEventListener('pointerdown', fuera, true);
+
+  mas.onclick = e => { e.stopPropagation(); if (menu.hidden) abrirMenu(); else cerrarMenu(true); };
+
+  // ── El grande: arrastrar, o pulsar (abre el lector o el menú). Clic
+  // derecho o pulsación larga: el menú. ──
+  let arrastre = null, arrastrado = false;
+  principal.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    arrastre = { x: e.clientX, y: e.clientY, left: host.getBoundingClientRect().left, top, mueve: false };
+    principal.setPointerCapture(e.pointerId);
+  });
+  principal.addEventListener('pointermove', e => {
+    if (!arrastre) return;
+    const dx = e.clientX - arrastre.x, dy = e.clientY - arrastre.y;
+    if (!arrastre.mueve && Math.hypot(dx, dy) < 6) return;
+    arrastre.mueve = true;
+    cerrarMenu(false);
+    top = arrastre.top + dy;
+    colocar(arrastre.left + dx);
+  });
+  const soltar = () => {
+    if (!arrastre) return;
+    const movido = arrastre.mueve;
+    arrastre = null;
+    if (!movido) return;
+    arrastrado = true;
+    const r = host.getBoundingClientRect();
+    lado = r.left + r.width / 2 > window.innerWidth / 2 ? 'der' : 'izq';
+    colocar();
+    CFG.fab = { ...(CFG.fab || {}), lado, top };
+    delete CFG.fab.left;
     saveCfg(CFG);
-    toast(t('addedTo') + ' ' + d, 6000,
-      { label: t('btnUndo'), onClick: () => {
-        if (removeSiteRule(d)){
-          toast(t('siteRemovedToast').replace('{X}', d), 1800);
-          setTimeout(() => { ensureAddFAB(); repositionStackFABs(); }, 50);
-        }
-      } });
-    fab.remove();
-    repositionStackFABs();
-    if (!document.getElementById('il-fab')) ensureReaderFAB();
-    if (!document.getElementById('il-servicios-fab') && debeMostrarFabServicios()) crearFabServicios();
   };
-  document.body.appendChild(fab);
-  repositionStackFABs();
-}
+  principal.addEventListener('pointerup', soltar);
+  principal.addEventListener('pointercancel', soltar);
+  principal.addEventListener('click', e => {
+    e.stopPropagation();
+    if (arrastrado){ arrastrado = false; return; }
+    if (oferta && oferta.lector){ cerrarMenu(false); activateReader(); }
+    else if (menu.hidden) abrirMenu();
+    else cerrarMenu(true);
+  });
+  principal.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (menu.hidden) abrirMenu();
+  });
+  function alRedimensionar(){
+    if (!host.isConnected){ window.removeEventListener('resize', alRedimensionar); return; }
+    colocar();
+  }
+  window.addEventListener('resize', alRedimensionar);
+  // Para devolverle el foco desde fuera (document.activeElement solo ve el host).
+  host.__enfocar = () => principal.focus();
 
-function ensureAddFAB(){
-  if (findSiteRule()) return;
-  if (isDomainDisabled(location.hostname)) return;
-  if (isPlainDomain()) return;
-  if (!isKnownMediaDomain(location.hostname)) return;
-  if (document.getElementById('il-add-fab')) return;
-  createAddFAB();
+  host.__pintar = o => {
+    oferta = o;
+    host.setAttribute('data-theme', (CFG.prefs && CFG.prefs.theme) || 'light');
+    const auto = !!(o.lector && CFG.readerAutoAll);
+    const nombre = o.lector ? t('fabTitle') + (auto ? ' (' + t('fabAutomatico') + ')' : '') : t('fabMenu');
+    principal.innerHTML = (o.lector ? icono('book-open-text') : icono('ellipsis')) + (auto ? '<span class="auto"></span>' : '');
+    principal.setAttribute('aria-label', nombre);
+    principal.title = nombre;
+    if (o.lector){
+      principal.removeAttribute('aria-haspopup');
+      principal.removeAttribute('aria-expanded');
+    } else {
+      principal.setAttribute('aria-haspopup', 'menu');
+      principal.setAttribute('aria-expanded', String(!menu.hidden));
+    }
+    mas.hidden = !o.lector;
+    mas.setAttribute('aria-label', t('fabMenu'));
+    mas.title = t('fabMenu');
+    pintarMenu();
+    colocar();
+  };
+  return host;
 }
-
 /* ============================================================
    23. ACTIVAR LECTOR
    ============================================================ */
@@ -5190,12 +5512,7 @@ function openSettings(initialTab){
             disableDomain(removed.domain);
           }
           saveCfg(CFG); render();
-          if (removed && removed.domain === currentDomain){
-            const f = document.getElementById('il-fab'); if (f) f.remove();
-            const bf = document.getElementById('il-servicios-fab'); if (bf) bf.remove();
-            ensureAddFAB();
-            repositionStackFABs();
-          }
+          if (removed && removed.domain === currentDomain) actualizarBoton();
         };
       });
       box.querySelectorAll('.il-set-delpat').forEach(btn => {
@@ -5229,13 +5546,7 @@ function openSettings(initialTab){
         saveCfg(CFG);
         toast(t('addedTo') + ' ' + currentDomain);
         render();
-        const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-        if (!document.getElementById('il-fab') && !isPlainDomain()){
-          const rule = findSiteRule();
-          if (rule && rule.mode !== 'off' && !isIgnoredSection(rule)) createFAB();
-        }
-        if (!document.getElementById('il-servicios-fab') && debeMostrarFabServicios()) crearFabServicios();
-        repositionStackFABs();
+        actualizarBoton();
       };
 
       const addBtn = box.querySelector('.il-set-add');
@@ -5254,15 +5565,7 @@ function openSettings(initialTab){
         });
         saveCfg(CFG);
         render();
-        if (d === currentDomain){
-          const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-          if (!document.getElementById('il-fab') && !isPlainDomain()){
-            const rule = findSiteRule();
-            if (rule && rule.mode === 'prompt' && !isIgnoredSection(rule)) createFAB();
-          }
-          if (!document.getElementById('il-servicios-fab') && debeMostrarFabServicios()) crearFabServicios();
-          repositionStackFABs();
-        }
+        if (d === currentDomain) actualizarBoton();
       };
 
       /* Foco al medio actual */
@@ -5439,12 +5742,7 @@ function openSettings(initialTab){
               saveCfg(CFG);
               toast(t('addedTo') + ' ' + entry.d, 2000);
               render();
-              if (entry.d === currentDomain){
-                const af = document.getElementById('il-add-fab'); if (af) af.remove();
-                ensureReaderFAB();
-                if (debeMostrarFabServicios()) crearFabServicios();
-                repositionStackFABs();
-              }
+              if (entry.d === currentDomain) actualizarBoton();
             }
           };
         });
@@ -5456,11 +5754,7 @@ function openSettings(initialTab){
               saveCfg(CFG);
               toast(t('removedFrom') + ' ' + d, 2000);
               render();
-              if (d === currentDomain){
-                const f = document.getElementById('il-fab'); if (f) f.remove();
-                const bf = document.getElementById('il-servicios-fab'); if (bf) bf.remove();
-                repositionStackFABs();
-              }
+              if (d === currentDomain) actualizarBoton();
             }
           };
         });
@@ -5832,11 +6126,7 @@ function openSettings(initialTab){
           (servicios.length ? '' : ' disabled') + '>' + esc(t('serviciosExportar')) + '</button>' +
       '</div>';
 
-    function refrescarFab(){
-      const f = document.getElementById('il-servicios-fab'); if (f) f.remove();
-      crearFabServicios();
-      repositionStackFABs();
-    }
+    const refrescarFab = actualizarBoton;
 
     function wire(){
       box.querySelectorAll('.il-svc-del').forEach(btn => {
@@ -6073,19 +6363,14 @@ function openSettings(initialTab){
         CFG.lang = newLang;
         saveCfg(CFG);
         render();
-        const fab = document.getElementById('il-fab');
-        if (fab){ fab.title = t('fabTitle') + '\n' + t('fabHidden'); }
-        const sfab = document.getElementById('il-settings-fab');
-        if (sfab) sfab.title = t('settingsFabTitle');
-        const afab = document.getElementById('il-add-fab');
-        if (afab) afab.title = t('addFabTitle');
+        actualizarBoton();
       };
 
       const autoAllChk = box.querySelector('.il-set-auto-all');
       if (autoAllChk) autoAllChk.onchange = () => {
         CFG.readerAutoAll = autoAllChk.checked;
         saveCfg(CFG);
-        paintReaderFAB();
+        actualizarBoton();
         toast(CFG.readerAutoAll ? t('readerAutoAllOn') : t('readerAutoAllOff'), 1800);
         render();
       };
@@ -6291,10 +6576,7 @@ function registerMenus(){
     });
     saveCfg(CFG);
     toast(t('addedTo') + ' ' + d);
-    const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-    if (!isPlainDomain() && !isIgnoredSection(findSiteRule())) createFAB();
-    if (!document.getElementById('il-servicios-fab') && debeMostrarFabServicios()) crearFabServicios();
-    repositionStackFABs();
+    actualizarBoton();
   });
   PLATAFORMA.menu(t('removeCurrent'), () => {
     const d = normalizeDomain(location.hostname);
@@ -6304,10 +6586,7 @@ function registerMenus(){
       disableDomain(d);
       saveCfg(CFG);
       toast(t('removedFrom') + ' ' + d);
-      const f = document.getElementById('il-fab'); if (f) f.remove();
-      const bf = document.getElementById('il-servicios-fab'); if (bf) bf.remove();
-      ensureAddFAB();
-      repositionStackFABs();
+      actualizarBoton();
     } else {
       toast(t('notInList'));
     }
@@ -6317,14 +6596,13 @@ function registerMenus(){
     CFG.serviciosFab = CFG.serviciosFab || { oculto: false };
     CFG.serviciosFab.oculto = !CFG.serviciosFab.oculto;
     saveCfg(CFG);
-    if (CFG.serviciosFab.oculto){
-      const el = document.getElementById('il-servicios-fab');
-      if (el) el.remove();
-      toast(t('serviciosFabOculto'), 2000);
-    } else {
-      crearFabServicios();
-      toast(t('serviciosFabVisible'), 2000);
-    }
+    actualizarBoton();
+    toast(t(CFG.serviciosFab.oculto ? 'serviciosFabOculto' : 'serviciosFabVisible'), 2000);
+  });
+  // El botón se oculta por medio desde su propio menú; aquí se recupera.
+  PLATAFORMA.menu(t('fabMostrarAqui'), () => {
+    ocultarBotonAqui(false);
+    if (!document.getElementById(FAB_ID)) toast(t('fabNadaAqui'), 2400);
   });
 }
 
@@ -6343,32 +6621,17 @@ function shouldActivateHere(){
   return !!(rule && rule.mode === 'auto');
 }
 
-function ensureSettingsFAB(){
-  if (document.getElementById('il-settings-fab')) return;
-  if (isDomainDisabled(location.hostname)) return;
-  if (!isKnownMediaDomain(location.hostname) && !findSiteRule()) return;
-  createSettingsFAB();
-}
-
 function init(){
   registerMenus();
 
   if (isDomainDisabled(location.hostname)) return;
-  if (!isPlainDomain()) ensureSettingsFAB();
 
-  if (debeMostrarFabServicios()){
-    const goServicios = () => crearFabServicios();
-    if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(goServicios, 300);
-    else window.addEventListener('load', () => setTimeout(goServicios, 300));
-  }
+  const goBoton = () => actualizarBoton();
+  if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(goBoton, 250);
+  else window.addEventListener('load', () => setTimeout(goBoton, 250));
 
-  if (shouldShowReaderFAB()){
-    const goFab = () => ensureReaderFAB();
-    if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(goFab, 250);
-    else window.addEventListener('load', () => setTimeout(goFab, 250));
-  }
-
-  if (shouldActivateHere()){
+  // Llegando desde «Siguiente pendiente», el lector se abre solo.
+  if (llegaDeSiguientePendiente() || shouldActivateHere()){
     const go = () => activateReader();
     if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(go, 400);
     else window.addEventListener('load', () => setTimeout(go, 400));
@@ -6380,27 +6643,12 @@ function checkUrlChange(){
   if (location.href === __lastHref) return;
   __lastHref = location.href;
   if (document.getElementById('il-full')) return;
-  const fab = document.getElementById('il-fab');
-  if (fab) fab.remove();
-  const bfab = document.getElementById('il-servicios-fab');
-  if (bfab) bfab.remove();
-  const sfab = document.getElementById('il-settings-fab');
-  if (sfab) sfab.remove();
-  const afab = document.getElementById('il-add-fab');
-  if (afab) afab.remove();
+  actualizarBoton();
 
   const attempt = (delay) => setTimeout(() => {
     if (document.getElementById('il-full')) return;
+    actualizarBoton();
     if (isDomainDisabled(location.hostname)) return;
-    if (!isPlainDomain() && !document.getElementById('il-settings-fab')){
-      ensureSettingsFAB();
-    }
-    if (!isPlainDomain()) ensureAddFAB();
-    if (debeMostrarFabServicios() && !document.getElementById('il-servicios-fab')){
-      crearFabServicios();
-    }
-    ensureReaderFAB();
-    repositionStackFABs();
     if (shouldActivateHere()) init();
   }, delay);
   attempt(400);
@@ -6425,8 +6673,10 @@ document.addEventListener('keydown', globalKeyHandler, true);
    sentido para que nadie se oiga a sí mismo:
      · 'voceiro-ping'   Voceiro → lector; se responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
-     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector}.
-     · 'lector-estado'  lector → Voceiro, igual.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
+                        leidasHasta}.
+     · 'lector-estado'  lector → Voceiro {…, leidas}: lo terminado en el lector
+                        (11-pendientes.js); Voceiro lo confirma con leidasHasta.
    Pendientes y perfil se fusionan con shared/sync/fusion.js. «lector» es
    la configuración propia del lector: Voceiro la guarda sin mirarla y la
    lleva a otros dispositivos con su sincronización; gana la más reciente.
@@ -6438,7 +6688,8 @@ const PUENTE_V = 2;
 function estadoDelLector(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
-    pendientes: CFG.readLater || [], perfil: perfilDelLector(), lector: bloqueConfigLector()
+    pendientes: CFG.readLater || [], perfil: perfilDelLector(), lector: bloqueConfigLector(),
+    leidas: CFG.leidasParaVoceiro || []
   };
 }
 
@@ -6459,6 +6710,10 @@ function enviarEstado(respuesta){
   } catch(e){}
 }
 
+// Volver a Voceiro: la pestaña que se cierra lo apunta aquí y la de Voceiro,
+// al enterarse, se pone delante (si el gestor sabe hacerlo).
+const VOLVER_KEY = 'lector-volver-a-voceiro';
+
 (function initVoceiroBridge(){
   if (window.__voceiroBridgeReady) return;
   window.__voceiroBridgeReady = true;
@@ -6470,11 +6725,14 @@ function enviarEstado(respuesta){
     __perfilFirma = firmaPerfilLector(CFG);
     __configFirma = firmaConfig(CFG);
     if (__lectorAbierto) __lectorAbierto.refrescar();
+    actualizarBoton();
     enviarEstado(false);
   });
 
   // Lo demás solo existe en Voceiro.
   if (!esVoceiro()) return;
+
+  PLATAFORMA.alCambiar(VOLVER_KEY, () => PLATAFORMA.enfocarPestana());
 
   document.addEventListener('voceiro-ping', () => {
     document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: { v: PUENTE_V } }));
@@ -6498,9 +6756,13 @@ function enviarEstado(respuesta){
       aplicarBloqueConfig(llega);
     }
 
+    // Leídas que Voceiro ya tiene: fuera. Si quedan, se le vuelven a mandar.
+    leidasConfirmadas(d.leidasHasta);
+
     saveCfg(CFG);
     if (__lectorAbierto) __lectorAbierto.refrescar();
-    if (!d.respuesta && comparableEstado(estadoDelLector()) !== comparableEstado(d)){
+    if (!d.respuesta && (comparableEstado(estadoDelLector()) !== comparableEstado(d) ||
+                         hayLeidasSinAvisar(d.leidasHasta))){
       enviarEstado(true);
     }
   });

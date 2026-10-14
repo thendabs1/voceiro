@@ -1188,6 +1188,8 @@
     display:block;
   }
   .pendiente-item a:hover{text-decoration:underline}
+  /* Leída: tachada y en gris, sin transparencia (con ella no llegaba a 3:1) */
+  .pendiente-item.leida a{color:var(--muted); text-decoration:line-through}
   .pendiente-meta{
     font-size:.65em; color:var(--muted);
     margin-top:4px;
@@ -1963,6 +1965,20 @@
   <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></symbol>
   <symbol id="i-qr-code" viewBox="0 0 24 24"><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path d="M21 12v.01" /><path d="M12 21v-1" /></symbol>
+  <symbol id="i-a-large-small" viewBox="0 0 24 24"><path d="M21 14h-5" /><path d="M16 16v-3.5a2.5 2.5 0 0 1 5 0V16" /><path d="M4.5 13h6" /><path d="m3 16 4.5-9 4.5 9" /></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></symbol>
+  <symbol id="i-book-a" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" /><path d="m8 13 4-7 4 7" /><path d="M9.1 11h5.7" /></symbol>
+  <symbol id="i-book-open-text" viewBox="0 0 24 24"><path d="M12 7v14" /><path d="M16 12h2" /><path d="M16 8h2" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /><path d="M6 12h2" /><path d="M6 8h2" /></symbol>
+  <symbol id="i-bookmark-check" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z" /><path d="m9 10 2 2 4-4" /></symbol>
+  <symbol id="i-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></symbol>
+  <symbol id="i-image-off" viewBox="0 0 24 24"><line x1="2" x2="22" y1="2" y2="22" /><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83" /><line x1="13.5" x2="6" y1="13.5" y2="21" /><line x1="18" x2="21" y1="12" y2="15" /><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59" /><path d="M21 15V5a2 2 0 0 0-2-2H9" /></symbol>
+  <symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+  <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></symbol>
 </svg>
 <header>
   <div class="header-top">
@@ -5718,8 +5734,12 @@ function aplicarPerfilEnVoceiro(p){
    Eventos en document, uno por sentido para que nadie se oiga a sí mismo:
      · 'voceiro-ping'   Voceiro → lector; responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
-     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector}.
-     · 'lector-estado'  lector → Voceiro, igual.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
+                        leidasHasta}.
+     · 'lector-estado'  lector → Voceiro {…, leidas}: lo que se ha terminado de
+                        leer en el lector, [{url, fecha, quitar?}]. Voceiro lo
+                        marca como leído y lo confirma con leidasHasta (la fecha
+                        más nueva que ya tiene); el lector borra lo confirmado.
    Cada lado fusiona lo que le llega y, si lo suyo no coincide y el mensaje
    no era ya una respuesta, contesta una vez con lo suyo. Como fusionar da
    lo mismo en cualquier orden, tras ese ida y vuelta los dos coinciden. */
@@ -5739,8 +5759,52 @@ function guardarBloqueLector(b){
 function estadoDeVoceiro(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
-    pendientes: PENDIENTES, perfil: perfilDeVoceiro(), lector: cargarBloqueLector()
+    pendientes: PENDIENTES, perfil: perfilDeVoceiro(), lector: cargarBloqueLector(),
+    leidasHasta: leidasDelLectorHasta()
   };
+}
+
+// Leídas que manda el lector (lo terminado allí): hasta qué fecha las tengo.
+const LEIDAS_LECTOR_KEY = 'voceiro-leidas-lector-hasta';
+function leidasDelLectorHasta(){
+  try { return Number(localStorage.getItem(LEIDAS_LECTOR_KEY)) || 0; } catch(e){ return 0; }
+}
+// Devuelve si ha marcado o desmarcado algo.
+function recibirLeidasDelLector(lista){
+  if (!Array.isArray(lista)) return false;
+  const hasta = leidasDelLectorHasta();
+  let nueva = hasta, cambio = false;
+  for (const l of lista){
+    const fecha = Number(l && l.fecha) || 0;
+    if (!l || !l.url || fecha <= hasta) continue;
+    const k = normalizeUrlForMatch(l.url);
+    if (l.quitar){
+      if (LEIDAS_LOCAL.has(k)){ desmarcarLeidaLocal(l.url); cambio = true; }
+    } else if (!LEIDAS_LOCAL.has(k)){
+      marcarLeidaLocal(l.url);
+      cambio = true;
+    }
+    nueva = Math.max(nueva, fecha);
+  }
+  if (nueva > hasta){
+    try { localStorage.setItem(LEIDAS_LECTOR_KEY, String(nueva)); } catch(e){}
+  }
+  return cambio || nueva > hasta;
+}
+
+// Repinta como leídas (o no) las tarjetas de la lista, sin rehacerla: lo
+// que llega del lector mientras Voceiro está detrás no debe moverte el scroll.
+function pintarLeidasEnLista(){
+  document.querySelectorAll('#resultados .noticia').forEach(art => {
+    const n = ULT_FILTRADAS[parseInt(art.dataset.idx, 10)];
+    if (!n) return;
+    const key = normalizeUrlForMatch(n.enlace);
+    const item = PENDIENTES_MAP.get(key);
+    const leida = !!(item && item.read) || LEIDAS_LOCAL.has(key);
+    art.classList.toggle('leida', leida);
+    if (leida) art.classList.remove('vista');
+  });
+  refrescarBotonesGuardar();
 }
 function comparable(d){
   return huella({
@@ -5766,12 +5830,16 @@ function enviarEstadoAlLector(){
 
 function recibirEstadoDelLector(d){
   const fusion = fusionarPendientes(PENDIENTES, d.pendientes);
-  if (huella(fusion) !== huella(PENDIENTES)){
+  const pendCambian = huella(fusion) !== huella(PENDIENTES);
+  if (pendCambian){
     PENDIENTES = fusion;
     guardarPendientes();
     rebuildPendientes();
     sincronizarPronto();
   }
+  const hastaAntes = leidasDelLectorHasta();
+  const leidasCambian = recibirLeidasDelLector(d.leidas);
+  if (pendCambian || leidasCambian) pintarLeidasEnLista();
   // Un perfil sin sellar (nadie lo ha cambiado desde que se comparten) no
   // se impone: se unifican con el primer cambio, en cualquiera de los dos.
   const mio = perfilDeVoceiro();
@@ -5788,7 +5856,11 @@ function recibirEstadoDelLector(d){
     guardarBloqueLector(elegido);
     sincronizarPronto();
   }
-  if (!d.respuesta && comparable(estadoDeVoceiro()) !== comparable(d)) enviarEstadoAhora(true);
+  // Se contesta si lo mío no coincide o si hay leídas nuevas que confirmar
+  // (esto último, aunque lo recibido ya fuera una respuesta: la mía también
+  // lo es, y el lector no contesta a respuestas).
+  const confirmar = leidasDelLectorHasta() > hastaAntes;
+  if (confirmar || (!d.respuesta && comparable(estadoDeVoceiro()) !== comparable(d))) enviarEstadoAhora(true);
 }
 
 function initUserScriptBridge(){
@@ -6270,8 +6342,8 @@ function renderPendientes(items){
   function fila(p, esLeida){
     const fecha = p.date ? new Date(p.date).toLocaleString(ACCES.lang) : '';
     return `
-      <div class="pendiente-item" style="${esLeida ? 'opacity:.55' : ''}">
-        <a href="${escapeHtml(p.url)}" target="_blank" rel="noopener" style="${esLeida ? 'text-decoration:line-through' : ''}">${escapeHtml(p.title || p.url)}</a>
+      <div class="pendiente-item${esLeida ? ' leida' : ''}">
+        <a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.title || p.url)}</a>
         <div class="pendiente-meta">
           ${p.domain ? `<span>${escapeHtml(p.domain)}</span>` : ''}
           ${fecha ? `<span>· ${escapeHtml(fecha)}</span>` : ''}
