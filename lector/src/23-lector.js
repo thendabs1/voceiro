@@ -308,13 +308,11 @@ function openReader(art){
     '</div>';
 
   // Lo que tenía el foco (el botón del lector, normalmente) lo recupera al
-  // salir. La página de debajo queda inerte mientras: ni el teclado ni los
-  // lectores de pantalla se meten en lo que no se ve.
+  // salir. La página de debajo queda tapada e inerte mientras (25).
   const focoAntes = document.activeElement;
   document.body.insertAdjacentHTML('beforeend', full);
   const ov = document.getElementById('il-full');
-  const inertes = [...document.body.children].filter(el => el !== ov && !el.inert);
-  inertes.forEach(el => { el.inert = true; });
+  const pagina = taparPagina(ov);
 
   // Imágenes: lo del medio, si tiene; si no, lo de todos los medios.
   function imagenesDelMedio(){
@@ -547,7 +545,7 @@ function openReader(art){
     document.removeEventListener('keydown', keyHandler);
     if (finObservador) finObservador.disconnect();
     __lectorAbierto = null;
-    inertes.forEach(el => { el.inert = false; });
+    pagina.fin();
     ov.remove();
     if (focoAntes && focoAntes.isConnected){
       if (focoAntes.__enfocar) focoAntes.__enfocar();
@@ -635,6 +633,7 @@ function openReader(art){
     const done = () => toast('✓ ' + t('copied'), 1500);
     const fb = () => {
       const ta = document.createElement('textarea');
+      ta.id = 'il-copia';   // con id il-…: la página tapada no lo tapa
       ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0';
       document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); done(); } catch(e){ toast(t('copyFailed')); }

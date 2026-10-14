@@ -12,7 +12,9 @@ Con un gestor de userscripts (Violentmonkey, Tampermonkey…), abre
 ## Qué hace
 
 - Modo lectura con perfil de lectura: tema, fuente (también para dislexia),
-  tamaño, ancho, interlineado, lectura biónica y foco.
+  tamaño, ancho, interlineado, lectura biónica y foco. Mientras está abierto,
+  la página de debajo no se ve ni se toca, tampoco lo que aparezca después
+  (avisos y ventanas del medio); al cerrarlo, queda como estaba.
 - Pendientes, diccionarios por idioma, lectura rápida (RSVP) y extracción
   asistida por sitio.
 - Tweets, vídeos, gráficos y mapas insertados salen como tarjeta con enlace al
