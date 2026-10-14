@@ -31,13 +31,19 @@ function openReader(art){
     if (tEl) fecha = (tEl.getAttribute('datetime') || '').slice(0,10);
   }
 
-  const parrafos = useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody);
   const srcKey = art._source || (rawHTML ? 'readability' : 'jsonld');
   const srcName = srcKey === 'jsonld' ? t('srcJsonld')
+                : srcKey === 'mixto' ? t('srcMixto')
                 : srcKey === 'custom' ? t('srcCustom')
                 : srcKey === 'all' ? t('extractionModeAll')
                 : t('srcReadability');
-  const wordsCount = countWords(plainBody);
+  // Fuera las imágenes repetidas y, si viene del DOM, las promociones del
+  // medio al principio y al final («¿Ya nos sigues?», newsletters…).
+  let parrafos = art.bloques || (useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody));
+  parrafos = sinImagenesRepetidas(parrafos);
+  if (srcKey !== 'jsonld') parrafos = sinPromosEnBordes(parrafos, textoDeBloque);
+  // Las palabras del texto que se ve, no las de lo que se ha quitado.
+  const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
   const iu = String(art.image || '');
   const iuHi = iu.replace('_16-9-discover-', '_source-');
@@ -45,6 +51,10 @@ function openReader(art){
   const iuFallback = iuHi !== iu ? iu : '';
   const cap = art.imageCaption || '';
   const auImg = art.imageAuthor || '';
+  // La portada repetida como primera imagen del cuerpo sale una sola vez,
+  // en el cuerpo y con su pie.
+  const enCuerpo = iu ? parrafos.find(b => b.tipo === 'img' && claveImagen(b.src) === claveImagen(iu)) : null;
+  if (enCuerpo && !enCuerpo.caption && cap) enCuerpo.caption = cap;
 
   function renderBlock(b){
     const process = html => prefs.bionic ? bionicizeHTML(html) : html;
@@ -198,7 +208,7 @@ function openReader(art){
       panelAa + menuMasHTML +
     '</div>';
 
-  const figura = iuFinal
+  const figura = iuFinal && !enCuerpo
     ? '<figure class="il-figure"><img src="' + esc(iuFinal) + '"' +
       (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') +
       ' alt="' + esc(headline) + '" loading="lazy"><figcaption>' +

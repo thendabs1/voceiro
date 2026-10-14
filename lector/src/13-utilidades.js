@@ -11,21 +11,6 @@ function stripTags(html){
   } catch(e){ return String(html).replace(/<[^>]+>/g, ''); }
 }
 function countWords(s){ return String(s || '').split(/\s+/).filter(Boolean).length; }
-function countRichElements(html){
-  if (!html) return 0;
-  try {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    let n = 0;
-    n += doc.querySelectorAll('b,strong').length;
-    n += doc.querySelectorAll('i,em').length;
-    n += doc.querySelectorAll('a[href]').length;
-    n += doc.querySelectorAll('h2,h3,h4').length;
-    n += doc.querySelectorAll('ul,ol').length;
-    n += doc.querySelectorAll('blockquote').length;
-    n += doc.querySelectorAll('img').length;
-    return n;
-  } catch(e){ return 0; }
-}
 function absUrl(u){
   if (!u) return '';
   try { return new URL(u, location.href).href; } catch(e){ return u; }

@@ -74,6 +74,10 @@ function extractBlocks(root){
   walk(root);
   return out;
 }
+// Texto plano de un bloque (para comparar con el JSON o contar palabras).
+function textoDeBloque(b){
+  return b.tipo === 'list' ? b.items.map(stripTags).join(' ') : stripTags(b.html || '');
+}
 function buildBlocksFromHTML(html){
   const sanitized = sanitizeHTML(html);
   if (!sanitized) return [];

@@ -28,6 +28,13 @@ function normAuth(a){
   if (typeof a === 'string') return [a];
   return [(a && a.name) || ''].filter(Boolean);
 }
+// De varias imágenes (suelen ser la misma en tamaños distintos), la más ancha.
+function imagenPrincipal(im){
+  if (!Array.isArray(im)) return im;
+  const conAncho = im.filter(x => x && typeof x === 'object' && Number(x.width) > 0);
+  if (!conAncho.length) return im[0];
+  return conAncho.reduce((a, b) => Number(b.width) > Number(a.width) ? b : a);
+}
 function imgUrlFrom(im){
   if (!im) return '';
   if (typeof im === 'string') return im;
@@ -56,6 +63,7 @@ function metaContent(sel){
   return el ? (el.getAttribute('content') || '') : '';
 }
 function buildFromJSONLD(ld){
+  const im = imagenPrincipal(ld.image);
   return {
     headline: decodeEnt(ld.headline || ''),
     description: decodeEnt(ld.description || ''),
@@ -64,16 +72,35 @@ function buildFromJSONLD(ld){
     // Hay CMS que dejan dentro el CSS y el JS de los gráficos (Onm).
     rawBody: limpiarCodigoIncrustado(decodeEnt(String(ld.articleBody || ''))),
     rawHTML: '',
-    image: imgUrlFrom(ld.image),
-    imageCaption: decodeEnt(imgCaptionFrom(ld.image)),
-    imageAuthor: decodeEnt(imgAuthorFrom(ld.image)),
+    image: imgUrlFrom(im),
+    imageCaption: decodeEnt(imgCaptionFrom(im)),
+    imageAuthor: decodeEnt(imgAuthorFrom(im)),
     datePublished: ld.datePublished || ''
   };
 }
+// Publicidad metida entre los párrafos (Nós Diario: div.ad-slot con un GIF
+// enlazado a /ads/): Readability la deja pasar y el modo mixto también,
+// porque va entre bloques que se quedan. Se quita antes.
+const SEL_PUBLICIDAD = [
+  '.ad-slot', '[data-mark^="Publici"]', 'a[href*="/ads/"]', 'ins.adsbygoogle', '[id^="div-gpt-ad"]',
+  '[class*="outbrain"]', '[id*="outbrain"]', '[class*="taboola"]', '[id*="taboola"]',
+  '[class~="publicidad"]', '[class~="publicidade"]', '[class~="publicitat"]', '[class~="advertisement"]'
+].join(',');
+const ALT_PUBLICIDAD = /^\s*(publicidad|publicidade|publicitat|advertisement|anuncio)\b/i;
+function limpiarPublicidad(doc){
+  try {
+    doc.querySelectorAll(SEL_PUBLICIDAD).forEach(n => n.remove());
+    doc.querySelectorAll('img[alt]').forEach(im => {
+      if (ALT_PUBLICIDAD.test(im.getAttribute('alt') || '')) (im.closest('a') || im).remove();
+    });
+  } catch(e){}
+  return doc;
+}
+
 function extractFromReadability(){
   if (typeof Readability !== 'function') return null;
   try {
-    const clone = document.cloneNode(true);
+    const clone = limpiarPublicidad(document.cloneNode(true));
     const reader = new Readability(clone);
     const art = reader.parse();
     if (!art || !art.textContent || art.textContent.trim().length < 200) return null;
@@ -185,7 +212,7 @@ function collectAllText(){
 function extractFromAll(){
   try {
     if (typeof Readability === 'function'){
-      const clone = document.cloneNode(true);
+      const clone = limpiarPublicidad(document.cloneNode(true));
       clone.querySelectorAll('script,style,iframe,noscript,svg,canvas,video,audio,form,button,select,textarea,input,nav,header,footer,aside,[role="navigation"],[role="banner"],[role="complementary"]').forEach(n => n.remove());
       const reader = new Readability(clone);
       const art = reader.parse();
@@ -229,17 +256,20 @@ function extractAuto(){
   if (!jsonArt && !readArt) return null;
   if (!jsonArt){ readArt._source = 'readability'; return readArt; }
   if (!readArt){ jsonArt._source = 'jsonld'; return jsonArt; }
-  const lJson = (jsonArt.rawBody || '').trim().length;
-  const lRead = (readArt.rawBody || '').trim().length;
-  const rich  = countRichElements(readArt.rawHTML);
-  if (lJson < AUTO_MIN_LEN && lRead < AUTO_MIN_LEN){
-    if (lRead > lJson){ readArt._source = 'readability'; return readArt; }
-    jsonArt._source = 'jsonld'; return jsonArt;
-  }
-  if (lRead >= AUTO_MIN_RATIO * lJson && rich >= AUTO_MIN_RICH){
-    readArt._source = 'readability'; return readArt;
-  }
-  jsonArt._source = 'jsonld'; return jsonArt;
+  // Mixto (lector/modulos/mixto.js): los bloques de Readability que están
+  // en el JSON. Los metadatos (autor, sección, pie de la portada) son los
+  // del JSON, que suelen ser mejores.
+  const bloques = buildBlocksFromHTML(readArt.rawHTML);
+  const d = decidirMixto(bloques, jsonArt.rawBody, textoDeBloque);
+  if (d.origen === 'jsonld'){ jsonArt._source = 'jsonld'; return jsonArt; }
+  if (d.origen === 'readability'){ readArt._source = 'readability'; return readArt; }
+  const elegidos = d.conservar.map(i => bloques[i]);
+  return Object.assign({}, jsonArt, {
+    bloques: elegidos,
+    rawBody: elegidos.filter(esDeTexto).map(textoDeBloque).join('\n\n'),
+    rawHTML: '',
+    _source: 'mixto'
+  });
 }
 
 function extractArticleWithConfig(extraction, overrideSrc){
