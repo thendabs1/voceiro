@@ -182,9 +182,20 @@ function openReader(art){
       metaActions +
       figura +
       '<div class="il-body">' + renderBody() + '</div>' +
+      // Final: volver a Voceiro (marcándola leída), la siguiente pendiente,
+      // guardarla para luego o subir. Al llegar aquí se marca leída sola.
+      '<section class="il-fin">' +
+        '<div class="il-fin-acciones">' +
+          '<button type="button" class="il-fin-volver il-primary">' + esc(t('finVolver')) + '</button>' +
+          '<button type="button" class="il-fin-siguiente" hidden>' +
+            '<span>' + esc(t('finSiguiente')) + '</span><span class="il-fin-sig-titulo"></span>' +
+          '</button>' +
+          '<button type="button" class="il-fin-guardar"></button>' +
+          '<button type="button" class="il-fin-arriba">' + esc(t('up')) + '</button>' +
+        '</div>' +
+        '<p class="il-fin-estado" role="status" aria-live="polite"></p>' +
+      '</section>' +
       '<div class="il-footer">' +
-        '<button class="il-footer-top">' + esc(t('up')) + '</button> · ' +
-        '<button class="il-footer-back">' + esc(t('back')) + '</button> · ' +
         '<button class="il-dict-hint">' + esc(t('raeHint')) + ' ' + esc(defaultDictName) + '</button>' +
         sourceBadge +
       '</div>' +
@@ -270,6 +281,7 @@ function openReader(art){
     }
     pintarPrefs();
     pintarBotonGuardar();
+    pintarSiguiente();
   }
 
   function saveScroll(){
@@ -354,6 +366,7 @@ function openReader(art){
   function closeOverlay(){
     saveScroll();
     document.removeEventListener('keydown', keyHandler);
+    if (finObservador) finObservador.disconnect();
     __lectorAbierto = null;
     ov.remove();
     setTimeout(() => ensureReaderFAB(), 100);
@@ -394,16 +407,21 @@ function openReader(art){
   });
 
   ov.querySelectorAll('.il-close').forEach(b => b.onclick = closeOverlay);
-  ov.querySelector('.il-close-tab').onclick = () => {
-    // 1. Intentar cerrar la pestaña
-    try { window.close(); } catch(e){}
-    // 2. Si en 200 ms sigue abierta, volver a Voceiro
+  // Cerrar la pestaña y que quede delante Voceiro (VOLVER_KEY: la pestaña de
+  // Voceiro se pone delante al enterarse). Si el navegador no deja cerrarla:
+  // si ya estás en Voceiro, se sale del lector sin más; si no, esta misma
+  // pestaña va a Voceiro.
+  function volverAVoceiro(){
+    saveScroll();
+    PLATAFORMA.guardar(VOLVER_KEY, Date.now());
+    // Un respiro para que lo guardado llegue al gestor antes de cerrar.
+    setTimeout(() => PLATAFORMA.cerrarPestana(), 120);
     setTimeout(() => {
-      if (!window.closed){
-        location.href = VOCEIRO_URL;
-      }
-    }, 200);
-  };
+      if (document.visibilityState === 'hidden') closeOverlay();
+      else location.href = VOCEIRO_URL;
+    }, 600);
+  }
+  ov.querySelector('.il-close-tab').onclick = volverAVoceiro;
   ov.querySelectorAll('.il-back').forEach(b => b.onclick = goBack);
   ov.querySelector('.il-settings-btn').onclick = (e) => { e.stopPropagation(); openSettings('sites'); };
   ov.querySelector('.il-pendientes-btn').onclick = (e) => { e.stopPropagation(); openSettings('pendientes'); };
@@ -436,8 +454,7 @@ function openReader(art){
   }
   ov.querySelector('.il-copytxt').onclick = function(){ copyText(buildText(), this, t('copied')); };
   ov.querySelector('.il-print').onclick = () => window.print();
-  ov.querySelector('.il-footer-top').onclick = () => ov.scrollTo({ top: 0, behavior: 'smooth' });
-  ov.querySelector('.il-footer-back').onclick = goBack;
+  ov.querySelector('.il-fin-arriba').onclick = () => ov.scrollTo({ top: 0, behavior: 'smooth' });
   ov.querySelector('.il-mail').onclick = () => {
     const txt = buildText();
     const subj = encodeURIComponent(headline || t('news'));
@@ -549,22 +566,88 @@ function openReader(art){
   });
   // Sin guardar → neutro; pendiente → color de guardar; leída → verde
   // (se puede devolver a pendientes). Colores del tema, con su contraste.
+  // Hay dos: arriba, junto al título, y en el final.
   function pintarBotonGuardar(){
-    const btn = ov.querySelector('.il-save-meta');
-    if (!btn) return;
     const ex = findLaterItem(location.href);
-    btn.classList.toggle('il-guardada', !!ex && !ex.read);
-    btn.classList.toggle('il-leida', !!ex && !!ex.read);
-    btn.textContent = '🕒 ' + t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove');
+    ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => {
+      btn.classList.toggle('il-guardada', !!ex && !ex.read);
+      btn.classList.toggle('il-leida', !!ex && !!ex.read);
+      btn.textContent = '🕒 ' + t(!ex ? 'saveLater' : ex.read ? 'saveToPending' : 'saveRemove');
+    });
   }
 
-  ov.querySelector('.il-save-meta').onclick = function(){
+  ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => btn.onclick = function(){
     saveForLater(art);
+    // Si vuelve a pendientes, ya no cuenta como leída aquí.
+    const ex = findLaterItem(location.href);
+    if (estadoLeida === 'marcada' && ex && !ex.read){ estadoLeida = 'deshecha'; finEstado.textContent = ''; }
     pintarBotonGuardar();
+    pintarSiguiente();
+  });
+
+  // ── Final del artículo ──
+  // estadoLeida: 'no' (aún no), 'marcada' (se puede deshacer) o 'deshecha'
+  // (la persona dijo que no: ya no se marca sola).
+  let estadoLeida = 'no', deshacerLeida = null, finObservador = null;
+  const finEstado = ov.querySelector('.il-fin-estado');
+
+  function marcarLeida(){
+    if (estadoLeida === 'marcada') return;
+    estadoLeida = 'marcada';
+    deshacerLeida = marcarLeidaAlTerminar();
+    pintarBotonGuardar();
+    pintarSiguiente();
+    finEstado.textContent = '';
+    const txt = document.createElement('span');
+    txt.textContent = '✓ ' + t('finMarcada') + ' · ';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'il-fin-deshacer';
+    btn.textContent = t('btnUndo');
+    btn.onclick = () => {
+      if (deshacerLeida) deshacerLeida();
+      deshacerLeida = null;
+      estadoLeida = 'deshecha';
+      finEstado.textContent = '';
+      pintarBotonGuardar();
+      pintarSiguiente();
+    };
+    finEstado.append(txt, btn);
+  }
+
+  function pintarSiguiente(){
+    const b = ov.querySelector('.il-fin-siguiente');
+    const sig = siguientePendiente(location.href);
+    b.hidden = !sig;
+    if (!sig) return;
+    const titulo = sig.title || sig.url;
+    b.querySelector('.il-fin-sig-titulo').textContent = titulo;
+    b.setAttribute('aria-label', t('finSiguienteDe').replace('{X}', titulo));
+    b.onclick = () => {
+      if (estadoLeida !== 'marcada') marcarLeida();
+      saveScroll();
+      irASiguientePendiente(sig);
+    };
+  }
+
+  ov.querySelector('.il-fin-volver').onclick = () => {
+    if (estadoLeida !== 'marcada') marcarLeida();
+    volverAVoceiro();
   };
+
+  // Llegar al final cuenta como leída, si se ha bajado hasta allí (un
+  // artículo que cabe entero en pantalla no se marca solo).
+  if ('IntersectionObserver' in window){
+    finObservador = new IntersectionObserver(entradas => {
+      if (estadoLeida !== 'no' || ov.scrollTop <= 0) return;
+      if (entradas.some(en => en.isIntersecting)) marcarLeida();
+    }, { root: ov, threshold: 0.5 });
+    finObservador.observe(ov.querySelector('.il-fin-acciones'));
+  }
 
   // Estado inicial al abrir el lector
   pintarBotonGuardar();
+  pintarSiguiente();
   __lectorAbierto = { refrescar };
 
   function showDictPopup(word, parentEl){

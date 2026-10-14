@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Final del artículo en el lector
+
+### Añadido
+- Bloque final en el lector: «✓ Leída · volver a Voceiro», «Siguiente pendiente →»
+  (con su título; la abre en la misma pestaña con el lector ya abierto), guardar
+  para luego y subir.
+- Llegar al final marca el artículo como leído: en Pendientes, si está, y en
+  Voceiro, aunque no se abriera desde allí. Se puede deshacer y entonces ya no se
+  marca sola.
+- Puente: el lector manda a Voceiro lo terminado (`leidas`) y Voceiro lo confirma
+  con `leidasHasta`; las tarjetas se repintan sin rehacer la lista.
+
+### Cambiado
+- Volver a Voceiro cierra la pestaña (`@grant window.close`) y pone delante la de
+  Voceiro (`@grant window.focus`, avisando por el almacén del gestor). Si no se
+  puede cerrar: si Voceiro ya está delante, solo se sale del lector; si no, la
+  pestaña va a Voceiro. La ✕ de arriba hace lo mismo.
+
+### Quitado
+- «↑ Subir · ← Atrás» del pie del artículo (los sustituye el bloque final).
+
 ## 2026-10-14 — Paleta accesible y lector que se entera de los cambios
 
 ### Cambiado
