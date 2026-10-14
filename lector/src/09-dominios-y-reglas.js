@@ -137,7 +137,7 @@ function removeSiteRule(domain){
   CFG.sites = CFG.sites.filter(s => s.domain !== d);
   if (CFG.sites.length < before){
     saveCfg(CFG);
-    const f = document.getElementById('il-fab'); if (f) f.remove();
+    actualizarBoton();
     return true;
   }
   return false;

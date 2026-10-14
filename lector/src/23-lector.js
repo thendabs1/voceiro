@@ -405,8 +405,11 @@ function openReader(art){
     __lectorAbierto = null;
     inertes.forEach(el => { el.inert = false; });
     ov.remove();
-    if (focoAntes && focoAntes.isConnected && focoAntes.focus) focoAntes.focus();
-    setTimeout(() => ensureReaderFAB(), 100);
+    if (focoAntes && focoAntes.isConnected){
+      if (focoAntes.__enfocar) focoAntes.__enfocar();
+      else if (focoAntes.focus) focoAntes.focus();
+    }
+    setTimeout(() => actualizarBoton(), 100);
   }
 
   // ── Apariencia y Más: uno abierto a la vez. Esc o pulsar fuera los

@@ -45,8 +45,9 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
 (`00-inicio.js` … `99-fin.js`). Algunas piezas:
 
 - `02-plataforma.js`: lo único que depende del gestor de userscripts (`GM_*`).
-- `04-servicios.js`, `21-desplegable-servicios.js`, `27-fab-servicios.js`:
-  «Abrir en…».
+- `04-servicios.js`, `21-desplegable-servicios.js`: «Abrir en…».
+- `26-boton-flotante.js`: el botón flotante, uno solo y en un Shadow DOM.
+  `actualizarBoton()` lo pone, lo cambia o lo quita según la página.
 - `34-puente-con-voceiro.js`: el puente con Voceiro.
 - `plantilla.mjs`: la paleta y los iconos son los de Voceiro. `build.mjs` saca
   de `plantilla.html` el bloque PALETA y los `<symbol>` del sprite (solo los que

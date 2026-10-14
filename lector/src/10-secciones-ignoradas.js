@@ -29,10 +29,7 @@ function ignoreCurrentSection(){
   rule.ignorePatterns.push(pattern);
   CFG.sites.sort((a, b) => a.domain.localeCompare(b.domain));
   saveCfg(CFG);
-  const fab = document.getElementById('il-fab'); if (fab) fab.remove();
-  const bfab = document.getElementById('il-servicios-fab'); if (bfab) bfab.remove();
-  const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-  repositionStackFABs();
+  actualizarBoton();
   toast((existedBefore ? '' : t('siteAddedForIgnore') + '\n') + t('sectionIgnored') + ' ' + pattern);
 }
 

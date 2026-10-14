@@ -313,12 +313,7 @@ function openSettings(initialTab){
             disableDomain(removed.domain);
           }
           saveCfg(CFG); render();
-          if (removed && removed.domain === currentDomain){
-            const f = document.getElementById('il-fab'); if (f) f.remove();
-            const bf = document.getElementById('il-servicios-fab'); if (bf) bf.remove();
-            ensureAddFAB();
-            repositionStackFABs();
-          }
+          if (removed && removed.domain === currentDomain) actualizarBoton();
         };
       });
       box.querySelectorAll('.il-set-delpat').forEach(btn => {
@@ -352,13 +347,7 @@ function openSettings(initialTab){
         saveCfg(CFG);
         toast(t('addedTo') + ' ' + currentDomain);
         render();
-        const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-        if (!document.getElementById('il-fab') && !isPlainDomain()){
-          const rule = findSiteRule();
-          if (rule && rule.mode !== 'off' && !isIgnoredSection(rule)) createFAB();
-        }
-        if (!document.getElementById('il-servicios-fab') && debeMostrarFabServicios()) crearFabServicios();
-        repositionStackFABs();
+        actualizarBoton();
       };
 
       const addBtn = box.querySelector('.il-set-add');
@@ -377,15 +366,7 @@ function openSettings(initialTab){
         });
         saveCfg(CFG);
         render();
-        if (d === currentDomain){
-          const afab = document.getElementById('il-add-fab'); if (afab) afab.remove();
-          if (!document.getElementById('il-fab') && !isPlainDomain()){
-            const rule = findSiteRule();
-            if (rule && rule.mode === 'prompt' && !isIgnoredSection(rule)) createFAB();
-          }
-          if (!document.getElementById('il-servicios-fab') && debeMostrarFabServicios()) crearFabServicios();
-          repositionStackFABs();
-        }
+        if (d === currentDomain) actualizarBoton();
       };
 
       /* Foco al medio actual */
@@ -562,12 +543,7 @@ function openSettings(initialTab){
               saveCfg(CFG);
               toast(t('addedTo') + ' ' + entry.d, 2000);
               render();
-              if (entry.d === currentDomain){
-                const af = document.getElementById('il-add-fab'); if (af) af.remove();
-                ensureReaderFAB();
-                if (debeMostrarFabServicios()) crearFabServicios();
-                repositionStackFABs();
-              }
+              if (entry.d === currentDomain) actualizarBoton();
             }
           };
         });
@@ -579,11 +555,7 @@ function openSettings(initialTab){
               saveCfg(CFG);
               toast(t('removedFrom') + ' ' + d, 2000);
               render();
-              if (d === currentDomain){
-                const f = document.getElementById('il-fab'); if (f) f.remove();
-                const bf = document.getElementById('il-servicios-fab'); if (bf) bf.remove();
-                repositionStackFABs();
-              }
+              if (d === currentDomain) actualizarBoton();
             }
           };
         });
@@ -955,11 +927,7 @@ function openSettings(initialTab){
           (servicios.length ? '' : ' disabled') + '>' + esc(t('serviciosExportar')) + '</button>' +
       '</div>';
 
-    function refrescarFab(){
-      const f = document.getElementById('il-servicios-fab'); if (f) f.remove();
-      crearFabServicios();
-      repositionStackFABs();
-    }
+    const refrescarFab = actualizarBoton;
 
     function wire(){
       box.querySelectorAll('.il-svc-del').forEach(btn => {
@@ -1196,19 +1164,14 @@ function openSettings(initialTab){
         CFG.lang = newLang;
         saveCfg(CFG);
         render();
-        const fab = document.getElementById('il-fab');
-        if (fab){ fab.title = t('fabTitle') + '\n' + t('fabHidden'); }
-        const sfab = document.getElementById('il-settings-fab');
-        if (sfab) sfab.title = t('settingsFabTitle');
-        const afab = document.getElementById('il-add-fab');
-        if (afab) afab.title = t('addFabTitle');
+        actualizarBoton();
       };
 
       const autoAllChk = box.querySelector('.il-set-auto-all');
       if (autoAllChk) autoAllChk.onchange = () => {
         CFG.readerAutoAll = autoAllChk.checked;
         saveCfg(CFG);
-        paintReaderFAB();
+        actualizarBoton();
         toast(CFG.readerAutoAll ? t('readerAutoAllOn') : t('readerAutoAllOff'), 1800);
         render();
       };
