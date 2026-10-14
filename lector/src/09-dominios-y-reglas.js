@@ -117,7 +117,7 @@ function ensureSiteRule(){
   const d = normalizeDomain(location.hostname);
   rule = {
     domain: d, mode: 'prompt', ignorePatterns: [], readerSource: 'auto', lang: 'auto',
-    type: '', tags: [], textOnly: false,
+    type: '', tags: [],
     extraction: deepClone(DEFAULT_EXTRACTION)
   };
   CFG.sites.push(rule);
@@ -189,7 +189,6 @@ function addSiteFromCatalog(entry){
     lang: entry.lang || 'auto',
     type: entry.type || '',
     tags: Array.isArray(entry.tags) ? entry.tags.slice() : [],
-    textOnly: false,
     extraction: deepClone(DEFAULT_EXTRACTION)
   });
   CFG.sites.sort((a, b) => a.domain.localeCompare(b.domain));
@@ -217,7 +216,6 @@ function addSiteAnywhere(domain, opts){
     lang: opts.lang || cat.lang || 'auto',
     type: opts.type !== undefined ? opts.type : (cat.type || ''),
     tags: opts.tags || (cat.tags ? cat.tags.slice() : []),
-    textOnly: false,
     extraction: deepClone(DEFAULT_EXTRACTION)
   });
   CFG.sites.sort((a, b) => a.domain.localeCompare(b.domain));

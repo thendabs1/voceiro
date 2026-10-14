@@ -3,6 +3,9 @@
    ============================================================ */
 const SCRIPT_VERSION = '{{VERSION}}';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
+// Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
+// valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
+const IMAGENES = ['todas','conPie','ninguna'];
 const SITE_LANGS     = ['auto','es','gl','ca','en','eu','fr','de','it','pt'];
 const UI_LANGS       = ['es','gl','ca','en','eu'];
 const EXTRACTION_MODES = ['auto','selector','all'];

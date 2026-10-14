@@ -59,7 +59,8 @@ function openReader(art){
   function renderBlock(b){
     const process = html => prefs.bionic ? bionicizeHTML(html) : html;
     if (b.tipo === 'img'){
-      return '<figure class="il-inline-figure">' +
+      return '<figure class="il-inline-figure' + (b.caption ? ' il-con-pie' : '') + '"' +
+        (b === enCuerpo ? ' id="il-portada"' : '') + '>' +
         '<img src="' + esc(b.src) + '" alt="' + esc(b.alt || '') + '" loading="lazy">' +
         (b.caption ? '<figcaption>' + esc(b.caption) + '</figcaption>' : '') +
       '</figure>';
@@ -149,8 +150,12 @@ function openReader(art){
         opcion('checkbox', 'il-pref', 'just', t('justify')) +
         opcion('checkbox', 'il-pref', 'bionic', t('bionic')) +
         opcion('checkbox', 'il-pref', 'focus', t('focus')) +
-        opcion('checkbox', 'il-pref', 'img', t('coverImage')) +
-        opcion('checkbox', 'il-pref', 'textonly', t('sinImagenesMedio')) +
+      '</fieldset>' +
+      '<fieldset><legend>' + esc(t('imgMedio')) + '</legend>' +
+        opcion('radio', 'il-img-medio', '', t('imgComoSiempre')) +
+        opcion('radio', 'il-img-medio', 'todas', t('imgTodas')) +
+        opcion('radio', 'il-img-medio', 'conPie', t('imgConPie')) +
+        opcion('radio', 'il-img-medio', 'ninguna', t('imgNinguna')) +
       '</fieldset>' +
       '<fieldset><legend>' + esc(t('source')) + '</legend>' +
         opcion('radio', 'il-origen', 'auto', t('srcAuto')) +
@@ -209,7 +214,7 @@ function openReader(art){
     '</div>';
 
   const figura = iuFinal && !enCuerpo
-    ? '<figure class="il-figure"><img src="' + esc(iuFinal) + '"' +
+    ? '<figure class="il-figure' + (cap || auImg ? ' il-con-pie' : '') + '"><img src="' + esc(iuFinal) + '"' +
       (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') +
       ' alt="' + esc(headline) + '" loading="lazy"><figcaption>' +
       esc(cap) + (auImg ? (cap ? ' — ' : '') + esc(auImg) : '') +
@@ -223,11 +228,16 @@ function openReader(art){
   const metaActions =
     '<div class="il-meta-actions">' +
       '<button type="button" class="il-save-meta"></button>' +
+      '<button type="button" class="il-img-meta"></button>' +
       '<button type="button" class="il-rsvp-meta">' + icono('zap') + '<span>' + esc(sinSimbolo(t('teleprompter'))) + '</span></button>' +
     '</div>';
 
   const contentHTML =
     '<div class="il-wrap"><div class="il-content" lang="' + esc(pageLang) + '">' +
+      // La portada que se repite en el cuerpo: miniatura que lleva hasta ella.
+      (enCuerpo && iuFinal ? '<button type="button" class="il-miniatura' + (enCuerpo.caption ? ' il-con-pie' : '') + '"' +
+        ' aria-label="' + esc(t('verPortada')) + '"><img src="' + esc(iuFinal) + '"' +
+        (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') + ' alt=""></button>' : '') +
       '<h1 id="il-titulo" tabindex="-1">' + esc(headline) + '</h1>' +
       (description ? '<p class="il-desc">' + esc(description) + '</p>' : '') +
       '<div class="il-meta">' + esc(fecha) +
@@ -276,9 +286,36 @@ function openReader(art){
   const inertes = [...document.body.children].filter(el => el !== ov && !el.inert);
   inertes.forEach(el => { el.inert = true; });
 
-  function currentSiteTextOnly(){
+  // Imágenes: lo del medio, si tiene; si no, lo de todos los medios.
+  function imagenesDelMedio(){
     const rule = findSiteRule();
-    return !!(rule && rule.textOnly);
+    return rule && IMAGENES.includes(rule.imagenes) ? rule.imagenes : '';
+  }
+  function imagenesEfectivas(){
+    return imagenesDelMedio() || (IMAGENES.includes(prefs.imagenes) ? prefs.imagenes : 'todas');
+  }
+  // Escritos tal cual: build.mjs solo mete los iconos que ve como icono('…').
+  const ICONO_IMAGENES = { todas: icono('image'), conPie: icono('captions'), ninguna: icono('image-off') };
+  const TEXTO_IMAGENES = { todas: 'imgTodas', conPie: 'imgConPie', ninguna: 'imgNinguna' };
+  const siguienteImagenes = v => IMAGENES[(IMAGENES.indexOf(v) + 1) % IMAGENES.length];
+  function pintarImagenes(){
+    const v = imagenesEfectivas();
+    const delMedio = imagenesDelMedio();
+    ov.setAttribute('data-imagenes', v);
+    const b = ov.querySelector('.il-img-meta');
+    b.innerHTML = ICONO_IMAGENES[v] + '<span>' + esc(t(TEXTO_IMAGENES[v])) + '</span>';
+    b.setAttribute('aria-label', t(TEXTO_IMAGENES[v]) + (delMedio ? ' (' + t('imgEnEsteMedio') + ')' : '') +
+      '. ' + t('imgCambiarA') + ': ' + t(TEXTO_IMAGENES[siguienteImagenes(v)]));
+    ov.querySelectorAll('input[name="il-img-medio"]').forEach(r => { r.checked = r.value === delMedio; });
+  }
+  // El botón y la tecla pasan al siguiente estado: el del medio si tiene
+  // uno propio; si no, el de todos los medios.
+  function cambiarImagenes(){
+    const sig = siguienteImagenes(imagenesEfectivas());
+    const delMedio = !!imagenesDelMedio();
+    if (delMedio) findSiteRule().imagenes = sig; else prefs.imagenes = sig;
+    applyPrefs();
+    toast(t(TEXTO_IMAGENES[sig]) + (delMedio ? ' · ' + t('imgEnEsteMedio') : ''), 1400);
   }
 
   // Pinta las preferencias; applyPrefs, además, las guarda.
@@ -289,10 +326,8 @@ function openReader(art){
     ov.style.setProperty('--w', prefs.width + 'px');
     ov.style.setProperty('--fs', prefs.fs + 'px');
     ov.style.setProperty('--lh', prefs.lh);
-    ov.classList.toggle('il-hideimg', !prefs.img);
     ov.classList.toggle('il-focus', prefs.focus);
-    const siteTextOnly = currentSiteTextOnly();
-    ov.classList.toggle('il-textonly', siteTextOnly);
+    pintarImagenes();
 
     ov.querySelector('.il-fs-val').textContent = prefs.fs;
     ov.querySelector('.il-w-val').textContent = prefs.width;
@@ -301,9 +336,7 @@ function openReader(art){
     marcar('il-tema', prefs.theme);
     marcar('il-letra', prefs.font);
     marcar('il-origen', currentReaderSource());
-    ov.querySelectorAll('input[name="il-pref"]').forEach(c => {
-      c.checked = c.value === 'textonly' ? siteTextOnly : !!prefs[c.value];
-    });
+    ov.querySelectorAll('input[name="il-pref"]').forEach(c => { c.checked = !!prefs[c.value]; });
     pintarColores();
     if (prefs.focus) setTimeout(updateFocus, 60);
   }
@@ -600,12 +633,6 @@ function openReader(art){
   ov.querySelector('.il-w-plus').onclick   = () => { prefs.width = Math.min(UI.wMax, prefs.width + UI.wStep); applyPrefs(); };
   ov.querySelectorAll('input[name="il-pref"]').forEach(c => c.onchange = () => {
     const p = c.value;
-    if (p === 'textonly'){
-      // Sin imágenes va por medio, en su regla.
-      ensureSiteRule().textOnly = c.checked;
-      applyPrefs();
-      return;
-    }
     prefs[p] = c.checked;
     if (p === 'bionic'){
       ov.querySelector('.il-body').innerHTML = renderBody();
@@ -613,6 +640,22 @@ function openReader(art){
     }
     applyPrefs();
   });
+
+  // Imágenes en este medio: '' quita lo del medio y vale lo de todos.
+  ov.querySelectorAll('input[name="il-img-medio"]').forEach(r => r.onchange = () => {
+    if (r.value) ensureSiteRule().imagenes = r.value;
+    else { const rule = findSiteRule(); if (rule) delete rule.imagenes; }
+    applyPrefs();
+  });
+  ov.querySelector('.il-img-meta').onclick = cambiarImagenes;
+  const miniatura = ov.querySelector('.il-miniatura');
+  if (miniatura) miniatura.onclick = () => {
+    const fig = ov.querySelector('#il-portada');
+    if (!fig) return;
+    fig.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const im = fig.querySelector('img');
+    if (im) im.focus({ preventScroll: true });
+  };
 
   ov.querySelectorAll('input[name="il-origen"]').forEach(r => r.onchange = async () => {
     const v = r.value;
@@ -794,7 +837,7 @@ function openReader(art){
         break;
       case 'toggleFocus':   prefs.focus = !prefs.focus; applyPrefs(); break;
       case 'toggleJustify': prefs.just  = !prefs.just;  applyPrefs(); break;
-      case 'toggleImages':  prefs.img   = !prefs.img;   applyPrefs(); break;
+      case 'toggleImages':  cambiarImagenes(); break;
       case 'toggleWide':    prefs.width = prefs.width >= 900 ? 720 : 1100; applyPrefs(); break;
       case 'saveLater':     saveForLater(art); break;
       case 'openSites':     openSettings('sites'); break;
