@@ -3,6 +3,19 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — El lector, solo en pantalla
+
+### Cambiado
+- Mientras el lector está abierto, la página de debajo queda tapada
+  (`visibility` y `opacity`, sin cambiar tamaños) además de inerte, y también lo
+  que el medio añada después: avisos de cookies, de suscripción o del bloqueador
+  que, con el z-index máximo, salían por encima del lector. Al cerrar, todo
+  vuelve a estar como estaba, con el mismo scroll (`lector/src/25-pagina-de-debajo.js`).
+- Si la página pone un filtro o un transform en `html` o `body` (desenfocarla es
+  un recurso de algunos muros), no le afecta al lector mientras está abierto.
+- Se respetan las piezas del lector y los elementos personalizados que aparecen
+  mientras está abierto, que suelen ser de extensiones (diccionarios,
+  traductores, lectura en voz alta).
 ## 2026-10-14 — Gráficos y tablas en el lector
 
 ### Añadido
