@@ -3,6 +3,26 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Ajustes, avisos y diálogos del lector con el tema
+
+### Cambiado
+- Ajustes del lector, la herramienta de análisis de extracción, el selector
+  visual, el diálogo de añadir medio, el desplegable «Abrir en…» y los avisos usan
+  la paleta y el tema del perfil (unos 270 colores fijos menos). Lo que el lector
+  pinta fuera de su ventana lleva la clase `il-tema`; la paleta para ella va en
+  una sola hoja (`temaDe()`).
+- Avisos con los colores del tema invertidos (fondo = color del texto), para que
+  se vean sobre cualquier página.
+
+### Accesibilidad
+- Ajustes, el diálogo de añadir medio y la herramienta de extracción son
+  diálogos modales con nombre. El foco entra al abrirlos y vuelve a donde estaba
+  al cerrarlos.
+- Los avisos son `role="status"`: los lectores de pantalla los leen sin mover el
+  foco.
+- Pendientes leídas y textos secundarios del desplegable, en gris legible en vez
+  de transparentes.
+
 ## 2026-10-14 — Un solo botón flotante
 
 ### Cambiado

@@ -135,12 +135,14 @@ function startVisualPicker(onPick, onCancel){
 
   const style = document.createElement('style');
   style.id = 'il-picker-style';
-  style.textContent = '.il-picker-hover{outline:2px dashed #d32f2f !important;outline-offset:-2px !important;background:rgba(211,47,47,.08) !important;cursor:crosshair !important}';
+  style.textContent = '.il-picker-hover{outline:2px dashed var(--accent) !important;outline-offset:-2px !important;background:rgba(211,47,47,.08) !important;cursor:crosshair !important}';
   document.head.appendChild(style);
 
   const bar = document.createElement('div');
   bar.id = 'il-picker-bar';
-  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#222;color:#fff;' +
+  temaDe(bar);
+  bar.setAttribute('role', 'status');
+  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--fg);color:var(--bg);' +
     'padding:12px 16px;z-index:2147483647;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
     'text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.3)';
   bar.textContent = '🎯 ' + t('extractionPickerHint');
