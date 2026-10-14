@@ -73,7 +73,8 @@ const DEFAULT_CFG = {
   readerSettings: {
     keepReadItems: true
   },
-  fab: { left: null, top: null },
+  // Botón flotante: lado ('izq'/'der'), altura y medios donde se ha ocultado.
+  fab: { lado: null, top: null, ocultoEn: [] },
   servicios: [],
   serviciosFab: { oculto: false },
   prefs: {

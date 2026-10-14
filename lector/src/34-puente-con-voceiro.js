@@ -57,6 +57,7 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
     __perfilFirma = firmaPerfilLector(CFG);
     __configFirma = firmaConfig(CFG);
     if (__lectorAbierto) __lectorAbierto.refrescar();
+    actualizarBoton();
     enviarEstado(false);
   });
 

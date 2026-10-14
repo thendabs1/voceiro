@@ -3,6 +3,32 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Un solo botón flotante
+
+### Cambiado
+- Los cuatro botones flotantes (📖 lector, ⚙️ ajustes, ＋ añadir medio y ↗ «Abrir
+  en…») pasan a ser uno. Con artículo, el botón grande abre el lector y el pequeño
+  (⋯) despliega el resto; sin artículo, el grande despliega el menú: modo lectura,
+  añadir este medio, «Abrir en…» (los servicios), ajustes y ocultar el botón en
+  este medio.
+- Neutro y con los colores del tema del perfil, en vez del degradado rojo. El
+  lector automático se ve como un punto verde y se dice en su nombre.
+- Dentro de un Shadow DOM: el CSS del medio no le llega.
+- Se arrastra y al soltarlo se pega al borde más cercano; recuerda el lado y la
+  altura (`CFG.fab.lado` y `top`; la posición de antes se traduce sola).
+- «Ocultar el botón en este medio» se deshace desde el aviso o desde el menú del
+  gestor («Mostrar el botón en este medio»). Clic derecho o pulsación larga ya no
+  lo ocultan: abren el menú.
+- La opción «Abrir en…» de los ajustes decide ahora si los servicios salen en el
+  menú del botón.
+- `actualizarBoton()` sustituye a las funciones de cada botón: unas cuarenta
+  llamadas repartidas que los quitaban y ponían uno a uno.
+
+### Accesibilidad
+- Nombres accesibles en los dos botones, menú con `role="menu"` y teclado
+  (flechas, Inicio, Fin, Esc, Tab) y foco visible con el color del tema.
+- Al salir del lector, el foco vuelve al botón.
+
 ## 2026-10-14 — Barra y menús del lector, con iconos y accesibles
 
 ### Cambiado

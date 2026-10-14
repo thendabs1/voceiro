@@ -37,10 +37,4 @@ function shouldShowReaderFAB(){
   return isArticlePage();
 }
 
-function ensureReaderFAB(){
-  if (!shouldShowReaderFAB()) return;
-  if (document.getElementById('il-fab')) return;
-  if (document.getElementById('il-full')) return;
-  createFAB();
-}
 
