@@ -79,7 +79,7 @@ const DEFAULT_CFG = {
   serviciosFab: { oculto: false },
   prefs: {
     fs: 18, theme: 'light', width: 720, font: 'georgia', lh: 1.7,
-    just: false, bionic: false, focus: false, img: true,
+    just: false, bionic: false, focus: false, imagenes: 'todas',
     panelText: true, panelActions: false
   },
   dict: {
@@ -166,7 +166,10 @@ function migrateCfg(cfg){
     if (!s.lang || !SITE_LANGS.includes(s.lang)) s.lang = 'auto';
     if (!s.type) s.type = '';
     if (!Array.isArray(s.tags)) s.tags = [];
-    if (typeof s.textOnly !== 'boolean') s.textOnly = false;
+    // «Sin imágenes en este medio» (textOnly) pasa a imagenes: 'ninguna'.
+    if (s.textOnly === true && !s.imagenes) s.imagenes = 'ninguna';
+    delete s.textOnly;
+    if (s.imagenes !== undefined && !IMAGENES.includes(s.imagenes)) delete s.imagenes;
     const oldSel = typeof s.customSelector === 'string' ? s.customSelector : '';
     s.extraction = normalizeExtraction(s.extraction, oldSel);
     delete s.customSelector;
@@ -236,6 +239,9 @@ function migrateCfg(cfg){
   if (cfg.prefs.panelText === undefined) cfg.prefs.panelText = true;
   if (cfg.prefs.panelActions === undefined) cfg.prefs.panelActions = false;
   if ('readerSource' in cfg.prefs) delete cfg.prefs.readerSource;
+  // «Portada» (img) pasa a imagenes; quien la ocultaba, ve solo las que tienen pie.
+  if (!IMAGENES.includes(cfg.prefs.imagenes)) cfg.prefs.imagenes = cfg.prefs.img === false ? 'conPie' : 'todas';
+  delete cfg.prefs.img;
 
   cfg.servicios = normalizarServicios(cfg.servicios);
   if (!cfg.serviciosFab || typeof cfg.serviciosFab !== 'object') cfg.serviciosFab = { oculto: false };

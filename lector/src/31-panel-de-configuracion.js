@@ -143,7 +143,8 @@ function openSettings(initialTab, opts){
       '</div>';
       const tagsStr = (s.tags || []).join(', ');
       const typeLabel = s.type ? getTypeLabel(s.type) : '—';
-      const textOnlyBadge = s.textOnly ? ' · <span style="color:var(--accent);font-weight:bold">📝</span>' : '';
+      const textOnlyBadge = s.imagenes === 'ninguna' ? ' · <span style="color:var(--accent);font-weight:bold" title="' + esc(t('imgNinguna')) + '">📝</span>'
+                          : s.imagenes === 'conPie' ? ' · <span style="color:var(--accent)" title="' + esc(t('imgConPie')) + '">🖼✎</span>' : '';
       const exBadge = extractionBadge(s.extraction);
       return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +

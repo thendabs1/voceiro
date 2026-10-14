@@ -29,20 +29,13 @@ function executeGlobalAction(action){
       break;
     }
     case 'toggleTextOnly': {
+      // Sin imágenes en este medio, o vuelta a lo de todos los medios.
       const rule = ensureSiteRule();
-      rule.textOnly = !rule.textOnly;
+      const sinImagenes = rule.imagenes !== 'ninguna';
+      if (sinImagenes) rule.imagenes = 'ninguna'; else delete rule.imagenes;
       saveCfg(CFG);
-      const ov2 = document.getElementById('il-full');
-      if (ov2){
-        ov2.classList.toggle('il-textonly', rule.textOnly);
-        const btn = ov2.querySelector('.il-textonly-btn');
-        if (btn){
-          btn.textContent = rule.textOnly ? '📝' : '🖼';
-          btn.title = rule.textOnly ? t('textOnlyOn') : t('textOnlyOff');
-          btn.classList.toggle('il-active', rule.textOnly);
-        }
-      }
-      toast(rule.textOnly ? t('textOnlyOn') : t('textOnlyOff'), 1500);
+      if (__lectorAbierto) __lectorAbierto.refrescar();
+      toast(sinImagenes ? t('textOnlyOn') : t('textOnlyOff'), 1500);
       break;
     }
     case 'openVoceiro': {
