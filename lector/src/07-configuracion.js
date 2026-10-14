@@ -336,9 +336,11 @@ function aplicarPerfilAlLector(perfil){
 // Configuración propia del lector que viaja a otros dispositivos (por
 // Voceiro y su sincronización): reglas por sitio, catálogo propio,
 // diccionarios, servicios de «Abrir en…», atajos… Todo menos Pendientes, el
-// perfil común (va aparte), los sellos, la posición de los botones y qué
-// paneles del lector están abiertos (abrir uno no es un cambio que viaje).
-const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab'];
+// perfil común (va aparte), los sellos, la posición de los botones, qué
+// paneles del lector están abiertos (abrir uno no es un cambio que viaje) y
+// los avisos de leídas para el Voceiro de este navegador.
+const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab',
+                     'leidasParaVoceiro'];
 const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
 const PREFS_LOCALES = ['panelText', 'panelActions'];
 let __configFirma = null;

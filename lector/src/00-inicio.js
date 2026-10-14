@@ -16,6 +16,8 @@
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_addValueChangeListener
+// @grant        window.close
+// @grant        window.focus
 // @require      https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js
 // @run-at       document-idle
 // @noframes

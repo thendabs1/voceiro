@@ -69,7 +69,14 @@ function buildReaderCSS(){
 #il-full .il-figure figcaption,
 #il-full .il-inline-figure figcaption{font-size:.85em;color:var(--muted);text-align:center;padding:10px 14px;line-height:1.4;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-footer{color:var(--muted);font-size:.8em;margin-top:20px;padding-top:14px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
-#il-full .il-footer-top,#il-full .il-footer-back{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
+#il-full [hidden]{display:none!important}
+#il-full .il-fin{margin:48px 0 8px;padding-top:24px;border-top:1px solid var(--border);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#il-full .il-fin-acciones{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+#il-full .il-fin-acciones button{min-height:44px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;max-width:100%}
+#il-full .il-fin-volver{flex:1 1 100%;font-size:16px}
+#il-full .il-fin-sig-titulo{font-size:12px;font-weight:400;max-width:30ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#il-full .il-fin-estado{min-height:1.5em;margin:12px 0 0;text-align:center;color:var(--muted);font-size:14px}
+#il-full .il-fin-deshacer{background:none;border:none;color:var(--accent);text-decoration:underline;padding:4px 6px;font-size:inherit;font-weight:bold}
 #il-full .il-dict-hint{background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;padding:0;font-family:inherit;font-weight:bold;text-decoration:underline}
 #il-full .il-source-badge{color:var(--muted);margin-left:4px}
 #il-full .il-top-btn{position:fixed;bottom:24px;right:24px;z-index:20;width:48px;height:48px;padding:0;border-radius:50%;font-size:22px;line-height:1;background:var(--accent);color:var(--on-solid);border:1px solid var(--accent);box-shadow:0 4px 12px var(--shadow);opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .25s,transform .25s}
@@ -78,7 +85,7 @@ function buildReaderCSS(){
 #il-full .il-dict-popup-title{padding:6px 10px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px}
 #il-full .il-dict-popup button{text-align:left;padding:8px 10px;border:none;background:transparent;color:var(--fg);cursor:pointer;border-radius:4px;font-size:14px;font-family:inherit}
 #il-full .il-dict-popup button:hover{background:var(--quote-bg)}
-@media print{#il-full .il-top-btn{display:none!important}}
+@media print{#il-full .il-top-btn,#il-full .il-fin{display:none!important}}
 `;
 }
 

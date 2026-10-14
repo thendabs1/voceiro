@@ -5720,8 +5720,12 @@ function aplicarPerfilEnVoceiro(p){
    Eventos en document, uno por sentido para que nadie se oiga a sí mismo:
      · 'voceiro-ping'   Voceiro → lector; responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
-     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector}.
-     · 'lector-estado'  lector → Voceiro, igual.
+     · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
+                        leidasHasta}.
+     · 'lector-estado'  lector → Voceiro {…, leidas}: lo que se ha terminado de
+                        leer en el lector, [{url, fecha, quitar?}]. Voceiro lo
+                        marca como leído y lo confirma con leidasHasta (la fecha
+                        más nueva que ya tiene); el lector borra lo confirmado.
    Cada lado fusiona lo que le llega y, si lo suyo no coincide y el mensaje
    no era ya una respuesta, contesta una vez con lo suyo. Como fusionar da
    lo mismo en cualquier orden, tras ese ida y vuelta los dos coinciden. */
@@ -5741,8 +5745,52 @@ function guardarBloqueLector(b){
 function estadoDeVoceiro(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
-    pendientes: PENDIENTES, perfil: perfilDeVoceiro(), lector: cargarBloqueLector()
+    pendientes: PENDIENTES, perfil: perfilDeVoceiro(), lector: cargarBloqueLector(),
+    leidasHasta: leidasDelLectorHasta()
   };
+}
+
+// Leídas que manda el lector (lo terminado allí): hasta qué fecha las tengo.
+const LEIDAS_LECTOR_KEY = 'voceiro-leidas-lector-hasta';
+function leidasDelLectorHasta(){
+  try { return Number(localStorage.getItem(LEIDAS_LECTOR_KEY)) || 0; } catch(e){ return 0; }
+}
+// Devuelve si ha marcado o desmarcado algo.
+function recibirLeidasDelLector(lista){
+  if (!Array.isArray(lista)) return false;
+  const hasta = leidasDelLectorHasta();
+  let nueva = hasta, cambio = false;
+  for (const l of lista){
+    const fecha = Number(l && l.fecha) || 0;
+    if (!l || !l.url || fecha <= hasta) continue;
+    const k = normalizeUrlForMatch(l.url);
+    if (l.quitar){
+      if (LEIDAS_LOCAL.has(k)){ desmarcarLeidaLocal(l.url); cambio = true; }
+    } else if (!LEIDAS_LOCAL.has(k)){
+      marcarLeidaLocal(l.url);
+      cambio = true;
+    }
+    nueva = Math.max(nueva, fecha);
+  }
+  if (nueva > hasta){
+    try { localStorage.setItem(LEIDAS_LECTOR_KEY, String(nueva)); } catch(e){}
+  }
+  return cambio || nueva > hasta;
+}
+
+// Repinta como leídas (o no) las tarjetas de la lista, sin rehacerla: lo
+// que llega del lector mientras Voceiro está detrás no debe moverte el scroll.
+function pintarLeidasEnLista(){
+  document.querySelectorAll('#resultados .noticia').forEach(art => {
+    const n = ULT_FILTRADAS[parseInt(art.dataset.idx, 10)];
+    if (!n) return;
+    const key = normalizeUrlForMatch(n.enlace);
+    const item = PENDIENTES_MAP.get(key);
+    const leida = !!(item && item.read) || LEIDAS_LOCAL.has(key);
+    art.classList.toggle('leida', leida);
+    if (leida) art.classList.remove('vista');
+  });
+  refrescarBotonesGuardar();
 }
 function comparable(d){
   return huella({
@@ -5768,12 +5816,16 @@ function enviarEstadoAlLector(){
 
 function recibirEstadoDelLector(d){
   const fusion = fusionarPendientes(PENDIENTES, d.pendientes);
-  if (huella(fusion) !== huella(PENDIENTES)){
+  const pendCambian = huella(fusion) !== huella(PENDIENTES);
+  if (pendCambian){
     PENDIENTES = fusion;
     guardarPendientes();
     rebuildPendientes();
     sincronizarPronto();
   }
+  const hastaAntes = leidasDelLectorHasta();
+  const leidasCambian = recibirLeidasDelLector(d.leidas);
+  if (pendCambian || leidasCambian) pintarLeidasEnLista();
   // Un perfil sin sellar (nadie lo ha cambiado desde que se comparten) no
   // se impone: se unifican con el primer cambio, en cualquiera de los dos.
   const mio = perfilDeVoceiro();
@@ -5790,7 +5842,11 @@ function recibirEstadoDelLector(d){
     guardarBloqueLector(elegido);
     sincronizarPronto();
   }
-  if (!d.respuesta && comparable(estadoDeVoceiro()) !== comparable(d)) enviarEstadoAhora(true);
+  // Se contesta si lo mío no coincide o si hay leídas nuevas que confirmar
+  // (esto último, aunque lo recibido ya fuera una respuesta: la mía también
+  // lo es, y el lector no contesta a respuestas).
+  const confirmar = leidasDelLectorHasta() > hastaAntes;
+  if (confirmar || (!d.respuesta && comparable(estadoDeVoceiro()) !== comparable(d))) enviarEstadoAhora(true);
 }
 
 function initUserScriptBridge(){

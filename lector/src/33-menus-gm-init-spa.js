@@ -103,7 +103,8 @@ function init(){
     else window.addEventListener('load', () => setTimeout(goFab, 250));
   }
 
-  if (shouldActivateHere()){
+  // Llegando desde «Siguiente pendiente», el lector se abre solo.
+  if (llegaDeSiguientePendiente() || shouldActivateHere()){
     const go = () => activateReader();
     if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(go, 400);
     else window.addEventListener('load', () => setTimeout(go, 400));
