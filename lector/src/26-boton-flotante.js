@@ -263,7 +263,7 @@ function crearBoton(){
 
   host.__pintar = o => {
     oferta = o;
-    host.setAttribute('data-theme', (CFG.prefs && CFG.prefs.theme) || 'light');
+    aplicarTema(host);
     const auto = !!(o.lector && CFG.readerAutoAll);
     const nombre = o.lector ? t('fabTitle') + (auto ? ' (' + t('fabAutomatico') + ')' : '') : t('fabMenu');
     principal.innerHTML = (o.lector ? icono('book-open-text') : icono('ellipsis')) + (auto ? '<span class="auto"></span>' : '');

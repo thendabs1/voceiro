@@ -313,20 +313,22 @@ function loadCfg(){
 let __perfilFirma = null;
 function firmaPerfilLector(cfg){
   const p = cfg.prefs || {};
-  return JSON.stringify([cfg.lang, p.theme, p.font, p.fs, !!p.just, !!p.bionic, !!p.focus]);
+  return JSON.stringify([cfg.lang, p.theme, p.font, p.fs, !!p.just, !!p.bionic, !!p.focus, limpiarColores(p.colores)]);
 }
 function perfilDelLector(){
   const p = CFG.prefs || {};
   return limpiarPerfil({
     lang: CFG.lang, tema: p.theme, fuente: p.font === 'georgia' ? 'serif' : p.font,
     fs: p.fs, just: !!p.just, bionic: !!p.bionic, focus: !!p.focus,
+    colores: p.colores || undefined,
     actualizado: CFG.perfilActualizado || 0
   });
 }
 function aplicarPerfilAlLector(perfil){
   const p = CFG.prefs;
   if (UI_LANGS.includes(perfil.lang)) CFG.lang = perfil.lang;
-  if (['light', 'sepia', 'dark', 'contrast'].includes(perfil.tema)) p.theme = perfil.tema;
+  if (['light', 'sepia', 'dark', 'contrast', 'custom'].includes(perfil.tema)) p.theme = perfil.tema;
+  if (limpiarColores(perfil.colores)) p.colores = limpiarColores(perfil.colores);
   if (perfil.fuente) p.font = perfil.fuente === 'serif' ? 'georgia' : perfil.fuente;
   if (typeof perfil.fs === 'number') p.fs = Math.min(UI.fsMax, Math.max(UI.fsMin, perfil.fs));
   ['just', 'bionic', 'focus'].forEach(k => { if (perfil[k] !== undefined) p[k] = !!perfil[k]; });
@@ -342,7 +344,7 @@ function aplicarPerfilAlLector(perfil){
 // los avisos de leídas para el Voceiro de este navegador.
 const CFG_NO_VIAJA = ['readLater', 'voceiro', 'lang', 'perfilActualizado', 'configActualizado', 'fab',
                      'leidasParaVoceiro'];
-const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus'];
+const PREFS_DEL_PERFIL = ['theme', 'font', 'fs', 'just', 'bionic', 'focus', 'colores'];
 const PREFS_LOCALES = ['panelText', 'panelActions'];
 let __configFirma = null;
 

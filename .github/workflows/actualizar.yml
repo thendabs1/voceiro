@@ -91,6 +91,7 @@ jobs:
           # front anterior si fallan los tests.
           if [ -d public/busqueda ]; then git add public/busqueda; fi
           if [ -d public/sync ]; then git add public/sync; fi
+          if [ -d public/tema ]; then git add public/tema; fi
           if [ -f public/lector.user.js ]; then git add public/lector.user.js; fi
           if [ -f state.json ]; then git add state.json; fi
           if git diff --staged --quiet; then

@@ -10,7 +10,9 @@
      FIN DE LA PALETA) y cambia :root por #il-full. Solo colores.
      tests/tema/paleta.test.mjs comprueba los contrastes (WCAG 2.2 AA).
      --on-solid es el texto sobre un fondo de color (--accent, --preset,
-     --block, --save); --focus, el anillo de foco. ═══ */
+     --block, --save); --focus, el anillo de foco; --titulos, el de los
+     títulos. El tema «Personalizado» (shared/tema/personalizado.js) pone
+     encima, en línea, las variables que salen de los colores elegidos. ═══ */
   :root{
     color-scheme:light;
     --bg:#fff; --fg:#222; --muted:#6b6b6b; --accent:#d32f2f;
@@ -21,7 +23,7 @@
     --block:#b00020; --block-bg:#fde8ec;
     --save:#1565c0; --save-bg:#e3f2fd;
     --mark:#ffe680; --mark-fg:#111;
-    --on-solid:#fff; --focus:#1565c0;
+    --on-solid:#fff; --focus:#1565c0; --titulos:#222;
   }
   [data-theme="sepia"]{
     color-scheme:light;
@@ -33,7 +35,7 @@
     --block:#8b2020; --block-bg:#ebd5d0;
     --save:#2e5a8b; --save-bg:#d8e3ee;
     --mark:#c9a227; --mark-fg:#2c1c08;
-    --on-solid:#fff; --focus:#2e5a8b;
+    --on-solid:#fff; --focus:#2e5a8b; --titulos:#3b2f1e;
   }
   [data-theme="dark"]{
     color-scheme:dark;
@@ -45,7 +47,7 @@
     --block:#ff8a9c; --block-bg:#3d1a20;
     --save:#6cb3ff; --save-bg:#1e3550;
     --mark:#b58600; --mark-fg:#111;
-    --on-solid:#111; --focus:#6cb3ff;
+    --on-solid:#111; --focus:#6cb3ff; --titulos:#e0e0e0;
   }
   [data-theme="contrast"]{
     color-scheme:dark;
@@ -57,7 +59,7 @@
     --block:#f00; --block-bg:#330000;
     --save:#0ff; --save-bg:#003333;
     --mark:#ff0; --mark-fg:#000;
-    --on-solid:#000; --focus:#ff0;
+    --on-solid:#000; --focus:#ff0; --titulos:#fff;
   }
   /* ═══ FIN DE LA PALETA ═══ */
   :root{
@@ -86,6 +88,7 @@
   /* Enlaces y foco con los colores del tema: los del navegador (azul,
      morado) casi no se ven en los temas oscuros */
   a{color:var(--accent)}
+  h1, h2, h3, h4{color:var(--titulos)}
   :focus-visible{outline:2px solid var(--focus); outline-offset:2px}
   /* Iconos del sprite: miden lo que la letra y toman su color */
   .ico{
@@ -360,6 +363,11 @@
     text-transform:uppercase; min-width:110px;
   }
   .opt-group{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .ac-colores{margin:-4px 0 14px; display:flex; flex-direction:column; gap:8px}
+  .ac-color{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:.8em}
+  .ac-color input[type="color"]{width:44px; height:44px; padding:2px; border:1px solid var(--btn-border); border-radius:8px; background:var(--btn-bg); cursor:pointer}
+  .ac-contraste{color:var(--muted); font-variant-numeric:tabular-nums}
+  .ac-contraste.poco{color:var(--block); font-weight:600}
   .opt-val{
     font-weight:bold; min-width:44px; text-align:center;
     font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em;
@@ -2146,7 +2154,17 @@
               <button type="button" data-val="sepia"></button>
               <button type="button" data-val="dark"></button>
               <button type="button" data-val="contrast"></button>
+              <button type="button" data-val="custom"></button>
             </div>
+          </div>
+          <!-- Tema personalizado: cuatro colores (shared/tema/personalizado.js
+               saca el resto) y el contraste de cada uno con el fondo. -->
+          <div class="ac-colores" id="ac-colores" hidden>
+            <p class="aj-hint" id="ac-colores-pista"></p>
+            <div class="ac-color"><input type="color" id="ac-color-fondo" data-color="fondo"><label for="ac-color-fondo" id="ac-color-fondo-lbl"></label></div>
+            <div class="ac-color"><input type="color" id="ac-color-texto" data-color="texto"><label for="ac-color-texto" id="ac-color-texto-lbl"></label><span class="ac-contraste" data-cr="texto"></span></div>
+            <div class="ac-color"><input type="color" id="ac-color-enlaces" data-color="enlaces"><label for="ac-color-enlaces" id="ac-color-enlaces-lbl"></label><span class="ac-contraste" data-cr="enlaces"></span></div>
+            <div class="ac-color"><input type="color" id="ac-color-titulos" data-color="titulos"><label for="ac-color-titulos" id="ac-color-titulos-lbl"></label><span class="ac-contraste" data-cr="titulos"></span></div>
           </div>
 
           <div class="opt-row">
@@ -2547,8 +2565,9 @@ import { comparador } from './busqueda/orden.js';
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
-  CAMPOS_PERFIL, LEIDAS_MAX,
+  CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
 } from './sync/fusion.js';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
 import { crearCliente } from './sync/cliente.js';
 import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js';
@@ -2899,6 +2918,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Oscuro',
     acContraste:            'Contraste',
+    acPersonalizado:        'Personalizado',
+    acColorFondo:           'Fondo',
+    acColorTexto:           'Texto',
+    acColorEnlaces:         'Enlaces',
+    acColorTitulos:         'Títulos',
+    acColoresPista:         'Elige cuatro colores; el resto se calcula a partir de ellos. Se comparte con el lector.',
+    acPocoContraste:        'poco contraste',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislexia',
@@ -3256,6 +3282,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Escuro',
     acContraste:            'Contraste',
+    acPersonalizado:        'Personalizado',
+    acColorFondo:           'Fondo',
+    acColorTexto:           'Texto',
+    acColorEnlaces:         'Ligazóns',
+    acColorTitulos:         'Títulos',
+    acColoresPista:         'Escolle catro cores; o resto calcúlase a partir delas. Compártese co lector.',
+    acPocoContraste:        'pouco contraste',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislexia',
@@ -3604,6 +3637,13 @@ const I18N = {
     acSepia:                'Sèpia',
     acOscuro:               'Fosc',
     acContraste:            'Contrast',
+    acPersonalizado:        'Personalitzat',
+    acColorFondo:           'Fons',
+    acColorTexto:           'Text',
+    acColorEnlaces:         'Enllaços',
+    acColorTitulos:         'Títols',
+    acColoresPista:         'Tria quatre colors; la resta es calcula a partir d’aquests. Es comparteix amb el lector.',
+    acPocoContraste:        'poc contrast',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislèxia',
@@ -3952,6 +3992,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Dark',
     acContraste:            'Contrast',
+    acPersonalizado:        'Custom',
+    acColorFondo:           'Background',
+    acColorTexto:           'Text',
+    acColorEnlaces:         'Links',
+    acColorTitulos:         'Headings',
+    acColoresPista:         'Pick four colours; the rest are worked out from them. Shared with the reader.',
+    acPocoContraste:        'low contrast',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dyslexic',
@@ -4300,6 +4347,13 @@ const I18N = {
     acSepia:                'Sepia',
     acOscuro:               'Iluna',
     acContraste:            'Kontrastea',
+    acPersonalizado:        'Pertsonalizatua',
+    acColorFondo:           'Atzealdea',
+    acColorTexto:           'Testua',
+    acColorEnlaces:         'Estekak',
+    acColorTitulos:         'Izenburuak',
+    acColoresPista:         'Aukeratu lau kolore; gainerakoak haietatik kalkulatzen dira. Irakurgailuarekin partekatzen da.',
+    acPocoContraste:        'kontraste gutxi',
     acSerif:                'Serif',
     acSans:                 'Sans',
     acDislexia:             'Dislexia',
@@ -4741,10 +4795,52 @@ function guardarAcces(){
   }
   try{ localStorage.setItem('voceiro-acces-v2', JSON.stringify(ACCES)); }catch(e){}
 }
+// Tema personalizado: data-theme es su base (claro u oscuro, por los colores
+// de estado) y encima, en línea, las variables que salen de sus colores.
+function aplicarTemaPersonalizado(h){
+  VARS_PERSONALIZADAS.forEach(k => h.style.removeProperty('--' + k));
+  h.style.removeProperty('color-scheme');
+  const colores = ACCES.tema === 'custom' ? limpiarColores(ACCES.colores) : null;
+  if (!colores) return null;
+  const { base, vars } = paletaPersonalizada(colores);
+  for (const [k, v] of Object.entries(vars)) h.style.setProperty(k === 'color-scheme' ? k : '--' + k, v);
+  return base;
+}
+// Al elegir «Personalizado» la primera vez se parte de los colores que hay.
+function coloresDelTemaActual(){
+  const cs = getComputedStyle(document.documentElement);
+  const hex6 = v => {
+    v = String(v || '').trim().toLowerCase();
+    if (/^#[0-9a-f]{3}$/.test(v)) v = '#' + [...v.slice(1)].map(c => c + c).join('');
+    return /^#[0-9a-f]{6}$/.test(v) ? v : null;
+  };
+  return limpiarColores({
+    fondo: hex6(cs.getPropertyValue('--bg')) || '#ffffff',
+    texto: hex6(cs.getPropertyValue('--fg')) || '#222222',
+    enlaces: hex6(cs.getPropertyValue('--accent')) || '#d32f2f',
+    titulos: hex6(cs.getPropertyValue('--titulos')) || '#222222',
+  });
+}
+function pintarEditorColores(){
+  const caja = $('#ac-colores');
+  if (!caja) return;
+  const colores = ACCES.tema === 'custom' ? limpiarColores(ACCES.colores) : null;
+  caja.hidden = !colores;
+  if (!colores) return;
+  CLAVES_COLORES.forEach(k => { const inp = $('#ac-color-' + k); if (inp && inp.value !== colores[k]) inp.value = colores[k]; });
+  caja.querySelectorAll('.ac-contraste').forEach(sp => {
+    const r = contraste(colores[sp.dataset.cr], colores.fondo);
+    const poco = r < 4.5;
+    sp.classList.toggle('poco', poco);
+    sp.textContent = r.toLocaleString(ACCES.lang, { maximumFractionDigits: 1 }) + ':1' +
+      (poco ? ' · ⚠ ' + t('acPocoContraste') : ' ✓');
+  });
+}
+
 function aplicarAcces(){
   const h = document.documentElement;
   h.lang = ACCES.lang;
-  h.dataset.theme  = ACCES.tema;
+  h.dataset.theme  = aplicarTemaPersonalizado(h) || ACCES.tema;
   h.dataset.font   = ACCES.fuente;
   h.dataset.just   = ACCES.just ? '1' : '0';
   h.dataset.bionic = ACCES.bionic ? '1' : '0';
@@ -4763,6 +4859,7 @@ function aplicarAcces(){
 
   $('#fs-val').textContent = ACCES.fs;
   $('#w-val').textContent  = ACCES.width;
+  pintarEditorColores();
 
   if (ACCES.focus) setTimeout(updateFocus, 30);
 }
@@ -10762,8 +10859,12 @@ function aplicarTextos(){
   if (selPrensaP) selPrensaP.innerHTML = '';
   pintarSelectsPrensa();
   const bTema = document.querySelectorAll('.opt-group[data-grupo="tema"] button');
-  [t('acClaro'), t('acSepia'), t('acOscuro'), t('acContraste')].forEach((txt, i) => {
+  [t('acClaro'), t('acSepia'), t('acOscuro'), t('acContraste'), t('acPersonalizado')].forEach((txt, i) => {
     if (bTema[i]) bTema[i].textContent = txt;
+  });
+  $('#ac-colores-pista').textContent = t('acColoresPista');
+  CLAVES_COLORES.forEach(k => {
+    $('#ac-color-' + k + '-lbl').textContent = t('acColor' + k[0].toUpperCase() + k.slice(1));
   });
   const bFuente = document.querySelectorAll('.opt-group[data-grupo="fuente"] button');
   [t('acSerif'), t('acSans'), t('acDislexia')].forEach((txt, i) => {
@@ -11270,11 +11371,22 @@ function wireStaticEvents(){
       const b = e.target.closest('button');
       if (!b) return;
       const v = b.dataset.val;
+      if (clave === 'tema' && v === 'custom' && !limpiarColores(ACCES.colores)) ACCES.colores = coloresDelTemaActual();
       if (clave === 'tema' || clave === 'fuente') ACCES[clave] = v;
       if (clave === 'extra') ACCES[v] = !ACCES[v];
       guardarAcces(); aplicarAcces();
       if (clave === 'extra' && (v === 'focus' || v === 'bionic')) renderizar();
     });
+  });
+  // Tema personalizado: se ve al momento al mover el color; se guarda (y
+  // viaja al lector y a otros dispositivos) al soltarlo.
+  document.querySelectorAll('#ac-colores input[type="color"]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const antes = limpiarColores(ACCES.colores) || coloresDelTemaActual();
+      ACCES.colores = limpiarColores({ ...antes, [inp.dataset.color]: inp.value });
+      aplicarAcces();
+    });
+    inp.addEventListener('change', () => guardarAcces());
   });
 
   $('#fs-menos').addEventListener('click', () => ajustarFs(-1));
