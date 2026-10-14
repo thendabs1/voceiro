@@ -3,6 +3,22 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Ajustes › Lector en Voceiro
+
+### Añadido
+- Página «Lector» en Ajustes de Voceiro. Con el lector instalado, su propio panel
+  de ajustes (medios, catálogo, pendientes, diccionarios, «Abrir en…», atajos,
+  general) se pinta dentro: Voceiro deja el hueco (`#aj-lector-panel`) y le avisa
+  por el puente (`voceiro-ajustes-lector`), sin conocer su formato. Sin el
+  lector, la página explica qué es y ofrece instalarlo (lo que estaba en
+  Avanzado).
+- `openSettings(pestaña, { dentro })`: el panel del lector, sin fondo ni diálogo,
+  dentro de un elemento de la página.
+
+### Arreglado
+- Un cambio de configuración hecho en la página de Voceiro se le manda a Voceiro
+  al momento (`alCambiar` solo oye otras pestañas).
+
 ## 2026-10-14 — Ajustes, avisos y diálogos del lector con el tema
 
 ### Cambiado

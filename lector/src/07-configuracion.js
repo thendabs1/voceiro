@@ -386,13 +386,17 @@ function aplicarBloqueConfig(bloque){
 }
 
 function saveCfg(cfg){
+  let cambio = false;
   const firma = firmaPerfilLector(cfg);
-  if (__perfilFirma !== null && firma !== __perfilFirma) cfg.perfilActualizado = Date.now();
+  if (__perfilFirma !== null && firma !== __perfilFirma){ cfg.perfilActualizado = Date.now(); cambio = true; }
   __perfilFirma = firma;
   const firmaC = firmaConfig(cfg);
-  if (__configFirma !== null && firmaC !== __configFirma) cfg.configActualizado = Date.now();
+  if (__configFirma !== null && firmaC !== __configFirma){ cfg.configActualizado = Date.now(); cambio = true; }
   __configFirma = firmaC;
   PLATAFORMA.guardar(CFG_KEY, cfg);
+  // En la página de Voceiro (sus Ajustes › Lector), un cambio de aquí no
+  // llega por alCambiar, que solo oye otras pestañas: se manda directamente.
+  if (cambio && esVoceiro()) setTimeout(() => enviarEstado(false), 0);
 }
 let CFG = loadCfg();
 __perfilFirma = firmaPerfilLector(CFG);

@@ -9,6 +9,8 @@
                         leidasHasta}.
      · 'lector-estado'  lector → Voceiro {…, leidas}: lo terminado en el lector
                         (11-pendientes.js); Voceiro lo confirma con leidasHasta.
+     · 'voceiro-ajustes-lector' Voceiro → lector {v}: pinta tus ajustes en
+                        #aj-lector-panel (página Lector de Ajustes).
    Pendientes y perfil se fusionan con shared/sync/fusion.js. «lector» es
    la configuración propia del lector: Voceiro la guarda sin mirarla y la
    lleva a otros dispositivos con su sincronización; gana la más reciente.
@@ -65,6 +67,15 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   if (!esVoceiro()) return;
 
   PLATAFORMA.alCambiar(VOLVER_KEY, () => PLATAFORMA.enfocarPestana());
+
+  // Página Lector de Ajustes de Voceiro: deja un hueco y avisa; el panel de
+  // ajustes del lector se pinta ahí (una vez: si ya está, no se repite).
+  document.addEventListener('voceiro-ajustes-lector', e => {
+    const d = e.detail;
+    if (!d || d.v !== PUENTE_V) return;
+    const hueco = document.getElementById('aj-lector-panel');
+    if (hueco) openSettings('sites', { dentro: hueco });
+  });
 
   document.addEventListener('voceiro-ping', () => {
     document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: { v: PUENTE_V } }));

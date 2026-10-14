@@ -1,25 +1,34 @@
 /* ============================================================
    24. PANEL DE CONFIGURACIÓN
    ============================================================ */
-function openSettings(initialTab){
-  if (document.getElementById('il-settings')) return;
+// opts.dentro: un elemento de la página donde pintar el panel, sin fondo ni
+// diálogo (la página Lector de Ajustes de Voceiro, que lo abre y lo cierra).
+function openSettings(initialTab, opts){
+  const dentro = opts && opts.dentro;
+  if (dentro ? dentro.querySelector('.il-settings-dentro') : document.getElementById('il-settings')) return;
   // Con el tema del perfil; diálogo modal: el foco entra y, al cerrar,
   // vuelve a donde estaba.
   const focoAntes = document.activeElement;
   const root = temaDe(document.createElement('div'));
-  root.id = 'il-settings';
-  root.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2147483647;' +
-    'display:flex;align-items:center;justify-content:center;padding:20px;' +
-    'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
   const box = document.createElement('div');
-  box.setAttribute('role', 'dialog');
-  box.setAttribute('aria-modal', 'true');
-  box.setAttribute('aria-label', t('settingsShort'));
-  box.tabIndex = -1;
-  box.style.cssText = 'background:var(--bg);color:var(--fg);border-radius:12px;max-width:960px;width:100%;' +
-    'max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:24px';
+  if (dentro){
+    root.classList.add('il-settings-dentro');
+    root.style.cssText = 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+    box.style.cssText = 'background:var(--bg);color:var(--fg)';
+  } else {
+    root.id = 'il-settings';
+    root.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2147483647;' +
+      'display:flex;align-items:center;justify-content:center;padding:20px;' +
+      'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-label', t('settingsShort'));
+    box.tabIndex = -1;
+    box.style.cssText = 'background:var(--bg);color:var(--fg);border-radius:12px;max-width:960px;width:100%;' +
+      'max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:24px';
+  }
   root.appendChild(box);
-  document.body.appendChild(root);
+  (dentro || document.body).appendChild(root);
 
   let activeSection = initialTab || 'sites';
   let activeCatalogSub = 'media';
@@ -42,6 +51,7 @@ function openSettings(initialTab){
     scState.capture = null;
     root.remove();
     document.removeEventListener('keydown', escHandler, true);
+    if (dentro) return;
     if (focoAntes && focoAntes.isConnected){
       if (focoAntes.__enfocar) focoAntes.__enfocar();
       else if (focoAntes.focus) focoAntes.focus();
@@ -57,8 +67,11 @@ function openSettings(initialTab){
       closeSettings();
     }
   };
-  document.addEventListener('keydown', escHandler, true);
-  root.addEventListener('click', e => { if (e.target === root) closeSettings(); });
+  // Dentro de Voceiro, Esc y el cierre son cosa de su página de Ajustes.
+  if (!dentro){
+    document.addEventListener('keydown', escHandler, true);
+    root.addEventListener('click', e => { if (e.target === root) closeSettings(); });
+  }
 
   function dictRow(d, lang, isDefault, isBuiltin){
     const canDelete = !isBuiltin;
@@ -1258,7 +1271,7 @@ function openSettings(initialTab){
         tabBtn('general', t('settings')) +
       '</div>';
 
-    const headerHTML =
+    const headerHTML = dentro ? '' :
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
         '<h2 style="margin:0;font-size:20px">' + esc(t('settings')) + '</h2>' +
         '<button class="il-set-close" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('close')) + '</button>' +
@@ -1275,7 +1288,8 @@ function openSettings(initialTab){
 
     box.innerHTML = headerHTML + tabsHTML + payload.html;
 
-    box.querySelector('.il-set-close').onclick = closeSettings;
+    const cerrar = box.querySelector('.il-set-close');
+    if (cerrar) cerrar.onclick = closeSettings;
     box.querySelectorAll('.il-set-tab').forEach(b => {
       b.onclick = () => { activeSection = b.dataset.tab; render(); };
     });
@@ -1284,6 +1298,6 @@ function openSettings(initialTab){
   }
 
   render();
-  box.focus({ preventScroll: true });
+  if (!dentro) box.focus({ preventScroll: true });
 }
 

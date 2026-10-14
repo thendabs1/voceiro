@@ -1741,6 +1741,8 @@
   .aj-pagina[hidden]{ display:none; }
   .aj-cuerpo h3:first-child{ border-top:none; padding-top:0; margin-top:0; }
   .aj-hint{ font-size:.68em; color:var(--muted); margin:0 0 8px; line-height:1.45; }
+  /* Hueco donde el lector pinta su panel de ajustes (página Lector) */
+  .aj-lector-panel{ margin-top:12px; font-size:16px; }
   .sync-acciones{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
   .sync-unir-codigo{ flex:1 1 16em; min-width:0; padding:8px 10px; font:inherit; font-size:.85em;
     font-family:ui-monospace, Menlo, Consolas, monospace; text-transform:uppercase;
@@ -2055,6 +2057,7 @@
         <button type="button" data-ir="lectura"><span class="aj-aa" aria-hidden="true">Aa</span><span id="aj-nav-lectura"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="feed"><svg class="ico" aria-hidden="true"><use href="#i-newspaper"/></svg><span id="aj-nav-feed"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="sync"><svg class="ico" aria-hidden="true"><use href="#i-cloud"/></svg><span id="aj-nav-sync"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button type="button" data-ir="lector"><svg class="ico" aria-hidden="true"><use href="#i-book-open-text"/></svg><span id="aj-nav-lector"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="avanzado"><svg class="ico" aria-hidden="true"><use href="#i-wrench"/></svg><span id="aj-nav-avanzado"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="ayuda"><svg class="ico" aria-hidden="true"><use href="#i-circle-help"/></svg><span id="aj-nav-ayuda"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
       </div>
@@ -2339,6 +2342,13 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- ═══════════ LECTOR ═══════════
+             Con el lector instalado, su propio panel de ajustes se pinta en
+             #aj-lector-panel (lo pone el lector: Voceiro solo deja el hueco y
+             le avisa con 'voceiro-ajustes-lector'). Sin él, cómo instalarlo. -->
+        <div class="aj-pagina" data-pagina="lector" hidden>
           <h3 id="aj-plugin-tit"></h3>
           <div id="sync-banner" class="sync-banner" style="display:none">
             <span class="sync-dot"></span>
@@ -2349,6 +2359,7 @@
             <a id="aj-lector-instalar" class="boton con-ico" href="lector.user.js" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span id="aj-lector-instalar-lbl"></span></a>
           </p>
           <p id="aj-lector-hint" class="aj-hint"></p>
+          <div id="aj-lector-panel" class="aj-lector-panel"></div>
         </div>
 
         <!-- ═══════════ AYUDA ═══════════ -->
@@ -3080,6 +3091,7 @@ const I18N = {
     ajLectorInstalar:       'Instalar el lector',
     ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
     ajSync:                 'Sincronización',
+    ajLector:               'Lector',
     syncIntro:              'Lleva tus modos, Pendientes, lo que has leído, tu perfil de lectura y la configuración del lector a tus otros dispositivos. Sin cuentas: basta un código que solo tienen tus dispositivos.',
     syncActivar:            'Activar en este dispositivo',
     syncUnirTit:            '¿Ya la usas en otro dispositivo?',
@@ -3427,6 +3439,7 @@ const I18N = {
     ajLectorInstalar:       'Instalar o lector',
     ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
     ajSync:                 'Sincronización',
+    ajLector:               'Lector',
     syncIntro:              'Leva os teus modos, Pendentes, o que liches, o teu perfil de lectura e a configuración do lector aos teus outros dispositivos. Sen contas: abonda un código que só teñen os teus dispositivos.',
     syncActivar:            'Activar neste dispositivo',
     syncUnirTit:            'Xa a usas noutro dispositivo?',
@@ -3774,6 +3787,7 @@ const I18N = {
     ajLectorInstalar:       'Instal·la el lector',
     ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
     ajSync:                 'Sincronització',
+    ajLector:               'Lector',
     syncIntro:              "Porta els teus modes, Pendents, el que has llegit, el teu perfil de lectura i la configuració del lector als teus altres dispositius. Sense comptes: n'hi ha prou amb un codi que només tenen els teus dispositius.",
     syncActivar:            'Activa en aquest dispositiu',
     syncUnirTit:            'Ja la fas servir en un altre dispositiu?',
@@ -4121,6 +4135,7 @@ const I18N = {
     ajLectorInstalar:       'Install the reader',
     ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
     ajSync:                 'Sync',
+    ajLector:               'Reader',
     syncIntro:              'Take your modes, Queue, what you have read, your reading profile and the reader settings to your other devices. No accounts: a code that only your devices have is enough.',
     syncActivar:            'Turn on for this device',
     syncUnirTit:            'Already using it on another device?',
@@ -4468,6 +4483,7 @@ const I18N = {
     ajLectorInstalar:       'Instalatu irakurgailua',
     ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
     ajSync:                 'Sinkronizazioa',
+    ajLector:               'Irakurgailua',
     syncIntro:              'Eraman zure moduak, Zain zerrenda, irakurri duzuna, irakurketa-profila eta irakurgailuaren ezarpenak zure beste gailuetara. Konturik gabe: zure gailuek bakarrik duten kode bat nahikoa da.',
     syncActivar:            'Aktibatu gailu honetan',
     syncUnirTit:            'Beste gailu batean erabiltzen duzu dagoeneko?',
@@ -5879,6 +5895,7 @@ function initUserScriptBridge(){
     }
     actualizarBotonPendientes();
     actualizarSyncBanner();
+    if (ajRuta() === 'lector') ajPintarLector();
   };
   document.addEventListener('voceiro-ready', conectar);
   document.addEventListener('voceiro-pong', conectar);
@@ -7854,10 +7871,10 @@ function actualizarResumen(visiblesOverride){
    Rutas: '' (lista de secciones, solo en móvil), 'modos', 'modo' (el de
    MODO_EDITADO), 'lectura', 'feed', 'avanzado', 'ayuda'.
    ═══════════════════════════════════════════════════════════════ */
-const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'avanzado', 'ayuda'];
+const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
   '': 'ajTitulo', modos: 'ajModos', lectura: 'ajLectura',
-  feed: 'ajFeed', sync: 'ajSync', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
+  feed: 'ajFeed', sync: 'ajSync', lector: 'ajLector', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
 };
 let AJ_PILA = [];             // vacía = Ajustes cerrado
 let MODO_EDITADO = null;      // id del modo de la página 'modo'
@@ -7954,6 +7971,7 @@ function cerrarAjustes(){
 }
 function ajCerrarVista(){
   ajGuardarTemas();
+  ajVaciarLector();
   AJ_PILA = [];
   _ajPendiente = null;
   cerrarPanel('panel-ajustes');
@@ -7974,6 +7992,7 @@ function ajPintar(){
     else b.removeAttribute('aria-current');
   });
   panel.querySelectorAll('.aj-pagina').forEach(p => { p.hidden = p.dataset.pagina !== ruta; });
+  if (ruta !== 'lector') ajVaciarLector();
   if (AJ_SECCIONES.includes(ruta)){
     try { localStorage.setItem(AJ_SECCION_KEY, ruta); } catch(e){}
   }
@@ -7995,11 +8014,25 @@ function ajRefrescar(){
   else if (ruta === 'modo') pintarModo();
   else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); renderDiasSelector(); }
   else if (ruta === 'sync') ajPintarSync();
-  else if (ruta === 'avanzado'){
-    $('#aj-investigar').checked = INVESTIGAR_ON;
-    actualizarSyncBanner();
-    $('#aj-plugin-hint').hidden = USCRIPT_OK;
-  }
+  else if (ruta === 'lector') ajPintarLector();
+  else if (ruta === 'avanzado') $('#aj-investigar').checked = INVESTIGAR_ON;
+}
+
+// Página Lector: el panel lo pinta el propio lector en #aj-lector-panel; aquí
+// solo se le avisa (lo ignora si ya está). Al salir de la página se vacía.
+function ajPintarLector(){
+  actualizarSyncBanner();
+  $('#aj-plugin-hint').hidden = USCRIPT_OK;
+  $('#aj-lector-instalar').hidden = USCRIPT_OK;
+  $('#aj-lector-hint').hidden = USCRIPT_OK;
+  if (!USCRIPT_OK){ ajVaciarLector(); return; }
+  try {
+    document.dispatchEvent(new CustomEvent('voceiro-ajustes-lector', { detail: { v: PUENTE_V } }));
+  } catch(e){}
+}
+function ajVaciarLector(){
+  const c = document.getElementById('aj-lector-panel');
+  if (c) c.replaceChildren();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -10599,7 +10632,7 @@ function aplicarTextos(){
 
   // ── Ajustes ──
   $('#aj-titulo').textContent = t('ajTitulo');
-  ['modos', 'lectura', 'feed', 'avanzado', 'ayuda'].forEach(s =>
+  ['modos', 'lectura', 'feed', 'lector', 'avanzado', 'ayuda'].forEach(s =>
     $('#aj-nav-' + s).textContent = t(AJ_TITULOS[s]));
 
   // Modos
