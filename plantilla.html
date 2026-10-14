@@ -922,7 +922,9 @@
   }
   .noticia.foco-dim{opacity:.28}
   .noticia.foco-active{opacity:1}
-  .noticia.vista{opacity:.80}
+  /* Vista (mirada un rato, sin abrir): letra algo menos gruesa. Con la
+     opacidad de antes, el gris de la cabecera bajaba a 3,5:1 */
+  .noticia.vista a.titular{font-weight:500}
   /* Leída: gris legible y una marca, sin transparencia (con opacidad el
      gris no llegaba ni a 2:1) */
   .noticia.leida a.titular{color:var(--muted); font-weight:500}

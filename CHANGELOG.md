@@ -20,7 +20,8 @@ Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
   se pintan oscuros en los temas oscuros. Enlaces con el color del tema y anillo
   de foco propio (`--focus`).
 - Titulares leídos: gris legible con una ✓, sin la transparencia que los dejaba
-  por debajo de 2:1.
+  por debajo de 2:1. Los vistos (mirados sin abrir) pierden también la
+  transparencia y se distinguen por una letra algo menos gruesa.
 - Lector: el botón «Guardar» usa los colores del tema (el naranja no llegaba a 3:1).
 
 ### Arreglado
