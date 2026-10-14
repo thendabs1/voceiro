@@ -61,7 +61,8 @@ function buildFromJSONLD(ld){
     description: decodeEnt(ld.description || ''),
     articleSection: decodeEnt(ld.articleSection || ''),
     autores: decodeEnt(normAuth(ld.author).join(', ')),
-    rawBody: decodeEnt(String(ld.articleBody || '')),
+    // Hay CMS que dejan dentro el CSS y el JS de los gráficos (Onm).
+    rawBody: limpiarCodigoIncrustado(decodeEnt(String(ld.articleBody || ''))),
     rawHTML: '',
     image: imgUrlFrom(ld.image),
     imageCaption: decodeEnt(imgCaptionFrom(ld.image)),

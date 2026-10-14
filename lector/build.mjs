@@ -46,9 +46,12 @@ function version(){
   }
 }
 
-// Módulos compartidos con Voceiro que entran en el lector, sin los
-// `export`, justo después de la plataforma. No pueden importar nada.
-const COMPARTIDOS = ['../shared/sync/fusion.js', '../shared/tema/personalizado.js'];
+// Módulos que entran en el lector, sin los `export`, justo después de la
+// plataforma. No pueden importar nada. Los de shared/ los comparte con
+// Voceiro; los de modulos/ son solo del lector, pero aparte para probarlos
+// con node --test (tests/lector).
+const COMPARTIDOS = ['../shared/sync/fusion.js', '../shared/tema/personalizado.js',
+                     'modulos/codigo-incrustado.js'];
 const TRAS = '02-plataforma.js';
 
 function compartido(rel){
@@ -56,7 +59,8 @@ function compartido(rel){
   if (/^\s*import\b/m.test(fuente)) throw new Error(`${rel}: un módulo compartido no puede importar`);
   const codigo = fuente.replace(/^export\s+(?=(?:async\s+)?function\b|const\b|let\b|class\b)/gm, '');
   if (/^\s*export\b/m.test(codigo)) throw new Error(`${rel}: hay un export que no se sabe quitar`);
-  return `/* ── ${rel.replace(/^\.\.\//, '')} (compartido con Voceiro) ── */\n${codigo}\n`;
+  const origen = rel.startsWith('../') ? `${rel.slice(3)} (compartido con Voceiro)` : `lector/${rel}`;
+  return `/* ── ${origen} ── */\n${codigo}\n`;
 }
 
 const catalogo = execFileSync('python3', ['-I', join(raiz, 'catalogo.py')],
