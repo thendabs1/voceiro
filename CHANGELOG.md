@@ -3,6 +3,28 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-14 — Gráficos y tablas en el lector
+
+### Añadido
+- Los gráficos, tablas y mapas insertados (Datawrapper, Flourish, Infogram,
+  Tableau Public, Genially, Google Sheets, Google Maps, uMap y ArcGIS) salen como
+  tarjeta, igual que los tweets y los vídeos: qué es («Táboa · Datawrapper»), su
+  título y un enlace a la versión interactiva. No se carga nada de esos
+  servicios; al cerrar el lector, el gráfico sigue en la página. Antes
+  desaparecían sin rastro.
+- Las tablas de datos del artículo se pintan como tabla, con el tema y la letra
+  del lector, scroll propio en pantallas estrechas y el pie de su figure como
+  caption. Antes salía un párrafo por celda. Las tablas de maquetación (otra
+  tabla dentro, celdas con texto largo o intertítulos) se recorren como hasta
+  ahora.
+
+### Cambiado
+- Al buscar el envoltorio de un embebido no cuentan su script ni su noscript:
+  la tarjeta ya no se queda dentro de un div que Readability puede tirar (el
+  iframe de Datawrapper con su script en Praza).
+- El modo mixto cuenta el texto de las tablas al comprobar si Readability tiene
+  el JSON entero.
+
 ## 2026-10-14 — Tema «Personalizado»
 
 ### Añadido

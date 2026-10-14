@@ -15,6 +15,8 @@ Con un gestor de userscripts (Violentmonkey, Tampermonkey…), abre
   tamaño, ancho, interlineado, lectura biónica y foco.
 - Pendientes, diccionarios por idioma, lectura rápida (RSVP) y extracción
   asistida por sitio.
+- Tweets, vídeos, gráficos y mapas insertados salen como tarjeta con enlace al
+  original; no se carga nada de terceros. Las tablas de datos, como tabla.
 - Al final del artículo: «Leída · volver a Voceiro» (cierra la pestaña;
   necesita `@grant window.close`), «Siguiente pendiente» (la abre con el lector
   ya abierto), guardar para luego y subir. Llegar al final la marca como leída,

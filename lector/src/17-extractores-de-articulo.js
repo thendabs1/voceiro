@@ -97,7 +97,7 @@ function limpiarPublicidad(doc){
   return doc;
 }
 
-// Embebidos (tweets, vídeos…): el sanitizador quita los iframes y
+// Embebidos (tweets, vídeos, gráficos…): el sanitizador quita los iframes y
 // Readability se deja muchos, así que desaparecían sin rastro. Antes de
 // extraer se cambian por un párrafo marcado (data-il-embed, data-il-url)
 // que llega a los bloques como tarjeta con enlace al original. No se carga
@@ -111,6 +111,29 @@ function parametro(url, nombre){
   try { return new URL(url, location.href).searchParams.get(nombre) || ''; } catch(e){ return ''; }
 }
 const fuenteDe = el => el.getAttribute('src') || el.getAttribute('data-src') || '';
+// Título de un gráfico: el del iframe, sin el «(Copy)» que deja duplicarlo
+// en Datawrapper ni los genéricos que ponen los servicios.
+const TITULO_GENERICO = /^(interactive or visual content|chart visualization|embed|iframe|google maps|map|mapa|chart|gr[aá]fico|datawrapper|flourish|infogram|genially|tableau)$/i;
+function sinCopia(s){ return String(s || '').replace(/(\s*\((copy|copia|cópia|còpia)\))+\s*$/i, '').trim(); }
+function tituloDe(el){ const s = sinCopia(el.getAttribute('title')); return TITULO_GENERICO.test(s) ? '' : s; }
+// Las inserciones con script dejan en <noscript> una imagen con el título
+// en el alt. En la página, el noscript es texto; en un DOMParser, elementos.
+function altDeNoscript(el){
+  const ns = el.querySelector('noscript');
+  if (!ns) return '';
+  const im = ns.querySelector('img');
+  const m = im ? null : (ns.textContent || '').match(/\balt="([^"]*)"/i);
+  const s = sinCopia(decodeEnt(im ? im.getAttribute('alt') : m ? m[1] : ''));
+  return TITULO_GENERICO.test(s) ? '' : s;
+}
+// Lo que acompaña al embebido sin verse (su script, su estilo, su
+// noscript) no cuenta al subir por los envoltorios.
+const SIN_VER = new Set(['SCRIPT','STYLE','NOSCRIPT','TEMPLATE']);
+const hijosVisibles = el => [...el.children].filter(c => !SIN_VER.has(c.tagName));
+function textoVisible(el){
+  return [...el.childNodes].map(n => n.nodeType === 3 ? n.data
+    : n.nodeType === 1 && !SIN_VER.has(n.tagName) ? textoVisible(n) : '').join('').replace(/\s+/g, ' ').trim();
+}
 const EMBEBIDOS = [
   { red: 'x', sel: 'blockquote.twitter-tweet',
     url: el => enlaceQueCasa(el, /\/status\/\d+/), texto: el => textoPlano(el.querySelector('p')) },
@@ -136,7 +159,42 @@ const EMBEBIDOS = [
     url: el => enlaceQueCasa(el, /bsky\.app\/profile\/.+\/post\//) ||
                fuenteDe(el).replace(/^.*\/embed\/([^/]+)\/app\.bsky\.feed\.post\/([\w]+).*$/, 'https://bsky.app/profile/$1/post/$2'),
     texto: el => textoPlano(el.querySelector('p')) },
-  { red: 'facebook', sel: 'iframe[src*="facebook.com/plugins/"]', url: el => parametro(fuenteDe(el), 'href') }
+  { red: 'facebook', sel: 'iframe[src*="facebook.com/plugins/"]', url: el => parametro(fuenteDe(el), 'href') },
+
+  // Gráficos, tablas y mapas. Solo se avisa de que están y se enlaza la
+  // versión interactiva; al cerrar el lector se ven en la página. clase:
+  // 'tabla', 'grafico' o 'mapa' si se sabe. Las inserciones con script
+  // (div + embed.js) van antes que su iframe: al cambiar el div, el iframe
+  // que el script metió dentro ya no está.
+  { red: 'datawrapper', sel: 'div[id^="datawrapper-vis-"]',
+    url: el => 'https://datawrapper.dwcdn.net/' + encodeURIComponent(el.id.slice(16)) + '/',
+    texto: altDeNoscript },
+  { red: 'datawrapper', sel: 'iframe[id^="datawrapper-chart-"],iframe[src*="datawrapper.dwcdn.net/"],iframe[data-src*="datawrapper.dwcdn.net/"],iframe[src*="datawrapper.de/_/"]',
+    url: fuenteDe, texto: tituloDe,
+    clase: el => { const a = el.getAttribute('aria-label') || '';
+                   return /table/i.test(a) ? 'tabla' : /map/i.test(a) ? 'mapa' : /chart|graph/i.test(a) ? 'grafico' : ''; } },
+  { red: 'flourish', sel: 'div.flourish-embed[data-src]',
+    url: el => { const s = el.getAttribute('data-src').replace(/^\/+/, '');
+                 return /^(visualisation|story)\/\d+/.test(s) ? 'https://public.flourish.studio/' + s.split('?')[0] + '/' : ''; },
+    texto: altDeNoscript, clase: el => /^\/?visualisation\//.test(el.getAttribute('data-src')) ? 'grafico' : '' },
+  { red: 'flourish', sel: 'iframe[src*="flo.uri.sh/"],iframe[src*="public.flourish.studio/"]',
+    url: fuenteDe, texto: tituloDe, clase: el => /\/visualisation\//.test(fuenteDe(el)) ? 'grafico' : '' },
+  { red: 'infogram', sel: 'div.infogram-embed[data-id]',
+    url: el => 'https://e.infogram.com/' + encodeURIComponent(el.getAttribute('data-id')),
+    texto: el => sinCopia(el.getAttribute('data-title')), clase: () => 'grafico' },
+  { red: 'infogram', sel: 'iframe[src*="infogram.com/"]', url: fuenteDe, texto: tituloDe, clase: () => 'grafico' },
+  { red: 'tableau', sel: 'div.tableauPlaceholder',
+    url: el => { const n = el.querySelector('param[name="name"]');
+                 return n && n.getAttribute('value') ? 'https://public.tableau.com/views/' + n.getAttribute('value').split('/').map(encodeURIComponent).join('/') : ''; },
+    clase: () => 'grafico' },
+  { red: 'tableau', sel: 'iframe[src*="public.tableau.com/"]', url: fuenteDe, texto: tituloDe, clase: () => 'grafico' },
+  { red: 'genially', sel: 'iframe[src*="genial.ly/"],iframe[src*="genially.com/"]', url: fuenteDe, texto: tituloDe },
+  { red: 'googlesheets', sel: 'iframe[src*="docs.google.com/spreadsheets/"]', url: fuenteDe, texto: tituloDe, clase: () => 'tabla' },
+  { red: 'googlemaps', sel: 'iframe[src*="google.com/maps"],iframe[src*="maps.google."],iframe[data-src*="google.com/maps"]',
+    url: fuenteDe, texto: tituloDe, clase: () => 'mapa' },
+  { red: 'umap', sel: 'iframe[src*="umap.openstreetmap."]', url: fuenteDe, texto: tituloDe, clase: () => 'mapa' },
+  { red: 'arcgis', sel: 'iframe[src*="arcgis.com/"]', url: fuenteDe, texto: tituloDe,
+    clase: el => /storymaps\./.test(fuenteDe(el)) ? '' : 'mapa' }
 ];
 // raiz: un documento (clonado) o un elemento (modo selector).
 function marcarEmbebidos(raiz){
@@ -150,12 +208,14 @@ function marcarEmbebidos(raiz){
       // Se sube por los envoltorios que no tienen nada más: Readability tira
       // los div con clases como «media» o «widget» aunque lleven el párrafo.
       let caja = el;
-      while (caja.parentElement && caja.parentElement !== tope && caja.parentElement.children.length === 1 &&
+      while (caja.parentElement && caja.parentElement !== tope && hijosVisibles(caja.parentElement).length === 1 &&
              !/^(ARTICLE|MAIN|SECTION)$/.test(caja.parentElement.tagName) &&
-             textoPlano(caja.parentElement) === textoPlano(caja)) caja = caja.parentElement;
+             textoVisible(caja.parentElement) === textoVisible(caja)) caja = caja.parentElement;
       const p = doc.createElement('p');
       p.setAttribute('data-il-embed', e.red);
       p.setAttribute('data-il-url', url);
+      const clase = e.clase ? e.clase(el) : '';
+      if (CLASES_EMBEBIDO[clase]) p.setAttribute('data-il-clase', clase);
       p.textContent = (e.texto ? e.texto(el) : '').slice(0, 500) || '·';
       caja.replaceWith(p);
     }));

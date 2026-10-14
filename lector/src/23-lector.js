@@ -78,11 +78,18 @@ function openReader(art){
     if (b.tipo === 'embed'){
       // Tarjeta con enlace al original: no se carga nada de terceros.
       const nombre = NOMBRES_REDES[b.red] || b.red;
+      const clase = CLASES_EMBEBIDO[b.clase] ? t(CLASES_EMBEBIDO[b.clase]) + ' · ' : '';
       return '<aside class="il-embed" aria-label="' + esc(t('embebidoDe').replace('{X}', nombre)) + '">' +
-        '<p class="il-embed-red">' + esc(nombre) + '</p>' +
+        '<p class="il-embed-red">' + esc(clase + nombre) + '</p>' +
         (b.texto ? '<p class="il-embed-texto">' + process(esc(b.texto)) + '</p>' : '') +
         '<a href="' + esc(b.url) + '" target="_blank" rel="noopener noreferrer">' + icono('external-link') +
         '<span>' + esc(t('verEn').replace('{X}', nombre)) + '</span></a></aside>';
+    }
+    if (b.tipo === 'tabla'){
+      // Con scroll propio en pantallas estrechas; tabindex para moverla con
+      // el teclado.
+      return '<div class="il-tabla" role="region" tabindex="0" aria-label="' + esc(b.caption || t('tabla')) + '">' +
+        process(b.html || '') + '</div>';
     }
     if (b.tipo === 'q') return '<blockquote>' + process(b.html || '') + '</blockquote>';
     if (b.tipo === 'h') return '<h' + b.level + '>' + process(b.html || '') + '</h' + b.level + '>';
@@ -101,7 +108,9 @@ function openReader(art){
       if (b.tipo === 'hr') return '---';
       if (b.tipo === 'img') return '[' + t('imageLabel') + (b.caption ? ': ' + b.caption : '') + ']';
       if (b.tipo === 'galeria') return '[' + t('galeria').replace('{N}', b.imagenes.length) + ']';
-      if (b.tipo === 'embed') return '[' + (NOMBRES_REDES[b.red] || b.red) + (b.texto ? ': ' + b.texto : '') + ' — ' + b.url + ']';
+      if (b.tipo === 'embed') return '[' + (CLASES_EMBEBIDO[b.clase] ? t(CLASES_EMBEBIDO[b.clase]) + ' · ' : '') +
+        (NOMBRES_REDES[b.red] || b.red) + (b.texto ? ': ' + b.texto : '') + ' — ' + b.url + ']';
+      if (b.tipo === 'tabla') return textoDeTabla(b);
       if (b.tipo === 'list') return b.items.map(i => '- ' + stripTags(i)).join('\n');
       if (b.tipo === 'h') return stripTags(b.html || '');
       if (b.tipo === 'q') return '> ' + stripTags(b.html || '');
