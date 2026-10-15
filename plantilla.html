@@ -2219,11 +2219,6 @@
             </div>
           </div>
 
-          <div class="opt-row">
-            <label class="opt-label" id="ac-idioma" for="lang-select"></label>
-            <select id="lang-select" class="lang-select"></select>
-          </div>
-
           <div class="aj-fila-fin">
             <button id="acces-reset" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-rotate-ccw"/></svg><span id="acces-reset-lbl"></span></button>
           </div>
@@ -2404,6 +2399,10 @@
             <div class="acciones">
               <button id="btn-report-generic" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-flag"/></svg><span id="cfg-help-btn"></span></button>
             </div>
+          </div>
+          <div class="opt-row">
+            <label class="opt-label" id="ayuda-idioma" for="lang-select"></label>
+            <select id="lang-select" class="lang-select"></select>
           </div>
           <h3 id="aj-atajos-tit"></h3>
           <dl id="aj-atajos" class="aj-atajos"></dl>
@@ -10867,8 +10866,10 @@ function aplicarTextos(){
   $('#ac-tamano').textContent = t('acTamano');
   $('#ac-ancho').textContent = t('acAncho');
   $('#ac-extra').textContent = t('acExtra');
-  $('#ac-idioma').textContent = t('lblIdioma');
   $('#acces-reset-lbl').textContent = t('acReset');
+
+  // Ayuda - selector de idioma
+  $('#ayuda-idioma').textContent = t('lblIdioma');
 
   // Feed
   $('#aj-vista-tit').textContent = t('ajVistaTit');
