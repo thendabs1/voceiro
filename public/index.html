@@ -1854,7 +1854,7 @@
   @media (min-width: 820px){
     .panel-ajustes{ background:rgba(0,0,0,.25); }
     .panel-ajustes .aj-inner{
-      width:min(780px, 100vw); margin:0 0 0 auto;
+      width:min(900px, 100vw); margin:0 0 0 auto;
       border-left:1px solid var(--border);
       box-shadow:-12px 0 40px rgba(0,0,0,.25);
     }
@@ -10756,7 +10756,7 @@ function aplicarTextos(){
 
   // ── Ajustes ──
   $('#aj-titulo').textContent = t('ajTitulo');
-  ['modos', 'lectura', 'feed', 'lector', 'avanzado', 'ayuda'].forEach(s =>
+  AJ_SECCIONES.forEach(s =>
     $('#aj-nav-' + s).textContent = t(AJ_TITULOS[s]));
 
   // Modos
