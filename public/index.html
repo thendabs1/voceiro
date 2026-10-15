@@ -1728,7 +1728,7 @@
   .aj-resize{ display:none; }
   .aj-nav{ flex:1; }
   .aj-contenido{ flex:1; }
-  .aj-secciones{ display:flex; flex-direction:column; gap:2px; padding:10px 8px; overflow-y:auto; }
+  .aj-secciones{ display:flex; flex-direction:column; gap:2px; padding:10px 8px; overflow-y:auto; flex:1; min-height:0; }
   .aj-secciones button{
     display:flex; align-items:center; gap:12px;
     width:100%; padding:13px 14px;
@@ -1738,6 +1738,17 @@
   .aj-secciones button:hover{ background:var(--quote-bg); filter:none; }
   .aj-secciones button[aria-current="page"]{ background:var(--quote-bg); font-weight:700; }
   .aj-secciones .aj-flecha{ margin-left:auto; color:var(--muted); }
+  .aj-nav-pie{
+    flex-shrink:0;
+    padding:10px 12px;
+    border-top:1px solid var(--border);
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .aj-nav-pie-lbl{
+    font-size:.62em; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); font-weight:600;
+  }
+  .aj-nav-pie select.lang-select{ width:100%; }
   .aj-aa, .cab-aa{ font-weight:700; letter-spacing:-.02em; line-height:1; width:1.15em; text-align:center; flex-shrink:0; }
   .panel-ajustes .panel-header{ min-height:58px; }
   .aj-cabecera{ justify-content:flex-start; }
@@ -2085,6 +2096,10 @@
         <button type="button" data-ir="avanzado"><svg class="ico" aria-hidden="true"><use href="#i-wrench"/></svg><span id="aj-nav-avanzado"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         <button type="button" data-ir="ayuda"><svg class="ico" aria-hidden="true"><use href="#i-circle-help"/></svg><span id="aj-nav-ayuda"></span><svg class="ico aj-flecha" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
       </div>
+      <div class="aj-nav-pie">
+        <label class="aj-nav-pie-lbl" id="nav-idioma-lbl" for="lang-select"></label>
+        <select id="lang-select" class="lang-select"></select>
+      </div>
     </nav>
 
     <div class="aj-contenido">
@@ -2217,11 +2232,6 @@
               <button type="button" data-val="bionic"></button>
               <button type="button" data-val="focus"></button>
             </div>
-          </div>
-
-          <div class="opt-row">
-            <label class="opt-label" id="ac-idioma" for="lang-select"></label>
-            <select id="lang-select" class="lang-select"></select>
           </div>
 
           <div class="aj-fila-fin">
@@ -10867,8 +10877,10 @@ function aplicarTextos(){
   $('#ac-tamano').textContent = t('acTamano');
   $('#ac-ancho').textContent = t('acAncho');
   $('#ac-extra').textContent = t('acExtra');
-  $('#ac-idioma').textContent = t('lblIdioma');
   $('#acces-reset-lbl').textContent = t('acReset');
+
+  // Pie del menú de Ajustes - selector de idioma
+  $('#nav-idioma-lbl').textContent = t('lblIdioma');
 
   // Feed
   $('#aj-vista-tit').textContent = t('ajVistaTit');
