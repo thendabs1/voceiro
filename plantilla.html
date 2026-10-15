@@ -1725,6 +1725,7 @@
     flex-direction:row;
   }
   .aj-nav, .aj-contenido{ display:flex; flex-direction:column; min-height:0; min-width:0; }
+  .aj-resize{ display:none; }
   .aj-nav{ flex:1; }
   .aj-contenido{ flex:1; }
   .aj-secciones{ display:flex; flex-direction:column; gap:2px; padding:10px 8px; overflow-y:auto; }
@@ -1858,7 +1859,18 @@
       border-left:1px solid var(--border);
       box-shadow:-12px 0 40px rgba(0,0,0,.25);
     }
-    .aj-nav{ flex:0 0 210px; border-right:1px solid var(--border); }
+    .aj-resize{
+      display:block; position:absolute; z-index:2; left:0; top:0;
+      width:12px; height:100%; padding:0; border:0;
+      background:transparent; cursor:ew-resize; touch-action:none;
+    }
+    .aj-resize::after{
+      content:''; position:absolute; left:3px; top:50%;
+      width:3px; height:36px; border-radius:3px;
+      background:var(--border); transform:translateY(-50%);
+    }
+    .aj-resize:hover::after, .aj-resize:focus-visible::after{ background:var(--accent); }
+    .aj-nav{ flex:0 0 240px; border-right:1px solid var(--border); }
     .aj-nav .panel-close{ display:none; }
     .aj-secciones .aj-flecha{ display:none; }
     .aj-atras{ display:none; }
@@ -2056,6 +2068,8 @@
 <section id="panel-ajustes" class="panel panel-ajustes" role="dialog" aria-modal="true"
          aria-labelledby="aj-titulo" data-ruta="">
   <div class="panel-inner aj-inner">
+    <div id="aj-resize" class="aj-resize" role="separator" aria-orientation="vertical"
+         aria-controls="panel-ajustes" aria-valuemin="700" aria-valuemax="900" aria-valuenow="900" tabindex="0"></div>
 
     <nav class="aj-nav">
       <div class="panel-header">
@@ -3120,6 +3134,7 @@ const I18N = {
     ajLectorInstalar:       'Instalar el lector',
     ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
     ajSync:                 'Sincronización',
+    ajRedimensionar:        'Cambiar el ancho de Ajustes',
     ajLector:               'Lector',
     syncIntro:              'Lleva tus modos, Pendientes, lo que has leído, tu perfil de lectura y la configuración del lector a tus otros dispositivos. Sin cuentas: basta un código que solo tienen tus dispositivos.',
     syncActivar:            'Activar en este dispositivo',
@@ -3476,6 +3491,7 @@ const I18N = {
     ajLectorInstalar:       'Instalar o lector',
     ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
     ajSync:                 'Sincronización',
+    ajRedimensionar:        'Cambiar o ancho dos Axustes',
     ajLector:               'Lector',
     syncIntro:              'Leva os teus modos, Pendentes, o que liches, o teu perfil de lectura e a configuración do lector aos teus outros dispositivos. Sen contas: abonda un código que só teñen os teus dispositivos.',
     syncActivar:            'Activar neste dispositivo',
@@ -3832,6 +3848,7 @@ const I18N = {
     ajLectorInstalar:       'Instal·la el lector',
     ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
     ajSync:                 'Sincronització',
+    ajRedimensionar:        'Canviar l’amplada de Configuració',
     ajLector:               'Lector',
     syncIntro:              "Porta els teus modes, Pendents, el que has llegit, el teu perfil de lectura i la configuració del lector als teus altres dispositius. Sense comptes: n'hi ha prou amb un codi que només tenen els teus dispositius.",
     syncActivar:            'Activa en aquest dispositiu',
@@ -4188,6 +4205,7 @@ const I18N = {
     ajLectorInstalar:       'Install the reader',
     ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
     ajSync:                 'Sync',
+    ajRedimensionar:        'Resize Settings',
     ajLector:               'Reader',
     syncIntro:              'Take your modes, Queue, what you have read, your reading profile and the reader settings to your other devices. No accounts: a code that only your devices have is enough.',
     syncActivar:            'Turn on for this device',
@@ -4544,6 +4562,7 @@ const I18N = {
     ajLectorInstalar:       'Instalatu irakurgailua',
     ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
     ajSync:                 'Sinkronizazioa',
+    ajRedimensionar:        'Ezarpenen zabalera aldatu',
     ajLector:               'Irakurgailua',
     syncIntro:              'Eraman zure moduak, Zain zerrenda, irakurri duzuna, irakurketa-profila eta irakurgailuaren ezarpenak zure beste gailuetara. Konturik gabe: zure gailuek bakarrik duten kode bat nahikoa da.',
     syncActivar:            'Aktibatu gailu honetan',
@@ -7990,6 +8009,59 @@ let _ajSinReglas = new Set(); // modos vacíos al abrir (ver ajActivarAlCerrar)
 function ajEsMovil(){ return window.matchMedia('(max-width: 819.98px)').matches; }
 function ajAbierto(){ return AJ_PILA.length > 0; }
 function ajRuta(){ return AJ_PILA.length ? AJ_PILA[AJ_PILA.length - 1] : null; }
+function ajAnchoLimites(){ return [Math.min(700, window.innerWidth), window.innerWidth]; }
+function ajFijarAncho(ancho){
+  const inner = $('#panel-ajustes .aj-inner');
+  const control = $('#aj-resize');
+  if (ajEsMovil()){
+    inner.style.removeProperty('width');
+    return;
+  }
+  const [min, max] = ajAnchoLimites();
+  const valor = Math.round(Math.max(min, Math.min(max, ancho)));
+  inner.style.width = valor + 'px';
+  control.setAttribute('aria-valuemin', min);
+  control.setAttribute('aria-valuemax', max);
+  control.setAttribute('aria-valuenow', valor);
+}
+function ajPrepararAncho(){
+  const control = $('#aj-resize');
+  let guardado;
+  try { guardado = Number(localStorage.getItem('voceiro-aj-ancho')); } catch(e){}
+  let ancho = guardado > 0 ? guardado : 900;
+  const aplicar = () => ajFijarAncho(ancho);
+  aplicar();
+  window.addEventListener('resize', aplicar);
+  let inicioX, anchoInicial;
+  control.addEventListener('pointerdown', e => {
+    if (ajEsMovil() || e.button !== 0) return;
+    inicioX = e.clientX;
+    anchoInicial = $('#panel-ajustes .aj-inner').getBoundingClientRect().width;
+    control.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  control.addEventListener('pointermove', e => {
+    if (!control.hasPointerCapture(e.pointerId)) return;
+    ancho = anchoInicial + inicioX - e.clientX;
+    ajFijarAncho(ancho);
+  });
+  const terminar = e => {
+    if (!control.hasPointerCapture(e.pointerId)) return;
+    control.releasePointerCapture(e.pointerId);
+    ancho = Number(control.getAttribute('aria-valuenow'));
+    try { localStorage.setItem('voceiro-aj-ancho', ancho); } catch(e){}
+  };
+  control.addEventListener('pointerup', terminar);
+  control.addEventListener('pointercancel', terminar);
+  control.addEventListener('keydown', e => {
+    if (ajEsMovil() || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    e.preventDefault();
+    ancho = Number(control.getAttribute('aria-valuenow')) + (e.key === 'ArrowLeft' ? 1 : -1) * (e.shiftKey ? 80 : 20);
+    ajFijarAncho(ancho);
+    ancho = Number(control.getAttribute('aria-valuenow'));
+    try { localStorage.setItem('voceiro-aj-ancho', ancho); } catch(e){}
+  });
+}
 function modoEnPanel(){
   return (PRESETS && PRESETS.lista.find(p => p.id === MODO_EDITADO)) || null;
 }
@@ -10756,6 +10828,7 @@ function aplicarTextos(){
 
   // ── Ajustes ──
   $('#aj-titulo').textContent = t('ajTitulo');
+  $('#aj-resize').setAttribute('aria-label', t('ajRedimensionar'));
   AJ_SECCIONES.forEach(s =>
     $('#aj-nav-' + s).textContent = t(AJ_TITULOS[s]));
 
@@ -11062,6 +11135,7 @@ function aplicarDiasMemoria(v){
 function wireAjustes(){
   const panel = $('#panel-ajustes');
   if (!panel) return;
+  ajPrepararAncho();
   window.addEventListener('popstate', ajPopstate);
   // Si se recargó con Ajustes abierto, el paso del historial queda huérfano.
   if (history.state && history.state.aj) history.replaceState(null, '');
