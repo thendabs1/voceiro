@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.235
+// @version      2.0.237
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,14 +29,19 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.235';
+const SCRIPT_VERSION = '2.0.237';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
 const IMAGENES = ['todas','conPie','ninguna'];
-// Nombres de las redes de los embebidos (tarjeta con enlace).
+// Nombres de las redes y servicios de los embebidos (tarjeta con enlace).
 const NOMBRES_REDES = { x: 'X', youtube: 'YouTube', vimeo: 'Vimeo', instagram: 'Instagram',
-                        tiktok: 'TikTok', bluesky: 'Bluesky', facebook: 'Facebook' };
+                        tiktok: 'TikTok', bluesky: 'Bluesky', facebook: 'Facebook',
+                        datawrapper: 'Datawrapper', flourish: 'Flourish', infogram: 'Infogram',
+                        genially: 'Genially', tableau: 'Tableau Public', arcgis: 'ArcGIS',
+                        googlemaps: 'Google Maps', umap: 'uMap', googlesheets: 'Google Sheets' };
+// Qué es el embebido, si se sabe (data-il-clase): sale en la tarjeta.
+const CLASES_EMBEBIDO = { tabla: 'tabla', grafico: 'grafico', mapa: 'mapa' };
 const SITE_LANGS     = ['auto','es','gl','ca','en','eu','fr','de','it','pt'];
 const UI_LANGS       = ['es','gl','ca','en','eu'];
 const EXTRACTION_MODES = ['auto','selector','all'];
@@ -574,7 +579,9 @@ function decidirMixto(bloques, textoJson, textoDe){
   const tejasJson = new Set(tejas(textoJson));
   if (!tejasJson.size) return { origen: 'readability' };
 
-  const textos = bloques.map(b => esDeTexto(b) ? textoDe(b) : '');
+  // Las tablas van con el texto de al lado, como las imágenes, pero su
+  // texto cuenta para ver si Readability tiene el JSON entero.
+  const textos = bloques.map(b => esDeTexto(b) || b.tipo === 'tabla' ? textoDe(b) : '');
   const tejasR = new Set(tejas(textos.join(' ')));
   let enR = 0;
   tejasJson.forEach(x => { if (tejasR.has(x)) enR++; });
@@ -819,7 +826,7 @@ const I18N = {
     mas: 'Más', masAcciones: 'Más acciones',
     letraMenor: 'Letra más pequeña', letraMayor: 'Letra más grande',
     masEstrecho: 'Más estrecho', masAncho: 'Más ancho',
-    imgTodas: 'Con imágenes', imgConPie: 'Solo con pie', imgNinguna: 'Sin imágenes', imgMedio: 'Imágenes en este medio', imgComoSiempre: 'Como en todos los medios', imgEnEsteMedio: 'en este medio', imgCambiarA: 'Pulsa para pasar a', verPortada: 'Ver la portada en el artículo', embebidoDe: 'Contenido de {X}', verEn: 'Ver en {X}', galeria: '{N} imágenes', galeriaPulsa: 'pulsa una para verlas en grande', visorAnterior: 'Imagen anterior', visorSiguiente: 'Imagen siguiente', sitesHint: 'Medios con ajustes propios: si el lector se abre solo, de dónde saca el texto, las imágenes y las secciones que se ignoran. Los demás medios usan lo de siempre.', medioSinReglas: 'Este medio aún no tiene ajustes propios', ampliarImagen: 'Ampliar imagen',
+    imgTodas: 'Con imágenes', imgConPie: 'Solo con pie', imgNinguna: 'Sin imágenes', imgMedio: 'Imágenes en este medio', imgComoSiempre: 'Como en todos los medios', imgEnEsteMedio: 'en este medio', imgCambiarA: 'Pulsa para pasar a', verPortada: 'Ver la portada en el artículo', embebidoDe: 'Contenido de {X}', tabla: 'Tabla', grafico: 'Gráfico', mapa: 'Mapa', verEn: 'Ver en {X}', galeria: '{N} imágenes', galeriaPulsa: 'pulsa una para verlas en grande', visorAnterior: 'Imagen anterior', visorSiguiente: 'Imagen siguiente', sitesHint: 'Medios con ajustes propios: si el lector se abre solo, de dónde saca el texto, las imágenes y las secciones que se ignoran. Los demás medios usan lo de siempre.', medioSinReglas: 'Este medio aún no tiene ajustes propios', ampliarImagen: 'Ampliar imagen',
     readItems: 'Leídas', 
     keepReadItems: 'Guardar historial de leídas',
     clearRead: 'Borrar leídas',
@@ -1011,7 +1018,7 @@ const I18N = {
     mas: 'Máis', masAcciones: 'Máis accións',
     letraMenor: 'Letra máis pequena', letraMayor: 'Letra máis grande',
     masEstrecho: 'Máis estreito', masAncho: 'Máis ancho',
-    imgTodas: 'Con imaxes', imgConPie: 'Só con pé', imgNinguna: 'Sen imaxes', imgMedio: 'Imaxes neste medio', imgComoSiempre: 'Como en todos os medios', imgEnEsteMedio: 'neste medio', imgCambiarA: 'Preme para pasar a', verPortada: 'Ver a portada no artigo', embebidoDe: 'Contido de {X}', verEn: 'Ver en {X}', galeria: '{N} imaxes', galeriaPulsa: 'preme nunha para velas en grande', visorAnterior: 'Imaxe anterior', visorSiguiente: 'Imaxe seguinte', sitesHint: 'Medios con axustes propios: se o lector se abre só, de onde colle o texto, as imaxes e as seccións que se ignoran. Os demais medios usan o de sempre.', medioSinReglas: 'Este medio aínda non ten axustes propios', ampliarImagen: 'Ampliar imaxe',
+    imgTodas: 'Con imaxes', imgConPie: 'Só con pé', imgNinguna: 'Sen imaxes', imgMedio: 'Imaxes neste medio', imgComoSiempre: 'Como en todos os medios', imgEnEsteMedio: 'neste medio', imgCambiarA: 'Preme para pasar a', verPortada: 'Ver a portada no artigo', embebidoDe: 'Contido de {X}', tabla: 'Táboa', grafico: 'Gráfico', mapa: 'Mapa', verEn: 'Ver en {X}', galeria: '{N} imaxes', galeriaPulsa: 'preme nunha para velas en grande', visorAnterior: 'Imaxe anterior', visorSiguiente: 'Imaxe seguinte', sitesHint: 'Medios con axustes propios: se o lector se abre só, de onde colle o texto, as imaxes e as seccións que se ignoran. Os demais medios usan o de sempre.', medioSinReglas: 'Este medio aínda non ten axustes propios', ampliarImagen: 'Ampliar imaxe',
     readItems: 'Lidas', 
     keepReadItems: 'Gardar historial de lidas',
     clearRead: 'Borrar lidas',
@@ -1208,7 +1215,7 @@ const I18N = {
     mas: 'Més', masAcciones: 'Més accions',
     letraMenor: 'Lletra més petita', letraMayor: 'Lletra més grossa',
     masEstrecho: 'Més estret', masAncho: 'Més ample',
-    imgTodas: 'Amb imatges', imgConPie: 'Només amb peu', imgNinguna: 'Sense imatges', imgMedio: 'Imatges en aquest mitjà', imgComoSiempre: 'Com a tots els mitjans', imgEnEsteMedio: 'en aquest mitjà', imgCambiarA: 'Prem per passar a', verPortada: 'Veure la portada a l\'article', embebidoDe: 'Contingut de {X}', verEn: 'Veure a {X}', galeria: '{N} imatges', galeriaPulsa: 'prem-ne una per veure-les en gran', visorAnterior: 'Imatge anterior', visorSiguiente: 'Imatge següent', sitesHint: 'Mitjans amb ajustos propis: si el lector s\'obre sol, d\'on treu el text, les imatges i les seccions que s\'ignoren. La resta de mitjans fan servir el de sempre.', medioSinReglas: 'Aquest mitjà encara no té ajustos propis', ampliarImagen: 'Amplia la imatge',
+    imgTodas: 'Amb imatges', imgConPie: 'Només amb peu', imgNinguna: 'Sense imatges', imgMedio: 'Imatges en aquest mitjà', imgComoSiempre: 'Com a tots els mitjans', imgEnEsteMedio: 'en aquest mitjà', imgCambiarA: 'Prem per passar a', verPortada: 'Veure la portada a l\'article', embebidoDe: 'Contingut de {X}', tabla: 'Taula', grafico: 'Gràfic', mapa: 'Mapa', verEn: 'Veure a {X}', galeria: '{N} imatges', galeriaPulsa: 'prem-ne una per veure-les en gran', visorAnterior: 'Imatge anterior', visorSiguiente: 'Imatge següent', sitesHint: 'Mitjans amb ajustos propis: si el lector s\'obre sol, d\'on treu el text, les imatges i les seccions que s\'ignoren. La resta de mitjans fan servir el de sempre.', medioSinReglas: 'Aquest mitjà encara no té ajustos propis', ampliarImagen: 'Amplia la imatge',
     readItems: 'Llegides', 
     keepReadItems: 'Desar historial de llegides',
     clearRead: 'Esborrar llegides',
@@ -1395,7 +1402,7 @@ const I18N = {
     mas: 'More', masAcciones: 'More actions',
     letraMenor: 'Smaller text', letraMayor: 'Larger text',
     masEstrecho: 'Narrower', masAncho: 'Wider',
-    imgTodas: 'With images', imgConPie: 'Captioned only', imgNinguna: 'No images', imgMedio: 'Images on this site', imgComoSiempre: 'Same as all sites', imgEnEsteMedio: 'on this site', imgCambiarA: 'Press to switch to', verPortada: 'See the cover in the article', embebidoDe: 'Content from {X}', verEn: 'View on {X}', galeria: '{N} images', galeriaPulsa: 'press one to see them full size', visorAnterior: 'Previous image', visorSiguiente: 'Next image', sitesHint: 'Sites with their own settings: whether the reader opens by itself, where the text comes from, images and ignored sections. Other sites use the defaults.', medioSinReglas: 'This site has no settings of its own yet', ampliarImagen: 'Enlarge image',
+    imgTodas: 'With images', imgConPie: 'Captioned only', imgNinguna: 'No images', imgMedio: 'Images on this site', imgComoSiempre: 'Same as all sites', imgEnEsteMedio: 'on this site', imgCambiarA: 'Press to switch to', verPortada: 'See the cover in the article', embebidoDe: 'Content from {X}', tabla: 'Table', grafico: 'Chart', mapa: 'Map', verEn: 'View on {X}', galeria: '{N} images', galeriaPulsa: 'press one to see them full size', visorAnterior: 'Previous image', visorSiguiente: 'Next image', sitesHint: 'Sites with their own settings: whether the reader opens by itself, where the text comes from, images and ignored sections. Other sites use the defaults.', medioSinReglas: 'This site has no settings of its own yet', ampliarImagen: 'Enlarge image',
     readItems: 'Read', 
     keepReadItems: 'Keep history of read items',
     clearRead: 'Clear read',
@@ -1587,7 +1594,7 @@ const I18N = {
     mas: 'Gehiago', masAcciones: 'Ekintza gehiago',
     letraMenor: 'Letra txikiagoa', letraMayor: 'Letra handiagoa',
     masEstrecho: 'Estuagoa', masAncho: 'Zabalagoa',
-    imgTodas: 'Irudiekin', imgConPie: 'Oinarekin soilik', imgNinguna: 'Irudirik gabe', imgMedio: 'Irudiak hedabide honetan', imgComoSiempre: 'Hedabide guztietan bezala', imgEnEsteMedio: 'hedabide honetan', imgCambiarA: 'Sakatu hona aldatzeko', verPortada: 'Ikusi azala artikuluan', embebidoDe: '{X} edukia', verEn: 'Ikusi {X}-n', galeria: '{N} irudi', galeriaPulsa: 'sakatu bat handian ikusteko', visorAnterior: 'Aurreko irudia', visorSiguiente: 'Hurrengo irudia', sitesHint: 'Ezarpen propioak dituzten hedabideak: irakurgailua bere kabuz irekitzen den, testua nondik ateratzen duen, irudiak eta alde batera uzten diren atalak. Gainerakoek ohikoa erabiltzen dute.', medioSinReglas: 'Hedabide honek ez du oraindik ezarpen propiorik', ampliarImagen: 'Irudia handitu',
+    imgTodas: 'Irudiekin', imgConPie: 'Oinarekin soilik', imgNinguna: 'Irudirik gabe', imgMedio: 'Irudiak hedabide honetan', imgComoSiempre: 'Hedabide guztietan bezala', imgEnEsteMedio: 'hedabide honetan', imgCambiarA: 'Sakatu hona aldatzeko', verPortada: 'Ikusi azala artikuluan', embebidoDe: '{X} edukia', tabla: 'Taula', grafico: 'Grafikoa', mapa: 'Mapa', verEn: 'Ikusi {X}-n', galeria: '{N} irudi', galeriaPulsa: 'sakatu bat handian ikusteko', visorAnterior: 'Aurreko irudia', visorSiguiente: 'Hurrengo irudia', sitesHint: 'Ezarpen propioak dituzten hedabideak: irakurgailua bere kabuz irekitzen den, testua nondik ateratzen duen, irudiak eta alde batera uzten diren atalak. Gainerakoek ohikoa erabiltzen dute.', medioSinReglas: 'Hedabide honek ez du oraindik ezarpen propiorik', ampliarImagen: 'Irudia handitu',
     readItems: 'Irakurriak', 
     keepReadItems: 'Irakurrien historia gorde',
     clearRead: 'Irakurriak ezabatu',
@@ -2745,7 +2752,8 @@ function shortcutActionLabel(action){
 const ALLOWED_TAGS = new Set([
   'B','STRONG','I','EM','U','S','SUP','SUB','CODE','MARK','A','BR','SPAN',
   'P','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE','HR',
-  'DIV','SECTION','ARTICLE','FIGURE','FIGCAPTION','IMG'
+  'DIV','SECTION','ARTICLE','FIGURE','FIGCAPTION','IMG',
+  'TABLE','CAPTION','THEAD','TBODY','TFOOT','TR','TH','TD'
 ]);
 const DROP_TAGS = new Set(['SCRIPT','STYLE','IFRAME','FORM','INPUT','SVG','NOSCRIPT','OBJECT','EMBED',
                            'VIDEO','AUDIO','CANVAS','BUTTON','SELECT','TEXTAREA','SOURCE']);
@@ -2778,6 +2786,12 @@ function sanitizeNode(node){
         } else if (tag === 'P' && a.name === 'data-il-embed' && /^[a-z]+$/.test(a.value)){
           // keep: embebido marcado en 17-extractores
         } else if (tag === 'P' && a.name === 'data-il-url' && /^https?:\/\//i.test(a.value)){
+          // keep
+        } else if (tag === 'P' && a.name === 'data-il-clase' && /^[a-z]+$/.test(a.value)){
+          // keep
+        } else if ((tag === 'TD' || tag === 'TH') && (a.name === 'colspan' || a.name === 'rowspan') && /^[1-9]\d?$/.test(a.value)){
+          // keep: celdas unidas
+        } else if (tag === 'TH' && a.name === 'scope' && /^(row|col|rowgroup|colgroup)$/.test(a.value)){
           // keep
         } else {
           child.removeAttribute(a.name);
@@ -2818,6 +2832,7 @@ function extractBlocks(root){
         push('embed', {
           red: child.getAttribute('data-il-embed'),
           url: child.getAttribute('data-il-url') || '',
+          clase: child.getAttribute('data-il-clase') || '',
           // «·» es el relleno para que Readability no tire el párrafo vacío.
           texto: (child.textContent || '').replace(/\s+/g,' ').trim().replace(/^·$/, '')
         });
@@ -2833,6 +2848,12 @@ function extractBlocks(root){
         const h = child.innerHTML.trim();
         if (h) push('p', { html: h });
       } else if (tag === 'FIGURE'){
+        const tabla = child.querySelector(':scope > table');
+        if (tabla && esTablaDeDatos(tabla)){
+          const capEl = child.querySelector(':scope > figcaption');
+          push('tabla', bloqueTabla(tabla, capEl ? capEl.textContent : ''));
+          continue;
+        }
         const img = child.querySelector('img');
         if (img && isValidImage(img)){
           const capEl = child.querySelector('figcaption');
@@ -2869,6 +2890,8 @@ function extractBlocks(root){
             });
           }
         }
+      } else if (tag === 'TABLE' && esTablaDeDatos(child)){
+        push('tabla', bloqueTabla(child, ''));
       } else if (tag === 'HR'){
         push('hr');
       } else if (tag === 'PRE'){
@@ -2882,8 +2905,42 @@ function extractBlocks(root){
   walk(root);
   return out;
 }
+// Tabla de datos o de maquetación (CMS viejos que meten el artículo en una
+// tabla, que se recorre como hasta ahora). De datos: sin otra tabla dentro,
+// al menos 2 × 2 y sin texto largo ni intertítulos en las celdas.
+function esTablaDeDatos(tabla){
+  if (tabla.querySelector('table')) return false;
+  const filas = Array.from(tabla.rows);
+  if (filas.length < 2 || !filas.some(f => f.cells.length >= 2)) return false;
+  return filas.every(f => Array.from(f.cells).every(c =>
+    (c.textContent || '').replace(/\s+/g,' ').trim().length <= 300 &&
+    !c.querySelector('h1,h2,h3,h4,h5,h6,blockquote,figure,pre')));
+}
+// {html, caption}: la tabla ya saneada. Si no trae caption y su figure
+// tiene pie, el pie pasa a caption. Las imágenes de las celdas (banderas,
+// escudos) se quedan en su texto alternativo.
+function bloqueTabla(tabla, pieFigura){
+  const t = tabla.cloneNode(true);
+  t.querySelectorAll('img').forEach(im => im.replaceWith(im.getAttribute('alt') || ''));
+  let cap = t.querySelector('caption');
+  const pie = (pieFigura || '').replace(/\s+/g,' ').trim();
+  if (!cap && pie){
+    cap = t.ownerDocument.createElement('caption');
+    cap.textContent = pie;
+    t.insertBefore(cap, t.firstChild);
+  }
+  return { html: t.outerHTML, caption: cap ? (cap.textContent || '').replace(/\s+/g,' ').trim() : '' };
+}
+// Texto plano de una tabla, fila a fila (copiar el texto).
+function textoDeTabla(b){
+  const doc = new DOMParser().parseFromString(b.html || '', 'text/html');
+  const filas = Array.from(doc.querySelectorAll('tr')).map(tr =>
+    Array.from(tr.cells).map(c => (c.textContent || '').replace(/\s+/g,' ').trim()).join(' | '));
+  return (b.caption ? b.caption + '\n' : '') + filas.join('\n');
+}
 // Texto plano de un bloque (para comparar con el JSON o contar palabras).
 function textoDeBloque(b){
+  if (b.tipo === 'tabla') return textoDeTabla(b);
   return b.tipo === 'list' ? b.items.map(stripTags).join(' ') : stripTags(b.html || '');
 }
 function buildBlocksFromHTML(html){
@@ -3046,7 +3103,7 @@ function limpiarPublicidad(doc){
   return doc;
 }
 
-// Embebidos (tweets, vídeos…): el sanitizador quita los iframes y
+// Embebidos (tweets, vídeos, gráficos…): el sanitizador quita los iframes y
 // Readability se deja muchos, así que desaparecían sin rastro. Antes de
 // extraer se cambian por un párrafo marcado (data-il-embed, data-il-url)
 // que llega a los bloques como tarjeta con enlace al original. No se carga
@@ -3060,6 +3117,29 @@ function parametro(url, nombre){
   try { return new URL(url, location.href).searchParams.get(nombre) || ''; } catch(e){ return ''; }
 }
 const fuenteDe = el => el.getAttribute('src') || el.getAttribute('data-src') || '';
+// Título de un gráfico: el del iframe, sin el «(Copy)» que deja duplicarlo
+// en Datawrapper ni los genéricos que ponen los servicios.
+const TITULO_GENERICO = /^(interactive or visual content|chart visualization|embed|iframe|google maps|map|mapa|chart|gr[aá]fico|datawrapper|flourish|infogram|genially|tableau)$/i;
+function sinCopia(s){ return String(s || '').replace(/(\s*\((copy|copia|cópia|còpia)\))+\s*$/i, '').trim(); }
+function tituloDe(el){ const s = sinCopia(el.getAttribute('title')); return TITULO_GENERICO.test(s) ? '' : s; }
+// Las inserciones con script dejan en <noscript> una imagen con el título
+// en el alt. En la página, el noscript es texto; en un DOMParser, elementos.
+function altDeNoscript(el){
+  const ns = el.querySelector('noscript');
+  if (!ns) return '';
+  const im = ns.querySelector('img');
+  const m = im ? null : (ns.textContent || '').match(/\balt="([^"]*)"/i);
+  const s = sinCopia(decodeEnt(im ? im.getAttribute('alt') : m ? m[1] : ''));
+  return TITULO_GENERICO.test(s) ? '' : s;
+}
+// Lo que acompaña al embebido sin verse (su script, su estilo, su
+// noscript) no cuenta al subir por los envoltorios.
+const SIN_VER = new Set(['SCRIPT','STYLE','NOSCRIPT','TEMPLATE']);
+const hijosVisibles = el => [...el.children].filter(c => !SIN_VER.has(c.tagName));
+function textoVisible(el){
+  return [...el.childNodes].map(n => n.nodeType === 3 ? n.data
+    : n.nodeType === 1 && !SIN_VER.has(n.tagName) ? textoVisible(n) : '').join('').replace(/\s+/g, ' ').trim();
+}
 const EMBEBIDOS = [
   { red: 'x', sel: 'blockquote.twitter-tweet',
     url: el => enlaceQueCasa(el, /\/status\/\d+/), texto: el => textoPlano(el.querySelector('p')) },
@@ -3085,7 +3165,42 @@ const EMBEBIDOS = [
     url: el => enlaceQueCasa(el, /bsky\.app\/profile\/.+\/post\//) ||
                fuenteDe(el).replace(/^.*\/embed\/([^/]+)\/app\.bsky\.feed\.post\/([\w]+).*$/, 'https://bsky.app/profile/$1/post/$2'),
     texto: el => textoPlano(el.querySelector('p')) },
-  { red: 'facebook', sel: 'iframe[src*="facebook.com/plugins/"]', url: el => parametro(fuenteDe(el), 'href') }
+  { red: 'facebook', sel: 'iframe[src*="facebook.com/plugins/"]', url: el => parametro(fuenteDe(el), 'href') },
+
+  // Gráficos, tablas y mapas. Solo se avisa de que están y se enlaza la
+  // versión interactiva; al cerrar el lector se ven en la página. clase:
+  // 'tabla', 'grafico' o 'mapa' si se sabe. Las inserciones con script
+  // (div + embed.js) van antes que su iframe: al cambiar el div, el iframe
+  // que el script metió dentro ya no está.
+  { red: 'datawrapper', sel: 'div[id^="datawrapper-vis-"]',
+    url: el => 'https://datawrapper.dwcdn.net/' + encodeURIComponent(el.id.slice(16)) + '/',
+    texto: altDeNoscript },
+  { red: 'datawrapper', sel: 'iframe[id^="datawrapper-chart-"],iframe[src*="datawrapper.dwcdn.net/"],iframe[data-src*="datawrapper.dwcdn.net/"],iframe[src*="datawrapper.de/_/"]',
+    url: fuenteDe, texto: tituloDe,
+    clase: el => { const a = el.getAttribute('aria-label') || '';
+                   return /table/i.test(a) ? 'tabla' : /map/i.test(a) ? 'mapa' : /chart|graph/i.test(a) ? 'grafico' : ''; } },
+  { red: 'flourish', sel: 'div.flourish-embed[data-src]',
+    url: el => { const s = el.getAttribute('data-src').replace(/^\/+/, '');
+                 return /^(visualisation|story)\/\d+/.test(s) ? 'https://public.flourish.studio/' + s.split('?')[0] + '/' : ''; },
+    texto: altDeNoscript, clase: el => /^\/?visualisation\//.test(el.getAttribute('data-src')) ? 'grafico' : '' },
+  { red: 'flourish', sel: 'iframe[src*="flo.uri.sh/"],iframe[src*="public.flourish.studio/"]',
+    url: fuenteDe, texto: tituloDe, clase: el => /\/visualisation\//.test(fuenteDe(el)) ? 'grafico' : '' },
+  { red: 'infogram', sel: 'div.infogram-embed[data-id]',
+    url: el => 'https://e.infogram.com/' + encodeURIComponent(el.getAttribute('data-id')),
+    texto: el => sinCopia(el.getAttribute('data-title')), clase: () => 'grafico' },
+  { red: 'infogram', sel: 'iframe[src*="infogram.com/"]', url: fuenteDe, texto: tituloDe, clase: () => 'grafico' },
+  { red: 'tableau', sel: 'div.tableauPlaceholder',
+    url: el => { const n = el.querySelector('param[name="name"]');
+                 return n && n.getAttribute('value') ? 'https://public.tableau.com/views/' + n.getAttribute('value').split('/').map(encodeURIComponent).join('/') : ''; },
+    clase: () => 'grafico' },
+  { red: 'tableau', sel: 'iframe[src*="public.tableau.com/"]', url: fuenteDe, texto: tituloDe, clase: () => 'grafico' },
+  { red: 'genially', sel: 'iframe[src*="genial.ly/"],iframe[src*="genially.com/"]', url: fuenteDe, texto: tituloDe },
+  { red: 'googlesheets', sel: 'iframe[src*="docs.google.com/spreadsheets/"]', url: fuenteDe, texto: tituloDe, clase: () => 'tabla' },
+  { red: 'googlemaps', sel: 'iframe[src*="google.com/maps"],iframe[src*="maps.google."],iframe[data-src*="google.com/maps"]',
+    url: fuenteDe, texto: tituloDe, clase: () => 'mapa' },
+  { red: 'umap', sel: 'iframe[src*="umap.openstreetmap."]', url: fuenteDe, texto: tituloDe, clase: () => 'mapa' },
+  { red: 'arcgis', sel: 'iframe[src*="arcgis.com/"]', url: fuenteDe, texto: tituloDe,
+    clase: el => /storymaps\./.test(fuenteDe(el)) ? '' : 'mapa' }
 ];
 // raiz: un documento (clonado) o un elemento (modo selector).
 function marcarEmbebidos(raiz){
@@ -3099,12 +3214,14 @@ function marcarEmbebidos(raiz){
       // Se sube por los envoltorios que no tienen nada más: Readability tira
       // los div con clases como «media» o «widget» aunque lleven el párrafo.
       let caja = el;
-      while (caja.parentElement && caja.parentElement !== tope && caja.parentElement.children.length === 1 &&
+      while (caja.parentElement && caja.parentElement !== tope && hijosVisibles(caja.parentElement).length === 1 &&
              !/^(ARTICLE|MAIN|SECTION)$/.test(caja.parentElement.tagName) &&
-             textoPlano(caja.parentElement) === textoPlano(caja)) caja = caja.parentElement;
+             textoVisible(caja.parentElement) === textoVisible(caja)) caja = caja.parentElement;
       const p = doc.createElement('p');
       p.setAttribute('data-il-embed', e.red);
       p.setAttribute('data-il-url', url);
+      const clase = e.clase ? e.clase(el) : '';
+      if (CLASES_EMBEBIDO[clase]) p.setAttribute('data-il-clase', clase);
       p.textContent = (e.texto ? e.texto(el) : '').slice(0, 500) || '·';
       caja.replaceWith(p);
     }));
@@ -3750,6 +3867,12 @@ ${cssPaleta('#il-full')}
 #il-full .il-embed-texto{margin:0 0 6px}
 #il-full .il-embed a{display:inline-flex;align-items:center;gap:6px;min-height:44px}
 #il-full .il-embed .il-ico{width:16px;height:16px}
+#il-full .il-tabla{margin:1.6em 0;overflow-x:auto;border:1px solid var(--btn-border);border-radius:6px}
+#il-full .il-tabla table{border-collapse:collapse;width:100%;font-size:.86em;line-height:1.45;font-variant-numeric:tabular-nums}
+#il-full .il-tabla caption{caption-side:top;text-align:left;font-weight:600;padding:10px 12px 6px}
+#il-full .il-tabla th,#il-full .il-tabla td{padding:6px 12px;border-top:1px solid var(--border);text-align:left;vertical-align:top}
+#il-full .il-tabla th{font-weight:600;background:var(--quote-bg)}
+#il-full .il-body .il-tabla p{margin:0;text-align:left;hyphens:manual}
 #il-full .il-visor{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 64px 16px;cursor:zoom-out}
 #il-full .il-visor-img{max-width:100%;max-height:calc(100% - 60px);object-fit:contain}
 #il-full .il-visor-pie{color:#eee;margin:12px 0 0;max-width:60em;text-align:center;font:14px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;cursor:default}
@@ -4202,11 +4325,18 @@ function openReader(art){
     if (b.tipo === 'embed'){
       // Tarjeta con enlace al original: no se carga nada de terceros.
       const nombre = NOMBRES_REDES[b.red] || b.red;
+      const clase = CLASES_EMBEBIDO[b.clase] ? t(CLASES_EMBEBIDO[b.clase]) + ' · ' : '';
       return '<aside class="il-embed" aria-label="' + esc(t('embebidoDe').replace('{X}', nombre)) + '">' +
-        '<p class="il-embed-red">' + esc(nombre) + '</p>' +
+        '<p class="il-embed-red">' + esc(clase + nombre) + '</p>' +
         (b.texto ? '<p class="il-embed-texto">' + process(esc(b.texto)) + '</p>' : '') +
         '<a href="' + esc(b.url) + '" target="_blank" rel="noopener noreferrer">' + icono('external-link') +
         '<span>' + esc(t('verEn').replace('{X}', nombre)) + '</span></a></aside>';
+    }
+    if (b.tipo === 'tabla'){
+      // Con scroll propio en pantallas estrechas; tabindex para moverla con
+      // el teclado.
+      return '<div class="il-tabla" role="region" tabindex="0" aria-label="' + esc(b.caption || t('tabla')) + '">' +
+        process(b.html || '') + '</div>';
     }
     if (b.tipo === 'q') return '<blockquote>' + process(b.html || '') + '</blockquote>';
     if (b.tipo === 'h') return '<h' + b.level + '>' + process(b.html || '') + '</h' + b.level + '>';
@@ -4225,7 +4355,9 @@ function openReader(art){
       if (b.tipo === 'hr') return '---';
       if (b.tipo === 'img') return '[' + t('imageLabel') + (b.caption ? ': ' + b.caption : '') + ']';
       if (b.tipo === 'galeria') return '[' + t('galeria').replace('{N}', b.imagenes.length) + ']';
-      if (b.tipo === 'embed') return '[' + (NOMBRES_REDES[b.red] || b.red) + (b.texto ? ': ' + b.texto : '') + ' — ' + b.url + ']';
+      if (b.tipo === 'embed') return '[' + (CLASES_EMBEBIDO[b.clase] ? t(CLASES_EMBEBIDO[b.clase]) + ' · ' : '') +
+        (NOMBRES_REDES[b.red] || b.red) + (b.texto ? ': ' + b.texto : '') + ' — ' + b.url + ']';
+      if (b.tipo === 'tabla') return textoDeTabla(b);
       if (b.tipo === 'list') return b.items.map(i => '- ' + stripTags(i)).join('\n');
       if (b.tipo === 'h') return stripTags(b.html || '');
       if (b.tipo === 'q') return '> ' + stripTags(b.html || '');
@@ -4423,13 +4555,11 @@ function openReader(art){
     '</div>';
 
   // Lo que tenía el foco (el botón del lector, normalmente) lo recupera al
-  // salir. La página de debajo queda inerte mientras: ni el teclado ni los
-  // lectores de pantalla se meten en lo que no se ve.
+  // salir. La página de debajo queda tapada e inerte mientras (25).
   const focoAntes = document.activeElement;
   document.body.insertAdjacentHTML('beforeend', full);
   const ov = document.getElementById('il-full');
-  const inertes = [...document.body.children].filter(el => el !== ov && !el.inert);
-  inertes.forEach(el => { el.inert = true; });
+  const pagina = taparPagina(ov);
 
   // Imágenes: lo del medio, si tiene; si no, lo de todos los medios.
   function imagenesDelMedio(){
@@ -4662,7 +4792,7 @@ function openReader(art){
     document.removeEventListener('keydown', keyHandler);
     if (finObservador) finObservador.disconnect();
     __lectorAbierto = null;
-    inertes.forEach(el => { el.inert = false; });
+    pagina.fin();
     ov.remove();
     if (focoAntes && focoAntes.isConnected){
       if (focoAntes.__enfocar) focoAntes.__enfocar();
@@ -4750,6 +4880,7 @@ function openReader(art){
     const done = () => toast('✓ ' + t('copied'), 1500);
     const fb = () => {
       const ta = document.createElement('textarea');
+      ta.id = 'il-copia';   // con id il-…: la página tapada no lo tapa
       ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0';
       document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); done(); } catch(e){ toast(t('copyFailed')); }
@@ -5195,6 +5326,80 @@ function openRSVP(ov, rawBody){
   });
 }
 
+/* ============================================================
+   20b. LA PÁGINA DE DEBAJO
+   ------------------------------------------------------------
+   Mientras el lector está abierto, la página no se ve ni se puede
+   tocar: ni lo que ya había ni lo que el medio ponga después (avisos
+   de cookies, de suscripción o del bloqueador de anuncios), que con
+   un z-index alto quedaría por encima del lector. Al cerrar, todo
+   vuelve a estar como estaba, también el scroll: visibility y
+   opacity no cambian el tamaño de nada.
+
+   Se respetan las piezas del lector (id «il-…» o clase il-tema) y lo
+   que aparece mientras con nombre de elemento personalizado (con
+   guion), que suele ser de extensiones del navegador: diccionarios,
+   traductores, lectura en voz alta.
+   ============================================================ */
+const esDelLector = el => (el.id || '').indexOf('il-') === 0 || el.classList.contains('il-tema');
+const NO_SE_OCULTA = /^(HEAD|BODY|SCRIPT|STYLE|LINK|META|NOSCRIPT|TEMPLATE)$/;
+
+function taparPagina(ov){
+  // El :not(#il-x) sube la especificidad a la de dos ids: gana a un
+  // «visibility:visible!important» con id que traiga la página.
+  // El filtro o el transform en html o body (hay muros que desenfocan la
+  // página así) se llevarían también al lector, que va dentro del body.
+  const st = document.createElement('style');
+  st.id = 'il-pagina-tapada';
+  st.textContent =
+    '[data-il-tapado]:not(#il-x):not(#il-y){visibility:hidden!important;opacity:0!important;pointer-events:none!important}' +
+    'html,body{filter:none!important;-webkit-filter:none!important;transform:none!important}' +
+    '#il-full{pointer-events:auto!important;-webkit-user-select:text!important;user-select:text!important}';
+  (document.head || document.documentElement).appendChild(st);
+
+  const tapados = [];
+  const inertes = [];
+  const tapar = el => {
+    if (el.nodeType !== 1 || esDelLector(el) || NO_SE_OCULTA.test(el.tagName) || el.hasAttribute('data-il-tapado')) return;
+    el.setAttribute('data-il-tapado', '');
+    tapados.push(el);
+  };
+  const inutilizar = el => { if (!el.inert){ el.inert = true; inertes.push(el); } };
+
+  // Lo que ya había: todo inerte (como siempre: ni el teclado ni los
+  // lectores de pantalla se meten en lo que no se ve) y tapado, menos los
+  // elementos personalizados, que pueden ser de una extensión.
+  [...document.body.children].forEach(el => {
+    if (esDelLector(el)) return;
+    inutilizar(el);
+    if (!el.tagName.includes('-')) tapar(el);
+  });
+  [...document.documentElement.children].forEach(el => { if (!el.tagName.includes('-')) tapar(el); });
+
+  // Lo que llega después, igual, salvo los elementos personalizados. Si
+  // la página se lleva el lector (una SPA que rehace el body), se destapa.
+  const obs = new MutationObserver(cambios => {
+    if (!ov.isConnected){ fin(); return; }
+    cambios.forEach(c => c.addedNodes.forEach(n => {
+      if (n.nodeType !== 1 || esDelLector(n) || n.tagName.includes('-') || NO_SE_OCULTA.test(n.tagName)) return;
+      tapar(n);
+      inutilizar(n);
+    }));
+  });
+  obs.observe(document.body, { childList: true });
+  obs.observe(document.documentElement, { childList: true });
+
+  let hecho = false;
+  function fin(){
+    if (hecho) return;
+    hecho = true;
+    obs.disconnect();
+    tapados.forEach(el => el.removeAttribute('data-il-tapado'));
+    inertes.forEach(el => { el.inert = false; });
+    st.remove();
+  }
+  return { fin: fin };
+}
 /* ============================================================
    21. BOTÓN FLOTANTE
    ------------------------------------------------------------
