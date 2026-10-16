@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.241
+// @version      2.0.242
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.241';
+const SCRIPT_VERSION = '2.0.242';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -3285,6 +3285,8 @@ function extractFromSelector(rootSel, excludeSel, minChars){
 function collectAllText(){
   const out = [];
   const skip = new Set(['SCRIPT','STYLE','NOSCRIPT','IFRAME','SVG','CANVAS','VIDEO','AUDIO','FORM','BUTTON','INPUT','SELECT','TEXTAREA','NAV','HEADER','FOOTER','ASIDE','LINK','META']);
+  const PAYWALL_RE = /(paywall|regwall|subscriber?[-_]?(?:banner|modal|overlay)|newsletter[-_]?(?:modal|popup))/i;
+
   function walk(node){
     if (node.nodeType === 3){
       const txt = (node.textContent || '').replace(/\s+/g,' ').trim();
@@ -3300,6 +3302,11 @@ function collectAllText(){
       let cs;
       try { cs = window.getComputedStyle(node); } catch(e){ return; }
       if (cs.display !== 'contents' && (cs.display === 'none' || cs.visibility === 'hidden')) return;
+    }
+
+    const cls = (typeof node.className === 'string') ? node.className.toLowerCase() : '';
+    if (cls && PAYWALL_RE.test(cls)){
+      if ((node.textContent || '').length > 200) return;
     }
 
     if (node.parentNode === document.body){
