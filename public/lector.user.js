@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.241
+// @version      2.0.244
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.241';
+const SCRIPT_VERSION = '2.0.244';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -832,7 +832,7 @@ const I18N = {
     clearRead: 'Borrar leídas',
     clearReadConfirm: '¿Borrar todas las noticias marcadas como leídas?',
     up: '↑ Subir', raeHint: 'Doble clic en palabra = Buscar',
-    noArticle: 'No se pudo extraer el artículo (Paywall, sitio no soportado o sin contenido).',
+    noArticle: 'No se pudo extraer el artículo (sitio no soportado o sin contenido).',
     srcNoJsonld: 'No hay JSON-LD con articleBody en esta página (origen: JSON).',
     srcNoReadability: 'Readability no pudo extraer el artículo de esta página (origen: Lector).',
     srcNoCustom: 'La extracción por selector no encontró contenido. Revisa la configuración del sitio.',
@@ -1024,7 +1024,7 @@ const I18N = {
     clearRead: 'Borrar lidas',
     clearReadConfirm: '¿Borrar todas as noticias marcadas como lidas?',
     up: '↑ Subir', raeHint: 'Dobre clic nunha palabra = Buscar',
-    noArticle: 'Non se puido extraer o artigo (Paywall, sitio non soportado ou sen contido).',
+    noArticle: 'Non se puido extraer o artigo (sitio non soportado ou sen contido).',
     srcNoJsonld: 'Non hai JSON-LD con articleBody nesta páxina (orixe: JSON).',
     srcNoReadability: 'Readability non puido extraer o artigo desta páxina (orixe: Lector).',
     srcNoCustom: 'A extracción por selector non atopou contido. Revisa a configuración do sitio.',
@@ -1221,7 +1221,7 @@ const I18N = {
     clearRead: 'Esborrar llegides',
     clearReadConfirm: 'Esborrar totes les notícies marcades com llegides?',
     up: '↑ Pujar', raeHint: 'Doble clic a un mot = Cercar',
-    noArticle: "No s'ha pogut extreure l'article (Paywall, lloc no suportat o sense contingut).",
+    noArticle: "No s'ha pogut extreure l'article (lloc no suportat o sense contingut).",
     srcNoJsonld: 'No hi ha JSON-LD amb articleBody en aquesta pàgina (origen: JSON).',
     srcNoReadability: "Readability no ha pogut extreure l'article d'aquesta pàgina (origen: Lector).",
     srcNoCustom: "L'extracció per selector no ha trobat contingut. Revisa la configuració del lloc.",
@@ -1408,7 +1408,7 @@ const I18N = {
     clearRead: 'Clear read',
     clearReadConfirm: 'Delete all news marked as read?',
     up: '↑ Top', raeHint: 'Double-click a word = Look up',
-    noArticle: 'Could not extract the article (paywall, unsupported site, or no content).',
+    noArticle: 'Could not extract the article (unsupported site or no content).',
     srcNoJsonld: 'No JSON-LD with articleBody on this page (source: JSON).',
     srcNoReadability: 'Readability could not extract the article from this page (source: Reader).',
     srcNoCustom: 'Selector extraction found no content. Check the site settings.',
@@ -1600,7 +1600,7 @@ const I18N = {
     clearRead: 'Irakurriak ezabatu',
     clearReadConfirm: 'Irakurrita markatutako albiste guztiak ezabatu?',
     up: '↑ Igo', raeHint: 'Hitz batean klik bikoitza = Bilatu',
-    noArticle: 'Ezin izan da artikulua atera (paywall, onartzen ez den gunea edo edukirik ez).',
+    noArticle: 'Ezin izan da artikulua atera (onartzen ez den gunea edo edukirik ez).',
     srcNoJsonld: 'Ez dago articleBody duen JSON-LDrik orri honetan (iturria: JSON).',
     srcNoReadability: 'Readability-k ezin izan du orri honetako artikulua atera (iturria: Irakurgailua).',
     srcNoCustom: 'Hautatzaile bidezko erauzketak ez du edukirik aurkitu. Egiaztatu gunearen ezarpenak.',
@@ -4037,7 +4037,6 @@ function openExtractionTool(siteIdx, onClose){
       ? '<span style="color:var(--block);font-weight:bold">' + esc(t('extractionPaywallYes')) + '</span>' +
         ' <span style="color:var(--muted);font-size:12px">(' + diag.paywall.indicators.map(esc).join(', ') + ')</span>'
       : '<span style="color:var(--preset);font-weight:bold">' + esc(t('extractionPaywallNo')) + '</span>';
-
     return (
       '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;background:var(--quote-bg)">' +
         '<h4 style="margin:0 0 10px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
