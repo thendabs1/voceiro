@@ -59,11 +59,6 @@ function openExtractionTool(siteIdx, onClose){
       ? diag.overlays.map(o => '<code style="font-size:11px;background:var(--quote-bg);padding:2px 6px;border-radius:3px;margin:2px 4px 2px 0;display:inline-block">' +
           esc(o.tag + (o.id ? '#' + o.id : '') + (o.cls ? '.' + o.cls.split(/\s+/)[0] : '')) + ' (z-index: ' + esc(o.zIndex) + ')</code>').join('')
       : '<span style="color:var(--muted);font-size:12px">—</span>';
-    const paywall = diag.paywall.detected
-      ? '<span style="color:var(--block);font-weight:bold">' + esc(t('extractionPaywallYes')) + '</span>' +
-        ' <span style="color:var(--muted);font-size:12px">(' + diag.paywall.indicators.map(esc).join(', ') + ')</span>'
-      : '<span style="color:var(--preset);font-weight:bold">' + esc(t('extractionPaywallNo')) + '</span>';
-
     return (
       '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;background:var(--quote-bg)">' +
         '<h4 style="margin:0 0 10px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
@@ -75,7 +70,6 @@ function openExtractionTool(siteIdx, onClose){
             diag.metrics.p + ' &lt;p&gt; · ' + diag.metrics.img + ' img · ' +
             diag.metrics.words + ' ' + esc(t('extractionWordsShort')) + ' · ' +
             diag.metrics.textLen + ' ' + esc(t('extractionCharsShort')) + '<br>' +
-          '<strong>' + esc(t('extractionPaywallLbl')) + ':</strong> ' + paywall + '<br>' +
           '<strong>' + esc(t('extractionOverlaysLbl')) + ':</strong> ' +
             (diag.overlays.length ? diag.overlays.length + ' ' + overlays : '<span style="color:var(--muted);font-size:12px">—</span>') +
         '</div>' +

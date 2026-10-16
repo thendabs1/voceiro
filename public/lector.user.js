@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.239
+// @version      2.0.241
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.239';
+const SCRIPT_VERSION = '2.0.241';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -832,7 +832,7 @@ const I18N = {
     clearRead: 'Borrar leídas',
     clearReadConfirm: '¿Borrar todas las noticias marcadas como leídas?',
     up: '↑ Subir', raeHint: 'Doble clic en palabra = Buscar',
-    noArticle: 'No se pudo extraer el artículo (Paywall, sitio no soportado o sin contenido).',
+    noArticle: 'No se pudo extraer el artículo (sitio no soportado o sin contenido).',
     srcNoJsonld: 'No hay JSON-LD con articleBody en esta página (origen: JSON).',
     srcNoReadability: 'Readability no pudo extraer el artículo de esta página (origen: Lector).',
     srcNoCustom: 'La extracción por selector no encontró contenido. Revisa la configuración del sitio.',
@@ -915,13 +915,10 @@ const I18N = {
     extractionDiagnostics: 'Diagnóstico de la página',
     extractionTitleLbl: 'Título',
     extractionMetricsLbl: 'Contenido',
-    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Candidatos de contenedor',
     extractionPreviewLbl: 'Previsualización',
     extractionPreviewEmpty: 'Sin contenido para previsualizar.',
-    extractionPaywallYes: 'Detectado',
-    extractionPaywallNo: 'No detectado',
     extractionNoCandidates: 'Sin candidatos relevantes',
     extractionPickerHint: 'Pasa el ratón y haz clic para elegir el contenedor. Esc para cancelar.',
     extractionWordsShort: 'palabras',
@@ -1024,7 +1021,7 @@ const I18N = {
     clearRead: 'Borrar lidas',
     clearReadConfirm: '¿Borrar todas as noticias marcadas como lidas?',
     up: '↑ Subir', raeHint: 'Dobre clic nunha palabra = Buscar',
-    noArticle: 'Non se puido extraer o artigo (Paywall, sitio non soportado ou sen contido).',
+    noArticle: 'Non se puido extraer o artigo (sitio non soportado ou sen contido).',
     srcNoJsonld: 'Non hai JSON-LD con articleBody nesta páxina (orixe: JSON).',
     srcNoReadability: 'Readability non puido extraer o artigo desta páxina (orixe: Lector).',
     srcNoCustom: 'A extracción por selector non atopou contido. Revisa a configuración do sitio.',
@@ -1107,13 +1104,10 @@ const I18N = {
     extractionDiagnostics: 'Diagnóstico da páxina',
     extractionTitleLbl: 'Título',
     extractionMetricsLbl: 'Contido',
-    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Candidatos de contedor',
     extractionPreviewLbl: 'Previsualización',
     extractionPreviewEmpty: 'Sen contido para previsualizar.',
-    extractionPaywallYes: 'Detectado',
-    extractionPaywallNo: 'Non detectado',
     extractionNoCandidates: 'Sen candidatos relevantes',
     extractionPickerHint: 'Pasa o rato e fai clic para elixir o contedor. Esc para cancelar.',
     extractionWordsShort: 'palabras',
@@ -1221,7 +1215,7 @@ const I18N = {
     clearRead: 'Esborrar llegides',
     clearReadConfirm: 'Esborrar totes les notícies marcades com llegides?',
     up: '↑ Pujar', raeHint: 'Doble clic a un mot = Cercar',
-    noArticle: "No s'ha pogut extreure l'article (Paywall, lloc no suportat o sense contingut).",
+    noArticle: "No s'ha pogut extreure l'article (lloc no suportat o sense contingut).",
     srcNoJsonld: 'No hi ha JSON-LD amb articleBody en aquesta pàgina (origen: JSON).',
     srcNoReadability: "Readability no ha pogut extreure l'article d'aquesta pàgina (origen: Lector).",
     srcNoCustom: "L'extracció per selector no ha trobat contingut. Revisa la configuració del lloc.",
@@ -1299,13 +1293,10 @@ const I18N = {
     extractionDiagnostics: 'Diagnòstic de la pàgina',
     extractionTitleLbl: 'Títol',
     extractionMetricsLbl: 'Contingut',
-    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Candidats de contenidor',
     extractionPreviewLbl: 'Previsualització',
     extractionPreviewEmpty: 'Sense contingut per previsualitzar.',
-    extractionPaywallYes: 'Detectat',
-    extractionPaywallNo: 'No detectat',
     extractionNoCandidates: 'Sense candidats rellevants',
     extractionPickerHint: 'Passa el ratolí i fes clic per triar el contenidor. Esc per cancel·lar.',
     extractionWordsShort: 'paraules',
@@ -1408,7 +1399,7 @@ const I18N = {
     clearRead: 'Clear read',
     clearReadConfirm: 'Delete all news marked as read?',
     up: '↑ Top', raeHint: 'Double-click a word = Look up',
-    noArticle: 'Could not extract the article (paywall, unsupported site, or no content).',
+    noArticle: 'Could not extract the article (unsupported site or no content).',
     srcNoJsonld: 'No JSON-LD with articleBody on this page (source: JSON).',
     srcNoReadability: 'Readability could not extract the article from this page (source: Reader).',
     srcNoCustom: 'Selector extraction found no content. Check the site settings.',
@@ -1491,13 +1482,10 @@ const I18N = {
     extractionDiagnostics: 'Page diagnostics',
     extractionTitleLbl: 'Title',
     extractionMetricsLbl: 'Content',
-    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Container candidates',
     extractionPreviewLbl: 'Preview',
     extractionPreviewEmpty: 'No content to preview.',
-    extractionPaywallYes: 'Detected',
-    extractionPaywallNo: 'Not detected',
     extractionNoCandidates: 'No relevant candidates',
     extractionPickerHint: 'Hover and click to pick the container. Esc to cancel.',
     extractionWordsShort: 'words',
@@ -1600,7 +1588,7 @@ const I18N = {
     clearRead: 'Irakurriak ezabatu',
     clearReadConfirm: 'Irakurrita markatutako albiste guztiak ezabatu?',
     up: '↑ Igo', raeHint: 'Hitz batean klik bikoitza = Bilatu',
-    noArticle: 'Ezin izan da artikulua atera (paywall, onartzen ez den gunea edo edukirik ez).',
+    noArticle: 'Ezin izan da artikulua atera (onartzen ez den gunea edo edukirik ez).',
     srcNoJsonld: 'Ez dago articleBody duen JSON-LDrik orri honetan (iturria: JSON).',
     srcNoReadability: 'Readability-k ezin izan du orri honetako artikulua atera (iturria: Irakurgailua).',
     srcNoCustom: 'Hautatzaile bidezko erauzketak ez du edukirik aurkitu. Egiaztatu gunearen ezarpenak.',
@@ -1683,13 +1671,10 @@ const I18N = {
     extractionDiagnostics: 'Orriaren diagnostikoa',
     extractionTitleLbl: 'Izenburua',
     extractionMetricsLbl: 'Edukia',
-    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlayak',
     extractionCandidatesLbl: 'Edukiontzi hautagaiak',
     extractionPreviewLbl: 'Aurrebista',
     extractionPreviewEmpty: 'Ez dago edukirik aurrebistarako.',
-    extractionPaywallYes: 'Detektatuta',
-    extractionPaywallNo: 'Ez detektatuta',
     extractionNoCandidates: 'Hautagai garrantzitsurik ez',
     extractionPickerHint: 'Pasatu sagua eta egin klik edukiontzia aukeratzeko. Esc utzi.',
     extractionWordsShort: 'hitza',
@@ -3300,8 +3285,6 @@ function extractFromSelector(rootSel, excludeSel, minChars){
 function collectAllText(){
   const out = [];
   const skip = new Set(['SCRIPT','STYLE','NOSCRIPT','IFRAME','SVG','CANVAS','VIDEO','AUDIO','FORM','BUTTON','INPUT','SELECT','TEXTAREA','NAV','HEADER','FOOTER','ASIDE','LINK','META']);
-  const PAYWALL_RE = /(paywall|regwall|subscriber?[-_]?(?:banner|modal|overlay)|newsletter[-_]?(?:modal|popup))/i;
-
   function walk(node){
     if (node.nodeType === 3){
       const txt = (node.textContent || '').replace(/\s+/g,' ').trim();
@@ -3317,11 +3300,6 @@ function collectAllText(){
       let cs;
       try { cs = window.getComputedStyle(node); } catch(e){ return; }
       if (cs.display !== 'contents' && (cs.display === 'none' || cs.visibility === 'hidden')) return;
-    }
-
-    const cls = (typeof node.className === 'string') ? node.className.toLowerCase() : '';
-    if (cls && PAYWALL_RE.test(cls)){
-      if ((node.textContent || '').length > 200) return;
     }
 
     if (node.parentNode === document.body){
@@ -3444,7 +3422,6 @@ function analyzeCurrentPage(){
     title: { text: '', source: '' },
     metrics: { p: 0, img: 0, figure: 0, blockquote: 0, textLen: 0, words: 0 },
     candidates: [],
-    paywall: { detected: false, indicators: [] },
     overlays: []
   };
 
@@ -3494,23 +3471,6 @@ function analyzeCurrentPage(){
   });
   info.candidates.sort((a, b) => b.textLen - a.textLen);
   info.candidates = info.candidates.slice(0, 8);
-
-  const paywallPatterns = [
-    { sel: '[class*="paywall"]', name: 'class~"paywall"' },
-    { sel: '[class*="regwall"]', name: 'class~"regwall"' },
-    { sel: '[class*="subscriber"]', name: 'class~"subscriber"' },
-    { sel: '[class*="subscription"]', name: 'class~"subscription"' },
-    { sel: '[data-paywall]', name: '[data-paywall]' },
-    { sel: '[class*="premium-content"]', name: 'class~"premium-content"' }
-  ];
-  paywallPatterns.forEach(p => {
-    let n = 0;
-    try { n = document.querySelectorAll(p.sel).length; } catch(e){}
-    if (n){
-      info.paywall.detected = true;
-      info.paywall.indicators.push(p.name + ' (' + n + ')');
-    }
-  });
 
   Array.from(document.querySelectorAll('body > *')).forEach(el => {
     const cs = window.getComputedStyle(el);
@@ -4033,11 +3993,6 @@ function openExtractionTool(siteIdx, onClose){
       ? diag.overlays.map(o => '<code style="font-size:11px;background:var(--quote-bg);padding:2px 6px;border-radius:3px;margin:2px 4px 2px 0;display:inline-block">' +
           esc(o.tag + (o.id ? '#' + o.id : '') + (o.cls ? '.' + o.cls.split(/\s+/)[0] : '')) + ' (z-index: ' + esc(o.zIndex) + ')</code>').join('')
       : '<span style="color:var(--muted);font-size:12px">—</span>';
-    const paywall = diag.paywall.detected
-      ? '<span style="color:var(--block);font-weight:bold">' + esc(t('extractionPaywallYes')) + '</span>' +
-        ' <span style="color:var(--muted);font-size:12px">(' + diag.paywall.indicators.map(esc).join(', ') + ')</span>'
-      : '<span style="color:var(--preset);font-weight:bold">' + esc(t('extractionPaywallNo')) + '</span>';
-
     return (
       '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;background:var(--quote-bg)">' +
         '<h4 style="margin:0 0 10px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
@@ -4049,7 +4004,6 @@ function openExtractionTool(siteIdx, onClose){
             diag.metrics.p + ' &lt;p&gt; · ' + diag.metrics.img + ' img · ' +
             diag.metrics.words + ' ' + esc(t('extractionWordsShort')) + ' · ' +
             diag.metrics.textLen + ' ' + esc(t('extractionCharsShort')) + '<br>' +
-          '<strong>' + esc(t('extractionPaywallLbl')) + ':</strong> ' + paywall + '<br>' +
           '<strong>' + esc(t('extractionOverlaysLbl')) + ':</strong> ' +
             (diag.overlays.length ? diag.overlays.length + ' ' + overlays : '<span style="color:var(--muted);font-size:12px">—</span>') +
         '</div>' +

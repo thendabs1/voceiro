@@ -294,8 +294,6 @@ function extractFromSelector(rootSel, excludeSel, minChars){
 function collectAllText(){
   const out = [];
   const skip = new Set(['SCRIPT','STYLE','NOSCRIPT','IFRAME','SVG','CANVAS','VIDEO','AUDIO','FORM','BUTTON','INPUT','SELECT','TEXTAREA','NAV','HEADER','FOOTER','ASIDE','LINK','META']);
-  const PAYWALL_RE = /(paywall|regwall|subscriber?[-_]?(?:banner|modal|overlay)|newsletter[-_]?(?:modal|popup))/i;
-
   function walk(node){
     if (node.nodeType === 3){
       const txt = (node.textContent || '').replace(/\s+/g,' ').trim();
@@ -311,11 +309,6 @@ function collectAllText(){
       let cs;
       try { cs = window.getComputedStyle(node); } catch(e){ return; }
       if (cs.display !== 'contents' && (cs.display === 'none' || cs.visibility === 'hidden')) return;
-    }
-
-    const cls = (typeof node.className === 'string') ? node.className.toLowerCase() : '';
-    if (cls && PAYWALL_RE.test(cls)){
-      if ((node.textContent || '').length > 200) return;
     }
 
     if (node.parentNode === document.body){
