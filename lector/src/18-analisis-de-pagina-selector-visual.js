@@ -8,6 +8,7 @@ function analyzeCurrentPage(){
     title: { text: '', source: '' },
     metrics: { p: 0, img: 0, figure: 0, blockquote: 0, textLen: 0, words: 0 },
     candidates: [],
+    paywall: { detected: false, indicators: [] },
     overlays: []
   };
 
@@ -57,6 +58,23 @@ function analyzeCurrentPage(){
   });
   info.candidates.sort((a, b) => b.textLen - a.textLen);
   info.candidates = info.candidates.slice(0, 8);
+
+  const paywallPatterns = [
+    { sel: '[class*="paywall"]', name: 'class~"paywall"' },
+    { sel: '[class*="regwall"]', name: 'class~"regwall"' },
+    { sel: '[class*="subscriber"]', name: 'class~"subscriber"' },
+    { sel: '[class*="subscription"]', name: 'class~"subscription"' },
+    { sel: '[data-paywall]', name: '[data-paywall]' },
+    { sel: '[class*="premium-content"]', name: 'class~"premium-content"' }
+  ];
+  paywallPatterns.forEach(p => {
+    let n = 0;
+    try { n = document.querySelectorAll(p.sel).length; } catch(e){}
+    if (n){
+      info.paywall.detected = true;
+      info.paywall.indicators.push(p.name + ' (' + n + ')');
+    }
+  });
 
   Array.from(document.querySelectorAll('body > *')).forEach(el => {
     const cs = window.getComputedStyle(el);

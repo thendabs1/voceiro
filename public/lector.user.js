@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.242
+// @version      2.0.243
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.242';
+const SCRIPT_VERSION = '2.0.243';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -915,10 +915,13 @@ const I18N = {
     extractionDiagnostics: 'Diagnóstico de la página',
     extractionTitleLbl: 'Título',
     extractionMetricsLbl: 'Contenido',
+    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Candidatos de contenedor',
     extractionPreviewLbl: 'Previsualización',
     extractionPreviewEmpty: 'Sin contenido para previsualizar.',
+    extractionPaywallYes: 'Detectado',
+    extractionPaywallNo: 'No detectado',
     extractionNoCandidates: 'Sin candidatos relevantes',
     extractionPickerHint: 'Pasa el ratón y haz clic para elegir el contenedor. Esc para cancelar.',
     extractionWordsShort: 'palabras',
@@ -1104,10 +1107,13 @@ const I18N = {
     extractionDiagnostics: 'Diagnóstico da páxina',
     extractionTitleLbl: 'Título',
     extractionMetricsLbl: 'Contido',
+    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Candidatos de contedor',
     extractionPreviewLbl: 'Previsualización',
     extractionPreviewEmpty: 'Sen contido para previsualizar.',
+    extractionPaywallYes: 'Detectado',
+    extractionPaywallNo: 'Non detectado',
     extractionNoCandidates: 'Sen candidatos relevantes',
     extractionPickerHint: 'Pasa o rato e fai clic para elixir o contedor. Esc para cancelar.',
     extractionWordsShort: 'palabras',
@@ -1293,10 +1299,13 @@ const I18N = {
     extractionDiagnostics: 'Diagnòstic de la pàgina',
     extractionTitleLbl: 'Títol',
     extractionMetricsLbl: 'Contingut',
+    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Candidats de contenidor',
     extractionPreviewLbl: 'Previsualització',
     extractionPreviewEmpty: 'Sense contingut per previsualitzar.',
+    extractionPaywallYes: 'Detectat',
+    extractionPaywallNo: 'No detectat',
     extractionNoCandidates: 'Sense candidats rellevants',
     extractionPickerHint: 'Passa el ratolí i fes clic per triar el contenidor. Esc per cancel·lar.',
     extractionWordsShort: 'paraules',
@@ -1482,10 +1491,13 @@ const I18N = {
     extractionDiagnostics: 'Page diagnostics',
     extractionTitleLbl: 'Title',
     extractionMetricsLbl: 'Content',
+    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlays',
     extractionCandidatesLbl: 'Container candidates',
     extractionPreviewLbl: 'Preview',
     extractionPreviewEmpty: 'No content to preview.',
+    extractionPaywallYes: 'Detected',
+    extractionPaywallNo: 'Not detected',
     extractionNoCandidates: 'No relevant candidates',
     extractionPickerHint: 'Hover and click to pick the container. Esc to cancel.',
     extractionWordsShort: 'words',
@@ -1671,10 +1683,13 @@ const I18N = {
     extractionDiagnostics: 'Orriaren diagnostikoa',
     extractionTitleLbl: 'Izenburua',
     extractionMetricsLbl: 'Edukia',
+    extractionPaywallLbl: 'Paywall',
     extractionOverlaysLbl: 'Overlayak',
     extractionCandidatesLbl: 'Edukiontzi hautagaiak',
     extractionPreviewLbl: 'Aurrebista',
     extractionPreviewEmpty: 'Ez dago edukirik aurrebistarako.',
+    extractionPaywallYes: 'Detektatuta',
+    extractionPaywallNo: 'Ez detektatuta',
     extractionNoCandidates: 'Hautagai garrantzitsurik ez',
     extractionPickerHint: 'Pasatu sagua eta egin klik edukiontzia aukeratzeko. Esc utzi.',
     extractionWordsShort: 'hitza',
@@ -3429,6 +3444,7 @@ function analyzeCurrentPage(){
     title: { text: '', source: '' },
     metrics: { p: 0, img: 0, figure: 0, blockquote: 0, textLen: 0, words: 0 },
     candidates: [],
+    paywall: { detected: false, indicators: [] },
     overlays: []
   };
 
@@ -3478,6 +3494,23 @@ function analyzeCurrentPage(){
   });
   info.candidates.sort((a, b) => b.textLen - a.textLen);
   info.candidates = info.candidates.slice(0, 8);
+
+  const paywallPatterns = [
+    { sel: '[class*="paywall"]', name: 'class~"paywall"' },
+    { sel: '[class*="regwall"]', name: 'class~"regwall"' },
+    { sel: '[class*="subscriber"]', name: 'class~"subscriber"' },
+    { sel: '[class*="subscription"]', name: 'class~"subscription"' },
+    { sel: '[data-paywall]', name: '[data-paywall]' },
+    { sel: '[class*="premium-content"]', name: 'class~"premium-content"' }
+  ];
+  paywallPatterns.forEach(p => {
+    let n = 0;
+    try { n = document.querySelectorAll(p.sel).length; } catch(e){}
+    if (n){
+      info.paywall.detected = true;
+      info.paywall.indicators.push(p.name + ' (' + n + ')');
+    }
+  });
 
   Array.from(document.querySelectorAll('body > *')).forEach(el => {
     const cs = window.getComputedStyle(el);
@@ -4000,6 +4033,10 @@ function openExtractionTool(siteIdx, onClose){
       ? diag.overlays.map(o => '<code style="font-size:11px;background:var(--quote-bg);padding:2px 6px;border-radius:3px;margin:2px 4px 2px 0;display:inline-block">' +
           esc(o.tag + (o.id ? '#' + o.id : '') + (o.cls ? '.' + o.cls.split(/\s+/)[0] : '')) + ' (z-index: ' + esc(o.zIndex) + ')</code>').join('')
       : '<span style="color:var(--muted);font-size:12px">—</span>';
+    const paywall = diag.paywall.detected
+      ? '<span style="color:var(--block);font-weight:bold">' + esc(t('extractionPaywallYes')) + '</span>' +
+        ' <span style="color:var(--muted);font-size:12px">(' + diag.paywall.indicators.map(esc).join(', ') + ')</span>'
+      : '<span style="color:var(--preset);font-weight:bold">' + esc(t('extractionPaywallNo')) + '</span>';
     return (
       '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;background:var(--quote-bg)">' +
         '<h4 style="margin:0 0 10px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' +
@@ -4011,6 +4048,7 @@ function openExtractionTool(siteIdx, onClose){
             diag.metrics.p + ' &lt;p&gt; · ' + diag.metrics.img + ' img · ' +
             diag.metrics.words + ' ' + esc(t('extractionWordsShort')) + ' · ' +
             diag.metrics.textLen + ' ' + esc(t('extractionCharsShort')) + '<br>' +
+          '<strong>' + esc(t('extractionPaywallLbl')) + ':</strong> ' + paywall + '<br>' +
           '<strong>' + esc(t('extractionOverlaysLbl')) + ':</strong> ' +
             (diag.overlays.length ? diag.overlays.length + ' ' + overlays : '<span style="color:var(--muted);font-size:12px">—</span>') +
         '</div>' +
