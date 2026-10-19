@@ -4679,7 +4679,7 @@ function debounce(fn, ms){
 /* ═══════════════════════════════════════════════════════════════
    FECHAS
    ═══════════════════════════════════════════════════════════════ */
-const HORIZONTE_FUTURO_MS = 6 * 60 * 60 * 1000;
+const HORIZONTE_FUTURO_MS = 1 * 60 * 60 * 1000;
 
 let ABS_FMT = null;
 let ABS_FMT_LANG = null;
@@ -9739,6 +9739,19 @@ function _paraOrden(n, clave){
   };
 }
 
+// Timestamp de ordenación para el feed. Un programado futuro no debe flotar
+// por encima de lo ya publicado, así que se trata como si fuera "ahora".
+function _tsOrdenFeed(n, ahora){
+  if (n._esFuturo && !isNaN(n._tsShow) && n._tsShow > ahora) return ahora;
+  return n._tsOrden;
+}
+
+// Vista del feed: igual que _paraOrden, pero con el timestamp ajustado para
+// que los programados no tapen las noticias ya publicadas.
+function _paraOrdenFeed(n, clave, ahora){
+  return { ..._paraOrden(n, clave), ts: _tsOrdenFeed(n, ahora) };
+}
+
 // Ocultar leídas / vistas (HIDE_MODE). Una sola copia: la usan la lista,
 // la prensa (aplicarTier3) y el recuento de las pestañas.
 function _ocultaPorLectura(n, hm){
@@ -9987,14 +10000,15 @@ if (!capas.size) {
       const fb = bFav ? 1 : 0;
       if (fa !== fb) return fb - fa;
     }
-    const H6 = 6 * 3600 * 1000;
-    const aLejos = a._esFuturo && !isNaN(a._tsShow) && (a._tsShow - ahora > H6);
-    const bLejos = b._esFuturo && !isNaN(b._tsShow) && (b._tsShow - ahora > H6);
+    const aLejos = a._esFuturo && !isNaN(a._tsShow) && (a._tsShow - ahora > HORIZONTE_FUTURO_MS);
+    const bLejos = b._esFuturo && !isNaN(b._tsShow) && (b._tsShow - ahora > HORIZONTE_FUTURO_MS);
     if (aLejos !== bLejos) return aLejos - bLejos;
     // El resto lo decide el núcleo: fecha según el orden, sin fecha siempre
     // al final (antes, con 'antiguos', salían las primeras) y relevancia
     // por el rango que dio el archivo para esta consulta.
-    return cmpNucleo(_paraOrden(a, consulta.clave), _paraOrden(b, consulta.clave));
+    // Los programados futuros se ordenan como "ahora", para no tapar lo
+    // publicado recientemente.
+    return cmpNucleo(_paraOrdenFeed(a, consulta.clave, ahora), _paraOrdenFeed(b, consulta.clave, ahora));
   });
 
   ULT_FILTRADAS = filtradas;
@@ -10372,15 +10386,16 @@ function _anexarItemsIncremental(items, ctx) {
   if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
 
   const orden = ctx.orden || 'recientes';
+  const ahora = ctx.ahora || Date.now();
 
   // ¿Todos los nuevos van DESPUÉS del último renderizado?
   const ultimo = ULT_FILTRADAS[ULT_FILTRADAS.length - 1];
   if (!ultimo) return false;
 
-  const tsUlt = isNaN(ultimo._tsOrden) ? 0 : ultimo._tsOrden;
+  const tsUlt = isNaN(ultimo._tsOrden) ? 0 : _tsOrdenFeed(ultimo, ahora);
 
   for (const n of nuevos) {
-    const ts = isNaN(n._tsOrden) ? 0 : n._tsOrden;
+    const ts = isNaN(n._tsOrden) ? 0 : _tsOrdenFeed(n, ahora);
     const vaDespues = orden === 'antiguos' ? (ts >= tsUlt) : (ts <= tsUlt);
     if (!vaDespues) return false;
   }
