@@ -58,23 +58,6 @@ for (const rel of [
   }
 }
 
-// ── 3) Sanity funcional mínima ──
-console.log('\nSanity funcional:');
-try {
-  const { parseQuery, normalize, normDomain } = await import(resolve(ROOT, 'shared/parser.js'));
-  const q = parseQuery('sanchez web:elpais.com desde:7d');
-  if (q && typeof q === 'object') ok('parseQuery() devuelve objeto');
-  else fail('parseQuery() no devuelve objeto');
-
-  if (typeof normalize('Pepe') === 'string') ok('normalize() devuelve string');
-  else fail('normalize() no devuelve string');
-
-  if (typeof normDomain('El País.COM') === 'string') ok('normDomain() devuelve string');
-  else fail('normDomain() no devuelve string');
-} catch (e) {
-  fail(`No se pudo importar el parser: ${e.message}`);
-}
-
 // ── Resultado ──
 console.log();
 if (errores) {

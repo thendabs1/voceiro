@@ -11,6 +11,10 @@ on:
         description: 'Tipos de fuente (rss,sitemap,wp,scrape,gn)'
         required: false
         default: 'rss,sitemap,wp'
+      exigir_ok:
+        description: 'Marcar el run como fallido si alguna fuente tiene problemas'
+        type: boolean
+        default: false
       dominios:
         description: 'Limitar a estos dominios (coma; vacío = todos)'
         required: false
@@ -32,7 +36,16 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Probar fuentes
-        run: python salud_fuentes.py --tipos "$TIPOS" --dominios "$DOMINIOS"
+        run: |
+          opciones=()
+          if [ "$EXIGIR_OK" = true ]; then opciones+=(--exigir-ok); fi
+          python salud_fuentes.py --tipos "$TIPOS" --dominios "$DOMINIOS" --muestras 3 --json salud.json "${opciones[@]}"
         env:
+          EXIGIR_OK: ${{ inputs.exigir_ok }}
           TIPOS: ${{ inputs.tipos }}
           DOMINIOS: ${{ inputs.dominios }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: salud-fuentes
+          path: salud.json

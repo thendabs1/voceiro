@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
     paths:
+      - '*.py'
+      - 'requirements.txt'
       - 'shared/**'
       - 'tests/**'
       - 'public/**'
@@ -26,7 +28,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Tests del buscador
+      - name: Tests de buscador, lector, temas y sincronización
         run: node --test 'tests/**/*.test.mjs'
 
       # Las copias del parser las sincroniza sync-parser.yml tras el merge;
@@ -36,3 +38,16 @@ jobs:
         run: |
           node scripts/sync-parser.mjs
           node scripts/test-parser.mjs
+
+  fuentes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Extracción y diagnóstico sin red
+        run: python -m unittest discover -s tests/fuentes -v

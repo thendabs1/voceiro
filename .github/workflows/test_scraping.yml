@@ -1,27 +1,43 @@
-name: Test scraping
+name: Diagnóstico de dominio
 
 on:
   workflow_dispatch:
     inputs:
       url:
-        description: 'URL a probar'
+        description: 'URL completa de página, feed o sitemap (también fuera del catálogo)'
         required: true
         default: 'https://www.revistamongolia.com/'
+      tipo:
+        description: 'auto descubre feeds y prueba fuentes del catálogo; otros prueban un método'
+        type: choice
+        default: auto
+        options: [auto, rss, sitemap, scrape, wp, gn]
+      lang:
+        description: 'Idioma de Google News para dominios nuevos'
+        default: es
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  diagnostico:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Instalar dependencias
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Ejecutar test
-        run: python test_scraping.py "${{ github.event.inputs.url }}"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Inspeccionar estructura y extracción
+        run: python diagnosticar_dominio.py "$URL" --tipo "$TIPO" --lang "$IDIOMA" --json diagnostico.json
+        env:
+          URL: ${{ inputs.url }}
+          TIPO: ${{ inputs.tipo }}
+          IDIOMA: ${{ inputs.lang }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: diagnostico-dominio
+          path: diagnostico.json
