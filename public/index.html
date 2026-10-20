@@ -146,6 +146,7 @@
     gap: 10px;
     flex-wrap: nowrap;
     min-width: 0;
+    flex: 1 1 auto;
   }
   header .meta .meta-text{
     flex: 1 1 auto;
@@ -1389,7 +1390,9 @@
 .btn-cab{ display:inline-flex; align-items:center; gap:.4em; }
 @media (max-width: 640px){
   header #h-title{ font-size: 1.3em; }
-  header .header-top{ flex-wrap: nowrap; }
+  header .header-top{ flex-wrap: wrap; }
+  header .meta{ order: 3; flex: 1 0 100%; }
+  header .header-actions-right{ order: 2; margin-left: auto; }
   header .header-actions .btn-cab{
     min-width: 40px; min-height: 40px; padding: 6px 9px; justify-content: center;
   }
@@ -1913,22 +1916,22 @@
 <header>
   <div class="header-top">
     <h1 id="h-title">Voceiro</h1>
+    <p class="meta">
+      <span class="meta-text">
+        <span id="meta-prefix"></span>
+        <span id="fecha">06/10/2026 15:21</span>
+        <span>·</span>
+        <span id="contador"></span>
+        <span id="total-r2-sep" hidden>·</span>
+        <span id="total-r2" hidden></span>
+      </span>
+    </p>
     <div class="header-actions header-actions-right">
       <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
       <button id="btn-acces" class="btn-cab" type="button"></button>
       <button id="btn-config" class="btn-cab" type="button"></button>
     </div>
   </div>
-  <p class="meta">
-    <span class="meta-text">
-      <span id="meta-prefix"></span>
-      <span id="fecha">06/10/2026 15:21</span>
-      <span>·</span>
-      <span id="contador"></span>
-      <span id="total-r2-sep" hidden>·</span>
-      <span id="total-r2" hidden></span>
-    </span>
-  </p>
 </header>
 <!-- AJUSTES
      Una sola ventana. Escritorio y tablet: panel lateral con las secciones a
@@ -2815,7 +2818,7 @@ const I18N = {
     ordenRelevancia:         'Relevancia',
 
     /* ── Contador / vacío / errores ── */
-    contador:               'Mostrando {n} de {total} titulares',
+    contador:               'Mostrando {n}',
     contadorScope:          'Mostrando {n} de {total} en modo activo',
     contadorR2:             '{n} en total',
     contadorR2Title:        'Noticias guardadas en R2: {dias} días, desde el {desde}',
@@ -3141,7 +3144,7 @@ const I18N = {
     ordenAntiguos:          'Máis antigos',
     ordenRelevancia:         'Relevancia',
 
-    contador:               'Amosando {n} de {total} titulares',
+    contador:               'Amosando {n}',
     contadorScope:          'Amosando {n} de {total} en modo activo',
     contadorR2:             '{n} en total',
     contadorR2Title:        'Novas gardadas en R2: {dias} días, dende o {desde}',
@@ -3460,7 +3463,7 @@ const I18N = {
     ordenAntiguos:          'Més antics',
     ordenRelevancia:         'Rellevància',
 
-    contador:               'Mostrant {n} de {total} titulars',
+    contador:               'Mostrant {n}',
     contadorScope:          'Mostrant {n} de {total} en mode actiu',
     contadorR2:             '{n} en total',
     contadorR2Title:        'Notícies desades a R2: {dias} dies, des del {desde}',
@@ -3779,7 +3782,7 @@ const I18N = {
     ordenAntiguos:          'Oldest first',
     ordenRelevancia:         'Relevance',
 
-    contador:               'Showing {n} of {total} headlines',
+    contador:               'Showing {n}',
     contadorScope:          'Showing {n} of {total} in active mode',
     contadorR2:             '{n} in total',
     contadorR2Title:        'News stored in R2: {dias} days, since {desde}',
@@ -4098,7 +4101,7 @@ const I18N = {
     ordenAntiguos:          'Zaharrenak lehenengo',
     ordenRelevancia:         'Garrantzia',
 
-    contador:               '{total}tik {n} izenburu erakusten',
+    contador:               '{n} izenburu erakusten',
     contadorScope:          '{total}etik {n} erakusten modu aktiboan',
     contadorR2:             '{n} guztira',
     contadorR2Title:        'R2n gordetako albisteak: {dias} egun, {desde}tik',
