@@ -87,8 +87,10 @@ export function textoVacio(c) {
   return !c || (!c.incluir.length && !c.excluir.length);
 }
 
-// ¿Aparece el término en la lista de palabras? Devuelve el índice de inicio o -1.
-function _buscar(palabras, termino) {
+// ¿Aparece el término en la lista de palabras? Los temas =Palabra aportan
+// «caso» y necesitan posiciones del titular para comprobar la capitalización.
+// Devuelve el índice de inicio o -1.
+function _buscar(palabras, termino, titular) {
   const { partes, prefijo } = termino;
   const n = partes.length;
   for (let i = 0; i + n <= palabras.length; i++) {
@@ -98,6 +100,9 @@ function _buscar(palabras, termino) {
       const p = partes[k];
       const ultima = k === n - 1;
       if (ultima && prefijo ? !w.startsWith(p) : w !== p) { ok = false; break; }
+      if (termino.caso && (!titular ||
+          titular.slice(palabras[i + k].i, palabras[i + k].j)
+            .normalize('NFD').replace(/[̀-ͯ]/g, '') !== termino.caso)) { ok = false; break; }
     }
     if (ok) return i;
   }
@@ -105,10 +110,10 @@ function _buscar(palabras, termino) {
 }
 
 // palabras: palabrasDe(titular) o tokenizar(titular) (se puede cachear por item).
-export function coincide(palabras, compilado) {
+export function coincide(palabras, compilado, titular) {
   if (textoVacio(compilado)) return true;
-  for (const t of compilado.incluir) if (_buscar(palabras, t) < 0) return false;
-  for (const t of compilado.excluir) if (_buscar(palabras, t) >= 0) return false;
+  for (const t of compilado.incluir) if (_buscar(palabras, t, titular) < 0) return false;
+  for (const t of compilado.excluir) if (_buscar(palabras, t, titular) >= 0) return false;
   return true;
 }
 
@@ -121,7 +126,7 @@ export function rangosResaltado(titular, compilado) {
   for (const t of compilado.incluir) {
     const n = t.partes.length;
     for (let i = 0; i + n <= palabras.length; i++) {
-      if (_buscar(palabras.slice(i, i + n), t) === 0) {
+      if (_buscar(palabras.slice(i, i + n), t, titular) === 0) {
         rangos.push([palabras[i].i, palabras[i + n - 1].j]);
       }
     }
