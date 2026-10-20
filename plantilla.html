@@ -1558,6 +1558,10 @@
     font-weight: 400;
     margin-top: 1px;
   }
+  .vs-ayuda{ margin:4px 8px 6px; font-size:.72em; color:var(--muted); }
+  .vs-ayuda summary{ cursor:pointer; list-style:none; }
+  .vs-ayuda summary::-webkit-details-marker{ display:none; }
+  .vs-ayuda ul{ margin:6px 0 0; padding-left:1.2em; line-height:1.5; }
   .dups-details{
     margin-top:8px;
     font-size:.72em;
@@ -2106,6 +2110,10 @@
           <h3 id="aj-vista-tit"></h3>
           <div class="aj-radios" role="radiogroup" aria-labelledby="aj-hide-tit">
             <span class="aj-radios-tit" id="aj-hide-tit"></span>
+            <details class="temas-ayuda">
+              <summary><span class="temas-ayuda-q" aria-hidden="true">?</span><span id="aj-hide-ayuda-lbl"></span></summary>
+              <ul class="vs-ayuda-lista"></ul>
+            </details>
             <label><input type="radio" name="aj-hide" value="off"><span data-txt="vsHideOff"></span></label>
             <label><input type="radio" name="aj-hide" value="read"><span data-txt="vsHideRead" data-hint="vsHideReadHint"></span></label>
             <label><input type="radio" name="aj-hide" value="viewed"><span data-txt="vsHideViewed" data-hint="vsHideViewedHint"></span></label>
@@ -2384,6 +2392,10 @@
     </div>
     <fieldset>
       <legend id="vs-title-hide"></legend>
+      <details class="vs-ayuda">
+        <summary><span class="temas-ayuda-q" aria-hidden="true">?</span><span id="vs-ayuda-lbl"></span></summary>
+        <ul class="vs-ayuda-lista"></ul>
+      </details>
       <div class="filtros-lectura">
         <label class="vs-radio"><input type="radio" name="vs-hide" value="off"><span id="vs-hide-off"></span></label>
         <label class="vs-radio"><input type="radio" name="vs-hide" value="read"><span id="vs-hide-read"></span></label>
@@ -2713,6 +2725,8 @@ const I18N = {
     addToModoTitle:      'Añadir este medio al modo',
     destinoAnadirA:      'Añadir a…',
     destinoBloquearEn:   'Bloquear en…',
+    destinoTodosModos:  'Todos los modos',
+    destinoOkTodos:     'Bloqueado en todos los modos',
     destinoNuevoModo:    'Crear nuevo modo…',
     destinoOkAnadido:    'Añadido al modo',
     destinoOkBloqueado:  'Bloqueado en el modo',
@@ -2917,6 +2931,8 @@ const I18N = {
     vsTitleDup:             'Duplicados',
     vsDup:                  'Ocultar duplicados',
     vsTitleHide:            'Ocultar titulares…',
+    vsAyudaLbl:             '¿Cómo funciona?',
+    vsAyuda:                'No oculta titulares por lectura o vista.|Se ocultan después de abrir el titular.|Se ocultan al pasar el ratón durante un segundo o al avanzar el feed hasta que salen por arriba.|Combina las dos opciones anteriores.',
     vsHideOff:              'Ver todos',
     vsHideRead:             'Ya leídos',
     vsHideReadHint:         'Se ocultan al abrirlos',
@@ -3050,6 +3066,8 @@ const I18N = {
     addToModoTitle:      'Engadir este medio ao modo',
     destinoAnadirA:      'Engadir a…',
     destinoBloquearEn:   'Bloquear en…',
+    destinoTodosModos:  'Todos os modos',
+    destinoOkTodos:     'Bloqueado en todos os modos',
     destinoNuevoModo:    'Crear novo modo…',
     destinoOkAnadido:    'Engadido ao modo',
     destinoOkBloqueado:  'Bloqueado no modo',
@@ -3236,6 +3254,8 @@ const I18N = {
     vsTitleDup:             'Duplicados',
     vsDup:                  'Agochar duplicados',
     vsTitleHide:            'Agochar titulares…',
+    vsAyudaLbl:             'Como funciona?',
+    vsAyuda:                'Non agocha titulares por lectura ou vista.|Agóchanse despois de abrir o titular.|Agóchanse ao pasar o rato durante un segundo ou ao avanzar no feed ata que saen por arriba.|Combina as dúas opcións anteriores.',
     vsHideOff:              'Ver todos',
     vsHideRead:             'Xa lidos',
     vsHideReadHint:         'Agóchanse ao abrilos',
@@ -3369,6 +3389,8 @@ const I18N = {
     addToModoTitle:      'Afegir aquest mitjà al mode',
     destinoAnadirA:      'Afegir a…',
     destinoBloquearEn:   'Bloquejar a…',
+    destinoTodosModos:  'Tots els modes',
+    destinoOkTodos:     'Bloquejat en tots els modes',
     destinoNuevoModo:    'Crear un mode nou…',
     destinoOkAnadido:    'Afegit al mode',
     destinoOkBloqueado:  'Bloquejat al mode',
@@ -3555,6 +3577,8 @@ const I18N = {
     vsTitleDup:             'Duplicats',
     vsDup:                  'Amagar duplicats',
     vsTitleHide:            'Amagar titulars…',
+    vsAyudaLbl:             'Com funciona?',
+    vsAyuda:                'No amaga titulars per lectura o visualització.|S’amaguen després d’obrir el titular.|S’amaguen en passar-hi el ratolí durant un segon o en avançar pel feed fins que surten per dalt.|Combina les dues opcions anteriors.',
     vsHideOff:              'Veure tots',
     vsHideRead:             'Ja llegits',
     vsHideReadHint:         "S'amaguen en obrir-los",
@@ -3688,6 +3712,8 @@ const I18N = {
     addToModoTitle:      'Add this outlet to a mode',
     destinoAnadirA:      'Add to…',
     destinoBloquearEn:   'Block in…',
+    destinoTodosModos:  'All modes',
+    destinoOkTodos:     'Blocked in all modes',
     destinoNuevoModo:    'Create new mode…',
     destinoOkAnadido:    'Added to mode',
     destinoOkBloqueado:  'Blocked in mode',
@@ -3874,6 +3900,8 @@ const I18N = {
     vsTitleDup:             'Duplicates',
     vsDup:                  'Hide duplicates',
     vsTitleHide:            'Hide headlines…',
+    vsAyudaLbl:             'How does it work?',
+    vsAyuda:                'Does not hide headlines based on reading or viewing.|Hidden after opening the headline.|Hidden after hovering for a second or scrolling the feed until they pass off the top.|Combines the two options above.',
     vsHideOff:              'Show all',
     vsHideRead:             'Already read',
     vsHideReadHint:         'Hidden once opened',
@@ -4007,6 +4035,8 @@ const I18N = {
     addToModoTitle:      'Gehitu hedabide hau modu batera',
     destinoAnadirA:      'Gehitu honi…',
     destinoBloquearEn:   'Blokeatu honetan…',
+    destinoTodosModos:  'Modu guztietan',
+    destinoOkTodos:     'Modu guztietan blokeatuta',
     destinoNuevoModo:    'Modu berria sortu…',
     destinoOkAnadido:    'Modura gehituta',
     destinoOkBloqueado:  'Moduan blokeatuta',
@@ -4193,6 +4223,8 @@ const I18N = {
     vsTitleDup:             'Bikoiztuak',
     vsDup:                  'Bikoiztuak ezkutatu',
     vsTitleHide:            'Izenburuak ezkutatu…',
+    vsAyudaLbl:             'Nola funtzionatzen du?',
+    vsAyuda:                'Ez du izenbururik ezkutatzen irakurri edo ikusi izanagatik.|Izenburua ireki ondoren ezkutatzen dira.|Sagua segundo batez gainean edukitzean edo feed-ean aurrera egin eta goitik irtetean ezkutatzen dira.|Aurreko bi aukerak bateratzen ditu.',
     vsHideOff:              'Dena erakutsi',
     vsHideRead:             'Irakurriak',
     vsHideReadHint:         'Irekitzean ezkutatzen dira',
@@ -5095,6 +5127,9 @@ function abrirDestinoInline(idx, accion){
     escapeHtml(accion === 'first' ? t('destinoAnadirA') : t('destinoBloquearEn'))
   }</span>`;
 
+  if (accion === 'ignore'){
+    html += `<button type="button" class="destino-btn" data-destino-id="__todos">${escapeHtml(t('destinoTodosModos'))}</button>`;
+  }
   PRESETS.lista.forEach(p => {
     const activo = p.id === activoId;
     html += `<button type="button" class="destino-btn${activo ? ' activo' : ''}"
@@ -5115,6 +5150,17 @@ function abrirDestinoInline(idx, accion){
       const n = ULT_FILTRADAS[idx];
       if (!n) { cerrarDestinoInline(); return; }
 
+      if (id === '__todos'){
+        PRESETS.lista.forEach(p => {
+          if (!p.overrides) p.overrides = {};
+          p.overrides[n.dominio] = 'ignore';
+        });
+        guardarPresets();
+        ajRefrescar();
+        toast(`${t('destinoOkTodos')} · ${n.medio || n.dominio}`, 2400);
+        cerrarDestinoInline();
+        return;
+      }
       if (id === '__nuevo'){
         const nuevo = crearModoYDevolver();
         if (nuevo) aplicarOverrideEnModo(nuevo, accion, n.dominio, n.medio || n.dominio);
@@ -9922,10 +9968,6 @@ function wireResultadosDelegation(){
         toast(`${t('destinoOkBloqueado')} · ${nombre}`, 2000);
         return;
       }
-      if (PRESETS.lista.length === 1){
-        aplicarOverrideEnModo(PRESETS.lista[0], 'ignore', dom, nombre);
-        return;
-      }
       abrirDestinoInline(i, 'ignore');
       return;
     }
@@ -10072,6 +10114,15 @@ function aplicarTextos(){
 
   // Filtros de lectura.
   $('#vs-title-hide').textContent  = t('vsTitleHide');
+  $('#vs-ayuda-lbl').textContent = t('vsAyudaLbl');
+  $('#aj-hide-ayuda-lbl').textContent = t('vsAyudaLbl');
+  const descripcionesOcultar = t('vsAyuda').split('|');
+  const opcionesOcultar = ['vsHideOff', 'vsHideRead', 'vsHideViewed', 'vsHideBoth'];
+  document.querySelectorAll('.vs-ayuda-lista').forEach(lista => {
+    lista.innerHTML = opcionesOcultar.map((clave, i) =>
+      `<li><strong>${escapeHtml(t(clave))}:</strong> ${escapeHtml(descripcionesOcultar[i])}</li>`
+    ).join('');
+  });
   $('#vs-hide-off').innerHTML    = escapeHtml(t('vsHideOff'));
   $('#vs-hide-read').innerHTML   = escapeHtml(t('vsHideRead'))
     + `<small>${escapeHtml(t('vsHideReadHint'))}</small>`;
