@@ -2751,7 +2751,7 @@ const I18N = {
     cfgTodosGrupos:         'Todos los grupos',
     cfgPalabras:            'Temas',
     cfgPalabrasHint:        'Una línea = un tema',
-    cfgTemasAyuda:          'incendio|también «incendios»\nsan salvador|las dos palabras, en cualquier orden\n"san salvador"|frase exacta\nPP|sigla: palabra entera\ngalicia -feijoo|«galicia», pero sin «feijoo»',
+    cfgTemasAyuda:          'incendio|también «incendios»\nsan salvador|las dos palabras, en cualquier orden\n"san salvador"|frase exacta\n=Portas|palabra entera, respetando mayúsculas\nPP|sigla: palabra entera\ngalicia -feijoo|«galicia», pero sin «feijoo»',
     cfgBackup:              'Copia de seguridad',
     cfgBackupMsg:           'Exporta tu configuración a un archivo compatible con Voceiro y con el plugin Lector Universal.',
     cfgHelpLbl:             'Ayúdanos a mejorar',
@@ -3080,7 +3080,7 @@ const I18N = {
     cfgTodosGrupos:         'Todos os grupos',
     cfgPalabras:            'Temas',
     cfgPalabrasHint:        'Unha liña = un tema',
-    cfgTemasAyuda:          'incendio|tamén «incendios»\nsan salvador|as dúas palabras, en calquera orde\n"san salvador"|frase exacta\nPP|sigla: palabra enteira\ngalicia -feijoo|«galicia», pero sen «feijoo»',
+    cfgTemasAyuda:          'incendio|tamén «incendios»\nsan salvador|as dúas palabras, en calquera orde\n"san salvador"|frase exacta\n=Portas|palabra enteira, respectando maiúsculas\nPP|sigla: palabra enteira\ngalicia -feijoo|«galicia», pero sen «feijoo»',
     cfgBackup:              'Copia de seguridade',
     cfgBackupMsg:           'Exporta a túa configuración a un ficheiro compatible con Voceiro e co plugin Lector Universal.',
     cfgHelpLbl:             'Axúdanos a mellorar',
@@ -3399,7 +3399,7 @@ const I18N = {
     cfgTodosGrupos:         'Tots els grups',
     cfgPalabras:            'Temes',
     cfgPalabrasHint:        'Una línia = un tema',
-    cfgTemasAyuda:          'incendi|també «incendis»\nsant salvador|les dues paraules, en qualsevol ordre\n"sant salvador"|frase exacta\nPP|sigla: paraula sencera\ncatalunya -illa|«catalunya», però sense «illa»',
+    cfgTemasAyuda:          'incendi|també «incendis»\nsant salvador|les dues paraules, en qualsevol ordre\n"sant salvador"|frase exacta\n=Portas|paraula sencera, respectant majúscules\nPP|sigla: paraula sencera\ncatalunya -illa|«catalunya», però sense «illa»',
     cfgBackup:              'Còpia de seguretat',
     cfgBackupMsg:           'Exporta la teva configuració a un fitxer compatible amb Voceiro i amb el plugin Lector Universal.',
     cfgHelpLbl:             "Ajuda'ns a millorar",
@@ -3718,7 +3718,7 @@ const I18N = {
     cfgTodosGrupos:         'All groups',
     cfgPalabras:            'Topics',
     cfgPalabrasHint:        'One line = one topic',
-    cfgTemasAyuda:          'fire|also «fires»\nsan salvador|both words, in any order\n"san salvador"|exact phrase\nUK|acronym: whole word\ngalicia -feijoo|«galicia», but not «feijoo»',
+    cfgTemasAyuda:          'fire|also «fires»\nsan salvador|both words, in any order\n"san salvador"|exact phrase\n=Portas|whole word, matching capitalization\nUK|acronym: whole word\ngalicia -feijoo|«galicia», but not «feijoo»',
     cfgBackup:              'Backup',
     cfgBackupMsg:           'Export your configuration to a file compatible with Voceiro and the Universal Reader plugin.',
     cfgHelpLbl:             'Help us improve',
@@ -4037,7 +4037,7 @@ const I18N = {
     cfgTodosGrupos:         'Talde guztiak',
     cfgPalabras:            'Gaiak',
     cfgPalabrasHint:        'Lerro bat = gai bat',
-    cfgTemasAyuda:          'sute|baita «suteak» ere\nsan salvador|bi hitzak, edozein ordenatan\n"san salvador"|esaldi zehatza\nPP|sigla: hitz osoa\ngalizia -feijoo|«galizia», baina «feijoo» gabe',
+    cfgTemasAyuda:          'sute|baita «suteak» ere\nsan salvador|bi hitzak, edozein ordenatan\n"san salvador"|esaldi zehatza\n=Portas|hitz osoa, maiuskulak errespetatuz\nPP|sigla: hitz osoa\ngalizia -feijoo|«galizia», baina «feijoo» gabe',
     cfgBackup:              'Babeskopia',
     cfgBackupMsg:           'Esportatu zure konfigurazioa Voceiro-rekin eta Lector Universal pluginarekin bateragarria den fitxategi batera.',
     cfgHelpLbl:             'Lagun gaitzazu hobetzen',
@@ -8096,7 +8096,7 @@ function _temasDe(n){
   const out = [];
   for (const m of TEMAS_TODOS){
     if (m.ignorar.has(n.dominio)) continue;
-    for (const etiqueta of temasQueCasan(palabras, m.temas)) out.push({ id: m.id, etiqueta });
+    for (const etiqueta of temasQueCasan(palabras, m.temas, n.titular)) out.push({ id: m.id, etiqueta });
   }
   n._temas = out;
   n._temasVer = TEMAS_VER;

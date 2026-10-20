@@ -8,7 +8,7 @@ import {
   compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible,
 } from '../../shared/busqueda/temas.js';
 
-const casan = (lineas, titular) => temasQueCasan(palabrasDe(titular), compilarTemas(lineas));
+const casan = (lineas, titular) => temasQueCasan(palabrasDe(titular), compilarTemas(lineas), titular);
 
 test('inicio de palabra: incendio casa «Incendios»', () => {
   assert.deepEqual(casan(['incendio'], 'Incendios en Ourense'), ['incendio']);
@@ -28,6 +28,28 @@ test('sin tildes ni mayúsculas, también con ñ', () => {
   assert.deepEqual(casan(['Coruña'], 'Lluvia en A CORUNA'), ['Coruña']);
   assert.deepEqual(casan(['coruna'], 'Lluvia en A Coruña'), ['coruna']);
   assert.deepEqual(casan(['españa'], 'La selección de España gana'), ['españa']);
+});
+
+test('=Palabra exige palabra completa y conserva mayúsculas', () => {
+  const xacobeo = 'A Xunta fixa os límites oficiais ás portas do Xacobeo 2027';
+  const municipio = 'Melloras de infraestruturas e servizos en Ribadumia e Portas';
+  assert.deepEqual(casan(['Portas', '"Portas"'], xacobeo), ['Portas', '"Portas"']);
+  assert.deepEqual(casan(['=Portas'], xacobeo), []);
+  assert.deepEqual(casan(['=Portas'], municipio), ['=Portas']);
+  assert.deepEqual(casan(['=Portas'], 'Portasvivas prepara unha festa'), []);
+  assert.deepEqual(casan(['=portas'], xacobeo), ['=portas']);
+  assert.deepEqual(casan(['=Portas galicia'], 'Galicia celebra unha festa en Portas'), ['=Portas galicia']);
+  assert.deepEqual(casan(['=Portas galicia'], 'Galicia está ás portas dunha festa'), []);
+  assert.equal(etiquetaVisible('=Portas'), 'Portas');
+});
+
+test('=Palabra conserva mayúsculas al resaltar, incluso si aparece también en minúsculas', () => {
+  const titular = 'ás portas de Portas';
+  const temas = compilarTemas(['=Portas']);
+  const etiquetas = temasQueCasan(palabrasDe(titular), temas, titular);
+  assert.deepEqual(etiquetas, ['=Portas']);
+  const rangos = rangosResaltado(titular, compiladoDeTemas(temas, etiquetas));
+  assert.deepEqual(rangos.map(([i, j]) => titular.slice(i, j)), ['Portas']);
 });
 
 test('siglas de 1-2 letras: palabra completa, no se ignoran', () => {
