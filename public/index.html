@@ -101,10 +101,7 @@
   .con-ico{ display:inline-flex; align-items:center; gap:.4em; }
   /* ═══ Cabecera ═══ */
   header{
-    position: sticky;
-    top: 0;
     background: var(--bg);
-    z-index: 10;
     padding: 12px 0 0;
   }
   header .header-top{
@@ -135,20 +132,9 @@
   header .header-actions .lang-select{
     flex-shrink: 0;
   }
-  header .header-actions-left{
-    flex: 0 1 auto;
-    min-width: 0;
-  }
   header .header-actions-right{
     flex: 0 0 auto;
     margin-left: auto;   /* ← empuja el grupo a la derecha */
-  }
-  header .header-actions-left .btn-preset{
-    flex-shrink: 1;
-    max-width: 260px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   
   header .meta{
@@ -160,11 +146,6 @@
     gap: 10px;
     flex-wrap: nowrap;
     min-width: 0;
-  }
-  header .meta .view-settings-wrap{
-    flex: 0 0 auto;
-   /* margin-left: auto;   /* ← empuja el botón al extremo derecho */
-    font-size: 1.15em;
   }
   header .meta .meta-text{
     flex: 1 1 auto;
@@ -585,30 +566,57 @@
   /* ═══ Filtros ═══ */
 .filtros-wrap{
   position: sticky;
-  top: var(--header-h, 130px);
+  top: 0;
   background: var(--bg);
   z-index: 9;
   padding: 6px 0 0;
 }
 .filtros-row{
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   padding-bottom: 10px;
 }
 .filtros-panel{
-  padding-bottom: 10px;
-  animation: filtros-in .15s ease-out;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 12px;
+  width: min(640px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-.filtros-panel[hidden]{ display: none; }
-@keyframes filtros-in{
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+.filtros-panel::backdrop{ background: rgba(0,0,0,.4); }
+.filtros-cab{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.filtros-cab h2{ margin:0; font-size:1.1em; }
+.filtros-panel label > span{ display:block; font-size:.78em; margin-bottom:4px; }
+.filtros-panel select, .filtros-panel input[type="date"]{ width:100%; min-height:44px; }
+.filtros-panel fieldset{ margin:18px 0 0; padding:12px; border:1px solid var(--border); border-radius:8px; }
+.filtros-panel legend{ font-size:.85em; }
+.filtros-panel .vs-radio{ min-height:44px; }
+.filtros-panel .vs-radio span{ margin:0; }
+.filtros-lectura{ display:grid; grid-template-columns:1fr 1fr; }
+.filtros-wrap .preset-wrap{ min-width:0; max-width:240px; }
+.filtros-wrap .btn-preset{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-height:44px; }
+#btn-filtros, #btn-buscar, #filtros-cerrar{ min-height:44px; opacity:1; font-size:.78em; }
+#btn-buscar{ display:none; }
+.lectura-activa{ margin-bottom:8px; font-size:.78em; }
+@media (max-width: 640px){
+  .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto; gap:6px; }
+  .filtros-wrap .preset-wrap{ max-width:none; }
+  #btn-buscar{ display:inline-flex; align-items:center; gap:6px; }
+  .filtros-row .filtro-buscar-wrap, .filtros-row #btn-prensa{ display:none; }
+  .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; grid-row:2; grid-column:1 / 3; }
+  .filtros-wrap.busqueda-abierta #btn-prensa{ display:inline-flex; grid-row:2; grid-column:3; min-height:44px; }
+  .filtros-panel{ margin:auto 0 0; width:100%; max-width:none; max-height:85dvh; border-radius:16px 16px 0 0; padding:16px 16px max(16px, env(safe-area-inset-bottom)); }
+  .filtros-lectura{ grid-template-columns:1fr; }
 }
 .filtros{
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 .filtros select{
@@ -1365,9 +1373,6 @@
 @media (max-width: 640px){
   header #h-title{ font-size: 1.3em; }
   header .header-top{ flex-wrap: nowrap; }
-  header .header-actions-left{ flex: 1 1 auto; flex-wrap: nowrap; }
-  header .preset-wrap{ min-width: 0; max-width: 100%; }
-  header .header-actions-left .btn-preset{ max-width: 100%; min-width: 0; }
   header .header-actions .btn-cab{
     min-width: 40px; min-height: 40px; padding: 6px 9px; justify-content: center;
   }
@@ -1375,13 +1380,6 @@
     position: absolute; width: 1px; height: 1px; overflow: hidden;
     clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
   }
-}
-/* Móvil estrecho: título e iconos arriba; el modo, abajo con todo el ancho
-   (en una fila se quedaría en «Ge… ▾»). */
-@media (max-width: 480px){
-  header .header-top{ flex-wrap: wrap; row-gap: 6px; }
-  header .header-actions-right{ order: 1; margin-left: auto; }
-  header .header-actions-left{ order: 2; flex: 1 1 100%; }
 }
   @media (max-width:900px){
 .filtros-row{ position: static; }
@@ -1480,10 +1478,6 @@
     .btn-prensa span { font-size: .95em; }
     .btn-prensa { padding: 6px 8px; }
   }
-  .view-settings-wrap{
-    position: relative;
-    display: inline-flex;
-  }
   .btn-view-settings{
     display: inline-flex;
     align-items: center;
@@ -1507,18 +1501,6 @@
     display: none;
   }
 
-  .view-settings-menu{
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    min-width: 250px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: 0 8px 24px var(--shadow);
-    padding: 8px;
-    z-index: 60;
-  }
   .vs-caret{
     display: inline-block;
     font-size: .9em;
@@ -1529,16 +1511,6 @@
   .btn-view-settings[aria-expanded="true"] .vs-caret{
     transform: rotate(180deg);
   }
-  .vs-group{ padding: 4px 6px; }
-  .vs-title{
-    font-size: .62em;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: var(--muted);
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .vs-item,
   .vs-radio{
     display: flex;
     align-items: center;
@@ -1550,9 +1522,7 @@
     user-select: none;
     line-height: 1.3;
   }
-  .vs-item:hover,
   .vs-radio:hover{ background: var(--quote-bg); }
-  .vs-item input,
   .vs-radio input{
     accent-color: var(--save);
     width: 1.1em;
@@ -1567,34 +1537,6 @@
     color: var(--muted);
     font-weight: 400;
     margin-top: 1px;
-  }
-  .vs-sep{
-    height: 1px;
-    background: var(--border);
-    margin: 6px 4px;
-  }
-  .vs-reset{
-    width: 100%;
-    justify-content: center;
-    padding: 6px 10px;
-    font-size: .74em;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .vs-reset:hover{
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-  @media (max-width: 560px){
-    .view-settings-menu{
-      right: auto;
-      left: 0;
-      min-width: 220px;
-    }
   }
   .dups-details{
     margin-top:8px;
@@ -1904,6 +1846,7 @@
   <symbol id="i-hash" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
   <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></symbol>
@@ -1953,13 +1896,6 @@
 <header>
   <div class="header-top">
     <h1 id="h-title">Voceiro</h1>
-    <div class="header-actions header-actions-left">
-      <span class="preset-wrap">
-        <button id="btn-preset" class="btn-preset" type="button"
-                aria-expanded="false" aria-haspopup="true"></button>
-        <div id="preset-menu" class="preset-menu" style="display:none"></div>
-      </span>
-    </div>
     <div class="header-actions header-actions-right">
       <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
       <button id="btn-acces" class="btn-cab" type="button"></button>
@@ -1974,34 +1910,6 @@
       <span id="contador"></span>
       <span id="total-r2-sep" hidden>·</span>
       <span id="total-r2" hidden></span>
-    </span>
-    <span class="view-settings-wrap">
-      <button id="btn-view-settings" class="btn-dup-inline btn-view-settings" type="button"
-              aria-expanded="false" aria-haspopup="true">
-        <svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg>
-        <span id="vs-label">Vista</span>
-        <span id="vs-count" class="vs-count" data-count="0">0</span>
-        <span class="vs-caret"><svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></span>
-      </button>
-      <div id="view-settings-menu" class="view-settings-menu" style="display:none">
-        <div class="vs-group">
-          <div class="vs-title" id="vs-title-dup"></div>
-          <label class="vs-item">
-            <input type="checkbox" id="vs-dup">
-            <span id="vs-dup-label"></span>
-          </label>
-        </div>
-        <div class="vs-sep"></div>
-        <div class="vs-group">
-          <div class="vs-title" id="vs-title-hide"></div>
-          <label class="vs-radio"><input type="radio" name="vs-hide" value="off">   <span id="vs-hide-off"></span></label>
-          <label class="vs-radio"><input type="radio" name="vs-hide" value="read">  <span id="vs-hide-read"></span></label>
-          <label class="vs-radio"><input type="radio" name="vs-hide" value="viewed"><span id="vs-hide-viewed"></span></label>
-          <label class="vs-radio"><input type="radio" name="vs-hide" value="both">  <span id="vs-hide-both"></span></label>
-        </div>
-        <div class="vs-sep"></div>
-        <button class="vs-reset con-ico" id="vs-reset" type="button"></button>
-      </div>
     </span>
   </p>
 </header>
@@ -2176,12 +2084,6 @@
         <!-- ═══════════ FEED ═══════════ -->
         <div class="aj-pagina" data-pagina="feed" hidden>
           <h3 id="aj-vista-tit"></h3>
-          <label class="cfg-toggle">
-            <input type="checkbox" id="aj-dup">
-            <span class="cfg-toggle-txt">
-              <span class="cfg-toggle-title" id="aj-dup-lbl"></span>
-            </span>
-          </label>
           <div class="aj-radios" role="radiogroup" aria-labelledby="aj-hide-tit">
             <span class="aj-radios-tit" id="aj-hide-tit"></span>
             <label><input type="radio" name="aj-hide" value="off"><span data-txt="vsHideOff"></span></label>
@@ -2415,7 +2317,13 @@
 <!-- FILTROS -->
 <section class="filtros-wrap">
   <div class="filtros-row">
-    <div class="filtro-buscar-wrap">
+    <span class="preset-wrap">
+      <button id="btn-preset" class="btn-preset" type="button"
+              aria-expanded="false" aria-haspopup="true"></button>
+      <div id="preset-menu" class="preset-menu" style="display:none"></div>
+    </span>
+    <button id="btn-buscar" type="button" aria-expanded="false" aria-controls="buscar-wrap"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg><span></span></button>
+    <div class="filtro-buscar-wrap" id="buscar-wrap">
       <input type="search" id="buscar" autocomplete="off">
       <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
       <div id="buscar-sugerencias" class="buscar-sugerencias" style="display:none"></div>
@@ -2425,31 +2333,45 @@
       <span>prensa</span>
     </button>
     <button id="btn-filtros" class="btn-dup-inline btn-view-settings" type="button"
-            aria-expanded="false" aria-haspopup="true" aria-controls="filtros-panel">
+            aria-expanded="false" aria-haspopup="dialog" aria-controls="filtros-panel">
       <svg class="ico" aria-hidden="true"><use href="#i-filter"/></svg>
       <span id="filtros-label"></span>
       <span id="filtros-count" class="vs-count" data-count="0">0</span>
       <span class="vs-caret"><svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></span>
     </button>
   </div>
-  <div id="filtros-panel" class="filtros-panel" hidden>
+  <dialog id="filtros-panel" class="filtros-panel" aria-labelledby="filtros-titulo">
+    <div class="filtros-cab">
+      <h2 id="filtros-titulo"></h2>
+      <button id="filtros-cerrar" type="button" autofocus></button>
+    </div>
     <div class="filtros">
-      <select id="grupo"><option value=""></option></select>
-      <select id="tipo"><option value=""></option></select>
-      <select id="rango">
+      <label><span data-filtro-label="grupo"></span><select id="grupo"><option value=""></option></select></label>
+      <label><span data-filtro-label="tipo"></span><select id="tipo"><option value=""></option></select></label>
+      <label><span data-filtro-label="periodo"></span><select id="rango">
         <option value=""></option>
         <option value="1"></option>
         <option value="2"></option>
-      </select>
-      <select id="orden">
+      </select></label>
+      <label><span data-filtro-label="orden"></span><select id="orden">
         <option value="recientes"></option>
         <option value="antiguos"></option>
         <option value="relevancia"></option>
-      </select>
-      <input type="date" id="fecha-desde" aria-label="Desde">
-      <input type="date" id="fecha-hasta" aria-label="Hasta">
+      </select></label>
+      <label><span data-filtro-label="desde"></span><input type="date" id="fecha-desde"></label>
+      <label><span data-filtro-label="hasta"></span><input type="date" id="fecha-hasta"></label>
     </div>
-  </div>
+    <fieldset>
+      <legend id="vs-title-hide"></legend>
+      <div class="filtros-lectura">
+        <label class="vs-radio"><input type="radio" name="vs-hide" value="off"><span id="vs-hide-off"></span></label>
+        <label class="vs-radio"><input type="radio" name="vs-hide" value="read"><span id="vs-hide-read"></span></label>
+        <label class="vs-radio"><input type="radio" name="vs-hide" value="viewed"><span id="vs-hide-viewed"></span></label>
+        <label class="vs-radio"><input type="radio" name="vs-hide" value="both"><span id="vs-hide-both"></span></label>
+      </div>
+    </fieldset>
+  </dialog>
+  <button id="lectura-activa" class="chip lectura-activa" type="button" hidden></button>
 </section>
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
@@ -2753,6 +2675,8 @@ const I18N = {
     cfgModoBorrado:         'Modo borrado: {X}',
     cfgModoUnicoNoBorrar:   'No puedes borrar el único modo. Crea otro antes.',
     fltBtn: 'Filtros',
+    fltBuscarBoton: 'Buscar',
+    fltCampos: 'Grupo|Tipo|Período|Orden|Desde|Hasta',
 
     /* ── Overrides por dominio ── */
     cfgOverrideHint:        'Medios que este modo fuerza o bloquea. Para añadir uno que no está en la lista, escribe su dominio en el buscador de abajo.',
@@ -3082,6 +3006,8 @@ const I18N = {
     prensaPaisUK:      'Reino Unido',
     prensaPaisUS:      'Estados Unidos',
     fltBtn: 'Filtros',
+    fltBuscarBoton: 'Buscar',
+    fltCampos: 'Grupo|Tipo|Período|Orde|Desde|Ata',
 
     cfgModosHint:           'Cada modo é un feed á túa medida, cos seus temas, medios e grupos. Toca un para editalo.',
     cfgModoNuevo:           'Novo modo',
@@ -3399,6 +3325,8 @@ const I18N = {
     prensaPaisUK:      'Regne Unit',
     prensaPaisUS:      'Estats Units',
     fltBtn: 'Filtres',
+    fltBuscarBoton: 'Cercar',
+    fltCampos: 'Grup|Tipus|Període|Ordre|Des de|Fins a',
 
     cfgModosHint:           "Cada mode és un feed a la teva mida, amb els seus temes, mitjans i grups. Toca'n un per editar-lo.",
     cfgModoNuevo:           'Nou mode',
@@ -3716,6 +3644,8 @@ const I18N = {
     prensaPaisUK:      'United Kingdom',
     prensaPaisUS:      'United States',
     fltBtn: 'Filters',
+    fltBuscarBoton: 'Search',
+    fltCampos: 'Group|Type|Period|Order|From|To',
 
     cfgModosHint:           'Each mode is a feed made to measure, with its own topics, outlets and groups. Tap one to edit it.',
     cfgModoNuevo:           'New mode',
@@ -4033,6 +3963,8 @@ const I18N = {
     prensaPaisUK:      'Erresuma Batua',
     prensaPaisUS:      'Estatu Batuak',
     fltBtn: 'Iragazkiak',
+    fltBuscarBoton: 'Bilatu',
+    fltCampos: 'Taldea|Mota|Epea|Ordena|Noiztik|Noiz arte',
 
     cfgModosHint:           'Modu bakoitza zure neurriko feed bat da, bere gai, hedabide eta taldeekin. Ukitu bat editatzeko.',
     cfgModoNuevo:           'Modu berria',
@@ -4617,7 +4549,6 @@ const PRESET_KEY = 'voceiro-presets-v4';
 const PRESET_ACTIVO_KEY = 'voceiro-preset-activo';
 const PRESET_ID_KEY = 'voceiro-modo-activo';
 const SITES_CACHE_KEY = 'voceiro-sites-cache-v1';
-const DUP_PREF_KEY = 'voceiro-dup-agrupar';
 const AJ_SECCION_KEY = 'voceiro-aj-seccion';   // última sección de Ajustes (escritorio)
 const PRESET_DEF = { grupos: [], palabras: [] };
 const PRESET_UNICO_DEF = { id: 'general', nombre: 'General', grupos: [], palabras: [], overrides: {} };
@@ -4637,7 +4568,6 @@ let CHIP_TEMA = null;
 let SITES = new Map();
 let SITES_LIST = [];
 
-let AGRUPAR_DUPS = true;
 
 const HIDE_MODE_KEY = 'voceiro-hide-mode';
 const HIDE_MODES = ['off', 'read', 'viewed', 'both'];
@@ -4842,18 +4772,6 @@ function setSitesFromArray(arr){
   });
 }
 
-function cargarDupPref(){
-  try {
-    const raw = localStorage.getItem(DUP_PREF_KEY);
-    if (raw === 'false') return false;
-    if (raw === 'true') return true;
-  }catch(e){}
-  return true;
-}
-function guardarDupPref(){
-  try{ localStorage.setItem(DUP_PREF_KEY, AGRUPAR_DUPS ? 'true' : 'false'); }catch(e){}
-}
-
 function actualizarBotonPendientes(){
   const b = $('#btn-pendientes');
   if (!b) return;
@@ -4870,30 +4788,15 @@ function actualizarBotonPendientes(){
   countEl.dataset.count = String(n);
   b.classList.toggle('has-pendientes', n > 0);
 }
-function actualizarBotonViewSettings(){
-  const btn = $('#btn-view-settings');
-  const count = $('#vs-count');
-  if (!btn || !count) return;
-
-  let n = 0;
-  if (!AGRUPAR_DUPS) n++;
-  if (HIDE_MODE !== 'off') n++;
-
-  count.textContent = n;
-  count.dataset.count = String(n);
-
-  btn.classList.toggle('active', n > 0);
-  btn.setAttribute('aria-pressed', n > 0 ? 'true' : 'false');
-  btn.title = t('vsButton');
-}
-
 function actualizarFiltrosCount(){
   let n = 0;
   const g = $('#grupo'), tp = $('#tipo'), r = $('#rango'), o = $('#orden');
   if (g  && g.value)  n++;
   if (tp && tp.value) n++;
-  if (r  && r.value)  n++;
+  if ((r && r.value) || $('#fecha-desde').value) n++;
+  if ($('#fecha-hasta').value) n++;
   if (o  && o.value && o.value !== 'recientes') n++;
+  if (HIDE_MODE !== 'off') n++;
 
   const count = $('#filtros-count');
   const btn   = $('#btn-filtros');
@@ -4902,64 +4805,33 @@ function actualizarFiltrosCount(){
     count.dataset.count = String(n);
   }
   if (btn) btn.classList.toggle('active', n > 0);
+  const lectura = $('#lectura-activa');
+  lectura.hidden = HIDE_MODE === 'off';
+  const clave = { read: 'vsHideRead', viewed: 'vsHideViewed', both: 'vsHideBoth' }[HIDE_MODE];
+  lectura.textContent = clave ? `${t('vsTitleHide')} ${t(clave)} ×` : '';
+  lectura.setAttribute('aria-label', `${lectura.textContent.replace(' ×', '')}. ${t('vsHideOff')}`);
 }
 
-function renderViewSettingsMenu(){
-  const menu = $('#view-settings-menu');
-  if (!menu) return;
-  const dupChk = $('#vs-dup');
-  if (dupChk) dupChk.checked = AGRUPAR_DUPS;
-  menu.querySelectorAll('input[name="vs-hide"]').forEach(r => {
+function pintarFiltroLectura(){
+  document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
     r.checked = (r.value === HIDE_MODE);
   });
 }
 
-// Duplicados y ocultar leídos se cambian desde el menú Vista y desde
-// Ajustes › Feed; estas funciones guardan y repintan los dos sitios.
-function ponerAgruparDups(v){
-  AGRUPAR_DUPS = !!v;
-  guardarDupPref();
-  renderViewSettingsMenu();
-  ajPintarVista();
-  actualizarBotonViewSettings();
-  aplicarFiltros();
-}
+// Lectura se cambia desde Filtros y Ajustes › Feed.
 function ponerHideMode(v){
   if (!HIDE_MODES.includes(v)) return;
   HIDE_MODE = v;
   guardarHideMode();
-  renderViewSettingsMenu();
+  pintarFiltroLectura();
   ajPintarVista();
-  actualizarBotonViewSettings();
+  actualizarFiltrosCount();
   aplicarFiltros();
 }
 function ajPintarVista(){
-  const dup = $('#aj-dup');
-  if (dup) dup.checked = AGRUPAR_DUPS;
   document.querySelectorAll('input[name="aj-hide"]').forEach(r => { r.checked = r.value === HIDE_MODE; });
 }
 
-function abrirViewSettingsMenu(){
-  const menu = $('#view-settings-menu');
-  const btn  = $('#btn-view-settings');
-  if (!menu) return;
-  renderViewSettingsMenu();
-  menu.style.display = '';
-  if (btn) btn.setAttribute('aria-expanded', 'true');
-  document.addEventListener('click', _vsOutsideClick);
-}
-function cerrarViewSettingsMenu(){
-  const menu = $('#view-settings-menu');
-  const btn  = $('#btn-view-settings');
-  if (!menu) return;
-  menu.style.display = 'none';
-  if (btn) btn.setAttribute('aria-expanded', 'false');
-  document.removeEventListener('click', _vsOutsideClick);
-}
-function _vsOutsideClick(e){
-  const wrap = document.querySelector('.view-settings-wrap');
-  if (wrap && !wrap.contains(e.target)) cerrarViewSettingsMenu();
-}
 /* ── Fase 2 · relanzar carga (cambio de días o de preset) ── */
 
 let _relanzarTimer = null;
@@ -6135,21 +6007,6 @@ function refrescarBotonesGuardar(){
       b.title = t('saveForLaterTitle');
     }
   });
-}
-function wireStickyOffsets(){
-  const hd = document.querySelector('header');
-  const fl = document.querySelector('.filtros-wrap');
-  if (!hd) return;
-  const apply = () => {
-    document.documentElement.style.setProperty('--header-h', hd.offsetHeight + 'px');
-    document.documentElement.style.setProperty(
-      '--filtros-h', fl ? fl.offsetHeight + 'px' : '0px'
-    );
-  };
-  apply();
-  new ResizeObserver(apply).observe(hd);
-  if (fl) new ResizeObserver(apply).observe(fl);
-  window.addEventListener('resize', apply, { passive: true });
 }
 function wireBackToTop(){
   const b = document.getElementById('btn-top');
@@ -9639,9 +9496,9 @@ function renderItemHtml(n, idx){
   const shareBtnHtml = PUEDE_COMPARTIR
     ? `<button class="btn-mini btn-share-item" type="button" data-idx="${idx}" title="${escapeHtml(t('shareTitle'))}" aria-label="${escapeHtml(t('shareTitle'))}">${ico('share-2')}</button>`
     : '';
-  // Bloque de duplicados (solo si los hay y AGRUPAR_DUPS está activo)
+  // Otras fuentes siempre disponibles, plegadas dentro de la tarjeta.
   let dupsHtml = '';
-  if (AGRUPAR_DUPS && n._dupHidden && n._dupHidden.length){
+  if (n._dupHidden && n._dupHidden.length){
     const otros = n._dupHidden.map(o => {
       return `<div class="dup-item">
         <span class="dup-medio">${escapeHtml(o.medio)}</span>
@@ -10175,12 +10032,8 @@ function aplicarTextos(){
   cab('#btn-pendientes', ico('bookmark'), 'btnPendientes');
   $('#btn-pendientes').insertAdjacentHTML('beforeend', '<span class="pend-count" data-count="0">0</span>');
 
-  // Rellenar textos del desplegable de vista
-  $('#vs-label').textContent  = t('vsButton');
-  $('#vs-title-dup').textContent   = t('vsTitleDup');
-  $('#vs-dup-label').textContent   = t('vsDup');
+  // Filtros de lectura.
   $('#vs-title-hide').textContent  = t('vsTitleHide');
-  $('#vs-reset').innerHTML         = ico('rotate-ccw') + `<span>${escapeHtml(t('vsReset'))}</span>`;
   $('#vs-hide-off').innerHTML    = escapeHtml(t('vsHideOff'));
   $('#vs-hide-read').innerHTML   = escapeHtml(t('vsHideRead'))
     + `<small>${escapeHtml(t('vsHideReadHint'))}</small>`;
@@ -10188,7 +10041,8 @@ function aplicarTextos(){
     + `<small>${escapeHtml(t('vsHideViewedHint'))}</small>`;
   $('#vs-hide-both').innerHTML   = escapeHtml(t('vsHideBoth'));
 
-  actualizarBotonViewSettings();
+  pintarFiltroLectura();
+  actualizarFiltrosCount();
 
   // ── Ajustes ──
   $('#aj-titulo').textContent = t('ajTitulo');
@@ -10238,7 +10092,6 @@ function aplicarTextos(){
 
   // Feed
   $('#aj-vista-tit').textContent = t('ajVistaTit');
-  $('#aj-dup-lbl').textContent = t('vsDup');
   $('#aj-hide-tit').textContent = t('vsTitleHide');
   document.querySelectorAll('.aj-radios span[data-txt]').forEach(sp => {
     sp.innerHTML = escapeHtml(t(sp.dataset.txt))
@@ -10360,6 +10213,13 @@ function aplicarTextos(){
 
   $('#buscar').placeholder = t('fltBuscar');
   $('#filtros-label').textContent = t('fltBtn');
+  $('#filtros-titulo').textContent = t('fltBtn');
+  $('#filtros-cerrar').textContent = t('btnCerrar');
+  $('#btn-buscar span').textContent = t('fltBuscarBoton');
+  $('#buscar').setAttribute('aria-label', t('fltBuscarBoton'));
+  document.querySelectorAll('[data-filtro-label]').forEach((el, i) => {
+    el.textContent = t('fltCampos').split('|')[i];
+  });
   document.querySelectorAll('.panel-close').forEach(b => {
     b.title = t('btnCerrar');
     b.setAttribute('aria-label', t('btnCerrar'));
@@ -10549,8 +10409,7 @@ function wireAjustes(){
     pintarModo();
   });
 
-  // ── Feed: mismo estado que el menú Vista ──
-  $('#aj-dup').addEventListener('change', e => ponerAgruparDups(e.target.checked));
+  // ── Feed: mismo estado que el panel Filtros ──
   document.querySelectorAll('input[name="aj-hide"]').forEach(r =>
     r.addEventListener('change', () => { if (r.checked) ponerHideMode(r.value); }));
 
@@ -10592,45 +10451,11 @@ function wireStaticEvents(){
       abrirPresetMenu();
     }
   });
-  // ── Botón "Vista" + desplegable ──
-  const btnVS  = $('#btn-view-settings');
-  const menuVS = $('#view-settings-menu');
-  if (btnVS && menuVS){
-    btnVS.addEventListener('click', e => {
-      e.stopPropagation();
-      if (menuVS.style.display !== 'none'){
-        cerrarViewSettingsMenu();
-      } else {
-        abrirViewSettingsMenu();
-      }
-    });
-
-    // Que un clic dentro del menú NO llegue a document (si no, se cerraría)
-    menuVS.addEventListener('click', e => e.stopPropagation());
-  }
-
-  const dupChk = $('#vs-dup');
-  if (dupChk){
-    dupChk.addEventListener('change', () => ponerAgruparDups(dupChk.checked));
-  }
-
   document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
     r.addEventListener('change', () => { if (r.checked) ponerHideMode(r.value); });
   });
 
-  const vsReset = $('#vs-reset');
-  if (vsReset){
-    vsReset.addEventListener('click', () => {
-      AGRUPAR_DUPS = true;
-      HIDE_MODE = 'off';
-      guardarDupPref();
-      guardarHideMode();
-      renderViewSettingsMenu();
-      ajPintarVista();
-      actualizarBotonViewSettings();
-      aplicarFiltros();
-    });
-  }
+  $('#lectura-activa').addEventListener('click', () => ponerHideMode('off'));
     // ── Toggle "Recordar filtros" ──
   const chkRec = $('#cfg-recordar-filtros');
   if (chkRec){
@@ -10763,7 +10588,7 @@ function wireStaticEvents(){
   document.addEventListener('keydown', e => {
       if (e.key === 'Escape'){
         cerrarPresetMenu();
-        cerrarViewSettingsMenu();
+        if ($('#filtros-panel').open) $('#filtros-panel').close();
         cerrarMenuMas();
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
@@ -10890,35 +10715,30 @@ function wireStaticEvents(){
 const btnFiltros   = $('#btn-filtros');
 const filtrosPanel = $('#filtros-panel');
 if (btnFiltros && filtrosPanel){
-  const FILTROS_OPEN_KEY = 'voceiro-filtros-abierto';
-  const mqDesktop = window.matchMedia('(min-width: 820px)');
-
-  // Preferencia guardada por el usuario; si no hay, usa el valor por defecto (abierto en desktop)
-  let filtrosAbierto;
-  try {
-    const raw = localStorage.getItem(FILTROS_OPEN_KEY);
-    filtrosAbierto = raw === 'true'  ? true
-                   : raw === 'false' ? false
-                   : mqDesktop.matches;
-  } catch(e){
-    filtrosAbierto = mqDesktop.matches;
-  }
-
-  const syncPanel = () => {
-    filtrosPanel.hidden = !filtrosAbierto;
-    btnFiltros.setAttribute('aria-expanded', String(filtrosAbierto));
-  };
-  syncPanel();
-
-  btnFiltros.addEventListener('click', e => {
-    e.stopPropagation();
-    filtrosAbierto = !filtrosAbierto;
-    try { localStorage.setItem(FILTROS_OPEN_KEY, String(filtrosAbierto)); } catch(e){}
-    syncPanel();
+  btnFiltros.addEventListener('click', () => {
+    cerrarPresetMenu();
+    pintarFiltroLectura();
+    filtrosPanel.showModal();
+    btnFiltros.setAttribute('aria-expanded', 'true');
   });
-
-  // Sin listener de cambio de media query: respetamos la elección del usuario.
+  $('#filtros-cerrar').addEventListener('click', () => filtrosPanel.close());
+  filtrosPanel.addEventListener('close', () => {
+    btnFiltros.setAttribute('aria-expanded', 'false');
+    btnFiltros.focus({ preventScroll: true });
+  });
 }
+  const barra = $('.filtros-wrap');
+  const btnBuscar = $('#btn-buscar');
+  const mostrarBusqueda = abrir => {
+    barra.classList.toggle('busqueda-abierta', abrir);
+    btnBuscar.setAttribute('aria-expanded', String(abrir));
+  };
+  mostrarBusqueda(!!$('#buscar').value);
+  btnBuscar.addEventListener('click', () => {
+    const abrir = !barra.classList.contains('busqueda-abierta');
+    mostrarBusqueda(abrir);
+    if (abrir) $('#buscar').focus({ preventScroll: true });
+  });
   
   // ── Clear del buscador ──
   const buscarInput = $('#buscar');
@@ -11005,7 +10825,6 @@ async function init(){
   PRESET_ACTIVO  = cargarPresetActivo() && presetTieneReglas();
   VISTA_TEMAS    = !PRESET_ACTIVO && cargarVistaTemas();
   if (VISTA_TEMAS && !TEMAS_TODOS.length) ponerVistaTemas(false);
-  AGRUPAR_DUPS   = cargarDupPref();
   HIDE_MODE      = cargarHideMode();
   RECORDAR_FILTROS = cargarRecordarFiltros();
     // Preferencias de prensa externa
@@ -11016,7 +10835,6 @@ async function init(){
 
   // Textos + listeners: ya con esto la UI está viva y clicable
   aplicarTextos();
-  wireStickyOffsets();
   wireBackToTop();
   wireStaticEvents();
   wireAjustes();
@@ -11034,6 +10852,8 @@ async function init(){
       if (savedBuscar){
         const input = $('#buscar');
         input.value = savedBuscar;
+        $('.filtros-wrap').classList.add('busqueda-abierta');
+        $('#btn-buscar').setAttribute('aria-expanded', 'true');
         const clearBtn = $('#buscar-clear');
         if (clearBtn) clearBtn.hidden = !savedBuscar;
       }
