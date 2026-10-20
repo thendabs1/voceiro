@@ -6,7 +6,7 @@ El workflow **Tests** ejecuta la suite completa en cada PR:
 
 - `node --test 'tests/**/*.test.mjs'` (Node 24): buscador y equivalencia con SQLite FTS5, filtros y fechas de Madrid, limpieza del lector, temas y contraste, sincronización, cifrado y servicio con almacén simulado.
 - `node scripts/sync-parser.mjs` y `node scripts/test-parser.mjs`: comprueban las cuatro copias generadas del parser.
-- `python -m unittest discover -s tests/fuentes -v` (Python 3.11 y `requirements.txt`): extracción RSS/Atom, parser alternativo, sitemap, scraping y JSON-LD, WordPress, Google News, errores HTTP, relay y selección de fuentes alternativas. También prueba el diagnóstico y sus informes. Las peticiones se simulan; no depende de que un periódico esté disponible.
+- `python -m unittest discover -s tests/fuentes -v` (Python 3.11 y `requirements.txt`): extracción RSS/Atom, parser alternativo, sitemap, scraping y JSON-LD, WordPress, Google News, errores HTTP, relay y selección de fuentes alternativas. Cubre fechas de feeds, relativas y estimadas; fusión y deduplicación del histórico, y la relectura de su formato corto. También prueba el diagnóstico y sus informes. Las peticiones se simulan; no depende de que un periódico esté disponible.
 
 **Lector** construye el userscript y comprueba su sintaxis, cabecera y dominios cuando cambian sus archivos.
 
