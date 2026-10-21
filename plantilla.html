@@ -863,7 +863,9 @@
 .tiempo-ahora{ display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; flex-wrap: wrap; }
 .tiempo-ahora > .ico{ width: 2em; height: 2em; }
 .tiempo-temp{ font-size: 1.9em; font-weight: 700; line-height: 1; }
-.tiempo-sol{ margin-left: auto; }
+.tiempo-sol{ margin-left: auto; display: inline-flex; align-items: center; gap: 7px; }
+.tiempo-sol .ico{ width: 1em; height: 1em; }
+.tiempo-sol-hora{ white-space: nowrap; }
 .tiempo-dias{ display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; overflow-x: auto; scrollbar-width: none; }
 .tiempo-dias::-webkit-scrollbar{ display: none; }
 .tiempo-dias li{ flex: 1 0 64px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 6px; background: var(--bg); }
@@ -899,6 +901,8 @@
 .tiempo-horas .tiempo-dias{ margin-top: 6px; scrollbar-width: thin; }
 .tiempo-horas .tiempo-dias::-webkit-scrollbar{ display: block; height: 6px; }
 .tiempo-horas .tiempo-dias li{ flex: 0 0 54px; }
+.tiempo-horas .tiempo-dia{ min-height: 2.2em; display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.tiempo-horas .tiempo-dia small{ font-size: .8em; color: var(--muted); }
 /* ═══ Panel de avisos (alertas:): el mismo recuadro que el tiempo. El nivel
    va siempre escrito; el color del borde solo lo acompaña. ═══ */
 .aviso[data-nivel="amarillo"], .aviso-zona[data-nivel="amarillo"], .tiempo-sitio-aviso[data-nivel="amarillo"], .btn-tiempo[data-nivel="amarillo"]{ --aviso: #e0b000; }
@@ -7942,8 +7946,9 @@ function htmlPrevision(p){
   const a = p.ahora;
   const ca = a ? cielo(a.cielo, a.noche) : null;
   const sol = p.sol
-    ? `<span class="tiempo-sol"><span class="sr">${escapeHtml(t('tiempoOrto'))}</span><span aria-hidden="true">↑</span>${escapeHtml(p.sol.orto)}
-       <span class="sr">${escapeHtml(t('tiempoOcaso'))}</span><span aria-hidden="true">↓</span>${escapeHtml(p.sol.ocaso)}</span>`
+    ? `<span class="tiempo-sol">${ico('sun')}
+       <span class="tiempo-sol-hora"><span class="sr">${escapeHtml(t('tiempoOrto'))}: </span><span aria-hidden="true">↑</span>${escapeHtml(p.sol.orto)}</span>
+       <span class="tiempo-sol-hora"><span class="sr">${escapeHtml(t('tiempoOcaso'))}: </span><span aria-hidden="true">↓</span>${escapeHtml(p.sol.ocaso)}</span></span>`
     : '';
   const ahora = a
     ? `<div class="tiempo-ahora">${ca.ico}<span class="tiempo-temp">${grados(a.temp)}</span><span>${escapeHtml(ca.txt)}</span>${sol}</div>`
@@ -8021,10 +8026,10 @@ function htmlHoras(p){
   try { abiertas = localStorage.getItem(TIEMPO_HORAS_KEY) === 'true'; } catch(e){}
   const horas = p.horas.map((h, i) => {
     const c = cieloTiempo(h.cielo, h.noche);
-    // A medianoche, el día: «jue 0h».
-    const etiqueta = (h.hora === 0 && i > 0 ? diaSemana.format(new Date(h.fecha + 'T12:00:00Z')) + ' ' : '') + `${h.hora}h`;
+    // A medianoche, el día va bajo «0h» sin desplazar el resto de la fila.
+    const dia = h.hora === 0 && i > 0 ? diaSemana.format(new Date(h.fecha + 'T12:00:00Z')) : '';
     return `<li>
-      <span class="tiempo-dia">${escapeHtml(etiqueta)}</span>
+      <span class="tiempo-dia">${h.hora}h${dia ? `<small>${escapeHtml(dia)}</small>` : ''}</span>
       ${c.ico}<span class="sr">${escapeHtml(c.txt)}</span>
       <b>${grados(h.temp)}</b>
       ${h.lluvia ? `<span class="tiempo-lluvia">${ico('droplet')}<span class="sr">${escapeHtml(t('tiempoProbLluvia'))}</span> ${h.lluvia}%</span>` : ''}
@@ -9604,8 +9609,22 @@ let ULT_CTX = null;                // contexto para append incremental
 
 // ── Paginación R2 + Turso ──
 let DIAS_ACTUAL = 0;               // días cargados vía R2 para la query actual
+let DIAS_CAPAS_KEY = '';            // las capas a las que pertenece ese contador
 const DIAS_R2_STEP = 30;           // días por click en "Cargar más"
 // Sin tope: se extiende hasta agotar el manifest.
+
+function claveCapas(capas){ return [...capas].sort().join('|'); }
+
+function ajustarDiasActual(capas){
+  const clave = claveCapas(capas);
+  const total = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
+  if (clave !== DIAS_CAPAS_KEY){
+    DIAS_CAPAS_KEY = clave;
+    DIAS_ACTUAL = clave ? Math.min(DIAS_MEMORIA, total) : 0;
+  } else {
+    DIAS_ACTUAL = clave ? Math.min(Math.max(DIAS_ACTUAL, Math.min(DIAS_MEMORIA, total)), total) : 0;
+  }
+}
 
 let TURSO_OFFSET = 0;              // próximo offset a pedir
 let TURSO_HAY_MAS = false;
@@ -10063,17 +10082,9 @@ if (consulta.clave !== ULT_QUERY_KEY) {
   TURSO_RAW     = '';
 }
 
-// DIAS_ACTUAL se recalcula SIEMPRE a partir de las capas activas.
-// No depende del cambio de query: si hay capas, tiene que haber al menos
-// DIAS_MEMORIA días cargados (o los que haya en el manifest).
-if (!capas.size) {
-  DIAS_ACTUAL = 0;
-} else {
-  const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
-  const objetivo  = Math.min(DIAS_MEMORIA, totalDias);
-  if (DIAS_ACTUAL < objetivo) DIAS_ACTUAL = objetivo;
-  if (DIAS_ACTUAL > totalDias) DIAS_ACTUAL = totalDias;
-}
+// El cursor solo sirve para las capas que se cargaron con él. Al cambiar de
+// modo o de medio, la nueva capa empieza tras los días cargados en memoria.
+ajustarDiasActual(capas);
     // Disparo R2 en background
   if (capas.size) {
     const signal = new AbortController().signal;
@@ -10598,13 +10609,11 @@ function renderizar(){
     }
 
     // Lista agotada → pedir más (R2 días o Turso página) si hay
-    if (_cargandoMas) return;
     const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
     const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
     const puedeR2 = capas.size > 0 && DIAS_ACTUAL < totalDias;
     if (puedeR2) {
-      _cargandoMas = true;
-      cargarMas().finally(() => { _cargandoMas = false; });
+      solicitarMas(cargarMas);
     }
   }, { rootMargin: '400px' });
   SENTINEL_OBSERVER.observe(sentinel);
@@ -10865,32 +10874,41 @@ function appendBatchDesdeOffset(desde, hasta) {
 // cuota). El archivo se pagina únicamente con el botón «Buscar más en el
 // archivo» (cargarMasDeTurso), nunca solo: así no puede recorrerse entero
 // en bucle si sus páginas no añaden nada visible.
+async function solicitarMas(pedir){
+  if (_cargandoMas) return;
+  _cargandoMas = true;
+  actualizarBotonCargarMas();
+  try { await pedir(); }
+  catch(e){ console.warn('[cargar más]', e); }
+  finally {
+    _cargandoMas = false;
+    actualizarBotonCargarMas();
+  }
+}
+
 async function cargarMas() {
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
   const capas = capasRequeridas(parsed);
-  if (!capas.size) return;
+  if (!capas.size || claveCapas(capas) !== DIAS_CAPAS_KEY) return;
 
   const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
   if (DIAS_ACTUAL >= totalDias) return;
 
+  const clave = DIAS_CAPAS_KEY;
   const desde = DIAS_ACTUAL;
   const hasta = Math.min(DIAS_ACTUAL + DIAS_R2_STEP, totalDias);
-  const btn = document.getElementById('btn-cargar-mas');
-  if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
   await extenderCapasR2(capas, desde, hasta);
+  if (DIAS_CAPAS_KEY !== clave) return;
   DIAS_ACTUAL = hasta;
 
-  if (btn) btn.disabled = false;
   aplicarFiltros();
 }
 
 // ─── Paginación Turso ───
 async function cargarMasDeTurso() {
   if (!ARCHIVO_ACTIVO || !TURSO_HAY_MAS || !TURSO_RAW) return;
-  const btn = document.getElementById('btn-cargar-mas');
-  if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
 
   const claveTurso = TURSO_RAW;
   const claveConsulta = ULT_QUERY_KEY;
@@ -10900,7 +10918,6 @@ async function cargarMasDeTurso() {
     limit: 50
   });
 
-  if (btn) btn.disabled = false;
   // La consulta cambió (o ya se cargó esta página) mientras esperábamos.
   if (TURSO_RAW !== claveTurso || TURSO_OFFSET !== offsetPedido) return;
 
@@ -10939,9 +10956,9 @@ function actualizarBotonCargarMas() {
     const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
     if (DIAS_ACTUAL < totalDias) {
       wrap.style.display = '';
-      btn.textContent = `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
+      btn.textContent = _cargandoMas ? 'Cargando…' : `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
       btn.dataset.modo = 'r2';
-      btn.disabled = false;
+      btn.disabled = _cargandoMas;
       return;
     }
   }
@@ -10949,9 +10966,9 @@ function actualizarBotonCargarMas() {
   // 2) Archivo: solo a mano, cuando R2 no da más y la búsqueda tiene más páginas.
   if (ARCHIVO_ACTIVO && TURSO_HAY_MAS) {
     wrap.style.display = '';
-    btn.textContent = 'Buscar más en el archivo';
+    btn.textContent = _cargandoMas ? 'Cargando…' : 'Buscar más en el archivo';
     btn.dataset.modo = 'archivo';
-    btn.disabled = false;
+    btn.disabled = _cargandoMas;
     return;
   }
 
@@ -11834,10 +11851,8 @@ function wireStaticEvents(){
   // ── Botón "Cargar más" (paginación R2 + Turso) ──
   const btnCargarMas = document.getElementById('btn-cargar-mas');
   if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
-    if (_cargandoMas) return;
-    _cargandoMas = true;
     const pedir = btnCargarMas.dataset.modo === 'archivo' ? cargarMasDeTurso : cargarMas;
-    pedir().finally(() => { _cargandoMas = false; });
+    solicitarMas(pedir);
   });
 
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
