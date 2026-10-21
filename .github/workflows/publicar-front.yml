@@ -1,0 +1,80 @@
+name: Publicar frontend
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout de main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Tests del frontend
+        run: node --test 'tests/**/*.test.mjs'
+
+      - name: Generar HTML y módulos
+        run: python3 scripts/generar_front.py
+
+      - name: Construir y comprobar el lector
+        run: |
+          node lector/build.mjs "$RUNNER_TEMP/lector.user.js"
+          node --check "$RUNNER_TEMP/lector.user.js"
+          node lector/comprobar.mjs "$RUNNER_TEMP/lector.user.js"
+          cp "$RUNNER_TEMP/lector.user.js" public/lector.user.js
+
+      - name: Guardar frontend generado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A -- public/index.html public/parser.js public/busqueda public/sync public/tema public/tiempo public/lector.user.js
+          if ! git diff --staged --quiet; then
+            git commit -m "Regenerar frontend [skip ci]"
+          fi
+          # Si main avanzó mientras se construía, evita publicar una versión
+          # anterior. Se puede lanzar de nuevo desde Actions.
+          git fetch origin main
+          git merge-base --is-ancestor origin/main HEAD || {
+            echo "main cambió durante la generación; vuelve a lanzar el workflow"
+            exit 1
+          }
+          git push origin HEAD:main
+
+      - name: Quitar datos del artefacto de Pages
+        run: rm -rf public/datos
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
