@@ -39,6 +39,11 @@ export default {
       secretAccessKey,
     });
 
+    // Revalidación: R2 contesta 304 si el ETag coincide. El nuestro va
+    // débil (W/"…") porque el cuerpo puede ir comprimido; a R2, sin W/.
+    const inm = request.headers.get('If-None-Match');
+    if (inm) sigHeaders['If-None-Match'] = inm.trim().replace(/^W\//, '');
+
     let r2Res;
     try {
       r2Res = await fetch(r2Url, { method, headers: sigHeaders });
@@ -46,6 +51,15 @@ export default {
       return new Response(`R2 fetch error: ${e.message}`, { status: 502, headers: CORS });
     }
 
+    const cacheControl = _cacheControlFor(key);
+    const etag = r2Res.headers.get('ETag');
+    const etagDebil = etag ? 'W/' + etag.replace(/^W\//, '') : null;
+
+    if (r2Res.status === 304) {
+      const h304 = { 'Cache-Control': cacheControl, 'Vary': 'Accept-Encoding', ...CORS };
+      if (etagDebil) h304['ETag'] = etagDebil;
+      return new Response(null, { status: 304, headers: h304 });
+    }
     if (r2Res.status === 404) return _notFound();
     if (!r2Res.ok) {
       const txt = await r2Res.text().catch(() => '');
@@ -55,16 +69,23 @@ export default {
       });
     }
 
-    const cacheControl = _cacheControlFor(key);
+    // Deno Deploy no comprime estas respuestas: gzip aquí (JSON ≈ 5× menos).
+    const gzip = method === 'GET' &&
+      /\bgzip\b/.test(request.headers.get('Accept-Encoding') || '');
+    const headers = {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': cacheControl,
+      'Vary': 'Accept-Encoding',
+      ...CORS,
+    };
+    if (etagDebil) headers['ETag'] = etagDebil;
+    if (gzip) headers['Content-Encoding'] = 'gzip';
 
-    return new Response(method === 'HEAD' ? null : r2Res.body, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': cacheControl,
-        ...CORS,
-      },
-    });
+    let body = null;
+    if (method === 'GET') {
+      body = gzip ? r2Res.body.pipeThrough(new CompressionStream('gzip')) : r2Res.body;
+    }
+    return new Response(body, { status: 200, headers });
   },
 };
 

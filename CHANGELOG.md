@@ -3,6 +3,20 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Datos: menos descarga y vuelta a CF solo si responde
+
+### Corregido
+- La sonda que devuelve el lector a Cloudflare espera al cuerpo completo
+  del manifest. Antes bastaban las cabeceras: con CF atascado a mitad de
+  respuesta se volvía a él, las capas esperaban 10 s y la siguiente carga
+  perdía otros 5 s antes de saltar a Deno.
+
+### Cambiado
+- Los workers de datos mandan `ETag` y contestan 304 si no hay cambios:
+  F5 ya no baja el manifest entero cuando sigue igual.
+- El worker de Deno comprime con gzip (el manifest pasa de ~730 KB a
+  ~170 KB por la red).
+
 ## 2026-10-21 — Recolector: fecha de otra tarjeta y lecturas estrictas
 
 ### Corregido

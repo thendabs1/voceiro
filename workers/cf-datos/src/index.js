@@ -19,16 +19,32 @@ export default {
     const key = url.pathname.slice(1);
     if (!key) return _notFound();
 
-    const obj = await env.BUCKET.get(key);
+    // ── Revalidación: si el ETag coincide, R2 no manda el cuerpo → 304 ──
+    // Cloudflare debilita el ETag al comprimir (W/"…"): se compara sin W/.
+    const inm = _etagPedido(request);
+    const obj = await env.BUCKET.get(key,
+      inm ? { onlyIf: { etagDoesNotMatch: inm } } : undefined);
     if (!obj) return _notFound();
 
     // ── Cache-Control según el tipo de fichero ──
     const cacheControl = _cacheControlFor(key);
 
+    if (!('body' in obj)) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          'ETag': obj.httpEtag,
+          'Cache-Control': cacheControl,
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
     return new Response(obj.body, {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': cacheControl,
+        'ETag': obj.httpEtag,
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -50,6 +66,13 @@ function _notFound() {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
+}
+
+// ETag de If-None-Match sin W/ ni comillas (el navegador manda uno solo).
+function _etagPedido(request) {
+  const h = request.headers.get('If-None-Match');
+  if (!h) return null;
+  return h.trim().replace(/^W\//, '').replace(/^"|"$/g, '') || null;
 }
 
 function _cacheControlFor(key) {
