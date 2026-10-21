@@ -3,6 +3,20 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Recolector: publicación segura en R2
+
+### Corregido
+- Si falla la descarga del manifest de R2 (cualquier error que no sea «no
+  existe»), el run se para. Antes seguía como si fuera el primero: subía un
+  manifest con solo los días recién recogidos y el barrido de huérfanos
+  podía borrar el archivo entero.
+- Un día de la ventana que no se puede bajar también para el run, en vez de
+  reescribirse sin sus noticias. Si R2 dice que no existe, se sigue.
+- El manifest se sube el último y solo si todos los datos subieron. Con
+  algún fallo, el run se para antes de Turso, la limpieza y el `state`: el
+  siguiente parte de lo que sigue publicado.
+- Fuera el `[r2-debug]` que imprimía datos de la cuenta en cada conexión.
+
 ## 2026-10-21 — Recolector: fechas honestas
 
 ### Corregido
