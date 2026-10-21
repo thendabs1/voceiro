@@ -3,6 +3,20 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Datos: caché de los ficheros por medio y artefacto de Pages
+
+### Corregido
+- La capa de un medio ya no se queda con la versión de los días vivos que
+  bajó la primera vez: el lector pedía todo con `force-cache`, que usa la
+  copia guardada aunque haya caducado, y los ficheros por medio se
+  reescriben con el mismo nombre. Ahora se piden con la caché normal.
+
+### Cambiado
+- Los workers de datos dan 1 día de caché a los ficheros por medio de los
+  días congelados (5 días o más atrás); los vivos siguen con 60 s.
+- El artefacto de Pages ya no lleva `public/datos` (~50 MB por run): la
+  web lee los datos de R2.
+
 ## 2026-10-21 — Datos: menos descarga y vuelta a CF solo si responde
 
 ### Corregido
