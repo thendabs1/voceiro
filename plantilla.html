@@ -6392,6 +6392,7 @@ function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null)
     if (u) {
       const existente = _itemPorUrl.get(u);
       if (existente) {
+        _adoptarPublicacion(existente, n);
         existente._capas.add(capaKey);
         marcar(existente);
         continue;
@@ -6921,8 +6922,8 @@ function hidratarNoticias(){
     // ── Fechas: HH:MM (nuevo) o ISO (viejo) ──
     n.fecha_pub      = reconstruirFecha(n.p, n._dia);
     n.fecha_estimada = reconstruirFecha(n.e, n._dia);
-    // `c` ya no existe: usamos el `generado` del fichero
-    n.fecha          = n._generado || '';
+    // `c`: primera recogida. Los ficheros de antes no la traen: el generado.
+    n.fecha          = reconstruirFecha(n.c, n._dia) || n._generado || '';
 
     n.titular = limpiarCdata(n.titular);
 
@@ -6940,28 +6941,49 @@ function hidratarNoticias(){
     n._enlaceEsc  = escapeHtml(n.enlace);
     n._esPreset   = false;
 
-    const tsPub = parseFecha(n.fecha_pub);
-    const tsEst = parseFecha(n.fecha_estimada);
-    const tsRec = parseFecha(n.fecha);
-
-    let tsOrden = NaN;
-    if (!isNaN(tsPub) && tsPub <= horizonte) tsOrden = tsPub;
-    else if (!isNaN(tsEst)) tsOrden = tsEst;
-    else if (!isNaN(tsRec)) tsOrden = tsRec;
-
-    let tsShow = NaN;
-    let tipoShow = 'none';
-    if (!isNaN(tsPub)){ tsShow = tsPub; tipoShow = 'pub'; }
-    else if (!isNaN(tsEst)){ tsShow = tsEst; tipoShow = 'est'; }
-    else if (!isNaN(tsRec)){ tsShow = tsRec; tipoShow = 'rec'; }
-
-    n._tsOrden    = tsOrden;
-    n._tsShow     = tsShow;
-    n._tipoShow   = tipoShow;
-    n._esFuturo   = !isNaN(tsPub) && (tsPub > horizonte);
-    n._tieneFecha = !isNaN(tsOrden);
+    _calcularFechas(n, horizonte);
   }
   _hidratadasHasta = NOTICIAS.length;
+}
+
+// Instantes de una noticia ya hidratada. Para ordenar y mostrar vale la
+// publicación, la estimada o la recogida; para los filtros de tiempo
+// (_tsActualidad), solo la publicación: la estimada sale de la posición en
+// la portada y la recogida dice cuándo la vimos, no cuándo se publicó.
+function _calcularFechas(n, horizonte){
+  const tsPub = parseFecha(n.fecha_pub);
+  const tsEst = parseFecha(n.fecha_estimada);
+  const tsRec = parseFecha(n.fecha);
+
+  let tsOrden = NaN;
+  if (!isNaN(tsPub) && tsPub <= horizonte) tsOrden = tsPub;
+  else if (!isNaN(tsEst)) tsOrden = tsEst;
+  else if (!isNaN(tsRec)) tsOrden = tsRec;
+
+  let tsShow = NaN;
+  let tipoShow = 'none';
+  if (!isNaN(tsPub)){ tsShow = tsPub; tipoShow = 'pub'; }
+  else if (!isNaN(tsEst)){ tsShow = tsEst; tipoShow = 'est'; }
+  else if (!isNaN(tsRec)){ tsShow = tsRec; tipoShow = 'rec'; }
+
+  n._tsOrden      = tsOrden;
+  n._tsActualidad = (!isNaN(tsPub) && tsPub <= horizonte) ? tsPub : NaN;
+  n._tsShow       = tsShow;
+  n._tipoShow     = tipoShow;
+  n._esFuturo     = !isNaN(tsPub) && (tsPub > horizonte);
+  n._tieneFecha   = !isNaN(tsOrden);
+}
+
+// Otra capa (la prensa, el archivo) trae la publicación que aquí faltaba:
+// se adopta. La hora corta (HH:MM) es relativa al día de su fichero.
+function _adoptarPublicacion(n, otra){
+  if (n.p || !otra.p) return;
+  const p = reconstruirFecha(otra.p, otra._dia || '');
+  if (isNaN(parseFecha(p))) return;
+  n.p = p;
+  if (!n._hidratada) return;
+  n.fecha_pub = p;
+  _calcularFechas(n, Date.now() + HORIZONTE_FUTURO_MS);
 }
 
 function construirMediosUnicos(){
@@ -9747,7 +9769,7 @@ function _pasaConsulta(n, consulta){
   return consulta.pasa({
     dominio: n.dominio,
     titular: n.titular,
-    ts: n._tsOrden,
+    ts: n._tsActualidad,
     palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
   });
 }
@@ -9757,7 +9779,7 @@ function _pasaExterno(n, consulta){
   return consulta.pasaExterno({
     dominio: n.dominio,
     titular: n.titular,
-    ts: n._tsOrden,
+    ts: n._tsActualidad,
     palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
   });
 }

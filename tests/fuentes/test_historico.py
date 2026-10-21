@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import recolector as R
+from bs4 import BeautifulSoup
 
 MADRID = R.TZ_MADRID
 
@@ -43,14 +44,14 @@ class Fechas(unittest.TestCase):
             with self.subTest(txt=txt):
                 self.assertEqual(R._delta_relativo(txt), esperado)
 
-    def test_dia_de_url_solo_acepta_el_ultimo_anio_y_no_futuro(self):
+    def test_dia_de_url_acepta_dias_antiguos_pero_no_futuros(self):
         hoy = datetime.now(MADRID).date()
         ayer = hoy - timedelta(days=1)
         casos = (
             (f'https://ejemplo.test/{ayer:%Y/%m/%d}/noticia', ayer.isoformat()),
             (f'https://ejemplo.test/noticia-{ayer:%Y%m%d}.html', ayer.isoformat()),
             (f'https://ejemplo.test/{hoy + timedelta(days=1):%Y/%m/%d}/noticia', ''),
-            (f'https://ejemplo.test/{hoy - timedelta(days=400):%Y/%m/%d}/noticia', ''),
+            ('https://ejemplo.test/2020/01/01/noticia', '2020-01-01'),
         )
         for url, esperado in casos:
             with self.subTest(url=url):
@@ -83,6 +84,19 @@ class Fechas(unittest.TestCase):
         for n in ignoradas:
             self.assertNotIn('fecha_estimada', n)
 
+    def test_la_fecha_de_otra_tarjeta_no_se_toma_pero_la_del_antetitulo_si(self):
+        listado = BeautifulSoup(
+            '<section><article><h2><a href="/a">Con fecha</a></h2>'
+            '<time datetime="2026-10-21T08:00:00Z"></time></article>'
+            '<div><h2><a href="/b">Sin fecha</a></h2></div></section>', 'lxml')
+        self.assertEqual(R._extract_item_date(listado.find_all('h2')[1]), '')
+        self.assertEqual(R._extract_item_date(listado.find_all('h2')[0]),
+                         '2026-10-21T10:00:00+02:00')
+        tarjeta = BeautifulSoup(
+            '<article><h3>Política</h3><h2><a href="/c">Titular</a></h2>'
+            '<time datetime="2026-10-21T08:00:00Z"></time></article>', 'lxml')
+        self.assertEqual(R._extract_item_date(tarjeta.h2), '2026-10-21T10:00:00+02:00')
+
     def test_hora_corta_se_reconstruye_con_el_horario_de_ese_dia(self):
         self.assertEqual(R._reconstruir_fecha('09:30', '2026-01-20'), '2026-01-20T09:30:00+01:00')
         self.assertEqual(R._reconstruir_fecha('09:30', '2026-07-20'), '2026-07-20T09:30:00+02:00')
@@ -114,6 +128,13 @@ class Historico(unittest.TestCase):
         self.assertTrue(todas[0]['_nueva'])
         self.assertNotIn('_pos', repetida)
 
+    def test_una_fecha_antigua_descubierta_retira_tambien_la_copia_vieja(self):
+        ahora = datetime.now(MADRID).replace(microsecond=0)
+        vieja = {'dominio': 'ejemplo.test', 'titular': 'T', 'fecha': ahora.isoformat(),
+                 'fecha_pub': '', 'fecha_estimada': ''}
+        nueva = {**vieja, 'fecha_pub': (ahora - timedelta(days=22)).isoformat()}
+        self.assertEqual(R.fusionar_historico([nueva], [dict(vieja)], dias=15), [])
+
     def test_dedup_agrupa_variantes_y_prefiere_la_que_tiene_fecha_pub(self):
         titular = 'El Gobierno aprueba los presupuestos'
         a = {'dominio': 'a.test', 'titular': titular, 'fecha': '2026-10-20T12:00:00+02:00',
@@ -125,8 +146,12 @@ class Historico(unittest.TestCase):
         vacias = [{'dominio': 'a.test', 'titular': '', 'fecha': ''} for _ in range(2)]
         salida = R.deduplicar_editorial([a, b, c, *vacias])
         self.assertEqual(len(salida), 3)
-        self.assertIs(salida[0], b)
-        self.assertEqual(b['alt'], [{'d': 'c.test', 'u': '/z'}, {'d': 'a.test', 'u': '/x?id=3'}])
+        self.assertEqual(salida[0]['enlace'], b['enlace'])
+        self.assertNotIn('alt', b)  # copia: la original sigue sirviendo a otros slices
+        self.assertEqual(salida[0]['alt'], [
+            {'d': 'c.test', 'u': '/z', 'e': c['fecha_estimada'], 'c': c['fecha']},
+            {'d': 'a.test', 'u': '/x?id=3', 'c': a['fecha']},
+        ])
 
     def test_formato_corto_se_relee_sin_perder_instantes_enlaces_ni_alternativas(self):
         hoy = datetime.now(MADRID).date()
@@ -168,3 +193,42 @@ class Historico(unittest.TestCase):
         self.assertEqual(instante(leidas[3]['fecha_estimada']), est.timestamp())
         self.assertEqual((leidas[0]['medio'], leidas[0]['grupo'], leidas[0]['fecha']),
                          ('Ejemplo', 'Pruebas', generado))
+
+
+class Recogida(unittest.TestCase):
+    def releer(self, noticias, dia, generado):
+        fichero = {'fecha': dia, 'generado': generado, 'medios': {},
+                   'noticias': [R._noticia_a_formato_corto(n, dia)
+                                for n in R.deduplicar_editorial(noticias)]}
+        with tempfile.TemporaryDirectory() as carpeta:
+            Path(carpeta, 'dia.json').write_text(json.dumps(fichero), encoding='utf-8')
+            Path(carpeta, 'manifest.json').write_text(json.dumps(
+                {'dias': [{'fecha': dia, 'all': {'file': 'dia.json'}}]}), encoding='utf-8')
+            with patch.multiple(R, DATOS_DIR=carpeta, MANIFEST_PATH=str(Path(carpeta, 'manifest.json')),
+                                STATE_PATH=str(Path(carpeta, 'state.json'))), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                return {n['dominio']: n for n in R.cargar_historico_payload()['noticias']}
+
+    def test_la_recogida_y_las_fechas_de_cada_alternativa_sobreviven_a_releer(self):
+        hoy = datetime.now(MADRID).date()
+        dia = hoy.isoformat()
+        en = lambda h, m: datetime.combine(hoy, time(h, m), tzinfo=MADRID).isoformat()
+        titular = 'El municipio aprueba un nuevo presupuesto'
+        con_fecha = {'dominio': 'a.test', 'titular': titular, 'fuente': 'RSS',
+                     'enlace': 'https://a.test/x', 'fecha': en(9, 0), 'fecha_pub': en(8, 30)}
+        sin_fecha = {'dominio': 'b.test', 'titular': titular.upper(), 'fuente': 'Scraping',
+                     'enlace': 'https://b.test/y', 'fecha': en(10, 15)}
+        leidas = self.releer([con_fecha, sin_fecha], dia, generado=en(16, 2))
+        a, b = leidas['a.test'], leidas['b.test']
+        self.assertEqual(instante(a['fecha']), instante(en(9, 0)))
+        self.assertEqual(instante(a['fecha_pub']), instante(en(8, 30)))
+        # La alternativa no hereda la publicación ni la fuente del representante,
+        # y su recogida no es la hora del fichero.
+        self.assertEqual((b['fecha_pub'], b['fecha_estimada'], b['fuente']), ('', '', 'Scraping'))
+        self.assertEqual(instante(b['fecha']), instante(en(10, 15)))
+
+    def test_recogida_de_otro_dia_va_completa(self):
+        n = {'dominio': 'a.test', 'titular': 'T', 'enlace': 'https://a.test/x',
+             'fecha': '2026-10-20T23:50:00+02:00'}
+        self.assertEqual(R._noticia_a_formato_corto(n, '2026-10-21')['c'], n['fecha'])
+        self.assertEqual(R._noticia_a_formato_corto(n, '2026-10-20')['c'], '23:50')
