@@ -75,7 +75,7 @@ export function paraArchivo(c) {
   return partes.filter(Boolean).join(' ');
 }
 
-// Para prensa externa (Google News, FreeNews): sintaxis del proveedor.
+// Para prensa externa (Google News): sintaxis del proveedor.
 // Palabras tal cual, frases entre comillas, -exclusiones; dominios solo si
 // son pocos (site:); el resto de filtros se aplica al filtrar con c.pasa.
 export function paraPrensa(c) {

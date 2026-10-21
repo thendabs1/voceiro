@@ -3,6 +3,26 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Prensa externa: solo Google News, con el medio de verdad
+
+### Añadido
+- Relay de búsquedas en el repo (`workers/deno-relay-buscar`, con su workflow):
+  pide el RSS de búsqueda de Google News desde Deno Deploy y lo devuelve en el
+  mismo formato que el proxy anterior, más el dominio del medio
+  (`<source url>`), que antes se perdía. Solo sirve `news.google.com/rss`.
+
+### Cambiado
+- Los resultados de Google News llevan el dominio del medio, así que los
+  filtros de medio, el bloqueo y el nombre del catálogo funcionan con ellos sin
+  adivinar el medio por su nombre (que sigue de reserva).
+- Reino Unido se envía como `GB` (antes `UK`, que Google no reconoce); la
+  preferencia guardada se migra al cargar.
+
+### Quitado
+- FreeNews: los adaptadores de los dos workers, su casilla y su preferencia.
+  Casi nunca aportaba noticias nuevas. Con un solo proveedor desaparece también
+  la casilla «Google News»: el interruptor de prensa basta.
+
 ## 2026-10-14 — El lector, solo en pantalla
 
 ### Cambiado

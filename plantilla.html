@@ -738,33 +738,6 @@
   letter-spacing: .05em;
   font-weight: 600;
 }
-.fp-chks{
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 5px 0;
-}
-.fp-chk{
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  user-select: none;
-  color: var(--muted);
-  font-weight: 500;
-}
-.fp-chk input{
-  accent-color: var(--save);
-  width: 1em;
-  height: 1em;
-  margin: 0;
-  cursor: pointer;
-}
-.fp-chk input:checked + span{
-  color: var(--fg);
-  font-weight: 600;
-}
 .filtros-prensa-selects select{
   font-size: 1em;
   padding: 5px 8px;
@@ -797,9 +770,6 @@
   .filtros-prensa-selects{
     grid-template-columns: 1fr 1fr;
     gap: 6px;
-  }
-  .fp-fuentes{
-    grid-column: 1 / -1;
   }
   .prensa-reset{
     grid-column: 2 / 3;
@@ -2325,20 +2295,6 @@
             </label>
 
             <div class="filtros-prensa-selects" id="prensa-selects" hidden>
-              <label class="fp-fuentes">
-                <span id="prensa-fuentes-label">Fuentes</span>
-                <div class="fp-chks">
-                  <label class="fp-chk">
-                    <input type="checkbox" id="prensa-f-gnews" checked>
-                    <span>Google News</span>
-                  </label>
-                  <label class="fp-chk">
-                    <input type="checkbox" id="prensa-f-freenews" checked>
-                    <span>FreeNews</span>
-                  </label>
-                </div>
-              </label>
-
               <label class="fp-lang">
                 <span id="prensa-lang-label">Idioma</span>
                 <select id="prensa-lang"></select>
@@ -2774,7 +2730,6 @@ let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
 let PRENSA_CLAVE = null;   // clave de la consulta con prensa pendiente
 let PRENSA_USER_MANUAL_OFF = false;
-let PRENSA_FUENTES = { gnews: true, freenews: true };
 let PRENSA_LANG = 'es';
 let PRENSA_PAIS = 'ES';
 
@@ -2793,7 +2748,7 @@ const PRENSA_PAISES = [
   { code: 'AR', labelKey: 'prensaPaisAR' },
   { code: 'CO', labelKey: 'prensaPaisCO' },
   { code: 'CL', labelKey: 'prensaPaisCL' },
-  { code: 'UK', labelKey: 'prensaPaisUK', gnewsGl: 'GB' },
+  { code: 'GB', labelKey: 'prensaPaisUK' },
   { code: 'US', labelKey: 'prensaPaisUS' },
 ];
 
@@ -2832,7 +2787,6 @@ const I18N = {
 
     /* ── Prensa externa ── */
     prensaPanelLabel:  'Prensa externa',
-    prensaFuentes:     'Fuentes',
     prensaLang:        'Idioma',
     prensaPais:        'País',
     prensaReset:       'Restablecer prensa',
@@ -3108,7 +3062,7 @@ const I18N = {
     ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
     ajMediosN:              '{f} forzados · {b} bloqueados',
     ajVistaTit:             'Vista del feed',
-    ajPrensaActivar:        'Buscar también en Google News y FreeNews',
+    ajPrensaActivar:        'Buscar también en Google News',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalar el lector',
     ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
@@ -3177,7 +3131,6 @@ const I18N = {
     cfgDiasCancelar:        'Cancelar',
 
     prensaPanelLabel:  'Prensa externa',
-    prensaFuentes:     'Fontes',
     prensaLang:        'Idioma',
     prensaPais:        'País',
     prensaReset:       'Restablecer prensa',
@@ -3431,7 +3384,7 @@ const I18N = {
     ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
     ajMediosN:              '{f} forzados · {b} bloqueados',
     ajVistaTit:             'Vista do feed',
-    ajPrensaActivar:        'Buscar tamén en Google News e FreeNews',
+    ajPrensaActivar:        'Buscar tamén en Google News',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalar o lector',
     ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
@@ -3500,7 +3453,6 @@ const I18N = {
     cfgDiasCancelar:        'Cancel·lar',
 
     prensaPanelLabel:  'Premsa externa',
-    prensaFuentes:     'Fonts',
     prensaLang:        'Idioma',
     prensaPais:        'País',
     prensaReset:       'Restablir premsa',
@@ -3754,7 +3706,7 @@ const I18N = {
     ajResumenModo:          '{t} temes · {g} grups · {m} mitjans',
     ajMediosN:              '{f} forçats · {b} bloquejats',
     ajVistaTit:             'Vista del feed',
-    ajPrensaActivar:        'Cercar també a Google News i FreeNews',
+    ajPrensaActivar:        'Cercar també a Google News',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instal·la el lector',
     ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
@@ -3823,7 +3775,6 @@ const I18N = {
     cfgDiasCancelar:        'Cancel',
 
     prensaPanelLabel:  'External press',
-    prensaFuentes:     'Sources',
     prensaLang:        'Language',
     prensaPais:        'Country',
     prensaReset:       'Reset press',
@@ -4077,7 +4028,7 @@ const I18N = {
     ajResumenModo:          '{t} topics · {g} groups · {m} outlets',
     ajMediosN:              '{f} forced · {b} blocked',
     ajVistaTit:             'Feed view',
-    ajPrensaActivar:        'Also search Google News and FreeNews',
+    ajPrensaActivar:        'Also search Google News',
     ajPluginTit:            'Universal Reader',
     ajLectorInstalar:       'Install the reader',
     ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
@@ -4146,7 +4097,6 @@ const I18N = {
     cfgDiasCancelar:        'Utzi',
 
     prensaPanelLabel:  'Kanpoko prentsa',
-    prensaFuentes:     'Iturriak',
     prensaLang:        'Hizkuntza',
     prensaPais:        'Herrialdea',
     prensaReset:       'Prentsa berrezarri',
@@ -4400,7 +4350,7 @@ const I18N = {
     ajResumenModo:          '{t} gai · {g} talde · {m} hedabide',
     ajMediosN:              '{f} behartuta · {b} blokeatuta',
     ajVistaTit:             'Feed-aren ikuspegia',
-    ajPrensaActivar:        'Bilatu Google News eta FreeNews-en ere',
+    ajPrensaActivar:        'Bilatu Google News-en ere',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalatu irakurgailua',
     ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
@@ -9533,7 +9483,7 @@ let _archivoTimer = null;
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false; 
 /* ═══════════════════════════════════════════════════════════════
-   PRENSA EXTERNA (vía Worker: gnews + freenews)
+   PRENSA EXTERNA (vía Worker: Google News)
    ═══════════════════════════════════════════════════════════════ */
 function prensaCacheGet(rawQuery){
   try {
@@ -9560,16 +9510,6 @@ function setPrensaActiva(valor, { persistir = true } = {}){
   }
 }
 
-function setPrensaFuente(nombre, activa, { persistir = true } = {}){
-  if (!PRENSA_FUENTES.hasOwnProperty(nombre)) return;
-  PRENSA_FUENTES[nombre] = !!activa;
-  const chk = document.getElementById('prensa-f-' + nombre);
-  if (chk) chk.checked = PRENSA_FUENTES[nombre];
-  if (persistir){
-    try { localStorage.setItem('voceiro-prensa-' + nombre, PRENSA_FUENTES[nombre] ? '1' : '0'); } catch(e){}
-  }
-}
-
 function setPrensaLang(valor, { persistir = true } = {}){
   PRENSA_LANG = valor || 'es';
   const sel = document.getElementById('prensa-lang');
@@ -9589,23 +9529,13 @@ function setPrensaPais(valor, { persistir = true } = {}){
 }
 
 function resetPrensa(){
-  setPrensaFuente('gnews', true);
-  setPrensaFuente('freenews', true);
   setPrensaLang('es');
   setPrensaPais('ES');
   aplicarFiltros();
 }
 
-function prensaFuentesActivas(){
-  const out = [];
-  if (PRENSA_FUENTES.gnews)    out.push('gnews');
-  if (PRENSA_FUENTES.freenews) out.push('freenews');
-  return out;
-}
-
 function prensaCacheKey(rawQuery){
-  const fuentes = prensaFuentesActivas().join(',');
-  return `${rawQuery}|${PRENSA_LANG}|${PRENSA_PAIS}|${fuentes}`;
+  return `${rawQuery}|${PRENSA_LANG}|${PRENSA_PAIS}`;
 }
 
 function pintarSelectsPrensa(){
@@ -9626,28 +9556,21 @@ function pintarSelectsPrensa(){
   // Sincronizar valores
   if (selL) selL.value = PRENSA_LANG;
   if (selP) selP.value = PRENSA_PAIS;
-
-  const chkG = document.getElementById('prensa-f-gnews');
-  const chkF = document.getElementById('prensa-f-freenews');
-  if (chkG) chkG.checked = PRENSA_FUENTES.gnews;
-  if (chkF) chkF.checked = PRENSA_FUENTES.freenews;
 }
 
 function cargarPrensaDeLocalStorage(){
   try {
     const guardado = localStorage.getItem('voceiro-prensa-activa');
     const activa  = guardado === '1';
-    const gnews   = localStorage.getItem('voceiro-prensa-gnews')   !== '0';
-    const freenews= localStorage.getItem('voceiro-prensa-freenews')!== '0';
     const lang    = localStorage.getItem('voceiro-prensa-lang')  || 'es';
-    const pais    = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
+    let pais      = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
+    // Reino Unido se guardaba como 'UK'; Google usa el código ISO ('GB').
+    if (pais === 'UK') pais = 'GB';
 
     PRENSA_ACTIVA = activa;
     // Solo cuenta como apagado manual si el usuario lo apagó ('0');
     // sin clave guardada, la autoactivación por pocos resultados sigue viva.
     PRENSA_USER_MANUAL_OFF = guardado === '0';
-    PRENSA_FUENTES.gnews    = gnews;
-    PRENSA_FUENTES.freenews = freenews;
     PRENSA_LANG = lang;
     PRENSA_PAIS = pais;
   } catch(e){}
@@ -9687,9 +9610,6 @@ function _avisarErroresFuente(data){
 }
 
 async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
-  const fuentes = prensaFuentesActivas();
-  if (!fuentes.length) return { items: [] };
-
   // Cache primero
   const cacheKey = prensaCacheKey(rawQuery);
   const cached = prensaCacheGet(cacheKey);
@@ -9700,7 +9620,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
 
   const params = new URLSearchParams();
   params.set('raw', rawQuery || '');
-  params.set('fuentes', fuentes.join(','));
+  params.set('fuentes', 'gnews');
   params.set('limit', '40');
   params.set('offset', '0');
   params.set('lang', PRENSA_LANG);
@@ -9799,12 +9719,13 @@ function mergePrensa(locales, prensaItems, consulta = null){
   for (const it of prensaItems){
     if (!it.u) continue;
 
-    // ── 1er intento: match por dominio (FreeNews) ──
+    // ── 1er intento: match por dominio (el de <source url>, vía relay) ──
     let dom = it.d || '';
     let m = MEDIOS[dom] || {};
 
-    // ── 2º intento: match por nombre (GNews) ──
-    // Solo si no hubo match por dominio y tenemos nombre de medio.
+    // ── 2º intento: match por nombre ──
+    // Solo si no hubo match por dominio (el relay no lo dio o el medio no
+    // está en el catálogo con ese dominio) y tenemos nombre de medio.
     if (!m.n && it._src === 'gnews' && it.f){
       const clave = normStrict(it.f);
       // Mínimo 4 letras para evitar colisiones ("Vox", "ABC", "EFE"...)
@@ -9820,7 +9741,7 @@ function mergePrensa(locales, prensaItems, consulta = null){
     // Nombre a mostrar (orden de preferencia):
     //   1. Nombre del catálogo (match correcto)
     //   2. Nombre crudo de GNews (sin match)
-    //   3. Dominio (para FreeNews sin match)
+    //   3. Dominio
     //   4. Fallback
     const nombreMostrar = m.n
       || (it._src === 'gnews' ? it.f : '')
@@ -11387,8 +11308,6 @@ function aplicarTextos(){
   // Prensa externa (panel)
   const pl = document.getElementById('prensa-panel-label');
   if (pl) pl.textContent = t('ajPrensaActivar');
-  const plf = document.getElementById('prensa-fuentes-label');
-  if (plf) plf.textContent = t('prensaFuentes');
   const pll = document.getElementById('prensa-lang-label');
   if (pll) pll.textContent = t('prensaLang');
   const plp = document.getElementById('prensa-region-label');
@@ -11775,22 +11694,6 @@ function wireStaticEvents(){
       const nuevo = chkPrensaPanel.checked;
       PRENSA_USER_MANUAL_OFF = !nuevo;
       setPrensaActiva(nuevo);
-      aplicarFiltros();
-    });
-  }
-
-  // ── Checkboxes de fuentes ──
-  const chkGnews = $('#prensa-f-gnews');
-  if (chkGnews){
-    chkGnews.addEventListener('change', () => {
-      setPrensaFuente('gnews', chkGnews.checked);
-      aplicarFiltros();
-    });
-  }
-  const chkFree = $('#prensa-f-freenews');
-  if (chkFree){
-    chkFree.addEventListener('change', () => {
-      setPrensaFuente('freenews', chkFree.checked);
       aplicarFiltros();
     });
   }
