@@ -8,7 +8,7 @@ import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
 import { desdeCap, desdeTar, desdeAtom, vigentes } from '../../workers/deno-buscar/src/tiempo/avisos.js';
 import {
   comunidadDeZona, provinciaDeZona, zonaHorariaAviso, filtrarAvisos, agruparAvisos,
-  resumenAvisos, busquedaNoticias,
+  resumenAvisos,
 } from '../../shared/tiempo/avisos.js';
 
 test('alertas: vacío es toda España; con valor, un filtro; no filtra noticias', () => {
@@ -77,6 +77,13 @@ test('tar: todos los CAP, sin las versiones sustituidas', () => {
   assert.deepEqual(r.map(a => [a.zona, a.fen, a.nivel]), [['713601', 'PR', 'naranja'], ['659303', 'VI', 'naranja']]);
 });
 
+test('respuesta que no es un tar de CAP ni un Atom: error, no «sin avisos»', () => {
+  assert.throws(() => desdeTar(new TextEncoder().encode('<html>Demasiadas peticiones</html>')));
+  assert.throws(() => desdeTar(tar(['no es un CAP'])));
+  assert.throws(() => desdeAtom('<html></html>'));
+  assert.deepEqual(desdeAtom('<feed xmlns="http://www.w3.org/2005/Atom"></feed>'), []);
+});
+
 test('Atom de MeteoAlarm: nivel por severidad y zona por el identificador', () => {
   const entrada = (sev, id, area) => `<entry><cap:areaDesc>${area}</cap:areaDesc><cap:severity>${sev}</cap:severity>
     <cap:onset>2026-10-21T22:00:00+00:00</cap:onset><cap:expires>2026-10-22T21:59:59+00:00</cap:expires>
@@ -135,21 +142,18 @@ test('filtro: comunidad, provincia, zona, fenómeno o nivel, sin tildes y en dos
   assert.deepEqual(zonas('rojo'), ['659601']);
 });
 
-test('grupos: por fenómeno, el de nivel más alto primero; dentro, lo grave y lo que ya empezó', () => {
+test('grupos: una línea por fenómeno y comunidad; lo grave y lo que ya empezó, primero', () => {
   const g = agruparAvisos(AVISOS, AHORA);
-  assert.deepEqual(g.map(x => [x.fen, x.nivel]), [['PR', 'rojo'], ['VI', 'amarillo'], ['CO', 'amarillo']]);
+  assert.deepEqual(g.map(x => [x.fen, x.comunidad, x.nivel, x.zonas]),
+    [['PR', 'Canarias', 'rojo', 2], ['VI', 'Galicia', 'amarillo', 1], ['CO', 'Galicia', 'amarillo', 1]]);
   assert.deepEqual(g[0].avisos.map(a => a.zona), ['659601', '659303']);
+  assert.equal(g[0].inicio, '2026-10-21T09:00:00.000Z');   // el primero que empieza
+  assert.equal(g[0].fin, '2026-10-22T17:00:00.000Z');      // el último que acaba
+  const futuro = { ...AVISOS[1], zona: '713601', inicio: '2026-10-22T00:00:00+02:00' };
+  assert.deepEqual(agruparAvisos([futuro, AVISOS[2]], AHORA).map(x => x.comunidad), ['Canarias', 'Galicia']);
 });
 
 test('icono: solo naranja y rojo, con los que ya están en vigor', () => {
   assert.deepEqual(resumenAvisos(AVISOS, AHORA), { nivel: 'rojo', total: 2, ahora: 1 });
   assert.equal(resumenAvisos(AVISOS.filter(a => a.nivel === 'amarillo'), AHORA), null);
-});
-
-test('«Ver noticias»: fenómeno y comunidad desde ayer', () => {
-  assert.equal(busquedaNoticias(AVISOS[1]), 'lluvia* Canarias desde:ayer');
-  assert.equal(busquedaNoticias({ zona: '673401', fen: 'NE' }), 'nev* "Castilla y León" desde:ayer');
-  assert.equal(busquedaNoticias({ zona: '774601', fen: 'TO' }), 'tormenta* valencia* desde:ayer');
-  const p = parseQuery(busquedaNoticias({ zona: '673401', fen: 'NE' }));
-  assert.ok(p.desde);
 });

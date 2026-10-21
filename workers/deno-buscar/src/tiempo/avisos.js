@@ -59,9 +59,12 @@ export function* ficherosTar(bytes) {
 }
 
 // Todos los avisos amarillos, naranjas y rojos del tar. Si una versión
-// sustituye a otra (<references>), la sustituida se quita.
+// sustituye a otra (<references>), la sustituida se quita. El tar siempre
+// trae CAP, aunque sean verdes: si no hay ninguno, la respuesta no vale
+// (y no se guarda como «no hay avisos»).
 export function desdeTar(bytes) {
-  const caps = [...ficherosTar(bytes)];
+  const caps = [...ficherosTar(bytes)].filter(xml => xml.includes('<alert'));
+  if (!caps.length) throw new Error('AEMET: tar sin avisos CAP');
   const sustituidos = new Set();
   for (const xml of caps) {
     for (const ref of (campo(xml, 'references') || '').split(/\s+/)) {
@@ -80,6 +83,7 @@ export function desdeTar(bytes) {
 const SEVERIDAD = { Moderate: 'amarillo', Severe: 'naranja', Extreme: 'rojo' };
 
 export function desdeAtom(xml) {
+  if (!/<feed[\s>]/.test(xml)) throw new Error('MeteoAlarm: no es un Atom');
   return xml.split('<entry>').slice(1).flatMap(e => {
     const nivel = SEVERIDAD[campo(e, 'cap:severity')];
     const m = (campo(e, 'cap:identifier') || '').match(/\.(\d{6})([A-Z]{2})[A-Z0-9]*$/);
