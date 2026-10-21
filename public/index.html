@@ -923,6 +923,10 @@
 }
 .temas-chips-fila::-webkit-scrollbar{ display: none; }
 .temas-chips[hidden]{ display: none; }
+.temas-chips-contexto{ display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; color: var(--muted); }
+.temas-chips-cero > summary{ cursor: pointer; }
+.temas-chips-cero[open]{ flex-basis: 100%; }
+.temas-chips-cero-lista{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .temas-chips button.cero{ opacity: .45; cursor: default; }
 .temas-chips button{
   flex: none;
@@ -2721,12 +2725,17 @@ const I18N = {
     portadaEus:              'País Vasco y Navarra',
     portadaNac:              'Nacional',
     portadaInt:              'Internacional',
-    presetPestanaModo:       'Modo «{X}» · {n}',
-    presetPestanaTodo:       'Todo · {n}',
+    presetPestanaModo:       '{X} · {n}',
+    presetPestanaTodo:       'Toda la búsqueda · {n}',
     presetPestanaTemas:      'Temas · {n}',
     presetVistaTemas:        'Temas',
     temaChipTodo:            'Todo',
     temaChipMedios:          'Medios del modo',
+    temaChipSinFiltro:       'Sin filtro',
+    temaChipSoloMedios:      'Solo medios',
+    temaChipTema:            'Tema: {X}',
+    temaFiltroEnModo:        'Filtrar dentro de {X}:',
+    temaChipsSinCoincidencias: 'Temas sin coincidencias · {n}',
 
     /* ── Días en memoria ── */
     cfgDias:                 'Días en memoria',
@@ -3068,12 +3077,17 @@ const I18N = {
     portadaEus:              'País Vasco e Navarra',
     portadaNac:              'Estatal',
     portadaInt:              'Internacional',
-    presetPestanaModo:       'Modo «{X}» · {n}',
-    presetPestanaTodo:       'Todo · {n}',
+    presetPestanaModo:       '{X} · {n}',
+    presetPestanaTodo:       'Toda a busca · {n}',
     presetPestanaTemas:      'Temas · {n}',
     presetVistaTemas:        'Temas',
     temaChipTodo:            'Todo',
     temaChipMedios:          'Medios do modo',
+    temaChipSinFiltro:       'Sen filtro',
+    temaChipSoloMedios:      'Só medios',
+    temaChipTema:            'Tema: {X}',
+    temaFiltroEnModo:        'Filtrar en {X}:',
+    temaChipsSinCoincidencias: 'Temas sen coincidencias · {n}',
 
     /* ── Días na memoria ── */
     cfgDias:                 'Días na memoria',
@@ -3392,12 +3406,17 @@ const I18N = {
     portadaEus:              'País Basc i Navarra',
     portadaNac:              'Estatal',
     portadaInt:              'Internacional',
-    presetPestanaModo:       'Mode «{X}» · {n}',
-    presetPestanaTodo:       'Tot · {n}',
+    presetPestanaModo:       '{X} · {n}',
+    presetPestanaTodo:       'Tota la cerca · {n}',
     presetPestanaTemas:      'Temes · {n}',
     presetVistaTemas:        'Temes',
     temaChipTodo:            'Tot',
     temaChipMedios:          'Mitjans del mode',
+    temaChipSinFiltro:       'Sense filtre',
+    temaChipSoloMedios:      'Només mitjans',
+    temaChipTema:            'Tema: {X}',
+    temaFiltroEnModo:        'Filtrar dins de {X}:',
+    temaChipsSinCoincidencias: 'Temes sense coincidències · {n}',
 
     /* ── Dies en memòria ── */
     cfgDias:                 'Dies en memòria',
@@ -3716,12 +3735,17 @@ const I18N = {
     portadaEus:              'Basque Country and Navarre',
     portadaNac:              'Spain (national)',
     portadaInt:              'International',
-    presetPestanaModo:       '"{X}" mode · {n}',
-    presetPestanaTodo:       'All · {n}',
+    presetPestanaModo:       '{X} · {n}',
+    presetPestanaTodo:       'All search results · {n}',
     presetPestanaTemas:      'Topics · {n}',
     presetVistaTemas:        'Topics',
     temaChipTodo:            'All',
     temaChipMedios:          'Mode sources',
+    temaChipSinFiltro:       'No filter',
+    temaChipSoloMedios:      'Only sources',
+    temaChipTema:            'Topic: {X}',
+    temaFiltroEnModo:        'Filter within {X}:',
+    temaChipsSinCoincidencias: 'Topics with no matches · {n}',
 
     /* ── Days in memory ── */
     cfgDias:                 'Days in memory',
@@ -4040,12 +4064,17 @@ const I18N = {
     portadaEus:              'Euskadi eta Nafarroa',
     portadaNac:              'Estatukoa',
     portadaInt:              'Nazioartekoa',
-    presetPestanaModo:       '«{X}» modua · {n}',
-    presetPestanaTodo:       'Dena · {n}',
+    presetPestanaModo:       '{X} · {n}',
+    presetPestanaTodo:       'Bilaketa osoa · {n}',
     presetPestanaTemas:      'Gaiak · {n}',
     presetVistaTemas:        'Gaiak',
     temaChipTodo:            'Dena',
     temaChipMedios:          'Moduaren hedabideak',
+    temaChipSinFiltro:       'Iragazkirik gabe',
+    temaChipSoloMedios:      'Hedabideak soilik',
+    temaChipTema:            'Gaia: {X}',
+    temaFiltroEnModo:        'Iragazi {X} moduan:',
+    temaChipsSinCoincidencias: 'Emaitzarik gabeko gaiak · {n}',
 
     /* ── Memoriako egunak ── */
     cfgDias:                 'Memoriako egunak',
@@ -10144,6 +10173,8 @@ function renderChipsTemas(){
   if (!el) return;
   const info = ULT_CHIPS;
   if (!info){ el.hidden = true; el.innerHTML = ''; return; }
+  const enBusquedaModo = !!(ULT_PESTANAS && ULT_PESTANAS.pestana === 'modo' && !info.porModo);
+  const cerosAbiertos = !!el.querySelector('.temas-chips-cero[open]');
   // Solo un chip de tema se atenúa a 0: los «Todo» y los de modo, nunca.
   const chip = (attrs, label, n, pulsado, title, atenuable = false) =>
     `<button type="button" ${attrs} aria-pressed="${String(pulsado)}"`
@@ -10151,6 +10182,7 @@ function renderChipsTemas(){
     + (title ? ` title="${escapeHtml(title)}"` : '')
     + `>${escapeHtml(label)} · ${n.toLocaleString()}</button>`;
   const filas = [];
+  const ceros = [];
   if (info.porModo && TEMAS_TODOS.length >= 2){
     let html = chip('data-chip=""', t('temaChipTodo'), info.total, !CHIP_TEMAS);
     for (const m of TEMAS_TODOS){
@@ -10162,17 +10194,32 @@ function renderChipsTemas(){
   if (info.porTema){
     const modo = `data-modo="${escapeHtml(info.modo)}"`;
     let html = '';
-    if (!filas.length) html += chip(`data-tema="" ${modo}`, t('temaChipTodo'), info.totalModo, !CHIP_TEMA);
+    if (!filas.length) html += chip(`data-tema="" ${modo}`, t(enBusquedaModo ? 'temaChipSinFiltro' : 'temaChipTodo'), info.totalModo, !CHIP_TEMA);
     if (info.nMedios !== null){
-      html += chip(`data-medios="1" ${modo}`, t('temaChipMedios'), info.nMedios, !!(CHIP_TEMA && CHIP_TEMA.medios));
+      html += chip(`data-medios="1" ${modo}`, t(enBusquedaModo ? 'temaChipSoloMedios' : 'temaChipMedios'), info.nMedios, !!(CHIP_TEMA && CHIP_TEMA.medios));
     }
     for (const [e, n] of info.porTema){
-      html += chip(`data-tema="${escapeHtml(e)}" ${modo}`, etiquetaVisible(e), n, !!(CHIP_TEMA && CHIP_TEMA.etiqueta === e), e, true);
+      const pulsado = !!(CHIP_TEMA && CHIP_TEMA.etiqueta === e);
+      const etiqueta = etiquetaVisible(e);
+      const boton = chip(`data-tema="${escapeHtml(e)}" ${modo}`,
+        enBusquedaModo ? t('temaChipTema', { X: etiqueta }) : etiqueta, n, pulsado, e, true);
+      if (enBusquedaModo && n === 0 && !pulsado) ceros.push(boton);
+      else html += boton;
     }
     filas.push(html);
   }
+  const contexto = enBusquedaModo
+    ? `<div class="temas-chips-contexto"><span>${escapeHtml(t('temaFiltroEnModo', { X: PRESET.nombre }))}</span>`
+      + (ceros.length
+        ? `<details class="temas-chips-cero"><summary>${escapeHtml(t('temaChipsSinCoincidencias', { n: ceros.length.toLocaleString() }))}</summary><div class="temas-chips-cero-lista">${ceros.join('')}</div></details>`
+        : '') + '</div>'
+    : '';
   // Con dos filas, la de temas cuelga del modo elegido: va sangrada.
-  el.innerHTML = filas.map((h, i) => `<div class="temas-chips-fila${i ? ' hija' : ''}">${h}</div>`).join('');
+  el.innerHTML = contexto + filas.map((h, i) => `<div class="temas-chips-fila${i ? ' hija' : ''}">${h}</div>`).join('');
+  if (cerosAbiertos){
+    const details = el.querySelector('.temas-chips-cero');
+    if (details) details.open = true;
+  }
   el.hidden = false;
 }
 
