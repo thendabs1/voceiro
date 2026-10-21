@@ -6,8 +6,8 @@
 // La zona de AEMET lleva comunidad, provincia (o isla) y zona: 71 36 01 es
 // Galicia, Pontevedra, Rías Baixas; las costeras acaban en C.
 
-import { normalize } from '../parser.js?v=6b49a74614';
-import { PROVINCIAS } from './lugares.js?v=6b49a74614';
+import { normalize } from '../parser.js?v=4617b0d5d3';
+import { PROVINCIAS } from './lugares.js?v=4617b0d5d3';
 
 export const COMUNIDADES = {
   61: 'Andalucía', 62: 'Aragón', 63: 'Asturias', 64: 'Illes Balears', 65: 'Canarias',
@@ -46,13 +46,14 @@ export function filtrarAvisos(avisos, texto, nombres = {}) {
     || (nombres.nivel?.[a.nivel] || []).some(casa));
 }
 
-// Una línea por fenómeno y comunidad («Lluvias · Comunitat Valenciana ·
-// 3 zonas»): primero lo más grave y lo que ya ha empezado. Dentro, las
-// zonas por nivel, por lo que ya empezó y por código.
+// Una línea por comunidad, con todos sus niveles juntos («[GALICIA] Naranja
+// Lluvias · Amarillo Vientos · 3 zonas»): primero lo más grave y lo que ya
+// ha empezado. Dentro, los avisos por nivel, por lo que ya empezó, por hora,
+// fenómeno y zona. Las horas de la línea son las del nivel más alto.
 export function agruparAvisos(avisos, ahora = Date.now()) {
   const por = new Map();
   for (const a of avisos) {
-    const k = `${a.fen}|${String(a.zona).slice(0, 2)}`;
+    const k = String(a.zona).slice(0, 2);
     if (!por.has(k)) por.set(k, []);
     por.get(k).push(a);
   }
@@ -60,15 +61,20 @@ export function agruparAvisos(avisos, ahora = Date.now()) {
     .map(([clave, lista]) => {
       lista.sort((a, b) => PESO[b.nivel] - PESO[a.nivel]
         || empezado(b, ahora) - empezado(a, ahora)
-        || a.zona.localeCompare(b.zona)
-        || Date.parse(a.inicio) - Date.parse(b.inicio));
+        || Date.parse(a.inicio) - Date.parse(b.inicio)
+        || FENOMENOS.indexOf(a.fen) - FENOMENOS.indexOf(b.fen)
+        || a.zona.localeCompare(b.zona));
       const iso = ms => new Date(ms).toISOString();
+      const nivel = lista[0].nivel;
+      const alto = lista.filter(a => a.nivel === nivel);
+      const niveles = [...new Set(lista.map(a => a.nivel))]
+        .map(n => ({ nivel: n, fens: [...new Set(lista.filter(a => a.nivel === n).map(a => a.fen))] }));
       return {
-        clave, fen: lista[0].fen, zona: lista[0].zona, comunidad: comunidadDeZona(lista[0].zona),
-        nivel: lista[0].nivel,
+        clave, zona: lista[0].zona, comunidad: comunidadDeZona(lista[0].zona),
+        nivel, niveles,
         zonas: new Set(lista.map(a => a.zona)).size,
-        inicio: iso(Math.min(...lista.map(a => Date.parse(a.inicio)))),
-        fin: iso(Math.max(...lista.map(a => Date.parse(a.fin)))),
+        inicio: iso(Math.min(...alto.map(a => Date.parse(a.inicio)))),
+        fin: iso(Math.max(...alto.map(a => Date.parse(a.fin)))),
         avisos: lista,
       };
     })
