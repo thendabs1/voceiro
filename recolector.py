@@ -59,6 +59,7 @@ from curl_cffi import requests as curl_requests
 from medios import (
     MEDIA_CATALOG, HEADERS, todos_los_medios, fuentes_de, google_news_url,
 )
+from scripts.generar_front import generar_html
 
 
 # ─────────────────────────────────────────────────────────────
@@ -2229,61 +2230,6 @@ def generar_portada(noticias, ahora, horas=PORTADA_HORAS, max_items=PORTADA_MAX,
         'n':    len(recientes),
         'kb':   round(size_kb, 1),
     }
-# ─────────────────────────────────────────────────────────────
-# FASE 3c · HTML
-# ─────────────────────────────────────────────────────────────
-def generar_html(fecha, total):
-    # Si fallan los tests del buscador, el workflow pone esta variable: los
-    # datos se publican igual, pero el front (index.html y módulos) se queda
-    # en la última versión buena, la que está en el repo.
-    if os.environ.get('VOCEIRO_FRONT_CONGELADO') == '1':
-        print('[front] tests en rojo: se mantiene el front anterior')
-        return
-    here = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(here, 'plantilla.html'), encoding='utf-8') as f:
-        html = f.read()
-    html = html.replace('{{FECHA}}', fecha).replace('{{TOTAL}}', str(total))
-    os.makedirs('public', exist_ok=True)
-
-    # Los módulos compartidos (parser, núcleo de búsqueda y fusión de datos
-    # con el lector) viajan junto al HTML, mismo origen (GitHub Pages): sin
-    # CORS, sin workers, sin bloqueos.
-    #   shared/parser.js        → public/parser.js
-    #   shared/busqueda/*.js    → public/busqueda/*.js
-    #   shared/sync/*.js        → public/sync/*.js
-    #   shared/tema/*.js        → public/tema/*.js
-    #   shared/tiempo/*.js      → public/tiempo/*.js (municipios: solo con eltiempo:)
-    modulos = {'parser.js': os.path.join(here, 'shared/parser.js')}
-    for carpeta in ('busqueda', 'sync', 'tema', 'tiempo'):
-        dir_mod = os.path.join(here, 'shared', carpeta)
-        if os.path.isdir(dir_mod):
-            for nombre in sorted(os.listdir(dir_mod)):
-                if nombre.endswith('.js'):
-                    modulos[f'{carpeta}/{nombre}'] = os.path.join(dir_mod, nombre)
-    fuentes = {}
-    for rel, ruta in modulos.items():
-        with open(ruta, encoding='utf-8') as f:
-            fuentes[rel] = f.read()
-
-    # Versión común a todos los módulos: Pages los cachea 10 min y un
-    # index.html nuevo con un módulo viejo (o al revés) rompe el import y,
-    # con él, toda la app. Se añade ?v=<hash> a cada import relativo, también
-    # a los imports entre módulos.
-    h = hashlib.sha256()
-    for rel in sorted(fuentes):
-        h.update(rel.encode()); h.update(fuentes[rel].encode())
-    version = h.hexdigest()[:10]
-    rx_import = re.compile(r"""((?:from|import)\s*\(?\s*['"])(\.{1,2}/[^'"?]+\.js)(['"])""")
-    versionar = lambda s: rx_import.sub(lambda m: f"{m.group(1)}{m.group(2)}?v={version}{m.group(3)}", s)
-
-    with open('public/index.html', 'w', encoding='utf-8') as f:
-        f.write(versionar(html))
-    for rel, src in fuentes.items():
-        dst = os.path.join('public', rel)
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        with open(dst, 'w', encoding='utf-8') as f:
-            f.write(versionar(src))
-
 # ─────────────────────────────────────────────────────────────
 # SUBIDA A CLOUDFLARE R2
 # ─────────────────────────────────────────────────────────────
