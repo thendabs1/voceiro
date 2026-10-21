@@ -10332,7 +10332,7 @@ function renderChipsTemas(){
   const ceros = [];
   if (info.porModo && TEMAS_TODOS.length >= 2){
     let html = chip('data-chip=""', t('temaChipTodo'), info.total, !CHIP_TEMAS);
-    for (const m of TEMAS_TODOS){
+    for (const m of [...TEMAS_TODOS].sort((a, b) => (info.porModo.get(b.id) || 0) - (info.porModo.get(a.id) || 0))){
       const n = info.porModo.get(m.id) || 0;
       if (n || m.id === CHIP_TEMAS) html += chip(`data-chip="${escapeHtml(m.id)}"`, m.nombre, n, m.id === CHIP_TEMAS);
     }
@@ -10342,10 +10342,14 @@ function renderChipsTemas(){
     const modo = `data-modo="${escapeHtml(info.modo)}"`;
     let html = '';
     if (!filas.length) html += chip(`data-tema="" ${modo}`, t(enBusquedaModo ? 'temaChipSinFiltro' : 'temaChipTodo'), info.totalModo, !CHIP_TEMA);
-    if (info.nMedios !== null){
-      html += chip(`data-medios="1" ${modo}`, t(enBusquedaModo ? 'temaChipSoloMedios' : 'temaChipMedios'), info.nMedios, !!(CHIP_TEMA && CHIP_TEMA.medios));
-    }
-    for (const [e, n] of info.porTema){
+    const temasOrdenados = [...info.porTema].map(([e, n]) => ({ e, n }));
+    if (info.nMedios !== null) temasOrdenados.push({ medios: true, n: info.nMedios });
+    temasOrdenados.sort((a, b) => b.n - a.n);
+    for (const { e, n, medios } of temasOrdenados){
+      if (medios){
+        html += chip(`data-medios="1" ${modo}`, t(enBusquedaModo ? 'temaChipSoloMedios' : 'temaChipMedios'), n, !!(CHIP_TEMA && CHIP_TEMA.medios));
+        continue;
+      }
       const pulsado = !!(CHIP_TEMA && CHIP_TEMA.etiqueta === e);
       const etiqueta = etiquetaVisible(e);
       const boton = chip(`data-tema="${escapeHtml(e)}" ${modo}`,
