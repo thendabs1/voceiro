@@ -33,6 +33,7 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
     AVISOS: { datos: { avisos } }, filtrados: 0,
     avisosVigentes: () => avisos,
     aplicarFiltros() { ctx.filtrados++; },
+    requestAnimationFrame: callback => callback(),
     document: { getElementById: id => (id === 'btn-tiempo' ? sol : null) },
     localStorage: { getItem: k => guardado.get(k) ?? null, setItem: (k, v) => guardado.set(k, v) },
   };
@@ -51,6 +52,27 @@ test('el sol abre Mis sitios y lo cierra sin tocar el resto de la búsqueda', ()
   ctx.abrirTiempo();
   assert.equal(buscar.value, 'incendio medio:elpais');
   assert.equal(ctx.filtrados, 2);
+});
+
+test('el primer clic sitúa la tarjeta bajo la cabecera tras pintarla', () => {
+  const { ctx, buscar, sol } = contexto();
+  const panel = { hidden: true, getBoundingClientRect: () => ({ top: -480 }) };
+  const barra = { getBoundingClientRect: () => ({ height: 96 }) };
+  const desplazamientos = [];
+  let pintar;
+  ctx.document.getElementById = id => ({ 'btn-tiempo': sol, 'tiempo-tarjeta': panel, 'barra-sup': barra })[id] || null;
+  ctx.window = { scrollY: 1200, scrollTo: opciones => desplazamientos.push(opciones) };
+  ctx.requestAnimationFrame = callback => { pintar = callback; };
+  ctx.abrirTiempo();
+  assert.equal(buscar.value, 'eltiempo:');
+  assert.equal(desplazamientos.length, 0);
+  panel.hidden = false;
+  pintar();
+  assert.equal(desplazamientos[0].top, 616);
+  assert.equal(desplazamientos[0].behavior, 'auto');
+  ctx.abrirTiempo();
+  assert.equal(buscar.value, '');
+  assert.equal(desplazamientos.length, 1);
 });
 
 test('las pestañas cambian un prefijo del tiempo por otro', () => {

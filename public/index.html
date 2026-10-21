@@ -8146,7 +8146,12 @@ function ponerTiempo(token){
     if (clear) clear.hidden = false;
   }
   aplicarFiltros();
-  if (token) document.getElementById(token.startsWith('alertas') ? 'avisos-panel' : 'tiempo-tarjeta')?.scrollIntoView({ block: 'nearest' });
+  if (token) requestAnimationFrame(() => {
+    const panel = document.getElementById(token.startsWith('alertas') ? 'avisos-panel' : 'tiempo-tarjeta');
+    if (!panel || panel.hidden) return;
+    const altoBarra = document.getElementById('barra-sup')?.getBoundingClientRect().height || 0;
+    window.scrollTo({ top: Math.max(0, window.scrollY + panel.getBoundingClientRect().top - altoBarra - 8), behavior: 'auto' });
+  });
 }
 // Sin sitios guardados, el panel se abre con el cursor tras eltiempo:.
 function enfocarBuscador(){
