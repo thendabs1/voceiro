@@ -86,3 +86,80 @@ test('el sol se colorea solo con naranja o rojo en mis sitios', () => {
   apagado.ctx.pintarBotonTiempo();
   assert.equal(apagado.sol.dataset.nivel, undefined);
 });
+
+// Mis sitios con previsiones que llegan cuando el test quiere.
+function contextoSitios(sitios) {
+  const guardado = new Map([['voceiro-tiempo-sitios-v1', JSON.stringify(sitios)]]);
+  const pintados = [], pendientes = [];
+  const ctx = {
+    t: k => k, ico: n => `<${n}>`, escapeHtml: x => String(x), normalize: x => String(x).toLowerCase(),
+    provinciaDe: ine => ({ 27: 'Lugo', 32: 'Ourense' })[ine.slice(0, 2)] || '',
+    cieloTiempo: () => ({ ico: '', txt: '' }), grados: v => `${v}°`, nombreFen: f => f,
+    avisosDeZona: () => [], htmlPestanasTiempo: () => '', msgTiempo: k => k,
+    pedirAvisos: () => Promise.resolve(), pintarBotonTiempo() {},
+    document: { querySelector: () => null },
+    TIEMPO: { valor: '', sitios: new Map(), fallos: new Set() }, AVISOS: { datos: null },
+    TIEMPO_SITIOS_KEY: 'voceiro-tiempo-sitios-v1', TIEMPO_MAX_SITIOS: 5, JSON, Array, String,
+    localStorage: { getItem: k => guardado.get(k) ?? null, setItem: (k, v) => guardado.set(k, v) },
+    pintarTiempo: html => pintados.push(html),
+    previsionSitio: s => new Promise((ok, mal) => pendientes.push({ s, ok, mal })),
+  };
+  runInNewContext([
+    linea('const claveLugar'), linea('const htmlReintentar'), linea('const regionSitio'),
+    ...['sitiosTiempo', 'guardarSitios', 'pintarSitios', 'htmlSitios', 'quitarSitio'].map(funcion),
+  ].join('\n') + '\nthis.pintarSitios = pintarSitios; this.htmlSitios = htmlSitios; this.quitarSitio = quitarSitio;', ctx);
+  return { ctx, pintados, pendientes };
+}
+const vigo = { nombre: 'Vigo', lugar: { ine: '36057' } };
+const madrid = { nombre: 'Madrid', lugar: { ine: '28079' } };
+
+test('Mis sitios: una previsión que llega tarde no devuelve un sitio quitado', async () => {
+  const { ctx, pintados, pendientes } = contextoSitios([vigo, madrid]);
+  ctx.pintarSitios();
+  ctx.quitarSitio('36057');
+  const p = { dias: [{ max: 20, min: 10 }] };
+  ctx.TIEMPO.sitios.set('36057', { p });
+  pendientes[0].ok(p);
+  await new Promise(r => setTimeout(r));
+  const ultimo = pintados.at(-1);
+  assert.doesNotMatch(ultimo, /Vigo/);
+  assert.match(ultimo, /data-k="28079"/);
+});
+
+test('Mis sitios: los homónimos llevan su provincia; un fallo, guion y Reintentar', () => {
+  const { ctx } = contextoSitios([]);
+  const castros = [{ nombre: 'Castro', lugar: { ine: '27011' } }, { nombre: 'Castro', lugar: { ine: '32021' } }, vigo];
+  const html = ctx.htmlSitios(castros);
+  assert.match(html, /Castro \(Lugo\)/);
+  assert.match(html, /Castro \(Ourense\)/);
+  assert.match(html, /<strong>Vigo<\/strong>/);
+  assert.doesNotMatch(html, /tiempo-reintentar/);
+
+  ctx.TIEMPO.fallos.add('36057');
+  const fallo = ctx.htmlSitios([vigo]);
+  assert.match(fallo, /tiempo-min">–</);
+  assert.match(fallo, /tiempo-reintentar/);
+});
+
+// Los avisos dentro de la tarjeta: la fuente, solo si algo va mal.
+function avisosLugar(AVISOS) {
+  const ctx = {
+    t: k => k, escapeHtml: x => String(x), msgTiempo: k => `<p>${k}</p>`, htmlAviso: a => `<li>${a.zona}</li>`,
+    avisosDeZona: () => (AVISOS.datos?.avisos || []), ACCES: { lang: 'es' }, Date, isNaN,
+    TIEMPO_AVISOS_KEY: 'voceiro-tiempo-avisos', AVISOS, localStorage: { getItem: () => null },
+  };
+  runInNewContext(['htmlAvisosLugar', 'pieAvisos'].map(funcion).join('\n') + '\nthis.f = htmlAvisosLugar;', ctx);
+  return ctx.f({ zonaAviso: '713601' });
+}
+
+test('avisos del sitio: el fallo y MeteoAlarm se dicen; con AEMET, sin pie', () => {
+  assert.equal(avisosLugar({ datos: null, error: false }), '');
+  assert.match(avisosLugar({ datos: null, error: true }), /avisosError/);
+  const aemet = { fuente: 'aemet', consultado: '2026-10-21T10:00:00Z', avisos: [] };
+  assert.doesNotMatch(avisosLugar({ datos: aemet, error: false }), /tiempo-pie/);
+  assert.match(avisosLugar({ datos: aemet, error: true }), /tiempo-pie.*avisosError/s);
+  const meteoalarm = { fuente: 'meteoalarm', incompleto: true, avisos: [aviso('713601', 'amarillo')] };
+  const html = avisosLugar({ datos: meteoalarm, error: false });
+  assert.match(html, /avisosBotonTxt \(1\)/);
+  assert.match(html, /MeteoAlarm.*avisosIncompleto/s);
+});
