@@ -7447,7 +7447,7 @@ function aplicarSugerencia(idx){
     // eltiempo:"A Coruña" con el municipio elegido (hay nombres repetidos).
     recordarLugar(s.value, { ine: s.ine });
     const token = /\s/.test(s.value) ? `"${s.value}"` : s.value;
-    input.value = input.value.replace(RX_TIEMPO_FINAL, (_, antes) => `${antes}eltiempo:${token}`) + ' ';
+    input.value = input.value.replace(RX_TIEMPO_FINAL, (_, antes, prefijo) => `${antes}${prefijo}${token}`) + ' ';
     cerrarSugerencias();
     input.focus();
     aplicarFiltros();
@@ -7627,10 +7627,11 @@ function recordarLugar(nombre, lugar){
   try { localStorage.setItem(TIEMPO_LUGARES_KEY, JSON.stringify(r)); } catch(e){}
 }
 
-// El eltiempo: que se está escribiendo al final del buscador («eltiempo:"A Cor»).
-const RX_TIEMPO_FINAL = /(^|\s)eltiempo:(?:"[^"]*|[^\s"]*)$/i;
+// El eltiempo: (o tiempo:) que se está escribiendo al final del buscador
+// («eltiempo:"A Cor»).
+const RX_TIEMPO_FINAL = /(^|\s)((?:el)?tiempo:)(?:"[^"]*|[^\s"]*)$/i;
 function fragmentoTiempo(raw){
-  const m = raw.match(/(?:^|\s)eltiempo:(?:"([^"]*)|([^\s"]*))$/i);
+  const m = raw.match(/(?:^|\s)(?:el)?tiempo:(?:"([^"]*)|([^\s"]*))$/i);
   return m ? (m[1] ?? m[2]) : null;
 }
 

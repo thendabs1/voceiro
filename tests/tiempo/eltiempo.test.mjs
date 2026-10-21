@@ -23,7 +23,10 @@ test('eltiempo: es un lugar, no texto ni filtro', () => {
   const q = parseQuery('eltiempo:Vigo transporte');
   assert.equal(q.eltiempo, 'Vigo');
   assert.deepEqual(q.titulo, ['transporte']);
-  assert.equal(parseQuery('eltiempo:').eltiempo, null);
+  assert.equal(parseQuery('eltiempo:').eltiempo, '');          // el panel con los sitios guardados
+  assert.equal(parseQuery('incendio').eltiempo, null);
+  assert.equal(parseQuery('tiempo:Vigo').eltiempo, 'Vigo');      // tiempo: es lo mismo
+  assert.equal(parseQuery('TIEMPO:"A Coruña"').eltiempo, 'A Coruña');
 });
 
 test('eltiempo: no llega al archivo ni deja la consulta con texto', () => {
