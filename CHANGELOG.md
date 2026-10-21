@@ -3,6 +3,19 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Recolector: fecha de otra tarjeta y lecturas estrictas
+
+### Corregido
+- El scraping tampoco toma la fecha de otra tarjeta cuando el enlace
+  envuelve el titular (`<a><h2>`), además de cuando va dentro (`<h2><a>`).
+- Un día de la ventana que no se puede leer (local o recién bajado), un
+  troceado que falla a medias o un manifest previo ilegible paran el run.
+  Antes se seguía con el histórico incompleto: los días recientes se
+  reescribían sin sus noticias y, sin manifest previo, la limpieza podía
+  borrar el archivo.
+- Los días se bajan a un temporal y se validan antes de quedarse con su
+  nombre: uno a medias no se da por bueno en el siguiente intento.
+
 ## 2026-10-21 — Recolector: publicación segura en R2
 
 ### Corregido
