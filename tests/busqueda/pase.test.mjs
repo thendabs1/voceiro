@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 
 // Ejecuta el controlador real con un reloj y elementos mínimos, sin red.
-function preparar(archivo, visible = 0) {
+function preparar(archivo, visible = 0, { tapa = 0, alto = 100 } = {}) {
   const html = readFileSync(new URL(`../../${archivo}`, import.meta.url), 'utf8');
   const codigo = html.slice(html.indexOf('let PASE = null;'), html.indexOf('\nfunction renderizar(){'));
   assert.ok(codigo.startsWith('let PASE = null;'));
@@ -20,6 +20,7 @@ function preparar(archivo, visible = 0) {
       emitir(tipo, e) { listeners[tipo](e); },
       focus() {}, showModal() { this.open = true; }, close() { this.open = false; },
       remove() { this.removed = true; },
+      getBoundingClientRect: () => ({ top: 0, bottom: tapa }),
     };
   }
   const tarjetas = Array.from({ length: 3 }, (_, i) => ({
@@ -34,7 +35,7 @@ function preparar(archivo, visible = 0) {
       querySelectorAll: () => tarjetas,
       addEventListener: (tipo, fn) => { eventos[tipo] = fn; },
     },
-    window: { innerHeight: 100, addEventListener: (tipo, fn) => { eventos[tipo] = fn; } },
+    window: { innerHeight: alto, addEventListener: (tipo, fn) => { eventos[tipo] = fn; } },
     ULT_FILTRADAS: Array.from({ length: 3 }, (_, i) => ({
       titular: `Titular ${i}`, enlace: `https://medio.test/${i}`, medio: 'Medio',
     })),
@@ -65,6 +66,17 @@ for (const archivo of ['plantilla.html', 'public/index.html']) {
     assert.equal(s.filtrados, 0);
     s.pase.actual.root.querySelector('[data-pase-ritmo]').onchange({ target: { value: '3' } });
     assert.equal([...s.timers.values()][0].ms, 3000);
+  });
+
+  // public/index.html lo regenera el workflow desde la plantilla tras el merge.
+  if (archivo === 'plantilla.html') test(`${archivo}: el pase salta la tarjeta tapada a medias por la barra`, () => {
+    // Tarjetas en 0–100, 100–200 y 200–300 con la barra hasta 40 o 60.
+    let s = preparar(archivo, 0, { tapa: 40, alto: 300 });
+    s.pase.abrirPase();
+    assert.equal(s.pase.actual.lista[0].titular, 'Titular 0');
+    s = preparar(archivo, 0, { tapa: 60, alto: 300 });
+    s.pase.abrirPase();
+    assert.equal(s.pase.actual.lista[0].titular, 'Titular 1');
   });
 
   test(`${archivo}: mover el ratón o tocar la capa pausa`, () => {

@@ -565,11 +565,21 @@
   .backup-box .acciones{display:flex; gap:8px; flex-wrap:wrap}
 
   /* ═══ Filtros ═══ */
-.filtros-wrap{
+/* Cabecera y filtros van en un solo bloque fijo: así no se tapan entre sí.
+   .cab-oculta lo sube --cab-h (lo que hay encima de la fila de filtros). */
+.barra-sup{
   position: sticky;
   top: 0;
   background: var(--bg);
   z-index: 9;
+  container: barra / inline-size;
+  transition: transform .2s ease;
+}
+.barra-sup.cab-oculta{ transform: translateY(calc(-1 * var(--cab-h, 0px))); }
+@media (prefers-reduced-motion: reduce){
+  .barra-sup{ transition: none; }
+}
+.filtros-wrap{
   padding: 6px 0 0;
 }
 .filtros-row{
@@ -622,12 +632,24 @@
 #btn-filtros, #btn-buscar, #btn-pase, #btn-lectura, #filtros-cerrar{ min-height:44px; opacity:1; font-size:.78em; }
 #btn-pase, #btn-lectura{ min-width:44px; justify-content:center; }
 #btn-buscar{ display:none; }
+#btn-buscar .ico-volver{ display:none; }
 @media (max-width: 640px){
   .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto auto; gap:6px; }
   .filtros-wrap .preset-wrap{ max-width:none; }
   #btn-buscar{ display:inline-flex; align-items:center; gap:6px; }
+  /* Solo icono (y el número en Filtros): el texto queda para lectores de pantalla. */
+  #btn-buscar, #btn-filtros{ min-width:44px; justify-content:center; }
+  #btn-buscar > span, #filtros-label{
+    position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap;
+  }
+  #btn-filtros .vs-caret{ display:none; }
   .filtros-row .filtro-buscar-wrap{ display:none; }
-  .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; grid-row:2; grid-column:1 / -1; }
+  /* Búsqueda abierta: ocupa la fila y la lupa pasa a «←» para cerrarla. */
+  .filtros-wrap.busqueda-abierta .filtros-row{ grid-template-columns:auto minmax(0,1fr); }
+  .filtros-wrap.busqueda-abierta :is(.preset-wrap, #btn-pase, #btn-lectura, #btn-filtros){ display:none; }
+  .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; }
+  .filtros-wrap.busqueda-abierta #btn-buscar .ico-buscar{ display:none; }
+  .filtros-wrap.busqueda-abierta #btn-buscar .ico-volver{ display:inline; }
   .filtros-panel{ margin:auto 0 0; width:100%; max-width:none; max-height:85dvh; border-radius:16px 16px 0 0; padding:16px 16px max(16px, env(safe-area-inset-bottom)); }
   .filtros-lectura{ grid-template-columns:1fr; }
 }
@@ -1096,9 +1118,12 @@
   }
   .noticia a.titular:hover{text-decoration:underline}
   [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
-  /* Móvil: cabecera de la tarjeta en una línea; sin tipo de medio y solo «hace…» */
+  /* Fecha corta por defecto; la opción avanzada permite mostrar la completa. */
+  .noticia .fecha-abs{display:none}
+  [data-fecha-larga="1"] .noticia .fecha-abs{display:inline}
+  /* Móvil: cabecera de la tarjeta en una línea y sin tipo de medio. */
   @media (max-width:560px){
-    .noticia .badge.tipo, .noticia .fecha-abs{display:none}
+    .noticia .badge.tipo{display:none}
   }
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
@@ -1466,6 +1491,33 @@
   header .header-actions .btn-cab{
     min-width: 40px; min-height: 40px; padding: 6px 9px; justify-content: center;
   }
+  .btn-cab .cab-txt{
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+}
+/* Columna ancha (la elige el usuario en «Aa»; por eso es @container y no
+   @media): una sola fila con todo y la línea de fecha encima, que es lo que
+   se esconde al bajar. header y .filtros-wrap ceden sus hijos a la rejilla. */
+@container barra (min-width: 900px){
+  .barra-in{
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "meta meta meta" "tit fil acc" "pan pan pan";
+    column-gap: 14px;
+    align-items: center;
+    padding: 8px 0 10px;
+  }
+  .barra-in > header, .barra-in .header-top, .barra-in > .filtros-wrap{ display: contents; }
+  header .meta{ grid-area: meta; padding-bottom: 6px; }
+  header #h-title{ grid-area: tit; font-size: 1.35em; }
+  header .header-actions-right{ grid-area: acc; margin-left: 0; }
+  .filtros-row{
+    grid-area: fil; padding-bottom: 0;
+    grid-template-columns: minmax(0, auto) minmax(10em, 26em) auto auto auto;
+    justify-content: start;
+  }
+  .filtros-panel:not(:modal){ grid-area: pan; padding-top: 10px; }
   .btn-cab .cab-txt{
     position: absolute; width: 1px; height: 1px; overflow: hidden;
     clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
@@ -1966,29 +2018,6 @@
   <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3" /></symbol>
   <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></symbol>
 </svg>
-<header>
-  <div class="header-top">
-    <h1 id="h-title">Voceiro</h1>
-    <p class="meta">
-      <span class="meta-text">
-        <span id="meta-prefix"></span>
-        <span id="fecha">06/10/2026 15:21</span>
-        <span>·</span>
-        <span id="contador"></span>
-        <span id="total-r2-sep" hidden>·</span>
-        <span id="total-r2" hidden></span>
-        <span id="prensa-estado-sep" hidden>·</span>
-        <span id="prensa-estado" role="status" hidden></span>
-      </span>
-    </p>
-    <div class="header-actions header-actions-right">
-      <button id="btn-tiempo" class="btn-tiempo btn-cab" type="button" hidden></button>
-      <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
-      <button id="btn-acces" class="btn-cab" type="button"></button>
-      <button id="btn-config" class="btn-cab" type="button"></button>
-    </div>
-  </div>
-</header>
 <!-- AJUSTES
      Una sola ventana. Escritorio y tablet: panel lateral con las secciones a
      la izquierda y el feed visible detrás. Móvil: lista de secciones →
@@ -2285,6 +2314,13 @@
               <span class="cfg-toggle-hint"  id="cfg-avisos-cab-hint"></span>
             </span>
           </label>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="cfg-fecha-larga">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="cfg-fecha-larga-lbl"></span>
+              <span class="cfg-toggle-hint"  id="cfg-fecha-larga-hint"></span>
+            </span>
+          </label>
 
           <h3 id="cfg-backup"></h3>
           <div class="backup-box">
@@ -2396,6 +2432,33 @@
   </div>
 </section>
 
+<!-- CABECERA Y FILTROS: un solo bloque fijo. Al bajar se esconde lo que
+     queda encima de la fila de filtros; vuelve al subir (wireCabecera). -->
+<div id="barra-sup" class="barra-sup">
+<div class="barra-in">
+<header>
+  <div class="header-top">
+    <h1 id="h-title">Voceiro</h1>
+    <p class="meta">
+      <span class="meta-text">
+        <span id="meta-prefix"></span>
+        <span id="fecha">06/10/2026 15:21</span>
+        <span>·</span>
+        <span id="contador"></span>
+        <span id="total-r2-sep" hidden>·</span>
+        <span id="total-r2" hidden></span>
+        <span id="prensa-estado-sep" hidden>·</span>
+        <span id="prensa-estado" role="status" hidden></span>
+      </span>
+    </p>
+    <div class="header-actions header-actions-right">
+      <button id="btn-tiempo" class="btn-tiempo btn-cab" type="button" hidden></button>
+      <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
+      <button id="btn-acces" class="btn-cab" type="button"></button>
+      <button id="btn-config" class="btn-cab" type="button"></button>
+    </div>
+  </div>
+</header>
 <!-- FILTROS -->
 <section class="filtros-wrap">
   <div class="filtros-row">
@@ -2404,7 +2467,7 @@
               aria-expanded="false" aria-haspopup="true"></button>
       <div id="preset-menu" class="preset-menu" style="display:none"></div>
     </span>
-    <button id="btn-buscar" type="button" aria-expanded="false" aria-controls="buscar-wrap"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg><span></span></button>
+    <button id="btn-buscar" type="button" aria-expanded="false" aria-controls="buscar-wrap"><svg class="ico ico-buscar" aria-hidden="true"><use href="#i-search"/></svg><svg class="ico ico-volver" aria-hidden="true"><use href="#i-arrow-left"/></svg><span></span></button>
     <div class="filtro-buscar-wrap" id="buscar-wrap">
       <input type="search" id="buscar" autocomplete="off">
       <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
@@ -2456,6 +2519,8 @@
     </fieldset>
   </dialog>
 </section>
+</div>
+</div>
 
 <div id="chips-busqueda" class="chips-busqueda" style="display:none"></div>
 
@@ -4397,6 +4462,22 @@ for (const [lang, textos] of Object.entries({
   ['paseCapa', 'pasePausa', 'paseContinuar', 'paseAnterior', 'paseSiguiente', 'paseCerrar', 'paseRitmo', 'paseFin', 'paseMarcha', 'paseParado']
     .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
 }
+// Opción de fecha larga en tarjetas.
+for (const [lang, texto] of Object.entries({
+  es: 'Mostrar fecha completa',
+  gl: 'Mostrar a data completa',
+  ca: 'Mostrar la data completa',
+  en: 'Show full date',
+  eu: 'Erakutsi data osoa',
+})) I18N[lang].cfgFechaLarga = texto;
+for (const [lang, texto] of Object.entries({
+  es: 'Añade la fecha y la hora junto a «hace…».',
+  gl: 'Engade a data e a hora xunto a «hai…».',
+  ca: 'Afegeix la data i l’hora al costat de «fa…».',
+  en: 'Adds the date and time alongside “ago”.',
+  eu: 'Data eta ordua gehitzen ditu «duela…» esamoldearen ondoan.',
+})) I18N[lang].cfgFechaLargaHint = texto;
+
 // Textos de eltiempo:.
 for (const [lang, textos] of Object.entries({
   es: ['Despejado', 'Poco nuboso', 'Nuboso', 'Cubierto', 'Lluvia', 'Nieve', 'Tormenta', 'Niebla', 'Hoy', 'Fuente', 'elaborado a las {h}', 'AEMET no responde: datos de Open-Meteo', 'Consultando el tiempo…', 'No se pudo consultar el tiempo.', 'No encuentro «{X}».', '¿Qué «{X}»?', 'El tiempo está desactivado en Ajustes › Avanzado.', 'Probabilidad de lluvia', 'tiempo', 'Tiempo', 'Tiempo y avisos (tiempo:, alertas:)', 'Pide la previsión y los avisos a AEMET (y a Open-Meteo o MeteoAlarm si no responde) a través del servidor de Voceiro. Desactivado, no se conecta con ningún servicio del tiempo.', 'El tiempo en {X}', 'Sale el sol', 'Se pone el sol', 'Cambiar de lugar',
@@ -4594,7 +4675,7 @@ function formatearFecha(ts){
 const ACCES_DEF = {
   lang: 'es', tema: 'light', fuente: 'sans',
   fs: 18, width: 1100,
-  just: false, bionic: false, focus: false,
+  just: false, bionic: false, focus: false, fechaLarga: false,
 };
 const LIM = {
   fs: { min: 14, max: 32, step: 1 },
@@ -4730,6 +4811,7 @@ function aplicarAcces(){
   h.lang = ACCES.lang;
   h.dataset.theme  = aplicarTemaPersonalizado(h) || ACCES.tema;
   h.dataset.font   = ACCES.fuente;
+  h.dataset.fechaLarga = ACCES.fechaLarga ? '1' : '0';
   h.dataset.just   = ACCES.just ? '1' : '0';
   h.dataset.bionic = ACCES.bionic ? '1' : '0';
   h.dataset.focus  = ACCES.focus ? '1' : '0';
@@ -6264,6 +6346,39 @@ function refrescarBotonesGuardar(){
 
     pintarBotonGuardar(b, leida ? 'leida' : guardada ? 'pendiente' : 'guardar');
   });
+}
+// Al bajar se esconde lo que hay encima de la fila de filtros (en columna
+// estrecha, la cabecera; en ancha, la línea de fecha) y vuelve completo tras
+// subir SUBIR_CAB px seguidos. No se esconde con el foco de teclado dentro,
+// con la búsqueda de móvil abierta ni con el menú de modo desplegado (ahí
+// se queda como esté).
+const SUBIR_CAB = 60;
+function wireCabecera(){
+  const barra = document.getElementById('barra-sup');
+  const fila = barra?.querySelector('.filtros-row');
+  if (!fila) return;
+  let alto = 0;
+  const medir = () => {
+    // Las dos cajas llevan el mismo transform: la resta no depende de él.
+    alto = Math.max(0, fila.getBoundingClientRect().top - barra.getBoundingClientRect().top - 6);
+    barra.style.setProperty('--cab-h', alto + 'px');
+  };
+  new ResizeObserver(medir).observe(barra);
+  medir();
+  const fija = () => !!barra.querySelector(':focus-visible')
+    || barra.querySelector('.filtros-wrap').classList.contains('busqueda-abierta')
+    || document.getElementById('preset-menu').style.display !== 'none';
+  const ocultar = v => barra.classList.toggle('cab-oculta', v);
+  let ultY = window.scrollY, bajado = 0, subido = 0;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY, d = y - ultY;
+    ultY = y;
+    if (y <= alto){ bajado = subido = 0; ocultar(false); return; }
+    if (fija()){ bajado = subido = 0; return; }
+    if (d > 0){ bajado += d; subido = 0; if (bajado > alto) ocultar(true); }
+    else if (d < 0){ subido -= d; bajado = 0; if (subido >= SUBIR_CAB) ocultar(false); }
+  }, { passive: true });
+  barra.addEventListener('focusin', () => { if (barra.querySelector(':focus-visible')) ocultar(false); });
 }
 function wireBackToTop(){
   const b = document.getElementById('btn-top');
@@ -10238,9 +10353,11 @@ function abrirPase(){
   const filtrosPase = $('#filtros-panel');
   if (filtrosPase.matches(':modal')) filtrosPase.close();
   cerrarMenuMas();
+  // Primera tarjeta que se ve: con la mitad, al menos, por debajo de la barra fija.
+  const tapa = $('#barra-sup').getBoundingClientRect().bottom;
   const visible = [...document.querySelectorAll('#resultados .noticia')].find(el => {
     const r = el.getBoundingClientRect();
-    return r.bottom > 0 && r.top < window.innerHeight;
+    return (r.top + r.bottom) / 2 > tapa && r.top < window.innerHeight;
   });
   const desde = visible ? Number(visible.dataset.idx) : 0;
   const root = document.createElement('dialog');
@@ -11095,7 +11212,7 @@ function aplicarTextos(){
   $('#meta-prefix').textContent = t('metaPrefix');
 
   actualizarBotonPreset();
-  // Cabecera: icono y palabra (en móvil la palabra se oculta, ver .cab-txt).
+  // Cabecera: icono y palabra (en móvil y en la fila ancha la palabra se oculta, ver .cab-txt).
   const cab = (sel, icono, clave) => {
     const b = $(sel);
     b.innerHTML = icono + `<span class="cab-txt">${escapeHtml(t(clave))}</span>`;
@@ -11207,6 +11324,8 @@ function aplicarTextos(){
   $('#cfg-tiempo-hint').textContent = t('cfgTiempoHint');
   $('#cfg-avisos-cab-lbl').textContent = t('cfgAvisosCab');
   $('#cfg-avisos-cab-hint').textContent = t('cfgAvisosCabHint');
+  $('#cfg-fecha-larga-lbl').textContent = t('cfgFechaLarga');
+  $('#cfg-fecha-larga-hint').textContent = t('cfgFechaLargaHint');
   repintarTiempo();
   repintarAvisos();
   $('#cfg-backup').textContent = t('cfgBackup');
@@ -11584,6 +11703,16 @@ function wireStaticEvents(){
       try { localStorage.setItem(AVISOS_CABECERA_KEY, AVISOS_CABECERA ? 'true' : 'false'); } catch(e){}
       pintarBotonTiempo();
       refrescarAvisos();
+    });
+  }
+  // Toggle de fecha completa en las tarjetas.
+  const chkFechaLarga = $('#cfg-fecha-larga');
+  if (chkFechaLarga){
+    chkFechaLarga.checked = !!ACCES.fechaLarga;
+    chkFechaLarga.addEventListener('change', () => {
+      ACCES.fechaLarga = chkFechaLarga.checked;
+      guardarAcces();
+      aplicarAcces();
     });
   }
   wireTiempo();
@@ -11966,6 +12095,7 @@ async function init(){
   // Textos + listeners: ya con esto la UI está viva y clicable
   aplicarTextos();
   wireBackToTop();
+  wireCabecera();
   wireStaticEvents();
   wireAjustes();
   wireSync();
