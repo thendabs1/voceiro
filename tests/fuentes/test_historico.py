@@ -96,6 +96,14 @@ class Fechas(unittest.TestCase):
             '<article><h3>Política</h3><h2><a href="/c">Titular</a></h2>'
             '<time datetime="2026-10-21T08:00:00Z"></time></article>', 'lxml')
         self.assertEqual(R._extract_item_date(tarjeta.h2), '2026-10-21T10:00:00+02:00')
+        # Con el enlace envolviendo el titular (lo que recorre _scrape_slugs).
+        envueltos = BeautifulSoup(
+            '<section><a href="/a"><h2>Con fecha</h2>'
+            '<time datetime="2026-10-21T08:00:00Z"></time></a>'
+            '<a href="/b"><h2>Sin fecha</h2></a></section>', 'lxml')
+        self.assertEqual(R._extract_item_date(envueltos.find_all('a')[1]), '')
+        self.assertEqual(R._extract_item_date(envueltos.find_all('a')[0]),
+                         '2026-10-21T10:00:00+02:00')
 
     def test_hora_corta_se_reconstruye_con_el_horario_de_ese_dia(self):
         self.assertEqual(R._reconstruir_fecha('09:30', '2026-01-20'), '2026-01-20T09:30:00+01:00')
@@ -301,6 +309,29 @@ class PublicacionR2(unittest.TestCase):
             with patch.object(R, '_r2_client', return_value=cliente), \
                     contextlib.redirect_stdout(io.StringIO()):
                 return R.subir_a_r2(rutas)
+
+    def test_un_dia_que_llega_roto_para_el_run_y_no_queda_con_su_nombre(self):
+        manifest = self.manifest_con('a.json')
+        with tempfile.TemporaryDirectory() as carpeta, \
+                patch.multiple(R, DATOS_DIR=carpeta,
+                               MANIFEST_PATH=str(Path(carpeta, 'manifest.json'))), \
+                patch.object(R, '_r2_client', return_value=R2Falso(
+                    {'manifest.json': manifest, 'a.json': b'{"fecha": "2026-'})), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                R.descargar_historico_desde_r2()
+            self.assertFalse(Path(carpeta, 'a.json').exists())
+
+    def test_un_dia_ilegible_en_local_para_el_run(self):
+        hoy = datetime.now(MADRID).date().isoformat()
+        with tempfile.TemporaryDirectory() as carpeta:
+            Path(carpeta, 'a.json').write_text('', encoding='utf-8')
+            Path(carpeta, 'manifest.json').write_text(json.dumps(
+                {'dias': [{'fecha': hoy, 'all': {'file': 'a.json'}}]}), encoding='utf-8')
+            with patch.multiple(R, DATOS_DIR=carpeta, MANIFEST_PATH=str(Path(carpeta, 'manifest.json')),
+                                STATE_PATH=str(Path(carpeta, 'state.json'))), \
+                    contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit):
+                R.cargar_historico_payload()
 
     def test_el_manifest_se_sube_el_ultimo(self):
         cliente = R2Falso()

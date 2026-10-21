@@ -700,22 +700,26 @@ _TITULARES = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
 
 
 def _agrupa_varias(node):
-    """¿El nodo contiene más de una tarjeta (dos titulares con enlace o dos
-    <article>)? Entonces su fecha puede ser de otra noticia. Un antetítulo
-    sin enlace no cuenta como otra tarjeta."""
+    """¿El nodo contiene más de una tarjeta (titulares que enlazan a dos
+    sitios distintos, o dos <article>)? Entonces su fecha puede ser de otra
+    noticia. El enlace puede ir dentro del titular (<h2><a>) o envolverlo
+    (<a><h2>). Un antetítulo sin enlace no cuenta como otra tarjeta."""
     # Un solo recorrido, que corta en la segunda: en un listado grande se
     # sabe en las dos primeras tarjetas.
-    articulos = con_enlace = 0
+    articulos = 0
+    enlaces = set()
     for d in getattr(node, 'descendants', ()):
         nombre = getattr(d, 'name', None)
         if nombre == 'article':
             articulos += 1
             if articulos > 1:
                 return True
-        elif nombre in _TITULARES and d.find('a', href=True):
-            con_enlace += 1
-            if con_enlace > 1:
-                return True
+        elif nombre in _TITULARES:
+            a = d.find('a', href=True) or d.find_parent('a', href=True)
+            if a:
+                enlaces.add(a['href'])
+                if len(enlaces) > 1:
+                    return True
     return False
 
 
@@ -1450,11 +1454,13 @@ def cargar_historico_payload():
                 path = os.path.join(DATOS_DIR, fn)
                 if not os.path.exists(path):
                     continue
+                # Un día de la ventana que no se lee se reescribiría sin sus
+                # noticias: mejor parar.
                 try:
                     with open(path, encoding='utf-8') as f2:
                         d = json.load(f2)
-                except Exception:
-                    continue
+                except Exception as e:
+                    raise SystemExit(f"[historico!] {fn} ilegible: {e}")
                 dia = d.get('fecha', '')
                 generado_iso_del_fichero = d.get('generado', '')
                 medios_tabla = d.get('medios', {}) or {}
@@ -1538,7 +1544,7 @@ def cargar_historico_payload():
                             '_host':          m_alt.get('h', ''),
                         })
         except Exception as e:
-            print(f"[historico] no se pudo leer el troceado: {e}")
+            raise SystemExit(f"[historico!] no se pudo leer el troceado: {e}")
 
     print(f"[historico] {len(noticias)} noticias reconstruidas desde {DATOS_DIR}")
     return {
@@ -2880,10 +2886,15 @@ def descargar_historico_desde_r2():
         path = os.path.join(DATOS_DIR, fn)
         if os.path.exists(path):
             continue
+        # A un temporal y validado: un fichero a medias no debe quedarse
+        # con el nombre bueno (el siguiente intento se lo saltaría).
         try:
             obj = client.get_object(Bucket=R2_BUCKET, Key=fn)
-            with open(path, 'wb') as f:
-                f.write(obj['Body'].read())
+            datos = obj['Body'].read()
+            json.loads(datos)
+            with open(path + '.tmp', 'wb') as f:
+                f.write(datos)
+            os.replace(path + '.tmp', path)
             descargados += 1
         except Exception as e:
             print(f"[r2-download!] {fn}: {e}")
@@ -3062,7 +3073,9 @@ def main():
             n_dias_prev = len(manifest_prev.get('dias', []))
             print(f"[manifest-prev] {n_dias_prev} días en manifest previo")
         except Exception as e:
-            print(f"[manifest-prev] no se pudo leer: {e}")
+            # Sin él, el manifest nuevo perdería el archivo y la limpieza
+            # borraría sus ficheros.
+            raise SystemExit(f"[manifest-prev!] no se pudo leer: {e}")
 
     # Portada general y ediciones (dedup interno)
     _dedup_reset()
