@@ -2734,6 +2734,7 @@ const I18N = {
     cfgDiasEstimacion:      'Con «{X}»: ≈ {n} titulares · {mb} MB',
     cfgDiasSinModo:         'Se aplica al usar un modo o filtrar por medio. Sin modo, el feed es la portada y las búsquedas van al archivo.',
     cfgDiasConfirmar:       '{d} días de «{X}» son ≈ {n} titulares ({mb} MB). Tardará más en cargar y el buscador irá más lento, sobre todo en el móvil.',
+    cfgDiasUnoConfirmar:    'Con 1 día se carga el fichero del día natural más reciente; no equivale a las últimas 24 h. Para eso, usa el filtro «24 h».',
     cfgDiasCargar:          'Cargar igualmente',
     cfgDiasCancelar:        'Cancelar',
 
@@ -3081,6 +3082,7 @@ const I18N = {
     cfgDiasEstimacion:      'Con «{X}»: ≈ {n} titulares · {mb} MB',
     cfgDiasSinModo:         'Aplícase ao usar un modo ou filtrar por medio. Sen modo, o feed é a portada e as buscas van ao arquivo.',
     cfgDiasConfirmar:       '{d} días de «{X}» son ≈ {n} titulares ({mb} MB). Tardará máis en cargar e o buscador irá máis lento, sobre todo no móbil.',
+    cfgDiasUnoConfirmar:    'Con 1 día cárgase o ficheiro do día natural máis recente; non equivale ás últimas 24 h. Para iso, usa o filtro «24 h».',
     cfgDiasCargar:          'Cargar igualmente',
     cfgDiasCancelar:        'Cancelar',
 
@@ -3405,6 +3407,7 @@ const I18N = {
     cfgDiasEstimacion:      'Amb «{X}»: ≈ {n} titulars · {mb} MB',
     cfgDiasSinModo:         "S'aplica en fer servir un mode o filtrar per mitjà. Sense mode, el feed és la portada i les cerques van a l'arxiu.",
     cfgDiasConfirmar:       '{d} dies de «{X}» són ≈ {n} titulars ({mb} MB). Trigarà més a carregar i el cercador anirà més lent, sobretot al mòbil.',
+    cfgDiasUnoConfirmar:    'Amb 1 dia es carrega el fitxer del dia natural més recent; no equival a les últimes 24 h. Per això, fes servir el filtre «24 h».',
     cfgDiasCargar:          'Carregar igualment',
     cfgDiasCancelar:        'Cancel·lar',
 
@@ -3729,6 +3732,7 @@ const I18N = {
     cfgDiasEstimacion:      'With “{X}”: ≈ {n} headlines · {mb} MB',
     cfgDiasSinModo:         'Applies when a mode is on or you filter by outlet. Without a mode, the feed is the front page and searches go to the archive.',
     cfgDiasConfirmar:       '{d} days of “{X}” are ≈ {n} headlines ({mb} MB). It will take longer to load and search will be slower, especially on mobile.',
+    cfgDiasUnoConfirmar:    'With 1 day, only the latest calendar day file is loaded; that does not mean the last 24 hours. Use the “24 h” filter for that.',
     cfgDiasCargar:          'Load anyway',
     cfgDiasCancelar:        'Cancel',
 
@@ -4053,6 +4057,7 @@ const I18N = {
     cfgDiasEstimacion:      '«{X}» moduarekin: ≈ {n} izenburu · {mb} MB',
     cfgDiasSinModo:         'Modu bat erabiltzean edo hedabidez iragaztean aplikatzen da. Modurik gabe, feed-a azala da eta bilaketak artxibora doaz.',
     cfgDiasConfirmar:       '«{X}» moduaren {d} egun ≈ {n} izenburu dira ({mb} MB). Denbora gehiago beharko du kargatzeko eta bilatzailea motelagoa izango da, batez ere mugikorrean.',
+    cfgDiasUnoConfirmar:    'Egun 1 hautatuta, azken egun naturaleko fitxategia bakarrik kargatzen da; horrek ez ditu azken 24 orduak esan nahi. Horretarako, erabili «24 h» iragazkia.',
     cfgDiasCargar:          'Kargatu hala ere',
     cfgDiasCancelar:        'Utzi',
 
@@ -11356,10 +11361,16 @@ function wireDiasSelector() {
     // Descarga grande: se explica y se pide confirmación antes.
     const modo = modoParaDias();
     const c = modo && v > DIAS_MEMORIA ? estimarCarga(modo, v) : null;
-    if (c && c.n > DIAS_UMBRAL_TITULARES){
+    const confirmarUnDia = v === 1;
+    const confirmarCargaGrande = c && c.n > DIAS_UMBRAL_TITULARES;
+    if (confirmarUnDia || confirmarCargaGrande){
       pendiente = v;
-      $('#dias-confirmar-txt').textContent =
-        t('cfgDiasConfirmar', { d: v, X: modo.nombre, ...textoCarga(c) });
+      const avisos = [];
+      if (confirmarCargaGrande){
+        avisos.push(t('cfgDiasConfirmar', { d: v, X: modo.nombre, ...textoCarga(c) }));
+      }
+      if (confirmarUnDia) avisos.push(t('cfgDiasUnoConfirmar'));
+      $('#dias-confirmar-txt').textContent = avisos.join(' ');
       confirmar.hidden = false;
       return;
     }
