@@ -4,6 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voceiro · Titulares</title>
+<script>
+  // Pintar el tema guardado antes de que el módulo y el body puedan mostrarse.
+  try {
+    const raw = localStorage.getItem('voceiro-acces-v2');
+    const perfil = raw ? JSON.parse(raw) : null;
+    let tema = perfil?.tema;
+    if (!raw && !Object.keys(localStorage).some(k => k.startsWith('voceiro-')) &&
+        matchMedia('(prefers-color-scheme: dark)').matches) tema = 'dark';
+    const h = document.documentElement;
+    if (['light', 'sepia', 'dark', 'contrast'].includes(tema)) h.dataset.theme = tema;
+    if (tema === 'custom') {
+      const c = perfil?.colores;
+      if (['fondo', 'texto', 'enlaces', 'titulos'].every(k => /^#[0-9a-f]{6}$/i.test(c?.[k] || ''))) {
+        const rgb = [0, 2, 4].map(i => parseInt(c.fondo.slice(i + 1, i + 3), 16) / 255);
+        const [r, g, b] = rgb.map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+        const oscuro = 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
+        h.dataset.theme = oscuro ? 'dark' : 'light';
+        h.style.setProperty('color-scheme', oscuro ? 'dark' : 'light');
+        for (const [clave, valor] of Object.entries({ bg: c.fondo, fg: c.texto, accent: c.enlaces, titulos: c.titulos }))
+          h.style.setProperty('--' + clave, valor);
+      }
+    }
+  } catch(e){}
+</script>
 <style>
   /* ═══ PALETA ═══
      Común con el lector: lector/build.mjs copia este bloque (entre PALETA y
@@ -77,6 +101,7 @@
   /* hidden gana siempre, también a clases con display:flex */
   [hidden]{display:none !important}
   html,body{margin:0;padding:0}
+  html{background:var(--bg)}
   body{
     font-family:var(--ff);
     background:var(--bg); color:var(--fg);
