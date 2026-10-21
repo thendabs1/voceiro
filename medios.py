@@ -63,8 +63,9 @@ MEDIA_CATALOG = [
     { 'group':'Economía', 'items':[
         { 'd':'bolsamania.com','n':'Bolsamania','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','mercados'],
           'fuentes':[('rss', 'https://www.bolsamania.com/rss/generarRss2.php'), ('scrape',)] },
-        { 'd':'brainsre.news','n':'Brains RE','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','inmobiliario'],
-          'fuentes':[('rss', 'https://brainsre.news/feed/'), ('scrape',)] },
+        # Fuera (21-10-2026): el feed y la portada devuelven un 202 antibots que pide JS; por Google News solo salen titulares de unas 50 h.
+        # { 'd':'brainsre.news','n':'Brains RE','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','inmobiliario'],
+        #   'fuentes':[('rss', 'https://brainsre.news/feed/'), ('scrape',)] },
         { 'd':'capitalmadrid.com','n':'Capital Madrid','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','finanzas'],
           'fuentes':[('gn',)] },
         { 'd':'cincodias.com','n':'Cinco Días','type':'diario','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','negocios'],
@@ -126,7 +127,7 @@ MEDIA_CATALOG = [
         { 'd':'ituser.es','n':'IT User','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','empresa'],
           'fuentes':[('scrape',), ('gn',)] },
         { 'd':'muycomputer.com','n':'MuyComputer','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'],
-          'fuentes':[('rss', 'https://muycomputer.com/feed/'), ('scrape',)] },
+          'fuentes':[('rss', 'https://www.muycomputer.com/feed/'), ('scrape',)] },
         { 'd':'profesionalreview.com','n':'Profesional Review','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'],
           'fuentes':[('rss', 'https://www.profesionalreview.com/feed/'), ('scrape',)] },
         { 'd':'silicon.es','n':'Silicon','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','empresa'],
@@ -237,8 +238,9 @@ MEDIA_CATALOG = [
           'fuentes':[('sitemap', 'https://www.elperiodico.com/es/sitemapNews.xml'), ('scrape',), ('gn',)] },
         { 'd':'elplural.com','n':'El Plural','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital','progresista'],
           'fuentes':[('rss', 'https://www.elplural.com/uploads/feeds/feed_elplural_es.xml'), ('scrape',)] },
-        { 'd':'elsiglodeuropa.es','n':'El Siglo de Europa','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'],
-          'fuentes':[('scrape', 'https://elsiglodeuropa.es', 'relay'), ('gn',)] },
+        # Fuera (21-10-2026): el medio está parado; el último artículo del feed es de julio de 2023.
+        # { 'd':'elsiglodeuropa.es','n':'El Siglo de Europa','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'],
+        #   'fuentes':[('scrape', 'https://elsiglodeuropa.es', 'relay'), ('gn',)] },
         { 'd':'elviejotopo.com','n':'El Viejo Topo','type':'revista','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['cultural','izquierda'],
           'fuentes':[('rss', 'https://www.elviejotopo.com/feed/'), ('scrape',), ('gn',)] },
         { 'd':'europapress.es','n':'Europa Press','type':'agencia','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['agencia','nacional'],
