@@ -13,7 +13,8 @@ Fases:
   6. Podar por ventana de retención
   7. Escribir:
         · public/datos.json            (formato viejo, compatibilidad)
-        · public/datos/manifest.json   (índice del troceado nuevo)
+        · public/datos/manifest.json   (lo que lee el lector: ventana de días)
+        · public/datos/inventario.json (memoria del recolector: ficheros y archivo)
         · public/datos/YYYY-MM-DD.json (un fichero por día, formato corto)
         · public/index.html
   8. Reporte final
@@ -68,7 +69,8 @@ N_FEED              = 60
 # prueba la siguiente y, si ninguna llega, se usa la que más trajo.
 MIN_ITEMS_FUENTE    = 5
 DIAS_RETENCION      = 15    # working set: días que el runner deduplica y reescribe
-DIAS_ARCHIVO        = 365   # entradas que el manifest lista y R2 conserva
+DIAS_VENTANA        = 30    # días que lista el manifest público (lo que muestra el lector)
+DIAS_ARCHIVO        = 365   # días que R2 conserva: pasada la ventana, solo los ficheros por medio
 VENTANA_GRACIA_DIAS = 3     # días recientes que se reescriben (hoy + 2)
 MAX_WORKERS         = 8
 TIMEOUT             = 25
@@ -118,6 +120,9 @@ _FICHEROS_ESCRITOS = set()
 def _marcar_escrito(path):
     _FICHEROS_ESCRITOS.add(os.path.abspath(path))
 MANIFEST_PATH     = 'public/datos/manifest.json'
+# Memoria del recolector entre runs: ficheros, hashes y tamaños de los días
+# de la ventana, y una línea por día del archivo. El lector no lo usa.
+INVENTARIO_PATH   = 'public/datos/inventario.json'
 STATE_PATH        = 'state.json'
 # Relay del recolector: app de Deno Deploy enlazada a workers/deno-relay.
 # (El playground secret-worm-9453 es otro: lo usa el front para Google News.)
@@ -333,7 +338,7 @@ def _escribir_slice_si_hace_falta(path, hash_actual, hash_previo='',
     """
     Escribe solo si el contenido cambió respecto al run anterior.
     Si hash_previo == hash_actual → no serializa, no escribe, devuelve
-    el kb previo del manifest.
+    el kb previo del inventario.
     """
     if hash_previo and hash_previo == hash_actual:
         return kb_previo, True
@@ -1402,7 +1407,7 @@ def cargar_historico_payload():
     Carga el histórico desde:
       - state.json (solo estado: ultimo_exito_por_medio, generado,
         ultimo_barrido_r2)
-      - public/datos/manifest.json + public/datos/*.json (noticias)
+      - public/datos/inventario.json + public/datos/*.json (noticias)
     Reconstruye las noticias al formato largo.
     """
     state = {
@@ -1421,12 +1426,12 @@ def cargar_historico_payload():
             print(f"[state] no se pudo leer: {e}")
 
     noticias = []
-    if os.path.exists(MANIFEST_PATH):
+    if os.path.exists(INVENTARIO_PATH):
         try:
-            with open(MANIFEST_PATH, encoding='utf-8') as f:
-                manifest = json.load(f)
+            with open(INVENTARIO_PATH, encoding='utf-8') as f:
+                inventario = json.load(f)
             if not state['generado']:
-                state['generado'] = manifest.get('generado')
+                state['generado'] = inventario.get('generado')
 
             # Recolectar ficheros 'all' de los días dentro de la ventana de
             # retención. Los días más antiguos quedan en R2 pero no se
@@ -1435,7 +1440,7 @@ def cargar_historico_payload():
                      - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
 
             ficheros_a_leer = []
-            for d_info in manifest.get('dias', []):
+            for d_info in inventario.get('dias', []):
                 if d_info.get('fecha', '') < corte:
                     continue
                 if d_info.get('all') and d_info['all'].get('file'):
@@ -1443,7 +1448,7 @@ def cargar_historico_payload():
             # Compat: si no hay 'dias', usar 'ficheros' filtrado
             if not ficheros_a_leer:
                 ficheros_a_leer = [
-                    f for f in manifest.get('ficheros', [])
+                    f for f in inventario.get('ficheros', [])
                     if f.get('fecha', '') >= corte
                 ]
 
@@ -1841,11 +1846,11 @@ def _orden_estable(n):
     dt = _fecha_orden(n)
     return (-dt.timestamp(), n.get('dominio', ''), n.get('titular', ''))
 
-def _build_hashes_prev(manifest_prev):
-    """Devuelve {(fecha, tipo) → (hash, kb)} desde el manifest previo.
+def _build_hashes_prev(inventario_prev):
+    """Devuelve {(fecha, tipo) → (hash, kb)} desde el inventario previo.
     tipo: 'all' | 'g-<slug>' | 'd-<dominio>'."""
     out = {}
-    for d in (manifest_prev or {}).get('dias', []):
+    for d in (inventario_prev or {}).get('dias', []):
         fecha = d.get('fecha', '')
         if not fecha:
             continue
@@ -1860,23 +1865,91 @@ def _build_hashes_prev(manifest_prev):
     return out
 
 
-def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
-                      manifest_prev=None, portadas_info=None):
-    """
-    Genera manifest.json + slices. Los slices cuyo hash coincida con el
-    del manifest previo no se escriben (por tanto no se subirán a R2).
+def _corte_archivo(hoy):
+    """Primer día que R2 conserva: lo anterior se borra entero."""
+    return (hoy - timedelta(days=DIAS_ARCHIVO)).isoformat()
 
-    Devuelve: manifest (dict)
+
+def _a_archivo(d):
+    """Línea de archivo de un día que sale de la ventana: cuántas noticias
+    tuvo. Los días de antes del troceado por medio no tienen ficheros
+    d-*: conservan el fichero del día entero, que es todo lo que hay."""
+    e = {'fecha': d['fecha'], 'n': (d.get('all') or {}).get('n', 0)}
+    if not d.get('dominios') and (d.get('all') or {}).get('file'):
+        e['all'] = d['all']['file']
+    return e
+
+
+def _repartir_dias(dias, archivo_prev, hoy):
+    """(ventana, archivo): los DIAS_VENTANA días más recientes con todo su
+    detalle y el resto, hasta DIAS_ARCHIVO atrás, en una línea por día."""
+    dias = sorted(dias, key=lambda x: x['fecha'], reverse=True)
+    ventana = dias[:DIAS_VENTANA]
+    en_ventana = {d['fecha'] for d in ventana}
+    corte = _corte_archivo(hoy)
+    archivo = {e['fecha']: e for e in archivo_prev}
+    for d in dias[DIAS_VENTANA:]:
+        archivo[d['fecha']] = _a_archivo(d)
+    archivo = [e for f, e in sorted(archivo.items(), reverse=True)
+               if f not in en_ventana and f >= corte]
+    return ventana, archivo
+
+
+def _resumen_publico(ventana, archivo):
+    """Lo que el lector necesita de los días: por día, cuántas noticias y
+    el fichero de cada grupo (los de medio se deducen: d-<dominio>-<fecha>);
+    la media diaria de noticias y kB por grupo y medio, para estimar una
+    descarga; y el total guardado."""
+    dias = []
+    sumas = {'grupos': defaultdict(lambda: [0, 0.0]),
+             'dominios': defaultdict(lambda: [0, 0.0])}
+    con_detalle = 0
+    for d in ventana:
+        dias.append({
+            'fecha': d['fecha'],
+            'n': (d.get('all') or {}).get('n', 0),
+            'grupos': {g: v['file'] for g, v in (d.get('grupos') or {}).items()},
+        })
+        if not d.get('dominios'):
+            continue
+        con_detalle += 1
+        for tipo, suma in sumas.items():
+            for k, v in (d.get(tipo) or {}).items():
+                suma[k][0] += v.get('n', 0)
+                suma[k][1] += v.get('kb', 0)
+    medias = {tipo: {k: [round(n / con_detalle, 1), round(kb / con_detalle, 1)]
+                     for k, (n, kb) in suma.items()}
+              for tipo, suma in sumas.items()} if con_detalle else {}
+    todos = dias + archivo
+    return {
+        'dias': dias,
+        'medias': medias,
+        'guardado': {
+            'desde': min((x['fecha'] for x in todos), default=''),
+            'dias': len(todos),
+            'n': sum(x.get('n', 0) for x in todos),
+        },
+    }
+
+
+def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
+                      inventario_prev=None, portadas_info=None):
     """
-    manifest_prev = manifest_prev or {}
+    Genera inventario.json + manifest.json + slices. Los slices cuyo hash
+    coincida con el del inventario previo no se escriben (por tanto no se
+    subirán a R2).
+
+    Devuelve: inventario (dict)
+    """
+    inventario_prev = inventario_prev or {}
     hoy_str = ahora.strftime('%Y-%m-%d')
     generado_iso = ahora.isoformat(timespec='seconds')
 
-    # ── Compat: migrar manifest previo del formato viejo ──
-    if manifest_prev and not manifest_prev.get('dias') and manifest_prev.get('ficheros'):
-        print(f"[compat] migrando manifest previo ({len(manifest_prev['ficheros'])} ficheros)")
+    # ── Compat: migrar inventario previo del formato viejo ──
+    if inventario_prev and not inventario_prev.get('dias') and inventario_prev.get('ficheros'):
+        print(f"[compat] migrando inventario previo ({len(inventario_prev['ficheros'])} ficheros)")
         dias_migrados = []
-        for f in manifest_prev['ficheros']:
+        for f in inventario_prev['ficheros']:
             dias_migrados.append({
                 'fecha': f.get('fecha', ''),
                 'all': {'file': f.get('file', ''), 'n': f.get('n', 0),
@@ -1885,10 +1958,10 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
                 'dominios': {},
                 'archivo': True,
             })
-        manifest_prev = {'dias': dias_migrados}
+        inventario_prev = {'dias': dias_migrados}
 
-    hashes_prev = _build_hashes_prev(manifest_prev)
-    entradas_prev = {d['fecha']: d for d in manifest_prev.get('dias', [])}
+    hashes_prev = _build_hashes_prev(inventario_prev)
+    entradas_prev = {d['fecha']: d for d in inventario_prev.get('dias', [])}
 
     por_dia = defaultdict(list)
     for n in noticias_pre_dedup:
@@ -1896,7 +1969,6 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         por_dia[dia].append(n)
 
     dias_manifest = []
-    ficheros_viejos = []
     total_kb = 0.0
     escritos = reusados = congelados = 0
 
@@ -1938,9 +2010,6 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
             'grupos': {},
             'dominios': {},
         }
-        ficheros_viejos.append({'fecha': dia, 'file': fn_all, 'n': n_all,
-                                'hash': h_all, 'kb': round(size_all, 1),
-                                'es_hoy': dia == hoy_str})
 
         # GRUPOS
         por_grupo = defaultdict(list)
@@ -1986,44 +2055,47 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
         dias_manifest.append(entrada_dia)
 
     fechas_presentes = {d['fecha'] for d in dias_manifest}
-    for d_prev in manifest_prev.get('dias', []):
+    for d_prev in inventario_prev.get('dias', []):
         if d_prev['fecha'] in fechas_presentes:
             continue
         dias_manifest.append(d_prev)
 
-    dias_manifest.sort(key=lambda x: x['fecha'], reverse=True)
-    if len(dias_manifest) > DIAS_ARCHIVO:
-        dias_manifest = dias_manifest[:DIAS_ARCHIVO]
+    ventana, archivo = _repartir_dias(
+        dias_manifest, inventario_prev.get('archivo', []), ahora.date())
 
+    inventario = {
+        'generado': generado_iso,
+        'dias': ventana,
+        'archivo': archivo,
+    }
     manifest = {
         'generado': generado_iso,
         'generado_legible': ahora.strftime('%d/%m/%Y %H:%M'),
-        'dias_retencion': DIAS_RETENCION,
-        'dias_archivo': DIAS_ARCHIVO,
-        'ventana_gracia': VENTANA_GRACIA_DIAS,
-        'n_feed': N_FEED,
-        'total': len(noticias_pre_dedup),
         'hoy': hoy_str,
-        'dias': dias_manifest,
-        'ficheros': ficheros_viejos,
+        'n_feed': N_FEED,
+        'dias_ventana': DIAS_VENTANA,
+        'dias_archivo': DIAS_ARCHIVO,
+        **_resumen_publico(ventana, archivo),
         'catalogo': _catalogo_completo(),
     }
-    if portada_info:
-        manifest['portada'] = portada_info
-    if portadas_info:
-        manifest['portadas'] = portadas_info
+    for destino in (inventario, manifest):
+        if portada_info:
+            destino['portada'] = portada_info
+        if portadas_info:
+            destino['portadas'] = portadas_info
 
-    with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
-        json.dump(manifest, f, ensure_ascii=False, separators=(',', ':'))
-    _marcar_escrito(MANIFEST_PATH)
-    _limpiar_huerfanos_locales(manifest)
+    for path, datos in ((INVENTARIO_PATH, inventario), (MANIFEST_PATH, manifest)):
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(datos, f, ensure_ascii=False, separators=(',', ':'))
+        _marcar_escrito(path)
+    _limpiar_huerfanos_locales(inventario)
 
-    print(f"[troceado] {len(dias_manifest)} días · "
+    print(f"[troceado] {len(ventana)} días + {len(archivo)} en archivo · "
           f"{escritos} escritos · {reusados} reusados · "
           f"{congelados} congelados · {total_kb:.1f} KB · "
           f"{_dedup_resumen()}")
 
-    return manifest
+    return inventario
 
 def _ficheros_portada(manifest):
     """Ficheros de portada que referencia un manifest: general + ediciones."""
@@ -2037,15 +2109,8 @@ def _ficheros_portada(manifest):
     return out
 
 
-def _limpiar_huerfanos_locales(manifest):
-    validos = {'manifest.json'} | _ficheros_portada(manifest)
-    for d in manifest['dias']:
-        if d.get('all'):
-            validos.add(d['all']['file'])
-        for g in d.get('grupos', {}).values():
-            validos.add(g['file'])
-        for dd in d.get('dominios', {}).values():
-            validos.add(dd['file'])
+def _limpiar_huerfanos_locales(inventario):
+    validos = {'manifest.json', 'inventario.json'} | _ficheros_de_inventario(inventario)
 
     eliminados = 0
     for nombre in os.listdir(DATOS_DIR):
@@ -2247,8 +2312,8 @@ def _r2_client():
 
 def _r2_cache_control(filename):
     """Cabecera Cache-Control según el tipo de fichero."""
-    # Índice general: 60s
-    if filename == 'manifest.json':
+    # Índices: 60s
+    if filename in ('manifest.json', 'inventario.json'):
         return 'public, max-age=60'
     # Portada rodante: 60s
     if filename.startswith('portada-'):
@@ -2277,8 +2342,9 @@ def subir_a_r2(ficheros_locales):
     Sube a R2 SOLO los ficheros escritos en este run.
     Paralelizado con ThreadPoolExecutor (boto3 es thread-safe).
 
-    El manifest va el último y solo si todo lo demás subió: publicado
-    antes, apuntaría a ficheros que no están.
+    El inventario y el manifest van los últimos, en ese orden, y solo si
+    todo lo anterior subió: publicados antes, apuntarían a ficheros que no
+    están.
     """
     client = _r2_client()
     if not client:
@@ -2312,25 +2378,30 @@ def subir_a_r2(ficheros_locales):
                 errores += 1
             print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
 
-    manifest = [p for p in lista if os.path.basename(p) == 'manifest.json']
-    datos = [p for p in lista if p not in manifest]
+    orden = ('inventario.json', 'manifest.json')
+    indices = sorted((p for p in lista if os.path.basename(p) in orden),
+                     key=lambda p: orden.index(os.path.basename(p)))
+    datos = [p for p in lista if p not in indices]
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
         list(ex.map(_subir_uno, datos))
-    if errores:
-        print("[r2!] manifest sin subir: sigue publicado el anterior")
-    else:
-        for p in manifest:
-            _subir_uno(p)
+    for p in indices:
+        if errores:
+            print(f"[r2!] {os.path.basename(p)} sin subir: sigue publicado el anterior")
+            continue
+        _subir_uno(p)
 
     print(f"[r2] {subidos} subidos · 0 omitidos · {errores} errores")
     return subidos, 0, errores
 # ─────────────────────────────────────────────────────────────
 # LIMPIEZA DE HUÉRFANOS EN R2
 # ─────────────────────────────────────────────────────────────
-def _ficheros_de_manifest(manifest):
-    """Set con todos los nombres de fichero referenciados por un manifest."""
+def _ficheros_de_inventario(inventario):
+    """Set con todos los nombres de fichero que nombra un inventario: los
+    de los días de la ventana, los del día entero que guarda el archivo y
+    las portadas. Los ficheros por medio del archivo no se nombran: los
+    conserva _regla_archivo."""
     out = set()
-    for d in (manifest or {}).get('dias', []):
+    for d in (inventario or {}).get('dias', []):
         if d.get('all') and d['all'].get('file'):
             out.add(d['all']['file'])
         for g in (d.get('grupos') or {}).values():
@@ -2339,21 +2410,42 @@ def _ficheros_de_manifest(manifest):
         for dd in (d.get('dominios') or {}).values():
             if dd.get('file'):
                 out.add(dd['file'])
-    out |= _ficheros_portada(manifest)
+    for e in (inventario or {}).get('archivo', []):
+        if e.get('all'):
+            out.add(e['all'])
+    out |= _ficheros_portada(inventario)
     return out
 
 
-def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
+_RE_DOMINIO_FECHA = re.compile(r'^d-[a-z0-9.-]+-(\d{4}-\d{2}-\d{2})\.json$')
+
+def _regla_archivo(inventario, hoy):
+    """Función key → True si es un fichero por medio de un día que ya no
+    está en la ventana y sigue dentro de DIAS_ARCHIVO: se conserva aunque
+    el inventario no lo nombre. Si la ventana viniera vacía, protege de
+    más, nunca de menos."""
+    en_ventana = {d['fecha'] for d in (inventario or {}).get('dias', [])}
+    corte = _corte_archivo(hoy)
+    def archivado(key):
+        m = _RE_DOMINIO_FECHA.match(key)
+        return bool(m) and m.group(1) not in en_ventana and m.group(1) >= corte
+    return archivado
+
+
+def limpiar_r2_huerfanos(inventario, inventario_prev=None, forzar_scan=False):
     """
     Borra de R2 los ficheros que ya no están referenciados.
 
-    Camino rápido (diff): compara el set de ficheros del manifest previo
+    Camino rápido (diff): compara el set de ficheros del inventario previo
     con el nuevo. Solo borra los que desaparecieron. No lista el bucket.
 
-    Scan completo con paginación: si no hay manifest previo o si
+    Scan completo con paginación: si no hay inventario previo o si
     forzar_scan. El diff se salta lo que tiene menos de 1 h y no lo vuelve
     a ver (en el run siguiente ya no es candidato); con runs cada pocos
     minutos eso deja huérfanos. main() fuerza el scan una vez al día.
+
+    En los dos caminos, los ficheros por medio del archivo se conservan
+    por fecha (_regla_archivo) y los anteriores a DIAS_ARCHIVO se borran.
 
     Devuelve True si la limpieza terminó (el scan completo puede cortarse
     por tiempo).
@@ -2361,15 +2453,16 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
     client = _r2_client()
     if not client:
         return False
+    archivado = _regla_archivo(inventario, datetime.now(TZ_MADRID).date())
 
-    # ── Camino rápido: diff de manifests ──
-    if manifest_prev and manifest_prev.get('dias') and not forzar_scan:
-        prev_files = _ficheros_de_manifest(manifest_prev)
-        curr_files = _ficheros_de_manifest(manifest)
-        candidatos = prev_files - curr_files
+    # ── Camino rápido: diff de inventarios ──
+    if inventario_prev and inventario_prev.get('dias') and not forzar_scan:
+        prev_files = _ficheros_de_inventario(inventario_prev)
+        curr_files = _ficheros_de_inventario(inventario)
+        candidatos = {k for k in prev_files - curr_files if not archivado(k)}
 
         if not candidatos:
-            print("[r2-clean] nada que borrar (diff de manifests)")
+            print("[r2-clean] nada que borrar (diff de inventarios)")
             return True
 
         limite = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -2390,23 +2483,10 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
         print(f"[r2-clean] {borrados} borrados de {len(candidatos)} candidatos (diff)")
         return True
 
-    # ── Fallback: scan completo (sin manifest previo) ──
+    # ── Fallback: scan completo (sin inventario previo) ──
     print("[r2-clean] scan completo"
-          + (" (barrido diario)" if forzar_scan else " (sin manifest previo)"))
-    all_validos = set()
-    grupo_validos = set()
-    dominio_validos = set()
-    portadas_validas = _ficheros_portada(manifest)
-
-    for d in manifest.get('dias', []):
-        if d.get('all') and d['all'].get('file'):
-            all_validos.add(d['all']['file'])
-        for g in d.get('grupos', {}).values():
-            if g.get('file'):
-                grupo_validos.add(g['file'])
-        for dd in d.get('dominios', {}).values():
-            if dd.get('file'):
-                dominio_validos.add(dd['file'])
+          + (" (barrido diario)" if forzar_scan else " (sin inventario previo)"))
+    validos = _ficheros_de_inventario(inventario)
 
     limite = datetime.now(timezone.utc) - timedelta(hours=1)
     re_all     = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$')
@@ -2448,15 +2528,11 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
             if key == 'manifest.json':
                 continue
 
-            es_valido = False
-            if re_all.match(key):
-                es_valido = key in all_validos
-            elif re_grupo.match(key):
-                es_valido = key in grupo_validos
-            elif re_dominio.match(key):
-                es_valido = key in dominio_validos
-            elif key.startswith('portada-') and key.endswith('.json'):
-                es_valido = key in portadas_validas
+            if re_dominio.match(key):
+                es_valido = key in validos or archivado(key)
+            elif (re_all.match(key) or re_grupo.match(key)
+                  or (key.startswith('portada-') and key.endswith('.json'))):
+                es_valido = key in validos
             else:
                 continue
 
@@ -2832,45 +2908,64 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
     print(f"[turso] {total} candidatas · {insertados} enviadas · {fallos} fallos")
     return insertados
 
-def descargar_historico_desde_r2():
-    """Descarga de R2 el manifest completo y SOLO los ficheros de la
-    ventana de dedup (DIAS_RETENCION). Los días más antiguos quedan en
-    R2 y se conservan en el manifest nuevo, pero no se bajan.
+def _bajar_inventario(client):
+    """Bytes del inventario de R2, o None si no hay (primer run).
 
-    Solo se sigue sin manifest si R2 dice que no existe (primer run). Con
-    cualquier otro fallo el run se para: un manifest nuevo hecho sin el
+    Transición: sin inventario, el manifest de antes de separarlos traía
+    lo mismo en 'dias'. Uno ya separado no sirve (no nombra los ficheros
+    por medio): mejor parar que limpiar R2 con él."""
+    for key in ('inventario.json', 'manifest.json'):
+        try:
+            datos = client.get_object(Bucket=R2_BUCKET, Key=key)['Body'].read()
+            inventario = json.loads(datos)
+        except Exception as e:
+            if _codigo_r2(e) in ('404', 'NoSuchKey'):
+                continue
+            raise SystemExit(f"[r2-download!] no se pudo leer {key}: "
+                             f"{type(e).__name__}: {e}")
+        if key == 'manifest.json':
+            if 'dias_ventana' in inventario:
+                raise SystemExit("[r2-download!] no hay inventario y el manifest "
+                                 "ya es el público: run abortado")
+            print("[r2-download] sin inventario: se parte del manifest anterior")
+        return datos
+    return None
+
+
+def descargar_historico_desde_r2():
+    """Descarga de R2 el inventario y SOLO los ficheros de la ventana de
+    dedup (DIAS_RETENCION). Los días más antiguos quedan en R2 y se
+    conservan en el inventario nuevo, pero no se bajan.
+
+    Solo se sigue sin inventario si R2 dice que no existe (primer run). Con
+    cualquier otro fallo el run se para: un inventario nuevo hecho sin el
     anterior perdería el archivo, y la limpieza borraría sus ficheros."""
     client = _r2_client()
     if not client:
         print("[r2-download] sin credenciales — saltando")
         return 0
 
-    try:
-        obj = client.get_object(Bucket=R2_BUCKET, Key='manifest.json')
-        manifest_bytes = obj['Body'].read()
-        manifest = json.loads(manifest_bytes)
-    except Exception as e:
-        if _codigo_r2(e) in ('404', 'NoSuchKey'):
-            print("[r2-download] no hay manifest en R2: primer run")
-            return 0
-        raise SystemExit(f"[r2-download!] no se pudo leer el manifest: "
-                         f"{type(e).__name__}: {e}")
-    with open(MANIFEST_PATH, 'wb') as f:
-        f.write(manifest_bytes)
+    inventario_bytes = _bajar_inventario(client)
+    if inventario_bytes is None:
+        print("[r2-download] no hay inventario en R2: primer run")
+        return 0
+    inventario = json.loads(inventario_bytes)
+    with open(INVENTARIO_PATH, 'wb') as f:
+        f.write(inventario_bytes)
 
     corte = (datetime.now(TZ_MADRID) - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
 
     # Recolectar ficheros a bajar: 'all' de cada día dentro de retención
     ficheros_a_bajar = []
-    for d_info in manifest.get('dias', []):
+    for d_info in inventario.get('dias', []):
         if d_info.get('fecha', '') < corte:
             continue
         if d_info.get('all') and d_info['all'].get('file'):
             ficheros_a_bajar.append(d_info['all'])
-    # Compat con manifests viejos
+    # Compat con inventarios viejos
     if not ficheros_a_bajar:
         ficheros_a_bajar = [
-            f for f in manifest.get('ficheros', [])
+            f for f in inventario.get('ficheros', [])
             if f.get('fecha', '') >= corte
         ]
 
@@ -2904,9 +2999,9 @@ def descargar_historico_desde_r2():
         raise SystemExit(f"[r2-download!] {len(fallidos)} días sin bajar: "
                          + ', '.join(fallidos))
 
-    total = len(manifest.get('dias', []))
+    total = len(inventario.get('dias', []))
     print(f"[r2-download] {descargados} descargados · "
-          f"{total} en manifest · ventana {DIAS_RETENCION} días")
+          f"{total} en inventario · ventana {DIAS_RETENCION} días")
     return descargados
   
 
@@ -3064,18 +3159,18 @@ def main():
     # ─── Escribir salidas ───
     print()
 
-    # Leer manifest previo (el que bajó descargar_historico_desde_r2)
-    manifest_prev = None
-    if os.path.exists(MANIFEST_PATH):
+    # Leer inventario previo (el que bajó descargar_historico_desde_r2)
+    inventario_prev = None
+    if os.path.exists(INVENTARIO_PATH):
         try:
-            with open(MANIFEST_PATH, encoding='utf-8') as f:
-                manifest_prev = json.load(f)
-            n_dias_prev = len(manifest_prev.get('dias', []))
-            print(f"[manifest-prev] {n_dias_prev} días en manifest previo")
+            with open(INVENTARIO_PATH, encoding='utf-8') as f:
+                inventario_prev = json.load(f)
+            print(f"[inventario-prev] {len(inventario_prev.get('dias', []))} días"
+                  f" + {len(inventario_prev.get('archivo', []))} en archivo")
         except Exception as e:
-            # Sin él, el manifest nuevo perdería el archivo y la limpieza
+            # Sin él, el inventario nuevo perdería el archivo y la limpieza
             # borraría sus ficheros.
-            raise SystemExit(f"[manifest-prev!] no se pudo leer: {e}")
+            raise SystemExit(f"[inventario-prev!] no se pudo leer: {e}")
 
     # Portada general y ediciones (dedup interno)
     _dedup_reset()
@@ -3087,15 +3182,15 @@ def main():
             max_items=edicion['max'], prefix=f'portada-{slug}')
 
     # Trocear: all + grupos + dominios
-    manifest_actual = generar_troceados(
+    inventario = generar_troceados(
         finales_pre, t_now, portada_info,
-        manifest_prev=manifest_prev,
+        inventario_prev=inventario_prev,
         portadas_info=portadas_info,
     )
 
     # ─── Subir a R2 (solo lo que cambió, ya está en disco) ───
 
-    # Con errores, el manifest no se ha subido: ni limpieza ni state, para
+    # Con errores, ni el inventario ni el manifest se han subido: ni limpieza ni state, para
     # que el siguiente run parta de lo que sigue publicado.
     _, _, errores_r2 = subir_a_r2(list(_FICHEROS_ESCRITOS))
     if errores_r2:
@@ -3114,7 +3209,7 @@ def main():
     hoy_madrid = t_now.strftime('%Y-%m-%d')
     ultimo_barrido = payload_prev.get('ultimo_barrido_r2', '')
     barrido_hoy = ultimo_barrido != hoy_madrid and _r2_client() is not None
-    completo = limpiar_r2_huerfanos(manifest_actual, manifest_prev,
+    completo = limpiar_r2_huerfanos(inventario, inventario_prev,
                                     forzar_scan=barrido_hoy)
     if barrido_hoy and completo:
         ultimo_barrido = hoy_madrid

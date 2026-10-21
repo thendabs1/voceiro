@@ -116,9 +116,19 @@ def guardar_estado(estado):
 # ─────────────────────────────────────────────────────────────
 # R2
 # ─────────────────────────────────────────────────────────────
-def descargar_manifest(client):
-    obj = client.get_object(Bucket=R2_BUCKET, Key='manifest.json')
+def descargar_inventario(client):
+    obj = client.get_object(Bucket=R2_BUCKET, Key='inventario.json')
     return json.loads(obj['Body'].read())
+
+
+def ficheros_de_dia(inventario):
+    """[{fecha, file, n}] de los ficheros del día entero que hay en R2: los
+    de la ventana y los que el archivo conserva."""
+    out = [{'fecha': d['fecha'], 'file': d['all']['file'], 'n': d['all'].get('n', 0)}
+           for d in inventario.get('dias', []) if (d.get('all') or {}).get('file')]
+    out += [{'fecha': e['fecha'], 'file': e['all'], 'n': e.get('n', 0)}
+            for e in inventario.get('archivo', []) if e.get('all')]
+    return out
 
 
 def descargar_dia(client, filename):
@@ -262,15 +272,15 @@ def main():
         return 1
 
     try:
-        manifest = descargar_manifest(client)
+        inventario = descargar_inventario(client)
     except Exception as e:
-        print(f"No pude leer manifest de R2: {e}")
+        print(f"No pude leer el inventario de R2: {e}")
         return 1
 
-    ficheros = manifest.get('ficheros', [])
+    ficheros = ficheros_de_dia(inventario)
     ficheros.sort(key=lambda f: f['fecha'], reverse=True)
     pendientes = [f for f in ficheros if f['fecha'] not in completados]
-    print(f"Días en manifest: {len(ficheros)} · pendientes: {len(pendientes)}")
+    print(f"Días en el inventario: {len(ficheros)} · pendientes: {len(pendientes)}")
 
     total_insertados = 0
     procesados_ahora = 0
