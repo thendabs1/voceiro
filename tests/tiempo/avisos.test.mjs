@@ -142,13 +142,19 @@ test('filtro: comunidad, provincia, zona, fenómeno o nivel, sin tildes y en dos
   assert.deepEqual(zonas('rojo'), ['659601']);
 });
 
-test('grupos: una línea por fenómeno y comunidad; lo grave y lo que ya empezó, primero', () => {
+test('grupos: una línea por comunidad con sus niveles juntos; lo grave y lo que ya empezó, primero', () => {
   const g = agruparAvisos(AVISOS, AHORA);
-  assert.deepEqual(g.map(x => [x.fen, x.comunidad, x.nivel, x.zonas]),
-    [['PR', 'Canarias', 'rojo', 2], ['VI', 'Galicia', 'amarillo', 1], ['CO', 'Galicia', 'amarillo', 1]]);
+  assert.deepEqual(g.map(x => [x.comunidad, x.nivel, x.zonas]), [['Canarias', 'rojo', 2], ['Galicia', 'amarillo', 2]]);
   assert.deepEqual(g[0].avisos.map(a => a.zona), ['659601', '659303']);
-  assert.equal(g[0].inicio, '2026-10-21T09:00:00.000Z');   // el primero que empieza
-  assert.equal(g[0].fin, '2026-10-22T17:00:00.000Z');      // el último que acaba
+  assert.deepEqual(g[0].niveles, [{ nivel: 'rojo', fens: ['PR'] }, { nivel: 'naranja', fens: ['PR'] }]);
+  assert.equal(g[0].inicio, '2026-10-21T09:00:00.000Z');   // las horas, las del nivel más alto
+  assert.equal(g[0].fin, '2026-10-22T04:00:00.000Z');
+  assert.deepEqual(g[1].niveles, [{ nivel: 'amarillo', fens: ['VI', 'CO'] }]);
+  // Un naranja en Galicia arrastra a sus amarillos a la misma línea.
+  const naranja = { ...AVISOS[1], zona: '713601', area: 'Rias Baixas' };
+  const [galicia] = agruparAvisos([...AVISOS.filter(a => a.zona !== '659303'), naranja], AHORA)
+    .filter(x => x.comunidad === 'Galicia');
+  assert.deepEqual(galicia.avisos.map(a => [a.nivel, a.fen]), [['naranja', 'PR'], ['amarillo', 'VI'], ['amarillo', 'CO']]);
   const futuro = { ...AVISOS[1], zona: '713601', inicio: '2026-10-22T00:00:00+02:00' };
   assert.deepEqual(agruparAvisos([futuro, AVISOS[2]], AHORA).map(x => x.comunidad), ['Canarias', 'Galicia']);
 });

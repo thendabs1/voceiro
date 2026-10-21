@@ -888,17 +888,24 @@
 .tiempo-elegir button span{ color: var(--muted); }
 /* ═══ Panel de avisos (alertas:): el mismo recuadro que el tiempo. El nivel
    va siempre escrito; el color del borde solo lo acompaña. ═══ */
-.aviso[data-nivel="amarillo"], .btn-avisos[data-nivel="amarillo"]{ --aviso: #e0b000; }
-.aviso[data-nivel="naranja"],  .btn-avisos[data-nivel="naranja"]{ --aviso: #e65100; }
-.aviso[data-nivel="rojo"],     .btn-avisos[data-nivel="rojo"]{ --aviso: #d32f2f; }
+.aviso[data-nivel="amarillo"], .aviso-zona[data-nivel="amarillo"], .btn-avisos[data-nivel="amarillo"]{ --aviso: #e0b000; }
+.aviso[data-nivel="naranja"],  .aviso-zona[data-nivel="naranja"],  .btn-avisos[data-nivel="naranja"]{ --aviso: #e65100; }
+.aviso[data-nivel="rojo"],     .aviso-zona[data-nivel="rojo"],     .btn-avisos[data-nivel="rojo"]{ --aviso: #d32f2f; }
 .avisos-lista{ list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .aviso{ padding: 2px 0 2px 10px; border-left: 4px solid var(--aviso); }
 .aviso > summary, .avisos-amarillos > summary{ cursor: pointer; }
 .avisos-amarillos{ margin-top: 8px; }
 .avisos-amarillos > summary{ color: var(--muted); }
 .aviso-zonas{ list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.aviso-zona{ padding-left: 8px; border-left: 3px solid var(--aviso); }
 .aviso-nivel{ font-weight: 700; margin-right: 6px; }
+/* [GALICIA]: los corchetes no se leen en voz alta. */
+.aviso-ccaa{ font-weight: 700; text-transform: uppercase; margin-right: 6px; }
+.aviso-ccaa::before{ content: "["; content: "[" / ""; }
+.aviso-ccaa::after{ content: "]"; content: "]" / ""; }
 .aviso-cuando{ display: block; color: var(--muted); }
+.aviso-ahora, .aviso-hora{ color: var(--fg); font-weight: 700; }
+.aviso-hora{ font-variant-numeric: tabular-nums; }
 .aviso-texto{ margin: 2px 0 0; }
 .btn-avisos{ border: 2px solid var(--aviso); font-weight: 600; }
 .btn-avisos[hidden]{ display: none; }
@@ -7924,56 +7931,64 @@ function nombresAvisos(){
   };
 }
 
-// «En vigor · hasta mañana 17:59» o «jue 06:00 – 23:59», en la hora del sitio.
+// «En vigor · hasta mañana 17:59» o «jue 06:00 – 23:59», en la hora del
+// sitio. Devuelve HTML: las horas, en negrita.
 function cuandoAviso(a){
   const lang = (ACCES && ACCES.lang) || 'es';
   const timeZone = zonaHorariaAviso(a.zona);
   const fecha = ms => new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ms);
-  const hora = ms => new Intl.DateTimeFormat(lang, { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms);
+  const hora = ms => `<b class="aviso-hora">${escapeHtml(new Intl.DateTimeFormat(lang, { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms))}</b>`;
   const hoy = fecha(Date.now());
   const dia = ms => {
     const f = fecha(ms);
     const dias = Math.round((Date.parse(f) - Date.parse(hoy)) / 864e5);
-    return dias === 0 ? t('avisosHoy') : dias === 1 ? t('avisosManana')
-      : new Intl.DateTimeFormat(lang, { timeZone, weekday: 'short' }).format(ms);
+    return escapeHtml(dias === 0 ? t('avisosHoy') : dias === 1 ? t('avisosManana')
+      : new Intl.DateTimeFormat(lang, { timeZone, weekday: 'short' }).format(ms));
   };
   const ini = Date.parse(a.inicio), fin = Date.parse(a.fin);
   const hasta = fecha(fin) === hoy ? hora(fin) : `${dia(fin)} ${hora(fin)}`;
-  if (empezado(a)) return `${t('avisosAhora')} · ${t('avisosHasta', { h: hasta })}`;
+  if (empezado(a)) return `<span class="aviso-ahora">${escapeHtml(t('avisosAhora'))}</span> · `
+    + escapeHtml(t('avisosHasta', { h: '\u0000' })).replace('\u0000', hasta);
   return `${dia(ini)} ${hora(ini)} – ${fecha(fin) === fecha(ini) ? hora(fin) : `${dia(fin)} ${hora(fin)}`}`;
 }
 
-// Una zona dentro de su línea: el nivel solo si no es el de la línea.
+const nombreFen = fen => (I18N.es['avisoFen' + fen] ? t('avisoFen' + fen) : fen);
+
+// Una zona dentro de su comunidad: fenómeno y zona; el nivel, solo si no
+// es el de la línea (el borde lo acompaña siempre).
 function htmlAviso(a, g){
   const lang = (ACCES && ACCES.lang) || 'es';
   const texto = a.texto ? (lang === 'en' && a.texto.en) || a.texto.es : '';
-  return `<li>
-    ${a.nivel !== g.nivel ? `<span class="aviso-nivel">${escapeHtml(t('avisoNivel' + a.nivel))}</span>` : ''}<strong>${escapeHtml(a.area || '')}</strong>
-    <span class="aviso-cuando">${escapeHtml(cuandoAviso(a))}</span>
+  return `<li class="aviso-zona" data-nivel="${escapeHtml(a.nivel)}">
+    ${a.nivel !== g.nivel ? `<span class="aviso-nivel">${escapeHtml(t('avisoNivel' + a.nivel))}</span>` : ''}${escapeHtml(nombreFen(a.fen))} · <strong>${escapeHtml(a.area || '')}</strong>
+    <span class="aviso-cuando">${cuandoAviso(a)}</span>
     ${texto ? `<p class="aviso-texto">${escapeHtml(texto)}</p>` : ''}
   </li>`;
 }
 
-// «Naranja · Lluvias · Galicia · 3 zonas / En vigor · hasta 18:00»; al
-// desplegarla, las zonas con su texto.
+// «[GALICIA] Naranja Lluvias · Amarillo Vientos, Costeros · 3 zonas / En
+// vigor · hasta 18:00»; al desplegarla, todas sus zonas con su texto.
 function htmlGrupoAvisos(g, seccion){
-  const nombre = I18N.es['avisoFen' + g.fen] ? t('avisoFen' + g.fen) : g.fen;
+  const niveles = g.niveles.map(n => `<span class="aviso-nivel">${escapeHtml(t('avisoNivel' + n.nivel))}</span>`
+    + escapeHtml(n.fens.map(nombreFen).join(', '))).join(' · ');
   const donde = g.zonas === 1 ? g.avisos[0].area : t('avisosZonas', { n: g.zonas });
   return `<li><details class="aviso" data-nivel="${escapeHtml(g.nivel)}" data-k="${escapeHtml(seccion + '|' + g.clave)}">
-    <summary><span class="aviso-nivel">${escapeHtml(t('avisoNivel' + g.nivel))}</span>${escapeHtml([nombre, g.comunidad, donde].filter(Boolean).join(' · '))}
-      <span class="aviso-cuando">${escapeHtml(cuandoAviso(g))}</span></summary>
+    <summary><span class="aviso-ccaa">${escapeHtml(g.comunidad || g.clave)}</span>${niveles} · ${escapeHtml(donde || '')}
+      <span class="aviso-cuando">${cuandoAviso(g)}</span></summary>
     <ul class="aviso-zonas">${g.avisos.map(a => htmlAviso(a, g)).join('')}</ul>
   </details></li>`;
 }
 
-// Naranjas y rojos, una línea por fenómeno y comunidad; los amarillos, en
-// una sola línea plegada (abierta si se ha filtrado: alertas:Galicia).
+// Una línea por comunidad con algún naranja o rojo, con sus amarillos
+// dentro; las comunidades con solo amarillos, en una línea plegada (abierta
+// si se ha filtrado: alertas:Galicia).
 function htmlAvisos(valor){
   const d = AVISOS.datos;
   const lista = filtrarAvisos(avisosVigentes(), valor, nombresAvisos());
-  const graves = agruparAvisos(lista.filter(a => a.nivel !== 'amarillo'));
-  const amarillos = agruparAvisos(lista.filter(a => a.nivel === 'amarillo'));
-  const comunidades = [...new Set(amarillos.map(g => g.comunidad))];
+  const todos = agruparAvisos(lista);
+  const graves = todos.filter(g => g.nivel !== 'amarillo');
+  const amarillos = todos.filter(g => g.nivel === 'amarillo');
+  const comunidades = amarillos.map(g => g.comunidad);
   const grupos = (graves.length ? `<ul class="avisos-lista">${graves.map(g => htmlGrupoAvisos(g, 'g')).join('')}</ul>` : '')
     + (amarillos.length ? `<details class="avisos-amarillos" data-k="amarillos"${valor ? ' open' : ''}>
         <summary>${escapeHtml(t('avisosAmarillos', { n: amarillos.reduce((n, g) => n + g.avisos.length, 0) }))}
