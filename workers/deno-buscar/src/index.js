@@ -4,6 +4,7 @@ import { PARSER_SOURCE } from './parser-source.js';
 import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';
 import { freenews } from './sources/freenews.js';
+import { handleTiempo } from './tiempo/index.js';
 
 const ADAPTERS = { turso, gnews, freenews };
 
@@ -35,6 +36,7 @@ export default {
     }
 
     if (url.pathname === '/buscar') return handleBuscar(request, url);
+    if (url.pathname === '/tiempo' || url.pathname === '/tiempo/lugares') return handleTiempo(url, CORS);
     if (url.pathname === '/health') return json({ ok: true, ts: Date.now() });
 
     return new Response('Not found', { status: 404, headers: CORS });
