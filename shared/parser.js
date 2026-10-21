@@ -35,6 +35,7 @@ const PREFIX_ALIASES = {
   limit: 'limit',
   offset: 'offset',
   eltiempo: 'eltiempo',
+  alertas: 'alertas', avisos: 'alertas',
 };
 
 // Terminaciones de dominio que se aceptan para tratar una palabra suelta
@@ -159,6 +160,7 @@ export function parseQuery(raw) {
     dominios: [], medios: [], grupos: [], tipos: [], tags: [], lang: [],
     desde: null, hasta: null,
     eltiempo: null,
+    alertas: null,
     fuentes: ['turso'],
     order: 'recientes',
     limit: 50, offset: 0,
@@ -240,6 +242,12 @@ export function parseQuery(raw) {
           out.eltiempo = tk.text.trim();
           out.chips.push({ type:'eltiempo', value: tk.text, raw: tk.raw });
         }
+        break;
+
+      // Panel de avisos; vacío, los de toda España. No filtra noticias.
+      case 'alertas':
+        out.alertas = tk.text.trim();
+        out.chips.push({ type:'alertas', value: tk.text, raw: tk.raw });
         break;
 
       default:

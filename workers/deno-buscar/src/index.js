@@ -36,7 +36,9 @@ export default {
     }
 
     if (url.pathname === '/buscar') return handleBuscar(request, url);
-    if (url.pathname === '/tiempo' || url.pathname === '/tiempo/lugares') return handleTiempo(url, CORS);
+    if (url.pathname === '/tiempo' || url.pathname === '/tiempo/lugares' || url.pathname === '/avisos') {
+      return handleTiempo(url, CORS);
+    }
     if (url.pathname === '/health') return json({ ok: true, ts: Date.now() });
 
     return new Response('Not found', { status: 404, headers: CORS });
