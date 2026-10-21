@@ -342,3 +342,22 @@ class PublicacionR2(unittest.TestCase):
         cliente = R2Falso(fallos={'b.json': 'InternalError'})
         self.assertEqual(self.subir(cliente, 'manifest.json', 'a.json', 'b.json'), (1, 0, 1))
         self.assertEqual(cliente.subidas, ['a.json'])
+
+
+class Turso(unittest.TestCase):
+    def test_solo_van_las_nuevas_de_medios_nacionales_y_los_anadidos(self):
+        enviadas = []
+        medios = {'nac.test': {'ambito': 'nacional'}, 'reg.test': {'ambito': 'regional'},
+                  'extra.test': {'ambito': 'internacional'}}
+        noticias = [{'dominio': d, 'titular': d, 'enlace': f'https://{d}/x', '_nueva': True}
+                    for d in ('nac.test', 'reg.test', 'extra.test', 'fuera.test')]
+        noticias.append({'dominio': 'nac.test', 'titular': 'vieja',
+                         'enlace': 'https://nac.test/v', '_nueva': False})
+        with patch.multiple(R, TURSO_HTTP_URL='https://turso.test', TURSO_TOKEN='x',
+                            _MEDIOS_POR_DOMINIO=medios, TURSO_DOMINIOS_EXTRA={'extra.test'}), \
+                patch.object(R, 'turso_pipeline',
+                             side_effect=lambda stmts: enviadas.extend(stmts) or []), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(R.insertar_en_turso(noticias, '', '2026-10-21T12:00:00+02:00'), 2)
+        self.assertEqual(sorted(s['stmt']['args'][1]['value'] for s in enviadas),
+                         ['extra.test', 'nac.test'])

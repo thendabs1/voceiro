@@ -2774,8 +2774,21 @@ def _turso_setup_runs(runs_data, ts_iso):
         print(f"[turso] runs: {len(runs_data)} registrados + poda 30d OK")
 
 
+# Turso guarda el corpus para consultas complejas: los medios nacionales y
+# los que se añadan aquí a mano. El resto se consulta en R2 (por medio) y
+# en Google News.
+TURSO_AMBITOS        = {'nacional'}
+TURSO_DOMINIOS_EXTRA = set()
+
+def _va_a_turso(dominio):
+    _init_medios_por_dominio()
+    m = _MEDIOS_POR_DOMINIO.get(dominio) or {}
+    return m.get('ambito') in TURSO_AMBITOS or dominio in TURSO_DOMINIOS_EXTRA
+
+
 def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
-    """Inserta en Turso las noticias marcadas como nuevas en este run.
+    """Inserta en Turso las noticias marcadas como nuevas en este run, de
+    los medios que guarda (_va_a_turso).
 
     HTTP v2 · sin réplica local · sin sync.
     INSERT OR IGNORE con `enlace` como PRIMARY KEY → idempotente.
@@ -2784,9 +2797,10 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
         print("[turso] sin credenciales — saltando")
         return 0
 
-    candidatas = [n for n in noticias if n.get('_nueva') and n.get('enlace')]
+    nuevas = [n for n in noticias if n.get('_nueva') and n.get('enlace')]
+    candidatas = [n for n in nuevas if _va_a_turso(n.get('dominio', ''))]
     if not candidatas:
-        print("[turso] nada nuevo en este run")
+        print(f"[turso] nada nuevo en este run ({len(nuevas)} de otros medios)")
         return 0
 
     # Construir filas
@@ -2829,7 +2843,8 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
         else:
             insertados += len(lote)
 
-    print(f"[turso] {total} candidatas · {insertados} enviadas · {fallos} fallos")
+    print(f"[turso] {total} candidatas ({len(nuevas) - total} de otros medios fuera)"
+          f" · {insertados} enviadas · {fallos} fallos")
     return insertados
 
 def descargar_historico_desde_r2():
