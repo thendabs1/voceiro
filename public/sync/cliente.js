@@ -4,8 +4,8 @@
 // local (fusionarDocumento) y, si el resultado no es lo que ya había, lo
 // sube cifrado. Si otro dispositivo escribió entre medias (409), vuelve a
 // empezar. Devuelve el documento fusionado: quien llama lo vuelca en local.
-import { derivar, cifrar, descifrar } from './cripto.js?v=f08545e03d';
-import { fusionarDocumento, huella } from './fusion.js?v=f08545e03d';
+import { derivar, cifrar, descifrar } from './cripto.js?v=6b49a74614';
+import { fusionarDocumento, huella } from './fusion.js?v=6b49a74614';
 
 export const MAX_SUBIDA = 500 * 1024;   // el servidor admite 512 KB
 const INTENTOS = 4;

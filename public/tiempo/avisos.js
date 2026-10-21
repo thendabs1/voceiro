@@ -6,8 +6,8 @@
 // La zona de AEMET lleva comunidad, provincia (o isla) y zona: 71 36 01 es
 // Galicia, Pontevedra, Rías Baixas; las costeras acaban en C.
 
-import { normalize } from '../parser.js?v=f08545e03d';
-import { PROVINCIAS } from './lugares.js?v=f08545e03d';
+import { normalize } from '../parser.js?v=6b49a74614';
+import { PROVINCIAS } from './lugares.js?v=6b49a74614';
 
 export const COMUNIDADES = {
   61: 'Andalucía', 62: 'Aragón', 63: 'Asturias', 64: 'Illes Balears', 65: 'Canarias',
@@ -46,25 +46,36 @@ export function filtrarAvisos(avisos, texto, nombres = {}) {
     || (nombres.nivel?.[a.nivel] || []).some(casa));
 }
 
-// Por fenómeno: primero el de nivel más alto; dentro, lo más grave, lo que
-// ya ha empezado y por comunidad y zona.
+// Una línea por fenómeno y comunidad («Lluvias · Comunitat Valenciana ·
+// 3 zonas»): primero lo más grave y lo que ya ha empezado. Dentro, las
+// zonas por nivel, por lo que ya empezó y por código.
 export function agruparAvisos(avisos, ahora = Date.now()) {
   const por = new Map();
   for (const a of avisos) {
-    if (!por.has(a.fen)) por.set(a.fen, []);
-    por.get(a.fen).push(a);
+    const k = `${a.fen}|${String(a.zona).slice(0, 2)}`;
+    if (!por.has(k)) por.set(k, []);
+    por.get(k).push(a);
   }
-  const max = lista => Math.max(...lista.map(a => PESO[a.nivel]));
   return [...por.entries()]
-    .map(([fen, lista]) => ({
-      fen,
-      nivel: NIVELES[max(lista) - 1],
-      avisos: lista.sort((a, b) => PESO[b.nivel] - PESO[a.nivel]
+    .map(([clave, lista]) => {
+      lista.sort((a, b) => PESO[b.nivel] - PESO[a.nivel]
         || empezado(b, ahora) - empezado(a, ahora)
         || a.zona.localeCompare(b.zona)
-        || Date.parse(a.inicio) - Date.parse(b.inicio)),
-    }))
-    .sort((a, b) => PESO[b.nivel] - PESO[a.nivel] || b.avisos.length - a.avisos.length);
+        || Date.parse(a.inicio) - Date.parse(b.inicio));
+      const iso = ms => new Date(ms).toISOString();
+      return {
+        clave, fen: lista[0].fen, zona: lista[0].zona, comunidad: comunidadDeZona(lista[0].zona),
+        nivel: lista[0].nivel,
+        zonas: new Set(lista.map(a => a.zona)).size,
+        inicio: iso(Math.min(...lista.map(a => Date.parse(a.inicio)))),
+        fin: iso(Math.max(...lista.map(a => Date.parse(a.fin)))),
+        avisos: lista,
+      };
+    })
+    .sort((a, b) => PESO[b.nivel] - PESO[a.nivel]
+      || empezado(b, ahora) - empezado(a, ahora)
+      || Date.parse(a.inicio) - Date.parse(b.inicio)
+      || a.comunidad.localeCompare(b.comunidad));
 }
 
 // Para el icono: solo naranja y rojo. null si no hay.
@@ -78,16 +89,9 @@ export function resumenAvisos(avisos, ahora = Date.now()) {
   };
 }
 
-// «Ver noticias» desde un aviso naranja o rojo: palabra del fenómeno y
-// comunidad, desde ayer.
-const PALABRA = {
-  PR: 'lluvia*', TO: 'tormenta*', VI: 'viento*', CO: 'temporal', NE: 'nev*', AT: 'calor',
-  BT: 'frio', NI: 'niebla*', VS: 'calima', GA: 'galerna*', RI: 'rissaga*', DH: 'deshielo*', AL: 'alud*',
-};
-// Como lo suelen escribir los titulares, cuando no es el nombre oficial.
-const EN_TITULARES = { 64: 'Baleares', 77: 'valencia*' };
-export function busquedaNoticias(a) {
-  const ccaa = EN_TITULARES[String(a.zona).slice(0, 2)] || comunidadDeZona(a.zona);
-  const lugar = /\s/.test(ccaa) ? `"${ccaa}"` : ccaa;
-  return [PALABRA[a.fen], lugar, 'desde:ayer'].filter(Boolean).join(' ');
-}
+// «Buscar noticias relacionadas» (aplazado, 21-10-2026): se probó con la
+// palabra del fenómeno y la comunidad, desde ayer, en el corpus. Pierde lo
+// que solo nombra la ciudad (Vigo y no Galicia) y trae ruido («temporal»
+// casa con «empleo temporal»). Para retomarlo: lanzarla con la prensa
+// externa activada solo para esa búsqueda, palabras menos ambiguas
+// («temporal marítimo», «oleaje») y provincia además de comunidad.
