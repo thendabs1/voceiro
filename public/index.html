@@ -1850,10 +1850,6 @@
   .pase-controles{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px}
   .pase-controles button,.pase-controles select,.pase-contenido button{font:inherit;color:var(--fg);background:var(--btn-bg);border:1px solid var(--btn-border);border-radius:6px;padding:8px}
   .pase-controles button:disabled{opacity:.5}
-  #pase-barra{position:fixed;bottom:0;left:0;right:0;z-index:90;background:var(--bg);border-top:1px solid var(--btn-border);padding-bottom:env(safe-area-inset-bottom)}
-  body.pase-tarjetas{padding-bottom:180px}
-  .noticia.pase-consumida{display:none!important}
-  .noticia.pase-actual{outline:2px solid var(--accent);outline-offset:-2px;scroll-margin-top:24px}
   #pase-capa{box-sizing:border-box;position:fixed;inset:0;width:100%;max-width:none;height:100%;height:100dvh;max-height:none;margin:0;padding:20px;border:0;background:var(--bg);color:var(--fg);overflow:auto}
   #pase-capa[open]{display:flex;flex-direction:column}
   #pase-capa::backdrop{background:var(--bg)}
@@ -2420,8 +2416,7 @@
         <label class="vs-radio"><input type="radio" name="vs-hide" value="both"><span id="vs-hide-both"></span></label>
       </div>
       <div class="pase-accesos">
-        <button id="vs-pase-tarjetas" type="button" data-pase="tarjetas"></button>
-        <button id="vs-pase-capa" type="button" data-pase="capa"></button>
+        <button id="vs-pase-capa" type="button"></button>
       </div>
     </fieldset>
   </dialog>
@@ -4314,15 +4309,15 @@ const I18N = {
     acReset:                'Irakurketa berrezarri',
   },
 };
-// Controles del pase, compartidos por las dos presentaciones.
+// Textos de la capa de titulares.
 for (const [lang, textos] of Object.entries({
-  es: ['Consumir tarjetas', 'Capa de titulares', 'Pausa', 'Continuar', 'Anterior', 'Siguiente', 'Cerrar', 'segundos por titular', 'Fin del pase', 'En marcha', 'En pausa'],
-  gl: ['Consumir tarxetas', 'Capa de titulares', 'Pausa', 'Continuar', 'Anterior', 'Seguinte', 'Pechar', 'segundos por titular', 'Fin do pase', 'En marcha', 'En pausa'],
-  ca: ['Consumir targetes', 'Capa de titulars', 'Pausa', 'Continuar', 'Anterior', 'Següent', 'Tancar', 'segons per titular', 'Final del passi', 'En marxa', 'En pausa'],
-  en: ['Consume cards', 'Headline overlay', 'Pause', 'Continue', 'Previous', 'Next', 'Close', 'seconds per headline', 'End of headlines', 'Playing', 'Paused'],
-  eu: ['Txartelak pasa', 'Tituluen geruza', 'Pausatu', 'Jarraitu', 'Aurrekoa', 'Hurrengoa', 'Itxi', 'segundo tituluko', 'Amaiera', 'Martxan', 'Pausatuta'],
+  es: ['Capa de titulares', 'Pausa', 'Continuar', 'Anterior', 'Siguiente', 'Cerrar', 'segundos por titular', 'Fin del pase', 'En marcha', 'En pausa'],
+  gl: ['Capa de titulares', 'Pausa', 'Continuar', 'Anterior', 'Seguinte', 'Pechar', 'segundos por titular', 'Fin do pase', 'En marcha', 'En pausa'],
+  ca: ['Capa de titulars', 'Pausa', 'Continuar', 'Anterior', 'Següent', 'Tancar', 'segons per titular', 'Final del passi', 'En marxa', 'En pausa'],
+  en: ['Headline overlay', 'Pause', 'Continue', 'Previous', 'Next', 'Close', 'seconds per headline', 'End of headlines', 'Playing', 'Paused'],
+  eu: ['Tituluen geruza', 'Pausatu', 'Jarraitu', 'Aurrekoa', 'Hurrengoa', 'Itxi', 'segundo tituluko', 'Amaiera', 'Martxan', 'Pausatuta'],
 })) {
-  ['paseTarjetas', 'paseCapa', 'pasePausa', 'paseContinuar', 'paseAnterior', 'paseSiguiente', 'paseCerrar', 'paseRitmo', 'paseFin', 'paseMarcha', 'paseParado']
+  ['paseCapa', 'pasePausa', 'paseContinuar', 'paseAnterior', 'paseSiguiente', 'paseCerrar', 'paseRitmo', 'paseFin', 'paseMarcha', 'paseParado']
     .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
 }
 function t(key, vars){
@@ -9432,7 +9427,7 @@ function renderChipsTemas(){
    noticias al avanzar; las vistas se guardan con el mecanismo existente. */
 let PASE = null;
 
-function abrirPase(modo){
+function abrirPase(){
   if (!ULT_FILTRADAS.length) return;
   cerrarPase(false);
   const filtrosPase = $('#filtros-panel');
@@ -9443,14 +9438,14 @@ function abrirPase(modo){
     return r.bottom > 0 && r.top < window.innerHeight;
   });
   const desde = visible ? Number(visible.dataset.idx) : 0;
-  const root = document.createElement(modo === 'capa' ? 'dialog' : 'section');
-  root.id = modo === 'capa' ? 'pase-capa' : 'pase-barra';
-  root.setAttribute('aria-label', t(modo === 'capa' ? 'paseCapa' : 'paseTarjetas'));
-  root.innerHTML = (modo === 'capa' ? `<div class="pase-contenido">
+  const root = document.createElement('dialog');
+  root.id = 'pase-capa';
+  root.setAttribute('aria-label', t('paseCapa'));
+  root.innerHTML = `<div class="pase-contenido">
       <div class="pase-medio"></div>
       <a class="pase-titular" target="_blank" rel="noopener"></a>
       <div><button type="button" data-pase-guardar>${escapeHtml(t('saveForLaterTitle'))}</button></div>
-    </div>` : '') + `<div class="pase-controles">
+    </div><div class="pase-controles">
       <button type="button" data-pase-anterior>${escapeHtml(t('paseAnterior'))}</button>
       <button type="button" data-pase-play></button>
       <button type="button" data-pase-siguiente>${escapeHtml(t('paseSiguiente'))}</button>
@@ -9458,27 +9453,34 @@ function abrirPase(modo){
       <button type="button" data-pase-cerrar>${escapeHtml(t('paseCerrar'))}</button>
     </div><div class="pase-estado" role="status" aria-live="off"></div>`;
   const pase = PASE = {
-    modo, root, lista: ULT_FILTRADAS.slice(desde), desde, pos: 0,
+    root, lista: ULT_FILTRADAS.slice(desde), pos: 0,
     segundos: 8, jugando: true, timer: null, overflow: document.body.style.overflow,
   };
   document.body.appendChild(root);
-  if (modo === 'capa'){
-    document.body.style.overflow = 'hidden';
-    root.showModal();
-    root.addEventListener('cancel', e => { e.preventDefault(); cerrarPase(); });
-    root.querySelector('.pase-titular').onclick = () => {
-      pausarPase();
-      const n = pase.lista[pase.pos];
-      if (n){ marcarLeidaLocal(n.enlace); registrarLeido(n); pintarLeidasEnLista(); }
-    };
-    root.querySelector('[data-pase-guardar]').onclick = () => {
-      pausarPase();
-      const n = pase.lista[pase.pos];
-      if (n){ guardarParaLeerDespues(n); pintarPase(); }
-    };
-  } else {
-    document.body.classList.add('pase-tarjetas');
-  }
+  document.body.style.overflow = 'hidden';
+  root.showModal();
+  root.addEventListener('cancel', e => { e.preventDefault(); cerrarPase(); });
+  root.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') pausarPase();
+  }, { passive: true });
+  root.addEventListener('pointerdown', e => {
+    if (!e.target.closest('.pase-controles')) pausarPase();
+  });
+  root.querySelector('.pase-titular').onclick = () => {
+    pausarPase();
+    const n = pase.lista[pase.pos];
+    if (!n) return;
+    marcarLeidaLocal(n.enlace);
+    registrarLeido(n);
+    pintarLeidasEnLista();
+    moverPase(1);
+    pausarPase();
+  };
+  root.querySelector('[data-pase-guardar]').onclick = () => {
+    pausarPase();
+    const n = pase.lista[pase.pos];
+    if (n){ guardarParaLeerDespues(n); pintarPase(); }
+  };
   root.querySelector('[data-pase-anterior]').onclick = () => moverPase(-1);
   root.querySelector('[data-pase-siguiente]').onclick = () => moverPase(1);
   root.querySelector('[data-pase-play]').onclick = () => {
@@ -9491,16 +9493,12 @@ function abrirPase(modo){
     pase.segundos = Number(e.target.value);
     programarPase();
   };
-  pintarPase(true);
+  pintarPase();
   programarPase();
   root.querySelector('[data-pase-play]').focus({ preventScroll: true });
 }
 
-function tarjetaPase(pase, pos){
-  return document.querySelector(`#resultados .noticia[data-idx="${pase.desde + pos}"]`);
-}
-
-function pintarPase(desplazar = false){
+function pintarPase(){
   const p = PASE;
   if (!p) return;
   const n = p.lista[p.pos];
@@ -9511,27 +9509,16 @@ function pintarPase(desplazar = false){
   play.disabled = fin;
   play.textContent = t(p.jugando ? 'pasePausa' : 'paseContinuar');
   p.root.querySelector('.pase-estado').textContent =
-    `${t(p.modo === 'capa' ? 'paseCapa' : 'paseTarjetas')} · ${Math.min(p.pos + 1, p.lista.length)}/${p.lista.length} · ${t(fin ? 'paseFin' : p.jugando ? 'paseMarcha' : 'paseParado')}`;
-  if (p.modo === 'capa'){
-    p.root.querySelector('.pase-medio').textContent = n ? n.medio : '';
-    const link = p.root.querySelector('.pase-titular');
-    link.innerHTML = n ? bionicize(escapeHtml(n.titular)) : escapeHtml(t('paseFin'));
-    if (n) link.href = n.enlace;
-    else link.removeAttribute('href');
-    p.root.querySelector('[data-pase-guardar]').hidden = fin;
-    if (n){
-      const item = PENDIENTES_MAP.get(normalizeUrlForMatch(n.enlace));
-      p.root.querySelector('[data-pase-guardar]').textContent = t(!item ? 'saveLabelSave' : item.read ? 'saveLabelRead' : 'saveLabelPending');
-    }
-  } else if (n){
-    // El DOM crece por lotes como en la lista normal; no se carga más red.
-    while (RENDER_OFFSET <= p.desde + p.pos && document.getElementById('render-sentinel')) appendBatch();
-    const art = tarjetaPase(p, p.pos);
-    if (art){
-      art.classList.remove('pase-consumida');
-      art.classList.add('pase-actual');
-      if (desplazar) art.scrollIntoView({ block: 'start', behavior: 'instant' });
-    }
+    `${t('paseCapa')} · ${Math.min(p.pos + 1, p.lista.length)}/${p.lista.length} · ${t(fin ? 'paseFin' : p.jugando ? 'paseMarcha' : 'paseParado')}`;
+  p.root.querySelector('.pase-medio').textContent = n ? n.medio : '';
+  const link = p.root.querySelector('.pase-titular');
+  link.innerHTML = n ? bionicize(escapeHtml(n.titular)) : escapeHtml(t('paseFin'));
+  if (n) link.href = n.enlace;
+  else link.removeAttribute('href');
+  p.root.querySelector('[data-pase-guardar]').hidden = fin;
+  if (n){
+    const item = PENDIENTES_MAP.get(normalizeUrlForMatch(n.enlace));
+    p.root.querySelector('[data-pase-guardar]').textContent = t(!item ? 'saveLabelSave' : item.read ? 'saveLabelRead' : 'saveLabelPending');
   }
 }
 
@@ -9556,16 +9543,13 @@ function moverPase(delta){
   const p = PASE;
   if (!p || (delta < 0 && p.pos === 0) || (delta > 0 && p.pos === p.lista.length)) return;
   const n = p.lista[p.pos];
-  const art = p.modo === 'tarjetas' ? tarjetaPase(p, p.pos) : null;
-  if (art) art.classList.remove('pase-actual');
   if (delta > 0 && n){
     marcarVistaLocal(n.enlace);
     persistirVistas();
-    if (art){ art.classList.add('vista', 'pase-consumida'); }
   }
   p.pos += delta;
   if (p.pos === p.lista.length) p.jugando = false;
-  pintarPase(true);
+  pintarPase();
   programarPase();
 }
 
@@ -9574,10 +9558,9 @@ function cerrarPase(refiltrar = true){
   if (!p) return;
   PASE = null;
   clearTimeout(p.timer);
-  if (p.modo === 'capa'){ p.root.close(); document.body.style.overflow = p.overflow; }
+  p.root.close();
+  document.body.style.overflow = p.overflow;
   p.root.remove();
-  document.body.classList.remove('pase-tarjetas');
-  document.querySelectorAll('.pase-consumida,.pase-actual').forEach(el => el.classList.remove('pase-consumida', 'pase-actual'));
   if (refiltrar){
     aplicarFiltros();
     $('#btn-filtros').focus({ preventScroll: true });
@@ -9585,14 +9568,13 @@ function cerrarPase(refiltrar = true){
 }
 
 document.addEventListener('click', e => {
-  const boton = e.target.closest('[data-pase]');
-  if (boton) abrirPase(boton.dataset.pase);
+  if (e.target.closest('#vs-pase-capa')) abrirPase();
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pausarPase(); });
 window.addEventListener('blur', pausarPase);
 // Interactuar fuera de los controles o desplazarse a mano detiene el avance.
 function pausarPaseFuera(e){
-  if (PASE && !e.target.closest('#pase-barra,#pase-capa')) pausarPase();
+  if (PASE && !e.target.closest('#pase-capa')) pausarPase();
 }
 document.addEventListener('pointerdown', pausarPaseFuera, true);
 document.addEventListener('focusin', pausarPaseFuera);
@@ -9601,7 +9583,10 @@ document.addEventListener('touchmove', pausarPase, { passive: true });
 document.addEventListener('keydown', e => {
   if (!PASE) return;
   if (e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); cerrarPase(); }
-  else pausarPaseFuera(e);
+  else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.closest('select,input,textarea')){
+    e.preventDefault();
+    moverPase(e.key === 'ArrowRight' ? 1 : -1);
+  } else pausarPaseFuera(e);
 }, true);
 
 function renderizar(){
@@ -10324,7 +10309,6 @@ function aplicarTextos(){
   $('#btn-pendientes').insertAdjacentHTML('beforeend', '<span class="pend-count" data-count="0">0</span>');
 
   // Filtros de lectura.
-  $('#vs-pase-tarjetas').textContent = t('paseTarjetas');
   $('#vs-pase-capa').textContent = t('paseCapa');
   $('#vs-title-hide').textContent  = t('vsTitleHide');
   $('#vs-ayuda-lbl').textContent = t('vsAyudaLbl');
