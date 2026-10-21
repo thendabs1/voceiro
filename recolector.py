@@ -2130,8 +2130,9 @@ def generar_html(fecha, total):
     #   shared/busqueda/*.js    → public/busqueda/*.js
     #   shared/sync/*.js        → public/sync/*.js
     #   shared/tema/*.js        → public/tema/*.js
+    #   shared/tiempo/*.js      → public/tiempo/*.js (municipios: solo con eltiempo:)
     modulos = {'parser.js': os.path.join(here, 'shared/parser.js')}
-    for carpeta in ('busqueda', 'sync', 'tema'):
+    for carpeta in ('busqueda', 'sync', 'tema', 'tiempo'):
         dir_mod = os.path.join(here, 'shared', carpeta)
         if os.path.isdir(dir_mod):
             for nombre in sorted(os.listdir(dir_mod)):

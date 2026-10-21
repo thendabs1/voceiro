@@ -34,6 +34,7 @@ const PREFIX_ALIASES = {
   order: 'order', orden: 'order',
   limit: 'limit',
   offset: 'offset',
+  eltiempo: 'eltiempo',
 };
 
 // Terminaciones de dominio que se aceptan para tratar una palabra suelta
@@ -157,6 +158,7 @@ export function parseQuery(raw) {
     q: '', titulo: [],
     dominios: [], medios: [], grupos: [], tipos: [], tags: [], lang: [],
     desde: null, hasta: null,
+    eltiempo: null,
     fuentes: ['turso'],
     order: 'recientes',
     limit: 50, offset: 0,
@@ -230,6 +232,14 @@ export function parseQuery(raw) {
 
       case 'offset':
         out.offset = Math.max(parseInt(tk.text, 10) || 0, 0);
+        break;
+
+      // Lugar para la tarjeta del tiempo; no filtra noticias.
+      case 'eltiempo':
+        if (tk.text.trim()) {
+          out.eltiempo = tk.text.trim();
+          out.chips.push({ type:'eltiempo', value: tk.text, raw: tk.raw });
+        }
         break;
 
       default:
