@@ -24,18 +24,25 @@ for (const archivo of ['plantilla.html', 'public/index.html']) {
       _urlsCargadas: new Set(), _titulosCargados: new Set(),
       PRENSA_ACTIVA: true, PRENSA_LANG: 'es', PRENSA_PAIS: 'ES',
       normalizeUrlForMatch: s => s, normalize: s => s.toLowerCase(), palabrasDe,
+      HORIZONTE_FUTURO_MS: 3600e3,
     };
     for (const f of ['_mergearItemsEnNoticias', '_claveUrl', '_pasaVista', '_pasaConsulta',
-                     '_pasaExterno', '_soloDeConsulta', '_clavePrensa', '_ocultaPorLectura']) {
+                     '_pasaExterno', '_soloDeConsulta', '_clavePrensa', '_ocultaPorLectura',
+                     '_calcularFechas', '_adoptarPublicacion', 'reconstruirFecha', 'parseFecha']) {
       runInNewContext(funcion(f), ctx);
     }
     // Lo que hace hidratarNoticias con los campos que mira el filtro.
     const meter = (items, capa, clave) => {
       const n = runInNewContext('_mergearItemsEnNoticias', ctx)(items, capa, clave);
       for (const x of ctx.NOTICIAS) {
-        if (x.dominio === undefined) x.dominio = x.d;
-        if (x.titular === undefined) x.titular = x.t;
-        x._tsOrden = Date.parse(x.p);
+        if (x._hidratada) continue;
+        x._hidratada = true;
+        x.dominio = x.d;
+        x.titular = x.t;
+        x.fecha_pub = x.p || '';
+        x.fecha_estimada = x.e || '';
+        x.fecha = x.c || '';
+        runInNewContext('_calcularFechas', ctx)(x, A + 3600e3);
       }
       return n;
     };
@@ -100,5 +107,25 @@ for (const archivo of ['plantilla.html', 'public/index.html']) {
     assert.equal(meter([{ u: 'https://news.google.com/c', d: 'elpais.com', t: 'Muere el actor X', p: hace(1) }], 'prensa', k), 0);
     assert.equal(ctx.NOTICIAS.length, 2);
     assert.ok(ctx.NOTICIAS[0]._prensaPara.has(k));                       // el propio queda marcado
+  });
+
+  test(`${archivo}: sin publicación no pasa los filtros de tiempo, aunque se vea sin ellos`, () => {
+    const { meter, vista } = crear();
+    meter([
+      { u: 'https://elpais.com/a', d: 'elpais.com', t: 'Recogida hace nada', c: hace(0.5) },
+      { u: 'https://elpais.com/b', d: 'elpais.com', t: 'Estimada hace nada', e: hace(0.5), c: hace(0.5) },
+      propio('Publicada hace nada'),
+    ], 'r2', null);
+    assert.deepEqual(vista('desde:24h'), ['Publicada hace nada']);
+    assert.deepEqual(vista('').length, 3);
+  });
+
+  test(`${archivo}: una capa con la publicación que faltaba se la da a la que ya estaba`, () => {
+    const { ctx, meter, vista, clave } = crear();
+    meter([{ u: 'https://elpais.com/a', d: 'elpais.com', t: 'Arde una nave', c: hace(0.5) }], 'r2', null);
+    assert.deepEqual(vista('desde:24h'), []);
+    meter([{ u: 'https://elpais.com/a', d: 'elpais.com', t: 'Arde una nave', p: hace(3) }], 'prensa', clave('nave'));
+    assert.deepEqual(vista('desde:24h'), ['Arde una nave']);
+    assert.equal(ctx.NOTICIAS[0]._tipoShow, 'pub');
   });
 }

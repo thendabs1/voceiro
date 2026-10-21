@@ -3,6 +3,31 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Recolector: fechas honestas
+
+### Corregido
+- Las noticias sin fecha de publicación ya no «rejuvenecen». Su hora era el
+  `generado` del fichero del día, que avanza cada vez que el día cambia, y
+  pasaban por «última hora» indefinidamente. Ahora cada noticia guarda su
+  primera recogida (`c`) y la conserva entre runs.
+- Los filtros de tiempo (desde:, 24 h, 48 h…) solo cuentan la publicación
+  real. Lo estimado (≈) y lo recogido se siguen mostrando y ordenando, y
+  sin filtro de tiempo se ve todo como antes.
+- Las alternativas de un titular repetido guardan sus propias fechas: al
+  releer el histórico ya no heredan la publicación ni la fuente de otro
+  medio. Los ficheros de antes se siguen leyendo igual.
+- La dedup editorial trabaja con copias: un `alt` de un fichero ya no se
+  cuela en el de grupo o dominio.
+- Si una noticia ya vista descubre una fecha fuera de la ventana, se retira
+  también la copia vieja.
+- Una URL con fecha de hace más de un año cuenta como antigua, en vez de
+  estimarse como de hoy.
+- El scraping no toma la fecha de otra tarjeta: deja de subir por el árbol
+  cuando el contenedor tiene más de un titular con enlace o de un
+  `<article>`. De paso, es más rápido en portadas grandes.
+- Si la prensa o el archivo traen la publicación de una noticia que ya
+  estaba sin ella, se adopta.
+
 ## 2026-10-21 — Prensa externa siempre encendida
 
 ### Cambiado

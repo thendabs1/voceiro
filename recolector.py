@@ -629,7 +629,9 @@ _FECHA_URL_RES = (
 
 
 def _dia_de_url(href):
-    """Día de publicación que viene en la URL ('YYYY-MM-DD') o ''."""
+    """Día de publicación que viene en la URL ('YYYY-MM-DD') o ''. Uno
+    antiguo también vale: acota la estimada a ese día y la noticia cae
+    fuera de la ventana, en vez de estimarse como de hoy."""
     try:
         path = urlparse(href).path
     except Exception:
@@ -643,7 +645,7 @@ def _dia_de_url(href):
             dia = datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).date()
         except ValueError:
             continue
-        if hoy - timedelta(days=366) <= dia <= hoy:
+        if dia <= hoy:
             return dia.isoformat()
     return ''
 
@@ -694,12 +696,36 @@ def _clave_url(url):
     return host + p.path.rstrip('/')
 
 
+_TITULARES = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
+
+
+def _agrupa_varias(node):
+    """¿El nodo contiene más de una tarjeta (dos titulares con enlace o dos
+    <article>)? Entonces su fecha puede ser de otra noticia. Un antetítulo
+    sin enlace no cuenta como otra tarjeta."""
+    # Un solo recorrido, que corta en la segunda: en un listado grande se
+    # sabe en las dos primeras tarjetas.
+    articulos = con_enlace = 0
+    for d in getattr(node, 'descendants', ()):
+        nombre = getattr(d, 'name', None)
+        if nombre == 'article':
+            articulos += 1
+            if articulos > 1:
+                return True
+        elif nombre in _TITULARES and d.find('a', href=True):
+            con_enlace += 1
+            if con_enlace > 1:
+                return True
+    return False
+
+
 def _extract_item_date(tag):
-    """Intenta extraer la fecha real de un titular concreto del listado."""
+    """Intenta extraer la fecha real de un titular concreto del listado.
+    Sube por sus contenedores, pero no hasta uno que agrupe varias tarjetas."""
     # <time> cercano
     node = tag
     for _ in range(3):
-        if node is None:
+        if node is None or _agrupa_varias(node):
             break
         try:
             t_el = node.find('time')
@@ -715,7 +741,8 @@ def _extract_item_date(tag):
     # data-*
     node = tag
     for _ in range(3):
-        if node is None or not hasattr(node, 'attrs') or not node.attrs:
+        if node is None or not hasattr(node, 'attrs') or not node.attrs \
+                or _agrupa_varias(node):
             break
         for attr in ('data-timestamp', 'data-time', 'data-date',
                      'data-datetime', 'data-published', 'data-pubdate'):
@@ -741,7 +768,7 @@ def _extract_item_date(tag):
     # texto relativo
     node = tag
     for _ in range(3):
-        if node is None:
+        if node is None or _agrupa_varias(node):
             break
         try:
             txt = node.get_text(' ', strip=True).lower()
@@ -759,6 +786,8 @@ def _extract_item_date(tag):
         if node is None:
             break
         if getattr(node, 'name', None) == 'article':
+            if _agrupa_varias(node):
+                break
             t_el = node.find('time')
             if t_el:
                 raw = t_el.get('datetime') or t_el.get_text(' ', strip=True)
@@ -1434,12 +1463,11 @@ def cargar_historico_payload():
                     m_info = medios_tabla.get(dom, {}) or {}
                 
                     # Fecha: formato viejo (ISO completo) o nuevo (HH:MM)
-                    p_raw = n.get('p', '')
-                    e_raw = n.get('e', '')
-                    c_raw = n.get('c', '') or generado_iso_del_fichero
-                
-                    p_iso = _reconstruir_fecha(p_raw, dia)
-                    e_iso = _reconstruir_fecha(e_raw, dia)
+                    # Sin `c` (ficheros de antes): el generado del fichero.
+                    p_iso = _reconstruir_fecha(n.get('p', ''), dia)
+                    e_iso = _reconstruir_fecha(n.get('e', ''), dia)
+                    c_raw = (_reconstruir_fecha(n.get('c', ''), dia)
+                             or generado_iso_del_fichero)
                 
                     # URL: formato viejo (completa) o nuevo (path)
                     u_raw = n.get('u', '')
@@ -1485,6 +1513,15 @@ def cargar_historico_payload():
                         else:
                             enlace_alt = u_alt
 
+                        # Con `c` trae sus propias fechas; sin él es del
+                        # formato anterior y hereda las del representante.
+                        if 'c' in alt_item:
+                            p_alt = _reconstruir_fecha(alt_item.get('p', ''), dia)
+                            e_alt = _reconstruir_fecha(alt_item.get('e', ''), dia)
+                            c_alt = _reconstruir_fecha(alt_item['c'], dia)
+                        else:
+                            p_alt, e_alt, c_alt = p_iso, e_iso, c_raw
+
                         noticias.append({
                             'medio':          m_alt.get('n', ''),
                             'dominio':        dom_alt,
@@ -1494,10 +1531,10 @@ def cargar_historico_payload():
                             'tags':           m_alt.get('tags', []) or [],
                             'titular':        n.get('t', ''),
                             'enlace':         enlace_alt,
-                            'fecha_pub':      p_iso,
-                            'fecha_estimada': e_iso,
-                            'fuente':         n.get('f', ''),
-                            'fecha':          c_raw,
+                            'fecha_pub':      p_alt,
+                            'fecha_estimada': e_alt,
+                            'fuente':         alt_item.get('f') or n.get('f', ''),
+                            'fecha':          c_alt,
                             '_host':          m_alt.get('h', ''),
                         })
         except Exception as e:
@@ -1530,11 +1567,26 @@ def _dedup_resumen():
 # ─────────────────────────────────────────────────────────────
 # DEDUP EDITORIAL · mismo titular en varios medios del grupo
 # ─────────────────────────────────────────────────────────────
+def _alternativa(o, rep):
+    alt = {'d': o.get('dominio', ''),
+           'u': _url_corta(o.get('enlace', ''), o.get('dominio', ''))}
+    for corto, largo in (('p', 'fecha_pub'), ('e', 'fecha_estimada'), ('c', 'fecha')):
+        if o.get(largo):
+            alt[corto] = o[largo]
+    if o.get('fuente') and o.get('fuente') != rep.get('fuente'):
+        alt['f'] = o['fuente']
+    return alt
+
+
 def deduplicar_editorial(noticias):
     """
     Agrupa noticias por titular normalizado. De cada grupo deja un
     representante (el de mejor fecha) y guarda los demás como campo
-    'alt' compacto: [{'d': dominio, 'u': url}, ...]
+    'alt' compacto: [{'d': dominio, 'u': url, 'p'/'e'/'c': ISO, 'f'}, ...]
+    con sus propias fechas, y la fuente si no es la del representante.
+
+    El representante es una copia: la misma noticia pasa por varios slices
+    (all, grupo, dominio, portada) y un 'alt' de uno no debe colarse en otro.
 
     Reduce ~25% el JSON y elimina el trabajo de dedup en el frontend.
     """
@@ -1575,14 +1627,8 @@ def deduplicar_editorial(noticias):
             continue
 
         items.sort(key=score, reverse=True)
-        rep = items[0]
         otros = items[1:]
-
-        rep['alt'] = [
-            {'d': o.get('dominio', ''),
-             'u': _url_corta(o.get('enlace', ''), o.get('dominio', ''))}
-            for o in otros
-        ]
+        rep = {**items[0], 'alt': [_alternativa(o, items[0]) for o in otros]}
         salida.append(rep)
         grupos_colapsados += 1
         items_ocultos += len(otros)
@@ -1634,8 +1680,11 @@ def fusionar_historico(nuevas, viejas, dias):
         n.pop('_pos', None)
         n.pop('_dia_url', None)
 
+        # Fuera de la ventana con la fecha de ahora: también se va la copia
+        # vieja, que con su fecha de antes seguiría pareciendo reciente.
         f = _fecha_agrupacion_dt(n)
         if f is None or f < corte:
+            idx.pop(key, None)
             continue
 
         idx[key] = n
@@ -1705,37 +1754,39 @@ def _dia_iso(iso_str, fallback):
     return dt.strftime('%Y-%m-%d')
 
 
+def _fecha_corta(iso, dia):
+    """Portada (dia None): ISO completo. Diario: HH:MM si es de ese día,
+    ISO completo si no."""
+    if not iso or dia is None or iso[:10] != dia:
+        return iso or ''
+    return _hhmm(iso)
+
+
 def _noticia_a_formato_corto(n, dia=None):
+    """`c` es la primera recogida: no cambia entre runs (fusionar_historico
+    la conserva) y es la hora de las noticias sin p ni e. Las alternativas
+    llevan sus propias fechas: al releerlas no heredan las del representante."""
     out = {
         'd': n.get('dominio', ''),
         't': n.get('titular', ''),
         'u': _url_corta(n.get('enlace', ''), n.get('dominio', '')),
         'f': n.get('fuente', ''),
     }
-    p_iso = n.get('fecha_pub', '')
+    p = _fecha_corta(n.get('fecha_pub', ''), dia)
     e_iso = n.get('fecha_estimada', '')
-
-    if dia is None:
-        # Portada: siempre ISO completo
-        p = p_iso
-        e = e_iso
-    else:
-        # Diario: HH:MM si es del mismo día, ISO completo si no
-        p = ''
-        if p_iso:
-            if p_iso[:10] != dia:
-                p = p_iso
-            else:
-                p = _hhmm(p_iso)
-        e = _hhmm(e_iso) if e_iso else ''
+    e = e_iso if dia is None else (_hhmm(e_iso) if e_iso else '')
+    c = _fecha_corta(n.get('fecha', ''), dia)
 
     if p:
         out['p'] = p
     if e:
         out['e'] = e
+    if c:
+        out['c'] = c
     alt = n.get('alt')
     if alt:
-        out['a'] = alt
+        out['a'] = [{k: (_fecha_corta(v, dia) if k in ('p', 'e', 'c') else v)
+                     for k, v in o.items()} for o in alt]
     return out
 
 
