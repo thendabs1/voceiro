@@ -626,6 +626,12 @@
   .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto auto; gap:6px; }
   .filtros-wrap .preset-wrap{ max-width:none; }
   #btn-buscar{ display:inline-flex; align-items:center; gap:6px; }
+  /* Solo icono (y el número en Filtros): el texto queda para lectores de pantalla. */
+  #btn-buscar, #btn-filtros{ min-width:44px; justify-content:center; }
+  #btn-buscar > span, #filtros-label{
+    position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap;
+  }
+  #btn-filtros .vs-caret{ display:none; }
   .filtros-row .filtro-buscar-wrap{ display:none; }
   .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; grid-row:2; grid-column:1 / -1; }
   .filtros-panel{ margin:auto 0 0; width:100%; max-width:none; max-height:85dvh; border-radius:16px 16px 0 0; padding:16px 16px max(16px, env(safe-area-inset-bottom)); }
@@ -10265,9 +10271,11 @@ function abrirPase(){
   const filtrosPase = $('#filtros-panel');
   if (filtrosPase.matches(':modal')) filtrosPase.close();
   cerrarMenuMas();
+  // Primera tarjeta que se ve: con la mitad, al menos, por debajo de la barra fija.
+  const tapa = $('.filtros-wrap').getBoundingClientRect().bottom;
   const visible = [...document.querySelectorAll('#resultados .noticia')].find(el => {
     const r = el.getBoundingClientRect();
-    return r.bottom > 0 && r.top < window.innerHeight;
+    return (r.top + r.bottom) / 2 > tapa && r.top < window.innerHeight;
   });
   const desde = visible ? Number(visible.dataset.idx) : 0;
   const root = document.createElement('dialog');
