@@ -6,8 +6,8 @@
 // La zona de AEMET lleva comunidad, provincia (o isla) y zona: 71 36 01 es
 // Galicia, Pontevedra, Rías Baixas; las costeras acaban en C.
 
-import { normalize } from '../parser.js?v=4617b0d5d3';
-import { PROVINCIAS } from './lugares.js?v=4617b0d5d3';
+import { normalize } from '../parser.js?v=180205a27c';
+import { PROVINCIAS } from './lugares.js?v=180205a27c';
 
 export const COMUNIDADES = {
   61: 'Andalucía', 62: 'Aragón', 63: 'Asturias', 64: 'Illes Balears', 65: 'Canarias',
@@ -49,7 +49,9 @@ export function filtrarAvisos(avisos, texto, nombres = {}) {
 // Una línea por comunidad, con todos sus niveles juntos («[GALICIA] Naranja
 // Lluvias · Amarillo Vientos · 3 zonas»): primero lo más grave y lo que ya
 // ha empezado. Dentro, los avisos por nivel, por lo que ya empezó, por hora,
-// fenómeno y zona. Las horas de la línea son las del nivel más alto.
+// fenómeno y zona. Las horas de la línea son las del nivel más alto;
+// varios: si entre ellas hay huecos (6-12 y 18-23), que no se lean como
+// un periodo seguido.
 export function agruparAvisos(avisos, ahora = Date.now()) {
   const por = new Map();
   for (const a of avisos) {
@@ -67,6 +69,11 @@ export function agruparAvisos(avisos, ahora = Date.now()) {
       const iso = ms => new Date(ms).toISOString();
       const nivel = lista[0].nivel;
       const alto = lista.filter(a => a.nivel === nivel);
+      let hasta = -Infinity, varios = false;
+      for (const a of [...alto].sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio))) {
+        if (hasta > -Infinity && Date.parse(a.inicio) > hasta) varios = true;
+        hasta = Math.max(hasta, Date.parse(a.fin));
+      }
       const niveles = [...new Set(lista.map(a => a.nivel))]
         .map(n => ({ nivel: n, fens: [...new Set(lista.filter(a => a.nivel === n).map(a => a.fen))] }));
       return {
@@ -75,6 +82,7 @@ export function agruparAvisos(avisos, ahora = Date.now()) {
         zonas: new Set(lista.map(a => a.zona)).size,
         inicio: iso(Math.min(...alto.map(a => Date.parse(a.inicio)))),
         fin: iso(Math.max(...alto.map(a => Date.parse(a.fin)))),
+        varios,
         avisos: lista,
       };
     })
