@@ -18,7 +18,8 @@ Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
   medio (el día entero solo en los de antes del troceado por medio, que
   no tienen otros). La limpieza conserva esos ficheros por fecha y borra
   los de más de un año.
-- `migrar_historico.py` lee los días del inventario.
+- `migrar_historico.py` queda retirado (solo una nota): leía el formato
+  anterior. Si hace falta cargar R2 en Turso, se desarrolla de nuevo.
 
 ## 2026-10-21 — Datos: menos descarga y vuelta a CF solo si responde
 
