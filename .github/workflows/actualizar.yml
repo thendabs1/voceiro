@@ -115,6 +115,11 @@ jobs:
             echo "Histórico guardado en el repo"
           fi
 
+      # La web lee los datos de R2 (workers de datos): en Pages solo
+      # sumaban ~50 MB al artefacto de cada run.
+      - name: Quitar los datos del artefacto de Pages
+        run: rm -rf public/datos
+
       - name: Configurar Pages
         uses: actions/configure-pages@v5
 
