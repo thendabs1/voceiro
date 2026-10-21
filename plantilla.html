@@ -7627,6 +7627,7 @@ const TIEMPO_ACTIVO_KEY  = 'voceiro-tiempo-activo';
 const TIEMPO_LUGARES_KEY = 'voceiro-tiempo-lugares-v1';
 const TIEMPO_SITIOS_KEY  = 'voceiro-tiempo-sitios-v1';
 const TIEMPO_HORAS_KEY   = 'voceiro-tiempo-horas';
+const TIEMPO_AVISOS_KEY  = 'voceiro-tiempo-avisos';
 const TIEMPO_MAX_SITIOS  = 5;
 const TIEMPO_URL = BACKENDS.deno.buscar;
 const TIEMPO_CIELO = {
@@ -7929,9 +7930,11 @@ function avisosDeZona(zona){
 }
 function htmlAvisosLugar(p){
   if (!p.zonaAviso || !AVISOS.datos) return '';
-  // Plegados como «Por horas»; abiertos solo si hay avisos en el sitio.
+  // Plegados como «Por horas» y como se dejaron; el número se ve sin abrir.
   const lista = avisosDeZona(p.zonaAviso);
-  return `<details class="tiempo-avisos"${lista.length ? ' open' : ''}><summary>${escapeHtml(t('avisosBotonTxt'))}</summary>`
+  let abiertos = false;
+  try { abiertos = localStorage.getItem(TIEMPO_AVISOS_KEY) === 'true'; } catch(e){}
+  return `<details class="tiempo-avisos"${abiertos ? ' open' : ''}><summary>${escapeHtml(t('avisosBotonTxt'))}${lista.length ? ` (${lista.length})` : ''}</summary>`
     + (lista.length ? `<ul class="aviso-zonas">${lista.map(a => htmlAviso(a, { nivel: '' })).join('')}</ul>` : msgTiempo('avisosNinguno'))
     + '</details>';
 }
@@ -8076,11 +8079,13 @@ function wireTiempo(){
     else if (b.classList.contains('tiempo-otro')) enfocarBuscador();
     else pulsarPestanaTiempo(b);
   });
-  // «Por horas» se queda abierto o cerrado para la próxima vez (toggle no
-  // burbujea: se escucha en la captura).
+  // «Por horas» y los avisos se quedan abiertos o cerrados para la próxima
+  // vez (toggle no burbujea: se escucha en la captura).
   el.addEventListener('toggle', e => {
-    if (!e.target.classList?.contains('tiempo-horas')) return;
-    try { localStorage.setItem(TIEMPO_HORAS_KEY, String(e.target.open)); } catch(err){}
+    const clave = e.target.classList?.contains('tiempo-horas') ? TIEMPO_HORAS_KEY
+      : e.target.classList?.contains('tiempo-avisos') ? TIEMPO_AVISOS_KEY : null;
+    if (!clave) return;
+    try { localStorage.setItem(clave, String(e.target.open)); } catch(err){}
   }, true);
   // Una pestaña abierta desde hace rato: al volver, si la previsión tiene
   // más de una hora (lo que la guarda el worker) o es de otro día, se pide
