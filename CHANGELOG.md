@@ -11,6 +11,24 @@ Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
   resto se consulta en R2 (por medio) y en Google News. Lo ya guardado no
   se toca, y el estado de los medios y sus runs sigue entrando para todos.
 
+## 2026-10-21 — Datos: manifest de tamaño fijo y archivo de un año
+
+### Cambiado
+- El manifest que lee la web lista solo los 30 días que puede mostrar y
+  deja de crecer con el archivo: de ~730 KB (~170 KB comprimido) a
+  ~130 KB (~25 KB). Por día lleva cuántas noticias hay y los ficheros de
+  grupo; los de medio se deducen (`d-<dominio>-<fecha>.json`) y la
+  estimación de descarga usa la media diaria de cada grupo y medio.
+- La memoria del recolector pasa a `inventario.json` en R2: ficheros,
+  hashes y tamaños de la ventana y una línea por día del archivo. La web
+  no lo baja.
+- R2 guarda 365 días. Pasados 30, de cada día quedan solo los ficheros por
+  medio (el día entero solo en los de antes del troceado por medio, que
+  no tienen otros). La limpieza conserva esos ficheros por fecha y borra
+  los de más de un año.
+- `migrar_historico.py` queda retirado (solo una nota): leía el formato
+  anterior. Si hace falta cargar R2 en Turso, se desarrolla de nuevo.
+
 ## 2026-10-21 — Datos: menos descarga y vuelta a CF solo si responde
 
 ### Corregido
