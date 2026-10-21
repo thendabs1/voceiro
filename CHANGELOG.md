@@ -3,6 +3,14 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Turso: solo medios nacionales
+
+### Cambiado
+- El recolector envía a Turso solo las noticias de los medios de ámbito
+  nacional y de los que se añadan a mano en `TURSO_DOMINIOS_EXTRA`. El
+  resto se consulta en R2 (por medio) y en Google News. Lo ya guardado no
+  se toca, y el estado de los medios y sus runs sigue entrando para todos.
+
 ## 2026-10-21 — Datos: manifest de tamaño fijo y archivo de un año
 
 ### Cambiado
