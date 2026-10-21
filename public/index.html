@@ -854,6 +854,38 @@
   color: var(--on-solid);
 }
 [data-theme="contrast"] .preset-pestanas button[aria-selected="true"]{ color: #000; }
+/* ═══ Tarjeta de eltiempo: va encima de la lista, no es una noticia ═══ */
+.tiempo-tarjeta{
+  margin: 6px 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--quote-bg);
+  font-size: .8em;
+}
+.tiempo-tarjeta[hidden]{ display: none; }
+.tiempo-tarjeta .sr{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tiempo-cab{ display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.tiempo-cab strong{ font-size: 1.15em; }
+.tiempo-cab span, .tiempo-msg, .tiempo-pie, .tiempo-min, .tiempo-sol{ color: var(--muted); }
+.tiempo-msg{ margin: 0; }
+.tiempo-ahora{ display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; flex-wrap: wrap; }
+.tiempo-ahora > .ico{ width: 2em; height: 2em; }
+.tiempo-temp{ font-size: 1.9em; font-weight: 700; line-height: 1; }
+.tiempo-sol{ margin-left: auto; }
+.tiempo-dias{ display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; overflow-x: auto; scrollbar-width: none; }
+.tiempo-dias::-webkit-scrollbar{ display: none; }
+.tiempo-dias li{ flex: 1 0 64px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 6px; background: var(--bg); }
+.tiempo-dias .ico{ width: 1.4em; height: 1.4em; }
+.tiempo-dia{ font-weight: 600; text-transform: capitalize; }
+.tiempo-lluvia .ico{ width: 1em; height: 1em; vertical-align: -2px; }
+.tiempo-pie{ margin-top: 8px; font-size: .9em; }
+.tiempo-pie a{ color: inherit; }
+.tiempo-pie button, .tiempo-elegir button{ font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.tiempo-pie button{ padding: 1px 8px; margin-left: 6px; }
+.tiempo-elegir{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tiempo-elegir button{ padding: 5px 10px; text-align: left; }
+.tiempo-elegir button span{ color: var(--muted); }
 /* ═══ Chips de modo y de tema: «Todo · N» / «Política · M» / «incendio · K»…
    Una fila por nivel; cada fila hace scroll horizontal en móvil. ═══ */
 .temas-chips{
@@ -1923,6 +1955,15 @@
   <symbol id="i-circle-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></symbol>
   <symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></symbol>
   <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></symbol>
+  <symbol id="i-cloud-sun" viewBox="0 0 24 24"><path d="M12 2v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="M20 12h2" /><path d="m19.07 4.93-1.41 1.41" /><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128" /><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" /></symbol>
+  <symbol id="i-cloud-moon" viewBox="0 0 24 24"><path d="M13 16a3 3 0 1 1 0 6H7a5 5 0 1 1 4.9-6Z" /><path d="M10.1 9A6 6 0 0 1 16 4a4 4 0 0 0 6 6 6 6 0 0 1-3 5.197" /></symbol>
+  <symbol id="i-cloud-rain" viewBox="0 0 24 24"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M16 14v6" /><path d="M8 14v6" /><path d="M12 16v6" /></symbol>
+  <symbol id="i-cloud-snow" viewBox="0 0 24 24"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M8 15h.01" /><path d="M8 19h.01" /><path d="M12 17h.01" /><path d="M12 21h.01" /><path d="M16 15h.01" /><path d="M16 19h.01" /></symbol>
+  <symbol id="i-cloud-lightning" viewBox="0 0 24 24"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973" /><path d="m13 12-3 5h4l-3 5" /></symbol>
+  <symbol id="i-cloud-fog" viewBox="0 0 24 24"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M16 17H7" /><path d="M17 21H9" /></symbol>
+  <symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></symbol>
   <symbol id="i-qr-code" viewBox="0 0 24 24"><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path d="M21 12v.01" /><path d="M12 21v-1" /></symbol>
   <symbol id="i-a-large-small" viewBox="0 0 24 24"><path d="M21 14h-5" /><path d="M16 16v-3.5a2.5 2.5 0 0 1 5 0V16" /><path d="M4.5 13h6" /><path d="m3 16 4.5-9 4.5 9" /></symbol>
@@ -2261,6 +2302,15 @@
             </div>
           </div>
 
+          <h3 id="aj-tiempo-tit"></h3>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="cfg-tiempo">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="cfg-tiempo-lbl"></span>
+              <span class="cfg-toggle-hint"  id="cfg-tiempo-hint"></span>
+            </span>
+          </label>
+
           <h3 id="cfg-backup"></h3>
           <div class="backup-box">
             <span class="msg" id="cfg-backup-msg"></span>
@@ -2444,6 +2494,7 @@
 </div>
 <div id="temas-chips" class="temas-chips" role="toolbar" hidden></div>
 
+<section id="tiempo-tarjeta" class="tiempo-tarjeta" hidden aria-live="polite"></section>
 <main id="resultados"></main>
 <div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
   <button id="btn-cargar-mas" type="button" style="padding:10px 20px; font-size:.85em;"></button>
@@ -2467,22 +2518,24 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=76cf144eaf';
+} from './parser.js?v=379c57eab5';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=76cf144eaf';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=76cf144eaf';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=76cf144eaf';
-import { comparador } from './busqueda/orden.js?v=76cf144eaf';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=379c57eab5';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=379c57eab5';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=379c57eab5';
+import { comparador } from './busqueda/orden.js?v=379c57eab5';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=76cf144eaf';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=76cf144eaf';
+} from './sync/fusion.js?v=379c57eab5';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=379c57eab5';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=76cf144eaf';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=76cf144eaf';
+import { crearCliente } from './sync/cliente.js?v=379c57eab5';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=379c57eab5';
+// El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=379c57eab5';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -4332,6 +4385,20 @@ for (const [lang, textos] of Object.entries({
   eu: ['Tituluen geruza', 'Pausatu', 'Jarraitu', 'Aurrekoa', 'Hurrengoa', 'Itxi', 'segundo tituluko', 'Amaiera', 'Martxan', 'Pausatuta'],
 })) {
   ['paseCapa', 'pasePausa', 'paseContinuar', 'paseAnterior', 'paseSiguiente', 'paseCerrar', 'paseRitmo', 'paseFin', 'paseMarcha', 'paseParado']
+    .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
+}
+// Textos de eltiempo:.
+for (const [lang, textos] of Object.entries({
+  es: ['Despejado', 'Poco nuboso', 'Nuboso', 'Cubierto', 'Lluvia', 'Nieve', 'Tormenta', 'Niebla', 'Hoy', 'Fuente', 'elaborado a las {h}', 'AEMET no responde: datos de Open-Meteo', 'Consultando el tiempo…', 'No se pudo consultar el tiempo.', 'No encuentro «{X}».', '¿Qué «{X}»?', 'El tiempo está desactivado en Ajustes › Avanzado.', 'Probabilidad de lluvia', 'tiempo', 'Tiempo', 'Consultar el tiempo (eltiempo:)', 'Pide la previsión a AEMET y Open-Meteo a través del servidor de Voceiro. Desactivado, no se conecta con ningún servicio del tiempo.', 'El tiempo en {X}', 'Sale el sol', 'Se pone el sol', 'Cambiar de lugar'],
+  gl: ['Despexado', 'Pouco nubrado', 'Nubrado', 'Cuberto', 'Choiva', 'Neve', 'Treboada', 'Néboa', 'Hoxe', 'Fonte', 'elaborado ás {h}', 'AEMET non responde: datos de Open-Meteo', 'Consultando o tempo…', 'Non se puido consultar o tempo.', 'Non atopo «{X}».', 'Que «{X}»?', 'O tempo está desactivado en Axustes › Avanzado.', 'Probabilidade de choiva', 'tempo', 'Tempo', 'Consultar o tempo (eltiempo:)', 'Pide a previsión a AEMET e Open-Meteo a través do servidor de Voceiro. Desactivado, non se conecta con ningún servizo do tempo.', 'O tempo en {X}', 'Sae o sol', 'Ponse o sol', 'Cambiar de lugar'],
+  ca: ['Serè', 'Poc ennuvolat', 'Ennuvolat', 'Cobert', 'Pluja', 'Neu', 'Tempesta', 'Boira', 'Avui', 'Font', 'elaborat a les {h}', 'AEMET no respon: dades d’Open-Meteo', 'Consultant el temps…', 'No s’ha pogut consultar el temps.', 'No trobo «{X}».', 'Quin «{X}»?', 'El temps està desactivat a Configuració › Avançat.', 'Probabilitat de pluja', 'temps', 'Temps', 'Consultar el temps (eltiempo:)', 'Demana la previsió a AEMET i Open-Meteo a través del servidor de Voceiro. Desactivat, no es connecta amb cap servei del temps.', 'El temps a {X}', 'Surt el sol', 'Es pon el sol', 'Canviar de lloc'],
+  en: ['Clear', 'Partly cloudy', 'Cloudy', 'Overcast', 'Rain', 'Snow', 'Thunderstorm', 'Fog', 'Today', 'Source', 'issued at {h}', 'AEMET is not responding: Open-Meteo data', 'Checking the weather…', 'Could not get the weather.', 'Can’t find “{X}”.', 'Which “{X}”?', 'Weather is turned off in Settings › Advanced.', 'Chance of rain', 'weather', 'Weather', 'Check the weather (eltiempo:)', 'Gets the forecast from AEMET and Open-Meteo through the Voceiro server. When off, no weather service is contacted.', 'Weather in {X}', 'Sunrise', 'Sunset', 'Change place'],
+  eu: ['Oskarbi', 'Hodei gutxi', 'Hodeitsu', 'Estalia', 'Euria', 'Elurra', 'Ekaitza', 'Lainoa', 'Gaur', 'Iturria', '{h}etan egina', 'AEMETek ez du erantzuten: Open-Meteoren datuak', 'Eguraldia kontsultatzen…', 'Ezin izan da eguraldia kontsultatu.', 'Ez dut «{X}» aurkitzen.', 'Zein «{X}»?', 'Eguraldia desaktibatuta dago Ezarpenak › Aurreratua atalean.', 'Euria egiteko probabilitatea', 'eguraldia', 'Eguraldia', 'Eguraldia kontsultatu (eltiempo:)', 'Iragarpena AEMETi eta Open-Meteori eskatzen die Voceiroren zerbitzariaren bidez. Desaktibatuta, ez da eguraldi-zerbitzurik kontsultatzen.', 'Eguraldia: {X}', 'Eguzkia irteten da', 'Eguzkia sartzen da', 'Lekua aldatu'],
+})) {
+  ['tiempoDespejado', 'tiempoPoco', 'tiempoNuboso', 'tiempoCubierto', 'tiempoLluvia', 'tiempoNieve', 'tiempoTormenta', 'tiempoNiebla',
+   'tiempoHoy', 'tiempoFuente', 'tiempoElaborado', 'tiempoSinAemet', 'tiempoCargando', 'tiempoError', 'tiempoNoEncontrado', 'tiempoElegir',
+   'tiempoDesactivado', 'tiempoProbLluvia', 'tiempoSugTipo', 'ajTiempoTit', 'cfgTiempo', 'cfgTiempoHint', 'tiempoRegion', 'tiempoOrto',
+   'tiempoOcaso', 'tiempoCambiar']
     .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
 }
 function t(key, vars){
@@ -7197,6 +7264,10 @@ function scoreMatch(haystack, needle){
 }
 
 function sugerenciasBuscar(raw){
+  // eltiempo: sugiere municipios, no medios.
+  const fragTiempo = fragmentoTiempo(raw);
+  if (fragTiempo !== null) return TIEMPO_ACTIVO ? sugerenciasTiempo(fragTiempo) : [];
+
   const frag = fragmentoActual(raw);
   const low = normalize(frag.text);
   if (frag.prefix) return [];
@@ -7300,6 +7371,17 @@ function aplicarSugerencia(idx){
   if (!s) return;
   const input = document.getElementById('buscar');
 
+  if (s.kind === 'municipio'){
+    // eltiempo:"A Coruña" con el municipio elegido (hay nombres repetidos).
+    recordarLugar(s.value, { ine: s.ine });
+    const token = /\s/.test(s.value) ? `"${s.value}"` : s.value;
+    input.value = input.value.replace(RX_TIEMPO_FINAL, (_, antes) => `${antes}eltiempo:${token}`) + ' ';
+    cerrarSugerencias();
+    input.focus();
+    aplicarFiltros();
+    return;
+  }
+
   if (s.kind === 'titulo'){
     cerrarSugerencias();
     input.blur();
@@ -7351,6 +7433,10 @@ function aplicarSugerencia(idx){
   input.focus();
   aplicarFiltros();
 }
+// Las sugerencias normales empiezan por «Buscar en el titular» y se abren
+// con 2 o más; las de municipios, con una basta.
+const haySugerencias = items => items.length > 1 || items[0]?.kind === 'municipio';
+
 function wireAutocomplete(){
   const input = document.getElementById('buscar');
   const cont  = document.getElementById('buscar-sugerencias');
@@ -7358,7 +7444,7 @@ function wireAutocomplete(){
 
   input.addEventListener('input', () => {
     const items = sugerenciasBuscar(input.value);
-    if (items.length > 1) abrirSugerencias(items);
+    if (haySugerencias(items)) abrirSugerencias(items);
     else cerrarSugerencias();
   });
 
@@ -7366,7 +7452,7 @@ function wireAutocomplete(){
     if (!SUG_STATE.open){
       if (e.key === 'ArrowDown'){
         const items = sugerenciasBuscar(input.value);
-        if (items.length > 1){ abrirSugerencias(items); e.preventDefault(); }
+        if (haySugerencias(items)){ abrirSugerencias(items); e.preventDefault(); }
       }
       return;
     }
@@ -7418,11 +7504,236 @@ function wireAutocomplete(){
   input.addEventListener('focus', () => {
     if (input.value.trim()){
       const items = sugerenciasBuscar(input.value);
-      if (items.length > 1) abrirSugerencias(items);
+      if (haySugerencias(items)) abrirSugerencias(items);
     }
   });
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   EL TIEMPO (eltiempo:Lugar)
+   Tarjeta encima de la lista, fuera del flujo de noticias. Los municipios
+   se buscan aquí (shared/tiempo/; la lista se carga al escribir eltiempo:)
+   y la previsión la da el worker de Deno (/tiempo), que habla con AEMET y
+   Open-Meteo: Cloudflare se bloquea en España.
+   ═══════════════════════════════════════════════════════════════ */
+const TIEMPO_ACTIVO_KEY  = 'voceiro-tiempo-activo';
+const TIEMPO_LUGARES_KEY = 'voceiro-tiempo-lugares-v1';
+const TIEMPO_URL = BACKENDS.deno.buscar;
+const TIEMPO_CIELO = {
+  despejado: ['sun', 'tiempoDespejado'],      poco:     ['cloud-sun', 'tiempoPoco'],
+  nuboso:    ['cloud', 'tiempoNuboso'],       cubierto: ['cloud', 'tiempoCubierto'],
+  lluvia:    ['cloud-rain', 'tiempoLluvia'],  nieve:    ['cloud-snow', 'tiempoNieve'],
+  tormenta:  ['cloud-lightning', 'tiempoTormenta'], niebla: ['cloud-fog', 'tiempoNiebla'],
+};
+const TIEMPO = { valor: null, timer: null, indice: null, carga: null, ultima: null };
+let TIEMPO_ACTIVO = cargarTiempoActivo();
+
+function cargarTiempoActivo(){
+  try { return localStorage.getItem(TIEMPO_ACTIVO_KEY) !== 'false'; } catch(e){ return true; }
+}
+
+// La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
+function municipiosTiempo(){
+  if (!TIEMPO.carga){
+    TIEMPO.carga = import('./tiempo/municipios.js?v=379c57eab5')
+      .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
+      .catch(e => { TIEMPO.carga = null; throw e; });
+  }
+  return TIEMPO.carga;
+}
+
+// El lugar que se eligió para cada nombre (en el autocompletado o al haber
+// varios): la próxima vez no se pregunta.
+function lugaresRecordados(){
+  try { return JSON.parse(localStorage.getItem(TIEMPO_LUGARES_KEY)) || {}; } catch(e){ return {}; }
+}
+function recordarLugar(nombre, lugar){
+  const r = lugaresRecordados();
+  if (lugar) r[normalize(nombre).trim()] = lugar;
+  else delete r[normalize(nombre).trim()];
+  try { localStorage.setItem(TIEMPO_LUGARES_KEY, JSON.stringify(r)); } catch(e){}
+}
+
+// El eltiempo: que se está escribiendo al final del buscador («eltiempo:"A Cor»).
+const RX_TIEMPO_FINAL = /(^|\s)eltiempo:(?:"[^"]*|[^\s"]*)$/i;
+function fragmentoTiempo(raw){
+  const m = raw.match(/(?:^|\s)eltiempo:(?:"([^"]*)|([^\s"]*))$/i);
+  return m ? (m[1] ?? m[2]) : null;
+}
+
+function sugerenciasTiempo(texto){
+  if (!TIEMPO.indice){
+    // Cuando llegue la lista, se sugiere si el usuario sigue en el buscador.
+    municipiosTiempo().then(() => {
+      const input = document.getElementById('buscar');
+      if (document.activeElement !== input) return;
+      const items = sugerenciasBuscar(input.value);
+      if (haySugerencias(items)) abrirSugerencias(items);
+    }).catch(() => {});
+    return [];
+  }
+  return sugerirMunicipios(TIEMPO.indice, texto).map(m => ({
+    kind: 'municipio', value: m.nombre, ine: m.ine, label: m.nombre,
+    meta: provinciaDe(m.ine), tipo: t('tiempoSugTipo'),
+  }));
+}
+
+function pintarTiempo(html, prevision = null){
+  const el = document.getElementById('tiempo-tarjeta');
+  if (!el) return;
+  TIEMPO.ultima = prevision;
+  el.innerHTML = html;
+  el.hidden = !html;
+}
+const msgTiempo = (clave, vars) => `<p class="tiempo-msg">${escapeHtml(t(clave, vars))}</p>`;
+
+function actualizarTiempo(valor){
+  if (valor === TIEMPO.valor) return;
+  TIEMPO.valor = valor;
+  clearTimeout(TIEMPO.timer);
+  if (!valor){ pintarTiempo(''); return; }
+  // Pausa: mientras se escribe «eltiempo:Vi…» no se pide nada.
+  TIEMPO.timer = setTimeout(() => resolverTiempo(valor), 500);
+}
+
+async function pedirTiempo(ruta){
+  const r = await fetch(TIEMPO_URL + ruta, { signal: AbortSignal.timeout(15000) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || String(r.status));
+  return j;
+}
+
+// Primero lo recordado; luego los municipios de España (sin red); si no,
+// el worker geocodifica (ciudades de fuera, nombres en castellano…).
+async function resolverTiempo(valor){
+  if (!TIEMPO_ACTIVO){ pintarTiempo(msgTiempo('tiempoDesactivado')); return; }
+  const vigente = () => TIEMPO.valor === valor;
+  const clave = normalize(valor).trim();
+  const recordado = lugaresRecordados()[clave];
+  if (recordado) return mostrarPrevision(recordado, valor);
+
+  let exactos = [];
+  try { exactos = municipiosExactos(await municipiosTiempo(), valor); } catch(e){}
+  if (!vigente()) return;
+  if (exactos.length === 1) return mostrarPrevision({ ine: exactos[0].ine }, valor);
+  if (exactos.length > 1){
+    return pintarEleccion(valor, exactos.map(m => ({ ine: m.ine, nombre: m.nombre, region: provinciaDe(m.ine), pais: '' })));
+  }
+  if (clave.length < 3){ pintarTiempo(''); return; }
+
+  pintarTiempo(msgTiempo('tiempoCargando'));
+  let lugares;
+  try {
+    lugares = (await pedirTiempo(`/tiempo/lugares?q=${encodeURIComponent(valor)}&lang=${(ACCES && ACCES.lang) || 'es'}`)).lugares || [];
+  } catch(e){
+    if (vigente()) pintarTiempo(msgTiempo('tiempoError'));
+    return;
+  }
+  if (!vigente()) return;
+  if (!lugares.length){ pintarTiempo(msgTiempo('tiempoNoEncontrado', { X: valor })); return; }
+  const iguales = lugares.filter(l => normalize(l.nombre).trim() === clave);
+  if (iguales.length === 1) return mostrarPrevision(iguales[0], valor);
+  pintarEleccion(valor, (iguales.length ? iguales : lugares).slice(0, 6));
+}
+
+function pintarEleccion(valor, lugares){
+  pintarTiempo(msgTiempo('tiempoElegir', { X: valor })
+    + `<div class="tiempo-elegir">${lugares.map((l, i) =>
+        `<button type="button" data-i="${i}">${escapeHtml(l.nombre)} <span>${escapeHtml([l.region, l.pais].filter(Boolean).join(' · '))}</span></button>`
+      ).join('')}</div>`);
+  document.querySelectorAll('#tiempo-tarjeta .tiempo-elegir button').forEach(b => {
+    b.addEventListener('click', () => {
+      const l = lugares[+b.dataset.i];
+      const lugar = l.ine ? { ine: l.ine }
+        : { lat: l.lat, lon: l.lon, cc: l.cc, nombre: l.nombre, region: l.region, pais: l.pais };
+      recordarLugar(valor, lugar);
+      mostrarPrevision(lugar, valor);
+    });
+  });
+}
+
+async function mostrarPrevision(lugar, valor){
+  const ruta = lugar.ine ? `/tiempo?ine=${encodeURIComponent(lugar.ine)}`
+    : '/tiempo?' + new URLSearchParams({
+        lat: lugar.lat, lon: lugar.lon, cc: lugar.cc || '',
+        nombre: lugar.nombre || '', region: lugar.region || '', pais: lugar.pais || '',
+      });
+  pintarTiempo(msgTiempo('tiempoCargando'));
+  try {
+    const p = await pedirTiempo(ruta);
+    if (TIEMPO.valor === valor) pintarTiempo(htmlPrevision(p), p);
+  } catch(e){
+    if (TIEMPO.valor === valor) pintarTiempo(msgTiempo('tiempoError'));
+  }
+}
+
+function htmlPrevision(p){
+  const lang = (ACCES && ACCES.lang) || 'es';
+  const grados = v => (v == null ? '–' : `${v}°`);
+  const cielo = (c, noche) => {
+    const x = TIEMPO_CIELO[c];
+    if (!x) return { ico: '', txt: '' };
+    let nombre = x[0];
+    if (noche && c === 'despejado') nombre = 'moon';
+    if (noche && c === 'poco') nombre = 'cloud-moon';
+    return { ico: ico(nombre), txt: t(x[1]) };
+  };
+  const diaSemana = new Intl.DateTimeFormat(lang, { weekday: 'short', timeZone: 'UTC' });
+  const region = p.lugar.region || (p.ine ? provinciaDe(p.ine) : '');
+
+  const a = p.ahora;
+  const ca = a ? cielo(a.cielo, a.noche) : null;
+  const sol = p.sol
+    ? `<span class="tiempo-sol"><span class="sr">${escapeHtml(t('tiempoOrto'))}</span><span aria-hidden="true">↑</span>${escapeHtml(p.sol.orto)}
+       <span class="sr">${escapeHtml(t('tiempoOcaso'))}</span><span aria-hidden="true">↓</span>${escapeHtml(p.sol.ocaso)}</span>`
+    : '';
+  const ahora = a
+    ? `<div class="tiempo-ahora">${ca.ico}<span class="tiempo-temp">${grados(a.temp)}</span><span>${escapeHtml(ca.txt)}</span>${sol}</div>`
+    : '';
+
+  const dias = p.dias.slice(0, 5).map((d, i) => {
+    const c = cielo(d.cielo);
+    return `<li>
+      <span class="tiempo-dia">${escapeHtml(i === 0 ? t('tiempoHoy') : diaSemana.format(new Date(d.fecha + 'T12:00:00Z')))}</span>
+      ${c.ico}<span class="sr">${escapeHtml(c.txt)}</span>
+      <span><b>${grados(d.max)}</b> <span class="tiempo-min">${grados(d.min)}</span></span>
+      ${d.lluvia == null ? '' : `<span class="tiempo-lluvia">${ico('droplet')}<span class="sr">${escapeHtml(t('tiempoProbLluvia'))}</span> ${d.lluvia}%</span>`}
+    </li>`;
+  }).join('');
+
+  const enlace = /^https:\/\//.test(p.enlace || '') ? p.enlace : '';
+  const fuente = p.fuente === 'aemet' ? 'AEMET' : 'Open-Meteo';
+  const pie = `${escapeHtml(t('tiempoFuente'))}: `
+    + (enlace ? `<a href="${escapeHtml(enlace)}" target="_blank" rel="noopener">${fuente}</a>` : fuente)
+    + (p.elaborado ? ' · ' + escapeHtml(t('tiempoElaborado', { h: p.elaborado.slice(11, 16) })) : '')
+    + (p.sinAemet ? ' · ' + escapeHtml(t('tiempoSinAemet')) : '')
+    + (lugaresRecordados()[normalize(TIEMPO.valor || '').trim()]
+        ? `<button type="button" class="tiempo-cambiar">${escapeHtml(t('tiempoCambiar'))}</button>` : '');
+
+  return `<div class="tiempo-cab"><strong>${escapeHtml(p.lugar.nombre)}</strong><span>${escapeHtml([region, p.lugar.pais].filter(Boolean).join(' · '))}</span></div>
+    ${ahora}
+    <ol class="tiempo-dias">${dias}</ol>
+    <div class="tiempo-pie">${pie}</div>`;
+}
+
+// Etiqueta, idioma y «Cambiar de lugar» de la tarjeta ya pintada.
+function wireTiempo(){
+  const el = document.getElementById('tiempo-tarjeta');
+  if (!el) return;
+  el.addEventListener('click', e => {
+    if (!e.target.closest('.tiempo-cambiar') || !TIEMPO.valor) return;
+    const valor = TIEMPO.valor;
+    recordarLugar(valor, null);
+    TIEMPO.valor = null;
+    actualizarTiempo(valor);
+  });
+}
+function repintarTiempo(){
+  const el = document.getElementById('tiempo-tarjeta');
+  if (el && TIEMPO.ultima) pintarTiempo(htmlPrevision(TIEMPO.ultima), TIEMPO.ultima);
+  if (el) el.setAttribute('aria-label', t('tiempoRegion', { X: TIEMPO.valor || '' }));
+}
 
 /* ── Super-grupos (prefijo antes de " · ") ── */
 function superGrupo(grupo){
@@ -9150,6 +9461,7 @@ function aplicarFiltros(){
   const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
+  actualizarTiempo(parsed.eltiempo);
 
 const capas = capasRequeridas(parsed, consulta);
 // El archivo (Turso) es para búsquedas concretas: solo con texto. Un medio,
@@ -10419,6 +10731,10 @@ function aplicarTextos(){
 
   // Avanzado
   $('#aj-prensa-tit').textContent = t('prensaPanelLabel');
+  $('#aj-tiempo-tit').textContent = t('ajTiempoTit');
+  $('#cfg-tiempo-lbl').textContent = t('cfgTiempo');
+  $('#cfg-tiempo-hint').textContent = t('cfgTiempoHint');
+  repintarTiempo();
   $('#cfg-backup').textContent = t('cfgBackup');
   $('#cfg-backup-msg').textContent = t('cfgBackupMsg');
   $('#btn-export-lbl').textContent = t('btnExport');
@@ -10769,6 +11085,18 @@ function wireStaticEvents(){
       guardarRecordarFiltros();
     });
   }
+  // ── Toggle "Consultar el tiempo" ──
+  const chkTiempo = $('#cfg-tiempo');
+  if (chkTiempo){
+    chkTiempo.checked = TIEMPO_ACTIVO;
+    chkTiempo.addEventListener('change', () => {
+      TIEMPO_ACTIVO = chkTiempo.checked;
+      try { localStorage.setItem(TIEMPO_ACTIVO_KEY, TIEMPO_ACTIVO ? 'true' : 'false'); } catch(e){}
+      TIEMPO.valor = null;   // la tarjeta se vuelve a resolver con el ajuste nuevo
+      aplicarFiltros();
+    });
+  }
+  wireTiempo();
   wirePortadas();
   // ── Chips de modo y de tema ──
   // Elegir un modo quita el chip de tema; pulsar el tema elegido lo quita.
