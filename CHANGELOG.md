@@ -3,6 +3,25 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Prensa externa siempre encendida
+
+### Cambiado
+- La prensa está encendida por defecto y se apaga desde Ajustes → Avanzado;
+  la preferencia se guarda en el dispositivo (quien la había apagado la
+  mantiene apagada). Fuera el botón «prensa» de la barra y la activación
+  automática con menos de cinco resultados.
+- Junto al contador se indica «Buscando en prensa…» mientras llega y «La
+  prensa no respondió» si falla, conservando lo demás; sin toast en cada
+  búsqueda. Con la prensa en camino, la lista vacía no dice «Sin
+  resultados». Un fallo no se reintenta solo con cada llegada del archivo:
+  sí con otra búsqueda o al volver a encenderla.
+- Lo que está en la caché de prensa se muestra sin esperar al tecleo.
+- Lo que llega con el pase de lectura abierto (prensa, archivo) ya no lo
+  cierra: se ve al cerrarlo.
+- La pestaña automática «Modo»/«Todo» se decide con los primeros resultados
+  y se mantiene durante la búsqueda: lo que llega después cambia las cifras,
+  no la pestaña.
+
 ## 2026-10-21 — Prensa externa: un solo filtro para todo
 
 ### Cambiado

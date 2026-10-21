@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
+import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
 
 // Ejecutar la función real del frontal sin hacer peticiones ni arrancar el DOM.
 for (const archivo of ['plantilla.html', 'public/index.html']) {
@@ -12,74 +12,104 @@ for (const archivo of ['plantilla.html', 'public/index.html']) {
   assert.ok(inicio >= 0 && fin > inicio);
   const codigo = html.slice(inicio, fin);
 
-  function crear({ activa = false, manualOff = false } = {}) {
-    const estado = { programadas: 0, canceladas: 0, abortadas: 0 };
+  function crear({ activa = true, cache = false } = {}) {
+    const estado = { timers: [], canceladas: 0, abortadas: 0, filtrados: 0, pintados: 0, respuesta: null };
     const ctx = {
-      PRENSA_TIMER: null, PRENSA_CLAVE: null, PRENSA_HECHA: null, PRENSA_ABORT: null,
-      PRENSA_ACTIVA: activa, PRENSA_USER_MANUAL_OFF: manualOff,
-      PRENSA_LANG: 'es', PRENSA_PAIS: 'ES',
-      PRENSA_MIN_RESULTADOS: 5, PRENSA_DEBOUNCE_MS: 300,
-      document: { getElementById: () => null },
-      setTimeout: () => ++estado.programadas, clearTimeout: () => { estado.canceladas++; },
+      PRENSA_TIMER: null, PRENSA_CLAVE: null, PRENSA_HECHA: null, PRENSA_FALLO: null, PRENSA_ABORT: null,
+      PRENSA_ACTIVA: activa, PRENSA_LANG: 'es', PRENSA_PAIS: 'ES', PRENSA_DEBOUNCE_MS: 1500,
+      ULT_FILTRADAS: [], ULT_CTX: null,
+      paraPrensa, prensaCacheKey: s => s, prensaCacheGet: () => (cache ? [] : null),
+      buscarEnPrensa: () => ({ then: fn => fn(estado.respuesta) }),
+      _itemDePrensa: it => it, _mergearItemsEnNoticias: items => items.length, hidratarNoticias() {},
+      aplicarFiltros: () => { estado.filtrados++; }, renderizar: () => { estado.pintados++; },
+      t: s => s, document: { getElementById: () => null },
+      setTimeout: (fn, ms) => estado.timers.push({ fn, ms }), clearTimeout: () => { estado.canceladas++; },
     };
-    runInNewContext(`${codigo}\nthis.programar = programarPrensa; this.clave = _clavePrensa;`, ctx);
-    const programar = (q = 'incendio', locales = 0) => ctx.programar(interpretarConsulta(q), locales);
+    runInNewContext(`${codigo}\nthis.programar = programarPrensa; this.clave = _clavePrensa; this.estadoPrensa = _estadoPrensa;`, ctx);
+    const programar = (q = 'incendio') => {
+      const c = interpretarConsulta(q);
+      ctx.ULT_CTX = { clavePrensa: ctx.clave(c) };   // lo que deja aplicarFiltros
+      ctx.programar(c);
+    };
     const enCurso = () => { ctx.PRENSA_ABORT = { abort: () => { estado.abortadas++; } }; };
-    return { ctx, estado, programar, enCurso };
+    const responder = res => { estado.respuesta = res; estado.timers.at(-1).fn(); };
+    return { ctx, estado, programar, enCurso, responder };
   }
 
-  function programar({ activa = false, manualOff = false, locales = 0 } = {}) {
-    const { ctx, estado, programar } = crear({ activa, manualOff });
-    programar('incendio', locales);
-    return { pendientes: estado.programadas, activa: ctx.PRENSA_ACTIVA };
-  }
+  test(`${archivo}: encendida busca siempre, con la espera de tecleo; apagada, nunca`, () => {
+    const s = crear();
+    s.programar();
+    assert.equal(s.estado.timers.length, 1);
+    assert.equal(s.estado.timers[0].ms, 1500);
+    assert.equal(s.ctx.estadoPrensa(), 'prensaBuscando');
+    const off = crear({ activa: false });
+    off.programar();
+    assert.equal(off.estado.timers.length, 0);
+    assert.equal(off.ctx.estadoPrensa(), '');
+  });
 
-  test(`${archivo}: apagar prensa impide buscar aunque haya pocos resultados`, () => {
-    assert.deepEqual(programar({ manualOff: true }), { pendientes: 0, activa: false });
-  });
-  test(`${archivo}: pocos resultados permiten la activación automática`, () => {
-    assert.deepEqual(programar(), { pendientes: 1, activa: true });
-  });
-  test(`${archivo}: activación explícita busca aunque haya muchos resultados`, () => {
-    assert.deepEqual(programar({ activa: true, locales: 20 }), { pendientes: 1, activa: true });
-  });
-  test(`${archivo}: suficientes resultados no activan prensa automáticamente`, () => {
-    assert.deepEqual(programar({ locales: 20 }), { pendientes: 0, activa: false });
+  test(`${archivo}: lo que está en caché no espera`, () => {
+    const s = crear({ cache: true });
+    s.programar();
+    assert.equal(s.estado.timers[0].ms, 0);
   });
 
   // Cada llegada (R2, archivo, la propia prensa) vuelve a llamar a aplicarFiltros
   // y, con él, a programarPrensa: no debe volver a pedir lo mismo.
   test(`${archivo}: la misma consulta no se vuelve a programar ni se repite una vez hecha`, () => {
-    const { ctx, estado, programar } = crear({ activa: true });
-    programar();
-    programar();
-    assert.equal(estado.programadas, 1);
-    ctx.PRENSA_CLAVE = null;                       // llegó la respuesta
-    ctx.PRENSA_HECHA = ctx.clave(interpretarConsulta('incendio'));
-    programar();
-    assert.equal(estado.programadas, 1);
-    programar('incendio forestal');                // otra consulta: sí
-    assert.equal(estado.programadas, 2);
+    const s = crear();
+    s.programar();
+    s.programar();
+    assert.equal(s.estado.timers.length, 1);
+    s.responder({ items: [{ t: 'Arde una nave' }] });
+    assert.equal(s.estado.filtrados, 1);
+    assert.equal(s.ctx.estadoPrensa(), '');
+    s.programar();
+    assert.equal(s.estado.timers.length, 1);
+    s.programar('incendio forestal');                // otra consulta: sí
+    assert.equal(s.estado.timers.length, 2);
+  });
+
+  test(`${archivo}: sin noticias, el vacío deja de «buscar» sin volver a filtrar`, () => {
+    const s = crear();
+    s.programar();
+    s.responder({ items: [] });
+    assert.equal(s.estado.filtrados, 0);
+    assert.equal(s.estado.pintados, 1);
+    assert.equal(s.ctx.PRENSA_HECHA, s.ctx.ULT_CTX.clavePrensa);
+  });
+
+  test(`${archivo}: un fallo se indica y no se repite solo; otra búsqueda o volver a ella lo reintenta`, () => {
+    const s = crear();
+    s.programar();
+    s.responder(null);
+    assert.equal(s.ctx.estadoPrensa(), 'prensaFallo');
+    s.programar();                                   // llega el archivo: no se insiste
+    assert.equal(s.estado.timers.length, 1);
+    s.programar('arde');
+    s.programar();
+    assert.equal(s.estado.timers.length, 3);
+    assert.equal(s.ctx.estadoPrensa(), 'prensaBuscando');
   });
 
   test(`${archivo}: otro idioma o país es otra petición`, () => {
-    const { ctx, estado, programar } = crear({ activa: true });
-    programar();
-    ctx.PRENSA_LANG = 'gl';
-    programar();
-    assert.equal(estado.programadas, 2);
-    assert.match(ctx.PRENSA_CLAVE, /\|gl\|ES$/);
+    const s = crear();
+    s.programar();
+    s.ctx.PRENSA_LANG = 'gl';
+    s.programar();
+    assert.equal(s.estado.timers.length, 2);
+    assert.match(s.ctx.PRENSA_CLAVE, /\|gl\|ES$/);
   });
 
   test(`${archivo}: apagar cancela la petición programada y la que está en camino`, () => {
-    const { ctx, estado, programar, enCurso } = crear({ activa: true });
-    programar();
-    enCurso();
-    ctx.PRENSA_ACTIVA = false;
-    ctx.PRENSA_USER_MANUAL_OFF = true;
-    programar();
-    assert.equal(estado.abortadas, 1);
-    assert.equal(ctx.PRENSA_CLAVE, null);
-    assert.equal(ctx.PRENSA_TIMER, null);
+    const s = crear();
+    s.programar();
+    s.enCurso();
+    s.ctx.PRENSA_ACTIVA = false;
+    s.programar();
+    assert.equal(s.estado.abortadas, 1);
+    assert.equal(s.ctx.PRENSA_CLAVE, null);
+    assert.equal(s.ctx.PRENSA_TIMER, null);
+    assert.equal(s.ctx.estadoPrensa(), '');
   });
 }

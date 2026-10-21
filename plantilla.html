@@ -626,9 +626,8 @@
   .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto auto; gap:6px; }
   .filtros-wrap .preset-wrap{ max-width:none; }
   #btn-buscar{ display:inline-flex; align-items:center; gap:6px; }
-  .filtros-row .filtro-buscar-wrap, .filtros-row #btn-prensa{ display:none; }
-  .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; grid-row:2; grid-column:1 / 5; }
-  .filtros-wrap.busqueda-abierta #btn-prensa{ display:inline-flex; grid-row:2; grid-column:5; min-height:44px; }
+  .filtros-row .filtro-buscar-wrap{ display:none; }
+  .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; grid-row:2; grid-column:1 / -1; }
   .filtros-panel{ margin:auto 0 0; width:100%; max-width:none; max-height:85dvh; border-radius:16px 16px 0 0; padding:16px 16px max(16px, env(safe-area-inset-bottom)); }
   .filtros-lectura{ grid-template-columns:1fr; }
 }
@@ -1521,50 +1520,6 @@
     opacity:1;
     font-weight:600;
   }
-  .btn-prensa{
-    display: inline-flex;
-    align-items: center;
-    gap: .35em;
-    padding: 6px 12px;
-    font-size: .74em;
-    line-height: 1.3;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    border-radius: 9px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    letter-spacing: .01em;
-    transition: background .15s, color .15s, border-color .15s;
-    white-space: nowrap;
-  }
-  .btn-prensa:hover{
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-  .btn-prensa.active{
-    background: var(--save);
-    color: var(--on-solid);
-    border-color: var(--save);
-  }
-  .btn-prensa.cargando{
-    opacity: .65;
-    cursor: wait;
-  }
-  .btn-prensa.auto-activada{
-    animation: prensa-pulse .8s ease-out;
-  }
-  @keyframes prensa-pulse {
-    0%   { box-shadow: 0 0 0 0 var(--save); }
-    70%  { box-shadow: 0 0 0 6px rgba(0,0,0,0); }
-    100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
-  }
-
-  @media (max-width: 560px){
-    .btn-prensa span { font-size: .95em; }
-    .btn-prensa { padding: 6px 8px; }
-  }
   .btn-view-settings{
     display: inline-flex;
     align-items: center;
@@ -1949,7 +1904,6 @@
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></symbol>
-  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
   <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></symbol>
   <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
@@ -2019,6 +1973,8 @@
         <span id="contador"></span>
         <span id="total-r2-sep" hidden>·</span>
         <span id="total-r2" hidden></span>
+        <span id="prensa-estado-sep" hidden>·</span>
+        <span id="prensa-estado" role="status" hidden></span>
       </span>
     </p>
     <div class="header-actions header-actions-right">
@@ -2450,10 +2406,6 @@
       <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
       <div id="buscar-sugerencias" class="buscar-sugerencias" style="display:none"></div>
     </div>
-    <button id="btn-prensa" class="btn-prensa" type="button" title="Buscar también en prensa externa">
-      <svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>
-      <span>prensa</span>
-    </button>
     <button id="btn-pase" class="btn-dup-inline btn-view-settings" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></button>
     <button id="btn-lectura" class="btn-dup-inline btn-view-settings" type="button" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
     <button id="btn-filtros" class="btn-dup-inline btn-view-settings" type="button"
@@ -2587,7 +2539,6 @@ let _conmutacionEnCurso = null;
 
 const PRENSA_CACHE_KEY = 'voceiro-prensa-cache-v1';
 const PRENSA_CACHE_TTL_MS = 30 * 60 * 1000;
-const PRENSA_MIN_RESULTADOS = 5;
 const PRENSA_DEBOUNCE_MS = 1500;
 
 
@@ -2725,12 +2676,12 @@ function cargarDiasMemoria() {
 
 let DIAS_MEMORIA = cargarDiasMemoria();
 
-let PRENSA_ACTIVA = false;
+let PRENSA_ACTIVA = true;    // encendida salvo que se apague en este dispositivo
 let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
 let PRENSA_CLAVE = null;   // clave de la consulta con prensa pendiente
 let PRENSA_HECHA = null;   // clave cuya prensa ya está en NOTICIAS
-let PRENSA_USER_MANUAL_OFF = false;
+let PRENSA_FALLO = null;   // clave cuya petición falló (no se repite sola)
 let PRENSA_LANG = 'es';
 let PRENSA_PAIS = 'ES';
 
@@ -2939,6 +2890,8 @@ const I18N = {
     contadorR2:             '{n} en total',
     contadorR2Title:        'Noticias guardadas en R2: {dias} días, desde el {desde}',
     vacio:                  'Sin resultados',
+    prensaBuscando:         'Buscando en prensa…',
+    prensaFallo:            'La prensa no respondió',
     errCarga:               'Error cargando datos: ',
     loading:                'Cargando…',
 
@@ -3268,6 +3221,8 @@ const I18N = {
     contadorR2:             '{n} en total',
     contadorR2Title:        'Novas gardadas en R2: {dias} días, dende o {desde}',
     vacio:                  'Sen resultados',
+    prensaBuscando:         'Buscando na prensa…',
+    prensaFallo:            'A prensa non respondeu',
     errCarga:               'Erro cargando datos: ',
     loading:                'Cargando…',
 
@@ -3590,6 +3545,8 @@ const I18N = {
     contadorR2:             '{n} en total',
     contadorR2Title:        'Notícies desades a R2: {dias} dies, des del {desde}',
     vacio:                  'Sense resultats',
+    prensaBuscando:         'Cercant a la premsa…',
+    prensaFallo:            'La premsa no ha respost',
     errCarga:               'Error carregant dades: ',
     loading:                'Carregant…',
 
@@ -3912,6 +3869,8 @@ const I18N = {
     contadorR2:             '{n} in total',
     contadorR2Title:        'News stored in R2: {dias} days, since {desde}',
     vacio:                  'No results',
+    prensaBuscando:         'Searching the press…',
+    prensaFallo:            'No response from the press search',
     errCarga:               'Error loading data: ',
     loading:                'Loading…',
 
@@ -4234,6 +4193,8 @@ const I18N = {
     contadorR2:             '{n} guztira',
     contadorR2Title:        'R2n gordetako albisteak: {dias} egun, {desde}tik',
     vacio:                  'Emaitzarik gabe',
+    prensaBuscando:         'Prentsan bilatzen…',
+    prensaFallo:            'Prentsak ez du erantzun',
     errCarga:               'Errorea datuak kargatzean: ',
     loading:                'Kargatzen…',
 
@@ -6650,6 +6611,7 @@ async function cargarBase() {
     _titulosCargados = new Set();
     _hidratadasHasta = 0;
     PRENSA_HECHA = null;       // su prensa ya no está en NOTICIAS
+    PRENSA_FALLO = null;
     _dupsHechosHasta = 0;
     _dupsLogged = false;
 
@@ -9482,10 +9444,8 @@ function prensaCacheGet(rawQuery){
 /* ─── Control de estado de prensa externa ─── */
 function setPrensaActiva(valor, { persistir = true } = {}){
   PRENSA_ACTIVA = !!valor;
-  const btn = document.getElementById('btn-prensa');
   const chk = document.getElementById('prensa-panel-toggle');
   const sel = document.getElementById('prensa-selects');
-  if (btn) btn.classList.toggle('active', PRENSA_ACTIVA);
   if (chk) chk.checked = PRENSA_ACTIVA;
   if (sel) sel.hidden = !PRENSA_ACTIVA;
   if (persistir){
@@ -9543,17 +9503,13 @@ function pintarSelectsPrensa(){
 
 function cargarPrensaDeLocalStorage(){
   try {
-    const guardado = localStorage.getItem('voceiro-prensa-activa');
-    const activa  = guardado === '1';
+    const activa  = localStorage.getItem('voceiro-prensa-activa') !== '0';
     const lang    = localStorage.getItem('voceiro-prensa-lang')  || 'es';
     let pais      = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
     // Reino Unido se guardaba como 'UK'; Google usa el código ISO ('GB').
     if (pais === 'UK') pais = 'GB';
 
     PRENSA_ACTIVA = activa;
-    // Solo cuenta como apagado manual si el usuario lo apagó ('0');
-    // sin clave guardada, la autoactivación por pocos resultados sigue viva.
-    PRENSA_USER_MANUAL_OFF = guardado === '0';
     PRENSA_LANG = lang;
     PRENSA_PAIS = pais;
   } catch(e){}
@@ -9619,9 +9575,12 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
 
   // No se cachea una respuesta con fuentes fallidas: si no, el fallo
   // se serviría como "0 resultados" durante toda la vida de la caché.
+  // Con la fuente caída no hay respuesta (null): lo indica el estado junto
+  // al contador, sin toast en cada búsqueda.
   const procesar = (data) => {
+    if (data._errores){ console.warn('[prensa]', data._errores); return null; }
     const items = data.items || [];
-    if (!_avisarErroresFuente(data)) prensaCacheSet(cacheKey, items);
+    prensaCacheSet(cacheKey, items);
     return { items };
   };
 
@@ -9713,9 +9672,10 @@ function _itemDePrensa(it){
 
 // La prensa entra en NOTICIAS como capa 'prensa', marcada con la clave de la
 // consulta (_prensaPara), y se filtra, cuenta y ordena con todo lo demás en
-// aplicarFiltros. Cada aplicarFiltros pasa por aquí: lo ya pedido o en camino
-// para la misma clave no se repite (si no, su llegada la volvería a pedir).
-function programarPrensa(consulta, nLocales){
+// aplicarFiltros. Cada aplicarFiltros pasa por aquí: lo ya pedido, en camino
+// o fallido para la misma clave no se repite (si no, su llegada la volvería a
+// pedir); un fallo se reintenta con otra búsqueda o al volver a encenderla.
+function programarPrensa(consulta){
   // Con un filtro de medios de más de 3 dominios (p. ej. grupo:galicia) la
   // prensa no puede acotarse (site: admite 3) y lo que trae no pasa el
   // filtro de medios: medido, 0 de 100. No se pide.
@@ -9723,7 +9683,7 @@ function programarPrensa(consulta, nLocales){
   const tieneQuery = !consulta.imposible
     && (consulta.texto.incluir.length || dominios !== null)
     && !(dominios && dominios.size > 3);
-  if (!tieneQuery || (!PRENSA_ACTIVA && PRENSA_USER_MANUAL_OFF)){
+  if (!tieneQuery || !PRENSA_ACTIVA){
     _cancelarPrensa();
     return;
   }
@@ -9731,42 +9691,29 @@ function programarPrensa(consulta, nLocales){
   const clave = _clavePrensa(consulta);
   if (clave === PRENSA_CLAVE) return;
   _cancelarPrensa();
-  if (clave === PRENSA_HECHA) return;
-
-  const pocos = nLocales < PRENSA_MIN_RESULTADOS;
-  const forzar = PRENSA_ACTIVA;
-  if (!forzar && !pocos) return;
-
-  // Auto-activación si hay pocos resultados
-  if (pocos && !PRENSA_ACTIVA && !PRENSA_USER_MANUAL_OFF){   // ← añadir condición
-    PRENSA_ACTIVA = true;
-    const btn = document.getElementById('btn-prensa');
-    if (btn){
-      btn.classList.add('active', 'auto-activada');
-      setTimeout(() => btn.classList.remove('auto-activada'), 900);
-    }
-  }
+  if (clave === PRENSA_HECHA || clave === PRENSA_FALLO) return;
 
   PRENSA_CLAVE = clave;
+  PRENSA_FALLO = null;
+  const texto = paraPrensa(consulta);
+  // Lo que ya está en caché no espera a que se deje de teclear.
+  const espera = prensaCacheGet(prensaCacheKey(texto)) ? 0 : PRENSA_DEBOUNCE_MS;
   PRENSA_TIMER = setTimeout(() => {
     PRENSA_TIMER = null;
     if (PRENSA_CLAVE !== clave) return;
 
-    const btn = document.getElementById('btn-prensa');
-    if (btn) btn.classList.add('cargando');
-
-    buscarEnPrensa(consulta.parsed, paraPrensa(consulta), { silent: true }).then(res => {
-      if (btn) btn.classList.remove('cargando');
+    buscarEnPrensa(consulta.parsed, texto, { silent: true }).then(res => {
       if (PRENSA_CLAVE !== clave) return;
       PRENSA_CLAVE = null;
-      if (!res) return;          // error: se reintenta en el siguiente aplicarFiltros
-      PRENSA_HECHA = clave;
-      const items = (res.items || []).map(_itemDePrensa).filter(Boolean);
-      if (!items.length) return;
-      if (_mergearItemsEnNoticias(items, 'prensa', clave) > 0) hidratarNoticias();
-      aplicarFiltros();
+      if (res) PRENSA_HECHA = clave; else PRENSA_FALLO = clave;
+      const items = res ? (res.items || []).map(_itemDePrensa).filter(Boolean) : [];
+      if (items.length){
+        if (_mergearItemsEnNoticias(items, 'prensa', clave) > 0) hidratarNoticias();
+        aplicarFiltros();
+      } else if (!ULT_FILTRADAS.length) renderizar();   // el vacío deja de «buscar»
+      else pintarEstadoPrensa();
     });
-  }, PRENSA_DEBOUNCE_MS);
+  }, espera);
 }
 
 // Otra edición (idioma, país) es otra respuesta: va en la clave.
@@ -9779,6 +9726,20 @@ function _cancelarPrensa(){
   if (PRENSA_TIMER){ clearTimeout(PRENSA_TIMER); PRENSA_TIMER = null; }
   if (PRENSA_ABORT){ PRENSA_ABORT.abort(); PRENSA_ABORT = null; }
   PRENSA_CLAVE = null;
+}
+
+// Estado de la prensa para la consulta en pantalla, junto al contador.
+function _estadoPrensa(){
+  const k = ULT_CTX && ULT_CTX.clavePrensa;
+  if (!k || !PRENSA_ACTIVA) return '';
+  return k === PRENSA_CLAVE ? 'prensaBuscando' : k === PRENSA_FALLO ? 'prensaFallo' : '';
+}
+function pintarEstadoPrensa(){
+  const el = document.getElementById('prensa-estado');
+  if (!el) return;
+  const estado = _estadoPrensa();
+  el.textContent = estado ? t(estado) : '';
+  el.hidden = document.getElementById('prensa-estado-sep').hidden = !estado;
 }
 
 // Texto, medios y fechas: lo decide el núcleo (shared/busqueda/consulta.js).
@@ -9879,7 +9840,7 @@ function _avisarMediosDesconocidos(consulta){
 }
 
 function aplicarFiltros(){
-  cerrarPase(false);
+  if (PASE) return;   // lo que llegue durante el pase espera: cerrarPase vuelve a filtrar
   hidratarNoticias();
   const raw = $('#buscar').value.trim();
   const rawProcesado = preprocesarInput(raw);
@@ -10055,6 +10016,9 @@ if (!capas.size) {
     if (PESTANA_CLAVE !== consulta.clave){ PESTANA_CLAVE = consulta.clave; PESTANA_BUSQUEDA = null; }
     const delModo = filtradas.filter(n => n._esPreset);
     const pestana = PESTANA_BUSQUEDA || (delModo.length ? 'modo' : 'todo');
+    // La automática se decide con los primeros resultados y se mantiene: lo
+    // que llegue después (archivo, prensa) cambia las cifras, no la pestaña.
+    if (filtradas.length) PESTANA_BUSQUEDA = pestana;
     infoPestanas = { pestana, nModo: delModo.length, nTodo: filtradas.length, temas: vistaTemas };
     if (pestana === 'modo'){
       filtradas = filtrarPorChips(delModo);
@@ -10106,7 +10070,7 @@ if (!capas.size) {
   if (APP_LISTA && RECORDAR_FILTROS){
     try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
   }
-  programarPrensa(consulta, filtradas.length);
+  programarPrensa(consulta);
 }
 
 
@@ -10357,7 +10321,7 @@ document.addEventListener('keydown', e => {
 }, true);
 
 function renderizar(){
-  cerrarPase(false);
+  if (PASE) return;
   const lista = ULT_FILTRADAS;
   const nMostrados = lista.length;
   const nCargados = NOTICIAS.length;
@@ -10369,6 +10333,7 @@ function renderizar(){
 
   $('#contador').textContent = txt;
   renderTotalR2();
+  pintarEstadoPrensa();
   const cont = $('#resultados');
   cont.innerHTML = '';
   RENDER_OFFSET = 0;
@@ -10376,6 +10341,12 @@ function renderizar(){
   if (!lista.length){
     // Con un modo activo y sin búsqueda, se ofrece editarlo o verlo todo.
     const pista = PRESET_ACTIVO && !$('#buscar').value.trim();
+    // Con la prensa en camino aún no es «sin resultados»: lo dice el contador.
+    if (_estadoPrensa() === 'prensaBuscando'){
+      if (SENTINEL_OBSERVER){ SENTINEL_OBSERVER.disconnect(); SENTINEL_OBSERVER = null; }
+      actualizarBotonCargarMas();
+      return;
+    }
     cont.innerHTML = `<div class="vacio">${escapeHtml(t('vacio'))}${pista ? `
       <p class="vacio-pista">${escapeHtml(t('pistaModoSinResultados', { X: PRESET.nombre }))}</p>
       <div class="vacio-acciones">
@@ -11273,8 +11244,6 @@ function aplicarTextos(){
   if ($('#grupo').options[0]) $('#grupo').options[0].text = t('fltGrupo');
   if ($('#tipo').options[0])  $('#tipo').options[0].text  = t('fltTipo');
 
-  const btnPrensaEl = $('#btn-prensa');
-  if (btnPrensaEl) btnPrensaEl.classList.toggle('active', PRENSA_ACTIVA);
   const rOpts = $('#rango').options;
   rOpts[0].text = t('fltTodo');
   rOpts[1].text = t('flt24h');
@@ -11572,24 +11541,12 @@ function wireStaticEvents(){
       aplicarFiltros();
     });
   }
-    // ── Toggle prensa (botón de la barra) ──
-  const btnPrensa = $('#btn-prensa');
-  if (btnPrensa){
-    btnPrensa.addEventListener('click', () => {
-      const nuevo = !PRENSA_ACTIVA;
-      PRENSA_USER_MANUAL_OFF = !nuevo;
-      setPrensaActiva(nuevo);
-      aplicarFiltros();
-    });
-  }
-
   // ── Checkbox del panel de filtros ──
   const chkPrensaPanel = $('#prensa-panel-toggle');
   if (chkPrensaPanel){
     chkPrensaPanel.addEventListener('change', () => {
-      const nuevo = chkPrensaPanel.checked;
-      PRENSA_USER_MANUAL_OFF = !nuevo;
-      setPrensaActiva(nuevo);
+      setPrensaActiva(chkPrensaPanel.checked);
+      PRENSA_FALLO = null;     // volver a encenderla reintenta lo que falló
       aplicarFiltros();
     });
   }
