@@ -86,3 +86,23 @@ test('el sol se colorea solo con naranja o rojo en mis sitios', () => {
   apagado.ctx.pintarBotonTiempo();
   assert.equal(apagado.sol.dataset.nivel, undefined);
 });
+
+// Cuándo, sin horas y con ellas.
+function cuando(ahora) {
+  const ctx = {
+    t: k => k, escapeHtml: x => String(x), ACCES: { lang: 'es' }, Intl, Math,
+    empezado: a => empezado(a, ahora), zonaHorariaAviso: () => 'Europe/Madrid',
+    Date: class extends Date { static now() { return ahora; } },
+  };
+  runInNewContext([linea('const fechaAviso'), funcion('diaAviso'), linea('const momentoAviso'), funcion('cuandoAviso')].join('\n')
+    + '\nthis.momentoAviso = momentoAviso; this.cuandoAviso = cuandoAviso;', ctx);
+  return ctx;
+}
+
+test('el momento de un aviso: en vigor, hoy o mañana; con huecos, varios periodos', () => {
+  const c = cuando(Date.parse('2026-10-21T10:00:00Z'));
+  assert.equal(c.momentoAviso(aviso('713601', 'naranja')), 'avisosahora');
+  assert.equal(c.momentoAviso(aviso('713601', 'naranja', '2026-10-22T06:00:00Z')), 'avisosManana');
+  assert.equal(c.cuandoAviso({ ...aviso('713601', 'naranja', '2026-10-21T18:00:00Z'), varios: true }), 'AvisosVarios');
+  assert.match(c.cuandoAviso({ ...aviso('713601', 'naranja'), varios: true }), /avisosAhora<\/span> · avisosVarios$/);
+});
