@@ -232,3 +232,82 @@ class Recogida(unittest.TestCase):
              'fecha': '2026-10-20T23:50:00+02:00'}
         self.assertEqual(R._noticia_a_formato_corto(n, '2026-10-21')['c'], n['fecha'])
         self.assertEqual(R._noticia_a_formato_corto(n, '2026-10-20')['c'], '23:50')
+
+
+class FalloR2(Exception):
+    def __init__(self, codigo):
+        super().__init__(codigo)
+        self.response = {'Error': {'Code': codigo}}
+
+
+class R2Falso:
+    """Bucket en memoria; `fallos` dice qué claves fallan y con qué código."""
+    def __init__(self, objetos=None, fallos=None):
+        self.objetos = dict(objetos or {})
+        self.fallos = dict(fallos or {})
+        self.subidas = []
+
+    def get_object(self, Bucket, Key):
+        if Key in self.fallos:
+            raise FalloR2(self.fallos[Key])
+        if Key not in self.objetos:
+            raise FalloR2('NoSuchKey')
+        return {'Body': io.BytesIO(self.objetos[Key])}
+
+    def upload_fileobj(self, f, bucket, nombre, **kwargs):
+        if nombre in self.fallos:
+            raise FalloR2(self.fallos[nombre])
+        self.subidas.append(nombre)
+
+
+class PublicacionR2(unittest.TestCase):
+    def descargar(self, cliente):
+        with tempfile.TemporaryDirectory() as carpeta, \
+                patch.multiple(R, DATOS_DIR=carpeta,
+                               MANIFEST_PATH=str(Path(carpeta, 'manifest.json'))), \
+                patch.object(R, '_r2_client', return_value=cliente), \
+                contextlib.redirect_stdout(io.StringIO()):
+            try:
+                return R.descargar_historico_desde_r2()
+            finally:
+                self.manifest_local = Path(carpeta, 'manifest.json').exists()
+
+    def manifest_con(self, *ficheros):
+        hoy = datetime.now(MADRID).date().isoformat()
+        return json.dumps({'dias': [{'fecha': hoy, 'all': {'file': f}} for f in ficheros]}).encode()
+
+    def test_sin_manifest_en_r2_es_un_primer_run(self):
+        self.assertEqual(self.descargar(R2Falso()), 0)
+        self.assertFalse(self.manifest_local)
+
+    def test_un_fallo_al_bajar_el_manifest_para_el_run(self):
+        with self.assertRaises(SystemExit):
+            self.descargar(R2Falso(fallos={'manifest.json': 'InternalError'}))
+        self.assertFalse(self.manifest_local)
+
+    def test_un_fallo_al_bajar_un_dia_para_el_run_pero_uno_que_no_existe_no(self):
+        manifest = self.manifest_con('a.json', 'b.json')
+        with self.assertRaises(SystemExit):
+            self.descargar(R2Falso({'manifest.json': manifest, 'a.json': b'{}'},
+                                   fallos={'b.json': 'SlowDown'}))
+        self.assertEqual(self.descargar(R2Falso({'manifest.json': manifest, 'a.json': b'{}'})), 1)
+
+    def subir(self, cliente, *nombres):
+        with tempfile.TemporaryDirectory() as carpeta:
+            rutas = []
+            for nombre in nombres:
+                Path(carpeta, nombre).write_text('{}', encoding='utf-8')
+                rutas.append(str(Path(carpeta, nombre)))
+            with patch.object(R, '_r2_client', return_value=cliente), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                return R.subir_a_r2(rutas)
+
+    def test_el_manifest_se_sube_el_ultimo(self):
+        cliente = R2Falso()
+        self.assertEqual(self.subir(cliente, 'manifest.json', 'a.json', 'b.json'), (3, 0, 0))
+        self.assertEqual(cliente.subidas[-1], 'manifest.json')
+
+    def test_si_falla_un_dato_el_manifest_no_se_sube(self):
+        cliente = R2Falso(fallos={'b.json': 'InternalError'})
+        self.assertEqual(self.subir(cliente, 'manifest.json', 'a.json', 'b.json'), (1, 0, 1))
+        self.assertEqual(cliente.subidas, ['a.json'])

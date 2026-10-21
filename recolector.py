@@ -2230,11 +2230,6 @@ def _r2_client():
     """Crea un cliente S3 contra R2. Devuelve None si faltan credenciales."""
     if not (R2_ACCOUNT_ID and R2_ACCESS_KEY and R2_SECRET_KEY):
         return None
-    print(f"[r2-debug] account_len={len(R2_ACCOUNT_ID)} "
-      f"account_repr={R2_ACCOUNT_ID!r} "
-      f"key_len={len(R2_ACCESS_KEY)} "
-      f"secret_len={len(R2_SECRET_KEY)}")
-
     return boto3.client(
         service_name='s3',
         endpoint_url=f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com',
@@ -2264,10 +2259,20 @@ def _r2_cache_control(filename):
     # Fallback
     return 'public, max-age=3600'
 
+def _codigo_r2(e):
+    """Código de error de S3/R2 ('NoSuchKey', '404'…) o '' si no lo trae."""
+    if hasattr(e, 'response'):
+        return e.response.get('Error', {}).get('Code', '')
+    return ''
+
+
 def subir_a_r2(ficheros_locales):
     """
     Sube a R2 SOLO los ficheros escritos en este run.
     Paralelizado con ThreadPoolExecutor (boto3 es thread-safe).
+
+    El manifest va el último y solo si todo lo demás subió: publicado
+    antes, apuntaría a ficheros que no están.
     """
     client = _r2_client()
     if not client:
@@ -2301,8 +2306,15 @@ def subir_a_r2(ficheros_locales):
                 errores += 1
             print(f"[r2!] {nombre}: {type(e).__name__}: {e}")
 
+    manifest = [p for p in lista if os.path.basename(p) == 'manifest.json']
+    datos = [p for p in lista if p not in manifest]
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-        list(ex.map(_subir_uno, lista))
+        list(ex.map(_subir_uno, datos))
+    if errores:
+        print("[r2!] manifest sin subir: sigue publicado el anterior")
+    else:
+        for p in manifest:
+            _subir_uno(p)
 
     print(f"[r2] {subidos} subidos · 0 omitidos · {errores} errores")
     return subidos, 0, errores
@@ -2365,10 +2377,7 @@ def limpiar_r2_huerfanos(manifest, manifest_prev=None, forzar_scan=False):
                 client.delete_object(Bucket=R2_BUCKET, Key=key)
                 borrados += 1
             except Exception as e:
-                code = ''
-                if hasattr(e, 'response'):
-                    code = e.response.get('Error', {}).get('Code', '')
-                if code in ('404', 'NoSuchKey'):
+                if _codigo_r2(e) in ('404', 'NoSuchKey'):
                     continue           # ya no existe
                 print(f"[r2-clean!] {key}: {type(e).__name__}: {e}")
 
@@ -2820,7 +2829,11 @@ def insertar_en_turso(noticias, t_prev_iso, t_now_iso):
 def descargar_historico_desde_r2():
     """Descarga de R2 el manifest completo y SOLO los ficheros de la
     ventana de dedup (DIAS_RETENCION). Los días más antiguos quedan en
-    R2 y se conservan en el manifest nuevo, pero no se bajan."""
+    R2 y se conservan en el manifest nuevo, pero no se bajan.
+
+    Solo se sigue sin manifest si R2 dice que no existe (primer run). Con
+    cualquier otro fallo el run se para: un manifest nuevo hecho sin el
+    anterior perdería el archivo, y la limpieza borraría sus ficheros."""
     client = _r2_client()
     if not client:
         print("[r2-download] sin credenciales — saltando")
@@ -2829,12 +2842,15 @@ def descargar_historico_desde_r2():
     try:
         obj = client.get_object(Bucket=R2_BUCKET, Key='manifest.json')
         manifest_bytes = obj['Body'].read()
-        with open(MANIFEST_PATH, 'wb') as f:
-            f.write(manifest_bytes)
         manifest = json.loads(manifest_bytes)
     except Exception as e:
-        print(f"[r2-download] no hay manifest en R2: {e}")
-        return 0
+        if _codigo_r2(e) in ('404', 'NoSuchKey'):
+            print("[r2-download] no hay manifest en R2: primer run")
+            return 0
+        raise SystemExit(f"[r2-download!] no se pudo leer el manifest: "
+                         f"{type(e).__name__}: {e}")
+    with open(MANIFEST_PATH, 'wb') as f:
+        f.write(manifest_bytes)
 
     corte = (datetime.now(TZ_MADRID) - timedelta(days=DIAS_RETENCION)).strftime('%Y-%m-%d')
 
@@ -2852,7 +2868,11 @@ def descargar_historico_desde_r2():
             if f.get('fecha', '') >= corte
         ]
 
+    # Un día que no se baja se reescribiría sin sus noticias. Si R2 dice
+    # que no existe no hay nada que recuperar y se sigue; si es un fallo,
+    # se para.
     descargados = 0
+    fallidos = []
     for f_info in ficheros_a_bajar:
         fn = f_info.get('file')
         if not fn:
@@ -2867,6 +2887,11 @@ def descargar_historico_desde_r2():
             descargados += 1
         except Exception as e:
             print(f"[r2-download!] {fn}: {e}")
+            if _codigo_r2(e) not in ('404', 'NoSuchKey'):
+                fallidos.append(fn)
+    if fallidos:
+        raise SystemExit(f"[r2-download!] {len(fallidos)} días sin bajar: "
+                         + ', '.join(fallidos))
 
     total = len(manifest.get('dias', []))
     print(f"[r2-download] {descargados} descargados · "
@@ -3057,7 +3082,11 @@ def main():
 
     # ─── Subir a R2 (solo lo que cambió, ya está en disco) ───
 
-    subir_a_r2(list(_FICHEROS_ESCRITOS))
+    # Con errores, el manifest no se ha subido: ni limpieza ni state, para
+    # que el siguiente run parta de lo que sigue publicado.
+    _, _, errores_r2 = subir_a_r2(list(_FICHEROS_ESCRITOS))
+    if errores_r2:
+        raise SystemExit(f"[r2!] {errores_r2} ficheros sin subir: run abortado")
 
     # ─── Turso (HTTP v2) ───
     _turso_ensure_schema()
