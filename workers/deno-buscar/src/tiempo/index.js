@@ -6,6 +6,8 @@
 //                                          → lugar geocodificado; en España, el municipio
 //                                            más cercano con AEMET
 //   GET /tiempo/lugares?q=Buenos%20Aires&lang=es → candidatas (Open-Meteo)
+//   GET /avisos                            → avisos amarillos, naranjas y rojos de
+//                                            España (AEMET; si falla, MeteoAlarm)
 //
 // La clave de AEMET va en la variable de entorno AEMET_API_KEY. Se cachea
 // la respuesta en bruto y se normaliza en cada petición, para que «ahora»
@@ -13,17 +15,19 @@
 
 import { MUNICIPIOS } from './municipios.js';
 import { desdeAemet, desdeOpenMeteo, zonaHoraria, municipioCercano } from './normalizar.js';
+import { desdeTar, desdeAtom, vigentes } from './avisos.js';
 
 const CACHE_NAME = 'voceiro-tiempo-v1';
 const MIN = 60e3;
-// AEMET elabora la previsión pocas veces al día.
-const TTL = { aemet: 60 * MIN, openMeteo: 30 * MIN, lugares: 7 * 24 * 60 * MIN };
+// AEMET elabora la previsión pocas veces al día; los avisos cambian más.
+const TTL = { aemet: 60 * MIN, openMeteo: 30 * MIN, lugares: 7 * 24 * 60 * MIN, avisos: 10 * MIN };
 const AEMET = 'https://opendata.aemet.es/opendata/api';
 const IDIOMAS = new Set(['es', 'gl', 'ca', 'en', 'eu']);
 
 export async function handleTiempo(url, cabeceras) {
   try {
-    const datos = url.pathname === '/tiempo/lugares' ? await lugares(url) : await prevision(url);
+    const datos = url.pathname === '/avisos' ? await avisos()
+      : url.pathname === '/tiempo/lugares' ? await lugares(url) : await prevision(url);
     return responder(datos, 200, { ...cabeceras, 'Cache-Control': 'public, max-age=300' });
   } catch (e) {
     const status = e.status || 502;
@@ -59,7 +63,8 @@ async function conCache(clave, ttl, producir) {
 }
 
 // AEMET en dos pasos: la API devuelve una URL «datos» con el contenido.
-async function aemet(ruta) {
+// binario: devuelve los bytes (el tar de avisos) en vez del JSON.
+async function aemet(ruta, { binario = false } = {}) {
   const clave = Deno.env.get('AEMET_API_KEY');
   if (!clave) throw new Error('AEMET sin clave');
   const r = await fetch(AEMET + ruta, {
@@ -73,7 +78,8 @@ async function aemet(ruta) {
   // Al pasar el límite de uso, el paso 1 dice «éxito» y el 429 llega aquí
   // como una página HTML con estado 500: hay que mirar el tipo.
   const tipo = r2.headers.get('content-type') || '';
-  if (!r2.ok || !/json|text\/plain/.test(tipo)) throw new Error(`AEMET datos ${r2.status}`);
+  if (!r2.ok || !(binario ? !/html/.test(tipo) : /json|text\/plain/.test(tipo))) throw new Error(`AEMET datos ${r2.status}`);
+  if (binario) return new Uint8Array(await r2.arrayBuffer());
   const texto = new TextDecoder(/8859-15/i.test(tipo) ? 'iso-8859-15' : 'utf-8').decode(await r2.arrayBuffer());
   return JSON.parse(texto);
 }
@@ -152,4 +158,31 @@ async function lugares(url) {
       })),
     };
   });
+}
+
+// Se cachea la lista ya extraída (recorrer el tar lleva unos ms de CPU) y lo
+// caducado se quita en cada petición. MeteoAlarm solo llega hasta mañana:
+// la respuesta lo dice con «incompleto» para que el panel lo avise.
+async function avisos() {
+  let datos;
+  try {
+    datos = await conCache('avisos/aemet', TTL.avisos, async () => ({
+      fuente: 'aemet', enlace: 'https://www.aemet.es/es/eltiempo/prediccion/avisos',
+      consultado: new Date().toISOString(),
+      avisos: vigentes(desdeTar(await aemet('/avisos_cap/ultimoelaborado/area/esp', { binario: true }))),
+    }));
+  } catch {
+    datos = await conCache('avisos/meteoalarm', TTL.avisos, async () => {
+      const r = await fetch('https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-spain', {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!r.ok) throw new Error(`MeteoAlarm ${r.status}`);
+      return {
+        fuente: 'meteoalarm', enlace: 'https://meteoalarm.org/es/live/region/ES', incompleto: true,
+        consultado: new Date().toISOString(),
+        avisos: vigentes(desdeAtom(await r.text())),
+      };
+    });
+  }
+  return { ...datos, avisos: vigentes(datos.avisos) };
 }
