@@ -1096,9 +1096,12 @@
   }
   .noticia a.titular:hover{text-decoration:underline}
   [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
-  /* Móvil: cabecera de la tarjeta en una línea; sin tipo de medio y solo «hace…» */
+  /* Fecha corta por defecto; la opción avanzada permite mostrar la completa. */
+  .noticia .fecha-abs{display:none}
+  [data-fecha-larga="1"] .noticia .fecha-abs{display:inline}
+  /* Móvil: cabecera de la tarjeta en una línea y sin tipo de medio. */
   @media (max-width:560px){
-    .noticia .badge.tipo, .noticia .fecha-abs{display:none}
+    .noticia .badge.tipo{display:none}
   }
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
@@ -2283,6 +2286,13 @@
             <span class="cfg-toggle-txt">
               <span class="cfg-toggle-title" id="cfg-avisos-cab-lbl"></span>
               <span class="cfg-toggle-hint"  id="cfg-avisos-cab-hint"></span>
+            </span>
+          </label>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="cfg-fecha-larga">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="cfg-fecha-larga-lbl"></span>
+              <span class="cfg-toggle-hint"  id="cfg-fecha-larga-hint"></span>
             </span>
           </label>
 
@@ -4397,6 +4407,22 @@ for (const [lang, textos] of Object.entries({
   ['paseCapa', 'pasePausa', 'paseContinuar', 'paseAnterior', 'paseSiguiente', 'paseCerrar', 'paseRitmo', 'paseFin', 'paseMarcha', 'paseParado']
     .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
 }
+// Opción de fecha larga en tarjetas.
+for (const [lang, texto] of Object.entries({
+  es: 'Mostrar fecha completa',
+  gl: 'Mostrar a data completa',
+  ca: 'Mostrar la data completa',
+  en: 'Show full date',
+  eu: 'Erakutsi data osoa',
+})) I18N[lang].cfgFechaLarga = texto;
+for (const [lang, texto] of Object.entries({
+  es: 'Añade la fecha y la hora junto a «hace…».',
+  gl: 'Engade a data e a hora xunto a «hai…».',
+  ca: 'Afegeix la data i l’hora al costat de «fa…».',
+  en: 'Adds the date and time alongside “ago”.',
+  eu: 'Data eta ordua gehitzen ditu «duela…» esamoldearen ondoan.',
+})) I18N[lang].cfgFechaLargaHint = texto;
+
 // Textos de eltiempo:.
 for (const [lang, textos] of Object.entries({
   es: ['Despejado', 'Poco nuboso', 'Nuboso', 'Cubierto', 'Lluvia', 'Nieve', 'Tormenta', 'Niebla', 'Hoy', 'Fuente', 'elaborado a las {h}', 'AEMET no responde: datos de Open-Meteo', 'Consultando el tiempo…', 'No se pudo consultar el tiempo.', 'No encuentro «{X}».', '¿Qué «{X}»?', 'El tiempo está desactivado en Ajustes › Avanzado.', 'Probabilidad de lluvia', 'tiempo', 'Tiempo', 'Tiempo y avisos (tiempo:, alertas:)', 'Pide la previsión y los avisos a AEMET (y a Open-Meteo o MeteoAlarm si no responde) a través del servidor de Voceiro. Desactivado, no se conecta con ningún servicio del tiempo.', 'El tiempo en {X}', 'Sale el sol', 'Se pone el sol', 'Cambiar de lugar',
@@ -4594,7 +4620,7 @@ function formatearFecha(ts){
 const ACCES_DEF = {
   lang: 'es', tema: 'light', fuente: 'sans',
   fs: 18, width: 1100,
-  just: false, bionic: false, focus: false,
+  just: false, bionic: false, focus: false, fechaLarga: false,
 };
 const LIM = {
   fs: { min: 14, max: 32, step: 1 },
@@ -4730,6 +4756,7 @@ function aplicarAcces(){
   h.lang = ACCES.lang;
   h.dataset.theme  = aplicarTemaPersonalizado(h) || ACCES.tema;
   h.dataset.font   = ACCES.fuente;
+  h.dataset.fechaLarga = ACCES.fechaLarga ? '1' : '0';
   h.dataset.just   = ACCES.just ? '1' : '0';
   h.dataset.bionic = ACCES.bionic ? '1' : '0';
   h.dataset.focus  = ACCES.focus ? '1' : '0';
@@ -11207,6 +11234,8 @@ function aplicarTextos(){
   $('#cfg-tiempo-hint').textContent = t('cfgTiempoHint');
   $('#cfg-avisos-cab-lbl').textContent = t('cfgAvisosCab');
   $('#cfg-avisos-cab-hint').textContent = t('cfgAvisosCabHint');
+  $('#cfg-fecha-larga-lbl').textContent = t('cfgFechaLarga');
+  $('#cfg-fecha-larga-hint').textContent = t('cfgFechaLargaHint');
   repintarTiempo();
   repintarAvisos();
   $('#cfg-backup').textContent = t('cfgBackup');
@@ -11584,6 +11613,16 @@ function wireStaticEvents(){
       try { localStorage.setItem(AVISOS_CABECERA_KEY, AVISOS_CABECERA ? 'true' : 'false'); } catch(e){}
       pintarBotonTiempo();
       refrescarAvisos();
+    });
+  }
+  // Toggle de fecha completa en las tarjetas.
+  const chkFechaLarga = $('#cfg-fecha-larga');
+  if (chkFechaLarga){
+    chkFechaLarga.checked = !!ACCES.fechaLarga;
+    chkFechaLarga.addEventListener('change', () => {
+      ACCES.fechaLarga = chkFechaLarga.checked;
+      guardarAcces();
+      aplicarAcces();
     });
   }
   wireTiempo();
