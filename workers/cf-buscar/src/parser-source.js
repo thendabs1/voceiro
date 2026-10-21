@@ -37,7 +37,7 @@ const PREFIX_ALIASES = {
   order: 'order', orden: 'order',
   limit: 'limit',
   offset: 'offset',
-  eltiempo: 'eltiempo',
+  eltiempo: 'eltiempo', tiempo: 'eltiempo',
   alertas: 'alertas', avisos: 'alertas',
 };
 
@@ -239,12 +239,11 @@ export function parseQuery(raw) {
         out.offset = Math.max(parseInt(tk.text, 10) || 0, 0);
         break;
 
-      // Lugar para la tarjeta del tiempo; no filtra noticias.
+      // Lugar para la tarjeta del tiempo; vacío, el panel con los sitios
+      // guardados. No filtra noticias.
       case 'eltiempo':
-        if (tk.text.trim()) {
-          out.eltiempo = tk.text.trim();
-          out.chips.push({ type:'eltiempo', value: tk.text, raw: tk.raw });
-        }
+        out.eltiempo = tk.text.trim();
+        out.chips.push({ type:'eltiempo', value: tk.text, raw: tk.raw });
         break;
 
       // Panel de avisos; vacío, los de toda España. No filtra noticias.
