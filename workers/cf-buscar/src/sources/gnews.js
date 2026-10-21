@@ -1,5 +1,6 @@
 // worker/src/sources/gnews.js
-// Google News vía proxy Deno (necesario: CF bloqueada por Google News).
+// Google News vía el relay de búsquedas (workers/deno-relay-buscar):
+// Google bloquea la IP de Cloudflare.
 
 const GNEWS_PROXY  = 'https://silly-snail-8721.thendabs1.deno.net/?url=';
 const GN_MAX_ITEMS = 60;
@@ -50,7 +51,8 @@ export const gnews = {
         return {
         t: titulo,
         u: String(it.link || '').trim(),
-        d: _dominioDe(sourceName) || 'news.google.com',
+        // sourceUrl: el dominio del medio (<source url>), si el relay lo da.
+        d: _hostDe(it.sourceUrl) || _dominioDe(sourceName) || 'news.google.com',
         p: _toIso(it.pubDate),
         e: '',
         f: sourceName || 'Google News',
@@ -75,6 +77,11 @@ function _buildQuery(parsed){
   return partes.join(' ').trim();
 }
 
+
+function _hostDe(url){
+  try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); }
+  catch(e){ return ''; }
+}
 
 function _dominioDe(name){
   if (!name) return '';

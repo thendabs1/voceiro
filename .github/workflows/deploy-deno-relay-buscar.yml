@@ -1,0 +1,33 @@
+name: Deploy Deno relay buscar
+
+# Despliega el relay de búsquedas (Google News para cf-buscar y deno-buscar)
+# en Deno Deploy solo cuando cambia. Es otro relay que el del recolector
+# (deploy-deno-relay.yml).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/deno-relay-buscar/**'
+      - '.github/workflows/deploy-deno-relay-buscar.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-deno-relay-buscar
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Deploy
+        working-directory: workers/deno-relay-buscar
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+        run: deno deploy --org thendabs1 --app silly-snail-8721 --prod

@@ -3,10 +3,9 @@ import { parseQuery } from './shared/parser.js';
 import { PARSER_SOURCE } from './parser-source.js';
 import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';
-import { freenews } from './sources/freenews.js';
 import { handleTiempo } from './tiempo/index.js';
 
-const ADAPTERS = { turso, gnews, freenews };
+const ADAPTERS = { turso, gnews };
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
