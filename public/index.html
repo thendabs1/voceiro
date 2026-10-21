@@ -6477,6 +6477,26 @@ function _buscarGrupoEnDia(diaGrupos, nombreGrupo) {
   return null;
 }
 
+// Fichero de un grupo o de un medio en un día del manifest. El manifest
+// da el nombre del de grupo (lleva hash) y no lista los de medio: se
+// deducen, para los medios con noticias en la ventana (medias). El de
+// antes traía {file, n, hash, kb} para los dos.
+function _ficheroDeCapaEnDia(dia, tipo, valor) {
+  if (tipo === 'grupo') {
+    const g = _buscarGrupoEnDia(dia.grupos, valor);
+    return !g ? '' : (typeof g === 'string' ? g : (g.file || ''));
+  }
+  if (tipo !== 'dominio') return '';
+  if (dia.dominios) {
+    const d = dia.dominios[valor];
+    return (d && d.file) || '';
+  }
+  // Los días de antes del troceado no tienen ficheros de grupo ni de medio.
+  if (!dia.grupos || !Object.keys(dia.grupos).length) return '';
+  const medias = _manifest && _manifest.medias && _manifest.medias.dominios;
+  return (medias && medias[valor]) ? `d-${valor}-${dia.fecha}.json` : '';
+}
+
 
 // ─── Decidir qué capas necesita el estado actual ───
 // Con más dominios que esto, no se cargan ficheros por medio (sería
@@ -6591,13 +6611,8 @@ async function _cargarCapa(key, signal) {
   const files = [];
 
   for (const dia of dias) {
-    if (tipo === 'grupo') {
-      const g = _buscarGrupoEnDia(dia.grupos, valor);
-      if (g && g.file) files.push(g.file);
-    } else if (tipo === 'dominio') {
-      const d = dia.dominios && dia.dominios[valor];
-      if (d && d.file) files.push(d.file);
-    }
+    const f = _ficheroDeCapaEnDia(dia, tipo, valor);
+    if (f) files.push(f);
   }
 
   if (!files.length) return 0;
@@ -6655,13 +6670,8 @@ async function extenderCapasR2(capas, desde, hasta) {
 
     const files = [];
     for (const dia of dias) {
-      if (tipo === 'grupo') {
-        const g = _buscarGrupoEnDia(dia.grupos, valor);
-        if (g && g.file) files.push(g.file);
-      } else if (tipo === 'dominio') {
-        const d = dia.dominios && dia.dominios[valor];
-        if (d && d.file) files.push(d.file);
-      }
+      const f = _ficheroDeCapaEnDia(dia, tipo, valor);
+      if (f) files.push(f);
     }
     if (!files.length) continue;
 
@@ -6957,11 +6967,16 @@ function _claveUrl(u, dominio) {
   return normalizeUrlForMatch(full);
 }
 
+// Los ficheros con hash en el nombre no cambian: force-cache. Los de medio
+// (d-<dominio>-<fecha>) se reescriben con el mismo nombre mientras el día
+// está vivo: caché normal, con la duración que da el worker (60 s y 304 si
+// sigue igual; 1 día los congelados).
 async function _fetchJSON(path, signal) {
+  const cache = path.startsWith('d-') ? 'default' : 'force-cache';
   const intentar = async () => {
     const url = `${DATA_BASE}/${path}`;
     const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
-    const r = await fetch(url, { cache: 'force-cache', signal: sig });
+    const r = await fetch(url, { cache, signal: sig });
     if (r.status >= 400 && r.status < 500) return null;   // 4xx: no retry
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return await r.json();
@@ -10271,19 +10286,23 @@ function renderPestanasPreset(){
   el.hidden = false;
 }
 
-// Total de noticias guardadas en R2: suma de los ficheros diarios del
-// manifest (all.n, ya sin duplicados). manifest.total no sirve: es el
-// conjunto de trabajo del recolector antes de deduplicar.
+// Total de noticias guardadas en R2 (ventana y archivo, ya sin
+// duplicados): el manifest trae el resumen. El de antes solo listaba días
+// y se sumaban sus all.n.
 function renderTotalR2(){
   const el = $('#total-r2'), sep = $('#total-r2-sep');
   if (!el) return;
   const dias = (_manifest && _manifest.dias) || [];
-  const n = dias.reduce((s, d) => s + ((d.all && d.all.n) || 0), 0);
-  el.hidden = sep.hidden = !n;
-  if (!n) return;
-  const [a, m, d] = (dias[dias.length - 1].fecha || '').split('-');
-  el.textContent = t('contadorR2', { n: n.toLocaleString() });
-  el.title = t('contadorR2Title', { dias: dias.length, desde: a ? `${d}/${m}/${a}` : '?' });
+  const g = (_manifest && _manifest.guardado) || {
+    n: dias.reduce((s, d) => s + ((d.all && d.all.n) || 0), 0),
+    dias: dias.length,
+    desde: dias.length ? dias[dias.length - 1].fecha : '',
+  };
+  el.hidden = sep.hidden = !g.n;
+  if (!g.n) return;
+  const [a, m, d] = (g.desde || '').split('-');
+  el.textContent = t('contadorR2', { n: g.n.toLocaleString() });
+  el.title = t('contadorR2Title', { dias: g.dias, desde: a ? `${d}/${m}/${a}` : '?' });
 }
 
 // Chips, en una o dos filas. Fila de modos (vista Temas, si hay temas en
@@ -11459,7 +11478,8 @@ function aplicarTextos(){
    Los días solo se usan con un modo activo o filtrando por medio: entonces
    se descargan N días de los ficheros de sus grupos y medios. Lo que pesa
    es días × tamaño del modo, y el manifest dice cuántos titulares y kB hay
-   por grupo, medio y día, así que se puede estimar antes de descargar. */
+   de media al día por grupo y medio, así que se puede estimar antes de
+   descargar. */
 function estimarCarga(modo, dias){
   const lista = (_manifest && _manifest.dias) || [];
   if (!modo || !lista.length) return null;
@@ -11467,7 +11487,20 @@ function estimarCarga(modo, dias){
   const dominios = Object.entries(modo.overrides || {})
     .filter(([, v]) => v === 'first').map(([d]) => normDomain(d));
   let n = 0, kb = 0;
-  for (const dia of lista.slice(0, Math.min(dias, DIAS_MEMORIA_MAX_SCOPE))){
+  const nDias = Math.min(dias, DIAS_MEMORIA_MAX_SCOPE, lista.length);
+  const medias = _manifest.medias;
+  if (medias){
+    for (const g of grupos){
+      const f = _buscarGrupoEnDia(medias.grupos, g);
+      if (f){ n += f[0] * nDias; kb += f[1] * nDias; }
+    }
+    for (const d of dominios){
+      const f = medias.dominios && medias.dominios[d];
+      if (f){ n += f[0] * nDias; kb += f[1] * nDias; }
+    }
+    return { n, kb };
+  }
+  for (const dia of lista.slice(0, nDias)){
     for (const g of grupos){
       const f = _buscarGrupoEnDia(dia.grupos, g);
       if (f){ n += f.n || 0; kb += f.kb || 0; }
