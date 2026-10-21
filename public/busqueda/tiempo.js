@@ -8,7 +8,7 @@
 // Cada límite se devuelve como { ms, dia }: ms para el filtro local y dia
 // (YYYY-MM-DD de Madrid) para la cota gruesa de Turso (fecha_dia).
 
-import { parseRelativeDate } from '../parser.js?v=180205a27c';
+import { parseRelativeDate } from '../parser.js?v=b3413f596c';
 
 const _FMT = new Intl.DateTimeFormat('en-US', {
   timeZone: 'Europe/Madrid', hourCycle: 'h23',

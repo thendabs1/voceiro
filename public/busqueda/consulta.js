@@ -6,13 +6,14 @@
 //   const c = interpretarConsulta(raw, { catalogo, ahora });
 //   c.pasa({ dominio, titular, ts, palabras })  → ¿entra en la lista?
 //     (palabras = palabrasDe(titular), opcional; conviene cachearlo por item)
+//   c.pasaExterno({ dominio, titular, ts, palabras }) → ídem para prensa externa
 //   c.clave                                      → identidad de la búsqueda
 //   paraArchivo(c) / paraPrensa(c)               → texto para /buscar?raw=
 
-import { parseQuery, tokenizeQuery } from '../parser.js?v=180205a27c';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from './texto.js?v=180205a27c';
-import { resolverMedios, pasaMedios } from './filtros.js?v=180205a27c';
-import { resolverVentana, pasaVentana, hayVentana } from './tiempo.js?v=180205a27c';
+import { parseQuery, tokenizeQuery } from '../parser.js?v=b3413f596c';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from './texto.js?v=b3413f596c';
+import { resolverMedios, pasaMedios } from './filtros.js?v=b3413f596c';
+import { resolverVentana, pasaVentana, hayVentana } from './tiempo.js?v=b3413f596c';
 
 const ORDENES = new Set(['recientes', 'antiguos', 'relevancia']);
 
@@ -41,13 +42,18 @@ export function interpretarConsulta(raw, { catalogo = {}, ahora = Date.now() } =
     && pasaVentana(ts, ventana)
     && coincide(palabras || palabrasDe(titular), texto);
 
-  // Para fuentes externas (prensa): medios y fechas sí, el texto no, porque
-  // el proveedor busca también en el cuerpo y exigir las palabras en el
-  // titular descartaría resultados buenos.
-  const pasaFiltros = ({ dominio, ts }) => pasaMedios(dominio, medios) && pasaVentana(ts, ventana);
+  // Para fuentes externas (prensa): medios, fechas y exclusiones, estrictos.
+  // Las palabras buscadas no, porque el proveedor busca también en el cuerpo
+  // y exigirlas en el titular descartaría resultados buenos; una palabra
+  // excluida en el titular, en cambio, incumple la búsqueda seguro.
+  const exclusiones = { incluir: [], excluir: texto.excluir };
+  const pasaExterno = ({ dominio, titular, ts, palabras }) =>
+    pasaMedios(dominio, medios)
+    && pasaVentana(ts, ventana)
+    && coincide(palabras || palabrasDe(titular), exclusiones);
 
   return {
-    raw: raw || '', parsed, texto, medios, ventana, orden, clave, pasa, pasaFiltros,
+    raw: raw || '', parsed, texto, medios, ventana, orden, clave, pasa, pasaExterno,
     vacia: textoVacio(texto) && medios.dominios === null && !hayVentana(ventana),
     // Un filtro de medio sin coincidencias (medio:noexiste) da 0 resultados:
     // no hay que pedir nada fuera (sin web: el worker devolvería de todo).
@@ -75,7 +81,7 @@ export function paraArchivo(c) {
   return partes.filter(Boolean).join(' ');
 }
 
-// Para prensa externa (Google News, FreeNews): sintaxis del proveedor.
+// Para prensa externa (Google News): sintaxis del proveedor.
 // Palabras tal cual, frases entre comillas, -exclusiones; dominios solo si
 // son pocos (site:); el resto de filtros se aplica al filtrar con c.pasa.
 export function paraPrensa(c) {

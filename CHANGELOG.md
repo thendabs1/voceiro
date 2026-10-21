@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-21 — Prensa externa: un solo filtro para todo
+
+### Cambiado
+- Lo que trae la prensa entra en la lista como el archivo: una capa de la
+  consulta que la pidió, filtrada, contada y ordenada con lo demás. Las
+  pestañas «Modo»/«Todo», los chips de temas y el orden ya la incluyen al
+  llegar; antes se sumaba aparte y los chips no la contaban.
+- A lo de la prensa se le aplican también las exclusiones (`-palabra`) sobre el
+  titular. Las palabras buscadas siguen sin exigirse: el proveedor las
+  encuentra también en el cuerpo.
+- «24 h» y «48 h» escriben `desde:24h` / `desde:48h`: una ventana móvil, la
+  misma para la lista, el archivo y la prensa. Antes escribían `desde:1d`
+  (desde ayer a las 00:00) y además recortaban solo la lista a 24 h, así que
+  `desde:ayer` perdía parte de ayer y la prensa traía noticias de hace 40 h.
+- El mismo titular en otro medio ya no se descarta como duplicado (las
+  noticias de agencia); sí se une si es del mismo medio o si el medio no se
+  pudo resolver.
+- Cambiar idioma o país de la prensa es otra petición: ya no se acepta la
+  respuesta de la edición anterior. Apagar la prensa cancela la petición en
+  camino, y su llegada ya no vuelve a pedirla.
+
 ## 2026-10-21 — Prensa externa: solo Google News, con el medio de verdad
 
 ### Añadido

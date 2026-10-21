@@ -738,33 +738,6 @@
   letter-spacing: .05em;
   font-weight: 600;
 }
-.fp-chks{
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 5px 0;
-}
-.fp-chk{
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  user-select: none;
-  color: var(--muted);
-  font-weight: 500;
-}
-.fp-chk input{
-  accent-color: var(--save);
-  width: 1em;
-  height: 1em;
-  margin: 0;
-  cursor: pointer;
-}
-.fp-chk input:checked + span{
-  color: var(--fg);
-  font-weight: 600;
-}
 .filtros-prensa-selects select{
   font-size: 1em;
   padding: 5px 8px;
@@ -797,9 +770,6 @@
   .filtros-prensa-selects{
     grid-template-columns: 1fr 1fr;
     gap: 6px;
-  }
-  .fp-fuentes{
-    grid-column: 1 / -1;
   }
   .prensa-reset{
     grid-column: 2 / 3;
@@ -2325,20 +2295,6 @@
             </label>
 
             <div class="filtros-prensa-selects" id="prensa-selects" hidden>
-              <label class="fp-fuentes">
-                <span id="prensa-fuentes-label">Fuentes</span>
-                <div class="fp-chks">
-                  <label class="fp-chk">
-                    <input type="checkbox" id="prensa-f-gnews" checked>
-                    <span>Google News</span>
-                  </label>
-                  <label class="fp-chk">
-                    <input type="checkbox" id="prensa-f-freenews" checked>
-                    <span>FreeNews</span>
-                  </label>
-                </div>
-              </label>
-
               <label class="fp-lang">
                 <span id="prensa-lang-label">Idioma</span>
                 <select id="prensa-lang"></select>
@@ -2578,28 +2534,28 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=180205a27c';
+} from './parser.js?v=b3413f596c';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=180205a27c';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=180205a27c';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=180205a27c';
-import { comparador } from './busqueda/orden.js?v=180205a27c';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=b3413f596c';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b3413f596c';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b3413f596c';
+import { comparador } from './busqueda/orden.js?v=b3413f596c';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=180205a27c';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=180205a27c';
+} from './sync/fusion.js?v=b3413f596c';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b3413f596c';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=180205a27c';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=180205a27c';
+import { crearCliente } from './sync/cliente.js?v=b3413f596c';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b3413f596c';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=180205a27c';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b3413f596c';
 import {
   FENOMENOS, NIVELES, PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=180205a27c';
+} from './tiempo/avisos.js?v=b3413f596c';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -2773,8 +2729,8 @@ let PRENSA_ACTIVA = false;
 let PRENSA_ABORT = null;
 let PRENSA_TIMER = null;
 let PRENSA_CLAVE = null;   // clave de la consulta con prensa pendiente
+let PRENSA_HECHA = null;   // clave cuya prensa ya está en NOTICIAS
 let PRENSA_USER_MANUAL_OFF = false;
-let PRENSA_FUENTES = { gnews: true, freenews: true };
 let PRENSA_LANG = 'es';
 let PRENSA_PAIS = 'ES';
 
@@ -2793,7 +2749,7 @@ const PRENSA_PAISES = [
   { code: 'AR', labelKey: 'prensaPaisAR' },
   { code: 'CO', labelKey: 'prensaPaisCO' },
   { code: 'CL', labelKey: 'prensaPaisCL' },
-  { code: 'UK', labelKey: 'prensaPaisUK', gnewsGl: 'GB' },
+  { code: 'GB', labelKey: 'prensaPaisUK' },
   { code: 'US', labelKey: 'prensaPaisUS' },
 ];
 
@@ -2832,7 +2788,6 @@ const I18N = {
 
     /* ── Prensa externa ── */
     prensaPanelLabel:  'Prensa externa',
-    prensaFuentes:     'Fuentes',
     prensaLang:        'Idioma',
     prensaPais:        'País',
     prensaReset:       'Restablecer prensa',
@@ -3108,7 +3063,7 @@ const I18N = {
     ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
     ajMediosN:              '{f} forzados · {b} bloqueados',
     ajVistaTit:             'Vista del feed',
-    ajPrensaActivar:        'Buscar también en Google News y FreeNews',
+    ajPrensaActivar:        'Buscar también en Google News',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalar el lector',
     ajLectorHint:           'Necesita un gestor de userscripts, como Violentmonkey. Se actualiza solo.',
@@ -3177,7 +3132,6 @@ const I18N = {
     cfgDiasCancelar:        'Cancelar',
 
     prensaPanelLabel:  'Prensa externa',
-    prensaFuentes:     'Fontes',
     prensaLang:        'Idioma',
     prensaPais:        'País',
     prensaReset:       'Restablecer prensa',
@@ -3431,7 +3385,7 @@ const I18N = {
     ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
     ajMediosN:              '{f} forzados · {b} bloqueados',
     ajVistaTit:             'Vista do feed',
-    ajPrensaActivar:        'Buscar tamén en Google News e FreeNews',
+    ajPrensaActivar:        'Buscar tamén en Google News',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalar o lector',
     ajLectorHint:           'Precisa un xestor de userscripts, como Violentmonkey. Actualízase só.',
@@ -3500,7 +3454,6 @@ const I18N = {
     cfgDiasCancelar:        'Cancel·lar',
 
     prensaPanelLabel:  'Premsa externa',
-    prensaFuentes:     'Fonts',
     prensaLang:        'Idioma',
     prensaPais:        'País',
     prensaReset:       'Restablir premsa',
@@ -3754,7 +3707,7 @@ const I18N = {
     ajResumenModo:          '{t} temes · {g} grups · {m} mitjans',
     ajMediosN:              '{f} forçats · {b} bloquejats',
     ajVistaTit:             'Vista del feed',
-    ajPrensaActivar:        'Cercar també a Google News i FreeNews',
+    ajPrensaActivar:        'Cercar també a Google News',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instal·la el lector',
     ajLectorHint:           "Cal un gestor d'userscripts, com Violentmonkey. S'actualitza sol.",
@@ -3823,7 +3776,6 @@ const I18N = {
     cfgDiasCancelar:        'Cancel',
 
     prensaPanelLabel:  'External press',
-    prensaFuentes:     'Sources',
     prensaLang:        'Language',
     prensaPais:        'Country',
     prensaReset:       'Reset press',
@@ -4077,7 +4029,7 @@ const I18N = {
     ajResumenModo:          '{t} topics · {g} groups · {m} outlets',
     ajMediosN:              '{f} forced · {b} blocked',
     ajVistaTit:             'Feed view',
-    ajPrensaActivar:        'Also search Google News and FreeNews',
+    ajPrensaActivar:        'Also search Google News',
     ajPluginTit:            'Universal Reader',
     ajLectorInstalar:       'Install the reader',
     ajLectorHint:           'Needs a userscript manager such as Violentmonkey. It updates itself.',
@@ -4146,7 +4098,6 @@ const I18N = {
     cfgDiasCancelar:        'Utzi',
 
     prensaPanelLabel:  'Kanpoko prentsa',
-    prensaFuentes:     'Iturriak',
     prensaLang:        'Hizkuntza',
     prensaPais:        'Herrialdea',
     prensaReset:       'Prentsa berrezarri',
@@ -4400,7 +4351,7 @@ const I18N = {
     ajResumenModo:          '{t} gai · {g} talde · {m} hedabide',
     ajMediosN:              '{f} behartuta · {b} blokeatuta',
     ajVistaTit:             'Feed-aren ikuspegia',
-    ajPrensaActivar:        'Bilatu Google News eta FreeNews-en ere',
+    ajPrensaActivar:        'Bilatu Google News-en ere',
     ajPluginTit:            'Lector Universal',
     ajLectorInstalar:       'Instalatu irakurgailua',
     ajLectorHint:           'Userscript kudeatzaile bat behar du, Violentmonkey adibidez. Bere kabuz eguneratzen da.',
@@ -6453,8 +6404,8 @@ function capasRequeridas(parsed, consulta = ULT_CTX && ULT_CTX.consulta) {
 
 // ─── Mergear items de una capa/base en NOTICIAS con dedup global ───
 // Devuelve cuántos items NUEVOS se añadieron.
-// clave: consulta que trajo los items (solo Turso). Un item que solo viene
-// de Turso se ve únicamente mientras esa consulta esté activa (_pasaVista):
+// clave: consulta que trajo los items (Turso y prensa). Un item que solo viene
+// de ellas se ve únicamente mientras esa consulta esté activa (_pasaVista):
 // así una búsqueda no deja sus resultados en el feed ni en la siguiente.
 // rangoBase: posición del primer item en la respuesta del archivo (offset);
 // con order:relevancia el worker los devuelve por bm25 y esa posición es el rango.
@@ -6462,9 +6413,12 @@ function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null)
   let añadidos = 0;
   let pos = 0;
   let rango = null;
+  // La prensa lleva marca propia: su clave incluye idioma y país, y a lo suyo
+  // no se le exigen las palabras en el titular (_pasaVista).
+  const campo = capaKey === 'prensa' ? '_prensaPara' : '_consultas';
   const marcar = n => {
     if (!clave) return;
-    (n._consultas || (n._consultas = new Set())).add(clave);
+    (n[campo] || (n[campo] = new Set())).add(clave);
     if (rango !== null) n._rango = { clave, valor: rango };
   };
 
@@ -6482,10 +6436,13 @@ function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null)
         continue;
       }
     }
-    // ¿Ya existe por título?
+    // ¿Ya existe por título? En prensa, el mismo titular en otro medio es
+    // otra noticia (las de agencia): solo se une si es del mismo medio o si
+    // el medio no se pudo resolver.
     if (t) {
       const existente = _itemPorTitulo.get(t);
-      if (existente) {
+      if (existente && (capaKey !== 'prensa' || n.d === 'news.google.com'
+          || (existente.dominio || existente.d) === n.d)) {
         existente._capas.add(capaKey);
         marcar(existente);
         continue;
@@ -6502,7 +6459,7 @@ function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null)
     n._generado = n._generado || '';
     NOTICIAS.push(n);
     if (u) _itemPorUrl.set(u, n);
-    if (t) _itemPorTitulo.set(t, n);
+    if (t && !_itemPorTitulo.has(t)) _itemPorTitulo.set(t, n);
     añadidos++;
   }
 
@@ -6692,6 +6649,7 @@ async function cargarBase() {
     _urlsCargadas = new Set();
     _titulosCargados = new Set();
     _hidratadasHasta = 0;
+    PRENSA_HECHA = null;       // su prensa ya no está en NOTICIAS
     _dupsHechosHasta = 0;
     _dupsLogged = false;
 
@@ -7229,18 +7187,14 @@ function syncPanelFromParsed(parsed) {
   if (fD && fD.value !== desde) fD.value = desde;
   if (fH && fH.value !== hasta) fH.value = hasta;
 
-  // Rango: si el desde coincide con hoy-1d → "1"; hoy-2d → "2"; si no, "Todo"
+  // Rango: «24 h» y «48 h» son exactamente desde:24h y desde:48h. Otro desde
+  // (hoy, ayer, 2d, una fecha) no es una ventana móvil: el selector, en «Todo».
   const selR = $('#rango');
   if (selR) {
-    let rMatch = '';
-    if (desde) {
-      const hoy = new Date(); hoy.setHours(0,0,0,0);
-      const d = new Date(desde + 'T00:00:00');
-      const diff = Math.round((hoy - d) / 86400000);
-      if (diff === 0) rMatch = '1';       // hoy (equivalente a 24h)
-      else if (diff === 1) rMatch = '1';  // ayer
-      else if (diff === 2) rMatch = '2';
-    }
+    // parsed.desde ya es un día: se mira lo escrito (gana el último desde:).
+    const chD = (parsed.chips || []).filter(ch => ch.type === 'desde').pop();
+    const vD = chD ? String(chD.value).toLowerCase() : '';
+    const rMatch = vD === '24h' ? '1' : vD === '48h' ? '2' : '';
     if (selR.value !== rMatch) selR.value = rMatch;
   }
 }
@@ -7650,7 +7604,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=180205a27c')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=b3413f596c')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -9098,25 +9052,6 @@ function aplicarListaOverrides(){
   toast(`OK: ${ok} · KO: ${ko}`, 2200);
 }
 /* ═══════════════════════════════════════════════════════════════
-   TIER 3 · Preferencias del usuario (preset, overrides, hide mode)
-   Se aplica SIEMPRE al final, después de cada merge con resultados
-   del worker (histórico Turso + prensa externa). No depende del
-   worker: son preferencias locales.
-   ═══════════════════════════════════════════════════════════════ */
-function aplicarTier3(items){
-  const presetEfectivo = ULT_PRESET_EFECTIVO;
-  return items.filter(n => {
-    // Overrides + preset
-    if (presetEfectivo && !cumpleFiltro(n, ULT_CTX)) return false;
-
-    if (_ocultaPorLectura(n, HIDE_MODE)) return false;
-    // Se recorre toda la lista (locales + prensa): antes ponía _esPreset a
-    // false a todo y las marcas del modo desaparecían al llegar la prensa.
-    n._esPreset = (presetEfectivo || ULT_MARCAR_PRESET) ? cumpleFiltro(n, ULT_CTX) : false;
-    return true;
-  });
-}
-/* ═══════════════════════════════════════════════════════════════
    CUMPLE PRESET
    ═══════════════════════════════════════════════════════════════ */
 let SET_GRUPOS = new Set();
@@ -9502,8 +9437,6 @@ function importarConfig(file){
    ═══════════════════════════════════════════════════════════════ */
 let ULT_FILTRADAS = [];
 let ULT_TEXTO = null;   // texto compilado de la búsqueda actual (para resaltar)
-let ULT_PRESET_EFECTIVO = false;
-let ULT_MARCAR_PRESET = false;   // buscando con modo activo: marcar lo del modo
 let ULT_CHIPS = null;      // { total, porModo, modo, totalModo, porTema, nMedios } o null
 let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañas
 
@@ -9533,7 +9466,7 @@ let _archivoTimer = null;
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false; 
 /* ═══════════════════════════════════════════════════════════════
-   PRENSA EXTERNA (vía Worker: gnews + freenews)
+   PRENSA EXTERNA (vía Worker: Google News)
    ═══════════════════════════════════════════════════════════════ */
 function prensaCacheGet(rawQuery){
   try {
@@ -9560,16 +9493,6 @@ function setPrensaActiva(valor, { persistir = true } = {}){
   }
 }
 
-function setPrensaFuente(nombre, activa, { persistir = true } = {}){
-  if (!PRENSA_FUENTES.hasOwnProperty(nombre)) return;
-  PRENSA_FUENTES[nombre] = !!activa;
-  const chk = document.getElementById('prensa-f-' + nombre);
-  if (chk) chk.checked = PRENSA_FUENTES[nombre];
-  if (persistir){
-    try { localStorage.setItem('voceiro-prensa-' + nombre, PRENSA_FUENTES[nombre] ? '1' : '0'); } catch(e){}
-  }
-}
-
 function setPrensaLang(valor, { persistir = true } = {}){
   PRENSA_LANG = valor || 'es';
   const sel = document.getElementById('prensa-lang');
@@ -9589,23 +9512,13 @@ function setPrensaPais(valor, { persistir = true } = {}){
 }
 
 function resetPrensa(){
-  setPrensaFuente('gnews', true);
-  setPrensaFuente('freenews', true);
   setPrensaLang('es');
   setPrensaPais('ES');
   aplicarFiltros();
 }
 
-function prensaFuentesActivas(){
-  const out = [];
-  if (PRENSA_FUENTES.gnews)    out.push('gnews');
-  if (PRENSA_FUENTES.freenews) out.push('freenews');
-  return out;
-}
-
 function prensaCacheKey(rawQuery){
-  const fuentes = prensaFuentesActivas().join(',');
-  return `${rawQuery}|${PRENSA_LANG}|${PRENSA_PAIS}|${fuentes}`;
+  return `${rawQuery}|${PRENSA_LANG}|${PRENSA_PAIS}`;
 }
 
 function pintarSelectsPrensa(){
@@ -9626,28 +9539,21 @@ function pintarSelectsPrensa(){
   // Sincronizar valores
   if (selL) selL.value = PRENSA_LANG;
   if (selP) selP.value = PRENSA_PAIS;
-
-  const chkG = document.getElementById('prensa-f-gnews');
-  const chkF = document.getElementById('prensa-f-freenews');
-  if (chkG) chkG.checked = PRENSA_FUENTES.gnews;
-  if (chkF) chkF.checked = PRENSA_FUENTES.freenews;
 }
 
 function cargarPrensaDeLocalStorage(){
   try {
     const guardado = localStorage.getItem('voceiro-prensa-activa');
     const activa  = guardado === '1';
-    const gnews   = localStorage.getItem('voceiro-prensa-gnews')   !== '0';
-    const freenews= localStorage.getItem('voceiro-prensa-freenews')!== '0';
     const lang    = localStorage.getItem('voceiro-prensa-lang')  || 'es';
-    const pais    = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
+    let pais      = localStorage.getItem('voceiro-prensa-pais')  || 'ES';
+    // Reino Unido se guardaba como 'UK'; Google usa el código ISO ('GB').
+    if (pais === 'UK') pais = 'GB';
 
     PRENSA_ACTIVA = activa;
     // Solo cuenta como apagado manual si el usuario lo apagó ('0');
     // sin clave guardada, la autoactivación por pocos resultados sigue viva.
     PRENSA_USER_MANUAL_OFF = guardado === '0';
-    PRENSA_FUENTES.gnews    = gnews;
-    PRENSA_FUENTES.freenews = freenews;
     PRENSA_LANG = lang;
     PRENSA_PAIS = pais;
   } catch(e){}
@@ -9687,9 +9593,6 @@ function _avisarErroresFuente(data){
 }
 
 async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
-  const fuentes = prensaFuentesActivas();
-  if (!fuentes.length) return { items: [] };
-
   // Cache primero
   const cacheKey = prensaCacheKey(rawQuery);
   const cached = prensaCacheGet(cacheKey);
@@ -9700,7 +9603,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
 
   const params = new URLSearchParams();
   params.set('raw', rawQuery || '');
-  params.set('fuentes', fuentes.join(','));
+  params.set('fuentes', 'gnews');
   params.set('limit', '40');
   params.set('offset', '0');
   params.set('lang', PRENSA_LANG);
@@ -9783,125 +9686,36 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
 
 
 
-function mergePrensa(locales, prensaItems, consulta = null){
-  if (!prensaItems || !prensaItems.length) return locales;
-
-  const yaVistas = new Set();
-  const titulosVistos = new Set();
-  for (const n of locales){
-    yaVistas.add(normalizeUrlForMatch(n.enlace));
-    const tn = n._titNorm || (n._titNorm = normalize(n.titular));
-    if (tn) titulosVistos.add(tn);
-  }
-  const nuevos = [];
-  const horizonte = Date.now() + HORIZONTE_FUTURO_MS;
-
-  for (const it of prensaItems){
-    if (!it.u) continue;
-
-    // ── 1er intento: match por dominio (FreeNews) ──
-    let dom = it.d || '';
-    let m = MEDIOS[dom] || {};
-
-    // ── 2º intento: match por nombre (GNews) ──
-    // Solo si no hubo match por dominio y tenemos nombre de medio.
-    if (!m.n && it._src === 'gnews' && it.f){
-      const clave = normStrict(it.f);
-      // Mínimo 4 letras para evitar colisiones ("Vox", "ABC", "EFE"...)
-      if (clave.length >= 4){
-        const domPorNombre = MEDIOS_POR_NOMBRE.get(clave);
-        if (domPorNombre && MEDIOS[domPorNombre]){
-          dom = domPorNombre;
-          m = MEDIOS[dom];
-        }
+// Item de prensa → item crudo de NOTICIAS, como los de Turso. El medio se
+// resuelve por dominio (el de <source url>, vía relay) y, si ese dominio no
+// está en el catálogo, por nombre.
+function _itemDePrensa(it){
+  if (!it.u) return null;
+  let dom = it.d || '';
+  let m = MEDIOS[dom] || {};
+  // Mínimo 4 letras para evitar colisiones ("Vox", "ABC", "EFE"...)
+  if (!m.n && it.f){
+    const clave = normStrict(it.f);
+    if (clave.length >= 4){
+      const domPorNombre = MEDIOS_POR_NOMBRE.get(clave);
+      if (domPorNombre && MEDIOS[domPorNombre]){
+        dom = domPorNombre;
+        m = MEDIOS[dom];
       }
     }
-
-    // Nombre a mostrar (orden de preferencia):
-    //   1. Nombre del catálogo (match correcto)
-    //   2. Nombre crudo de GNews (sin match)
-    //   3. Dominio (para FreeNews sin match)
-    //   4. Fallback
-    const nombreMostrar = m.n
-      || (it._src === 'gnews' ? it.f : '')
-      || dom
-      || 'Prensa';
-
-    // Reconstruir URL si viene como path relativo
-    let enlace = it.u;
-    if (it.u.startsWith('/')){
-      const host = m.h || `www.${dom}`;
-      enlace = `https://${host}${it.u}`;
-    }
-
-    const key = normalizeUrlForMatch(enlace);
-    if (yaVistas.has(key)) continue;
-
-    // GNews devuelve redirects de Google cuya URL rota entre fetches.
-    // La canónica que tenemos en portada/Turso nunca coincide, así que
-    // sin esto la misma noticia entra dos veces (una con badge 🌐 prensa).
-    const titNorm = normalize(it.t || '');
-    if (titNorm && titulosVistos.has(titNorm)) continue;
-
-    yaVistas.add(key);
-    if (titNorm) titulosVistos.add(titNorm);
-
-    const n = {
-      dominio: dom,                        // puede ser "elpais.com" si hubo match
-      titular: limpiarCdata(it.t || ''),
-      enlace: enlace,
-      fecha_pub: it.p || '',
-      fecha_estimada: '',
-      fecha: '',
-      fuente: it.f || 'prensa',
-      medio: nombreMostrar,
-      grupo: m.g || '',                    // del catálogo si hubo match
-      tipo:  m.t || '',
-      lang:  m.l || '',
-      tags:  Array.isArray(m.tags) ? m.tags : [],
-      _desdePrensa: true,
-      _prensaSrc: it._src || '',
-      _enCatalogo: !!m.n,                  // ← flag útil para el badge "?"
-    };
-
-    n._titularEsc = escapeHtml(n.titular);
-    n._medioEsc   = escapeHtml(n.medio);
-    n._tipoEsc    = escapeHtml(n.tipo);
-    n._grupoEsc   = escapeHtml(n.grupo);
-    n._enlaceEsc  = escapeHtml(n.enlace);
-
-    const tsPub = parseFecha(n.fecha_pub);
-    n._tsShow     = !isNaN(tsPub) ? tsPub : NaN;
-    n._tsOrden    = (!isNaN(tsPub) && tsPub <= horizonte) ? tsPub : NaN;
-    n._tipoShow   = !isNaN(tsPub) ? 'pub' : 'none';
-    n._esFuturo   = !isNaN(tsPub) && (tsPub > horizonte);
-    n._tieneFecha = !isNaN(n._tsOrden);
-    n._esPreset   = false;
-    n._dupHidden  = null;
-
-    // Medios y fechas de la búsqueda, estrictos; el texto no (el proveedor
-    // busca también en el cuerpo). Con filtro de medio, un resultado cuyo
-    // medio no se pudo resolver queda fuera: no se puede comprobar.
-    if (consulta && !consulta.pasaFiltros({ dominio: dom, ts: n._tsOrden })) continue;
-
-    nuevos.push(n);
   }
-
-  if (!nuevos.length) return locales;
-
-  // Mismo orden que la lista (antes siempre 'recientes' y sin fecha como 0).
-  // Solo hay prensa con búsqueda, así que no hay bloque de favoritos que respetar.
-  const merged = locales.concat(nuevos);
-  const ctx = ULT_CTX;
-  const clave = ctx && ctx.consulta ? ctx.consulta.clave : '';
-  const cmp = comparador(ctx ? ctx.orden : 'recientes');
-  merged.sort((a, b) => cmp(_paraOrden(a, clave), _paraOrden(b, clave)));
-  return merged;
+  return {
+    u: it.u, d: dom, t: it.t || '', p: it.p || '', e: '', f: it.f || 'prensa',
+    // Fuera del catálogo, el nombre que dio el proveedor (o el dominio).
+    medio: m.n || it.f || dom || 'Prensa',
+  };
 }
 
+// La prensa entra en NOTICIAS como capa 'prensa', marcada con la clave de la
+// consulta (_prensaPara), y se filtra, cuenta y ordena con todo lo demás en
+// aplicarFiltros. Cada aplicarFiltros pasa por aquí: lo ya pedido o en camino
+// para la misma clave no se repite (si no, su llegada la volvería a pedir).
 function programarPrensa(consulta, nLocales){
-  if (PRENSA_TIMER){ clearTimeout(PRENSA_TIMER); PRENSA_TIMER = null; }
-
   // Con un filtro de medios de más de 3 dominios (p. ej. grupo:galicia) la
   // prensa no puede acotarse (site: admite 3) y lo que trae no pasa el
   // filtro de medios: medido, 0 de 100. No se pide.
@@ -9910,9 +9724,14 @@ function programarPrensa(consulta, nLocales){
     && (consulta.texto.incluir.length || dominios !== null)
     && !(dominios && dominios.size > 3);
   if (!tieneQuery || (!PRENSA_ACTIVA && PRENSA_USER_MANUAL_OFF)){
-    PRENSA_CLAVE = null;
+    _cancelarPrensa();
     return;
   }
+
+  const clave = _clavePrensa(consulta);
+  if (clave === PRENSA_CLAVE) return;
+  _cancelarPrensa();
+  if (clave === PRENSA_HECHA) return;
 
   const pocos = nLocales < PRENSA_MIN_RESULTADOS;
   const forzar = PRENSA_ACTIVA;
@@ -9928,11 +9747,7 @@ function programarPrensa(consulta, nLocales){
     }
   }
 
-  // Se compara por clave: cada aplicarFiltros crea un parsed nuevo y antes
-  // cualquier repintado anulaba la búsqueda de prensa pendiente.
-  const clave = consulta.clave;
   PRENSA_CLAVE = clave;
-
   PRENSA_TIMER = setTimeout(() => {
     PRENSA_TIMER = null;
     if (PRENSA_CLAVE !== clave) return;
@@ -9942,36 +9757,29 @@ function programarPrensa(consulta, nLocales){
 
     buscarEnPrensa(consulta.parsed, paraPrensa(consulta), { silent: true }).then(res => {
       if (btn) btn.classList.remove('cargando');
-      if (!res || !res.items || !res.items.length) return;
       if (PRENSA_CLAVE !== clave) return;
-
-      const antes = ULT_FILTRADAS.length;
-      const previos = new Set(ULT_FILTRADAS);
-      const merged = mergePrensa(ULT_FILTRADAS, res.items, consulta);
-
-      // Pestañas: la prensa cuenta en las dos, se vea o no en la pestaña
-      // actual (en «Modo» no se muestra la que no es del modo, pero suma en
-      // «Todo»). Cada aplicarFiltros recalcula los números desde cero, así
-      // que no se cuenta dos veces.
-      if (ULT_PESTANAS){
-        const enTodo = merged.filter(n => !previos.has(n) && !_ocultaPorLectura(n, HIDE_MODE));
-        ULT_PESTANAS.nTodo += enTodo.length;
-        // Sin chips: «Temas · N» / «Modo · N» cuentan antes del chip.
-        ULT_PESTANAS.nModo += enTodo.filter(n => cumpleFiltro(n, { vistaTemas: ULT_PESTANAS.temas })).length;
-        renderPestanasPreset();
-      }
-
-      const filtrado = aplicarTier3(merged);
-      const nuevas = filtrado.length - antes;
-      if (nuevas <= 0) return;
-
-      ULT_FILTRADAS = filtrado;                    // ← filtrado
-      renderizar();
-      actualizarFiltrosCount();
+      PRENSA_CLAVE = null;
+      if (!res) return;          // error: se reintenta en el siguiente aplicarFiltros
+      PRENSA_HECHA = clave;
+      const items = (res.items || []).map(_itemDePrensa).filter(Boolean);
+      if (!items.length) return;
+      if (_mergearItemsEnNoticias(items, 'prensa', clave) > 0) hidratarNoticias();
+      aplicarFiltros();
     });
   }, PRENSA_DEBOUNCE_MS);
 }
 
+// Otra edición (idioma, país) es otra respuesta: va en la clave.
+function _clavePrensa(consulta){
+  return `${consulta.clave}|${PRENSA_LANG}|${PRENSA_PAIS}`;
+}
+
+// Anula la petición programada o en camino; su respuesta, si llega, se descarta.
+function _cancelarPrensa(){
+  if (PRENSA_TIMER){ clearTimeout(PRENSA_TIMER); PRENSA_TIMER = null; }
+  if (PRENSA_ABORT){ PRENSA_ABORT.abort(); PRENSA_ABORT = null; }
+  PRENSA_CLAVE = null;
+}
 
 // Texto, medios y fechas: lo decide el núcleo (shared/busqueda/consulta.js).
 function _pasaConsulta(n, consulta){
@@ -9981,6 +9789,21 @@ function _pasaConsulta(n, consulta){
     ts: n._tsOrden,
     palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
   });
+}
+// Lo mismo para lo que trajo la prensa: las palabras buscadas pueden estar
+// en el cuerpo (consulta.pasaExterno).
+function _pasaExterno(n, consulta){
+  return consulta.pasaExterno({
+    dominio: n.dominio,
+    titular: n.titular,
+    ts: n._tsOrden,
+    palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
+  });
+}
+// ¿Todo lo que tiene el item viene de capas de una consulta (archivo, prensa)?
+function _soloDeConsulta(n){
+  for (const c of n._capas) if (c !== 'turso' && c !== 'prensa') return false;
+  return true;
 }
 
 // Vista de un item para el comparador del núcleo (shared/busqueda/orden.js).
@@ -10007,8 +9830,8 @@ function _paraOrdenFeed(n, clave, ahora){
   return { ..._paraOrden(n, clave), ts: _tsOrdenFeed(n, ahora) };
 }
 
-// Ocultar leídas / vistas (HIDE_MODE). Una sola copia: la usan la lista,
-// la prensa (aplicarTier3) y el recuento de las pestañas.
+// Ocultar leídas / vistas (HIDE_MODE). Una sola copia: la usan la lista
+// y el recuento de las pestañas.
 function _ocultaPorLectura(n, hm){
   if (hm === 'off') return false;
   const key = normalizeUrlForMatch(n.enlace);
@@ -10020,21 +9843,19 @@ function _ocultaPorLectura(n, hm){
 }
 
 // Predicado único de la lista (antes había dos copias: el filtro de
-// aplicarFiltros y _pasaFiltroIndividual). Encima de la consulta solo quedan
-// filtros de vista del cliente: selects, rango móvil, ocultar leídas/vistas
-// y modo (preset). Devuelve true, false o 'fuera-preset'.
+// aplicarFiltros y _pasaFiltroIndividual), también para la prensa. Encima de
+// la consulta solo quedan filtros de vista del cliente: selects, ocultar
+// leídas/vistas y modo (preset). Devuelve true, false o 'fuera-preset'.
 function _pasaVista(n, ctx){
-  const { g, t2, limiteMs, ahora, consulta, presetEfectivo, soloPreset, marcarPreset, HIDE_MODE: hm } = ctx;
+  const { g, t2, consulta, clavePrensa, presetEfectivo, soloPreset, marcarPreset, HIDE_MODE: hm } = ctx;
   if (g && n.grupo !== g) return false;
   if (t2 && n.tipo  !== t2) return false;
-  if (limiteMs){
-    const ts = n._tsOrden;
-    if (isNaN(ts) || ahora - ts > limiteMs) return false;
-  }
   if (_ocultaPorLectura(n, hm)) return false;
-  if (n._capas && n._capas.size === 1 && n._capas.has('turso')
-      && !(n._consultas && n._consultas.has(consulta.clave))) return false;
-  if (!_pasaConsulta(n, consulta)) return false;
+  // Lo que trajo la prensa para esta consulta, con la prensa encendida.
+  const dePrensa = PRENSA_ACTIVA && !!n._prensaPara && n._prensaPara.has(clavePrensa);
+  if (n._capas && _soloDeConsulta(n) && !dePrensa
+      && !(n._capas.has('turso') && n._consultas && n._consultas.has(consulta.clave))) return false;
+  if (!(dePrensa ? _pasaExterno(n, consulta) : _pasaConsulta(n, consulta))) return false;
   if (presetEfectivo || soloPreset){
     const cumple = cumpleFiltro(n, ctx);
     n._esPreset = cumple;
@@ -10149,11 +9970,9 @@ if (!capas.size) {
   // ── Filtrado ──
   const g = $('#grupo').value;
   const t2 = $('#tipo').value;
-  const dias = parseInt($('#rango').value, 10) || 0;
   const orden = $('#orden').value || 'recientes';   // sincronizado con order:/orden: de la consulta
 
   const ahora = Date.now();
-  const limiteMs = dias ? dias * 24 * 3600 * 1000 : 0;
 
   const hayMedio   = parsed.medios.length   > 0;
   const hayDominio = parsed.dominios.length > 0;
@@ -10165,7 +9984,7 @@ if (!capas.size) {
   const hayFuenteExplicita = hayDominio || hayMedio;
   const hayBusquedaActiva =
     hayTitulo || hayGrupo || hayTipo || hayTag ||
-    !!g || !!t2 || !!dias || !!parsed.desde || !!parsed.hasta;
+    !!g || !!t2 || !!parsed.desde || !!parsed.hasta;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
   // La vista 🔖 Temas filtra como un modo, con los temas de todos los modos.
@@ -10181,7 +10000,7 @@ if (!capas.size) {
 
   _avisarMediosDesconocidos(consulta);
   const ctx = {
-    g, t2, limiteMs, ahora, parsed, consulta, orden, HIDE_MODE,
+    g, t2, ahora, parsed, consulta, clavePrensa: _clavePrensa(consulta), orden, HIDE_MODE,
     presetEfectivo, marcarPreset: conPestanas, soloPreset: false,
     vistaTemas, chipTemas: null, chipTema: null,
   };
@@ -10272,8 +10091,6 @@ if (!capas.size) {
 
   ULT_FILTRADAS = filtradas;
   ULT_TEXTO = consulta.texto.incluir.length ? consulta.texto : null;
-  ULT_PRESET_EFECTIVO = presetEfectivo || ctx.soloPreset;
-  ULT_MARCAR_PRESET = conPestanas;
 
   // Contexto para el append incremental
   ULT_CTX = ctx;
@@ -10707,7 +10524,7 @@ function renderItemHtml(n, idx){
   const medioHtml = (n.dominio && MEDIOS[n.dominio])
     ? `<button class="medio" type="button" data-dominio="${escapeHtml(n.dominio)}" title="${escapeHtml(t('medioFiltrarTitle', { medio: n.medio || n.dominio }))}">${n._medioEsc}</button>`
     : `<span class="medio">${n._medioEsc}</span>`;
-  const prensaBadge = n._desdePrensa
+  const prensaBadge = (n._capas && n._capas.size === 1 && n._capas.has('prensa'))
     ? `<span class="badge prensa" title="Encontrado en prensa externa">${ico('globe')} prensa</span>`
     : '';
 
@@ -11387,8 +11204,6 @@ function aplicarTextos(){
   // Prensa externa (panel)
   const pl = document.getElementById('prensa-panel-label');
   if (pl) pl.textContent = t('ajPrensaActivar');
-  const plf = document.getElementById('prensa-fuentes-label');
-  if (plf) plf.textContent = t('prensaFuentes');
   const pll = document.getElementById('prensa-lang-label');
   if (pll) pll.textContent = t('prensaLang');
   const plp = document.getElementById('prensa-region-label');
@@ -11779,22 +11594,6 @@ function wireStaticEvents(){
     });
   }
 
-  // ── Checkboxes de fuentes ──
-  const chkGnews = $('#prensa-f-gnews');
-  if (chkGnews){
-    chkGnews.addEventListener('change', () => {
-      setPrensaFuente('gnews', chkGnews.checked);
-      aplicarFiltros();
-    });
-  }
-  const chkFree = $('#prensa-f-freenews');
-  if (chkFree){
-    chkFree.addEventListener('change', () => {
-      setPrensaFuente('freenews', chkFree.checked);
-      aplicarFiltros();
-    });
-  }
-
   // ── Selects de idioma y país ──
   const selPrensaLang = $('#prensa-lang');
   if (selPrensaLang){
@@ -11956,10 +11755,10 @@ function wireStaticEvents(){
 
   const selR = $('#rango');
   if (selR) selR.addEventListener('change', () => {
-    // Traducimos "24h"/"48h" al token desde:1d / desde:2d.
-    // "Todo" quita el desde.
-    if (selR.value === '1')      writeFilterToInput('desde', '1d');
-    else if (selR.value === '2') writeFilterToInput('desde', '2d');
+    // «24 h»/«48 h» → desde:24h / desde:48h: ventana móvil, la misma para la
+    // lista, el archivo y la prensa. "Todo" quita el desde.
+    if (selR.value === '1')      writeFilterToInput('desde', '24h');
+    else if (selR.value === '2') writeFilterToInput('desde', '48h');
     else                         writeFilterToInput('desde', null);
   });
     // Inputs de fecha — se enganchan una sola vez al arrancar.
