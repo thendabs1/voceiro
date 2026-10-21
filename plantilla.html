@@ -8962,7 +8962,7 @@ function programarPrensa(consulta, nLocales){
   const tieneQuery = !consulta.imposible
     && (consulta.texto.incluir.length || dominios !== null)
     && !(dominios && dominios.size > 3);
-  if (!tieneQuery){
+  if (!tieneQuery || (!PRENSA_ACTIVA && PRENSA_USER_MANUAL_OFF)){
     PRENSA_CLAVE = null;
     return;
   }
