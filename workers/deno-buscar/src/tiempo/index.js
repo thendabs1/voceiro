@@ -1,7 +1,8 @@
 // workers/deno-buscar/src/tiempo/index.js
 // Rutas de eltiempo: (solo en Deno: Cloudflare se bloquea en España).
 //
-//   GET /tiempo?ine=36057                  → municipio de España (AEMET; si falla, Open-Meteo)
+//   GET /tiempo?ine=36057                  → municipio de España (AEMET; si falla, Open-Meteo),
+//                                            con su zona de avisos (zonaAviso)
 //   GET /tiempo?lat=&lon=&cc=&nombre=&region=&pais=
 //                                          → lugar geocodificado; en España, el municipio
 //                                            más cercano con AEMET
@@ -89,6 +90,8 @@ async function openMeteo(lat, lon) {
   u.search = new URLSearchParams({
     latitude: lat.toFixed(3), longitude: lon.toFixed(3),
     current: 'temperature_2m,weather_code,is_day',
+    hourly: 'temperature_2m,weather_code,precipitation_probability,is_day',
+    forecast_hours: '26',
     daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset',
     timezone: 'auto', forecast_days: '6',
   });
@@ -100,7 +103,8 @@ async function openMeteo(lat, lon) {
 async function porIne(ine) {
   const m = MUNICIPIOS[ine];
   if (!m) throw fallo(404, 'Municipio desconocido');
-  const [nombre, lat, lon] = m;
+  // zona: la de los avisos de AEMET (el cliente busca también la costera, zona + C).
+  const [nombre, lat, lon, zona] = m;
   try {
     const bruto = await conCache(`aemet/${ine}`, TTL.aemet, async () => {
       // La horaria solo aporta «ahora» y el sol: si falla, la tarjeta sale igual.
@@ -111,12 +115,12 @@ async function porIne(ine) {
       if (diaria.status === 'rejected') throw diaria.reason;
       return { diaria: diaria.value, horaria: horaria.status === 'fulfilled' ? horaria.value : null };
     });
-    return { ...desdeAemet(bruto.diaria, bruto.horaria, { tz: zonaHoraria(ine) }), ine };
+    return { ...desdeAemet(bruto.diaria, bruto.horaria, { tz: zonaHoraria(ine) }), ine, zonaAviso: zona || null };
   } catch (e) {
     // Sin AEMET (límite de uso, clave caducada…), Open-Meteo con las
     // coordenadas del municipio. La tarjeta muestra la fuente que se usó.
     const bruto = await conCache(`om/${lat},${lon}`, TTL.openMeteo, () => openMeteo(lat, lon));
-    return { ...desdeOpenMeteo(bruto, { nombre, region: '', pais: 'España' }), ine, sinAemet: true };
+    return { ...desdeOpenMeteo(bruto, { nombre, region: '', pais: 'España' }), ine, zonaAviso: zona || null, sinAemet: true };
   }
 }
 

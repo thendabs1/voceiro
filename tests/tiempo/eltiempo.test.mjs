@@ -134,6 +134,26 @@ test('AEMET: en Canarias, las 12:30 peninsulares son las 11:30', () => {
   assert.deepEqual(q.ahora, { temp: 16, cielo: 'despejado', noche: true });
 });
 
+test('AEMET: las horas desde la que está en curso, con la lluvia de su tramo', () => {
+  const h = (dia, horas) => ({
+    fecha: `2026-10-${dia}T00:00:00`,
+    temperatura: horas.map(x => ({ value: String(x), periodo: String(x).padStart(2, '0') })),
+    estadoCielo: horas.map(x => ({ value: x >= 20 ? '11n' : '12', periodo: String(x).padStart(2, '0') })),
+    probPrecipitacion: [{ value: '0', periodo: '0208' }, { value: '10', periodo: '0814' },
+      { value: '40', periodo: '1420' }, { value: '90', periodo: '2002' }],
+  });
+  const todas = [...Array(24).keys()];
+  const horariaLarga = [{ prediccion: { dia: [h(21, todas), h(22, todas)] } }];
+  // 12:30 en Madrid: desde las 12 de hoy hasta las 11 de mañana.
+  const p = desdeAemet(diaria, horariaLarga, { ahora: Date.parse('2026-10-21T10:30:00Z') });
+  assert.equal(p.horas.length, 24);
+  assert.deepEqual(p.horas[0], { fecha: '2026-10-21', hora: 12, temp: 12, cielo: 'poco', noche: false, lluvia: 10 });
+  assert.deepEqual(p.horas.at(-1), { fecha: '2026-10-22', hora: 11, temp: 11, cielo: 'poco', noche: false, lluvia: 10 });
+  assert.deepEqual(p.horas.map(x => x.lluvia).slice(8, 15), [90, 90, 90, 90, 90, 90, 0]);   // 20–01 y las 2
+  assert.equal(p.horas[8].noche, true);
+  assert.deepEqual(desdeAemet(diaria, null).horas, []);
+});
+
 test('Open-Meteo: mismo formato, con la zona del lugar', () => {
   const j = {
     timezone: 'America/Argentina/Buenos_Aires',
@@ -145,6 +165,10 @@ test('Open-Meteo: mismo formato, con la zona del lugar', () => {
       sunrise: ['2026-10-20T06:04', '2026-10-21T06:03', '2026-10-22T06:02'],
       sunset: ['2026-10-20T19:12', '2026-10-21T19:13', '2026-10-22T19:14'],
     },
+    hourly: {
+      time: ['2026-10-21T11:00', '2026-10-21T12:00', '2026-10-21T13:00'],
+      temperature_2m: [15.2, 16.6, null], weather_code: [1, 61, 0], precipitation_probability: [5, 70, 0], is_day: [1, 1, 1],
+    },
   };
   const lugar = { nombre: 'Buenos Aires', region: 'CABA', pais: 'Argentina' };
   const p = desdeOpenMeteo(j, lugar, { ahora: Date.parse('2026-10-21T15:00:00Z') });
@@ -153,6 +177,8 @@ test('Open-Meteo: mismo formato, con la zona del lugar', () => {
   assert.deepEqual(p.ahora, { temp: 14, cielo: 'poco', noche: false });
   assert.deepEqual(p.dias[0], { fecha: '2026-10-21', max: 19, min: 14, cielo: 'lluvia', lluvia: 60 });
   assert.deepEqual(p.sol, { orto: '06:03', ocaso: '19:13' });
+  // Las 15:00 UTC son las 12 en Buenos Aires: desde esa hora, sin las vacías.
+  assert.deepEqual(p.horas, [{ fecha: '2026-10-21', hora: 12, temp: 17, cielo: 'lluvia', noche: false, lluvia: 70 }]);
 });
 
 test('el municipio más cercano, para usar AEMET con un lugar geocodificado', () => {

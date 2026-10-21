@@ -5,6 +5,7 @@
 //   { lugar: { nombre, region, pais }, fuente, enlace, elaborado, tz,
 //     ahora: { temp, cielo, noche } | null,
 //     dias: [{ fecha, max, min, cielo, lluvia }],   // lluvia: probabilidad %
+//     horas: [{ fecha, hora, temp, cielo, noche, lluvia }],   // 24, desde la hora en curso
 //     sol: { orto, ocaso } | null }
 //
 // cielo: despejado, poco, nuboso, cubierto, lluvia, nieve, tormenta, niebla.
@@ -71,8 +72,38 @@ function lluviaDelDia(dia) {
   return v.length ? Math.max(...v) : null;
 }
 
+// Probabilidad de lluvia de una hora: AEMET la da por tramos («0208», de 2
+// a 8; «2002» pasa la medianoche).
+function lluviaEnHora(tramos, hora) {
+  const t = (tramos || []).find(x => {
+    const a = parseInt(String(x.periodo).slice(0, 2), 10), b = parseInt(String(x.periodo).slice(2, 4), 10);
+    return a < b ? hora >= a && hora < b : hora >= a || hora < b;
+  });
+  return t ? numero(t.value) : null;
+}
+
+// Las 24 horas de la horaria desde la que está en curso.
+function horasAemet(horaria, hoy) {
+  const horas = [];
+  for (const x of horaria?.[0]?.prediccion?.dia || []) {
+    const fecha = String(x.fecha).slice(0, 10);
+    const cielos = new Map((x.estadoCielo || []).map(c => [parseInt(c.periodo, 10), c.value]));
+    for (const tt of x.temperatura || []) {
+      const hora = parseInt(tt.periodo, 10);
+      if (numero(tt.value) === null || fecha < hoy.fecha || (fecha === hoy.fecha && hora < hoy.hora)) continue;
+      const c = cielos.get(hora);
+      horas.push({
+        fecha, hora, temp: numero(tt.value),
+        cielo: c ? cieloAemet(c) : null, noche: !!c && String(c).endsWith('n'),
+        lluvia: lluviaEnHora(x.probPrecipitacion, hora),
+      });
+    }
+  }
+  return horas.slice(0, 24);
+}
+
 // diaria y horaria: el JSON de AEMET (un array de un elemento). horaria
-// puede faltar: entonces no hay «ahora».
+// puede faltar: entonces no hay «ahora» ni horas.
 export function desdeAemet(diaria, horaria, { ahora = Date.now(), tz = 'Europe/Madrid' } = {}) {
   const d = diaria[0];
   const hoy = fechaHoraEn(ahora, tz);
@@ -115,11 +146,12 @@ export function desdeAemet(diaria, horaria, { ahora = Date.now(), tz = 'Europe/M
     tz,
     ahora: actual,
     dias,
+    horas: horasAemet(horaria, hoy),
     sol,
   };
 }
 
-// j: respuesta de /v1/forecast con current, daily y timezone=auto.
+// j: respuesta de /v1/forecast con current, hourly, daily y timezone=auto.
 export function desdeOpenMeteo(j, lugar, { ahora = Date.now() } = {}) {
   const tz = j.timezone || 'UTC';
   const hoy = fechaHoraEn(ahora, tz).fecha;
@@ -133,6 +165,15 @@ export function desdeOpenMeteo(j, lugar, { ahora = Date.now() } = {}) {
   })).filter(x => x.fecha >= hoy);
   const i = (dl.time || []).indexOf(hoy);
   const c = j.current;
+  const hl = j.hourly || {};
+  const enCurso = fechaHoraEn(ahora, tz);
+  const horas = (hl.time || []).map((t, k) => ({
+    fecha: t.slice(0, 10), hora: parseInt(t.slice(11, 13), 10),
+    temp: numero(hl.temperature_2m?.[k]) === null ? null : Math.round(hl.temperature_2m[k]),
+    cielo: cieloWmo(hl.weather_code?.[k]), noche: hl.is_day?.[k] === 0,
+    lluvia: numero(hl.precipitation_probability?.[k]),
+  })).filter(h => h.temp !== null
+    && (h.fecha > enCurso.fecha || (h.fecha === enCurso.fecha && h.hora >= enCurso.hora))).slice(0, 24);
   return {
     lugar,
     fuente: 'open-meteo',
@@ -141,6 +182,7 @@ export function desdeOpenMeteo(j, lugar, { ahora = Date.now() } = {}) {
     tz,
     ahora: c ? { temp: Math.round(c.temperature_2m), cielo: cieloWmo(c.weather_code), noche: c.is_day === 0 } : null,
     dias,
+    horas,
     sol: i >= 0 && dl.sunrise?.[i] ? { orto: dl.sunrise[i].slice(11, 16), ocaso: dl.sunset[i].slice(11, 16) } : null,
   };
 }
