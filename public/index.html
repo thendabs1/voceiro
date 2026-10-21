@@ -574,7 +574,7 @@
 }
 .filtros-row{
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto auto auto;
   gap: 8px;
   align-items: center;
   padding-bottom: 10px;
@@ -619,16 +619,16 @@
 .filtros-panel:not(:modal) .filtros-lectura{ display:flex; flex-wrap:wrap; gap:0 4px; }
 .filtros-wrap .preset-wrap{ min-width:0; max-width:240px; }
 .filtros-wrap .btn-preset{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-height:44px; }
-#btn-filtros, #btn-buscar, #btn-lectura, #filtros-cerrar{ min-height:44px; opacity:1; font-size:.78em; }
-#btn-lectura{ min-width:44px; justify-content:center; }
+#btn-filtros, #btn-buscar, #btn-pase, #btn-lectura, #filtros-cerrar{ min-height:44px; opacity:1; font-size:.78em; }
+#btn-pase, #btn-lectura{ min-width:44px; justify-content:center; }
 #btn-buscar{ display:none; }
 @media (max-width: 640px){
-  .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto; gap:6px; }
+  .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto auto; gap:6px; }
   .filtros-wrap .preset-wrap{ max-width:none; }
   #btn-buscar{ display:inline-flex; align-items:center; gap:6px; }
   .filtros-row .filtro-buscar-wrap, .filtros-row #btn-prensa{ display:none; }
-  .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; grid-row:2; grid-column:1 / 4; }
-  .filtros-wrap.busqueda-abierta #btn-prensa{ display:inline-flex; grid-row:2; grid-column:4; min-height:44px; }
+  .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; grid-row:2; grid-column:1 / 5; }
+  .filtros-wrap.busqueda-abierta #btn-prensa{ display:inline-flex; grid-row:2; grid-column:5; min-height:44px; }
   .filtros-panel{ margin:auto 0 0; width:100%; max-width:none; max-height:85dvh; border-radius:16px 16px 0 0; padding:16px 16px max(16px, env(safe-area-inset-bottom)); }
   .filtros-lectura{ grid-template-columns:1fr; }
 }
@@ -1040,6 +1040,10 @@
   }
   .noticia a.titular:hover{text-decoration:underline}
   [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
+  /* Móvil: cabecera de la tarjeta en una línea; sin tipo de medio y solo «hace…» */
+  @media (max-width:560px){
+    .noticia .badge.tipo, .noticia .fecha-abs{display:none}
+  }
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
   /* ═══ Autocomplete del buscador ═══ */
@@ -1189,6 +1193,16 @@
     opacity:.85;
     transition:opacity .15s, background .15s, border-color .15s;
     line-height:1.3;
+  }
+  .btn-save-text .ico{display:none}
+  @media (max-width:560px){
+    .btn-save-text{display:inline-flex; align-items:center; justify-content:center; min-width:24px; min-height:24px; padding:0 4px; margin-left:2px}
+    .btn-save-text .ico{display:block; width:1.6em; height:1.6em}
+    .btn-save-text:not([data-estado="pendiente"]){color:var(--muted)}
+    .btn-save-text .save-txt{
+      position:absolute; width:1px; height:1px; overflow:hidden;
+      clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
+    }
   }
   .btn-save-text:hover{
     opacity:1;
@@ -1857,8 +1871,6 @@
   .pase-titular{font-size:clamp(1.4em,4vw,2.6em);line-height:1.4;color:var(--titulos);overflow-wrap:anywhere}
   .pase-medio{color:var(--muted)}
   .pase-estado{font-size:.85em;text-align:center}
-  .pase-accesos{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0}
-  .pase-accesos button{font:inherit;color:var(--fg);background:var(--btn-bg);border:1px solid var(--btn-border);border-radius:6px;min-height:44px;padding:8px}
 </style>
 </head>
 <body>
@@ -1928,6 +1940,10 @@
   <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
   <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" /><rect x="6" y="14" width="12" height="8" rx="1" /></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></symbol>
+  <symbol id="i-clock-plus" viewBox="0 0 24 24"><path d="M12 6v6l3.644 1.822" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M21.92 13.267a10 10 0 1 0-8.653 8.653" /></symbol>
+  <symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3" /></symbol>
   <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></symbol>
 </svg>
 <header>
@@ -2373,6 +2389,7 @@
       <svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>
       <span>prensa</span>
     </button>
+    <button id="btn-pase" class="btn-dup-inline btn-view-settings" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></button>
     <button id="btn-lectura" class="btn-dup-inline btn-view-settings" type="button" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
     <button id="btn-filtros" class="btn-dup-inline btn-view-settings" type="button"
             aria-expanded="false" aria-haspopup="dialog" aria-controls="filtros-panel">
@@ -2414,9 +2431,6 @@
         <label class="vs-radio"><input type="radio" name="vs-hide" value="read"><span id="vs-hide-read"></span></label>
         <label class="vs-radio"><input type="radio" name="vs-hide" value="viewed"><span id="vs-hide-viewed"></span></label>
         <label class="vs-radio"><input type="radio" name="vs-hide" value="both"><span id="vs-hide-both"></span></label>
-      </div>
-      <div class="pase-accesos">
-        <button id="vs-pase-capa" type="button"></button>
       </div>
     </fieldset>
   </dialog>
@@ -4428,6 +4442,14 @@ function parseFecha(s){
   return !isNaN(t) ? t : NaN;
 }
 
+// En la tarjeta la parte absoluta va aparte para ocultarla en móvil (CSS).
+function fechaTarjetaHtml(ts){
+  const txt = formatearFecha(ts);
+  const corte = txt.lastIndexOf(' · ');
+  if (corte < 0 || ts > Date.now()) return escapeHtml(txt);
+  return `<span class="fecha-abs">${escapeHtml(txt.slice(0, corte + 3))}</span>${escapeHtml(txt.slice(corte + 3))}`;
+}
+
 function formatearFecha(ts){
   if (isNaN(ts)) return '';
   let abs = ABS_CACHE.get(ts);
@@ -6097,6 +6119,22 @@ function wireSync(){
   });
 }
 
+// Botón Guardar de la tarjeta: texto, título e icono de cada estado.
+const GUARDAR_ESTADOS = {
+  guardar:   { txt: 'saveLabelSave',    titulo: 'saveForLaterTitle', ico: 'clock-plus' },
+  pendiente: { txt: 'saveLabelPending', titulo: 'markRead',          ico: 'clock' },
+  leida:     { txt: 'saveLabelRead',    titulo: 'markUnread',        ico: 'circle-check' },
+};
+function guardarHtml(estado){
+  const e = GUARDAR_ESTADOS[estado];
+  return `${ico(e.ico)}<span class="save-txt">${escapeHtml(t(e.txt))}</span>`;
+}
+function pintarBotonGuardar(b, estado){
+  b.dataset.estado = estado;
+  b.title = t(GUARDAR_ESTADOS[estado].titulo);
+  b.innerHTML = guardarHtml(estado);
+}
+
 function refrescarBotonesGuardar(){
   document.querySelectorAll('.btn-save-item').forEach(b => {
     const i = parseInt(b.dataset.idx, 10);
@@ -6107,16 +6145,7 @@ function refrescarBotonesGuardar(){
     const item = PENDIENTES_MAP.get(key);
     const leida = (guardada && item && item.read) || LEIDAS_LOCAL.has(key);
 
-    if (leida){
-      b.textContent = t('saveLabelRead');
-      b.title = t('markUnread');
-    } else if (guardada){
-      b.textContent = t('saveLabelPending');
-      b.title = t('markRead');
-    } else {
-      b.textContent = t('saveLabelSave');
-      b.title = t('saveForLaterTitle');
-    }
+    pintarBotonGuardar(b, leida ? 'leida' : guardada ? 'pendiente' : 'guardar');
   });
 }
 function wireBackToTop(){
@@ -8962,7 +8991,7 @@ function programarPrensa(consulta, nLocales){
   const tieneQuery = !consulta.imposible
     && (consulta.texto.incluir.length || dominios !== null)
     && !(dominios && dominios.size > 3);
-  if (!tieneQuery){
+  if (!tieneQuery || (!PRENSA_ACTIVA && PRENSA_USER_MANUAL_OFF)){
     PRENSA_CLAVE = null;
     return;
   }
@@ -9563,12 +9592,12 @@ function cerrarPase(refiltrar = true){
   p.root.remove();
   if (refiltrar){
     aplicarFiltros();
-    $('#btn-filtros').focus({ preventScroll: true });
+    $('#btn-pase').focus({ preventScroll: true });
   }
 }
 
 document.addEventListener('click', e => {
-  if (e.target.closest('#vs-pase-capa')) abrirPase();
+  if (e.target.closest('#btn-pase')) abrirPase();
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pausarPase(); });
 window.addEventListener('blur', pausarPase);
@@ -9709,12 +9738,11 @@ function renderItemHtml(n, idx){
   let fechaHtml = '';
   if (n._tipoShow === 'pub'){
     const esFuturo = n._esFuturo;
-    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
+    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${fechaTarjetaHtml(n._tsShow)}</span>`;
   } else if (n._tipoShow === 'est'){
-    fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">≈ ${escapeHtml(formatearFecha(n._tsShow))}</span>`;
+    fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">≈ ${fechaTarjetaHtml(n._tsShow)}</span>`;
   } else if (!isNaN(n._tsShow)){
-    const fecha = `${t('recolectado')} ${formatearFecha(n._tsShow)}`;
-    fechaHtml = `<span class="badge recolectado">${escapeHtml(fecha)}</span>`;
+    fechaHtml = `<span class="badge recolectado">${escapeHtml(t('recolectado'))} ${fechaTarjetaHtml(n._tsShow)}</span>`;
   } else {
     fechaHtml = `<span class="badge recolectado">${escapeHtml(t('recolectado'))}</span>`;
   }
@@ -9743,17 +9771,7 @@ function renderItemHtml(n, idx){
   //   - En cola + leída    → "Leída"     (click → marcar como no leída)
   //   - En cola + pendiente → "Pendiente" (click → marcar como leída)
   //   - No en cola          → "Guardar"   (click → añadir a pendientes)
-  let saveLabel, saveTitle;
-  if (enColaLeida){
-    saveLabel = t('saveLabelRead');
-    saveTitle = t('markUnread');
-  } else if (enCola){
-    saveLabel = t('saveLabelPending');
-    saveTitle = t('markRead');
-  } else {
-    saveLabel = t('saveLabelSave');
-    saveTitle = t('saveForLaterTitle');
-  }
+  const estadoGuardar = enColaLeida ? 'leida' : enCola ? 'pendiente' : 'guardar';
 
   // En la vista Temas el grupo no es «el modo»: va sin color y la marca es el tema.
   const presetBadge = n.grupo
@@ -9798,12 +9816,12 @@ function renderItemHtml(n, idx){
   return `<article class="noticia${leida ? ' leida' : (vista ? ' vista' : '')}" data-idx="${idx}">
     <div class="cabecera">
       ${medioHtml}
-      ${n.tipo ? `<span class="badge">${n._tipoEsc}</span>` : ''}
+      ${n.tipo ? `<span class="badge tipo">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
       ${temaBadge}
       ${prensaBadge}
       ${fechaHtml}
-      <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${escapeHtml(saveLabel)}</button>
+      <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" data-estado="${estadoGuardar}" title="${escapeHtml(t(GUARDAR_ESTADOS[estadoGuardar].titulo))}">${guardarHtml(estadoGuardar)}</button>
       <span class="cab-spacer"></span>
       ${shareBtnHtml}
       <button class="btn-mini btn-mas-item" type="button" data-idx="${idx}" title="${escapeHtml(t('masAcciones'))}" aria-label="${escapeHtml(t('masAcciones'))}" aria-haspopup="menu" aria-expanded="false">${ico('ellipsis')}</button>
@@ -10102,10 +10120,7 @@ function wireResultadosDelegation(){
         art.classList.remove('vista');
         art.classList.add('leida');
         const saveBtnInCard = art.querySelector('.btn-save-item');
-        if (saveBtnInCard){
-          saveBtnInCard.textContent = t('saveLabelRead');
-          saveBtnInCard.title = t('markUnread');
-        }
+        if (saveBtnInCard) pintarBotonGuardar(saveBtnInCard, 'leida');
       }
       return;   // dejamos que abra normalmente
     }
@@ -10309,7 +10324,8 @@ function aplicarTextos(){
   $('#btn-pendientes').insertAdjacentHTML('beforeend', '<span class="pend-count" data-count="0">0</span>');
 
   // Filtros de lectura.
-  $('#vs-pase-capa').textContent = t('paseCapa');
+  $('#btn-pase').title = t('paseCapa');
+  $('#btn-pase').setAttribute('aria-label', t('paseCapa'));
   $('#vs-title-hide').textContent  = t('vsTitleHide');
   $('#vs-ayuda-lbl').textContent = t('vsAyudaLbl');
   $('#aj-hide-ayuda-lbl').textContent = t('vsAyudaLbl');
