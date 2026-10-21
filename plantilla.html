@@ -904,7 +904,7 @@
 .tiempo-pie .tiempo-otro{ display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; margin-left: 0; }
 .tiempo-otro .ico, .tiempo-ajustes .ico, .tiempo-quitar .ico{ width: 1.1em; height: 1.1em; }
 .tiempo-horas, .tiempo-avisos{ margin-top: 8px; }
-.tiempo-horas > summary{ cursor: pointer; font-weight: 600; }
+.tiempo-horas > summary, .tiempo-avisos > summary{ cursor: pointer; font-weight: 600; }
 .tiempo-horas .tiempo-dias{ margin-top: 6px; scrollbar-width: thin; }
 .tiempo-horas .tiempo-dias::-webkit-scrollbar{ display: block; height: 6px; }
 .tiempo-horas .tiempo-dias li{ flex: 0 0 54px; }
@@ -7929,10 +7929,11 @@ function avisosDeZona(zona){
 }
 function htmlAvisosLugar(p){
   if (!p.zonaAviso || !AVISOS.datos) return '';
+  // Plegados como «Por horas»; abiertos solo si hay avisos en el sitio.
   const lista = avisosDeZona(p.zonaAviso);
-  return `<div class="tiempo-avisos"><strong>${escapeHtml(t('avisosBotonTxt'))}</strong>`
+  return `<details class="tiempo-avisos"${lista.length ? ' open' : ''}><summary>${escapeHtml(t('avisosBotonTxt'))}</summary>`
     + (lista.length ? `<ul class="aviso-zonas">${lista.map(a => htmlAviso(a, { nivel: '' })).join('')}</ul>` : msgTiempo('avisosNinguno'))
-    + '</div>';
+    + '</details>';
 }
 
 // La previsión de un sitio guardado: la de la última hora sirve.
