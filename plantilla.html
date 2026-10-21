@@ -2673,6 +2673,9 @@ async function _probarCFEnBackground(){
       signal: AbortSignal.timeout(2500),
     });
     if (!r.ok) return false;
+    // Cuerpo completo dentro del plazo: CF puede dar cabeceras al momento
+    // y atascarse después.
+    await r.arrayBuffer();
     if (BACKEND_ACTIVO === 'deno'){
       console.info('[backend] CF responde de nuevo → volviendo a CF');
       _aplicarBackend('cf');
