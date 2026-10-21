@@ -87,4 +87,21 @@ for (const archivo of ['plantilla.html', 'public/index.html']) {
     assert.match(elemento.innerHTML, /Medios del modo · 32/);
     assert.match(elemento.innerHTML, /caldas · 0/);
   });
+
+  test(`${archivo}: ordena modos y temas por resultados, manteniendo Todo primero`, () => {
+    const { elemento, contexto } = crearContexto({ buscando: false });
+    contexto.ULT_CHIPS = {
+      total: 40, porModo: new Map([['local', 8], ['general', 32]]),
+      modo: 'local', totalModo: 8, nMedios: 3,
+      porTema: new Map([['pontevedra', 5], ['caldas', 0], ['poio', 6], ['portas', 0]]),
+    };
+    contexto.TEMAS_TODOS = [{ id: 'local', nombre: 'Local' }, { id: 'general', nombre: 'General' }];
+    contexto.renderChipsTemas();
+    const [modos, temas] = elemento.innerHTML.match(/<div class="temas-chips-fila(?: hija)?">.*?<\/div>/g);
+    assert.ok(modos.indexOf('Todo · 40') < modos.indexOf('General · 32'));
+    assert.ok(modos.indexOf('General · 32') < modos.indexOf('Local · 8'));
+    assert.ok(temas.indexOf('poio · 6') < temas.indexOf('pontevedra · 5'));
+    assert.ok(temas.indexOf('pontevedra · 5') < temas.indexOf('Medios del modo · 3'));
+    assert.ok(temas.indexOf('Medios del modo · 3') < temas.indexOf('caldas · 0'));
+  });
 }
