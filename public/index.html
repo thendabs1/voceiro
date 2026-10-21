@@ -886,6 +886,25 @@
 .tiempo-elegir{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .tiempo-elegir button{ padding: 5px 10px; text-align: left; }
 .tiempo-elegir button span{ color: var(--muted); }
+/* ═══ Panel de avisos (alertas:): el mismo recuadro que el tiempo. El nivel
+   va siempre escrito; el color del borde solo lo acompaña. ═══ */
+.aviso[data-nivel="amarillo"], .btn-avisos[data-nivel="amarillo"]{ --aviso: #e0b000; }
+.aviso[data-nivel="naranja"],  .btn-avisos[data-nivel="naranja"]{ --aviso: #e65100; }
+.aviso[data-nivel="rojo"],     .btn-avisos[data-nivel="rojo"]{ --aviso: #d32f2f; }
+.avisos-grupo h3{ font-size: 1em; margin: 10px 0 4px; }
+.avisos-grupo ul{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.avisos-grupo details{ margin-top: 6px; }
+.avisos-grupo summary{ cursor: pointer; color: var(--muted); }
+.avisos-grupo details ul{ margin-top: 6px; }
+.aviso{ padding: 2px 0 2px 10px; border-left: 4px solid var(--aviso); }
+.aviso-nivel{ font-weight: 700; margin-right: 6px; }
+.aviso-cuando{ display: block; color: var(--muted); }
+.aviso-texto{ margin: 2px 0 0; }
+.aviso button{ font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 1px 8px; margin-top: 4px; }
+.btn-avisos{ border: 2px solid var(--aviso); font-weight: 600; }
+.btn-avisos[hidden]{ display: none; }
+.btn-avisos .ico{ color: var(--aviso); }
+[data-theme="contrast"] .aviso, [data-theme="contrast"] .btn-avisos{ --aviso: #fff; }
 /* ═══ Chips de modo y de tema: «Todo · N» / «Política · M» / «incendio · K»…
    Una fila por nivel; cada fila hace scroll horizontal en móvil. ═══ */
 .temas-chips{
@@ -2001,6 +2020,7 @@
       </span>
     </p>
     <div class="header-actions header-actions-right">
+      <button id="btn-avisos" class="btn-avisos btn-cab" type="button" hidden></button>
       <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
       <button id="btn-acces" class="btn-cab" type="button"></button>
       <button id="btn-config" class="btn-cab" type="button"></button>
@@ -2495,6 +2515,7 @@
 <div id="temas-chips" class="temas-chips" role="toolbar" hidden></div>
 
 <section id="tiempo-tarjeta" class="tiempo-tarjeta" hidden aria-live="polite"></section>
+<section id="avisos-panel" class="tiempo-tarjeta" hidden></section>
 <main id="resultados"></main>
 <div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
   <button id="btn-cargar-mas" type="button" style="padding:10px 20px; font-size:.85em;"></button>
@@ -2518,24 +2539,28 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=379c57eab5';
+} from './parser.js?v=f08545e03d';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=379c57eab5';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=379c57eab5';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=379c57eab5';
-import { comparador } from './busqueda/orden.js?v=379c57eab5';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=f08545e03d';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=f08545e03d';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=f08545e03d';
+import { comparador } from './busqueda/orden.js?v=f08545e03d';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=379c57eab5';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=379c57eab5';
+} from './sync/fusion.js?v=f08545e03d';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=f08545e03d';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=379c57eab5';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=379c57eab5';
+import { crearCliente } from './sync/cliente.js?v=f08545e03d';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=f08545e03d';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=379c57eab5';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=f08545e03d';
+import {
+  FENOMENOS, NIVELES, PESO, comunidadDeZona, zonaHorariaAviso, empezado,
+  filtrarAvisos, agruparAvisos, resumenAvisos, busquedaNoticias,
+} from './tiempo/avisos.js?v=f08545e03d';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -4389,16 +4414,50 @@ for (const [lang, textos] of Object.entries({
 }
 // Textos de eltiempo:.
 for (const [lang, textos] of Object.entries({
-  es: ['Despejado', 'Poco nuboso', 'Nuboso', 'Cubierto', 'Lluvia', 'Nieve', 'Tormenta', 'Niebla', 'Hoy', 'Fuente', 'elaborado a las {h}', 'AEMET no responde: datos de Open-Meteo', 'Consultando el tiempo…', 'No se pudo consultar el tiempo.', 'No encuentro «{X}».', '¿Qué «{X}»?', 'El tiempo está desactivado en Ajustes › Avanzado.', 'Probabilidad de lluvia', 'tiempo', 'Tiempo', 'Consultar el tiempo (eltiempo:)', 'Pide la previsión a AEMET y Open-Meteo a través del servidor de Voceiro. Desactivado, no se conecta con ningún servicio del tiempo.', 'El tiempo en {X}', 'Sale el sol', 'Se pone el sol', 'Cambiar de lugar'],
-  gl: ['Despexado', 'Pouco nubrado', 'Nubrado', 'Cuberto', 'Choiva', 'Neve', 'Treboada', 'Néboa', 'Hoxe', 'Fonte', 'elaborado ás {h}', 'AEMET non responde: datos de Open-Meteo', 'Consultando o tempo…', 'Non se puido consultar o tempo.', 'Non atopo «{X}».', 'Que «{X}»?', 'O tempo está desactivado en Axustes › Avanzado.', 'Probabilidade de choiva', 'tempo', 'Tempo', 'Consultar o tempo (eltiempo:)', 'Pide a previsión a AEMET e Open-Meteo a través do servidor de Voceiro. Desactivado, non se conecta con ningún servizo do tempo.', 'O tempo en {X}', 'Sae o sol', 'Ponse o sol', 'Cambiar de lugar'],
-  ca: ['Serè', 'Poc ennuvolat', 'Ennuvolat', 'Cobert', 'Pluja', 'Neu', 'Tempesta', 'Boira', 'Avui', 'Font', 'elaborat a les {h}', 'AEMET no respon: dades d’Open-Meteo', 'Consultant el temps…', 'No s’ha pogut consultar el temps.', 'No trobo «{X}».', 'Quin «{X}»?', 'El temps està desactivat a Configuració › Avançat.', 'Probabilitat de pluja', 'temps', 'Temps', 'Consultar el temps (eltiempo:)', 'Demana la previsió a AEMET i Open-Meteo a través del servidor de Voceiro. Desactivat, no es connecta amb cap servei del temps.', 'El temps a {X}', 'Surt el sol', 'Es pon el sol', 'Canviar de lloc'],
-  en: ['Clear', 'Partly cloudy', 'Cloudy', 'Overcast', 'Rain', 'Snow', 'Thunderstorm', 'Fog', 'Today', 'Source', 'issued at {h}', 'AEMET is not responding: Open-Meteo data', 'Checking the weather…', 'Could not get the weather.', 'Can’t find “{X}”.', 'Which “{X}”?', 'Weather is turned off in Settings › Advanced.', 'Chance of rain', 'weather', 'Weather', 'Check the weather (eltiempo:)', 'Gets the forecast from AEMET and Open-Meteo through the Voceiro server. When off, no weather service is contacted.', 'Weather in {X}', 'Sunrise', 'Sunset', 'Change place'],
-  eu: ['Oskarbi', 'Hodei gutxi', 'Hodeitsu', 'Estalia', 'Euria', 'Elurra', 'Ekaitza', 'Lainoa', 'Gaur', 'Iturria', '{h}etan egina', 'AEMETek ez du erantzuten: Open-Meteoren datuak', 'Eguraldia kontsultatzen…', 'Ezin izan da eguraldia kontsultatu.', 'Ez dut «{X}» aurkitzen.', 'Zein «{X}»?', 'Eguraldia desaktibatuta dago Ezarpenak › Aurreratua atalean.', 'Euria egiteko probabilitatea', 'eguraldia', 'Eguraldia', 'Eguraldia kontsultatu (eltiempo:)', 'Iragarpena AEMETi eta Open-Meteori eskatzen die Voceiroren zerbitzariaren bidez. Desaktibatuta, ez da eguraldi-zerbitzurik kontsultatzen.', 'Eguraldia: {X}', 'Eguzkia irteten da', 'Eguzkia sartzen da', 'Lekua aldatu'],
+  es: ['Despejado', 'Poco nuboso', 'Nuboso', 'Cubierto', 'Lluvia', 'Nieve', 'Tormenta', 'Niebla', 'Hoy', 'Fuente', 'elaborado a las {h}', 'AEMET no responde: datos de Open-Meteo', 'Consultando el tiempo…', 'No se pudo consultar el tiempo.', 'No encuentro «{X}».', '¿Qué «{X}»?', 'El tiempo está desactivado en Ajustes › Avanzado.', 'Probabilidad de lluvia', 'tiempo', 'Tiempo', 'Tiempo y avisos (eltiempo:, alertas:)', 'Pide la previsión y los avisos a AEMET (y a Open-Meteo o MeteoAlarm si no responde) a través del servidor de Voceiro. Desactivado, no se conecta con ningún servicio del tiempo.', 'El tiempo en {X}', 'Sale el sol', 'Se pone el sol', 'Cambiar de lugar'],
+  gl: ['Despexado', 'Pouco nubrado', 'Nubrado', 'Cuberto', 'Choiva', 'Neve', 'Treboada', 'Néboa', 'Hoxe', 'Fonte', 'elaborado ás {h}', 'AEMET non responde: datos de Open-Meteo', 'Consultando o tempo…', 'Non se puido consultar o tempo.', 'Non atopo «{X}».', 'Que «{X}»?', 'O tempo está desactivado en Axustes › Avanzado.', 'Probabilidade de choiva', 'tempo', 'Tempo', 'Tempo e avisos (eltiempo:, alertas:)', 'Pide a previsión e os avisos a AEMET (e a Open-Meteo ou MeteoAlarm se non responde) a través do servidor de Voceiro. Desactivado, non se conecta con ningún servizo do tempo.', 'O tempo en {X}', 'Sae o sol', 'Ponse o sol', 'Cambiar de lugar'],
+  ca: ['Serè', 'Poc ennuvolat', 'Ennuvolat', 'Cobert', 'Pluja', 'Neu', 'Tempesta', 'Boira', 'Avui', 'Font', 'elaborat a les {h}', 'AEMET no respon: dades d’Open-Meteo', 'Consultant el temps…', 'No s’ha pogut consultar el temps.', 'No trobo «{X}».', 'Quin «{X}»?', 'El temps està desactivat a Configuració › Avançat.', 'Probabilitat de pluja', 'temps', 'Temps', 'Temps i avisos (eltiempo:, alertas:)', 'Demana la previsió i els avisos a AEMET (i a Open-Meteo o MeteoAlarm si no respon) a través del servidor de Voceiro. Desactivat, no es connecta amb cap servei del temps.', 'El temps a {X}', 'Surt el sol', 'Es pon el sol', 'Canviar de lloc'],
+  en: ['Clear', 'Partly cloudy', 'Cloudy', 'Overcast', 'Rain', 'Snow', 'Thunderstorm', 'Fog', 'Today', 'Source', 'issued at {h}', 'AEMET is not responding: Open-Meteo data', 'Checking the weather…', 'Could not get the weather.', 'Can’t find “{X}”.', 'Which “{X}”?', 'Weather is turned off in Settings › Advanced.', 'Chance of rain', 'weather', 'Weather', 'Weather and warnings (eltiempo:, alertas:)', 'Gets the forecast and warnings from AEMET (or Open-Meteo and MeteoAlarm if it does not respond) through the Voceiro server. When off, no weather service is contacted.', 'Weather in {X}', 'Sunrise', 'Sunset', 'Change place'],
+  eu: ['Oskarbi', 'Hodei gutxi', 'Hodeitsu', 'Estalia', 'Euria', 'Elurra', 'Ekaitza', 'Lainoa', 'Gaur', 'Iturria', '{h}etan egina', 'AEMETek ez du erantzuten: Open-Meteoren datuak', 'Eguraldia kontsultatzen…', 'Ezin izan da eguraldia kontsultatu.', 'Ez dut «{X}» aurkitzen.', 'Zein «{X}»?', 'Eguraldia desaktibatuta dago Ezarpenak › Aurreratua atalean.', 'Euria egiteko probabilitatea', 'eguraldia', 'Eguraldia', 'Eguraldia eta abisuak (eltiempo:, alertas:)', 'Iragarpena eta abisuak AEMETi eskatzen dizkio (edo Open-Meteori eta MeteoAlarmi, hark erantzuten ez badu) Voceiroren zerbitzariaren bidez. Desaktibatuta, ez da eguraldi-zerbitzurik kontsultatzen.', 'Eguraldia: {X}', 'Eguzkia irteten da', 'Eguzkia sartzen da', 'Lekua aldatu'],
 })) {
   ['tiempoDespejado', 'tiempoPoco', 'tiempoNuboso', 'tiempoCubierto', 'tiempoLluvia', 'tiempoNieve', 'tiempoTormenta', 'tiempoNiebla',
    'tiempoHoy', 'tiempoFuente', 'tiempoElaborado', 'tiempoSinAemet', 'tiempoCargando', 'tiempoError', 'tiempoNoEncontrado', 'tiempoElegir',
    'tiempoDesactivado', 'tiempoProbLluvia', 'tiempoSugTipo', 'ajTiempoTit', 'cfgTiempo', 'cfgTiempoHint', 'tiempoRegion', 'tiempoOrto',
    'tiempoOcaso', 'tiempoCambiar']
+    .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
+}
+// Textos de alertas:. Fenómenos en el orden de FENOMENOS (shared/tiempo/avisos.js).
+for (const [lang, textos] of Object.entries({
+  es: ['Lluvias', 'Tormentas', 'Vientos', 'Costeros', 'Nevadas', 'Temperaturas máximas', 'Temperaturas mínimas', 'Nieblas', 'Polvo en suspensión', 'Galernas', 'Rissagas', 'Deshielos', 'Aludes',
+       'Amarillo', 'Naranja', 'Rojo',
+       'Avisos AEMET', 'Avisos meteorológicos', 'Consultando avisos…', 'No se pudieron consultar los avisos.', 'No hay avisos en vigor ni previstos.', 'No hay avisos para «{X}».',
+       'AEMET no responde: datos de MeteoAlarm, que solo llegan hasta mañana', 'Ver noticias', 'Avisos naranjas o rojos: {n} ({a} en vigor)', 'Avisos',
+       'Los avisos están desactivados en Ajustes › Avanzado.', 'En vigor', 'hasta {h}', 'hoy', 'mañana', 'consultado a las {h}', 'Amarillos: {n}'],
+  gl: ['Choivas', 'Treboadas', 'Ventos', 'Costeiros', 'Nevaradas', 'Temperaturas máximas', 'Temperaturas mínimas', 'Néboas', 'Po en suspensión', 'Galernas', 'Rissagas', 'Desxeos', 'Aludes',
+       'Amarelo', 'Laranxa', 'Vermello',
+       'Avisos AEMET', 'Avisos meteorolóxicos', 'Consultando avisos…', 'Non se puideron consultar os avisos.', 'Non hai avisos en vigor nin previstos.', 'Non hai avisos para «{X}».',
+       'AEMET non responde: datos de MeteoAlarm, que só chegan ata mañá', 'Ver noticias', 'Avisos laranxas ou vermellos: {n} ({a} en vigor)', 'Avisos',
+       'Os avisos están desactivados en Axustes › Avanzado.', 'En vigor', 'ata {h}', 'hoxe', 'mañá', 'consultado ás {h}', 'Amarelos: {n}'],
+  ca: ['Pluges', 'Tempestes', 'Vents', 'Costaners', 'Nevades', 'Temperatures màximes', 'Temperatures mínimes', 'Boires', 'Pols en suspensió', 'Galernes', 'Rissagues', 'Desglaços', 'Allaus',
+       'Groc', 'Taronja', 'Vermell',
+       'Avisos AEMET', 'Avisos meteorològics', 'Consultant avisos…', 'No s’han pogut consultar els avisos.', 'No hi ha avisos vigents ni previstos.', 'No hi ha avisos per a «{X}».',
+       'AEMET no respon: dades de MeteoAlarm, que només arriben fins demà', 'Veure notícies', 'Avisos taronja o vermells: {n} ({a} vigents)', 'Avisos',
+       'Els avisos estan desactivats a Configuració › Avançat.', 'Vigent', 'fins a les {h}', 'avui', 'demà', 'consultat a les {h}', 'Grocs: {n}'],
+  en: ['Rain', 'Thunderstorms', 'Wind', 'Coastal', 'Snow', 'High temperatures', 'Low temperatures', 'Fog', 'Dust', 'Galerna', 'Rissaga', 'Thaw', 'Avalanches',
+       'Yellow', 'Orange', 'Red',
+       'AEMET warnings', 'Weather warnings', 'Checking warnings…', 'Could not get the warnings.', 'No warnings in force or expected.', 'No warnings for “{X}”.',
+       'AEMET is not responding: MeteoAlarm data, which only covers until tomorrow', 'See news', 'Orange or red warnings: {n} ({a} in force)', 'Warnings',
+       'Warnings are turned off in Settings › Advanced.', 'In force', 'until {h}', 'today', 'tomorrow', 'checked at {h}', 'Yellow: {n}'],
+  eu: ['Euriteak', 'Ekaitzak', 'Haizeak', 'Kostaldekoak', 'Elurteak', 'Tenperatura maximoak', 'Tenperatura minimoak', 'Lainoak', 'Hauts esekia', 'Galernak', 'Rissagak', 'Izotz-urtzeak', 'Elur-jausiak',
+       'Horia', 'Laranja', 'Gorria',
+       'AEMETen abisuak', 'Eguraldi-abisuak', 'Abisuak kontsultatzen…', 'Ezin izan dira abisuak kontsultatu.', 'Ez dago abisurik indarrean ez aurreikusita.', 'Ez dago abisurik «{X}»rako.',
+       'AEMETek ez du erantzuten: MeteoAlarmen datuak, biharko arte bakarrik', 'Albisteak ikusi', 'Abisu laranja edo gorriak: {n} ({a} indarrean)', 'Abisuak',
+       'Abisuak desaktibatuta daude Ezarpenak › Aurreratua atalean.', 'Indarrean', '{h} arte', 'gaur', 'bihar', '{h}etan kontsultatua', 'Horiak: {n}'],
+})) {
+  [...FENOMENOS.map(f => 'avisoFen' + f), ...NIVELES.map(n => 'avisoNivel' + n),
+   'avisosTitulo', 'avisosRegion', 'avisosCargando', 'avisosError', 'avisosNinguno', 'avisosNingunoX',
+   'avisosIncompleto', 'avisosVerNoticias', 'avisosBoton', 'avisosBotonTxt',
+   'avisosDesactivado', 'avisosAhora', 'avisosHasta', 'avisosHoy', 'avisosManana', 'avisosConsultado', 'avisosAmarillos']
     .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
 }
 function t(key, vars){
@@ -7536,7 +7595,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=379c57eab5')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=f08545e03d')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -7733,6 +7792,177 @@ function repintarTiempo(){
   const el = document.getElementById('tiempo-tarjeta');
   if (el && TIEMPO.ultima) pintarTiempo(htmlPrevision(TIEMPO.ultima), TIEMPO.ultima);
   if (el) el.setAttribute('aria-label', t('tiempoRegion', { X: TIEMPO.valor || '' }));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AVISOS (alertas:)
+   Panel encima de la lista y botón en la cabecera, este solo con avisos
+   naranjas o rojos. Los da el worker de Deno (/avisos): AEMET y, si falla,
+   MeteoAlarm. Se piden al cargar y cada 15 min con la página a la vista;
+   con el tiempo desactivado, nunca. Nombres, filtro y grupos en
+   shared/tiempo/avisos.js.
+   ═══════════════════════════════════════════════════════════════ */
+const AVISOS_CADA = 15 * 60e3;
+const AVISOS = { datos: null, pedido: 0, carga: null, error: false, valor: null };
+
+// Una petición a la vez; si lo que hay tiene menos de 15 min, sirve. Tras
+// un fallo se reintenta al minuto, no a cada tecla.
+function pedirAvisos(){
+  if (AVISOS.carga) return AVISOS.carga;
+  if (Date.now() - AVISOS.pedido < (AVISOS.error ? 60e3 : AVISOS_CADA)) return Promise.resolve(AVISOS.datos);
+  AVISOS.carga = pedirTiempo('/avisos')
+    .then(d => { AVISOS.datos = d; AVISOS.error = false; return d; })
+    .catch(() => { AVISOS.error = true; return AVISOS.datos; })
+    .finally(() => { AVISOS.pedido = Date.now(); AVISOS.carga = null; });
+  return AVISOS.carga;
+}
+const avisosVigentes = () => (AVISOS.datos?.avisos || []).filter(a => Date.parse(a.fin) > Date.now());
+const firmaAvisos = () => `${AVISOS.datos?.consultado}|${AVISOS.error}|${avisosVigentes().length}`;
+
+// El panel abierto solo se repinta si algo cambió (así no se pliega lo
+// que se haya desplegado).
+async function refrescarAvisos(){
+  if (!TIEMPO_ACTIVO || document.hidden) return;
+  const antes = firmaAvisos();
+  await pedirAvisos();
+  pintarBotonAvisos();
+  if (AVISOS.valor !== null && firmaAvisos() !== antes) pintarAvisos();
+}
+
+function pintarBotonAvisos(){
+  const b = document.getElementById('btn-avisos');
+  if (!b) return;
+  const r = TIEMPO_ACTIVO ? resumenAvisos(avisosVigentes()) : null;
+  b.hidden = !r;
+  if (!r) return;
+  const etiqueta = `${t('avisoNivel' + r.nivel)} · ${t('avisosBoton', { n: r.total, a: r.ahora })}`;
+  b.dataset.nivel = r.nivel;
+  b.innerHTML = ico('triangle-alert')
+    + `<span class="cab-txt">${escapeHtml(t('avisosBotonTxt'))}</span><span aria-hidden="true">${r.total}</span>`;
+  b.title = etiqueta;
+  b.setAttribute('aria-label', etiqueta);
+}
+
+// El botón añade alertas: a la búsqueda (sin quitar lo que hubiera).
+function abrirAvisos(){
+  const input = $('#buscar');
+  if (!/(^|\s)(alertas|avisos):/i.test(input.value)) input.value = `${input.value.trim()} alertas: `.trimStart();
+  $('.filtros-wrap').classList.add('busqueda-abierta');
+  $('#btn-buscar').setAttribute('aria-expanded', 'true');
+  const clear = $('#buscar-clear');
+  if (clear) clear.hidden = false;
+  aplicarFiltros();
+  document.getElementById('avisos-panel')?.scrollIntoView({ block: 'nearest' });
+}
+
+// null: sin panel; '': toda España; si no, el filtro (Galicia, lluvia…).
+function actualizarAlertas(valor){
+  if (valor === AVISOS.valor) return;
+  AVISOS.valor = valor;
+  pintarAvisos();
+}
+
+async function pintarAvisos(){
+  const el = document.getElementById('avisos-panel');
+  if (!el) return;
+  const valor = AVISOS.valor;
+  el.hidden = valor === null;
+  if (valor === null){ el.innerHTML = ''; return; }
+  if (!TIEMPO_ACTIVO){ el.innerHTML = msgTiempo('avisosDesactivado'); return; }
+  if (!AVISOS.datos) el.innerHTML = msgTiempo('avisosCargando');
+  await pedirAvisos();
+  if (AVISOS.valor !== valor) return;
+  pintarBotonAvisos();
+  el.innerHTML = AVISOS.datos ? htmlAvisos(valor) : msgTiempo('avisosError');
+}
+
+// Para alertas:lluvia o alertas:naranja, en el idioma de la página y en castellano.
+function nombresAvisos(){
+  const ambos = clave => [t(clave), I18N.es[clave]];
+  return {
+    fen: Object.fromEntries(FENOMENOS.map(f => [f, ambos('avisoFen' + f)])),
+    nivel: Object.fromEntries(NIVELES.map(n => [n, ambos('avisoNivel' + n)])),
+  };
+}
+
+// «En vigor · hasta mañana 17:59» o «jue 06:00 – 23:59», en la hora del sitio.
+function cuandoAviso(a){
+  const lang = (ACCES && ACCES.lang) || 'es';
+  const timeZone = zonaHorariaAviso(a.zona);
+  const fecha = ms => new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ms);
+  const hora = ms => new Intl.DateTimeFormat(lang, { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms);
+  const hoy = fecha(Date.now());
+  const dia = ms => {
+    const f = fecha(ms);
+    const dias = Math.round((Date.parse(f) - Date.parse(hoy)) / 864e5);
+    return dias === 0 ? t('avisosHoy') : dias === 1 ? t('avisosManana')
+      : new Intl.DateTimeFormat(lang, { timeZone, weekday: 'short' }).format(ms);
+  };
+  const ini = Date.parse(a.inicio), fin = Date.parse(a.fin);
+  const hasta = fecha(fin) === hoy ? hora(fin) : `${dia(fin)} ${hora(fin)}`;
+  if (empezado(a)) return `${t('avisosAhora')} · ${t('avisosHasta', { h: hasta })}`;
+  return `${dia(ini)} ${hora(ini)} – ${fecha(fin) === fecha(ini) ? hora(fin) : `${dia(fin)} ${hora(fin)}`}`;
+}
+
+function htmlAviso(a){
+  const lang = (ACCES && ACCES.lang) || 'es';
+  const texto = a.texto ? (lang === 'en' && a.texto.en) || a.texto.es : '';
+  const lugar = [comunidadDeZona(a.zona), a.area].filter(Boolean).join(' · ');
+  return `<li class="aviso" data-nivel="${escapeHtml(a.nivel)}">
+    <span class="aviso-nivel">${escapeHtml(t('avisoNivel' + a.nivel))}</span><span>${escapeHtml(lugar)}</span>
+    <span class="aviso-cuando">${escapeHtml(cuandoAviso(a))}</span>
+    ${texto ? `<p class="aviso-texto">${escapeHtml(texto)}</p>` : ''}
+    ${PESO[a.nivel] >= 2 ? `<button type="button" data-q="${escapeHtml(busquedaNoticias(a))}">${escapeHtml(t('avisosVerNoticias'))}</button>` : ''}
+  </li>`;
+}
+
+// Por fenómeno; los amarillos, plegados (con un filtro, desplegados).
+function htmlAvisos(valor){
+  const d = AVISOS.datos;
+  const lista = filtrarAvisos(avisosVigentes(), valor, nombresAvisos());
+  const grupos = agruparAvisos(lista).map(g => {
+    const graves = g.avisos.filter(a => a.nivel !== 'amarillo');
+    const amarillos = g.avisos.filter(a => a.nivel === 'amarillo');
+    const nombre = I18N.es['avisoFen' + g.fen] ? t('avisoFen' + g.fen) : g.fen;
+    return `<section class="avisos-grupo"><h3>${escapeHtml(nombre)}</h3>
+      ${graves.length ? `<ul>${graves.map(htmlAviso).join('')}</ul>` : ''}
+      ${amarillos.length ? `<details${valor || !graves.length ? ' open' : ''}><summary>${escapeHtml(t('avisosAmarillos', { n: amarillos.length }))}</summary>
+        <ul>${amarillos.map(htmlAviso).join('')}</ul></details>` : ''}
+    </section>`;
+  }).join('');
+  const enlace = /^https:\/\//.test(d.enlace || '') ? d.enlace : '';
+  const fuente = d.fuente === 'aemet' ? 'AEMET' : 'MeteoAlarm';
+  const consultado = new Date(d.consultado);
+  const pie = `${escapeHtml(t('tiempoFuente'))}: `
+    + (enlace ? `<a href="${escapeHtml(enlace)}" target="_blank" rel="noopener">${fuente}</a>` : fuente)
+    + (isNaN(consultado) ? '' : ' · ' + escapeHtml(t('avisosConsultado', {
+        h: consultado.toLocaleTimeString((ACCES && ACCES.lang) || 'es', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) })))
+    + (d.incompleto ? ' · ' + escapeHtml(t('avisosIncompleto')) : '')
+    + (AVISOS.error ? ' · ' + escapeHtml(t('avisosError')) : '');
+  return `<div class="tiempo-cab"><strong>${escapeHtml(t('avisosTitulo'))}</strong>${valor ? `<span>${escapeHtml(valor)}</span>` : ''}</div>
+    ${lista.length ? grupos : msgTiempo(valor ? 'avisosNingunoX' : 'avisosNinguno', { X: valor })}
+    <div class="tiempo-pie">${pie}</div>`;
+}
+
+function wireAvisos(){
+  document.getElementById('btn-avisos')?.addEventListener('click', abrirAvisos);
+  // «Ver noticias»: la búsqueda preparada sustituye a alertas:.
+  document.getElementById('avisos-panel')?.addEventListener('click', e => {
+    const b = e.target.closest('button[data-q]');
+    if (!b) return;
+    $('#buscar').value = b.dataset.q + ' ';
+    aplicarFiltros();
+  });
+  // Cada minuto se quitan los caducados; la petición, solo cada 15.
+  setInterval(refrescarAvisos, 60e3);
+  document.addEventListener('visibilitychange', refrescarAvisos);
+  setTimeout(refrescarAvisos, 2000);
+}
+function repintarAvisos(){
+  const el = document.getElementById('avisos-panel');
+  if (el) el.setAttribute('aria-label', t('avisosRegion'));
+  pintarBotonAvisos();
+  if (AVISOS.valor !== null && AVISOS.datos) el.innerHTML = htmlAvisos(AVISOS.valor);
 }
 
 /* ── Super-grupos (prefijo antes de " · ") ── */
@@ -9462,6 +9692,7 @@ function aplicarFiltros(){
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
   actualizarTiempo(parsed.eltiempo);
+  actualizarAlertas(parsed.alertas);
 
 const capas = capasRequeridas(parsed, consulta);
 // El archivo (Turso) es para búsquedas concretas: solo con texto. Un medio,
@@ -10735,6 +10966,7 @@ function aplicarTextos(){
   $('#cfg-tiempo-lbl').textContent = t('cfgTiempo');
   $('#cfg-tiempo-hint').textContent = t('cfgTiempoHint');
   repintarTiempo();
+  repintarAvisos();
   $('#cfg-backup').textContent = t('cfgBackup');
   $('#cfg-backup-msg').textContent = t('cfgBackupMsg');
   $('#btn-export-lbl').textContent = t('btnExport');
@@ -11093,10 +11325,14 @@ function wireStaticEvents(){
       TIEMPO_ACTIVO = chkTiempo.checked;
       try { localStorage.setItem(TIEMPO_ACTIVO_KEY, TIEMPO_ACTIVO ? 'true' : 'false'); } catch(e){}
       TIEMPO.valor = null;   // la tarjeta se vuelve a resolver con el ajuste nuevo
+      AVISOS.valor = undefined;   // y el panel de avisos se repinta
       aplicarFiltros();
+      pintarBotonAvisos();
+      refrescarAvisos();
     });
   }
   wireTiempo();
+  wireAvisos();
   wirePortadas();
   // ── Chips de modo y de tema ──
   // Elegir un modo quita el chip de tema; pulsar el tema elegido lo quita.
