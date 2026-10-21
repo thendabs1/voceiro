@@ -4,7 +4,7 @@ import io
 import json
 import tempfile
 import unittest
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -183,9 +183,9 @@ class Historico(unittest.TestCase):
                    'noticias': [R._noticia_a_formato_corto(n, dia) for n in noticias]}
         with tempfile.TemporaryDirectory() as carpeta:
             Path(carpeta, 'dia.json').write_text(json.dumps(fichero), encoding='utf-8')
-            Path(carpeta, 'manifest.json').write_text(json.dumps(
+            Path(carpeta, 'inventario.json').write_text(json.dumps(
                 {'dias': [{'fecha': dia, 'all': {'file': 'dia.json'}}]}), encoding='utf-8')
-            with patch.multiple(R, DATOS_DIR=carpeta, MANIFEST_PATH=str(Path(carpeta, 'manifest.json')),
+            with patch.multiple(R, DATOS_DIR=carpeta, INVENTARIO_PATH=str(Path(carpeta, 'inventario.json')),
                                 STATE_PATH=str(Path(carpeta, 'state.json'))), \
                     contextlib.redirect_stdout(io.StringIO()):
                 leidas = R.cargar_historico_payload()['noticias']
@@ -210,9 +210,9 @@ class Recogida(unittest.TestCase):
                                 for n in R.deduplicar_editorial(noticias)]}
         with tempfile.TemporaryDirectory() as carpeta:
             Path(carpeta, 'dia.json').write_text(json.dumps(fichero), encoding='utf-8')
-            Path(carpeta, 'manifest.json').write_text(json.dumps(
+            Path(carpeta, 'inventario.json').write_text(json.dumps(
                 {'dias': [{'fecha': dia, 'all': {'file': 'dia.json'}}]}), encoding='utf-8')
-            with patch.multiple(R, DATOS_DIR=carpeta, MANIFEST_PATH=str(Path(carpeta, 'manifest.json')),
+            with patch.multiple(R, DATOS_DIR=carpeta, INVENTARIO_PATH=str(Path(carpeta, 'inventario.json')),
                                 STATE_PATH=str(Path(carpeta, 'state.json'))), \
                     contextlib.redirect_stdout(io.StringIO()):
                 return {n['dominio']: n for n in R.cargar_historico_payload()['noticias']}
@@ -272,33 +272,41 @@ class PublicacionR2(unittest.TestCase):
     def descargar(self, cliente):
         with tempfile.TemporaryDirectory() as carpeta, \
                 patch.multiple(R, DATOS_DIR=carpeta,
-                               MANIFEST_PATH=str(Path(carpeta, 'manifest.json'))), \
+                               INVENTARIO_PATH=str(Path(carpeta, 'inventario.json'))), \
                 patch.object(R, '_r2_client', return_value=cliente), \
                 contextlib.redirect_stdout(io.StringIO()):
             try:
                 return R.descargar_historico_desde_r2()
             finally:
-                self.manifest_local = Path(carpeta, 'manifest.json').exists()
+                self.inventario_local = Path(carpeta, 'inventario.json').exists()
 
-    def manifest_con(self, *ficheros):
+    def inventario_con(self, *ficheros):
         hoy = datetime.now(MADRID).date().isoformat()
         return json.dumps({'dias': [{'fecha': hoy, 'all': {'file': f}} for f in ficheros]}).encode()
 
-    def test_sin_manifest_en_r2_es_un_primer_run(self):
+    def test_sin_inventario_en_r2_es_un_primer_run(self):
         self.assertEqual(self.descargar(R2Falso()), 0)
-        self.assertFalse(self.manifest_local)
+        self.assertFalse(self.inventario_local)
 
-    def test_un_fallo_al_bajar_el_manifest_para_el_run(self):
+    def test_un_fallo_al_bajar_el_inventario_para_el_run(self):
         with self.assertRaises(SystemExit):
-            self.descargar(R2Falso(fallos={'manifest.json': 'InternalError'}))
-        self.assertFalse(self.manifest_local)
+            self.descargar(R2Falso(fallos={'inventario.json': 'InternalError'}))
+        self.assertFalse(self.inventario_local)
+
+    def test_sin_inventario_se_parte_del_manifest_de_antes_pero_no_del_publico(self):
+        viejo = self.inventario_con('a.json')
+        self.assertEqual(self.descargar(R2Falso({'manifest.json': viejo, 'a.json': b'{}'})), 1)
+        self.assertTrue(self.inventario_local)
+        publico = json.dumps({'dias_ventana': 30, 'dias': []}).encode()
+        with self.assertRaises(SystemExit):
+            self.descargar(R2Falso({'manifest.json': publico}))
 
     def test_un_fallo_al_bajar_un_dia_para_el_run_pero_uno_que_no_existe_no(self):
-        manifest = self.manifest_con('a.json', 'b.json')
+        inventario = self.inventario_con('a.json', 'b.json')
         with self.assertRaises(SystemExit):
-            self.descargar(R2Falso({'manifest.json': manifest, 'a.json': b'{}'},
+            self.descargar(R2Falso({'inventario.json': inventario, 'a.json': b'{}'},
                                    fallos={'b.json': 'SlowDown'}))
-        self.assertEqual(self.descargar(R2Falso({'manifest.json': manifest, 'a.json': b'{}'})), 1)
+        self.assertEqual(self.descargar(R2Falso({'inventario.json': inventario, 'a.json': b'{}'})), 1)
 
     def subir(self, cliente, *nombres):
         with tempfile.TemporaryDirectory() as carpeta:
@@ -311,12 +319,12 @@ class PublicacionR2(unittest.TestCase):
                 return R.subir_a_r2(rutas)
 
     def test_un_dia_que_llega_roto_para_el_run_y_no_queda_con_su_nombre(self):
-        manifest = self.manifest_con('a.json')
+        inventario = self.inventario_con('a.json')
         with tempfile.TemporaryDirectory() as carpeta, \
                 patch.multiple(R, DATOS_DIR=carpeta,
-                               MANIFEST_PATH=str(Path(carpeta, 'manifest.json'))), \
+                               INVENTARIO_PATH=str(Path(carpeta, 'inventario.json'))), \
                 patch.object(R, '_r2_client', return_value=R2Falso(
-                    {'manifest.json': manifest, 'a.json': b'{"fecha": "2026-'})), \
+                    {'inventario.json': inventario, 'a.json': b'{"fecha": "2026-'})), \
                 contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaises(SystemExit):
                 R.descargar_historico_desde_r2()
@@ -326,19 +334,153 @@ class PublicacionR2(unittest.TestCase):
         hoy = datetime.now(MADRID).date().isoformat()
         with tempfile.TemporaryDirectory() as carpeta:
             Path(carpeta, 'a.json').write_text('', encoding='utf-8')
-            Path(carpeta, 'manifest.json').write_text(json.dumps(
+            Path(carpeta, 'inventario.json').write_text(json.dumps(
                 {'dias': [{'fecha': hoy, 'all': {'file': 'a.json'}}]}), encoding='utf-8')
-            with patch.multiple(R, DATOS_DIR=carpeta, MANIFEST_PATH=str(Path(carpeta, 'manifest.json')),
+            with patch.multiple(R, DATOS_DIR=carpeta, INVENTARIO_PATH=str(Path(carpeta, 'inventario.json')),
                                 STATE_PATH=str(Path(carpeta, 'state.json'))), \
                     contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit):
                 R.cargar_historico_payload()
 
-    def test_el_manifest_se_sube_el_ultimo(self):
+    def test_el_inventario_y_el_manifest_se_suben_los_ultimos(self):
         cliente = R2Falso()
-        self.assertEqual(self.subir(cliente, 'manifest.json', 'a.json', 'b.json'), (3, 0, 0))
-        self.assertEqual(cliente.subidas[-1], 'manifest.json')
+        self.assertEqual(self.subir(cliente, 'manifest.json', 'a.json', 'inventario.json',
+                                    'b.json'), (4, 0, 0))
+        self.assertEqual(cliente.subidas[-2:], ['inventario.json', 'manifest.json'])
 
-    def test_si_falla_un_dato_el_manifest_no_se_sube(self):
+    def test_si_falla_un_dato_ni_el_inventario_ni_el_manifest_se_suben(self):
         cliente = R2Falso(fallos={'b.json': 'InternalError'})
-        self.assertEqual(self.subir(cliente, 'manifest.json', 'a.json', 'b.json'), (1, 0, 1))
+        self.assertEqual(self.subir(cliente, 'manifest.json', 'inventario.json',
+                                    'a.json', 'b.json'), (1, 0, 1))
         self.assertEqual(cliente.subidas, ['a.json'])
+
+    def test_si_falla_el_inventario_el_manifest_no_se_sube(self):
+        cliente = R2Falso(fallos={'inventario.json': 'InternalError'})
+        self.assertEqual(self.subir(cliente, 'manifest.json', 'inventario.json', 'a.json'),
+                         (1, 0, 1))
+        self.assertEqual(cliente.subidas, ['a.json'])
+
+
+def fecha(i):
+    return (datetime.now(MADRID).date() - timedelta(days=i)).isoformat()
+
+
+def dia(i, legado=False):
+    """Entrada de inventario del día hace i días; los de antes del troceado
+    por medio solo tienen el fichero del día entero."""
+    f = fecha(i)
+    e = {'fecha': f, 'all': {'file': f'{f}-{i:010d}.json', 'n': 10 + i},
+         'grupos': {}, 'dominios': {}}
+    if not legado:
+        e['grupos'] = {'Pruebas': {'file': f'{f}-g-pruebas-{i:010d}.json', 'n': 4, 'kb': 2.0}}
+        e['dominios'] = {'a.test': {'file': f'd-a.test-{f}.json', 'n': 6, 'kb': 3.0}}
+    return e
+
+
+class R2Bucket:
+    """Bucket en memoria para la limpieza: todo modificado hace 2 h."""
+    def __init__(self, claves):
+        hace = datetime.now(timezone.utc) - timedelta(hours=2)
+        self.claves = {k: hace for k in claves}
+
+    def head_object(self, Bucket, Key):
+        if Key not in self.claves:
+            raise FalloR2('404')
+        return {'LastModified': self.claves[Key]}
+
+    def delete_object(self, Bucket, Key):
+        self.claves.pop(Key, None)
+
+    def delete_objects(self, Bucket, Delete):
+        for o in Delete['Objects']:
+            self.claves.pop(o['Key'], None)
+        return {}
+
+    def get_paginator(self, nombre):
+        claves = self.claves
+        class Paginas:
+            def paginate(self, Bucket):
+                yield {'Contents': [{'Key': k, 'LastModified': t}
+                                    for k, t in list(claves.items())]}
+        return Paginas()
+
+
+@patch.multiple(R, DIAS_VENTANA=2, DIAS_ARCHIVO=5)
+class Archivo(unittest.TestCase):
+    """Ventana de 2 días y archivo de 5: lo que sale de la ventana queda en
+    una línea y en R2 solo sus ficheros por medio."""
+
+    def inventario(self):
+        hoy = datetime.now(MADRID).date()
+        ventana, archivo = R._repartir_dias(
+            [dia(0), dia(1), dia(2), dia(3, legado=True)],
+            [{'fecha': fecha(4), 'n': 5}, {'fecha': fecha(6), 'n': 1}], hoy)
+        return {'dias': ventana, 'archivo': archivo}
+
+    def test_reparto_entre_ventana_y_archivo(self):
+        inv = self.inventario()
+        self.assertEqual([d['fecha'] for d in inv['dias']], [fecha(0), fecha(1)])
+        self.assertEqual(inv['archivo'], [
+            {'fecha': fecha(2), 'n': 12},
+            {'fecha': fecha(3), 'n': 13, 'all': f'{fecha(3)}-{3:010d}.json'},
+            {'fecha': fecha(4), 'n': 5},
+        ])
+
+    def test_resumen_publico(self):
+        inv = self.inventario()
+        inv['dias'][1] = dia(1, legado=True)
+        r = R._resumen_publico(inv['dias'], inv['archivo'])
+        self.assertEqual(r['dias'][0], {'fecha': fecha(0), 'n': 10,
+                                        'grupos': {'Pruebas': f'{fecha(0)}-g-pruebas-{0:010d}.json'}})
+        self.assertEqual(r['dias'][1]['grupos'], {})
+        # La media sale solo de los días con detalle.
+        self.assertEqual(r['medias'], {'grupos': {'Pruebas': [4.0, 2.0]},
+                                       'dominios': {'a.test': [6.0, 3.0]}})
+        self.assertEqual(r['guardado'], {'desde': fecha(4), 'dias': 5,
+                                         'n': 10 + 11 + 12 + 13 + 5})
+
+    def bucket(self):
+        claves = ['inventario.json', 'manifest.json', f'{fecha(0)}-{99:010d}.json',
+                  f'd-b.test-{fecha(0)}.json', f'd-a.test-{fecha(6)}.json']
+        for i in range(4):
+            claves.append(f'{fecha(i)}-{i:010d}.json')
+            claves.append(f'{fecha(i)}-g-pruebas-{i:010d}.json')
+        for i in range(6):
+            claves.append(f'd-a.test-{fecha(i)}.json')
+        return R2Bucket(claves)
+
+    def limpiar(self, bucket, inv, prev=None, scan=False):
+        with patch.object(R, '_r2_client', return_value=bucket), \
+                contextlib.redirect_stdout(io.StringIO()):
+            return R.limpiar_r2_huerfanos(inv, prev, forzar_scan=scan)
+
+    def test_barrido_conserva_el_archivo_por_medio_y_borra_el_resto(self):
+        b = self.bucket()
+        antes = set(b.claves)
+        self.assertTrue(self.limpiar(b, self.inventario(), scan=True))
+        self.assertEqual(antes - set(b.claves), {
+            f'{fecha(0)}-{99:010d}.json',         # versión vieja de un día de la ventana
+            f'd-b.test-{fecha(0)}.json',          # medio que ya no está en ese día
+            f'{fecha(2)}-{2:010d}.json',          # día entero de un día archivado
+            f'{fecha(2)}-g-pruebas-{2:010d}.json',
+            f'{fecha(3)}-g-pruebas-{3:010d}.json',
+            f'd-a.test-{fecha(6)}.json',          # fuera del archivo
+        })
+        # Se conservan los ficheros por medio de los días archivados y el día
+        # entero de uno de antes del troceado.
+        for k in (f'd-a.test-{fecha(2)}.json', f'd-a.test-{fecha(5)}.json',
+                  f'{fecha(3)}-{3:010d}.json', 'inventario.json'):
+            self.assertIn(k, b.claves)
+
+    def test_diff_con_el_manifest_de_antes_no_borra_el_archivo(self):
+        b = self.bucket()
+        prev = {'dias': [dia(1), dia(2), dia(3, legado=True)]}
+        antes = set(b.claves)
+        self.limpiar(b, self.inventario(), prev)
+        self.assertEqual(antes - set(b.claves), {
+            f'{fecha(2)}-{2:010d}.json', f'{fecha(2)}-g-pruebas-{2:010d}.json'})
+
+    def test_con_la_ventana_vacia_no_se_borra_ningun_fichero_por_medio(self):
+        b = self.bucket()
+        self.limpiar(b, {'dias': [], 'archivo': []}, scan=True)
+        for i in range(6):
+            self.assertIn(f'd-a.test-{fecha(i)}.json', b.claves)
