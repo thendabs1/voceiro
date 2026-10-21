@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { PESO, empezado } from '../../shared/tiempo/avisos.js';
+import { PESO, empezado, zonaHorariaAviso } from '../../shared/tiempo/avisos.js';
 
 const html = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
 const funcion = nombre => html.slice(
@@ -87,6 +87,26 @@ test('el sol se colorea solo con naranja o rojo en mis sitios', () => {
   assert.equal(apagado.sol.dataset.nivel, undefined);
 });
 
+// Cuándo, sin horas y con ellas.
+function cuando(ahora) {
+  const ctx = {
+    t: k => k, escapeHtml: x => String(x), ACCES: { lang: 'es' }, Intl, Math,
+    empezado: a => empezado(a, ahora), zonaHorariaAviso: () => 'Europe/Madrid',
+    Date: class extends Date { static now() { return ahora; } },
+  };
+  runInNewContext([linea('const fechaAviso'), funcion('diaAviso'), linea('const momentoAviso'), funcion('cuandoAviso')].join('\n')
+    + '\nthis.momentoAviso = momentoAviso; this.cuandoAviso = cuandoAviso;', ctx);
+  return ctx;
+}
+
+test('el momento de un aviso: en vigor, hoy o mañana; con huecos, varios periodos', () => {
+  const c = cuando(Date.parse('2026-10-21T10:00:00Z'));
+  assert.equal(c.momentoAviso(aviso('713601', 'naranja')), 'avisosahora');
+  assert.equal(c.momentoAviso(aviso('713601', 'naranja', '2026-10-22T06:00:00Z')), 'avisosManana');
+  assert.equal(c.cuandoAviso({ ...aviso('713601', 'naranja', '2026-10-21T18:00:00Z'), varios: true }), 'AvisosVarios');
+  assert.match(c.cuandoAviso({ ...aviso('713601', 'naranja'), varios: true }), /avisosAhora<\/span> · avisosVarios$/);
+});
+
 // Mis sitios con previsiones que llegan cuando el test quiere.
 function contextoSitios(sitios) {
   const guardado = new Map([['voceiro-tiempo-sitios-v1', JSON.stringify(sitios)]]);
@@ -145,10 +165,12 @@ test('Mis sitios: los homónimos llevan su provincia; un fallo, guion y Reintent
 function avisosLugar(AVISOS) {
   const ctx = {
     t: k => k, escapeHtml: x => String(x), msgTiempo: k => `<p>${k}</p>`, htmlAviso: a => `<li>${a.zona}</li>`,
-    avisosDeZona: () => (AVISOS.datos?.avisos || []), ACCES: { lang: 'es' }, Date, isNaN,
-    TIEMPO_AVISOS_KEY: 'voceiro-tiempo-avisos', AVISOS, localStorage: { getItem: () => null },
+    avisosDeZona: () => (AVISOS.datos?.avisos || []), ACCES: { lang: 'es' }, Date, isNaN, Intl,
+    empezado, zonaHorariaAviso,
+    TIEMPO_AVISOS_KEY: 'voceiro-tiempo-sitios-v1', AVISOS, localStorage: { getItem: () => null },
   };
-  runInNewContext(['htmlAvisosLugar', 'pieAvisos'].map(funcion).join('\n') + '\nthis.f = htmlAvisosLugar;', ctx);
+  runInNewContext([linea('const fechaAviso'), funcion('diaAviso'), linea('const momentoAviso'),
+    ...['htmlAvisosLugar', 'pieAvisos'].map(funcion)].join('\n') + '\nthis.f = htmlAvisosLugar;', ctx);
   return ctx.f({ zonaAviso: '713601' });
 }
 

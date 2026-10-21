@@ -159,6 +159,17 @@ test('grupos: una línea por comunidad con sus niveles juntos; lo grave y lo que
   assert.deepEqual(agruparAvisos([futuro, AVISOS[2]], AHORA).map(x => x.comunidad), ['Canarias', 'Galicia']);
 });
 
+test('grupos: varios periodos solo si hay huecos entre los del nivel más alto', () => {
+  const n = (zona, inicio, fin) => ({ zona, nivel: 'naranja', fen: 'PR', area: zona, inicio, fin });
+  const seguidos = agruparAvisos([n('713601', '2026-10-21T06:00:00Z', '2026-10-21T14:00:00Z'),
+    n('713602', '2026-10-21T12:00:00Z', '2026-10-21T23:00:00Z')], AHORA);
+  assert.equal(seguidos[0].varios, false);
+  const huecos = agruparAvisos([n('713601', '2026-10-21T06:00:00Z', '2026-10-21T12:00:00Z'),
+    n('713602', '2026-10-21T18:00:00Z', '2026-10-21T23:00:00Z'),
+    { ...n('713603', '2026-10-21T13:00:00Z', '2026-10-21T15:00:00Z'), nivel: 'amarillo' }], AHORA);
+  assert.equal(huecos[0].varios, true);   // el amarillo no tapa el hueco
+});
+
 test('icono: solo naranja y rojo, con los que ya están en vigor', () => {
   assert.deepEqual(resumenAvisos(AVISOS, AHORA), { nivel: 'rojo', total: 2, ahora: 1 });
   assert.equal(resumenAvisos(AVISOS.filter(a => a.nivel === 'amarillo'), AHORA), null);
