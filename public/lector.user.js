@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.288
+// @version      2.0.289
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.288';
+const SCRIPT_VERSION = '2.0.289';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
