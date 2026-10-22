@@ -409,7 +409,7 @@
     border-radius:12px; font-size:.72em;
     font-family:ui-monospace,Menlo,Consolas,monospace;
   }
-  .ov-item.first{ background:var(--preset-bg); color:var(--preset); border:1px solid var(--preset); }
+  .ov-item.include,.ov-item.first{ background:var(--preset-bg); color:var(--preset); border:1px solid var(--preset); }
   .ov-item.ignore{ background:var(--block-bg); color:var(--block); border:1px solid var(--block); }
   .ov-item button{
     background:transparent; border:none; cursor:pointer;
@@ -417,6 +417,10 @@
     border-radius:8px;
   }
   .ov-item button:hover{ background:rgba(0,0,0,.08); }
+  .ov-item .ov-favorito{ color:var(--muted); }
+  .ov-item .ov-favorito[aria-pressed="true"]{ color:var(--preset); }
+  .ov-item .ov-favorito[aria-pressed="true"] .ico{ fill:currentColor; }
+  .ov-item .ov-favorito .ico{ width:14px; height:14px; }
   .grupo-item{
     display:flex; align-items:center; gap:8px;
     font-size:.75em; cursor:pointer;
@@ -512,7 +516,7 @@
   }
   .medio-fila{
     display:grid;
-    grid-template-columns:34px 34px minmax(140px,1.2fr) 1.6fr 1.4fr;
+    grid-template-columns:34px 34px 34px minmax(140px,1.2fr) 1.6fr 1.4fr;
     gap:8px; align-items:center;
     padding:6px 10px;
     border-bottom:1px solid var(--border);
@@ -556,6 +560,15 @@
   .chk.ignorar input:checked + span{
     background:var(--block); border-color:var(--block); color:var(--on-solid);
   }
+  .medio-favorito{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:27px; height:27px; padding:0; border:1.5px solid var(--btn-border);
+    border-radius:50%; background:transparent; color:var(--muted); cursor:pointer;
+  }
+  .medio-favorito:hover{ border-color:var(--preset); }
+  .medio-favorito[aria-pressed="true"]{ background:var(--preset); border-color:var(--preset); color:var(--on-solid); }
+  .medio-favorito[aria-pressed="true"] .ico{ fill:currentColor; }
+  .medio-favorito .ico{ width:14px; height:14px; }
 
   textarea.preset-texto{
     width:100%; min-height:180px; padding:12px;
@@ -1555,7 +1568,7 @@
   @media (max-width:900px){
 .filtros-row{ position: static; }
 .filtros{ grid-template-columns: 1fr 1fr; }
-    .medio-fila{grid-template-columns:34px 34px 1fr 1.2fr}
+    .medio-fila{grid-template-columns:34px 34px 34px 1fr 1.2fr}
     .medio-fila .celda-grupo{display:none}
     .opt-row{gap:8px}
     .opt-label{min-width:100%}
@@ -1563,7 +1576,7 @@
   }
   @media (max-width:560px){
     .filtros{ grid-template-columns: 1fr; }
-    .medio-fila{grid-template-columns:34px 34px 1fr}
+    .medio-fila{grid-template-columns:34px 34px 34px 1fr}
     .medio-fila .celda-nombre{display:none}
     .panel-header{padding:14px 16px 10px}
     .panel-body{padding:12px 16px 16px}
@@ -1998,6 +2011,7 @@
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" x2="4" y1="22" y2="15" /></symbol>
   <symbol id="i-share-2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" /></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 7 1-5.05 4.93 1.19 6.97L12 17.9l-6.24 3.3 1.19-6.97L1.9 9.3l7-1L12 2Z" /></symbol>
   <symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></symbol>
   <symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></symbol>
@@ -2133,7 +2147,7 @@
             </div>
             <div id="filtro-medio-add" class="filtro-medio-add" hidden>
               <span class="filtro-medio-add-label" id="filtro-medio-add-label"></span>
-              <button id="ov-add-first"  type="button" class="filtro-medio-add-btn force"></button>
+              <button id="ov-add-include" type="button" class="filtro-medio-add-btn force"></button>
               <button id="ov-add-ignore" type="button" class="filtro-medio-add-btn ignore"></button>
             </div>
             <div id="lista-medios" class="list-medios"></div>
@@ -2871,14 +2885,14 @@ const I18N = {
     fltCampos: 'Grupo|Tipo|Período|Orden|Desde|Hasta',
 
     /* ── Overrides por dominio ── */
-    cfgOverrideHint:        'Medios que este modo fuerza o bloquea. Para añadir uno que no está en la lista, escribe su dominio en el buscador de abajo.',
+    cfgOverrideHint:        'Medios incluidos, favoritos o bloqueados en este modo. Para añadir uno que no está en la lista, escribe su dominio en el buscador de abajo.',
     cfgOverridePegar:       'Pegar lista de dominios',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio no válido: {X}',
 
     /* ── Buscador de medios (add-bar) ── */
     cfgMedioAddLabel:       'Sin coincidencias. ¿Añadir {X} al modo?',
-    cfgMedioAddForce:       'Forzar',
+    cfgMedioAddForce:       'Añadir',
     cfgMedioAddIgnore:      'Bloquear',
 
     /* ── Destino inline (➕ / 🚫) ── */
@@ -2932,8 +2946,9 @@ const I18N = {
     cfgGrupos:              'Grupos completos',
     cfgGruposHint:          'Al marcar un grupo se incluyen todos sus medios. Un medio bloqueado no se muestra aunque su grupo esté marcado.',
     cfgMedios:              'Medios',
-    cfgMediosHint:          'Forzar: siempre se muestra. Bloquear: nunca. Sin marcar: según los grupos y los temas.',
-    forceInclude:           'Forzar siempre (incluir aunque no cumpla grupo ni palabras)',
+    cfgMediosHint:          '✓ incluye siempre. ★ destaca durante 3 horas. Bloquear oculta el medio.',
+    forceInclude:           'Incluir aunque no cumpla grupo ni temas',
+    forceFavorite:          'Destacar las noticias recientes de este medio',
     forceExclude:           'Bloquear siempre',
     blockMedia:             'No mostrar noticias de este medio',
     comoLeerlo:             'Cómo leer este medio',
@@ -2951,7 +2966,7 @@ const I18N = {
     cfgHelpLbl:             'Ayúdanos a mejorar',
     cfgHelpMsg:             '¿Algo no funciona? ¿Un medio no se muestra o da errores? Cuéntanoslo.',
     cfgHelpBtn:             'Reportar problema',
-    cfgResumen:             'Mostrando {vis} de {total} · {inc} forzados · {ign} bloqueados',
+    cfgResumen:             'Mostrando {vis} de {total} · {inc} incluidos · {fav} favoritos · {ign} bloqueados',
     cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
     /* ── Accesibilidad ── */
@@ -3121,7 +3136,7 @@ const I18N = {
     ajDeshacer:             'Deshacer',
     ajModoVacio:            'Sin configurar',
     ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
-    ajMediosN:              '{f} forzados · {b} bloqueados',
+    ajMediosN:              '{f} incluidos · {s} favoritos · {b} bloqueados',
     ajVistaTit:             'Vista del feed',
     ajPrensaActivar:        'Buscar también en Google News',
     ajPluginTit:            'Lector Universal',
@@ -3221,13 +3236,13 @@ const I18N = {
     cfgModoBorrado:         'Modo borrado: {X}',
     cfgModoUnicoNoBorrar:   'Non podes borrar o único modo. Crea outro antes.',
 
-    cfgOverrideHint:        'Medios que este modo forza ou bloquea. Para engadir un que non está na lista, escribe o seu dominio no buscador de abaixo.',
+    cfgOverrideHint:        'Medios incluídos, favoritos ou bloqueados neste modo. Para engadir un que non está na lista, escribe o seu dominio no buscador de abaixo.',
     cfgOverridePegar:       'Pegar lista de dominios',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Dominio non válido: {X}',
 
     cfgMedioAddLabel:       'Sen coincidencias. ¿Engadir {X} ao modo?',
-    cfgMedioAddForce:       'Forzar',
+    cfgMedioAddForce:       'Engadir',
     cfgMedioAddIgnore:      'Bloquear',
 
     addToModoTitle:      'Engadir este medio ao modo',
@@ -3272,8 +3287,9 @@ const I18N = {
     cfgGrupos:              'Grupos completos',
     cfgGruposHint:          'Ao marcar un grupo inclúense todos os seus medios. Un medio bloqueado non se amosa aínda que o seu grupo estea marcado.',
     cfgMedios:              'Medios',
-    cfgMediosHint:          'Forzar: amósase sempre. Bloquear: nunca. Sen marcar: segundo os grupos e os temas.',
-    forceInclude:           'Forzar sempre (incluír aínda que non cumpra grupo nin palabras)',
+    cfgMediosHint:          '✓ inclúe sempre. ★ destaca durante 3 horas. Bloquear agocha o medio.',
+    forceInclude:           'Incluír aínda que non cumpra grupo nin temas',
+    forceFavorite:          'Destacar as noticias recentes deste medio',
     forceExclude:           'Bloquear sempre',
     blockMedia:             'Non amosar noticias deste medio',
     comoLeerlo:             'Como ler este medio',
@@ -3291,7 +3307,7 @@ const I18N = {
     cfgHelpLbl:             'Axúdanos a mellorar',
     cfgHelpMsg:             '¿Algo non funciona? ¿Un medio non se amosa ou dá erros? Cóntanoslo.',
     cfgHelpBtn:             'Reportar problema',
-    cfgResumen:             'Amosando {vis} de {total} · {inc} forzados · {ign} bloqueados',
+    cfgResumen:             'Amosando {vis} de {total} · {inc} incluídos · {fav} favoritos · {ign} bloqueados',
     cfgPalabrasPlaceholder: 'incendio\n"san salvador"\nPP',
 
     acTema:                 'Tema',
@@ -3451,7 +3467,7 @@ const I18N = {
     ajDeshacer:             'Desfacer',
     ajModoVacio:            'Sen configurar',
     ajResumenModo:          '{t} temas · {g} grupos · {m} medios',
-    ajMediosN:              '{f} forzados · {b} bloqueados',
+    ajMediosN:              '{f} incluídos · {s} favoritos · {b} bloqueados',
     ajVistaTit:             'Vista do feed',
     ajPrensaActivar:        'Buscar tamén en Google News',
     ajPluginTit:            'Lector Universal',
@@ -3551,13 +3567,13 @@ const I18N = {
     cfgModoBorrado:         'Mode esborrat: {X}',
     cfgModoUnicoNoBorrar:   "No pots esborrar l'únic mode. Crea'n un altre abans.",
 
-    cfgOverrideHint:        'Mitjans que aquest mode força o bloqueja. Per afegir-ne un que no és a la llista, escriu el seu domini al cercador de sota.',
+    cfgOverrideHint:        'Mitjans inclosos, favorits o bloquejats en aquest mode. Per afegir-ne un que no és a la llista, escriu el seu domini al cercador de sota.',
     cfgOverridePegar:       'Enganxar llista de dominis',
     cfgOverrideAplicar:     'Aplicar',
     cfgOverrideBad:         'Domini no vàlid: {X}',
 
     cfgMedioAddLabel:       "Sense coincidències. Afegir {X} al mode?",
-    cfgMedioAddForce:       'Forçar',
+    cfgMedioAddForce:       'Afegir',
     cfgMedioAddIgnore:      'Bloquejar',
 
     addToModoTitle:      'Afegir aquest mitjà al mode',
@@ -3602,8 +3618,9 @@ const I18N = {
     cfgGrupos:              'Grups complets',
     cfgGruposHint:          "En marcar un grup s'hi inclouen tots els mitjans. Un mitjà bloquejat no es mostra encara que el seu grup estigui marcat.",
     cfgMedios:              'Mitjans',
-    cfgMediosHint:          'Forçar: sempre es mostra. Bloquejar: mai. Sense marcar: segons els grups i els temes.',
-    forceInclude:           'Forçar sempre (incloure encara que no compleixi grup ni paraules)',
+    cfgMediosHint:          '✓ inclou sempre. ★ destaca durant 3 hores. Bloquejar amaga el mitjà.',
+    forceInclude:           'Incloure encara que no compleixi grup ni temes',
+    forceFavorite:          'Destacar les notícies recents d’aquest mitjà',
     forceExclude:           'Bloquejar sempre',
     blockMedia:             "No mostrar notícies d'aquest mitjà",
     comoLeerlo:             "Com llegir aquest mitjà",
@@ -3621,7 +3638,7 @@ const I18N = {
     cfgHelpLbl:             "Ajuda'ns a millorar",
     cfgHelpMsg:             'Alguna cosa no funciona? Explica-nos-ho.',
     cfgHelpBtn:             'Reportar problema',
-    cfgResumen:             'Mostrant {vis} de {total} · {inc} forçats · {ign} bloquejats',
+    cfgResumen:             'Mostrant {vis} de {total} · {inc} inclosos · {fav} favorits · {ign} bloquejats',
     cfgPalabrasPlaceholder: 'incendi\n"sant salvador"\nPP',
 
     acTema:                 'Tema',
@@ -3781,7 +3798,7 @@ const I18N = {
     ajDeshacer:             'Desfés',
     ajModoVacio:            'Sense configurar',
     ajResumenModo:          '{t} temes · {g} grups · {m} mitjans',
-    ajMediosN:              '{f} forçats · {b} bloquejats',
+    ajMediosN:              '{f} inclosos · {s} favorits · {b} bloquejats',
     ajVistaTit:             'Vista del feed',
     ajPrensaActivar:        'Cercar també a Google News',
     ajPluginTit:            'Lector Universal',
@@ -3881,13 +3898,13 @@ const I18N = {
     cfgModoBorrado:         'Mode deleted: {X}',
     cfgModoUnicoNoBorrar:   'You cannot delete the only mode. Create another one first.',
 
-    cfgOverrideHint:        'Outlets this mode forces or blocks. To add one that is not on the list, type its domain in the search box below.',
+    cfgOverrideHint:        'Outlets included, favorited or blocked in this mode. To add one not listed, type its domain in the search box below.',
     cfgOverridePegar:       'Paste list of domains',
     cfgOverrideAplicar:     'Apply',
     cfgOverrideBad:         'Invalid domain: {X}',
 
     cfgMedioAddLabel:       'No matches. Add {X} to this mode?',
-    cfgMedioAddForce:       'Force',
+    cfgMedioAddForce:       'Add',
     cfgMedioAddIgnore:      'Block',
 
     addToModoTitle:      'Add this outlet to a mode',
@@ -3932,8 +3949,9 @@ const I18N = {
     cfgGrupos:              'Full groups',
     cfgGruposHint:          'Checking a group includes all its outlets. A blocked outlet stays hidden even if its group is checked.',
     cfgMedios:              'Outlets',
-    cfgMediosHint:          'Force: always shown. Block: never. Unchecked: depends on groups and topics.',
-    forceInclude:           'Always force (include even if group or keywords do not match)',
+    cfgMediosHint:          '✓ always includes. ★ highlights for 3 hours. Block hides the outlet.',
+    forceInclude:           'Include even if group or topics do not match',
+    forceFavorite:          'Highlight recent news from this outlet',
     forceExclude:           'Always block',
     blockMedia:             'Hide news from this outlet',
     comoLeerlo:             'How to read this outlet',
@@ -3951,7 +3969,7 @@ const I18N = {
     cfgHelpLbl:             'Help us improve',
     cfgHelpMsg:             'Something not working? Tell us.',
     cfgHelpBtn:             'Report a problem',
-    cfgResumen:             'Showing {vis} of {total} · {inc} forced · {ign} blocked',
+    cfgResumen:             'Showing {vis} of {total} · {inc} included · {fav} favorites · {ign} blocked',
     cfgPalabrasPlaceholder: 'fire\n"san salvador"\nUK',
 
     acTema:                 'Theme',
@@ -4111,7 +4129,7 @@ const I18N = {
     ajDeshacer:             'Undo',
     ajModoVacio:            'Not set up',
     ajResumenModo:          '{t} topics · {g} groups · {m} outlets',
-    ajMediosN:              '{f} forced · {b} blocked',
+    ajMediosN:              '{f} included · {s} favorites · {b} blocked',
     ajVistaTit:             'Feed view',
     ajPrensaActivar:        'Also search Google News',
     ajPluginTit:            'Universal Reader',
@@ -4211,13 +4229,13 @@ const I18N = {
     cfgModoBorrado:         'Modua ezabatuta: {X}',
     cfgModoUnicoNoBorrar:   'Ezin duzu modu bakarra ezabatu. Sortu beste bat lehenago.',
 
-    cfgOverrideHint:        'Modu honek behartzen edo blokeatzen dituen hedabideak. Zerrendan ez dagoen bat gehitzeko, idatzi bere domeinua beheko bilatzailean.',
+    cfgOverrideHint:        'Modu honetan sartutako, gogoko edo blokeatutako hedabideak. Zerrendan ez dagoen bat gehitzeko, idatzi bere domeinua beheko bilatzailean.',
     cfgOverridePegar:       'Itsatsi domeinuen zerrenda',
     cfgOverrideAplicar:     'Aplikatu',
     cfgOverrideBad:         'Domeinu baliogabea: {X}',
 
     cfgMedioAddLabel:       'Bat-etortzerik ez. {X} modura gehitu?',
-    cfgMedioAddForce:       'Behartu',
+    cfgMedioAddForce:       'Gehitu',
     cfgMedioAddIgnore:      'Blokeatu',
 
     addToModoTitle:      'Gehitu hedabide hau modu batera',
@@ -4262,8 +4280,9 @@ const I18N = {
     cfgGrupos:              'Talde osoak',
     cfgGruposHint:          'Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide blokeatu bat ez da erakusten, bere taldea markatuta egon arren.',
     cfgMedios:              'Hedabideak',
-    cfgMediosHint:          'Behartu: beti erakusten da. Blokeatu: inoiz ez. Markatu gabe: taldeen eta gaien arabera.',
-    forceInclude:           'Beti behartu (taldeak edo hitzek bat egiten ez badute ere sartu)',
+    cfgMediosHint:          '✓ beti sartzen du. ★ 3 orduz nabarmentzen du. Blokeatu aukerak hedabidea ezkutatzen du.',
+    forceInclude:           'Sartu taldea edo gaiak bat etorri ez arren',
+    forceFavorite:          'Nabarmendu hedabide honen azken albisteak',
     forceExclude:           'Beti blokeatu',
     blockMedia:             'Ez erakutsi hedabide honetako albisteak',
     comoLeerlo:             'Nola irakurri hedabide hau',
@@ -4281,7 +4300,7 @@ const I18N = {
     cfgHelpLbl:             'Lagun gaitzazu hobetzen',
     cfgHelpMsg:             'Zerbait ez dabil? Kontatu iezaguzu.',
     cfgHelpBtn:             'Arazo bat jakinarazi',
-    cfgResumen:             '{total}tik {vis} erakusten · {inc} behartuta · {ign} blokeatuta',
+    cfgResumen:             '{total}tik {vis} erakusten · {inc} sartuta · {fav} gogoko · {ign} blokeatuta',
     cfgPalabrasPlaceholder: 'sute\n"san salvador"\nPP',
 
     acTema:                 'Gaia',
@@ -4441,7 +4460,7 @@ const I18N = {
     ajDeshacer:             'Desegin',
     ajModoVacio:            'Konfiguratu gabe',
     ajResumenModo:          '{t} gai · {g} talde · {m} hedabide',
-    ajMediosN:              '{f} behartuta · {b} blokeatuta',
+    ajMediosN:              '{f} sartuta · {s} gogoko · {b} blokeatuta',
     ajVistaTit:             'Feed-aren ikuspegia',
     ajPrensaActivar:        'Bilatu Google News-en ere',
     ajPluginTit:            'Lector Universal',
@@ -5027,13 +5046,14 @@ function getOverride(domain, modo = PRESET){
   if (!modo || !modo.overrides) return '';
   return modo.overrides[domain] || '';
 }
+function overrideIncluye(value){ return value === 'include' || value === 'first'; }
 
 function setOverride(domain, value, modo = PRESET){
   if (!modo) return;
   if (!modo.overrides || typeof modo.overrides !== 'object') modo.overrides = {};
   if (!value){
     delete modo.overrides[domain];
-  } else if (value === 'first' || value === 'ignore'){
+  } else if (value === 'include' || value === 'first' || value === 'ignore'){
     modo.overrides[domain] = value;
   }
   if (modo === PRESET) guardarPreset();
@@ -5073,7 +5093,7 @@ function presetTieneReglas(p){
   return !!(
     (p.grupos && p.grupos.length) ||
     (p.palabras && p.palabras.length) ||
-    Object.keys(ov).some(d => ov[d] === 'first' || ov[d] === 'ignore')
+    Object.keys(ov).some(d => overrideIncluye(ov[d]) || ov[d] === 'ignore')
   );
 }
 
@@ -5351,8 +5371,8 @@ function abrirMenuMas(btn){
   const cont = $('#resultados');
   if (!n || !cont) return;
 
-  // Si el medio ya está forzado en el modo activo, «Añadir» no tiene sentido.
-  const yaForzado = PRESET_ACTIVO && getOverride(n.dominio) === 'first';
+  // Si el medio ya está incluido en el modo activo, «Añadir» no tiene sentido.
+  const yaForzado = PRESET_ACTIVO && overrideIncluye(getOverride(n.dominio));
   const item = (cls, icono, texto) =>
     `<button type="button" role="menuitem" class="${cls}" data-idx="${idx}">${ico(icono)}<span>${escapeHtml(texto)}</span></button>`;
   const m = document.createElement('div');
@@ -5404,7 +5424,7 @@ function abrirDestinoInline(idx, accion){
   const activoId = PRESET_ACTIVO && PRESETS ? PRESETS.activo : null;
 
   let html = `<span class="destino-lbl">${
-    escapeHtml(accion === 'first' ? t('destinoAnadirA') : t('destinoBloquearEn'))
+    escapeHtml(accion === 'include' ? t('destinoAnadirA') : t('destinoBloquearEn'))
   }</span>`;
 
   if (accion === 'ignore'){
@@ -5472,10 +5492,10 @@ function aplicarOverrideEnModo(targetPreset, accion, dominio, medioNombre){
 
   if (PRESET_ACTIVO && targetPreset === PRESET){
     aplicarFiltros();
-    const ok = accion === 'first' ? t('destinoOkAnadido') : t('destinoOkBloqueado');
+    const ok = accion === 'include' ? t('destinoOkAnadido') : t('destinoOkBloqueado');
     toast(`${ok} · ${medioNombre}`, 2000);
   } else {
-    const ok = accion === 'first' ? t('destinoOkAnadidoEn') : t('destinoOkBloqueadoEn');
+    const ok = accion === 'include' ? t('destinoOkAnadidoEn') : t('destinoOkBloqueadoEn');
     toast(`${ok} «${targetPreset.nombre}» · ${medioNombre}`, 2400);
   }
 }
@@ -6539,11 +6559,11 @@ const CAPAS_MAX_DOMINIOS = 12;
 function capasRequeridas(parsed, consulta = ULT_CTX && ULT_CTX.consulta) {
   const set = new Set();
 
-    // 1) Preset activo → sus grupos + overrides 'first'
+    // 1) Preset activo → sus grupos + medios incluidos o favoritos
   if (PRESET_ACTIVO && presetTieneReglas()) {
     (PRESET.grupos || []).forEach(g => set.add('grupo:' + normStrict(g)));
     Object.entries(PRESET.overrides || {}).forEach(([d, v]) => {
-      if (v === 'first') set.add('dominio:' + normDomain(d));
+      if (overrideIncluye(v)) set.add('dominio:' + normDomain(d));
     });
   }
 
@@ -8627,7 +8647,7 @@ function renderListaGrupos(p){
     });
   });
 }
-// Medios del modo que se edita en Ajustes, con su ✓ (forzar) o ⊘ (bloquear).
+// Medios del modo que se edita en Ajustes: incluir, destacar o bloquear.
 function renderListaMedios(){
   const cont = $('#lista-medios');
   const modo = modoEnPanel();
@@ -8647,14 +8667,16 @@ function renderListaMedios(){
     enCat.forEach(m => {
       const mode  = getOverride(m.dominio, modo) || '';
       html += `
-        <div class="medio-fila"
+        <div class="medio-fila${overrideIncluye(mode) ? ' estado-incluir' : mode === 'ignore' ? ' estado-ignorar' : ''}"
              data-dominio="${escapeHtml(m.dominio)}"
              data-grupo="${escapeHtml(m.grupo)}"
              data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
           <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-            <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>${ico('check')}</span>
+            <input type="checkbox" class="chk-incluir" ${overrideIncluye(mode) ? 'checked' : ''}><span>${ico('check')}</span>
           </label>
+          <button type="button" class="medio-favorito" aria-label="${escapeHtml(t('forceFavorite'))}"
+                  title="${escapeHtml(t('forceFavorite'))}" aria-pressed="${mode === 'first'}">${ico('star')}</button>
           <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
             <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>${ico('ban')}</span>
           </label>
@@ -8674,6 +8696,16 @@ function marca(fila){
   fila.classList.toggle('estado-incluir', inc);
   fila.classList.toggle('estado-ignorar', ign);
   actualizarResumen();
+}
+function actualizarFilaMedio(dominio, modo){
+  const fila = [...document.querySelectorAll('#lista-medios .medio-fila')]
+    .find(f => f.dataset.dominio === dominio);
+  if (!fila){ actualizarResumen(); return; }
+  const estado = getOverride(dominio, modo);
+  fila.querySelector('.chk-incluir').checked = overrideIncluye(estado);
+  fila.querySelector('.chk-ignorar').checked = estado === 'ignore';
+  fila.querySelector('.medio-favorito').setAttribute('aria-pressed', String(estado === 'first'));
+  marca(fila);
 }
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
@@ -8736,10 +8768,12 @@ function actualizarResumen(visiblesOverride){
   const visibles = visiblesOverride != null
     ? visiblesOverride
     : document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
-  const inc = document.querySelectorAll('#lista-medios .chk-incluir:checked').length;
-  const ign = document.querySelectorAll('#lista-medios .chk-ignorar:checked').length;
+  const ov = Object.values((modoEnPanel() || {}).overrides || {});
+  const inc = ov.filter(overrideIncluye).length;
+  const fav = ov.filter(v => v === 'first').length;
+  const ign = ov.filter(v => v === 'ignore').length;
   $('#resumen-medios').textContent = t('cfgResumen', {
-    vis: visibles, total: total, inc: inc, ign: ign
+    vis: visibles, total: total, inc: inc, fav: fav, ign: ign
   });
 }
 /* ═══════════════════════════════════════════════════════════════
@@ -9035,7 +9069,10 @@ function renderOverridesModo(modo){
   ovList.innerHTML = Object.entries(modo.overrides || {}).map(([d, v]) =>
     `<span class="ov-item ${v}">
       <span>${escapeHtml(d)}</span>
-      <button data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
+      ${overrideIncluye(v) ? `<button class="ov-favorito" data-dom="${escapeHtml(d)}" type="button"
+        title="${escapeHtml(t('forceFavorite'))}" aria-label="${escapeHtml(t('forceFavorite'))}"
+        aria-pressed="${v === 'first'}">${ico('star')}</button>` : ''}
+      <button class="ov-quitar" data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
     </span>`
   ).join('');
 }
@@ -9043,7 +9080,8 @@ function ajContadores(modo){
   $('#aj-temas-n').textContent = '· ' + compilarTemas(parseLista($('#aj-temas').value)).length;
   const ov = Object.values(modo.overrides || {});
   $('#aj-medios-n').textContent = '· ' + t('ajMediosN', {
-    f: ov.filter(v => v === 'first').length,
+    f: ov.filter(overrideIncluye).length,
+    s: ov.filter(v => v === 'first').length,
     b: ov.filter(v => v === 'ignore').length,
   });
   $('#aj-grupos-n').textContent = '· ' + (modo.grupos || []).length;
@@ -9229,7 +9267,7 @@ function aplicarListaOverrides(){
     const signo = m[1] || '-';
     const d = normalizarDominioInput(m[2]);
     if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){ ko++; return; }
-    setOverride(d, signo === '+' ? 'first' : 'ignore', modo);
+    setOverride(d, signo === '+' ? 'include' : 'ignore', modo);
     ok++;
   });
   $('#ov-pegar').value = '';
@@ -9294,19 +9332,19 @@ function _pasaChipTema(n, chip){
   if (chip.medios) return _entraPorMedios(n);
   return _temasDe(n).some(x => x.id === chip.modo && x.etiqueta === chip.etiqueta);
 }
-// Lo que entra en el modo activo por sus medios (grupos o «primero»), no
+// Lo que entra en el modo activo por sus medios (grupos o incluidos), no
 // por sus temas.
 function _entraPorMedios(n){
-  return getOverride(n.dominio) === 'first' || SET_GRUPOS.has(n.grupo);
+  return overrideIncluye(getOverride(n.dominio)) || SET_GRUPOS.has(n.grupo);
 }
 function _modoTieneMedios(){
   const ov = PRESET.overrides || {};
-  return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => ov[d] === 'first');
+  return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => overrideIncluye(ov[d]));
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
   if (ov === 'ignore') return false;
-  if (ov === 'first')  return true;
+  if (overrideIncluye(ov)) return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
   return _temasDe(n).some(x => x.id === PRESET.id);
 }
@@ -10258,7 +10296,7 @@ ajustarDiasActual(capas);
     filtradas = filtrarPorChips(filtradas);
   }
 
-  const FAV_WINDOW_MS = 8 * 3600 * 1000;
+  const FAV_WINDOW_MS = 3 * 3600 * 1000;
   const cmpNucleo = comparador(orden);
   filtradas.sort((a, b) => {
     if (presetEfectivo && !vistaTemas){
@@ -11121,16 +11159,16 @@ function wireResultadosDelegation(){
       const nombre = n.medio || dom;
 
       if (PRESET_ACTIVO && PRESET){
-        setOverride(dom, 'first');
+        setOverride(dom, 'include');
         aplicarFiltros();
         toast(`${t('destinoOkAnadido')} · ${nombre}`, 2000);
         return;
       }
       if (PRESETS.lista.length === 1){
-        aplicarOverrideEnModo(PRESETS.lista[0], 'first', dom, nombre);
+        aplicarOverrideEnModo(PRESETS.lista[0], 'include', dom, nombre);
         return;
       }
-      abrirDestinoInline(i, 'first');
+      abrirDestinoInline(i, 'include');
       return;
     }
 
@@ -11344,7 +11382,7 @@ function aplicarTextos(){
   }).join('');
   $('#cfg-medios').textContent = t('cfgMedios');
   $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
-  $('#ov-add-first').textContent  = t('cfgMedioAddForce');
+  $('#ov-add-include').textContent = t('cfgMedioAddForce');
   $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
   const det = $('#ov-pegar-wrap summary');
@@ -11536,7 +11574,7 @@ function estimarCarga(modo, dias){
   if (!modo || !lista.length) return null;
   const grupos = modo.grupos || [];
   const dominios = Object.entries(modo.overrides || {})
-    .filter(([, v]) => v === 'first').map(([d]) => normDomain(d));
+    .filter(([, v]) => overrideIncluye(v)).map(([d]) => normDomain(d));
   let n = 0, kb = 0;
   const nDias = Math.min(dias, DIAS_MEMORIA_MAX_SCOPE, lista.length);
   const medias = _manifest.medias;
@@ -11705,6 +11743,13 @@ function wireAjustes(){
     const b = e.target.closest('button[data-dom]');
     const modo = modoEnPanel();
     if (!b || !modo) return;
+    if (b.classList.contains('ov-favorito')){
+      setOverride(b.dataset.dom, getOverride(b.dataset.dom, modo) === 'first' ? 'include' : 'first', modo);
+      actualizarFilaMedio(b.dataset.dom, modo);
+      renderOverridesModo(modo);
+      ajModoCambiado(modo);
+      return;
+    }
     setOverride(b.dataset.dom, '', modo);
     ajModoCambiado(modo);
     pintarModo();
@@ -12099,7 +12144,7 @@ if (btnFiltros && filtrosPanel){
     });
   }
 
-  const ovFirst  = $('#ov-add-first');
+  const ovInclude = $('#ov-add-include');
   const ovIgnore = $('#ov-add-ignore');
 
   function aplicarOverrideDesdeBuscador(tipo){
@@ -12118,7 +12163,7 @@ if (btnFiltros && filtrosPanel){
     pintarModo();
   }
 
-  if (ovFirst)  ovFirst.addEventListener('click',  () => aplicarOverrideDesdeBuscador('first'));
+  if (ovInclude) ovInclude.addEventListener('click', () => aplicarOverrideDesdeBuscador('include'));
   if (ovIgnore) ovIgnore.addEventListener('click', () => aplicarOverrideDesdeBuscador('ignore'));
 
   const ovAplicar = $('#ov-pegar-aplicar');
@@ -12136,14 +12181,22 @@ if (btnFiltros && filtrosPanel){
       const ign = fila.querySelector('.chk-ignorar');
 
       if (e.target === inc){
-        if (inc.checked) ign.checked = false;
-        marca(fila);
-        setOverride(fila.dataset.dominio, inc.checked ? 'first' : '', modo);
+        setOverride(fila.dataset.dominio, inc.checked ? 'include' : '', modo);
       } else if (e.target === ign){
-        if (ign.checked) inc.checked = false;
-        marca(fila);
         setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '', modo);
       } else return;
+      actualizarFilaMedio(fila.dataset.dominio, modo);
+      renderOverridesModo(modo);
+      ajModoCambiado(modo);
+    });
+    contMedios.addEventListener('click', e => {
+      const b = e.target.closest('.medio-favorito');
+      const fila = b && b.closest('.medio-fila');
+      const modo = modoEnPanel();
+      if (!fila || !modo) return;
+      const dom = fila.dataset.dominio;
+      setOverride(dom, getOverride(dom, modo) === 'first' ? 'include' : 'first', modo);
+      actualizarFilaMedio(dom, modo);
       renderOverridesModo(modo);
       ajModoCambiado(modo);
     });
