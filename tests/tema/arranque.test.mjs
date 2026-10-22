@@ -5,13 +5,13 @@ import { runInNewContext } from 'node:vm';
 
 const plantilla = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
 const publicado = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
-const arranque = html => html.match(/<head>[\s\S]*?<script>([\s\S]*?)<\/script>\s*<style>/)?.[1];
+const arranque = html => html.match(/<head>[\s\S]*?<script>([\s\S]*?)<\/script>\s*<link rel="stylesheet"/)?.[1];
 
 test('el tema se restaura en el head, antes de los estilos y del body', () => {
   assert.ok(arranque(plantilla));
   assert.equal(arranque(publicado), arranque(plantilla));
-  assert.match(plantilla, /html\{background:var\(--bg\)\}/);
-  assert.match(publicado, /html\{background:var\(--bg\)\}/);
+  for (const ruta of ['front/estilos/01-base-cabecera.css', 'public/estilos.css'])
+    assert.match(readFileSync(new URL(`../../${ruta}`, import.meta.url), 'utf8'), /html\{background:var\(--bg\)\}/);
 });
 
 function pintar(perfil, oscuroSistema = false, legado = false){

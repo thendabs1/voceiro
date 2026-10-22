@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 
-const html = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
+const html = leerAplicacion();
 const paginacion = html.slice(html.indexOf('let DIAS_ACTUAL = 0;'), html.indexOf('let TURSO_OFFSET = 0;'));
 const carga = html.slice(html.indexOf('async function solicitarMas('), html.indexOf('// ─── Paginación Turso ───'));
 const boton = html.slice(html.indexOf('function actualizarBotonCargarMas()'), html.indexOf('\n\nfunction wireResultadosDelegation()', html.indexOf('function actualizarBotonCargarMas()')));

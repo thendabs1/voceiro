@@ -1,6 +1,6 @@
-// Lo que el lector toma de plantilla.html (Voceiro) al construirse, para que
+// Lo que el lector toma de Voceiro al construirse, para que
 // haya un solo juego de cada cosa:
-// - la paleta: el bloque entre «═══ PALETA ═══» y «═══ FIN DE LA PALETA ═══»,
+// - la paleta: shared/tema/paleta.css, entre PALETA y FIN DE LA PALETA,
 //   como datos ({ light: {bg:'#fff', …}, sepia: {…}, … }); el lector genera
 //   el CSS para cada sitio donde la usa (#il-full, Ajustes, el botón…);
 // - los iconos: los <symbol id="i-…"> del sprite (trazados de Lucide).
@@ -8,10 +8,10 @@
 
 const RX_BLOQUE = /\/\* ═══ PALETA ═══[\s\S]*?\*\/([\s\S]*?)\/\* ═══ FIN DE LA PALETA ═══ \*\//;
 
-// El bloque tal cual está en plantilla.html (sin los comentarios marcadores).
-export function leerPaleta(html){
-  const m = RX_BLOQUE.exec(html);
-  if (!m) throw new Error('plantilla.html: no se encuentra el bloque PALETA');
+// El bloque tal cual está en shared/tema/paleta.css (sin los marcadores).
+export function leerPaleta(css){
+  const m = RX_BLOQUE.exec(css);
+  if (!m) throw new Error('paleta.css: no se encuentra el bloque PALETA');
   return m[1].trim();
 }
 

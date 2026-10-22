@@ -1,11 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 
-// Solo la plantilla: public/index.html lo regenera el recolector, y con un
-// test que aún no pasa ahí el front se quedaría congelado.
-const html = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
+// Reglas de carga y estimación sobre las fuentes de la aplicación.
+const html = leerAplicacion();
 const funcion = nombre => html.slice(
   html.indexOf(`function ${nombre}(`),
   html.indexOf('\n}', html.indexOf(`function ${nombre}(`)) + 2,

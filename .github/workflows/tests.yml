@@ -8,6 +8,7 @@ on:
       - '*.py'
       - 'requirements.txt'
       - 'shared/**'
+      - 'front/**'
       - 'tests/**'
       - 'public/**'
       - 'workers/**'
@@ -27,6 +28,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+
+      - name: Construir y comprobar el módulo del frontend
+        run: |
+          python3 scripts/generar_front.py
+          node --check public/app.js
 
       - name: Tests de buscador, lector, temas y sincronización
         run: node --test 'tests/**/*.test.mjs'

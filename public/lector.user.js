@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.293
+// @version      2.0.294
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -29,7 +29,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.293';
+const SCRIPT_VERSION = '2.0.294';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -3677,7 +3677,7 @@ function shouldShowReaderFAB(){
 /* ============================================================
    16. ASPECTO: PALETA, ICONOS Y CSS DEL LECTOR
    ============================================================ */
-// Paleta de Voceiro (plantilla.html, bloque PALETA), puesta aquí por
+// Paleta de Voceiro (shared/tema/paleta.css), puesta aquí por
 // build.mjs: { light: {bg:'#fff', …, 'color-scheme':'light'}, sepia: {…}, … }.
 const PALETA = {"light":{"bg":"#fff","fg":"#222","muted":"#6b6b6b","accent":"#d32f2f","border":"#eee","quote-bg":"#f9f9f9","btn-bg":"#f7f7f7","btn-border":"#8a8a8a","shadow":"rgba(0,0,0,.08)","preset":"#0a7d3f","preset-bg":"#e8f5e9","block":"#b00020","block-bg":"#fde8ec","save":"#1565c0","save-bg":"#e3f2fd","mark":"#ffe680","mark-fg":"#111","on-solid":"#fff","focus":"#1565c0","titulos":"#222","color-scheme":"light"},"sepia":{"bg":"#f4ecd8","fg":"#3b2f1e","muted":"#6b5a3c","accent":"#8f4523","border":"#e0d5b8","quote-bg":"#ede0c4","btn-bg":"#ede0c4","btn-border":"#8c7c58","shadow":"rgba(59,47,30,.15)","preset":"#33682a","preset-bg":"#e4ebd0","block":"#8b2020","block-bg":"#ebd5d0","save":"#2e5a8b","save-bg":"#d8e3ee","mark":"#c9a227","mark-fg":"#2c1c08","on-solid":"#fff","focus":"#2e5a8b","titulos":"#3b2f1e","color-scheme":"light"},"dark":{"bg":"#1a1a1a","fg":"#e0e0e0","muted":"#999","accent":"#ff6b6b","border":"#333","quote-bg":"#252525","btn-bg":"#2a2a2a","btn-border":"#787878","shadow":"rgba(0,0,0,.5)","preset":"#4cc97a","preset-bg":"#173524","block":"#ff8a9c","block-bg":"#3d1a20","save":"#6cb3ff","save-bg":"#1e3550","mark":"#b58600","mark-fg":"#111","on-solid":"#111","focus":"#6cb3ff","titulos":"#e0e0e0","color-scheme":"dark"},"contrast":{"bg":"#000","fg":"#fff","muted":"#ff0","accent":"#0ff","border":"#fff","quote-bg":"#111","btn-bg":"#111","btn-border":"#fff","shadow":"rgba(255,255,255,.2)","preset":"#0f0","preset-bg":"#003300","block":"#f00","block-bg":"#330000","save":"#0ff","save-bg":"#003333","mark":"#ff0","mark-fg":"#000","on-solid":"#000","focus":"#ff0","titulos":"#fff","color-scheme":"dark"}};
 

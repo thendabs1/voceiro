@@ -7,7 +7,7 @@
 // Catálogo de medios: el de Voceiro, sacado de medios.py con catalogo.py
 // (necesita python3) y puesto en src/03 en lugar de /*{{CATALOGO}}*/[].
 //
-// Paleta e iconos: los de Voceiro, sacados de plantilla.html (plantilla.mjs)
+// Paleta: shared/tema/paleta.css. Iconos: plantilla.html (plantilla.mjs).
 // y puestos en src/20 en lugar de /*{{PALETA}}*/{} y /*{{ICONOS}}*/{}. De
 // los iconos van solo los que usa el lector (icono('…')); si falta alguno en
 // el sprite de Voceiro, no se construye.
@@ -68,7 +68,8 @@ const catalogo = execFileSync('python3', ['-I', join(raiz, 'catalogo.py')],
 if (!Array.isArray(JSON.parse(catalogo))) throw new Error('catálogo de medios vacío');
 
 const plantilla = readFileSync(resolve(raiz, '..', 'plantilla.html'), 'utf8');
-const paleta = JSON.stringify(temasDePaleta(leerPaleta(plantilla)));
+const cssPaleta = readFileSync(resolve(raiz, '..', 'shared/tema/paleta.css'), 'utf8');
+const paleta = JSON.stringify(temasDePaleta(leerPaleta(cssPaleta)));
 
 const v = version();
 const partes = readdirSync(src).filter(f => f.endsWith('.js')).sort();
