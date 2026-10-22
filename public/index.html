@@ -2599,28 +2599,28 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=b3413f596c';
+} from './parser.js?v=4a67a0e132';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=b3413f596c';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b3413f596c';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b3413f596c';
-import { comparador } from './busqueda/orden.js?v=b3413f596c';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=4a67a0e132';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=4a67a0e132';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=4a67a0e132';
+import { comparador } from './busqueda/orden.js?v=4a67a0e132';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=b3413f596c';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b3413f596c';
+} from './sync/fusion.js?v=4a67a0e132';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=4a67a0e132';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=b3413f596c';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b3413f596c';
+import { crearCliente } from './sync/cliente.js?v=4a67a0e132';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=4a67a0e132';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b3413f596c';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=4a67a0e132';
 import {
   FENOMENOS, NIVELES, PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=b3413f596c';
+} from './tiempo/avisos.js?v=4a67a0e132';
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -4532,15 +4532,15 @@ for (const [lang, texto] of Object.entries({
 
 // Textos de eltiempo:.
 for (const [lang, textos] of Object.entries({
-  es: ['Despejado', 'Poco nuboso', 'Nuboso', 'Cubierto', 'Lluvia', 'Nieve', 'Tormenta', 'Niebla', 'Hoy', 'Fuente', 'elaborado a las {h}', 'AEMET no responde: datos de Open-Meteo', 'Consultando el tiempo…', 'No se pudo consultar el tiempo.', 'No encuentro «{X}».', '¿Qué «{X}»?', 'El tiempo está desactivado en Ajustes › Avanzado.', 'Probabilidad de lluvia', 'tiempo', 'Tiempo', 'Tiempo y avisos (tiempo:, alertas:)', 'Pide la previsión y los avisos a AEMET (y a Open-Meteo o MeteoAlarm si no responde) a través del servidor de Voceiro. Desactivado, no se conecta con ningún servicio del tiempo.', 'El tiempo en {X}', 'Sale el sol', 'Se pone el sol', 'Cambiar de lugar',
+  es: ['Despejado', 'Poco nuboso', 'Nuboso', 'Cubierto', 'Lluvia', 'Nieve', 'Tormenta', 'Niebla', 'Hoy', 'Fuente', 'elaborado a las {h}', 'AEMET no responde: datos de Open-Meteo', 'Consultando el tiempo…', 'No se pudo consultar el tiempo.', 'No encuentro «{X}».', '¿Qué «{X}»?', 'El tiempo está desactivado en Ajustes › Avanzado.', 'Probabilidad de lluvia', 'tiempo', 'Tiempo', 'Tiempo y avisos (t:, tiempo:, alertas:)', 'Pide la previsión y los avisos a AEMET (y a Open-Meteo o MeteoAlarm si no responde) a través del servidor de Voceiro. Desactivado, no se conecta con ningún servicio del tiempo.', 'El tiempo en {X}', 'Sale el sol', 'Se pone el sol', 'Cambiar de lugar',
        'Guardar en mis sitios', 'Quitar de mis sitios', 'Ya tienes 5 sitios: quita uno para guardar este', 'Por horas', 'Mis sitios', 'Escribe un sitio en el buscador; con ☆ lo guardas aquí (hasta 5).', 'Buscar otro sitio', 'Ajustes del tiempo', 'No se pudo actualizar', 'Reintentar'],
-  gl: ['Despexado', 'Pouco nubrado', 'Nubrado', 'Cuberto', 'Choiva', 'Neve', 'Treboada', 'Néboa', 'Hoxe', 'Fonte', 'elaborado ás {h}', 'AEMET non responde: datos de Open-Meteo', 'Consultando o tempo…', 'Non se puido consultar o tempo.', 'Non atopo «{X}».', 'Que «{X}»?', 'O tempo está desactivado en Axustes › Avanzado.', 'Probabilidade de choiva', 'tempo', 'Tempo', 'Tempo e avisos (tiempo:, alertas:)', 'Pide a previsión e os avisos a AEMET (e a Open-Meteo ou MeteoAlarm se non responde) a través do servidor de Voceiro. Desactivado, non se conecta con ningún servizo do tempo.', 'O tempo en {X}', 'Sae o sol', 'Ponse o sol', 'Cambiar de lugar',
+  gl: ['Despexado', 'Pouco nubrado', 'Nubrado', 'Cuberto', 'Choiva', 'Neve', 'Treboada', 'Néboa', 'Hoxe', 'Fonte', 'elaborado ás {h}', 'AEMET non responde: datos de Open-Meteo', 'Consultando o tempo…', 'Non se puido consultar o tempo.', 'Non atopo «{X}».', 'Que «{X}»?', 'O tempo está desactivado en Axustes › Avanzado.', 'Probabilidade de choiva', 'tempo', 'Tempo', 'Tempo e avisos (t:, tempo:, avisos:)', 'Pide a previsión e os avisos a AEMET (e a Open-Meteo ou MeteoAlarm se non responde) a través do servidor de Voceiro. Desactivado, non se conecta con ningún servizo do tempo.', 'O tempo en {X}', 'Sae o sol', 'Ponse o sol', 'Cambiar de lugar',
        'Gardar nos meus sitios', 'Quitar dos meus sitios', 'Xa tes 5 sitios: quita un para gardar este', 'Por horas', 'Os meus sitios', 'Escribe un sitio no buscador; con ☆ gárdalo aquí (ata 5).', 'Buscar outro sitio', 'Axustes do tempo', 'Non se puido actualizar', 'Tentar de novo'],
-  ca: ['Serè', 'Poc ennuvolat', 'Ennuvolat', 'Cobert', 'Pluja', 'Neu', 'Tempesta', 'Boira', 'Avui', 'Font', 'elaborat a les {h}', 'AEMET no respon: dades d’Open-Meteo', 'Consultant el temps…', 'No s’ha pogut consultar el temps.', 'No trobo «{X}».', 'Quin «{X}»?', 'El temps està desactivat a Configuració › Avançat.', 'Probabilitat de pluja', 'temps', 'Temps', 'Temps i avisos (tiempo:, alertas:)', 'Demana la previsió i els avisos a AEMET (i a Open-Meteo o MeteoAlarm si no respon) a través del servidor de Voceiro. Desactivat, no es connecta amb cap servei del temps.', 'El temps a {X}', 'Surt el sol', 'Es pon el sol', 'Canviar de lloc',
+  ca: ['Serè', 'Poc ennuvolat', 'Ennuvolat', 'Cobert', 'Pluja', 'Neu', 'Tempesta', 'Boira', 'Avui', 'Font', 'elaborat a les {h}', 'AEMET no respon: dades d’Open-Meteo', 'Consultant el temps…', 'No s’ha pogut consultar el temps.', 'No trobo «{X}».', 'Quin «{X}»?', 'El temps està desactivat a Configuració › Avançat.', 'Probabilitat de pluja', 'temps', 'Temps', 'Temps i avisos (t:, temps:, avisos:)', 'Demana la previsió i els avisos a AEMET (i a Open-Meteo o MeteoAlarm si no respon) a través del servidor de Voceiro. Desactivat, no es connecta amb cap servei del temps.', 'El temps a {X}', 'Surt el sol', 'Es pon el sol', 'Canviar de lloc',
        'Desar als meus llocs', 'Treure dels meus llocs', 'Ja tens 5 llocs: treu-ne un per desar aquest', 'Per hores', 'Els meus llocs', 'Escriu un lloc al cercador; amb ☆ el deses aquí (fins a 5).', 'Cerca un altre lloc', 'Configuració del temps', 'No s’ha pogut actualitzar', 'Torna-ho a provar'],
-  en: ['Clear', 'Partly cloudy', 'Cloudy', 'Overcast', 'Rain', 'Snow', 'Thunderstorm', 'Fog', 'Today', 'Source', 'issued at {h}', 'AEMET is not responding: Open-Meteo data', 'Checking the weather…', 'Could not get the weather.', 'Can’t find “{X}”.', 'Which “{X}”?', 'Weather is turned off in Settings › Advanced.', 'Chance of rain', 'weather', 'Weather', 'Weather and warnings (tiempo:, alertas:)', 'Gets the forecast and warnings from AEMET (or Open-Meteo and MeteoAlarm if it does not respond) through the Voceiro server. When off, no weather service is contacted.', 'Weather in {X}', 'Sunrise', 'Sunset', 'Change place',
+  en: ['Clear', 'Partly cloudy', 'Cloudy', 'Overcast', 'Rain', 'Snow', 'Thunderstorm', 'Fog', 'Today', 'Source', 'issued at {h}', 'AEMET is not responding: Open-Meteo data', 'Checking the weather…', 'Could not get the weather.', 'Can’t find “{X}”.', 'Which “{X}”?', 'Weather is turned off in Settings › Advanced.', 'Chance of rain', 'weather', 'Weather', 'Weather and warnings (t:, weather:, alertas:)', 'Gets the forecast and warnings from AEMET (or Open-Meteo and MeteoAlarm if it does not respond) through the Voceiro server. When off, no weather service is contacted.', 'Weather in {X}', 'Sunrise', 'Sunset', 'Change place',
        'Save to my places', 'Remove from my places', 'You already have 5 places: remove one to save this one', 'Hourly', 'My places', 'Type a place in the search box; save it here with ☆ (up to 5).', 'Find another place', 'Weather settings', 'Could not update', 'Retry'],
-  eu: ['Oskarbi', 'Hodei gutxi', 'Hodeitsu', 'Estalia', 'Euria', 'Elurra', 'Ekaitza', 'Lainoa', 'Gaur', 'Iturria', '{h}etan egina', 'AEMETek ez du erantzuten: Open-Meteoren datuak', 'Eguraldia kontsultatzen…', 'Ezin izan da eguraldia kontsultatu.', 'Ez dut «{X}» aurkitzen.', 'Zein «{X}»?', 'Eguraldia desaktibatuta dago Ezarpenak › Aurreratua atalean.', 'Euria egiteko probabilitatea', 'eguraldia', 'Eguraldia', 'Eguraldia eta abisuak (tiempo:, alertas:)', 'Iragarpena eta abisuak AEMETi eskatzen dizkio (edo Open-Meteori eta MeteoAlarmi, hark erantzuten ez badu) Voceiroren zerbitzariaren bidez. Desaktibatuta, ez da eguraldi-zerbitzurik kontsultatzen.', 'Eguraldia: {X}', 'Eguzkia irteten da', 'Eguzkia sartzen da', 'Lekua aldatu',
+  eu: ['Oskarbi', 'Hodei gutxi', 'Hodeitsu', 'Estalia', 'Euria', 'Elurra', 'Ekaitza', 'Lainoa', 'Gaur', 'Iturria', '{h}etan egina', 'AEMETek ez du erantzuten: Open-Meteoren datuak', 'Eguraldia kontsultatzen…', 'Ezin izan da eguraldia kontsultatu.', 'Ez dut «{X}» aurkitzen.', 'Zein «{X}»?', 'Eguraldia desaktibatuta dago Ezarpenak › Aurreratua atalean.', 'Euria egiteko probabilitatea', 'eguraldia', 'Eguraldia', 'Eguraldia eta abisuak (t:, eguraldia:, avisos:)', 'Iragarpena eta abisuak AEMETi eskatzen dizkio (edo Open-Meteori eta MeteoAlarmi, hark erantzuten ez badu) Voceiroren zerbitzariaren bidez. Desaktibatuta, ez da eguraldi-zerbitzurik kontsultatzen.', 'Eguraldia: {X}', 'Eguzkia irteten da', 'Eguzkia sartzen da', 'Lekua aldatu',
        'Gorde nire lekuetan', 'Kendu nire lekuetatik', 'Dagoeneko 5 leku dituzu: kendu bat hau gordetzeko', 'Orduka', 'Nire lekuak', 'Idatzi leku bat bilatzailean; ☆ sakatuta hemen gordeko duzu (gehienez 5).', 'Bilatu beste leku bat', 'Eguraldiaren ezarpenak', 'Ezin izan da eguneratu', 'Saiatu berriro'],
 })) {
   ['tiempoDespejado', 'tiempoPoco', 'tiempoNuboso', 'tiempoCubierto', 'tiempoLluvia', 'tiempoNieve', 'tiempoTormenta', 'tiempoNiebla',
@@ -4550,6 +4550,9 @@ for (const [lang, textos] of Object.entries({
    'tiempoMisSitios', 'tiempoSinSitios', 'tiempoOtro', 'tiempoAjustes', 'tiempoNoActualizado', 'tiempoReintentar']
     .forEach((clave, i) => { I18N[lang][clave] = textos[i]; });
 }
+for (const [lang, etiqueta] of Object.entries({
+  es: 'El tiempo', gl: 'O tempo', ca: 'El temps', en: 'Weather', eu: 'Eguraldia',
+})) I18N[lang].chipTiempo = etiqueta;
 // Textos de alertas:. Fenómenos en el orden de FENOMENOS (shared/tiempo/avisos.js).
 for (const [lang, textos] of Object.entries({
   es: ['Lluvias', 'Tormentas', 'Vientos', 'Costeros', 'Nevadas', 'Temperaturas máximas', 'Temperaturas mínimas', 'Nieblas', 'Polvo en suspensión', 'Galernas', 'Rissagas', 'Deshielos', 'Aludes',
@@ -7447,7 +7450,7 @@ function renderChips(parsed, rawQuery){
   cont.style.display = '';
   cont.innerHTML = parsed.chips.map((c, i) =>
     `<span class="chip">
-      <span class="chip-tipo">${escapeHtml(c.type)}</span>
+      <span class="chip-tipo">${escapeHtml(c.type === 'eltiempo' ? t('chipTiempo') : c.type)}</span>
       <span>${escapeHtml(c.value)}</span>
       <button type="button" class="chip-x" data-idx="${i}" title="${escapeHtml(t('chipLiteral'))}">×</button>
     </span>`
@@ -7805,7 +7808,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=b3413f596c')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=4a67a0e132')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -7839,11 +7842,11 @@ const claveLugar = l => (l.ine ? String(l.ine) : `${(+l.lat).toFixed(3)},${(+l.l
 // El lugar de una previsión: los de España, por su INE.
 const lugarDe = (p, lugar) => (p.ine ? { ine: p.ine } : lugar);
 
-// El eltiempo: (o tiempo:) que se está escribiendo al final del buscador
+// El prefijo del tiempo que se está escribiendo al final del buscador
 // («eltiempo:"A Cor»).
-const RX_TIEMPO_FINAL = /(^|\s)((?:el)?tiempo:)(?:"[^"]*|[^\s"]*)$/i;
+const RX_TIEMPO_FINAL = /(^|\s)((?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia):)(?:"[^"]*|[^\s"]*)$/i;
 function fragmentoTiempo(raw){
-  const m = raw.match(/(?:^|\s)(?:el)?tiempo:(?:"([^"]*)|([^\s"]*))$/i);
+  const m = raw.match(/(?:^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia):(?:"([^"]*)|([^\s"]*))$/i);
   return m ? (m[1] ?? m[2]) : null;
 }
 
@@ -8185,8 +8188,8 @@ function quitarSitio(k){
 
 // El sol y las pestañas cambian un prefijo del tiempo por otro sin tocar
 // el resto de la búsqueda; '' los quita (cierra el panel).
-const RX_TOKENS_TIEMPO = /(^|\s)(?:(?:el)?tiempo|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
-const RX_HAY_TIEMPO = /(^|\s)(?:(?:el)?tiempo|alertas|avisos):/i;
+const RX_TOKENS_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
+const RX_HAY_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):/i;
 function ponerTiempo(token){
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
@@ -11562,6 +11565,11 @@ function aplicarTextos(){
   renderLangSelect();
   actualizarSyncBanner();
   actualizarBotonPendientes();
+  // Si cambia el idioma, el chip del tiempo muestra la nueva traducción.
+  if ($('#chips-busqueda').style.display !== 'none'){
+    const raw = $('#buscar').value.trim();
+    renderChips(parseQuery(preprocesarInput(raw)), raw);
+  }
 }
 
 /* ── Fase 2 · selector de días ── */
