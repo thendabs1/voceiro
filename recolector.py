@@ -379,7 +379,7 @@ def _hash_payload(payload):
 
 
 def _limpiar_cdata(s):
-    """Quita <![CDATA[...]]> y decodifica entidades HTML."""
+    """Devuelve el texto del titular sin CDATA, entidades ni etiquetas HTML."""
     if not s:
         return ''
     s = str(s).strip()
@@ -396,6 +396,9 @@ def _limpiar_cdata(s):
         s = s.strip()
     # Decodificar entidades HTML (&apos; &quot; &amp; &#39; etc.)
     s = html.unescape(s)
+    # Algunos feeds y sitemaps incluyen marcado inline dentro del título.
+    if '<' in s and '>' in s:
+        s = BeautifulSoup(s, 'html.parser').get_text()
     # Colapsar espacios múltiples
     s = re.sub(r'\s+', ' ', s).strip()
     return s
@@ -1668,6 +1671,10 @@ def fusionar_historico(nuevas, viejas, dias):
 
     # Viejas: filtrar por plantilla y por fecha de agrupación
     for n in viejas:
+        # Los títulos ya publicados con marcado deben usar la misma clave
+        # que los títulos limpios del feed para no duplicarse en este run.
+        if '<' in n.get('titular', '') and '>' in n['titular']:
+            n['titular'] = _limpiar_cdata(n['titular'])
         if _descartar_por_plantilla(n):
             continue
         f = _fecha_agrupacion_dt(n)
