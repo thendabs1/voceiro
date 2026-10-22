@@ -1,4 +1,4 @@
-// Contrastes de la paleta común (plantilla.html, bloque PALETA), la que usan
+// Contrastes de la paleta común (shared/tema/paleta.css), la que usan
 // Voceiro y el lector. Mínimos de WCAG 2.2 AA: 4,5:1 para texto y 3:1 para
 // los bordes y el foco de los controles.
 import { test } from 'node:test';
@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { leerIconos, leerPaleta, temasDePaleta } from '../../lector/plantilla.mjs';
 
 const html = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
-const bloque = leerPaleta(html);
+const bloque = leerPaleta(readFileSync(new URL('../../shared/tema/paleta.css', import.meta.url), 'utf8'));
 const temas = temasDePaleta(bloque);
 
 function luminancia(hex){

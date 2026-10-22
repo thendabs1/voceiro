@@ -1,0 +1,198 @@
+/* ═══ Chips de modo y de tema: «Todo · N» / «Política · M» / «incendio · K»…
+   Una fila por nivel; cada fila hace scroll horizontal en móvil. ═══ */
+.temas-chips{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 4px;
+  font-size: .72em;
+}
+.temas-chips-fila{
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.temas-chips-fila::-webkit-scrollbar{ display: none; }
+.temas-chips[hidden]{ display: none; }
+.temas-chips-contexto{ display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; color: var(--muted); }
+.temas-chips-cero > summary{ cursor: pointer; }
+.temas-chips-cero[open]{ flex-basis: 100%; }
+.temas-chips-cero-lista{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.temas-chips button.cero{ opacity: .45; cursor: default; }
+.temas-chips button{
+  flex: none;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--preset);
+  border: 1px solid var(--preset);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .95em;
+}
+.temas-chips button[aria-pressed="true"]{
+  background: var(--preset);
+  color: var(--on-solid);
+}
+/* Fila de temas bajo la de modos: sangrada y atenuada; el pulsado, como siempre. */
+.temas-chips-fila.hija{ padding-left: 4px; }
+.temas-chips-fila.hija::before{
+  content: '↳';
+  flex: none;
+  align-self: center;
+  color: var(--muted);
+}
+.temas-chips-fila.hija button:not([aria-pressed="true"]){
+  color: var(--muted);
+  border-color: var(--border);
+}
+[data-theme="contrast"] .temas-chips button[aria-pressed="true"]{ color: #000; }
+
+  /* ═══ Chips de filtros activos ═══ */
+  .chips-busqueda{
+    display:flex; flex-wrap:wrap; gap:6px;
+    padding:8px 0 10px;
+    border-bottom:1px solid var(--border);
+    font-size:.72em;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:3px 4px 3px 10px;
+    border-radius:12px;
+    background:var(--save-bg); color:var(--save);
+    border:1px solid var(--save);
+    font-weight:500;
+    line-height:1.4;
+  }
+  .chip-tipo{
+    opacity:.75; text-transform:uppercase; letter-spacing:.05em;
+    font-size:.85em;
+  }
+  .chip-x{
+    background:transparent; border:none;
+    color:inherit; cursor:pointer;
+    padding:0 6px; font-size:1.15em; line-height:1;
+    border-radius:8px;
+    font-family:inherit;
+    font-weight:700;
+  }
+  .chip-x:hover{background:rgba(0,0,0,.1)}
+  [data-theme="dark"] .chip-x:hover{background:rgba(255,255,255,.15)}
+  [data-theme="contrast"] .chip-x:hover{background:#333}
+
+  #contador{
+    font-size: 1em;   /* igual que el meta */
+    margin: 0;
+  }
+
+  .noticia{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 16px;
+    margin-bottom:8px;
+    transition:opacity .25s;
+    position:relative;
+    contain:content;
+  }
+  .noticia.foco-dim{opacity:.28}
+  .noticia.foco-active{opacity:1}
+  /* Vista (mirada un rato, sin abrir): letra algo menos gruesa. Con la
+     opacidad de antes, el gris de la cabecera bajaba a 3,5:1 */
+  .noticia.vista a.titular{font-weight:500}
+  /* Leída: gris legible y una marca, sin transparencia (con opacidad el
+     gris no llegaba ni a 2:1) */
+  .noticia.leida a.titular{color:var(--muted); font-weight:500}
+  .noticia.leida a.titular::before{content:"✓ "; content:"✓ " / ""}
+  .noticia .cabecera{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    margin-bottom:5px; font-size:.62em; color:var(--muted);
+  }
+  .noticia .medio{
+    font-weight:bold; color:var(--fg); font-size:1.1em;
+    text-transform:uppercase; letter-spacing:.3px;
+  }
+  /* Nombre del medio como enlace: filtra la lista por ese medio */
+  .noticia button.medio{
+    background:none; border:0; padding:0; margin:0;
+    font-family:inherit; line-height:inherit; cursor:pointer; text-align:left;
+  }
+  .noticia button.medio:hover,
+  .noticia button.medio:focus-visible{text-decoration:underline}
+  .badge{
+    background:var(--quote-bg); border:1px solid var(--border);
+    padding:1px 8px; border-radius:10px; color:var(--muted);
+  }
+  .badge.preset{
+    background:var(--preset-bg);
+    border-color:var(--preset);
+    color:var(--preset);
+  }
+  /* Tema que casó (vista Temas): mismo color que el resaltado del titular */
+  .badge.tema{
+    display:inline-flex; max-width:16em; min-width:0;
+    background:var(--mark); border-color:var(--mark); color:var(--mark-fg);
+  }
+  .badge.tema .tema-txt{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge.futuro{
+    background:#fff3e0; border-color:#ffb74d; color:#b45309;
+  }
+  [data-theme="dark"] .badge.futuro,
+  [data-theme="sepia"] .badge.futuro{
+    background:#3d2f14; border-color:#b58600; color:#ffcc66;
+  }
+  [data-theme="contrast"] .badge.futuro{background:#000; border-color:#ff0; color:#ff0}
+
+  .badge.recolectado{
+    background:#fef3c7; border-color:#fbbf24; color:#92400e;
+  }
+  [data-theme="dark"] .badge.recolectado{
+    background:#3d2f14; border-color:#b58600; color:#ffcc66;
+  }
+  [data-theme="sepia"] .badge.recolectado{
+    background:#f5e6c3; border-color:#c9a227; color:#5c4a1c;
+  }
+  [data-theme="contrast"] .badge.recolectado{
+    background:#000; border-color:#ff0; color:#ff0;
+  }
+
+  .badge.estimada{
+    background:#e8f0fe; border-color:#a0c4f8; color:#0d47a1;
+  }
+  [data-theme="dark"] .badge.estimada{
+    background:#1a2d47; border-color:#4a7ab5; color:#a0c4f8;
+  }
+  [data-theme="sepia"] .badge.estimada{
+    background:#dae4ef; border-color:#8fa9c4; color:#2e5a8b;
+  }
+  [data-theme="contrast"] .badge.estimada{
+    background:#003; border-color:#0ff; color:#0ff;
+  }
+  .badge.prensa{
+    background:#fef3c7; border-color:#f59e0b; color:#92400e;
+  }
+  [data-theme="dark"] .badge.prensa{
+    background:#3d2f14; border-color:#b58600; color:#ffcc66;
+  }
+  [data-theme="sepia"] .badge.prensa{
+    background:#f5e6c3; border-color:#c9a227; color:#5c4a1c;
+  }
+  [data-theme="contrast"] .badge.prensa{
+    background:#000; border-color:#ff0; color:#ff0;
+  }
+  .noticia a.titular{
+    color:var(--accent); text-decoration:none;
+    font-weight:600; font-size:1em; display:block; margin-top:2px;
+  }
+  .noticia a.titular:hover{text-decoration:underline}
+  [data-just="1"] .noticia a.titular{text-align:justify; hyphens:auto}
+  /* Fecha corta por defecto; la opción avanzada permite mostrar la completa. */
+  .noticia .fecha-abs{display:none}
+  [data-fecha-larga="1"] .noticia .fecha-abs{display:inline}
+  /* Móvil: cabecera de la tarjeta en una línea y sin tipo de medio. */
+  @media (max-width:560px){
+    .noticia .badge.tipo{display:none}
+  }
+  mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}

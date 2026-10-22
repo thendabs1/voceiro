@@ -1,15 +1,16 @@
 // node --test 'tests/**/*.test.mjs'
-// Panel del tiempo en plantilla.html: el sol y las pestañas cambian el
+// Panel del tiempo: el sol y las pestañas cambian el
 // prefijo del buscador, los avisos de un sitio (con su costa) y el sol
 // coloreado solo por avisos naranjas o rojos de mis sitios.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 import { parseQuery, tokenizeQuery } from '../../shared/parser.js';
+import { I18N } from '../../front/idiomas/index.js';
 import { PESO, empezado, zonaHorariaAviso } from '../../shared/tiempo/avisos.js';
 
-const html = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
+const html = leerAplicacion();
 const funcion = nombre => html.slice(
   html.indexOf(`function ${nombre}(`),
   html.indexOf('\n}', html.indexOf(`function ${nombre}(`)) + 2,
@@ -99,10 +100,6 @@ test('los alias del tiempo sugieren, se reemplazan y se cierran como eltiempo:',
 });
 
 test('el chip del tiempo se traduce y quita el alias escrito', () => {
-  const idiomas = Object.fromEntries(['es', 'gl', 'ca', 'en', 'eu'].map(lang => [lang, {}]));
-  const inicio = html.indexOf('for (const [lang, etiqueta] of Object.entries({\n  es:');
-  assert.ok(inicio > 0);
-  runInNewContext(html.slice(inicio, html.indexOf('// Textos de alertas:', inicio)), { I18N: idiomas });
   for (const [lang, nombre] of Object.entries({
     es: 'El tiempo', gl: 'O tempo', ca: 'El temps', en: 'Weather', eu: 'Eguraldia',
   })) {
@@ -113,7 +110,7 @@ test('el chip del tiempo se traduce y quita el alias escrito', () => {
     let filtrados = 0;
     const ctx = {
       $: selector => ({ '#chips-busqueda': chips, '#buscar': buscar, '#buscar-clear': clear })[selector],
-      escapeHtml: s => s, t: key => idiomas[lang][key] || key, tokenizeQuery,
+      escapeHtml: s => s, t: key => I18N[lang][key] || key, tokenizeQuery,
       preprocesarInput: s => s, aplicarFiltros: () => { filtrados++; },
     };
     runInNewContext(funcion('renderChips') + '\nthis.renderChips = renderChips;', ctx);
