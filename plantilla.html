@@ -922,7 +922,8 @@
 .tiempo-pestanas button, .tiempo-sitio, .tiempo-otro{ font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
 .tiempo-pestanas button{ padding: 3px 10px; }
 .tiempo-pestanas button[aria-current]{ border-color: var(--fg); font-weight: 700; }
-.tiempo-pestanas .tiempo-ajustes{ margin-left: auto; padding: 3px 6px; display: inline-flex; }
+.tiempo-pestanas .tiempo-cerrar{ margin-left: auto; }
+.tiempo-pestanas .tiempo-cerrar, .tiempo-pestanas .tiempo-ajustes{ padding: 3px 6px; display: inline-flex; }
 .tiempo-guardar{ margin-left: auto; font: inherit; font-size: 1.3em; line-height: 1; color: var(--fg); background: none; border: 0; padding: 2px 6px; cursor: pointer; }
 .tiempo-guardar span{ color: inherit; }
 .tiempo-guardar[aria-disabled="true"]{ color: var(--muted); cursor: not-allowed; }
@@ -933,7 +934,7 @@
 .tiempo-sitio-aviso{ font-weight: 700; padding-left: 6px; border-left: 3px solid var(--aviso); }
 .tiempo-quitar{ display: inline-flex; color: var(--muted); background: none; border: 0; padding: 8px; cursor: pointer; }
 .tiempo-pie .tiempo-otro{ display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; margin-left: 0; }
-.tiempo-otro .ico, .tiempo-ajustes .ico, .tiempo-quitar .ico{ width: 1.1em; height: 1.1em; }
+.tiempo-otro .ico, .tiempo-cerrar .ico, .tiempo-ajustes .ico, .tiempo-quitar .ico{ width: 1.1em; height: 1.1em; }
 .tiempo-horas, .tiempo-avisos{ margin-top: 8px; }
 .tiempo-horas > summary, .tiempo-avisos > summary{ cursor: pointer; font-weight: 600; }
 .tiempo-horas .tiempo-dias{ margin-top: 6px; scrollbar-width: thin; }
@@ -8016,8 +8017,7 @@ function htmlPrevision(p){
     + (p.elaborado ? ' · ' + escapeHtml(t('tiempoElaborado', { h: p.elaborado.slice(11, 16) })) : '')
     + (p.sinAemet ? ' · ' + escapeHtml(t('tiempoSinAemet')) : '')
     + (TIEMPO.fallo ? ' · ' + escapeHtml(t('tiempoNoActualizado')) + htmlReintentar() : '')
-    + (lugaresRecordados()[normalize(TIEMPO.valor || '').trim()]
-        ? `<button type="button" class="tiempo-cambiar">${escapeHtml(t('tiempoCambiar'))}</button>` : '');
+    + `<button type="button" class="tiempo-cambiar">${escapeHtml(t('tiempoCambiar'))}</button>`;
 
   return `${htmlPestanasTiempo(null)}
     <div class="tiempo-cab"><strong>${escapeHtml(p.lugar.nombre)}</strong><span>${escapeHtml([region, p.lugar.pais].filter(Boolean).join(' · '))}</span>${htmlGuardar(p)}</div>
@@ -8032,7 +8032,9 @@ function htmlPrevision(p){
 function htmlPestanasTiempo(activa){
   const p = (ir, clave) => `<button type="button" class="tiempo-pestana" data-ir="${ir}"${activa === ir ? ' aria-current="page"' : ''}>${escapeHtml(t(clave))}</button>`;
   const aj = t('tiempoAjustes');
+  const cerrar = `${t('btnCerrar')} ${t('ajTiempoTit')}`;
   return `<nav class="tiempo-pestanas" aria-label="${escapeHtml(t('ajTiempoTit'))}">${p('sitios', 'tiempoMisSitios')}${p('avisos', 'avisosBotonTxt')}
+    <button type="button" class="tiempo-cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button>
     <button type="button" class="tiempo-ajustes" title="${escapeHtml(aj)}" aria-label="${escapeHtml(aj)}">${ico('settings')}</button></nav>`;
 }
 
@@ -8209,6 +8211,10 @@ function enfocarBuscador(){
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
 }
+function cambiarLugarTiempo(){
+  ponerTiempo('eltiempo:');
+  requestAnimationFrame(enfocarBuscador);
+}
 function abrirSitios(){
   ponerTiempo('eltiempo:');
   if (!sitiosTiempo().length) enfocarBuscador();
@@ -8219,7 +8225,8 @@ function abrirTiempo(){
 }
 // Pestañas y ajustes, en el panel del tiempo y en el de avisos.
 function pulsarPestanaTiempo(b){
-  if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
+  if (b.classList.contains('tiempo-cerrar')) ponerTiempo('');
+  else if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
   else if (b.dataset.ir === 'avisos') ponerTiempo('alertas:');
   else if (b.dataset.ir === 'sitios') abrirSitios();
 }
@@ -8250,12 +8257,7 @@ function wireTiempo(){
   el.addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.classList.contains('tiempo-cambiar') && TIEMPO.valor){
-      const valor = TIEMPO.valor;
-      recordarLugar(valor, null);
-      TIEMPO.valor = null;
-      actualizarTiempo(valor);
-    }
+    if (b.classList.contains('tiempo-cambiar')) cambiarLugarTiempo();
     else if (b.classList.contains('tiempo-guardar')){
       if (TIEMPO.ultima && b.getAttribute('aria-disabled') !== 'true') alternarSitio(TIEMPO.ultima);
     }

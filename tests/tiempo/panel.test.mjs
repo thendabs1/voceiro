@@ -39,9 +39,10 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
   };
   runInNewContext([
     linea('const RX_TOKENS_TIEMPO'), linea('const RX_HAY_TIEMPO'),
-    ...['sitiosTiempo', 'ponerTiempo', 'enfocarBuscador', 'abrirSitios', 'abrirTiempo', 'avisosDeZona',
+    ...['sitiosTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo',
+      'htmlPestanasTiempo', 'pulsarPestanaTiempo', 'avisosDeZona',
       'pintarBotonTiempo'].map(funcion),
-  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.ponerTiempo = ponerTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
+  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.ponerTiempo = ponerTiempo; this.cambiarLugarTiempo = cambiarLugarTiempo; this.htmlPestanasTiempo = htmlPestanasTiempo; this.pulsarPestanaTiempo = pulsarPestanaTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
   return { ctx, buscar: el['#buscar'], sol };
 }
 
@@ -81,6 +82,34 @@ test('las pestañas cambian un prefijo del tiempo por otro', () => {
   assert.equal(buscar.value, 'incendio alertas:');
   ctx.ponerTiempo('eltiempo:Vigo');
   assert.equal(buscar.value, 'incendio eltiempo:Vigo');
+});
+
+test('Cambiar de lugar vacía el sitio, conserva la búsqueda y enfoca el buscador', () => {
+  for (const valor of ['incendio eltiempo:Vigo', 'incendio eltiempo:"A Coruña"']) {
+    const { ctx, buscar } = contexto({ buscar: valor });
+    let enfocado = false;
+    buscar.focus = () => { enfocado = true; };
+    buscar.setSelectionRange = (inicio, fin) => {
+      buscar.selectionStart = inicio;
+      buscar.selectionEnd = fin;
+    };
+    ctx.cambiarLugarTiempo();
+    assert.equal(enfocado, true);
+    assert.equal(buscar.value, 'incendio eltiempo:');
+    assert.equal(buscar.selectionStart, buscar.value.length);
+    assert.equal(buscar.selectionEnd, buscar.value.length);
+    assert.equal(ctx.filtrados, 1);
+  }
+});
+
+test('la X junto a ajustes cierra el tiempo como el sol', () => {
+  const { ctx, buscar } = contexto({ buscar: 'incendio eltiempo:Vigo' });
+  const nav = ctx.htmlPestanasTiempo(null);
+  assert.match(nav, /class="tiempo-cerrar"[^>]*aria-label="btnCerrar ajTiempoTit"[^>]*><x><\/button>/);
+  assert.ok(nav.indexOf('tiempo-cerrar') < nav.indexOf('tiempo-ajustes'));
+  ctx.pulsarPestanaTiempo({ classList: { contains: clase => clase === 'tiempo-cerrar' }, dataset: {} });
+  assert.equal(buscar.value, 'incendio');
+  assert.equal(ctx.filtrados, 1);
 });
 
 const aviso = (zona, nivel, inicio = '2026-10-21T08:00:00Z') =>
