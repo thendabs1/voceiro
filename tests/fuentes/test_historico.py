@@ -136,6 +136,17 @@ class Historico(unittest.TestCase):
         self.assertTrue(todas[0]['_nueva'])
         self.assertNotIn('_pos', repetida)
 
+    def test_fusion_limpia_titulares_ya_publicados_sin_duplicarlos(self):
+        ahora = datetime.now(MADRID).replace(microsecond=0)
+        base = {'dominio': 'ejemplo.test', 'fecha_estimada': '',
+                'fecha': ahora.isoformat(), 'fecha_pub': ahora.isoformat()}
+        viejas = [{**base, 'titular': 'O espírito do <em>Desassossego</em> de Pessoa'}]
+        nuevas = [{**base, 'titular': 'O espírito do Desassossego de Pessoa'}]
+        fusionadas = R.fusionar_historico(nuevas, viejas, dias=15)
+        self.assertEqual(len(fusionadas), 1)
+        self.assertEqual(fusionadas[0]['titular'], nuevas[0]['titular'])
+        self.assertFalse(fusionadas[0]['_nueva'])
+
     def test_una_fecha_antigua_descubierta_retira_tambien_la_copia_vieja(self):
         ahora = datetime.now(MADRID).replace(microsecond=0)
         vieja = {'dominio': 'ejemplo.test', 'titular': 'T', 'fecha': ahora.isoformat(),
