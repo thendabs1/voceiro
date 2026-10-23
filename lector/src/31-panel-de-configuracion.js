@@ -133,29 +133,39 @@ function openSettings(initialTab, opts){
       return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
           '<div style="flex:1;min-width:140px;font-family:monospace;font-size:13px">' + esc(s.domain) + '</div>' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12px">' + esc(t('siteOpening')) +
           '<select data-idx="' + realIdx + '" class="il-set-mode" style="padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
             '<option value="off"'    + (s.mode==='off'   ?' selected':'') + '>' + esc(t('modeOff'))    + '</option>' +
             '<option value="prompt"' + (s.mode==='prompt'?' selected':'') + '>' + esc(t('modePrompt')) + '</option>' +
             '<option value="auto"'   + (s.mode==='auto'  ?' selected':'') + '>' + esc(t('modeAuto'))   + '</option>' +
-          '</select>' +
-          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
-            '<option value="auto"' + (s.readerSource==='auto'?' selected':'') + '>' + esc(t('srcAuto')) + '</option>' +
-            '<option value="jsonld"' + (s.readerSource==='jsonld'?' selected':'') + '>' + esc(t('srcJsonld')) + '</option>' +
-            '<option value="readability"' + (s.readerSource==='readability'?' selected':'') + '>' + esc(t('srcReadability')) + '</option>' +
-          '</select>' +
+          '</select></label>' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12px">' + esc(t('colLang')) +
           '<select data-idx="' + realIdx + '" class="il-set-lang" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
             SITE_LANGS.map(l => '<option value="' + l + '"' + (s.lang===l?' selected':'') + '>' + esc(langLabel(l)) + '</option>').join('') +
-          '</select>' +
-          '<button data-idx="' + realIdx + '" class="il-set-extract" title="' + esc(t('extractionTitle')) + '" ' +
-            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬</button>' +
+          '</select></label>' +
           '<button data-idx="' + realIdx + '" class="il-set-visit" title="' + esc(t('openSite')) + '" ' +
             'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔗</button>' +
-          '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🗑</button>' +
+          '<button data-idx="' + realIdx + '" class="il-set-del" title="' + esc(t('siteDisableHint')) + '" aria-label="' + esc(t('siteDisable') + ': ' + s.domain) + '" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('siteDisable')) + '</button>' +
         '</div>' +
         '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
           '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colLang')) + ':</span> ' + esc(langLabel(s.lang)) +
           textOnlyBadge + exBadge +
         '</div>' +
+        '<details style="margin-top:8px">' +
+          '<summary style="cursor:pointer;font-size:13px">' + esc(t('siteAdvanced')) + '</summary>' +
+          '<p style="font-size:12px;color:var(--muted)">' + esc(t('siteSourceHint')) + '</p>' +
+          '<div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12px">' + esc(t('source')) +
+          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
+            '<option value="auto"' + (s.readerSource==='auto'?' selected':'') + '>' + esc(t('srcAuto')) + '</option>' +
+            '<option value="jsonld"' + (s.readerSource==='jsonld'?' selected':'') + '>' + esc(t('srcJsonld')) + '</option>' +
+            '<option value="readability"' + (s.readerSource==='readability'?' selected':'') + '>' + esc(t('srcReadability')) + '</option>' +
+          '</select></label>' +
+          '<button data-idx="' + realIdx + '" class="il-set-extract" title="' + esc(t('extractionTitle')) + '" ' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬 ' + esc(t('extractionTitle')) + '</button>' +
+          '</div>' +
+          '<p style="font-size:12px;color:var(--muted)">' + esc(t('extractionWrongSite').replace('{X}', s.domain)) + '</p>' +
+        '</details>' +
         patBlock +
       '</div>';
     }).join('');
@@ -188,6 +198,7 @@ function openSettings(initialTab, opts){
 
     const html =
       '<p style="margin:0 0 12px;font-size:13px;color:var(--muted)">' + esc(t('sitesHint')) + '</p>' +
+      '<p style="margin:0 0 12px;font-size:12px;color:var(--muted)">' + esc(t('siteOpeningHint')) + '</p>' +
       addCurrentBanner +
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
         '<input class="il-set-search" placeholder="' + esc(t('searchPlaceholder')) + '" value="' + esc(searchQuery) + '" ' +
@@ -228,7 +239,7 @@ function openSettings(initialTab, opts){
       });
 
       box.querySelectorAll('.il-set-mode').forEach(sel => {
-        sel.onchange = () => { CFG.sites[+sel.dataset.idx].mode = sel.value; saveCfg(CFG); };
+        sel.onchange = () => { CFG.sites[+sel.dataset.idx].mode = sel.value; saveCfg(CFG); actualizarBoton(); };
       });
       box.querySelectorAll('.il-set-src').forEach(sel => {
         sel.onchange = () => {
@@ -280,7 +291,7 @@ function openSettings(initialTab, opts){
       });
       box.querySelectorAll('.il-site-row').forEach(row => {
         row.addEventListener('dblclick', e => {
-          if (e.target.closest('select,button,input,label,datalist')) return;
+          if (e.target.closest('select,button,input,label,datalist,details')) return;
           const site = CFG.sites[+row.dataset.idx];
           if (site) window.open('https://' + site.domain, '_blank', 'noopener');
         });

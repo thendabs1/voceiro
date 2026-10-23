@@ -4,6 +4,11 @@
 function openExtractionTool(siteIdx, onClose){
   const site = CFG.sites[siteIdx];
   if (!site) return;
+  // El diagnóstico y el selector visual trabajan sobre el documento actual.
+  if (!domainMatches(location.hostname, site.domain)){
+    toast(t('extractionWrongSite').replace('{X}', site.domain), 4000);
+    return;
+  }
   if (document.getElementById('il-extract-tool')) return;
 
   const work = deepClone(site.extraction || DEFAULT_EXTRACTION);
