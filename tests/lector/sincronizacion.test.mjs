@@ -78,15 +78,21 @@ function nuevoLector(srv, opciones){
     GM_xmlhttpRequest: gestor(srv, opciones),
     window: { isSecureContext: true },
     crypto, TextEncoder, TextDecoder, Blob, Response, Headers, Request, AbortSignal,
-    CompressionStream, DecompressionStream, btoa, clearTimeout, console, URL,
-    // Lo que el lector deja programado no retiene la prueba.
-    setTimeout: (f, ms) => { const t = setTimeout(f, ms); t.unref(); return t; },
+    CompressionStream, DecompressionStream, btoa, console, URL,
+    // Lo que el lector deja programado no retiene la prueba; programados
+    // dice cuántas esperas quedan vivas.
+    setTimeout: (f, ms) => {
+      const t = setTimeout(() => { programados.delete(t); f(); }, ms);
+      t.unref(); programados.add(t); return t;
+    },
+    clearTimeout: t => { programados.delete(t); clearTimeout(t); },
   };
+  const programados = new Set();
   ctx.window.crypto = crypto;
   ctx.globalThis = ctx;
   vm.createContext(ctx);
   vm.runInContext(FUENTE, ctx);
-  return { lector: ctx.lector, valores };
+  return { lector: ctx.lector, valores, programados };
 }
 
 // Lo que sale del contexto del lector, con arrays y objetos de aquí.
@@ -197,6 +203,18 @@ test('un cambio mientras sincroniza deja otra vuelta programada', async () => {
   assert.ok(lector.sync.diferido, 'queda programada otra vuelta');
 });
 
+test('con varios cambios mientras sincroniza queda una sola vuelta programada', async () => {
+  const srv = servidor();
+  const { lector, programados } = nuevoLector(srv);
+  lector.activarSyncLector(generarCodigo(), false);
+  const primera = lector.sincronizarLector();
+  lector.sincronizarLectorPronto();       // un cambio mientras va…
+  lector.sincronizarLector();             // …cuya espera vence antes de terminar
+  lector.sincronizarLectorPronto();       // y otro cambio, aún en espera
+  await primera;
+  assert.equal(programados.size, 1);
+});
+
 test('el lector detiene un código revocado y conserva su documento local', async () => {
   const srv = servidor(), codigo = generarCodigo();
   const { lector, valores } = nuevoLector(srv);
@@ -211,4 +229,23 @@ test('el lector detiene un código revocado y conserva su documento local', asyn
   const n = srv.peticiones.length;
   await lector.sincronizarLector();
   assert.equal(srv.peticiones.length, n);
+});
+
+test('un código revocado no vuelve por el puente mientras Voceiro no se entera', async () => {
+  const srv = servidor(), codigo = generarCodigo();
+  const { lector, valores } = nuevoLector(srv);
+  lector.codigoDesdeVoceiro(codigo);
+  await lector.sincronizarLector();
+  const documento = valores.get('lector-sync-doc');
+  const web = crearCliente({ servidores: ['https://cf.test'], fetch: srv.atenderUrl });
+  await web.borrar(codigo);
+  await lector.sincronizarLector();
+  lector.codigoDesdeVoceiro(codigo);               // Voceiro aún lo tiene
+  assert.equal(lector.codigoSyncLector(), null);
+  assert.deepEqual(valores.get('lector-sync-doc'), documento);
+  lector.codigoDesdeVoceiro(null);                 // ya se enteró
+  assert.equal(valores.get('lector-sync-doc'), null);
+  const otro = generarCodigo();
+  lector.codigoDesdeVoceiro(otro);                 // y con uno nuevo, sigue
+  assert.equal(lector.codigoSyncLector(), otro.replace(/-/g, ''));
 });

@@ -759,7 +759,8 @@ function openSettings(initialTab, opts){
         '<p class="il-set-sync-estado" style="font-size:13px;margin:6px 0 10px">' + esc(estado) + '</p>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
           (codigo
-            ? boton('il-set-sync-ahora', t('syncNow'), puedeSincronizarAqui() ? '' : ' disabled') +
+            // Donde no puede (Voceiro, sin https) no hay botón: el estado dice por qué.
+            ? (puedeSincronizarAqui() ? boton('il-set-sync-ahora', t('syncNow')) : '') +
               boton('il-set-sync-quitar', t('syncUnlink'))
             : !esVoceiro() ? '<span style="font-size:13px">' + esc(t('syncSoloEnVoceiro')) + '</span>'
             : '<input type="text" class="il-set-sync-codigo" autocomplete="off" spellcheck="false" aria-label="' + esc(t('syncCodePh')) + '" placeholder="' + esc(t('syncCodePh')) + '" style="flex:1 1 16em;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-family:monospace">' +
@@ -772,9 +773,10 @@ function openSettings(initialTab, opts){
     const usar = box.querySelector('.il-set-sync-usar');
     if (usar) usar.onclick = () => {
       const campo = box.querySelector('.il-set-sync-codigo');
+      // Solo se escribe en Voceiro, donde no se sincroniza: queda apuntado
+      // y sube la próxima web donde arranque el lector.
       if (!activarSyncLector(campo.value, false)){ toast(t('syncInvalid'), 2400); campo.focus(); return; }
       render();
-      sincronizarLector().then(render);
     };
     const ahora = box.querySelector('.il-set-sync-ahora');
     if (ahora) ahora.onclick = () => {
