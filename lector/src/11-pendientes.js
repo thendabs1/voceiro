@@ -10,6 +10,7 @@ function cambiarReadLater(nueva){
   CFG.readLater = fusionarPendientes(nueva, []);
   saveCfg(CFG);
   enviarEstado(false);
+  sincronizarLectorPronto();
 }
 function pendientesVisibles(){
   return (CFG.readLater || []).filter(r => !r.borrado);
@@ -107,7 +108,8 @@ function findLaterItem(url){
    aquí (abierto desde donde sea) se le avisa por el puente: leidasParaVoceiro
    es una lista corta de { url, fecha, quitar? } que Voceiro confirma con
    leidasHasta (la fecha más nueva que ya tiene). No viaja a otros
-   dispositivos: allí ya llega por la sincronización de Voceiro. */
+   dispositivos: allí llega por la sincronización, la de Voceiro o la
+   propia del lector (apuntarLeidaEnSync, si hay código). */
 const LEIDAS_AVISO_MAX = 200;
 
 function avisarLeida(url, quitar){
@@ -115,6 +117,7 @@ function avisarLeida(url, quitar){
   const aviso = { url: String(url), fecha: ahora };
   if (quitar) aviso.quitar = true;
   CFG.leidasParaVoceiro = [...(CFG.leidasParaVoceiro || []), aviso].slice(-LEIDAS_AVISO_MAX);
+  apuntarLeidaEnSync(url, quitar);
 }
 
 // Lo que Voceiro ya tiene (fecha <= hasta) se quita de la lista.
@@ -142,6 +145,7 @@ function marcarLeidaAlTerminar(){
   CFG.readLater = fusionarPendientes(CFG.readLater, []);
   saveCfg(CFG);
   enviarEstado(false);
+  sincronizarLectorPronto();
   return () => {
     if (antes && !antes.read){
       const ahora = findLaterItem(url) || (CFG.readLater || []).find(r => r.url === antes.url);
@@ -151,6 +155,7 @@ function marcarLeidaAlTerminar(){
     CFG.readLater = fusionarPendientes(CFG.readLater, []);
     saveCfg(CFG);
     enviarEstado(false);
+    sincronizarLectorPronto();
   };
 }
 

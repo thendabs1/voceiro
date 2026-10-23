@@ -66,6 +66,7 @@ function shouldActivateHere(){
 
 function init(){
   registerMenus();
+  sincronizarLectorSiQuedoAlgo();
 
   if (isDomainDisabled(location.hostname)) return;
 

@@ -47,15 +47,22 @@ function version(){
 }
 
 // Módulos que entran en el lector, sin los `export`, justo después de la
-// plataforma. No pueden importar nada. Los de shared/ los comparte con
-// Voceiro; los de modulos/ son solo del lector, pero aparte para probarlos
-// con node --test (tests/lector).
-const COMPARTIDOS = ['../shared/sync/fusion.js', '../shared/tema/personalizado.js',
+// plataforma. Solo pueden importar de otro de la lista que vaya antes (todo
+// queda en el mismo ámbito: el import se quita). Los de shared/ los comparte
+// con Voceiro; los de modulos/ son solo del lector, pero aparte para
+// probarlos con node --test (tests/lector).
+const COMPARTIDOS = ['../shared/sync/fusion.js', '../shared/sync/cripto.js', '../shared/sync/cliente.js',
+                     '../shared/tema/personalizado.js',
                      'modulos/codigo-incrustado.js', 'modulos/mixto.js'];
 const TRAS = '02-plataforma.js';
 
-function compartido(rel){
-  const fuente = readFileSync(resolve(raiz, rel), 'utf8');
+function compartido(rel, n){
+  const antes = COMPARTIDOS.slice(0, n).map(r => resolve(raiz, r));
+  const fuente = readFileSync(resolve(raiz, rel), 'utf8')
+    .replace(/^import\s*\{[^}]*\}\s*from\s*'([^']+)';[ \t]*\n/gm, (linea, de) => {
+      if (!antes.includes(resolve(raiz, dirname(rel), de))) throw new Error(`${rel}: importa ${de}, que no va antes`);
+      return '';
+    });
   if (/^\s*import\b/m.test(fuente)) throw new Error(`${rel}: un módulo compartido no puede importar`);
   const codigo = fuente.replace(/^export\s+(?=(?:async\s+)?function\b|const\b|let\b|class\b)/gm, '');
   if (/^\s*export\b/m.test(codigo)) throw new Error(`${rel}: hay un export que no se sabe quitar`);
@@ -77,7 +84,7 @@ if (!partes.includes(TRAS)) throw new Error(`falta src/${TRAS}`);
 const trozos = [];
 for (const f of partes){
   trozos.push(readFileSync(join(src, f), 'utf8'));
-  if (f === TRAS) trozos.push(...COMPARTIDOS.map(compartido));
+  if (f === TRAS) trozos.push(...COMPARTIDOS.map((rel, n) => compartido(rel, n)));
 }
 let codigo = trozos.join('').replaceAll('{{VERSION}}', v);
 

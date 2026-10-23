@@ -729,6 +729,55 @@ function openSettings(initialTab, opts){
     return { html, wire };
   }
 
+  // Sincronización propia (28-sincronizacion.js). Este panel también se
+  // abre encima de webs ajenas, que pueden leer lo que tiene: el código no
+  // se pinta y solo se escribe en la página de Voceiro (Ajustes › Lector).
+  function htmlSync(){
+    const s = estadoSyncLector();
+    const codigo = codigoSyncLector();
+    const boton = (clase, texto, extra) =>
+      '<button class="' + clase + '"' + (extra || '') + ' style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(texto) + '</button>';
+    let estado = !codigo ? t('syncOff') : t(s.deVoceiro ? 'syncFromVoceiro' : 'syncManual');
+    if (codigo){
+      estado += ' ' + (s.subido ? t('syncLast') + ' ' + new Date(s.subido).toLocaleString(CFG.lang) + '.' : t('syncNever'));
+      if ((s.fallo || 0) > (s.subido || 0)) estado += ' ' + t('syncFailed') + ' (' + (s.error || '?') + ')';
+      if (!puedeSincronizarAqui()) estado += ' ' + t(esVoceiro() ? 'syncHereVoceiro' : 'syncNoHttps');
+    }
+    return '<div style="margin-bottom:18px;padding:14px;border:1px solid var(--btn-border);border-radius:8px">' +
+        '<div style="font-weight:bold;font-size:14px">' + esc(t('syncTitle')) + '</div>' +
+        '<p class="il-set-sync-estado" style="font-size:13px;margin:6px 0 10px">' + esc(estado) + '</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+          (codigo
+            ? boton('il-set-sync-ahora', t('syncNow'), puedeSincronizarAqui() ? '' : ' disabled') +
+              boton('il-set-sync-quitar', t('syncUnlink'))
+            : !esVoceiro() ? '<span style="font-size:13px">' + esc(t('syncSoloEnVoceiro')) + '</span>'
+            : '<input type="text" class="il-set-sync-codigo" autocomplete="off" spellcheck="false" aria-label="' + esc(t('syncCodePh')) + '" placeholder="' + esc(t('syncCodePh')) + '" style="flex:1 1 16em;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-family:monospace">' +
+              boton('il-set-sync-usar', t('syncUse'))) +
+        '</div>' +
+        '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">' + esc(t('syncHint')) + '</p>' +
+      '</div>';
+  }
+  function wireSync(){
+    const usar = box.querySelector('.il-set-sync-usar');
+    if (usar) usar.onclick = () => {
+      const campo = box.querySelector('.il-set-sync-codigo');
+      if (!activarSyncLector(campo.value, false)){ toast(t('syncInvalid'), 2400); campo.focus(); return; }
+      render();
+      sincronizarLector().then(render);
+    };
+    const ahora = box.querySelector('.il-set-sync-ahora');
+    if (ahora) ahora.onclick = () => {
+      ahora.disabled = true;
+      sincronizarLector().then(render);
+    };
+    const quitar = box.querySelector('.il-set-sync-quitar');
+    if (quitar) quitar.onclick = () => {
+      if (!confirm(t('syncUnlinkConfirm'))) return;
+      olvidarSyncLector();
+      render();
+    };
+  }
+
   function renderGeneralTab(){
     const html =
       '<div style="margin-bottom:18px">' +
@@ -753,6 +802,7 @@ function openSettings(initialTab, opts){
           '</span>' +
         '</label>' +
       '</div>' +
+      htmlSync() +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px">' +
         '<button class="il-set-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
         '<button class="il-set-import" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('importBtn')) + '</button>' +
@@ -760,6 +810,7 @@ function openSettings(initialTab, opts){
       '</div>';
 
     function wire(){
+      wireSync();
       const appLangSel = box.querySelector('.il-set-lang-app');
       if (appLangSel) appLangSel.onchange = e => {
         CFG.lang = e.target.value;
@@ -818,6 +869,7 @@ function openSettings(initialTab, opts){
               delete data._version;
               CFG = mergeCfg(DEFAULT_CFG, data);
               saveCfg(CFG);
+              sincronizarLectorPronto();   // saveCfg no mira Pendientes
               render();
             } catch(e){ toast('Error: ' + e.message); }
           };

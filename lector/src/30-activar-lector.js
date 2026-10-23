@@ -44,6 +44,7 @@ function activateReader(){
       return;
     }
     openReader(art);
+    sincronizarLectorAlAbrir();
   } catch(e){
     console.error('[Lector Universal]', e);
     toast(t('noArticle'));

@@ -54,6 +54,14 @@ test('preflight y salud, con CORS solo para Voceiro', async () => {
   assert.equal(r.status, 200);
   r = await atender(pedir('GET', { origen: 'https://otra.web' }), alm, T0);
   assert.equal(r.status, 403);
+  // El lector pide desde el gestor de userscripts o su extensión: sin CORS.
+  for (const origen of ['moz-extension://1234-abcd', 'chrome-extension://abcdefgh']){
+    r = await atender(pedir('GET', { origen }), alm, T0);
+    assert.equal(r.status, 404);
+    assert.equal(r.headers.get('Access-Control-Allow-Origin'), null);
+  }
+  r = await atender(pedir('GET', { origen: 'https://moz-extension.otra.web' }), alm, T0);
+  assert.equal(r.status, 403);
 });
 
 test('sin token válido no hay nada', async () => {

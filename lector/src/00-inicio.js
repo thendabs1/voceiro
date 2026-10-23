@@ -18,6 +18,9 @@
 // @grant        GM_addValueChangeListener
 // @grant        window.close
 // @grant        window.focus
+// @grant        GM_xmlhttpRequest
+// @connect      voceiro-sync.toriorecorda.workers.dev
+// @connect      voceiro-sync.thendabs1.deno.net
 // @require      https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js
 // @run-at       document-idle
 // @noframes

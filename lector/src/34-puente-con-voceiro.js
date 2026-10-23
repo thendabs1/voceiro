@@ -6,7 +6,8 @@
      · 'voceiro-ping'   Voceiro → lector; se responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
      · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
-                        leidasHasta}.
+                        leidasHasta, sync}. sync: el código de sincronización
+                        de Voceiro, o null; el lector lo sigue (28-sincronizacion.js).
      · 'lector-estado'  lector → Voceiro {…, leidas}: lo terminado en el lector
                         (11-pendientes.js); Voceiro lo confirma con leidasHasta.
      · 'voceiro-ajustes-lector' Voceiro → lector {v, dominio?}: pinta tus
@@ -34,6 +35,23 @@ function comparableEstado(d){
     perfil: limpiarPerfil(d && d.perfil),
     lector: d && d.lector ? { datos: d.lector.datos, actualizado: d.lector.actualizado || 0 } : null
   });
+}
+
+// Lo que llega de fuera (Voceiro por el puente o el servidor de
+// sincronización): Pendientes se fusionan; perfil y configuración, el más
+// reciente. Un perfil sin sellar no se impone: se unifican con el primer cambio.
+function adoptarEnLector(d){
+  CFG.readLater = fusionarPendientes(CFG.readLater, d.pendientes);
+
+  const mio = perfilDelLector();
+  const perfil = fusionarPerfil(mio, d.perfil);
+  if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilAlLector(perfil);
+
+  const mia = bloqueConfigLector();
+  const llega = d.lector;
+  if (llega && llega.datos && (llega.actualizado || 0) > (mia.actualizado || 0)){
+    aplicarBloqueConfig(llega);
+  }
 }
 
 function enviarEstado(respuesta){
@@ -93,19 +111,9 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
     const d = e.detail;
     if (!d || typeof d !== 'object' || d.v !== PUENTE_V) return;
 
-    CFG.readLater = fusionarPendientes(CFG.readLater, d.pendientes);
-
-    // Un perfil sin sellar no se impone: se unifican con el primer cambio.
-    const mio = perfilDelLector();
-    const perfil = fusionarPerfil(mio, d.perfil);
-    if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilAlLector(perfil);
-
-    // Configuración que llega de otro dispositivo: solo si es más nueva.
-    const mia = bloqueConfigLector();
-    const llega = d.lector;
-    if (llega && llega.datos && (llega.actualizado || 0) > (mia.actualizado || 0)){
-      aplicarBloqueConfig(llega);
-    }
+    adoptarEnLector(d);
+    // Un Voceiro anterior no manda el campo: entonces no se toca nada.
+    if ('sync' in d) codigoDesdeVoceiro(d.sync);
 
     // Leídas que Voceiro ya tiene: fuera. Si quedan, se le vuelven a mandar.
     leidasConfirmadas(d.leidasHasta);

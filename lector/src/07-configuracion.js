@@ -360,6 +360,7 @@ function saveCfg(cfg){
   // En la página de Voceiro (sus Ajustes › Lector), un cambio de aquí no
   // llega por alCambiar, que solo oye otras pestañas: se manda directamente.
   if (cambio && esVoceiro()) setTimeout(() => enviarEstado(false), 0);
+  if (cambio) sincronizarLectorPronto();
 }
 let CFG = loadCfg();
 __perfilFirma = firmaPerfilLector(CFG);

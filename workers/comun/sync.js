@@ -12,6 +12,9 @@
 // llega cifrado, así que aquí no se puede leer lo que guarda.
 
 export const ORIGEN = 'https://thendabs1.github.io';
+// El lector (userscript o extensión) pide desde el gestor o la extensión:
+// llega con su origen propio, que no es una web. No necesita CORS.
+const RE_ORIGEN_EXTENSION = /^(moz|chrome|safari-web)-extension:\/\//;
 export const MAX_BYTES = 512 * 1024;
 export const INTERVALO_MIN_MS = 2000;     // entre subidas del mismo código
 export const ALTAS_POR_IP_DIA = 10;       // códigos nuevos por IP y día
@@ -68,8 +71,9 @@ export async function atender(request, almacen, ahora = Date.now(),
   const url = new URL(request.url);
 
   if (request.method === 'OPTIONS') return responder(origen, 204, null);
-  // Otra web, desde un navegador: fuera. (Sin Origin, la llave es el token.)
-  if (origen && origen !== ORIGEN) return responder(origen, 403, { error: 'origen' });
+  // Otra web, desde un navegador: fuera. (Sin Origin o desde una extensión,
+  // la llave es el token.)
+  if (origen && origen !== ORIGEN && !RE_ORIGEN_EXTENSION.test(origen)) return responder(origen, 403, { error: 'origen' });
 
   if (url.pathname === '/v1/salud' && request.method === 'GET'){
     return responder(origen, 200, { ok: true });
