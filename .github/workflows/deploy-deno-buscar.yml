@@ -9,7 +9,11 @@ on:
     branches: [main]
     paths:
       - 'workers/deno-buscar/**'
-      - 'workers/comun/**'
+      # Solo los módulos comunes que usa (scripts/sync-workers.mjs): otro
+      # cambio en workers/comun no gasta un despliegue.
+      - 'workers/comun/buscar.js'
+      - 'workers/comun/turso.js'
+      - 'workers/comun/gnews.js'
       - 'scripts/sync-workers.mjs'
       # Las copias del parser las commitea sync-parser.yml con GITHUB_TOKEN, y
       # ese commit no dispara workflows: se sincronizan aquí antes de desplegar.

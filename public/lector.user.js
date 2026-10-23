@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.297
+// @version      2.0.298
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -18,6 +18,9 @@
 // @grant        GM_addValueChangeListener
 // @grant        window.close
 // @grant        window.focus
+// @grant        GM_xmlhttpRequest
+// @connect      voceiro-sync.toriorecorda.workers.dev
+// @connect      voceiro-sync.thendabs1.deno.net
 // @require      https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js
 // @run-at       document-idle
 // @noframes
@@ -29,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.297';
+const SCRIPT_VERSION = '2.0.298';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -72,7 +75,8 @@ function esVoceiro(){
    ------------------------------------------------------------
    Lo único que depende del gestor de userscripts: leer y guardar
    la configuración, enterarse de los cambios hechos en otra
-   pestaña y el menú del gestor. La extensión tendrá su propia
+   pestaña, pedir al servidor de sincronización y el menú del
+   gestor. La extensión tendrá su propia
    versión de este archivo, con la misma forma.
    ============================================================ */
 const PLATAFORMA = {
@@ -107,6 +111,45 @@ const PLATAFORMA = {
   // sabe, no pasa nada.
   enfocarPestana(){
     try { window.focus(); } catch(e){}
+  },
+  // Petición al servidor de sincronización, con la forma de fetch (la usa
+  // shared/sync/cliente.js). La hace el gestor (@grant GM_xmlhttpRequest y
+  // @connect en la cabecera): desde cualquier web, sin CORS ni cookies. En
+  // la extensión será un fetch desde el fondo.
+  pedir(url, opciones = {}){
+    if (typeof GM_xmlhttpRequest !== 'function') return fetch(url, opciones);
+    const signal = opciones.signal;
+    return new Promise((resolver, rechazar) => {
+      if (signal && signal.aborted){ rechazar(signal.reason); return; }
+      let peticion = null;
+      const abortar = () => {
+        try { if (peticion) peticion.abort(); } catch(e){}
+        rechazar(signal.reason);
+      };
+      const fin = () => { if (signal) signal.removeEventListener('abort', abortar); };
+      peticion = GM_xmlhttpRequest({
+        url, method: opciones.method || 'GET', headers: opciones.headers || {},
+        data: opciones.body ? new Blob([opciones.body]) : undefined,
+        responseType: 'arraybuffer', nocache: true, anonymous: true,
+        onload: r => {
+          fin();
+          const cabeceras = new Headers();
+          for (const linea of String(r.responseHeaders || '').split(/\r?\n/)){
+            const i = linea.indexOf(':');
+            if (i > 0) try { cabeceras.append(linea.slice(0, i).trim(), linea.slice(i + 1).trim()); } catch(e){}
+          }
+          // Sin respuesta (estado 0) es un fallo de red: Response lo rechaza.
+          try {
+            resolver(new Response([204, 205, 304].includes(r.status) ? null : r.response,
+                                  { status: r.status, headers: cabeceras }));
+          } catch(e){ rechazar(new TypeError('sin respuesta')); }
+        },
+        onerror: () => { fin(); rechazar(new TypeError('sin red')); },
+        ontimeout: () => { fin(); rechazar(new TypeError('sin respuesta')); },
+        onabort: () => { fin(); rechazar(new TypeError('cancelada')); },
+      });
+      if (signal) signal.addEventListener('abort', abortar, { once: true });
+    });
   },
   hayMenu(){ return typeof GM_registerMenuCommand === 'function'; },
   menu(texto, fn){
@@ -357,6 +400,185 @@ function fusionarDocumento(a, b, ahora = Date.now()){
     perfil: fusionarPerfil(a.perfil, b.perfil),
     modos: fusionarModos(a.modos, b.modos, ahora),
     lector: masReciente(a.lector || null, b.lector || null),
+  };
+}
+
+/* ── shared/sync/cripto.js (compartido con Voceiro) ── */
+// Código de sincronización y cifrado, con WebCrypto (navegador y Node).
+//
+// El código (25 caracteres, 125 bits) solo vive en los dispositivos. De él
+// salen, con HKDF:
+//   · id     → en qué fila del servidor está el bloque;
+//   · token  → la llave para leerlo y escribirlo (el servidor guarda su huella);
+//   · clave  → AES-GCM, para cifrar el bloque antes de que salga del navegador.
+// El servidor nunca ve el código ni la clave: lo que guarda no lo puede leer.
+
+// Base32 de Crockford: sin I, L, O ni U, para no confundir al dictarlo o
+// copiarlo a mano.
+const ALFABETO = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const LARGO_CODIGO = 25;
+const FORMATO = 1;    // primer byte del bloque cifrado
+const SAL = 'voceiro-sync-v1';
+
+function generarCodigo(){
+  const azar = crypto.getRandomValues(new Uint8Array(LARGO_CODIGO));
+  return formatearCodigo([...azar].map(b => ALFABETO[b & 31]).join(''));
+}
+
+// De lo que escribe la persona al código limpio, o null si no vale. Admite
+// minúsculas, espacios y guiones, y lee I/L como 1 y O como 0.
+function limpiarCodigo(texto){
+  const s = String(texto || '').toUpperCase().replace(/[\s-]/g, '')
+    .replace(/[IL]/g, '1').replace(/O/g, '0');
+  return s.length === LARGO_CODIGO && [...s].every(c => ALFABETO.includes(c)) ? s : null;
+}
+
+function formatearCodigo(codigo){
+  return String(codigo).match(/.{1,5}/g).join('-');
+}
+
+const texto = s => new TextEncoder().encode(s);
+
+async function hkdf(codigo, info, bits){
+  const base = await crypto.subtle.importKey('raw', texto(codigo), 'HKDF', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: texto(SAL), info: texto(info) }, base, bits));
+}
+
+function hex(bytes){
+  return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function base64url(bytes){
+  let s = '';
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function derivar(codigo){
+  const c = limpiarCodigo(codigo);
+  if (!c) throw new Error('código no válido');
+  const id = hex(await hkdf(c, 'id', 128));
+  const token = base64url(await hkdf(c, 'token', 256));
+  const clave = await crypto.subtle.importKey(
+    'raw', await hkdf(c, 'clave', 256), 'AES-GCM', false, ['encrypt', 'decrypt']);
+  return { id, token, clave };
+}
+
+async function pasar(bytes, transformador){
+  const stream = new Blob([bytes]).stream().pipeThrough(transformador);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+// Objeto → JSON → gzip → AES-GCM. Bloque: [formato][iv (12)][cifrado].
+async function cifrar(clave, objeto){
+  const comprimido = await pasar(texto(JSON.stringify(objeto)), new CompressionStream('gzip'));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cifrado = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, clave, comprimido));
+  const bloque = new Uint8Array(1 + iv.length + cifrado.length);
+  bloque[0] = FORMATO;
+  bloque.set(iv, 1);
+  bloque.set(cifrado, 1 + iv.length);
+  return bloque;
+}
+
+async function descifrar(clave, bloque){
+  const b = new Uint8Array(bloque);
+  if (b[0] !== FORMATO) throw new Error('formato desconocido');
+  const plano = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(1, 13) }, clave, b.slice(13));
+  const json = await pasar(new Uint8Array(plano), new DecompressionStream('gzip'));
+  return JSON.parse(new TextDecoder().decode(json));
+}
+
+/* ── shared/sync/cliente.js (compartido con Voceiro) ── */
+// Cliente de la sincronización entre dispositivos (servidor: workers/cf-sync).
+//
+// sincronizar() baja el bloque del servidor, lo descifra, lo fusiona con lo
+// local (fusionarDocumento) y, si el resultado no es lo que ya había, lo
+// sube cifrado. Si otro dispositivo escribió entre medias (409), vuelve a
+// empezar. Devuelve el documento fusionado: quien llama lo vuelca en local.
+
+// CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma
+// base. Los usan Voceiro y el lector.
+const SERVIDORES_SYNC = ['https://voceiro-sync.toriorecorda.workers.dev',
+                                'https://voceiro-sync.thendabs1.deno.net'];
+const MAX_SUBIDA = 500 * 1024;   // el servidor admite 512 KB
+const INTENTOS = 4;
+const TIMEOUT_MS = 10000;  // por servidor: da para subir 512 KB con mala cobertura
+
+const esperarMs = ms => new Promise(r => setTimeout(r, ms));
+
+function crearCliente({ servidores, fetch: pedirFetch = globalThis.fetch,
+                               esperar = esperarMs, ahora = () => Date.now() }){
+  // Cada servidor de la lista, si el anterior no responde (CF bloqueado
+  // durante un partido → el respaldo en Deno; comparten la misma base).
+  // Primero el último que respondió, para no esperar al caído cada vez. Un
+  // bloqueo puede dejar la conexión colgada: por eso el tiempo máximo.
+  let preferido = 0;
+  async function pedir(ruta, opciones){
+    let fallo;
+    const orden = [preferido, ...servidores.keys()].filter((i, n, a) => a.indexOf(i) === n);
+    for (const i of orden){
+      try {
+        const r = await pedirFetch(servidores[i] + ruta,
+                                   { ...opciones, signal: AbortSignal.timeout(TIMEOUT_MS) });
+        preferido = i;
+        return r;
+      } catch (e){ fallo = e; }
+    }
+    throw fallo || new Error('sin servidor');
+  }
+
+  // Si el bloque no cabe, se recortan las leídas (lo que más ocupa). Devuelve
+  // también el documento que de verdad se sube.
+  async function bloqueQueQuepa(clave, documento){
+    let doc = documento;
+    for (let i = 0; i < 4; i++){
+      const bloque = await cifrar(clave, doc);
+      if (bloque.length <= MAX_SUBIDA) return { bloque, doc };
+      const leidas = Object.entries(doc.leidas || {}).sort((x, y) => y[1] - x[1]);
+      doc = { ...doc, leidas: Object.fromEntries(leidas.slice(0, Math.floor(leidas.length / 2))) };
+    }
+    throw new Error('demasiados datos');
+  }
+
+  return {
+    async sincronizar(codigo, local){
+      const { id, token, clave } = await derivar(codigo);
+      const auth = { Authorization: 'Bearer ' + token };
+      for (let i = 0; i < INTENTOS; i++){
+        const r = await pedir(`/v1/s/${id}`, { headers: auth, cache: 'no-store' });
+        let remoto = null, version = 0;
+        if (r.status === 200){
+          version = Number(r.headers.get('X-Version')) || 0;
+          remoto = await descifrar(clave, await r.arrayBuffer());
+        } else if (r.status !== 404){
+          throw new Error('servidor ' + r.status);
+        }
+
+        const documento = fusionarDocumento(local, remoto, ahora());
+        if (remoto && huella(documento) === huella(fusionarDocumento(remoto, null, ahora()))){
+          return { documento, subido: false };
+        }
+        const { bloque, doc } = await bloqueQueQuepa(clave, documento);
+        const p = await pedir(`/v1/s/${id}`, {
+          method: 'PUT',
+          headers: { ...auth, 'If-Match': String(version), 'Content-Type': 'application/octet-stream' },
+          body: bloque,
+        });
+        if (p.status === 200) return { documento: doc, subido: true };
+        if (p.status === 409) continue;                      // otro escribió antes
+        if (p.status === 429){ await esperar(2100); continue; }
+        throw new Error('servidor ' + p.status);
+      }
+      throw new Error('demasiados conflictos');
+    },
+
+    async borrar(codigo){
+      const { id, token } = await derivar(codigo);
+      const r = await pedir(`/v1/s/${id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+      if (r.status !== 204) throw new Error('servidor ' + r.status);
+    },
   };
 }
 
@@ -797,6 +1019,17 @@ function importarServicios(data){
    ============================================================ */
 const I18N = {
   es: {
+    syncSoloEnVoceiro: 'El código se escribe en Voceiro (Ajustes › Lector), no encima de otra web, que podría leerlo.',
+    syncTitle: 'Sincronización',
+    syncOff: 'Sin sincronizar. Con Voceiro abierto en este navegador se activa sola, con su código.',
+    syncFromVoceiro: 'Activa, con el código de Voceiro.', syncManual: 'Activa, con un código escrito a mano.',
+    syncLast: 'Última vez:', syncNever: 'Aún no se ha sincronizado.', syncFailed: 'La última vez falló',
+    syncHereVoceiro: 'En esta página sincroniza Voceiro.',
+    syncNoHttps: 'En páginas sin https no se puede sincronizar.', syncCodePh: 'Código de sincronización',
+    syncUse: 'Usar', syncNow: 'Sincronizar ahora', syncUnlink: 'Dejar de sincronizar',
+    syncUnlinkConfirm: '¿Dejar de sincronizar el lector? Si el código vino de Voceiro, vuelve al abrirlo: para dejarlo del todo, desvincula también allí.',
+    syncInvalid: 'Ese código no es válido.',
+    syncHint: 'El mismo código que en Voceiro (Ajustes › Sincronización). Lleva Pendientes, leídas, perfil y esta configuración a tus otros dispositivos, cifrado. Si Voceiro tiene otro código, manda el suyo.',
     saveToPending: 'Guardar en pendientes',
     saveRemove: 'Quitar de pendientes',
     movedToPending: 'Movida a pendientes',
@@ -989,6 +1222,17 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible en el botón flotante',
   },
   gl: {
+    syncSoloEnVoceiro: 'O código escríbese en Voceiro (Axustes › Lector), non enriba doutra web, que podería lelo.',
+    syncTitle: 'Sincronización',
+    syncOff: 'Sen sincronizar. Con Voceiro aberto neste navegador actívase soa, co seu código.',
+    syncFromVoceiro: 'Activa, co código de Voceiro.', syncManual: 'Activa, cun código escrito a man.',
+    syncLast: 'Última vez:', syncNever: 'Aínda non se sincronizou.', syncFailed: 'A última vez fallou',
+    syncHereVoceiro: 'Nesta páxina sincroniza Voceiro.',
+    syncNoHttps: 'Nas páxinas sen https non se pode sincronizar.', syncCodePh: 'Código de sincronización',
+    syncUse: 'Usar', syncNow: 'Sincronizar agora', syncUnlink: 'Deixar de sincronizar',
+    syncUnlinkConfirm: 'Deixar de sincronizar o lector? Se o código veu de Voceiro, volve ao abrilo: para deixalo de todo, desvincula tamén alí.',
+    syncInvalid: 'Ese código non é válido.',
+    syncHint: 'O mesmo código que en Voceiro (Axustes › Sincronización). Leva Pendentes, lidas, perfil e esta configuración aos teus outros dispositivos, cifrado. Se Voceiro ten outro código, manda o seu.',
     saveToPending: 'Gardar en pendentes',
     saveRemove: 'Quitar de pendentes',
     movedToPending: 'Movida a pendentes',
@@ -1181,6 +1425,17 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible no botón flotante',
   },
   ca: {
+    syncSoloEnVoceiro: 'El codi s’escriu a Voceiro (Configuració › Lector), no a sobre d’una altra web, que el podria llegir.',
+    syncTitle: 'Sincronització',
+    syncOff: 'Sense sincronitzar. Amb Voceiro obert en aquest navegador s’activa sola, amb el seu codi.',
+    syncFromVoceiro: 'Activa, amb el codi de Voceiro.', syncManual: 'Activa, amb un codi escrit a mà.',
+    syncLast: 'Última vegada:', syncNever: 'Encara no s’ha sincronitzat.', syncFailed: 'L’última vegada va fallar',
+    syncHereVoceiro: 'En aquesta pàgina sincronitza Voceiro.',
+    syncNoHttps: 'A les pàgines sense https no es pot sincronitzar.', syncCodePh: 'Codi de sincronització',
+    syncUse: 'Fer servir', syncNow: 'Sincronitza ara', syncUnlink: 'Deixa de sincronitzar',
+    syncUnlinkConfirm: 'Vols deixar de sincronitzar el lector? Si el codi venia de Voceiro, torna en obrir-lo: per deixar-ho del tot, desvincula també allà.',
+    syncInvalid: 'Aquest codi no és vàlid.',
+    syncHint: 'El mateix codi que a Voceiro (Configuració › Sincronització). Porta Pendents, llegides, perfil i aquesta configuració als teus altres dispositius, xifrat. Si Voceiro té un altre codi, mana el seu.',
     saveToPending: 'Tornar a pendents',
     saveRemove: 'Treure de pendents',
     movedToPending: 'Moguda a pendents',
@@ -1373,6 +1628,16 @@ const I18N = {
     serviciosFabVisible: '«Obre a…» visible al botó flotant',
   },
   en: {
+    syncSoloEnVoceiro: 'Type the code in Voceiro (Settings › Reader), not on top of another site, which could read it.',
+    syncTitle: 'Sync',
+    syncOff: 'Not syncing. With Voceiro open in this browser it turns on by itself, with its code.',
+    syncFromVoceiro: 'On, with Voceiro’s code.', syncManual: 'On, with a code typed by hand.',
+    syncLast: 'Last time:', syncNever: 'Not synced yet.', syncFailed: 'Last attempt failed',
+    syncHereVoceiro: 'On this page, Voceiro does the syncing.', syncNoHttps: 'Pages without https can’t sync.',
+    syncCodePh: 'Sync code', syncUse: 'Use', syncNow: 'Sync now', syncUnlink: 'Stop syncing',
+    syncUnlinkConfirm: 'Stop syncing the reader? If the code came from Voceiro, it comes back when you open it: to stop for good, unlink there too.',
+    syncInvalid: 'That code isn’t valid.',
+    syncHint: 'The same code as in Voceiro (Settings › Sync). It carries Pending, read items, profile and these settings to your other devices, encrypted. If Voceiro has a different code, Voceiro’s wins.',
     saveToPending: 'Move to queue',
     saveRemove: 'Remove from queue',
     movedToPending: 'Moved to queue',
@@ -1565,6 +1830,17 @@ const I18N = {
     serviciosFabVisible: '“Open in…” shown in the floating button',
   },
   eu: {
+    syncSoloEnVoceiro: 'Kodea Voceiron idazten da (Ezarpenak › Irakurgailua), ez beste webgune baten gainean, irakur lezakeelako.',
+    syncTitle: 'Sinkronizazioa',
+    syncOff: 'Sinkronizatu gabe. Voceiro nabigatzaile honetan irekita badago, berez aktibatzen da haren kodearekin.',
+    syncFromVoceiro: 'Aktibo, Voceiroren kodearekin.', syncManual: 'Aktibo, eskuz idatzitako kode batekin.',
+    syncLast: 'Azken aldia:', syncNever: 'Oraindik ez da sinkronizatu.', syncFailed: 'Azken aldian huts egin zuen',
+    syncHereVoceiro: 'Orri honetan Voceirok sinkronizatzen du.',
+    syncNoHttps: 'https gabeko orrietan ezin da sinkronizatu.', syncCodePh: 'Sinkronizazio-kodea',
+    syncUse: 'Erabili', syncNow: 'Sinkronizatu orain', syncUnlink: 'Utzi sinkronizatzeari',
+    syncUnlinkConfirm: 'Irakurgailua sinkronizatzeari utzi? Kodea Voceirotik etorri bazen, hura irekitzean itzultzen da: guztiz uzteko, deskonektatu han ere.',
+    syncInvalid: 'Kode hori ez da baliozkoa.',
+    syncHint: 'Voceiron duzun kode bera (Ezarpenak › Sinkronizazioa). Zain daudenak, irakurritakoak, profila eta konfigurazio hau zure beste gailuetara eramaten ditu, zifratuta. Voceirok beste kode bat badu, harena nagusitzen da.',
     saveToPending: 'Zainera itzuli',
     saveRemove: 'Zainetik kendu',
     movedToPending: 'Zainera mugitua',
@@ -2120,6 +2396,7 @@ function saveCfg(cfg){
   // En la página de Voceiro (sus Ajustes › Lector), un cambio de aquí no
   // llega por alCambiar, que solo oye otras pestañas: se manda directamente.
   if (cambio && esVoceiro()) setTimeout(() => enviarEstado(false), 0);
+  if (cambio) sincronizarLectorPronto();
 }
 let CFG = loadCfg();
 __perfilFirma = firmaPerfilLector(CFG);
@@ -2354,6 +2631,7 @@ function cambiarReadLater(nueva){
   CFG.readLater = fusionarPendientes(nueva, []);
   saveCfg(CFG);
   enviarEstado(false);
+  sincronizarLectorPronto();
 }
 function pendientesVisibles(){
   return (CFG.readLater || []).filter(r => !r.borrado);
@@ -2451,7 +2729,8 @@ function findLaterItem(url){
    aquí (abierto desde donde sea) se le avisa por el puente: leidasParaVoceiro
    es una lista corta de { url, fecha, quitar? } que Voceiro confirma con
    leidasHasta (la fecha más nueva que ya tiene). No viaja a otros
-   dispositivos: allí ya llega por la sincronización de Voceiro. */
+   dispositivos: allí llega por la sincronización, la de Voceiro o la
+   propia del lector (apuntarLeidaEnSync, si hay código). */
 const LEIDAS_AVISO_MAX = 200;
 
 function avisarLeida(url, quitar){
@@ -2459,6 +2738,7 @@ function avisarLeida(url, quitar){
   const aviso = { url: String(url), fecha: ahora };
   if (quitar) aviso.quitar = true;
   CFG.leidasParaVoceiro = [...(CFG.leidasParaVoceiro || []), aviso].slice(-LEIDAS_AVISO_MAX);
+  apuntarLeidaEnSync(url, quitar);
 }
 
 // Lo que Voceiro ya tiene (fecha <= hasta) se quita de la lista.
@@ -2486,6 +2766,7 @@ function marcarLeidaAlTerminar(){
   CFG.readLater = fusionarPendientes(CFG.readLater, []);
   saveCfg(CFG);
   enviarEstado(false);
+  sincronizarLectorPronto();
   return () => {
     if (antes && !antes.read){
       const ahora = findLaterItem(url) || (CFG.readLater || []).find(r => r.url === antes.url);
@@ -2495,6 +2776,7 @@ function marcarLeidaAlTerminar(){
     CFG.readLater = fusionarPendientes(CFG.readLater, []);
     saveCfg(CFG);
     enviarEstado(false);
+    sincronizarLectorPronto();
   };
 }
 
@@ -5685,6 +5967,197 @@ function crearBoton(){
   return host;
 }
 /* ============================================================
+   SINCRONIZACIÓN PROPIA
+   ------------------------------------------------------------
+   El lector es un dispositivo más de la sincronización de Voceiro
+   (shared/sync/cliente.js): el mismo código y el mismo documento.
+   Así lo de aquí llega a los otros dispositivos aunque Voceiro no
+   esté abierto en este navegador.
+   · Documento: se guarda entero (LECTOR_SYNC_DOC_KEY). Lo que el
+     lector no usa (leídas, modos) se conserva y la fusión lo respeta.
+   · Código: el de Voceiro, que llega por el puente y manda (si
+     Voceiro lo quita, se quita aquí el que vino de allí), o uno
+     escrito a mano en Ajustes › General, solo en la página de Voceiro:
+     en otra web, la web podría leerlo.
+   · Cuándo: tras un cambio de aquí (con espera, juntando los
+     seguidos) y al abrir el lector si hace rato de la última vez.
+     Nunca por cargar una página: el lector corre en todas. Si la
+     página se cierra antes de subir, queda apuntado y lo hace la
+     siguiente donde arranque el lector.
+   · Dónde no: sin https (no hay WebCrypto) ni en la página de
+     Voceiro, que sincroniza ella y recibe lo de aquí por el puente.
+   ============================================================ */
+const LECTOR_SYNC_KEY = 'lector-sync';            // { codigo, deVoceiro, cambio, subido, fallo, error }
+const LECTOR_SYNC_DOC_KEY = 'lector-sync-doc';    // el último documento fusionado
+const LECTOR_SYNC_CANDADO_KEY = 'lector-sync-candado';
+const LECTOR_SYNC_ESPERA = 5000;
+const LECTOR_SYNC_AL_ABRIR = 10 * 60 * 1000;
+const LECTOR_SYNC_TRAS_FALLO = 5 * 60 * 1000;
+const LECTOR_SYNC_CANDADO_MS = 3 * 60 * 1000;     // más que el peor caso del cliente
+// var: saveCfg o el puente pueden llamar antes de que se evalúe este bloque.
+var __syncLector = { diferido: null, enCurso: null, otraVez: false, cliente: null,
+                     yo: Math.random().toString(36).slice(2) };
+
+function estadoSyncLector(){
+  const s = PLATAFORMA.leer(LECTOR_SYNC_KEY, null);
+  return s && typeof s === 'object' ? s : {};
+}
+function guardarEstadoSyncLector(cambio){
+  PLATAFORMA.guardar(LECTOR_SYNC_KEY, { ...estadoSyncLector(), ...cambio });
+}
+function codigoSyncLector(){
+  return limpiarCodigo(estadoSyncLector().codigo || '');
+}
+// subido es cuándo empezó la última que salió bien: un cambio en ese mismo
+// instante puede no haber ido, así que cuenta como pendiente.
+function haySyncSinSubir(s = estadoSyncLector()){
+  return (s.cambio || 0) > 0 && s.cambio >= (s.subido || 0);
+}
+function puedeSincronizarAqui(){
+  return !!(window.isSecureContext && window.crypto && crypto.subtle) && !esVoceiro();
+}
+
+function activarSyncLector(codigo, deVoceiro){
+  const c = limpiarCodigo(codigo);
+  if (!c) return false;
+  const s = estadoSyncLector();
+  if (s.codigo === c && !!s.deVoceiro === !!deVoceiro) return true;
+  // Otro código, otra cuenta: lo guardado de la anterior no se mezcla.
+  if (s.codigo !== c){
+    PLATAFORMA.guardar(LECTOR_SYNC_DOC_KEY, null);
+    PLATAFORMA.guardar(LECTOR_SYNC_KEY, { codigo: c, deVoceiro: !!deVoceiro, cambio: Date.now() });
+  } else {
+    guardarEstadoSyncLector({ deVoceiro: !!deVoceiro });
+  }
+  sincronizarLectorPronto();
+  return true;
+}
+function olvidarSyncLector(){
+  clearTimeout(__syncLector.diferido);
+  PLATAFORMA.guardar(LECTOR_SYNC_KEY, null);
+  PLATAFORMA.guardar(LECTOR_SYNC_DOC_KEY, null);
+}
+// Lo que dice Voceiro por el puente: su código manda. Si no tiene, se
+// quita aquí el que vino de allí; uno escrito a mano se queda.
+function codigoDesdeVoceiro(codigo){
+  const c = codigo ? limpiarCodigo(codigo) : null;
+  if (c) activarSyncLector(c, true);
+  else if (estadoSyncLector().deVoceiro) olvidarSyncLector();
+}
+
+// Un cambio de aquí: se apunta y se sube a los pocos segundos.
+function sincronizarLectorPronto(){
+  if (!codigoSyncLector()) return;
+  guardarEstadoSyncLector({ cambio: Date.now() });
+  if (!puedeSincronizarAqui()) return;
+  clearTimeout(__syncLector.diferido);
+  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+}
+// Al abrir el lector: si queda algo por subir o hace rato de la última vez.
+// Tras un fallo, espera: hay medios que abren el lector solos en cada noticia.
+function sincronizarLectorAlAbrir(){
+  const s = estadoSyncLector();
+  if (Date.now() - (s.fallo || 0) < LECTOR_SYNC_TRAS_FALLO) return;
+  if (haySyncSinSubir(s) || Date.now() - (s.subido || 0) > LECTOR_SYNC_AL_ABRIR) sincronizarLector();
+}
+// Al arrancar en una página: solo si quedó algo por subir (y no acaba de
+// fallar: sin red no se reintenta en cada página).
+function sincronizarLectorSiQuedoAlgo(){
+  const s = estadoSyncLector();
+  if (!haySyncSinSubir(s) || Date.now() - (s.fallo || 0) < LECTOR_SYNC_TRAS_FALLO) return;
+  if (!puedeSincronizarAqui() || !codigoSyncLector()) return;
+  clearTimeout(__syncLector.diferido);
+  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+}
+
+// Entre pestañas, una sola a la vez. No es atómico: si dos coinciden, el
+// servidor (409) lo arregla; esto evita el caso normal.
+function tomarCandadoSync(){
+  const ahora = Date.now();
+  const c = PLATAFORMA.leer(LECTOR_SYNC_CANDADO_KEY, null);
+  if (c && c.quien !== __syncLector.yo && c.hasta > ahora) return false;
+  PLATAFORMA.guardar(LECTOR_SYNC_CANDADO_KEY, { quien: __syncLector.yo, hasta: ahora + LECTOR_SYNC_CANDADO_MS });
+  return true;
+}
+function soltarCandadoSync(){
+  const c = PLATAFORMA.leer(LECTOR_SYNC_CANDADO_KEY, null);
+  if (c && c.quien === __syncLector.yo) PLATAFORMA.guardar(LECTOR_SYNC_CANDADO_KEY, null);
+}
+
+// Las leídas van también con los avisos para Voceiro (11-pendientes.js):
+// si dos pestañas apuntan a la vez en el documento, una puede pisar a la
+// otra; en la cola sigue estando. Gana lo último de cada dirección.
+function documentoDelLector(){
+  const guardado = PLATAFORMA.leer(LECTOR_SYNC_DOC_KEY, null) || {};
+  const leidas = { ...(guardado.leidas || {}) };
+  const avisos = [...(CFG.leidasParaVoceiro || [])].sort((a, b) => a.fecha - b.fecha);
+  for (const l of avisos){
+    const k = normalizeUrlForMatch(l.url);
+    if (!k) continue;
+    if (l.quitar){ if ((leidas[k] || 0) <= l.fecha) delete leidas[k]; }
+    else leidas[k] = Math.max(leidas[k] || 0, l.fecha);
+  }
+  return { ...guardado, v: 1, leidas, pendientes: CFG.readLater || [], perfil: perfilDelLector(),
+           lector: bloqueConfigLector() };
+}
+
+// Con la sincronización activa, lo terminado aquí va también a las leídas
+// del documento: así llega a Voceiro en los otros dispositivos.
+function apuntarLeidaEnSync(url, quitar){
+  const k = normalizeUrlForMatch(url);
+  if (!k || !codigoSyncLector()) return;
+  const doc = PLATAFORMA.leer(LECTOR_SYNC_DOC_KEY, null) || {};
+  const leidas = { ...(doc.leidas || {}) };
+  if (quitar) delete leidas[k];
+  else leidas[k] = Date.now();
+  PLATAFORMA.guardar(LECTOR_SYNC_DOC_KEY, { ...doc, leidas });
+}
+
+async function sincronizarLector(){
+  const codigo = codigoSyncLector();
+  if (!codigo || !puedeSincronizarAqui()) return;
+  // Un cambio mientras va y viene: otra vuelta al terminar.
+  if (__syncLector.enCurso){ __syncLector.otraVez = true; return __syncLector.enCurso; }
+  clearTimeout(__syncLector.diferido);
+  if (!tomarCandadoSync()){
+    __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+    return;
+  }
+  if (!__syncLector.cliente){
+    __syncLector.cliente = crearCliente({ servidores: SERVIDORES_SYNC, fetch: PLATAFORMA.pedir });
+  }
+  __syncLector.enCurso = (async () => {
+    const empezo = Date.now();
+    try {
+      const { documento } = await __syncLector.cliente.sincronizar(codigo, documentoDelLector());
+      if (codigoSyncLector() !== codigo) return;    // lo cambiaron mientras
+      // Las leídas apuntadas mientras iba y venía no se pierden.
+      const ahora = PLATAFORMA.leer(LECTOR_SYNC_DOC_KEY, null) || {};
+      PLATAFORMA.guardar(LECTOR_SYNC_DOC_KEY, { ...documento, leidas: fusionarLeidas(documento.leidas, ahora.leidas) });
+      const antes = JSON.stringify(CFG);
+      adoptarEnLector(documento);
+      if (JSON.stringify(CFG) !== antes){
+        saveCfg(CFG);
+        if (__lectorAbierto) __lectorAbierto.refrescar();
+        actualizarBoton();
+      }
+      guardarEstadoSyncLector({ subido: empezo, fallo: 0, error: '' });
+    } catch(e){
+      // Sin red o con los dos servidores caídos: todo sigue aquí y queda
+      // apuntado; se reintenta con el próximo cambio o al abrir el lector.
+      guardarEstadoSyncLector({ fallo: Date.now(), error: (e && e.message) || String(e) });
+    } finally {
+      soltarCandadoSync();
+      __syncLector.enCurso = null;
+      if (__syncLector.otraVez){
+        __syncLector.otraVez = false;
+        if (haySyncSinSubir()) __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+      }
+    }
+  })();
+  return __syncLector.enCurso;
+}
+/* ============================================================
    23. ACTIVAR LECTOR
    ============================================================ */
 function activateReader(){
@@ -5730,6 +6203,7 @@ function activateReader(){
       return;
     }
     openReader(art);
+    sincronizarLectorAlAbrir();
   } catch(e){
     console.error('[Lector Universal]', e);
     toast(t('noArticle'));
@@ -6467,6 +6941,55 @@ function openSettings(initialTab, opts){
     return { html, wire };
   }
 
+  // Sincronización propia (28-sincronizacion.js). Este panel también se
+  // abre encima de webs ajenas, que pueden leer lo que tiene: el código no
+  // se pinta y solo se escribe en la página de Voceiro (Ajustes › Lector).
+  function htmlSync(){
+    const s = estadoSyncLector();
+    const codigo = codigoSyncLector();
+    const boton = (clase, texto, extra) =>
+      '<button class="' + clase + '"' + (extra || '') + ' style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(texto) + '</button>';
+    let estado = !codigo ? t('syncOff') : t(s.deVoceiro ? 'syncFromVoceiro' : 'syncManual');
+    if (codigo){
+      estado += ' ' + (s.subido ? t('syncLast') + ' ' + new Date(s.subido).toLocaleString(CFG.lang) + '.' : t('syncNever'));
+      if ((s.fallo || 0) > (s.subido || 0)) estado += ' ' + t('syncFailed') + ' (' + (s.error || '?') + ')';
+      if (!puedeSincronizarAqui()) estado += ' ' + t(esVoceiro() ? 'syncHereVoceiro' : 'syncNoHttps');
+    }
+    return '<div style="margin-bottom:18px;padding:14px;border:1px solid var(--btn-border);border-radius:8px">' +
+        '<div style="font-weight:bold;font-size:14px">' + esc(t('syncTitle')) + '</div>' +
+        '<p class="il-set-sync-estado" style="font-size:13px;margin:6px 0 10px">' + esc(estado) + '</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+          (codigo
+            ? boton('il-set-sync-ahora', t('syncNow'), puedeSincronizarAqui() ? '' : ' disabled') +
+              boton('il-set-sync-quitar', t('syncUnlink'))
+            : !esVoceiro() ? '<span style="font-size:13px">' + esc(t('syncSoloEnVoceiro')) + '</span>'
+            : '<input type="text" class="il-set-sync-codigo" autocomplete="off" spellcheck="false" aria-label="' + esc(t('syncCodePh')) + '" placeholder="' + esc(t('syncCodePh')) + '" style="flex:1 1 16em;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-family:monospace">' +
+              boton('il-set-sync-usar', t('syncUse'))) +
+        '</div>' +
+        '<p style="font-size:12px;color:var(--muted);margin:8px 0 0">' + esc(t('syncHint')) + '</p>' +
+      '</div>';
+  }
+  function wireSync(){
+    const usar = box.querySelector('.il-set-sync-usar');
+    if (usar) usar.onclick = () => {
+      const campo = box.querySelector('.il-set-sync-codigo');
+      if (!activarSyncLector(campo.value, false)){ toast(t('syncInvalid'), 2400); campo.focus(); return; }
+      render();
+      sincronizarLector().then(render);
+    };
+    const ahora = box.querySelector('.il-set-sync-ahora');
+    if (ahora) ahora.onclick = () => {
+      ahora.disabled = true;
+      sincronizarLector().then(render);
+    };
+    const quitar = box.querySelector('.il-set-sync-quitar');
+    if (quitar) quitar.onclick = () => {
+      if (!confirm(t('syncUnlinkConfirm'))) return;
+      olvidarSyncLector();
+      render();
+    };
+  }
+
   function renderGeneralTab(){
     const html =
       '<div style="margin-bottom:18px">' +
@@ -6491,6 +7014,7 @@ function openSettings(initialTab, opts){
           '</span>' +
         '</label>' +
       '</div>' +
+      htmlSync() +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px">' +
         '<button class="il-set-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
         '<button class="il-set-import" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('importBtn')) + '</button>' +
@@ -6498,6 +7022,7 @@ function openSettings(initialTab, opts){
       '</div>';
 
     function wire(){
+      wireSync();
       const appLangSel = box.querySelector('.il-set-lang-app');
       if (appLangSel) appLangSel.onchange = e => {
         CFG.lang = e.target.value;
@@ -6556,6 +7081,7 @@ function openSettings(initialTab, opts){
               delete data._version;
               CFG = mergeCfg(DEFAULT_CFG, data);
               saveCfg(CFG);
+              sincronizarLectorPronto();   // saveCfg no mira Pendientes
               render();
             } catch(e){ toast('Error: ' + e.message); }
           };
@@ -6749,6 +7275,7 @@ function shouldActivateHere(){
 
 function init(){
   registerMenus();
+  sincronizarLectorSiQuedoAlgo();
 
   if (isDomainDisabled(location.hostname)) return;
 
@@ -6800,7 +7327,8 @@ document.addEventListener('keydown', globalKeyHandler, true);
      · 'voceiro-ping'   Voceiro → lector; se responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
      · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
-                        leidasHasta}.
+                        leidasHasta, sync}. sync: el código de sincronización
+                        de Voceiro, o null; el lector lo sigue (28-sincronizacion.js).
      · 'lector-estado'  lector → Voceiro {…, leidas}: lo terminado en el lector
                         (11-pendientes.js); Voceiro lo confirma con leidasHasta.
      · 'voceiro-ajustes-lector' Voceiro → lector {v, dominio?}: pinta tus
@@ -6828,6 +7356,23 @@ function comparableEstado(d){
     perfil: limpiarPerfil(d && d.perfil),
     lector: d && d.lector ? { datos: d.lector.datos, actualizado: d.lector.actualizado || 0 } : null
   });
+}
+
+// Lo que llega de fuera (Voceiro por el puente o el servidor de
+// sincronización): Pendientes se fusionan; perfil y configuración, el más
+// reciente. Un perfil sin sellar no se impone: se unifican con el primer cambio.
+function adoptarEnLector(d){
+  CFG.readLater = fusionarPendientes(CFG.readLater, d.pendientes);
+
+  const mio = perfilDelLector();
+  const perfil = fusionarPerfil(mio, d.perfil);
+  if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilAlLector(perfil);
+
+  const mia = bloqueConfigLector();
+  const llega = d.lector;
+  if (llega && llega.datos && (llega.actualizado || 0) > (mia.actualizado || 0)){
+    aplicarBloqueConfig(llega);
+  }
 }
 
 function enviarEstado(respuesta){
@@ -6887,19 +7432,9 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
     const d = e.detail;
     if (!d || typeof d !== 'object' || d.v !== PUENTE_V) return;
 
-    CFG.readLater = fusionarPendientes(CFG.readLater, d.pendientes);
-
-    // Un perfil sin sellar no se impone: se unifican con el primer cambio.
-    const mio = perfilDelLector();
-    const perfil = fusionarPerfil(mio, d.perfil);
-    if (perfil && perfil.actualizado > 0 && huella(perfil) !== huella(mio)) aplicarPerfilAlLector(perfil);
-
-    // Configuración que llega de otro dispositivo: solo si es más nueva.
-    const mia = bloqueConfigLector();
-    const llega = d.lector;
-    if (llega && llega.datos && (llega.actualizado || 0) > (mia.actualizado || 0)){
-      aplicarBloqueConfig(llega);
-    }
+    adoptarEnLector(d);
+    // Un Voceiro anterior no manda el campo: entonces no se toca nada.
+    if ('sync' in d) codigoDesdeVoceiro(d.sync);
 
     // Leídas que Voceiro ya tiene: fuera. Si quedan, se le vuelven a mandar.
     leidasConfirmadas(d.leidasHasta);
