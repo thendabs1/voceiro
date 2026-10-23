@@ -135,6 +135,10 @@
     border-radius: 8px;
     box-shadow: 0 8px 24px var(--shadow);
     min-width: 220px;
+    width: max-content;
+    max-width: min(380px, calc(100vw - 40px));
+    max-height: min(70dvh, 600px);
+    overflow-y: auto;
     padding: 6px;
     z-index: 50;
   }
@@ -155,6 +159,15 @@
     font-weight: 500;
   }
   .preset-item:hover{ background: var(--quote-bg); }
+  .preset-opcion{ display:flex; align-items:center; gap:4px; }
+  .preset-opcion .preset-item{ flex:1; min-width:0; }
+  .preset-item > span:last-child{ min-width:0; overflow-wrap:anywhere; }
+  .preset-editar{
+    display:inline-flex; align-items:center; gap:4px; flex-shrink:0;
+    min-height:44px; padding:8px; border:0;
+    background:transparent; color:var(--accent); font-size:.75em;
+  }
+  .preset-editar:hover{ background:var(--quote-bg); }
   .preset-item.active{
     background: var(--preset-bg);
     color: var(--preset);

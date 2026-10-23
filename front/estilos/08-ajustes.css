@@ -12,7 +12,9 @@
   .aj-nav, .aj-contenido{ display:flex; flex-direction:column; min-height:0; min-width:0; }
   .aj-resize{ display:none; }
   .aj-nav{ flex:1; }
-  .aj-contenido{ flex:1; }
+  .aj-contenido{ flex:1; container:ajustes / inline-size; }
+  .aj-cuerpo{ overflow-wrap:anywhere; overscroll-behavior:contain; }
+  .panel-ajustes :is(button, .boton, select.lang-select){ min-height:40px; }
   .aj-secciones{ display:flex; flex-direction:column; gap:2px; padding:10px 8px; overflow-y:auto; flex:1; min-height:0; }
   .aj-secciones button{
     display:flex; align-items:center; gap:12px;
@@ -21,6 +23,7 @@
     font-size:.9em; font-weight:500; text-align:left;
   }
   .aj-secciones button:hover{ background:var(--quote-bg); filter:none; }
+  .aj-secciones button > span{ min-width:0; overflow-wrap:anywhere; }
   .aj-secciones button[aria-current="page"]{ background:var(--quote-bg); font-weight:700; }
   .aj-secciones .aj-flecha{ margin-left:auto; color:var(--muted); }
   .aj-nav-pie{
@@ -45,7 +48,7 @@
   }
   .aj-pagina[hidden]{ display:none; }
   .aj-cuerpo h3:first-child{ border-top:none; padding-top:0; margin-top:0; }
-  .aj-hint{ font-size:.68em; color:var(--muted); margin:0 0 8px; line-height:1.45; }
+  .aj-hint{ font-size:.78em; color:var(--muted); margin:0 0 8px; line-height:1.45; }
   /* Hueco donde el lector pinta su panel de ajustes (página Lector) */
   .aj-lector-panel{ margin-top:12px; font-size:16px; }
   .sync-acciones{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
@@ -75,6 +78,7 @@
   .aj-modo-nombre{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .aj-modo-resumen{ font-size:.82em; color:var(--muted); }
   .aj-modo-fila > .ico{ color:var(--muted); }
+  .aj-modo-editar{ display:inline-flex; align-items:center; gap:4px; color:var(--accent); font-size:.85em; }
   .aj-activo{
     display:inline-flex; align-items:center; gap:4px;
     padding:2px 8px; border-radius:10px;
@@ -143,6 +147,23 @@
   .aj-atajos{ display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:.78em; margin:0; }
   .aj-atajos dt{ font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:700; }
   .aj-atajos dd{ margin:0; color:var(--muted); }
+
+  @container ajustes (max-width: 520px){
+    .ctrl-medios{ grid-template-columns:minmax(0, 1fr); }
+    .aj-bloque > summary{ flex-wrap:wrap; }
+    .aj-bloque .aj-n{ flex-basis:100%; font-size:.9em; }
+    .aj-bloque > summary::after{ position:absolute; right:16px; top:18px; }
+    .aj-bloque > summary{ position:relative; padding-right:36px; }
+    .backup-box .msg{ min-width:0; flex-basis:100%; }
+    .aj-modo-fila{ flex-wrap:wrap; }
+  }
+  @container ajustes (max-width: 400px){
+    .medio-fila{ grid-template-columns:minmax(0, 1fr); }
+    .aj-atras span{ display:none; }
+    .aj-bloque{ padding-left:10px; padding-right:10px; }
+    .aj-bloque > summary{ margin-left:-10px; margin-right:-10px; padding-left:10px; }
+    .list-grupos{ padding:4px; }
+  }
 
   @media (max-width: 819.98px){
     .panel-ajustes[data-ruta=""] .aj-contenido{ display:none; }

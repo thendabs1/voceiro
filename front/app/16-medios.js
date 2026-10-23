@@ -147,7 +147,8 @@ function renderListaGrupos(p){
 function renderListaMedios(){
   const cont = $('#lista-medios');
   const modo = modoEnPanel();
-  const { buckets, supers } = bucketPorSuper(MEDIOS_UNICOS, m => m.grupo);
+  const medios = mediosDelPanel(modo);
+  const { buckets, supers } = bucketPorSuper(medios, m => m.grupo);
 
   let html = '';
   supers.forEach(s => {
@@ -168,17 +169,16 @@ function renderListaMedios(){
              data-grupo="${escapeHtml(m.grupo)}"
              data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
-          <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-            <input type="checkbox" class="chk-incluir" ${overrideIncluye(mode) ? 'checked' : ''}><span>${ico('check')}</span>
-          </label>
-          <button type="button" class="medio-favorito" aria-label="${escapeHtml(t('forceFavorite'))}"
-                  title="${escapeHtml(t('forceFavorite'))}" aria-pressed="${mode === 'first'}">${ico('star')}</button>
-          <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
-            <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>${ico('ban')}</span>
-          </label>
-          <span class="celda celda-dominio"><code>${escapeHtml(m.dominio)}</code></span>
-          <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
-          <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
+          <span class="medio-identidad">
+            <strong>${escapeHtml(m.medio)}</strong>
+            <span class="medio-dominio">${escapeHtml(m.dominio)}</span>
+            <small>${escapeHtml(m.grupo)}</small>
+          </span>
+          <select class="medio-estado" aria-label="${escapeHtml(t('cfgEstadoMedio', { X: m.medio }))}">
+            ${['', 'include', 'first', 'ignore'].map(v =>
+              `<option value="${v}"${mode === v ? ' selected' : ''}>${escapeHtml(t(MEDIO_ESTADOS[v]))}</option>`
+            ).join('')}
+          </select>
         </div>`;
     });
   });
@@ -186,32 +186,45 @@ function renderListaMedios(){
   filtrarMedios();
 }
 
-function marca(fila){
-  const inc = fila.querySelector('.chk-incluir').checked;
-  const ign = fila.querySelector('.chk-ignorar').checked;
-  fila.classList.toggle('estado-incluir', inc);
-  fila.classList.toggle('estado-ignorar', ign);
-  actualizarResumen();
+const MEDIO_ESTADOS = {
+  '': 'cfgMedioAutomatico', include: 'cfgMedioIncluir', first: 'cfgMedioDestacar', ignore: 'cfgMedioBloquear',
+};
+
+// Los dominios añadidos a mano se editan en la misma lista que el catálogo.
+function mediosDelPanel(modo){
+  const conocidos = new Set(MEDIOS_UNICOS.map(m => m.dominio));
+  const extras = Object.keys((modo && modo.overrides) || {}).filter(d => !conocidos.has(d))
+    .map(d => ({ dominio: d, medio: d, grupo: t('cfgMediosOtros') }));
+  return [...MEDIOS_UNICOS, ...extras];
 }
 function actualizarFilaMedio(dominio, modo){
   const fila = [...document.querySelectorAll('#lista-medios .medio-fila')]
     .find(f => f.dataset.dominio === dominio);
   if (!fila){ actualizarResumen(); return; }
   const estado = getOverride(dominio, modo);
-  fila.querySelector('.chk-incluir').checked = overrideIncluye(estado);
-  fila.querySelector('.chk-ignorar').checked = estado === 'ignore';
-  fila.querySelector('.medio-favorito').setAttribute('aria-pressed', String(estado === 'first'));
-  marca(fila);
+  if (!estado && !MEDIOS_UNICOS.some(m => m.dominio === dominio)){
+    fila.remove();
+    filtrarMedios();
+    return;
+  }
+  fila.querySelector('.medio-estado').value = estado;
+  fila.classList.toggle('estado-incluir', overrideIncluye(estado));
+  fila.classList.toggle('estado-ignorar', estado === 'ignore');
+  filtrarMedios();
 }
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
   const g = $('#filtro-grupo-medio').value;
+  const estado = $('#filtro-estado-medio').value;
+  const modo = modoEnPanel();
   let visibles = 0;
 
   document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
     const okQ = !q || f.dataset.buscar.includes(q);
     const okG = !g || f.dataset.grupo === g;
-    const show = okQ && okG;
+    const valor = getOverride(f.dataset.dominio, modo);
+    const okEstado = !estado || (estado === 'configurados' ? !!valor : valor === estado);
+    const show = okQ && okG && okEstado;
     f.style.display = show ? '' : 'none';
     if (show) visibles++;
   });
@@ -232,6 +245,7 @@ function filtrarMedios(){
 
   actualizarResumen(visibles);
   actualizarAddBar(visibles);
+  $('#medios-vacio').hidden = visibles > 0;
 }
 
 function actualizarAddBar(visibles){
@@ -251,7 +265,8 @@ function actualizarAddBar(visibles){
   const modo     = modoEnPanel();
   const yaEsta   = !!(modo && modo.overrides && modo.overrides[dom]);
 
-  if (!raw || !esValido || visibles > 0 || yaEsta){
+  const enCatalogo = MEDIOS_UNICOS.some(m => m.dominio === dom);
+  if (!raw || !esValido || visibles > 0 || yaEsta || enCatalogo){
     bar.hidden = true;
     return;
   }
@@ -260,7 +275,7 @@ function actualizarAddBar(visibles){
   bar.hidden = false;
 }
 function actualizarResumen(visiblesOverride){
-  const total = MEDIOS_UNICOS.length;
+  const total = mediosDelPanel(modoEnPanel()).length;
   const visibles = visiblesOverride != null
     ? visiblesOverride
     : document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;

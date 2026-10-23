@@ -455,7 +455,7 @@ function abrirTiempo(){
 // Pestañas y ajustes, en el panel del tiempo y en el de avisos.
 function pulsarPestanaTiempo(b){
   if (b.classList.contains('tiempo-cerrar')) ponerTiempo('');
-  else if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
+  else if (b.classList.contains('tiempo-ajustes')) abrirAjustes('feed');
   else if (b.dataset.ir === 'avisos') ponerTiempo('alertas:');
   else if (b.dataset.ir === 'sitios') abrirSitios();
 }

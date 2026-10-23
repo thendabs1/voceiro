@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=cc9ddd2793';
+} from './parser.js?v=acb595ebc3';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=cc9ddd2793';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=cc9ddd2793';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=cc9ddd2793';
-import { comparador } from './busqueda/orden.js?v=cc9ddd2793';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=acb595ebc3';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=acb595ebc3';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=acb595ebc3';
+import { comparador } from './busqueda/orden.js?v=acb595ebc3';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=cc9ddd2793';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=cc9ddd2793';
+} from './sync/fusion.js?v=acb595ebc3';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=acb595ebc3';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=cc9ddd2793';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=cc9ddd2793';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=acb595ebc3';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=acb595ebc3';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=cc9ddd2793';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=acb595ebc3';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=cc9ddd2793';
+} from './tiempo/avisos.js?v=acb595ebc3';
 
-import { I18N, traducir } from './idiomas/index.js?v=cc9ddd2793';
+import { I18N, traducir } from './idiomas/index.js?v=acb595ebc3';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -877,10 +877,11 @@ function renderPresetMenu(){
   let html = '';
   lista.forEach(p => {
     const isActive = PRESET_ACTIVO && p.id === activo;
-    html += `<button type="button" class="preset-item${isActive ? ' active' : ''}" data-preset-id="${escapeHtml(p.id)}">
+    html += `<div class="preset-opcion"><button type="button" class="preset-item${isActive ? ' active' : ''}" data-preset-id="${escapeHtml(p.id)}" aria-pressed="${!!isActive}">
       <span class="preset-check">${ico('check')}</span>
       <span>${escapeHtml(p.nombre)}</span>
-    </button>`;
+    </button><button type="button" class="preset-editar" data-editar-modo="${escapeHtml(p.id)}"
+      aria-label="${escapeHtml(t('ajEditarModo', { X: p.nombre }))}">${ico('pencil')}<span>${escapeHtml(t('ajModoEditar'))}</span></button></div>`;
   });
 
   if (!lista.some(p => presetTieneReglas(p))){
@@ -907,6 +908,14 @@ function renderPresetMenu(){
   </button>`;
 
   menu.innerHTML = html;
+  menu.querySelectorAll('[data-editar-modo]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      cerrarPresetMenu();
+      abrirAjustes('modos');
+      ajEditarModo(btn.dataset.editarModo);
+    });
+  });
 
   menu.querySelectorAll('.preset-item').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -919,8 +928,8 @@ function renderPresetMenu(){
       }
       if (id === '__empezar'){
         cerrarPresetMenu();
-        MODO_EDITADO = PRESETS.activo;
-        abrirAjustes('modo');
+        abrirAjustes('modos');
+        ajEditarModo(PRESETS.activo);
         return;
       }
       if (id === '__temas'){
@@ -941,17 +950,8 @@ function renderPresetMenu(){
         cerrarPresetMenu();
         return;
       }
-      const target = PRESETS.lista.find(p => p.id === id);
-      if (!target) return;
-      PRESETS.activo = id;
-      PRESET = target;
-      PRESET_ACTIVO = true;
-      guardarPresets();
-      guardarPresetActivo();
-      recompilarPreset();
-      actualizarBotonPreset();
-      aplicarFiltros();
       cerrarPresetMenu();
+      activarModo(id);
     });
   });
 }
@@ -972,8 +972,10 @@ function cerrarPresetMenu(){
   const menu = $('#preset-menu');
   const btn  = $('#btn-preset');
   if (!menu) return;
+  const devolverFoco = menu.contains(document.activeElement);
   menu.style.display = 'none';
   if (btn) btn.setAttribute('aria-expanded', 'false');
+  if (devolverFoco && btn) btn.focus({ preventScroll: true });
   document.removeEventListener('mousedown', _presetOutsideClick, true);
   document.removeEventListener('keydown', _presetEscKey, true);
 }
@@ -3447,7 +3449,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=cc9ddd2793')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=acb595ebc3')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -3868,7 +3870,7 @@ function abrirTiempo(){
 // Pestañas y ajustes, en el panel del tiempo y en el de avisos.
 function pulsarPestanaTiempo(b){
   if (b.classList.contains('tiempo-cerrar')) ponerTiempo('');
-  else if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
+  else if (b.classList.contains('tiempo-ajustes')) abrirAjustes('feed');
   else if (b.dataset.ir === 'avisos') ponerTiempo('alertas:');
   else if (b.dataset.ir === 'sitios') abrirSitios();
 }
@@ -4293,7 +4295,8 @@ function renderListaGrupos(p){
 function renderListaMedios(){
   const cont = $('#lista-medios');
   const modo = modoEnPanel();
-  const { buckets, supers } = bucketPorSuper(MEDIOS_UNICOS, m => m.grupo);
+  const medios = mediosDelPanel(modo);
+  const { buckets, supers } = bucketPorSuper(medios, m => m.grupo);
 
   let html = '';
   supers.forEach(s => {
@@ -4314,17 +4317,16 @@ function renderListaMedios(){
              data-grupo="${escapeHtml(m.grupo)}"
              data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
-          <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-            <input type="checkbox" class="chk-incluir" ${overrideIncluye(mode) ? 'checked' : ''}><span>${ico('check')}</span>
-          </label>
-          <button type="button" class="medio-favorito" aria-label="${escapeHtml(t('forceFavorite'))}"
-                  title="${escapeHtml(t('forceFavorite'))}" aria-pressed="${mode === 'first'}">${ico('star')}</button>
-          <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
-            <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>${ico('ban')}</span>
-          </label>
-          <span class="celda celda-dominio"><code>${escapeHtml(m.dominio)}</code></span>
-          <span class="celda celda-nombre">${escapeHtml(m.medio)}</span>
-          <span class="celda celda-grupo">${escapeHtml(m.grupo)}</span>
+          <span class="medio-identidad">
+            <strong>${escapeHtml(m.medio)}</strong>
+            <span class="medio-dominio">${escapeHtml(m.dominio)}</span>
+            <small>${escapeHtml(m.grupo)}</small>
+          </span>
+          <select class="medio-estado" aria-label="${escapeHtml(t('cfgEstadoMedio', { X: m.medio }))}">
+            ${['', 'include', 'first', 'ignore'].map(v =>
+              `<option value="${v}"${mode === v ? ' selected' : ''}>${escapeHtml(t(MEDIO_ESTADOS[v]))}</option>`
+            ).join('')}
+          </select>
         </div>`;
     });
   });
@@ -4332,32 +4334,45 @@ function renderListaMedios(){
   filtrarMedios();
 }
 
-function marca(fila){
-  const inc = fila.querySelector('.chk-incluir').checked;
-  const ign = fila.querySelector('.chk-ignorar').checked;
-  fila.classList.toggle('estado-incluir', inc);
-  fila.classList.toggle('estado-ignorar', ign);
-  actualizarResumen();
+const MEDIO_ESTADOS = {
+  '': 'cfgMedioAutomatico', include: 'cfgMedioIncluir', first: 'cfgMedioDestacar', ignore: 'cfgMedioBloquear',
+};
+
+// Los dominios añadidos a mano se editan en la misma lista que el catálogo.
+function mediosDelPanel(modo){
+  const conocidos = new Set(MEDIOS_UNICOS.map(m => m.dominio));
+  const extras = Object.keys((modo && modo.overrides) || {}).filter(d => !conocidos.has(d))
+    .map(d => ({ dominio: d, medio: d, grupo: t('cfgMediosOtros') }));
+  return [...MEDIOS_UNICOS, ...extras];
 }
 function actualizarFilaMedio(dominio, modo){
   const fila = [...document.querySelectorAll('#lista-medios .medio-fila')]
     .find(f => f.dataset.dominio === dominio);
   if (!fila){ actualizarResumen(); return; }
   const estado = getOverride(dominio, modo);
-  fila.querySelector('.chk-incluir').checked = overrideIncluye(estado);
-  fila.querySelector('.chk-ignorar').checked = estado === 'ignore';
-  fila.querySelector('.medio-favorito').setAttribute('aria-pressed', String(estado === 'first'));
-  marca(fila);
+  if (!estado && !MEDIOS_UNICOS.some(m => m.dominio === dominio)){
+    fila.remove();
+    filtrarMedios();
+    return;
+  }
+  fila.querySelector('.medio-estado').value = estado;
+  fila.classList.toggle('estado-incluir', overrideIncluye(estado));
+  fila.classList.toggle('estado-ignorar', estado === 'ignore');
+  filtrarMedios();
 }
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
   const g = $('#filtro-grupo-medio').value;
+  const estado = $('#filtro-estado-medio').value;
+  const modo = modoEnPanel();
   let visibles = 0;
 
   document.querySelectorAll('#lista-medios .medio-fila').forEach(f => {
     const okQ = !q || f.dataset.buscar.includes(q);
     const okG = !g || f.dataset.grupo === g;
-    const show = okQ && okG;
+    const valor = getOverride(f.dataset.dominio, modo);
+    const okEstado = !estado || (estado === 'configurados' ? !!valor : valor === estado);
+    const show = okQ && okG && okEstado;
     f.style.display = show ? '' : 'none';
     if (show) visibles++;
   });
@@ -4378,6 +4393,7 @@ function filtrarMedios(){
 
   actualizarResumen(visibles);
   actualizarAddBar(visibles);
+  $('#medios-vacio').hidden = visibles > 0;
 }
 
 function actualizarAddBar(visibles){
@@ -4397,7 +4413,8 @@ function actualizarAddBar(visibles){
   const modo     = modoEnPanel();
   const yaEsta   = !!(modo && modo.overrides && modo.overrides[dom]);
 
-  if (!raw || !esValido || visibles > 0 || yaEsta){
+  const enCatalogo = MEDIOS_UNICOS.some(m => m.dominio === dom);
+  if (!raw || !esValido || visibles > 0 || yaEsta || enCatalogo){
     bar.hidden = true;
     return;
   }
@@ -4406,7 +4423,7 @@ function actualizarAddBar(visibles){
   bar.hidden = false;
 }
 function actualizarResumen(visiblesOverride){
-  const total = MEDIOS_UNICOS.length;
+  const total = mediosDelPanel(modoEnPanel()).length;
   const visibles = visiblesOverride != null
     ? visiblesOverride
     : document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
@@ -4423,8 +4440,8 @@ function actualizarResumen(visiblesOverride){
    AJ_PILA son las páginas abiertas, de la primera a la visible. Cada una
    tiene su paso en el historial (history.pushState): el botón atrás del
    móvil sube un nivel y al final cierra Ajustes, en vez de salir de la web.
-   Rutas: '' (lista de secciones, solo en móvil), 'modos', 'modo' (el de
-   MODO_EDITADO), 'lectura', 'feed', 'avanzado', 'ayuda'.
+   Rutas: '' (lista de secciones, solo en móvil), las de AJ_SECCIONES
+   y 'modo' (el de MODO_EDITADO).
    ═══════════════════════════════════════════════════════════════ */
 const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
@@ -4435,6 +4452,7 @@ let AJ_PILA = [];             // vacía = Ajustes cerrado
 let MODO_EDITADO = null;      // id del modo de la página 'modo'
 let _ajPendiente = null;      // sección que mostrar al volver atrás en el historial
 let _ajSinReglas = new Set(); // modos vacíos al abrir (ver ajActivarAlCerrar)
+let _ajOrigen = null;
 
 function ajEsMovil(){ return window.matchMedia('(max-width: 819.98px)').matches; }
 function ajAbierto(){ return AJ_PILA.length > 0; }
@@ -4510,6 +4528,8 @@ function abrirAjustes(ruta){
     else ajIrSeccion(ruta);
     return;
   }
+  _ajOrigen = document.activeElement;
+  cerrarPresetMenu();
   abrirPanel('panel-ajustes');
   AJ_PILA = [ruta];
   if (ruta !== 'modo') MODO_EDITADO = null;
@@ -4584,6 +4604,10 @@ function ajCerrarVista(){
   _ajPendiente = null;
   cerrarPanel('panel-ajustes');
   ajActivarAlCerrar();
+  const origen = _ajOrigen && _ajOrigen.isConnected && _ajOrigen.getClientRects().length
+    ? _ajOrigen : $('#btn-config');
+  origen.focus({ preventScroll: true });
+  _ajOrigen = null;
 }
 
 // Muestra la página de la ruta visible y la rellena.
@@ -4607,6 +4631,9 @@ function ajPintar(){
   const cuerpo = panel.querySelector('.aj-cuerpo');
   if (cuerpo) cuerpo.scrollTop = 0;
   ajRefrescar();
+  panel.setAttribute('aria-labelledby', ruta ? 'aj-titulo-pagina' : 'aj-titulo');
+  const titulo = ruta ? $('#aj-titulo-pagina') : $('#aj-titulo');
+  titulo.focus({ preventScroll: true });
 }
 
 // Repinta la página visible con los datos actuales. Se llama tras cualquier
@@ -4618,9 +4645,11 @@ function ajRefrescar(){
   const modo = modoEnPanel();
   $('#aj-titulo-pagina').textContent = ruta === 'modo' ? modo.nombre : t(AJ_TITULOS[ruta] || 'ajTitulo');
   $('#aj-atras-lbl').textContent = t(ruta === 'modo' ? 'ajModos' : 'ajTitulo');
+  $('#aj-atras').setAttribute('aria-label', $('#aj-atras-lbl').textContent);
   if (ruta === 'modos') renderListaModos();
   else if (ruta === 'modo') pintarModo();
-  else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); renderDiasSelector(); }
+  else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); }
+  else if (ruta === 'avanzado') renderDiasSelector();
   else if (ruta === 'sync') ajPintarSync();
   else if (ruta === 'lector') ajPintarLector();
 }
@@ -4671,14 +4700,20 @@ function renderListaModos(){
         <span class="aj-modo-resumen">${escapeHtml(resumenModo(p))}</span>
       </span>
       ${activo ? `<span class="aj-activo">${escapeHtml(t('ajModoActivo'))}</span>` : ''}
-      ${ico('chevron-right')}
+      <span class="aj-modo-editar">${escapeHtml(t('ajModoEditar'))}${ico('chevron-right')}</span>
     </button>`;
   }).join('');
 }
 function ajEditarModo(id){
+  ajGuardarTemas();
   MODO_EDITADO = id;
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
+  $('#filtro-estado-medio').value = '';
+  $('#ov-pegar').value = '';
+  $('#aj-bloque-temas').open = true;
+  $('#aj-bloque-medios').open = true;
+  $('#aj-bloque-grupos').open = false;
   if (ajRuta() === 'modo') ajPintar();
   else ajEmpujar('modo');
 }
@@ -4701,22 +4736,8 @@ function pintarModo(){
     ta.dataset.modoId = modo.id;
   }
   renderListaGrupos(modo);
-  renderOverridesModo(modo);
   renderListaMedios();
   ajContadores(modo);
-}
-function renderOverridesModo(modo){
-  const ovList = $('#ov-list');
-  if (!ovList) return;
-  ovList.innerHTML = Object.entries(modo.overrides || {}).map(([d, v]) =>
-    `<span class="ov-item ${v}">
-      <span>${escapeHtml(d)}</span>
-      ${overrideIncluye(v) ? `<button class="ov-favorito" data-dom="${escapeHtml(d)}" type="button"
-        title="${escapeHtml(t('forceFavorite'))}" aria-label="${escapeHtml(t('forceFavorite'))}"
-        aria-pressed="${v === 'first'}">${ico('star')}</button>` : ''}
-      <button class="ov-quitar" data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
-    </span>`
-  ).join('');
 }
 function ajContadores(modo){
   $('#aj-temas-n').textContent = '· ' + compilarTemas(parseLista($('#aj-temas').value)).length;
@@ -4747,6 +4768,9 @@ function ajModoCambiado(modo){
   if (ajRuta() === 'modo'){
     ajContadores(modo);
     $('#aj-modo-pista').hidden = presetTieneReglas(modo);
+    const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
+    $('#aj-modo-estado').hidden = !activo;
+    $('#aj-modo-activar').hidden = activo;
   }
 }
 
@@ -6707,8 +6731,8 @@ function wireResultadosDelegation(){
     const vacioBtn = e.target.closest('[data-vacio]');
     if (vacioBtn){
       if (vacioBtn.dataset.vacio === 'editar'){
-        MODO_EDITADO = PRESETS.activo;
-        abrirAjustes('modo');
+        abrirAjustes('modos');
+        ajEditarModo(PRESETS.activo);
       } else {
         PRESET_ACTIVO = false;
         guardarPresetActivo();
@@ -7010,7 +7034,7 @@ function aplicarTextos(){
     return `<li><code>${escapeHtml(ej)}</code> → ${escapeHtml(txt || '')}</li>`;
   }).join('');
   $('#cfg-medios').textContent = t('cfgMedios');
-  $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
+  $('#aj-guardado').textContent = t('ajGuardadoAutomatico');
   $('#ov-add-include').textContent = t('cfgMedioAddForce');
   $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
@@ -7018,6 +7042,19 @@ function aplicarTextos(){
   if (det) det.textContent = t('cfgOverridePegar');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#filtro-medio').placeholder = t('cfgBuscarMedio');
+  $('#filtro-medio').setAttribute('aria-label', t('cfgBuscarMedio'));
+  $('#filtro-grupo-medio').setAttribute('aria-label', t('cfgTodosGrupos'));
+  const estados = $('#filtro-estado-medio');
+  const estadoActual = estados.value;
+  estados.setAttribute('aria-label', t('cfgFiltrarEstado'));
+  estados.innerHTML = [
+    ['', 'cfgMediosTodos'], ['configurados', 'cfgMediosConfigurados'],
+    ['include', 'cfgMedioIncluir'], ['first', 'cfgMedioDestacar'], ['ignore', 'cfgMedioBloquear'],
+  ].map(([v, k]) => `<option value="${v}">${escapeHtml(t(k))}</option>`).join('');
+  estados.value = estadoActual;
+  $('#medios-vacio').textContent = t('cfgMediosVacio');
+  $('#aj-temas').setAttribute('aria-labelledby', 'aj-temas-tit');
+  $('#ov-pegar').setAttribute('aria-label', t('cfgOverridePegar'));
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-grupos').textContent = t('cfgGrupos');
   $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
@@ -7330,7 +7367,22 @@ function wireAjustes(){
   const panel = $('#panel-ajustes');
   if (!panel) return;
   ajPrepararAncho();
+  window.matchMedia('(max-width: 819.98px)').addEventListener('change', () => {
+    if (ajAbierto()){ ajGuardarTemas(); ajPintar(); }
+  });
   window.addEventListener('popstate', ajPopstate);
+  panel.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const controles = [...panel.querySelectorAll('button, input, select, textarea, summary, [tabindex="0"]')]
+      .filter(el => !el.disabled && el.getClientRects().length);
+    const primero = controles[0], ultimo = controles[controles.length - 1];
+    if (!primero) return;
+    if (e.shiftKey && (document.activeElement === primero || document.activeElement.tabIndex < 0)){
+      e.preventDefault(); ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo){
+      e.preventDefault(); primero.focus();
+    }
+  });
   // Si se recargó con Ajustes abierto, el paso del historial queda huérfano.
   if (history.state && history.state.aj) history.replaceState(null, '');
 
@@ -7371,21 +7423,6 @@ function wireAjustes(){
       .map(c => c.dataset.grupo);
     guardarPresets();
     ajModoCambiado(modo);
-  });
-  $('#ov-list').addEventListener('click', e => {
-    const b = e.target.closest('button[data-dom]');
-    const modo = modoEnPanel();
-    if (!b || !modo) return;
-    if (b.classList.contains('ov-favorito')){
-      setOverride(b.dataset.dom, getOverride(b.dataset.dom, modo) === 'first' ? 'include' : 'first', modo);
-      actualizarFilaMedio(b.dataset.dom, modo);
-      renderOverridesModo(modo);
-      ajModoCambiado(modo);
-      return;
-    }
-    setOverride(b.dataset.dom, '', modo);
-    ajModoCambiado(modo);
-    pintarModo();
   });
 
   // ── Feed: mismo estado que el panel Filtros ──
@@ -7662,6 +7699,7 @@ function wireStaticEvents(){
   const filtrarMediosDebounced = debounce(filtrarMedios, 120);
   $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
+  $('#filtro-estado-medio').addEventListener('change', filtrarMedios);
 
   $('#buscar').addEventListener('input', () => {
     aplicarFiltrosDebounced();
@@ -7806,31 +7844,15 @@ if (btnFiltros && filtrosPanel){
   const contMedios = $('#lista-medios');
   if (contMedios){
     contMedios.addEventListener('change', e => {
-      const fila = e.target.closest('.medio-fila');
+      const select = e.target.closest('.medio-estado');
+      const fila = select && select.closest('.medio-fila');
       const modo = modoEnPanel();
       if (!fila || !modo) return;
-      const inc = fila.querySelector('.chk-incluir');
-      const ign = fila.querySelector('.chk-ignorar');
-
-      if (e.target === inc){
-        setOverride(fila.dataset.dominio, inc.checked ? 'include' : '', modo);
-      } else if (e.target === ign){
-        setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '', modo);
-      } else return;
+      setOverride(fila.dataset.dominio, select.value, modo);
       actualizarFilaMedio(fila.dataset.dominio, modo);
-      renderOverridesModo(modo);
       ajModoCambiado(modo);
-    });
-    contMedios.addEventListener('click', e => {
-      const b = e.target.closest('.medio-favorito');
-      const fila = b && b.closest('.medio-fila');
-      const modo = modoEnPanel();
-      if (!fila || !modo) return;
-      const dom = fila.dataset.dominio;
-      setOverride(dom, getOverride(dom, modo) === 'first' ? 'include' : 'first', modo);
-      actualizarFilaMedio(dom, modo);
-      renderOverridesModo(modo);
-      ajModoCambiado(modo);
+      if (!fila.isConnected) $('#filtro-medio').focus();
+      else if (fila.style.display === 'none') $('#filtro-estado-medio').focus();
     });
   }
 }
