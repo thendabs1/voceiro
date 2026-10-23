@@ -7,6 +7,10 @@
 thendabs1.github.io
 github.com
 
+# Sincronización entre dispositivos (la de Voceiro; va cifrada)
+voceiro-sync.toriorecorda.workers.dev
+voceiro-sync.thendabs1.deno.net
+
 # Originales de tweets y vídeos embebidos: la tarjeta del lector enlaza a
 # ellos (no carga nada de terceros).
 x.com

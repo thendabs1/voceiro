@@ -6,9 +6,6 @@
    modos y la configuración del lector. La fusión es la de
    shared/sync/fusion.js; aquí se decide cuándo y se vuelca el resultado.
    ═══════════════════════════════════════════════════════════════ */
-// CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma base.
-const SYNC_SERVIDORES = ['https://voceiro-sync.toriorecorda.workers.dev',
-                         'https://voceiro-sync.thendabs1.deno.net'];
 const SYNC_CODIGO_KEY = 'voceiro-sync-codigo';
 const SYNC_ULTIMA_KEY = 'voceiro-sync-ultima';
 const SYNC_UNIRSE_KEY = 'voceiro-sync-unirse';   // hasta la primera sincronización
@@ -58,7 +55,7 @@ async function sincronizarAhora(){
   if (_sync.enCurso){ _sync.otraVez = true; return _sync.enCurso; }
   clearTimeout(_sync.diferido);
   clearTimeout(_sync.reintento);
-  if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SYNC_SERVIDORES });
+  if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
   _sync.enCurso = (async () => {
     try {
       const { documento } = await _sync.cliente.sincronizar(SYNC_CODIGO, documentoLocal());
@@ -204,6 +201,7 @@ function activarSync(codigo, unirse){
     else localStorage.removeItem(SYNC_UNIRSE_KEY);
   } catch(e){}
   ajPintarSync();
+  enviarEstadoAlLector();
   sincronizarAhora();
 }
 function olvidarSync(){
@@ -219,6 +217,7 @@ function olvidarSync(){
     localStorage.removeItem(SYNC_UNIRSE_KEY);
   } catch(e){}
   ajPintarSync();
+  enviarEstadoAlLector();
 }
 function enlaceSync(){
   return location.origin + location.pathname + '#sync=' + formatearCodigo(SYNC_CODIGO);
@@ -341,7 +340,7 @@ function wireSync(){
   $('#sync-borrar').addEventListener('click', async () => {
     if (!confirm(t('syncBorrarConfirm'))) return;
     try {
-      if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SYNC_SERVIDORES });
+      if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
       await _sync.cliente.borrar(SYNC_CODIGO);
       olvidarSync();
       toast(t('syncBorrado'), 2400);

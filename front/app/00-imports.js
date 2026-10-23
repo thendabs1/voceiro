@@ -26,7 +26,7 @@ import {
 } from './sync/fusion.js';
 import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js';
 import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
 import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js';

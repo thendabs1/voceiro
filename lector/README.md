@@ -32,6 +32,10 @@ Con un gestor de userscripts (Violentmonkey, Tampermonkey…), abre
 
   `{url}` es la dirección de la página tal cual y `{url_cod}`, codificada.
 - Puente con Voceiro (eventos `voceiro-*`), activo solo en la página de Voceiro.
+- Sincronización entre dispositivos, la misma de Voceiro y con el mismo código
+  (cifrada; Ajustes › General). Con Voceiro abierto en el navegador, el código
+  llega solo. Va por el gestor (`@grant GM_xmlhttpRequest`, `@connect` a los
+  dos servidores) y solo en páginas https.
 
 ## Construir
 
@@ -51,8 +55,10 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
 - `02-plataforma.js`: lo único que depende del gestor de userscripts (`GM_*`).
 - `04-servicios.js`, `21-desplegable-servicios.js`: «Abrir en…».
 - Módulos compartidos con Voceiro, metidos tal cual al construir:
-  `shared/sync/fusion.js` (Pendientes y perfil) y `shared/tema/personalizado.js`
-  (tema personalizado). No pueden importar nada.
+  `shared/sync/fusion.js` (Pendientes y perfil), `cripto.js` y `cliente.js`
+  (sincronización) y `shared/tema/personalizado.js` (tema personalizado). Solo
+  pueden importar de otro de la lista que vaya antes.
+- `28-sincronizacion.js`: cuándo sincroniza el lector y qué guarda.
 - `26-boton-flotante.js`: el botón flotante, uno solo y en un Shadow DOM.
   `actualizarBoton()` lo pone, lo cambia o lo quita según la página.
 - `34-puente-con-voceiro.js`: el puente con Voceiro.

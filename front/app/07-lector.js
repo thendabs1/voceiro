@@ -210,7 +210,9 @@ function aplicarPerfilEnVoceiro(p){
      · 'voceiro-ping'   Voceiro → lector; responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
      · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
-                        leidasHasta}.
+                        leidasHasta, sync}. sync: el código de sincronización, o
+                        null; el lector lo sigue y sincroniza también por su cuenta
+                        en las demás webs (lector/src/28-sincronizacion.js).
      · 'lector-estado'  lector → Voceiro {…, leidas}: lo que se ha terminado de
                         leer en el lector, [{url, fecha, quitar?}]. Voceiro lo
                         marca como leído y lo confirma con leidasHasta (la fecha
@@ -235,8 +237,13 @@ function estadoDeVoceiro(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
     pendientes: PENDIENTES, perfil: perfilDeVoceiro(), lector: cargarBloqueLector(),
-    leidasHasta: leidasDelLectorHasta()
+    leidasHasta: leidasDelLectorHasta(), sync: codigoSyncGuardado()
   };
+}
+// El guardado, no el de memoria: otra pestaña de Voceiro puede haberlo
+// quitado o cambiado, y esta no debe devolvérselo al lector.
+function codigoSyncGuardado(){
+  try { return limpiarCodigo(localStorage.getItem(SYNC_CODIGO_KEY) || '') || null; } catch(e){ return null; }
 }
 
 // Leídas que manda el lector (lo terminado allí): hasta qué fecha las tengo.
