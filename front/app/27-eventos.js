@@ -262,6 +262,7 @@ function wireStaticEvents(){
   const filtrarMediosDebounced = debounce(filtrarMedios, 120);
   $('#filtro-medio').addEventListener('input', filtrarMediosDebounced);
   $('#filtro-grupo-medio').addEventListener('change', filtrarMedios);
+  $('#filtro-estado-medio').addEventListener('change', filtrarMedios);
 
   $('#buscar').addEventListener('input', () => {
     aplicarFiltrosDebounced();
@@ -406,31 +407,15 @@ if (btnFiltros && filtrosPanel){
   const contMedios = $('#lista-medios');
   if (contMedios){
     contMedios.addEventListener('change', e => {
-      const fila = e.target.closest('.medio-fila');
+      const select = e.target.closest('.medio-estado');
+      const fila = select && select.closest('.medio-fila');
       const modo = modoEnPanel();
       if (!fila || !modo) return;
-      const inc = fila.querySelector('.chk-incluir');
-      const ign = fila.querySelector('.chk-ignorar');
-
-      if (e.target === inc){
-        setOverride(fila.dataset.dominio, inc.checked ? 'include' : '', modo);
-      } else if (e.target === ign){
-        setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '', modo);
-      } else return;
+      setOverride(fila.dataset.dominio, select.value, modo);
       actualizarFilaMedio(fila.dataset.dominio, modo);
-      renderOverridesModo(modo);
       ajModoCambiado(modo);
-    });
-    contMedios.addEventListener('click', e => {
-      const b = e.target.closest('.medio-favorito');
-      const fila = b && b.closest('.medio-fila');
-      const modo = modoEnPanel();
-      if (!fila || !modo) return;
-      const dom = fila.dataset.dominio;
-      setOverride(dom, getOverride(dom, modo) === 'first' ? 'include' : 'first', modo);
-      actualizarFilaMedio(dom, modo);
-      renderOverridesModo(modo);
-      ajModoCambiado(modo);
+      if (!fila.isConnected) $('#filtro-medio').focus();
+      else if (fila.style.display === 'none') $('#filtro-estado-medio').focus();
     });
   }
 }

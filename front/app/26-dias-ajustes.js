@@ -133,7 +133,22 @@ function wireAjustes(){
   const panel = $('#panel-ajustes');
   if (!panel) return;
   ajPrepararAncho();
+  window.matchMedia('(max-width: 819.98px)').addEventListener('change', () => {
+    if (ajAbierto()){ ajGuardarTemas(); ajPintar(); }
+  });
   window.addEventListener('popstate', ajPopstate);
+  panel.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const controles = [...panel.querySelectorAll('button, input, select, textarea, summary, [tabindex="0"]')]
+      .filter(el => !el.disabled && el.getClientRects().length);
+    const primero = controles[0], ultimo = controles[controles.length - 1];
+    if (!primero) return;
+    if (e.shiftKey && (document.activeElement === primero || document.activeElement.tabIndex < 0)){
+      e.preventDefault(); ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo){
+      e.preventDefault(); primero.focus();
+    }
+  });
   // Si se recargó con Ajustes abierto, el paso del historial queda huérfano.
   if (history.state && history.state.aj) history.replaceState(null, '');
 
@@ -174,21 +189,6 @@ function wireAjustes(){
       .map(c => c.dataset.grupo);
     guardarPresets();
     ajModoCambiado(modo);
-  });
-  $('#ov-list').addEventListener('click', e => {
-    const b = e.target.closest('button[data-dom]');
-    const modo = modoEnPanel();
-    if (!b || !modo) return;
-    if (b.classList.contains('ov-favorito')){
-      setOverride(b.dataset.dom, getOverride(b.dataset.dom, modo) === 'first' ? 'include' : 'first', modo);
-      actualizarFilaMedio(b.dataset.dom, modo);
-      renderOverridesModo(modo);
-      ajModoCambiado(modo);
-      return;
-    }
-    setOverride(b.dataset.dom, '', modo);
-    ajModoCambiado(modo);
-    pintarModo();
   });
 
   // ── Feed: mismo estado que el panel Filtros ──

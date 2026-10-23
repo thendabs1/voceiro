@@ -3,8 +3,8 @@
    AJ_PILA son las páginas abiertas, de la primera a la visible. Cada una
    tiene su paso en el historial (history.pushState): el botón atrás del
    móvil sube un nivel y al final cierra Ajustes, en vez de salir de la web.
-   Rutas: '' (lista de secciones, solo en móvil), 'modos', 'modo' (el de
-   MODO_EDITADO), 'lectura', 'feed', 'avanzado', 'ayuda'.
+   Rutas: '' (lista de secciones, solo en móvil), las de AJ_SECCIONES
+   y 'modo' (el de MODO_EDITADO).
    ═══════════════════════════════════════════════════════════════ */
 const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
@@ -15,6 +15,7 @@ let AJ_PILA = [];             // vacía = Ajustes cerrado
 let MODO_EDITADO = null;      // id del modo de la página 'modo'
 let _ajPendiente = null;      // sección que mostrar al volver atrás en el historial
 let _ajSinReglas = new Set(); // modos vacíos al abrir (ver ajActivarAlCerrar)
+let _ajOrigen = null;
 
 function ajEsMovil(){ return window.matchMedia('(max-width: 819.98px)').matches; }
 function ajAbierto(){ return AJ_PILA.length > 0; }
@@ -90,6 +91,8 @@ function abrirAjustes(ruta){
     else ajIrSeccion(ruta);
     return;
   }
+  _ajOrigen = document.activeElement;
+  cerrarPresetMenu();
   abrirPanel('panel-ajustes');
   AJ_PILA = [ruta];
   if (ruta !== 'modo') MODO_EDITADO = null;
@@ -164,6 +167,10 @@ function ajCerrarVista(){
   _ajPendiente = null;
   cerrarPanel('panel-ajustes');
   ajActivarAlCerrar();
+  const origen = _ajOrigen && _ajOrigen.isConnected && _ajOrigen.getClientRects().length
+    ? _ajOrigen : $('#btn-config');
+  origen.focus({ preventScroll: true });
+  _ajOrigen = null;
 }
 
 // Muestra la página de la ruta visible y la rellena.
@@ -187,6 +194,9 @@ function ajPintar(){
   const cuerpo = panel.querySelector('.aj-cuerpo');
   if (cuerpo) cuerpo.scrollTop = 0;
   ajRefrescar();
+  panel.setAttribute('aria-labelledby', ruta ? 'aj-titulo-pagina' : 'aj-titulo');
+  const titulo = ruta ? $('#aj-titulo-pagina') : $('#aj-titulo');
+  titulo.focus({ preventScroll: true });
 }
 
 // Repinta la página visible con los datos actuales. Se llama tras cualquier
@@ -198,9 +208,11 @@ function ajRefrescar(){
   const modo = modoEnPanel();
   $('#aj-titulo-pagina').textContent = ruta === 'modo' ? modo.nombre : t(AJ_TITULOS[ruta] || 'ajTitulo');
   $('#aj-atras-lbl').textContent = t(ruta === 'modo' ? 'ajModos' : 'ajTitulo');
+  $('#aj-atras').setAttribute('aria-label', $('#aj-atras-lbl').textContent);
   if (ruta === 'modos') renderListaModos();
   else if (ruta === 'modo') pintarModo();
-  else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); renderDiasSelector(); }
+  else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); }
+  else if (ruta === 'avanzado') renderDiasSelector();
   else if (ruta === 'sync') ajPintarSync();
   else if (ruta === 'lector') ajPintarLector();
 }
@@ -251,14 +263,20 @@ function renderListaModos(){
         <span class="aj-modo-resumen">${escapeHtml(resumenModo(p))}</span>
       </span>
       ${activo ? `<span class="aj-activo">${escapeHtml(t('ajModoActivo'))}</span>` : ''}
-      ${ico('chevron-right')}
+      <span class="aj-modo-editar">${escapeHtml(t('ajModoEditar'))}${ico('chevron-right')}</span>
     </button>`;
   }).join('');
 }
 function ajEditarModo(id){
+  ajGuardarTemas();
   MODO_EDITADO = id;
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
+  $('#filtro-estado-medio').value = '';
+  $('#ov-pegar').value = '';
+  $('#aj-bloque-temas').open = true;
+  $('#aj-bloque-medios').open = true;
+  $('#aj-bloque-grupos').open = false;
   if (ajRuta() === 'modo') ajPintar();
   else ajEmpujar('modo');
 }
@@ -281,22 +299,8 @@ function pintarModo(){
     ta.dataset.modoId = modo.id;
   }
   renderListaGrupos(modo);
-  renderOverridesModo(modo);
   renderListaMedios();
   ajContadores(modo);
-}
-function renderOverridesModo(modo){
-  const ovList = $('#ov-list');
-  if (!ovList) return;
-  ovList.innerHTML = Object.entries(modo.overrides || {}).map(([d, v]) =>
-    `<span class="ov-item ${v}">
-      <span>${escapeHtml(d)}</span>
-      ${overrideIncluye(v) ? `<button class="ov-favorito" data-dom="${escapeHtml(d)}" type="button"
-        title="${escapeHtml(t('forceFavorite'))}" aria-label="${escapeHtml(t('forceFavorite'))}"
-        aria-pressed="${v === 'first'}">${ico('star')}</button>` : ''}
-      <button class="ov-quitar" data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
-    </span>`
-  ).join('');
 }
 function ajContadores(modo){
   $('#aj-temas-n').textContent = '· ' + compilarTemas(parseLista($('#aj-temas').value)).length;
@@ -327,6 +331,9 @@ function ajModoCambiado(modo){
   if (ajRuta() === 'modo'){
     ajContadores(modo);
     $('#aj-modo-pista').hidden = presetTieneReglas(modo);
+    const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
+    $('#aj-modo-estado').hidden = !activo;
+    $('#aj-modo-activar').hidden = activo;
   }
 }
 

@@ -459,8 +459,8 @@ function wireResultadosDelegation(){
     const vacioBtn = e.target.closest('[data-vacio]');
     if (vacioBtn){
       if (vacioBtn.dataset.vacio === 'editar'){
-        MODO_EDITADO = PRESETS.activo;
-        abrirAjustes('modo');
+        abrirAjustes('modos');
+        ajEditarModo(PRESETS.activo);
       } else {
         PRESET_ACTIVO = false;
         guardarPresetActivo();

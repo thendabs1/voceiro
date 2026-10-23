@@ -88,7 +88,7 @@ function aplicarTextos(){
     return `<li><code>${escapeHtml(ej)}</code> → ${escapeHtml(txt || '')}</li>`;
   }).join('');
   $('#cfg-medios').textContent = t('cfgMedios');
-  $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
+  $('#aj-guardado').textContent = t('ajGuardadoAutomatico');
   $('#ov-add-include').textContent = t('cfgMedioAddForce');
   $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
@@ -96,6 +96,19 @@ function aplicarTextos(){
   if (det) det.textContent = t('cfgOverridePegar');
   $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#filtro-medio').placeholder = t('cfgBuscarMedio');
+  $('#filtro-medio').setAttribute('aria-label', t('cfgBuscarMedio'));
+  $('#filtro-grupo-medio').setAttribute('aria-label', t('cfgTodosGrupos'));
+  const estados = $('#filtro-estado-medio');
+  const estadoActual = estados.value;
+  estados.setAttribute('aria-label', t('cfgFiltrarEstado'));
+  estados.innerHTML = [
+    ['', 'cfgMediosTodos'], ['configurados', 'cfgMediosConfigurados'],
+    ['include', 'cfgMedioIncluir'], ['first', 'cfgMedioDestacar'], ['ignore', 'cfgMedioBloquear'],
+  ].map(([v, k]) => `<option value="${v}">${escapeHtml(t(k))}</option>`).join('');
+  estados.value = estadoActual;
+  $('#medios-vacio').textContent = t('cfgMediosVacio');
+  $('#aj-temas').setAttribute('aria-labelledby', 'aj-temas-tit');
+  $('#ov-pegar').setAttribute('aria-label', t('cfgOverridePegar'));
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-grupos').textContent = t('cfgGrupos');
   $('#cfg-grupos-hint').textContent = t('cfgGruposHint');

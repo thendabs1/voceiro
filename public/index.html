@@ -28,7 +28,7 @@
     }
   } catch(e){}
 </script>
-<link rel="stylesheet" href="./estilos.css?v=6980420c66">
+<link rel="stylesheet" href="./estilos.css?v=acb595ebc3">
 </head>
 <body>
 <!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
@@ -125,7 +125,7 @@
 
     <nav class="aj-nav">
       <div class="panel-header">
-        <h2 id="aj-titulo"></h2>
+        <h2 id="aj-titulo" tabindex="-1"></h2>
         <button class="panel-close" type="button" data-close="panel-ajustes"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
       <div class="aj-secciones">
@@ -146,7 +146,7 @@
     <div class="aj-contenido">
       <div class="panel-header aj-cabecera">
         <button type="button" class="aj-atras" id="aj-atras"><svg class="ico" aria-hidden="true"><use href="#i-chevron-left"/></svg><span id="aj-atras-lbl"></span></button>
-        <h2 id="aj-titulo-pagina"></h2>
+        <h2 id="aj-titulo-pagina" tabindex="-1"></h2>
         <button class="panel-close" type="button" data-close="panel-ajustes"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
 
@@ -161,6 +161,7 @@
 
         <!-- ═══════════ UN MODO (el de MODO_EDITADO) ═══════════ -->
         <div class="aj-pagina" data-pagina="modo" hidden>
+          <p id="aj-guardado" class="aj-hint"></p>
           <div class="aj-modo-cab">
             <span id="aj-modo-estado" class="aj-activo" hidden></span>
             <button id="aj-modo-activar" class="primary con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><span id="aj-modo-activar-lbl"></span></button>
@@ -178,23 +179,13 @@
             </details>
           </details>
 
-          <details class="aj-bloque" id="aj-bloque-medios">
+          <details class="aj-bloque" id="aj-bloque-medios" open>
             <summary><span id="cfg-medios"></span><span class="aj-n" id="aj-medios-n"></span></summary>
-            <div id="modo-overrides-wrap">
-              <p id="modo-overrides-hint" class="aj-hint"></p>
-              <div id="ov-list" class="ov-list"></div>
-              <details id="ov-pegar-wrap" class="aj-pegar">
-                <summary></summary>
-                <textarea id="ov-pegar" class="preset-texto aj-mono" placeholder="+ dominio.com&#10;- otro.com"></textarea>
-                <div class="aj-fila-fin">
-                  <button id="ov-pegar-aplicar" type="button" class="primary"></button>
-                </div>
-              </details>
-            </div>
             <p id="cfg-medios-hint" class="aj-hint"></p>
             <div class="ctrl-medios">
               <input type="search" id="filtro-medio" autocomplete="off">
               <select id="filtro-grupo-medio"><option value=""></option></select>
+              <select id="filtro-estado-medio"></select>
             </div>
             <div id="filtro-medio-add" class="filtro-medio-add" hidden>
               <span class="filtro-medio-add-label" id="filtro-medio-add-label"></span>
@@ -202,7 +193,15 @@
               <button id="ov-add-ignore" type="button" class="filtro-medio-add-btn ignore"></button>
             </div>
             <div id="lista-medios" class="list-medios"></div>
-            <p id="resumen-medios" class="aj-hint aj-resumen"></p>
+            <p id="medios-vacio" class="aj-hint" role="status" hidden></p>
+            <p id="resumen-medios" class="aj-hint aj-resumen" role="status"></p>
+            <details id="ov-pegar-wrap" class="aj-pegar">
+              <summary></summary>
+              <textarea id="ov-pegar" class="preset-texto aj-mono" placeholder="+ dominio.com&#10;- otro.com"></textarea>
+              <div class="aj-fila-fin">
+                <button id="ov-pegar-aplicar" type="button" class="primary"></button>
+              </div>
+            </details>
           </details>
 
           <details class="aj-bloque" id="aj-bloque-grupos">
@@ -275,6 +274,14 @@
             </div>
           </div>
 
+          <label class="cfg-toggle">
+            <input type="checkbox" id="cfg-fecha-larga">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="cfg-fecha-larga-lbl"></span>
+              <span class="cfg-toggle-hint"  id="cfg-fecha-larga-hint"></span>
+            </span>
+          </label>
+
           <div class="aj-fila-fin">
             <button id="acces-reset" class="con-ico" type="button"><svg class="ico" aria-hidden="true"><use href="#i-rotate-ccw"/></svg><span id="acces-reset-lbl"></span></button>
           </div>
@@ -308,23 +315,21 @@
             <div id="lista-portadas"></div>
           </div>
 
-          <h3 id="cfg-dias"></h3>
-          <p id="cfg-dias-hint" class="aj-hint"></p>
-          <div class="opt-group" data-dias data-grupo="dias">
-            <button type="button" data-val="1"></button>
-            <button type="button" data-val="3"></button>
-            <button type="button" data-val="7"></button>
-            <button type="button" data-val="20"></button>
-            <button type="button" data-val="30"></button>
-          </div>
-          <p id="dias-estimacion" class="aj-hint" style="margin-top:8px;"></p>
-          <div id="dias-confirmar" class="aj-aviso" role="alert" hidden>
-            <p><svg class="ico" aria-hidden="true"><use href="#i-triangle-alert"/></svg><span id="dias-confirmar-txt"></span></p>
-            <div class="aj-fila-fin">
-              <button id="dias-cancelar" type="button"></button>
-              <button id="dias-cargar" type="button" class="primary"></button>
-            </div>
-          </div>
+          <h3 id="aj-tiempo-tit"></h3>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="cfg-tiempo">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="cfg-tiempo-lbl"></span>
+              <span class="cfg-toggle-hint"  id="cfg-tiempo-hint"></span>
+            </span>
+          </label>
+          <label class="cfg-toggle">
+            <input type="checkbox" id="cfg-avisos-cab">
+            <span class="cfg-toggle-txt">
+              <span class="cfg-toggle-title" id="cfg-avisos-cab-lbl"></span>
+              <span class="cfg-toggle-hint"  id="cfg-avisos-cab-hint"></span>
+            </span>
+          </label>
         </div>
 
         <!-- ═══════════ SINCRONIZACIÓN ═══════════ -->
@@ -393,29 +398,23 @@
             </div>
           </div>
 
-          <h3 id="aj-tiempo-tit"></h3>
-          <label class="cfg-toggle">
-            <input type="checkbox" id="cfg-tiempo">
-            <span class="cfg-toggle-txt">
-              <span class="cfg-toggle-title" id="cfg-tiempo-lbl"></span>
-              <span class="cfg-toggle-hint"  id="cfg-tiempo-hint"></span>
-            </span>
-          </label>
-          <label class="cfg-toggle">
-            <input type="checkbox" id="cfg-avisos-cab">
-            <span class="cfg-toggle-txt">
-              <span class="cfg-toggle-title" id="cfg-avisos-cab-lbl"></span>
-              <span class="cfg-toggle-hint"  id="cfg-avisos-cab-hint"></span>
-            </span>
-          </label>
-          <label class="cfg-toggle">
-            <input type="checkbox" id="cfg-fecha-larga">
-            <span class="cfg-toggle-txt">
-              <span class="cfg-toggle-title" id="cfg-fecha-larga-lbl"></span>
-              <span class="cfg-toggle-hint"  id="cfg-fecha-larga-hint"></span>
-            </span>
-          </label>
-
+          <h3 id="cfg-dias"></h3>
+          <p id="cfg-dias-hint" class="aj-hint"></p>
+          <div class="opt-group" data-dias data-grupo="dias">
+            <button type="button" data-val="1"></button>
+            <button type="button" data-val="3"></button>
+            <button type="button" data-val="7"></button>
+            <button type="button" data-val="20"></button>
+            <button type="button" data-val="30"></button>
+          </div>
+          <p id="dias-estimacion" class="aj-hint" style="margin-top:8px;"></p>
+          <div id="dias-confirmar" class="aj-aviso" role="alert" hidden>
+            <p><svg class="ico" aria-hidden="true"><use href="#i-triangle-alert"/></svg><span id="dias-confirmar-txt"></span></p>
+            <div class="aj-fila-fin">
+              <button id="dias-cancelar" type="button"></button>
+              <button id="dias-cargar" type="button" class="primary"></button>
+            </div>
+          </div>
           <h3 id="cfg-backup"></h3>
           <div class="backup-box">
             <span class="msg" id="cfg-backup-msg"></span>
@@ -635,7 +634,7 @@
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script type="module" src="./app.js?v=6980420c66"></script>
+<script type="module" src="./app.js?v=acb595ebc3"></script>
 </body>
 </html>
 

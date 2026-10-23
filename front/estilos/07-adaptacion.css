@@ -58,16 +58,12 @@
   @media (max-width:900px){
 .filtros-row{ position: static; }
 .filtros{ grid-template-columns: 1fr 1fr; }
-    .medio-fila{grid-template-columns:34px 34px 34px 1fr 1.2fr}
-    .medio-fila .celda-grupo{display:none}
     .opt-row{gap:8px}
     .opt-label{min-width:100%}
     .panel-inner{max-width:none}
   }
   @media (max-width:560px){
     .filtros{ grid-template-columns: 1fr; }
-    .medio-fila{grid-template-columns:34px 34px 34px 1fr}
-    .medio-fila .celda-nombre{display:none}
     .panel-header{padding:14px 16px 10px}
     .panel-body{padding:12px 16px 16px}
     .panel-acciones{padding:10px 16px 14px}

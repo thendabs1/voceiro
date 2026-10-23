@@ -339,10 +339,11 @@ function renderPresetMenu(){
   let html = '';
   lista.forEach(p => {
     const isActive = PRESET_ACTIVO && p.id === activo;
-    html += `<button type="button" class="preset-item${isActive ? ' active' : ''}" data-preset-id="${escapeHtml(p.id)}">
+    html += `<div class="preset-opcion"><button type="button" class="preset-item${isActive ? ' active' : ''}" data-preset-id="${escapeHtml(p.id)}" aria-pressed="${!!isActive}">
       <span class="preset-check">${ico('check')}</span>
       <span>${escapeHtml(p.nombre)}</span>
-    </button>`;
+    </button><button type="button" class="preset-editar" data-editar-modo="${escapeHtml(p.id)}"
+      aria-label="${escapeHtml(t('ajEditarModo', { X: p.nombre }))}">${ico('pencil')}<span>${escapeHtml(t('ajModoEditar'))}</span></button></div>`;
   });
 
   if (!lista.some(p => presetTieneReglas(p))){
@@ -369,6 +370,14 @@ function renderPresetMenu(){
   </button>`;
 
   menu.innerHTML = html;
+  menu.querySelectorAll('[data-editar-modo]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      cerrarPresetMenu();
+      abrirAjustes('modos');
+      ajEditarModo(btn.dataset.editarModo);
+    });
+  });
 
   menu.querySelectorAll('.preset-item').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -381,8 +390,8 @@ function renderPresetMenu(){
       }
       if (id === '__empezar'){
         cerrarPresetMenu();
-        MODO_EDITADO = PRESETS.activo;
-        abrirAjustes('modo');
+        abrirAjustes('modos');
+        ajEditarModo(PRESETS.activo);
         return;
       }
       if (id === '__temas'){
@@ -403,17 +412,8 @@ function renderPresetMenu(){
         cerrarPresetMenu();
         return;
       }
-      const target = PRESETS.lista.find(p => p.id === id);
-      if (!target) return;
-      PRESETS.activo = id;
-      PRESET = target;
-      PRESET_ACTIVO = true;
-      guardarPresets();
-      guardarPresetActivo();
-      recompilarPreset();
-      actualizarBotonPreset();
-      aplicarFiltros();
       cerrarPresetMenu();
+      activarModo(id);
     });
   });
 }
@@ -434,8 +434,10 @@ function cerrarPresetMenu(){
   const menu = $('#preset-menu');
   const btn  = $('#btn-preset');
   if (!menu) return;
+  const devolverFoco = menu.contains(document.activeElement);
   menu.style.display = 'none';
   if (btn) btn.setAttribute('aria-expanded', 'false');
+  if (devolverFoco && btn) btn.focus({ preventScroll: true });
   document.removeEventListener('mousedown', _presetOutsideClick, true);
   document.removeEventListener('keydown', _presetEscKey, true);
 }
