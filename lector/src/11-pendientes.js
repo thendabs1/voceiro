@@ -142,20 +142,14 @@ function marcarLeidaAlTerminar(){
     CFG.readLater = conCambio(item, keepRead ? { read: true, readAt: Date.now() } : { borrado: true });
   }
   avisarLeida(url);
-  CFG.readLater = fusionarPendientes(CFG.readLater, []);
-  saveCfg(CFG);
-  enviarEstado(false);
-  sincronizarLectorPronto();
+  cambiarReadLater(CFG.readLater);
   return () => {
     if (antes && !antes.read){
       const ahora = findLaterItem(url) || (CFG.readLater || []).find(r => r.url === antes.url);
       if (ahora) CFG.readLater = conCambio(ahora, { read: false, readAt: null, borrado: false });
     }
     avisarLeida(url, true);
-    CFG.readLater = fusionarPendientes(CFG.readLater, []);
-    saveCfg(CFG);
-    enviarEstado(false);
-    sincronizarLectorPronto();
+    cambiarReadLater(CFG.readLater);
   };
 }
 

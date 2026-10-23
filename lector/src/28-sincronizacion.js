@@ -19,7 +19,7 @@
    · Dónde no: sin https (no hay WebCrypto) ni en la página de
      Voceiro, que sincroniza ella y recibe lo de aquí por el puente.
    ============================================================ */
-const LECTOR_SYNC_KEY = 'lector-sync';            // { codigo, deVoceiro, cambio, subido, fallo, error }
+const LECTOR_SYNC_KEY = 'lector-sync';            // { codigo, deVoceiro, cambio, subido, fallo, error, revocado }
 const LECTOR_SYNC_DOC_KEY = 'lector-sync-doc';    // el último documento fusionado
 const LECTOR_SYNC_CANDADO_KEY = 'lector-sync-candado';
 const LECTOR_SYNC_ESPERA = 5000;
@@ -70,20 +70,26 @@ function olvidarSyncLector(){
   PLATAFORMA.guardar(LECTOR_SYNC_DOC_KEY, null);
 }
 // Lo que dice Voceiro por el puente: su código manda. Si no tiene, se
-// quita aquí el que vino de allí; uno escrito a mano se queda.
+// quita aquí el que vino de allí; uno escrito a mano se queda. Un código
+// que el servidor ya dio por revocado no vuelve: Voceiro puede no haberse
+// enterado todavía.
 function codigoDesdeVoceiro(codigo){
   const c = codigo ? limpiarCodigo(codigo) : null;
-  if (c) activarSyncLector(c, true);
+  if (c){ if (c !== estadoSyncLector().revocado) activarSyncLector(c, true); }
   else if (estadoSyncLector().deVoceiro) olvidarSyncLector();
 }
 
+// La próxima vuelta, a los pocos segundos; si ya había una, la sustituye.
+function programarSyncLector(){
+  clearTimeout(__syncLector.diferido);
+  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+}
 // Un cambio de aquí: se apunta y se sube a los pocos segundos.
 function sincronizarLectorPronto(){
   if (!codigoSyncLector()) return;
   guardarEstadoSyncLector({ cambio: Date.now() });
   if (!puedeSincronizarAqui()) return;
-  clearTimeout(__syncLector.diferido);
-  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+  programarSyncLector();
 }
 // Al abrir el lector: si queda algo por subir o hace rato de la última vez.
 // Tras un fallo, espera: hay medios que abren el lector solos en cada noticia.
@@ -98,8 +104,7 @@ function sincronizarLectorSiQuedoAlgo(){
   const s = estadoSyncLector();
   if (!haySyncSinSubir(s) || Date.now() - (s.fallo || 0) < LECTOR_SYNC_TRAS_FALLO) return;
   if (!puedeSincronizarAqui() || !codigoSyncLector()) return;
-  clearTimeout(__syncLector.diferido);
-  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+  programarSyncLector();
 }
 
 // Entre pestañas, una sola a la vez. No es atómico: si dos coinciden, el
@@ -152,7 +157,7 @@ async function sincronizarLector(){
   if (__syncLector.enCurso){ __syncLector.otraVez = true; return __syncLector.enCurso; }
   clearTimeout(__syncLector.diferido);
   if (!tomarCandadoSync()){
-    __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+    programarSyncLector();
     return;
   }
   if (!__syncLector.cliente){
@@ -177,8 +182,9 @@ async function sincronizarLector(){
     } catch(e){
       if (codigoSyncLector() !== codigo) return;
       if (e?.code === 'SYNC_REVOCADO'){
-        // Conservar el documento local, pero detener las subidas de este código.
-        guardarEstadoSyncLector({ codigo: null, fallo: 0, error: '' });
+        // Conservar el documento local, pero detener las subidas de este código
+        // y no aceptarlo otra vez por el puente.
+        guardarEstadoSyncLector({ codigo: null, revocado: codigo, fallo: 0, error: '' });
         clearTimeout(__syncLector.diferido);
         return;
       }
@@ -190,7 +196,7 @@ async function sincronizarLector(){
       __syncLector.enCurso = null;
       if (__syncLector.otraVez){
         __syncLector.otraVez = false;
-        if (haySyncSinSubir()) __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+        if (haySyncSinSubir()) programarSyncLector();
       }
     }
   })();
