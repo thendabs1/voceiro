@@ -37,6 +37,22 @@ Con un gestor de userscripts (Violentmonkey, Tampermonkey…), abre
   llega solo. Va por el gestor (`@grant GM_xmlhttpRequest`, `@connect` a los
   dos servidores) y solo en páginas https.
 
+## Ajustar un medio
+
+En Ajustes › Medios aparecen los medios con ajustes propios. «Apertura»
+permite mostrar el botón, abrir las noticias automáticamente o desactivar
+el lector. «Idioma» indica el idioma del medio para los diccionarios.
+«Desactivar medio» elimina sus ajustes y bloquea el botón; se puede volver
+a habilitar desde la lista de bloqueados.
+
+En «Avanzado», deja «Origen» en Auto como punto de partida. JSON usa los
+datos estructurados del artículo y Lector analiza el contenido de la página.
+Si la detección falla, abre una noticia de ese medio y entra en «Análisis de
+extracción»: puedes seleccionar el contenedor del artículo, excluir elementos
+y probar el resultado antes de guardar. El selector manual tiene prioridad
+sobre el origen. Para volver a la detección automática, elige el método
+Automático y guarda; comprueba también que Origen esté en Auto.
+
 ## Construir
 
 ```sh
