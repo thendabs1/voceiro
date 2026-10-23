@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=6980420c66';
+} from './parser.js?v=cc9ddd2793';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=6980420c66';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=6980420c66';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=6980420c66';
-import { comparador } from './busqueda/orden.js?v=6980420c66';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=cc9ddd2793';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=cc9ddd2793';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=cc9ddd2793';
+import { comparador } from './busqueda/orden.js?v=cc9ddd2793';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=6980420c66';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=6980420c66';
+} from './sync/fusion.js?v=cc9ddd2793';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=cc9ddd2793';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=6980420c66';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=6980420c66';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=cc9ddd2793';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=cc9ddd2793';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=6980420c66';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=cc9ddd2793';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=6980420c66';
+} from './tiempo/avisos.js?v=cc9ddd2793';
 
-import { I18N, traducir } from './idiomas/index.js?v=6980420c66';
+import { I18N, traducir } from './idiomas/index.js?v=cc9ddd2793';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1473,7 +1473,9 @@ function aplicarPerfilEnVoceiro(p){
      · 'voceiro-ping'   Voceiro → lector; responde 'voceiro-pong' {v}.
      · 'voceiro-ready'  lector → Voceiro, al arrancar {v}.
      · 'voceiro-estado' Voceiro → lector {v, respuesta, pendientes, perfil, lector,
-                        leidasHasta}.
+                        leidasHasta, sync}. sync: el código de sincronización, o
+                        null; el lector lo sigue y sincroniza también por su cuenta
+                        en las demás webs (lector/src/28-sincronizacion.js).
      · 'lector-estado'  lector → Voceiro {…, leidas}: lo que se ha terminado de
                         leer en el lector, [{url, fecha, quitar?}]. Voceiro lo
                         marca como leído y lo confirma con leidasHasta (la fecha
@@ -1498,8 +1500,13 @@ function estadoDeVoceiro(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
     pendientes: PENDIENTES, perfil: perfilDeVoceiro(), lector: cargarBloqueLector(),
-    leidasHasta: leidasDelLectorHasta()
+    leidasHasta: leidasDelLectorHasta(), sync: codigoSyncGuardado()
   };
+}
+// El guardado, no el de memoria: otra pestaña de Voceiro puede haberlo
+// quitado o cambiado, y esta no debe devolvérselo al lector.
+function codigoSyncGuardado(){
+  try { return limpiarCodigo(localStorage.getItem(SYNC_CODIGO_KEY) || '') || null; } catch(e){ return null; }
 }
 
 // Leídas que manda el lector (lo terminado allí): hasta qué fecha las tengo.
@@ -1665,9 +1672,6 @@ function guardarParaLeerDespues(n){
    modos y la configuración del lector. La fusión es la de
    shared/sync/fusion.js; aquí se decide cuándo y se vuelca el resultado.
    ═══════════════════════════════════════════════════════════════ */
-// CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma base.
-const SYNC_SERVIDORES = ['https://voceiro-sync.toriorecorda.workers.dev',
-                         'https://voceiro-sync.thendabs1.deno.net'];
 const SYNC_CODIGO_KEY = 'voceiro-sync-codigo';
 const SYNC_ULTIMA_KEY = 'voceiro-sync-ultima';
 const SYNC_UNIRSE_KEY = 'voceiro-sync-unirse';   // hasta la primera sincronización
@@ -1717,7 +1721,7 @@ async function sincronizarAhora(){
   if (_sync.enCurso){ _sync.otraVez = true; return _sync.enCurso; }
   clearTimeout(_sync.diferido);
   clearTimeout(_sync.reintento);
-  if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SYNC_SERVIDORES });
+  if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
   _sync.enCurso = (async () => {
     try {
       const { documento } = await _sync.cliente.sincronizar(SYNC_CODIGO, documentoLocal());
@@ -1863,6 +1867,7 @@ function activarSync(codigo, unirse){
     else localStorage.removeItem(SYNC_UNIRSE_KEY);
   } catch(e){}
   ajPintarSync();
+  enviarEstadoAlLector();
   sincronizarAhora();
 }
 function olvidarSync(){
@@ -1878,6 +1883,7 @@ function olvidarSync(){
     localStorage.removeItem(SYNC_UNIRSE_KEY);
   } catch(e){}
   ajPintarSync();
+  enviarEstadoAlLector();
 }
 function enlaceSync(){
   return location.origin + location.pathname + '#sync=' + formatearCodigo(SYNC_CODIGO);
@@ -2000,7 +2006,7 @@ function wireSync(){
   $('#sync-borrar').addEventListener('click', async () => {
     if (!confirm(t('syncBorrarConfirm'))) return;
     try {
-      if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SYNC_SERVIDORES });
+      if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
       await _sync.cliente.borrar(SYNC_CODIGO);
       olvidarSync();
       toast(t('syncBorrado'), 2400);
@@ -3441,7 +3447,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=6980420c66')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=cc9ddd2793')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
