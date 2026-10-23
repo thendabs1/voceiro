@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.299
+// @version      2.0.300
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.299';
+const SCRIPT_VERSION = '2.0.300';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -542,12 +542,21 @@ function crearCliente({ servidores, fetch: pedirFetch = globalThis.fetch,
     throw new Error('demasiados datos');
   }
 
+  function comprobarRevocado(r){
+    if (r.status === 410){
+      const error = new Error('código revocado');
+      error.code = 'SYNC_REVOCADO';
+      throw error;
+    }
+  }
+
   return {
     async sincronizar(codigo, local){
       const { id, token, clave } = await derivar(codigo);
       const auth = { Authorization: 'Bearer ' + token };
       for (let i = 0; i < INTENTOS; i++){
         const r = await pedir(`/v1/s/${id}`, { headers: auth, cache: 'no-store' });
+        comprobarRevocado(r);
         let remoto = null, version = 0;
         if (r.status === 200){
           version = Number(r.headers.get('X-Version')) || 0;
@@ -566,6 +575,7 @@ function crearCliente({ servidores, fetch: pedirFetch = globalThis.fetch,
           headers: { ...auth, 'If-Match': String(version), 'Content-Type': 'application/octet-stream' },
           body: bloque,
         });
+        comprobarRevocado(p);
         if (p.status === 200) return { documento: doc, subido: true };
         if (p.status === 409) continue;                      // otro escribió antes
         if (p.status === 429){ await esperar(2100); continue; }
@@ -6143,6 +6153,13 @@ async function sincronizarLector(){
       }
       guardarEstadoSyncLector({ subido: empezo, fallo: 0, error: '' });
     } catch(e){
+      if (codigoSyncLector() !== codigo) return;
+      if (e?.code === 'SYNC_REVOCADO'){
+        // Conservar el documento local, pero detener las subidas de este código.
+        guardarEstadoSyncLector({ codigo: null, fallo: 0, error: '' });
+        clearTimeout(__syncLector.diferido);
+        return;
+      }
       // Sin red o con los dos servidores caídos: todo sigue aquí y queda
       // apuntado; se reintenta con el próximo cambio o al abrir el lector.
       guardarEstadoSyncLector({ fallo: Date.now(), error: (e && e.message) || String(e) });

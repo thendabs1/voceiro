@@ -4,8 +4,8 @@
 // local (fusionarDocumento) y, si el resultado no es lo que ya había, lo
 // sube cifrado. Si otro dispositivo escribió entre medias (409), vuelve a
 // empezar. Devuelve el documento fusionado: quien llama lo vuelca en local.
-import { derivar, cifrar, descifrar } from './cripto.js?v=8cfebb68cc';
-import { fusionarDocumento, huella } from './fusion.js?v=8cfebb68cc';
+import { derivar, cifrar, descifrar } from './cripto.js?v=9e781d8f66';
+import { fusionarDocumento, huella } from './fusion.js?v=9e781d8f66';
 
 // CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma
 // base. Los usan Voceiro y el lector.
@@ -51,12 +51,21 @@ export function crearCliente({ servidores, fetch: pedirFetch = globalThis.fetch,
     throw new Error('demasiados datos');
   }
 
+  function comprobarRevocado(r){
+    if (r.status === 410){
+      const error = new Error('código revocado');
+      error.code = 'SYNC_REVOCADO';
+      throw error;
+    }
+  }
+
   return {
     async sincronizar(codigo, local){
       const { id, token, clave } = await derivar(codigo);
       const auth = { Authorization: 'Bearer ' + token };
       for (let i = 0; i < INTENTOS; i++){
         const r = await pedir(`/v1/s/${id}`, { headers: auth, cache: 'no-store' });
+        comprobarRevocado(r);
         let remoto = null, version = 0;
         if (r.status === 200){
           version = Number(r.headers.get('X-Version')) || 0;
@@ -75,6 +84,7 @@ export function crearCliente({ servidores, fetch: pedirFetch = globalThis.fetch,
           headers: { ...auth, 'If-Match': String(version), 'Content-Type': 'application/octet-stream' },
           body: bloque,
         });
+        comprobarRevocado(p);
         if (p.status === 200) return { documento: doc, subido: true };
         if (p.status === 409) continue;                      // otro escribió antes
         if (p.status === 429){ await esperar(2100); continue; }

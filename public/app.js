@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=8cfebb68cc';
+} from './parser.js?v=9e781d8f66';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=8cfebb68cc';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=8cfebb68cc';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=8cfebb68cc';
-import { comparador } from './busqueda/orden.js?v=8cfebb68cc';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=9e781d8f66';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=9e781d8f66';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=9e781d8f66';
+import { comparador } from './busqueda/orden.js?v=9e781d8f66';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=8cfebb68cc';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=8cfebb68cc';
+} from './sync/fusion.js?v=9e781d8f66';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=9e781d8f66';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=8cfebb68cc';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=8cfebb68cc';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=9e781d8f66';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=9e781d8f66';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=8cfebb68cc';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=9e781d8f66';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=8cfebb68cc';
+} from './tiempo/avisos.js?v=9e781d8f66';
 
-import { I18N, traducir } from './idiomas/index.js?v=8cfebb68cc';
+import { I18N, traducir } from './idiomas/index.js?v=9e781d8f66';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1677,7 +1677,6 @@ function guardarParaLeerDespues(n){
 const SYNC_CODIGO_KEY = 'voceiro-sync-codigo';
 const SYNC_ULTIMA_KEY = 'voceiro-sync-ultima';
 const SYNC_UNIRSE_KEY = 'voceiro-sync-unirse';   // hasta la primera sincronización
-const SYNC_QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
 // var: guardarPresets, marcarLeidaLocal… pueden llamar a sincronizarPronto
 // antes de que este bloque se haya evaluado.
 var SYNC_CODIGO = null;
@@ -1694,7 +1693,7 @@ function cargarSync(){
 
 // Un cambio de aquí: se sube a los pocos segundos, juntando los seguidos.
 function sincronizarPronto(){
-  if (!SYNC_CODIGO || _sync.volcando) return;
+  if (!SYNC_CODIGO || _sync.volcando || _sync.borrando) return;
   clearTimeout(_sync.diferido);
   _sync.diferido = setTimeout(sincronizarAhora, 4000);
 }
@@ -1719,14 +1718,16 @@ function documentoLocal(){
 }
 
 async function sincronizarAhora(){
-  if (!SYNC_CODIGO) return;
+  if (!SYNC_CODIGO || _sync.borrando) return;
+  const codigo = SYNC_CODIGO;
   if (_sync.enCurso){ _sync.otraVez = true; return _sync.enCurso; }
   clearTimeout(_sync.diferido);
   clearTimeout(_sync.reintento);
   if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
   _sync.enCurso = (async () => {
     try {
-      const { documento } = await _sync.cliente.sincronizar(SYNC_CODIGO, documentoLocal());
+      const { documento } = await _sync.cliente.sincronizar(codigo, documentoLocal());
+      if (codigo !== SYNC_CODIGO) return;
       const eraUnirse = _sync.unirse;
       volcarDocumento(documento);
       _sync.ultima = Date.now();
@@ -1740,6 +1741,12 @@ async function sincronizarAhora(){
         localStorage.removeItem(SYNC_UNIRSE_KEY);
       } catch(e){}
     } catch (e){
+      if (codigo !== SYNC_CODIGO) return;
+      if (e?.code === 'SYNC_REVOCADO'){
+        olvidarSync();
+        toast(t('syncRevocado'), 6000);
+        return;
+      }
       // Sin red, servidor caído (p. ej. Cloudflare bloqueado durante un
       // partido)…: no pasa nada, todo sigue aquí; se reintenta con calma.
       _sync.error = (e && e.message) || String(e);
@@ -1913,21 +1920,6 @@ async function copiarTexto(texto, aviso){
   }
 }
 
-let _qrCargando = null;
-function cargarLibQr(){
-  if (window.qrcode) return Promise.resolve();
-  if (!_qrCargando){
-    _qrCargando = new Promise((ok, mal) => {
-      const s = document.createElement('script');
-      s.src = SYNC_QR_LIB;
-      s.async = true;
-      s.onload = ok;
-      s.onerror = () => { _qrCargando = null; mal(new Error('qr')); };
-      document.head.appendChild(s);
-    });
-  }
-  return _qrCargando;
-}
 async function alternarQr(){
   const caja = $('#sync-qr'), btn = $('#sync-qr-btn');
   if (!caja.hidden){
@@ -1936,8 +1928,8 @@ async function alternarQr(){
     return;
   }
   try {
-    await cargarLibQr();
-    const qr = window.qrcode(0, 'M');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=9e781d8f66');
+    const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
     caja.innerHTML = qr.createSvgTag(4, 2);
@@ -2007,14 +1999,19 @@ function wireSync(){
   });
   $('#sync-borrar').addEventListener('click', async () => {
     if (!confirm(t('syncBorrarConfirm'))) return;
+    if (_sync.borrando) return;
+    const codigo = SYNC_CODIGO;
+    _sync.borrando = true;
     try {
+      // Esperar una primera alta en curso antes de borrar, y no lanzar otra.
+      await _sync.enCurso;
       if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
-      await _sync.cliente.borrar(SYNC_CODIGO);
-      olvidarSync();
+      await _sync.cliente.borrar(codigo);
+      if (codigo === SYNC_CODIGO) olvidarSync();
       toast(t('syncBorrado'), 2400);
     } catch(e){
       toast(t('syncError', { X: (e && e.message) || e }), 3200);
-    }
+    } finally { _sync.borrando = false; }
   });
   // Al volver a la pestaña, lo último de los otros dispositivos.
   document.addEventListener('visibilitychange', () => {
@@ -3450,7 +3447,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=8cfebb68cc')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=9e781d8f66')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
