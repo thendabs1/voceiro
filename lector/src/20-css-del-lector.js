@@ -1,7 +1,7 @@
 /* ============================================================
    16. ASPECTO: PALETA, ICONOS Y CSS DEL LECTOR
    ============================================================ */
-// Paleta de Voceiro (plantilla.html, bloque PALETA), puesta aquí por
+// Paleta de Voceiro (shared/tema/paleta.css), puesta aquí por
 // build.mjs: { light: {bg:'#fff', …, 'color-scheme':'light'}, sepia: {…}, … }.
 const PALETA = /*{{PALETA}}*/{};
 

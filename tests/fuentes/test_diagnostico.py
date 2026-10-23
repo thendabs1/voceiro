@@ -29,26 +29,26 @@ class Diagnostico(unittest.TestCase):
 
     def test_dominio_nuevo_prueba_scrape_y_feed_descubierto(self):
         r = respuesta(b'<link rel="alternate" type="application/rss+xml" href="/feed">')
-        with patch.object(D, 'todos_los_medios', return_value=[]), patch.object(D.R.SESSION, 'get', return_value=r), patch.object(D, 'probar', return_value={'estado': 'ok'}) as probar:
+        with patch.object(D, 'todos_los_medios', return_value=[]), patch.object(D.fuentes.SESSION, 'get', return_value=r), patch.object(D, 'probar', return_value={'estado': 'ok'}) as probar:
             informe = D.diagnosticar('https://ejemplo.test/')
         self.assertEqual([c.args[1] for c in probar.call_args_list],
                          [('scrape', 'https://ejemplo.test/'), ('rss', 'https://ejemplo.test/feed')])
         self.assertEqual(informe['http']['estado'], 200)
 
     def test_pagina_caida_no_impide_probar_fuentes_catalogadas(self):
-        with patch.object(D, 'todos_los_medios', return_value=[MEDIO]), patch.object(D.R.SESSION, 'get', side_effect=TimeoutError()), patch.object(D, 'probar', return_value={'estado': 'vacío'}) as probar:
+        with patch.object(D, 'todos_los_medios', return_value=[MEDIO]), patch.object(D.fuentes.SESSION, 'get', side_effect=TimeoutError()), patch.object(D, 'probar', return_value={'estado': 'vacío'}) as probar:
             informe = D.diagnosticar('https://ejemplo.test/')
         self.assertIn('TimeoutError', informe['error_pagina'])
         self.assertEqual(probar.call_count, 3)
 
     def test_limite_evita_barridos_sin_tope(self):
-        with patch.object(D, 'todos_los_medios', return_value=[MEDIO]), patch.object(D.R.SESSION, 'get', return_value=respuesta()), patch.object(D, 'probar', return_value={'estado': 'vacío'}) as probar:
+        with patch.object(D, 'todos_los_medios', return_value=[MEDIO]), patch.object(D.fuentes.SESSION, 'get', return_value=respuesta()), patch.object(D, 'probar', return_value={'estado': 'vacío'}) as probar:
             informe = D.diagnosticar('https://ejemplo.test/', limite=2)
         self.assertEqual(probar.call_count, 2)
         self.assertEqual(informe['fuentes_omitidas'], 1)
 
     def test_tipo_explicito_no_descarga_portada(self):
-        with patch.object(D.R.SESSION, 'get', side_effect=AssertionError('No descargar')), patch.object(D, 'probar', return_value={'estado': 'ok'}) as probar:
+        with patch.object(D.fuentes.SESSION, 'get', side_effect=AssertionError('No descargar')), patch.object(D, 'probar', return_value={'estado': 'ok'}) as probar:
             D.diagnosticar('https://ejemplo.test/news.xml', tipo='sitemap')
         self.assertEqual(probar.call_args.args[1], ('sitemap', 'https://ejemplo.test/news.xml'))
 
@@ -60,10 +60,10 @@ class Diagnostico(unittest.TestCase):
     def test_salud_distingue_escasez_y_antiguedad_y_limita_muestras(self):
         for cantidad, dias, estado in ((2, 0, 'pocos'), (5, 0, 'ok'), (5, 5, 'rancia')):
             lote = items(cantidad)
-            fecha = (datetime.now(S.R.TZ_MADRID) - timedelta(days=dias)).isoformat()
+            fecha = (datetime.now(S.config.TZ_MADRID) - timedelta(days=dias)).isoformat()
             for it in lote:
                 it['fecha_pub'] = fecha
-            with self.subTest(estado=estado), patch.object(S.R, '_probar_fuente', return_value=(lote, 'ok')):
+            with self.subTest(estado=estado), patch.object(S.fuentes, '_probar_fuente', return_value=(lote, 'ok')):
                 fila = S.probar(MEDIO, ('rss', 'https://ejemplo.test/feed'), muestras=1)
             self.assertEqual(fila['estado'], estado)
             self.assertEqual(fila['con_fecha'], cantidad)
@@ -78,7 +78,7 @@ class Diagnostico(unittest.TestCase):
     def test_salud_modo_estricto_y_exportacion_de_fallos(self):
         with tempfile.TemporaryDirectory() as carpeta:
             destino = Path(carpeta) / 'salud.json'
-            with patch('sys.argv', ['salud_fuentes.py', '--tipos', 'rss', '--json', str(destino), '--exigir-ok']), patch.object(S, 'todos_los_medios', return_value=[MEDIO]), patch.object(S.R, '_probar_fuente', return_value=(None, 'HTTP 403')), patch.dict(S.os.environ, {'GITHUB_STEP_SUMMARY': str(Path(carpeta) / 'resumen.md')}), contextlib.redirect_stdout(io.StringIO()):
+            with patch('sys.argv', ['salud_fuentes.py', '--tipos', 'rss', '--json', str(destino), '--exigir-ok']), patch.object(S, 'todos_los_medios', return_value=[MEDIO]), patch.object(S.fuentes, '_probar_fuente', return_value=(None, 'HTTP 403')), patch.dict(S.os.environ, {'GITHUB_STEP_SUMMARY': str(Path(carpeta) / 'resumen.md')}), contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(S.main(), 1)
             self.assertIn('HTTP 403', destino.read_text())
             self.assertIn('HTTP 403', (Path(carpeta) / 'resumen.md').read_text())

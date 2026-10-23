@@ -1,3 +1,4 @@
+import { cacheControlFor } from './comun/datos-cache.js';
 // worker-deno-datos/src/index.js — Deno Deploy
 import { signR2Request } from './sigv4.js';
 
@@ -51,7 +52,7 @@ export default {
       return new Response(`R2 fetch error: ${e.message}`, { status: 502, headers: CORS });
     }
 
-    const cacheControl = _cacheControlFor(key);
+    const cacheControl = cacheControlFor(key);
     const etag = r2Res.headers.get('ETag');
     const etagDebil = etag ? 'W/' + etag.replace(/^W\//, '') : null;
 
@@ -91,21 +92,4 @@ export default {
 
 function _notFound() {
   return new Response('Not found', { status: 404, headers: CORS });
-}
-
-function _cacheControlFor(key) {
-  if (key === 'manifest.json' || key === 'inventario.json') return 'public, max-age=60';
-  if (key.startsWith('portada-')) return 'public, max-age=60';
-  const dominio = key.match(/^d-[a-z0-9.-]+-(\d{4}-\d{2}-\d{2})\.json$/);
-  if (dominio) return _congelado(dominio[1]) ? 'public, max-age=86400' : 'public, max-age=60';
-  if (/^\d{4}-\d{2}-\d{2}-[a-f0-9]{10}\.json$/.test(key)) return 'public, max-age=31536000, immutable';
-  if (/^\d{4}-\d{2}-\d{2}-g-[a-z0-9-]+-[a-f0-9]{10}\.json$/.test(key)) return 'public, max-age=31536000, immutable';
-  if (key === 'dominios.json') return 'public, max-age=300';
-  return 'public, max-age=3600';
-}
-
-// Días congelados: el recolector reescribe hoy y los 3 anteriores (hora de
-// Madrid). Contando en UTC sale como mucho un día menos: con 5 hay margen.
-function _congelado(fecha) {
-  return (Date.now() - Date.parse(fecha + 'T00:00:00Z')) / 86400000 >= 5;
 }

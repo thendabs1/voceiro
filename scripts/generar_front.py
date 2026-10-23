@@ -31,8 +31,26 @@ def generar_html(fecha=None, total=None, raiz=None):
                 modulos[f'{carpeta}/{ruta.name}'] = ruta
     fuentes = {rel: ruta.read_text(encoding='utf-8') for rel, ruta in modulos.items()}
 
+    # Como en el lector, las piezas de la interfaz se ensamblan en orden
+    # dentro de un único módulo: conservan su ámbito y su orden de arranque.
+    # Los diccionarios sí son módulos independientes, uno por idioma.
+    front = raiz / 'front'
+    fuentes['app.js'] = (
+        '// Generado por scripts/generar_front.py desde front/app/*.js. No editar.\n'
+        + ''.join(ruta.read_text(encoding='utf-8')
+                  for ruta in sorted((front / 'app').glob('*.js')))
+    )
+    fuentes['estilos.css'] = (
+        (raiz / 'shared/tema/paleta.css').read_text(encoding='utf-8')
+        + ''.join(ruta.read_text(encoding='utf-8')
+                  for ruta in sorted((front / 'estilos').glob('*.css')))
+    )
+    for ruta in sorted((front / 'idiomas').glob('*.js')):
+        fuentes[f'idiomas/{ruta.name}'] = ruta.read_text(encoding='utf-8')
+
     # Versión común: Pages puede cachear un módulo antiguo mientras llega el
-    # HTML nuevo. El hash en cada import evita mezclar versiones.
+    # HTML nuevo. El hash en cada import y en los enlaces a JS/CSS evita
+    # mezclar versiones, también si solo cambian estilos o traducciones.
     h = hashlib.sha256()
     for rel in sorted(fuentes):
         h.update(rel.encode())
@@ -42,11 +60,13 @@ def generar_html(fecha=None, total=None, raiz=None):
     def versionar(codigo):
         return rx_import.sub(lambda m: f'{m.group(1)}{m.group(2)}?v={version}{m.group(3)}', codigo)
 
-    (public / 'index.html').write_text(versionar(html), encoding='utf-8')
+    html = re.sub(r'''((?:src|href)=['"])(\./(?:app\.js|estilos\.css))(['"])''',
+                  lambda m: f'{m.group(1)}{m.group(2)}?v={version}{m.group(3)}', html)
     for rel, fuente in fuentes.items():
         destino = public / rel
         destino.parent.mkdir(parents=True, exist_ok=True)
         destino.write_text(versionar(fuente), encoding='utf-8')
+    (public / 'index.html').write_text(versionar(html), encoding='utf-8')
 
 
 if __name__ == '__main__':

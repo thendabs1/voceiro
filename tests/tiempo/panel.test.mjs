@@ -4,11 +4,11 @@
 // coloreado solo por avisos naranjas o rojos de mis sitios.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 import { PESO, empezado, zonaHorariaAviso } from '../../shared/tiempo/avisos.js';
 
-const html = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
+const html = leerAplicacion();
 const funcion = nombre => html.slice(
   html.indexOf(`function ${nombre}(`),
   html.indexOf('\n}', html.indexOf(`function ${nombre}(`)) + 2,
@@ -39,9 +39,9 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
   };
   runInNewContext([
     linea('const RX_TOKENS_TIEMPO'), linea('const RX_HAY_TIEMPO'),
-    ...['sitiosTiempo', 'ponerTiempo', 'enfocarBuscador', 'abrirSitios', 'abrirTiempo', 'avisosDeZona',
+    ...['sitiosTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo', 'avisosDeZona',
       'pintarBotonTiempo'].map(funcion),
-  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.ponerTiempo = ponerTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
+  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.ponerTiempo = ponerTiempo; this.cambiarLugarTiempo = cambiarLugarTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
   return { ctx, buscar: el['#buscar'], sol };
 }
 
@@ -81,6 +81,24 @@ test('las pestañas cambian un prefijo del tiempo por otro', () => {
   assert.equal(buscar.value, 'incendio alertas:');
   ctx.ponerTiempo('eltiempo:Vigo');
   assert.equal(buscar.value, 'incendio eltiempo:Vigo');
+});
+
+test('Cambiar de lugar vacía el sitio, conserva la búsqueda y enfoca el buscador', () => {
+  for (const valor of ['incendio eltiempo:Vigo', 'incendio eltiempo:"A Coruña"']) {
+    const { ctx, buscar } = contexto({ buscar: valor });
+    let enfocado = false;
+    buscar.focus = () => { enfocado = true; };
+    buscar.setSelectionRange = (inicio, fin) => {
+      buscar.selectionStart = inicio;
+      buscar.selectionEnd = fin;
+    };
+    ctx.cambiarLugarTiempo();
+    assert.equal(enfocado, true);
+    assert.equal(buscar.value, 'incendio eltiempo:');
+    assert.equal(buscar.selectionStart, buscar.value.length);
+    assert.equal(buscar.selectionEnd, buscar.value.length);
+    assert.equal(ctx.filtrados, 1);
+  }
 });
 
 const aviso = (zona, nivel, inicio = '2026-10-21T08:00:00Z') =>

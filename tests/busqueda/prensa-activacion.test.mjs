@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
 
 // Ejecutar la función real del frontal sin hacer peticiones ni arrancar el DOM.
 for (const archivo of ['plantilla.html', 'public/index.html']) {
-  const html = readFileSync(new URL(`../../${archivo}`, import.meta.url), 'utf8');
+  const html = leerAplicacion(archivo);
   const inicio = html.indexOf('function programarPrensa(');
   const fin = html.indexOf('\n// Texto, medios y fechas:', inicio);
   assert.ok(inicio >= 0 && fin > inicio);

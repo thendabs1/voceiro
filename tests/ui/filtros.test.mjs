@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 
 for (const archivo of ['plantilla.html', 'public/index.html']) {
-  const html = readFileSync(new URL(`../../${archivo}`, import.meta.url), 'utf8');
+  const html = leerAplicacion(archivo);
   const funcion = nombre => html.slice(
     html.indexOf(`function ${nombre}(`),
     html.indexOf('\n}', html.indexOf(`function ${nombre}(`)) + 2,

@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'workers/cf-buscar/**'
+      - 'workers/comun/**'
+      - 'scripts/sync-workers.mjs'
       # El worker empaqueta ../../../shared/parser.js (y shared/busqueda/):
       # un cambio solo en shared/ también tiene que redesplegar CF.
       - 'shared/**'
@@ -17,6 +19,9 @@ jobs:
     name: Deploy a Cloudflare
     steps:
       - uses: actions/checkout@v4
+
+      - name: Preparar módulos comunes locales
+        run: node scripts/sync-workers.mjs
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3

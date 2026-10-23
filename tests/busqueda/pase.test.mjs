@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 
 // Ejecuta el controlador real con un reloj y elementos mínimos, sin red.
 function preparar(archivo, visible = 0, { tapa = 0, alto = 100 } = {}) {
-  const html = readFileSync(new URL(`../../${archivo}`, import.meta.url), 'utf8');
+  const html = leerAplicacion(archivo);
   const codigo = html.slice(html.indexOf('let PASE = null;'), html.indexOf('\nfunction renderizar(){'));
   assert.ok(codigo.startsWith('let PASE = null;'));
   const vistas = [], leidas = [], guardadas = [], timers = new Map(), eventos = {};

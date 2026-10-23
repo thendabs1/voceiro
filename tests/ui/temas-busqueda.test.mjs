@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 
 const textos = {
@@ -14,7 +14,7 @@ const textos = {
 };
 
 for (const archivo of ['plantilla.html', 'public/index.html']) {
-  const html = readFileSync(new URL(`../../${archivo}`, import.meta.url), 'utf8');
+  const html = leerAplicacion(archivo);
   const inicio = html.indexOf('function renderChipsTemas(){');
   const funcion = html.slice(inicio, html.indexOf('\n}', inicio) + 2);
 

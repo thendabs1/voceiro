@@ -9,6 +9,8 @@ on:
     branches: [main]
     paths:
       - 'workers/deno-buscar/**'
+      - 'workers/comun/**'
+      - 'scripts/sync-workers.mjs'
       # Las copias del parser las commitea sync-parser.yml con GITHUB_TOKEN, y
       # ese commit no dispara workflows: se sincronizan aquí antes de desplegar.
       - 'shared/parser.js'
@@ -32,6 +34,9 @@ jobs:
 
       - name: Sincronizar parser
         run: node scripts/sync-parser.mjs
+
+      - name: Preparar módulos comunes locales
+        run: node scripts/sync-workers.mjs
 
       - uses: denoland/setup-deno@v2
         with:
