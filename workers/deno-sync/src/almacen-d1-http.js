@@ -81,9 +81,11 @@ export function almacenD1Http({ cuenta, base, token, fetch: pedirFetch = globalT
       return meta.changes === 1;
     },
 
+    // El servicio ya autenticó la fila. Mantener la revocación incluso si
+    // la limpieza la eliminó entre esa lectura y esta sentencia.
     async borrar(id, tokenHash){
       await consultar('INSERT OR IGNORE INTO revocados (id, token_hash) ' +
-        'SELECT id, token_hash FROM sync WHERE id = ? AND token_hash = ?', [id, tokenHash]);
+        'SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM sync WHERE id = ? AND token_hash <> ?)', [id, tokenHash, id, tokenHash]);
     },
 
     // La limpieza diaria (borrarInactivos, borrarAltasAntes) la hace el cron de CF.

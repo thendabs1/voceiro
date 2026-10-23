@@ -27,7 +27,7 @@ BEGIN
   UPDATE estado SET valor = valor - 1 WHERE clave = 'filas_v2';
 END;
 
--- Una marca solo se inserta mediante SELECT de una fila cuyo token coincide.
+-- El servicio solo solicita marcas después de autenticar una fila existente.
 -- El borrado y la marca son indivisibles; DELETE repetidos no crean marcas.
 CREATE TRIGGER IF NOT EXISTS sync_revocar
 AFTER INSERT ON revocados

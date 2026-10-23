@@ -176,3 +176,17 @@ test('el QR local genera el SVG del enlace de sincronización sin red', () => {
   assert.ok(qr.getModuleCount() > 0);
   assert.match(qr.createSvgTag(4, 2), /^<svg /);
 });
+
+
+test('borrar revoca también si la limpieza elimina la fila después de autenticarla', async () => {
+  const f = d1Local();
+  try {
+    await usar(f.cf, 1, 'PUT');
+    const almacen = { ...f.cf, async borrar(id, token){
+      f.db.prepare('DELETE FROM sync WHERE id = ?').run(id);
+      await f.http.borrar(id, token);
+    } };
+    assert.equal((await usar(almacen, 1, 'DELETE')).status, 204);
+    assert.equal((await usar(f.http, 1, 'PUT')).status, 410);
+  } finally { f.db.close(); }
+});
