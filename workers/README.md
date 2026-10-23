@@ -8,6 +8,9 @@ edita en `workers/comun/`:
 - `turso.js`: consulta SQL y protocolo HTTP del archivo.
 - `gnews.js`: prensa por el relay de Google News, también desde Deno.
 - `datos-cache.js`: caducidad de índices, portadas y slices de R2.
+- `sync.js`: sincronización entre dispositivos. CF la sirve con el binding de
+  D1; Deno, con la misma base D1 por la API HTTP de Cloudflare, así que no
+  hay dos copias que reconciliar. El cliente prueba CF y, si no responde, Deno.
 
 Cada despliegue contiene una copia generada de los módulos que necesita en
 `src/comun/`. Esto permite subir el directorio de Deno Deploy completo sin
@@ -31,6 +34,9 @@ Las diferencias de plataforma se conservan en los adaptadores:
 | Lectura de R2 | Binding del bucket. | API S3 con firma SigV4. |
 | Compresión | Gestionada por Cloudflare. | Gzip en el worker; conserva HEAD y ETags débiles. |
 | Tiempo y avisos | Sin rutas meteorológicas. | AEMET y Open-Meteo/MeteoAlarm como respaldo. |
+| Sync: almacén | Binding D1. | API HTTP de D1 (`CF_ACCOUNT_ID`, `CF_D1_TOKEN`). |
+| Sync: IP de las altas | `CF-Connecting-IP`. | `remoteAddr` de la conexión; la cabecera se ignora. |
+| Sync: limpieza diaria | Cron del worker. | No la hace: la base es la misma. |
 
 Los relays de extracción y búsqueda siguen siendo servicios distintos con
 sus propias restricciones. Las pruebas HTTP de `tests/workers` verifican los

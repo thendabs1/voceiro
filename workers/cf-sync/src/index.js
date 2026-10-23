@@ -1,6 +1,6 @@
 // Worker de sincronización de Voceiro (voceiro-sync). La lógica está en
-// sync.js; aquí solo se conecta con D1 y con el cron de limpieza.
-import { atender, limpiar, ORIGEN } from './sync.js';
+// comun/sync.js; aquí solo se conecta con D1 y con el cron de limpieza.
+import { atender, limpiar, ORIGEN } from './comun/sync.js';
 import { almacenD1 } from './almacen-d1.js';
 
 export default {
