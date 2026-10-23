@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=d8253e692b';
+} from './parser.js?v=8cfebb68cc';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=d8253e692b';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=d8253e692b';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=d8253e692b';
-import { comparador } from './busqueda/orden.js?v=d8253e692b';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=8cfebb68cc';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=8cfebb68cc';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=8cfebb68cc';
+import { comparador } from './busqueda/orden.js?v=8cfebb68cc';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=d8253e692b';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=d8253e692b';
+} from './sync/fusion.js?v=8cfebb68cc';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=8cfebb68cc';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=d8253e692b';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=d8253e692b';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=8cfebb68cc';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=8cfebb68cc';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=d8253e692b';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=8cfebb68cc';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=d8253e692b';
+} from './tiempo/avisos.js?v=8cfebb68cc';
 
-import { I18N, traducir } from './idiomas/index.js?v=d8253e692b';
+import { I18N, traducir } from './idiomas/index.js?v=8cfebb68cc';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -3428,6 +3428,7 @@ const TIEMPO_SITIOS_KEY  = 'voceiro-tiempo-sitios-v1';
 const TIEMPO_HORAS_KEY   = 'voceiro-tiempo-horas';
 const TIEMPO_AVISOS_KEY  = 'voceiro-tiempo-avisos';
 const TIEMPO_MAX_SITIOS  = 5;
+const PREFIJOS_TIEMPO = { es: 'eltiempo', gl: 'otempo', ca: 'eltemps', en: 'weather', eu: 'eguraldia' };
 const TIEMPO_URL = BACKENDS.deno.buscar;
 const TIEMPO_CIELO = {
   despejado: ['sun', 'tiempoDespejado'],      poco:     ['cloud-sun', 'tiempoPoco'],
@@ -3449,7 +3450,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=d8253e692b')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=8cfebb68cc')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -3817,7 +3818,7 @@ const sitioPorClave = k => sitiosTiempo().find(s => claveLugar(s.lugar) === k);
 function abrirSitio(s){
   if (!s) return;
   recordarLugar(s.nombre, s.lugar);   // que no pregunte «¿Qué Castro?»
-  ponerTiempo('eltiempo:' + (/\s/.test(s.nombre) ? `"${s.nombre}"` : s.nombre));
+  ponerTiempo(tokenTiempo(/\s/.test(s.nombre) ? `"${s.nombre}"` : s.nombre));
 }
 function quitarSitio(k){
   const sitios = sitiosTiempo().filter(s => claveLugar(s.lugar) !== k);
@@ -3831,6 +3832,9 @@ function quitarSitio(k){
 // el resto de la búsqueda; '' los quita (cierra el panel).
 const RX_TOKENS_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
 const RX_HAY_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):/i;
+function tokenTiempo(valor = ''){
+  return `${PREFIJOS_TIEMPO[(ACCES && ACCES.lang) || 'es'] || 'eltiempo'}:${valor}`;
+}
 function ponerTiempo(token){
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
@@ -3861,11 +3865,11 @@ function enfocarBuscador(){
   input.setSelectionRange(input.value.length, input.value.length);
 }
 function cambiarLugarTiempo(){
-  ponerTiempo('eltiempo:');
+  ponerTiempo(tokenTiempo());
   requestAnimationFrame(enfocarBuscador);
 }
 function abrirSitios(){
-  ponerTiempo('eltiempo:');
+  ponerTiempo(tokenTiempo());
   if (!sitiosTiempo().length) enfocarBuscador();
 }
 function abrirTiempo(){

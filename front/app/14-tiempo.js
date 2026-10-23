@@ -13,6 +13,7 @@ const TIEMPO_SITIOS_KEY  = 'voceiro-tiempo-sitios-v1';
 const TIEMPO_HORAS_KEY   = 'voceiro-tiempo-horas';
 const TIEMPO_AVISOS_KEY  = 'voceiro-tiempo-avisos';
 const TIEMPO_MAX_SITIOS  = 5;
+const PREFIJOS_TIEMPO = { es: 'eltiempo', gl: 'otempo', ca: 'eltemps', en: 'weather', eu: 'eguraldia' };
 const TIEMPO_URL = BACKENDS.deno.buscar;
 const TIEMPO_CIELO = {
   despejado: ['sun', 'tiempoDespejado'],      poco:     ['cloud-sun', 'tiempoPoco'],
@@ -402,7 +403,7 @@ const sitioPorClave = k => sitiosTiempo().find(s => claveLugar(s.lugar) === k);
 function abrirSitio(s){
   if (!s) return;
   recordarLugar(s.nombre, s.lugar);   // que no pregunte «¿Qué Castro?»
-  ponerTiempo('eltiempo:' + (/\s/.test(s.nombre) ? `"${s.nombre}"` : s.nombre));
+  ponerTiempo(tokenTiempo(/\s/.test(s.nombre) ? `"${s.nombre}"` : s.nombre));
 }
 function quitarSitio(k){
   const sitios = sitiosTiempo().filter(s => claveLugar(s.lugar) !== k);
@@ -416,6 +417,9 @@ function quitarSitio(k){
 // el resto de la búsqueda; '' los quita (cierra el panel).
 const RX_TOKENS_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
 const RX_HAY_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):/i;
+function tokenTiempo(valor = ''){
+  return `${PREFIJOS_TIEMPO[(ACCES && ACCES.lang) || 'es'] || 'eltiempo'}:${valor}`;
+}
 function ponerTiempo(token){
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
@@ -446,11 +450,11 @@ function enfocarBuscador(){
   input.setSelectionRange(input.value.length, input.value.length);
 }
 function cambiarLugarTiempo(){
-  ponerTiempo('eltiempo:');
+  ponerTiempo(tokenTiempo());
   requestAnimationFrame(enfocarBuscador);
 }
 function abrirSitios(){
-  ponerTiempo('eltiempo:');
+  ponerTiempo(tokenTiempo());
   if (!sitiosTiempo().length) enfocarBuscador();
 }
 function abrirTiempo(){
