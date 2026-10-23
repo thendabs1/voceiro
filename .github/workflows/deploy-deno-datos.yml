@@ -9,7 +9,9 @@ on:
     branches: [main]
     paths:
       - 'workers/deno-datos/**'
-      - 'workers/comun/**'
+      # Solo los módulos comunes que usa (scripts/sync-workers.mjs): otro
+      # cambio en workers/comun no gasta un despliegue.
+      - 'workers/comun/datos-cache.js'
       - 'scripts/sync-workers.mjs'
       - '.github/workflows/deploy-deno-datos.yml'
   workflow_dispatch:
