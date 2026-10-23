@@ -3,7 +3,8 @@ name: Deploy Deno sync
 # Respaldo de la sincronización en Deno Deploy (workers/deno-sync): la misma
 # lógica (workers/comun/sync.js) y la misma base D1 que voceiro-sync en CF.
 # Variables en Deno Deploy: CF_ACCOUNT_ID y CF_D1_TOKEN (token de Cloudflare
-# solo con permiso de edición de D1).
+# solo con permiso de edición de D1), y SYNC_IP_SECRET idéntico al de CF.
+# Antes de fusionar: migración y secretos según workers/cf-sync/SEGURIDAD.md.
 
 on:
   push:

@@ -175,6 +175,13 @@ async function sincronizarLector(){
       }
       guardarEstadoSyncLector({ subido: empezo, fallo: 0, error: '' });
     } catch(e){
+      if (codigoSyncLector() !== codigo) return;
+      if (e?.code === 'SYNC_REVOCADO'){
+        // Conservar el documento local, pero detener las subidas de este código.
+        guardarEstadoSyncLector({ codigo: null, fallo: 0, error: '' });
+        clearTimeout(__syncLector.diferido);
+        return;
+      }
       // Sin red o con los dos servidores caídos: todo sigue aquí y queda
       // apuntado; se reintenta con el próximo cambio o al abrir el lector.
       guardarEstadoSyncLector({ fallo: Date.now(), error: (e && e.message) || String(e) });

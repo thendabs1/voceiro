@@ -56,6 +56,60 @@ export async function sha256hex(texto){
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// La IP solo se usa en memoria. Unifica IPv6 y las IPv4 mapeadas antes del HMAC.
+export function normalizarIp(ip){
+  if (typeof ip !== 'string' || !ip || ip !== ip.trim()) return null;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)){
+    const partes = ip.split('.').map(Number);
+    return partes.every(n => n <= 255) ? partes.join('.') : null;
+  }
+  if (!/^[0-9a-f:.]+$/i.test(ip) || !ip.includes(':')) return null;
+  try {
+    const canonica = new URL(`http://[${ip}]/`).hostname.slice(1, -1);
+    const mapeada = canonica.match(/^::ffff:([0-9a-f]+):([0-9a-f]+)$/);
+    if (mapeada){
+      const a = parseInt(mapeada[1], 16), b = parseInt(mapeada[2], 16);
+      return [a >> 8, a & 255, b >> 8, b & 255].join('.');
+    }
+    return canonica;
+  } catch { return null; }
+}
+
+export async function huellaIpDiaria(ip, dia, secreto){
+  const normalizada = normalizarIp(ip);
+  // 32 bytes aleatorios representados en hexadecimal, iguales en CF y Deno.
+  if (!normalizada || !/^[0-9a-f]{64}$/i.test(secreto || '')) return null;
+  const bytes = Uint8Array.from(secreto.match(/../g), b => parseInt(b, 16));
+  const clave = await crypto.subtle.importKey('raw', bytes,
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const firma = await crypto.subtle.sign('HMAC', clave,
+    new TextEncoder().encode(`voceiro-altas-v1\n${dia}\n${normalizada}`));
+  return [...new Uint8Array(firma)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function leerCuerpo(request){
+  if (!request.body) return new Uint8Array();
+  const lector = request.body.getReader();
+  const partes = [];
+  let total = 0;
+  try {
+    for (;;){
+      const { done, value } = await lector.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_BYTES){
+        await lector.cancel().catch(() => {});
+        return null;
+      }
+      partes.push(value);
+    }
+  } finally { lector.releaseLock(); }
+  const datos = new Uint8Array(total);
+  let offset = 0;
+  for (const parte of partes){ datos.set(parte, offset); offset += parte.byteLength; }
+  return datos;
+}
+
 // Comparación en tiempo constante (las dos huellas miden lo mismo).
 function iguales(a, b){
   if (a.length !== b.length) return false;
@@ -67,7 +121,7 @@ function iguales(a, b){
 // ip: la del cliente según la plataforma. En CF, CF-Connecting-IP es fiable;
 // en Deno esa cabecera la podría mandar cualquiera, así que se pasa aparte.
 export async function atender(request, almacen, ahora = Date.now(),
-                              ip = request.headers.get('CF-Connecting-IP')){
+                              ip = request.headers.get('CF-Connecting-IP'), secretoIp){
   const origen = request.headers.get('Origin') || '';
   const url = new URL(request.url);
 
@@ -91,6 +145,10 @@ export async function atender(request, almacen, ahora = Date.now(),
 
   const fila = await almacen.leer(id);
   if (fila && !iguales(fila.token_hash, huellaToken)) return responder(origen, 403, { error: 'token' });
+  if (fila?.revocado){
+    return request.method === 'DELETE' ? responder(origen, 204, null)
+      : responder(origen, 410, { error: 'revocado' });
+  }
 
   if (request.method === 'GET'){
     if (!fila) return responder(origen, 404, { error: 'no existe' });
@@ -100,7 +158,7 @@ export async function atender(request, almacen, ahora = Date.now(),
   }
 
   if (request.method === 'DELETE'){
-    if (fila) await almacen.borrar(id);
+    if (fila) await almacen.borrar(id, huellaToken);
     return responder(origen, 204, null);
   }
 
@@ -109,25 +167,30 @@ export async function atender(request, almacen, ahora = Date.now(),
   // Sin If-Match no se escribe (Number(null) sería 0, «crear», y no lo es).
   const ifMatch = (request.headers.get('If-Match') || '').trim();
   const base = /^\d+$/.test(ifMatch) ? Number(ifMatch) : NaN;
-  if (!Number.isInteger(base)) return responder(origen, 428, { error: 'If-Match' });
+  if (!Number.isSafeInteger(base)) return responder(origen, 428, { error: 'If-Match' });
   if (Number(request.headers.get('Content-Length') || 0) > MAX_BYTES){
     return responder(origen, 413, { error: 'tamaño' });
   }
-  const datos = new Uint8Array(await request.arrayBuffer());
+  const datos = await leerCuerpo(request);
+  if (!datos) return responder(origen, 413, { error: 'tamaño' });
   if (!datos.length) return responder(origen, 400, { error: 'vacío' });
-  if (datos.length > MAX_BYTES) return responder(origen, 413, { error: 'tamaño' });
 
   if (!fila){
     if (base !== 0) return responder(origen, 409, { version: 0 }, { 'X-Version': '0' });
-    const huellaIp = await sha256hex(ip || 'sin-ip');
     const dia = new Date(ahora).toISOString().slice(0, 10);
-    if (await almacen.altasHoy(huellaIp, dia) >= ALTAS_POR_IP_DIA) return responder(origen, 429, { error: 'altas' });
-    if (await almacen.contar() >= MAX_FILAS) return responder(origen, 503, { error: 'lleno' });
-    if (!await almacen.crear({ id, token_hash: huellaToken, datos, ahora })){
+    const huellaIp = await huellaIpDiaria(ip, dia, secretoIp);
+    if (!huellaIp) return responder(origen, 503, { error: 'altas no disponibles' });
+    // Comprobación, alta y contadores se confirman juntos en D1.
+    const resultado = await almacen.crear({ id, token_hash: huellaToken, datos, ahora,
+      ip: huellaIp, dia, maxAltas: ALTAS_POR_IP_DIA, maxFilas: MAX_FILAS });
+    if (resultado === 'altas') return responder(origen, 429, { error: 'altas' });
+    if (resultado === 'lleno') return responder(origen, 503, { error: 'lleno' });
+    if (resultado === 'revocado') return responder(origen, 410, { error: 'revocado' });
+    if (resultado === 'existe'){
       const otra = await almacen.leer(id);   // se creó a la vez desde otro sitio
       return responder(origen, 409, { version: otra ? otra.version : 0 });
     }
-    await almacen.sumarAlta(huellaIp, dia);
+    if (resultado !== 'creado') throw new Error('Resultado de alta desconocido');
     return responder(origen, 200, { version: 1 }, { 'X-Version': '1' });
   }
 
@@ -139,6 +202,7 @@ export async function atender(request, almacen, ahora = Date.now(),
   }
   if (!await almacen.actualizar({ id, token_hash: huellaToken, version: base, datos, ahora })){
     const otra = await almacen.leer(id);
+    if (otra?.revocado) return responder(origen, 410, { error: 'revocado' });
     return responder(origen, 409, { version: otra ? otra.version : 0 });
   }
   return responder(origen, 200, { version: base + 1 }, { 'X-Version': String(base + 1) });

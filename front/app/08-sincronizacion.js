@@ -9,7 +9,6 @@
 const SYNC_CODIGO_KEY = 'voceiro-sync-codigo';
 const SYNC_ULTIMA_KEY = 'voceiro-sync-ultima';
 const SYNC_UNIRSE_KEY = 'voceiro-sync-unirse';   // hasta la primera sincronización
-const SYNC_QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
 // var: guardarPresets, marcarLeidaLocal… pueden llamar a sincronizarPronto
 // antes de que este bloque se haya evaluado.
 var SYNC_CODIGO = null;
@@ -26,7 +25,7 @@ function cargarSync(){
 
 // Un cambio de aquí: se sube a los pocos segundos, juntando los seguidos.
 function sincronizarPronto(){
-  if (!SYNC_CODIGO || _sync.volcando) return;
+  if (!SYNC_CODIGO || _sync.volcando || _sync.borrando) return;
   clearTimeout(_sync.diferido);
   _sync.diferido = setTimeout(sincronizarAhora, 4000);
 }
@@ -51,14 +50,16 @@ function documentoLocal(){
 }
 
 async function sincronizarAhora(){
-  if (!SYNC_CODIGO) return;
+  if (!SYNC_CODIGO || _sync.borrando) return;
+  const codigo = SYNC_CODIGO;
   if (_sync.enCurso){ _sync.otraVez = true; return _sync.enCurso; }
   clearTimeout(_sync.diferido);
   clearTimeout(_sync.reintento);
   if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
   _sync.enCurso = (async () => {
     try {
-      const { documento } = await _sync.cliente.sincronizar(SYNC_CODIGO, documentoLocal());
+      const { documento } = await _sync.cliente.sincronizar(codigo, documentoLocal());
+      if (codigo !== SYNC_CODIGO) return;
       const eraUnirse = _sync.unirse;
       volcarDocumento(documento);
       _sync.ultima = Date.now();
@@ -72,6 +73,12 @@ async function sincronizarAhora(){
         localStorage.removeItem(SYNC_UNIRSE_KEY);
       } catch(e){}
     } catch (e){
+      if (codigo !== SYNC_CODIGO) return;
+      if (e?.code === 'SYNC_REVOCADO'){
+        olvidarSync();
+        toast(t('syncRevocado'), 6000);
+        return;
+      }
       // Sin red, servidor caído (p. ej. Cloudflare bloqueado durante un
       // partido)…: no pasa nada, todo sigue aquí; se reintenta con calma.
       _sync.error = (e && e.message) || String(e);
@@ -245,21 +252,6 @@ async function copiarTexto(texto, aviso){
   }
 }
 
-let _qrCargando = null;
-function cargarLibQr(){
-  if (window.qrcode) return Promise.resolve();
-  if (!_qrCargando){
-    _qrCargando = new Promise((ok, mal) => {
-      const s = document.createElement('script');
-      s.src = SYNC_QR_LIB;
-      s.async = true;
-      s.onload = ok;
-      s.onerror = () => { _qrCargando = null; mal(new Error('qr')); };
-      document.head.appendChild(s);
-    });
-  }
-  return _qrCargando;
-}
 async function alternarQr(){
   const caja = $('#sync-qr'), btn = $('#sync-qr-btn');
   if (!caja.hidden){
@@ -268,8 +260,8 @@ async function alternarQr(){
     return;
   }
   try {
-    await cargarLibQr();
-    const qr = window.qrcode(0, 'M');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js');
+    const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
     caja.innerHTML = qr.createSvgTag(4, 2);
@@ -339,14 +331,19 @@ function wireSync(){
   });
   $('#sync-borrar').addEventListener('click', async () => {
     if (!confirm(t('syncBorrarConfirm'))) return;
+    if (_sync.borrando) return;
+    const codigo = SYNC_CODIGO;
+    _sync.borrando = true;
     try {
+      // Esperar una primera alta en curso antes de borrar, y no lanzar otra.
+      await _sync.enCurso;
       if (!_sync.cliente) _sync.cliente = crearCliente({ servidores: SERVIDORES_SYNC });
-      await _sync.cliente.borrar(SYNC_CODIGO);
-      olvidarSync();
+      await _sync.cliente.borrar(codigo);
+      if (codigo === SYNC_CODIGO) olvidarSync();
       toast(t('syncBorrado'), 2400);
     } catch(e){
       toast(t('syncError', { X: (e && e.message) || e }), 3200);
-    }
+    } finally { _sync.borrando = false; }
   });
   // Al volver a la pestaña, lo último de los otros dispositivos.
   document.addEventListener('visibilitychange', () => {

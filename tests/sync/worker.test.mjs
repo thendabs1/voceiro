@@ -1,35 +1,14 @@
-// Servicio de sincronización (workers/cf-sync), con un almacén en memoria.
+// Servicio de sincronización (workers/cf-sync), con los adaptadores y SQLite local.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  atender, limpiar, ORIGEN, MAX_BYTES, INTERVALO_MIN_MS, ALTAS_POR_IP_DIA, CADUCIDAD_MS, sha256hex,
+  limpiar, ORIGEN, MAX_BYTES, INTERVALO_MIN_MS, ALTAS_POR_IP_DIA, CADUCIDAD_MS, sha256hex,
 } from '../../workers/comun/sync.js';
 
-function almacenEnMemoria(){
-  const filas = new Map();
-  const altas = new Map();
-  return {
-    filas,
-    async leer(id){ return filas.get(id) || null; },
-    async tocar(id, ahora){ filas.get(id).accedido = ahora; },
-    async crear({ id, token_hash, datos, ahora }){
-      if (filas.has(id)) return false;
-      filas.set(id, { id, token_hash, version: 1, datos: [...datos], creado: ahora, actualizado: ahora, accedido: ahora });
-      return true;
-    },
-    async actualizar({ id, token_hash, version, datos, ahora }){
-      const f = filas.get(id);
-      if (!f || f.version !== version || f.token_hash !== token_hash) return false;
-      Object.assign(f, { datos: [...datos], version: version + 1, actualizado: ahora, accedido: ahora });
-      return true;
-    },
-    async borrar(id){ filas.delete(id); },
-    async contar(){ return filas.size; },
-    async altasHoy(ip, dia){ return altas.get(ip + dia) || 0; },
-    async sumarAlta(ip, dia){ altas.set(ip + dia, (altas.get(ip + dia) || 0) + 1); },
-    async borrarInactivos(limite){ for (const [id, f] of filas) if (f.accedido < limite) filas.delete(id); },
-    async borrarAltasAntes(){},
-  };
+import { atender, d1Local } from './soporte.mjs';
+function almacenLocal(){
+  const { cf, filas } = d1Local();
+  return { ...cf, filas };
 }
 
 const ID = 'a'.repeat(32);
@@ -46,7 +25,7 @@ function pedir(metodo, { id = ID, token = TOKEN, base, cuerpo, origen = ORIGEN, 
 }
 
 test('preflight y salud, con CORS solo para Voceiro', async () => {
-  const alm = almacenEnMemoria();
+  const alm = almacenLocal();
   let r = await atender(pedir('OPTIONS'), alm, T0);
   assert.equal(r.status, 204);
   assert.equal(r.headers.get('Access-Control-Allow-Origin'), ORIGEN);
@@ -65,14 +44,14 @@ test('preflight y salud, con CORS solo para Voceiro', async () => {
 });
 
 test('sin token válido no hay nada', async () => {
-  const alm = almacenEnMemoria();
+  const alm = almacenLocal();
   assert.equal((await atender(pedir('GET', { token: '' }), alm, T0)).status, 401);
   assert.equal((await atender(pedir('GET', { token: 'corto' }), alm, T0)).status, 401);
   assert.equal((await atender(pedir('GET', { ruta: 'v1/s/xyz' }), alm, T0)).status, 404);
 });
 
 test('crear, leer y actualizar con versión', async () => {
-  const alm = almacenEnMemoria();
+  const alm = almacenLocal();
   assert.equal((await atender(pedir('GET'), alm, T0)).status, 404);
 
   let r = await atender(pedir('PUT', { base: 0, cuerpo: new Uint8Array([1, 2, 3]) }), alm, T0);
@@ -99,7 +78,7 @@ test('crear, leer y actualizar con versión', async () => {
 });
 
 test('con otro token no se lee, ni se pisa, ni se borra', async () => {
-  const alm = almacenEnMemoria();
+  const alm = almacenLocal();
   await atender(pedir('PUT', { base: 0, cuerpo: new Uint8Array([1]) }), alm, T0);
   const otro = 'U'.repeat(43);
   assert.equal((await atender(pedir('GET', { token: otro }), alm, T0)).status, 403);
@@ -109,16 +88,16 @@ test('con otro token no se lee, ni se pisa, ni se borra', async () => {
 });
 
 test('tamaño, If-Match y borrado', async () => {
-  const alm = almacenEnMemoria();
+  const alm = almacenLocal();
   assert.equal((await atender(pedir('PUT', { base: 0, cuerpo: new Uint8Array(MAX_BYTES + 1) }), alm, T0)).status, 413);
   assert.equal((await atender(pedir('PUT', { cuerpo: new Uint8Array([1]) }), alm, T0)).status, 428);
   await atender(pedir('PUT', { base: 0, cuerpo: new Uint8Array([1]) }), alm, T0);
   assert.equal((await atender(pedir('DELETE'), alm, T0)).status, 204);
-  assert.equal((await atender(pedir('GET'), alm, T0)).status, 404);
+  assert.equal((await atender(pedir('GET'), alm, T0)).status, 410);
 });
 
 test('altas por IP y día limitadas', async () => {
-  const alm = almacenEnMemoria();
+  const alm = almacenLocal();
   for (let i = 0; i < ALTAS_POR_IP_DIA; i++){
     const id = i.toString(16).padStart(32, '0');
     assert.equal((await atender(pedir('PUT', { id, base: 0, cuerpo: new Uint8Array([1]) }), alm, T0)).status, 200);
@@ -129,7 +108,7 @@ test('altas por IP y día limitadas', async () => {
 });
 
 test('la limpieza borra lo que lleva un año sin usarse', async () => {
-  const alm = almacenEnMemoria();
+  const alm = almacenLocal();
   await atender(pedir('PUT', { base: 0, cuerpo: new Uint8Array([1]) }), alm, T0);
   await limpiar(alm, T0 + CADUCIDAD_MS - 1000);
   assert.equal(alm.filas.size, 1);

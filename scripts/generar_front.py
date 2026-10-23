@@ -48,6 +48,10 @@ def generar_html(fecha=None, total=None, raiz=None):
     for ruta in sorted((front / 'idiomas').glob('*.js')):
         fuentes[f'idiomas/{ruta.name}'] = ruta.read_text(encoding='utf-8')
 
+    for ruta in sorted((front / 'vendor').glob('*')):
+        if ruta.is_file():
+            fuentes[f'vendor/{ruta.name}'] = ruta.read_text(encoding='utf-8')
+
     # Versión común: Pages puede cachear un módulo antiguo mientras llega el
     # HTML nuevo. El hash en cada import y en los enlaces a JS/CSS evita
     # mezclar versiones, también si solo cambian estilos o traducciones.

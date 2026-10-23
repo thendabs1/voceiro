@@ -1,8 +1,8 @@
 name: Deploy Worker Sync
 
 # Sincronización entre dispositivos (workers/cf-sync, D1 voceiro-sync).
-# El esquema (schema.sql) se aplica a mano con wrangler: no cambia con cada
-# despliegue.
+# Antes de fusionar: aplicar las migraciones y configurar SYNC_IP_SECRET
+# en ambas plataformas según workers/cf-sync/SEGURIDAD.md.
 on:
   push:
     branches: [main]

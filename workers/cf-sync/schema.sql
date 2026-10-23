@@ -1,5 +1,6 @@
 -- Sincronización de Voceiro (D1 voceiro-sync).
--- Aplicar: wrangler d1 execute voceiro-sync --remote --file schema.sql
+-- Base inicial: wrangler d1 execute voceiro-sync --remote --file schema.sql
+-- Después: wrangler d1 migrations apply voceiro-sync --remote
 
 -- Un bloque cifrado por código. id y token salen del código en el
 -- navegador; aquí solo se guarda la huella del token.

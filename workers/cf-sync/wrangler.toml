@@ -12,3 +12,6 @@ database_id = "1db3d775-d97d-454a-891e-346a56eef456"
 # Limpieza diaria: códigos sin uso en 12 meses y contadores viejos.
 [triggers]
 crons = ["17 3 * * *"]
+
+# Secreto obligatorio para altas: SYNC_IP_SECRET (64 caracteres hex aleatorios).
+# Configurar el mismo valor en Deno; ver SEGURIDAD.md antes de desplegar.

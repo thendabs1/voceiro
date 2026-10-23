@@ -103,6 +103,7 @@ jobs:
           # Módulos del núcleo: hacen falta en el repo para poder publicar el
           # front anterior si fallan los tests.
           if [ -d public/busqueda ]; then git add public/busqueda; fi
+          if [ -d public/vendor ]; then git add public/vendor; fi
           if [ -d public/sync ]; then git add public/sync; fi
           if [ -d public/tema ]; then git add public/tema; fi
           if [ -d public/tiempo ]; then git add public/tiempo; fi

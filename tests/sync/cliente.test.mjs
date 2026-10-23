@@ -1,33 +1,14 @@
 // Cliente de sincronización contra la lógica real del servidor
-// (workers/comun/sync.js), con un almacén en memoria.
+// (workers/comun/sync.js), con los adaptadores y SQLite local.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { crearCliente } from '../../shared/sync/cliente.js';
 import { generarCodigo } from '../../shared/sync/cripto.js';
-import { atender } from '../../workers/comun/sync.js';
+import { atender, d1Local } from './soporte.mjs';
 
 function servidorFalso(){
-  const filas = new Map();
-  let reloj = Date.parse('2026-10-14T10:00:00Z');
-  const almacen = {
-    async leer(id){ return filas.get(id) || null; },
-    async tocar(id, ahora){ filas.get(id).accedido = ahora; },
-    async crear({ id, token_hash, datos, ahora }){
-      if (filas.has(id)) return false;
-      filas.set(id, { id, token_hash, version: 1, datos: [...datos], creado: ahora, actualizado: ahora, accedido: ahora });
-      return true;
-    },
-    async actualizar({ id, token_hash, version, datos, ahora }){
-      const f = filas.get(id);
-      if (!f || f.version !== version || f.token_hash !== token_hash) return false;
-      Object.assign(f, { datos: [...datos], version: version + 1, actualizado: ahora, accedido: ahora });
-      return true;
-    },
-    async borrar(id){ filas.delete(id); },
-    async contar(){ return filas.size; },
-    async altasHoy(){ return 0; },
-    async sumarAlta(){},
-  };
+  const { cf: almacen, filas } = d1Local();
+  let reloj = Date.parse('2026-10-23T10:00:00Z');
   const peticiones = [];
   const fetch = async (url, opciones = {}) => {
     reloj += 3000;   // más que el intervalo mínimo entre subidas
