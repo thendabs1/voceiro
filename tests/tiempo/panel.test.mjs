@@ -31,6 +31,7 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
   const ctx = {
     $: s => el[s], t: k => k, ico: n => `<${n}>`, escapeHtml: x => String(x),
     PESO, empezado, Date, JSON, String, Array,
+    ACCES: { lang: 'es' }, recordarLugar() {},
     TIEMPO_ACTIVO: true, AVISOS_CABECERA: true, TIEMPO_SITIOS_KEY: 'voceiro-tiempo-sitios-v1', TIEMPO_MAX_SITIOS: 5,
     AVISOS: { datos: { avisos } }, filtrados: 0,
     avisosVigentes: () => avisos,
@@ -40,11 +41,11 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
     localStorage: { getItem: k => guardado.get(k) ?? null, setItem: (k, v) => guardado.set(k, v) },
   };
   runInNewContext([
-    linea('const RX_TIEMPO_FINAL'), linea('const RX_TOKENS_TIEMPO'), linea('const RX_HAY_TIEMPO'),
-    ...['fragmentoTiempo', 'sitiosTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo',
+    linea('const PREFIJOS_TIEMPO'), linea('const RX_TIEMPO_FINAL'), linea('const RX_TOKENS_TIEMPO'), linea('const RX_HAY_TIEMPO'),
+    ...['fragmentoTiempo', 'sitiosTiempo', 'tokenTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo', 'abrirSitio',
       'htmlPestanasTiempo', 'pulsarPestanaTiempo', 'avisosDeZona',
       'pintarBotonTiempo'].map(funcion),
-  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.ponerTiempo = ponerTiempo; this.cambiarLugarTiempo = cambiarLugarTiempo; this.fragmentoTiempo = fragmentoTiempo; this.rxTiempoFinal = RX_TIEMPO_FINAL; this.htmlPestanasTiempo = htmlPestanasTiempo; this.pulsarPestanaTiempo = pulsarPestanaTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
+  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.abrirSitio = abrirSitio; this.ponerTiempo = ponerTiempo; this.cambiarLugarTiempo = cambiarLugarTiempo; this.fragmentoTiempo = fragmentoTiempo; this.rxTiempoFinal = RX_TIEMPO_FINAL; this.htmlPestanasTiempo = htmlPestanasTiempo; this.pulsarPestanaTiempo = pulsarPestanaTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
   return { ctx, buscar: el['#buscar'], sol };
 }
 
@@ -55,6 +56,25 @@ test('el sol abre Mis sitios y lo cierra sin tocar el resto de la búsqueda', ()
   ctx.abrirTiempo();
   assert.equal(buscar.value, 'incendio medio:elpais');
   assert.equal(ctx.filtrados, 2);
+});
+
+test('el sol, Cambiar de lugar y Mis sitios escriben el prefijo del idioma', () => {
+  for (const [lang, prefijo] of Object.entries({
+    es: 'eltiempo', gl: 'otempo', ca: 'eltemps', en: 'weather', eu: 'eguraldia',
+  })) {
+    const { ctx, buscar } = contexto({ buscar: 'incendio' });
+    ctx.ACCES.lang = lang;
+    ctx.abrirTiempo();
+    assert.equal(buscar.value, `incendio ${prefijo}:`, lang);
+    assert.equal(parseQuery(buscar.value).eltiempo, '', lang);
+    ctx.abrirSitio({ nombre: 'A Coruña', lugar: { ine: '15030' } });
+    assert.equal(buscar.value, `incendio ${prefijo}:"A Coruña"`, lang);
+    assert.equal(parseQuery(buscar.value).eltiempo, 'A Coruña', lang);
+    ctx.cambiarLugarTiempo();
+    assert.equal(buscar.value, `incendio ${prefijo}:`, lang);
+    ctx.abrirTiempo();
+    assert.equal(buscar.value, 'incendio', lang);
+  }
 });
 
 test('el primer clic sitúa la tarjeta bajo la cabecera tras pintarla', () => {
