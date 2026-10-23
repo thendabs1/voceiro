@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.300
+// @version      2.0.301
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.300';
+const SCRIPT_VERSION = '2.0.301';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -1112,6 +1112,13 @@ const I18N = {
     sites: 'Medios', pendientes: 'Pendientes', readLater: 'Guardados para más tarde',
     noReadLater: 'No hay artículos pendientes.', 
     domainPh: 'dominio (ej. elpais.com)',
+    siteOpening: "Apertura",
+    siteAdvanced: "Avanzado",
+    siteOpeningHint: "Botón muestra el acceso al lector; Automático abre las noticias al entrar; Desactivado oculta el botón.",
+    siteSourceHint: "Deja el origen en Auto salvo que falte texto: JSON usa los datos del artículo y Lector analiza la página. El selector manual tiene prioridad sobre el origen.",
+    extractionWrongSite: "Abre una noticia de {X} para analizar y ajustar su extracción.",
+    siteDisable: "Desactivar medio",
+    siteDisableHint: "Desactiva el lector en este medio y elimina sus ajustes propios.",
     modeOff: 'Desactivado', modePrompt: 'Botón', modeAuto: 'Automático', add: 'Añadir', remove: 'Eliminar',
     importBtn: 'Importar', exportBtn: 'Exportar', resetBtn: 'Restablecer',
     noSites: 'No hay sitios configurados.', confirmReset: '¿Restablecer toda la configuración?',
@@ -1315,6 +1322,13 @@ const I18N = {
     sites: 'Medios', pendientes: 'Pendentes', readLater: 'Gardados para máis tarde',
     noReadLater: 'Non hai artigos pendentes.', 
     domainPh: 'dominio (ex. elpais.com)',
+    siteOpening: "Apertura",
+    siteAdvanced: "Avanzado",
+    siteOpeningHint: "Botón amosa o acceso ao lector; Automático abre as noticias ao entrar; Desactivado agocha o botón.",
+    siteSourceHint: "Deixa a orixe en Auto salvo que falte texto: JSON usa os datos do artigo e Lector analiza a páxina. O selector manual ten prioridade sobre a orixe.",
+    extractionWrongSite: "Abre unha noticia de {X} para analizar e axustar a súa extracción.",
+    siteDisable: "Desactivar medio",
+    siteDisableHint: "Desactiva o lector neste medio e elimina os seus axustes propios.",
     modeOff: 'Desactivado', modePrompt: 'Botón', modeAuto: 'Automático', add: 'Engadir', remove: 'Eliminar',
     importBtn: 'Importar', exportBtn: 'Exportar', resetBtn: 'Restablecer',
     noSites: 'Non hai sitios configurados.', confirmReset: '¿Restablecer toda a configuración?',
@@ -1518,6 +1532,13 @@ const I18N = {
     sites: 'Mitjans', pendientes: 'Pendents', readLater: 'Desats per a més tard',
     noReadLater: 'No hi ha articles pendents.', 
     domainPh: 'domini (ex. elpais.com)',
+    siteOpening: "Obertura",
+    siteAdvanced: "Avançat",
+    siteOpeningHint: "Botó mostra l’accés al lector; Automàtic obre les notícies en entrar; Desactivat amaga el botó.",
+    siteSourceHint: "Deixa l’origen en Auto llevat que falti text: JSON usa les dades de l’article i Lector analitza la pàgina. El selector manual té prioritat sobre l’origen.",
+    extractionWrongSite: "Obre una notícia de {X} per analitzar i ajustar-ne l’extracció.",
+    siteDisable: "Desactivar mitjà",
+    siteDisableHint: "Desactiva el lector en aquest mitjà i elimina els seus ajustos propis.",
     modeOff: 'Desactivat', modePrompt: 'Botó', modeAuto: 'Automàtic', add: 'Afegir', remove: 'Eliminar',
     importBtn: 'Importar', exportBtn: 'Exportar', resetBtn: 'Restablir',
     noSites: 'No hi ha llocs configurats.', confirmReset: 'Restablir tota la configuració?',
@@ -1720,6 +1741,13 @@ const I18N = {
     sites: 'Sites', pendientes: 'Queue', readLater: 'Saved for later',
     noReadLater: 'No pending articles.', 
     domainPh: 'domain (e.g. elpais.com)',
+    siteOpening: "Opening",
+    siteAdvanced: "Advanced",
+    siteOpeningHint: "Button shows access to the reader; Auto opens articles on arrival; Disabled hides the button.",
+    siteSourceHint: "Keep the source on Auto unless text is missing: JSON uses article data and Reader analyzes the page. A manual selector takes priority over the source.",
+    extractionWrongSite: "Open an article on {X} to analyze and adjust its extraction.",
+    siteDisable: "Disable site",
+    siteDisableHint: "Disables the reader on this site and removes its custom settings.",
     modeOff: 'Disabled', modePrompt: 'Button', modeAuto: 'Auto', add: 'Add', remove: 'Remove',
     importBtn: 'Import', exportBtn: 'Export', resetBtn: 'Reset',
     noSites: 'No sites configured.', confirmReset: 'Reset all settings?',
@@ -1923,6 +1951,13 @@ const I18N = {
     sites: 'Hedabideak', pendientes: 'Zain', readLater: 'Geroagorako gordeta',
     noReadLater: 'Ez dago artikulu zainenik.', 
     domainPh: 'domeinua (adib. elpais.com)',
+    siteOpening: "Irekitzea",
+    siteAdvanced: "Aurreratua",
+    siteOpeningHint: "Botoiak irakurgailurako sarbidea erakusten du; Automatikoak albisteak sartzean irekitzen ditu; Desgaituak botoia ezkutatzen du.",
+    siteSourceHint: "Utzi iturria Auto aukeran, testua falta ez bada: JSONek artikuluaren datuak erabiltzen ditu eta Irakurgailuak orria aztertzen du. Eskuzko hautatzaileak lehentasuna du iturriaren aurretik.",
+    extractionWrongSite: "Ireki {X} guneko albiste bat erauzketa aztertu eta doitzeko.",
+    siteDisable: "Hedabidea desgaitu",
+    siteDisableHint: "Hedabide honetan irakurgailua desgaitzen du eta haren ezarpen propioak ezabatzen ditu.",
     modeOff: 'Desgaituta', modePrompt: 'Botoia', modeAuto: 'Automatikoa', add: 'Gehitu', remove: 'Ezabatu',
     importBtn: 'Inportatu', exportBtn: 'Esportatu', resetBtn: 'Berrezarri',
     noSites: 'Ez dago gunerik konfiguratuta.', confirmReset: 'Konfigurazio osoa berrezarri?',
@@ -4270,6 +4305,11 @@ function crearDesplegableServicios(opts){
 function openExtractionTool(siteIdx, onClose){
   const site = CFG.sites[siteIdx];
   if (!site) return;
+  // El diagnóstico y el selector visual trabajan sobre el documento actual.
+  if (!domainMatches(location.hostname, site.domain)){
+    toast(t('extractionWrongSite').replace('{X}', site.domain), 4000);
+    return;
+  }
   if (document.getElementById('il-extract-tool')) return;
 
   const work = deepClone(site.extraction || DEFAULT_EXTRACTION);
@@ -6362,29 +6402,39 @@ function openSettings(initialTab, opts){
       return '<div class="il-site-row" data-idx="' + realIdx + '" data-domain="' + esc(s.domain) + '" style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
           '<div style="flex:1;min-width:140px;font-family:monospace;font-size:13px">' + esc(s.domain) + '</div>' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12px">' + esc(t('siteOpening')) +
           '<select data-idx="' + realIdx + '" class="il-set-mode" style="padding:6px 10px;border:1px solid var(--btn-border);border-radius:6px;font-size:13px">' +
             '<option value="off"'    + (s.mode==='off'   ?' selected':'') + '>' + esc(t('modeOff'))    + '</option>' +
             '<option value="prompt"' + (s.mode==='prompt'?' selected':'') + '>' + esc(t('modePrompt')) + '</option>' +
             '<option value="auto"'   + (s.mode==='auto'  ?' selected':'') + '>' + esc(t('modeAuto'))   + '</option>' +
-          '</select>' +
-          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
-            '<option value="auto"' + (s.readerSource==='auto'?' selected':'') + '>' + esc(t('srcAuto')) + '</option>' +
-            '<option value="jsonld"' + (s.readerSource==='jsonld'?' selected':'') + '>' + esc(t('srcJsonld')) + '</option>' +
-            '<option value="readability"' + (s.readerSource==='readability'?' selected':'') + '>' + esc(t('srcReadability')) + '</option>' +
-          '</select>' +
+          '</select></label>' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12px">' + esc(t('colLang')) +
           '<select data-idx="' + realIdx + '" class="il-set-lang" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
             SITE_LANGS.map(l => '<option value="' + l + '"' + (s.lang===l?' selected':'') + '>' + esc(langLabel(l)) + '</option>').join('') +
-          '</select>' +
-          '<button data-idx="' + realIdx + '" class="il-set-extract" title="' + esc(t('extractionTitle')) + '" ' +
-            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬</button>' +
+          '</select></label>' +
           '<button data-idx="' + realIdx + '" class="il-set-visit" title="' + esc(t('openSite')) + '" ' +
             'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔗</button>' +
-          '<button data-idx="' + realIdx + '" class="il-set-del" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🗑</button>' +
+          '<button data-idx="' + realIdx + '" class="il-set-del" title="' + esc(t('siteDisableHint')) + '" aria-label="' + esc(t('siteDisable') + ': ' + s.domain) + '" style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('siteDisable')) + '</button>' +
         '</div>' +
         '<div style="margin-top:4px;font-size:11px;color:var(--muted)">' +
           '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colLang')) + ':</span> ' + esc(langLabel(s.lang)) +
           textOnlyBadge + exBadge +
         '</div>' +
+        '<details style="margin-top:8px">' +
+          '<summary style="cursor:pointer;font-size:13px">' + esc(t('siteAdvanced')) + '</summary>' +
+          '<p style="font-size:12px;color:var(--muted)">' + esc(t('siteSourceHint')) + '</p>' +
+          '<div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">' +
+          '<label style="display:flex;flex-direction:column;gap:4px;font-size:12px">' + esc(t('source')) +
+          '<select data-idx="' + realIdx + '" class="il-set-src" style="padding:6px 8px;border:1px solid var(--btn-border);border-radius:6px;font-size:12px">' +
+            '<option value="auto"' + (s.readerSource==='auto'?' selected':'') + '>' + esc(t('srcAuto')) + '</option>' +
+            '<option value="jsonld"' + (s.readerSource==='jsonld'?' selected':'') + '>' + esc(t('srcJsonld')) + '</option>' +
+            '<option value="readability"' + (s.readerSource==='readability'?' selected':'') + '>' + esc(t('srcReadability')) + '</option>' +
+          '</select></label>' +
+          '<button data-idx="' + realIdx + '" class="il-set-extract" title="' + esc(t('extractionTitle')) + '" ' +
+            'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬 ' + esc(t('extractionTitle')) + '</button>' +
+          '</div>' +
+          '<p style="font-size:12px;color:var(--muted)">' + esc(t('extractionWrongSite').replace('{X}', s.domain)) + '</p>' +
+        '</details>' +
         patBlock +
       '</div>';
     }).join('');
@@ -6417,6 +6467,7 @@ function openSettings(initialTab, opts){
 
     const html =
       '<p style="margin:0 0 12px;font-size:13px;color:var(--muted)">' + esc(t('sitesHint')) + '</p>' +
+      '<p style="margin:0 0 12px;font-size:12px;color:var(--muted)">' + esc(t('siteOpeningHint')) + '</p>' +
       addCurrentBanner +
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
         '<input class="il-set-search" placeholder="' + esc(t('searchPlaceholder')) + '" value="' + esc(searchQuery) + '" ' +
@@ -6457,7 +6508,7 @@ function openSettings(initialTab, opts){
       });
 
       box.querySelectorAll('.il-set-mode').forEach(sel => {
-        sel.onchange = () => { CFG.sites[+sel.dataset.idx].mode = sel.value; saveCfg(CFG); };
+        sel.onchange = () => { CFG.sites[+sel.dataset.idx].mode = sel.value; saveCfg(CFG); actualizarBoton(); };
       });
       box.querySelectorAll('.il-set-src').forEach(sel => {
         sel.onchange = () => {
@@ -6509,7 +6560,7 @@ function openSettings(initialTab, opts){
       });
       box.querySelectorAll('.il-site-row').forEach(row => {
         row.addEventListener('dblclick', e => {
-          if (e.target.closest('select,button,input,label,datalist')) return;
+          if (e.target.closest('select,button,input,label,datalist,details')) return;
           const site = CFG.sites[+row.dataset.idx];
           if (site) window.open('https://' + site.domain, '_blank', 'noopener');
         });
