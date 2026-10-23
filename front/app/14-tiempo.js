@@ -68,11 +68,11 @@ const claveLugar = l => (l.ine ? String(l.ine) : `${(+l.lat).toFixed(3)},${(+l.l
 // El lugar de una previsión: los de España, por su INE.
 const lugarDe = (p, lugar) => (p.ine ? { ine: p.ine } : lugar);
 
-// El eltiempo: (o tiempo:) que se está escribiendo al final del buscador
+// El prefijo del tiempo que se está escribiendo al final del buscador
 // («eltiempo:"A Cor»).
-const RX_TIEMPO_FINAL = /(^|\s)((?:el)?tiempo:)(?:"[^"]*|[^\s"]*)$/i;
+const RX_TIEMPO_FINAL = /(^|\s)((?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia):)(?:"[^"]*|[^\s"]*)$/i;
 function fragmentoTiempo(raw){
-  const m = raw.match(/(?:^|\s)(?:el)?tiempo:(?:"([^"]*)|([^\s"]*))$/i);
+  const m = raw.match(/(?:^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia):(?:"([^"]*)|([^\s"]*))$/i);
   return m ? (m[1] ?? m[2]) : null;
 }
 
@@ -261,7 +261,9 @@ function htmlPrevision(p){
 function htmlPestanasTiempo(activa){
   const p = (ir, clave) => `<button type="button" class="tiempo-pestana" data-ir="${ir}"${activa === ir ? ' aria-current="page"' : ''}>${escapeHtml(t(clave))}</button>`;
   const aj = t('tiempoAjustes');
+  const cerrar = `${t('btnCerrar')} ${t('ajTiempoTit')}`;
   return `<nav class="tiempo-pestanas" aria-label="${escapeHtml(t('ajTiempoTit'))}">${p('sitios', 'tiempoMisSitios')}${p('avisos', 'avisosBotonTxt')}
+    <button type="button" class="tiempo-cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button>
     <button type="button" class="tiempo-ajustes" title="${escapeHtml(aj)}" aria-label="${escapeHtml(aj)}">${ico('settings')}</button></nav>`;
 }
 
@@ -412,8 +414,8 @@ function quitarSitio(k){
 
 // El sol y las pestañas cambian un prefijo del tiempo por otro sin tocar
 // el resto de la búsqueda; '' los quita (cierra el panel).
-const RX_TOKENS_TIEMPO = /(^|\s)(?:(?:el)?tiempo|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
-const RX_HAY_TIEMPO = /(^|\s)(?:(?:el)?tiempo|alertas|avisos):/i;
+const RX_TOKENS_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
+const RX_HAY_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):/i;
 function ponerTiempo(token){
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
@@ -452,7 +454,8 @@ function abrirTiempo(){
 }
 // Pestañas y ajustes, en el panel del tiempo y en el de avisos.
 function pulsarPestanaTiempo(b){
-  if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
+  if (b.classList.contains('tiempo-cerrar')) ponerTiempo('');
+  else if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
   else if (b.dataset.ir === 'avisos') ponerTiempo('alertas:');
   else if (b.dataset.ir === 'sitios') abrirSitios();
 }

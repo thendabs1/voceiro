@@ -10,7 +10,7 @@ function estimarCarga(modo, dias){
   if (!modo || !lista.length) return null;
   const grupos = modo.grupos || [];
   const dominios = Object.entries(modo.overrides || {})
-    .filter(([, v]) => v === 'first').map(([d]) => normDomain(d));
+    .filter(([, v]) => overrideIncluye(v)).map(([d]) => normDomain(d));
   let n = 0, kb = 0;
   const nDias = Math.min(dias, DIAS_MEMORIA_MAX_SCOPE, lista.length);
   const medias = _manifest.medias;
@@ -179,6 +179,13 @@ function wireAjustes(){
     const b = e.target.closest('button[data-dom]');
     const modo = modoEnPanel();
     if (!b || !modo) return;
+    if (b.classList.contains('ov-favorito')){
+      setOverride(b.dataset.dom, getOverride(b.dataset.dom, modo) === 'first' ? 'include' : 'first', modo);
+      actualizarFilaMedio(b.dataset.dom, modo);
+      renderOverridesModo(modo);
+      ajModoCambiado(modo);
+      return;
+    }
     setOverride(b.dataset.dom, '', modo);
     ajModoCambiado(modo);
     pintarModo();

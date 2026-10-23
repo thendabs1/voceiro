@@ -27,12 +27,19 @@ test('eltiempo: es un lugar, no texto ni filtro', () => {
   assert.equal(parseQuery('incendio').eltiempo, null);
   assert.equal(parseQuery('tiempo:Vigo').eltiempo, 'Vigo');      // tiempo: es lo mismo
   assert.equal(parseQuery('TIEMPO:"A Coruña"').eltiempo, 'A Coruña');
+  for (const prefijo of ['t', 'tempo', 'otempo', 'temps', 'eltemps', 'weather', 'eguraldia']) {
+    const alias = parseQuery(`${prefijo}:"A Coruña"`);
+    assert.equal(alias.eltiempo, 'A Coruña', prefijo);
+    assert.deepEqual(alias.chips.map(c => c.type), ['eltiempo'], prefijo);
+    assert.equal(parseQuery(`${prefijo}:`).eltiempo, '', prefijo);
+  }
 });
 
 test('eltiempo: no llega al archivo ni deja la consulta con texto', () => {
   const c = interpretarConsulta('eltiempo:Vigo');
   assert.equal(c.vacia, true);
   assert.equal(paraArchivo(interpretarConsulta('eltiempo:Vigo incendio')), 'incendio*');
+  assert.equal(paraArchivo(interpretarConsulta('t:Vigo incendio')), 'incendio*');
 });
 
 test('nombres del maestro: el artículo va delante', () => {

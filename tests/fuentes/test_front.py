@@ -50,6 +50,26 @@ class PublicacionFrontend(unittest.TestCase):
                 self.assertNotEqual(actual, anterior)
                 anterior = actual
 
+    def test_publicacion_conserva_codigo_estilos_y_diccionarios(self):
+        generar_html(raiz=self.raiz)
+        public = self.raiz / 'public'
+        front = self.raiz / 'front'
+
+        def sin_version(texto):
+            return re.sub(r'''(\.{1,2}/[^'"?]+\.js)\?v=[a-f0-9]{10}''', r'\1', texto)
+
+        # Una comprobación del ensamblado permite ejecutar cada prueba de
+        # comportamiento una sola vez, sobre sus fuentes.
+        aplicacion = ''.join(p.read_text() for p in sorted((front / 'app').glob('*.js')))
+        generado = (public / 'app.js').read_text().partition('\n')[2]
+        self.assertEqual(sin_version(generado), aplicacion)
+        estilos = (self.raiz / 'shared/tema/paleta.css').read_text()
+        estilos += ''.join(p.read_text() for p in sorted((front / 'estilos').glob('*.css')))
+        self.assertEqual((public / 'estilos.css').read_text(), estilos)
+        for fuente in (front / 'idiomas').glob('*.js'):
+            self.assertEqual(sin_version((public / 'idiomas' / fuente.name).read_text()),
+                             fuente.read_text())
+
     def test_congelar_front_conserva_html_estilos_y_modulos_anteriores(self):
         generar_html(raiz=self.raiz)
         public = self.raiz / 'public'

@@ -89,7 +89,7 @@ function aplicarTextos(){
   }).join('');
   $('#cfg-medios').textContent = t('cfgMedios');
   $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
-  $('#ov-add-first').textContent  = t('cfgMedioAddForce');
+  $('#ov-add-include').textContent = t('cfgMedioAddForce');
   $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
   const det = $('#ov-pegar-wrap summary');
@@ -267,4 +267,9 @@ function aplicarTextos(){
   renderLangSelect();
   actualizarSyncBanner();
   actualizarBotonPendientes();
+  // Si cambia el idioma, el chip del tiempo muestra la nueva traducción.
+  if ($('#chips-busqueda').style.display !== 'none'){
+    const raw = $('#buscar').value.trim();
+    renderChips(parseQuery(preprocesarInput(raw)), raw);
+  }
 }

@@ -64,6 +64,21 @@ class Extraccion(unittest.TestCase):
         self.assertEqual(texto._limpiar_cdata('3 &lt; 5 &amp; 8 &gt; 6'),
                          '3 < 5 & 8 > 6')
 
+    def test_titulares_con_etiquetas_inline_en_rss_y_sitemap(self):
+        rss = (b'<rss><channel><item><title>Un \xc2\xab&lt;span lang="gl"&gt;'
+               b'grup\xc3\xbasculo de radicais&lt;/span&gt;\xc2\xbb herido</title>'
+               b'<link>https://ejemplo.test/a</link></item></channel></rss>')
+        sitemap = (b'<urlset xmlns:n="http://www.google.com/schemas/sitemap-news/0.9">'
+                   b'<url><loc>https://ejemplo.test/b</loc><n:news><n:title>'
+                   b'O esp\xc3\xadrito do &lt;em&gt;Desassossego&lt;/em&gt; de Pessoa'
+                   b'</n:title></n:news></url></urlset>')
+        self.assertEqual(R._parse_feed(rss)[0]['titular'],
+                         'Un «grupúsculo de radicais» herido')
+        self.assertEqual(R._parse_news_sitemap(sitemap)[0]['titular'],
+                         'O espírito do Desassossego de Pessoa')
+        self.assertEqual(R._limpiar_cdata('3 &lt; 5 &amp; 8 &gt; 6'),
+                         '3 < 5 & 8 > 6')
+
     def test_html_de_bloqueo_no_es_feed(self):
         self.assertEqual(fuentes._parse_feed(b'<html><title>Access denied</title></html>'), [])
 

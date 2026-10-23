@@ -143,7 +143,7 @@ function renderListaGrupos(p){
     });
   });
 }
-// Medios del modo que se edita en Ajustes, con su ✓ (forzar) o ⊘ (bloquear).
+// Medios del modo que se edita en Ajustes: incluir, destacar o bloquear.
 function renderListaMedios(){
   const cont = $('#lista-medios');
   const modo = modoEnPanel();
@@ -163,14 +163,16 @@ function renderListaMedios(){
     enCat.forEach(m => {
       const mode  = getOverride(m.dominio, modo) || '';
       html += `
-        <div class="medio-fila"
+        <div class="medio-fila${overrideIncluye(mode) ? ' estado-incluir' : mode === 'ignore' ? ' estado-ignorar' : ''}"
              data-dominio="${escapeHtml(m.dominio)}"
              data-grupo="${escapeHtml(m.grupo)}"
              data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
           <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-            <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>${ico('check')}</span>
+            <input type="checkbox" class="chk-incluir" ${overrideIncluye(mode) ? 'checked' : ''}><span>${ico('check')}</span>
           </label>
+          <button type="button" class="medio-favorito" aria-label="${escapeHtml(t('forceFavorite'))}"
+                  title="${escapeHtml(t('forceFavorite'))}" aria-pressed="${mode === 'first'}">${ico('star')}</button>
           <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
             <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>${ico('ban')}</span>
           </label>
@@ -190,6 +192,16 @@ function marca(fila){
   fila.classList.toggle('estado-incluir', inc);
   fila.classList.toggle('estado-ignorar', ign);
   actualizarResumen();
+}
+function actualizarFilaMedio(dominio, modo){
+  const fila = [...document.querySelectorAll('#lista-medios .medio-fila')]
+    .find(f => f.dataset.dominio === dominio);
+  if (!fila){ actualizarResumen(); return; }
+  const estado = getOverride(dominio, modo);
+  fila.querySelector('.chk-incluir').checked = overrideIncluye(estado);
+  fila.querySelector('.chk-ignorar').checked = estado === 'ignore';
+  fila.querySelector('.medio-favorito').setAttribute('aria-pressed', String(estado === 'first'));
+  marca(fila);
 }
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
@@ -252,9 +264,11 @@ function actualizarResumen(visiblesOverride){
   const visibles = visiblesOverride != null
     ? visiblesOverride
     : document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
-  const inc = document.querySelectorAll('#lista-medios .chk-incluir:checked').length;
-  const ign = document.querySelectorAll('#lista-medios .chk-ignorar:checked').length;
+  const ov = Object.values((modoEnPanel() || {}).overrides || {});
+  const inc = ov.filter(overrideIncluye).length;
+  const fav = ov.filter(v => v === 'first').length;
+  const ign = ov.filter(v => v === 'ignore').length;
   $('#resumen-medios').textContent = t('cfgResumen', {
-    vis: visibles, total: total, inc: inc, ign: ign
+    vis: visibles, total: total, inc: inc, fav: fav, ign: ign
   });
 }

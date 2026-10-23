@@ -44,11 +44,11 @@ const CAPAS_MAX_DOMINIOS = 12;
 function capasRequeridas(parsed, consulta = ULT_CTX && ULT_CTX.consulta) {
   const set = new Set();
 
-    // 1) Preset activo → sus grupos + overrides 'first'
+    // 1) Preset activo → sus grupos + medios incluidos o favoritos
   if (PRESET_ACTIVO && presetTieneReglas()) {
     (PRESET.grupos || []).forEach(g => set.add('grupo:' + normStrict(g)));
     Object.entries(PRESET.overrides || {}).forEach(([d, v]) => {
-      if (v === 'first') set.add('dominio:' + normDomain(d));
+      if (overrideIncluye(v)) set.add('dominio:' + normDomain(d));
     });
   }
 

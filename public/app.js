@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=4214c8a66c';
+} from './parser.js?v=e4cb42a377';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=4214c8a66c';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=4214c8a66c';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=4214c8a66c';
-import { comparador } from './busqueda/orden.js?v=4214c8a66c';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=e4cb42a377';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e4cb42a377';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e4cb42a377';
+import { comparador } from './busqueda/orden.js?v=e4cb42a377';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=4214c8a66c';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=4214c8a66c';
+} from './sync/fusion.js?v=e4cb42a377';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=e4cb42a377';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=4214c8a66c';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=4214c8a66c';
+import { crearCliente } from './sync/cliente.js?v=e4cb42a377';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=e4cb42a377';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=4214c8a66c';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=e4cb42a377';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=4214c8a66c';
+} from './tiempo/avisos.js?v=e4cb42a377';
 
-import { I18N, traducir } from './idiomas/index.js?v=4214c8a66c';
+import { I18N, traducir } from './idiomas/index.js?v=e4cb42a377';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -689,13 +689,14 @@ function getOverride(domain, modo = PRESET){
   if (!modo || !modo.overrides) return '';
   return modo.overrides[domain] || '';
 }
+function overrideIncluye(value){ return value === 'include' || value === 'first'; }
 
 function setOverride(domain, value, modo = PRESET){
   if (!modo) return;
   if (!modo.overrides || typeof modo.overrides !== 'object') modo.overrides = {};
   if (!value){
     delete modo.overrides[domain];
-  } else if (value === 'first' || value === 'ignore'){
+  } else if (value === 'include' || value === 'first' || value === 'ignore'){
     modo.overrides[domain] = value;
   }
   if (modo === PRESET) guardarPreset();
@@ -735,7 +736,7 @@ function presetTieneReglas(p){
   return !!(
     (p.grupos && p.grupos.length) ||
     (p.palabras && p.palabras.length) ||
-    Object.keys(ov).some(d => ov[d] === 'first' || ov[d] === 'ignore')
+    Object.keys(ov).some(d => overrideIncluye(ov[d]) || ov[d] === 'ignore')
   );
 }
 
@@ -1013,8 +1014,8 @@ function abrirMenuMas(btn){
   const cont = $('#resultados');
   if (!n || !cont) return;
 
-  // Si el medio ya está forzado en el modo activo, «Añadir» no tiene sentido.
-  const yaForzado = PRESET_ACTIVO && getOverride(n.dominio) === 'first';
+  // Si el medio ya está incluido en el modo activo, «Añadir» no tiene sentido.
+  const yaForzado = PRESET_ACTIVO && overrideIncluye(getOverride(n.dominio));
   const item = (cls, icono, texto) =>
     `<button type="button" role="menuitem" class="${cls}" data-idx="${idx}">${ico(icono)}<span>${escapeHtml(texto)}</span></button>`;
   const m = document.createElement('div');
@@ -1066,7 +1067,7 @@ function abrirDestinoInline(idx, accion){
   const activoId = PRESET_ACTIVO && PRESETS ? PRESETS.activo : null;
 
   let html = `<span class="destino-lbl">${
-    escapeHtml(accion === 'first' ? t('destinoAnadirA') : t('destinoBloquearEn'))
+    escapeHtml(accion === 'include' ? t('destinoAnadirA') : t('destinoBloquearEn'))
   }</span>`;
 
   if (accion === 'ignore'){
@@ -1134,10 +1135,10 @@ function aplicarOverrideEnModo(targetPreset, accion, dominio, medioNombre){
 
   if (PRESET_ACTIVO && targetPreset === PRESET){
     aplicarFiltros();
-    const ok = accion === 'first' ? t('destinoOkAnadido') : t('destinoOkBloqueado');
+    const ok = accion === 'include' ? t('destinoOkAnadido') : t('destinoOkBloqueado');
     toast(`${ok} · ${medioNombre}`, 2000);
   } else {
-    const ok = accion === 'first' ? t('destinoOkAnadidoEn') : t('destinoOkBloqueadoEn');
+    const ok = accion === 'include' ? t('destinoOkAnadidoEn') : t('destinoOkBloqueadoEn');
     toast(`${ok} «${targetPreset.nombre}» · ${medioNombre}`, 2400);
   }
 }
@@ -2198,11 +2199,11 @@ const CAPAS_MAX_DOMINIOS = 12;
 function capasRequeridas(parsed, consulta = ULT_CTX && ULT_CTX.consulta) {
   const set = new Set();
 
-    // 1) Preset activo → sus grupos + overrides 'first'
+    // 1) Preset activo → sus grupos + medios incluidos o favoritos
   if (PRESET_ACTIVO && presetTieneReglas()) {
     (PRESET.grupos || []).forEach(g => set.add('grupo:' + normStrict(g)));
     Object.entries(PRESET.overrides || {}).forEach(([d, v]) => {
-      if (v === 'first') set.add('dominio:' + normDomain(d));
+      if (overrideIncluye(v)) set.add('dominio:' + normDomain(d));
     });
   }
 
@@ -3082,7 +3083,7 @@ function renderChips(parsed, rawQuery){
   cont.style.display = '';
   cont.innerHTML = parsed.chips.map((c, i) =>
     `<span class="chip">
-      <span class="chip-tipo">${escapeHtml(c.type)}</span>
+      <span class="chip-tipo">${escapeHtml(c.type === 'eltiempo' ? t('chipTiempo') : c.type)}</span>
       <span>${escapeHtml(c.value)}</span>
       <button type="button" class="chip-x" data-idx="${i}" title="${escapeHtml(t('chipLiteral'))}">×</button>
     </span>`
@@ -3438,7 +3439,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=4214c8a66c')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=e4cb42a377')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -3472,11 +3473,11 @@ const claveLugar = l => (l.ine ? String(l.ine) : `${(+l.lat).toFixed(3)},${(+l.l
 // El lugar de una previsión: los de España, por su INE.
 const lugarDe = (p, lugar) => (p.ine ? { ine: p.ine } : lugar);
 
-// El eltiempo: (o tiempo:) que se está escribiendo al final del buscador
+// El prefijo del tiempo que se está escribiendo al final del buscador
 // («eltiempo:"A Cor»).
-const RX_TIEMPO_FINAL = /(^|\s)((?:el)?tiempo:)(?:"[^"]*|[^\s"]*)$/i;
+const RX_TIEMPO_FINAL = /(^|\s)((?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia):)(?:"[^"]*|[^\s"]*)$/i;
 function fragmentoTiempo(raw){
-  const m = raw.match(/(?:^|\s)(?:el)?tiempo:(?:"([^"]*)|([^\s"]*))$/i);
+  const m = raw.match(/(?:^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia):(?:"([^"]*)|([^\s"]*))$/i);
   return m ? (m[1] ?? m[2]) : null;
 }
 
@@ -3665,7 +3666,9 @@ function htmlPrevision(p){
 function htmlPestanasTiempo(activa){
   const p = (ir, clave) => `<button type="button" class="tiempo-pestana" data-ir="${ir}"${activa === ir ? ' aria-current="page"' : ''}>${escapeHtml(t(clave))}</button>`;
   const aj = t('tiempoAjustes');
+  const cerrar = `${t('btnCerrar')} ${t('ajTiempoTit')}`;
   return `<nav class="tiempo-pestanas" aria-label="${escapeHtml(t('ajTiempoTit'))}">${p('sitios', 'tiempoMisSitios')}${p('avisos', 'avisosBotonTxt')}
+    <button type="button" class="tiempo-cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button>
     <button type="button" class="tiempo-ajustes" title="${escapeHtml(aj)}" aria-label="${escapeHtml(aj)}">${ico('settings')}</button></nav>`;
 }
 
@@ -3816,8 +3819,8 @@ function quitarSitio(k){
 
 // El sol y las pestañas cambian un prefijo del tiempo por otro sin tocar
 // el resto de la búsqueda; '' los quita (cierra el panel).
-const RX_TOKENS_TIEMPO = /(^|\s)(?:(?:el)?tiempo|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
-const RX_HAY_TIEMPO = /(^|\s)(?:(?:el)?tiempo|alertas|avisos):/i;
+const RX_TOKENS_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):(?:"[^"]*"?|[^\s"]*)/gi;
+const RX_HAY_TIEMPO = /(^|\s)(?:eltiempo|tiempo|t|otempo|tempo|eltemps|temps|weather|eguraldia|alertas|avisos):/i;
 function ponerTiempo(token){
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
@@ -3856,7 +3859,8 @@ function abrirTiempo(){
 }
 // Pestañas y ajustes, en el panel del tiempo y en el de avisos.
 function pulsarPestanaTiempo(b){
-  if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
+  if (b.classList.contains('tiempo-cerrar')) ponerTiempo('');
+  else if (b.classList.contains('tiempo-ajustes')) abrirAjustes('avanzado');
   else if (b.dataset.ir === 'avisos') ponerTiempo('alertas:');
   else if (b.dataset.ir === 'sitios') abrirSitios();
 }
@@ -4277,7 +4281,7 @@ function renderListaGrupos(p){
     });
   });
 }
-// Medios del modo que se edita en Ajustes, con su ✓ (forzar) o ⊘ (bloquear).
+// Medios del modo que se edita en Ajustes: incluir, destacar o bloquear.
 function renderListaMedios(){
   const cont = $('#lista-medios');
   const modo = modoEnPanel();
@@ -4297,14 +4301,16 @@ function renderListaMedios(){
     enCat.forEach(m => {
       const mode  = getOverride(m.dominio, modo) || '';
       html += `
-        <div class="medio-fila"
+        <div class="medio-fila${overrideIncluye(mode) ? ' estado-incluir' : mode === 'ignore' ? ' estado-ignorar' : ''}"
              data-dominio="${escapeHtml(m.dominio)}"
              data-grupo="${escapeHtml(m.grupo)}"
              data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
           <label class="chk incluir" title="${escapeHtml(t('forceInclude'))}">
-            <input type="checkbox" class="chk-incluir" ${mode === 'first' ? 'checked' : ''}><span>${ico('check')}</span>
+            <input type="checkbox" class="chk-incluir" ${overrideIncluye(mode) ? 'checked' : ''}><span>${ico('check')}</span>
           </label>
+          <button type="button" class="medio-favorito" aria-label="${escapeHtml(t('forceFavorite'))}"
+                  title="${escapeHtml(t('forceFavorite'))}" aria-pressed="${mode === 'first'}">${ico('star')}</button>
           <label class="chk ignorar" title="${escapeHtml(t('forceExclude'))}">
             <input type="checkbox" class="chk-ignorar" ${mode === 'ignore' ? 'checked' : ''}><span>${ico('ban')}</span>
           </label>
@@ -4324,6 +4330,16 @@ function marca(fila){
   fila.classList.toggle('estado-incluir', inc);
   fila.classList.toggle('estado-ignorar', ign);
   actualizarResumen();
+}
+function actualizarFilaMedio(dominio, modo){
+  const fila = [...document.querySelectorAll('#lista-medios .medio-fila')]
+    .find(f => f.dataset.dominio === dominio);
+  if (!fila){ actualizarResumen(); return; }
+  const estado = getOverride(dominio, modo);
+  fila.querySelector('.chk-incluir').checked = overrideIncluye(estado);
+  fila.querySelector('.chk-ignorar').checked = estado === 'ignore';
+  fila.querySelector('.medio-favorito').setAttribute('aria-pressed', String(estado === 'first'));
+  marca(fila);
 }
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
@@ -4386,10 +4402,12 @@ function actualizarResumen(visiblesOverride){
   const visibles = visiblesOverride != null
     ? visiblesOverride
     : document.querySelectorAll('#lista-medios .medio-fila:not([style*="display: none"])').length;
-  const inc = document.querySelectorAll('#lista-medios .chk-incluir:checked').length;
-  const ign = document.querySelectorAll('#lista-medios .chk-ignorar:checked').length;
+  const ov = Object.values((modoEnPanel() || {}).overrides || {});
+  const inc = ov.filter(overrideIncluye).length;
+  const fav = ov.filter(v => v === 'first').length;
+  const ign = ov.filter(v => v === 'ignore').length;
   $('#resumen-medios').textContent = t('cfgResumen', {
-    vis: visibles, total: total, inc: inc, ign: ign
+    vis: visibles, total: total, inc: inc, fav: fav, ign: ign
   });
 }
 /* ═══════════════════════════════════════════════════════════════
@@ -4685,7 +4703,10 @@ function renderOverridesModo(modo){
   ovList.innerHTML = Object.entries(modo.overrides || {}).map(([d, v]) =>
     `<span class="ov-item ${v}">
       <span>${escapeHtml(d)}</span>
-      <button data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
+      ${overrideIncluye(v) ? `<button class="ov-favorito" data-dom="${escapeHtml(d)}" type="button"
+        title="${escapeHtml(t('forceFavorite'))}" aria-label="${escapeHtml(t('forceFavorite'))}"
+        aria-pressed="${v === 'first'}">${ico('star')}</button>` : ''}
+      <button class="ov-quitar" data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
     </span>`
   ).join('');
 }
@@ -4693,7 +4714,8 @@ function ajContadores(modo){
   $('#aj-temas-n').textContent = '· ' + compilarTemas(parseLista($('#aj-temas').value)).length;
   const ov = Object.values(modo.overrides || {});
   $('#aj-medios-n').textContent = '· ' + t('ajMediosN', {
-    f: ov.filter(v => v === 'first').length,
+    f: ov.filter(overrideIncluye).length,
+    s: ov.filter(v => v === 'first').length,
     b: ov.filter(v => v === 'ignore').length,
   });
   $('#aj-grupos-n').textContent = '· ' + (modo.grupos || []).length;
@@ -4879,7 +4901,7 @@ function aplicarListaOverrides(){
     const signo = m[1] || '-';
     const d = normalizarDominioInput(m[2]);
     if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){ ko++; return; }
-    setOverride(d, signo === '+' ? 'first' : 'ignore', modo);
+    setOverride(d, signo === '+' ? 'include' : 'ignore', modo);
     ok++;
   });
   $('#ov-pegar').value = '';
@@ -4944,19 +4966,19 @@ function _pasaChipTema(n, chip){
   if (chip.medios) return _entraPorMedios(n);
   return _temasDe(n).some(x => x.id === chip.modo && x.etiqueta === chip.etiqueta);
 }
-// Lo que entra en el modo activo por sus medios (grupos o «primero»), no
+// Lo que entra en el modo activo por sus medios (grupos o incluidos), no
 // por sus temas.
 function _entraPorMedios(n){
-  return getOverride(n.dominio) === 'first' || SET_GRUPOS.has(n.grupo);
+  return overrideIncluye(getOverride(n.dominio)) || SET_GRUPOS.has(n.grupo);
 }
 function _modoTieneMedios(){
   const ov = PRESET.overrides || {};
-  return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => ov[d] === 'first');
+  return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => overrideIncluye(ov[d]));
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
   if (ov === 'ignore') return false;
-  if (ov === 'first')  return true;
+  if (overrideIncluye(ov)) return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
   return _temasDe(n).some(x => x.id === PRESET.id);
 }
@@ -5901,7 +5923,7 @@ ajustarDiasActual(capas);
     filtradas = filtrarPorChips(filtradas);
   }
 
-  const FAV_WINDOW_MS = 8 * 3600 * 1000;
+  const FAV_WINDOW_MS = 3 * 3600 * 1000;
   const cmpNucleo = comparador(orden);
   filtradas.sort((a, b) => {
     if (presetEfectivo && !vistaTemas){
@@ -6759,16 +6781,16 @@ function wireResultadosDelegation(){
       const nombre = n.medio || dom;
 
       if (PRESET_ACTIVO && PRESET){
-        setOverride(dom, 'first');
+        setOverride(dom, 'include');
         aplicarFiltros();
         toast(`${t('destinoOkAnadido')} · ${nombre}`, 2000);
         return;
       }
       if (PRESETS.lista.length === 1){
-        aplicarOverrideEnModo(PRESETS.lista[0], 'first', dom, nombre);
+        aplicarOverrideEnModo(PRESETS.lista[0], 'include', dom, nombre);
         return;
       }
-      abrirDestinoInline(i, 'first');
+      abrirDestinoInline(i, 'include');
       return;
     }
 
@@ -6981,7 +7003,7 @@ function aplicarTextos(){
   }).join('');
   $('#cfg-medios').textContent = t('cfgMedios');
   $('#modo-overrides-hint').textContent = t('cfgOverrideHint');
-  $('#ov-add-first').textContent  = t('cfgMedioAddForce');
+  $('#ov-add-include').textContent = t('cfgMedioAddForce');
   $('#ov-add-ignore').textContent = t('cfgMedioAddIgnore');
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
   const det = $('#ov-pegar-wrap summary');
@@ -7159,6 +7181,11 @@ function aplicarTextos(){
   renderLangSelect();
   actualizarSyncBanner();
   actualizarBotonPendientes();
+  // Si cambia el idioma, el chip del tiempo muestra la nueva traducción.
+  if ($('#chips-busqueda').style.display !== 'none'){
+    const raw = $('#buscar').value.trim();
+    renderChips(parseQuery(preprocesarInput(raw)), raw);
+  }
 }
 /* ── Fase 2 · selector de días ── */
 /* ── Fase 2 · selector de días ──
@@ -7172,7 +7199,7 @@ function estimarCarga(modo, dias){
   if (!modo || !lista.length) return null;
   const grupos = modo.grupos || [];
   const dominios = Object.entries(modo.overrides || {})
-    .filter(([, v]) => v === 'first').map(([d]) => normDomain(d));
+    .filter(([, v]) => overrideIncluye(v)).map(([d]) => normDomain(d));
   let n = 0, kb = 0;
   const nDias = Math.min(dias, DIAS_MEMORIA_MAX_SCOPE, lista.length);
   const medias = _manifest.medias;
@@ -7341,6 +7368,13 @@ function wireAjustes(){
     const b = e.target.closest('button[data-dom]');
     const modo = modoEnPanel();
     if (!b || !modo) return;
+    if (b.classList.contains('ov-favorito')){
+      setOverride(b.dataset.dom, getOverride(b.dataset.dom, modo) === 'first' ? 'include' : 'first', modo);
+      actualizarFilaMedio(b.dataset.dom, modo);
+      renderOverridesModo(modo);
+      ajModoCambiado(modo);
+      return;
+    }
     setOverride(b.dataset.dom, '', modo);
     ajModoCambiado(modo);
     pintarModo();
@@ -7734,7 +7768,7 @@ if (btnFiltros && filtrosPanel){
     });
   }
 
-  const ovFirst  = $('#ov-add-first');
+  const ovInclude = $('#ov-add-include');
   const ovIgnore = $('#ov-add-ignore');
 
   function aplicarOverrideDesdeBuscador(tipo){
@@ -7753,7 +7787,7 @@ if (btnFiltros && filtrosPanel){
     pintarModo();
   }
 
-  if (ovFirst)  ovFirst.addEventListener('click',  () => aplicarOverrideDesdeBuscador('first'));
+  if (ovInclude) ovInclude.addEventListener('click', () => aplicarOverrideDesdeBuscador('include'));
   if (ovIgnore) ovIgnore.addEventListener('click', () => aplicarOverrideDesdeBuscador('ignore'));
 
   const ovAplicar = $('#ov-pegar-aplicar');
@@ -7771,14 +7805,22 @@ if (btnFiltros && filtrosPanel){
       const ign = fila.querySelector('.chk-ignorar');
 
       if (e.target === inc){
-        if (inc.checked) ign.checked = false;
-        marca(fila);
-        setOverride(fila.dataset.dominio, inc.checked ? 'first' : '', modo);
+        setOverride(fila.dataset.dominio, inc.checked ? 'include' : '', modo);
       } else if (e.target === ign){
-        if (ign.checked) inc.checked = false;
-        marca(fila);
         setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '', modo);
       } else return;
+      actualizarFilaMedio(fila.dataset.dominio, modo);
+      renderOverridesModo(modo);
+      ajModoCambiado(modo);
+    });
+    contMedios.addEventListener('click', e => {
+      const b = e.target.closest('.medio-favorito');
+      const fila = b && b.closest('.medio-fila');
+      const modo = modoEnPanel();
+      if (!fila || !modo) return;
+      const dom = fila.dataset.dominio;
+      setOverride(dom, getOverride(dom, modo) === 'first' ? 'include' : 'first', modo);
+      actualizarFilaMedio(dom, modo);
       renderOverridesModo(modo);
       ajModoCambiado(modo);
     });

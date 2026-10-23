@@ -151,13 +151,14 @@ function getOverride(domain, modo = PRESET){
   if (!modo || !modo.overrides) return '';
   return modo.overrides[domain] || '';
 }
+function overrideIncluye(value){ return value === 'include' || value === 'first'; }
 
 function setOverride(domain, value, modo = PRESET){
   if (!modo) return;
   if (!modo.overrides || typeof modo.overrides !== 'object') modo.overrides = {};
   if (!value){
     delete modo.overrides[domain];
-  } else if (value === 'first' || value === 'ignore'){
+  } else if (value === 'include' || value === 'first' || value === 'ignore'){
     modo.overrides[domain] = value;
   }
   if (modo === PRESET) guardarPreset();
@@ -197,7 +198,7 @@ function presetTieneReglas(p){
   return !!(
     (p.grupos && p.grupos.length) ||
     (p.palabras && p.palabras.length) ||
-    Object.keys(ov).some(d => ov[d] === 'first' || ov[d] === 'ignore')
+    Object.keys(ov).some(d => overrideIncluye(ov[d]) || ov[d] === 'ignore')
   );
 }
 

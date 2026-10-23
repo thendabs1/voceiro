@@ -55,19 +55,19 @@ function _pasaChipTema(n, chip){
   if (chip.medios) return _entraPorMedios(n);
   return _temasDe(n).some(x => x.id === chip.modo && x.etiqueta === chip.etiqueta);
 }
-// Lo que entra en el modo activo por sus medios (grupos o «primero»), no
+// Lo que entra en el modo activo por sus medios (grupos o incluidos), no
 // por sus temas.
 function _entraPorMedios(n){
-  return getOverride(n.dominio) === 'first' || SET_GRUPOS.has(n.grupo);
+  return overrideIncluye(getOverride(n.dominio)) || SET_GRUPOS.has(n.grupo);
 }
 function _modoTieneMedios(){
   const ov = PRESET.overrides || {};
-  return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => ov[d] === 'first');
+  return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => overrideIncluye(ov[d]));
 }
 function cumplePreset(n){
   const ov = getOverride(n.dominio);
   if (ov === 'ignore') return false;
-  if (ov === 'first')  return true;
+  if (overrideIncluye(ov)) return true;
   if (SET_GRUPOS.has(n.grupo)) return true;
   return _temasDe(n).some(x => x.id === PRESET.id);
 }

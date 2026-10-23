@@ -1,11 +1,13 @@
 // node --test 'tests/**/*.test.mjs'
-// Panel del tiempo en plantilla.html: el sol y las pestañas cambian el
+// Panel del tiempo: el sol y las pestañas cambian el
 // prefijo del buscador, los avisos de un sitio (con su costa) y el sol
 // coloreado solo por avisos naranjas o rojos de mis sitios.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
+import { parseQuery, tokenizeQuery } from '../../shared/parser.js';
+import { I18N } from '../../front/idiomas/index.js';
 import { PESO, empezado, zonaHorariaAviso } from '../../shared/tiempo/avisos.js';
 
 const html = leerAplicacion();
@@ -38,10 +40,11 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
     localStorage: { getItem: k => guardado.get(k) ?? null, setItem: (k, v) => guardado.set(k, v) },
   };
   runInNewContext([
-    linea('const RX_TOKENS_TIEMPO'), linea('const RX_HAY_TIEMPO'),
-    ...['sitiosTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo', 'avisosDeZona',
+    linea('const RX_TIEMPO_FINAL'), linea('const RX_TOKENS_TIEMPO'), linea('const RX_HAY_TIEMPO'),
+    ...['fragmentoTiempo', 'sitiosTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo',
+      'htmlPestanasTiempo', 'pulsarPestanaTiempo', 'avisosDeZona',
       'pintarBotonTiempo'].map(funcion),
-  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.ponerTiempo = ponerTiempo; this.cambiarLugarTiempo = cambiarLugarTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
+  ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.ponerTiempo = ponerTiempo; this.cambiarLugarTiempo = cambiarLugarTiempo; this.fragmentoTiempo = fragmentoTiempo; this.rxTiempoFinal = RX_TIEMPO_FINAL; this.htmlPestanasTiempo = htmlPestanasTiempo; this.pulsarPestanaTiempo = pulsarPestanaTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
   return { ctx, buscar: el['#buscar'], sol };
 }
 
@@ -83,6 +86,42 @@ test('las pestañas cambian un prefijo del tiempo por otro', () => {
   assert.equal(buscar.value, 'incendio eltiempo:Vigo');
 });
 
+test('los alias del tiempo sugieren, se reemplazan y se cierran como eltiempo:', () => {
+  for (const prefijo of ['t', 'tempo', 'otempo', 'temps', 'eltemps', 'weather', 'eguraldia']) {
+    const { ctx, buscar } = contexto({ buscar: `incendio ${prefijo}:Vig` });
+    assert.equal(ctx.fragmentoTiempo(buscar.value), 'Vig', prefijo);
+    assert.equal(buscar.value.replace(ctx.rxTiempoFinal, (_, antes, token) => `${antes}${token}Vigo`), `incendio ${prefijo}:Vigo`);
+    ctx.abrirTiempo();
+    assert.equal(buscar.value, 'incendio', prefijo);
+    buscar.value = `incendio ${prefijo}:"A Coruña"`;
+    ctx.ponerTiempo('alertas:');
+    assert.equal(buscar.value, 'incendio alertas:', prefijo);
+  }
+});
+
+test('el chip del tiempo se traduce y quita el alias escrito', () => {
+  for (const [lang, nombre] of Object.entries({
+    es: 'El tiempo', gl: 'O tempo', ca: 'El temps', en: 'Weather', eu: 'Eguraldia',
+  })) {
+    const buscar = { value: 'incendio t:Vigo' };
+    const clear = { hidden: false };
+    const boton = { dataset: { idx: '0' }, addEventListener(_, callback) { this.pulsar = callback; } };
+    const chips = { style: {}, innerHTML: '', querySelectorAll: () => [boton] };
+    let filtrados = 0;
+    const ctx = {
+      $: selector => ({ '#chips-busqueda': chips, '#buscar': buscar, '#buscar-clear': clear })[selector],
+      escapeHtml: s => s, t: key => I18N[lang][key] || key, tokenizeQuery,
+      preprocesarInput: s => s, aplicarFiltros: () => { filtrados++; },
+    };
+    runInNewContext(funcion('renderChips') + '\nthis.renderChips = renderChips;', ctx);
+    ctx.renderChips(parseQuery(buscar.value), buscar.value);
+    assert.match(chips.innerHTML, new RegExp(`<span class="chip-tipo">${nombre}</span>`), lang);
+    boton.pulsar();
+    assert.equal(buscar.value, 'incendio', lang);
+    assert.equal(filtrados, 1, lang);
+  }
+});
+
 test('Cambiar de lugar vacía el sitio, conserva la búsqueda y enfoca el buscador', () => {
   for (const valor of ['incendio eltiempo:Vigo', 'incendio eltiempo:"A Coruña"']) {
     const { ctx, buscar } = contexto({ buscar: valor });
@@ -99,6 +138,16 @@ test('Cambiar de lugar vacía el sitio, conserva la búsqueda y enfoca el buscad
     assert.equal(buscar.selectionEnd, buscar.value.length);
     assert.equal(ctx.filtrados, 1);
   }
+});
+
+test('la X junto a ajustes cierra el tiempo como el sol', () => {
+  const { ctx, buscar } = contexto({ buscar: 'incendio eltiempo:Vigo' });
+  const nav = ctx.htmlPestanasTiempo(null);
+  assert.match(nav, /class="tiempo-cerrar"[^>]*aria-label="btnCerrar ajTiempoTit"[^>]*><x><\/button>/);
+  assert.ok(nav.indexOf('tiempo-cerrar') < nav.indexOf('tiempo-ajustes'));
+  ctx.pulsarPestanaTiempo({ classList: { contains: clase => clase === 'tiempo-cerrar' }, dataset: {} });
+  assert.equal(buscar.value, 'incendio');
+  assert.equal(ctx.filtrados, 1);
 });
 
 const aviso = (zona, nivel, inicio = '2026-10-21T08:00:00Z') =>

@@ -4,8 +4,8 @@ import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 
 // Ejecuta el controlador real con un reloj y elementos mínimos, sin red.
-function preparar(archivo, visible = 0, { tapa = 0, alto = 100 } = {}) {
-  const html = leerAplicacion(archivo);
+function preparar(visible = 0, { tapa = 0, alto = 100 } = {}) {
+  const html = leerAplicacion();
   const codigo = html.slice(html.indexOf('let PASE = null;'), html.indexOf('\nfunction renderizar(){'));
   assert.ok(codigo.startsWith('let PASE = null;'));
   const vistas = [], leidas = [], guardadas = [], timers = new Map(), eventos = {};
@@ -53,106 +53,103 @@ function preparar(archivo, visible = 0, { tapa = 0, alto = 100 } = {}) {
   return { pase: ctx.pase, ctx, vistas, leidas, guardadas, timers, eventos, get filtrados() { return filtrados; } };
 }
 
-for (const archivo of ['plantilla.html', 'public/index.html']) {
-  test(`${archivo}: el pase usa los resultados visibles y el ritmo elegido`, () => {
-    const s = preparar(archivo, 1);
-    s.pase.abrirPase();
-    assert.equal(s.pase.actual.lista.length, 2);
-    assert.equal([...s.timers.values()][0].ms, 8000);
-    [...s.timers.values()][0].fn();
-    assert.equal(s.pase.actual.pos, 1);
-    assert.deepEqual(s.vistas, ['https://medio.test/1']);
-    assert.deepEqual(s.leidas, []);
-    assert.equal(s.filtrados, 0);
-    s.pase.actual.root.querySelector('[data-pase-ritmo]').onchange({ target: { value: '3' } });
-    assert.equal([...s.timers.values()][0].ms, 3000);
-  });
+test(`el pase usa los resultados visibles y el ritmo elegido`, () => {
+  const s = preparar(1);
+  s.pase.abrirPase();
+  assert.equal(s.pase.actual.lista.length, 2);
+  assert.equal([...s.timers.values()][0].ms, 8000);
+  [...s.timers.values()][0].fn();
+  assert.equal(s.pase.actual.pos, 1);
+  assert.deepEqual(s.vistas, ['https://medio.test/1']);
+  assert.deepEqual(s.leidas, []);
+  assert.equal(s.filtrados, 0);
+  s.pase.actual.root.querySelector('[data-pase-ritmo]').onchange({ target: { value: '3' } });
+  assert.equal([...s.timers.values()][0].ms, 3000);
+});
 
-  // public/index.html lo regenera el workflow desde la plantilla tras el merge.
-  if (archivo === 'plantilla.html') test(`${archivo}: el pase salta la tarjeta tapada a medias por la barra`, () => {
-    // Tarjetas en 0–100, 100–200 y 200–300 con la barra hasta 40 o 60.
-    let s = preparar(archivo, 0, { tapa: 40, alto: 300 });
-    s.pase.abrirPase();
-    assert.equal(s.pase.actual.lista[0].titular, 'Titular 0');
-    s = preparar(archivo, 0, { tapa: 60, alto: 300 });
-    s.pase.abrirPase();
-    assert.equal(s.pase.actual.lista[0].titular, 'Titular 1');
-  });
+test(`el pase salta la tarjeta tapada a medias por la barra`, () => {
+  // Tarjetas en 0–100, 100–200 y 200–300 con la barra hasta 40 o 60.
+  let s = preparar(0, { tapa: 40, alto: 300 });
+  s.pase.abrirPase();
+  assert.equal(s.pase.actual.lista[0].titular, 'Titular 0');
+  s = preparar(0, { tapa: 60, alto: 300 });
+  s.pase.abrirPase();
+  assert.equal(s.pase.actual.lista[0].titular, 'Titular 1');
+});
 
-  test(`${archivo}: mover el ratón o tocar la capa pausa`, () => {
-    const s = preparar(archivo);
-    s.pase.abrirPase();
-    const root = s.pase.actual.root;
-    root.emitir('pointermove', { pointerType: 'touch' });
-    assert.equal(s.timers.size, 1);
-    root.emitir('pointermove', { pointerType: 'mouse' });
-    assert.equal(s.timers.size, 0);
-    assert.equal(s.pase.actual.jugando, false);
-    root.querySelector('[data-pase-play]').onclick();
-    assert.equal(s.timers.size, 1);
-    root.emitir('pointerdown', { target: { closest: () => null } });
-    assert.equal(s.timers.size, 0);
-    root.querySelector('[data-pase-play]').onclick();
-    root.emitir('pointerdown', { target: { closest: () => ({}) } });
-    assert.equal(s.timers.size, 1);
-  });
+test(`mover el ratón o tocar la capa pausa`, () => {
+  const s = preparar();
+  s.pase.abrirPase();
+  const root = s.pase.actual.root;
+  root.emitir('pointermove', { pointerType: 'touch' });
+  assert.equal(s.timers.size, 1);
+  root.emitir('pointermove', { pointerType: 'mouse' });
+  assert.equal(s.timers.size, 0);
+  assert.equal(s.pase.actual.jugando, false);
+  root.querySelector('[data-pase-play]').onclick();
+  assert.equal(s.timers.size, 1);
+  root.emitir('pointerdown', { target: { closest: () => null } });
+  assert.equal(s.timers.size, 0);
+  root.querySelector('[data-pase-play]').onclick();
+  root.emitir('pointerdown', { target: { closest: () => ({}) } });
+  assert.equal(s.timers.size, 1);
+});
 
-  test(`${archivo}: las flechas navegan y el selector conserva sus teclas`, () => {
-    const s = preparar(archivo);
-    s.pase.abrirPase();
-    let prevenido = 0;
-    const tecla = (key, target = { closest: () => null }) =>
-      s.eventos.keydown({ key, target, preventDefault: () => prevenido++ });
-    tecla('ArrowRight');
-    assert.equal(s.pase.actual.pos, 1);
-    tecla('ArrowLeft');
-    assert.equal(s.pase.actual.pos, 0);
-    tecla('ArrowLeft');
-    assert.equal(s.pase.actual.pos, 0);
-    tecla('ArrowRight', { closest: () => ({}) });
-    assert.equal(s.pase.actual.pos, 0);
-    assert.equal(prevenido, 3);
-  });
+test(`las flechas navegan y el selector conserva sus teclas`, () => {
+  const s = preparar();
+  s.pase.abrirPase();
+  let prevenido = 0;
+  const tecla = (key, target = { closest: () => null }) =>
+    s.eventos.keydown({ key, target, preventDefault: () => prevenido++ });
+  tecla('ArrowRight');
+  assert.equal(s.pase.actual.pos, 1);
+  tecla('ArrowLeft');
+  assert.equal(s.pase.actual.pos, 0);
+  tecla('ArrowLeft');
+  assert.equal(s.pase.actual.pos, 0);
+  tecla('ArrowRight', { closest: () => ({}) });
+  assert.equal(s.pase.actual.pos, 0);
+  assert.equal(prevenido, 3);
+});
 
-  test(`${archivo}: abrir marca como leída y deja el siguiente titular pausado`, () => {
-    const s = preparar(archivo);
-    s.pase.abrirPase();
-    const root = s.pase.actual.root;
-    root.querySelector('.pase-titular').onclick();
-    assert.deepEqual(s.leidas, ['https://medio.test/0']);
-    assert.deepEqual(s.vistas, ['https://medio.test/0']);
-    assert.equal(s.pase.actual.pos, 1);
-    assert.equal(root.querySelector('.pase-titular').href, 'https://medio.test/1');
-    assert.equal(s.timers.size, 0);
-    s.ctx.document.hidden = true;
-    s.eventos.visibilitychange();
-    s.ctx.document.hidden = false;
-    s.eventos.visibilitychange();
-    assert.equal(s.pase.actual.pos, 1);
-    assert.equal(s.timers.size, 0);
-  });
+test(`abrir marca como leída y deja el siguiente titular pausado`, () => {
+  const s = preparar();
+  s.pase.abrirPase();
+  const root = s.pase.actual.root;
+  root.querySelector('.pase-titular').onclick();
+  assert.deepEqual(s.leidas, ['https://medio.test/0']);
+  assert.deepEqual(s.vistas, ['https://medio.test/0']);
+  assert.equal(s.pase.actual.pos, 1);
+  assert.equal(root.querySelector('.pase-titular').href, 'https://medio.test/1');
+  assert.equal(s.timers.size, 0);
+  s.ctx.document.hidden = true;
+  s.eventos.visibilitychange();
+  s.ctx.document.hidden = false;
+  s.eventos.visibilitychange();
+  assert.equal(s.pase.actual.pos, 1);
+  assert.equal(s.timers.size, 0);
+});
 
-  test(`${archivo}: guardar pausa sin avanzar`, () => {
-    const s = preparar(archivo);
-    s.pase.abrirPase();
-    s.pase.actual.root.querySelector('[data-pase-guardar]').onclick();
-    assert.deepEqual(s.guardadas, ['https://medio.test/0']);
-    assert.equal(s.pase.actual.pos, 0);
-    assert.equal(s.timers.size, 0);
-  });
+test(`guardar pausa sin avanzar`, () => {
+  const s = preparar();
+  s.pase.abrirPase();
+  s.pase.actual.root.querySelector('[data-pase-guardar]').onclick();
+  assert.deepEqual(s.guardadas, ['https://medio.test/0']);
+  assert.equal(s.pase.actual.pos, 0);
+  assert.equal(s.timers.size, 0);
+});
 
-  test(`${archivo}: terminar, retroceder y cerrar limpian el temporizador`, () => {
-    const s = preparar(archivo);
-    s.pase.abrirPase();
-    for (let i = 0; i < 3; i++) s.pase.moverPase(1);
-    assert.equal(s.pase.actual.pos, 3);
-    assert.equal(s.timers.size, 0);
-    s.pase.moverPase(-1);
-    assert.equal(s.pase.actual.pos, 2);
-    s.pase.cerrarPase();
-    assert.equal(s.pase.actual, null);
-    assert.equal(s.timers.size, 0);
-    assert.equal(s.filtrados, 1);
-    assert.equal(s.ctx.document.body.style.overflow, undefined);
-  });
-}
+test(`terminar, retroceder y cerrar limpian el temporizador`, () => {
+  const s = preparar();
+  s.pase.abrirPase();
+  for (let i = 0; i < 3; i++) s.pase.moverPase(1);
+  assert.equal(s.pase.actual.pos, 3);
+  assert.equal(s.timers.size, 0);
+  s.pase.moverPase(-1);
+  assert.equal(s.pase.actual.pos, 2);
+  s.pase.cerrarPase();
+  assert.equal(s.pase.actual, null);
+  assert.equal(s.timers.size, 0);
+  assert.equal(s.filtrados, 1);
+  assert.equal(s.ctx.document.body.style.overflow, undefined);
+});

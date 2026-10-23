@@ -28,7 +28,7 @@
     }
   } catch(e){}
 </script>
-<link rel="stylesheet" href="./estilos.css?v=4214c8a66c">
+<link rel="stylesheet" href="./estilos.css?v=e4cb42a377">
 </head>
 <body>
 <!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
@@ -62,6 +62,7 @@
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" x2="4" y1="22" y2="15" /></symbol>
   <symbol id="i-share-2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" /></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 7 1-5.05 4.93 1.19 6.97L12 17.9l-6.24 3.3 1.19-6.97L1.9 9.3l7-1L12 2Z" /></symbol>
   <symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></symbol>
   <symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></symbol>
@@ -197,7 +198,7 @@
             </div>
             <div id="filtro-medio-add" class="filtro-medio-add" hidden>
               <span class="filtro-medio-add-label" id="filtro-medio-add-label"></span>
-              <button id="ov-add-first"  type="button" class="filtro-medio-add-btn force"></button>
+              <button id="ov-add-include" type="button" class="filtro-medio-add-btn force"></button>
               <button id="ov-add-ignore" type="button" class="filtro-medio-add-btn ignore"></button>
             </div>
             <div id="lista-medios" class="list-medios"></div>
@@ -634,7 +635,7 @@
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script type="module" src="./app.js?v=4214c8a66c"></script>
+<script type="module" src="./app.js?v=e4cb42a377"></script>
 </body>
 </html>
 

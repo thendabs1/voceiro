@@ -291,7 +291,10 @@ function renderOverridesModo(modo){
   ovList.innerHTML = Object.entries(modo.overrides || {}).map(([d, v]) =>
     `<span class="ov-item ${v}">
       <span>${escapeHtml(d)}</span>
-      <button data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
+      ${overrideIncluye(v) ? `<button class="ov-favorito" data-dom="${escapeHtml(d)}" type="button"
+        title="${escapeHtml(t('forceFavorite'))}" aria-label="${escapeHtml(t('forceFavorite'))}"
+        aria-pressed="${v === 'first'}">${ico('star')}</button>` : ''}
+      <button class="ov-quitar" data-dom="${escapeHtml(d)}" type="button" title="${escapeHtml(t('deletePending'))}" aria-label="${escapeHtml(t('deletePending'))}">${ico('x')}</button>
     </span>`
   ).join('');
 }
@@ -299,7 +302,8 @@ function ajContadores(modo){
   $('#aj-temas-n').textContent = '· ' + compilarTemas(parseLista($('#aj-temas').value)).length;
   const ov = Object.values(modo.overrides || {});
   $('#aj-medios-n').textContent = '· ' + t('ajMediosN', {
-    f: ov.filter(v => v === 'first').length,
+    f: ov.filter(overrideIncluye).length,
+    s: ov.filter(v => v === 'first').length,
     b: ov.filter(v => v === 'ignore').length,
   });
   $('#aj-grupos-n').textContent = '· ' + (modo.grupos || []).length;
@@ -485,7 +489,7 @@ function aplicarListaOverrides(){
     const signo = m[1] || '-';
     const d = normalizarDominioInput(m[2]);
     if (!d || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(d)){ ko++; return; }
-    setOverride(d, signo === '+' ? 'first' : 'ignore', modo);
+    setOverride(d, signo === '+' ? 'include' : 'ignore', modo);
     ok++;
   });
   $('#ov-pegar').value = '';

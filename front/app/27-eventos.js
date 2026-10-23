@@ -376,7 +376,7 @@ if (btnFiltros && filtrosPanel){
     });
   }
 
-  const ovFirst  = $('#ov-add-first');
+  const ovInclude = $('#ov-add-include');
   const ovIgnore = $('#ov-add-ignore');
 
   function aplicarOverrideDesdeBuscador(tipo){
@@ -395,7 +395,7 @@ if (btnFiltros && filtrosPanel){
     pintarModo();
   }
 
-  if (ovFirst)  ovFirst.addEventListener('click',  () => aplicarOverrideDesdeBuscador('first'));
+  if (ovInclude) ovInclude.addEventListener('click', () => aplicarOverrideDesdeBuscador('include'));
   if (ovIgnore) ovIgnore.addEventListener('click', () => aplicarOverrideDesdeBuscador('ignore'));
 
   const ovAplicar = $('#ov-pegar-aplicar');
@@ -413,14 +413,22 @@ if (btnFiltros && filtrosPanel){
       const ign = fila.querySelector('.chk-ignorar');
 
       if (e.target === inc){
-        if (inc.checked) ign.checked = false;
-        marca(fila);
-        setOverride(fila.dataset.dominio, inc.checked ? 'first' : '', modo);
+        setOverride(fila.dataset.dominio, inc.checked ? 'include' : '', modo);
       } else if (e.target === ign){
-        if (ign.checked) inc.checked = false;
-        marca(fila);
         setOverride(fila.dataset.dominio, ign.checked ? 'ignore' : '', modo);
       } else return;
+      actualizarFilaMedio(fila.dataset.dominio, modo);
+      renderOverridesModo(modo);
+      ajModoCambiado(modo);
+    });
+    contMedios.addEventListener('click', e => {
+      const b = e.target.closest('.medio-favorito');
+      const fila = b && b.closest('.medio-fila');
+      const modo = modoEnPanel();
+      if (!fila || !modo) return;
+      const dom = fila.dataset.dominio;
+      setOverride(dom, getOverride(dom, modo) === 'first' ? 'include' : 'first', modo);
+      actualizarFilaMedio(dom, modo);
       renderOverridesModo(modo);
       ajModoCambiado(modo);
     });

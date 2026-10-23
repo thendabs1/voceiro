@@ -541,16 +541,16 @@ function wireResultadosDelegation(){
       const nombre = n.medio || dom;
 
       if (PRESET_ACTIVO && PRESET){
-        setOverride(dom, 'first');
+        setOverride(dom, 'include');
         aplicarFiltros();
         toast(`${t('destinoOkAnadido')} · ${nombre}`, 2000);
         return;
       }
       if (PRESETS.lista.length === 1){
-        aplicarOverrideEnModo(PRESETS.lista[0], 'first', dom, nombre);
+        aplicarOverrideEnModo(PRESETS.lista[0], 'include', dom, nombre);
         return;
       }
-      abrirDestinoInline(i, 'first');
+      abrirDestinoInline(i, 'include');
       return;
     }
 

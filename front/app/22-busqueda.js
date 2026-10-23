@@ -276,7 +276,7 @@ ajustarDiasActual(capas);
     filtradas = filtrarPorChips(filtradas);
   }
 
-  const FAV_WINDOW_MS = 8 * 3600 * 1000;
+  const FAV_WINDOW_MS = 3 * 3600 * 1000;
   const cmpNucleo = comparador(orden);
   filtradas.sort((a, b) => {
     if (presetEfectivo && !vistaTemas){

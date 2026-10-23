@@ -37,7 +37,8 @@
 .tiempo-pestanas button, .tiempo-sitio, .tiempo-otro{ font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
 .tiempo-pestanas button{ padding: 3px 10px; }
 .tiempo-pestanas button[aria-current]{ border-color: var(--fg); font-weight: 700; }
-.tiempo-pestanas .tiempo-ajustes{ margin-left: auto; padding: 3px 6px; display: inline-flex; }
+.tiempo-pestanas .tiempo-cerrar{ margin-left: auto; }
+.tiempo-pestanas .tiempo-cerrar, .tiempo-pestanas .tiempo-ajustes{ padding: 3px 6px; display: inline-flex; }
 .tiempo-guardar{ margin-left: auto; font: inherit; font-size: 1.3em; line-height: 1; color: var(--fg); background: none; border: 0; padding: 2px 6px; cursor: pointer; }
 .tiempo-guardar span{ color: inherit; }
 .tiempo-guardar[aria-disabled="true"]{ color: var(--muted); cursor: not-allowed; }
@@ -48,7 +49,7 @@
 .tiempo-sitio-aviso{ font-weight: 700; padding-left: 6px; border-left: 3px solid var(--aviso); }
 .tiempo-quitar{ display: inline-flex; color: var(--muted); background: none; border: 0; padding: 8px; cursor: pointer; }
 .tiempo-pie .tiempo-otro{ display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; margin-left: 0; }
-.tiempo-otro .ico, .tiempo-ajustes .ico, .tiempo-quitar .ico{ width: 1.1em; height: 1.1em; }
+.tiempo-otro .ico, .tiempo-cerrar .ico, .tiempo-ajustes .ico, .tiempo-quitar .ico{ width: 1.1em; height: 1.1em; }
 .tiempo-horas, .tiempo-avisos{ margin-top: 8px; }
 .tiempo-horas > summary, .tiempo-avisos > summary{ cursor: pointer; font-weight: 600; }
 .tiempo-horas .tiempo-dias{ margin-top: 6px; scrollbar-width: thin; }

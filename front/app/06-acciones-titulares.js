@@ -26,8 +26,8 @@ function abrirMenuMas(btn){
   const cont = $('#resultados');
   if (!n || !cont) return;
 
-  // Si el medio ya está forzado en el modo activo, «Añadir» no tiene sentido.
-  const yaForzado = PRESET_ACTIVO && getOverride(n.dominio) === 'first';
+  // Si el medio ya está incluido en el modo activo, «Añadir» no tiene sentido.
+  const yaForzado = PRESET_ACTIVO && overrideIncluye(getOverride(n.dominio));
   const item = (cls, icono, texto) =>
     `<button type="button" role="menuitem" class="${cls}" data-idx="${idx}">${ico(icono)}<span>${escapeHtml(texto)}</span></button>`;
   const m = document.createElement('div');
@@ -79,7 +79,7 @@ function abrirDestinoInline(idx, accion){
   const activoId = PRESET_ACTIVO && PRESETS ? PRESETS.activo : null;
 
   let html = `<span class="destino-lbl">${
-    escapeHtml(accion === 'first' ? t('destinoAnadirA') : t('destinoBloquearEn'))
+    escapeHtml(accion === 'include' ? t('destinoAnadirA') : t('destinoBloquearEn'))
   }</span>`;
 
   if (accion === 'ignore'){
@@ -147,10 +147,10 @@ function aplicarOverrideEnModo(targetPreset, accion, dominio, medioNombre){
 
   if (PRESET_ACTIVO && targetPreset === PRESET){
     aplicarFiltros();
-    const ok = accion === 'first' ? t('destinoOkAnadido') : t('destinoOkBloqueado');
+    const ok = accion === 'include' ? t('destinoOkAnadido') : t('destinoOkBloqueado');
     toast(`${ok} · ${medioNombre}`, 2000);
   } else {
-    const ok = accion === 'first' ? t('destinoOkAnadidoEn') : t('destinoOkBloqueadoEn');
+    const ok = accion === 'include' ? t('destinoOkAnadidoEn') : t('destinoOkBloqueadoEn');
     toast(`${ok} «${targetPreset.nombre}» · ${medioNombre}`, 2400);
   }
 }

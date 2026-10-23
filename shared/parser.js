@@ -34,7 +34,10 @@ const PREFIX_ALIASES = {
   order: 'order', orden: 'order',
   limit: 'limit',
   offset: 'offset',
-  eltiempo: 'eltiempo', tiempo: 'eltiempo',
+  eltiempo: 'eltiempo', tiempo: 'eltiempo', t: 'eltiempo',
+  tempo: 'eltiempo', otempo: 'eltiempo',
+  temps: 'eltiempo', eltemps: 'eltiempo',
+  weather: 'eltiempo', eguraldia: 'eltiempo',
   alertas: 'alertas', avisos: 'alertas',
 };
 
