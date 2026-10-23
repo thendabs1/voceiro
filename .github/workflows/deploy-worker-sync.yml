@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - 'workers/cf-sync/**'
+      - 'workers/comun/sync.js'
+      - 'scripts/sync-workers.mjs'
       - '.github/workflows/deploy-worker-sync.yml'
   workflow_dispatch:
 
@@ -17,6 +19,9 @@ jobs:
     name: Deploy a Cloudflare
     steps:
       - uses: actions/checkout@v4
+
+      - name: Preparar módulos comunes locales
+        run: node scripts/sync-workers.mjs
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3

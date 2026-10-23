@@ -1,5 +1,6 @@
 // Lógica del servicio de sincronización, sin nada de Cloudflare: el almacén
-// se inyecta (D1 en producción, uno en memoria en los tests).
+// se inyecta (D1 por binding en CF, D1 por la API HTTP en Deno, uno en
+// memoria en los tests) y la IP del cliente la da cada plataforma.
 //
 // API (todo con Authorization: Bearer <token>):
 //   GET    /v1/s/:id   → 200 bloque cifrado + X-Version | 404
@@ -59,7 +60,10 @@ function iguales(a, b){
   return d === 0;
 }
 
-export async function atender(request, almacen, ahora = Date.now()){
+// ip: la del cliente según la plataforma. En CF, CF-Connecting-IP es fiable;
+// en Deno esa cabecera la podría mandar cualquiera, así que se pasa aparte.
+export async function atender(request, almacen, ahora = Date.now(),
+                              ip = request.headers.get('CF-Connecting-IP')){
   const origen = request.headers.get('Origin') || '';
   const url = new URL(request.url);
 
@@ -110,15 +114,15 @@ export async function atender(request, almacen, ahora = Date.now()){
 
   if (!fila){
     if (base !== 0) return responder(origen, 409, { version: 0 }, { 'X-Version': '0' });
-    const ip = await sha256hex(request.headers.get('CF-Connecting-IP') || 'sin-ip');
+    const huellaIp = await sha256hex(ip || 'sin-ip');
     const dia = new Date(ahora).toISOString().slice(0, 10);
-    if (await almacen.altasHoy(ip, dia) >= ALTAS_POR_IP_DIA) return responder(origen, 429, { error: 'altas' });
+    if (await almacen.altasHoy(huellaIp, dia) >= ALTAS_POR_IP_DIA) return responder(origen, 429, { error: 'altas' });
     if (await almacen.contar() >= MAX_FILAS) return responder(origen, 503, { error: 'lleno' });
     if (!await almacen.crear({ id, token_hash: huellaToken, datos, ahora })){
       const otra = await almacen.leer(id);   // se creó a la vez desde otro sitio
       return responder(origen, 409, { version: otra ? otra.version : 0 });
     }
-    await almacen.sumarAlta(ip, dia);
+    await almacen.sumarAlta(huellaIp, dia);
     return responder(origen, 200, { version: 1 }, { 'X-Version': '1' });
   }
 

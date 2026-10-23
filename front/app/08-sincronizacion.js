@@ -6,7 +6,9 @@
    modos y la configuración del lector. La fusión es la de
    shared/sync/fusion.js; aquí se decide cuándo y se vuelca el resultado.
    ═══════════════════════════════════════════════════════════════ */
-const SYNC_SERVIDORES = ['https://voceiro-sync.toriorecorda.workers.dev'];
+// CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma base.
+const SYNC_SERVIDORES = ['https://voceiro-sync.toriorecorda.workers.dev',
+                         'https://voceiro-sync.thendabs1.deno.net'];
 const SYNC_CODIGO_KEY = 'voceiro-sync-codigo';
 const SYNC_ULTIMA_KEY = 'voceiro-sync-ultima';
 const SYNC_UNIRSE_KEY = 'voceiro-sync-unirse';   // hasta la primera sincronización

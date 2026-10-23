@@ -1,0 +1,6 @@
+{
+  "deploy": {
+    "org": "thendabs1",
+    "app": "voceiro-sync"
+  }
+}

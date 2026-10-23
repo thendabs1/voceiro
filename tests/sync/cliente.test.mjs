@@ -1,10 +1,10 @@
 // Cliente de sincronización contra la lógica real del servidor
-// (workers/cf-sync/src/sync.js), con un almacén en memoria.
+// (workers/comun/sync.js), con un almacén en memoria.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { crearCliente } from '../../shared/sync/cliente.js';
 import { generarCodigo } from '../../shared/sync/cripto.js';
-import { atender } from '../../workers/cf-sync/src/sync.js';
+import { atender } from '../../workers/comun/sync.js';
 
 function servidorFalso(){
   const filas = new Map();
@@ -86,14 +86,19 @@ test('si otro escribe entre medias (409), se vuelve a fusionar y se sube', async
 
 test('si el primer servidor no responde, se usa el siguiente; borrar lo quita', async () => {
   const srv = servidorFalso();
+  let alCaido = 0;
   const fetch = async (url, opciones) => {
-    if (url.startsWith('https://caido')) throw new TypeError('sin red');
+    assert.ok(opciones.signal, 'cada petición lleva su tiempo máximo');
+    if (url.startsWith('https://caido')){ alCaido++; throw new TypeError('sin red'); }
     return srv.fetch(url, opciones);
   };
   const codigo = generarCodigo();
   const cli = crearCliente({ servidores: ['https://caido.test', 'https://sync.test'], fetch });
   await cli.sincronizar(codigo, { pendientes: [pend('https://a.es/1')] });
   assert.equal(srv.filas.size, 1);
+  // Ya sabe cuál responde: no vuelve a esperar al caído.
+  await cli.sincronizar(codigo, { pendientes: [pend('https://a.es/2')] });
+  assert.equal(alCaido, 1);
   await cli.borrar(codigo);
   assert.equal(srv.filas.size, 0);
 });

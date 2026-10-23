@@ -1,0 +1,43 @@
+name: Deploy Deno sync
+
+# Respaldo de la sincronización en Deno Deploy (workers/deno-sync): la misma
+# lógica (workers/comun/sync.js) y la misma base D1 que voceiro-sync en CF.
+# Variables en Deno Deploy: CF_ACCOUNT_ID y CF_D1_TOKEN (token de Cloudflare
+# solo con permiso de edición de D1).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/deno-sync/**'
+      - 'workers/comun/sync.js'
+      - 'scripts/sync-workers.mjs'
+      - '.github/workflows/deploy-deno-sync.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-deno-sync
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Preparar módulos comunes locales
+        run: node scripts/sync-workers.mjs
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Deploy
+        working-directory: workers/deno-sync
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+        run: deno deploy --org thendabs1 --app voceiro-sync --prod

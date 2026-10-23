@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   atender, limpiar, ORIGEN, MAX_BYTES, INTERVALO_MIN_MS, ALTAS_POR_IP_DIA, CADUCIDAD_MS, sha256hex,
-} from '../../workers/cf-sync/src/sync.js';
+} from '../../workers/comun/sync.js';
 
 function almacenEnMemoria(){
   const filas = new Map();
