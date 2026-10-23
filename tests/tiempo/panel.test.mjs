@@ -60,7 +60,7 @@ test('el sol abre Mis sitios y lo cierra sin tocar el resto de la búsqueda', ()
 test('el primer clic sitúa la tarjeta bajo la cabecera tras pintarla', () => {
   const { ctx, buscar, sol } = contexto();
   const panel = { hidden: true, getBoundingClientRect: () => ({ top: -480 }) };
-  const barra = { getBoundingClientRect: () => ({ height: 96 }) };
+  const barra = { classList: { remove() {} }, getBoundingClientRect: () => ({ height: 96 }) };
   const desplazamientos = [];
   let pintar;
   ctx.document.getElementById = id => ({ 'btn-tiempo': sol, 'tiempo-tarjeta': panel, 'barra-sup': barra })[id] || null;
@@ -76,6 +76,33 @@ test('el primer clic sitúa la tarjeta bajo la cabecera tras pintarla', () => {
   ctx.abrirTiempo();
   assert.equal(buscar.value, '');
   assert.equal(desplazamientos.length, 1);
+});
+
+test('al abrir y cerrar, las galletas visibles quedan bajo la barra', () => {
+  const { ctx, sol } = contexto({ buscar: 'incendio' });
+  let cabeceraVisible = false;
+  const barra = {
+    classList: { remove(clase) { if (clase === 'cab-oculta') cabeceraVisible = true; } },
+    getBoundingClientRect: () => ({ height: 96 }),
+  };
+  const panel = { hidden: false, getBoundingClientRect: () => ({ top: 240 }) };
+  const busqueda = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 120 }) };
+  const temas = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 180 }) };
+  const desplazamientos = [];
+  ctx.document.getElementById = id => ({
+    'btn-tiempo': sol, 'barra-sup': barra, 'tiempo-tarjeta': panel,
+    'chips-busqueda': busqueda, 'temas-chips': temas,
+  })[id] || null;
+  ctx.window = { scrollY: 500, scrollTo: opciones => desplazamientos.push(opciones) };
+  ctx.abrirTiempo();
+  assert.equal(cabeceraVisible, true);
+  assert.equal(desplazamientos[0].top, 516);
+  ctx.abrirTiempo();
+  assert.equal(desplazamientos[1].top, 516);
+
+  busqueda.getClientRects = () => [];
+  ctx.abrirTiempo();
+  assert.equal(desplazamientos[2].top, 576);
 });
 
 test('las pestañas cambian un prefijo del tiempo por otro', () => {
