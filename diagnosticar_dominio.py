@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
-import recolector as R
+from cosecha import config, fuentes, texto
 from medios import todos_los_medios
 from salud_fuentes import probar
 
@@ -24,7 +24,7 @@ def url_http(valor):
 def inspeccionar(html, url):
     """Describe el HTML y descubre feeds sin inventar rutas del sitio."""
     soup = BeautifulSoup(html, 'lxml')
-    fuentes = []
+    feeds = []
     for link in soup.find_all('link', href=True):
         tipo = (link.get('type') or '').lower().split(';')[0].strip()
         if 'alternate' in link.get('rel', []) and tipo in (
@@ -32,8 +32,8 @@ def inspeccionar(html, url):
             destino = urljoin(url, link['href'])
             if urlparse(destino).scheme in ('http', 'https'):
                 fuente = ('rss', destino)
-                if fuente not in fuentes:
-                    fuentes.append(fuente)
+                if fuente not in feeds:
+                    feeds.append(fuente)
     tipos_ld, errores_ld = set(), 0
 
     def visitar(obj):
@@ -53,42 +53,42 @@ def inspeccionar(html, url):
             visitar(json.loads(script.string or script.get_text()))
         except (ValueError, TypeError):
             errores_ld += 1
-    dom = R._dominio_de(url)
+    dom = texto._dominio_de(url)
     return {
         'titulo': soup.title.get_text(' ', strip=True) if soup.title else '',
         'etiquetas': {tag: len(soup.find_all(tag)) for tag in
                       ('h1', 'h2', 'h3', 'article', 'time', 'a')},
         'jsonld_tipos': sorted(tipos_ld), 'jsonld_invalidos': errores_ld,
-        'candidatos_headings': len(R._scrape_headings(soup, url, dom)),
-        'candidatos_slugs': len(R._scrape_slugs(soup, url, dom)),
-        'feeds_descubiertos': fuentes,
+        'candidatos_headings': len(fuentes._scrape_headings(soup, url, dom)),
+        'candidatos_slugs': len(fuentes._scrape_slugs(soup, url, dom)),
+        'feeds_descubiertos': feeds,
     }
 
 
 def diagnosticar(url, tipo='auto', lang='es', muestras=3, limite=8):
-    dom = R._dominio_de(url)
+    dom = texto._dominio_de(url)
     medio = next((m for m in todos_los_medios() if m['d'] == dom),
                  {'n': dom, 'd': dom, 'lang': lang})
     informe = {'url': url, 'dominio': dom, 'fuentes': []}
     # Auto inspecciona la página y añade los feeds anunciados a las fuentes
     # del catálogo. Los tipos explícitos permiten probar una URL conocida.
-    fuentes = [(tipo, url)] if tipo in ('rss', 'sitemap', 'scrape') else [(tipo,)]
+    configuraciones = [(tipo, url)] if tipo in ('rss', 'sitemap', 'scrape') else [(tipo,)]
     if tipo == 'auto':
-        fuentes = list(R.fuentes_de(medio)) if 'fuentes' in medio else [('scrape', url)]
+        configuraciones = list(fuentes.fuentes_de(medio)) if 'fuentes' in medio else [('scrape', url)]
         try:
-            r = R.SESSION.get(url, timeout=R.TIMEOUT)
+            r = fuentes.SESSION.get(url, timeout=config.TIMEOUT)
             informe['http'] = {'estado': r.status_code, 'url_final': r.url,
                                'tipo': r.headers.get('content-type', ''),
                                'bytes': len(r.content)}
             if r.status_code == 200:
                 estructura = inspeccionar(r.text, r.url)
                 informe['estructura'] = estructura
-                fuentes.extend(estructura['feeds_descubiertos'])
+                configuraciones.extend(estructura['feeds_descubiertos'])
         except Exception as exc:
             informe['error_pagina'] = f'{type(exc).__name__}: {exc}'
-    fuentes = list(dict.fromkeys(tuple(f) for f in fuentes))
-    informe['fuentes_omitidas'] = max(0, len(fuentes) - limite)
-    for fuente in fuentes[:limite]:
+    configuraciones = list(dict.fromkeys(tuple(f) for f in configuraciones))
+    informe['fuentes_omitidas'] = max(0, len(configuraciones) - limite)
+    for fuente in configuraciones[:limite]:
         logs = io.StringIO()
         with contextlib.redirect_stdout(logs):
             fila = probar(medio, fuente, muestras=muestras)

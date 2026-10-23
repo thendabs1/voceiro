@@ -41,7 +41,7 @@ node lector/comprobar.mjs    # cabecera y dominios permitidos
 ```
 
 La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
-`shared/sync/`, `medios.py` o `plantilla.html`. Necesita la historia completa de git.
+`shared/sync/`, `shared/tema/`, `medios.py` o `plantilla.html`. Necesita la historia completa de git.
 
 ## Estructura
 
@@ -56,8 +56,8 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
 - `26-boton-flotante.js`: el botón flotante, uno solo y en un Shadow DOM.
   `actualizarBoton()` lo pone, lo cambia o lo quita según la página.
 - `34-puente-con-voceiro.js`: el puente con Voceiro.
-- `plantilla.mjs`: la paleta y los iconos son los de Voceiro. `build.mjs` saca
-  de `plantilla.html` el bloque PALETA y los `<symbol>` del sprite (solo los que
+- `plantilla.mjs`: la paleta y los iconos son los de Voceiro. `build.mjs` toma
+  la paleta de `shared/tema/paleta.css` y de `plantilla.html` los `<symbol>` del sprite (solo los que
   usa el lector con `icono('…')`) y los pone en `20-css-del-lector.js`;
   `tests/tema/paleta.test.mjs` comprueba los contrastes de la paleta.
 

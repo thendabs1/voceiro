@@ -33,6 +33,7 @@ jobs:
 
       - name: Comprobar frontend generado
         run: |
+          node scripts/sync-workers.mjs --check
           node --check public/app.js
           node --test 'tests/**/*.test.mjs'
 

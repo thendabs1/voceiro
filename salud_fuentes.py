@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-import recolector as R
+from cosecha import config, fechas, fuentes
 from medios import todos_los_medios, fuentes_de
 
 # Más de esto sin publicar → la fuente se marca como rancia
@@ -34,28 +34,28 @@ HORAS_RANCIA = 48
 
 def probar(medio, fuente, muestras=0):
     try:
-        items, estado = R._probar_fuente(medio, fuente)
+        items, estado = fuentes._probar_fuente(medio, fuente)
     except Exception as e:
         items, estado = None, type(e).__name__
     fila = {
         'medio': medio['n'], 'dominio': medio['d'], 'configuracion': fuente,
-        'fuente': R.ETIQUETA_FUENTE.get(fuente[0], fuente[0])
+        'fuente': fuentes.ETIQUETA_FUENTE.get(fuente[0], fuente[0])
                   + (' (relay)' if 'relay' in fuente[2:] else ''),
         'estado': estado, 'n': 0, 'con_fecha': 0, 'edad_h': None,
         'muestras': (items or [])[:muestras],
     }
     if not items:
         return fila
-    fechas = [R._parse_iso_flexible(it.get('fecha_pub')) for it in items]
-    fechas = [f for f in fechas if f]
+    fechas_validas = [fechas._parse_iso_flexible(it.get('fecha_pub')) for it in items]
+    fechas_validas = [f for f in fechas_validas if f]
     fila['n'] = len(items)
-    fila['con_fecha'] = len(fechas)
-    if fechas:
-        ahora = datetime.now(R.TZ_MADRID)
-        fila['edad_h'] = round((ahora - max(fechas)).total_seconds() / 3600, 1)
+    fila['con_fecha'] = len(fechas_validas)
+    if fechas_validas:
+        ahora = datetime.now(config.TZ_MADRID)
+        fila['edad_h'] = round((ahora - max(fechas_validas)).total_seconds() / 3600, 1)
         if fila['edad_h'] > HORAS_RANCIA:
             fila['estado'] = 'rancia'
-    if fila['estado'] == 'ok' and len(items) < R.MIN_ITEMS_FUENTE:
+    if fila['estado'] == 'ok' and len(items) < config.MIN_ITEMS_FUENTE:
         fila['estado'] = 'pocos'
     return fila
 
@@ -73,7 +73,7 @@ def main():
                     help='Salir con error si alguna fuente tiene problemas')
     args = ap.parse_args()
     tipos = {t.strip() for t in args.tipos.split(',') if t.strip()}
-    if not tipos or tipos - R.ETIQUETA_FUENTE.keys():
+    if not tipos or tipos - fuentes.ETIQUETA_FUENTE.keys():
         ap.error('Tipos válidos: rss,sitemap,wp,scrape,gn')
     dominios = {d.strip().lower().removeprefix('www.')
                 for d in args.dominios.split(',') if d.strip()}
@@ -95,7 +95,7 @@ def main():
     # global al proceso: se aplica una sola vez alrededor de todo el pool.
     with contextlib.redirect_stdout(io.StringIO()):
         with concurrent.futures.ThreadPoolExecutor(
-                max_workers=R.MAX_WORKERS) as ex:
+                max_workers=config.MAX_WORKERS) as ex:
             filas = list(ex.map(lambda t: probar(*t, muestras=args.muestras), tareas))
 
     orden = {'ok': 2, 'pocos': 1, 'rancia': 1}

@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - '*.py'
+      - 'cosecha/**'
       - 'requirements.txt'
       - 'shared/**'
       - 'front/**'
@@ -28,6 +29,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+
+      - name: Comprobar copias locales de los workers
+        run: node scripts/sync-workers.mjs --check
 
       - name: Construir y comprobar el módulo del frontend
         run: |

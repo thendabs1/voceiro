@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=6a854e2cf5';
+} from './parser.js?v=e4cb42a377';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=6a854e2cf5';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=6a854e2cf5';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=6a854e2cf5';
-import { comparador } from './busqueda/orden.js?v=6a854e2cf5';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=e4cb42a377';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e4cb42a377';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e4cb42a377';
+import { comparador } from './busqueda/orden.js?v=e4cb42a377';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=6a854e2cf5';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=6a854e2cf5';
+} from './sync/fusion.js?v=e4cb42a377';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=e4cb42a377';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=6a854e2cf5';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=6a854e2cf5';
+import { crearCliente } from './sync/cliente.js?v=e4cb42a377';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=e4cb42a377';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=6a854e2cf5';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=e4cb42a377';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=6a854e2cf5';
+} from './tiempo/avisos.js?v=e4cb42a377';
 
-import { I18N, traducir } from './idiomas/index.js?v=6a854e2cf5';
+import { I18N, traducir } from './idiomas/index.js?v=e4cb42a377';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -3439,7 +3439,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=6a854e2cf5')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=e4cb42a377')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -5300,8 +5300,6 @@ const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
 let ULT_CTX = null;                // contexto para append incremental
-
-
 // ── Paginación R2 + Turso ──
 let DIAS_ACTUAL = 0;               // días cargados vía R2 para la query actual
 let DIAS_CAPAS_KEY = '';            // las capas a las que pertenece ese contador
@@ -5335,6 +5333,47 @@ const ARCHIVO_ACTIVO = false;
 let _archivoTimer = null;
 let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false;
+
+async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
+  const params = new URLSearchParams();
+  params.set('raw', rawQuery || '');
+  params.set('limit', String(limit));
+  params.set('offset', String(offset));
+  params.set('fuentes', 'turso');
+
+  const mapear = (data) => ({
+    items: (data.items || []).map(it => ({
+      u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
+      _src: 'turso',
+    })),
+    total: data.total || 0,
+    nextOffset: data.next_offset ?? null,
+  });
+
+  const intentar = async () => {
+    const sig = _signalConTimeout(null, BACKEND_TIMEOUT_CF_MS);
+    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  };
+
+  try {
+    const data = await intentar();
+    _avisarErroresFuente(data);
+    return mapear(data);
+  } catch(e) {
+    if (e.name !== 'AbortError') console.warn('[worker]', e.message);
+    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError'){
+      await _conmutarBackendPorFallo();
+      try {
+        const data = await intentar();
+        _avisarErroresFuente(data);
+        return mapear(data);
+      } catch(e2){ /* fall through */ }
+    }
+    return { items: [], total: 0, nextOffset: null };
+  }
+}
 /* ═══════════════════════════════════════════════════════════════
    PRENSA EXTERNA (vía Worker: Google News)
    ═══════════════════════════════════════════════════════════════ */
@@ -5509,49 +5548,6 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
     return null;
   }
 }
-
-async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
-  const params = new URLSearchParams();
-  params.set('raw', rawQuery || '');
-  params.set('limit', String(limit));
-  params.set('offset', String(offset));
-  params.set('fuentes', 'turso');
-
-  const mapear = (data) => ({
-    items: (data.items || []).map(it => ({
-      u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
-      _src: 'turso',
-    })),
-    total: data.total || 0,
-    nextOffset: data.next_offset ?? null,
-  });
-
-  const intentar = async () => {
-    const sig = _signalConTimeout(null, BACKEND_TIMEOUT_CF_MS);
-    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  };
-
-  try {
-    const data = await intentar();
-    _avisarErroresFuente(data);
-    return mapear(data);
-  } catch(e) {
-    if (e.name !== 'AbortError') console.warn('[worker]', e.message);
-    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError'){
-      await _conmutarBackendPorFallo();
-      try {
-        const data = await intentar();
-        _avisarErroresFuente(data);
-        return mapear(data);
-      } catch(e2){ /* fall through */ }
-    }
-    return { items: [], total: 0, nextOffset: null };
-  }
-}
-
-
 
 // Item de prensa → item crudo de NOTICIAS, como los de Turso. El medio se
 // resuelve por dominio (el de <source url>, vía relay) y, si ese dominio no
@@ -6075,7 +6071,6 @@ function renderChipsTemas(){
   }
   el.hidden = false;
 }
-
 /* Pase sobre una instantánea de los resultados cargados. No filtra ni pide
    noticias al avanzar; las vistas se guardan con el mecanismo existente. */
 let PASE = null;
