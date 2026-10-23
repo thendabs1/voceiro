@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=acb595ebc3';
+} from './parser.js?v=d8253e692b';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=acb595ebc3';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=acb595ebc3';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=acb595ebc3';
-import { comparador } from './busqueda/orden.js?v=acb595ebc3';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=d8253e692b';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=d8253e692b';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=d8253e692b';
+import { comparador } from './busqueda/orden.js?v=d8253e692b';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=acb595ebc3';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=acb595ebc3';
+} from './sync/fusion.js?v=d8253e692b';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=d8253e692b';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=acb595ebc3';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=acb595ebc3';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=d8253e692b';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=d8253e692b';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=acb595ebc3';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=d8253e692b';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=acb595ebc3';
+} from './tiempo/avisos.js?v=d8253e692b';
 
-import { I18N, traducir } from './idiomas/index.js?v=acb595ebc3';
+import { I18N, traducir } from './idiomas/index.js?v=d8253e692b';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -3449,7 +3449,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=acb595ebc3')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=d8253e692b')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -3842,11 +3842,16 @@ function ponerTiempo(token){
     if (clear) clear.hidden = false;
   }
   aplicarFiltros();
-  if (token) requestAnimationFrame(() => {
+  const barra = document.getElementById('barra-sup');
+  barra?.classList.remove('cab-oculta');
+  requestAnimationFrame(() => {
     const panel = document.getElementById(token.startsWith('alertas') ? 'avisos-panel' : 'tiempo-tarjeta');
-    if (!panel || panel.hidden) return;
-    const altoBarra = document.getElementById('barra-sup')?.getBoundingClientRect().height || 0;
-    window.scrollTo({ top: Math.max(0, window.scrollY + panel.getBoundingClientRect().top - altoBarra - 8), behavior: 'auto' });
+    const chips = ['chips-busqueda', 'preset-pestanas', 'temas-chips']
+      .map(id => document.getElementById(id)).find(el => el?.getClientRects().length);
+    const destino = chips || (token && panel && !panel.hidden ? panel : null);
+    if (!destino) return;
+    const altoBarra = barra?.getBoundingClientRect().height || 0;
+    window.scrollTo({ top: Math.max(0, window.scrollY + destino.getBoundingClientRect().top - altoBarra - 8), behavior: 'auto' });
   });
 }
 // Sin sitios guardados, el panel se abre con el cursor tras eltiempo:.

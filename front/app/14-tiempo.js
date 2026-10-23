@@ -427,11 +427,16 @@ function ponerTiempo(token){
     if (clear) clear.hidden = false;
   }
   aplicarFiltros();
-  if (token) requestAnimationFrame(() => {
+  const barra = document.getElementById('barra-sup');
+  barra?.classList.remove('cab-oculta');
+  requestAnimationFrame(() => {
     const panel = document.getElementById(token.startsWith('alertas') ? 'avisos-panel' : 'tiempo-tarjeta');
-    if (!panel || panel.hidden) return;
-    const altoBarra = document.getElementById('barra-sup')?.getBoundingClientRect().height || 0;
-    window.scrollTo({ top: Math.max(0, window.scrollY + panel.getBoundingClientRect().top - altoBarra - 8), behavior: 'auto' });
+    const chips = ['chips-busqueda', 'preset-pestanas', 'temas-chips']
+      .map(id => document.getElementById(id)).find(el => el?.getClientRects().length);
+    const destino = chips || (token && panel && !panel.hidden ? panel : null);
+    if (!destino) return;
+    const altoBarra = barra?.getBoundingClientRect().height || 0;
+    window.scrollTo({ top: Math.max(0, window.scrollY + destino.getBoundingClientRect().top - altoBarra - 8), behavior: 'auto' });
   });
 }
 // Sin sitios guardados, el panel se abre con el cursor tras eltiempo:.
