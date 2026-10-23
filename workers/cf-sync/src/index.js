@@ -6,7 +6,7 @@ import { almacenD1 } from './almacen-d1.js';
 export default {
   async fetch(request, env){
     try {
-      return await atender(request, almacenD1(env.DB));
+      return await atender(request, almacenD1(env.DB), Date.now(), request.headers.get('CF-Connecting-IP'), env.SYNC_IP_SECRET);
     } catch (e) {
       console.error('[sync]', e && e.stack || e);
       return new Response(JSON.stringify({ error: 'interno' }), {

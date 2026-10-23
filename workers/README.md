@@ -41,3 +41,7 @@ Las diferencias de plataforma se conservan en los adaptadores:
 Los relays de extracción y búsqueda siguen siendo servicios distintos con
 sus propias restricciones. Las pruebas HTTP de `tests/workers` verifican los
 dos adaptadores, errores parciales, caché, paginación y revalidación sin red real.
+
+La sincronización requiere `SYNC_IP_SECRET` idéntico en ambos servicios.
+La migración, la revocación de códigos, la retención y las comprobaciones de
+producción se describen en [Seguridad de la sincronización](cf-sync/SEGURIDAD.md).

@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { atender } from '../../workers/comun/sync.js';
+import { atender, d1Local } from '../sync/soporte.mjs';
 import { crearCliente } from '../../shared/sync/cliente.js';
 import { generarCodigo } from '../../shared/sync/cripto.js';
 import { normalizeUrlForMatch } from '../../shared/sync/fusion.js';
@@ -38,27 +38,8 @@ const FUENTE = [
 ].join('\n');
 
 function servidor(){
-  const filas = new Map();
+  const { cf: almacen, filas } = d1Local();
   let reloj = Date.parse('2026-10-23T10:00:00Z');
-  const almacen = {
-    async leer(id){ return filas.get(id) || null; },
-    async tocar(){},
-    async crear({ id, token_hash, datos, ahora }){
-      if (filas.has(id)) return false;
-      filas.set(id, { id, token_hash, version: 1, datos: [...datos], actualizado: ahora });
-      return true;
-    },
-    async actualizar({ id, token_hash, version, datos, ahora }){
-      const f = filas.get(id);
-      if (!f || f.version !== version || f.token_hash !== token_hash) return false;
-      Object.assign(f, { datos: [...datos], version: version + 1, actualizado: ahora });
-      return true;
-    },
-    async borrar(id){ filas.delete(id); },
-    async contar(){ return filas.size; },
-    async altasHoy(){ return 0; },
-    async sumarAlta(){},
-  };
   const peticiones = [];
   // Como el servidor de verdad, contesta a Voceiro (fetch) y al gestor.
   async function atenderUrl(url, opciones = {}){
@@ -214,4 +195,20 @@ test('un cambio mientras sincroniza deja otra vuelta programada', async () => {
   await primera;
   assert.ok(lector.haySyncSinSubir(), 'el cambio sigue pendiente');
   assert.ok(lector.sync.diferido, 'queda programada otra vuelta');
+});
+
+test('el lector detiene un código revocado y conserva su documento local', async () => {
+  const srv = servidor(), codigo = generarCodigo();
+  const { lector, valores } = nuevoLector(srv);
+  lector.activarSyncLector(codigo, false);
+  await lector.sincronizarLector();
+  const documento = valores.get('lector-sync-doc');
+  const web = crearCliente({ servidores: ['https://cf.test'], fetch: srv.atenderUrl });
+  await web.borrar(codigo);
+  await lector.sincronizarLector();
+  assert.equal(lector.codigoSyncLector(), null);
+  assert.deepEqual(valores.get('lector-sync-doc'), documento);
+  const n = srv.peticiones.length;
+  await lector.sincronizarLector();
+  assert.equal(srv.peticiones.length, n);
 });

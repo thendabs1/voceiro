@@ -66,6 +66,9 @@ class PublicacionFrontend(unittest.TestCase):
         estilos = (self.raiz / 'shared/tema/paleta.css').read_text()
         estilos += ''.join(p.read_text() for p in sorted((front / 'estilos').glob('*.css')))
         self.assertEqual((public / 'estilos.css').read_text(), estilos)
+        for fuente in (front / 'vendor').glob('*'):
+            self.assertEqual((public / 'vendor' / fuente.name).read_bytes(), fuente.read_bytes())
+        self.assertIn('./vendor/qrcode-1.4.4.js?v=', generado)
         for fuente in (front / 'idiomas').glob('*.js'):
             self.assertEqual(sin_version((public / 'idiomas' / fuente.name).read_text()),
                              fuente.read_text())

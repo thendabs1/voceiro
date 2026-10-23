@@ -3,36 +3,14 @@
 // (workers/cf-sync/schema.sql) que contesta como la API de Cloudflare.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { DatabaseSync } from 'node:sqlite';
 import { almacenD1Http } from '../../workers/deno-sync/src/almacen-d1-http.js';
-import { atender, ORIGEN, ALTAS_POR_IP_DIA } from '../../workers/comun/sync.js';
+import { ORIGEN, ALTAS_POR_IP_DIA } from '../../workers/comun/sync.js';
 import { crearCliente } from '../../shared/sync/cliente.js';
 import { generarCodigo } from '../../shared/sync/cripto.js';
 
-const ESQUEMA = readFileSync(new URL('../../workers/cf-sync/schema.sql', import.meta.url), 'utf8');
-
-// La API de D1: POST …/query {sql, params} → {success, result: [{results, meta}]}.
+import { atender, d1Local } from './soporte.mjs';
 function d1Falso(){
-  const db = new DatabaseSync(':memory:');
-  db.exec(ESQUEMA);
-  const consultas = [];
-  const fetch = async (url, opciones) => {
-    assert.match(url, /\/accounts\/cuenta\/d1\/database\/base\/query$/);
-    assert.equal(opciones.headers.Authorization, 'Bearer secreto');
-    const { sql, params } = JSON.parse(opciones.body);
-    consultas.push(sql);
-    try {
-      const st = db.prepare(sql);
-      const lee = /^\s*SELECT/i.test(sql);
-      const results = lee ? st.all(...params).map(f => ({ ...f })) : [];
-      const meta = lee ? { changes: 0 } : { changes: Number(st.run(...params).changes) };
-      return Response.json({ success: true, errors: [], result: [{ success: true, results, meta }] });
-    } catch (e) {
-      return Response.json({ success: false, errors: [{ message: e.message }], result: [] }, { status: 400 });
-    }
-  };
-  const almacen = almacenD1Http({ cuenta: 'cuenta', base: 'base', token: 'secreto', fetch });
+  const { db, http: almacen, consultas } = d1Local();
   return { db, almacen, consultas };
 }
 
@@ -52,7 +30,7 @@ test('crear, leer, actualizar y borrar guardan los bytes tal cual', async () => 
 
   let r = await atender(pedir('PUT', { base: 0, cuerpo: bloque }), almacen, T0, '1.2.3.4');
   assert.equal(r.status, 200);
-  assert.equal(db.prepare("SELECT valor FROM estado WHERE clave = 'filas'").get().valor, 1);
+  assert.equal(db.prepare("SELECT valor FROM estado WHERE clave = 'filas_v2'").get().valor, 1);
   assert.equal(db.prepare('SELECT typeof(datos) AS t FROM sync').get().t, 'blob');
 
   r = await atender(pedir('GET'), almacen, T0 + 1000, '1.2.3.4');
@@ -73,7 +51,7 @@ test('crear, leer, actualizar y borrar guardan los bytes tal cual', async () => 
   r = await atender(pedir('DELETE'), almacen, T0 + 11000, '1.2.3.4');
   assert.equal(r.status, 204);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM sync').get().n, 0);
-  assert.equal(db.prepare("SELECT valor FROM estado WHERE clave = 'filas'").get().valor, 0);
+  assert.equal(db.prepare("SELECT valor FROM estado WHERE clave = 'filas_v2'").get().valor, 0);
 });
 
 test('el límite de altas cuenta la IP que da la plataforma, no la cabecera', async () => {

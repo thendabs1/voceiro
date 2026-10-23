@@ -50,6 +50,7 @@ export function almacenD1Http({ cuenta, base, token, fetch: pedirFetch = globalT
         'SELECT id, token_hash, version, hex(datos) AS datos, creado, actualizado, accedido FROM sync WHERE id = ?',
         [id]);
       if (f) f.datos = deHex(f.datos);
+      else return primera('SELECT id, token_hash, 1 AS revocado FROM revocados WHERE id = ?', [id]);
       return f;
     },
 
@@ -57,15 +58,18 @@ export function almacenD1Http({ cuenta, base, token, fetch: pedirFetch = globalT
       await consultar('UPDATE sync SET accedido = ? WHERE id = ?', [ahora, id]);
     },
 
-    // false si ya existía (alta simultánea desde otro dispositivo).
-    async crear({ id, token_hash, datos, ahora }){
-      const { meta } = await consultar(
-        'INSERT INTO sync (id, token_hash, version, datos, creado, actualizado, accedido) ' +
-        'VALUES (?, ?, 1, unhex(?), ?, ?, ?) ON CONFLICT(id) DO NOTHING',
-        [id, token_hash, aHex(datos), ahora, ahora, ahora]);
-      if (meta.changes !== 1) return false;
-      await consultar("UPDATE estado SET valor = valor + 1 WHERE clave = 'filas'");
-      return true;
+    // La vista y sus triggers comprueban límites y escriben todo atómicamente.
+    async crear({ id, token_hash, datos, ahora, ip, dia, maxAltas, maxFilas }){
+      const sql = 'INSERT INTO sync_crear (id, token_hash, datos, ahora, ip, dia, max_altas, max_filas) ' +
+        'VALUES (?, ?, unhex(?), ?, ?, ?, ?, ?)';
+      try {
+        await consultar(sql, [id, token_hash, aHex(datos), ahora, ip, dia, maxAltas, maxFilas]);
+        return 'creado';
+      } catch (e) {
+        const motivo = String(e.message).match(/\bsync_(altas|lleno|existe|revocado)\b/);
+        if (motivo) return motivo[1];
+        throw e;
+      }
     },
 
     // Solo si la versión sigue siendo la de base: si no, otro escribió antes.
@@ -77,28 +81,13 @@ export function almacenD1Http({ cuenta, base, token, fetch: pedirFetch = globalT
       return meta.changes === 1;
     },
 
-    async borrar(id){
-      const { meta } = await consultar('DELETE FROM sync WHERE id = ?', [id]);
-      if (meta.changes){
-        await consultar("UPDATE estado SET valor = MAX(valor - ?, 0) WHERE clave = 'filas'", [meta.changes]);
-      }
+    // El servicio ya autenticó la fila. Mantener la revocación incluso si
+    // la limpieza la eliminó entre esa lectura y esta sentencia.
+    async borrar(id, tokenHash){
+      await consultar('INSERT OR IGNORE INTO revocados (id, token_hash) ' +
+        'SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM sync WHERE id = ? AND token_hash <> ?)', [id, tokenHash, id, tokenHash]);
     },
 
-    async contar(){
-      const r = await primera("SELECT valor FROM estado WHERE clave = 'filas'");
-      return r ? r.valor : 0;
-    },
-
-    async altasHoy(ip, dia){
-      const r = await primera('SELECT n FROM altas WHERE ip = ? AND dia = ?', [ip, dia]);
-      return r ? r.n : 0;
-    },
-
-    async sumarAlta(ip, dia){
-      await consultar(
-        'INSERT INTO altas (ip, dia, n) VALUES (?, ?, 1) ON CONFLICT(ip, dia) DO UPDATE SET n = n + 1',
-        [ip, dia]);
-    },
     // La limpieza diaria (borrarInactivos, borrarAltasAntes) la hace el cron de CF.
   };
 }
