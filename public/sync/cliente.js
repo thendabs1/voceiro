@@ -4,23 +4,32 @@
 // local (fusionarDocumento) y, si el resultado no es lo que ya había, lo
 // sube cifrado. Si otro dispositivo escribió entre medias (409), vuelve a
 // empezar. Devuelve el documento fusionado: quien llama lo vuelca en local.
-import { derivar, cifrar, descifrar } from './cripto.js?v=e4cb42a377';
-import { fusionarDocumento, huella } from './fusion.js?v=e4cb42a377';
+import { derivar, cifrar, descifrar } from './cripto.js?v=6980420c66';
+import { fusionarDocumento, huella } from './fusion.js?v=6980420c66';
 
 export const MAX_SUBIDA = 500 * 1024;   // el servidor admite 512 KB
 const INTENTOS = 4;
+const TIMEOUT_MS = 10000;  // por servidor: da para subir 512 KB con mala cobertura
 
 const esperarMs = ms => new Promise(r => setTimeout(r, ms));
 
 export function crearCliente({ servidores, fetch: pedirFetch = globalThis.fetch,
                                esperar = esperarMs, ahora = () => Date.now() }){
-  // Cada servidor de la lista, por orden, si el anterior no responde (para
-  // poder añadir un respaldo en Deno sin tocar nada más).
+  // Cada servidor de la lista, si el anterior no responde (CF bloqueado
+  // durante un partido → el respaldo en Deno; comparten la misma base).
+  // Primero el último que respondió, para no esperar al caído cada vez. Un
+  // bloqueo puede dejar la conexión colgada: por eso el tiempo máximo.
+  let preferido = 0;
   async function pedir(ruta, opciones){
     let fallo;
-    for (const base of servidores){
-      try { return await pedirFetch(base + ruta, opciones); }
-      catch (e){ fallo = e; }
+    const orden = [preferido, ...servidores.keys()].filter((i, n, a) => a.indexOf(i) === n);
+    for (const i of orden){
+      try {
+        const r = await pedirFetch(servidores[i] + ruta,
+                                   { ...opciones, signal: AbortSignal.timeout(TIMEOUT_MS) });
+        preferido = i;
+        return r;
+      } catch (e){ fallo = e; }
     }
     throw fallo || new Error('sin servidor');
   }

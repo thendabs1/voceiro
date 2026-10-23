@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=e4cb42a377';
+} from './parser.js?v=6980420c66';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=e4cb42a377';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e4cb42a377';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e4cb42a377';
-import { comparador } from './busqueda/orden.js?v=e4cb42a377';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=6980420c66';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=6980420c66';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=6980420c66';
+import { comparador } from './busqueda/orden.js?v=6980420c66';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=e4cb42a377';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=e4cb42a377';
+} from './sync/fusion.js?v=6980420c66';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=6980420c66';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente } from './sync/cliente.js?v=e4cb42a377';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=e4cb42a377';
+import { crearCliente } from './sync/cliente.js?v=6980420c66';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=6980420c66';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=e4cb42a377';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=6980420c66';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=e4cb42a377';
+} from './tiempo/avisos.js?v=6980420c66';
 
-import { I18N, traducir } from './idiomas/index.js?v=e4cb42a377';
+import { I18N, traducir } from './idiomas/index.js?v=6980420c66';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1665,7 +1665,9 @@ function guardarParaLeerDespues(n){
    modos y la configuración del lector. La fusión es la de
    shared/sync/fusion.js; aquí se decide cuándo y se vuelca el resultado.
    ═══════════════════════════════════════════════════════════════ */
-const SYNC_SERVIDORES = ['https://voceiro-sync.toriorecorda.workers.dev'];
+// CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma base.
+const SYNC_SERVIDORES = ['https://voceiro-sync.toriorecorda.workers.dev',
+                         'https://voceiro-sync.thendabs1.deno.net'];
 const SYNC_CODIGO_KEY = 'voceiro-sync-codigo';
 const SYNC_ULTIMA_KEY = 'voceiro-sync-ultima';
 const SYNC_UNIRSE_KEY = 'voceiro-sync-unirse';   // hasta la primera sincronización
@@ -3439,7 +3441,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=e4cb42a377')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=6980420c66')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
