@@ -20,6 +20,7 @@ from .historico import _dedup_resumen, deduplicar_editorial
 from .texto import _hash_payload, _slug_grupo
 
 
+# Solo estos archivos se suben a R2 al terminar el run.
 _FICHEROS_ESCRITOS = set()
 
 

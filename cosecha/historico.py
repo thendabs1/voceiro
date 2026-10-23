@@ -12,6 +12,9 @@ from .fechas import _fecha_agrupacion_dt, _fecha_orden, _reconstruir_fecha
 from .texto import _limpiar_cdata, _url_corta
 
 
+# Titulares programáticos: se filtran al fusionar para cubrir todas las
+# fuentes y limpiar también el histórico. Mantener los patrones estrechos:
+# «el tiempo» a secas también aparece en noticias reales.
 DROP_PATTERNS = [
     ('meteo_localidad', re.compile(
         r'^el tiempo en .+?:\s*previsi[oó]n meteorol[oó]gica\s+'
