@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.301
+// @version      2.0.304
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.301';
+const SCRIPT_VERSION = '2.0.304';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -1114,7 +1114,7 @@ const I18N = {
     domainPh: 'dominio (ej. elpais.com)',
     siteOpening: "Apertura",
     siteAdvanced: "Avanzado",
-    siteOpeningHint: "Botón muestra el acceso al lector; Automático abre las noticias al entrar; Desactivado oculta el botón.",
+    siteOpeningHint: "Botón muestra el acceso al lector; Automático abre las noticias al entrar; Desactivado apaga el lector; los ajustes siguen accesibles.",
     siteSourceHint: "Deja el origen en Auto salvo que falte texto: JSON usa los datos del artículo y Lector analiza la página. El selector manual tiene prioridad sobre el origen.",
     extractionWrongSite: "Abre una noticia de {X} para analizar y ajustar su extracción.",
     siteDisable: "Desactivar medio",
@@ -1324,7 +1324,7 @@ const I18N = {
     domainPh: 'dominio (ex. elpais.com)',
     siteOpening: "Apertura",
     siteAdvanced: "Avanzado",
-    siteOpeningHint: "Botón amosa o acceso ao lector; Automático abre as noticias ao entrar; Desactivado agocha o botón.",
+    siteOpeningHint: "Botón amosa o acceso ao lector; Automático abre as noticias ao entrar; Desactivado apaga o lector; os axustes seguen accesibles.",
     siteSourceHint: "Deixa a orixe en Auto salvo que falte texto: JSON usa os datos do artigo e Lector analiza a páxina. O selector manual ten prioridade sobre a orixe.",
     extractionWrongSite: "Abre unha noticia de {X} para analizar e axustar a súa extracción.",
     siteDisable: "Desactivar medio",
@@ -1534,7 +1534,7 @@ const I18N = {
     domainPh: 'domini (ex. elpais.com)',
     siteOpening: "Obertura",
     siteAdvanced: "Avançat",
-    siteOpeningHint: "Botó mostra l’accés al lector; Automàtic obre les notícies en entrar; Desactivat amaga el botó.",
+    siteOpeningHint: "Botó mostra l’accés al lector; Automàtic obre les notícies en entrar; Desactivat apaga el lector; els ajustos continuen accessibles.",
     siteSourceHint: "Deixa l’origen en Auto llevat que falti text: JSON usa les dades de l’article i Lector analitza la pàgina. El selector manual té prioritat sobre l’origen.",
     extractionWrongSite: "Obre una notícia de {X} per analitzar i ajustar-ne l’extracció.",
     siteDisable: "Desactivar mitjà",
@@ -1743,7 +1743,7 @@ const I18N = {
     domainPh: 'domain (e.g. elpais.com)',
     siteOpening: "Opening",
     siteAdvanced: "Advanced",
-    siteOpeningHint: "Button shows access to the reader; Auto opens articles on arrival; Disabled hides the button.",
+    siteOpeningHint: "Button shows access to the reader; Auto opens articles on arrival; Disabled turns off the reader; settings remain accessible.",
     siteSourceHint: "Keep the source on Auto unless text is missing: JSON uses article data and Reader analyzes the page. A manual selector takes priority over the source.",
     extractionWrongSite: "Open an article on {X} to analyze and adjust its extraction.",
     siteDisable: "Disable site",
@@ -1953,7 +1953,7 @@ const I18N = {
     domainPh: 'domeinua (adib. elpais.com)',
     siteOpening: "Irekitzea",
     siteAdvanced: "Aurreratua",
-    siteOpeningHint: "Botoiak irakurgailurako sarbidea erakusten du; Automatikoak albisteak sartzean irekitzen ditu; Desgaituak botoia ezkutatzen du.",
+    siteOpeningHint: "Botoiak irakurgailurako sarbidea erakusten du; Automatikoak albisteak sartzean irekitzen ditu; Desgaituak irakurgailua itzaltzen du; ezarpenek eskuragarri jarraitzen dute.",
     siteSourceHint: "Utzi iturria Auto aukeran, testua falta ez bada: JSONek artikuluaren datuak erabiltzen ditu eta Irakurgailuak orria aztertzen du. Eskuzko hautatzaileak lehentasuna du iturriaren aurretik.",
     extractionWrongSite: "Ireki {X} guneko albiste bat erauzketa aztertu eta doitzeko.",
     siteDisable: "Hedabidea desgaitu",
@@ -2808,20 +2808,14 @@ function marcarLeidaAlTerminar(){
     CFG.readLater = conCambio(item, keepRead ? { read: true, readAt: Date.now() } : { borrado: true });
   }
   avisarLeida(url);
-  CFG.readLater = fusionarPendientes(CFG.readLater, []);
-  saveCfg(CFG);
-  enviarEstado(false);
-  sincronizarLectorPronto();
+  cambiarReadLater(CFG.readLater);
   return () => {
     if (antes && !antes.read){
       const ahora = findLaterItem(url) || (CFG.readLater || []).find(r => r.url === antes.url);
       if (ahora) CFG.readLater = conCambio(ahora, { read: false, readAt: null, borrado: false });
     }
     avisarLeida(url, true);
-    CFG.readLater = fusionarPendientes(CFG.readLater, []);
-    saveCfg(CFG);
-    enviarEstado(false);
-    sincronizarLectorPronto();
+    cambiarReadLater(CFG.readLater);
   };
 }
 
@@ -6037,7 +6031,7 @@ function crearBoton(){
    · Dónde no: sin https (no hay WebCrypto) ni en la página de
      Voceiro, que sincroniza ella y recibe lo de aquí por el puente.
    ============================================================ */
-const LECTOR_SYNC_KEY = 'lector-sync';            // { codigo, deVoceiro, cambio, subido, fallo, error }
+const LECTOR_SYNC_KEY = 'lector-sync';            // { codigo, deVoceiro, cambio, subido, fallo, error, revocado }
 const LECTOR_SYNC_DOC_KEY = 'lector-sync-doc';    // el último documento fusionado
 const LECTOR_SYNC_CANDADO_KEY = 'lector-sync-candado';
 const LECTOR_SYNC_ESPERA = 5000;
@@ -6088,20 +6082,26 @@ function olvidarSyncLector(){
   PLATAFORMA.guardar(LECTOR_SYNC_DOC_KEY, null);
 }
 // Lo que dice Voceiro por el puente: su código manda. Si no tiene, se
-// quita aquí el que vino de allí; uno escrito a mano se queda.
+// quita aquí el que vino de allí; uno escrito a mano se queda. Un código
+// que el servidor ya dio por revocado no vuelve: Voceiro puede no haberse
+// enterado todavía.
 function codigoDesdeVoceiro(codigo){
   const c = codigo ? limpiarCodigo(codigo) : null;
-  if (c) activarSyncLector(c, true);
+  if (c){ if (c !== estadoSyncLector().revocado) activarSyncLector(c, true); }
   else if (estadoSyncLector().deVoceiro) olvidarSyncLector();
 }
 
+// La próxima vuelta, a los pocos segundos; si ya había una, la sustituye.
+function programarSyncLector(){
+  clearTimeout(__syncLector.diferido);
+  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+}
 // Un cambio de aquí: se apunta y se sube a los pocos segundos.
 function sincronizarLectorPronto(){
   if (!codigoSyncLector()) return;
   guardarEstadoSyncLector({ cambio: Date.now() });
   if (!puedeSincronizarAqui()) return;
-  clearTimeout(__syncLector.diferido);
-  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+  programarSyncLector();
 }
 // Al abrir el lector: si queda algo por subir o hace rato de la última vez.
 // Tras un fallo, espera: hay medios que abren el lector solos en cada noticia.
@@ -6116,8 +6116,7 @@ function sincronizarLectorSiQuedoAlgo(){
   const s = estadoSyncLector();
   if (!haySyncSinSubir(s) || Date.now() - (s.fallo || 0) < LECTOR_SYNC_TRAS_FALLO) return;
   if (!puedeSincronizarAqui() || !codigoSyncLector()) return;
-  clearTimeout(__syncLector.diferido);
-  __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+  programarSyncLector();
 }
 
 // Entre pestañas, una sola a la vez. No es atómico: si dos coinciden, el
@@ -6170,7 +6169,7 @@ async function sincronizarLector(){
   if (__syncLector.enCurso){ __syncLector.otraVez = true; return __syncLector.enCurso; }
   clearTimeout(__syncLector.diferido);
   if (!tomarCandadoSync()){
-    __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+    programarSyncLector();
     return;
   }
   if (!__syncLector.cliente){
@@ -6195,8 +6194,9 @@ async function sincronizarLector(){
     } catch(e){
       if (codigoSyncLector() !== codigo) return;
       if (e?.code === 'SYNC_REVOCADO'){
-        // Conservar el documento local, pero detener las subidas de este código.
-        guardarEstadoSyncLector({ codigo: null, fallo: 0, error: '' });
+        // Conservar el documento local, pero detener las subidas de este código
+        // y no aceptarlo otra vez por el puente.
+        guardarEstadoSyncLector({ codigo: null, revocado: codigo, fallo: 0, error: '' });
         clearTimeout(__syncLector.diferido);
         return;
       }
@@ -6208,7 +6208,7 @@ async function sincronizarLector(){
       __syncLector.enCurso = null;
       if (__syncLector.otraVez){
         __syncLector.otraVez = false;
-        if (haySyncSinSubir()) __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
+        if (haySyncSinSubir()) programarSyncLector();
       }
     }
   })();
@@ -7028,7 +7028,8 @@ function openSettings(initialTab, opts){
         '<p class="il-set-sync-estado" style="font-size:13px;margin:6px 0 10px">' + esc(estado) + '</p>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
           (codigo
-            ? boton('il-set-sync-ahora', t('syncNow'), puedeSincronizarAqui() ? '' : ' disabled') +
+            // Donde no puede (Voceiro, sin https) no hay botón: el estado dice por qué.
+            ? (puedeSincronizarAqui() ? boton('il-set-sync-ahora', t('syncNow')) : '') +
               boton('il-set-sync-quitar', t('syncUnlink'))
             : !esVoceiro() ? '<span style="font-size:13px">' + esc(t('syncSoloEnVoceiro')) + '</span>'
             : '<input type="text" class="il-set-sync-codigo" autocomplete="off" spellcheck="false" aria-label="' + esc(t('syncCodePh')) + '" placeholder="' + esc(t('syncCodePh')) + '" style="flex:1 1 16em;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-family:monospace">' +
@@ -7041,9 +7042,10 @@ function openSettings(initialTab, opts){
     const usar = box.querySelector('.il-set-sync-usar');
     if (usar) usar.onclick = () => {
       const campo = box.querySelector('.il-set-sync-codigo');
+      // Solo se escribe en Voceiro, donde no se sincroniza: queda apuntado
+      // y sube la próxima web donde arranque el lector.
       if (!activarSyncLector(campo.value, false)){ toast(t('syncInvalid'), 2400); campo.focus(); return; }
       render();
-      sincronizarLector().then(render);
     };
     const ahora = box.querySelector('.il-set-sync-ahora');
     if (ahora) ahora.onclick = () => {
