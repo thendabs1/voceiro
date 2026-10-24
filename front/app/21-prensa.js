@@ -100,25 +100,6 @@ function prensaCacheSet(rawQuery, items){
   } catch(e){}
 }
 
-// El worker responde 200 aunque falle una fuente y pone el motivo en
-// _errores. Sin esto, una fuente caída se ve como "0 resultados".
-// Se avisa como mucho una vez por minuto y fuente.
-const _ERRORES_AVISADOS = new Map();
-function _avisarErroresFuente(data){
-  const errs = data && data._errores;
-  if (!errs) return false;
-  const ahora = Date.now();
-  for (const fuente in errs){
-    const ult = _ERRORES_AVISADOS.get(fuente) || 0;
-    if (ahora - ult < 60000) continue;
-    _ERRORES_AVISADOS.set(fuente, ahora);
-    const nombre = fuente === 'turso' ? 'Archivo' : fuente;
-    console.warn(`[${fuente}]`, errs[fuente]);
-    toast(`${nombre} no disponible: ${String(errs[fuente]).slice(0, 120)}`, 4000);
-  }
-  return true;
-}
-
 async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   // Cache primero
   const cacheKey = prensaCacheKey(rawQuery);
@@ -174,7 +155,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   }
 }
 
-// Item de prensa → item crudo de NOTICIAS, como los de Turso. El medio se
+// Item de prensa → item crudo de NOTICIAS, como los de R2. El medio se
 // resuelve por dominio (el de <source url>, vía relay) y, si ese dominio no
 // está en el catálogo, por nombre.
 function _itemDePrensa(it){

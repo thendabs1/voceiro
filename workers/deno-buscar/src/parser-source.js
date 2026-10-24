@@ -167,7 +167,9 @@ export function parseQuery(raw) {
     desde: null, hasta: null,
     eltiempo: null,
     alertas: null,
-    fuentes: ['turso'],
+    // Sin fuente por defecto: la da fuentes: o el parámetro de /buscar.
+    // Sin ninguna, /buscar no consulta nada (tampoco Google News).
+    fuentes: [],
     order: 'recientes',
     limit: 50, offset: 0,
     chips: [],
@@ -268,20 +270,5 @@ export function parseQuery(raw) {
 
   out.q = out.titulo.join(' ');
   return out;
-}
-
-// Convierte tokens de título en query FTS5 segura.
-// "sanchez feijoo" → '"sanchez" AND "feijoo"'
-// "\\"cambio climatico\\"" → '"cambio climatico"' (frase)
-// "eleccion*" → '"eleccion"*' (prefijo)
-export function buildFtsQuery(titulo) {
-  if (!titulo || !titulo.length) return '';
-  const parts = titulo.map(t => {
-    const hasStar = t.endsWith('*') && t.length > 1;
-    const clean = hasStar ? t.slice(0, -1) : t;
-    const safe = '"' + clean.replace(/"/g, '""') + '"';
-    return hasStar ? safe + '*' : safe;
-  });
-  return parts.join(' AND ');
 }
 `;

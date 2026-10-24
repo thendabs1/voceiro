@@ -1,12 +1,11 @@
 import { buscar, CORS, json } from './comun/buscar.js';
 import { parseQuery } from './shared/parser.js';
 import { PARSER_SOURCE } from './parser-source.js';
-import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';
 import { handleTiempo } from './tiempo/index.js';
 import { crearLimite, claveIp, respuesta429 } from './comun/limite.js';
 
-const ADAPTERS = { turso, gnews };
+const ADAPTERS = { gnews };
 // Por IP y minuto: las consultas que llegan a las fuentes (las de caché no
 // cuentan) y las del tiempo (AEMET y Open-Meteo tienen cuota por clave o IP).
 const limiteBuscar = crearLimite({ max: 30, ventanaMs: 60e3 });

@@ -53,7 +53,7 @@ function renderizar(){
       return;
     }
 
-    // Lista agotada → pedir más (R2 días o Turso página) si hay
+    // Lista agotada → pedir más días de R2 si hay
     const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
     const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
     const puedeR2 = capas.size > 0 && DIAS_ACTUAL < totalDias;
@@ -243,82 +243,7 @@ function appendBatch(){
   }
 }
 
-// Añade items nuevos al final del DOM sin re-render completo.
-// Devuelve true si el append fue limpio, false si hay que re-renderizar.
-function _anexarItemsIncremental(items, ctx) {
-  if (!items.length || !ctx) return false;
-
-  // Filtrar los nuevos que pasan los filtros actuales. Se trabaja siempre
-  // con el objeto que vive en NOTICIAS (hidratado): si el item de Turso era
-  // un duplicado por URL o por título, el crudo no tiene titular ni fecha
-  // y acabaría como tarjeta vacía.
-  const nuevos = [];
-  const vistos = new Set();
-  for (const n of items) {
-    const u = _claveUrl(n.u || '', n.d || '');
-    const real = (u && _itemPorUrl.get(u))
-              || (n.t && _itemPorTitulo.get(normalize(n.t)))
-              || n;
-    if (vistos.has(real) || ULT_FILTRADAS.includes(real)) continue;
-    vistos.add(real);
-    if (_pasaVista(real, ctx) === true) nuevos.push(real);
-  }
-  if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
-
-  const orden = ctx.orden || 'recientes';
-  const ahora = ctx.ahora || Date.now();
-
-  // ¿Todos los nuevos van DESPUÉS del último renderizado?
-  const ultimo = ULT_FILTRADAS[ULT_FILTRADAS.length - 1];
-  if (!ultimo) return false;
-
-  const tsUlt = isNaN(ultimo._tsOrden) ? 0 : _tsOrdenFeed(ultimo, ahora);
-
-  for (const n of nuevos) {
-    const ts = isNaN(n._tsOrden) ? 0 : _tsOrdenFeed(n, ahora);
-    const vaDespues = orden === 'antiguos' ? (ts >= tsUlt) : (ts <= tsUlt);
-    if (!vaDespues) return false;
-  }
-
-  // Los nuevos van al final → append limpio. Se ordenan solo ellos: la
-  // lista ya pintada NO se reordena, porque las tarjetas guardan su índice
-  // (data-idx) y las acciones (leída, guardar, ➕/🚫) lo usan.
-  const cmp = comparador(orden);
-  nuevos.sort((a, b) => cmp(_paraOrden(a, ctx.consulta.clave), _paraOrden(b, ctx.consulta.clave)));
-  const desde = ULT_FILTRADAS.length;
-  ULT_FILTRADAS.push(...nuevos);
-
-  // Si aún quedaban tarjetas sin pintar, el scroll infinito las pintará en
-  // orden (incluidas estas); pintar desde 'desde' se saltaría las del medio.
-  if (RENDER_OFFSET < desde) return true;
-
-  appendBatchDesdeOffset(desde, ULT_FILTRADAS.length);
-  return true;
-}
-
-// Añade al DOM las tarjetas [desde, hasta) sin tocar las que ya hay.
-function appendBatchDesdeOffset(desde, hasta) {
-  const cont = $('#resultados');
-  const sentinel = document.getElementById('render-sentinel');
-
-  let html = '';
-  for (let i = desde; i < hasta; i++) {
-    html += renderItemHtml(ULT_FILTRADAS[i], i);
-  }
-
-  if (sentinel) {
-    sentinel.insertAdjacentHTML('beforebegin', html);
-  } else {
-    cont.insertAdjacentHTML('beforeend', html);
-  }
-  RENDER_OFFSET = Math.max(RENDER_OFFSET, hasta);
-  observarNoticias();
-}
-
-// Scroll infinito y «Cargar más»: solo R2 (ficheros estáticos: gratis y sin
-// cuota). El archivo se pagina únicamente con el botón «Buscar más en el
-// archivo» (cargarMasDeTurso), nunca solo: así no puede recorrerse entero
-// en bucle si sus páginas no añaden nada visible.
+// Scroll infinito y «Cargar más»: R2 (ficheros estáticos: gratis y sin cuota).
 async function solicitarMas(pedir){
   if (_cargandoMas) return;
   _cargandoMas = true;
@@ -351,49 +276,12 @@ async function cargarMas() {
   aplicarFiltros();
 }
 
-// ─── Paginación Turso ───
-async function cargarMasDeTurso() {
-  if (!ARCHIVO_ACTIVO || !TURSO_HAY_MAS || !TURSO_RAW) return;
-
-  const claveTurso = TURSO_RAW;
-  const claveConsulta = ULT_QUERY_KEY;
-  const offsetPedido = TURSO_OFFSET;
-  const res = await buscarEnWorker(TURSO_RAW, {
-    offset: TURSO_OFFSET,
-    limit: 50
-  });
-
-  // La consulta cambió (o ya se cargó esta página) mientras esperábamos.
-  if (TURSO_RAW !== claveTurso || TURSO_OFFSET !== offsetPedido) return;
-
-  if (!res.items || !res.items.length) {
-    TURSO_HAY_MAS = false;
-    actualizarBotonCargarMas();
-    return;
-  }
-
-  TURSO_OFFSET  = (res.nextOffset ?? (TURSO_OFFSET + res.items.length));
-  TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
-
-  // Como en la primera página: también los items ya cargados cuentan para
-  // esta consulta, así que se anexan aunque no haya ninguno nuevo.
-  const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta, offsetPedido);
-  if (nuevos > 0) hidratarNoticias();
-  if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
-    aplicarFiltros();
-  } else {
-    renderPestanasPreset();
-    actualizarFiltrosCount();
-    actualizarBotonCargarMas();
-  }
-}
-
 function actualizarBotonCargarMas() {
   const wrap = document.getElementById('cargar-mas-wrap');
   const btn  = document.getElementById('btn-cargar-mas');
   if (!wrap || !btn) return;
 
-  // 1) R2: extender días si quedan en el manifest
+  // R2: extender días si quedan en el manifest
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
   const capas = capasRequeridas(parsed);
@@ -402,19 +290,9 @@ function actualizarBotonCargarMas() {
     if (DIAS_ACTUAL < totalDias) {
       wrap.style.display = '';
       btn.textContent = _cargandoMas ? 'Cargando…' : `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
-      btn.dataset.modo = 'r2';
       btn.disabled = _cargandoMas;
       return;
     }
-  }
-
-  // 2) Archivo: solo a mano, cuando R2 no da más y la búsqueda tiene más páginas.
-  if (ARCHIVO_ACTIVO && TURSO_HAY_MAS) {
-    wrap.style.display = '';
-    btn.textContent = _cargandoMas ? 'Cargando…' : 'Buscar más en el archivo';
-    btn.dataset.modo = 'archivo';
-    btn.disabled = _cargandoMas;
-    return;
   }
 
   wrap.style.display = 'none';

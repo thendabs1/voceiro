@@ -7,36 +7,35 @@
    ═══════════════════════════════════════════════════════════════ */
 import {
   parseQuery,
-  buildFtsQuery,
   parseRelativeDate,
   normalize,
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=b4efeb6f8f';
+} from './parser.js?v=fbda9cd20c';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=b4efeb6f8f';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b4efeb6f8f';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b4efeb6f8f';
-import { comparador } from './busqueda/orden.js?v=b4efeb6f8f';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=fbda9cd20c';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=fbda9cd20c';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=fbda9cd20c';
+import { comparador } from './busqueda/orden.js?v=fbda9cd20c';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=b4efeb6f8f';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b4efeb6f8f';
+} from './sync/fusion.js?v=fbda9cd20c';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=fbda9cd20c';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=b4efeb6f8f';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b4efeb6f8f';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=fbda9cd20c';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=fbda9cd20c';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b4efeb6f8f';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=fbda9cd20c';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=b4efeb6f8f';
+} from './tiempo/avisos.js?v=fbda9cd20c';
 
-import { I18N, traducir } from './idiomas/index.js?v=b4efeb6f8f';
+import { I18N, traducir } from './idiomas/index.js?v=fbda9cd20c';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1933,7 +1932,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=b4efeb6f8f');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=fbda9cd20c');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2238,21 +2237,20 @@ function capasRequeridas(parsed, consulta = ULT_CTX && ULT_CTX.consulta) {
 
 // ─── Mergear items de una capa/base en NOTICIAS con dedup global ───
 // Devuelve cuántos items NUEVOS se añadieron.
-// clave: consulta que trajo los items (Turso y prensa). Un item que solo viene
-// de ellas se ve únicamente mientras esa consulta esté activa (_pasaVista):
+// clave: consulta que trajo los items (prensa). Un item que solo viene de
+// ella se ve únicamente mientras esa consulta esté activa (_pasaVista):
 // así una búsqueda no deja sus resultados en el feed ni en la siguiente.
-// rangoBase: posición del primer item en la respuesta del archivo (offset);
-// con order:relevancia el worker los devuelve por bm25 y esa posición es el rango.
+// rangoBase: posición del primer item en una respuesta ordenada por
+// relevancia; esa posición es su rango. Hoy ninguna fuente lo manda.
 function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null) {
   let añadidos = 0;
   let pos = 0;
   let rango = null;
-  // La prensa lleva marca propia: su clave incluye idioma y país, y a lo suyo
-  // no se le exigen las palabras en el titular (_pasaVista).
-  const campo = capaKey === 'prensa' ? '_prensaPara' : '_consultas';
+  // Su clave incluye idioma y país, y a lo suyo no se le exigen las palabras
+  // en el titular (_pasaVista).
   const marcar = n => {
     if (!clave) return;
-    (n[campo] || (n[campo] = new Set())).add(clave);
+    (n._prensaPara || (n._prensaPara = new Set())).add(clave);
     if (rango !== null) n._rango = { clave, valor: rango };
   };
 
@@ -3452,7 +3450,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=b4efeb6f8f')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=fbda9cd20c')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -5342,8 +5340,8 @@ let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañ
 const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
-let ULT_CTX = null;                // contexto para append incremental
-// ── Paginación R2 + Turso ──
+let ULT_CTX = null;                // contexto del último filtrado
+// ── Paginación R2 ──
 let DIAS_ACTUAL = 0;               // días cargados vía R2 para la query actual
 let DIAS_CAPAS_KEY = '';            // las capas a las que pertenece ese contador
 const DIAS_R2_STEP = 30;           // días por click en "Cargar más"
@@ -5362,62 +5360,7 @@ function ajustarDiasActual(capas){
   }
 }
 
-let TURSO_OFFSET = 0;              // próximo offset a pedir
-let TURSO_HAY_MAS = false;
-let TURSO_ACTIVO = false;          // true cuando ya estamos paginando Turso
-let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llevar cutoff)
-// El archivo se consulta tras una pausa sin cambios (regla 3), no en cada
-// pausa del debounce al teclear: menos peticiones y menos respuestas tiradas.
-const ARCHIVO_PAUSA_MS = 700;
-// TEMPORAL (13-10-2026): Turso sin cuota de lecturas. Con false no se pide
-// nada al archivo (ni búsqueda ni «Cargar más»); lo cargado, R2 y la prensa
-// siguen igual. Volver a true cuando se restablezca la cuota.
-const ARCHIVO_ACTIVO = false;
-let _archivoTimer = null;
-let ULT_QUERY_KEY = '';            // para detectar cambio de query
 let _cargandoMas  = false;
-
-async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
-  const params = new URLSearchParams();
-  params.set('raw', rawQuery || '');
-  params.set('limit', String(limit));
-  params.set('offset', String(offset));
-  params.set('fuentes', 'turso');
-
-  const mapear = (data) => ({
-    items: (data.items || []).map(it => ({
-      u: it.u, d: it.d, t: it.t, p: it.p, e: it.e, f: it.f || 'TURSO',
-      _src: 'turso',
-    })),
-    total: data.total || 0,
-    nextOffset: data.next_offset ?? null,
-  });
-
-  const intentar = async () => {
-    const sig = _signalConTimeout(null, BACKEND_TIMEOUT_CF_MS);
-    const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
-    if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status });
-    return await r.json();
-  };
-
-  try {
-    const data = await intentar();
-    _avisarErroresFuente(data);
-    return mapear(data);
-  } catch(e) {
-    if (e.name !== 'AbortError') console.warn('[worker]', e.message);
-    // Un 429 es el límite por IP del worker, no un backend caído: no se conmuta.
-    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError' && e.status !== 429){
-      await _conmutarBackendPorFallo();
-      try {
-        const data = await intentar();
-        _avisarErroresFuente(data);
-        return mapear(data);
-      } catch(e2){ /* fall through */ }
-    }
-    return { items: [], total: 0, nextOffset: null };
-  }
-}
 /* ═══════════════════════════════════════════════════════════════
    PRENSA EXTERNA (vía Worker: Google News)
    ═══════════════════════════════════════════════════════════════ */
@@ -5520,25 +5463,6 @@ function prensaCacheSet(rawQuery, items){
   } catch(e){}
 }
 
-// El worker responde 200 aunque falle una fuente y pone el motivo en
-// _errores. Sin esto, una fuente caída se ve como "0 resultados".
-// Se avisa como mucho una vez por minuto y fuente.
-const _ERRORES_AVISADOS = new Map();
-function _avisarErroresFuente(data){
-  const errs = data && data._errores;
-  if (!errs) return false;
-  const ahora = Date.now();
-  for (const fuente in errs){
-    const ult = _ERRORES_AVISADOS.get(fuente) || 0;
-    if (ahora - ult < 60000) continue;
-    _ERRORES_AVISADOS.set(fuente, ahora);
-    const nombre = fuente === 'turso' ? 'Archivo' : fuente;
-    console.warn(`[${fuente}]`, errs[fuente]);
-    toast(`${nombre} no disponible: ${String(errs[fuente]).slice(0, 120)}`, 4000);
-  }
-  return true;
-}
-
 async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   // Cache primero
   const cacheKey = prensaCacheKey(rawQuery);
@@ -5594,7 +5518,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   }
 }
 
-// Item de prensa → item crudo de NOTICIAS, como los de Turso. El medio se
+// Item de prensa → item crudo de NOTICIAS, como los de R2. El medio se
 // resuelve por dominio (el de <source url>, vía relay) y, si ese dominio no
 // está en el catálogo, por nombre.
 function _itemDePrensa(it){
@@ -5709,9 +5633,9 @@ function _pasaExterno(n, consulta){
     palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
   });
 }
-// ¿Todo lo que tiene el item viene de capas de una consulta (archivo, prensa)?
+// ¿Todo lo que tiene el item viene de la prensa (lo trae una consulta)?
 function _soloDeConsulta(n){
-  for (const c of n._capas) if (c !== 'turso' && c !== 'prensa') return false;
+  for (const c of n._capas) if (c !== 'prensa') return false;
   return true;
 }
 
@@ -5762,8 +5686,7 @@ function _pasaVista(n, ctx){
   if (_ocultaPorLectura(n, hm)) return false;
   // Lo que trajo la prensa para esta consulta, con la prensa encendida.
   const dePrensa = PRENSA_ACTIVA && !!n._prensaPara && n._prensaPara.has(clavePrensa);
-  if (n._capas && _soloDeConsulta(n) && !dePrensa
-      && !(n._capas.has('turso') && n._consultas && n._consultas.has(consulta.clave))) return false;
+  if (n._capas && _soloDeConsulta(n) && !dePrensa) return false;
   if (!(dePrensa ? _pasaExterno(n, consulta) : _pasaConsulta(n, consulta))) return false;
   if (presetEfectivo || soloPreset){
     const cumple = cumpleFiltro(n, ctx);
@@ -5794,7 +5717,7 @@ function aplicarFiltros(){
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
-  // Se interpreta una vez y la usan el filtro, Turso y la prensa.
+  // Se interpreta una vez y la usan el filtro y la prensa.
   const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
@@ -5803,19 +5726,6 @@ function aplicarFiltros(){
   pintarBotonTiempo();
 
 const capas = capasRequeridas(parsed, consulta);
-// El archivo (Turso) es para búsquedas concretas: solo con texto. Un medio,
-// grupo, tag… sin texto se sirve de lo cargado y de R2.
-const usarTurso = consulta.texto.incluir.length > 0;
-
-// Reset solo si cambia la consulta (por su clave: un espacio o cambiar
-// 'Sánchez' por 'sanchez' no es otra búsqueda).
-if (consulta.clave !== ULT_QUERY_KEY) {
-  ULT_QUERY_KEY = consulta.clave;
-  TURSO_OFFSET  = 0;
-  TURSO_HAY_MAS = false;
-  TURSO_ACTIVO  = !capas.size;
-  TURSO_RAW     = '';
-}
 
 // El cursor solo sirve para las capas que se cargaron con él. Al cambiar de
 // modo o de medio, la nueva capa empieza tras los días cargados en memoria.
@@ -5826,46 +5736,6 @@ ajustarDiasActual(capas);
     asegurarCapas(capas, signal).then(trajo => {
       if (trajo) aplicarFiltros();
     });
-  }
-
-  // Archivo (Turso): solo con texto (usarTurso), primera página automática
-  // tras la pausa; las siguientes, solo con el botón «Buscar más en el archivo».
-  // Al archivo se le manda la consulta ya interpretada (inicio de palabra,
-  // dominios exactos, días de Madrid): el worker no tiene que reinterpretar.
-  const rawArchivo = consulta.imposible ? '' : paraArchivo(consulta);
-  if (ARCHIVO_ACTIVO && usarTurso && rawArchivo && !TURSO_RAW) {
-    TURSO_RAW = rawArchivo;
-    TURSO_OFFSET = 0;
-
-    // Se descarta solo si la consulta cambió, no por cualquier otra llamada
-    // a aplicarFiltros (un espacio, una capa R2, un toggle…): si no, la
-    // respuesta se perdía y no se volvía a pedir.
-    const claveTurso = TURSO_RAW;
-    const claveConsulta = consulta.clave;
-    if (_archivoTimer) clearTimeout(_archivoTimer);
-    _archivoTimer = setTimeout(() => {
-      _archivoTimer = null;
-      if (TURSO_RAW !== claveTurso) return;      // la consulta cambió durante la pausa
-      buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
-        if (TURSO_RAW !== claveTurso) return;
-        if (!res.items || !res.items.length) {
-          TURSO_HAY_MAS = false;
-          actualizarBotonCargarMas();
-          return;
-        }
-        TURSO_OFFSET  = (res.nextOffset ?? res.items.length);
-        TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
-
-        // Se repinta aunque no haya items nuevos: los que ya estaban en
-        // NOTICIAS (de otra búsqueda) pasan a ser visibles para esta.
-        const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta, 0);
-        if (nuevos > 0) {
-          _hidratadasHasta = 0;
-          hidratarNoticias();
-        }
-        aplicarFiltros();
-      });
-    }, ARCHIVO_PAUSA_MS);
   }
 
   // ── Filtrado ──
@@ -5911,8 +5781,8 @@ ajustarDiasActual(capas);
   // Chips. En la vista Temas, uno por modo; con un modo elegido (o si solo
   // hay uno), uno por cada tema suyo. En un modo con temas, «Medios del
   // modo» y uno por tema. Se cuenta sobre la lista sin el chip y luego se
-  // filtra. Los chips pasan al ctx para que el añadido incremental
-  // (ULT_CTX) los respete.
+  // filtra. Los chips pasan al ctx para que lo que lee ULT_CTX (las marcas
+  // de tema de cada tarjeta) los respete.
   let infoChips = null;
   const filtrarPorChips = lista => {
     const total = lista.length;
@@ -5987,7 +5857,7 @@ ajustarDiasActual(capas);
     if (aLejos !== bLejos) return aLejos - bLejos;
     // El resto lo decide el núcleo: fecha según el orden, sin fecha siempre
     // al final (antes, con 'antiguos', salían las primeras) y relevancia
-    // por el rango que dio el archivo para esta consulta.
+    // por el rango que dio la fuente para esta consulta, si lo dio.
     // Los programados futuros se ordenan como "ahora", para no tapar lo
     // publicado recientemente.
     return cmpNucleo(_paraOrdenFeed(a, consulta.clave, ahora), _paraOrdenFeed(b, consulta.clave, ahora));
@@ -6400,7 +6270,7 @@ function renderizar(){
       return;
     }
 
-    // Lista agotada → pedir más (R2 días o Turso página) si hay
+    // Lista agotada → pedir más días de R2 si hay
     const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
     const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
     const puedeR2 = capas.size > 0 && DIAS_ACTUAL < totalDias;
@@ -6590,82 +6460,7 @@ function appendBatch(){
   }
 }
 
-// Añade items nuevos al final del DOM sin re-render completo.
-// Devuelve true si el append fue limpio, false si hay que re-renderizar.
-function _anexarItemsIncremental(items, ctx) {
-  if (!items.length || !ctx) return false;
-
-  // Filtrar los nuevos que pasan los filtros actuales. Se trabaja siempre
-  // con el objeto que vive en NOTICIAS (hidratado): si el item de Turso era
-  // un duplicado por URL o por título, el crudo no tiene titular ni fecha
-  // y acabaría como tarjeta vacía.
-  const nuevos = [];
-  const vistos = new Set();
-  for (const n of items) {
-    const u = _claveUrl(n.u || '', n.d || '');
-    const real = (u && _itemPorUrl.get(u))
-              || (n.t && _itemPorTitulo.get(normalize(n.t)))
-              || n;
-    if (vistos.has(real) || ULT_FILTRADAS.includes(real)) continue;
-    vistos.add(real);
-    if (_pasaVista(real, ctx) === true) nuevos.push(real);
-  }
-  if (!nuevos.length) return true;   // nada nuevo, pero no bloqueamos
-
-  const orden = ctx.orden || 'recientes';
-  const ahora = ctx.ahora || Date.now();
-
-  // ¿Todos los nuevos van DESPUÉS del último renderizado?
-  const ultimo = ULT_FILTRADAS[ULT_FILTRADAS.length - 1];
-  if (!ultimo) return false;
-
-  const tsUlt = isNaN(ultimo._tsOrden) ? 0 : _tsOrdenFeed(ultimo, ahora);
-
-  for (const n of nuevos) {
-    const ts = isNaN(n._tsOrden) ? 0 : _tsOrdenFeed(n, ahora);
-    const vaDespues = orden === 'antiguos' ? (ts >= tsUlt) : (ts <= tsUlt);
-    if (!vaDespues) return false;
-  }
-
-  // Los nuevos van al final → append limpio. Se ordenan solo ellos: la
-  // lista ya pintada NO se reordena, porque las tarjetas guardan su índice
-  // (data-idx) y las acciones (leída, guardar, ➕/🚫) lo usan.
-  const cmp = comparador(orden);
-  nuevos.sort((a, b) => cmp(_paraOrden(a, ctx.consulta.clave), _paraOrden(b, ctx.consulta.clave)));
-  const desde = ULT_FILTRADAS.length;
-  ULT_FILTRADAS.push(...nuevos);
-
-  // Si aún quedaban tarjetas sin pintar, el scroll infinito las pintará en
-  // orden (incluidas estas); pintar desde 'desde' se saltaría las del medio.
-  if (RENDER_OFFSET < desde) return true;
-
-  appendBatchDesdeOffset(desde, ULT_FILTRADAS.length);
-  return true;
-}
-
-// Añade al DOM las tarjetas [desde, hasta) sin tocar las que ya hay.
-function appendBatchDesdeOffset(desde, hasta) {
-  const cont = $('#resultados');
-  const sentinel = document.getElementById('render-sentinel');
-
-  let html = '';
-  for (let i = desde; i < hasta; i++) {
-    html += renderItemHtml(ULT_FILTRADAS[i], i);
-  }
-
-  if (sentinel) {
-    sentinel.insertAdjacentHTML('beforebegin', html);
-  } else {
-    cont.insertAdjacentHTML('beforeend', html);
-  }
-  RENDER_OFFSET = Math.max(RENDER_OFFSET, hasta);
-  observarNoticias();
-}
-
-// Scroll infinito y «Cargar más»: solo R2 (ficheros estáticos: gratis y sin
-// cuota). El archivo se pagina únicamente con el botón «Buscar más en el
-// archivo» (cargarMasDeTurso), nunca solo: así no puede recorrerse entero
-// en bucle si sus páginas no añaden nada visible.
+// Scroll infinito y «Cargar más»: R2 (ficheros estáticos: gratis y sin cuota).
 async function solicitarMas(pedir){
   if (_cargandoMas) return;
   _cargandoMas = true;
@@ -6698,49 +6493,12 @@ async function cargarMas() {
   aplicarFiltros();
 }
 
-// ─── Paginación Turso ───
-async function cargarMasDeTurso() {
-  if (!ARCHIVO_ACTIVO || !TURSO_HAY_MAS || !TURSO_RAW) return;
-
-  const claveTurso = TURSO_RAW;
-  const claveConsulta = ULT_QUERY_KEY;
-  const offsetPedido = TURSO_OFFSET;
-  const res = await buscarEnWorker(TURSO_RAW, {
-    offset: TURSO_OFFSET,
-    limit: 50
-  });
-
-  // La consulta cambió (o ya se cargó esta página) mientras esperábamos.
-  if (TURSO_RAW !== claveTurso || TURSO_OFFSET !== offsetPedido) return;
-
-  if (!res.items || !res.items.length) {
-    TURSO_HAY_MAS = false;
-    actualizarBotonCargarMas();
-    return;
-  }
-
-  TURSO_OFFSET  = (res.nextOffset ?? (TURSO_OFFSET + res.items.length));
-  TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
-
-  // Como en la primera página: también los items ya cargados cuentan para
-  // esta consulta, así que se anexan aunque no haya ninguno nuevo.
-  const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta, offsetPedido);
-  if (nuevos > 0) hidratarNoticias();
-  if (!_anexarItemsIncremental(res.items, ULT_CTX)) {
-    aplicarFiltros();
-  } else {
-    renderPestanasPreset();
-    actualizarFiltrosCount();
-    actualizarBotonCargarMas();
-  }
-}
-
 function actualizarBotonCargarMas() {
   const wrap = document.getElementById('cargar-mas-wrap');
   const btn  = document.getElementById('btn-cargar-mas');
   if (!wrap || !btn) return;
 
-  // 1) R2: extender días si quedan en el manifest
+  // R2: extender días si quedan en el manifest
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
   const capas = capasRequeridas(parsed);
@@ -6749,19 +6507,9 @@ function actualizarBotonCargarMas() {
     if (DIAS_ACTUAL < totalDias) {
       wrap.style.display = '';
       btn.textContent = _cargandoMas ? 'Cargando…' : `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
-      btn.dataset.modo = 'r2';
       btn.disabled = _cargandoMas;
       return;
     }
-  }
-
-  // 2) Archivo: solo a mano, cuando R2 no da más y la búsqueda tiene más páginas.
-  if (ARCHIVO_ACTIVO && TURSO_HAY_MAS) {
-    wrap.style.display = '';
-    btn.textContent = _cargandoMas ? 'Cargando…' : 'Buscar más en el archivo';
-    btn.dataset.modo = 'archivo';
-    btn.disabled = _cargandoMas;
-    return;
   }
 
   wrap.style.display = 'none';
@@ -7431,7 +7179,6 @@ function aplicarDiasMemoria(v){
   LAYERS.clear();
   _itemsCargadosDeCapas = 0;
   DIAS_ACTUAL = 0;
-  ULT_QUERY_KEY = '';       // fuerza el reset en el siguiente aplicarFiltros
   _hidratadasHasta = 0;
   _dupsHechosHasta = 0;
 
@@ -7662,12 +7409,9 @@ function wireStaticEvents(){
   pintarSelectsPrensa();
   setPrensaActiva(PRENSA_ACTIVA, { persistir: false });
   // ── Botones que abren paneles ──
-  // ── Botón "Cargar más" (paginación R2 + Turso) ──
+  // ── Botón "Cargar más" (paginación R2) ──
   const btnCargarMas = document.getElementById('btn-cargar-mas');
-  if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
-    const pedir = btnCargarMas.dataset.modo === 'archivo' ? cargarMasDeTurso : cargarMas;
-    solicitarMas(pedir);
-  });
+  if (btnCargarMas) btnCargarMas.addEventListener('click', () => solicitarMas(cargarMas));
 
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-acces').addEventListener('click', () => abrirAjustes('lectura'));

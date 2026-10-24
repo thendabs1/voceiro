@@ -4,8 +4,8 @@ import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 
 const html = leerAplicacion();
-const paginacion = html.slice(html.indexOf('let DIAS_ACTUAL = 0;'), html.indexOf('let TURSO_OFFSET = 0;'));
-const carga = html.slice(html.indexOf('async function solicitarMas('), html.indexOf('// ─── Paginación Turso ───'));
+const paginacion = html.slice(html.indexOf('let DIAS_ACTUAL = 0;'), html.indexOf('let _cargandoMas'));
+const carga = html.slice(html.indexOf('async function solicitarMas('), html.indexOf('function actualizarBotonCargarMas()'));
 const boton = html.slice(html.indexOf('function actualizarBotonCargarMas()'), html.indexOf('\n\nfunction wireResultadosDelegation()', html.indexOf('function actualizarBotonCargarMas()')));
 
 function preparar(){
@@ -14,7 +14,7 @@ function preparar(){
   let filtrados = 0;
   const ctx = {
     DIAS_MEMORIA: 3, _manifest: { dias: Array(100) },
-    _cargandoMas: false, ARCHIVO_ACTIVO: false,
+    _cargandoMas: false,
     document: { getElementById: id => id === 'btn-cargar-mas' ? btn : wrap },
     $: () => ({ value: 'consulta' }),
     preprocesarInput: x => x, parseQuery: x => x,

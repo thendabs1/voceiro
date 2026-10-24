@@ -6,10 +6,6 @@ export const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-// Hasta dónde se pagina el archivo. OFFSET lee y descarta las filas que se
-// salta, y Turso cobra las leídas: sin tope, una petición podía leer miles.
-export const MAX_OFFSET = 1000;
-
 // Las plataformas aportan su caché, su entorno y cómo retener la escritura.
 // No llama al otro backend: cada despliegue resuelve la consulta por sí mismo.
 // limitar: segundos de espera para quien pide (0: adelante); solo cuenta lo
@@ -24,12 +20,6 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
   const fuentesQ = url.searchParams.get('fuentes');
   if (fuentesQ) parsed.fuentes = fuentesQ.split(',').map(s => s.trim()).filter(Boolean);
 
-  const limitQ = url.searchParams.get('limit');
-  if (limitQ) parsed.limit = Math.min(parseInt(limitQ, 10) || 50, 200);
-
-  const offsetQ = url.searchParams.get('offset');
-  if (offsetQ) parsed.offset = Math.max(parseInt(offsetQ, 10) || 0, 0);
-
   const orderQ = url.searchParams.get('order');
   if (orderQ && ['recientes','antiguos','relevancia'].includes(orderQ)) parsed.order = orderQ;
 
@@ -39,17 +29,25 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
   const regionQ = url.searchParams.get('region');
   if (regionQ && !parsed.region) parsed.region = regionQ;
 
-  const activas = parsed.fuentes.filter(f => adapters[f]);
-  if (!activas.length || parsed.offset > MAX_OFFSET) {
+  // Las fuentes dan una sola página: limit y offset se aceptan y no cambian
+  // nada. next_offset sigue en la respuesta para los clientes antiguos.
+  const activas = [...new Set(parsed.fuentes)].filter(f => Object.hasOwn(adapters, f)).sort();
+  if (!activas.length) {
     return json({ total: 0, items: [], next_offset: null, fuentes: [] }, CORS);
   }
 
   // ── Cache ──
-  const cacheKeyUrl = new URL(request.url);
-  cacheKeyUrl.searchParams.set('fuentes', [...activas].sort().join(','));
-  cacheKeyUrl.searchParams.set('limit',  String(parsed.limit));
-  cacheKeyUrl.searchParams.set('offset', String(parsed.offset));
-  cacheKeyUrl.searchParams.set('order',  parsed.order);
+  // La consulta efectiva, no la URL escrita: q/raw, espacios, overrides y
+  // parámetros ajenos no deben multiplicar las peticiones de una misma búsqueda.
+  const cacheKeyUrl = new URL('/buscar', url);
+  cacheKeyUrl.searchParams.set('v', '2');
+  cacheKeyUrl.searchParams.set('consulta', JSON.stringify({
+    titulo: parsed.titulo, dominios: parsed.dominios, medios: parsed.medios,
+    grupos: parsed.grupos, tipos: parsed.tipos, tags: parsed.tags,
+    lang: parsed.lang, region: parsed.region,
+    desde: parsed.desde, hasta: parsed.hasta,
+    fuentes: activas, order: parsed.order,
+  }));
   const cacheKey = new Request(cacheKeyUrl.toString(), { method: 'GET' });
 
   const cache = await abrirCache();
@@ -71,8 +69,6 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
   const ms = Date.now() - t0;
 
   const itemsAll = [];
-  let totalTurso = 0;
-  let hayMasTurso = false;
   const fuentesOk = [];
   const fuentesErr = {};
 
@@ -85,10 +81,6 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
       }
       itemsAll.push(...items);
       fuentesOk.push(name);
-      if (name === 'turso') {
-        totalTurso = r.value.total ?? items.length;
-        hayMasTurso = r.value.hayMas ?? false;
-      }
     } else {
       fuentesErr[name] = String(r.reason?.message || r.reason).slice(0, 200);
     }
@@ -113,15 +105,10 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
     });
   }
 
-  const soloTurso = activas.length === 1 && activas[0] === 'turso';
-  const next_offset = (soloTurso && hayMasTurso && parsed.offset + parsed.limit <= MAX_OFFSET)
-    ? parsed.offset + parsed.limit
-    : null;
-
   const body = {
-    total: soloTurso ? totalTurso : deduped.length,
+    total: deduped.length,
     items: deduped,
-    next_offset,
+    next_offset: null,
     fuentes: fuentesOk,
     _ms: ms,
   };

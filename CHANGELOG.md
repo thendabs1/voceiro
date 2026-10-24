@@ -3,6 +3,23 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Búsqueda sin Turso
+
+### Quitado
+- El archivo (Turso) deja de usarse en las búsquedas: ni el front ni los
+  workers lo consultan. Sale el adaptador `turso.js`, `TURSO_PAUSADO`,
+  `ARCHIVO_ACTIVO`, «Buscar más en el archivo» y `buildFtsQuery`/`paraArchivo`.
+  Lo reciente se busca sobre R2 en el navegador y el resto, en Google News.
+  Turso sigue recibiendo la cosecha (recolector, medios y runs).
+
+### Cambiado
+- `/buscar` sin `fuentes` no consulta nada (antes, Turso por defecto).
+  `fuentes=turso`, de clientes antiguos, devuelve una respuesta vacía.
+- `limit` y `offset` ya no cambian la respuesta: Google News da una sola
+  página. `next_offset` sigue en la respuesta, siempre `null`.
+- La caché usa la consulta interpretada: URLs equivalentes (`q`/`raw`,
+  espacios, fuentes repetidas, parámetros ajenos) comparten respuesta.
+
 ## 2026-10-24 — Caché de búsqueda en Deno
 
 ### Cambiado

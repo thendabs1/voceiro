@@ -1,11 +1,10 @@
 // node --test 'tests/**/*.test.mjs'
 // Identidad (regla 5), orden (reglas 2, 8, 27), clave de búsqueda (caso 31),
-// y que lo que se envía al worker significa lo mismo que el filtro local.
+// y que lo que se envía a la prensa significa lo mismo que el filtro local.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
-import { parseQuery, buildFtsQuery } from '../../shared/parser.js';
-import { interpretarConsulta, paraArchivo, paraPrensa } from '../../shared/busqueda/consulta.js';
+import { parseQuery } from '../../shared/parser.js';
+import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
 import { urlCanonica, crearDeduplicador, crearIndiceNombres } from '../../shared/busqueda/identidad.js';
 import { comparador } from '../../shared/busqueda/orden.js';
 
@@ -28,7 +27,7 @@ test('5 · deduplicar: URL, medio + titular, o solo titular si el medio es desco
   const dd = crearDeduplicador();
   const local = { id: 'local' };
   assert.equal(dd.añadir(local, { url: '/a.html', dominio: 'elpais.com', titular: 'Sánchez anuncia elecciones' }), null);
-  // Mismo artículo desde Turso con otra forma de la URL.
+  // Mismo artículo desde otra fuente con otra forma de la URL.
   assert.equal(dd.añadir({}, { url: 'https://www.elpais.com/a.html?utm_medium=rss', dominio: 'elpais.com', titular: 'x' }), local);
   // Google News: URL de redirección y medio no resuelto → por titular.
   assert.equal(dd.añadir({}, { url: 'https://news.google.com/rss/articles/X', dominio: '', titular: 'Sánchez anuncia elecciones' }), local);
@@ -76,33 +75,10 @@ test('21 · medio desconocido: consulta imposible, no se pide nada fuera', () =>
   assert.ok(!interpretarConsulta('sanchez', { catalogo: CATALOGO, ahora: A }).imposible);
 });
 
-test('paraArchivo: tras pasar por el parser y buildFtsQuery del worker, FTS5 da lo mismo que el filtro local', () => {
-  const TIT = [
-    'Pedro Sánchez anuncia elecciones', 'El sanchismo responde', 'San Salvador de Poio celebra',
-    'Salvador Illa visita Poio y San Sebastián', 'Nuevo repunte de covid-19', 'El covid 19 vuelve',
-    'EE.UU. sube los aranceles', 'Incendio en Vigo', 'Incendio forestal en Ourense',
-  ];
-  const db = new DatabaseSync(':memory:');
-  db.exec("CREATE VIRTUAL TABLE t USING fts5(titular, tokenize='unicode61 remove_diacritics 2')");
-  const ins = db.prepare('INSERT INTO t(rowid, titular) VALUES (?, ?)');
-  TIT.forEach((x, i) => ins.run(i + 1, x));
-  for (const q of ['sanch', 'san salvador poio', '"san salvador"', 'covid-19', 'EE.UU aranceles', 'incendio -forestal']) {
-    const c = interpretarConsulta(q, { catalogo: CATALOGO, ahora: A });
-    const enviado = paraArchivo(c);
-    const fts = buildFtsQuery(parseQuery(enviado).titulo);       // lo que hace el worker hoy
-    const remoto = db.prepare('SELECT titular FROM t WHERE t MATCH ? ORDER BY rowid').all(fts).map(r => r.titular);
-    // El worker no tiene NOT: lo que devuelve se filtra después con c.pasa.
-    const remotoFiltrado = remoto.filter(x => c.pasa({ dominio: 'elpais.com', titular: x, ts: A }));
-    const local = TIT.filter(x => c.pasa({ dominio: 'elpais.com', titular: x, ts: A }));
-    assert.deepEqual(remotoFiltrado, local, `${q} → ${enviado} → ${fts}`);
-  }
-});
-
-test('paraArchivo / paraPrensa: medios como dominios exactos, fechas absolutas de Madrid', () => {
+test('paraPrensa: medios como dominios exactos, fechas absolutas de Madrid', () => {
   const c = interpretarConsulta('sanchez grupo:galicia desde:hoy', { catalogo: CATALOGO, ahora: A });
-  assert.equal(paraArchivo(c), 'sanchez* web:lavozdegalicia.es web:praza.gal desde:2026-10-13');
   assert.equal(paraPrensa(c), 'sanchez web:lavozdegalicia.es web:praza.gal desde:2026-10-13');
-  const p = parseQuery(paraArchivo(c));
+  const p = parseQuery(paraPrensa(c));
   assert.deepEqual(p.dominios.sort(), ['lavozdegalicia.es', 'praza.gal']);
   assert.equal(p.desde, '2026-10-13');
   assert.equal(paraPrensa(interpretarConsulta('incendio -forestal')), 'incendio -forestal');

@@ -2,7 +2,7 @@
 // Límite de peticiones por IP, en memoria. Cada instancia (isolate en CF,
 // instancia en Deno) cuenta por su lado y se pierde al reciclarse: es
 // aproximado. Frena a quien martillea desde una IP las cuotas de detrás
-// (Turso, D1, Google, AEMET); no frena ataques distribuidos ni ahorra la
+// (D1, Google, AEMET); no frena ataques distribuidos ni ahorra la
 // invocación del worker (eso, reglas de la plataforma delante del worker).
 
 const MAX_CLAVES = 10000;

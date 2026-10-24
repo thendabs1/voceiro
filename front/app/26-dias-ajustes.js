@@ -122,7 +122,6 @@ function aplicarDiasMemoria(v){
   LAYERS.clear();
   _itemsCargadosDeCapas = 0;
   DIAS_ACTUAL = 0;
-  ULT_QUERY_KEY = '';       // fuerza el reset en el siguiente aplicarFiltros
   _hidratadasHasta = 0;
   _dupsHechosHasta = 0;
 
