@@ -4,12 +4,13 @@
    tiene su paso en el historial (history.pushState): el botón atrás del
    móvil sube un nivel y al final cierra Ajustes, en vez de salir de la web.
    Rutas: '' (lista de secciones, solo en móvil), las de AJ_SECCIONES
-   y 'modo' (el de MODO_EDITADO).
+   y 'modo' (el de MODO_EDITADO) o 'asistente' (un borrador sin guardar).
    ═══════════════════════════════════════════════════════════════ */
 const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
   '': 'ajTitulo', modos: 'ajModos', lectura: 'ajLectura',
   feed: 'ajFeed', sync: 'ajSync', lector: 'ajLector', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
+  asistente: 'asTitulo',
 };
 let AJ_PILA = [];             // vacía = Ajustes cerrado
 let MODO_EDITADO = null;      // id del modo de la página 'modo'
@@ -132,7 +133,8 @@ function ajIrSeccion(ruta){
 // Botón «‹» de la cabecera: de un modo a Modos; de una sección a la lista.
 function ajAtras(){
   ajGuardarTemas();
-  const padre = ajRuta() === 'modo' ? 'modos' : '';
+  if (ajRuta() === 'asistente' && ASISTENTE_MODO?.paso > 0){ avanzarAsistente(-1); return; }
+  const padre = ['modo', 'asistente'].includes(ajRuta()) ? 'modos' : '';
   if (AJ_PILA.length > 1 && AJ_PILA[AJ_PILA.length - 2] === padre){
     history.back();
     return;
@@ -162,6 +164,7 @@ function cerrarAjustes(){
 }
 function ajCerrarVista(){
   ajGuardarTemas();
+  ASISTENTE_MODO = null;
   ajVaciarLector();
   AJ_PILA = [];
   _ajPendiente = null;
@@ -181,7 +184,8 @@ function ajPintar(){
   if (ruta === '' && !ajEsMovil()) ruta = AJ_PILA[AJ_PILA.length - 1] = ajSeccionGuardada();
   if (ruta === 'modo' && !modoEnPanel()) ruta = AJ_PILA[AJ_PILA.length - 1] = 'modos';
   panel.dataset.ruta = ruta;
-  const seccion = ruta === 'modo' ? 'modos' : ruta;
+  if (ruta !== 'asistente') ASISTENTE_MODO = null;
+  const seccion = ['modo', 'asistente'].includes(ruta) ? 'modos' : ruta;
   panel.querySelectorAll('.aj-secciones button').forEach(b => {
     if (b.dataset.ir === seccion) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
@@ -207,9 +211,10 @@ function ajRefrescar(){
   if (ruta === 'modo' && !modoEnPanel()){ ajPintar(); return; }
   const modo = modoEnPanel();
   $('#aj-titulo-pagina').textContent = ruta === 'modo' ? modo.nombre : t(AJ_TITULOS[ruta] || 'ajTitulo');
-  $('#aj-atras-lbl').textContent = t(ruta === 'modo' ? 'ajModos' : 'ajTitulo');
+  $('#aj-atras-lbl').textContent = t(['modo', 'asistente'].includes(ruta) ? 'ajModos' : 'ajTitulo');
   $('#aj-atras').setAttribute('aria-label', $('#aj-atras-lbl').textContent);
   if (ruta === 'modos') renderListaModos();
+  else if (ruta === 'asistente') pintarAsistenteModo();
   else if (ruta === 'modo') pintarModo();
   else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); }
   else if (ruta === 'avanzado') renderDiasSelector();
@@ -284,6 +289,9 @@ function ajEditarModo(id){
 function pintarModo(){
   const modo = modoEnPanel();
   if (!modo) return;
+  const regla = normalizarRegla(modo.regla);
+  $('#aj-regla').value = regla ? regla.fuentes : 'sumar';
+  $('#aj-regla-hint').textContent = t(regla ? 'asRegla' + (regla.fuentes === 'todas' ? 'Todas' : 'Elegidas') : 'asReglaSumar');
   const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
   const estado = $('#aj-modo-estado');
   estado.textContent = t('ajModoActivo');
@@ -441,6 +449,7 @@ function vaciarModo(id){
   modo.grupos = [];
   modo.palabras = [];
   modo.overrides = {};
+  delete modo.regla;
   const ta = $('#aj-temas');
   if (ta && ta.dataset.modoId === id) ta.value = '';
   guardarPresets();

@@ -16,6 +16,7 @@ import {
 import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js';
 import { palabrasDe, rangosResaltado } from './busqueda/texto.js';
 import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js';
 import { comparador } from './busqueda/orden.js';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {

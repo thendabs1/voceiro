@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tokenizeQuery, normalize, normDomain } from '../../shared/parser.js';
 import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
+import { compilarRegla } from '../../shared/busqueda/reglas.js';
 
 const codigo = readFileSync(new URL('../../front/app/14-estadisticas.js', import.meta.url), 'utf8');
 const catalogo = {
@@ -17,7 +18,7 @@ const indice = () => ({ generado: '2026-10-24T04:00:00+02:00', medios: catalogo,
 const dia = fecha => ({ fecha, medios: { 'a.es': { pub: { titulares: 0 } }, 'b.es': { pub: { titulares: 3, fechas: { solo_dia: 2, con_hora: 1 } } } } });
 const copia = v => JSON.parse(JSON.stringify(v));
 function contexto(){
-  const c = { tokenizeQuery, normalize, normDomain, ACCES: { lang: 'es' }, Intl, Date, AbortController, AbortSignal, structuredClone,
+  const c = { tokenizeQuery, normalize, normDomain, compilarRegla, ACCES: { lang: 'es' }, Intl, Date, AbortController, AbortSignal, structuredClone,
     DATA_BASE: 'https://datos.example', BACKENDS: { cf: { data: 'https://datos.example' }, deno: { data: 'https://alternativo.example' } },
     PRESETS: { lista: [], activo: '' }, PRESET_ACTIVO: false,
   };
@@ -44,6 +45,12 @@ test('los totales y las series distinguen cero real, falta de datos y muestra pa
   assert.equal(api.sumarEstadisticas(datos.medios, ['c.gal']).titulares, null);
   assert.deepEqual(copia(api.serieEstadisticas(indice(), ['a.es'])),
     [{ fecha: '2026-10-22', valor: null, medios: 0 }, { fecha: '2026-10-23', valor: 0, medios: 1 }]);
+});
+
+test('un modo que sigue temas en todas las fuentes conserva ese ámbito en estadísticas', () => {
+  const { api } = contexto();
+  const modos = [{ id: 't', regla: { v: 1, fuentes: 'todas' }, palabras: ['vivienda'], overrides: { 'a.es': 'ignore' } }];
+  assert.deepEqual(copia(api.seleccionEstadisticas(catalogo, 'modo:t', modos)), ['b.es', 'c.gal', 'd.es']);
 });
 
 test('el ámbito sigue al modo activo hasta que se elige otro; un modo borrado vuelve a él', () => {

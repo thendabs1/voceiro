@@ -156,6 +156,7 @@ function wireAjustes(){
   $('#aj-atras').addEventListener('click', ajAtras);
 
   // ── Modos ──
+  wireAsistenteModo();
   $('#lista-modos').addEventListener('click', e => {
     const fila = e.target.closest('[data-modo-id]');
     if (fila) ajEditarModo(fila.dataset.modoId);
@@ -172,6 +173,15 @@ function wireAjustes(){
   });
   $('#aj-modo-vaciar').addEventListener('click', () => vaciarModo(MODO_EDITADO));
   $('#aj-modo-borrar').addEventListener('click', () => borrarModo(MODO_EDITADO));
+  $('#aj-regla').addEventListener('change', e => {
+    const modo = modoEnPanel();
+    if (!modo) return;
+    if (e.target.value === 'sumar') delete modo.regla;
+    else modo.regla = { v: 1, fuentes: e.target.value };
+    guardarPresets();
+    ajModoCambiado(modo);
+    pintarModo();
+  });
 
   const ta = $('#aj-temas');
   ta.addEventListener('input', () => {

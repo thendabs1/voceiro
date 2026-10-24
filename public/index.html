@@ -28,7 +28,7 @@
     }
   } catch(e){}
 </script>
-<link rel="stylesheet" href="./estilos.css?v=e261fd7853">
+<link rel="stylesheet" href="./estilos.css?v=5c974b0081">
 </head>
 <body>
 <!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
@@ -155,8 +155,14 @@
         <!-- ═══════════ MODOS ═══════════ -->
         <div class="aj-pagina" data-pagina="modos" hidden>
           <p class="aj-hint" id="cfg-modos-hint"></p>
+          <button id="btn-asistente-modo" class="primary con-ico aj-nuevo" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg><span id="btn-asistente-modo-lbl"></span></button>
+          <p id="as-entrada-hint" class="aj-hint"></p>
           <div id="lista-modos" class="aj-lista-modos"></div>
           <button id="btn-nuevo-modo" class="con-ico aj-nuevo" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg><span id="btn-nuevo-modo-lbl"></span></button>
+        </div>
+
+        <div class="aj-pagina" data-pagina="asistente" hidden>
+          <form id="asistente-modo" novalidate></form>
         </div>
 
         <!-- ═══════════ UN MODO (el de MODO_EDITADO) ═══════════ -->
@@ -170,6 +176,10 @@
           </div>
 
           <p id="aj-modo-pista" class="aj-pista" hidden></p>
+          <label class="as-campo" for="aj-regla"><span id="aj-regla-lbl"></span>
+            <select id="aj-regla" aria-describedby="aj-regla-hint"></select>
+          </label>
+          <p id="aj-regla-hint" class="aj-hint"></p>
           <details class="aj-bloque" id="aj-bloque-temas" open>
             <summary><span id="aj-temas-tit"></span><span class="aj-n" id="aj-temas-n"></span></summary>
             <textarea id="aj-temas" class="preset-texto" spellcheck="false"></textarea>
@@ -636,7 +646,7 @@
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script type="module" src="./app.js?v=e261fd7853"></script>
+<script type="module" src="./app.js?v=5c974b0081"></script>
 </body>
 </html>
 

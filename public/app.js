@@ -12,30 +12,31 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=e261fd7853';
+} from './parser.js?v=5c974b0081';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=e261fd7853';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e261fd7853';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e261fd7853';
-import { comparador } from './busqueda/orden.js?v=e261fd7853';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=5c974b0081';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=5c974b0081';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=5c974b0081';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=5c974b0081';
+import { comparador } from './busqueda/orden.js?v=5c974b0081';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=e261fd7853';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=e261fd7853';
+} from './sync/fusion.js?v=5c974b0081';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=5c974b0081';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=e261fd7853';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=e261fd7853';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=5c974b0081';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=5c974b0081';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=e261fd7853';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=5c974b0081';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=e261fd7853';
+} from './tiempo/avisos.js?v=5c974b0081';
 
-import { I18N, traducir } from './idiomas/index.js?v=e261fd7853';
+import { I18N, traducir } from './idiomas/index.js?v=5c974b0081';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -606,6 +607,7 @@ function guardarHideMode(){
   try{ localStorage.setItem(HIDE_MODE_KEY, HIDE_MODE); }catch(e){}
 }
 function normalizarPreset(p){
+  const regla = normalizarRegla(p.regla);
   return {
     id:        String(p.id || 'general'),
     nombre:    String(p.nombre || p.id || 'General'),
@@ -613,6 +615,7 @@ function normalizarPreset(p){
     palabras:  Array.isArray(p.palabras) ? p.palabras : [],
     overrides: (p.overrides && typeof p.overrides === 'object' && !Array.isArray(p.overrides))
                ? p.overrides : {},
+    ...(regla ? { regla } : {}),
     // Fecha del último cambio de este modo (la pone sellarModos).
     ...(Number(p.actualizado) > 0 ? { actualizado: Number(p.actualizado) } : {})
   };
@@ -734,6 +737,7 @@ function presetTieneReglas(p){
   if (!p) return false;
   const ov = p.overrides || {};
   return !!(
+    normalizarRegla(p.regla) ||
     (p.grupos && p.grupos.length) ||
     (p.palabras && p.palabras.length) ||
     Object.keys(ov).some(d => overrideIncluye(ov[d]) || ov[d] === 'ignore')
@@ -929,7 +933,7 @@ function renderPresetMenu(){
       if (id === '__empezar'){
         cerrarPresetMenu();
         abrirAjustes('modos');
-        ajEditarModo(PRESETS.activo);
+        abrirAsistenteModo();
         return;
       }
       if (id === '__temas'){
@@ -1934,7 +1938,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=e261fd7853');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=5c974b0081');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3465,6 +3469,11 @@ function seleccionEstadisticas(catalogo, ambito, modos = []){
   if (!ambito.startsWith('modo:')) return todos;
   const modo = modos.find(p => 'modo:' + p.id === ambito);
   if (!modo) return [];
+  if (modo.regla){
+    const regla = compilarRegla(modo);
+    if (regla) return [...new Set([...todos, ...Object.keys(modo.overrides || {})])]
+      .filter(d => regla.pasaFuentes({ dominio: d, grupo: catalogo[d]?.g }));
+  }
   const ov = modo.overrides || {}, grupos = new Set(modo.grupos || []);
   const incluido = d => ov[d] === 'include' || ov[d] === 'first';
   return [...new Set([...todos, ...Object.keys(ov)])].filter(d => ov[d] !== 'ignore' && (incluido(d) || grupos.has(catalogo[d]?.g)));
@@ -3867,7 +3876,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=e261fd7853')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=5c974b0081')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -4868,12 +4877,13 @@ function actualizarResumen(visiblesOverride){
    tiene su paso en el historial (history.pushState): el botón atrás del
    móvil sube un nivel y al final cierra Ajustes, en vez de salir de la web.
    Rutas: '' (lista de secciones, solo en móvil), las de AJ_SECCIONES
-   y 'modo' (el de MODO_EDITADO).
+   y 'modo' (el de MODO_EDITADO) o 'asistente' (un borrador sin guardar).
    ═══════════════════════════════════════════════════════════════ */
 const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
   '': 'ajTitulo', modos: 'ajModos', lectura: 'ajLectura',
   feed: 'ajFeed', sync: 'ajSync', lector: 'ajLector', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
+  asistente: 'asTitulo',
 };
 let AJ_PILA = [];             // vacía = Ajustes cerrado
 let MODO_EDITADO = null;      // id del modo de la página 'modo'
@@ -4996,7 +5006,8 @@ function ajIrSeccion(ruta){
 // Botón «‹» de la cabecera: de un modo a Modos; de una sección a la lista.
 function ajAtras(){
   ajGuardarTemas();
-  const padre = ajRuta() === 'modo' ? 'modos' : '';
+  if (ajRuta() === 'asistente' && ASISTENTE_MODO?.paso > 0){ avanzarAsistente(-1); return; }
+  const padre = ['modo', 'asistente'].includes(ajRuta()) ? 'modos' : '';
   if (AJ_PILA.length > 1 && AJ_PILA[AJ_PILA.length - 2] === padre){
     history.back();
     return;
@@ -5026,6 +5037,7 @@ function cerrarAjustes(){
 }
 function ajCerrarVista(){
   ajGuardarTemas();
+  ASISTENTE_MODO = null;
   ajVaciarLector();
   AJ_PILA = [];
   _ajPendiente = null;
@@ -5045,7 +5057,8 @@ function ajPintar(){
   if (ruta === '' && !ajEsMovil()) ruta = AJ_PILA[AJ_PILA.length - 1] = ajSeccionGuardada();
   if (ruta === 'modo' && !modoEnPanel()) ruta = AJ_PILA[AJ_PILA.length - 1] = 'modos';
   panel.dataset.ruta = ruta;
-  const seccion = ruta === 'modo' ? 'modos' : ruta;
+  if (ruta !== 'asistente') ASISTENTE_MODO = null;
+  const seccion = ['modo', 'asistente'].includes(ruta) ? 'modos' : ruta;
   panel.querySelectorAll('.aj-secciones button').forEach(b => {
     if (b.dataset.ir === seccion) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
@@ -5071,9 +5084,10 @@ function ajRefrescar(){
   if (ruta === 'modo' && !modoEnPanel()){ ajPintar(); return; }
   const modo = modoEnPanel();
   $('#aj-titulo-pagina').textContent = ruta === 'modo' ? modo.nombre : t(AJ_TITULOS[ruta] || 'ajTitulo');
-  $('#aj-atras-lbl').textContent = t(ruta === 'modo' ? 'ajModos' : 'ajTitulo');
+  $('#aj-atras-lbl').textContent = t(['modo', 'asistente'].includes(ruta) ? 'ajModos' : 'ajTitulo');
   $('#aj-atras').setAttribute('aria-label', $('#aj-atras-lbl').textContent);
   if (ruta === 'modos') renderListaModos();
+  else if (ruta === 'asistente') pintarAsistenteModo();
   else if (ruta === 'modo') pintarModo();
   else if (ruta === 'feed'){ ajPintarVista(); renderListaPortadas(); }
   else if (ruta === 'avanzado') renderDiasSelector();
@@ -5148,6 +5162,9 @@ function ajEditarModo(id){
 function pintarModo(){
   const modo = modoEnPanel();
   if (!modo) return;
+  const regla = normalizarRegla(modo.regla);
+  $('#aj-regla').value = regla ? regla.fuentes : 'sumar';
+  $('#aj-regla-hint').textContent = t(regla ? 'asRegla' + (regla.fuentes === 'todas' ? 'Todas' : 'Elegidas') : 'asReglaSumar');
   const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
   const estado = $('#aj-modo-estado');
   estado.textContent = t('ajModoActivo');
@@ -5305,6 +5322,7 @@ function vaciarModo(id){
   modo.grupos = [];
   modo.palabras = [];
   modo.overrides = {};
+  delete modo.regla;
   const ta = $('#aj-temas');
   if (ta && ta.dataset.modoId === id) ta.value = '';
   guardarPresets();
@@ -5368,10 +5386,273 @@ function aplicarListaOverrides(){
   pintarModo();
   toast(`OK: ${ok} · KO: ${ko}`, 2200);
 }
+// Borrador en memoria: ni los pasos ni la prueba escriben modos o ajustes.
+// La única escritura se hace al confirmar la selección en el último paso.
+let ASISTENTE_MODO = null;
+
+function abrirAsistenteModo(){
+  ajGuardarTemas();
+  ASISTENTE_MODO = {
+    paso: 0, tipo: 'medios', fuentes: 'elegidas', grupos: [], overrides: {},
+    textoTemas: '', nombre: '', categoria: '', buscar: '',
+  };
+  ajEmpujar('asistente');
+}
+function pasosAsistente(){
+  return ASISTENTE_MODO?.tipo === 'temas'
+    ? ['intencion', 'fuentes', 'temas', 'resumen'] : ['intencion', 'fuentes', 'resumen'];
+}
+function modoAsistente(){
+  const b = ASISTENTE_MODO;
+  return {
+    nombre: b.nombre.trim(), grupos: b.fuentes === 'todas' ? [] : [...b.grupos],
+    palabras: b.tipo === 'temas' ? parseLista(b.textoTemas) : [],
+    overrides: { ...b.overrides }, regla: { v: 1, fuentes: b.fuentes },
+  };
+}
+function errorAsistente(paso){
+  const m = modoAsistente();
+  if (paso === 'fuentes' && m.regla.fuentes === 'elegidas'
+      && !m.grupos.length && !Object.values(m.overrides).some(overrideIncluye)) return t('asSinFuentes');
+  if (paso === 'temas' || paso === 'resumen'){
+    if (ASISTENTE_MODO.tipo === 'temas'){
+      const validas = new Set(compilarTemas(m.palabras).map(x => x.etiqueta));
+      const invalidas = m.palabras.filter(x => !validas.has(x) || tokenizeQuery(x).some(tk => tk.prefix));
+      if (!m.palabras.length || invalidas.length)
+        return t('asTemasInvalidos', { X: invalidas.join(' · ') });
+    }
+  }
+  if (paso === 'resumen' && !m.nombre) return t('asNombreFalta');
+  return '';
+}
+function avanzarAsistente(delta){
+  const b = ASISTENTE_MODO;
+  if (!b) return;
+  const pasos = pasosAsistente();
+  const error = delta > 0 ? errorAsistente(pasos[b.paso]) : '';
+  if (error){ $('#as-error').textContent = error; return; }
+  b.paso = Math.max(0, Math.min(pasos.length - 1, b.paso + delta));
+  pintarAsistenteModo();
+  $('#as-paso-titulo').focus();
+  $('#panel-ajustes .aj-cuerpo').scrollTop = 0;
+}
+function pintarAsistenteModo(){
+  const b = ASISTENTE_MODO;
+  if (!b) return;
+  // Una carga de datos no debe sustituir un campo mientras se escribe.
+  const form = $('#asistente-modo');
+  if (form.contains(document.activeElement) && form.dataset.paso === String(b.paso)) return;
+  const pasos = pasosAsistente(), paso = pasos[b.paso];
+  const e = escapeHtml;
+  let contenido = '';
+  if (paso === 'intencion'){
+    contenido = `<p class="aj-hint">${e(t('asIntencionHint'))}</p>`
+      + `<div class="aj-radios">${['medios', 'temas'].map(tipo =>
+        `<label><input type="radio" name="as-tipo" value="${tipo}"${b.tipo === tipo ? ' checked' : ''}>`
+        + `<span>${e(t(tipo === 'medios' ? 'asMedios' : 'asTemas'))}</span></label>`).join('')}</div>`
+      + `<details class="as-ayuda"><summary>${e(t('asPortadas'))}</summary>`
+      + `<p class="aj-hint">${e(t('asPortadasHint'))}</p>`
+      + `<button type="button" data-as="portadas">${e(t('asVerPortadas'))}</button></details>`;
+  } else if (paso === 'fuentes'){
+    contenido = `<p class="aj-hint">${e(t('asFuentesHint'))}</p><p class="aj-hint">${e(t('asEstadosHint'))}</p>`
+      + `<div class="aj-radios">${['elegidas', 'todas'].map(f =>
+        `<label><input type="radio" name="as-fuentes" value="${f}"${b.fuentes === f ? ' checked' : ''}>`
+        + `<span>${e(t(f === 'todas' ? 'asFuentesTodas' : 'asFuentesElegidas'))}</span></label>`).join('')}</div>`
+      + `<label class="as-campo" for="as-categoria">${e(t('asCategoria'))}<select id="as-categoria">`
+      + `<option value="">${e(t('asCategoria'))}</option>`
+      + [...new Set(MEDIOS_UNICOS.map(m => superGrupo(m.grupo)))].sort((a, c) => ordenSuper(a) - ordenSuper(c))
+        .map(c => `<option value="${e(c)}"${b.categoria === c ? ' selected' : ''}>${e(c)}</option>`).join('') + '</select></label>'
+      + `<label class="as-campo" for="as-buscar">${e(t('cfgBuscarMedio'))}`
+      + `<input id="as-buscar" type="search" value="${e(b.buscar)}" autocomplete="off"></label>`
+      + `<div id="as-fuentes-lista"></div><div id="as-excepciones"></div>`
+      + `<p id="as-fuentes-resumen" class="aj-pista" role="status"></p>`;
+  } else if (paso === 'temas'){
+    contenido = `<p class="aj-hint">${e(t('asTemasHint'))}</p>`
+      + `<label class="as-campo" for="as-temas">${e(t('cfgPalabras'))}`
+      + `<textarea id="as-temas" class="preset-texto" spellcheck="false" placeholder="${e(t('cfgPalabrasPlaceholder'))}">${e(b.textoTemas)}</textarea></label>`
+      + `<details class="as-ayuda"><summary>${e(t('cfgPalabrasHint'))}</summary><ul>`
+      + t('cfgTemasAyuda').split('\n').map(l => {
+        const [ej, txt] = l.split('|');
+        return `<li><code>${e(ej)}</code> → ${e(txt || '')}</li>`;
+      }).join('') + '</ul></details>';
+  } else {
+    contenido = `<label class="as-campo" for="as-nombre">${e(t('asNombre'))}`
+      + `<input id="as-nombre" maxlength="100" value="${e(b.nombre)}" autocomplete="off" required></label>`
+      + `<div id="as-seleccion-resumen" class="aj-pista"></div>`
+      + `<p id="as-preview-count" role="status"></p><p class="aj-hint">${e(t('asVistaParcial'))}</p>`
+      + `<ul id="as-preview" class="as-preview"></ul>`
+      + `<p class="aj-hint">${e(t('asFiltrosVista'))}</p>`;
+  }
+  const titulos = { intencion: 'asIntencion', fuentes: 'cfgMedios', temas: 'cfgPalabras', resumen: 'asRevisar' };
+  form.dataset.paso = String(b.paso);
+  form.innerHTML = `<p class="aj-hint">${e(t('asPaso', { n: b.paso + 1, total: pasos.length }))}</p>`
+    + `<h3 id="as-paso-titulo" tabindex="-1">${e(t(titulos[paso]))}</h3>`
+    + contenido + `<p id="as-error" class="as-error" role="alert"></p>`
+    + `<p class="aj-hint">${e(t('asBorrador'))}</p><div class="as-acciones">`
+    + `<button type="button" data-as="cancelar">${e(t('asCancelar'))}</button>`
+    + (b.paso ? `<button type="button" data-as="anterior">${e(t('asAnterior'))}</button>` : '')
+    + `<button type="submit" class="primary">${e(t(paso === 'resumen' ? 'asGuardar' : 'asSiguiente'))}</button></div>`;
+  if (paso === 'fuentes') pintarFuentesAsistente();
+  if (paso === 'resumen') pintarPruebaAsistente();
+}
+function filaMedioAsistente(m){
+  const e = escapeHtml, ov = ASISTENTE_MODO.overrides[m.dominio] || '';
+  return `<label class="as-medio"><span><strong>${e(m.medio)}</strong><small>${e(m.dominio)}</small></span>`
+    + `<select data-as-medio="${e(m.dominio)}" aria-label="${e(t('cfgEstadoMedio', { X: m.medio }))}">`
+    + [['', 'cfgMedioAutomatico'], ['include', 'cfgMedioIncluir'], ['ignore', 'cfgMedioBloquear']]
+      .map(([v, k]) => `<option value="${v}"${ov === v ? ' selected' : ''}>${e(t(k))}</option>`).join('')
+    + '</select></label>';
+}
+function pintarFuentesAsistente(){
+  const b = ASISTENTE_MODO, e = escapeHtml;
+  const q = normalize(b.buscar.trim());
+  const lista = $('#as-fuentes-lista');
+  if (q){
+    const medios = MEDIOS_UNICOS.filter(m => normalize(m.medio + ' ' + m.dominio + ' ' + m.grupo).includes(q));
+    lista.innerHTML = medios.slice(0, 25).map(filaMedioAsistente).join('');
+    if (medios.length > 25) lista.innerHTML += `<p class="aj-hint">${e(t('asLimiteMedios', { n: 25, total: medios.length }))}</p>`;
+    const dominio = normalizarDominioInput(b.buscar);
+    if (!medios.length){
+      lista.innerHTML = `<p class="aj-hint">${e(t('cfgMediosVacio'))}</p>`;
+      if (/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(dominio) && !Object.hasOwn(b.overrides, dominio))
+        lista.innerHTML += `<button type="button" data-as-dominio="${e(dominio)}">${e(t('asAnadirDominio', { X: dominio }))}</button>`
+          + `<p class="aj-hint">${e(t('asDominioHint'))}</p>`;
+    }
+  } else {
+    const medios = MEDIOS_UNICOS.filter(m => superGrupo(m.grupo) === b.categoria);
+    const grupos = ordenarGruposPorIdioma([...new Set(medios.map(m => m.grupo))]);
+    lista.innerHTML = grupos.map(g => {
+      const delGrupo = medios.filter(m => m.grupo === g);
+      return `<details class="as-grupo"><summary>${e(g)} · ${delGrupo.length}</summary>`
+        + `<label class="as-grupo-elegir"><input type="checkbox" data-as-grupo="${e(g)}"${b.grupos.includes(g) ? ' checked' : ''}`
+        + `${b.fuentes === 'todas' ? ' disabled' : ''}> ${e(t('asIncluirGrupo'))}</label>`
+        + delGrupo.map(filaMedioAsistente).join('') + '</details>';
+    }).join('');
+    if (!MEDIOS_UNICOS.length) lista.innerHTML = `<p class="aj-hint">${e(t('asSinCatalogo'))}</p>`;
+  }
+  pintarResumenFuentesAsistente();
+}
+function pintarResumenFuentesAsistente(){
+  const b = ASISTENTE_MODO, e = escapeHtml, m = modoAsistente();
+  const regla = compilarRegla(m);
+  const n = MEDIOS_UNICOS.filter(medio => regla.pasaFuentes(medio)).length;
+  $('#as-fuentes-resumen').textContent = t('asResumenFuentes', {
+    g: m.grupos.length, i: Object.values(m.overrides).filter(overrideIncluye).length,
+    s: Object.values(m.overrides).filter(x => x === 'ignore').length, n,
+  });
+  const propios = Object.keys(b.overrides).map(d =>
+    MEDIOS_UNICOS.find(m => m.dominio === d) || { dominio: d, medio: d });
+  $('#as-excepciones').innerHTML = (b.grupos.length && b.fuentes === 'elegidas'
+    ? `<p class="aj-hint">${b.grupos.map(g => `<button type="button" data-as-quitar-grupo="${e(g)}">${e(g)} ×</button>`).join(' ')}</p>` : '')
+    + (propios.length ? `<details class="as-grupo" open><summary>${e(t('asExcepciones'))}</summary>`
+      + propios.map(filaMedioAsistente).join('') + '</details>' : '')
+    + (propios.some(m => !MEDIOS_UNICOS.some(c => c.dominio === m.dominio))
+      ? `<p class="aj-hint">${e(t('asDominioHint'))}</p>` : '');
+  // Una excepción puede aparecer en el catálogo y en el resumen.
+  $('#as-fuentes-lista').querySelectorAll('select[data-as-medio]').forEach(s => {
+    s.value = b.overrides[s.dataset.asMedio] || '';
+  });
+}
+function pintarPruebaAsistente(){
+  const modo = modoAsistente(), regla = compilarRegla(modo), e = escapeHtml;
+  const fuentes = modo.regla.fuentes === 'todas' ? t('asResumenTodas')
+    : t('asResumenElegidas', { X: [...modo.grupos, ...Object.entries(modo.overrides)
+      .filter(([, v]) => overrideIncluye(v)).map(([d]) => d)].join(' · ') });
+  const silencios = Object.entries(modo.overrides).filter(([, v]) => v === 'ignore').map(([d]) => d);
+  $('#as-seleccion-resumen').innerHTML = `<p>${e(fuentes)}</p>`
+    + `<p>${e(modo.palabras.length ? t('asResumenTemas', { X: modo.palabras.join(' / ') }) : t('asSinTemas'))}</p>`
+    + (silencios.length ? `<p>${e(t('cfgMedioBloquear'))}: ${e(silencios.join(' · '))}</p>` : '');
+  // Solo datos propios ya cargados: nunca se lanza una consulta ni una
+  // descarga masiva para probar un borrador. No influye el modo activo.
+  const propias = NOTICIAS.filter(n => !(n._capas && _soloDeConsulta(n)));
+  const noticias = propias.filter(regla.pasa).sort((a, b) => (b._tsActualidad || 0) - (a._tsActualidad || 0));
+  $('#as-preview-count').textContent = t('asVistaPrevia', { n: noticias.length, total: propias.length });
+  $('#as-preview').innerHTML = noticias.slice(0, 8).map(n =>
+    `<li><strong>${e(n.titular)}</strong><small>${e(n.medio || n.dominio)}</small></li>`).join('')
+    || `<li>${e(t('asSinCoincidencias'))}</li>`;
+}
+function guardarAsistenteModo(){
+  if (!ASISTENTE_MODO) return;
+  for (const paso of pasosAsistente()){
+    const error = errorAsistente(paso);
+    if (error){ $('#as-error').textContent = error; return; }
+  }
+  const modo = normalizarPreset({ ...modoAsistente(), id: 'm-' + crypto.randomUUID() });
+  PRESETS.lista.push(modo);
+  MODO_EDITADO = modo.id;
+  ASISTENTE_MODO = null;
+  AJ_PILA[AJ_PILA.length - 1] = 'modo';
+  activarModo(modo.id);  // Guarda y recompila con el mismo motor de la prueba.
+  ajPintar();
+  toast(t('asGuardado', { X: modo.nombre }), 3000);
+}
+function wireAsistenteModo(){
+  $('#btn-asistente-modo').addEventListener('click', abrirAsistenteModo);
+  const form = $('#asistente-modo');
+  form.addEventListener('submit', ev => {
+    ev.preventDefault();
+    if (!ASISTENTE_MODO) return;
+    if (pasosAsistente()[ASISTENTE_MODO.paso] === 'resumen') guardarAsistenteModo();
+    else avanzarAsistente(1);
+  });
+  form.addEventListener('input', ev => {
+    const b = ASISTENTE_MODO;
+    if (!b) return;
+    if (ev.target.id === 'as-temas') b.textoTemas = ev.target.value;
+    if (ev.target.id === 'as-nombre') b.nombre = ev.target.value;
+    if (ev.target.id === 'as-buscar'){ b.buscar = ev.target.value; pintarFuentesAsistente(); }
+    $('#as-error').textContent = '';
+  });
+  form.addEventListener('change', ev => {
+    const b = ASISTENTE_MODO, el = ev.target;
+    if (!b) return;
+    if (el.name === 'as-tipo'){
+      b.tipo = el.value;
+      b.fuentes = b.tipo === 'temas' ? 'todas' : 'elegidas';
+      // Solo cambia el número de pasos; se conserva el control enfocado.
+      form.querySelector('.aj-hint').textContent = t('asPaso', { n: 1, total: pasosAsistente().length });
+    }
+    if (el.name === 'as-fuentes'){ b.fuentes = el.value; pintarFuentesAsistente(); }
+    if (el.id === 'as-categoria'){ b.categoria = el.value; b.buscar = ''; $('#as-buscar').value = ''; pintarFuentesAsistente(); }
+    if (el.dataset.asGrupo){
+      b.grupos = b.grupos.filter(g => g !== el.dataset.asGrupo);
+      if (el.checked) b.grupos.push(el.dataset.asGrupo);
+      pintarResumenFuentesAsistente();
+    }
+    if (el.dataset.asMedio){
+      if (el.value) b.overrides[el.dataset.asMedio] = el.value;
+      else delete b.overrides[el.dataset.asMedio];
+      // No se recrea el selector enfocado ni se cierran los grupos.
+      if (!el.closest('#as-excepciones')) pintarResumenFuentesAsistente();
+      else {
+        const id = el.dataset.asMedio;
+        pintarResumenFuentesAsistente();
+        form.querySelector(`select[data-as-medio="${CSS.escape(id)}"]`)?.focus();
+      }
+    }
+    $('#as-error').textContent = '';
+  });
+  form.addEventListener('click', ev => {
+    const el = ev.target.closest('button');
+    if (!el || !ASISTENTE_MODO) return;
+    if (el.dataset.as === 'anterior') avanzarAsistente(-1);
+    if (el.dataset.as === 'cancelar'){ ASISTENTE_MODO = null; ajAtras(); }
+    if (el.dataset.as === 'portadas'){ ASISTENTE_MODO = null; ajIrSeccion('feed'); }
+    if (el.dataset.asDominio){
+      ASISTENTE_MODO.overrides[el.dataset.asDominio] = 'include';
+      pintarFuentesAsistente();
+    }
+    if (el.dataset.asQuitarGrupo){
+      ASISTENTE_MODO.grupos = ASISTENTE_MODO.grupos.filter(g => g !== el.dataset.asQuitarGrupo);
+      pintarFuentesAsistente();
+    }
+  });
+}
 /* ═══════════════════════════════════════════════════════════════
    CUMPLE PRESET
    ═══════════════════════════════════════════════════════════════ */
 let SET_GRUPOS = new Set();
+let REGLA_PRESET = null;
 // Temas: las palabras de cada modo, una búsqueda pequeña por línea
 // (shared/busqueda/temas.js). Se compilan los de TODOS los modos: el modo
 // activo los usa para ampliar su feed y la vista 🔖 Temas los junta.
@@ -5386,6 +5667,7 @@ function recompilarPreset(){
 // Depende de toda la lista de modos: la llaman recompilarPreset y
 // guardarPresets (renombrar, duplicar, borrar, silenciar un medio…).
 function recompilarTemas(){
+  REGLA_PRESET = compilarRegla(PRESET);
   const lista = (PRESETS && PRESETS.lista) || [];
   TEMAS_TODOS = lista.map(p => {
     const ov = p.overrides || {};
@@ -5393,6 +5675,7 @@ function recompilarTemas(){
       id: p.id,
       nombre: p.nombre,
       temas: compilarTemas(p.palabras),
+      regla: compilarRegla(p),
       ignorar: new Set(Object.keys(ov).filter(d => ov[d] === 'ignore')),
     };
   }).filter(m => m.temas.length);
@@ -5406,6 +5689,7 @@ function _temasDe(n){
   const out = [];
   for (const m of TEMAS_TODOS){
     if (m.ignorar.has(n.dominio)) continue;
+    if (m.regla && !m.regla.pasaFuentes(n)) continue;
     for (const etiqueta of temasQueCasan(palabras, m.temas, n.titular)) out.push({ id: m.id, etiqueta });
   }
   n._temas = out;
@@ -5425,9 +5709,10 @@ function _pasaChipTema(n, chip){
   if (chip.medios) return _entraPorMedios(n);
   return _temasDe(n).some(x => x.id === chip.modo && x.etiqueta === chip.etiqueta);
 }
-// Lo que entra en el modo activo por sus medios (grupos o incluidos), no
-// por sus temas.
+// Aporte de las fuentes al modo. En las selecciones nuevas pasa también
+// por las palabras: nunca debe ofrecer un atajo que se salte ese filtro.
 function _entraPorMedios(n){
+  if (REGLA_PRESET) return REGLA_PRESET.pasa(n);
   return overrideIncluye(getOverride(n.dominio)) || SET_GRUPOS.has(n.grupo);
 }
 function _modoTieneMedios(){
@@ -5435,6 +5720,7 @@ function _modoTieneMedios(){
   return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => overrideIncluye(ov[d]));
 }
 function cumplePreset(n){
+  if (REGLA_PRESET) return REGLA_PRESET.pasa(n);
   const ov = getOverride(n.dominio);
   if (ov === 'ignore') return false;
   if (overrideIncluye(ov)) return true;
@@ -7272,6 +7558,11 @@ function aplicarTextos(){
   // Modos
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
   $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
+  $('#btn-asistente-modo-lbl').textContent = t('asTitulo');
+  $('#as-entrada-hint').textContent = t('asEntrada');
+  $('#aj-regla-lbl').textContent = t('asComportamiento');
+  $('#aj-regla').innerHTML = [['sumar', 'asSumar'], ['elegidas', 'asCruzar'], ['todas', 'asTodas']]
+    .map(([v, k]) => `<option value="${v}">${escapeHtml(t(k))}</option>`).join('');
   $('#aj-modo-activar-lbl').textContent   = t('ajModoActivar');
   $('#aj-modo-renombrar-lbl').textContent = t('ajModoRenombrar');
   $('#aj-modo-duplicar-lbl').textContent  = t('ajModoDuplicar');
@@ -7643,6 +7934,7 @@ function wireAjustes(){
   $('#aj-atras').addEventListener('click', ajAtras);
 
   // ── Modos ──
+  wireAsistenteModo();
   $('#lista-modos').addEventListener('click', e => {
     const fila = e.target.closest('[data-modo-id]');
     if (fila) ajEditarModo(fila.dataset.modoId);
@@ -7659,6 +7951,15 @@ function wireAjustes(){
   });
   $('#aj-modo-vaciar').addEventListener('click', () => vaciarModo(MODO_EDITADO));
   $('#aj-modo-borrar').addEventListener('click', () => borrarModo(MODO_EDITADO));
+  $('#aj-regla').addEventListener('change', e => {
+    const modo = modoEnPanel();
+    if (!modo) return;
+    if (e.target.value === 'sumar') delete modo.regla;
+    else modo.regla = { v: 1, fuentes: e.target.value };
+    guardarPresets();
+    ajModoCambiado(modo);
+    pintarModo();
+  });
 
   const ta = $('#aj-temas');
   ta.addEventListener('input', () => {

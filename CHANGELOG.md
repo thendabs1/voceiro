@@ -3,6 +3,18 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Asistente para crear modos
+
+### Añadido
+- Guía opcional para elegir fuentes, grupos y medios, ajustar inclusiones y
+  silencios, añadir temas y probar una selección antes de guardarla.
+- Selecciones que buscan temas solo en las fuentes elegidas o en todas,
+  con la misma regla en prueba, feed y vista Temas. Los modos anteriores
+  mantienen su comportamiento y el editor explica ambas opciones.
+- Explicación de portadas, dominios ajenos al catálogo y límites de la
+  muestra, en los cinco idiomas. Telegram, ubicación, tiempo y avisos
+  quedan previstos como ampliaciones posteriores.
+
 ## 2026-10-24 — Panel de estadísticas: menos y mejor
 
 ### Cambiado

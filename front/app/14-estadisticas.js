@@ -38,6 +38,11 @@ function seleccionEstadisticas(catalogo, ambito, modos = []){
   if (!ambito.startsWith('modo:')) return todos;
   const modo = modos.find(p => 'modo:' + p.id === ambito);
   if (!modo) return [];
+  if (modo.regla){
+    const regla = compilarRegla(modo);
+    if (regla) return [...new Set([...todos, ...Object.keys(modo.overrides || {})])]
+      .filter(d => regla.pasaFuentes({ dominio: d, grupo: catalogo[d]?.g }));
+  }
   const ov = modo.overrides || {}, grupos = new Set(modo.grupos || []);
   const incluido = d => ov[d] === 'include' || ov[d] === 'first';
   return [...new Set([...todos, ...Object.keys(ov)])].filter(d => ov[d] !== 'ignore' && (incluido(d) || grupos.has(catalogo[d]?.g)));
