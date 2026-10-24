@@ -84,6 +84,14 @@ class Titulares(unittest.TestCase):
         self.assertEqual(total['por_grupo'], {'Nacional': {'medios': 2, 'titulares': 5}})
         self.assertEqual(total['compartidos'], 1)
 
+    def test_solo_el_dia_no_cuenta_como_hora(self):
+        payload = {'medios': {}, 'noticias': [
+            {'d': 'a.test', 't': 'Uno', 'f': 'RSS', 'p': '2026-10-23',
+             'e': '09:15', 'c': '09:20'}]}
+        a = est.resumen_titulares(payload, '2026-10-23')[0]['a.test']
+        self.assertEqual(a['fechas'], {'solo_dia': 1})
+        self.assertEqual((a['retraso_min'], a['adelantadas']), (None, 0))
+        self.assertEqual(a['por_hora'][9], 1)
 
     def test_cambio_de_horario_por_instantes(self):
         # 25-10-2026: p en la primera 02:50 (+02:00), recogida en la segunda

@@ -52,6 +52,36 @@ def _solo_dia(raw):
     return bool(_SOLO_DIA_RE.match(str(raw or '').strip()))
 
 
+def _dia_de_fecha(raw):
+    """'AAAA-MM-DD' de una fecha que trae solo el día, o ''. El día sí es
+    fiable: acota la estimada y se guarda como `p` sin hora."""
+    raw = str(raw or '').strip()
+    if not _solo_dia(raw):
+        return ''
+    m = (re.match(r'^(\d{4})-(\d{2})-(\d{2})$', raw)
+         or re.match(r'^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$', raw))
+    if m:
+        a, b, c = (int(x) for x in m.groups())
+        y, mo, d = (a, b, c) if a > 31 else (c, b, a)
+    else:
+        m = re.search(r'(\d{1,2})\s+([^\W\d_]{3,})\.?\s+(\d{4})$', raw.lower())
+        mes = _MESES.get(m.group(2)[:3]) if m else None
+        if not mes:
+            return ''
+        d, y = int(m.group(1)), int(m.group(3))
+        mo = datetime.strptime(mes, '%b').month
+    try:
+        return datetime(y, mo, d).date().isoformat()
+    except ValueError:
+        return ''
+
+
+def _fecha_y_dia(raw):
+    """(instante ISO, '') o, si la fuente da solo el día, ('', 'AAAA-MM-DD')."""
+    iso = _rss_date_to_iso(raw)
+    return (iso, '') if iso else ('', _dia_de_fecha(raw))
+
+
 def _rss_date_to_iso(raw):
     if not raw:
         return ''
@@ -275,9 +305,46 @@ def _agrupa_varias(node):
     return False
 
 
+_ATRIBUTOS_FECHA = ('data-timestamp', 'data-time', 'data-date',
+                    'data-datetime', 'data-published', 'data-pubdate')
+
+
+def _fecha_de_atributos(node):
+    """ISO del primer atributo data-* con fecha (epoch o texto), o ''."""
+    for attr in _ATRIBUTOS_FECHA:
+        val = node.attrs.get(attr)
+        if not val:
+            continue
+        val_str = str(val).strip()
+        if val_str.isdigit():
+            try:
+                ts = int(val_str)
+                if ts > 1e12:
+                    ts = ts / 1000
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                return _to_iso_madrid(dt)
+            except (ValueError, OSError, OverflowError):
+                pass
+        else:
+            iso = _rss_date_to_iso(val_str)
+            if iso:
+                return iso
+    return ''
+
+
+def _fecha_de_time(t_el):
+    """(ISO, día) de un <time>. La hora puede ir en un data-* del propio
+    <time> aunque el texto diga solo el día (publico.es)."""
+    raw = t_el.get('datetime') or t_el.get_text(' ', strip=True)
+    iso, dia = _fecha_y_dia(raw)
+    return (iso, dia) if iso else (_fecha_de_atributos(t_el) or '', dia)
+
+
 def _extract_item_date(tag):
     """Intenta extraer la fecha real de un titular concreto del listado.
-    Sube por sus contenedores, pero no hasta uno que agrupe varias tarjetas."""
+    Sube por sus contenedores, pero no hasta uno que agrupe varias tarjetas.
+    Si solo encuentra el día, lo devuelve como 'AAAA-MM-DD'."""
+    dia = ''
     # <time> cercano
     node = tag
     for _ in range(3):
@@ -286,10 +353,10 @@ def _extract_item_date(tag):
         try:
             t_el = node.find('time')
             if t_el:
-                raw = t_el.get('datetime') or t_el.get_text(' ', strip=True)
-                iso = _rss_date_to_iso(raw)
+                iso, d = _fecha_de_time(t_el)
                 if iso:
                     return iso
+                dia = dia or d
         except AttributeError:
             pass
         node = getattr(node, 'parent', None)
@@ -300,25 +367,9 @@ def _extract_item_date(tag):
         if node is None or not hasattr(node, 'attrs') or not node.attrs \
                 or _agrupa_varias(node):
             break
-        for attr in ('data-timestamp', 'data-time', 'data-date',
-                     'data-datetime', 'data-published', 'data-pubdate'):
-            val = node.attrs.get(attr)
-            if not val:
-                continue
-            val_str = str(val).strip()
-            if val_str.isdigit():
-                try:
-                    ts = int(val_str)
-                    if ts > 1e12:
-                        ts = ts / 1000
-                    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
-                    return _to_iso_madrid(dt)
-                except (ValueError, OSError, OverflowError):
-                    pass
-            else:
-                iso = _rss_date_to_iso(val_str)
-                if iso:
-                    return iso
+        iso = _fecha_de_atributos(node)
+        if iso:
+            return iso
         node = getattr(node, 'parent', None)
 
     # texto relativo
@@ -346,10 +397,10 @@ def _extract_item_date(tag):
                 break
             t_el = node.find('time')
             if t_el:
-                raw = t_el.get('datetime') or t_el.get_text(' ', strip=True)
-                iso = _rss_date_to_iso(raw)
+                iso, d = _fecha_de_time(t_el)
                 if iso:
                     return iso
+                dia = dia or d
             meta_el = node.find('meta', attrs={'itemprop': 'datePublished'})
             if meta_el and meta_el.get('content'):
                 iso = _rss_date_to_iso(meta_el.get('content'))
@@ -358,32 +409,40 @@ def _extract_item_date(tag):
             break
         node = getattr(node, 'parent', None)
 
-    return ''
+    return dia
 
 
-def _acotar_por_dia_url(fecha, dia_url):
-    """Si la URL dice que la noticia es de un día anterior al estimado
-    (p. ej. la primera vez que vemos una portada con piezas de ayer), la
-    estimada pasa a las 12:00 de ese día: mejor el día correcto con hora
-    aproximada que hoy con una hora inventada."""
-    if not dia_url:
-        return fecha
+def _estimar_en_ventana(t_prev, t_now, r, dia=''):
+    """Instante a la fracción `r` de la ventana (t_prev, t_now], contando
+    desde el final. Con el día conocido (de la fuente o de la URL), la
+    ventana se recorta a ese día; si el día es anterior a la ventana (p. ej.
+    la primera vez que vemos una portada con piezas de ayer), las 12:00 de
+    ese día: mejor el día correcto con hora aproximada que hoy con una hora
+    inventada. Las cuentas van en UTC: restar horas de Madrid no ve el
+    cambio de horario."""
+    lo, hi = t_prev.astimezone(timezone.utc), t_now.astimezone(timezone.utc)
     try:
-        dia = datetime.fromisoformat(dia_url).date()
+        d = datetime.fromisoformat(dia).date() if dia else None
     except ValueError:
-        return fecha
-    if dia >= fecha.astimezone(config.TZ_MADRID).date():
-        return fecha
-    return datetime(dia.year, dia.month, dia.day, 12, 0, tzinfo=config.TZ_MADRID)
+        d = None
+    if d is not None and d <= t_now.astimezone(config.TZ_MADRID).date():
+        ini = datetime(d.year, d.month, d.day, tzinfo=config.TZ_MADRID)
+        sig = d + timedelta(days=1)
+        fin = datetime(sig.year, sig.month, sig.day, tzinfo=config.TZ_MADRID)
+        lo, hi = max(lo, ini.astimezone(timezone.utc)), min(hi, fin.astimezone(timezone.utc))
+        if lo >= hi:
+            return ini.replace(hour=12)
+    return (hi - (hi - lo) * r).astimezone(config.TZ_MADRID)
 
 
 def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
                               ultimo_exito_por_medio):
+    """Estimada para los titulares nuevos sin hora de cualquier fuente: los
+    reparte por la ventana desde la pasada anterior del medio, en el orden
+    de la portada o del feed, y dentro del día si se sabe."""
     por_medio = defaultdict(list)
 
     for n in todas:
-        if n.get('fuente') != 'Scraping':
-            continue
         if n.get('fecha_pub'):
             continue
         key = (n['dominio'], n['titular'])
@@ -412,13 +471,13 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
             intervalo = config.INTERVALO_DEFAULT_SEG
         intervalo = max(config.INTERVALO_MIN_SEG, min(intervalo, config.INTERVALO_MAX_SEG))
         intervalos_por_medio[medio] = intervalo
+        t_prev = t_now - timedelta(seconds=intervalo)
 
         items.sort(key=lambda x: x.get('_pos') if x.get('_pos') is not None else 999)
         K = len(items)
         for i, n in enumerate(items):
-            offset_seg = intervalo * (i + 1) / (K + 1)
-            fecha = t_now - timedelta(seconds=offset_seg)
-            fecha = _acotar_por_dia_url(fecha, n.get('_dia_url'))
+            fecha = _estimar_en_ventana(t_prev, t_now, (i + 1) / (K + 1),
+                                        n.get('dia_pub') or n.get('_dia_url'))
             n['fecha_estimada'] = fecha.isoformat(timespec='seconds')
             total_nuevos += 1
 
@@ -426,8 +485,9 @@ def asignar_fechas_estimadas(todas, historico_keys, t_prev_global, t_now,
 
 
 def _reconstruir_fecha(raw, dia):
-    """Acepta HH:MM (nuevo) o ISO completo (viejo). Devuelve ISO o ''."""
-    if not raw:
+    """Acepta HH:MM (nuevo) o ISO completo (viejo). Devuelve ISO o ''.
+    Solo el día ('AAAA-MM-DD') no es un instante: ''."""
+    if not raw or _es_dia(raw):
         return ''
     if 'T' in raw and len(raw) > 10:
         return raw  # formato viejo, ya es ISO
@@ -440,6 +500,11 @@ def _reconstruir_fecha(raw, dia):
         except ValueError:
             return ''
     return raw
+
+
+def _es_dia(raw):
+    """¿Es un `p` de solo el día ('AAAA-MM-DD')?"""
+    return bool(re.match(r'^\d{4}-\d{2}-\d{2}$', str(raw or '')))
 
 
 def _hhmm(iso):
@@ -476,7 +541,10 @@ def _hora_repetida(iso):
 
 def _fecha_corta(iso, dia):
     """Portada (dia None): ISO completo. Diario: HH:MM si es de ese día,
-    ISO completo si no o si es una hora repetida por el cambio de horario."""
+    ISO completo si no o si es una hora repetida por el cambio de horario.
+    Solo el día se queda como está: en HH:MM sería un 00:00 inventado."""
+    if _es_dia(iso):
+        return iso
     if not iso or dia is None or iso[:10] != dia or _hora_repetida(iso):
         return iso or ''
     return _hhmm(iso)

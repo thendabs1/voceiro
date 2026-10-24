@@ -172,6 +172,8 @@ def _hhmm_del_dia(fecha, valor):
 def _clase_fecha(n, fecha):
     p, e = n.get('p', ''), n.get('e', '')
     if p:
+        if len(p) == 10:
+            return 'solo_dia'
         if len(p) == 5:
             return 'hora_00' if p == '00:00' else 'con_hora'
         # ISO del mismo día: hora repetida por el cambio de horario.

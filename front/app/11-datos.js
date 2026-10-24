@@ -158,6 +158,8 @@ function _offsetMadrid(dia, hhmm){
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
   const s = String(raw).trim();
+  // `p` con solo el día (AAAA-MM-DD): no es un instante, la hora la da `e`.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
   if (s.includes('T') && s.length > 10) return s;
   if (/^\d{2}:\d{2}$/.test(s) && dia){
     return `${dia}T${s}:00${_offsetMadrid(dia, s)}`;
@@ -245,10 +247,11 @@ function _calcularFechas(n, horizonte){
   n._tieneFecha   = !isNaN(tsOrden);
 }
 
-// Otra capa (la prensa, el archivo) trae la publicación que aquí faltaba:
-// se adopta. La hora corta (HH:MM) es relativa al día de su fichero.
+// Otra capa (la prensa, el archivo) trae la publicación que aquí faltaba
+// (o solo tenía el día): se adopta. La hora corta (HH:MM) es relativa al
+// día de su fichero.
 function _adoptarPublicacion(n, otra){
-  if (n.p || !otra.p) return;
+  if (reconstruirFecha(n.p, n._dia || '') || !otra.p) return;
   const p = reconstruirFecha(otra.p, otra._dia || '');
   if (isNaN(parseFecha(p))) return;
   n.p = p;

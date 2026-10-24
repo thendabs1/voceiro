@@ -3,6 +3,23 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Fechas sin hora
+
+### Cambiado
+- Cuando la fuente da solo el día (feed, sitemap o `<time>` del scraper),
+  se guarda como `p: "AAAA-MM-DD"`: el día es fiable aunque no haya hora.
+  Front, relectura del histórico y estadísticas (clase `solo_dia`) no lo
+  toman por un instante.
+- La estimada vale para cualquier fuente sin hora, no solo el scraping: se
+  reparte por la ventana desde la pasada anterior del medio, recortada al
+  día conocido (de la fuente o de la URL). Las cuentas van en UTC.
+
+### Corregido
+- El scraper lee la hora de los atributos `data-*` del propio `<time>`
+  aunque su texto diga solo el día: publico.es (`/ultimas-noticias`) tenía
+  la hora exacta en `data-timestamp` y salía a las 00:00.
+- La hora de otra capa (prensa, archivo) mejora un `p` de solo el día.
+
 ## 2026-10-24 — Ventana entre pasadas
 
 ### Añadido

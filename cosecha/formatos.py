@@ -11,14 +11,15 @@ from .texto import _slug_grupo, _url_corta
 def _noticia_a_formato_corto(n, dia=None):
     """`c` es la primera recogida: no cambia entre runs (fusionar_historico
     la conserva) y es la hora de las noticias sin p ni e. Las alternativas
-    llevan sus propias fechas: al releerlas no heredan las del representante."""
+    llevan sus propias fechas: al releerlas no heredan las del representante.
+    Sin hora, `p` lleva solo el día ('AAAA-MM-DD'), que no es un instante."""
     out = {
         'd': n.get('dominio', ''),
         't': n.get('titular', ''),
         'u': _url_corta(n.get('enlace', ''), n.get('dominio', '')),
         'f': n.get('fuente', ''),
     }
-    p = _fecha_corta(n.get('fecha_pub', ''), dia)
+    p = _fecha_corta(n.get('fecha_pub') or n.get('dia_pub', ''), dia)
     e = _fecha_corta(n.get('fecha_estimada', ''), dia)
     c = _fecha_corta(n.get('fecha', ''), dia)
 
