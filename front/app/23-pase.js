@@ -196,7 +196,8 @@ function cerrarPase(refiltrar = true){
   p.root.remove();
   if (refiltrar){
     aplicarFiltros();
-    $('#btn-pase').focus({ preventScroll: true });
+    const btn = $('#btn-pase'), menu = btn.closest('#cab-menu');
+    (menu && !menu.open ? menu.querySelector('summary') : btn).focus({ preventScroll: true });
   }
 }
 

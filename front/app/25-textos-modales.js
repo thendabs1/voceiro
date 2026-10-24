@@ -26,7 +26,7 @@ function cerrarPanel(id){
    ═══════════════════════════════════════════════════════════════ */
 function aplicarTextos(){
   document.title = t('pageTitle');
-  $('#h-title').textContent = t('headerTitle');
+  $('#cab-menu-label').textContent = t('masAcciones');
   $('#meta-prefix').textContent = t('metaPrefix');
 
   actualizarBotonPreset();
@@ -46,6 +46,7 @@ function aplicarTextos(){
   // Filtros de lectura.
   $('#btn-pase').title = t('paseCapa');
   $('#btn-pase').setAttribute('aria-label', t('paseCapa'));
+  $('#btn-pase .cab-txt').textContent = t('paseCapa');
   $('#vs-title-hide').textContent  = t('vsTitleHide');
   $('#vs-ayuda-lbl').textContent = t('vsAyudaLbl');
   $('#aj-hide-ayuda-lbl').textContent = t('vsAyudaLbl');

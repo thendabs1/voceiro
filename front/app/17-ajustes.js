@@ -172,7 +172,8 @@ function ajCerrarVista(){
   ajActivarAlCerrar();
   const origen = _ajOrigen && _ajOrigen.isConnected && _ajOrigen.getClientRects().length
     ? _ajOrigen : $('#btn-config');
-  origen.focus({ preventScroll: true });
+  const menu = origen.closest('#cab-menu');
+  (menu && !menu.open ? menu.querySelector('summary') : origen).focus({ preventScroll: true });
   _ajOrigen = null;
 }
 

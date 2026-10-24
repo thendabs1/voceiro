@@ -187,6 +187,7 @@ export default {
   "presetSinFiltro": "Sin filtro",
   "presetGestionar": "Gestionar modos…",
   "pageTitle": "Voceiro · Titulares",
+  "cabCambiarModo": "Cambiar modo",
   "headerTitle": "Voceiro",
   "metaPrefix": "Actualizado:",
   "metaSuffix": "titulares en histórico",

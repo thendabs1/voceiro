@@ -186,6 +186,7 @@ export default {
   "presetSinFiltro": "No filter",
   "presetGestionar": "Manage modes…",
   "pageTitle": "Voceiro · Headlines",
+  "cabCambiarModo": "Change mode",
   "headerTitle": "Voceiro",
   "metaPrefix": "Updated:",
   "metaSuffix": "headlines in history",

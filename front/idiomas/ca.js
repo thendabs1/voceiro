@@ -186,6 +186,7 @@ export default {
   "presetSinFiltro": "Sense filtre",
   "presetGestionar": "Gestionar modes…",
   "pageTitle": "Voceiro · Titulars",
+  "cabCambiarModo": "Canviar mode",
   "headerTitle": "Voceiro",
   "metaPrefix": "Actualitzat:",
   "metaSuffix": "titulars a l'històric",

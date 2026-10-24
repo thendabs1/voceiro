@@ -7,10 +7,8 @@ function wireStaticEvents(){
   const btnP = $('#btn-preset');
   actualizarBotonPreset();
   wireDiasSelector();
-  const hTitle = document.getElementById('h-title');
+  const hTitle = document.getElementById('btn-recargar');
   if (hTitle){
-    hTitle.style.cursor = 'pointer';
-    hTitle.title = 'F5';
     hTitle.addEventListener('click', () => {
       if ('scrollRestoration' in history){
         history.scrollRestoration = 'manual';
