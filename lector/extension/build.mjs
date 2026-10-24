@@ -35,6 +35,8 @@ copyFileSync(join(lector,'LICENSE'),join(salida,'LICENSE'));
 const manifest = {
   manifest_version:3, name:'Lector Universal', version,
   description:'Lectura accesible de noticias, pendientes, diccionarios y sincronización cifrada con Voceiro.',
+  // storage.local es compartido: no conservar datos de navegación privada.
+  incognito:'not_allowed',
   permissions:['activeTab','scripting','storage','alarms'],
   host_permissions:['https://voceiro-sync.toriorecorda.workers.dev/*','https://voceiro-sync.thendabs1.deno.net/*'],
   optional_host_permissions:['http://*/*','https://*/*'],
