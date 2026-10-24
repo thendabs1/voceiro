@@ -3,6 +3,15 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Panel de estadísticas: el panel como vista
+
+### Cambiado
+- Resumen muestra cifras, evolución y después los grupos, plegados por
+  familia: Regional e Internacional se despliegan en sus subgrupos.
+- Abierto, el panel sustituye al feed y sus chips; escribir otra búsqueda
+  vuelve al feed. Se quita «Ampliar», que ya no aporta.
+- Se abre con el último día calculado en vez de hoy, casi siempre sin datos.
+
 ## 2026-10-24 — Panel de estadísticas: clics sin saltos
 
 ### Corregido

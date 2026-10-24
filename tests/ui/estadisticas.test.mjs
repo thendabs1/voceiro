@@ -21,7 +21,7 @@ function contexto(){
     DATA_BASE: 'https://datos.example', BACKENDS: { cf: { data: 'https://datos.example' }, deno: { data: 'https://alternativo.example' } },
     PRESETS: { lista: [] },
   };
-  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estCurva, estDirectorio, estListaMedios, fijarModoEstadisticas, estDominios }; pintarEstadisticas = () => {};', c);
+  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estCurva, estDirectorio, estListaMedios, familiasEstadisticas, fijarModoEstadisticas, estDominios }; pintarEstadisticas = () => {};', c);
   const s = c.api.s;
   s.abierto = true; s.fecha = '2026-10-23';
   return c;
@@ -163,4 +163,29 @@ test('cada barra abre su día y la del día consultado se marca; buscar solo fil
   c.api.s.consulta = 'b.es';
   assert.match(c.api.estListaMedios(), /data-valor="b\.es"/);
   assert.doesNotMatch(c.api.estListaMedios(), /data-valor="a\.es"|est-buscar-medio/);
+});
+
+test('los grupos «Familia · grupo» se pliegan bajo su familia y el resumen suma la familia entera', () => {
+  const c = contexto(), cat = { ...catalogo, 'e.gal': { n: 'E', g: 'Regional · Galicia' }, 'f.cat': { n: 'F', g: 'Regional · Cataluña' } };
+  const familias = c.api.familiasEstadisticas(cat, Object.keys(cat), 'Sin grupo');
+  assert.deepEqual([...familias.keys()], ['Nacional', 'Regional']);
+  assert.deepEqual(copia([...familias.get('Regional')]), [['Regional · Galicia', ['c.gal', 'e.gal']], ['Regional · Cataluña', ['f.cat']]]);
+  c.escapeHtml = s => String(s); c.t = k => k; c.ico = () => '';
+  c.api.s.indice = { ...indice(), medios: cat }; c.api.s.dia = dia('2026-10-23');
+  c.api.s.dia.medios['f.cat'] = { pub: { titulares: 5 } };
+  const plegado = c.api.estResumen();
+  assert.match(plegado, /data-est="familia" data-valor="Regional" aria-expanded="false">Regional<\/button><\/th><td>5<\/td><td>1 \/ 3<\/td>/);
+  assert.doesNotMatch(plegado, /est-subgrupo/);
+  assert.ok(plegado.indexOf('estEvolucion') < plegado.indexOf('estPorGrupo'));
+  c.api.s.familias.add('Regional');
+  assert.match(c.api.estResumen(), /est-subgrupo">Cataluña<\/span><\/th><td>5<\/td><td>1 \/ 1<\/td>/);
+});
+
+test('sin día elegido se abre el último calculado, no hoy', async () => {
+  const c = contexto(), pedidos = [];
+  c.api.s.fecha = '';
+  c.fetch = async url => { pedidos.push(url); return { ok: true, json: async () => url.endsWith('estadisticas.json') ? indice() : dia('2026-10-23') }; };
+  await c.api.cargarEstadisticas();
+  assert.equal(c.api.s.fecha, '2026-10-23'); assert.equal(c.api.s.dia.fecha, '2026-10-23');
+  assert.match(pedidos[1], /estadisticas-dia-2026-10-23\.json$/);
 });
