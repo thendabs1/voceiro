@@ -374,6 +374,14 @@ function wireResultadosDelegation(){
       return;
     }
     const medioBtn = e.target.closest('button.medio');
+    const statsBtn = e.target.closest('.btn-estadisticas-item');
+    if (statsBtn){
+      e.preventDefault();
+      const n = ULT_FILTRADAS[Number(statsBtn.dataset.idx)];
+      const origen = cont.querySelector(`.btn-mas-item[data-idx="${statsBtn.dataset.idx}"]`);
+      if (n?.dominio) abrirEstadisticas(n.dominio, origen);
+      return;
+    }
     if (medioBtn){
       e.preventDefault();
       filtrarPorMedio(medioBtn.dataset.dominio);

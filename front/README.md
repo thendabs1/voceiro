@@ -22,3 +22,29 @@ dinámicos, para evitar mezclar versiones cacheadas.
 
 CI genera el frontend antes de probarlo. En la cosecha se conserva el frontend
 anterior si el candidato no se construye o no supera las comprobaciones.
+
+## Panel de estadísticas
+
+`app/14-estadisticas.js` carga los JSON públicos de estadísticas solo al abrir
+el panel. Resumen ofrece totales del archivo diario, grupos y evolución de
+hasta 30 días; Medios contiene el directorio y la ficha con precisión de
+fechas y seguimiento. Se abre desde cabecera, el menú ⋯ de un titular o las
+órdenes `estadisticas:` / `stats:` confirmadas con Intro o una sugerencia.
+`estadisticas:mis-medios` selecciona las fuentes del modo, sin sus palabras.
+
+El día inicial es hoy. Si todavía no se ha calculado, se mantiene la fecha y
+se ofrece abrir el último día disponible. No confundir titulares del archivo
+con artículos únicos por publicación. Los datos ausentes no son ceros; las
+series indican su muestra diaria. El trabajo completo se verifica en CI.
+
+Pendiente para la siguiente fase: agregados de Asuntos, identidad de artículo,
+evidencia y comparación. Un idioma único asignado al medio no basta: algunos
+publican en varios y el catálogo está incompleto. Hay que validar el análisis
+por titular, cuantificar los no analizables y comprobar una muestra compatible
+antes de habilitar comparaciones; no convertir idioma desconocido en ausencia
+de menciones. El resumen técnico no necesita esa clasificación.
+
+Ideas de UI recogidas al probar la maqueta: jerarquía de contexto y cifras,
+controles agrupados, espacio entre bloques y acciones secundarias en ⋯.
+Revisar su aplicación al feed en otro cambio de diseño; conservar los accesos
+habituales y las preferencias de lectura.

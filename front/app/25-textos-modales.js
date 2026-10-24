@@ -37,6 +37,8 @@ function aplicarTextos(){
     b.title = t(clave);
   };
   cab('#btn-config', ico('settings'), 'ajTitulo');
+  cab('#btn-estadisticas', iconoEstadisticas(), 'estTitulo');
+  $('#btn-estadisticas').setAttribute('aria-label', t('estTitulo'));
   cab('#btn-acces', '<span class="cab-aa" aria-hidden="true">Aa</span>', 'ajLectura');
   cab('#btn-pendientes', ico('bookmark'), 'btnPendientes');
   $('#btn-pendientes').insertAdjacentHTML('beforeend', '<span class="pend-count" data-count="0">0</span>');
@@ -280,6 +282,7 @@ function aplicarTextos(){
   renderLangSelect();
   actualizarSyncBanner();
   actualizarBotonPendientes();
+  pintarEstadisticas();
   // Si cambia el idioma, el chip del tiempo muestra la nueva traducción.
   if ($('#chips-busqueda').style.display !== 'none'){
     const raw = $('#buscar').value.trim();

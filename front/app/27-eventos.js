@@ -80,6 +80,7 @@ function wireStaticEvents(){
     });
   }
   wireTiempo();
+  wireEstadisticas();
   wireAvisos();
   wirePortadas();
   // ── Chips de modo y de tema ──
@@ -175,6 +176,7 @@ function wireStaticEvents(){
         cerrarMenuMas();
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
+        if (ESTADISTICAS.abierto){ cerrarEstadisticas(); return; }
       }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT')) return;

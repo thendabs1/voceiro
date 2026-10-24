@@ -97,7 +97,8 @@ function _avisarMediosDesconocidos(consulta){
 function aplicarFiltros(){
   if (PASE) return;   // lo que llegue durante el pase espera: cerrarPase vuelve a filtrar
   hidratarNoticias();
-  const raw = $('#buscar').value.trim();
+  const rawInput = $('#buscar').value.trim();
+  const raw = ordenEstadisticas(rawInput)?.resto ?? rawInput;
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.

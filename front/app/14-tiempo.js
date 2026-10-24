@@ -421,6 +421,7 @@ function tokenTiempo(valor = ''){
   return `${PREFIJOS_TIEMPO[(ACCES && ACCES.lang) || 'es'] || 'eltiempo'}:${valor}`;
 }
 function ponerTiempo(token){
+  if (document.getElementById('estadisticas-panel')?.hidden === false) cerrarEstadisticas();
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
   input.value = [resto, token].filter(Boolean).join(' ');
