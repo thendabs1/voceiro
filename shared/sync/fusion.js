@@ -18,6 +18,16 @@ export const CAMPOS_PERFIL = ['lang', 'tema', 'fuente', 'fs', 'just', 'bionic', 
 
 const DIA_MS = 86400000;
 
+// Direcciones que se pueden abrir desde datos importados o sincronizados.
+// Solo URLs absolutas de la web, sin credenciales ni protocolos ejecutables.
+export function urlWebValida(valor){
+  if (typeof valor !== 'string' || !/^https?:\/\//i.test(valor.trim())) return '';
+  try {
+    const u = new URL(valor.trim());
+    return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.href : '';
+  } catch(e){ return ''; }
+}
+
 // Clave de una URL para comparar: sin #, sin www., sin parámetros de
 // seguimiento y sin barra final.
 export function normalizeUrlForMatch(u){
@@ -52,10 +62,12 @@ export function huella(x){
 // del lector (date en ISO). Devuelve null si no vale.
 export function normalizarPendiente(i){
   if (!i || typeof i !== 'object' || !i.url) return null;
+  const url = urlWebValida(i.url);
+  if (!url) return null;
   const creado = fusionMs(i.date);
   const leidoEn = i.read ? fusionMs(i.readAt) : 0;
   const p = {
-    url: String(i.url),
+    url,
     title: String(i.title || ''),
     description: String(i.description || ''),
     image: String(i.image || ''),

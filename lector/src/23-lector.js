@@ -7,6 +7,9 @@ let __lectorAbierto = null;
 
 function openReader(art){
   if (document.getElementById('il-full')) return;
+  art = { ...art, url: urlWebValida(art.url || location.href) };
+  if (!art.url) return;
+  const articleUrl = art.url;
 
   // let: CFG se sustituye entero cuando cambia en otra pestaña (refrescar).
   let prefs = CFG.prefs;
@@ -121,7 +124,7 @@ function openReader(art){
       (description ? description + '\n\n' : '') +
       (fecha ? fecha + ' · ' : '') + articleSection +
       (autores ? ' · ' + autores : '') + '\n\n' +
-      lines + '\n\nURL: ' + location.href;
+      lines + '\n\nURL: ' + articleUrl;
   }
 
   // «Abrir en…»: los servicios que haya configurado cada persona.
@@ -409,15 +412,6 @@ function openReader(art){
     pintarSiguiente();
   }
 
-  function saveScroll(){
-    try {
-      const s = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}');
-      s[location.href] = ov.scrollTop;
-      const ks = Object.keys(s);
-      if (ks.length > 50) for (let i = 0; i < ks.length - 50; i++) delete s[ks[i]];
-      localStorage.setItem(SCROLL_KEY, JSON.stringify(s));
-    } catch(e){}
-  }
   function updateFocus(){
     if (!prefs.focus) return;
     const els = ov.querySelectorAll('.il-body>*');
@@ -517,7 +511,7 @@ function openReader(art){
   const topBtn = ov.querySelector('.il-top-btn');
   topBtn.onclick = () => ov.scrollTo({ top: 0, behavior: desplazar() });
 
-  let stm, focusTimer = null, lastScroll = 0;
+  let focusTimer = null, lastScroll = 0;
   const topbarEl = ov.querySelector('.il-topbar');
   ov.addEventListener('scroll', () => {
     const st = Math.max(0, ov.scrollTop);
@@ -530,18 +524,11 @@ function openReader(art){
     if (prefs.focus && !focusTimer){
       focusTimer = setTimeout(() => { updateFocus(); focusTimer = null; }, 100);
     }
-    clearTimeout(stm); stm = setTimeout(saveScroll, 400);
   }, { passive: true });
 
-  setTimeout(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}');
-      if (s[location.href] && s[location.href] > 50) ov.scrollTop = s[location.href];
-    } catch(e){}
-  }, 350);
-
   function closeOverlay(){
-    saveScroll();
+    if (ov.__cerrarRSVP) ov.__cerrarRSVP();
+    clearTimeout(focusTimer);
     document.removeEventListener('keydown', keyHandler);
     if (finObservador) finObservador.disconnect();
     __lectorAbierto = null;
@@ -616,10 +603,10 @@ function openReader(art){
   // si ya estás en Voceiro, se sale del lector sin más; si no, esta misma
   // pestaña va a Voceiro.
   function volverAVoceiro(){
-    saveScroll();
+    if (PLATAFORMA.volverAVoceiro){ PLATAFORMA.volverAVoceiro(); return; }
     PLATAFORMA.guardar(VOLVER_KEY, Date.now());
-    // Un respiro para que lo guardado llegue al gestor antes de cerrar.
-    setTimeout(() => PLATAFORMA.cerrarPestana(), 120);
+    // El adaptador de extensión confirma sus escrituras antes de cerrar.
+    Promise.resolve(PLATAFORMA.vaciar ? PLATAFORMA.vaciar() : null).then(() => PLATAFORMA.cerrarPestana());
     setTimeout(() => {
       if (document.visibilityState === 'hidden') closeOverlay();
       else location.href = VOCEIRO_URL;
@@ -658,19 +645,19 @@ function openReader(art){
   };
   ov.querySelector('.il-share').onclick = () => {
     if (navigator.share){
-      navigator.share({ title: headline || document.title, text: description || '', url: location.href }).catch(()=>{});
+      navigator.share({ title: headline || document.title, text: description || '', url: articleUrl }).catch(()=>{});
     } else if (navigator.clipboard){
-      navigator.clipboard.writeText(location.href).then(() => toast(t('urlCopied')));
+      navigator.clipboard.writeText(articleUrl).then(() => toast(t('urlCopied')));
     }
   };
   ov.querySelectorAll('.il-servicio').forEach(btn => {
     const svc = servicios.find(s => s.id === btn.getAttribute('data-servicio'));
-    if (svc) btn.onclick = () => abrirEnServicio(svc);
+    if (svc) btn.onclick = () => abrirEnServicio(svc, articleUrl);
   });
 
   ov.querySelector('.il-ignore-section').onclick = () => { ignoreCurrentSection(); };
-  ov.querySelector('.il-rsvp-meta').onclick = () => openRSVP(ov, rawBody);
-  ov.querySelector('.il-rsvp-menu').onclick = () => openRSVP(ov, rawBody);
+  ov.querySelector('.il-rsvp-meta').onclick = () => openRSVP(ov, parrafos.filter(esDeTexto).map(textoDeBloque).join('\n\n'));
+  ov.querySelector('.il-rsvp-menu').onclick = () => openRSVP(ov, parrafos.filter(esDeTexto).map(textoDeBloque).join('\n\n'));
   ov.querySelector('.il-dict-hint').onclick = () => { openSettings('dict'); };
 
   ov.querySelectorAll('input[name="il-tema"]').forEach(r =>
@@ -769,7 +756,7 @@ function openReader(art){
   // (se puede devolver a pendientes). Colores del tema, con su contraste.
   // Hay dos: arriba, junto al título, y en el final.
   function pintarBotonGuardar(){
-    const ex = findLaterItem(location.href);
+    const ex = findLaterItem(articleUrl);
     ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => {
       btn.classList.toggle('il-guardada', !!ex && !ex.read);
       btn.classList.toggle('il-leida', !!ex && !!ex.read);
@@ -781,7 +768,7 @@ function openReader(art){
   ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => btn.onclick = function(){
     saveForLater(art);
     // Si vuelve a pendientes, ya no cuenta como leída aquí.
-    const ex = findLaterItem(location.href);
+    const ex = findLaterItem(articleUrl);
     if (estadoLeida === 'marcada' && ex && !ex.read){ estadoLeida = 'deshecha'; finEstado.textContent = ''; }
     pintarBotonGuardar();
     pintarSiguiente();
@@ -796,7 +783,7 @@ function openReader(art){
   function marcarLeida(){
     if (estadoLeida === 'marcada') return;
     estadoLeida = 'marcada';
-    deshacerLeida = marcarLeidaAlTerminar();
+    deshacerLeida = marcarLeidaAlTerminar(articleUrl);
     pintarBotonGuardar();
     pintarSiguiente();
     finEstado.textContent = '';
@@ -819,7 +806,7 @@ function openReader(art){
 
   function pintarSiguiente(){
     const b = ov.querySelector('.il-fin-siguiente');
-    const sig = siguientePendiente(location.href);
+    const sig = siguientePendiente(articleUrl);
     b.hidden = !sig;
     if (!sig) return;
     const titulo = sig.title || sig.url;
@@ -827,7 +814,6 @@ function openReader(art){
     b.setAttribute('aria-label', t('finSiguienteDe').replace('{X}', titulo));
     b.onclick = () => {
       if (estadoLeida !== 'marcada') marcarLeida();
-      saveScroll();
       irASiguientePendiente(sig);
     };
   }
@@ -850,7 +836,7 @@ function openReader(art){
   // Estado inicial al abrir el lector
   pintarBotonGuardar();
   pintarSiguiente();
-  __lectorAbierto = { refrescar };
+  __lectorAbierto = { refrescar, cerrar: closeOverlay };
 
   function showDictPopup(word, parentEl){
     const existing = parentEl.querySelector('.il-dict-popup');
@@ -901,10 +887,10 @@ function openReader(art){
       case 'toggleJustify': prefs.just  = !prefs.just;  applyPrefs(); break;
       case 'toggleImages':  cambiarImagenes(); break;
       case 'toggleWide':    prefs.width = prefs.width >= 900 ? 720 : 1100; applyPrefs(); break;
-      case 'saveLater':     saveForLater(art); break;
+      case 'saveLater':     saveForLater(art); pintarBotonGuardar(); pintarSiguiente(); break;
       case 'openSites':     openSettings('sites'); break;
       case 'openQueue':     openSettings('pendientes'); break;
-      case 'openRSVP':      openRSVP(ov, rawBody); break;
+      case 'openRSVP':      openRSVP(ov, parrafos.filter(esDeTexto).map(textoDeBloque).join('\n\n')); break;
       case 'copyText':
         copyText(buildText());
         break;
@@ -912,6 +898,7 @@ function openReader(art){
   }
 
   function keyHandler(e){
+    if (!e.isTrusted || ov.querySelector('#il-rsvp-root')) return;
     if (!document.getElementById('il-full')) return;
     if (document.getElementById('il-settings')) return;
     if (document.getElementById('il-extract-tool')) return;

@@ -4,6 +4,11 @@ Modo lectura accesible para medios y complemento de
 [Voceiro](https://thendabs1.github.io/voceiro/): Voceiro da los titulares y el
 lector se encarga de lo que pasa al abrir la noticia.
 
+## Documentación
+
+- [Manual de usuario](MANUAL.md).
+- [Revisión y adaptación a Firefox](REVISION-FIREFOX.md).
+
 ## Instalar
 
 Con un gestor de userscripts (Violentmonkey, Tampermonkey…), abre
@@ -88,3 +93,8 @@ La versión es `2.0.N`, con N = número de commits que han tocado `lector/`,
 - El lector solo enlaza a los dominios de `dominios-permitidos.txt`; la CI lo
   comprueba.
 - Los servicios de «Abrir en…» son datos de cada persona, no código.
+
+Los atajos vienen sin asignar salvo Escape; se conservan las asignaciones
+existentes. La configuración se abre en Voceiro y el diagnóstico del medio
+sigue disponible en el menú del flotante. El lector empieza cada artículo
+desde el principio, sin restaurar la posición.

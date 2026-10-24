@@ -21,6 +21,11 @@
    ─────────────────────────────────────────────────────────────── */
 const PUENTE_V = 2;
 
+function datosDelPuente(detail){
+  try { return typeof detail === 'string' ? JSON.parse(detail) : detail; }
+  catch(e){ return null; }
+}
+
 function estadoDelLector(respuesta){
   return {
     v: PUENTE_V, respuesta: !!respuesta,
@@ -58,7 +63,7 @@ function enviarEstado(respuesta){
   if (!esVoceiro()) return;
   try {
     document.dispatchEvent(new CustomEvent('lector-estado', {
-      detail: JSON.parse(JSON.stringify(estadoDelLector(respuesta)))
+      detail: JSON.stringify(estadoDelLector(respuesta))
     }));
   } catch(e){}
 }
@@ -91,7 +96,7 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   // ajustes del lector se pinta ahí (una vez: si ya está, no se repite).
   // Con dominio se vuelve a pintar, en Medios y con ese medio delante.
   document.addEventListener('voceiro-ajustes-lector', e => {
-    const d = e.detail;
+    const d = datosDelPuente(e.detail);
     if (!d || d.v !== PUENTE_V) return;
     const hueco = document.getElementById('aj-lector-panel');
     if (!hueco) return;
@@ -104,11 +109,11 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   });
 
   document.addEventListener('voceiro-ping', () => {
-    document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: { v: PUENTE_V } }));
+    document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: JSON.stringify({ v: PUENTE_V }) }));
   });
 
   document.addEventListener('voceiro-estado', e => {
-    const d = e.detail;
+    const d = datosDelPuente(e.detail);
     if (!d || typeof d !== 'object' || d.v !== PUENTE_V) return;
 
     adoptarEnLector(d);
@@ -127,9 +132,19 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   });
 
   try {
-    document.dispatchEvent(new CustomEvent('voceiro-ready', { detail: { v: PUENTE_V } }));
+    document.dispatchEvent(new CustomEvent('voceiro-ready', { detail: JSON.stringify({ v: PUENTE_V }) }));
   } catch(e){}
 })();
+
+function abrirAjustesDesdeEnlace(){
+  if (!esVoceiro()) return;
+  const p = new URLSearchParams(location.hash.slice(1));
+  const tab = p.get('lector');
+  if (!['sites','pendientes','dict','servicios','shortcuts','general'].includes(tab)) return;
+  openSettings(tab, { dominio: normalizeDomain(p.get('dominio')) });
+}
+window.addEventListener('hashchange', abrirAjustesDesdeEnlace);
+abrirAjustesDesdeEnlace();
 
 if (document.body) init();
 else window.addEventListener('DOMContentLoaded', init);

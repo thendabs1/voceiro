@@ -2,7 +2,6 @@
    5. CONFIGURACIÓN
    ============================================================ */
 const CFG_KEY = 'lector-universal-cfg-v8';
-const SCROLL_KEY = 'lector-universal-scroll';
 const LEGACY_KEYS = ['lector-universal-cfg-v7','lector-universal-cfg-v6','lector-universal-cfg-v5','lector-universal-cfg-v4'];
 
 const DEFAULT_DICTS_ES = [
@@ -71,7 +70,7 @@ const DEFAULT_CFG = {
     keepReadItems: true
   },
   // Botón flotante: lado ('izq'/'der'), altura y medios donde se ha ocultado.
-  fab: { lado: null, top: null, ocultoEn: [] },
+  fab: { visible: true, lado: null, top: null, ocultoEn: [] },
   servicios: [],
   serviciosFab: { oculto: false },
   prefs: {
@@ -91,30 +90,30 @@ const DEFAULT_CFG = {
   shortcuts: {
     reader: {
       close:         ['escape'],
-      fontIncrease:  ['+', '='],
-      fontDecrease:  ['-', '_'],
-      toggleTheme:   ['d'],
-      scrollTop:     ['t'],
-      scrollBottom:  ['shift+g'],
-      toggleBionic:  ['b'],
-      toggleFocus:   ['f'],
-      toggleJustify: ['j'],
-      toggleImages:  ['i'],
-      toggleWide:    ['w'],
-      saveLater:     ['s'],
-      openSites:     ['l'],
-      openQueue:     ['p'],
-      openRSVP:      ['r'],
+      fontIncrease:  [],
+      fontDecrease:  [],
+      toggleTheme:   [],
+      scrollTop:     [],
+      scrollBottom:  [],
+      toggleBionic:  [],
+      toggleFocus:   [],
+      toggleJustify: [],
+      toggleImages:  [],
+      toggleWide:    [],
+      saveLater:     [],
+      openSites:     [],
+      openQueue:     [],
+      openRSVP:      [],
       copyText:      []
     },
     global: {
-      openReader:     ['alt+l'],
-      openQueue:      ['alt+p'],
-      openMedia:      ['alt+m'],
-      openSettings:   ['alt+s'],
+      openReader:     [],
+      openQueue:      [],
+      openMedia:      [],
+      openSettings:   [],
       abrirEn:        [],
-      toggleTextOnly: ['alt+i'],
-      openVoceiro:    ['alt+v']
+      toggleTextOnly: [],
+      openVoceiro:    []
       }
     },
     voceiro: { presets: [] }
@@ -138,7 +137,8 @@ function normalizeExtraction(ex, oldSel){
 }
 
 function migrateCfg(cfg){
-  if (!Array.isArray(cfg.sites)) cfg.sites = [];
+  cfg.sites = (Array.isArray(cfg.sites) ? cfg.sites : [])
+    .filter(s => s && typeof s === 'object' && !Array.isArray(s));
 
   if (!Array.isArray(cfg.disabledDomains)) cfg.disabledDomains = [];
   cfg.disabledDomains = cfg.disabledDomains.map(d => String(d||'').toLowerCase()
@@ -158,9 +158,12 @@ function migrateCfg(cfg){
   delete cfg.siteTypes;
   delete cfg.siteTags;
 
+  cfg.sites = cfg.sites.filter(s => s && typeof s === 'object' && !Array.isArray(s))
+    .map(s => ({ ...s, domain: normalizeDomain(s.domain) })).filter(s => s.domain);
   cfg.sites.forEach(s => {
-    if (!Array.isArray(s.ignorePatterns)) s.ignorePatterns = [];
-    if (!s.mode) s.mode = 'prompt';
+    s.ignorePatterns = (Array.isArray(s.ignorePatterns) ? s.ignorePatterns : [])
+      .filter(p => typeof p === 'string' && p.startsWith('/'));
+    if (!['off', 'prompt', 'auto'].includes(s.mode)) s.mode = 'prompt';
     if (!s.domain) s.domain = '';
     if (!s.lang || !SITE_LANGS.includes(s.lang)) s.lang = 'auto';
     delete s.type;
@@ -191,6 +194,18 @@ function migrateCfg(cfg){
   }
 
   if (typeof cfg.readerAutoAll !== 'boolean') cfg.readerAutoAll = false;
+  if (!cfg.fab || typeof cfg.fab !== 'object' || Array.isArray(cfg.fab)) cfg.fab = deepClone(DEFAULT_CFG.fab);
+  cfg.fab.visible = cfg.fab.visible !== false;
+  if (!cfg.prefs || typeof cfg.prefs !== 'object' || Array.isArray(cfg.prefs)) cfg.prefs = {};
+  cfg.prefs = { ...DEFAULT_CFG.prefs, ...cfg.prefs };
+  for (const [k, min, max] of [['fs', UI.fsMin, UI.fsMax], ['width', UI.wMin, UI.wMax], ['lh', 1, 3]]){
+    cfg.prefs[k] = Number.isFinite(cfg.prefs[k]) ? Math.min(max, Math.max(min, cfg.prefs[k])) : DEFAULT_CFG.prefs[k];
+  }
+  if (!['light','sepia','dark','contrast','custom'].includes(cfg.prefs.theme)) cfg.prefs.theme = 'light';
+  if (!['georgia','sans','dyslexic'].includes(cfg.prefs.font)) cfg.prefs.font = 'georgia';
+  for (const k of ['just', 'bionic', 'focus']) cfg.prefs[k] = cfg.prefs[k] === true;
+  cfg.leidasParaVoceiro = (Array.isArray(cfg.leidasParaVoceiro) ? cfg.leidasParaVoceiro : [])
+    .filter(l => l && urlWebValida(l.url) && Number.isFinite(l.fecha));
   if (cfg.prefs.panelText === undefined) cfg.prefs.panelText = true;
   if (cfg.prefs.panelActions === undefined) cfg.prefs.panelActions = false;
   if ('readerSource' in cfg.prefs) delete cfg.prefs.readerSource;
@@ -215,7 +230,9 @@ function migrateCfg(cfg){
   if (!cfg.dict.defaultPt) cfg.dict.defaultPt = 'priberam';
   ['customEs','customGl','customCa','customEu','customEn',
    'customFr','customDe','customIt','customPt'].forEach(k => {
-    if (!Array.isArray(cfg.dict[k])) cfg.dict[k] = [];
+    cfg.dict[k] = (Array.isArray(cfg.dict[k]) ? cfg.dict[k] : [])
+      .filter(d => d && typeof d.name === 'string' && typeof d.id === 'string' && plantillaDiccionarioValida(d.url))
+      .slice(0, 30).map(d => ({ id: d.id, name: d.name.slice(0, 60), url: d.url, builtin: false }));
   });
 
   if (!UI_LANGS.includes(cfg.lang)) cfg.lang = 'es';
@@ -245,8 +262,10 @@ function migrateCfg(cfg){
 
 function mergeCfg(base, over){
   const out = deepClone(base);
-  if (!over || typeof over !== 'object') return out;
+  if (!over || typeof over !== 'object' || Array.isArray(over)) return migrateCfg(out);
+  const admitidas = new Set([...Object.keys(base), 'customCatalog', 'leidasParaVoceiro']);
   for (const k of Object.keys(over)){
+    if (!admitidas.has(k)) continue;
     if (k === 'prefs' || k === 'fab' || k === 'dict' || k === 'serviciosFab' || k === 'shortcuts' || k === 'readerSettings')
       out[k] = Object.assign({}, out[k], over[k] || {});
     else out[k] = over[k];
@@ -331,7 +350,7 @@ function bloqueConfigLector(){
 function aplicarBloqueConfig(bloque){
   const d = (bloque && bloque.datos) || {};
   for (const k of Object.keys(d)){
-    if (CFG_NO_VIAJA.includes(k)) continue;
+    if (CFG_NO_VIAJA.includes(k) || !Object.hasOwn(DEFAULT_CFG, k)) continue;
     if (k === 'prefs'){
       const p = { ...(CFG.prefs || {}) };
       for (const [pk, pv] of Object.entries(d.prefs || {})){

@@ -2,8 +2,13 @@
    7. DOMINIOS Y REGLAS
    ============================================================ */
 function normalizeDomain(d){
-  return String(d || '').trim().toLowerCase()
-    .replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+  const valor = String(d || '').trim();
+  if (!valor) return '';
+  try {
+    const u = new URL(/^https?:\/\//i.test(valor) ? valor : 'https://' + valor);
+    if (!/^https?:$/.test(u.protocol) || u.username || u.password || u.port) return '';
+    return u.hostname.toLowerCase().replace(/^www\./, '');
+  } catch(e){ return ''; }
 }
 function domainMatches(host, rule){
   host = String(host||'').toLowerCase();
@@ -45,8 +50,8 @@ function getCatalogEntry(host){
 }
 
 function findSiteRule(){
-  for (const s of CFG.sites) if (domainMatches(location.hostname, s.domain)) return s;
-  return null;
+  return CFG.sites.filter(s => domainMatches(location.hostname, s.domain))
+    .reduce((mejor, s) => !mejor || s.domain.length > mejor.domain.length ? s : mejor, null);
 }
 function currentReaderSource(){
   if (__sessionSourceOverride && READER_SOURCES.includes(__sessionSourceOverride))

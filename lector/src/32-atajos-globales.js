@@ -46,6 +46,7 @@ function executeGlobalAction(action){
 }
 
 function globalKeyHandler(e){
+  if (!e.isTrusted) return;
   // En Voceiro mandan sus atajos (Alt+P, Alt+M, Alt+B…): los del lector
   // no actúan allí. La revisión completa de atajos, antes de publicar.
   if (esVoceiro()) return;

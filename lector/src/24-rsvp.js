@@ -2,6 +2,8 @@
    20. RSVP
    ============================================================ */
 function openRSVP(ov, rawBody){
+  const existente = ov.querySelector('#il-rsvp-root');
+  if (existente){ existente.focus(); return; }
   const allWords = rawBody.split(/\s+/).filter(Boolean);
   if (!allWords.length) return;
   const WPL = UI.rsvpWPL;
@@ -11,6 +13,9 @@ function openRSVP(ov, rawBody){
 
   const root = document.createElement('div');
   root.id = 'il-rsvp-root';
+  root.tabIndex = -1;
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-label', t('teleprompter'));
   root.style.cssText = 'position:fixed;inset:0;background:var(--bg);color:var(--fg);z-index:25;display:flex;flex-direction:column;';
 
   const linesHtml = lines.map(l =>
@@ -105,6 +110,7 @@ function openRSVP(ov, rawBody){
     }, dur);
   }
   function play(){
+    if (!root.isConnected) return;
     playing = true; pBtn.textContent = t('pause');
     if (!rafId) rafId = requestAnimationFrame(rAFHighlight);
     scheduleNext();
@@ -134,9 +140,19 @@ function openRSVP(ov, rawBody){
     wpm = Math.min(UI.rsvpWpmMax, wpm + UI.rsvpWpmStep); vEl.textContent = wpm;
     if (playing){ clearTimeout(timer); scheduleNext(); }
   };
-  root.querySelector('#il-rsvp-cls').onclick = () => { stop(); root.remove(); };
+  const cerrar = () => {
+    stop(); root.remove(); delete ov.__cerrarRSVP;
+    if (ov.isConnected) ov.querySelector('#il-titulo')?.focus({ preventScroll: true });
+  };
+  ov.__cerrarRSVP = cerrar;
+  root.querySelector('#il-rsvp-cls').onclick = cerrar;
+  root.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cerrar(); }
+  });
+  root.focus();
 
   requestAnimationFrame(() => {
+    if (!root.isConnected) return;
     inner.style.transition = 'none';
     inner.style.transform = 'translateY(' + offsetFor(0) + 'px)';
     setActive(0);

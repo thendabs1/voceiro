@@ -26,13 +26,13 @@ function sanitizeNode(node){
         if (tag === 'A' && a.name === 'href'){
           const v = a.value.trim();
           if (/^(https?:|mailto:|#|\/)/i.test(v)){
-            child.setAttribute('target','_blank');
-            child.setAttribute('rel','noopener noreferrer');
+            // Los atributos de salida se reponen después de limpiar los originales.
           } else {
             child.removeAttribute('href');
           }
         } else if (tag === 'IMG' && a.name === 'src'){
-          child.setAttribute('src', absUrl(a.value));
+          const src = urlWebValida(absUrl(a.value));
+          if (src) child.setAttribute('src', src); else child.removeAttribute('src');
         } else if (tag === 'IMG' && a.name === 'alt'){
           // keep
         } else if (tag === 'P' && a.name === 'data-il-embed' && /^[a-z]+$/.test(a.value)){
@@ -49,6 +49,10 @@ function sanitizeNode(node){
           child.removeAttribute(a.name);
         }
       });
+      if (tag === 'A' && child.hasAttribute('href')){
+        child.setAttribute('target', '_blank');
+        child.setAttribute('rel', 'noopener noreferrer');
+      }
     }
   });
 }
