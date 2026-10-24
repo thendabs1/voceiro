@@ -8,7 +8,8 @@ import re
 import unicodedata
 
 from . import config
-from .fechas import _fecha_agrupacion_dt, _fecha_orden, _reconstruir_fecha
+from .fechas import (_fecha_agrupacion_dt, _fecha_orden, _parse_iso_flexible,
+                     _reconstruir_fecha)
 from .texto import _limpiar_cdata, _url_corta
 
 
@@ -184,7 +185,7 @@ def cargar_historico_payload():
                             'tipo':           m_alt.get('t', ''),
                             'lang':           m_alt.get('l', ''),
                             'tags':           m_alt.get('tags', []) or [],
-                            'titular':        n.get('t', ''),
+                            'titular':        alt_item.get('t') or n.get('t', ''),
                             'enlace':         enlace_alt,
                             'fecha_pub':      p_alt,
                             'fecha_estimada': e_alt,
@@ -223,6 +224,10 @@ def _dedup_resumen():
 def _alternativa(o, rep):
     alt = {'d': o.get('dominio', ''),
            'u': _url_corta(o.get('enlace', ''), o.get('dominio', ''))}
+    # Su titular solo si no es idéntico: agrupan los normalizados, y con el
+    # del representante no casaría con su feed al releerla.
+    if o.get('titular') and o['titular'] != rep.get('titular'):
+        alt['t'] = o['titular']
     for corto, largo in (('p', 'fecha_pub'), ('e', 'fecha_estimada'), ('c', 'fecha')):
         if o.get(largo):
             alt[corto] = o[largo]
@@ -235,8 +240,9 @@ def deduplicar_editorial(noticias):
     """
     Agrupa noticias por titular normalizado. De cada grupo deja un
     representante (el de mejor fecha) y guarda los demás como campo
-    'alt' compacto: [{'d': dominio, 'u': url, 'p'/'e'/'c': ISO, 'f'}, ...]
-    con sus propias fechas, y la fuente si no es la del representante.
+    'alt' compacto: [{'d': dominio, 'u': url, 'p'/'e'/'c': ISO, 'f', 't'}, ...]
+    con sus propias fechas, y la fuente y el titular si no son los del
+    representante.
 
     El representante es una copia: la misma noticia pasa por varios slices
     (all, grupo, dominio, portada) y un 'alt' de uno no debe colarse en otro.
@@ -328,7 +334,9 @@ def fusionar_historico(nuevas, viejas, dias):
         old = idx.get(key)
         if old:
             n['fecha'] = old.get('fecha', n['fecha'])
-            if not n.get('fecha_pub') and old.get('fecha_pub'):
+            # La primera fecha válida se queda: las que llegan después suelen
+            # ser de actualización y moverían la noticia de hora o de día.
+            if _parse_iso_flexible(old.get('fecha_pub')):
                 n['fecha_pub'] = old['fecha_pub']
             if old.get('fecha_estimada') and not n.get('fecha_estimada'):
                 n['fecha_estimada'] = old['fecha_estimada']

@@ -16,6 +16,7 @@ from .fechas import (
     _fechas_jsonld,
     _parse_iso_flexible,
     _rss_date_to_iso,
+    _solo_dia,
     _to_iso_madrid,
 )
 from .texto import (
@@ -42,6 +43,9 @@ SESSION = _crear_sesion()
 # petición al relay, no en la sesión: así nunca llega a los medios.
 _RELAY_CLAVE = os.environ.get('RELAY_CLAVE', '')
 RELAY_HEADERS = {'X-Voceiro-Relay': _RELAY_CLAVE} if _RELAY_CLAVE else None
+
+
+_ORDEN_FECHAS_LXML = ('pubdate', 'published', 'issued', 'date', 'updated')
 
 
 def _parse_feed_lxml(content):
@@ -72,20 +76,41 @@ def _parse_feed_lxml(content):
 
     out = []
     for e in entries[:config.N_FEED]:
-        t = l = raw_date = ''
+        t = l = ''
+        fechas = {}
         for el in e.iter():
             ln = local(el.tag)
             if ln == 'title' and not t:
                 t = _limpiar_cdata(el.text or '')
             elif ln == 'link' and not l:
                 l = (el.text or '').strip() or el.get('href', '').strip()
-            elif ln in ('pubdate', 'published', 'updated', 'date') and not raw_date:
-                raw_date = (el.text or '').strip()
+            elif ln in _ORDEN_FECHAS_LXML:
+                fechas.setdefault(ln, (el.text or '').strip())
         if not t or not l:
             continue
+        # La de publicación antes que la de actualización, venga donde venga.
+        raw_date = next((fechas[k] for k in _ORDEN_FECHAS_LXML if fechas.get(k)), '')
         fecha_pub = _rss_date_to_iso(raw_date) if raw_date else ''
         out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub})
     return out
+
+
+def _fecha_entrada(e):
+    """Fecha de una entrada de feedparser: published antes que updated. Con
+    solo el día no hay instante, y su `*_parsed` lo completaría con 00:00 UTC."""
+    raw = e.get('published') or e.get('updated') or ''
+    if _solo_dia(raw):
+        return ''
+    fecha_pub = _rss_date_to_iso(raw)
+    if not fecha_pub:
+        st = e.get('published_parsed') or e.get('updated_parsed')
+        if st:
+            try:
+                dt = datetime(*st[:6], tzinfo=timezone.utc)
+                fecha_pub = _to_iso_madrid(dt)
+            except Exception:
+                pass
+    return fecha_pub
 
 
 def _parse_feed(content):
@@ -96,18 +121,7 @@ def _parse_feed(content):
         l = (e.get('link') or '').strip()
         if not t or not l:
             continue
-        fecha_pub = ''
-        raw = e.get('published') or e.get('updated') or ''
-        if raw:
-            fecha_pub = _rss_date_to_iso(raw)
-        if not fecha_pub:
-            st = e.get('published_parsed') or e.get('updated_parsed')
-            if st:
-                try:
-                    dt = datetime(*st[:6], tzinfo=timezone.utc)
-                    fecha_pub = _to_iso_madrid(dt)
-                except Exception:
-                    pass
+        fecha_pub = _fecha_entrada(e)
         out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub})
 
     # Fallback: si feedparser no sacó nada, intentar lxml
@@ -338,18 +352,7 @@ def _parse_gn_feed(content):
         elif src:
             source_name = str(src).strip()
 
-        fecha_pub = ''
-        raw = e.get('published') or e.get('updated') or ''
-        if raw:
-            fecha_pub = _rss_date_to_iso(raw)
-        if not fecha_pub:
-            st = e.get('published_parsed') or e.get('updated_parsed')
-            if st:
-                try:
-                    dt = datetime(*st[:6], tzinfo=timezone.utc)
-                    fecha_pub = _to_iso_madrid(dt)
-                except Exception:
-                    pass
+        fecha_pub = _fecha_entrada(e)
 
         out.append({
             'titular':     _limpiar_titular_gn(t, source_name),

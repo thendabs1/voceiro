@@ -24,8 +24,8 @@ INTERVALO_MIN_SEG     = 60          # no menos de 1 min
 INTERVALO_MAX_SEG     = 24 * 3600   # no más de 24 h
 
 # Horizonte de "futuro legítimo": si fecha_pub está dentro de este margen
-# respecto a ahora, se considera programada. Si está más allá, se
-# considera futura y se usa otra fecha para agrupar.
+# respecto a la primera recogida, se considera programada. Si está más
+# allá, se considera futura y se usa otra fecha para agrupar y ordenar.
 HORIZONTE_FUTURO_HORAS = 6
 GRUPOS_INCLUIDOS = []
 
