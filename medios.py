@@ -36,7 +36,7 @@ MEDIA_CATALOG = [
     # ═══════════════════════════════════════════════════════════════
     { 'group':'Deportes', 'items':[
         { 'd':'2playbook.com','n':'2Playbook','type':'digital','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','negocio'],
-          'fuentes':[('scrape',), ('gn',)] },
+          'fuentes':[('rss', 'https://www.2playbook.com/uploads/feeds/feed_2playbook_es.xml'), ('scrape',), ('gn',)] },
         { 'd':'as.com','n':'Diario AS','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','futbol'],
           'fuentes':[('rss', 'https://feeds.as.com/mrss-s/pages/as/site/as.com/portada'), ('scrape',)] },
         { 'd':'eldesmarque.com','n':'El Desmarque','type':'digital','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','digital'],
@@ -125,7 +125,8 @@ MEDIA_CATALOG = [
         { 'd':'hipertextual.com','n':'Hipertextual','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','cultura'],
           'fuentes':[('gn',)] },
         { 'd':'ituser.es','n':'IT User','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','empresa'],
-          'fuentes':[('scrape',), ('gn',)] },
+          # La portada requiere www y no trae hora: GN sigue siendo la primera opción.
+          'fuentes':[('gn',), ('scrape', 'https://www.ituser.es/')] },
         { 'd':'muycomputer.com','n':'MuyComputer','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'],
           'fuentes':[('rss', 'https://www.muycomputer.com/feed/'), ('scrape',)] },
         { 'd':'profesionalreview.com','n':'Profesional Review','type':'digital','sector':'tecnologia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['tecnologia','hardware'],
@@ -147,7 +148,8 @@ MEDIA_CATALOG = [
     # ═══════════════════════════════════════════════════════════════
     { 'group':'Ciencia', 'items':[
         { 'd':'agenciasinc.es','n':'SINC','type':'digital','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['ciencia','publico'],
-          'fuentes':[('scrape',), ('gn',)] },
+          # La portada ya se puede extraer, pero no trae fechas: conservar la hora de GN.
+          'fuentes':[('gn',), ('scrape',)] },
         { 'd':'consalud.es','n':'ConSalud','type':'digital','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['salud'],
           'fuentes':[('rss', 'https://www.consalud.es/feed/'), ('scrape',)] },
         { 'd':'diariomedico.com','n':'Diario Médico','type':'digital','sector':'ciencia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['salud','profesional'],
@@ -276,7 +278,7 @@ MEDIA_CATALOG = [
         { 'd':'republica.com','n':'Republica.com','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'],
           'fuentes':[('rss', 'https://republica.com/feed'), ('scrape',)] },
         { 'd':'rtve.es','n':'RTVE','type':'tv','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','publico','tv','radio'],
-          'fuentes':[('scrape',), ('gn',)] },
+          'fuentes':[('scrape', 'https://www.rtve.es/noticias/'), ('gn',)] },
         { 'd':'servimedia.es','n':'Servimedia','type':'agencia','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['agencia','social'],
           'fuentes':[('scrape',), ('gn',)] },
         { 'd':'telecinco.es','n':'Telecinco','type':'tv','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','privado','tv'],
@@ -815,7 +817,8 @@ MEDIA_CATALOG = [
     # ═══════════════════════════════════════════════════════════════
     { 'group':'Internacional · El Salvador', 'items':[
         { 'd':'elfaro.net','n':'El Faro','type':'digital','sector':'generalista','ambito':'internacional','region':None,'pais':'el-salvador','langs':['es'],'lang_principal':'es','tags':['investigacion','salvador'],
-          'fuentes':[('scrape',), ('gn',)] },
+          # elfaro.net solo redirige con JavaScript a esta portada.
+          'fuentes':[('scrape', 'https://beta.elfaro.net/es/?from=elfaro_main'), ('gn',)] },
     ]},
 
     # ═══════════════════════════════════════════════════════════════
@@ -853,7 +856,8 @@ MEDIA_CATALOG = [
     # ═══════════════════════════════════════════════════════════════
     { 'group':'Internacional · Honduras', 'items':[
         { 'd':'elheraldo.hn','n':'El Heraldo','type':'diario','sector':'generalista','ambito':'internacional','region':None,'pais':'honduras','langs':['es'],'lang_principal':'es','tags':['generalista','honduras'],
-          'fuentes':[('scrape',), ('gn',)] },
+          # Los encabezados envueltos en enlaces no traen hora en la portada.
+          'fuentes':[('gn',), ('scrape',)] },
     ]},
 
     # ═══════════════════════════════════════════════════════════════

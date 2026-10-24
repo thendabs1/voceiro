@@ -3,6 +3,20 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Revisión de fuentes y extracción
+
+### Corregido
+- El scraper acepta encabezados envueltos en enlaces sin añadir el resumen
+  al titular ni tomar la fecha de otra tarjeta.
+- Las fechas localizadas sin hora y los días seguidos de una zona horaria
+  conservan solo el día, sin una medianoche inventada.
+- RSS de 2Playbook y portadas de IT User, RTVE y El Faro. SINC, El Heraldo
+  e IT User mantienen Google News primero para conservar sus horas.
+
+### Documentado
+- Inventario de fallos, alternativas y límites de fechas desde tres pasadas
+  de los 342 medios en `cosecha/REVISION-EXTRACTOR.md`.
+
 ## 2026-10-24 — Fechas sin hora
 
 ### Cambiado
