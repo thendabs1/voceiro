@@ -283,6 +283,39 @@ def _fechas_jsonld(soup):
     return out
 
 
+def _fechas_fusion(soup, base_url):
+    """Fechas propias de historias Arc/Fusion, sin ejecutar JavaScript.
+
+    La primera publicación prevalece sobre la republicación. Nunca se
+    hereda la fecha de una colección ni la de otro objeto del estado.
+    """
+    from urllib.parse import urljoin
+
+    out = {}
+    decoder = json.JSONDecoder()
+    for script in soup.find_all('script'):
+        raw = script.string or ''
+        for m in re.finditer(r'\bFusion\.contentCache\s*=\s*', raw):
+            try:
+                estado, _ = decoder.raw_decode(raw, m.end())
+            except ValueError:
+                continue
+            pendientes = [estado]
+            while pendientes:
+                obj = pendientes.pop()
+                if isinstance(obj, list):
+                    pendientes.extend(obj)
+                elif isinstance(obj, dict):
+                    url = obj.get('canonical_url')
+                    fecha = obj.get('first_publish_date') or obj.get('publish_date')
+                    if obj.get('type') == 'story' and isinstance(url, str):
+                        iso = _rss_date_to_iso(fecha) if isinstance(fecha, str) else ''
+                        if iso:
+                            out.setdefault(_clave_url(urljoin(base_url, url)), iso)
+                    pendientes.extend(v for v in obj.values() if isinstance(v, (dict, list)))
+    return out
+
+
 _TITULARES = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
 
 

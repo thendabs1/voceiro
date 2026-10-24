@@ -37,6 +37,12 @@ BAD_PATH_SEGMENTS = (
 )
 SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9\-]{15,}$')
 
+# Portales oficiales de noticias que conservan la identidad del catálogo.
+_DOMINIOS_ASOCIADOS = {
+    'eitb.eus': ('orain.eus',),
+    'xinhuanet.com': ('english.news.cn',),
+}
+
 
 def _norm_strict(s):
     """Equivalente a normStrict de shared/parser.js.
@@ -181,7 +187,8 @@ def _es_valido(texto, href, dominio):
     if any(seg in low_href for seg in BAD_PATH_SEGMENTS):
         return False
     dom_href = _dominio_de(href)
-    if dom_href and dom_href != dominio and not dom_href.endswith('.' + dominio):
+    permitidos = (dominio, *_DOMINIOS_ASOCIADOS.get(dominio, ()))
+    if dom_href and not any(dom_href == d or dom_href.endswith('.' + d) for d in permitidos):
         return False
     return True
 
