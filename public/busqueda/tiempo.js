@@ -6,9 +6,9 @@
 //   fechas absolutas    → días de Madrid; hasta: incluye el día entero
 //   noticias sin fecha  → fuera cuando hay filtro de fecha
 // Cada límite se devuelve como { ms, dia }: ms para el filtro local y dia
-// (YYYY-MM-DD de Madrid) para la cota gruesa de Turso (fecha_dia).
+// (YYYY-MM-DD de Madrid) para la cota gruesa que se manda a la prensa.
 
-import { parseRelativeDate } from '../parser.js?v=d6889b9135';
+import { parseRelativeDate } from '../parser.js?v=fbda9cd20c';
 
 const _FMT = new Intl.DateTimeFormat('en-US', {
   timeZone: 'Europe/Madrid', hourCycle: 'h23',

@@ -9,4 +9,4 @@ let ULT_PESTANAS = null;   // { pestana, nModo, nTodo } o null si no hay pestañ
 const RENDER_BATCH = 60;
 let RENDER_OFFSET = 0;
 let SENTINEL_OBSERVER = null;
-let ULT_CTX = null;                // contexto para append incremental
+let ULT_CTX = null;                // contexto del último filtrado

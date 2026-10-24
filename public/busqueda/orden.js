@@ -1,7 +1,7 @@
 // shared/busqueda/orden.js
 // Orden de los resultados de búsqueda (reglas 2, 8 y 27 de la especificación):
 //   recientes (por defecto) / antiguos → por fecha; relevancia → por rango
-//   que da la fuente (bm25 de Turso) y, a igualdad o sin rango, por fecha.
+//   que da la fuente y, a igualdad o sin rango, por fecha.
 //   Las noticias sin fecha van siempre al final.
 //   El preset NO reordena: sus resultados solo se marcan.
 // Desempate estable por dominio y titular, para que la lista no baile.

@@ -1,11 +1,10 @@
 import { buscar, CORS, json } from './comun/buscar.js';
 import { parseQuery } from '../../../shared/parser.js';
 import { PARSER_SOURCE } from './parser-source.js';
-import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';
 import { crearLimite, claveIp } from './comun/limite.js';
 
-const ADAPTERS = { turso, gnews };
+const ADAPTERS = { gnews };
 // Consultas que llegan a las fuentes (las de caché no cuentan), por IP y minuto.
 const limiteBuscar = crearLimite({ max: 30, ventanaMs: 60e3 });
 

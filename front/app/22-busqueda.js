@@ -17,9 +17,9 @@ function _pasaExterno(n, consulta){
     palabras: n._palabras || (n._palabras = palabrasDe(n.titular)),
   });
 }
-// ¿Todo lo que tiene el item viene de capas de una consulta (archivo, prensa)?
+// ¿Todo lo que tiene el item viene de la prensa (lo trae una consulta)?
 function _soloDeConsulta(n){
-  for (const c of n._capas) if (c !== 'turso' && c !== 'prensa') return false;
+  for (const c of n._capas) if (c !== 'prensa') return false;
   return true;
 }
 
@@ -70,8 +70,7 @@ function _pasaVista(n, ctx){
   if (_ocultaPorLectura(n, hm)) return false;
   // Lo que trajo la prensa para esta consulta, con la prensa encendida.
   const dePrensa = PRENSA_ACTIVA && !!n._prensaPara && n._prensaPara.has(clavePrensa);
-  if (n._capas && _soloDeConsulta(n) && !dePrensa
-      && !(n._capas.has('turso') && n._consultas && n._consultas.has(consulta.clave))) return false;
+  if (n._capas && _soloDeConsulta(n) && !dePrensa) return false;
   if (!(dePrensa ? _pasaExterno(n, consulta) : _pasaConsulta(n, consulta))) return false;
   if (presetEfectivo || soloPreset){
     const cumple = cumpleFiltro(n, ctx);
@@ -102,7 +101,7 @@ function aplicarFiltros(){
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
-  // Se interpreta una vez y la usan el filtro, Turso y la prensa.
+  // Se interpreta una vez y la usan el filtro y la prensa.
   const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
@@ -111,20 +110,6 @@ function aplicarFiltros(){
   pintarBotonTiempo();
 
 const capas = capasRequeridas(parsed, consulta);
-// El archivo (Turso) es para búsquedas concretas: solo con texto. Un medio,
-// grupo, tag… sin texto se sirve de lo cargado y de R2.
-const usarTurso = consulta.texto.incluir.length > 0;
-
-// Reset solo si cambia la consulta (por su clave: un espacio o cambiar
-// 'Sánchez' por 'sanchez' no es otra búsqueda).
-if (consulta.clave !== ULT_QUERY_KEY) {
-  ULT_QUERY_KEY = consulta.clave;
-  TURSO_OFFSET  = 0;
-  TURSO_HAY_MAS = false;
-  TURSO_ACTIVO  = !capas.size;
-  TURSO_RAW     = '';
-  TURSO_AMPLIAR_HASTA = '';
-}
 
 // El cursor solo sirve para las capas que se cargaron con él. Al cambiar de
 // modo o de medio, la nueva capa empieza tras los días cargados en memoria.
@@ -135,51 +120,6 @@ ajustarDiasActual(capas);
     asegurarCapas(capas, signal).then(trajo => {
       if (trajo) aplicarFiltros();
     });
-  }
-
-  // Archivo (Turso): solo con texto (usarTurso), primera página automática
-  // tras la pausa; las siguientes, solo con el botón «Buscar más en el archivo».
-  // Al archivo se le manda la consulta ya interpretada (inicio de palabra,
-  // dominios exactos, días de Madrid): el worker no tiene que reinterpretar.
-  const rawArchivo = consulta.imposible ? '' : paraArchivo(consulta);
-  if (ARCHIVO_ACTIVO && usarTurso && rawArchivo && !TURSO_RAW) {
-    TURSO_RAW = rawArchivo;
-    TURSO_OFFSET = 0;
-
-    // Se descarta solo si la consulta cambió, no por cualquier otra llamada
-    // a aplicarFiltros (un espacio, una capa R2, un toggle…): si no, la
-    // respuesta se perdía y no se volvía a pedir.
-    const claveTurso = TURSO_RAW;
-    const claveConsulta = consulta.clave;
-    if (_archivoTimer) clearTimeout(_archivoTimer);
-    _archivoTimer = setTimeout(() => {
-      _archivoTimer = null;
-      if (TURSO_RAW !== claveTurso) return;      // la consulta cambió durante la pausa
-      buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
-        if (TURSO_RAW !== claveTurso) return;
-        if (res.archivoDesde && !res.errorArchivo) {
-          const anterior = new Date(`${res.archivoDesde}T00:00:00Z`);
-          anterior.setUTCDate(anterior.getUTCDate() - 1);
-          TURSO_AMPLIAR_HASTA = anterior.toISOString().slice(0, 10);
-        }
-        if (!res.items || !res.items.length) {
-          TURSO_HAY_MAS = false;
-          actualizarBotonCargarMas();
-          return;
-        }
-        TURSO_OFFSET  = (res.nextOffset ?? res.items.length);
-        TURSO_HAY_MAS = res.nextOffset !== null && res.nextOffset !== undefined;
-
-        // Se repinta aunque no haya items nuevos: los que ya estaban en
-        // NOTICIAS (de otra búsqueda) pasan a ser visibles para esta.
-        const nuevos = _mergearItemsEnNoticias(res.items, 'turso', claveConsulta, 0);
-        if (nuevos > 0) {
-          _hidratadasHasta = 0;
-          hidratarNoticias();
-        }
-        aplicarFiltros();
-      });
-    }, ARCHIVO_PAUSA_MS);
   }
 
   // ── Filtrado ──
@@ -225,8 +165,8 @@ ajustarDiasActual(capas);
   // Chips. En la vista Temas, uno por modo; con un modo elegido (o si solo
   // hay uno), uno por cada tema suyo. En un modo con temas, «Medios del
   // modo» y uno por tema. Se cuenta sobre la lista sin el chip y luego se
-  // filtra. Los chips pasan al ctx para que el añadido incremental
-  // (ULT_CTX) los respete.
+  // filtra. Los chips pasan al ctx para que lo que lee ULT_CTX (las marcas
+  // de tema de cada tarjeta) los respete.
   let infoChips = null;
   const filtrarPorChips = lista => {
     const total = lista.length;
@@ -301,7 +241,7 @@ ajustarDiasActual(capas);
     if (aLejos !== bLejos) return aLejos - bLejos;
     // El resto lo decide el núcleo: fecha según el orden, sin fecha siempre
     // al final (antes, con 'antiguos', salían las primeras) y relevancia
-    // por el rango que dio el archivo para esta consulta.
+    // por el rango que dio la fuente para esta consulta, si lo dio.
     // Los programados futuros se ordenan como "ahora", para no tapar lo
     // publicado recientemente.
     return cmpNucleo(_paraOrdenFeed(a, consulta.clave, ahora), _paraOrdenFeed(b, consulta.clave, ahora));

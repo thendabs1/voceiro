@@ -1,8 +1,8 @@
 // shared/busqueda/filtros.js
 // Filtros por medio: medio:, web:/dominio:, grupo:, tipo:, tag:, lang:.
 // Se resuelven UNA vez contra el catálogo a un conjunto exacto de dominios,
-// que sirve igual para el filtro local, para la consulta a Turso (dominio IN)
-// y para post-filtrar fuentes externas.
+// que sirve igual para el filtro local, para pedir a la prensa (site:) y
+// para post-filtrar fuentes externas.
 //
 // Semántica (ver la especificación del buscador):
 //   - OR dentro del mismo filtro, AND entre filtros distintos.

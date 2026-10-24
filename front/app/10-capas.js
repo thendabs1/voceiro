@@ -71,21 +71,20 @@ function capasRequeridas(parsed, consulta = ULT_CTX && ULT_CTX.consulta) {
 
 // ─── Mergear items de una capa/base en NOTICIAS con dedup global ───
 // Devuelve cuántos items NUEVOS se añadieron.
-// clave: consulta que trajo los items (Turso y prensa). Un item que solo viene
-// de ellas se ve únicamente mientras esa consulta esté activa (_pasaVista):
+// clave: consulta que trajo los items (prensa). Un item que solo viene de
+// ella se ve únicamente mientras esa consulta esté activa (_pasaVista):
 // así una búsqueda no deja sus resultados en el feed ni en la siguiente.
-// rangoBase: posición del primer item en la respuesta del archivo (offset);
-// con order:relevancia el worker los devuelve por bm25 y esa posición es el rango.
+// rangoBase: posición del primer item en una respuesta ordenada por
+// relevancia; esa posición es su rango. Hoy ninguna fuente lo manda.
 function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null) {
   let añadidos = 0;
   let pos = 0;
   let rango = null;
-  // La prensa lleva marca propia: su clave incluye idioma y país, y a lo suyo
-  // no se le exigen las palabras en el titular (_pasaVista).
-  const campo = capaKey === 'prensa' ? '_prensaPara' : '_consultas';
+  // Su clave incluye idioma y país, y a lo suyo no se le exigen las palabras
+  // en el titular (_pasaVista).
   const marcar = n => {
     if (!clave) return;
-    (n[campo] || (n[campo] = new Set())).add(clave);
+    (n._prensaPara || (n._prensaPara = new Set())).add(clave);
     if (rango !== null) n._rango = { clave, valor: rango };
   };
 

@@ -150,14 +150,9 @@ function wireStaticEvents(){
   pintarSelectsPrensa();
   setPrensaActiva(PRENSA_ACTIVA, { persistir: false });
   // ── Botones que abren paneles ──
-  // ── Botón "Cargar más" (paginación R2 + Turso) ──
+  // ── Botón "Cargar más" (paginación R2) ──
   const btnCargarMas = document.getElementById('btn-cargar-mas');
-  if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
-    const modo = btnCargarMas.dataset.modo;
-    const pedir = modo === 'historico' ? ampliarArchivo
-      : modo === 'archivo' ? cargarMasDeTurso : cargarMas;
-    solicitarMas(pedir);
-  });
+  if (btnCargarMas) btnCargarMas.addEventListener('click', () => solicitarMas(cargarMas));
 
   $('#btn-pendientes').addEventListener('click', abrirPendientes);
   $('#btn-acces').addEventListener('click', () => abrirAjustes('lectura'));

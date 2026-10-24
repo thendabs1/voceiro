@@ -1,19 +1,19 @@
 // shared/busqueda/consulta.js
 // Punto de entrada del núcleo: la consulta se interpreta UNA vez (en el
 // navegador, que tiene el catálogo y el reloj) y todos los consumidores usan
-// el resultado: filtro local, petición al archivo (Turso) y petición a prensa.
+// el resultado: filtro local y petición a prensa.
 //
 //   const c = interpretarConsulta(raw, { catalogo, ahora });
 //   c.pasa({ dominio, titular, ts, palabras })  → ¿entra en la lista?
 //     (palabras = palabrasDe(titular), opcional; conviene cachearlo por item)
 //   c.pasaExterno({ dominio, titular, ts, palabras }) → ídem para prensa externa
 //   c.clave                                      → identidad de la búsqueda
-//   paraArchivo(c) / paraPrensa(c)               → texto para /buscar?raw=
+//   paraPrensa(c)                                → texto para /buscar?raw=
 
-import { parseQuery, tokenizeQuery } from '../parser.js?v=d6889b9135';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from './texto.js?v=d6889b9135';
-import { resolverMedios, pasaMedios } from './filtros.js?v=d6889b9135';
-import { resolverVentana, pasaVentana, hayVentana } from './tiempo.js?v=d6889b9135';
+import { parseQuery, tokenizeQuery } from '../parser.js?v=fbda9cd20c';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from './texto.js?v=fbda9cd20c';
+import { resolverMedios, pasaMedios } from './filtros.js?v=fbda9cd20c';
+import { resolverVentana, pasaVentana, hayVentana } from './tiempo.js?v=fbda9cd20c';
 
 const ORDENES = new Set(['recientes', 'antiguos', 'relevancia']);
 
@@ -66,20 +66,6 @@ const _fechas = c => [
   c.ventana.desde ? `desde:${c.ventana.desde.dia}` : '',
   c.ventana.hasta ? `hasta:${c.ventana.hasta.dia}` : '',
 ];
-
-// Para el archivo (worker → Turso). El worker construye el FTS con
-// buildFtsQuery: 'x*' → "x"* (inicio de palabra), '"a b"' → frase.
-// Las exclusiones no se envían (el worker no tiene NOT): se aplican al
-// filtrar el resultado con c.pasa. Los medios viajan como lista exacta de
-// dominios; las fechas como días de Madrid (cota gruesa: se afina con c.pasa).
-export function paraArchivo(c) {
-  const partes = c.texto.incluir.map(t =>
-    t.prefijo ? `${t.partes.join('-')}*` : _comillas(t.partes));
-  if (c.medios.dominios) for (const d of c.medios.dominios) partes.push(`web:${d}`);
-  partes.push(..._fechas(c));
-  if (c.orden !== 'recientes') partes.push(`order:${c.orden}`);
-  return partes.filter(Boolean).join(' ');
-}
 
 // Para prensa externa (Google News): sintaxis del proveedor.
 // Palabras tal cual, frases entre comillas, -exclusiones; dominios solo si

@@ -3,25 +3,22 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
-## 2026-10-24 — Archivo: menos trabajo por búsqueda
+## 2026-10-24 — Búsqueda sin Turso
+
+### Quitado
+- El archivo (Turso) deja de usarse en las búsquedas: ni el front ni los
+  workers lo consultan. Sale el adaptador `turso.js`, `TURSO_PAUSADO`,
+  `ARCHIVO_ACTIVO`, «Buscar más en el archivo» y `buildFtsQuery`/`paraArchivo`.
+  Lo reciente se busca sobre R2 en el navegador y el resto, en Google News.
+  Turso sigue recibiendo la cosecha (recolector, medios y runs).
 
 ### Cambiado
-- Turso consulta los últimos 30 días de Madrid si no se indican fechas.
-  Al agotarlos, «Ampliar al histórico» busca el tramo anterior sin repetir
-  las páginas recientes. Las fechas expresas se respetan. Google News
-  conserva su búsqueda independiente.
-- Una consulta SQL por página, sin `COUNT`: una fila extra decide si hay
-  otra página. `total` puede ser `null`; la paginación usa `next_offset`.
-- Relevancia con `rank` y `bm25()` explícito, para ordenar dentro de FTS.
-- La caché usa la consulta interpretada para reutilizar URLs equivalentes.
-
-### Corregido
-- La API limita `limit` a 1–200, también dentro de `raw`: los negativos
-  podían desactivar el límite de SQLite. No repite fuentes ni consulta
-  Turso sin texto.
-
-La pausa del archivo sigue activa. Falta contrastar el esquema y consumo
-reales cuando Turso vuelva a permitir lecturas; ver `workers/README.md`.
+- `/buscar` sin `fuentes` no consulta nada (antes, Turso por defecto).
+  `fuentes=turso`, de clientes antiguos, devuelve una respuesta vacía.
+- `limit` y `offset` ya no cambian la respuesta: Google News da una sola
+  página. `next_offset` sigue en la respuesta, siempre `null`.
+- La caché usa la consulta interpretada: URLs equivalentes (`q`/`raw`,
+  espacios, fuentes repetidas, parámetros ajenos) comparten respuesta.
 
 ## 2026-10-24 — Caché de búsqueda en Deno
 

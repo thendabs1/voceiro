@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseQuery } from '../../shared/parser.js';
-import { interpretarConsulta, paraArchivo } from '../../shared/busqueda/consulta.js';
+import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
 import { MUNICIPIOS } from '../../shared/tiempo/municipios.js';
 import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from '../../shared/tiempo/lugares.js';
 import { nombreVisible } from '../../scripts/generar-municipios.mjs';
@@ -35,11 +35,11 @@ test('eltiempo: es un lugar, no texto ni filtro', () => {
   }
 });
 
-test('eltiempo: no llega al archivo ni deja la consulta con texto', () => {
+test('eltiempo: no llega a la prensa ni deja la consulta con texto', () => {
   const c = interpretarConsulta('eltiempo:Vigo');
   assert.equal(c.vacia, true);
-  assert.equal(paraArchivo(interpretarConsulta('eltiempo:Vigo incendio')), 'incendio*');
-  assert.equal(paraArchivo(interpretarConsulta('t:Vigo incendio')), 'incendio*');
+  assert.equal(paraPrensa(interpretarConsulta('eltiempo:Vigo incendio')), 'incendio');
+  assert.equal(paraPrensa(interpretarConsulta('t:Vigo incendio')), 'incendio');
 });
 
 test('nombres del maestro: el artículo va delante', () => {

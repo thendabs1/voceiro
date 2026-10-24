@@ -1,6 +1,6 @@
 // shared/busqueda/texto.js
-// Regla única del texto libre: la usan el filtro local, la consulta a Turso
-// (FTS5) y el resaltado. Ver la especificación del buscador.
+// Regla única del texto libre: la usan el filtro local y el resaltado.
+// Ver la especificación del buscador.
 //
 // Semántica:
 //   palabra        → alguna palabra del titular EMPIEZA por ella ("eleccion" → "elecciones")
