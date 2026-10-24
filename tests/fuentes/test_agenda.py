@@ -24,6 +24,7 @@ def ficha(identificador=101, **cambios):
         'dataActualizacion': '2026-10-01 10:00:00', 'estado': None,
         'data': {'dataInicio': '2026-10-26 18:00:00', 'dataFin': '2026-10-26 18:00:00'},
         'lugarCelebracion': {'nome': 'Teatro', 'espazoId': '34',
+                            'localizacion': {'latitude': 42.43, 'lonxitude': -8.65},
                             'concello': {'tid': 487, 'nome': 'Pontevedra', 'cod_ine': '360388'}},
         'tipoEvento': {'tid': 14, 'nome': 'Teatro'},
         'ciclo': {'tid': 50, 'nome': 'Festival'}, **cambios,
@@ -48,6 +49,7 @@ class Identidad(unittest.TestCase):
         self.assertEqual(calendario['regiones']['cultura-galicia:municipio:487']
                          ['identificadores']['ine_cpro_cmun_dc'], '360388')
         self.assertEqual(len(evento['grupos']), 2)  # Actividad y ciclo son referencias distintas.
+        self.assertEqual(evento['lugar']['coordenadas'], {'latitud': 42.43, 'longitud': -8.65})
 
     def test_aplazamiento_y_nueva_equivalencia_conservan_id_y_primera_recogida(self):
         original = ficha(traducionId=None)

@@ -89,11 +89,14 @@ def normalizar(fila, idioma):
     estado = fila.get('estado')
     estado = estado.get('chave') if isinstance(estado, dict) else estado
     estado = {None: 'programado', 'cancelled': 'cancelado', 'postponed': 'aplazado'}.get(estado, 'desconocido')
+    coordenadas = lugar.get('localizacion') or {}
     datos = {
         'titulos': {idioma: fila['titulo'].strip()}, 'cuando': _cuando(fila.get('data')),
         'estado': estado,
         'lugar': {'nombre': lugar.get('nome'), 'id_externo': lugar.get('espazoId'),
-                  'municipio': municipio.get('nome'), 'coordenadas': lugar.get('localizacion'),
+                  'municipio': municipio.get('nome'),
+                  'coordenadas': {'latitud': coordenadas.get('latitude'),
+                                  'longitud': coordenadas.get('lonxitude')},
                   'online': bool(fila.get('eventoOnline')), 'url_online': fila.get('urlEventoOnline')},
         'regiones': list(regiones),
         'grupos': [g for g in grupos if grupos[g]['tipo'] != 'ficha'],
