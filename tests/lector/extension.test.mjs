@@ -81,6 +81,36 @@ test('la fusión conserva preferencias y reglas cambiadas en otras pestañas', (
   assert.deepEqual(r.sites.map(s=>s.domain).sort(),['a.example','b.example']);
 });
 
+test('volver a las imágenes generales retira la excepción del medio y conserva otras ediciones', async () => {
+  const f=fondo(), clave='lector-universal-cfg-v8';
+  const inicial=(await f.enviar({tipo:'lector:iniciar'})).cfg;
+  const configurada=structuredClone(inicial);
+  configurada.sites=[{domain:'medio.example',imagenes:'ninguna'}];
+  const base=(await f.enviar({tipo:'lector:guardar',clave,base:inicial,valor:configurada})).cfg;
+  const otra=structuredClone(base);
+  otra.sites[0].mode='auto';
+  await f.enviar({tipo:'lector:guardar',clave,base,valor:otra},f.tab(2));
+  const general=structuredClone(base);
+  delete general.sites[0].imagenes;
+  const r=await f.enviar({tipo:'lector:guardar',clave,base,valor:general},f.tab(1));
+  assert.equal(r.ok,true);
+  assert.equal(Object.hasOwn(r.cfg.sites[0],'imagenes'),false);
+  assert.equal(r.cfg.sites[0].mode,'auto');
+});
+
+test('confirmar avisos de lectura los retira sin perder los nuevos de otra pestaña', async () => {
+  const f=fondo(), clave='lector-universal-cfg-v8';
+  const inicial=(await f.enviar({tipo:'lector:iniciar'})).cfg;
+  const primero={url:'https://medio.example/a',fecha:1};
+  const segundo={url:'https://medio.example/b',fecha:2};
+  const base=(await f.enviar({tipo:'lector:guardar',clave,base:inicial,
+    valor:{...inicial,leidasParaVoceiro:[primero]}})).cfg;
+  await f.enviar({tipo:'lector:guardar',clave,base,valor:{...base,leidasParaVoceiro:[primero,segundo]}},f.tab(2));
+  const r=await f.enviar({tipo:'lector:guardar',clave,base,valor:{...base,leidasParaVoceiro:[]}},f.tab(1));
+  assert.equal(r.ok,true);
+  assert.deepEqual(structuredClone(r.cfg.leidasParaVoceiro),[segundo]);
+});
+
 test('la siguiente pendiente se guarda por pestaña y antes de responder', async () => {
   const f=fondo();
   const r=await f.enviar({tipo:'lector:guardar',clave:'lector-abrir-al-llegar',valor:{url:'https://medio.example/b'}},f.tab(1));

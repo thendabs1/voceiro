@@ -7,6 +7,9 @@ export function fusionarCambiosCfg(actual, base, nuevo, fusionarPendientes, ahor
     if (igual(antes, despues)) return vivo;
     if (!objeto(despues)) return structuredClone(despues);
     const out = { ...(objeto(vivo) ? vivo : {}) };
+    for (const k of Object.keys(objeto(antes) ? antes : {})){
+      if (!Object.hasOwn(despues, k)) delete out[k];
+    }
     for (const k of Object.keys(despues)){
       if (['__proto__','prototype','constructor'].includes(k)) continue;
       if (!igual(antes?.[k], despues[k])) out[k] = aplicar(out[k], antes?.[k], despues[k]);
@@ -31,9 +34,12 @@ export function fusionarCambiosCfg(actual, base, nuevo, fusionarPendientes, ahor
     out.sites = [...sitios.values()];
   }
   if (!igual(base.leidasParaVoceiro, nuevo.leidasParaVoceiro)){
+    const clave = l => l.url + ':' + l.fecha + ':' + !!l.quitar;
+    const presentes = new Set((nuevo.leidasParaVoceiro || []).filter(Boolean).map(clave));
+    const retirados = new Set((base.leidasParaVoceiro || []).filter(l => l && !presentes.has(clave(l))).map(clave));
     const porClave = new Map();
     for (const l of [...(actual.leidasParaVoceiro || []), ...(nuevo.leidasParaVoceiro || [])]){
-      if (l) porClave.set(l.url + ':' + l.fecha + ':' + !!l.quitar, l);
+      if (l && !retirados.has(clave(l))) porClave.set(clave(l), l);
     }
     out.leidasParaVoceiro = [...porClave.values()].sort((a,b) => a.fecha-b.fecha).slice(-200);
   }
