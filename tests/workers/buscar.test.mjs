@@ -103,8 +103,7 @@ test('paginación, deduplicación y caché se conservan en las dos plataformas',
     assert.equal(datos.items.length, 1);
     assert.equal(datos.total, 12);
     assert.equal(datos.next_offset, 6);
-    assert.equal(primera.headers.get('Cache-Control'), plataforma === 'cf'
-      ? 'public, max-age=60, s-maxage=300' : 'public, max-age=60');
+    assert.equal(primera.headers.get('Cache-Control'), 'public, max-age=60, s-maxage=300');
     const segunda = await s.pedir(ruta);
     assert.equal(segunda.headers.get('X-Cache'), 'HIT');
     assert.deepEqual(await segunda.json(), datos);

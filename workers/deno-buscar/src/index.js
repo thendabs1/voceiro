@@ -39,7 +39,9 @@ export default {
       parseQuery, adapters: ADAPTERS,
       abrirCache: () => caches.open(CACHE_NAME),
       guardarCache: tarea => { tarea.catch(() => {}); },
-      cacheControl: 'public, max-age=60',
+      // s-maxage: la caché de Deno Deploy (la de delante de la app, la que
+      // cuenta: Cache-Status) guarda 5 min, como CF; el navegador, 1.
+      cacheControl: 'public, max-age=60, s-maxage=300',
       limitar: () => limiteBuscar(ip),
     });
     if (url.pathname === '/tiempo' || url.pathname === '/tiempo/lugares' || url.pathname === '/avisos') {

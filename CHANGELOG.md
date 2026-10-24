@@ -3,6 +3,13 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Caché de búsqueda en Deno
+
+### Cambiado
+- `/buscar` en Deno manda `s-maxage=300`, como CF: la caché de Deno Deploy
+  guarda las respuestas 5 min en vez de 1 (cuando CF cae, todo pasa por
+  Deno). Se ve en `Cache-Status: deno; hit`.
+
 ## 2026-10-24 — Workers en voceiro.eu
 
 ### Cambiado
