@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.307
+// @version      2.0.317
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.307';
+const SCRIPT_VERSION = '2.0.317';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -1040,6 +1040,7 @@ function importarServicios(data){
    ============================================================ */
 const I18N = {
   es: {
+    syncPermiso: 'Permite la sincronización en las opciones de la extensión.',
     fabVisible: 'Mostrar el botón flotante',
     syncSoloEnVoceiro: 'El código se escribe en Voceiro (Ajustes › Lector), no encima de otra web, que podría leerlo.',
     syncTitle: 'Sincronización',
@@ -1251,6 +1252,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible en el botón flotante',
   },
   gl: {
+    syncPermiso: 'Permite a sincronización nas opcións da extensión.',
     fabVisible: 'Amosar o botón flotante',
     syncSoloEnVoceiro: 'O código escríbese en Voceiro (Axustes › Lector), non enriba doutra web, que podería lelo.',
     syncTitle: 'Sincronización',
@@ -1462,6 +1464,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible no botón flotante',
   },
   ca: {
+    syncPermiso: 'Permet la sincronització a les opcions de l’extensió.',
     fabVisible: 'Mostrar el botó flotant',
     syncSoloEnVoceiro: 'El codi s’escriu a Voceiro (Configuració › Lector), no a sobre d’una altra web, que el podria llegir.',
     syncTitle: 'Sincronització',
@@ -1673,6 +1676,7 @@ const I18N = {
     serviciosFabVisible: '«Obre a…» visible al botó flotant',
   },
   en: {
+    syncPermiso: 'Allow synchronization in the extension options.',
     fabVisible: 'Show the floating button',
     syncSoloEnVoceiro: 'Type the code in Voceiro (Settings › Reader), not on top of another site, which could read it.',
     syncTitle: 'Sync',
@@ -1883,6 +1887,7 @@ const I18N = {
     serviciosFabVisible: '“Open in…” shown in the floating button',
   },
   eu: {
+    syncPermiso: 'Baimendu sinkronizazioa hedapenaren aukeretan.',
     fabVisible: 'Erakutsi botoi mugikorra',
     syncSoloEnVoceiro: 'Kodea Voceiron idazten da (Ezarpenak › Irakurgailua), ez beste webgune baten gainean, irakur lezakeelako.',
     syncTitle: 'Sinkronizazioa',
@@ -4353,6 +4358,10 @@ function crearDesplegableServicios(opts){
 function openExtractionTool(siteIdx, onClose){
   const site = CFG.sites[siteIdx];
   if (!site) return;
+  if (PLATAFORMA.esPaginaPropia && PLATAFORMA.analizar){
+    PLATAFORMA.analizar(site.domain).catch(e => toast(e.message, 4000));
+    return;
+  }
   // El diagnóstico y el selector visual trabajan sobre el documento actual.
   if (!domainMatches(location.hostname, site.domain)){
     toast(t('extractionWrongSite').replace('{X}', site.domain), 4000);
@@ -4675,7 +4684,7 @@ function openReader(art){
   // Las palabras del texto que se ve, no las de lo que se ha quitado.
   const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
-  const iu = String(art.image || '');
+  const iu = urlWebValida(absUrl(String(art.image || '')));
   const iuHi = iu.replace('_16-9-discover-', '_source-');
   const iuFinal = iuHi !== iu ? iuHi : iu;
   const iuFallback = iuHi !== iu ? iu : '';
@@ -6117,6 +6126,7 @@ function haySyncSinSubir(s = estadoSyncLector()){
   return (s.cambio || 0) > 0 && s.cambio >= (s.subido || 0);
 }
 function puedeSincronizarAqui(){
+  if (PLATAFORMA.puedeSincronizar) return PLATAFORMA.puedeSincronizar();
   return !!(window.isSecureContext && window.crypto && crypto.subtle) && !esVoceiro();
 }
 
@@ -6152,6 +6162,7 @@ function codigoDesdeVoceiro(codigo){
 
 // La próxima vuelta, a los pocos segundos; si ya había una, la sustituye.
 function programarSyncLector(){
+  if (PLATAFORMA.programarSync){ PLATAFORMA.programarSync(); return; }
   clearTimeout(__syncLector.diferido);
   __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
 }
@@ -6380,6 +6391,8 @@ function openSettings(initialTab, opts){
   let scListener = null;
 
   const closeSettings = function(){
+    if (cancelarCfg) cancelarCfg();
+    if (cancelarSync) cancelarSync();
     if (scListener){
       document.removeEventListener('keydown', scListener, true);
       scListener = null;
@@ -7091,7 +7104,7 @@ function openSettings(initialTab, opts){
     if (codigo){
       estado += ' ' + (s.subido ? t('syncLast') + ' ' + new Date(s.subido).toLocaleString(CFG.lang) + '.' : t('syncNever'));
       if ((s.fallo || 0) > (s.subido || 0)) estado += ' ' + t('syncFailed') + ' (' + (s.error || '?') + ')';
-      if (!puedeSincronizarAqui()) estado += ' ' + t(esVoceiro() ? 'syncHereVoceiro' : 'syncNoHttps');
+      if (!puedeSincronizarAqui()) estado += ' ' + t(PLATAFORMA.esExtension ? 'syncPermiso' : esVoceiro() ? 'syncHereVoceiro' : 'syncNoHttps');
     }
     return '<div style="margin-bottom:18px;padding:14px;border:1px solid var(--btn-border);border-radius:8px">' +
         '<div style="font-weight:bold;font-size:14px">' + esc(t('syncTitle')) + '</div>' +
@@ -7101,7 +7114,7 @@ function openSettings(initialTab, opts){
             // Donde no puede (Voceiro, sin https) no hay botón: el estado dice por qué.
             ? (puedeSincronizarAqui() ? boton('il-set-sync-ahora', t('syncNow')) : '') +
               boton('il-set-sync-quitar', t('syncUnlink'))
-            : !esVoceiro() ? '<span style="font-size:13px">' + esc(t('syncSoloEnVoceiro')) + '</span>'
+            : !(esVoceiro() || PLATAFORMA.esPaginaPropia) ? '<span style="font-size:13px">' + esc(t('syncSoloEnVoceiro')) + '</span>'
             : '<input type="text" class="il-set-sync-codigo" autocomplete="off" spellcheck="false" aria-label="' + esc(t('syncCodePh')) + '" placeholder="' + esc(t('syncCodePh')) + '" style="flex:1 1 16em;padding:8px 12px;border:1px solid var(--btn-border);border-radius:6px;font-family:monospace">' +
               boton('il-set-sync-usar', t('syncUse'))) +
         '</div>' +
@@ -7246,7 +7259,9 @@ function openSettings(initialTab, opts){
     return { html, wire };
   }
 
+  let refrescoPendiente = false;
   function render(){
+    refrescoPendiente = false;
     const tabsHTML =
       '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap">' +
         tabBtn('sites', t('sites')) +
@@ -7282,7 +7297,18 @@ function openSettings(initialTab, opts){
     payload.wire();
   }
 
+  function refrescarDesdeFuera(){
+    if (!root.isConnected) return;
+    // No retirar el campo ni el control que se está usando con el teclado.
+    if (root.contains(document.activeElement)){ refrescoPendiente = true; return; }
+    render();
+  }
+  root.addEventListener('focusout', () => setTimeout(() => {
+    if (refrescoPendiente && !root.contains(document.activeElement)) refrescarDesdeFuera();
+  }, 0));
   render();
+  const cancelarCfg = PLATAFORMA.esPaginaPropia ? PLATAFORMA.alCambiar(CFG_KEY, refrescarDesdeFuera) : null;
+  const cancelarSync = PLATAFORMA.esPaginaPropia ? PLATAFORMA.alCambiar('lector-extension-estado', refrescarDesdeFuera) : null;
   if (!dentro) box.focus({ preventScroll: true });
 }
 
@@ -7566,6 +7592,15 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
     const hueco = document.getElementById('aj-lector-panel');
     if (!hueco) return;
     const dominio = typeof d.dominio === 'string' ? normalizeDomain(d.dominio) : '';
+    if (PLATAFORMA.esExtension){
+      if (!hueco.firstChild){
+        const abrir = document.createElement('button');
+        abrir.type = 'button'; abrir.textContent = t('openSettings');
+        abrir.onclick = () => PLATAFORMA.abrirAjustes('sites', dominio);
+        hueco.appendChild(abrir);
+      }
+      return;
+    }
     if (dominio){
       const viejo = hueco.querySelector('.il-settings-dentro');
       if (viejo) viejo.remove();
@@ -7611,7 +7646,11 @@ function abrirAjustesDesdeEnlace(){
 window.addEventListener('hashchange', abrirAjustesDesdeEnlace);
 abrirAjustesDesdeEnlace();
 
-if (document.body) init();
-else window.addEventListener('DOMContentLoaded', init);
+if (PLATAFORMA.iniciar) PLATAFORMA.iniciar({ abrir:activateReader, ajustes:openSettings,
+  analizar:openExtractionTool, sitio:() => CFG.sites.indexOf(findSiteRule()) });
+if (!PLATAFORMA.esPaginaPropia){
+  if (document.body) init();
+  else window.addEventListener('DOMContentLoaded', init);
+}
 
 })();
