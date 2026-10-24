@@ -3,6 +3,24 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Panel de estadísticas: menos y mejor
+
+### Cambiado
+- Un solo selector de ámbito: todos, cada modo o un grupo o familia. Sin
+  elegirlo, sigue al modo activo (antes había que pasar por «Mis medios» y
+  elegir el modo aparte).
+- La ficha del medio da su histórico: cifras del día (media de 30 días, % con
+  hora, primer y último titular, cuánto tarda en llegar), 30 días, reparto por
+  horas, secciones y tabla día a día de nuevo a antiguo.
+- Resumen añade el reparto por horas; los grupos y la lista de medios van de
+  más a menos titulares, y la lista lleva una miniatura de 30 días.
+- Todos los textos del panel, traducidos a los cinco idiomas.
+
+### Quitado
+- Los desplegables de seguimiento (siempre vacío: no hay datos de pasadas),
+  precisión de fechas, valores en tabla y método; queda una nota al pie.
+- Las cifras sin dato o a cero que no informan, como «Solo día: 0».
+
 ## 2026-10-24 — Panel de estadísticas: el panel como vista
 
 ### Cambiado

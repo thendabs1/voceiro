@@ -19,45 +19,46 @@ const copia = v => JSON.parse(JSON.stringify(v));
 function contexto(){
   const c = { tokenizeQuery, normalize, normDomain, ACCES: { lang: 'es' }, Intl, Date, AbortController, AbortSignal, structuredClone,
     DATA_BASE: 'https://datos.example', BACKENDS: { cf: { data: 'https://datos.example' }, deno: { data: 'https://alternativo.example' } },
-    PRESETS: { lista: [] },
+    PRESETS: { lista: [], activo: '' }, PRESET_ACTIVO: false,
   };
-  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estCurva, estDirectorio, estListaMedios, familiasEstadisticas, fijarModoEstadisticas, estDominios }; pintarEstadisticas = () => {};', c);
+  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estEvolucion, estDirectorio, estListaMedios, familiasEstadisticas, estAmbito, estDominios }; pintarEstadisticas = () => {};', c);
   const s = c.api.s;
   s.abierto = true; s.fecha = '2026-10-23';
   return c;
 }
 
-test('Mis medios resuelve grupos, incluidos y priorizados; ignore gana, las palabras no añaden medios', () => {
+test('un modo resuelve grupos, incluidos y priorizados; ignore gana, las palabras no añaden medios', () => {
   const { api } = contexto();
   const modo = { grupos: ['Nacional'], palabras: ['grupo:Regional'], overrides: { 'a.es': 'ignore', 'c.gal': 'include', 'externo.es': 'first' } };
-  assert.deepEqual(copia(api.seleccionEstadisticas(catalogo, 'mis', modo)), ['b.es', 'c.gal', 'd.es', 'externo.es']);
-  assert.deepEqual(copia(api.seleccionEstadisticas(catalogo, 'mis', { grupos: [], palabras: ['vivienda'] })), []);
-  assert.deepEqual(copia(api.seleccionEstadisticas(catalogo, 'mis', null)), []);
+  const modos = [{ id: 'm', ...modo }, { id: 'p', grupos: [], palabras: ['vivienda'] }];
+  assert.deepEqual(copia(api.seleccionEstadisticas(catalogo, 'modo:m', modos)), ['b.es', 'c.gal', 'd.es', 'externo.es']);
+  assert.deepEqual(copia(api.seleccionEstadisticas(catalogo, 'modo:p', modos)), []);
+  assert.deepEqual(copia(api.seleccionEstadisticas(catalogo, 'modo:borrado', modos)), []);
 });
 
 test('los totales y las series distinguen cero real, falta de datos y muestra parcial', () => {
   const { api } = contexto(), datos = dia('2026-10-23');
   const total = api.sumarEstadisticas(datos.medios, Object.keys(catalogo));
   assert.equal(total.titulares, 3); assert.equal(total.disponibles, 2); assert.equal(total.conTitulares, 1);
-  assert.equal(total.seleccionados, 4); assert.equal(total.fechas.solo_dia, 2);
+  assert.equal(total.seleccionados, 4);
   assert.equal(api.sumarEstadisticas(datos.medios, ['c.gal']).titulares, null);
-  assert.deepEqual(copia(api.serieEstadisticas(indice(), ['a.es'], '2026-10-23')),
+  assert.deepEqual(copia(api.serieEstadisticas(indice(), ['a.es'])),
     [{ fecha: '2026-10-22', valor: null, medios: 0 }, { fecha: '2026-10-23', valor: 0, medios: 1 }]);
 });
 
-test('editar o borrar un modo no cambia silenciosamente la muestra que se está consultando', () => {
+test('el ámbito sigue al modo activo hasta que se elige otro; un modo borrado vuelve a él', () => {
   const c = contexto();
-  c.api.s.indice = indice(); c.api.s.ambito = 'mis';
-  c.PRESETS.lista = [{ id: 'm', grupos: ['Nacional'], overrides: {} }];
-  c.api.fijarModoEstadisticas('m');
-  c.PRESETS.lista[0].overrides['a.es'] = 'ignore';
-  assert.ok(c.api.estDominios().includes('a.es'));
-  c.api.fijarModoEstadisticas('m');
-  assert.ok(!c.api.estDominios().includes('a.es'));
-  c.PRESETS.lista = [];
-  assert.equal(c.api.estDominios().length, 2);
-  c.api.fijarModoEstadisticas('m');
-  assert.equal(c.api.estDominios().length, 0);
+  c.api.s.indice = indice();
+  c.PRESETS.lista = [{ id: 'm', grupos: ['Nacional'], overrides: { 'a.es': 'ignore' } }, { id: 'n', grupos: [], overrides: { 'c.gal': 'include' } }];
+  assert.equal(c.api.estAmbito(), 'todos');
+  c.PRESETS.activo = 'm'; c.PRESET_ACTIVO = true;
+  assert.deepEqual(copia(c.api.estDominios()), ['b.es', 'd.es']);
+  c.api.s.ambito = 'modo:n';
+  assert.deepEqual(copia(c.api.estDominios()), ['c.gal']);
+  c.PRESETS.lista.pop();
+  assert.equal(c.api.estAmbito(), 'modo:m');
+  c.api.s.ambito = 'grupo:Regional';
+  assert.deepEqual(copia(c.api.estDominios()), ['c.gal']);
 });
 
 test('la orden usa el último destino, respeta las comillas y conserva filtros para el feed y la prensa', () => {
@@ -138,47 +139,75 @@ test('cerrar cancela la carga, devuelve foco y scroll y conserva los filtros del
   assert.equal(foco, true); assert.equal(scroll, 730);
 });
 
-test('nombres y errores del JSON se escapan, y el total del resumen coincide con sus grupos', () => {
-  const c = contexto();
-  c.escapeHtml = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
-  c.t = (k, vars) => k + (vars ? JSON.stringify(vars) : '');
-  c.ico = () => '';
+const html = c => { c.escapeHtml = s => String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
+  c.t = (k, vars) => k + (vars ? JSON.stringify(vars) : ''); c.ico = () => ''; c.normalize = normalize; return c; };
+
+test('nombres y secciones del JSON se escapan, y el total del resumen coincide con sus grupos', () => {
+  const c = html(contexto());
   c.api.s.indice = indice(); c.api.s.dia = dia('2026-10-23');
   c.api.s.indice.medios = { ...catalogo, 'a.es': { n: '<img src=x onerror=alert(1)>', g: 'Nacional' } };
-  c.api.s.dia.medios['a.es'].runs = { errores: { '<img src=x>': 1 } };
+  c.api.s.dia.medios['a.es'].pub = { titulares: 4, secciones: { '<img src=x>': 3, b: 1 }, fuentes: { '<b>': 4 } };
   c.api.s.dominio = 'a.es';
-  assert.doesNotMatch(c.api.estFicha(), /<img/);
-  assert.match(c.api.estFicha(), /&lt;img/);
-  assert.match(c.api.estResumen(), /<dd>3<\/dd>/);
+  assert.doesNotMatch(c.api.estFicha(), /<img|<b>4/);
+  assert.match(c.api.estFicha(), /&lt;img/); assert.match(c.api.estFicha(), /&lt;b>/);
+  assert.match(c.api.estResumen(), /<dd>7<\/dd>/);
 });
 
-test('cada barra abre su día y la del día consultado se marca; buscar solo filtra la lista', () => {
-  const c = contexto();
-  c.escapeHtml = s => String(s); c.t = k => k; c.normalize = normalize;
+test('cada barra abre su día, la del día consultado se marca y un día sin datos no se puede pulsar', () => {
+  const c = html(contexto());
   c.api.s.indice = indice(); c.api.s.dia = dia('2026-10-23');
-  const barras = c.api.estCurva(['b.es']).split('</div>')[0].match(/<button[^>]*data-est="fecha"[^>]*>/g);
+  const barras = c.api.estEvolucion(['a.es']).match(/<button[^>]*data-est="fecha"[^>]*>/g);
   assert.equal(barras.length, 2);
+  assert.match(barras[0], /disabled/);
   assert.match(barras[1], /data-valor="2026-10-23"[^>]*aria-current="date"/);
-  assert.doesNotMatch(barras[0], /aria-current/);
+  assert.equal(c.api.estEvolucion(['c.gal']), '');
+});
+
+test('la lista va de más a menos titulares, con su miniatura, y buscar solo la filtra', () => {
+  const c = html(contexto());
+  c.api.s.indice = indice(); c.api.s.dia = dia('2026-10-23');
+  const orden = [...c.api.estListaMedios().matchAll(/data-est="medio" data-valor="([^"]+)"/g)].map(m => m[1]);
+  assert.deepEqual(orden, ['b.es', 'a.es', 'c.gal', 'd.es']);
+  assert.match(c.api.estListaMedios(), /class="est-mini"/);
   c.api.s.consulta = 'b.es';
   assert.match(c.api.estListaMedios(), /data-valor="b\.es"/);
   assert.doesNotMatch(c.api.estListaMedios(), /data-valor="a\.es"|est-buscar-medio/);
 });
 
-test('los grupos «Familia · grupo» se pliegan bajo su familia y el resumen suma la familia entera', () => {
+test('la ficha da el histórico de nuevo a antiguo y no pinta cifras que no existen', () => {
+  const c = html(contexto());
+  c.api.s.indice = { ...indice(), serie_dias: ['2026-10-21', '2026-10-22', '2026-10-23'],
+    serie: { 'b.es': { titulares: [4, null, 3], con_hora: [4, null, 1] } } };
+  c.api.s.dia = dia('2026-10-23'); c.api.s.dominio = 'b.es';
+  const ficha = c.api.estFicha(), historico = ficha.slice(ficha.indexOf('estHistorico'));
+  assert.deepEqual([...historico.matchAll(/data-valor="(\d{4}-\d{2}-\d{2})"/g)].map(m => m[1]), ['2026-10-23', '2026-10-21']);
+  assert.match(historico, /33 %/);
+  assert.match(ficha, /estMediaDiaria<\/dt><dd>4<\/dd>/);
+  assert.doesNotMatch(ficha, /estHorario|estRetraso|estSecciones|estPorHora/);
+  c.api.s.dia.medios['b.es'].pub = { ...c.api.s.dia.medios['b.es'].pub, primera: '06:55', ultima: '22:50', retraso_min: { p50: 54 },
+    por_hora: Array.from({ length: 24 }, (_, h) => h === 14 ? 3 : 0) };
+  assert.match(c.api.estFicha(), /06:55–22:50/);
+  assert.match(c.api.estFicha(), /54 min/);
+  assert.match(c.api.estFicha(), /estPico\{&quot;hora&quot;:14,&quot;n&quot;:&quot;3&quot;\}/);
+});
+
+test('los grupos «Familia · grupo» se pliegan bajo su familia, ordenados por titulares', () => {
   const c = contexto(), cat = { ...catalogo, 'e.gal': { n: 'E', g: 'Regional · Galicia' }, 'f.cat': { n: 'F', g: 'Regional · Cataluña' } };
   const familias = c.api.familiasEstadisticas(cat, Object.keys(cat), 'Sin grupo');
   assert.deepEqual([...familias.keys()], ['Nacional', 'Regional']);
   assert.deepEqual(copia([...familias.get('Regional')]), [['Regional · Galicia', ['c.gal', 'e.gal']], ['Regional · Cataluña', ['f.cat']]]);
-  c.escapeHtml = s => String(s); c.t = k => k; c.ico = () => '';
+  html(c);
   c.api.s.indice = { ...indice(), medios: cat }; c.api.s.dia = dia('2026-10-23');
   c.api.s.dia.medios['f.cat'] = { pub: { titulares: 5 } };
   const plegado = c.api.estResumen();
-  assert.match(plegado, /data-est="familia" data-valor="Regional" aria-expanded="false">Regional<\/button><\/th><td>5<\/td><td>1 \/ 3<\/td>/);
+  assert.match(plegado, /data-est="familia" data-valor="Regional" aria-expanded="false">Regional<\/button><\/th><td>5<\/td><td>estNDe\{"n":"1","total":"3"\}<\/td>/);
+  assert.ok(plegado.indexOf('Regional') < plegado.indexOf('>Nacional<'));
   assert.doesNotMatch(plegado, /est-subgrupo/);
   assert.ok(plegado.indexOf('estEvolucion') < plegado.indexOf('estPorGrupo'));
   c.api.s.familias.add('Regional');
-  assert.match(c.api.estResumen(), /est-subgrupo">Cataluña<\/span><\/th><td>5<\/td><td>1 \/ 1<\/td>/);
+  assert.match(c.api.estResumen(), /est-subgrupo">Cataluña<\/span><\/th><td>5<\/td>/);
+  c.api.s.ambito = 'grupo:Nacional';
+  assert.doesNotMatch(c.api.estResumen(), /estPorGrupo/);
 });
 
 test('sin día elegido se abre el último calculado, no hoy', async () => {
@@ -188,4 +217,22 @@ test('sin día elegido se abre el último calculado, no hoy', async () => {
   await c.api.cargarEstadisticas();
   assert.equal(c.api.s.fecha, '2026-10-23'); assert.equal(c.api.s.dia.fecha, '2026-10-23');
   assert.match(pedidos[1], /estadisticas-dia-2026-10-23\.json$/);
+});
+
+test('las pasadas salen solo cuando hay datos, sin contadores a cero, y un feed caído entra en el histórico', () => {
+  const c = html(contexto());
+  c.api.s.indice = { ...indice(), serie_dias: ['2026-10-22', '2026-10-23'],
+    serie: { 'b.es': { titulares: [null, 3], con_hora: [null, 3], pasadas: [40, 48], ok: [0, 46] } } };
+  c.api.s.dia = dia('2026-10-23'); c.api.s.dominio = 'b.es';
+  assert.doesNotMatch(c.api.estFicha(), /estRecogida/);
+  c.api.s.dia.medios['b.es'].runs = { pasadas: 48, ok: 46, rescates: 0, racha_fallos_min: 0, ventana_min: { p50: 30 },
+    errores: { 'HTTP 503': 2 }, ultimo_estado: 'fallo' };
+  const ficha = c.api.estFicha();
+  assert.match(ficha, /estPasadasBuenas<\/dt><dd>estNDe\{&quot;n&quot;:&quot;46&quot;,&quot;total&quot;:&quot;48&quot;\}/);
+  assert.match(ficha, /estUltimaFallo/); assert.match(ficha, /HTTP 503/); assert.match(ficha, /30 min/);
+  assert.doesNotMatch(ficha, /estRescates|estRachaFallos/);
+  const historico = ficha.slice(ficha.indexOf('estHistorico'));
+  assert.match(historico, /data-valor="2026-10-22"/);
+  assert.match(historico, /"n":"0","total":"40"/);
+  assert.match(c.api.estListaMedios(), /b\.es · Nacional · estConFallos/);
 });

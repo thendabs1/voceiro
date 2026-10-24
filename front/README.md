@@ -26,18 +26,22 @@ anterior si el candidato no se construye o no supera las comprobaciones.
 ## Panel de estadísticas
 
 `app/14-estadisticas.js` carga los JSON públicos de estadísticas solo al abrir
-el panel. Resumen ofrece totales del archivo diario, evolución de hasta 30
-días (cada barra abre su día) y grupos plegados por familia («Regional ·
-Galicia» bajo «Regional»); Medios contiene el directorio y la ficha con precisión de
-fechas y seguimiento. Se abre desde cabecera, el menú ⋯ de un titular o las
-órdenes `estadisticas:` / `stats:` confirmadas con Intro o una sugerencia.
-`estadisticas:mis-medios` selecciona las fuentes del modo, sin sus palabras.
+el panel. El ámbito es uno solo: todos los medios, un modo (grupos y
+excepciones, sin sus palabras) o un grupo o familia; sin elegirlo, sigue al
+modo activo. Resumen da titulares y medios con titulares del día, los 30 días
+(cada barra abre su día), el reparto por horas y los grupos ordenados por
+volumen y plegados por familia («Regional · Galicia» bajo «Regional»). Medios
+va de más a menos titulares, con una miniatura de 30 días que delata un medio
+callado. La ficha reúne lo que hay del medio: cifras del día, 30 días, horas,
+secciones e histórico de nuevo a antiguo. Se abre desde cabecera, el menú ⋯
+de un titular o las órdenes `estadisticas:` / `stats:` confirmadas con Intro o
+una sugerencia; `estadisticas:mis-medios` abre los medios del modo activo.
 
 Abierto, el panel ocupa el sitio del feed; escribir otra búsqueda lo cierra.
 El día inicial es el último calculado. Si se elige uno que aún no lo está, se
 mantiene la fecha y se ofrece abrir el último disponible. No confundir titulares del archivo
-con artículos únicos por publicación. Los datos ausentes no son ceros; las
-series indican su muestra diaria. El trabajo completo se verifica en CI.
+con artículos únicos por publicación. Lo que no trae datos no se pinta: un
+hueco no es un cero. El trabajo completo se verifica en CI.
 
 Pendiente para la siguiente fase: agregados de Asuntos, identidad de artículo,
 evidencia y comparación. Un idioma único asignado al medio no basta: algunos
