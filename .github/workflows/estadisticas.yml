@@ -1,0 +1,50 @@
+name: Estadísticas
+
+# Una vez al día, con el día anterior ya completo en `runs`. Recalcula los
+# últimos días (el recolector reescribe hasta 3 días atrás) y publica los
+# JSON de estadísticas en R2. No toca el repo.
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dias:
+        description: 'Días hacia atrás que recalcular (1–30)'
+        required: false
+        default: '4'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: estadisticas
+  cancel-in-progress: false
+
+jobs:
+  estadisticas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Calcular y publicar
+        run: python estadisticas.py "$DIAS"
+        env:
+          DIAS: ${{ github.event.inputs.dias || '4' }}
+          PYTHONUNBUFFERED: "1"
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
