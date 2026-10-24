@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=d338c86cf3';
+} from './parser.js?v=a71a835843';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=d338c86cf3';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=d338c86cf3';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=d338c86cf3';
-import { comparador } from './busqueda/orden.js?v=d338c86cf3';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=a71a835843';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=a71a835843';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=a71a835843';
+import { comparador } from './busqueda/orden.js?v=a71a835843';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=d338c86cf3';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=d338c86cf3';
+} from './sync/fusion.js?v=a71a835843';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=a71a835843';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=d338c86cf3';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=d338c86cf3';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=a71a835843';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=a71a835843';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=d338c86cf3';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=a71a835843';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=d338c86cf3';
+} from './tiempo/avisos.js?v=a71a835843';
 
-import { I18N, traducir } from './idiomas/index.js?v=d338c86cf3';
+import { I18N, traducir } from './idiomas/index.js?v=a71a835843';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1933,7 +1933,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=d338c86cf3');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=a71a835843');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3452,7 +3452,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=d338c86cf3')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=a71a835843')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -5396,7 +5396,7 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
   const intentar = async () => {
     const sig = _signalConTimeout(null, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status });
     return await r.json();
   };
 
@@ -5406,7 +5406,8 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
     return mapear(data);
   } catch(e) {
     if (e.name !== 'AbortError') console.warn('[worker]', e.message);
-    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError'){
+    // Un 429 es el límite por IP del worker, no un backend caído: no se conmuta.
+    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError' && e.status !== 429){
       await _conmutarBackendPorFallo();
       try {
         const data = await intentar();
@@ -5559,7 +5560,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   const intentar = async () => {
     const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status });
     return await r.json();
   };
 
@@ -5578,7 +5579,8 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
     return procesar(await intentar());
   } catch (e) {
     if (e.name === 'AbortError') return null;
-    if (BACKEND_ACTIVO === 'cf'){
+    // Un 429 es el límite por IP del worker, no un backend caído: no se conmuta.
+    if (BACKEND_ACTIVO === 'cf' && e.status !== 429){
       await _conmutarBackendPorFallo();
       try {
         return procesar(await intentar());
