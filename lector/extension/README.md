@@ -3,6 +3,9 @@
 Versión para pruebas, pendiente de comprobar manualmente en Firefox.
 Todo su código está en este repositorio; no se publica ni se firma en AMO
 desde este cambio. Requiere Firefox 140 o posterior.
+La extensión no funciona en ventanas privadas porque guarda preferencias y
+artículos en `storage.local`. Consulta la [política de privacidad](PRIVACIDAD.md)
+antes de activar la sincronización opcional.
 
 ## Construir y probar en Firefox
 
@@ -103,6 +106,16 @@ puedes establecer `LECTOR_VERSION` con la versión que quieras probar.
 ```sh
 LECTOR_VERSION=2.0.1 node lector/extension/build.mjs firefox
 ```
+
+Para una versión enviada a AMO, adjunta también un ZIP de las fuentes del
+repositorio: `lector/`, `shared/sync/`, `shared/tema/`, `medios.py` y
+`plantilla.html` son necesarios para reproducir el código generado. En un
+ZIP sin historial de Git, sustituye `2.0.1` por la versión exacta del
+`manifest.json` enviado y ejecuta el comando anterior desde la raíz de las
+fuentes. El resultado está en `lector/dist/firefox/` y se construye con
+Node 24 y Python 3 sin instalar paquetes adicionales. Mozilla pide fuentes
+e instrucciones de construcción cuando un proceso genera los JavaScript
+incluidos en el complemento.
 
 La biblioteca procede de
 [`@mozilla/readability@0.5.0`](https://github.com/mozilla/readability/tree/0.5.0),
