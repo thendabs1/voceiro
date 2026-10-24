@@ -23,8 +23,6 @@ export default {
   "estVerDia": "Ver {fecha}",
   "estSeguimiento": "Datos do seguimento",
   "estVolverMedios": "← Volver a medios",
-  "estAmpliar": "Ampliar",
-  "estReducir": "Reducir",
   "estActualizar": "Actualizar",
   "estCerrar": "Pechar estatísticas",
   "estReintentar": "Tentar de novo",

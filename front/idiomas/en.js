@@ -61,8 +61,6 @@ export default {
   "estFecha_futura": "Later day",
   "estFecha_estimada": "Estimated",
   "estFecha_sin_fecha": "No date",
-  "estAmpliar": "Expand",
-  "estReducir": "Reduce",
   "estActualizar": "Refresh",
   "estCerrar": "Close statistics",
   "estReintentar": "Retry",

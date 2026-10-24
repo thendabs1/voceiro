@@ -4,7 +4,7 @@
 const ESTADISTICAS = {
   abierto: false, vista: 'resumen', fecha: '', ambito: 'todos', modo: '', modoBase: null,
   dominio: '', consulta: '', destino: null, indice: null, dia: null,
-  cargando: false, error: false, ampliado: false, secuencia: 0,
+  cargando: false, error: false, familias: new Set(), secuencia: 0,
   controller: null, cache: new Map(), origen: null, scroll: 0,
 };
 const iconoEstadisticas = () => '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3v17h17M8 16v-5m5 5V6m5 10v-8"/></svg>';
@@ -37,6 +37,20 @@ function sumarEstadisticas(medios, dominios){
     disponibles: pubs.length, conTitulares: pubs.filter(p => p.titulares > 0).length,
     seleccionados: dominios.length, fechas };
 }
+// «Regional · Galicia» se pliega bajo «Regional»; una familia de un solo grupo
+// se muestra como ese grupo. Mapa familia → grupo → dominios.
+function familiasEstadisticas(catalogo, dominios, sinGrupo){
+  const familias = new Map();
+  for (const d of dominios){
+    const g = catalogo[d]?.g || sinGrupo, f = g.split(' · ')[0];
+    if (!familias.has(f)) familias.set(f, new Map());
+    const grupos = familias.get(f);
+    if (!grupos.has(g)) grupos.set(g, []);
+    grupos.get(g).push(d);
+  }
+  return familias;
+}
+function estUltimoDia(indice){ return indice.dias.map(d => d.fecha).filter(f => f <= estHoy()).sort().at(-1); }
 function serieEstadisticas(indice, dominios, hasta){
   return indice.serie_dias.map((fecha, i) => {
     const valores = dominios.map(d => indice.serie[d]?.titulares?.[i]).filter(Number.isFinite);
@@ -80,23 +94,24 @@ function estCurva(dominios){
 function estResumen(){
   const dia = estDatoDia(), ids = estDominios();
   if (!dia) return estSinDia();
-  const total = sumarEstadisticas(dia.medios, ids), grupos = new Map();
-  for (const d of ids){
-    const g = ESTADISTICAS.indice.medios[d]?.g || t('estSinSeguimiento');
-    if (!grupos.has(g)) grupos.set(g, []);
-    grupos.get(g).push(d);
+  const total = sumarEstadisticas(dia.medios, ids), filas = [];
+  const fila = (nombre, ds) => { const s = sumarEstadisticas(dia.medios, ds); return [nombre, estNumero(s.titulares), `${s.disponibles} / ${ds.length}`]; };
+  const familias = familiasEstadisticas(ESTADISTICAS.indice.medios, ids, t('estSinSeguimiento'));
+  for (const [f, grupos] of [...familias].sort(([a], [b]) => a.localeCompare(b))){
+    if (grupos.size === 1){ const [[g, ds]] = grupos; filas.push(fila(escapeHtml(g), ds)); continue; }
+    const abierta = ESTADISTICAS.familias.has(f);
+    filas.push(fila(`<button type="button" data-est="familia" data-valor="${escapeHtml(f)}" aria-expanded="${abierta}">${escapeHtml(f)}</button>`, [...grupos.values()].flat()));
+    if (abierta) for (const [g, ds] of [...grupos].sort(([a], [b]) => a.localeCompare(b))) filas.push(fila(`<span class="est-subgrupo">${escapeHtml(g.slice(f.length).replace(/^ · /, '') || g)}</span>`, ds));
   }
   return `<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(t('estResumen'))}</h2>
     ${estMetricas([['estTitulares', total.titulares], ['estMediosTitulares', total.disponibles ? total.conTitulares : null], ['estMediosDatos', total.disponibles]])}
     <p class="est-nota">${escapeHtml(t('estMuestra', { n: total.disponibles, total: total.seleccionados }))}</p>
-    <h3>${escapeHtml(t('estPorGrupo'))}</h3>${estTabla(['estGrupo', 'estTitulares', 'estMediosDatos'], [...grupos].sort(([a], [b]) => a.localeCompare(b)).map(([g, ds]) => {
-      const s = sumarEstadisticas(dia.medios, ds);
-      return [escapeHtml(g), estNumero(s.titulares), `${s.disponibles} / ${ds.length}`];
-    }))}<h3>${escapeHtml(t('estEvolucion'))}</h3>${estCurva(ids)}
+    <h3>${escapeHtml(t('estEvolucion'))}</h3>${estCurva(ids)}
+    <h3>${escapeHtml(t('estPorGrupo'))}</h3>${estTabla(['estGrupo', 'estTitulares', 'estMediosDatos'], filas)}
     ${estSeguimiento(dia.recolector)}`;
 }
 function estSinDia(conTitulo = true){
-  const ultimo = ESTADISTICAS.indice.dias.map(d => d.fecha).sort().at(-1);
+  const ultimo = estUltimoDia(ESTADISTICAS.indice);
   return `${conTitulo ? `<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(t('estSinDia'))}</h2>` : ''}<p>${escapeHtml(t('estSinDiaNota'))}</p>
     ${ultimo && ultimo !== ESTADISTICAS.fecha ? estBoton('fecha', t('estVerDia', { fecha: estFecha(ultimo) }), ultimo) : ''}`;
 }
@@ -158,7 +173,6 @@ function pintarEstadisticas(){
   // aviso de «sin datos»: se conservan los abiertos y el contenido anterior.
   const abiertos = new Set([...panel.querySelectorAll('details[open][data-clave]')].map(d => d.dataset.clave));
   const previo = panel.querySelector('.est-contenido');
-  panel.classList.toggle('est-ampliado', s.ampliado);
   panel.setAttribute('aria-label', t('estTitulo'));
   panel.setAttribute('aria-busy', String(s.cargando));
   const catalogo = s.indice?.medios || {};
@@ -174,7 +188,6 @@ function pintarEstadisticas(){
   const modoCambiado = s.ambito === 'mis' && s.modoBase && JSON.stringify(s.modoBase) !== JSON.stringify(PRESETS.lista.find(p => p.id === s.modo));
   const option = (valor, texto, seleccionado) => `<option value="${escapeHtml(valor)}"${seleccionado === valor ? ' selected' : ''}>${escapeHtml(texto)}</option>`;
   panel.innerHTML = `<div class="est-cabecera"><strong>${escapeHtml(t('estTitulo'))}</strong><div class="est-acciones">
-      <button type="button" data-est="ampliar" aria-pressed="${s.ampliado}">${escapeHtml(t(s.ampliado ? 'estReducir' : 'estAmpliar'))}</button>
       <button type="button" data-est="renovar"${s.cargando ? ' disabled' : ''} aria-label="${escapeHtml(t('estActualizar'))}" title="${escapeHtml(t('estActualizar'))}">${ico('refresh-cw')}</button>
       <button type="button" data-est="cerrar" aria-label="${escapeHtml(t('estCerrar'))}" title="${escapeHtml(t('estCerrar'))}">${ico('x')}</button></div></div>
     <nav class="est-nav" aria-label="${escapeHtml(t('estTitulo'))}">${['resumen', 'medios'].map(v => `<button type="button" data-est="${v}"${(v === 'medios' ? s.vista !== 'resumen' : s.vista === v) ? ' aria-current="page"' : ''}>${escapeHtml(t(v === 'resumen' ? 'estResumen' : 'estMedios'))}</button>`).join('')}</nav>
@@ -206,10 +219,12 @@ async function pedirEstadisticas(nombre, signal){
 async function cargarEstadisticas(renovar = false){
   const s = ESTADISTICAS, secuencia = ++s.secuencia;
   s.controller?.abort();
-  const controller = s.controller = new AbortController(), fecha = s.fecha;
+  const controller = s.controller = new AbortController();
   s.cargando = true; s.error = false; pintarEstadisticas();
   try {
     const indice = renovar || !s.indice ? validarIndiceEstadisticas(await pedirEstadisticas('estadisticas.json', controller.signal)) : s.indice;
+    // Sin día elegido, el último calculado: el de hoy casi nunca lo está aún.
+    const fecha = s.fecha || estUltimoDia(indice) || estHoy();
     let dia = null;
     const cacheKey = indice.generado + '/' + fecha;
     if (indice.dias.some(d => d.fecha === fecha)){
@@ -219,7 +234,7 @@ async function cargarEstadisticas(renovar = false){
     }
     if (secuencia !== s.secuencia || !s.abierto) return;
     // Publicar juntos índice y detalle: un fallo conserva el resultado anterior.
-    s.indice = indice; s.dia = dia;
+    s.indice = indice; s.dia = dia; s.fecha = fecha;
     if (dia){ if (s.cache.size >= 30) s.cache.clear(); s.cache.set(cacheKey, dia); }
     if (s.destino != null){
       const destino = s.destino; s.destino = null;
@@ -242,7 +257,6 @@ function abrirEstadisticas(destino = '', origen = null){
   }
   s.abierto = true; s.destino = destino;
   if (destino === 'mis-medios' && PRESET_ACTIVO) fijarModoEstadisticas(PRESETS.activo);
-  if (!s.fecha) s.fecha = estHoy();
   if (destino && destino !== 'mis-medios') { s.ambito = 'todos'; s.consulta = ''; }
   const carga = cargarEstadisticas(), secuencia = s.secuencia;
   carga.then(() => { if (s.abierto && s.secuencia === secuencia) document.getElementById('est-vista-titulo')?.focus({ preventScroll: true }); });
@@ -261,11 +275,12 @@ function estEncajar(siempre = false){
     window.scrollTo({ top: Math.max(0, window.scrollY + top), behavior: 'auto' });
   });
 }
-function cerrarEstadisticas(){
+function cerrarEstadisticas(volver = true){
   const s = ESTADISTICAS;
   if (!s.abierto) return;
-  s.abierto = false; s.ampliado = false; s.secuencia++; s.controller?.abort(); s.cargando = false;
+  s.abierto = false; s.secuencia++; s.controller?.abort(); s.cargando = false;
   pintarEstadisticas();
+  if (!volver) return;
   (s.origen?.isConnected && s.origen.getClientRects().length ? s.origen : document.getElementById('btn-estadisticas'))?.focus({ preventScroll: true });
   window.scrollTo({ top: s.scroll, behavior: 'auto' });
 }
@@ -309,11 +324,11 @@ function wireEstadisticas(){
     if (accion === 'renovar') return void cargarEstadisticas(true);
     if (accion === 'modo-actualizar') { fijarModoEstadisticas(s.modo); pintarEstadisticas(); return; }
     if (accion === 'fecha') { s.fecha = b.dataset.valor; estEncajar(); return void cargarEstadisticas(); }
-    if (accion === 'ampliar') s.ampliado = !s.ampliado;
+    if (accion === 'familia') { const f = b.dataset.valor; s.familias.has(f) ? s.familias.delete(f) : s.familias.add(f); }
     else if (accion === 'medio') { s.destino = null; s.vista = 'medio'; s.dominio = b.dataset.valor; }
     else if (accion === 'resumen' || accion === 'medios') { s.destino = null; s.vista = accion; }
     pintarEstadisticas();
-    if (accion !== 'ampliar') { document.getElementById('est-vista-titulo')?.focus({ preventScroll: true }); estEncajar(); }
+    if (accion !== 'familia') { document.getElementById('est-vista-titulo')?.focus({ preventScroll: true }); estEncajar(); }
   });
   p.addEventListener('change', e => {
     if (e.target.id === 'est-fecha'){
@@ -326,6 +341,10 @@ function wireEstadisticas(){
     if (e.target.id !== 'est-buscar-medio') return;
     s.consulta = e.target.value;
     document.getElementById('est-lista').innerHTML = estListaMedios();
+  });
+  // El panel tapa el feed: escribir otra búsqueda vuelve a él sin mover el foco.
+  document.getElementById('buscar').addEventListener('input', e => {
+    if (s.abierto && !/(?:^|\s)(?:estadisticas|stats):/i.test(e.target.value)) cerrarEstadisticas(false);
   });
   document.getElementById('buscar').addEventListener('keydown', e => {
     if (e.key === 'Enter' && ordenEstadisticas(e.target.value)) {

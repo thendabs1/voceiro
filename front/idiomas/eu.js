@@ -23,8 +23,6 @@ export default {
   "estVerDia": "Ikusi: {fecha}",
   "estSeguimiento": "Jarraipenaren datuak",
   "estVolverMedios": "← Itzuli hedabideetara",
-  "estAmpliar": "Handitu",
-  "estReducir": "Txikitu",
   "estActualizar": "Eguneratu",
   "estCerrar": "Itxi estatistikak",
   "estReintentar": "Saiatu berriro",

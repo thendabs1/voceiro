@@ -26,14 +26,16 @@ anterior si el candidato no se construye o no supera las comprobaciones.
 ## Panel de estadísticas
 
 `app/14-estadisticas.js` carga los JSON públicos de estadísticas solo al abrir
-el panel. Resumen ofrece totales del archivo diario, grupos y evolución de
-hasta 30 días; Medios contiene el directorio y la ficha con precisión de
+el panel. Resumen ofrece totales del archivo diario, evolución de hasta 30
+días (cada barra abre su día) y grupos plegados por familia («Regional ·
+Galicia» bajo «Regional»); Medios contiene el directorio y la ficha con precisión de
 fechas y seguimiento. Se abre desde cabecera, el menú ⋯ de un titular o las
 órdenes `estadisticas:` / `stats:` confirmadas con Intro o una sugerencia.
 `estadisticas:mis-medios` selecciona las fuentes del modo, sin sus palabras.
 
-El día inicial es hoy. Si todavía no se ha calculado, se mantiene la fecha y
-se ofrece abrir el último día disponible. No confundir titulares del archivo
+Abierto, el panel ocupa el sitio del feed; escribir otra búsqueda lo cierra.
+El día inicial es el último calculado. Si se elige uno que aún no lo está, se
+mantiene la fecha y se ofrece abrir el último disponible. No confundir titulares del archivo
 con artículos únicos por publicación. Los datos ausentes no son ceros; las
 series indican su muestra diaria. El trabajo completo se verifica en CI.
 
