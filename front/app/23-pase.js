@@ -53,8 +53,9 @@ function abrirPase(){
     marcarLeidaLocal(n.enlace);
     registrarLeido(n);
     pintarLeidasEnLista();
-    moverPase(1);
-    pausarPase();
+    // Avanzar tras la acción por defecto: si no, el enlace ya apunta al siguiente al abrirse.
+    const pos = pase.pos;
+    setTimeout(() => { if (PASE === pase && pase.pos === pos){ moverPase(1); pausarPase(); } });
   };
   root.querySelector('[data-pase-guardar]').onclick = () => {
     pausarPase();

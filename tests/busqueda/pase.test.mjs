@@ -256,6 +256,12 @@ test(`abrir marca como leída y deja el siguiente titular pausado`, () => {
   s.pase.abrirPase();
   const root = s.pase.actual.root;
   root.querySelector('.pase-titular').onclick();
+  // El navegador abre el enlace después del manejador: aún debe ser el pulsado.
+  assert.equal(root.querySelector('.pase-titular').href, 'https://medio.test/0');
+  assert.equal(s.timers.size, 1);
+  const [[id, { fn }]] = s.timers;
+  s.timers.delete(id);
+  fn();
   assert.deepEqual(s.leidas, ['https://medio.test/0']);
   assert.deepEqual(s.vistas, ['https://medio.test/0']);
   assert.equal(s.pase.actual.pos, 1);
