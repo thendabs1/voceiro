@@ -138,6 +138,21 @@ function estGrupos(dia, ids){
   }
   return `<h3>${escapeHtml(t('estPorGrupo'))}</h3>${estTabla(['estGrupo', 'estTitulares', 'estMediosTitulares'], filas)}`;
 }
+// Pasadas del recolector: solo cuando el día las trae. Un contador a cero
+// (rescates, huecos, rachas) no se pinta; «48 de 48 buenas» sí informa.
+function estRecogida(runs){
+  if (!runs?.pasadas) return '';
+  const errores = Object.entries(runs.errores || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  return `<h3>${escapeHtml(t('estRecogida'))}</h3>`
+    + (runs.ultimo_estado === 'fallo' ? `<p class="est-aviso">${escapeHtml(t('estUltimaFallo'))}</p>` : '')
+    + estMetricas([
+      ['estPasadasBuenas', t('estNDe', { n: estNumero(runs.ok), total: estNumero(runs.pasadas) })],
+      ['estVentana', estDuracion(runs.ventana_min?.p50)],
+      ['estRescates', runs.rescates || null],
+      ['estRachaFallos', runs.racha_fallos_min ? estDuracion(runs.racha_fallos_min) : null],
+    ])
+    + (errores.length ? estTabla(['estError', 'estOcurrencias'], errores.map(([k, v]) => [escapeHtml(k), estNumero(v)])) : '');
+}
 function estSinDia(){
   const ultimo = estUltimoDia(ESTADISTICAS.indice);
   return `<p class="est-aviso">${escapeHtml(t('estSinDia'))}${ultimo && ultimo !== ESTADISTICAS.fecha ? ' ' + estBoton('fecha', t('estVerDia', { fecha: estFecha(ultimo) }), ultimo) : ''}</p>`;
@@ -162,10 +177,11 @@ function estMiniatura(valores){
 function estListaMedios(){
   const s = ESTADISTICAS, catalogo = s.indice.medios, dia = estDatoDia(), q = normalize(s.consulta);
   const nombre = d => catalogo[d]?.n || d, titulares = d => dia?.medios[d]?.pub?.titulares;
+  const fallo = d => dia?.medios[d]?.runs?.ultimo_estado === 'fallo' ? [t('estConFallos')] : [];
   const ids = estDominios().filter(d => normalize(d + ' ' + nombre(d)).includes(q))
     .sort((a, b) => (titulares(b) ?? -1) - (titulares(a) ?? -1) || nombre(a).localeCompare(nombre(b)));
   return ids.length ? estTabla(['estMedio', 'estTitulares', 'estUltimos30'], ids.map(d => [
-      estBoton('medio', nombre(d), d) + `<small>${escapeHtml([d, catalogo[d]?.g || t('estSinSeguimiento')].join(' · '))}</small>`,
+      estBoton('medio', nombre(d), d) + `<small>${escapeHtml([d, catalogo[d]?.g || t('estSinSeguimiento'), ...fallo(d)].join(' · '))}</small>`,
       estNumero(titulares(d)), estMiniatura(s.indice.serie[d]?.titulares),
     ])) : `<p>${escapeHtml(t('estSinMedios'))}</p>`;
 }
@@ -176,14 +192,16 @@ function estDirectorio(){
     <div id="est-lista">${estListaMedios()}</div>`;
 }
 function estFicha(){
-  const s = ESTADISTICAS, d = s.dominio, m = s.indice.medios[d], dia = estDatoDia(), pub = dia?.medios[d]?.pub;
+  const s = ESTADISTICAS, d = s.dominio, m = s.indice.medios[d], dia = estDatoDia(), pub = dia?.medios[d]?.pub, runs = dia?.medios[d]?.runs;
   const cabecera = `${estBoton('medios', t('estVolverMedios'))}<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(m?.n || d)}</h2>
     <p class="est-nota">${[d, m?.g, pub?.fuentes && Object.keys(pub.fuentes).join(', ')].filter(Boolean).map(escapeHtml).join(' · ')}</p>`;
   if (!m) return cabecera + `<p>${escapeHtml(t('estSinSeguimiento'))}</p>`;
   const serie = s.indice.serie[d] || {};
-  const dias = s.indice.serie_dias.map((fecha, i) => ({ fecha, titulares: serie.titulares?.[i], conHora: serie.con_hora?.[i] }))
-    .filter(x => Number.isFinite(x.titulares));
-  const media = dias.length ? Math.round(dias.reduce((n, x) => n + x.titulares, 0) / dias.length) : null;
+  // Un día con pasadas y sin titulares (feed caído) también entra en el histórico.
+  const dias = s.indice.serie_dias.map((fecha, i) => ({ fecha, titulares: serie.titulares?.[i], conHora: serie.con_hora?.[i], pasadas: serie.pasadas?.[i], ok: serie.ok?.[i] }))
+    .filter(x => Number.isFinite(x.titulares) || x.pasadas > 0);
+  const conTitulares = dias.filter(x => Number.isFinite(x.titulares)), conPasadas = dias.some(x => x.pasadas > 0);
+  const media = conTitulares.length ? Math.round(conTitulares.reduce((n, x) => n + x.titulares, 0) / conTitulares.length) : null;
   const delDia = !dia ? estSinDia() : !pub ? `<p class="est-aviso">${escapeHtml(t('estSinDatos'))}</p>` : estMetricas([
     ['estTitulares', pub.titulares],
     ['estMediaDiaria', media],
@@ -191,9 +209,10 @@ function estFicha(){
     ['estHorario', pub.primera && pub.ultima ? `${pub.primera}–${pub.ultima}` : null],
     ['estRetraso', estDuracion(pub.retraso_min?.p50)],
   ]);
-  return cabecera + delDia + estEvolucion([d]) + estHoras(pub?.por_hora) + estSecciones(pub?.secciones)
-    + (dias.length ? `<h3>${escapeHtml(t('estHistorico'))}</h3>` + estTabla(['estDia', 'estTitulares', 'estConHora'], dias.reverse().map(x => [
-      estBoton('fecha', estFecha(x.fecha), x.fecha), estNumero(x.titulares), estPorcentaje(x.conHora, x.titulares) || '—'])) : '');
+  return cabecera + delDia + estEvolucion([d]) + estHoras(pub?.por_hora) + estSecciones(pub?.secciones) + estRecogida(runs)
+    + (dias.length ? `<h3>${escapeHtml(t('estHistorico'))}</h3>` + estTabla(['estDia', 'estTitulares', 'estConHora', ...(conPasadas ? ['estPasadasBuenas'] : [])], dias.reverse().map(x => [
+      estBoton('fecha', estFecha(x.fecha), x.fecha), estNumero(x.titulares), estPorcentaje(x.conHora, x.titulares) || '—',
+      ...(conPasadas ? [x.pasadas > 0 ? t('estNDe', { n: estNumero(x.ok), total: estNumero(x.pasadas) }) : '—'] : [])])) : '');
 }
 function estFiltros(){
   const s = ESTADISTICAS, ambito = estAmbito(), catalogo = s.indice?.medios || {};

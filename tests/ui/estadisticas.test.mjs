@@ -218,3 +218,21 @@ test('sin día elegido se abre el último calculado, no hoy', async () => {
   assert.equal(c.api.s.fecha, '2026-10-23'); assert.equal(c.api.s.dia.fecha, '2026-10-23');
   assert.match(pedidos[1], /estadisticas-dia-2026-10-23\.json$/);
 });
+
+test('las pasadas salen solo cuando hay datos, sin contadores a cero, y un feed caído entra en el histórico', () => {
+  const c = html(contexto());
+  c.api.s.indice = { ...indice(), serie_dias: ['2026-10-22', '2026-10-23'],
+    serie: { 'b.es': { titulares: [null, 3], con_hora: [null, 3], pasadas: [40, 48], ok: [0, 46] } } };
+  c.api.s.dia = dia('2026-10-23'); c.api.s.dominio = 'b.es';
+  assert.doesNotMatch(c.api.estFicha(), /estRecogida/);
+  c.api.s.dia.medios['b.es'].runs = { pasadas: 48, ok: 46, rescates: 0, racha_fallos_min: 0, ventana_min: { p50: 30 },
+    errores: { 'HTTP 503': 2 }, ultimo_estado: 'fallo' };
+  const ficha = c.api.estFicha();
+  assert.match(ficha, /estPasadasBuenas<\/dt><dd>estNDe\{&quot;n&quot;:&quot;46&quot;,&quot;total&quot;:&quot;48&quot;\}/);
+  assert.match(ficha, /estUltimaFallo/); assert.match(ficha, /HTTP 503/); assert.match(ficha, /30 min/);
+  assert.doesNotMatch(ficha, /estRescates|estRachaFallos/);
+  const historico = ficha.slice(ficha.indexOf('estHistorico'));
+  assert.match(historico, /data-valor="2026-10-22"/);
+  assert.match(historico, /"n":"0","total":"40"/);
+  assert.match(c.api.estListaMedios(), /b\.es · Nacional · estConFallos/);
+});
