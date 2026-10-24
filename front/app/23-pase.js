@@ -82,12 +82,17 @@ function abrirPase(){
   root.querySelector('[data-pase-play]').focus({ preventScroll: true });
 }
 
+// El titular no cabe: el desplazamiento vertical sirve para leerlo entero.
+function desbordaPase(root){
+  return root.scrollHeight > root.clientHeight + 1;
+}
+
 function prepararGestosPase(root){
   let inicio = null;
   root.addEventListener('touchstart', e => {
     inicio = null;
     // Si hace falta scroll, se conserva para poder leer todo el titular.
-    if (e.touches.length !== 1 || root.scrollHeight > root.clientHeight + 1 ||
+    if (e.touches.length !== 1 || desbordaPase(root) ||
         e.target.closest('.pase-controles,button,input,select,textarea,[contenteditable]')) return;
     const dedo = e.touches[0];
     inicio = { x: dedo.clientX, y: dedo.clientY, id: dedo.identifier };
@@ -206,14 +211,17 @@ function pausarPaseFuera(e){
 document.addEventListener('pointerdown', pausarPaseFuera, true);
 document.addEventListener('focusin', pausarPaseFuera);
 document.addEventListener('wheel', pausarPase, { passive: true });
+// Solo arrastrar el deslizador del ritmo deja el pase en marcha.
 document.addEventListener('touchmove', e => {
-  if (!e.target.closest('.pase-controles')) pausarPase();
+  if (!e.target.closest('[data-pase-ritmo]')) pausarPase();
 }, { passive: true });
 document.addEventListener('keydown', e => {
   if (!PASE) return;
   if (e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); cerrarPase(); }
   else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) &&
            !e.target.closest('select,input,textarea,[contenteditable]')){
+    // Como con el dedo: si el titular no cabe, ↑ ↓ desplazan y pausan.
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && desbordaPase(PASE.root)){ pausarPase(); return; }
     e.preventDefault();
     moverPase(e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1);
   } else pausarPaseFuera(e);

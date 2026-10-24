@@ -33,3 +33,17 @@ test('el extractor admite el medio y sus subdominios', () => {
     assert.equal(consultas, 1);
   }
 });
+
+test('el aviso de abrir el medio solo sale donde el análisis no funciona', () => {
+  const casos = [
+    [{}, 'thendabs1.github.io', false],
+    [{}, 'www.medio.example', true],
+    [{ esPaginaPropia: true, analizar(){} }, 'extension-id', true],
+    [{ esPaginaPropia: true }, 'extension-id', false],
+  ];
+  for (const [PLATAFORMA, hostname, esperado] of casos){
+    const contexto = vm.createContext({ PLATAFORMA, location: { hostname } });
+    vm.runInContext(fuente, contexto);
+    assert.equal(vm.runInContext('analisisDisponible("medio.example")', contexto), esperado, hostname);
+  }
+});
