@@ -45,7 +45,7 @@ function ofertaDelBoton(){
 
 function actualizarBoton(){
   if (!document.body) return;
-  const o = botonOcultoAqui() ? null : ofertaDelBoton();
+  const o = CFG.fab?.visible === false || botonOcultoAqui() ? null : ofertaDelBoton();
   let host = document.getElementById(FAB_ID);
   if (!o){ if (host) host.remove(); return; }
   if (!host || !host.__pintar){ if (host) host.remove(); host = crearBoton(); }
@@ -152,6 +152,7 @@ function crearBoton(){
     }
     h += '<div role="separator"></div>';
     if (o.ajustes) h += item('ajustes', icono('settings'), t('settingsFabTitle'));
+    if (findSiteRule()) h += item('extraccion', icono('settings'), t('extractionTitle'));
     h += item('ocultar', icono('eye-off'), t('fabOcultarAqui'));
     menu.innerHTML = h;
   }
@@ -190,6 +191,7 @@ function crearBoton(){
     if (accion === 'lector') activateReader();
     else if (accion === 'anadir') anadirSitioActual();
     else if (accion === 'ajustes') openSettings('sites');
+    else if (accion === 'extraccion') openExtractionTool(CFG.sites.indexOf(findSiteRule()));
     else if (accion === 'servicio'){
       const svc = oferta.servicios.find(s => s.id === b.dataset.id);
       if (svc) abrirEnServicio(svc);

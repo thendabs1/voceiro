@@ -12,7 +12,8 @@ const SERVICIOS_MAX = 30;
 
 function plantillaServicioValida(p){
   p = String(p || '').trim();
-  return /^https:\/\/\S+$/i.test(p) && /\{url(_cod)?\}/.test(p);
+  return /^https:\/\/\S+$/i.test(p) && /\{url(_cod)?\}/.test(p) &&
+    !!urlWebValida(p.replace(/\{url(_cod)?\}/g, 'noticia'));
 }
 
 // Deja solo servicios válidos, sin plantillas repetidas (gana el primero).
@@ -44,11 +45,10 @@ function urlEnServicio(svc, url){
     .replace(/\{url\}/g, url);
 }
 
-function abrirEnServicio(svc){
-  const url = location.href;
-  if (!svc || !/^https?:/i.test(url)) return;
-  const destino = urlEnServicio(svc, url);
-  if (!/^https:\/\//i.test(destino)) return;
+function abrirEnServicio(svc, url = location.href){
+  if (!svc || !plantillaServicioValida(svc.plantilla) || !urlWebValida(url)) return;
+  const destino = urlWebValida(urlEnServicio(svc, url));
+  if (!destino || !destino.startsWith('https://')) return;
   window.open(destino, '_blank', 'noopener,noreferrer');
 }
 

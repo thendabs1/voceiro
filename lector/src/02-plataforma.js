@@ -11,14 +11,13 @@ const PLATAFORMA = {
   leer(clave, porDefecto){
     try {
       if (typeof GM_getValue === 'function') return GM_getValue(clave, porDefecto);
-      const raw = localStorage.getItem(clave);
-      return raw === null ? porDefecto : JSON.parse(raw);
+      return porDefecto;
     } catch(e){ return porDefecto; }
   },
   guardar(clave, valor){
     try {
       if (typeof GM_setValue === 'function') GM_setValue(clave, valor);
-      else localStorage.setItem(clave, JSON.stringify(valor));
+      else throw new Error('El lector necesita un gestor de userscripts');
     } catch(e){}
   },
   // fn(valorNuevo), solo con los cambios hechos en otra pestaña.

@@ -202,7 +202,7 @@ function marcarEmbebidos(raiz){
   const tope = raiz.body || raiz;
   try {
     EMBEBIDOS.forEach(e => raiz.querySelectorAll(e.sel).forEach(el => {
-      if (!el.isConnected) return;
+      if (!raiz.contains(el)) return;
       const url = absUrl(e.url(el) || '');
       if (!/^https?:\/\//i.test(url)) return;
       // Se sube por los envoltorios que no tienen nada más: Readability tira

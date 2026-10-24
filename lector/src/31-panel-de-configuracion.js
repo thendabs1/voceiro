@@ -6,6 +6,17 @@
 // opts.dominio: el medio que se enseña en Medios en lugar del de la página
 // («Cómo leerlo», desde un titular de Voceiro).
 function openSettings(initialTab, opts){
+  // Pendientes y ajustes de otras webs solo se muestran en un origen propio.
+  if (PLATAFORMA.abrirAjustes && !PLATAFORMA.esPaginaPropia){
+    PLATAFORMA.abrirAjustes(initialTab || 'sites', opts?.dominio || normalizeDomain(location.hostname));
+    return;
+  }
+  if (!esVoceiro() && !PLATAFORMA.esPaginaPropia){
+    const destino = new URL(VOCEIRO_URL);
+    destino.hash = new URLSearchParams({ lector: initialTab || 'sites', dominio: normalizeDomain(location.hostname) });
+    window.open(destino.href, '_blank', 'noopener,noreferrer');
+    return;
+  }
   const dentro = opts && opts.dentro;
   if (dentro ? dentro.querySelector('.il-settings-dentro') : document.getElementById('il-settings')) return;
   // Con el tema del perfil; diálogo modal: el foco entra y, al cerrar,
@@ -496,7 +507,7 @@ function openSettings(initialTab, opts){
         const name = box.querySelector('.il-dict-new-name').value.trim();
         const url = box.querySelector('.il-dict-new-url').value.trim();
         const l = box.querySelector('.il-dict-new-lang').value;
-        if (!name || !url.includes('{palabra}')){ toast(t('siteInvalid')); return; }
+        if (!name || !plantillaDiccionarioValida(url)){ toast(t('siteInvalid')); return; }
         const id = 'custom-' + Date.now();
         const key = 'custom' + l.charAt(0).toUpperCase() + l.slice(1);
         if (!Array.isArray(CFG.dict[key])) CFG.dict[key] = [];
@@ -815,6 +826,9 @@ function openSettings(initialTab, opts){
           '</span>' +
         '</label>' +
       '</div>' +
+      '<label style="display:flex;gap:10px;align-items:center;margin-bottom:18px">' +
+        '<input type="checkbox" class="il-set-fab-visible"' + (CFG.fab.visible ? ' checked' : '') + '>' +
+        esc(t('fabVisible')) + '</label>' +
       htmlSync() +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px">' +
         '<button class="il-set-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
@@ -824,6 +838,9 @@ function openSettings(initialTab, opts){
 
     function wire(){
       wireSync();
+      box.querySelector('.il-set-fab-visible').onchange = e => {
+        CFG.fab.visible = e.target.checked; saveCfg(CFG); actualizarBoton();
+      };
       const appLangSel = box.querySelector('.il-set-lang-app');
       if (appLangSel) appLangSel.onchange = e => {
         CFG.lang = e.target.value;

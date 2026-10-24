@@ -6,6 +6,7 @@
    ============================================================ */
 const I18N = {
   es: {
+    fabVisible: 'Mostrar el botón flotante',
     syncSoloEnVoceiro: 'El código se escribe en Voceiro (Ajustes › Lector), no encima de otra web, que podría leerlo.',
     syncTitle: 'Sincronización',
     syncOff: 'Sin sincronizar. Con Voceiro abierto en este navegador se activa sola, con su código.',
@@ -216,6 +217,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible en el botón flotante',
   },
   gl: {
+    fabVisible: 'Amosar o botón flotante',
     syncSoloEnVoceiro: 'O código escríbese en Voceiro (Axustes › Lector), non enriba doutra web, que podería lelo.',
     syncTitle: 'Sincronización',
     syncOff: 'Sen sincronizar. Con Voceiro aberto neste navegador actívase soa, co seu código.',
@@ -426,6 +428,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible no botón flotante',
   },
   ca: {
+    fabVisible: 'Mostrar el botó flotant',
     syncSoloEnVoceiro: 'El codi s’escriu a Voceiro (Configuració › Lector), no a sobre d’una altra web, que el podria llegir.',
     syncTitle: 'Sincronització',
     syncOff: 'Sense sincronitzar. Amb Voceiro obert en aquest navegador s’activa sola, amb el seu codi.',
@@ -636,6 +639,7 @@ const I18N = {
     serviciosFabVisible: '«Obre a…» visible al botó flotant',
   },
   en: {
+    fabVisible: 'Show the floating button',
     syncSoloEnVoceiro: 'Type the code in Voceiro (Settings › Reader), not on top of another site, which could read it.',
     syncTitle: 'Sync',
     syncOff: 'Not syncing. With Voceiro open in this browser it turns on by itself, with its code.',
@@ -845,6 +849,7 @@ const I18N = {
     serviciosFabVisible: '“Open in…” shown in the floating button',
   },
   eu: {
+    fabVisible: 'Erakutsi botoi mugikorra',
     syncSoloEnVoceiro: 'Kodea Voceiron idazten da (Ezarpenak › Irakurgailua), ez beste webgune baten gainean, irakur lezakeelako.',
     syncTitle: 'Sinkronizazioa',
     syncOff: 'Sinkronizatu gabe. Voceiro nabigatzaile honetan irekita badago, berez aktibatzen da haren kodearekin.',

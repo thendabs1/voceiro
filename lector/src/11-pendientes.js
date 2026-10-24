@@ -21,13 +21,15 @@ function conCambio(item, cambio){
 
 function saveForLater(art){
   if (!art || !art.headline) return;
-  const url = location.href;
+  const url = urlWebValida(art.url || location.href);
+  if (!url) return;
   const existing = findLaterItem(url);
 
   if (existing){
     // Estaba → alterna pendiente / leída
     const leida = !existing.read;
-    cambiarReadLater(conCambio(existing, { read: leida, readAt: leida ? Date.now() : null }));
+    const quitar = leida && CFG.readerSettings?.keepReadItems === false;
+    cambiarReadLater(conCambio(existing, { read: leida, readAt: leida ? Date.now() : null, ...(quitar ? { borrado: true } : {}) }));
     toast(t(leida ? 'movedToRead' : 'movedToPending'), 1800);
     return;
   }
@@ -40,7 +42,7 @@ function saveForLater(art){
     description: art.description || '',
     image: art.image || '',
     date: ahora,
-    domain: normalizeDomain(location.hostname),
+    domain: normalizeDomain(new URL(url).hostname),
     read: false,
     readAt: null,
     actualizado: ahora
@@ -85,6 +87,7 @@ function findLaterItem(url){
     if (normalizeUrlForMatch(r.url) === norm) return r;
   }
 
+  if (normalizeUrlForMatch(href) !== normalizeUrlForMatch(location.href)) return null;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical){
     const cAbs = absUrl(canonical.getAttribute('href') || '');
@@ -133,8 +136,8 @@ function hayLeidasSinAvisar(hasta){
 // Marca esta página como leída: en Pendientes, si está (respetando «guardar
 // leídas»), y para Voceiro. Devuelve con qué deshacerlo, o null si ya lo
 // estaba y no había nada que hacer.
-function marcarLeidaAlTerminar(){
-  const url = location.href;
+function marcarLeidaAlTerminar(url = location.href){
+  if (!urlWebValida(url)) return null;
   const item = findLaterItem(url);
   const antes = item ? { ...item } : null;
   if (item && !item.read){
@@ -169,9 +172,12 @@ function siguientePendiente(url){
    dirección o el mismo medio (por si redirige), durante dos minutos. */
 const SIGUIENTE_KEY = 'lector-abrir-al-llegar';
 
-function irASiguientePendiente(siguiente){
-  PLATAFORMA.guardar(SIGUIENTE_KEY, { url: siguiente.url, t: Date.now() });
-  location.href = siguiente.url;
+async function irASiguientePendiente(siguiente){
+  const url = urlWebValida(siguiente && siguiente.url);
+  if (!url) return;
+  await PLATAFORMA.guardar(SIGUIENTE_KEY, { url, t: Date.now() });
+  if (PLATAFORMA.vaciar) await PLATAFORMA.vaciar();
+  location.href = url;
 }
 
 function llegaDeSiguientePendiente(){

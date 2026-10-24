@@ -33,14 +33,18 @@ function detectPageLang(){
   if (SITE_LANGS.includes(htmlLang) && htmlLang !== 'auto') return htmlLang;
   return UI_LANGS.includes(CFG.lang) ? CFG.lang : 'es';
 }
+function plantillaDiccionarioValida(url){
+  return typeof url === 'string' && url.includes('{palabra}') &&
+    !!urlWebValida(url.replace(/\{palabra\}/g, 'palabra'));
+}
 function buildDictUrl(dict, word){
-  if (!dict || !dict.url) return null;
-  return dict.url.replace(/\{palabra\}/g, encodeURIComponent(word.trim()));
+  if (!dict || !plantillaDiccionarioValida(dict.url)) return null;
+  return urlWebValida(dict.url.replace(/\{palabra\}/g, encodeURIComponent(String(word).trim()))) || null;
 }
 function openDictionary(dict, word){
   if (!dict) { toast(t('dictNoDefault')); return; }
   const url = buildDictUrl(dict, word);
   if (!url){ toast(t('dictNotFound')); return; }
-  window.open(url, '_blank', 'noopener');
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 

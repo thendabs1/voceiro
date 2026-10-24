@@ -295,11 +295,12 @@ function comparable(d){
     lector: d && d.lector ? { datos: d.lector.datos, actualizado: d.lector.actualizado || 0 } : null
   });
 }
+let __lectorPuenteJSON = false;
 function enviarEstadoAhora(respuesta){
   if (!USCRIPT_OK) return;
   try {
     document.dispatchEvent(new CustomEvent('voceiro-estado', {
-      detail: structuredClone(estadoDeVoceiro(respuesta))
+      detail: __lectorPuenteJSON ? JSON.stringify(estadoDeVoceiro(respuesta)) : structuredClone(estadoDeVoceiro(respuesta))
     }));
   } catch(e){}
 }
@@ -349,7 +350,10 @@ function initUserScriptBridge(){
   rebuildPendientes();
 
   const conectar = e => {
-    const v = e.detail && e.detail.v;
+    let d;
+    try { d = typeof e.detail === 'string' ? JSON.parse(e.detail) : e.detail; } catch(e){ return; }
+    const v = d && d.v;
+    if (typeof e.detail === 'string' && v === PUENTE_V) __lectorPuenteJSON = true;
     USCRIPT_CHECKED = true;
     if (v === PUENTE_V){
       const primera = !USCRIPT_OK;
@@ -367,7 +371,8 @@ function initUserScriptBridge(){
   document.addEventListener('voceiro-pong', conectar);
 
   document.addEventListener('lector-estado', e => {
-    const d = e.detail;
+    let d;
+    try { d = typeof e.detail === 'string' ? JSON.parse(e.detail) : e.detail; } catch(e){ return; }
     if (!d || typeof d !== 'object' || d.v !== PUENTE_V) return;
     if (!USCRIPT_OK) conectar({ detail: { v: PUENTE_V } });
     recibirEstadoDelLector(d);

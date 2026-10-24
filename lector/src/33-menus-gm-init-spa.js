@@ -85,28 +85,25 @@ function init(){
 let __lastHref = location.href;
 function checkUrlChange(){
   if (location.href === __lastHref) return;
+  const cambioArticulo = normalizeUrlForMatch(location.href) !== normalizeUrlForMatch(__lastHref);
   __lastHref = location.href;
-  if (document.getElementById('il-full')) return;
+  if (!cambioArticulo) return;
+  if (__lectorAbierto) __lectorAbierto.cerrar();
   actualizarBoton();
-
-  const attempt = (delay) => setTimeout(() => {
-    if (document.getElementById('il-full')) return;
+  const href = location.href;
+  for (const delay of [400, 1600]) setTimeout(() => {
+    if (location.href !== href || document.getElementById('il-full')) return;
     actualizarBoton();
-    if (isDomainDisabled(location.hostname)) return;
-    if (shouldActivateHere()) init();
+    if (!isDomainDisabled(location.hostname) && shouldActivateHere()) activateReader();
   }, delay);
-  attempt(400);
-  attempt(1600);
 }
-['pushState','replaceState'].forEach(m => {
-  const orig = history[m];
-  history[m] = function(){
-    const r = orig.apply(this, arguments);
-    setTimeout(checkUrlChange, 60);
-    return r;
-  };
+// Comparar la URL no modifica el historial de la página y funciona también
+// desde el contexto aislado de una extensión. La caché Atrás/Adelante
+// pausa el intervalo y lo reanuda al volver: solo se cancela al descartar.
+const __navegacion = setInterval(checkUrlChange, 1000);
+window.addEventListener('pagehide', e => {
+  if (!e.persisted) clearInterval(__navegacion);
 });
-window.addEventListener('popstate', () => setTimeout(checkUrlChange, 60));
 
 document.addEventListener('keydown', globalKeyHandler, true);
 
