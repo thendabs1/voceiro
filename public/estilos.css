@@ -1954,8 +1954,14 @@
 .estadisticas-panel details{border-top:1px solid var(--border);padding:12px 0;margin-top:16px;font-size:.85em}
 .estadisticas-panel summary{cursor:pointer;min-height:44px;display:list-item;align-content:center}
 .est-barras{display:flex;align-items:end;gap:4px;height:150px;border-bottom:1px solid var(--btn-border);margin-top:18px;padding:0 3px}
-.est-barras span{display:flex;align-items:end;height:100%;flex:1;min-width:0}
+.est-barras button{display:flex;align-items:end;height:100%;flex:1;min-width:0;padding:0;border:0;border-radius:0;background:transparent}
 .est-barras i{display:block;width:100%;height:var(--est-valor);background:var(--save);min-height:1px}
-.est-ampliado .est-cuerpo{min-height:65vh}
-.estadisticas-abiertas #tiempo-tarjeta,.estadisticas-abiertas #avisos-panel{display:none}
+.est-barras button:hover i,.est-barras [aria-current] i{background:var(--accent)}
+.est-barras [aria-current]{box-shadow:inset 0 -3px var(--accent)}
+.estadisticas-panel[aria-busy="true"] .est-contenido{opacity:.55;transition:opacity .2s}
+.est-tabla [data-est="familia"]::before{content:'▸ ';display:inline-block;width:1.1em;text-decoration:none}
+.est-tabla [data-est="familia"][aria-expanded="true"]::before{content:'▾ '}
+.est-subgrupo{display:block;padding-left:1.4em}
+/* El panel es la vista: sin feed debajo en el que caer al desplazarse. */
+.estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:10px;gap:6px}.est-cabecera strong{font-size:.9em}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros label{flex:1 1 120px}.est-filtros select{width:100%}.est-nav{padding-inline:10px}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
