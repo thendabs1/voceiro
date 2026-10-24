@@ -20,7 +20,7 @@ function renderPestanasPreset(){
 // duplicados): el manifest trae el resumen. El de antes solo listaba días
 // y se sumaban sus all.n.
 function renderTotalR2(){
-  const el = $('#total-r2'), sep = $('#total-r2-sep');
+  const el = $('#total-r2');
   if (!el) return;
   const dias = (_manifest && _manifest.dias) || [];
   const g = (_manifest && _manifest.guardado) || {
@@ -28,7 +28,7 @@ function renderTotalR2(){
     dias: dias.length,
     desde: dias.length ? dias[dias.length - 1].fecha : '',
   };
-  el.hidden = sep.hidden = !g.n;
+  el.hidden = !g.n;
   if (!g.n) return;
   const [a, m, d] = (g.desde || '').split('-');
   el.textContent = t('contadorR2', { n: g.n.toLocaleString() });

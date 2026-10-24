@@ -76,7 +76,7 @@
     font-family:var(--ff);
     background:var(--bg); color:var(--fg);
     font-size:var(--fs); line-height:var(--lh);
-    max-width:var(--w); margin:0 auto; padding:20px;
+    max-width:var(--w); margin:0 auto; padding:0 20px 20px;
     transition:background .15s, color .15s;
   }
   code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em}
@@ -85,6 +85,10 @@
   a{color:var(--accent)}
   h1, h2, h3, h4{color:var(--titulos)}
   :focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+  .sr-only{
+    position:absolute; width:1px; height:1px; overflow:hidden;
+    clip-path:inset(50%); white-space:nowrap;
+  }
   /* Iconos del sprite: miden lo que la letra y toman su color */
   .ico{
     width:1.15em; height:1.15em; flex-shrink:0;
@@ -97,44 +101,47 @@
   /* ═══ Cabecera ═══ */
   header{
     background: var(--bg);
-    padding: 12px 0 0;
+    padding: 0;
+    border-bottom: 1px solid var(--border);
   }
   header .header-top{
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px 10px;
-    margin-bottom: 4px;
+    min-height: 44px;
   }
-  header #h-title{
-    margin: 0;
-    padding: 0;
-    border: none;
-    font-size: 1.6em;
-    line-height: 1.2;
-    flex: 0 0 auto;
+  .header-brand{
+    font-size: .78em;
+    font-weight: 600;
+    color: var(--titulos);
+    flex-shrink: 0;
   }
+  #cab-meta-home{ flex:1; min-width:0; }
   header .header-actions{
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 6px;
     align-items: center;
   }
   header .header-actions button{
     font-size: .78em;
-    padding: 6px 12px;
+    padding: 6px 8px;
+    min-height: 40px;
+    border: 0;
+    background: transparent;
   }
   header .header-actions .lang-select{
     flex-shrink: 0;
   }
   header .header-actions-right{
     flex: 0 0 auto;
-    margin-left: auto;   /* ← empuja el grupo a la derecha */
+    margin-left: auto;
   }
 
   header .meta{
     color: var(--muted);
-    font-size: .72em;
+    font-size: .68em;
     margin: 0;
     display: flex;
     align-items: center;
@@ -146,11 +153,41 @@
   header .meta .meta-text{
     flex: 1 1 auto;
     min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   header .meta .meta-text > span{
     margin-right: 4px;
   }
   #total-r2{ font-weight: bold; }
+  .cab-menu{ display:none; position:relative; }
+  .cab-menu > summary{
+    display:flex; align-items:center; justify-content:center;
+    width:44px; min-height:44px; cursor:pointer; list-style:none;
+    border-radius:6px;
+  }
+  .cab-menu > summary::-webkit-details-marker{ display:none; }
+  .cab-menu[open] > summary{ background:var(--quote-bg); }
+  .cab-menu-panel{
+    position:absolute; right:0; top:calc(100% + 4px);
+    width:min(320px, calc(100vw - 40px));
+    max-height:calc(100dvh - 64px); overflow-y:auto;
+    padding:8px; background:var(--bg); color:var(--fg);
+    border:1px solid var(--border); border-radius:8px;
+    box-shadow:0 8px 24px var(--shadow); z-index:50;
+  }
+  .cab-menu-panel .meta{ padding:8px; margin-bottom:6px; border-bottom:1px solid var(--border); }
+  .cab-menu-panel .meta-text{ white-space:normal; overflow:visible; }
+  .cab-menu-panel > button{
+    display:flex; align-items:center; gap:10px; width:100%;
+    min-height:44px; padding:8px 10px; font-size:.78em;
+    border:0; text-align:left; justify-content:flex-start;
+    background:transparent; color:var(--fg);
+  }
+  .cab-menu-panel > button:hover{ background:var(--quote-bg); }
+  .cab-menu-panel > button.active{ background:var(--preset-bg); color:var(--preset); }
+  .cab-menu-panel #btn-pase, .cab-menu-panel #btn-lectura{ justify-content:flex-start; }
   button, a.boton{
     cursor:pointer; padding:8px 14px;
     border:1px solid var(--btn-border);
@@ -169,20 +206,29 @@
   }
 
   .btn-preset{
-    border:2px solid var(--preset); background:transparent; color:var(--preset);
+    border:0; background:transparent; color:inherit;
     font-weight:600;
     display:inline-flex; align-items:center; gap:.35em;
   }
-  .btn-preset .preset-nombre{
+  .preset-nombre{
     min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
-  .btn-preset:hover{background:var(--preset-bg)}
-  .btn-preset.active{background:var(--preset); color:var(--on-solid)}
+  .btn-preset:hover, #btn-recargar:hover{background:var(--preset-bg)}
+  .btn-preset.active{background:transparent; color:inherit}
   .preset-wrap{
     position: relative;
     display: inline-flex;
     align-items: center;
+    color:var(--titulos);
   }
+  .preset-wrap.active{ color:var(--preset); }
+  #h-title{ margin:0; font-size:1.25em; line-height:1.2; min-width:0; color:inherit; }
+  #btn-recargar{
+    display:flex; align-items:center; gap:.3em; min-width:0; max-width:100%;
+    padding:6px 0; min-height:44px; border:0; background:transparent;
+    color:inherit; font:inherit; font-weight:700;
+  }
+  .preset-wrap > .btn-preset{ flex-shrink:0; min-width:36px; padding:6px; justify-content:center; }
   .preset-menu{
     position: absolute;
     top: calc(100% + 6px);
@@ -553,11 +599,11 @@
   .barra-sup{ transition: none; }
 }
 .filtros-wrap{
-  padding: 6px 0 0;
+  padding: 10px 0 0;
 }
 .filtros-row{
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto auto auto;
+  grid-template-columns: minmax(0, auto) auto minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   padding-bottom: 10px;
@@ -601,13 +647,17 @@
 .filtros-panel:not(:modal) legend{ float:left; padding:0; font-size:.78em; color:var(--muted); }
 .filtros-panel:not(:modal) .filtros-lectura{ display:flex; flex-wrap:wrap; gap:0 4px; }
 .filtros-wrap .preset-wrap{ min-width:0; max-width:240px; }
-.filtros-wrap .btn-preset{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-height:44px; }
+.feed-actions{ display:flex; align-items:center; gap:6px; }
+.feed-actions > button, .filtros-row > .btn-pendientes{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:44px; min-height:44px; padding:6px 9px; font-size:.78em;
+}
 #btn-filtros, #btn-buscar, #btn-pase, #btn-lectura, #filtros-cerrar{ min-height:44px; opacity:1; font-size:.78em; }
 #btn-pase, #btn-lectura{ min-width:44px; justify-content:center; }
 #btn-buscar{ display:none; }
 #btn-buscar .ico-volver{ display:none; }
 @media (max-width: 640px){
-  .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto auto; gap:6px; }
+  .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto; gap:6px; }
   .filtros-wrap .preset-wrap{ max-width:none; }
   #btn-buscar{ display:inline-flex; align-items:center; gap:6px; }
   /* Solo icono (y el número en Filtros): el texto queda para lectores de pantalla. */
@@ -619,7 +669,7 @@
   .filtros-row .filtro-buscar-wrap{ display:none; }
   /* Búsqueda abierta: ocupa la fila y la lupa pasa a «←» para cerrarla. */
   .filtros-wrap.busqueda-abierta .filtros-row{ grid-template-columns:auto minmax(0,1fr); }
-  .filtros-wrap.busqueda-abierta :is(.preset-wrap, #btn-pase, #btn-lectura, #btn-filtros){ display:none; }
+  .filtros-wrap.busqueda-abierta :is(.preset-wrap, #btn-pendientes, .feed-actions, #btn-filtros){ display:none; }
   .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; }
   .filtros-wrap.busqueda-abierta #btn-buscar .ico-buscar{ display:none; }
   .filtros-wrap.busqueda-abierta #btn-buscar .ico-volver{ display:inline; }
@@ -1442,62 +1492,28 @@
     height:1px;
     margin-top:8px;
   }
-  /* ═══ Cabecera en una sola fila en escritorio ═══ */
-@media (min-width: 820px){
-  header .header-actions button{
-    font-size: .74em;
-    padding: 6px 10px;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  header .header-actions .lang-select{
-    font-size: .74em;
-    padding: 6px 8px;
-    flex-shrink: 0;
-  }
-}
-/* Botones de la cabecera: icono y palabra; en móvil, solo el icono (la
-   palabra sigue ahí para lectores de pantalla). */
+/* La franja superior conserva una línea; los controles secundarios pasan
+   al menú según el ancho real de la columna elegida en Lectura. */
 .btn-cab{ display:inline-flex; align-items:center; gap:.4em; }
-@media (max-width: 640px){
-  header #h-title{ font-size: 1.3em; }
-  header .header-top{ flex-wrap: wrap; }
-  header .meta{ order: 3; flex: 1 0 100%; }
-  header .header-actions-right{ order: 2; margin-left: auto; }
-  header .header-actions .btn-cab{
-    min-width: 40px; min-height: 40px; padding: 6px 9px; justify-content: center;
-  }
-  .btn-cab .cab-txt{
-    position: absolute; width: 1px; height: 1px; overflow: hidden;
-    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
-  }
+.filtros-row > .btn-pendientes .cab-txt,
+.feed-actions .cab-txt{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip-path:inset(50%); white-space:nowrap;
 }
-/* Columna ancha (la elige el usuario en «Aa»; por eso es @container y no
-   @media): una sola fila con todo y la línea de fecha encima, que es lo que
-   se esconde al bajar. header y .filtros-wrap ceden sus hijos a la rejilla. */
-@container barra (min-width: 900px){
-  .barra-in{
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "meta meta meta" "tit fil acc" "pan pan pan";
-    column-gap: 14px;
-    align-items: center;
-    padding: 8px 0 10px;
+@container barra (width < 900px){
+  .cab-menu{ display:block; }
+  #cab-meta-home, #cab-est-home, #cab-feed-home{ display:none; }
+  .filtros-row{ grid-template-columns:minmax(0, auto) auto minmax(0, 1fr) auto; }
+  #btn-filtros.lectura-activa{ background:var(--preset-bg); border-color:var(--preset); color:var(--preset); }
+}
+@media (max-width: 640px){
+  #h-title{ font-size:1.1em; }
+  header .header-actions .btn-tiempo .cab-txt{
+    position:absolute; width:1px; height:1px; overflow:hidden;
+    clip-path:inset(50%); white-space:nowrap;
   }
-  .barra-in > header, .barra-in .header-top, .barra-in > .filtros-wrap{ display: contents; }
-  header .meta{ grid-area: meta; padding-bottom: 6px; }
-  header #h-title{ grid-area: tit; font-size: 1.35em; }
-  header .header-actions-right{ grid-area: acc; margin-left: 0; }
-  .filtros-row{
-    grid-area: fil; padding-bottom: 0;
-    grid-template-columns: minmax(0, auto) minmax(10em, 26em) auto auto auto;
-    justify-content: start;
-  }
-  .filtros-panel:not(:modal){ grid-area: pan; padding-top: 10px; }
-  .btn-cab .cab-txt{
-    position: absolute; width: 1px; height: 1px; overflow: hidden;
-    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
-  }
+  .filtros-row{ grid-template-columns:minmax(0, 1fr) auto auto auto; }
+  .filtros-wrap.busqueda-abierta .filtros-row{ grid-template-columns:auto minmax(0,1fr); }
 }
   @media (max-width:900px){
 .filtros-row{ position: static; }

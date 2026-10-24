@@ -186,6 +186,7 @@ export default {
   "presetSinFiltro": "Iragazkirik gabe",
   "presetGestionar": "Moduak kudeatu…",
   "pageTitle": "Voceiro · Izenburuak",
+  "cabCambiarModo": "Modua aldatu",
   "headerTitle": "Voceiro",
   "metaPrefix": "Eguneratuta:",
   "metaSuffix": "izenburu historian",

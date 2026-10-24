@@ -52,5 +52,8 @@ de menciones. El resumen técnico no necesita esa clasificación.
 
 Ideas de UI recogidas al probar la maqueta: jerarquía de contexto y cifras,
 controles agrupados, espacio entre bloques y acciones secundarias en ⋯.
-Revisar su aplicación al feed en otro cambio de diseño; conservar los accesos
-habituales y las preferencias de lectura.
+El feed usa una franja superior de una línea con la marca, actualización,
+contador, tiempo y estadísticas. El nombre de la vista recarga y su flecha
+abre los modos; Guardadas está a la izquierda del buscador. Por debajo de
+900 px de columna, el menú ⋯ reúne información, estadísticas y controles
+secundarios, conservando sus estados. El total del archivo está en Estadísticas.

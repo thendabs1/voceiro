@@ -258,7 +258,9 @@ function pintarEstadisticas(){
     <p class="est-contexto">${escapeHtml(estFecha(s.fecha))}${datos && !datos.cerrado ? ' · ' + escapeHtml(t('estRevisable')) : ''}</p>
     <p class="est-estado" role="status">${s.error ? escapeHtml(t('estErrorCarga')) + ' ' + estBoton('renovar', t('estReintentar')) : s.cargando ? escapeHtml(t('estCargando')) : ''}</p>
     <div class="est-contenido">${contenido}</div>
+    <p id="total-r2" class="est-nota est-pie" hidden></p>
     <p class="est-nota est-pie">${escapeHtml(t('estMetodo'))}${generado ? ' ' + escapeHtml(t('estGenerado', { fecha: estGenerado(generado) })) : ''}</p></div>`;
+  renderTotalR2();
   // Repintar una tabla no debe expulsar el teclado al body.
   const siguiente = idFoco ? document.getElementById(idFoco) : [...panel.querySelectorAll('[data-est]')].find(b => b.dataset.est === accionFoco && b.dataset.valor === valorFoco);
   siguiente?.focus({ preventScroll: true });
@@ -337,7 +339,9 @@ function cerrarEstadisticas(volver = true){
   s.abierto = false; s.secuencia++; s.controller?.abort(); s.cargando = false;
   pintarEstadisticas();
   if (!volver) return;
-  (s.origen?.isConnected && s.origen.getClientRects().length ? s.origen : document.getElementById('btn-estadisticas'))?.focus({ preventScroll: true });
+  const origen = s.origen?.isConnected && s.origen.getClientRects().length ? s.origen : document.getElementById('btn-estadisticas');
+  const menu = origen?.closest?.('#cab-menu');
+  (menu && !menu.open ? menu.querySelector('summary') : origen)?.focus({ preventScroll: true });
   window.scrollTo({ top: s.scroll, behavior: 'auto' });
 }
 

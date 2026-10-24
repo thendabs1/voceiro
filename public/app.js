@@ -12,31 +12,31 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=62d6e1079e';
+} from './parser.js?v=f57f9fea17';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=62d6e1079e';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=62d6e1079e';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=62d6e1079e';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=62d6e1079e';
-import { comparador } from './busqueda/orden.js?v=62d6e1079e';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=f57f9fea17';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=f57f9fea17';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=f57f9fea17';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=f57f9fea17';
+import { comparador } from './busqueda/orden.js?v=f57f9fea17';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=62d6e1079e';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=62d6e1079e';
+} from './sync/fusion.js?v=f57f9fea17';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=f57f9fea17';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=62d6e1079e';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=62d6e1079e';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=f57f9fea17';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=f57f9fea17';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=62d6e1079e';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=f57f9fea17';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=62d6e1079e';
+} from './tiempo/avisos.js?v=f57f9fea17';
 
-import { I18N, traducir } from './idiomas/index.js?v=62d6e1079e';
+import { I18N, traducir } from './idiomas/index.js?v=f57f9fea17';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -803,7 +803,10 @@ function actualizarFiltrosCount(){
     count.textContent = n;
     count.dataset.count = String(n);
   }
-  if (btn) btn.classList.toggle('active', n > 0);
+  if (btn){
+    btn.classList.toggle('active', n > 0);
+    btn.classList.toggle('lectura-activa', HIDE_MODE !== 'off');
+  }
 }
 
 // El ojo de la barra alterna entre ver todos y el último modo de ocultar
@@ -825,6 +828,8 @@ function pintarBotonLectura(){
   b.setAttribute('aria-pressed', String(activo));
   b.setAttribute('aria-label', txt);
   b.title = txt;
+  const etiqueta = b.querySelector('.cab-txt');
+  if (etiqueta) etiqueta.textContent = txt;
   b.querySelector('use').setAttribute('href', activo ? '#i-eye-off' : '#i-eye');
 }
 
@@ -862,9 +867,15 @@ function actualizarBotonPreset(){
   const nombre = temas  ? t('presetVistaTemas')
                : activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
 
-  btn.innerHTML = (temas ? ico('hash') : '')
-    + `<span class="preset-nombre">${escapeHtml(nombre)}</span>` + ico('chevron-down');
+  const recargar = $('#btn-recargar');
+  recargar.innerHTML = (temas ? ico('hash') : '')
+    + `<span class="preset-nombre">${escapeHtml(nombre)}</span>`;
+  recargar.title = `${t('estActualizar')} · ${nombre} (F5)`;
+  recargar.setAttribute('aria-label', `${t('estActualizar')} · ${nombre}`);
+  btn.title = t('cabCambiarModo');
+  btn.setAttribute('aria-label', t('cabCambiarModo'));
   btn.classList.toggle('active', !!activo || temas);
+  btn.closest('.preset-wrap').classList.toggle('active', !!activo || temas);
 
   const menu = $('#preset-menu');
   if (menu && menu.style.display !== 'none'){
@@ -1938,7 +1949,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=62d6e1079e');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=f57f9fea17');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2063,10 +2074,55 @@ function refrescarBotonesGuardar(){
 // con la búsqueda de móvil abierta ni con el menú de modo desplegado (ahí
 // se queda como esté).
 const SUBIR_CAB = 60;
+// Se mueven los controles, sin duplicar estados ni manejadores de eventos.
+function wireMenuCabecera(barra){
+  const menu = document.getElementById('cab-menu');
+  const panel = document.getElementById('cab-menu-panel');
+  const destinos = [
+    [document.querySelector('header .meta'), document.getElementById('cab-meta-home')],
+    [document.getElementById('btn-estadisticas'), document.getElementById('cab-est-home')],
+    ...[...document.querySelectorAll('#cab-feed-home > button')]
+      .map(b => [b, document.getElementById('cab-feed-home')]),
+  ];
+  let compacto;
+  new ResizeObserver(([entrada]) => {
+    const siguiente = entrada.contentRect.width < 900;
+    if (siguiente === compacto) return;
+    compacto = siguiente;
+    const foco = document.activeElement;
+    const estabaEnMenu = menu.contains(foco);
+    for (const [el, origen] of destinos) (compacto ? panel : origen).append(el);
+    menu.open = compacto && destinos.some(([el]) => el.contains(foco));
+    if (menu.open || (!compacto && estabaEnMenu)) {
+      (foco === menu.querySelector('summary') ? document.getElementById('btn-recargar') : foco)
+        .focus({ preventScroll: true });
+    }
+  }).observe(barra);
+  const cerrar = () => { menu.open = false; };
+  menu.addEventListener('toggle', () => {
+    if (menu.open) barra.classList.remove('cab-oculta');
+  });
+  document.addEventListener('pointerdown', e => { if (!menu.contains(e.target)) cerrar(); });
+  menu.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault(); e.stopPropagation(); cerrar();
+      menu.querySelector('summary').focus({ preventScroll: true });
+    }
+  });
+  menu.addEventListener('focusout', e => {
+    if (!menu.contains(e.relatedTarget)) cerrar();
+  });
+  panel.addEventListener('click', e => {
+    if (!e.target.closest('button')) return;
+    cerrar();
+    if (panel.contains(document.activeElement)) menu.querySelector('summary').focus({ preventScroll: true });
+  });
+}
 function wireCabecera(){
   const barra = document.getElementById('barra-sup');
   const fila = barra?.querySelector('.filtros-row');
   if (!fila) return;
+  wireMenuCabecera(barra);
   let alto = 0;
   const medir = () => {
     // Las dos cajas llevan el mismo transform: la resta no depende de él.
@@ -2077,6 +2133,7 @@ function wireCabecera(){
   medir();
   const fija = () => !!barra.querySelector(':focus-visible')
     || barra.querySelector('.filtros-wrap').classList.contains('busqueda-abierta')
+    || document.getElementById('cab-menu').open
     || document.getElementById('preset-menu').style.display !== 'none';
   const ocultar = v => barra.classList.toggle('cab-oculta', v);
   let ultY = window.scrollY, bajado = 0, subido = 0;
@@ -3689,7 +3746,9 @@ function pintarEstadisticas(){
     <p class="est-contexto">${escapeHtml(estFecha(s.fecha))}${datos && !datos.cerrado ? ' · ' + escapeHtml(t('estRevisable')) : ''}</p>
     <p class="est-estado" role="status">${s.error ? escapeHtml(t('estErrorCarga')) + ' ' + estBoton('renovar', t('estReintentar')) : s.cargando ? escapeHtml(t('estCargando')) : ''}</p>
     <div class="est-contenido">${contenido}</div>
+    <p id="total-r2" class="est-nota est-pie" hidden></p>
     <p class="est-nota est-pie">${escapeHtml(t('estMetodo'))}${generado ? ' ' + escapeHtml(t('estGenerado', { fecha: estGenerado(generado) })) : ''}</p></div>`;
+  renderTotalR2();
   // Repintar una tabla no debe expulsar el teclado al body.
   const siguiente = idFoco ? document.getElementById(idFoco) : [...panel.querySelectorAll('[data-est]')].find(b => b.dataset.est === accionFoco && b.dataset.valor === valorFoco);
   siguiente?.focus({ preventScroll: true });
@@ -3768,7 +3827,9 @@ function cerrarEstadisticas(volver = true){
   s.abierto = false; s.secuencia++; s.controller?.abort(); s.cargando = false;
   pintarEstadisticas();
   if (!volver) return;
-  (s.origen?.isConnected && s.origen.getClientRects().length ? s.origen : document.getElementById('btn-estadisticas'))?.focus({ preventScroll: true });
+  const origen = s.origen?.isConnected && s.origen.getClientRects().length ? s.origen : document.getElementById('btn-estadisticas');
+  const menu = origen?.closest?.('#cab-menu');
+  (menu && !menu.open ? menu.querySelector('summary') : origen)?.focus({ preventScroll: true });
   window.scrollTo({ top: s.scroll, behavior: 'auto' });
 }
 
@@ -3876,7 +3937,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=62d6e1079e')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=f57f9fea17')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -5052,7 +5113,8 @@ function ajCerrarVista(){
   ajActivarAlCerrar();
   const origen = _ajOrigen && _ajOrigen.isConnected && _ajOrigen.getClientRects().length
     ? _ajOrigen : $('#btn-config');
-  origen.focus({ preventScroll: true });
+  const menu = origen.closest('#cab-menu');
+  (menu && !menu.open ? menu.querySelector('summary') : origen).focus({ preventScroll: true });
   _ajOrigen = null;
 }
 
@@ -6621,7 +6683,7 @@ function renderPestanasPreset(){
 // duplicados): el manifest trae el resumen. El de antes solo listaba días
 // y se sumaban sus all.n.
 function renderTotalR2(){
-  const el = $('#total-r2'), sep = $('#total-r2-sep');
+  const el = $('#total-r2');
   if (!el) return;
   const dias = (_manifest && _manifest.dias) || [];
   const g = (_manifest && _manifest.guardado) || {
@@ -6629,7 +6691,7 @@ function renderTotalR2(){
     dias: dias.length,
     desde: dias.length ? dias[dias.length - 1].fecha : '',
   };
-  el.hidden = sep.hidden = !g.n;
+  el.hidden = !g.n;
   if (!g.n) return;
   const [a, m, d] = (g.desde || '').split('-');
   el.textContent = t('contadorR2', { n: g.n.toLocaleString() });
@@ -6897,7 +6959,8 @@ function cerrarPase(refiltrar = true){
   p.root.remove();
   if (refiltrar){
     aplicarFiltros();
-    $('#btn-pase').focus({ preventScroll: true });
+    const btn = $('#btn-pase'), menu = btn.closest('#cab-menu');
+    (menu && !menu.open ? menu.querySelector('summary') : btn).focus({ preventScroll: true });
   }
 }
 
@@ -7516,7 +7579,7 @@ function cerrarPanel(id){
    ═══════════════════════════════════════════════════════════════ */
 function aplicarTextos(){
   document.title = t('pageTitle');
-  $('#h-title').textContent = t('headerTitle');
+  $('#cab-menu-label').textContent = t('masAcciones');
   $('#meta-prefix').textContent = t('metaPrefix');
 
   actualizarBotonPreset();
@@ -7536,6 +7599,7 @@ function aplicarTextos(){
   // Filtros de lectura.
   $('#btn-pase').title = t('paseCapa');
   $('#btn-pase').setAttribute('aria-label', t('paseCapa'));
+  $('#btn-pase .cab-txt').textContent = t('paseCapa');
   $('#vs-title-hide').textContent  = t('vsTitleHide');
   $('#vs-ayuda-lbl').textContent = t('vsAyudaLbl');
   $('#aj-hide-ayuda-lbl').textContent = t('vsAyudaLbl');
@@ -8006,10 +8070,8 @@ function wireStaticEvents(){
   const btnP = $('#btn-preset');
   actualizarBotonPreset();
   wireDiasSelector();
-  const hTitle = document.getElementById('h-title');
+  const hTitle = document.getElementById('btn-recargar');
   if (hTitle){
-    hTitle.style.cursor = 'pointer';
-    hTitle.title = 'F5';
     hTitle.addEventListener('click', () => {
       if ('scrollRestoration' in history){
         history.scrollRestoration = 'manual';

@@ -33,10 +33,55 @@ function refrescarBotonesGuardar(){
 // con la búsqueda de móvil abierta ni con el menú de modo desplegado (ahí
 // se queda como esté).
 const SUBIR_CAB = 60;
+// Se mueven los controles, sin duplicar estados ni manejadores de eventos.
+function wireMenuCabecera(barra){
+  const menu = document.getElementById('cab-menu');
+  const panel = document.getElementById('cab-menu-panel');
+  const destinos = [
+    [document.querySelector('header .meta'), document.getElementById('cab-meta-home')],
+    [document.getElementById('btn-estadisticas'), document.getElementById('cab-est-home')],
+    ...[...document.querySelectorAll('#cab-feed-home > button')]
+      .map(b => [b, document.getElementById('cab-feed-home')]),
+  ];
+  let compacto;
+  new ResizeObserver(([entrada]) => {
+    const siguiente = entrada.contentRect.width < 900;
+    if (siguiente === compacto) return;
+    compacto = siguiente;
+    const foco = document.activeElement;
+    const estabaEnMenu = menu.contains(foco);
+    for (const [el, origen] of destinos) (compacto ? panel : origen).append(el);
+    menu.open = compacto && destinos.some(([el]) => el.contains(foco));
+    if (menu.open || (!compacto && estabaEnMenu)) {
+      (foco === menu.querySelector('summary') ? document.getElementById('btn-recargar') : foco)
+        .focus({ preventScroll: true });
+    }
+  }).observe(barra);
+  const cerrar = () => { menu.open = false; };
+  menu.addEventListener('toggle', () => {
+    if (menu.open) barra.classList.remove('cab-oculta');
+  });
+  document.addEventListener('pointerdown', e => { if (!menu.contains(e.target)) cerrar(); });
+  menu.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault(); e.stopPropagation(); cerrar();
+      menu.querySelector('summary').focus({ preventScroll: true });
+    }
+  });
+  menu.addEventListener('focusout', e => {
+    if (!menu.contains(e.relatedTarget)) cerrar();
+  });
+  panel.addEventListener('click', e => {
+    if (!e.target.closest('button')) return;
+    cerrar();
+    if (panel.contains(document.activeElement)) menu.querySelector('summary').focus({ preventScroll: true });
+  });
+}
 function wireCabecera(){
   const barra = document.getElementById('barra-sup');
   const fila = barra?.querySelector('.filtros-row');
   if (!fila) return;
+  wireMenuCabecera(barra);
   let alto = 0;
   const medir = () => {
     // Las dos cajas llevan el mismo transform: la resta no depende de él.
@@ -47,6 +92,7 @@ function wireCabecera(){
   medir();
   const fija = () => !!barra.querySelector(':focus-visible')
     || barra.querySelector('.filtros-wrap').classList.contains('busqueda-abierta')
+    || document.getElementById('cab-menu').open
     || document.getElementById('preset-menu').style.display !== 'none';
   const ocultar = v => barra.classList.toggle('cab-oculta', v);
   let ultY = window.scrollY, bajado = 0, subido = 0;

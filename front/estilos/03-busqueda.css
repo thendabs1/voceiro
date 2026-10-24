@@ -14,11 +14,11 @@
   .barra-sup{ transition: none; }
 }
 .filtros-wrap{
-  padding: 6px 0 0;
+  padding: 10px 0 0;
 }
 .filtros-row{
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto auto auto;
+  grid-template-columns: minmax(0, auto) auto minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   padding-bottom: 10px;
@@ -62,13 +62,17 @@
 .filtros-panel:not(:modal) legend{ float:left; padding:0; font-size:.78em; color:var(--muted); }
 .filtros-panel:not(:modal) .filtros-lectura{ display:flex; flex-wrap:wrap; gap:0 4px; }
 .filtros-wrap .preset-wrap{ min-width:0; max-width:240px; }
-.filtros-wrap .btn-preset{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-height:44px; }
+.feed-actions{ display:flex; align-items:center; gap:6px; }
+.feed-actions > button, .filtros-row > .btn-pendientes{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:44px; min-height:44px; padding:6px 9px; font-size:.78em;
+}
 #btn-filtros, #btn-buscar, #btn-pase, #btn-lectura, #filtros-cerrar{ min-height:44px; opacity:1; font-size:.78em; }
 #btn-pase, #btn-lectura{ min-width:44px; justify-content:center; }
 #btn-buscar{ display:none; }
 #btn-buscar .ico-volver{ display:none; }
 @media (max-width: 640px){
-  .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto auto; gap:6px; }
+  .filtros-row{ grid-template-columns:minmax(0,1fr) auto auto auto; gap:6px; }
   .filtros-wrap .preset-wrap{ max-width:none; }
   #btn-buscar{ display:inline-flex; align-items:center; gap:6px; }
   /* Solo icono (y el número en Filtros): el texto queda para lectores de pantalla. */
@@ -80,7 +84,7 @@
   .filtros-row .filtro-buscar-wrap{ display:none; }
   /* Búsqueda abierta: ocupa la fila y la lupa pasa a «←» para cerrarla. */
   .filtros-wrap.busqueda-abierta .filtros-row{ grid-template-columns:auto minmax(0,1fr); }
-  .filtros-wrap.busqueda-abierta :is(.preset-wrap, #btn-pase, #btn-lectura, #btn-filtros){ display:none; }
+  .filtros-wrap.busqueda-abierta :is(.preset-wrap, #btn-pendientes, .feed-actions, #btn-filtros){ display:none; }
   .filtros-wrap.busqueda-abierta .filtro-buscar-wrap{ display:block; }
   .filtros-wrap.busqueda-abierta #btn-buscar .ico-buscar{ display:none; }
   .filtros-wrap.busqueda-abierta #btn-buscar .ico-volver{ display:inline; }

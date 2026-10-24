@@ -265,7 +265,10 @@ function actualizarFiltrosCount(){
     count.textContent = n;
     count.dataset.count = String(n);
   }
-  if (btn) btn.classList.toggle('active', n > 0);
+  if (btn){
+    btn.classList.toggle('active', n > 0);
+    btn.classList.toggle('lectura-activa', HIDE_MODE !== 'off');
+  }
 }
 
 // El ojo de la barra alterna entre ver todos y el último modo de ocultar
@@ -287,6 +290,8 @@ function pintarBotonLectura(){
   b.setAttribute('aria-pressed', String(activo));
   b.setAttribute('aria-label', txt);
   b.title = txt;
+  const etiqueta = b.querySelector('.cab-txt');
+  if (etiqueta) etiqueta.textContent = txt;
   b.querySelector('use').setAttribute('href', activo ? '#i-eye-off' : '#i-eye');
 }
 
@@ -324,9 +329,15 @@ function actualizarBotonPreset(){
   const nombre = temas  ? t('presetVistaTemas')
                : activo ? (PRESET.nombre || 'General') : t('presetSinFiltro');
 
-  btn.innerHTML = (temas ? ico('hash') : '')
-    + `<span class="preset-nombre">${escapeHtml(nombre)}</span>` + ico('chevron-down');
+  const recargar = $('#btn-recargar');
+  recargar.innerHTML = (temas ? ico('hash') : '')
+    + `<span class="preset-nombre">${escapeHtml(nombre)}</span>`;
+  recargar.title = `${t('estActualizar')} · ${nombre} (F5)`;
+  recargar.setAttribute('aria-label', `${t('estActualizar')} · ${nombre}`);
+  btn.title = t('cabCambiarModo');
+  btn.setAttribute('aria-label', t('cabCambiarModo'));
   btn.classList.toggle('active', !!activo || temas);
+  btn.closest('.preset-wrap').classList.toggle('active', !!activo || temas);
 
   const menu = $('#preset-menu');
   if (menu && menu.style.display !== 'none'){

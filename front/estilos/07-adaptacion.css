@@ -1,59 +1,25 @@
-  /* ═══ Cabecera en una sola fila en escritorio ═══ */
-@media (min-width: 820px){
-  header .header-actions button{
-    font-size: .74em;
-    padding: 6px 10px;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  header .header-actions .lang-select{
-    font-size: .74em;
-    padding: 6px 8px;
-    flex-shrink: 0;
-  }
-}
-/* Botones de la cabecera: icono y palabra; en móvil, solo el icono (la
-   palabra sigue ahí para lectores de pantalla). */
+/* La franja superior conserva una línea; los controles secundarios pasan
+   al menú según el ancho real de la columna elegida en Lectura. */
 .btn-cab{ display:inline-flex; align-items:center; gap:.4em; }
-@media (max-width: 640px){
-  header #h-title{ font-size: 1.3em; }
-  header .header-top{ flex-wrap: wrap; }
-  header .meta{ order: 3; flex: 1 0 100%; }
-  header .header-actions-right{ order: 2; margin-left: auto; }
-  header .header-actions .btn-cab{
-    min-width: 40px; min-height: 40px; padding: 6px 9px; justify-content: center;
-  }
-  .btn-cab .cab-txt{
-    position: absolute; width: 1px; height: 1px; overflow: hidden;
-    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
-  }
+.filtros-row > .btn-pendientes .cab-txt,
+.feed-actions .cab-txt{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip-path:inset(50%); white-space:nowrap;
 }
-/* Columna ancha (la elige el usuario en «Aa»; por eso es @container y no
-   @media): una sola fila con todo y la línea de fecha encima, que es lo que
-   se esconde al bajar. header y .filtros-wrap ceden sus hijos a la rejilla. */
-@container barra (min-width: 900px){
-  .barra-in{
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "meta meta meta" "tit fil acc" "pan pan pan";
-    column-gap: 14px;
-    align-items: center;
-    padding: 8px 0 10px;
+@container barra (width < 900px){
+  .cab-menu{ display:block; }
+  #cab-meta-home, #cab-est-home, #cab-feed-home{ display:none; }
+  .filtros-row{ grid-template-columns:minmax(0, auto) auto minmax(0, 1fr) auto; }
+  #btn-filtros.lectura-activa{ background:var(--preset-bg); border-color:var(--preset); color:var(--preset); }
+}
+@media (max-width: 640px){
+  #h-title{ font-size:1.1em; }
+  header .header-actions .btn-tiempo .cab-txt{
+    position:absolute; width:1px; height:1px; overflow:hidden;
+    clip-path:inset(50%); white-space:nowrap;
   }
-  .barra-in > header, .barra-in .header-top, .barra-in > .filtros-wrap{ display: contents; }
-  header .meta{ grid-area: meta; padding-bottom: 6px; }
-  header #h-title{ grid-area: tit; font-size: 1.35em; }
-  header .header-actions-right{ grid-area: acc; margin-left: 0; }
-  .filtros-row{
-    grid-area: fil; padding-bottom: 0;
-    grid-template-columns: minmax(0, auto) minmax(10em, 26em) auto auto auto;
-    justify-content: start;
-  }
-  .filtros-panel:not(:modal){ grid-area: pan; padding-top: 10px; }
-  .btn-cab .cab-txt{
-    position: absolute; width: 1px; height: 1px; overflow: hidden;
-    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
-  }
+  .filtros-row{ grid-template-columns:minmax(0, 1fr) auto auto auto; }
+  .filtros-wrap.busqueda-abierta .filtros-row{ grid-template-columns:auto minmax(0,1fr); }
 }
   @media (max-width:900px){
 .filtros-row{ position: static; }

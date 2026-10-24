@@ -28,7 +28,7 @@
     }
   } catch(e){}
 </script>
-<link rel="stylesheet" href="./estilos.css?v=62d6e1079e">
+<link rel="stylesheet" href="./estilos.css?v=f57f9fea17">
 </head>
 <body>
 <!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
@@ -541,44 +541,51 @@
 <div class="barra-in">
 <header>
   <div class="header-top">
-    <h1 id="h-title">Voceiro</h1>
+    <span class="header-brand">Voceiro</span>
+    <div id="cab-meta-home">
     <p class="meta">
       <span class="meta-text">
         <span id="meta-prefix"></span>
         <span id="fecha">06/10/2026 15:21</span>
         <span>·</span>
         <span id="contador"></span>
-        <span id="total-r2-sep" hidden>·</span>
-        <span id="total-r2" hidden></span>
         <span id="prensa-estado-sep" hidden>·</span>
         <span id="prensa-estado" role="status" hidden></span>
       </span>
     </p>
+    </div>
     <div class="header-actions header-actions-right">
-      <button id="btn-estadisticas" class="btn-cab" type="button" aria-controls="estadisticas-panel" aria-expanded="false"></button>
       <button id="btn-tiempo" class="btn-tiempo btn-cab" type="button" hidden></button>
-      <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
-      <button id="btn-acces" class="btn-cab" type="button"></button>
-      <button id="btn-config" class="btn-cab" type="button"></button>
+      <div id="cab-est-home"><button id="btn-estadisticas" class="btn-cab" type="button" aria-controls="estadisticas-panel" aria-expanded="false"></button></div>
+      <details id="cab-menu" class="cab-menu">
+        <summary aria-controls="cab-menu-panel"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis"/></svg><span class="sr-only" id="cab-menu-label"></span></summary>
+        <div id="cab-menu-panel" class="cab-menu-panel"></div>
+      </details>
     </div>
   </div>
 </header>
 <!-- FILTROS -->
 <section class="filtros-wrap">
   <div class="filtros-row">
-    <span class="preset-wrap">
+    <div class="preset-wrap">
+      <h1 id="h-title"><button id="btn-recargar" type="button"><span class="preset-nombre">Voceiro</span></button></h1>
       <button id="btn-preset" class="btn-preset" type="button"
-              aria-expanded="false" aria-haspopup="true"></button>
+              aria-expanded="false" aria-haspopup="true" aria-controls="preset-menu"><svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
       <div id="preset-menu" class="preset-menu" style="display:none"></div>
-    </span>
+    </div>
+    <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
     <button id="btn-buscar" type="button" aria-expanded="false" aria-controls="buscar-wrap"><svg class="ico ico-buscar" aria-hidden="true"><use href="#i-search"/></svg><svg class="ico ico-volver" aria-hidden="true"><use href="#i-arrow-left"/></svg><span></span></button>
     <div class="filtro-buscar-wrap" id="buscar-wrap">
       <input type="search" id="buscar" autocomplete="off">
       <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
       <div id="buscar-sugerencias" class="buscar-sugerencias" style="display:none"></div>
     </div>
-    <button id="btn-pase" class="btn-dup-inline btn-view-settings" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg></button>
-    <button id="btn-lectura" class="btn-dup-inline btn-view-settings" type="button" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></button>
+    <div id="cab-feed-home" class="feed-actions">
+      <button id="btn-pase" class="btn-dup-inline btn-view-settings btn-cab" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span class="cab-txt"></span></button>
+      <button id="btn-lectura" class="btn-dup-inline btn-view-settings btn-cab" type="button" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg><span class="cab-txt"></span></button>
+      <button id="btn-acces" class="btn-cab" type="button"></button>
+      <button id="btn-config" class="btn-cab" type="button"></button>
+    </div>
     <button id="btn-filtros" class="btn-dup-inline btn-view-settings" type="button"
             aria-expanded="false" aria-haspopup="dialog" aria-controls="filtros-panel">
       <svg class="ico" aria-hidden="true"><use href="#i-filter"/></svg>
@@ -646,7 +653,7 @@
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script type="module" src="./app.js?v=62d6e1079e"></script>
+<script type="module" src="./app.js?v=f57f9fea17"></script>
 </body>
 </html>
 
