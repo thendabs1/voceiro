@@ -5,11 +5,11 @@ apariencia configurable, pendientes, diccionarios y teleprompter. Puede
 usarse junto a [Voceiro](https://thendabs1.github.io/voceiro/) o abrirse
 directamente sobre una noticia.
 
-Este manual describe el userscript revisado el 24 de octubre de 2026.
-La extensión de Firefox está en preparación: todavía no hay un paquete ni
-una ficha de instalación de esa extensión en este repositorio. Su acceso
-desde la barra del navegador y las nuevas opciones se documentarán cuando
-estén implementados.
+Este manual describe el lector revisado el 24 de octubre de 2026.
+La [extensión de Firefox para pruebas](extension/README.md) está incluida
+en el repositorio. Ese documento explica cómo construirla y cargarla de
+forma temporal; la instalación publicada en una tienda aún está pendiente.
+Las funciones de lectura son comunes a la extensión y al userscript.
 
 ## Instalar la versión actual
 
@@ -341,9 +341,10 @@ La importación de servicios de **Abrir en…** sí añade elementos a su lista.
 confirmación. No equivale a dejar de sincronizar ni a borrar los datos del
 servidor: los datos sincronizados pueden volver a aparecer.
 
-Para pasar a la futura extensión, la copia JSON será el punto de partida
-para conservar tus datos. El procedimiento definitivo depende de su
-implementación.
+Para pasar a la extensión, exporta el JSON del userscript e impórtalo en
+las opciones de la extensión. El código de sincronización se vincula aparte.
+Desactiva el userscript mientras pruebas la extensión para evitar dos
+lectores en la misma noticia.
 
 ## Problemas frecuentes y límites actuales
 

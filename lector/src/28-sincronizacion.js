@@ -46,6 +46,7 @@ function haySyncSinSubir(s = estadoSyncLector()){
   return (s.cambio || 0) > 0 && s.cambio >= (s.subido || 0);
 }
 function puedeSincronizarAqui(){
+  if (PLATAFORMA.puedeSincronizar) return PLATAFORMA.puedeSincronizar();
   return !!(window.isSecureContext && window.crypto && crypto.subtle) && !esVoceiro();
 }
 
@@ -81,6 +82,7 @@ function codigoDesdeVoceiro(codigo){
 
 // La próxima vuelta, a los pocos segundos; si ya había una, la sustituye.
 function programarSyncLector(){
+  if (PLATAFORMA.programarSync){ PLATAFORMA.programarSync(); return; }
   clearTimeout(__syncLector.diferido);
   __syncLector.diferido = setTimeout(sincronizarLector, LECTOR_SYNC_ESPERA);
 }
