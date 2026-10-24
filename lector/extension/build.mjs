@@ -45,8 +45,8 @@ if (navegador === 'firefox'){
   manifest.icons = {48:'icono.svg',96:'icono.svg'};
   manifest.browser_specific_settings = {gecko:{
     id:'lector-universal@voceiro', strict_min_version:'140.0',
-    data_collection_permissions:{required:[],optional:['browsingActivity','websiteContent']}
-  }};
+    data_collection_permissions:{required:['none'],optional:['browsingActivity','websiteContent']}
+  },gecko_android:{strict_min_version:'142.0'}};
 }
 writeFileSync(join(salida,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
 console.log(`${salida} · ${navegador} · ${version}`);

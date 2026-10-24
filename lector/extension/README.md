@@ -34,6 +34,8 @@ la misma noticia. La posición de lectura no se restaura; los atajos vienen
 sin asignar salvo Escape.
 
 La CI construye el paquete, comprueba su sintaxis y ejecuta `web-ext lint`.
+El validador puede mostrar avisos sobre el HTML dinámico del lector y de
+Readability: quedan visibles para su revisión; no se suprimen en CI.
 En la ejecución del workflow **Lector** puedes descargar el artefacto
 **lector-firefox-pruebas**, descomprimirlo y seleccionar su `manifest.json`.
 
