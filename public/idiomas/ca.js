@@ -103,6 +103,7 @@ export default {
   "estConFallos": "amb errors",
   "cfgMediosVacio": "No hi ha mitjans amb aquests filtres. Canvia la cerca o els filtres. Per afegir un mitjà fora del catàleg, escriu el seu domini.",
   "cfgMediosOtros": "Fora del catàleg",
+  "cfgMediosCategoria": "{activos} actius · {total} mitjans",
   "cfgMediosConfigurados": "Només configurats",
   "cfgMediosTodos": "Tots els mitjans",
   "cfgFiltrarEstado": "Filtrar mitjans per comportament",

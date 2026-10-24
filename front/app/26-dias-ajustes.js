@@ -198,6 +198,7 @@ function wireAjustes(){
       .map(c => c.dataset.grupo);
     guardarPresets();
     ajModoCambiado(modo);
+    renderListaMedios();
   });
 
   // ── Feed: mismo estado que el panel Filtros ──

@@ -389,6 +389,7 @@ if (btnFiltros && filtrosPanel){
     const modo = modoEnPanel();
     if (!modo) return;
     setOverride(d, tipo, modo);
+    MEDIOS_CATS_ABIERTAS.add(t('cfgMediosOtros'));
     $('#filtro-medio').value = '';
     $('#filtro-medio-add').hidden = true;
     ajModoCambiado(modo);
@@ -405,16 +406,21 @@ if (btnFiltros && filtrosPanel){
     // Delegación para #lista-medios (un único listener en todo el contenedor)
   const contMedios = $('#lista-medios');
   if (contMedios){
+    contMedios.addEventListener('click', e => {
+      const summary = e.target.closest('.medio-cat-header');
+      if (!summary || $('#filtro-medio').value.trim() || $('#filtro-grupo-medio').value || $('#filtro-estado-medio').value) return;
+      const cat = summary.closest('.medio-cat');
+      if (cat.open) MEDIOS_CATS_ABIERTAS.delete(cat.dataset.cat);
+      else MEDIOS_CATS_ABIERTAS.add(cat.dataset.cat);
+    });
     contMedios.addEventListener('change', e => {
       const select = e.target.closest('.medio-estado');
       const fila = select && select.closest('.medio-fila');
       const modo = modoEnPanel();
       if (!fila || !modo) return;
       setOverride(fila.dataset.dominio, select.value, modo);
-      actualizarFilaMedio(fila.dataset.dominio, modo);
+      actualizarFilaMedio(fila.dataset.dominio);
       ajModoCambiado(modo);
-      if (!fila.isConnected) $('#filtro-medio').focus();
-      else if (fila.style.display === 'none') $('#filtro-estado-medio').focus();
     });
   }
 }

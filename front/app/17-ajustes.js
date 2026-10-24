@@ -54,7 +54,7 @@ function ajPrepararAncho(){
   });
   control.addEventListener('pointermove', e => {
     if (!control.hasPointerCapture(e.pointerId)) return;
-    ancho = anchoInicial + inicioX - e.clientX;
+    ancho = anchoInicial + e.clientX - inicioX;
     ajFijarAncho(ancho);
   });
   const terminar = e => {
@@ -68,7 +68,7 @@ function ajPrepararAncho(){
   control.addEventListener('keydown', e => {
     if (ajEsMovil() || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
     e.preventDefault();
-    ancho = Number(control.getAttribute('aria-valuenow')) + (e.key === 'ArrowLeft' ? 1 : -1) * (e.shiftKey ? 80 : 20);
+    ancho = Number(control.getAttribute('aria-valuenow')) + (e.key === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 80 : 20);
     ajFijarAncho(ancho);
     ancho = Number(control.getAttribute('aria-valuenow'));
     try { localStorage.setItem('voceiro-aj-ancho', ancho); } catch(e){}
@@ -275,12 +275,13 @@ function renderListaModos(){
 function ajEditarModo(id){
   ajGuardarTemas();
   MODO_EDITADO = id;
+  MEDIOS_CATS_ABIERTAS = new Set();
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
   $('#filtro-estado-medio').value = '';
   $('#ov-pegar').value = '';
   $('#aj-bloque-temas').open = true;
-  $('#aj-bloque-medios').open = true;
+  $('#aj-bloque-medios').open = false;
   $('#aj-bloque-grupos').open = false;
   if (ajRuta() === 'modo') ajPintar();
   else ajEmpujar('modo');
