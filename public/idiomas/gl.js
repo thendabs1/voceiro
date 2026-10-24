@@ -20,7 +20,7 @@ export default {
   "asDominioHint": "Engadir un dominio configura unha preferencia; non incorpora unha nova fonte ao recolector. Se non está no catálogo, pode non achegar titulares do arquivo propio.",
   "asSinFuentes": "Escolle polo menos un grupo ou un medio incluído, ou selecciona todas as fontes. Os medios silenciados non contan como fontes escollidas.",
   "asTemasHint": "Escribe un tema por liña. Nunha liña esíxense todas as palabras; abonda con que coincida unha das liñas. Búscase no titular e só nas fontes escollidas. Incluír un medio non evita este filtro.",
-  "asTemasInvalidos": "Engade un tema con palabras para buscar. As liñas con só exclusións ou filtros de fontes non son temas: {X}",
+  "asTemasInvalidos": "Engade palabras para buscar xunto ás exclusións. Os filtros de medios ou grupos configúranse no paso Fontes, non nas liñas de temas: {X}",
   "asNombre": "Nome do modo",
   "asNombreFalta": "Ponlle un nome ao modo antes de crealo.",
   "asRevisar": "Comproba a selección",

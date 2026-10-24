@@ -20,7 +20,7 @@ export default {
   "asDominioHint": "Afegir un domini configura una preferència; no incorpora una font nova al recol·lector. Si no és al catàleg, pot no aportar titulars de l'arxiu propi.",
   "asSinFuentes": "Tria almenys un grup o un mitjà inclòs, o selecciona totes les fonts. Els mitjans silenciats no compten com a fonts triades.",
   "asTemasHint": "Escriu un tema per línia. En una línia calen totes les paraules; n'hi ha prou que coincideixi una de les línies. Es busca al titular i només a les fonts triades. Incloure un mitjà no evita aquest filtre.",
-  "asTemasInvalidos": "Afegeix un tema amb paraules per cercar. Les línies amb només exclusions o filtres de fonts no són temes: {X}",
+  "asTemasInvalidos": "Afegeix paraules per cercar al costat de les exclusions. Els filtres de mitjans o grups es configuren al pas Fonts, no a les línies de temes: {X}",
   "asNombre": "Nom del mode",
   "asNombreFalta": "Posa un nom al mode abans de crear-lo.",
   "asRevisar": "Comprova la selecció",

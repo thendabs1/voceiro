@@ -17,6 +17,7 @@ export function compilarRegla(modo) {
   const overrides = new Map(Object.entries(modo.overrides || {})
     .map(([d, v]) => [limpiarDominio(d), v]));
   const temas = compilarTemas(modo.palabras);
+  const hayTemas = (modo.palabras || []).some(x => String(x || '').trim());
   const pasaFuentes = n => {
     const ov = overrides.get(limpiarDominio(n.dominio || ''));
     if (ov === 'ignore') return false;
@@ -24,6 +25,8 @@ export function compilarRegla(modo) {
   };
   const temasDe = n => pasaFuentes(n)
     ? temasQueCasan(n.palabras || palabrasDe(n.titular), temas, n.titular) : [];
-  const pasa = n => pasaFuentes(n) && (!temas.length || temasDe(n).length > 0);
+  // Un tema inválido escrito a mano o importado no debe ampliar la
+  // selección a todos los titulares como si no se hubiera escrito nada.
+  const pasa = n => pasaFuentes(n) && (!hayTemas || temasDe(n).length > 0);
   return { regla, temas, pasaFuentes, temasDe, pasa };
 }

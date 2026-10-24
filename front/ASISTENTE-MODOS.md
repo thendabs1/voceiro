@@ -47,8 +47,11 @@ Una selección de fuentes vacía nunca se interpreta como todas las fuentes.
 Cada línea es un tema; todas las palabras de la línea son necesarias y
 las líneas son alternativas. Se conservan frases, exclusiones, siglas
 cortas y términos sensibles a mayúsculas del motor compartido existente.
-La guía rechaza líneas sin palabras que incluir, también si otras líneas
-sí son válidas. Las fuentes se configuran en su paso, no en las líneas.
+La guía rechaza líneas sin palabras que incluir y prefijos de filtros,
+también si otras líneas sí son válidas. Las fuentes se configuran en su
+paso, no en las líneas. Si en el editor avanzado o al importar solo hay
+temas inválidos, la regla no coincide con nada: no se amplía a todos los
+titulares como si se hubieran dejado las palabras vacías.
 
 Un modo sin `regla` conserva el comportamiento anterior: fuentes OR temas.
 No se convierten los modos existentes. El editor explica el comportamiento

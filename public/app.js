@@ -12,31 +12,31 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=018d15d10d';
+} from './parser.js?v=5c974b0081';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=018d15d10d';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=018d15d10d';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=018d15d10d';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=018d15d10d';
-import { comparador } from './busqueda/orden.js?v=018d15d10d';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=5c974b0081';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=5c974b0081';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=5c974b0081';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=5c974b0081';
+import { comparador } from './busqueda/orden.js?v=5c974b0081';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=018d15d10d';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=018d15d10d';
+} from './sync/fusion.js?v=5c974b0081';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=5c974b0081';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=018d15d10d';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=018d15d10d';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=5c974b0081';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=5c974b0081';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=018d15d10d';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=5c974b0081';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=018d15d10d';
+} from './tiempo/avisos.js?v=5c974b0081';
 
-import { I18N, traducir } from './idiomas/index.js?v=018d15d10d';
+import { I18N, traducir } from './idiomas/index.js?v=5c974b0081';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1938,7 +1938,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=018d15d10d');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=5c974b0081');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3876,7 +3876,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=018d15d10d')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=5c974b0081')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -5417,7 +5417,7 @@ function errorAsistente(paso){
   if (paso === 'temas' || paso === 'resumen'){
     if (ASISTENTE_MODO.tipo === 'temas'){
       const validas = new Set(compilarTemas(m.palabras).map(x => x.etiqueta));
-      const invalidas = m.palabras.filter(x => !validas.has(x));
+      const invalidas = m.palabras.filter(x => !validas.has(x) || tokenizeQuery(x).some(tk => tk.prefix));
       if (!m.palabras.length || invalidas.length)
         return t('asTemasInvalidos', { X: invalidas.join(' · ') });
     }

@@ -29,7 +29,7 @@ function errorAsistente(paso){
   if (paso === 'temas' || paso === 'resumen'){
     if (ASISTENTE_MODO.tipo === 'temas'){
       const validas = new Set(compilarTemas(m.palabras).map(x => x.etiqueta));
-      const invalidas = m.palabras.filter(x => !validas.has(x));
+      const invalidas = m.palabras.filter(x => !validas.has(x) || tokenizeQuery(x).some(tk => tk.prefix));
       if (!m.palabras.length || invalidas.length)
         return t('asTemasInvalidos', { X: invalidas.join(' · ') });
     }

@@ -20,7 +20,7 @@ export default {
   "asDominioHint": "Adding a domain sets a preference; it does not add a new source to the collector. A domain outside the catalogue may have no headlines in our archive.",
   "asSinFuentes": "Choose at least one group or included outlet, or select all sources. Muted outlets do not count as chosen sources.",
   "asTemasHint": "Write one topic per line. All words on a line must match; matching any line is enough. Only headlines from your chosen sources are searched. Including an outlet does not bypass this filter.",
-  "asTemasInvalidos": "Add a topic containing words to search for. Lines containing only exclusions or source filters are not topics: {X}",
+  "asTemasInvalidos": "Add search words alongside exclusions. Set outlet or group filters in the Sources step, not in topic lines: {X}",
   "asNombre": "Mode name",
   "asNombreFalta": "Give the mode a name before creating it.",
   "asRevisar": "Check your selection",

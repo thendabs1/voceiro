@@ -20,7 +20,7 @@ export default {
   "asDominioHint": "Domeinu bat gehitzeak hobespena ezartzen du; ez dio iturri berririk gehitzen biltzaileari. Katalogotik kanpoko domeinuak baliteke artxiboan titularrik ez izatea.",
   "asSinFuentes": "Aukeratu gutxienez talde edo hedabide bat, edo hautatu iturri guztiak. Isildutako hedabideak ez dira hautatutako iturriak.",
   "asTemasHint": "Idatzi gai bat lerro bakoitzean. Lerroko hitz guztiek bat etorri behar dute; lerro batek bat egitea nahikoa da. Aukeratutako iturrien titularretan bilatzen da. Hedabidea gehitzeak ez du iragazki hau saihesten.",
-  "asTemasInvalidos": "Gehitu bilatzeko hitzak dituen gai bat. Bazterketak edo iturri-iragazkiak soilik dituzten lerroak ez dira gaiak: {X}",
+  "asTemasInvalidos": "Gehitu bilatzeko hitzak bazterketekin batera. Hedabideen edo taldeen iragazkiak Iturriak urratsean ezartzen dira, ez gaien lerroetan: {X}",
   "asNombre": "Moduaren izena",
   "asNombreFalta": "Eman izena moduari sortu aurretik.",
   "asRevisar": "Egiaztatu hautaketa",

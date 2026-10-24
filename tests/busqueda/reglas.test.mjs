@@ -52,3 +52,9 @@ test('los temas conservan alternativas entre líneas, exclusiones, frases y sigl
   assert.equal(r.pasa(noticia('economico.es', 'Iago visita una vivienda')), false);
   assert.deepEqual(r.temasDe(noticia('otro.es', 'La IA llega', 'Deportes')), []);
 });
+
+test('temas inválidos importados o escritos en el editor no amplían la selección a todos los titulares', () => {
+  for (const palabras of [['-forestal'], ['medio:diario.es']]){
+    assert.equal(compilarRegla({ ...modo(), palabras }).pasa(noticia()), false);
+  }
+});

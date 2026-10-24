@@ -6,6 +6,7 @@ import { normalizarRegla, compilarRegla } from '../../shared/busqueda/reglas.js'
 import { compilarTemas, temasQueCasan } from '../../shared/busqueda/temas.js';
 import { palabrasDe } from '../../shared/busqueda/texto.js';
 import { fusionarModos } from '../../shared/sync/fusion.js';
+import { tokenizeQuery } from '../../shared/parser.js';
 
 const codigo = leerAplicacion();
 const copia = v => JSON.parse(JSON.stringify(v));
@@ -17,7 +18,7 @@ function cargar(ctx, ...nombres){
   }
 }
 function contexto(){
-  const ctx = { normalizarRegla, compilarRegla, compilarTemas, temasQueCasan, palabrasDe,
+  const ctx = { normalizarRegla, compilarRegla, compilarTemas, temasQueCasan, palabrasDe, tokenizeQuery,
     t: k => k, crypto: { randomUUID: () => 'prueba' },
     ASISTENTE_MODO: { paso: 0, tipo: 'temas', fuentes: 'elegidas', grupos: ['Economía'],
       overrides: {}, textoTemas: 'vivienda', nombre: 'Vivienda' },
@@ -43,7 +44,7 @@ test('la guía rechaza fuentes vacías y cada línea de tema inválida antes de 
   assert.equal(ctx.errorAsistente('fuentes'), 'asSinFuentes');
   b.fuentes = 'todas';
   assert.equal(ctx.errorAsistente('fuentes'), '');
-  for (const texto of ['', '-forestal', 'vivienda\nmedio:diario.es']){
+  for (const texto of ['', '-forestal', 'vivienda\nmedio:diario.es', 'vivienda grupo:Economía']){
     b.textoTemas = texto;
     assert.equal(ctx.errorAsistente('temas'), 'asTemasInvalidos');
   }
