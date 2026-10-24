@@ -4,7 +4,7 @@
 // carga solo al escribir eltiempo:). El cliente busca; el worker resuelve el
 // INE a coordenadas y zona.
 
-import { normalize } from '../parser.js?v=1a0c4ce668';
+import { normalize } from '../parser.js?v=d338c86cf3';
 
 export const PROVINCIAS = {
   '01': 'Araba/Álava', '02': 'Albacete', '03': 'Alicante/Alacant', '04': 'Almería',
