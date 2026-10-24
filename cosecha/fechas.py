@@ -449,9 +449,19 @@ def _dia_iso(iso_str, fallback):
     return dt.strftime('%Y-%m-%d')
 
 
+def _hora_repetida(iso):
+    """La hora local se repite al volver al horario de invierno (02:00–02:59
+    del último domingo de octubre): en HH:MM no se sabe cuál de las dos es."""
+    dt = _parse_iso_flexible(iso)
+    if dt is None:
+        return False
+    local = dt.astimezone(config.TZ_MADRID)
+    return local.replace(fold=1 - local.fold).utcoffset() != local.utcoffset()
+
+
 def _fecha_corta(iso, dia):
     """Portada (dia None): ISO completo. Diario: HH:MM si es de ese día,
-    ISO completo si no."""
-    if not iso or dia is None or iso[:10] != dia:
+    ISO completo si no o si es una hora repetida por el cambio de horario."""
+    if not iso or dia is None or iso[:10] != dia or _hora_repetida(iso):
         return iso or ''
     return _hhmm(iso)

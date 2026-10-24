@@ -155,22 +155,34 @@ def _local(fecha, valor):
     return _dt(valor).astimezone(config.TZ_MADRID)
 
 
+def _hhmm_del_dia(fecha, valor):
+    """'HH:MM' de `valor` si cae en el día `fecha`; None si no."""
+    if not valor:
+        return None
+    dt = _local(fecha, valor)
+    return dt.strftime('%H:%M') if dt.date().isoformat() == fecha else None
+
+
 def _clase_fecha(n, fecha):
     p, e = n.get('p', ''), n.get('e', '')
     if p:
         if len(p) == 5:
             return 'hora_00' if p == '00:00' else 'con_hora'
-        return 'futura' if _local(fecha, p).date().isoformat() > fecha else 'pasada'
+        # ISO del mismo día: hora repetida por el cambio de horario.
+        dia = _local(fecha, p).date().isoformat()
+        if dia == fecha:
+            return 'con_hora'
+        return 'futura' if dia > fecha else 'pasada'
     return 'estimada' if e else 'sin_fecha'
 
 
-def _hora_visible(n, clase):
+def _hora_visible(n, clase, fecha):
     if clase == 'con_hora':
-        return n['p']
+        return _hhmm_del_dia(fecha, n['p'])
     for k in ('e', 'c'):
-        v = n.get(k, '')
-        if len(v) == 5:
-            return v
+        h = _hhmm_del_dia(fecha, n.get(k, ''))
+        if h:
+            return h
     return None
 
 
@@ -222,12 +234,13 @@ def _resumen_medio_titulares(its, fecha):
         clase = _clase_fecha(n, fecha)
         fechas[clase] += 1
         por_fuente[n.get('f') or '?'][clase] += 1
-        h = _hora_visible(n, clase)
+        h = _hora_visible(n, clase, fecha)
         if h:
             por_hora[int(h[:2])] += 1
             horas.append(h)
         if clase == 'con_hora' and n.get('c'):
-            m = (_local(fecha, n['c']) - _local(fecha, n['p'])).total_seconds() / 60
+            # Por instantes: restar dos horas de Madrid no ve el cambio de horario.
+            m = (_local(fecha, n['c']).timestamp() - _local(fecha, n['p']).timestamp()) / 60
             if m < -ADELANTO_MIN:
                 adelantos.append(round(-m))
             else:

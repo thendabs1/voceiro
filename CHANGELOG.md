@@ -3,6 +3,20 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Fechas que no se estropean al guardarse
+
+### Corregido
+- La estimada (`e`) de otro día se guardaba como `HH:MM` y, al releer el
+  fichero, pasaba al día del fichero. Ahora va completa, como `p` y `c`.
+- Las horas que se repiten al volver al horario de invierno (02:00–02:59 del
+  último domingo de octubre) van en ISO completo: en `HH:MM` se releían
+  siempre como la primera.
+- Un día de la gracia que se queda sin noticias (cambiaron de día) ya no
+  vuelve del inventario anterior con su fichero viejo.
+- Estadísticas: retraso y adelanto se restan por instantes (antes, con el
+  cambio de horario, salía −40 min donde pasan +20) y una hora del mismo día
+  en ISO cuenta como «con hora».
+
 ## 2026-10-24 — Estadísticas técnicas
 
 ### Añadido
