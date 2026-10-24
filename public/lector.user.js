@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.304
+// @version      2.0.307
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.304';
+const SCRIPT_VERSION = '2.0.307';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -83,14 +83,13 @@ const PLATAFORMA = {
   leer(clave, porDefecto){
     try {
       if (typeof GM_getValue === 'function') return GM_getValue(clave, porDefecto);
-      const raw = localStorage.getItem(clave);
-      return raw === null ? porDefecto : JSON.parse(raw);
+      return porDefecto;
     } catch(e){ return porDefecto; }
   },
   guardar(clave, valor){
     try {
       if (typeof GM_setValue === 'function') GM_setValue(clave, valor);
-      else localStorage.setItem(clave, JSON.stringify(valor));
+      else throw new Error('El lector necesita un gestor de userscripts');
     } catch(e){}
   },
   // fn(valorNuevo), solo con los cambios hechos en otra pestaña.
@@ -178,6 +177,16 @@ const CAMPOS_PERFIL = ['lang', 'tema', 'fuente', 'fs', 'just', 'bionic', 'focus'
 
 const DIA_MS = 86400000;
 
+// Direcciones que se pueden abrir desde datos importados o sincronizados.
+// Solo URLs absolutas de la web, sin credenciales ni protocolos ejecutables.
+function urlWebValida(valor){
+  if (typeof valor !== 'string' || !/^https?:\/\//i.test(valor.trim())) return '';
+  try {
+    const u = new URL(valor.trim());
+    return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.href : '';
+  } catch(e){ return ''; }
+}
+
 // Clave de una URL para comparar: sin #, sin www., sin parámetros de
 // seguimiento y sin barra final.
 function normalizeUrlForMatch(u){
@@ -212,10 +221,12 @@ function huella(x){
 // del lector (date en ISO). Devuelve null si no vale.
 function normalizarPendiente(i){
   if (!i || typeof i !== 'object' || !i.url) return null;
+  const url = urlWebValida(i.url);
+  if (!url) return null;
   const creado = fusionMs(i.date);
   const leidoEn = i.read ? fusionMs(i.readAt) : 0;
   const p = {
-    url: String(i.url),
+    url,
     title: String(i.title || ''),
     description: String(i.description || ''),
     image: String(i.image || ''),
@@ -969,7 +980,8 @@ const SERVICIOS_MAX = 30;
 
 function plantillaServicioValida(p){
   p = String(p || '').trim();
-  return /^https:\/\/\S+$/i.test(p) && /\{url(_cod)?\}/.test(p);
+  return /^https:\/\/\S+$/i.test(p) && /\{url(_cod)?\}/.test(p) &&
+    !!urlWebValida(p.replace(/\{url(_cod)?\}/g, 'noticia'));
 }
 
 // Deja solo servicios válidos, sin plantillas repetidas (gana el primero).
@@ -1001,11 +1013,10 @@ function urlEnServicio(svc, url){
     .replace(/\{url\}/g, url);
 }
 
-function abrirEnServicio(svc){
-  const url = location.href;
-  if (!svc || !/^https?:/i.test(url)) return;
-  const destino = urlEnServicio(svc, url);
-  if (!/^https:\/\//i.test(destino)) return;
+function abrirEnServicio(svc, url = location.href){
+  if (!svc || !plantillaServicioValida(svc.plantilla) || !urlWebValida(url)) return;
+  const destino = urlWebValida(urlEnServicio(svc, url));
+  if (!destino || !destino.startsWith('https://')) return;
   window.open(destino, '_blank', 'noopener,noreferrer');
 }
 
@@ -1029,6 +1040,7 @@ function importarServicios(data){
    ============================================================ */
 const I18N = {
   es: {
+    fabVisible: 'Mostrar el botón flotante',
     syncSoloEnVoceiro: 'El código se escribe en Voceiro (Ajustes › Lector), no encima de otra web, que podría leerlo.',
     syncTitle: 'Sincronización',
     syncOff: 'Sin sincronizar. Con Voceiro abierto en este navegador se activa sola, con su código.',
@@ -1239,6 +1251,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible en el botón flotante',
   },
   gl: {
+    fabVisible: 'Amosar o botón flotante',
     syncSoloEnVoceiro: 'O código escríbese en Voceiro (Axustes › Lector), non enriba doutra web, que podería lelo.',
     syncTitle: 'Sincronización',
     syncOff: 'Sen sincronizar. Con Voceiro aberto neste navegador actívase soa, co seu código.',
@@ -1449,6 +1462,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible no botón flotante',
   },
   ca: {
+    fabVisible: 'Mostrar el botó flotant',
     syncSoloEnVoceiro: 'El codi s’escriu a Voceiro (Configuració › Lector), no a sobre d’una altra web, que el podria llegir.',
     syncTitle: 'Sincronització',
     syncOff: 'Sense sincronitzar. Amb Voceiro obert en aquest navegador s’activa sola, amb el seu codi.',
@@ -1659,6 +1673,7 @@ const I18N = {
     serviciosFabVisible: '«Obre a…» visible al botó flotant',
   },
   en: {
+    fabVisible: 'Show the floating button',
     syncSoloEnVoceiro: 'Type the code in Voceiro (Settings › Reader), not on top of another site, which could read it.',
     syncTitle: 'Sync',
     syncOff: 'Not syncing. With Voceiro open in this browser it turns on by itself, with its code.',
@@ -1868,6 +1883,7 @@ const I18N = {
     serviciosFabVisible: '“Open in…” shown in the floating button',
   },
   eu: {
+    fabVisible: 'Erakutsi botoi mugikorra',
     syncSoloEnVoceiro: 'Kodea Voceiron idazten da (Ezarpenak › Irakurgailua), ez beste webgune baten gainean, irakur lezakeelako.',
     syncTitle: 'Sinkronizazioa',
     syncOff: 'Sinkronizatu gabe. Voceiro nabigatzaile honetan irekita badago, berez aktibatzen da haren kodearekin.',
@@ -2083,7 +2099,6 @@ const I18N = {
    5. CONFIGURACIÓN
    ============================================================ */
 const CFG_KEY = 'lector-universal-cfg-v8';
-const SCROLL_KEY = 'lector-universal-scroll';
 const LEGACY_KEYS = ['lector-universal-cfg-v7','lector-universal-cfg-v6','lector-universal-cfg-v5','lector-universal-cfg-v4'];
 
 const DEFAULT_DICTS_ES = [
@@ -2152,7 +2167,7 @@ const DEFAULT_CFG = {
     keepReadItems: true
   },
   // Botón flotante: lado ('izq'/'der'), altura y medios donde se ha ocultado.
-  fab: { lado: null, top: null, ocultoEn: [] },
+  fab: { visible: true, lado: null, top: null, ocultoEn: [] },
   servicios: [],
   serviciosFab: { oculto: false },
   prefs: {
@@ -2172,30 +2187,30 @@ const DEFAULT_CFG = {
   shortcuts: {
     reader: {
       close:         ['escape'],
-      fontIncrease:  ['+', '='],
-      fontDecrease:  ['-', '_'],
-      toggleTheme:   ['d'],
-      scrollTop:     ['t'],
-      scrollBottom:  ['shift+g'],
-      toggleBionic:  ['b'],
-      toggleFocus:   ['f'],
-      toggleJustify: ['j'],
-      toggleImages:  ['i'],
-      toggleWide:    ['w'],
-      saveLater:     ['s'],
-      openSites:     ['l'],
-      openQueue:     ['p'],
-      openRSVP:      ['r'],
+      fontIncrease:  [],
+      fontDecrease:  [],
+      toggleTheme:   [],
+      scrollTop:     [],
+      scrollBottom:  [],
+      toggleBionic:  [],
+      toggleFocus:   [],
+      toggleJustify: [],
+      toggleImages:  [],
+      toggleWide:    [],
+      saveLater:     [],
+      openSites:     [],
+      openQueue:     [],
+      openRSVP:      [],
       copyText:      []
     },
     global: {
-      openReader:     ['alt+l'],
-      openQueue:      ['alt+p'],
-      openMedia:      ['alt+m'],
-      openSettings:   ['alt+s'],
+      openReader:     [],
+      openQueue:      [],
+      openMedia:      [],
+      openSettings:   [],
       abrirEn:        [],
-      toggleTextOnly: ['alt+i'],
-      openVoceiro:    ['alt+v']
+      toggleTextOnly: [],
+      openVoceiro:    []
       }
     },
     voceiro: { presets: [] }
@@ -2219,7 +2234,8 @@ function normalizeExtraction(ex, oldSel){
 }
 
 function migrateCfg(cfg){
-  if (!Array.isArray(cfg.sites)) cfg.sites = [];
+  cfg.sites = (Array.isArray(cfg.sites) ? cfg.sites : [])
+    .filter(s => s && typeof s === 'object' && !Array.isArray(s));
 
   if (!Array.isArray(cfg.disabledDomains)) cfg.disabledDomains = [];
   cfg.disabledDomains = cfg.disabledDomains.map(d => String(d||'').toLowerCase()
@@ -2239,9 +2255,12 @@ function migrateCfg(cfg){
   delete cfg.siteTypes;
   delete cfg.siteTags;
 
+  cfg.sites = cfg.sites.filter(s => s && typeof s === 'object' && !Array.isArray(s))
+    .map(s => ({ ...s, domain: normalizeDomain(s.domain) })).filter(s => s.domain);
   cfg.sites.forEach(s => {
-    if (!Array.isArray(s.ignorePatterns)) s.ignorePatterns = [];
-    if (!s.mode) s.mode = 'prompt';
+    s.ignorePatterns = (Array.isArray(s.ignorePatterns) ? s.ignorePatterns : [])
+      .filter(p => typeof p === 'string' && p.startsWith('/'));
+    if (!['off', 'prompt', 'auto'].includes(s.mode)) s.mode = 'prompt';
     if (!s.domain) s.domain = '';
     if (!s.lang || !SITE_LANGS.includes(s.lang)) s.lang = 'auto';
     delete s.type;
@@ -2272,6 +2291,18 @@ function migrateCfg(cfg){
   }
 
   if (typeof cfg.readerAutoAll !== 'boolean') cfg.readerAutoAll = false;
+  if (!cfg.fab || typeof cfg.fab !== 'object' || Array.isArray(cfg.fab)) cfg.fab = deepClone(DEFAULT_CFG.fab);
+  cfg.fab.visible = cfg.fab.visible !== false;
+  if (!cfg.prefs || typeof cfg.prefs !== 'object' || Array.isArray(cfg.prefs)) cfg.prefs = {};
+  cfg.prefs = { ...DEFAULT_CFG.prefs, ...cfg.prefs };
+  for (const [k, min, max] of [['fs', UI.fsMin, UI.fsMax], ['width', UI.wMin, UI.wMax], ['lh', 1, 3]]){
+    cfg.prefs[k] = Number.isFinite(cfg.prefs[k]) ? Math.min(max, Math.max(min, cfg.prefs[k])) : DEFAULT_CFG.prefs[k];
+  }
+  if (!['light','sepia','dark','contrast','custom'].includes(cfg.prefs.theme)) cfg.prefs.theme = 'light';
+  if (!['georgia','sans','dyslexic'].includes(cfg.prefs.font)) cfg.prefs.font = 'georgia';
+  for (const k of ['just', 'bionic', 'focus']) cfg.prefs[k] = cfg.prefs[k] === true;
+  cfg.leidasParaVoceiro = (Array.isArray(cfg.leidasParaVoceiro) ? cfg.leidasParaVoceiro : [])
+    .filter(l => l && urlWebValida(l.url) && Number.isFinite(l.fecha));
   if (cfg.prefs.panelText === undefined) cfg.prefs.panelText = true;
   if (cfg.prefs.panelActions === undefined) cfg.prefs.panelActions = false;
   if ('readerSource' in cfg.prefs) delete cfg.prefs.readerSource;
@@ -2296,7 +2327,9 @@ function migrateCfg(cfg){
   if (!cfg.dict.defaultPt) cfg.dict.defaultPt = 'priberam';
   ['customEs','customGl','customCa','customEu','customEn',
    'customFr','customDe','customIt','customPt'].forEach(k => {
-    if (!Array.isArray(cfg.dict[k])) cfg.dict[k] = [];
+    cfg.dict[k] = (Array.isArray(cfg.dict[k]) ? cfg.dict[k] : [])
+      .filter(d => d && typeof d.name === 'string' && typeof d.id === 'string' && plantillaDiccionarioValida(d.url))
+      .slice(0, 30).map(d => ({ id: d.id, name: d.name.slice(0, 60), url: d.url, builtin: false }));
   });
 
   if (!UI_LANGS.includes(cfg.lang)) cfg.lang = 'es';
@@ -2326,8 +2359,10 @@ function migrateCfg(cfg){
 
 function mergeCfg(base, over){
   const out = deepClone(base);
-  if (!over || typeof over !== 'object') return out;
+  if (!over || typeof over !== 'object' || Array.isArray(over)) return migrateCfg(out);
+  const admitidas = new Set([...Object.keys(base), 'customCatalog', 'leidasParaVoceiro']);
   for (const k of Object.keys(over)){
+    if (!admitidas.has(k)) continue;
     if (k === 'prefs' || k === 'fab' || k === 'dict' || k === 'serviciosFab' || k === 'shortcuts' || k === 'readerSettings')
       out[k] = Object.assign({}, out[k], over[k] || {});
     else out[k] = over[k];
@@ -2412,7 +2447,7 @@ function bloqueConfigLector(){
 function aplicarBloqueConfig(bloque){
   const d = (bloque && bloque.datos) || {};
   for (const k of Object.keys(d)){
-    if (CFG_NO_VIAJA.includes(k)) continue;
+    if (CFG_NO_VIAJA.includes(k) || !Object.hasOwn(DEFAULT_CFG, k)) continue;
     if (k === 'prefs'){
       const p = { ...(CFG.prefs || {}) };
       for (const [pk, pv] of Object.entries(d.prefs || {})){
@@ -2485,23 +2520,32 @@ function detectPageLang(){
   if (SITE_LANGS.includes(htmlLang) && htmlLang !== 'auto') return htmlLang;
   return UI_LANGS.includes(CFG.lang) ? CFG.lang : 'es';
 }
+function plantillaDiccionarioValida(url){
+  return typeof url === 'string' && url.includes('{palabra}') &&
+    !!urlWebValida(url.replace(/\{palabra\}/g, 'palabra'));
+}
 function buildDictUrl(dict, word){
-  if (!dict || !dict.url) return null;
-  return dict.url.replace(/\{palabra\}/g, encodeURIComponent(word.trim()));
+  if (!dict || !plantillaDiccionarioValida(dict.url)) return null;
+  return urlWebValida(dict.url.replace(/\{palabra\}/g, encodeURIComponent(String(word).trim()))) || null;
 }
 function openDictionary(dict, word){
   if (!dict) { toast(t('dictNoDefault')); return; }
   const url = buildDictUrl(dict, word);
   if (!url){ toast(t('dictNotFound')); return; }
-  window.open(url, '_blank', 'noopener');
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 /* ============================================================
    7. DOMINIOS Y REGLAS
    ============================================================ */
 function normalizeDomain(d){
-  return String(d || '').trim().toLowerCase()
-    .replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+  const valor = String(d || '').trim();
+  if (!valor) return '';
+  try {
+    const u = new URL(/^https?:\/\//i.test(valor) ? valor : 'https://' + valor);
+    if (!/^https?:$/.test(u.protocol) || u.username || u.password || u.port) return '';
+    return u.hostname.toLowerCase().replace(/^www\./, '');
+  } catch(e){ return ''; }
 }
 function domainMatches(host, rule){
   host = String(host||'').toLowerCase();
@@ -2543,8 +2587,8 @@ function getCatalogEntry(host){
 }
 
 function findSiteRule(){
-  for (const s of CFG.sites) if (domainMatches(location.hostname, s.domain)) return s;
-  return null;
+  return CFG.sites.filter(s => domainMatches(location.hostname, s.domain))
+    .reduce((mejor, s) => !mejor || s.domain.length > mejor.domain.length ? s : mejor, null);
 }
 function currentReaderSource(){
   if (__sessionSourceOverride && READER_SOURCES.includes(__sessionSourceOverride))
@@ -2687,13 +2731,15 @@ function conCambio(item, cambio){
 
 function saveForLater(art){
   if (!art || !art.headline) return;
-  const url = location.href;
+  const url = urlWebValida(art.url || location.href);
+  if (!url) return;
   const existing = findLaterItem(url);
 
   if (existing){
     // Estaba → alterna pendiente / leída
     const leida = !existing.read;
-    cambiarReadLater(conCambio(existing, { read: leida, readAt: leida ? Date.now() : null }));
+    const quitar = leida && CFG.readerSettings?.keepReadItems === false;
+    cambiarReadLater(conCambio(existing, { read: leida, readAt: leida ? Date.now() : null, ...(quitar ? { borrado: true } : {}) }));
     toast(t(leida ? 'movedToRead' : 'movedToPending'), 1800);
     return;
   }
@@ -2706,7 +2752,7 @@ function saveForLater(art){
     description: art.description || '',
     image: art.image || '',
     date: ahora,
-    domain: normalizeDomain(location.hostname),
+    domain: normalizeDomain(new URL(url).hostname),
     read: false,
     readAt: null,
     actualizado: ahora
@@ -2751,6 +2797,7 @@ function findLaterItem(url){
     if (normalizeUrlForMatch(r.url) === norm) return r;
   }
 
+  if (normalizeUrlForMatch(href) !== normalizeUrlForMatch(location.href)) return null;
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical){
     const cAbs = absUrl(canonical.getAttribute('href') || '');
@@ -2799,8 +2846,8 @@ function hayLeidasSinAvisar(hasta){
 // Marca esta página como leída: en Pendientes, si está (respetando «guardar
 // leídas»), y para Voceiro. Devuelve con qué deshacerlo, o null si ya lo
 // estaba y no había nada que hacer.
-function marcarLeidaAlTerminar(){
-  const url = location.href;
+function marcarLeidaAlTerminar(url = location.href){
+  if (!urlWebValida(url)) return null;
   const item = findLaterItem(url);
   const antes = item ? { ...item } : null;
   if (item && !item.read){
@@ -2835,9 +2882,12 @@ function siguientePendiente(url){
    dirección o el mismo medio (por si redirige), durante dos minutos. */
 const SIGUIENTE_KEY = 'lector-abrir-al-llegar';
 
-function irASiguientePendiente(siguiente){
-  PLATAFORMA.guardar(SIGUIENTE_KEY, { url: siguiente.url, t: Date.now() });
-  location.href = siguiente.url;
+async function irASiguientePendiente(siguiente){
+  const url = urlWebValida(siguiente && siguiente.url);
+  if (!url) return;
+  await PLATAFORMA.guardar(SIGUIENTE_KEY, { url, t: Date.now() });
+  if (PLATAFORMA.vaciar) await PLATAFORMA.vaciar();
+  location.href = url;
 }
 
 function llegaDeSiguientePendiente(){
@@ -3095,13 +3145,13 @@ function sanitizeNode(node){
         if (tag === 'A' && a.name === 'href'){
           const v = a.value.trim();
           if (/^(https?:|mailto:|#|\/)/i.test(v)){
-            child.setAttribute('target','_blank');
-            child.setAttribute('rel','noopener noreferrer');
+            // Los atributos de salida se reponen después de limpiar los originales.
           } else {
             child.removeAttribute('href');
           }
         } else if (tag === 'IMG' && a.name === 'src'){
-          child.setAttribute('src', absUrl(a.value));
+          const src = urlWebValida(absUrl(a.value));
+          if (src) child.setAttribute('src', src); else child.removeAttribute('src');
         } else if (tag === 'IMG' && a.name === 'alt'){
           // keep
         } else if (tag === 'P' && a.name === 'data-il-embed' && /^[a-z]+$/.test(a.value)){
@@ -3118,6 +3168,10 @@ function sanitizeNode(node){
           child.removeAttribute(a.name);
         }
       });
+      if (tag === 'A' && child.hasAttribute('href')){
+        child.setAttribute('target', '_blank');
+        child.setAttribute('rel', 'noopener noreferrer');
+      }
     }
   });
 }
@@ -3529,7 +3583,7 @@ function marcarEmbebidos(raiz){
   const tope = raiz.body || raiz;
   try {
     EMBEBIDOS.forEach(e => raiz.querySelectorAll(e.sel).forEach(el => {
-      if (!el.isConnected) return;
+      if (!raiz.contains(el)) return;
       const url = absUrl(e.url(el) || '');
       if (!/^https?:\/\//i.test(url)) return;
       // Se sube por los envoltorios que no tienen nada más: Readability tira
@@ -4579,6 +4633,9 @@ let __lectorAbierto = null;
 
 function openReader(art){
   if (document.getElementById('il-full')) return;
+  art = { ...art, url: urlWebValida(art.url || location.href) };
+  if (!art.url) return;
+  const articleUrl = art.url;
 
   // let: CFG se sustituye entero cuando cambia en otra pestaña (refrescar).
   let prefs = CFG.prefs;
@@ -4693,7 +4750,7 @@ function openReader(art){
       (description ? description + '\n\n' : '') +
       (fecha ? fecha + ' · ' : '') + articleSection +
       (autores ? ' · ' + autores : '') + '\n\n' +
-      lines + '\n\nURL: ' + location.href;
+      lines + '\n\nURL: ' + articleUrl;
   }
 
   // «Abrir en…»: los servicios que haya configurado cada persona.
@@ -4981,15 +5038,6 @@ function openReader(art){
     pintarSiguiente();
   }
 
-  function saveScroll(){
-    try {
-      const s = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}');
-      s[location.href] = ov.scrollTop;
-      const ks = Object.keys(s);
-      if (ks.length > 50) for (let i = 0; i < ks.length - 50; i++) delete s[ks[i]];
-      localStorage.setItem(SCROLL_KEY, JSON.stringify(s));
-    } catch(e){}
-  }
   function updateFocus(){
     if (!prefs.focus) return;
     const els = ov.querySelectorAll('.il-body>*');
@@ -5089,7 +5137,7 @@ function openReader(art){
   const topBtn = ov.querySelector('.il-top-btn');
   topBtn.onclick = () => ov.scrollTo({ top: 0, behavior: desplazar() });
 
-  let stm, focusTimer = null, lastScroll = 0;
+  let focusTimer = null, lastScroll = 0;
   const topbarEl = ov.querySelector('.il-topbar');
   ov.addEventListener('scroll', () => {
     const st = Math.max(0, ov.scrollTop);
@@ -5102,18 +5150,11 @@ function openReader(art){
     if (prefs.focus && !focusTimer){
       focusTimer = setTimeout(() => { updateFocus(); focusTimer = null; }, 100);
     }
-    clearTimeout(stm); stm = setTimeout(saveScroll, 400);
   }, { passive: true });
 
-  setTimeout(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem(SCROLL_KEY) || '{}');
-      if (s[location.href] && s[location.href] > 50) ov.scrollTop = s[location.href];
-    } catch(e){}
-  }, 350);
-
   function closeOverlay(){
-    saveScroll();
+    if (ov.__cerrarRSVP) ov.__cerrarRSVP();
+    clearTimeout(focusTimer);
     document.removeEventListener('keydown', keyHandler);
     if (finObservador) finObservador.disconnect();
     __lectorAbierto = null;
@@ -5188,10 +5229,10 @@ function openReader(art){
   // si ya estás en Voceiro, se sale del lector sin más; si no, esta misma
   // pestaña va a Voceiro.
   function volverAVoceiro(){
-    saveScroll();
+    if (PLATAFORMA.volverAVoceiro){ PLATAFORMA.volverAVoceiro(); return; }
     PLATAFORMA.guardar(VOLVER_KEY, Date.now());
-    // Un respiro para que lo guardado llegue al gestor antes de cerrar.
-    setTimeout(() => PLATAFORMA.cerrarPestana(), 120);
+    // El adaptador de extensión confirma sus escrituras antes de cerrar.
+    Promise.resolve(PLATAFORMA.vaciar ? PLATAFORMA.vaciar() : null).then(() => PLATAFORMA.cerrarPestana());
     setTimeout(() => {
       if (document.visibilityState === 'hidden') closeOverlay();
       else location.href = VOCEIRO_URL;
@@ -5230,19 +5271,19 @@ function openReader(art){
   };
   ov.querySelector('.il-share').onclick = () => {
     if (navigator.share){
-      navigator.share({ title: headline || document.title, text: description || '', url: location.href }).catch(()=>{});
+      navigator.share({ title: headline || document.title, text: description || '', url: articleUrl }).catch(()=>{});
     } else if (navigator.clipboard){
-      navigator.clipboard.writeText(location.href).then(() => toast(t('urlCopied')));
+      navigator.clipboard.writeText(articleUrl).then(() => toast(t('urlCopied')));
     }
   };
   ov.querySelectorAll('.il-servicio').forEach(btn => {
     const svc = servicios.find(s => s.id === btn.getAttribute('data-servicio'));
-    if (svc) btn.onclick = () => abrirEnServicio(svc);
+    if (svc) btn.onclick = () => abrirEnServicio(svc, articleUrl);
   });
 
   ov.querySelector('.il-ignore-section').onclick = () => { ignoreCurrentSection(); };
-  ov.querySelector('.il-rsvp-meta').onclick = () => openRSVP(ov, rawBody);
-  ov.querySelector('.il-rsvp-menu').onclick = () => openRSVP(ov, rawBody);
+  ov.querySelector('.il-rsvp-meta').onclick = () => openRSVP(ov, parrafos.filter(esDeTexto).map(textoDeBloque).join('\n\n'));
+  ov.querySelector('.il-rsvp-menu').onclick = () => openRSVP(ov, parrafos.filter(esDeTexto).map(textoDeBloque).join('\n\n'));
   ov.querySelector('.il-dict-hint').onclick = () => { openSettings('dict'); };
 
   ov.querySelectorAll('input[name="il-tema"]').forEach(r =>
@@ -5341,7 +5382,7 @@ function openReader(art){
   // (se puede devolver a pendientes). Colores del tema, con su contraste.
   // Hay dos: arriba, junto al título, y en el final.
   function pintarBotonGuardar(){
-    const ex = findLaterItem(location.href);
+    const ex = findLaterItem(articleUrl);
     ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => {
       btn.classList.toggle('il-guardada', !!ex && !ex.read);
       btn.classList.toggle('il-leida', !!ex && !!ex.read);
@@ -5353,7 +5394,7 @@ function openReader(art){
   ov.querySelectorAll('.il-save-meta, .il-fin-guardar').forEach(btn => btn.onclick = function(){
     saveForLater(art);
     // Si vuelve a pendientes, ya no cuenta como leída aquí.
-    const ex = findLaterItem(location.href);
+    const ex = findLaterItem(articleUrl);
     if (estadoLeida === 'marcada' && ex && !ex.read){ estadoLeida = 'deshecha'; finEstado.textContent = ''; }
     pintarBotonGuardar();
     pintarSiguiente();
@@ -5368,7 +5409,7 @@ function openReader(art){
   function marcarLeida(){
     if (estadoLeida === 'marcada') return;
     estadoLeida = 'marcada';
-    deshacerLeida = marcarLeidaAlTerminar();
+    deshacerLeida = marcarLeidaAlTerminar(articleUrl);
     pintarBotonGuardar();
     pintarSiguiente();
     finEstado.textContent = '';
@@ -5391,7 +5432,7 @@ function openReader(art){
 
   function pintarSiguiente(){
     const b = ov.querySelector('.il-fin-siguiente');
-    const sig = siguientePendiente(location.href);
+    const sig = siguientePendiente(articleUrl);
     b.hidden = !sig;
     if (!sig) return;
     const titulo = sig.title || sig.url;
@@ -5399,7 +5440,6 @@ function openReader(art){
     b.setAttribute('aria-label', t('finSiguienteDe').replace('{X}', titulo));
     b.onclick = () => {
       if (estadoLeida !== 'marcada') marcarLeida();
-      saveScroll();
       irASiguientePendiente(sig);
     };
   }
@@ -5422,7 +5462,7 @@ function openReader(art){
   // Estado inicial al abrir el lector
   pintarBotonGuardar();
   pintarSiguiente();
-  __lectorAbierto = { refrescar };
+  __lectorAbierto = { refrescar, cerrar: closeOverlay };
 
   function showDictPopup(word, parentEl){
     const existing = parentEl.querySelector('.il-dict-popup');
@@ -5473,10 +5513,10 @@ function openReader(art){
       case 'toggleJustify': prefs.just  = !prefs.just;  applyPrefs(); break;
       case 'toggleImages':  cambiarImagenes(); break;
       case 'toggleWide':    prefs.width = prefs.width >= 900 ? 720 : 1100; applyPrefs(); break;
-      case 'saveLater':     saveForLater(art); break;
+      case 'saveLater':     saveForLater(art); pintarBotonGuardar(); pintarSiguiente(); break;
       case 'openSites':     openSettings('sites'); break;
       case 'openQueue':     openSettings('pendientes'); break;
-      case 'openRSVP':      openRSVP(ov, rawBody); break;
+      case 'openRSVP':      openRSVP(ov, parrafos.filter(esDeTexto).map(textoDeBloque).join('\n\n')); break;
       case 'copyText':
         copyText(buildText());
         break;
@@ -5484,6 +5524,7 @@ function openReader(art){
   }
 
   function keyHandler(e){
+    if (!e.isTrusted || ov.querySelector('#il-rsvp-root')) return;
     if (!document.getElementById('il-full')) return;
     if (document.getElementById('il-settings')) return;
     if (document.getElementById('il-extract-tool')) return;
@@ -5509,6 +5550,8 @@ function openReader(art){
    20. RSVP
    ============================================================ */
 function openRSVP(ov, rawBody){
+  const existente = ov.querySelector('#il-rsvp-root');
+  if (existente){ existente.focus(); return; }
   const allWords = rawBody.split(/\s+/).filter(Boolean);
   if (!allWords.length) return;
   const WPL = UI.rsvpWPL;
@@ -5518,6 +5561,9 @@ function openRSVP(ov, rawBody){
 
   const root = document.createElement('div');
   root.id = 'il-rsvp-root';
+  root.tabIndex = -1;
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-label', t('teleprompter'));
   root.style.cssText = 'position:fixed;inset:0;background:var(--bg);color:var(--fg);z-index:25;display:flex;flex-direction:column;';
 
   const linesHtml = lines.map(l =>
@@ -5612,6 +5658,7 @@ function openRSVP(ov, rawBody){
     }, dur);
   }
   function play(){
+    if (!root.isConnected) return;
     playing = true; pBtn.textContent = t('pause');
     if (!rafId) rafId = requestAnimationFrame(rAFHighlight);
     scheduleNext();
@@ -5641,9 +5688,19 @@ function openRSVP(ov, rawBody){
     wpm = Math.min(UI.rsvpWpmMax, wpm + UI.rsvpWpmStep); vEl.textContent = wpm;
     if (playing){ clearTimeout(timer); scheduleNext(); }
   };
-  root.querySelector('#il-rsvp-cls').onclick = () => { stop(); root.remove(); };
+  const cerrar = () => {
+    stop(); root.remove(); delete ov.__cerrarRSVP;
+    if (ov.isConnected) ov.querySelector('#il-titulo')?.focus({ preventScroll: true });
+  };
+  ov.__cerrarRSVP = cerrar;
+  root.querySelector('#il-rsvp-cls').onclick = cerrar;
+  root.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cerrar(); }
+  });
+  root.focus();
 
   requestAnimationFrame(() => {
+    if (!root.isConnected) return;
     inner.style.transition = 'none';
     inner.style.transform = 'translateY(' + offsetFor(0) + 'px)';
     setActive(0);
@@ -5772,7 +5829,7 @@ function ofertaDelBoton(){
 
 function actualizarBoton(){
   if (!document.body) return;
-  const o = botonOcultoAqui() ? null : ofertaDelBoton();
+  const o = CFG.fab?.visible === false || botonOcultoAqui() ? null : ofertaDelBoton();
   let host = document.getElementById(FAB_ID);
   if (!o){ if (host) host.remove(); return; }
   if (!host || !host.__pintar){ if (host) host.remove(); host = crearBoton(); }
@@ -5879,6 +5936,7 @@ function crearBoton(){
     }
     h += '<div role="separator"></div>';
     if (o.ajustes) h += item('ajustes', icono('settings'), t('settingsFabTitle'));
+    if (findSiteRule()) h += item('extraccion', icono('settings'), t('extractionTitle'));
     h += item('ocultar', icono('eye-off'), t('fabOcultarAqui'));
     menu.innerHTML = h;
   }
@@ -5917,6 +5975,7 @@ function crearBoton(){
     if (accion === 'lector') activateReader();
     else if (accion === 'anadir') anadirSitioActual();
     else if (accion === 'ajustes') openSettings('sites');
+    else if (accion === 'extraccion') openExtractionTool(CFG.sites.indexOf(findSiteRule()));
     else if (accion === 'servicio'){
       const svc = oferta.servicios.find(s => s.id === b.dataset.id);
       if (svc) abrirEnServicio(svc);
@@ -6275,6 +6334,17 @@ function activateReader(){
 // opts.dominio: el medio que se enseña en Medios en lugar del de la página
 // («Cómo leerlo», desde un titular de Voceiro).
 function openSettings(initialTab, opts){
+  // Pendientes y ajustes de otras webs solo se muestran en un origen propio.
+  if (PLATAFORMA.abrirAjustes && !PLATAFORMA.esPaginaPropia){
+    PLATAFORMA.abrirAjustes(initialTab || 'sites', opts?.dominio || normalizeDomain(location.hostname));
+    return;
+  }
+  if (!esVoceiro() && !PLATAFORMA.esPaginaPropia){
+    const destino = new URL(VOCEIRO_URL);
+    destino.hash = new URLSearchParams({ lector: initialTab || 'sites', dominio: normalizeDomain(location.hostname) });
+    window.open(destino.href, '_blank', 'noopener,noreferrer');
+    return;
+  }
   const dentro = opts && opts.dentro;
   if (dentro ? dentro.querySelector('.il-settings-dentro') : document.getElementById('il-settings')) return;
   // Con el tema del perfil; diálogo modal: el foco entra y, al cerrar,
@@ -6765,7 +6835,7 @@ function openSettings(initialTab, opts){
         const name = box.querySelector('.il-dict-new-name').value.trim();
         const url = box.querySelector('.il-dict-new-url').value.trim();
         const l = box.querySelector('.il-dict-new-lang').value;
-        if (!name || !url.includes('{palabra}')){ toast(t('siteInvalid')); return; }
+        if (!name || !plantillaDiccionarioValida(url)){ toast(t('siteInvalid')); return; }
         const id = 'custom-' + Date.now();
         const key = 'custom' + l.charAt(0).toUpperCase() + l.slice(1);
         if (!Array.isArray(CFG.dict[key])) CFG.dict[key] = [];
@@ -7084,6 +7154,9 @@ function openSettings(initialTab, opts){
           '</span>' +
         '</label>' +
       '</div>' +
+      '<label style="display:flex;gap:10px;align-items:center;margin-bottom:18px">' +
+        '<input type="checkbox" class="il-set-fab-visible"' + (CFG.fab.visible ? ' checked' : '') + '>' +
+        esc(t('fabVisible')) + '</label>' +
       htmlSync() +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px">' +
         '<button class="il-set-export" style="padding:8px 14px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">' + esc(t('exportBtn')) + '</button>' +
@@ -7093,6 +7166,9 @@ function openSettings(initialTab, opts){
 
     function wire(){
       wireSync();
+      box.querySelector('.il-set-fab-visible').onchange = e => {
+        CFG.fab.visible = e.target.checked; saveCfg(CFG); actualizarBoton();
+      };
       const appLangSel = box.querySelector('.il-set-lang-app');
       if (appLangSel) appLangSel.onchange = e => {
         CFG.lang = e.target.value;
@@ -7258,6 +7334,7 @@ function executeGlobalAction(action){
 }
 
 function globalKeyHandler(e){
+  if (!e.isTrusted) return;
   // En Voceiro mandan sus atajos (Alt+P, Alt+M, Alt+B…): los del lector
   // no actúan allí. La revisión completa de atajos, antes de publicar.
   if (esVoceiro()) return;
@@ -7364,28 +7441,25 @@ function init(){
 let __lastHref = location.href;
 function checkUrlChange(){
   if (location.href === __lastHref) return;
+  const cambioArticulo = normalizeUrlForMatch(location.href) !== normalizeUrlForMatch(__lastHref);
   __lastHref = location.href;
-  if (document.getElementById('il-full')) return;
+  if (!cambioArticulo) return;
+  if (__lectorAbierto) __lectorAbierto.cerrar();
   actualizarBoton();
-
-  const attempt = (delay) => setTimeout(() => {
-    if (document.getElementById('il-full')) return;
+  const href = location.href;
+  for (const delay of [400, 1600]) setTimeout(() => {
+    if (location.href !== href || document.getElementById('il-full')) return;
     actualizarBoton();
-    if (isDomainDisabled(location.hostname)) return;
-    if (shouldActivateHere()) init();
+    if (!isDomainDisabled(location.hostname) && shouldActivateHere()) activateReader();
   }, delay);
-  attempt(400);
-  attempt(1600);
 }
-['pushState','replaceState'].forEach(m => {
-  const orig = history[m];
-  history[m] = function(){
-    const r = orig.apply(this, arguments);
-    setTimeout(checkUrlChange, 60);
-    return r;
-  };
+// Comparar la URL no modifica el historial de la página y funciona también
+// desde el contexto aislado de una extensión. La caché Atrás/Adelante
+// pausa el intervalo y lo reanuda al volver: solo se cancela al descartar.
+const __navegacion = setInterval(checkUrlChange, 1000);
+window.addEventListener('pagehide', e => {
+  if (!e.persisted) clearInterval(__navegacion);
 });
-window.addEventListener('popstate', () => setTimeout(checkUrlChange, 60));
 
 document.addEventListener('keydown', globalKeyHandler, true);
 
@@ -7411,6 +7485,11 @@ document.addEventListener('keydown', globalKeyHandler, true);
    ya una respuesta: tras ese ida y vuelta, coinciden.
    ─────────────────────────────────────────────────────────────── */
 const PUENTE_V = 2;
+
+function datosDelPuente(detail){
+  try { return typeof detail === 'string' ? JSON.parse(detail) : detail; }
+  catch(e){ return null; }
+}
 
 function estadoDelLector(respuesta){
   return {
@@ -7449,7 +7528,7 @@ function enviarEstado(respuesta){
   if (!esVoceiro()) return;
   try {
     document.dispatchEvent(new CustomEvent('lector-estado', {
-      detail: JSON.parse(JSON.stringify(estadoDelLector(respuesta)))
+      detail: JSON.stringify(estadoDelLector(respuesta))
     }));
   } catch(e){}
 }
@@ -7482,7 +7561,7 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   // ajustes del lector se pinta ahí (una vez: si ya está, no se repite).
   // Con dominio se vuelve a pintar, en Medios y con ese medio delante.
   document.addEventListener('voceiro-ajustes-lector', e => {
-    const d = e.detail;
+    const d = datosDelPuente(e.detail);
     if (!d || d.v !== PUENTE_V) return;
     const hueco = document.getElementById('aj-lector-panel');
     if (!hueco) return;
@@ -7495,11 +7574,11 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   });
 
   document.addEventListener('voceiro-ping', () => {
-    document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: { v: PUENTE_V } }));
+    document.dispatchEvent(new CustomEvent('voceiro-pong', { detail: JSON.stringify({ v: PUENTE_V }) }));
   });
 
   document.addEventListener('voceiro-estado', e => {
-    const d = e.detail;
+    const d = datosDelPuente(e.detail);
     if (!d || typeof d !== 'object' || d.v !== PUENTE_V) return;
 
     adoptarEnLector(d);
@@ -7518,9 +7597,19 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
   });
 
   try {
-    document.dispatchEvent(new CustomEvent('voceiro-ready', { detail: { v: PUENTE_V } }));
+    document.dispatchEvent(new CustomEvent('voceiro-ready', { detail: JSON.stringify({ v: PUENTE_V }) }));
   } catch(e){}
 })();
+
+function abrirAjustesDesdeEnlace(){
+  if (!esVoceiro()) return;
+  const p = new URLSearchParams(location.hash.slice(1));
+  const tab = p.get('lector');
+  if (!['sites','pendientes','dict','servicios','shortcuts','general'].includes(tab)) return;
+  openSettings(tab, { dominio: normalizeDomain(p.get('dominio')) });
+}
+window.addEventListener('hashchange', abrirAjustesDesdeEnlace);
+abrirAjustesDesdeEnlace();
 
 if (document.body) init();
 else window.addEventListener('DOMContentLoaded', init);

@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=5c40ce2f05';
+} from './parser.js?v=dde21f3a2c';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=5c40ce2f05';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=5c40ce2f05';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=5c40ce2f05';
-import { comparador } from './busqueda/orden.js?v=5c40ce2f05';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=dde21f3a2c';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=dde21f3a2c';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=dde21f3a2c';
+import { comparador } from './busqueda/orden.js?v=dde21f3a2c';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=5c40ce2f05';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=5c40ce2f05';
+} from './sync/fusion.js?v=dde21f3a2c';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=dde21f3a2c';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=5c40ce2f05';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=5c40ce2f05';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=dde21f3a2c';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=dde21f3a2c';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=5c40ce2f05';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=dde21f3a2c';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=5c40ce2f05';
+} from './tiempo/avisos.js?v=dde21f3a2c';
 
-import { I18N, traducir } from './idiomas/index.js?v=5c40ce2f05';
+import { I18N, traducir } from './idiomas/index.js?v=dde21f3a2c';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1560,11 +1560,12 @@ function comparable(d){
     lector: d && d.lector ? { datos: d.lector.datos, actualizado: d.lector.actualizado || 0 } : null
   });
 }
+let __lectorPuenteJSON = false;
 function enviarEstadoAhora(respuesta){
   if (!USCRIPT_OK) return;
   try {
     document.dispatchEvent(new CustomEvent('voceiro-estado', {
-      detail: structuredClone(estadoDeVoceiro(respuesta))
+      detail: __lectorPuenteJSON ? JSON.stringify(estadoDeVoceiro(respuesta)) : structuredClone(estadoDeVoceiro(respuesta))
     }));
   } catch(e){}
 }
@@ -1614,7 +1615,10 @@ function initUserScriptBridge(){
   rebuildPendientes();
 
   const conectar = e => {
-    const v = e.detail && e.detail.v;
+    let d;
+    try { d = typeof e.detail === 'string' ? JSON.parse(e.detail) : e.detail; } catch(e){ return; }
+    const v = d && d.v;
+    if (typeof e.detail === 'string' && v === PUENTE_V) __lectorPuenteJSON = true;
     USCRIPT_CHECKED = true;
     if (v === PUENTE_V){
       const primera = !USCRIPT_OK;
@@ -1632,7 +1636,8 @@ function initUserScriptBridge(){
   document.addEventListener('voceiro-pong', conectar);
 
   document.addEventListener('lector-estado', e => {
-    const d = e.detail;
+    let d;
+    try { d = typeof e.detail === 'string' ? JSON.parse(e.detail) : e.detail; } catch(e){ return; }
     if (!d || typeof d !== 'object' || d.v !== PUENTE_V) return;
     if (!USCRIPT_OK) conectar({ detail: { v: PUENTE_V } });
     recibirEstadoDelLector(d);
@@ -1928,7 +1933,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=5c40ce2f05');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=dde21f3a2c');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3447,7 +3452,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=5c40ce2f05')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=dde21f3a2c')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
