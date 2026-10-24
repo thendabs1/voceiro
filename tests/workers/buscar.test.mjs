@@ -30,6 +30,7 @@ function preparar(t, plataforma, responder, credenciales = true) {
   const env = credenciales ? {
     WORKER_TURSO_URL: `https://${plataforma}-turso.test`,
     WORKER_TURSO_TOKEN: `${plataforma}-prueba`,
+    TURSO_PAUSADO: '',
   } : {};
   globalTemporal(t, 'Deno', { env: { get: k => env[k] } });
   t.mock.method(globalThis, 'fetch', async (url, opciones) => {
@@ -169,6 +170,15 @@ test('el archivo en pausa no llama a Turso y no se cachea', async t => {
     assert.equal(r.headers.get('Cache-Control'), 'no-store, max-age=0');
     assert.equal(s.llamadas.length, 0);
   });
+});
+
+test('en Deno el archivo está en pausa si el panel no dice otra cosa', async t => {
+  const s = preparar(t, 'deno', () => { throw new Error('Turso no debía llamarse'); });
+  const env = { WORKER_TURSO_URL: 'https://x.test', WORKER_TURSO_TOKEN: 'x' };
+  globalTemporal(t, 'Deno', { env: { get: k => env[k] } });
+  const datos = await (await s.pedir('/buscar?raw=incendio&fuentes=turso')).json();
+  assert.match(datos._errores.turso, /archivo en pausa/);
+  assert.equal(s.llamadas.length, 0);
 });
 
 test('más allá del tope de offset no se consulta el archivo ni se ofrece otra página', async t => {

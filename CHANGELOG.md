@@ -14,8 +14,9 @@ Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
   mientras el relay no la tenga puesta, sigue abierto.
 
 ### Cambiado
-- El archivo (Turso) se puede pausar en el servidor con `TURSO_PAUSADO`
-  (puesto en CF); antes solo lo apagaba el front y la URL seguía sirviéndolo.
+- El archivo (Turso) queda en pausa también en el servidor (`TURSO_PAUSADO`,
+  en el código de CF y Deno); antes solo lo apagaba el front y la URL seguía
+  sirviéndolo.
 - `/buscar` no pagina el archivo más allá de `offset` 1000: OFFSET lee las
   filas que se salta y Turso cobra las leídas.
 - El cupo de altas de la sincronización cuenta IPv6 por su /64.

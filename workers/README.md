@@ -51,7 +51,7 @@ el front. Lo que protege las cuotas de detrás:
 | Dónde | Límite |
 | --- | --- |
 | `/buscar` (CF y Deno) | 30 consultas por IP y minuto que lleguen a las fuentes; lo servido de caché no cuenta. `offset` hasta `MAX_OFFSET` (1000): OFFSET lee las filas que se salta y Turso cobra las leídas. |
-| Archivo (Turso) | `TURSO_PAUSADO` lo apaga en el servidor: `[vars]` en `cf-buscar/wrangler.toml`; en Deno, variable de entorno. |
+| Archivo (Turso) | `TURSO_PAUSADO` lo apaga en el servidor, desde el código: `[vars]` en `cf-buscar/wrangler.toml` y el valor por defecto en `deno-buscar/src/sources/turso.js`. Se reactiva quitando los dos y con `ARCHIVO_ACTIVO` en el front. |
 | `/tiempo`, `/avisos` (Deno) | 30 peticiones por IP y minuto. |
 | `sync` (CF y Deno) | 120 peticiones por IP y minuto, antes de tocar D1; además, el cupo de altas. |
 | Relays de Deno | Con `RELAY_CLAVE` puesta, solo atienden a quien manda `X-Voceiro-Relay` con ella: los workers de búsqueda (`RELAY_CLAVE` en CF y en Deno) y el recolector (secreto de Actions). Sin ella, siguen abiertos. |

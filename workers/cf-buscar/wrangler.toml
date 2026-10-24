@@ -5,6 +5,6 @@ compatibility_date = "2024-09-23"
 keep_vars = true
 
 # Archivo (Turso) en pausa también en el servidor, como ARCHIVO_ACTIVO en el
-# front. Quitar al restablecer la cuota (y en Deno, la variable TURSO_PAUSADO).
+# front. Quitar al restablecer la cuota (y en deno-buscar/src/sources/turso.js).
 [vars]
 TURSO_PAUSADO = "1"
