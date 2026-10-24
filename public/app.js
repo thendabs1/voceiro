@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=dde21f3a2c';
+} from './parser.js?v=1a0c4ce668';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=dde21f3a2c';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=dde21f3a2c';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=dde21f3a2c';
-import { comparador } from './busqueda/orden.js?v=dde21f3a2c';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=1a0c4ce668';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=1a0c4ce668';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=1a0c4ce668';
+import { comparador } from './busqueda/orden.js?v=1a0c4ce668';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=dde21f3a2c';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=dde21f3a2c';
+} from './sync/fusion.js?v=1a0c4ce668';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=1a0c4ce668';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=dde21f3a2c';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=dde21f3a2c';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=1a0c4ce668';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=1a0c4ce668';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=dde21f3a2c';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=1a0c4ce668';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=dde21f3a2c';
+} from './tiempo/avisos.js?v=1a0c4ce668';
 
-import { I18N, traducir } from './idiomas/index.js?v=dde21f3a2c';
+import { I18N, traducir } from './idiomas/index.js?v=1a0c4ce668';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1933,7 +1933,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=dde21f3a2c');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=1a0c4ce668');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3452,7 +3452,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=dde21f3a2c')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=1a0c4ce668')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -6198,12 +6198,17 @@ function abrirPase(){
   root.querySelector('[data-pase-play]').focus({ preventScroll: true });
 }
 
+// El titular no cabe: el desplazamiento vertical sirve para leerlo entero.
+function desbordaPase(root){
+  return root.scrollHeight > root.clientHeight + 1;
+}
+
 function prepararGestosPase(root){
   let inicio = null;
   root.addEventListener('touchstart', e => {
     inicio = null;
     // Si hace falta scroll, se conserva para poder leer todo el titular.
-    if (e.touches.length !== 1 || root.scrollHeight > root.clientHeight + 1 ||
+    if (e.touches.length !== 1 || desbordaPase(root) ||
         e.target.closest('.pase-controles,button,input,select,textarea,[contenteditable]')) return;
     const dedo = e.touches[0];
     inicio = { x: dedo.clientX, y: dedo.clientY, id: dedo.identifier };
@@ -6322,14 +6327,17 @@ function pausarPaseFuera(e){
 document.addEventListener('pointerdown', pausarPaseFuera, true);
 document.addEventListener('focusin', pausarPaseFuera);
 document.addEventListener('wheel', pausarPase, { passive: true });
+// Solo arrastrar el deslizador del ritmo deja el pase en marcha.
 document.addEventListener('touchmove', e => {
-  if (!e.target.closest('.pase-controles')) pausarPase();
+  if (!e.target.closest('[data-pase-ritmo]')) pausarPase();
 }, { passive: true });
 document.addEventListener('keydown', e => {
   if (!PASE) return;
   if (e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); cerrarPase(); }
   else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) &&
            !e.target.closest('select,input,textarea,[contenteditable]')){
+    // Como con el dedo: si el titular no cabe, ↑ ↓ desplazan y pausan.
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && desbordaPase(PASE.root)){ pausarPase(); return; }
     e.preventDefault();
     moverPase(e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1);
   } else pausarPaseFuera(e);
