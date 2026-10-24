@@ -109,6 +109,16 @@ class Fechas(unittest.TestCase):
         self.assertEqual(fechas._reconstruir_fecha('09:30', '2026-01-20'), '2026-01-20T09:30:00+01:00')
         self.assertEqual(fechas._reconstruir_fecha('09:30', '2026-07-20'), '2026-07-20T09:30:00+02:00')
 
+    def test_hora_repetida_al_cambiar_de_horario_va_completa(self):
+        # El 25-10-2026 las 02:30 ocurren dos veces: en HH:MM serían la primera.
+        for iso in ('2026-10-25T02:30:00+02:00', '2026-10-25T02:30:00+01:00'):
+            with self.subTest(iso=iso):
+                corta = fechas._fecha_corta(iso, '2026-10-25')
+                self.assertEqual(corta, iso)
+                self.assertEqual(instante(fechas._reconstruir_fecha(corta, '2026-10-25')), instante(iso))
+        self.assertEqual(fechas._fecha_corta('2026-10-25T01:59:00+02:00', '2026-10-25'), '01:59')
+        self.assertEqual(fechas._fecha_corta('2026-10-25T03:00:00+01:00', '2026-10-25'), '03:00')
+
 
 class Historico(unittest.TestCase):
     def test_fusion_conserva_datos_viejos_y_descarta_caducadas_y_plantillas(self):
@@ -245,6 +255,18 @@ class Recogida(unittest.TestCase):
         # y su recogida no es la hora del fichero.
         self.assertEqual((b['fecha_pub'], b['fecha_estimada'], b['fuente']), ('', '', 'Scraping'))
         self.assertEqual(instante(b['fecha']), instante(en(10, 15)))
+
+    def test_la_estimada_de_otro_dia_no_cambia_de_dia_al_releer(self):
+        hoy = datetime.now(MADRID).date()
+        dia = hoy.isoformat()
+        ayer = datetime.combine(hoy - timedelta(days=1), time(23, 55), tzinfo=MADRID)
+        en = lambda h, m: datetime.combine(hoy, time(h, m), tzinfo=MADRID).isoformat()
+        n = {'dominio': 'a.test', 'titular': 'Estimada ayer, publicada hoy', 'fuente': 'Scraping',
+             'enlace': 'https://a.test/x', 'fecha_pub': en(0, 10),
+             'fecha_estimada': ayer.isoformat(), 'fecha': en(0, 12)}
+        self.assertEqual(formatos._noticia_a_formato_corto(n, dia)['e'], ayer.isoformat())
+        leida = self.releer([n], dia, generado=en(0, 20))['a.test']
+        self.assertEqual(instante(leida['fecha_estimada']), ayer.timestamp())
 
     def test_recogida_de_otro_dia_va_completa(self):
         n = {'dominio': 'a.test', 'titular': 'T', 'enlace': 'https://a.test/x',

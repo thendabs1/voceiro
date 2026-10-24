@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import timedelta
 
 from . import config
-from .fechas import _fecha_corta, _fecha_orden, _hhmm
+from .fechas import _fecha_corta, _fecha_orden
 from .texto import _slug_grupo, _url_corta
 
 
@@ -19,8 +19,7 @@ def _noticia_a_formato_corto(n, dia=None):
         'f': n.get('fuente', ''),
     }
     p = _fecha_corta(n.get('fecha_pub', ''), dia)
-    e_iso = n.get('fecha_estimada', '')
-    e = e_iso if dia is None else (_hhmm(e_iso) if e_iso else '')
+    e = _fecha_corta(n.get('fecha_estimada', ''), dia)
     c = _fecha_corta(n.get('fecha', ''), dia)
 
     if p:

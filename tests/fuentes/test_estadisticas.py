@@ -77,6 +77,19 @@ class Titulares(unittest.TestCase):
         self.assertEqual(total['compartidos'], 1)
 
 
+    def test_cambio_de_horario_por_instantes(self):
+        # 25-10-2026: p en la primera 02:50 (+02:00), recogida en la segunda
+        # 02:10 (+01:00): pasan 20 min, no −40.
+        payload = {'medios': {}, 'noticias': [
+            {'d': 'a.test', 't': 'Uno', 'f': 'RSS',
+             'p': '2026-10-25T02:50:00+02:00', 'c': '2026-10-25T02:10:00+01:00'}]}
+        a = est.resumen_titulares(payload, '2026-10-25')[0]['a.test']
+        self.assertEqual(a['fechas'], {'con_hora': 1})
+        self.assertEqual(a['retraso_min'], {'p50': 20, 'p90': 20, 'n': 1})
+        self.assertEqual(a['adelantadas'], 0)
+        self.assertEqual(a['por_hora'][2], 1)
+
+
 class Dias(unittest.TestCase):
     def test_dias_y_cerrado(self):
         hoy = date(2026, 10, 24)

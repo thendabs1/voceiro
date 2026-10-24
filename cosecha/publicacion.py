@@ -205,9 +205,18 @@ def generar_troceados(noticias_pre_dedup, ahora, portada_info=None,
 
         dias_manifest.append(entrada_dia)
 
+    # Los días de la gracia se acaban de recalcular: si faltan es que se han
+    # quedado sin noticias (cambiaron de día) y no vuelven del inventario
+    # anterior. Los demás no se reconstruyen y se conservan.
     fechas_presentes = {d['fecha'] for d in dias_manifest}
     for d_prev in inventario_prev.get('dias', []):
         if d_prev['fecha'] in fechas_presentes:
+            continue
+        try:
+            fecha_prev = datetime.strptime(d_prev['fecha'], '%Y-%m-%d').date()
+        except ValueError:
+            fecha_prev = None
+        if fecha_prev and (ahora.date() - fecha_prev).days <= config.VENTANA_GRACIA_DIAS:
             continue
         dias_manifest.append(d_prev)
 

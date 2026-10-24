@@ -59,3 +59,34 @@ class PublicacionLocal(unittest.TestCase):
             self.assertEqual(inv2['dias'], inv['dias'])
             self.assertEqual({Path(p).name for p in publicacion._FICHEROS_ESCRITOS},
                              {'manifest.json', 'inventario.json'})
+
+    def test_un_dia_reciente_que_se_queda_vacio_sale_del_inventario(self):
+        ahora = datetime.now(config.TZ_MADRID).replace(hour=12, minute=0, second=0, microsecond=0)
+        medios = {'a.test': {'n': 'A', 'grupo': 'Pruebas', 'type': 'diario', 'lang': 'es'}}
+        noticia = {'dominio': 'a.test', 'medio': 'A', 'grupo': 'Pruebas', 'tipo': 'diario',
+                   'lang': 'es', 'titular': 'El municipio aprueba el presupuesto',
+                   'enlace': 'https://a.test/noticia', 'fuente': 'RSS',
+                   'fecha_pub': (ahora - timedelta(hours=1)).isoformat(),
+                   'fecha': (ahora - timedelta(minutes=10)).isoformat()}
+        hoy, ayer = ahora.date().isoformat(), (ahora - timedelta(days=1)).date().isoformat()
+        antiguo = {'fecha': (ahora - timedelta(days=10)).date().isoformat(),
+                   'all': {'file': 'viejo.json', 'n': 1, 'hash': 'h', 'kb': 1}}
+        with tempfile.TemporaryDirectory() as temporal, \
+                patch.multiple(config, DATOS_DIR=temporal,
+                               MANIFEST_PATH=str(Path(temporal, 'manifest.json')),
+                               INVENTARIO_PATH=str(Path(temporal, 'inventario.json')),
+                               STATE_PATH=str(Path(temporal, 'state.json'))), \
+                patch.object(catalogo, '_MEDIOS_POR_DOMINIO', medios), \
+                patch.object(publicacion, '_FICHEROS_ESCRITOS', set()), \
+                contextlib.redirect_stdout(io.StringIO()):
+            portada = publicacion.generar_portada([noticia], ahora)
+            inv = publicacion.generar_troceados([noticia], ahora, portada)
+            inv['dias'].append(antiguo)
+            self.assertEqual([d['fecha'] for d in inv['dias']], [hoy, antiguo['fecha']])
+
+            # Su único titular pasa a ayer: hoy ya no tiene noticias.
+            movida = {**noticia, 'fecha_pub': (ahora - timedelta(days=1)).isoformat()}
+            portada2 = publicacion.generar_portada([movida], ahora)
+            inv2 = publicacion.generar_troceados([movida], ahora, portada2, inventario_prev=inv)
+            self.assertEqual(sorted(d['fecha'] for d in inv2['dias']),
+                             sorted([ayer, antiguo['fecha']]))
