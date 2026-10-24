@@ -73,8 +73,9 @@ function estCurva(dominios){
   const puntos = serieEstadisticas(ESTADISTICAS.indice, dominios, ESTADISTICAS.fecha);
   if (!puntos.some(p => p.valor != null)) return `<p class="est-nota">${escapeHtml(t('estSinSerie'))}</p>`;
   const max = Math.max(1, ...puntos.map(p => p.valor || 0));
-  return `<div class="est-barras" aria-hidden="true">${puntos.map(p => `<span style="--est-valor:${p.valor == null ? 0 : p.valor / max * 100}%" title="${escapeHtml(estFecha(p.fecha))}: ${estNumero(p.valor)}">${p.valor == null ? '' : '<i></i>'}</span>`).join('')}</div>
-    <p class="est-nota">${escapeHtml(t('estSerieNota'))}</p><details><summary>${escapeHtml(t('estVerValores'))}</summary>${estTabla(['estDia', 'estTitulares', 'estMediosDatos'], puntos.map(p => [estBoton('fecha', estFecha(p.fecha), p.fecha), estNumero(p.valor), `${estNumero(p.medios)} / ${estNumero(dominios.length)}`]))}</details>`;
+  // Cada barra abre su día: en móvil no hay title que leer al pasar.
+  return `<div class="est-barras" role="group" aria-label="${escapeHtml(t('estEvolucion'))}">${puntos.map(p => `<button type="button" data-est="fecha" data-valor="${p.fecha}"${p.fecha === ESTADISTICAS.fecha ? ' aria-current="date"' : ''} style="--est-valor:${p.valor == null ? 0 : p.valor / max * 100}%" aria-label="${escapeHtml(estFecha(p.fecha))}: ${estNumero(p.valor)}" title="${escapeHtml(estFecha(p.fecha))}: ${estNumero(p.valor)}">${p.valor == null ? '' : '<i></i>'}</button>`).join('')}</div>
+    <p class="est-nota">${escapeHtml(t('estSerieNota'))} ${escapeHtml(t('estBarrasDia'))}</p><details data-clave="valores"><summary>${escapeHtml(t('estVerValores'))}</summary>${estTabla(['estDia', 'estTitulares', 'estMediosDatos'], puntos.map(p => [estBoton('fecha', estFecha(p.fecha), p.fecha), estNumero(p.valor), `${estNumero(p.medios)} / ${estNumero(dominios.length)}`]))}</details>`;
 }
 function estResumen(){
   const dia = estDatoDia(), ids = estDominios();
@@ -105,17 +106,21 @@ function estEstado(dominio){
   if (d?.runs?.ultimo_estado === 'fallo') return t('estIncidencias');
   return t(d?.pub ? 'estDatosRecogidos' : 'estSinDatos');
 }
-function estDirectorio(){
+function estListaMedios(){
   const catalogo = ESTADISTICAS.indice.medios, dia = estDatoDia();
   const q = normalize(ESTADISTICAS.consulta);
   const ids = estDominios().filter(d => normalize(d + ' ' + (catalogo[d]?.n || '')).includes(q))
     .sort((a, b) => (catalogo[a]?.n || a).localeCompare(catalogo[b]?.n || b));
-  return `<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(t('estMedios'))}</h2>
-    <label class="est-buscar">${escapeHtml(t('estBuscarMedio'))}<input type="search" id="est-buscar-medio" value="${escapeHtml(ESTADISTICAS.consulta)}" autocomplete="off"></label>
-    ${ids.length ? estTabla(['estMedio', 'estGrupo', 'estTitulares', 'estSeguimiento'], ids.map(d => [
+  return ids.length ? estTabla(['estMedio', 'estGrupo', 'estTitulares', 'estSeguimiento'], ids.map(d => [
       estBoton('medio', catalogo[d]?.n || d, d) + `<small>${escapeHtml(d)}</small>`,
       escapeHtml(catalogo[d]?.g || '—'), estNumero(dia?.medios[d]?.pub?.titulares), escapeHtml(estEstado(d)),
-    ])) : `<p>${escapeHtml(t('estSinMedios'))}</p>`}`;
+    ])) : `<p>${escapeHtml(t('estSinMedios'))}</p>`;
+}
+// Al escribir solo cambia la lista: recrear el campo cierra el teclado del móvil.
+function estDirectorio(){
+  return `<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(t('estMedios'))}</h2>
+    <label class="est-buscar">${escapeHtml(t('estBuscarMedio'))}<input type="search" id="est-buscar-medio" value="${escapeHtml(ESTADISTICAS.consulta)}" autocomplete="off"></label>
+    <div id="est-lista">${estListaMedios()}</div>`;
 }
 function estFicha(){
   const d = ESTADISTICAS.dominio, m = ESTADISTICAS.indice.medios[d], datos = estDatoDia()?.medios[d], pub = datos?.pub;
@@ -125,7 +130,7 @@ function estFicha(){
     ${!m ? `<p>${escapeHtml(t('estSinSeguimiento'))}</p>` : !estDatoDia() ? estSinDia(false) : !pub ? `<p>${escapeHtml(t('estSinDatos'))}</p>` :
       estMetricas([['estTitulares', pub.titulares], ['estConHora', (pub.fechas?.con_hora || 0) + (pub.fechas?.hora_00 || 0)], ['estSoloDia', pub.fechas?.solo_dia || 0]])}
     <h3>${escapeHtml(t('estEvolucion'))}</h3>${estCurva([d])}
-    ${pub ? `<details><summary>${escapeHtml(t('estPrecision'))}</summary><p>${escapeHtml(t('estPrecisionNota'))}</p>${estTabla(['estClase', 'estTitulares'], clases.map(k => [escapeHtml(t('estFecha_' + k)), estNumero(pub.fechas?.[k] || 0)]))}</details>` : ''}
+    ${pub ? `<details data-clave="precision"><summary>${escapeHtml(t('estPrecision'))}</summary><p>${escapeHtml(t('estPrecisionNota'))}</p>${estTabla(['estClase', 'estTitulares'], clases.map(k => [escapeHtml(t('estFecha_' + k)), estNumero(pub.fechas?.[k] || 0)]))}</details>` : ''}
     ${estSeguimiento(null, datos?.runs, pub)}`;
 }
 function estSeguimiento(recolector, runs = null, pub = null){
@@ -134,7 +139,7 @@ function estSeguimiento(recolector, runs = null, pub = null){
     ['estPasadas', runs.pasadas], ['estBuenas', runs.ok], ['estRescates', runs.rescates],
     ['estVentana', runs.ventana_min?.p50], ['estLatencia', runs.ms?.p50],
   ] : recolector ? [['estPasadas', recolector.pasadas], ['estIntervalo', recolector.intervalo_p50], ['estHuecos', recolector.huecos]] : [];
-  return `<details><summary>${e('estSeguimiento')}</summary>
+  return `<details data-clave="seguimiento"><summary>${e('estSeguimiento')}</summary>
     <p>${e('estSeguimientoNota')}</p>${pares.length ? estMetricas(pares) : `<p>${e('estSinPasadas')}</p>`}
     ${runs?.ultimo_estado === 'fallo' ? `<p>${e('estIncidencias')}</p>` : ''}
     ${pub?.fuentes ? `<h3>${e('estFuentes')}</h3>${estTabla(['estFuente', 'estTitulares'], Object.entries(pub.fuentes).map(([k, v]) => [escapeHtml(k), estNumero(v)]))}` : ''}
@@ -149,6 +154,10 @@ function pintarEstadisticas(){
   if (!s.abierto) return;
   const foco = panel.contains(document.activeElement) ? document.activeElement : null;
   const idFoco = foco?.id, accionFoco = foco?.dataset.est, valorFoco = foco?.dataset.valor;
+  // innerHTML cierra los desplegables y, mientras llega otro día, dejaría el
+  // aviso de «sin datos»: se conservan los abiertos y el contenido anterior.
+  const abiertos = new Set([...panel.querySelectorAll('details[open][data-clave]')].map(d => d.dataset.clave));
+  const previo = panel.querySelector('.est-contenido');
   panel.classList.toggle('est-ampliado', s.ampliado);
   panel.setAttribute('aria-label', t('estTitulo'));
   panel.setAttribute('aria-busy', String(s.cargando));
@@ -159,6 +168,7 @@ function pintarEstadisticas(){
     if (s.ambito === 'mis' && !estModo()) contenido = `<p>${escapeHtml(t('estElegirModo'))}</p>`;
     else if (s.ambito === 'mis' && !estDominios().length) contenido = `<p>${escapeHtml(t('estModoSinMedios'))}</p>`;
     else contenido = ({ resumen: estResumen, medios: estDirectorio, medio: estFicha }[s.vista] || estResumen)();
+    if (s.cargando && !estDatoDia() && previo) contenido = previo.innerHTML;
   }
   const datos = estDatoDia(), generado = datos?.generado || s.indice?.generado;
   const modoCambiado = s.ambito === 'mis' && s.modoBase && JSON.stringify(s.modoBase) !== JSON.stringify(PRESETS.lista.find(p => p.id === s.modo));
@@ -174,7 +184,8 @@ function pintarEstadisticas(){
     <p class="est-contexto">${escapeHtml(estFecha(s.fecha))}${s.ambito === 'mis' && estModo() ? ' · ' + escapeHtml(estModo().nombre) : ''}${datos ? ' · ' + escapeHtml(t(datos.cerrado ? 'estArchivado' : 'estRevisable')) : ''}${generado ? ' · ' + escapeHtml(t('estGenerado', { fecha: estGenerado(generado) })) : ''}</p>
     <p class="est-estado" role="status">${escapeHtml(t(s.error ? 'estErrorCarga' : s.cargando ? 'estCargando' : 'estLecturaLista'))}${s.error ? ' ' + estBoton('renovar', t('estReintentar')) : ''}</p>
     ${modoCambiado ? `<p class="est-nota">${escapeHtml(t('estModoCambio'))} ${estBoton('modo-actualizar', t('estActualizar'))}</p>` : ''}
-    ${contenido}<details class="est-metodo"><summary>${escapeHtml(t('estComo'))}</summary><p>${escapeHtml(t('estMetodo'))}</p><p>${escapeHtml(t('estActualizacion'))}</p></details></div>`;
+    <div class="est-contenido">${contenido}</div><details class="est-metodo" data-clave="metodo"><summary>${escapeHtml(t('estComo'))}</summary><p>${escapeHtml(t('estMetodo'))}</p><p>${escapeHtml(t('estActualizacion'))}</p></details></div>`;
+  panel.querySelectorAll('details[data-clave]').forEach(d => { d.open = abiertos.has(d.dataset.clave); });
   // Repintar una tabla no debe expulsar el teclado al body.
   const siguiente = idFoco ? document.getElementById(idFoco) : [...panel.querySelectorAll('[data-est]')].find(b => b.dataset.est === accionFoco && b.dataset.valor === valorFoco);
   siguiente?.focus({ preventScroll: true });
@@ -235,11 +246,19 @@ function abrirEstadisticas(destino = '', origen = null){
   if (destino && destino !== 'mis-medios') { s.ambito = 'todos'; s.consulta = ''; }
   const carga = cargarEstadisticas(), secuencia = s.secuencia;
   carga.then(() => { if (s.abierto && s.secuencia === secuencia) document.getElementById('est-vista-titulo')?.focus({ preventScroll: true }); });
-  document.getElementById('barra-sup')?.classList.remove('cab-oculta');
+  estEncajar(true);
+}
+// Al abrir, y al cambiar de vista o de día desde más abajo, el panel vuelve a
+// empezar bajo la cabecera: una ficha más corta no deja ver el feed.
+function estEncajar(siempre = false){
+  const barra = document.getElementById('barra-sup');
   requestAnimationFrame(() => {
-    if (!s.abierto) return;
-    const p = document.getElementById('estadisticas-panel'), alto = document.getElementById('barra-sup')?.getBoundingClientRect().height || 0;
-    window.scrollTo({ top: Math.max(0, window.scrollY + p.getBoundingClientRect().top - alto - 8), behavior: 'auto' });
+    const p = document.getElementById('estadisticas-panel');
+    if (!ESTADISTICAS.abierto || !p) return;
+    const alto = barra?.getBoundingClientRect().height || 0, top = p.getBoundingClientRect().top - alto - 8;
+    if (!siempre && top >= 0) return;
+    barra?.classList.remove('cab-oculta');
+    window.scrollTo({ top: Math.max(0, window.scrollY + top), behavior: 'auto' });
   });
 }
 function cerrarEstadisticas(){
@@ -289,12 +308,12 @@ function wireEstadisticas(){
     if (accion === 'cerrar') return cerrarEstadisticas();
     if (accion === 'renovar') return void cargarEstadisticas(true);
     if (accion === 'modo-actualizar') { fijarModoEstadisticas(s.modo); pintarEstadisticas(); return; }
-    if (accion === 'fecha') { s.fecha = b.dataset.valor; return void cargarEstadisticas(); }
+    if (accion === 'fecha') { s.fecha = b.dataset.valor; estEncajar(); return void cargarEstadisticas(); }
     if (accion === 'ampliar') s.ampliado = !s.ampliado;
     else if (accion === 'medio') { s.destino = null; s.vista = 'medio'; s.dominio = b.dataset.valor; }
     else if (accion === 'resumen' || accion === 'medios') { s.destino = null; s.vista = accion; }
     pintarEstadisticas();
-    if (accion !== 'ampliar') document.getElementById('est-vista-titulo')?.focus({ preventScroll: true });
+    if (accion !== 'ampliar') { document.getElementById('est-vista-titulo')?.focus({ preventScroll: true }); estEncajar(); }
   });
   p.addEventListener('change', e => {
     if (e.target.id === 'est-fecha'){
@@ -305,7 +324,8 @@ function wireEstadisticas(){
   });
   p.addEventListener('input', e => {
     if (e.target.id !== 'est-buscar-medio') return;
-    s.consulta = e.target.value; pintarEstadisticas();
+    s.consulta = e.target.value;
+    document.getElementById('est-lista').innerHTML = estListaMedios();
   });
   document.getElementById('buscar').addEventListener('keydown', e => {
     if (e.key === 'Enter' && ordenEstadisticas(e.target.value)) {

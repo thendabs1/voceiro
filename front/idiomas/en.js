@@ -30,6 +30,7 @@ export default {
   "estMuestra": "Data from {n} of {total} selected sources. Missing data is not counted as zero.",
   "estSinSerie": "No series is available for this selection.",
   "estSerieNota": "Available counts for up to 30 days. The table shows how many sources have data each day; the sample may change. Bars start at zero.",
+  "estBarrasDia": "Tap a bar to open that day.",
   "estVerValores": "View values and dates in a table",
   "estSeguimiento": "Collection details",
   "estSeguimientoNota": "Runs describe collection, not the entire output of a source. Overview shows runs for the whole collector, regardless of scope.",

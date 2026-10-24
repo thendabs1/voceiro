@@ -3,6 +3,15 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Panel de estadísticas: clics sin saltos
+
+### Corregido
+- Repintar el panel ya no cierra los desplegables abiertos ni sustituye el
+  contenido por «sin datos» mientras llega otro día.
+- Buscar un medio no recrea el campo: el teclado del móvil no se cierra.
+- Cambiar de vista o de día desde abajo devuelve el panel bajo la cabecera.
+- Las barras de la evolución abren su día y marcan el consultado.
+
 ## 2026-10-24 — Panel de estadísticas: Resumen y Medios
 
 ### Añadido
