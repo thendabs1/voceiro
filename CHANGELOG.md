@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Estadísticas técnicas
+
+### Añadido
+- `estadisticas.py` y el workflow diario `estadisticas.yml`: recalculan los
+  4 últimos días (el recolector reescribe hasta 3 atrás; a partir del cuarto
+  el día queda `cerrado`) desde `runs` y el fichero `all` de cada día en R2.
+- Por medio y día, de las pasadas: pasadas y buenas, fuentes, titulares por
+  pasada, % con fecha, tiempos (media, p50, p95, máx.), resultado de cada
+  fuente según `intentos`, cadenas más frecuentes, rescates (falla la
+  primera fuente y salva otra), errores, racha de fallos y estado final.
+- Por medio y día, de los titulares: clase de fecha (con hora, `00:00`,
+  otro día pasado o futuro, estimada, sin fecha) también por fuente, curva
+  por horas, retraso de captura (p50, p90), fechas adelantadas y su
+  adelanto, compartidos con otros medios, fuentes, longitud, secciones y
+  primer y último titular.
+- Del día: pasadas del recolector, intervalo y huecos de más de 20 min,
+  totales y desglose por grupo.
+- Tablas `medio_dia` y `dia_stats` en Turso (histórico sin poda; las filas
+  que no cambian no cuestan escrituras) y, en R2, `estadisticas.json`,
+  `estadisticas-dia-AAAA-MM-DD.json` y `estadisticas-medio-<dominio>.json`.
+
 ## 2026-10-24 — Turso nuevo: solo diagnóstico de la cosecha
 
 ### Cambiado

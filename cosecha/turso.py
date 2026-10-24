@@ -142,6 +142,21 @@ def _turso_ensure_schema():
               intentos   TEXT NOT NULL DEFAULT '',
               PRIMARY KEY (ts, dominio)
             ) WITHOUT ROWID"""),
+        # Estadísticas (estadisticas.py): JSON de cosecha/estadisticas.py.
+        # '' = sin datos de esa parte; 'null' = el medio no aparece ese día.
+        _t_stmt("""CREATE TABLE IF NOT EXISTS medio_dia (
+              dia      TEXT NOT NULL,
+              dominio  TEXT NOT NULL,
+              runs     TEXT NOT NULL DEFAULT '',
+              pub      TEXT NOT NULL DEFAULT '',
+              PRIMARY KEY (dia, dominio)
+            ) WITHOUT ROWID"""),
+        _t_stmt("""CREATE TABLE IF NOT EXISTS dia_stats (
+              dia         TEXT PRIMARY KEY,
+              cerrado     INTEGER NOT NULL DEFAULT 0,
+              recolector  TEXT NOT NULL DEFAULT '',
+              total       TEXT NOT NULL DEFAULT ''
+            ) WITHOUT ROWID"""),
     ]
     if turso_pipeline(stmts, timeout=30) is None:
         print("[turso!] ensure_schema falló")
