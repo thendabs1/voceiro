@@ -16,7 +16,7 @@
     document.getElementById('conexion').checked = !!r?.estado?.permiso;
     const lista = document.getElementById('sitios');
     lista.replaceChildren();
-    for (const origen of (p.origins || []).filter(o => !/voceiro-sync\./.test(o))){
+    for (const origen of (p.origins || []).filter(o => !/^https:\/\/(voceiro-sync\.|sync\.voceiro\.eu\/)/.test(o))){
       const fila = document.createElement('li');
       fila.append(document.createTextNode(origen));
       const quitar = document.createElement('button');

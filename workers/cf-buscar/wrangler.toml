@@ -1,6 +1,12 @@
 name = "voceiro-buscar"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
+
+# Dominio propio: el WAF de la zona voceiro.eu (límite por IP) va delante.
+# workers.dev sigue abierto mientras queden clientes viejos que lo usan;
+# cuando no, workers_dev = false (si no, se puede saltar el WAF).
+routes = [{ pattern = "buscar.voceiro.eu", custom_domain = true }]
+workers_dev = true
 # Las variables del panel (si las hay) no se pierden al desplegar con [vars].
 keep_vars = true
 

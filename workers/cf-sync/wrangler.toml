@@ -2,6 +2,12 @@ name = "voceiro-sync"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 
+# Dominio propio: el WAF de la zona voceiro.eu (límite por IP) va delante.
+# workers.dev sigue abierto mientras queden clientes viejos que lo usan;
+# cuando no, workers_dev = false (si no, se puede saltar el WAF).
+routes = [{ pattern = "sync.voceiro.eu", custom_domain = true }]
+workers_dev = true
+
 # Sincronización de Voceiro entre dispositivos: guarda un bloque cifrado en
 # el navegador por cada código. El servidor no puede leer lo que guarda.
 [[d1_databases]]
