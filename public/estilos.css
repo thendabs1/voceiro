@@ -480,20 +480,31 @@
     border:1px solid var(--btn-border); border-radius:6px;
     background:var(--bg); color:var(--fg); font:inherit;
   }
-/* ── Cabeceras de super-grupo (lista de medios) ── */
+/* ── Categorías plegables de la lista de medios ── */
+.medio-cat{ border-bottom:1px solid var(--border); }
+.medio-cat:last-child{ border-bottom:0; }
 .medio-cat-header{
-  padding: 10px 10px 4px;
-  font-size: .68em;
+  display:flex; align-items:center; gap:10px;
+  padding: 10px;
+  cursor:pointer;
+  font-size: .72em;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--muted);
   background: var(--quote-bg);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  list-style:none;
 }
+.medio-cat-header::-webkit-details-marker{ display:none; }
+.medio-cat-header span{ flex:1; min-width:0; }
+.medio-cat-header small{ color:var(--muted); font-size:.9em; font-weight:400; white-space:nowrap; }
+.medio-cat-header::after{
+  content:''; width:.5em; height:.5em; flex:none;
+  border-right:2px solid var(--muted); border-bottom:2px solid var(--muted);
+  transform:rotate(45deg);
+}
+.medio-cat[open] .medio-cat-header::after{ transform:rotate(-135deg); }
+.medio-cat-header:hover{ filter:brightness(.97); }
+.medio-cat-header:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+.medio-cat[open] .medio-cat-header{ border-bottom:1px solid var(--border); }
+.medio-cat .medio-fila:last-child{ border-bottom:0; }
 
   textarea.preset-texto{
     width:100%; min-height:180px; padding:12px;
@@ -1656,7 +1667,7 @@
   .dups-list .dup-item a:hover{text-decoration:underline}
   /* ═══ Ajustes ═══
      Móvil: pantalla completa, o la lista de secciones o una página.
-     Escritorio y tablet (≥ 820 px): panel lateral con el feed visible detrás. */
+     Escritorio y tablet (≥ 820 px): panel lateral a la izquierda. */
   .panel-ajustes{ padding:0; overflow:hidden; }
   .panel-ajustes .aj-inner{
     max-width:none; width:100%; margin:0;
@@ -1828,17 +1839,17 @@
   @media (min-width: 820px){
     .panel-ajustes{ background:rgba(0,0,0,.25); }
     .panel-ajustes .aj-inner{
-      width:min(900px, 100vw); margin:0 0 0 auto;
-      border-left:1px solid var(--border);
-      box-shadow:-12px 0 40px rgba(0,0,0,.25);
+      width:min(900px, 100vw); margin:0 auto 0 0;
+      border-right:1px solid var(--border);
+      box-shadow:12px 0 40px rgba(0,0,0,.25);
     }
     .aj-resize{
-      display:block; position:absolute; z-index:2; left:0; top:0;
+      display:block; position:absolute; z-index:2; right:0; top:0;
       width:12px; height:100%; padding:0; border:0;
       background:transparent; cursor:ew-resize; touch-action:none;
     }
     .aj-resize::after{
-      content:''; position:absolute; left:3px; top:50%;
+      content:''; position:absolute; right:3px; top:50%;
       width:3px; height:36px; border-radius:3px;
       background:var(--border); transform:translateY(-50%);
     }

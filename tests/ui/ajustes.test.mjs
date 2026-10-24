@@ -25,11 +25,39 @@ test('el catálogo y los dominios propios se pueden gestionar juntos sin duplica
   assert.equal(ctx.mediosDelPanel(null).length, 1);
 });
 
+test('las categorías y sus filas priorizan los medios activos del modo', () => {
+  const medios = [
+    { dominio: 'nacional-a.es', medio: 'A', grupo: 'Nacional' },
+    { dominio: 'nacional-b.es', medio: 'B', grupo: 'Nacional' },
+    { dominio: 'galicia-a.es', medio: 'A', grupo: 'Regional · Galicia' },
+    { dominio: 'galicia-b.es', medio: 'B', grupo: 'Regional · Galicia' },
+    { dominio: 'galicia-c.es', medio: 'C', grupo: 'Regional · Galicia' },
+  ];
+  const modo = {
+    grupos: ['Regional · Galicia'],
+    overrides: { 'galicia-b.es': 'ignore', 'nacional-b.es': 'first' },
+  };
+  const ctx = {};
+  cargar(ctx, 'getOverride', 'overrideIncluye', 'medioActivoEnModo', 'ordenarCategoriasMedios');
+  const { categorias, grupos, activos } = ctx.ordenarCategoriasMedios(medios, modo);
+  assert.deepEqual(Array.from(grupos), ['Regional · Galicia', 'Nacional']);
+  assert.equal(activos.get('Regional · Galicia'), 2);
+  assert.equal(activos.get('Nacional'), 1);
+  assert.deepEqual(Array.from(categorias.get('Regional · Galicia'), m => m.dominio),
+    ['galicia-a.es', 'galicia-c.es', 'galicia-b.es']);
+  assert.deepEqual(Array.from(categorias.get('Nacional'), m => m.dominio),
+    ['nacional-b.es', 'nacional-a.es']);
+});
+
 test('buscar medios combina nombre, grupo y comportamiento del modo editado', () => {
   const filas = [
     { dataset: { dominio: 'uno.es', buscar: 'diario uno', grupo: 'Nacional' }, style: {} },
     { dataset: { dominio: 'dos.es', buscar: 'diario dos', grupo: 'Regional' }, style: {} },
     { dataset: { dominio: 'tres.es', buscar: 'revista tres', grupo: 'Nacional' }, style: {} },
+  ];
+  const categorias = [
+    { dataset: { cat: 'Nacional' }, style: {}, open: false, querySelectorAll: () => [filas[0], filas[2]] },
+    { dataset: { cat: 'Regional' }, style: {}, open: false, querySelectorAll: () => [filas[1]] },
   ];
   const elementos = {
     '#filtro-medio': { value: '' }, '#filtro-grupo-medio': { value: '' },
@@ -38,13 +66,16 @@ test('buscar medios combina nombre, grupo y comportamiento del modo editado', ()
   let visibles;
   const ctx = {
     $: s => elementos[s], normalize: s => s,
-    document: { querySelectorAll: s => s.endsWith('.medio-fila') ? filas : [] },
+    document: { querySelectorAll: s => s.endsWith('.medio-fila') ? filas : s.endsWith('.medio-cat') ? categorias : [] },
+    MEDIOS_CATS_ABIERTAS: new Set(),
     modoEnPanel: () => ({ overrides: { 'uno.es': 'first', 'dos.es': 'ignore' } }),
     actualizarResumen: n => { visibles = n; }, actualizarAddBar() {},
   };
   cargar(ctx, 'getOverride', 'filtrarMedios');
   ctx.filtrarMedios();
   assert.equal(visibles, 2);
+  assert.equal(categorias[0].open, true);
+  assert.equal(categorias[1].open, true);
   elementos['#filtro-grupo-medio'].value = 'Nacional';
   ctx.filtrarMedios();
   assert.equal(visibles, 1);
@@ -59,6 +90,12 @@ test('buscar medios combina nombre, grupo y comportamiento del modo editado', ()
   ctx.filtrarMedios();
   assert.equal(visibles, 1);
   assert.equal(filas[2].style.display, '');
+  assert.equal(categorias[0].open, true);
+  assert.equal(categorias[1].style.display, 'none');
+  elementos['#filtro-medio'].value = '';
+  ctx.filtrarMedios();
+  assert.equal(categorias[0].open, false);
+  assert.equal(categorias[1].open, false);
 });
 
 test('un dominio del catálogo oculto por los filtros no se ofrece como medio nuevo', () => {
@@ -97,5 +134,5 @@ test('cambiar de editor guarda los temas pendientes en su modo antes de abrir ot
   assert.equal(guardados, 1);
   assert.equal(pintados, 1);
   assert.equal(elementos['#filtro-estado-medio'].value, '');
-  assert.equal(elementos['#aj-bloque-medios'].open, true);
+  assert.equal(elementos['#aj-bloque-medios'].open, false);
 });

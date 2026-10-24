@@ -103,6 +103,7 @@ export default {
   "estConFallos": "hutsegiteekin",
   "cfgMediosVacio": "Ez dago iragazki hauekin bat datorren hedabiderik. Aldatu bilaketa edo iragazkiak. Katalogotik kanpoko hedabidea gehitzeko, idatzi bere domeinua.",
   "cfgMediosOtros": "Katalogotik kanpo",
+  "cfgMediosCategoria": "{activos} aktibo · {total} hedabide",
   "cfgMediosConfigurados": "Konfiguratuak soilik",
   "cfgMediosTodos": "Hedabide guztiak",
   "cfgFiltrarEstado": "Iragazi hedabideak portaeraren arabera",

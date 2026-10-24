@@ -144,30 +144,50 @@ function renderListaGrupos(p){
   });
 }
 // Medios del modo que se edita en Ajustes: incluir, destacar o bloquear.
+let MEDIOS_CATS_MODO = null;
+let MEDIOS_CATS_ABIERTAS = new Set();
+function medioActivoEnModo(m, modo){
+  const estado = getOverride(m.dominio, modo);
+  return overrideIncluye(estado) || (estado !== 'ignore' && (modo?.grupos || []).includes(m.grupo));
+}
+function ordenarCategoriasMedios(medios, modo){
+  const categorias = new Map();
+  medios.forEach(m => {
+    if (!categorias.has(m.grupo)) categorias.set(m.grupo, []);
+    categorias.get(m.grupo).push(m);
+  });
+  const activos = new Map();
+  categorias.forEach((enCat, grupo) => {
+    enCat.sort((a, b) => Number(medioActivoEnModo(b, modo)) - Number(medioActivoEnModo(a, modo))
+      || a.medio.localeCompare(b.medio));
+    activos.set(grupo, enCat.filter(m => medioActivoEnModo(m, modo)).length);
+  });
+  const grupos = [...categorias.keys()].sort((a, b) =>
+    activos.get(b) - activos.get(a) || a.localeCompare(b));
+  return { categorias, grupos, activos };
+}
 function renderListaMedios(){
   const cont = $('#lista-medios');
   const modo = modoEnPanel();
   const medios = mediosDelPanel(modo);
-  const { buckets, supers } = bucketPorSuper(medios, m => m.grupo);
+  if (MEDIOS_CATS_MODO !== modo?.id){
+    MEDIOS_CATS_MODO = modo?.id;
+    MEDIOS_CATS_ABIERTAS = new Set();
+  }
+  const { categorias, grupos, activos } = ordenarCategoriasMedios(medios, modo);
 
   let html = '';
-  supers.forEach(s => {
-    const enCat = buckets.get(s);
-
-    // Si el grupo se llama igual que la categoría (Deportes, Economía,
-    // Nacional…), no pintamos cabecera: sería una línea redundante.
-    const esRedundante = enCat.length === 1 && enCat[0].grupo === s;
-    if (!esRedundante){
-      html += `<div class="medio-cat-header" data-cat="${escapeHtml(s)}">${escapeHtml(s)}</div>`;
-    }
-
+  grupos.forEach(g => {
+    const enCat = categorias.get(g);
+    html += `<details class="medio-cat" data-cat="${escapeHtml(g)}"${MEDIOS_CATS_ABIERTAS.has(g) ? ' open' : ''}>
+      <summary class="medio-cat-header"><span>${escapeHtml(g)}</span>
+        <small>${escapeHtml(t('cfgMediosCategoria', { activos: activos.get(g), total: enCat.length }))}</small></summary>`;
     enCat.forEach(m => {
       const mode  = getOverride(m.dominio, modo) || '';
       html += `
         <div class="medio-fila${overrideIncluye(mode) ? ' estado-incluir' : mode === 'ignore' ? ' estado-ignorar' : ''}"
              data-dominio="${escapeHtml(m.dominio)}"
              data-grupo="${escapeHtml(m.grupo)}"
-             data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
           <span class="medio-identidad">
             <strong>${escapeHtml(m.medio)}</strong>
@@ -181,6 +201,7 @@ function renderListaMedios(){
           </select>
         </div>`;
     });
+    html += '</details>';
   });
   cont.innerHTML = html;
   filtrarMedios();
@@ -197,20 +218,12 @@ function mediosDelPanel(modo){
     .map(d => ({ dominio: d, medio: d, grupo: t('cfgMediosOtros') }));
   return [...MEDIOS_UNICOS, ...extras];
 }
-function actualizarFilaMedio(dominio, modo){
+function actualizarFilaMedio(dominio){
+  renderListaMedios();
   const fila = [...document.querySelectorAll('#lista-medios .medio-fila')]
     .find(f => f.dataset.dominio === dominio);
-  if (!fila){ actualizarResumen(); return; }
-  const estado = getOverride(dominio, modo);
-  if (!estado && !MEDIOS_UNICOS.some(m => m.dominio === dominio)){
-    fila.remove();
-    filtrarMedios();
-    return;
-  }
-  fila.querySelector('.medio-estado').value = estado;
-  fila.classList.toggle('estado-incluir', overrideIncluye(estado));
-  fila.classList.toggle('estado-ignorar', estado === 'ignore');
-  filtrarMedios();
+  if (fila && fila.style.display !== 'none') fila.querySelector('.medio-estado').focus();
+  else $(fila ? '#filtro-estado-medio' : '#filtro-medio').focus();
 }
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
@@ -229,18 +242,12 @@ function filtrarMedios(){
     if (show) visibles++;
   });
 
-  // Ocultar cabeceras de categoría sin filas visibles
-  document.querySelectorAll('#lista-medios .medio-cat-header').forEach(hdr => {
-    let sib = hdr.nextElementSibling;
-    let hasVisible = false;
-    while (sib && !sib.classList.contains('medio-cat-header')){
-      if (sib.classList.contains('medio-fila') && sib.style.display !== 'none'){
-        hasVisible = true;
-        break;
-      }
-      sib = sib.nextElementSibling;
-    }
-    hdr.style.display = hasVisible ? '' : 'none';
+  const filtrando = !!(q || g || estado);
+  document.querySelectorAll('#lista-medios .medio-cat').forEach(cat => {
+    const tieneVisibles = [...cat.querySelectorAll('.medio-fila')]
+      .some(f => f.style.display !== 'none');
+    cat.style.display = tieneVisibles ? '' : 'none';
+    cat.open = (filtrando && tieneVisibles) || MEDIOS_CATS_ABIERTAS.has(cat.dataset.cat);
   });
 
   actualizarResumen(visibles);

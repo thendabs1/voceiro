@@ -103,6 +103,7 @@ export default {
   "estConFallos": "failing",
   "cfgMediosVacio": "No outlets match these filters. Change the search or filters. To add an outlet outside the catalog, enter its domain.",
   "cfgMediosOtros": "Outside the catalog",
+  "cfgMediosCategoria": "{activos} active · {total} outlets",
   "cfgMediosConfigurados": "Configured only",
   "cfgMediosTodos": "All outlets",
   "cfgFiltrarEstado": "Filter outlets by behavior",

@@ -103,6 +103,7 @@ export default {
   "estConFallos": "con fallos",
   "cfgMediosVacio": "No hay medios con estos filtros. Cambia la búsqueda o los filtros. Para añadir un medio fuera del catálogo, escribe su dominio.",
   "cfgMediosOtros": "Fuera del catálogo",
+  "cfgMediosCategoria": "{activos} activos · {total} medios",
   "cfgMediosConfigurados": "Solo configurados",
   "cfgMediosTodos": "Todos los medios",
   "cfgFiltrarEstado": "Filtrar medios por comportamiento",

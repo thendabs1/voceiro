@@ -12,31 +12,31 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=5c974b0081';
+} from './parser.js?v=9d02ff73f3';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=5c974b0081';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=5c974b0081';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=5c974b0081';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=5c974b0081';
-import { comparador } from './busqueda/orden.js?v=5c974b0081';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=9d02ff73f3';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=9d02ff73f3';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=9d02ff73f3';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=9d02ff73f3';
+import { comparador } from './busqueda/orden.js?v=9d02ff73f3';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=5c974b0081';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=5c974b0081';
+} from './sync/fusion.js?v=9d02ff73f3';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=9d02ff73f3';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=5c974b0081';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=5c974b0081';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=9d02ff73f3';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=9d02ff73f3';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=5c974b0081';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=9d02ff73f3';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=5c974b0081';
+} from './tiempo/avisos.js?v=9d02ff73f3';
 
-import { I18N, traducir } from './idiomas/index.js?v=5c974b0081';
+import { I18N, traducir } from './idiomas/index.js?v=9d02ff73f3';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1938,7 +1938,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=5c974b0081');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=9d02ff73f3');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3876,7 +3876,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=5c974b0081')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=9d02ff73f3')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -4728,30 +4728,50 @@ function renderListaGrupos(p){
   });
 }
 // Medios del modo que se edita en Ajustes: incluir, destacar o bloquear.
+let MEDIOS_CATS_MODO = null;
+let MEDIOS_CATS_ABIERTAS = new Set();
+function medioActivoEnModo(m, modo){
+  const estado = getOverride(m.dominio, modo);
+  return overrideIncluye(estado) || (estado !== 'ignore' && (modo?.grupos || []).includes(m.grupo));
+}
+function ordenarCategoriasMedios(medios, modo){
+  const categorias = new Map();
+  medios.forEach(m => {
+    if (!categorias.has(m.grupo)) categorias.set(m.grupo, []);
+    categorias.get(m.grupo).push(m);
+  });
+  const activos = new Map();
+  categorias.forEach((enCat, grupo) => {
+    enCat.sort((a, b) => Number(medioActivoEnModo(b, modo)) - Number(medioActivoEnModo(a, modo))
+      || a.medio.localeCompare(b.medio));
+    activos.set(grupo, enCat.filter(m => medioActivoEnModo(m, modo)).length);
+  });
+  const grupos = [...categorias.keys()].sort((a, b) =>
+    activos.get(b) - activos.get(a) || a.localeCompare(b));
+  return { categorias, grupos, activos };
+}
 function renderListaMedios(){
   const cont = $('#lista-medios');
   const modo = modoEnPanel();
   const medios = mediosDelPanel(modo);
-  const { buckets, supers } = bucketPorSuper(medios, m => m.grupo);
+  if (MEDIOS_CATS_MODO !== modo?.id){
+    MEDIOS_CATS_MODO = modo?.id;
+    MEDIOS_CATS_ABIERTAS = new Set();
+  }
+  const { categorias, grupos, activos } = ordenarCategoriasMedios(medios, modo);
 
   let html = '';
-  supers.forEach(s => {
-    const enCat = buckets.get(s);
-
-    // Si el grupo se llama igual que la categoría (Deportes, Economía,
-    // Nacional…), no pintamos cabecera: sería una línea redundante.
-    const esRedundante = enCat.length === 1 && enCat[0].grupo === s;
-    if (!esRedundante){
-      html += `<div class="medio-cat-header" data-cat="${escapeHtml(s)}">${escapeHtml(s)}</div>`;
-    }
-
+  grupos.forEach(g => {
+    const enCat = categorias.get(g);
+    html += `<details class="medio-cat" data-cat="${escapeHtml(g)}"${MEDIOS_CATS_ABIERTAS.has(g) ? ' open' : ''}>
+      <summary class="medio-cat-header"><span>${escapeHtml(g)}</span>
+        <small>${escapeHtml(t('cfgMediosCategoria', { activos: activos.get(g), total: enCat.length }))}</small></summary>`;
     enCat.forEach(m => {
       const mode  = getOverride(m.dominio, modo) || '';
       html += `
         <div class="medio-fila${overrideIncluye(mode) ? ' estado-incluir' : mode === 'ignore' ? ' estado-ignorar' : ''}"
              data-dominio="${escapeHtml(m.dominio)}"
              data-grupo="${escapeHtml(m.grupo)}"
-             data-cat="${escapeHtml(s)}"
              data-buscar="${escapeHtml(normalize(m.dominio + ' ' + m.medio + ' ' + m.grupo))}">
           <span class="medio-identidad">
             <strong>${escapeHtml(m.medio)}</strong>
@@ -4765,6 +4785,7 @@ function renderListaMedios(){
           </select>
         </div>`;
     });
+    html += '</details>';
   });
   cont.innerHTML = html;
   filtrarMedios();
@@ -4781,20 +4802,12 @@ function mediosDelPanel(modo){
     .map(d => ({ dominio: d, medio: d, grupo: t('cfgMediosOtros') }));
   return [...MEDIOS_UNICOS, ...extras];
 }
-function actualizarFilaMedio(dominio, modo){
+function actualizarFilaMedio(dominio){
+  renderListaMedios();
   const fila = [...document.querySelectorAll('#lista-medios .medio-fila')]
     .find(f => f.dataset.dominio === dominio);
-  if (!fila){ actualizarResumen(); return; }
-  const estado = getOverride(dominio, modo);
-  if (!estado && !MEDIOS_UNICOS.some(m => m.dominio === dominio)){
-    fila.remove();
-    filtrarMedios();
-    return;
-  }
-  fila.querySelector('.medio-estado').value = estado;
-  fila.classList.toggle('estado-incluir', overrideIncluye(estado));
-  fila.classList.toggle('estado-ignorar', estado === 'ignore');
-  filtrarMedios();
+  if (fila && fila.style.display !== 'none') fila.querySelector('.medio-estado').focus();
+  else $(fila ? '#filtro-estado-medio' : '#filtro-medio').focus();
 }
 function filtrarMedios(){
   const q = normalize($('#filtro-medio').value.trim());
@@ -4813,18 +4826,12 @@ function filtrarMedios(){
     if (show) visibles++;
   });
 
-  // Ocultar cabeceras de categoría sin filas visibles
-  document.querySelectorAll('#lista-medios .medio-cat-header').forEach(hdr => {
-    let sib = hdr.nextElementSibling;
-    let hasVisible = false;
-    while (sib && !sib.classList.contains('medio-cat-header')){
-      if (sib.classList.contains('medio-fila') && sib.style.display !== 'none'){
-        hasVisible = true;
-        break;
-      }
-      sib = sib.nextElementSibling;
-    }
-    hdr.style.display = hasVisible ? '' : 'none';
+  const filtrando = !!(q || g || estado);
+  document.querySelectorAll('#lista-medios .medio-cat').forEach(cat => {
+    const tieneVisibles = [...cat.querySelectorAll('.medio-fila')]
+      .some(f => f.style.display !== 'none');
+    cat.style.display = tieneVisibles ? '' : 'none';
+    cat.open = (filtrando && tieneVisibles) || MEDIOS_CATS_ABIERTAS.has(cat.dataset.cat);
   });
 
   actualizarResumen(visibles);
@@ -4927,7 +4934,7 @@ function ajPrepararAncho(){
   });
   control.addEventListener('pointermove', e => {
     if (!control.hasPointerCapture(e.pointerId)) return;
-    ancho = anchoInicial + inicioX - e.clientX;
+    ancho = anchoInicial + e.clientX - inicioX;
     ajFijarAncho(ancho);
   });
   const terminar = e => {
@@ -4941,7 +4948,7 @@ function ajPrepararAncho(){
   control.addEventListener('keydown', e => {
     if (ajEsMovil() || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
     e.preventDefault();
-    ancho = Number(control.getAttribute('aria-valuenow')) + (e.key === 'ArrowLeft' ? 1 : -1) * (e.shiftKey ? 80 : 20);
+    ancho = Number(control.getAttribute('aria-valuenow')) + (e.key === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 80 : 20);
     ajFijarAncho(ancho);
     ancho = Number(control.getAttribute('aria-valuenow'));
     try { localStorage.setItem('voceiro-aj-ancho', ancho); } catch(e){}
@@ -5148,12 +5155,13 @@ function renderListaModos(){
 function ajEditarModo(id){
   ajGuardarTemas();
   MODO_EDITADO = id;
+  MEDIOS_CATS_ABIERTAS = new Set();
   $('#filtro-medio').value = '';
   $('#filtro-grupo-medio').value = '';
   $('#filtro-estado-medio').value = '';
   $('#ov-pegar').value = '';
   $('#aj-bloque-temas').open = true;
-  $('#aj-bloque-medios').open = true;
+  $('#aj-bloque-medios').open = false;
   $('#aj-bloque-grupos').open = false;
   if (ajRuta() === 'modo') ajPintar();
   else ajEmpujar('modo');
@@ -7976,6 +7984,7 @@ function wireAjustes(){
       .map(c => c.dataset.grupo);
     guardarPresets();
     ajModoCambiado(modo);
+    renderListaMedios();
   });
 
   // ── Feed: mismo estado que el panel Filtros ──
@@ -8379,6 +8388,7 @@ if (btnFiltros && filtrosPanel){
     const modo = modoEnPanel();
     if (!modo) return;
     setOverride(d, tipo, modo);
+    MEDIOS_CATS_ABIERTAS.add(t('cfgMediosOtros'));
     $('#filtro-medio').value = '';
     $('#filtro-medio-add').hidden = true;
     ajModoCambiado(modo);
@@ -8395,16 +8405,21 @@ if (btnFiltros && filtrosPanel){
     // Delegación para #lista-medios (un único listener en todo el contenedor)
   const contMedios = $('#lista-medios');
   if (contMedios){
+    contMedios.addEventListener('click', e => {
+      const summary = e.target.closest('.medio-cat-header');
+      if (!summary || $('#filtro-medio').value.trim() || $('#filtro-grupo-medio').value || $('#filtro-estado-medio').value) return;
+      const cat = summary.closest('.medio-cat');
+      if (cat.open) MEDIOS_CATS_ABIERTAS.delete(cat.dataset.cat);
+      else MEDIOS_CATS_ABIERTAS.add(cat.dataset.cat);
+    });
     contMedios.addEventListener('change', e => {
       const select = e.target.closest('.medio-estado');
       const fila = select && select.closest('.medio-fila');
       const modo = modoEnPanel();
       if (!fila || !modo) return;
       setOverride(fila.dataset.dominio, select.value, modo);
-      actualizarFilaMedio(fila.dataset.dominio, modo);
+      actualizarFilaMedio(fila.dataset.dominio);
       ajModoCambiado(modo);
-      if (!fila.isConnected) $('#filtro-medio').focus();
-      else if (fila.style.display === 'none') $('#filtro-estado-medio').focus();
     });
   }
 }
