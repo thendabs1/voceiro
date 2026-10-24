@@ -3,6 +3,13 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Ventana entre pasadas
+
+### Añadido
+- Estadísticas: `ventana_min` por medio y día (p50, p90 y máximo de los
+  minutos entre dos pasadas buenas seguidas), lo que abarca una estimada.
+  Serie `ventana_p50` en `estadisticas.json`.
+
 ## 2026-10-24 — Fechas de publicación fiables
 
 ### Corregido
