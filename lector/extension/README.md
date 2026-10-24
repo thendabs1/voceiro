@@ -34,8 +34,24 @@ la misma noticia. La posición de lectura no se restaura; los atajos vienen
 sin asignar salvo Escape.
 
 La CI construye el paquete, comprueba su sintaxis y ejecuta `web-ext lint`.
-El validador puede mostrar avisos sobre el HTML dinámico del lector y de
-Readability: quedan visibles para su revisión; no se suprimen en CI.
+El validador muestra 0 errores y 16 avisos por asignaciones de HTML dinámico.
+Quedan visibles en CI; no se suprimen. La [guía de Mozilla sobre contenido
+externo](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Safely_inserting_external_content_into_a_page)
+explica el riesgo y la necesidad de limpiar el HTML antes de insertarlo.
+
+| Fuente de los avisos | Cantidad | Revisión del contenido insertado |
+| --- | ---: | --- |
+| `vendor/Readability.js` | 2 | Vuelve a analizar HTML en una copia desconectada del documento; el artículo resultante pasa por `sanitizeHTML` antes de mostrarse. Se conserva la biblioteca original. |
+| `lector.js`: diálogo y diagnóstico | 2 | Plantillas locales; el texto del medio, los selectores y las etiquetas se escapan. |
+| `lector.js`: lector y cambios de aspecto | 7 | El cuerpo procede de bloques saneados o texto escapado; metadatos y atributos se escapan. La portada solo admite una URL HTTP/HTTPS válida. |
+| `lector.js`: teleprompter, flotante y ajustes | 5 | Estructura e iconos locales; los nombres y valores variables se escapan. |
+
+Son avisos estáticos: por sí solos no demuestran una inyección, pero tampoco
+equivalen a una aprobación de seguridad. Mozilla [permite seguir con el envío
+si solo hay avisos](https://extensionworkshop.com/documentation/publish/submitting-an-add-on/),
+aunque los de seguridad pueden motivar un rechazo en la revisión humana.
+Antes de publicar conviene revisar en Firefox páginas con HTML adversarial y
+el saneador propio; la instalación y el uso reales aún están pendientes.
 En la ejecución del workflow **Lector** puedes descargar el artefacto
 **lector-firefox-pruebas**. Sus archivos van en la raíz del ZIP: descomprímelo
 y selecciona el `manifest.json` extraído, no el ZIP contenedor de GitHub.
