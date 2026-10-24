@@ -36,3 +36,7 @@ workers/cf-buscar/node_modules/
 
 # Cachés locales de wrangler (id y nombre de la cuenta)
 workers/*/.wrangler/
+
+# Notas y planes locales (los planes son enlaces a ~/.claude)
+/docs/
+/IDEAS
