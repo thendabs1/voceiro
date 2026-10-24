@@ -21,6 +21,7 @@ let TURSO_OFFSET = 0;              // próximo offset a pedir
 let TURSO_HAY_MAS = false;
 let TURSO_ACTIVO = false;          // true cuando ya estamos paginando Turso
 let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llevar cutoff)
+let TURSO_AMPLIAR_HASTA = '';      // día anterior a la ventana automática de 30 días
 // El archivo se consulta tras una pausa sin cambios (regla 3), no en cada
 // pausa del debounce al teclear: menos peticiones y menos respuestas tiradas.
 const ARCHIVO_PAUSA_MS = 700;
@@ -46,6 +47,8 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
     })),
     total: data.total || 0,
     nextOffset: data.next_offset ?? null,
+    archivoDesde: data.archivo_desde || null,
+    errorArchivo: !!data._errores?.turso,
   });
 
   const intentar = async () => {

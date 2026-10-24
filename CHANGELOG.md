@@ -3,6 +3,26 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Archivo: menos trabajo por búsqueda
+
+### Cambiado
+- Turso consulta los últimos 30 días de Madrid si no se indican fechas.
+  Al agotarlos, «Ampliar al histórico» busca el tramo anterior sin repetir
+  las páginas recientes. Las fechas expresas se respetan. Google News
+  conserva su búsqueda independiente.
+- Una consulta SQL por página, sin `COUNT`: una fila extra decide si hay
+  otra página. `total` puede ser `null`; la paginación usa `next_offset`.
+- Relevancia con `rank` y `bm25()` explícito, para ordenar dentro de FTS.
+- La caché usa la consulta interpretada para reutilizar URLs equivalentes.
+
+### Corregido
+- La API limita `limit` a 1–200, también dentro de `raw`: los negativos
+  podían desactivar el límite de SQLite. No repite fuentes ni consulta
+  Turso sin texto.
+
+La pausa del archivo sigue activa. Falta contrastar el esquema y consumo
+reales cuando Turso vuelva a permitir lecturas; ver `workers/README.md`.
+
 ## 2026-10-24 — Caché de búsqueda en Deno
 
 ### Cambiado

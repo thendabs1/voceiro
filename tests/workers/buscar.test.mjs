@@ -50,11 +50,11 @@ function preparar(t, plataforma, responder, credenciales = true) {
   };
 }
 
-function pipeline(filas, total = filas.length) {
+function pipeline(filas) {
   const resultado = rows => ({ type: 'ok', response: { type: 'execute', result: {
     rows: rows.map(f => f.map(value => ({ type: 'text', value: String(value) }))),
   } } });
-  return new Response(JSON.stringify({ results: [resultado(filas), resultado([[total]])] }));
+  return new Response(JSON.stringify({ results: [resultado(filas)] }));
 }
 
 const fila = ['Titular', 'https://www.ejemplo.test/a', 'ejemplo.test', '2026-10-23T10:00:00Z', '', 'RSS'];
@@ -67,7 +67,7 @@ test('CF y Deno conservan filtros, consulta SQL y credenciales independientes', 
       assert.equal(url, `https://${plataforma}-turso.test/v2/pipeline`);
       assert.equal(opciones.headers.Authorization, `Bearer ${plataforma}-prueba`);
       consultas.push(JSON.parse(opciones.body));
-      return pipeline([fila], 9);
+      return pipeline([fila]);
     });
     const params = new URLSearchParams({
       raw: 'incendio grupo:galicia tipo:diario medio:elpais.com desde:2026-10-20 hasta:2026-10-23',
@@ -77,7 +77,7 @@ test('CF y Deno conservan filtros, consulta SQL y credenciales independientes', 
     assert.equal(r.headers.get('Access-Control-Allow-Origin'), '*');
     const { _ms, ...datos } = await r.json();
     respuestas.push(datos);
-    assert.equal(datos.total, 9);
+    assert.equal(datos.total, 5);
     assert.equal(datos.items[0].u, '/a');
     assert.equal(datos.items[0]._src, 'turso');
   });
@@ -86,9 +86,11 @@ test('CF y Deno conservan filtros, consulta SQL y credenciales independientes', 
   const sql = consultas[0].requests[0].stmt;
   assert.match(sql.sql, /noticias_fts MATCH/);
   assert.match(sql.sql, /bm25/);
+  assert.match(sql.sql, /ORDER BY f\.rank ASC/);
+  assert.equal(consultas[0].requests.filter(r => r.type === 'execute').length, 1);
   assert.ok(sql.args.some(a => a.value === '2026-10-20'));
   assert.deepEqual(sql.args.slice(-2), [
-    { type: 'integer', value: '7' }, { type: 'integer', value: '4' },
+    { type: 'integer', value: '8' }, { type: 'integer', value: '4' },
   ]);
 });
 
@@ -96,12 +98,14 @@ test('paginación, deduplicación y caché se conservan en las dos plataformas',
   for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
     const repetida = [...fila];
     repetida[1] = 'https://ejemplo.test/a?utm_source=rss';
-    const s = preparar(t, plataforma, () => pipeline([fila, repetida], 12));
+    const siguiente = [...fila];
+    siguiente[1] = 'https://ejemplo.test/b';
+    const s = preparar(t, plataforma, () => pipeline([fila, repetida, siguiente]));
     const ruta = '/buscar?raw=incendio&fuentes=turso&limit=2&offset=4';
     const primera = await s.pedir(ruta);
     const datos = await primera.json();
     assert.equal(datos.items.length, 1);
-    assert.equal(datos.total, 12);
+    assert.equal(datos.total, null);
     assert.equal(datos.next_offset, 6);
     assert.equal(primera.headers.get('Cache-Control'), 'public, max-age=60, s-maxage=300');
     const segunda = await s.pedir(ruta);
@@ -109,6 +113,94 @@ test('paginación, deduplicación y caché se conservan en las dos plataformas',
     assert.deepEqual(await segunda.json(), datos);
     assert.equal(s.llamadas.length, 1);
     assert.equal(s.escrituras.length, 1);
+  });
+});
+
+test('limit nunca desactiva el tope de SQLite, tampoco dentro de raw', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const limites = [];
+    const s = preparar(t, plataforma, (url, opciones) => {
+      const stmt = JSON.parse(opciones.body).requests[0].stmt;
+      limites.push(Number(stmt.args.at(-2).value));
+      return pipeline([]);
+    });
+    const casos = [
+      ['incendio', '-1', 2], ['incendio limit:-20', null, 2],
+      ['incendio', '99999', 201], ['incendio limit:99999', null, 201],
+      ['incendio', '0', 51], ['incendio', 'invalido', 51],
+    ];
+    for (let i = 0; i < casos.length; i++) {
+      const [raw, limit, esperado] = casos[i];
+      // Offset distinto para comprobar cada caso sin reutilizar caché.
+      const params = new URLSearchParams({ raw, fuentes: 'turso', offset: String(i) });
+      if (limit !== null) params.set('limit', limit);
+      await s.pedir(`/buscar?${params}`);
+      assert.equal(limites.at(-1), esperado);
+    }
+    assert.equal(s.llamadas.length, casos.length);
+  });
+});
+
+test('fuentes repetidas y URLs equivalentes comparten una sola consulta y caché', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const s = preparar(t, plataforma, () => pipeline([fila]));
+    const primera = await s.pedir('/buscar?raw=Incendio&fuentes=turso,turso&ruido=1');
+    assert.deepEqual((await primera.json()).fuentes, ['turso']);
+    const segunda = await s.pedir('/buscar?q=%20incendio%20&limit=50&order=recientes&offset=0&ruido=2');
+    assert.equal(segunda.headers.get('X-Cache'), 'HIT');
+    assert.equal(s.llamadas.length, 1);
+    // Las diferencias que afectan al resultado sí necesitan otra consulta.
+    await s.pedir('/buscar?raw=incendio&offset=1');
+    await s.pedir('/buscar?raw=incendio&order=antiguos');
+    await s.pedir('/buscar?raw=incendio%20desde:2026-10-20');
+    await s.pedir('/buscar?raw=incendio%20web:ejemplo.test');
+    assert.equal(s.llamadas.length, 5);
+  });
+});
+
+test('sin texto no se consulta Turso aunque se llame directamente a la API', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const s = preparar(t, plataforma, () => { throw new Error('Turso no debía llamarse'); });
+    for (const raw of ['', 'web:ejemplo.test', 'desde:2026-01-01 hasta:2026-10-24']) {
+      const datos = await (await s.pedir(`/buscar?fuentes=turso&raw=${encodeURIComponent(raw)}`)).json();
+      assert.deepEqual(datos.items, []);
+      assert.equal(datos.next_offset, null);
+      assert.equal(datos.total, 0);
+    }
+    assert.equal(s.llamadas.length, 0);
+  });
+});
+
+test('el archivo usa 30 días de Madrid y permite consultar expresamente fechas anteriores', async t => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-24T22:30:00Z') });
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const args = [];
+    const s = preparar(t, plataforma, (url, opciones) => {
+      args.push(JSON.parse(opciones.body).requests[0].stmt.args.map(a => a.value));
+      return pipeline([]);
+    });
+    const reciente = await (await s.pedir('/buscar?raw=incendio')).json();
+    // Ya es día 25 en Madrid: el tramo incluye del 26 de septiembre al 25.
+    assert.equal(reciente.archivo_desde, '2026-09-26');
+    assert.ok(args.at(-1).includes('2026-09-26'));
+    const anterior = await (await s.pedir('/buscar?raw=incendio%20hasta:2026-09-25')).json();
+    assert.equal(anterior.archivo_desde, null);
+    assert.ok(args.at(-1).includes('2026-09-25'));
+    assert.ok(!args.at(-1).includes('2026-09-26'));
+    await s.pedir('/buscar?raw=incendio%20desde:2020-01-01');
+    assert.ok(args.at(-1).includes('2020-01-01'));
+    assert.ok(!args.at(-1).includes('2026-09-26'));
+  });
+});
+
+test('la ventana automática de Turso no limita las fechas de Google News', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const s = preparar(t, plataforma, (url) => url.includes('/v2/pipeline')
+      ? pipeline([]) : new Response(JSON.stringify({ status: 'ok', items: [] })));
+    await s.pedir('/buscar?raw=incendio&fuentes=turso,gnews');
+    const relay = s.llamadas.find(r => !r.url.includes('/v2/pipeline'));
+    const google = new URL(new URL(relay.url).searchParams.get('url'));
+    assert.equal(google.searchParams.get('q'), 'incendio');
   });
 });
 
@@ -182,7 +274,7 @@ test('en Deno el archivo está en pausa si el panel no dice otra cosa', async t 
 
 test('más allá del tope de offset no se consulta el archivo ni se ofrece otra página', async t => {
   for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
-    const s = preparar(t, plataforma, () => pipeline([fila], 5000));
+    const s = preparar(t, plataforma, () => pipeline([fila]));
     const lejos = await (await s.pedir(`/buscar?raw=incendio&fuentes=turso&offset=${MAX_OFFSET + 1}`)).json();
     assert.deepEqual(lejos.items, []);
     assert.equal(lejos.next_offset, null);

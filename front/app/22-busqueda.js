@@ -123,6 +123,7 @@ if (consulta.clave !== ULT_QUERY_KEY) {
   TURSO_HAY_MAS = false;
   TURSO_ACTIVO  = !capas.size;
   TURSO_RAW     = '';
+  TURSO_AMPLIAR_HASTA = '';
 }
 
 // El cursor solo sirve para las capas que se cargaron con él. Al cambiar de
@@ -156,6 +157,11 @@ ajustarDiasActual(capas);
       if (TURSO_RAW !== claveTurso) return;      // la consulta cambió durante la pausa
       buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
         if (TURSO_RAW !== claveTurso) return;
+        if (res.archivoDesde && !res.errorArchivo) {
+          const anterior = new Date(`${res.archivoDesde}T00:00:00Z`);
+          anterior.setUTCDate(anterior.getUTCDate() - 1);
+          TURSO_AMPLIAR_HASTA = anterior.toISOString().slice(0, 10);
+        }
         if (!res.items || !res.items.length) {
           TURSO_HAY_MAS = false;
           actualizarBotonCargarMas();

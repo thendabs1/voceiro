@@ -153,7 +153,9 @@ function wireStaticEvents(){
   // ── Botón "Cargar más" (paginación R2 + Turso) ──
   const btnCargarMas = document.getElementById('btn-cargar-mas');
   if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
-    const pedir = btnCargarMas.dataset.modo === 'archivo' ? cargarMasDeTurso : cargarMas;
+    const modo = btnCargarMas.dataset.modo;
+    const pedir = modo === 'historico' ? ampliarArchivo
+      : modo === 'archivo' ? cargarMasDeTurso : cargarMas;
     solicitarMas(pedir);
   });
 

@@ -352,6 +352,16 @@ async function cargarMas() {
 }
 
 // ─── Paginación Turso ───
+async function ampliarArchivo() {
+  if (!ARCHIVO_ACTIVO || TURSO_HAY_MAS || !TURSO_RAW || !TURSO_AMPLIAR_HASTA) return;
+  // Solo el tramo anterior: no repetimos las páginas de los últimos 30 días.
+  TURSO_RAW += ` hasta:${TURSO_AMPLIAR_HASTA}`;
+  TURSO_AMPLIAR_HASTA = '';
+  TURSO_OFFSET = 0;
+  TURSO_HAY_MAS = true;
+  await cargarMasDeTurso();
+}
+
 async function cargarMasDeTurso() {
   if (!ARCHIVO_ACTIVO || !TURSO_HAY_MAS || !TURSO_RAW) return;
 
@@ -413,6 +423,14 @@ function actualizarBotonCargarMas() {
     wrap.style.display = '';
     btn.textContent = _cargandoMas ? 'Cargando…' : 'Buscar más en el archivo';
     btn.dataset.modo = 'archivo';
+    btn.disabled = _cargandoMas;
+    return;
+  }
+
+  if (ARCHIVO_ACTIVO && TURSO_RAW && TURSO_AMPLIAR_HASTA) {
+    wrap.style.display = '';
+    btn.textContent = _cargandoMas ? 'Cargando…' : 'Ampliar al histórico';
+    btn.dataset.modo = 'historico';
     btn.disabled = _cargandoMas;
     return;
   }

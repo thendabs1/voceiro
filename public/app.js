@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=b4efeb6f8f';
+} from './parser.js?v=d6889b9135';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=b4efeb6f8f';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b4efeb6f8f';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b4efeb6f8f';
-import { comparador } from './busqueda/orden.js?v=b4efeb6f8f';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=d6889b9135';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=d6889b9135';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=d6889b9135';
+import { comparador } from './busqueda/orden.js?v=d6889b9135';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=b4efeb6f8f';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b4efeb6f8f';
+} from './sync/fusion.js?v=d6889b9135';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=d6889b9135';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=b4efeb6f8f';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b4efeb6f8f';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=d6889b9135';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=d6889b9135';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b4efeb6f8f';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=d6889b9135';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=b4efeb6f8f';
+} from './tiempo/avisos.js?v=d6889b9135';
 
-import { I18N, traducir } from './idiomas/index.js?v=b4efeb6f8f';
+import { I18N, traducir } from './idiomas/index.js?v=d6889b9135';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1933,7 +1933,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=b4efeb6f8f');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=d6889b9135');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3452,7 +3452,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=b4efeb6f8f')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=d6889b9135')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -5366,6 +5366,7 @@ let TURSO_OFFSET = 0;              // próximo offset a pedir
 let TURSO_HAY_MAS = false;
 let TURSO_ACTIVO = false;          // true cuando ya estamos paginando Turso
 let TURSO_RAW = '';                // raw con el que se pagina Turso (puede llevar cutoff)
+let TURSO_AMPLIAR_HASTA = '';      // día anterior a la ventana automática de 30 días
 // El archivo se consulta tras una pausa sin cambios (regla 3), no en cada
 // pausa del debounce al teclear: menos peticiones y menos respuestas tiradas.
 const ARCHIVO_PAUSA_MS = 700;
@@ -5391,6 +5392,8 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
     })),
     total: data.total || 0,
     nextOffset: data.next_offset ?? null,
+    archivoDesde: data.archivo_desde || null,
+    errorArchivo: !!data._errores?.turso,
   });
 
   const intentar = async () => {
@@ -5815,6 +5818,7 @@ if (consulta.clave !== ULT_QUERY_KEY) {
   TURSO_HAY_MAS = false;
   TURSO_ACTIVO  = !capas.size;
   TURSO_RAW     = '';
+  TURSO_AMPLIAR_HASTA = '';
 }
 
 // El cursor solo sirve para las capas que se cargaron con él. Al cambiar de
@@ -5848,6 +5852,11 @@ ajustarDiasActual(capas);
       if (TURSO_RAW !== claveTurso) return;      // la consulta cambió durante la pausa
       buscarEnWorker(TURSO_RAW, { offset: 0, limit: 50 }).then(res => {
         if (TURSO_RAW !== claveTurso) return;
+        if (res.archivoDesde && !res.errorArchivo) {
+          const anterior = new Date(`${res.archivoDesde}T00:00:00Z`);
+          anterior.setUTCDate(anterior.getUTCDate() - 1);
+          TURSO_AMPLIAR_HASTA = anterior.toISOString().slice(0, 10);
+        }
         if (!res.items || !res.items.length) {
           TURSO_HAY_MAS = false;
           actualizarBotonCargarMas();
@@ -6699,6 +6708,16 @@ async function cargarMas() {
 }
 
 // ─── Paginación Turso ───
+async function ampliarArchivo() {
+  if (!ARCHIVO_ACTIVO || TURSO_HAY_MAS || !TURSO_RAW || !TURSO_AMPLIAR_HASTA) return;
+  // Solo el tramo anterior: no repetimos las páginas de los últimos 30 días.
+  TURSO_RAW += ` hasta:${TURSO_AMPLIAR_HASTA}`;
+  TURSO_AMPLIAR_HASTA = '';
+  TURSO_OFFSET = 0;
+  TURSO_HAY_MAS = true;
+  await cargarMasDeTurso();
+}
+
 async function cargarMasDeTurso() {
   if (!ARCHIVO_ACTIVO || !TURSO_HAY_MAS || !TURSO_RAW) return;
 
@@ -6760,6 +6779,14 @@ function actualizarBotonCargarMas() {
     wrap.style.display = '';
     btn.textContent = _cargandoMas ? 'Cargando…' : 'Buscar más en el archivo';
     btn.dataset.modo = 'archivo';
+    btn.disabled = _cargandoMas;
+    return;
+  }
+
+  if (ARCHIVO_ACTIVO && TURSO_RAW && TURSO_AMPLIAR_HASTA) {
+    wrap.style.display = '';
+    btn.textContent = _cargandoMas ? 'Cargando…' : 'Ampliar al histórico';
+    btn.dataset.modo = 'historico';
     btn.disabled = _cargandoMas;
     return;
   }
@@ -7665,7 +7692,9 @@ function wireStaticEvents(){
   // ── Botón "Cargar más" (paginación R2 + Turso) ──
   const btnCargarMas = document.getElementById('btn-cargar-mas');
   if (btnCargarMas) btnCargarMas.addEventListener('click', () => {
-    const pedir = btnCargarMas.dataset.modo === 'archivo' ? cargarMasDeTurso : cargarMas;
+    const modo = btnCargarMas.dataset.modo;
+    const pedir = modo === 'historico' ? ampliarArchivo
+      : modo === 'archivo' ? cargarMasDeTurso : cargarMas;
     solicitarMas(pedir);
   });
 

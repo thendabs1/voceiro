@@ -15,10 +15,11 @@ export function crearTurso(buildFtsQuery) {
       const args = [];
 
       const ftsQ = buildFtsQuery(parsed.titulo);
-      if (ftsQ) {
-        conditions.push('noticias_fts MATCH ?');
-        args.push(ftsQ);
-      }
+      // La navegación por medio/fecha se sirve de R2. También en la API,
+      // exigir texto evita barrer el catálogo para un filtro poco frecuente.
+      if (!ftsQ) return { items: [], total: 0, hayMas: false };
+      conditions.push('noticias_fts MATCH ?');
+      args.push(ftsQ);
 
       if (parsed.desde) { conditions.push('n.fecha_dia >= ?'); args.push(parsed.desde); }
       if (parsed.hasta) { conditions.push('n.fecha_dia <= ?'); args.push(parsed.hasta); }
@@ -29,9 +30,8 @@ export function crearTurso(buildFtsQuery) {
         args.push(...parsed.dominios);
       }
 
-      // ── Filtros de medios: UNA subquery en vez de JOIN ──
-      // Con JOIN, SQLite no puede usar idx_noticias_dia para el ORDER BY.
-      // Con subquery, noticias se itera por fecha_dia (índice) y se filtra.
+      // La subconsulta resuelve el catálogo de medios una vez, sin añadir
+      // otro JOIN a cada coincidencia del índice de texto.
       const mediosConds = [];
       const mediosArgs = [];
       // ── Filtros de facet: OR dentro del facet, AND entre facets ──
@@ -70,36 +70,23 @@ export function crearTurso(buildFtsQuery) {
         args.push(...mediosArgs);
       }
 
-      // ── Ventana por defecto cuando no hay FTS ni rango explícito ──
-      // Sin texto, el usuario navega el catálogo. 7 días es lo que cabe en
-      // "portada del feed" sin obligar a escanear todo el histórico.
-      if (!ftsQ && !parsed.desde && !parsed.hasta) {
-        const hace7 = new Date(Date.now() - 8 * 86400 * 1000)
-          .toISOString().slice(0, 10);
-        conditions.push('n.fecha_dia >= ?');
-        args.push(hace7);
-      }
-
-      const where = conditions.length ? conditions.join(' AND ') : '1=1';
-
       // ── ORDER BY ──
-      // Dos columnas: fecha_dia (indexado) + enlace (PK de noticias, único).
-      // NO añadir fecha_pub en medio: rompe la coincidencia con idx_noticias_dia
-      // y SQLite cae a USE TEMP B-TREE FOR ORDER BY (materializa todo).
+      // Fecha + enlace dan un orden estable para las páginas. Con FTS, ordenar
+      // por fecha aún puede examinar todas las coincidencias antes de LIMIT.
       const orderByItems = parsed.order === 'antiguos'
         ? 'ORDER BY n.fecha_dia ASC,  n.enlace ASC'
         : 'ORDER BY n.fecha_dia DESC, n.enlace ASC';
 
-      const orderByFts = (parsed.order === 'relevancia' && ftsQ)
-        ? 'ORDER BY bm25(noticias_fts) ASC'
+      // rank permite que FTS entregue las coincidencias ordenadas y corte en
+      // LIMIT; ORDER BY bm25() obliga a SQLite a ordenarlas fuera de FTS.
+      // Fijarlo por consulta conserva bm25() aunque la tabla tenga otro default.
+      if (parsed.order === 'relevancia') conditions.push("f.rank MATCH 'bm25()'");
+      const where = conditions.join(' AND ');
+      const orderByFts = parsed.order === 'relevancia'
+        ? 'ORDER BY f.rank ASC'
         : orderByItems;
 
-      // ── Dos caminos ──
-      // Con FTS: noticias_fts MATCH + JOIN a noticias.
-      // Sin FTS: noticias directo, con INDEXED BY para forzar el uso de
-      //          idx_noticias_dia y así evitar USE TEMP B-TREE FOR ORDER BY.
-      const sql = ftsQ
-        ? `
+      const sql = `
           SELECT n.titular, n.enlace, n.dominio,
                  n.fecha_pub, n.fecha_est, n.fuente, n.fecha_dia
           FROM noticias_fts f
@@ -107,46 +94,13 @@ export function crearTurso(buildFtsQuery) {
           WHERE ${where}
           ${orderByFts}
           LIMIT ? OFFSET ?
-        `
-        : `
-          SELECT n.titular, n.enlace, n.dominio,
-                 n.fecha_pub, n.fecha_est, n.fuente, n.fecha_dia
-          FROM noticias n INDEXED BY idx_noticias_dia
-          WHERE ${where}
-          ${orderByItems}
-          LIMIT ? OFFSET ?
         `;
 
-      const countSql = ftsQ
-        ? `
-          SELECT COUNT(*) AS n FROM (
-            SELECT 1
-            FROM noticias_fts f
-            JOIN noticias n ON n.enlace = f.enlace
-            WHERE ${where}
-            LIMIT 5001
-          )
-        `
-        : `
-          SELECT COUNT(*) AS n FROM (
-            SELECT 1
-            FROM noticias n INDEXED BY idx_noticias_dia
-            WHERE ${where}
-            LIMIT 5001
-          )
-        `;
-
-      const itemArgs = [...args, parsed.limit, parsed.offset];
-      const countArgs = args;
-
-      const hacerCount = !!ftsQ;
-
+      // Una fila de más resuelve la paginación sin COUNT ni página vacía final.
+      const itemArgs = [...args, parsed.limit + 1, parsed.offset];
       const requests = [
         { type: 'execute', stmt: { sql, args: itemArgs.map(toArg) } },
       ];
-      if (hacerCount) {
-        requests.push({ type: 'execute', stmt: { sql: countSql, args: countArgs.map(toArg) } });
-      }
       requests.push({ type: 'close' });
 
       const payload = { requests };
@@ -183,15 +137,13 @@ export function crearTurso(buildFtsQuery) {
       }
 
       const rows = parseRows(results[0]);
-      let total = rows.length;
-      if (hacerCount) {
-        total = parseScalar(results[1]) ?? rows.length;
-        if (total > 5000) total = 5000;
-      }
+      const hayMas = rows.length > parsed.limit;
+      // Solo conocemos el total al agotar una página; un offset fuera del
+      // archivo tampoco permite deducirlo. El front pagina con next_offset.
+      const total = hayMas || (!rows.length && parsed.offset > 0)
+        ? null : parsed.offset + rows.length;
 
-      const hayMas = rows.length === parsed.limit;
-
-      const items = rows.map(r => ({
+      const items = rows.slice(0, parsed.limit).map(r => ({
         t: r[0] || '',
         u: shortenUrl(r[1], r[2]),
         d: r[2] || '',
@@ -226,13 +178,6 @@ function parseRows(result) {
   const resp = result.response;
   if (!resp || resp.type !== 'execute') return [];
   return (resp.result?.rows || []).map(row => row.map(c => c.value));
-}
-
-function parseScalar(result) {
-  const rows = parseRows(result);
-  if (!rows.length) return null;
-  const n = parseInt(rows[0][0], 10);
-  return Number.isFinite(n) ? n : null;
 }
 
 function shortenUrl(url, dominio) {
