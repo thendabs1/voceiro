@@ -20,7 +20,7 @@ function lector(){
     PLATAFORMA: { leer: (k,d) => valores.get(k) || d, guardar: (k,v) => valores.set(k, v) },
     document: { addEventListener(){}, getElementById: () => null, querySelector: () => null },
     window: { open: u => abiertos.push(u), addEventListener: (n,f) => eventos.set(n,f) },
-    setTimeout: f => { programados.push(f); }, setInterval: f => { eventos.set('interval', f); }, clearInterval(){},
+    setTimeout: f => { programados.push(f); }, setInterval: f => { eventos.set('interval', f); }, clearInterval(){ eventos.delete('interval'); },
     toast(){}, enviarEstado(){}, sincronizarLectorPronto(){}, apuntarLeidaEnSync(){},
     actualizarBoton(){}, activateReader(){}, __lectorAbierto: null,
   });
@@ -110,6 +110,19 @@ test('un cambio de URL cierra el lector anterior y no modifica history', () => {
   assert.equal(cerrados, 1);
   assert.equal(l.programados.length, 2);
   assert.ok(l.eventos.has('interval'));
+});
+
+test('la navegación sigue detectándose al volver con Atrás desde la caché del navegador', () => {
+  const l = lector();
+  l.eventos.get('pagehide')({persisted:true});
+  assert.ok(l.eventos.has('interval'));
+  let cerrados = 0;
+  l.contexto.__lectorAbierto = { cerrar(){ cerrados++; l.contexto.__lectorAbierto = null; } };
+  l.run("location.href = 'https://medio.example/b';");
+  l.eventos.get('interval')();
+  assert.equal(cerrados, 1);
+  l.eventos.get('pagehide')({persisted:false});
+  assert.equal(l.eventos.has('interval'), false);
 });
 
 test('los ajustes abiertos sobre un medio se trasladan a Voceiro sin pintar datos en el medio', () => {

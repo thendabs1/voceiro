@@ -96,9 +96,12 @@ function checkUrlChange(){
   }, delay);
 }
 // Comparar la URL no modifica el historial de la página y funciona también
-// desde el contexto aislado de una extensión. Se cancela al salir de ella.
+// desde el contexto aislado de una extensión. La caché Atrás/Adelante
+// pausa el intervalo y lo reanuda al volver: solo se cancela al descartar.
 const __navegacion = setInterval(checkUrlChange, 1000);
-window.addEventListener('pagehide', () => clearInterval(__navegacion), { once: true });
+window.addEventListener('pagehide', e => {
+  if (!e.persisted) clearInterval(__navegacion);
+});
 
 document.addEventListener('keydown', globalKeyHandler, true);
 

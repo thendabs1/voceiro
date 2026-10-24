@@ -22,6 +22,20 @@ accesos del navegador. Pendiente de verificación manual en Firefox.
 Los apartados siguientes conservan los problemas encontrados y las
 propuestas que sirvieron de base a la adaptación. El [manual](MANUAL.md) refleja las correcciones.
 
+## Segunda revisión: navegación al volver con Atrás
+
+Se ha reproducido que `pagehide` cancelaba definitivamente la detección de
+cambios de URL, incluso si el navegador conservaba la página para volver
+con Atrás/Adelante. Ahora el intervalo se conserva cuando `persisted` es
+verdadero: el navegador lo pausa y lo reanuda junto con la página. Se
+cancela al descartar el documento. Véase el ciclo de
+[Atrás/Adelante](https://web.dev/articles/bfcache).
+
+La nueva prueba reproduce el fallo antes de corregirlo y verifica que,
+tras recuperar la página, cambiar de URL sigue cerrando el lector anterior.
+Las 13 pruebas locales de seguridad y navegación pasan. La suite completa
+queda en CI; sigue pendiente la comprobación en Firefox real.
+
 ## Diseño de acceso propuesto
 
 Tras comentarlo con el usuario, la propuesta para Firefox es:
