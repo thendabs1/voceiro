@@ -28,7 +28,7 @@
     }
   } catch(e){}
 </script>
-<link rel="stylesheet" href="./estilos.css?v=45beec2371">
+<link rel="stylesheet" href="./estilos.css?v=b9df5177eb">
 </head>
 <body>
 <!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
@@ -545,6 +545,7 @@
       </span>
     </p>
     <div class="header-actions header-actions-right">
+      <button id="btn-estadisticas" class="btn-cab" type="button" aria-controls="estadisticas-panel" aria-expanded="false"></button>
       <button id="btn-tiempo" class="btn-tiempo btn-cab" type="button" hidden></button>
       <button id="btn-pendientes" class="btn-pendientes btn-cab" type="button"></button>
       <button id="btn-acces" class="btn-cab" type="button"></button>
@@ -625,6 +626,7 @@
 
 <section id="tiempo-tarjeta" class="tiempo-tarjeta" hidden aria-live="polite"></section>
 <section id="avisos-panel" class="tiempo-tarjeta" hidden></section>
+<section id="estadisticas-panel" class="estadisticas-panel" hidden></section>
 <main id="resultados"></main>
 <div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
   <button id="btn-cargar-mas" type="button" style="padding:10px 20px; font-size:.85em;"></button>
@@ -634,7 +636,7 @@
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script type="module" src="./app.js?v=45beec2371"></script>
+<script type="module" src="./app.js?v=b9df5177eb"></script>
 </body>
 </html>
 
