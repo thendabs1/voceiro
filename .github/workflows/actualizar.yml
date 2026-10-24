@@ -71,6 +71,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          RELAY_CLAVE: ${{ secrets.RELAY_CLAVE }}
       # El lector (lector/) se sirve en Pages: …/voceiro/lector.user.js, y
       # Violentmonkey lo actualiza solo desde ahí. Solo se sustituye si se
       # construye y pasa las comprobaciones; si no, se publica el anterior.

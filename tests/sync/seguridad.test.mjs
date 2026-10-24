@@ -5,6 +5,7 @@ import { atender, huellaIpDiaria, normalizarIp, MAX_BYTES, MAX_FILAS, limpiar } 
 import { crearCliente } from '../../shared/sync/cliente.js';
 import { generarCodigo } from '../../shared/sync/cripto.js';
 import { d1Local, SECRETO, migracion } from './soporte.mjs';
+import { crearLimite } from '../../workers/comun/limite.js';
 import qrcode from '../../front/vendor/qrcode-1.4.4.js';
 
 const T = Date.parse('2026-10-23T12:00:00Z'), DIA = '2026-10-23';
@@ -189,4 +190,26 @@ test('borrar revoca también si la limpieza elimina la fila después de autentic
     assert.equal((await usar(almacen, 1, 'DELETE')).status, 204);
     assert.equal((await usar(f.http, 1, 'PUT')).status, 410);
   } finally { f.db.close(); }
+});
+
+test('las altas cuentan IPv6 por su /64: cambiar de dirección no da otro cupo', async () => {
+  const h = await huellaIpDiaria('2001:db8:1:2::1', DIA, SECRETO);
+  assert.equal(h, await huellaIpDiaria('2001:db8:1:2:ffff::9', DIA, SECRETO));
+  assert.notEqual(h, await huellaIpDiaria('2001:db8:1:3::1', DIA, SECRETO));
+});
+
+test('el límite por IP responde 429 antes de leer el almacén', async () => {
+  const f = d1Local();
+  let leidas = 0;
+  const alm = { ...f.cf, leer: id => { leidas++; return f.cf.leer(id); } };
+  const limite = crearLimite({ max: 2, ventanaMs: 60e3 });
+  const usarConLimite = (ip = IP) => atender(pedir(1, 'GET'), alm, T, ip, SECRETO, limite);
+  assert.equal((await usarConLimite()).status, 404);
+  assert.equal((await usarConLimite()).status, 404);
+  const r = await usarConLimite();
+  assert.equal(r.status, 429);
+  assert.equal(r.headers.get('Retry-After'), '60');
+  assert.equal(r.headers.get('Cache-Control'), 'no-store');
+  assert.equal(leidas, 2);
+  assert.equal((await usarConLimite('192.0.2.2')).status, 404, 'otra IP, otro cupo');
 });

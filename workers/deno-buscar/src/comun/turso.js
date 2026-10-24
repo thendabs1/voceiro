@@ -8,6 +8,9 @@ export function crearTurso(buildFtsQuery) {
     cacheTTL: 300,
 
     async search(parsed, env) {
+      // Pausa del archivo en el servidor (con el front sin pedirlo, como con
+      // ARCHIVO_ACTIVO = false): la URL del worker es pública.
+      if (env.TURSO_PAUSADO) throw new Error('archivo en pausa');
       const conditions = [];
       const args = [];
 

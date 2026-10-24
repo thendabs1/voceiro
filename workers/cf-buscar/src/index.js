@@ -3,8 +3,11 @@ import { parseQuery } from '../../../shared/parser.js';
 import { PARSER_SOURCE } from './parser-source.js';
 import { turso } from './sources/turso.js';
 import { gnews } from './sources/gnews.js';
+import { crearLimite, claveIp } from './comun/limite.js';
 
 const ADAPTERS = { turso, gnews };
+// Consultas que llegan a las fuentes (las de caché no cuentan), por IP y minuto.
+const limiteBuscar = crearLimite({ max: 30, ventanaMs: 60e3 });
 
 export default {
   async fetch(request, env, ctx) {
@@ -34,6 +37,7 @@ export default {
       abrirCache: () => caches.default,
       guardarCache: tarea => ctx.waitUntil(tarea),
       cacheControl: 'public, max-age=60, s-maxage=300',
+      limitar: () => limiteBuscar(claveIp(request.headers.get('CF-Connecting-IP'))),
     });
     if (url.pathname === '/health') return json({ ok: true, ts: Date.now() });
 

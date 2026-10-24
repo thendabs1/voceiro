@@ -44,6 +44,7 @@ jobs:
           EXIGIR_OK: ${{ inputs.exigir_ok }}
           TIPOS: ${{ inputs.tipos }}
           DOMINIOS: ${{ inputs.dominios }}
+          RELAY_CLAVE: ${{ secrets.RELAY_CLAVE }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

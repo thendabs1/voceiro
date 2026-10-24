@@ -51,7 +51,7 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
   const intentar = async () => {
     const sig = _signalConTimeout(null, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status });
     return await r.json();
   };
 
@@ -61,7 +61,8 @@ async function buscarEnWorker(rawQuery, { offset = 0, limit = 50 } = {}) {
     return mapear(data);
   } catch(e) {
     if (e.name !== 'AbortError') console.warn('[worker]', e.message);
-    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError'){
+    // Un 429 es el límite por IP del worker, no un backend caído: no se conmuta.
+    if (BACKEND_ACTIVO === 'cf' && e.name !== 'AbortError' && e.status !== 429){
       await _conmutarBackendPorFallo();
       try {
         const data = await intentar();

@@ -1,4 +1,10 @@
 name = "voceiro-buscar"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
+# Las variables del panel (si las hay) no se pierden al desplegar con [vars].
+keep_vars = true
 
+# Archivo (Turso) en pausa también en el servidor, como ARCHIVO_ACTIVO en el
+# front. Quitar al restablecer la cuota (y en deno-buscar/src/sources/turso.js).
+[vars]
+TURSO_PAUSADO = "1"

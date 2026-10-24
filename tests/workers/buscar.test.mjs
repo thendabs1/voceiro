@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import cf from '../../workers/cf-buscar/src/index.js';
 import deno from '../../workers/deno-buscar/src/index.js';
+import { MAX_OFFSET } from '../../workers/comun/buscar.js';
 
 function globalTemporal(t, nombre, valor) {
   const anterior = Object.getOwnPropertyDescriptor(globalThis, nombre);
@@ -29,6 +30,7 @@ function preparar(t, plataforma, responder, credenciales = true) {
   const env = credenciales ? {
     WORKER_TURSO_URL: `https://${plataforma}-turso.test`,
     WORKER_TURSO_TOKEN: `${plataforma}-prueba`,
+    TURSO_PAUSADO: '',
   } : {};
   globalTemporal(t, 'Deno', { env: { get: k => env[k] } });
   t.mock.method(globalThis, 'fetch', async (url, opciones) => {
@@ -153,4 +155,89 @@ test('preflight y parser no requieren credenciales; el tiempo sigue disponible s
   const r = await deno.fetch(new Request('https://worker.test/tiempo?ine=invalido'));
   assert.equal(r.status, 400);
   assert.deepEqual(await r.json(), { error: 'INE no válido' });
+});
+
+test('el archivo en pausa no llama a Turso y no se cachea', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const s = preparar(t, plataforma, () => { throw new Error('Turso no debía llamarse'); });
+    const env = { WORKER_TURSO_URL: 'https://x.test', WORKER_TURSO_TOKEN: 'x', TURSO_PAUSADO: '1' };
+    globalTemporal(t, 'Deno', { env: { get: k => env[k] } });
+    const r = plataforma === 'cf'
+      ? await cf.fetch(new Request('https://cf.test/buscar?raw=incendio&fuentes=turso'), env, { waitUntil() {} })
+      : await s.pedir('/buscar?raw=incendio&fuentes=turso');
+    const datos = await r.json();
+    assert.match(datos._errores.turso, /archivo en pausa/);
+    assert.equal(r.headers.get('Cache-Control'), 'no-store, max-age=0');
+    assert.equal(s.llamadas.length, 0);
+  });
+});
+
+test('en Deno el archivo está en pausa si el panel no dice otra cosa', async t => {
+  const s = preparar(t, 'deno', () => { throw new Error('Turso no debía llamarse'); });
+  const env = { WORKER_TURSO_URL: 'https://x.test', WORKER_TURSO_TOKEN: 'x' };
+  globalTemporal(t, 'Deno', { env: { get: k => env[k] } });
+  const datos = await (await s.pedir('/buscar?raw=incendio&fuentes=turso')).json();
+  assert.match(datos._errores.turso, /archivo en pausa/);
+  assert.equal(s.llamadas.length, 0);
+});
+
+test('más allá del tope de offset no se consulta el archivo ni se ofrece otra página', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const s = preparar(t, plataforma, () => pipeline([fila], 5000));
+    const lejos = await (await s.pedir(`/buscar?raw=incendio&fuentes=turso&offset=${MAX_OFFSET + 1}`)).json();
+    assert.deepEqual(lejos.items, []);
+    assert.equal(lejos.next_offset, null);
+    // El tope vale también para el operador offset: de la consulta.
+    await s.pedir(`/buscar?fuentes=turso&raw=${encodeURIComponent(`incendio offset:${MAX_OFFSET + 50}`)}`);
+    assert.equal(s.llamadas.length, 0);
+    const ultima = await (await s.pedir(`/buscar?raw=incendio&fuentes=turso&limit=1&offset=${MAX_OFFSET}`)).json();
+    assert.equal(ultima.items.length, 1);
+    assert.equal(ultima.next_offset, null);
+  });
+});
+
+test('el límite por IP frena las consultas a las fuentes, no las de caché', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const s = preparar(t, plataforma, () => new Response(JSON.stringify({ status: 'ok', items: [] })));
+    const ip = plataforma === 'cf' ? '198.51.100.7' : '2001:db8:7::1';
+    const pedir = (i, otra = ip) => {
+      const req = new Request(`https://${plataforma}.test/buscar?fuentes=gnews&raw=consulta${i}`,
+        { headers: plataforma === 'cf' ? { 'CF-Connecting-IP': otra } : {} });
+      return plataforma === 'cf'
+        ? cf.fetch(req, {}, { waitUntil() {} })
+        : deno.fetch(req, { remoteAddr: { hostname: otra } });
+    };
+    for (let i = 0; i < 30; i++) assert.equal((await pedir(i)).status, 200);
+    const frenada = await pedir(30);
+    assert.equal(frenada.status, 429);
+    assert.ok(Number(frenada.headers.get('Retry-After')) >= 1);
+    assert.equal(frenada.headers.get('Access-Control-Allow-Origin'), '*');
+    assert.equal(s.llamadas.length, 30);
+    assert.equal((await pedir(0)).headers.get('X-Cache'), 'HIT');
+    // Otra IP (en Deno, otro /64) tiene su propio cupo.
+    assert.equal((await pedir(31, plataforma === 'cf' ? '198.51.100.8' : '2001:db8:8::1')).status, 200);
+  });
+});
+
+test('el tiempo en Deno tiene su propio límite por IP', async t => {
+  const pedir = () => deno.fetch(new Request('https://deno.test/tiempo?ine=invalido'),
+    { remoteAddr: { hostname: '203.0.113.9' } });
+  for (let i = 0; i < 30; i++) assert.equal((await pedir()).status, 400);
+  const r = await pedir();
+  assert.equal(r.status, 429);
+  assert.equal(r.headers.get('Access-Control-Allow-Origin'), '*');
+});
+
+test('la prensa manda la clave del relay solo si está configurada', async t => {
+  for (const plataforma of ['cf', 'deno']) await t.test(plataforma, async t => {
+    const s = preparar(t, plataforma, () => new Response(JSON.stringify({ status: 'ok', items: [] })));
+    const env = { RELAY_CLAVE: 'clave-relay' };
+    globalTemporal(t, 'Deno', { env: { get: k => env[k] } });
+    const ruta = `/buscar?fuentes=gnews&raw=clave${plataforma}`;
+    if (plataforma === 'cf') await cf.fetch(new Request(`https://cf.test${ruta}`), env, { waitUntil() {} });
+    else await s.pedir(ruta);
+    assert.equal(s.llamadas[0].headers['X-Voceiro-Relay'], 'clave-relay');
+    await s.pedir(`/buscar?fuentes=gnews&raw=sinclave${plataforma}`);
+    assert.equal(s.llamadas[1].headers['X-Voceiro-Relay'], plataforma === 'cf' ? undefined : 'clave-relay');
+  });
 });

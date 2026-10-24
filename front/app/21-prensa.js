@@ -140,7 +140,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   const intentar = async () => {
     const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status });
     return await r.json();
   };
 
@@ -159,7 +159,8 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
     return procesar(await intentar());
   } catch (e) {
     if (e.name === 'AbortError') return null;
-    if (BACKEND_ACTIVO === 'cf'){
+    // Un 429 es el límite por IP del worker, no un backend caído: no se conmuta.
+    if (BACKEND_ACTIVO === 'cf' && e.status !== 429){
       await _conmutarBackendPorFallo();
       try {
         return procesar(await intentar());

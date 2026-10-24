@@ -12,6 +12,7 @@ on:
     paths:
       - 'workers/deno-sync/**'
       - 'workers/comun/sync.js'
+      - 'workers/comun/limite.js'
       - 'scripts/sync-workers.mjs'
       - '.github/workflows/deploy-deno-sync.yml'
   workflow_dispatch:

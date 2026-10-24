@@ -69,7 +69,9 @@ test('gnews: el dominio sale de sourceUrl y, sin él, del nombre', async () => {
   ]);
 });
 
-test('gnews: las copias de CF y Deno son idénticas', () => {
+// La lógica es la de comun/gnews.js en los dos (sync-workers.mjs comprueba
+// las copias); Deno la envuelve solo para leer RELAY_CLAVE de Deno.env.
+test('gnews: CF y Deno usan el mismo adaptador común', () => {
   const leer = w => readFileSync(new URL(`../../workers/${w}/src/sources/gnews.js`, import.meta.url), 'utf8');
-  assert.equal(leer('cf-buscar'), leer('deno-buscar'));
+  for (const w of ['cf-buscar', 'deno-buscar']) assert.match(leer(w), /from '\.\.\/comun\/gnews\.js'/);
 });

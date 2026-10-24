@@ -12,9 +12,9 @@ if (process.argv.slice(2).some(arg => arg !== '--check')) {
 }
 
 const archivos = {
-  buscar: ['buscar.js', 'turso.js', 'gnews.js'],
+  buscar: ['buscar.js', 'turso.js', 'gnews.js', 'limite.js'],
   datos: ['datos-cache.js'],
-  sync: ['sync.js'],
+  sync: ['sync.js', 'limite.js'],
 };
 const pendientes = [];
 let total = 0;

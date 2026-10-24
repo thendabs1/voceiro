@@ -5,6 +5,10 @@
 // la API de Cloudflare. La limpieza diaria la hace el cron de CF.
 import { atender, ORIGEN } from './comun/sync.js';
 import { almacenD1Http } from './almacen-d1-http.js';
+import { crearLimite } from './comun/limite.js';
+
+// Peticiones por IP y minuto: una sincronización son pocas (GET y PUT).
+const limiteSync = crearLimite({ max: 120, ventanaMs: 60e3 });
 
 // Es la de workers/cf-sync/wrangler.toml.
 const D1_BASE = '1db3d775-d97d-454a-891e-346a56eef456';
@@ -16,7 +20,7 @@ export default {
       const token = Deno.env.get('CF_D1_TOKEN');
       if (!cuenta || !token) throw new Error('Faltan CF_ACCOUNT_ID o CF_D1_TOKEN');
       const almacen = almacenD1Http({ cuenta, base: D1_BASE, token });
-      return await atender(request, almacen, Date.now(), info?.remoteAddr?.hostname || '', Deno.env.get('SYNC_IP_SECRET'));
+      return await atender(request, almacen, Date.now(), info?.remoteAddr?.hostname || '', Deno.env.get('SYNC_IP_SECRET'), limiteSync);
     } catch (e) {
       console.error('[sync]', e && e.stack || e);
       return new Response(JSON.stringify({ error: 'interno' }), {

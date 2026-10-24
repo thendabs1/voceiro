@@ -26,6 +26,13 @@ Deno.serve(async (req) => {
     return new Response("not found", { status: 404 });
   }
 
+  // Lo llama solo el recolector: con RELAY_CLAVE puesta en Deno, sin su
+  // cabecera no se atiende.
+  const clave = Deno.env.get("RELAY_CLAVE");
+  if (clave && req.headers.get("X-Voceiro-Relay") !== clave) {
+    return new Response("forbidden", { status: 403 });
+  }
+
   const target = u.searchParams.get("u");
   if (!target) {
     return new Response("missing u", { status: 400 });
@@ -44,6 +51,7 @@ Deno.serve(async (req) => {
 
   try {
     const r = await fetch(targetUrl.toString(), {
+      signal: AbortSignal.timeout(20000),
       headers: {
         "User-Agent": UA,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

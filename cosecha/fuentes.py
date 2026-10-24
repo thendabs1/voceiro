@@ -1,5 +1,6 @@
 """Extracción y selección de fuentes, con acceso directo o mediante el relay."""
 
+import os
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, urlparse
 
@@ -36,6 +37,11 @@ def _crear_sesion():
 
 
 SESSION = _crear_sesion()
+
+# El relay de Deno solo atiende con su clave (si la tiene puesta). Va en cada
+# petición al relay, no en la sesión: así nunca llega a los medios.
+_RELAY_CLAVE = os.environ.get('RELAY_CLAVE', '')
+RELAY_HEADERS = {'X-Voceiro-Relay': _RELAY_CLAVE} if _RELAY_CLAVE else None
 
 
 def _parse_feed_lxml(content):
@@ -119,7 +125,8 @@ def _get_xml(medio, url, relay, tag):
     if relay:
         tag = 'RELAY'
     try:
-        r = SESSION.get(fetch_url, timeout=config.TIMEOUT)
+        r = SESSION.get(fetch_url, timeout=config.TIMEOUT,
+                        headers=RELAY_HEADERS if relay else None)
     except Exception as e:
         print(f"  [{tag}!] {medio['n']}: {type(e).__name__}: {e}")
         return None, type(e).__name__
@@ -227,7 +234,7 @@ def _scrape(medio, url=None, relay=False, verify=True):
     tag = 'SCRAPE RELAY' if relay else 'SCRAPE'
     try:
         r = SESSION.get(fetch_url, timeout=config.TIMEOUT, allow_redirects=True,
-                        verify=verify)
+                        verify=verify, headers=RELAY_HEADERS if relay else None)
         if r.status_code != 200:
             print(f"  [{tag} {r.status_code}] {medio['n']}")
             return None, f'HTTP {r.status_code}'

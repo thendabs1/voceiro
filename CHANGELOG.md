@@ -3,6 +3,26 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Workers: límites de peticiones
+
+### Añadido
+- Límite por IP en memoria (`workers/comun/limite.js`; IPv6 por su /64):
+  30 consultas por minuto a las fuentes de `/buscar` (la caché no cuenta),
+  30 al tiempo y avisos en Deno y 120 a la sincronización, antes de tocar D1.
+- Los relays de Deno aceptan una clave (`RELAY_CLAVE`, cabecera
+  `X-Voceiro-Relay`). La mandan los workers de búsqueda y el recolector;
+  mientras el relay no la tenga puesta, sigue abierto.
+
+### Cambiado
+- El archivo (Turso) queda en pausa también en el servidor (`TURSO_PAUSADO`,
+  en el código de CF y Deno); antes solo lo apagaba el front y la URL seguía
+  sirviéndolo.
+- `/buscar` no pagina el archivo más allá de `offset` 1000: OFFSET lee las
+  filas que se salta y Turso cobra las leídas.
+- El cupo de altas de la sincronización cuenta IPv6 por su /64.
+- El front no cambia de backend por un 429.
+- El relay del recolector corta a los 20 s las descargas colgadas.
+
 ## 2026-10-21 — Datos: caché de los ficheros por medio y artefacto de Pages
 
 ### Corregido
