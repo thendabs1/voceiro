@@ -1,0 +1,47 @@
+name: Calendario (piloto)
+
+# Recogida manual para revisar datos antes de decidir publicación y consumo.
+on:
+  workflow_dispatch:
+    inputs:
+      inicio:
+        description: 'Primer día (AAAA-MM-DD, vacío = hoy)'
+        required: false
+      fin:
+        description: 'Último día incluido (vacío = inicio + 30 días; máximo 91 días)'
+        required: false
+      idioma:
+        description: 'Idioma de la fuente'
+        type: choice
+        options: [gl, es]
+        default: gl
+
+permissions:
+  contents: read
+
+jobs:
+  recoger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recoger Cultura de Galicia en el modelo común
+        env:
+          INICIO: ${{ inputs.inicio }}
+          FIN: ${{ inputs.fin }}
+          IDIOMA: ${{ inputs.idioma }}
+        run: |
+          args=(--salida "$RUNNER_TEMP/calendario/calendario.json" --idioma "$IDIOMA")
+          if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
+          if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
+          python calendario.py "${args[@]}"
+      - name: Guardar calendario para revisión
+        uses: actions/upload-artifact@v4
+        with:
+          name: calendario-piloto
+          path: ${{ runner.temp }}/calendario/calendario.json
+          if-no-files-found: error
+          retention-days: 14

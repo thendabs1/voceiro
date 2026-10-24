@@ -7,6 +7,7 @@ on:
     paths:
       - '*.py'
       - 'cosecha/**'
+      - 'agenda/**'
       - 'requirements.txt'
       - 'shared/**'
       - 'front/**'
