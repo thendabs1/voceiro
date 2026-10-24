@@ -32,6 +32,17 @@ class Fechas(unittest.TestCase):
             with self.subTest(raw=raw):
                 self.assertEqual(fechas._rss_date_to_iso(raw), esperado)
 
+    def test_solo_el_dia_no_es_un_instante_y_la_zona_con_dos_puntos_cuenta(self):
+        casos = (
+            ('Sat, 24 Oct 2026 16:04:42 +09:00', '2026-10-24T09:04:42+02:00'),
+            ('2026-10-23', ''),
+            ('23/10/2026', ''),
+            ('Fri, 23 Oct 2026', ''),
+        )
+        for raw, esperado in casos:
+            with self.subTest(raw=raw):
+                self.assertEqual(fechas._rss_date_to_iso(raw), esperado)
+
     def test_fechas_relativas_en_varios_idiomas(self):
         casos = (
             ('hace 3 horas', timedelta(hours=3)),
@@ -64,6 +75,15 @@ class Fechas(unittest.TestCase):
         futura = {'fecha_pub': '2026-10-21T12:00:00+02:00', 'fecha_estimada': estimada}
         self.assertEqual(fechas._fecha_visible_iso(programada, ahora), '2026-10-20T15:00:00+02:00')
         self.assertEqual(fechas._fecha_visible_iso(futura, ahora), estimada)
+
+    def test_el_horizonte_se_cuenta_desde_la_recogida(self):
+        # Una cita de agenda recogida días antes no salta a su día al acercarse,
+        # ni ordena como si fuera de ese día.
+        recogida = '2026-10-23T12:00:00+02:00'
+        cita = {'fecha_pub': '2026-10-30T19:30:00+01:00', 'fecha': recogida}
+        ahora = datetime(2026, 10, 30, 18, 0, tzinfo=MADRID)
+        self.assertEqual(fechas._fecha_visible_iso(cita, ahora), recogida)
+        self.assertEqual(fechas._fecha_orden(cita).isoformat(), recogida)
 
     def test_estimadas_reparten_el_intervalo_por_posicion_y_respetan_dia_de_url(self):
         t_now = datetime(2026, 10, 20, 12, 0, tzinfo=MADRID)
@@ -146,6 +166,21 @@ class Historico(unittest.TestCase):
         self.assertTrue(todas[0]['_nueva'])
         self.assertNotIn('_pos', repetida)
 
+    def test_la_primera_fecha_valida_se_queda(self):
+        ahora = datetime.now(MADRID).replace(microsecond=0)
+        hace = lambda **kw: (ahora - timedelta(**kw)).isoformat()
+        base = {'dominio': 'ejemplo.test', 'fecha': hace(hours=3), 'fecha_estimada': ''}
+        viejas = [{**base, 'titular': 'Publicada', 'fecha_pub': hace(hours=4)},
+                  {**base, 'titular': 'Rota', 'fecha_pub': 'mañana'}]
+        # El feed trae después la hora de actualización.
+        nuevas = [{**base, 'titular': 'Publicada', 'fecha': hace(minutes=1),
+                   'fecha_pub': hace(minutes=30)},
+                  {**base, 'titular': 'Rota', 'fecha': hace(minutes=1),
+                   'fecha_pub': hace(hours=2)}]
+        todas = {n['titular']: n for n in historico.fusionar_historico(nuevas, viejas, dias=15)}
+        self.assertEqual(todas['Publicada']['fecha_pub'], hace(hours=4))
+        self.assertEqual(todas['Rota']['fecha_pub'], hace(hours=2))
+
     def test_fusion_limpia_titulares_ya_publicados_sin_duplicarlos(self):
         ahora = datetime.now(MADRID).replace(microsecond=0)
         base = {'dominio': 'ejemplo.test', 'fecha_estimada': '',
@@ -178,8 +213,9 @@ class Historico(unittest.TestCase):
         self.assertEqual(salida[0]['enlace'], b['enlace'])
         self.assertNotIn('alt', b)  # copia: la original sigue sirviendo a otros slices
         self.assertEqual(salida[0]['alt'], [
-            {'d': 'c.test', 'u': '/z', 'e': c['fecha_estimada'], 'c': c['fecha']},
-            {'d': 'a.test', 'u': '/x?id=3', 'c': a['fecha']},
+            {'d': 'c.test', 'u': '/z', 't': c['titular'], 'e': c['fecha_estimada'],
+             'c': c['fecha']},
+            {'d': 'a.test', 'u': '/x?id=3', 't': titular, 'c': a['fecha']},
         ])
 
     def test_formato_corto_se_relee_sin_perder_instantes_enlaces_ni_alternativas(self):
@@ -273,6 +309,25 @@ class Recogida(unittest.TestCase):
              'fecha': '2026-10-20T23:50:00+02:00'}
         self.assertEqual(formatos._noticia_a_formato_corto(n, '2026-10-21')['c'], n['fecha'])
         self.assertEqual(formatos._noticia_a_formato_corto(n, '2026-10-20')['c'], '23:50')
+
+    def test_la_alternativa_conserva_su_titular_y_casa_con_su_feed(self):
+        hoy = datetime.now(MADRID).date()
+        en = lambda h, m: datetime.combine(hoy, time(h, m), tzinfo=MADRID).isoformat()
+        titular = 'El municipio aprueba un nuevo presupuesto'
+        a = {'dominio': 'a.test', 'titular': titular, 'fuente': 'RSS',
+             'enlace': 'https://a.test/x', 'fecha': en(9, 0), 'fecha_pub': en(8, 30)}
+        b = {'dominio': 'b.test', 'titular': titular.upper(), 'fuente': 'RSS',
+             'enlace': 'https://b.test/y', 'fecha': en(10, 15), 'fecha_pub': en(8, 0)}
+        # a es el representante (fecha más reciente); b va de alternativa.
+        leidas = self.releer([a, b], hoy.isoformat(), generado=en(16, 2))
+        self.assertEqual(leidas['b.test']['titular'], b['titular'])
+        # En la pasada siguiente su feed la trae igual: no es nueva y no
+        # pierde la recogida.
+        otra = {**b, 'fecha': en(16, 10)}
+        fusion = historico.fusionar_historico([otra], list(leidas.values()), dias=15)
+        b2 = next(n for n in fusion if n['dominio'] == 'b.test')
+        self.assertFalse(b2['_nueva'])
+        self.assertEqual(instante(b2['fecha']), instante(en(10, 15)))
 
 
 class FalloR2(Exception):

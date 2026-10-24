@@ -49,6 +49,20 @@ class Extraccion(unittest.TestCase):
         with patch.object(fuentes.feedparser, 'parse', return_value=SimpleNamespace(entries=[])):
             self.assertEqual(fuentes._parse_feed(xml.encode())[0]['titular'], TITULO)
 
+    def test_feed_con_solo_el_dia_no_inventa_hora(self):
+        xml = (f'<rss><channel><item><title>{TITULO}</title><link>https://ejemplo.test/a</link>'
+               '<pubDate>2026-10-23</pubDate></item></channel></rss>')
+        self.assertEqual(fuentes._parse_feed(xml.encode())[0]['fecha_pub'], '')
+
+    def test_feed_xml_prefiere_publicacion_a_actualizacion(self):
+        xml = (f'<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>{TITULO}</title>'
+               '<link href="https://ejemplo.test/a"/><updated>2026-10-21T18:00:00Z</updated>'
+               '<published>2026-10-20T10:00:00Z</published></entry></feed>')
+        with patch.object(fuentes.feedparser, 'parse', return_value=SimpleNamespace(entries=[])):
+            fecha = fuentes._parse_feed(xml.encode())[0]['fecha_pub']
+        self.assertEqual(datetime.fromisoformat(fecha).timestamp(),
+                         datetime.fromisoformat('2026-10-20T10:00:00+00:00').timestamp())
+
     def test_titulares_con_etiquetas_inline_en_rss_y_sitemap(self):
         rss = (b'<rss><channel><item><title>Un \xc2\xab&lt;span lang="gl"&gt;'
                b'grup\xc3\xbasculo de radicais&lt;/span&gt;\xc2\xbb herido</title>'

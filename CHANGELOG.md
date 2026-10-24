@@ -3,6 +3,26 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Fechas de publicación fiables
+
+### Corregido
+- La fecha de publicación ya no la pisa la de la pasada siguiente: se queda
+  la primera válida. Las que llegaban después eran de actualización
+  (`updated`, `dc:date`) y movían titulares de hora o de día: unas 5.000
+  «adelantadas» por semana.
+- Zonas con dos puntos en RFC 822 (`Sat, 24 Oct 2026 16:04:42 +09:00`) se
+  leían como UTC: The Korea Herald salía con 9 h de adelanto.
+- Una fecha con solo el día (`2026-10-23`, `23/10/2026`) ya no se guarda
+  como un instante a las 00:00 o 02:00 inventado; ni feedparser la completa.
+- En el XML de respaldo, la fecha de publicación gana a la de actualización
+  aunque esta vaya antes.
+- El horizonte de 6 h para fechas futuras se cuenta desde la primera
+  recogida, no desde ahora: una cita de agenda no salta a su día cuando se
+  acerca, y tampoco ordena como si fuera de ese día.
+- Las alternativas guardan su titular (`t` en `a`) cuando no es idéntico al
+  del representante: al releerlas casan con su feed y no pierden la
+  recogida ni se duplican.
+
 ## 2026-10-24 — Fechas que no se estropean al guardarse
 
 ### Corregido

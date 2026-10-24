@@ -41,11 +41,22 @@ _FECHA_LOCALIZADA_RE = re.compile(
     r'(\d{1,2}:\d{2}(?::\d{2})?)\s*([+-]\d{4}|gmt|utc|z)?')
 
 
+_SOLO_DIA_RE = re.compile(
+    r'^(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{4}'
+    r'|(?:[^\W\d_]{3,}\.?,?\s+)?\d{1,2}\s+[^\W\d_]{3,}\.?\s+\d{4})$')
+
+
+def _solo_dia(raw):
+    """¿Trae el día sin hora? Entonces no hay instante que guardar: con la
+    hora inventada (00:00, o 02:00 si se lee como UTC) parecería exacta."""
+    return bool(_SOLO_DIA_RE.match(str(raw or '').strip()))
+
+
 def _rss_date_to_iso(raw):
     if not raw:
         return ''
     raw = str(raw).strip()
-    if not raw:
+    if not raw or _solo_dia(raw):
         return ''
 
     try:
@@ -54,6 +65,9 @@ def _rss_date_to_iso(raw):
     except (ValueError, AttributeError):
         pass
 
+    # RFC 822 con la zona en «+09:00»: parsedate_to_datetime no la entiende,
+    # devuelve una fecha sin zona y se leería como UTC.
+    raw = re.sub(r'(\d{2}:\d{2}(?::\d{2})?\s*[+-]\d{2}):(\d{2})$', r'\1\2', raw)
     try:
         dt = parsedate_to_datetime(raw)
         if dt is not None:
@@ -106,24 +120,25 @@ def _parse_iso_flexible(val):
 
 def _fecha_orden(n):
     """Fecha para ordenar visualmente: prioriza pub > estimada > recolección."""
-    for key in ('fecha_pub', 'fecha_estimada', 'fecha'):
-        dt = _parse_iso_flexible(n.get(key))
-        if dt is not None:
-            return dt
-    return datetime.min.replace(tzinfo=timezone.utc)
+    return _fecha_agrupacion_dt(n) or datetime.min.replace(tzinfo=timezone.utc)
 
 
 def _fecha_agrupacion_dt(n, ahora=None):
     """
     Fecha que determina a qué día pertenece la noticia.
-    - Si fecha_pub existe y NO es futura (> ahora + HORIZONTE) → fecha_pub.
+    - Si fecha_pub existe y NO es futura (> recogida + HORIZONTE) → fecha_pub.
     - Si fecha_pub es futura → fecha_estimada o fecha.
     - Si no hay fecha_pub → fecha_estimada o fecha.
     Devuelve None si no hay ninguna fecha válida.
+
+    El horizonte se cuenta desde la primera recogida (`fecha`), no desde
+    ahora: así una cita de agenda no salta de día al acercarse, y lo
+    decidido no cambia de un run a otro.
     """
-    if ahora is None:
-        ahora = datetime.now(config.TZ_MADRID)
-    horizonte = ahora + timedelta(hours=config.HORIZONTE_FUTURO_HORAS)
+    ref = _parse_iso_flexible(n.get('fecha'))
+    if ref is None:
+        ref = ahora or datetime.now(config.TZ_MADRID)
+    horizonte = ref + timedelta(hours=config.HORIZONTE_FUTURO_HORAS)
 
     for key in ('fecha_pub', 'fecha_estimada', 'fecha'):
         dt = _parse_iso_flexible(n.get(key))
