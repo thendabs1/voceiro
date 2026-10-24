@@ -5,7 +5,7 @@ Fases:
   1-3. Probar en orden las 'fuentes' de cada medio (medios.py): RSS,
      sitemap de Google News, API de WordPress, scraping o búsqueda en
      Google News → hasta N_FEED titulares. Cada intento queda registrado
-     en Turso (columna `intentos`).
+     en la tabla `runs` de Turso (columna `intentos`).
   4. Estimar fecha de los scrapeados nuevos usando el intervalo entre runs
      (por medio, no global — ver `ultimo_exito_por_medio`)
   5. Deduplicar contra el histórico y fusionar
@@ -234,8 +234,7 @@ def main():
 
     # ─── Turso (HTTP v2) ───
     turso._turso_ensure_schema()
-    turso._turso_setup_medios(medios_completos, runs_data, t_now_iso)
-    turso.insertar_en_turso(finales_pre, generado_prev, t_now_iso)
+    turso._turso_setup_medios(medios_completos)
     turso._turso_setup_runs(runs_data, t_now_iso)
 
     # ─── Limpiar huérfanos en R2 ───

@@ -14,7 +14,7 @@ en estos módulos, que también usan las herramientas de diagnóstico:
 | `formatos.py` | Formato corto, índices de ventana y archivo e inventario de ficheros. |
 | `publicacion.py` | Portadas y slices locales; registro de archivos escritos en el run. |
 | `r2.py` | Descarga, subida ordenada y limpieza remota. |
-| `turso.py` | Archivo, esquema y diagnóstico mediante HTTP v2. |
+| `turso.py` | Catálogo de medios y pasadas (`runs`) mediante HTTP v2. |
 
 La configuración se consulta en `config`, sin copiar valores mutables entre
 módulos. Las credenciales de R2 y Turso se leen en sus respectivos adaptadores.

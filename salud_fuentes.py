@@ -5,7 +5,7 @@ lógica que el recolector, y saca una tabla con su estado.
 
 Sirve para validar fuentes nuevas desde la IP de GitHub Actions antes de
 darlas por buenas (workflow test_feeds.yml). Para el día a día, la columna
-`intentos` de las tablas `medios` y `runs` de Turso ya dice qué falla.
+`intentos` de la tabla `runs` de Turso ya dice qué falla.
 
 Uso:
   python salud_fuentes.py                      # rss, sitemap y wp de todos

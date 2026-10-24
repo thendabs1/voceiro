@@ -8,7 +8,7 @@ from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from cosecha import catalogo, config, fechas, formatos, historico, r2, turso
+from cosecha import config, fechas, formatos, historico, r2, turso
 from bs4 import BeautifulSoup
 
 MADRID = config.TZ_MADRID
@@ -498,20 +498,16 @@ class Archivo(unittest.TestCase):
 
 
 class Turso(unittest.TestCase):
-    def test_solo_van_las_nuevas_de_medios_nacionales_y_los_anadidos(self):
+    def test_runs_con_ts_en_cabeza_y_poda_al_final(self):
         enviadas = []
-        medios = {'nac.test': {'ambito': 'nacional'}, 'reg.test': {'ambito': 'regional'},
-                  'extra.test': {'ambito': 'internacional'}}
-        noticias = [{'dominio': d, 'titular': d, 'enlace': f'https://{d}/x', '_nueva': True}
-                    for d in ('nac.test', 'reg.test', 'extra.test', 'fuera.test')]
-        noticias.append({'dominio': 'nac.test', 'titular': 'vieja',
-                         'enlace': 'https://nac.test/v', '_nueva': False})
-        with patch.multiple(turso, TURSO_HTTP_URL='https://turso.test', TURSO_TOKEN='x',
-                            TURSO_DOMINIOS_EXTRA={'extra.test'}), \
-                patch.object(catalogo, '_MEDIOS_POR_DOMINIO', medios), \
+        runs = [{'dominio': 'a.test', 'ok': True, 'fuente': 'RSS', 'n_items': 3},
+                {'dominio': 'b.test', 'ok': False, 'error': 'HTTP 403'}]
+        with patch.multiple(turso, TURSO_HTTP_URL='https://turso.test', TURSO_TOKEN='x'), \
                 patch.object(turso, 'turso_pipeline',
                              side_effect=lambda stmts: enviadas.extend(stmts) or []), \
                 contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(turso.insertar_en_turso(noticias, '', '2026-10-21T12:00:00+02:00'), 2)
-        self.assertEqual(sorted(s['stmt']['args'][1]['value'] for s in enviadas),
-                         ['extra.test', 'nac.test'])
+            turso._turso_setup_runs(runs, '2026-10-24T12:00:00+02:00')
+        args = [[a['value'] for a in s['stmt']['args'][:3]] for s in enviadas[:2]]
+        self.assertEqual(args, [['2026-10-24T12:00:00+02:00', 'a.test', '1'],
+                                ['2026-10-24T12:00:00+02:00', 'b.test', '0']])
+        self.assertTrue(enviadas[-1]['stmt']['sql'].startswith('DELETE FROM runs'))
