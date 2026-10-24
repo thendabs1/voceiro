@@ -49,7 +49,7 @@ function openReader(art){
   // Las palabras del texto que se ve, no las de lo que se ha quitado.
   const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
-  const iu = String(art.image || '');
+  const iu = urlWebValida(absUrl(String(art.image || '')));
   const iuHi = iu.replace('_16-9-discover-', '_source-');
   const iuFinal = iuHi !== iu ? iuHi : iu;
   const iuFallback = iuHi !== iu ? iu : '';

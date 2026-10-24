@@ -101,6 +101,15 @@ const VOLVER_KEY = 'lector-volver-a-voceiro';
     const hueco = document.getElementById('aj-lector-panel');
     if (!hueco) return;
     const dominio = typeof d.dominio === 'string' ? normalizeDomain(d.dominio) : '';
+    if (PLATAFORMA.esExtension){
+      if (!hueco.firstChild){
+        const abrir = document.createElement('button');
+        abrir.type = 'button'; abrir.textContent = t('openSettings');
+        abrir.onclick = () => PLATAFORMA.abrirAjustes('sites', dominio);
+        hueco.appendChild(abrir);
+      }
+      return;
+    }
     if (dominio){
       const viejo = hueco.querySelector('.il-settings-dentro');
       if (viejo) viejo.remove();
@@ -146,6 +155,10 @@ function abrirAjustesDesdeEnlace(){
 window.addEventListener('hashchange', abrirAjustesDesdeEnlace);
 abrirAjustesDesdeEnlace();
 
-if (document.body) init();
-else window.addEventListener('DOMContentLoaded', init);
+if (PLATAFORMA.iniciar) PLATAFORMA.iniciar({ abrir:activateReader, ajustes:openSettings,
+  analizar:openExtractionTool, sitio:() => CFG.sites.indexOf(findSiteRule()) });
+if (!PLATAFORMA.esPaginaPropia){
+  if (document.body) init();
+  else window.addEventListener('DOMContentLoaded', init);
+}
 

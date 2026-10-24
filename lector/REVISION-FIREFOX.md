@@ -16,8 +16,11 @@ rechazan eventos de teclado sintéticos. Los atajos nuevos quedan sin
 asignar salvo Escape y se retira la restauración de posición. El flotante
 tiene una opción global independiente de la apertura automática.
 
-Los apartados siguientes explican los problemas encontrados y el trabajo
-de adaptación a la extensión. El [manual](MANUAL.md) refleja las correcciones.
+La extensión para pruebas está implementada en [extension/](extension/README.md):
+almacenamiento propio, fondo, permisos opcionales, bibliotecas locales y
+accesos del navegador. Pendiente de verificación manual en Firefox.
+Los apartados siguientes conservan los problemas encontrados y las
+propuestas que sirvieron de base a la adaptación. El [manual](MANUAL.md) refleja las correcciones.
 
 ## Segunda revisión: navegación al volver con Atrás
 

@@ -6,6 +6,7 @@
    ============================================================ */
 const I18N = {
   es: {
+    syncPermiso: 'Permite la sincronización en las opciones de la extensión.',
     fabVisible: 'Mostrar el botón flotante',
     syncSoloEnVoceiro: 'El código se escribe en Voceiro (Ajustes › Lector), no encima de otra web, que podría leerlo.',
     syncTitle: 'Sincronización',
@@ -217,6 +218,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible en el botón flotante',
   },
   gl: {
+    syncPermiso: 'Permite a sincronización nas opcións da extensión.',
     fabVisible: 'Amosar o botón flotante',
     syncSoloEnVoceiro: 'O código escríbese en Voceiro (Axustes › Lector), non enriba doutra web, que podería lelo.',
     syncTitle: 'Sincronización',
@@ -428,6 +430,7 @@ const I18N = {
     serviciosFabVisible: '«Abrir en…» visible no botón flotante',
   },
   ca: {
+    syncPermiso: 'Permet la sincronització a les opcions de l’extensió.',
     fabVisible: 'Mostrar el botó flotant',
     syncSoloEnVoceiro: 'El codi s’escriu a Voceiro (Configuració › Lector), no a sobre d’una altra web, que el podria llegir.',
     syncTitle: 'Sincronització',
@@ -639,6 +642,7 @@ const I18N = {
     serviciosFabVisible: '«Obre a…» visible al botó flotant',
   },
   en: {
+    syncPermiso: 'Allow synchronization in the extension options.',
     fabVisible: 'Show the floating button',
     syncSoloEnVoceiro: 'Type the code in Voceiro (Settings › Reader), not on top of another site, which could read it.',
     syncTitle: 'Sync',
@@ -849,6 +853,7 @@ const I18N = {
     serviciosFabVisible: '“Open in…” shown in the floating button',
   },
   eu: {
+    syncPermiso: 'Baimendu sinkronizazioa hedapenaren aukeretan.',
     fabVisible: 'Erakutsi botoi mugikorra',
     syncSoloEnVoceiro: 'Kodea Voceiron idazten da (Ezarpenak › Irakurgailua), ez beste webgune baten gainean, irakur lezakeelako.',
     syncTitle: 'Sinkronizazioa',

@@ -9,7 +9,13 @@ lector se encarga de lo que pasa al abrir la noticia.
 - [Manual de usuario](MANUAL.md).
 - [Revisión y adaptación a Firefox](REVISION-FIREFOX.md).
 
-## Instalar
+## Extensión de Firefox para pruebas
+
+Las fuentes están en [`extension/`](extension/README.md), con construcción,
+permisos e instrucciones de instalación temporal. Pendiente de prueba
+manual en Firefox y de publicación en la tienda.
+
+## Instalar el userscript
 
 Con un gestor de userscripts (Violentmonkey, Tampermonkey…), abre
 <https://thendabs1.github.io/voceiro/lector.user.js>. Se actualiza solo.

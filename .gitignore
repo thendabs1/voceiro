@@ -1,5 +1,6 @@
 # Ignorar la carpeta de datos generados
 public/datos/
+lector/dist/
 
 # Python
 venv/

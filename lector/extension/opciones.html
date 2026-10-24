@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Opciones del Lector Universal</title>
+<link rel="stylesheet" href="interfaz.css">
+<body>
+<h1>Lector Universal</h1>
+<p>Abre una noticia desde el botón de la barra de Firefox. El botón flotante y la apertura automática son opcionales.</p>
+<p id="estado" role="status" aria-live="polite"></p>
+<section aria-labelledby="acceso-titulo">
+  <h2 id="acceso-titulo">Acceso a los medios</h2>
+  <p>Para mostrar el flotante o abrir noticias automáticamente, permite el acceso a esos medios. Puedes concederlo en cada web desde el botón de la barra.</p>
+  <button type="button" id="todos">Permitir acceso a todos los medios</button>
+  <button type="button" id="voceiro">Conectar con Voceiro</button>
+  <ul id="sitios"></ul>
+</section>
+<section aria-labelledby="conexion-titulo">
+  <h2 id="conexion-titulo">Sincronización opcional</h2>
+  <p>Los pendientes, las marcas de leídas y los ajustes se cifran antes de enviarse a los servidores de Voceiro. Después de permitirlo, introduce el mismo código en Configuración o conecta con Voceiro.</p>
+  <label><input id="conexion" type="checkbox"> Permitir la sincronización cifrada</label>
+  <p>Los diccionarios y «Abrir en…» reciben la palabra o la dirección solo cuando eliges abrirlos. No se envía el cuerpo de los artículos al servidor de sincronización.</p>
+</section>
+<section id="lector-opciones" aria-label="Configuración del lector"></section>
+<script src="plataforma.js"></script>
+<script src="lector.js"></script>
+<script src="opciones.js"></script>
+</body>
+</html>

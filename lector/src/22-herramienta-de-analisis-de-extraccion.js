@@ -4,6 +4,10 @@
 function openExtractionTool(siteIdx, onClose){
   const site = CFG.sites[siteIdx];
   if (!site) return;
+  if (PLATAFORMA.esPaginaPropia && PLATAFORMA.analizar){
+    PLATAFORMA.analizar(site.domain).catch(e => toast(e.message, 4000));
+    return;
+  }
   // El diagnóstico y el selector visual trabajan sobre el documento actual.
   if (!domainMatches(location.hostname, site.domain)){
     toast(t('extractionWrongSite').replace('{X}', site.domain), 4000);

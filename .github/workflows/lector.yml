@@ -43,3 +43,23 @@ jobs:
 
       - name: Cabecera y dominios permitidos
         run: node lector/comprobar.mjs
+
+      - name: Construir la extensión de Firefox y la variante Chrome
+        run: |
+          node lector/extension/build.mjs firefox
+          node lector/extension/build.mjs chrome
+          node --check lector/dist/firefox/lector.js
+          node --check lector/dist/firefox/fondo.js
+          node --check lector/dist/chrome/fondo.js
+
+      - name: Validar el paquete Firefox
+        run: npx --yes web-ext@10.5.0 lint --source-dir lector/dist/firefox
+
+      - name: Empaquetar Firefox para pruebas
+        run: npx --yes web-ext@10.5.0 build --source-dir lector/dist/firefox --artifacts-dir lector/dist/paquetes
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lector-firefox-pruebas
+          # Un único directorio: manifest.json queda en la raíz de la descarga.
+          path: lector/dist/firefox/
