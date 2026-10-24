@@ -99,6 +99,10 @@ def _resumen_medio_runs(fs, tss):
     if inicio:
         racha_min = max(racha_min, _minutos(inicio, tss[-1]))
 
+    # Ventana: minutos entre dos pasadas buenas seguidas. Es lo que abarca
+    # una estimada (se reparte entre la pasada anterior y esta).
+    ventanas = [_minutos(a['ts'], b['ts']) for a, b in zip(oks, oks[1:])]
+
     return {
         'pasadas': len(fs),
         'ok': len(oks),
@@ -115,6 +119,8 @@ def _resumen_medio_runs(fs, tss):
         'errores': _top(Counter(f['error'][:120] for f in fs if f['error'])),
         'racha_fallos': racha_max,
         'racha_fallos_min': racha_min,
+        'ventana_min': ({'p50': _percentil(ventanas, 50), 'p90': _percentil(ventanas, 90),
+                         'max': max(ventanas)} if ventanas else None),
         'primera_ok': _hhmm(oks[0]['ts']) if oks else None,
         'ultima_ok': _hhmm(oks[-1]['ts']) if oks else None,
         'ultimo_estado': 'ok' if fs[-1]['ok'] else 'fallo',
@@ -287,6 +293,7 @@ CAMPOS_SERIE = {
     'ok':          ('runs', '$.ok'),
     'ms_p50':      ('runs', '$.ms.p50'),
     'rescates':    ('runs', '$.rescates'),
+    'ventana_p50': ('runs', '$.ventana_min.p50'),
     'titulares':   ('pub',  '$.titulares'),
     'con_hora':    ('pub',  '$.fechas.con_hora'),
     'retraso_p50': ('pub',  '$.retraso_min.p50'),

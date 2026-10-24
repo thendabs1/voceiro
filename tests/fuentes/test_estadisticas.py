@@ -39,6 +39,14 @@ class Runs(unittest.TestCase):
         self.assertEqual(medios['b.test']['intentos']['RSS'], {'pocos': 1})
         self.assertEqual(medios['b.test']['rescates'], 1)
 
+    def test_ventana_entre_pasadas_buenas(self):
+        # Una fallida en medio alarga la ventana de la estimada siguiente.
+        filas = [run('00:00'), run('01:00'), run('02:00'), run('03:00', ok=False), run('04:00'),
+                 run('00:00', dominio='b.test')]
+        medios, _ = est.resumen_runs(filas)
+        self.assertEqual(medios['a.test']['ventana_min'], {'p50': 60, 'p90': 120, 'max': 120})
+        self.assertIsNone(medios['b.test']['ventana_min'])
+
 
 class Titulares(unittest.TestCase):
     payload = {
