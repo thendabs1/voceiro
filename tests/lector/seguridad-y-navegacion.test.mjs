@@ -38,6 +38,29 @@ test('los destinos importados solo admiten URLs web absolutas sin credenciales',
   assert.equal(urlWebValida('https://medio.example/a?x=1#b'), 'https://medio.example/a?x=1#b');
 });
 
+test('la portada del artículo solo carga una URL web válida', () => {
+  const l = lector();
+  vm.runInContext(['13-utilidades.js', '20-css-del-lector.js', '23-lector.js']
+    .map(f => leer('lector/src/' + f)).join('\n'), l.contexto);
+  let html = '';
+  l.contexto.document.body = {
+    insertAdjacentHTML(_pos, contenido){ html = contenido; throw new Error('HTML capturado'); }
+  };
+  Object.assign(l.contexto, {
+    t: k => k, getDefaultDict: () => null, detectPageLang: () => 'es',
+    buildBlocksFromText: () => [{ tipo: 'p', html: 'Contenido de la noticia' }],
+    sinImagenesRepetidas: a => a, agruparGalerias: a => a,
+    esDeTexto: () => true, textoDeBloque: () => 'Contenido de la noticia'
+  });
+  const pintar = image => {
+    l.contexto.articulo = { rawBody: 'Contenido de la noticia. '.repeat(8), headline: 'Noticia', image, _source: 'jsonld' };
+    assert.throws(() => l.run('openReader(articulo)'), /HTML capturado/);
+    return html;
+  };
+  assert.doesNotMatch(pintar('javascript:alert(1)'), /id="il-ambi-img"|class="il-figure/);
+  assert.match(pintar('/portada.jpg'), /src="https:\/\/medio\.example\/portada\.jpg"/);
+});
+
 test('diccionarios y servicios validan también al abrir, no solo al importarlos', () => {
   const l = lector();
   assert.equal(l.run('buildDictUrl({ url: \'javascript:void("{palabra}")\' }, "hola")'), null);
