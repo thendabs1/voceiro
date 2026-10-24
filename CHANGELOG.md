@@ -3,6 +3,15 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Workers en voceiro.eu
+
+### Cambiado
+- Los workers de CF responden en `buscar.voceiro.eu`, `datos.voceiro.eu` y
+  `sync.voceiro.eu`, con el WAF de la zona delante (regla de límite por IP en
+  el panel; ver workers/README.md). El front, la sincronización, el lector y
+  la extensión pasan a esas URL. Las de `workers.dev` siguen abiertas hasta
+  que no queden clientes viejos.
+
 ## 2026-10-24 — Workers: límites de peticiones
 
 ### Añadido

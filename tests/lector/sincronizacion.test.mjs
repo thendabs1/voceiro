@@ -131,7 +131,7 @@ test('el lector sube y baja por el gestor, y conserva lo que no usa', async () =
 test('con CF bloqueado va por el respaldo; sin nada nuevo no sube', async () => {
   const srv = servidor();
   const codigo = generarCodigo();
-  const { lector } = nuevoLector(srv, { caidos: ['https://voceiro-sync.toriorecorda.workers.dev'] });
+  const { lector } = nuevoLector(srv, { caidos: ['https://sync.voceiro.eu'] });
   lector.CFG = { readLater: [pend('https://a.es/1')] };
   lector.activarSyncLector(codigo, false);
   await lector.sincronizarLector();

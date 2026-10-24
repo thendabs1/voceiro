@@ -9,7 +9,7 @@ import { fusionarDocumento, huella } from './fusion.js';
 
 // CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma
 // base. Los usan Voceiro y el lector.
-export const SERVIDORES_SYNC = ['https://voceiro-sync.toriorecorda.workers.dev',
+export const SERVIDORES_SYNC = ['https://sync.voceiro.eu',
                                 'https://voceiro-sync.thendabs1.deno.net'];
 export const MAX_SUBIDA = 500 * 1024;   // el servidor admite 512 KB
 const INTENTOS = 4;

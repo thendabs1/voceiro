@@ -17,7 +17,7 @@ function fondo({antesDePeticion = async () => {}, catalogo = []} = {}){
     runtime:{id:'lector-test',getURL: p => 'moz-extension://lector-test/'+p,
       onMessage:{addListener:fn => { mensaje=fn; }},onStartup:evento('inicio')},
     storage:{local:{async get(){return structuredClone(datos);},async set(o){Object.assign(datos,structuredClone(o)); cambios.push(Object.keys(o)[0]);}}},
-    permissions:{async getAll(){return {origins:['https://voceiro-sync.toriorecorda.workers.dev/*','https://voceiro-sync.thendabs1.deno.net/*'], data_collection:permitir ? ['browsingActivity','websiteContent'] : []};},
+    permissions:{async getAll(){return {origins:['https://sync.voceiro.eu/*','https://voceiro-sync.thendabs1.deno.net/*'], data_collection:permitir ? ['browsingActivity','websiteContent'] : []};},
       async contains(){return true;},onAdded:evento('permisos+'),onRemoved:evento('permisos-')},
     scripting:{async getRegisteredContentScripts(){return [];},async registerContentScripts(s){registros.push(s);},async unregisterContentScripts(){},
       async executeScript({target}){

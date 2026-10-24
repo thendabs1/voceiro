@@ -38,7 +38,7 @@ const manifest = {
   // storage.local es compartido: no conservar datos de navegación privada.
   incognito:'not_allowed',
   permissions:['activeTab','scripting','storage','alarms'],
-  host_permissions:['https://voceiro-sync.toriorecorda.workers.dev/*','https://voceiro-sync.thendabs1.deno.net/*'],
+  host_permissions:['https://sync.voceiro.eu/*','https://voceiro-sync.thendabs1.deno.net/*'],
   optional_host_permissions:['http://*/*','https://*/*'],
   action:{default_title:'Lector Universal',default_popup:'popup.html'},
   options_ui:{page:'opciones.html',open_in_tab:true},

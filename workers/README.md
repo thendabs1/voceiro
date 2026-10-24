@@ -59,8 +59,31 @@ el front. Lo que protege las cuotas de detrás:
 El límite por IP cuenta en memoria, en cada instancia por separado: frena a
 quien insiste desde una IP, no ataques distribuidos, y la petición frenada
 sigue contando en la cuota diaria de la plataforma. Para eso harían falta
-reglas delante del worker (WAF con dominio propio). El front no cambia de
-backend por un 429.
+reglas delante del worker: las del WAF de voceiro.eu. El front no cambia
+de backend por un 429.
+
+### Dominio propio y WAF
+
+Los workers de CF responden en `buscar.voceiro.eu`, `datos.voceiro.eu` y
+`sync.voceiro.eu` (`routes` con `custom_domain` en cada `wrangler.toml`;
+CF crea el DNS y el certificado al desplegar). El front, la sincronización,
+el lector y la extensión usan esas URL; Deno sigue de respaldo, fuera del WAF.
+
+En el panel (Security → WAF → Rate limiting rules; el plan Free da una
+regla, por IP y con periodo de 10 s):
+
+- Expresión: `http.host in {"buscar.voceiro.eu" "datos.voceiro.eu" "sync.voceiro.eu"}`
+- 150 peticiones en 10 s por IP; acción Block durante 10 s.
+
+Holgada a propósito: abrir una capa pide hasta 30 ficheros de `datos`, y
+detrás de una IP puede haber mucha gente (CGNAT). Frena ráfagas, no un goteo
+lento. No activar Bot Fight Mode: pone un desafío JavaScript que un
+`fetch()` del front no puede resolver.
+
+`workers_dev = true` mantiene abiertas las URL `*.workers.dev`, que se
+saltan el WAF. Se cierran (`workers_dev = false`) cuando no queden clientes
+que las usen: el front y el lector de antes de este cambio, y la extensión
+instalada sin actualizar.
 
 La sincronización requiere `SYNC_IP_SECRET` idéntico en ambos servicios.
 La migración, la revocación de códigos, la retención y las comprobaciones de

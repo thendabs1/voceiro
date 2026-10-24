@@ -7,8 +7,8 @@ const REPORT_REPO = 'thendabs1/voceiro';
 
 // ── Backends (switch CF ↔ Deno) ──
 const BACKENDS = {
-  cf:   { data: 'https://voceiro-datos.toriorecorda.workers.dev',
-          buscar: 'https://voceiro-buscar.toriorecorda.workers.dev' },
+  cf:   { data: 'https://datos.voceiro.eu',
+          buscar: 'https://buscar.voceiro.eu' },
   deno: { data: 'https://voceiro-datos.thendabs1.deno.net',
           buscar: 'https://voceiro-buscar.thendabs1.deno.net' },
 };
