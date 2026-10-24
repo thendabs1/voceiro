@@ -61,6 +61,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: lector-firefox-pruebas
-          path: |
-            lector/dist/firefox/
-            lector/dist/paquetes/
+          # Un único directorio: manifest.json queda en la raíz de la descarga.
+          path: lector/dist/firefox/

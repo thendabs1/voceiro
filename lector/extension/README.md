@@ -37,7 +37,10 @@ La CI construye el paquete, comprueba su sintaxis y ejecuta `web-ext lint`.
 El validador puede mostrar avisos sobre el HTML dinámico del lector y de
 Readability: quedan visibles para su revisión; no se suprimen en CI.
 En la ejecución del workflow **Lector** puedes descargar el artefacto
-**lector-firefox-pruebas**, descomprimirlo y seleccionar su `manifest.json`.
+**lector-firefox-pruebas**. Sus archivos van en la raíz del ZIP: descomprímelo
+y selecciona el `manifest.json` extraído, no el ZIP contenedor de GitHub.
+Las primeras descargas incluían dos carpetas: en ese caso selecciona
+`firefox/manifest.json` después de descomprimir.
 
 ## Sincronización y Voceiro
 
