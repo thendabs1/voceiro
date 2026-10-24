@@ -9,6 +9,7 @@ export const turso = {
     const env = {
       WORKER_TURSO_URL: Deno.env.get('WORKER_TURSO_URL'),
       WORKER_TURSO_TOKEN: Deno.env.get('WORKER_TURSO_TOKEN'),
+      TURSO_PAUSADO: Deno.env.get('TURSO_PAUSADO'),
     };
     if (!env.WORKER_TURSO_URL || !env.WORKER_TURSO_TOKEN) {
       throw new Error('Faltan WORKER_TURSO_URL o WORKER_TURSO_TOKEN');

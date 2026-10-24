@@ -10,6 +10,7 @@ on:
       - 'workers/comun/buscar.js'
       - 'workers/comun/turso.js'
       - 'workers/comun/gnews.js'
+      - 'workers/comun/limite.js'
       - 'scripts/sync-workers.mjs'
       # El worker empaqueta ../../../shared/parser.js (y shared/busqueda/):
       # un cambio solo en shared/ también tiene que redesplegar CF.

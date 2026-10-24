@@ -36,6 +36,7 @@ jobs:
           URL: ${{ inputs.url }}
           TIPO: ${{ inputs.tipo }}
           IDIOMA: ${{ inputs.lang }}
+          RELAY_CLAVE: ${{ secrets.RELAY_CLAVE }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -9,6 +9,7 @@ on:
     paths:
       - 'workers/cf-sync/**'
       - 'workers/comun/sync.js'
+      - 'workers/comun/limite.js'
       - 'scripts/sync-workers.mjs'
       - '.github/workflows/deploy-worker-sync.yml'
   workflow_dispatch:

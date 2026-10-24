@@ -6,6 +6,7 @@
 // con su allowlist; este solo sirve news.google.com/rss.
 //
 //   GET /?url=<URL de news.google.com/rss/search?…>
+//   (con la cabecera X-Voceiro-Relay si el relay tiene RELAY_CLAVE)
 
 import { rssAJson } from './rss.js';
 
@@ -26,6 +27,12 @@ Deno.serve(async (req) => {
 
   const target = u.searchParams.get('url');
   if (!target) return new Response('relay ok', { status: 200 });
+  // Lo llaman solo los workers de búsqueda: con RELAY_CLAVE puesta en Deno,
+  // sin su cabecera no se atiende (si no, es un proxy de Google para cualquiera).
+  const clave = Deno.env.get('RELAY_CLAVE');
+  if (clave && req.headers.get('X-Voceiro-Relay') !== clave) {
+    return json({ status: 'error', message: 'clave' }, 403);
+  }
 
   let destino;
   try {

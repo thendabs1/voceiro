@@ -8,6 +8,7 @@ edita en `workers/comun/`:
 - `turso.js`: consulta SQL y protocolo HTTP del archivo.
 - `gnews.js`: prensa por el relay de Google News, también desde Deno.
 - `datos-cache.js`: caducidad de índices, portadas y slices de R2.
+- `limite.js`: límite de peticiones por IP en memoria (IPv6 por su /64).
 - `sync.js`: sincronización entre dispositivos. CF la sirve con el binding de
   D1; Deno, con la misma base D1 por la API HTTP de Cloudflare, así que no
   hay dos copias que reconciliar. El cliente prueba CF y, si no responde, Deno.
@@ -41,6 +42,25 @@ Las diferencias de plataforma se conservan en los adaptadores:
 Los relays de extracción y búsqueda siguen siendo servicios distintos con
 sus propias restricciones. Las pruebas HTTP de `tests/workers` verifican los
 dos adaptadores, errores parciales, caché, paginación y revalidación sin red real.
+
+## Límites de peticiones
+
+Las URL de los workers son públicas: cualquiera puede llamarlas sin pasar por
+el front. Lo que protege las cuotas de detrás:
+
+| Dónde | Límite |
+| --- | --- |
+| `/buscar` (CF y Deno) | 30 consultas por IP y minuto que lleguen a las fuentes; lo servido de caché no cuenta. `offset` hasta `MAX_OFFSET` (1000): OFFSET lee las filas que se salta y Turso cobra las leídas. |
+| Archivo (Turso) | `TURSO_PAUSADO` lo apaga en el servidor: `[vars]` en `cf-buscar/wrangler.toml`; en Deno, variable de entorno. |
+| `/tiempo`, `/avisos` (Deno) | 30 peticiones por IP y minuto. |
+| `sync` (CF y Deno) | 120 peticiones por IP y minuto, antes de tocar D1; además, el cupo de altas. |
+| Relays de Deno | Con `RELAY_CLAVE` puesta, solo atienden a quien manda `X-Voceiro-Relay` con ella: los workers de búsqueda (`RELAY_CLAVE` en CF y en Deno) y el recolector (secreto de Actions). Sin ella, siguen abiertos. |
+
+El límite por IP cuenta en memoria, en cada instancia por separado: frena a
+quien insiste desde una IP, no ataques distribuidos, y la petición frenada
+sigue contando en la cuota diaria de la plataforma. Para eso harían falta
+reglas delante del worker (WAF con dominio propio). El front no cambia de
+backend por un 429.
 
 La sincronización requiere `SYNC_IP_SECRET` idéntico en ambos servicios.
 La migración, la revocación de códigos, la retención y las comprobaciones de

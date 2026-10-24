@@ -26,7 +26,9 @@ export const gnews = {
 
     let res;
     try {
-      res = await fetch(url, { signal: ctrl.signal });
+      // El relay solo atiende a quien lleva su clave (si la tiene puesta).
+      const headers = env?.RELAY_CLAVE ? { 'X-Voceiro-Relay': env.RELAY_CLAVE } : {};
+      res = await fetch(url, { signal: ctrl.signal, headers });
     } finally {
       clearTimeout(tid);
     }

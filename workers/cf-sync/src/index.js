@@ -2,11 +2,15 @@
 // comun/sync.js; aquí solo se conecta con D1 y con el cron de limpieza.
 import { atender, limpiar, ORIGEN } from './comun/sync.js';
 import { almacenD1 } from './almacen-d1.js';
+import { crearLimite } from './comun/limite.js';
+
+// Peticiones por IP y minuto: una sincronización son pocas (GET y PUT).
+const limiteSync = crearLimite({ max: 120, ventanaMs: 60e3 });
 
 export default {
   async fetch(request, env){
     try {
-      return await atender(request, almacenD1(env.DB), Date.now(), request.headers.get('CF-Connecting-IP'), env.SYNC_IP_SECRET);
+      return await atender(request, almacenD1(env.DB), Date.now(), request.headers.get('CF-Connecting-IP'), env.SYNC_IP_SECRET, limiteSync);
     } catch (e) {
       console.error('[sync]', e && e.stack || e);
       return new Response(JSON.stringify({ error: 'interno' }), {

@@ -1,13 +1,21 @@
+import { respuesta429 } from './limite.js';
+
 export const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// Hasta dónde se pagina el archivo. OFFSET lee y descarta las filas que se
+// salta, y Turso cobra las leídas: sin tope, una petición podía leer miles.
+export const MAX_OFFSET = 1000;
+
 // Las plataformas aportan su caché, su entorno y cómo retener la escritura.
 // No llama al otro backend: cada despliegue resuelve la consulta por sí mismo.
+// limitar: segundos de espera para quien pide (0: adelante); solo cuenta lo
+// que no está en caché, que es lo que gasta las cuotas de las fuentes.
 export async function buscar(request, { parseQuery, adapters, env, abrirCache,
-                                        guardarCache, cacheControl }) {
+                                        guardarCache, cacheControl, limitar }) {
   const url = new URL(request.url);
   const raw = url.searchParams.get('raw') ?? url.searchParams.get('q') ?? '';
   const parsed = parseQuery(raw);
@@ -32,7 +40,7 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
   if (regionQ && !parsed.region) parsed.region = regionQ;
 
   const activas = parsed.fuentes.filter(f => adapters[f]);
-  if (!activas.length) {
+  if (!activas.length || parsed.offset > MAX_OFFSET) {
     return json({ total: 0, items: [], next_offset: null, fuentes: [] }, CORS);
   }
 
@@ -51,6 +59,9 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
     r.headers.set('X-Cache', 'HIT');
     return r;
   }
+
+  const espera = limitar ? limitar() : 0;
+  if (espera) return respuesta429(espera, CORS);
 
   // ── Fan-out paralelo ──
   const t0 = Date.now();
@@ -103,7 +114,7 @@ export async function buscar(request, { parseQuery, adapters, env, abrirCache,
   }
 
   const soloTurso = activas.length === 1 && activas[0] === 'turso';
-  const next_offset = (soloTurso && hayMasTurso)
+  const next_offset = (soloTurso && hayMasTurso && parsed.offset + parsed.limit <= MAX_OFFSET)
     ? parsed.offset + parsed.limit
     : null;
 

@@ -8,7 +8,7 @@ D1 guarda el bloque, la huella del token, versión y fechas técnicas.
 ## Cambios y retención
 
 - Las altas usan HMAC-SHA-256 con una clave aleatoria de 32 bytes, día UTC e
-  IP normalizada. CF y Deno deben tener exactamente la misma clave. Cambiar
+  IP normalizada (IPv6, por su /64). CF y Deno deben tener exactamente la misma clave. Cambiar
   el día cambia la huella; conservar la clave permite comprobar IP candidatas,
   por lo que hablamos de seudonimización, no de anonimización irreversible.
 - `altas` solo guarda huella, día y contador. `sync_crear` es una vista vacía:
@@ -77,9 +77,11 @@ La revisión y los tests locales no certifican la configuración de producción:
   proveedores. Ambos reciben las conexiones; no se afirma que no registren IP.
 - Comprobar el cron de CF y alertar si deja de limpiar. Deno usa la misma base
   y no ejecuta una segunda limpieza.
-- El cupo limita altas, no todo el tráfico HTTP ni ataques distribuidos. Una
-  red compartida puede agotar el cupo; cambiar de IP (también IPv6) permite
-  obtener otro. Valorar límites de tráfico de plataforma según uso real.
+- El cupo limita altas; el resto del tráfico, un límite por IP en memoria
+  (`workers/comun/limite.js`), aproximado y por instancia. Ninguno frena
+  ataques distribuidos. Una red compartida puede agotar el cupo; cambiar de
+  IPv4, o de /64 en IPv6, permite obtener otro. Valorar límites de tráfico de
+  plataforma según uso real.
 
 Referencias:
 - https://www.aepd.es/documento/estudio-hash-anonimidad.pdf

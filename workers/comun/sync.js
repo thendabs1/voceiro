@@ -10,6 +10,7 @@
 //   GET    /v1/salud   → 200 {ok: true}
 // id y token salen del código de sincronización en el navegador; el bloque
 // llega cifrado, así que aquí no se puede leer lo que guarda.
+import { claveIp } from './limite.js';
 
 export const ORIGEN = 'https://thendabs1.github.io';
 // El lector (userscript o extensión) pide desde el gestor o la extensión:
@@ -82,7 +83,8 @@ export async function huellaIpDiaria(ip, dia, secreto){
   const clave = await crypto.subtle.importKey('raw', bytes,
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const firma = await crypto.subtle.sign('HMAC', clave,
-    new TextEncoder().encode(`voceiro-altas-v1\n${dia}\n${normalizada}`));
+    // IPv6 por su /64: cambiar de dirección dentro de él no da otro cupo.
+    new TextEncoder().encode(`voceiro-altas-v1\n${dia}\n${claveIp(normalizada)}`));
   return [...new Uint8Array(firma)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
@@ -119,8 +121,9 @@ function iguales(a, b){
 
 // ip: la del cliente según la plataforma. En CF, CF-Connecting-IP es fiable;
 // en Deno esa cabecera la podría mandar cualquiera, así que se pasa aparte.
+// limite: el de peticiones por IP (comun/limite.js) que da cada plataforma.
 export async function atender(request, almacen, ahora = Date.now(),
-                              ip = request.headers.get('CF-Connecting-IP'), secretoIp){
+                              ip = request.headers.get('CF-Connecting-IP'), secretoIp, limite){
   const origen = request.headers.get('Origin') || '';
   const url = new URL(request.url);
 
@@ -128,6 +131,11 @@ export async function atender(request, almacen, ahora = Date.now(),
   // Otra web, desde un navegador: fuera. (Sin Origin o desde una extensión,
   // la llave es el token.)
   if (origen && origen !== ORIGEN && !RE_ORIGEN_EXTENSION.test(origen)) return responder(origen, 403, { error: 'origen' });
+
+  // Antes de tocar D1: cada lectura cuenta (en Deno, además, es una llamada
+  // a la API de Cloudflare, con su propio límite por cuenta).
+  const espera = limite ? limite(claveIp(normalizarIp(ip) || ''), ahora) : 0;
+  if (espera) return responder(origen, 429, { error: 'demasiadas' }, { 'Retry-After': String(espera) });
 
   if (url.pathname === '/v1/salud' && request.method === 'GET'){
     return responder(origen, 200, { ok: true });
