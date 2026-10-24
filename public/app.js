@@ -12,30 +12,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=fbda9cd20c';
+} from './parser.js?v=45beec2371';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=fbda9cd20c';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=fbda9cd20c';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=fbda9cd20c';
-import { comparador } from './busqueda/orden.js?v=fbda9cd20c';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=45beec2371';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=45beec2371';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=45beec2371';
+import { comparador } from './busqueda/orden.js?v=45beec2371';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=fbda9cd20c';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=fbda9cd20c';
+} from './sync/fusion.js?v=45beec2371';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=45beec2371';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=fbda9cd20c';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=fbda9cd20c';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=45beec2371';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=45beec2371';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=fbda9cd20c';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=45beec2371';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=fbda9cd20c';
+} from './tiempo/avisos.js?v=45beec2371';
 
-import { I18N, traducir } from './idiomas/index.js?v=fbda9cd20c';
+import { I18N, traducir } from './idiomas/index.js?v=45beec2371';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1932,7 +1932,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=fbda9cd20c');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=45beec2371');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2752,6 +2752,8 @@ function _offsetMadrid(dia, hhmm){
 function reconstruirFecha(raw, dia){
   if (!raw) return '';
   const s = String(raw).trim();
+  // `p` con solo el día (AAAA-MM-DD): no es un instante, la hora la da `e`.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
   if (s.includes('T') && s.length > 10) return s;
   if (/^\d{2}:\d{2}$/.test(s) && dia){
     return `${dia}T${s}:00${_offsetMadrid(dia, s)}`;
@@ -2839,10 +2841,11 @@ function _calcularFechas(n, horizonte){
   n._tieneFecha   = !isNaN(tsOrden);
 }
 
-// Otra capa (la prensa, el archivo) trae la publicación que aquí faltaba:
-// se adopta. La hora corta (HH:MM) es relativa al día de su fichero.
+// Otra capa (la prensa, el archivo) trae la publicación que aquí faltaba
+// (o solo tenía el día): se adopta. La hora corta (HH:MM) es relativa al
+// día de su fichero.
 function _adoptarPublicacion(n, otra){
-  if (n.p || !otra.p) return;
+  if (reconstruirFecha(n.p, n._dia || '') || !otra.p) return;
   const p = reconstruirFecha(otra.p, otra._dia || '');
   if (isNaN(parseFecha(p))) return;
   n.p = p;
@@ -3450,7 +3453,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=fbda9cd20c')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=45beec2371')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
