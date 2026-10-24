@@ -73,6 +73,39 @@ class Extraccion(unittest.TestCase):
             '<article><time>24/10/2026</time><h2><a href="/a">Titular</a></h2></article>', 'lxml')
         self.assertEqual(fechas._extract_item_date(solo_dia.h2), '2026-10-24')
 
+    def test_dias_localizados_y_con_zona_no_inventan_hora(self):
+        # <time> de 2Playbook y pubDate de Galicia Digital.
+        for raw, dia in (('6 de octubre de 2026', '2026-10-06'),
+                         ('24 octubre, 2026', '2026-10-24'),
+                         ('2026-10-23 +0200', '2026-10-23')):
+            with self.subTest(raw=raw):
+                xml = (f'<rss><channel><item><title>{TITULO}</title>'
+                       f'<link>https://ejemplo.test/a</link><pubDate>{raw}</pubDate>'
+                       '</item></channel></rss>')
+                it = fuentes._parse_feed(xml.encode())[0]
+                self.assertEqual((it['fecha_pub'], it['dia_pub']), ('', dia))
+                tarjeta = BeautifulSoup(
+                    f'<article><time>{raw}</time><h2><a href="/a">{TITULO}</a>'
+                    '</h2></article>', 'lxml')
+                self.assertEqual(fechas._extract_item_date(tarjeta.h2), dia)
+
+    def test_encabezado_dentro_del_enlace_sin_texto_ni_fecha_de_otra_tarjeta(self):
+        # SINC y El Heraldo usan <a><h2>; el resumen queda fuera del titular.
+        html = (f'<div><article><a href="/noticia-del-presupuesto-municipal">'
+                f'<h2>{TITULO}</h2><p>Texto del resumen</p></a></article>'
+                '<article><time datetime="2026-10-23T09:00:00Z"></time>'
+                f'<h2><a href="/otra-noticia-del-municipio">{TITULO} dos</a>'
+                '</h2></article></div>')
+        with patch.object(fuentes.SESSION, 'get', return_value=respuesta(html.encode())):
+            extraidos, estado = fuentes._scrape(MEDIO)
+        self.assertEqual(estado, 'ok')
+        self.assertEqual(len(extraidos), 2)
+        self.assertEqual(extraidos[0]['fecha_pub'], '2026-10-23T11:00:00+02:00')
+        sin_fecha = next(it for it in extraidos if not it['fecha_pub'])
+        self.assertEqual(sin_fecha['titular'], TITULO)
+        self.assertEqual(sin_fecha['enlace'],
+                         'https://ejemplo.test/noticia-del-presupuesto-municipal')
+
     def test_feed_xml_prefiere_publicacion_a_actualizacion(self):
         xml = (f'<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>{TITULO}</title>'
                '<link href="https://ejemplo.test/a"/><updated>2026-10-21T18:00:00Z</updated>'

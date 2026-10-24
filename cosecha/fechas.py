@@ -43,7 +43,9 @@ _FECHA_LOCALIZADA_RE = re.compile(
 
 _SOLO_DIA_RE = re.compile(
     r'^(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{4}'
-    r'|(?:[^\W\d_]{3,}\.?,?\s+)?\d{1,2}\s+[^\W\d_]{3,}\.?\s+\d{4})$')
+    r'|(?:[^\W\d_]{3,}\.?,?\s+)?\d{1,2}\s+(?:de\s+)?'
+    r'[^\W\d_]{3,}\.?(?:,\s*|\s+)(?:de\s+)?\d{4})'
+    r'(?:\s+(?:Z|[+-]\d{2}:?\d{2}))?$', re.IGNORECASE)
 
 
 def _solo_dia(raw):
@@ -58,13 +60,16 @@ def _dia_de_fecha(raw):
     raw = str(raw or '').strip()
     if not _solo_dia(raw):
         return ''
+    # Una zona sin hora tampoco aporta un instante (feed de Galicia Digital).
+    raw = re.sub(r'\s+(?:Z|[+-]\d{2}:?\d{2})$', '', raw, flags=re.IGNORECASE)
     m = (re.match(r'^(\d{4})-(\d{2})-(\d{2})$', raw)
          or re.match(r'^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$', raw))
     if m:
         a, b, c = (int(x) for x in m.groups())
         y, mo, d = (a, b, c) if a > 31 else (c, b, a)
     else:
-        m = re.search(r'(\d{1,2})\s+([^\W\d_]{3,})\.?\s+(\d{4})$', raw.lower())
+        m = re.search(r'(\d{1,2})\s+(?:de\s+)?([^\W\d_]{3,})'
+                      r'\.?(?:,\s*|\s+)(?:de\s+)?(\d{4})$', raw.lower())
         mes = _MESES.get(m.group(2)[:3]) if m else None
         if not mes:
             return ''

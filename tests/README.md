@@ -17,6 +17,12 @@ archivos entre dos runs locales.
 
 ## Medios actuales que fallan
 
+Para una revisión general, empezar por los logs del recolector y
+`runs.intentos`: ya registran los intentos y la alternativa elegida en cada
+pasada. Reservar las peticiones nuevas para los casos que no expliquen esos
+datos. El [inventario del extractor](../cosecha/REVISION-EXTRACTOR.md)
+documenta las incidencias observadas y las alternativas aún sin comprobar.
+
 En Actions → **Salud de fuentes**, elige `tipos` y, si quieres, `dominios` separados por comas. Prueba cada fuente configurada con el mismo código que el recolector, incluidas las alternativas. `gn` permite hacer el diagnóstico de Google News que antes tenía un workflow propio.
 
 ```sh

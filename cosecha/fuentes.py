@@ -292,13 +292,14 @@ def _scrape(medio, url=None, relay=False, verify=True):
 
 
 def _scrape_headings(soup, base_url, dominio):
-    """E1: headings h1/h2/h3 con enlace, con filtros anti-basura."""
+    """E1: headings h1/h2/h3 con enlace dentro o alrededor del titular."""
     out = []
     for tag in soup.find_all(['h1', 'h2', 'h3'], limit=150):
-        a = tag.find('a', href=True)
+        interior = tag.find('a', href=True)
+        a = interior or tag.find_parent('a', href=True)
         if not a:
             continue
-        texto = a.get_text(' ', strip=True)
+        texto = (interior or tag).get_text(' ', strip=True)
         href = _normalizar_url(a['href'], base_url)
         if not _es_valido(texto, href, dominio):
             continue
