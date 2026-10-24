@@ -80,6 +80,9 @@ const fondoListo = (async () => {
         if (m.clave === CFG_KEY){
           const base = mergeCfg(DEFAULT_CFG, m.base), nuevo = mergeCfg(DEFAULT_CFG, m.valor);
           CFG = mergeCfg(DEFAULT_CFG, fusionarCambiosCfg(CFG, base, nuevo, fusionarPendientes));
+          // El contenido ya sella sus cambios y conserva las fechas de lo adoptado.
+          __perfilFirma = firmaPerfilLector(CFG);
+          __configFirma = firmaConfig(CFG);
           saveCfg(CFG);
         } else if (m.clave === SIGUIENTE_KEY && emisor.tab?.id){
           const siguientes = {...(valores[SIGUIENTES] || {})};
@@ -168,11 +171,15 @@ function ejecutar(fn){
 }
 API_LECTOR.runtime.onMessage.addListener((m, emisor, responder) => {
   if (!m?.tipo?.startsWith('lector:')) return;
-  ejecutar(f => f.manejar(m,emisor)).then(responder, e => responder({ok:false,error:e.message}));
+  // Inyectar espera al arranque del contenido, que pide aquí su configuración.
+  // Ni esa lectura ni la red pueden ocupar la cola de escrituras.
+  const independiente = m.tipo === 'lector:iniciar' || (m.tipo === 'lector:sync' && m.accion === 'ahora');
+  const tarea = independiente ? fondoListo.then(f => f.manejar(m,emisor)) : ejecutar(f => f.manejar(m,emisor));
+  tarea.then(responder, e => responder({ok:false,error:e.message}));
   return true;
 });
 API_LECTOR.alarms.onAlarm.addListener(a => {
-  if (a.name === 'lector-sync') ejecutar(f => f.sincronizar()).catch(console.error);
+  if (a.name === 'lector-sync') fondoListo.then(f => f.sincronizar()).catch(console.error);
 });
 for (const evento of [API_LECTOR.permissions.onAdded, API_LECTOR.permissions.onRemoved]){
   evento.addListener(() => ejecutar(f => f.registrar()).catch(console.error));

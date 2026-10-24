@@ -12,6 +12,7 @@ async function crearPlataformaExtension(){
   const oyentes = new Map();
   let cola = Promise.resolve(), version = 0;
   function notificar(clave, valor){
+    if (JSON.stringify(cache[clave]) === JSON.stringify(valor)) return;
     cache[clave] = copia(valor);
     for (const fn of oyentes.get(clave) || []) fn(copia(valor));
   }
@@ -29,11 +30,16 @@ async function crearPlataformaExtension(){
     if (cambios[STATUS]) notificar(STATUS, cambios[STATUS].newValue);
     // Las respuestas a nuestros propios cambios llevan el resultado fusionado.
     // Mientras hay escrituras, ese resultado evita sustituir una edición local.
-    if (cambios[CFG]) cola.then(() => {
-      api.runtime.sendMessage({tipo:'lector:iniciar'}).then(r => {
-        if (r?.ok && JSON.stringify(cache[CFG]) !== JSON.stringify(r.cfg)) notificar(CFG, r.cfg);
-      });
-    }).catch(() => {});
+    if (cambios[CFG]){
+      const pendiente = cola;
+      pendiente.then(() => {
+        if (pendiente !== cola) return;
+        const esta = version;
+        return api.runtime.sendMessage({tipo:'lector:iniciar'}).then(r => {
+          if (r?.ok && esta === version && pendiente === cola) notificar(CFG, r.cfg);
+        });
+      }).catch(() => {});
+    }
   });
   return {
     esExtension: true, esPaginaPropia: propia,

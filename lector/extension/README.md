@@ -56,6 +56,13 @@ de Voceiro. Guarda los cambios antes de confirmar el cierre o la navegación.
 Las alarmas permiten retomar las subidas al cerrar una noticia; el navegador
 puede retrasarlas. Los scripts de contenido reciben la configuración y un
 estado público, sin el código en los mensajes de inicialización.
+El código se guarda en `storage.local` de la extensión: las webs no tienen
+acceso, pero los contextos aislados de los scripts de contenido sí. No se
+ha separado en un almacén exclusivo del fondo.
+
+**Volver a Voceiro** reutiliza su pestaña abierta si has concedido el acceso
+con **Conectar con Voceiro**. Sin ese permiso, abre Voceiro en la pestaña
+de la noticia, porque Firefox no deja identificar la otra por su dirección.
 
 Pendientes y configuración se muestran en una página de la extensión.
 Para usar el selector visual, abre Opciones desde la noticia y pulsa
@@ -97,3 +104,6 @@ retirada de acceso, flotante y automatismo, importación, diccionarios,
 selector, teleprompter, navegación sin recarga, retorno a Voceiro y
 persistencia después de reiniciar. Las pruebas de código usan las APIs
 simuladas y no sustituyen esa comprobación manual.
+
+La [segunda revisión con Claude](../REVISION-CLAUDE.md) recoge los fallos
+reproducidos, las correcciones y las comprobaciones de navegador pendientes.

@@ -1,5 +1,6 @@
-// El fondo conserva el código, cifra y sincroniza. La página recibe estado,
-// nunca las credenciales ni un proxy de peticiones arbitrarias.
+// El fondo cifra y sincroniza. Los mensajes entregan solo estado público,
+// sin código ni un proxy de peticiones. El código está en storage.local de
+// la extensión, accesible a sus contextos aislados pero no a la web.
 function estadoSyncLector(){ return PLATAFORMA.estado(); }
 function codigoSyncLector(){ return estadoSyncLector().activo ? true : null; }
 function puedeSincronizarAqui(){ return !!estadoSyncLector().permiso; }

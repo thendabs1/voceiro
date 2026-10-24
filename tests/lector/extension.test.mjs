@@ -7,8 +7,9 @@ import { fusionarPendientes } from '../../shared/sync/fusion.js';
 import { generarCodigo } from '../../shared/sync/cripto.js';
 import { atender, d1Local } from '../sync/soporte.mjs';
 
-function fondo(){
+function fondo({antesDePeticion = async () => {}, catalogo = []} = {}){
   const datos = {}, alarmas = new Map(), cambios = [], registros = [], eventos = new Map();
+  const cargadas = new Set();
   let mensaje, permitir = false;
   const srv = d1Local(), peticiones = [];
   const evento = nombre => ({addListener: fn => eventos.set(nombre,fn)});
@@ -18,9 +19,21 @@ function fondo(){
     storage:{local:{async get(){return structuredClone(datos);},async set(o){Object.assign(datos,structuredClone(o)); cambios.push(Object.keys(o)[0]);}}},
     permissions:{async getAll(){return {origins:['https://voceiro-sync.toriorecorda.workers.dev/*','https://voceiro-sync.thendabs1.deno.net/*'], data_collection:permitir ? ['browsingActivity','websiteContent'] : []};},
       async contains(){return true;},onAdded:evento('permisos+'),onRemoved:evento('permisos-')},
-    scripting:{async getRegisteredContentScripts(){return [];},async registerContentScripts(s){registros.push(s);},async unregisterContentScripts(){}},
+    scripting:{async getRegisteredContentScripts(){return [];},async registerContentScripts(s){registros.push(s);},async unregisterContentScripts(){},
+      async executeScript({target}){
+        // executeScript espera la promesa del lector: esta pide su configuración al fondo.
+        const r=await enviar({tipo:'lector:iniciar'},tab(target.tabId));
+        if (!r.ok) throw new Error(r.error);
+        cargadas.add(target.tabId);
+        return [{frameId:0}];
+      }},
     alarms:{create:(n,o)=>alarmas.set(n,o),onAlarm:evento('alarma')},
-    tabs:{async query(){return [{id:10,url:'https://thendabs1.github.io/voceiro/',windowId:1}];},async update(id,o){cambios.push(['actualizar',id,o]);},async remove(id){cambios.push(['cerrar',id]);}},
+    tabs:{async query(){return [{id:10,url:'https://thendabs1.github.io/voceiro/',windowId:1}];},async update(id,o){cambios.push(['actualizar',id,o]);},async remove(id){cambios.push(['cerrar',id]);},
+      async sendMessage(id,m){
+        if (!cargadas.has(id)) throw new Error('No hay lector en esta pestaña');
+        cambios.push([m.tipo,id]);
+        return {ok:true};
+      }},
     windows:{async update(){}},
   };
   const ctx = vm.createContext({browser:api, URL,URLSearchParams,crypto,structuredClone,console,
@@ -28,9 +41,10 @@ function fondo(){
     location:{origin:'moz-extension://lector-test',pathname:'/_generated_background_page.html'},isSecureContext:true,
     setTimeout,clearTimeout,fetch:async (url,o) => {
       peticiones.push(url);
+      await antesDePeticion();
       return atender(new Request(url,o),srv.cf,Date.now(),'1.2.3.4');
     }});
-  vm.runInContext(codigoFondo('2.0.1'),ctx);
+  vm.runInContext(codigoFondo('2.0.1',catalogo),ctx);
   const propia = {id:api.runtime.id,url:api.runtime.getURL('opciones.html')};
   const tab = id => ({id:api.runtime.id,url:'https://medio.example/a',tab:{id},frameId:0});
   const enviar = (m,s=propia) => new Promise(resolve => mensaje(m,s,resolve));
@@ -58,6 +72,53 @@ test('el fondo rechaza códigos ajenos a Voceiro, claves privadas y subframes', 
     assert.equal((await f.enviar(m,f.tab(1))).ok,false);
   }
   assert.equal((await f.enviar({tipo:'lector:iniciar'},{...f.tab(1),frameId:2})).ok,false);
+});
+
+test('la primera apertura puede iniciar el contenido mientras el fondo espera la inyección', {timeout:1000}, async () => {
+  const f=fondo();
+  const r=await f.enviar({tipo:'lector:abrir-pagina',pestana:7});
+  assert.equal(r.ok,true);
+  assert.ok(f.cambios.some(c => Array.isArray(c) && c[0]==='lector:abrir' && c[1]===7));
+});
+
+test('habilitar un medio nuevo consulta el catálogo y permite dominios propios', async () => {
+  const f=fondo({catalogo:[{group:'Prueba',items:[{d:'medio.example',n:'Medio',lang:'gl'}]}]});
+  for (const dominio of ['medio.example','propio.example']){
+    const r=await f.enviar({tipo:'lector:habilitar',url:'https://'+dominio+'/a'});
+    assert.equal(r.ok,true,r.error);
+  }
+  const cfg=(await f.enviar({tipo:'lector:iniciar'})).cfg;
+  assert.equal(cfg.fab.visible,true);
+  assert.equal(cfg.sites.find(s=>s.domain==='medio.example').lang,'gl');
+  assert.equal(cfg.sites.find(s=>s.domain==='propio.example').lang,'auto');
+});
+
+test('el fondo conserva las fechas de los ajustes adoptados por el puente', async () => {
+  const f=fondo(), base=(await f.enviar({tipo:'lector:iniciar'})).cfg;
+  const valor=structuredClone(base);
+  valor.prefs.fs=24; valor.perfilActualizado=1000;
+  valor.readerAutoAll=true; valor.configActualizado=2000;
+  const r=await f.enviar({tipo:'lector:guardar',clave:'lector-universal-cfg-v8',base,valor},f.tab(1));
+  assert.equal(r.ok,true);
+  assert.equal(r.cfg.perfilActualizado,1000);
+  assert.equal(r.cfg.configActualizado,2000);
+});
+
+test('una petición de sincronización lenta no bloquea el guardado en otras pestañas', {timeout:2000}, async t => {
+  const red=Promise.withResolvers(), inicio=Promise.withResolvers();
+  t.after(()=>red.resolve());
+  const f=fondo({antesDePeticion:async()=>{inicio.resolve(); await red.promise;}});
+  await f.enviar({tipo:'lector:sync',accion:'vincular',codigo:generarCodigo()});
+  f.permitir(); await f.enviar({tipo:'lector:permisos',online:true});
+  const base=(await f.enviar({tipo:'lector:iniciar'})).cfg;
+  const sincronizando=f.enviar({tipo:'lector:sync',accion:'ahora'});
+  await inicio.promise;
+  const valor={...base,fab:{...base.fab,visible:true}};
+  const guardado=await f.enviar({tipo:'lector:guardar',clave:'lector-universal-cfg-v8',base,valor},f.tab(2));
+  assert.equal(guardado.ok,true);
+  assert.equal(guardado.cfg.fab.visible,true);
+  red.resolve();
+  assert.equal((await sincronizando).ok,true);
 });
 
 test('dos pestañas que guardan pendientes desde la misma base conservan ambas noticias', async () => {

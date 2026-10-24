@@ -25,7 +25,8 @@ for (const [f, texto] of [['02-plataforma.js','const PLATAFORMA = await crearPla
 }
 writeFileSync(join(salida,'lector.js'),codigo);
 
-writeFileSync(join(salida,'fondo.js'),codigoFondo(version));
+const catalogo = JSON.parse(execFileSync('python3',['-I',join(lector,'catalogo.py')],{encoding:'utf8'}));
+writeFileSync(join(salida,'fondo.js'),codigoFondo(version,catalogo));
 for (const f of ['plataforma.js','opciones.html','opciones.js','interfaz.css','popup.html','popup.js','icono.svg']){
   copyFileSync(join(raiz,f),join(salida,f));
 }

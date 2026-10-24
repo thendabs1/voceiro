@@ -920,7 +920,9 @@ function openSettings(initialTab, opts){
     return { html, wire };
   }
 
+  let refrescoPendiente = false;
   function render(){
+    refrescoPendiente = false;
     const tabsHTML =
       '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap">' +
         tabBtn('sites', t('sites')) +
@@ -956,9 +958,18 @@ function openSettings(initialTab, opts){
     payload.wire();
   }
 
+  function refrescarDesdeFuera(){
+    if (!root.isConnected) return;
+    // No retirar el campo ni el control que se está usando con el teclado.
+    if (root.contains(document.activeElement)){ refrescoPendiente = true; return; }
+    render();
+  }
+  root.addEventListener('focusout', () => setTimeout(() => {
+    if (refrescoPendiente && !root.contains(document.activeElement)) refrescarDesdeFuera();
+  }, 0));
   render();
-  const cancelarCfg = PLATAFORMA.esPaginaPropia ? PLATAFORMA.alCambiar(CFG_KEY, () => { if (root.isConnected) render(); }) : null;
-  const cancelarSync = PLATAFORMA.esPaginaPropia ? PLATAFORMA.alCambiar('lector-extension-estado', () => { if (root.isConnected) render(); }) : null;
+  const cancelarCfg = PLATAFORMA.esPaginaPropia ? PLATAFORMA.alCambiar(CFG_KEY, refrescarDesdeFuera) : null;
+  const cancelarSync = PLATAFORMA.esPaginaPropia ? PLATAFORMA.alCambiar('lector-extension-estado', refrescarDesdeFuera) : null;
   if (!dentro) box.focus({ preventScroll: true });
 }
 
