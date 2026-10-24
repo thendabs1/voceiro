@@ -11,8 +11,8 @@
 // Ojo: las claves de leídas/vistas siguen usando normalizeUrlForMatch de la
 // plantilla; urlCanonica es solo para deduplicar y no las sustituye.
 
-import { palabrasDe } from './texto.js?v=a71a835843';
-import { limpiarDominio } from './filtros.js?v=a71a835843';
+import { palabrasDe } from './texto.js?v=b4efeb6f8f';
+import { limpiarDominio } from './filtros.js?v=b4efeb6f8f';
 
 // Unión de las listas del front (normalizeUrlForMatch) y del recolector (_QUERY_RUIDO).
 const PARAMS_RASTREO = new Set([

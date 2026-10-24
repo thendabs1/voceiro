@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.320
+// @version      2.0.321
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -19,7 +19,7 @@
 // @grant        window.close
 // @grant        window.focus
 // @grant        GM_xmlhttpRequest
-// @connect      voceiro-sync.toriorecorda.workers.dev
+// @connect      sync.voceiro.eu
 // @connect      voceiro-sync.thendabs1.deno.net
 // @require      https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js
 // @run-at       document-idle
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.320';
+const SCRIPT_VERSION = '2.0.321';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -511,7 +511,7 @@ async function descifrar(clave, bloque){
 
 // CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma
 // base. Los usan Voceiro y el lector.
-const SERVIDORES_SYNC = ['https://voceiro-sync.toriorecorda.workers.dev',
+const SERVIDORES_SYNC = ['https://sync.voceiro.eu',
                                 'https://voceiro-sync.thendabs1.deno.net'];
 const MAX_SUBIDA = 500 * 1024;   // el servidor admite 512 KB
 const INTENTOS = 4;

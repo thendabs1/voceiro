@@ -4,12 +4,12 @@
 // local (fusionarDocumento) y, si el resultado no es lo que ya había, lo
 // sube cifrado. Si otro dispositivo escribió entre medias (409), vuelve a
 // empezar. Devuelve el documento fusionado: quien llama lo vuelca en local.
-import { derivar, cifrar, descifrar } from './cripto.js?v=a71a835843';
-import { fusionarDocumento, huella } from './fusion.js?v=a71a835843';
+import { derivar, cifrar, descifrar } from './cripto.js?v=b4efeb6f8f';
+import { fusionarDocumento, huella } from './fusion.js?v=b4efeb6f8f';
 
 // CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma
 // base. Los usan Voceiro y el lector.
-export const SERVIDORES_SYNC = ['https://voceiro-sync.toriorecorda.workers.dev',
+export const SERVIDORES_SYNC = ['https://sync.voceiro.eu',
                                 'https://voceiro-sync.thendabs1.deno.net'];
 export const MAX_SUBIDA = 500 * 1024;   // el servidor admite 512 KB
 const INTENTOS = 4;

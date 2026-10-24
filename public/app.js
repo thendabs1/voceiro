@@ -13,30 +13,30 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=a71a835843';
+} from './parser.js?v=b4efeb6f8f';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=a71a835843';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=a71a835843';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=a71a835843';
-import { comparador } from './busqueda/orden.js?v=a71a835843';
+import { interpretarConsulta, paraArchivo, paraPrensa } from './busqueda/consulta.js?v=b4efeb6f8f';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b4efeb6f8f';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b4efeb6f8f';
+import { comparador } from './busqueda/orden.js?v=b4efeb6f8f';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=a71a835843';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=a71a835843';
+} from './sync/fusion.js?v=b4efeb6f8f';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b4efeb6f8f';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=a71a835843';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=a71a835843';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=b4efeb6f8f';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b4efeb6f8f';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=a71a835843';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b4efeb6f8f';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=a71a835843';
+} from './tiempo/avisos.js?v=b4efeb6f8f';
 
-import { I18N, traducir } from './idiomas/index.js?v=a71a835843';
+import { I18N, traducir } from './idiomas/index.js?v=b4efeb6f8f';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -46,8 +46,8 @@ const REPORT_REPO = 'thendabs1/voceiro';
 
 // ── Backends (switch CF ↔ Deno) ──
 const BACKENDS = {
-  cf:   { data: 'https://voceiro-datos.toriorecorda.workers.dev',
-          buscar: 'https://voceiro-buscar.toriorecorda.workers.dev' },
+  cf:   { data: 'https://datos.voceiro.eu',
+          buscar: 'https://buscar.voceiro.eu' },
   deno: { data: 'https://voceiro-datos.thendabs1.deno.net',
           buscar: 'https://voceiro-buscar.thendabs1.deno.net' },
 };
@@ -1933,7 +1933,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=a71a835843');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=b4efeb6f8f');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3452,7 +3452,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=a71a835843')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=b4efeb6f8f')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
