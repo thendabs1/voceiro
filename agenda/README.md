@@ -1,8 +1,9 @@
 # Calendario común — piloto de datos
 
 Una función de teatro, un partido y una sesión de F1 son citas del mismo
-calendario. El primer importador es Cultura de Galicia; el núcleo no conoce
-sus campos. Esta fase produce un JSON revisable. El panel de calendario,
+calendario. Los importadores son Cultura de Galicia y el ICS completo de
+Vidmar; el núcleo no conoce sus campos. Esta fase guarda una base SQLite
+local y permite exportar un JSON revisable. El panel de calendario,
 las órdenes del buscador y la publicación periódica se diseñarán después
 de comprobar los datos. No hay despliegue ni tarea programada nueva.
 
@@ -21,10 +22,23 @@ python calendario.py --anterior /tmp/calendario.json \
 # Examinar una o varias páginas ya descargadas, sin red.
 python calendario.py --entrada /tmp/pagina-0.json --entrada /tmp/pagina-1.json \
   --salida /tmp/calendario-muestra.json
+
+# Estado persistente: una segunda ejecución carga la misma base automáticamente.
+python calendario.py --fuente cultura-galicia --fuente vidmar-f1 \
+  --inicio 2026-10-25 --fin 2026-11-23 \
+  --db /tmp/calendario.sqlite --salida /tmp/calendario.json
+
+# Recuperar o regenerar la exportación, sin red ni una nueva recogida.
+python calendario.py --db /tmp/calendario.sqlite --exportar \
+  --salida /tmp/calendario.json
+
+# Combinar muestras de ambos formatos, sin red.
+python calendario.py --entrada /tmp/galicia.json --entrada-ics /tmp/vidmar.ics \
+  --db /tmp/calendario-muestra.sqlite
 ```
 
 Por defecto se pide desde hoy hasta dentro de 30 días, ambos incluidos. El
-adaptador limita cada consulta a 91 días y 20 páginas de 1000 registros por
+adaptador de Galicia limita cada consulta a 91 días y 20 páginas de 1000 registros por
 idioma. No descarga una ficha de detalle por evento. Si cambia el total,
 se repiten IDs o faltan páginas, falla sin sustituir la salida anterior.
 Una muestra local queda identificada como tal, aunque declare más resultados.
@@ -36,11 +50,31 @@ Se usa ese tamaño para reducir los cortes y se mantiene el rechazo de
 solapamientos. No se presupone que la API ofrezca una instantánea transaccional;
 si falla con un intervalo grande, hay que reducirlo y revisar la recogida.
 
-El workflow manual **Calendario (piloto)** guarda el JSON como artefacto
-durante 14 días. Cada ejecución del workflow parte de cero; para comparar
-pasadas con estado se descargan los artefactos y se usa `--anterior` localmente.
-No sustituye la cosecha de titulares, ni escribe en R2 o Turso. Aún no hay
-retención, restauración automática del estado ni publicación para el navegador.
+El workflow manual **Calendario (piloto)** permite elegir Galicia, F1 o ambas
+y guarda SQLite y JSON como artefacto durante 14 días. Cada ejecución del
+workflow parte de cero; para seguir una base existente se descarga el artefacto
+y se usa `--db` localmente. No sustituye la cosecha de titulares, ni escribe
+en R2 o Turso. Aún no hay restauración automática del estado en Actions ni
+publicación para el navegador. La base local no poda eventos ni historial.
+
+`--db` sustituye a `--anterior`; no se pueden combinar. Toda la recogida se
+valida antes de escribir. La transacción conserva el estado y las revisiones
+de contenido; repetir datos idénticos registra otra recogida sin inventar un
+cambio. SQLite es la autoridad cuando se usa `--db`: la exportación ocurre
+después del commit y puede regenerarse con `--exportar` si falla el archivo.
+Esquema, límites y continuidad del modelo en [Persistencia y estructura
+deportiva](persistencia.md).
+
+Vidmar se solicita explícitamente con `--fuente vidmar-f1`: recoge el ICS
+completo, sin aplicar el intervalo de Galicia. Preserva los UID, las fechas
+sin hora y el fin exclusivo. Las alarmas no producen eventos. El lector
+acepta el subconjunto observado (DATE y horas UTC); recurrencias, excepciones,
+duraciones y zonas locales no soportadas abortan la pasada. No se deducen
+regiones ni agrupaciones de gran premio desde nombres de ciudades o títulos.
+La colección del proveedor y sus categorías explícitas son grupos.
+Su licencia de republicación está pendiente de verificar y viaja como tal
+en los metadatos; el piloto no publica el calendario. Fuente:
+[F1 Calendar de Vidmar](https://f1.vidmar.net/).
 
 ## Contrato inicial del JSON (versión 1)
 
@@ -66,8 +100,8 @@ determinista a partir de una referencia externa y se conservan con
 traducciones al mismo evento. Si una equivalencia intenta unir dos eventos
 internos ya separados, la pasada falla para revisarlos. No hay conciliación
 automática entre proveedores por título, fecha o parecido. Antes de publicar
-periódicamente hará falta persistir el estado y diseñar la conciliación
-reversible entre fuentes.
+periódicamente hará falta ubicar el estado persistente en el servidor y
+diseñar la conciliación reversible entre fuentes.
 
 `datos_de` identifica el registro elegido para mostrar horario, estado y
 lugar: se elige de forma estable por referencia, sin afirmar que sea el más
@@ -109,6 +143,20 @@ progreso en disco antes de entregar el resultado. Se conservan sus informes:
 - [Agendas territoriales: Galicia y Kulturklik](investigacion/01-agendas-territoriales.md).
 - [Directos: elDiario.es, RTVE y 20minutos](investigacion/02-directos.md).
 
+Revisión propia posterior: [servicios deportivos y propuesta de reglas de
+recopilación](investigacion/03-servicios-y-reglas.md). Compara los dos ICS
+de Vidmar, distingue fuentes documentadas de importadores probados y recoge
+el descarte de OpenF1 indicado por el usuario. Las cadencias propuestas
+todavía no se han activado.
+
+El [contraste de fuentes de fútbol](investigacion/04-futbol-fuentes.md) añade
+pruebas HTTP de ESPN, OpenLigaDB, FotMob y TheSportsDB, el bloqueo de SofaScore
+y la revisión de openfootball y fixturedownload. Distingue cobertura de frescura
+y condiciones de recogida. El fútbol queda pendiente: el usuario ha solicitado
+autorización a FotMob por su cobertura de Liga F y fútbol regional. No se
+continúa con otros proveedores de fútbol ni se consulta FotMob mientras se
+espera respuesta. Su estructura se contempla en el diseño de persistencia.
+
 Son notas de investigación, con límites y dudas expresos. Dos precisiones de
 la revisión: inicio=fin no demuestra que la actividad sea instantánea, y
 la correspondencia de los códigos de Kulturklik con INE no se aplica sin
@@ -122,8 +170,8 @@ Fuentes primarias del primer importador:
 y [JSON público](https://www.cultura.gal/v1/axenda/eventos.json?idioma=gl).
 La atribución y licencia CC BY-SA 4.0 viajan en el calendario generado.
 
-Próximo contraste: una segunda agenda territorial o de prensa para probar
-intervalos y territorio; después sesiones deportivas y resultados con ámbito
+Contraste actual: Galicia y sesiones deportivas de Vidmar en la misma base.
+Quedan una segunda agenda territorial o de prensa y los resultados con ámbito
 de sesión/competición/temporada. Antes del panel habrá que concretar filtros
 y la capa de regiones o grupos con el usuario. El piloto no decide esa UI.
 
@@ -135,11 +183,13 @@ las correcciones. Se investigará antes de actualizar servidores.
 
 ## Verificación
 
-`tests/fuentes/test_agenda.py` entra en la suite Python completa del workflow
+`tests/fuentes/test_agenda.py` y `test_calendario_almacen.py` entran en la suite Python completa del workflow
 **Tests**. Cubre funciones múltiples, traducciones, cambios de fecha,
 equivalencias conflictivas, ausencias, regiones y grupos múltiples, fechas
 sin hora y cambios de horario, paginación y conservación de la última salida
-buena ante errores. Todas las peticiones de esas pruebas son simuladas.
+buena ante errores. También cubren reapertura SQLite, auditoría, reversión de
+transacciones y errores entre fuentes, exportación y el contrato ICS.
+Todas las peticiones de esas pruebas son simuladas.
 
 Comprobación real del 24/10/2026: el intervalo 25/10–23/11 devolvió 185
 registros e identidades distintas y 41 municipios. Una segunda integración
@@ -147,3 +197,9 @@ local de esa respuesta conservó las 185 identidades y primeras recogidas.
 La muestra del nodo 127829 produjo tres funciones distintas enlazadas a
 una misma ficha. No se simularon cambios reales del proveedor entre descargas;
 los aplazamientos y cancelaciones se cubren con respuestas simuladas en CI.
+
+Contraste posterior del mismo día: recogida conjunta de 185 registros gallegos
+y 128 de Vidmar en una SQLite con 313 eventos, 41 regiones y 197 grupos.
+Releer los originales descargados conservó los 313 vínculos y primeras
+recogidas. La base reabierta y su exportación fueron equivalentes y no hubo
+revisiones nuevas por contenido idéntico; `foreign_key_check` no devolvió errores.
