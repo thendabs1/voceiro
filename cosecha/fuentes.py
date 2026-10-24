@@ -13,6 +13,7 @@ from . import config
 from .fechas import (
     _dia_de_url,
     _extract_item_date,
+    _fecha_y_dia,
     _fechas_jsonld,
     _parse_iso_flexible,
     _rss_date_to_iso,
@@ -90,17 +91,18 @@ def _parse_feed_lxml(content):
             continue
         # La de publicación antes que la de actualización, venga donde venga.
         raw_date = next((fechas[k] for k in _ORDEN_FECHAS_LXML if fechas.get(k)), '')
-        fecha_pub = _rss_date_to_iso(raw_date) if raw_date else ''
-        out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub})
+        fecha_pub, dia = _fecha_y_dia(raw_date)
+        out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub, 'dia_pub': dia})
     return out
 
 
 def _fecha_entrada(e):
-    """Fecha de una entrada de feedparser: published antes que updated. Con
-    solo el día no hay instante, y su `*_parsed` lo completaría con 00:00 UTC."""
+    """(fecha, día) de una entrada de feedparser: published antes que
+    updated. Con solo el día no hay instante, y su `*_parsed` lo completaría
+    con 00:00 UTC: se devuelve el día aparte."""
     raw = e.get('published') or e.get('updated') or ''
     if _solo_dia(raw):
-        return ''
+        return _fecha_y_dia(raw)
     fecha_pub = _rss_date_to_iso(raw)
     if not fecha_pub:
         st = e.get('published_parsed') or e.get('updated_parsed')
@@ -110,7 +112,7 @@ def _fecha_entrada(e):
                 fecha_pub = _to_iso_madrid(dt)
             except Exception:
                 pass
-    return fecha_pub
+    return fecha_pub, ''
 
 
 def _parse_feed(content):
@@ -121,8 +123,8 @@ def _parse_feed(content):
         l = (e.get('link') or '').strip()
         if not t or not l:
             continue
-        fecha_pub = _fecha_entrada(e)
-        out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub})
+        fecha_pub, dia = _fecha_entrada(e)
+        out.append({'titular': t, 'enlace': l, 'fecha_pub': fecha_pub, 'dia_pub': dia})
 
     # Fallback: si feedparser no sacó nada, intentar lxml
     if not out:
@@ -202,17 +204,18 @@ def _parse_news_sitemap(content):
     for u in root:
         if local(u.tag) != 'url':
             continue
-        loc = tit = fecha = ''
+        loc = tit = fecha = dia = ''
         for el in u.iter():
             ln = local(el.tag)
             if ln == 'loc' and not loc:
                 loc = (el.text or '').strip()
             elif ln == 'title' and not tit:
                 tit = _limpiar_cdata(el.text or '')
-            elif ln == 'publication_date' and not fecha:
-                fecha = _rss_date_to_iso(el.text or '')
+            elif ln == 'publication_date' and not (fecha or dia):
+                fecha, dia = _fecha_y_dia(el.text or '')
         if loc and tit:
-            out.append({'titular': tit, 'enlace': loc, 'fecha_pub': fecha})
+            out.append({'titular': tit, 'enlace': loc, 'fecha_pub': fecha,
+                        'dia_pub': dia})
     # Los sitemaps no garantizan orden: más recientes primero
     out.sort(key=lambda x: x['fecha_pub'] or '', reverse=True)
     return out[:config.N_FEED]
@@ -261,6 +264,9 @@ def _scrape(medio, url=None, relay=False, verify=True):
         unicos = {}
         orden = 0
         for it in items_e1 + items_e7:
+            # _extract_item_date da 'AAAA-MM-DD' si solo encontró el día
+            if len(it.get('fecha_pub') or '') == 10:
+                it['dia_pub'], it['fecha_pub'] = it['fecha_pub'], ''
             u = it['enlace']
             if u not in unicos:
                 it['pos'] = orden
@@ -352,7 +358,7 @@ def _parse_gn_feed(content):
         elif src:
             source_name = str(src).strip()
 
-        fecha_pub = _fecha_entrada(e)
+        fecha_pub, _ = _fecha_entrada(e)
 
         out.append({
             'titular':     _limpiar_titular_gn(t, source_name),
@@ -527,6 +533,7 @@ def obtener_titulares(medio):
             'fuente':         fuente,
             'fecha':          ahora,
             '_pos':           it.get('pos'),
+            'dia_pub':        it.get('dia_pub', ''),
             '_dia_url':       it.get('dia_url', ''),
             '_host':          _host_de(it['enlace']),
         })

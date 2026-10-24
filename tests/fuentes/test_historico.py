@@ -91,8 +91,7 @@ class Fechas(unittest.TestCase):
         a = {**base, 'titular': 'A', '_pos': 1}
         b = {**base, 'titular': 'B', '_pos': 0}
         c = {**base, 'titular': 'C', '_pos': 2, '_dia_url': '2026-10-19'}
-        ignoradas = [{**base, 'titular': 'RSS', 'fuente': 'RSS'},
-                     {**base, 'titular': 'Con fecha', 'fecha_pub': '2026-10-20T09:00:00+02:00'},
+        ignoradas = [{**base, 'titular': 'Con fecha', 'fecha_pub': '2026-10-20T09:00:00+02:00'},
                      {**base, 'titular': 'Ya vista'}]
         total, intervalos = fechas.asignar_fechas_estimadas(
             [a, b, c, *ignoradas], {('ejemplo.test', 'Ya vista')}, None, t_now,
@@ -103,6 +102,29 @@ class Fechas(unittest.TestCase):
         self.assertEqual(c['fecha_estimada'], '2026-10-19T12:00:00+02:00')
         for n in ignoradas:
             self.assertNotIn('fecha_estimada', n)
+
+    def test_la_estimada_vale_para_cualquier_fuente_y_cae_en_su_dia(self):
+        # Pasada de las 00:30 tras una de las 23:30: el día que da la fuente
+        # recorta la ventana. Una hora repartida sin el día cruzaría la medianoche.
+        t_now = datetime(2026, 10, 21, 0, 30, tzinfo=MADRID)
+        base = {'medio': 'Ejemplo', 'dominio': 'ejemplo.test', 'fuente': 'RSS', 'fecha_pub': ''}
+        ayer = {**base, 'titular': 'Ayer', 'dia_pub': '2026-10-20'}
+        hoy = {**base, 'titular': 'Hoy', 'dia_pub': '2026-10-21'}
+        sin_dia = {**base, 'titular': 'Sin día'}
+        fechas.asignar_fechas_estimadas(
+            [ayer, hoy, sin_dia], set(), None, t_now,
+            {'ejemplo.test': '2026-10-20T23:30:00+02:00'})
+        self.assertEqual(ayer['fecha_estimada'], '2026-10-20T23:52:30+02:00')
+        self.assertEqual(hoy['fecha_estimada'], '2026-10-21T00:15:00+02:00')
+        self.assertEqual(sin_dia['fecha_estimada'], '2026-10-20T23:45:00+02:00')
+
+    def test_la_estimada_cuenta_bien_la_hora_que_se_repite(self):
+        # 25-10: de 02:59 CEST se vuelve a 02:00 CET. Una hora real de
+        # ventana entre las 02:30 CEST y las 02:30 CET.
+        t_prev = datetime(2026, 10, 25, 0, 30, tzinfo=timezone.utc)
+        t_now = datetime(2026, 10, 25, 1, 30, tzinfo=timezone.utc)
+        e = fechas._estimar_en_ventana(t_prev, t_now, 0.5, '2026-10-25')
+        self.assertEqual(e.astimezone(timezone.utc), datetime(2026, 10, 25, 1, 0, tzinfo=timezone.utc))
 
     def test_la_fecha_de_otra_tarjeta_no_se_toma_pero_la_del_antetitulo_si(self):
         listado = BeautifulSoup(
@@ -328,6 +350,27 @@ class Recogida(unittest.TestCase):
         b2 = next(n for n in fusion if n['dominio'] == 'b.test')
         self.assertFalse(b2['_nueva'])
         self.assertEqual(instante(b2['fecha']), instante(en(10, 15)))
+
+    def test_solo_el_dia_se_guarda_como_dia_y_la_hora_lo_mejora(self):
+        hoy = datetime.now(MADRID).date()
+        dia = hoy.isoformat()
+        en = lambda h, m: datetime.combine(hoy, time(h, m), tzinfo=MADRID).isoformat()
+        base = {'titular': 'Solo trae el día', 'fuente': 'RSS', 'fecha': en(9, 0),
+                'fecha_estimada': en(8, 50)}
+        a = {**base, 'dominio': 'a.test', 'enlace': 'https://a.test/x', 'dia_pub': dia}
+        b = {**base, 'dominio': 'b.test', 'enlace': 'https://b.test/y', 'dia_pub': dia,
+             'titular': base['titular'].upper(), 'fecha': en(9, 5)}
+        corto = formatos._noticia_a_formato_corto(
+            historico.deduplicar_editorial([a, b])[0], dia)
+        self.assertEqual((corto['p'], corto['e']), (dia, '08:50'))
+        self.assertEqual(corto['a'][0]['p'], dia)
+        leidas = self.releer([a, b], dia, generado=en(16, 2))
+        for n in leidas.values():
+            self.assertEqual((n['fecha_pub'], n['dia_pub']), ('', dia))
+        # Más tarde la fuente da la hora: mejora el día, que ya no se escribe.
+        con_hora = {**a, 'dia_pub': '', 'fecha_pub': en(8, 40), 'fecha': en(16, 10)}
+        n = historico.fusionar_historico([con_hora], [leidas['a.test']], dias=15)[0]
+        self.assertEqual(formatos._noticia_a_formato_corto(n, dia)['p'], '08:40')
 
 
 class FalloR2(Exception):

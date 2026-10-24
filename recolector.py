@@ -19,15 +19,16 @@ Fases:
   8. Reporte final
 
 Formato corto de noticia (ficheros diarios):
-  d: dominio · t: titular · u: enlace · p: fecha_pub
-  e: fecha_estimada · c: fecha recolección · f: fuente
+  d: dominio · t: titular · u: enlace · p: fecha_pub (o solo el día,
+  AAAA-MM-DD, si la fuente no da hora) · e: fecha_estimada
+  c: fecha recolección · f: fuente
 
 Tabla de medios (una por fichero diario, sin duplicación por noticia):
   n: nombre · g: grupo · t: tipo · l: lang · tags: lista
 
 Agrupación por día:
   - La fecha de agrupación prioriza fecha_pub si NO es futura.
-  - Si fecha_pub es futura (> ahora + 6h) → se usa fecha_estimada o fecha
+  - Si fecha_pub es futura (> recogida + 6h) → se usa fecha_estimada o fecha
     (para no crear ficheros con fechas futuras por eventos programados).
   - Cualquier noticia con fecha de agrupación fuera de la ventana de
     retención se descarta.
@@ -130,7 +131,7 @@ def main():
     historico_keys = {(n['dominio'], n['titular']) for n in noticias_previas}
 
     # ─── Asignar fechas estimadas ───
-    print("\n── Estimando fechas para scraping ──")
+    print("\n── Estimando fechas sin hora ──")
     total_estimados, intervalos_por_medio = fechas.asignar_fechas_estimadas(
         todas, historico_keys, t_prev_global, t_now, ultimo_exito_prev
     )

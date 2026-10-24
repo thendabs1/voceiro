@@ -127,3 +127,16 @@ test(`una capa con la publicación que faltaba se la da a la que ya estaba`, () 
   assert.deepEqual(vista('desde:24h'), ['Arde una nave']);
   assert.equal(ctx.NOTICIAS[0]._tipoShow, 'pub');
 });
+
+test(`un p con solo el día no es un instante y la hora de otra capa lo mejora`, () => {
+  const { ctx } = crear();
+  const reconstruir = runInNewContext('reconstruirFecha', ctx);
+  assert.equal(reconstruir('2026-10-21', '2026-10-21'), '');
+  const n = { p: '2026-10-21', _dia: '2026-10-21', _hidratada: true,
+              fecha_pub: '', fecha_estimada: hace(2), fecha: hace(1) };
+  runInNewContext('_calcularFechas', ctx)(n, A + 3600e3);
+  assert.equal(n._tipoShow, 'est');
+  runInNewContext('_adoptarPublicacion', ctx)(n, { p: hace(3) });
+  assert.equal(n._tipoShow, 'pub');
+  assert.equal(n._tsShow, Date.parse(hace(3)));
+});

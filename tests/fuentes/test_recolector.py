@@ -4,7 +4,9 @@ from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from cosecha import config, fuentes, texto
+from bs4 import BeautifulSoup
+
+from cosecha import config, fechas, fuentes, texto
 
 MEDIO = {'d': 'ejemplo.test', 'n': 'Ejemplo', 'grupo': 'Pruebas',
          'fuentes': [('rss', 'https://ejemplo.test/feed'), ('scrape',), ('gn',)]}
@@ -52,7 +54,24 @@ class Extraccion(unittest.TestCase):
     def test_feed_con_solo_el_dia_no_inventa_hora(self):
         xml = (f'<rss><channel><item><title>{TITULO}</title><link>https://ejemplo.test/a</link>'
                '<pubDate>2026-10-23</pubDate></item></channel></rss>')
-        self.assertEqual(fuentes._parse_feed(xml.encode())[0]['fecha_pub'], '')
+        item = fuentes._parse_feed(xml.encode())[0]
+        self.assertEqual((item['fecha_pub'], item['dia_pub']), ('', '2026-10-23'))
+        sitemap = (b'<urlset xmlns:n="http://www.google.com/schemas/sitemap-news/0.9">'
+                   b'<url><loc>https://ejemplo.test/b</loc><n:news><n:title>' + TITULO.encode()
+                   + b'</n:title><n:publication_date>2026-10-22</n:publication_date>'
+                   b'</n:news></url></urlset>')
+        item = fuentes._parse_news_sitemap(sitemap)[0]
+        self.assertEqual((item['fecha_pub'], item['dia_pub']), ('', '2026-10-22'))
+
+    def test_time_con_solo_el_dia_y_la_hora_en_un_atributo(self):
+        # publico.es: el texto dice el día; la hora va en data-timestamp.
+        tarjeta = BeautifulSoup(
+            '<article><p><time data-timestamp="1792844175"><a href="/a">24/10/2026</a>'
+            '</time></p><h2><a href="/a">Titular</a></h2></article>', 'lxml')
+        self.assertEqual(fechas._extract_item_date(tarjeta.h2), '2026-10-24T14:16:15+02:00')
+        solo_dia = BeautifulSoup(
+            '<article><time>24/10/2026</time><h2><a href="/a">Titular</a></h2></article>', 'lxml')
+        self.assertEqual(fechas._extract_item_date(solo_dia.h2), '2026-10-24')
 
     def test_feed_xml_prefiere_publicacion_a_actualizacion(self):
         xml = (f'<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>{TITULO}</title>'

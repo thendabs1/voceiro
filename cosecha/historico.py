@@ -8,8 +8,8 @@ import re
 import unicodedata
 
 from . import config
-from .fechas import (_fecha_agrupacion_dt, _fecha_orden, _parse_iso_flexible,
-                     _reconstruir_fecha)
+from .fechas import (_es_dia, _fecha_agrupacion_dt, _fecha_orden,
+                     _parse_iso_flexible, _reconstruir_fecha)
 from .texto import _limpiar_cdata, _url_corta
 
 
@@ -144,6 +144,7 @@ def cargar_historico_payload():
                         'titular':        n.get('t', ''),
                         'enlace':         u_iso,
                         'fecha_pub':      p_iso,
+                        'dia_pub':        n['p'] if _es_dia(n.get('p')) else '',
                         'fecha_estimada': e_iso,
                         'fuente':         n.get('f', ''),
                         'fecha':          c_raw,
@@ -172,11 +173,13 @@ def cargar_historico_payload():
                         # Con `c` trae sus propias fechas; sin él es del
                         # formato anterior y hereda las del representante.
                         if 'c' in alt_item:
+                            dia_alt = alt_item['p'] if _es_dia(alt_item.get('p')) else ''
                             p_alt = _reconstruir_fecha(alt_item.get('p', ''), dia)
                             e_alt = _reconstruir_fecha(alt_item.get('e', ''), dia)
                             c_alt = _reconstruir_fecha(alt_item['c'], dia)
                         else:
                             p_alt, e_alt, c_alt = p_iso, e_iso, c_raw
+                            dia_alt = ''
 
                         noticias.append({
                             'medio':          m_alt.get('n', ''),
@@ -188,6 +191,7 @@ def cargar_historico_payload():
                             'titular':        alt_item.get('t') or n.get('t', ''),
                             'enlace':         enlace_alt,
                             'fecha_pub':      p_alt,
+                            'dia_pub':        dia_alt,
                             'fecha_estimada': e_alt,
                             'fuente':         alt_item.get('f') or n.get('f', ''),
                             'fecha':          c_alt,
@@ -231,6 +235,8 @@ def _alternativa(o, rep):
     for corto, largo in (('p', 'fecha_pub'), ('e', 'fecha_estimada'), ('c', 'fecha')):
         if o.get(largo):
             alt[corto] = o[largo]
+    if not alt.get('p') and o.get('dia_pub'):
+        alt['p'] = o['dia_pub']
     if o.get('fuente') and o.get('fuente') != rep.get('fuente'):
         alt['f'] = o['fuente']
     return alt
@@ -338,6 +344,8 @@ def fusionar_historico(nuevas, viejas, dias):
             # ser de actualización y moverían la noticia de hora o de día.
             if _parse_iso_flexible(old.get('fecha_pub')):
                 n['fecha_pub'] = old['fecha_pub']
+            if old.get('dia_pub'):
+                n['dia_pub'] = old['dia_pub']
             if old.get('fecha_estimada') and not n.get('fecha_estimada'):
                 n['fecha_estimada'] = old['fecha_estimada']
             n['_nueva'] = False
