@@ -30,6 +30,7 @@ export default {
   "estMuestra": "Datos de {n} de {total} medios seleccionados. Lo que falta no se cuenta como cero.",
   "estSinSerie": "No hay una serie disponible para esta selección.",
   "estSerieNota": "Recuentos disponibles de hasta 30 días. La tabla indica cuántos medios tienen datos cada día; la muestra puede variar. Las barras parten de cero.",
+  "estBarrasDia": "Pulsa una barra para ver ese día.",
   "estVerValores": "Ver valores y fechas en tabla",
   "estSeguimiento": "Datos del seguimiento",
   "estSeguimientoNota": "Las pasadas describen la recogida, no toda la producción del medio. En Resumen, las pasadas corresponden al recolector completo, con independencia del ámbito.",

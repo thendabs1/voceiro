@@ -21,7 +21,7 @@ function contexto(){
     DATA_BASE: 'https://datos.example', BACKENDS: { cf: { data: 'https://datos.example' }, deno: { data: 'https://alternativo.example' } },
     PRESETS: { lista: [] },
   };
-  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estCurva, estDirectorio, fijarModoEstadisticas, estDominios }; pintarEstadisticas = () => {};', c);
+  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estCurva, estDirectorio, estListaMedios, fijarModoEstadisticas, estDominios }; pintarEstadisticas = () => {};', c);
   const s = c.api.s;
   s.abierto = true; s.fecha = '2026-10-23';
   return c;
@@ -150,4 +150,17 @@ test('nombres y errores del JSON se escapan, y el total del resumen coincide con
   assert.doesNotMatch(c.api.estFicha(), /<img/);
   assert.match(c.api.estFicha(), /&lt;img/);
   assert.match(c.api.estResumen(), /<dd>3<\/dd>/);
+});
+
+test('cada barra abre su día y la del día consultado se marca; buscar solo filtra la lista', () => {
+  const c = contexto();
+  c.escapeHtml = s => String(s); c.t = k => k; c.normalize = normalize;
+  c.api.s.indice = indice(); c.api.s.dia = dia('2026-10-23');
+  const barras = c.api.estCurva(['b.es']).split('</div>')[0].match(/<button[^>]*data-est="fecha"[^>]*>/g);
+  assert.equal(barras.length, 2);
+  assert.match(barras[1], /data-valor="2026-10-23"[^>]*aria-current="date"/);
+  assert.doesNotMatch(barras[0], /aria-current/);
+  c.api.s.consulta = 'b.es';
+  assert.match(c.api.estListaMedios(), /data-valor="b\.es"/);
+  assert.doesNotMatch(c.api.estListaMedios(), /data-valor="a\.es"|est-buscar-medio/);
 });
