@@ -1,6 +1,7 @@
 """Extracción y selección de fuentes, con acceso directo o mediante el relay."""
 
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, urlparse
 
@@ -11,10 +12,12 @@ import feedparser
 
 from . import config
 from .fechas import (
+    _dia_de_fecha,
     _dia_de_url,
     _extract_item_date,
     _fecha_y_dia,
     _fechas_jsonld,
+    _fechas_fusion,
     _parse_iso_flexible,
     _rss_date_to_iso,
     _solo_dia,
@@ -165,6 +168,11 @@ def _rss(medio, url, relay=False):
         return None, estado
     try:
         items = _parse_feed(r.content)
+        if medio['d'] == 'galiciadigital.com':
+            # Este RSS tiene una entrada de 2205. Con solo el día no hay
+            # una hora que permita justificar una publicación adelantada.
+            hoy = datetime.now(config.TZ_MADRID).date().isoformat()
+            items = [it for it in items if not it.get('dia_pub') or it['dia_pub'] <= hoy]
     except Exception as e:
         print(f"  [RSS!] {medio['n']}: {type(e).__name__}: {e}")
         return None, type(e).__name__
@@ -258,12 +266,13 @@ def _scrape(medio, url=None, relay=False, verify=True):
         soup = BeautifulSoup(r.text, 'lxml')
         dominio = medio['d']
 
-        items_e1 = _scrape_headings(soup, url, dominio)
-        items_e7 = _scrape_slugs(soup, url, dominio)
+        especiales = _scrape_tarjetas(soup, url, dominio)
+        candidatos = (especiales if especiales is not None else
+                      _scrape_headings(soup, url, dominio) + _scrape_slugs(soup, url, dominio))
 
         unicos = {}
         orden = 0
-        for it in items_e1 + items_e7:
+        for it in candidatos:
             # _extract_item_date da 'AAAA-MM-DD' si solo encontró el día
             if len(it.get('fecha_pub') or '') == 10:
                 it['dia_pub'], it['fecha_pub'] = it['fecha_pub'], ''
@@ -277,6 +286,8 @@ def _scrape(medio, url=None, relay=False, verify=True):
 
         out = list(unicos.values())
         fechas_ld = _fechas_jsonld(soup)
+        if dominio == 'estadao.com.br':
+            fechas_ld = {**_fechas_fusion(soup, url), **fechas_ld}
         for it in out:
             if not it.get('fecha_pub'):
                 it['fecha_pub'] = fechas_ld.get(_clave_url(it['enlace']), '')
@@ -289,6 +300,67 @@ def _scrape(medio, url=None, relay=False, verify=True):
     except Exception as e:
         print(f"  [{tag}!] {medio['n']}: {type(e).__name__}: {e}")
         return None, type(e).__name__
+
+
+def _scrape_tarjetas(soup, base_url, dominio):
+    """Listados cuya noticia y día no están en un encabezado enlazado.
+    None deja actuar las reglas generales; [] es un listado sin noticias.
+    """
+    if dominio == 'crtvg.gal':
+        tarjetas = soup.select('.journal-content-article[data-analytics-asset-title]')
+    elif dominio == 'elviejotopo.com':
+        tarjetas = soup.select('header.article-header')
+    elif dominio == 'praza.gal':
+        tarjetas = soup.select('header.article-summary-header, header.article-opinion-summary-header')
+    elif dominio == 'xinhuanet.com':
+        # La edición inglesa usa /AAAAMMDD/id/c.html, no slugs.
+        tarjetas = soup.select('a[href]')
+    elif dominio == 'eitb.eus':
+        # Orain: solo noticias con día propio en su URL, no portales
+        # permanentes de elecciones ni programación del grupo.
+        return [it for it in _scrape_headings(soup, base_url, dominio)
+                + _scrape_slugs(soup, base_url, dominio) if _dia_de_url(it['enlace'])]
+    else:
+        return None
+
+    out = []
+    for tarjeta in tarjetas:
+        fecha = ''
+        if dominio == 'crtvg.gal':
+            a = tarjeta.select_one('a[href^="/-/"]')
+            titulo = tarjeta.get('data-analytics-asset-title', '')
+            dias = [_dia_de_fecha(p.get_text(' ', strip=True)) for p in tarjeta.select('p')]
+            dia = next((d for d in dias if d), '')
+        elif dominio == 'elviejotopo.com':
+            a = tarjeta.select_one('h4 a[href]')
+            titulo = a.get_text(' ', strip=True) if a else ''
+            firma = tarjeta.select_one('.byline')
+            # Solo el texto directo: categoría y autor tienen sus enlaces.
+            raw = ' '.join(firma.find_all(string=True, recursive=False)) if firma else ''
+            dia = _dia_de_fecha(raw)
+        elif dominio == 'praza.gal':
+            # Praza: las referencias de archivo de una tarjeta no son
+            # noticias nuevas ni deben recibir la fecha de su cabecera.
+            a = tarjeta.select_one('.article-summary-headline a, .article-opinion-summary-headline a')
+            titulo = a.get_text(' ', strip=True) if a else ''
+            time = tarjeta.find('time', recursive=False)
+            raw = (time.get('datetime') or time.get_text(' ', strip=True)) if time else ''
+            fecha, dia = _fecha_y_dia(raw)
+        else:
+            a = tarjeta
+            titulo = a.get_text(' ', strip=True)
+            dia = ''
+            if not re.fullmatch(r'/20\d{6}/[a-f0-9]+/c\.html', urlparse(a['href']).path):
+                continue
+        if not a:
+            continue
+        href = _normalizar_url(a['href'], base_url)
+        if dominio == 'elviejotopo.com' and not urlparse(href).path.startswith('/topoexpress/'):
+            continue  # libros y números de la revista no son artículos del flujo
+        if _es_valido(titulo, href, dominio):
+            out.append({'titular': titulo, 'enlace': href,
+                        'fecha_pub': fecha, 'dia_pub': dia})
+    return out
 
 
 def _scrape_headings(soup, base_url, dominio):
