@@ -85,7 +85,9 @@ function init(){
 let __lastHref = location.href;
 function checkUrlChange(){
   if (location.href === __lastHref) return;
+  const cambioArticulo = normalizeUrlForMatch(location.href) !== normalizeUrlForMatch(__lastHref);
   __lastHref = location.href;
+  if (!cambioArticulo) return;
   if (__lectorAbierto) __lectorAbierto.cerrar();
   actualizarBoton();
   const href = location.href;

@@ -112,6 +112,16 @@ test('un cambio de URL cierra el lector anterior y no modifica history', () => {
   assert.ok(l.eventos.has('interval'));
 });
 
+test('un hash o parámetros de seguimiento no cierran la lectura; otra noticia sí', () => {
+  const l = lector();
+  let cerrados = 0;
+  l.contexto.__lectorAbierto = { cerrar(){ cerrados++; l.contexto.__lectorAbierto = null; } };
+  l.run("location.href = 'https://medio.example/a?utm_source=portada#lectura'; checkUrlChange();");
+  assert.equal(cerrados, 0);
+  l.run("location.href = 'https://medio.example/a?id=otra-noticia'; checkUrlChange();");
+  assert.equal(cerrados, 1);
+});
+
 test('la navegación sigue detectándose al volver con Atrás desde la caché del navegador', () => {
   const l = lector();
   l.eventos.get('pagehide')({persisted:true});

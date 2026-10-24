@@ -33,7 +33,11 @@ cancela al descartar el documento. Véase el ciclo de
 
 La nueva prueba reproduce el fallo antes de corregirlo y verifica que,
 tras recuperar la página, cambiar de URL sigue cerrando el lector anterior.
-Las 13 pruebas locales de seguridad y navegación pasan. La suite completa
+La revisión independiente de Claude detectó además que un cambio de hash
+o la retirada de parámetros de seguimiento cerraba la lectura manual.
+Ahora se compara la identidad normalizada de las URLs: las consultas que
+identifican otra noticia siguen provocando el cierre. La prueba reproduce
+ambos casos. Las 14 pruebas locales de seguridad y navegación pasan. La suite completa
 queda en CI; sigue pendiente la comprobación en Firefox real.
 
 ## Diseño de acceso propuesto
