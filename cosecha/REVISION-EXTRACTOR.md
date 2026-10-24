@@ -1,5 +1,43 @@
 # Revisión del extractor — 24 de octubre de 2026
 
+## Pendiente: fecha declarada y fecha de celebración
+
+Observación del usuario al diseñar agendas y eventos: algunos medios fechan
+la ficha o la noticia con el día en que se celebrará el evento. Que esa
+fecha sea futura no demuestra un fallo del recopilador: puede ser el valor
+que publica la propia fuente. Este caso no se tuvo en cuenta en el diseño
+de fechas de esta tarde; queda pendiente comprobar su efecto, sin dar por
+confirmado un defecto ni corregir el histórico automáticamente.
+
+Evidencia puntual del 24/10/2026: el [RSS de Cultura de Galicia](https://abertos.xunta.gal/catalogo/cultura-ocio-deporte/-/dataset/0045/axenda-cultura-galicia/101/acceso-aos-datos.rss)
+incluye «Latexos», GUID `156743`, con `pubDate` igual a
+`Sun, 25 Oct 2026 12:00:00 +0100`; la descripción anuncia la celebración
+el 25 de octubre a las 12:00. Es una muestra de agenda, no una prueba de
+qué medios del catálogo hacen lo mismo.
+
+Lectura del código actual: `_fecha_agrupacion_dt` conserva la fecha
+declarada, pero, si supera la primera recogida en más de seis horas,
+agrupa por la estimada o la recogida. Esa protección no identifica el
+significado de la fecha: quedan por revisar las citas cercanas o pasadas,
+la estimación acotada por `dia_pub`/URL y las métricas que presentan una
+fecha extraída como publicación. Esto es una revisión estática, sin haber
+reproducido todavía un fallo con un medio del catálogo.
+
+Revisar antes de cerrar el modelo:
+
+- Distinguir la fecha declarada por la fuente, su significado comprobado
+  (publicación, actualización o celebración), la fecha del evento y la
+  primera recogida. Una fecha con hora puede estar bien extraída y tener
+  otro significado; una fecha futura, por sí sola, no permite decidirlo.
+- Comprobar el efecto en agrupación por día, orden, estimación, filtros de
+  fechas futuras, retención, fusión del histórico y estadísticas. Revisar
+  también las fechas de celebración que ya han pasado.
+- Conservar el dato original y su procedencia; evitar sustituirlo por la
+  primera recogida como si esta fuera una publicación comprobada, o
+  estimar la publicación dentro del día del evento sin evidencia.
+- Obtener ejemplos de los medios afectados antes de cambiar reglas. El
+  tratamiento específico por fuente queda pendiente de diseño.
+
 ## Alcance y evidencia
 
 Catálogo al empezar: **342 medios y 742 fuentes configuradas**. La cifra de

@@ -13,6 +13,10 @@ Las pruebas Python importan directamente los módulos de `cosecha/`. La integrac
 de publicación comprueba portadas, slices, índices, estado y reutilización de
 archivos entre dos runs locales.
 
+`test_agenda.py` comprueba además el [piloto de calendario común](../agenda/README.md):
+identidad de funciones y traducciones, regiones y grupos, fechas de celebración,
+paginación y conservación de la última salida buena, sin peticiones reales.
+
 **Lector** construye el userscript y comprueba su sintaxis, cabecera y dominios cuando cambian sus archivos.
 
 ## Medios actuales que fallan
