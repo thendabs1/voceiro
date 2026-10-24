@@ -18,7 +18,6 @@ __pycache__/
 
 # Estado de scripts
 state.json
-migration_state.json
 .migracion_ckpt.txt
 .migracion_r2_state.json
 

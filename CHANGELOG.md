@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Turso nuevo: solo diagnóstico de la cosecha
+
+### Cambiado
+- Turso pasa a una base nueva (`voceiro`, org `tuksyy`, Irlanda) con solo
+  `medios` y `runs`, pensada para las estadísticas. La cuota del plan es de
+  10 M filas escritas al mes y cada índice cuenta como otra fila.
+- `runs` tiene `(ts, dominio)` como clave: la poda de 30 días va por rango
+  de la clave, sin `idx_runs_ts`. Cada pasada cuesta unas 2 escrituras por
+  medio (alta y poda): unos 3 M al mes.
+- `medios` es solo el catálogo (nombre, grupo, tipo, ámbito, idioma,
+  etiquetas). El upsert no reescribe las filas que no cambian, así que una
+  pasada normal no gasta escrituras. El estado de la última pasada está en
+  `runs`.
+
+### Quitado
+- Las noticias ya no se guardan en Turso (`insertar_en_turso`,
+  `TURSO_DOMINIOS_EXTRA`): nada las lee desde que la búsqueda no usa Turso.
+- Columnas `*_norm` de `medios` y sus índices, que eran para la búsqueda, y
+  las migraciones de columnas de la base antigua.
+- `migrar.yml`, `migrar_historico.py` (ya retirado) y `migration_state.json`.
+
 ## 2026-10-24 — Búsqueda sin Turso
 
 ### Quitado
