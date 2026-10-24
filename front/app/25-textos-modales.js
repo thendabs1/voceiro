@@ -76,6 +76,11 @@ function aplicarTextos(){
   // Modos
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
   $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
+  $('#btn-asistente-modo-lbl').textContent = t('asTitulo');
+  $('#as-entrada-hint').textContent = t('asEntrada');
+  $('#aj-regla-lbl').textContent = t('asComportamiento');
+  $('#aj-regla').innerHTML = [['sumar', 'asSumar'], ['elegidas', 'asCruzar'], ['todas', 'asTodas']]
+    .map(([v, k]) => `<option value="${v}">${escapeHtml(t(k))}</option>`).join('');
   $('#aj-modo-activar-lbl').textContent   = t('ajModoActivar');
   $('#aj-modo-renombrar-lbl').textContent = t('ajModoRenombrar');
   $('#aj-modo-duplicar-lbl').textContent  = t('ajModoDuplicar');

@@ -69,6 +69,7 @@ function guardarHideMode(){
   try{ localStorage.setItem(HIDE_MODE_KEY, HIDE_MODE); }catch(e){}
 }
 function normalizarPreset(p){
+  const regla = normalizarRegla(p.regla);
   return {
     id:        String(p.id || 'general'),
     nombre:    String(p.nombre || p.id || 'General'),
@@ -76,6 +77,7 @@ function normalizarPreset(p){
     palabras:  Array.isArray(p.palabras) ? p.palabras : [],
     overrides: (p.overrides && typeof p.overrides === 'object' && !Array.isArray(p.overrides))
                ? p.overrides : {},
+    ...(regla ? { regla } : {}),
     // Fecha del último cambio de este modo (la pone sellarModos).
     ...(Number(p.actualizado) > 0 ? { actualizado: Number(p.actualizado) } : {})
   };
@@ -197,6 +199,7 @@ function presetTieneReglas(p){
   if (!p) return false;
   const ov = p.overrides || {};
   return !!(
+    normalizarRegla(p.regla) ||
     (p.grupos && p.grupos.length) ||
     (p.palabras && p.palabras.length) ||
     Object.keys(ov).some(d => overrideIncluye(ov[d]) || ov[d] === 'ignore')
@@ -392,7 +395,7 @@ function renderPresetMenu(){
       if (id === '__empezar'){
         cerrarPresetMenu();
         abrirAjustes('modos');
-        ajEditarModo(PRESETS.activo);
+        abrirAsistenteModo();
         return;
       }
       if (id === '__temas'){

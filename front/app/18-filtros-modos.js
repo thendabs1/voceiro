@@ -2,6 +2,7 @@
    CUMPLE PRESET
    ═══════════════════════════════════════════════════════════════ */
 let SET_GRUPOS = new Set();
+let REGLA_PRESET = null;
 // Temas: las palabras de cada modo, una búsqueda pequeña por línea
 // (shared/busqueda/temas.js). Se compilan los de TODOS los modos: el modo
 // activo los usa para ampliar su feed y la vista 🔖 Temas los junta.
@@ -16,6 +17,7 @@ function recompilarPreset(){
 // Depende de toda la lista de modos: la llaman recompilarPreset y
 // guardarPresets (renombrar, duplicar, borrar, silenciar un medio…).
 function recompilarTemas(){
+  REGLA_PRESET = compilarRegla(PRESET);
   const lista = (PRESETS && PRESETS.lista) || [];
   TEMAS_TODOS = lista.map(p => {
     const ov = p.overrides || {};
@@ -23,6 +25,7 @@ function recompilarTemas(){
       id: p.id,
       nombre: p.nombre,
       temas: compilarTemas(p.palabras),
+      regla: compilarRegla(p),
       ignorar: new Set(Object.keys(ov).filter(d => ov[d] === 'ignore')),
     };
   }).filter(m => m.temas.length);
@@ -36,6 +39,7 @@ function _temasDe(n){
   const out = [];
   for (const m of TEMAS_TODOS){
     if (m.ignorar.has(n.dominio)) continue;
+    if (m.regla && !m.regla.pasaFuentes(n)) continue;
     for (const etiqueta of temasQueCasan(palabras, m.temas, n.titular)) out.push({ id: m.id, etiqueta });
   }
   n._temas = out;
@@ -55,9 +59,10 @@ function _pasaChipTema(n, chip){
   if (chip.medios) return _entraPorMedios(n);
   return _temasDe(n).some(x => x.id === chip.modo && x.etiqueta === chip.etiqueta);
 }
-// Lo que entra en el modo activo por sus medios (grupos o incluidos), no
-// por sus temas.
+// Aporte de las fuentes al modo. En las selecciones nuevas pasa también
+// por las palabras: nunca debe ofrecer un atajo que se salte ese filtro.
 function _entraPorMedios(n){
+  if (REGLA_PRESET) return REGLA_PRESET.pasa(n);
   return overrideIncluye(getOverride(n.dominio)) || SET_GRUPOS.has(n.grupo);
 }
 function _modoTieneMedios(){
@@ -65,6 +70,7 @@ function _modoTieneMedios(){
   return SET_GRUPOS.size > 0 || Object.keys(ov).some(d => overrideIncluye(ov[d]));
 }
 function cumplePreset(n){
+  if (REGLA_PRESET) return REGLA_PRESET.pasa(n);
   const ov = getOverride(n.dominio);
   if (ov === 'ignore') return false;
   if (overrideIncluye(ov)) return true;

@@ -191,7 +191,37 @@
     .aj-nav .panel-close{ display:none; }
     .aj-secciones .aj-flecha{ display:none; }
     .aj-atras{ display:none; }
-    .panel-ajustes[data-ruta="modo"] .aj-atras{ display:inline-flex; }
+    .panel-ajustes:is([data-ruta="modo"], [data-ruta="asistente"]) .aj-atras{ display:inline-flex; }
+  }
+
+  /* Asistente de modos: los controles mantienen el tamaño del panel. */
+  #btn-asistente-modo{ margin-bottom:8px; }
+  .as-campo{ display:flex; flex-direction:column; gap:6px; margin:12px 0; font-size:.85em; }
+  .as-campo :is(input, select, textarea){ width:100%; min-width:0; box-sizing:border-box; font:inherit;
+    padding:9px 10px; border:1px solid var(--btn-border); border-radius:6px; background:var(--bg); color:var(--fg); }
+  .as-campo textarea{ min-height:120px; }
+  .as-acciones{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; margin-top:12px; }
+  .as-acciones button{ font-size:.85em; }
+  .as-grupo{ border:1px solid var(--border); border-radius:8px; margin:8px 0; padding:0 10px; }
+  .as-grupo > summary{ cursor:pointer; padding:10px 0; font-size:.85em; font-weight:600; }
+  .as-grupo-elegir{ display:flex; align-items:center; gap:8px; padding:8px 0; font-size:.8em; }
+  .as-medio{ display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 0; border-top:1px solid var(--border); font-size:.8em; }
+  .as-medio > span{ flex:1; min-width:0; overflow-wrap:anywhere; }
+  .as-medio small, .as-preview small{ display:block; color:var(--muted); margin-top:3px; }
+  .as-medio select{ max-width:48%; background:var(--bg); color:var(--fg); border:1px solid var(--btn-border);
+    border-radius:5px; padding:6px; font:inherit; }
+  .as-ayuda{ margin:16px 0; font-size:.85em; }
+  .as-ayuda summary{ cursor:pointer; color:var(--accent); margin-bottom:8px; }
+  .as-ayuda li{ margin-bottom:8px; }
+  .as-error{ color:var(--block); font-size:.85em; }
+  .as-error:empty{ display:none; }
+  .as-preview{ list-style:none; padding:0; }
+  .as-preview li{ border-top:1px solid var(--border); padding:10px 0; font-size:.85em; line-height:1.5; }
+  #as-seleccion-resumen p{ margin:4px 0; }
+  @container ajustes (max-width: 400px){
+    .as-medio{ flex-wrap:wrap; }
+    .as-medio select{ max-width:100%; width:100%; }
   }
 
   /* ═══ Destino inline (➕ / 🚫 sin modo activo) ═══ */
