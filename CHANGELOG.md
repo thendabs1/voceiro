@@ -3,6 +3,17 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-24 — Panel de estadísticas: Resumen y Medios
+
+### Añadido
+- Panel sobre el feed con totales diarios, desglose por grupo y evolución
+  de hasta 30 días, directorio y ficha de medio; lee los JSON públicos existentes.
+- Acceso desde cabecera, ⋯ y `estadisticas:` / `stats:`. Mis medios respeta
+  grupos y excepciones del modo, sin ampliar la muestra por sus palabras.
+- Fechas sin datos, muestras parciales, actualización con reintento y regreso
+  al feed con foco y posición. Las cifras cuentan titulares del archivo,
+  sin presentarlos como artículos únicos por publicación.
+
 ## 2026-10-24 — Revisión de fuentes y extracción
 
 ### Corregido

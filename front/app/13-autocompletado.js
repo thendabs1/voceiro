@@ -23,6 +23,8 @@ function scoreMatch(haystack, needle){
 }
 
 function sugerenciasBuscar(raw){
+  const stats = sugerenciasEstadisticas(raw);
+  if (stats) return stats;
   // eltiempo: sugiere municipios, no medios.
   const fragTiempo = fragmentoTiempo(raw);
   if (fragTiempo !== null) return TIEMPO_ACTIVO ? sugerenciasTiempo(fragTiempo) : [];
@@ -130,6 +132,11 @@ function aplicarSugerencia(idx){
   if (!s) return;
   const input = document.getElementById('buscar');
 
+  if (s.kind === 'estadisticas'){
+    input.value = input.value.replace(/(^|\s)(?:estadisticas|stats):(?:"[^"]*|[^\s"]*)$/i, (_, antes) => antes + 'estadisticas:' + s.value);
+    consumirOrdenEstadisticas();
+    return;
+  }
   if (s.kind === 'municipio'){
     // eltiempo:"A Coruña" con el municipio elegido (hay nombres repetidos).
     recordarLugar(s.value, { ine: s.ine });
@@ -194,7 +201,7 @@ function aplicarSugerencia(idx){
 }
 // Las sugerencias normales empiezan por «Buscar en el titular» y se abren
 // con 2 o más; las de municipios, con una basta.
-const haySugerencias = items => items.length > 1 || items[0]?.kind === 'municipio';
+const haySugerencias = items => items.length > 1 || ['municipio', 'estadisticas'].includes(items[0]?.kind);
 
 function wireAutocomplete(){
   const input = document.getElementById('buscar');

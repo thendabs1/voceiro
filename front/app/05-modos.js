@@ -108,6 +108,7 @@ function guardarPresets(){
   if (sellarModos()) sincronizarPronto();
   try{ localStorage.setItem(PRESET_KEY, JSON.stringify(PRESETS)); }catch(e){}
   try{ localStorage.setItem(PRESET_ID_KEY, PRESETS.activo); }catch(e){}
+  pintarEstadisticas();
 }
 
 // Cada modo lleva la fecha de su último cambio y cada borrado la suya: así

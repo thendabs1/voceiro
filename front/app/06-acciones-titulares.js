@@ -38,6 +38,7 @@ function abrirMenuMas(btn){
   m.innerHTML =
     (yaForzado ? '' : item('btn-add-item', 'plus', t('addToModoTitle')))
     + item('btn-block-item', 'ban', t('blockMedia'))
+    + (n.dominio ? `<button type="button" role="menuitem" class="btn-estadisticas-item" data-idx="${idx}">${iconoEstadisticas()}<span>${escapeHtml(t('estDelMedio'))}</span></button>` : '')
     // Cómo se lee este medio en el lector: su regla, en Ajustes › Lector.
     + (USCRIPT_OK ? item('btn-leer-item', 'book-open-text', t('comoLeerlo')) : '')
     + item('btn-report-item', 'flag', t('repBtnTitle'));
