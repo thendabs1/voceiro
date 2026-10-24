@@ -1951,13 +1951,27 @@
 .est-tabla td{font-variant-numeric:tabular-nums}
 .est-tabla button{background:transparent;color:var(--accent);border:0;text-decoration:underline;padding:4px 0;text-align:left}
 .est-tabla small{display:block;color:var(--muted)}
-.estadisticas-panel details{border-top:1px solid var(--border);padding:12px 0;margin-top:16px;font-size:.85em}
-.estadisticas-panel summary{cursor:pointer;min-height:44px;display:list-item;align-content:center}
-.est-barras{display:flex;align-items:end;gap:4px;height:150px;border-bottom:1px solid var(--btn-border);margin-top:18px;padding:0 3px}
-.est-barras button{display:flex;align-items:end;height:100%;flex:1;min-width:0;padding:0;border:0;border-radius:0;background:transparent}
-.est-barras i{display:block;width:100%;height:var(--est-valor);background:var(--save);min-height:1px}
-.est-barras button:hover i,.est-barras [aria-current] i{background:var(--accent)}
+.est-aviso{font-size:.9em;margin:16px 0}
+.est-aviso button{margin-left:6px;padding:4px 10px}
+.est-grafico{margin-top:10px}
+.est-escala,.est-eje{font-size:.7em;color:var(--muted);font-variant-numeric:tabular-nums}
+.est-eje{display:flex;justify-content:space-between;margin-top:4px}
+.est-barras{display:flex;align-items:end;gap:3px;height:150px;border-bottom:1px solid var(--btn-border);padding:0 2px}
+.est-barras>*{display:flex;align-items:end;height:100%;flex:1;min-width:0;padding:0;border:0;border-radius:0;background:transparent}
+.estadisticas-panel .est-barras button{min-height:0}
+.est-barras i{display:block;width:100%;height:var(--est-valor);background:var(--save);border-radius:2px 2px 0 0}
+.est-barras button:not(:disabled):hover i,.est-barras [aria-current] i{background:var(--accent)}
 .est-barras [aria-current]{box-shadow:inset 0 -3px var(--accent)}
+.est-barras button:disabled{cursor:default}
+.est-horas{height:90px;gap:2px}
+.est-ranking{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:.85em}
+.est-ranking li{display:grid;grid-template-columns:1fr auto;gap:3px 10px}
+.est-ranking span:first-letter{text-transform:uppercase}
+.est-ranking b{font-weight:600;font-variant-numeric:tabular-nums}
+.est-ranking i{grid-column:1/-1;height:6px;width:var(--est-valor);background:var(--save);border-radius:3px}
+.est-mini{display:block;width:84px;height:22px}
+.est-mini polyline{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.est-pie{margin-top:28px;border-top:1px solid var(--border);padding-top:12px}
 .estadisticas-panel[aria-busy="true"] .est-contenido{opacity:.55;transition:opacity .2s}
 .est-tabla [data-est="familia"]::before{content:'▸ ';display:inline-block;width:1.1em;text-decoration:none}
 .est-tabla [data-est="familia"][aria-expanded="true"]::before{content:'▾ '}
