@@ -46,6 +46,8 @@ function openSettings(initialTab, opts){
   // «catalog» era la pestaña del catálogo, que ya no existe.
   let activeSection = initialTab && initialTab !== 'catalog' ? initialTab : 'sites';
   let searchQuery = '';
+  // «Avanzado» abierto por dominio: sobrevive a cada render().
+  const avanzadosAbiertos = new Set();
   let filterLang = '';
   const dominioPedido = opts && opts.dominio ? normalizeDomain(opts.dominio) : '';
   const scState = { capture: null };
@@ -164,7 +166,7 @@ function openSettings(initialTab, opts){
           '<span style="text-transform:uppercase;letter-spacing:.5px">' + esc(t('colLang')) + ':</span> ' + esc(langLabel(s.lang)) +
           textOnlyBadge + exBadge +
         '</div>' +
-        '<details style="margin-top:8px">' +
+        '<details class="il-site-avanzado" data-domain="' + esc(s.domain) + '"' + (avanzadosAbiertos.has(s.domain) ? ' open' : '') + ' style="margin-top:8px">' +
           '<summary style="cursor:pointer;font-size:13px">' + esc(t('siteAdvanced')) + '</summary>' +
           '<p style="font-size:12px;color:var(--muted)">' + esc(t('siteSourceHint')) + '</p>' +
           '<div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">' +
@@ -177,7 +179,8 @@ function openSettings(initialTab, opts){
           '<button data-idx="' + realIdx + '" class="il-set-extract" title="' + esc(t('extractionTitle')) + '" ' +
             'style="padding:6px 10px;border:1px solid var(--btn-border);background:var(--bg);border-radius:6px;cursor:pointer">🔬 ' + esc(t('extractionTitle')) + '</button>' +
           '</div>' +
-          '<p style="font-size:12px;color:var(--muted)">' + esc(t('extractionWrongSite').replace('{X}', s.domain)) + '</p>' +
+          (analisisDisponible(s.domain) ? '' :
+            '<p style="font-size:12px;color:var(--muted)">' + esc(t('extractionWrongSite').replace('{X}', s.domain)) + '</p>') +
         '</details>' +
         patBlock +
       '</div>';
@@ -267,6 +270,12 @@ function openSettings(initialTab, opts){
           const idx = +sel.dataset.idx;
           CFG.sites[idx].lang = sel.value;
           saveCfg(CFG);
+        };
+      });
+      box.querySelectorAll('.il-site-avanzado').forEach(d => {
+        d.ontoggle = () => {
+          if (d.open) avanzadosAbiertos.add(d.dataset.domain);
+          else avanzadosAbiertos.delete(d.dataset.domain);
         };
       });
       box.querySelectorAll('.il-set-extract').forEach(btn => {

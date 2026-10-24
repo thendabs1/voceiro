@@ -164,10 +164,28 @@ test(`las cuatro flechas navegan y el deslizador conserva sus teclas`, () => {
   assert.equal(prevenido, 6);
 });
 
-// Emite las fases reales del gesto, incluida la propagación a document.
-function gesto(s, dx, dy, { control = false, varios = false, cancelar = false } = {}){
+test(`si el titular no cabe, ↑ ↓ desplazan y pausan; ← → siguen navegando`, () => {
+  const s = preparar();
+  s.pase.abrirPase();
   const root = s.pase.actual.root;
-  const target = { closest: () => control ? {} : null };
+  root.scrollHeight = root.clientHeight + 100;
+  let prevenido = 0;
+  const tecla = key => s.eventos.keydown({ key, target: { closest: () => null }, preventDefault: () => prevenido++ });
+  tecla('ArrowDown');
+  tecla('ArrowUp');
+  assert.equal(s.pase.actual.pos, 0);
+  assert.equal(prevenido, 0);
+  assert.equal(s.pase.actual.jugando, false);
+  tecla('ArrowRight');
+  assert.equal(s.pase.actual.pos, 1);
+  assert.equal(prevenido, 1);
+});
+
+// Emite las fases reales del gesto, incluida la propagación a document.
+// control: el deslizador; boton: otro control de la fila.
+function gesto(s, dx, dy, { control = false, boton = false, varios = false, cancelar = false } = {}){
+  const root = s.pase.actual.root;
+  const target = { closest: sel => control || (boton && !sel.includes('data-pase-ritmo')) ? {} : null };
   const dedo = (x, y) => ({ identifier: 1, clientX: x, clientY: y });
   let prevenidos = 0;
   const evento = { target, cancelable: true, preventDefault: () => { prevenidos++; } };
@@ -207,6 +225,10 @@ test(`los gestos conservan los controles, el scroll y el zoom`, () => {
   // Arrastrar el deslizador no debe detener el pase ni cambiar de titular.
   assert.equal(gesto(s, 0, -100, { control: true }).prevenidos, 0);
   assert.equal(s.pase.actual.jugando, true);
+  assert.equal(s.pase.actual.pos, 0);
+  // Desplazarse empezando en otro control sí pausa, sin cambiar de titular.
+  assert.equal(gesto(s, 0, -100, { boton: true }).prevenidos, 0);
+  assert.equal(s.pase.actual.jugando, false);
   assert.equal(s.pase.actual.pos, 0);
   for (const [dx, dy, opciones] of [[0, -20], [100, -60], [0, -100, { varios: true }], [0, -100, { cancelar: true }]]){
     assert.equal(gesto(s, dx, dy, opciones).clickCancelado, false);

@@ -1,6 +1,11 @@
 /* ============================================================
    18. HERRAMIENTA DE ANÁLISIS DE EXTRACCIÓN
    ============================================================ */
+// En la página propia lo analiza el fondo; si no, hay que estar en el medio.
+function analisisDisponible(domain){
+  return !!(PLATAFORMA.esPaginaPropia && PLATAFORMA.analizar) || domainMatches(location.hostname, domain);
+}
+
 function openExtractionTool(siteIdx, onClose){
   const site = CFG.sites[siteIdx];
   if (!site) return;
