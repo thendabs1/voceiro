@@ -1,0 +1,18 @@
+[
+  {"sistema":"ine:municipio","codigo":"36038","id":"es:municipio:36038","ancestros":["es:provincia:36","es:autonomia:12","pais:ES"]},
+  {"sistema":"ine:municipio:dc","codigo":"360388","id":"es:municipio:36038","ancestros":["es:provincia:36","es:autonomia:12","pais:ES"]},
+  {"sistema":"ine:municipio","codigo":"01001","id":"es:municipio:01001","ancestros":["es:provincia:01","es:autonomia:16","pais:ES"]},
+  {"sistema":"ine:municipio","codigo":"28079","id":"es:municipio:28079","ancestros":["es:provincia:28","es:autonomia:13","pais:ES"]},
+  {"sistema":"ine:municipio","codigo":"51001","id":"es:municipio:51001","ancestros":["es:provincia:51","es:autonomia:18","pais:ES"]},
+  {"sistema":"medios:region","codigo":"galicia","id":"es:autonomia:12","ancestros":["pais:ES"]},
+  {"sistema":"ine:autonomia","codigo":"01","id":"es:autonomia:01","ancestros":["pais:ES"]},
+  {"sistema":"ine:provincia","codigo":"01","id":"es:provincia:01","ancestros":["es:autonomia:16","pais:ES"]},
+  {"sistema":"ine:municipio:dc","codigo":"360389","id":null},
+  {"sistema":"ine:municipio","codigo":"360388","id":null},
+  {"sistema":"ine:municipio","codigo":"01999","id":null},
+  {"sistema":"ine:municipio","codigo":1001,"id":null},
+  {"sistema":"ine:municipio","codigo":" 01001","id":null},
+  {"sistema":"ine:municipio","codigo":"０１００１","id":null},
+  {"sistema":"nora:municipio","codigo":"001","id":null},
+  {"sistema":"medios:region","codigo":"desconocida","id":null}
+]

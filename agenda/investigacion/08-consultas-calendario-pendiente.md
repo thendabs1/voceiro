@@ -4,6 +4,11 @@
 estudiar juntos la arquitectura. No hay worker nuevo, migración ni cambio
 en producción. El PR se limita a rendimiento local y Municipio visible.
 
+Continuación: [propuesta de arquitectura de agenda, deportes y territorio](../arquitectura-servicios.md).
+Recoge la revisión del código, los códigos territoriales compartidos, la lectura
+indexada desde Turso y las consultas puntuales externas. Primera fase sin
+marcadores en directo; la interfaz de recintos sigue sin decidir.
+
 ## Funcionamiento comprobado
 
 - `front/app/14-calendario.js` descarga `calendario.json` completo desde el

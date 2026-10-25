@@ -109,6 +109,7 @@ jobs:
           if [ -d public/tema ]; then git add public/tema; fi
           if [ -d public/tiempo ]; then git add public/tiempo; fi
           if [ -d public/calendario ]; then git add public/calendario; fi
+          if [ -d public/territorios ]; then git add public/territorios; fi
           if [ -f public/lector.user.js ]; then git add public/lector.user.js; fi
           if [ -f state.json ]; then git add state.json; fi
           if git diff --staged --quiet; then

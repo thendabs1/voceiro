@@ -61,5 +61,7 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Comprobar catálogo territorial generado
+        run: python scripts/generar_territorios.py --check
       - name: Extracción y diagnóstico sin red
         run: python -m unittest discover -s tests/fuentes -v
