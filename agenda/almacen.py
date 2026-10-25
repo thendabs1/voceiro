@@ -6,8 +6,10 @@ import json
 from pathlib import Path
 import sqlite3
 
+from . import almacen_nucleo
 
-VERSION_ESQUEMA = 3
+
+VERSION_ESQUEMA = 4
 TABLAS_CLASIFICACION = {'agenda_temas', 'agenda_tema_padres', 'agenda_evento_tema',
                         'agenda_clasificacion_revisiones'}
 COLECCIONES = ('fuentes', 'regiones', 'grupos', 'eventos', 'registros', 'vinculos')
@@ -19,6 +21,7 @@ CONSULTAS = [
     ('SELECT datos_json FROM agenda_eventos ORDER BY id', ()),
     ('SELECT ref, datos_json, primera_recogida, ultima_recogida FROM agenda_registros ORDER BY ref', ()),
     ('SELECT ref, evento FROM agenda_vinculos ORDER BY ref', ()),
+    *almacen_nucleo.CONSULTAS,
 ]
 
 
@@ -33,7 +36,7 @@ def esquema():
 
 
 def migracion():
-    """Ampliación aditiva v2→v3, dentro de la transacción del llamante.
+    """Ampliación aditiva v2/v3→v4, dentro de la transacción del llamante.
 
     La guardia tolera otra migración concurrente ya confirmada; una versión
     ajena o futura revierte incluso las sentencias de creación del esquema.
@@ -41,10 +44,10 @@ def migracion():
     return [
         ('INSERT INTO agenda_esquema(id, version, revision) '
          'SELECT 1, ?, -1 WHERE NOT EXISTS '
-         '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version IN (2, ?))',
+         '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version IN (2, 3, ?))',
          (VERSION_ESQUEMA, VERSION_ESQUEMA)),
         *esquema(),
-        ('UPDATE agenda_esquema SET version=?, revision=revision+1 WHERE id=1 AND version=2',
+        ('UPDATE agenda_esquema SET version=?, revision=revision+1 WHERE id=1 AND version IN (2, 3)',
          (VERSION_ESQUEMA,)),
     ]
 
@@ -63,7 +66,7 @@ def abrir(ruta):
             version = db.execute('PRAGMA user_version').fetchone()[0]
             if version not in (0, 1):
                 raise ValueError('Versión de base de calendario incompatible')
-            if tablas and (version != 1 or tablas - TABLAS_CLASIFICACION != {
+            if tablas and (version != 1 or tablas - TABLAS_CLASIFICACION - almacen_nucleo.NOMBRES != {
                 'agenda_estado', 'agenda_fuentes', 'agenda_regiones', 'agenda_grupos',
                 'agenda_eventos', 'agenda_registros', 'agenda_vinculos',
                 'agenda_evento_region', 'agenda_evento_grupo', 'agenda_recogidas', 'agenda_revisiones'}):
@@ -78,7 +81,7 @@ def abrir(ruta):
                                (_json(_contenido(json.loads(datos))), ref))
             db.execute('INSERT INTO agenda_esquema VALUES (1, ?, 0)', (VERSION_ESQUEMA,))
         version = db.execute('SELECT version FROM agenda_esquema WHERE id=1').fetchone()
-        if version == (2,):
+        if version in ((2,), (3,)):
             for sentencia, args in migracion():
                 db.execute(sentencia, args)
             version = (VERSION_ESQUEMA,)
@@ -112,6 +115,11 @@ def reconstruir(resultados):
                                     'ultima_recogida': ultima}
                               for ref, datos, primera, ultima in resultados[6]}
     calendario['vinculos'] = dict(resultados[7])
+    if 'nucleo' in calendario:
+        from .nucleo import COLECCIONES as colecciones, clave
+        for c, filas in zip(colecciones, resultados[8:]):
+            datos = [json.loads(f[0]) for f in filas]
+            calendario['nucleo'][c] = {(clave(d) if c == 'entidades' else d['id']): d for d in datos}
     return calendario
 
 
@@ -126,31 +134,43 @@ def _contenido(registro):
             if k not in ('primera_recogida', 'ultima_recogida')}
 
 
-def guardar(db, calendario, solo_clasificacion=False):
+def guardar(db, calendario, solo_clasificacion=False, solo_nucleo=False):
     """Escribe el estado integrado y audita cambios de contenido, no meros sondeos.
 
     Se invoca dentro de abrir(); el llamante carga e integra en esa misma
     transacción para evitar perder una actualización de otro escritor.
     """
     anterior = cargar(db)
-    if solo_clasificacion and anterior == calendario:
+    if (solo_clasificacion or solo_nucleo) and anterior == calendario:
         return
-    for sql, args in planificar(anterior, calendario, solo_clasificacion):
+    for sql, args in planificar(anterior, calendario, solo_clasificacion, solo_nucleo):
         db.execute(sql, args)
     db.execute('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1')
 
 
-def planificar(anterior, calendario, solo_clasificacion=False):
+def planificar(anterior, calendario, solo_clasificacion=False, solo_nucleo=False):
     """SQL común a SQLite y Turso: contenido modificado y observaciones recibidas.
 
     El llamante garantiza la exclusión de escritores o valida la revisión leída.
     La auditoría usa la recogida recién insertada dentro de la misma transacción.
     """
     anterior = anterior or {}
-    if solo_clasificacion and ({k: v for k, v in anterior.items() if k != 'clasificacion'} !=
-                               {k: v for k, v in calendario.items() if k != 'clasificacion'}):
-        raise ValueError('Reclasificar no puede modificar registros ni observaciones')
-    pasos = [] if solo_clasificacion else [
+    if solo_nucleo and ({k: v for k, v in anterior.items() if k != 'nucleo'} !=
+                        {k: v for k, v in calendario.items() if k != 'nucleo'}):
+        raise ValueError('Ampliar el núcleo no puede modificar el piloto ni sus observaciones')
+    if solo_clasificacion:
+        def sin_clasificacion(c):
+            from copy import deepcopy
+            c = deepcopy(c)
+            c.pop('clasificacion', None)
+            if 'nucleo' in c:
+                c['nucleo'].pop('catalogo', None)
+                for e in c['nucleo']['entidades'].values():
+                    e.pop('temas', None)
+            return c
+        if sin_clasificacion(anterior) != sin_clasificacion(calendario):
+            raise ValueError('Reclasificar no puede modificar registros ni observaciones')
+    pasos = [] if solo_clasificacion or solo_nucleo else [
         ('INSERT INTO agenda_recogidas(observado, consultas_json) VALUES (?, ?)',
          (calendario['actualizado'], _json(calendario['consultas'])))]
     for campo in ('fuentes', 'regiones', 'grupos'):
@@ -198,10 +218,15 @@ def planificar(anterior, calendario, solo_clasificacion=False):
             pasos.append(('INSERT INTO agenda_vinculos VALUES (?, ?) '
                 'ON CONFLICT(ref) DO UPDATE SET evento=excluded.evento', (ref, evento)))
     pasos.extend(_planificar_clasificacion(anterior, calendario))
+    pasos.extend(almacen_nucleo.planificar(anterior.get('nucleo'), calendario.get('nucleo')))
+    metadatos = {k: v for k, v in calendario.items() if k not in COLECCIONES}
+    if 'nucleo' in metadatos:
+        from .nucleo import COLECCIONES as colecciones
+        metadatos['nucleo'] = {k: v for k, v in metadatos['nucleo'].items() if k not in colecciones}
     pasos.append(("INSERT INTO agenda_estado VALUES ('calendario', ?) "
         'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json '
         'WHERE valor_json IS NOT excluded.valor_json',
-        (_json({k: v for k, v in calendario.items() if k not in COLECCIONES}),)))
+        (_json(metadatos),)))
     return pasos
 
 

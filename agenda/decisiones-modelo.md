@@ -1,8 +1,9 @@
 # Decisiones del modelo y plan de implementación
 
 Especificación de trabajo tras la revisión conjunta. El catálogo temático y
-su persistencia están implementados; el resto fija el comportamiento de los
-siguientes incrementos. Turso es la autoridad. SQLite queda para pruebas y
+el primer incremento del [núcleo v2](nucleo-implementado.md) están implementados.
+Ese documento distingue el contrato operativo de los siguientes incrementos.
+Turso es la autoridad. SQLite queda para pruebas y
 copias de recuperación, sin base local que haya que mantener o sincronizar.
 
 ## Catálogo común: decidido e implementado
@@ -157,7 +158,7 @@ provisional ante conflicto, conservará la selección anterior y lo marcará com
 conflictivo; no fabricará certeza. La selección antigua del piloto seguirá
 identificada como tal hasta sustituirla en el incremento del núcleo.
 
-## Resultados: estructura decidida para el siguiente incremento
+## Resultados: estructura inicial implementada
 
 Cada observación pertenece a una cita y a una fuente/registro. Conserva
 condición declarada, líneas por participación y parciales ordenados/anidados.
@@ -219,10 +220,11 @@ dentro de una transacción; avanza la revisión para invalidar escritores antigu
 Reclasificar después rellena los índices sin crear una recogida del proveedor.
 Repetir la misma reclasificación no escribe ni avanza la revisión.
 
-La siguiente ampliación del núcleo se preparará como esquema 4 y JSON v2,
-manteniendo las tablas anteriores durante la transición:
+La ampliación del núcleo usa esquema 4 y contrato v2, manteniendo las tablas
+anteriores. La exportación del piloto conserva JSON v1 con una extensión opcional
+`nucleo`; `--exportar-nucleo` entrega únicamente el nuevo contrato. Las tablas son:
 
-| Tabla propuesta | Clave y propósito |
+| Tabla | Clave y propósito |
 | --- | --- |
 | `agenda_entidades` | PK `(tipo, id)`; identidad común para agrupaciones, actividades, participantes, lugares, territorios y eventos. Los eventos conservan sus IDs actuales. |
 | `agenda_documentos` | ID de documento, contenido o referencia, huella y observación; una huella de documento no identifica un partido. |
@@ -233,18 +235,19 @@ manteniendo las tablas anteriores durante la transición:
 | `agenda_tiempos` | Objetivo tipado y extremos separados; columnas de fecha civil e instante UTC para consultas distintas, con precisión y certeza. |
 | `agenda_resultados`, `agenda_clasificaciones` | Observaciones e instantáneas con ámbitos tipados; líneas y parciales con referencias y métricas JSON validadas. |
 
-El borrador físico anterior fija responsabilidades y claves; su DDL y el
-validador JSON v2 se escribirán juntos cuando se implemente ese incremento.
-No hay tablas deportivas vacías creadas para aparentar que ese núcleo existe.
+El DDL y el validador v2 están implementados juntos y probados con el piloto y
+muestras FEB/WTA. Políticas y selecciones tienen tablas propias; sus detalles
+y los límites del contraste están en [Núcleo implementado](nucleo-implementado.md).
 Las relaciones nuevas no reinterpretarán todos los grupos actuales: la
 categoría gallega `actividad` sigue siendo vocabulario de origen; una ficha
 identificada podrá convertirse en actividad/obra y un ciclo en agrupación,
 con evidencia y correspondencia, sin fusionar sus traducciones a ciegas.
 
-La migración v4 conservará originales, observaciones, revisiones y vínculos.
-Deberá validar copia previa, igualdad de IDs y recuentos, claves foráneas y
-casos Galicia/Vidmar antes de cambiar la versión. Un escritor de una versión
-anterior fallará antes de escribir. La publicación de JSON para el navegador,
+La migración v4 conserva originales, observaciones, revisiones y vínculos.
+Se ha validado sobre una copia del piloto con igualdad de IDs y filas,
+claves foráneas y casos Galicia/Vidmar. El workflow exige copia previa conservada
+y comprobación posterior al preparar el núcleo remoto. Un escritor de una versión
+anterior falla antes de escribir. La publicación de JSON para el navegador,
 las vistas semana/mes y el seguimiento se construirán sobre ese contrato;
 no condicionan ahora la cuota de recogida ni obligan a otra fuente.
 
@@ -252,11 +255,12 @@ no condicionan ahora la cuota de recogida ni obligan a otra fuente.
 
 1. Catálogo común, persistencia v3 y reclasificación sin red: implementados en
    este cambio; pruebas específicas locales y suite completa en CI.
-2. Aplicación en Turso con copia previa y revisión de la clasificación real.
-3. Núcleo v2/esquema 4: entidades, relaciones, tiempo y política de fuentes;
-   migración compatible y casos de aceptación con los adaptadores actuales.
-4. Adaptador deportivo elegido según disponibilidad y condiciones, resultados
-   y clasificaciones; las muestras FEB y tenis guían el contrato común.
+2. Clasificación aplicada en Turso con copia previa: 313 eventos conservados,
+   208 clasificados y 105 sin correspondencia.
+3. Núcleo v2/esquema 4 implementado y probado sobre copia, con los adaptadores
+   actuales y muestras FEB/WTA; operación remota preparada en el workflow.
+4. Resultados y clasificaciones implementados para el subconjunto de muestras;
+   falta escoger y habilitar el recolector operativo según disponibilidad y condiciones.
 5. Lectura pública y vistas, guardados/seguimientos, sincronización personal.
 6. Conexión con artículos y entrega de novedades según las preferencias.
 

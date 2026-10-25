@@ -37,7 +37,7 @@ class Almacen:
             versiones = self.cliente.transaccion([
                 ('SELECT version FROM agenda_esquema WHERE id=1', ())], escritura=False)
             version = filas(versiones[0])
-            if version == [[2]]:
+            if version in ([[2]], [[3]]):
                 self.cliente.transaccion(almacen.migracion())
             elif version != [[almacen.VERSION_ESQUEMA]]:
                 raise ValueError('Versión de base de calendario incompatible')
@@ -49,10 +49,10 @@ class Almacen:
         self.anterior = deepcopy(calendario)
         return calendario
 
-    def guardar(self, calendario, solo_clasificacion=False):
+    def guardar(self, calendario, solo_clasificacion=False, solo_nucleo=False):
         if self.revision is None:
             raise ValueError('Hay que cargar el estado remoto antes de integrarlo')
-        if solo_clasificacion and self.anterior == calendario:
+        if (solo_clasificacion or solo_nucleo) and self.anterior == calendario:
             return
         # Si otro escritor avanzó la revisión, CHECK(revision>=0) rechaza la
         # guardia, el batch omite las escrituras y revierte. También falla si
@@ -61,7 +61,7 @@ class Almacen:
             'SELECT 1, ?, -1 WHERE NOT EXISTS '
             '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version=? AND revision=?)',
             (almacen.VERSION_ESQUEMA, almacen.VERSION_ESQUEMA, self.revision))
-        pasos = [guardia, *almacen.planificar(self.anterior, calendario, solo_clasificacion),
+        pasos = [guardia, *almacen.planificar(self.anterior, calendario, solo_clasificacion, solo_nucleo),
                  ('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ())]
         try:
             self.cliente.transaccion(pasos)

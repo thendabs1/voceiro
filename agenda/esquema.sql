@@ -93,3 +93,115 @@ CREATE TABLE IF NOT EXISTS agenda_clasificacion_revisiones (
     anterior_json TEXT,
     nuevo_json TEXT NOT NULL
 );
+-- Núcleo v2. Las tablas anteriores conservan el piloto y toda su auditoría.
+CREATE TABLE IF NOT EXISTS agenda_entidades (
+    tipo TEXT NOT NULL,
+    id TEXT NOT NULL,
+    clase TEXT NOT NULL,
+    datos_json TEXT NOT NULL,
+    PRIMARY KEY (tipo, id),
+    CHECK (tipo IN ('evento','agrupacion','actividad','participante','lugar','territorio'))
+);
+CREATE TABLE IF NOT EXISTS agenda_documentos (
+    id TEXT PRIMARY KEY,
+    fuente TEXT NOT NULL,
+    datos_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS agenda_referencias (
+    id TEXT PRIMARY KEY,
+    proveedor TEXT NOT NULL,
+    tipo_externo TEXT NOT NULL,
+    contexto_json TEXT NOT NULL,
+    id_externo TEXT NOT NULL,
+    tipo_destino TEXT,
+    destino TEXT,
+    datos_json TEXT NOT NULL,
+    UNIQUE (proveedor, tipo_externo, contexto_json, id_externo),
+    FOREIGN KEY (tipo_destino, destino) REFERENCES agenda_entidades(tipo, id),
+    CHECK ((tipo_destino IS NULL) = (destino IS NULL))
+);
+CREATE INDEX IF NOT EXISTS agenda_referencias_destino ON agenda_referencias(tipo_destino, destino);
+CREATE TABLE IF NOT EXISTS agenda_observaciones (
+    id TEXT PRIMARY KEY,
+    referencia TEXT NOT NULL REFERENCES agenda_referencias(id),
+    documento TEXT NOT NULL REFERENCES agenda_documentos(id),
+    observado TEXT NOT NULL,
+    ultima_observacion TEXT NOT NULL,
+    datos_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS agenda_observaciones_ref ON agenda_observaciones(referencia, ultima_observacion);
+CREATE TABLE IF NOT EXISTS agenda_relaciones (
+    id TEXT PRIMARY KEY,
+    tipo TEXT NOT NULL,
+    origen_tipo TEXT NOT NULL,
+    origen TEXT NOT NULL,
+    destino_tipo TEXT NOT NULL,
+    destino TEXT NOT NULL,
+    ambito_tipo TEXT,
+    ambito TEXT,
+    datos_json TEXT NOT NULL,
+    FOREIGN KEY (origen_tipo, origen) REFERENCES agenda_entidades(tipo, id),
+    FOREIGN KEY (destino_tipo, destino) REFERENCES agenda_entidades(tipo, id),
+    FOREIGN KEY (ambito_tipo, ambito) REFERENCES agenda_entidades(tipo, id),
+    CHECK ((ambito_tipo IS NULL) = (ambito IS NULL))
+);
+CREATE INDEX IF NOT EXISTS agenda_relaciones_destino ON agenda_relaciones(destino_tipo, destino, tipo);
+CREATE TABLE IF NOT EXISTS agenda_participaciones (
+    id TEXT PRIMARY KEY,
+    evento_tipo TEXT NOT NULL CHECK (evento_tipo = 'evento'),
+    evento TEXT NOT NULL,
+    participante_tipo TEXT CHECK (participante_tipo = 'participante'),
+    participante TEXT,
+    datos_json TEXT NOT NULL,
+    FOREIGN KEY (evento_tipo, evento) REFERENCES agenda_entidades(tipo, id),
+    FOREIGN KEY (participante_tipo, participante) REFERENCES agenda_entidades(tipo, id),
+    CHECK ((participante_tipo IS NULL) = (participante IS NULL))
+);
+CREATE INDEX IF NOT EXISTS agenda_participaciones_persona ON agenda_participaciones(participante, evento);
+CREATE TABLE IF NOT EXISTS agenda_resultados (
+    id TEXT PRIMARY KEY,
+    evento_tipo TEXT NOT NULL CHECK (evento_tipo = 'evento'),
+    evento TEXT NOT NULL,
+    observacion TEXT NOT NULL REFERENCES agenda_observaciones(id),
+    datos_json TEXT NOT NULL,
+    FOREIGN KEY (evento_tipo, evento) REFERENCES agenda_entidades(tipo, id)
+);
+CREATE TABLE IF NOT EXISTS agenda_clasificaciones (
+    id TEXT PRIMARY KEY,
+    ambito_tipo TEXT NOT NULL CHECK (ambito_tipo = 'agrupacion'),
+    ambito TEXT NOT NULL,
+    observacion TEXT NOT NULL REFERENCES agenda_observaciones(id),
+    datos_json TEXT NOT NULL,
+    FOREIGN KEY (ambito_tipo, ambito) REFERENCES agenda_entidades(tipo, id)
+);
+CREATE TABLE IF NOT EXISTS agenda_nucleo_politicas (
+    id TEXT PRIMARY KEY,
+    objetivo_tipo TEXT NOT NULL,
+    objetivo TEXT NOT NULL,
+    bloque TEXT NOT NULL,
+    datos_json TEXT NOT NULL,
+    FOREIGN KEY (objetivo_tipo, objetivo) REFERENCES agenda_entidades(tipo, id),
+    UNIQUE (objetivo_tipo, objetivo, bloque)
+);
+CREATE TABLE IF NOT EXISTS agenda_nucleo_selecciones (
+    id TEXT PRIMARY KEY,
+    objetivo_tipo TEXT NOT NULL,
+    objetivo TEXT NOT NULL,
+    bloque TEXT NOT NULL,
+    datos_json TEXT NOT NULL,
+    FOREIGN KEY (objetivo_tipo, objetivo) REFERENCES agenda_entidades(tipo, id),
+    UNIQUE (objetivo_tipo, objetivo, bloque)
+);
+CREATE TABLE IF NOT EXISTS agenda_tiempos (
+    tipo TEXT NOT NULL,
+    objetivo TEXT NOT NULL,
+    inicio_fecha TEXT,
+    inicio_instante TEXT,
+    fin_fecha TEXT,
+    fin_instante TEXT,
+    datos_json TEXT NOT NULL,
+    PRIMARY KEY (tipo, objetivo),
+    FOREIGN KEY (tipo, objetivo) REFERENCES agenda_entidades(tipo, id)
+);
+CREATE INDEX IF NOT EXISTS agenda_tiempos_civil ON agenda_tiempos(tipo, inicio_fecha, fin_fecha);
+CREATE INDEX IF NOT EXISTS agenda_tiempos_utc ON agenda_tiempos(tipo, inicio_instante, fin_instante);

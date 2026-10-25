@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       operacion:
-        description: 'Recoger fuentes o reclasificar datos existentes sin consultar proveedores'
+        description: 'Recoger, reclasificar o preparar el núcleo sin consultar proveedores'
         type: choice
-        options: [recoger, reclasificar]
+        options: [recoger, reclasificar, preparar-nucleo]
         default: recoger
       inicio:
         description: 'Primer día (AAAA-MM-DD, vacío = hoy)'
@@ -45,14 +45,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Copia previa a reclasificar
-        if: inputs.operacion == 'reclasificar'
+      - name: Copia previa a modificar el modelo
+        if: inputs.operacion != 'recoger'
         run: python calendario.py --turso --copia "$RUNNER_TEMP/antes/calendario.sqlite"
       - name: Conservar copia antes de modificar Turso
-        if: inputs.operacion == 'reclasificar'
+        if: inputs.operacion != 'recoger'
         uses: actions/upload-artifact@v4
         with:
-          name: calendario-antes-de-clasificar
+          name: calendario-antes-de-modificar
           path: ${{ runner.temp }}/antes/
           if-no-files-found: error
           retention-days: 14
@@ -64,6 +64,11 @@ jobs:
           IDIOMA: ${{ inputs.idioma }}
           FUENTE: ${{ inputs.fuente }}
         run: |
+          if [ "$OPERACION" = preparar-nucleo ]; then
+            python calendario.py --turso --preparar-nucleo --exportar-nucleo --salida "$RUNNER_TEMP/calendario/nucleo.json"
+            python calendario.py --turso --exportar --salida "$RUNNER_TEMP/calendario/calendario.json"
+            exit 0
+          fi
           if [ "$OPERACION" = reclasificar ]; then
             python calendario.py --turso --reclasificar --salida "$RUNNER_TEMP/calendario/calendario.json"
             exit 0
@@ -79,8 +84,10 @@ jobs:
           python calendario.py "${args[@]}"
       - name: Copiar el estado completo con su historial
         run: python calendario.py --turso --copia "$RUNNER_TEMP/calendario/calendario.sqlite"
-      - name: Comprobar conservación tras reclasificar
-        if: inputs.operacion == 'reclasificar'
+      - name: Comprobar conservación tras modificar el modelo
+        if: inputs.operacion != 'recoger'
+        env:
+          OPERACION: ${{ inputs.operacion }}
         run: |
           python - <<'PY'
           from collections import Counter
@@ -99,9 +106,20 @@ jobs:
               for tabla, filas in historial.items():
                   if db.execute(f'SELECT * FROM {tabla} ORDER BY 1').fetchall() != filas:
                       raise ValueError(f'Cambió el historial de {tabla}')
-          sin_clasificacion = lambda c: {k: v for k, v in c.items() if k != 'clasificacion'}
-          if sin_clasificacion(antes) != sin_clasificacion(despues):
-              raise ValueError('Cambió contenido u observación del calendario al reclasificar')
+          campos = {'nucleo'} if os.environ['OPERACION'] == 'preparar-nucleo' else {'clasificacion', 'nucleo'}
+          contenido_piloto = lambda c: {k: v for k, v in c.items() if k not in campos}
+          if contenido_piloto(antes) != contenido_piloto(despues):
+              raise ValueError('Cambió contenido u observación del calendario al modificar el modelo')
+          if 'nucleo' in despues:
+              from agenda import nucleo
+              n = nucleo.validar(despues['nucleo'])
+              ids = {e['id'] for e in n['entidades'].values() if e['tipo'] == 'evento'}
+              if not {e['id'] for e in despues['eventos']} <= ids:
+                  raise ValueError('Faltan identidades del piloto en el núcleo')
+              for ref, evento in despues['vinculos'].items():
+                  if n['referencias'].get(ref, {}).get('destino') != nucleo.objetivo('evento', evento):
+                      raise ValueError('Cambió un vínculo del piloto al preparar el núcleo')
+              print(f"Núcleo v2: {len(ids)} eventos, {len(n['referencias'])} referencias tipadas")
           cuentas = Counter(t for e in despues['eventos'] for t in temas_de(despues, e['id']))
           asignados = len(despues['clasificacion']['asignaciones'])
           print(f"Conservados {len(despues['eventos'])} eventos, IDs, originales y revisiones")

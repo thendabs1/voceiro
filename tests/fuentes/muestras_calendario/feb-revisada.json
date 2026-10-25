@@ -1,0 +1,145 @@
+{
+  "version_muestra": 1,
+  "proveedor": "feb",
+  "competicion": {
+    "id": "4",
+    "nombre": "LF ENDESA"
+  },
+  "edicion": {
+    "id": "2026",
+    "nombre": "2026/2027"
+  },
+  "fase": {
+    "id": "89975",
+    "nombre": "Liga Regular Único"
+  },
+  "partidos": [
+    {
+      "id": "2522807",
+      "fecha_hora": "24/10/2026 - 17:00",
+      "local": {
+        "id": "1008705",
+        "nombre": "AZULMARINO MALLORCA PALMA"
+      },
+      "visitante": {
+        "id": null,
+        "nombre": "HOZONO GLOBAL JAIRIS"
+      },
+      "pista": {
+        "nombre": "POLIESPORTIU SON MOIX",
+        "municipio_literal": "Palma de Mallorca",
+        "provincia_literal": "Illes Balears"
+      },
+      "marcador_resultados": [
+        67,
+        69
+      ],
+      "cuartos": [
+        [
+          19,
+          25
+        ],
+        [
+          18,
+          12
+        ],
+        [
+          19,
+          16
+        ],
+        [
+          11,
+          16
+        ]
+      ]
+    },
+    {
+      "id": "2522809",
+      "fecha_hora": "25/10/2026 - 18:30",
+      "local": {
+        "id": null,
+        "nombre": "SPAR GIRONA"
+      },
+      "visitante": {
+        "id": null,
+        "nombre": "MIRAI EUSKOTREN"
+      },
+      "pista": {
+        "nombre": "Pavelló Municipal Girona Fontajau",
+        "municipio_literal": "Girona",
+        "provincia_literal": "Girona"
+      },
+      "marcador_ficha": [
+        0,
+        0
+      ],
+      "marcador_resultados": null,
+      "cuartos": []
+    }
+  ],
+  "clasificacion": {
+    "filas": [
+      {
+        "id": null,
+        "nombre": "CASADEMONT ZARAGOZA",
+        "posicion": 1,
+        "metricas": {
+          "baloncesto.partidos_jugados": 4,
+          "baloncesto.victorias": 4,
+          "baloncesto.derrotas": 0,
+          "baloncesto.puntos_favor": 354,
+          "baloncesto.puntos_contra": 229,
+          "baloncesto.diferencia": 125,
+          "baloncesto.porcentaje_victorias": "100.0"
+        }
+      },
+      {
+        "id": null,
+        "nombre": "AZULMARINO MALLORCA PALMA",
+        "posicion": 2,
+        "metricas": {
+          "baloncesto.partidos_jugados": 5,
+          "baloncesto.victorias": 4,
+          "baloncesto.derrotas": 1,
+          "baloncesto.puntos_favor": 387,
+          "baloncesto.puntos_contra": 332,
+          "baloncesto.diferencia": 55
+        }
+      }
+    ]
+  },
+  "fragmentos": [
+    {
+      "archivo": "muestra-menu-competiciones.txt",
+      "url": "https://baloncestoenvivo.feb.es/calendario/4/2026",
+      "texto": "Catalogo de competiciones enlazado en el menu de la propia pagina (g, t, nm):\ng=  4 t=2026 nm=lfendesa\ng=  1 t=2026 nm=primerafeb\ng= 67 t=2026 nm=lfchallenge\ng=  2 t=2026 nm=segundafeb\ng=  9 t=2026 nm=lf2\ng=  3 t=2026 nm=tercerafeb\ng= 74 t=2026 nm=ligau\ng= 73 t=2026 nm=copaespaa\ng= 19 t=2025 nm=cessaaminimas\ng= 20 t=2025 nm=cessaaminifem\ng= 40 t=2025 nm=cessaacadetemas\ng= 41 t=2025 nm=cessaacadetefem\ng= 25 t=2025 nm=cessaainfantilmas\ng= 26 t=2025 nm=cessaainfantilfem\ng= 55 t=2025 nm=minicopalfendesa\ng= 44 t=2025 nm=fasefinal1divisinfemenin\ng= 21 t=2025 nm=cespclubesjrmasc\ng= 22 t=2025 nm=cespclubesjrfem\ng= 35 t=2025 nm=cespclubescadmasc\ng= 36 t=2025 nm=cespclubescadfem\ng= 37 t=2025 nm=cespclubesinfmasc\ng= 38 t=2025 nm=cespclubesinffem\ng= 71 t=2025 nm=cespclubesminimasc\ng= 72 t=2025 nm=cespclubesminifem\nSelector de temporadas: value 2026 -> '2026/2027' ... hasta 1997 -> '1997/1998'.\n"
+    },
+    {
+      "archivo": "muestra-ce-junior-fases-g21-t2025.txt",
+      "url": "https://baloncestoenvivo.feb.es/calendario/4/2026",
+      "texto": "Selector de fases/grupos de C ESP CLUBES JR MASC (g=21, t=2025):\n   89493 -> 3º-4º 3º-4º\n   89494 -> 5º-6º 5º-6º\n   89495 -> 7º-8º 7º-8º\n   89481 -> PRIMERA FASE A\n   89482 -> PRIMERA FASE B\n   89483 -> PRIMERA FASE C\n   89484 -> PRIMERA FASE D\n   89485 -> PRIMERA FASE E\n   89486 -> PRIMERA FASE F\n   89487 -> PRIMERA FASE G\n   89488 -> PRIMERA FASE H\n\nBloque visible por defecto: Jornada 1 02/05/2026\n\nEn LF Endesa (g=4) el selector de grupo solo contiene: 89975 -> Liga Regular Único (texto literal del sitio).\nEn la pagina de LF Endesa aparece enlace Series.aspx?f=45080 con texto 'Supercopa' (parametro f = fase/serie).\n"
+    },
+    {
+      "archivo": "muestra-partido-final-2522807.txt",
+      "url": "https://baloncestoenvivo.feb.es/partido/2522807",
+      "texto": "Estadística de partido| |LF ENDESA | |2026/2027| | | | | | | |Directo| |Rankings| |Ficha| |Gráfico de tiro| |Estadísticas| | || | $(function () { $('#loader-data').widgetlauncher({ initLoad: \"boxscore\", idPartido: \"2522807\" }); }); | | | | | | | | ||AZULMARINO MALLORCA PALMA|| | |67| | | | | || || || || |p| | | | | |69| | ||HOZONO GLOBAL JAIRIS|| | | | | | | |19| |18| |19| |11| | | &nbsp; | | |25| |12| |16| |16| | | | | | |1º C||19/25| | | |2º C||18/12| | | |3º C||19/16| | | |4º C||11/16| | | | | |Fecha| |24/10/2026 - 17:00| | | |Árbitros| |OLIVARES BERNABEU, JOSEP MARIA| |PIÑEIRO AMONDARAY, LAURA| |LAZARO RODRIGUEZ, ALBERTO| | | |Pista| |POLIESPORTIU SON MOIX| |Palma de Mallorca (Illes Balears)| | | | | | || | |%| | | AZULMARINO MALLORCA PALMA | | | | || |Rebotes| || |Tapones| || |Faltas| || | | |I| |D| |Jugador| |MIN| |PT| |T2| |T3| |TC| |TL| |RO| |RD| |RT| |AS| |BR| |BP| |TF| |TC| |MT| |FC| |FR| |VA| |+/-| | | |*| |1| ||HOLM, KLARA MARIA SUSANNE|| |35:22| |21| |3/11 |27,3%|| |3/7 |42,9%|| |6/18 |33,3%|| |6/6 |100%|| |2| |7| |9| | 5| |0| | 1| |0| |2| |0| |3| |8| |27| |-3| | | || |5"
+    },
+    {
+      "archivo": "muestra-partido-pendiente-2522809.txt",
+      "url": "https://baloncestoenvivo.feb.es/partido/2522809",
+      "texto": "Estadística de partido| |LF ENDESA | |2026/2027| | | | | | | |Directo| |Rankings| |Ficha| |Gráfico de tiro| |Estadísticas| | || | $(function () { $('#loader-data').widgetlauncher({ initLoad: \"boxscore\", idPartido: \"2522809\" }); }); | | | | | | | | ||SPAR GIRONA|| | |0| | | | | || || || || |p| | | | | |0| | ||MIRAI EUSKOTREN|| | | | | | | || || || || | | &nbsp; | | || || || || | | | | | |Fecha| |25/10/2026 - 18:30| | | |Árbitros| |BAENA CRIADO, JORGE| |DOMINGO VILALTA, JORDI| |ARRESA QUINTERO, JOSE MARIA| | | |Pista| |Pavelló Municipal Girona Fontajau| |Girona (Girona)| | | | Esta información es provisional y está sujeta a cambios y/o correcciones realizadas por la FEB. | | | | | | | &copy; ||&nbsp;Federación Española de Baloncesto · |Contacto| · |Política de privacidad| · |Política de cookies| · |Aviso Legal| | | | | ||Youtube| |||Facebook| |||flickr| |||Instagram| |||Twitter| | | | | var gaJsHost = ((\"https:\" == document.location.protocol) ? \"https://ssl.\" : \"http://www.\"); document.w"
+    },
+    {
+      "archivo": "muestra-resultados-lfendesa.txt",
+      "url": "https://baloncestoenvivo.feb.es/resultados/4/2026",
+      "texto": "== Resultados Jornada 5 (5 finales + 3 '*-*') ==\nResultados Jornada 5(24/10/2026) | | | | |Equipos||Resultado||Fecha||Hora| || | |AZULMARINO MALLORCA PALMA| - |HOZONO GLOBAL JAIRIS| || |67-69| || 24/10/2026 || 17:00 | || | |INNOVA-TSN LEGANÉS| - |KUTXABANK ARASKI| || |63-58| || 24/10/2026 || 17:00 | || | |BAXI FERROL| - |INVERSUS GERNIKA BIZKAIA| || |76-71| || 24/10/2026 || 18:30 | || | |CELTA FEMXA ZORKA| - |CADI LA SEU| || <a id=\"_ctl0_MainContentPlaceHold\n\n== Bloque Clasificacion (Po|Equipo|PJ|PG|PP|PF|PC|DIF|%|R) ==\nClasificación | | | | |Po||Equipo||PJ||PG||PP||PF||PC||DIF||%||R| || | 1 || |CASADEMONT ZARAGOZA| || 4 || 4 || 0 || 354 || 229 || 125 || 100,0% || |+4| | || | 2 || |AZULMARINO MALLORCA PALMA| || 5 || 4 || 1 || 387 || 332 || 55 || "
+    },
+    {
+      "archivo": "muestra-calendario-lfendesa.txt",
+      "url": "https://baloncestoenvivo.feb.es/calendario/4/2026",
+      "texto": "== Jornada 1 (jugada): celda resultado con marcador y enlace Partido.aspx?p= ==\nJornada 1 03/10/2026 </h1> <table cellpadding=\"0\" border=\"0\" id=\"_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl0_DataGrid3\"> <tr> <th scope=\"col\">Local</th><th scope=\"col\">Resultado</th><th scope=\"col\">Visitante</th> </tr><tr> <td class=\"equipo local\"> <div class=\"contenedorLogoEquipoCalendario equipoLocal\"> <img id=\"_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl0_DataGrid3__ctl2_LogoEquipoLocal\" class=\"logoEquipoCalendario equipoLocal\" src=\"https://imagenes.feb.es/Imagen.aspx?i=1008705&amp;ti=1\" border=\"0\" /> <a id=\"_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl0_DataGrid3__ctl2_Hyperlink1\" href=\"https://baloncestoenvivo.feb.es/Equipo.aspx?i=1008705\">AZULMARINO MALLORCA PALMA</a> </div> </td><td class=\"resultado\"> <a href='https://baloncestoenvivo.feb.es/Partido.aspx?p=2522775'>88-71</a> </td><td class=\"equipo visitante\"> <div class=\"contenedorLogoEqu\n\n== Jornada 6 (futura): celda class=fecha con dia semana+fecha+hora ==\nJornada 6 31/10/2026 </h1> <table cellpadding=\"0\" border=\"0\" id=\"_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl5_DataGrid3\"> <tr> <th scope=\"col\">Local</th><th scope=\"col\">Resultado</th><th scope=\"col\">Visitante</th> </tr><tr> <td class=\"equipo local\"> <div class=\"contenedorLogoEquipoCalendario equipoLocal\"> <img id=\"_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl5_DataGrid3__ctl2_LogoEquipoLocal\" class=\"logoEquipoCalendario equipoLocal\" src=\"https://imagenes.feb.es/Imagen.aspx?i=1008971&amp;ti=1\" border=\"0\" /> <a id=\"_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl5_DataGrid3__ctl2_Hyperlink1\" href=\"https://baloncestoenvivo.feb.es/Equipo.aspx?i=1008971\">KUTXABANK ARASKI</a> </div> </td><td class=\"fecha\"> <a href='https://baloncestoenvivo.feb.es/Partido.aspx?p=2522815'>SÁBADO<br/>31/10/2026<br/>19:00</a> </td><td class=\"equipo visitante\"> <div class=\"cont"
+    }
+  ],
+  "fecha_captura_original": "2026-10-25",
+  "precision_captura_original": "día; hora no retenida"
+}

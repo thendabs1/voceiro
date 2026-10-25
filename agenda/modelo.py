@@ -129,4 +129,8 @@ def integrar(anterior, registros, fuentes, observado, consultas=()):
                 raise ValueError(f'Referencia de {campo} sin definir: {identidad}')
         eventos.append(evento)
     calendario['eventos'] = eventos
-    return clasificar(calendario)
+    calendario = clasificar(calendario)
+    if 'nucleo' in calendario:
+        from .transicion import ampliar
+        calendario = ampliar(calendario)
+    return calendario
