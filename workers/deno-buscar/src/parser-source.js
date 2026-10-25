@@ -72,7 +72,7 @@ export function normDomain(s) {
 }
 
 export function tokenizeQuery(raw) {
-  const re = /([a-z][a-z]*):"([^"]*)"|"([^"]*)"|([^\\s"]+)/gi;
+  const re = /([\\p{L}][\\p{L}\\p{N}-]*):"([^"]*)"|"([^"]*)"|([^\\s"]+)/giu;
   const tokens = [];
   let m;
   while ((m = re.exec(raw)) !== null) {
@@ -83,7 +83,7 @@ export function tokenizeQuery(raw) {
     } else {
       const word = m[4];
       const pi = word.indexOf(':');
-      if (pi > 0 && /^[a-z]+$/i.test(word.slice(0, pi))) {
+      if (pi > 0 && /^[\\p{L}][\\p{L}\\p{N}-]*$/u.test(word.slice(0, pi))) {
         tokens.push({ prefix: word.slice(0, pi).toLowerCase(), text: word.slice(pi + 1), raw: word, quoted: false });
       } else {
         tokens.push({ prefix: '', text: word, raw: word, quoted: false });
