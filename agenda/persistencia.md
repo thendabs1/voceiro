@@ -1,22 +1,25 @@
 # Persistencia del calendario y continuidad del modelo
 
-## Alcance del PR
+## Almacenamiento y autoridad
 
-Una base **SQLite local dedicada**, manejada por la biblioteca estándar de
-Python. Guarda el calendario de Galicia y Vidmar, permite retomar una pasada
-y exportar el mismo contrato JSON. No configura una base remota, no cambia
-la base de sincronización de dispositivos ni publica en R2. El SQL y los
-documentos conservan el modelo sin escoger todavía el servicio de alojamiento.
+El calendario se guarda en una **base Turso/libSQL dedicada**, con credenciales
+`CALENDARIO_TURSO_URL` y `CALENDARIO_TURSO_TOKEN`. Es independiente de `voceiro`
+(catálogo, pasadas y estadísticas) y de la sincronización de dispositivos.
+SQLite local sigue disponible para muestras y recuperación de copias.
+Ambos usan el mismo plan de escrituras y el mismo contrato JSON.
 
-Hay dos versiones distintas: `version` del contrato JSON y `PRAGMA user_version`
-del esquema SQLite, ambas inicialmente 1. Una base ajena sin versión o una
-versión desconocida se rechaza. Las futuras migraciones deberán ser explícitas;
-no se da por resuelto el paso a Turso o D1 por compartir dialecto SQLite.
+El contrato JSON conserva `version: 1`; el esquema es versión 2 en
+`agenda_esquema`, con una revisión monotónica independiente. Turso documenta
+`PRAGMA user_version` como [solo lectura](https://docs.turso.tech/cloud/limitations).
+Las bases locales del boceto v1 se migran transaccionalmente, conservando
+identidades, originales e historial. Las bases ajenas y versiones futuras se
+rechazan. No se aplica el esquema del calendario a la base de estadísticas.
 
 ## Tablas y garantías
 
 | Tabla | Responsabilidad |
 | --- | --- |
+| `agenda_esquema` | Versión y revisión del estado para detectar escritores concurrentes. |
 | `agenda_fuentes` | Procedencia, atribución, licencia y metadatos del flujo. |
 | `agenda_eventos` | Citas comunes; JSON completo y columnas de precisión, inicio, fin y estado. |
 | `agenda_registros` | Identidad de origen, original, normalización y primera/última observación. |
@@ -35,12 +38,31 @@ las fechas de precisión día permanecen fechas. El JSON conserva zona y valor
 normalizados del adaptador. Se consultan por precisión: no se compara una
 fecha sin hora como si fuera medianoche UTC.
 
-Toda la red y el parseo terminan antes de abrir la transacción. Dentro de
-`BEGIN IMMEDIATE` se carga el estado vigente, se integra y se guarda: dos
-escritores no leen ambos una versión antigua antes de sobrescribirse.
+La recogida y el parseo de proveedores terminan antes de escribir. En local
+se carga e integra dentro de `BEGIN IMMEDIATE`. En Turso se lee una instantánea
+consistente en una transacción breve, se integra fuera de la red y se confirma
+en un solo batch con `BEGIN IMMEDIATE`. La primera sentencia comprueba la
+revisión leída: si otro escritor avanzó, falla una restricción y se revierte
+el batch. Hay que releer e integrar de nuevo. Tampoco se acepta una observación
+de un registro anterior a la que ya tenemos, aunque su descarga termine después.
 Un error en una fuente, equivalencias o claves foráneas no confirma una
 recogida parcial. Un evento ausente permanece con su última observación;
 no se revalida por el mero hecho de volver a guardar la base.
+
+Cada paso del batch depende del éxito del anterior. COMMIT solo se ejecuta
+si todos pasan y ante error se intenta ROLLBACK. Un pipeline de `execute`
+independientes continúa tras un error y no ofrece esta garantía. Se comparte
+la codificación de valores con `cosecha/turso.py`; el calendario falla si faltan
+credenciales, hay errores SQL o una respuesta incompleta. Una respuesta perdida
+tras COMMIT deja un resultado incierto: se relee antes de decidir si repetir,
+sin reintentos automáticos.
+
+Catálogos, eventos, vínculos y pertenencias se escriben únicamente al cambiar.
+Una observación idéntica actualiza solo `ultima_recogida` en la fila del registro.
+Los originales y la normalización no se reescriben por esa observación; las
+fechas de observación viven en columnas y la exportación las recompone.
+Se muestran las métricas de filas leídas/escritas del servidor. El presupuesto
+se debe comprobar con el consumo del plan, aunque las bases estén separadas.
 
 La auditoría compara el contenido completo del registro salvo primera y
 última recogida. Cambios de horario con `SEQUENCE:0` también producen revisión.
@@ -50,12 +72,43 @@ La exportación JSON se escribe atómicamente **después** de confirmar la base.
 No hay una transacción conjunta entre SQLite y el archivo: si la exportación
 falla, se regenera con `--exportar` sin consultar otra vez al proveedor.
 
-El workflow manual entrega base y JSON; todavía no recupera la base de una
-ejecución anterior. No hay cron, poda de revisiones ni retención automática
-del estado más allá de los 14 días del artefacto de Actions. Localmente la
-base e historial crecen hasta que se decida una política. Antes de producción
-faltan alojamiento, copia/restauración, frescura visible y revalidación de
-eventos, presupuesto por fuente y publicación de vistas para el navegador.
+El workflow manual continúa el estado remoto y serializa sus ejecuciones.
+Entrega JSON y una copia SQLite completa de `/dump`, incluido el historial,
+durante 14 días. La copia se valida con `integrity_check`, claves foráneas y
+reapertura del contrato antes de sustituir el archivo anterior. Puede continuarse
+localmente con `--db`. El dump es una instantánea propia: un escritor externo
+entre exportación y copia puede hacer que esta tenga una revisión posterior al JSON.
+
+Se mantiene la recogida manual. Se carga el estado completo, sin descargar
+el historial de revisiones; envío y respuesta SQL se limitan a 8 y 16 MB y
+el dump a 64 MB. Un exceso falla explícitamente, sin confirmar datos truncados.
+Antes de automatizar o crecer hay que sustituir la carga completa por alcances
+apropiados y acordar archivo, retención, revalidación y presupuesto por fuente.
+No se podan citas futuras por la ventana de titulares ni se borra historial
+automáticamente. La publicación prevista es generar vistas JSON en R2 para
+el navegador; este cambio todavía no las publica.
+
+## Revisión para otras agendas y deportes
+
+El modelo admite funciones culturales, partidos y pruebas o sesiones individuales
+si se mantienen estas separaciones:
+
+| Concepto | Regla común |
+| --- | --- |
+| Identidad | Fuente estable + ID literal; variantes de idioma o selección no inventan otro proveedor. No fusionar por nombre ni horario. |
+| Celebración | Instante con zona, día sin hora o fecha desconocida. Un aplazamiento conserva el evento; las repeticiones necesitan ocurrencias identificadas. |
+| Agrupación | Ciclo/ficha o competición/temporada/fase son grupos tipados y relaciones explícitas. No deducir el gran premio del título ni la temporada del año de celebración. |
+| Territorio | Lugar o ámbitos declarados, múltiples y con correspondencias verificadas. El origen de una fuente o equipo no localiza el evento; una cita online puede no tener región. |
+| Participantes | Futuro catálogo de personas, equipos o parejas y papeles en el encuentro. Una carrera admite muchos participantes, no solo local/visitante. |
+| Resultados | Futuros registros por fuente y evento/sesión, con unidades, parciales, empates, retiradas/descalificaciones y condición provisional/final. No reducirlos a dos marcadores. |
+| Clasificaciones | Futuras instantáneas por competición + temporada + fase/grupo + ámbito + observación. No son citas ni resultados de una sesión. Preservar correcciones y deducciones. |
+
+Ahora se guardan los grupos y sus documentos; sus relaciones todavía no forman
+tablas consultables con claves foráneas. Participantes, resultados y clasificaciones
+tampoco están implementados. Se añadirán con una migración y un adaptador real
+que permita comprobar sus reglas. Conservar originales no equivale a implementar
+esas entidades. La persistencia del calendario no depende de anticipar una
+estructura particular del fútbol.
 
 ## Fútbol pendiente, conservando el encaje de FotMob
 

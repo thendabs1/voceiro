@@ -1,6 +1,7 @@
 """Persistencia real en SQLite y contraste ICS, con respuestas de red simuladas."""
 
 from copy import deepcopy
+from contextlib import closing
 import json
 from pathlib import Path
 import sqlite3
@@ -161,13 +162,14 @@ class Persistencia(unittest.TestCase):
         with tempfile.TemporaryDirectory() as carpeta:
             for version in (0, 99):
                 ruta = Path(carpeta) / f'ajena-{version}.sqlite'
-                with sqlite3.connect(ruta) as db:
+                with closing(sqlite3.connect(ruta)) as db:
                     db.execute('CREATE TABLE ajena(id TEXT)')
                     db.execute(f'PRAGMA user_version = {version}')
+                    db.commit()
                 with self.assertRaises(ValueError):
                     with almacen.abrir(ruta):
                         self.fail('No debe abrir una base ajena')
-                with sqlite3.connect(ruta) as db:
+                with closing(sqlite3.connect(ruta)) as db:
                     self.assertEqual(db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall(),
                                      [('ajena',)])
 

@@ -4,8 +4,8 @@ Documento de diseño. Las reglas siguientes son una propuesta para contrastar
 con el usuario; no activan recopilación periódica ni cambian el modelo.
 No se ha vuelto a utilizar OpenCode.
 
-Continuidad posterior: el piloto incorpora Vidmar y persistencia SQLite
-local, descritos en [el diseño de almacenamiento](../persistencia.md).
+Continuidad posterior: el piloto incorpora Vidmar y persistencia Turso con
+copias SQLite, descritos en [el diseño de almacenamiento](../persistencia.md).
 Las propuestas de cadencia de este informe siguen sin activarse.
 
 ## Vidmar: dos selecciones del mismo calendario

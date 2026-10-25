@@ -2,8 +2,8 @@
 
 Una función de teatro, un partido y una sesión de F1 son citas del mismo
 calendario. Los importadores son Cultura de Galicia y el ICS completo de
-Vidmar; el núcleo no conoce sus campos. Esta fase guarda una base SQLite
-local y permite exportar un JSON revisable. El panel de calendario,
+Vidmar; el núcleo no conoce sus campos. Esta fase persiste en Turso y conserva
+SQLite local para muestras y copias. Permite exportar un JSON revisable. El panel de calendario,
 las órdenes del buscador y la publicación periódica se diseñarán después
 de comprobar los datos. No hay despliegue ni tarea programada nueva.
 
@@ -32,6 +32,19 @@ python calendario.py --fuente cultura-galicia --fuente vidmar-f1 \
 python calendario.py --db /tmp/calendario.sqlite --exportar \
   --salida /tmp/calendario.json
 
+# Continuar el estado remoto con CALENDARIO_TURSO_URL y
+# CALENDARIO_TURSO_TOKEN en el entorno (no se carga .env automáticamente).
+python calendario.py --turso --fuente cultura-galicia --fuente vidmar-f1 \
+  --inicio 2026-10-25 --fin 2026-11-23 --salida /tmp/calendario.json
+
+# Recuperar la exportación sin consultar proveedores.
+python calendario.py --turso --exportar --salida /tmp/calendario.json
+
+# Copia completa con originales, observaciones, vínculos e historial.
+python calendario.py --turso --copia /tmp/calendario.sqlite
+# Reabrir la copia recupera el JSON y permite continuar localmente.
+python calendario.py --db /tmp/calendario.sqlite --exportar --salida /tmp/recuperado.json
+
 # Combinar muestras de ambos formatos, sin red.
 python calendario.py --entrada /tmp/galicia.json --entrada-ics /tmp/vidmar.ics \
   --db /tmp/calendario-muestra.sqlite
@@ -51,16 +64,18 @@ solapamientos. No se presupone que la API ofrezca una instantánea transaccional
 si falla con un intervalo grande, hay que reducirlo y revisar la recogida.
 
 El workflow manual **Calendario (piloto)** permite elegir Galicia, F1 o ambas
-y guarda SQLite y JSON como artefacto durante 14 días. Cada ejecución del
-workflow parte de cero; para seguir una base existente se descarga el artefacto
-y se usa `--db` localmente. No sustituye la cosecha de titulares, ni escribe
-en R2 o Turso. Aún no hay restauración automática del estado en Actions ni
-publicación para el navegador. La base local no poda eventos ni historial.
+y continúa el estado en una base Turso dedicada. Necesita los secretos de
+Actions `CALENDARIO_TURSO_URL` y `CALENDARIO_TURSO_TOKEN`; no usa como alternativa
+las credenciales del diagnóstico de la cosecha. Guarda una copia SQLite
+completa y JSON como artefacto durante 14 días. Las ejecuciones del workflow
+se serializan y la revisión remota detecta otros escritores. La base conserva
+el estado más allá de los artefactos. No hay cron, publicación para el navegador
+ni poda automática de eventos o historial.
 
-`--db` sustituye a `--anterior`; no se pueden combinar. Toda la recogida se
+`--db`, `--turso` y `--anterior` son alternativas. Toda la recogida se
 valida antes de escribir. La transacción conserva el estado y las revisiones
 de contenido; repetir datos idénticos registra otra recogida sin inventar un
-cambio. SQLite es la autoridad cuando se usa `--db`: la exportación ocurre
+cambio. La base elegida es la autoridad: la exportación ocurre
 después del commit y puede regenerarse con `--exportar` si falla el archivo.
 Esquema, límites y continuidad del modelo en [Persistencia y estructura
 deportiva](persistencia.md).
@@ -100,8 +115,8 @@ determinista a partir de una referencia externa y se conservan con
 traducciones al mismo evento. Si una equivalencia intenta unir dos eventos
 internos ya separados, la pasada falla para revisarlos. No hay conciliación
 automática entre proveedores por título, fecha o parecido. Antes de publicar
-periódicamente hará falta ubicar el estado persistente en el servidor y
-diseñar la conciliación reversible entre fuentes.
+periódicamente hará falta diseñar la conciliación reversible entre fuentes,
+la revalidación y el archivo del estado remoto.
 
 `datos_de` identifica el registro elegido para mostrar horario, estado y
 lugar: se elige de forma estable por referencia, sin afirmar que sea el más
@@ -183,13 +198,20 @@ las correcciones. Se investigará antes de actualizar servidores.
 
 ## Verificación
 
-`tests/fuentes/test_agenda.py` y `test_calendario_almacen.py` entran en la suite Python completa del workflow
+`tests/fuentes/test_agenda.py`, `test_calendario_almacen.py` y
+`test_calendario_turso.py` entran en la suite Python completa del workflow
 **Tests**. Cubre funciones múltiples, traducciones, cambios de fecha,
 equivalencias conflictivas, ausencias, regiones y grupos múltiples, fechas
 sin hora y cambios de horario, paginación y conservación de la última salida
 buena ante errores. También cubren reapertura SQLite, auditoría, reversión de
 transacciones y errores entre fuentes, exportación y el contrato ICS.
 Todas las peticiones de esas pruebas son simuladas.
+
+El batch HTTP se prueba contra un emulador que ejecuta SQLite real: dos
+escritores, rollback, respuesta perdida tras COMMIT, respuesta incompleta,
+escrituras evitables, copia y reapertura del historial, migración del boceto
+v1 y observaciones antiguas. Hay un contraste sintético de agendas con
+baloncesto y atletismo; no son adaptadores ni pruebas de proveedores deportivos.
 
 Comprobación real del 24/10/2026: el intervalo 25/10–23/11 devolvió 185
 registros e identidades distintas y 41 municipios. Una segunda integración
@@ -203,3 +225,11 @@ y 128 de Vidmar en una SQLite con 313 eventos, 41 regiones y 197 grupos.
 Releer los originales descargados conservó los 313 vínculos y primeras
 recogidas. La base reabierta y su exportación fueron equivalentes y no hubo
 revisiones nuevas por contenido idéntico; `foreign_key_check` no devolvió errores.
+
+Verificación real del 25/10/2026 en la base dedicada `voceiro-calendario`:
+313 eventos (185 de Galicia y 128 de Vidmar). Reintegrar los datos descargados
+conservó identidades, primeras observaciones y las 313 revisiones iniciales;
+el batch de escritura leyó 317 filas y escribió 316 según libSQL. La cifra no
+incluye la lectura previa de la instantánea ni el dump. Se verificaron también
+el rechazo de un escritor obsoleto y de referencias inválidas en el servidor,
+y la recuperación de una copia completa con los 313 eventos y sus revisiones.

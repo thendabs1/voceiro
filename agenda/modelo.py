@@ -54,7 +54,8 @@ def integrar(anterior, registros, fuentes, observado, consultas=()):
         'version': VERSION, 'fuentes': {}, 'regiones': {}, 'grupos': {},
         'registros': {}, 'vinculos': {}, 'eventos': [],
     }
-    calendario['actualizado'] = observado
+    actualizado = calendario.get('actualizado', observado)
+    calendario['actualizado'] = max((actualizado, observado), key=datetime.fromisoformat)
     calendario['consultas'] = list(consultas)
     calendario['fuentes'].update(deepcopy(fuentes))
     vistos = set()
@@ -79,6 +80,8 @@ def integrar(anterior, registros, fuentes, observado, consultas=()):
             NAMESPACE_URL, 'https://voceiro.eu/agenda/' + min(alias)))
         calendario['vinculos'].update({a: identidad for a in alias})
         previo = calendario['registros'].get(ref, {})
+        if previo and datetime.fromisoformat(observado) < datetime.fromisoformat(previo['ultima_recogida']):
+            raise ValueError(f'Recogida anterior a la última observación: {ref}')
         calendario['registros'][ref] = {
             **deepcopy(registro), 'evento': identidad,
             'primera_recogida': previo.get('primera_recogida', observado),

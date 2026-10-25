@@ -18,6 +18,9 @@ identidad de funciones y traducciones, regiones y grupos, fechas de celebración
 paginación y conservación de la última salida buena, sin peticiones reales.
 `test_calendario_almacen.py` contrasta el ICS de Vidmar y la persistencia SQLite:
 reapertura, revisiones, reversión ante fallos y recuperación de la exportación.
+`test_calendario_turso.py` comprueba el batch HTTP con SQLite real y red simulada:
+rollback, escritores concurrentes, respuestas perdidas o incompletas, observaciones
+sin reescrituras de contenido, copia completa, migración v1 y otras disciplinas.
 
 **Lector** construye el userscript y comprueba su sintaxis, cabecera y dominios cuando cambian sus archivos.
 

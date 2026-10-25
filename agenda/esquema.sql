@@ -1,5 +1,10 @@
 -- Base dedicada al calendario. Los JSON conservan el contrato y los originales;
 -- las columnas y relaciones permiten consultar sin recorrer todos los documentos.
+CREATE TABLE IF NOT EXISTS agenda_esquema (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    version INTEGER NOT NULL,
+    revision INTEGER NOT NULL CHECK (revision >= 0)
+);
 CREATE TABLE IF NOT EXISTS agenda_estado (
     clave TEXT PRIMARY KEY,
     valor_json TEXT NOT NULL

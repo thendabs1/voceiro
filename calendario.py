@@ -1,4 +1,4 @@
-"""Piloto de calendario común: python calendario.py --help. Sin publicación remota."""
+"""Calendario común: estado local o Turso y exportación JSON. Sin publicación web."""
 
 import argparse
 from datetime import date, datetime, timedelta
@@ -33,7 +33,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--salida', help='Exportación JSON de calendario para revisar')
     ap.add_argument('--db', help='Base SQLite dedicada: conserva estado e historial entre pasadas')
-    ap.add_argument('--exportar', action='store_true', help='Exportar --db a --salida sin recoger fuentes')
+    ap.add_argument('--turso', action='store_true', help='Persistir con CALENDARIO_TURSO_URL y CALENDARIO_TURSO_TOKEN')
+    ap.add_argument('--copia', help='Descargar un snapshot SQLite completo de --turso, sin recoger fuentes')
+    ap.add_argument('--exportar', action='store_true', help='Exportar --db/--turso a --salida sin recoger fuentes')
     ap.add_argument('--anterior', help='Calendario anterior: conserva IDs e historial de recogida')
     ap.add_argument('--entrada', action='append', help='Página JSON guardada de Galicia (repetible, sin red)')
     ap.add_argument('--entrada-ics', action='append', help='ICS de Vidmar guardado (repetible, sin red)')
@@ -43,24 +45,42 @@ def main(argv=None):
     ap.add_argument('--inicio', help='Primer día solicitado (hoy por defecto)')
     ap.add_argument('--fin', help='Último día solicitado, incluido (inicio + 30 días por defecto)')
     args = ap.parse_args(argv)
-    if not args.salida and not args.db:
-        ap.error('Se necesita --salida o --db')
-    if args.db and args.anterior:
-        ap.error('--db sustituye a --anterior como estado persistente')
+    if not args.salida and not args.db and not args.turso:
+        ap.error('Se necesita --salida, --db o --turso')
+    if sum(bool(a) for a in (args.db, args.turso, args.anterior)) > 1:
+        ap.error('--db, --turso y --anterior son alternativas de estado persistente')
     if args.db and args.salida and Path(args.db).resolve() == Path(args.salida).resolve():
         ap.error('La base y la exportación deben ser archivos distintos')
     if args.fuente and (args.entrada or args.entrada_ics):
         ap.error('Usa --fuente para red o --entrada/--entrada-ics para archivos locales')
+    if args.copia:
+        if not args.turso or any((args.exportar, args.salida, args.db, args.anterior,
+                args.entrada, args.entrada_ics, args.fuente, args.inicio, args.fin, args.idioma)):
+            ap.error('--copia requiere solo --turso y una ruta de copia')
+        from agenda.turso import Almacen
+        Almacen().copia(args.copia)
+        print(f'[agenda] Copia completa → {args.copia}')
+        return
     if args.exportar:
-        if not args.db or not args.salida or any((args.anterior, args.entrada, args.entrada_ics,
+        if not (args.db or args.turso) or not args.salida or any((args.anterior, args.entrada, args.entrada_ics,
                                                   args.fuente, args.inicio, args.fin, args.idioma)):
-            ap.error('--exportar requiere solo --db y --salida')
-        with almacen.abrir(args.db) as db:
-            calendario = almacen.cargar(db)
-            if calendario is None:
-                raise ValueError('La base aún no contiene un calendario')
+            ap.error('--exportar requiere --db/--turso y --salida')
+        if args.turso:
+            from agenda.turso import Almacen
+            remoto = Almacen()
+            remoto.inicializar()
+            calendario = remoto.cargar()
+        else:
+            with almacen.abrir(args.db) as db:
+                calendario = almacen.cargar(db)
+        if calendario is None:
+            raise ValueError('La base aún no contiene un calendario')
         guardar(args.salida, calendario)
         return
+    remoto = None
+    if args.turso:
+        from agenda.turso import Almacen
+        remoto = Almacen()  # Validar credenciales antes de consultar proveedores.
     ahora = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='seconds')
     idiomas = list(dict.fromkeys(args.idioma or ['gl']))
     anterior = json.loads(Path(args.anterior).read_text(encoding='utf-8')) if args.anterior else None
@@ -102,7 +122,13 @@ def main(argv=None):
                 consultas.append({'fuente': fuente, 'url': vidmar_f1.URL,
                                   'registros': len(filas), 'alcance': 'calendario_completo'})
     # Toda la red y el parseo terminan antes de abrir la transacción de escritura.
-    if args.db:
+    if args.turso:
+        remoto.inicializar()
+        calendario = integrar(remoto.cargar(), registros, fuentes, ahora, consultas)
+        remoto.guardar(calendario)
+        print(f'[agenda] Turso: {remoto.cliente.leidas} filas leídas, '
+              f'{remoto.cliente.escritas} escritas (métricas del servidor)')
+    elif args.db:
         with almacen.abrir(args.db) as db:
             calendario = integrar(almacen.cargar(db), registros, fuentes, ahora, consultas)
             almacen.guardar(db, calendario)
@@ -111,7 +137,7 @@ def main(argv=None):
     if args.salida:
         guardar(args.salida, calendario)
     print(f"[agenda] {len(calendario['eventos'])} eventos, "
-          f"{len(calendario['registros'])} registros → {args.db or args.salida}")
+          f"{len(calendario['registros'])} registros → {'Turso' if args.turso else args.db or args.salida}")
 
 
 if __name__ == '__main__':
