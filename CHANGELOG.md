@@ -3,6 +3,17 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 Sin tags formales todavía; los bloques van por fecha y agrupados por tema.
 
+## 2026-10-25 — Calendario persistente en Turso
+
+### Añadido
+- Estado e historial del calendario en una base Turso dedicada, con recogida
+  manual, exportación recuperable y copia SQLite completa desde Actions.
+- Escrituras por cambios, observaciones separadas del contenido y control de
+  revisión para evitar que dos escritores se sobrescriban. Rechazo de recogidas
+  antiguas, rollback y comprobación de respuestas incompletas o perdidas.
+- Esquema versionado en tabla y migración del boceto SQLite v1; criterios para
+  otras agendas, deportes, participantes, resultados y clasificaciones.
+
 ## 2026-10-24 — Asistente para crear modos
 
 ### Añadido

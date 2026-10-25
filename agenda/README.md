@@ -1,8 +1,9 @@
 # Calendario común — piloto de datos
 
 Una función de teatro, un partido y una sesión de F1 son citas del mismo
-calendario. El primer importador es Cultura de Galicia; el núcleo no conoce
-sus campos. Esta fase produce un JSON revisable. El panel de calendario,
+calendario. Los importadores son Cultura de Galicia y el ICS completo de
+Vidmar; el núcleo no conoce sus campos. Esta fase persiste en Turso y conserva
+SQLite local para muestras y copias. Permite exportar un JSON revisable. El panel de calendario,
 las órdenes del buscador y la publicación periódica se diseñarán después
 de comprobar los datos. No hay despliegue ni tarea programada nueva.
 
@@ -21,10 +22,36 @@ python calendario.py --anterior /tmp/calendario.json \
 # Examinar una o varias páginas ya descargadas, sin red.
 python calendario.py --entrada /tmp/pagina-0.json --entrada /tmp/pagina-1.json \
   --salida /tmp/calendario-muestra.json
+
+# Estado persistente: una segunda ejecución carga la misma base automáticamente.
+python calendario.py --fuente cultura-galicia --fuente vidmar-f1 \
+  --inicio 2026-10-25 --fin 2026-11-23 \
+  --db /tmp/calendario.sqlite --salida /tmp/calendario.json
+
+# Recuperar o regenerar la exportación, sin red ni una nueva recogida.
+python calendario.py --db /tmp/calendario.sqlite --exportar \
+  --salida /tmp/calendario.json
+
+# Continuar el estado remoto con CALENDARIO_TURSO_URL y
+# CALENDARIO_TURSO_TOKEN en el entorno (no se carga .env automáticamente).
+python calendario.py --turso --fuente cultura-galicia --fuente vidmar-f1 \
+  --inicio 2026-10-25 --fin 2026-11-23 --salida /tmp/calendario.json
+
+# Recuperar la exportación sin consultar proveedores.
+python calendario.py --turso --exportar --salida /tmp/calendario.json
+
+# Copia completa con originales, observaciones, vínculos e historial.
+python calendario.py --turso --copia /tmp/calendario.sqlite
+# Reabrir la copia recupera el JSON y permite continuar localmente.
+python calendario.py --db /tmp/calendario.sqlite --exportar --salida /tmp/recuperado.json
+
+# Combinar muestras de ambos formatos, sin red.
+python calendario.py --entrada /tmp/galicia.json --entrada-ics /tmp/vidmar.ics \
+  --db /tmp/calendario-muestra.sqlite
 ```
 
 Por defecto se pide desde hoy hasta dentro de 30 días, ambos incluidos. El
-adaptador limita cada consulta a 91 días y 20 páginas de 1000 registros por
+adaptador de Galicia limita cada consulta a 91 días y 20 páginas de 1000 registros por
 idioma. No descarga una ficha de detalle por evento. Si cambia el total,
 se repiten IDs o faltan páginas, falla sin sustituir la salida anterior.
 Una muestra local queda identificada como tal, aunque declare más resultados.
@@ -36,11 +63,33 @@ Se usa ese tamaño para reducir los cortes y se mantiene el rechazo de
 solapamientos. No se presupone que la API ofrezca una instantánea transaccional;
 si falla con un intervalo grande, hay que reducirlo y revisar la recogida.
 
-El workflow manual **Calendario (piloto)** guarda el JSON como artefacto
-durante 14 días. Cada ejecución del workflow parte de cero; para comparar
-pasadas con estado se descargan los artefactos y se usa `--anterior` localmente.
-No sustituye la cosecha de titulares, ni escribe en R2 o Turso. Aún no hay
-retención, restauración automática del estado ni publicación para el navegador.
+El workflow manual **Calendario (piloto)** permite elegir Galicia, F1 o ambas
+y continúa el estado en una base Turso dedicada. Necesita los secretos de
+Actions `CALENDARIO_TURSO_URL` y `CALENDARIO_TURSO_TOKEN`; no usa como alternativa
+las credenciales del diagnóstico de la cosecha. Guarda una copia SQLite
+completa y JSON como artefacto durante 14 días. Las ejecuciones del workflow
+se serializan y la revisión remota detecta otros escritores. La base conserva
+el estado más allá de los artefactos. No hay cron, publicación para el navegador
+ni poda automática de eventos o historial.
+
+`--db`, `--turso` y `--anterior` son alternativas. Toda la recogida se
+valida antes de escribir. La transacción conserva el estado y las revisiones
+de contenido; repetir datos idénticos registra otra recogida sin inventar un
+cambio. La base elegida es la autoridad: la exportación ocurre
+después del commit y puede regenerarse con `--exportar` si falla el archivo.
+Esquema, límites y continuidad del modelo en [Persistencia y estructura
+deportiva](persistencia.md).
+
+Vidmar se solicita explícitamente con `--fuente vidmar-f1`: recoge el ICS
+completo, sin aplicar el intervalo de Galicia. Preserva los UID, las fechas
+sin hora y el fin exclusivo. Las alarmas no producen eventos. El lector
+acepta el subconjunto observado (DATE y horas UTC); recurrencias, excepciones,
+duraciones y zonas locales no soportadas abortan la pasada. No se deducen
+regiones ni agrupaciones de gran premio desde nombres de ciudades o títulos.
+La colección del proveedor y sus categorías explícitas son grupos.
+Su licencia de republicación está pendiente de verificar y viaja como tal
+en los metadatos; el piloto no publica el calendario. Fuente:
+[F1 Calendar de Vidmar](https://f1.vidmar.net/).
 
 ## Contrato inicial del JSON (versión 1)
 
@@ -66,8 +115,8 @@ determinista a partir de una referencia externa y se conservan con
 traducciones al mismo evento. Si una equivalencia intenta unir dos eventos
 internos ya separados, la pasada falla para revisarlos. No hay conciliación
 automática entre proveedores por título, fecha o parecido. Antes de publicar
-periódicamente hará falta persistir el estado y diseñar la conciliación
-reversible entre fuentes.
+periódicamente hará falta diseñar la conciliación reversible entre fuentes,
+la revalidación y el archivo del estado remoto.
 
 `datos_de` identifica el registro elegido para mostrar horario, estado y
 lugar: se elige de forma estable por referencia, sin afirmar que sea el más
@@ -109,6 +158,20 @@ progreso en disco antes de entregar el resultado. Se conservan sus informes:
 - [Agendas territoriales: Galicia y Kulturklik](investigacion/01-agendas-territoriales.md).
 - [Directos: elDiario.es, RTVE y 20minutos](investigacion/02-directos.md).
 
+Revisión propia posterior: [servicios deportivos y propuesta de reglas de
+recopilación](investigacion/03-servicios-y-reglas.md). Compara los dos ICS
+de Vidmar, distingue fuentes documentadas de importadores probados y recoge
+el descarte de OpenF1 indicado por el usuario. Las cadencias propuestas
+todavía no se han activado.
+
+El [contraste de fuentes de fútbol](investigacion/04-futbol-fuentes.md) añade
+pruebas HTTP de ESPN, OpenLigaDB, FotMob y TheSportsDB, el bloqueo de SofaScore
+y la revisión de openfootball y fixturedownload. Distingue cobertura de frescura
+y condiciones de recogida. El fútbol queda pendiente: el usuario ha solicitado
+autorización a FotMob por su cobertura de Liga F y fútbol regional. No se
+continúa con otros proveedores de fútbol ni se consulta FotMob mientras se
+espera respuesta. Su estructura se contempla en el diseño de persistencia.
+
 Son notas de investigación, con límites y dudas expresos. Dos precisiones de
 la revisión: inicio=fin no demuestra que la actividad sea instantánea, y
 la correspondencia de los códigos de Kulturklik con INE no se aplica sin
@@ -122,8 +185,8 @@ Fuentes primarias del primer importador:
 y [JSON público](https://www.cultura.gal/v1/axenda/eventos.json?idioma=gl).
 La atribución y licencia CC BY-SA 4.0 viajan en el calendario generado.
 
-Próximo contraste: una segunda agenda territorial o de prensa para probar
-intervalos y territorio; después sesiones deportivas y resultados con ámbito
+Contraste actual: Galicia y sesiones deportivas de Vidmar en la misma base.
+Quedan una segunda agenda territorial o de prensa y los resultados con ámbito
 de sesión/competición/temporada. Antes del panel habrá que concretar filtros
 y la capa de regiones o grupos con el usuario. El piloto no decide esa UI.
 
@@ -135,11 +198,20 @@ las correcciones. Se investigará antes de actualizar servidores.
 
 ## Verificación
 
-`tests/fuentes/test_agenda.py` entra en la suite Python completa del workflow
+`tests/fuentes/test_agenda.py`, `test_calendario_almacen.py` y
+`test_calendario_turso.py` entran en la suite Python completa del workflow
 **Tests**. Cubre funciones múltiples, traducciones, cambios de fecha,
 equivalencias conflictivas, ausencias, regiones y grupos múltiples, fechas
 sin hora y cambios de horario, paginación y conservación de la última salida
-buena ante errores. Todas las peticiones de esas pruebas son simuladas.
+buena ante errores. También cubren reapertura SQLite, auditoría, reversión de
+transacciones y errores entre fuentes, exportación y el contrato ICS.
+Todas las peticiones de esas pruebas son simuladas.
+
+El batch HTTP se prueba contra un emulador que ejecuta SQLite real: dos
+escritores, rollback, respuesta perdida tras COMMIT, respuesta incompleta,
+escrituras evitables, copia y reapertura del historial, migración del boceto
+v1 y observaciones antiguas. Hay un contraste sintético de agendas con
+baloncesto y atletismo; no son adaptadores ni pruebas de proveedores deportivos.
 
 Comprobación real del 24/10/2026: el intervalo 25/10–23/11 devolvió 185
 registros e identidades distintas y 41 municipios. Una segunda integración
@@ -147,3 +219,17 @@ local de esa respuesta conservó las 185 identidades y primeras recogidas.
 La muestra del nodo 127829 produjo tres funciones distintas enlazadas a
 una misma ficha. No se simularon cambios reales del proveedor entre descargas;
 los aplazamientos y cancelaciones se cubren con respuestas simuladas en CI.
+
+Contraste posterior del mismo día: recogida conjunta de 185 registros gallegos
+y 128 de Vidmar en una SQLite con 313 eventos, 41 regiones y 197 grupos.
+Releer los originales descargados conservó los 313 vínculos y primeras
+recogidas. La base reabierta y su exportación fueron equivalentes y no hubo
+revisiones nuevas por contenido idéntico; `foreign_key_check` no devolvió errores.
+
+Verificación real del 25/10/2026 en la base dedicada `voceiro-calendario`:
+313 eventos (185 de Galicia y 128 de Vidmar). Reintegrar los datos descargados
+conservó identidades, primeras observaciones y las 313 revisiones iniciales;
+el batch de escritura leyó 317 filas y escribió 316 según libSQL. La cifra no
+incluye la lectura previa de la instantánea ni el dump. Se verificaron también
+el rechazo de un escritor obsoleto y de referencias inválidas en el servidor,
+y la recuperación de una copia completa con los 313 eventos y sus revisiones.

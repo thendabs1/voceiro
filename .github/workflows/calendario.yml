@@ -15,33 +15,53 @@ on:
         type: choice
         options: [gl, es]
         default: gl
+      fuente:
+        description: 'Fuente del piloto (F1 recoge el ICS completo)'
+        type: choice
+        options: [cultura-galicia, vidmar-f1, ambas]
+        default: cultura-galicia
 
 permissions:
   contents: read
+
+concurrency:
+  group: calendario-turso
+  cancel-in-progress: false
 
 jobs:
   recoger:
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    env:
+      CALENDARIO_TURSO_URL: ${{ secrets.CALENDARIO_TURSO_URL }}
+      CALENDARIO_TURSO_TOKEN: ${{ secrets.CALENDARIO_TURSO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Recoger Cultura de Galicia en el modelo común
+      - name: Recoger fuentes en el modelo común y guardar la base
         env:
           INICIO: ${{ inputs.inicio }}
           FIN: ${{ inputs.fin }}
           IDIOMA: ${{ inputs.idioma }}
+          FUENTE: ${{ inputs.fuente }}
         run: |
-          args=(--salida "$RUNNER_TEMP/calendario/calendario.json" --idioma "$IDIOMA")
+          args=(--turso --salida "$RUNNER_TEMP/calendario/calendario.json" --idioma "$IDIOMA")
+          if [ "$FUENTE" = ambas ]; then
+            args+=(--fuente cultura-galicia --fuente vidmar-f1)
+          else
+            args+=(--fuente "$FUENTE")
+          fi
           if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
           if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
           python calendario.py "${args[@]}"
+      - name: Copiar el estado completo con su historial
+        run: python calendario.py --turso --copia "$RUNNER_TEMP/calendario/calendario.sqlite"
       - name: Guardar calendario para revisión
         uses: actions/upload-artifact@v4
         with:
           name: calendario-piloto
-          path: ${{ runner.temp }}/calendario/calendario.json
+          path: ${{ runner.temp }}/calendario/
           if-no-files-found: error
           retention-days: 14

@@ -17,6 +17,7 @@ FUENTES = {FUENTE: {
     'catalogo': 'https://abertos.xunta.gal/catalogo/cultura-ocio-deporte/-/dataset/0045/axenda-cultura-galicia',
     'licencia': 'CC BY-SA 4.0', 'licencia_url': 'https://creativecommons.org/licenses/by-sa/4.0/',
     'atribucion': 'Xunta de Galicia — Axenda de Cultura de Galicia',
+    'capacidades': ['calendario'],
 }}
 CAMPOS = ('id,nid,traducionId,dataActualizacion,data,dataOrixinal,estado,'
           'lugarCelebracion,titulo,tipoEvento,ciclo,url,idioma,eventoOnline,urlEventoOnline')

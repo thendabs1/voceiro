@@ -6,6 +6,7 @@ import json
 import os
 
 import requests
+from turso_http import argumento as _t_arg, valor as _t_val
 
 from . import config
 
@@ -13,22 +14,6 @@ from . import config
 TURSO_URL   = os.environ.get('TURSO_DATABASE_URL', '')
 TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN', '')
 TURSO_HTTP_URL = (TURSO_URL or "").replace("libsql://", "https://")
-
-
-def _t_arg(v):
-    """Convierte un valor Python en un arg HTTP v2 de Turso."""
-    if v is None:
-        return {"type": "null"}
-    if isinstance(v, bool):
-        return {"type": "integer", "value": "1" if v else "0"}
-    if isinstance(v, int):
-        return {"type": "integer", "value": str(v)}
-    if isinstance(v, float):
-        return {"type": "float", "value": str(v)}
-    if isinstance(v, (bytes, bytearray)):
-        import base64
-        return {"type": "blob", "value": base64.b64encode(v).decode()}
-    return {"type": "text", "value": str(v)}
 
 
 def _t_stmt(sql, args=None):
@@ -76,24 +61,6 @@ def turso_pipeline(statements, timeout=90, errores_ok=()):
             print(f"[turso!] {err.get('code')} · {err.get('message','')[:200]}")
             return None
     return results
-
-
-def _t_val(cell):
-    """Convierte una celda de Turso HTTP v2 a un valor Python."""
-    if not isinstance(cell, dict):
-        return cell
-    t = cell.get("type")
-    v = cell.get("value")
-    if t == "null" or v is None:
-        return None
-    if t == "integer":
-        return int(v)
-    if t == "float":
-        return float(v)
-    if t == "blob":
-        import base64
-        return base64.b64decode(v)
-    return v
 
 
 def _t_rows(results, idx=0):
