@@ -90,3 +90,19 @@ test('participante y lugar se cruzan con fuente y texto sin ampliar la selecció
   assert.deepEqual(seleccionCalendario(d, orden('tenis: Ana'), filtros).eventos.map(e => e.id), ['WTA dobles']);
   assert.deepEqual(seleccionCalendario(d, orden('tenis:'), { ...filtros, lugar: 'otro' }).eventos, []);
 });
+
+test('los códigos de competición del catálogo funcionan y no sustituyen la consulta', () => {
+  const d = structuredClone(datos);
+  d.entidades['agrupacion:a'].codigos.push('competicion-local');
+  const ids = (q, circuitos) => seleccionCalendario(d, orden(q), { circuitos }).eventos.map(e => e.id);
+  assert.deepEqual(ids('tenis:', ['competicion-local']), ['ATP final']);
+  assert.deepEqual(ids('tenis: circuito:wta', ['atp']), []);
+  assert.deepEqual(ids('tenis: circuito:wta', ['atp', 'wta']), ['WTA dobles']);
+});
+
+test('la búsqueda propia del calendario se cruza con texto, categoría y fuente', () => {
+  const ids = (q, filtros) => seleccionCalendario(datos, orden(q), filtros).eventos.map(e => e.id);
+  assert.deepEqual(ids('tenis: dobles', { texto: 'WTA', temas: ['tenis'], fuente: 'prueba' }), ['WTA dobles']);
+  assert.deepEqual(ids('tenis: dobles', { texto: 'ATP' }), []);
+  assert.deepEqual(ids('tenis:', { texto: '"WTA dobles"' }), ['WTA dobles']);
+});
