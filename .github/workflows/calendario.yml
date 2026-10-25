@@ -4,6 +4,11 @@ name: Calendario (piloto)
 on:
   workflow_dispatch:
     inputs:
+      operacion:
+        description: 'Recoger fuentes o reclasificar datos existentes sin consultar proveedores'
+        type: choice
+        options: [recoger, reclasificar]
+        default: recoger
       inicio:
         description: 'Primer día (AAAA-MM-DD, vacío = hoy)'
         required: false
@@ -40,13 +45,29 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Copia previa a reclasificar
+        if: inputs.operacion == 'reclasificar'
+        run: python calendario.py --turso --copia "$RUNNER_TEMP/antes/calendario.sqlite"
+      - name: Conservar copia antes de modificar Turso
+        if: inputs.operacion == 'reclasificar'
+        uses: actions/upload-artifact@v4
+        with:
+          name: calendario-antes-de-clasificar
+          path: ${{ runner.temp }}/antes/
+          if-no-files-found: error
+          retention-days: 14
       - name: Recoger fuentes en el modelo común y guardar la base
         env:
+          OPERACION: ${{ inputs.operacion }}
           INICIO: ${{ inputs.inicio }}
           FIN: ${{ inputs.fin }}
           IDIOMA: ${{ inputs.idioma }}
           FUENTE: ${{ inputs.fuente }}
         run: |
+          if [ "$OPERACION" = reclasificar ]; then
+            python calendario.py --turso --reclasificar --salida "$RUNNER_TEMP/calendario/calendario.json"
+            exit 0
+          fi
           args=(--turso --salida "$RUNNER_TEMP/calendario/calendario.json" --idioma "$IDIOMA")
           if [ "$FUENTE" = ambas ]; then
             args+=(--fuente cultura-galicia --fuente vidmar-f1)
@@ -58,6 +79,35 @@ jobs:
           python calendario.py "${args[@]}"
       - name: Copiar el estado completo con su historial
         run: python calendario.py --turso --copia "$RUNNER_TEMP/calendario/calendario.sqlite"
+      - name: Comprobar conservación tras reclasificar
+        if: inputs.operacion == 'reclasificar'
+        run: |
+          python - <<'PY'
+          from collections import Counter
+          import os
+          from pathlib import Path
+          from agenda import almacen
+          from agenda.clasificacion import temas_de
+
+          base = Path(os.environ['RUNNER_TEMP'])
+          with almacen.abrir(base / 'antes/calendario.sqlite') as db:
+              antes = almacen.cargar(db)
+              historial = {t: db.execute(f'SELECT * FROM {t} ORDER BY 1').fetchall()
+                           for t in ('agenda_registros', 'agenda_revisiones', 'agenda_recogidas')}
+          with almacen.abrir(base / 'calendario/calendario.sqlite') as db:
+              despues = almacen.cargar(db)
+              for tabla, filas in historial.items():
+                  if db.execute(f'SELECT * FROM {tabla} ORDER BY 1').fetchall() != filas:
+                      raise ValueError(f'Cambió el historial de {tabla}')
+          sin_clasificacion = lambda c: {k: v for k, v in c.items() if k != 'clasificacion'}
+          if sin_clasificacion(antes) != sin_clasificacion(despues):
+              raise ValueError('Cambió contenido u observación del calendario al reclasificar')
+          cuentas = Counter(t for e in despues['eventos'] for t in temas_de(despues, e['id']))
+          asignados = len(despues['clasificacion']['asignaciones'])
+          print(f"Conservados {len(despues['eventos'])} eventos, IDs, originales y revisiones")
+          print(f"Clasificados: {asignados}; sin correspondencia: {len(despues['eventos']) - asignados}")
+          print(dict(sorted(cuentas.items())))
+          PY
       - name: Guardar calendario para revisión
         uses: actions/upload-artifact@v4
         with:
