@@ -7,6 +7,9 @@ edita en `workers/comun/`:
 - `buscar.js`: parámetros, consulta a fuentes, deduplicación, orden y caché.
 - `gnews.js`: prensa por el relay de Google News, también desde Deno.
 - `datos-cache.js`: caducidad de índices, portadas y slices de R2.
+- `calendario.js` y `calendario-turso.js`: API de agenda sobre la proyección
+  pública de Turso. Activación, contrato y mediciones en
+  [Lectura indexada del calendario](../agenda/api-lectura.md).
 - `limite.js`: límite de peticiones por IP en memoria (IPv6 por su /64).
 - `sync.js`: sincronización entre dispositivos. CF la sirve con el binding de
   D1; Deno, con la misma base D1 por la API HTTP de Cloudflare, así que no
@@ -23,7 +26,8 @@ node scripts/sync-workers.mjs --check
 
 CI comprueba las copias versionadas; los workflows de despliegue las regeneran
 antes de empaquetar. Los cambios en la fuente común activan ambos despliegues.
-El parser sigue usando `scripts/sync-parser.mjs`.
+Las dependencias `shared/` de datos se sincronizan con ese mismo script. Las
+copias anteriores del parser de búsqueda siguen usando `scripts/sync-parser.mjs`.
 
 Las diferencias de plataforma se conservan en los adaptadores:
 
@@ -68,7 +72,8 @@ cambian nada; `next_offset` es siempre `null`. `fuentes=turso`, de clientes
 antiguos, se ignora y devuelve una respuesta vacía sin consultar nada.
 
 Lo reciente se busca en el navegador sobre los ficheros de R2: los días del
-manifest (hasta 30), con «Cargar más». El público no consulta Turso: el coste
+manifest (hasta 30), con «Cargar más». La búsqueda pública de noticias no consulta
+Turso: el coste
 de una búsqueda de texto con FTS crece con las coincidencias en todo el
 archivo, no con la página pedida, y la cuota de lecturas es una sola para
 todos.

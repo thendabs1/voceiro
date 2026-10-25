@@ -1,4 +1,5 @@
 import { cacheControlFor } from './comun/datos-cache.js';
+import { atenderCalendario } from './comun/calendario.js';
 // worker-deno-datos/src/index.js — Deno Deploy
 import { signR2Request } from './sigv4.js';
 
@@ -10,8 +11,13 @@ const CORS = {
 };
 
 export default {
-  async fetch(request) {
+  async fetch(request, info) {
     const url = new URL(request.url);
+    const calendario = await atenderCalendario(request, {
+      CALENDARIO_TURSO_URL: Deno.env.get('CALENDARIO_TURSO_URL'),
+      CALENDARIO_TURSO_TOKEN_LECTURA: Deno.env.get('CALENDARIO_TURSO_TOKEN_LECTURA'),
+    }, { ip: info?.remoteAddr?.hostname || '', abrirCache: () => caches.open('voceiro-calendario-v1') });
+    if (calendario) return calendario;
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS });

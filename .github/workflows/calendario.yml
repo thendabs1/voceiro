@@ -64,6 +64,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Dependencias de las recogidas y publicación
         run: pip install beautifulsoup4 boto3
       - name: Recoger directamente en Turso
@@ -118,6 +121,7 @@ jobs:
         env:
           PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' }}
           FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik' }}
+          LECTURA_SQL: ${{ vars.CALENDARIO_LECTURA_SQL || 'false' }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -125,4 +129,5 @@ jobs:
         run: |
           args=(--turso)
           if [ "$PUBLICAR" = true ]; then args+=(--fuentes "$FUENTES_PUBLICAS" --publicar); fi
+          if [ "$PUBLICAR" = true ] && [ "$LECTURA_SQL" = true ]; then args+=(--lectura-sql); fi
           python -m agenda.publicacion "${args[@]}"

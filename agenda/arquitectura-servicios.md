@@ -3,8 +3,9 @@
 25/10/2026. Revisión del [PR 141](https://github.com/thendabs1/voceiro/pull/141),
 de las [consultas pendientes](investigacion/08-consultas-calendario-pendiente.md)
 y de la implementación actual. Planteamiento acordado; primer incremento en
-`shared/territorios/` y `agenda/retencion.py`. No activa migraciones, proveedores,
-tareas ni despliegues nuevos.
+`shared/territorios/` y `agenda/retencion.py`. El siguiente incremento prepara
+[lectura SQL y rutas CF/Deno](api-lectura.md), sin activar su publicación ni cambiar
+el frontend. No incorpora proveedores ni tareas de recogida nuevas.
 
 ## Alcance aclarado con el usuario
 

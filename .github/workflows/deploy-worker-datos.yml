@@ -8,6 +8,13 @@ on:
       # Solo los módulos comunes que usa (scripts/sync-workers.mjs): otro
       # cambio en workers/comun no gasta un despliegue.
       - 'workers/comun/datos-cache.js'
+      - 'workers/comun/calendario.js'
+      - 'workers/comun/calendario-turso.js'
+      - 'workers/comun/limite.js'
+      - 'shared/parser.js'
+      - 'shared/busqueda/texto.js'
+      - 'shared/calendario/consulta.js'
+      - 'shared/calendario/fechas.js'
       - 'scripts/sync-workers.mjs'
       - '.github/workflows/deploy-worker-datos.yml'
   workflow_dispatch:

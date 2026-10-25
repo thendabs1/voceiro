@@ -32,6 +32,14 @@ function importados(worker){
   for (const f of archivosJs(join(raiz, 'workers', worker, 'src'))){
     for (const m of readFileSync(f, 'utf8').matchAll(/from\s+'(?:\.\.?\/)+comun\/([a-z-]+\.js)'/g)) mods.add(m[1]);
   }
+  // Los módulos comunes también pueden importar otros módulos comunes.
+  const pendientes = [...mods];
+  while (pendientes.length) {
+    const contenido = readFileSync(join(raiz, 'workers/comun', pendientes.pop()), 'utf8');
+    for (const m of contenido.matchAll(/from\s+'\.\/([a-z-]+\.js)'/g)) {
+      if (!mods.has(m[1])) { mods.add(m[1]); pendientes.push(m[1]); }
+    }
+  }
   return [...mods].sort();
 }
 
