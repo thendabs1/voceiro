@@ -42,6 +42,7 @@ def ampliar(calendario):
             identidad=r['evento'], referencia=ref, historico=True)
         por_ref[ref] = evidencia
         lugar = d.get('lugar') or {}
+        recinto = None
         if lugar.get('id_externo') not in (None, '') and lugar.get('nombre'):
             recinto, _ = c.entidad(r['fuente'], 'recinto_piloto', str(lugar['id_externo']), {},
                 'lugar', 'recinto', {r.get('idioma') or 'und': lugar['nombre']}, doc,
@@ -58,6 +59,8 @@ def ampliar(calendario):
                 region['tipo'], region['nombres'], doc, '/regiones/' + i, r['ultima_recogida'],
                 bloques={'identificadores': region.get('identificadores', {})}, identidad=i, historico=True)
             c.relacion('se_celebra_en', destino, territorio, evidencia)
+            if recinto and region['tipo'] == 'municipio':
+                c.relacion('ubicado_en', recinto, territorio, evidencia)
         for i, grupo in r.get('grupos', {}).items():
             tipo_g = grupo['tipo']
             if tipo_g == 'actividad':

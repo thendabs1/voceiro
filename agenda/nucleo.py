@@ -31,6 +31,7 @@ RELACIONES = {
     'inscrito_en': ({'participante'}, {'agrupacion'}),
     'pertenece_al_club': ({'participante'}, {'participante'}),
     'se_celebra_en': ({'evento', 'agrupacion'}, {'lugar', 'territorio'}),
+    'ubicado_en': ({'lugar'}, {'territorio'}),
 }
 METRICAS = {
     'baloncesto.puntos': ('entero', 'puntos', True),
@@ -93,6 +94,11 @@ class Constructor:
         self.n = deepcopy(anterior) if anterior else nuevo()
         if self.n.get('version') != 2:
             raise ValueError('Versión de núcleo incompatible')
+        self._ultima_por_referencia = {}
+        for o in self.n['observaciones'].values():
+            fecha = tiempos.instante(o['ultima_observacion'])
+            ref = o['referencia']
+            self._ultima_por_referencia[ref] = max(fecha, self._ultima_por_referencia.get(ref, fecha))
 
     def documento(self, fuente, contenido, url=None, clase='respuesta'):
         huella = sha256(json_canonico(contenido).encode()).hexdigest()
@@ -119,12 +125,11 @@ class Constructor:
         contenido = {'nombres': deepcopy(nombres), 'clase': clase, **deepcopy(bloques or {})}
         oid = identificador('observacion', ref, documento, ruta, contenido)
         momento = tiempos.instante(observado)
-        antigua = False
-        for o in self.n['observaciones'].values():
-            if o['referencia'] == ref and momento < tiempos.instante(o['ultima_observacion']):
-                antigua = True
-                if not historico:
-                    raise ValueError('Observación anterior a la última de su referencia')
+        ultima = self._ultima_por_referencia.get(ref, momento)
+        antigua = momento < ultima
+        if antigua and not historico:
+            raise ValueError('Observación anterior a la última de su referencia')
+        self._ultima_por_referencia[ref] = max(ultima, momento)
         previa_o = self.n['observaciones'].get(oid, {})
         self.n['observaciones'][oid] = {'id': oid, 'referencia': ref, 'documento': documento,
             'ruta': ruta, 'observado': previa_o.get('observado', observado),
@@ -175,12 +180,12 @@ class Constructor:
         return self.n
 
 
-def seleccionar(n, destino, bloque, activas=None):
+def seleccionar(n, destino, bloque, activas=None, candidatas=None):
     """Política por bloque; ninguna prioridad implícita por proveedor o descarga."""
     k = identificador('seleccion', destino, bloque)
     politica = n['politicas'].get(k, {})
     candidatos = {}
-    for i in sorted(ultimas(n) if activas is None else activas):
+    for i in sorted(candidatas if candidatas is not None else ultimas(n) if activas is None else activas):
         o = n['observaciones'][i]
         if n['referencias'][o['referencia']]['destino'] == destino and bloque in o['bloques']:
             candidatos[o['referencia']] = {'valor': o['bloques'][bloque],
@@ -205,9 +210,11 @@ def seleccionar(n, destino, bloque, activas=None):
 
 def recalcular_selecciones(n):
     activas = ultimas(n)
-    objetivos = set()
+    objetivos, por_objetivo = set(), {}
     for o in n['observaciones'].values():
         d = n['referencias'][o['referencia']]['destino']
+        if o['id'] in activas:
+            por_objetivo.setdefault(clave(d), []).append(o['id'])
         for bloque in ('programacion', 'lugar', 'resultado', 'clasificacion'):
             if bloque in o['bloques']:
                 objetivos.add((d['tipo'], d['id'], bloque))
@@ -215,7 +222,7 @@ def recalcular_selecciones(n):
         d = objetivo(tipo, i)
         k = identificador('seleccion', d, bloque)
         n['selecciones'][k] = {'id': k, 'objetivo': d, 'bloque': bloque,
-                               'seleccion': seleccionar(n, d, bloque, activas)}
+                               'seleccion': seleccionar(n, d, bloque, activas, por_objetivo.get(clave(d), []))}
 
 
 def validar_metricas(metricas):
@@ -479,6 +486,22 @@ def consultar(n, inicio, fin, tema=None, destino=None, territorio=None, zona='Eu
                                    or territorio['tipo'] not in ('territorio', 'lugar')):
         raise ValueError('Filtro de lugar/territorio sin identidad acreditada')
     permitidos = set(eventos_alcanzados(n, destino)) if destino else None
+    conexiones = {}
+    if territorio:
+        for r in n['relaciones'].values():
+            if r['tipo'] in ('se_celebra_en', 'ubicado_en', 'pertenece_a', 'es_parte_de', 'es_edicion_de') and vigente(n, r, activas):
+                conexiones.setdefault(clave(r['origen']), []).append(r['destino'])
+
+    def en_lugar(evento):
+        pendientes, vistos = [evento], set()
+        while pendientes:
+            d = pendientes.pop()
+            if d == territorio:
+                return True
+            if clave(d) not in vistos:
+                vistos.add(clave(d))
+                pendientes.extend(conexiones.get(clave(d), ()))
+        return False
     hijos = {tema} if tema else set()
     if tema:
         if tema not in n['catalogo']['conceptos']:
@@ -492,9 +515,7 @@ def consultar(n, inicio, fin, tema=None, destino=None, territorio=None, zona='Eu
     for e in n['entidades'].values():
         if e['tipo'] != 'evento' or (permitidos is not None and e['id'] not in permitidos):
             continue
-        if territorio is not None and not any(r['tipo'] == 'se_celebra_en'
-                and r['origen'] == objetivo('evento', e['id']) and r['destino'] == territorio
-                and vigente(n, r, activas) for r in n['relaciones'].values()):
+        if territorio is not None and not en_lugar(objetivo('evento', e['id'])):
             continue
         if tema and not any(t['tema'] in hijos and vigente(n, t, activas) for t in e['temas']):
             continue

@@ -1,7 +1,9 @@
 name: Calendario
 
-# Turso es el estado de trabajo. Las SQLite del artefacto son copias de recuperación.
+# Recogida → Turso → lectura pública. Sin copias ni artefactos intermedios.
 on:
+  schedule:
+    - cron: '30 4 * * *'
   workflow_dispatch:
     inputs:
       operacion:
@@ -23,18 +25,23 @@ on:
       fuente:
         description: 'Fuente del piloto (F1 recoge el ICS completo)'
         type: choice
-        options: [cultura-galicia, vidmar-f1, ambas]
+        options: [cultura-galicia, vidmar-f1, ambas, ninguna]
         default: cultura-galicia
       deportes:
         description: 'Recogida deportiva manual adicional (FEB: solo LF Endesa)'
         type: choice
         options: [ninguno, feb, tenis, feb-y-tenis]
         default: ninguno
+      cultura:
+        description: 'Agendas culturales adicionales (recogida completa paginada)'
+        type: choice
+        options: [ninguna, madrid, kulturklik, madrid-y-kulturklik]
+        default: ninguna
       temporada_feb:
         description: 'Año inicial explícito de la temporada LF Endesa'
         default: '2026'
       publicar:
-        description: 'Publicar la lectura en R2 (fuentes de CALENDARIO_FUENTES_PUBLICAS; por defecto Galicia)'
+        description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid y Kulturklik)'
         type: boolean
         default: false
 
@@ -59,126 +66,63 @@ jobs:
           python-version: '3.11'
       - name: Dependencias de las recogidas y publicación
         run: pip install beautifulsoup4 boto3
-      - name: Copia previa a modificar el modelo
-        if: inputs.operacion != 'recoger'
-        run: python calendario.py --turso --copia "$RUNNER_TEMP/antes/calendario.sqlite"
-      - name: Conservar copia antes de modificar Turso
-        if: inputs.operacion != 'recoger'
-        uses: actions/upload-artifact@v4
-        with:
-          name: calendario-antes-de-modificar
-          path: ${{ runner.temp }}/antes/
-          if-no-files-found: error
-          retention-days: 14
-      - name: Recoger fuentes en el modelo común y guardar la base
+      - name: Recoger directamente en Turso
         env:
-          OPERACION: ${{ inputs.operacion }}
+          OPERACION: ${{ inputs.operacion || 'recoger' }}
           INICIO: ${{ inputs.inicio }}
           FIN: ${{ inputs.fin }}
-          IDIOMA: ${{ inputs.idioma }}
-          FUENTE: ${{ inputs.fuente }}
-        run: |
-          if [ "$OPERACION" = publicar ]; then
-            python calendario.py --turso --exportar --salida "$RUNNER_TEMP/calendario/calendario.json"
-            exit 0
-          fi
-          if [ "$OPERACION" = preparar-nucleo ]; then
-            python calendario.py --turso --preparar-nucleo --exportar-nucleo --salida "$RUNNER_TEMP/calendario/nucleo.json"
-            python calendario.py --turso --exportar --salida "$RUNNER_TEMP/calendario/calendario.json"
-            exit 0
-          fi
-          if [ "$OPERACION" = reclasificar ]; then
-            python calendario.py --turso --reclasificar --salida "$RUNNER_TEMP/calendario/calendario.json"
-            exit 0
-          fi
-          args=(--turso --salida "$RUNNER_TEMP/calendario/calendario.json" --idioma "$IDIOMA")
-          if [ "$FUENTE" = ambas ]; then
-            args+=(--fuente cultura-galicia --fuente vidmar-f1)
-          else
-            args+=(--fuente "$FUENTE")
-          fi
-          if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
-          if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
-          python calendario.py "${args[@]}"
-      - name: Recoger deportes elegidos, con una sola escritura al terminar
-        if: inputs.operacion == 'recoger' && inputs.deportes != 'ninguno'
-        env:
-          DEPORTES: ${{ inputs.deportes }}
+          IDIOMA: ${{ inputs.idioma || 'gl' }}
+          FUENTE: ${{ inputs.fuente || 'cultura-galicia' }}
+          CULTURA: ${{ inputs.cultura || 'madrid-y-kulturklik' }}
+          DEPORTES: ${{ inputs.deportes || 'ninguno' }}
           TEMPORADA_FEB: ${{ inputs.temporada_feb }}
         run: |
-          args=(--turso --salida "$RUNNER_TEMP/calendario/calendario.json")
-          if [ "$DEPORTES" = feb ] || [ "$DEPORTES" = feb-y-tenis ]; then
-            args+=(--recoger-deporte feb --temporada-feb "$TEMPORADA_FEB")
+          if [ "$OPERACION" = reclasificar ]; then
+            python calendario.py --turso --reclasificar
           fi
-          if [ "$DEPORTES" = tenis ] || [ "$DEPORTES" = feb-y-tenis ]; then
-            args+=(--recoger-deporte espn-atp --recoger-deporte espn-wta)
+          if [ "$OPERACION" = recoger ]; then
+            if [ "$FUENTE" != ninguna ]; then
+              args=(--turso --idioma "$IDIOMA")
+              if [ "$FUENTE" = ambas ]; then
+                args+=(--fuente cultura-galicia --fuente vidmar-f1)
+              else
+                args+=(--fuente "$FUENTE")
+              fi
+              if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
+              if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
+              python calendario.py "${args[@]}"
+            fi
+            args=(--turso)
+            if [ "$CULTURA" = madrid ] || [ "$CULTURA" = madrid-y-kulturklik ]; then
+              args+=(--recoger-cultura madrid)
+            fi
+            if [ "$CULTURA" = kulturklik ] || [ "$CULTURA" = madrid-y-kulturklik ]; then
+              args+=(--recoger-cultura kulturklik)
+            fi
+            if [ "$CULTURA" != ninguna ]; then
+              if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
+              if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
+            fi
+            if [ "$DEPORTES" = feb ] || [ "$DEPORTES" = feb-y-tenis ]; then
+              args+=(--recoger-deporte feb --temporada-feb "$TEMPORADA_FEB")
+            fi
+            if [ "$DEPORTES" = tenis ] || [ "$DEPORTES" = feb-y-tenis ]; then
+              args+=(--recoger-deporte espn-atp --recoger-deporte espn-wta)
+            fi
+            if [ "$CULTURA" != ninguna ] || [ "$DEPORTES" != ninguno ]; then
+              python calendario.py "${args[@]}"
+            fi
           fi
-          python calendario.py "${args[@]}"
-      - name: Preparar lectura común desde el estado remoto
-        run: |
-          python calendario.py --turso --preparar-nucleo --exportar-nucleo --salida "$RUNNER_TEMP/calendario/nucleo.json"
-          python -m agenda.publicacion --entrada "$RUNNER_TEMP/calendario/nucleo.json" --salida "$RUNNER_TEMP/calendario/lectura-revision.json"
-      - name: Copiar el estado completo con su historial
-        run: python calendario.py --turso --copia "$RUNNER_TEMP/calendario/calendario.sqlite"
-      - name: Comprobar conservación tras modificar el modelo
-        if: inputs.operacion != 'recoger'
+          python calendario.py --turso --preparar-nucleo
+      - name: Validar y publicar la lectura desde Turso
         env:
-          OPERACION: ${{ inputs.operacion }}
-        run: |
-          python - <<'PY'
-          from collections import Counter
-          import os
-          from pathlib import Path
-          from agenda import almacen
-          from agenda.clasificacion import temas_de
-
-          base = Path(os.environ['RUNNER_TEMP'])
-          with almacen.abrir(base / 'antes/calendario.sqlite') as db:
-              antes = almacen.cargar(db)
-              historial = {t: db.execute(f'SELECT * FROM {t} ORDER BY 1').fetchall()
-                           for t in ('agenda_registros', 'agenda_revisiones', 'agenda_recogidas')}
-          with almacen.abrir(base / 'calendario/calendario.sqlite') as db:
-              despues = almacen.cargar(db)
-              for tabla, filas in historial.items():
-                  if db.execute(f'SELECT * FROM {tabla} ORDER BY 1').fetchall() != filas:
-                      raise ValueError(f'Cambió el historial de {tabla}')
-          campos = {'nucleo'} if os.environ['OPERACION'] == 'preparar-nucleo' else {'clasificacion', 'nucleo'}
-          contenido_piloto = lambda c: {k: v for k, v in c.items() if k not in campos}
-          if contenido_piloto(antes) != contenido_piloto(despues):
-              raise ValueError('Cambió contenido u observación del calendario al modificar el modelo')
-          if 'nucleo' in despues:
-              from agenda import nucleo
-              n = nucleo.validar(despues['nucleo'])
-              ids = {e['id'] for e in n['entidades'].values() if e['tipo'] == 'evento'}
-              if not {e['id'] for e in despues['eventos']} <= ids:
-                  raise ValueError('Faltan identidades del piloto en el núcleo')
-              for ref, evento in despues['vinculos'].items():
-                  if n['referencias'].get(ref, {}).get('destino') != nucleo.objetivo('evento', evento):
-                      raise ValueError('Cambió un vínculo del piloto al preparar el núcleo')
-              print(f"Núcleo v2: {len(ids)} eventos, {len(n['referencias'])} referencias tipadas")
-          cuentas = Counter(t for e in despues['eventos'] for t in temas_de(despues, e['id']))
-          asignados = len(despues['clasificacion']['asignaciones'])
-          print(f"Conservados {len(despues['eventos'])} eventos, IDs, originales y revisiones")
-          print(f"Clasificados: {asignados}; sin correspondencia: {len(despues['eventos']) - asignados}")
-          print(dict(sorted(cuentas.items())))
-          PY
-      - name: Publicar la lectura seleccionada en R2
-        if: inputs.publicar || inputs.operacion == 'publicar'
-        env:
-          FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia' }}
+          PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' }}
+          FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik' }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: >-
-          python -m agenda.publicacion
-          --entrada "$RUNNER_TEMP/calendario/nucleo.json"
-          --salida "$RUNNER_TEMP/calendario/lectura-publica.json"
-          --fuentes "$FUENTES_PUBLICAS" --publicar
-      - name: Guardar calendario para revisión
-        uses: actions/upload-artifact@v4
-        with:
-          name: calendario-piloto
-          path: ${{ runner.temp }}/calendario/
-          if-no-files-found: error
-          retention-days: 14
+        run: |
+          args=(--turso)
+          if [ "$PUBLICAR" = true ]; then args+=(--fuentes "$FUENTES_PUBLICAS" --publicar); fi
+          python -m agenda.publicacion "${args[@]}"

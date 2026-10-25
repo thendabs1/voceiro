@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=4c28597024';
-import { compilarTexto, coincide, palabrasDe } from '../busqueda/texto.js?v=4c28597024';
+import { tokenizeQuery, normalize } from '../parser.js?v=b66c1c82c8';
+import { compilarTexto, coincide, palabrasDe } from '../busqueda/texto.js?v=b66c1c82c8';
 
 export const AMBITOS = {
   tenis: { tema: 'tenis', noticias: ['tenis', 'ATP', 'WTA'] },
@@ -74,6 +74,7 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
     if (circuitos.length && !circuitos.some(a => casaAmbito(objetivos, a))) return false;
     if (temas.size && !objetivos.some(e => e.temas.some(t => temas.has(t)))) return false;
     if (filtros.objetivo && !dato.objetivos.includes(filtros.objetivo)) return false;
+    if (filtros.lugar && !dato.objetivos.includes(filtros.lugar)) return false;
     const fuente = esTabla ? dato.seleccion?.procedencia?.fuente : dato.fuentes.map(f => f.fuente);
     if (filtros.fuente && !(Array.isArray(fuente) ? fuente.includes(filtros.fuente) : fuente === filtros.fuente)) return false;
     const nombres = objetivos.flatMap(e => Object.values(e.nombres)).join(' ');

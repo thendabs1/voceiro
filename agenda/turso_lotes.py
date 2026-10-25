@@ -12,6 +12,10 @@ from turso_http import Cliente, ErrorTurso, argumento
 
 
 class ClienteCalendario(Cliente):
+    # El núcleo reúne varias agendas y su historial en una instantánea validada.
+    # Límite propio; no amplía los envíos ni el cliente de otros servicios.
+    MAX_RESPUESTA = 64_000_000
+
     def transaccion(self, sentencias, escritura=True):
         sentencias = list(sentencias)
         try:

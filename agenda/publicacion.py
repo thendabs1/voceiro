@@ -56,7 +56,8 @@ def proyectar(n, fuentes=None, generado=None):
 
     relaciones = [{c: deepcopy(r[c]) for c in ('tipo', 'origen', 'destino', 'ambito')}
                   for r in n['relaciones'].values() if vigente(r)
-                  and nucleo.clave(r['origen']) in entidades and nucleo.clave(r['destino']) in entidades]
+                  and nucleo.clave(r['origen']) in entidades and nucleo.clave(r['destino']) in entidades
+                  and (r['ambito'] is None or nucleo.clave(r['ambito']) in entidades)]
     padres = {}
     for r in relaciones:
         if r['tipo'] in ('pertenece_a', 'celebracion_de', 'es_parte_de', 'es_edicion_de'):
@@ -90,9 +91,39 @@ def proyectar(n, fuentes=None, generado=None):
         for i, p in n['participaciones'].items() if vigente(p)
         and nucleo.clave(p['evento']) in entidades
         and (p['participante'] is None or nucleo.clave(p['participante']) in entidades)}
+    por_evento = {}
+    for p in participaciones.values():
+        por_evento.setdefault(nucleo.clave(p['evento']), []).append(p)
+    composiciones = {}
+    for r in relaciones:
+        if r['tipo'] == 'compuesta_por':
+            composiciones.setdefault(nucleo.clave(r['origen']), []).append(r)
+    lugares = {}
+    for r in relaciones:
+        if r['tipo'] in ('se_celebra_en', 'ubicado_en'):
+            lugares.setdefault(nucleo.clave(r['origen']), set()).add(nucleo.clave(r['destino']))
+
+    def objetivos_evento(k):
+        objetivos = set(ascendientes(k))
+        for p in por_evento.get(k, []):
+            if p['participante'] is None:
+                continue
+            participante = nucleo.clave(p['participante'])
+            objetivos.add(participante)
+            for r in composiciones.get(participante, []):
+                if nucleo.clave(r['ambito']) in ascendientes(k):
+                    objetivos.add(nucleo.clave(r['destino']))
+        pendientes = [l for o in objetivos for l in lugares.get(o, ())]
+        while pendientes:
+            lugar = pendientes.pop()
+            if lugar not in objetivos:
+                objetivos.add(lugar)
+                pendientes.extend(lugares.get(lugar, ()))
+        return sorted(objetivos)
+
     eventos, tablas = [], []
     for k, e in entidades.items():
-        e['objetivos'] = ascendientes(k)
+        e['objetivos'] = objetivos_evento(k) if e['tipo'] == 'evento' else ascendientes(k)
         if e['tipo'] != 'evento':
             continue
         propias = [i for i in n['entidades'][k]['evidencias'] if i in observaciones and i in activas]
@@ -104,7 +135,9 @@ def proyectar(n, fuentes=None, generado=None):
                      if rid in n['resultados'] and n['resultados'][rid]['observacion'] in observaciones else None)
         eventos.append({**deepcopy(e), 'programacion': seleccion(k, 'programacion'),
             'lugar': seleccion(k, 'lugar'), 'resultado': resultado,
-            'participaciones': [p for p in participaciones.values() if p['evento']['id'] == e['id']],
+            'enlaces': sorted({observaciones[i]['bloques']['url_evento'] for i in propias
+                              if observaciones[i]['bloques'].get('url_evento')}),
+            'participaciones': por_evento.get(k, []),
             'fuentes': [procedencia(i) for i in sorted(propias)]})
     for (k, bloque), _ in selecciones.items():
         if bloque != 'clasificacion' or k not in entidades:
@@ -112,8 +145,10 @@ def proyectar(n, fuentes=None, generado=None):
         s = seleccion(k, bloque)
         cid = s.get('valor') if s else None
         if cid in n['clasificaciones'] and n['clasificaciones'][cid]['observacion'] in observaciones:
+            participantes_tabla = {nucleo.clave(f['participante']) for f in n['clasificaciones'][cid]['filas']
+                                   if f['participante'] and nucleo.clave(f['participante']) in entidades}
             tablas.append({**deepcopy(n['clasificaciones'][cid]), 'seleccion': s,
-                           'objetivos': ascendientes(k)})
+                           'objetivos': sorted(set(ascendientes(k)) | participantes_tabla)})
     campos_fuente = ('nombre', 'url', 'atribucion', 'licencia', 'licencia_url', 'condiciones', 'capacidades', 'modo')
     return {'version': 1, 'nucleo_version': 2,
         'generado': generado or datetime.now(timezone.utc).isoformat(timespec='seconds'),
@@ -146,15 +181,25 @@ def subir(datos):
 def main(argv=None):
     from calendario import guardar
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--entrada', required=True, help='Exportación v2 desde Turso')
-    ap.add_argument('--salida', required=True)
+    origen = ap.add_mutually_exclusive_group(required=True)
+    origen.add_argument('--entrada', help='Exportación v2 para revisión local')
+    origen.add_argument('--turso', action='store_true', help='Leer directamente la base del calendario')
+    ap.add_argument('--salida', help='Exportación opcional para revisión local')
     ap.add_argument('--fuentes', help='Fuentes seleccionadas para publicación, separadas por comas')
     ap.add_argument('--publicar', action='store_true')
     args = ap.parse_args(argv)
-    with open(args.entrada, encoding='utf-8') as archivo:
-        n = json.load(archivo)
+    if args.turso:
+        from .turso import Almacen
+        calendario = Almacen().cargar()
+        if calendario is None or 'nucleo' not in calendario:
+            raise ValueError('Preparar el núcleo de Turso antes de publicar')
+        n = calendario['nucleo']
+    else:
+        with open(args.entrada, encoding='utf-8') as archivo:
+            n = json.load(archivo)
     datos = proyectar(n, None if args.fuentes is None else args.fuentes.split(','))
-    guardar(args.salida, datos)
+    if args.salida:
+        guardar(args.salida, datos)
     if args.publicar:
         subir(datos)
     print(f'[agenda] Lectura: {len(datos["eventos"])} eventos, {len(datos["clasificaciones"])} tablas')
