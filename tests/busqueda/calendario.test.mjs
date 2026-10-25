@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { leerConsultaCalendario, seleccionCalendario, noticiaEnAmbitos } from '../../shared/calendario/consulta.js';
-import { extremoVisible, enDia, ventanaCalendario, moverFecha } from '../../shared/calendario/fechas.js';
+import { extremoVisible, enDia, agruparPorDiaCalendario, ventanaCalendario, moverFecha } from '../../shared/calendario/fechas.js';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 const orden = leerConsultaCalendario;
 const e = (id, temas, codigos = [], objetivos = []) => ({ id, tipo: codigos.length ? 'agrupacion' : 'evento',
@@ -105,4 +107,47 @@ test('la búsqueda propia del calendario se cruza con texto, categoría y fuente
   assert.deepEqual(ids('tenis: dobles', { texto: 'WTA', temas: ['tenis'], fuente: 'prueba' }), ['WTA dobles']);
   assert.deepEqual(ids('tenis: dobles', { texto: 'ATP' }), []);
   assert.deepEqual(ids('tenis:', { texto: '"WTA dobles"' }), ['WTA dobles']);
+});
+
+test('municipio se cruza con recinto, tema y fuente usando su identidad publicada', () => {
+  const d = structuredClone(datos);
+  d.entidades['territorio:uno'] = { ...e('uno', []), tipo: 'territorio', clase: 'municipio' };
+  d.entidades['lugar:sala'] = { ...e('sala', []), tipo: 'lugar', clase: 'recinto' };
+  d.eventos[0].objetivos.push('territorio:uno', 'lugar:sala');
+  d.eventos[1].objetivos.push('territorio:uno');
+  const ids = filtros => seleccionCalendario(d, orden('tenis:'), filtros).eventos.map(e => e.id);
+  assert.deepEqual(ids({ municipio: 'territorio:uno' }), ['ATP final', 'WTA dobles']);
+  assert.deepEqual(ids({ municipio: 'territorio:uno', lugar: 'lugar:sala', fuente: 'prueba', temas: ['tenis'] }), ['ATP final']);
+  assert.deepEqual(ids({ municipio: 'territorio:otro', lugar: 'lugar:sala' }), []);
+});
+
+test('la agrupación conserva exclusiones, fin exclusivo, fechas pendientes y cambios de zona', () => {
+  const horarios = [
+    { inicio: extremo('2026-10-19'), fin: extremo('2026-11-05'), dias_semana: [0,2,4], dias_excluidos: ['2026-10-23'] },
+    { inicio: extremo('2026-10-24'), fin: extremo('2026-10-26'), fin_exclusivo: true },
+    { inicio: extremo('2026-10-25'), fin: extremo(null) },
+    { inicio: extremo(null), fin: extremo(null) },
+    { inicio: extremo('2026-10-25', { instante: '2026-10-25T00:30:00Z', certeza_hora: 'confirmado' }),
+      fin: extremo('2026-10-25', { instante: '2026-10-25T01:30:00Z', certeza_hora: 'confirmado' }) },
+  ];
+  const eventos = horarios.map((cuando, id) => ({ id, programacion: { valor: { cuando } } }));
+  for (const zona of ['Europe/Madrid', 'America/New_York', 'UTC']){
+    const dias = ventanaCalendario('2026-10-25', 'mes');
+    const grupos = agruparPorDiaCalendario(eventos, dias, zona);
+    for (const dia of dias) assert.deepEqual(grupos.get(dia), eventos.filter(e => enDia(e.programacion.valor.cuando, dia, zona)));
+  }
+  assert.equal(agruparPorDiaCalendario(eventos, [], 'UTC').size, 0);
+});
+
+test('miles de conversiones reutilizan Intl por zona sin crear formatos por evento o día', () => {
+  let construidos = 0;
+  const c = { Intl: { DateTimeFormat: function(...args){ construidos++; return new Intl.DateTimeFormat(...args); } } };
+  const codigo = readFileSync(new URL('../../shared/calendario/fechas.js', import.meta.url), 'utf8').replace(/^export /gm, '');
+  runInNewContext(codigo + '\nthis.visible = extremoVisible;', c);
+  const x = extremo('2026-10-25', { instante: '2026-10-25T00:30:00Z', certeza_hora: 'confirmado' });
+  for (let i = 0; i < 1000; i++){
+    assert.equal(c.visible(x, 'Europe/Madrid').hora, '02:30');
+    assert.equal(c.visible(x, 'America/New_York').fecha, '2026-10-24');
+  }
+  assert.equal(construidos, 4);
 });

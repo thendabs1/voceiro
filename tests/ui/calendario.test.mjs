@@ -14,10 +14,10 @@ function evento(id, inicio = '2026-10-25', fin = inicio, modalidad = 'cita'){
     fuentes: [], participaciones: [], programacion: { valor: { modalidad,
       cuando: { inicio: extremo(inicio), fin: extremo(fin) } } } };
 }
-function contexto(eventos){
+function contexto(eventos, intl = Intl){
   const listeners = {};
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelectorAll: () => [] };
-  const c = { ...fechas, ...consulta, parseQuery, Intl, ACCES: { lang: 'es' },
+  const c = { ...fechas, ...consulta, parseQuery, Intl: intl, ACCES: { lang: 'es' },
     t: (k, v) => traducir('es', k, v), escapeHtml: s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
     document: { getElementById: id => id === 'calendario-panel' ? panel : { addEventListener() {} } },
   };
@@ -28,6 +28,7 @@ function contexto(eventos){
     catalogo: { conceptos: { teatro: { nombres: { es: 'Teatro' }, padres: [] } } } };
   c.api.wireCalendario();
   c.click = (cal, valor = '') => listeners.click({ target: { closest: () => ({ dataset: { cal, valor } }) } });
+  c.change = (id, value) => listeners.change({ target: { id, value } });
   return c;
 }
 const cantidad = html => (html.match(/class="cal-evento cal-evento-compacto"/g) || []).length;
@@ -86,4 +87,39 @@ test('sin fecha también pagina y las categorías quedan fuera de los filtros pl
   const filtros = c.api.calFiltros();
   assert.ok(filtros.indexOf('data-cal="tema"') < filtros.indexOf('<details'));
   assert.ok(filtros.indexOf('id="cal-texto"') < filtros.indexOf('<details'));
+});
+
+test('municipio queda visible, filtra las citas y se conserva al cambiar de vista', () => {
+  const c = contexto([evento('Uno'), evento('Dos')]);
+  c.api.s.datos.entidades['territorio:m'] = { tipo: 'territorio', clase: 'municipio', nombres: { es: 'Municipio publicado' }, codigos: [] };
+  c.api.s.datos.eventos[0].objetivos.push('territorio:m');
+  const filtros = c.api.calFiltros();
+  assert.ok(filtros.indexOf('id="cal-municipio"') < filtros.indexOf('<details'));
+  assert.match(filtros, /Municipio publicado/);
+  c.api.s.lugar = 'lugar:otra-sala';
+  c.change('cal-municipio', 'territorio:m');
+  assert.equal(c.api.s.lugar, '');
+  assert.equal(cantidad(c.api.calContenido()), 1);
+  c.click('vista', 'mes');
+  assert.equal((c.api.calContenido().match(/class="cal-mini-evento"/g) || []).length, 1);
+  assert.equal(c.api.s.municipio, 'territorio:m');
+  c.click('limpiar');
+  assert.equal(c.api.s.municipio, '');
+  c.click('vista', 'agenda');
+  assert.equal(cantidad(c.api.calContenido()), 2);
+});
+
+test('cambiar de vista reutiliza los formatos de fecha de la interfaz', () => {
+  let construidos = 0;
+  const c = contexto(Array.from({ length: 47 }, (_, i) => evento('Cita ' + i)), {
+    DateTimeFormat: function(...args){ construidos++; return new Intl.DateTimeFormat(...args); },
+  });
+  for (let i = 0; i < 5; i++) for (const vista of ['agenda', 'semana', 'mes']){
+    c.click('vista', vista); c.api.calContenido();
+  }
+  assert.ok(construidos <= 8, `se crearon ${construidos} formatos`);
+  const antes = construidos;
+  c.ACCES.lang = 'en';
+  assert.match(c.api.calContenido(), /title="Monday"/);
+  assert.ok(construidos > antes);
 });

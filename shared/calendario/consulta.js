@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
 import { tokenizeQuery, normalize } from '../parser.js';
-import { compilarTexto, coincide, palabrasDe } from '../busqueda/texto.js';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js';
 
 export const AMBITOS = {
   tenis: { tema: 'tenis', noticias: ['tenis', 'ATP', 'WTA'] },
@@ -62,10 +62,13 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
   const temas = temasDescendientes(datos.catalogo, filtros.temas || []);
   const texto = compilarTexto(tokenizeQuery(orden.resto || '').filter(t => !t.prefix));
   const busqueda = compilarTexto(tokenizeQuery(filtros.texto || ''));
+  const buscarTexto = !textoVacio(texto) || !textoVacio(busqueda);
+  const porAmbito = new Map((orden.ambitos || []).map(a => [a,
+    AMBITOS[a] && temasDescendientes(datos.catalogo, [AMBITOS[a].tema])]));
   const casaAmbito = (objetivos, a) => {
     const s = AMBITOS[a];
     return s && objetivos.some(e => s.codigo ? e.codigos.includes(s.codigo)
-      : e.temas.some(t => temasDescendientes(datos.catalogo, [s.tema]).has(t)));
+      : e.temas.some(t => porAmbito.get(a).has(t)));
   };
   const casa = (dato, esTabla = false) => {
     if (orden.desconocidos?.length) return false;
@@ -77,8 +80,10 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
     if (temas.size && !objetivos.some(e => e.temas.some(t => temas.has(t)))) return false;
     if (filtros.objetivo && !dato.objetivos.includes(filtros.objetivo)) return false;
     if (filtros.lugar && !dato.objetivos.includes(filtros.lugar)) return false;
+    if (filtros.municipio && !dato.objetivos.includes(filtros.municipio)) return false;
     const fuente = esTabla ? dato.seleccion?.procedencia?.fuente : dato.fuentes.map(f => f.fuente);
     if (filtros.fuente && !(Array.isArray(fuente) ? fuente.includes(filtros.fuente) : fuente === filtros.fuente)) return false;
+    if (!buscarTexto) return true;
     const nombres = objetivos.flatMap(e => Object.values(e.nombres)).join(' ');
     const palabras = palabrasDe(nombres);
     return coincide(palabras, texto) && coincide(palabras, busqueda);
