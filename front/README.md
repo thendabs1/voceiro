@@ -5,9 +5,18 @@
 `app/14-calendario.js` carga bajo demanda `calendario.json` desde los mismos
 backends de datos. Agenda, semana y mes comparten selección y fechas en
 `shared/calendario/`. Se filtra por tema, circuitos combinables, objetivo
-identificado y fuente; no hay filtro de ciudades. La zona del lector convierte
+identificado, municipio/recinto publicado y fuente. La zona del lector convierte
 solo instantes acreditados: una fecha sin hora o una hora sin zona mantienen
 su significado. Las citas sin fecha confirmada quedan en una sección aparte.
+
+La agenda conserva dos semanas y muestra 20 citas por tanda con «Ver más»;
+cada evento aparece una sola vez. Las programaciones prolongadas se agrupan
+al final. Las filas abren el detalle en un diálogo. Categorías y búsqueda
+propia permanecen visibles; los filtros adicionales se despliegan aparte.
+Semana muestra hasta tres citas por día, mes hasta dos; pulsar un día o
+«más» abre solo ese día. Pulsar Agenda recupera las dos semanas. Sin fecha
+confirmada también se muestra en tandas de 20. Cambiar filtros o período
+reinicia la tanda. Las vistas y filtros conservan la selección entre sí.
 
 Las órdenes `tenis:`, `atp: wta:`, `resultados:tenis` y `f1:clasificación`
 reúnen contenido o limitan su tipo. Las noticias siguen el buscador habitual
