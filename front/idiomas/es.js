@@ -7,7 +7,7 @@ export default {
   "calBuscar": "Buscar en el calendario", "calBuscarEjemplo": "Título, actividad o participante…",
   "calMostrando": "Mostrando {n} de {total} eventos", "calVerMas": "Ver {n} más",
   "calObjetivo": "Competición, actividad o participante", "calFuente": "Fuente", "calZona": "Zona horaria",
-  "calLugar": "Municipio o recinto", "calRecinto": "Recinto", "calMunicipio": "Municipio",
+  "calLugar": "Recinto o territorio", "calRecinto": "Recinto", "calMunicipio": "Municipio",
   "calPeriodo": "Programación en este intervalo", "calVerOriginal": "Consultar en la fuente original",
   "calProgramaciones": "Programaciones y actividades prolongadas",
   "calProgramacionesNota": "El intervalo indica el período publicado. Consulta los días y horarios en la fuente; no supone una función diaria.",
