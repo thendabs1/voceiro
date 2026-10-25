@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=b66c1c82c8';
-import { compilarTexto, coincide, palabrasDe } from '../busqueda/texto.js?v=b66c1c82c8';
+import { tokenizeQuery, normalize } from '../parser.js?v=0785143481';
+import { compilarTexto, coincide, palabrasDe } from '../busqueda/texto.js?v=0785143481';
 
 export const AMBITOS = {
   tenis: { tema: 'tenis', noticias: ['tenis', 'ATP', 'WTA'] },
@@ -61,6 +61,7 @@ export function temasDescendientes(catalogo, seleccion){
 export function seleccionCalendario(datos, orden = {}, filtros = {}){
   const temas = temasDescendientes(datos.catalogo, filtros.temas || []);
   const texto = compilarTexto(tokenizeQuery(orden.resto || '').filter(t => !t.prefix));
+  const busqueda = compilarTexto(tokenizeQuery(filtros.texto || ''));
   const casaAmbito = (objetivos, a) => {
     const s = AMBITOS[a];
     return s && objetivos.some(e => s.codigo ? e.codigos.includes(s.codigo)
@@ -70,15 +71,17 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
     if (orden.desconocidos?.length) return false;
     const objetivos = (dato.objetivos || []).map(k => datos.entidades[k]).filter(Boolean);
     if (orden.ambitos?.length && !orden.ambitos.some(a => casaAmbito(objetivos, a))) return false;
-    const circuitos = filtros.circuitos?.length ? filtros.circuitos : orden.circuitos || [];
-    if (circuitos.length && !circuitos.some(a => casaAmbito(objetivos, a))) return false;
+    for (const circuitos of [orden.circuitos || [], filtros.circuitos || []]){
+      if (circuitos.length && !objetivos.some(e => circuitos.some(c => e.codigos.includes(c)))) return false;
+    }
     if (temas.size && !objetivos.some(e => e.temas.some(t => temas.has(t)))) return false;
     if (filtros.objetivo && !dato.objetivos.includes(filtros.objetivo)) return false;
     if (filtros.lugar && !dato.objetivos.includes(filtros.lugar)) return false;
     const fuente = esTabla ? dato.seleccion?.procedencia?.fuente : dato.fuentes.map(f => f.fuente);
     if (filtros.fuente && !(Array.isArray(fuente) ? fuente.includes(filtros.fuente) : fuente === filtros.fuente)) return false;
     const nombres = objetivos.flatMap(e => Object.values(e.nombres)).join(' ');
-    return coincide(palabrasDe(nombres), texto);
+    const palabras = palabrasDe(nombres);
+    return coincide(palabras, texto) && coincide(palabras, busqueda);
   };
   return { eventos: datos.eventos.filter(e => casa(e)), clasificaciones: datos.clasificaciones.filter(e => casa(e, true)) };
 }
