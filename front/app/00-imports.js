@@ -36,3 +36,5 @@ import {
 } from './tiempo/avisos.js';
 
 import { I18N, traducir } from './idiomas/index.js';
+import { AMBITOS, leerConsultaCalendario, seleccionCalendario, temasDescendientes, noticiaEnAmbitos } from './calendario/consulta.js';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, enDia, ventanaCalendario, moverFecha } from './calendario/fechas.js';

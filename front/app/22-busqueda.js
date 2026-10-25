@@ -1,5 +1,6 @@
 // Texto, medios y fechas: lo decide el núcleo (shared/busqueda/consulta.js).
 function _pasaConsulta(n, consulta){
+  if (consulta.calendario && !noticiaEnAmbitos(n.titular, consulta.calendario)) return false;
   return consulta.pasa({
     dominio: n.dominio,
     titular: n.titular,
@@ -10,6 +11,7 @@ function _pasaConsulta(n, consulta){
 // Lo mismo para lo que trajo la prensa: las palabras buscadas pueden estar
 // en el cuerpo (consulta.pasaExterno).
 function _pasaExterno(n, consulta){
+  if (consulta.calendario && !noticiaEnAmbitos(n.titular, consulta.calendario)) return false;
   return consulta.pasaExterno({
     dominio: n.dominio,
     titular: n.titular,
@@ -98,12 +100,17 @@ function aplicarFiltros(){
   if (PASE) return;   // lo que llegue durante el pase espera: cerrarPase vuelve a filtrar
   hidratarNoticias();
   const rawInput = $('#buscar').value.trim();
-  const raw = ordenEstadisticas(rawInput)?.resto ?? rawInput;
+  const sinStats = ordenEstadisticas(rawInput)?.resto ?? rawInput;
+  const ordenCalendario = leerConsultaCalendario(sinStats);
+  actualizarConsultaCalendario(ordenCalendario);
+  const raw = ordenCalendario?.resto ?? sinStats;
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
   // Se interpreta una vez y la usan el filtro y la prensa.
   const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
+  consulta.calendario = ordenCalendario;
+  if (ordenCalendario) consulta.clave += '|' + JSON.stringify(ordenCalendario);
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
   actualizarTiempo(parsed.eltiempo);
@@ -140,7 +147,7 @@ ajustarDiasActual(capas);
   const hayFuenteExplicita = hayDominio || hayMedio;
   const hayBusquedaActiva =
     hayTitulo || hayGrupo || hayTipo || hayTag ||
-    !!g || !!t2 || !!parsed.desde || !!parsed.hasta;
+    !!g || !!t2 || !!parsed.desde || !!parsed.hasta || !!ordenCalendario;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
   // La vista 🔖 Temas filtra como un modo, con los temas de todos los modos.
@@ -152,7 +159,7 @@ ajustarDiasActual(capas);
   // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
   // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
   const presetEfectivo = conFiltro && !hayFuenteExplicita && !hayBusquedaActiva;
-  const conPestanas    = conFiltro && !hayFuenteExplicita &&  hayBusquedaActiva;
+  const conPestanas    = conFiltro && !hayFuenteExplicita && hayBusquedaActiva && !ordenCalendario;
 
   _avisarMediosDesconocidos(consulta);
   const ctx = {
@@ -263,7 +270,7 @@ ajustarDiasActual(capas);
   requestAnimationFrame(renderizar);
 
   if (APP_LISTA && RECORDAR_FILTROS){
-    try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
+    try { localStorage.setItem('voceiro-buscar', rawInput); } catch(e){}
   }
   programarPrensa(consulta);
 }

@@ -28,7 +28,7 @@
     }
   } catch(e){}
 </script>
-<link rel="stylesheet" href="./estilos.css?v=f57f9fea17">
+<link rel="stylesheet" href="./estilos.css?v=4c28597024">
 </head>
 <body>
 <!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
@@ -556,6 +556,7 @@
     </div>
     <div class="header-actions header-actions-right">
       <button id="btn-tiempo" class="btn-tiempo btn-cab" type="button" hidden></button>
+      <button id="btn-calendario" class="btn-cab" type="button" aria-controls="calendario-panel" aria-expanded="false"></button>
       <div id="cab-est-home"><button id="btn-estadisticas" class="btn-cab" type="button" aria-controls="estadisticas-panel" aria-expanded="false"></button></div>
       <details id="cab-menu" class="cab-menu">
         <summary aria-controls="cab-menu-panel"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis"/></svg><span class="sr-only" id="cab-menu-label"></span></summary>
@@ -644,6 +645,8 @@
 <section id="tiempo-tarjeta" class="tiempo-tarjeta" hidden aria-live="polite"></section>
 <section id="avisos-panel" class="tiempo-tarjeta" hidden></section>
 <section id="estadisticas-panel" class="estadisticas-panel" hidden></section>
+<section id="calendario-panel" class="calendario-panel" aria-labelledby="cal-titulo" hidden></section>
+<dialog id="cal-evento-dialogo" class="cal-evento-dialogo"></dialog>
 <main id="resultados"></main>
 <div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
   <button id="btn-cargar-mas" type="button" style="padding:10px 20px; font-size:.85em;"></button>
@@ -653,7 +656,7 @@
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script type="module" src="./app.js?v=f57f9fea17"></script>
+<script type="module" src="./app.js?v=4c28597024"></script>
 </body>
 </html>
 

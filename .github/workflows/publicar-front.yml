@@ -48,7 +48,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A -- public/index.html public/app.js public/estilos.css public/idiomas public/vendor public/parser.js public/busqueda public/sync public/tema public/tiempo public/lector.user.js
+          git add -A -- public/index.html public/app.js public/estilos.css public/idiomas public/vendor public/parser.js public/busqueda public/sync public/tema public/tiempo public/calendario public/lector.user.js
           if ! git diff --staged --quiet; then
             git commit -m "Regenerar frontend [skip ci]"
           fi

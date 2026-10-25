@@ -1,7 +1,7 @@
 // Generado desde workers/comun/datos-cache.js por scripts/sync-workers.mjs. No editar.
 export function cacheControlFor(key) {
   // Índices: 60s
-  if (key === 'manifest.json' || key === 'inventario.json') return 'public, max-age=60';
+  if (key === 'manifest.json' || key === 'inventario.json' || key === 'calendario.json') return 'public, max-age=60';
 
   // Portada rodante: 60s
   if (key.startsWith('portada-')) return 'public, max-age=60';

@@ -24,12 +24,15 @@ class Servidor:
         self.consultas = []
         self.peticiones = 0
         self.perder_respuesta = False
+        self.baton = None
 
     def abrir(self, peticion, timeout):
         self.peticiones += 1
         if peticion.full_url.endswith('/dump'):
             return io.BytesIO('\n'.join(self.db.iterdump()).encode())
         cuerpo = json.loads(peticion.data)
+        if cuerpo.get('baton'):
+            assert cuerpo['baton'] == self.baton
         resultados, errores = [], []
 
         def condicion(c):
@@ -61,14 +64,18 @@ class Servidor:
             except sqlite3.Error as error:
                 resultados.append(None)
                 errores.append({'code': error.sqlite_errorname})
-        if self.db.in_transaction:
+        cerrar = len(cuerpo['requests']) == 2 and cuerpo['requests'][1]['type'] == 'close'
+        if cerrar and self.db.in_transaction:
             self.db.rollback()  # close del stream también revierte un BEGIN sin COMMIT.
+        self.baton = None if cerrar else f'baton-{self.peticiones}'
         if self.perder_respuesta:
             raise TimeoutError()
-        return io.BytesIO(json.dumps({'results': [
+        rs = [
             {'type': 'ok', 'response': {'type': 'batch', 'result': {
-                'step_results': resultados, 'step_errors': errores}}},
-            {'type': 'ok', 'response': {'type': 'close'}}]}).encode())
+                'step_results': resultados, 'step_errors': errores}}}]
+        if cerrar:
+            rs.append({'type': 'ok', 'response': {'type': 'close'}})
+        return io.BytesIO(json.dumps({'baton': self.baton, 'base_url': None, 'results': rs}).encode())
 
 
 class PersistenciaTurso(unittest.TestCase):

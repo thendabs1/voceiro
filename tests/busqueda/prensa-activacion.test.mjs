@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
+import { AMBITOS, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 
 // Ejecutar la función real del frontal sin hacer peticiones ni arrancar el DOM.
 const html = leerAplicacion();
@@ -18,7 +19,8 @@ function crear({ activa = true, cache = false } = {}) {
     PRENSA_ACTIVA: activa, PRENSA_LANG: 'es', PRENSA_PAIS: 'ES', PRENSA_DEBOUNCE_MS: 1500,
     ULT_FILTRADAS: [], ULT_CTX: null,
     paraPrensa, prensaCacheKey: s => s, prensaCacheGet: () => (cache ? [] : null),
-    buscarEnPrensa: () => ({ then: fn => fn(estado.respuesta) }),
+    buscarEnPrensa: async () => estado.respuesta,
+    AbortController, AMBITOS,
     _itemDePrensa: it => it, _mergearItemsEnNoticias: items => items.length, hidratarNoticias() {},
     aplicarFiltros: () => { estado.filtrados++; }, renderizar: () => { estado.pintados++; },
     t: s => s, document: { getElementById: () => null },
@@ -31,7 +33,7 @@ function crear({ activa = true, cache = false } = {}) {
     ctx.programar(c);
   };
   const enCurso = () => { ctx.PRENSA_ABORT = { abort: () => { estado.abortadas++; } }; };
-  const responder = res => { estado.respuesta = res; estado.timers.at(-1).fn(); };
+  const responder = async res => { estado.respuesta = res; await estado.timers.at(-1).fn(); };
   return { ctx, estado, programar, enCurso, responder };
 }
 
@@ -55,12 +57,12 @@ test(`lo que está en caché no espera`, () => {
 
 // Cada llegada (R2, archivo, la propia prensa) vuelve a llamar a aplicarFiltros
 // y, con él, a programarPrensa: no debe volver a pedir lo mismo.
-test(`la misma consulta no se vuelve a programar ni se repite una vez hecha`, () => {
+test(`la misma consulta no se vuelve a programar ni se repite una vez hecha`, async () => {
   const s = crear();
   s.programar();
   s.programar();
   assert.equal(s.estado.timers.length, 1);
-  s.responder({ items: [{ t: 'Arde una nave' }] });
+  await s.responder({ items: [{ t: 'Arde una nave' }] });
   assert.equal(s.estado.filtrados, 1);
   assert.equal(s.ctx.estadoPrensa(), '');
   s.programar();
@@ -69,19 +71,19 @@ test(`la misma consulta no se vuelve a programar ni se repite una vez hecha`, ()
   assert.equal(s.estado.timers.length, 2);
 });
 
-test(`sin noticias, el vacío deja de «buscar» sin volver a filtrar`, () => {
+test(`sin noticias, el vacío deja de «buscar» sin volver a filtrar`, async () => {
   const s = crear();
   s.programar();
-  s.responder({ items: [] });
+  await s.responder({ items: [] });
   assert.equal(s.estado.filtrados, 0);
   assert.equal(s.estado.pintados, 1);
   assert.equal(s.ctx.PRENSA_HECHA, s.ctx.ULT_CTX.clavePrensa);
 });
 
-test(`un fallo se indica y no se repite solo; otra búsqueda o volver a ella lo reintenta`, () => {
+test(`un fallo se indica y no se repite solo; otra búsqueda o volver a ella lo reintenta`, async () => {
   const s = crear();
   s.programar();
-  s.responder(null);
+  await s.responder(null);
   assert.equal(s.ctx.estadoPrensa(), 'prensaFallo');
   s.programar();                                   // llega el archivo: no se insiste
   assert.equal(s.estado.timers.length, 1);
@@ -89,6 +91,26 @@ test(`un fallo se indica y no se repite solo; otra búsqueda o volver a ella lo 
   s.programar();
   assert.equal(s.estado.timers.length, 3);
   assert.equal(s.ctx.estadoPrensa(), 'prensaBuscando');
+});
+
+test('ATP y WTA se buscan por separado, comparten cancelación y un filtro de resultados no pide prensa', async () => {
+  const s = crear(), peticiones = [];
+  s.ctx.buscarEnPrensa = async (_, texto, opciones) => {
+    peticiones.push({ texto, signal: opciones.signal });
+    return { items: [{ t: texto }] };
+  };
+  const c = interpretarConsulta('final');
+  c.calendario = leerConsultaCalendario('atp: wta: final');
+  s.ctx.ULT_CTX = { clavePrensa: s.ctx.clave(c) };
+  s.ctx.programar(c);
+  await s.estado.timers.at(-1).fn();
+  assert.equal(peticiones.length, 2);
+  assert.match(peticiones[0].texto, /ATP/); assert.match(peticiones[1].texto, /WTA/);
+  assert.equal(peticiones[0].signal, peticiones[1].signal);
+  const previas = s.estado.timers.length;
+  c.calendario = leerConsultaCalendario('resultados:tenis');
+  s.ctx.programar(c);
+  assert.equal(s.estado.timers.length, previas);
 });
 
 test(`otro idioma o país es otra petición`, () => {

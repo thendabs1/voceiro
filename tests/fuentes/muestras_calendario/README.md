@@ -31,3 +31,13 @@ Las referencias y límites de la investigación están en
 [multideporte](../../../agenda/investigacion/07-multideporte-y-seleccion.md).
 Estas muestras permiten verificar estructura, identidad y conservación;
 no acreditan reutilización pública, frescura ni disponibilidad de la fuente.
+# Contraste del recolector HTML
+
+`feb-calendario.html` y `feb-resultados.html` contienen fragmentos retenidos
+el 25/10/2026 de las páginas de LF Endesa 2026/2027: tres partidos y dos
+filas de clasificación. Se conservan HTML, IDs y selectores originales;
+se han retirado filas ajenas a la muestra. No representan cobertura completa.
+Se usan para probar el parser, el rechazo de cambios de estructura y el
+contraste entre vistas sin red. Las pruebas de publicación cubren selección
+de fuentes, circuitos, TBD y transacciones divididas con rollback real.
+

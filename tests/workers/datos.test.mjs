@@ -23,6 +23,7 @@ test('la política de caché coincide al servir datos por CF o por Deno', async 
   for (const [nombre, cache] of [
     ['manifest.json', 'public, max-age=60'],
     ['inventario.json', 'public, max-age=60'],
+    ['calendario.json', 'public, max-age=60'],
     ['portada-0123456789.json', 'public, max-age=60'],
     ['d-ejemplo.test-2026-10-23.json', 'public, max-age=60'],
     ['d-ejemplo.test-2026-10-10.json', 'public, max-age=86400'],

@@ -1,5 +1,26 @@
 # Interfaz
 
+## Calendario y contenido del feed
+
+`app/14-calendario.js` carga bajo demanda `calendario.json` desde los mismos
+backends de datos. Agenda, semana y mes comparten selección y fechas en
+`shared/calendario/`. Se filtra por tema, circuitos combinables, objetivo
+identificado y fuente; no hay filtro de ciudades. La zona del lector convierte
+solo instantes acreditados: una fecha sin hora o una hora sin zona mantienen
+su significado. Las citas sin fecha confirmada quedan en una sección aparte.
+
+Las órdenes `tenis:`, `atp: wta:`, `resultados:tenis` y `f1:clasificación`
+reúnen contenido o limitan su tipo. Las noticias siguen el buscador habitual
+y una selección por texto del titular, sin fabricar enlaces con entidades
+deportivas; los filtros de medios solo afectan a esas noticias. Los filtros
+propios del calendario se muestran en su panel. Las vistas completas ocupan
+el espacio central y conservan el feed al cerrarse. Las tablas deportivas
+conservan ámbito y comprobación, y no se representan como citas.
+
+La lectura conserva el último resultado bueno si falla la actualización.
+Las respuestas de fuentes excluidas de publicación no viajan al navegador.
+La publicación es una operación manual del workflow Calendario.
+
 `plantilla.html` contiene el HTML y el arranque temprano del tema.
 `python3 scripts/generar_front.py` genera los archivos que se sirven en Pages:
 

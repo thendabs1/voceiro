@@ -32,6 +32,7 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
     $: s => el[s], t: k => k, ico: n => `<${n}>`, escapeHtml: x => String(x),
     PESO, empezado, Date, JSON, String, Array,
     ACCES: { lang: 'es' }, recordarLugar() {},
+    cerrarCalendario() {},
     TIEMPO_ACTIVO: true, AVISOS_CABECERA: true, TIEMPO_SITIOS_KEY: 'voceiro-tiempo-sitios-v1', TIEMPO_MAX_SITIOS: 5,
     AVISOS: { datos: { avisos } }, filtrados: 0,
     avisosVigentes: () => avisos,

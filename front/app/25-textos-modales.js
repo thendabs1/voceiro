@@ -38,6 +38,8 @@ function aplicarTextos(){
   };
   cab('#btn-config', ico('settings'), 'ajTitulo');
   cab('#btn-estadisticas', iconoEstadisticas(), 'estTitulo');
+  cab('#btn-calendario', iconoCalendario(), 'calTitulo');
+  $('#btn-calendario').setAttribute('aria-label', t('calTitulo'));
   $('#btn-estadisticas').setAttribute('aria-label', t('estTitulo'));
   cab('#btn-acces', '<span class="cab-aa" aria-hidden="true">Aa</span>', 'ajLectura');
   cab('#btn-pendientes', ico('bookmark'), 'btnPendientes');
@@ -289,6 +291,7 @@ function aplicarTextos(){
   actualizarSyncBanner();
   actualizarBotonPendientes();
   pintarEstadisticas();
+  pintarCalendario();
   // Si cambia el idioma, el chip del tiempo muestra la nueva traducción.
   if ($('#chips-busqueda').style.display !== 'none'){
     const raw = $('#buscar').value.trim();

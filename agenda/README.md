@@ -1,4 +1,47 @@
-# Calendario común — piloto de datos
+# Calendario común
+
+## Ampliación: lectura y recogidas deportivas
+
+El frontend añade agenda, semana y mes y consultas en el feed: `tenis:`,
+`atp: wta:`, `resultados:tenis`, `resultados:atp,wta`, `f1:clasificación`
+y `tenis: circuito:atp,wta`. Los ámbitos se suman sin duplicar citas; un
+circuito explícito se cruza con el deporte y tipo de contenido. ATP y WTA
+tienen identidad de circuito independiente del proveedor, conservando los
+IDs existentes de torneos, cuadros y encuentros.
+
+`python -m agenda.publicacion` genera desde el núcleo v2 la lectura del
+navegador, sin originales ni historial completo. Conserva identidades,
+horarios, precisión, procedencia, participantes, resultados y tablas actuales.
+Las clasificaciones no son eventos. Vidmar sigue aportando solo calendario:
+una consulta de clasificación de F1 indica que no hay tabla disponible.
+
+El workflow manual **Calendario** incorpora FEB (LF Endesa, temporada
+explícita y dos páginas por pasada) y los scoreboards ATP/WTA (una petición
+por circuito). No se acredita cobertura de toda FEB. Las plazas TBD no crean
+personas ficticias. Los fragmentos ESPN se conservan por encuentro para no
+duplicar toda la respuesta al cambiar un marcador.
+
+Turso es el estado de trabajo. Los JSON y SQLite del artefacto son exportaciones
+y copias de recuperación. Las escrituras grandes usan varios envíos HTTP
+unidos por el baton del protocolo v2, con un único COMMIT y rollback completo
+ante errores. No se reintenta automáticamente una escritura con respuesta perdida.
+
+La publicación en R2 es explícita: usa la variable del repositorio
+`CALENDARIO_FUENTES_PUBLICAS` (IDs separados por comas; por defecto
+`cultura-galicia`). Sin seleccionar fuentes se genera la lectura de revisión,
+que no se puede subir como pública. Añadir un recolector no habilita
+republicación ni cron; las condiciones pendientes siguen documentadas.
+`calendario.json` se sustituye como objeto completo y su caché dura 60 s.
+
+No se añade filtro de ciudades: su conexión con tiempo y noticias requiere
+correspondencias verificadas por INE. Las noticias de las consultas temáticas
+se seleccionan por texto del titular; todavía no se enlazan automáticamente
+con encuentros o participantes.
+
+Los apartados siguientes documentan el piloto conservado y sus contrastes
+anteriores; esta ampliación sustituye sus menciones a UI o lectura pendientes.
+
+## Piloto conservado
 
 Una función de teatro, un partido y una sesión de F1 son citas del mismo
 calendario. Los importadores son Cultura de Galicia y el ICS completo de

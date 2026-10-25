@@ -12,31 +12,33 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=f57f9fea17';
+} from './parser.js?v=4c28597024';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=f57f9fea17';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=f57f9fea17';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=f57f9fea17';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=f57f9fea17';
-import { comparador } from './busqueda/orden.js?v=f57f9fea17';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=4c28597024';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=4c28597024';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=4c28597024';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=4c28597024';
+import { comparador } from './busqueda/orden.js?v=4c28597024';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=f57f9fea17';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=f57f9fea17';
+} from './sync/fusion.js?v=4c28597024';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=4c28597024';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=f57f9fea17';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=f57f9fea17';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=4c28597024';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=4c28597024';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=f57f9fea17';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=4c28597024';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=f57f9fea17';
+} from './tiempo/avisos.js?v=4c28597024';
 
-import { I18N, traducir } from './idiomas/index.js?v=f57f9fea17';
+import { I18N, traducir } from './idiomas/index.js?v=4c28597024';
+import { AMBITOS, leerConsultaCalendario, seleccionCalendario, temasDescendientes, noticiaEnAmbitos } from './calendario/consulta.js?v=4c28597024';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, enDia, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=4c28597024';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1949,7 +1951,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=f57f9fea17');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=4c28597024');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3235,6 +3237,8 @@ function scoreMatch(haystack, needle){
 }
 
 function sugerenciasBuscar(raw){
+  const calendario = sugerenciasCalendario(raw);
+  if (calendario) return calendario;
   const stats = sugerenciasEstadisticas(raw);
   if (stats) return stats;
   // eltiempo: sugiere municipios, no medios.
@@ -3343,6 +3347,11 @@ function aplicarSugerencia(idx){
   const s = SUG_STATE.items[idx];
   if (!s) return;
   const input = document.getElementById('buscar');
+
+  if (s.kind === 'calendario'){
+    input.value = input.value.replace(/[^\s"]*$/, s.value);
+    cerrarSugerencias(); aplicarFiltros(); return;
+  }
 
   if (s.kind === 'estadisticas'){
     input.value = input.value.replace(/(^|\s)(?:estadisticas|stats):(?:"[^"]*|[^\s"]*)$/i, (_, antes) => antes + 'estadisticas:' + s.value);
@@ -3485,6 +3494,315 @@ function wireAutocomplete(){
       if (haySugerencias(items)) abrirSugerencias(items);
     }
   });
+}
+/* Un contrato de lectura para calendario y contenido deportivo del feed. */
+const CALENDARIO = {
+  abierto: false, orden: null, datos: null, cargando: false, error: false, intentado: false,
+  fecha: '', vista: 'agenda', zona: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid',
+  temas: new Set(), circuitos: new Set(), fuente: '', objetivo: '', clave: '', controller: null,
+  origen: null, scroll: 0, cargado: 0,
+};
+const iconoCalendario = () => '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg>';
+const calNombre = e => e?.nombres?.[ACCES.lang] || e?.nombres?.es || Object.values(e?.nombres || {})[0] || '—';
+const calEsc = s => escapeHtml(String(s ?? ''));
+const calHoy = () => diaEnZona(new Date().toISOString(), CALENDARIO.zona);
+const calFecha = (dia, opciones = {}) => fechaValida(dia) ? new Intl.DateTimeFormat(ACCES.lang, {
+  timeZone: 'UTC', day: 'numeric', month: 'short', ...opciones,
+}).format(new Date(dia + 'T12:00:00Z')) : t('calFechaPendiente');
+const calBoton = (accion, label, valor = '', attrs = '') => `<button type="button" data-cal="${accion}" data-valor="${calEsc(valor)}" ${attrs}>${calEsc(label)}</button>`;
+function calEnlace(url, label){
+  try { if (!/^https?:$/.test(new URL(url).protocol)) return calEsc(label); }
+  catch { return calEsc(label); }
+  return `<a href="${calEsc(url)}" target="_blank" rel="noopener noreferrer">${calEsc(label)}</a>`;
+}
+function validarLecturaCalendario(p){
+  if (!p || p.version !== 1 || p.nucleo_version !== 2 || !p.catalogo?.conceptos
+      || !p.entidades || !p.fuentes || !Array.isArray(p.eventos) || !Array.isArray(p.clasificaciones)
+      || !Number.isFinite(Date.parse(p.generado))) throw new Error('Contrato de calendario incompatible');
+  const vistos = new Set();
+  for (const [k, e] of Object.entries(p.entidades)){
+    if (k !== `${e.tipo}:${e.id}` || !e.nombres || !Array.isArray(e.temas)
+        || !Array.isArray(e.codigos) || !Array.isArray(e.objetivos)
+        || e.objetivos.some(i => !Object.hasOwn(p.entidades, i))) throw new Error('Entidad de calendario inválida');
+  }
+  for (const e of p.eventos){
+    if (vistos.has(e.id) || !Object.hasOwn(p.entidades, 'evento:' + e.id)
+        || !Array.isArray(e.fuentes) || !Array.isArray(e.participaciones)) throw new Error('Evento inválido');
+    vistos.add(e.id);
+    const c = e.programacion?.valor?.cuando;
+    if (c && (!c.inicio || !c.fin || [c.inicio, c.fin].some(x =>
+      x.fecha && !fechaValida(x.fecha) || x.instante && !Number.isFinite(Date.parse(x.instante))))) throw new Error('Horario inválido');
+  }
+  for (const tabla of p.clasificaciones){
+    if (!Array.isArray(tabla.filas) || !Object.hasOwn(p.entidades, `${tabla.ambito?.tipo}:${tabla.ambito?.id}`)) throw new Error('Clasificación inválida');
+  }
+  return p;
+}
+async function cargarCalendario(renovar = false){
+  const s = CALENDARIO;
+  if (s.cargando || !renovar && (s.datos || s.intentado)) return;
+  s.controller?.abort();
+  const controller = s.controller = new AbortController();
+  s.cargando = true; s.error = false; s.intentado = true; pintarCalendario();
+  const bases = [...new Set([DATA_BASE, ...Object.values(BACKENDS).map(b => b.data)])];
+  try {
+    let datos, fallo;
+    for (const base of bases){
+      try {
+        const r = await fetch(`${base}/calendario.json`, { cache: 'no-cache',
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        datos = validarLecturaCalendario(await r.json()); break;
+      } catch (e){ if (controller.signal.aborted) throw e; fallo = e; }
+    }
+    if (!datos) throw fallo;
+    s.datos = datos; s.cargado = Date.now();
+  } catch { if (!controller.signal.aborted) s.error = true; }
+  finally { s.cargando = false; pintarCalendario(); }
+}
+function actualizarConsultaCalendario(orden){
+  const s = CALENDARIO, clave = JSON.stringify(orden);
+  if (clave !== s.clave){
+    s.clave = clave; s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = '';
+    const fecha = parseQuery(orden?.resto || '').desde;
+    s.fecha = fecha || (orden?.tipos.includes('resultados') ? sumarDiasCalendario(calHoy(), -7) : calHoy());
+  }
+  s.orden = orden;
+  if (orden && !s.datos && !s.intentado) cargarCalendario();
+  pintarCalendario();
+}
+function abrirCalendario(origen = null){
+  const s = CALENDARIO;
+  if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; }
+  cerrarEstadisticas(false);
+  s.abierto = true; s.fecha ||= calHoy();
+  pintarCalendario();
+  if (!s.datos || Date.now() - s.cargado > 60000) cargarCalendario(true);
+  requestAnimationFrame(() => {
+    document.getElementById('cal-titulo')?.focus({ preventScroll: true });
+    document.getElementById('calendario-panel')?.scrollIntoView({ block: 'start' });
+  });
+}
+function cerrarCalendario(volver = true){
+  const s = CALENDARIO;
+  if (!s.abierto) return;
+  s.abierto = false; pintarCalendario();
+  if (!volver) return;
+  const origen = s.origen?.isConnected ? s.origen : document.getElementById('btn-calendario');
+  const menu = origen?.closest?.('#cab-menu');
+  (menu && !menu.open ? menu.querySelector('summary') : origen)?.focus({ preventScroll: true });
+  window.scrollTo({ top: s.scroll, behavior: 'auto' });
+}
+function calHora(e){
+  const c = e.programacion?.valor?.cuando;
+  const a = extremoVisible(c?.inicio, CALENDARIO.zona), b = extremoVisible(c?.fin, CALENDARIO.zona);
+  if (!a.fecha) return t('calFechaPendiente');
+  let s = a.hora || t('calSinHora');
+  if (a.hora && a.sinZona) s += ' · ' + t('calSinZona');
+  if (b.fecha) s += ' → ' + calFecha(b.fecha) + (b.hora ? ' ' + b.hora : '')
+    + (c.fin_exclusivo ? ' · ' + t('calFinExclusivo') : '');
+  return s;
+}
+function calLugar(e){
+  const v = e.lugar?.valor;
+  if (!v) return '';
+  if (typeof v === 'string') return v;
+  return [v.nombre || v.fullName || v.displayName, v.municipio_literal || v.address?.city].filter(Boolean).join(' · ');
+}
+const CAL_METRICAS = {
+  'baloncesto.puntos': 'calPuntos', 'baloncesto.partidos_jugados': 'calPJ',
+  'baloncesto.victorias': 'calPG', 'baloncesto.derrotas': 'calPP',
+  'baloncesto.puntos_favor': 'calPF', 'baloncesto.puntos_contra': 'calPC',
+  'baloncesto.diferencia': 'calDiferencia', 'baloncesto.porcentaje_victorias': 'calPorcentaje',
+  'tenis.sets_ganados': 'calSets', 'tenis.juegos': 'calJuegos',
+  'tenis.puntos_desempate': 'calDesempate', 'carrera.posicion': 'calPosicion', 'carrera.tiempo': 'calSegundos',
+};
+function calTabla(filas, caption, conPosicion = false){
+  const metricas = [...new Set(filas.flatMap(f => Object.keys(f.metricas)))];
+  const valor = v => v == null ? '—' : typeof v === 'number' ? new Intl.NumberFormat(ACCES.lang).format(v) : v;
+  return `<div class="cal-tabla"><table><caption>${calEsc(caption)}</caption><thead><tr>${conPosicion ? `<th scope="col">${calEsc(t('calPosicion'))}</th>` : ''}<th scope="col">${calEsc(t('calParticipante'))}</th>${metricas.map(m => `<th scope="col">${calEsc(t(CAL_METRICAS[m] || m))}</th>`).join('')}</tr></thead><tbody>${filas.map(f => `<tr>${conPosicion ? `<td>${calEsc(f.posicion ?? '—')}</td>` : ''}<th scope="row">${calEsc(f.literal)}</th>${metricas.map(m => `<td>${calEsc(valor(f.metricas[m]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function calResultado(e){
+  const r = e.resultado;
+  if (!r) return '';
+  const nombres = Object.fromEntries(e.participaciones.map(p => [p.id, p.literal]));
+  const filas = lineas => lineas.map(l => ({ literal: nombres[l.participacion] || t('calParticipante'), metricas: l.metricas }));
+  return `<div class="cal-resultado">${calTabla(filas(r.lineas), t('calResultados'))}
+    <p class="cal-nota">${calEsc(r.condicion === 'final' ? t('calFinal') : t('calResultadoObservado'))}</p>
+    ${r.parciales.length ? `<details><summary>${calEsc(t('calParciales'))}</summary>${r.parciales.map(p => calTabla(filas(p.lineas), `${p.tipo === 'set' ? t('calSet') : t('calCuarto')} ${p.orden}`)).join('')}</details>` : ''}</div>`;
+}
+function calFuentes(e){
+  const datos = CALENDARIO.datos;
+  const vistas = new Set();
+  return e.fuentes.filter(f => { const k = f.fuente + '/' + f.url; if (vistas.has(k)) return false; vistas.add(k); return true; })
+    .map(f => {
+      const fuente = datos.fuentes[f.fuente];
+      const comprobado = new Date(f.comprobado);
+      return `<p class="cal-nota">${calEnlace(f.url || fuente?.url, fuente?.atribucion || fuente?.nombre || f.fuente)}
+        · ${calEsc(t('calComprobado', { fecha: new Intl.DateTimeFormat(ACCES.lang, { dateStyle: 'short', timeStyle: 'short', timeZone: CALENDARIO.zona }).format(comprobado) }))}
+        ${fuente?.licencia ? ' · ' + calEnlace(fuente.licencia_url, fuente.licencia) : ''}</p>`;
+    }).join('');
+}
+function calEvento(e){
+  const v = e.programacion?.valor, estado = v?.programacion;
+  const aviso = e.programacion?.conflicto || e.lugar?.conflicto || e.resultado?.seleccion?.conflicto;
+  const ejecucion = v?.ejecucion;
+  return `<article class="cal-evento"><h3>${calEsc(calNombre(e))}</h3>
+    <p class="cal-cuando">${calEsc(calHora(e))}</p>${calLugar(e) ? `<p>${calEsc(calLugar(e))}</p>` : ''}
+    ${estado === 'cancelado' || estado === 'aplazado' ? `<p class="cal-aviso">${calEsc(t(estado === 'cancelado' ? 'calCancelado' : 'calAplazado'))}</p>` : ''}
+    ${ejecucion === 'en_curso' || ejecucion === 'terminado' ? `<p class="cal-nota">${calEsc(t(ejecucion === 'en_curso' ? 'calEnCurso' : 'calTerminado'))}</p>` : ''}
+    ${aviso ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}
+    ${calResultado(e)}<details><summary>${calEsc(t('calDetalles'))}</summary>
+    ${e.participaciones.length ? `<ul>${e.participaciones.map(p => `<li>${calEsc(p.literal)}</li>`).join('')}</ul>` : ''}
+    ${calFuentes(e)}</details></article>`;
+}
+function calClasificacion(tabla){
+  const d = CALENDARIO.datos, e = d.entidades[`${tabla.ambito.tipo}:${tabla.ambito.id}`];
+  const nombres = tabla.objetivos.map(k => d.entidades[k]).filter(x => x && x.clase !== 'fase').map(calNombre);
+  const f = tabla.seleccion.procedencia;
+  return `<article class="cal-clasificacion"><h3>${calEsc([...new Set(nombres)].join(' · ') || calNombre(e))}</h3>
+    ${calTabla(tabla.filas, calNombre(e), true)}
+    ${tabla.alcance === 'muestra_parcial' ? `<p class="cal-aviso">${calEsc(t('calTablaParcial'))}</p>` : ''}
+    ${tabla.seleccion.conflicto ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}
+    ${f ? calFuentes({ fuentes: [f] }) : ''}</article>`;
+}
+function calFiltros(){
+  const s = CALENDARIO, d = s.datos;
+  if (!d) return '';
+  const directos = new Set(d.eventos.flatMap(e => e.temas));
+  const temas = Object.entries(d.catalogo.conceptos).filter(([id]) => temasDescendientes(d.catalogo, [id]).size &&
+    [...temasDescendientes(d.catalogo, [id])].some(t => directos.has(t)));
+  const circuitos = Object.values(d.entidades).flatMap(e => e.codigos).filter((x, i, a) => a.indexOf(x) === i);
+  const option = (valor, label, elegido) => `<option value="${calEsc(valor)}"${elegido === valor ? ' selected' : ''}>${calEsc(label)}</option>`;
+  const objetivos = Object.entries(d.entidades).filter(([, e]) => ['agrupacion', 'actividad', 'participante'].includes(e.tipo));
+  return `<details class="cal-filtros"><summary>${calEsc(t('calFiltros'))}</summary>
+    <fieldset><legend>${calEsc(t('calTemas'))}</legend><div class="cal-chips">${temas.map(([i, tema]) => calBoton('tema', calNombre(tema), i, `aria-pressed="${s.temas.has(i)}"`)).join('')}</div></fieldset>
+    ${circuitos.length ? `<fieldset><legend>${calEsc(t('calCircuitos'))}</legend><div class="cal-chips">${circuitos.map(i => calBoton('circuito', i.toUpperCase(), i, `aria-pressed="${s.circuitos.has(i)}"`)).join('')}</div></fieldset>` : ''}
+    <div class="cal-campos"><label>${calEsc(t('calObjetivo'))}<select id="cal-objetivo">${option('', t('calTodos'), s.objetivo)}${objetivos.sort((a,b) => calNombre(a[1]).localeCompare(calNombre(b[1]))).map(([k,e]) => option(k, calNombre(e), s.objetivo)).join('')}</select></label>
+    <label>${calEsc(t('calFuente'))}<select id="cal-fuente">${option('', t('calTodas'), s.fuente)}${Object.entries(d.fuentes).map(([i, f]) => option(i, f.nombre, s.fuente)).join('')}</select></label>
+    <label>${calEsc(t('calZona'))}<select id="cal-zona">${[...new Set([s.zona, 'Europe/Madrid', 'Atlantic/Canary', 'UTC'])].map(z => option(z, z, s.zona)).join('')}</select></label></div>
+    ${calBoton('limpiar', t('calLimpiar'))}</details>`;
+}
+function calContenido(){
+  const s = CALENDARIO, d = s.datos;
+  if (!d) return '';
+  const orden = s.orden || {}, { eventos, clasificaciones } = seleccionCalendario(d, orden, {
+    temas: [...s.temas], circuitos: [...s.circuitos], fuente: s.fuente, objetivo: s.objetivo,
+  });
+  const tipos = new Set(orden.tipos || []), soloTablas = tipos.size && !tipos.has('calendario') && !tipos.has('resultados');
+  const mostrarEventos = !soloTablas, mostrarTablas = !tipos.size || tipos.has('clasificaciones');
+  // desde:/hasta: se refieren a celebración; en noticias, a publicación.
+  const parsed = parseQuery(orden.resto || '');
+  const desde = parsed.desde, hasta = parsed.hasta;
+  const dias = ventanaCalendario(s.fecha || calHoy(), s.vista);
+  const elegidos = tipos.has('resultados') && !tipos.has('calendario') ? eventos.filter(e => e.resultado) : eventos;
+  const pendientes = elegidos.filter(e => !extremoVisible(e.programacion?.valor?.cuando?.inicio, s.zona).fecha);
+  const porDia = new Map(dias.map(dia => [dia, elegidos.filter(e => (!desde || dia >= desde) && (!hasta || dia <= hasta)
+    && enDia(e.programacion?.valor?.cuando, dia, s.zona)).sort((a,b) => {
+    const ha = extremoVisible(a.programacion?.valor?.cuando?.inicio, s.zona).hora || '99:99';
+    const hb = extremoVisible(b.programacion?.valor?.cuando?.inicio, s.zona).hora || '99:99';
+    return ha.localeCompare(hb) || calNombre(a).localeCompare(calNombre(b)) || a.id.localeCompare(b.id);
+  })]));
+  const ids = new Set([...porDia.values()].flat().map(e => e.id));
+  let html = `<p class="cal-nota">${calEsc(t('calCuenta', { n: ids.size, p: pendientes.length, t: mostrarTablas ? clasificaciones.length : 0 }))}</p>`;
+  if (orden.desconocidos?.length) return `<p class="cal-aviso">${calEsc(t('calConsultaDesconocida', { x: orden.desconocidos.join(', ') }))}</p>`;
+  if (mostrarEventos){
+    if (s.vista === 'mes'){
+      const cabeceras = ventanaCalendario(s.fecha || calHoy(), 'semana');
+      html += `<div class="cal-mes" aria-label="${calEsc(t('calMes'))}">${cabeceras.map(d => `<span class="cal-semana-nombre">${calEsc(calFecha(d, { weekday: 'short', day: undefined, month: undefined }))}</span>`).join('')}
+        ${[...porDia].map(([dia, lista]) => `<div class="cal-celda${dia.slice(0,7) !== s.fecha.slice(0,7) ? ' cal-otro-mes' : ''}">
+        ${calBoton('dia', calFecha(dia, { month: undefined }), dia, `${dia === calHoy() ? 'aria-current="date"' : ''} aria-label="${calEsc(calFecha(dia, { weekday: 'long' }))} · ${lista.length}"`)}
+        ${lista.slice(0,2).map(e => calBoton('evento', `${extremoVisible(e.programacion?.valor?.cuando?.inicio,s.zona).hora || '·'} ${calNombre(e)}`, e.id, 'class="cal-mini-evento"')).join('')}
+        ${lista.length > 2 ? calBoton('dia', t('calMas', { n: lista.length - 2 }), dia) : ''}</div>`).join('')}</div>`;
+    } else {
+      html += `<div class="${s.vista === 'semana' ? 'cal-semana' : 'cal-agenda'}">${[...porDia].filter(([, l]) => l.length || s.vista === 'semana').map(([dia, lista]) => `<section class="cal-dia"><h2>${calEsc(calFecha(dia, { weekday: 'long' }))}</h2>${lista.map(calEvento).join('') || `<p class="cal-nota">${calEsc(t('calSinCitas'))}</p>`}</section>`).join('')}</div>`;
+    }
+    if (!ids.size && s.vista !== 'mes') html += `<p>${calEsc(t('calSinCitas'))}</p>`;
+    if (pendientes.length && !desde && !hasta) html += `<details class="cal-pendientes"><summary>${calEsc(t('calSinFecha', { n: pendientes.length }))}</summary>${pendientes.map(calEvento).join('')}</details>`;
+  }
+  if (mostrarTablas){
+    html += `<section class="cal-tablas"><h2>${calEsc(t('calClasificaciones'))}</h2>${clasificaciones.map(calClasificacion).join('') || `<p>${calEsc(t('calSinClasificacion'))}</p>`}</section>`;
+  }
+  return html;
+}
+function pintarCalendario(){
+  const s = CALENDARIO, p = document.getElementById('calendario-panel');
+  if (!p) return;
+  const visible = s.abierto || !!s.orden;
+  p.hidden = !visible;
+  document.body.classList.toggle('calendario-abierto', s.abierto);
+  document.body.classList.toggle('calendario-sin-noticias', !!s.orden && !s.orden.noticias);
+  document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(s.abierto));
+  if (!visible) return;
+  s.fecha ||= calHoy();
+  const foco = p.contains(document.activeElement) ? document.activeElement : null;
+  const id = foco?.id, accion = foco?.dataset.cal, valor = foco?.dataset.valor;
+  const desplegados = [...p.querySelectorAll('details[open]')].map(d => d.className).filter(Boolean);
+  p.setAttribute('aria-busy', String(s.cargando));
+  const periodo = s.vista === 'mes' ? calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined }) : calFecha(s.fecha, { year: 'numeric' });
+  p.innerHTML = `<div class="cal-cabecera"><h1 id="cal-titulo" tabindex="-1">${calEsc(t('calTitulo'))}</h1>
+    <div class="cal-acciones">${calBoton('renovar', t('calActualizar'), '', s.cargando ? 'disabled' : '')}
+    ${calBoton(s.abierto ? 'cerrar' : 'abrir', t(s.abierto ? 'calCerrar' : 'calAbrir'))}</div></div>
+    ${s.orden ? `<p class="cal-contexto">${calEsc([...s.orden.ambitos, ...s.orden.circuitos, ...s.orden.tipos].join(' · ') || t('calTodos'))}</p>` : ''}
+    <nav class="cal-nav" aria-label="${calEsc(t('calVistas'))}">${['agenda','semana','mes'].map(v => calBoton('vista', t({agenda:'calAgenda',semana:'calSemana',mes:'calMes'}[v]), v, s.vista === v ? 'aria-current="page"' : '')).join('')}</nav>
+    <div class="cal-cuerpo"><div class="cal-periodo">${calBoton('anterior', '←', '', `aria-label="${calEsc(t('calAnterior'))}"`)}
+    <strong>${calEsc(periodo)}</strong>${calBoton('siguiente', '→', '', `aria-label="${calEsc(t('calSiguiente'))}"`)}${calBoton('hoy', t('calHoy'))}
+    <label><span class="sr-only">${calEsc(t('calFecha'))}</span><input id="cal-fecha" type="date" value="${s.fecha}"></label></div>
+    ${calFiltros()}<p class="cal-estado" role="status">${calEsc(s.error ? t('calError') : s.cargando ? t('calCargando') : '')}</p>
+    ${s.error ? calBoton('renovar', t('calReintentar')) : ''}<div class="cal-contenido">${calContenido()}</div>
+    ${s.datos ? `<p class="cal-nota cal-pie">${calEsc(t('calCobertura'))} ${calEsc(t('calGenerado', { fecha: new Intl.DateTimeFormat(ACCES.lang, { dateStyle: 'short', timeStyle: 'short', timeZone: s.zona }).format(new Date(s.datos.generado)) }))}
+    ${s.datos.revision ? ' ' + calEsc(t('calRevision')) : ''}</p>` : ''}
+    ${s.orden?.noticias ? `<p class="cal-nota">${calEsc(t('calNoticiasTexto'))}</p>` : ''}</div>`;
+  for (const clase of desplegados) for (const d of p.querySelectorAll('details')) if (d.className === clase) d.open = true;
+  const siguiente = id ? document.getElementById(id) : [...p.querySelectorAll('[data-cal]')].find(b => b.dataset.cal === accion && b.dataset.valor === valor);
+  siguiente?.focus({ preventScroll: true });
+}
+function wireCalendario(){
+  const s = CALENDARIO, p = document.getElementById('calendario-panel');
+  document.getElementById('btn-calendario').addEventListener('click', e => s.abierto ? cerrarCalendario() : abrirCalendario(e.currentTarget));
+  p.addEventListener('click', e => {
+    const b = e.target.closest('[data-cal]');
+    if (!b) return;
+    const a = b.dataset.cal, v = b.dataset.valor;
+    if (a === 'abrir') return abrirCalendario(b);
+    if (a === 'cerrar') return cerrarCalendario();
+    if (a === 'renovar') return void cargarCalendario(true);
+    if (a === 'vista') s.vista = v;
+    if (a === 'anterior' || a === 'siguiente') s.fecha = moverFecha(s.fecha, s.vista, a === 'anterior' ? -1 : 1);
+    if (a === 'hoy') s.fecha = calHoy();
+    if (a === 'dia'){ s.fecha = v; s.vista = 'agenda'; }
+    if (a === 'tema' || a === 'circuito'){
+      const set = a === 'tema' ? s.temas : s.circuitos;
+      set.has(v) ? set.delete(v) : set.add(v);
+    }
+    if (a === 'limpiar'){ s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = ''; }
+    if (a === 'evento'){
+      const evento = s.datos.eventos.find(x => x.id === v), dialogo = document.getElementById('cal-evento-dialogo');
+      dialogo.innerHTML = `<form method="dialog"><button autofocus>${calEsc(t('calCerrar'))}</button></form>${calEvento(evento)}`;
+      dialogo.showModal(); return;
+    }
+    pintarCalendario();
+  });
+  p.addEventListener('change', e => {
+    const id = e.target.id, v = e.target.value;
+    if (id === 'cal-fecha' && fechaValida(v)) s.fecha = v;
+    if (id === 'cal-fuente') s.fuente = v;
+    if (id === 'cal-objetivo') s.objetivo = v;
+    if (id === 'cal-zona') s.zona = v;
+    pintarCalendario();
+  });
+  document.getElementById('buscar').addEventListener('input', () => cerrarCalendario(false));
+}
+function sugerenciasCalendario(raw){
+  const m = raw.match(/(?:^|\s)([^\s"]*)$/);
+  if (!m || !m[1]) return null;
+  const q = normalize(m[1]);
+  const opciones = [...Object.keys(AMBITOS).map(a => a + ':'), 'resultados:tenis',
+    'resultados:atp,wta', 'clasificacion:f1', 'f1:clasificación', 'calendario:', 'circuito:atp,wta'];
+  const seleccion = opciones.filter(v => normalize(v).startsWith(q));
+  if (!seleccion.length) return q.includes(':') && leerConsultaCalendario(q) ? [] : null;
+  return seleccion.slice(0,8).map(value => ({ kind: 'calendario', value, label: value,
+    tipo: t('calTitulo') }));
 }
 /* Panel técnico: lee los resúmenes públicos ya calculados, bajo demanda.
    Cuenta los titulares guardados en el archivo de cada día, no artículos
@@ -3800,6 +4118,7 @@ async function cargarEstadisticas(renovar = false){
   finally { if (secuencia === s.secuencia){ s.cargando = false; pintarEstadisticas(); } }
 }
 function abrirEstadisticas(destino = '', origen = null){
+  cerrarCalendario(false);
   const s = ESTADISTICAS;
   if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; }
   s.abierto = true; s.destino = destino;
@@ -3937,7 +4256,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=f57f9fea17')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=4c28597024')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -4324,6 +4643,7 @@ function tokenTiempo(valor = ''){
 }
 function ponerTiempo(token){
   if (document.getElementById('estadisticas-panel')?.hidden === false) cerrarEstadisticas();
+  cerrarCalendario(false);
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
   input.value = [resto, token].filter(Boolean).join(' ');
@@ -6237,14 +6557,16 @@ function prensaCacheSet(rawQuery, items){
   } catch(e){}
 }
 
-async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
+async function buscarEnPrensa(parsed, rawQuery, { silent = false, signal: signalExterno = null } = {}){
   // Cache primero
   const cacheKey = prensaCacheKey(rawQuery);
   const cached = prensaCacheGet(cacheKey);
   if (cached) return { items: cached, _cache: true };
 
-  if (PRENSA_ABORT) PRENSA_ABORT.abort();
-  PRENSA_ABORT = new AbortController();
+  if (!signalExterno){
+    if (PRENSA_ABORT) PRENSA_ABORT.abort();
+    PRENSA_ABORT = new AbortController();
+  }
 
   const params = new URLSearchParams();
   params.set('raw', rawQuery || '');
@@ -6254,7 +6576,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   params.set('lang', PRENSA_LANG);
   params.set('region', PRENSA_PAIS);
 
-  const signal = PRENSA_ABORT.signal;
+  const signal = signalExterno || PRENSA_ABORT.signal;
   const intentar = async () => {
     const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
@@ -6327,8 +6649,11 @@ function programarPrensa(consulta){
   // prensa no puede acotarse (site: admite 3) y lo que trae no pasa el
   // filtro de medios: medido, 0 de 100. No se pide.
   const dominios = consulta.medios.dominios;
+  const calendario = consulta.calendario;
+  const ambitos = calendario ? (calendario.circuitos.length ? calendario.circuitos : calendario.ambitos) : [];
   const tieneQuery = !consulta.imposible
-    && (consulta.texto.incluir.length || dominios !== null)
+    && (!calendario || calendario.noticias && !calendario.desconocidos.length)
+    && (consulta.texto.incluir.length || dominios !== null || ambitos.length)
     && !(dominios && dominios.size > 3);
   if (!tieneQuery || !PRENSA_ACTIVA){
     _cancelarPrensa();
@@ -6343,23 +6668,34 @@ function programarPrensa(consulta){
   PRENSA_CLAVE = clave;
   PRENSA_FALLO = null;
   const texto = paraPrensa(consulta);
+  const textos = ambitos.length ? [...new Set(ambitos.map(a => `"${AMBITOS[a].noticias[0]}" ${texto}`.trim()))] : [texto];
   // Lo que ya está en caché no espera a que se deje de teclear.
-  const espera = prensaCacheGet(prensaCacheKey(texto)) ? 0 : PRENSA_DEBOUNCE_MS;
-  PRENSA_TIMER = setTimeout(() => {
+  const espera = textos.every(t => prensaCacheGet(prensaCacheKey(t))) ? 0 : PRENSA_DEBOUNCE_MS;
+  PRENSA_TIMER = setTimeout(async () => {
     PRENSA_TIMER = null;
     if (PRENSA_CLAVE !== clave) return;
 
-    buscarEnPrensa(consulta.parsed, texto, { silent: true }).then(res => {
+    PRENSA_ABORT = new AbortController();
+    const signal = PRENSA_ABORT.signal;
+    // Una consulta por ámbito, con cancelación compartida y sin que una
+    // respuesta aborte a las demás. Se conserva la deduplicación del feed.
+    const respuestas = [];
+    for (const texto of textos){
+      if (signal.aborted || PRENSA_CLAVE !== clave) return;
+      respuestas.push(await buscarEnPrensa(consulta.parsed, texto, { silent: true, signal }));
+    }
+    const res = respuestas.every(Boolean) ? { items: respuestas.flatMap(r => r.items || []) } : null;
+    {
       if (PRENSA_CLAVE !== clave) return;
       PRENSA_CLAVE = null;
       if (res) PRENSA_HECHA = clave; else PRENSA_FALLO = clave;
-      const items = res ? (res.items || []).map(_itemDePrensa).filter(Boolean) : [];
+      const items = respuestas.filter(Boolean).flatMap(r => r.items || []).map(_itemDePrensa).filter(Boolean);
       if (items.length){
         if (_mergearItemsEnNoticias(items, 'prensa', clave) > 0) hidratarNoticias();
         aplicarFiltros();
       } else if (!ULT_FILTRADAS.length) renderizar();   // el vacío deja de «buscar»
       else pintarEstadoPrensa();
-    });
+    }
   }, espera);
 }
 
@@ -6390,6 +6726,7 @@ function pintarEstadoPrensa(){
 }
 // Texto, medios y fechas: lo decide el núcleo (shared/busqueda/consulta.js).
 function _pasaConsulta(n, consulta){
+  if (consulta.calendario && !noticiaEnAmbitos(n.titular, consulta.calendario)) return false;
   return consulta.pasa({
     dominio: n.dominio,
     titular: n.titular,
@@ -6400,6 +6737,7 @@ function _pasaConsulta(n, consulta){
 // Lo mismo para lo que trajo la prensa: las palabras buscadas pueden estar
 // en el cuerpo (consulta.pasaExterno).
 function _pasaExterno(n, consulta){
+  if (consulta.calendario && !noticiaEnAmbitos(n.titular, consulta.calendario)) return false;
   return consulta.pasaExterno({
     dominio: n.dominio,
     titular: n.titular,
@@ -6488,12 +6826,17 @@ function aplicarFiltros(){
   if (PASE) return;   // lo que llegue durante el pase espera: cerrarPase vuelve a filtrar
   hidratarNoticias();
   const rawInput = $('#buscar').value.trim();
-  const raw = ordenEstadisticas(rawInput)?.resto ?? rawInput;
+  const sinStats = ordenEstadisticas(rawInput)?.resto ?? rawInput;
+  const ordenCalendario = leerConsultaCalendario(sinStats);
+  actualizarConsultaCalendario(ordenCalendario);
+  const raw = ordenCalendario?.resto ?? sinStats;
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
   // Se interpreta una vez y la usan el filtro y la prensa.
   const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
+  consulta.calendario = ordenCalendario;
+  if (ordenCalendario) consulta.clave += '|' + JSON.stringify(ordenCalendario);
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
   actualizarTiempo(parsed.eltiempo);
@@ -6530,7 +6873,7 @@ ajustarDiasActual(capas);
   const hayFuenteExplicita = hayDominio || hayMedio;
   const hayBusquedaActiva =
     hayTitulo || hayGrupo || hayTipo || hayTag ||
-    !!g || !!t2 || !!parsed.desde || !!parsed.hasta;
+    !!g || !!t2 || !!parsed.desde || !!parsed.hasta || !!ordenCalendario;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
   // La vista 🔖 Temas filtra como un modo, con los temas de todos los modos.
@@ -6542,7 +6885,7 @@ ajustarDiasActual(capas);
   // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
   // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
   const presetEfectivo = conFiltro && !hayFuenteExplicita && !hayBusquedaActiva;
-  const conPestanas    = conFiltro && !hayFuenteExplicita &&  hayBusquedaActiva;
+  const conPestanas    = conFiltro && !hayFuenteExplicita && hayBusquedaActiva && !ordenCalendario;
 
   _avisarMediosDesconocidos(consulta);
   const ctx = {
@@ -6653,7 +6996,7 @@ ajustarDiasActual(capas);
   requestAnimationFrame(renderizar);
 
   if (APP_LISTA && RECORDAR_FILTROS){
-    try { localStorage.setItem('voceiro-buscar', raw); } catch(e){}
+    try { localStorage.setItem('voceiro-buscar', rawInput); } catch(e){}
   }
   programarPrensa(consulta);
 }
@@ -7591,6 +7934,8 @@ function aplicarTextos(){
   };
   cab('#btn-config', ico('settings'), 'ajTitulo');
   cab('#btn-estadisticas', iconoEstadisticas(), 'estTitulo');
+  cab('#btn-calendario', iconoCalendario(), 'calTitulo');
+  $('#btn-calendario').setAttribute('aria-label', t('calTitulo'));
   $('#btn-estadisticas').setAttribute('aria-label', t('estTitulo'));
   cab('#btn-acces', '<span class="cab-aa" aria-hidden="true">Aa</span>', 'ajLectura');
   cab('#btn-pendientes', ico('bookmark'), 'btnPendientes');
@@ -7842,6 +8187,7 @@ function aplicarTextos(){
   actualizarSyncBanner();
   actualizarBotonPendientes();
   pintarEstadisticas();
+  pintarCalendario();
   // Si cambia el idioma, el chip del tiempo muestra la nueva traducción.
   if ($('#chips-busqueda').style.display !== 'none'){
     const raw = $('#buscar').value.trim();
@@ -8142,6 +8488,7 @@ function wireStaticEvents(){
   }
   wireTiempo();
   wireEstadisticas();
+  wireCalendario();
   wireAvisos();
   wirePortadas();
   // ── Chips de modo y de tema ──
@@ -8232,12 +8579,14 @@ function wireStaticEvents(){
 
   document.addEventListener('keydown', e => {
       if (e.key === 'Escape'){
+        if (document.getElementById('cal-evento-dialogo').open) return;
         cerrarPresetMenu();
         if ($('#filtros-panel').matches(':modal')) $('#filtros-panel').close();
         cerrarMenuMas();
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
         if (ESTADISTICAS.abierto){ cerrarEstadisticas(); return; }
+        if (CALENDARIO.abierto){ cerrarCalendario(); return; }
       }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT')) return;
