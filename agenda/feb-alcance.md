@@ -64,8 +64,10 @@ por sí sola el lugar de todos sus encuentros ni la continuidad de IDs personale
 - **Fases:** en júnior masculino (`g=21,t=2025`) el calendario selecciona
   `f=89493` (3.º–4.º) y resultados `f=89492` (final). Las peticiones probadas
   con `&f=89481` mantienen esas selecciones distintas. No se mezclan ni se
-  presenta ese campeonato como soportado. Hay que resolver la navegación de
-  fase y las variantes de eliminatorias y clasificación final antes de incorporarlo.
+  presenta ese campeonato como soportado. La [ampliación de investigación](investigacion/07-feb-rutas-sedes.md)
+  consiguió seleccionar `89481` en ambas páginas mediante el formulario ASP.NET.
+  El recolector aún no implementa esa navegación ni las variantes de
+  eliminatorias y clasificación final; deben resolverse antes de incorporarlo.
 - **Fechas antiguas:** el calendario general sustituye el horario por el
   marcador en partidos jugados; la página de resultados solo recupera horarios
   de las jornadas que muestra. Un marcador sin horario no autoriza a usar la

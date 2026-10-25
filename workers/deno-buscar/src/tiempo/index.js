@@ -14,7 +14,7 @@
 // la respuesta en bruto y se normaliza en cada petición, para que «ahora»
 // sea la hora de la petición y no la de la caché.
 
-import { MUNICIPIOS } from './municipios.js';
+import { MUNICIPIOS, SIN_PREVISION } from './municipios.js';
 import { desdeAemet, desdeOpenMeteo, zonaHoraria, municipioCercano } from './normalizar.js';
 import { desdeTar, desdeAtom, vigentes } from './avisos.js';
 
@@ -24,6 +24,14 @@ const MIN = 60e3;
 const TTL = { aemet: 60 * MIN, openMeteo: 30 * MIN, lugares: 7 * 24 * 60 * MIN, avisos: 10 * MIN };
 const AEMET = 'https://opendata.aemet.es/opendata/api';
 const IDIOMAS = new Set(['es', 'gl', 'ca', 'en', 'eu']);
+const nombreMunicipio = nombre => String(nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().trim().replace(/^(el|la)\s+/, '').replace(/\s+/g, ' ');
+const SIN_PREVISION_NOMBRES = new Set(SIN_PREVISION.map(nombreMunicipio));
+
+// Open-Meteo aún sitúa algunas localidades bajo su municipio anterior.
+// Esas coincidencias no acreditan el municipio actual ni su zona de avisos.
+export const esMunicipioSinPrevision = (nombre, cc) =>
+  cc?.toUpperCase() === 'ES' && SIN_PREVISION_NOMBRES.has(nombreMunicipio(nombre));
 
 export async function handleTiempo(url, cabeceras) {
   try {
@@ -137,6 +145,9 @@ async function prevision(url) {
     throw fallo(400, 'Faltan ine o lat y lon');
   }
   if ((url.searchParams.get('cc') || '').toUpperCase() === 'ES') {
+    if (esMunicipioSinPrevision(url.searchParams.get('nombre'), 'ES')) {
+      throw fallo(404, 'Municipio sin previsión disponible');
+    }
     const cercano = municipioCercano(lat, lon);
     if (cercano) return porIne(cercano);
   }
@@ -149,14 +160,14 @@ async function lugares(url) {
   const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
   if (q.length < 2) throw fallo(400, 'Texto demasiado corto');
   const lang = IDIOMAS.has(url.searchParams.get('lang')) ? url.searchParams.get('lang') : 'es';
-  return conCache(`lugares/${lang}/${encodeURIComponent(q.toLowerCase())}`, TTL.lugares, async () => {
+  return conCache(`lugares/v2/${lang}/${encodeURIComponent(q.toLowerCase())}`, TTL.lugares, async () => {
     const u = new URL('https://geocoding-api.open-meteo.com/v1/search');
     u.search = new URLSearchParams({ name: q, count: '8', language: lang, format: 'json' });
     const r = await fetch(u, { signal: AbortSignal.timeout(8000) });
     if (!r.ok) throw new Error(`Open-Meteo ${r.status}`);
     const j = await r.json();
     return {
-      lugares: (j.results || []).map(x => ({
+      lugares: (j.results || []).filter(x => !esMunicipioSinPrevision(x.name, x.country_code)).map(x => ({
         nombre: x.name, region: x.admin1 || '', pais: x.country || '', cc: x.country_code || '',
         lat: x.latitude, lon: x.longitude, hab: x.population || 0,
       })),

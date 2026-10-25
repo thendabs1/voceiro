@@ -1,0 +1,21 @@
+{
+  "fecha_comprobacion": "2026-10-25",
+  "revision": "shared/territorios/revision-aemet-2026-10-25.md",
+  "obsoletos": ["36011", "36012"],
+  "sin_prevision": [
+    {"codigo": "11903", "nombre": "San Martín del Tesorillo"},
+    {"codigo": "14901", "nombre": "Fuente Carreteros"},
+    {"codigo": "14902", "nombre": "La Guijarrosa"},
+    {"codigo": "18077", "nombre": "Fornes"},
+    {"codigo": "18916", "nombre": "Torrenueva Costa"},
+    {"codigo": "21902", "nombre": "La Zarza-Perrunal"},
+    {"codigo": "41904", "nombre": "El Palmar de Troya"},
+    {"codigo": "48916", "nombre": "Usansolo"}
+  ],
+  "activos_fuera_del_maestro": [
+    {"codigo": "04904", "nombre": "Balanegra", "lat": 36.746, "lon": -2.909, "zona": "610403"},
+    {"codigo": "18106", "nombre": "Játar", "lat": 36.935, "lon": -3.91, "zona": "611801"},
+    {"codigo": "18915", "nombre": "Domingo Pérez de Granada", "lat": 37.496, "lon": -3.509, "zona": "611801"},
+    {"codigo": "36902", "nombre": "Cerdedo-Cotobade", "lat": 42.472, "lon": -8.482, "zona": "713602"}
+  ]
+}

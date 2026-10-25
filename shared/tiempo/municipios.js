@@ -1,4 +1,4 @@
-// Generado por scripts/generar-municipios.mjs a partir del maestro de AEMET. No editar a mano.
+// Generado por scripts/generar-municipios.mjs desde AEMET y municipios-aemet-revisados.json. No editar a mano.
 export const MUNICIPIOS = [
 ["Madrid","28079",3165235],
 ["Barcelona","08019",1602386],
@@ -1431,7 +1431,6 @@ export const MUNICIPIOS = [
 ["Boqueixón","15012",4342],
 ["Ajalvir","28002",4339],
 ["Bocairent","46072",4335],
-["Cotobade","36012",4327],
 ["Santa Marta","06121",4321],
 ["San Vicente de la Barquera","39080",4314],
 ["Polop","03107",4313],
@@ -2380,7 +2379,6 @@ export const MUNICIPIOS = [
 ["Almonaster la Real","21004",1863],
 ["Madrigalejo","10112",1862],
 ["Ribadedeva","33055",1862],
-["Cerdedo","36011",1860],
 ["Alforja","43009",1859],
 ["Beniarbeig","03026",1859],
 ["Mansilla de las Mulas","24094",1859],
@@ -8122,4 +8120,8 @@ export const MUNICIPIOS = [
 ["Estepa de San Juan","42082",7],
 ["Jaramillo Quemado","09184",4],
 ["Illán de Vacas","45080",3],
+["Balanegra","04904",0],
+["Cerdedo-Cotobade","36902",0],
+["Domingo Pérez de Granada","18915",0],
+["Játar","18106",0],
 ];

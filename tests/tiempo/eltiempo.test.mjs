@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import { parseQuery } from '../../shared/parser.js';
 import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
 import { MUNICIPIOS } from '../../shared/tiempo/municipios.js';
+import { MUNICIPIOS as MUNICIPIOS_WORKER, SIN_PREVISION } from '../../workers/deno-buscar/src/tiempo/municipios.js';
+import { esMunicipioSinPrevision, handleTiempo } from '../../workers/deno-buscar/src/tiempo/index.js';
 import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from '../../shared/tiempo/lugares.js';
 import { nombreVisible } from '../../scripts/generar-municipios.mjs';
 import {
@@ -63,6 +65,50 @@ test('municipios: los nombres repetidos dan varias opciones', () => {
   const r = municipiosExactos(indice, 'Arroyomolinos');
   assert.equal(r.length, 2);
   assert.deepEqual(r.map(m => provinciaDe(m.ine)).sort(), ['Cáceres', 'Madrid']);
+});
+
+test('municipios revisados: los cuatro vigentes son seleccionables y los antiguos no', () => {
+  for (const [nombre, codigo, zona] of [
+    ['Balanegra', '04904', '610403'],
+    ['Játar', '18106', '611801'],
+    ['Domingo Pérez de Granada', '18915', '611801'],
+    ['Cerdedo-Cotobade', '36902', '713602'],
+  ]) {
+    assert.deepEqual(municipiosExactos(indice, nombre).map(m => m.ine), [codigo]);
+    assert.equal(MUNICIPIOS_WORKER[codigo][3], zona);
+  }
+  for (const codigo of ['36011', '36012', '18916']) {
+    assert.equal(MUNICIPIOS.some(m => m[1] === codigo), false);
+    assert.equal(Object.hasOwn(MUNICIPIOS_WORKER, codigo), false);
+  }
+});
+
+test('municipios sin previsión: el geocodificador no los reactiva como municipios actuales', () => {
+  assert.equal(SIN_PREVISION.length, 8);
+  for (const nombre of SIN_PREVISION) assert.equal(esMunicipioSinPrevision(nombre, 'ES'), true);
+  assert.equal(esMunicipioSinPrevision('Usánsolo', 'ES'), true);
+  assert.equal(esMunicipioSinPrevision('Palmar de Troya', 'ES'), true);
+  assert.equal(esMunicipioSinPrevision('Fornes', 'FR'), false);
+  assert.equal(esMunicipioSinPrevision('Cerdedo-Cotobade', 'ES'), false);
+});
+
+test('la ruta de lugares oculta un municipio sin previsión y la ruta directa lo rechaza', async () => {
+  const fetchAnterior = globalThis.fetch, cachesAnteriores = globalThis.caches;
+  globalThis.caches = { open: async () => ({ match: async () => null, put: async () => {} }) };
+  globalThis.fetch = async () => new Response(JSON.stringify({ results: [
+    { name: 'Usánsolo', country_code: 'ES', latitude: 43.22166, longitude: -2.81567 },
+    { name: 'Bilbao', country_code: 'ES', latitude: 43.263, longitude: -2.935 },
+  ] }), { headers: { 'content-type': 'application/json' } });
+  try {
+    const lugares = await handleTiempo(new URL('https://ejemplo.test/tiempo/lugares?q=Usansolo'), {});
+    assert.equal(lugares.status, 200);
+    assert.deepEqual((await lugares.json()).lugares.map(x => x.nombre), ['Bilbao']);
+    const directo = await handleTiempo(new URL('https://ejemplo.test/tiempo?lat=43.22166&lon=-2.81567&cc=ES&nombre=Usansolo'), {});
+    assert.equal(directo.status, 404);
+  } finally {
+    globalThis.fetch = fetchAnterior;
+    globalThis.caches = cachesAnteriores;
+  }
 });
 
 test('sugerencias: primero los que empiezan, de más a menos habitantes', () => {

@@ -129,6 +129,11 @@ No se recorren actas, plantillas ni estadísticas personales. Los marcadores
 y la tabla que ya vienen en las páginas agregadas se conservan como observaciones;
 no hay una recogida adicional de todos los resultados ni actualización en directo.
 
+La [investigación de rutas y sedes](investigacion/07-feb-rutas-sedes.md)
+contrasta el calendario general JSON, pabellón habitual frente a pista del
+encuentro, estadísticas enlazables y navegación por fase mediante formulario.
+Sus propuestas todavía no amplían el adaptador ni las recogidas.
+
 Para seleccionar otra liga en el workflow se usa `competicion_feb`. En CLI,
 por ejemplo: `python calendario.py --turso --recoger-deporte feb --temporada-feb 2026 --competicion-feb 1`.
 Para inventariar un HTML ya guardado, sin consultar la fuente:
