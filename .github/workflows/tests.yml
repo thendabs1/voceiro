@@ -60,6 +60,9 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - run: pip install -r requirements.txt
       - name: Comprobar catálogo territorial generado
         run: python scripts/generar_territorios.py --check

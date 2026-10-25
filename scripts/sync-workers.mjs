@@ -13,7 +13,7 @@ if (process.argv.slice(2).some(arg => arg !== '--check')) {
 
 const archivos = {
   buscar: ['buscar.js', 'gnews.js', 'limite.js'],
-  datos: ['datos-cache.js'],
+  datos: ['datos-cache.js', 'calendario.js', 'calendario-turso.js', 'limite.js'],
   sync: ['sync.js', 'limite.js'],
 };
 const pendientes = [];
@@ -37,6 +37,27 @@ for (const [servicio, nombres] of Object.entries(archivos)) {
       }
       total++;
     }
+  }
+}
+// Imports compartidos del calendario. La ruta relativa ../../shared funciona
+// tanto desde workers/comun como desde src/comun en cada despliegue aislado.
+for (const nombre of ['parser.js', 'busqueda/texto.js', 'calendario/consulta.js', 'calendario/fechas.js']) {
+  const origen = `shared/${nombre}`;
+  const contenido = `// Generado desde ${origen} por scripts/sync-workers.mjs. No editar.\n`
+    + readFileSync(resolve(raiz, origen), 'utf8');
+  for (const plataforma of ['cf', 'deno']) {
+    const rel = `workers/${plataforma}-datos/shared/${nombre}`;
+    const destino = resolve(raiz, rel);
+    if (comprobar) {
+      let actual;
+      try { actual = readFileSync(destino, 'utf8'); }
+      catch (error) { if (error.code !== 'ENOENT') throw error; }
+      if (actual !== contenido) pendientes.push(rel);
+    } else {
+      mkdirSync(dirname(destino), { recursive: true });
+      writeFileSync(destino, contenido);
+    }
+    total++;
   }
 }
 if (pendientes.length) {

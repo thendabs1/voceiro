@@ -224,10 +224,15 @@ def main(argv=None):
     ap.add_argument('--salida', help='Exportación opcional para revisión local')
     ap.add_argument('--fuentes', help='Fuentes seleccionadas para publicación, separadas por comas')
     ap.add_argument('--publicar', action='store_true')
+    ap.add_argument('--lectura-sql', action='store_true',
+                    help='Preparar y publicar la proyección indexada en el mismo Turso (requiere --fuentes)')
     args = ap.parse_args(argv)
+    if args.lectura_sql and (not args.turso or args.fuentes is None):
+        ap.error('--lectura-sql requiere --turso y --fuentes explícitas')
     if args.turso:
         from .turso import Almacen
-        calendario = Almacen().cargar()
+        remoto = Almacen()
+        calendario = remoto.cargar()
         if calendario is None or 'nucleo' not in calendario:
             raise ValueError('Preparar el núcleo de Turso antes de publicar')
         n = calendario['nucleo']
@@ -237,6 +242,12 @@ def main(argv=None):
     datos = proyectar(n, None if args.fuentes is None else args.fuentes.split(','))
     if args.salida:
         guardar(args.salida, datos)
+    if args.lectura_sql:
+        from .lectura import preparar, planificar
+        preparada = preparar(datos)
+        remoto.cliente.transaccion(planificar(preparada, remoto.revision))
+        print(f'[agenda] Lectura SQL: {len(preparada["tramos"])} tramos; '
+              f'{remoto.cliente.leidas} filas leídas, {remoto.cliente.escritas} escritas')
     if args.publicar:
         subir(datos)
     print(f'[agenda] Lectura: {len(datos["eventos"])} eventos, {len(datos["clasificaciones"])} tablas')

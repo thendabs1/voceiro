@@ -7,7 +7,7 @@ Primer incremento de la [arquitectura acordada](arquitectura-servicios.md):
 provincia → autonomía → país y cobertura editorial en el catálogo de medios.
 La lectura pública de agenda enlaza los municipios acreditados sin cambiar
 IDs del núcleo ni resolver NORA por nombres. El tiempo reutiliza las provincias.
-La migración a consultas indexadas en Turso sigue siendo el siguiente incremento.
+La lectura indexada en Turso se prepara en el siguiente incremento.
 
 Los eventos puntuales terminados tendrán un tope de **45 días**; temporadas,
 resultados, clasificaciones y entidades reutilizables requieren políticas propias.
@@ -19,6 +19,12 @@ de dependencias exclusivas, el tratamiento de documentos compartidos y la
 protección frente a que una recogida vuelva a importar el evento caducado.
 
 Este incremento no modifica la base remota ni publica servicios.
+
+## Lectura SQL y API
+
+La siguiente fase añade una proyección pública indexada y rutas comunes CF/Deno,
+con activación independiente del cliente. Contrato, mediciones y condiciones de
+activación en [api-lectura.md](api-lectura.md).
 
 ## Madrid, Kulturklik y conexiones públicas
 

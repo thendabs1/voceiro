@@ -1,7 +1,11 @@
 import { cacheControlFor } from './comun/datos-cache.js';
+import { atenderCalendario } from './comun/calendario.js';
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const calendario = await atenderCalendario(request, env, { ip: request.headers.get('CF-Connecting-IP') || '',
+      abrirCache: () => caches.default, guardarCache: tarea => ctx?.waitUntil(tarea) });
+    if (calendario) return calendario;
 
     // ── CORS preflight ──
     if (request.method === 'OPTIONS') {
