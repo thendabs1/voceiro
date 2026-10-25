@@ -33,6 +33,14 @@ class Almacen:
                  (almacen.VERSION_ESQUEMA,))])
         elif 'agenda_esquema' not in tablas or any(not t.startswith('agenda_') for t in tablas):
             raise ValueError('Se requiere una base Turso dedicada al calendario')
+        else:
+            versiones = self.cliente.transaccion([
+                ('SELECT version FROM agenda_esquema WHERE id=1', ())], escritura=False)
+            version = filas(versiones[0])
+            if version == [[2]]:
+                self.cliente.transaccion(almacen.migracion())
+            elif version != [[almacen.VERSION_ESQUEMA]]:
+                raise ValueError('Versión de base de calendario incompatible')
 
     def cargar(self):
         resultados = [filas(r) for r in self.cliente.transaccion(almacen.CONSULTAS, escritura=False)]
@@ -41,9 +49,11 @@ class Almacen:
         self.anterior = deepcopy(calendario)
         return calendario
 
-    def guardar(self, calendario):
+    def guardar(self, calendario, solo_clasificacion=False):
         if self.revision is None:
             raise ValueError('Hay que cargar el estado remoto antes de integrarlo')
+        if solo_clasificacion and self.anterior == calendario:
+            return
         # Si otro escritor avanzó la revisión, CHECK(revision>=0) rechaza la
         # guardia, el batch omite las escrituras y revierte. También falla si
         # desapareció el control: un UPDATE con cero filas no daría esa garantía.
@@ -51,7 +61,7 @@ class Almacen:
             'SELECT 1, ?, -1 WHERE NOT EXISTS '
             '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version=? AND revision=?)',
             (almacen.VERSION_ESQUEMA, almacen.VERSION_ESQUEMA, self.revision))
-        pasos = [guardia, *almacen.planificar(self.anterior, calendario),
+        pasos = [guardia, *almacen.planificar(self.anterior, calendario, solo_clasificacion),
                  ('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ())]
         try:
             self.cliente.transaccion(pasos)
@@ -76,7 +86,9 @@ class Almacen:
                     raise ValueError('Copia de calendario sin integridad')
                 if db.execute('PRAGMA foreign_key_check').fetchall():
                     raise ValueError('Copia de calendario con referencias inválidas')
-                almacen.cargar(db)  # Valida también la versión y el contrato recuperable.
+            # Las copias antiguas se migran aquí, sin modificar la base remota.
+            with almacen.abrir(temporal) as db:
+                almacen.cargar(db)
             temporal.replace(ruta)
         finally:
             temporal.unlink(missing_ok=True)

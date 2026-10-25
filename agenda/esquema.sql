@@ -68,3 +68,28 @@ CREATE TABLE IF NOT EXISTS agenda_revisiones (
     nuevo_json TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS agenda_revisiones_registro ON agenda_revisiones(ref, id);
+-- Índices derivados de la clasificación común, independiente del proveedor.
+CREATE TABLE IF NOT EXISTS agenda_temas (
+    id TEXT PRIMARY KEY,
+    datos_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS agenda_tema_padres (
+    tema TEXT NOT NULL REFERENCES agenda_temas(id),
+    padre TEXT NOT NULL REFERENCES agenda_temas(id),
+    PRIMARY KEY (tema, padre),
+    CHECK (tema <> padre)
+);
+CREATE INDEX IF NOT EXISTS agenda_tema_hijos ON agenda_tema_padres(padre, tema);
+CREATE TABLE IF NOT EXISTS agenda_evento_tema (
+    evento TEXT NOT NULL REFERENCES agenda_eventos(id),
+    tema TEXT NOT NULL REFERENCES agenda_temas(id),
+    evidencias_json TEXT NOT NULL,
+    PRIMARY KEY (evento, tema)
+);
+CREATE INDEX IF NOT EXISTS agenda_tema_eventos ON agenda_evento_tema(tema, evento);
+CREATE TABLE IF NOT EXISTS agenda_clasificacion_revisiones (
+    id INTEGER PRIMARY KEY,
+    modificado TEXT NOT NULL,
+    anterior_json TEXT,
+    nuevo_json TEXT NOT NULL
+);

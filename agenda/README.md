@@ -40,6 +40,9 @@ python calendario.py --turso --fuente cultura-galicia --fuente vidmar-f1 \
 # Recuperar la exportación sin consultar proveedores.
 python calendario.py --turso --exportar --salida /tmp/calendario.json
 
+# Reclasificar el estado remoto ya guardado, sin consultar proveedores.
+python calendario.py --turso --reclasificar --salida /tmp/calendario-clasificado.json
+
 # Copia completa con originales, observaciones, vínculos e historial.
 python calendario.py --turso --copia /tmp/calendario.sqlite
 # Reabrir la copia recupera el JSON y permite continuar localmente.
@@ -128,8 +131,12 @@ Las regiones de esta integración proceden del municipio de celebración,
 con ID propio de la fuente y el código INE original **CPRO+CMUN+DC**, incluido
 su control. No se asigna «Galicia» por el dominio del proveedor. La jerarquía
 territorial y la correspondencia entre códigos de diferentes fuentes quedan
-pendientes de tablas verificadas. Los grupos de actividad también mantienen
-el vocabulario del proveedor: aún no son una clasificación común entre agendas.
+pendientes de tablas verificadas. Los grupos de actividad mantienen el
+vocabulario del proveedor. La extensión `clasificacion` añade conceptos comunes
+y evidencia por registro; sus correspondencias viven en
+[shared/catalogo-tematico.json](../shared/catalogo-tematico.json). Las etiquetas
+desconocidas se conservan sin asignarles un tema. La jerarquía permite filtrar
+Deportes desde Automovilismo, o Cultura desde Teatro, sin duplicar asignaciones.
 
 `cuando` distingue precisión `dia`, `hora` y `desconocida`. Una hora lleva
 desplazamiento UTC y zona; los días no reciben horas inventadas. En Galicia,
@@ -151,6 +158,21 @@ la ausencia no prueba cancelación ni vigencia. Para la futura interfaz será
 necesario mostrar frescura y definir cuándo revalidar o retirar citas.
 
 ## Investigación y siguientes pasos
+
+La [revisión propuesta del modelo](modelo-propuesto.md) contrasta actividades,
+celebraciones, participantes, territorios, temas y seguimiento con
+[nuevas muestras culturales y deportivas](investigacion/07-multideporte-y-seleccion.md).
+Es diseño pendiente de acuerdo; no modifica el contrato ni activa integraciones.
+La continuación del [diseño del núcleo con FEB, tenis y noticias ESPN](diseno-nucleo.md)
+concreta las relaciones y garantías que falta acordar antes de migrar o importar.
+El [contrato lógico propuesto](contrato-propuesto.md) concreta campos y
+cardinalidades, mantiene la clasificación compartida con noticias y deja para
+otro incremento los enlaces con artículos concretos.
+Las [decisiones del modelo y plan de implementación](decisiones-modelo.md)
+concretan el catálogo, las reglas de fuentes, fechas, seguimiento y datos
+personales; distinguen la clasificación implementada del núcleo que sigue.
+La revisión nueva encargó también dos lotes a OpenCode Go: FEB terminó y
+Cataluña/Madrid se completó aquí a partir de sus muestras tras agotar el tiempo.
 
 OpenCode Go (`opencode-go/kimi-k3`) trabajó en dos lotes acotados, escribiendo
 progreso en disco antes de entregar el resultado. Se conservan sus informes:

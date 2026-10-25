@@ -7,7 +7,9 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA = 2
+VERSION_ESQUEMA = 3
+TABLAS_CLASIFICACION = {'agenda_temas', 'agenda_tema_padres', 'agenda_evento_tema',
+                        'agenda_clasificacion_revisiones'}
 COLECCIONES = ('fuentes', 'regiones', 'grupos', 'eventos', 'registros', 'vinculos')
 CONSULTAS = [
     ('SELECT version, revision FROM agenda_esquema WHERE id=1', ()),
@@ -30,6 +32,23 @@ def esquema():
     return [(s, ()) for s in sql.split(';') if s.strip()]
 
 
+def migracion():
+    """Ampliación aditiva v2→v3, dentro de la transacción del llamante.
+
+    La guardia tolera otra migración concurrente ya confirmada; una versión
+    ajena o futura revierte incluso las sentencias de creación del esquema.
+    """
+    return [
+        ('INSERT INTO agenda_esquema(id, version, revision) '
+         'SELECT 1, ?, -1 WHERE NOT EXISTS '
+         '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version IN (2, ?))',
+         (VERSION_ESQUEMA, VERSION_ESQUEMA)),
+        *esquema(),
+        ('UPDATE agenda_esquema SET version=?, revision=revision+1 WHERE id=1 AND version=2',
+         (VERSION_ESQUEMA,)),
+    ]
+
+
 @contextmanager
 def abrir(ruta):
     """Serializa escritores y confirma una pasada completa o revierte sus cambios."""
@@ -44,7 +63,7 @@ def abrir(ruta):
             version = db.execute('PRAGMA user_version').fetchone()[0]
             if version not in (0, 1):
                 raise ValueError('Versión de base de calendario incompatible')
-            if tablas and (version != 1 or tablas != {
+            if tablas and (version != 1 or tablas - TABLAS_CLASIFICACION != {
                 'agenda_estado', 'agenda_fuentes', 'agenda_regiones', 'agenda_grupos',
                 'agenda_eventos', 'agenda_registros', 'agenda_vinculos',
                 'agenda_evento_region', 'agenda_evento_grupo', 'agenda_recogidas', 'agenda_revisiones'}):
@@ -59,6 +78,10 @@ def abrir(ruta):
                                (_json(_contenido(json.loads(datos))), ref))
             db.execute('INSERT INTO agenda_esquema VALUES (1, ?, 0)', (VERSION_ESQUEMA,))
         version = db.execute('SELECT version FROM agenda_esquema WHERE id=1').fetchone()
+        if version == (2,):
+            for sentencia, args in migracion():
+                db.execute(sentencia, args)
+            version = (VERSION_ESQUEMA,)
         if version != (VERSION_ESQUEMA,):
             raise ValueError('Versión de base de calendario incompatible')
         yield db
@@ -103,26 +126,33 @@ def _contenido(registro):
             if k not in ('primera_recogida', 'ultima_recogida')}
 
 
-def guardar(db, calendario):
+def guardar(db, calendario, solo_clasificacion=False):
     """Escribe el estado integrado y audita cambios de contenido, no meros sondeos.
 
     Se invoca dentro de abrir(); el llamante carga e integra en esa misma
     transacción para evitar perder una actualización de otro escritor.
     """
-    for sql, args in planificar(cargar(db), calendario):
+    anterior = cargar(db)
+    if solo_clasificacion and anterior == calendario:
+        return
+    for sql, args in planificar(anterior, calendario, solo_clasificacion):
         db.execute(sql, args)
     db.execute('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1')
 
 
-def planificar(anterior, calendario):
+def planificar(anterior, calendario, solo_clasificacion=False):
     """SQL común a SQLite y Turso: contenido modificado y observaciones recibidas.
 
     El llamante garantiza la exclusión de escritores o valida la revisión leída.
     La auditoría usa la recogida recién insertada dentro de la misma transacción.
     """
     anterior = anterior or {}
-    pasos = [('INSERT INTO agenda_recogidas(observado, consultas_json) VALUES (?, ?)',
-              (calendario['actualizado'], _json(calendario['consultas'])))]
+    if solo_clasificacion and ({k: v for k, v in anterior.items() if k != 'clasificacion'} !=
+                               {k: v for k, v in calendario.items() if k != 'clasificacion'}):
+        raise ValueError('Reclasificar no puede modificar registros ni observaciones')
+    pasos = [] if solo_clasificacion else [
+        ('INSERT INTO agenda_recogidas(observado, consultas_json) VALUES (?, ?)',
+         (calendario['actualizado'], _json(calendario['consultas'])))]
     for campo in ('fuentes', 'regiones', 'grupos'):
         for i, datos in calendario[campo].items():
             if anterior.get(campo, {}).get(i) != datos:
@@ -167,8 +197,69 @@ def planificar(anterior, calendario):
         if anterior.get('vinculos', {}).get(ref) != evento:
             pasos.append(('INSERT INTO agenda_vinculos VALUES (?, ?) '
                 'ON CONFLICT(ref) DO UPDATE SET evento=excluded.evento', (ref, evento)))
+    pasos.extend(_planificar_clasificacion(anterior, calendario))
     pasos.append(("INSERT INTO agenda_estado VALUES ('calendario', ?) "
         'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json '
         'WHERE valor_json IS NOT excluded.valor_json',
         (_json({k: v for k, v in calendario.items() if k not in COLECCIONES}),)))
+    return pasos
+
+
+def _planificar_clasificacion(anterior, calendario):
+    previo = anterior.get('clasificacion')
+    nuevo = calendario.get('clasificacion')
+    if previo == nuevo:
+        return []
+    if nuevo is None or nuevo.get('version') != 1:
+        raise ValueError('Versión de clasificación incompatible')
+    from .clasificacion import validar
+    catalogo = validar(nuevo['catalogo'])
+    objetivos = {e['id']: set(e['registros']) for e in calendario['eventos']}
+    correspondencias = {r['id']: r for r in catalogo['correspondencias']}
+    for evento, evidencias in nuevo['asignaciones'].items():
+        for evidencia in evidencias:
+            regla = correspondencias.get(evidencia.get('correspondencia'))
+            if (evento not in objetivos or evidencia.get('registro') not in objetivos[evento]
+                    or not regla or evidencia.get('tema') != regla['tema']
+                    or evidencia.get('version') != catalogo['version']):
+                raise ValueError('Asignación temática sin referencia o correspondencia válida')
+    anterior_catalogo = (previo or {}).get('catalogo', {})
+    if (anterior_catalogo and anterior_catalogo != catalogo
+            and catalogo['version'] <= anterior_catalogo['version']):
+        raise ValueError('Un cambio de catálogo necesita una versión mayor')
+    temas = catalogo['conceptos']
+    anteriores = anterior_catalogo.get('conceptos', {})
+    if anteriores.keys() - temas.keys():
+        raise ValueError('No se eliminan IDs temáticos: conservar el concepto o marcarlo retirado')
+    pasos = []
+    for tema, datos in temas.items():
+        if anteriores.get(tema) != datos:
+            pasos.append(('INSERT INTO agenda_temas VALUES (?, ?) '
+                'ON CONFLICT(id) DO UPDATE SET datos_json=excluded.datos_json', (tema, _json(datos))))
+    for tema, datos in temas.items():
+        viejos = set(anteriores.get(tema, {}).get('padres', []))
+        nuevos = set(datos['padres'])
+        for padre in sorted(viejos - nuevos):
+            pasos.append(('DELETE FROM agenda_tema_padres WHERE tema=? AND padre=?', (tema, padre)))
+        for padre in sorted(nuevos - viejos):
+            pasos.append(('INSERT INTO agenda_tema_padres VALUES (?, ?)', (tema, padre)))
+
+    def por_clave(clasificacion):
+        filas = {}
+        for evento, evidencias in (clasificacion or {}).get('asignaciones', {}).items():
+            for evidencia in evidencias:
+                filas.setdefault((evento, evidencia['tema']), []).append(evidencia)
+        return filas
+
+    viejas, nuevas = por_clave(previo), por_clave(nuevo)
+    for evento, tema in sorted(viejas.keys() - nuevas.keys()):
+        pasos.append(('DELETE FROM agenda_evento_tema WHERE evento=? AND tema=?', (evento, tema)))
+    for (evento, tema), evidencias in nuevas.items():
+        if viejas.get((evento, tema)) != evidencias:
+            pasos.append(('INSERT INTO agenda_evento_tema VALUES (?, ?, ?) '
+                'ON CONFLICT(evento, tema) DO UPDATE SET evidencias_json=excluded.evidencias_json',
+                (evento, tema, _json(evidencias))))
+    pasos.append(('INSERT INTO agenda_clasificacion_revisiones(modificado, anterior_json, nuevo_json) '
+                  'VALUES (?, ?, ?)', (datetime.now(timezone.utc).isoformat(),
+                    _json(previo) if previo else None, _json(nuevo))))
     return pasos

@@ -4,6 +4,8 @@ from copy import deepcopy
 from datetime import date, datetime
 from uuid import NAMESPACE_URL, uuid5
 
+from .clasificacion import aplicar as clasificar
+
 
 VERSION = 1
 
@@ -127,4 +129,4 @@ def integrar(anterior, registros, fuentes, observado, consultas=()):
                 raise ValueError(f'Referencia de {campo} sin definir: {identidad}')
         eventos.append(evento)
     calendario['eventos'] = eventos
-    return calendario
+    return clasificar(calendario)

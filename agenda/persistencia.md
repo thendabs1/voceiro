@@ -8,12 +8,27 @@ El calendario se guarda en una **base Turso/libSQL dedicada**, con credenciales
 SQLite local sigue disponible para muestras y recuperación de copias.
 Ambos usan el mismo plan de escrituras y el mismo contrato JSON.
 
-El contrato JSON conserva `version: 1`; el esquema es versión 2 en
+El contrato JSON conserva `version: 1`; el esquema es versión 3 en
 `agenda_esquema`, con una revisión monotónica independiente. Turso documenta
 `PRAGMA user_version` como [solo lectura](https://docs.turso.tech/cloud/limitations).
 Las bases locales del boceto v1 se migran transaccionalmente, conservando
 identidades, originales e historial. Las bases ajenas y versiones futuras se
 rechazan. No se aplica el esquema del calendario a la base de estadísticas.
+
+La ampliación v2→v3 es aditiva y transaccional: crea conceptos, jerarquía,
+asignaciones temáticas y auditoría de clasificación. Conserva las filas
+anteriores y avanza la revisión para invalidar escritores de versiones previas.
+La extensión JSON `clasificacion` guarda el catálogo utilizado y la evidencia;
+las tablas nuevas son sus índices consultables y su auditoría. El resto del
+modelo se concreta en [Decisiones del modelo](decisiones-modelo.md).
+
+`--turso --reclasificar` aplica el catálogo a registros ya guardados, sin
+recoger fuentes, actualizar observaciones ni crear revisiones del proveedor.
+Una repetición idéntica no escribe. El workflow manual ofrece esa operación
+con copia previa conservada antes de modificar Turso y comparación posterior
+de IDs, contenido e historial. La copia puede migrarse localmente para validar
+su reapertura sin modificar la base remota; SQLite solo sirve para pruebas y
+recuperación, sin una base local de trabajo adicional.
 
 ## Tablas y garantías
 
@@ -29,6 +44,9 @@ rechazan. No se aplica el esquema del calendario a la base de estadísticas.
 | `agenda_recogidas` | Fecha y consultas de cada pasada confirmada, con sus alcances. |
 | `agenda_revisiones` | Registro anterior y nuevo ante inserción o cambio de contenido. |
 | `agenda_estado` | Metadatos del último calendario; permite reconstruir la exportación. |
+| `agenda_temas`, `agenda_tema_padres` | Catálogo común y jerarquía de temas. |
+| `agenda_evento_tema` | Asignaciones directas por cita, con sus evidencias. |
+| `agenda_clasificacion_revisiones` | Cambios de clasificación separados de la observación del proveedor. |
 
 Los JSON de las entidades preservan campos y vocabularios sin crear columnas
 propias de Galicia o F1. Los padres territoriales y relaciones de grupos se

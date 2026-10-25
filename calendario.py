@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from agenda.cultura_galicia import FUENTES, leer_pagina, normalizar, recoger
 from agenda import almacen, vidmar_f1
 from agenda.modelo import integrar
+from agenda.clasificacion import aplicar as clasificar
 
 
 def guardar(ruta, calendario):
@@ -36,6 +37,8 @@ def main(argv=None):
     ap.add_argument('--turso', action='store_true', help='Persistir con CALENDARIO_TURSO_URL y CALENDARIO_TURSO_TOKEN')
     ap.add_argument('--copia', help='Descargar un snapshot SQLite completo de --turso, sin recoger fuentes')
     ap.add_argument('--exportar', action='store_true', help='Exportar --db/--turso a --salida sin recoger fuentes')
+    ap.add_argument('--reclasificar', action='store_true',
+                    help='Aplicar el catálogo común al estado guardado, sin consultar fuentes ni revalidar eventos')
     ap.add_argument('--anterior', help='Calendario anterior: conserva IDs e historial de recogida')
     ap.add_argument('--entrada', action='append', help='Página JSON guardada de Galicia (repetible, sin red)')
     ap.add_argument('--entrada-ics', action='append', help='ICS de Vidmar guardado (repetible, sin red)')
@@ -54,12 +57,36 @@ def main(argv=None):
     if args.fuente and (args.entrada or args.entrada_ics):
         ap.error('Usa --fuente para red o --entrada/--entrada-ics para archivos locales')
     if args.copia:
-        if not args.turso or any((args.exportar, args.salida, args.db, args.anterior,
+        if not args.turso or any((args.exportar, args.reclasificar, args.salida, args.db, args.anterior,
                 args.entrada, args.entrada_ics, args.fuente, args.inicio, args.fin, args.idioma)):
             ap.error('--copia requiere solo --turso y una ruta de copia')
         from agenda.turso import Almacen
         Almacen().copia(args.copia)
         print(f'[agenda] Copia completa → {args.copia}')
+        return
+    if args.reclasificar:
+        if not (args.db or args.turso) or any((args.exportar, args.anterior, args.entrada,
+                args.entrada_ics, args.fuente, args.inicio, args.fin, args.idioma)):
+            ap.error('--reclasificar requiere --db/--turso y opcionalmente --salida, sin recogida')
+        if args.turso:
+            from agenda.turso import Almacen
+            remoto = Almacen()
+            remoto.inicializar()
+            anterior = remoto.cargar()
+            if anterior is None:
+                raise ValueError('La base aún no contiene un calendario')
+            calendario = clasificar(anterior)
+            remoto.guardar(calendario, solo_clasificacion=True)
+        else:
+            with almacen.abrir(args.db) as db:
+                anterior = almacen.cargar(db)
+                if anterior is None:
+                    raise ValueError('La base aún no contiene un calendario')
+                calendario = clasificar(anterior)
+                almacen.guardar(db, calendario, solo_clasificacion=True)
+        if args.salida:
+            guardar(args.salida, calendario)
+        print('[agenda] Clasificación común aplicada sin consultar proveedores')
         return
     if args.exportar:
         if not (args.db or args.turso) or not args.salida or any((args.anterior, args.entrada, args.entrada_ics,

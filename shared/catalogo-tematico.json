@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "conceptos": {
+    "deportes": {"nombres": {"es": "Deportes"}, "padres": []},
+    "economia": {"nombres": {"es": "Economía"}, "padres": []},
+    "tecnologia": {"nombres": {"es": "Tecnología"}, "padres": []},
+    "ciencia": {"nombres": {"es": "Ciencia"}, "padres": []},
+    "cultura": {"nombres": {"es": "Cultura"}, "padres": []},
+    "tenis": {"nombres": {"es": "Tenis"}, "padres": ["deportes"]},
+    "baloncesto": {"nombres": {"es": "Baloncesto"}, "padres": ["deportes"]},
+    "automovilismo": {"nombres": {"es": "Automovilismo"}, "padres": ["deportes"]},
+    "futbol": {"nombres": {"es": "Fútbol"}, "padres": ["deportes"]},
+    "futbol-americano": {"nombres": {"es": "Fútbol americano"}, "padres": ["deportes"]},
+    "hockey-hielo": {"nombres": {"es": "Hockey sobre hielo"}, "padres": ["deportes"]},
+    "beisbol": {"nombres": {"es": "Béisbol"}, "padres": ["deportes"]},
+    "ajedrez": {"nombres": {"es": "Ajedrez"}, "padres": ["deportes"]},
+    "atletismo": {"nombres": {"es": "Atletismo"}, "padres": ["deportes"]},
+    "teatro": {"nombres": {"es": "Teatro", "gl": "Teatro"}, "padres": ["cultura"]},
+    "musica": {"nombres": {"es": "Música", "gl": "Música"}, "padres": ["cultura"]},
+    "danza": {"nombres": {"es": "Danza", "gl": "Danza"}, "padres": ["cultura"]},
+    "cine": {"nombres": {"es": "Cine", "gl": "Cinema"}, "padres": ["cultura"]},
+    "exposiciones": {"nombres": {"es": "Exposiciones", "gl": "Exposicións"}, "padres": ["cultura"]},
+    "literatura": {"nombres": {"es": "Literatura", "gl": "Literatura"}, "padres": ["cultura"]},
+    "patrimonio": {"nombres": {"es": "Patrimonio", "gl": "Patrimonio"}, "padres": ["cultura"]}
+  },
+  "correspondencias": [
+    {"id": "galicia-teatro", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Teatro"], "tema": "teatro", "evidencia": "Correspondencia editorial del tipo de evento; no se busca en títulos."},
+    {"id": "galicia-musica", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Música"], "tema": "musica", "evidencia": "Correspondencia editorial del tipo de evento."},
+    {"id": "galicia-danza", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Danza"], "tema": "danza", "evidencia": "Correspondencia editorial del tipo de evento."},
+    {"id": "galicia-cine", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Cine", "Cinema"], "tema": "cine", "evidencia": "Correspondencia editorial de nombres castellano y gallego del tipo de evento."},
+    {"id": "galicia-exposiciones", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Exposición", "Exposicións", "Exposiciones"], "tema": "exposiciones", "evidencia": "Correspondencia editorial de nombres del tipo de evento; no crea funciones diarias."},
+    {"id": "galicia-literatura", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Literatura"], "tema": "literatura", "evidencia": "Correspondencia editorial del tipo de evento."},
+    {"id": "galicia-patrimonio", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Patrimonio"], "tema": "patrimonio", "evidencia": "Correspondencia editorial del tipo de evento."},
+    {"id": "vidmar-automovilismo", "fuente": "vidmar-f1", "criterio": "id_grupo", "tipo_grupo": "coleccion", "valores": ["vidmar-f1:calendario"], "tema": "automovilismo", "evidencia": "Decisión editorial sobre el alcance de la colección F1 Calendar ya integrada; no identifica grandes premios ni deduce geografía."}
+  ]
+}
