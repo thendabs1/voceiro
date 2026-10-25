@@ -93,7 +93,7 @@ class Migracion(unittest.TestCase):
             with almacen.abrir(ruta) as db:
                 self.assertEqual(almacen.cargar(db), antiguo)
                 self.assertEqual(db.execute('SELECT version, revision FROM agenda_esquema').fetchone(),
-                                 (3, revision + 1))
+                                 (almacen.VERSION_ESQUEMA, revision + 1))
             salida = Path(carpeta) / 'salida.json'
             with patch('calendario.recoger', side_effect=AssertionError('Sin red')):
                 main(['--db', str(ruta), '--reclasificar', '--salida', str(salida)])

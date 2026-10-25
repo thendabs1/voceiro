@@ -3,7 +3,10 @@
 Una función de teatro, un partido y una sesión de F1 son citas del mismo
 calendario. Los importadores son Cultura de Galicia y el ICS completo de
 Vidmar; el núcleo no conoce sus campos. Esta fase persiste en Turso y conserva
-SQLite local para muestras y copias. Permite exportar un JSON revisable. El panel de calendario,
+SQLite local para muestras y copias. El [núcleo v2 implementado](nucleo-implementado.md)
+añade entidades tipadas, relaciones, resultados y consultas comunes, contrastados
+con muestras guardadas de FEB y WTA. Su exportación es independiente del JSON
+del piloto, que conserva su formato durante la transición. El panel de calendario,
 las órdenes del buscador y la publicación periódica se diseñarán después
 de comprobar los datos. No hay despliegue ni tarea programada nueva.
 
@@ -42,6 +45,10 @@ python calendario.py --turso --exportar --salida /tmp/calendario.json
 
 # Reclasificar el estado remoto ya guardado, sin consultar proveedores.
 python calendario.py --turso --reclasificar --salida /tmp/calendario-clasificado.json
+
+# Proyectar el piloto al contrato v2 y exportarlo, sin consultar proveedores.
+python calendario.py --turso --preparar-nucleo
+python calendario.py --turso --exportar-nucleo --salida /tmp/nucleo.json
 
 # Copia completa con originales, observaciones, vínculos e historial.
 python calendario.py --turso --copia /tmp/calendario.sqlite
@@ -162,7 +169,8 @@ necesario mostrar frescura y definir cuándo revalidar o retirar citas.
 La [revisión propuesta del modelo](modelo-propuesto.md) contrasta actividades,
 celebraciones, participantes, territorios, temas y seguimiento con
 [nuevas muestras culturales y deportivas](investigacion/07-multideporte-y-seleccion.md).
-Es diseño pendiente de acuerdo; no modifica el contrato ni activa integraciones.
+Las partes implementadas y pendientes se detallan en el
+[núcleo v2](nucleo-implementado.md); las notas de investigación no activan integraciones.
 La continuación del [diseño del núcleo con FEB, tenis y noticias ESPN](diseno-nucleo.md)
 concreta las relaciones y garantías que falta acordar antes de migrar o importar.
 El [contrato lógico propuesto](contrato-propuesto.md) concreta campos y
@@ -208,8 +216,9 @@ y [JSON público](https://www.cultura.gal/v1/axenda/eventos.json?idioma=gl).
 La atribución y licencia CC BY-SA 4.0 viajan en el calendario generado.
 
 Contraste actual: Galicia y sesiones deportivas de Vidmar en la misma base.
-Quedan una segunda agenda territorial o de prensa y los resultados con ámbito
-de sesión/competición/temporada. Antes del panel habrá que concretar filtros
+El núcleo v2 añade resultados e instantáneas de clasificación con ámbito,
+probados con muestras locales; siguen pendientes sus recolectores y una segunda
+agenda territorial o de prensa. Antes del panel habrá que concretar filtros
 y la capa de regiones o grupos con el usuario. El piloto no decide esa UI.
 
 Los directos quedan documentados: harían falta seguimiento por cobertura,
@@ -255,3 +264,10 @@ el batch de escritura leyó 317 filas y escribió 316 según libSQL. La cifra no
 incluye la lectura previa de la instantánea ni el dump. Se verificaron también
 el rechazo de un escritor obsoleto y de referencias inválidas en el servidor,
 y la recuperación de una copia completa con los 313 eventos y sus revisiones.
+
+Reclasificación real del 25/10/2026, tras integrar el catálogo común:
+[ejecución verificada](https://github.com/thendabs1/voceiro/actions/runs/40180791841).
+Conservados los 313 eventos, IDs, originales e historial; 208 clasificados y
+105 sin correspondencia. Los tipos sin correspondencia mantienen el original.
+La ampliación al núcleo v2 se ha contrastado sobre una copia: sus resultados
+y límites están en [Núcleo implementado](nucleo-implementado.md).

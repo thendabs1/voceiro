@@ -8,7 +8,7 @@ El calendario se guarda en una **base Turso/libSQL dedicada**, con credenciales
 SQLite local sigue disponible para muestras y recuperación de copias.
 Ambos usan el mismo plan de escrituras y el mismo contrato JSON.
 
-El contrato JSON conserva `version: 1`; el esquema es versión 3 en
+El JSON del piloto conserva `version: 1`; el esquema del código es versión 4 en
 `agenda_esquema`, con una revisión monotónica independiente. Turso documenta
 `PRAGMA user_version` como [solo lectura](https://docs.turso.tech/cloud/limitations).
 Las bases locales del boceto v1 se migran transaccionalmente, conservando
@@ -21,6 +21,13 @@ anteriores y avanza la revisión para invalidar escritores de versiones previas.
 La extensión JSON `clasificacion` guarda el catálogo utilizado y la evidencia;
 las tablas nuevas son sus índices consultables y su auditoría. El resto del
 modelo se concreta en [Decisiones del modelo](decisiones-modelo.md).
+
+La ampliación v3→v4 añade el [núcleo implementado](nucleo-implementado.md), sin
+reconstruir las tablas anteriores. Preparar su proyección es una operación
+explícita: `--preparar-nucleo`; `--exportar-nucleo` entrega el contrato v2.
+En el JSON del piloto queda como extensión opcional `nucleo`. Los índices nuevos
+se reconstruyen desde sus colecciones y las escrituras siguen siendo por cambios.
+La preparación no crea recogidas ni revisiones ficticias del proveedor.
 
 `--turso --reclasificar` aplica el catálogo a registros ya guardados, sin
 recoger fuentes, actualizar observaciones ni crear revisiones del proveedor.
@@ -117,16 +124,16 @@ si se mantienen estas separaciones:
 | Celebración | Instante con zona, día sin hora o fecha desconocida. Un aplazamiento conserva el evento; las repeticiones necesitan ocurrencias identificadas. |
 | Agrupación | Ciclo/ficha o competición/temporada/fase son grupos tipados y relaciones explícitas. No deducir el gran premio del título ni la temporada del año de celebración. |
 | Territorio | Lugar o ámbitos declarados, múltiples y con correspondencias verificadas. El origen de una fuente o equipo no localiza el evento; una cita online puede no tener región. |
-| Participantes | Futuro catálogo de personas, equipos o parejas y papeles en el encuentro. Una carrera admite muchos participantes, no solo local/visitante. |
-| Resultados | Futuros registros por fuente y evento/sesión, con unidades, parciales, empates, retiradas/descalificaciones y condición provisional/final. No reducirlos a dos marcadores. |
-| Clasificaciones | Futuras instantáneas por competición + temporada + fase/grupo + ámbito + observación. No son citas ni resultados de una sesión. Preservar correcciones y deducciones. |
+| Participantes | Catálogo tipado de personas, equipos o parejas y papeles en el encuentro; los literales sin ID siguen pendientes. |
+| Resultados | Observaciones por fuente y evento/sesión, con métricas y parciales validados. La normalización de condiciones depende del subconjunto acreditado. |
+| Clasificaciones | Instantáneas por ámbito y observación. No son citas ni resultados de una sesión; el corte no se deduce de la fecha de recogida. |
 
-Ahora se guardan los grupos y sus documentos; sus relaciones todavía no forman
-tablas consultables con claves foráneas. Participantes, resultados y clasificaciones
-tampoco están implementados. Se añadirán con una migración y un adaptador real
-que permita comprobar sus reglas. Conservar originales no equivale a implementar
-esas entidades. La persistencia del calendario no depende de anticipar una
-estructura particular del fútbol.
+El esquema 4 añade tablas consultables con claves foráneas para entidades,
+referencias, relaciones, participaciones, resultados y clasificaciones. El
+[contraste FEB/WTA](nucleo-implementado.md) distingue extractos revisados de
+respuestas de API, e importación offline de un recolector operativo. La
+persistencia del calendario no depende de anticipar una estructura particular
+del fútbol.
 
 ## Fútbol pendiente, conservando el encaje de FotMob
 
@@ -149,11 +156,9 @@ grupo o fase. No son eventos nuevos ni otra clase de calendario.
 
 **Implementado ahora:** eventos, referencias y grupos extensibles, regiones
 múltiples, originales e historial, con persistencia independiente del proveedor.
-**Para el siguiente adaptador:** catálogo de participantes, sus papeles,
-resultados e instantáneas de clasificación, con migración y pruebas sobre
-las capacidades finalmente autorizadas. Esas tablas y su normalización no
-están implementadas en este PR. Los documentos JSON evitan perder futuros
-campos, pero no sustituyen esas relaciones consultables.
+**Para el siguiente adaptador operativo:** conectar sus referencias y campos
+al núcleo tipado ya implementado, con pruebas sobre las capacidades finalmente
+autorizadas. No hay importador ni normalización específicos de FotMob.
 
 Ningún nombre, slug, fecha o similitud unirá por sí solo equipos, competiciones
 o eventos de proveedores distintos. Una correspondencia común necesitará

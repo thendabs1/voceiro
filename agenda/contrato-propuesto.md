@@ -2,7 +2,7 @@
 
 Continúa el [diseño del núcleo](diseno-nucleo.md). Concreta campos,
 cardinalidades y reglas. Las [decisiones de implementación](decisiones-modelo.md)
-concretan el catálogo común ya implementado y la ampliación siguiente del núcleo.
+concretan el catálogo común y el [núcleo v2 implementado](nucleo-implementado.md).
 El formato completo descrito aquí todavía no es una versión pública del JSON.
 Se contrasta con las muestras ya revisadas, sin nuevas consultas a proveedores.
 
@@ -231,5 +231,7 @@ pueden implementarse por incrementos conservando este encaje lógico.
 La migración aditiva a esquema 3 implementa la clasificación temática. Las
 [decisiones de implementación](decisiones-modelo.md) fijan su catálogo, auditoría
 y reclasificación, además del almacenamiento y sincronización previstos para
-el núcleo ampliado. Ese núcleo pasará a JSON v2/esquema 4 al implementarse;
-no exige conectar artículos ahora ni se presenta como ya implementado.
+el núcleo ampliado. El primer incremento del contrato v2/esquema 4 está
+implementado y contrastado con el piloto y muestras deportivas, conservando la
+exportación antigua durante la transición. No conecta artículos ni implementa
+todavía los datos personales descritos aquí.

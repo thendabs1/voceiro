@@ -30,6 +30,45 @@ def guardar(ruta, calendario):
             temporal.unlink()
 
 
+def operar_nucleo(args):
+    from agenda.transicion import ampliar
+    from agenda import feb, espn_tenis
+
+    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis)
+    observado = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='microseconds')
+
+    def preparar(anterior):
+        if anterior is None:
+            raise ValueError('La base aún no contiene un calendario del piloto')
+        calendario = ampliar(anterior) if modificar else anterior
+        if 'nucleo' not in calendario:
+            raise ValueError('Preparar el núcleo antes de exportarlo')
+        for ruta in args.entrada_feb or []:
+            calendario['nucleo'] = feb.importar(calendario['nucleo'],
+                json.loads(Path(ruta).read_text(encoding='utf-8')), observado)
+        for ruta in args.entrada_tenis or []:
+            calendario['nucleo'] = espn_tenis.importar(calendario['nucleo'],
+                json.loads(Path(ruta).read_text(encoding='utf-8')), args.circuito, observado)
+        return calendario
+
+    if args.turso:
+        from agenda.turso import Almacen
+        remoto = Almacen()
+        remoto.inicializar()
+        calendario = preparar(remoto.cargar())
+        if modificar:
+            remoto.guardar(calendario, solo_nucleo=True)
+    else:
+        with almacen.abrir(args.db) as db:
+            calendario = preparar(almacen.cargar(db))
+            if modificar:
+                almacen.guardar(db, calendario, solo_nucleo=True)
+    if args.salida:
+        guardar(args.salida, calendario['nucleo'] if args.exportar_nucleo else calendario)
+    cuenta = sum(e['tipo'] == 'evento' for e in calendario['nucleo']['entidades'].values())
+    print(f'[agenda] Núcleo v2: {cuenta} eventos; sin consultar proveedores')
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--salida', help='Exportación JSON de calendario para revisar')
@@ -39,6 +78,13 @@ def main(argv=None):
     ap.add_argument('--exportar', action='store_true', help='Exportar --db/--turso a --salida sin recoger fuentes')
     ap.add_argument('--reclasificar', action='store_true',
                     help='Aplicar el catálogo común al estado guardado, sin consultar fuentes ni revalidar eventos')
+    ap.add_argument('--preparar-nucleo', action='store_true',
+                    help='Proyectar el piloto al núcleo v2 sin recoger proveedores')
+    ap.add_argument('--exportar-nucleo', action='store_true',
+                    help='Exportar solo el contrato v2 con --salida, sin recoger proveedores')
+    ap.add_argument('--entrada-feb', action='append', help='Extracción FEB revisada v1 guardada, sin red')
+    ap.add_argument('--entrada-tenis', action='append', help='JSON Site API de tenis guardado, sin red')
+    ap.add_argument('--circuito', choices=('atp', 'wta'), help='Circuito de --entrada-tenis')
     ap.add_argument('--anterior', help='Calendario anterior: conserva IDs e historial de recogida')
     ap.add_argument('--entrada', action='append', help='Página JSON guardada de Galicia (repetible, sin red)')
     ap.add_argument('--entrada-ics', action='append', help='ICS de Vidmar guardado (repetible, sin red)')
@@ -56,6 +102,19 @@ def main(argv=None):
         ap.error('La base y la exportación deben ser archivos distintos')
     if args.fuente and (args.entrada or args.entrada_ics):
         ap.error('Usa --fuente para red o --entrada/--entrada-ics para archivos locales')
+    operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb, args.entrada_tenis))
+    if args.circuito and not args.entrada_tenis:
+        ap.error('--circuito requiere --entrada-tenis')
+    if operacion_nucleo:
+        if not (args.db or args.turso) or any((args.copia, args.exportar, args.reclasificar, args.anterior,
+                args.entrada, args.entrada_ics, args.fuente, args.inicio, args.fin, args.idioma)):
+            ap.error('El núcleo requiere --db/--turso, sin recogida ni operaciones del piloto')
+        if args.exportar_nucleo and not args.salida:
+            ap.error('--exportar-nucleo requiere --salida')
+        if args.entrada_tenis and not args.circuito:
+            ap.error('--entrada-tenis requiere --circuito')
+        operar_nucleo(args)
+        return
     if args.copia:
         if not args.turso or any((args.exportar, args.reclasificar, args.salida, args.db, args.anterior,
                 args.entrada, args.entrada_ics, args.fuente, args.inicio, args.fin, args.idioma)):
@@ -76,6 +135,9 @@ def main(argv=None):
             if anterior is None:
                 raise ValueError('La base aún no contiene un calendario')
             calendario = clasificar(anterior)
+            if 'nucleo' in calendario:
+                from agenda.transicion import ampliar
+                calendario = ampliar(calendario)
             remoto.guardar(calendario, solo_clasificacion=True)
         else:
             with almacen.abrir(args.db) as db:
@@ -83,6 +145,9 @@ def main(argv=None):
                 if anterior is None:
                     raise ValueError('La base aún no contiene un calendario')
                 calendario = clasificar(anterior)
+                if 'nucleo' in calendario:
+                    from agenda.transicion import ampliar
+                    calendario = ampliar(calendario)
                 almacen.guardar(db, calendario, solo_clasificacion=True)
         if args.salida:
             guardar(args.salida, calendario)
