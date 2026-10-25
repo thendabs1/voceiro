@@ -1,4 +1,4 @@
-"""Lector offline del subconjunto Site API ATP/WTA contrastado; sin red."""
+"""Importador del subconjunto Site API ATP/WTA contrastado."""
 
 from copy import deepcopy
 from datetime import datetime
@@ -7,19 +7,28 @@ from decimal import Decimal
 from . import nucleo, tiempos
 
 
-def importar(anterior, pagina, circuito, observado):
+def importar(anterior, pagina, circuito, observado, url=None):
     if circuito not in ('atp', 'wta') or not isinstance(pagina.get('events'), list):
         raise ValueError('Se requiere una respuesta Site API ATP/WTA')
     c = nucleo.Constructor(anterior)
     fuente = 'espn-' + circuito
     c.n['fuentes'][fuente] = {'nombre': 'ESPN ' + circuito.upper(), 'url': 'https://www.espn.com/tennis/',
-        'atribucion': 'ESPN', 'licencia': None, 'modo': 'muestra_local',
+        'atribucion': 'ESPN', 'licencia': None, 'modo': 'recogida_manual' if url else 'muestra_local',
         'condiciones': 'Recogida sistemática y republicación pendientes',
         'capacidades': ['calendario', 'resultados']}
-    doc = c.documento(fuente, pagina, clase='respuesta_site_api_guardada')
+    # Fragmentos originales con contexto y URL. Un cambio de marcador no
+    # duplica todas las observaciones del resto del scoreboard en Turso.
+    doc = c.documento(fuente, {'leagues': pagina.get('leagues')}, url=url, clase='fragmento_site_api')
     liga = (pagina.get('leagues') or [{}])[0]
     if liga.get('slug') != circuito:
         raise ValueError('El circuito no coincide con la respuesta')
+    # Identidad editorial del circuito, independiente del proveedor. No cambia
+    # los IDs existentes de torneos, cuadros, encuentros o participantes.
+    circuito_obj, ec = c.entidad(fuente, 'circuito', circuito, {}, 'agrupacion', 'circuito',
+        {'en': circuito.upper()}, doc, '/leagues/0', observado,
+        identidad=nucleo.identificador('circuito-tenis', circuito),
+        bloques={'codigo_consulta': circuito})
+    c.tema(circuito_obj, 'tenis', ec, 'espn:' + circuito + ':circuito-revisado-v1')
 
     def entero(valor):
         d = Decimal(str(valor))
@@ -36,22 +45,30 @@ def importar(anterior, pagina, circuito, observado):
 
     vistos = set()
     for ie, torneo in enumerate(pagina['events']):
-        ruta_e = f'/events/{ie}'
+        cabecera = {k: deepcopy(v) for k, v in torneo.items() if k != 'groupings'}
+        doc_t = c.documento(fuente, {'torneo': cabecera}, url=url, clase='fragmento_site_api')
+        ruta_e = '/torneo'
         edicion, ee = c.entidad(fuente, 'tournament_uid', torneo['uid'], {}, 'agrupacion', 'edicion',
-            {'en': torneo['name']}, doc, ruta_e, observado)
+            {'en': torneo['name']}, doc_t, ruta_e, observado)
+        c.relacion('es_parte_de', edicion, circuito_obj, ee)
         # No se deduce un torneo recurrente recortando «-2026» del ID.
         for ig, grupo in enumerate(torneo.get('groupings', [])):
             g = grupo['grouping']
-            ruta_g = ruta_e + f'/groupings/{ig}'
+            ruta_g = '/grupo'
+            doc_g = c.documento(fuente, {'torneo_uid': torneo['uid'],
+                'grupo': {k: deepcopy(v) for k, v in g.items() if k != 'competitions'}},
+                url=url, clase='fragmento_site_api')
             cuadro, eg = c.entidad(fuente, 'grouping', g['id'], {'torneo_uid': torneo['uid']},
-                'agrupacion', 'cuadro', {'en': g['displayName']}, doc, ruta_g, observado,
-                bloques={'modalidad_original': deepcopy(g)})
+                'agrupacion', 'cuadro', {'en': g['displayName']}, doc_g, ruta_g, observado,
+                bloques={'modalidad_original': {k: deepcopy(v) for k, v in g.items() if k != 'competitions'}})
             c.relacion('es_parte_de', cuadro, edicion, eg)
             for im, m in enumerate(grupo['competitions']):
                 if m['uid'] in vistos:
                     raise ValueError('Encuentro repetido en la respuesta')
                 vistos.add(m['uid'])
-                ruta = ruta_g + f'/competitions/{im}'
+                ruta = '/encuentro'
+                doc = c.documento(fuente, {'torneo_uid': torneo['uid'], 'cuadro_id': g['id'],
+                    'encuentro': deepcopy(m)}, url=url, clase='fragmento_site_api')
                 tipo = m.get('status', {}).get('type', {})
                 estado = tipo.get('name')
                 confirmado = m.get('timeValid') is True
@@ -87,21 +104,28 @@ def importar(anterior, pagina, circuito, observado):
                 for ip, p in enumerate(competidores):
                     ruta_p = ruta + f'/competitors/{ip}'
                     if p['type'] == 'athlete':
-                        participante = persona(p['athlete'], ruta_p + '/athlete')
+                        # Las plazas TBD usan IDs negativos reutilizados. Se
+                        # conserva el literal en la participación, sin persona.
+                        pendiente = str(p.get('id', '')).startswith('-') and p['athlete'].get('displayName') == 'TBD'
+                        participante = None if pendiente else persona(p['athlete'], ruta_p + '/athlete')
                         for tipo_externo, campo in (('athlete_uid', 'uid'), ('athlete_id', 'id')):
-                            if p.get(campo):
+                            if participante and p.get(campo):
                                 c.entidad(fuente, tipo_externo, p[campo], {}, 'participante', 'persona',
                                     {'en': p['athlete']['displayName']}, doc, ruta_p, observado,
                                     identidad=participante['id'])
                     elif p['type'] == 'team':
-                        participante, _ = c.entidad(fuente, 'pair_uid', p['uid'], {},
-                            'participante', 'pareja', {'en': p['roster']['displayName']}, doc, ruta_p, observado)
                         integrantes = p['roster']['athletes']
                         if len(integrantes) != 2:
                             raise ValueError('Pareja sin dos integrantes acreditadas')
-                        for ia, atleta in enumerate(integrantes):
-                            integrante = persona(atleta, ruta_p + f'/roster/athletes/{ia}')
-                            c.relacion('compuesta_por', participante, integrante, em, ambito=evento)
+                        pendiente = str(p.get('id', '')).startswith('-') and all(
+                            a.get('displayName') == 'TBD' and not a.get('guid') for a in integrantes)
+                        participante = None
+                        if not pendiente:
+                            participante, _ = c.entidad(fuente, 'pair_uid', p['uid'], {},
+                                'participante', 'pareja', {'en': p['roster']['displayName']}, doc, ruta_p, observado)
+                            for ia, atleta in enumerate(integrantes):
+                                integrante = persona(atleta, ruta_p + f'/roster/athletes/{ia}')
+                                c.relacion('compuesta_por', participante, integrante, em, ambito=evento)
                     else:
                         raise ValueError('Tipo de competidor no contrastado')
                     participacion = c.participar(evento, fuente + ':' + p['uid'], participante,

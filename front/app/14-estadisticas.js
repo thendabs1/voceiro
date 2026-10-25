@@ -312,6 +312,7 @@ async function cargarEstadisticas(renovar = false){
   finally { if (secuencia === s.secuencia){ s.cargando = false; pintarEstadisticas(); } }
 }
 function abrirEstadisticas(destino = '', origen = null){
+  cerrarCalendario(false);
   const s = ESTADISTICAS;
   if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; }
   s.abierto = true; s.destino = destino;

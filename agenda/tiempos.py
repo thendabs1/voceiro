@@ -78,7 +78,10 @@ def desde_legado(c):
         if c['precision'] == 'dia':
             return extremo(fecha=valor)
         dt = datetime.fromisoformat(valor)
-        return extremo(dt.date().isoformat(), dt.time().isoformat(), c.get('zona'), valor)
+        e = extremo(dt.date().isoformat(), dt.time().isoformat(), c.get('zona'), valor)
+        if 'hora_cero_sin_confirmar' in c.get('avisos', ()):
+            e['certeza_hora'] = 'provisional'
+        return e
     return validar({'inicio': convertir(c.get('inicio')), 'fin': convertir(c.get('fin')),
                     'fin_exclusivo': c.get('fin_exclusivo'), 'horario_textual': None})
 

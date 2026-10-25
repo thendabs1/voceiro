@@ -23,7 +23,12 @@ def importar(anterior, muestra, observado):
         raise ValueError('Se requiere una extracción FEB revisada v1')
     c = nucleo.Constructor(anterior)
     c.n['fuentes'].update(deepcopy(FUENTES))
-    doc = c.documento(FUENTE, muestra, clase='extraccion_revisada_con_fragmentos')
+    recogida = muestra.get('modo') == 'recogida_html'
+    if recogida:
+        c.n['fuentes'][FUENTE]['modo'] = 'recogida_manual'
+        c.n['fuentes'][FUENTE]['condiciones'] = 'Recogida manual; republicación y automatización periódica pendientes'
+    doc = c.documento(FUENTE, muestra, url=muestra.get('url'),
+        clase='recogida_html' if recogida else 'extraccion_revisada_con_fragmentos')
     g, t, f = (muestra[k] for k in ('competicion', 'edicion', 'fase'))
     if any(not isinstance(x['id'], str) or not x['id'].isdigit() for x in (g, t, f)):
         raise ValueError('IDs FEB literales inválidos')
@@ -36,14 +41,18 @@ def importar(anterior, muestra, observado):
                          {'es': datos['nombre']}, doc, ruta, observado)
 
     competicion, eg = entidad('competicion', g, {}, 'agrupacion', 'competicion', '/competicion')
+    c.tema(competicion, 'baloncesto', eg, 'feb:competicion-baloncesto-v1')
     edicion, et = entidad('temporada', t, {'g': g['id']}, 'agrupacion', 'edicion', '/edicion')
     fase, ef = entidad('fase', f, {'g': g['id'], 't': t['id']}, 'agrupacion', 'fase', '/fase')
     c.relacion('es_edicion_de', edicion, competicion, et)
     c.relacion('es_parte_de', fase, edicion, ef)
     for indice, p in enumerate(muestra['partidos']):
         ruta = f'/partidos/{indice}'
-        inicio = datetime.strptime(p['fecha_hora'], '%d/%m/%Y - %H:%M')
-        cuando = {'inicio': tiempos.extremo(inicio.date().isoformat(), inicio.time().isoformat()),
+        inicio = datetime.strptime(p['fecha_hora'], '%d/%m/%Y - %H:%M') if p.get('fecha_hora') else None
+        # Los encuentros jugados del calendario general no declaran la hora.
+        # La fecha de jornada tampoco demuestra el día concreto del encuentro.
+        cuando = {'inicio': tiempos.extremo(inicio.date().isoformat(), inicio.time().isoformat())
+                            if inicio else tiempos.extremo(),
                   'fin': tiempos.extremo(), 'fin_exclusivo': None, 'horario_textual': p['fecha_hora']}
         nombres = [p[lado]['nombre'] for lado in ('local', 'visitante')]
         evento, ep = c.entidad(FUENTE, 'partido', p['id'], {}, 'evento', 'encuentro',
@@ -93,6 +102,7 @@ def importar(anterior, muestra, observado):
             filas.append({'participante': participante, 'literal': fila['nombre'],
                 'posicion': fila.get('posicion'), 'orden': orden, 'metricas': deepcopy(fila['metricas'])})
         c.n['clasificaciones'][cid] = {'id': cid, 'ambito': fase, 'observacion': ec,
-            'corte': None, 'jornada': None, 'alcance': 'muestra_parcial', 'filas': filas}
+            'corte': None, 'jornada': None,
+            'alcance': 'tabla_observada' if recogida else 'muestra_parcial', 'filas': filas}
         c.n['observaciones'][ec]['bloques']['clasificacion'] = cid
     return c.terminar()

@@ -79,6 +79,7 @@ function wireStaticEvents(){
   }
   wireTiempo();
   wireEstadisticas();
+  wireCalendario();
   wireAvisos();
   wirePortadas();
   // ── Chips de modo y de tema ──
@@ -169,12 +170,14 @@ function wireStaticEvents(){
 
   document.addEventListener('keydown', e => {
       if (e.key === 'Escape'){
+        if (document.getElementById('cal-evento-dialogo').open) return;
         cerrarPresetMenu();
         if ($('#filtros-panel').matches(':modal')) $('#filtros-panel').close();
         cerrarMenuMas();
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
         if (ESTADISTICAS.abierto){ cerrarEstadisticas(); return; }
+        if (CALENDARIO.abierto){ cerrarCalendario(); return; }
       }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT')) return;

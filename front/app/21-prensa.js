@@ -100,14 +100,16 @@ function prensaCacheSet(rawQuery, items){
   } catch(e){}
 }
 
-async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
+async function buscarEnPrensa(parsed, rawQuery, { silent = false, signal: signalExterno = null } = {}){
   // Cache primero
   const cacheKey = prensaCacheKey(rawQuery);
   const cached = prensaCacheGet(cacheKey);
   if (cached) return { items: cached, _cache: true };
 
-  if (PRENSA_ABORT) PRENSA_ABORT.abort();
-  PRENSA_ABORT = new AbortController();
+  if (!signalExterno){
+    if (PRENSA_ABORT) PRENSA_ABORT.abort();
+    PRENSA_ABORT = new AbortController();
+  }
 
   const params = new URLSearchParams();
   params.set('raw', rawQuery || '');
@@ -117,7 +119,7 @@ async function buscarEnPrensa(parsed, rawQuery, { silent = false } = {}){
   params.set('lang', PRENSA_LANG);
   params.set('region', PRENSA_PAIS);
 
-  const signal = PRENSA_ABORT.signal;
+  const signal = signalExterno || PRENSA_ABORT.signal;
   const intentar = async () => {
     const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(`${WORKER_BUSCAR}/buscar?${params}`, { signal: sig });
@@ -190,8 +192,11 @@ function programarPrensa(consulta){
   // prensa no puede acotarse (site: admite 3) y lo que trae no pasa el
   // filtro de medios: medido, 0 de 100. No se pide.
   const dominios = consulta.medios.dominios;
+  const calendario = consulta.calendario;
+  const ambitos = calendario ? (calendario.circuitos.length ? calendario.circuitos : calendario.ambitos) : [];
   const tieneQuery = !consulta.imposible
-    && (consulta.texto.incluir.length || dominios !== null)
+    && (!calendario || calendario.noticias && !calendario.desconocidos.length)
+    && (consulta.texto.incluir.length || dominios !== null || ambitos.length)
     && !(dominios && dominios.size > 3);
   if (!tieneQuery || !PRENSA_ACTIVA){
     _cancelarPrensa();
@@ -206,23 +211,34 @@ function programarPrensa(consulta){
   PRENSA_CLAVE = clave;
   PRENSA_FALLO = null;
   const texto = paraPrensa(consulta);
+  const textos = ambitos.length ? [...new Set(ambitos.map(a => `"${AMBITOS[a].noticias[0]}" ${texto}`.trim()))] : [texto];
   // Lo que ya está en caché no espera a que se deje de teclear.
-  const espera = prensaCacheGet(prensaCacheKey(texto)) ? 0 : PRENSA_DEBOUNCE_MS;
-  PRENSA_TIMER = setTimeout(() => {
+  const espera = textos.every(t => prensaCacheGet(prensaCacheKey(t))) ? 0 : PRENSA_DEBOUNCE_MS;
+  PRENSA_TIMER = setTimeout(async () => {
     PRENSA_TIMER = null;
     if (PRENSA_CLAVE !== clave) return;
 
-    buscarEnPrensa(consulta.parsed, texto, { silent: true }).then(res => {
+    PRENSA_ABORT = new AbortController();
+    const signal = PRENSA_ABORT.signal;
+    // Una consulta por ámbito, con cancelación compartida y sin que una
+    // respuesta aborte a las demás. Se conserva la deduplicación del feed.
+    const respuestas = [];
+    for (const texto of textos){
+      if (signal.aborted || PRENSA_CLAVE !== clave) return;
+      respuestas.push(await buscarEnPrensa(consulta.parsed, texto, { silent: true, signal }));
+    }
+    const res = respuestas.every(Boolean) ? { items: respuestas.flatMap(r => r.items || []) } : null;
+    {
       if (PRENSA_CLAVE !== clave) return;
       PRENSA_CLAVE = null;
       if (res) PRENSA_HECHA = clave; else PRENSA_FALLO = clave;
-      const items = res ? (res.items || []).map(_itemDePrensa).filter(Boolean) : [];
+      const items = respuestas.filter(Boolean).flatMap(r => r.items || []).map(_itemDePrensa).filter(Boolean);
       if (items.length){
         if (_mergearItemsEnNoticias(items, 'prensa', clave) > 0) hidratarNoticias();
         aplicarFiltros();
       } else if (!ULT_FILTRADAS.length) renderizar();   // el vacío deja de «buscar»
       else pintarEstadoPrensa();
-    });
+    }
   }, espera);
 }
 

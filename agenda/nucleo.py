@@ -19,7 +19,7 @@ COLECCIONES = ('entidades', 'documentos', 'referencias', 'observaciones', 'relac
 TIPOS = {'evento', 'agrupacion', 'actividad', 'participante', 'lugar', 'territorio'}
 CLASES = {
     'evento': {'encuentro', 'funcion', 'sesion', 'actividad_continua', 'desconocida'},
-    'agrupacion': {'competicion', 'edicion', 'fase', 'cuadro', 'ciclo', 'festival', 'coleccion'},
+    'agrupacion': {'circuito', 'competicion', 'edicion', 'fase', 'cuadro', 'ciclo', 'festival', 'coleccion'},
     'participante': {'persona', 'equipo', 'pareja', 'club', 'organizacion'},
 }
 RELACIONES = {

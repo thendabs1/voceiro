@@ -1,13 +1,13 @@
-name: Calendario (piloto)
+name: Calendario
 
-# Recogida manual para revisar datos antes de decidir publicación y consumo.
+# Turso es el estado de trabajo. Las SQLite del artefacto son copias de recuperación.
 on:
   workflow_dispatch:
     inputs:
       operacion:
-        description: 'Recoger, reclasificar o preparar el núcleo sin consultar proveedores'
+        description: 'Recoger, reclasificar, preparar el núcleo o publicar el estado guardado'
         type: choice
-        options: [recoger, reclasificar, preparar-nucleo]
+        options: [recoger, reclasificar, preparar-nucleo, publicar]
         default: recoger
       inicio:
         description: 'Primer día (AAAA-MM-DD, vacío = hoy)'
@@ -25,6 +25,18 @@ on:
         type: choice
         options: [cultura-galicia, vidmar-f1, ambas]
         default: cultura-galicia
+      deportes:
+        description: 'Recogida deportiva manual adicional (FEB: solo LF Endesa)'
+        type: choice
+        options: [ninguno, feb, tenis, feb-y-tenis]
+        default: ninguno
+      temporada_feb:
+        description: 'Año inicial explícito de la temporada LF Endesa'
+        default: '2026'
+      publicar:
+        description: 'Publicar la lectura en R2 (fuentes de CALENDARIO_FUENTES_PUBLICAS; por defecto Galicia)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -36,7 +48,7 @@ concurrency:
 jobs:
   recoger:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       CALENDARIO_TURSO_URL: ${{ secrets.CALENDARIO_TURSO_URL }}
       CALENDARIO_TURSO_TOKEN: ${{ secrets.CALENDARIO_TURSO_TOKEN }}
@@ -45,6 +57,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Dependencias de las recogidas y publicación
+        run: pip install beautifulsoup4 boto3
       - name: Copia previa a modificar el modelo
         if: inputs.operacion != 'recoger'
         run: python calendario.py --turso --copia "$RUNNER_TEMP/antes/calendario.sqlite"
@@ -64,6 +78,10 @@ jobs:
           IDIOMA: ${{ inputs.idioma }}
           FUENTE: ${{ inputs.fuente }}
         run: |
+          if [ "$OPERACION" = publicar ]; then
+            python calendario.py --turso --exportar --salida "$RUNNER_TEMP/calendario/calendario.json"
+            exit 0
+          fi
           if [ "$OPERACION" = preparar-nucleo ]; then
             python calendario.py --turso --preparar-nucleo --exportar-nucleo --salida "$RUNNER_TEMP/calendario/nucleo.json"
             python calendario.py --turso --exportar --salida "$RUNNER_TEMP/calendario/calendario.json"
@@ -82,6 +100,24 @@ jobs:
           if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
           if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
           python calendario.py "${args[@]}"
+      - name: Recoger deportes elegidos, con una sola escritura al terminar
+        if: inputs.operacion == 'recoger' && inputs.deportes != 'ninguno'
+        env:
+          DEPORTES: ${{ inputs.deportes }}
+          TEMPORADA_FEB: ${{ inputs.temporada_feb }}
+        run: |
+          args=(--turso --salida "$RUNNER_TEMP/calendario/calendario.json")
+          if [ "$DEPORTES" = feb ] || [ "$DEPORTES" = feb-y-tenis ]; then
+            args+=(--recoger-deporte feb --temporada-feb "$TEMPORADA_FEB")
+          fi
+          if [ "$DEPORTES" = tenis ] || [ "$DEPORTES" = feb-y-tenis ]; then
+            args+=(--recoger-deporte espn-atp --recoger-deporte espn-wta)
+          fi
+          python calendario.py "${args[@]}"
+      - name: Preparar lectura común desde el estado remoto
+        run: |
+          python calendario.py --turso --preparar-nucleo --exportar-nucleo --salida "$RUNNER_TEMP/calendario/nucleo.json"
+          python -m agenda.publicacion --entrada "$RUNNER_TEMP/calendario/nucleo.json" --salida "$RUNNER_TEMP/calendario/lectura-revision.json"
       - name: Copiar el estado completo con su historial
         run: python calendario.py --turso --copia "$RUNNER_TEMP/calendario/calendario.sqlite"
       - name: Comprobar conservación tras modificar el modelo
@@ -126,6 +162,19 @@ jobs:
           print(f"Clasificados: {asignados}; sin correspondencia: {len(despues['eventos']) - asignados}")
           print(dict(sorted(cuentas.items())))
           PY
+      - name: Publicar la lectura seleccionada en R2
+        if: inputs.publicar || inputs.operacion == 'publicar'
+        env:
+          FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia' }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: >-
+          python -m agenda.publicacion
+          --entrada "$RUNNER_TEMP/calendario/nucleo.json"
+          --salida "$RUNNER_TEMP/calendario/lectura-publica.json"
+          --fuentes "$FUENTES_PUBLICAS" --publicar
       - name: Guardar calendario para revisión
         uses: actions/upload-artifact@v4
         with:

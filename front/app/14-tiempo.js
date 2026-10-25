@@ -422,6 +422,7 @@ function tokenTiempo(valor = ''){
 }
 function ponerTiempo(token){
   if (document.getElementById('estadisticas-panel')?.hidden === false) cerrarEstadisticas();
+  cerrarCalendario(false);
   const input = $('#buscar');
   const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
   input.value = [resto, token].filter(Boolean).join(' ');

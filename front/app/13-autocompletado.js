@@ -23,6 +23,8 @@ function scoreMatch(haystack, needle){
 }
 
 function sugerenciasBuscar(raw){
+  const calendario = sugerenciasCalendario(raw);
+  if (calendario) return calendario;
   const stats = sugerenciasEstadisticas(raw);
   if (stats) return stats;
   // eltiempo: sugiere municipios, no medios.
@@ -131,6 +133,11 @@ function aplicarSugerencia(idx){
   const s = SUG_STATE.items[idx];
   if (!s) return;
   const input = document.getElementById('buscar');
+
+  if (s.kind === 'calendario'){
+    input.value = input.value.replace(/[^\s"]*$/, s.value);
+    cerrarSugerencias(); aplicarFiltros(); return;
+  }
 
   if (s.kind === 'estadisticas'){
     input.value = input.value.replace(/(^|\s)(?:estadisticas|stats):(?:"[^"]*|[^\s"]*)$/i, (_, antes) => antes + 'estadisticas:' + s.value);

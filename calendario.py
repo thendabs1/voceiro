@@ -1,4 +1,4 @@
-"""Calendario común: estado local o Turso y exportación JSON. Sin publicación web."""
+"""Calendario común: Turso, recogidas acotadas y exportaciones recuperables."""
 
 import argparse
 from datetime import date, datetime, timedelta
@@ -34,7 +34,7 @@ def operar_nucleo(args):
     from agenda.transicion import ampliar
     from agenda import feb, espn_tenis
 
-    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis)
+    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.recoger_deporte)
     observado = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='microseconds')
 
     def preparar(anterior):
@@ -49,6 +49,16 @@ def operar_nucleo(args):
         for ruta in args.entrada_tenis or []:
             calendario['nucleo'] = espn_tenis.importar(calendario['nucleo'],
                 json.loads(Path(ruta).read_text(encoding='utf-8')), args.circuito, observado)
+        from agenda import recogida
+        for fuente in dict.fromkeys(args.recoger_deporte or []):
+            if fuente == 'feb':
+                calendario['nucleo'] = feb.importar(calendario['nucleo'],
+                    recogida.feb(args.temporada_feb), observado)
+            else:
+                circuito = fuente.removeprefix('espn-')
+                pagina, url = recogida.tenis(circuito)
+                calendario['nucleo'] = espn_tenis.importar(calendario['nucleo'],
+                    pagina, circuito, observado, url=url)
         return calendario
 
     if args.turso:
@@ -66,7 +76,8 @@ def operar_nucleo(args):
     if args.salida:
         guardar(args.salida, calendario['nucleo'] if args.exportar_nucleo else calendario)
     cuenta = sum(e['tipo'] == 'evento' for e in calendario['nucleo']['entidades'].values())
-    print(f'[agenda] Núcleo v2: {cuenta} eventos; sin consultar proveedores')
+    print(f'[agenda] Núcleo v2: {cuenta} eventos; '
+          + ('recogida deportiva explícita' if args.recoger_deporte else 'sin consultar proveedores'))
 
 
 def main(argv=None):
@@ -85,6 +96,9 @@ def main(argv=None):
     ap.add_argument('--entrada-feb', action='append', help='Extracción FEB revisada v1 guardada, sin red')
     ap.add_argument('--entrada-tenis', action='append', help='JSON Site API de tenis guardado, sin red')
     ap.add_argument('--circuito', choices=('atp', 'wta'), help='Circuito de --entrada-tenis')
+    ap.add_argument('--recoger-deporte', action='append', choices=('feb', 'espn-atp', 'espn-wta'),
+                    help='Recogida manual deportiva en el núcleo; repetible, sin publicación')
+    ap.add_argument('--temporada-feb', help='Año inicial explícito de la temporada LF Endesa')
     ap.add_argument('--anterior', help='Calendario anterior: conserva IDs e historial de recogida')
     ap.add_argument('--entrada', action='append', help='Página JSON guardada de Galicia (repetible, sin red)')
     ap.add_argument('--entrada-ics', action='append', help='ICS de Vidmar guardado (repetible, sin red)')
@@ -102,7 +116,10 @@ def main(argv=None):
         ap.error('La base y la exportación deben ser archivos distintos')
     if args.fuente and (args.entrada or args.entrada_ics):
         ap.error('Usa --fuente para red o --entrada/--entrada-ics para archivos locales')
-    operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb, args.entrada_tenis))
+    operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb,
+                           args.entrada_tenis, args.recoger_deporte))
+    if ('feb' in (args.recoger_deporte or [])) != bool(args.temporada_feb):
+        ap.error('--recoger-deporte feb requiere --temporada-feb y viceversa')
     if args.circuito and not args.entrada_tenis:
         ap.error('--circuito requiere --entrada-tenis')
     if operacion_nucleo:

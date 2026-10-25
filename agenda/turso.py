@@ -7,7 +7,8 @@ from pathlib import Path
 import sqlite3
 import tempfile
 
-from turso_http import Cliente, ErrorTurso, filas
+from turso_http import ErrorTurso, filas
+from .turso_lotes import ClienteCalendario as Cliente
 from . import almacen
 
 
