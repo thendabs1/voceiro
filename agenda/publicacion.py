@@ -13,6 +13,7 @@ import os
 
 from . import nucleo
 from .tiempos import instante
+from shared.territorios import cargar as cargar_territorios
 
 
 def proyectar(n, fuentes=None, generado=None):
@@ -77,6 +78,10 @@ def proyectar(n, fuentes=None, generado=None):
 
     def seleccion(k, bloque):
         s = selecciones.get((k, bloque))
+        if s is None and bloque == 'identificadores':
+            e = entidades[k]
+            s = nucleo.seleccionar(n, nucleo.objetivo(e['tipo'], e['id']), bloque, activas,
+                [i for i in n['entidades'][k]['evidencias'] if i in activas])
         if s is None:
             return None
         # Tampoco publicar un valor anterior que proceda de una fuente excluida.
@@ -85,6 +90,23 @@ def proyectar(n, fuentes=None, generado=None):
             return {'valor': None, 'conflicto': s.get('conflicto', False)}
         return {'valor': deepcopy(s['valor']), 'conflicto': s['conflicto'],
                 'procedencia': procedencia(s['observacion'])}
+
+    territorios = cargar_territorios()
+    for k, e in entidades.items():
+        if e['tipo'] != 'territorio':
+            continue
+        identificadores = seleccion(k, 'identificadores')
+        valor = (identificadores or {}).get('valor') or {}
+        comun = None
+        if not (identificadores or {}).get('conflicto'):
+            # Cada espacio de códigos tiene su cruce explícito. NORA queda pendiente.
+            if valor.get('ine_cpro_cmun_dc'):
+                comun = territorios.resolver('ine:municipio:dc', valor['ine_cpro_cmun_dc'])
+            elif valor.get('ine'):
+                comun = territorios.resolver('ine:municipio', valor['ine'])
+        e['territorio_comun'] = comun
+        e['territorio_estado'] = ('conflicto' if (identificadores or {}).get('conflicto')
+                                  else 'resuelto' if comun else 'pendiente')
 
     participaciones = {i: {c: deepcopy(p[c]) for c in
         ('id', 'evento', 'participante', 'literal', 'papel', 'orden')}
@@ -133,7 +155,20 @@ def proyectar(n, fuentes=None, generado=None):
         rid = resultado.get('valor') if resultado else None
         resultado = ({**deepcopy(n['resultados'][rid]), 'seleccion': resultado}
                      if rid in n['resultados'] and n['resultados'][rid]['observacion'] in observaciones else None)
+        # Solo ubicación del evento o de su recinto; no el ámbito de una agrupación.
+        pendientes, ubicaciones, vistos = list(lugares.get(k, ())), {}, set()
+        while pendientes:
+            lugar = pendientes.pop()
+            if lugar in vistos:
+                continue
+            vistos.add(lugar)
+            comun = entidades[lugar].get('territorio_comun')
+            if comun:
+                ubicaciones[comun['id']] = {'territorio': comun['id'], 'papel': 'celebracion',
+                                           'ancestros': comun['ancestros']}
+            pendientes.extend(lugares.get(lugar, ()))
         eventos.append({**deepcopy(e), 'programacion': seleccion(k, 'programacion'),
+            'territorios': [ubicaciones[i] for i in sorted(ubicaciones)],
             'lugar': seleccion(k, 'lugar'), 'resultado': resultado,
             'enlaces': sorted({observaciones[i]['bloques']['url_evento'] for i in propias
                               if observaciones[i]['bloques'].get('url_evento')}),
@@ -154,6 +189,8 @@ def proyectar(n, fuentes=None, generado=None):
         'generado': generado or datetime.now(timezone.utc).isoformat(timespec='seconds'),
         'revision': fuentes is None,
         'catalogo': {'version': n['catalogo']['version'], 'conceptos': deepcopy(n['catalogo']['conceptos'])},
+        'territorios_catalogo': {'version': list(territorios.version),
+                                'fecha_referencia': territorios.fecha_referencia},
         'fuentes': {f: {c: deepcopy(n['fuentes'][f][c]) for c in campos_fuente if c in n['fuentes'][f]}
                     for f in sorted(permitidas)},
         'entidades': entidades, 'relaciones': relaciones,

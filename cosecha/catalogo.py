@@ -1,9 +1,18 @@
 """Catálogo de medios para slices y ediciones, cargado bajo demanda."""
 
 from medios import todos_los_medios
+from shared.territorios import cobertura_medio
 
 
 _MEDIOS_POR_DOMINIO = None
+
+
+def _territorio_medio(medio):
+    datos = {k: medio[k] for k in ('region', 'pais', 'ambito') if medio.get(k)}
+    cobertura = cobertura_medio(medio)
+    if cobertura:
+        datos['territorios'] = cobertura
+    return datos
 
 
 def _init_medios_por_dominio():
@@ -27,6 +36,7 @@ def _tabla_medios_slice(items):
             medios[d] = {
                 'n': nombre, 'g': grupo, 't': tipo,
                 'l': lang, 'tags': tags or [],
+                **_territorio_medio(_MEDIOS_POR_DOMINIO.get(d, {})),
             }
         if host and d not in hosts:
             hosts[d] = host
@@ -64,6 +74,7 @@ def _catalogo_completo():
             't':    m.get('type', ''),
             'l':    m.get('lang', ''),
             'tags': m.get('tags', []),
+            **_territorio_medio(m),
         }
     return dict(sorted(out.items()))
 

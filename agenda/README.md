@@ -1,5 +1,25 @@
 # Calendario común
 
+## Territorio compartido y retención
+
+Primer incremento de la [arquitectura acordada](arquitectura-servicios.md):
+[catálogo común INE](../shared/territorios/README.md), jerarquía municipio →
+provincia → autonomía → país y cobertura editorial en el catálogo de medios.
+La lectura pública de agenda enlaza los municipios acreditados sin cambiar
+IDs del núcleo ni resolver NORA por nombres. El tiempo reutiliza las provincias.
+La migración a consultas indexadas en Turso sigue siendo el siguiente incremento.
+
+Los eventos puntuales terminados tendrán un tope de **45 días**; temporadas,
+resultados, clasificaciones y entidades reutilizables requieren políticas propias.
+`python -m agenda.retencion exportacion.json --ahora 2026-12-11T12:00:00Z`
+prepara un informe sin borrar: exige fin confirmado, conserva conflictos,
+aplazados, intervalos y vínculos deportivos. Un final desconocido no se inventa.
+Antes de activar la poda quedan por implementar la eliminación transaccional
+de dependencias exclusivas, el tratamiento de documentos compartidos y la
+protección frente a que una recogida vuelva a importar el evento caducado.
+
+Este incremento no modifica la base remota ni publica servicios.
+
 ## Madrid, Kulturklik y conexiones públicas
 
 El workflow **Calendario** permite recoger Madrid y Kulturklik con el campo
@@ -39,7 +59,7 @@ La proyección pública incluye participantes y miembros de pareja exclusivament
 dentro del ámbito acreditado, además de competición → edición → encuentro y
 actividad → celebraciones. El navegador cruza estos objetivos con fuente,
 tema y municipio/recinto. Los recintos del piloto se conectan con sus municipios
-declarados, sin convertir aún INE de seis dígitos ni NORA en el catálogo del tiempo.
+declarados. El catálogo común contrasta INE de seis dígitos y conserva NORA pendiente.
 La agenda muestra una sola ficha por programación prolongada en cada ventana;
 semana y mes muestran su presencia en días permitidos, sin crear nuevos eventos.
 

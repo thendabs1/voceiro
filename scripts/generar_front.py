@@ -24,7 +24,7 @@ def generar_html(fecha=None, total=None, raiz=None):
 
     # Los módulos compartidos viajan con el HTML en Pages.
     modulos = {'parser.js': raiz / 'shared/parser.js'}
-    for carpeta in ('busqueda', 'sync', 'tema', 'tiempo', 'calendario'):
+    for carpeta in ('busqueda', 'sync', 'tema', 'tiempo', 'calendario', 'territorios'):
         carpeta_shared = raiz / 'shared' / carpeta
         if carpeta_shared.is_dir():
             for ruta in sorted(carpeta_shared.glob('*.js')):
