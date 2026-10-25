@@ -28,7 +28,7 @@ on:
         options: [cultura-galicia, vidmar-f1, ambas, ninguna]
         default: cultura-galicia
       deportes:
-        description: 'Recogida deportiva manual adicional (FEB: solo LF Endesa)'
+        description: 'Recogida deportiva manual adicional'
         type: choice
         options: [ninguno, feb, tenis, feb-y-tenis]
         default: ninguno
@@ -38,8 +38,13 @@ on:
         options: [ninguna, madrid, kulturklik, madrid-y-kulturklik]
         default: ninguna
       temporada_feb:
-        description: 'Año inicial explícito de la temporada LF Endesa'
+        description: 'Año inicial explícito de la temporada FEB'
         default: '2026'
+      competicion_feb:
+        description: 'FEB: 4 LF Endesa, 1 Primera FEB, 67 LF Challenge'
+        type: choice
+        options: ['4', '1', '67']
+        default: '4'
       publicar:
         description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid y Kulturklik)'
         type: boolean
@@ -79,6 +84,7 @@ jobs:
           CULTURA: ${{ inputs.cultura || 'madrid-y-kulturklik' }}
           DEPORTES: ${{ inputs.deportes || 'ninguno' }}
           TEMPORADA_FEB: ${{ inputs.temporada_feb }}
+          COMPETICION_FEB: ${{ inputs.competicion_feb || '4' }}
         run: |
           if [ "$OPERACION" = reclasificar ]; then
             python calendario.py --turso --reclasificar
@@ -107,7 +113,7 @@ jobs:
               if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
             fi
             if [ "$DEPORTES" = feb ] || [ "$DEPORTES" = feb-y-tenis ]; then
-              args+=(--recoger-deporte feb --temporada-feb "$TEMPORADA_FEB")
+              args+=(--recoger-deporte feb --temporada-feb "$TEMPORADA_FEB" --competicion-feb "$COMPETICION_FEB")
             fi
             if [ "$DEPORTES" = tenis ] || [ "$DEPORTES" = feb-y-tenis ]; then
               args+=(--recoger-deporte espn-atp --recoger-deporte espn-wta)
@@ -117,6 +123,8 @@ jobs:
             fi
           fi
           python calendario.py --turso --preparar-nucleo
+      - name: Revisar clasificación y relaciones de todas las fuentes guardadas
+        run: python -m agenda.revision --turso
       - name: Validar y publicar la lectura desde Turso
         env:
           PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' }}

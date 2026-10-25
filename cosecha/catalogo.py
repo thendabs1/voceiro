@@ -1,7 +1,7 @@
 """Catálogo de medios para slices y ediciones, cargado bajo demanda."""
 
 from medios import todos_los_medios
-from shared.territorios import cobertura_medio
+from shared.territorios import territorios_medio
 
 
 _MEDIOS_POR_DOMINIO = None
@@ -9,9 +9,9 @@ _MEDIOS_POR_DOMINIO = None
 
 def _territorio_medio(medio):
     datos = {k: medio[k] for k in ('region', 'pais', 'ambito') if medio.get(k)}
-    cobertura = cobertura_medio(medio)
-    if cobertura:
-        datos['territorios'] = cobertura
+    relaciones = territorios_medio(medio)
+    if relaciones:
+        datos['territorios'] = relaciones
     return datos
 
 

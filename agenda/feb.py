@@ -58,7 +58,8 @@ def importar(anterior, muestra, observado):
         evento, ep = c.entidad(FUENTE, 'partido', p['id'], {}, 'evento', 'encuentro',
             {'es': ' — '.join(nombres)}, doc, ruta, observado, bloques={
                 'programacion': {'cuando': cuando, 'programacion': 'desconocido', 'ejecucion': 'desconocido'},
-                'lugar': deepcopy(p.get('pista'))})
+                'lugar': deepcopy(p.get('pista')),
+                'url_evento': f'https://baloncestoenvivo.feb.es/partido/{p["id"]}'})
         c.relacion('pertenece_a', evento, fase, ep)
         c.tema(evento, 'baloncesto', ep, 'feb:flujo-baloncesto-revisado-v1')
         participaciones = []

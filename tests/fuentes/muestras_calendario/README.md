@@ -41,6 +41,16 @@ Se usan para probar el parser, el rechazo de cambios de estructura y el
 contraste entre vistas sin red. Las pruebas de publicación cubren selección
 de fuentes, circuitos, TBD y transacciones divididas con rollback real.
 
+`feb-primera-{calendario,resultados}.html` y
+`feb-challenge-{calendario,resultados}.html` son selecciones del 25/10/2026
+de Primera FEB y LF Challenge 2026/2027, respectivamente: tres partidos y
+dos filas de clasificación por liga. Conservan únicamente la entrada propia
+del menú y los selectores seleccionados. `feb-junior-catalogo.html` retiene
+el menú de 24 competiciones y los selectores de temporada/fase del calendario
+júnior masculino 2025/2026, sin partidos. Permite distinguir el inventario
+anunciado de la cobertura contrastada del lector. No se conserva un instante
+exacto de captura ni se acredita la cobertura de las fases júnior.
+
 # Madrid y Kulturklik (25/10/2026)
 
 `madrid.json`: cuatro registros reales del datastore municipal `300107-2-agenda-actividades-eventos-csv`,

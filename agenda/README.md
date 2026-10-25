@@ -1,5 +1,11 @@
 # Calendario común
 
+La [base y el contrato de servicios](arquitectura-servicios.md) reúnen las
+reglas de territorio, cobertura, noticias en memoria, persistencia y servicio.
+La prioridad actual es cerrar esa base y la operación por colección antes de
+activar la nueva lectura o ampliar proveedores; los apartados del piloto
+conservan su contexto histórico.
+
 ## Territorio compartido y retención
 
 Primer incremento de la [arquitectura acordada](arquitectura-servicios.md):
@@ -7,7 +13,11 @@ Primer incremento de la [arquitectura acordada](arquitectura-servicios.md):
 provincia → autonomía → país y cobertura editorial en el catálogo de medios.
 La lectura pública de agenda enlaza los municipios acreditados sin cambiar
 IDs del núcleo ni resolver NORA por nombres. El tiempo reutiliza las provincias.
-La lectura indexada en Turso se prepara en el siguiente incremento.
+La lectura indexada en Turso está preparada en el PR 144 para revisión.
+La [revisión común de clasificación y territorio](revision.md) concreta el paso
+por fuente, los tres recintos de Madrid acreditados y el desajuste entre los
+códigos municipales de Kulturklik y el servicio NORA. Puede ejecutarse con
+`python -m agenda.revision --entrada exportacion.json` sobre lo ya guardado.
 
 Los eventos puntuales terminados tendrán un tope de **45 días**; temporadas,
 resultados, clasificaciones y entidades reutilizables requieren políticas propias.
@@ -22,9 +32,10 @@ Este incremento no modifica la base remota ni publica servicios.
 
 ## Lectura SQL y API
 
-La siguiente fase añade una proyección pública indexada y rutas comunes CF/Deno,
-con activación independiente del cliente. Contrato, mediciones y condiciones de
-activación en [api-lectura.md](api-lectura.md).
+El PR 144 prepara una proyección pública indexada y rutas comunes CF/Deno,
+con activación independiente del cliente. Implementación, mediciones y condiciones
+de activación en [api-lectura.md](api-lectura.md); su continuación se ordena según
+el contrato de servicios.
 
 ## Madrid, Kulturklik y conexiones públicas
 
@@ -50,8 +61,9 @@ Madrid identifica eventos por `ID-EVENTO`, actividades y recintos por el
 `vgnextoid` de sus URLs oficiales. Conserva `TIPO`, días de semana y exclusiones.
 Los intervalos no se expanden en funciones diarias. Exclusiones malformadas
 quedan como restricciones pendientes y no se ofrecen como fechas confirmadas.
-Kulturklik usa `id`, nombres castellano/euskera juntos y municipios NORA con su
-provincia; las medianoches serializadas no son horarios de inicio. Sus horarios
+Kulturklik usa `id`, nombres castellano/euskera juntos y su campo municipal
+`municipalityNoraCode` con provincia; ese espacio no se equipara al del servicio
+territorial NORA. Las medianoches serializadas no son horarios de inicio. Sus horarios
 se conservan como texto bilingüe. Sin ID de recinto no se agrupan lugares por
 nombre ni se convierten empresas en participantes.
 
@@ -75,6 +87,9 @@ predeterminada del workflow) y publicar la lectura. Una fuente deportiva pendien
 
 ## Ampliación: lectura y recogidas deportivas
 
+La [revisión del encaje deportivo](revision-deportes.md) distingue las capas
+comunes, el estado de F1/tenis/FEB y las relaciones que faltan por acreditar.
+
 El frontend añade agenda, semana y mes y consultas en el feed: `tenis:`,
 `atp: wta:`, `resultados:tenis`, `resultados:atp,wta`, `f1:clasificación`
 y `tenis: circuito:atp,wta`. Los ámbitos se suman sin duplicar citas; un
@@ -88,11 +103,36 @@ horarios, precisión, procedencia, participantes, resultados y tablas actuales.
 Las clasificaciones no son eventos. Vidmar sigue aportando solo calendario:
 una consulta de clasificación de F1 indica que no hay tabla disponible.
 
-El workflow manual **Calendario** incorpora FEB (LF Endesa, temporada
-explícita y dos páginas por pasada) y los scoreboards ATP/WTA (una petición
+El workflow manual **Calendario** incorpora FEB (LF Endesa, Primera FEB o
+LF Challenge, temporada explícita y dos páginas por pasada) y los scoreboards ATP/WTA (una petición
 por circuito). No se acredita cobertura de toda FEB. Las plazas TBD no crean
 personas ficticias. Los fragmentos ESPN se conservan por encuentro para no
 duplicar toda la respuesta al cambiar un marcador.
+
+Cada pasada del workflow revisa todas las fuentes guardadas, incluida FEB,
+con `python -m agenda.revision --turso`, sin escribir ni publicar. El informe
+separa clasificación temática de ubicación acreditada; una sede pendiente no
+impide conservar el partido ni sus relaciones deportivas. Para revisar solo
+FEB: `python -m agenda.revision --turso --fuentes feb`.
+
+Contraste del 25/10/2026 con las dos páginas completas de LF Endesa 2026/2027:
+240 partidos, 16 equipos en la clasificación y 39 marcadores; los 240 eventos
+clasificados como baloncesto y sin ubicación acreditada. La recogida conserva
+competición, edición, fase y equipos mediante sus IDs FEB. No deduce pabellón
+ni municipio desde el nombre del equipo. Es una observación puntual, no una
+garantía de cobertura de otras competiciones o de estabilidad del HTML.
+
+La ampliación y la selección de qué guardar o consultar están en
+[alcance de FEB](feb-alcance.md). Cada partido incorpora un enlace a su ficha
+oficial, que el frontend muestra en los detalles mediante «Ver original».
+No se recorren actas, plantillas ni estadísticas personales. Los marcadores
+y la tabla que ya vienen en las páginas agregadas se conservan como observaciones;
+no hay una recogida adicional de todos los resultados ni actualización en directo.
+
+Para seleccionar otra liga en el workflow se usa `competicion_feb`. En CLI,
+por ejemplo: `python calendario.py --turso --recoger-deporte feb --temporada-feb 2026 --competicion-feb 1`.
+Para inventariar un HTML ya guardado, sin consultar la fuente:
+`python -m agenda.feb_html --entrada /tmp/feb-calendario.html`.
 
 Turso es el estado de trabajo y la publicación lo consulta directamente.
 Las escrituras grandes usan varios envíos HTTP

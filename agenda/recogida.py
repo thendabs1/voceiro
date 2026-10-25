@@ -28,16 +28,20 @@ def tenis(circuito):
     return pagina, url
 
 
-def feb(temporada):
-    from .feb_html import leer
+def feb(temporada, competicion='4'):
+    from .feb_html import COMPETICIONES, catalogo, leer
     if not str(temporada).isdigit() or len(str(temporada)) != 4:
         raise ValueError('La temporada FEB necesita su año inicial explícito')
+    if competicion not in COMPETICIONES:
+        raise ValueError('Competición FEB aún no contrastada')
     base = 'https://baloncestoenvivo.feb.es'
-    calendario_url = f'{base}/calendario/4/{temporada}'
-    resultados_url = f'{base}/resultados/4/{temporada}'
+    calendario_url = f'{base}/calendario/{competicion}/{temporada}'
+    resultados_url = f'{base}/resultados/{competicion}/{temporada}'
     calendario = descargar(calendario_url)
     resultados = descargar(resultados_url)
-    return leer(calendario, resultados, str(temporada), calendario_url, resultados_url)
+    muestra = leer(calendario, resultados, str(temporada), calendario_url, resultados_url, competicion)
+    muestra['catalogo_anunciado'] = catalogo(calendario)
+    return muestra
 
 
 def cultura(fuente, inicio=None, fin=None):

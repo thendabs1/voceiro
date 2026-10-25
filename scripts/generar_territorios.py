@@ -55,6 +55,12 @@ def javascript(administracion):
             + 'export const PROVINCIAS = Object.fromEntries(ADMINISTRACION.provincias.map(([c, n]) => [c, n]));\n')
 
 
+def javascript_paises(paises):
+    return ('// Generado por scripts/generar_territorios.py desde paises.json. No editar.\n'
+            + 'export const PAISES = '
+            + json.dumps(paises, ensure_ascii=False, separators=(',', ':')) + ';\n')
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--municipios', type=Path)
@@ -65,8 +71,11 @@ def main():
     administracion = json.loads((CARPETA / 'administracion.json').read_text())
     js = javascript(administracion)
     destino = CARPETA / 'administracion.js'
+    paises = json.loads((CARPETA / 'paises.json').read_text())
+    js_paises = javascript_paises(paises)
+    destino_paises = CARPETA / 'paises.js'
     if args.check:
-        if destino.read_text() != js:
+        if destino.read_text() != js or destino_paises.read_text() != js_paises:
             raise ValueError('Ejecutar python scripts/generar_territorios.py')
     else:
         if args.municipios:
@@ -82,6 +91,7 @@ def main():
                 '    ' + json.dumps(m, ensure_ascii=False) for m in contenido['municipios']) + '\n  ]\n}\n'
             (CARPETA / 'municipios.json').write_text(texto)
         destino.write_text(js)
+        destino_paises.write_text(js_paises)
 
 
 def _titulo(ruta):

@@ -1,4 +1,4 @@
-"""HTML observado de LF Endesa: dos páginas, sin recorrer fichas personales.
+"""HTML observado de ligas FEB y fichas de partido, sin fichas personales.
 
 No deduce la hora de encuentros ya jugados desde la fecha de jornada. La
 vista de resultados acredita fecha/hora de las jornadas que sí contiene.
@@ -10,6 +10,37 @@ import re
 from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
+
+
+COMPETICIONES = {'4': 'LF ENDESA', '1': 'PRIMERA FEB', '67': 'LF CHALLENGE'}
+
+
+def catalogo(html):
+    """Inventario anunciado por la fuente; no acredita cobertura del lector."""
+    s = BeautifulSoup(html, 'html.parser')
+    competiciones = {}
+    for menu in s.select('.menu-item'):
+        nombre = menu.select_one('.menu-item-liga')
+        if nombre is None:
+            continue
+        for a in menu.select('a[href]'):
+            u = urlparse(a['href'])
+            if u.hostname not in (None, 'baloncestoenvivo.feb.es') or u.path.lower() != '/calendario.aspx':
+                continue
+            q = parse_qs(u.query)
+            g, t = q.get('g', [''])[0], q.get('t', [''])[0]
+            if not g.isdigit() or not t.isdigit():
+                raise ValueError('Menú FEB sin competición y temporada acreditadas')
+            competiciones[(g, t)] = {'id': g, 'nombre': texto(nombre), 'temporada': t,
+                                    'url': a['href'], 'lector_contrastado': g in COMPETICIONES}
+    def opciones(sufijo):
+        campos = s.find_all('select', id=lambda i: i and i.endswith(sufijo))
+        if len(campos) != 1:
+            raise ValueError('Selector FEB ausente o ambiguo: ' + sufijo)
+        return [{'id': o['value'], 'nombre': texto(o), 'seleccionado': o.has_attr('selected')}
+                for o in campos[0].select('option')]
+    return {'competiciones': list(competiciones.values()),
+            'temporadas': opciones('temporadasDropDownList'), 'fases': opciones('gruposDropDownList')}
 
 
 def texto(el):
@@ -54,7 +85,9 @@ def marcador(valor):
     return [int(m[1]), int(m[2])]
 
 
-def leer(calendario, resultados, temporada, calendario_url, resultados_url):
+def leer(calendario, resultados, temporada, calendario_url, resultados_url, competicion='4'):
+    if competicion not in COMPETICIONES:
+        raise ValueError('Competición FEB aún no contrastada')
     c, r = (BeautifulSoup(html, 'html.parser') for html in (calendario, resultados))
     edicion = seleccion(c, 'temporadasDropDownList')
     fase = seleccion(c, 'gruposDropDownList')
@@ -62,14 +95,14 @@ def leer(calendario, resultados, temporada, calendario_url, resultados_url):
         raise ValueError('Las páginas FEB no corresponden a la temporada solicitada')
     if seleccion(r, 'gruposDropDownList') != fase:
         raise ValueError('Las páginas FEB no corresponden a la misma fase')
-    if any(not sopa.select_one('span.liga') or texto(sopa.select_one('span.liga')) != 'LF ENDESA'
+    if any(not sopa.select_one('span.liga') or texto(sopa.select_one('span.liga')) != COMPETICIONES[competicion]
            for sopa in (c, r)):
-        raise ValueError('La cabecera FEB no corresponde a LF Endesa')
-    if not any(parse_qs(urlparse(a.get('href', '')).query).get('g') == ['4']
+        raise ValueError('La cabecera FEB no corresponde a la competición solicitada')
+    if not any(urlparse(a.get('href', '')).hostname in (None, 'baloncestoenvivo.feb.es')
+               and parse_qs(urlparse(a.get('href', '')).query).get('g') == [competicion]
                and parse_qs(urlparse(a.get('href', '')).query).get('t') == [temporada]
-               and parse_qs(urlparse(a.get('href', '')).query).get('nm') == ['lfendesa']
                for a in c.select('a[href]')):
-        raise ValueError('Competición LF Endesa no acreditada')
+        raise ValueError('Competición FEB no acreditada')
     partidos = {}
     tablas = c.find_all('table', id=lambda i: i and 'calendarioRepeater' in i and i.endswith('DataGrid3'))
     if not tablas:
@@ -137,7 +170,17 @@ def leer(calendario, resultados, temporada, calendario_url, resultados_url):
     if not filas or len({f['id'] for f in filas}) != len(filas):
         raise ValueError('Clasificación FEB vacía o con equipos repetidos')
     return {'version_muestra': 1, 'proveedor': 'feb', 'modo': 'recogida_html',
-        'url': calendario_url, 'competicion': {'id': '4', 'nombre': 'LF ENDESA'},
+        'url': calendario_url, 'competicion': {'id': competicion, 'nombre': COMPETICIONES[competicion]},
         'edicion': edicion, 'fase': fase, 'partidos': list(partidos.values()),
         'clasificacion': {'filas': filas}, 'fecha_captura_original': datetime.now(timezone.utc).date().isoformat(),
         'fragmentos': [{'url': calendario_url, 'texto': calendario}, {'url': resultados_url, 'texto': resultados}]}
+
+
+if __name__ == '__main__':
+    import argparse
+    import json
+    from pathlib import Path
+    ap = argparse.ArgumentParser(description='Inventariar el menú y los selectores de una página FEB guardada; sin red')
+    ap.add_argument('--entrada', required=True, help='HTML oficial guardado de calendario o resultados')
+    args = ap.parse_args()
+    print(json.dumps(catalogo(Path(args.entrada).read_text(encoding='utf-8')), ensure_ascii=False, indent=2))
