@@ -1,6 +1,6 @@
 """Fechas civiles e instantes independientes para el contrato v2."""
 
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 
@@ -68,6 +68,15 @@ def validar(cuando):
             ultimo = datetime.fromisoformat(b['fecha'] + 'T' + b['hora_local'])
     if primero is not None and (ultimo < primero or (exclusivo and ultimo == primero)):
         raise ValueError('Fin anterior al inicio o intervalo exclusivo vacío')
+    if 'dias_semana' in cuando and (not isinstance(cuando['dias_semana'], list)
+            or not cuando['dias_semana'] or any(type(d) is not int or not 0 <= d <= 6
+                                               for d in cuando['dias_semana'])):
+        raise ValueError('Días de semana inválidos')
+    if 'dias_excluidos' in cuando:
+        if not isinstance(cuando['dias_excluidos'], list):
+            raise ValueError('Días excluidos inválidos')
+        for d in cuando['dias_excluidos']:
+            date.fromisoformat(d)
     return cuando
 
 
@@ -91,6 +100,17 @@ def en_intervalo(cuando, inicio, fin, zona='Europe/Madrid'):
     primero, ultimo = date.fromisoformat(inicio), date.fromisoformat(fin)
     if ultimo <= primero:
         raise ValueError('Ventana de consulta vacía')
+    if cuando.get('dias_semana') or cuando.get('dias_excluidos'):
+        sin_reglas = {k: v for k, v in cuando.items() if k not in ('dias_semana', 'dias_excluidos')}
+        dia = primero
+        while dia < ultimo:
+            siguiente = dia + timedelta(days=1)
+            if (('dias_semana' not in cuando or dia.weekday() in cuando['dias_semana'])
+                    and dia.isoformat() not in cuando.get('dias_excluidos', ())
+                    and en_intervalo(sin_reglas, dia.isoformat(), siguiente.isoformat(), zona)):
+                return True
+            dia = siguiente
+        return False
     a, b = cuando['inicio'], cuando['fin']
     if a['certeza_fecha'] != 'confirmado':
         return False

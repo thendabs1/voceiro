@@ -12,33 +12,33 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=4c28597024';
+} from './parser.js?v=b66c1c82c8';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=4c28597024';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=4c28597024';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=4c28597024';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=4c28597024';
-import { comparador } from './busqueda/orden.js?v=4c28597024';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=b66c1c82c8';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b66c1c82c8';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b66c1c82c8';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=b66c1c82c8';
+import { comparador } from './busqueda/orden.js?v=b66c1c82c8';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=4c28597024';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=4c28597024';
+} from './sync/fusion.js?v=b66c1c82c8';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b66c1c82c8';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=4c28597024';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=4c28597024';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=b66c1c82c8';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b66c1c82c8';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=4c28597024';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b66c1c82c8';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=4c28597024';
+} from './tiempo/avisos.js?v=b66c1c82c8';
 
-import { I18N, traducir } from './idiomas/index.js?v=4c28597024';
-import { AMBITOS, leerConsultaCalendario, seleccionCalendario, temasDescendientes, noticiaEnAmbitos } from './calendario/consulta.js?v=4c28597024';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, enDia, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=4c28597024';
+import { I18N, traducir } from './idiomas/index.js?v=b66c1c82c8';
+import { AMBITOS, leerConsultaCalendario, seleccionCalendario, temasDescendientes, noticiaEnAmbitos } from './calendario/consulta.js?v=b66c1c82c8';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, enDia, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=b66c1c82c8';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1951,7 +1951,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=4c28597024');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=b66c1c82c8');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3499,7 +3499,7 @@ function wireAutocomplete(){
 const CALENDARIO = {
   abierto: false, orden: null, datos: null, cargando: false, error: false, intentado: false,
   fecha: '', vista: 'agenda', zona: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid',
-  temas: new Set(), circuitos: new Set(), fuente: '', objetivo: '', clave: '', controller: null,
+  temas: new Set(), circuitos: new Set(), fuente: '', objetivo: '', lugar: '', clave: '', controller: null,
   origen: null, scroll: 0, cargado: 0,
 };
 const iconoCalendario = () => '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg>';
@@ -3563,7 +3563,7 @@ async function cargarCalendario(renovar = false){
 function actualizarConsultaCalendario(orden){
   const s = CALENDARIO, clave = JSON.stringify(orden);
   if (clave !== s.clave){
-    s.clave = clave; s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = '';
+    s.clave = clave; s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = ''; s.lugar = '';
     const fecha = parseQuery(orden?.resto || '').desde;
     s.fecha = fecha || (orden?.tipos.includes('resultados') ? sumarDiasCalendario(calHoy(), -7) : calHoy());
   }
@@ -3596,7 +3596,9 @@ function cerrarCalendario(volver = true){
 function calHora(e){
   const c = e.programacion?.valor?.cuando;
   const a = extremoVisible(c?.inicio, CALENDARIO.zona), b = extremoVisible(c?.fin, CALENDARIO.zona);
-  if (!a.fecha) return t('calFechaPendiente');
+  if (!a.fecha) return c?.restricciones_pendientes ? t('calHorarioRevisar') : t('calFechaPendiente');
+  if (e.programacion?.valor?.modalidad === 'intervalo') return calFecha(a.fecha)
+    + (b.fecha ? ' → ' + calFecha(b.fecha) : '') + ' · ' + t('calPeriodo');
   let s = a.hora || t('calSinHora');
   if (a.hora && a.sinZona) s += ' · ' + t('calSinZona');
   if (b.fecha) s += ' → ' + calFecha(b.fecha) + (b.hora ? ' ' + b.hora : '')
@@ -3607,7 +3609,7 @@ function calLugar(e){
   const v = e.lugar?.valor;
   if (!v) return '';
   if (typeof v === 'string') return v;
-  return [v.nombre || v.fullName || v.displayName, v.municipio_literal || v.address?.city].filter(Boolean).join(' · ');
+  return [v.nombre || v.fullName || v.displayName, v.municipio_literal || v.municipio || v.address?.city].filter(Boolean).join(' · ');
 }
 const CAL_METRICAS = {
   'baloncesto.puntos': 'calPuntos', 'baloncesto.partidos_jugados': 'calPJ',
@@ -3647,18 +3649,23 @@ function calEvento(e){
   const v = e.programacion?.valor, estado = v?.programacion;
   const aviso = e.programacion?.conflicto || e.lugar?.conflicto || e.resultado?.seleccion?.conflicto;
   const ejecucion = v?.ejecucion;
+  const horario = v?.cuando?.horario_textual;
+  const textoHorario = typeof horario === 'string' ? horario : horario?.[ACCES.lang] || horario?.es || Object.values(horario || {})[0];
+  const dias = v?.cuando?.dias_semana?.map(d => calFecha(sumarDiasCalendario('2026-10-19', d), { weekday: 'short', day: undefined, month: undefined })).join(', ');
   return `<article class="cal-evento"><h3>${calEsc(calNombre(e))}</h3>
     <p class="cal-cuando">${calEsc(calHora(e))}</p>${calLugar(e) ? `<p>${calEsc(calLugar(e))}</p>` : ''}
+    ${textoHorario || dias ? `<p class="cal-nota">${calEsc([dias, textoHorario].filter(Boolean).join(' · '))}</p>` : ''}
     ${estado === 'cancelado' || estado === 'aplazado' ? `<p class="cal-aviso">${calEsc(t(estado === 'cancelado' ? 'calCancelado' : 'calAplazado'))}</p>` : ''}
     ${ejecucion === 'en_curso' || ejecucion === 'terminado' ? `<p class="cal-nota">${calEsc(t(ejecucion === 'en_curso' ? 'calEnCurso' : 'calTerminado'))}</p>` : ''}
     ${aviso ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}
     ${calResultado(e)}<details><summary>${calEsc(t('calDetalles'))}</summary>
     ${e.participaciones.length ? `<ul>${e.participaciones.map(p => `<li>${calEsc(p.literal)}</li>`).join('')}</ul>` : ''}
+    ${(e.enlaces || []).map(url => `<p>${calEnlace(url, t('calVerOriginal'))}</p>`).join('')}
     ${calFuentes(e)}</details></article>`;
 }
 function calClasificacion(tabla){
   const d = CALENDARIO.datos, e = d.entidades[`${tabla.ambito.tipo}:${tabla.ambito.id}`];
-  const nombres = tabla.objetivos.map(k => d.entidades[k]).filter(x => x && x.clase !== 'fase').map(calNombre);
+  const nombres = e.objetivos.map(k => d.entidades[k]).filter(x => x && x.clase !== 'fase').map(calNombre);
   const f = tabla.seleccion.procedencia;
   return `<article class="cal-clasificacion"><h3>${calEsc([...new Set(nombres)].join(' · ') || calNombre(e))}</h3>
     ${calTabla(tabla.filas, calNombre(e), true)}
@@ -3674,11 +3681,14 @@ function calFiltros(){
     [...temasDescendientes(d.catalogo, [id])].some(t => directos.has(t)));
   const circuitos = Object.values(d.entidades).flatMap(e => e.codigos).filter((x, i, a) => a.indexOf(x) === i);
   const option = (valor, label, elegido) => `<option value="${calEsc(valor)}"${elegido === valor ? ' selected' : ''}>${calEsc(label)}</option>`;
-  const objetivos = Object.entries(d.entidades).filter(([, e]) => ['agrupacion', 'actividad', 'participante'].includes(e.tipo));
+  const utilizados = new Set([...d.eventos, ...d.clasificaciones].flatMap(e => e.objetivos));
+  const objetivos = Object.entries(d.entidades).filter(([k, e]) => utilizados.has(k) && ['agrupacion', 'actividad', 'participante'].includes(e.tipo));
+  const lugares = Object.entries(d.entidades).filter(([k, e]) => utilizados.has(k) && ['lugar', 'territorio'].includes(e.tipo));
   return `<details class="cal-filtros"><summary>${calEsc(t('calFiltros'))}</summary>
     <fieldset><legend>${calEsc(t('calTemas'))}</legend><div class="cal-chips">${temas.map(([i, tema]) => calBoton('tema', calNombre(tema), i, `aria-pressed="${s.temas.has(i)}"`)).join('')}</div></fieldset>
     ${circuitos.length ? `<fieldset><legend>${calEsc(t('calCircuitos'))}</legend><div class="cal-chips">${circuitos.map(i => calBoton('circuito', i.toUpperCase(), i, `aria-pressed="${s.circuitos.has(i)}"`)).join('')}</div></fieldset>` : ''}
     <div class="cal-campos"><label>${calEsc(t('calObjetivo'))}<select id="cal-objetivo">${option('', t('calTodos'), s.objetivo)}${objetivos.sort((a,b) => calNombre(a[1]).localeCompare(calNombre(b[1]))).map(([k,e]) => option(k, calNombre(e), s.objetivo)).join('')}</select></label>
+    <label>${calEsc(t('calLugar'))}<select id="cal-lugar">${option('', t('calTodos'), s.lugar)}${lugares.sort((a,b) => calNombre(a[1]).localeCompare(calNombre(b[1]))).map(([k,e]) => option(k, calNombre(e) + ' · ' + (e.tipo === 'lugar' ? t('calRecinto') : t('calMunicipio')), s.lugar)).join('')}</select></label>
     <label>${calEsc(t('calFuente'))}<select id="cal-fuente">${option('', t('calTodas'), s.fuente)}${Object.entries(d.fuentes).map(([i, f]) => option(i, f.nombre, s.fuente)).join('')}</select></label>
     <label>${calEsc(t('calZona'))}<select id="cal-zona">${[...new Set([s.zona, 'Europe/Madrid', 'Atlantic/Canary', 'UTC'])].map(z => option(z, z, s.zona)).join('')}</select></label></div>
     ${calBoton('limpiar', t('calLimpiar'))}</details>`;
@@ -3687,7 +3697,7 @@ function calContenido(){
   const s = CALENDARIO, d = s.datos;
   if (!d) return '';
   const orden = s.orden || {}, { eventos, clasificaciones } = seleccionCalendario(d, orden, {
-    temas: [...s.temas], circuitos: [...s.circuitos], fuente: s.fuente, objetivo: s.objetivo,
+    temas: [...s.temas], circuitos: [...s.circuitos], fuente: s.fuente, objetivo: s.objetivo, lugar: s.lugar,
   });
   const tipos = new Set(orden.tipos || []), soloTablas = tipos.size && !tipos.has('calendario') && !tipos.has('resultados');
   const mostrarEventos = !soloTablas, mostrarTablas = !tipos.size || tipos.has('clasificaciones');
@@ -3714,6 +3724,10 @@ function calContenido(){
         ${calBoton('dia', calFecha(dia, { month: undefined }), dia, `${dia === calHoy() ? 'aria-current="date"' : ''} aria-label="${calEsc(calFecha(dia, { weekday: 'long' }))} · ${lista.length}"`)}
         ${lista.slice(0,2).map(e => calBoton('evento', `${extremoVisible(e.programacion?.valor?.cuando?.inicio,s.zona).hora || '·'} ${calNombre(e)}`, e.id, 'class="cal-mini-evento"')).join('')}
         ${lista.length > 2 ? calBoton('dia', t('calMas', { n: lista.length - 2 }), dia) : ''}</div>`).join('')}</div>`;
+    } else if (s.vista === 'agenda') {
+      const intervalos = elegidos.filter(e => ids.has(e.id) && e.programacion?.valor?.modalidad === 'intervalo');
+      html += `<div class="cal-agenda">${[...porDia].map(([dia, lista]) => [dia, lista.filter(e => e.programacion?.valor?.modalidad !== 'intervalo')]).filter(([, lista]) => lista.length).map(([dia, lista]) => `<section class="cal-dia"><h2>${calEsc(calFecha(dia, { weekday: 'long' }))}</h2>${lista.map(calEvento).join('')}</section>`).join('')}
+        ${intervalos.length ? `<section class="cal-dia cal-intervalos"><h2>${calEsc(t('calProgramaciones'))}</h2><p class="cal-nota">${calEsc(t('calProgramacionesNota'))}</p>${intervalos.map(calEvento).join('')}</section>` : ''}</div>`;
     } else {
       html += `<div class="${s.vista === 'semana' ? 'cal-semana' : 'cal-agenda'}">${[...porDia].filter(([, l]) => l.length || s.vista === 'semana').map(([dia, lista]) => `<section class="cal-dia"><h2>${calEsc(calFecha(dia, { weekday: 'long' }))}</h2>${lista.map(calEvento).join('') || `<p class="cal-nota">${calEsc(t('calSinCitas'))}</p>`}</section>`).join('')}</div>`;
     }
@@ -3775,7 +3789,7 @@ function wireCalendario(){
       const set = a === 'tema' ? s.temas : s.circuitos;
       set.has(v) ? set.delete(v) : set.add(v);
     }
-    if (a === 'limpiar'){ s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = ''; }
+    if (a === 'limpiar'){ s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = ''; s.lugar = ''; }
     if (a === 'evento'){
       const evento = s.datos.eventos.find(x => x.id === v), dialogo = document.getElementById('cal-evento-dialogo');
       dialogo.innerHTML = `<form method="dialog"><button autofocus>${calEsc(t('calCerrar'))}</button></form>${calEvento(evento)}`;
@@ -3788,6 +3802,7 @@ function wireCalendario(){
     if (id === 'cal-fecha' && fechaValida(v)) s.fecha = v;
     if (id === 'cal-fuente') s.fuente = v;
     if (id === 'cal-objetivo') s.objetivo = v;
+    if (id === 'cal-lugar') s.lugar = v;
     if (id === 'cal-zona') s.zona = v;
     pintarCalendario();
   });
@@ -4256,7 +4271,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=4c28597024')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=b66c1c82c8')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }

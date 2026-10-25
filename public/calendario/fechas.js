@@ -25,6 +25,9 @@ export function extremoVisible(e, zona){
 }
 export function enDia(cuando, dia, zona){
   if (!cuando) return false;
+  if (cuando.dias_excluidos?.includes(dia)) return false;
+  const semana = (new Date(dia + 'T12:00:00Z').getUTCDay() + 6) % 7;
+  if (cuando.dias_semana && !cuando.dias_semana.includes(semana)) return false;
   const a = extremoVisible(cuando.inicio, zona), b = extremoVisible(cuando.fin, zona);
   if (!a.fecha || a.fecha > dia) return false;
   if (!b.fecha) return a.fecha === dia;

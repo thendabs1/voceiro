@@ -1,5 +1,52 @@
 # Calendario común
 
+## Madrid, Kulturklik y conexiones públicas
+
+El workflow **Calendario** permite recoger Madrid y Kulturklik con el campo
+`cultura`; `fuente: ninguna` evita volver a recoger el piloto. También se pueden
+recoger juntas por CLI:
+
+```sh
+python calendario.py --turso --recoger-cultura madrid --recoger-cultura kulturklik \
+  --inicio 2026-10-25 --fin 2026-11-24
+```
+
+La ventana es inclusiva (31 días por defecto, máximo 91). Se comprueban todas
+las páginas del catálogo antes de filtrar por solapamiento e importar; cambios
+de total, páginas repetidas, truncamiento o descarga fallida impiden guardar.
+Las dos agendas se guardan en una sola transacción. El workflow trabaja
+directamente con Turso, sin copias de recuperación ni artefactos intermedios.
+Una pasada diaria a las **04:30 UTC**
+(05:30 en Madrid en invierno, 06:30 en verano) recoge Galicia, Madrid y Kulturklik
+y publica al terminar correctamente. Los deportes siguen siendo manuales.
+
+Madrid identifica eventos por `ID-EVENTO`, actividades y recintos por el
+`vgnextoid` de sus URLs oficiales. Conserva `TIPO`, días de semana y exclusiones.
+Los intervalos no se expanden en funciones diarias. Exclusiones malformadas
+quedan como restricciones pendientes y no se ofrecen como fechas confirmadas.
+Kulturklik usa `id`, nombres castellano/euskera juntos y municipios NORA con su
+provincia; las medianoches serializadas no son horarios de inicio. Sus horarios
+se conservan como texto bilingüe. Sin ID de recinto no se agrupan lugares por
+nombre ni se convierten empresas en participantes.
+
+Referencias: [Madrid](https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos),
+[estructura oficial de junio de 2026](https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos/resource/300107-4-agenda-actividades-eventos/download/300107-4-agenda-actividades-eventos.pdf),
+[API Kulturklik](https://opendata.euskadi.eus/api-culture/?api=culture_events),
+[ficha estatal y licencia de Kulturklik](https://datos.gob.es/es/catalogo/a16003011-agenda-cultural-proximos-eventos1).
+Ambas CC BY 4.0, con atribución y enlace al original en la lectura.
+
+La proyección pública incluye participantes y miembros de pareja exclusivamente
+dentro del ámbito acreditado, además de competición → edición → encuentro y
+actividad → celebraciones. El navegador cruza estos objetivos con fuente,
+tema y municipio/recinto. Los recintos del piloto se conectan con sus municipios
+declarados, sin convertir aún INE de seis dígitos ni NORA en el catálogo del tiempo.
+La agenda muestra una sola ficha por programación prolongada en cada ventana;
+semana y mes muestran su presencia en días permitidos, sin crear nuevos eventos.
+
+Para habilitar las nuevas agendas públicas después de recogerlas, establecer
+`CALENDARIO_FUENTES_PUBLICAS=cultura-galicia,madrid,kulturklik` (selección
+predeterminada del workflow) y publicar la lectura. Una fuente deportiva pendiente no se habilita por añadir estas agendas.
+
 ## Ampliación: lectura y recogidas deportivas
 
 El frontend añade agenda, semana y mes y consultas en el feed: `tenis:`,
@@ -21,19 +68,19 @@ por circuito). No se acredita cobertura de toda FEB. Las plazas TBD no crean
 personas ficticias. Los fragmentos ESPN se conservan por encuentro para no
 duplicar toda la respuesta al cambiar un marcador.
 
-Turso es el estado de trabajo. Los JSON y SQLite del artefacto son exportaciones
-y copias de recuperación. Las escrituras grandes usan varios envíos HTTP
+Turso es el estado de trabajo y la publicación lo consulta directamente.
+Las escrituras grandes usan varios envíos HTTP
 unidos por el baton del protocolo v2, con un único COMMIT y rollback completo
 ante errores. No se reintenta automáticamente una escritura con respuesta perdida.
 
 La publicación en R2 es explícita: usa la variable del repositorio
 `CALENDARIO_FUENTES_PUBLICAS` (IDs separados por comas; por defecto
-`cultura-galicia`). Sin seleccionar fuentes se genera la lectura de revisión,
-que no se puede subir como pública. Añadir un recolector no habilita
-republicación ni cron; las condiciones pendientes siguen documentadas.
+`cultura-galicia,madrid,kulturklik`). Sin seleccionar fuentes se genera la lectura de revisión,
+que no se puede subir como pública. La pasada diaria incluye solo las agendas
+culturales; las fuentes con condiciones pendientes no se habilitan automáticamente.
 `calendario.json` se sustituye como objeto completo y su caché dura 60 s.
 
-No se añade filtro de ciudades: su conexión con tiempo y noticias requiere
+La conexión de municipios con tiempo y noticias requiere todavía
 correspondencias verificadas por INE. Las noticias de las consultas temáticas
 se seleccionan por texto del titular; todavía no se enlazan automáticamente
 con encuentros o participantes.

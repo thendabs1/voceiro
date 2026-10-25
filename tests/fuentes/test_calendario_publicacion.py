@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from agenda import espn_tenis, feb, nucleo, recogida
 from agenda.feb_html import leer
-from agenda.publicacion import proyectar, subir
+from agenda.publicacion import main as publicar, proyectar, subir
 from agenda.transicion import ampliar
 from agenda.turso_lotes import ClienteCalendario
 from turso_http import ErrorTurso
@@ -34,6 +34,37 @@ def html_feb():
 
 
 class Lectura(unittest.TestCase):
+    def test_publicacion_directa_desde_turso_sin_archivos_intermedios(self):
+        calendario = ampliar(construir([ficha()]))
+        with patch('agenda.turso.Almacen') as remoto, patch('agenda.publicacion.subir') as subir_lectura, patch('calendario.guardar') as archivo:
+            remoto.return_value.cargar.return_value = calendario
+            publicar(['--turso', '--fuentes', 'cultura-galicia', '--publicar'])
+            remoto.return_value.cargar.assert_called_once_with()
+            subir_lectura.assert_called_once()
+            self.assertEqual(len(subir_lectura.call_args.args[0]['eventos']), 1)
+            self.assertFalse(subir_lectura.call_args.args[0]['revision'])
+            archivo.assert_not_called()
+
+    def test_objetivos_publicos_coinciden_con_consultas_del_nucleo_y_ambitos_de_pareja(self):
+        n = espn_tenis.importar(None, tenis(), 'wta', AHORA)
+        n = feb.importar(n, html_feb(), AHORA)
+        pareja = next(e for e in n['entidades'].values() if e['clase'] == 'pareja')
+        # La misma pareja puede aparecer fuera del encuentro que acredita sus integrantes.
+        c = nucleo.Constructor(n)
+        doc = next(d['id'] for d in n['documentos'].values() if d['fuente'] == 'espn-wta')
+        extra, ev = c.entidad('espn-wta', 'prueba_ambito', 'fuera', {}, 'evento', 'encuentro',
+            {'es': 'Encuentro fuera del ámbito acreditado'}, doc, '/prueba', AHORA)
+        c.participar(extra, 'local', nucleo.objetivo('participante', pareja['id']), 'Pareja', 'local', ev)
+        n = c.terminar()
+        p = proyectar(n)
+        for k, e in n['entidades'].items():
+            if e['tipo'] not in ('agrupacion', 'actividad', 'participante'):
+                continue
+            esperado = set(nucleo.eventos_alcanzados(n, nucleo.objetivo(e['tipo'], e['id'])))
+            observado = {ev['id'] for ev in p['eventos'] if k in ev['objetivos']}
+            self.assertEqual(observado, esperado, (e['clase'], e['nombres']))
+        self.assertNotIn('espn-wta', json.dumps(proyectar(n, ['feb'])))
+
     def test_una_hora_cero_con_aviso_no_se_muestra_como_confirmada(self):
         c = construir([ficha(data={'dataInicio': '2026-10-26 00:00:00', 'dataFin': None})])
         p = proyectar(ampliar(c)['nucleo'])

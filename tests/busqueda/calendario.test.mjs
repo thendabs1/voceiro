@@ -71,3 +71,22 @@ test('intervalos exclusivos, fin desconocido y cambio de hora conservan los día
   assert.equal(ventanaCalendario('2026-10-25','mes').length, 42);
   assert.equal(moverFecha('2026-01-31', 'mes', 1), '2026-02-01');
 });
+test('programaciones culturales respetan días de semana y exclusiones en cualquier zona', () => {
+  const c = { inicio: extremo('2026-10-19'), fin: extremo('2026-10-31'), fin_exclusivo: false,
+    dias_semana: [0, 2, 4], dias_excluidos: ['2026-10-23'] };
+  for (const zona of ['Europe/Madrid', 'America/New_York']){
+    assert.equal(enDia(c, '2026-10-19', zona), true);
+    assert.equal(enDia(c, '2026-10-20', zona), false);
+    assert.equal(enDia(c, '2026-10-23', zona), false);
+    assert.equal(enDia(c, '2026-10-30', zona), true);
+  }
+});
+test('participante y lugar se cruzan con fuente y texto sin ampliar la selección', () => {
+  const d = structuredClone(datos), partido = d.eventos[1];
+  d.entidades['participante:ana'] = { ...e('ana', []), tipo: 'participante', nombres: { es: 'Ana' } };
+  d.entidades['territorio:lugar'] = { ...e('lugar', []), tipo: 'territorio' };
+  partido.objetivos.push('participante:ana', 'territorio:lugar');
+  const filtros = { objetivo: 'participante:ana', lugar: 'territorio:lugar', fuente: 'prueba' };
+  assert.deepEqual(seleccionCalendario(d, orden('tenis: Ana'), filtros).eventos.map(e => e.id), ['WTA dobles']);
+  assert.deepEqual(seleccionCalendario(d, orden('tenis:'), { ...filtros, lugar: 'otro' }).eventos, []);
+});
