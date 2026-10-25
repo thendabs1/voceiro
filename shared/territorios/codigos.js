@@ -1,12 +1,23 @@
 // El catálogo municipal completo se proporciona solo donde sea necesario.
 // El tiempo sigue cargando sus sugerencias AEMET bajo demanda.
 import { ADMINISTRACION } from './administracion.js';
+import { PAISES } from './paises.js';
 
 export { PROVINCIAS } from './administracion.js';
 
-export function crearCatalogo(municipios, administracion = ADMINISTRACION) {
-  const entidades = new Map([['pais:ES', { id: 'pais:ES', tipo: 'pais', nombre: 'España', padre: null }]]);
-  const codigos = new Map([['iso3166-1:alpha2|ES', 'pais:ES']]);
+export function crearCatalogo(municipios, administracion = ADMINISTRACION, paises = PAISES) {
+  const entidades = new Map();
+  const codigos = new Map();
+  for (const [codigo, nombre, editorial] of paises.paises) {
+    const id = `pais:${codigo}`;
+    if (typeof codigo !== 'string' || !/^[A-Z]{2}$/.test(codigo) || entidades.has(id) || !nombre
+        || (editorial !== null && (!editorial || codigos.has(`medios:pais|${editorial}`)))) {
+      throw new Error('País o código editorial inválido o duplicado');
+    }
+    entidades.set(id, { id, tipo: 'pais', nombre, padre: null });
+    codigos.set(`iso3166-1:alpha2|${codigo}`, id);
+    if (editorial !== null) codigos.set(`medios:pais|${editorial}`, id);
+  }
   const agregar = (tipo, codigo, nombre, padre, sistema) => {
     const id = `es:${tipo}:${codigo}`;
     if (entidades.has(id) || !entidades.has(padre) || !nombre) throw new Error('Territorio duplicado o sin padre/nombre');
@@ -27,7 +38,7 @@ export function crearCatalogo(municipios, administracion = ADMINISTRACION) {
       agregar('municipio', codigo, nombre, `es:provincia:${codigo.slice(0, 2)}`, 'ine:municipio'));
   }
   return {
-    version: [administracion.version, municipios.version],
+    version: [administracion.version, municipios.version, paises.version],
     fecha_referencia: municipios.fecha_referencia,
     resolver(sistema, codigo) {
       if (typeof codigo !== 'string') return null;

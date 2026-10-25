@@ -8,8 +8,9 @@ import unittest
 from unittest.mock import patch
 
 from agenda import espn_tenis, feb, nucleo, recogida
-from agenda.feb_html import leer
+from agenda.feb_html import catalogo, leer
 from agenda.publicacion import main as publicar, proyectar, subir
+from agenda.revision import main as revisar_guardado
 from agenda.transicion import ampliar
 from agenda.turso_lotes import ClienteCalendario
 from turso_http import ErrorTurso
@@ -139,6 +140,57 @@ class Lectura(unittest.TestCase):
 
 
 class RecolectorFEB(unittest.TestCase):
+    def test_cli_selecciona_competicion_sin_recorrer_fichas(self):
+        from calendario import main
+        m = leer(*[(MUESTRAS / f'feb-primera-{tipo}.html').read_text()
+                   for tipo in ('calendario', 'resultados')], '2026', 'calendario', 'resultados', '1')
+        with patch('agenda.turso.Almacen') as remoto, patch('agenda.recogida.feb', return_value=m) as recoger:
+            remoto.return_value.cargar.return_value = ampliar(construir([ficha()]))
+            main(['--turso', '--recoger-deporte', 'feb', '--temporada-feb', '2026', '--competicion-feb', '1'])
+            recoger.assert_called_once_with('2026', '1')
+            guardado = remoto.return_value.guardar.call_args.args[0]['nucleo']
+            self.assertEqual(len(proyectar(guardado, ['feb'])['eventos']), 3)
+
+    def test_otras_ligas_contrastadas_y_catalogo_anunciado_son_distintos(self):
+        for nombre, codigo in (('primera', '1'), ('challenge', '67')):
+            c, r = [(MUESTRAS / f'feb-{nombre}-{tipo}.html').read_text()
+                    for tipo in ('calendario', 'resultados')]
+            m = leer(c, r, '2026', 'calendario', 'resultados', codigo)
+            self.assertEqual(m['competicion']['id'], codigo)
+            self.assertEqual(len(m['partidos']), 3)
+            n = feb.importar(None, m, AHORA)
+            eventos = proyectar(n, ['feb'])['eventos']
+            self.assertEqual(len(eventos), 3)
+            self.assertEqual({e['enlaces'][0] for e in eventos}, {
+                f'https://baloncestoenvivo.feb.es/partido/{p["id"]}' for p in m['partidos']})
+            with patch('agenda.recogida.descargar', side_effect=[c, r]) as descargar:
+                self.assertEqual(recogida.feb('2026', codigo)['competicion']['id'], codigo)
+                self.assertEqual(descargar.call_count, 2)
+            with self.assertRaisesRegex(ValueError, 'cabecera'):
+                leer(c, r, '2026', 'calendario', 'resultados', '4')
+        inventario = catalogo((MUESTRAS / 'feb-junior-catalogo.html').read_text())
+        self.assertEqual(len(inventario['competiciones']), 24)
+        self.assertEqual(len(inventario['fases']), 11)
+        self.assertEqual(sum(f['seleccionado'] for f in inventario['fases']), 1)
+        self.assertFalse(next(c for c in inventario['competiciones'] if c['id'] == '21')['lector_contrastado'])
+        with self.assertRaisesRegex(ValueError, 'no contrastada'):
+            leer('', '', '2025', '', '', '21')
+
+    def test_feb_pasa_por_revision_comun_desde_turso_sin_escribir(self):
+        n = feb.importar(None, html_feb(), AHORA)
+        with patch('agenda.turso.Almacen') as remoto, patch('sys.stdout', new_callable=io.StringIO) as salida:
+            remoto.return_value.cargar.return_value = {'nucleo': n}
+            revisar_guardado(['--turso', '--fuentes', 'feb'])
+            informe = json.loads(salida.getvalue())
+            self.assertEqual(informe['fuentes'], {'feb': {
+                'eventos': 3, 'temas': {'clasificados': 3, 'pendientes': 0},
+                'ubicacion': {'pendiente': 3}}})
+            self.assertEqual(remoto.return_value.method_calls, [unittest.mock.call.cargar()])
+        with patch('agenda.turso.Almacen') as remoto:
+            remoto.return_value.cargar.return_value = None
+            with self.assertRaisesRegex(ValueError, 'Preparar el núcleo'):
+                revisar_guardado(['--turso'])
+
     def test_html_retiene_identidad_fechas_marcadores_y_tabla(self):
         m = html_feb()
         n = feb.importar(None, m, AHORA)

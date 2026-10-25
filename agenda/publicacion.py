@@ -14,6 +14,7 @@ import os
 from . import nucleo
 from .tiempos import instante
 from shared.territorios import cargar as cargar_territorios
+from shared.territorios.relacionador import cargar as cargar_relacionador
 
 
 def proyectar(n, fuentes=None, generado=None):
@@ -92,21 +93,63 @@ def proyectar(n, fuentes=None, generado=None):
                 'procedencia': procedencia(s['observacion'])}
 
     territorios = cargar_territorios()
+    relacionador = cargar_relacionador()
+
+    def pruebas_origen(k, bloque=None):
+        return [{**procedencia(i), 'observacion': i, 'documento': observaciones[i]['documento'],
+                 'sha256': n['documentos'][observaciones[i]['documento']]['huella'],
+                 'ruta': observaciones[i]['ruta']}
+                for i in sorted(n['entidades'][k]['evidencias']) if i in observaciones and i in activas
+                and (bloque is None or bloque in observaciones[i]['bloques'])]
+
+    def resolver_entidad(e, referencias, operacion, origen, conflicto=False):
+        resultados = [getattr(relacionador, operacion)(r) for r in referencias]
+        for resultado in resultados:
+            resultado['origen'] = deepcopy(origen)
+        ids = {r['territorio'] for r in resultados if r['estado'] == 'resuelto'}
+        estado = ('conflicto' if conflicto or len(ids) > 1 or any(r['estado'] == 'conflicto' for r in resultados)
+                  else 'resuelto' if resultados and all(r['estado'] == 'resuelto' for r in resultados)
+                  else 'pendiente')
+        prefijo = 'territorio' if operacion == 'resolver_referencia' else 'ubicacion'
+        e[prefijo + '_resoluciones'] = resultados
+        e[prefijo + '_estado'] = estado
+        e[prefijo + '_motivo'] = ('identificadores_en_conflicto' if conflicto else
+            'referencias_incompatibles' if len(ids) > 1 else 'sin_referencia' if not resultados else
+            next((r['motivo'] for r in resultados if r['estado'] != 'resuelto'), 'correspondencia_acreditada'))
+        e[prefijo + '_comun'] = territorios.territorio(next(iter(ids))) if estado == 'resuelto' else None
+
     for k, e in entidades.items():
+        if e['tipo'] == 'lugar':
+            # El recinto mantiene su identidad; se resuelve su ubicación, no su equivalencia.
+            referencias = {r['id']: r for o in pruebas_origen(k)
+                           if (r := n['referencias'][o['referencia']])['proveedor'] == 'madrid'
+                           and r['tipo_externo'] == 'instalacion_vgnextoid'}
+            if referencias:
+                resolver_entidad(e, [{'sistema': 'madrid:instalacion_vgnextoid',
+                                      'codigo': r['id_externo'], 'contexto': {}}
+                                     for r in referencias.values()], 'resolver_ubicacion', pruebas_origen(k))
+            continue
         if e['tipo'] != 'territorio':
             continue
         identificadores = seleccion(k, 'identificadores')
-        valor = (identificadores or {}).get('valor') or {}
-        comun = None
-        if not (identificadores or {}).get('conflicto'):
-            # Cada espacio de códigos tiene su cruce explícito. NORA queda pendiente.
-            if valor.get('ine_cpro_cmun_dc'):
-                comun = territorios.resolver('ine:municipio:dc', valor['ine_cpro_cmun_dc'])
-            elif valor.get('ine'):
-                comun = territorios.resolver('ine:municipio', valor['ine'])
-        e['territorio_comun'] = comun
-        e['territorio_estado'] = ('conflicto' if (identificadores or {}).get('conflicto')
-                                  else 'resuelto' if comun else 'pendiente')
+        origen = pruebas_origen(k, 'identificadores')
+        valores = [((identificadores or {}).get('valor') or {},
+                    (identificadores or {}).get('procedencia', {}).get('fuente'))]
+        if (identificadores or {}).get('conflicto'):
+            valores = [(observaciones[o['observacion']]['bloques']['identificadores'], o['fuente']) for o in origen]
+        referencias = []
+        for valor, proveedor in valores:
+            referencias.extend({'sistema': sistema, 'codigo': valor[campo], 'contexto': {}}
+                               for campo, sistema in (('ine_cpro_cmun_dc', 'ine:municipio:dc'), ('ine', 'ine:municipio'))
+                               if campo in valor)
+            if 'nora' in valor:
+                kulturklik = proveedor == 'kulturklik'
+                referencias.append({'sistema': 'kulturklik:municipio_nora' if kulturklik else 'nora:municipio',
+                    'codigo': valor['nora'],
+                    'contexto': {('provincia_nora' if kulturklik else 'provincia'): valor['provincia_nora']}
+                                if 'provincia_nora' in valor else {}})
+        resolver_entidad(e, referencias, 'resolver_referencia', origen,
+                         conflicto=(identificadores or {}).get('conflicto', False))
 
     participaciones = {i: {c: deepcopy(p[c]) for c in
         ('id', 'evento', 'participante', 'literal', 'papel', 'orden')}
@@ -162,7 +205,7 @@ def proyectar(n, fuentes=None, generado=None):
             if lugar in vistos:
                 continue
             vistos.add(lugar)
-            comun = entidades[lugar].get('territorio_comun')
+            comun = entidades[lugar].get('territorio_comun') or entidades[lugar].get('ubicacion_comun')
             if comun:
                 ubicaciones[comun['id']] = {'territorio': comun['id'], 'papel': 'celebracion',
                                            'ancestros': comun['ancestros']}
@@ -190,7 +233,8 @@ def proyectar(n, fuentes=None, generado=None):
         'revision': fuentes is None,
         'catalogo': {'version': n['catalogo']['version'], 'conceptos': deepcopy(n['catalogo']['conceptos'])},
         'territorios_catalogo': {'version': list(territorios.version),
-                                'fecha_referencia': territorios.fecha_referencia},
+                                'fecha_referencia': territorios.fecha_referencia,
+                                'relacionador': deepcopy(relacionador.revision)},
         'fuentes': {f: {c: deepcopy(n['fuentes'][f][c]) for c in campos_fuente if c in n['fuentes'][f]}
                     for f in sorted(permitidas)},
         'entidades': entidades, 'relaciones': relaciones,

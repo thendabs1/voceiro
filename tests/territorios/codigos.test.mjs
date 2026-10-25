@@ -8,7 +8,7 @@ const leer = ruta => JSON.parse(readFileSync(new URL(ruta, import.meta.url), 'ut
 const municipios = leer('../../shared/territorios/municipios.json');
 const catalogo = crearCatalogo(municipios);
 
-test('INE, códigos editoriales y jerarquías usan los mismos casos que Python', () => {
+test('ISO, INE, códigos editoriales y jerarquías usan los mismos casos que Python', () => {
   for (const caso of leer('./casos.json')) {
     const dato = catalogo.resolver(caso.sistema, caso.codigo);
     assert.equal(dato?.id ?? null, caso.id, JSON.stringify(caso));

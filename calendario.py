@@ -61,7 +61,7 @@ def operar_nucleo(args):
         for fuente in dict.fromkeys(args.recoger_deporte or []):
             if fuente == 'feb':
                 calendario['nucleo'] = feb.importar(calendario['nucleo'],
-                    recogida.feb(args.temporada_feb), observado)
+                    recogida.feb(args.temporada_feb, args.competicion_feb), observado)
             else:
                 circuito = fuente.removeprefix('espn-')
                 pagina, url = recogida.tenis(circuito)
@@ -110,7 +110,9 @@ def main(argv=None):
     ap.add_argument('--circuito', choices=('atp', 'wta'), help='Circuito de --entrada-tenis')
     ap.add_argument('--recoger-deporte', action='append', choices=('feb', 'espn-atp', 'espn-wta'),
                     help='Recogida manual deportiva en el núcleo; repetible, sin publicación')
-    ap.add_argument('--temporada-feb', help='Año inicial explícito de la temporada LF Endesa')
+    ap.add_argument('--temporada-feb', help='Año inicial explícito de la temporada FEB')
+    ap.add_argument('--competicion-feb', choices=('4', '1', '67'), default='4',
+                    help='Competición FEB contrastada: 4 LF Endesa, 1 Primera FEB, 67 LF Challenge')
     ap.add_argument('--anterior', help='Calendario anterior: conserva IDs e historial de recogida')
     ap.add_argument('--entrada', action='append', help='Página JSON guardada de Galicia (repetible, sin red)')
     ap.add_argument('--entrada-ics', action='append', help='ICS de Vidmar guardado (repetible, sin red)')
@@ -133,6 +135,8 @@ def main(argv=None):
                            args.entrada_madrid, args.entrada_kulturklik))
     if ('feb' in (args.recoger_deporte or [])) != bool(args.temporada_feb):
         ap.error('--recoger-deporte feb requiere --temporada-feb y viceversa')
+    if args.competicion_feb != '4' and 'feb' not in (args.recoger_deporte or []):
+        ap.error('--competicion-feb requiere --recoger-deporte feb')
     if args.circuito and not args.entrada_tenis:
         ap.error('--circuito requiere --entrada-tenis')
     if operacion_nucleo:

@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "alcance": "Tres recintos de las muestras Madrid; dos referencias Kulturklik pendientes. Revisión manual, sin correspondencia general NORA–INE.",
+  "correspondencias": [
+    {
+      "id": "madrid:recinto:1915:municipio:v1",
+      "tipo": "ubicacion",
+      "referencia": {
+        "sistema": "madrid:instalacion_vgnextoid",
+        "codigo": "ba663d0b5e71c010VgnVCM1000000b205a0aRCRD",
+        "contexto": {}
+      },
+      "territorio": "es:municipio:28079",
+      "metodo": "catalogo_oficial_revisado",
+      "vigencia": null,
+      "evidencias": [
+        {
+          "fuente": "Ayuntamiento de Madrid",
+          "documento": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-1-ocio_salas-json/download/208862-7650046-ocio_salas.json",
+          "sha256": "10f7750b26338d480f3bbe12c076bcbb63bf9bfe417bcf175ba2a1213f39edc8",
+          "ruta": "/@graph/1",
+          "dato": {
+            "id": "1915",
+            "title": "Fernán Gómez Centro Cultural de la Villa",
+            "relation": "http://www.madrid.es/sites/v/index.jsp?vgnextchannel=bfa48ab43d6bb410VgnVCM100000171f5a0aRCRD&vgnextoid=ba663d0b5e71c010VgnVCM1000000b205a0aRCRD",
+            "address": {
+              "district": {
+                "@id": "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Salamanca"
+              },
+              "area": {
+                "@id": "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Salamanca/Barrio/Recoletos"
+              },
+              "locality": "MADRID",
+              "postal-code": "28001",
+              "street-address": "PLAZA COLON 4"
+            }
+          },
+          "observado": "2026-10-25T18:30:17+00:00",
+          "comprobado": "2026-10-25T18:30:17+00:00"
+        }
+      ],
+      "criterio": "Identidad exacta vgnextoid de relation; address.district y address.area declaran Provincia/Madrid/Municipio/Madrid, contrastado con INE 28079. No se cruza por nombre del recinto ni código postal."
+    },
+    {
+      "id": "madrid:recinto:2190:municipio:v1",
+      "tipo": "ubicacion",
+      "referencia": {
+        "sistema": "madrid:instalacion_vgnextoid",
+        "codigo": "6d3ce3914381c010VgnVCM1000000b205a0aRCRD",
+        "contexto": {}
+      },
+      "territorio": "es:municipio:28079",
+      "metodo": "catalogo_oficial_revisado",
+      "vigencia": null,
+      "evidencias": [
+        {
+          "fuente": "Ayuntamiento de Madrid",
+          "documento": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-1-ocio_salas-json/download/208862-7650046-ocio_salas.json",
+          "sha256": "10f7750b26338d480f3bbe12c076bcbb63bf9bfe417bcf175ba2a1213f39edc8",
+          "ruta": "/@graph/7",
+          "dato": {
+            "id": "2190",
+            "title": "Teatro Español",
+            "relation": "http://www.madrid.es/sites/v/index.jsp?vgnextchannel=bfa48ab43d6bb410VgnVCM100000171f5a0aRCRD&vgnextoid=6d3ce3914381c010VgnVCM1000000b205a0aRCRD",
+            "address": {
+              "district": {
+                "@id": "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Centro"
+              },
+              "area": {
+                "@id": "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Centro/Barrio/Cortes"
+              },
+              "locality": "MADRID",
+              "postal-code": "28012",
+              "street-address": "CALLE PRINCIPE 25"
+            }
+          },
+          "observado": "2026-10-25T18:30:17+00:00",
+          "comprobado": "2026-10-25T18:30:17+00:00"
+        }
+      ],
+      "criterio": "Identidad exacta vgnextoid de relation; address.district y address.area declaran Provincia/Madrid/Municipio/Madrid, contrastado con INE 28079. No se cruza por nombre del recinto ni código postal."
+    },
+    {
+      "id": "madrid:recinto:1947:municipio:v1",
+      "tipo": "ubicacion",
+      "referencia": {
+        "sistema": "madrid:instalacion_vgnextoid",
+        "codigo": "23881e79ee71c010VgnVCM1000000b205a0aRCRD",
+        "contexto": {}
+      },
+      "territorio": "es:municipio:28079",
+      "metodo": "catalogo_oficial_revisado",
+      "vigencia": null,
+      "evidencias": [
+        {
+          "fuente": "Ayuntamiento de Madrid",
+          "documento": "https://datos.madrid.es/dataset/200304-0-centros-culturales/resource/200304-0-centros-culturales-json/download/200304-0-centros-culturales.json",
+          "sha256": "c45040ce7d453b57d585fab36df05aebd28fed390109c125cfe5cccde8b9d38c",
+          "ruta": "/@graph/82",
+          "dato": {
+            "id": "1947",
+            "title": "Centro Sociocultural José de Espronceda (Tetuán)",
+            "relation": "http://www.madrid.es/sites/v/index.jsp?vgnextchannel=bfa48ab43d6bb410VgnVCM100000171f5a0aRCRD&vgnextoid=23881e79ee71c010VgnVCM1000000b205a0aRCRD",
+            "address": {
+              "district": {
+                "@id": "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Tetuan"
+              },
+              "area": {
+                "@id": "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Tetuan/Barrio/BellasVistas"
+              },
+              "locality": "MADRID",
+              "postal-code": "28039",
+              "street-address": "CALLE ALMANSA 9"
+            }
+          },
+          "observado": "2026-10-25T18:30:17+00:00",
+          "comprobado": "2026-10-25T18:30:17+00:00"
+        }
+      ],
+      "criterio": "Identidad exacta vgnextoid de relation; address.district y address.area declaran Provincia/Madrid/Municipio/Madrid, contrastado con INE 28079. No se cruza por nombre del recinto ni código postal."
+    }
+  ],
+  "pendientes": [
+    {
+      "referencia": {
+        "sistema": "kulturklik:municipio_nora",
+        "codigo": "476",
+        "contexto": {
+          "provincia_nora": "31"
+        }
+      },
+      "motivo": "espacio_kulturklik_sin_correspondencia_acreditada",
+      "evidencias": [
+        {
+          "fuente": "Kulturklik",
+          "documento": "tests/fuentes/muestras_calendario/kulturklik.json",
+          "sha256": "e9e9defb6c094d270d7b651dff9706919d536d775746b5d0066696c85b2487f7",
+          "ruta": "/0",
+          "dato": {
+            "id": "2025102210363314",
+            "municipalityNoraCode": "476",
+            "provinceNoraCode": "31",
+            "municipalityEs": "Pamplona/Iruña"
+          },
+          "observado": null,
+          "comprobado": "2026-10-25T18:30:17+00:00"
+        },
+        {
+          "fuente": "geoEuskadi / NORA",
+          "documento": "https://www.geo.euskadi.eus/t17iApiRestWar/rest/v1/municipios?provinciaId=31&withParents=false",
+          "sha256": "0575e81acb6d606d498b0a3c12cf11a6fc28a4d68881cfd9960ba18429375607",
+          "ruta": "/210",
+          "dato": {
+            "idProvincia": "31",
+            "id": "201",
+            "descripcionOficial": "Pamplona/Iruña",
+            "digitoControl": "6"
+          },
+          "observado": "2026-10-25T18:30:17+00:00",
+          "comprobado": "2026-10-25T18:30:17+00:00"
+        }
+      ],
+      "nota": "Contraste manual que evidencia códigos diferentes. La coincidencia de denominación no acredita equivalencia; no se asigna territorio ni candidato por nombre."
+    },
+    {
+      "referencia": {
+        "sistema": "kulturklik:municipio_nora",
+        "codigo": "46",
+        "contexto": {
+          "provincia_nora": "1"
+        }
+      },
+      "motivo": "espacio_kulturklik_sin_correspondencia_acreditada",
+      "evidencias": [
+        {
+          "fuente": "Kulturklik",
+          "documento": "tests/fuentes/muestras_calendario/kulturklik.json",
+          "sha256": "e9e9defb6c094d270d7b651dff9706919d536d775746b5d0066696c85b2487f7",
+          "ruta": "/1",
+          "dato": {
+            "id": "2026020412450217",
+            "municipalityNoraCode": "46",
+            "provinceNoraCode": "1",
+            "municipalityEs": "Vitoria-Gasteiz"
+          },
+          "observado": null,
+          "comprobado": "2026-10-25T18:30:17+00:00"
+        },
+        {
+          "fuente": "geoEuskadi / NORA",
+          "documento": "https://www.geo.euskadi.eus/t17iApiRestWar/rest/v1/municipios?provinciaId=01&withParents=false",
+          "sha256": "f677aa49f8c30b5cbb8e1648c901f162d43ea5cf50e5f1d61e539cf9160d8abb",
+          "ruta": "/47",
+          "dato": {
+            "idProvincia": "01",
+            "id": "059",
+            "descripcionOficial": "Vitoria-Gasteiz",
+            "digitoControl": "0"
+          },
+          "observado": "2026-10-25T18:30:17+00:00",
+          "comprobado": "2026-10-25T18:30:17+00:00"
+        }
+      ],
+      "nota": "Contraste manual que evidencia códigos diferentes. La coincidencia de denominación no acredita equivalencia; no se asigna territorio ni candidato por nombre."
+    }
+  ]
+}

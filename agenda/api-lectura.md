@@ -1,6 +1,11 @@
 # Lectura indexada del calendario
 
-Primer tramo del paso 2 de [la arquitectura acordada](arquitectura-servicios.md).
+Estado tras la revisión de la base: se conserva como implementación preparada.
+La [arquitectura y el contrato de servicios](arquitectura-servicios.md) priorizan
+territorio, cobertura y operación por colección antes de conectar el cliente
+o ampliar proveedores. Este documento describe el código, no un contrato cerrado.
+
+Primer incremento técnico de la lectura descrita en la arquitectura.
 Añade tablas derivadas y rutas comunes en `cf-datos` y `deno-datos`.
 El frontend continúa con `calendario.json`. La publicación SQL requiere
 activación explícita; desplegar el worker no crea tablas ni consulta proveedores.

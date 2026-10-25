@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from shared.territorios import cargar, resolver
+from medios import todos_los_medios
 from cosecha import catalogo
 from agenda import nucleo, retencion
 from agenda.publicacion import proyectar
@@ -27,7 +28,38 @@ class Territorios(unittest.TestCase):
                 self.assertEqual(dato['id'] if dato else None, caso['id'])
                 if dato:
                     self.assertEqual(dato['ancestros'], caso['ancestros'])
-        self.assertEqual(len(cargar().entidades), 1 + 19 + 52 + 8132)
+        paises = json.loads((RAIZ / 'shared/territorios/paises.json').read_text())
+        self.assertEqual(len(cargar().entidades), len(paises['paises']) + 19 + 52 + 8132)
+
+    def test_pais_del_catalogo_se_publica_sin_inventar_cobertura_internacional(self):
+        medios = {'bbc.com': {'pais': 'reino-unido', 'ambito': 'internacional'},
+                  'africanews.com': {'pais': 'africa', 'ambito': 'internacional'},
+                  'desconocido.test': {'pais': 'desconocido', 'ambito': 'internacional'},
+                  'extranjero.test': {'pais': 'reino-unido', 'ambito': 'nacional'}}
+        with patch.object(catalogo, '_MEDIOS_POR_DOMINIO', medios):
+            completo = catalogo._catalogo_completo()
+            slice_ = catalogo._tabla_medios_slice([
+                {'dominio': 'extranjero.test', 'alt': [{'d': 'bbc.com'}, {'d': 'africanews.com'}]}])
+        esperado = [{'territorio': 'pais:GB', 'papel': 'pais_catalogo'}]
+        for vista in (completo, slice_):
+            self.assertEqual(vista['bbc.com']['territorios'], esperado)
+            self.assertEqual(vista['extranjero.test']['territorios'], esperado)
+            self.assertEqual(vista['bbc.com']['pais'], 'reino-unido')
+            self.assertEqual(vista['africanews.com']['pais'], 'africa')
+            self.assertNotIn('territorios', vista['africanews.com'])
+        self.assertNotIn('territorios', completo['desconocido.test'])
+
+    def test_el_catalogo_real_resuelve_paises_y_conserva_la_agrupacion_africana(self):
+        pendientes = set()
+        for medio in todos_los_medios():
+            if medio.get('pais'):
+                territorio = resolver('medios:pais', medio['pais'])
+                if territorio is None:
+                    pendientes.add((medio['d'], medio['pais']))
+                else:
+                    self.assertEqual(territorio['tipo'], 'pais')
+                    self.assertEqual(territorio['ancestros'], [])
+        self.assertEqual(pendientes, {('africanews.com', 'africa')})
 
     def test_prensa_publica_cobertura_y_conserva_los_codigos_editoriales(self):
         medios = {'gal.test': {'region': 'galicia', 'ambito': 'regional', 'n': 'Gal'},
