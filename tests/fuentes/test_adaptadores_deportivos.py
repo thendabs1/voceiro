@@ -200,6 +200,19 @@ class Adaptadores(unittest.TestCase):
         self.assertFalse(tiempos.en_intervalo(cuando, '2026-01-26', '2026-01-27'))
         self.assertIsNone(cuando['inicio']['hora_local'])
 
+    def test_wrc_sin_round_count_es_seleccion_valida_sin_cobertura_completa(self):
+        from agenda import proveedores
+        pagina = muestra('ocblacktop-wrc')
+        self.assertIsNone(pagina['roundCount'])
+        alcance = proveedores.describir('ocblacktop-wrc', pagina)
+        self.assertTrue(alcance['seleccion_valida'])
+        self.assertFalse(alcance['cobertura_completa'])
+        pagina['roundCount'] = len(pagina['rallies'])
+        self.assertTrue(proveedores.describir('ocblacktop-wrc', pagina)['cobertura_completa'])
+        pagina['rallies'][1]['round'] = 3
+        hueco = proveedores.describir('ocblacktop-wrc', pagina)
+        self.assertFalse(hueco['seleccion_valida'] or hueco['cobertura_completa'])
+
     def test_feb_conserva_horario_que_desaparece_sin_tomar_fecha_de_jornada(self):
         a = importar('feb-endesa')
         otra = muestra('feb-endesa')
