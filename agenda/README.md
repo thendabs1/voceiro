@@ -1,5 +1,12 @@
 # Calendario común
 
+El [diseño deportivo del 26/10/2026](calendario-deportivo.md) concreta las doce
+colecciones iniciales confirmadas: citas en la agenda común, tenis solo por
+torneos, parte compartida ESPN y OCB desde servidor. Sustituye el borrador de
+resultados diferidos. Sus adaptadores y controles están pendientes; los deportes
+siguen sin recogida periódica activada y el cliente está desactivado hasta
+conectar la API de lectura.
+
 La [base y el contrato de servicios](arquitectura-servicios.md) reúnen las
 reglas de territorio, cobertura, noticias en memoria, persistencia y servicio.
 La prioridad actual es cerrar esa base y la operación por colección antes de
@@ -128,6 +135,11 @@ oficial, que el frontend muestra en los detalles mediante «Ver original».
 No se recorren actas, plantillas ni estadísticas personales. Los marcadores
 y la tabla que ya vienen en las páginas agregadas se conservan como observaciones;
 no hay una recogida adicional de todos los resultados ni actualización en directo.
+
+La [investigación de rutas y sedes](investigacion/07-feb-rutas-sedes.md)
+contrasta el calendario general JSON, pabellón habitual frente a pista del
+encuentro, estadísticas enlazables y navegación por fase mediante formulario.
+Sus propuestas todavía no amplían el adaptador ni las recogidas.
 
 Para seleccionar otra liga en el workflow se usa `competicion_feb`. En CLI,
 por ejemplo: `python calendario.py --turso --recoger-deporte feb --temporada-feb 2026 --competicion-feb 1`.

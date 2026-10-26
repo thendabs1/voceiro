@@ -1,4 +1,4 @@
-// Generado por scripts/generar-municipios.mjs a partir del maestro de AEMET. No editar a mano.
+// Generado por scripts/generar-municipios.mjs desde AEMET y municipios-aemet-revisados.json. No editar a mano.
 export const MUNICIPIOS = {
 "28079":["Madrid",40.408,-3.688,"722802"],
 "08019":["Barcelona",41.384,2.176,"690804"],
@@ -1431,7 +1431,6 @@ export const MUNICIPIOS = {
 "15012":["Boqueixón",42.813,-8.418,"711503"],
 "28002":["Ajalvir",40.535,-3.481,"722802"],
 "46072":["Bocairent",38.766,-0.611,"774603"],
-"36012":["Cotobade",42.473,-8.48,"713602"],
 "06121":["Santa Marta",38.615,-6.627,"700603"],
 "39080":["San Vicente de la Barquera",43.383,-4.4,"663901"],
 "03107":["Polop",38.623,-0.127,"770303"],
@@ -2380,7 +2379,6 @@ export const MUNICIPIOS = {
 "21004":["Almonaster la Real",37.873,-6.787,"612101"],
 "10112":["Madrigalejo",39.139,-5.627,"701004"],
 "33055":["Ribadedeva",43.375,-4.54,"633302"],
-"36011":["Cerdedo",42.532,-8.391,"713602"],
 "43009":["Alforja",41.21,0.975,"694305"],
 "03026":["Beniarbeig",38.822,-0.001,"770301"],
 "24094":["Mansilla de las Mulas",42.499,-5.416,"672403"],
@@ -8122,4 +8120,9 @@ export const MUNICIPIOS = {
 "42082":["Estepa de San Juan",41.927,-2.335,"674201"],
 "09184":["Jaramillo Quemado",42.084,-3.36,"670905"],
 "45080":["Illán de Vacas",39.971,-4.558,"684502"],
+"04904":["Balanegra",36.746,-2.909,"610403"],
+"36902":["Cerdedo-Cotobade",42.472,-8.482,"713602"],
+"18915":["Domingo Pérez de Granada",37.496,-3.509,"611801"],
+"18106":["Játar",36.935,-3.91,"611801"],
 };
+export const SIN_PREVISION = ["San Martín del Tesorillo","Fuente Carreteros","La Guijarrosa","Fornes","Torrenueva Costa","La Zarza-Perrunal","El Palmar de Troya","Usansolo"];

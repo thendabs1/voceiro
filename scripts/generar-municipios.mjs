@@ -1,11 +1,12 @@
 // scripts/generar-municipios.mjs
-// Genera las dos tablas de municipios a partir del maestro de AEMET:
+// Genera las dos tablas a partir del maestro de AEMET y la revisión local:
 //   1. shared/tiempo/municipios.js               (cliente: autocompletado de eltiempo:)
 //      [nombre, INE, habitantes], de más a menos habitantes.
 //   2. workers/deno-buscar/src/tiempo/municipios.js  (worker: INE → lugar)
 //      INE → [nombre, lat, lon, zona de avisos].
 //
-// Los municipios casi no cambian: se regenera a mano, de vez en cuando.
+// El maestro conserva dos municipios extinguidos y omite productos vigentes.
+// La revisión documentada evita reintroducirlos al regenerar.
 // Uso: AEMET_API_KEY=… node scripts/generar-municipios.mjs
 //      (sin la variable, la lee de .env)
 
@@ -14,6 +15,7 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const REVISION = JSON.parse(readFileSync(resolve(ROOT, 'scripts/municipios-aemet-revisados.json'), 'utf-8'));
 
 function clave() {
   if (process.env.AEMET_API_KEY) return process.env.AEMET_API_KEY;
@@ -57,7 +59,9 @@ function escribir(rel, cabecera, lineas, apertura, cierre) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const descartados = new Set([...REVISION.obsoletos, ...REVISION.sin_prevision.map(m => m.codigo)]);
   const lista = (await maestro())
+    .filter(m => !descartados.has(m.id.replace(/^id/, '')))
     .map(m => ({
       nombre: nombreVisible(m.nombre),
       ine: m.id.replace(/^id/, ''),
@@ -65,14 +69,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       lat: Math.round(parseFloat(m.latitud_dec) * 1000) / 1000,
       lon: Math.round(parseFloat(m.longitud_dec) * 1000) / 1000,
       zona: m.zona_comarcal,
-    }))
-    .sort((a, b) => b.hab - a.hab || a.nombre.localeCompare(b.nombre, 'es'));
+    }));
+  const presentes = new Set(lista.map(m => m.ine));
+  for (const m of REVISION.activos_fuera_del_maestro) {
+    if (!presentes.has(m.codigo)) lista.push({ nombre: m.nombre, ine: m.codigo, hab: 0,
+      lat: m.lat, lon: m.lon, zona: m.zona });
+  }
+  lista.sort((a, b) => b.hab - a.hab || a.nombre.localeCompare(b.nombre, 'es'));
 
-  const aviso = '// Generado por scripts/generar-municipios.mjs a partir del maestro de AEMET. No editar a mano.';
+  const aviso = '// Generado por scripts/generar-municipios.mjs desde AEMET y municipios-aemet-revisados.json. No editar a mano.';
   escribir('shared/tiempo/municipios.js', aviso,
     lista.map(m => JSON.stringify([m.nombre, m.ine, m.hab])),
     'export const MUNICIPIOS = [', '];');
   escribir('workers/deno-buscar/src/tiempo/municipios.js', aviso,
     lista.map(m => `${JSON.stringify(m.ine)}:${JSON.stringify([m.nombre, m.lat, m.lon, m.zona])}`),
-    'export const MUNICIPIOS = {', '};');
+    'export const MUNICIPIOS = {', `};\nexport const SIN_PREVISION = ${JSON.stringify(REVISION.sin_prevision.map(m => m.nombre))};`);
 }

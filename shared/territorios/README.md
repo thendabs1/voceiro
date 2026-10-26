@@ -79,6 +79,10 @@ ausentes y diferencias entre cliente y worker. Las diferencias no se corrigen
 automáticamente ni acreditan un cambio actual del proveedor. Relaciones de zonas,
 cobertura municipal/provincial de medios y orden de implementación se concretan
 en la [base y el contrato de servicios](../../agenda/arquitectura-servicios.md).
+La [revisión de AEMET del 25/10/2026](revision-aemet-2026-10-25.md) documenta
+cuatro productos municipales vigentes ausentes del maestro, dos entradas antiguas
+y ocho municipios sin previsión actual acreditada. El generador del tiempo aplica
+esas excepciones versionadas.
 
 Se conserva la URL y SHA-256 del fichero INE. `--check` comprueba las proyecciones
 administrativa y de países JavaScript en CI. La lectura preparada del PR 144 incorpora

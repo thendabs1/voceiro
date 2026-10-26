@@ -1,4 +1,6 @@
 /* Un contrato de lectura para calendario y contenido deportivo del feed. */
+// Pendiente de conectar el cliente a la lectura acotada de Turso mediante la API.
+const CALENDARIO_ACTIVO = false;
 const CALENDARIO = {
   abierto: false, orden: null, datos: null, cargando: false, error: false, intentado: false,
   fecha: '', vista: 'agenda', zona: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid',
@@ -51,6 +53,7 @@ function validarLecturaCalendario(p){
   return p;
 }
 async function cargarCalendario(renovar = false){
+  if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
   if (s.cargando || !renovar && (s.datos || s.intentado)) return;
   s.controller?.abort();
@@ -73,6 +76,7 @@ async function cargarCalendario(renovar = false){
   finally { s.cargando = false; pintarCalendario(); }
 }
 function actualizarConsultaCalendario(orden){
+  if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO, clave = JSON.stringify(orden);
   if (clave !== s.clave){
     s.clave = clave; s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = ''; s.lugar = ''; s.municipio = ''; s.texto = '';
@@ -85,6 +89,7 @@ function actualizarConsultaCalendario(orden){
   pintarCalendario();
 }
 function abrirCalendario(origen = null){
+  if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
   if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; }
   cerrarEstadisticas(false);
@@ -281,11 +286,11 @@ function calContenido(){
 function pintarCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   if (!p) return;
-  const visible = s.abierto || !!s.orden;
+  const visible = CALENDARIO_ACTIVO && (s.abierto || !!s.orden);
   p.hidden = !visible;
-  document.body.classList.toggle('calendario-abierto', s.abierto);
-  document.body.classList.toggle('calendario-sin-noticias', !!s.orden && !s.orden.noticias);
-  document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(s.abierto));
+  document.body.classList.toggle('calendario-abierto', visible && s.abierto);
+  document.body.classList.toggle('calendario-sin-noticias', visible && !!s.orden && !s.orden.noticias);
+  document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(visible && s.abierto));
   if (!visible) return;
   s.fecha ||= calHoy();
   const foco = p.contains(document.activeElement) ? document.activeElement : null;
@@ -317,7 +322,9 @@ function pintarCalendario(){
 }
 function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
-  document.getElementById('btn-calendario').addEventListener('click', e => s.abierto ? cerrarCalendario() : abrirCalendario(e.currentTarget));
+  const boton = document.getElementById('btn-calendario');
+  boton.hidden = !CALENDARIO_ACTIVO;
+  boton.addEventListener('click', e => s.abierto ? cerrarCalendario() : abrirCalendario(e.currentTarget));
   p.addEventListener('click', e => {
     const b = e.target.closest('[data-cal]');
     if (!b) return;
@@ -371,6 +378,7 @@ function wireCalendario(){
   document.getElementById('buscar').addEventListener('input', () => cerrarCalendario(false));
 }
 function sugerenciasCalendario(raw){
+  if (!CALENDARIO_ACTIVO) return null;
   const m = raw.match(/(?:^|\s)([^\s"]*)$/);
   if (!m || !m[1]) return null;
   const q = normalize(m[1]);

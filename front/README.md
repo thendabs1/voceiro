@@ -2,6 +2,14 @@
 
 ## Calendario y contenido del feed
 
+El calendario está desactivado mediante `CALENDARIO_ACTIVO = false`: botón,
+panel, órdenes del buscador y sugerencias quedan inactivos, sin descargar
+`calendario.json`. Se conserva la implementación para conectarla a la lectura
+acotada de Turso mediante nuestra API antes de reactivarla. Los datos y las
+recogidas del servidor conservan su funcionamiento.
+
+La implementación conservada funciona así:
+
 `app/14-calendario.js` carga bajo demanda `calendario.json` desde los mismos
 backends de datos. Agenda, semana y mes comparten selección y fechas en
 `shared/calendario/`. Se filtra por tema, circuitos combinables, objetivo

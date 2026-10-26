@@ -101,7 +101,7 @@ function aplicarFiltros(){
   hidratarNoticias();
   const rawInput = $('#buscar').value.trim();
   const sinStats = ordenEstadisticas(rawInput)?.resto ?? rawInput;
-  const ordenCalendario = leerConsultaCalendario(sinStats);
+  const ordenCalendario = CALENDARIO_ACTIVO ? leerConsultaCalendario(sinStats) : null;
   actualizarConsultaCalendario(ordenCalendario);
   const raw = ordenCalendario?.resto ?? sinStats;
   const rawProcesado = preprocesarInput(raw);

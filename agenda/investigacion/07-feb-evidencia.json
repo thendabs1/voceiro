@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "fecha_revision": "2026-10-25",
+  "alcance": "Contraste puntual de rutas públicas; no acredita cobertura completa ni condiciones de API. Huellas de respuestas completas y extractos sin campos de sesión.",
+  "peticiones_logicas": 13,
+  "nota_peticiones": "11 respuestas finales reseñadas; los dos GET previos a los POST de selección de fase completan 13; redirecciones adicionales no contadas.",
+  "respuestas": [
+    {
+      "url": "https://baloncestoenvivo.feb.es/calendariofeb.aspx",
+      "metodo": "GET",
+      "bytes": 56839,
+      "sha256": "65dd3a4b376c190b2d8558c482aa43ecd7cc5fc532af45adb71959dd0e2b66e4"
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/CalendarioFEB.aspx/ObtenerPartidos",
+      "metodo": "POST",
+      "bytes": 64222,
+      "sha256": "52e507cf6e83c7be8ca380ce2ad828c83e256a8c24cc4ab98d9f3b8a62126844",
+      "cuerpo_enviado": {},
+      "filas": 132,
+      "ids_partido_unicos": 132,
+      "campos": [
+        "Campo",
+        "EquipoLocal",
+        "EquipoVisitante",
+        "Fecha",
+        "Hora",
+        "IdCategoria",
+        "IdInscripcionLocal",
+        "IdInscripcionVisitante",
+        "IdPartido",
+        "NombreCategoria",
+        "NombreFase",
+        "NombreGrupo",
+        "NumeroJornada",
+        "Resultado",
+        "YoutubeId"
+      ],
+      "filas_sin_campo": 0,
+      "ejemplo": {
+        "IdPartido": 2513928,
+        "IdCategoria": 22392,
+        "Fecha": 1781992800000,
+        "Hora": 1792918800000,
+        "Campo": "Pabellón Blas Infante",
+        "EquipoLocal": "IVECO CBC VALLADOLID PONCE A",
+        "EquipoVisitante": "BBC - JOVENTUT A",
+        "NombreCategoria": "C ESP CLUBES MINI FEM",
+        "NombreFase": "PRIMERA FASE",
+        "NombreGrupo": "A                   ",
+        "NumeroJornada": 1,
+        "Resultado": "39-59",
+        "YoutubeId": "D_jsywvXcdI",
+        "IdInscripcionLocal": 989330,
+        "IdInscripcionVisitante": 982558
+      },
+      "fechas_utc_decodificadas_ejemplo": {
+        "Fecha": "2026-06-20T22:00:00+00:00",
+        "Hora": "2026-10-25T09:00:00+00:00"
+      }
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/stats/partido/2513928",
+      "metodo": "GET",
+      "bytes": 109560,
+      "sha256": "a01f0705f86ea4164d6fe9275f5e0b089e023961776d7a76d3cb4f98549248e5",
+      "pista": [
+        "Pista Pabellón Blas Infante Alhaurín de la Torre (Málaga)"
+      ]
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/stats/equipo/1008705",
+      "metodo": "GET",
+      "bytes": 119616,
+      "sha256": "04cb29b66e0b7fcbaef640a6cc3cc4b9d3bcaf45f4cea247ad9d273371f9f5e9",
+      "campo_habitual": {
+        "pabellonLabel": "POLIESPORTIU SON MOIX",
+        "dirPabellonLabel": "CAMÍ DE LA VILETA, 40 07011 Palma de Mallorca (Illes Balears)"
+      }
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/stats/equipo/989330",
+      "metodo": "GET",
+      "bytes": 116797,
+      "sha256": "8758c66753b262313b693d48d8d10a4bba24af29ef1d40c0312ef901f2b060e2",
+      "campo_habitual": {
+        "pabellonLabel": "POLIDEPORTIVO PONCE DE LEON",
+        "dirPabellonLabel": "C/ TRES AMIGOS, S/N 47006 Valladolid (Valladolid)"
+      }
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/rankings.aspx?g=4&t=2026",
+      "metodo": "GET",
+      "bytes": 110651,
+      "sha256": "edf77449c67eca14fe0657e3e05f8a591d7766c039278feba8425b2ec5b94c77"
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/estadisticas.aspx?g=4&t=2026",
+      "metodo": "GET",
+      "bytes": 109395,
+      "sha256": "a717ffdc827f19791aca5176ee9e1fa85d63ba97152f7049fc9df54d061430ab"
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/scripts/widget.launcher.js?v=20251022",
+      "metodo": "GET",
+      "bytes": 17652,
+      "sha256": "ba68563abe9afc7266a9340ccd60b56d196e60a06236e864aa9ce5d74a3b153d"
+    },
+    {
+      "url": "https://intrafeb.feb.es/LiveStats.API/api/v1/BoxScore/2522807",
+      "metodo": "GET",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "http_observado": 401
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/calendario/21/2025",
+      "metodo": "POST",
+      "bytes": 58809,
+      "sha256": "2f255318d779cf24a81db489a0008bf896e662b9d1f694352dbad9efbdde9ad8",
+      "fase_seleccionada": [
+        {
+          "id": "89481",
+          "nombre": "PRIMERA FASE A"
+        }
+      ],
+      "tablas": [
+        {
+          "id": "_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl0_DataGrid3",
+          "filas_con_cabecera": 3
+        },
+        {
+          "id": "_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl1_DataGrid3",
+          "filas_con_cabecera": 3
+        },
+        {
+          "id": "_ctl0_MainContentPlaceHolderMaster_calendarioRepeater__ctl2_DataGrid3",
+          "filas_con_cabecera": 3
+        }
+      ]
+    },
+    {
+      "url": "https://baloncestoenvivo.feb.es/resultados/21/2025",
+      "metodo": "POST",
+      "bytes": 64456,
+      "sha256": "0de0ac1aeffc5b93b49b03f3903859462e3b165b655cbbcfdbc1a1a86da3f4fc",
+      "fase_seleccionada": [
+        {
+          "id": "89481",
+          "nombre": "PRIMERA FASE A"
+        }
+      ],
+      "tablas": [
+        {
+          "id": "_ctl0_MainContentPlaceHolderMaster_jornadaDataGrid",
+          "filas_con_cabecera": 3
+        },
+        {
+          "id": "_ctl0_MainContentPlaceHolderMaster_clasificacionDataGrid",
+          "filas_con_cabecera": 5
+        },
+        {
+          "id": "_ctl0_MainContentPlaceHolderMaster_clasificacionFinalDataGrid",
+          "filas_con_cabecera": 33
+        }
+      ]
+    }
+  ]
+}

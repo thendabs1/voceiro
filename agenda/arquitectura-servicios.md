@@ -22,8 +22,14 @@ cobertura editorial; la persistencia y los recorridos del contrato son propuesta
 
 ## Alcance aclarado con el usuario
 
-- Primera fase deportiva: calendarios, resultados y clasificaciones con
-  recogidas periódicas. Los marcadores en directo quedan para después.
+- Alcance deportivo corregido el 26/10: citas y su organización, integradas con
+  cultura en la agenda común. No recoger ni ofrecer resultados y clasificaciones
+  desde nuestra base en esta fase; su posible consulta externa se decide por
+  proveedor. Tenis empieza solo por torneos. La
+  [revisión de almacenamiento deportivo](revision-almacenamiento-deportivo.md)
+  concreta este alcance y sustituye las propuestas previas de resultados diferidos.
+  El [diseño por deporte y proveedor](calendario-deportivo.md) desarrolla las
+  colecciones iniciales confirmadas y OCB como integración de servidor.
 - Municipios como primer paso hacia códigos comunes y reutilizables entre
   servicios. La interfaz para fijar o seguir recintos sigue sin decidir.
 - Se conservan los recintos acreditados que ya aportan las fuentes, sin
@@ -117,7 +123,8 @@ antes de activarlo se medirán consultas reales, especialmente las de texto.
 
 Se mantienen las entidades del núcleo: evento, actividad, agrupación,
 participante, lugar y territorio. Resultados y clasificaciones conservan su
-estructura específica. Unificar no exige convertir previsiones, avisos,
+estructura específica ya soportada, sin activar su recogida o publicación deportiva.
+Unificar no exige convertir previsiones, avisos,
 tablas deportivas o artículos en eventos de calendario.
 
 ### Catálogo territorial
@@ -492,12 +499,11 @@ lectura tampoco debe revalidar y reconstruir toda la historia cada vez. Ese
 cambio se entrega de forma gradual con comparación de estados; no se elimina
 el historial para acelerar las recogidas.
 
-Como punto de partida a medir: cultura diaria; calendarios deportivos varias
-veces al día según proveedor; resultados de jornadas recientes con mayor
-frecuencia y revisión posterior; clasificaciones tras cambios relevantes.
-Son políticas propuestas, pendientes de cuotas y cobertura de cada servicio,
-no nuevos compromisos de frescura. Sin directo no hace falta sondear todos los
-encuentros continuamente.
+Se mantiene la recogida cultural diaria. La cadencia deportiva se decidirá
+por colección para mantener fechas, horas y cambios de agenda, tras contrastar
+calendarios, cuotas y cobertura. No se programan revisiones de marcadores ni
+clasificaciones en esta fase. Las consultas externas opcionales tienen su
+propio presupuesto y no escriben automáticamente sus respuestas en Turso.
 
 Ausencia no equivale a cancelación. El estado de cobertura permite distinguir
 datos vistos anteriormente, revalidados, fuera de la última ventana y antiguos.
