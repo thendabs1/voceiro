@@ -257,7 +257,7 @@ class Persistencia(unittest.TestCase):
                 almacen.guardar(db, a)
             from agenda.clasificacion import cargar_catalogo
             catalogo = cargar_catalogo()
-            catalogo['version'] = 2
+            catalogo['version'] += 1
             catalogo['correspondencias'][0]['tema'] = 'danza'
             with patch('agenda.clasificacion.cargar_catalogo', return_value=catalogo):
                 main(['--db', str(ruta), '--reclasificar'])
@@ -329,7 +329,10 @@ class Persistencia(unittest.TestCase):
             n = json.loads(salida.read_text())
             nucleo.validar(n)
             self.assertEqual(n['version'], 2)
-            self.assertEqual(sum(e['tipo'] == 'evento' for e in n['entidades'].values()), 6)
+            self.assertEqual(sum(e['tipo'] == 'evento' for e in n['entidades'].values()), 5)
+            self.assertEqual(sum(r['tipo_externo'] == 'tournament_calendar_uid' for r in n['referencias'].values()), 2)
+            self.assertFalse(n['resultados'])
+            self.assertFalse(n['clasificaciones'])
 
     def test_cultura_y_f1_conservan_ids_fechas_y_vocabulario_sin_duplicar_actividades(self):
         a = integrar(construir([ficha(), ficha(201)]), vidmar_f1.leer(ics(DIAS)), vidmar_f1.FUENTES, AHORA)

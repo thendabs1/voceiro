@@ -12,7 +12,8 @@ def ampliar(calendario):
     salida = deepcopy(calendario)
     c = nucleo.Constructor(salida.get('nucleo'))
     c.n['fuentes'].update(deepcopy(calendario['fuentes']))
-    if calendario.get('clasificacion'):
+    if (calendario.get('clasificacion')
+            and calendario['clasificacion']['catalogo']['version'] >= c.n['catalogo']['version']):
         c.n['catalogo'] = deepcopy(calendario['clasificacion']['catalogo'])
     registros = calendario['registros']
     por_ref = {}

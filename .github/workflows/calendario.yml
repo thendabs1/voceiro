@@ -116,7 +116,7 @@ jobs:
               args+=(--recoger-deporte feb --temporada-feb "$TEMPORADA_FEB" --competicion-feb "$COMPETICION_FEB")
             fi
             if [ "$DEPORTES" = tenis ] || [ "$DEPORTES" = feb-y-tenis ]; then
-              args+=(--recoger-deporte espn-atp --recoger-deporte espn-wta)
+              args+=(--recoger-deporte espn-atp --recoger-deporte espn-wta --fecha-deporte "${INICIO:-$(date -u +%F)}")
             fi
             if [ "$CULTURA" != ninguna ] || [ "$DEPORTES" != ninguno ]; then
               python calendario.py "${args[@]}"

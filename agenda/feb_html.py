@@ -85,7 +85,7 @@ def marcador(valor):
     return [int(m[1]), int(m[2])]
 
 
-def leer(calendario, resultados, temporada, calendario_url, resultados_url, competicion='4'):
+def leer(calendario, resultados, temporada, calendario_url, resultados_url, competicion='4', *, solo_agenda=False):
     if competicion not in COMPETICIONES:
         raise ValueError('Competición FEB aún no contrastada')
     c, r = (BeautifulSoup(html, 'html.parser') for html in (calendario, resultados))
@@ -127,7 +127,7 @@ def leer(calendario, resultados, temporada, calendario_url, resultados_url, comp
                     raise ValueError('Horario FEB no reconocido')
                 fecha_hora = m[1] + ' - ' + m[2]
                 datetime.strptime(fecha_hora, '%d/%m/%Y - %H:%M')
-            else:
+            elif not solo_agenda:
                 puntos = marcador(valor)
             partidos[i] = {'id': i, 'fecha_hora': fecha_hora,
                 'local': equipo(celdas[0]), 'visitante': equipo(celdas[2]),
@@ -151,7 +151,14 @@ def leer(calendario, resultados, temporada, calendario_url, resultados_url, comp
                 raise ValueError('Participantes FEB discrepantes entre páginas')
             fecha_hora = texto(celdas[2]) + ' - ' + texto(celdas[3])
             datetime.strptime(fecha_hora, '%d/%m/%Y - %H:%M')
-            partidos[i].update(fecha_hora=fecha_hora, marcador_resultados=marcador(texto(celdas[1])))
+            partidos[i]['fecha_hora'] = fecha_hora
+            if not solo_agenda:
+                partidos[i]['marcador_resultados'] = marcador(texto(celdas[1]))
+    if solo_agenda:
+        return {'version_muestra': 1, 'proveedor': 'feb', 'modo': 'agenda_html',
+            'competicion': {'id': competicion, 'nombre': COMPETICIONES[competicion]},
+            'edicion': edicion, 'fase': fase,
+            'partidos': [{k: p[k] for k in ('id', 'fecha_hora', 'local', 'visitante')} for p in partidos.values()]}
     tablas_clas = r.find_all('table', id=lambda i: i and i.endswith('clasificacionDataGrid'))
     if len(tablas_clas) != 1:
         raise ValueError('Clasificación FEB ausente o ambigua')

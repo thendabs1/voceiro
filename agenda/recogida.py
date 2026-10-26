@@ -9,8 +9,8 @@ from urllib.request import Request, urlopen
 MAX_BYTES = 4_000_000
 
 
-def descargar(url):
-    req = Request(url, headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)'})
+def descargar(url, cabeceras=None):
+    req = Request(url, headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)', **(cabeceras or {})})
     with urlopen(req, timeout=25) as respuesta:
         contenido = respuesta.read(MAX_BYTES + 1)
     if len(contenido) > MAX_BYTES:
@@ -28,7 +28,7 @@ def tenis(circuito):
     return pagina, url
 
 
-def feb(temporada, competicion='4'):
+def feb(temporada, competicion='4', *, solo_agenda=False):
     from .feb_html import COMPETICIONES, catalogo, leer
     if not str(temporada).isdigit() or len(str(temporada)) != 4:
         raise ValueError('La temporada FEB necesita su año inicial explícito')
@@ -39,7 +39,8 @@ def feb(temporada, competicion='4'):
     resultados_url = f'{base}/resultados/{competicion}/{temporada}'
     calendario = descargar(calendario_url)
     resultados = descargar(resultados_url)
-    muestra = leer(calendario, resultados, str(temporada), calendario_url, resultados_url, competicion)
+    muestra = leer(calendario, resultados, str(temporada), calendario_url, resultados_url, competicion,
+                   solo_agenda=solo_agenda)
     muestra['catalogo_anunciado'] = catalogo(calendario)
     return muestra
 

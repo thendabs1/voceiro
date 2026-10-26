@@ -3,14 +3,15 @@
 Revisión del 26/10/2026, corregida con el usuario: guardar citas y su organización,
 sin ofrecer resultados desde nuestra base. En tenis se empieza solo por torneos.
 Este alcance sustituye las propuestas anteriores de resultados diferidos y
-clasificaciones periódicas. La desactivación del cliente está implementada;
-la separación de los importadores y las consultas externas están pendientes.
-No activa recogidas ni cambia los datos guardados o la selección pública.
+clasificaciones periódicas. La desactivación del cliente está implementada.
+La continuación implementa [entradas de agenda](adaptadores-deportivos.md)
+separadas de los importadores de investigación; las consultas externas y la
+operación siguen pendientes. No activa recogidas ni cambia la selección pública.
 
 El [diseño por deporte y proveedor](calendario-deportivo.md) concreta las doce
 colecciones iniciales confirmadas, la parte común ESPN y la recogida OCB desde
-nuestro servidor. Sustituye el borrador anterior de ese documento; sus módulos
-y controles operativos siguen pendientes de implementación.
+nuestro servidor. Sustituye el borrador anterior de ese documento; los adaptadores
+están implementados y los controles operativos siguen pendientes.
 
 ## Estado real comprobado
 
@@ -102,7 +103,9 @@ entero e historizar cada marcador mantendría el coste que queremos evitar.
 La prueba de esa separación deberá comprobar que un cambio exclusivo de
 marcador no modifica el contenido de agenda ni crea historial deportivo,
 mientras que un cambio de horario conserva la identidad y actualiza la cita.
-No se ha implementado ese cambio en esta revisión.
+La continuación añade entradas de agenda y pruebas de esa separación; las
+funciones de investigación siguen conservando sus capacidades previas. La
+activación operativa y las consultas externas continúan pendientes.
 
 ## Consulta desde el navegador
 

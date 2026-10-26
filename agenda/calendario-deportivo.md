@@ -7,9 +7,11 @@ mostrarán **gran premio con sesiones dentro**, según lo confirmado. Este dise�
 sustituye el borrador de resultados diferidos y desarrolla la
 [decisión de almacenamiento](revision-almacenamiento-deportivo.md).
 
-Estado: diseño para implementar por incrementos; no incorpora módulos, cambia
-importadores, consume la clave OCB ni activa recogidas. El calendario del cliente
-sigue desactivado hasta conectar y comprobar la lectura de nuestra API.
+Estado inicial: diseño para implementar por incrementos. La continuación añade
+los [adaptadores de agenda](adaptadores-deportivos.md) y sus entradas CLI; los
+apartados siguientes conservan las decisiones y requisitos del diseño. La
+operación, cobertura y conexión del cliente siguen pendientes. No activa recogidas
+periódicas ni el calendario del navegador.
 
 ## Flujo y contrato común
 

@@ -135,7 +135,7 @@ class Migracion(unittest.TestCase):
     def test_corregir_mapeo_audita_y_rechaza_cambios_encubiertos_de_observacion(self):
         a = construir([ficha()])
         catalogo = cargar_catalogo()
-        catalogo['version'] = 2
+        catalogo['version'] += 1
         catalogo['correspondencias'][0]['tema'] = 'danza'
         b = aplicar(a, catalogo)
         with tempfile.TemporaryDirectory() as carpeta, almacen.abrir(Path(carpeta) / 'copia.sqlite') as db:

@@ -147,9 +147,11 @@ class RecolectorFEB(unittest.TestCase):
         with patch('agenda.turso.Almacen') as remoto, patch('agenda.recogida.feb', return_value=m) as recoger:
             remoto.return_value.cargar.return_value = ampliar(construir([ficha()]))
             main(['--turso', '--recoger-deporte', 'feb', '--temporada-feb', '2026', '--competicion-feb', '1'])
-            recoger.assert_called_once_with('2026', '1')
+            recoger.assert_called_once_with('2026', '1', solo_agenda=True)
             guardado = remoto.return_value.guardar.call_args.args[0]['nucleo']
             self.assertEqual(len(proyectar(guardado, ['feb'])['eventos']), 3)
+            self.assertFalse(guardado['resultados'])
+            self.assertFalse(guardado['clasificaciones'])
 
     def test_otras_ligas_contrastadas_y_catalogo_anunciado_son_distintos(self):
         for nombre, codigo in (('primera', '1'), ('challenge', '67')):

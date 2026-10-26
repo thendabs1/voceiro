@@ -19,7 +19,7 @@ COLECCIONES = ('entidades', 'documentos', 'referencias', 'observaciones', 'relac
 TIPOS = {'evento', 'agrupacion', 'actividad', 'participante', 'lugar', 'territorio'}
 CLASES = {
     'evento': {'encuentro', 'funcion', 'sesion', 'actividad_continua', 'desconocida'},
-    'agrupacion': {'circuito', 'competicion', 'edicion', 'fase', 'cuadro', 'ciclo', 'festival', 'coleccion'},
+    'agrupacion': {'circuito', 'competicion', 'edicion', 'fase', 'cuadro', 'ciclo', 'festival', 'coleccion', 'gran_premio'},
     'participante': {'persona', 'equipo', 'pareja', 'club', 'organizacion'},
 }
 RELACIONES = {
@@ -310,6 +310,22 @@ def validar(n):
                 raise ValueError('Estado de programación inválido')
             if p['ejecucion'] not in ('sin_empezar', 'en_curso', 'terminado', 'interrumpido', 'desconocido'):
                 raise ValueError('Estado de ejecución inválido')
+        agenda = o['bloques'].get('agenda')
+        if agenda:
+            propia = entidad(n['referencias'][o['referencia']]['destino'])
+            if propia['tipo'] != 'evento':
+                raise ValueError('Programa de agenda sin evento')
+            if agenda.get('rol') == 'principal':
+                grupo = entidad(agenda.get('grupo'))
+                if propia['clase'] != 'actividad_continua' or grupo['clase'] != 'gran_premio':
+                    raise ValueError('Cita principal sin gran premio')
+            elif agenda.get('rol') == 'sesion':
+                principal = entidad(agenda.get('principal'))
+                if (propia['clase'] != 'sesion' or principal['tipo'] != 'evento'
+                        or principal['clase'] != 'actividad_continua' or not agenda.get('tipo_sesion')):
+                    raise ValueError('Sesión sin cita principal válida')
+            else:
+                raise ValueError('Papel de agenda desconocido')
     padres, unicos, activas = {}, {}, ultimas(n)
     for i, r in n['relaciones'].items():
         a, b = entidad(r['origen']), entidad(r['destino'])

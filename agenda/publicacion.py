@@ -24,7 +24,9 @@ def proyectar(n, fuentes=None, generado=None):
         raise ValueError('Fuentes desconocidas: ' + ', '.join(sorted(permitidas - n['fuentes'].keys())))
     activas = nucleo.ultimas(n)
     observaciones = {i: o for i, o in n['observaciones'].items()
-                     if n['referencias'][o['referencia']]['proveedor'] in permitidas}
+        if n['referencias'][o['referencia']]['proveedor'] in permitidas
+        and (n['fuentes'][n['referencias'][o['referencia']]['proveedor']].get('alcance') != 'agenda_deportiva'
+             or n['documentos'][o['documento']]['clase'] == 'extraccion_agenda')}
 
     def vigente(dato):
         return nucleo.vigente(n, dato, activas & observaciones.keys())
@@ -79,7 +81,7 @@ def proyectar(n, fuentes=None, generado=None):
 
     def seleccion(k, bloque):
         s = selecciones.get((k, bloque))
-        if s is None and bloque == 'identificadores':
+        if s is None and bloque in ('identificadores', 'agenda'):
             e = entidades[k]
             s = nucleo.seleccionar(n, nucleo.objetivo(e['tipo'], e['id']), bloque, activas,
                 [i for i in n['entidades'][k]['evidencias'] if i in activas])
@@ -217,6 +219,26 @@ def proyectar(n, fuentes=None, generado=None):
                               if observaciones[i]['bloques'].get('url_evento')}),
             'participaciones': por_evento.get(k, []),
             'fuentes': [procedencia(i) for i in sorted(propias)]})
+        agenda = seleccion(k, 'agenda')
+        if agenda and agenda.get('valor'):
+            eventos[-1]['agenda'] = agenda['valor']
+    por_id = {e['id']: e for e in eventos}
+    sesiones = set()
+    for e in eventos:
+        agenda = e.get('agenda') or {}
+        if agenda.get('rol') != 'sesion':
+            continue
+        principal = por_id.get(agenda['principal']['id'])
+        if not principal or (principal.get('agenda') or {}).get('rol') != 'principal':
+            raise ValueError('Sesión publicada sin su gran premio principal')
+        principal.setdefault('programa', []).append(deepcopy(e))
+        principal['objetivos'] = sorted(set(principal['objetivos']) | set(e['objetivos']))
+        sesiones.add(e['id'])
+    for e in eventos:
+        if 'programa' in e:
+            e['programa'].sort(key=lambda s: (s['programacion']['valor']['cuando']['inicio']['fecha'] or '',
+                s['programacion']['valor']['cuando']['inicio']['hora_local'] or '', s['id']))
+    eventos = [e for e in eventos if e['id'] not in sesiones]
     for (k, bloque), _ in selecciones.items():
         if bloque != 'clasificacion' or k not in entidades:
             continue

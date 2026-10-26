@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "conceptos": {
     "deportes": {"nombres": {"es": "Deportes"}, "padres": []},
     "economia": {"nombres": {"es": "Economía"}, "padres": []},
@@ -9,6 +9,7 @@
     "tenis": {"nombres": {"es": "Tenis"}, "padres": ["deportes"]},
     "baloncesto": {"nombres": {"es": "Baloncesto"}, "padres": ["deportes"]},
     "automovilismo": {"nombres": {"es": "Automovilismo"}, "padres": ["deportes"]},
+    "motociclismo": {"nombres": {"es": "Motociclismo"}, "padres": ["deportes"]},
     "futbol": {"nombres": {"es": "Fútbol"}, "padres": ["deportes"]},
     "futbol-americano": {"nombres": {"es": "Fútbol americano"}, "padres": ["deportes"]},
     "hockey-hielo": {"nombres": {"es": "Hockey sobre hielo"}, "padres": ["deportes"]},
