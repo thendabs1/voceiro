@@ -2,7 +2,8 @@
 
 26/10/2026. Alcance confirmado con el usuario: ATP/WTA, Primera y Segunda
 españolas, NBA/WNBA, LF Endesa, Primera FEB, LF Challenge, F1, MotoGP y WRC.
-Son doce colecciones de agenda. Tenis empieza **solo por torneos**. Este diseño
+Son doce colecciones de agenda. Tenis empieza **solo por torneos** y F1/MotoGP
+mostrarán **gran premio con sesiones dentro**, según lo confirmado. Este diseño
 sustituye el borrador de resultados diferidos y desarrolla la
 [decisión de almacenamiento](revision-almacenamiento-deportivo.md).
 
@@ -194,7 +195,7 @@ son sesiones, sin necesidad de pilotos, escuderías o tablas deportivas.
 
 El núcleo no tiene clase de agrupación `gran_premio`: proponer ese término
 mínimo al validar el adaptador, sin convertirlo silenciosamente en `fase`.
-La presentación principal y su programa se concretan en la propuesta posterior
+La presentación principal y su programa se concretan en el diseño posterior
 común a F1/MotoGP; requieren adaptar proyección/UI, sin fabricar horarios.
 
 **Cambio necesario:** contrastar paridad Vidmar/ESPN y elegir principal antes
@@ -220,11 +221,11 @@ equivalen a una integración operativa. Si hace falta adoptar OCB, resolver ante
 su temporada por UUID y cobertura; los IDs de ambas fuentes no son equivalentes.
 No sondear ambas para rellenar huecos ni cambiar de fuente automáticamente.
 
-### Presentación de grandes premios: propuesta para revisar
+### Presentación de grandes premios: acuerdo confirmado
 
-Propuesta planteada al usuario: una cita principal de varios días con las
-sesiones dentro. Permite mostrar un GP desde que se conocen sus fechas, antes
-de publicar sus horas. Si se adopta, concreta el modelo anterior así:
+Una cita principal de varios días con las sesiones dentro. Permite mostrar un
+GP desde que se conocen sus fechas, antes de publicar sus horas. El modelo
+queda así:
 
 - Mantener la agrupación GP para identidad, temporada y pertenencias. Añadir
   una cita principal `actividad_continua` con referencia distinta y su intervalo
@@ -239,8 +240,8 @@ de publicar sus horas. Si se adopta, concreta el modelo anterior así:
   permiten generar automáticamente esas citas principales. Acreditar una
   fuente estructurada y correspondencias antes de ofrecer esta presentación.
 
-La consulta sobre esta presentación no altera el alcance confirmado de deportes
-ni autoriza deducir fechas del GP desde sus sesiones.
+Las fechas de la cita principal necesitan evidencia propia; no se deducen del
+primer y último horario de sesión descargados.
 
 ## WRC y OCBlacktop desde nuestro servidor
 
@@ -307,9 +308,9 @@ añadir `motociclismo` bajo Deportes. Ampliar los atajos del parser al conectarl
 tener un tema en el catálogo no significa que su prefijo esté implementado.
 
 La tarjeta muestra cita, fecha/precisión, competición, fuente y antigüedad.
-El detalle incorpora procedencia, participantes mínimos y, si se adopta la
-propuesta de motor, programa de sesiones. Resultados no rellenan tarjetas ni
-reordenan la agenda. La cobertura se comunica por colección, separando vacío
+El detalle incorpora procedencia, participantes mínimos y programa de sesiones
+en los grandes premios. Resultados no rellenan tarjetas ni reordenan la agenda.
+La cobertura se comunica por colección, separando vacío
 comprobado, ventana incompleta y datos antiguos. Los metadatos actuales solo
 acreditan antigüedad por fuente; este control por colección sigue pendiente.
 

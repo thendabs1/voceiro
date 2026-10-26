@@ -68,7 +68,7 @@ La recogida actual usa dos páginas por liga y no recorre esos detalles.
 | --- | --- |
 | Fútbol y baloncesto, incluida FEB | Partidos anunciados, equipos conocidos, competición/temporada y fecha/hora disponible. No fabricar cruces de eliminatorias ni horarios pendientes. |
 | Tenis ATP/WTA | Solo torneos: edición e intervalo de celebración cuando esté acreditado. Sin recoger partidos, cuadros ni listas de jugadores en esta fase. |
-| F1/MotoGP | Gran premio como agrupación y sesiones con horario publicado como citas. No exigir pilotos, escuderías, ganador ni clasificación. |
+| F1/MotoGP | Cita principal de gran premio de varios días, con sesiones dentro. Mantener la agrupación para identidad/temporada y las citas de sesión con horario publicado, sin tarjetas duplicadas. No exigir pilotos, escuderías, ganador ni clasificación. |
 | Rallies | Rally como cita de varios días, vinculado al campeonato/temporada. Sin bajar a tramos ni clasificación. |
 
 Estas son reglas de selección, no cobertura ya implementada de todas las
