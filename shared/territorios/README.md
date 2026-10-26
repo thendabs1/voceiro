@@ -3,7 +3,7 @@
 Un municipio es una identidad territorial reutilizable por agenda, tiempo y
 prensa. Sus nombres y las zonas meteorológicas tienen otra función.
 
-El [inventario de relaciones y códigos](../../agenda/inventario-relaciones.md)
+El [inventario de relaciones y códigos](inventario.md)
 reúne el estado implementado, los cruces pendientes y las fuentes oficiales
 para revisar otros niveles y sistemas territoriales antes de ampliarlos.
 El [contrato del relacionador](relacionador.md) concreta identidad, tipos,
@@ -51,7 +51,7 @@ revisión y evidencias. `correspondencias.json` permite localizar tres recintos
 de las muestras Madrid por `vgnextoid` acreditado en catálogos oficiales, sin
 convertir el recinto en municipio. La proyección usa esos cruces también con
 observaciones ya guardadas. Los nuevos estados no están implementados en JS.
-El [informe por fuente](../../agenda/revision.md) revisa temas y ubicación de una
+El informe por fuente (`python -m agenda.revision`) revisa temas y ubicación de una
 exportación, sin consultar proveedores ni modificar el núcleo.
 El catálogo de medios y sus slices incorporan `region`, `pais`, `ambito` y
 los enlaces acreditados con papel `cobertura_editorial`. Eso no atribuye una
@@ -78,7 +78,7 @@ Informa códigos sin correspondencia, municipios sin punto meteorológico, zonas
 ausentes y diferencias entre cliente y worker. Las diferencias no se corrigen
 automáticamente ni acreditan un cambio actual del proveedor. Relaciones de zonas,
 cobertura municipal/provincial de medios y orden de implementación se concretan
-en la [base y el contrato de servicios](../../agenda/arquitectura-servicios.md).
+en el [inventario](inventario.md) y el [estado de la agenda](../../agenda/README.md).
 La [revisión de AEMET del 25/10/2026](revision-aemet-2026-10-25.md) documenta
 cuatro productos municipales vigentes ausentes del maestro, dos entradas antiguas
 y ocho municipios sin previsión actual acreditada. El generador del tiempo aplica

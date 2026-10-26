@@ -1,15 +1,15 @@
 # Inventario de relaciones y códigos
 
 Revisión del 25/10/2026 para cerrar el modelo con las fuentes ya disponibles.
-Complementa la [arquitectura de servicios](arquitectura-servicios.md): aquí se
+Complementa el [estado de la agenda](../../agenda/README.md): aquí se
 identifica qué existe, qué evidencia lo sostiene y qué falta por resolver.
 El alcance es agenda, territorio, tiempo y prensa; no es un inventario de todas
 las relaciones internas de Voceiro. Las propuestas no amplían el esquema actual.
 
-Continuación: el [contrato del relacionador](../shared/territorios/relacionador.md)
+Continuación: el [contrato del relacionador](relacionador.md)
 formaliza referencias, tipos y recorridos. Su primer incremento añade países
 ISO y el papel `pais_catalogo` de los medios, separado de su cobertura editorial.
-La [revisión posterior](revision.md) aplica estado/evidencia a las agendas:
+La revisión posterior (`python -m agenda.revision`) aplica estado/evidencia a las agendas:
 resuelve tres recintos de Madrid y documenta el desajuste Kulturklik/NORA.
 
 Se mantienen las recogidas culturales actuales: conservan evidencia útil para

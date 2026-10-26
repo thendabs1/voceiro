@@ -1,12 +1,12 @@
 # Contrato del relacionador territorial
 
-25/10/2026. Formalización a partir del [inventario](../../agenda/inventario-relaciones.md).
+25/10/2026. Formalización a partir del [inventario](inventario.md).
 El primer incremento implementa países y su enlace con el catálogo de medios.
 El segundo aplica en Python la resolución con estado/evidencia a Galicia,
 Kulturklik y tres recintos de Madrid, con correspondencias locales versionadas.
 La persistencia general de relaciones, vigencias y recorridos descritos abajo
 sigue propuesta; no tiene API pública. No sustituye las nueve relaciones del
-núcleo de agenda. Estado y orden de trabajo en la [revisión común](../../agenda/revision.md).
+núcleo de agenda. Estado de la agenda en su [README](../../agenda/README.md).
 
 El relacionador tiene tres responsabilidades: identificar un territorio desde
 una referencia externa, conservar vínculos con significado explícito y devolver
