@@ -111,9 +111,12 @@ test('GP con días oficiales pendientes conserva sesiones consultables sin relle
   const r = await b.pedir('/calendario/resumen?desde=2026-10-22&hasta=2026-10-28&zona=UTC');
   assert.deepEqual(r.dato.dias.map(d => d.cantidad), [1, 0, 0, 1, 0, 0]);
   const lista = await b.pedir('/calendario/eventos?desde=2026-10-22&hasta=2026-10-28&zona=UTC&limite=1');
-  assert.deepEqual(lista.dato.eventos.map(e => e.id), ['gp']);
+  // El cliente agrupa por el primer día visible de la ventana, no por el inicio.
+  assert.deepEqual(lista.dato.eventos.map(e => [e.id, e.dia]), [['gp', '2026-10-22']]);
   assert.equal(lista.dato.siguiente, null);
-  assert.deepEqual((await b.pedir('/calendario/eventos?pendientes=1')).dato.eventos.map(e => e.id), ['gp']);
+  const tarde = await b.pedir('/calendario/eventos?desde=2026-10-23&hasta=2026-10-28&zona=UTC');
+  assert.deepEqual(tarde.dato.eventos.map(e => [e.id, e.dia]), [['gp', '2026-10-25']]);
+  assert.deepEqual((await b.pedir('/calendario/eventos?pendientes=1')).dato.eventos.map(e => [e.id, e.dia]), [['gp', '']]);
   const local = agruparPorDiaCalendario(datos.eventos, r.dato.dias.map(d => d.dia), 'UTC');
   assert.deepEqual([...local.values()].map(v => v.length), [1, 0, 0, 1, 0, 0]);
 });
@@ -140,7 +143,7 @@ test('paginación completa, filtros antes de LIMIT y revisión en todas las pág
 
 test('semántica del parser, ámbitos, circuitos y filtros coincide con selección local', async t => {
   const b = base(); t.after(() => b.db.close());
-  for (const [q, texto] of [['cultura:calendario', '-prob'], ['deportes:resultados', 'musica'],
+  for (const [q, texto] of [['cultura:calendario', '-prob'], ['deportes:agenda', 'musica'],
     ['circuito:wta', 'coru'], ['', '"teatro de"'], ['', '-teatro']]) {
     const orden = leerConsultaCalendario(q) || {};
     let esperado = seleccionCalendario(b.datos, orden, { texto }).eventos.filter(e => e.id !== '003');

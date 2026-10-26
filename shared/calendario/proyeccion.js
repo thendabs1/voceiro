@@ -16,6 +16,11 @@ export function prepararLectura(datos) {
     if (objetivos.some(o => !o)) throw new Error('Objetivo ausente');
     const detalle = { evento: e, entidades: Object.fromEntries(e.objetivos.map(k => [k, datos.entidades[k]])) };
     const tarjeta = Object.fromEntries(['id', 'clase', 'nombres', 'programacion', 'territorios'].map(k => [k, e[k]]));
+    // Lugar compacto para la lista; dirección, coordenadas y procedencia van en el detalle.
+    const lugar = e.lugar?.valor;
+    tarjeta.lugar = lugar && typeof lugar === 'object'
+      ? { nombre: lugar.nombre || null, municipio: lugar.municipio || lugar.municipio_literal || null }
+      : lugar || null;
     tarjeta.resultado_disponible = Boolean(e.resultado);
     tarjeta.fuentes = [...new Set(e.fuentes.map(f => f.fuente))];
     eventos.push([e.id, texto(objetivos.flatMap(o => Object.values(o.nombres)).join(' ')),

@@ -93,7 +93,7 @@ test(`un fallo se indica y no se repite solo; otra búsqueda o volver a ella lo 
   assert.equal(s.ctx.estadoPrensa(), 'prensaBuscando');
 });
 
-test('ATP y WTA se buscan por separado, comparten cancelación y un filtro de resultados no pide prensa', async () => {
+test('ATP y WTA se buscan por separado, comparten cancelación y una consulta solo de agenda no pide prensa', async () => {
   const s = crear(), peticiones = [];
   s.ctx.buscarEnPrensa = async (_, texto, opciones) => {
     peticiones.push({ texto, signal: opciones.signal });
@@ -108,7 +108,7 @@ test('ATP y WTA se buscan por separado, comparten cancelación y un filtro de re
   assert.match(peticiones[0].texto, /ATP/); assert.match(peticiones[1].texto, /WTA/);
   assert.equal(peticiones[0].signal, peticiones[1].signal);
   const previas = s.estado.timers.length;
-  c.calendario = leerConsultaCalendario('resultados:tenis');
+  c.calendario = leerConsultaCalendario('calendario:tenis');
   s.ctx.programar(c);
   assert.equal(s.estado.timers.length, previas);
 });

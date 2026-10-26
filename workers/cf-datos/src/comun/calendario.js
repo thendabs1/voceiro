@@ -225,8 +225,10 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       salida = { ...base, dias: [...porDia.values()] };
     } else {
       const hayMas = filas.length > c.limite, pagina = filas.slice(0, c.limite), ultima = pagina.at(-1);
+      // dia: primer día visible en la ventana pedida ('' en la lista pendiente),
+      // para agrupar en el cliente con la misma regla que la consulta.
       salida = { ...base, [ruta.endsWith('/objetivos') ? 'entidades' : 'eventos']:
-        pagina.map(f => JSON.parse(f.tarjeta || f.datos_json)),
+        pagina.map(f => f.tarjeta ? { ...JSON.parse(f.tarjeta), dia: f.dia } : JSON.parse(f.datos_json)),
         siguiente: hayMas ? codificar([meta.revision, huella, ultima.dia || '', ultima.id]) : null };
     }
     const respuesta = json(salida, 200, { 'Cache-Control': 'public, max-age=30', ETag: '"' + etag + '"' });
