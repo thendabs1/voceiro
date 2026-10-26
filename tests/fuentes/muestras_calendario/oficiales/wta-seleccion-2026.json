@@ -1,0 +1,36 @@
+{
+  "year": "2026",
+  "pageInfo": {
+    "numEntries": 2
+  },
+  "content": [
+    {
+      "year": 2026,
+      "title": "United Cup - Australia, AUS",
+      "startDate": "2026-01-02",
+      "endDate": "2026-01-11",
+      "city": "PERTH + SYDNEY",
+      "country": "AUS",
+      "level": "WTA 500",
+      "status": "past",
+      "tournamentGroup": {
+        "id": "2084",
+        "name": "UNITED CUP"
+      }
+    },
+    {
+      "year": 2026,
+      "title": "Open BLS de Limoges - Limoges, FRA",
+      "startDate": "2026-12-14",
+      "endDate": "2026-12-20",
+      "city": "LIMOGES",
+      "country": "FRA",
+      "level": "WTA 125",
+      "status": "future",
+      "tournamentGroup": {
+        "id": "1072",
+        "name": "LIMOGES 125"
+      }
+    }
+  ]
+}

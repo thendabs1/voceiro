@@ -39,7 +39,7 @@ def recoger(coleccion, fecha):
     dia = date.fromisoformat(fecha)
     deporte_id, liga = COLECCIONES[coleccion]
     url = BASE + deporte_id + '/' + liga + '/scoreboard?' + urlencode({'dates': dia.strftime('%Y%m%d')})
-    pagina = json.loads(recogida.descargar(url))
+    pagina = json.loads(recogida.descargar(url, cabeceras={'User-Agent': recogida.CHROME_UA}))
     validar(pagina, liga)
     return pagina, url
 

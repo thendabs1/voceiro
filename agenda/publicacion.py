@@ -17,7 +17,7 @@ from shared.territorios import cargar as cargar_territorios
 from shared.territorios.relacionador import cargar as cargar_relacionador
 
 
-def proyectar(n, fuentes=None, generado=None):
+def proyectar(n, fuentes=None, generado=None, control=None):
     nucleo.validar(n)
     permitidas = set(n['fuentes']) if fuentes is None else set(fuentes)
     if permitidas - n['fuentes'].keys():
@@ -250,7 +250,7 @@ def proyectar(n, fuentes=None, generado=None):
             tablas.append({**deepcopy(n['clasificaciones'][cid]), 'seleccion': s,
                            'objetivos': sorted(set(ascendientes(k)) | participantes_tabla)})
     campos_fuente = ('nombre', 'url', 'atribucion', 'licencia', 'licencia_url', 'condiciones', 'capacidades', 'modo')
-    return {'version': 1, 'nucleo_version': 2,
+    salida = {'version': 1, 'nucleo_version': 2,
         'generado': generado or datetime.now(timezone.utc).isoformat(timespec='seconds'),
         'revision': fuentes is None,
         'catalogo': {'version': n['catalogo']['version'], 'conceptos': deepcopy(n['catalogo']['conceptos'])},
@@ -261,6 +261,22 @@ def proyectar(n, fuentes=None, generado=None):
                     for f in sorted(permitidas)},
         'entidades': entidades, 'relaciones': relaciones,
         'eventos': sorted(eventos, key=lambda e: e['id']), 'clasificaciones': tablas}
+    if control:
+        # Al cambiar de principal no se fusionan IDs por título ni se publican
+        # simultáneamente las dos versiones de una cita deportiva.
+        limites = {f: set(ids) for f, ids in control['eventos'].items() if f in permitidas}
+        salida['eventos'] = [e for e in salida['eventos'] if any(
+            p['fuente'] not in limites or e['id'] in limites[p['fuente']] for p in e['fuentes'])]
+        usados = {k for e in salida['eventos'] for k in e['objetivos']}
+        for e in salida['eventos']:
+            for sesion in e.get('programa', []):
+                usados.update(sesion['objetivos'])
+        usados.update(k for tabla in tablas for k in tabla['objetivos'])
+        salida['entidades'] = {k: v for k, v in entidades.items() if k in usados}
+        salida['relaciones'] = [r for r in relaciones if nucleo.clave(r['origen']) in usados
+            and nucleo.clave(r['destino']) in usados and (not r['ambito'] or nucleo.clave(r['ambito']) in usados)]
+        salida['cobertura_colecciones'] = [deepcopy(c) for c in control['colecciones'] if c['fuente'] in permitidas]
+    return salida
 
 
 def subir(datos):
@@ -289,10 +305,14 @@ def main(argv=None):
     origen.add_argument('--turso', action='store_true', help='Leer directamente la base del calendario')
     ap.add_argument('--salida', help='Exportación opcional para revisión local')
     ap.add_argument('--fuentes', help='Fuentes seleccionadas para publicación, separadas por comas')
+    ap.add_argument('--fuentes-control', action='store_true',
+                    help='Añadir los principales deportivos con recogida validada y su cobertura')
     ap.add_argument('--publicar', action='store_true')
     ap.add_argument('--lectura-sql', action='store_true',
                     help='Preparar y publicar la proyección indexada en el mismo Turso (requiere --fuentes)')
     args = ap.parse_args(argv)
+    if args.fuentes_control and (not args.turso or args.fuentes is None):
+        ap.error('--fuentes-control requiere --turso y una selección --fuentes explícita')
     if args.lectura_sql and (not args.turso or args.fuentes is None):
         ap.error('--lectura-sql requiere --turso y --fuentes explícitas')
     if args.turso:
@@ -305,7 +325,15 @@ def main(argv=None):
     else:
         with open(args.entrada, encoding='utf-8') as archivo:
             n = json.load(archivo)
-    datos = proyectar(n, None if args.fuentes is None else args.fuentes.split(','))
+    control = None
+    fuentes = None if args.fuentes is None else [f for f in args.fuentes.split(',') if f]
+    if args.fuentes_control:
+        from .control import Repositorio
+        repo = Repositorio(remoto=remoto)
+        repo.inicializar()
+        control = repo.publico()
+        fuentes = sorted(set(fuentes) | (control['eventos'].keys() & n['fuentes'].keys()))
+    datos = proyectar(n, fuentes, control=control)
     if args.salida:
         guardar(args.salida, datos)
     if args.lectura_sql:

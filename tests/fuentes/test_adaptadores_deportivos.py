@@ -317,7 +317,7 @@ class PersistenciaYTransporte(unittest.TestCase):
                 _, url = deportes.recoger(c, fecha='2026-11-01')
                 self.assertTrue(url.endswith('?dates=20261101'))
                 self.assertNotIn('limit=', url)
-                descargar.assert_called_once_with(url)
+                descargar.assert_called_once_with(url, cabeceras={'User-Agent': recogida.CHROME_UA})
         error = HTTPError('https://ejemplo', 403, 'Forbidden', {}, io.BytesIO())
         with closing(error), patch('agenda.recogida.urlopen', side_effect=error) as descargar:
             with self.assertRaises(HTTPError):

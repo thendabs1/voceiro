@@ -1,18 +1,50 @@
 """Recogidas explícitas y acotadas; no programa ni publica datos."""
 
 import json
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import date, timedelta
 from urllib.parse import urlencode
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
 MAX_BYTES = 4_000_000
+CHROME_UA = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
+             '(KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36')
+_CONTROL = ContextVar('agenda_control_descargas', default=None)
+
+
+@contextmanager
+def controlar(antes, despues):
+    """Reserva cada GET antes de enviarlo y registra también los intentos fallidos."""
+    token = _CONTROL.set((antes, despues))
+    try:
+        yield
+    finally:
+        _CONTROL.reset(token)
 
 
 def descargar(url, cabeceras=None):
     req = Request(url, headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)', **(cabeceras or {})})
-    with urlopen(req, timeout=25) as respuesta:
-        contenido = respuesta.read(MAX_BYTES + 1)
+    control = _CONTROL.get()
+    if control:
+        control[0](url)
+    estado, headers, contenido = None, {}, b''
+    try:
+        with urlopen(req, timeout=25) as respuesta:
+            estado = getattr(respuesta, 'status', 200)
+            headers = dict(getattr(respuesta, 'headers', {}) or {})
+            contenido = respuesta.read(MAX_BYTES + 1)
+    except HTTPError as error:
+        estado, headers = error.code, dict(error.headers or {})
+        raise
+    finally:
+        if control:
+            # Nunca registrar cabeceras de petición, claves ni cookies de respuesta.
+            seleccion = {k.lower(): v for k, v in headers.items()
+                         if k.lower() == 'retry-after' or 'ratelimit' in k.lower()}
+            control[1](url, estado, seleccion, len(contenido))
     if len(contenido) > MAX_BYTES:
         raise ValueError('Respuesta demasiado grande; no se importa truncada')
     return contenido.decode('utf-8-sig')

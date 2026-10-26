@@ -60,6 +60,7 @@ export function prepararLectura(datos) {
     alcance: 'eventos_publicados', completa: false }));
   return { version: 1, generado: datos.generado, desde, hasta, zonas: ZONAS,
     catalogo: datos.catalogo, territorios_catalogo: datos.territorios_catalogo,
-    fuentes: datos.fuentes, cobertura: comprobaciones, eventos, facetas, tramos,
+    fuentes: datos.fuentes, cobertura: comprobaciones,
+    colecciones: datos.cobertura_colecciones || [], eventos, facetas, tramos,
     entidades: entidades.map(([k, e]) => [k, e.tipo, texto(Object.values(e.nombres).join(' ')), JSON.stringify(e)]) };
 }

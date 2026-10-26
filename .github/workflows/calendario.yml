@@ -9,7 +9,7 @@ on:
       operacion:
         description: 'Recoger, reclasificar, preparar el núcleo o publicar el estado guardado'
         type: choice
-        options: [recoger, reclasificar, preparar-nucleo, publicar]
+        options: [recoger, deportes, reclasificar, preparar-nucleo, publicar]
         default: recoger
       inicio:
         description: 'Primer día (AAAA-MM-DD, vacío = hoy)'
@@ -39,7 +39,7 @@ on:
         default: ninguna
       temporada_feb:
         description: 'Año inicial explícito de la temporada FEB'
-        default: '2026'
+        required: false
       competicion_feb:
         description: 'FEB: 4 LF Endesa, 1 Primera FEB, 67 LF Challenge'
         type: choice
@@ -64,6 +64,7 @@ jobs:
     env:
       CALENDARIO_TURSO_URL: ${{ secrets.CALENDARIO_TURSO_URL }}
       CALENDARIO_TURSO_TOKEN: ${{ secrets.CALENDARIO_TURSO_TOKEN }}
+      OCBLACKTOP_API_KEY: ${{ secrets.OCBLACKTOP_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -123,6 +124,12 @@ jobs:
             fi
           fi
           python calendario.py --turso --preparar-nucleo
+      - name: Revisar temporadas y descubrir los próximos calendarios deportivos
+        id: temporadas
+        # Manual hasta medir filas y peticiones de una pasada real; después, al cron.
+        if: inputs.operacion == 'deportes'
+        continue-on-error: true
+        run: python -m agenda.operacion --turso --ejecutar --descubrir
       - name: Revisar clasificación y relaciones de todas las fuentes guardadas
         run: python -m agenda.revision --turso
       - name: Validar y publicar la lectura desde Turso
@@ -136,6 +143,9 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           args=(--turso)
-          if [ "$PUBLICAR" = true ]; then args+=(--fuentes "$FUENTES_PUBLICAS" --publicar); fi
+          if [ "$PUBLICAR" = true ]; then args+=(--fuentes "$FUENTES_PUBLICAS" --fuentes-control --publicar); fi
           if [ "$PUBLICAR" = true ] && [ "$LECTURA_SQL" = true ]; then args+=(--lectura-sql); fi
           python -m agenda.publicacion "${args[@]}"
+      - name: Señalar incidencias de la recogida deportiva después de publicar el estado válido
+        if: steps.temporadas.outcome == 'failure'
+        run: exit 1

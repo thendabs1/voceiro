@@ -34,7 +34,26 @@ def operar_nucleo(args):
     from agenda.transicion import ampliar
     from agenda import feb, espn_tenis, madrid, kulturklik
 
-    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.entrada_deporte or args.recoger_deporte
+    # Las rutas manuales también respetan cierre, presupuesto y enfriamiento.
+    # Cada selección deportiva se confirma antes de continuar con otras fuentes.
+    if args.recoger_deporte:
+        from agenda import operacion
+        resultados = []
+        with operacion.abrir(db=args.db, turso=args.turso) as repo:
+            for fuente in dict.fromkeys(args.recoger_deporte):
+                if fuente == 'feb':
+                    fuente = {'4': 'feb-endesa', '1': 'feb-primera', '67': 'feb-challenge'}[args.competicion_feb]
+                    year = args.temporada_feb
+                else:
+                    year = args.temporada_deporte
+                resultados.append(operacion.manual(repo, fuente, operacion.ahora_utc(),
+                                                   year=year, fecha=args.fecha_deporte))
+        for resultado in resultados:
+            print('[agenda] Control: ' + json.dumps(resultado, ensure_ascii=False))
+        if any(r and r.get('estado') == 'fallida' for r in resultados):
+            raise ValueError('Falló una selección deportiva; se conserva su última lectura válida')
+
+    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.entrada_deporte
                      or args.recoger_cultura or args.entrada_madrid or args.entrada_kulturklik)
     observado = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='microseconds')
 
@@ -64,14 +83,6 @@ def operar_nucleo(args):
             if fuente in (args.recoger_cultura or []):
                 filas, url = recogida.cultura(fuente, args.inicio, args.fin)
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'], filas, observado, url)
-        for fuente in dict.fromkeys(args.recoger_deporte or []):
-            if fuente == 'feb':
-                calendario['nucleo'] = feb.importar_agenda(calendario['nucleo'],
-                    recogida.feb(args.temporada_feb, args.competicion_feb, solo_agenda=True), observado)
-            else:
-                pagina, url = deportes.recoger(fuente, fecha=args.fecha_deporte, temporada=args.temporada_deporte)
-                calendario['nucleo'] = deportes.importar(calendario['nucleo'], fuente,
-                    pagina, observado, url=url, temporada=args.temporada_deporte)
         return calendario
 
     if args.turso:
