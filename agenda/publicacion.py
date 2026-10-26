@@ -337,10 +337,12 @@ def main(argv=None):
     if args.salida:
         guardar(args.salida, datos)
     if args.lectura_sql:
-        from .lectura import preparar, planificar
+        from turso_http import filas
+        from .lectura import estado, preparar, planificar
         preparada = preparar(datos)
-        remoto.cliente.transaccion(planificar(preparada, remoto.revision))
-        print(f'[agenda] Lectura SQL: {len(preparada["tramos"])} tramos; '
+        previo = estado(lambda s: [filas(r) for r in remoto.cliente.transaccion(s, escritura=False)])
+        remoto.cliente.transaccion(planificar(preparada, remoto.revision, previo))
+        print(f'[agenda] Lectura SQL {"diferencial" if previo else "completa"}: {len(preparada["tramos"])} tramos; '
               f'{remoto.cliente.leidas} filas leídas, {remoto.cliente.escritas} escritas')
     if args.publicar:
         subir(datos)

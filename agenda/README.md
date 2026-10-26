@@ -151,7 +151,14 @@ proyección: solo fuentes permitidas (`CALENDARIO_FUENTES_PUBLICAS`, por defecto
 
 Con `--lectura-sql` prepara además tablas indexadas por tramos de días
 consecutivos (de 329.000 filas diarias a 25.000 tramos en la medición del
-25/10). Rutas GET/HEAD del worker:
+25/10). La publicación es diferencial: `agenda_lectura_huellas` guarda una
+huella por evento (con sus facetas y tramos) y por entidad, y solo se reescribe
+lo que cambió; sin huellas previas se reemplaza todo. Para que una cita sin
+cambios conserve su huella, la lectura no lleva «comprobado» por cita (va por
+fuente en `cobertura`), los tramos iguales en las tres zonas se guardan una vez
+con zona `*` y el recorte al horizonte va por meses enteros. Con los 4.784
+eventos del 26/10: de 64.015 filas reescritas por publicación a 45.662 la
+primera vez y 0 si no hay novedades. Rutas GET/HEAD del worker:
 
 | Ruta | Respuesta |
 | --- | --- |

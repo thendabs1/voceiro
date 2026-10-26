@@ -35,3 +35,11 @@ CREATE TABLE IF NOT EXISTS agenda_lectura_entidades (
     datos_json TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS agenda_lectura_entidades_tipo ON agenda_lectura_entidades(tipo,id);
+-- Huella de cada evento (con sus facetas y tramos) y de cada entidad publicada:
+-- cada publicación reescribe solo lo que cambió.
+CREATE TABLE IF NOT EXISTS agenda_lectura_huellas (
+    tipo TEXT NOT NULL CHECK(tipo IN ('evento','entidad')),
+    id TEXT NOT NULL,
+    huella TEXT NOT NULL,
+    PRIMARY KEY(tipo,id)
+);
