@@ -1,4 +1,5 @@
 """Lectura SQL regenerable. Preparar antes de abrir la transacción de publicación."""
+from collections import defaultdict
 import hashlib
 import json
 from pathlib import Path
@@ -7,6 +8,7 @@ import subprocess
 from .almacen import VERSION_ESQUEMA
 
 RAIZ = Path(__file__).resolve().parent.parent
+TABLAS = {'evento': 'eventos', 'entidad': 'entidades'}
 
 
 def preparar(datos):
@@ -16,9 +18,47 @@ def preparar(datos):
     return json.loads(resultado.stdout)
 
 
-def planificar(preparada, revision):
+def _huella(dato):
+    return hashlib.sha256(json.dumps(dato, ensure_ascii=False, sort_keys=True,
+                                     separators=(',', ':')).encode()).hexdigest()
+
+
+def huellas(preparada):
+    """Huella de cada evento (con sus facetas y tramos) y de cada entidad."""
+    facetas, tramos = defaultdict(list), defaultdict(list)
+    for f in preparada['facetas']:
+        facetas[f[0]].append(f)
+    for t in preparada['tramos']:
+        tramos[t[3]].append(t)
+    resultado = {('evento', e[0]): _huella([e, sorted(facetas[e[0]]), sorted(tramos[e[0]])])
+                 for e in preparada['eventos']}
+    resultado.update({('entidad', e[0]): _huella(e) for e in preparada['entidades']})
+    return resultado, facetas, tramos
+
+
+def estado(consultar):
+    """Revisión publicada y huellas guardadas, leídas en un mismo snapshot.
+
+    `consultar(sentencias)` devuelve las filas de cada sentencia. None (sin
+    lectura previa o sin huellas) obliga a reemplazar la lectura entera.
+    """
+    tablas, = consultar([("SELECT name FROM sqlite_master WHERE type='table' "
+                          "AND name IN ('agenda_lectura_control', 'agenda_lectura_huellas')", ())])
+    if len(tablas) != 2:
+        return None
+    control, guardadas = consultar([('SELECT revision FROM agenda_lectura_control WHERE id=1', ()),
+                                    ('SELECT tipo, id, huella FROM agenda_lectura_huellas', ())])
+    if not control or not guardadas:
+        return None
+    return {'revision': control[0][0], 'huellas': {(t, i): h for t, i, h in guardadas}}
+
+
+def planificar(preparada, revision, previo=None):
     """Reemplazo atómico; la revisión del núcleo protege frente a publicaciones viejas.
 
+    Con `previo` (de `estado`) solo se reescriben los eventos y entidades cuya
+    huella cambió, y se retiran los que ya no se publican. Si otra publicación
+    cambió la lectura desde que se leyó `previo`, la guardia revierte todo.
     El llamante ejecuta TODOS los pasos en una transacción, también el DDL.
     La versión SQL de lectura es independiente de la del núcleo.
     """
@@ -36,11 +76,40 @@ def planificar(preparada, revision):
         'SELECT 1, -1, ?, ?, ? WHERE NOT EXISTS '
         '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version=? AND revision=?)',
         (identificador, revision, '{}', VERSION_ESQUEMA, revision)))
-    for tabla in ('facetas', 'tramos', 'eventos', 'entidades'):
-        pasos.append((f'DELETE FROM agenda_lectura_{tabla}', ()))
-    for tabla, cantidad in (('eventos', 5), ('facetas', 3), ('tramos', 4), ('entidades', 4)):
-        sentencia = f'INSERT INTO agenda_lectura_{tabla} VALUES ({",".join("?" for _ in range(cantidad))})'
-        pasos.extend((sentencia, tuple(fila)) for fila in preparada[tabla])
+    nuevas, facetas, tramos = huellas(preparada)
+    if previo is None:
+        cambiadas, retiradas = set(nuevas), set()
+        for tabla in ('facetas', 'tramos', 'eventos', 'entidades', 'huellas'):
+            pasos.append((f'DELETE FROM agenda_lectura_{tabla}', ()))
+    else:
+        # Misma técnica: si la lectura publicada ya no es la leída, CHECK o PK fallan.
+        pasos.append(('INSERT INTO agenda_lectura_control SELECT 1, -1, ?, ?, ? WHERE NOT EXISTS '
+                      '(SELECT 1 FROM agenda_lectura_control WHERE id=1 AND revision=?)',
+                      (identificador, revision, '{}', previo['revision'])))
+        cambiadas = {k for k, h in nuevas.items() if previo['huellas'].get(k) != h}
+        retiradas = previo['huellas'].keys() - nuevas.keys()
+        for tipo, i in sorted(cambiadas | retiradas):
+            if tipo == 'evento':
+                pasos.append(('DELETE FROM agenda_lectura_facetas WHERE evento=?', (i,)))
+                pasos.append(('DELETE FROM agenda_lectura_tramos WHERE evento=?', (i,)))
+        for tipo, i in sorted(retiradas):
+            pasos.append((f'DELETE FROM agenda_lectura_{TABLAS[tipo]} WHERE id=?', (i,)))
+            pasos.append(('DELETE FROM agenda_lectura_huellas WHERE tipo=? AND id=?', (tipo, i)))
+    for e in preparada['eventos']:
+        if ('evento', e[0]) not in cambiadas:
+            continue
+        pasos.append(('INSERT INTO agenda_lectura_eventos VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
+                      'texto=excluded.texto, resultado=excluded.resultado, '
+                      'tarjeta_json=excluded.tarjeta_json, detalle_json=excluded.detalle_json', tuple(e)))
+        pasos.extend(('INSERT INTO agenda_lectura_facetas VALUES (?,?,?)', tuple(f)) for f in facetas[e[0]])
+        pasos.extend(('INSERT INTO agenda_lectura_tramos VALUES (?,?,?,?)', tuple(t)) for t in tramos[e[0]])
+    for e in preparada['entidades']:
+        if ('entidad', e[0]) in cambiadas:
+            pasos.append(('INSERT INTO agenda_lectura_entidades VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
+                          'tipo=excluded.tipo, texto=excluded.texto, datos_json=excluded.datos_json', tuple(e)))
+    pasos.extend(('INSERT INTO agenda_lectura_huellas VALUES (?,?,?) ON CONFLICT(tipo,id) '
+                  'DO UPDATE SET huella=excluded.huella', (tipo, i, nuevas[(tipo, i)]))
+                 for tipo, i in sorted(cambiadas))
     pasos.append(('INSERT INTO agenda_lectura_control VALUES (1,1,?,?,?) ON CONFLICT(id) '
                   'DO UPDATE SET revision=excluded.revision, origen_revision=excluded.origen_revision, '
                   'datos_json=excluded.datos_json',

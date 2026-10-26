@@ -108,6 +108,7 @@ async function firma(c) {
   return [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
+// zona '*': tramos iguales en todas las zonas (citas con solo fecha), una sola fila.
 export function consultaEventos(c, meta, cursor) {
   const args = c.pendientes ? [c.zona, '', ''] : [c.desde, c.zona, c.desde, c.hasta];
   const dia = c.pendientes ? 'd.desde' : 'max(d.desde,?)';
@@ -119,7 +120,7 @@ export function consultaEventos(c, meta, cursor) {
   return { sql: `WITH seleccion AS (
     SELECT e.id, min(${dia}) AS dia FROM agenda_lectura_tramos d
     JOIN agenda_lectura_eventos e ON e.id=d.evento
-    WHERE d.zona=? AND ${dias}${filtros} GROUP BY e.id)
+    WHERE d.zona IN (?,'*') AND ${dias}${filtros} GROUP BY e.id)
     SELECT id,dia,(SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=seleccion.id) AS tarjeta
     FROM seleccion${continuacion} ORDER BY dia,id LIMIT ?`, args };
 }
@@ -132,7 +133,7 @@ export function consultaResumen(c, meta) {
   return { sql: `WITH dias(dia) AS (VALUES ${dias.map(() => '(?)').join(',')}), seleccion AS (
     SELECT v.dia,e.id,ROW_NUMBER() OVER(PARTITION BY v.dia ORDER BY e.id) AS orden,
       count(*) OVER(PARTITION BY v.dia) AS cantidad
-    FROM dias v JOIN agenda_lectura_tramos d ON d.zona=? AND d.hasta>v.dia AND d.desde<=v.dia
+    FROM dias v JOIN agenda_lectura_tramos d ON d.zona IN (?,'*') AND d.hasta>v.dia AND d.desde<=v.dia
     JOIN agenda_lectura_eventos e ON e.id=d.evento WHERE 1=1${filtros})
     SELECT dia,id,cantidad,(SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=seleccion.id) AS tarjeta
     FROM seleccion WHERE orden<=2 ORDER BY dia,id`, args };

@@ -106,6 +106,30 @@ test('GP con sesiones fuera de sus días locales: SQL, resumen y agrupación coi
   assert.deepEqual((await b.pedir('/calendario/eventos?pendientes=1')).dato.eventos, []);
 });
 
+test('tramos iguales en todas las zonas se guardan una vez y la lectura no lleva «comprobado» por cita', async t => {
+  const b = base(); t.after(() => b.db.close());
+  const zonas = id => b.db.prepare('SELECT DISTINCT zona FROM agenda_lectura_tramos WHERE evento=? ORDER BY zona').all(id).map(f => f.zona);
+  assert.deepEqual(zonas('004'), ['*']);
+  assert.deepEqual(zonas('003'), ['*']);
+  // 00:30Z cae el 25 en las tres zonas; 23:30Z del 25 es ya el 26 en Madrid.
+  assert.deepEqual(zonas('001'), ['*']);
+  assert.deepEqual(zonas('002'), ['Atlantic/Canary', 'Europe/Madrid', 'UTC']);
+  for (const zona of ['Europe/Madrid', 'Atlantic/Canary', 'UTC']) {
+    const ids = [];
+    for (let cursor = ''; ;) {
+      const r = await b.pedir(ventana + '&limite=50&zona=' + encodeURIComponent(zona) + (cursor ? '&cursor=' + cursor : ''));
+      ids.push(...r.dato.eventos.map(e => e.id));
+      if (!(cursor = r.dato.siguiente)) break;
+    }
+    assert.deepEqual(['001', '002', '004'].map(id => ids.includes(id)), [true, true, true], zona);
+    assert.equal(new Set(ids).size, ids.length, zona);
+    const p = await b.pedir('/calendario/eventos?pendientes=1&zona=' + encodeURIComponent(zona));
+    assert.deepEqual(p.dato.eventos.map(e => e.id), ['003'], zona);
+  }
+  const lectura = b.db.prepare('SELECT tarjeta_json || detalle_json AS j FROM agenda_lectura_eventos').all();
+  assert.ok(lectura.every(f => !f.j.includes('comprobado')));
+});
+
 test('GP con días oficiales pendientes conserva sesiones consultables sin rellenar huecos', async t => {
   const datos = muestraGP(true), b = base(datos); t.after(() => b.db.close());
   const r = await b.pedir('/calendario/resumen?desde=2026-10-22&hasta=2026-10-28&zona=UTC');
