@@ -12,33 +12,33 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=6688a0c5d9';
+} from './parser.js?v=3bc5de9c03';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=6688a0c5d9';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=6688a0c5d9';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=6688a0c5d9';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=6688a0c5d9';
-import { comparador } from './busqueda/orden.js?v=6688a0c5d9';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=3bc5de9c03';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=3bc5de9c03';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=3bc5de9c03';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=3bc5de9c03';
+import { comparador } from './busqueda/orden.js?v=3bc5de9c03';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=6688a0c5d9';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=6688a0c5d9';
+} from './sync/fusion.js?v=3bc5de9c03';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=3bc5de9c03';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=6688a0c5d9';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=6688a0c5d9';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=3bc5de9c03';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=3bc5de9c03';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=6688a0c5d9';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=3bc5de9c03';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=6688a0c5d9';
+} from './tiempo/avisos.js?v=3bc5de9c03';
 
-import { I18N, traducir } from './idiomas/index.js?v=6688a0c5d9';
-import { AMBITOS, leerConsultaCalendario, seleccionCalendario, temasDescendientes, noticiaEnAmbitos } from './calendario/consulta.js?v=6688a0c5d9';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, agruparPorDiaCalendario, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=6688a0c5d9';
+import { I18N, traducir } from './idiomas/index.js?v=3bc5de9c03';
+import { AMBITOS, leerConsultaCalendario, seleccionCalendario, temasDescendientes, noticiaEnAmbitos } from './calendario/consulta.js?v=3bc5de9c03';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, agruparPorDiaCalendario, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=3bc5de9c03';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1951,7 +1951,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=6688a0c5d9');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=3bc5de9c03');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3496,6 +3496,8 @@ function wireAutocomplete(){
   });
 }
 /* Un contrato de lectura para calendario y contenido deportivo del feed. */
+// Pendiente de conectar el cliente a la lectura acotada de Turso mediante la API.
+const CALENDARIO_ACTIVO = false;
 const CALENDARIO = {
   abierto: false, orden: null, datos: null, cargando: false, error: false, intentado: false,
   fecha: '', vista: 'agenda', zona: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid',
@@ -3548,6 +3550,7 @@ function validarLecturaCalendario(p){
   return p;
 }
 async function cargarCalendario(renovar = false){
+  if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
   if (s.cargando || !renovar && (s.datos || s.intentado)) return;
   s.controller?.abort();
@@ -3570,6 +3573,7 @@ async function cargarCalendario(renovar = false){
   finally { s.cargando = false; pintarCalendario(); }
 }
 function actualizarConsultaCalendario(orden){
+  if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO, clave = JSON.stringify(orden);
   if (clave !== s.clave){
     s.clave = clave; s.temas.clear(); s.circuitos.clear(); s.fuente = ''; s.objetivo = ''; s.lugar = ''; s.municipio = ''; s.texto = '';
@@ -3582,6 +3586,7 @@ function actualizarConsultaCalendario(orden){
   pintarCalendario();
 }
 function abrirCalendario(origen = null){
+  if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
   if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; }
   cerrarEstadisticas(false);
@@ -3778,11 +3783,11 @@ function calContenido(){
 function pintarCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   if (!p) return;
-  const visible = s.abierto || !!s.orden;
+  const visible = CALENDARIO_ACTIVO && (s.abierto || !!s.orden);
   p.hidden = !visible;
-  document.body.classList.toggle('calendario-abierto', s.abierto);
-  document.body.classList.toggle('calendario-sin-noticias', !!s.orden && !s.orden.noticias);
-  document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(s.abierto));
+  document.body.classList.toggle('calendario-abierto', visible && s.abierto);
+  document.body.classList.toggle('calendario-sin-noticias', visible && !!s.orden && !s.orden.noticias);
+  document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(visible && s.abierto));
   if (!visible) return;
   s.fecha ||= calHoy();
   const foco = p.contains(document.activeElement) ? document.activeElement : null;
@@ -3814,7 +3819,9 @@ function pintarCalendario(){
 }
 function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
-  document.getElementById('btn-calendario').addEventListener('click', e => s.abierto ? cerrarCalendario() : abrirCalendario(e.currentTarget));
+  const boton = document.getElementById('btn-calendario');
+  boton.hidden = !CALENDARIO_ACTIVO;
+  boton.addEventListener('click', e => s.abierto ? cerrarCalendario() : abrirCalendario(e.currentTarget));
   p.addEventListener('click', e => {
     const b = e.target.closest('[data-cal]');
     if (!b) return;
@@ -3868,6 +3875,7 @@ function wireCalendario(){
   document.getElementById('buscar').addEventListener('input', () => cerrarCalendario(false));
 }
 function sugerenciasCalendario(raw){
+  if (!CALENDARIO_ACTIVO) return null;
   const m = raw.match(/(?:^|\s)([^\s"]*)$/);
   if (!m || !m[1]) return null;
   const q = normalize(m[1]);
@@ -4330,7 +4338,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=6688a0c5d9')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=3bc5de9c03')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -6901,7 +6909,7 @@ function aplicarFiltros(){
   hidratarNoticias();
   const rawInput = $('#buscar').value.trim();
   const sinStats = ordenEstadisticas(rawInput)?.resto ?? rawInput;
-  const ordenCalendario = leerConsultaCalendario(sinStats);
+  const ordenCalendario = CALENDARIO_ACTIVO ? leerConsultaCalendario(sinStats) : null;
   actualizarConsultaCalendario(ordenCalendario);
   const raw = ordenCalendario?.resto ?? sinStats;
   const rawProcesado = preprocesarInput(raw);

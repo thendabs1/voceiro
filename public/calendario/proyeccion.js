@@ -1,6 +1,6 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=6688a0c5d9';
-import { extremoVisible, enDia, sumarDiasCalendario } from './fechas.js?v=6688a0c5d9';
+import { palabrasDe } from '../busqueda/texto.js?v=3bc5de9c03';
+import { extremoVisible, enDia, sumarDiasCalendario } from './fechas.js?v=3bc5de9c03';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 export function prepararLectura(datos) {
