@@ -110,14 +110,18 @@ def describir(proveedor, pagina, url=None):
     if proveedor == 'ocblacktop-wrc':
         year = deporte.temporada(pagina.get('year'))
         rallies = deporte.filas(pagina, 'rallies', 100)
-        completos = bool(rallies) and pagina.get('roundCount') == len(rallies)
+        # Sin roundCount (OCBlacktop dejó de enviarlo), rondas 1..N seguidas
+        # valen como selección, pero no acreditan que no falte una última.
+        rondas = sorted(r.get('round') for r in rallies if type(r.get('round')) is int)
+        seguidas = bool(rallies) and rondas == list(range(1, len(rallies) + 1))
+        completos = seguidas and pagina.get('roundCount') == len(rallies)
         fechas = all(r.get('dateStart') and r.get('dateEnd') and
                      len(r['dateStart']) == len(r['dateEnd']) == 10 for r in rallies)
         base.update(referencia=year, seleccion={'year': year},
             inicio=min((r.get('dateStart') for r in rallies if r.get('dateStart')), default=None),
             fin=max((r.get('dateEnd') for r in rallies if r.get('dateEnd')), default=None),
             fin_confirmado=completos and fechas, cobertura_completa=completos,
-            fases_completas=completos, programa_completo=completos and fechas)
+            fases_completas=completos, programa_completo=completos and fechas, seleccion_valida=seguidas)
         return base
     raise ValueError('Proveedor de agenda desconocido')
 

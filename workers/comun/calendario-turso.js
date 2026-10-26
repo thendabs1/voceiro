@@ -7,7 +7,8 @@ export async function consultarTurso(env, sentencias, fetchImpl = fetch) {
   const pasos = operaciones.map((s, i) => ({ stmt: { sql: s.sql, args: s.args.map(v =>
     typeof v === 'number' ? { type: 'integer', value: String(v) } : { type: 'text', value: v }) },
     ...(i ? { condition: { type: 'ok', step: i - 1 } } : {}) }));
-  const r = await fetchImpl(url.origin + '/v2/pipeline', { method: 'POST', redirect: 'error',
+  // Cloudflare no admite redirect 'error'; con 'manual' un 3xx no es ok y se rechaza abajo.
+  const r = await fetchImpl(url.origin + '/v2/pipeline', { method: 'POST', redirect: 'manual',
     signal: AbortSignal.timeout(5000), headers: { Authorization: 'Bearer ' + env.CALENDARIO_TURSO_TOKEN_LECTURA,
       'Content-Type': 'application/json' },
     body: JSON.stringify({ requests: [{ type: 'batch', batch: { steps: pasos } }, { type: 'close' }] }) });

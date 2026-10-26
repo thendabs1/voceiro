@@ -229,6 +229,8 @@ test('HTTP Turso usa batch condicional en un snapshot, liga parámetros y cierra
   const simular = async (url, opciones) => {
     assert.equal(url, 'https://prueba.turso.io/v2/pipeline');
     assert.equal(opciones.headers.Authorization, 'Bearer solo-prueba');
+    // Cloudflare rechaza redirect 'error' antes de enviar la petición.
+    assert.equal(opciones.redirect, 'manual');
     cuerpo = JSON.parse(opciones.body);
     return Response.json({ results: [{ type: 'ok', response: { type: 'batch', result: {
       step_results: [{ cols: [], rows: [] }, { cols: [{ name: 'id' }], rows: [[{ type: 'integer', value: '12' }]] }, { cols: [], rows: [] }],
@@ -240,6 +242,7 @@ test('HTTP Turso usa batch condicional en un snapshot, liga parámetros y cierra
   assert.equal(cuerpo.requests[1].type, 'close');
   assert.deepEqual(cuerpo.requests[0].batch.steps[1].condition, { type: 'ok', step: 0 });
   await assert.rejects(consultarTurso(env, [], async () => Response.json({ results: [] })));
+  await assert.rejects(consultarTurso(env, [], async () => new Response(null, { status: 307, headers: { Location: 'https://otro.test/' } })));
   await assert.rejects(consultarTurso({ ...env, CALENDARIO_TURSO_URL: 'https://host/path' }, [], simular));
 });
 
