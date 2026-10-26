@@ -16,7 +16,8 @@ def importar(anterior, pagina, observado, url=None):
         enlace = espn.enlace(gp, a.url)
         principal, _ = a.evento('grand_prix_calendar_uid', gp['uid'], 'actividad_continua', gp.get('name'),
             deporte.dias(gp.get('date'), gp.get('endDate')), padre=grupo, sitio=gp.get('circuit'),
-            url=enlace, estado=espn.estado(gp), bloques={'agenda': {'rol': 'principal', 'grupo': grupo},
+            url=enlace, estado=espn.estado(gp), bloques={'agenda': {'rol': 'principal', 'grupo': grupo,
+                'criterio_dias': 'circuito'},
                 'limites_proveedor': {'inicio': gp.get('date'), 'fin': gp.get('endDate')}})
         sesiones = deporte.filas({'competitions': gp.get('competitions') or []}, 'competitions', 30)
         for s in deporte.unicos(sesiones, 'uid'):

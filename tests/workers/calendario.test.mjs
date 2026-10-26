@@ -63,6 +63,61 @@ function base(datos = muestra()) {
 }
 const ventana = '/calendario/eventos?desde=2026-10-23&hasta=2026-10-29';
 
+function muestraGP(pendiente = false) {
+  const datos = muestra();
+  const gp = { id: 'gp', tipo: 'evento', clase: 'actividad_continua', nombres: { es: 'GP de prueba' },
+    temas: ['deportes'], codigos: ['f1'], objetivos: ['evento:gp', 'evento:fp1', 'evento:carrera'],
+    territorios: [], fuentes: [{ fuente: 'motogp', comprobado: '2026-10-26T12:00:00Z' }],
+    participaciones: [], resultado: null, agenda: { rol: 'principal' },
+    programacion: { valor: { cuando: { inicio: extremo(pendiente ? null : '2026-10-23'),
+      fin: extremo(pendiente ? null : '2026-10-25'), fin_exclusivo: false } } } };
+  const sesion = (id, instante) => ({ id, tipo: 'evento', clase: 'sesion', nombres: { es: id },
+    temas: ['deportes'], codigos: [], objetivos: ['evento:gp', 'evento:' + id],
+    programacion: { valor: { cuando: { inicio: extremo(instante.slice(0, 10), instante), fin: extremo(null) } } } });
+  // Instantes sintéticos que caen en días distintos en UTC y España.
+  gp.programa = [sesion('fp1', '2026-10-22T23:30:00Z'), sesion('carrera', '2026-10-25T23:30:00Z')];
+  datos.eventos = [gp];
+  datos.entidades = Object.fromEntries([gp, ...gp.programa].map(e => ['evento:' + e.id, e]));
+  datos.fuentes = { motogp: { nombre: 'MotoGP' } };
+  return datos;
+}
+
+test('GP con sesiones fuera de sus días locales: SQL, resumen y agrupación coinciden sin duplicarlo', async t => {
+  const datos = muestraGP(), b = base(datos); t.after(() => b.db.close());
+  for (const zona of ['UTC', 'Europe/Madrid', 'Atlantic/Canary']) {
+    const ruta = '/calendario/resumen?desde=2026-10-22&hasta=2026-10-28&zona=' + zona;
+    const r = await b.pedir(ruta);
+    assert.equal(r.status, 200);
+    const local = agruparPorDiaCalendario(datos.eventos, r.dato.dias.map(d => d.dia), zona);
+    for (const d of r.dato.dias) {
+      const esperado = d.dia >= (zona === 'UTC' ? '2026-10-22' : '2026-10-23')
+        && d.dia <= (zona === 'Europe/Madrid' ? '2026-10-26' : '2026-10-25');
+      assert.equal(d.cantidad, Number(esperado), `${zona} ${d.dia}`);
+      assert.equal(local.get(d.dia).length, d.cantidad);
+      const hasta = new Date(Date.parse(d.dia) + 86400000).toISOString().slice(0, 10);
+      const lista = await b.pedir(`/calendario/eventos?desde=${d.dia}&hasta=${hasta}&zona=${zona}&texto=fp1&limite=1`);
+      assert.deepEqual(lista.dato.eventos.map(e => e.id), esperado ? ['gp'] : []);
+      assert.equal(lista.dato.siguiente, null);
+      if (esperado) assert.equal(lista.dato.eventos[0].programacion.valor.cuando.inicio.fecha, '2026-10-23');
+    }
+  }
+  const d = await b.pedir('/calendario/eventos/gp');
+  assert.equal(d.dato.evento.programa.length, 2);
+  assert.deepEqual((await b.pedir('/calendario/eventos?pendientes=1')).dato.eventos, []);
+});
+
+test('GP con días oficiales pendientes conserva sesiones consultables sin rellenar huecos', async t => {
+  const datos = muestraGP(true), b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir('/calendario/resumen?desde=2026-10-22&hasta=2026-10-28&zona=UTC');
+  assert.deepEqual(r.dato.dias.map(d => d.cantidad), [1, 0, 0, 1, 0, 0]);
+  const lista = await b.pedir('/calendario/eventos?desde=2026-10-22&hasta=2026-10-28&zona=UTC&limite=1');
+  assert.deepEqual(lista.dato.eventos.map(e => e.id), ['gp']);
+  assert.equal(lista.dato.siguiente, null);
+  assert.deepEqual((await b.pedir('/calendario/eventos?pendientes=1')).dato.eventos.map(e => e.id), ['gp']);
+  const local = agruparPorDiaCalendario(datos.eventos, r.dato.dias.map(d => d.dia), 'UTC');
+  assert.deepEqual([...local.values()].map(v => v.length), [1, 0, 0, 1, 0, 0]);
+});
+
 test('paginación completa, filtros antes de LIMIT y revisión en todas las páginas', async t => {
   const b = base(); t.after(() => b.db.close());
   let ruta = ventana, ids = [], etags = new Set();

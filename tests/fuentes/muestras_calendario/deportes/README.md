@@ -15,7 +15,8 @@ retenidos, no cobertura completa, autorización de publicación ni acceso actual
   HTML de Primera FEB y LF Challenge. Sin repetir HTML completo.
 - MotoGP: detalle de Malasia conservado del calendario oficial; mezcla emisiones
   y categorías para verificar selección de las ocho sesiones MotoGP. El recinto
-  conserva una dirección literal, distinta de las direcciones estructuradas ESPN.
+  conserva una dirección literal, distinta de las direcciones estructuradas ESPN,
+  y `time_zone` conserva la zona nominal declarada en mayúsculas.
 - OCB/WRC: dos rallies de la respuesta de temporada 2026 conservada, cuyo
   `roundCount` era nulo. No representan la temporada completa de catorce rallies.
 

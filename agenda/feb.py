@@ -135,9 +135,9 @@ def importar_agenda(anterior, muestra, observado):
                   'fin': tiempos.extremo(), 'fin_exclusivo': None, 'horario_textual': None}
         lados = [p.get(lado) or {} for lado in ('local', 'visitante')]
         nombres = [deporte.literal(e.get('nombre'), 'equipo FEB') for e in lados]
-        evento, ev = a.evento('partido', p['id'], 'encuentro', ' — '.join(nombres), cuando,
+        equipos = [{'papel': lado, 'nombre': nombre, 'id': equipo.get('id')}
+                   for lado, equipo, nombre in zip(('local', 'visitante'), lados, nombres)]
+        a.evento('partido', p['id'], 'encuentro', ' — '.join(nombres), cuando,
             padre=fase, sitio=p.get('pista'), url=f'https://baloncestoenvivo.feb.es/partido/{p["id"]}',
-            conservar_fecha=True)
-        for lado, equipo, nombre in zip(('local', 'visitante'), lados, nombres):
-            a.equipo(evento, ev, lado, nombre, equipo.get('id'))
+            conservar_fecha=True, equipos=equipos)
     return a.terminar()

@@ -10,6 +10,7 @@
   "type": "SPORT",
   "date_start": "2026-10-30T08:00:00+08:00",
   "date_end": "2026-11-01T18:00:00+08:00",
+  "time_zone": "ASIA/KUALA_LUMPUR",
   "show_in_calendar": true,
   "has_results": true,
   "status": "NOT-STARTED",

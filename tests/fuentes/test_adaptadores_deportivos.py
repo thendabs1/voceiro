@@ -206,10 +206,11 @@ class Adaptadores(unittest.TestCase):
         for p in otra['partidos']:
             p['fecha_hora'] = None
         b = importar('feb-endesa', otra, a, DESPUES)
-        self.assertEqual(set(a['observaciones']), set(b['observaciones']))
+        self.assertLess(set(a['observaciones']), set(b['observaciones']))
         p = publicacion.proyectar(b)['eventos']
         self.assertTrue(all(e['programacion']['valor']['cuando']['inicio']['fecha'] for e in p))
         self.assertTrue(all(e['programacion']['valor']['cuando']['inicio']['instante'] is None for e in p))
+        self.assertTrue(all(e['programacion']['valor']['fecha_conservada']['comprobado'] == OBSERVADO for e in p))
 
     def test_fuente_de_agenda_no_publica_resultados_de_investigacion_previa(self):
         vieja = json.loads((MUESTRAS.parent / 'espn-wta.json').read_text())

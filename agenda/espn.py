@@ -86,6 +86,9 @@ def partidos(anterior, pagina, liga, observado, *, deporte_id, tema, remoto=Fals
         if len(competiciones) != 1:
             raise ValueError('Partido ESPN sin competición única')
         partido = competiciones[0]
+        uid = deporte.literal(partido.get('uid'), 'UID de partido ESPN')
+        if not uid.startswith(e['uid'] + '~c:'):
+            raise ValueError('Partido ESPN fuera del espacio de su evento')
         temporada = e.get('season') or {}
         year = deporte.temporada(temporada.get('year'))
         liga_temporada = cabecera.get('season') or {}
@@ -106,12 +109,11 @@ def partidos(anterior, pagina, liga, observado, *, deporte_id, tema, remoto=Fals
             uid = t.get('uid')
             if str(t.get('id', '')).startswith('-') or nombre == 'TBD':
                 uid = None
-            equipos.append((p['homeAway'], nombre, uid))
+            equipos.append({'papel': 'local' if p['homeAway'] == 'home' else 'visitante',
+                            'nombre': nombre, 'id': uid})
         url = enlace(e, base)
-        evento, ev = a.evento('event_uid', e['uid'], 'encuentro', e.get('name'),
+        a.evento('event_uid', e['uid'], 'encuentro', e.get('name'),
             comienzo(e, partido), padre=padre, estado=estado(partido),
-            sitio=partido.get('venue') or e.get('venue'), url=url,
+            sitio=partido.get('venue') or e.get('venue'), url=url, equipos=equipos,
             bloques={'neutral': partido.get('neutralSite')} if type(partido.get('neutralSite')) is bool else None)
-        for lado, nombre, uid in equipos:
-            a.equipo(evento, ev, 'local' if lado == 'home' else 'visitante', nombre, uid)
     return a.terminar()

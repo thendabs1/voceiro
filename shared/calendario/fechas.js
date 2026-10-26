@@ -49,16 +49,21 @@ function enDiaVisible(cuando, dia, a, b, semana){
   if (cuando.fin_exclusivo && b.fecha === dia && (!b.hora || b.hora === '00:00')) return false;
   return b.fecha >= dia;
 }
+export function programacionesCalendario(evento){
+  return [evento.programacion?.valor?.cuando,
+    ...(evento.programa || []).map(s => s.programacion?.valor?.cuando)].filter(Boolean);
+}
 // Resolver los extremos una vez por evento y ordenar antes de agrupar.
 export function agruparPorDiaCalendario(eventos, dias, zona){
   const grupos = new Map(dias.map(dia => [dia, []]));
   const semanas = new Map(dias.map(dia => [dia, (new Date(dia + 'T12:00:00Z').getUTCDay() + 6) % 7]));
   for (const e of eventos){
-    const cuando = e.programacion?.valor?.cuando;
-    if (!cuando) continue;
-    const a = extremoVisible(cuando.inicio, zona), b = extremoVisible(cuando.fin, zona);
-    if (!a.fecha || !dias.length || a.fecha > dias.at(-1) || (b.fecha || a.fecha) < dias[0]) continue;
-    for (const [dia, lista] of grupos) if (enDiaVisible(cuando, dia, a, b, semanas.get(dia))) lista.push(e);
+    const horarios = programacionesCalendario(e).map(cuando => ({ cuando,
+      a: extremoVisible(cuando.inicio, zona), b: extremoVisible(cuando.fin, zona) }))
+      .filter(({ a, b }) => a.fecha && dias.length && a.fecha <= dias.at(-1) && (b.fecha || a.fecha) >= dias[0]);
+    for (const [dia, lista] of grupos) {
+      if (horarios.some(({ cuando, a, b }) => enDiaVisible(cuando, dia, a, b, semanas.get(dia)))) lista.push(e);
+    }
   }
   return grupos;
 }

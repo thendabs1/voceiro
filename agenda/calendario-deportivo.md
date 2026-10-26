@@ -245,6 +245,12 @@ queda así:
 Las fechas de la cita principal necesitan evidencia propia; no se deducen del
 primer y último horario de sesión descargados.
 
+En la revisión posterior se confirma que la cita principal mostrará **los días
+oficiales del circuito**, mientras las horas de sesión se convierten a la zona
+del lector. Un instante UTC no acredita esos días civiles por simple recorte.
+La búsqueda por día de una sesión también debe recuperar su GP cuando, en la
+zona del lector, caiga fuera de los días locales de la cita principal.
+
 ## WRC y OCBlacktop desde nuestro servidor
 
 Primera integración OCB: calendario WRC por temporada explícita.
