@@ -1,0 +1,111 @@
+{
+  "version_muestra": 1,
+  "proveedor": "feb",
+  "competicion": {
+    "id": "4",
+    "nombre": "LF ENDESA"
+  },
+  "edicion": {
+    "id": "2026",
+    "nombre": "2026/2027"
+  },
+  "fase": {
+    "id": "89975",
+    "nombre": "Liga Regular Único"
+  },
+  "partidos": [
+    {
+      "id": "2522807",
+      "fecha_hora": "24/10/2026 - 17:00",
+      "local": {
+        "id": "1008705",
+        "nombre": "AZULMARINO MALLORCA PALMA"
+      },
+      "visitante": {
+        "id": null,
+        "nombre": "HOZONO GLOBAL JAIRIS"
+      },
+      "pista": {
+        "nombre": "POLIESPORTIU SON MOIX",
+        "municipio_literal": "Palma de Mallorca",
+        "provincia_literal": "Illes Balears"
+      },
+      "marcador_resultados": [
+        67,
+        69
+      ],
+      "cuartos": [
+        [
+          19,
+          25
+        ],
+        [
+          18,
+          12
+        ],
+        [
+          19,
+          16
+        ],
+        [
+          11,
+          16
+        ]
+      ]
+    },
+    {
+      "id": "2522809",
+      "fecha_hora": "25/10/2026 - 18:30",
+      "local": {
+        "id": null,
+        "nombre": "SPAR GIRONA"
+      },
+      "visitante": {
+        "id": null,
+        "nombre": "MIRAI EUSKOTREN"
+      },
+      "pista": {
+        "nombre": "Pavelló Municipal Girona Fontajau",
+        "municipio_literal": "Girona",
+        "provincia_literal": "Girona"
+      },
+      "marcador_ficha": [
+        0,
+        0
+      ],
+      "marcador_resultados": null,
+      "cuartos": []
+    }
+  ],
+  "clasificacion": {
+    "filas": [
+      {
+        "id": null,
+        "nombre": "CASADEMONT ZARAGOZA",
+        "posicion": 1,
+        "metricas": {
+          "baloncesto.partidos_jugados": 4,
+          "baloncesto.victorias": 4,
+          "baloncesto.derrotas": 0,
+          "baloncesto.puntos_favor": 354,
+          "baloncesto.puntos_contra": 229,
+          "baloncesto.diferencia": 125,
+          "baloncesto.porcentaje_victorias": "100.0"
+        }
+      },
+      {
+        "id": null,
+        "nombre": "AZULMARINO MALLORCA PALMA",
+        "posicion": 2,
+        "metricas": {
+          "baloncesto.partidos_jugados": 5,
+          "baloncesto.victorias": 4,
+          "baloncesto.derrotas": 1,
+          "baloncesto.puntos_favor": 387,
+          "baloncesto.puntos_contra": 332,
+          "baloncesto.diferencia": 55
+        }
+      }
+    ]
+  }
+}

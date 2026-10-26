@@ -209,7 +209,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       filas = respuesta;
     }
     const base = { version: 1, revision: meta.revision, generado: meta.generado,
-      horizonte: { desde: meta.desde, hasta: meta.hasta }, cobertura: meta.cobertura };
+      horizonte: { desde: meta.desde, hasta: meta.hasta }, cobertura: meta.cobertura,
+      colecciones: meta.colecciones || [] };
     let salida;
     if (detalle) {
       if (!filas.length) throw error(404, 'Evento desconocido');

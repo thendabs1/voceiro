@@ -1,0 +1,181 @@
+{
+  "leagues": [
+    {
+      "id": "851",
+      "uid": "s:850~l:851",
+      "slug": "atp",
+      "name": "ATP",
+      "season": {
+        "year": 2026,
+        "startDate": "2026-01-01T08:00Z",
+        "endDate": "2027-01-01T07:59Z",
+        "displayName": "2026",
+        "type": {
+          "id": "2",
+          "type": 2,
+          "name": "Regular Season",
+          "abbreviation": "reg"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "10-2026",
+      "uid": "s:850~l:851~e:10-2026",
+      "name": "Erste Bank Open",
+      "date": "2026-10-24T04:00Z",
+      "endDate": "2026-11-02T04:59Z",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "venue": {
+        "displayName": "Vienna, Austria"
+      },
+      "calendar": {
+        "type": "day",
+        "timeZone": "America/New_York",
+        "startDate": "2026-10-24T04:00Z",
+        "endDate": "2026-11-01T04:00Z",
+        "calendar": [
+          "2026-10-24T04:00Z",
+          "2026-10-25T04:00Z",
+          "2026-10-26T04:00Z",
+          "2026-10-27T04:00Z",
+          "2026-10-28T04:00Z",
+          "2026-10-30T04:00Z",
+          "2026-10-31T04:00Z",
+          "2026-11-01T04:00Z"
+        ]
+      },
+      "links": [
+        {
+          "language": "en-US",
+          "rel": [
+            "summary",
+            "desktop",
+            "event"
+          ],
+          "href": "https://www.espn.com/tennis/scoreboard/tournament/_/eventId/10-2026/competitionType/1",
+          "text": "Summary",
+          "shortText": "Summary",
+          "isExternal": false,
+          "isPremium": false,
+          "isHidden": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "bracket",
+            "desktop",
+            "event"
+          ],
+          "href": "https://www.espn.com/tennis/bracket/_/year/2026/tournamentId/10/type/1",
+          "text": "Bracket",
+          "shortText": "Bracket",
+          "isExternal": false,
+          "isPremium": false,
+          "isHidden": false
+        }
+      ],
+      "previousWinners": [
+        {
+          "displayName": "Jannik Sinner",
+          "shortDisplayName": "J. Sinner",
+          "type": {
+            "id": "1",
+            "text": "Men's Singles",
+            "slug": "mens-singles"
+          },
+          "headshot": "https://a.espncdn.com/i/headshots/tennis/players/full/3623.png",
+          "links": [
+            {
+              "language": "en-US",
+              "rel": [
+                "playercard",
+                "desktop",
+                "athlete"
+              ],
+              "href": "https://www.espn.com/tennis/player/_/id/3623/jannik-sinner",
+              "text": "Player Card",
+              "shortText": "Player Card",
+              "isExternal": false,
+              "isPremium": false,
+              "isHidden": false
+            }
+          ]
+        },
+        {
+          "displayName": "Julian Cash / Lloyd Glasspool",
+          "shortDisplayName": "J. Cash / L. Glasspool",
+          "type": {
+            "id": "3",
+            "text": "Men's Doubles",
+            "slug": "mens-doubles"
+          },
+          "athletes": [
+            {
+              "displayName": "Julian Cash",
+              "shortDisplayName": "J. Cash",
+              "links": [
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "playercard",
+                    "desktop",
+                    "athlete"
+                  ],
+                  "href": "https://www.espn.com/tennis/player/_/id/2420/julian-cash",
+                  "text": "Player Card",
+                  "shortText": "Player Card",
+                  "isExternal": false,
+                  "isPremium": false,
+                  "isHidden": false
+                }
+              ]
+            },
+            {
+              "displayName": "Lloyd Glasspool",
+              "shortDisplayName": "L. Glasspool",
+              "links": [
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "playercard",
+                    "desktop",
+                    "athlete"
+                  ],
+                  "href": "https://www.espn.com/tennis/player/_/id/3064/lloyd-glasspool",
+                  "text": "Player Card",
+                  "shortText": "Player Card",
+                  "isExternal": false,
+                  "isPremium": false,
+                  "isHidden": false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groupings": [
+        {
+          "competitions": [
+            {
+              "uid": "encuentro-ignorado",
+              "score": 99,
+              "competitors": [
+                {
+                  "athlete": {
+                    "displayName": "Jugador que no se importa"
+                  },
+                  "winner": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

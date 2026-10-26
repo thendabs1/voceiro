@@ -134,18 +134,21 @@ def _contenido(registro):
             if k not in ('primera_recogida', 'ultima_recogida')}
 
 
-def guardar(db, calendario, solo_clasificacion=False, solo_nucleo=False):
+def guardar(db, calendario, solo_clasificacion=False, solo_nucleo=False, pasos_extra=()):
     """Escribe el estado integrado y audita cambios de contenido, no meros sondeos.
 
     Se invoca dentro de abrir(); el llamante carga e integra en esa misma
     transacción para evitar perder una actualización de otro escritor.
     """
     anterior = cargar(db)
-    if (solo_clasificacion or solo_nucleo) and anterior == calendario:
+    cambios = anterior != calendario
+    if (solo_clasificacion or solo_nucleo) and not cambios and not pasos_extra:
         return
-    for sql, args in planificar(anterior, calendario, solo_clasificacion, solo_nucleo):
+    pasos = planificar(anterior, calendario, solo_clasificacion, solo_nucleo) if cambios else []
+    for sql, args in [*pasos_extra, *pasos]:
         db.execute(sql, args)
-    db.execute('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1')
+    if cambios:
+        db.execute('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1')
 
 
 def planificar(anterior, calendario, solo_clasificacion=False, solo_nucleo=False):

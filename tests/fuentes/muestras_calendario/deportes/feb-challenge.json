@@ -1,0 +1,100 @@
+{
+  "version_muestra": 1,
+  "proveedor": "feb",
+  "modo": "recogida_html",
+  "url": "https://baloncestoenvivo.feb.es/calendario/67/2026",
+  "competicion": {
+    "id": "67",
+    "nombre": "LF CHALLENGE"
+  },
+  "edicion": {
+    "id": "2026",
+    "nombre": "2026/2027"
+  },
+  "fase": {
+    "id": "89981",
+    "nombre": "Liga Regular Único"
+  },
+  "partidos": [
+    {
+      "id": "2524482",
+      "fecha_hora": "24/10/2026 - 17:30",
+      "local": {
+        "id": "1008987",
+        "nombre": "UNICAJA MIJAS"
+      },
+      "visitante": {
+        "id": "1008631",
+        "nombre": "MIPELLETYMAS B.F. LEON"
+      },
+      "marcador_resultados": [
+        81,
+        82
+      ],
+      "cuartos": []
+    },
+    {
+      "id": "2524486",
+      "fecha_hora": "24/10/2026 - 17:00",
+      "local": {
+        "id": "1008898",
+        "nombre": "RECOLETAS ZAMORA"
+      },
+      "visitante": {
+        "id": "1008685",
+        "nombre": "FUSTECMA NBF CASTELLÓ"
+      },
+      "marcador_resultados": [
+        65,
+        37
+      ],
+      "cuartos": []
+    },
+    {
+      "id": "2524489",
+      "fecha_hora": "01/11/2026 - 13:00",
+      "local": {
+        "id": "1008631",
+        "nombre": "MIPELLETYMAS B.F. LEON"
+      },
+      "visitante": {
+        "id": "1008377",
+        "nombre": "OSES CONSTRUCCION"
+      },
+      "marcador_resultados": null,
+      "cuartos": []
+    }
+  ],
+  "clasificacion": {
+    "filas": [
+      {
+        "id": "1008988",
+        "nombre": "SEVILLA CAJASOL GARDENSTORE BALONCESTO",
+        "posicion": 1,
+        "metricas": {
+          "baloncesto.partidos_jugados": 4,
+          "baloncesto.victorias": 4,
+          "baloncesto.derrotas": 0,
+          "baloncesto.puntos_favor": 296,
+          "baloncesto.puntos_contra": 237,
+          "baloncesto.diferencia": 59,
+          "baloncesto.porcentaje_victorias": "100.0"
+        }
+      },
+      {
+        "id": "1008377",
+        "nombre": "OSES CONSTRUCCION",
+        "posicion": 2,
+        "metricas": {
+          "baloncesto.partidos_jugados": 4,
+          "baloncesto.victorias": 4,
+          "baloncesto.derrotas": 0,
+          "baloncesto.puntos_favor": 302,
+          "baloncesto.puntos_contra": 279,
+          "baloncesto.diferencia": 23,
+          "baloncesto.porcentaje_victorias": "100.0"
+        }
+      }
+    ]
+  }
+}

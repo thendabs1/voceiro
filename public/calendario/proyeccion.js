@@ -1,6 +1,6 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=3bc5de9c03';
-import { extremoVisible, enDia, sumarDiasCalendario } from './fechas.js?v=3bc5de9c03';
+import { palabrasDe } from '../busqueda/texto.js?v=d98859c090';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js?v=d98859c090';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 export function prepararLectura(datos) {
@@ -31,18 +31,25 @@ export function prepararLectura(datos) {
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
     for (const zona of ZONAS) {
-      const a = extremoVisible(cuando?.inicio, zona), b = extremoVisible(cuando?.fin, zona);
       // Una fecha pendiente tiene su propia lista, fuera de la ventana de días.
-      if (!a.fecha) { tramos.push([zona, '', '', e.id]); continue; }
-      const inicio = a.fecha > desde ? a.fecha : desde;
-      const fin = (b.fecha || a.fecha) < hasta ? (b.fecha || a.fecha) : sumarDiasCalendario(hasta, -1);
+      if (!extremoVisible(cuando?.inicio, zona).fecha) tramos.push([zona, '', '', e.id]);
+      const dias = new Set();
+      for (const horario of programacionesCalendario(e)) {
+        const a = extremoVisible(horario.inicio, zona), b = extremoVisible(horario.fin, zona);
+        if (!a.fecha) continue;
+        const inicio = a.fecha > desde ? a.fecha : desde;
+        const fin = (b.fecha || a.fecha) < hasta ? (b.fecha || a.fecha) : sumarDiasCalendario(hasta, -1);
+        for (let dia = inicio; dia <= fin; dia = sumarDiasCalendario(dia, 1)) {
+          if (++evaluaciones > 5_000_000) throw new Error('Lectura demasiado grande: revisar horizonte antes de publicar');
+          if (enDia(horario, dia, zona)) dias.add(dia);
+        }
+      }
+      // Unión sin solapes: cada GP se cuenta una sola vez por día, aunque
+      // coincidan el principal y varias sesiones. Los huecos se conservan.
       let tramo = null;
-      for (let dia = inicio; dia <= fin; dia = sumarDiasCalendario(dia, 1)) {
-        if (++evaluaciones > 5_000_000) throw new Error('Lectura demasiado grande: revisar horizonte antes de publicar');
-        if (enDia(cuando, dia, zona)) {
-          if (!tramo) { tramo = [zona, dia, '', e.id]; tramos.push(tramo); }
-          tramo[2] = sumarDiasCalendario(dia, 1);
-        } else tramo = null;
+      for (const dia of [...dias].sort()) {
+        if (!tramo || tramo[2] !== dia) { tramo = [zona, dia, '', e.id]; tramos.push(tramo); }
+        tramo[2] = sumarDiasCalendario(dia, 1);
       }
     }
   }

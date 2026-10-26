@@ -26,9 +26,7 @@ los tres encuentros se conservan íntegros, con sus valores originales.
 No se retuvo aquí el instante exacto de la descarga: los sellos de observación
 de las pruebas son entradas sintéticas explícitas, no una fecha de publicación.
 
-Las referencias y límites de la investigación están en
-[FEB](../../../agenda/investigacion/06-feb.md) y
-[multideporte](../../../agenda/investigacion/07-multideporte-y-seleccion.md).
+Las condiciones de cada fuente están en [agenda/fuentes.md](../../../agenda/fuentes.md).
 Estas muestras permiten verificar estructura, identidad y conservación;
 no acreditan reutilización pública, frescura ni disponibilidad de la fuente.
 # Contraste del recolector HTML

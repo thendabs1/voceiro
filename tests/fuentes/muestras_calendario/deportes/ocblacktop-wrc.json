@@ -1,0 +1,55 @@
+{
+  "id": "5193ee62-0bac-4cf9-b4d8-777d49c3aa43",
+  "year": 2026,
+  "sportId": "wrc",
+  "status": null,
+  "roundCount": null,
+  "rallies": [
+    {
+      "id": "5d0baa38-84ee-47f9-9b20-1f174832f5c6",
+      "name": "Rallye Monte Carlo",
+      "round": 1,
+      "surface": "Asphalt",
+      "dateStart": "2026-01-22",
+      "dateEnd": "2026-01-25",
+      "status": "completed",
+      "location": {
+        "id": "667dea1e-adf3-4688-a552-f811f4f9c119",
+        "name": "Gap, Provence-Alpes-Côte d'Azur",
+        "city": "Gap, Provence-Alpes-Côte d'Azur",
+        "country": {
+          "name": "Monaco",
+          "twoCode": "MC",
+          "threeCode": "MCO"
+        }
+      },
+      "season": {
+        "id": "5193ee62-0bac-4cf9-b4d8-777d49c3aa43",
+        "year": 2026
+      }
+    },
+    {
+      "id": "e22fa4f5-227a-4cb9-96a1-835235139b87",
+      "name": "Rally Sweden",
+      "round": 2,
+      "surface": "Snow",
+      "dateStart": "2026-02-12",
+      "dateEnd": "2026-02-15",
+      "status": "completed",
+      "location": {
+        "id": "e883dea0-26bb-493e-a4d9-2cdb76511fce",
+        "name": "Umeå",
+        "city": "Umeå",
+        "country": {
+          "name": "Sweden",
+          "twoCode": "SE",
+          "threeCode": "SWE"
+        }
+      },
+      "season": {
+        "id": "5193ee62-0bac-4cf9-b4d8-777d49c3aa43",
+        "year": 2026
+      }
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "leagues": [
+    {
+      "id": "740",
+      "uid": "s:600~l:740",
+      "slug": "esp.1",
+      "name": "Spanish LALIGA",
+      "season": {
+        "year": 2026,
+        "startDate": "2026-06-01T04:00Z",
+        "endDate": "2027-06-01T03:59Z",
+        "displayName": "2026-27 Spanish LALIGA",
+        "type": {
+          "id": "1",
+          "type": 14357,
+          "name": "2026-27 LALIGA",
+          "abbreviation": "2026-27 LALIGA"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "401882821",
+      "uid": "s:600~l:740~e:401882821",
+      "name": "Sevilla at Getafe",
+      "date": "2026-11-01T13:00Z",
+      "season": {
+        "year": 2026,
+        "type": 14357,
+        "slug": "2026-27-laliga"
+      },
+      "venue": {
+        "displayName": "Estadio Coliseum"
+      },
+      "links": [
+        {
+          "language": "en-US",
+          "rel": [
+            "summary",
+            "desktop",
+            "event"
+          ],
+          "href": "https://www.espn.com/soccer/match/_/gameId/401882821/sevilla-getafe",
+          "text": "Summary",
+          "shortText": "Summary",
+          "isExternal": false,
+          "isPremium": false,
+          "isHidden": false
+        }
+      ],
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0'",
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false,
+          "description": "Scheduled",
+          "detail": "Sun, November 1st at 8:00 AM EST",
+          "shortDetail": "Scheduled"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401882821",
+          "uid": "s:600~l:740~e:401882821~c:401882821",
+          "date": "2026-11-01T13:00Z",
+          "startDate": "2026-11-01T13:00Z",
+          "timeValid": true,
+          "status": {
+            "clock": 0.0,
+            "displayClock": "0'",
+            "type": {
+              "id": "1",
+              "name": "STATUS_SCHEDULED",
+              "state": "pre",
+              "completed": false,
+              "description": "Scheduled",
+              "detail": "Sun, November 1st at 8:00 AM EST",
+              "shortDetail": "Scheduled"
+            }
+          },
+          "venue": {
+            "id": "4154",
+            "fullName": "Estadio Coliseum",
+            "address": {
+              "city": "Getafe",
+              "country": "Spain"
+            }
+          },
+          "competitors": [
+            {
+              "id": "2922",
+              "uid": "s:600~t:2922",
+              "type": "team",
+              "order": 0,
+              "homeAway": "home",
+              "winner": false,
+              "score": "0",
+              "records": [
+                {
+                  "name": "All Splits",
+                  "type": "total",
+                  "summary": "2-3-5",
+                  "abbreviation": "Total"
+                }
+              ],
+              "team": {
+                "id": "2922",
+                "uid": "s:600~t:2922",
+                "displayName": "Getafe",
+                "name": "Getafe",
+                "location": "Getafe",
+                "abbreviation": "GET",
+                "venue": {
+                  "id": "4154"
+                }
+              }
+            },
+            {
+              "id": "243",
+              "uid": "s:600~t:243",
+              "type": "team",
+              "order": 1,
+              "homeAway": "away",
+              "winner": false,
+              "score": "0",
+              "records": [
+                {
+                  "name": "All Splits",
+                  "type": "total",
+                  "summary": "4-2-3",
+                  "abbreviation": "Total"
+                }
+              ],
+              "team": {
+                "id": "243",
+                "uid": "s:600~t:243",
+                "displayName": "Sevilla",
+                "name": "Sevilla",
+                "location": "Sevilla",
+                "abbreviation": "SEV",
+                "venue": {
+                  "id": "10628"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

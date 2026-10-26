@@ -1,0 +1,451 @@
+{
+  "id": "d1aedfce-d7c8-4d4a-9532-99c82547baad",
+  "name": "PETRONAS GRAND PRIX OF MALAYSIA ",
+  "season": {
+    "id": "0e67d879-2863-454a-914c-7d583ce4cd9c",
+    "year": 2026,
+    "current": true
+  },
+  "kind": "GP",
+  "type": "SPORT",
+  "date_start": "2026-10-30T08:00:00+08:00",
+  "date_end": "2026-11-01T18:00:00+08:00",
+  "time_zone": "ASIA/KUALA_LUMPUR",
+  "show_in_calendar": true,
+  "has_results": true,
+  "status": "NOT-STARTED",
+  "circuit": {
+    "id": "6c1390e6-d9dd-4a5b-bef1-eb6b33b4e3d6",
+    "name": "Petronas Sepang International Circuit",
+    "city": "Sepang",
+    "country": "Malaysia",
+    "address": "Jalan Pekeliling, 64000 Sepang, Selangor, Malaysia"
+  },
+  "broadcasts": [
+    {
+      "id": "e479d6ec-e054-47f6-8e96-48f19cf92342",
+      "name": "GearUp",
+      "shortname": "SHOW",
+      "date_start": "2026-10-29T15:30:00+0800",
+      "date_end": "2026-10-29T16:00:00+0800",
+      "type": "MEDIA",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRESS",
+      "status": "NOT-STARTED",
+      "has_results": false,
+      "is_live": false
+    },
+    {
+      "id": "d040bd8d-c7a6-45c5-b502-29f1f07c13f7",
+      "name": "Pre-Event Press Conference",
+      "shortname": "PRESS",
+      "date_start": "2026-10-29T16:00:00+0800",
+      "date_end": "2026-10-29T16:30:00+0800",
+      "type": "MEDIA",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRESS",
+      "status": "NOT-STARTED",
+      "has_results": false,
+      "is_live": false
+    },
+    {
+      "id": "35e56c9e-f58d-4efe-b37c-3b13ec0e7c73",
+      "name": "Free Practice Nr. 1",
+      "shortname": "FP1",
+      "date_start": "2026-10-30T09:00:00+0800",
+      "date_end": "2026-10-30T09:35:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "7b0adf61-0a93-4e3d-a7ef-1fee93c2591f",
+        "name": "Moto3",
+        "acronym": "MT3"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "cb2149c8-e8a9-439b-afea-bc84e370d164",
+      "name": "Free Practice Nr. 1",
+      "shortname": "FP1",
+      "date_start": "2026-10-30T09:50:00+0800",
+      "date_end": "2026-10-30T10:30:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "bc2b0143-1bfb-4ad0-9501-da2e474e3ea7",
+        "name": "Moto2",
+        "acronym": "MT2"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "569afaba-2f75-41f8-9f7d-0aa7b7819aae",
+      "name": "Free Practice Nr. 1",
+      "shortname": "FP1",
+      "date_start": "2026-10-30T10:45:00+0800",
+      "date_end": "2026-10-30T11:30:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "de93eaad-186b-4d4e-8057-95cf1dff875a",
+      "name": "Practice",
+      "shortname": "PR",
+      "date_start": "2026-10-30T13:15:00+0800",
+      "date_end": "2026-10-30T13:50:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "7b0adf61-0a93-4e3d-a7ef-1fee93c2591f",
+        "name": "Moto3",
+        "acronym": "MT3"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "4990781c-6519-40b4-8cbb-47b4edf847a6",
+      "name": "Practice",
+      "shortname": "PR",
+      "date_start": "2026-10-30T14:05:00+0800",
+      "date_end": "2026-10-30T14:45:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "bc2b0143-1bfb-4ad0-9501-da2e474e3ea7",
+        "name": "Moto2",
+        "acronym": "MT2"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "3df75f4a-07dd-4893-8067-a26284c550ab",
+      "name": "Practice",
+      "shortname": "PR",
+      "date_start": "2026-10-30T15:00:00+0800",
+      "date_end": "2026-10-30T16:00:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "0d6322d1-f2e3-4bb3-9453-30c16a069956",
+      "name": "Free Practice Nr. 2",
+      "shortname": "FP2",
+      "date_start": "2026-10-31T08:40:00+0800",
+      "date_end": "2026-10-31T09:10:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "7b0adf61-0a93-4e3d-a7ef-1fee93c2591f",
+        "name": "Moto3",
+        "acronym": "MT3"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "03883752-e8b6-42d2-9ee7-29bddcfacd9d",
+      "name": "Free Practice Nr. 2",
+      "shortname": "FP2",
+      "date_start": "2026-10-31T09:25:00+0800",
+      "date_end": "2026-10-31T09:55:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "bc2b0143-1bfb-4ad0-9501-da2e474e3ea7",
+        "name": "Moto2",
+        "acronym": "MT2"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "3355904d-af6c-4a00-9d39-1c37cc5fcbe2",
+      "name": "Free Practice Nr. 2",
+      "shortname": "FP2",
+      "date_start": "2026-10-31T10:10:00+0800",
+      "date_end": "2026-10-31T10:40:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRACTICE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "1a64f2f2-1a2e-4798-8acc-89c3f8391d5e",
+      "name": "Qualifying Nr. 1 ",
+      "shortname": "Q1",
+      "date_start": "2026-10-31T10:50:00+0800",
+      "date_end": "2026-10-31T11:05:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "QUALIFYING",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "be5fce5e-f376-4811-b0e7-22afce162539",
+      "name": "Qualifying Nr. 2 ",
+      "shortname": "Q2",
+      "date_start": "2026-10-31T11:15:00+0800",
+      "date_end": "2026-10-31T11:30:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "QUALIFYING",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "db982302-f8fb-417b-ae15-eac51a90c481",
+      "name": "Qualifying Nr. 1 ",
+      "shortname": "Q1",
+      "date_start": "2026-10-31T12:45:00+0800",
+      "date_end": "2026-10-31T13:00:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "7b0adf61-0a93-4e3d-a7ef-1fee93c2591f",
+        "name": "Moto3",
+        "acronym": "MT3"
+      },
+      "kind": "QUALIFYING",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "af26eac8-aa8e-4b28-83d2-2829126feade",
+      "name": "Qualifying Nr. 2 ",
+      "shortname": "Q2",
+      "date_start": "2026-10-31T13:10:00+0800",
+      "date_end": "2026-10-31T13:25:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "7b0adf61-0a93-4e3d-a7ef-1fee93c2591f",
+        "name": "Moto3",
+        "acronym": "MT3"
+      },
+      "kind": "QUALIFYING",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "a19722f3-4642-4a0d-9b0d-7650b6b67f5a",
+      "name": "Qualifying Nr. 1 ",
+      "shortname": "Q1",
+      "date_start": "2026-10-31T13:40:00+0800",
+      "date_end": "2026-10-31T13:55:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "bc2b0143-1bfb-4ad0-9501-da2e474e3ea7",
+        "name": "Moto2",
+        "acronym": "MT2"
+      },
+      "kind": "QUALIFYING",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "43989866-f93e-4bb2-9179-07b962ceab68",
+      "name": "Qualifying Nr. 2 ",
+      "shortname": "Q2",
+      "date_start": "2026-10-31T14:05:00+0800",
+      "date_end": "2026-10-31T14:20:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "bc2b0143-1bfb-4ad0-9501-da2e474e3ea7",
+        "name": "Moto2",
+        "acronym": "MT2"
+      },
+      "kind": "QUALIFYING",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "77c9f3f4-a34f-4c14-842c-91fe87b1b11d",
+      "name": "Tissot Sprint",
+      "shortname": "SPR",
+      "date_start": "2026-10-31T15:00:00+0800",
+      "date_end": "2026-10-31T15:00:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "RACE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "e1df9253-ff08-4569-9b01-bb1af9f9f4ec",
+      "name": "Warm Up",
+      "shortname": "WUP",
+      "date_start": "2026-11-01T10:40:00+0800",
+      "date_end": "2026-11-01T10:50:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "WARM_UP",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "0d282942-6478-4911-9359-8bfa6b2458a5",
+      "name": "Talk Show",
+      "shortname": "SHOW",
+      "date_start": "2026-11-01T11:00:00+0800",
+      "date_end": "2026-11-01T11:40:00+0800",
+      "type": "MEDIA",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRESS",
+      "status": "NOT-STARTED",
+      "has_results": false,
+      "is_live": false
+    },
+    {
+      "id": "73d30ecb-7585-4d43-8cc5-0678c194187b",
+      "name": "Race",
+      "shortname": "RAC",
+      "date_start": "2026-11-01T12:00:00+0800",
+      "date_end": "2026-11-01T12:00:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "7b0adf61-0a93-4e3d-a7ef-1fee93c2591f",
+        "name": "Moto3",
+        "acronym": "MT3"
+      },
+      "kind": "RACE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "a5ab31bd-807f-4341-a562-9058436c29c2",
+      "name": "Race",
+      "shortname": "RAC",
+      "date_start": "2026-11-01T13:15:00+0800",
+      "date_end": "2026-11-01T13:15:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "bc2b0143-1bfb-4ad0-9501-da2e474e3ea7",
+        "name": "Moto2",
+        "acronym": "MT2"
+      },
+      "kind": "RACE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "43682de4-47e6-4992-b2e6-a4b1c86149c3",
+      "name": "Grand Prix",
+      "shortname": "RAC",
+      "date_start": "2026-11-01T15:00:00+0800",
+      "date_end": "2026-11-01T15:00:00+0800",
+      "type": "SESSION",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "RACE",
+      "status": "NOT-STARTED",
+      "has_results": true,
+      "is_live": false
+    },
+    {
+      "id": "188b9cbc-71f5-4967-bd27-347cd16238b9",
+      "name": "After the Flag",
+      "shortname": "SHOW",
+      "date_start": "2026-11-01T16:15:00+0800",
+      "date_end": "2026-11-01T16:45:00+0800",
+      "type": "MEDIA",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRESS",
+      "status": "NOT-STARTED",
+      "has_results": false,
+      "is_live": false
+    },
+    {
+      "id": "d7715af1-0fee-403c-825a-190353d74c7c",
+      "name": "Sunday Press Conference",
+      "shortname": "SHOW",
+      "date_start": "2026-11-01T16:45:00+0800",
+      "date_end": "2026-11-01T17:15:00+0800",
+      "type": "MEDIA",
+      "category": {
+        "id": "93888447-8746-4161-882c-e08a1d48447e",
+        "name": "MotoGP",
+        "acronym": "MGP"
+      },
+      "kind": "PRESS",
+      "status": "NOT-STARTED",
+      "has_results": false,
+      "is_live": false
+    }
+  ]
+}

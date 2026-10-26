@@ -50,10 +50,11 @@ class Almacen:
         self.anterior = deepcopy(calendario)
         return calendario
 
-    def guardar(self, calendario, solo_clasificacion=False, solo_nucleo=False):
+    def guardar(self, calendario, solo_clasificacion=False, solo_nucleo=False, pasos_extra=()):
         if self.revision is None:
             raise ValueError('Hay que cargar el estado remoto antes de integrarlo')
-        if (solo_clasificacion or solo_nucleo) and self.anterior == calendario:
+        cambios = self.anterior != calendario
+        if (solo_clasificacion or solo_nucleo) and not cambios and not pasos_extra:
             return
         # Si otro escritor avanzó la revisión, CHECK(revision>=0) rechaza la
         # guardia, el batch omite las escrituras y revierte. También falla si
@@ -62,15 +63,17 @@ class Almacen:
             'SELECT 1, ?, -1 WHERE NOT EXISTS '
             '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version=? AND revision=?)',
             (almacen.VERSION_ESQUEMA, almacen.VERSION_ESQUEMA, self.revision))
-        pasos = [guardia, *almacen.planificar(self.anterior, calendario, solo_clasificacion, solo_nucleo),
-                 ('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ())]
+        pasos = [guardia, *pasos_extra]
+        if cambios:
+            pasos.extend(almacen.planificar(self.anterior, calendario, solo_clasificacion, solo_nucleo))
+            pasos.append(('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ()))
         try:
             self.cliente.transaccion(pasos)
         except ErrorTurso as error:
             if error.paso == 0 and error.codigo in ('SQLITE_CONSTRAINT', 'SQLITE_CONSTRAINT_CHECK'):
                 raise ConflictoCalendario('Otra ejecución modificó el calendario; releer antes de integrar') from None
             raise
-        self.revision += 1
+        self.revision += int(cambios)
         self.anterior = deepcopy(calendario)
 
     def copia(self, ruta):

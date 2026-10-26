@@ -169,3 +169,40 @@ def importar(anterior, pagina, circuito, observado, url=None):
                                for ip, p in enumerate(participaciones)], 'parciales': parciales}
                 c.n['observaciones'][em]['bloques']['resultado'] = rid
     return c.terminar()
+
+
+def importar_agenda(anterior, pagina, circuito, observado, url=None):
+    """Solo torneos; no visita groupings, partidos, jugadores o ganadores."""
+    from zoneinfo import ZoneInfo
+    from . import deporte, espn
+    if circuito not in ('atp', 'wta'):
+        raise ValueError('Circuito de tenis desconocido')
+    _, torneos = espn.validar(pagina, circuito)
+    a = deporte.Agenda(anterior, 'espn-' + circuito, 'ESPN ' + circuito.upper(),
+        'https://www.espn.com/tennis/', 'tenis', observado, bool(url))
+    padre = a.grupo('circuito', circuito, 'circuito', circuito.upper(), codigo=circuito,
+                   identidad=nucleo.identificador('circuito-tenis', circuito))
+    for t in torneos:
+        enlace = espn.enlace(t, a.url)
+        edicion = a.grupo('tournament_uid', t['uid'], 'edicion', t.get('name'), padre=padre)
+        cuando = deporte.intervalo()
+        calendario = t.get('calendar') or {}
+        limites = {k: t.get(k) for k in ('date', 'endDate')}
+        if all(isinstance(v, str) and len(v) == 10 for v in limites.values()):
+            cuando = deporte.dias(t['date'], t['endDate'])
+        elif calendario.get('type') == 'day' and calendario.get('timeZone'):
+            zona = ZoneInfo(calendario['timeZone'])
+            def dia(valor):
+                return tiempos.instante(valor).astimezone(zona).date().isoformat()
+            inicio, fin = calendario.get('startDate'), calendario.get('endDate')
+            # Se requiere coincidencia entre los límites del evento y su calendario.
+            if inicio and fin and t.get('date') and t.get('endDate'):
+                if dia(inicio) != dia(t['date']) or dia(fin) != dia(t['endDate']):
+                    raise ValueError('Límites de torneo discrepantes con su calendario')
+                cuando = deporte.dias(dia(inicio), dia(fin))
+            limites['calendario'] = {k: calendario.get(k) for k in ('type', 'timeZone', 'startDate', 'endDate')}
+        temporada = t.get('season') or {}
+        a.evento('tournament_calendar_uid', t['uid'], 'actividad_continua', t.get('name'),
+            cuando, padre=edicion, sitio=t.get('venue'), url=enlace,
+            bloques={'limites_proveedor': limites, 'temporada_declarada': temporada.get('year')})
+    return a.terminar()

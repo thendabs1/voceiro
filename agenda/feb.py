@@ -107,3 +107,37 @@ def importar(anterior, muestra, observado):
             'alcance': 'tabla_observada' if recogida else 'muestra_parcial', 'filas': filas}
         c.n['observaciones'][ec]['bloques']['clasificacion'] = cid
     return c.terminar()
+
+
+def importar_agenda(anterior, muestra, observado):
+    """Extracción de citas: no persiste fragmentos HTML, tanteos ni tablas."""
+    from . import deporte
+    from .feb_html import COMPETICIONES
+    if not isinstance(muestra, dict) or muestra.get('version_muestra') != 1 or muestra.get('proveedor') != FUENTE:
+        raise ValueError('Se requiere una extracción FEB revisada v1')
+    g, t, f = (muestra.get(k) or {} for k in ('competicion', 'edicion', 'fase'))
+    if g.get('id') not in COMPETICIONES or any(not str(x.get('id', '')).isdigit() for x in (g, t, f)):
+        raise ValueError('Competición, temporada o fase FEB fuera del alcance')
+    deporte.temporada(t['id'])
+    a = deporte.Agenda(anterior, FUENTE, FUENTES[FUENTE]['nombre'], FUENTES[FUENTE]['url'],
+                       'baloncesto', observado, muestra.get('modo') in ('recogida_html', 'agenda_html'))
+    competicion = a.grupo('competicion', g['id'], 'competicion', g.get('nombre'))
+    edicion = a.grupo('temporada', t['id'], 'edicion', t.get('nombre'), contexto={'g': g['id']},
+                     padre=competicion, relacion='es_edicion_de')
+    fase = a.grupo('fase', f['id'], 'fase', f.get('nombre'),
+                   contexto={'g': g['id'], 't': t['id']}, padre=edicion)
+    for p in deporte.unicos(deporte.filas(muestra, 'partidos', 1000), 'id'):
+        if not str(p['id']).isdigit():
+            raise ValueError('ID de partido FEB inválido')
+        inicio = datetime.strptime(p['fecha_hora'], '%d/%m/%Y - %H:%M') if p.get('fecha_hora') else None
+        cuando = {'inicio': tiempos.extremo(inicio.date().isoformat(), inicio.time().isoformat())
+                            if inicio else tiempos.extremo(),
+                  'fin': tiempos.extremo(), 'fin_exclusivo': None, 'horario_textual': None}
+        lados = [p.get(lado) or {} for lado in ('local', 'visitante')]
+        nombres = [deporte.literal(e.get('nombre'), 'equipo FEB') for e in lados]
+        equipos = [{'papel': lado, 'nombre': nombre, 'id': equipo.get('id')}
+                   for lado, equipo, nombre in zip(('local', 'visitante'), lados, nombres)]
+        a.evento('partido', p['id'], 'encuentro', ' — '.join(nombres), cuando,
+            padre=fase, sitio=p.get('pista'), url=f'https://baloncestoenvivo.feb.es/partido/{p["id"]}',
+            conservar_fecha=True, equipos=equipos)
+    return a.terminar()

@@ -1,441 +1,230 @@
-# Calendario común
+# Agenda
 
-El [diseño deportivo del 26/10/2026](calendario-deportivo.md) concreta las doce
-colecciones iniciales confirmadas: citas en la agenda común, tenis solo por
-torneos, parte compartida ESPN y OCB desde servidor. Sustituye el borrador de
-resultados diferidos. Sus adaptadores y controles están pendientes; los deportes
-siguen sin recogida periódica activada y el cliente está desactivado hasta
-conectar la API de lectura.
+Calendario común de citas (cultura, deportes y otras) para mostrarlas junto a
+las noticias. Este documento recoge el estado vigente; la historia de cada
+decisión está en git. Las fuentes, sus condiciones y las candidatas están en
+[fuentes.md](fuentes.md).
 
-La [base y el contrato de servicios](arquitectura-servicios.md) reúnen las
-reglas de territorio, cobertura, noticias en memoria, persistencia y servicio.
-La prioridad actual es cerrar esa base y la operación por colección antes de
-activar la nueva lectura o ampliar proveedores; los apartados del piloto
-conservan su contexto histórico.
+## Tres planos
 
-## Territorio compartido y retención
+| Plano | Qué contiene | Dónde vive | Cómo se sirve |
+| --- | --- | --- | --- |
+| Noticias | Titulares de medios | R2 + relay de Google News | Fuera de este directorio. |
+| Agenda | Citas que se cruzan por fecha, lugar y tema | Base Turso dedicada (`CALENDARIO_TURSO_URL`) | Publicación a R2 (`calendario.json`) y lectura SQL para la API de los workers. |
+| Consultas puntuales | Fichas por identidad: libro, película, resultado de un partido… | No se guardan | Worker con caché o navegador directo. |
 
-Primer incremento de la [arquitectura acordada](arquitectura-servicios.md):
-[catálogo común INE](../shared/territorios/README.md), jerarquía municipio →
-provincia → autonomía → país y cobertura editorial en el catálogo de medios.
-La lectura pública de agenda enlaza los municipios acreditados sin cambiar
-IDs del núcleo ni resolver NORA por nombres. El tiempo reutiliza las provincias.
-La lectura indexada en Turso está preparada en el PR 144 para revisión.
-La [revisión común de clasificación y territorio](revision.md) concreta el paso
-por fuente, los tres recintos de Madrid acreditados y el desajuste entre los
-códigos municipales de Kulturklik y el servicio NORA. Puede ejecutarse con
-`python -m agenda.revision --entrada exportacion.json` sobre lo ya guardado.
+**Regla:** se guarda en la base solo lo que se trabaja o sirve a otras
+funciones (calendario, sitios, seguimientos). Lo que se pide por identidad se
+consulta y se cachea: muchas consultas tienen picos breves cuando ocurre algo.
+Los resultados deportivos son consultas puntuales; no se recogen.
 
-Los eventos puntuales terminados tendrán un tope de **45 días**; temporadas,
-resultados, clasificaciones y entidades reutilizables requieren políticas propias.
-`python -m agenda.retencion exportacion.json --ahora 2026-12-11T12:00:00Z`
-prepara un informe sin borrar: exige fin confirmado, conserva conflictos,
-aplazados, intervalos y vínculos deportivos. Un final desconocido no se inventa.
-Antes de activar la poda quedan por implementar la eliminación transaccional
-de dependencias exclusivas, el tratamiento de documentos compartidos y la
-protección frente a que una recogida vuelva a importar el evento caducado.
+Las tres capas comparten el catálogo temático
+([shared/catalogo-tematico.json](../shared/catalogo-tematico.json)), el
+territorio común ([shared/territorios](../shared/territorios/README.md)) y el
+parser de búsqueda.
 
-Este incremento no modifica la base remota ni publica servicios.
+## Estado (26/10/2026)
 
-## Lectura SQL y API
+- **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid y Kulturklik
+  en Turso y publicación en R2.
+- **Deportes:** doce colecciones con adaptador y control de temporadas. La
+  recogida es manual (`operacion: deportes` en el workflow) hasta medir filas
+  y peticiones de una pasada real; después pasa al cron.
+- **Cliente:** `CALENDARIO_ACTIVO = false` en `front/app/14-calendario.js`.
+  Descargar `calendario.json` completo (unos 12 MB) bloqueaba; se reactiva al
+  conectar la API.
+- **API de lectura:** rutas `/calendario/*` en `cf-datos` y `deno-datos`,
+  implementadas y sin activar (`CALENDARIO_LECTURA_SQL=false`, secretos de
+  lectura pendientes en los workers).
 
-El PR 144 prepara una proyección pública indexada y rutas comunes CF/Deno,
-con activación independiente del cliente. Implementación, mediciones y condiciones
-de activación en [api-lectura.md](api-lectura.md); su continuación se ordena según
-el contrato de servicios.
+## Flujo
 
-## Madrid, Kulturklik y conexiones públicas
+```text
+proveedor → adaptador → núcleo v2 en Turso (+ control de colecciones)
+                              │
+                              ├→ publicacion.py → R2 calendario.json
+                              └→ publicacion.py --lectura-sql → tablas de lectura
+                                                     → worker /calendario/* → front
+```
 
-El workflow **Calendario** permite recoger Madrid y Kulturklik con el campo
-`cultura`; `fuente: ninguna` evita volver a recoger el piloto. También se pueden
-recoger juntas por CLI:
+La recogida y el parseo terminan antes de escribir. Cada escritura es un
+batch con `BEGIN IMMEDIATE`, guardia de revisión y un único COMMIT; si otro
+escritor avanzó, se revierte y hay que releer. Una respuesta perdida tras
+COMMIT no se reintenta a ciegas.
+
+## Modelo: núcleo v2 (esquema 4)
+
+Tipos: `evento` (la cita), `agrupacion` (competición, edición, fase, GP,
+ciclo), `actividad` (obra o ficha con varias celebraciones), `participante`,
+`lugar` y `territorio`. Tablas principales en [esquema.sql](esquema.sql):
+entidades, documentos, referencias, observaciones, relaciones,
+participaciones, tiempos, políticas y selecciones. Las tablas del piloto
+(`agenda_eventos`, `agenda_registros`…) se conservan durante la transición.
+
+Reglas que no hay que romper:
+
+- **Identidad:** referencia externa (proveedor, tipo, contexto, ID literal) →
+  ID interno estable. Nunca por título, slug ni horario. No se fusionan
+  proveedores sin correspondencia explícita.
+- **Traducciones:** títulos por idioma en el mismo evento; las equivalencias
+  vienen declaradas por la fuente.
+- **Tiempo:** cada extremo con fecha civil, instante con offset si consta,
+  zona, precisión (`dia`, `hora`, `desconocida`) y certeza. No se fabrican
+  medianoches, duraciones ni zonas; el fin exclusivo de ICS se conserva.
+- **Programación:** nueva fecha, aplazamiento y cancelación solo si la
+  fuente los declara. Desaparecer de una respuesta no cancela ni borra.
+- **Revisiones:** repetir datos idénticos solo actualiza la comprobación;
+  marcador, reloj o ganador no generan versiones de agenda.
+- **Selección entre fuentes, por bloque** (horario, sede, programación):
+  corrección editorial > referencia preferida por política > última
+  observación válida > conflicto sin resolver.
+- **Territorio:** municipio por código INE acreditado. El dominio de la
+  fuente, el domicilio de un equipo o el país de una competición no sitúan
+  una cita. Una cita sin lugar sigue siendo importable.
+- **Temas:** asignaciones directas con evidencia por fuente; Deportes y
+  Cultura se obtienen por la jerarquía. Una etiqueta desconocida no se asigna.
+
+Relaciones del núcleo y cómo se recorren al seguir algo:
+
+| Relación | Origen → destino | Al seguir |
+| --- | --- | --- |
+| `es_edicion_de` | edición → competición | Seguir la competición alcanza sus ediciones presentes y futuras. |
+| `es_parte_de` | fase/cuadro/festival → agrupación | Se recorre hacia los hijos. |
+| `pertenece_a` | evento → agrupación | Seguir la agrupación alcanza sus citas. |
+| `celebracion_de` | evento → actividad | Seguir la obra alcanza sus funciones. |
+| `participa_en` | participante → evento | Seguir un equipo alcanza sus partidos. |
+| `compuesta_por` | pareja → persona | Solo dentro del ámbito acreditado. |
+| `inscrito_en`, `pertenece_al_club`, `se_celebra_en` | — | No propagan el seguimiento. |
+
+`agenda.nucleo.consultar` ya resuelve los eventos alcanzados desde una
+competición, edición, actividad, equipo o persona.
+
+## Deportes: solo citas
+
+| Colección | Principal | Contraste | Unidad |
+| --- | --- | --- | --- |
+| ATP | `espn-atp` | — | torneo (cita continua) |
+| WTA | oficial WTA | `espn-wta` | torneo |
+| Primera, Segunda | oficial LaLiga | `espn-primera`, `espn-segunda` | partido |
+| NBA, WNBA | `espn-nba`, `espn-wnba` | — | partido |
+| LF Endesa, Primera FEB, LF Challenge | `feb-*` (competiciones 4, 1, 67) | — | partido |
+| Fórmula 1 | oficial F1 | `espn-f1` | GP con sesiones |
+| MotoGP | oficial MotoGP | — | GP con sesiones |
+| WRC | OCBlacktop | — | rally (cita continua) |
+
+Las fuentes oficiales son principales por estabilidad y gratuidad
+(`proveedores.PRINCIPALES`). Cambiar de principal es configuración, nunca una
+reacción automática a un error; el contraste valida en memoria sin publicar.
+
+- Un GP o un torneo es una cita principal de varios días (días oficiales del
+  circuito) con las sesiones en `programa`. La lectura devuelve una tarjeta;
+  buscar una sesión lleva a su GP.
+- No se recogen resultados, clasificaciones, plantillas ni estadísticas; el
+  adaptador recorta la evidencia antes de persistirla.
+- **Control de temporadas** ([control.sql](control.sql), `temporadas.py`,
+  `operacion.py`): estados `anunciada → activa → en_cierre → cerrada` (y
+  `pausada`). Cada GET se reserva en la base antes de enviarse (por defecto 32
+  por pasada y 64 al día por proveedor; WRC además 120 al mes). Una selección
+  se confirma completa o conserva la última lectura válida. Respeta
+  `Retry-After`, se bloquea ante 401/403 y enfría tras errores. El
+  descubrimiento busca la temporada siguiente sin años fijos en el cron.
+- La publicación (`--fuentes-control`) añade los principales validados y su
+  cobertura por colección.
+
+## Cultura
+
+| Fuente | Identidad | Particularidades |
+| --- | --- | --- |
+| Cultura de Galicia | `id` de celebración; nodo = ficha | Hasta 91 días y 20 páginas de 1000 por idioma; inicio = fin no prueba un instante. CC BY-SA 4.0. |
+| Madrid | `ID-EVENTO`; `vgnextoid` para actividad y recinto | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. CC BY 4.0. |
+| Kulturklik | `id`; castellano y euskera juntos | Fechas de día con horario en texto; su código municipal no es NORA ni INE completo. CC BY 4.0. |
+
+La recogida comprueba todas las páginas antes de importar: cambios de total,
+páginas repetidas o truncadas impiden guardar. Una programación prolongada
+(exposición) aparece una vez por ventana.
+
+## Lectura pública
+
+`python -m agenda.publicacion --turso --fuentes … --publicar` genera la
+proyección: solo fuentes permitidas (`CALENDARIO_FUENTES_PUBLICAS`, por defecto
+`cultura-galicia,madrid,kulturklik`) y sin originales ni historial.
+
+Con `--lectura-sql` prepara además tablas indexadas por tramos de días
+consecutivos (de 329.000 filas diarias a 25.000 tramos en la medición del
+25/10). Rutas GET/HEAD del worker:
+
+| Ruta | Respuesta |
+| --- | --- |
+| `/calendario/eventos?desde&hasta` | 20 tarjetas por página (máx. 50), ventana `[desde,hasta)` de hasta 42 días. |
+| `/calendario/eventos?pendientes=1` | Citas con fecha pendiente. |
+| `/calendario/resumen?desde&hasta` | Conteo por día y hasta dos muestras. |
+| `/calendario/eventos/:id` | Detalle con sus objetivos. |
+| `/calendario/catalogo`, `/calendario/objetivos?texto&tipo` | Temas, fuentes y zonas; entidades paginadas. |
+
+Filtros: `q` (prefijos del parser y texto), `texto`, `temas`, `circuitos`,
+`fuente`, `objetivo`, `lugar`, `municipio`, `territorio`, `zona`. El cursor va
+ligado a la revisión: si cambia la publicación responde 409. Caché de 15 s con
+clave por revisión y límite de 30 peticiones/IP/minuto.
+
+**Para activar:** secretos `CALENDARIO_TURSO_URL` y
+`CALENDARIO_TURSO_TOKEN_LECTURA` (token de solo lectura) en CF y Deno,
+variable `CALENDARIO_LECTURA_SQL=true` en Actions y conectar el cliente.
+`node scripts/medir-lectura-calendario.mjs publicacion.json` mide la proyección
+sin red.
+
+## Operación
+
+Workflow **Calendario**: `recoger` (cultura y, opcionalmente, FEB o tenis),
+`deportes` (temporadas y descubrimiento), `reclasificar`, `preparar-nucleo` y
+`publicar`. Cada pasada revisa las fuentes guardadas con
+`python -m agenda.revision --turso`, sin escribir.
 
 ```sh
+# Cultura en Turso (ventana inclusiva, 31 días por defecto, máximo 91).
 python calendario.py --turso --recoger-cultura madrid --recoger-cultura kulturklik \
   --inicio 2026-10-25 --fin 2026-11-24
+
+# Deportes: estado, pasada con descubrimiento y recogida manual de una colección.
+python -m agenda.operacion --turso --estado
+python -m agenda.operacion --turso --ejecutar --descubrir
+python calendario.py --turso --recoger-deporte feb --temporada-feb 2026 --competicion-feb 4
+
+# Sin red: muestras locales sobre SQLite y exportación del núcleo.
+python calendario.py --db /tmp/agenda.sqlite \
+  --entrada-deporte espn-primera=tests/fuentes/muestras_calendario/deportes/espn-primera.json \
+  --exportar-nucleo --salida /tmp/nucleo.json
+
+# Informe de retención (no borra): eventos puntuales terminados hace más de 45 días.
+python -m agenda.retencion exportacion.json --ahora 2026-12-11T12:00:00Z
 ```
 
-La ventana es inclusiva (31 días por defecto, máximo 91). Se comprueban todas
-las páginas del catálogo antes de filtrar por solapamiento e importar; cambios
-de total, páginas repetidas, truncamiento o descarga fallida impiden guardar.
-Las dos agendas se guardan en una sola transacción. El workflow trabaja
-directamente con Turso, sin copias de recuperación ni artefactos intermedios.
-Una pasada diaria a las **04:30 UTC**
-(05:30 en Madrid en invierno, 06:30 en verano) recoge Galicia, Madrid y Kulturklik
-y publica al terminar correctamente. Los deportes siguen siendo manuales.
+SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
+(`OCBLACKTOP_API_KEY` y las de Turso) viven solo en el servidor.
 
-Madrid identifica eventos por `ID-EVENTO`, actividades y recintos por el
-`vgnextoid` de sus URLs oficiales. Conserva `TIPO`, días de semana y exclusiones.
-Los intervalos no se expanden en funciones diarias. Exclusiones malformadas
-quedan como restricciones pendientes y no se ofrecen como fechas confirmadas.
-Kulturklik usa `id`, nombres castellano/euskera juntos y su campo municipal
-`municipalityNoraCode` con provincia; ese espacio no se equipara al del servicio
-territorial NORA. Las medianoches serializadas no son horarios de inicio. Sus horarios
-se conservan como texto bilingüe. Sin ID de recinto no se agrupan lugares por
-nombre ni se convierten empresas en participantes.
+## Pendiente
 
-Referencias: [Madrid](https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos),
-[estructura oficial de junio de 2026](https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos/resource/300107-4-agenda-actividades-eventos/download/300107-4-agenda-actividades-eventos.pdf),
-[API Kulturklik](https://opendata.euskadi.eus/api-culture/?api=culture_events),
-[ficha estatal y licencia de Kulturklik](https://datos.gob.es/es/catalogo/a16003011-agenda-cultural-proximos-eventos1).
-Ambas CC BY 4.0, con atribución y enlace al original en la lectura.
+- **Activar la lectura y el cliente:** agenda paginada, semana y mes con
+  `/resumen`, detalle bajo demanda y reactivar `CALENDARIO_ACTIVO`.
+- **Medir una pasada deportiva real** y pasar `deportes` al cron.
+- **Retención:** borrado transaccional de dependencias exclusivas antes de
+  activar la poda de 45 días.
+- **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un
+  registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
+- **Consultas puntuales:** registro único de prefijos (hoy `shared/parser.js`
+  y `shared/calendario/consulta.js` tienen listas separadas), contrato común
+  de respuesta y una salida única del worker con caché y presupuesto.
+- **Seguir:** guardado y seguimiento por objetivo en un documento cifrado
+  separado (`calendario-personal`, misma clave de sincronización con otra
+  derivación); novedades por objetivo, tipo de cambio y revisión. Diseñado,
+  sin implementar.
+- **Alrededores** (búsqueda por distancia): por diseñar.
 
-La proyección pública incluye participantes y miembros de pareja exclusivamente
-dentro del ámbito acreditado, además de competición → edición → encuentro y
-actividad → celebraciones. El navegador cruza estos objetivos con fuente,
-tema y municipio/recinto. Los recintos del piloto se conectan con sus municipios
-declarados. El catálogo común contrasta INE de seis dígitos y conserva NORA pendiente.
-La agenda muestra una sola ficha por programación prolongada en cada ventana;
-semana y mes muestran su presencia en días permitidos, sin crear nuevos eventos.
+## Pruebas
 
-Para habilitar las nuevas agendas públicas después de recogerlas, establecer
-`CALENDARIO_FUENTES_PUBLICAS=cultura-galicia,madrid,kulturklik` (selección
-predeterminada del workflow) y publicar la lectura. Una fuente deportiva pendiente no se habilita por añadir estas agendas.
-
-## Ampliación: lectura y recogidas deportivas
-
-La [revisión del encaje deportivo](revision-deportes.md) distingue las capas
-comunes, el estado de F1/tenis/FEB y las relaciones que faltan por acreditar.
-
-El frontend añade agenda, semana y mes y consultas en el feed: `tenis:`,
-`atp: wta:`, `resultados:tenis`, `resultados:atp,wta`, `f1:clasificación`
-y `tenis: circuito:atp,wta`. Los ámbitos se suman sin duplicar citas; un
-circuito explícito se cruza con el deporte y tipo de contenido. ATP y WTA
-tienen identidad de circuito independiente del proveedor, conservando los
-IDs existentes de torneos, cuadros y encuentros.
-
-`python -m agenda.publicacion` genera desde el núcleo v2 la lectura del
-navegador, sin originales ni historial completo. Conserva identidades,
-horarios, precisión, procedencia, participantes, resultados y tablas actuales.
-Las clasificaciones no son eventos. Vidmar sigue aportando solo calendario:
-una consulta de clasificación de F1 indica que no hay tabla disponible.
-
-El workflow manual **Calendario** incorpora FEB (LF Endesa, Primera FEB o
-LF Challenge, temporada explícita y dos páginas por pasada) y los scoreboards ATP/WTA (una petición
-por circuito). No se acredita cobertura de toda FEB. Las plazas TBD no crean
-personas ficticias. Los fragmentos ESPN se conservan por encuentro para no
-duplicar toda la respuesta al cambiar un marcador.
-
-Cada pasada del workflow revisa todas las fuentes guardadas, incluida FEB,
-con `python -m agenda.revision --turso`, sin escribir ni publicar. El informe
-separa clasificación temática de ubicación acreditada; una sede pendiente no
-impide conservar el partido ni sus relaciones deportivas. Para revisar solo
-FEB: `python -m agenda.revision --turso --fuentes feb`.
-
-Contraste del 25/10/2026 con las dos páginas completas de LF Endesa 2026/2027:
-240 partidos, 16 equipos en la clasificación y 39 marcadores; los 240 eventos
-clasificados como baloncesto y sin ubicación acreditada. La recogida conserva
-competición, edición, fase y equipos mediante sus IDs FEB. No deduce pabellón
-ni municipio desde el nombre del equipo. Es una observación puntual, no una
-garantía de cobertura de otras competiciones o de estabilidad del HTML.
-
-La ampliación y la selección de qué guardar o consultar están en
-[alcance de FEB](feb-alcance.md). Cada partido incorpora un enlace a su ficha
-oficial, que el frontend muestra en los detalles mediante «Ver original».
-No se recorren actas, plantillas ni estadísticas personales. Los marcadores
-y la tabla que ya vienen en las páginas agregadas se conservan como observaciones;
-no hay una recogida adicional de todos los resultados ni actualización en directo.
-
-La [investigación de rutas y sedes](investigacion/07-feb-rutas-sedes.md)
-contrasta el calendario general JSON, pabellón habitual frente a pista del
-encuentro, estadísticas enlazables y navegación por fase mediante formulario.
-Sus propuestas todavía no amplían el adaptador ni las recogidas.
-
-Para seleccionar otra liga en el workflow se usa `competicion_feb`. En CLI,
-por ejemplo: `python calendario.py --turso --recoger-deporte feb --temporada-feb 2026 --competicion-feb 1`.
-Para inventariar un HTML ya guardado, sin consultar la fuente:
-`python -m agenda.feb_html --entrada /tmp/feb-calendario.html`.
-
-Turso es el estado de trabajo y la publicación lo consulta directamente.
-Las escrituras grandes usan varios envíos HTTP
-unidos por el baton del protocolo v2, con un único COMMIT y rollback completo
-ante errores. No se reintenta automáticamente una escritura con respuesta perdida.
-
-La publicación en R2 es explícita: usa la variable del repositorio
-`CALENDARIO_FUENTES_PUBLICAS` (IDs separados por comas; por defecto
-`cultura-galicia,madrid,kulturklik`). Sin seleccionar fuentes se genera la lectura de revisión,
-que no se puede subir como pública. La pasada diaria incluye solo las agendas
-culturales; las fuentes con condiciones pendientes no se habilitan automáticamente.
-`calendario.json` se sustituye como objeto completo y su caché dura 60 s.
-
-La conexión de municipios con tiempo y noticias requiere todavía
-correspondencias verificadas por INE. Las noticias de las consultas temáticas
-se seleccionan por texto del titular; todavía no se enlazan automáticamente
-con encuentros o participantes.
-
-Los apartados siguientes documentan el piloto conservado y sus contrastes
-anteriores; esta ampliación sustituye sus menciones a UI o lectura pendientes.
-
-## Piloto conservado
-
-Una función de teatro, un partido y una sesión de F1 son citas del mismo
-calendario. Los importadores son Cultura de Galicia y el ICS completo de
-Vidmar; el núcleo no conoce sus campos. Esta fase persiste en Turso y conserva
-SQLite local para muestras y copias. El [núcleo v2 implementado](nucleo-implementado.md)
-añade entidades tipadas, relaciones, resultados y consultas comunes, contrastados
-con muestras guardadas de FEB y WTA. Su exportación es independiente del JSON
-del piloto, que conserva su formato durante la transición. El panel de calendario,
-las órdenes del buscador y la publicación periódica se diseñarán después
-de comprobar los datos. No hay despliegue ni tarea programada nueva.
-
-## Ejecutar
-
-Solo requiere Python 3.11 o posterior (biblioteca estándar):
-
-```sh
-python calendario.py --inicio 2026-10-25 --fin 2026-11-23 \
-  --idioma gl --salida /tmp/calendario.json
-
-# Siguiente pasada: conservar identidades y primeras observaciones.
-python calendario.py --anterior /tmp/calendario.json \
-  --idioma gl --idioma es --salida /tmp/calendario.json
-
-# Examinar una o varias páginas ya descargadas, sin red.
-python calendario.py --entrada /tmp/pagina-0.json --entrada /tmp/pagina-1.json \
-  --salida /tmp/calendario-muestra.json
-
-# Estado persistente: una segunda ejecución carga la misma base automáticamente.
-python calendario.py --fuente cultura-galicia --fuente vidmar-f1 \
-  --inicio 2026-10-25 --fin 2026-11-23 \
-  --db /tmp/calendario.sqlite --salida /tmp/calendario.json
-
-# Recuperar o regenerar la exportación, sin red ni una nueva recogida.
-python calendario.py --db /tmp/calendario.sqlite --exportar \
-  --salida /tmp/calendario.json
-
-# Continuar el estado remoto con CALENDARIO_TURSO_URL y
-# CALENDARIO_TURSO_TOKEN en el entorno (no se carga .env automáticamente).
-python calendario.py --turso --fuente cultura-galicia --fuente vidmar-f1 \
-  --inicio 2026-10-25 --fin 2026-11-23 --salida /tmp/calendario.json
-
-# Recuperar la exportación sin consultar proveedores.
-python calendario.py --turso --exportar --salida /tmp/calendario.json
-
-# Reclasificar el estado remoto ya guardado, sin consultar proveedores.
-python calendario.py --turso --reclasificar --salida /tmp/calendario-clasificado.json
-
-# Proyectar el piloto al contrato v2 y exportarlo, sin consultar proveedores.
-python calendario.py --turso --preparar-nucleo
-python calendario.py --turso --exportar-nucleo --salida /tmp/nucleo.json
-
-# Copia completa con originales, observaciones, vínculos e historial.
-python calendario.py --turso --copia /tmp/calendario.sqlite
-# Reabrir la copia recupera el JSON y permite continuar localmente.
-python calendario.py --db /tmp/calendario.sqlite --exportar --salida /tmp/recuperado.json
-
-# Combinar muestras de ambos formatos, sin red.
-python calendario.py --entrada /tmp/galicia.json --entrada-ics /tmp/vidmar.ics \
-  --db /tmp/calendario-muestra.sqlite
-```
-
-Por defecto se pide desde hoy hasta dentro de 30 días, ambos incluidos. El
-adaptador de Galicia limita cada consulta a 91 días y 20 páginas de 1000 registros por
-idioma. No descarga una ficha de detalle por evento. Si cambia el total,
-se repiten IDs o faltan páginas, falla sin sustituir la salida anterior.
-Una muestra local queda identificada como tal, aunque declare más resultados.
-
-La comprobación real encontró un solapamiento entre páginas de 50 registros:
-el ID 156840 aparecía en dos páginas y faltaba el 156877, aunque el total
-seguía siendo 185. Una respuesta de 1000 devolvió las 185 identidades distintas.
-Se usa ese tamaño para reducir los cortes y se mantiene el rechazo de
-solapamientos. No se presupone que la API ofrezca una instantánea transaccional;
-si falla con un intervalo grande, hay que reducirlo y revisar la recogida.
-
-El workflow manual **Calendario (piloto)** permite elegir Galicia, F1 o ambas
-y continúa el estado en una base Turso dedicada. Necesita los secretos de
-Actions `CALENDARIO_TURSO_URL` y `CALENDARIO_TURSO_TOKEN`; no usa como alternativa
-las credenciales del diagnóstico de la cosecha. Guarda una copia SQLite
-completa y JSON como artefacto durante 14 días. Las ejecuciones del workflow
-se serializan y la revisión remota detecta otros escritores. La base conserva
-el estado más allá de los artefactos. No hay cron, publicación para el navegador
-ni poda automática de eventos o historial.
-
-`--db`, `--turso` y `--anterior` son alternativas. Toda la recogida se
-valida antes de escribir. La transacción conserva el estado y las revisiones
-de contenido; repetir datos idénticos registra otra recogida sin inventar un
-cambio. La base elegida es la autoridad: la exportación ocurre
-después del commit y puede regenerarse con `--exportar` si falla el archivo.
-Esquema, límites y continuidad del modelo en [Persistencia y estructura
-deportiva](persistencia.md).
-
-Vidmar se solicita explícitamente con `--fuente vidmar-f1`: recoge el ICS
-completo, sin aplicar el intervalo de Galicia. Preserva los UID, las fechas
-sin hora y el fin exclusivo. Las alarmas no producen eventos. El lector
-acepta el subconjunto observado (DATE y horas UTC); recurrencias, excepciones,
-duraciones y zonas locales no soportadas abortan la pasada. No se deducen
-regiones ni agrupaciones de gran premio desde nombres de ciudades o títulos.
-La colección del proveedor y sus categorías explícitas son grupos.
-Su licencia de republicación está pendiente de verificar y viaja como tal
-en los metadatos; el piloto no publica el calendario. Fuente:
-[F1 Calendar de Vidmar](https://f1.vidmar.net/).
-
-## Contrato inicial del JSON (versión 1)
-
-| Campo | Significado |
-| --- | --- |
-| `fuentes` | Identidad de cada flujo de datos, atribución, catálogo y licencia. No se limita a un dominio de periódico. |
-| `eventos` | Citas con ID interno, títulos por idioma, celebración, estado, lugar y referencias. |
-| `registros` | Registros externos por fuente e ID, datos normalizados y originales, modificación declarada, primera y última recogida. |
-| `vinculos` | Correspondencias persistentes entre IDs externos y evento interno, incluidas equivalencias explícitas de traducción. |
-| `regiones` | Lugares o territorios identificados con nombres, identificadores externos y posibles padres. |
-| `grupos` | Actividades, ciclos, fichas y futuras colecciones o competiciones identificadas por separado. |
-| `consultas` | Alcance de la última recogida: intervalo e idioma, o muestra local. No garantiza cubrir todos los eventos de un territorio. |
-
-Cada cita concreta tiene ID propio, aunque comparta ficha con otras funciones.
-La relación `celebracion_de` enlaza esa ficha; un ciclo pertenece a `grupos`.
-Un futuro gran premio podrá agrupar sus sesiones mediante referencias del
-mismo modelo. Las clasificaciones de campeonato tendrán un ámbito propio;
-no se fabricará un evento para representar una tabla de temporada.
-
-Los IDs no dependen de título, slug ni horario. Se generan de forma
-determinista a partir de una referencia externa y se conservan con
-`--anterior`. Las equivalencias declaradas por una fuente permiten añadir
-traducciones al mismo evento. Si una equivalencia intenta unir dos eventos
-internos ya separados, la pasada falla para revisarlos. No hay conciliación
-automática entre proveedores por título, fecha o parecido. Antes de publicar
-periódicamente hará falta diseñar la conciliación reversible entre fuentes,
-la revalidación y el archivo del estado remoto.
-
-`datos_de` identifica el registro elegido para mostrar horario, estado y
-lugar: se elige de forma estable por referencia, sin afirmar que sea el más
-fiable. Si las traducciones discrepan, `conflictos` señala el campo y ambas
-versiones quedan en `registros`. Los títulos por idioma se conservan juntos.
-Las listas de regiones, grupos y relaciones admiten pertenencia múltiple.
-
-Las regiones de esta integración proceden del municipio de celebración,
-con ID propio de la fuente y el código INE original **CPRO+CMUN+DC**, incluido
-su control. No se asigna «Galicia» por el dominio del proveedor. La jerarquía
-territorial y la correspondencia entre códigos de diferentes fuentes quedan
-pendientes de tablas verificadas. Los grupos de actividad mantienen el
-vocabulario del proveedor. La extensión `clasificacion` añade conceptos comunes
-y evidencia por registro; sus correspondencias viven en
-[shared/catalogo-tematico.json](../shared/catalogo-tematico.json). Las etiquetas
-desconocidas se conservan sin asignarles un tema. La jerarquía permite filtrar
-Deportes desde Automovilismo, o Cultura desde Teatro, sin duplicar asignaciones.
-
-`cuando` distingue precisión `dia`, `hora` y `desconocida`. Una hora lleva
-desplazamiento UTC y zona; los días no reciben horas inventadas. En Galicia,
-inicio y fin iguales se conservan en el original y se omite el fin normalizado
-porque no se ha confirmado una duración. Una medianoche declarada conserva
-un aviso de precisión pendiente: no se interpreta como actividad de todo el
-día. Una hora local ambigua o inexistente por el cambio horario conserva el
-original y se marca como desconocida. No se extrapolan repeticiones desde
-el texto de una ficha, ni se crean citas diarias para una exposición.
-`fin_exclusivo` admite verdadero, falso o desconocido: un futuro adaptador
-ICS deberá declarar su fin exclusivo, sin restar un día al dato original.
-El JSON gallego no se interpreta con las reglas de ICS.
-
-Las fechas de modificación y recogida no se presentan como publicación.
-`dataOrixinal` conserva la celebración anterior cuando la fuente la declara;
-los estados cancelado y aplazado necesitan señales explícitas. Un evento
-ausente de la siguiente consulta se conserva con su última observación:
-la ausencia no prueba cancelación ni vigencia. Para la futura interfaz será
-necesario mostrar frescura y definir cuándo revalidar o retirar citas.
-
-## Investigación y siguientes pasos
-
-La [revisión propuesta del modelo](modelo-propuesto.md) contrasta actividades,
-celebraciones, participantes, territorios, temas y seguimiento con
-[nuevas muestras culturales y deportivas](investigacion/07-multideporte-y-seleccion.md).
-Las partes implementadas y pendientes se detallan en el
-[núcleo v2](nucleo-implementado.md); las notas de investigación no activan integraciones.
-La continuación del [diseño del núcleo con FEB, tenis y noticias ESPN](diseno-nucleo.md)
-concreta las relaciones y garantías que falta acordar antes de migrar o importar.
-El [contrato lógico propuesto](contrato-propuesto.md) concreta campos y
-cardinalidades, mantiene la clasificación compartida con noticias y deja para
-otro incremento los enlaces con artículos concretos.
-Las [decisiones del modelo y plan de implementación](decisiones-modelo.md)
-concretan el catálogo, las reglas de fuentes, fechas, seguimiento y datos
-personales; distinguen la clasificación implementada del núcleo que sigue.
-La revisión nueva encargó también dos lotes a OpenCode Go: FEB terminó y
-Cataluña/Madrid se completó aquí a partir de sus muestras tras agotar el tiempo.
-
-OpenCode Go (`opencode-go/kimi-k3`) trabajó en dos lotes acotados, escribiendo
-progreso en disco antes de entregar el resultado. Se conservan sus informes:
-
-- [Agendas territoriales: Galicia y Kulturklik](investigacion/01-agendas-territoriales.md).
-- [Directos: elDiario.es, RTVE y 20minutos](investigacion/02-directos.md).
-
-Revisión propia posterior: [servicios deportivos y propuesta de reglas de
-recopilación](investigacion/03-servicios-y-reglas.md). Compara los dos ICS
-de Vidmar, distingue fuentes documentadas de importadores probados y recoge
-el descarte de OpenF1 indicado por el usuario. Las cadencias propuestas
-todavía no se han activado.
-
-El [contraste de fuentes de fútbol](investigacion/04-futbol-fuentes.md) añade
-pruebas HTTP de ESPN, OpenLigaDB, FotMob y TheSportsDB, el bloqueo de SofaScore
-y la revisión de openfootball y fixturedownload. Distingue cobertura de frescura
-y condiciones de recogida. El fútbol queda pendiente: el usuario ha solicitado
-autorización a FotMob por su cobertura de Liga F y fútbol regional. No se
-continúa con otros proveedores de fútbol ni se consulta FotMob mientras se
-espera respuesta. Su estructura se contempla en el diseño de persistencia.
-
-Son notas de investigación, con límites y dudas expresos. Dos precisiones de
-la revisión: inicio=fin no demuestra que la actividad sea instantánea, y
-la correspondencia de los códigos de Kulturklik con INE no se aplica sin
-validar el conjunto y sus excepciones. La cobertura entre idiomas tampoco
-se da por completa. El lote de agendas propuso un vocabulario común, que
-queda pendiente de comprobar con una segunda fuente real.
-
-Fuentes primarias del primer importador:
-[catálogo y licencia](https://abertos.xunta.gal/catalogo/cultura-ocio-deporte/-/dataset/0045/axenda-cultura-galicia),
-[manual del servicio](https://ficheiros-web.xunta.gal/cultura/servizo-web/Manual_Servizo%20Web_Axenda_Cultura.pdf)
-y [JSON público](https://www.cultura.gal/v1/axenda/eventos.json?idioma=gl).
-La atribución y licencia CC BY-SA 4.0 viajan en el calendario generado.
-
-Contraste actual: Galicia y sesiones deportivas de Vidmar en la misma base.
-El núcleo v2 añade resultados e instantáneas de clasificación con ámbito,
-probados con muestras locales; siguen pendientes sus recolectores y una segunda
-agenda territorial o de prensa. Antes del panel habrá que concretar filtros
-y la capa de regiones o grupos con el usuario. El piloto no decide esa UI.
-
-Los directos quedan documentados: harían falta seguimiento por cobertura,
-identidad y revisiones de cada entrada, paginación, caché compartida y cadencia
-propia según estado. El endpoint incremental localizado en elDiario.es no
-demuestra acceso a todo el histórico ni permite detectar por sí solo todas
-las correcciones. Se investigará antes de actualizar servidores.
-
-## Verificación
-
-`tests/fuentes/test_agenda.py`, `test_calendario_almacen.py` y
-`test_calendario_turso.py` entran en la suite Python completa del workflow
-**Tests**. Cubre funciones múltiples, traducciones, cambios de fecha,
-equivalencias conflictivas, ausencias, regiones y grupos múltiples, fechas
-sin hora y cambios de horario, paginación y conservación de la última salida
-buena ante errores. También cubren reapertura SQLite, auditoría, reversión de
-transacciones y errores entre fuentes, exportación y el contrato ICS.
-Todas las peticiones de esas pruebas son simuladas.
-
-El batch HTTP se prueba contra un emulador que ejecuta SQLite real: dos
-escritores, rollback, respuesta perdida tras COMMIT, respuesta incompleta,
-escrituras evitables, copia y reapertura del historial, migración del boceto
-v1 y observaciones antiguas. Hay un contraste sintético de agendas con
-baloncesto y atletismo; no son adaptadores ni pruebas de proveedores deportivos.
-
-Comprobación real del 24/10/2026: el intervalo 25/10–23/11 devolvió 185
-registros e identidades distintas y 41 municipios. Una segunda integración
-local de esa respuesta conservó las 185 identidades y primeras recogidas.
-La muestra del nodo 127829 produjo tres funciones distintas enlazadas a
-una misma ficha. No se simularon cambios reales del proveedor entre descargas;
-los aplazamientos y cancelaciones se cubren con respuestas simuladas en CI.
-
-Contraste posterior del mismo día: recogida conjunta de 185 registros gallegos
-y 128 de Vidmar en una SQLite con 313 eventos, 41 regiones y 197 grupos.
-Releer los originales descargados conservó los 313 vínculos y primeras
-recogidas. La base reabierta y su exportación fueron equivalentes y no hubo
-revisiones nuevas por contenido idéntico; `foreign_key_check` no devolvió errores.
-
-Verificación real del 25/10/2026 en la base dedicada `voceiro-calendario`:
-313 eventos (185 de Galicia y 128 de Vidmar). Reintegrar los datos descargados
-conservó identidades, primeras observaciones y las 313 revisiones iniciales;
-el batch de escritura leyó 317 filas y escribió 316 según libSQL. La cifra no
-incluye la lectura previa de la instantánea ni el dump. Se verificaron también
-el rechazo de un escritor obsoleto y de referencias inválidas en el servidor,
-y la recuperación de una copia completa con los 313 eventos y sus revisiones.
-
-Reclasificación real del 25/10/2026, tras integrar el catálogo común:
-[ejecución verificada](https://github.com/thendabs1/voceiro/actions/runs/40180791841).
-Conservados los 313 eventos, IDs, originales e historial; 208 clasificados y
-105 sin correspondencia. Los tipos sin correspondencia mantienen el original.
-La ampliación al núcleo v2 se ha contrastado sobre una copia: sus resultados
-y límites están en [Núcleo implementado](nucleo-implementado.md).
+`tests/fuentes/test_agenda.py`, `test_calendario_*.py`,
+`test_adaptadores_deportivos.py`, `test_deportes_actualizaciones.py`,
+`test_control_temporadas.py`, `test_temporadas.py`, `test_fuentes_oficiales.py`
+y `tests/workers/calendario.test.mjs`. Todas las peticiones son simuladas; las
+escrituras Turso se prueban contra un emulador con SQLite real. Las muestras y
+su procedencia están en
+[tests/fuentes/muestras_calendario](../tests/fuentes/muestras_calendario/README.md).

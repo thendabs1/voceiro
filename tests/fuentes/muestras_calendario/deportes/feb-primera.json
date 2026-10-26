@@ -1,0 +1,100 @@
+{
+  "version_muestra": 1,
+  "proveedor": "feb",
+  "modo": "recogida_html",
+  "url": "https://baloncestoenvivo.feb.es/calendario/1/2026",
+  "competicion": {
+    "id": "1",
+    "nombre": "PRIMERA FEB"
+  },
+  "edicion": {
+    "id": "2026",
+    "nombre": "2026/2027"
+  },
+  "fase": {
+    "id": "89991",
+    "nombre": "Liga Regular Único"
+  },
+  "partidos": [
+    {
+      "id": "2535767",
+      "fecha_hora": "24/10/2026 - 19:00",
+      "local": {
+        "id": "1009837",
+        "nombre": "ALIMERKA OVIEDO BALONCESTO"
+      },
+      "visitante": {
+        "id": "1008900",
+        "nombre": "CAJA RURAL CB ZAMORA"
+      },
+      "marcador_resultados": [
+        81,
+        77
+      ],
+      "cuartos": []
+    },
+    {
+      "id": "2535768",
+      "fecha_hora": "24/10/2026 - 19:00",
+      "local": {
+        "id": "1010207",
+        "nombre": "IBEROLEA PALENCIA"
+      },
+      "visitante": {
+        "id": "1009095",
+        "nombre": "CLUB OURENSE BALONCESTO"
+      },
+      "marcador_resultados": [
+        84,
+        80
+      ],
+      "cuartos": []
+    },
+    {
+      "id": "2535775",
+      "fecha_hora": "01/11/2026 - 18:30",
+      "local": {
+        "id": "1010493",
+        "nombre": "MOVISTAR ESTUDIANTES"
+      },
+      "visitante": {
+        "id": "1008797",
+        "nombre": "CAJASIETE GRAN CANARIA"
+      },
+      "marcador_resultados": null,
+      "cuartos": []
+    }
+  ],
+  "clasificacion": {
+    "filas": [
+      {
+        "id": "1008687",
+        "nombre": "HLA ALICANTE",
+        "posicion": 1,
+        "metricas": {
+          "baloncesto.partidos_jugados": 5,
+          "baloncesto.victorias": 5,
+          "baloncesto.derrotas": 0,
+          "baloncesto.puntos_favor": 450,
+          "baloncesto.puntos_contra": 365,
+          "baloncesto.diferencia": 85,
+          "baloncesto.porcentaje_victorias": "100.0"
+        }
+      },
+      {
+        "id": "1010493",
+        "nombre": "MOVISTAR ESTUDIANTES",
+        "posicion": 2,
+        "metricas": {
+          "baloncesto.partidos_jugados": 4,
+          "baloncesto.victorias": 4,
+          "baloncesto.derrotas": 0,
+          "baloncesto.puntos_favor": 350,
+          "baloncesto.puntos_contra": 291,
+          "baloncesto.diferencia": 59,
+          "baloncesto.porcentaje_victorias": "100.0"
+        }
+      }
+    ]
+  }
+}

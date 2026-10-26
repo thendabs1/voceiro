@@ -8,7 +8,7 @@ import tempfile
 from zoneinfo import ZoneInfo
 
 from agenda.cultura_galicia import FUENTES, leer_pagina, normalizar, recoger
-from agenda import almacen, vidmar_f1
+from agenda import almacen, deportes, vidmar_f1
 from agenda.modelo import integrar
 from agenda.clasificacion import aplicar as clasificar
 
@@ -34,22 +34,47 @@ def operar_nucleo(args):
     from agenda.transicion import ampliar
     from agenda import feb, espn_tenis, madrid, kulturklik
 
-    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.recoger_deporte
+    # Las rutas manuales también respetan cierre, presupuesto y enfriamiento.
+    # Cada selección deportiva se confirma antes de continuar con otras fuentes.
+    if args.recoger_deporte:
+        from agenda import operacion
+        resultados = []
+        with operacion.abrir(db=args.db, turso=args.turso) as repo:
+            for fuente in dict.fromkeys(args.recoger_deporte):
+                if fuente == 'feb':
+                    fuente = {'4': 'feb-endesa', '1': 'feb-primera', '67': 'feb-challenge'}[args.competicion_feb]
+                    year = args.temporada_feb
+                else:
+                    year = args.temporada_deporte
+                resultados.append(operacion.manual(repo, fuente, operacion.ahora_utc(),
+                                                   year=year, fecha=args.fecha_deporte))
+        for resultado in resultados:
+            print('[agenda] Control: ' + json.dumps(resultado, ensure_ascii=False))
+        if any(r and r.get('estado') == 'fallida' for r in resultados):
+            raise ValueError('Falló una selección deportiva; se conserva su última lectura válida')
+
+    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.entrada_deporte
                      or args.recoger_cultura or args.entrada_madrid or args.entrada_kulturklik)
     observado = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='microseconds')
 
     def preparar(anterior):
         if anterior is None:
-            raise ValueError('La base aún no contiene un calendario del piloto')
+            if not modificar:
+                raise ValueError('La base aún no contiene un calendario del piloto')
+            anterior = integrar(None, [], {}, observado)
         calendario = ampliar(anterior) if modificar else anterior
         if 'nucleo' not in calendario:
             raise ValueError('Preparar el núcleo antes de exportarlo')
         for ruta in args.entrada_feb or []:
-            calendario['nucleo'] = feb.importar(calendario['nucleo'],
+            calendario['nucleo'] = feb.importar_agenda(calendario['nucleo'],
                 json.loads(Path(ruta).read_text(encoding='utf-8')), observado)
         for ruta in args.entrada_tenis or []:
-            calendario['nucleo'] = espn_tenis.importar(calendario['nucleo'],
+            calendario['nucleo'] = espn_tenis.importar_agenda(calendario['nucleo'],
                 json.loads(Path(ruta).read_text(encoding='utf-8')), args.circuito, observado)
+        for entrada in args.entrada_deporte or []:
+            coleccion, _, ruta = entrada.partition('=')
+            calendario['nucleo'] = deportes.importar(calendario['nucleo'], coleccion,
+                json.loads(Path(ruta).read_text(encoding='utf-8')), observado, temporada=args.temporada_deporte)
         from agenda import recogida
         for fuente, modulo in (('madrid', madrid), ('kulturklik', kulturklik)):
             for ruta in getattr(args, 'entrada_' + fuente) or []:
@@ -58,29 +83,22 @@ def operar_nucleo(args):
             if fuente in (args.recoger_cultura or []):
                 filas, url = recogida.cultura(fuente, args.inicio, args.fin)
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'], filas, observado, url)
-        for fuente in dict.fromkeys(args.recoger_deporte or []):
-            if fuente == 'feb':
-                calendario['nucleo'] = feb.importar(calendario['nucleo'],
-                    recogida.feb(args.temporada_feb, args.competicion_feb), observado)
-            else:
-                circuito = fuente.removeprefix('espn-')
-                pagina, url = recogida.tenis(circuito)
-                calendario['nucleo'] = espn_tenis.importar(calendario['nucleo'],
-                    pagina, circuito, observado, url=url)
         return calendario
 
     if args.turso:
         from agenda.turso import Almacen
         remoto = Almacen()
         remoto.inicializar()
-        calendario = preparar(remoto.cargar())
+        anterior = remoto.cargar()
+        calendario = preparar(anterior)
         if modificar:
-            remoto.guardar(calendario, solo_nucleo=True)
+            remoto.guardar(calendario, solo_nucleo=anterior is not None)
     else:
         with almacen.abrir(args.db) as db:
-            calendario = preparar(almacen.cargar(db))
+            anterior = almacen.cargar(db)
+            calendario = preparar(anterior)
             if modificar:
-                almacen.guardar(db, calendario, solo_nucleo=True)
+                almacen.guardar(db, calendario, solo_nucleo=anterior is not None)
     if args.salida:
         guardar(args.salida, calendario['nucleo'] if args.exportar_nucleo else calendario)
     cuenta = sum(e['tipo'] == 'evento' for e in calendario['nucleo']['entidades'].values())
@@ -103,13 +121,17 @@ def main(argv=None):
                     help='Exportar solo el contrato v2 con --salida, sin recoger proveedores')
     ap.add_argument('--entrada-feb', action='append', help='Extracción FEB revisada v1 guardada, sin red')
     ap.add_argument('--entrada-tenis', action='append', help='JSON Site API de tenis guardado, sin red')
+    ap.add_argument('--entrada-deporte', action='append', metavar='COLECCION=JSON',
+                    help='Importar solo agenda de una de las doce colecciones desde un archivo, sin red')
     ap.add_argument('--entrada-madrid', action='append', help='Lista de registros Madrid guardada, sin red')
     ap.add_argument('--entrada-kulturklik', action='append', help='Lista de eventos Kulturklik guardada, sin red')
     ap.add_argument('--recoger-cultura', action='append', choices=('madrid', 'kulturklik'),
                     help='Recogida cultural completa paginada en el núcleo; repetible')
     ap.add_argument('--circuito', choices=('atp', 'wta'), help='Circuito de --entrada-tenis')
-    ap.add_argument('--recoger-deporte', action='append', choices=('feb', 'espn-atp', 'espn-wta'),
-                    help='Recogida manual deportiva en el núcleo; repetible, sin publicación')
+    ap.add_argument('--recoger-deporte', action='append', choices=(*deportes.COLECCIONES, 'feb'),
+                    help='Recogida manual de agenda deportiva; repetible, sin publicación')
+    ap.add_argument('--fecha-deporte', help='Día explícito YYYY-MM-DD para las recogidas ESPN')
+    ap.add_argument('--temporada-deporte', help='Año explícito para FEB, MotoGP y WRC')
     ap.add_argument('--temporada-feb', help='Año inicial explícito de la temporada FEB')
     ap.add_argument('--competicion-feb', choices=('4', '1', '67'), default='4',
                     help='Competición FEB contrastada: 4 LF Endesa, 1 Primera FEB, 67 LF Challenge')
@@ -131,8 +153,29 @@ def main(argv=None):
     if args.fuente and (args.entrada or args.entrada_ics):
         ap.error('Usa --fuente para red o --entrada/--entrada-ics para archivos locales')
     operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb,
-                           args.entrada_tenis, args.recoger_deporte, args.recoger_cultura,
+                           args.entrada_tenis, args.entrada_deporte, args.recoger_deporte, args.recoger_cultura,
                            args.entrada_madrid, args.entrada_kulturklik))
+    for entrada in args.entrada_deporte or []:
+        coleccion, separador, ruta = entrada.partition('=')
+        if not separador or not ruta or coleccion not in deportes.COLECCIONES:
+            ap.error('--entrada-deporte requiere COLECCION=JSON con una colección conocida')
+    seleccion_deportiva = set(args.recoger_deporte or [])
+    espn_seleccionada = bool(seleccion_deportiva & deportes.espn.COLECCIONES.keys())
+    temporada_necesaria = bool(seleccion_deportiva - deportes.espn.COLECCIONES.keys() - {'feb'})
+    entrada_temporada = any(deportes.COLECCIONES[e.partition('=')[0]][0] in ('feb', 'motogp', 'wrc')
+                           for e in args.entrada_deporte or [])
+    if espn_seleccionada != bool(args.fecha_deporte):
+        ap.error('Las recogidas ESPN requieren --fecha-deporte y viceversa')
+    if args.fecha_deporte:
+        try:
+            date.fromisoformat(args.fecha_deporte)
+        except ValueError:
+            ap.error('--fecha-deporte debe ser YYYY-MM-DD')
+    if temporada_necesaria and not args.temporada_deporte:
+        ap.error('La recogida FEB/MotoGP/WRC requiere --temporada-deporte')
+    if args.temporada_deporte and (len(args.temporada_deporte) != 4 or not args.temporada_deporte.isdigit()
+            or not (temporada_necesaria or entrada_temporada)):
+        ap.error('--temporada-deporte requiere un año de cuatro cifras y una colección por temporada')
     if ('feb' in (args.recoger_deporte or [])) != bool(args.temporada_feb):
         ap.error('--recoger-deporte feb requiere --temporada-feb y viceversa')
     if args.competicion_feb != '4' and 'feb' not in (args.recoger_deporte or []):

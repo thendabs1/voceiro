@@ -9,7 +9,7 @@ edita en `workers/comun/`:
 - `datos-cache.js`: caducidad de índices, portadas y slices de R2.
 - `calendario.js` y `calendario-turso.js`: API de agenda sobre la proyección
   pública de Turso. Activación, contrato y mediciones en
-  [Lectura indexada del calendario](../agenda/api-lectura.md).
+  [Agenda: lectura pública](../agenda/README.md#lectura-pública).
 - `limite.js`: límite de peticiones por IP en memoria (IPv6 por su /64).
 - `sync.js`: sincronización entre dispositivos. CF la sirve con el binding de
   D1; Deno, con la misma base D1 por la API HTTP de Cloudflare, así que no

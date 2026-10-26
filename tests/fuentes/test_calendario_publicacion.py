@@ -4,6 +4,7 @@ from copy import deepcopy
 import io
 import json
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -144,12 +145,16 @@ class RecolectorFEB(unittest.TestCase):
         from calendario import main
         m = leer(*[(MUESTRAS / f'feb-primera-{tipo}.html').read_text()
                    for tipo in ('calendario', 'resultados')], '2026', 'calendario', 'resultados', '1')
-        with patch('agenda.turso.Almacen') as remoto, patch('agenda.recogida.feb', return_value=m) as recoger:
-            remoto.return_value.cargar.return_value = ampliar(construir([ficha()]))
-            main(['--turso', '--recoger-deporte', 'feb', '--temporada-feb', '2026', '--competicion-feb', '1'])
-            recoger.assert_called_once_with('2026', '1')
-            guardado = remoto.return_value.guardar.call_args.args[0]['nucleo']
+        with tempfile.TemporaryDirectory() as carpeta, patch('agenda.recogida.feb', return_value=m) as recoger:
+            from agenda import almacen
+            ruta = Path(carpeta) / 'agenda.sqlite'
+            main(['--db', str(ruta), '--recoger-deporte', 'feb', '--temporada-feb', '2026', '--competicion-feb', '1'])
+            recoger.assert_called_once_with('2026', '1', solo_agenda=True)
+            with almacen.abrir(ruta) as db:
+                guardado = almacen.cargar(db)['nucleo']
             self.assertEqual(len(proyectar(guardado, ['feb'])['eventos']), 3)
+            self.assertFalse(guardado['resultados'])
+            self.assertFalse(guardado['clasificaciones'])
 
     def test_otras_ligas_contrastadas_y_catalogo_anunciado_son_distintos(self):
         for nombre, codigo in (('primera', '1'), ('challenge', '67')):
