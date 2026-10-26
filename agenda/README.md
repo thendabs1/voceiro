@@ -1,5 +1,12 @@
 # Calendario común
 
+El [diseño deportivo del 26/10/2026](calendario-deportivo.md) concreta las doce
+colecciones iniciales confirmadas: citas en la agenda común, tenis solo por
+torneos, parte compartida ESPN y OCB desde servidor. Sustituye el borrador de
+resultados diferidos. Sus adaptadores y controles están pendientes; los deportes
+siguen sin recogida periódica activada y el cliente está desactivado hasta
+conectar la API de lectura.
+
 La [base y el contrato de servicios](arquitectura-servicios.md) reúnen las
 reglas de territorio, cobertura, noticias en memoria, persistencia y servicio.
 La prioridad actual es cerrar esa base y la operación por colección antes de

@@ -28,6 +28,8 @@ cobertura editorial; la persistencia y los recorridos del contrato son propuesta
   proveedor. Tenis empieza solo por torneos. La
   [revisión de almacenamiento deportivo](revision-almacenamiento-deportivo.md)
   concreta este alcance y sustituye las propuestas previas de resultados diferidos.
+  El [diseño por deporte y proveedor](calendario-deportivo.md) desarrolla las
+  colecciones iniciales confirmadas y OCB como integración de servidor.
 - Municipios como primer paso hacia códigos comunes y reutilizables entre
   servicios. La interfaz para fijar o seguir recintos sigue sin decidir.
 - Se conservan los recintos acreditados que ya aportan las fuentes, sin

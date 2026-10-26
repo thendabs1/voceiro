@@ -1,5 +1,9 @@
 # Encaje de los deportes en el modelo común
 
+El [diseño del 26/10](calendario-deportivo.md) fija el alcance actual: citas,
+tenis solo por torneos y sin recogida de resultados. La revisión siguiente
+describe capacidades y contrastes previos del núcleo, no el alcance a activar.
+
 Revisión local del 25/10/2026 sobre código y muestras conservadas. F1, tenis
 y baloncesto comparten el núcleo de agenda; necesitan relaciones y métricas
 propias dentro de ese núcleo. El desarrollo actual es desigual. Esta revisión

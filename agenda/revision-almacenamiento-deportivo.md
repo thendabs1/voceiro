@@ -7,6 +7,11 @@ clasificaciones periódicas. La desactivación del cliente está implementada;
 la separación de los importadores y las consultas externas están pendientes.
 No activa recogidas ni cambia los datos guardados o la selección pública.
 
+El [diseño por deporte y proveedor](calendario-deportivo.md) concreta las doce
+colecciones iniciales confirmadas, la parte común ESPN y la recogida OCB desde
+nuestro servidor. Sustituye el borrador anterior de ese documento; sus módulos
+y controles operativos siguen pendientes de implementación.
+
 ## Estado real comprobado
 
 Una transacción de lectura en Turso, esquema 4, revisión 10, devuelve:
