@@ -36,5 +36,7 @@ import {
 } from './tiempo/avisos.js';
 
 import { I18N, traducir } from './idiomas/index.js';
-import { AMBITOS, leerConsultaCalendario, seleccionCalendario, temasDescendientes, noticiaEnAmbitos } from './calendario/consulta.js';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, agruparPorDiaCalendario, ventanaCalendario, moverFecha } from './calendario/fechas.js';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js';
+// Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
+import { ADMINISTRACION } from './territorios/administracion.js';

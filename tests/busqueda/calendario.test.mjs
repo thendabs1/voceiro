@@ -21,16 +21,19 @@ const datos = {
 for (const e of datos.eventos) datos.entidades['evento:' + e.id] = e;
 
 test('órdenes de deporte, circuito y contenido conservan filtros, comillas y texto', () => {
-  assert.deepEqual(orden('resultados:tenis web:ejemplo.es "dobles femenino"'), {
-    ambitos: ['tenis'], circuitos: [], tipos: ['resultados'], desconocidos: [],
+  assert.deepEqual(orden('calendario:tenis web:ejemplo.es "dobles femenino"'), {
+    ambitos: ['tenis'], circuitos: [], tipos: ['calendario'], desconocidos: [],
     resto: 'web:ejemplo.es "dobles femenino"', noticias: false,
   });
-  assert.deepEqual(orden('f1:clasificación').tipos, ['clasificaciones']);
-  assert.deepEqual(orden('clasificación:f1').ambitos, ['f1']);
+  assert.deepEqual(orden('f1:agenda').tipos, ['calendario']);
+  assert.deepEqual(orden('agenda:f1').ambitos, ['f1']);
+  // Resultados y clasificaciones ya no son tipos del calendario.
+  assert.deepEqual(orden('f1:clasificación').desconocidos, ['f1:clasificación']);
+  assert.equal(orden('resultados:tenis'), null);
   assert.deepEqual(orden('circuito:"atp,wta"').circuitos, ['atp','wta']);
   assert.equal(orden('"tenis:" Wimbledon'), null);
   assert.equal(orden('tenis Wimbledon'), null);
-  assert.deepEqual(orden('resultados:desconocido').desconocidos, ['desconocido']);
+  assert.deepEqual(orden('calendario:desconocido').desconocidos, ['desconocido']);
 });
 test('los ámbitos se suman sin duplicar eventos; circuitos, tema, fuente y texto se cruzan', () => {
   const ids = (o, f) => seleccionCalendario(datos, orden(o), f).eventos.map(e => e.id);
@@ -42,14 +45,14 @@ test('los ámbitos se suman sin duplicar eventos; circuitos, tema, fuente y text
   assert.deepEqual(ids('tenis: dobles'), ['WTA dobles']);
   assert.deepEqual(ids('tenis:', { temas: ['automovilismo'] }), []);
   assert.deepEqual(ids('tenis:', { fuente: 'otra' }), []);
-  assert.equal(seleccionCalendario(datos, orden('f1:clasificación')).clasificaciones.length, 1);
+  assert.equal(seleccionCalendario(datos, orden('f1:')).clasificaciones.length, 1);
 });
 test('noticias por texto sin confundir una búsqueda temática con un enlace a un partido', () => {
   assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('tenis:')), true);
   assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('atp:')), false);
   assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('atp: wta:')), true);
   assert.equal(noticiaEnAmbitos('Carrera de Fórmula 1', orden('f1:')), true);
-  assert.equal(noticiaEnAmbitos('ATP anuncia su calendario', orden('resultados:tenis')), false);
+  assert.equal(noticiaEnAmbitos('ATP anuncia su calendario', orden('calendario:tenis')), false);
 });
 const extremo = (fecha, extras = {}) => ({ fecha, hora_local: null, instante: null, zona: null,
   certeza_fecha: fecha ? 'confirmado' : 'desconocida', certeza_hora: 'desconocida', ...extras });

@@ -19,9 +19,8 @@ export const AMBITOS = {
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
 };
-const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario',
-  resultado: 'resultados', resultados: 'resultados',
-  clasificacion: 'clasificaciones', clasificaciones: 'clasificaciones', noticias: 'noticias' };
+// Resultados y clasificaciones son consultas puntuales, no parte del calendario.
+const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario', noticias: 'noticias' };
 const lista = s => normalize(s).split(',').map(v => v.trim()).filter(Boolean);
 
 export function leerConsultaCalendario(raw){
