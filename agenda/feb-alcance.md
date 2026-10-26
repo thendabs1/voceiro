@@ -4,6 +4,12 @@ Contraste puntual del 25/10/2026. Decisión acordada: guardar el calendario y
 sus relaciones; para el detalle que no guardamos, ofrecer el enlace oficial.
 La consulta del detalle dentro de Voceiro y su caché quedan para otro diseño.
 
+Corrección de alcance del 26/10: la futura recogida compartida será solo de
+agenda. La tabla siguiente describe lo que admite el código actual, incluidas
+sus muestras de marcadores y clasificación; no autoriza su recogida periódica
+ni su publicación. Antes de activarlo hay que separar esos datos según la
+[revisión de almacenamiento deportivo](revision-almacenamiento-deportivo.md).
+
 ## Qué hemos contrastado
 
 Dos páginas completas por liga, calendario y resultados, temporada 2026/2027:
