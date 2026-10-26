@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=d98859c090';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=d98859c090';
+import { tokenizeQuery, normalize } from '../parser.js?v=fd49f1b134';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=fd49f1b134';
 
 export const AMBITOS = {
   tenis: { tema: 'tenis', noticias: ['tenis', 'ATP', 'WTA'] },
