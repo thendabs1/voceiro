@@ -7,6 +7,7 @@ el Centro Cultural…») o un ciclo, y su título queda en la evidencia.
 """
 
 from datetime import date, datetime
+import math
 from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
@@ -28,6 +29,18 @@ CAMPOS = ('ID-EVENTO', 'TITULO', 'FECHA', 'FECHA-FIN', 'HORA', 'LARGA-DURACION',
           'NOMBRE-INSTALACION', 'CLASE-VIAL-INSTALACION', 'NOMBRE-VIA-INSTALACION', 'NUM-INSTALACION',
           'DISTRITO-INSTALACION', 'BARRIO-INSTALACION', 'CODIGO-POSTAL-INSTALACION', 'LATITUD', 'LONGITUD', 'TIPO')
 DIAS = {'L': 0, 'M': 1, 'X': 2, 'J': 3, 'V': 4, 'S': 5, 'D': 6}
+
+
+def coordenadas(fila):
+    """Posición declarada del recinto; el municipio se acredita con límites oficiales."""
+    try:
+        latitud, longitud = float(fila['LATITUD']), float(fila['LONGITUD'])
+    except (KeyError, TypeError, ValueError):
+        return {}
+    if not (math.isfinite(latitud) and math.isfinite(longitud)
+            and -90 <= latitud <= 90 and -180 <= longitud <= 180):
+        return {}
+    return {'coordenadas': {'latitud': latitud, 'longitud': longitud}}
 
 
 def identidad_url(url):
@@ -126,7 +139,7 @@ def importar(anterior, filas, observado, url=URL):
         recinto = identidad_url(fila.get('URL-INSTALACION'))
         if recinto and lugar['nombre']:
             l, _ = c.entidad(FUENTE, 'instalacion_vgnextoid', recinto, {}, 'lugar', 'recinto',
-                {'es': lugar['nombre']}, doc, '/URL-INSTALACION', observado)
+                {'es': lugar['nombre']}, doc, '/URL-INSTALACION', observado, bloques=coordenadas(fila))
             c.relacion('se_celebra_en', evento, l, evidencia)
         tipo = fila.get('TIPO') or ''
         tema = next((t for codigo, t in TEMAS.items()

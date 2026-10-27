@@ -37,13 +37,16 @@ def punto(lon=0.5, lat=0.5, nombre='Vitoria-Gasteiz', provincia='1'):
 
 class Geometria(unittest.TestCase):
     def test_no_asigna_el_municipio_mas_cercano_y_respeta_fronteras(self):
-        mapa = LimitesMunicipales(coleccion(feature()))
+        # 01001 linda con 01059 en x = 0; el resto del contorno es costa.
+        mapa = LimitesMunicipales(coleccion(feature(), feature('01001', [cuadrado(-1, 0)])))
         self.assertEqual(mapa.resolver(0.5, 0.5)['territorio'], 'es:municipio:01059')
-        for lon, lat in ((0, 0.5), (0.0001, 0.5), (-0.0001, 0.5), (1, 1)):
+        for lon, lat in ((0, 0.5), (0.0001, 0.5), (-0.0001, 0.5), (1.0001, 0.5)):
             r = mapa.resolver(lon, lat)
             self.assertEqual(r['estado'], 'pendiente')
             self.assertIsNone(r['territorio'])
             self.assertEqual(r['motivo'], 'cerca_del_limite')
+        # Junto a la costa no hay otro destino posible: se resuelve.
+        self.assertEqual(mapa.resolver(0.9999, 0.5)['territorio'], 'es:municipio:01059')
         self.assertEqual(mapa.resolver(10, 10)['motivo'], 'fuera_de_cobertura')
 
     def test_huecos_islas_y_recintos_solapados(self):
@@ -103,7 +106,7 @@ class LectoresTerritoriales(unittest.TestCase):
         self.assertEqual(cruce['evidencias'][1]['margen_revision_m'], 50)
 
     def test_referencias_con_nombre_provincia_o_coordenadas_contradictorias_no_se_confirman(self):
-        mapa = LimitesMunicipales(coleccion(feature()))
+        mapa = LimitesMunicipales(coleccion(feature(), feature('01001', [cuadrado(-1, 0)])))
         mapas = [(mapa, [PRUEBA | {'dato': {}}])]
         for entradas, motivo in (([punto(nombre='Galdakao')], 'denominacion_contradice_recinto'),
                                  ([punto(), punto(nombre='Galdakao')], 'denominacion_contradice_recinto'),
