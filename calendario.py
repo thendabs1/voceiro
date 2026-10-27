@@ -252,8 +252,8 @@ def main(argv=None):
                                                   args.fuente, args.inicio, args.fin, args.idioma)):
             ap.error('--exportar requiere --db/--turso y --salida')
         if args.turso:
-            from agenda.turso import Almacen
-            remoto = Almacen()
+            from agenda.turso import abrir
+            remoto = abrir()
             remoto.inicializar()
             calendario = remoto.cargar()
         else:
@@ -267,6 +267,8 @@ def main(argv=None):
     if args.turso:
         from agenda.turso import abrir
         remoto = abrir()  # Validar credenciales antes de consultar proveedores.
+        # En una pasada el cliente es compartido: las métricas de este paso son la diferencia.
+        leidas, escritas = remoto.cliente.leidas, remoto.cliente.escritas
     ahora = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='seconds')
     idiomas = list(dict.fromkeys(args.idioma or ['gl']))
     anterior = json.loads(Path(args.anterior).read_text(encoding='utf-8')) if args.anterior else None
@@ -312,8 +314,8 @@ def main(argv=None):
         remoto.inicializar()
         calendario = integrar(remoto.cargar(), registros, fuentes, ahora, consultas)
         remoto.guardar(calendario)
-        print(f'[agenda] Turso: {remoto.cliente.leidas} filas leídas, '
-              f'{remoto.cliente.escritas} escritas (métricas del servidor)')
+        print(f'[agenda] Turso: {remoto.cliente.leidas - leidas} filas leídas, '
+              f'{remoto.cliente.escritas - escritas} escritas (métricas del servidor)')
     elif args.db:
         with almacen.abrir(args.db) as db:
             calendario = integrar(almacen.cargar(db), registros, fuentes, ahora, consultas)

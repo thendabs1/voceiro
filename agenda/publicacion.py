@@ -341,6 +341,8 @@ def main(argv=None):
     if args.turso:
         from .turso import abrir
         remoto = abrir()
+        # En una pasada el cliente es compartido: las métricas de este paso son la diferencia.
+        leidas, escritas = remoto.cliente.leidas, remoto.cliente.escritas
         calendario = remoto.cargar()
         if calendario is None or 'nucleo' not in calendario:
             raise ValueError('Preparar el núcleo de Turso antes de publicar')
@@ -371,12 +373,17 @@ def main(argv=None):
         guardar(args.salida, datos)
     if args.lectura_sql:
         from turso_http import filas
-        from .lectura import estado, preparar, planificar
+        from .lectura import estado, huellas, preparar, planificar
         preparada = preparar(datos)
         previo = estado(lambda s: [filas(r) for r in remoto.cliente.transaccion(s, escritura=False)])
         remoto.cliente.transaccion(planificar(preparada, remoto.revision, previo))
+        # Cuántos eventos y entidades se reescriben: separa cambios reales de amplificación.
+        nuevas, viejas = huellas(preparada)[0], (previo or {}).get('huellas', {})
+        cambiadas = [k for k, h in nuevas.items() if viejas.get(k) != h]
         print(f'[agenda] Lectura SQL {"diferencial" if previo else "completa"}: {len(preparada["tramos"])} tramos; '
-              f'{remoto.cliente.leidas} filas leídas, {remoto.cliente.escritas} escritas')
+              f'{sum(t == "evento" for t, _ in cambiadas)} eventos y {sum(t == "entidad" for t, _ in cambiadas)} '
+              f'entidades reescritos, {len(viejas.keys() - nuevas.keys())} retirados; '
+              f'{remoto.cliente.leidas - leidas} filas leídas, {remoto.cliente.escritas - escritas} escritas')
     if args.publicar:
         subir(datos)
     print(f'[agenda] Lectura: {len(datos["eventos"])} eventos, {len(datos["clasificaciones"])} tablas')
