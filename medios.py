@@ -1166,18 +1166,26 @@ def google_news_url(domain, lang='es', extra_q=None):
         f"q={quote_plus(q)}&hl={hl}&gl={gl}&ceid={ceid}"
     )
 
-def _derivar_grupo(m):
-    """Deriva el nombre del grupo a partir de sector y ámbito."""
+def categoria_de(m):
+    """(categoría, subcategoría) estructuradas; la subcategoría puede ser None.
+    Es la única fuente del literal de grupo, que se conserva tal cual porque los
+    modos guardados lo usan como identidad."""
     s = m['sector']; a = m['ambito']
     if s != 'generalista':
-        return SECTOR_DISPLAY.get(s, s.replace('-', ' ').title())
+        return SECTOR_DISPLAY.get(s, s.replace('-', ' ').title()), None
     if a == 'nacional':
-        return 'Nacional'
+        return 'Nacional', None
     if a == 'regional':
-        return f"Regional · {REGION_DISPLAY.get(m['region'], m['region'])}"
+        return 'Regional', REGION_DISPLAY.get(m['region'], m['region'])
     if a == 'internacional':
-        return f"Internacional · {COUNTRY_DISPLAY.get(m['pais'], m['pais'])}"
-    return 'Otros'
+        return 'Internacional', COUNTRY_DISPLAY.get(m['pais'], m['pais'])
+    return 'Otros', None
+
+
+def _derivar_grupo(m):
+    """Deriva el nombre del grupo («Categoría · Subcategoría») a partir de categoria_de."""
+    categoria, sub = categoria_de(m)
+    return f"{categoria} · {sub}" if sub else categoria
 
 
 def todos_los_medios():
@@ -1190,6 +1198,67 @@ def todos_los_medios():
 
 def total_medios():
     return sum(len(g['items']) for g in MEDIA_CATALOG)
+
+
+# Campos opcionales de emisor (ver shared/territorios/relacionador.md): ningún
+# medio actual los lleva. Ausentes, el territorio sigue saliendo de region/ambito.
+#   clase      naturaleza del emisor; ausente = 'medio'
+#   sede       [{'estado', 'territorio', 'funcion'?, 'evidencias'}]
+#   cobertura  {'estado', 'territorios': [...], 'candidatos'?, 'evidencias'}
+CLASES = {'medio', 'club', 'web_aficion', 'federacion', 'administracion', 'universidad',
+          'institucion_cultural', 'asociacion', 'colegio_profesional', 'blog', 'newsletter'}
+ESTADOS_TERRITORIO = {'resuelto', 'pendiente', 'conflicto'}
+FUNCIONES_SEDE = {'editorial', 'social'}
+
+
+def _ids_validos(x):
+    return isinstance(x, list) and all(isinstance(t, str) and t for t in x)
+
+
+from shared.territorios import evidencia_valida  # noqa: E402 (solo stdlib; sin dependencia circular)
+
+
+def problemas_forma_emisor(it):
+    """Defectos de forma de clase/sede/cobertura; nunca lanza. Las identidades se
+    comprueban contra el catálogo territorial en shared.territorios.problemas_territoriales."""
+    d, fallos = it['d'], []
+    clase = it.get('clase', 'medio')
+    if not isinstance(clase, str) or clase not in CLASES:
+        fallos.append(f"{d}: clase {clase!r} fuera de {sorted(CLASES)}")
+    sedes, cobertura = it.get('sede'), it.get('cobertura')
+    if sedes is not None and not isinstance(sedes, list):
+        fallos.append(f"{d}: sede debe ser una lista")
+    bloques = [('sede', s, 'territorio') for s in sedes] if isinstance(sedes, list) else []
+    if cobertura is not None:
+        bloques.append(('cobertura', cobertura, 'territorios'))
+    for nombre, b, clave in bloques:
+        estado = b.get('estado') if isinstance(b, dict) else None
+        if not isinstance(estado, str) or estado not in ESTADOS_TERRITORIO:
+            fallos.append(f"{d}: {nombre} sin estado válido {sorted(ESTADOS_TERRITORIO)}")
+            continue
+        valor = b.get(clave)
+        if clave == 'territorio':
+            if valor is not None and not (isinstance(valor, str) and valor):
+                fallos.append(f"{d}: sede con territorio no válido {valor!r}")
+            ids = [valor] if valor else []
+            funcion = b.get('funcion', 'editorial')
+            if not isinstance(funcion, str) or funcion not in FUNCIONES_SEDE:
+                fallos.append(f"{d}: sede con función {funcion!r} fuera de {sorted(FUNCIONES_SEDE)}")
+        else:
+            if valor is not None and not _ids_validos(valor):
+                fallos.append(f"{d}: cobertura con territorios no válidos {valor!r}")
+            ids = valor if _ids_validos(valor) else []
+        evidencias = b.get('evidencias')
+        if evidencias is not None and not (isinstance(evidencias, list) and all(map(evidencia_valida, evidencias))):
+            fallos.append(f"{d}: {nombre} con evidencias mal formadas (cada una: url o doc, y dato)")
+        if estado == 'resuelto' and not (ids and evidencias):
+            fallos.append(f"{d}: {nombre} resuelta sin {clave} o sin evidencias")
+        if estado != 'resuelto' and ids:
+            fallos.append(f"{d}: {nombre} {estado} no puede declarar {clave}")
+        candidatos = b.get('candidatos')
+        if candidatos is not None and not _ids_validos(candidatos):
+            fallos.append(f"{d}: {nombre} con candidatos no válidos {candidatos!r}")
+    return fallos
 
 
 def _validar_catalogo():
@@ -1219,6 +1288,8 @@ def _validar_catalogo():
             warnings.warn(f"{d}: nacional con region/pais")
         if it['lang_principal'] not in it['langs']:
             warnings.warn(f"{d}: lang_principal '{it['lang_principal']}' no está en langs {it['langs']}")
+        for fallo in problemas_forma_emisor(it):
+            warnings.warn(fallo)
         for f in fuentes_de(it):
             if _fuente_invalida(f):
                 warnings.warn(f"{d}: fuente mal formada {f!r}")

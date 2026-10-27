@@ -6,8 +6,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from shared.territorios import cargar, resolver
-from medios import todos_los_medios
+from shared.territorios import cargar, problemas_territoriales, resolver, territorios_medio
+from medios import categoria_de, problemas_forma_emisor, todos_los_medios
 from cosecha import catalogo
 from agenda import nucleo, retencion
 from agenda.publicacion import proyectar
@@ -17,6 +17,7 @@ from test_calendario_nucleo import importar_feb
 
 
 RAIZ = Path(__file__).resolve().parents[2]
+EV = [{'doc': 'aviso legal', 'dato': 'dirección en el pie'}]
 
 
 class Territorios(unittest.TestCase):
@@ -74,6 +75,124 @@ class Territorios(unittest.TestCase):
         self.assertEqual(slice_['nac.test']['territorios'][0]['territorio'], 'pais:ES')
         self.assertEqual(completo['gal.test']['region'], 'galicia')
         self.assertNotIn('territorios', completo['otro.test'])
+
+    def test_sede_y_cobertura_explicitas_son_opcionales_y_no_cambian_el_catalogo(self):
+        for medio in todos_los_medios():
+            with self.subTest(medio=medio['d']):
+                self.assertFalse({'clase', 'sede', 'cobertura'} & set(medio))
+                self.assertEqual(problemas_forma_emisor(medio), [])
+                self.assertEqual(problemas_territoriales(medio), [])
+                self.assertFalse([r for r in territorios_medio(medio) if r['papel'] == 'sede'])
+
+    def test_cobertura_explicita_resuelta_sustituye_a_la_heredada_y_admite_varios_destinos(self):
+        medio = {'d': 'vigo.test', 'ambito': 'regional', 'region': 'galicia',
+                 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
+                               'territorios': ['es:provincia:36', 'es:autonomia:12', 'es:provincia:36']}}
+        self.assertEqual(territorios_medio(medio), [
+            {'territorio': 'es:provincia:36', 'papel': 'cobertura_editorial'},
+            {'territorio': 'es:autonomia:12', 'papel': 'cobertura_editorial'}])
+        self.assertEqual(problemas_forma_emisor(medio), [])
+        self.assertEqual(problemas_territoriales(medio), [])
+
+    def test_la_cobertura_de_un_medio_no_baja_de_provincia(self):
+        medio = {'d': 'vigo.test', 'ambito': 'regional', 'region': 'galicia',
+                 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
+                               'territorios': ['es:provincia:36', 'es:municipio:36057']}}
+        self.assertEqual(territorios_medio(medio), [])  # bloque a medias: no publica nada
+        self.assertEqual(len(problemas_territoriales(medio)), 1)
+        # la sede sí puede ser municipal
+        sede = {'d': 'club.test', 'sede': [{'estado': 'resuelto', 'territorio': 'es:municipio:36057', 'evidencias': EV}]}
+        self.assertEqual(problemas_territoriales(sede), [])
+
+    def test_cobertura_pendiente_o_en_conflicto_no_reactiva_la_cobertura_amplia(self):
+        for estado in ('pendiente', 'conflicto'):
+            with self.subTest(estado=estado):
+                medio = {'d': 'vigo.test', 'ambito': 'regional', 'region': 'galicia', 'pais': 'reino-unido',
+                         'cobertura': {'estado': estado, 'territorios': [], 'candidatos': ['es:municipio:36057']}}
+                self.assertEqual(territorios_medio(medio), [{'territorio': 'pais:GB', 'papel': 'pais_catalogo'}])
+                self.assertEqual(problemas_forma_emisor(medio), [])
+        # `cobertura: None` o ausente no es lo mismo que una lista vacía resuelta
+        self.assertEqual(territorios_medio({'d': 'a', 'ambito': 'regional', 'region': 'galicia', 'cobertura': None}),
+                         [{'territorio': 'es:autonomia:12', 'papel': 'cobertura_editorial'}])
+
+    def test_la_sede_no_genera_cobertura_ni_localiza(self):
+        medio = {'d': 'club.test', 'ambito': 'nacional', 'clase': 'club',
+                 'sede': [{'estado': 'resuelto', 'territorio': 'es:municipio:36038', 'funcion': 'editorial',
+                           'evidencias': EV},
+                          {'estado': 'pendiente', 'territorio': None}],
+                 'cobertura': {'estado': 'pendiente', 'territorios': []}}
+        self.assertEqual(territorios_medio(medio), [{'territorio': 'es:municipio:36038', 'papel': 'sede', 'funcion': 'editorial'}])
+        self.assertEqual(problemas_forma_emisor(medio), [])
+
+    def test_entradas_mal_formadas_no_lanzan_ni_se_publican(self):
+        malos = [{'clase': []}, {'clase': 3}, {'sede': [42]}, {'sede': 'x'}, {'sede': [{'estado': []}]},
+                 {'cobertura': 'es:provincia:04'}, {'cobertura': {'estado': 'resuelto', 'territorios': 'es:provincia:04',
+                                                                  'evidencias': 'x'}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': [None], 'evidencias': EV}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': [['es:provincia:04']], 'evidencias': EV}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': ['es:provincia:04'], 'evidencias': [1]}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': ['es:provincia:04'], 'evidencias': [{'url': 'u'}]}},
+                 {'cobertura': {'estado': 'pendiente', 'candidatos': 'es:provincia:04'}}]
+        for extra in malos:
+            with self.subTest(extra=extra):
+                medio = {'d': 'x.test', 'ambito': 'regional', 'region': 'galicia', **extra}
+                self.assertTrue(problemas_forma_emisor(medio))
+                problemas_territoriales(medio)
+                relaciones = territorios_medio(medio)
+                self.assertFalse([r for r in relaciones if r['papel'] == 'sede'])
+                if 'cobertura' in extra:  # clase/sede inválidas no tocan la cobertura heredada
+                    self.assertFalse([r for r in relaciones if r['papel'] == 'cobertura_editorial'])
+
+    def test_un_bloque_a_medias_no_publica_sus_destinos_buenos(self):
+        medio = {'d': 'x.test', 'ambito': 'regional', 'region': 'galicia',
+                 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
+                               'territorios': ['es:provincia:36', 'es:provincia:99']}}
+        self.assertEqual(territorios_medio(medio), [])
+        self.assertEqual(len(problemas_territoriales(medio)), 1)
+
+    def test_los_candidatos_de_cobertura_tambien_respetan_el_limite_provincial(self):
+        medio = {'d': 'x.test', 'cobertura': {'estado': 'pendiente', 'territorios': [],
+                                              'candidatos': ['es:municipio:36057', 'es:provincia:36']}}
+        self.assertEqual(problemas_forma_emisor(medio), [])
+        self.assertEqual(len(problemas_territoriales(medio)), 1)
+
+    def test_grupos_congelados_de_los_medios_con_grupo_escrito_distinto(self):
+        esperado = {'riazor.org': 'Deportes', 'dxtcampeon.com': 'Deportes', 'bloomberg.com': 'Economía',
+                    'newyorker.com': 'Cultura', 'theatlantic.com': 'Cultura', 'ft.com': 'Economía'}
+        grupos = {m['d']: m['grupo'] for m in todos_los_medios()}
+        for dominio, grupo in esperado.items():
+            self.assertEqual(grupos.get(dominio), grupo, dominio)
+        self.assertEqual(len(grupos), 341)
+        self.assertEqual(sum(g.startswith('Regional · ') for g in grupos.values()), 109)
+
+    def test_forma_invalida_y_territorios_desconocidos_se_senalan(self):
+        malos = [{'clase': 'otra'},
+                 {'sede': {'estado': 'resuelto'}},
+                 {'sede': [{'estado': 'resuelto', 'territorio': 'es:municipio:36038'}]},
+                 {'sede': [{'estado': 'quizas'}]},
+                 {'sede': [{'estado': 'pendiente', 'territorio': 'es:municipio:36038'}]},
+                 {'sede': [{'estado': 'pendiente', 'funcion': 'fiscal'}]},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': ['es:autonomia:12']}}]
+        for extra in malos:
+            with self.subTest(extra=extra):
+                self.assertTrue(problemas_forma_emisor({'d': 'x.test', **extra}))
+        inventado = {'d': 'x.test', 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
+                                                  'territorios': ['es:municipio:00000']}}
+        self.assertEqual(problemas_forma_emisor(inventado), [])
+        self.assertEqual(len(problemas_territoriales(inventado)), 1)
+        self.assertEqual(territorios_medio(inventado), [])
+
+    def test_categoria_estructurada_reproduce_el_literal_de_grupo(self):
+        casos = {('generalista', 'nacional'): ('Nacional', None),
+                 ('generalista', 'regional'): ('Regional', 'Galicia'),
+                 ('generalista', 'internacional'): ('Internacional', 'Reino Unido'),
+                 ('deportes', 'nacional'): ('Deportes', None)}
+        base = {'region': 'galicia', 'pais': 'reino-unido'}
+        for (sector, ambito), esperado in casos.items():
+            self.assertEqual(categoria_de({**base, 'sector': sector, 'ambito': ambito}), esperado)
+        for medio in todos_los_medios():
+            categoria, sub = categoria_de(medio)
+            self.assertEqual(medio['grupo'], f'{categoria} · {sub}' if sub else categoria, medio['d'])
 
     def test_agenda_enlaza_municipio_sin_cambiar_ids_y_rechaza_control_incorrecto(self):
         n = ampliar(construir([ficha()]))['nucleo']

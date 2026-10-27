@@ -81,8 +81,52 @@ def resolver(sistema, codigo):
     return cargar().resolver(sistema, codigo)
 
 
+# La cobertura de un medio llega como mucho a provincia: bajar a ciudad o comarca
+# no es fiable (ver relacionador.md). La sede de un emisor sí puede ser municipal.
+NIVELES_COBERTURA = ('pais', 'autonomia', 'provincia')
+
+
+def _nivel(identidad):
+    dato = cargar().territorio(identidad) if isinstance(identidad, str) else None
+    return dato['tipo'] if dato else None
+
+
+def evidencia_valida(e):
+    """Una evidencia nombra su fuente (`url` o `doc`) y el dato observado."""
+    return (isinstance(e, dict) and isinstance(e.get('dato'), str) and bool(e['dato'].strip())
+            and any(isinstance(e.get(k), str) and e[k].strip() for k in ('url', 'doc')))
+
+
+def _bloque_publicable(b, ids, niveles=None):
+    """Todo o nada: resuelto, con evidencias, y cada identidad existente y de un
+    nivel admitido. Un bloque a medias no publica sus destinos buenos."""
+    return (isinstance(b, dict) and b.get('estado') == 'resuelto'
+            and isinstance(b.get('evidencias'), list) and bool(b['evidencias'])
+            and all(map(evidencia_valida, b['evidencias']))
+            and isinstance(ids, list) and bool(ids)
+            and all(_nivel(t) and (niveles is None or _nivel(t) in niveles) for t in ids))
+
+
+def sedes_medio(medio):
+    """Dónde está el emisor. Nunca localiza ni cubre; es una relación aparte.
+    Solo las sedes publicables: pendiente o en conflicto no publican nada."""
+    sedes = medio.get('sede')
+    return [{'territorio': s['territorio'], 'papel': 'sede', 'funcion': s.get('funcion', 'editorial')}
+            for s in (sedes if isinstance(sedes, list) else [])
+            if isinstance(s, dict) and _bloque_publicable(s, [s.get('territorio')])]
+
+
 def cobertura_medio(medio):
-    """Cobertura editorial española; no atribuye territorio a cada artículo."""
+    """Cobertura editorial; no atribuye territorio a cada artículo.
+    Una `cobertura` explícita sustituye a la proyección heredada de `region` y
+    `ambito`; pendiente, en conflicto o inválida, no publica nada y **no
+    reactiva** la heredada."""
+    explicita = medio.get('cobertura')
+    if explicita is not None:
+        ids = explicita.get('territorios') if isinstance(explicita, dict) else None
+        if not _bloque_publicable(explicita, ids, NIVELES_COBERTURA):
+            return []
+        return [{'territorio': t, 'papel': 'cobertura_editorial'} for t in dict.fromkeys(ids)]
     if medio.get('region'):
         territorio = resolver('medios:region', medio['region'])
     elif medio.get('ambito') == 'nacional' and not medio.get('pais'):
@@ -93,9 +137,26 @@ def cobertura_medio(medio):
 
 
 def territorios_medio(medio):
-    """País de clasificación y cobertura son relaciones distintas."""
+    """País de clasificación, sede y cobertura son relaciones distintas."""
     relaciones = cobertura_medio(medio)
     pais = resolver('medios:pais', medio.get('pais'))
     if pais:
         relaciones.append({'territorio': pais['id'], 'papel': 'pais_catalogo'})
-    return relaciones
+    return relaciones + sedes_medio(medio)
+
+
+def problemas_territoriales(medio):
+    """Identidades de `sede`/`cobertura` inexistentes y coberturas (incluidos sus
+    candidatos) por debajo de provincia. Tolera formas inválidas: de esas se ocupa
+    `medios.problemas_forma_emisor`."""
+    def ids(x):
+        return [t for t in x if isinstance(t, str) and t] if isinstance(x, list) else []
+    sedes = [s for s in medio.get('sede') or [] if isinstance(s, dict)] if isinstance(medio.get('sede'), list) else []
+    cobertura = medio.get('cobertura') if isinstance(medio.get('cobertura'), dict) else {}
+    sede_ids = [t for s in sedes for t in ids([s.get('territorio')] + ids(s.get('candidatos')))]
+    cob_ids = ids(cobertura.get('territorios')) + ids(cobertura.get('candidatos'))
+    problemas = [f"{medio['d']}: territorio desconocido {t!r}"
+                 for t in sede_ids + cob_ids if not _nivel(t)]
+    problemas += [f"{medio['d']}: cobertura en {_nivel(t)} {t!r}; el máximo detalle es provincia"
+                  for t in cob_ids if _nivel(t) and _nivel(t) not in NIVELES_COBERTURA]
+    return problemas

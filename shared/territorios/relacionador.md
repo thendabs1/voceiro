@@ -53,7 +53,8 @@ La relación `pais_catalogo`
 indica el país con el que clasificamos el medio o su edición en Voceiro. No
 afirma domicilio social, propiedad, nacionalidad ni territorios cubiertos.
 `cobertura_editorial` expresa los territorios para los que se ha clasificado
-su cobertura; admite varios destinos y precisión municipal/provincial/autonómica.
+su cobertura; admite varios destinos con precisión como máximo provincial
+(nunca municipal ni comarcal, ver «Sede, cobertura explícita y clase del emisor»).
 Los vínculos a noticias concretas siguen pendientes de otro incremento.
 
 La publicación actual de BBC queda así:
@@ -76,6 +77,39 @@ desconocido no activa el respaldo de cobertura nacional española.
 La clasificación actual identifica medios por dominio. Una futura edición con
 identidad propia necesitará una referencia contextualizada; el dominio no obliga
 a todas las ediciones de una cabecera a compartir país o cobertura.
+
+## Sede, cobertura explícita y clase del emisor
+
+Implementado como campos **opcionales** de `medios.py`; ningún medio actual los
+lleva, así que nada cambia hasta que alguno los declare.
+
+| Campo | Contenido | Regla |
+| --- | --- | --- |
+| `clase` | Naturaleza del emisor: `medio` (por defecto), `club`, `web_aficion`, `federacion`, `administracion`, `universidad`, `institucion_cultural`, `asociacion`, `colegio_profesional`, `blog`, `newsletter` | `type` sigue siendo el formato y `sector` la especialidad; la clase no es un sector. |
+| `sede` | Lista de `{estado, territorio, funcion?, evidencias}`; `funcion` es `editorial` (por defecto) o `social` | Dónde está el emisor. Se publica con papel `sede` (y su `funcion`); **nunca** genera cobertura ni localiza noticias. |
+| `cobertura` | `{estado, territorios, candidatos?, evidencias}` | Varios destinos independientes, **como máximo a provincia** (`pais`, `autonomia`, `provincia`): bajar a ciudad o comarca no es fiable. Papel `cobertura_editorial`. |
+
+`estado` es `resuelto`, `pendiente` o `conflicto`. Resuelto exige identidad
+y evidencias; en los otros dos la identidad queda vacía y, si se conoce, se
+anota como `candidatos` (que también respetan el límite provincial). Cada
+evidencia nombra su fuente (`url` o `doc`) y el `dato` observado. Un bloque
+publica todo o nada: si alguna identidad falta, es de un nivel no admitido o la
+evidencia está mal formada, no se publica ninguno de sus destinos y tampoco se
+reactiva la cobertura heredada. Precedencia:
+
+1. `cobertura` ausente (o `null`): vale la proyección heredada de `region` y `ambito`.
+2. `cobertura` resuelta: sustituye a la heredada.
+3. `cobertura` pendiente o en conflicto: no publica cobertura y **no reactiva** la heredada.
+4. La cobertura de una edición o sección no se propaga a todos los artículos del medio.
+
+La estructura (categoría, subcategoría) del medio la da `medios.categoria_de`;
+el literal de grupo («Regional · Galicia») se deriva de ella y no cambia, porque
+los modos guardados lo usan como identidad. El país del catálogo
+(`pais_catalogo`) sigue aparte. Una identidad que no
+existe en el catálogo territorial no se publica; `problemas_territoriales`
+la señala y `problemas_forma_emisor` (en `medios.py`) comprueba la forma.
+Ediciones, secciones y canales como entidades hijas, y la activación de
+fuentes nuevas en portadas, quedan para PR posteriores.
 
 ## Referencia y resultado de resolución
 
@@ -186,9 +220,9 @@ de todos los tipos juntos ni se almacena cada resultado como un hecho nuevo.
 | --- | --- |
 | Eventos celebrados en Galicia | Evento → territorio o recinto → municipio → provincia → autonomía. No se atraviesa una competición ni el país de un medio. |
 | Medios por país del catálogo | Solo `pais_catalogo`. BBC puede aparecer bajo `GB` sin que sus noticias se localicen allí. |
-| Medios con cobertura directa de un municipio | Coincidencia de destino en `cobertura_editorial`; devuelve la asignación original. |
-| Consulta provincial con cobertura contenida | Admite medios municipales de esa provincia y los identifica como municipales; no les atribuye cobertura provincial completa. |
-| Consulta municipal ampliada a cobertura superior | Solo si se solicita; distingue medios provinciales, autonómicos y nacionales. No incluye un medio de otro municipio por compartir provincia. |
+| Medios con cobertura directa de un territorio | Coincidencia de destino en `cobertura_editorial` (país, autonomía o provincia); devuelve la asignación original. |
+| Consulta provincial con cobertura contenida | Admite medios cuya cobertura está en esa provincia y los identifica como tales (la cobertura de un medio no baja de provincia). |
+| Consulta provincial ampliada a cobertura superior | Solo si se solicita; distingue medios autonómicos y nacionales. No incluye un medio de otra provincia por compartir autonomía. |
 | Contexto meteorológico de un recinto | Ubicación acreditada y asociación de servicio, o aproximación por coordenadas explícita. Una zona parcial no acredita afectación exacta al recinto. |
 
 Los modos `directa`, `contenida` y `superior` son selecciones distintas. Ninguna
