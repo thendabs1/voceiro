@@ -52,8 +52,8 @@ COMMIT no se reintenta a ciegas.
 
 ## Modelo: núcleo v2 (esquema 4)
 
-Tipos: `evento` (la cita), `agrupacion` (competición, edición, fase, GP,
-ciclo), `actividad` (obra o ficha con varias celebraciones), `participante`,
+Tipos: `evento` (la cita), `agrupacion` (competición, edición, fase, GP),
+`actividad` (obra declarada por la fuente), `participante`,
 `lugar` y `territorio`. Tablas principales en [esquema.sql](esquema.sql):
 entidades, documentos, referencias, observaciones, relaciones,
 participaciones, tiempos, políticas y selecciones. Las tablas del piloto
@@ -140,13 +140,34 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
 
 | Fuente | Identidad | Particularidades |
 | --- | --- | --- |
-| Cultura de Galicia | `id` de celebración; nodo = ficha | Hasta 91 días y 20 páginas de 1000 por idioma; inicio = fin no prueba un instante. CC BY-SA 4.0. |
-| Madrid | `ID-EVENTO`; `vgnextoid` para actividad y recinto | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. CC BY 4.0. |
+| Cultura de Galicia | `id` de celebración; `nid` = obra; ciclo = etiqueta | Hasta 91 días y 20 páginas de 1000 por idioma; inicio = fin no prueba un instante. CC BY-SA 4.0. |
+| Madrid | `ID-EVENTO`; `vgnextoid` para el recinto | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. URL-ACTIVIDAD suele ser un contenedor («Actividades en el Centro Cultural…»): no es obra. CC BY 4.0. |
 | Kulturklik | `id`; castellano y euskera juntos | Fechas de día con horario en texto; su código municipal no es NORA ni INE completo. CC BY 4.0. |
 
 La recogida comprueba todas las páginas antes de importar: cambios de total,
 páginas repetidas o truncadas impiden guardar. Una programación prolongada
 (exposición) aparece una vez por ventana.
+
+Contrato común para las fuentes culturales:
+
+- **Obra con funciones:** cada función es un `evento`; la obra, una
+  `actividad` unida por `celebracion_de`, solo cuando la fuente la declara
+  (Galicia `nid`; en las nuevas, CyL `id_evento`, Zaragoza `id` con
+  `subEvent`, Málaga `ID_ACTIVIDAD`). Sin evento sintético: la tarjeta de cada
+  función lleva `obra: {id, nombres}` y `objetivo=actividad:<id>` las lista.
+  Cómo agruparlas en pantalla lo decide el cliente.
+- **Clase:** las citas culturales quedan `desconocida` y no se corrigen; la
+  forma temporal está en `programacion.cuando` (inicio, fin, días).
+- **Etiquetas** (ciclos, festivales): bloque observado
+  `etiquetas: [{id, nombres}]` con clave estable del proveedor, sin jerarquía
+  ni expansión de objetivos. Faceta y filtro `etiqueta=`.
+- **Identificadores externos** (Wikidata, TMDB, ISBN…): irán como bloque
+  observado de la obra o la persona, `{sistema, tipo, id}` con procedencia,
+  porque son asociaciones corregibles; una referencia del núcleo significa
+  identidad y no se deshace. Sin implementar hasta que haya quien los escriba.
+- **Ausencia:** una función que deja de aparecer se sigue publicando. Antes de
+  fuentes cuya función se identifica por fecha (CyL, Málaga) hay que diseñar
+  la retirada por respuesta completa.
 
 ## Lectura pública
 
@@ -174,7 +195,7 @@ primera vez y 0 si no hay novedades. Rutas GET/HEAD del worker:
 | `/calendario/catalogo`, `/calendario/objetivos?texto&tipo` | Temas, fuentes y zonas; entidades paginadas. |
 
 Filtros: `q` (prefijos del parser y texto), `texto`, `temas`, `circuitos`,
-`fuente`, `objetivo`, `lugar`, `municipio`, `territorio`, `zona`. El cursor va
+`fuente`, `objetivo`, `lugar`, `municipio`, `territorio`, `etiqueta`, `zona`. El cursor va
 ligado a la revisión: si cambia la publicación responde 409. Caché de 15 s con
 clave por revisión y límite de 30 peticiones/IP/minuto.
 
@@ -220,8 +241,11 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
 
 - **Activar la lectura y el cliente:** agenda paginada, semana y mes con
   `/resumen`, detalle bajo demanda y reactivar `CALENDARIO_ACTIVO`.
-- **Retención:** borrado transaccional de dependencias exclusivas antes de
-  activar la poda de 45 días.
+- **Retención y retirada:** borrado transaccional de dependencias exclusivas
+  antes de activar la poda de 45 días; retirar de la lectura lo que una
+  respuesta completa ya no trae (requisito de CyL y Málaga).
+- **Fuentes culturales nuevas:** Zaragoza primero (funciones con ID propio),
+  luego CyL, Málaga y Cataluña; territorio por coordenadas antes de escalar.
 - **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un
   registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
 - **Consultas puntuales:** registro único de prefijos (hoy `shared/parser.js`
