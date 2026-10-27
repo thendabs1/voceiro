@@ -32,6 +32,10 @@ on:
         type: choice
         options: [ninguna, madrid, kulturklik, madrid-y-kulturklik]
         default: ninguna
+      aceptar_inventario:
+        description: 'Cultura: aceptar un inventario que cae más del 30 % (retirada real)'
+        type: boolean
+        default: false
       colecciones:
         description: 'Deportes: colecciones separadas por comas (vacío = todas; p. ej. wrc,nba,feb-endesa)'
         required: false
@@ -77,6 +81,7 @@ jobs:
           IDIOMA: ${{ inputs.idioma || 'gl' }}
           FUENTE: ${{ inputs.fuente || 'cultura-galicia' }}
           CULTURA: ${{ inputs.cultura || 'madrid-y-kulturklik' }}
+          ACEPTAR_INVENTARIO: ${{ inputs.aceptar_inventario }}
         run: |
           if [ "$OPERACION" = reclasificar ]; then
             python calendario.py --turso --reclasificar
@@ -96,9 +101,11 @@ jobs:
             args=(--turso)
             if [ "$CULTURA" = madrid ] || [ "$CULTURA" = madrid-y-kulturklik ]; then
               args+=(--recoger-cultura madrid)
+              if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario madrid); fi
             fi
             if [ "$CULTURA" = kulturklik ] || [ "$CULTURA" = madrid-y-kulturklik ]; then
               args+=(--recoger-cultura kulturklik)
+              if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario kulturklik); fi
             fi
             if [ "$CULTURA" != ninguna ]; then
               if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi

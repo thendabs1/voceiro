@@ -172,7 +172,9 @@ Contrato común para las fuentes culturales:
   pública. La recogida y su inventario se guardan en la misma transacción;
   páginas incompletas o archivos sueltos no acreditan ausencias. Cada cambio
   de inventario conserva su documento y fecha; repetirlo solo renueva la
-  comprobación. Galicia todavía conserva las ausentes: su respuesta está
+  comprobación. Si el inventario cae más del 30 % no se acredita (aviso en
+  Actions); `--aceptar-inventario FUENTE` o la casilla del workflow lo
+  aceptan. Galicia todavía conserva las ausentes: su respuesta está
   acotada por fechas e idiomas y necesita una política con ese alcance.
 
 ## Lectura pública
