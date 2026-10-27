@@ -225,6 +225,14 @@ esperar su cadencia: `deportes` con `colecciones` (p. ej. `wrc,nba`) y
 las fuentes guardadas (`python -m agenda.publicacion --turso --revisar`, el
 mismo informe que `agenda.revision`) con la carga que usa para publicar.
 
+El workflow ejecuta todo en un proceso, `python -m agenda.pasada --paso "CLI
+args" … --paso-tolerado "CLI args"`, con un `Almacen` compartido
+(`turso.compartido`): el núcleo se lee una vez y cada paso guarda al terminar
+(cada agenda cultural por separado). Un paso tolerado que falla conserva lo ya
+guardado y la pasada sigue y publica; sale con 1 al final. Un conflicto de
+revisión (otro escritor) o un error de Turso la detienen; un guardado incierto
+obliga a releer.
+
 ```sh
 # Cultura en Turso (ventana inclusiva, 31 días por defecto, máximo 91).
 python calendario.py --turso --recoger-cultura madrid --recoger-cultura kulturklik \

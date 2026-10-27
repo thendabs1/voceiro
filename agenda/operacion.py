@@ -23,8 +23,8 @@ def abrir(*, db=None, turso=False):
     if bool(db) == bool(turso):
         raise ValueError('Seleccionar SQLite o Turso')
     if turso:
-        from .turso import Almacen
-        remoto = Almacen()
+        from .turso import abrir
+        remoto = abrir()
         remoto.inicializar()
         repo = Repositorio(remoto=remoto)
         repo.inicializar()

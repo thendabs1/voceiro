@@ -339,8 +339,8 @@ def main(argv=None):
     if args.lectura_sql and (not args.turso or args.fuentes is None):
         ap.error('--lectura-sql requiere --turso y --fuentes explícitas')
     if args.turso:
-        from .turso import Almacen
-        remoto = Almacen()
+        from .turso import abrir
+        remoto = abrir()
         calendario = remoto.cargar()
         if calendario is None or 'nucleo' not in calendario:
             raise ValueError('Preparar el núcleo de Turso antes de publicar')

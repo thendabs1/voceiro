@@ -1,7 +1,8 @@
 """Calendario en una base Turso dedicada; autoridad remota y escrituras por cambios."""
 
 import os
-from contextlib import closing
+from contextlib import closing, contextmanager
+from contextvars import ContextVar
 from copy import deepcopy
 from pathlib import Path
 import sqlite3
@@ -16,12 +17,36 @@ class ConflictoCalendario(RuntimeError):
     pass
 
 
+_COMPARTIDO = ContextVar('agenda_turso_compartido', default=None)
+
+
+@contextmanager
+def compartido():
+    """Un Almacen para varias CLI seguidas: cargar() reutiliza el estado ya leído.
+
+    La guardia de revisión de guardar() sigue detectando a otro escritor.
+    """
+    remoto = Almacen()
+    remoto.reutilizar = True
+    token = _COMPARTIDO.set(remoto)
+    try:
+        yield remoto
+    finally:
+        _COMPARTIDO.reset(token)
+
+
+def abrir():
+    return _COMPARTIDO.get() or Almacen()
+
+
 class Almacen:
     def __init__(self, url=None, token=None):
         self.cliente = Cliente(url or os.environ.get('CALENDARIO_TURSO_URL', ''),
                                token or os.environ.get('CALENDARIO_TURSO_TOKEN', ''))
         self.revision = None
         self.anterior = None
+        self.reutilizar = False
+        self._vigente = False  # anterior coincide con la revisión remota conocida.
 
     def inicializar(self):
         resultados = self.cliente.transaccion([
@@ -44,10 +69,13 @@ class Almacen:
                 raise ValueError('Versión de base de calendario incompatible')
 
     def cargar(self):
+        if self.reutilizar and self._vigente:
+            return deepcopy(self.anterior)
         resultados = [filas(r) for r in self.cliente.transaccion(almacen.CONSULTAS, escritura=False)]
         calendario = almacen.reconstruir(resultados)
         self.revision = resultados[0][0][1]
         self.anterior = deepcopy(calendario)
+        self._vigente = True
         return calendario
 
     def guardar(self, calendario, solo_clasificacion=False, solo_nucleo=False, pasos_extra=()):
@@ -67,6 +95,8 @@ class Almacen:
         if cambios:
             pasos.extend(almacen.planificar(self.anterior, calendario, solo_clasificacion, solo_nucleo))
             pasos.append(('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ()))
+        # Una respuesta perdida deja la base incierta: la siguiente carga relee.
+        self._vigente = False
         try:
             self.cliente.transaccion(pasos)
         except ErrorTurso as error:
@@ -75,6 +105,7 @@ class Almacen:
             raise
         self.revision += int(cambios)
         self.anterior = deepcopy(calendario)
+        self._vigente = True
 
     def copia(self, ruta):
         """Snapshot completo, incluido historial; sustituye la copia tras validarla."""

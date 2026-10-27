@@ -94,8 +94,8 @@ def operar_nucleo(args):
         return calendario
 
     if args.turso:
-        from agenda.turso import Almacen
-        remoto = Almacen()
+        from agenda.turso import abrir
+        remoto = abrir()
         remoto.inicializar()
         anterior = remoto.cargar()
         calendario = preparar(anterior)
@@ -220,8 +220,8 @@ def main(argv=None):
                 args.entrada_ics, args.fuente, args.inicio, args.fin, args.idioma)):
             ap.error('--reclasificar requiere --db/--turso y opcionalmente --salida, sin recogida')
         if args.turso:
-            from agenda.turso import Almacen
-            remoto = Almacen()
+            from agenda.turso import abrir
+            remoto = abrir()
             remoto.inicializar()
             anterior = remoto.cargar()
             if anterior is None:
@@ -263,8 +263,8 @@ def main(argv=None):
         return
     remoto = None
     if args.turso:
-        from agenda.turso import Almacen
-        remoto = Almacen()  # Validar credenciales antes de consultar proveedores.
+        from agenda.turso import abrir
+        remoto = abrir()  # Validar credenciales antes de consultar proveedores.
     ahora = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='seconds')
     idiomas = list(dict.fromkeys(args.idioma or ['gl']))
     anterior = json.loads(Path(args.anterior).read_text(encoding='utf-8')) if args.anterior else None
