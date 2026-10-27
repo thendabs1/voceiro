@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from agenda import almacen, almacen_nucleo, kulturklik, madrid, nucleo, recogida, tiempos
+from agenda import almacen, almacen_nucleo, kulturklik, madrid, nucleo, presencia, recogida, tiempos
 from agenda.publicacion import proyectar
 from agenda.transicion import ampliar
 from calendario import main
@@ -201,8 +201,9 @@ class Paginacion(unittest.TestCase):
         filas = muestra('madrid')[:2]
         paginas = [json.dumps({'success': True, 'result': {'total': 2, 'records': [fila]}}) for fila in filas]
         with patch('agenda.recogida.descargar', side_effect=paginas) as descargar:
-            seleccion, _ = recogida.cultura('madrid', '2027-01-27', '2027-01-27')
+            seleccion, _, ids = recogida.cultura('madrid', '2027-01-27', '2027-01-27')
         self.assertEqual(len(seleccion), 1)
+        self.assertEqual(set(ids), {str(f['ID-EVENTO']) for f in filas})
         self.assertEqual(descargar.call_count, 2)
         self.assertIn('offset=1', descargar.call_args.args[0])
 
@@ -210,8 +211,9 @@ class Paginacion(unittest.TestCase):
         filas = muestra('kulturklik')
         paginas = [json.dumps({'totalItems': 3, 'currentPage': i + 1, 'items': [f]}) for i, f in enumerate(filas)]
         with patch('agenda.recogida.descargar', side_effect=paginas):
-            seleccion, _ = recogida.cultura('kulturklik', '2026-10-25', '2026-10-25')
+            seleccion, _, ids = recogida.cultura('kulturklik', '2026-10-25', '2026-10-25')
         self.assertEqual(len(seleccion), 3)
+        self.assertEqual(set(ids), {f['id'] for f in filas})
 
     def test_pagina_repetida_cambio_de_total_y_descarga_cortada_no_dan_resultado_parcial(self):
         fila = muestra('kulturklik')[0]
@@ -222,3 +224,77 @@ class Paginacion(unittest.TestCase):
             with patch('agenda.recogida.descargar', side_effect=[json.dumps(primera), json.dumps(segunda)]):
                 with self.assertRaises(ValueError):
                     recogida.cultura('kulturklik')
+
+
+class RetiradaCultural(unittest.TestCase):
+    def test_ausencia_y_reaparicion_conservan_identidad_horario_e_historial(self):
+        for modulo, campo in ((madrid, 'ID-EVENTO'), (kulturklik, 'id')):
+            with self.subTest(fuente=modulo.FUENTE):
+                filas = muestra(modulo.FUENTE)
+                n = modulo.importar(None, filas, AHORA)
+                ids = [str(f[campo]) for f in filas]
+                completa = presencia.registrar(n, modulo.FUENTE, ids, AHORA, modulo.URL)
+                # Una importación parcial no acredita retirada.
+                parcial = modulo.importar(completa, filas[:1], LUEGO)
+                self.assertEqual(len(proyectar(parcial)['eventos']), len(filas))
+                retirada = presencia.registrar(parcial, modulo.FUENTE, [], LUEGO, modulo.URL)
+                self.assertEqual(proyectar(retirada)['eventos'], [])
+                self.assertFalse(any(e['tipo'] == 'evento' for e in proyectar(retirada)['entidades'].values()))
+                self.assertEqual(retirada['entidades'].keys(), n['entidades'].keys())
+                self.assertEqual(retirada['observaciones'], parcial['observaciones'])
+                self.assertEqual(retirada['selecciones'], parcial['selecciones'])
+                self.assertEqual(retirada['referencias'], n['referencias'])
+                self.assertTrue(almacen_nucleo.planificar(parcial, retirada))
+                regreso = '2026-10-27T12:00:00+01:00'
+                recuperada = presencia.registrar(retirada, modulo.FUENTE, ids, regreso, modulo.URL)
+                self.assertEqual(proyectar(recuperada)['eventos'], proyectar(parcial)['eventos'])
+                self.assertTrue(retirada['documentos'].keys() <= recuperada['documentos'].keys())
+                repetida = presencia.registrar(recuperada, modulo.FUENTE, ids,
+                                               '2026-10-28T12:00:00+01:00', modulo.URL)
+                self.assertEqual(repetida['documentos'], recuperada['documentos'])
+                with self.assertRaisesRegex(ValueError, 'anterior'):
+                    presencia.registrar(repetida, modulo.FUENTE, [], AHORA, modulo.URL)
+
+    def test_cli_inventario_fuera_de_ventana_reapertura_y_fallo_no_retirado(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = Path(tmp) / 'agenda.sqlite'
+            main(['--db', str(ruta), '--entrada-madrid', str(MUESTRAS / 'madrid.json'),
+                  '--entrada-kulturklik', str(MUESTRAS / 'kulturklik.json')])
+            filas = muestra('madrid')[:2]  # Una cita en enero y otra en mayo.
+            respuesta = json.dumps({'success': True, 'result': {'total': 2, 'records': filas}})
+            args = ['--db', str(ruta), '--recoger-cultura', 'madrid',
+                    '--inicio', '2027-01-27', '--fin', '2027-01-27']
+            with patch('agenda.recogida.descargar', return_value=respuesta):
+                main(args)
+            with almacen.abrir(ruta) as db:
+                guardada = almacen.cargar(db)
+                self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(), [])
+            n = guardada['nucleo']
+            self.assertEqual(len(proyectar(n, ['madrid'])['eventos']), 2)
+            self.assertEqual(len(proyectar(n, ['kulturklik'])['eventos']), 3)
+            self.assertEqual(sum(e['tipo'] == 'evento' for e in n['entidades'].values()), 7)
+            # El vacío sí acredita ausencia; si falla otra fuente se revierte todo.
+            vacia = json.dumps({'success': True, 'result': {'total': 0, 'records': []}})
+            with patch('agenda.recogida.descargar', side_effect=[vacia, ValueError('descarga cortada')]):
+                with self.assertRaisesRegex(ValueError, 'descarga cortada'):
+                    main([*args, '--recoger-cultura', 'kulturklik'])
+            with almacen.abrir(ruta) as db:
+                self.assertEqual(almacen.cargar(db), guardada)
+            with patch('agenda.recogida.descargar', return_value=vacia):
+                main(args)
+            with almacen.abrir(ruta) as db:
+                retirada = almacen.cargar(db)
+            self.assertEqual(proyectar(retirada['nucleo'], ['madrid'])['eventos'], [])
+            # Un archivo suelto tampoco borra el inventario acreditado.
+            main(['--db', str(ruta), '--entrada-madrid', str(MUESTRAS / 'madrid.json')])
+            with almacen.abrir(ruta) as db:
+                self.assertEqual(proyectar(almacen.cargar(db)['nucleo'], ['madrid'])['eventos'], [])
+
+    def test_rechaza_inventarios_sin_procedencia_y_ids_invalidos(self):
+        n = madrid.importar(None, muestra('madrid'), AHORA)
+        for ids in ([''], [1], ['a', 'a']):
+            with self.assertRaisesRegex(ValueError, 'Inventario cultural inválido'):
+                presencia.registrar(n, 'madrid', ids, AHORA, madrid.URL)
+        n['fuentes']['madrid']['respuesta_completa'] = {'documento': 'inexistente', 'comprobado': AHORA}
+        with self.assertRaisesRegex(ValueError, 'sin inventario acreditado'):
+            nucleo.validar(n)

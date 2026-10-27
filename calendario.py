@@ -75,14 +75,15 @@ def operar_nucleo(args):
             coleccion, _, ruta = entrada.partition('=')
             calendario['nucleo'] = deportes.importar(calendario['nucleo'], coleccion,
                 json.loads(Path(ruta).read_text(encoding='utf-8')), observado, temporada=args.temporada_deporte)
-        from agenda import recogida
+        from agenda import presencia, recogida
         for fuente, modulo in (('madrid', madrid), ('kulturklik', kulturklik)):
             for ruta in getattr(args, 'entrada_' + fuente) or []:
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'],
                     json.loads(Path(ruta).read_text(encoding='utf-8')), observado)
             if fuente in (args.recoger_cultura or []):
-                filas, url = recogida.cultura(fuente, args.inicio, args.fin)
+                filas, url, ids = recogida.cultura(fuente, args.inicio, args.fin)
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'], filas, observado, url)
+                calendario['nucleo'] = presencia.registrar(calendario['nucleo'], fuente, ids, observado, url)
         return calendario
 
     if args.turso:

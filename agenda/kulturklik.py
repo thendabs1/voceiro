@@ -20,7 +20,8 @@ def importar(anterior, filas, observado, url=URL):
     if not isinstance(filas, list):
         raise ValueError('Kulturklik requiere eventos completos')
     c = nucleo.Constructor(anterior)
-    c.n['fuentes'][FUENTE] = {'nombre': 'Kulturklik', 'url': CATALOGO,
+    c.n['fuentes'][FUENTE] = {**c.n['fuentes'].get(FUENTE, {}),
+        'nombre': 'Kulturklik', 'url': CATALOGO,
         'atribucion': 'Gobierno Vasco · Kulturklik · datos normalizados por Voceiro',
         'licencia': 'CC BY 4.0', 'licencia_url': 'https://creativecommons.org/licenses/by/4.0/',
         'capacidades': ['calendario'], 'modo': 'recogida_manual',

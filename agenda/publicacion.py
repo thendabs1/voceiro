@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import json
 import os
 
-from . import nucleo
+from . import nucleo, presencia
 from .tiempos import instante
 from shared.territorios import cargar as cargar_territorios
 from shared.territorios.relacionador import cargar as cargar_relacionador
@@ -23,8 +23,10 @@ def proyectar(n, fuentes=None, generado=None, control=None):
     if permitidas - n['fuentes'].keys():
         raise ValueError('Fuentes desconocidas: ' + ', '.join(sorted(permitidas - n['fuentes'].keys())))
     activas = nucleo.ultimas(n)
+    ausentes = presencia.referencias_ausentes(n)
     observaciones = {i: o for i, o in n['observaciones'].items()
         if n['referencias'][o['referencia']]['proveedor'] in permitidas
+        and o['referencia'] not in ausentes
         and (n['fuentes'][n['referencias'][o['referencia']]['proveedor']].get('alcance') != 'agenda_deportiva'
              or n['documentos'][o['documento']]['clase'] == 'extraccion_agenda')}
 

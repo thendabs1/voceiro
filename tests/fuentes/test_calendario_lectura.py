@@ -5,7 +5,7 @@ import sqlite3
 import unittest
 from unittest.mock import patch
 
-from agenda import espn_tenis, feb, kulturklik, madrid
+from agenda import espn_tenis, feb, kulturklik, madrid, presencia
 from agenda.lectura import estado, preparar, planificar
 from agenda.publicacion import proyectar, main
 from agenda.transicion import ampliar
@@ -159,6 +159,27 @@ class LecturaSQL(unittest.TestCase):
         pasos = planificar(preparar(proyectar(segunda, fuentes, LUEGO)), 12, self.previo())
         tocadas = [sql for sql, _ in pasos if 'agenda_lectura_control' not in sql and not sql.lstrip().startswith('CREATE')]
         self.assertEqual(tocadas, [])
+
+    def test_ausencia_cultural_retira_tarjeta_detalle_facetas_y_tramos_y_reaparece(self):
+        filas = muestra('madrid')
+        n = madrid.importar(None, filas, AHORA)
+        ids = [str(f['ID-EVENTO']) for f in filas]
+        n = presencia.registrar(n, 'madrid', ids, AHORA, madrid.URL)
+        preparada = preparar(proyectar(n, ['madrid'], AHORA))
+        self.publicar(preparada)
+        # Una comprobación idéntica no cambia las huellas de lectura.
+        repetida = presencia.registrar(n, 'madrid', ids, LUEGO, madrid.URL)
+        pasos = planificar(preparar(proyectar(repetida, ['madrid'], AHORA)), 12, self.previo())
+        self.assertFalse(any(sql.startswith(('INSERT INTO agenda_lectura_eventos',
+                                             'DELETE FROM agenda_lectura_')) for sql, _ in pasos))
+        n = presencia.registrar(repetida, 'madrid', [], LUEGO, madrid.URL)
+        self.publicar(preparar(proyectar(n, ['madrid'], AHORA)), previo=self.previo())
+        for tabla in ('eventos', 'facetas', 'tramos'):
+            self.assertEqual(self.db.execute(f'SELECT count(*) FROM agenda_lectura_{tabla}').fetchone()[0], 0)
+        self.assertFalse(self.db.execute("SELECT id FROM agenda_lectura_entidades WHERE tipo='evento'").fetchall())
+        n = presencia.registrar(n, 'madrid', ids, '2026-10-28T12:00:00Z', madrid.URL)
+        self.publicar(preparar(proyectar(n, ['madrid'], AHORA)), previo=self.previo())
+        self.assertEqual(self.tablas(), self.completa(preparada))
 
     def test_cambios_y_retiradas_dejan_la_misma_lectura_que_un_reemplazo_completo(self):
         ampliada = self.con_otro_evento()

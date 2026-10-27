@@ -278,6 +278,8 @@ def validar(n):
         if (d['id'] != i or d['fuente'] not in n['fuentes']
                 or d['huella'] != sha256(json_canonico(d['contenido']).encode()).hexdigest()):
             raise ValueError('Documento sin fuente o huella válida')
+    from .presencia import validar as validar_presencia
+    validar_presencia(n)
     tuplas = set()
     for i, r in n['referencias'].items():
         t = json_canonico([r['proveedor'], r['tipo_externo'], r['contexto'], r['id_externo']])

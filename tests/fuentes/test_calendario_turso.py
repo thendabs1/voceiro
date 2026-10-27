@@ -121,6 +121,32 @@ class PersistenciaTurso(unittest.TestCase):
         self.assertEqual(self.servidor.db.execute('SELECT count(*) FROM agenda_recogidas').fetchone()[0], 1)
         self.assertEqual(self.servidor.db.execute('PRAGMA foreign_key_check').fetchall(), [])
 
+    def test_inventario_cultural_y_citas_se_confirman_juntos_y_reabren_sin_perder_historial(self):
+        from copy import deepcopy
+        from agenda import madrid, presencia
+        from agenda.publicacion import proyectar
+        from agenda.transicion import ampliar
+        from test_calendario_cultura import muestra
+        a = ampliar(construir([ficha()]))
+        a['nucleo'] = madrid.importar(a['nucleo'], muestra('madrid'), AHORA)
+        self.remoto.guardar(a)
+        b = deepcopy(a)
+        b['nucleo'] = presencia.registrar(b['nucleo'], 'madrid', [], DESPUES, madrid.URL)
+        # Falla después de insertar el inventario, al guardar los metadatos.
+        self.servidor.db.execute("CREATE TRIGGER fallo_estado BEFORE INSERT ON agenda_estado "
+                                "BEGIN SELECT RAISE(ABORT, 'fallo simulado'); END")
+        with self.assertRaises(ErrorTurso):
+            self.remoto.guardar(b, solo_nucleo=True)
+        self.assertEqual(self.nuevo().cargar(), a)
+        self.servidor.db.execute('DROP TRIGGER fallo_estado')
+        self.remoto.guardar(b, solo_nucleo=True)
+        guardada = self.nuevo().cargar()
+        self.assertEqual(guardada, b)
+        self.assertEqual(proyectar(guardada['nucleo'], ['madrid'])['eventos'], [])
+        for campo in ('entidades', 'referencias', 'observaciones', 'relaciones', 'selecciones'):
+            self.assertEqual(guardada['nucleo'][campo], a['nucleo'][campo])
+        self.assertEqual(self.servidor.db.execute('PRAGMA foreign_key_check').fetchall(), [])
+
     def test_dos_escritores_no_pisan_actualizaciones(self):
         segundo = self.nuevo()
         a = construir([ficha()])
