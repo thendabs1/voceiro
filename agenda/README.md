@@ -25,7 +25,7 @@ parser de búsqueda.
 
 ## Estado (27/10/2026)
 
-- **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik y Zaragoza
+- **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
 - **Deportes:** doce colecciones con adaptador y control de temporadas, todas
   publicadas; MotoGP y WTA ya tienen registrada la temporada 2027. La revisión
@@ -143,6 +143,7 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
 | Cultura de Galicia | `id` de celebración; `nid` = obra; ciclo = etiqueta | Hasta 91 días y 20 páginas de 1000 por idioma; inicio = fin no prueba un instante. CC BY-SA 4.0. |
 | Madrid | `ID-EVENTO`; `vgnextoid` para el recinto, con sus coordenadas | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. URL-ACTIVIDAD suele ser un contenedor («Actividades en el Centro Cultural…»): no es obra. CC BY 4.0. |
 | Zaragoza | `subEvent.id` = función; `id` = obra (actividad si tiene varias funciones); `location.id` = recinto con coordenadas WGS84 | `rows` ≤ 500 por `id asc`; inventario por función. Fechas de días; hora solo con una sesión el mismo día; «Sin determinar» queda como texto. Se saltan las ofertas sin fecha de inicio (27 antiguas, fin en 2020). Mezcla formación y empleo: tema `cultura` salvo las categorías revisadas. Condiciones del Ayuntamiento: «Origen de los datos: Ayuntamiento de Zaragoza» y `lastUpdated` (bloque `actualizado_origen`). |
+| Castilla y León (`cyl`) | Función = `id_evento@fecha_inicio` (`funcion_obra_fecha_v1`): entrada de programación, sin continuidad si cambia la fecha; `id_evento` = obra, siempre actividad; recinto = `id_localidad:lugar_celebracion`, con coordenadas | Opendatasoft `records` (100 por página, `order_by=id_evento,fecha_inicio`, `total_count`). Una fila de una obra conocida se actualiza fuera de la ventana. Horas en formatos mezclados («19:30 h.», «9:00h.»); en intervalos, solo texto. Temas por `tematica`; sin correspondencia (conferencias, talleres, circo, magia…) queda sin tema, no `cultura`. CC BY 4.0. |
 | Kulturklik | `id`; castellano y euskera juntos | Fechas de día con horario en texto; su código municipal no es NORA ni INE completo. CC BY 4.0. |
 
 La recogida comprueba todas las páginas antes de importar: cambios de total,
@@ -182,7 +183,7 @@ Contrato común para las fuentes culturales:
 
 `python -m agenda.publicacion --turso --fuentes … --publicar` genera la
 proyección: solo fuentes permitidas (`CALENDARIO_FUENTES_PUBLICAS`, por defecto
-`cultura-galicia,madrid,kulturklik,zaragoza`) y sin originales ni historial.
+`cultura-galicia,madrid,kulturklik,zaragoza,cyl`) y sin originales ni historial.
 
 Con `--lectura-sql` prepara además tablas indexadas por tramos de días
 consecutivos (de 329.000 filas diarias a 25.000 tramos en la medición del
@@ -265,7 +266,7 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
   antes de activar la poda de 45 días; retirada por ventanas e idiomas en
   Galicia y adaptación del inventario completo a nuevas fuentes (requisito
   de CyL y Málaga, cuya identidad de función incluye la fecha).
-- **Fuentes culturales nuevas:** CyL, Málaga y Cataluña (Zaragoza ya está);
+- **Fuentes culturales nuevas:** Málaga y Cataluña (Zaragoza y CyL ya están);
   sus recintos con coordenadas se ubican con los [límites municipales](../shared/territorios/README.md#límites-municipales) del IGN.
 - **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un
   registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
@@ -288,8 +289,8 @@ sabe una cosa y las fuentes nuevas se suman declarando, no ramificando código.
 | Pieza | Dónde | Qué hace | Qué no hace |
 |---|---|---|---|
 | Red | `recogida.descargar` | Única salida: User-Agent, límite de bytes, presupuesto y registro por petición | No interpreta respuestas |
-| Familia | `familias.py` (`ckan`, `euskadi`) | Recorre una API paginada entera y devuelve filas e inventario de IDs; lanza ante total cambiante, ID repetido o página vacía | No conoce el núcleo ni la ventana |
-| Fuente | `madrid.py`, `kulturklik.py` | Declara `FUENTE`, `FAMILIA`, `URL_RECOGIDA`, `CAMPO_ID`, `TIPO_EXTERNO`, `FECHAS`; `importar` traduce sus campos al núcleo | No descarga |
+| Familia | `familias.py` (`ckan`, `euskadi`, `zaragoza`, `opendatasoft`) | Recorre una API paginada entera y devuelve filas e inventario de IDs; lanza ante total cambiante, ID repetido o página vacía | No conoce el núcleo ni la ventana |
+| Fuente | `madrid.py`, `kulturklik.py`, `zaragoza.py`, `cyl.py` | Declara `FUENTE`, `FAMILIA`, `URL_RECOGIDA`, `CAMPO_ID`, `TIPO_EXTERNO`, `FECHAS`; `importar` traduce sus campos al núcleo | No descarga |
 | Registro | `registro.CULTURA` | Lista única de fuentes culturales para la CLI, la recogida y el inventario | — |
 | Comunes | `presencia.py`, límites municipales, constructor | Retirada por inventario completo, municipio por coordenadas | No dependen de la fuente |
 
@@ -300,7 +301,15 @@ Reglas para cada fuente nueva:
    ausencias. La ventana de fechas filtra después, nunca antes del inventario,
    y no excluye una cita ya conocida: aplazada lejos, se actualiza igual.
 2. **Identidad de función.** ID propio si la fuente lo da (Zaragoza
-   `subEvent.id`); si no, obra + fecha (CyL, Málaga), declarada en la fuente.
+   `subEvent.id`); si no, obra + fecha de inicio (CyL, Málaga) con un
+   `TIPO_EXTERNO` que lo diga (`funcion_obra_fecha_v1`). Es una entrada de
+   programación: si la fecha cambia, se retira y aparece otra, sin afirmar
+   aplazamiento. La obra es siempre actividad (objetivo estable para seguir) y
+   la fuente declara `obra(id)` para que sus filas se actualicen fuera de la
+   ventana. Una colisión (misma obra y día en dos recintos) detiene la fuente;
+   no se resuelve con ordinales ni huellas. Antes de importar quedan fijados la
+   unidad, los componentes y la serialización de la clave: después solo se
+   cambia migrando.
 3. **Territorio por coordenadas.** El recinto guarda el bloque `coordenadas`
    y el municipio lo acreditan los límites del IGN; los códigos propios de la
    fuente solo con correspondencia revisada.
@@ -310,10 +319,9 @@ Reglas para cada fuente nueva:
    de la cita: si no, cada cambio de una cita suma evidencia a todas.
 5. **Muestra versionada** de la respuesta en `tests/fuentes/muestras_calendario`.
 
-Pendiente: familias Socrata, Opendatasoft, ICS y
-JSON-LD `schema.org/Event`; grabar y reproducir respuestas desde la red común;
-constructor cultural común (hoy cada `importar` repite fuente, documento,
-recinto y tema); `--entrada-FUENTE` genérica en la CLI.
+Pendiente: familias Socrata, ICS y JSON-LD `schema.org/Event`; grabar y
+reproducir respuestas desde la red común; constructor cultural común (hoy cada
+`importar` repite fuente, documento, recinto y tema).
 
 ## Pruebas
 

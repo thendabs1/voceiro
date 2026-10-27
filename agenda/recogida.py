@@ -81,7 +81,8 @@ def cultura(fuente, inicio=None, fin=None, conocidos=()):
 
     Devuelve las filas de la ventana, la URL y el inventario completo de IDs.
     Las filas con alguna identidad de `conocidos` se devuelven aunque queden
-    fuera: una cita aplazada lejos no puede conservar su fecha anterior.
+    fuera: una cita aplazada lejos no puede conservar su fecha anterior. Si la
+    fuente declara `obra`, basta con que la obra sea conocida (CyL).
     Un cambio de total, repetición o página vacía obliga a repetir la recogida;
     la respuesta anterior sigue disponible en Turso/R2.
     """
@@ -104,10 +105,12 @@ def cultura(fuente, inicio=None, fin=None, conocidos=()):
             return True  # Fecha pendiente, sin inventarla.
         return date.fromisoformat(primero[:10]) <= hasta and date.fromisoformat(ultimo[:10]) >= desde
     conocidos = set(conocidos)
+    # Con identidad obra + fecha, una función aplazada cambia de clave: basta la obra conocida.
+    obras = {m.obra(i) for i in conocidos} if hasattr(m, 'obra') else set()
 
     def conocida(f):
         propias = m.inventario([f]) if hasattr(m, 'inventario') else [str(f.get(m.CAMPO_ID))]
-        return not conocidos.isdisjoint(propias)
+        return not conocidos.isdisjoint(propias) or any(m.obra(i) in obras for i in propias if obras)
     seleccion = [f for f in filas if en_ventana(f) or conocida(f)]
     print(f'[agenda] {fuente}: {len(filas)} registros comprobados; {len(seleccion)} en {desde} → {hasta} o ya conocidos')
     # El inventario completo acredita ausencias; la ventana solo decide

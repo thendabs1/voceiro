@@ -55,8 +55,7 @@ def operar_nucleo(args):
             raise ValueError('Falló una selección deportiva; se conserva su última lectura válida')
 
     modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.entrada_deporte
-                     or args.recoger_cultura or args.entrada_madrid or args.entrada_kulturklik
-                     or args.entrada_zaragoza)
+                     or args.recoger_cultura or any(getattr(args, 'entrada_' + f) for f in CULTURA))
     observado = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='microseconds')
 
     def preparar(anterior):
@@ -133,9 +132,8 @@ def main(argv=None):
     ap.add_argument('--entrada-tenis', action='append', help='JSON Site API de tenis guardado, sin red')
     ap.add_argument('--entrada-deporte', action='append', metavar='COLECCION=JSON',
                     help='Importar solo agenda de una de las doce colecciones desde un archivo, sin red')
-    ap.add_argument('--entrada-madrid', action='append', help='Lista de registros Madrid guardada, sin red')
-    ap.add_argument('--entrada-kulturklik', action='append', help='Lista de eventos Kulturklik guardada, sin red')
-    ap.add_argument('--entrada-zaragoza', action='append', help='Lista de eventos Zaragoza guardada, sin red')
+    for fuente in CULTURA:
+        ap.add_argument(f'--entrada-{fuente}', action='append', help=f'Lista de eventos {fuente} guardada, sin red')
     ap.add_argument('--recoger-cultura', action='append', choices=tuple(CULTURA),
                     help='Recogida cultural completa paginada en el núcleo; repetible')
     ap.add_argument('--aceptar-inventario', action='append', choices=tuple(CULTURA),
@@ -169,7 +167,7 @@ def main(argv=None):
         ap.error('--aceptar-inventario requiere recoger esa fuente con --recoger-cultura')
     operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb,
                            args.entrada_tenis, args.entrada_deporte, args.recoger_deporte, args.recoger_cultura,
-                           args.entrada_madrid, args.entrada_kulturklik, args.entrada_zaragoza))
+                           *(getattr(args, 'entrada_' + f) for f in CULTURA)))
     for entrada in args.entrada_deporte or []:
         coleccion, separador, ruta = entrada.partition('=')
         if not separador or not ruta or coleccion not in deportes.COLECCIONES:

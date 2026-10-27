@@ -68,3 +68,11 @@ del 27/10/2026, sin descripción, imágenes, accesibilidad ni otros campos que e
 usa. Cubren una función con hora, una obra con cuatro funciones, un intervalo de tres días con
 horario por día y un recinto sin geometría con temporada sin horario. Condiciones generales de
 reutilización del Ayuntamiento de Zaragoza: «Origen de los datos: Ayuntamiento de Zaragoza».
+
+# Castilla y León (27/10/2026)
+
+`cyl.json`: siete filas reales del conjunto Opendatasoft
+`eventos-de-la-agenda-cultural-categorizados-y-geolocalizados` de la Junta de Castilla y León
+(27/10/2026), sin descripción ni imágenes. Cubren una obra con tres fechas (Burgos), una función
+con hora «19:00 h.», una sin hora, una exposición con horario en texto («9:00h.» – «14:00h.») y
+otra sin horario. CC BY 4.0.

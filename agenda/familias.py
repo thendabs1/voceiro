@@ -18,7 +18,10 @@ def _url(base, params):
 
 
 def recorrer(descargar, base, campo, pagina):
-    """`pagina.url(base, n, leidas)` pide la página n; `pagina.leer` devuelve (items, total)."""
+    """`pagina.url(base, n, leidas)` pide la página n; `pagina.leer` devuelve (items, total).
+
+    `campo` es el nombre del ID o una función que lo compone (CyL: obra + fecha).
+    """
     filas, vistos, total = [], set(), None
     for n in range(1, MAX_PAGINAS + 1):
         items, cuenta = pagina.leer(json.loads(descargar(pagina.url(base, n, len(filas)))), n)
@@ -29,7 +32,7 @@ def recorrer(descargar, base, campo, pagina):
         if cuenta != total:
             raise ValueError('El total cambió durante la recogida cultural')
         for item in items:
-            identidad = str(item.get(campo) or '')
+            identidad = campo(item) if callable(campo) else str(item.get(campo) or '')
             if not identidad or identidad in vistos:
                 raise ValueError('Identidad repetida o ausente entre páginas culturales')
             vistos.add(identidad)
@@ -83,4 +86,18 @@ class Zaragoza:
         return dato['result'], dato['totalCount']
 
 
-FAMILIAS = {'ckan': Ckan, 'euskadi': Euskadi, 'zaragoza': Zaragoza}
+class Opendatasoft:
+    """Explore API v2.1 `records`: limit ≤ 100 y offset; el orden lo fija la URL de la fuente."""
+
+    FILAS = 100
+
+    @classmethod
+    def url(cls, base, n, leidas):
+        return _url(base, {'limit': cls.FILAS, 'offset': leidas})
+
+    @staticmethod
+    def leer(dato, n):
+        return dato['results'], dato['total_count']
+
+
+FAMILIAS = {'ckan': Ckan, 'euskadi': Euskadi, 'zaragoza': Zaragoza, 'opendatasoft': Opendatasoft}

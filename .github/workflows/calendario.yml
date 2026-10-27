@@ -30,7 +30,7 @@ on:
       cultura:
         description: 'Agendas culturales adicionales (recogida completa paginada)'
         type: choice
-        options: [ninguna, madrid, kulturklik, zaragoza, madrid-y-kulturklik, todas]
+        options: [ninguna, madrid, kulturklik, zaragoza, cyl, madrid-y-kulturklik, todas]
         default: ninguna
       aceptar_inventario:
         description: 'Cultura: aceptar un inventario que cae más del 30 % (retirada real)'
@@ -44,7 +44,7 @@ on:
         type: boolean
         default: false
       publicar:
-        description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid, Kulturklik y Zaragoza)'
+        description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid, Kulturklik, Zaragoza y CyL)'
         type: boolean
         default: false
 
@@ -96,7 +96,7 @@ jobs:
           COLECCIONES: ${{ inputs.colecciones }}
           FORZAR: ${{ inputs.forzar }}
           PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' || inputs.operacion == 'deportes' }}
-          FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik,zaragoza' }}
+          FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik,zaragoza,cyl' }}
           LECTURA_SQL: ${{ vars.CALENDARIO_LECTURA_SQL || 'false' }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -121,7 +121,7 @@ jobs:
             fi
             case "$CULTURA" in
               ninguna) culturas="" ;;
-              todas) culturas="madrid kulturklik zaragoza" ;;
+              todas) culturas="madrid kulturklik zaragoza cyl" ;;
               madrid-y-kulturklik) culturas="madrid kulturklik" ;;
               *) culturas="$CULTURA" ;;
             esac
