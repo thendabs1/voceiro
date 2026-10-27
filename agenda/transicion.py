@@ -25,6 +25,10 @@ def ampliar(calendario):
     for rel in c.n['relaciones'].values():
         if rel['tipo'] == 'celebracion_de' and rel['origen']['id'] in fichas:
             rel['suspendida'] = len(fichas[rel['origen']['id']]) > 1
+        # Los ciclos pasan a etiqueta: sus pertenencias guardadas se suspenden.
+        elif (rel['tipo'] == 'pertenece_a'
+              and c.n['entidades'][nucleo.clave(rel['destino'])]['clase'] == 'ciclo'):
+            rel['suspendida'] = True
     # No se reconstruyen IDs con título/fecha ni se unen fichas traducidas.
     for ref, r in sorted(registros.items()):
         d = r['datos']
@@ -35,12 +39,17 @@ def ampliar(calendario):
             'programacion': d['estado'] if d['estado'] in ('programado', 'aplazado', 'cancelado')
                             else 'desconocido', 'ejecucion': 'desconocido',
             'estado_original': d['estado']}
+        bloques = {'programacion': programacion, 'lugar': d.get('lugar'),
+                   'relaciones_piloto_sin_conciliar': d.get('relaciones', [])
+                       if len(fichas.get(r['evento'], [])) > 1 else []}
+        # Clave estable del proveedor; sin jerarquía ni expansión de objetivos.
+        etiquetas = [{'id': i, 'nombres': deepcopy(g['nombres'])} for i, g in sorted(r.get('grupos', {}).items())
+                     if g['tipo'] == 'ciclo' and i in d.get('grupos', [])]
+        if etiquetas:
+            bloques['etiquetas'] = etiquetas
         destino, evidencia = c.entidad(r['fuente'], 'evento_piloto', r['id_externo'], {},
             'evento', 'desconocida', d['titulos'], doc, '/normalizado_piloto', r['ultima_recogida'],
-            bloques={'programacion': programacion, 'lugar': d.get('lugar'),
-                     'relaciones_piloto_sin_conciliar': d.get('relaciones', [])
-                         if len(fichas.get(r['evento'], [])) > 1 else []},
-            identidad=r['evento'], referencia=ref, historico=True)
+            bloques=bloques, identidad=r['evento'], referencia=ref, historico=True)
         por_ref[ref] = evidencia
         lugar = d.get('lugar') or {}
         recinto = None
@@ -64,8 +73,8 @@ def ampliar(calendario):
                 c.relacion('ubicado_en', recinto, territorio, evidencia)
         for i, grupo in r.get('grupos', {}).items():
             tipo_g = grupo['tipo']
-            if tipo_g == 'actividad':
-                continue  # Es vocabulario del proveedor, no una obra.
+            if tipo_g in ('actividad', 'ciclo'):
+                continue  # Vocabulario del proveedor, no una obra; los ciclos van como etiqueta.
             tipo = 'actividad' if tipo_g == 'ficha' else 'agrupacion'
             clase = tipo_g if tipo == 'actividad' or tipo_g in nucleo.CLASES['agrupacion'] else 'coleccion'
             g, _ = c.entidad(r['fuente'], 'grupo_piloto', i, {}, tipo, clase, grupo['nombres'],

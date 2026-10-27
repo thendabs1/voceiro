@@ -327,6 +327,12 @@ def validar(n):
                     raise ValueError('Sesión sin cita principal válida')
             else:
                 raise ValueError('Papel de agenda desconocido')
+        etiquetas = o['bloques'].get('etiquetas')
+        if etiquetas is not None and (not isinstance(etiquetas, list) or not etiquetas or any(
+                not isinstance(t, dict) or not isinstance(t.get('id'), str) or not t['id']
+                or not t.get('nombres') for t in etiquetas)
+                or len({t['id'] for t in etiquetas}) != len(etiquetas)):
+            raise ValueError('Etiquetas sin clave estable o nombres')
     padres, unicos, activas = {}, {}, ultimas(n)
     for i, r in n['relaciones'].items():
         a, b = entidad(r['origen']), entidad(r['destino'])

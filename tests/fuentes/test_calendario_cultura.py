@@ -11,7 +11,7 @@ from agenda import almacen, almacen_nucleo, kulturklik, madrid, nucleo, recogida
 from agenda.publicacion import proyectar
 from agenda.transicion import ampliar
 from calendario import main
-from test_agenda import construir, ficha
+from test_agenda import AHORA as AHORA_PILOTO, construir, ficha
 
 
 MUESTRAS = Path(__file__).with_name('muestras_calendario')
@@ -162,6 +162,38 @@ class AgendasCulturales(unittest.TestCase):
                       '--entrada-kulturklik', str(invalida)])
             with almacen.abrir(ruta) as db:
                 self.assertEqual(almacen.cargar(db), piloto)
+
+
+    def test_ciclos_de_galicia_son_etiquetas_y_sus_pertenencias_se_suspenden(self):
+        calendario = ampliar(construir([ficha()]))
+        n, ciclo = calendario['nucleo'], 'cultura-galicia:ciclo:50'
+        self.assertNotIn('agrupacion:' + ciclo, n['entidades'])
+        evento = proyectar(n)['eventos'][0]
+        self.assertEqual(evento['etiquetas'], [{'id': ciclo, 'nombres': {'gl': 'Festival'}}])
+        # Núcleo guardado antes del cambio: el ciclo era una agrupación con pertenece_a.
+        c = nucleo.Constructor(n)
+        destino = nucleo.objetivo('evento', evento['id'])
+        evidencia = n['entidades'][nucleo.clave(destino)]['evidencias'][-1]
+        g, _ = c.entidad('cultura-galicia', 'grupo_piloto', ciclo, {}, 'agrupacion', 'ciclo',
+            {'gl': 'Festival'}, n['observaciones'][evidencia]['documento'], '/grupos/' + ciclo,
+            AHORA_PILOTO, identidad=ciclo, historico=True)
+        c.relacion('pertenece_a', destino, g, evidencia)
+        calendario['nucleo'] = c.terminar()
+        nuevo = ampliar(calendario)['nucleo']
+        self.assertTrue(all(r['suspendida'] for r in nuevo['relaciones'].values() if r['tipo'] == 'pertenece_a'))
+        self.assertTrue(almacen_nucleo.planificar(calendario['nucleo'], nuevo))
+        publicado = proyectar(nuevo)['eventos'][0]
+        self.assertNotIn('agrupacion:' + ciclo, publicado['objetivos'])
+        self.assertEqual(publicado['etiquetas'], evento['etiquetas'])
+
+    def test_etiquetas_sin_clave_o_nombres_no_se_guardan(self):
+        n = ampliar(construir([ficha()]))['nucleo']
+        o = next(o for o in n['observaciones'].values() if 'etiquetas' in o['bloques'])
+        for mala in ([], [{'id': '', 'nombres': {'gl': 'X'}}], [{'id': 'a', 'nombres': {}}],
+                     [{'id': 'a', 'nombres': {'gl': 'X'}}] * 2):
+            o['bloques']['etiquetas'] = mala
+            with self.assertRaisesRegex(ValueError, 'Etiquetas'):
+                nucleo.validar(n)
 
 
 class Paginacion(unittest.TestCase):

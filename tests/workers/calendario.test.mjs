@@ -330,3 +330,13 @@ test('dentro del d√≠a se pagina por instante de inicio: sin hora primero, despu√
   assert.ok(pos('005') < pos('012') && pos('012') < pos('011') && pos('011') < pos('010'), ids.join());
   assert.ok(pos('001') < pos('012') && pos('002') > pos('010'));
 });
+
+test('las etiquetas van en la tarjeta y se filtran por su clave', async t => {
+  const datos = muestra(), etiqueta = { id: 'cultura-galicia:ciclo:50', nombres: { gl: 'Festival' } };
+  for (const i of [7, 8]) datos.eventos[i].etiquetas = [etiqueta];
+  const b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir(ventana + '&etiqueta=' + encodeURIComponent(etiqueta.id));
+  assert.deepEqual(r.dato.eventos.map(e => [e.id, e.etiquetas]), [['007', [etiqueta]], ['008', [etiqueta]]]);
+  const otras = b.db.prepare("SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id NOT IN ('007','008')").all();
+  assert.ok(otras.every(f => !('etiquetas' in JSON.parse(f.tarjeta_json))));
+});
