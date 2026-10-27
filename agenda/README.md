@@ -25,7 +25,7 @@ parser de búsqueda.
 
 ## Estado (27/10/2026)
 
-- **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid y Kulturklik
+- **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik y Zaragoza
   en Turso y publicación en R2 y en las tablas de lectura.
 - **Deportes:** doce colecciones con adaptador y control de temporadas, todas
   publicadas; MotoGP y WTA ya tienen registrada la temporada 2027. La revisión
@@ -142,6 +142,7 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
 | --- | --- | --- |
 | Cultura de Galicia | `id` de celebración; `nid` = obra; ciclo = etiqueta | Hasta 91 días y 20 páginas de 1000 por idioma; inicio = fin no prueba un instante. CC BY-SA 4.0. |
 | Madrid | `ID-EVENTO`; `vgnextoid` para el recinto | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. URL-ACTIVIDAD suele ser un contenedor («Actividades en el Centro Cultural…»): no es obra. CC BY 4.0. |
+| Zaragoza | `subEvent.id` = función; `id` = obra (actividad si tiene varias funciones); `location.id` = recinto con coordenadas WGS84 | `rows` ≤ 500 por `id asc`; inventario por función. Fechas de días; hora solo con una sesión el mismo día; «Sin determinar» queda como texto. Se saltan las ofertas sin fecha de inicio (27 antiguas, fin en 2020). Mezcla formación y empleo: tema `cultura` salvo las categorías revisadas. Condiciones del Ayuntamiento: «Origen de los datos: Ayuntamiento de Zaragoza» y `lastUpdated` (bloque `actualizado_origen`). |
 | Kulturklik | `id`; castellano y euskera juntos | Fechas de día con horario en texto; su código municipal no es NORA ni INE completo. CC BY 4.0. |
 
 La recogida comprueba todas las páginas antes de importar: cambios de total,
@@ -181,7 +182,7 @@ Contrato común para las fuentes culturales:
 
 `python -m agenda.publicacion --turso --fuentes … --publicar` genera la
 proyección: solo fuentes permitidas (`CALENDARIO_FUENTES_PUBLICAS`, por defecto
-`cultura-galicia,madrid,kulturklik`) y sin originales ni historial.
+`cultura-galicia,madrid,kulturklik,zaragoza`) y sin originales ni historial.
 
 Con `--lectura-sql` prepara además tablas indexadas por tramos de días
 consecutivos (de 329.000 filas diarias a 25.000 tramos en la medición del
@@ -298,7 +299,7 @@ Reglas para cada fuente nueva:
    irrelevante no cree observaciones nuevas.
 5. **Muestra versionada** de la respuesta en `tests/fuentes/muestras_calendario`.
 
-Pendiente: familias Socrata, Opendatasoft, Zaragoza (`rows`/`start`), ICS y
+Pendiente: familias Socrata, Opendatasoft, ICS y
 JSON-LD `schema.org/Event`; grabar y reproducir respuestas desde la red común;
 constructor cultural común (hoy cada `importar` repite fuente, documento,
 recinto y tema); `--entrada-FUENTE` genérica en la CLI.

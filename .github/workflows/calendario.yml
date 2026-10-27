@@ -30,7 +30,7 @@ on:
       cultura:
         description: 'Agendas culturales adicionales (recogida completa paginada)'
         type: choice
-        options: [ninguna, madrid, kulturklik, madrid-y-kulturklik]
+        options: [ninguna, madrid, kulturklik, zaragoza, madrid-y-kulturklik, todas]
         default: ninguna
       aceptar_inventario:
         description: 'Cultura: aceptar un inventario que cae más del 30 % (retirada real)'
@@ -44,7 +44,7 @@ on:
         type: boolean
         default: false
       publicar:
-        description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid y Kulturklik)'
+        description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid, Kulturklik y Zaragoza)'
         type: boolean
         default: false
 
@@ -80,7 +80,7 @@ jobs:
           FIN: ${{ inputs.fin }}
           IDIOMA: ${{ inputs.idioma || 'gl' }}
           FUENTE: ${{ inputs.fuente || 'cultura-galicia' }}
-          CULTURA: ${{ inputs.cultura || 'madrid-y-kulturklik' }}
+          CULTURA: ${{ inputs.cultura || 'todas' }}
           ACEPTAR_INVENTARIO: ${{ inputs.aceptar_inventario }}
         run: |
           if [ "$OPERACION" = reclasificar ]; then
@@ -99,13 +99,17 @@ jobs:
               python calendario.py "${args[@]}"
             fi
             args=(--turso)
-            if [ "$CULTURA" = madrid ] || [ "$CULTURA" = madrid-y-kulturklik ]; then
+            if [ "$CULTURA" = madrid ] || [ "$CULTURA" = madrid-y-kulturklik ] || [ "$CULTURA" = todas ]; then
               args+=(--recoger-cultura madrid)
               if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario madrid); fi
             fi
-            if [ "$CULTURA" = kulturklik ] || [ "$CULTURA" = madrid-y-kulturklik ]; then
+            if [ "$CULTURA" = kulturklik ] || [ "$CULTURA" = madrid-y-kulturklik ] || [ "$CULTURA" = todas ]; then
               args+=(--recoger-cultura kulturklik)
               if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario kulturklik); fi
+            fi
+            if [ "$CULTURA" = zaragoza ] || [ "$CULTURA" = todas ]; then
+              args+=(--recoger-cultura zaragoza)
+              if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario zaragoza); fi
             fi
             if [ "$CULTURA" != ninguna ]; then
               if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
@@ -134,7 +138,7 @@ jobs:
       - name: Validar y publicar la lectura desde Turso
         env:
           PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' || inputs.operacion == 'deportes' }}
-          FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik' }}
+          FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik,zaragoza' }}
           LECTURA_SQL: ${{ vars.CALENDARIO_LECTURA_SQL || 'false' }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
