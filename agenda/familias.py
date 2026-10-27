@@ -69,4 +69,18 @@ class Euskadi:
         return dato['items'], dato['totalItems']
 
 
-FAMILIAS = {'ckan': Ckan, 'euskadi': Euskadi}
+class Zaragoza:
+    """Sede electrónica de Zaragoza: rows/start (máximo 500) con orden estable por id."""
+
+    @staticmethod
+    def url(base, n, leidas):
+        return _url(base, {'rows': FILAS, 'start': leidas, 'sort': 'id asc'})
+
+    @staticmethod
+    def leer(dato, n):
+        if dato.get('start') != (n - 1) * FILAS:
+            raise ValueError('Página Zaragoza inesperada')
+        return dato['result'], dato['totalCount']
+
+
+FAMILIAS = {'ckan': Ckan, 'euskadi': Euskadi, 'zaragoza': Zaragoza}

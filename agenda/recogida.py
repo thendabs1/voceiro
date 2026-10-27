@@ -93,6 +93,8 @@ def cultura(fuente, inicio=None, fin=None):
     if not 0 <= (hasta - desde).days <= 90:
         raise ValueError('La ventana cultural debe cubrir entre 1 y 91 días')
     filas, ids = recorrer(descargar, m.URL_RECOGIDA, m.CAMPO_ID, FAMILIAS[m.FAMILIA])
+    if hasattr(m, 'inventario'):
+        ids = m.inventario(filas)
 
     def en_ventana(f):
         primero, ultimo = f.get(m.FECHAS[0]), f.get(m.FECHAS[1]) or f.get(m.FECHAS[0])

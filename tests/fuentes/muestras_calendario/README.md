@@ -60,3 +60,11 @@ fechas, horas textuales y municipios NORA. No son una cobertura exhaustiva.
 Ambos catálogos se publican bajo CC BY 4.0: Ayuntamiento de Madrid y Gobierno Vasco.
 Los casos de datos contradictorios/malformados se construyen explícitamente en los tests.
 
+
+# Zaragoza (27/10/2026)
+
+`zaragoza.json`: cuatro obras reales de `/sede/servicio/cultura/evento/list.json?srsname=wgs84`
+del 27/10/2026, sin descripción, imágenes, accesibilidad ni otros campos que el calendario no
+usa. Cubren una función con hora, una obra con cuatro funciones, un intervalo de tres días con
+horario por día y un recinto sin geometría con temporada sin horario. Condiciones generales de
+reutilización del Ayuntamiento de Zaragoza: «Origen de los datos: Ayuntamiento de Zaragoza».

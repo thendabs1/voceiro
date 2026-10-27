@@ -1,0 +1,369 @@
+[
+ {
+  "id": 312317,
+  "subEvent": [
+   {
+    "id": 311489,
+    "location": {
+     "id": 4907,
+     "title": "La Azucarera",
+     "streetAddress": "C/ Mas de las Matas, 20",
+     "postalCode": "50014",
+     "junta": "Junta Municipal El Rabal",
+     "addressLocality": "Zaragoza",
+     "addressRegion": "Zaragoza",
+     "addressCountry": "España",
+     "telephone": "976 724579",
+     "email": "azucarera@zaragoza.es",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -0.8678951683418872,
+       41.663689367450836
+      ]
+     },
+     "publicTransport": "28, 35, CI1, CI2"
+    },
+    "startDate": "2026-10-27T00:00:00",
+    "endDate": "2026-10-27T00:00:00",
+    "openingHours": [
+     {
+      "dayOfWeek": "Martes",
+      "startTime": "17:00",
+      "endTime": "19:00",
+      "codSesion": 183677,
+      "codigosIndividuales": false
+     }
+    ]
+   }
+  ],
+  "title": "Next level: Entiende tu nómina",
+  "destacada": true,
+  "url": "https://www.zaragoza.es/sede/portal/juventud/",
+  "startDate": "2026-10-27T00:00:00",
+  "endDate": "2026-10-27T00:00:00",
+  "visible": "S",
+  "category": [
+   {
+    "id": 91,
+    "title": "Desarrollo personal",
+    "imageAlt": "//www.zaragoza.es/cont/paginas/actividades/icon/desarrollo-profesional.png"
+   }
+  ],
+  "creationDate": "2026-07-30T14:30:11",
+  "lastUpdated": "2026-10-13T10:39:50",
+  "geometry": {
+   "type": "Point",
+   "coordinates": [
+    -0.8678951683418872,
+    41.663689367450836
+   ]
+  },
+  "daysLeft": 0,
+  "type": "Cursos y talleres",
+  "location": "La Azucarera",
+  "minAge": 16,
+  "maxAge": 30
+ },
+ {
+  "id": 312997,
+  "subEvent": [
+   {
+    "id": 312138,
+    "location": {
+     "id": 18220,
+     "title": "Iglesia de San Pablo ",
+     "streetAddress": "C/ San Pablo, 44",
+     "postalCode": "50003",
+     "junta": "Junta Municipal Casco Histórico",
+     "addressLocality": "Zaragoza",
+     "addressRegion": "Zaragoza",
+     "addressCountry": "España",
+     "telephone": " 976 28 36 46",
+     "faxNumber": " ",
+     "email": " ",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -0.8866330664021655,
+       41.65596800076973
+      ]
+     },
+     "publicTransport": "23, 33, 34"
+    },
+    "startDate": "2026-09-25T00:00:00",
+    "endDate": "2026-09-25T00:00:00",
+    "openingHours": [
+     {
+      "dayOfWeek": "Viernes",
+      "startTime": "17:00",
+      "codSesion": 184993,
+      "codigosIndividuales": false
+     }
+    ]
+   },
+   {
+    "id": 312135,
+    "location": {
+     "id": 18220,
+     "title": "Iglesia de San Pablo ",
+     "streetAddress": "C/ San Pablo, 44",
+     "postalCode": "50003",
+     "junta": "Junta Municipal Casco Histórico",
+     "addressLocality": "Zaragoza",
+     "addressRegion": "Zaragoza",
+     "addressCountry": "España",
+     "telephone": " 976 28 36 46",
+     "faxNumber": " ",
+     "email": " ",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -0.8866330664021655,
+       41.65596800076973
+      ]
+     },
+     "publicTransport": "23, 33, 34"
+    },
+    "startDate": "2026-10-16T00:00:00",
+    "endDate": "2026-10-16T00:00:00",
+    "openingHours": [
+     {
+      "dayOfWeek": "Viernes",
+      "startTime": "17:00",
+      "codSesion": 184990,
+      "codigosIndividuales": false
+     }
+    ]
+   },
+   {
+    "id": 312137,
+    "location": {
+     "id": 18220,
+     "title": "Iglesia de San Pablo ",
+     "streetAddress": "C/ San Pablo, 44",
+     "postalCode": "50003",
+     "junta": "Junta Municipal Casco Histórico",
+     "addressLocality": "Zaragoza",
+     "addressRegion": "Zaragoza",
+     "addressCountry": "España",
+     "telephone": " 976 28 36 46",
+     "faxNumber": " ",
+     "email": " ",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -0.8866330664021655,
+       41.65596800076973
+      ]
+     },
+     "publicTransport": "23, 33, 34"
+    },
+    "startDate": "2026-10-23T00:00:00",
+    "endDate": "2026-10-23T00:00:00",
+    "openingHours": [
+     {
+      "dayOfWeek": "Viernes",
+      "startTime": "17:00",
+      "codSesion": 184992,
+      "codigosIndividuales": false
+     }
+    ]
+   },
+   {
+    "id": 312136,
+    "location": {
+     "id": 18220,
+     "title": "Iglesia de San Pablo ",
+     "streetAddress": "C/ San Pablo, 44",
+     "postalCode": "50003",
+     "junta": "Junta Municipal Casco Histórico",
+     "addressLocality": "Zaragoza",
+     "addressRegion": "Zaragoza",
+     "addressCountry": "España",
+     "telephone": " 976 28 36 46",
+     "faxNumber": " ",
+     "email": " ",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -0.8866330664021655,
+       41.65596800076973
+      ]
+     },
+     "publicTransport": "23, 33, 34"
+    },
+    "startDate": "2026-10-30T00:00:00",
+    "endDate": "2026-10-30T00:00:00",
+    "openingHours": [
+     {
+      "dayOfWeek": "Viernes",
+      "startTime": "17:00",
+      "codSesion": 184991,
+      "codigosIndividuales": false
+     }
+    ]
+   }
+  ],
+  "title": "VISITAS TEATRALIZADAS LA HUELLA DEL MUDÉJAR",
+  "destacada": true,
+  "facebook": "https://www.facebook.com/",
+  "population": [
+   {
+    "id": 10,
+    "title": "Adultos"
+   },
+   {
+    "id": 3,
+    "title": "Personas Mayores"
+   },
+   {
+    "id": 6,
+    "title": "Población en general"
+   },
+   {
+    "id": 2,
+    "title": "Jóvenes"
+   }
+  ],
+  "startDate": "2026-09-25T00:00:00",
+  "endDate": "2026-10-30T00:00:00",
+  "visible": "S",
+  "category": [
+   {
+    "id": 17,
+    "title": "Teatro y Artes Escénicas",
+    "imageAlt": "//www.zaragoza.es/cont/paginas/actividades/icon/teatro.png"
+   }
+  ],
+  "creationDate": "2026-08-07T13:55:24",
+  "lastUpdated": "2026-09-04T10:17:22",
+  "geometry": {
+   "type": "Point",
+   "coordinates": [
+    -0.8866330664021655,
+    41.65596800076973
+   ]
+  },
+  "daysLeft": 3,
+  "type": "Visitas Guiadas",
+  "location": "Iglesia de San Pablo "
+ },
+ {
+  "id": 316069,
+  "subEvent": [
+   {
+    "id": 315621,
+    "location": {
+     "id": 30296,
+     "title": "Torre Outlet",
+     "streetAddress": "Autovía de Logroño,  Km. 6,5",
+     "postalCode": "50011",
+     "junta": "Junta Vecinal Monzalbarba",
+     "addressLocality": "Zaragoza",
+     "addressRegion": "Zaragoza",
+     "addressCountry": "España",
+     "telephone": "876 00 70 20",
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       -0.9686777281929032,
+       41.684511394050396
+      ]
+     }
+    },
+    "comment": "<p>Cines ARTESIETE</p>\n",
+    "startDate": "2026-10-25T00:00:00",
+    "endDate": "2026-10-27T00:00:00",
+    "openingHours": [
+     {
+      "dayOfWeek": "Martes",
+      "startTime": "17:00",
+      "codSesion": 192227,
+      "codigosIndividuales": false
+     },
+     {
+      "dayOfWeek": "Domingo",
+      "startTime": "21:30",
+      "codSesion": 192226,
+      "codigosIndividuales": false
+     },
+     {
+      "dayOfWeek": "Lunes",
+      "startTime": "21:15",
+      "codSesion": 192228,
+      "codigosIndividuales": false
+     }
+    ]
+   }
+  ],
+  "title": "CIERZO Y SED, EL CORAZON DE IBERIA",
+  "destacada": true,
+  "startDate": "2026-10-25T00:00:00",
+  "endDate": "2026-10-27T00:00:00",
+  "visible": "S",
+  "category": [
+   {
+    "id": 15,
+    "title": "Cine",
+    "imageAlt": "//www.zaragoza.es/cont/paginas/actividades/icon/cine.png"
+   }
+  ],
+  "creationDate": "2026-10-22T10:22:52",
+  "lastUpdated": "2026-10-22T10:26:23",
+  "priceComment": "<p>En las taquillas de ARTESIETE o a trav&eacute;s de su web.</p>\n",
+  "geometry": {
+   "type": "Point",
+   "coordinates": [
+    -0.9686777281929032,
+    41.684511394050396
+   ]
+  },
+  "daysLeft": 0,
+  "type": "Exhibición, proyección, competición",
+  "location": "Torre Outlet"
+ },
+ {
+  "id": 316268,
+  "subEvent": [
+   {
+    "id": 315835,
+    "location": {
+     "id": 5245,
+     "title": "Lugar por determinar"
+    },
+    "startDate": "2026-10-28T00:00:00",
+    "endDate": "2027-06-30T00:00:00"
+   }
+  ],
+  "title": "Fútbol sala Corona 26-27",
+  "formaPago": 1,
+  "destacada": true,
+  "facebook": "https://www.facebook.com/actividades.coronadearagon",
+  "population": [
+   {
+    "id": 2,
+    "title": "Jóvenes"
+   }
+  ],
+  "startDate": "2026-10-28T00:00:00",
+  "endDate": "2027-06-30T00:00:00",
+  "visible": "S",
+  "category": [
+   {
+    "id": 25,
+    "title": "Deporte",
+    "imageAlt": "//www.zaragoza.es/cont/paginas/actividades/icon/deporte.png"
+   }
+  ],
+  "creationDate": "2026-10-26T20:46:59",
+  "lastUpdated": "2026-10-27T09:44:11",
+  "priceComment": "<p>15&euro;/mes</p>\n",
+  "daysLeft": 1,
+  "type": "Cursos y talleres",
+  "location": "",
+  "minAge": 12,
+  "maxAge": 16,
+  "tipoActividad": 9
+ }
+]
