@@ -27,24 +27,18 @@ on:
         type: choice
         options: [cultura-galicia, vidmar-f1, ambas, ninguna]
         default: cultura-galicia
-      deportes:
-        description: 'Recogida deportiva manual adicional'
-        type: choice
-        options: [ninguno, feb, tenis, feb-y-tenis]
-        default: ninguno
       cultura:
         description: 'Agendas culturales adicionales (recogida completa paginada)'
         type: choice
         options: [ninguna, madrid, kulturklik, madrid-y-kulturklik]
         default: ninguna
-      temporada_feb:
-        description: 'Año inicial explícito de la temporada FEB'
+      colecciones:
+        description: 'Deportes: colecciones separadas por comas (vacío = todas; p. ej. wrc,nba,feb-endesa)'
         required: false
-      competicion_feb:
-        description: 'FEB: 4 LF Endesa, 1 Primera FEB, 67 LF Challenge'
-        type: choice
-        options: ['4', '1', '67']
-        default: '4'
+      forzar:
+        description: 'Deportes: revisar ya, sin esperar su cadencia (requiere colecciones)'
+        type: boolean
+        default: false
       publicar:
         description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid y Kulturklik)'
         type: boolean
@@ -60,7 +54,7 @@ concurrency:
 jobs:
   recoger:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       CALENDARIO_TURSO_URL: ${{ secrets.CALENDARIO_TURSO_URL }}
       CALENDARIO_TURSO_TOKEN: ${{ secrets.CALENDARIO_TURSO_TOKEN }}
@@ -83,9 +77,6 @@ jobs:
           IDIOMA: ${{ inputs.idioma || 'gl' }}
           FUENTE: ${{ inputs.fuente || 'cultura-galicia' }}
           CULTURA: ${{ inputs.cultura || 'madrid-y-kulturklik' }}
-          DEPORTES: ${{ inputs.deportes || 'ninguno' }}
-          TEMPORADA_FEB: ${{ inputs.temporada_feb }}
-          COMPETICION_FEB: ${{ inputs.competicion_feb || '4' }}
         run: |
           if [ "$OPERACION" = reclasificar ]; then
             python calendario.py --turso --reclasificar
@@ -112,29 +103,30 @@ jobs:
             if [ "$CULTURA" != ninguna ]; then
               if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
               if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
-            fi
-            if [ "$DEPORTES" = feb ] || [ "$DEPORTES" = feb-y-tenis ]; then
-              args+=(--recoger-deporte feb --temporada-feb "$TEMPORADA_FEB" --competicion-feb "$COMPETICION_FEB")
-            fi
-            if [ "$DEPORTES" = tenis ] || [ "$DEPORTES" = feb-y-tenis ]; then
-              args+=(--recoger-deporte espn-atp --recoger-deporte espn-wta --fecha-deporte "${INICIO:-$(date -u +%F)}")
-            fi
-            if [ "$CULTURA" != ninguna ] || [ "$DEPORTES" != ninguno ]; then
               python calendario.py "${args[@]}"
             fi
           fi
           python calendario.py --turso --preparar-nucleo
       - name: Revisar temporadas y descubrir los próximos calendarios deportivos
         id: temporadas
-        # Manual hasta medir filas y peticiones de una pasada real; después, al cron.
-        if: inputs.operacion == 'deportes'
+        # Cada colección decide si le toca (cadencia, reintentos y presupuesto en
+        # agenda/temporadas.py). Un cron diario cabe en el presupuesto de ESPN: 3
+        # colecciones por fecha × 14 días = 42 de 64 peticiones.
+        if: github.event_name == 'schedule' || inputs.operacion == 'deportes'
         continue-on-error: true
-        run: python -m agenda.operacion --turso --ejecutar --descubrir
+        env:
+          COLECCIONES: ${{ inputs.colecciones }}
+          FORZAR: ${{ inputs.forzar }}
+        run: |
+          args=(--turso --ejecutar --descubrir)
+          for c in ${COLECCIONES//,/ }; do args+=(--coleccion "$c"); done
+          if [ "$FORZAR" = true ]; then args+=(--forzar); fi
+          python -m agenda.operacion "${args[@]}"
       - name: Revisar clasificación y relaciones de todas las fuentes guardadas
         run: python -m agenda.revision --turso
       - name: Validar y publicar la lectura desde Turso
         env:
-          PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' }}
+          PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' || inputs.operacion == 'deportes' }}
           FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik' }}
           LECTURA_SQL: ${{ vars.CALENDARIO_LECTURA_SQL || 'false' }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}

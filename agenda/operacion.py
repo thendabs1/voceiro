@@ -281,7 +281,11 @@ def descubrir(repo, coleccion, ahora, *, proveedor=None, year=None, fecha=None, 
     except ErrorTurso:
         raise
     except Exception as error:
-        repo.terminar_descubrimiento(pasada, ahora, error=error)
+        # Buscar la temporada siguiente antes de que se publique es lo normal, no un fallo.
+        repo.terminar_descubrimiento(pasada, ahora, error=error, siguiente=bool(conocidas))
+        if conocidas:
+            return None, {'coleccion': coleccion, 'estado': 'omitida',
+                          'motivo': 'temporada siguiente no disponible', 'error': str(error)}
         return None, {'coleccion': coleccion, 'estado': 'fallida', 'error': str(error)}
     repo.terminar_descubrimiento(pasada, ahora, referencia=alcance['referencia'])
     existente = next((t for t in conocidas if t['referencia'] == alcance['referencia']), None)
@@ -296,7 +300,7 @@ def descubrir(repo, coleccion, ahora, *, proveedor=None, year=None, fecha=None, 
                                  precargada=(pagina, url), forzar=True)
 
 
-def ejecutar(repo, ahora, *, colecciones=None, descubrimiento=False):
+def ejecutar(repo, ahora, *, colecciones=None, descubrimiento=False, forzar=False):
     seleccion = set(colecciones or temporadas.CATALOGO)
     if seleccion - temporadas.CATALOGO.keys():
         raise ValueError('Colección desconocida')
@@ -304,7 +308,7 @@ def ejecutar(repo, ahora, *, colecciones=None, descubrimiento=False):
     # El cron no contiene años fijos. Descubrir y revisar tienen relojes propios.
     if descubrimiento:
         for coleccion in sorted(seleccion):
-            t, resultado = descubrir(repo, coleccion, ahora)
+            t, resultado = descubrir(repo, coleccion, ahora, forzar=forzar)
             if resultado:
                 salida.append(resultado)
             if t:
@@ -312,7 +316,7 @@ def ejecutar(repo, ahora, *, colecciones=None, descubrimiento=False):
     for t in repo.temporadas():
         if t['coleccion'] in seleccion and t['id'] not in tratadas:
             t = _principal_actual(repo, t, ahora)
-            salida.append(ejecutar_temporada(repo, t, ahora))
+            salida.append(ejecutar_temporada(repo, t, ahora, forzar=forzar))
     return salida
 
 
@@ -364,6 +368,8 @@ def main(argv=None):
     accion.add_argument('--contrastar', metavar='ID')
     p.add_argument('--descubrir', action='store_true')
     p.add_argument('--coleccion', action='append', choices=temporadas.CATALOGO)
+    p.add_argument('--forzar', action='store_true',
+                   help='Revisar sin esperar su cadencia (no salta el enfriamiento de un error de temporada)')
     p.add_argument('--proveedor')
     p.add_argument('--fecha')
     p.add_argument('--motivo')
@@ -396,7 +402,10 @@ def main(argv=None):
             salida = ejecutar_temporada(repo, repo.obtener(args.contrastar), ahora,
                 proveedor=args.proveedor, contraste=True, fechas=[args.fecha] if args.fecha else None, forzar=True)
         else:
-            salida = ejecutar(repo, ahora, colecciones=args.coleccion, descubrimiento=args.descubrir)
+            if args.forzar and not args.coleccion:
+                p.error('--forzar requiere --coleccion')
+            salida = ejecutar(repo, ahora, colecciones=args.coleccion, descubrimiento=args.descubrir,
+                              forzar=args.forzar)
     print(json.dumps(salida, ensure_ascii=False, indent=2))
     resultados = salida if isinstance(salida, list) else [salida]
     if (args.ejecutar or args.contrastar) and any(r and r.get('estado') == 'fallida' for r in resultados):
