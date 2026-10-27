@@ -18,7 +18,8 @@ def registrar(n, fuente, ids, observado, url, *, aceptar_caida=False):
 
     Los IDs proceden de todas las páginas, antes de filtrar la ventana temporal.
     La ausencia no modifica las observaciones de la cita ni declara cancelación.
-    Una caída mayor que CAIDA_MAXIMA exige aceptar_caida.
+    Una caída mayor que CAIDA_MAXIMA exige aceptar_caida; si el total se
+    mantiene pero desaparece esa proporción de IDs anteriores, solo avisa.
     """
     if (fuente not in TIPOS or not isinstance(ids, (list, tuple))
             or any(not isinstance(i, str) or not i for i in ids) or len(set(ids)) != len(ids)):
@@ -30,9 +31,16 @@ def registrar(n, fuente, ids, observado, url, *, aceptar_caida=False):
     documento = c.n['documentos'][previa['documento']] if previa else None
     if previa and momento < tiempos.instante(previa['comprobado']):
         raise ValueError('Respuesta completa anterior a la última comprobación')
-    if documento and not aceptar_caida and len(ids) < len(documento['contenido']['ids']) * (1 - CAIDA_MAXIMA):
-        raise InventarioDesplomado(f'Inventario {fuente}: {len(documento["contenido"]["ids"])} → {len(ids)} '
-                                   'citas; se conserva el anterior')
+    if documento and not aceptar_caida:
+        anteriores = set(documento['contenido']['ids'])
+        if len(ids) < len(anteriores) * (1 - CAIDA_MAXIMA):
+            raise InventarioDesplomado(f'Inventario {fuente}: {len(anteriores)} → {len(ids)} '
+                                       'citas; se conserva el anterior')
+        # Sustituir muchos IDs no baja el total: ¿cambió el proveedor sus identidades?
+        perdidos = len(anteriores - set(ids))
+        if perdidos > len(anteriores) * CAIDA_MAXIMA:
+            print(f'::warning::Inventario {fuente}: faltan {perdidos} de {len(anteriores)} citas anteriores '
+                  'aunque el total se mantiene; revisar si el proveedor cambió identidades')
     if (documento is None or documento['url'] != url
             or {k: documento['contenido'][k] for k in contenido} != contenido):
         did = c.documento(fuente, {**contenido, 'observado': observado}, url, 'inventario_cultural_completo')

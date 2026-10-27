@@ -1,6 +1,8 @@
 """Agendas culturales y relaciones públicas: muestras retenidas, sin red."""
 
+from contextlib import redirect_stdout
 from copy import deepcopy
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -267,6 +269,11 @@ class RetiradaCultural(unittest.TestCase):
                 self.assertEqual(repetida['documentos'], recuperada['documentos'])
                 with self.assertRaisesRegex(ValueError, 'anterior'):
                     presencia.registrar(repetida, modulo.FUENTE, [], AHORA, modulo.URL)
+                # Mismo total con la mitad de IDs nuevos: se acredita, pero avisa.
+                otros = ids[:len(ids) // 2] + [f'nuevo-{i}' for i in range(len(ids) - len(ids) // 2)]
+                with redirect_stdout(io.StringIO()) as salida:
+                    presencia.registrar(repetida, modulo.FUENTE, otros, '2026-10-29T12:00:00+01:00', modulo.URL)
+                self.assertIn('::warning::', salida.getvalue())
 
     def test_cli_inventario_fuera_de_ventana_reapertura_y_fallo_no_retirado(self):
         with tempfile.TemporaryDirectory() as tmp:
