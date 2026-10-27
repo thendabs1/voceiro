@@ -86,7 +86,7 @@ lleva, así que nada cambia hasta que alguno los declare.
 | --- | --- | --- |
 | `clase` | Naturaleza del emisor: `medio` (por defecto), `club`, `web_aficion`, `federacion`, `administracion`, `universidad`, `institucion_cultural`, `asociacion`, `colegio_profesional`, `blog`, `newsletter` | `type` sigue siendo el formato y `sector` la especialidad; la clase no es un sector. |
 | `sede` | Lista de `{estado, territorio, funcion?, evidencias}`; `funcion` es `editorial` (por defecto) o `social` | Dónde está el emisor. Se publica con papel `sede`; **nunca** genera cobertura ni localiza noticias. |
-| `cobertura` | `{estado, territorios, candidatos?, evidencias}` | Varios destinos independientes. Papel `cobertura_editorial`. |
+| `cobertura` | `{estado, territorios, candidatos?, evidencias}` | Varios destinos independientes, **como máximo a provincia** (`pais`, `autonomia`, `provincia`): bajar a ciudad o comarca no es fiable. Papel `cobertura_editorial`. |
 
 `estado` es `resuelto`, `pendiente` o `conflicto`. Resuelto exige identidad
 y evidencias; en los otros dos la identidad queda vacía y, si se conoce, se
@@ -97,7 +97,10 @@ anota como `candidatos`. Precedencia:
 3. `cobertura` pendiente o en conflicto: no publica cobertura y **no reactiva** la heredada.
 4. La cobertura de una edición o sección no se propaga a todos los artículos del medio.
 
-El país del catálogo (`pais_catalogo`) sigue aparte. Una identidad que no
+La estructura (categoría, subcategoría) del medio la da `medios.categoria_de`;
+el literal de grupo («Regional · Galicia») se deriva de ella y no cambia, porque
+los modos guardados lo usan como identidad. El país del catálogo
+(`pais_catalogo`) sigue aparte. Una identidad que no
 existe en el catálogo territorial no se publica; `problemas_territoriales`
 la señala y `problemas_forma_emisor` (en `medios.py`) comprueba la forma.
 Ediciones, secciones y canales como entidades hijas, y la activación de

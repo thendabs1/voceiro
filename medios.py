@@ -1166,18 +1166,26 @@ def google_news_url(domain, lang='es', extra_q=None):
         f"q={quote_plus(q)}&hl={hl}&gl={gl}&ceid={ceid}"
     )
 
-def _derivar_grupo(m):
-    """Deriva el nombre del grupo a partir de sector y ámbito."""
+def categoria_de(m):
+    """(categoría, subcategoría) estructuradas; la subcategoría puede ser None.
+    Es la única fuente del literal de grupo, que se conserva tal cual porque los
+    modos guardados lo usan como identidad."""
     s = m['sector']; a = m['ambito']
     if s != 'generalista':
-        return SECTOR_DISPLAY.get(s, s.replace('-', ' ').title())
+        return SECTOR_DISPLAY.get(s, s.replace('-', ' ').title()), None
     if a == 'nacional':
-        return 'Nacional'
+        return 'Nacional', None
     if a == 'regional':
-        return f"Regional · {REGION_DISPLAY.get(m['region'], m['region'])}"
+        return 'Regional', REGION_DISPLAY.get(m['region'], m['region'])
     if a == 'internacional':
-        return f"Internacional · {COUNTRY_DISPLAY.get(m['pais'], m['pais'])}"
-    return 'Otros'
+        return 'Internacional', COUNTRY_DISPLAY.get(m['pais'], m['pais'])
+    return 'Otros', None
+
+
+def _derivar_grupo(m):
+    """Deriva el nombre del grupo («Categoría · Subcategoría») a partir de categoria_de."""
+    categoria, sub = categoria_de(m)
+    return f"{categoria} · {sub}" if sub else categoria
 
 
 def todos_los_medios():

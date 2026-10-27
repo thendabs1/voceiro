@@ -81,6 +81,11 @@ def resolver(sistema, codigo):
     return cargar().resolver(sistema, codigo)
 
 
+# La cobertura de un medio llega como mucho a provincia: bajar a ciudad o comarca
+# no es fiable (ver relacionador.md). La sede de un emisor sí puede ser municipal.
+NIVELES_COBERTURA = ('pais', 'autonomia', 'provincia')
+
+
 def sedes_medio(medio):
     """Dónde está el emisor. Nunca localiza ni cubre; es una relación aparte.
     Solo las sedes `resueltas`: pendiente o en conflicto no publican nada."""
@@ -97,7 +102,7 @@ def cobertura_medio(medio):
     if explicita is not None:
         ids = explicita.get('territorios') if explicita.get('estado') == 'resuelto' else []
         return [{'territorio': t, 'papel': 'cobertura_editorial'}
-                for t in dict.fromkeys(ids or []) if cargar().territorio(t)]
+                for t in dict.fromkeys(ids or []) if _nivel(t) in NIVELES_COBERTURA]
     if medio.get('region'):
         territorio = resolver('medios:region', medio['region'])
     elif medio.get('ambito') == 'nacional' and not medio.get('pais'):
@@ -116,9 +121,17 @@ def territorios_medio(medio):
     return relaciones + sedes_medio(medio)
 
 
+def _nivel(identidad):
+    dato = cargar().territorio(identidad) if isinstance(identidad, str) else None
+    return dato['tipo'] if dato else None
+
+
 def problemas_territoriales(medio):
-    """Identidades de `sede`/`cobertura` que no existen en el catálogo común."""
+    """Identidades de `sede`/`cobertura` inexistentes, y coberturas por debajo de provincia."""
     ids = [s.get('territorio') for s in medio.get('sede') or []]
-    ids += (medio.get('cobertura') or {}).get('territorios') or []
-    return [f"{medio['d']}: territorio desconocido {t!r}"
-            for t in ids if t and not cargar().territorio(t)]
+    cobertura = (medio.get('cobertura') or {}).get('territorios') or []
+    problemas = [f"{medio['d']}: territorio desconocido {t!r}"
+                 for t in ids + cobertura if t and not _nivel(t)]
+    problemas += [f"{medio['d']}: cobertura en {_nivel(t)} {t!r}; el máximo detalle es provincia"
+                  for t in cobertura if _nivel(t) and _nivel(t) not in NIVELES_COBERTURA]
+    return problemas
