@@ -138,14 +138,8 @@ jobs:
           for c in ${COLECCIONES//,/ }; do args+=(--coleccion "$c"); done
           if [ "$FORZAR" = true ]; then args+=(--forzar); fi
           python -m agenda.operacion "${args[@]}"
-      - name: Revisar clasificación y relaciones de todas las fuentes guardadas
-        env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: python -m agenda.revision --turso
-      - name: Validar y publicar la lectura desde Turso
+      - name: Revisar todas las fuentes guardadas, validar y publicar la lectura desde Turso
+        # Una sola carga del núcleo para el informe y la publicación.
         env:
           PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' || inputs.operacion == 'deportes' }}
           FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik,zaragoza' }}
@@ -155,7 +149,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
-          args=(--turso)
+          args=(--turso --revisar)
           if [ "$PUBLICAR" = true ]; then args+=(--fuentes "$FUENTES_PUBLICAS" --fuentes-control --publicar); fi
           if [ "$PUBLICAR" = true ] && [ "$LECTURA_SQL" = true ]; then args+=(--lectura-sql); fi
           python -m agenda.publicacion "${args[@]}"

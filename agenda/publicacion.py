@@ -329,6 +329,8 @@ def main(argv=None):
     ap.add_argument('--fuentes-control', action='store_true',
                     help='Añadir los principales deportivos con recogida validada y su cobertura')
     ap.add_argument('--publicar', action='store_true')
+    ap.add_argument('--revisar', action='store_true',
+                    help='Imprimir antes el informe de agenda.revision de todas las fuentes, con la misma carga')
     ap.add_argument('--lectura-sql', action='store_true',
                     help='Preparar y publicar la proyección indexada en el mismo Turso (requiere --fuentes)')
     args = ap.parse_args(argv)
@@ -346,6 +348,12 @@ def main(argv=None):
     else:
         with open(args.entrada, encoding='utf-8') as archivo:
             n = json.load(archivo)
+    from shared.territorios.limites import cargar as cargar_limites
+    limites = cargar_limites()
+    if args.revisar:
+        # Proyección propia de todas las fuentes: filtrar la publicable no la sustituye.
+        from .revision import revisar
+        print(json.dumps(revisar(n, None, limites), ensure_ascii=False, indent=2))
     control = None
     fuentes = None if args.fuentes is None else [f for f in args.fuentes.split(',') if f]
     if args.fuentes_control:
@@ -354,8 +362,7 @@ def main(argv=None):
         repo.inicializar()
         control = repo.publico()
         fuentes = sorted(set(fuentes) | (control['eventos'].keys() & n['fuentes'].keys()))
-    from shared.territorios.limites import cargar as cargar_limites
-    datos = proyectar(n, fuentes, control=control, limites_municipales=cargar_limites())
+    datos = proyectar(n, fuentes, control=control, limites_municipales=limites)
     sin_limites = sorted({p for e in datos['entidades'].values() for r in e.get('ubicacion_resoluciones', ())
                           if r['motivo'] == 'limites_no_disponibles' for p in r['provincias']})
     if sin_limites and (args.publicar or args.lectura_sql):

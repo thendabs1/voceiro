@@ -222,7 +222,8 @@ descubrimiento; publica), `reclasificar`, `preparar-nucleo` y `publicar`. El
 cron diario hace `recoger` y `deportes`. Para revisar ya una colección sin
 esperar su cadencia: `deportes` con `colecciones` (p. ej. `wrc,nba`) y
 `forzar`; no salta la espera tras un error de temporada. Cada pasada revisa
-las fuentes guardadas con `python -m agenda.revision --turso`, sin escribir.
+las fuentes guardadas (`python -m agenda.publicacion --turso --revisar`, el
+mismo informe que `agenda.revision`) con la carga que usa para publicar.
 
 ```sh
 # Cultura en Turso (ventana inclusiva, 31 días por defecto, máximo 91).
