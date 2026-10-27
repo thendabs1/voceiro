@@ -18,6 +18,15 @@ export const AMBITOS = {
   atp: { codigo: 'atp', noticias: ['ATP'] },
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
+  motogp: { codigo: 'motogp', noticias: ['MotoGP'] },
+  wrc: { codigo: 'wrc', noticias: ['WRC', 'Mundial de Rallies'] },
+  primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'] },
+  segunda: { codigo: 'segunda', noticias: ['Segunda División', 'LaLiga Hypermotion'] },
+  nba: { codigo: 'nba', noticias: ['NBA'] },
+  wnba: { codigo: 'wnba', noticias: ['WNBA'] },
+  'feb-endesa': { codigo: 'feb-endesa', noticias: ['Liga Femenina Endesa'] },
+  'feb-primera': { codigo: 'feb-primera', noticias: ['Primera FEB'] },
+  'feb-challenge': { codigo: 'feb-challenge', noticias: ['Liga Femenina Challenge'] },
 };
 // Resultados y clasificaciones son consultas puntuales, no parte del calendario.
 const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario', noticias: 'noticias' };

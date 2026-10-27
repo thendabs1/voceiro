@@ -31,6 +31,8 @@ test('órdenes de deporte, circuito y contenido conservan filtros, comillas y te
   assert.deepEqual(orden('f1:clasificación').desconocidos, ['f1:clasificación']);
   assert.equal(orden('resultados:tenis'), null);
   assert.deepEqual(orden('circuito:"atp,wta"').circuitos, ['atp','wta']);
+  assert.deepEqual(orden('circuito:primera,feb-endesa,wrc').circuitos, ['primera','feb-endesa','wrc']);
+  assert.deepEqual(orden('motogp: nba:').ambitos, ['motogp','nba']);
   assert.equal(orden('"tenis:" Wimbledon'), null);
   assert.equal(orden('tenis Wimbledon'), null);
   assert.deepEqual(orden('calendario:desconocido').desconocidos, ['desconocido']);

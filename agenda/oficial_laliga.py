@@ -184,7 +184,8 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
     year, liga, paginas = validar(pagina, temporada, competicion)
     slug, codigo, nombre = _competicion(liga)
     a = deporte.Agenda(anterior, 'laliga', 'LALIGA oficial', URL, 'futbol', observado, bool(url))
-    campeonato = a.grupo('competition_slug', codigo, 'competicion', nombre, codigo=codigo)
+    # La identidad sigue siendo el código de LaLiga; la consulta usa el nombre de colección.
+    campeonato = a.grupo('competition_slug', codigo, 'competicion', nombre, codigo=liga)
     edicion = a.grupo('temporada', year, 'edicion', year + '/' + str(int(year) + 1),
                      contexto={'competition': codigo}, padre=campeonato, relacion='es_edicion_de')
     for p in paginas:

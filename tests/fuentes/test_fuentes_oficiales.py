@@ -224,6 +224,8 @@ class LaLigaOficial(unittest.TestCase):
                 self.assertFalse(n['resultados'])
                 self.assertFalse(n['clasificaciones'])
                 self.assertEqual(len(n['participaciones']), 4)
+                # La consulta usa el nombre de colección; la identidad, el código de LaLiga.
+                self.assertEqual({c for e in p['entidades'].values() for c in e['codigos']}, {liga})
 
     def test_marcador_temporal_no_confirma_dia_y_no_acredita_fin_temporada(self):
         p = laliga('laliga-primera-ultima', 'primera', 38)

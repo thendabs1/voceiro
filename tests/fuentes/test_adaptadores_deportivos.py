@@ -365,6 +365,10 @@ class PersistenciaYTransporte(unittest.TestCase):
         self.assertNotIn('fragmentos', pagina)
         self.assertNotIn('clasificacion', pagina)
         self.assertTrue(all('marcador_resultados' not in p for p in pagina['partidos']))
+        # Mismo vocabulario que el control de temporadas para filtrar por circuito.
+        n = deportes.importar(None, 'feb-endesa', pagina, OBSERVADO, 'https://baloncestoenvivo.feb.es/')
+        codigos = {c for e in publicacion.proyectar(n)['entidades'].values() for c in e['codigos']}
+        self.assertEqual(codigos, {'feb-endesa'})
 
 
 if __name__ == '__main__':

@@ -11,6 +11,8 @@ from . import nucleo, tiempos
 
 
 FUENTE = 'feb'
+# Código de consulta por competición: el nombre de colección del control de temporadas.
+CODIGOS = {'4': 'feb-endesa', '1': 'feb-primera', '67': 'feb-challenge'}
 FUENTES = {FUENTE: {'nombre': 'Federación Española de Baloncesto',
     'url': 'https://baloncestoenvivo.feb.es/', 'atribucion': 'FEB', 'licencia': None,
     'condiciones': 'Muestra de investigación; recogida sistemática y republicación pendientes',
@@ -121,7 +123,7 @@ def importar_agenda(anterior, muestra, observado):
     deporte.temporada(t['id'])
     a = deporte.Agenda(anterior, FUENTE, FUENTES[FUENTE]['nombre'], FUENTES[FUENTE]['url'],
                        'baloncesto', observado, muestra.get('modo') in ('recogida_html', 'agenda_html'))
-    competicion = a.grupo('competicion', g['id'], 'competicion', g.get('nombre'))
+    competicion = a.grupo('competicion', g['id'], 'competicion', g.get('nombre'), codigo=CODIGOS[g['id']])
     edicion = a.grupo('temporada', t['id'], 'edicion', t.get('nombre'), contexto={'g': g['id']},
                      padre=competicion, relacion='es_edicion_de')
     fase = a.grupo('fase', f['id'], 'fase', f.get('nombre'),
