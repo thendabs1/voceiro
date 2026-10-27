@@ -1,6 +1,6 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=b6b63a5e98';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js?v=b6b63a5e98';
+import { palabrasDe } from '../busqueda/texto.js?v=95aabcc51b';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js?v=95aabcc51b';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -18,13 +18,15 @@ export function prepararLectura(datos) {
   // actividades largas cambiarían en cada publicación sin cambiar nada.
   const mes = (dia, n) => { const d = new Date(dia.slice(0, 8) + '01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 10); };
   const desdeTramos = mes(desde, 0), hastaTramos = mes(hasta, 1);
-  const eventos = [], facetas = [], tramos = [], entidades = Object.entries(datos.entidades);
+  // Las resoluciones de lugares y territorios citan su origen, también con «comprobado».
+  const limpias = sinComprobado(datos.entidades);
+  const eventos = [], facetas = [], tramos = [], entidades = Object.entries(limpias);
   let evaluaciones = 0;
   const texto = s => ' ' + palabrasDe(s).map(p => p.t).join(' ') + ' ';
   for (const original of datos.eventos) {
-    const e = sinComprobado(original), objetivos = e.objetivos.map(k => datos.entidades[k]);
+    const e = sinComprobado(original), objetivos = e.objetivos.map(k => limpias[k]);
     if (objetivos.some(o => !o)) throw new Error('Objetivo ausente');
-    const detalle = { evento: e, entidades: Object.fromEntries(e.objetivos.map(k => [k, datos.entidades[k]])) };
+    const detalle = { evento: e, entidades: Object.fromEntries(e.objetivos.map(k => [k, limpias[k]])) };
     const tarjeta = Object.fromEntries(['id', 'clase', 'nombres', 'programacion', 'territorios'].map(k => [k, e[k]]));
     // Lugar compacto para la lista; dirección, coordenadas y procedencia van en el detalle.
     const lugar = e.lugar?.valor;
