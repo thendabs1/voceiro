@@ -4,7 +4,6 @@ import json
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import date, timedelta
-from urllib.parse import urlencode
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -80,58 +79,28 @@ def feb(temporada, competicion='4', *, solo_agenda=False):
 def cultura(fuente, inicio=None, fin=None):
     """Pasada completa paginada antes de importar; nunca guardar un prefijo.
 
-    Máximo 40 páginas. Un cambio de total, repetición o página vacía obliga a
-    repetir la recogida; la respuesta anterior sigue disponible en Turso/R2.
+    Devuelve las filas de la ventana, la URL y el inventario completo de IDs.
+    Un cambio de total, repetición o página vacía obliga a repetir la recogida;
+    la respuesta anterior sigue disponible en Turso/R2.
     """
-    from . import madrid, kulturklik
-    if fuente not in ('madrid', 'kulturklik'):
+    from .familias import FAMILIAS, recorrer
+    from .registro import CULTURA
+    if fuente not in CULTURA:
         raise ValueError('Agenda cultural desconocida')
+    m = CULTURA[fuente]
     desde = date.fromisoformat(inicio) if inicio else date.today()
     hasta = date.fromisoformat(fin) if fin else desde + timedelta(days=30)
     if not 0 <= (hasta - desde).days <= 90:
         raise ValueError('La ventana cultural debe cubrir entre 1 y 91 días')
-    base = madrid.URL if fuente == 'madrid' else kulturklik.URL + '/upcoming'
-    filas, vistos, total = [], set(), None
-    for pagina in range(1, 41):
-        params = {'limit': 500, 'offset': len(filas), 'sort': '_id asc'} if fuente == 'madrid' else {
-            '_elements': 500, '_page': pagina}
-        url = base + ('&' if '?' in base else '?') + urlencode(params)
-        dato = json.loads(descargar(url))
-        if fuente == 'madrid':
-            if dato.get('success') is not True:
-                raise ValueError('CKAN Madrid devolvió un error')
-            resultado = dato['result']
-            items, cuenta = resultado['records'], resultado['total']
-            campo = 'ID-EVENTO'
-        else:
-            items, cuenta = dato['items'], dato['totalItems']
-            campo = 'id'
-            if dato.get('currentPage') != pagina:
-                raise ValueError('Página Kulturklik inesperada')
-        if type(cuenta) is not int or cuenta < 0 or not isinstance(items, list):
-            raise ValueError('Paginación cultural inválida')
-        if total is None:
-            total = cuenta
-        if cuenta != total:
-            raise ValueError('El total cambió durante la recogida cultural')
-        for item in items:
-            identidad = str(item.get(campo) or '')
-            if not identidad or identidad in vistos:
-                raise ValueError('Identidad repetida o ausente entre páginas culturales')
-            vistos.add(identidad)
-            filas.append(item)
-        if len(filas) == total:
-            def en_ventana(f):
-                a, b = (('FECHA', 'FECHA-FIN') if fuente == 'madrid' else ('startDate', 'endDate'))
-                primero, ultimo = f.get(a), f.get(b) or f.get(a)
-                if not primero:
-                    return True  # Fecha pendiente, sin inventarla.
-                return date.fromisoformat(primero[:10]) <= hasta and date.fromisoformat(ultimo[:10]) >= desde
-            seleccion = [f for f in filas if en_ventana(f)]
-            print(f'[agenda] {fuente}: {len(filas)} registros comprobados; {len(seleccion)} en {desde} → {hasta}')
-            # El inventario completo acredita ausencias; la ventana solo decide
-            # qué contenidos se actualizan. Nunca deducir ausencias de seleccion.
-            return seleccion, base, sorted(vistos)
-        if not items or len(filas) > total:
-            raise ValueError('Recogida cultural incompleta')
-    raise ValueError('La agenda cultural supera el máximo de 40 páginas')
+    filas, ids = recorrer(descargar, m.URL_RECOGIDA, m.CAMPO_ID, FAMILIAS[m.FAMILIA])
+
+    def en_ventana(f):
+        primero, ultimo = f.get(m.FECHAS[0]), f.get(m.FECHAS[1]) or f.get(m.FECHAS[0])
+        if not primero:
+            return True  # Fecha pendiente, sin inventarla.
+        return date.fromisoformat(primero[:10]) <= hasta and date.fromisoformat(ultimo[:10]) >= desde
+    seleccion = [f for f in filas if en_ventana(f)]
+    print(f'[agenda] {fuente}: {len(filas)} registros comprobados; {len(seleccion)} en {desde} → {hasta}')
+    # El inventario completo acredita ausencias; la ventana solo decide
+    # qué contenidos se actualizan. Nunca deducir ausencias de seleccion.
+    return seleccion, m.URL_RECOGIDA, ids

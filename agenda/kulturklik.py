@@ -8,6 +8,9 @@ from . import nucleo, tiempos
 FUENTE = 'kulturklik'
 URL = 'https://api.euskadi.eus/culture/events/v1.0/events'
 CATALOGO = 'https://opendata.euskadi.eus/catalogo/-/kulturklik-agenda-cultural/'
+FAMILIA, URL_RECOGIDA = 'euskadi', URL + '/upcoming'
+CAMPO_ID, TIPO_EXTERNO = 'id', 'event_id'
+FECHAS = ('startDate', 'endDate')
 TEMAS = {1: 'musica', 2: 'teatro', 3: 'exposiciones', 4: 'danza', 9: 'cine'}
 
 

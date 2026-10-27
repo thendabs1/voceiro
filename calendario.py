@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from agenda.cultura_galicia import FUENTES, leer_pagina, normalizar, recoger
 from agenda import almacen, deportes, vidmar_f1
 from agenda.modelo import integrar
+from agenda.registro import CULTURA
 from agenda.clasificacion import aplicar as clasificar
 
 
@@ -32,7 +33,7 @@ def guardar(ruta, calendario):
 
 def operar_nucleo(args):
     from agenda.transicion import ampliar
-    from agenda import feb, espn_tenis, madrid, kulturklik
+    from agenda import feb, espn_tenis
 
     # Las rutas manuales también respetan cierre, presupuesto y enfriamiento.
     # Cada selección deportiva se confirma antes de continuar con otras fuentes.
@@ -76,7 +77,7 @@ def operar_nucleo(args):
             calendario['nucleo'] = deportes.importar(calendario['nucleo'], coleccion,
                 json.loads(Path(ruta).read_text(encoding='utf-8')), observado, temporada=args.temporada_deporte)
         from agenda import presencia, recogida
-        for fuente, modulo in (('madrid', madrid), ('kulturklik', kulturklik)):
+        for fuente, modulo in CULTURA.items():
             for ruta in getattr(args, 'entrada_' + fuente) or []:
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'],
                     json.loads(Path(ruta).read_text(encoding='utf-8')), observado)
@@ -131,9 +132,9 @@ def main(argv=None):
                     help='Importar solo agenda de una de las doce colecciones desde un archivo, sin red')
     ap.add_argument('--entrada-madrid', action='append', help='Lista de registros Madrid guardada, sin red')
     ap.add_argument('--entrada-kulturklik', action='append', help='Lista de eventos Kulturklik guardada, sin red')
-    ap.add_argument('--recoger-cultura', action='append', choices=('madrid', 'kulturklik'),
+    ap.add_argument('--recoger-cultura', action='append', choices=tuple(CULTURA),
                     help='Recogida cultural completa paginada en el núcleo; repetible')
-    ap.add_argument('--aceptar-inventario', action='append', choices=('madrid', 'kulturklik'),
+    ap.add_argument('--aceptar-inventario', action='append', choices=tuple(CULTURA),
                     help='Acreditar ausencias aunque el inventario caiga más del 30 %%; repetible')
     ap.add_argument('--circuito', choices=('atp', 'wta'), help='Circuito de --entrada-tenis')
     ap.add_argument('--recoger-deporte', action='append', choices=(*deportes.COLECCIONES, 'feb'),
