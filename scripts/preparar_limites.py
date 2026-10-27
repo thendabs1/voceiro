@@ -107,9 +107,11 @@ def preparar(carpeta, provincias=None):
         faltan.extend(sorted(esperados - vistos))
         cuerpo = gzip.compress(json.dumps(datos, ensure_ascii=False, separators=(',', ':')).encode(),
                                compresslevel=9, mtime=0)
-        archivo = provincia + '.geojson.gz'
+        huella = hashlib.sha256(cuerpo).hexdigest()
+        # Nombre por contenido: dos revisiones nunca comparten clave en R2.
+        archivo = f'{provincia}-{huella[:16]}.geojson.gz'
         (carpeta / archivo).write_bytes(cuerpo)
-        salida[provincia] = {'archivo': archivo, 'url': url, 'sha256': hashlib.sha256(cuerpo).hexdigest(),
+        salida[provincia] = {'archivo': archivo, 'url': url, 'sha256': huella,
                              'bytes': len(cuerpo), 'municipios': len(vistos), 'caja': caja(datos['features'])}
         print(f'{provincia} {nombre}: {len(vistos)} municipios, {len(cuerpo) // 1024} KB'
               + (f'; faltan {len(esperados - vistos)}' if esperados - vistos else ''), flush=True)
@@ -133,13 +135,16 @@ def main():
     ap.add_argument('--subir', action='store_true', help='Publicar los archivos en R2 (credenciales R2_*)')
     ap.add_argument('--manifiesto', type=Path, default=CARPETA / 'limites.json')
     args = ap.parse_args()
+    if args.provincias and args.manifiesto == CARPETA / 'limites.json':
+        # Un manifiesto parcial haría pasar por «fuera de cobertura» las provincias omitidas.
+        ap.error('--provincias requiere un --manifiesto distinto del oficial')
     args.carpeta.mkdir(parents=True, exist_ok=True)
     comprobado = datetime.now(timezone.utc).isoformat(timespec='seconds')
     provincias, descartados, faltan = preparar(args.carpeta, set(args.provincias.split(',')) if args.provincias else None)
     manifiesto = {'version': 1, 'fuente': 'Instituto Geográfico Nacional · Unidades administrativas INSPIRE (BDDAE)',
                   'licencia': 'CC BY 4.0', 'licencia_url': 'https://www.ign.es/resources/licencia/Condiciones_licenciaUso_IGN.pdf',
                   'servicio': SERVICIO, 'comprobado': comprobado, 'margen_revision_m': 50,
-                  'prefijo_r2': 'territorios/limites/' + comprobado[:10] + '/',
+                  'prefijo_r2': 'territorios/limites/',
                   'provincias': provincias, 'descartados': descartados, 'faltan': faltan}
     if args.subir:
         subir(args.carpeta, manifiesto)

@@ -118,9 +118,11 @@ hace peticiones de geocodificación por visitante.
 Los límites proceden de [geoEuskadi](https://www.geo.euskadi.eus/geoeuskadi/rest/services/U11/AE55J/MapServer/2)
 y del [WFS de IDENA](https://www.navarra.es/es/web/geoportal/idena/servicios).
 Se usan polígonos originales sin simplificar, en longitud/latitud, con huecos
-y recintos separados. Se deja pendiente cualquier punto a menos de 50 metros
-del límite (margen conservador de revisión, no precisión declarada del mapa),
-sin cobertura, con provincia incompatible o con denominación contradictoria.
+y recintos separados. Se deja pendiente un punto con otro municipio a menos de
+50 metros, o fuera de todo recinto pero a menos de 50 metros de uno (margen
+conservador de revisión, no precisión declarada del mapa); la costa o una
+frontera sin recintos cartografiados no ofrecen otro destino. También queda
+pendiente sin cobertura, con provincia incompatible o con denominación contradictoria.
 Los solapes y coordenadas incompatibles no eligen un destino por orden.
 El nombre solo detecta contradicciones: nunca encuentra el municipio.
 
@@ -145,8 +147,8 @@ revisión usa un prefijo con su fecha y no pisa la anterior.
 `limites.py` resuelve punto → municipio cargando solo las provincias cuya caja
 contiene el punto, desde `VOCEIRO_LIMITES` o `~/.cache/voceiro/limites` y, si
 faltan, desde R2 con la huella verificada. Aplica las reglas de `geometria.py`:
-polígonos sin simplificar (redondeo a 1e-7°), pendiente a menos de 50 m de un
-límite, conflicto si dos recintos contienen el punto, nunca el municipio más
+polígonos sin simplificar (redondeo a 1e-7°), pendiente con otro municipio a
+menos de 50 m, conflicto si dos recintos contienen el punto, nunca el municipio más
 cercano. Sin límites disponibles el resultado es `limites_no_disponibles`, y
 publicar con ese estado falla.
 
@@ -154,6 +156,7 @@ La proyección resuelve así los recintos con bloque `coordenadas` (hoy Madrid:
 `LATITUD`/`LONGITUD` declaradas por el Ayuntamiento). El punto se suma a los
 cruces revisados: si coinciden, resuelto; si discrepan, conflicto. Un recinto
 sin correspondencia revisada no bloquea la ubicación que acredita su punto.
-Medido sobre la agenda de Madrid del 27/10/2026: 208 puntos distintos, todos
-en 28079 y ninguno pendiente (1.266 de 1.344 citas; las otras no tienen recinto).
+Medido el 27/10/2026: los 208 puntos distintos de la agenda de Madrid caen en
+28079 (1.266 de 1.344 citas; las otras no tienen recinto) y los 212 de Zaragoza
+en 50297, ninguno pendiente.
 

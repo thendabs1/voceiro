@@ -66,6 +66,9 @@ class LimitesPorProvincia(unittest.TestCase):
         self.assertEqual(r['territorio'], 'es:municipio:20069')
         r = limites.resolver(5, 5)
         self.assertEqual((r['estado'], r['motivo']), ('pendiente', 'fuera_de_cobertura'))
+        # Costa (borde sin vecino): resuelto; justo fuera de ella: pendiente.
+        self.assertEqual(limites.resolver(0.5, 0.9999)['territorio'], 'es:municipio:01059')
+        self.assertEqual(limites.resolver(0.5, 1.0001)['motivo'], 'cerca_del_limite')
 
     def test_recintos_solapados_dan_conflicto(self):
         m, _ = provincias(self.tmp.name, {'01': [('01059', 0, 0, 1), ('01001', 0.4, 0.4, 0.2)]})

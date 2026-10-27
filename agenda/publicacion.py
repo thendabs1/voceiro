@@ -112,7 +112,7 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
             resultado['origen'] = deepcopy(origen)
         resultados.extend(adicionales)
         # Un recinto sin correspondencia no contradice la ubicación que acredita su punto.
-        decisivos = [r for r in resultados if not (r['tipo'] == 'ubicacion' and r['estado'] == 'pendiente'
+        decisivos = [r for r in resultados if not (adicionales and r['estado'] == 'pendiente'
                      and r['motivo'] == 'sin_correspondencia')] or resultados
         ids = {r['territorio'] for r in decisivos if r['estado'] == 'resuelto'}
         estado = ('conflicto' if conflicto or len(ids) > 1 or any(r['estado'] == 'conflicto' for r in decisivos)

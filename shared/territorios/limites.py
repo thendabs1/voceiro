@@ -22,6 +22,9 @@ CACHE = Path.home() / '.cache' / 'voceiro' / 'limites'
 class Limites:
     def __init__(self, manifiesto=None, directorio=None, obtener=None):
         self.m = manifiesto if manifiesto is not None else json.loads(MANIFIESTO.read_text(encoding='utf-8'))
+        esperadas = {c for c, _, _ in json.loads((CARPETA / 'administracion.json').read_text(encoding='utf-8'))['provincias']}
+        if manifiesto is None and set(self.m['provincias']) != esperadas:
+            raise ValueError('Manifiesto de límites incompleto: faltan provincias')
         self.directorio = Path(directorio) if directorio else None
         self.obtener = obtener  # clave R2 → bytes
         self.mapas = {}
@@ -64,10 +67,10 @@ class Limites:
         if any(v is None for v in cargadas.values()):
             return {**resultado, 'motivo': 'limites_no_disponibles',
                     'provincias': sorted(c for c, v in cargadas.items() if v is None)}
-        candidatos, cerca = {}, False
+        candidatos, cercanos = {}, set()
         for codigo, (mapa, features) in cargadas.items():
             r = mapa.resolver(longitud, latitud)
-            cerca = cerca or r['motivo'] == 'cerca_del_limite'
+            cercanos.update('es:municipio:' + c for c in r['cercanos'])
             info = self.m['provincias'][codigo]
             for ine, indices in r['recintos'].items():
                 candidatos.setdefault('es:municipio:' + ine, []).extend(
@@ -77,6 +80,8 @@ class Limites:
                      'margen_revision_m': self.m['margen_revision_m']} for i in indices)
         resultado['candidatos'] = [{'territorio': t, 'evidencias': e} for t, e in sorted(candidatos.items())]
         resultado['evidencias'] = [e for t in sorted(candidatos) for e in candidatos[t]]
+        # Mismo criterio que geometria.py, con los recintos de todas las provincias cercanas.
+        cerca = bool(cercanos - candidatos.keys()) or not candidatos and bool(cercanos)
         if len(candidatos) > 1:
             return {**resultado, 'estado': 'conflicto', 'motivo': 'recintos_solapados'}
         if cerca or not candidatos:
