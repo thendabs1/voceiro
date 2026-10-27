@@ -7,7 +7,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from agenda import almacen, deportes, temporadas
+from agenda import almacen, deportes, operacion, temporadas
 from agenda.control import ConflictoControl, PresupuestoAgotado, Repositorio
 from agenda.transicion import ampliar
 from agenda.turso import Almacen, ConflictoCalendario
@@ -343,6 +343,20 @@ class ControlTurso(ContratoControl, unittest.TestCase):
         self.assertEqual(recuperado.pasadas(t['id'])[0]['estado'], 'completa')
         self.assertEqual([c['unidad'] for c in recuperado.cobertura(t['id'])], [UNIDAD])
         self.assertEqual([e['evento'] for e in recuperado.eventos(t['id'])], [evento])
+
+
+
+class IncidenciasDeRespuesta(unittest.TestCase):
+    def test_programa_desaparecido_entero_cuenta_como_ausente(self):
+        previa = [{'unidad': '2026', 'recurso': 'calendario', 'eventos': ['gp']},
+                  {'unidad': '2026', 'recurso': 'programa:gp', 'eventos': ['s1', 's2']}]
+        nuevas = [{'unidad': '2026', 'recurso': 'calendario', 'eventos': ['gp']}]
+        recibidos = [{'evento': 'gp', 'conflicto': False, 'estado': 'programado', 'inicio': '2026-11-01'}]
+        incidencias = operacion._incidencias(previa, nuevas, recibidos, ['2026'], '2026-10-27T00:00:00Z')
+        self.assertEqual(incidencias, [{'tipo': 'ausentes_en_respuesta', 'unidad': '2026',
+                                        'recurso': 'programa:gp', 'eventos': ['s1', 's2']}])
+        # Una unidad que no se pidió en esta pasada no se compara.
+        self.assertEqual(operacion._incidencias(previa, nuevas, recibidos, ['2027'], '2026-10-27T00:00:00Z'), [])
 
 
 if __name__ == '__main__':

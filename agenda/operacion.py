@@ -90,8 +90,10 @@ def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False):
     por_recurso = {(c['unidad'], c['recurso']): c for c in nuevas}
     recibidos = {e['evento'] for e in eventos}
     for c in previa:
-        nueva = por_recurso.get((c['unidad'], c['recurso']))
-        if c['unidad'] in unidades and nueva is not None:
+        # Un recurso de una unidad pedida que no vuelve (p. ej. todo el programa de un GP)
+        # cuenta como vacío: sus citas faltan igual que si faltaran una a una.
+        nueva = por_recurso.get((c['unidad'], c['recurso'])) or {}
+        if c['unidad'] in unidades:
             ausentes = set(c.get('eventos', [])) - set(nueva.get('eventos', [])) - recibidos
             if ausentes:
                 incidencias.append({'tipo': 'ausentes_en_respuesta', 'unidad': c['unidad'],
