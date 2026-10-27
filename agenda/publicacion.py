@@ -222,6 +222,13 @@ def proyectar(n, fuentes=None, generado=None, control=None):
         agenda = seleccion(k, 'agenda')
         if agenda and agenda.get('valor'):
             eventos[-1]['agenda'] = agenda['valor']
+        # Unión por clave: las traducciones de una misma etiqueta suman nombres.
+        etiquetas = {}
+        for i in propias:
+            for t in observaciones[i]['bloques'].get('etiquetas', ()):
+                etiquetas.setdefault(t['id'], {'id': t['id'], 'nombres': {}})['nombres'].update(t['nombres'])
+        if etiquetas:
+            eventos[-1]['etiquetas'] = [etiquetas[i] for i in sorted(etiquetas)]
     por_id = {e['id']: e for e in eventos}
     sesiones = set()
     for e in eventos:
