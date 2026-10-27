@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from agenda import almacen, kulturklik, madrid, nucleo, recogida, tiempos
+from agenda import almacen, almacen_nucleo, kulturklik, madrid, nucleo, recogida, tiempos
 from agenda.publicacion import proyectar
 from agenda.transicion import ampliar
 from calendario import main
@@ -24,15 +24,11 @@ def muestra(nombre):
 
 
 class AgendasCulturales(unittest.TestCase):
-    def test_madrid_identidad_actividad_recinto_y_funciones_sin_expansion(self):
+    def test_madrid_identidad_recinto_y_funciones_sin_expansion(self):
         filas = muestra('madrid')
         n = madrid.importar(None, filas, AHORA)
         p = proyectar(n)
         self.assertEqual(len(p['eventos']), 4)
-        actividad = next(e for e in n['entidades'].values() if e['tipo'] == 'actividad')
-        alcanzados = nucleo.eventos_alcanzados(n, nucleo.objetivo('actividad', actividad['id']))
-        self.assertEqual(len(alcanzados), 2)
-        self.assertTrue(all(nucleo.clave(actividad) in e['objetivos'] for e in p['eventos'] if e['id'] in alcanzados))
         self.assertTrue(any(r['tipo'] == 'se_celebra_en' for r in p['relaciones']))
         largo = next(e for e in p['eventos'] if e['nombres']['es'] == '1984')
         c = largo['programacion']['valor']['cuando']
@@ -53,6 +49,34 @@ class AgendasCulturales(unittest.TestCase):
         c = madrid.importar(n, ruido, LUEGO)
         self.assertEqual(c['documentos'].keys(), n['documentos'].keys())
         self.assertEqual(c['observaciones'].keys(), n['observaciones'].keys())
+
+    def test_madrid_no_acredita_obras_y_suspende_las_guardadas(self):
+        filas = muestra('madrid')
+        n = madrid.importar(None, filas, AHORA)
+        self.assertFalse(any(e['tipo'] == 'actividad' for e in n['entidades'].values()))
+        # Núcleo guardado por la versión anterior, que unía cada evento a su URL-ACTIVIDAD.
+        c = nucleo.Constructor(n)
+        for fila in filas:
+            ficha_madrid = madrid.identidad_url(fila.get('URL-ACTIVIDAD'))
+            if not ficha_madrid:
+                continue
+            evento = next(r['destino'] for r in c.n['referencias'].values()
+                          if r['tipo_externo'] == 'ID-EVENTO' and r['id_externo'] == str(fila['ID-EVENTO']))
+            evidencia = c.n['entidades'][nucleo.clave(evento)]['evidencias'][-1]
+            a, _ = c.entidad(madrid.FUENTE, 'actividad_vgnextoid', ficha_madrid, {}, 'actividad', 'ficha',
+                {'es': fila['TITULO-ACTIVIDAD']}, c.n['observaciones'][evidencia]['documento'],
+                '/URL-ACTIVIDAD', AHORA)
+            c.relacion('celebracion_de', evento, a, evidencia)
+        antiguo = c.terminar()
+        # Fila sin cambios: la observación del evento es la misma y seguiría vigente.
+        nuevo = madrid.importar(antiguo, filas, LUEGO)
+        celebraciones = [r for r in nuevo['relaciones'].values() if r['tipo'] == 'celebracion_de']
+        self.assertEqual(len(celebraciones), 2)
+        self.assertTrue(all(r['suspendida'] for r in celebraciones))
+        self.assertTrue(almacen_nucleo.planificar(antiguo, nuevo))
+        self.assertFalse(any(k.startswith('actividad:') for e in proyectar(nuevo)['eventos']
+                             for k in e['objetivos']))
+        self.assertEqual(almacen_nucleo.planificar(nuevo, madrid.importar(nuevo, filas, LUEGO)), [])
 
     def test_madrid_exclusiones_y_horas_cero_no_inventan_citas(self):
         fila = muestra('madrid')[0]

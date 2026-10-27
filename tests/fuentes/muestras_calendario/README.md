@@ -52,7 +52,8 @@ exacto de captura ni se acredita la cobertura de las fases júnior.
 # Madrid y Kulturklik (25/10/2026)
 
 `madrid.json`: cuatro registros reales del datastore municipal `300107-2-agenda-actividades-eventos-csv`,
-incluyendo una programación prolongada y dos eventos con la misma URL-ACTIVIDAD.
+incluyendo una programación prolongada y dos eventos con la misma URL-ACTIVIDAD
+(un contenedor de centro cultural, que no se trata como obra).
 `kulturklik.json`: tres eventos de la API oficial `/culture/events/v1.0/events` del 25/10/2026;
 se omiten descripciones HTML, imágenes y adjuntos. Conservan ID, nombres bilingües,
 fechas, horas textuales y municipios NORA. No son una cobertura exhaustiva.

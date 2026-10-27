@@ -1,7 +1,9 @@
-"""Agenda municipal de Madrid: ID-EVENTO, actividad y recinto acreditados.
+"""Agenda municipal de Madrid: ID-EVENTO y recinto acreditados.
 
 No usa el índice de CKAN ni título/fecha como identidad. Una programación
 prolongada se conserva como intervalo con sus restricciones, sin expandirla.
+URL-ACTIVIDAD no acredita una obra: suele ser un contenedor («Actividades en
+el Centro Cultural…») o un ciclo, y su título queda en la evidencia.
 """
 
 from datetime import date, datetime
@@ -89,6 +91,13 @@ def importar(anterior, filas, observado, url=URL):
         'licencia': 'CC BY 4.0', 'licencia_url': 'https://creativecommons.org/licenses/by/4.0/',
         'capacidades': ['calendario'], 'modo': 'recogida_manual',
         'condiciones': 'Atribución y enlace al original; actualización diaria del proveedor'}
+    # Las celebraciones que unían eventos a URL-ACTIVIDAD se suspenden, también
+    # fuera de esta recogida; relación y evidencia se conservan.
+    fichas = {nucleo.clave(r['destino']) for r in c.n['referencias'].values()
+              if r['proveedor'] == FUENTE and r['tipo_externo'] == 'actividad_vgnextoid'}
+    for r in c.n['relaciones'].values():
+        if r['tipo'] == 'celebracion_de' and nucleo.clave(r['destino']) in fichas:
+            r['suspendida'] = True
     vistos = {}
     for fila in filas:
         identidad = str(fila.get('ID-EVENTO') or '')
@@ -109,12 +118,7 @@ def importar(anterior, filas, observado, url=URL):
             {'es': fila['TITULO']}, doc, '/', observado,
             bloques={'programacion': programacion(fila), 'lugar': lugar,
                      'url_evento': fila.get('CONTENT-URL'), 'tipo_original': fila.get('TIPO')})
-        # Relación solo cuando existe la identidad publicada de actividad/instalación.
-        actividad = identidad_url(fila.get('URL-ACTIVIDAD'))
-        if actividad and fila.get('TITULO-ACTIVIDAD'):
-            a, _ = c.entidad(FUENTE, 'actividad_vgnextoid', actividad, {}, 'actividad', 'ficha',
-                {'es': fila['TITULO-ACTIVIDAD']}, doc, '/URL-ACTIVIDAD', observado)
-            c.relacion('celebracion_de', evento, a, evidencia)
+        # Relación solo cuando existe la identidad publicada de la instalación.
         recinto = identidad_url(fila.get('URL-INSTALACION'))
         if recinto and lugar['nombre']:
             l, _ = c.entidad(FUENTE, 'instalacion_vgnextoid', recinto, {}, 'lugar', 'recinto',
