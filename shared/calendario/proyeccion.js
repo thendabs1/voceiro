@@ -35,6 +35,10 @@ export function prepararLectura(datos) {
       : lugar || null;
     tarjeta.resultado_disponible = Boolean(e.resultado);
     tarjeta.fuentes = [...new Set(e.fuentes.map(f => f.fuente))];
+    // Obra que la fuente declara (celebracion_de vigente, como mucho una). Sin
+    // clave cuando no hay: así no se reescriben las tarjetas sin obra.
+    const obra = e.objetivos.find(k => limpias[k].tipo === 'actividad');
+    if (obra) tarjeta.obra = { id: obra, nombres: limpias[obra].nombres };
     eventos.push([e.id, texto(objetivos.flatMap(o => Object.values(o.nombres)).join(' ')),
       Number(Boolean(e.resultado)), JSON.stringify(tarjeta), JSON.stringify(detalle)]);
     const f = new Map();
