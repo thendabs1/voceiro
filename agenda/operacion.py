@@ -281,7 +281,11 @@ def descubrir(repo, coleccion, ahora, *, proveedor=None, year=None, fecha=None, 
     except ErrorTurso:
         raise
     except Exception as error:
-        repo.terminar_descubrimiento(pasada, ahora, error=error)
+        # Buscar la temporada siguiente antes de que se publique es lo normal, no un fallo.
+        repo.terminar_descubrimiento(pasada, ahora, error=error, siguiente=bool(conocidas))
+        if conocidas:
+            return None, {'coleccion': coleccion, 'estado': 'omitida',
+                          'motivo': 'temporada siguiente no disponible', 'error': str(error)}
         return None, {'coleccion': coleccion, 'estado': 'fallida', 'error': str(error)}
     repo.terminar_descubrimiento(pasada, ahora, referencia=alcance['referencia'])
     existente = next((t for t in conocidas if t['referencia'] == alcance['referencia']), None)

@@ -328,14 +328,16 @@ class Repositorio:
             (p['id'], None, proveedor, 'en_curso', ahora, p['lease_hasta'], codificar(p)))])
         return p
 
-    def terminar_descubrimiento(self, p, ahora, *, referencia=None, error=None):
+    def terminar_descubrimiento(self, p, ahora, *, referencia=None, error=None, siguiente=False):
         anterior = self.descubrimiento(p['coleccion']) or {}
         ultima = p['peticiones'][-1] if p['peticiones'] else {}
-        # Sin temporada nueva se vuelve a mirar en una semana; un error se reintenta
-        # como en las temporadas, sin esperar la semana entera.
-        errores = anterior.get('errores_consecutivos', 0) + 1 if error else 0
-        proxima = (temporadas.reintento(ahora, errores, ultima.get('cabeceras', {}).get('retry-after')) if error
-                   else temporadas.despues(ahora, hours=temporadas.POLITICA['descubrimiento_horas']))
+        retry_after = ultima.get('cabeceras', {}).get('retry-after')
+        # Se vuelve a mirar en una semana, también si la temporada siguiente aún no
+        # está publicada. Sin ninguna temporada, un error se reintenta como en ellas.
+        errores = anterior.get('errores_consecutivos', 0) + 1 if error and not siguiente else 0
+        semana = temporadas.despues(ahora, hours=temporadas.POLITICA['descubrimiento_horas'])
+        proxima = (temporadas.reintento(ahora, errores, retry_after) if errores
+                   else max(semana, temporadas.esperar_retry(retry_after, ahora) or semana))
         dato = {'coleccion': p['coleccion'], 'proveedor': p['proveedor'], 'errores_consecutivos': errores,
             'ultimo_intento': temporadas.marca(ahora),
             'ultima_valida': temporadas.marca(ahora) if not error else anterior.get('ultima_valida'),

@@ -268,6 +268,16 @@ class ContratoControl:
         self.assertEqual((d['errores_consecutivos'], d['proxima_revision']), (0, '2026-11-08T13:00:00.000000+00:00'))
         self.assertEqual(self.repo.descubrimiento('wrc'), d)
 
+    def test_temporada_siguiente_sin_publicar_no_es_fallo_y_espera_una_semana(self):
+        with patch.object(operacion.proveedores, 'recoger', side_effect=ValueError('sin calendario')):
+            self.assertEqual(operacion.descubrir(self.repo, 'wrc', AHORA)[1]['estado'], 'fallida')
+            self.assertEqual(self.repo.descubrimiento('wrc')['proxima_revision'], '2026-11-01T12:30:00.000000+00:00')
+            self.repo.registrar(temporadas.nueva('wrc', '2026', AHORA))
+            t, r = operacion.descubrir(self.repo, 'wrc', AHORA, forzar=True)
+        self.assertEqual((t, r['estado']), (None, 'omitida'))
+        d = self.repo.descubrimiento('wrc')
+        self.assertEqual((d['errores_consecutivos'], d['proxima_revision']), (0, '2026-11-08T12:00:00.000000+00:00'))
+
     def test_confirmar_rechaza_unidad_o_proveedor_ajenos(self):
         t, p = self.comenzar()
         self.reservar(t, p)
