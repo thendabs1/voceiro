@@ -172,7 +172,7 @@ class LecturaSQL(unittest.TestCase):
         pasos = planificar(preparar(proyectar(repetida, ['madrid'], AHORA)), 12, self.previo())
         self.assertFalse(any(sql.startswith(('INSERT INTO agenda_lectura_eventos',
                                              'DELETE FROM agenda_lectura_')) for sql, _ in pasos))
-        n = presencia.registrar(repetida, 'madrid', [], LUEGO, madrid.URL)
+        n = presencia.registrar(repetida, 'madrid', [], LUEGO, madrid.URL, aceptar_caida=True)
         self.publicar(preparar(proyectar(n, ['madrid'], AHORA)), previo=self.previo())
         for tabla in ('eventos', 'facetas', 'tramos'):
             self.assertEqual(self.db.execute(f'SELECT count(*) FROM agenda_lectura_{tabla}').fetchone()[0], 0)

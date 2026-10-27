@@ -83,7 +83,12 @@ def operar_nucleo(args):
             if fuente in (args.recoger_cultura or []):
                 filas, url, ids = recogida.cultura(fuente, args.inicio, args.fin)
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'], filas, observado, url)
-                calendario['nucleo'] = presencia.registrar(calendario['nucleo'], fuente, ids, observado, url)
+                try:
+                    calendario['nucleo'] = presencia.registrar(calendario['nucleo'], fuente, ids, observado, url,
+                        aceptar_caida=fuente in (args.aceptar_inventario or []))
+                except presencia.InventarioDesplomado as aviso:
+                    # Los contenidos sí se actualizan; solo no se acreditan ausencias.
+                    print(f'::warning::{aviso}. Repetir con --aceptar-inventario {fuente} si es real.')
         return calendario
 
     if args.turso:
@@ -128,6 +133,8 @@ def main(argv=None):
     ap.add_argument('--entrada-kulturklik', action='append', help='Lista de eventos Kulturklik guardada, sin red')
     ap.add_argument('--recoger-cultura', action='append', choices=('madrid', 'kulturklik'),
                     help='Recogida cultural completa paginada en el núcleo; repetible')
+    ap.add_argument('--aceptar-inventario', action='append', choices=('madrid', 'kulturklik'),
+                    help='Acreditar ausencias aunque el inventario caiga más del 30 %%; repetible')
     ap.add_argument('--circuito', choices=('atp', 'wta'), help='Circuito de --entrada-tenis')
     ap.add_argument('--recoger-deporte', action='append', choices=(*deportes.COLECCIONES, 'feb'),
                     help='Recogida manual de agenda deportiva; repetible, sin publicación')
@@ -153,6 +160,8 @@ def main(argv=None):
         ap.error('La base y la exportación deben ser archivos distintos')
     if args.fuente and (args.entrada or args.entrada_ics):
         ap.error('Usa --fuente para red o --entrada/--entrada-ics para archivos locales')
+    if set(args.aceptar_inventario or []) - set(args.recoger_cultura or []):
+        ap.error('--aceptar-inventario requiere recoger esa fuente con --recoger-cultura')
     operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb,
                            args.entrada_tenis, args.entrada_deporte, args.recoger_deporte, args.recoger_cultura,
                            args.entrada_madrid, args.entrada_kulturklik))

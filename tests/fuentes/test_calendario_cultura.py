@@ -237,7 +237,9 @@ class RetiradaCultural(unittest.TestCase):
                 # Una importación parcial no acredita retirada.
                 parcial = modulo.importar(completa, filas[:1], LUEGO)
                 self.assertEqual(len(proyectar(parcial)['eventos']), len(filas))
-                retirada = presencia.registrar(parcial, modulo.FUENTE, [], LUEGO, modulo.URL)
+                with self.assertRaises(presencia.InventarioDesplomado):
+                    presencia.registrar(parcial, modulo.FUENTE, [], LUEGO, modulo.URL)
+                retirada = presencia.registrar(parcial, modulo.FUENTE, [], LUEGO, modulo.URL, aceptar_caida=True)
                 self.assertEqual(proyectar(retirada)['eventos'], [])
                 self.assertFalse(any(e['tipo'] == 'evento' for e in proyectar(retirada)['entidades'].values()))
                 self.assertEqual(retirada['entidades'].keys(), n['entidades'].keys())
@@ -280,8 +282,13 @@ class RetiradaCultural(unittest.TestCase):
                     main([*args, '--recoger-cultura', 'kulturklik'])
             with almacen.abrir(ruta) as db:
                 self.assertEqual(almacen.cargar(db), guardada)
+            # Una caída mayor del 30 % no acredita ausencias sin aceptarla.
             with patch('agenda.recogida.descargar', return_value=vacia):
                 main(args)
+            with almacen.abrir(ruta) as db:
+                self.assertEqual(len(proyectar(almacen.cargar(db)['nucleo'], ['madrid'])['eventos']), 2)
+            with patch('agenda.recogida.descargar', return_value=vacia):
+                main([*args, '--aceptar-inventario', 'madrid'])
             with almacen.abrir(ruta) as db:
                 retirada = almacen.cargar(db)
             self.assertEqual(proyectar(retirada['nucleo'], ['madrid'])['eventos'], [])
