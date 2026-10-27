@@ -46,6 +46,13 @@ class AgendasCulturales(unittest.TestCase):
         b = madrid.importar(n, cambio, LUEGO)
         self.assertEqual(n['entidades'].keys(), b['entidades'].keys())
         self.assertGreater(len(b['observaciones']), len(n['observaciones']))
+        # El índice de fila CKAN, la descripción o el precio no son evidencia de la cita.
+        ruido = deepcopy(filas)
+        for i, f in enumerate(ruido):
+            f.update(_id=1000 + i, DESCRIPCION='Texto nuevo', PRECIO='5 euros')
+        c = madrid.importar(n, ruido, LUEGO)
+        self.assertEqual(c['documentos'].keys(), n['documentos'].keys())
+        self.assertEqual(c['observaciones'].keys(), n['observaciones'].keys())
 
     def test_madrid_exclusiones_y_horas_cero_no_inventan_citas(self):
         fila = muestra('madrid')[0]
