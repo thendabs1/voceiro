@@ -73,6 +73,11 @@ jobs:
           node-version: '24'
       - name: Dependencias de las recogidas y publicación
         run: pip install beautifulsoup4 boto3
+      - name: Límites municipales del IGN (se descargan de R2 solo las provincias usadas)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/voceiro/limites
+          key: limites-${{ hashFiles('shared/territorios/limites.json') }}
       - name: Recoger directamente en Turso
         env:
           OPERACION: ${{ inputs.operacion || 'recoger' }}
@@ -130,6 +135,11 @@ jobs:
           if [ "$FORZAR" = true ]; then args+=(--forzar); fi
           python -m agenda.operacion "${args[@]}"
       - name: Revisar clasificación y relaciones de todas las fuentes guardadas
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: python -m agenda.revision --turso
       - name: Validar y publicar la lectura desde Turso
         env:

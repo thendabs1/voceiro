@@ -48,8 +48,8 @@ Los códigos no resueltos quedan `pendiente`; los conflictos no se asignan.
 La revisión Python `relacionador.py` añade resultados con motivo, referencia,
 revisión y evidencias. `correspondencias.json` permite localizar tres recintos
 de las muestras Madrid por `vgnextoid` acreditado en catálogos oficiales, sin
-convertir el recinto en municipio. El resto de recintos de Madrid se resolverá
-por sus coordenadas con límites municipales oficiales, no por catálogos. La proyección usa esos cruces también con
+convertir el recinto en municipio. Los recintos con coordenadas se ubican con
+los [límites municipales](#límites-municipales) del IGN. La proyección usa esos cruces también con
 observaciones ya guardadas. Los nuevos estados no están implementados en JS.
 El informe por fuente (`python -m agenda.revision`) revisa temas y ubicación de una
 exportación, sin consultar proveedores ni modificar el núcleo.
@@ -132,3 +132,28 @@ francés; no se asignan municipios españoles por proximidad.
 Medición sobre las 5.115 citas publicadas el 27/10/2026: Kulturklik pasa de 0
 a 2.475 de 2.689 citas con municipio resuelto.
 Es una medición sobre registros guardados, no cobertura total de los proveedores.
+
+## Límites municipales
+
+`limites.json` es el manifiesto de los límites del IGN (unidades
+administrativas INSPIRE, BDDAE; CC BY 4.0): un archivo GeoJSON comprimido por
+provincia con `properties.ine`, su URL de consulta, SHA-256, caja y número de
+municipios. Los archivos están en R2 bajo `prefijo_r2`, no en el repositorio.
+`scripts/preparar_limites.py CARPETA [--subir]` los vuelve a generar; cada
+revisión usa un prefijo con su fecha y no pisa la anterior.
+
+`limites.py` resuelve punto → municipio cargando solo las provincias cuya caja
+contiene el punto, desde `VOCEIRO_LIMITES` o `~/.cache/voceiro/limites` y, si
+faltan, desde R2 con la huella verificada. Aplica las reglas de `geometria.py`:
+polígonos sin simplificar (redondeo a 1e-7°), pendiente a menos de 50 m de un
+límite, conflicto si dos recintos contienen el punto, nunca el municipio más
+cercano. Sin límites disponibles el resultado es `limites_no_disponibles`, y
+publicar con ese estado falla.
+
+La proyección resuelve así los recintos con bloque `coordenadas` (hoy Madrid:
+`LATITUD`/`LONGITUD` declaradas por el Ayuntamiento). El punto se suma a los
+cruces revisados: si coinciden, resuelto; si discrepan, conflicto. Un recinto
+sin correspondencia revisada no bloquea la ubicación que acredita su punto.
+Medido sobre la agenda de Madrid del 27/10/2026: 208 puntos distintos, todos
+en 28079 y ninguno pendiente (1.266 de 1.344 citas; las otras no tienen recinto).
+
