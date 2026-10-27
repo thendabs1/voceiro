@@ -165,9 +165,17 @@ Contrato común para las fuentes culturales:
   observado de la obra o la persona, `{sistema, tipo, id}` con procedencia,
   porque son asociaciones corregibles; una referencia del núcleo significa
   identidad y no se deshace. Sin implementar hasta que haya quien los escriba.
-- **Ausencia:** una función que deja de aparecer se sigue publicando. Antes de
-  fuentes cuya función se identifica por fecha (CyL, Málaga) hay que diseñar
-  la retirada por respuesta completa.
+- **Ausencia:** Madrid y Kulturklik acreditan el inventario completo antes de
+  filtrar la ventana de fechas. Una cita ausente se oculta de la publicación
+  (incluido el detalle y la búsqueda de objetivos); conserva identidad,
+  horario e historial, sin declararla cancelada. Si reaparece, vuelve a ser
+  pública. La recogida y su inventario se guardan en la misma transacción;
+  páginas incompletas o archivos sueltos no acreditan ausencias. Cada cambio
+  de inventario conserva su documento y fecha; repetirlo solo renueva la
+  comprobación. Si el inventario cae más del 30 % no se acredita (aviso en
+  Actions); `--aceptar-inventario FUENTE` o la casilla del workflow lo
+  aceptan. Galicia todavía conserva las ausentes: su respuesta está
+  acotada por fechas e idiomas y necesita una política con ese alcance.
 
 ## Lectura pública
 
@@ -244,8 +252,9 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
   el detalle bajo demanda ya están conectados. Revisar la interfaz antes
   de reactivar `CALENDARIO_ACTIVO`.
 - **Retención y retirada:** borrado transaccional de dependencias exclusivas
-  antes de activar la poda de 45 días; retirar de la lectura lo que una
-  respuesta completa ya no trae (requisito de CyL y Málaga).
+  antes de activar la poda de 45 días; retirada por ventanas e idiomas en
+  Galicia y adaptación del inventario completo a nuevas fuentes (requisito
+  de CyL y Málaga, cuya identidad de función incluye la fecha).
 - **Fuentes culturales nuevas:** Zaragoza primero (funciones con ID propio),
   luego CyL, Málaga y Cataluña; territorio por coordenadas antes de escalar.
 - **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un

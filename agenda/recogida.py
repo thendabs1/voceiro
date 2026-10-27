@@ -129,7 +129,9 @@ def cultura(fuente, inicio=None, fin=None):
                 return date.fromisoformat(primero[:10]) <= hasta and date.fromisoformat(ultimo[:10]) >= desde
             seleccion = [f for f in filas if en_ventana(f)]
             print(f'[agenda] {fuente}: {len(filas)} registros comprobados; {len(seleccion)} en {desde} → {hasta}')
-            return seleccion, base
+            # El inventario completo acredita ausencias; la ventana solo decide
+            # qué contenidos se actualizan. Nunca deducir ausencias de seleccion.
+            return seleccion, base, sorted(vistos)
         if not items or len(filas) > total:
             raise ValueError('Recogida cultural incompleta')
     raise ValueError('La agenda cultural supera el máximo de 40 páginas')
