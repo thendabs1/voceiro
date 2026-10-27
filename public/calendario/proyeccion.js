@@ -1,6 +1,6 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=70035fc9fa';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js?v=70035fc9fa';
+import { palabrasDe } from '../busqueda/texto.js?v=66d5fae6c9';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js?v=66d5fae6c9';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -28,6 +28,8 @@ export function prepararLectura(datos) {
     if (objetivos.some(o => !o)) throw new Error('Objetivo ausente');
     const detalle = { evento: e, entidades: Object.fromEntries(e.objetivos.map(k => [k, limpias[k]])) };
     const tarjeta = Object.fromEntries(['id', 'clase', 'nombres', 'programacion', 'territorios'].map(k => [k, e[k]]));
+    // Ciclos y festivales: sin clave cuando no hay, para no reescribir el resto.
+    if (e.etiquetas?.length) tarjeta.etiquetas = e.etiquetas;
     // Lugar compacto para la lista; dirección, coordenadas y procedencia van en el detalle.
     const lugar = e.lugar?.valor;
     tarjeta.lugar = lugar && typeof lugar === 'object'
@@ -35,6 +37,10 @@ export function prepararLectura(datos) {
       : lugar || null;
     tarjeta.resultado_disponible = Boolean(e.resultado);
     tarjeta.fuentes = [...new Set(e.fuentes.map(f => f.fuente))];
+    // Obra que la fuente declara (celebracion_de vigente, como mucho una). Sin
+    // clave cuando no hay: así no se reescriben las tarjetas sin obra.
+    const obra = e.objetivos.find(k => limpias[k].tipo === 'actividad');
+    if (obra) tarjeta.obra = { id: obra, nombres: limpias[obra].nombres };
     eventos.push([e.id, texto(objetivos.flatMap(o => Object.values(o.nombres)).join(' ')),
       Number(Boolean(e.resultado)), JSON.stringify(tarjeta), JSON.stringify(detalle)]);
     const f = new Map();
@@ -45,6 +51,7 @@ export function prepararLectura(datos) {
     agregar('fuente', tarjeta.fuentes);
     agregar('territorio', (e.territorios || []).filter(t => t.papel === 'celebracion')
       .flatMap(t => [t.territorio, ...t.ancestros]));
+    agregar('etiqueta', (e.etiquetas || []).map(t => t.id));
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
     const porZona = ZONAS.map(zona => {
