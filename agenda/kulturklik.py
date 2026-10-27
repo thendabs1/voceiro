@@ -50,6 +50,7 @@ def importar(anterior, filas, observado, url=URL):
         campos = ('id', 'type', 'typeEs', 'typeEu', 'nameEs', 'nameEu', 'startDate', 'endDate',
                   'openingHoursEs', 'openingHoursEu', 'sourceUrlEs', 'sourceUrlEu',
                   'municipalityEs', 'municipalityEu', 'municipalityNoraCode', 'provinceNoraCode',
+                  'municipalityLatitude', 'municipalityLongitude',
                   'establishmentEs', 'establishmentEu', 'placeEs', 'placeEu')
         doc = c.documento(FUENTE, {k: fila[k] for k in campos if k in fila}, url, 'fragmento_evento_api')
         evento, evidencia = c.entidad(FUENTE, 'event_id', identidad, {}, 'evento', 'desconocida',

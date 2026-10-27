@@ -1,7 +1,7 @@
 # Contrato del relacionador territorial
 
 La resolución con estado y evidencia está implementada en Python para Galicia,
-Kulturklik y tres recintos de Madrid, con correspondencias locales versionadas.
+Kulturklik y recintos de Madrid, con correspondencias locales versionadas.
 La persistencia general de relaciones, vigencias y recorridos descritos abajo
 sigue propuesta; no tiene API pública. El modelo de agenda está en su
 [manual](../../agenda/README.md).
@@ -39,7 +39,7 @@ La fecha de comprobación no declara una vigencia histórica del país o del med
 | `medios:pais` / `africa` | Pendiente de clasificación como agrupación geográfica | No es un país. Se conserva el literal del catálogo. |
 | `ine:municipio` / `36038` | `es:municipio:36038` | Identidad de la instantánea INE ya cargada. |
 | `ine:municipio:dc` / `360388` | `es:municipio:36038` | Mismo municipio, tras verificar el control. |
-| `kulturklik:municipio_nora` / `476`, provincia `31` | Pendiente | Espacio del campo publicado por Kulturklik. NORA territorial devuelve `31/201` para la denominación Pamplona/Iruña; no son códigos intercambiables. |
+| `kulturklik:municipio_nora` / `476`, provincia `31` | `es:municipio:31201` | Cruce revisado mediante coordenadas municipales y límites oficiales. NORA territorial usa `31/201`; no son códigos intercambiables. |
 
 África puede representarse más adelante como agrupación geográfica —M49 publica
 el código regional `002`— si hace falta seleccionarla. Esa agrupación tendría
@@ -109,12 +109,14 @@ local. Sus métodos `resolver_referencia(referencia, fecha=None)` y
 cargada; todavía no permiten elegir una revisión histórica. La segunda operación
 localiza un recinto, sin declarar que su identidad equivale al municipio.
 
-`correspondencias.json` contiene tres ubicaciones de Madrid con comprobación
-manual y dos pendientes Kulturklik con pruebas del desajuste. Conserva datos
+`correspondencias.json` conserva las tres ubicaciones manuales iniciales de
+Madrid y añade cruces de siete catálogos municipales y 179 referencias de
+Kulturklik contrastadas con polígonos oficiales de Euskadi y Navarra. Conserva datos
 seleccionados, ruta y huella de la respuesta completa; esta última no se guarda
 íntegra. El JSON oficial de centros contiene caracteres de control: para esta
 revisión se extrajeron los campos con un lector permisivo, sin modificar la huella
-de los bytes descargados. No hay una descarga automática de esos catálogos.
+de los bytes descargados. El manifiesto, los lectores locales y los límites
+de esta resolución están en [Preparar cruces de agenda](README.md#preparar-cruces-de-agenda).
 Los cruces INE directos aportan fila, huella y revisión del catálogo local.
 
 La proyección añade `territorio_resoluciones` a territorios y
@@ -201,8 +203,10 @@ los caminos que coinciden; no multiplica un evento por cada código equivalente.
 
 ## Pendiente
 
-- Ampliar la revisión de recintos de Madrid y acreditar los códigos municipales
-  de Kulturklik con su contexto. Los nombres no bastan para resolverlos.
+- Completar los recintos de Madrid sin correspondencia y las referencias
+  Kulturklik sin coordenadas, fuera de cobertura o con datos contradictorios.
+  Los nombres no bastan para resolverlos. El cruce de 179 referencias ya se
+  aplica a datos guardados; Iparralde necesita un catálogo francés.
 - Persistir los registros tipados, con ciclos, evidencias y vigencias; implementar
   consultas inversas y recorridos por servicio antes de ofrecer una API común.
 - Incorporar cobertura editorial múltiple y asociaciones meteorológicas con

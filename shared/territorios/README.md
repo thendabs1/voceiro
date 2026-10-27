@@ -26,7 +26,9 @@ Los espacios soportados son `iso3166-1:alpha2`, `medios:pais`,
 `ine:autonomia`, `ine:provincia`, `ine:municipio`, `ine:municipio:dc` y
 `medios:region`. Kulturklik conserva su referencia contextualizada en el núcleo;
 su espacio `kulturklik:municipio_nora` se distingue del servicio territorial
-`nora:municipio`, y el cruce sigue pendiente. No se deduce que dos códigos de proveedores distintos
+`nora:municipio`. El catálogo revisado cruza 179 referencias culturales con
+municipios INE mediante sus coordenadas municipales y límites oficiales.
+No se deduce que dos códigos de proveedores distintos
 sean equivalentes. `paises.json` añade España y los 36 países presentes en medios,
 con códigos ISO contrastados en [Naciones Unidas](https://unstats.un.org/unsd/methodology/m49/overview/)
 y alias editoriales explícitos. No es un catálogo mundial completo. África se
@@ -44,8 +46,9 @@ Los eventos añaden relaciones con papel `celebracion`, resueltas desde el
 municipio declarado o el recinto, sin heredar el ámbito de una competición.
 Los códigos no resueltos quedan `pendiente`; los conflictos no se asignan.
 La revisión Python `relacionador.py` añade resultados con motivo, referencia,
-revisión y evidencias. `correspondencias.json` permite localizar tres recintos
-de las muestras Madrid por `vgnextoid` acreditado en catálogos oficiales, sin
+revisión y evidencias. `correspondencias.json` localiza recintos de Madrid por
+`vgnextoid` acreditado en siete catálogos oficiales (centros culturales,
+bibliotecas, teatros, cines, auditorios, museos y centros de mayores), sin
 convertir el recinto en municipio. La proyección usa esos cruces también con
 observaciones ya guardadas. Los nuevos estados no están implementados en JS.
 El informe por fuente (`python -m agenda.revision`) revisa temas y ubicación de una
@@ -87,3 +90,45 @@ administrativa y de países JavaScript en CI. La lectura pública de agenda
 incorpora facetas territoriales de eventos. Las relaciones de servicio,
 las vigencias y la integración con preferencias siguen pendientes en el
 [contrato del relacionador](relacionador.md).
+
+## Preparar cruces de agenda
+
+`importadores.py` lee catálogos Madrid y páginas de eventos Kulturklik;
+`geometria.py` consulta límites GeoJSON normalizados. Los lectores no descargan
+ni escriben. `scripts/generar_correspondencias_agenda.py` coordina la preparación
+local desde el manifiesto [fuentes-agenda.json](fuentes-agenda.json), que conserva
+URL, lector, nombre de archivo y SHA-256 de cada descarga utilizada.
+
+Para repetir la revisión con esas descargas locales y una copia del catálogo
+anterior como base:
+
+```sh
+python scripts/generar_correspondencias_agenda.py shared/territorios/fuentes-agenda.json \
+  --carpeta /ruta/descargas --base /ruta/correspondencias-anteriores.json \
+  --salida /tmp/correspondencias.json --informe /tmp/cruces-pendientes.json
+```
+
+Un fichero distinto de la huella del manifiesto se rechaza: una nueva descarga
+necesita actualizar la revisión y contrastarla. El generador conserva los cruces
+manuales y exige revisión explícita si un cruce anterior cambia de municipio o
+deja de acreditarse. Los casos nuevos rechazados conservan motivo y pruebas.
+La salida se revisa antes de sustituir el catálogo; la API no descarga mapas ni
+hace peticiones de geocodificación por visitante.
+
+Los límites proceden de [geoEuskadi](https://www.geo.euskadi.eus/geoeuskadi/rest/services/U11/AE55J/MapServer/2)
+y del [WFS de IDENA](https://www.navarra.es/es/web/geoportal/idena/servicios).
+Se usan polígonos originales sin simplificar, en longitud/latitud, con huecos
+y recintos separados. Se deja pendiente cualquier punto a menos de 50 metros
+del límite (margen conservador de revisión, no precisión declarada del mapa),
+sin cobertura, con provincia incompatible o con denominación contradictoria.
+Los solapes y coordenadas incompatibles no eligen un destino por orden.
+El nombre solo detecta contradicciones: nunca encuentra el municipio.
+
+Las coordenadas Kulturklik son del municipio; no localizan el recinto ni sirven
+para medir distancia al evento. La referencia Galdakao `48/183`, cuyo punto cae
+en Usansolo, queda pendiente. Las referencias de Iparralde requieren un catálogo
+francés; no se asignan municipios españoles por proximidad.
+
+Medición sobre las 5.115 citas publicadas el 27/10/2026: Madrid pasa de 22 a
+760 de 1.093 citas con municipio resuelto y Kulturklik de 0 a 2.475 de 2.689.
+Es una medición sobre registros guardados, no cobertura total de los proveedores.

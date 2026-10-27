@@ -1,0 +1,131 @@
+{
+  "comprobado": "2026-10-27T10:10:54+00:00",
+  "entradas": [
+    {
+      "archivo": "voceiro-madrid-centros.json",
+      "lector": "madrid",
+      "url": "https://datos.madrid.es/dataset/200304-0-centros-culturales/resource/200304-0-centros-culturales-json/download/200304-0-centros-culturales.json",
+      "fuente": "Ayuntamiento de Madrid",
+      "sha256": "c45040ce7d453b57d585fab36df05aebd28fed390109c125cfe5cccde8b9d38c"
+    },
+    {
+      "archivo": "voceiro-madrid-bibliotecas.json",
+      "lector": "madrid",
+      "url": "https://datos.madrid.es/dataset/201747-0-bibliobuses-bibliotecas/resource/201747-2-bibliobuses-bibliotecas-json/download/201747-0-bibliobuses-bibliotecas.json",
+      "fuente": "Ayuntamiento de Madrid",
+      "sha256": "bc349ad129c749a6a76667f55905394847b740a1d24ba9bf95efd1c5a5729e3f"
+    },
+    {
+      "archivo": "voceiro-madrid-teatros.json",
+      "lector": "madrid",
+      "url": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-1-ocio_salas-json/download/208862-7650046-ocio_salas.json",
+      "fuente": "Ayuntamiento de Madrid",
+      "sha256": "10f7750b26338d480f3bbe12c076bcbb63bf9bfe417bcf175ba2a1213f39edc8"
+    },
+    {
+      "archivo": "voceiro-madrid-museos.json",
+      "lector": "madrid",
+      "url": "https://datos.madrid.es/dataset/201132-0-museos/resource/201132-2-museos-json/download/201132-0-museos.json",
+      "fuente": "Ayuntamiento de Madrid",
+      "sha256": "0d0932db52a6580b8a2354616e2dac4c2582c0f56525cfe30bcbab2e9df1db74"
+    },
+    {
+      "archivo": "voceiro-madrid-mayores.json",
+      "lector": "madrid",
+      "url": "https://datos.madrid.es/dataset/200337-0-centros-mayores/resource/200337-1-centros-mayores-json/download/200337-0-centros-mayores.json",
+      "fuente": "Ayuntamiento de Madrid",
+      "sha256": "59a6c174124a649996ba36fd917e198f705f020202066e033fae7e826cc9d4ea"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-1.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=1",
+      "fuente": "Kulturklik",
+      "sha256": "e809654d810fdcf09990016ecec832cf92c1f1924ae3e82bccc09dd62fe5a83c"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-2.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=2",
+      "fuente": "Kulturklik",
+      "sha256": "ccdb817d3f0e442b37d2c2a94510d937d370733dc26a1f7cb6e88aa3752567c2"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-3.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=3",
+      "fuente": "Kulturklik",
+      "sha256": "157919d76f9b2381a7e8a6eb6f7033c06db1392d6d7f2f2a7b739d313d4a1370"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-4.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=4",
+      "fuente": "Kulturklik",
+      "sha256": "16f7ebe5d92463443fcad1c354b7fde03e8b153c2b12907478945211bd06810b"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-5.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=5",
+      "fuente": "Kulturklik",
+      "sha256": "93daa3ae891e1c2baacb274d94dac79f6d3fe2d579b2d8a81a3308b8ae731049"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-6.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=6",
+      "fuente": "Kulturklik",
+      "sha256": "447823bd213e5017838527fde375923c5a18e3862406c3acb608a4191ee15664"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-7.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=7",
+      "fuente": "Kulturklik",
+      "sha256": "50b063ee17379ed4574f53b1ccf38fc69bc8df0fa87bae7656043d63068663a4"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-8.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=8",
+      "fuente": "Kulturklik",
+      "sha256": "bfa5a0dfdaddaa59d056e952a78808d0d880d18440481b7b95b4b439fe66b9d5"
+    },
+    {
+      "archivo": "voceiro-kulturklik-actual-9.json",
+      "lector": "kulturklik",
+      "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=9",
+      "fuente": "Kulturklik",
+      "sha256": "eb9de7c630312344a5dedee2f7826ad69e43901f870099abd850a1850aa1a801"
+    },
+    {
+      "archivo": "voceiro-euskadi-municipios.geojson",
+      "lector": "geoeuskadi",
+      "fuente": "geoEuskadi",
+      "url": "https://www.geo.euskadi.eus/geoeuskadi/rest/services/U11/AE55J/MapServer/2/query?where=1%3D1&outFields=MUN_PROV%2CMUN_MUNI%2CNOMBRE_CAS%2CNOMBRE_EUS&returnGeometry=true&outSR=4326&f=geojson",
+      "sha256": "619c6e590d2a321a3efcb8bb9f694efd7c718c045bfb3a1872a4809780b5f30d"
+    },
+    {
+      "archivo": "voceiro-navarra-municipios.geojson",
+      "lector": "idena",
+      "fuente": "Gobierno de Navarra / IDENA",
+      "url": "https://idena.navarra.es/ogc/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=IDENA:DIADMI_Pol_Municipio&count=500&outputFormat=json&srsName=CRS:84",
+      "sha256": "0be5c5be8472f536c7e67c91ecda77a4f68c271c0e79916ea7964f8e1483b2cf"
+    },
+    {
+      "archivo": "voceiro-madrid-cines.json",
+      "lector": "madrid",
+      "fuente": "Ayuntamiento de Madrid",
+      "url": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-7-ocio_salas-json/download/208862-7650180-ocio_salas.json",
+      "sha256": "9e7e1155b4693a5a867a0c55a2b57c666500cd0e2295d0d6351222f3e2d7117b"
+    },
+    {
+      "archivo": "voceiro-madrid-auditorios.json",
+      "lector": "madrid",
+      "fuente": "Ayuntamiento de Madrid",
+      "url": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-13-ocio_salas-json/download/208862-7650164-ocio_salas.json",
+      "sha256": "2902d980bcf8738e7a85aba29a8c25208d29eed767adc04c37a82d19449062a7"
+    }
+  ]
+}
