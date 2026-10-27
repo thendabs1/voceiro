@@ -27,10 +27,9 @@ parser de búsqueda.
 
 - **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid y Kulturklik
   en Turso y publicación en R2 y en las tablas de lectura.
-- **Deportes:** doce colecciones con adaptador y control de temporadas; once
-  publicadas (WRC pendiente de una pasada con el código actual). La recogida
-  es manual (`operacion: deportes` en el workflow) hasta confirmar una pasada
-  limpia; después pasa al cron.
+- **Deportes:** doce colecciones con adaptador y control de temporadas, todas
+  publicadas; MotoGP y WTA ya tienen registrada la temporada 2027. La revisión
+  entra en el cron de las 04:30 UTC: cada colección decide si le toca.
 - **API de lectura:** activa en `cf-datos` y `deno-datos`
   (`CALENDARIO_LECTURA_SQL=true`), con publicación diferencial.
 - **Cliente:** `CALENDARIO_ACTIVO = false` en `front/app/14-calendario.js`; la
@@ -130,8 +129,10 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
   `pausada`). Cada GET se reserva en la base antes de enviarse (por defecto 32
   por pasada y 64 al día por proveedor; WRC además 120 al mes). Una selección
   se confirma completa o conserva la última lectura válida. Respeta
-  `Retry-After`, se bloquea ante 401/403 y enfría tras errores. El
-  descubrimiento busca la temporada siguiente sin años fijos en el cron.
+  `Retry-After`, se bloquea ante 401/403 y tras un error espera 30 min, 1 h,
+  2 h… hasta 24 h. El descubrimiento busca la temporada siguiente sin años
+  fijos cada semana; que aún no esté publicada no es un fallo. Solo una
+  colección sin ninguna temporada reintenta con espera creciente.
 - La publicación (`--fuentes-control`) añade los principales validados y su
   cobertura por colección.
 
@@ -185,10 +186,12 @@ sin red.
 
 ## Operación
 
-Workflow **Calendario**: `recoger` (cultura y, opcionalmente, FEB o tenis),
-`deportes` (temporadas y descubrimiento), `reclasificar`, `preparar-nucleo` y
-`publicar`. Cada pasada revisa las fuentes guardadas con
-`python -m agenda.revision --turso`, sin escribir.
+Workflow **Calendario**: `recoger` (cultura), `deportes` (temporadas y
+descubrimiento; publica), `reclasificar`, `preparar-nucleo` y `publicar`. El
+cron diario hace `recoger` y `deportes`. Para revisar ya una colección sin
+esperar su cadencia: `deportes` con `colecciones` (p. ej. `wrc,nba`) y
+`forzar`; no salta la espera tras un error de temporada. Cada pasada revisa
+las fuentes guardadas con `python -m agenda.revision --turso`, sin escribir.
 
 ```sh
 # Cultura en Turso (ventana inclusiva, 31 días por defecto, máximo 91).
@@ -198,6 +201,7 @@ python calendario.py --turso --recoger-cultura madrid --recoger-cultura kulturkl
 # Deportes: estado, pasada con descubrimiento y recogida manual de una colección.
 python -m agenda.operacion --turso --estado
 python -m agenda.operacion --turso --ejecutar --descubrir
+python -m agenda.operacion --turso --ejecutar --descubrir --coleccion wrc --forzar
 python calendario.py --turso --recoger-deporte feb --temporada-feb 2026 --competicion-feb 4
 
 # Sin red: muestras locales sobre SQLite y exportación del núcleo.
@@ -216,7 +220,6 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
 
 - **Activar la lectura y el cliente:** agenda paginada, semana y mes con
   `/resumen`, detalle bajo demanda y reactivar `CALENDARIO_ACTIVO`.
-- **Medir una pasada deportiva real** y pasar `deportes` al cron.
 - **Retención:** borrado transaccional de dependencias exclusivas antes de
   activar la poda de 45 días.
 - **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un
