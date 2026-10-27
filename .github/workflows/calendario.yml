@@ -78,7 +78,9 @@ jobs:
         with:
           path: ~/.cache/voceiro/limites
           key: limites-${{ hashFiles('shared/territorios/limites.json') }}
-      - name: Recoger directamente en Turso
+      - name: Recoger, revisar temporadas y publicar con una sola carga del núcleo
+        # Cada fuente guarda al terminar. Si una falla, las demás siguen, se publica
+        # el estado válido y el job se marca fallido al final (agenda/pasada.py).
         env:
           OPERACION: ${{ inputs.operacion || 'recoger' }}
           INICIO: ${{ inputs.inicio }}
@@ -87,66 +89,12 @@ jobs:
           FUENTE: ${{ inputs.fuente || 'cultura-galicia' }}
           CULTURA: ${{ inputs.cultura || 'todas' }}
           ACEPTAR_INVENTARIO: ${{ inputs.aceptar_inventario }}
-        run: |
-          if [ "$OPERACION" = reclasificar ]; then
-            python calendario.py --turso --reclasificar
-          fi
-          if [ "$OPERACION" = recoger ]; then
-            if [ "$FUENTE" != ninguna ]; then
-              args=(--turso --idioma "$IDIOMA")
-              if [ "$FUENTE" = ambas ]; then
-                args+=(--fuente cultura-galicia --fuente vidmar-f1)
-              else
-                args+=(--fuente "$FUENTE")
-              fi
-              if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
-              if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
-              python calendario.py "${args[@]}"
-            fi
-            args=(--turso)
-            if [ "$CULTURA" = madrid ] || [ "$CULTURA" = madrid-y-kulturklik ] || [ "$CULTURA" = todas ]; then
-              args+=(--recoger-cultura madrid)
-              if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario madrid); fi
-            fi
-            if [ "$CULTURA" = kulturklik ] || [ "$CULTURA" = madrid-y-kulturklik ] || [ "$CULTURA" = todas ]; then
-              args+=(--recoger-cultura kulturklik)
-              if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario kulturklik); fi
-            fi
-            if [ "$CULTURA" = zaragoza ] || [ "$CULTURA" = todas ]; then
-              args+=(--recoger-cultura zaragoza)
-              if [ "$ACEPTAR_INVENTARIO" = true ]; then args+=(--aceptar-inventario zaragoza); fi
-            fi
-            if [ "$CULTURA" != ninguna ]; then
-              if [ -n "$INICIO" ]; then args+=(--inicio "$INICIO"); fi
-              if [ -n "$FIN" ]; then args+=(--fin "$FIN"); fi
-              python calendario.py "${args[@]}"
-            fi
-          fi
-          python calendario.py --turso --preparar-nucleo
-      - name: Revisar temporadas y descubrir los próximos calendarios deportivos
-        id: temporadas
-        # Cada colección decide si le toca (cadencia, reintentos y presupuesto en
-        # agenda/temporadas.py). Un cron diario cabe en el presupuesto de ESPN: 3
-        # colecciones por fecha × 14 días = 42 de 64 peticiones.
-        if: github.event_name == 'schedule' || inputs.operacion == 'deportes'
-        continue-on-error: true
-        env:
+          # Temporadas: cada colección decide si le toca (cadencia, reintentos y
+          # presupuesto en agenda/temporadas.py). Un cron diario cabe en el
+          # presupuesto de ESPN: 3 colecciones por fecha × 14 días = 42 de 64.
+          DEPORTES: ${{ github.event_name == 'schedule' || inputs.operacion == 'deportes' }}
           COLECCIONES: ${{ inputs.colecciones }}
           FORZAR: ${{ inputs.forzar }}
-        run: |
-          args=(--turso --ejecutar --descubrir)
-          for c in ${COLECCIONES//,/ }; do args+=(--coleccion "$c"); done
-          if [ "$FORZAR" = true ]; then args+=(--forzar); fi
-          python -m agenda.operacion "${args[@]}"
-      - name: Revisar clasificación y relaciones de todas las fuentes guardadas
-        env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: python -m agenda.revision --turso
-      - name: Validar y publicar la lectura desde Turso
-        env:
           PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' || inputs.operacion == 'deportes' }}
           FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik,zaragoza' }}
           LECTURA_SQL: ${{ vars.CALENDARIO_LECTURA_SQL || 'false' }}
@@ -155,10 +103,43 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
-          args=(--turso)
-          if [ "$PUBLICAR" = true ]; then args+=(--fuentes "$FUENTES_PUBLICAS" --fuentes-control --publicar); fi
-          if [ "$PUBLICAR" = true ] && [ "$LECTURA_SQL" = true ]; then args+=(--lectura-sql); fi
-          python -m agenda.publicacion "${args[@]}"
-      - name: Señalar incidencias de la recogida deportiva después de publicar el estado válido
-        if: steps.temporadas.outcome == 'failure'
-        run: exit 1
+          fechas=""
+          if [ -n "$INICIO" ]; then fechas+=" --inicio $INICIO"; fi
+          if [ -n "$FIN" ]; then fechas+=" --fin $FIN"; fi
+          pasos=()
+          if [ "$OPERACION" = reclasificar ]; then
+            pasos+=(--paso "calendario --turso --reclasificar")
+          fi
+          if [ "$OPERACION" = recoger ]; then
+            case "$FUENTE" in
+              ninguna) piloto="" ;;
+              ambas) piloto=" --fuente cultura-galicia --fuente vidmar-f1" ;;
+              *) piloto=" --fuente $FUENTE" ;;
+            esac
+            if [ -n "$piloto" ]; then
+              pasos+=(--paso-tolerado "calendario --turso --idioma $IDIOMA$piloto$fechas")
+            fi
+            case "$CULTURA" in
+              ninguna) culturas="" ;;
+              todas) culturas="madrid kulturklik zaragoza" ;;
+              madrid-y-kulturklik) culturas="madrid kulturklik" ;;
+              *) culturas="$CULTURA" ;;
+            esac
+            for c in $culturas; do
+              paso="calendario --turso --recoger-cultura $c$fechas"
+              if [ "$ACEPTAR_INVENTARIO" = true ]; then paso+=" --aceptar-inventario $c"; fi
+              pasos+=(--paso-tolerado "$paso")
+            done
+          fi
+          pasos+=(--paso "calendario --turso --preparar-nucleo")
+          if [ "$DEPORTES" = true ]; then
+            paso="operacion --turso --ejecutar --descubrir"
+            for c in ${COLECCIONES//,/ }; do paso+=" --coleccion $c"; done
+            if [ "$FORZAR" = true ]; then paso+=" --forzar"; fi
+            pasos+=(--paso-tolerado "$paso")
+          fi
+          paso="publicacion --turso --revisar"
+          if [ "$PUBLICAR" = true ]; then paso+=" --fuentes $FUENTES_PUBLICAS --fuentes-control --publicar"; fi
+          if [ "$PUBLICAR" = true ] && [ "$LECTURA_SQL" = true ]; then paso+=" --lectura-sql"; fi
+          pasos+=(--paso "$paso")
+          python -m agenda.pasada "${pasos[@]}"

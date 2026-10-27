@@ -196,6 +196,16 @@ class RecolectorFEB(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Preparar el núcleo'):
                 revisar_guardado(['--turso'])
 
+    def test_revisar_y_publicar_comparten_una_carga(self):
+        n = feb.importar(None, html_feb(), AHORA)
+        with patch('agenda.turso.Almacen') as remoto, patch('sys.stdout', new_callable=io.StringIO) as salida:
+            remoto.return_value.cargar.return_value = {'nucleo': n}
+            publicar(['--turso', '--revisar'])
+        self.assertEqual(remoto.return_value.method_calls, [unittest.mock.call.cargar()])
+        informe, _, resto = salida.getvalue().partition('\n}\n')
+        self.assertEqual(json.loads(informe + '}')['fuentes']['feb']['eventos'], 3)
+        self.assertIn('[agenda] Lectura: 3 eventos', resto)
+
     def test_html_retiene_identidad_fechas_marcadores_y_tabla(self):
         m = html_feb()
         n = feb.importar(None, m, AHORA)
