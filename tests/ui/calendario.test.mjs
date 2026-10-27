@@ -37,7 +37,7 @@ function api(u){
   }
   if (ruta === '/calendario/objetivos') return { ...META, siguiente: null, entidades: [
     { tipo: 'agrupacion', id: 'liga', nombres: { es: 'Liga gallega' }, temas: ['teatro'] },
-    { tipo: 'territorio', id: 'vigo', nombres: { es: 'Vigo' }, temas: [] }] };
+    { tipo: 'territorio', id: 'vigo', nombres: { es: 'Vigo' }, temas: [] }].filter(e => !p.get('tipo') || p.get('tipo').split(',').includes(e.tipo)) };
   if (ruta.startsWith('/calendario/eventos/')) return { ...META, entidades: {}, evento: { ...tarjeta(decodeURIComponent(ruta.slice(20)), '2026-10-25'),
     lugar: { valor: { nombre: 'Circuito', municipio_literal: 'Jerez' }, conflicto: false },
     participaciones: [], enlaces: [], fuentes: [{ fuente: 'galicia', url: 'https://galicia.test/1' }],
@@ -195,6 +195,8 @@ test('qué consulta entidades publicadas sin territorios y filtra por objetivo',
   assert.notEqual(c.ultima().pathname, '/calendario/objetivos');
   await c.escribir('cal-que', 'liga');
   assert.deepEqual([c.ultima().pathname, c.ultima().searchParams.get('texto')], ['/calendario/objetivos', 'liga']);
+  // Los tipos se filtran en el servidor, antes del límite.
+  assert.deepEqual([c.ultima().searchParams.get('tipo'), c.ultima().searchParams.get('limite')], ['agrupacion,actividad,participante,lugar', '8']);
   const html = c.sugerencias['cal-sug-que'].innerHTML;
   assert.match(html, /data-valor="agrupacion:liga"[^>]*>Liga gallega <small>Teatro/);
   assert.doesNotMatch(html, /territorio:vigo/);
@@ -217,6 +219,35 @@ test('un fallo del primer backend pasa al segundo; un error de la consulta no se
   await d.abrir();
   assert.equal(d.pedidas.filter(u => u.pathname === '/calendario/eventos').length, 1);
   assert.equal(d.api.s.error, 'calError');
+});
+
+test('un 429 no pasa al otro backend y se espera lo que pide Retry-After', async () => {
+  let limitado = false;
+  const c = contexto({ responder: u => limitado && u.pathname === '/calendario/eventos'
+    ? new Response(JSON.stringify({ error: 'demasiadas peticiones' }), { status: 429, headers: { 'Retry-After': '30' } }) : api(u) });
+  await c.abrir();
+  limitado = true;
+  await c.click('tema', 'teatro');
+  assert.deepEqual(c.pedidas.slice(-1).map(u => u.hostname + u.pathname), ['cf.test/calendario/eventos']);
+  assert.equal(c.api.s.error, 'calError');
+  const antes = c.pedidas.length;
+  await c.click('tema', 'tenis');
+  assert.equal(c.pedidas.length, antes);
+});
+
+test('si falla la renovación se conserva la lista anterior; otra consulta no la hereda', async () => {
+  let falla = false;
+  const c = contexto({ responder: u => falla && u.pathname === '/calendario/eventos'
+    ? Response.json({ error: 'caída' }, { status: 503 }) : api(u) });
+  await c.abrir();
+  await c.click('mas');
+  falla = true;
+  await c.click('renovar');
+  assert.equal(c.api.s.error, 'calError');
+  assert.equal(cantidad(c.api.calContenido()), 40);
+  assert.equal(c.api.s.lista.cargando, false);
+  await c.click('tema', 'teatro');
+  assert.equal(c.api.s.lista, null);
 });
 
 test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fuente', async () => {
