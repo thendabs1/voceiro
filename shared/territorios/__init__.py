@@ -81,8 +81,23 @@ def resolver(sistema, codigo):
     return cargar().resolver(sistema, codigo)
 
 
+def sedes_medio(medio):
+    """Dónde está el emisor. Nunca localiza ni cubre; es una relación aparte.
+    Solo las sedes `resueltas`: pendiente o en conflicto no publican nada."""
+    return [{'territorio': s['territorio'], 'papel': 'sede'}
+            for s in medio.get('sede') or []
+            if s.get('estado') == 'resuelto' and cargar().territorio(s.get('territorio'))]
+
+
 def cobertura_medio(medio):
-    """Cobertura editorial española; no atribuye territorio a cada artículo."""
+    """Cobertura editorial; no atribuye territorio a cada artículo.
+    Una `cobertura` explícita sustituye a la proyección heredada de `region` y
+    `ambito`; pendiente o en conflicto, no reactiva la heredada."""
+    explicita = medio.get('cobertura')
+    if explicita is not None:
+        ids = explicita.get('territorios') if explicita.get('estado') == 'resuelto' else []
+        return [{'territorio': t, 'papel': 'cobertura_editorial'}
+                for t in dict.fromkeys(ids or []) if cargar().territorio(t)]
     if medio.get('region'):
         territorio = resolver('medios:region', medio['region'])
     elif medio.get('ambito') == 'nacional' and not medio.get('pais'):
@@ -93,9 +108,17 @@ def cobertura_medio(medio):
 
 
 def territorios_medio(medio):
-    """País de clasificación y cobertura son relaciones distintas."""
+    """País de clasificación, sede y cobertura son relaciones distintas."""
     relaciones = cobertura_medio(medio)
     pais = resolver('medios:pais', medio.get('pais'))
     if pais:
         relaciones.append({'territorio': pais['id'], 'papel': 'pais_catalogo'})
-    return relaciones
+    return relaciones + sedes_medio(medio)
+
+
+def problemas_territoriales(medio):
+    """Identidades de `sede`/`cobertura` que no existen en el catálogo común."""
+    ids = [s.get('territorio') for s in medio.get('sede') or []]
+    ids += (medio.get('cobertura') or {}).get('territorios') or []
+    return [f"{medio['d']}: territorio desconocido {t!r}"
+            for t in ids if t and not cargar().territorio(t)]

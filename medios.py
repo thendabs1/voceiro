@@ -1192,6 +1192,42 @@ def total_medios():
     return sum(len(g['items']) for g in MEDIA_CATALOG)
 
 
+# Campos opcionales de emisor (ver shared/territorios/relacionador.md): ningún
+# medio actual los lleva. Ausentes, el territorio sigue saliendo de region/ambito.
+#   clase      naturaleza del emisor; ausente = 'medio'
+#   sede       [{'estado', 'territorio', 'funcion'?, 'evidencias'}]
+#   cobertura  {'estado', 'territorios': [...], 'candidatos'?, 'evidencias'}
+CLASES = {'medio', 'club', 'web_aficion', 'federacion', 'administracion', 'universidad',
+          'institucion_cultural', 'asociacion', 'colegio_profesional', 'blog', 'newsletter'}
+ESTADOS_TERRITORIO = {'resuelto', 'pendiente', 'conflicto'}
+FUNCIONES_SEDE = {'editorial', 'social'}
+
+
+def problemas_forma_emisor(it):
+    """Defectos de forma de clase/sede/cobertura; las identidades se comprueban
+    contra el catálogo territorial en shared.territorios.problemas_territoriales."""
+    d, fallos = it['d'], []
+    if it.get('clase', 'medio') not in CLASES:
+        fallos.append(f"{d}: clase '{it['clase']}' fuera de {sorted(CLASES)}")
+    sedes, cobertura = it.get('sede'), it.get('cobertura')
+    if sedes is not None and not isinstance(sedes, list):
+        fallos.append(f"{d}: sede debe ser una lista")
+    bloques = [('sede', s, 'territorio') for s in sedes] if isinstance(sedes, list) else []
+    if cobertura is not None:
+        bloques.append(('cobertura', cobertura, 'territorios'))
+    for nombre, b, clave in bloques:
+        if not isinstance(b, dict) or b.get('estado') not in ESTADOS_TERRITORIO:
+            fallos.append(f"{d}: {nombre} sin estado válido {sorted(ESTADOS_TERRITORIO)}")
+            continue
+        if b['estado'] == 'resuelto' and not (b.get(clave) and b.get('evidencias')):
+            fallos.append(f"{d}: {nombre} resuelta sin {clave} o sin evidencias")
+        if b['estado'] != 'resuelto' and b.get(clave):
+            fallos.append(f"{d}: {nombre} {b['estado']} no puede declarar {clave}")
+        if nombre == 'sede' and b.get('funcion', 'editorial') not in FUNCIONES_SEDE:
+            fallos.append(f"{d}: sede con función '{b['funcion']}' fuera de {sorted(FUNCIONES_SEDE)}")
+    return fallos
+
+
 def _validar_catalogo():
     """Verifica consistencia del catálogo. Imprime warnings."""
     import warnings
@@ -1219,6 +1255,8 @@ def _validar_catalogo():
             warnings.warn(f"{d}: nacional con region/pais")
         if it['lang_principal'] not in it['langs']:
             warnings.warn(f"{d}: lang_principal '{it['lang_principal']}' no está en langs {it['langs']}")
+        for fallo in problemas_forma_emisor(it):
+            warnings.warn(fallo)
         for f in fuentes_de(it):
             if _fuente_invalida(f):
                 warnings.warn(f"{d}: fuente mal formada {f!r}")
