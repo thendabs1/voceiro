@@ -12,6 +12,46 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
   meteorológicas y cobertura editorial múltiple:
   [relacionador territorial](shared/territorios/relacionador.md#pendiente).
 
+## Fuentes de noticias: clubes, federaciones y otros emisores
+
+El modelo ya admite `clase`, `sede` y `cobertura` (hasta provincia) y
+`medios.categoria_de`; ningún medio los usa aún
+([contrato](shared/territorios/relacionador.md#sede-cobertura-explícita-y-clase-del-emisor)).
+No dar de alta ningún club, federación ni institución hasta resolver la
+activación (tercer punto). La cobertura nunca baja de provincia: la
+clasificación por ciudad no es fiable (16 % de sedes resueltas en el sondeo).
+
+- Publicar `clase` y la categoría estructurada en el catálogo, las portadas
+  (`cosecha/formatos.py` no lleva territorio ni clase) y las estadísticas, y
+  sustituir los troceos del literal de grupo por `« · »`
+  (`front/app/16-medios.js`, `14-estadisticas.js`, `17-asistente-modos.js`,
+  autocompletado). El literal no cambia: los modos guardados lo usan como
+  identidad.
+- Datos: cobertura provincial con evidencia para unos 15 diarios (Diario de
+  Almería, Cádiz, Sevilla, Sur, Granada Hoy, Málaga Hoy, Diario de León,
+  Valladolid, Burgos, Diari de Tarragona, Alicante Plaza, Castellón Plaza,
+  Ideal, Heraldo, Hoy). eldiario.es se queda como nacional; sus ediciones
+  regionales serían canales. No usar las coberturas con municipio de los
+  sondeos (El Correo, ABC).
+- Activación de fuentes nuevas (`existente`, `territorio`, `seguimiento`): el
+  filtro debe aplicarse antes del cupo y la deduplicación de portadas y de los
+  «compartidos» de estadísticas; si no, 200 fuentes alteran lo existente. Hay
+  que recuperar el histórico de las fuentes adicionales (hoy solo se relee
+  `all`), dar cadencia y umbral de suficiencia por emisor (hoy cinco titulares
+  para todos) y medir el recolector antes de crecer.
+- Confirmar quién lanza `actualizar.yml` y con qué cadencia: el repositorio
+  solo tiene `workflow_dispatch`.
+- Selección por territorio (directa, contenida, superior) como operador del
+  parser compartido: solo cuando se pida buscar «todo lo de Andalucía».
+- Portadas configurables o bajo demanda: aparcado. La opción recomendada es
+  ampliar el ensamblado en cliente de `front/app/10-capas.js` (límite de 12
+  dominios en filtros explícitos sin grupo, selección guardada como lista de
+  dominios para clientes antiguos); medir antes selecciones distintas, bytes y
+  tiempos en móvil.
+- Atletismo: pedir permiso a la RFEA para su calendario
+  ([fuentes](agenda/fuentes.md#atletismo)); World Athletics solo con
+  autorización escrita.
+
 ## Cosecha y fechas
 
 - Obtener casos reales de medios que fechen noticias con la celebración de un
