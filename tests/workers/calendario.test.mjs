@@ -106,6 +106,19 @@ test('GP con sesiones fuera de sus días locales: SQL, resumen y agrupación coi
   assert.deepEqual((await b.pedir('/calendario/eventos?pendientes=1')).dato.eventos, []);
 });
 
+test('la tarjeta lleva la obra de sus funciones y se filtran por objetivo', async t => {
+  const datos = muestra();
+  datos.entidades['actividad:obra'] = { id: 'obra', tipo: 'actividad', clase: 'ficha',
+    nombres: { gl: 'Os Bolechas' }, temas: [], codigos: [], objetivos: ['actividad:obra'] };
+  for (const i of [5, 6]) datos.eventos[i].objetivos = [...datos.eventos[i].objetivos, 'actividad:obra'];
+  const b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir(ventana + '&objetivo=actividad:obra');
+  assert.deepEqual(r.dato.eventos.map(e => [e.id, e.obra]), ['005', '006'].map(id =>
+    [id, { id: 'actividad:obra', nombres: { gl: 'Os Bolechas' } }]));
+  const otras = b.db.prepare("SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id NOT IN ('005','006')").all();
+  assert.ok(otras.every(f => !('obra' in JSON.parse(f.tarjeta_json))));
+});
+
 test('tramos iguales en todas las zonas se guardan una vez y la lectura no lleva «comprobado» por cita', async t => {
   const b = base(); t.after(() => b.db.close());
   const zonas = id => b.db.prepare('SELECT DISTINCT zona FROM agenda_lectura_tramos WHERE evento=? ORDER BY zona').all(id).map(f => f.zona);
