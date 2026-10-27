@@ -77,6 +77,20 @@ class Zaragoza(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Página Zaragoza inesperada'):
                 recogida.cultura('zaragoza')
 
+    def test_cambio_de_funcion_no_es_evidencia_del_recinto_ni_de_la_obra(self):
+        n = zaragoza.importar(None, muestra('zaragoza'), AHORA)
+        compartidas = lambda m: {k: list(e['evidencias']) for k, e in m['entidades'].items()
+                                 if e['tipo'] in ('lugar', 'actividad')}
+        filas = muestra('zaragoza')
+        visitas = next(f for f in filas if f['id'] == 312997)
+        visitas['lastUpdated'] = '2026-10-26T09:00:00'
+        visitas['subEvent'][0]['startDate'] = visitas['subEvent'][0]['endDate'] = '2026-09-26T00:00:00'
+        b = zaragoza.importar(n, filas, LUEGO)
+        self.assertGreater(len(b['observaciones']), len(n['observaciones']))
+        # Cuatro funciones, un recinto: una sola evidencia, que no cambia con ellas.
+        self.assertEqual(compartidas(b), compartidas(n))
+        self.assertTrue(all(len(v) == 1 for v in compartidas(n).values()))
+
     def test_recintos_se_ubican_por_su_punto(self):
         import tempfile
         from shared.territorios.limites import Limites

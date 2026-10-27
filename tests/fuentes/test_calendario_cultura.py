@@ -42,6 +42,10 @@ class AgendasCulturales(unittest.TestCase):
         b = madrid.importar(n, cambio, LUEGO)
         self.assertEqual(n['entidades'].keys(), b['entidades'].keys())
         self.assertGreater(len(b['observaciones']), len(n['observaciones']))
+        # La instalación tiene documento propio: el cambio de cita no es evidencia suya.
+        recintos = lambda m: {k: e['evidencias'] for k, e in m['entidades'].items() if e['tipo'] == 'lugar'}
+        self.assertTrue(recintos(n))
+        self.assertEqual(recintos(b), recintos(n))
         # El índice de fila CKAN, la descripción o el precio no son evidencia de la cita.
         ruido = deepcopy(filas)
         for i, f in enumerate(ruido):
@@ -111,6 +115,13 @@ class AgendasCulturales(unittest.TestCase):
         self.assertEqual(referencia['id_externo'], '476')
         self.assertEqual(referencia['contexto'], {'provincia_nora': '31'})
         self.assertFalse(any(e['tipo'] == 'lugar' for e in n['entidades'].values()))
+        # Los eventos de un municipio comparten su documento: aplazar uno no lo toca.
+        filas = muestra('kulturklik')
+        for f in filas:
+            f['startDate'] = f['endDate'] = '2027-02-01T00:00:00Z'
+        b = kulturklik.importar(n, filas, LUEGO)
+        self.assertGreater(len(b['observaciones']), len(n['observaciones']))
+        self.assertEqual(b['entidades'][nucleo.clave(municipio)]['evidencias'], municipio['evidencias'])
 
     def test_id_duplicado_con_datos_distintos_rechaza_toda_la_importacion(self):
         for modulo in (madrid, kulturklik):
