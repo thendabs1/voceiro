@@ -288,7 +288,8 @@ Reglas para cada fuente nueva:
 
 1. **Respuesta completa o nada.** La familia distingue vacío acreditado (total
    cero declarado), respuesta parcial y fallo; solo la completa acredita
-   ausencias. La ventana de fechas filtra después, nunca antes del inventario.
+   ausencias. La ventana de fechas filtra después, nunca antes del inventario,
+   y no excluye una cita ya conocida: aplazada lejos, se actualiza igual.
 2. **Identidad de función.** ID propio si la fuente lo da (Zaragoza
    `subEvent.id`); si no, obra + fecha (CyL, Málaga), declarada en la fuente.
 3. **Territorio por coordenadas.** El recinto guarda el bloque `coordenadas`
