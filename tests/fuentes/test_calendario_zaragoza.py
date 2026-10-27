@@ -77,6 +77,23 @@ class Zaragoza(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Página Zaragoza inesperada'):
                 recogida.cultura('zaragoza')
 
+    def test_cita_conocida_aplazada_fuera_de_la_ventana_se_actualiza(self):
+        n = zaragoza.importar(None, muestra('zaragoza'), AHORA)
+        filas = muestra('zaragoza')
+        nomina = next(f for f in filas if f['id'] == 312317)
+        for d in (nomina, nomina['subEvent'][0]):
+            d['startDate'] = d['endDate'] = '2027-01-20T00:00:00'
+        pagina = json.dumps({'totalCount': 4, 'start': 0, 'rows': 500, 'result': filas})
+        conocidos = {r['id_externo'] for r in n['referencias'].values() if r['tipo_externo'] == 'subevent_id'}
+        with patch('agenda.recogida.descargar', return_value=pagina):
+            sin, _, _ = recogida.cultura('zaragoza', '2026-10-27', '2026-10-27')
+            seleccion, url, _ = recogida.cultura('zaragoza', '2026-10-27', '2026-10-27', conocidos)
+        self.assertNotIn(nomina, sin)
+        self.assertIn(nomina, seleccion)
+        p = proyectar(zaragoza.importar(n, seleccion, LUEGO, url))
+        e, = [e for e in p['eventos'] if e['nombres']['es'] == 'Next level: Entiende tu nómina']
+        self.assertEqual(e['programacion']['valor']['cuando']['inicio']['fecha'], '2027-01-20')
+
     def test_recintos_se_ubican_por_su_punto(self):
         import tempfile
         from shared.territorios.limites import Limites
