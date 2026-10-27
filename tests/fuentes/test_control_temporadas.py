@@ -278,6 +278,18 @@ class ContratoControl:
         d = self.repo.descubrimiento('wrc')
         self.assertEqual((d['errores_consecutivos'], d['proxima_revision']), (0, '2026-11-08T12:00:00.000000+00:00'))
 
+    def test_reserva_incierta_en_el_descubrimiento_no_es_temporada_ausente(self):
+        def recoger(*args, **kwargs):
+            try:
+                raise ErrorTurso('comprobar estado')
+            except ErrorTurso as error:
+                raise PresupuestoAgotado('no se envió la petición') from error
+        for coleccion, error in (('wrc', recoger), ('f1', ConflictoControl('pasada sustituida'))):
+            with self.subTest(coleccion), patch.object(operacion.proveedores, 'recoger', side_effect=error):
+                with self.assertRaises((ErrorTurso, ConflictoControl)):
+                    operacion.descubrir(self.repo, coleccion, AHORA)
+                self.assertIsNone(self.repo.descubrimiento(coleccion))
+
     def test_confirmar_rechaza_unidad_o_proveedor_ajenos(self):
         t, p = self.comenzar()
         self.reservar(t, p)

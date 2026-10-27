@@ -278,9 +278,11 @@ def descubrir(repo, coleccion, ahora, *, proveedor=None, year=None, fecha=None, 
                 raise ValueError('No hay un calendario o selección válida publicados para la temporada solicitada')
             # Validar toda la estructura antes de registrar una nueva temporada.
             proveedores.importar(None, proveedor, pagina, ahora, url=url, temporada=alcance['referencia'])
-    except ErrorTurso:
+    except (ErrorTurso, ConflictoControl):
         raise
     except Exception as error:
+        if isinstance(error, PresupuestoAgotado) and isinstance(error.__cause__, ErrorTurso):
+            raise error.__cause__  # Como en ejecutar_temporada: no es una temporada ausente.
         # Buscar la temporada siguiente antes de que se publique es lo normal, no un fallo.
         repo.terminar_descubrimiento(pasada, ahora, error=error, siguiente=bool(conocidas))
         if conocidas:
