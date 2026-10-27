@@ -7,6 +7,7 @@ from unittest.mock import patch
 from agenda import nucleo, presencia, recogida, zaragoza
 from agenda.publicacion import proyectar
 from test_calendario_cultura import AHORA, LUEGO, muestra
+from test_limites import provincias
 
 
 class Zaragoza(unittest.TestCase):
@@ -75,6 +76,20 @@ class Zaragoza(unittest.TestCase):
                 {'totalCount': 4, 'start': 500, 'rows': 500, 'result': filas})):
             with self.assertRaisesRegex(ValueError, 'Página Zaragoza inesperada'):
                 recogida.cultura('zaragoza')
+
+    def test_recintos_se_ubican_por_su_punto(self):
+        import tempfile
+        from shared.territorios.limites import Limites
+        with tempfile.TemporaryDirectory() as tmp:
+            m, _ = provincias(tmp, {'50': [('50297', -1.1, 41.5, 0.4)]})
+            p = proyectar(zaragoza.importar(None, muestra('zaragoza'), AHORA),
+                          limites_municipales=Limites(m, tmp))
+        estados = {e['nombres']['es']: e.get('ubicacion_estado') for e in p['entidades'].values()
+                   if e['tipo'] == 'lugar'}
+        self.assertEqual(sorted(estados.values(), key=str), [None, 'resuelto', 'resuelto', 'resuelto'])
+        con_municipio = [e for e in p['eventos'] if e['territorios']]
+        self.assertEqual(len(con_municipio), 6)  # La temporada de fútbol sala no trae geometría.
+        self.assertTrue(all(e['territorios'][0]['territorio'] == 'es:municipio:50297' for e in con_municipio))
 
     def test_rechaza_obra_sin_identidad_y_funcion_sin_id(self):
         fila = muestra('zaragoza')[0]

@@ -12,8 +12,8 @@ from . import nucleo
 from .publicacion import proyectar
 
 
-def revisar(n, fuentes=None):
-    p = proyectar(n, fuentes)
+def revisar(n, fuentes=None, limites_municipales=None):
+    p = proyectar(n, fuentes, limites_municipales=limites_municipales)
     entidades = p['entidades']
     lugares = {}
     for r in p['relaciones']:
@@ -75,7 +75,8 @@ def main(argv=None):
         with open(args.entrada, encoding='utf-8') as archivo:
             datos = json.load(archivo)
     fuentes = args.fuentes.split(',') if args.fuentes is not None else None
-    print(json.dumps(revisar(datos.get('nucleo', datos), fuentes), ensure_ascii=False, indent=2))
+    from shared.territorios.limites import cargar as cargar_limites
+    print(json.dumps(revisar(datos.get('nucleo', datos), fuentes, cargar_limites()), ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':

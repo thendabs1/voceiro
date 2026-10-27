@@ -95,9 +95,12 @@ class LimitesMunicipales:
                 cercanos.add(codigo)
             if _dentro(punto, anillos[0]) and not any(_dentro(punto, a) for a in anillos[1:]):
                 candidatos.setdefault(codigo, []).append(indice)
-        estado = 'conflicto' if len(candidatos) > 1 else 'pendiente' if cercanos or not candidatos else 'resuelto'
+        # Solo otro municipio a menos del margen hace dudar: la costa o una
+        # frontera sin recintos cartografiados no ofrecen otro destino.
+        cerca = bool(cercanos - candidatos.keys()) or not candidatos and bool(cercanos)
+        estado = 'conflicto' if len(candidatos) > 1 else 'pendiente' if cerca or not candidatos else 'resuelto'
         return {'estado': estado, 'territorio': 'es:municipio:' + next(iter(candidatos)) if estado == 'resuelto' else None,
-                'candidatos': sorted(candidatos), 'recintos': candidatos,
-                'motivo': 'recintos_solapados' if len(candidatos) > 1 else 'cerca_del_limite' if cercanos
+                'candidatos': sorted(candidatos), 'recintos': candidatos, 'cercanos': sorted(cercanos),
+                'motivo': 'recintos_solapados' if len(candidatos) > 1 else 'cerca_del_limite' if cerca
                     else 'punto_en_recinto_municipal' if candidatos else 'fuera_de_cobertura',
                 'margen_revision_m': self.margen_m}

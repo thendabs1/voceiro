@@ -17,7 +17,7 @@ from shared.territorios import cargar as cargar_territorios
 from shared.territorios.relacionador import cargar as cargar_relacionador
 
 
-def proyectar(n, fuentes=None, generado=None, control=None):
+def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=None):
     nucleo.validar(n)
     permitidas = set(n['fuentes']) if fuentes is None else set(fuentes)
     if permitidas - n['fuentes'].keys():
@@ -106,20 +106,24 @@ def proyectar(n, fuentes=None, generado=None, control=None):
                 for i in sorted(n['entidades'][k]['evidencias']) if i in observaciones and i in activas
                 and (bloque is None or bloque in observaciones[i]['bloques'])]
 
-    def resolver_entidad(e, referencias, operacion, origen, conflicto=False):
+    def resolver_entidad(e, referencias, operacion, origen, conflicto=False, adicionales=()):
         resultados = [getattr(relacionador, operacion)(r) for r in referencias]
         for resultado in resultados:
             resultado['origen'] = deepcopy(origen)
-        ids = {r['territorio'] for r in resultados if r['estado'] == 'resuelto'}
-        estado = ('conflicto' if conflicto or len(ids) > 1 or any(r['estado'] == 'conflicto' for r in resultados)
-                  else 'resuelto' if resultados and all(r['estado'] == 'resuelto' for r in resultados)
+        resultados.extend(adicionales)
+        # Un recinto sin correspondencia no contradice la ubicación que acredita su punto.
+        decisivos = [r for r in resultados if not (adicionales and r['estado'] == 'pendiente'
+                     and r['motivo'] == 'sin_correspondencia')] or resultados
+        ids = {r['territorio'] for r in decisivos if r['estado'] == 'resuelto'}
+        estado = ('conflicto' if conflicto or len(ids) > 1 or any(r['estado'] == 'conflicto' for r in decisivos)
+                  else 'resuelto' if decisivos and all(r['estado'] == 'resuelto' for r in decisivos)
                   else 'pendiente')
         prefijo = 'territorio' if operacion == 'resolver_referencia' else 'ubicacion'
         e[prefijo + '_resoluciones'] = resultados
         e[prefijo + '_estado'] = estado
         e[prefijo + '_motivo'] = ('identificadores_en_conflicto' if conflicto else
             'referencias_incompatibles' if len(ids) > 1 else 'sin_referencia' if not resultados else
-            next((r['motivo'] for r in resultados if r['estado'] != 'resuelto'), 'correspondencia_acreditada'))
+            next((r['motivo'] for r in decisivos if r['estado'] != 'resuelto'), 'correspondencia_acreditada'))
         e[prefijo + '_comun'] = territorios.territorio(next(iter(ids))) if estado == 'resuelto' else None
 
     for k, e in entidades.items():
@@ -128,10 +132,18 @@ def proyectar(n, fuentes=None, generado=None, control=None):
             referencias = {r['id']: r for o in pruebas_origen(k)
                            if (r := n['referencias'][o['referencia']])['proveedor'] == 'madrid'
                            and r['tipo_externo'] == 'instalacion_vgnextoid'}
-            if referencias:
+            puntos = []
+            if limites_municipales is not None:
+                origen = pruebas_origen(k, 'coordenadas')
+                for lat, lon in sorted({(c['latitud'], c['longitud']) for o in origen
+                                        if (c := observaciones[o['observacion']]['bloques']['coordenadas'])}):
+                    puntos.append({**limites_municipales.resolver(lon, lat), 'origen': [o for o in origen
+                        if observaciones[o['observacion']]['bloques']['coordenadas'] == {'latitud': lat, 'longitud': lon}]})
+            if referencias or puntos:
                 resolver_entidad(e, [{'sistema': 'madrid:instalacion_vgnextoid',
                                       'codigo': r['id_externo'], 'contexto': {}}
-                                     for r in referencias.values()], 'resolver_ubicacion', pruebas_origen(k))
+                                     for r in referencias.values()], 'resolver_ubicacion', pruebas_origen(k),
+                                 adicionales=puntos)
             continue
         if e['tipo'] != 'territorio':
             continue
@@ -342,7 +354,12 @@ def main(argv=None):
         repo.inicializar()
         control = repo.publico()
         fuentes = sorted(set(fuentes) | (control['eventos'].keys() & n['fuentes'].keys()))
-    datos = proyectar(n, fuentes, control=control)
+    from shared.territorios.limites import cargar as cargar_limites
+    datos = proyectar(n, fuentes, control=control, limites_municipales=cargar_limites())
+    sin_limites = sorted({p for e in datos['entidades'].values() for r in e.get('ubicacion_resoluciones', ())
+                          if r['motivo'] == 'limites_no_disponibles' for p in r['provincias']})
+    if sin_limites and (args.publicar or args.lectura_sql):
+        raise ValueError('Límites municipales no disponibles para publicar: ' + ', '.join(sin_limites))
     if args.salida:
         guardar(args.salida, datos)
     if args.lectura_sql:

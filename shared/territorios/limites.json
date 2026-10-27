@@ -1,0 +1,690 @@
+{
+  "version": 1,
+  "fuente": "Instituto Geográfico Nacional · Unidades administrativas INSPIRE (BDDAE)",
+  "licencia": "CC BY 4.0",
+  "licencia_url": "https://www.ign.es/resources/licencia/Condiciones_licenciaUso_IGN.pdf",
+  "servicio": "https://www.ign.es/wfs-inspire/unidades-administrativas",
+  "comprobado": "2026-10-27T10:38:52+00:00",
+  "margen_revision_m": 50,
+  "prefijo_r2": "territorios/limites/",
+  "provincias": {
+    "01": {
+      "archivo": "01-4e39097dacaab9f3.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34160101%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "4e39097dacaab9f3aac54225d36092eb1549cf984d5493556d96730a31003c5e",
+      "bytes": 343693,
+      "municipios": 51,
+      "caja": [
+        -3.2867669,
+        42.4723608,
+        -2.2359396,
+        43.2171873
+      ]
+    },
+    "02": {
+      "archivo": "02-b1fc5b3f97fb0f58.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34080202%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "b1fc5b3f97fb0f58415cfa197be229d45ddacef648abcc71a1c6a6c146e87d5e",
+      "bytes": 314611,
+      "municipios": 87,
+      "caja": [
+        -2.8828884,
+        38.0218377,
+        -0.9157933,
+        39.4230767
+      ]
+    },
+    "03": {
+      "archivo": "03-d6e23d3e4d60ffbf.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34100303%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "d6e23d3e4d60ffbffeec6942e78a43f1b0146cdbe49ff9d8b6a176bfb9785623",
+      "bytes": 538732,
+      "municipios": 141,
+      "caja": [
+        -1.0941618,
+        37.8437789,
+        0.2340674,
+        38.8873914
+      ]
+    },
+    "04": {
+      "archivo": "04-73f768836dee624f.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34010404%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "73f768836dee624f4c6f3060ef297b1652c4e3cbd0c8c3e7e8070cd0697e382e",
+      "bytes": 568682,
+      "municipios": 103,
+      "caja": [
+        -3.1401874,
+        35.937646,
+        -1.6301237,
+        37.9162478
+      ]
+    },
+    "05": {
+      "archivo": "05-526017600dce24ba.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34070505%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "526017600dce24ba7e4cbc80c9509616f714377cebc1457f0a8d9b0abebc2ea3",
+      "bytes": 411067,
+      "municipios": 248,
+      "caja": [
+        -5.7375619,
+        40.0819259,
+        -4.1602343,
+        41.1642497
+      ]
+    },
+    "06": {
+      "archivo": "06-db970381333363f9.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34110606%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "db970381333363f974a2004253af59b5507c5a0802485ca6a758b31cf844258b",
+      "bytes": 758687,
+      "municipios": 165,
+      "caja": [
+        -7.335668,
+        37.941026,
+        -4.6475774,
+        39.4517888
+      ]
+    },
+    "07": {
+      "archivo": "07-c5335cb239ce7ad0.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34040707%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "c5335cb239ce7ad0c9cb2761acfee43954c78057c92d412454a70c4cf3542df1",
+      "bytes": 836010,
+      "municipios": 67,
+      "caja": [
+        1.1572406,
+        38.6403876,
+        4.3277847,
+        40.0945744
+      ]
+    },
+    "08": {
+      "archivo": "08-613b25feb2f64975.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34090808%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "613b25feb2f649752791cf3806e956f8475e5e29e10c3e1572c5b4672367c134",
+      "bytes": 2327754,
+      "municipios": 311,
+      "caja": [
+        1.3603969,
+        41.1927453,
+        2.7775843,
+        42.3229607
+      ]
+    },
+    "09": {
+      "archivo": "09-70b0e3045d668a28.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34070909%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "70b0e3045d668a285e583175d09a497d6da0d3cf6e37c109b6e7fb2899795783",
+      "bytes": 522558,
+      "municipios": 371,
+      "caja": [
+        -4.3353271,
+        41.4507842,
+        -2.517397,
+        43.1987473
+      ]
+    },
+    "10": {
+      "archivo": "10-2bb91c7bf48af54f.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34111010%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "2bb91c7bf48af54fd2c06d66b40187f287e72f045aed1eee49a91b1c2d3778ea",
+      "bytes": 1081621,
+      "municipios": 223,
+      "caja": [
+        -7.5413318,
+        39.0314856,
+        -4.9529505,
+        40.4866514
+      ]
+    },
+    "11": {
+      "archivo": "11-0ee019fc4ece9b84.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34011111%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "0ee019fc4ece9b8489ee05f03024af19b819b5ab31cfe17774d4fffbbeb0da31",
+      "bytes": 527475,
+      "municipios": 45,
+      "caja": [
+        -6.473737,
+        35.999968,
+        -5.0867934,
+        37.0524453
+      ]
+    },
+    "12": {
+      "archivo": "12-c88f866a50ebb984.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34101212%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "c88f866a50ebb98422879a414681e5428206497e9c29e9dd197b6ae61d2c2aab",
+      "bytes": 412121,
+      "municipios": 135,
+      "caja": [
+        -0.8462969,
+        39.7146978,
+        0.6903134,
+        40.7886312
+      ]
+    },
+    "13": {
+      "archivo": "13-ac7a3f5c6edfb0b0.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34081313%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "ac7a3f5c6edfb0b0cb870e69a5f34128e671192cd13baf80afe737915111c734",
+      "bytes": 592636,
+      "municipios": 102,
+      "caja": [
+        -5.0469484,
+        38.3424525,
+        -2.6378903,
+        39.5767615
+      ]
+    },
+    "14": {
+      "archivo": "14-0ea852667d9e5b13.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34011414%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "0ea852667d9e5b1325ca4167bccee320ee35048390ef93d1e603cdf91d14e67c",
+      "bytes": 779703,
+      "municipios": 77,
+      "caja": [
+        -5.585924,
+        37.1840705,
+        -4.0009398,
+        38.7290874
+      ]
+    },
+    "15": {
+      "archivo": "15-300437aff027c79a.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34121515%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "300437aff027c79a459a6f0983d43d295e02f4b4348a4fb1dba8242fcc9b3f1a",
+      "bytes": 1029789,
+      "municipios": 93,
+      "caja": [
+        -9.3015157,
+        42.4590335,
+        -7.6617212,
+        43.7923796
+      ]
+    },
+    "16": {
+      "archivo": "16-e22e4d45e540623f.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34081616%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "e22e4d45e540623ff5e8b66e0264afd1c22942209f73d740dc549ffe999aa0c0",
+      "bytes": 503118,
+      "municipios": 238,
+      "caja": [
+        -3.1702345,
+        39.2264807,
+        -1.1425465,
+        40.6586924
+      ]
+    },
+    "17": {
+      "archivo": "17-ad8c951d241c4dad.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34091717%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "ad8c951d241c4dad2f9e9c8f6289df72442068fa08a96f0243bace27e7f0aca9",
+      "bytes": 1978461,
+      "municipios": 221,
+      "caja": [
+        1.7242977,
+        41.6507685,
+        3.3325538,
+        42.4955747
+      ]
+    },
+    "18": {
+      "archivo": "18-08d717041c672c1d.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34011818%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "08d717041c672c1d90c912531d025e70ab6a85a3dcb80fcb74062ce803e1ee61",
+      "bytes": 707416,
+      "municipios": 174,
+      "caja": [
+        -4.3281329,
+        36.6935198,
+        -2.2077891,
+        38.0840932
+      ]
+    },
+    "19": {
+      "archivo": "19-5d9e7ad7ffa0991c.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34081919%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "5d9e7ad7ffa0991cb09a79bbccaa03fcfc0833d75697b318367e11abcc441e22",
+      "bytes": 527908,
+      "municipios": 288,
+      "caja": [
+        -3.5410982,
+        40.1524557,
+        -1.5356379,
+        41.3276322
+      ]
+    },
+    "20": {
+      "archivo": "20-b8770a776f46f21d.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34162020%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "b8770a776f46f21d172d82f4f74111a4248e93a1c537b63cf668b1b9138f0915",
+      "bytes": 225595,
+      "municipios": 88,
+      "caja": [
+        -2.6027191,
+        42.9313927,
+        -1.7293435,
+        43.3959108
+      ]
+    },
+    "21": {
+      "archivo": "21-bde5cdbba8bd55d7.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34012121%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "bde5cdbba8bd55d747af066df9ffc4e6bb56fcaf98deab0353ef38acd8b3e9b3",
+      "bytes": 472198,
+      "municipios": 80,
+      "caja": [
+        -7.5230471,
+        36.7897183,
+        -6.1215588,
+        38.2082098
+      ]
+    },
+    "22": {
+      "archivo": "22-1b6d692b52ec3b8a.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34022222%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "1b6d692b52ec3b8a9ac646e8245f5621963c73eb57116394c604c8d09b98b5f3",
+      "bytes": 629205,
+      "municipios": 202,
+      "caja": [
+        -0.9341684,
+        41.3478056,
+        0.7713067,
+        42.9243863
+      ]
+    },
+    "23": {
+      "archivo": "23-27e96bb23cd194d8.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34012323%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "27e96bb23cd194d8e0ad5c5ab69266b91195d913d1f65f5554f3f77b60040285",
+      "bytes": 569119,
+      "municipios": 97,
+      "caja": [
+        -4.2876404,
+        37.3782781,
+        -2.4349518,
+        38.5149506
+      ]
+    },
+    "24": {
+      "archivo": "24-0ffcc214c3e45566.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34072424%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "0ffcc214c3e455669077af914440d4d24b60ac7a531abc93670c9f00836629d7",
+      "bytes": 399108,
+      "municipios": 211,
+      "caja": [
+        -7.0770689,
+        42.0292261,
+        -4.7338815,
+        43.2382042
+      ]
+    },
+    "25": {
+      "archivo": "25-182f2dc04c2a0602.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34092525%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "182f2dc04c2a060289807e0ff20aec9851bb5ce1aef95c252e52a6237cb06bda",
+      "bytes": 1804794,
+      "municipios": 231,
+      "caja": [
+        0.3200365,
+        41.2741968,
+        1.8550577,
+        42.8614495
+      ]
+    },
+    "26": {
+      "archivo": "26-40549aceb4142d09.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34172626%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "40549aceb4142d0937d0e0f60f181231be53d27c6ed02659d1c71ddcce68d514",
+      "bytes": 231207,
+      "municipios": 174,
+      "caja": [
+        -3.1342714,
+        41.919034,
+        -1.6787015,
+        42.6442647
+      ]
+    },
+    "27": {
+      "archivo": "27-b288a69c3989755d.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34122727%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "b288a69c3989755dbf96ab3d55ca051e4ec05a86b74287fb72d792daae3d3aeb",
+      "bytes": 342992,
+      "municipios": 67,
+      "caja": [
+        -7.9997322,
+        42.3257002,
+        -6.814053,
+        43.7616442
+      ]
+    },
+    "28": {
+      "archivo": "28-91d6f67b030beb6b.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34132828%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "91d6f67b030beb6bd1c04cfe63e517d734c8e9f55c97e4d204fb9fa8418b9d04",
+      "bytes": 1156392,
+      "municipios": 179,
+      "caja": [
+        -4.5790762,
+        39.8847193,
+        -3.0529833,
+        41.1658448
+      ]
+    },
+    "29": {
+      "archivo": "29-c48fcdb18043513b.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34012929%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "c48fcdb18043513b2b06dff5e029b4598376f26e21fddfc5faaeb3aa3dcb92d9",
+      "bytes": 491548,
+      "municipios": 103,
+      "caja": [
+        -5.6117767,
+        36.3102806,
+        -3.7659671,
+        37.2821995
+      ]
+    },
+    "30": {
+      "archivo": "30-97a1a2ef252ae934.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34143030%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "97a1a2ef252ae934fe8dab47ecbfdb6b252f5a3398f31cac688c65c7c1b328a2",
+      "bytes": 811375,
+      "municipios": 45,
+      "caja": [
+        -2.3441843,
+        37.3737525,
+        -0.647983,
+        38.7550843
+      ]
+    },
+    "31": {
+      "archivo": "31-02b628ad5375fd1b.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34153131%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "02b628ad5375fd1b5ad6fbbf12f419022d305824a7d1bd4a1cc8962d557cae05",
+      "bytes": 589012,
+      "municipios": 272,
+      "caja": [
+        -2.5000827,
+        41.9098937,
+        -0.7240697,
+        43.3148431
+      ]
+    },
+    "32": {
+      "archivo": "32-e236c8a47710cffb.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34123232%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "e236c8a47710cffbeb3a997c6251cc51f70aeb504c42e9a7f33ade3057d5e235",
+      "bytes": 236342,
+      "municipios": 92,
+      "caja": [
+        -8.3663444,
+        41.8072331,
+        -6.7339533,
+        42.5785999
+      ]
+    },
+    "33": {
+      "archivo": "33-eaf153d5ee204ec0.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34033333%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "eaf153d5ee204ec082851c54c02327db3556f507d5771cacf41b59dae07a3ae0",
+      "bytes": 633373,
+      "municipios": 78,
+      "caja": [
+        -7.1824889,
+        42.8825428,
+        -4.5104535,
+        43.6665322
+      ]
+    },
+    "34": {
+      "archivo": "34-baa3f0fc09b5ad3e.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34073434%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "baa3f0fc09b5ad3ec7bc295e095667f8bcf5851a3017f8b24b20b410ab46ab3e",
+      "bytes": 286661,
+      "municipios": 191,
+      "caja": [
+        -5.0318945,
+        41.7581663,
+        -3.8896224,
+        43.0609889
+      ]
+    },
+    "35": {
+      "archivo": "35-64ad62e892aa26f6.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34053535%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "64ad62e892aa26f6bc7af42944409106a5a7ae2a6eb089605c203da59cd849b5",
+      "bytes": 1225255,
+      "municipios": 34,
+      "caja": [
+        -15.834649,
+        27.7345038,
+        -13.3349584,
+        29.4164516
+      ]
+    },
+    "36": {
+      "archivo": "36-d616792f1c50bf81.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34123636%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "d616792f1c50bf81e9414d7cb101d8d9639ee7964ff759674601003208ffa75a",
+      "bytes": 402266,
+      "municipios": 61,
+      "caja": [
+        -8.9494526,
+        41.868849,
+        -7.861428,
+        42.8601571
+      ]
+    },
+    "37": {
+      "archivo": "37-4a72ebf2c2e76174.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34073737%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "4a72ebf2c2e76174caee53d1b30380a52e6dd64a66de3d3cc70afd4d7b598238",
+      "bytes": 657548,
+      "municipios": 362,
+      "caja": [
+        -6.9317054,
+        40.2389235,
+        -5.0898411,
+        41.2942159
+      ]
+    },
+    "38": {
+      "archivo": "38-3900762fe0a97156.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34053838%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "3900762fe0a9715605ac3aea55f1c5ddd5531cc14eca31a43a862a3db054f742",
+      "bytes": 993357,
+      "municipios": 54,
+      "caja": [
+        -18.1611809,
+        27.6377232,
+        -16.1185711,
+        28.8575803
+      ]
+    },
+    "39": {
+      "archivo": "39-26217f9a75b390c1.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34063939%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "26217f9a75b390c1b8de696342b55fe0f034496679a7a0fe8fa266af3c56ade4",
+      "bytes": 378418,
+      "municipios": 102,
+      "caja": [
+        -4.8517783,
+        42.7580499,
+        -3.1496347,
+        43.513693
+      ]
+    },
+    "40": {
+      "archivo": "40-d74447e48b1b47d7.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34074040%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "d74447e48b1b47d7e9024c5c5f2229221dae7448e531bfec5c187189abe880b8",
+      "bytes": 267607,
+      "municipios": 209,
+      "caja": [
+        -4.7246528,
+        40.6329848,
+        -3.206929,
+        41.5860824
+      ]
+    },
+    "41": {
+      "archivo": "41-957c6ff843da20c6.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34014141%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "957c6ff843da20c6c27c53bb4f9b338c6eac5fd210f52266cecc4330fbd63568",
+      "bytes": 575728,
+      "municipios": 106,
+      "caja": [
+        -6.5385147,
+        36.8421915,
+        -4.6533503,
+        38.1974173
+      ]
+    },
+    "42": {
+      "archivo": "42-536615b537339655.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34074242%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "536615b537339655b4cb234110df7bb1a6204daa70345a6dca390170a245d5a1",
+      "bytes": 239673,
+      "municipios": 183,
+      "caja": [
+        -3.5504383,
+        41.0565078,
+        -1.7753716,
+        42.1467061
+      ]
+    },
+    "43": {
+      "archivo": "43-6cc150ac5220df43.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34094343%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "6cc150ac5220df4372d348212dd9ac6a624a91192498886594c8d62d7c517068",
+      "bytes": 1369244,
+      "municipios": 184,
+      "caja": [
+        0.1590703,
+        40.5229684,
+        1.6531513,
+        41.5826063
+      ]
+    },
+    "44": {
+      "archivo": "44-98e5a55d785bfd48.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34024444%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "98e5a55d785bfd487a42244cb2e2dd804d871f053b44d57f46822daea0cdcaf9",
+      "bytes": 487474,
+      "municipios": 236,
+      "caja": [
+        -1.8057277,
+        39.8467782,
+        0.2935008,
+        41.3543894
+      ]
+    },
+    "45": {
+      "archivo": "45-d01e2139ae3e696c.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34084545%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "d01e2139ae3e696ca26c40cafce575b47b1ff9a47cbf971541261e141537cbf4",
+      "bytes": 662315,
+      "municipios": 204,
+      "caja": [
+        -5.4061837,
+        39.2584168,
+        -2.9082333,
+        40.3183415
+      ]
+    },
+    "46": {
+      "archivo": "46-fabd559bd4859915.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34104646%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "fabd559bd48599154d5998fc341d95bddc889a4afd5ff6dbfc93002dbfaca0ea",
+      "bytes": 682252,
+      "municipios": 266,
+      "caja": [
+        -1.5288111,
+        38.6865536,
+        -0.0246856,
+        40.2116832
+      ]
+    },
+    "47": {
+      "archivo": "47-4eba484fbd47dcb3.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34074747%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "4eba484fbd47dcb3baca9111328c308be7796428fa23396f2bc6609d8c55d269",
+      "bytes": 291334,
+      "municipios": 225,
+      "caja": [
+        -5.5208908,
+        41.0940153,
+        -3.9804421,
+        42.311842
+      ]
+    },
+    "48": {
+      "archivo": "48-ce0d2797a203971b.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34164848%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "ce0d2797a203971b4f247a13457dc36f5355d38fe57064950b5b1477ccb19259",
+      "bytes": 572200,
+      "municipios": 113,
+      "caja": [
+        -3.4503314,
+        42.9816529,
+        -2.4126037,
+        43.4572461
+      ]
+    },
+    "49": {
+      "archivo": "49-5447e5fcd6dd3526.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34074949%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "5447e5fcd6dd3526016191140045401352a8e485033d0e888bf3605131dec0b5",
+      "bytes": 327954,
+      "municipios": 248,
+      "caja": [
+        -7.0340431,
+        41.1171729,
+        -5.2288732,
+        42.2541925
+      ]
+    },
+    "50": {
+      "archivo": "50-c8042e6603958075.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34025050%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "c8042e660395807506bef305fc9afc86c7cca2e586629b39d6f5faf5193e14fb",
+      "bytes": 600120,
+      "municipios": 293,
+      "caja": [
+        -2.1736713,
+        40.9362157,
+        0.385695,
+        42.744052
+      ]
+    },
+    "51": {
+      "archivo": "51-5b0f0965207719b8.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34185151%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "5b0f0965207719b82a96e452fb8df4cb5980275ec271f72bcc1d26500b317d15",
+      "bytes": 19629,
+      "municipios": 1,
+      "caja": [
+        -5.3820607,
+        35.8707385,
+        -5.2782916,
+        35.9179839
+      ]
+    },
+    "52": {
+      "archivo": "52-614ba027c3680b90.geojson.gz",
+      "url": "https://www.ign.es/wfs-inspire/unidades-administrativas?service=WFS&version=2.0.0&request=GetFeature&typeNames=au%3AAdministrativeUnit&outputFormat=application%2Fgeo%2Bjson&srsName=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FOGC%2F1.3%2FCRS84&FILTER=%3Cfes%3AFilter+xmlns%3Afes%3D%22http%3A%2F%2Fwww.opengis.net%2Ffes%2F2.0%22+xmlns%3Aau%3D%22http%3A%2F%2Finspire.ec.europa.eu%2Fschemas%2Fau%2F4.0%22%3E%3Cfes%3APropertyIsLike+wildCard%3D%22%2A%22+singleChar%3D%22.%22+escapeChar%3D%22%21%22%3E%3Cfes%3AValueReference%3Eau%3AnationalCode%3C%2Ffes%3AValueReference%3E%3Cfes%3ALiteral%3E34195252%2A%3C%2Ffes%3ALiteral%3E%3C%2Ffes%3APropertyIsLike%3E%3C%2Ffes%3AFilter%3E",
+      "sha256": "614ba027c3680b90bf64645944c913c595ed0aeb913f3466ebeebc72932a165a",
+      "bytes": 7457,
+      "municipios": 1,
+      "caja": [
+        -2.9702955,
+        35.2654885,
+        -2.923187,
+        35.3203002
+      ]
+    }
+  },
+  "descartados": [],
+  "faltan": []
+}

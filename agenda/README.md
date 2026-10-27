@@ -141,7 +141,7 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
 | Fuente | Identidad | Particularidades |
 | --- | --- | --- |
 | Cultura de Galicia | `id` de celebración; `nid` = obra; ciclo = etiqueta | Hasta 91 días y 20 páginas de 1000 por idioma; inicio = fin no prueba un instante. CC BY-SA 4.0. |
-| Madrid | `ID-EVENTO`; `vgnextoid` para el recinto | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. URL-ACTIVIDAD suele ser un contenedor («Actividades en el Centro Cultural…»): no es obra. CC BY 4.0. |
+| Madrid | `ID-EVENTO`; `vgnextoid` para el recinto, con sus coordenadas | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. URL-ACTIVIDAD suele ser un contenedor («Actividades en el Centro Cultural…»): no es obra. CC BY 4.0. |
 | Zaragoza | `subEvent.id` = función; `id` = obra (actividad si tiene varias funciones); `location.id` = recinto con coordenadas WGS84 | `rows` ≤ 500 por `id asc`; inventario por función. Fechas de días; hora solo con una sesión el mismo día; «Sin determinar» queda como texto. Se saltan las ofertas sin fecha de inicio (27 antiguas, fin en 2020). Mezcla formación y empleo: tema `cultura` salvo las categorías revisadas. Condiciones del Ayuntamiento: «Origen de los datos: Ayuntamiento de Zaragoza» y `lastUpdated` (bloque `actualizado_origen`). |
 | Kulturklik | `id`; castellano y euskera juntos | Fechas de día con horario en texto; su código municipal no es NORA ni INE completo. CC BY 4.0. |
 
@@ -256,9 +256,8 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
   antes de activar la poda de 45 días; retirada por ventanas e idiomas en
   Galicia y adaptación del inventario completo a nuevas fuentes (requisito
   de CyL y Málaga, cuya identidad de función incluye la fecha).
-- **Fuentes culturales nuevas:** Zaragoza primero (funciones con ID propio),
-  luego CyL, Málaga y Cataluña; reutilizar el preparador de cruces por
-  coordenadas y límites oficiales de [territorios](../shared/territorios/README.md#preparar-cruces-de-agenda).
+- **Fuentes culturales nuevas:** CyL, Málaga y Cataluña (Zaragoza ya está);
+  sus recintos con coordenadas se ubican con los [límites municipales](../shared/territorios/README.md#límites-municipales) del IGN.
 - **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un
   registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
   Todavía no implementados: Vidmar solo cubre su subconjunto ICS y el RSS de

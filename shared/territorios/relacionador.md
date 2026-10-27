@@ -203,8 +203,9 @@ los caminos que coinciden; no multiplica un evento por cada código equivalente.
 
 ## Pendiente
 
-- Completar los recintos de Madrid sin correspondencia y las referencias
-  Kulturklik sin coordenadas, fuera de cobertura o con datos contradictorios.
+- Completar las referencias Kulturklik sin coordenadas, fuera de cobertura o
+  con datos contradictorios. Los recintos con coordenadas ya se ubican con los
+  [límites municipales](README.md#límites-municipales) del IGN.
   Los nombres no bastan para resolverlos. El cruce de 179 referencias ya se
   aplica a datos guardados; Iparralde necesita un catálogo francés.
 - Persistir los registros tipados, con ciclos, evidencias y vigencias; implementar
