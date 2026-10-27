@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=95aabcc51b';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=95aabcc51b';
+import { tokenizeQuery, normalize } from '../parser.js?v=70035fc9fa';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=70035fc9fa';
 
 export const AMBITOS = {
   tenis: { tema: 'tenis', noticias: ['tenis', 'ATP', 'WTA'] },
@@ -18,6 +18,15 @@ export const AMBITOS = {
   atp: { codigo: 'atp', noticias: ['ATP'] },
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
+  motogp: { codigo: 'motogp', noticias: ['MotoGP'] },
+  wrc: { codigo: 'wrc', noticias: ['WRC', 'Mundial de Rallies'] },
+  primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'] },
+  segunda: { codigo: 'segunda', noticias: ['Segunda División', 'LaLiga Hypermotion'] },
+  nba: { codigo: 'nba', noticias: ['NBA'] },
+  wnba: { codigo: 'wnba', noticias: ['WNBA'] },
+  'feb-endesa': { codigo: 'feb-endesa', noticias: ['Liga Femenina Endesa'] },
+  'feb-primera': { codigo: 'feb-primera', noticias: ['Primera FEB'] },
+  'feb-challenge': { codigo: 'feb-challenge', noticias: ['Liga Femenina Challenge'] },
 };
 // Resultados y clasificaciones son consultas puntuales, no parte del calendario.
 const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario', noticias: 'noticias' };
