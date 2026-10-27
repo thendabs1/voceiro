@@ -116,8 +116,16 @@ prueba fechada; disciplina (ruta, cross, trail, pista), distancia y
 superficie como datos. Una carrera que aparezca en la RFEA y en una agenda
 municipal solo se une por correspondencia revisada entre referencias.
 
+Criterio (27/10/2026): el atletismo tiene un **calendario universal** como el
+resto de deportes. Se empieza por la RFEA (España; hay que pedirle permiso).
+World Athletics queda para después y solo con autorización escrita, porque
+prohíbe el acceso automatizado. Los calendarios autonómicos y municipales no
+son fuentes aparte: entran por el clasificador común y se quedan si aportan
+citas que el universal no tiene. Hasta tener permiso se sigue con las agendas
+municipales.
+
 Fases: (1) atletismo bien clasificado en Madrid, Zaragoza y Málaga con la
-reconstrucción («carreras cerca de mí este mes»); (2) calendario federativo
+reconstrucción («carreras cerca de mí este mes»); (2) calendario universal
 tras conseguir permiso y acreditar identidad y lectura completa; (3)
 resultados por worker con un proveedor autorizado.
 
