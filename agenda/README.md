@@ -3,7 +3,8 @@
 Calendario común de citas (cultura, deportes y otras) para mostrarlas junto a
 las noticias. Este documento recoge el estado vigente; la historia de cada
 decisión está en git. Las fuentes, sus condiciones y las candidatas están en
-[fuentes.md](fuentes.md).
+[fuentes.md](fuentes.md); el modelo de clasificación, en
+[clasificacion.md](clasificacion.md).
 
 ## Tres planos
 
@@ -266,8 +267,15 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
   antes de activar la poda de 45 días; retirada por ventanas e idiomas en
   Galicia y adaptación del inventario completo a nuevas fuentes (requisito
   de CyL y Málaga, cuya identidad de función incluye la fecha).
-- **Fuentes culturales nuevas:** Málaga y Cataluña (Zaragoza y CyL ya están);
-  sus recintos con coordenadas se ubican con los [límites municipales](../shared/territorios/README.md#límites-municipales) del IGN.
+- **Clasificación común y reconstrucción cultural:** diseño cerrado en
+  [clasificacion.md](clasificacion.md) (temas compartidos con las noticias,
+  filtros del calendario, etiquetas; un clasificador con tablas por fuente).
+  Antes de añadir fuentes, las cinco culturales se regeneran con él
+  conservando sus referencias externas.
+- **Fuentes nuevas:** por el orden de la [lista cerrada](fuentes.md#lista-cerrada)
+  (Barcelona, Cataluña, Málaga, esMadrid…), cada una con el
+  [contrato de fuente](fuentes.md#contrato-de-fuente); sus recintos con
+  coordenadas se ubican con los [límites municipales](../shared/territorios/README.md#límites-municipales) del IGN.
 - **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un
   registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
   Todavía no implementados: Vidmar solo cubre su subconjunto ICS y el RSS de
