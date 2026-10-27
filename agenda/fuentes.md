@@ -88,6 +88,39 @@ Navarra, Asturias, Cantabria, La Rioja, Extremadura, Baleares, Castilla-La
 Mancha (solo web), Murcia, Canarias (parada en 2022), Sevilla, Valencia
 ciudad, Valladolid y A Coruña. No se abre una ronda de scraping para ellas.
 
+## Atletismo
+
+Comprobado el 27/10/2026 (muestras locales y 43 GET a páginas públicas).
+Carreras populares, maratones, cross, trail y pista son citas de agenda; los
+resultados, clasificaciones y marcas, consulta puntual, y solo con una fuente
+que permita reutilizarlos (un worker no elimina las restricciones).
+
+**Ya disponible en fuentes abiertas:** Madrid (`CarrerasMaratones`, p. ej.
+Cross de la Constitución de Villaverde), Zaragoza (categoría Deporte: trail y
+carreras entre unas 300 obras deportivas) y Málaga (Maratón, Carrera de la
+Prensa). `Deporte` o `Eventos deportivos` no bastan para asignar `atletismo`:
+la tabla de la fuente lo decide por campo, nunca por título.
+
+| Fuente | Acceso | Cobertura | Condiciones | Veredicto |
+| --- | --- | --- | --- | --- |
+| [RFEA](https://atletismorfea.es/calendario) | HTML con filtros (temporada, disciplina, ámbito); fichas por URL; ID estable sin acreditar; la descarga Excel no devolvió datos | Ruta, maratón, cross, pista, marcha y trail; temporadas hasta 2027 | Copyright, sin licencia de datos | Pedir permiso; es la fuente para «campeonatos de España» y «maratones de la temporada» |
+| [Federació Catalana](https://fcatletisme.cat/events/?ical=1) | ICS con 30 citas, `UID` (incluye fechas), lugar, categorías y modificación | Ruta, cross, trail, pista | Aviso legal: solo uso personal | Pedir permiso |
+| [Federación Galega](https://atletismo.gal/competicions/) | HTML y Excel anunciado | Por disciplina, municipio y temporada | Autorización escrita para reproducir | Pedir permiso |
+| [Federación Andaluza](https://atletismofaa.es/carreraspopulares/) | HTML de próximas carreras; PDF federativo | Carreras, cross y trail hasta 03/2027 | Derechos reservados | Pendiente |
+| [World Athletics](https://worldathletics.org/terms-and-conditions) | HTML con datos embebidos | Internacional | Sus condiciones prohíben bases de datos y acceso automatizado sin autorización escrita | No |
+| [CarrerasPopulares](https://carreraspopulares.com/aviso-legal) | Web; su RSS son noticias | Amplia | Autorización previa | No |
+| Tenerife deportiva | JSON, URL no única | Cabildo | CC BY | Solo si acredita identidad |
+
+En el núcleo: agrupación para circuito, campeonato o temporada; evento por
+prueba fechada; disciplina (ruta, cross, trail, pista), distancia y
+superficie como datos. Una carrera que aparezca en la RFEA y en una agenda
+municipal solo se une por correspondencia revisada entre referencias.
+
+Fases: (1) atletismo bien clasificado en Madrid, Zaragoza y Málaga con la
+reconstrucción («carreras cerca de mí este mes»); (2) calendario federativo
+tras conseguir permiso y acreditar identidad y lectura completa; (3)
+resultados por worker con un proveedor autorizado.
+
 ## Agenda: otras candidatas
 
 | Fuente | Qué aportaría | Situación |
