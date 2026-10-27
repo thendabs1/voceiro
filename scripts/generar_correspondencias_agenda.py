@@ -1,7 +1,7 @@
 """Prepara cruces municipales desde descargas locales; no consulta ni publica nada.
 
-El manifiesto lista archivos con lector, url y fuente: madrid, kulturklik,
-geoeuskadi o idena. Las coordenadas se resuelven fuera del camino de lectura.
+El manifiesto lista archivos con lector, url y fuente: kulturklik, geoeuskadi
+o idena. Las coordenadas se resuelven fuera del camino de lectura.
 La salida se revisa antes de sustituir el catálogo versionado.
 """
 
@@ -24,11 +24,8 @@ def preparar(manifiesto, base, carpeta):
         if entrada.get('sha256') and hashlib.sha256(cuerpo).hexdigest() != entrada['sha256']:
             raise ValueError('Descarga distinta de la revisión del manifiesto: ' + entrada['archivo'])
         lector = entrada['lector']
-        datos, prueba = importadores.leer(cuerpo, entrada['url'], entrada['fuente'], comprobado,
-                                          permisivo=lector == 'madrid')
-        if lector == 'madrid':
-            cruces.extend(importadores.recintos_madrid(datos, prueba))
-        elif lector == 'kulturklik':
+        datos, prueba = importadores.leer(cuerpo, entrada['url'], entrada['fuente'], comprobado)
+        if lector == 'kulturklik':
             puntos.extend(importadores.puntos_kulturklik(datos, prueba))
         elif lector in ('geoeuskadi', 'idena'):
             mapas.append(importadores.limites(datos, prueba, lector))
@@ -61,12 +58,12 @@ def preparar(manifiesto, base, carpeta):
         'referencia': p['referencia'], 'motivo': ','.join(p['motivos']), 'evidencias': p['evidencias']}
         for p in pendientes})
     salida = {**base, 'version': base['version'] + 1,
-        'alcance': 'Recintos acreditados en catálogos oficiales de Madrid y municipios Kulturklik '
-                   'contrastados con límites oficiales. Revisión local; sin vigencia histórica.',
+        'alcance': 'Recintos de Madrid con comprobación manual y municipios Kulturklik contrastados '
+                   'con límites oficiales. Revisión local; sin vigencia histórica.',
         'correspondencias': list(anteriores.values()),
         'pendientes': list(pendientes_previos.values())}
     Relacionador(salida)  # Validación del contrato y destinos antes de escribir.
-    return salida, {'cruces_catalogos': len(por_id), 'municipios_kulturklik': len(geograficos),
+    return salida, {'cruces': len(por_id), 'municipios_kulturklik': len(geograficos),
                     'pendientes_kulturklik': pendientes}
 
 
@@ -83,7 +80,7 @@ def main():
                                args.carpeta or args.manifiesto.parent)
     args.salida.write_text(json.dumps(salida, ensure_ascii=False, indent=2) + '\n')
     args.informe.write_text(json.dumps(informe, ensure_ascii=False, indent=2) + '\n')
-    print(f'Cruces preparados: {informe["cruces_catalogos"]}; municipios Kulturklik: '
+    print(f'Cruces preparados: {informe["cruces"]}; municipios Kulturklik: '
           f'{informe["municipios_kulturklik"]}; pendientes: {len(informe["pendientes_kulturklik"])}')
 
 

@@ -1,44 +1,19 @@
 """Lectores de catálogos territoriales: datos y evidencias, sin red ni escritura."""
 
-from copy import deepcopy
 import hashlib
 import json
 import re
 import unicodedata
-from urllib.parse import parse_qs, urlsplit
 
 from . import resolver
 from .geometria import LimitesMunicipales
 
 
-def leer(cuerpo, url, fuente, comprobado, *, permisivo=False):
-    datos = json.loads(cuerpo, strict=not permisivo)
+def leer(cuerpo, url, fuente, comprobado):
+    datos = json.loads(cuerpo)
     prueba = {'fuente': fuente, 'documento': url, 'sha256': hashlib.sha256(cuerpo).hexdigest(),
               'observado': comprobado, 'comprobado': comprobado}
     return datos, prueba
-
-
-def recintos_madrid(datos, prueba):
-    if not isinstance(datos.get('@graph'), list) or not datos['@graph']:
-        raise ValueError('Catálogo de recintos Madrid sin registros')
-    cruces = []
-    for i, fila in enumerate(datos['@graph']):
-        partes = urlsplit(fila.get('relation') or '')
-        claves = parse_qs(partes.query).get('vgnextoid', [])
-        if partes.hostname not in ('www.madrid.es', 'madrid.es') or len(claves) != 1 or not claves[0]:
-            continue
-        direccion = fila.get('address') or {}
-        uris = [direccion[k]['@id'] for k in ('district', 'area') if direccion.get(k, {}).get('@id')]
-        prefijo = 'https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/'
-        if not uris or not all(uri.startswith(prefijo) for uri in uris):
-            continue
-        dato = {k: deepcopy(fila[k]) for k in ('id', 'title', 'relation') if k in fila}
-        dato['address'] = {k: deepcopy(direccion[k]) for k in ('district', 'area') if k in direccion}
-        cruces.append({'id': 'madrid:recinto:' + claves[0] + ':municipio:catalogo-v1', 'tipo': 'ubicacion',
-            'referencia': {'sistema': 'madrid:instalacion_vgnextoid', 'codigo': claves[0], 'contexto': {}},
-            'territorio': 'es:municipio:28079', 'metodo': 'catalogo_oficial_revisado', 'vigencia': None,
-            'evidencias': [{**prueba, 'ruta': f'/@graph/{i}', 'dato': dato}]})
-    return cruces
 
 
 def limites(datos, prueba, perfil):

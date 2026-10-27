@@ -46,10 +46,10 @@ Los eventos añaden relaciones con papel `celebracion`, resueltas desde el
 municipio declarado o el recinto, sin heredar el ámbito de una competición.
 Los códigos no resueltos quedan `pendiente`; los conflictos no se asignan.
 La revisión Python `relacionador.py` añade resultados con motivo, referencia,
-revisión y evidencias. `correspondencias.json` localiza recintos de Madrid por
-`vgnextoid` acreditado en siete catálogos oficiales (centros culturales,
-bibliotecas, teatros, cines, auditorios, museos y centros de mayores), sin
-convertir el recinto en municipio. La proyección usa esos cruces también con
+revisión y evidencias. `correspondencias.json` permite localizar tres recintos
+de las muestras Madrid por `vgnextoid` acreditado en catálogos oficiales, sin
+convertir el recinto en municipio. El resto de recintos de Madrid se resolverá
+por sus coordenadas con límites municipales oficiales, no por catálogos. La proyección usa esos cruces también con
 observaciones ya guardadas. Los nuevos estados no están implementados en JS.
 El informe por fuente (`python -m agenda.revision`) revisa temas y ubicación de una
 exportación, sin consultar proveedores ni modificar el núcleo.
@@ -93,7 +93,7 @@ las vigencias y la integración con preferencias siguen pendientes en el
 
 ## Preparar cruces de agenda
 
-`importadores.py` lee catálogos Madrid y páginas de eventos Kulturklik;
+`importadores.py` lee páginas de eventos Kulturklik y límites municipales;
 `geometria.py` consulta límites GeoJSON normalizados. Los lectores no descargan
 ni escriben. `scripts/generar_correspondencias_agenda.py` coordina la preparación
 local desde el manifiesto [fuentes-agenda.json](fuentes-agenda.json), que conserva
@@ -129,6 +129,6 @@ para medir distancia al evento. La referencia Galdakao `48/183`, cuyo punto cae
 en Usansolo, queda pendiente. Las referencias de Iparralde requieren un catálogo
 francés; no se asignan municipios españoles por proximidad.
 
-Medición sobre las 5.115 citas publicadas el 27/10/2026: Madrid pasa de 22 a
-760 de 1.093 citas con municipio resuelto y Kulturklik de 0 a 2.475 de 2.689.
+Medición sobre las 5.115 citas publicadas el 27/10/2026: Kulturklik pasa de 0
+a 2.475 de 2.689 citas con municipio resuelto.
 Es una medición sobre registros guardados, no cobertura total de los proveedores.

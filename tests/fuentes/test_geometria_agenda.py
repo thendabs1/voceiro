@@ -70,16 +70,6 @@ class Geometria(unittest.TestCase):
 
 
 class LectoresTerritoriales(unittest.TestCase):
-    def test_madrid_exige_identidad_y_municipio_declarados(self):
-        f = {'id': '1', 'title': 'Recinto', 'relation': 'https://www.madrid.es/?vgnextoid=clave',
-             'address': {'district': {'@id': 'https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Centro'}}}
-        r, = importadores.recintos_madrid({'@graph': [f]}, PRUEBA)
-        self.assertEqual(r['territorio'], 'es:municipio:28079')
-        self.assertEqual(r['referencia']['codigo'], 'clave')
-        self.assertEqual(r['evidencias'][0]['sha256'], PRUEBA['sha256'])
-        f['address'] = {'locality': 'MADRID', 'postal-code': '28001'}
-        self.assertEqual(importadores.recintos_madrid({'@graph': [f]}, PRUEBA), [])
-
     def test_geojson_normaliza_solo_los_campos_documentados(self):
         f = feature()
         f['properties'] = {'MUN_PROV': '01', 'MUN_MUNI': '059', 'NOMBRE_CAS': 'Vitoria-Gasteiz'}
@@ -135,34 +125,41 @@ class LectoresTerritoriales(unittest.TestCase):
         self.assertEqual(cruces, [])
         self.assertEqual(pendientes[0]['motivos'], ['coordenadas_contradictorias'])
 
+    def descargas(self, carpeta):
+        f = feature()
+        f['properties'] = {'MUN_PROV': '01', 'MUN_MUNI': '059', 'NOMBRE_CAS': 'Vitoria-Gasteiz'}
+        (carpeta / 'limites.json').write_text(json.dumps(coleccion(f)))
+        (carpeta / 'eventos.json').write_text(json.dumps({'items': [{
+            'id': 'evento', 'municipalityNoraCode': '46', 'provinceNoraCode': '1',
+            'municipalityEs': 'Vitoria-Gasteiz', 'municipalityLatitude': '0.5', 'municipalityLongitude': '0.5'}]}))
+        return [{'lector': 'kulturklik', 'archivo': 'eventos.json', 'fuente': 'Prueba', 'url': PRUEBA['documento']},
+                {'lector': 'geoeuskadi', 'archivo': 'limites.json', 'fuente': 'Prueba', 'url': PRUEBA['documento']}]
+
     def test_generador_valida_huellas_y_reune_catalogos_sin_tocar_la_base(self):
-        f = {'id': '1', 'relation': 'https://www.madrid.es/?vgnextoid=clave',
-             'address': {'district': {'@id': 'https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Centro'}}}
         base = {'version': 1, 'correspondencias': [], 'pendientes': []}
         anterior = deepcopy(base)
         with tempfile.TemporaryDirectory() as tmp:
-            carpeta = Path(tmp)
-            (carpeta / 'recintos.json').write_text(json.dumps({'@graph': [f]}))
-            entrada = {'lector': 'madrid', 'archivo': 'recintos.json', 'fuente': 'Prueba', 'url': PRUEBA['documento']}
-            m = {'comprobado': AHORA, 'entradas': [entrada, entrada]}
-            salida, informe = preparar(m, base, carpeta)
+            entradas = self.descargas(Path(tmp))
+            m = {'comprobado': AHORA, 'entradas': entradas}
+            salida, informe = preparar(m, base, Path(tmp))
             self.assertEqual(base, anterior)
-            self.assertEqual(informe['cruces_catalogos'], 1)
+            self.assertEqual(informe['cruces'], 1)
             self.assertEqual(salida['version'], 2)
-            self.assertEqual(len(salida['correspondencias'][0]['evidencias']), 2)
-            entrada['sha256'] = 'b' * 64
+            cruce, = salida['correspondencias']
+            self.assertEqual(cruce['territorio'], 'es:municipio:01059')
+            self.assertEqual(len(cruce['evidencias']), 2)
+            entradas[0]['sha256'] = 'b' * 64
             with self.assertRaisesRegex(ValueError, 'Descarga distinta'):
-                preparar(m, base, carpeta)
+                preparar(m, base, Path(tmp))
+            entradas[0]['lector'], entradas[0]['sha256'] = 'madrid', None
+            with self.assertRaisesRegex(ValueError, 'Lector territorial desconocido'):
+                preparar(m, base, Path(tmp))
 
     def test_generador_no_cambia_silenciosamente_un_cruce_anterior(self):
-        f = {'id': '1', 'relation': 'https://www.madrid.es/?vgnextoid=clave',
-             'address': {'district': {'@id': 'https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Centro'}}}
-        cruce, = importadores.recintos_madrid({'@graph': [f]}, PRUEBA)
-        cruce['territorio'] = 'es:municipio:36038'
-        base = {'version': 1, 'correspondencias': [cruce], 'pendientes': []}
         with tempfile.TemporaryDirectory() as tmp:
-            carpeta = Path(tmp)
-            (carpeta / 'recintos.json').write_text(json.dumps({'@graph': [f]}))
-            entrada = {'lector': 'madrid', 'archivo': 'recintos.json', 'fuente': 'Prueba', 'url': PRUEBA['documento']}
+            entradas = self.descargas(Path(tmp))
+            m = {'comprobado': AHORA, 'entradas': entradas}
+            cruce, = preparar(m, {'version': 1, 'correspondencias': [], 'pendientes': []}, Path(tmp))[0]['correspondencias']
+            cruce['territorio'] = 'es:municipio:01001'
             with self.assertRaisesRegex(ValueError, 'revisión explícita'):
-                preparar({'comprobado': AHORA, 'entradas': [entrada]}, base, carpeta)
+                preparar(m, {'version': 2, 'correspondencias': [cruce], 'pendientes': []}, Path(tmp))

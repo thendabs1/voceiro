@@ -2,41 +2,6 @@
   "comprobado": "2026-10-27T10:10:54+00:00",
   "entradas": [
     {
-      "archivo": "voceiro-madrid-centros.json",
-      "lector": "madrid",
-      "url": "https://datos.madrid.es/dataset/200304-0-centros-culturales/resource/200304-0-centros-culturales-json/download/200304-0-centros-culturales.json",
-      "fuente": "Ayuntamiento de Madrid",
-      "sha256": "c45040ce7d453b57d585fab36df05aebd28fed390109c125cfe5cccde8b9d38c"
-    },
-    {
-      "archivo": "voceiro-madrid-bibliotecas.json",
-      "lector": "madrid",
-      "url": "https://datos.madrid.es/dataset/201747-0-bibliobuses-bibliotecas/resource/201747-2-bibliobuses-bibliotecas-json/download/201747-0-bibliobuses-bibliotecas.json",
-      "fuente": "Ayuntamiento de Madrid",
-      "sha256": "bc349ad129c749a6a76667f55905394847b740a1d24ba9bf95efd1c5a5729e3f"
-    },
-    {
-      "archivo": "voceiro-madrid-teatros.json",
-      "lector": "madrid",
-      "url": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-1-ocio_salas-json/download/208862-7650046-ocio_salas.json",
-      "fuente": "Ayuntamiento de Madrid",
-      "sha256": "10f7750b26338d480f3bbe12c076bcbb63bf9bfe417bcf175ba2a1213f39edc8"
-    },
-    {
-      "archivo": "voceiro-madrid-museos.json",
-      "lector": "madrid",
-      "url": "https://datos.madrid.es/dataset/201132-0-museos/resource/201132-2-museos-json/download/201132-0-museos.json",
-      "fuente": "Ayuntamiento de Madrid",
-      "sha256": "0d0932db52a6580b8a2354616e2dac4c2582c0f56525cfe30bcbab2e9df1db74"
-    },
-    {
-      "archivo": "voceiro-madrid-mayores.json",
-      "lector": "madrid",
-      "url": "https://datos.madrid.es/dataset/200337-0-centros-mayores/resource/200337-1-centros-mayores-json/download/200337-0-centros-mayores.json",
-      "fuente": "Ayuntamiento de Madrid",
-      "sha256": "59a6c174124a649996ba36fd917e198f705f020202066e033fae7e826cc9d4ea"
-    },
-    {
       "archivo": "voceiro-kulturklik-actual-1.json",
       "lector": "kulturklik",
       "url": "https://api.euskadi.eus/culture/events/v1.0/events/upcoming?_elements=500&_page=1",
@@ -112,20 +77,6 @@
       "fuente": "Gobierno de Navarra / IDENA",
       "url": "https://idena.navarra.es/ogc/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=IDENA:DIADMI_Pol_Municipio&count=500&outputFormat=json&srsName=CRS:84",
       "sha256": "0be5c5be8472f536c7e67c91ecda77a4f68c271c0e79916ea7964f8e1483b2cf"
-    },
-    {
-      "archivo": "voceiro-madrid-cines.json",
-      "lector": "madrid",
-      "fuente": "Ayuntamiento de Madrid",
-      "url": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-7-ocio_salas-json/download/208862-7650180-ocio_salas.json",
-      "sha256": "9e7e1155b4693a5a867a0c55a2b57c666500cd0e2295d0d6351222f3e2d7117b"
-    },
-    {
-      "archivo": "voceiro-madrid-auditorios.json",
-      "lector": "madrid",
-      "fuente": "Ayuntamiento de Madrid",
-      "url": "https://datos.madrid.es/dataset/208862-7650046-ocio_salas/resource/208862-13-ocio_salas-json/download/208862-7650164-ocio_salas.json",
-      "sha256": "2902d980bcf8738e7a85aba29a8c25208d29eed767adc04c37a82d19449062a7"
     }
   ]
 }

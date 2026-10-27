@@ -110,8 +110,8 @@ cargada; todavía no permiten elegir una revisión histórica. La segunda operac
 localiza un recinto, sin declarar que su identidad equivale al municipio.
 
 `correspondencias.json` conserva las tres ubicaciones manuales iniciales de
-Madrid y añade cruces de siete catálogos municipales y 179 referencias de
-Kulturklik contrastadas con polígonos oficiales de Euskadi y Navarra. Conserva datos
+Madrid y añade 179 referencias de Kulturklik contrastadas con polígonos
+oficiales de Euskadi y Navarra. Conserva datos
 seleccionados, ruta y huella de la respuesta completa; esta última no se guarda
 íntegra. El JSON oficial de centros contiene caracteres de control: para esta
 revisión se extrajeron los campos con un lector permisivo, sin modificar la huella
