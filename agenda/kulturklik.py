@@ -67,9 +67,12 @@ def importar(anterior, filas, observado, url=URL):
         municipio = fila.get('municipalityNoraCode')
         provincia = fila.get('provinceNoraCode')
         if municipio and provincia and municipios:
+            # Documento propio del municipio, compartido por sus eventos.
+            municipio_doc = c.documento(FUENTE, {k: fila[k] for k in ('municipalityEs', 'municipalityEu',
+                'municipalityNoraCode', 'provinceNoraCode') if k in fila}, url, 'fragmento_municipio_api')
             territorio, _ = c.entidad(FUENTE, 'municipio_nora', str(municipio),
                 {'provincia_nora': str(provincia)}, 'territorio', 'municipio', municipios,
-                doc, '/municipalityNoraCode', observado,
+                municipio_doc, '/municipalityNoraCode', observado,
                 bloques={'identificadores': {'nora': str(municipio), 'provincia_nora': str(provincia)}})
             c.relacion('se_celebra_en', evento, territorio, evidencia)
         # Los nombres de recintos no acreditan una identidad compartida: literal conservado.

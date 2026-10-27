@@ -296,7 +296,9 @@ Reglas para cada fuente nueva:
    y el municipio lo acreditan los límites del IGN; los códigos propios de la
    fuente solo con correspondencia revisada.
 4. **Evidencia recortada** a los campos que se usan, para que un cambio
-   irrelevante no cree observaciones nuevas.
+   irrelevante no cree observaciones nuevas. Las entidades compartidas
+   (recinto, municipio, obra) llevan documento propio con sus campos, no el
+   de la cita: si no, cada cambio de una cita suma evidencia a todas.
 5. **Muestra versionada** de la respuesta en `tests/fuentes/muestras_calendario`.
 
 Pendiente: familias Socrata, Opendatasoft, ICS y

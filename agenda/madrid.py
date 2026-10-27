@@ -138,8 +138,12 @@ def importar(anterior, filas, observado, url=URL):
         # Relación solo cuando existe la identidad publicada de la instalación.
         recinto = identidad_url(fila.get('URL-INSTALACION'))
         if recinto and lugar['nombre']:
+            # Documento propio del recinto, compartido por sus eventos: un cambio
+            # de cita no es evidencia nueva de la instalación.
+            instalacion = c.documento(FUENTE, {k: fila[k] for k in ('URL-INSTALACION', 'NOMBRE-INSTALACION',
+                'LATITUD', 'LONGITUD') if k in fila}, url, 'fragmento_instalacion_ckan')
             l, _ = c.entidad(FUENTE, 'instalacion_vgnextoid', recinto, {}, 'lugar', 'recinto',
-                {'es': lugar['nombre']}, doc, '/URL-INSTALACION', observado, bloques=coordenadas(fila))
+                {'es': lugar['nombre']}, instalacion, '/URL-INSTALACION', observado, bloques=coordenadas(fila))
             c.relacion('se_celebra_en', evento, l, evidencia)
         tipo = fila.get('TIPO') or ''
         tema = next((t for codigo, t in TEMAS.items()

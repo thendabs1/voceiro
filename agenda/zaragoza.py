@@ -127,12 +127,17 @@ def importar(anterior, filas, observado, url=URL):
             c.tema(evento, tema, evidencia, 'zaragoza:category:revisado-v1')
             if len(funciones) > 1:
                 if actividad is None:
+                    # Documento propio: el cambio de una función no es evidencia nueva de la obra.
+                    obra_doc = c.documento(FUENTE, {'id': obra['id'], 'title': obra['title']}, url,
+                                           'fragmento_obra_api')
                     actividad, _ = c.entidad(FUENTE, 'evento_id', identidad, {}, 'actividad', 'obra',
-                                             {'es': titulo}, doc, '/id', observado)
+                                             {'es': titulo}, obra_doc, '/id', observado)
                 c.relacion('celebracion_de', evento, actividad, evidencia)
             if recinto.get('id') and recinto.get('title'):
+                # Compartido entre funciones: solo sus propios datos lo cambian.
+                lugar_doc = c.documento(FUENTE, recinto, url, 'fragmento_lugar_api')
                 l, _ = c.entidad(FUENTE, 'lugar_id', str(recinto['id']), {}, 'lugar', 'recinto',
-                                 {'es': recinto['title']}, doc, '/subEvent/location', observado,
+                                 {'es': recinto['title']}, lugar_doc, '/', observado,
                                  bloques=coordenadas(recinto))
                 c.relacion('se_celebra_en', evento, l, evidencia)
     return c.terminar()
