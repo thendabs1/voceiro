@@ -83,7 +83,9 @@ def operar_nucleo(args):
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'],
                     json.loads(Path(ruta).read_text(encoding='utf-8')), observado)
             if fuente in (args.recoger_cultura or []):
-                filas, url, ids = recogida.cultura(fuente, args.inicio, args.fin)
+                conocidos = {r['id_externo'] for r in calendario['nucleo']['referencias'].values()
+                             if r['proveedor'] == fuente and r['tipo_externo'] == modulo.TIPO_EXTERNO}
+                filas, url, ids = recogida.cultura(fuente, args.inicio, args.fin, conocidos)
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'], filas, observado, url)
                 try:
                     calendario['nucleo'] = presencia.registrar(calendario['nucleo'], fuente, ids, observado, url,
