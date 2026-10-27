@@ -23,19 +23,18 @@ Las tres capas comparten el catálogo temático
 territorio común ([shared/territorios](../shared/territorios/README.md)) y el
 parser de búsqueda.
 
-## Estado (26/10/2026)
+## Estado (27/10/2026)
 
 - **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid y Kulturklik
-  en Turso y publicación en R2.
-- **Deportes:** doce colecciones con adaptador y control de temporadas. La
-  recogida es manual (`operacion: deportes` en el workflow) hasta medir filas
-  y peticiones de una pasada real; después pasa al cron.
-- **Cliente:** `CALENDARIO_ACTIVO = false` en `front/app/14-calendario.js`.
-  Descargar `calendario.json` completo (unos 12 MB) bloqueaba; se reactiva al
-  conectar la API.
-- **API de lectura:** rutas `/calendario/*` en `cf-datos` y `deno-datos`,
-  implementadas y sin activar (`CALENDARIO_LECTURA_SQL=false`, secretos de
-  lectura pendientes en los workers).
+  en Turso y publicación en R2 y en las tablas de lectura.
+- **Deportes:** doce colecciones con adaptador y control de temporadas; once
+  publicadas (WRC pendiente de una pasada con el código actual). La recogida
+  es manual (`operacion: deportes` en el workflow) hasta confirmar una pasada
+  limpia; después pasa al cron.
+- **API de lectura:** activa en `cf-datos` y `deno-datos`
+  (`CALENDARIO_LECTURA_SQL=true`), con publicación diferencial.
+- **Cliente:** `CALENDARIO_ACTIVO = false` en `front/app/14-calendario.js`; la
+  capa de datos usa la API y la interfaz está por rehacer.
 
 ## Flujo
 
@@ -111,6 +110,11 @@ competición, edición, actividad, equipo o persona.
 | Fórmula 1 | oficial F1 | `espn-f1` | GP con sesiones |
 | MotoGP | oficial MotoGP | — | GP con sesiones |
 | WRC | OCBlacktop | — | rally (cita continua) |
+
+El código de circuito (`circuitos=` en la API, `circuito:` y los ámbitos de
+`shared/calendario/consulta.js`) es el nombre de colección de
+`temporadas.CATALOGO`; la identidad de cada competición sigue siendo el ID del
+proveedor.
 
 Las fuentes oficiales son principales por estabilidad y gratuidad
 (`proveedores.PRINCIPALES`). Cambiar de principal es configuración, nunca una
