@@ -53,7 +53,6 @@ Reglas comunes:
 | OpenLigaDB | LaLiga y Bundesliga | ODbL, sin registro; resultados atrasados en la comprobación. |
 | openfootball, fixturedownload, TheSportsDB | Calendarios de fútbol | openfootball: CC0 sin IDs. fixturedownload: no permite redistribuir. TheSportsDB: clave pública recortada. |
 | Directos de prensa | Entradas de directos (elDiario.es, RTVE, 20minutos) | elDiario.es tiene un endpoint incremental; los demás cargan por JS. Investigación sin plan. |
-| Descartadas | — | OpenF1 (decisión del usuario), SofaScore (403), Bandsintown, Songkick y Eventbrite (sin acceso general). |
 
 ## Consultas puntuales (conectores)
 

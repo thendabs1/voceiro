@@ -18,20 +18,14 @@ __pycache__/
 
 # Estado de scripts
 state.json
-.migracion_ckpt.txt
-.migracion_r2_state.json
 
 # Editores / OS
 .vscode/
 .idea/
 .DS_Store
-.env
 workers/*/.dev.vars
-workers/cf-buscar/node_modules/
-workers/cf-buscar/node_modules/
+workers/*/node_modules/
 tools/
-workers/cf-buscar/.wrangler/
-workers/cf-buscar/node_modules/
 
 # Cachés locales de wrangler (id y nombre de la cuenta)
 workers/*/.wrangler/

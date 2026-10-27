@@ -35,3 +35,43 @@ fuentes mantiene el acceso directo o mediante relay según el catálogo.
 
 Las pruebas de `tests/fuentes` se ejecutan completas en CI, con respuestas
 de red simuladas. Incluyen la generación y relectura entre dos runs.
+
+## Almacenamiento y fechas
+
+R2 conserva los titulares; Turso solo recibe catálogo, diagnóstico de pasadas
+y resúmenes estadísticos. No hay escritura ni migración de noticias a Turso.
+La agenda tiene su propia base independiente.
+
+`config.py` mantiene 15 días de trabajo para fusión, una ventana pública de
+30 días y archivo por medio de hasta 365 días. Hoy y los dos días anteriores
+se pueden reescribir; los índices públicos se actualizan después de los datos.
+
+El formato corto de los ficheros diarios es:
+
+| Campo | Contenido |
+| --- | --- |
+| `d`, `t`, `u`, `f` | Dominio, titular, enlace y fuente. |
+| `p` | Fecha declarada: `HH:MM` si corresponde al día del fichero en Madrid; ISO completo si no o si la hora es ambigua por cambio de horario; `AAAA-MM-DD` cuando solo consta el día. |
+| `e` | Fecha estimada para noticias sin hora propia; se conserva la primera estimación y se acota al día conocido. |
+| `c` | Primera recogida conservada; no se sustituye en cada pasada. |
+| `a` | Alternativas, con su dominio, enlace y fechas propios; fuente y titular cuando difieren del representante. |
+
+En memoria, `dia_pub` conserva el día sin hora separado de `fecha_pub`.
+Una fecha de día no es medianoche. Se conserva la primera fecha válida salvo
+mejora de precisión. La agrupación usa la declarada dentro del margen de seis
+horas desde la primera recogida; después, estimada o recogida. Este margen
+no demuestra que una fecha sea de publicación y no de celebración.
+
+## Diagnóstico y límites de cobertura
+
+Empezar por los logs y `runs.intentos`: indican alternativas probadas y fuente
+elegida. Que una fuente devuelva titulares no acredita frescura ni cobertura
+completa. Las alternativas no utilizadas en una pasada tampoco quedan probadas.
+Para una comprobación puntual, usar
+[salud de fuentes o diagnóstico por URL](../tests/README.md).
+
+Las fechas se toman de cada noticia o tarjeta, nunca de la colección ni de
+tarjetas vecinas. Algunas fuentes solo dan día o necesitan estimación; una
+periodicidad larga no prueba inactividad. Los bloqueos locales y de Actions
+pueden diferir. El [seguimiento pendiente](../PENDIENTES.md#cosecha-y-fechas)
+recoge las revisiones aún abiertas, sin repetir barridos del catálogo.

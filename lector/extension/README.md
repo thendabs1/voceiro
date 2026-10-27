@@ -1,8 +1,8 @@
 # Extensión del Lector Universal
 
 Versión para pruebas, pendiente de comprobar manualmente en Firefox.
-Todo su código está en este repositorio; no se publica ni se firma en AMO
-desde este cambio. Requiere Firefox 140 o posterior.
+Todo su código está en este repositorio; la publicación y firma en AMO están
+pendientes. Requiere Firefox 140 o posterior.
 La extensión no funciona en ventanas privadas porque guarda preferencias y
 artículos en `storage.local`. Consulta la [política de privacidad](PRIVACIDAD.md)
 antes de activar la sincronización opcional.
@@ -58,8 +58,6 @@ el saneador propio; la instalación y el uso reales aún están pendientes.
 En la ejecución del workflow **Lector** puedes descargar el artefacto
 **lector-firefox-pruebas**. Sus archivos van en la raíz del ZIP: descomprímelo
 y selecciona el `manifest.json` extraído, no el ZIP contenedor de GitHub.
-Las primeras descargas incluían dos carpetas: en ese caso selecciona
-`firefox/manifest.json` después de descomprimir.
 
 ## Sincronización y Voceiro
 
@@ -134,5 +132,8 @@ selector, teleprompter, navegación sin recarga, retorno a Voceiro y
 persistencia después de reiniciar. Las pruebas de código usan las APIs
 simuladas y no sustituyen esa comprobación manual.
 
-La [segunda revisión con Claude](../REVISION-CLAUDE.md) recoge los fallos
-reproducidos, las correcciones y las comprobaciones de navegador pendientes.
+Comprobar también la primera apertura, el popup al solicitar permisos, el foco
+con teclado y lector de pantalla, dos pestañas guardando a la vez,
+sincronización con las noticias cerradas y regreso con Atrás/Adelante.
+Probar CSP estricta, HTML adversarial, imágenes diferidas, tablas y embebidos
+con cada método de extracción.

@@ -1,12 +1,10 @@
 # Contrato del relacionador territorial
 
-25/10/2026. Formalización a partir del [inventario](inventario.md).
-El primer incremento implementa países y su enlace con el catálogo de medios.
-El segundo aplica en Python la resolución con estado/evidencia a Galicia,
+La resolución con estado y evidencia está implementada en Python para Galicia,
 Kulturklik y tres recintos de Madrid, con correspondencias locales versionadas.
 La persistencia general de relaciones, vigencias y recorridos descritos abajo
-sigue propuesta; no tiene API pública. No sustituye las nueve relaciones del
-núcleo de agenda. Estado de la agenda en su [README](../../agenda/README.md).
+sigue propuesta; no tiene API pública. El modelo de agenda está en su
+[manual](../../agenda/README.md).
 
 El relacionador tiene tres responsabilidades: identificar un territorio desde
 una referencia externa, conservar vínculos con significado explícito y devolver
@@ -51,7 +49,7 @@ distingue un código inválido de un país válido que aún no hemos cargado.
 
 ## País del medio y cobertura
 
-Acuerdo con el usuario: se conservan por separado. La relación `pais_catalogo`
+La relación `pais_catalogo`
 indica el país con el que clasificamos el medio o su edición en Voceiro. No
 afirma domicilio social, propiedad, nacionalidad ni territorios cubiertos.
 `cobertura_editorial` expresa los territorios para los que se ha clasificado
@@ -68,7 +66,7 @@ La publicación actual de BBC queda así:
 }
 ```
 
-Los 122 medios con país obtienen ese papel. Africanews conserva `pais: "africa"`
+Los medios con país resuelto obtienen ese papel. Africanews conserva `pais: "africa"`
 sin enlace de país. No se añade cobertura mundial por tener ámbito internacional,
 ni cobertura británica a BBC por su país del catálogo. La región y el ámbito
 nacional españoles conservan su proyección de cobertura existente; el contrato
@@ -79,7 +77,7 @@ La clasificación actual identifica medios por dominio. Una futura edición con
 identidad propia necesitará una referencia contextualizada; el dominio no obliga
 a todas las ediciones de una cabecera a compartir país o cobertura.
 
-## Referencia y resultado de resolución propuestos
+## Referencia y resultado de resolución
 
 Una referencia conserva `sistema`, `codigo` original como cadena, `contexto`
 estructurado y `edicion` cuando la fuente la ofrece. El sistema fija nivel,
@@ -163,7 +161,7 @@ Una evidencia identifica fuente, documento o catálogo y su edición/huella cuan
 esté disponible, ruta al dato y momento de observación y comprobación. Una URL
 sola no sustituye el dato observado. Para `pais_catalogo`, el catálogo local
 acredita la clasificación y la fuente internacional acredita el código; no
-afirmamos haber revisado la ficha corporativa de los 122 medios.
+afirmamos haber revisado las fichas corporativas de todos los medios.
 
 `vigencia: null` significa desconocida. Cuando hay intervalo se usa `[desde,hasta)`;
 un extremo abierto solo se declara si la fuente lo permite. La fecha de una
@@ -201,23 +199,20 @@ Hay conflicto cuando las pruebas incompatibles pretenden resolver una misma
 identidad o ubicación única. La selección deduplica entidades por su ID y devuelve
 los caminos que coinciden; no multiplica un evento por cada código equivalente.
 
-## Incrementos y aceptación
+## Pendiente
 
-1. **Este incremento:** catálogo pequeño de países, equivalencias explícitas de
-   categorías editoriales y papel `pais_catalogo` en catálogo/slices. Las pruebas
-   compartidas Python/JS incluyen códigos desconocidos, `GB`, alias y África.
-2. **Correspondencias implementadas sobre muestras:** estado/evidencia para
-   Galicia, Kulturklik y Madrid. Tres recintos revisados; Kulturklik conserva
-   pendientes sus dos referencias municipales, con espacio propio y contexto.
-   El informe `python -m agenda.revision --entrada exportacion.json` revisa
-   temas y ubicación de todas las fuentes guardadas sin consultar proveedores.
-   Los cruces AEMET continúan pendientes. Falta ampliar la revisión de datos.
-3. **Relaciones y consultas:** persistir registros tipados, comprobar ciclos,
-   temporalidad y consultas inversas; integrar cobertura múltiple y vínculos
-   meteorológicos acreditados. Implementar recorridos de cada servicio.
+- Ampliar la revisión de recintos de Madrid y acreditar los códigos municipales
+  de Kulturklik con su contexto. Los nombres no bastan para resolverlos.
+- Persistir los registros tipados, con ciclos, evidencias y vigencias; implementar
+  consultas inversas y recorridos por servicio antes de ofrecer una API común.
+- Incorporar cobertura editorial múltiple y asociaciones meteorológicas con
+  alcance explícito. Las excepciones actuales de AEMET están documentadas en
+  su [revisión](revision-aemet-2026-10-25.md), sin registro general aún.
+- Revisar otros niveles solo cuando una integración los necesite: NORA,
+  distritos/barrios de Madrid, comarcas, parroquias y núcleos no se resuelven
+  como códigos municipales ni se añaden por deducción de nombres o prefijos.
 
-La aceptación exige preservar IDs españoles, controles INE y ceros iniciales;
-igualdad Python/JS; publicación del país del catálogo sin cobertura añadida;
-pendientes sin asignaciones por nombre; conflictos visibles; y recorridos que
-no mezclen ubicación, ámbito, cobertura y previsión. La suite completa se ejecuta
-en CI. Esta formalización no activa nuevas recogidas ni modifica producción.
+La aceptación exige preservar IDs, controles INE y ceros iniciales; igualdad
+Python/JS para el contrato compartido; pendientes y conflictos visibles; y
+recorridos que separen ubicación, ámbito, cobertura y previsión. La suite
+completa se ejecuta en CI.

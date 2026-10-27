@@ -1,42 +1,6 @@
 # Interfaz
 
-## Calendario y contenido del feed
-
-El calendario está desactivado mediante `CALENDARIO_ACTIVO = false`: botón,
-panel, órdenes del buscador y sugerencias quedan inactivos, sin descargar
-`calendario.json`. Se conserva la implementación para conectarla a la lectura
-acotada de Turso mediante nuestra API antes de reactivarla. Los datos y las
-recogidas del servidor conservan su funcionamiento.
-
-La implementación conservada funciona así:
-
-`app/14-calendario.js` carga bajo demanda `calendario.json` desde los mismos
-backends de datos. Agenda, semana y mes comparten selección y fechas en
-`shared/calendario/`. Se filtra por tema, circuitos combinables, objetivo
-identificado, municipio/recinto publicado y fuente. La zona del lector convierte
-solo instantes acreditados: una fecha sin hora o una hora sin zona mantienen
-su significado. Las citas sin fecha confirmada quedan en una sección aparte.
-
-La agenda conserva dos semanas y muestra 20 citas por tanda con «Ver más»;
-cada evento aparece una sola vez. Las programaciones prolongadas se agrupan
-al final. Las filas abren el detalle en un diálogo. Categorías y búsqueda
-propia permanecen visibles; los filtros adicionales se despliegan aparte.
-Semana muestra hasta tres citas por día, mes hasta dos; pulsar un día o
-«más» abre solo ese día. Pulsar Agenda recupera las dos semanas. Sin fecha
-confirmada también se muestra en tandas de 20. Cambiar filtros o período
-reinicia la tanda. Las vistas y filtros conservan la selección entre sí.
-
-Las órdenes `tenis:`, `atp: wta:`, `resultados:tenis` y `f1:clasificación`
-reúnen contenido o limitan su tipo. Las noticias siguen el buscador habitual
-y una selección por texto del titular, sin fabricar enlaces con entidades
-deportivas; los filtros de medios solo afectan a esas noticias. Los filtros
-propios del calendario se muestran en su panel. Las vistas completas ocupan
-el espacio central y conservan el feed al cerrarse. Las tablas deportivas
-conservan ámbito y comprobación, y no se representan como citas.
-
-La lectura conserva el último resultado bueno si falla la actualización.
-Las respuestas de fuentes excluidas de publicación no viajan al navegador.
-La publicación es una operación manual del workflow Calendario.
+## Construcción
 
 `plantilla.html` contiene el HTML y el arranque temprano del tema.
 `python3 scripts/generar_front.py` genera los archivos que se sirven en Pages:
@@ -61,6 +25,37 @@ dinámicos, para evitar mezclar versiones cacheadas.
 CI genera el frontend antes de probarlo. En la cosecha se conserva el frontend
 anterior si el candidato no se construye o no supera las comprobaciones.
 
+## Calendario
+
+El calendario está desactivado mediante `CALENDARIO_ACTIVO = false`: botón,
+panel, órdenes y sugerencias quedan inactivos. La interfaz está pendiente
+de rediseño; las recogidas del servidor siguen funcionando.
+
+`app/14-calendario.js` ya consulta la API `/calendario/*` de los backends de
+datos. Carga el catálogo bajo demanda, páginas de 20 citas en agenda,
+resúmenes para semana y mes y el detalle al abrir una cita. Las citas sin
+fecha confirmada se consultan aparte. El cliente conserva el resultado de
+la misma consulta mientras lo renueva y respeta los errores 4xx y el tiempo
+de espera de 429, sin repetirlos en el otro backend.
+
+`shared/calendario/` reúne las fechas y la interpretación de consultas. Una
+fecha civil sin hora conserva su significado; solo se convierten instantes
+con zona acreditada. Los filtros de noticias y los de agenda tienen ámbitos
+distintos. Los resultados y clasificaciones deportivos son consultas
+puntuales pendientes de implementación.
+
+El [manual de agenda](../agenda/README.md) documenta rutas, publicación,
+control de temporadas y trabajo pendiente para reactivar la interfaz.
+
+## Modos y cabecera
+
+El [contrato de modos](ASISTENTE-MODOS.md) describe las reglas y la prueba
+del asistente. El feed usa una franja superior con marca, actualización,
+contador, tiempo y estadísticas. El nombre de la vista recarga y su flecha
+abre los modos; Guardadas está a la izquierda del buscador. Por debajo de
+900 px de columna, el menú ⋯ reúne información y controles secundarios,
+conservando sus estados. El total del archivo está en Estadísticas.
+
 ## Panel de estadísticas
 
 `app/14-estadisticas.js` carga los JSON públicos de estadísticas solo al abrir
@@ -81,17 +76,5 @@ mantiene la fecha y se ofrece abrir el último disponible. No confundir titulare
 con artículos únicos por publicación. Lo que no trae datos no se pinta: un
 hueco no es un cero. El trabajo completo se verifica en CI.
 
-Pendiente para la siguiente fase: agregados de Asuntos, identidad de artículo,
-evidencia y comparación. Un idioma único asignado al medio no basta: algunos
-publican en varios y el catálogo está incompleto. Hay que validar el análisis
-por titular, cuantificar los no analizables y comprobar una muestra compatible
-antes de habilitar comparaciones; no convertir idioma desconocido en ausencia
-de menciones. El resumen técnico no necesita esa clasificación.
-
-Ideas de UI recogidas al probar la maqueta: jerarquía de contexto y cifras,
-controles agrupados, espacio entre bloques y acciones secundarias en ⋯.
-El feed usa una franja superior de una línea con la marca, actualización,
-contador, tiempo y estadísticas. El nombre de la vista recarga y su flecha
-abre los modos; Guardadas está a la izquierda del buscador. Por debajo de
-900 px de columna, el menú ⋯ reúne información, estadísticas y controles
-secundarios, conservando sus estados. El total del archivo está en Estadísticas.
+El análisis de asuntos y las comparaciones siguen
+[pendientes](../PENDIENTES.md#estadísticas-de-asuntos).

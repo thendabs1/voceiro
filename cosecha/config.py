@@ -18,7 +18,7 @@ MAX_WORKERS         = 8
 TIMEOUT             = 25
 TZ_MADRID = ZoneInfo('Europe/Madrid')
 
-# Intervalo por defecto si no hay datos.json previo (primer run)
+# Intervalo por defecto si no hay una pasada anterior registrada (primer run)
 INTERVALO_DEFAULT_SEG = 3600        # 1 hora
 INTERVALO_MIN_SEG     = 60          # no menos de 1 min
 INTERVALO_MAX_SEG     = 24 * 3600   # no más de 24 h

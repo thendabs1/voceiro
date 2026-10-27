@@ -5,7 +5,6 @@ apariencia configurable, pendientes, diccionarios y teleprompter. Puede
 usarse junto a [Voceiro](https://thendabs1.github.io/voceiro/) o abrirse
 directamente sobre una noticia.
 
-Este manual describe el lector revisado el 24 de octubre de 2026.
 La [extensión de Firefox para pruebas](extension/README.md) está incluida
 en el repositorio. Ese documento explica cómo construirla y cargarla de
 forma temporal; la instalación publicada en una tienda aún está pendiente.
@@ -365,5 +364,5 @@ con buena parte de ella, pero sus scripts pueden seguir ejecutándose.
 Ocultar imágenes tampoco garantiza evitar sus descargas. Pendientes y configuración se muestran en Voceiro; el medio solo recibe
 los controles necesarios para leer y ajustar su propia noticia.
 
-Los ajustes pendientes del portado y los fallos detectados se detallan en
-la [revisión técnica para Firefox](REVISION-FIREFOX.md).
+La [documentación de la extensión](extension/README.md) detalla la instalación
+temporal y las comprobaciones de navegador pendientes antes de publicarla.

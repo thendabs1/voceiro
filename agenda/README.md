@@ -199,9 +199,10 @@ Filtros: `q` (prefijos del parser y texto), `texto`, `temas`, `circuitos`,
 ligado a la revisión: si cambia la publicación responde 409. Caché de 15 s con
 clave por revisión y límite de 30 peticiones/IP/minuto.
 
-**Para activar:** secretos `CALENDARIO_TURSO_URL` y
+**Configuración:** secretos `CALENDARIO_TURSO_URL` y
 `CALENDARIO_TURSO_TOKEN_LECTURA` (token de solo lectura) en CF y Deno,
-variable `CALENDARIO_LECTURA_SQL=true` en Actions y conectar el cliente.
+variable `CALENDARIO_LECTURA_SQL=true` en Actions. El cliente ya consulta
+esta API; su interfaz sigue desactivada mientras se rediseña.
 `node scripts/medir-lectura-calendario.mjs publicacion.json` mide la proyección
 sin red.
 
@@ -239,8 +240,9 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
 
 ## Pendiente
 
-- **Activar la lectura y el cliente:** agenda paginada, semana y mes con
-  `/resumen`, detalle bajo demanda y reactivar `CALENDARIO_ACTIVO`.
+- **Rediseñar y reactivar el cliente:** la lectura paginada, los resúmenes y
+  el detalle bajo demanda ya están conectados. Revisar la interfaz antes
+  de reactivar `CALENDARIO_ACTIVO`.
 - **Retención y retirada:** borrado transaccional de dependencias exclusivas
   antes de activar la poda de 45 días; retirar de la lectura lo que una
   respuesta completa ya no trae (requisito de CyL y Málaga).

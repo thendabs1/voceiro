@@ -1,14 +1,11 @@
-# Territorios comunes: primer incremento
+# Territorios comunes
 
 Un municipio es una identidad territorial reutilizable por agenda, tiempo y
 prensa. Sus nombres y las zonas meteorológicas tienen otra función.
 
-El [inventario de relaciones y códigos](inventario.md)
-reúne el estado implementado, los cruces pendientes y las fuentes oficiales
-para revisar otros niveles y sistemas territoriales antes de ampliarlos.
 El [contrato del relacionador](relacionador.md) concreta identidad, tipos,
 evidencia y recorridos propuestos; distingue el país del catálogo de un medio
-de su cobertura editorial, según lo acordado con el usuario.
+de su cobertura editorial, con papeles separados.
 
 La primera instantánea contiene España, 19 autonomías/ciudades autónomas,
 52 provincias y los 8.132 municipios del [diccionario INE de 2026](https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx).
@@ -76,15 +73,17 @@ node scripts/revisar-base-territorial.mjs
 
 Informa códigos sin correspondencia, municipios sin punto meteorológico, zonas
 ausentes y diferencias entre cliente y worker. Las diferencias no se corrigen
-automáticamente ni acreditan un cambio actual del proveedor. Relaciones de zonas,
-cobertura municipal/provincial de medios y orden de implementación se concretan
-en el [inventario](inventario.md) y el [estado de la agenda](../../agenda/README.md).
+automáticamente ni acreditan un cambio actual del proveedor. El resultado local
+actual contiene 8.124 puntos meteorológicos, todos con correspondencia INE,
+sin diferencias entre cliente y worker. Ocho municipios INE carecen de punto
+propio; no se les asigna por proximidad una zona de avisos.
 La [revisión de AEMET del 25/10/2026](revision-aemet-2026-10-25.md) documenta
 cuatro productos municipales vigentes ausentes del maestro, dos entradas antiguas
 y ocho municipios sin previsión actual acreditada. El generador del tiempo aplica
 esas excepciones versionadas.
 
 Se conserva la URL y SHA-256 del fichero INE. `--check` comprueba las proyecciones
-administrativa y de países JavaScript en CI. La lectura preparada del PR 144 incorpora
-facetas territoriales de eventos; quedan las relaciones de servicio, la
-resolución territorial común y su conexión con los filtros y preferencias.
+administrativa y de países JavaScript en CI. La lectura pública de agenda
+incorpora facetas territoriales de eventos. Las relaciones de servicio,
+las vigencias y la integración con preferencias siguen pendientes en el
+[contrato del relacionador](relacionador.md).
