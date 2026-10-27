@@ -312,3 +312,21 @@ test('los planes de consulta usan índices por fecha y faceta, sin leer detalles
     assert.doesNotMatch(plan, /SCAN agenda_lectura_eventos/);
   }
 });
+
+test('dentro del día se pagina por instante de inicio: sin hora primero, después por hora', async t => {
+  const datos = muestra();
+  // IDs en orden inverso a la hora; el desfase horario no altera el orden absoluto.
+  const horas = { '010': '2026-10-25T20:00:00Z', '011': '2026-10-25T19:30:00+01:00', '012': '2026-10-25T09:00:00+01:00' };
+  for (const e of datos.eventos) if (horas[e.id]) e.programacion.valor.cuando = { inicio: extremo('2026-10-25', horas[e.id]), fin: extremo(null) };
+  const b = base(datos); t.after(() => b.db.close());
+  const ids = [];
+  for (let cursor = ''; ;) {
+    const r = await b.pedir('/calendario/eventos?desde=2026-10-25&hasta=2026-10-26&zona=UTC&limite=7' + (cursor ? '&cursor=' + cursor : ''));
+    ids.push(...r.dato.eventos.map(e => e.id));
+    if (!(cursor = r.dato.siguiente)) break;
+  }
+  assert.equal(new Set(ids).size, ids.length);
+  const pos = id => ids.indexOf(id);
+  assert.ok(pos('005') < pos('012') && pos('012') < pos('011') && pos('011') < pos('010'), ids.join());
+  assert.ok(pos('001') < pos('012') && pos('002') > pos('010'));
+});

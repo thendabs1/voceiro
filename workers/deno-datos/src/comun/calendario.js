@@ -100,7 +100,8 @@ function leerCursor(s) {
   if (!s) return null;
   try {
     const v = JSON.parse(atob(s.replaceAll('-', '+').replaceAll('_', '/')));
-    if (!Array.isArray(v) || v.length !== 4 || v.some(x => typeof x !== 'string' || x.length > 1024)) throw 0;
+    if (!Array.isArray(v) || v.length !== 5 || v.some(x => typeof x !== 'string' || x.length > 1024)
+      || !Number.isFinite(Number(v[3]))) throw 0;
     return v;
   } catch { throw error(400, 'Cursor inválido'); }
 }
@@ -116,14 +117,18 @@ export function consultaEventos(c, meta, cursor) {
   const dias = c.pendientes ? 'd.hasta=? AND d.desde=?' : 'd.hasta>? AND d.desde<?';
   const filtros = filtrosSql(c, meta, args);
   let continuacion = '';
-  if (cursor) { continuacion = ' WHERE (dia,id)>(?,?)'; args.push(cursor[2], cursor[3]); }
+  if (cursor) { continuacion = ' WHERE (dia,orden,id)>(?,?,?)'; args.push(cursor[2], Number(cursor[3]), cursor[4]); }
   args.push(c.limite + 1);
+  // Dentro del día, por instante de inicio (absoluto, válido en cualquier zona): primero
+  // lo que ya había empezado o no tiene hora, después cada cita por su hora.
   return { sql: `WITH seleccion AS (
     SELECT e.id, min(${dia}) AS dia FROM agenda_lectura_tramos d
     JOIN agenda_lectura_eventos e ON e.id=d.evento
-    WHERE d.zona IN (?,'*') AND ${dias}${filtros} GROUP BY e.id)
-    SELECT id,dia,(SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=seleccion.id) AS tarjeta
-    FROM seleccion${continuacion} ORDER BY dia,id LIMIT ?`, args };
+    WHERE d.zona IN (?,'*') AND ${dias}${filtros} GROUP BY e.id),
+    ordenada AS (SELECT s.id, s.dia, e.tarjeta_json AS tarjeta,
+      coalesce(julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')),0) AS orden
+      FROM seleccion s JOIN agenda_lectura_eventos e ON e.id=s.id)
+    SELECT id,dia,orden,tarjeta FROM ordenada${continuacion} ORDER BY dia,orden,id LIMIT ?`, args };
 }
 
 export function consultaResumen(c, meta) {
@@ -198,7 +203,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       const args = [], condiciones = ['1=1', ...predicadosTexto(c.texto || c.resto, 'texto', args)];
       // Varios tipos a la vez: filtrar antes del límite, no después en el cliente.
       if (c.tipos.length) { condiciones.push(`tipo IN (${c.tipos.map(() => '?').join(',')})`); args.push(...c.tipos); }
-      if (cursor) { condiciones.push('id>?'); args.push(cursor[3]); }
+      if (cursor) { condiciones.push('id>?'); args.push(cursor[4]); }
       args.push(c.limite + 1);
       sentencia = { sql: 'SELECT id,datos_json FROM agenda_lectura_entidades WHERE ' + condiciones.join(' AND ') + ' ORDER BY id LIMIT ?', args };
     }
@@ -231,7 +236,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       // para agrupar en el cliente con la misma regla que la consulta.
       salida = { ...base, [ruta.endsWith('/objetivos') ? 'entidades' : 'eventos']:
         pagina.map(f => f.tarjeta ? { ...JSON.parse(f.tarjeta), dia: f.dia } : JSON.parse(f.datos_json)),
-        siguiente: hayMas ? codificar([meta.revision, huella, ultima.dia || '', ultima.id]) : null };
+        siguiente: hayMas ? codificar([meta.revision, huella, ultima.dia || '', String(ultima.orden ?? 0), ultima.id]) : null };
     }
     const respuesta = json(salida, 200, { 'Cache-Control': 'public, max-age=30', ETag: '"' + etag + '"' });
     guardar(clave, respuesta.clone());

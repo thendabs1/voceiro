@@ -166,7 +166,7 @@ primera vez y 0 si no hay novedades. Rutas GET/HEAD del worker:
 
 | Ruta | Respuesta |
 | --- | --- |
-| `/calendario/eventos?desde&hasta` | 20 tarjetas por página (máx. 50), ventana `[desde,hasta)` de hasta 42 días. |
+| `/calendario/eventos?desde&hasta` | 20 tarjetas por página (máx. 50), ventana `[desde,hasta)` de hasta 42 días; orden por día e instante de inicio (sin hora o ya empezadas, primero). |
 | `/calendario/eventos?pendientes=1` | Citas con fecha pendiente. |
 | `/calendario/resumen?desde&hasta` | Conteo por día y hasta dos muestras. |
 | `/calendario/eventos/:id` | Detalle con sus objetivos. |
