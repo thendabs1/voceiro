@@ -52,17 +52,22 @@ class CrucesRevisados(unittest.TestCase):
         self.assertEqual(e['ubicacion_motivo'], 'sin_correspondencia')
 
     def test_kulturklik_preserva_el_espacio_publicado_y_el_desajuste_con_nora(self):
-        p = proyectar(kulturklik.importar(None, muestra('kulturklik'), AHORA))
-        self.assertTrue(all(not e['territorios'] for e in p['eventos']))
+        n = kulturklik.importar(None, muestra('kulturklik'), AHORA)
+        anterior = deepcopy(n)
+        p = proyectar(n)
+        self.assertEqual(n, anterior)
+        self.assertEqual({t['territorio'] for e in p['eventos'] for t in e['territorios']},
+                         {'es:municipio:31201', 'es:municipio:01059'})
         municipios = [e for e in p['entidades'].values() if e['tipo'] == 'territorio']
         self.assertEqual(len(municipios), 2)
         for e in municipios:
-            self.assertEqual(e['territorio_estado'], 'pendiente')
+            self.assertEqual(e['territorio_estado'], 'resuelto')
             r = e['territorio_resoluciones'][0]
             self.assertEqual(r['referencia']['sistema'], 'kulturklik:municipio_nora')
-            self.assertEqual(r['motivo'], 'espacio_kulturklik_sin_correspondencia_acreditada')
-            self.assertEqual(len(r['evidencias']), 2)
-            self.assertEqual(r['candidatos'], [])
+            self.assertEqual(r['motivo'], 'correspondencia_acreditada')
+            self.assertGreaterEqual(len(r['evidencias']), 2)
+            self.assertEqual(len(r['candidatos']), 1)
+            self.assertTrue(any(e.get('geometria_sha256') for e in r['evidencias']))
             self.assertIn('provincia_nora', r['referencia']['contexto'])
         relacionador = Relacionador()
         for ref in ({'sistema': 'kulturklik:municipio_nora', 'codigo': '476'},
@@ -81,6 +86,15 @@ class CrucesRevisados(unittest.TestCase):
                 self.assertEqual(e['territorio_estado'], estado)
                 self.assertEqual(len(e['territorio_resoluciones']), 2)
                 self.assertEqual(bool(p['eventos'][0]['territorios']), estado == 'resuelto')
+
+    def test_galdakao_con_coordenadas_en_usansolo_no_se_asigna_y_conserva_pruebas(self):
+        r = Relacionador().resolver_referencia({'sistema': 'kulturklik:municipio_nora',
+            'codigo': '183', 'contexto': {'provincia_nora': '48'}})
+        self.assertEqual(r['estado'], 'pendiente')
+        self.assertIsNone(r['territorio'])
+        self.assertEqual(r['motivo'], 'denominacion_contradice_recinto')
+        self.assertTrue(any(e['dato'].get('municipalityEs') == 'Galdakao' for e in r['evidencias']))
+        self.assertTrue(any(e['dato'].get('MUN_MUNI') == '916' for e in r['evidencias']))
 
     def test_conflicto_de_observaciones_conserva_las_referencias_sin_publicar_una(self):
         c = nucleo.Constructor()
@@ -104,8 +118,8 @@ class CrucesRevisados(unittest.TestCase):
         self.assertEqual(n, anterior)
         self.assertEqual(informe['fuentes']['cultura-galicia']['ubicacion'], {'resuelto': 1})
         self.assertEqual(informe['fuentes']['madrid']['ubicacion'], {'resuelto': 4})
-        self.assertEqual(informe['fuentes']['kulturklik']['ubicacion'], {'pendiente': 3})
-        self.assertEqual(len(informe['pendientes']), 2)
+        self.assertEqual(informe['fuentes']['kulturklik']['ubicacion'], {'resuelto': 3})
+        self.assertEqual(len(informe['pendientes']), 0)
         self.assertEqual(informe['fuentes']['madrid']['temas'], {'clasificados': 4, 'pendientes': 0})
         self.assertEqual(revisar(n, ['madrid'])['pendientes'], [])
         self.assertNotIn('kulturklik', json.dumps(revisar(n, ['madrid'])))
@@ -117,13 +131,14 @@ class EstadosResolucion(unittest.TestCase):
         self.ref = self.datos['correspondencias'][0]['referencia']
 
     def test_reune_pruebas_del_mismo_destino_y_no_elige_entre_destinos_incompatibles(self):
+        previas = len(Relacionador(self.datos).resolver_ubicacion(self.ref)['evidencias'])
         copia = deepcopy(self.datos['correspondencias'][0])
         copia['id'] += ':otra-prueba'
         self.datos['correspondencias'].append(copia)
         r = Relacionador(self.datos).resolver_ubicacion(self.ref)
         self.assertEqual(r['estado'], 'resuelto')
         self.assertEqual(len(r['candidatos']), 1)
-        self.assertEqual(len(r['evidencias']), 2)
+        self.assertEqual(len(r['evidencias']), previas + 1)
         copia['territorio'] = 'es:municipio:36038'
         relacionador = Relacionador(self.datos)
         r = relacionador.resolver_ubicacion(self.ref)

@@ -256,9 +256,12 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
   Galicia y adaptación del inventario completo a nuevas fuentes (requisito
   de CyL y Málaga, cuya identidad de función incluye la fecha).
 - **Fuentes culturales nuevas:** Zaragoza primero (funciones con ID propio),
-  luego CyL, Málaga y Cataluña; territorio por coordenadas antes de escalar.
+  luego CyL, Málaga y Cataluña; reutilizar el preparador de cruces por
+  coordenadas y límites oficiales de [territorios](../shared/territorios/README.md#preparar-cruces-de-agenda).
 - **Lectores por formato** (ICS completo, JSON-LD schema.org/Event, RSS) con un
   registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
+  Todavía no implementados: Vidmar solo cubre su subconjunto ICS y el RSS de
+  noticias no interpreta citas.
 - **Consultas puntuales:** registro único de prefijos (hoy `shared/parser.js`
   y `shared/calendario/consulta.js` tienen listas separadas), contrato común
   de respuesta y una salida única del worker con caché y presupuesto.
@@ -267,6 +270,28 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
   derivación); novedades por objetivo, tipo de cambio y revisión. Diseñado,
   sin implementar.
 - **Alrededores** (búsqueda por distancia): por diseñar.
+
+### Lectores y escalado
+
+El patrón revisado en el repositorio hermano `boletines-es` (`CONTRATO.md`,
+`REVISION_RUMBO.md` y `boletines/red.py`) separa lectores por fuente/familia,
+extractores por formato, red común y recolector. Es la referencia para ampliar
+la agenda; sus contratos y decisiones de almacenamiento pertenecen a otro
+servicio y no se trasladan automáticamente.
+
+En agenda, el lector de formato debe decodificar y conservar procedencia; el
+adaptador de fuente interpreta identidades, fechas, lenguas y alcance; el
+relacionador común acredita códigos y ubicaciones. Compartir JSON o XML no
+significa compartir el contrato de una fuente. Las familias de API (CKAN,
+Socrata, Opendatasoft) también necesitan paginación y validación propias.
+
+La incorporación de cada lector debe distinguir vacío acreditado, respuesta
+parcial y fallo; guardar URL, fecha y huella; permitir repetir muestras sin red;
+y declarar la versión de sus reglas. Los límites por host y presupuestos van
+en la red común, sin que cada lector reintente por su cuenta. La agenda ya
+centraliza descarga y presupuestos deportivos, pero faltan el contrato general,
+la grabación/reproducción y los lectores ICS/JSON-LD/RSS. Los lectores de
+catálogos territoriales son la primera aplicación local de esa separación.
 
 ## Pruebas
 
