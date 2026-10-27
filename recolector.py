@@ -11,11 +11,11 @@ Fases:
   5. Deduplicar contra el histórico y fusionar
   6. Podar por ventana de retención
   7. Escribir:
-        · public/datos.json            (formato viejo, compatibilidad)
         · public/datos/manifest.json   (lo que lee el lector: ventana de días)
         · public/datos/inventario.json (memoria del recolector: ficheros y archivo)
         · public/datos/YYYY-MM-DD.json (un fichero por día, formato corto)
-        · public/index.html
+        · portadas y slices por medio y grupo en public/datos/
+        · frontend generado en public/
   8. Reporte final
 
 Formato corto de noticia (ficheros diarios):
@@ -27,7 +27,8 @@ Tabla de medios (una por fichero diario, sin duplicación por noticia):
   n: nombre · g: grupo · t: tipo · l: lang · tags: lista
 
 Agrupación por día:
-  - La fecha de agrupación prioriza fecha_pub si NO es futura.
+  - La fecha de agrupación prioriza la publicación declarada (hora o día)
+    dentro del horizonte permitido respecto a la primera recogida.
   - Si fecha_pub es futura (> recogida + 6h) → se usa fecha_estimada o fecha
     (para no crear ficheros con fechas futuras por eventos programados).
   - Cualquier noticia con fecha de agrupación fuera de la ventana de

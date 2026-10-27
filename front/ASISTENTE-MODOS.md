@@ -1,11 +1,10 @@
-# Asistente web de modos y ampliaciones previstas
+# Modos y asistente web
 
-Se acuerda empezar por una guía opcional en la web. Las reglas que crea
-deben poder reutilizarse más adelante para entregar titulares en Telegram.
-Ubicación, tiempo y avisos se añadirán en una fase posterior, por decisión
-del usuario durante el desarrollo de este PR.
+El asistente es una guía opcional para crear modos. Su implementación está
+en `app/17-asistente-modos.js` y utiliza las reglas compartidas de
+`shared/busqueda/reglas.js`.
 
-## Primer PR
+## Recorrido
 
 - Acceso desde Modos y desde la invitación a empezar del menú de modos.
   Se conserva la creación directa y el editor existente.
@@ -18,15 +17,14 @@ del usuario durante el desarrollo de este PR.
   Todo el recorrido trabaja sobre un borrador; salir lo descarta.
 - Reutilizar el mismo motor de coincidencia en la prueba, el feed y la
   vista Temas. Conservar el formato al exportar, importar y sincronizar.
-- Ofrecer un acceso a las portadas existentes en Noticias. No crear una
-  portada nueva ni un envío durante esta fase.
+- Ofrecer un acceso a las portadas existentes en Noticias.
 - Textos en castellano, gallego, catalán, inglés y euskera; navegación con
   teclado, retroceso del navegador y disposición móvil.
 
 ## Regla y compatibilidad
 
 Los campos del modo siguen siendo `grupos`, `palabras` y `overrides`.
-Un campo opcional distingue la nueva selección:
+Un campo opcional distingue la selección de fuentes cruzada con temas:
 
 ```json
 {
@@ -58,7 +56,7 @@ No se convierten los modos existentes. El editor explica el comportamiento
 y permite cambiarlo explícitamente. Duplicar conserva la regla; vaciar
 el modo elimina también la regla.
 
-El frontend normaliza el campo nuevo al leer, importar y recibir modos por
+El frontend normaliza `regla` al leer, importar y recibir modos por
 sincronización; la fusión compartida ya conserva los campos de cada modo.
 Los clientes web antiguos desconocen `regla` y pueden perderla si vuelven
 a guardar un modo: hay que recargar las pestañas antiguas antes de editar
@@ -93,7 +91,7 @@ el predicado que decide si coincide un titular.
 
 ### Ubicación, tiempo y avisos
 
-Pendiente de diseño e implementación, fuera de este PR:
+Pendiente de diseño e implementación:
 
 - Elegir una localidad identificada por el catálogo geográfico, no solo
   una cadena de texto. Mostrar municipio, provincia y comunidad para
@@ -113,7 +111,7 @@ Pendiente de diseño e implementación, fuera de este PR:
 
 ### Telegram
 
-Pendiente, sin conexión ni envíos en este PR:
+Pendiente, sin conexión ni envíos implementados:
 
 - Entrada desde un modo: escoger temas concretos y transferir una regla
   con sus fuentes y silencios, sin noticias ni configuración privada ajena.

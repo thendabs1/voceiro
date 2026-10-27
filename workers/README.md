@@ -27,7 +27,7 @@ node scripts/sync-workers.mjs --check
 CI comprueba las copias versionadas; los workflows de despliegue las regeneran
 antes de empaquetar. Los cambios en la fuente común activan ambos despliegues.
 Las dependencias `shared/` de datos se sincronizan con ese mismo script. Las
-copias anteriores del parser de búsqueda siguen usando `scripts/sync-parser.mjs`.
+copias del parser de búsqueda se generan con `scripts/sync-parser.mjs`.
 
 Las diferencias de plataforma se conservan en los adaptadores:
 
@@ -45,6 +45,32 @@ Las diferencias de plataforma se conservan en los adaptadores:
 Los relays de extracción y búsqueda siguen siendo servicios distintos con
 sus propias restricciones. Las pruebas HTTP de `tests/workers` verifican los
 dos adaptadores, errores parciales, caché, paginación y revalidación sin red real.
+
+## Tiempo y avisos
+
+`deno-buscar/src/tiempo/` sirve `/tiempo`, `/tiempo/lugares` y `/avisos`.
+España usa AEMET con `AEMET_API_KEY` en el servidor; Open-Meteo sirve el
+resto y respalda las previsiones. Los avisos españoles usan CAP de AEMET,
+con MeteoAlarm como respaldo; el cliente indica la fuente y la limitación
+de cobertura cuando cambia. Sin datos no se afirma «sin avisos».
+
+La Cache API conserva previsiones AEMET 60 minutos, Open-Meteo 30 minutos,
+geocodificación siete días y avisos diez minutos. La descarga de AEMET va
+en dos pasos: hay que comprobar también el contenido de la segunda respuesta.
+`index.js` gestiona la codificación y `avisos.js` extrae los CAP del archivo tar.
+
+El cliente carga municipios bajo demanda. Para regenerar sus sugerencias y
+la tabla del worker se usa `node scripts/generar-municipios.mjs`, que consulta
+AEMET y necesita su clave (del entorno o del `.env` local). Aplica las
+excepciones de `scripts/municipios-aemet-revisados.json`; su
+[evidencia](../shared/territorios/revision-aemet-2026-10-25.md) sigue siendo
+necesaria para no reintroducir códigos antiguos o productos sin previsión vigente.
+
+El panel vive en `front/app/14-tiempo.js`. `eltiempo:` y `tiempo:` abren
+Mis sitios o una localidad; `alertas:` abre los avisos. Mis sitios guarda
+hasta cinco lugares en el dispositivo. El sol puede destacar naranja o
+rojo de sus zonas. Estos ajustes se habilitan con «Tiempo y avisos» y
+son independientes de los modos de noticias.
 
 ## Límites de peticiones
 
@@ -81,13 +107,13 @@ todos.
 La caché identifica la consulta interpretada: `q`/`raw`, espacios, overrides
 equivalentes y parámetros ajenos no generan consultas distintas.
 
-Turso sigue recibiendo la cosecha (`cosecha/turso.py`). Para seguir su consumo
-sin hacer recuentos sobre las noticias, la API de gestión documenta
+Turso recibe el catálogo y el diagnóstico de las pasadas (`cosecha/turso.py`)
+y los resúmenes de estadísticas; las noticias se almacenan en R2.
+Para seguir el consumo, la API de gestión documenta
 [uso mensual por base](https://docs.turso.tech/api-reference/databases/usage)
 y [consultas con más filas leídas](https://docs.turso.tech/api-reference/databases/stats);
 requiere autenticación de gestión, el token SQL de una base no la sustituye.
-También está documentado `turso db inspect <base> --queries`. Turso sigue sin
-una poda automática de noticias: no se ha borrado histórico.
+También está documentado `turso db inspect <base> --queries`.
 
 ### Dominio propio y WAF
 

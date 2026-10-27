@@ -13,7 +13,7 @@ Las pruebas Python importan directamente los módulos de `cosecha/`. La integrac
 de publicación comprueba portadas, slices, índices, estado y reutilización de
 archivos entre dos runs locales.
 
-`test_agenda.py` comprueba además el [piloto de calendario común](../agenda/README.md):
+`test_agenda.py` comprueba además el [calendario común](../agenda/README.md):
 identidad de funciones y traducciones, regiones y grupos, fechas de celebración,
 paginación y conservación de la última salida buena, sin peticiones reales.
 `test_calendario_almacen.py` contrasta el ICS de Vidmar y la persistencia SQLite:
@@ -29,8 +29,8 @@ sin reescrituras de contenido, copia completa, migración v1 y otras disciplinas
 Para una revisión general, empezar por los logs del recolector y
 `runs.intentos`: ya registran los intentos y la alternativa elegida en cada
 pasada. Reservar las peticiones nuevas para los casos que no expliquen esos
-datos. El [inventario del extractor](../cosecha/REVISION-EXTRACTOR.md)
-documenta las incidencias observadas y las alternativas aún sin comprobar.
+datos. El [manual de cosecha](../cosecha/README.md) explica las limitaciones
+de fechas y cobertura que hay que tener en cuenta.
 
 En Actions → **Salud de fuentes**, elige `tipos` y, si quieres, `dominios` separados por comas. Prueba cada fuente configurada con el mismo código que el recolector, incluidas las alternativas. `gn` permite hacer el diagnóstico de Google News que antes tenía un workflow propio.
 
@@ -57,9 +57,3 @@ python diagnosticar_dominio.py https://ejemplo.es/ --tipo gn --lang es
 Los tipos explícitos permiten probar rutas conocidas o métodos alternativos aunque no se anuncien en la portada. `wp` y `gn` usan el dominio, mientras que `rss`, `sitemap` y `scrape` usan la URL indicada. Hay un máximo de ocho fuentes por diagnóstico; el informe indica las omitidas. Los candidatos de headings y slugs pueden solaparse y todavía no representan el total final deduplicado.
 
 El JSON guarda configuración, estado, recencia, muestras y mensajes del extractor; se publica como artefacto incluso si ninguna fuente da `ok` y el run falla. Un HTTP 200 por sí solo no implica extracción correcta. Estos diagnósticos hacen peticiones reales y se ejecutan manualmente; la IP de GitHub puede recibir bloqueos distintos de la de tu equipo.
-
-## Depuración realizada
-
-Se conservan las pruebas de comportamiento de buscador, lector, temas y sincronización: cubren reglas distintas o su integración. Se eliminan las comprobaciones del parser que solo verificaban tipos de retorno, ya cubiertas por pruebas de resultados concretos.
-
-Se retiran `test_feeds.py` (seis URLs fijas y combinaciones de clientes), `test_scraping.py` (copia antigua de estrategias y fechas con offset fijo) y `test_google_news.py` (lista antigua de medios y lógica separada del recolector). Sus usos quedan cubiertos por salud de fuentes y diagnóstico por URL usando los extractores actuales; la comparación experimental entre clientes HTTP no se conserva. `check_run.py` se mantiene para analizar los datos ya recolectados.

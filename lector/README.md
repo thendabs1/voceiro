@@ -7,7 +7,7 @@ lector se encarga de lo que pasa al abrir la noticia.
 ## Documentación
 
 - [Manual de usuario](MANUAL.md).
-- [Revisión y adaptación a Firefox](REVISION-FIREFOX.md).
+- [Construcción, permisos y pruebas de la extensión](extension/README.md).
 
 ## Extensión de Firefox para pruebas
 

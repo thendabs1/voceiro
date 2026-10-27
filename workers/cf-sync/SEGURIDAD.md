@@ -5,7 +5,7 @@ identificador, token y clave se derivan separadamente del código con HKDF.
 El servidor recibe el token de acceso, nunca el código ni la clave de cifrado.
 D1 guarda el bloque, la huella del token, versión y fechas técnicas.
 
-## Cambios y retención
+## Almacenamiento y retención
 
 - Las altas usan HMAC-SHA-256 con una clave aleatoria de 32 bytes, día UTC e
   IP normalizada (IPv6, por su /64). CF y Deno deben tener exactamente la misma clave. Cambiar
@@ -35,10 +35,10 @@ D1 guarda el bloque, la huella del token, versión y fechas técnicas.
 - Se cancela una subida cuando supera 512 KiB aunque no indique Content-Length.
   La librería del QR se sirve localmente, con su licencia y versión fijada.
 
-## Antes de fusionar y desplegar
+## Configuración y despliegue
 
-Este PR no configura secretos ni migra producción automáticamente. Preparar
-ambas cosas antes de fusionar, ya que main activa los despliegues de los workers:
+Los despliegues de los workers se activan desde `main`. Una instalación
+necesita el esquema D1 y el mismo secreto en ambos adaptadores:
 
 1. Generar una clave aleatoria de 32 bytes y codificarla con 64 caracteres
    hexadecimales. Guardarla como secreto `SYNC_IP_SECRET` en **ambas** plataformas
@@ -50,10 +50,8 @@ ambas cosas antes de fusionar, ya que main activa los despliegues de los workers
    vista y triggers; no borra bloques existentes. Es compatible con los
    adaptadores anteriores y mantiene su contador separado. No retirar los
    triggers de revocación al revertir una versión del worker.
-3. Desplegar ambos workers con la misma versión y secreto. La transición de
-   SHA-256 a HMAC reinicia el cupo por IP; mientras convivan las versiones no
-   existe un cupo único entre ambas. Hacer el cambio coordinado en una ventana
-   de mantenimiento si se necesita mantener esa garantía durante la transición.
+3. Desplegar ambos workers con la misma versión y secreto para compartir
+   el cupo de altas.
 4. Publicar el frontend y el lector actualizados con sus workflows habituales.
    La revocación del servidor protege también frente a los clientes anteriores;
    estos mostrarán un error genérico hasta actualizarse.
@@ -62,7 +60,7 @@ ambas cosas antes de fusionar, ya que main activa los despliegues de los workers
    Sin secreto válido o IP válida se rechazan las altas con 503; las lecturas,
    actualizaciones y borrados de códigos existentes siguen funcionando.
 
-## Comprobaciones de configuración pendientes
+## Verificación de la instalación
 
 La revisión y los tests locales no certifican la configuración de producción:
 
