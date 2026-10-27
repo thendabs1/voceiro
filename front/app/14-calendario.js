@@ -11,7 +11,7 @@ const CALENDARIO = {
   fecha: '', vista: 'agenda', soloDia: false, zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
   temas: new Set(), fuente: '', texto: '', donde: null, que: null, clave: '',
   escrito: { donde: '', que: '' }, sugerencias: { donde: [], que: [] },
-  consulta: '', controller: null, lista: null, resumen: null, pendientes: null, origen: null, scroll: 0,
+  consulta: '', vigente: '', controller: null, lista: null, resumen: null, pendientes: null, origen: null, scroll: 0,
 };
 const iconoCalendario = () => '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg>';
 const calNombre = e => e?.nombres?.[ACCES.lang] || e?.nombres?.es || Object.values(e?.nombres || {})[0] || '—';
@@ -38,8 +38,11 @@ function calEnlace(url, label){
 // El texto libre, sin prefijos: las fechas y los filtros van en parámetros propios.
 const calLibre = raw => tokenizeQuery(raw || '').filter(tk => !tk.prefix).map(tk => tk.raw).join(' ');
 // Mismo orden de backends que los datos. Un 4xx es de la consulta: el otro
-// backend respondería lo mismo, así que no se repite (salvo el límite, 429).
+// backend respondería lo mismo, así que no se repite. Tampoco el 429: es el
+// límite por IP y ambos leen la misma base; se espera lo que diga Retry-After.
+let calEsperaHasta = 0;
 async function calPedir(ruta, params, signal){
+  if (Date.now() < calEsperaHasta) throw Object.assign(new Error('HTTP 429'), { status: 429 });
   const qs = String(new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null)));
   let fallo;
   for (const base of [...new Set([DATA_BASE, ...Object.values(BACKENDS).map(b => b.data)])]){
@@ -51,7 +54,8 @@ async function calPedir(ruta, params, signal){
     const dato = await r.json().catch(() => null);
     if (r.ok && dato) return dato;
     fallo = Object.assign(new Error(dato?.error || `HTTP ${r.status}`), { status: r.status });
-    if (r.status >= 400 && r.status < 500 && r.status !== 429) throw fallo;
+    if (r.status === 429) calEsperaHasta = Date.now() + (Number(r.headers.get('Retry-After')) || 60) * 1000;
+    if (r.status >= 400 && r.status < 500) throw fallo;
   }
   throw fallo;
 }
@@ -104,7 +108,9 @@ async function consultarCalendario(){
   if (clave === s.consulta && !s.error) return void pintarCalendario();
   s.controller?.abort();
   const controller = s.controller = new AbortController();
-  s.consulta = clave; s.lista = s.resumen = null; s.error = '';
+  // Al renovar la misma consulta se deja lo que había hasta que llegue su sustituto.
+  if (clave !== s.vigente) s.lista = s.resumen = null;
+  s.consulta = clave; s.error = '';
   // Abortar también corta la lista sin fecha en curso: se vuelve a pedir al pulsar.
   const p = s.pendientes;
   if (p && (p.cargando || p.clave !== JSON.stringify(calParametros()))) s.pendientes = null;
@@ -112,7 +118,7 @@ async function consultarCalendario(){
   s.cargando = true; pintarCalendario();
   try {
     const dato = await calPedir(agenda ? 'eventos' : 'resumen', params, controller.signal);
-    calAnotar(dato);
+    calAnotar(dato); s.vigente = clave;
     if (agenda) s.lista = { params, eventos: dato.eventos, siguiente: dato.siguiente, cargando: false };
     else s.resumen = dato.dias;
   } catch (e){
@@ -132,7 +138,8 @@ async function masCalendario(){
     if (s.lista !== l) return;
     calAnotar(dato); l.eventos.push(...dato.eventos); l.siguiente = dato.siguiente;
   } catch (e){
-    if (controller.signal.aborted || s.lista !== l) return;
+    // Abortada al renovar: la lista conservada no se queda con «Ver más» bloqueado.
+    if (controller.signal.aborted || s.lista !== l) return void (l.cargando = false);
     if (e.status === 409){ s.consulta = ''; return void consultarCalendario(); }
     s.error = 'calError';
   }
@@ -338,9 +345,8 @@ function sugerirQue(texto){
     const controller = s.controllerQue = new AbortController();
     const conceptos = s.meta?.catalogo?.conceptos || {};
     try {
-      const d = await calPedir('objetivos', { texto: libre, limite: 12 }, controller.signal);
-      s.sugerencias.que = d.entidades.filter(e => ['agrupacion', 'actividad', 'participante', 'lugar'].includes(e.tipo))
-        .slice(0, 8).map(e => ({ id: e.tipo + ':' + e.id, nombre: calNombre(e),
+      const d = await calPedir('objetivos', { texto: libre, tipo: 'agrupacion,actividad,participante,lugar', limite: 8 }, controller.signal);
+      s.sugerencias.que = d.entidades.map(e => ({ id: e.tipo + ':' + e.id, nombre: calNombre(e),
           meta: (e.temas || []).filter(i => conceptos[i]).map(i => calNombre(conceptos[i])).join(', ') }));
     } catch {
       if (controller.signal.aborted) return;

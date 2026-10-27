@@ -5,12 +5,13 @@ import sqlite3
 import unittest
 from unittest.mock import patch
 
-from agenda import espn_tenis, feb
+from agenda import espn_tenis, feb, kulturklik, madrid
 from agenda.lectura import estado, preparar, planificar
 from agenda.publicacion import proyectar, main
 from agenda.transicion import ampliar
 from test_agenda import construir, ficha
 from test_calendario_publicacion import tenis, html_feb, AHORA
+from test_calendario_cultura import muestra, LUEGO
 
 
 def sin_comprobado(v):
@@ -144,6 +145,20 @@ class LecturaSQL(unittest.TestCase):
         self.assertEqual(tocadas, [])
         self.publicar(previo=self.previo())
         self.assertEqual(self.tablas(), antes)
+
+    def test_recoger_otra_vez_lo_mismo_no_reescribe_nada(self):
+        # «Comprobado» avanza en cada pasada, también en el origen de las resoluciones de recintos.
+        def recoger(n, ahora):
+            for modulo in (madrid, kulturklik):
+                n = modulo.importar(n, muestra(modulo.__name__.rsplit('.', 1)[-1]), ahora)
+            return n
+        primera = recoger(None, AHORA)
+        segunda = recoger(primera, LUEGO)
+        fuentes = sorted(primera['fuentes'])
+        self.publicar(preparar(proyectar(primera, fuentes, AHORA)))
+        pasos = planificar(preparar(proyectar(segunda, fuentes, LUEGO)), 12, self.previo())
+        tocadas = [sql for sql, _ in pasos if 'agenda_lectura_control' not in sql and not sql.lstrip().startswith('CREATE')]
+        self.assertEqual(tocadas, [])
 
     def test_cambios_y_retiradas_dejan_la_misma_lectura_que_un_reemplazo_completo(self):
         ampliada = self.con_otro_evento()

@@ -224,6 +224,11 @@ test('cursor de otra selección y publicación nueva se rechazan; detalle acotad
   assert.equal(catalogo.dato.cobertura[0].completa, false);
   const objetivos = await b.pedir('/calendario/objetivos?texto=musica&tipo=evento');
   assert.equal(objetivos.dato.entidades.length, 20); assert.ok(objetivos.dato.siguiente);
+  // Varios tipos se filtran en SQL, antes del límite.
+  const varios = await b.pedir('/calendario/objetivos?texto=musica&tipo=participante,evento&limite=5');
+  assert.equal(varios.dato.entidades.length, 5); assert.ok(varios.dato.siguiente);
+  assert.deepEqual((await b.pedir('/calendario/objetivos?texto=musica&tipo=participante,lugar')).dato.entidades, []);
+  assert.equal((await b.pedir('/calendario/objetivos?tipo=evento,otro')).status, 400);
 });
 
 test('validación antes de Turso; fallos de transporte y cambios entre snapshots no dan vacíos', async () => {

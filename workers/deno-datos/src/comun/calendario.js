@@ -62,10 +62,10 @@ export function normalizarConsulta(url) {
   const c = { zona, desde, hasta, pendientes, limite, orden, resto, texto,
     temas: lista(p.get('temas')), circuitos: lista(p.get('circuitos')),
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
-    fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', tipo: p.get('tipo') || '',
+    fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', tipos: lista(p.get('tipo')),
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
   if ([c.temas, c.circuitos, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
-  if (c.tipo && !['evento', 'actividad', 'agrupacion', 'participante', 'lugar', 'territorio'].includes(c.tipo)) throw error(400, 'Tipo desconocido');
+  if (c.tipos.some(t => !['evento', 'actividad', 'agrupacion', 'participante', 'lugar', 'territorio'].includes(t))) throw error(400, 'Tipo desconocido');
   return c;
 }
 
@@ -196,7 +196,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     else if (ruta === '/calendario/resumen') sentencia = consultaResumen(c, meta);
     else if (ruta === '/calendario/objetivos') {
       const args = [], condiciones = ['1=1', ...predicadosTexto(c.texto || c.resto, 'texto', args)];
-      if (c.tipo) { condiciones.push('tipo=?'); args.push(c.tipo); }
+      // Varios tipos a la vez: filtrar antes del límite, no después en el cliente.
+      if (c.tipos.length) { condiciones.push(`tipo IN (${c.tipos.map(() => '?').join(',')})`); args.push(...c.tipos); }
       if (cursor) { condiciones.push('id>?'); args.push(cursor[3]); }
       args.push(c.limite + 1);
       sentencia = { sql: 'SELECT id,datos_json FROM agenda_lectura_entidades WHERE ' + condiciones.join(' AND ') + ' ORDER BY id LIMIT ?', args };
