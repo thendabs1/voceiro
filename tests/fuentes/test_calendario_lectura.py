@@ -52,7 +52,7 @@ class LecturaSQL(unittest.TestCase):
         self.publicar()
         volcado = '\n'.join(self.db.iterdump())
         self.assertNotIn('espn-wta', volcado)
-        self.assertNotIn('feb', volcado)
+        self.assertNotRegex(volcado, r'\bfeb\b')  # Fuente o colección, no letras de un hash.
         tarjetas = [json.loads(f[0]) for f in self.db.execute('SELECT tarjeta_json FROM agenda_lectura_eventos')]
         self.assertEqual([t['id'] for t in tarjetas], [e['id'] for e in self.publica['eventos']])
         self.assertNotIn('observaciones', tarjetas[0])
