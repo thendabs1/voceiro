@@ -273,25 +273,35 @@ SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
 
 ### Lectores y escalado
 
-El patrón revisado en el repositorio hermano `boletines-es` (`CONTRATO.md`,
-`REVISION_RUMBO.md` y `boletines/red.py`) separa lectores por fuente/familia,
-extractores por formato, red común y recolector. Es la referencia para ampliar
-la agenda; sus contratos y decisiones de almacenamiento pertenecen a otro
-servicio y no se trasladan automáticamente.
+Adaptado del contrato de lectores de `boletines-es` (`CONTRATO.md`): cada pieza
+sabe una cosa y las fuentes nuevas se suman declarando, no ramificando código.
 
-En agenda, el lector de formato debe decodificar y conservar procedencia; el
-adaptador de fuente interpreta identidades, fechas, lenguas y alcance; el
-relacionador común acredita códigos y ubicaciones. Compartir JSON o XML no
-significa compartir el contrato de una fuente. Las familias de API (CKAN,
-Socrata, Opendatasoft) también necesitan paginación y validación propias.
+| Pieza | Dónde | Qué hace | Qué no hace |
+|---|---|---|---|
+| Red | `recogida.descargar` | Única salida: User-Agent, límite de bytes, presupuesto y registro por petición | No interpreta respuestas |
+| Familia | `familias.py` (`ckan`, `euskadi`) | Recorre una API paginada entera y devuelve filas e inventario de IDs; lanza ante total cambiante, ID repetido o página vacía | No conoce el núcleo ni la ventana |
+| Fuente | `madrid.py`, `kulturklik.py` | Declara `FUENTE`, `FAMILIA`, `URL_RECOGIDA`, `CAMPO_ID`, `TIPO_EXTERNO`, `FECHAS`; `importar` traduce sus campos al núcleo | No descarga |
+| Registro | `registro.CULTURA` | Lista única de fuentes culturales para la CLI, la recogida y el inventario | — |
+| Comunes | `presencia.py`, límites municipales, constructor | Retirada por inventario completo, municipio por coordenadas | No dependen de la fuente |
 
-La incorporación de cada lector debe distinguir vacío acreditado, respuesta
-parcial y fallo; guardar URL, fecha y huella; permitir repetir muestras sin red;
-y declarar la versión de sus reglas. Los límites por host y presupuestos van
-en la red común, sin que cada lector reintente por su cuenta. La agenda ya
-centraliza descarga y presupuestos deportivos, pero faltan el contrato general,
-la grabación/reproducción y los lectores ICS/JSON-LD/RSS. Los lectores de
-catálogos territoriales son la primera aplicación local de esa separación.
+Reglas para cada fuente nueva:
+
+1. **Respuesta completa o nada.** La familia distingue vacío acreditado (total
+   cero declarado), respuesta parcial y fallo; solo la completa acredita
+   ausencias. La ventana de fechas filtra después, nunca antes del inventario.
+2. **Identidad de función.** ID propio si la fuente lo da (Zaragoza
+   `subEvent.id`); si no, obra + fecha (CyL, Málaga), declarada en la fuente.
+3. **Territorio por coordenadas.** El recinto guarda el bloque `coordenadas`
+   y el municipio lo acreditan los límites del IGN; los códigos propios de la
+   fuente solo con correspondencia revisada.
+4. **Evidencia recortada** a los campos que se usan, para que un cambio
+   irrelevante no cree observaciones nuevas.
+5. **Muestra versionada** de la respuesta en `tests/fuentes/muestras_calendario`.
+
+Pendiente: familias Socrata, Opendatasoft, Zaragoza (`rows`/`start`), ICS y
+JSON-LD `schema.org/Event`; grabar y reproducir respuestas desde la red común;
+constructor cultural común (hoy cada `importar` repite fuente, documento,
+recinto y tema); `--entrada-FUENTE` genérica en la CLI.
 
 ## Pruebas
 

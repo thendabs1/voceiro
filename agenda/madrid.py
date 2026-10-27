@@ -16,6 +16,9 @@ from . import nucleo, tiempos
 FUENTE = 'madrid'
 URL = 'https://datos.madrid.es/api/3/action/datastore_search?resource_id=300107-2-agenda-actividades-eventos-csv'
 CATALOGO = 'https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos'
+FAMILIA, URL_RECOGIDA = 'ckan', URL
+CAMPO_ID = TIPO_EXTERNO = 'ID-EVENTO'
+FECHAS = ('FECHA', 'FECHA-FIN')
 TEMAS = {'TeatroPerformance': 'teatro', 'Musica': 'musica', 'DanzaBaile': 'danza',
          'CineActividadesAudiovisuales': 'cine', 'Exposiciones': 'exposiciones',
          'RecitalesPresentacionesActosLiterarios': 'literatura', 'ClubesLectura': 'literatura',

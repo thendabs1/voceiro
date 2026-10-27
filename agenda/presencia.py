@@ -1,9 +1,9 @@
 """Presencia cultural acreditada por un catálogo completo, independiente del horario."""
 
 from . import nucleo, tiempos
+from .registro import CULTURA
 
-
-TIPOS = {'madrid': 'ID-EVENTO', 'kulturklik': 'event_id'}
+TIPOS = {f: m.TIPO_EXTERNO for f, m in CULTURA.items()}
 # Un catálogo cultural cambia poco de un día a otro; una caída mayor suele ser
 # un fallo del proveedor (respuesta vacía o recortada) y ocultaría la fuente.
 CAIDA_MAXIMA = 0.3
