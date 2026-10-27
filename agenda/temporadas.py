@@ -130,10 +130,14 @@ def fallida(t, ahora, error, *, estado_http=None, retry_after=None):
     r['ultimo_intento'] = marca(ahora)
     r['incidencias'] = [{'tipo': 'error_recogida', 'detalle': str(error)[:500], 'http': estado_http}]
     r['bloqueada'] = estado_http in (401, 403)
-    espera = esperar_retry(retry_after, ahora)
-    r['proxima_revision'] = None if r['bloqueada'] else max(
-        espera or marca(ahora), despues(ahora, minutes=min(1440, 15 * 2 ** min(r['errores_consecutivos'], 6))))
+    r['proxima_revision'] = None if r['bloqueada'] else reintento(ahora, r['errores_consecutivos'], retry_after)
     return validar(r)
+
+
+def reintento(ahora, errores, retry_after=None):
+    """Tras un error: 30 min, 1 h, 2 h… hasta 24 h, o lo que pida Retry-After si es más."""
+    return max(esperar_retry(retry_after, ahora) or marca(ahora),
+               despues(ahora, minutes=min(1440, 15 * 2 ** min(errores, 6))))
 
 
 def exitosa(t, ahora, alcance, incidencias=(), proximas=()):

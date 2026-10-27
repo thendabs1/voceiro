@@ -331,11 +331,12 @@ class Repositorio:
     def terminar_descubrimiento(self, p, ahora, *, referencia=None, error=None):
         anterior = self.descubrimiento(p['coleccion']) or {}
         ultima = p['peticiones'][-1] if p['peticiones'] else {}
-        proxima = temporadas.despues(ahora, hours=temporadas.POLITICA['descubrimiento_horas'])
-        if error:
-            proxima = max(proxima, temporadas.esperar_retry(
-                ultima.get('cabeceras', {}).get('retry-after'), ahora) or proxima)
-        dato = {'coleccion': p['coleccion'], 'proveedor': p['proveedor'],
+        # Sin temporada nueva se vuelve a mirar en una semana; un error se reintenta
+        # como en las temporadas, sin esperar la semana entera.
+        errores = anterior.get('errores_consecutivos', 0) + 1 if error else 0
+        proxima = (temporadas.reintento(ahora, errores, ultima.get('cabeceras', {}).get('retry-after')) if error
+                   else temporadas.despues(ahora, hours=temporadas.POLITICA['descubrimiento_horas']))
+        dato = {'coleccion': p['coleccion'], 'proveedor': p['proveedor'], 'errores_consecutivos': errores,
             'ultimo_intento': temporadas.marca(ahora),
             'ultima_valida': temporadas.marca(ahora) if not error else anterior.get('ultima_valida'),
             'referencia': referencia or anterior.get('referencia'), 'proxima_revision': proxima,

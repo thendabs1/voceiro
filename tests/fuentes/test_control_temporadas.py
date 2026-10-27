@@ -256,6 +256,18 @@ class ContratoControl:
         self.assertEqual(r['ultimo_contraste']['error'], 'Fuente de contraste denegada')
         self.assertEqual(self.repo.pasadas(t['id'])[0]['estado'], 'fallida')
 
+    def test_descubrimiento_fallido_se_reintenta_pronto_y_el_exito_espera_una_semana(self):
+        def pasada(ahora, error=None):
+            p = self.repo.comenzar_descubrimiento('wrc', 'ocblacktop-wrc', ahora)
+            return self.repo.terminar_descubrimiento(p, ahora, error=error, referencia=None if error else '2026')
+        d = pasada(AHORA, 'respuesta vacía')
+        self.assertEqual((d['errores_consecutivos'], d['proxima_revision']), (1, '2026-11-01T12:30:00.000000+00:00'))
+        d = pasada(DESPUES, 'respuesta vacía')
+        self.assertEqual((d['errores_consecutivos'], d['proxima_revision']), (2, '2026-11-01T14:00:00.000000+00:00'))
+        d = pasada(DESPUES)
+        self.assertEqual((d['errores_consecutivos'], d['proxima_revision']), (0, '2026-11-08T13:00:00.000000+00:00'))
+        self.assertEqual(self.repo.descubrimiento('wrc'), d)
+
     def test_confirmar_rechaza_unidad_o_proveedor_ajenos(self):
         t, p = self.comenzar()
         self.reservar(t, p)
@@ -347,6 +359,15 @@ class ControlTurso(ContratoControl, unittest.TestCase):
 
 
 class IncidenciasDeRespuesta(unittest.TestCase):
+    def test_forzar_llega_al_descubrimiento_y_a_cada_temporada(self):
+        repo = type('Repo', (), {'temporadas': lambda self, c=None: [{'id': 't', 'coleccion': 'wrc'}]})()
+        with patch.object(operacion, 'descubrir', return_value=(None, None)) as descubrir, \
+                patch.object(operacion, '_principal_actual', side_effect=lambda r, t, a: t), \
+                patch.object(operacion, 'ejecutar_temporada', return_value={}) as revisar:
+            operacion.ejecutar(repo, AHORA, colecciones=['wrc'], descubrimiento=True, forzar=True)
+        self.assertTrue(descubrir.call_args.kwargs['forzar'])
+        self.assertTrue(revisar.call_args.kwargs['forzar'])
+
     def test_programa_desaparecido_entero_cuenta_como_ausente(self):
         previa = [{'unidad': '2026', 'recurso': 'calendario', 'eventos': ['gp']},
                   {'unidad': '2026', 'recurso': 'programa:gp', 'eventos': ['s1', 's2']}]
