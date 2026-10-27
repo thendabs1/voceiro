@@ -17,6 +17,7 @@ from test_calendario_nucleo import importar_feb
 
 
 RAIZ = Path(__file__).resolve().parents[2]
+EV = [{'doc': 'aviso legal', 'dato': 'dirección en el pie'}]
 
 
 class Territorios(unittest.TestCase):
@@ -85,7 +86,7 @@ class Territorios(unittest.TestCase):
 
     def test_cobertura_explicita_resuelta_sustituye_a_la_heredada_y_admite_varios_destinos(self):
         medio = {'d': 'vigo.test', 'ambito': 'regional', 'region': 'galicia',
-                 'cobertura': {'estado': 'resuelto', 'evidencias': [{'doc': 'x'}],
+                 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
                                'territorios': ['es:provincia:36', 'es:autonomia:12', 'es:provincia:36']}}
         self.assertEqual(territorios_medio(medio), [
             {'territorio': 'es:provincia:36', 'papel': 'cobertura_editorial'},
@@ -95,12 +96,12 @@ class Territorios(unittest.TestCase):
 
     def test_la_cobertura_de_un_medio_no_baja_de_provincia(self):
         medio = {'d': 'vigo.test', 'ambito': 'regional', 'region': 'galicia',
-                 'cobertura': {'estado': 'resuelto', 'evidencias': [1],
+                 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
                                'territorios': ['es:provincia:36', 'es:municipio:36057']}}
-        self.assertEqual(territorios_medio(medio), [{'territorio': 'es:provincia:36', 'papel': 'cobertura_editorial'}])
+        self.assertEqual(territorios_medio(medio), [])  # bloque a medias: no publica nada
         self.assertEqual(len(problemas_territoriales(medio)), 1)
         # la sede sí puede ser municipal
-        sede = {'d': 'club.test', 'sede': [{'estado': 'resuelto', 'territorio': 'es:municipio:36057', 'evidencias': [1]}]}
+        sede = {'d': 'club.test', 'sede': [{'estado': 'resuelto', 'territorio': 'es:municipio:36057', 'evidencias': EV}]}
         self.assertEqual(problemas_territoriales(sede), [])
 
     def test_cobertura_pendiente_o_en_conflicto_no_reactiva_la_cobertura_amplia(self):
@@ -117,11 +118,52 @@ class Territorios(unittest.TestCase):
     def test_la_sede_no_genera_cobertura_ni_localiza(self):
         medio = {'d': 'club.test', 'ambito': 'nacional', 'clase': 'club',
                  'sede': [{'estado': 'resuelto', 'territorio': 'es:municipio:36038', 'funcion': 'editorial',
-                           'evidencias': [{'doc': 'aviso legal'}]},
+                           'evidencias': EV},
                           {'estado': 'pendiente', 'territorio': None}],
                  'cobertura': {'estado': 'pendiente', 'territorios': []}}
-        self.assertEqual(territorios_medio(medio), [{'territorio': 'es:municipio:36038', 'papel': 'sede'}])
+        self.assertEqual(territorios_medio(medio), [{'territorio': 'es:municipio:36038', 'papel': 'sede', 'funcion': 'editorial'}])
         self.assertEqual(problemas_forma_emisor(medio), [])
+
+    def test_entradas_mal_formadas_no_lanzan_ni_se_publican(self):
+        malos = [{'clase': []}, {'clase': 3}, {'sede': [42]}, {'sede': 'x'}, {'sede': [{'estado': []}]},
+                 {'cobertura': 'es:provincia:04'}, {'cobertura': {'estado': 'resuelto', 'territorios': 'es:provincia:04',
+                                                                  'evidencias': 'x'}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': [None], 'evidencias': EV}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': [['es:provincia:04']], 'evidencias': EV}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': ['es:provincia:04'], 'evidencias': [1]}},
+                 {'cobertura': {'estado': 'resuelto', 'territorios': ['es:provincia:04'], 'evidencias': [{'url': 'u'}]}},
+                 {'cobertura': {'estado': 'pendiente', 'candidatos': 'es:provincia:04'}}]
+        for extra in malos:
+            with self.subTest(extra=extra):
+                medio = {'d': 'x.test', 'ambito': 'regional', 'region': 'galicia', **extra}
+                self.assertTrue(problemas_forma_emisor(medio))
+                problemas_territoriales(medio)
+                relaciones = territorios_medio(medio)
+                self.assertFalse([r for r in relaciones if r['papel'] == 'sede'])
+                if 'cobertura' in extra:  # clase/sede inválidas no tocan la cobertura heredada
+                    self.assertFalse([r for r in relaciones if r['papel'] == 'cobertura_editorial'])
+
+    def test_un_bloque_a_medias_no_publica_sus_destinos_buenos(self):
+        medio = {'d': 'x.test', 'ambito': 'regional', 'region': 'galicia',
+                 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
+                               'territorios': ['es:provincia:36', 'es:provincia:99']}}
+        self.assertEqual(territorios_medio(medio), [])
+        self.assertEqual(len(problemas_territoriales(medio)), 1)
+
+    def test_los_candidatos_de_cobertura_tambien_respetan_el_limite_provincial(self):
+        medio = {'d': 'x.test', 'cobertura': {'estado': 'pendiente', 'territorios': [],
+                                              'candidatos': ['es:municipio:36057', 'es:provincia:36']}}
+        self.assertEqual(problemas_forma_emisor(medio), [])
+        self.assertEqual(len(problemas_territoriales(medio)), 1)
+
+    def test_grupos_congelados_de_los_medios_con_grupo_escrito_distinto(self):
+        esperado = {'riazor.org': 'Deportes', 'dxtcampeon.com': 'Deportes', 'bloomberg.com': 'Economía',
+                    'newyorker.com': 'Cultura', 'theatlantic.com': 'Cultura', 'ft.com': 'Economía'}
+        grupos = {m['d']: m['grupo'] for m in todos_los_medios()}
+        for dominio, grupo in esperado.items():
+            self.assertEqual(grupos.get(dominio), grupo, dominio)
+        self.assertEqual(len(grupos), 341)
+        self.assertEqual(sum(g.startswith('Regional · ') for g in grupos.values()), 109)
 
     def test_forma_invalida_y_territorios_desconocidos_se_senalan(self):
         malos = [{'clase': 'otra'},
@@ -134,7 +176,7 @@ class Territorios(unittest.TestCase):
         for extra in malos:
             with self.subTest(extra=extra):
                 self.assertTrue(problemas_forma_emisor({'d': 'x.test', **extra}))
-        inventado = {'d': 'x.test', 'cobertura': {'estado': 'resuelto', 'evidencias': [1],
+        inventado = {'d': 'x.test', 'cobertura': {'estado': 'resuelto', 'evidencias': EV,
                                                   'territorios': ['es:municipio:00000']}}
         self.assertEqual(problemas_forma_emisor(inventado), [])
         self.assertEqual(len(problemas_territoriales(inventado)), 1)
