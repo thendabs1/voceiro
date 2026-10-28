@@ -74,7 +74,10 @@
         },
         "90": {
           "nombre": "Imagen y sonido",
-          "nota": "Pendiente: fotografía y vídeo (¿artes visuales, cine?); sin tema hasta revisarlo."
+          "temas": [
+            "cultura"
+          ],
+          "nota": "Cine, fotografía, videojuegos y producción musical mezclados: cultura sin disciplina (decisión 28-10)."
         },
         "27": {
           "nombre": "Medio Ambiente y Naturaleza",

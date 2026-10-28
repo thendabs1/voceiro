@@ -202,15 +202,20 @@
       }
     }
   },
-  "precio": {
-    "tipo": "indicador",
-    "campo": "GRATUITO",
-    "valores": {
-      "1": "gratis",
-      "0": "pago"
+  "precio": [
+    {
+      "tipo": "indicador",
+      "campo": "GRATUITO",
+      "valores": {
+        "1": "gratis"
+      },
+      "nota": "GRATUITO=0 no implica pago: 188 de 331 sin importe y 26 con «Entrada gratuita» o «Acceso libre» en PRECIO (revisión 28-10)."
     },
-    "nota": "GRATUITO=0 sin importe en PRECIO (188 de 331, 88 de Programación destacada): se acepta como pago porque lo declara la fuente."
-  },
+    {
+      "tipo": "texto",
+      "campo": "PRECIO"
+    }
+  ],
   "publico": {
     "campo": "AUDIENCIA",
     "valores": {

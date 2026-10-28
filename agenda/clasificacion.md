@@ -173,30 +173,27 @@ clasificar: tema 80 % (CyL), 78 % (Kulturklik), 63 % (Madrid) y 65 %
 
 Notas que dejó la implementación; las de cada valor están en su tabla (`nota`).
 
-1. **Precio de Madrid:** `GRATUITO=0` se toma como pago, pero 188 de 331 no
-   traen importe (88 de «Programación destacada»).
-2. **Zaragoza «Imagen y sonido»** (33): sin tema hasta decidir si es artes
-   visuales, cine o etiqueta.
-3. **Ámbitos del buscador:** los temas nuevos (`artes-visuales`, `circo`,
+1. **Ámbitos del buscador:** los temas nuevos (`artes-visuales`, `circo`,
    `magia`, `cultura-popular`, `medio-ambiente`, `gastronomia`) ya se publican,
    pero `consulta.js` aún no tiene su ámbito: se encuentran dentro de
-   `cultura:` (o en su raíz). Falta generar `AMBITOS` desde el catálogo,
-   revisar los términos de noticias con titulares reales y retirar
-   `exposiciones:`, que solo usa ya Galicia.
-4. **Filtros en la interfaz:** formato y precio ya son facetas de la lectura
-   (`formato`, `precio`), pero el worker no los consulta todavía; entran con
-   la interfaz nueva del calendario.
-5. **Galicia:** su tabla va con la reconstrucción. Propuesto: «Espectáculo» →
+   `cultura:` (o en su raíz). Falta añadirlos con sus términos de noticias y
+   retirar `exposiciones:` cuando Galicia deje de usarlo.
+2. **Filtros en la interfaz:** formato y precio ya son facetas de la lectura
+   (`formato`, `precio`), pero el worker no los consulta todavía.
+3. **Galicia:** su tabla va con la reconstrucción. Propuesto: «Espectáculo» →
    `cultura` + representación; «Proxección audiovisual» → proyección sin tema;
    «Festa de interese turístico» → fiesta sin tema.
-6. **Política de publicación:** culto («ActosReligiosos» de Madrid),
-   actos partidistas y formación restringida aún se publican; falta el
-   alcance y la regla de no publicar.
-7. **Kulturklik:** «Inscripción» o «Invitación» sin más (190) quedan sin
-   precio.
-8. **Temas antiguos en el núcleo:** los `c.tema` que asignaban los lectores
+4. **Política de publicación (aplazada):** culto, actos partidistas y
+   formación restringida aún se publican. Madrid solo trae 2 «ActosReligiosos»,
+   y uno es patrimonio; la regla de no publicar se hará cuando una fuente
+   traiga volumen.
+5. **Temas antiguos en el núcleo:** los `c.tema` que asignaban los lectores
    siguen en las entidades hasta que su observación se compacte; al publicar
    se ignoran en las fuentes con tabla.
+
+Resuelto el 28-10: Madrid toma el precio de `PRECIO` (texto) y `GRATUITO=1`,
+porque `GRATUITO=0` no implica pago; Zaragoza «Imagen y sonido» → `cultura`;
+en Kulturklik «Invitación» es gratis y «Inscripción» sin más sigue sin precio.
 
 ## Fases
 

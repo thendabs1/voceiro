@@ -114,6 +114,6 @@
   "precio": {
     "tipo": "texto",
     "campo": "priceEs",
-    "nota": "«Inscripción» o «Invitación» sin más (190) quedan sin precio: Kulturklik escribe «Gratis (inscripción)» cuando es gratis."
+    "nota": "«Invitación» es gratis; «Inscripción» sin más queda sin precio: inscribirse no implica pagar y Kulturklik escribe «Gratis (inscripción)» cuando lo es."
   }
 }

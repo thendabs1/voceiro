@@ -28,7 +28,7 @@ def muestra(nombre):
 class AgendasCulturales(unittest.TestCase):
     def test_bloque_de_origen_en_bruto_para_clasificar(self):
         # Público y precio en bruto, con su evidencia en el fragmento; sin interpretar.
-        esperados = {madrid: {'GRATUITO', 'AUDIENCIA'}, cyl: {'precio', 'destinatarios'},
+        esperados = {madrid: {'GRATUITO', 'PRECIO', 'AUDIENCIA'}, cyl: {'precio', 'destinatarios'},
                      kulturklik: {'priceEs', 'priceEu', 'language'},
                      zaragoza: {'category', 'population'}}
         for lector, campos in esperados.items():
@@ -66,13 +66,16 @@ class AgendasCulturales(unittest.TestCase):
         recintos = lambda m: {k: e['evidencias'] for k, e in m['entidades'].items() if e['tipo'] == 'lugar'}
         self.assertTrue(recintos(n))
         self.assertEqual(recintos(b), recintos(n))
-        # El índice de fila CKAN, la descripción o el precio no son evidencia de la cita.
+        # El índice de fila CKAN o la descripción no son evidencia de la cita; el precio sí
+        # (se clasifica al publicar).
         ruido = deepcopy(filas)
         for i, f in enumerate(ruido):
-            f.update(_id=1000 + i, DESCRIPCION='Texto nuevo', PRECIO='5 euros')
+            f.update(_id=1000 + i, DESCRIPCION='Texto nuevo')
         c = madrid.importar(n, ruido, LUEGO)
         self.assertEqual(c['documentos'].keys(), n['documentos'].keys())
         self.assertEqual(c['observaciones'].keys(), n['observaciones'].keys())
+        ruido[1]['PRECIO'] = '5 euros'
+        self.assertGreater(len(madrid.importar(n, ruido, LUEGO)['observaciones']), len(n['observaciones']))
 
     def test_madrid_no_acredita_obras_y_suspende_las_guardadas(self):
         filas = muestra('madrid')

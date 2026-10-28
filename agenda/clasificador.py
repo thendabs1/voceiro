@@ -22,7 +22,7 @@ FORMATOS = {'concierto', 'representacion', 'proyeccion', 'exposicion', 'curso-ta
 PRECIOS = ('gratis', 'pago', 'mixto')
 PUBLICOS = {'infancia', 'juventud', 'familias', 'mayores'}
 # Patrones acotados al campo de precio (clasificacion.md: «patrones en campos concretos»).
-GRATIS = re.compile(r'\bgrat|\bdoa|\bdohain|\blibre\b', re.I)
+GRATIS = re.compile(r'\bgrat|\bdoa|\bdohain|\blibre\b|\binvitaci', re.I)
 IMPORTE = re.compile(r'(\d+(?:[.,]\d+)?)\s*(?:€|eur)', re.I)
 
 
@@ -34,6 +34,7 @@ def _madrid(b):
     tipo = (b.get('tipo_original') or '').removeprefix('/contenido/actividades/')
     origen = b.get('origen') or {}
     return {'TIPO': [tipo] if tipo else [], 'GRATUITO': _lista(origen.get('GRATUITO')),
+            'PRECIO': _lista(origen.get('PRECIO')),
             'AUDIENCIA': [a.strip() for a in (origen.get('AUDIENCIA') or '').split(',') if a.strip()]}
 
 
@@ -73,10 +74,10 @@ def validar(tabla, conceptos):
     for c in tabla.get('combinaciones', ()):
         if c['formato'] not in FORMATOS or c['sustituye'] not in FORMATOS or c['si_tema'] not in conceptos:
             raise ValueError(f'Combinación inválida en {tabla["fuente"]}')
-    precio = tabla.get('precio')
-    if precio and (precio['tipo'] not in ('indicador', 'tarifas', 'texto')
-                   or set(precio.get('valores', {}).values()) - set(PRECIOS)):
-        raise ValueError(f'Precio inválido en {tabla["fuente"]}')
+    for precio in _specs(tabla.get('precio')):
+        if (precio['tipo'] not in ('indicador', 'tarifas', 'texto')
+                or set(precio.get('valores', {}).values()) - set(PRECIOS)):
+            raise ValueError(f'Precio inválido en {tabla["fuente"]}')
     publico = tabla.get('publico')
     if publico and set(publico['valores'].values()) - PUBLICOS:
         raise ValueError(f'Público inválido en {tabla["fuente"]}')
@@ -93,20 +94,29 @@ def cargar():
     return tablas
 
 
-def _precio(spec, campos):
+def _specs(precio):
+    # Una regla o varias (Madrid: indicador y texto); sus clases se suman.
+    return [] if not precio else precio if isinstance(precio, list) else [precio]
+
+
+def _clases(spec, campos):
     valores = campos.get(spec['campo']) or []
     if spec['tipo'] == 'indicador':
-        clases = {spec['valores'].get(str(v)) for v in valores} - {None}
-    elif spec['tipo'] == 'tarifas':
-        clases = {'pago' if (t.get('hasCurrencyValue') or 0) > 0 else 'gratis' for t in valores}
-    else:
-        clases = set()
-        for texto in valores:
-            importes = [float(i.replace(',', '.')) for i in IMPORTE.findall(texto)]
-            if GRATIS.search(texto) or importes and not any(importes):
-                clases.add('gratis')
-            if any(importes):
-                clases.add('pago')
+        return {spec['valores'].get(str(v)) for v in valores} - {None}
+    if spec['tipo'] == 'tarifas':
+        return {'pago' if (t.get('hasCurrencyValue') or 0) > 0 else 'gratis' for t in valores}
+    clases = set()
+    for texto in valores:
+        importes = [float(i.replace(',', '.')) for i in IMPORTE.findall(texto)]
+        if GRATIS.search(texto) or importes and not any(importes):
+            clases.add('gratis')
+        if any(importes):
+            clases.add('pago')
+    return clases
+
+
+def _precio(precio, campos):
+    clases = set().union(*(_clases(s, campos) for s in _specs(precio)))
     # Varias tarifas, gratis y de pago: el filtro «gratis» no debe prometerlo.
     return 'mixto' if {'gratis', 'pago'} <= clases else next(iter(clases), None) if len(clases) == 1 else None
 
