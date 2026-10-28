@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { leerConsultaCalendario, seleccionCalendario, noticiaEnAmbitos } from '../../shared/calendario/consulta.js';
+import { AMBITOS, leerConsultaCalendario, seleccionCalendario, noticiaEnAmbitos } from '../../shared/calendario/consulta.js';
 import { extremoVisible, enDia, agruparPorDiaCalendario, ventanaCalendario, moverFecha } from '../../shared/calendario/fechas.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 
 const orden = leerConsultaCalendario;
@@ -49,12 +49,26 @@ test('los ámbitos se suman sin duplicar eventos; circuitos, tema, fuente y text
   assert.deepEqual(ids('tenis:', { fuente: 'otra' }), []);
   assert.equal(seleccionCalendario(datos, orden('f1:')).clasificaciones.length, 1);
 });
-test('noticias por texto sin confundir una búsqueda temática con un enlace a un partido', () => {
-  assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('tenis:')), true);
+test('solo las competiciones suman noticias por texto; los temas solo seleccionan agenda', () => {
+  assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('tenis:')), false);
+  assert.equal(noticiaEnAmbitos('El teatro vuelve', orden('teatro:')), false);
+  assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('wta: tenis:')), false);
+  assert.deepEqual(orden('teatro:noticias').desconocidos, ['teatro:noticias']);
+  assert.deepEqual(orden('noticias:wta').desconocidos, []);
   assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('atp:')), false);
   assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('atp: wta:')), true);
   assert.equal(noticiaEnAmbitos('Carrera de Fórmula 1', orden('f1:')), true);
   assert.equal(noticiaEnAmbitos('ATP anuncia su calendario', orden('calendario:tenis')), false);
+});
+test('cada tema que usan las tablas de la agenda tiene su prefijo', () => {
+  const dir = new URL('../../agenda/tablas/', import.meta.url), temas = new Set();
+  for (const f of readdirSync(dir)) {
+    const t = JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
+    for (const c of Object.values(t.campos)) for (const v of Object.values(c.valores)) for (const x of v.temas || []) temas.add(x);
+    for (const c of t.combinaciones || []) temas.add(c.si_tema);
+  }
+  const conPrefijo = new Set(Object.values(AMBITOS).map(a => a.tema));
+  assert.deepEqual([...temas].filter(x => !conPrefijo.has(x)), []);
 });
 const extremo = (fecha, extras = {}) => ({ fecha, hora_local: null, instante: null, zona: null,
   certeza_fecha: fecha ? 'confirmado' : 'desconocida', certeza_hora: 'desconocida', ...extras });
