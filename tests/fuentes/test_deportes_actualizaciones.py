@@ -77,14 +77,16 @@ class Actualizaciones(unittest.TestCase):
         datos = muestra('espn-nba')
         anterior = importar('espn-nba', datos)
         competidores = datos['events'][0]['competitions'][0]['competitors']
-        viejo = proyectar(anterior)['eventos'][0]['participaciones'][0]['participante']
+        clave = lambda e: {nucleo.clave(p['participante']) for p in e['participaciones']}
+        viejos = clave(proyectar(anterior)['eventos'][0])
         competidores[0]['team']['uid'] = 's:40~l:46~t:prueba-sustitucion'
         for c in competidores:
             c['homeAway'] = 'away' if c['homeAway'] == 'home' else 'home'
         nuevo = importar('espn-nba', datos, anterior, DESPUES)
         e = proyectar(nuevo)['eventos'][0]
         self.assertEqual(len(e['participaciones']), 2)
-        self.assertNotIn(viejo, [p['participante'] for p in e['participaciones']])
+        # Un equipo sustituido y el otro conservado, sea cual sea el orden publicado.
+        self.assertEqual(len(clave(e) & viejos), 1)
         orden = deepcopy(datos)
         orden['events'][0]['competitions'][0]['competitors'].reverse()
         repetido = importar('espn-nba', orden, nuevo, '2026-10-28T12:00:00+01:00')
