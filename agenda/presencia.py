@@ -14,7 +14,7 @@ class InventarioDesplomado(ValueError):
 
 
 def registrar(n, fuente, ids, observado, url, *, aceptar_caida=False):
-    """Conserva cada cambio de inventario; repetirlo solo actualiza la comprobación.
+    """Registra el inventario vigente; repetirlo solo actualiza la comprobación.
 
     Los IDs proceden de todas las páginas, antes de filtrar la ventana temporal.
     La ausencia no modifica las observaciones de la cita ni declara cancelación.

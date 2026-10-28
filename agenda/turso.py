@@ -10,7 +10,11 @@ import tempfile
 
 from turso_http import ErrorTurso, filas
 from .turso_lotes import ClienteCalendario as Cliente
-from . import almacen
+from . import almacen, almacen_nucleo
+
+# Filas por página al cargar el núcleo; muy por debajo de MAX_RESPUESTA incluso
+# con las filas más grandes medidas (documento 95 KB, entidad 17 KB).
+PAGINA, PAGINA_DOCUMENTOS = 2000, 500
 
 
 class ConflictoCalendario(RuntimeError):
@@ -69,18 +73,49 @@ class Almacen:
                 raise ValueError('Versión de base de calendario incompatible')
 
     def cargar(self):
+        """Piloto en una lectura y núcleo por páginas: ninguna respuesta crece con el total.
+
+        Las páginas son lecturas separadas; si la revisión cambió entre la primera
+        y la última, otro escritor intervino y la carga no es coherente.
+        """
         if self.reutilizar and self._vigente:
             return deepcopy(self.anterior)
-        resultados = [filas(r) for r in self.cliente.transaccion(almacen.CONSULTAS, escritura=False)]
+        base = almacen.CONSULTAS[:len(almacen.CONSULTAS) - len(almacen_nucleo.CONSULTAS)]
+        resultados = [filas(r) for r in self.cliente.transaccion(base, escritura=False)]
+        if len(resultados[0]) != 1:
+            raise ValueError('Versión de base de calendario incompatible')
+        revision = resultados[0][0][1]
+        resultados.extend(self._paginas(tabla) for tabla in almacen_nucleo.TABLAS.values())
+        final = filas(self.cliente.transaccion(
+            [('SELECT revision FROM agenda_esquema WHERE id=1', ())], escritura=False)[0])
+        if final != [[revision]]:
+            raise ConflictoCalendario('El calendario cambió durante la carga; repetir la pasada')
         calendario = almacen.reconstruir(resultados)
-        self.revision = resultados[0][0][1]
+        self.revision = revision
         self.anterior = deepcopy(calendario)
         self._vigente = True
         return calendario
 
+    def _paginas(self, tabla):
+        """Filas [datos_json] de una tabla del núcleo, por clave primaria."""
+        clave = ('tipo', 'id') if tabla == 'agenda_entidades' else ('id',)
+        # Un documento puede ocupar ~100 KB (inventario completo); el resto, pocos KB.
+        limite = PAGINA_DOCUMENTOS if tabla == 'agenda_documentos' else PAGINA
+        salida, ultima = [], None
+        while True:
+            donde = '' if ultima is None else f'WHERE ({", ".join(clave)}) > ({", ".join("?" * len(clave))}) '
+            pagina = filas(self.cliente.transaccion([(
+                f'SELECT {", ".join(clave)}, datos_json FROM {tabla} {donde}'
+                f'ORDER BY {", ".join(clave)} LIMIT ?', (*(ultima or ()), limite))], escritura=False)[0])
+            salida.extend([f[-1]] for f in pagina)
+            if len(pagina) < limite:
+                return salida
+            ultima = tuple(pagina[-1][:-1])
+
     def guardar(self, calendario, solo_clasificacion=False, solo_nucleo=False, pasos_extra=()):
         if self.revision is None:
             raise ValueError('Hay que cargar el estado remoto antes de integrarlo')
+        calendario = almacen.sin_historial(calendario)
         cambios = self.anterior != calendario
         if (solo_clasificacion or solo_nucleo) and not cambios and not pasos_extra:
             return

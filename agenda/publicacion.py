@@ -50,6 +50,9 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
             nombres.update(o['bloques']['nombres'])
             if o['id'] in activas and o['bloques'].get('codigo_consulta'):
                 codigos.add(o['bloques']['codigo_consulta'])
+        # Sin historial, una traducción que la última respuesta omite sigue en la entidad.
+        for idioma, nombre in e['nombres'].items():
+            nombres.setdefault(idioma, nombre)
         entidades[k] = {c: deepcopy(e[c]) for c in ('tipo', 'id', 'clase')}
         entidades[k].update(nombres=nombres, codigos=sorted(codigos),
             temas=sorted({t['tema'] for t in e['temas'] if vigente(t)}))
