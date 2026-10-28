@@ -24,10 +24,10 @@ CAMPOS = ('ID-EVENTO', 'TITULO', 'FECHA', 'FECHA-FIN', 'HORA', 'LARGA-DURACION',
           'DIAS-EXCLUIDOS', 'CONTENT-URL', 'TITULO-ACTIVIDAD', 'URL-ACTIVIDAD', 'URL-INSTALACION',
           'NOMBRE-INSTALACION', 'CLASE-VIAL-INSTALACION', 'NOMBRE-VIA-INSTALACION', 'NUM-INSTALACION',
           'DISTRITO-INSTALACION', 'BARRIO-INSTALACION', 'CODIGO-POSTAL-INSTALACION', 'LATITUD', 'LONGITUD', 'TIPO',
-          'GRATUITO', 'AUDIENCIA')
-# Campos en bruto para clasificar al publicar (precio y público). PRECIO es texto libre
-# largo y GRATUITO ya dice lo filtrable.
-ORIGEN = ('GRATUITO', 'AUDIENCIA')
+          'GRATUITO', 'PRECIO', 'AUDIENCIA')
+# Campos en bruto para clasificar al publicar (precio y público). GRATUITO=0 no implica
+# pago (sin importe o con «Entrada gratuita» en PRECIO): el precio sale del texto.
+ORIGEN = ('GRATUITO', 'PRECIO', 'AUDIENCIA')
 DIAS = {'L': 0, 'M': 1, 'X': 2, 'J': 3, 'V': 4, 'S': 5, 'D': 6}
 
 

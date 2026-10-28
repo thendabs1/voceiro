@@ -10,8 +10,9 @@ from test_agenda import AHORA
 from test_calendario_cultura import muestra
 
 
-def madrid(tipo, gratuito=None, audiencia=None):
-    origen = {k: v for k, v in (('GRATUITO', gratuito), ('AUDIENCIA', audiencia)) if v is not None}
+def madrid(tipo, gratuito=None, audiencia=None, precio=None):
+    origen = {k: v for k, v in (('GRATUITO', gratuito), ('PRECIO', precio), ('AUDIENCIA', audiencia))
+              if v is not None}
     return {'tipo_original': '/contenido/actividades/' + tipo, 'origen': origen}
 
 
@@ -30,7 +31,7 @@ class Clasificar(unittest.TestCase):
     def test_exposicion_sin_disciplina_es_cultura_y_la_charla_queda_sin_tema(self):
         r = clasificador.clasificar('madrid', [madrid('Exposiciones', '1')])
         self.assertEqual((r['temas'], r['formatos'], r['precio']), (['cultura'], ['exposicion'], 'gratis'))
-        r = clasificador.clasificar('madrid', [madrid('ConferenciasColoquios', '0')])
+        r = clasificador.clasificar('madrid', [madrid('ConferenciasColoquios', '0', precio='8 €')])
         self.assertEqual((r['temas'], r['formatos'], r['precio']), ([], ['charla-encuentro'], 'pago'))
 
     def test_arbol_de_portal_hereda_del_padre_y_lo_desconocido_no_inventa(self):
@@ -60,8 +61,12 @@ class Clasificar(unittest.TestCase):
         self.assertEqual({t: cyl(t) for t in casos}, casos)
         kk = lambda p: clasificador.clasificar('kulturklik', [{'tipo_original': {'id': 1},
                                                                'origen': {'priceEs': p}}])['precio']
-        self.assertEqual([kk('Doakoa'), kk('Gratis (inscripción)'), kk('Inscripción'), kk('10 / 12 €')],
-                         ['gratis', 'gratis', None, 'pago'])
+        self.assertEqual([kk('Doakoa'), kk('Gratis (inscripción)'), kk('Inscripción'), kk('10 / 12 €'),
+                          kk('Invitaciones en taquilla')], ['gratis', 'gratis', None, 'pago', 'gratis'])
+        # Madrid: GRATUITO=0 no es pago; decide el texto de PRECIO.
+        mad = lambda g, p=None: clasificador.clasificar('madrid', [madrid('Musica', g, precio=p)])['precio']
+        self.assertEqual([mad('1'), mad('0'), mad('0', 'Entrada gratuita'), mad('0', '12 €'), mad('1', '5 €')],
+                         ['gratis', None, 'gratis', 'pago', 'mixto'])
         tarifa = lambda v: {'fareGroup': 'x', 'hasCurrencyValue': v}
         zgz = lambda *t: clasificador.clasificar('zaragoza', [{'origen': {'price': list(t)}}])['precio']
         self.assertEqual([zgz(tarifa(0)), zgz(tarifa(2)), zgz(tarifa(0), tarifa(2)), zgz()],
