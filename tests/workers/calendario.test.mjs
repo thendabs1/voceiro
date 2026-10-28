@@ -362,3 +362,17 @@ test('formato y precio son facetas; sin clasificar, ninguna fila', () => {
   assert.deepEqual(de(datos.eventos[0].id), [[datos.eventos[0].id, 'formato', 'concierto'], [datos.eventos[0].id, 'precio', 'gratis']]);
   assert.deepEqual(de(datos.eventos[1].id), []);
 });
+
+test('formatos y precio filtran por faceta; gratis no incluye mixto', async t => {
+  const datos = muestra();
+  Object.assign(datos.eventos[4], { formatos: ['concierto'], precio: 'gratis' });
+  Object.assign(datos.eventos[5], { formatos: ['concierto', 'festival'], precio: 'mixto' });
+  Object.assign(datos.eventos[6], { formatos: ['representacion'], precio: 'pago' });
+  const b = base(datos); t.after(() => b.db.close());
+  const ids = async q => (await b.pedir(ventana + q)).dato.eventos.map(e => e.id);
+  assert.deepEqual(await ids('&formatos=concierto'), ['004', '005']);
+  assert.deepEqual(await ids('&formatos=festival,representacion'), ['005', '006']);
+  assert.deepEqual(await ids('&precio=gratis'), ['004']);
+  assert.deepEqual(await ids('&formatos=concierto&precio=mixto'), ['005']);
+  assert.equal((await b.pedir(ventana + '&precio=barato')).status, 400);
+});

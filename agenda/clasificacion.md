@@ -173,27 +173,24 @@ clasificar: tema 80 % (CyL), 78 % (Kulturklik), 63 % (Madrid) y 65 %
 
 Notas que dejó la implementación; las de cada valor están en su tabla (`nota`).
 
-1. **Ámbitos del buscador:** los temas nuevos (`artes-visuales`, `circo`,
-   `magia`, `cultura-popular`, `medio-ambiente`, `gastronomia`) ya se publican,
-   pero `consulta.js` aún no tiene su ámbito: se encuentran dentro de
-   `cultura:` (o en su raíz). Falta añadirlos con sus términos de noticias y
-   retirar `exposiciones:` cuando Galicia deje de usarlo.
-2. **Filtros en la interfaz:** formato y precio ya son facetas de la lectura
-   (`formato`, `precio`), pero el worker no los consulta todavía.
-3. **Galicia:** su tabla va con la reconstrucción. Propuesto: «Espectáculo» →
+1. **Galicia:** su tabla va con la reconstrucción. Propuesto: «Espectáculo» →
    `cultura` + representación; «Proxección audiovisual» → proyección sin tema;
-   «Festa de interese turístico» → fiesta sin tema.
-4. **Política de publicación (aplazada):** culto, actos partidistas y
+   «Festa de interese turístico» → fiesta sin tema. Después, retirar el
+   prefijo `exposiciones:`, que solo usa Galicia.
+2. **Política de publicación (aplazada):** culto, actos partidistas y
    formación restringida aún se publican. Madrid solo trae 2 «ActosReligiosos»,
    y uno es patrimonio; la regla de no publicar se hará cuando una fuente
    traiga volumen.
-5. **Temas antiguos en el núcleo:** los `c.tema` que asignaban los lectores
+3. **Temas antiguos en el núcleo:** los `c.tema` que asignaban los lectores
    siguen en las entidades hasta que su observación se compacte; al publicar
    se ignoran en las fuentes con tabla.
 
 Resuelto el 28-10: Madrid toma el precio de `PRECIO` (texto) y `GRATUITO=1`,
 porque `GRATUITO=0` no implica pago; Zaragoza «Imagen y sonido» → `cultura`;
 en Kulturklik «Invitación» es gratis y «Inscripción» sin más sigue sin precio.
+Cada tema de las tablas tiene su prefijo en el buscador (solo agenda; las
+competiciones suman noticias por titular) y el worker filtra por `formatos=`
+y `precio=`.
 
 ## Fases
 
