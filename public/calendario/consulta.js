@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=cd24c2992b';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=cd24c2992b';
+import { tokenizeQuery, normalize } from '../parser.js?v=bbebd08e9c';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=bbebd08e9c';
 
 // Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
 // nombre propio no es ambiguo, suman noticias por su titular (las noticias no se
@@ -16,7 +16,6 @@ export const AMBITOS = {
   musica: { tema: 'musica' },
   cine: { tema: 'cine' },
   danza: { tema: 'danza' },
-  exposiciones: { tema: 'exposiciones' },
   literatura: { tema: 'literatura' },
   patrimonio: { tema: 'patrimonio' },
   'artes-visuales': { tema: 'artes-visuales' },
