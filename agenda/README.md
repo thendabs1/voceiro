@@ -74,6 +74,12 @@ Reglas que no hay que romper:
   fuente los declara. Desaparecer de una respuesta no cancela ni borra.
 - **Revisiones:** repetir datos idénticos solo actualiza la comprobación;
   marcador, reloj o ganador no generan versiones de agenda.
+- **Sin historial:** al guardar, [compactar.py](compactar.py) deja solo las
+  observaciones vigentes (empates incluidos), las que sostienen una selección,
+  un resultado o una clasificación, sus documentos y el inventario vigente.
+  Las agendas son públicas: una versión sustituida no se archiva; si hace falta
+  se vuelve a pedir. Referencias y entidades no se borran nunca. El núcleo se
+  carga de Turso por páginas (ninguna respuesta crece con el total).
 - **Selección entre fuentes, por bloque** (horario, sede, programación):
   corrección editorial > referencia preferida por política > última
   observación válida > conflicto sin resolver.
@@ -170,12 +176,11 @@ Contrato común para las fuentes culturales:
   identidad y no se deshace. Sin implementar hasta que haya quien los escriba.
 - **Ausencia:** Madrid y Kulturklik acreditan el inventario completo antes de
   filtrar la ventana de fechas. Una cita ausente se oculta de la publicación
-  (incluido el detalle y la búsqueda de objetivos); conserva identidad,
-  horario e historial, sin declararla cancelada. Si reaparece, vuelve a ser
+  (incluido el detalle y la búsqueda de objetivos); conserva identidad y
+  horario, sin declararla cancelada. Si reaparece, vuelve a ser
   pública. La recogida y su inventario se guardan en la misma transacción;
-  páginas incompletas o archivos sueltos no acreditan ausencias. Cada cambio
-  de inventario conserva su documento y fecha; repetirlo solo renueva la
-  comprobación. Si el inventario cae más del 30 % no se acredita (aviso en
+  páginas incompletas o archivos sueltos no acreditan ausencias. Solo se
+  guarda el inventario vigente; repetirlo solo renueva la comprobación. Si el inventario cae más del 30 % no se acredita (aviso en
   Actions); `--aceptar-inventario FUENTE` o la casilla del workflow lo
   aceptan. Galicia todavía conserva las ausentes: su respuesta está
   acotada por fechas e idiomas y necesita una política con ese alcance.

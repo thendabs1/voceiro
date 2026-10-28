@@ -9,6 +9,8 @@ from .tiempos import instante
 TABLAS = {c: 'agenda_' + c for c in nucleo.COLECCIONES}
 TABLAS.update(politicas='agenda_nucleo_politicas', selecciones='agenda_nucleo_selecciones')
 NOMBRES = set(TABLAS.values()) | {'agenda_tiempos'}
+# Lo que compactar.py puede retirar al guardar; referencias, entidades y resultados nunca.
+COMPACTABLES = ('observaciones', 'documentos', 'relaciones', 'participaciones', 'politicas', 'selecciones')
 CONSULTAS = [(f'SELECT datos_json FROM {tabla} ORDER BY 1', ()) for tabla in TABLAS.values()]
 
 
@@ -88,8 +90,8 @@ def planificar(anterior, nuevo):
     pasos = []
     for c, tabla in TABLAS.items():
         viejos, nuevos = previo.get(c, {}), nuevo[c]
-        if c not in ('politicas', 'selecciones') and viejos.keys() - nuevos.keys():
-            raise ValueError('El núcleo conserva identidades, evidencia e historial')
+        if c not in COMPACTABLES and viejos.keys() - nuevos.keys():
+            raise ValueError('El núcleo conserva identidades y resultados')
         if c in ('politicas', 'selecciones'):
             for i in viejos.keys() - nuevos.keys():
                 pasos.append((f'DELETE FROM {tabla} WHERE id=?', (i,)))
@@ -117,6 +119,10 @@ def planificar(anterior, nuevo):
                    f'({", ".join("?" for _ in columnas)}) ON CONFLICT ({", ".join(claves)}) '
                    f'DO UPDATE SET {cambios}')
             pasos.append((sql, valores))
+    # Versiones sustituidas (compactar.py): observaciones antes que sus documentos.
+    for c in ('relaciones', 'participaciones', 'observaciones', 'documentos'):
+        for i in sorted(previo.get(c, {}).keys() - nuevo[c].keys()):
+            pasos.append((f'DELETE FROM {TABLAS[c]} WHERE id=?', (i,)))
     viejos_t, nuevos_t = tiempos(previo), tiempos(nuevo)
     for k in viejos_t.keys() - nuevos_t.keys():
         pasos.append(('DELETE FROM agenda_tiempos WHERE tipo=? AND objetivo=?', viejos_t[k][:2]))

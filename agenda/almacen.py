@@ -141,6 +141,7 @@ def guardar(db, calendario, solo_clasificacion=False, solo_nucleo=False, pasos_e
     transacción para evitar perder una actualización de otro escritor.
     """
     anterior = cargar(db)
+    calendario = sin_historial(calendario)
     cambios = anterior != calendario
     if (solo_clasificacion or solo_nucleo) and not cambios and not pasos_extra:
         return
@@ -149,6 +150,14 @@ def guardar(db, calendario, solo_clasificacion=False, solo_nucleo=False, pasos_e
         db.execute(sql, args)
     if cambios:
         db.execute('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1')
+
+
+def sin_historial(calendario):
+    """Copia con el núcleo compactado: se compara y se guarda solo lo vigente."""
+    if not calendario or 'nucleo' not in calendario:
+        return calendario
+    from .compactar import compactar
+    return {**calendario, 'nucleo': compactar(calendario['nucleo'])}
 
 
 def planificar(anterior, calendario, solo_clasificacion=False, solo_nucleo=False):
@@ -171,7 +180,8 @@ def planificar(anterior, calendario, solo_clasificacion=False, solo_nucleo=False
                 for e in c['nucleo']['entidades'].values():
                     e.pop('temas', None)
             return c
-        if sin_clasificacion(anterior) != sin_clasificacion(calendario):
+        # La primera compactación retira versiones: no es modificar registros.
+        if sin_clasificacion(sin_historial(anterior)) != sin_clasificacion(calendario):
             raise ValueError('Reclasificar no puede modificar registros ni observaciones')
     pasos = [] if solo_clasificacion or solo_nucleo else [
         ('INSERT INTO agenda_recogidas(observado, consultas_json) VALUES (?, ?)',
