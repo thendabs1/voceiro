@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "fuente": "cyl",
+  "revisado": "2026-10-28",
+  "muestra": "600 registros (28-10-2026)",
+  "campos": {
+    "tematica": {
+      "valores": {
+        "Teatro títeres monólogo": {
+          "temas": [
+            "teatro"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "Club de lectura": {
+          "temas": [
+            "literatura"
+          ],
+          "formatos": [
+            "lectura-club"
+          ]
+        },
+        "Taller": {
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "Concierto": {
+          "temas": [
+            "musica"
+          ],
+          "formatos": [
+            "concierto"
+          ]
+        },
+        "Cuentacuentos": {
+          "temas": [
+            "literatura"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "Narración oral para adultos": {
+          "temas": [
+            "literatura"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "Conferencia": {
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "Exposición": {
+          "temas": [
+            "cultura"
+          ],
+          "formatos": [
+            "exposicion"
+          ]
+        },
+        "Danza": {
+          "temas": [
+            "danza"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "Magia": {
+          "temas": [
+            "magia"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "Circo": {
+          "temas": [
+            "circo"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "Presentación": {
+          "formatos": [
+            "charla-encuentro"
+          ],
+          "nota": "Caso 11: sola no acredita literatura; la da la categoría «Libros y Lectura»."
+        },
+        "Foro o reunión": {
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "Visita guiada": {
+          "formatos": [
+            "visita-ruta"
+          ]
+        },
+        "Cine o audiovisual": {
+          "temas": [
+            "cine"
+          ],
+          "formatos": [
+            "proyeccion"
+          ]
+        },
+        "Festivales": {
+          "temas": [
+            "cultura"
+          ],
+          "formatos": [
+            "festival"
+          ]
+        },
+        "Curso o formación": {
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "Fiesta": {
+          "formatos": [
+            "fiesta"
+          ],
+          "nota": "Caso 12: una fiesta no es tradición por defecto."
+        },
+        "Concursos o juego": {
+          "nota": "Concurso o juego: etiqueta."
+        }
+      }
+    },
+    "categoria": {
+      "valores": {
+        "Libros y Lectura": {
+          "temas": [
+            "literatura"
+          ]
+        },
+        "Conciertos": {
+          "temas": [
+            "musica"
+          ]
+        },
+        "Cine": {
+          "temas": [
+            "cine"
+          ]
+        },
+        "Espectáculos": {
+          "nota": "La disciplina la da la temática."
+        },
+        "Exposiciones": {
+          "nota": "La da la temática."
+        },
+        "Conferencias y Cursos": {
+          "nota": "La da la temática."
+        },
+        "Ferias y Fiestas": {
+          "nota": "La da la temática."
+        },
+        "Otros": {
+          "nota": "Revisado: no dice tema ni formato."
+        }
+      }
+    }
+  },
+  "precio": {
+    "tipo": "texto",
+    "campo": "precio"
+  },
+  "publico": {
+    "campo": "destinatarios",
+    "valores": {
+      "Público infantil": "infancia",
+      "Público familiar": "familias"
+    }
+  }
+}

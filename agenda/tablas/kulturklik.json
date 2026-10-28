@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "fuente": "kulturklik",
+  "revisado": "2026-10-28",
+  "muestra": "4.520 eventos (28-10-2026)",
+  "campos": {
+    "type": {
+      "valores": {
+        "1": {
+          "nombre": "Concierto",
+          "temas": [
+            "musica"
+          ],
+          "formatos": [
+            "concierto"
+          ]
+        },
+        "2": {
+          "nombre": "Teatro",
+          "temas": [
+            "teatro"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "3": {
+          "nombre": "Exposición",
+          "temas": [
+            "cultura"
+          ],
+          "formatos": [
+            "exposicion"
+          ]
+        },
+        "4": {
+          "nombre": "Danza",
+          "temas": [
+            "danza"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "6": {
+          "nombre": "Conferencia",
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "7": {
+          "nombre": "Bertsolarismo",
+          "temas": [
+            "literatura",
+            "cultura-popular"
+          ],
+          "formatos": [
+            "representacion"
+          ],
+          "nota": "Caso 10: literatura y cultura popular."
+        },
+        "8": {
+          "nombre": "Feria",
+          "formatos": [
+            "feria-mercado"
+          ]
+        },
+        "9": {
+          "nombre": "Cine y audiovisuales",
+          "temas": [
+            "cine"
+          ],
+          "formatos": [
+            "proyeccion"
+          ]
+        },
+        "10": {
+          "nombre": "Eventos/jornadas",
+          "nota": "Revisado: no dice tema ni formato."
+        },
+        "11": {
+          "nombre": "Formación",
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "12": {
+          "nombre": "Concurso",
+          "nota": "Concurso: etiqueta."
+        },
+        "13": {
+          "nombre": "Festival",
+          "temas": [
+            "cultura"
+          ],
+          "formatos": [
+            "festival"
+          ]
+        },
+        "15": {
+          "nombre": "Otro",
+          "nota": "Revisado: no dice tema ni formato."
+        },
+        "16": {
+          "nombre": "Fiestas",
+          "formatos": [
+            "fiesta"
+          ],
+          "nota": "Caso 12: una fiesta no es tradición por defecto."
+        }
+      }
+    }
+  },
+  "precio": {
+    "tipo": "texto",
+    "campo": "priceEs",
+    "nota": "«Inscripción» o «Invitación» sin más (190) quedan sin precio: Kulturklik escribe «Gratis (inscripción)» cuando es gratis."
+  }
+}

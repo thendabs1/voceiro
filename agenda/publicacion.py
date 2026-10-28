@@ -11,13 +11,15 @@ from datetime import datetime, timezone
 import json
 import os
 
-from . import nucleo, presencia
+from . import clasificador, nucleo, presencia
+from .clasificacion import cargar_catalogo
 from .tiempos import instante
 from shared.territorios import cargar as cargar_territorios
 from shared.territorios.relacionador import cargar as cargar_relacionador
 
 
-def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=None):
+def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=None, informe=None):
+    """`informe`, si se pasa un dict, recibe la clasificación de cada evento por fuente."""
     nucleo.validar(n)
     permitidas = set(n['fuentes']) if fuentes is None else set(fuentes)
     if permitidas - n['fuentes'].keys():
@@ -56,6 +58,20 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
         entidades[k] = {c: deepcopy(e[c]) for c in ('tipo', 'id', 'clase')}
         entidades[k].update(nombres=nombres, codigos=sorted(codigos),
             temas=sorted({t['tema'] for t in e['temas'] if vigente(t)}))
+    # Fuentes con tabla: tema, formato, precio y público se deciden al publicar,
+    # desde los campos en bruto de las observaciones vigentes (clasificador.py).
+    tablas_fuente, clasificados = clasificador.cargar(), {}
+    for k, e in entidades.items():
+        if e['tipo'] != 'evento':
+            continue
+        propias = [observaciones[i] for i in sorted(n['entidades'][k]['evidencias'])
+                   if i in observaciones and i in activas]
+        fuente = next((n['referencias'][o['referencia']]['proveedor'] for o in propias), None)
+        if fuente in tablas_fuente:
+            clasificados[k] = clasificador.clasificar(fuente, [o['bloques'] for o in propias])
+            e['temas'] = clasificados[k]['temas']
+            if informe is not None:
+                informe.setdefault(fuente, []).append(clasificados[k])
     # Correspondencia editorial del flujo ya integrado, no de los títulos.
     ref_f1 = next((r for r in n['referencias'].values()
         if r['proveedor'] == 'vidmar-f1' and r['tipo_externo'] == 'grupo_piloto'
@@ -247,6 +263,9 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                 etiquetas.setdefault(t['id'], {'id': t['id'], 'nombres': {}})['nombres'].update(t['nombres'])
         if etiquetas:
             eventos[-1]['etiquetas'] = [etiquetas[i] for i in sorted(etiquetas)]
+        # Sin clave cuando no hay: las citas sin tabla no se reescriben.
+        eventos[-1].update({c: v for c, v in clasificados.get(k, {}).items()
+                            if c in ('formatos', 'precio', 'publico') and v})
     por_id = {e['id']: e for e in eventos}
     sesiones = set()
     for e in eventos:
@@ -274,11 +293,13 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                                    if f['participante'] and nucleo.clave(f['participante']) in entidades}
             tablas.append({**deepcopy(n['clasificaciones'][cid]), 'seleccion': s,
                            'objetivos': sorted(set(ascendientes(k)) | participantes_tabla)})
+    # Los temas de las tablas pueden ser más nuevos que el catálogo del núcleo.
+    catalogo = max(n['catalogo'], cargar_catalogo(), key=lambda c: c['version'])
     campos_fuente = ('nombre', 'url', 'atribucion', 'licencia', 'licencia_url', 'condiciones', 'capacidades', 'modo')
     salida = {'version': 1, 'nucleo_version': 2,
         'generado': generado or datetime.now(timezone.utc).isoformat(timespec='seconds'),
         'revision': fuentes is None,
-        'catalogo': {'version': n['catalogo']['version'], 'conceptos': deepcopy(n['catalogo']['conceptos'])},
+        'catalogo': {'version': catalogo['version'], 'conceptos': deepcopy(catalogo['conceptos'])},
         'territorios_catalogo': {'version': list(territorios.version),
                                 'fecha_referencia': territorios.fecha_referencia,
                                 'relacionador': deepcopy(relacionador.revision)},
@@ -368,7 +389,10 @@ def main(argv=None):
         repo.inicializar()
         control = repo.publico()
         fuentes = sorted(set(fuentes) | (control['eventos'].keys() & n['fuentes'].keys()))
-    datos = proyectar(n, fuentes, control=control, limites_municipales=limites)
+    cobertura = {}
+    datos = proyectar(n, fuentes, control=control, limites_municipales=limites, informe=cobertura)
+    for linea in clasificador.informe(cobertura):
+        print(linea)
     sin_limites = sorted({p for e in datos['entidades'].values() for r in e.get('ubicacion_resoluciones', ())
                           if r['motivo'] == 'limites_no_disponibles' for p in r['provincias']})
     if sin_limites and (args.publicar or args.lectura_sql):

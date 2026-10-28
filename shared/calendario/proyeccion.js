@@ -52,6 +52,9 @@ export function prepararLectura(datos) {
     agregar('territorio', (e.territorios || []).filter(t => t.papel === 'celebracion')
       .flatMap(t => [t.territorio, ...t.ancestros]));
     agregar('etiqueta', (e.etiquetas || []).map(t => t.id));
+    // Filtros del calendario (clasificador.py); el público es dato, no faceta.
+    agregar('formato', e.formatos || []);
+    agregar('precio', e.precio ? [e.precio] : []);
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
     const porZona = ZONAS.map(zona => {

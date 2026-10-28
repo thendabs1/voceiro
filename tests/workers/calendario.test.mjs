@@ -353,3 +353,12 @@ test('las etiquetas van en la tarjeta y se filtran por su clave', async t => {
   const otras = b.db.prepare("SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id NOT IN ('007','008')").all();
   assert.ok(otras.every(f => !('etiquetas' in JSON.parse(f.tarjeta_json))));
 });
+
+test('formato y precio son facetas; sin clasificar, ninguna fila', () => {
+  const datos = muestra();
+  Object.assign(datos.eventos[0], { formatos: ['concierto'], precio: 'gratis', publico: ['infancia'] });
+  const facetas = prepararLectura(datos).facetas;
+  const de = id => facetas.filter(([e, tipo]) => e === id && ['formato', 'precio', 'publico'].includes(tipo));
+  assert.deepEqual(de(datos.eventos[0].id), [[datos.eventos[0].id, 'formato', 'concierto'], [datos.eventos[0].id, 'precio', 'gratis']]);
+  assert.deepEqual(de(datos.eventos[1].id), []);
+});

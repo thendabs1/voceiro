@@ -11,7 +11,6 @@ CATALOGO = 'https://opendata.euskadi.eus/catalogo/-/kulturklik-agenda-cultural/'
 FAMILIA, URL_RECOGIDA = 'euskadi', URL + '/upcoming'
 CAMPO_ID, TIPO_EXTERNO = 'id', 'event_id'
 FECHAS = ('startDate', 'endDate')
-TEMAS = {1: 'musica', 2: 'teatro', 3: 'exposiciones', 4: 'danza', 9: 'cine'}
 # Campos en bruto para clasificar al publicar (precio, idioma y modalidad).
 ORIGEN = ('priceEs', 'priceEu', 'language', 'online')
 
@@ -79,5 +78,4 @@ def importar(anterior, filas, observado, url=URL):
                 bloques={'identificadores': {'nora': str(municipio), 'provincia_nora': str(provincia)}})
             c.relacion('se_celebra_en', evento, territorio, evidencia)
         # Los nombres de recintos no acreditan una identidad compartida: literal conservado.
-        c.tema(evento, TEMAS.get(fila.get('type'), 'cultura'), evidencia, 'kulturklik:eventType:revisado-v1')
     return c.terminar()

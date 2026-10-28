@@ -25,10 +25,6 @@ CATALOGO = ('https://datos.gob.es/es/catalogo/'
 FAMILIA, URL_RECOGIDA = 'opendatasoft', URL
 TIPO_EXTERNO = 'funcion_obra_fecha_v1'
 FECHAS = ('fecha_inicio', 'fecha_fin')
-TEMAS = {'Teatro títeres monólogo': 'teatro', 'Danza': 'danza', 'Exposición': 'exposiciones',
-         'Club de lectura': 'literatura', 'Cuentacuentos': 'literatura', 'Presentación': 'literatura',
-         'Narración oral para adultos': 'literatura', 'Cine o audiovisual': 'cine'}
-CATEGORIAS = {'Conciertos': 'musica', 'Exposiciones': 'exposiciones'}
 # «19:30», «19:30 h.», «9:00h.», «19.30 horas»; el resto queda como texto.
 HORA = re.compile(r'\s*(\d{1,2})[:.](\d{2})\s*(?:h\.?|horas)?\s*')
 EVIDENCIA = ('id_evento', 'titulo', 'categoria', 'tematica', 'fecha_inicio', 'fecha_fin',
@@ -129,11 +125,6 @@ def importar(anterior, filas, observado, url=URL):
                          'url_evento': fila.get('enlace_contenido'),
                          'tipo_original': {'categoria': fila.get('categoria'), 'tematica': fila.get('tematica')},
                          'origen': {k: fila[k] for k in ORIGEN if fila.get(k) not in (None, '')}})
-            # Sin correspondencia queda sin tema, como Galicia: `cultura` no es «desconocido»
-            # y una correspondencia posterior se añade, no sustituye a esta.
-            tema = TEMAS.get(fila.get('tematica')) or CATEGORIAS.get(fila.get('categoria'))
-            if tema:
-                c.tema(evento, tema, evidencia, 'cyl:tematica:revisado-v1')
             if actividad is None:
                 # Documento propio: el cambio de una función no es evidencia nueva de la obra.
                 obra_doc = c.documento(FUENTE, {'id_evento': fila['id_evento'], 'titulo': titulo}, url,

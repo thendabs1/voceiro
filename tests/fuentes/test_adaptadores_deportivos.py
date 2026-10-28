@@ -311,7 +311,7 @@ class PersistenciaYTransporte(unittest.TestCase):
         a['clasificacion']['catalogo']['version'] = 1
         a['clasificacion']['catalogo']['conceptos'].pop('motociclismo')
         b = ampliar(a)
-        self.assertEqual(b['nucleo']['catalogo']['version'], 2)
+        self.assertEqual(b['nucleo']['catalogo']['version'], 3)
         p = publicacion.proyectar(b['nucleo'], list(b['nucleo']['fuentes']), generado=OBSERVADO)
         self.assertEqual(len(p['eventos']), 2)
         preparada = lectura.preparar(p)

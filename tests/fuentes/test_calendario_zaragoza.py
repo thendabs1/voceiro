@@ -29,7 +29,8 @@ class Zaragoza(unittest.TestCase):
         cuando = nomina['programacion']['valor']['cuando']
         self.assertEqual(cuando['inicio']['hora_local'], '17:00')
         self.assertTrue(cuando['inicio']['instante'].endswith('+01:00'))
-        self.assertEqual(nomina['temas'], ['cultura'])
+        # «Desarrollo personal» no acredita tema; el curso sigue publicado con su formato.
+        self.assertEqual((nomina['temas'], nomina['formatos']), ([], ['curso-taller']))
         cierzo, = por_titulo['CIERZO Y SED, EL CORAZON DE IBERIA']
         cuando = cierzo['programacion']['valor']['cuando']
         self.assertEqual(cierzo['programacion']['valor']['modalidad'], 'intervalo')

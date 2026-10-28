@@ -3,8 +3,8 @@
 Cada función es un evento con identidad propia; la obra es una `actividad`
 unida por `celebracion_de` solo cuando tiene más de una función. El recinto
 guarda sus coordenadas WGS84 y el municipio lo acreditan los límites del IGN.
-Mezcla actividades no culturales (cursos, empleo): quedan con tema `cultura`
-salvo las categorías revisadas en TEMAS.
+Mezcla actividades no culturales (cursos, empleo): el clasificador al publicar
+las deja sin tema salvo lo que acredita su tabla (tablas/zaragoza.json).
 """
 
 from datetime import date, datetime
@@ -20,8 +20,6 @@ CATALOGO = 'https://www.zaragoza.es/web/espacio-de-datos/servicio/catalogo/282'
 FAMILIA, URL_RECOGIDA = 'zaragoza', URL
 CAMPO_ID, TIPO_EXTERNO = 'id', 'subevent_id'
 FECHAS = ('startDate', 'endDate')
-TEMAS = {17: 'teatro', 16: 'musica', 19: 'exposiciones', 92: 'exposiciones', 15: 'cine',
-         25: 'deportes', 84: 'ciencia', 13: 'patrimonio'}
 DIAS = {'Lunes': 0, 'Martes': 1, 'Miércoles': 2, 'Jueves': 3, 'Viernes': 4, 'Sábado': 5, 'Domingo': 6}
 
 
@@ -99,7 +97,6 @@ def importar(anterior, filas, observado, url=URL):
         vistos[identidad] = obra
         funciones = obra.get('subEvent') or []
         categorias = [{'id': k.get('id'), 'title': k.get('title')} for k in obra.get('category') or []]
-        tema = next((TEMAS[k['id']] for k in categorias if k['id'] in TEMAS), 'cultura')
         base = {k: obra[k] for k in ('id', 'title', 'startDate', 'endDate', 'type', 'url', 'lastUpdated')
                 if k in obra}
         # Campos en bruto para clasificar al publicar; de cada tarifa, solo grupo e importe.
@@ -130,7 +127,6 @@ def importar(anterior, filas, observado, url=URL):
                                    'municipio_literal': recinto.get('addressLocality')},
                          'url_evento': obra.get('url'), 'tipo_original': obra.get('type'),
                          'actualizado_origen': obra.get('lastUpdated'), 'origen': origen})
-            c.tema(evento, tema, evidencia, 'zaragoza:category:revisado-v1')
             if len(funciones) > 1:
                 if actividad is None:
                     # Documento propio: el cambio de una función no es evidencia nueva de la obra.
