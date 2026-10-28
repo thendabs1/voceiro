@@ -160,7 +160,7 @@ def sin_historial(calendario):
     return {**calendario, 'nucleo': compactar(calendario['nucleo'])}
 
 
-def planificar(anterior, calendario, solo_clasificacion=False, solo_nucleo=False):
+def planificar(anterior, calendario, solo_clasificacion=False, solo_nucleo=False, nucleo_sql=True):
     """SQL común a SQLite y Turso: contenido modificado y observaciones recibidas.
 
     El llamante garantiza la exclusión de escritores o valida la revisión leída.
@@ -231,7 +231,10 @@ def planificar(anterior, calendario, solo_clasificacion=False, solo_nucleo=False
             pasos.append(('INSERT INTO agenda_vinculos VALUES (?, ?) '
                 'ON CONFLICT(ref) DO UPDATE SET evento=excluded.evento', (ref, evento)))
     pasos.extend(_planificar_clasificacion(anterior, calendario))
-    pasos.extend(almacen_nucleo.planificar(anterior.get('nucleo'), calendario.get('nucleo')))
+    # Con el núcleo en R2 se comprueban sus invariantes pero no se escribe en SQL.
+    pasos_nucleo = almacen_nucleo.planificar(anterior.get('nucleo'), calendario.get('nucleo'))
+    if nucleo_sql:
+        pasos.extend(pasos_nucleo)
     metadatos = {k: v for k, v in calendario.items() if k not in COLECCIONES}
     if 'nucleo' in metadatos:
         from .nucleo import COLECCIONES as colecciones
