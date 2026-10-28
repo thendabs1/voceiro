@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "fuente": "zaragoza",
+  "revisado": "2026-10-28",
+  "muestra": "2.807 obras (28-10-2026)",
+  "campos": {
+    "category": {
+      "valores": {
+        "24": {
+          "nombre": "Formación",
+          "nota": "Formación no acredita tema; el formato lo da el tipo."
+        },
+        "16": {
+          "nombre": "Música",
+          "temas": [
+            "musica"
+          ]
+        },
+        "25": {
+          "nombre": "Deporte",
+          "temas": [
+            "deportes"
+          ]
+        },
+        "92": {
+          "nombre": "Artes plásticas",
+          "temas": [
+            "artes-visuales"
+          ]
+        },
+        "17": {
+          "nombre": "Teatro y Artes Escénicas",
+          "temas": [
+            "cultura"
+          ],
+          "nota": "Caso 5: acredita cultura, no solo teatro."
+        },
+        "26": {
+          "nombre": "Otros",
+          "nota": "Revisado: no dice tema ni formato."
+        },
+        "91": {
+          "nombre": "Desarrollo personal",
+          "nota": "Etiqueta."
+        },
+        "93": {
+          "nombre": "Ocio y Juegos",
+          "nota": "Etiqueta."
+        },
+        "84": {
+          "nombre": "Ciencia y Tecnología",
+          "nota": "Caso 6: no se elige entre ciencia y tecnología sin evidencia."
+        },
+        "43": {
+          "nombre": "Cursos y Talleres",
+          "nota": "El formato lo da el tipo."
+        },
+        "89": {
+          "nombre": "Idiomas",
+          "nota": "Etiqueta."
+        },
+        "86": {
+          "nombre": "Gastronomía",
+          "temas": [
+            "gastronomia"
+          ]
+        },
+        "19": {
+          "nombre": "Exposiciones",
+          "temas": [
+            "cultura"
+          ],
+          "nota": "Exposición sin disciplina: cultura (decisión 28-10)."
+        },
+        "90": {
+          "nombre": "Imagen y sonido",
+          "nota": "Pendiente: fotografía y vídeo (¿artes visuales, cine?); sin tema hasta revisarlo."
+        },
+        "27": {
+          "nombre": "Medio Ambiente y Naturaleza",
+          "temas": [
+            "medio-ambiente"
+          ]
+        },
+        "88": {
+          "nombre": "Turismo",
+          "nota": "Etiqueta."
+        },
+        "20": {
+          "nombre": "Conferencias y Congresos",
+          "nota": "El formato lo da el tipo."
+        },
+        "15": {
+          "nombre": "Cine",
+          "temas": [
+            "cine"
+          ]
+        },
+        "13": {
+          "nombre": "Visitas Turísticas",
+          "nota": "Turismo no acredita patrimonio."
+        },
+        "80": {
+          "nombre": "Empleo y Empresa",
+          "nota": "Etiqueta."
+        },
+        "11": {
+          "nombre": "Aire Libre y Excursiones",
+          "nota": "Revisado: no dice tema ni formato."
+        },
+        "22": {
+          "nombre": "Ferias y Fiestas",
+          "nota": "El formato lo da el tipo."
+        },
+        "87": {
+          "nombre": "Actividades vacacionales",
+          "nota": "Etiqueta."
+        }
+      }
+    },
+    "type": {
+      "valores": {
+        "Cursos y talleres": {
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "Otras": {
+          "nota": "Revisado: no dice tema ni formato."
+        },
+        "Exhibición, proyección, competición": {
+          "nota": "Caso 8: enumera alternativas; no se asignan las tres."
+        },
+        "Exposiciones": {
+          "formatos": [
+            "exposicion"
+          ]
+        },
+        "Festivales": {
+          "formatos": [
+            "festival"
+          ]
+        },
+        "Charlas (Conferencias y otros)": {
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "Fiestas": {
+          "formatos": [
+            "fiesta"
+          ]
+        },
+        "Visitas Guiadas": {
+          "formatos": [
+            "visita-ruta"
+          ]
+        },
+        "Reunión": {
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "Congresos y Jornadas": {
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "Excursiones y viajes": {
+          "formatos": [
+            "visita-ruta"
+          ]
+        },
+        "Concierto": {
+          "formatos": [
+            "concierto"
+          ]
+        },
+        "Campamentos y colonias": {
+          "nota": "Campamento: etiqueta."
+        },
+        "Ferias": {
+          "formatos": [
+            "feria-mercado"
+          ]
+        }
+      }
+    }
+  },
+  "combinaciones": [
+    {
+      "si_tema": "deportes",
+      "sustituye": "curso-taller",
+      "formato": "practica-deportiva",
+      "nota": "Caso 7: pilates o yoga en un centro cívico es hacer deporte, no un curso."
+    }
+  ],
+  "precio": {
+    "tipo": "tarifas",
+    "campo": "price"
+  },
+  "publico": {
+    "campo": "population",
+    "valores": {
+      "1": "infancia",
+      "2": "juventud",
+      "3": "mayores"
+    }
+  }
+}

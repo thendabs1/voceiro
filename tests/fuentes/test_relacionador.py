@@ -120,7 +120,8 @@ class CrucesRevisados(unittest.TestCase):
         self.assertEqual(informe['fuentes']['madrid']['ubicacion'], {'resuelto': 4})
         self.assertEqual(informe['fuentes']['kulturklik']['ubicacion'], {'resuelto': 3})
         self.assertEqual(len(informe['pendientes']), 0)
-        self.assertEqual(informe['fuentes']['madrid']['temas'], {'clasificados': 4, 'pendientes': 0})
+        # La conferencia no acredita tema (tablas/madrid.json).
+        self.assertEqual(informe['fuentes']['madrid']['temas'], {'clasificados': 3, 'pendientes': 1})
         self.assertEqual(revisar(n, ['madrid'])['pendientes'], [])
         self.assertNotIn('kulturklik', json.dumps(revisar(n, ['madrid'])))
 

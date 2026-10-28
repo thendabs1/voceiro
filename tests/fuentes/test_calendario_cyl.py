@@ -40,7 +40,7 @@ class CastillaLeon(unittest.TestCase):
         cuando = expo['programacion']['valor']['cuando']
         self.assertEqual((cuando['inicio']['hora_local'], cuando['horario_textual']), (None, '9:00h. – 14:00h.'))
         self.assertEqual(sorted(t for e in p['eventos'] for t in e['temas']),
-                         ['danza', 'exposiciones', 'exposiciones', 'literatura'])  # Burgos («Foro») sin tema.
+                         ['cultura', 'cultura', 'danza', 'literatura'])  # Burgos («Foro») sin tema.
 
     def test_horas_en_formatos_mezclados(self):
         for texto, hora in (('19:30 h.', '19:30'), ('9:00h.', '09:00'), ('20:00', '20:00'), ('19.30 horas', '19:30'),

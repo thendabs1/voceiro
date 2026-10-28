@@ -1,10 +1,12 @@
 # Clasificación de citas
 
-Modelo común para todas las fuentes de agenda. Diseño cerrado el 27/10/2026;
-**sin implementar**: hoy cada lector asigna temas por su cuenta
-(`c.tema`, [clasificacion.py](clasificacion.py) en Galicia) y el resultado es
-desigual (Madrid 60 % en `cultura`, Galicia 58 % sin tema). Las fases están al
-final.
+Modelo común para todas las fuentes de agenda. Diseño cerrado el 27/10/2026 y
+revisado con datos el 28/10/2026. **Implementado en Madrid, CyL, Kulturklik y
+Zaragoza** ([clasificador.py](clasificador.py) con las tablas de
+[tablas/](tablas/)): los lectores guardan el vocabulario en bruto y la
+clasificación se decide al publicar. Galicia sigue con el piloto
+([clasificacion.py](clasificacion.py)) hasta su reconstrucción. Las fases y lo
+pendiente de revisar están al final.
 
 ## Para qué sirve
 
@@ -67,7 +69,7 @@ Fotografía se reduce a `artes-visuales`; narración oral y bertsolarismo a
 | Eje | Valores | Notas |
 | --- | --- | --- |
 | Formato (varios si coexisten) | concierto, representacion, proyeccion, exposicion, curso-taller, charla-encuentro, lectura-club, festival, feria-mercado, fiesta, visita-ruta, competicion-deportiva, practica-deportiva | Una categoría que enumera alternativas («exhibición, proyección, competición») no asigna las tres. Festival no crea funciones. Concurso, entrega de premios, ceremonia, juego, campamento, degustación: etiquetas |
-| Público (varios) | infancia, juventud, familias, mayores | Destinatarios declarados, no restricciones deducidas. Familias no se deduce de infancia. Edades como datos |
+| Público (varios) | infancia, juventud, familias, mayores | **Solo dato, sin filtro** (decisión 28/10): lo declara el 12 % de las citas y Kulturklik y Galicia nada; un filtro «con niños» escondería la mayoría. Se publica en el evento y se reabre si llegan fuentes que lo publiquen. Destinatarios declarados, no deducidos |
 | Precio | gratis, pago | En los datos también `mixto` y `desconocido`; desconocido no es gratis |
 | Acceso | libre, con-inscripcion | Inscripción no implica pago. Invitación, cupo y reserva se guardan |
 | Modalidad | presencial, en-linea | Híbrida y desconocida se guardan |
@@ -150,6 +152,51 @@ para un filtro, que ayuda a elegir un plan y los datos lo acreditan. En
 espera: fotografía, arquitectura, historia y narración oral como temas
 propios; videojuegos y juegos de mesa; idiomas y campamentos como filtros;
 otros públicos.
+
+## Datos de la revisión (28/10/2026)
+
+9.760 registros de las cinco fuentes culturales: tema con disciplina 56 %,
+solo `cultura` 10 %, sin tema 34 %; formato 91 %; público 12 %; precio ~70 %.
+Ninguna fuente separa formato y tema: publican un solo vocabulario que mezcla
+los dos («Concierto» da música y concierto; «Exposición», «Conferencia» o
+«Taller» solo formato). Por eso cada tabla da, por valor, tema, formato o los
+dos.
+
+Decisiones: exposiciones, festivales y espectáculos sin disciplina de una
+agenda cultural reciben `cultura` (correspondencia revisada valor a valor, no
+un defecto); charlas y talleres sin disciplina quedan sin tema y se publican
+con su formato; el público es dato. Con el núcleo de producción, tras
+clasificar: tema 80 % (CyL), 78 % (Kulturklik), 63 % (Madrid) y 65 %
+(Zaragoza) de los eventos publicados.
+
+## Pendiente de revisar
+
+Notas que dejó la implementación; las de cada valor están en su tabla (`nota`).
+
+1. **Precio de Madrid:** `GRATUITO=0` se toma como pago, pero 188 de 331 no
+   traen importe (88 de «Programación destacada»).
+2. **Zaragoza «Imagen y sonido»** (33): sin tema hasta decidir si es artes
+   visuales, cine o etiqueta.
+3. **Ámbitos del buscador:** los temas nuevos (`artes-visuales`, `circo`,
+   `magia`, `cultura-popular`, `medio-ambiente`, `gastronomia`) ya se publican,
+   pero `consulta.js` aún no tiene su ámbito: se encuentran dentro de
+   `cultura:` (o en su raíz). Falta generar `AMBITOS` desde el catálogo,
+   revisar los términos de noticias con titulares reales y retirar
+   `exposiciones:`, que solo usa ya Galicia.
+4. **Filtros en la interfaz:** formato y precio ya son facetas de la lectura
+   (`formato`, `precio`), pero el worker no los consulta todavía; entran con
+   la interfaz nueva del calendario.
+5. **Galicia:** su tabla va con la reconstrucción. Propuesto: «Espectáculo» →
+   `cultura` + representación; «Proxección audiovisual» → proyección sin tema;
+   «Festa de interese turístico» → fiesta sin tema.
+6. **Política de publicación:** culto («ActosReligiosos» de Madrid),
+   actos partidistas y formación restringida aún se publican; falta el
+   alcance y la regla de no publicar.
+7. **Kulturklik:** «Inscripción» o «Invitación» sin más (190) quedan sin
+   precio.
+8. **Temas antiguos en el núcleo:** los `c.tema` que asignaban los lectores
+   siguen en las entidades hasta que su observación se compacte; al publicar
+   se ignoran en las fuentes con tabla.
 
 ## Fases
 

@@ -20,10 +20,6 @@ CATALOGO = 'https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos'
 FAMILIA, URL_RECOGIDA = 'ckan', URL
 CAMPO_ID = TIPO_EXTERNO = 'ID-EVENTO'
 FECHAS = ('FECHA', 'FECHA-FIN')
-TEMAS = {'TeatroPerformance': 'teatro', 'Musica': 'musica', 'DanzaBaile': 'danza',
-         'CineActividadesAudiovisuales': 'cine', 'Exposiciones': 'exposiciones',
-         'RecitalesPresentacionesActosLiterarios': 'literatura', 'ClubesLectura': 'literatura',
-         'ActividadesDeportivas': 'deportes'}
 CAMPOS = ('ID-EVENTO', 'TITULO', 'FECHA', 'FECHA-FIN', 'HORA', 'LARGA-DURACION', 'DIAS-SEMANA',
           'DIAS-EXCLUIDOS', 'CONTENT-URL', 'TITULO-ACTIVIDAD', 'URL-ACTIVIDAD', 'URL-INSTALACION',
           'NOMBRE-INSTALACION', 'CLASE-VIAL-INSTALACION', 'NOMBRE-VIA-INSTALACION', 'NUM-INSTALACION',
@@ -150,9 +146,4 @@ def importar(anterior, filas, observado, url=URL):
             l, _ = c.entidad(FUENTE, 'instalacion_vgnextoid', recinto, {}, 'lugar', 'recinto',
                 {'es': lugar['nombre']}, instalacion, '/URL-INSTALACION', observado, bloques=coordenadas(fila))
             c.relacion('se_celebra_en', evento, l, evidencia)
-        tipo = fila.get('TIPO') or ''
-        tema = next((t for codigo, t in TEMAS.items()
-                     if tipo == '/contenido/actividades/' + codigo
-                     or tipo.startswith('/contenido/actividades/' + codigo + '/')), 'cultura')
-        c.tema(evento, tema, evidencia, 'madrid:TIPO:revisado-v1')
     return c.terminar()

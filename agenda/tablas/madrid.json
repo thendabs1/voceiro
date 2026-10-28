@@ -1,0 +1,223 @@
+{
+  "version": 1,
+  "fuente": "madrid",
+  "revisado": "2026-10-28",
+  "muestra": "1.525 registros del CKAN (28-10-2026)",
+  "campos": {
+    "TIPO": {
+      "jerarquico": true,
+      "valores": {
+        "TeatroPerformance": {
+          "temas": [
+            "teatro"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "CineActividadesAudiovisuales": {
+          "temas": [
+            "cine"
+          ],
+          "formatos": [
+            "proyeccion"
+          ]
+        },
+        "Musica": {
+          "temas": [
+            "musica"
+          ],
+          "formatos": [
+            "concierto"
+          ]
+        },
+        "DanzaBaile": {
+          "temas": [
+            "danza"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "DanzaBaile/FolcloreEtnica": {
+          "temas": [
+            "danza",
+            "cultura-popular"
+          ],
+          "formatos": [
+            "representacion"
+          ]
+        },
+        "RecitalesPresentacionesActosLiterarios": {
+          "temas": [
+            "literatura"
+          ],
+          "nota": "Caso 3: recital (actuación) y presentación (charla) en un solo valor; sin formato."
+        },
+        "ClubesLectura": {
+          "temas": [
+            "literatura"
+          ],
+          "formatos": [
+            "lectura-club"
+          ]
+        },
+        "CuentacuentosTiteresMarionetas": {
+          "temas": [
+            "cultura"
+          ],
+          "formatos": [
+            "representacion"
+          ],
+          "nota": "Caso 2: mezcla cuentacuentos (literatura) y títeres (teatro); cultura sin disciplina."
+        },
+        "CircoMagia": {
+          "temas": [
+            "cultura"
+          ],
+          "formatos": [
+            "representacion"
+          ],
+          "nota": "Circo y magia sin separar (clasificacion.md)."
+        },
+        "ActividadesDeportivas": {
+          "temas": [
+            "deportes"
+          ],
+          "formatos": [
+            "practica-deportiva"
+          ]
+        },
+        "ActividadesDeportivas/CarrerasMaratones": {
+          "temas": [
+            "atletismo"
+          ],
+          "formatos": [
+            "competicion-deportiva"
+          ]
+        },
+        "ItinerariosOtrasActividadesAmbientales": {
+          "temas": [
+            "medio-ambiente"
+          ],
+          "formatos": [
+            "visita-ruta"
+          ]
+        },
+        "CursosTalleres": {
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "CursosTalleres/Arte": {
+          "temas": [
+            "artes-visuales"
+          ],
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "CursosTalleres/Literatura": {
+          "temas": [
+            "literatura"
+          ],
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "CursosTalleres/CapacitacionDigital": {
+          "temas": [
+            "tecnologia"
+          ],
+          "formatos": [
+            "curso-taller"
+          ]
+        },
+        "ConferenciasColoquios": {
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "ConferenciasColoquios/Arte": {
+          "temas": [
+            "artes-visuales"
+          ],
+          "formatos": [
+            "charla-encuentro"
+          ]
+        },
+        "Exposiciones": {
+          "temas": [
+            "cultura"
+          ],
+          "formatos": [
+            "exposicion"
+          ],
+          "nota": "Exposición sin disciplina en agenda cultural: cultura (decisión 28-10)."
+        },
+        "ExcursionesItinerariosVisitas": {
+          "formatos": [
+            "visita-ruta"
+          ],
+          "nota": "Caso 4: turismo no acredita patrimonio."
+        },
+        "ActividadesCalleArteUrbano": {
+          "temas": [
+            "cultura"
+          ],
+          "nota": "Actividades de calle y arte urbano mezcladas; ni artes visuales ni formato."
+        },
+        "Fiestas": {
+          "formatos": [
+            "fiesta"
+          ]
+        },
+        "ProgramacionDestacadaAgendaCultura": {
+          "temas": [
+            "cultura"
+          ],
+          "nota": "Caso 1: selección de la agenda cultural sin disciplina."
+        },
+        "ConcursosCertamenes": {
+          "nota": "Concurso: etiqueta, no formato."
+        },
+        "Campamentos": {
+          "nota": "Campamento: etiqueta."
+        },
+        "1ciudad21distritos": {
+          "nota": "Programa municipal: Revisado: no dice tema ni formato."
+        },
+        "ActividadesEscolares": {
+          "nota": "Revisado: no dice tema ni formato."
+        },
+        "ComemoracionesHomenajes": {
+          "nota": "Revisado: no dice tema ni formato."
+        },
+        "ActosReligiosos": {
+          "nota": "Culto: guardar y contar, no publicar (pendiente de política)."
+        },
+        "EnLinea": {
+          "nota": "Modalidad, no tema."
+        }
+      }
+    }
+  },
+  "precio": {
+    "tipo": "indicador",
+    "campo": "GRATUITO",
+    "valores": {
+      "1": "gratis",
+      "0": "pago"
+    },
+    "nota": "GRATUITO=0 sin importe en PRECIO (188 de 331, 88 de Programación destacada): se acepta como pago porque lo declara la fuente."
+  },
+  "publico": {
+    "campo": "AUDIENCIA",
+    "valores": {
+      "/usuario/Niños": "infancia",
+      "/usuario/Familias": "familias",
+      "/usuario/Mayores": "mayores",
+      "/usuario/Jovenes": "juventud"
+    }
+  }
+}

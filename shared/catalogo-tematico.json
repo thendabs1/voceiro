@@ -1,11 +1,13 @@
 {
-  "version": 2,
+  "version": 3,
   "conceptos": {
     "deportes": {"nombres": {"es": "Deportes"}, "padres": []},
     "economia": {"nombres": {"es": "Economía"}, "padres": []},
     "tecnologia": {"nombres": {"es": "Tecnología"}, "padres": []},
     "ciencia": {"nombres": {"es": "Ciencia"}, "padres": []},
     "cultura": {"nombres": {"es": "Cultura"}, "padres": []},
+    "medio-ambiente": {"nombres": {"es": "Medio ambiente"}, "padres": []},
+    "gastronomia": {"nombres": {"es": "Gastronomía"}, "padres": []},
     "tenis": {"nombres": {"es": "Tenis"}, "padres": ["deportes"]},
     "baloncesto": {"nombres": {"es": "Baloncesto"}, "padres": ["deportes"]},
     "automovilismo": {"nombres": {"es": "Automovilismo"}, "padres": ["deportes"]},
@@ -22,7 +24,11 @@
     "cine": {"nombres": {"es": "Cine", "gl": "Cinema"}, "padres": ["cultura"]},
     "exposiciones": {"nombres": {"es": "Exposiciones", "gl": "Exposicións"}, "padres": ["cultura"]},
     "literatura": {"nombres": {"es": "Literatura", "gl": "Literatura"}, "padres": ["cultura"]},
-    "patrimonio": {"nombres": {"es": "Patrimonio", "gl": "Patrimonio"}, "padres": ["cultura"]}
+    "patrimonio": {"nombres": {"es": "Patrimonio", "gl": "Patrimonio"}, "padres": ["cultura"]},
+    "artes-visuales": {"nombres": {"es": "Artes visuales", "gl": "Artes visuais"}, "padres": ["cultura"]},
+    "circo": {"nombres": {"es": "Circo", "gl": "Circo"}, "padres": ["cultura"]},
+    "magia": {"nombres": {"es": "Magia", "gl": "Maxia"}, "padres": ["cultura"]},
+    "cultura-popular": {"nombres": {"es": "Cultura popular", "gl": "Cultura popular"}, "padres": ["cultura"]}
   },
   "correspondencias": [
     {"id": "galicia-teatro", "fuente": "cultura-galicia", "criterio": "nombre_grupo", "tipo_grupo": "actividad", "valores": ["Teatro"], "tema": "teatro", "evidencia": "Correspondencia editorial del tipo de evento; no se busca en títulos."},
