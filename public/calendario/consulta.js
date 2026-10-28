@@ -1,20 +1,31 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=00e8e92404';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=00e8e92404';
+import { tokenizeQuery, normalize } from '../parser.js?v=cd24c2992b';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=cd24c2992b';
 
+// Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
+// nombre propio no es ambiguo, suman noticias por su titular (las noticias no se
+// clasifican). El texto sin prefijo no pasa por la agenda.
 export const AMBITOS = {
-  tenis: { tema: 'tenis', noticias: ['tenis', 'ATP', 'WTA'] },
-  baloncesto: { tema: 'baloncesto', noticias: ['baloncesto', 'FEB', 'NBA', 'WNBA'] },
-  automovilismo: { tema: 'automovilismo', noticias: ['automovilismo', 'F1', 'Fórmula 1'] },
-  deportes: { tema: 'deportes', noticias: ['deporte', 'tenis', 'baloncesto', 'F1'] },
-  cultura: { tema: 'cultura', noticias: ['cultura', 'teatro', 'música', 'cine'] },
-  teatro: { tema: 'teatro', noticias: ['teatro'] },
-  musica: { tema: 'musica', noticias: ['música'] },
-  cine: { tema: 'cine', noticias: ['cine'] },
-  danza: { tema: 'danza', noticias: ['danza'] },
-  exposiciones: { tema: 'exposiciones', noticias: ['exposición'] },
-  literatura: { tema: 'literatura', noticias: ['literatura'] },
-  patrimonio: { tema: 'patrimonio', noticias: ['patrimonio'] },
+  tenis: { tema: 'tenis' },
+  baloncesto: { tema: 'baloncesto' },
+  automovilismo: { tema: 'automovilismo' },
+  atletismo: { tema: 'atletismo' },
+  deportes: { tema: 'deportes' },
+  cultura: { tema: 'cultura' },
+  teatro: { tema: 'teatro' },
+  musica: { tema: 'musica' },
+  cine: { tema: 'cine' },
+  danza: { tema: 'danza' },
+  exposiciones: { tema: 'exposiciones' },
+  literatura: { tema: 'literatura' },
+  patrimonio: { tema: 'patrimonio' },
+  'artes-visuales': { tema: 'artes-visuales' },
+  circo: { tema: 'circo' },
+  magia: { tema: 'magia' },
+  'cultura-popular': { tema: 'cultura-popular' },
+  'medio-ambiente': { tema: 'medio-ambiente' },
+  gastronomia: { tema: 'gastronomia' },
+  tecnologia: { tema: 'tecnologia' },
   atp: { codigo: 'atp', noticias: ['ATP'] },
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
@@ -52,8 +63,11 @@ export function leerConsultaCalendario(raw){
       }
     } else resto.push(tk.raw);
   }
+  // Noticias solo si cada prefijo las admite: un titular no cumple media consulta.
+  const conNoticias = [...ambitos, ...circuitos].every(a => AMBITOS[a].noticias);
+  if (tipos.has('noticias') && !conNoticias) desconocidos.push(raw);
   return activa ? { ambitos: [...ambitos], circuitos: [...circuitos], tipos: [...tipos],
-    desconocidos, resto: resto.join(' '), noticias: !tipos.size || tipos.has('noticias') } : null;
+    desconocidos, resto: resto.join(' '), noticias: (!tipos.size || tipos.has('noticias')) && conNoticias } : null;
 }
 
 export function temasDescendientes(catalogo, seleccion){
