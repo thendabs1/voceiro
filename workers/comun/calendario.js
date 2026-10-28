@@ -31,7 +31,7 @@ export function predicadosTexto(texto, columna, args) {
 export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
-    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'pendientes', 'resultados', 'revision', 'tipo']);
+    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'precio', 'pendientes', 'resultados', 'revision', 'tipo']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
   }
@@ -62,9 +62,12 @@ export function normalizarConsulta(url) {
     temas: lista(p.get('temas')), circuitos: lista(p.get('circuitos')),
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', etiqueta: p.get('etiqueta') || '',
+    formatos: lista(p.get('formatos')), precio: p.get('precio') || '',
     tipos: lista(p.get('tipo')),
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
-  if ([c.temas, c.circuitos, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
+  if ([c.temas, c.circuitos, c.formatos, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
+  // «gratis» no incluye «mixto»: el filtro no promete lo que solo vale para una tarifa.
+  if (c.precio && !['gratis', 'pago', 'mixto'].includes(c.precio)) throw error(400, 'Precio desconocido');
   if (c.tipos.some(t => !['evento', 'actividad', 'agrupacion', 'participante', 'lugar', 'territorio'].includes(t))) throw error(400, 'Tipo desconocido');
   return c;
 }
@@ -82,6 +85,8 @@ export function filtrosSql(c, meta, args) {
   faceta('fuente', c.fuente ? [c.fuente] : []);
   faceta('territorio', c.territorio ? [c.territorio] : []);
   faceta('etiqueta', c.etiqueta ? [c.etiqueta] : []);
+  faceta('formato', c.formatos);
+  faceta('precio', c.precio ? [c.precio] : []);
   if (c.orden.ambitos?.length) {
     const porAmbito = [];
     for (const ambito of c.orden.ambitos) {

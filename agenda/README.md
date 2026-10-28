@@ -170,6 +170,9 @@ Contrato común para las fuentes culturales:
 - **Etiquetas** (ciclos, festivales): bloque observado
   `etiquetas: [{id, nombres}]` con clave estable del proveedor, sin jerarquía
   ni expansión de objetivos. Faceta y filtro `etiqueta=`.
+- **Formato y precio** (del [clasificador](clasificacion.md)): facetas y
+  filtros `formatos=` (lista, basta uno) y `precio=gratis|pago|mixto`; «gratis»
+  no incluye las citas mixtas. Sin valor, la cita no sale al filtrar.
 - **Identificadores externos** (Wikidata, TMDB, ISBN…): irán como bloque
   observado de la obra o la persona, `{sistema, tipo, id}` con procedencia,
   porque son asociaciones corregibles; una referencia del núcleo significa
