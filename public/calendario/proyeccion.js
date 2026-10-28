@@ -1,6 +1,6 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=66d5fae6c9';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js?v=66d5fae6c9';
+import { palabrasDe } from '../busqueda/texto.js?v=00e8e92404';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js?v=00e8e92404';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -52,6 +52,9 @@ export function prepararLectura(datos) {
     agregar('territorio', (e.territorios || []).filter(t => t.papel === 'celebracion')
       .flatMap(t => [t.territorio, ...t.ancestros]));
     agregar('etiqueta', (e.etiquetas || []).map(t => t.id));
+    // Filtros del calendario (clasificador.py); el público es dato, no faceta.
+    agregar('formato', e.formatos || []);
+    agregar('precio', e.precio ? [e.precio] : []);
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
     const porZona = ZONAS.map(zona => {
