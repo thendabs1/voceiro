@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from agenda import almacen, almacen_nucleo, kulturklik, madrid, nucleo, presencia, recogida, tiempos
+from agenda import almacen, almacen_nucleo, cyl, kulturklik, madrid, nucleo, presencia, recogida, tiempos, zaragoza
 from agenda.publicacion import proyectar
 from agenda.transicion import ampliar
 from calendario import main
@@ -26,6 +26,24 @@ def muestra(nombre):
 
 
 class AgendasCulturales(unittest.TestCase):
+    def test_bloque_de_origen_en_bruto_para_clasificar(self):
+        # Público y precio en bruto, con su evidencia en el fragmento; sin interpretar.
+        esperados = {madrid: {'GRATUITO', 'AUDIENCIA'}, cyl: {'precio', 'destinatarios'},
+                     kulturklik: {'priceEs', 'priceEu', 'language'},
+                     zaragoza: {'category', 'population'}}
+        for lector, campos in esperados.items():
+            n = lector.importar(None, muestra(lector.FUENTE), AHORA)
+            vistos = set()
+            for o in n['observaciones'].values():
+                origen = o['bloques'].get('origen')
+                if origen is None:
+                    continue
+                vistos |= origen.keys()
+                contenido = json.dumps(n['documentos'][o['documento']]['contenido'], ensure_ascii=False)
+                for v in origen.values():
+                    self.assertIn(json.dumps(v, ensure_ascii=False).strip('"'), contenido)
+            self.assertEqual(vistos, campos, lector.FUENTE)
+
     def test_madrid_identidad_recinto_y_funciones_sin_expansion(self):
         filas = muestra('madrid')
         n = madrid.importar(None, filas, AHORA)

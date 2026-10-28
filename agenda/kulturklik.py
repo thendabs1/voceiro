@@ -12,6 +12,8 @@ FAMILIA, URL_RECOGIDA = 'euskadi', URL + '/upcoming'
 CAMPO_ID, TIPO_EXTERNO = 'id', 'event_id'
 FECHAS = ('startDate', 'endDate')
 TEMAS = {1: 'musica', 2: 'teatro', 3: 'exposiciones', 4: 'danza', 9: 'cine'}
+# Campos en bruto para clasificar al publicar (precio, idioma y modalidad).
+ORIGEN = ('priceEs', 'priceEu', 'language', 'online')
 
 
 def nombres(fila, campo):
@@ -55,7 +57,7 @@ def importar(anterior, filas, observado, url=URL):
                   'openingHoursEs', 'openingHoursEu', 'sourceUrlEs', 'sourceUrlEu',
                   'municipalityEs', 'municipalityEu', 'municipalityNoraCode', 'provinceNoraCode',
                   'municipalityLatitude', 'municipalityLongitude',
-                  'establishmentEs', 'establishmentEu', 'placeEs', 'placeEu')
+                  'establishmentEs', 'establishmentEu', 'placeEs', 'placeEu', *ORIGEN)
         doc = c.documento(FUENTE, {k: fila[k] for k in campos if k in fila}, url, 'fragmento_evento_api')
         evento, evidencia = c.entidad(FUENTE, 'event_id', identidad, {}, 'evento', 'desconocida',
             nombres(fila, 'name'), doc, '/', observado,
@@ -63,7 +65,8 @@ def importar(anterior, filas, observado, url=URL):
                      'lugar': {'nombre': establecimientos.get('es') or next(iter(establecimientos.values()), None),
                                'municipio_literal': municipios.get('es') or next(iter(municipios.values()), None)},
                      'url_evento': fila.get('sourceUrlEs') or fila.get('sourceUrlEu'),
-                     'tipo_original': {'id': fila.get('type'), 'nombres': nombres(fila, 'type')}})
+                     'tipo_original': {'id': fila.get('type'), 'nombres': nombres(fila, 'type')},
+                     'origen': {k: fila[k] for k in ORIGEN if fila.get(k) not in (None, '')}})
         municipio = fila.get('municipalityNoraCode')
         provincia = fila.get('provinceNoraCode')
         if municipio and provincia and municipios:

@@ -32,7 +32,10 @@ CATEGORIAS = {'Conciertos': 'musica', 'Exposiciones': 'exposiciones'}
 # «19:30», «19:30 h.», «9:00h.», «19.30 horas»; el resto queda como texto.
 HORA = re.compile(r'\s*(\d{1,2})[:.](\d{2})\s*(?:h\.?|horas)?\s*')
 EVIDENCIA = ('id_evento', 'titulo', 'categoria', 'tematica', 'fecha_inicio', 'fecha_fin',
-             'hora_inicio', 'hora_fin', 'enlace_contenido', 'id_localidad', 'lugar_celebracion')
+             'hora_inicio', 'hora_fin', 'enlace_contenido', 'id_localidad', 'lugar_celebracion',
+             'precio', 'destinatarios')
+# Campos en bruto para clasificar al publicar (precio y público).
+ORIGEN = ('precio', 'destinatarios')
 RECINTO = ('id_localidad', 'lugar_celebracion', 'calle', 'cp', 'nombre_localidad',
            'codigo_provincia', 'latitud', 'longitud')
 
@@ -124,7 +127,8 @@ def importar(anterior, filas, observado, url=URL):
                          'lugar': {'nombre': fila.get('lugar_celebracion'), 'direccion': fila.get('calle'),
                                    'municipio_literal': fila.get('nombre_localidad')},
                          'url_evento': fila.get('enlace_contenido'),
-                         'tipo_original': {'categoria': fila.get('categoria'), 'tematica': fila.get('tematica')}})
+                         'tipo_original': {'categoria': fila.get('categoria'), 'tematica': fila.get('tematica')},
+                         'origen': {k: fila[k] for k in ORIGEN if fila.get(k) not in (None, '')}})
             # Sin correspondencia queda sin tema, como Galicia: `cultura` no es «desconocido»
             # y una correspondencia posterior se añade, no sustituye a esta.
             tema = TEMAS.get(fila.get('tematica')) or CATEGORIAS.get(fila.get('categoria'))
