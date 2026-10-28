@@ -55,7 +55,7 @@ def operar_nucleo(args):
             raise ValueError('Falló una selección deportiva; se conserva su última lectura válida')
 
     modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.entrada_deporte
-                     or args.recoger_cultura or any(getattr(args, 'entrada_' + f) for f in CULTURA))
+                     or args.recoger_cultura or any(getattr(args, 'entrada_' + f.replace('-', '_')) for f in CULTURA))
     observado = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='microseconds')
 
     def preparar(anterior):
@@ -78,7 +78,7 @@ def operar_nucleo(args):
                 json.loads(Path(ruta).read_text(encoding='utf-8')), observado, temporada=args.temporada_deporte)
         from agenda import presencia, recogida
         for fuente, modulo in CULTURA.items():
-            for ruta in getattr(args, 'entrada_' + fuente) or []:
+            for ruta in getattr(args, 'entrada_' + fuente.replace('-', '_')) or []:
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'],
                     json.loads(Path(ruta).read_text(encoding='utf-8')), observado)
             if fuente in (args.recoger_cultura or []):
@@ -86,12 +86,13 @@ def operar_nucleo(args):
                              if r['proveedor'] == fuente and r['tipo_externo'] == modulo.TIPO_EXTERNO}
                 filas, url, ids = recogida.cultura(fuente, args.inicio, args.fin, conocidos)
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'], filas, observado, url)
-                try:
-                    calendario['nucleo'] = presencia.registrar(calendario['nucleo'], fuente, ids, observado, url,
-                        aceptar_caida=fuente in (args.aceptar_inventario or []))
-                except presencia.InventarioDesplomado as aviso:
-                    # Los contenidos sí se actualizan; solo no se acreditan ausencias.
-                    print(f'::warning::{aviso}. Repetir con --aceptar-inventario {fuente} si es real.')
+                if ids is not None:
+                    try:
+                        calendario['nucleo'] = presencia.registrar(calendario['nucleo'], fuente, ids, observado, url,
+                            aceptar_caida=fuente in (args.aceptar_inventario or []))
+                    except presencia.InventarioDesplomado as aviso:
+                        # Los contenidos sí se actualizan; solo no se acreditan ausencias.
+                        print(f'::warning::{aviso}. Repetir con --aceptar-inventario {fuente} si es real.')
         return calendario
 
     if args.turso:
@@ -136,7 +137,8 @@ def main(argv=None):
         ap.add_argument(f'--entrada-{fuente}', action='append', help=f'Lista de eventos {fuente} guardada, sin red')
     ap.add_argument('--recoger-cultura', action='append', choices=tuple(CULTURA),
                     help='Recogida cultural completa paginada en el núcleo; repetible')
-    ap.add_argument('--aceptar-inventario', action='append', choices=tuple(CULTURA),
+    ap.add_argument('--aceptar-inventario', action='append',
+                    choices=tuple(f for f, m in CULTURA.items() if getattr(m, 'INVENTARIO_COMPLETO', True)),
                     help='Acreditar ausencias aunque el inventario caiga más del 30 %%; repetible')
     ap.add_argument('--circuito', choices=('atp', 'wta'), help='Circuito de --entrada-tenis')
     ap.add_argument('--recoger-deporte', action='append', choices=(*deportes.COLECCIONES, 'feb'),
@@ -167,7 +169,7 @@ def main(argv=None):
         ap.error('--aceptar-inventario requiere recoger esa fuente con --recoger-cultura')
     operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb,
                            args.entrada_tenis, args.entrada_deporte, args.recoger_deporte, args.recoger_cultura,
-                           *(getattr(args, 'entrada_' + f) for f in CULTURA)))
+                           *(getattr(args, 'entrada_' + f.replace('-', '_')) for f in CULTURA)))
     for entrada in args.entrada_deporte or []:
         coleccion, separador, ruta = entrada.partition('=')
         if not separador or not ruta or coleccion not in deportes.COLECCIONES:

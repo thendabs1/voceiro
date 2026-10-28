@@ -63,6 +63,8 @@ def integrar(anterior, registros, fuentes, observado, consultas=()):
     vistos = set()
     for registro in registros:
         fuente = registro['fuente']
+        if calendario.get('nucleo', {}).get('fuentes', {}).get(fuente, {}).get('ingesta') == 'nucleo':
+            raise ValueError(f'{fuente} ya usa el núcleo; recoger con --recoger-cultura {fuente}')
         if fuente not in calendario['fuentes']:
             raise ValueError(f'Fuente sin definir: {fuente}')
         ref = clave(fuente, registro['id_externo'])

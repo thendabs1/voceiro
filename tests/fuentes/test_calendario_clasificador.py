@@ -18,7 +18,7 @@ def madrid(tipo, gratuito=None, audiencia=None, precio=None):
 
 class Tablas(unittest.TestCase):
     def test_todas_validan_contra_el_catalogo(self):
-        self.assertEqual(set(clasificador.cargar()), {'madrid', 'cyl', 'kulturklik', 'zaragoza'})
+        self.assertEqual(set(clasificador.cargar()), {'cultura-galicia', 'madrid', 'cyl', 'kulturklik', 'zaragoza'})
 
     def test_un_tema_fuera_del_catalogo_es_un_error(self):
         tabla = deepcopy(clasificador.cargar()['madrid'])

@@ -21,6 +21,7 @@ FORMATOS = {'concierto', 'representacion', 'proyeccion', 'exposicion', 'curso-ta
             'practica-deportiva'}
 PRECIOS = ('gratis', 'pago', 'mixto')
 PUBLICOS = {'infancia', 'juventud', 'familias', 'mayores'}
+ACCESOS = {'libre', 'con-inscripcion'}
 # Patrones acotados al campo de precio (clasificacion.md: «patrones en campos concretos»).
 GRATIS = re.compile(r'\bgrat|\bdoa|\bdohain|\blibre\b|\binvitaci', re.I)
 IMPORTE = re.compile(r'(\d+(?:[.,]\d+)?)\s*(?:€|eur)', re.I)
@@ -58,8 +59,16 @@ def _zaragoza(b):
             'population': [str(p['id']) for p in origen.get('population') or [] if p.get('id') is not None]}
 
 
+def _galicia(b):
+    tipo, origen = b.get('tipo_original') or {}, b.get('origen') or {}
+    return {'tipoEvento': [str(tipo['tid'])] if tipo.get('tid') is not None else [],
+            **{k: [str(v['tid']) for v in origen.get(k) or [] if v.get('tid') is not None]
+               for k in ('tipoPublico', 'tipoEntrada')}}
+
+
 # Cómo leer los campos de cada fuente desde los bloques de una observación.
-CAMPOS = {'madrid': _madrid, 'cyl': _cyl, 'kulturklik': _kulturklik, 'zaragoza': _zaragoza}
+CAMPOS = {'madrid': _madrid, 'cyl': _cyl, 'kulturklik': _kulturklik, 'zaragoza': _zaragoza,
+          'cultura-galicia': _galicia}
 
 
 def validar(tabla, conceptos):
@@ -81,6 +90,9 @@ def validar(tabla, conceptos):
     publico = tabla.get('publico')
     if publico and set(publico['valores'].values()) - PUBLICOS:
         raise ValueError(f'Público inválido en {tabla["fuente"]}')
+    acceso = tabla.get('acceso')
+    if acceso and set(acceso['valores'].values()) - ACCESOS:
+        raise ValueError(f'Acceso inválido en {tabla["fuente"]}')
     return tabla
 
 
@@ -125,7 +137,7 @@ def clasificar(fuente, bloques):
     """Ejes de un evento a partir de los bloques de sus observaciones vigentes."""
     tabla = cargar()[fuente]
     conceptos = cargar_catalogo()['conceptos']
-    temas, formatos, publico, precios, sin_revisar = set(), set(), set(), set(), set()
+    temas, formatos, publico, precios, sin_revisar, accesos = set(), set(), set(), set(), set(), set()
     for b in bloques:
         campos = CAMPOS[fuente](b)
         for campo, datos in tabla['campos'].items():
@@ -147,6 +159,9 @@ def clasificar(fuente, bloques):
         if tabla.get('publico'):
             publico.update(tabla['publico']['valores'][v] for v in campos.get(tabla['publico']['campo'], ())
                            if v in tabla['publico']['valores'])
+        if tabla.get('acceso'):
+            accesos.update(tabla['acceso']['valores'][v] for v in campos.get(tabla['acceso']['campo'], ())
+                           if v in tabla['acceso']['valores'])
     for c in tabla.get('combinaciones', ()):
         if c['si_tema'] in temas and c['sustituye'] in formatos:
             formatos = (formatos - {c['sustituye']}) | {c['formato']}
@@ -160,7 +175,7 @@ def clasificar(fuente, bloques):
             pendientes.extend(conceptos[p]['padres'])
     return {'temas': sorted(temas - antecesores), 'formatos': sorted(formatos),
             'precio': precios.pop() if len(precios) == 1 else 'mixto' if precios else None,
-            'publico': sorted(publico), 'sin_revisar': sorted(sin_revisar)}
+            'publico': sorted(publico), 'sin_revisar': sorted(sin_revisar), 'acceso': sorted(accesos)}
 
 
 def informe(resultados):

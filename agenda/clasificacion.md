@@ -1,11 +1,11 @@
 # Clasificación de citas
 
 Modelo común para todas las fuentes de agenda. Diseño cerrado el 27/10/2026 y
-revisado con datos el 28/10/2026. **Implementado en Madrid, CyL, Kulturklik y
+revisado con datos el 28/10/2026. **Implementado en Galicia, Madrid, CyL, Kulturklik y
 Zaragoza** ([clasificador.py](clasificador.py) con las tablas de
 [tablas/](tablas/)): los lectores guardan el vocabulario en bruto y la
-clasificación se decide al publicar. Galicia sigue con el piloto
-([clasificacion.py](clasificacion.py)) hasta su reconstrucción. Las fases y lo
+clasificación se decide al publicar. Galicia se recoge solo en gallego,
+directamente al núcleo, manteniendo sus referencias del piloto. Las fases y lo
 pendiente de revisar están al final.
 
 ## Para qué sirve
@@ -69,7 +69,7 @@ Fotografía se reduce a `artes-visuales`; narración oral y bertsolarismo a
 | Eje | Valores | Notas |
 | --- | --- | --- |
 | Formato (varios si coexisten) | concierto, representacion, proyeccion, exposicion, curso-taller, charla-encuentro, lectura-club, festival, feria-mercado, fiesta, visita-ruta, competicion-deportiva, practica-deportiva | Una categoría que enumera alternativas («exhibición, proyección, competición») no asigna las tres. Festival no crea funciones. Concurso, entrega de premios, ceremonia, juego, campamento, degustación: etiquetas |
-| Público (varios) | infancia, juventud, familias, mayores | **Solo dato, sin filtro** (decisión 28/10): lo declara el 12 % de las citas y Kulturklik y Galicia nada; un filtro «con niños» escondería la mayoría. Se publica en el evento y se reabre si llegan fuentes que lo publiquen. Destinatarios declarados, no deducidos |
+| Público (varios) | infancia, juventud, familias, mayores | **Solo dato, sin filtro** (decisión 28/10): cobertura desigual; un filtro «con niños» escondería muchas citas. Galicia sí lo ofrece al solicitar `tipoPublico` (160/209 en la revisión); el piloto no lo pedía. Destinatarios declarados, no deducidos |
 | Precio | gratis, pago | En los datos también `mixto` y `desconocido`; desconocido no es gratis |
 | Acceso | libre, con-inscripcion | Inscripción no implica pago. Invitación, cupo y reserva se guardan |
 | Modalidad | presencial, en-linea | Híbrida y desconocida se guardan |
@@ -173,10 +173,14 @@ clasificar: tema 80 % (CyL), 78 % (Kulturklik), 63 % (Madrid) y 65 %
 
 Notas que dejó la implementación; las de cada valor están en su tabla (`nota`).
 
-1. **Galicia:** su tabla va con la reconstrucción. Propuesto: «Espectáculo» →
-   `cultura` + representación; «Proxección audiovisual» → proyección sin tema;
-   «Festa de interese turístico» → fiesta sin tema. Después, retirar el
-   prefijo `exposiciones:`, que solo usa Galicia.
+1. **Galicia (resuelto):** tabla con los 35 tipos del catálogo oficial gallego,
+   público y entrada. «Espectáculo» → `cultura` + representación;
+   «Proxección audiovisual» → proyección sin tema; «Festa de interese turístico»
+   → fiesta sin tema. «Divulgación» es hija de exposición, no acredita ciencia.
+   Se retira el prefijo `exposiciones:`; el ID antiguo se conserva en el catálogo.
+   La recogida castellana queda aplazada: el 28/10 declaró 202 resultados pero
+   devolvió 200 incluso paginando; cuatro traducciones diferían en horario y
+   había un enlace ambiguo. No se relaja la comprobación de integridad.
 2. **Política de publicación (aplazada):** culto, actos partidistas y
    formación restringida aún se publican. Madrid solo trae 2 «ActosReligiosos»,
    y uno es patrimonio; la regla de no publicar se hará cuando una fuente

@@ -20,7 +20,7 @@ Reglas comunes:
 
 | Fuente | Ámbito | Acceso | Condiciones | Notas |
 | --- | --- | --- | --- | --- |
-| [Cultura de Galicia](https://abertos.xunta.gal/catalogo/cultura-ocio-deporte/-/dataset/0045/axenda-cultura-galicia) | Cultura, Galicia | JSON público, sin clave | CC BY-SA 4.0 | `concello` trae INE de seis cifras con control. Traducciones como celebraciones distintas enlazadas. |
+| [Cultura de Galicia](https://abertos.xunta.gal/catalogo/cultura-ocio-deporte/-/dataset/0045/axenda-cultura-galicia) | Cultura, Galicia | JSON público, sin clave; solo gallego | CC BY-SA 4.0 | `concello` trae INE de seis cifras con control. `tipoPublico` y `tipoEntrada` se solicitan expresamente. Los alias de traducción se conservan, sin recoger castellano ni acreditar ausencias fuera de la ventana. |
 | [Madrid](https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos) | Cultura, Madrid | CKAN, sin clave | CC BY 4.0 | Intervalos con días de semana y exclusiones; recintos por `vgnextoid`. |
 | [Kulturklik](https://opendata.euskadi.eus/api-culture/?api=culture_events) | Cultura, Euskadi | API REST, sin clave | CC BY 4.0 | Fechas de día y horario en texto; código municipal propio. |
 | [Zaragoza](https://www.zaragoza.es/web/espacio-de-datos/servicio/catalogo/282) | Cultura y actividades municipales | REST JSON, `rows` ≤ 500 por `id asc` | Atribución al Ayuntamiento | Obra `id` con funciones en `subEvent`; recinto con ID. Mezcla formación, empleo y deporte. |

@@ -95,6 +95,10 @@ def cultura(fuente, inicio=None, fin=None, conocidos=()):
     hasta = date.fromisoformat(fin) if fin else desde + timedelta(days=30)
     if not 0 <= (hasta - desde).days <= 90:
         raise ValueError('La ventana cultural debe cubrir entre 1 y 91 días')
+    if hasattr(m, 'recoger_ventana'):
+        filas = m.recoger_ventana(desde.isoformat(), hasta.isoformat(), descargar)
+        print(f'[agenda] {fuente}: {len(filas)} registros en {desde} → {hasta}; sin inventario global')
+        return filas, m.URL_RECOGIDA, None
     filas, ids = recorrer(descargar, m.URL_RECOGIDA, m.CAMPO_ID, FAMILIAS[m.FAMILIA])
     if hasattr(m, 'inventario'):
         ids = m.inventario(filas)
