@@ -377,16 +377,19 @@ def main(argv=None):
         guardar(args.salida, datos)
     if args.lectura_sql:
         from turso_http import filas
-        from .lectura import estado, huellas, preparar, planificar
+        from .lectura import cambios, estado, huellas, preparar, planificar
         preparada = preparar(datos)
         previo = estado(lambda s: [filas(r) for r in remoto.cliente.transaccion(s, escritura=False)])
         remoto.cliente.transaccion(planificar(preparada, remoto.revision, previo))
-        # Cuántos eventos y entidades se reescriben: separa cambios reales de amplificación.
+        # Cuántos eventos y entidades se reescriben, y qué parte: separa cambios reales de amplificación.
         nuevas, viejas = huellas(preparada)[0], (previo or {}).get('huellas', {})
-        cambiadas = [k for k, h in nuevas.items() if viejas.get(k) != h]
+        cambiadas = cambios(preparada, previo)
+        partes = ', '.join(f'{c} {sum(c in v for (t, _), v in cambiadas.items() if t == "evento")}'
+                           for c in ('fila', 'facetas', 'tramos'))
         print(f'[agenda] Lectura SQL {"diferencial" if previo else "completa"}: {len(preparada["tramos"])} tramos; '
-              f'{sum(t == "evento" for t, _ in cambiadas)} eventos y {sum(t == "entidad" for t, _ in cambiadas)} '
-              f'entidades reescritos, {len(viejas.keys() - nuevas.keys())} retirados; '
+              f'{sum(t == "evento" for t, _ in cambiadas)} eventos ({partes}) y '
+              f'{sum(t == "entidad" for t, _ in cambiadas)} entidades reescritos, '
+              f'{len(viejas.keys() - nuevas.keys())} retirados; '
               f'{remoto.cliente.leidas - leidas} filas leídas, {remoto.cliente.escritas - escritas} escritas')
     if args.publicar:
         subir(datos)

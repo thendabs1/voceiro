@@ -23,17 +23,49 @@ def _huella(dato):
                                      separators=(',', ':')).encode()).hexdigest()
 
 
+COMPONENTES = ('fila', 'facetas', 'tramos')
+
+
 def huellas(preparada):
-    """Huella de cada evento (con sus facetas y tramos) y de cada entidad."""
+    """Huella de cada evento por componente (fila, facetas, tramos) y de cada entidad.
+
+    La de un evento se guarda como JSON con una huella por componente: si solo
+    cambian sus facetas no se reescriben su fila ni sus tramos.
+    """
     facetas, tramos = defaultdict(list), defaultdict(list)
     for f in preparada['facetas']:
         facetas[f[0]].append(f)
     for t in preparada['tramos']:
         tramos[t[3]].append(t)
-    resultado = {('evento', e[0]): _huella([e, sorted(facetas[e[0]]), sorted(tramos[e[0]])])
+    resultado = {('evento', e[0]): json.dumps({'fila': _huella(e), 'facetas': _huella(sorted(facetas[e[0]])),
+                                               'tramos': _huella(sorted(tramos[e[0]]))}, sort_keys=True)
                  for e in preparada['eventos']}
     resultado.update({('entidad', e[0]): _huella(e) for e in preparada['entidades']})
     return resultado, facetas, tramos
+
+
+def cambios(preparada, previo=None):
+    """{(tipo, id): componentes que hay que reescribir}; vacío si nada cambió.
+
+    Las huellas guardadas antes de separar componentes (un solo hash del evento)
+    siguen valiendo: si el contenido es el mismo, no se reescribe nada.
+    """
+    nuevas, facetas, tramos = huellas(preparada)
+    guardadas = (previo or {}).get('huellas', {})
+    filas = {e[0]: e for e in preparada['eventos']}
+    salida = {}
+    for (tipo, i), h in nuevas.items():
+        vieja = guardadas.get((tipo, i))
+        if vieja == h:
+            continue
+        if tipo == 'entidad' or vieja is None:
+            salida[(tipo, i)] = set(COMPONENTES) if tipo == 'evento' else {'fila'}
+        elif vieja.startswith('{'):
+            antes, ahora = json.loads(vieja), json.loads(h)
+            salida[(tipo, i)] = {c for c in COMPONENTES if antes.get(c) != ahora[c]}
+        elif vieja != _huella([filas[i], sorted(facetas[i]), sorted(tramos[i])]):
+            salida[(tipo, i)] = set(COMPONENTES)
+    return salida
 
 
 def estado(consultar):
@@ -78,7 +110,7 @@ def planificar(preparada, revision, previo=None):
         (identificador, revision, '{}', VERSION_ESQUEMA, revision)))
     nuevas, facetas, tramos = huellas(preparada)
     if previo is None:
-        cambiadas, retiradas = set(nuevas), set()
+        cambiadas, retiradas = {k: set(COMPONENTES) for k in nuevas}, set()
         for tabla in ('facetas', 'tramos', 'eventos', 'entidades', 'huellas'):
             pasos.append((f'DELETE FROM agenda_lectura_{tabla}', ()))
     else:
@@ -86,23 +118,29 @@ def planificar(preparada, revision, previo=None):
         pasos.append(('INSERT INTO agenda_lectura_control SELECT 1, -1, ?, ?, ? WHERE NOT EXISTS '
                       '(SELECT 1 FROM agenda_lectura_control WHERE id=1 AND revision=?)',
                       (identificador, revision, '{}', previo['revision'])))
-        cambiadas = {k for k, h in nuevas.items() if previo['huellas'].get(k) != h}
+        cambiadas = cambios(preparada, previo)
         retiradas = previo['huellas'].keys() - nuevas.keys()
-        for tipo, i in sorted(cambiadas | retiradas):
-            if tipo == 'evento':
+        for tipo, i in sorted(cambiadas.keys() | retiradas):
+            if tipo != 'evento':
+                continue
+            componentes = cambiadas.get((tipo, i), set(COMPONENTES))
+            if 'facetas' in componentes:
                 pasos.append(('DELETE FROM agenda_lectura_facetas WHERE evento=?', (i,)))
+            if 'tramos' in componentes:
                 pasos.append(('DELETE FROM agenda_lectura_tramos WHERE evento=?', (i,)))
         for tipo, i in sorted(retiradas):
             pasos.append((f'DELETE FROM agenda_lectura_{TABLAS[tipo]} WHERE id=?', (i,)))
             pasos.append(('DELETE FROM agenda_lectura_huellas WHERE tipo=? AND id=?', (tipo, i)))
     for e in preparada['eventos']:
-        if ('evento', e[0]) not in cambiadas:
-            continue
-        pasos.append(('INSERT INTO agenda_lectura_eventos VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
-                      'texto=excluded.texto, resultado=excluded.resultado, '
-                      'tarjeta_json=excluded.tarjeta_json, detalle_json=excluded.detalle_json', tuple(e)))
-        pasos.extend(('INSERT INTO agenda_lectura_facetas VALUES (?,?,?)', tuple(f)) for f in facetas[e[0]])
-        pasos.extend(('INSERT INTO agenda_lectura_tramos VALUES (?,?,?,?)', tuple(t)) for t in tramos[e[0]])
+        componentes = cambiadas.get(('evento', e[0]), set())
+        if 'fila' in componentes:
+            pasos.append(('INSERT INTO agenda_lectura_eventos VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
+                          'texto=excluded.texto, resultado=excluded.resultado, '
+                          'tarjeta_json=excluded.tarjeta_json, detalle_json=excluded.detalle_json', tuple(e)))
+        if 'facetas' in componentes:
+            pasos.extend(('INSERT INTO agenda_lectura_facetas VALUES (?,?,?)', tuple(f)) for f in facetas[e[0]])
+        if 'tramos' in componentes:
+            pasos.extend(('INSERT INTO agenda_lectura_tramos VALUES (?,?,?,?)', tuple(t)) for t in tramos[e[0]])
     for e in preparada['entidades']:
         if ('entidad', e[0]) in cambiadas:
             pasos.append(('INSERT INTO agenda_lectura_entidades VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
