@@ -102,6 +102,12 @@ def importar(anterior, filas, observado, url=URL):
         tema = next((TEMAS[k['id']] for k in categorias if k['id'] in TEMAS), 'cultura')
         base = {k: obra[k] for k in ('id', 'title', 'startDate', 'endDate', 'type', 'url', 'lastUpdated')
                 if k in obra}
+        # Campos en bruto para clasificar al publicar; de cada tarifa, solo grupo e importe.
+        origen = {'category': categorias,
+                  'population': [{'id': p.get('id'), 'title': p.get('title')} for p in obra.get('population') or []],
+                  'price': [{'fareGroup': p.get('fareGroup'), 'hasCurrencyValue': p.get('hasCurrencyValue')}
+                            for p in obra.get('price') or []]}
+        origen = {k: v for k, v in origen.items() if v}
         actividad = None
         for funcion in funciones:
             fid = str(funcion.get('id') or '')
@@ -114,7 +120,7 @@ def importar(anterior, filas, observado, url=URL):
                        if k in lugar}
             # Solo los campos que usa el calendario: descripción, imágenes o
             # accesibilidad crearían evidencia nueva sin cambio de cita.
-            doc = c.documento(FUENTE, {**base, 'category': categorias, 'subEvent': {
+            doc = c.documento(FUENTE, {**base, **origen, 'subEvent': {
                 **{k: funcion[k] for k in ('id', 'startDate', 'endDate', 'openingHours') if k in funcion},
                 'location': recinto}}, url, 'fragmento_evento_api')
             evento, evidencia = c.entidad(FUENTE, TIPO_EXTERNO, fid, {}, 'evento', 'desconocida',
@@ -123,7 +129,7 @@ def importar(anterior, filas, observado, url=URL):
                          'lugar': {'nombre': recinto.get('title'), 'direccion': recinto.get('streetAddress'),
                                    'municipio_literal': recinto.get('addressLocality')},
                          'url_evento': obra.get('url'), 'tipo_original': obra.get('type'),
-                         'actualizado_origen': obra.get('lastUpdated')})
+                         'actualizado_origen': obra.get('lastUpdated'), 'origen': origen})
             c.tema(evento, tema, evidencia, 'zaragoza:category:revisado-v1')
             if len(funciones) > 1:
                 if actividad is None:

@@ -27,7 +27,11 @@ TEMAS = {'TeatroPerformance': 'teatro', 'Musica': 'musica', 'DanzaBaile': 'danza
 CAMPOS = ('ID-EVENTO', 'TITULO', 'FECHA', 'FECHA-FIN', 'HORA', 'LARGA-DURACION', 'DIAS-SEMANA',
           'DIAS-EXCLUIDOS', 'CONTENT-URL', 'TITULO-ACTIVIDAD', 'URL-ACTIVIDAD', 'URL-INSTALACION',
           'NOMBRE-INSTALACION', 'CLASE-VIAL-INSTALACION', 'NOMBRE-VIA-INSTALACION', 'NUM-INSTALACION',
-          'DISTRITO-INSTALACION', 'BARRIO-INSTALACION', 'CODIGO-POSTAL-INSTALACION', 'LATITUD', 'LONGITUD', 'TIPO')
+          'DISTRITO-INSTALACION', 'BARRIO-INSTALACION', 'CODIGO-POSTAL-INSTALACION', 'LATITUD', 'LONGITUD', 'TIPO',
+          'GRATUITO', 'AUDIENCIA')
+# Campos en bruto para clasificar al publicar (precio y público). PRECIO es texto libre
+# largo y GRATUITO ya dice lo filtrable.
+ORIGEN = ('GRATUITO', 'AUDIENCIA')
 DIAS = {'L': 0, 'M': 1, 'X': 2, 'J': 3, 'V': 4, 'S': 5, 'D': 6}
 
 
@@ -126,7 +130,7 @@ def importar(anterior, filas, observado, url=URL):
             continue
         vistos[identidad] = fila
         # Solo los campos que usa el calendario y la ubicación para el territorio:
-        # `_id` (fila CKAN), descripción o precio crearían evidencia sin cambio de cita.
+        # `_id` (fila CKAN), descripción o el texto del precio crearían evidencia sin cambio de cita.
         doc = c.documento(FUENTE, {k: fila[k] for k in CAMPOS if k in fila}, url, 'fragmento_registro_ckan')
         lugar = {'nombre': fila.get('NOMBRE-INSTALACION'), 'url': fila.get('URL-INSTALACION'),
                  'direccion': ' '.join(str(fila.get(k) or '') for k in
@@ -134,7 +138,8 @@ def importar(anterior, filas, observado, url=URL):
         evento, evidencia = c.entidad(FUENTE, 'ID-EVENTO', identidad, {}, 'evento', 'desconocida',
             {'es': fila['TITULO']}, doc, '/', observado,
             bloques={'programacion': programacion(fila), 'lugar': lugar,
-                     'url_evento': fila.get('CONTENT-URL'), 'tipo_original': fila.get('TIPO')})
+                     'url_evento': fila.get('CONTENT-URL'), 'tipo_original': fila.get('TIPO'),
+                     'origen': {k: fila[k] for k in ORIGEN if fila.get(k) not in (None, '')}})
         # Relación solo cuando existe la identidad publicada de la instalación.
         recinto = identidad_url(fila.get('URL-INSTALACION'))
         if recinto and lugar['nombre']:
