@@ -195,6 +195,38 @@ class LecturaSQL(unittest.TestCase):
         self.assertEqual(self.tablas(), self.completa(self.preparada))
         self.assertEqual(self.db.execute('PRAGMA foreign_key_check').fetchall(), [])
 
+    def test_cambiar_solo_facetas_no_reescribe_fila_ni_tramos(self):
+        self.publicar()
+        cambiada = deepcopy(self.preparada)
+        evento = cambiada['eventos'][0][0]
+        cambiada['facetas'].append([evento, 'formato', 'concierto'])
+        pasos = planificar(cambiada, 12, self.previo())
+        sqls = [sql for sql, _ in pasos]
+        self.assertFalse(any(s.startswith(('INSERT INTO agenda_lectura_eventos', 'INSERT INTO agenda_lectura_tramos',
+                                           'DELETE FROM agenda_lectura_tramos')) for s in sqls))
+        self.assertIn('DELETE FROM agenda_lectura_facetas WHERE evento=?', sqls)
+        self.publicar(cambiada, previo=self.previo())
+        self.assertEqual(self.tablas(), self.completa(cambiada))
+
+    def test_huellas_de_un_solo_hash_siguen_valiendo(self):
+        # Lectura publicada antes de separar componentes: sin cambios no se reescribe nada.
+        from agenda.lectura import _huella
+        self.publicar()
+        facetas = {e[0]: sorted(f for f in self.preparada['facetas'] if f[0] == e[0]) for e in self.preparada['eventos']}
+        tramos = {e[0]: sorted(t for t in self.preparada['tramos'] if t[3] == e[0]) for e in self.preparada['eventos']}
+        for e in self.preparada['eventos']:
+            self.db.execute("UPDATE agenda_lectura_huellas SET huella=? WHERE tipo='evento' AND id=?",
+                            (_huella([e, facetas[e[0]], tramos[e[0]]]), e[0]))
+        pasos = planificar(self.preparada, 12, self.previo())
+        self.assertEqual([sql for sql, _ in pasos if 'agenda_lectura_control' not in sql
+                          and not sql.lstrip().startswith('CREATE')], [])
+        cambiada = deepcopy(self.preparada)
+        cambiada['eventos'][0][1] += 'cambio '
+        self.publicar(cambiada, previo=self.previo())
+        self.assertEqual(self.tablas()['eventos'], self.completa(cambiada)['eventos'])
+        self.assertTrue(self.db.execute("SELECT huella FROM agenda_lectura_huellas WHERE id=?",
+                                        (cambiada['eventos'][0][0],)).fetchone()[0].startswith('{'))
+
     def test_lectura_previa_desfasada_no_modifica_nada(self):
         self.publicar()
         previo = self.previo()
