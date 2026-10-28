@@ -260,8 +260,22 @@ python calendario.py --db /tmp/agenda.sqlite \
 python -m agenda.retencion exportacion.json --ahora 2026-12-11T12:00:00Z
 ```
 
-SQLite solo sirve para pruebas y copias; Turso es la autoridad. Las claves
-(`OCBLACKTOP_API_KEY` y las de Turso) viven solo en el servidor.
+SQLite solo sirve para pruebas y copias. En producción el **núcleo** vive en el
+bucket privado `voceiro-agenda` de R2, un fichero por fuente
+(`nucleo/v1/<fuente>.json.gz` más `indice.json`, [nucleo_r2.py](nucleo_r2.py));
+Turso guarda el piloto, el control deportivo, la lectura y la revisión global.
+Se guarda primero R2 (escritura condicional por ETag, solo los ficheros
+cambiados) y luego Turso; si Turso falla, la pasada siguiente parte de R2. La
+fila `nucleo_r2` de `agenda_estado` marca la migración: desde entonces un
+`Almacen` sin `AGENDA_R2_*` se niega a cargar. Las tablas del núcleo en Turso
+quedan quietas como vuelta atrás hasta la limpieza.
+
+```bash
+# Una sola vez: copiar el núcleo de Turso a R2 y dejar la marca.
+python -m agenda.nucleo_r2 --migrar
+```
+
+Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el servidor.
 
 ## Pendiente
 

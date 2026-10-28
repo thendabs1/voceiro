@@ -58,6 +58,9 @@ def main(argv=None):
                 print('::endgroup::', flush=True)
         print(f'[agenda] Pasada: {remoto.cliente.leidas} filas leídas, '
               f'{remoto.cliente.escritas} escritas en Turso')
+        if remoto.ficheros:
+            f = remoto.ficheros
+            print(f'[agenda] R2: {f.leidos} ficheros leídos, {f.escritos} escritos, {f.bytes / 1e6:.2f} MB')
     if fallidos:
         print('[agenda] Pasos fallidos (lo guardado antes se conserva): ' + '; '.join(fallidos))
         sys.exit(1)
