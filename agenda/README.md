@@ -24,7 +24,7 @@ Las tres capas comparten el catálogo temático
 territorio común ([shared/territorios](../shared/territorios/README.md)) y el
 parser de búsqueda.
 
-## Estado (27/10/2026)
+## Estado (28/10/2026)
 
 - **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
@@ -147,7 +147,7 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
 
 | Fuente | Identidad | Particularidades |
 | --- | --- | --- |
-| Cultura de Galicia | `id` de celebración; `nid` = obra; ciclo = etiqueta | Hasta 91 días y 20 páginas de 1000 por idioma; inicio = fin no prueba un instante. CC BY-SA 4.0. |
+| Cultura de Galicia | `id` de celebración; `nid` = obra; ciclo = etiqueta | Recogida directa al núcleo, solo en gallego. Hasta 91 días y 20 páginas de 1000; inicio = fin no prueba un instante. CC BY-SA 4.0. |
 | Madrid | `ID-EVENTO`; `vgnextoid` para el recinto, con sus coordenadas | Intervalos con días de semana y exclusiones, sin expandir a funciones diarias. URL-ACTIVIDAD suele ser un contenedor («Actividades en el Centro Cultural…»): no es obra. CC BY 4.0. |
 | Zaragoza | `subEvent.id` = función; `id` = obra (actividad si tiene varias funciones); `location.id` = recinto con coordenadas WGS84 | `rows` ≤ 500 por `id asc`; inventario por función. Fechas de días; hora solo con una sesión el mismo día; «Sin determinar» queda como texto. Se saltan las ofertas sin fecha de inicio (27 antiguas, fin en 2020). Mezcla formación y empleo: tema `cultura` salvo las categorías revisadas. Condiciones del Ayuntamiento: «Origen de los datos: Ayuntamiento de Zaragoza» y `lastUpdated` (bloque `actualizado_origen`). |
 | Castilla y León (`cyl`) | Función = `id_evento@fecha_inicio` (`funcion_obra_fecha_v1`): entrada de programación, sin continuidad si cambia la fecha; `id_evento` = obra, siempre actividad; recinto = `id_localidad:lugar_celebracion`, con coordenadas | Opendatasoft `records` (100 por página, `order_by=id_evento,fecha_inicio`, `total_count`). Una fila de una obra conocida se actualiza fuera de la ventana. Horas en formatos mezclados («19:30 h.», «9:00h.»); en intervalos, solo texto. Temas por `tematica`; sin correspondencia (conferencias, talleres, circo, magia…) queda sin tema, no `cultura`. CC BY 4.0. |
@@ -173,6 +173,13 @@ Contrato común para las fuentes culturales:
 - **Formato y precio** (del [clasificador](clasificacion.md)): facetas y
   filtros `formatos=` (lista, basta uno) y `precio=gratis|pago|mixto`; «gratis»
   no incluye las citas mixtas. Sin valor, la cita no sale al filtrar.
+- **Galicia:** conserva los IDs y alias del piloto y clasifica al publicar
+  con su tabla de 35 tipos. Se solicitan además `tipoPublico` y `tipoEntrada`:
+  «Entrada de balde» acredita gratuidad y «Inscrición previa» publica
+  `acceso: ["con-inscripcion"]`, sin deducir pago ni acceso libre. El público
+  sigue siendo dato, sin filtro. Las observaciones castellanas antiguas no
+  gobiernan la lectura; las referencias se conservan. El puente deja de
+  reproyectar esta fuente tras la primera importación directa al núcleo.
 - **Identificadores externos** (Wikidata, TMDB, ISBN…): irán como bloque
   observado de la obra o la persona, `{sistema, tipo, id}` con procedencia,
   porque son asociaciones corregibles; una referencia del núcleo significa
@@ -248,6 +255,9 @@ obliga a releer.
 python calendario.py --turso --recoger-cultura madrid --recoger-cultura kulturklik \
   --inicio 2026-10-25 --fin 2026-11-24
 
+# Galicia: solo gallego, ventana completa; no acredita un inventario global.
+python calendario.py --turso --recoger-cultura cultura-galicia
+
 # Deportes: estado, pasada con descubrimiento y recogida manual de una colección.
 python -m agenda.operacion --turso --estado
 python -m agenda.operacion --turso --ejecutar --descubrir
@@ -292,8 +302,10 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
 - **Clasificación común y reconstrucción cultural:** diseño cerrado en
   [clasificacion.md](clasificacion.md) (temas compartidos con las noticias,
   filtros del calendario, etiquetas; un clasificador con tablas por fuente).
-  Antes de añadir fuentes, las cinco culturales se regeneran con él
-  conservando sus referencias externas.
+  Las cinco culturales ya clasifican al publicar conservando sus referencias
+  externas. Galicia se recoge directamente en gallego; su retirada por ventana
+  sigue pendiente. El piloto queda como compatibilidad y no se actualiza para
+  Galicia tras la transición.
 - **Fuentes nuevas:** por el orden de la [lista cerrada](fuentes.md#lista-cerrada)
   (Barcelona, Cataluña, Málaga, esMadrid…), cada una con el
   [contrato de fuente](fuentes.md#contrato-de-fuente); sus recintos con

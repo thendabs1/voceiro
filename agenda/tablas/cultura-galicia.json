@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "fuente": "cultura-galicia",
+  "revisado": "2026-10-28",
+  "muestra": "209 celebraciones en gallego (28-10 a 27-11-2026); 35 tipos del catálogo oficial /v1/axenda/tipoloxia.json?idioma=gl, público y entrada contrastados con sus catálogos",
+  "campos": {
+    "tipoEvento": {
+      "valores": {
+        "13": {"nombre": "Espectáculo", "temas": ["cultura"], "formatos": ["representacion"]},
+        "14": {"nombre": "Teatro", "temas": ["teatro"], "formatos": ["representacion"]},
+        "15": {"nombre": "Danza", "temas": ["danza"], "formatos": ["representacion"]},
+        "16": {"nombre": "Maxia", "temas": ["magia"], "formatos": ["representacion"]},
+        "19": {"nombre": "Novo circo", "temas": ["circo"], "formatos": ["representacion"]},
+        "17": {"nombre": "Monicreques", "temas": ["teatro"], "formatos": ["representacion"]},
+        "18": {"nombre": "Contacontos/Narración oral", "temas": ["literatura"], "formatos": ["representacion"]},
+        "7": {"nombre": "Concerto", "temas": ["musica"], "formatos": ["concierto"]},
+        "8": {"nombre": "Clásica", "temas": ["musica"], "formatos": ["concierto"]},
+        "9": {"nombre": "Raíz/folk", "temas": ["musica"], "formatos": ["concierto"]},
+        "10": {"nombre": "Pop/rock", "temas": ["musica"], "formatos": ["concierto"]},
+        "74": {"nombre": "Urbana", "temas": ["musica"], "formatos": ["concierto"]},
+        "11": {"nombre": "Contemporánea", "temas": ["musica"], "formatos": ["concierto"]},
+        "12": {"nombre": "Antiga", "temas": ["musica"], "formatos": ["concierto"]},
+        "75": {"nombre": "Electrónica", "temas": ["musica"], "formatos": ["concierto"]},
+        "76": {"nombre": "Jazz", "temas": ["musica"], "formatos": ["concierto"]},
+        "77": {"nombre": "De autor", "temas": ["musica"], "formatos": ["concierto"]},
+        "20": {"nombre": "Proxección audiovisual", "formatos": ["proyeccion"], "nota": "El formato audiovisual no acredita cine."},
+        "21": {"nombre": "Obradoiro", "formatos": ["curso-taller"]},
+        "22": {"nombre": "Xornada/Congreso", "formatos": ["charla-encuentro"]},
+        "122": {"nombre": "Conferencia/Mesa redonda", "formatos": ["charla-encuentro"]},
+        "23": {"nombre": "Presentación", "formatos": ["charla-encuentro"], "nota": "No acredita por sí sola un libro ni literatura."},
+        "547": {"nombre": "Feira/Mostra", "formatos": ["feria-mercado"]},
+        "26": {"nombre": "Festival", "temas": ["cultura"], "formatos": ["festival"]},
+        "69": {"nombre": "Visita guiada/Roteiro", "formatos": ["visita-ruta"], "nota": "Una visita no acredita patrimonio."},
+        "2": {"nombre": "Exposición", "temas": ["cultura"], "formatos": ["exposicion"]},
+        "3": {"nombre": "Artes plásticas", "temas": ["artes-visuales"], "formatos": ["exposicion"]},
+        "6": {"nombre": "Deseño", "temas": ["artes-visuales"], "formatos": ["exposicion"]},
+        "4": {"nombre": "Fotografía", "temas": ["artes-visuales"], "formatos": ["exposicion"]},
+        "5": {"nombre": "Divulgación", "temas": ["cultura"], "formatos": ["exposicion"], "nota": "Es hija de Exposición en esta fuente; no acredita ciencia."},
+        "549": {"nombre": "Festa/Feira popular", "nota": "Alternativas de formato sin distinguir; no acredita tradición."},
+        "551": {"nombre": "Festa de interese turístico", "formatos": ["fiesta"], "nota": "El interés turístico no acredita cultura popular."},
+        "2162": {"nombre": "Outras festas e feiras", "nota": "No permite distinguir fiesta de feria."},
+        "70": {"nombre": "Outras actividades", "nota": "Revisado: sin tema ni formato acreditados."},
+        "643": {"nombre": "Xincana", "nota": "Juego: se conserva sin atribuir deporte ni un formato común."}
+      }
+    },
+    "tipoPublico": {
+      "valores": {
+        "2312": {"nombre": "Público adulto", "nota": "Se conserva; no equivale a mayores ni familias."},
+        "29": {"nombre": "Público infantil"},
+        "30": {"nombre": "Actividade escolar", "nota": "Se conserva; no se deduce una edad."},
+        "31": {"nombre": "Público xuvenil"}
+      }
+    },
+    "tipoEntrada": {
+      "valores": {
+        "71": {"nombre": "Entrada de balde", "nota": "Acredita gratuidad; no acceso sin inscripción."},
+        "120": {"nombre": "Inscrición previa", "nota": "Acredita inscripción; no pago."}
+      }
+    }
+  },
+  "precio": {"tipo": "indicador", "campo": "tipoEntrada", "valores": {"71": "gratis"}},
+  "publico": {"campo": "tipoPublico", "valores": {"29": "infancia", "31": "juventud"}},
+  "acceso": {"campo": "tipoEntrada", "valores": {"120": "con-inscripcion"}}
+}

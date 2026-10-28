@@ -11,11 +11,12 @@ def ampliar(calendario):
         raise ValueError('Versión de calendario del piloto incompatible')
     salida = deepcopy(calendario)
     c = nucleo.Constructor(salida.get('nucleo'))
-    c.n['fuentes'].update(deepcopy(calendario['fuentes']))
+    migradas = {f for f, d in c.n['fuentes'].items() if d.get('ingesta') == 'nucleo'}
+    c.n['fuentes'].update({f: deepcopy(d) for f, d in calendario['fuentes'].items() if f not in migradas})
     if (calendario.get('clasificacion')
             and calendario['clasificacion']['catalogo']['version'] >= c.n['catalogo']['version']):
         c.n['catalogo'] = deepcopy(calendario['clasificacion']['catalogo'])
-    registros = calendario['registros']
+    registros = {ref: r for ref, r in calendario['registros'].items() if r['fuente'] not in migradas}
     por_ref = {}
     fichas = {}
     for r in registros.values():
@@ -47,6 +48,9 @@ def ampliar(calendario):
                      if g['tipo'] == 'ciclo' and i in d.get('grupos', [])]
         if etiquetas:
             bloques['etiquetas'] = etiquetas
+        if r['fuente'] == 'cultura-galicia' and r.get('idioma') == 'gl':
+            from .cultura_galicia import bloques as bloques_galicia
+            bloques.update(bloques_galicia(r))
         destino, evidencia = c.entidad(r['fuente'], 'evento_piloto', r['id_externo'], {},
             'evento', 'desconocida', d['titulos'], doc, '/normalizado_piloto', r['ultima_recogida'],
             bloques=bloques, identidad=r['evento'], referencia=ref, historico=True)
@@ -92,6 +96,8 @@ def ampliar(calendario):
             if len(fuentes) != 1:
                 raise ValueError('Alias del piloto sin fuente inequívoca')
             fuente = fuentes[0]
+            if fuente in migradas:
+                continue
             c.n['referencias'][ref] = {'id': ref, 'proveedor': fuente, 'tipo_externo': 'evento_piloto',
                 'contexto': {}, 'id_externo': ref[len(fuente) + 1:], 'destino': nucleo.objetivo('evento', i)}
     # Solo evidencia vigente: las asignaciones anteriores no se reutilizan como hechos nuevos.
@@ -99,6 +105,8 @@ def ampliar(calendario):
         e['temas'] = [t for t in e['temas'] if not t['correspondencia'].startswith('piloto:')]
     for i, evidencias in calendario.get('clasificacion', {}).get('asignaciones', {}).items():
         for e in evidencias:
+            if e['registro'] not in por_ref:
+                continue
             c.tema(nucleo.objetivo('evento', i), e['tema'], por_ref[e['registro']],
                    'piloto:' + e['correspondencia'])
     salida['nucleo'] = c.terminar()

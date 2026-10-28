@@ -29,6 +29,8 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
     observaciones = {i: o for i, o in n['observaciones'].items()
         if n['referencias'][o['referencia']]['proveedor'] in permitidas
         and o['referencia'] not in ausentes
+        and (not (idiomas := n['fuentes'][n['referencias'][o['referencia']]['proveedor']].get('idiomas_recogida'))
+             or set(idiomas) & o['bloques']['nombres'].keys())
         and (n['fuentes'][n['referencias'][o['referencia']]['proveedor']].get('alcance') != 'agenda_deportiva'
              or n['documentos'][o['documento']]['clase'] == 'extraccion_agenda')}
 
@@ -265,7 +267,7 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
             eventos[-1]['etiquetas'] = [etiquetas[i] for i in sorted(etiquetas)]
         # Sin clave cuando no hay: las citas sin tabla no se reescriben.
         eventos[-1].update({c: v for c, v in clasificados.get(k, {}).items()
-                            if c in ('formatos', 'precio', 'publico') and v})
+                            if c in ('formatos', 'precio', 'publico', 'acceso') and v})
     por_id = {e['id']: e for e in eventos}
     sesiones = set()
     for e in eventos:

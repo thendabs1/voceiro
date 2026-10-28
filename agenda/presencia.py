@@ -3,7 +3,7 @@
 from . import nucleo, tiempos
 from .registro import CULTURA
 
-TIPOS = {f: m.TIPO_EXTERNO for f, m in CULTURA.items()}
+TIPOS = {f: m.TIPO_EXTERNO for f, m in CULTURA.items() if getattr(m, 'INVENTARIO_COMPLETO', True)}
 # Un catálogo cultural cambia poco de un día a otro; una caída mayor suele ser
 # un fallo del proveedor (respuesta vacía o recortada) y ocultaría la fuente.
 CAIDA_MAXIMA = 0.3

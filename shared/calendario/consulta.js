@@ -16,7 +16,6 @@ export const AMBITOS = {
   musica: { tema: 'musica' },
   cine: { tema: 'cine' },
   danza: { tema: 'danza' },
-  exposiciones: { tema: 'exposiciones' },
   literatura: { tema: 'literatura' },
   patrimonio: { tema: 'patrimonio' },
   'artes-visuales': { tema: 'artes-visuales' },

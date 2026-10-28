@@ -17,13 +17,8 @@ on:
       fin:
         description: 'Último día incluido (vacío = inicio + 30 días; máximo 91 días)'
         required: false
-      idioma:
-        description: 'Idioma de la fuente'
-        type: choice
-        options: [gl, es]
-        default: gl
       fuente:
-        description: 'Fuente del piloto (F1 recoge el ICS completo)'
+        description: 'Galicia solo en gallego, o ICS completo de Vidmar F1'
         type: choice
         options: [cultura-galicia, vidmar-f1, ambas, ninguna]
         default: cultura-galicia
@@ -90,7 +85,6 @@ jobs:
           OPERACION: ${{ inputs.operacion || 'recoger' }}
           INICIO: ${{ inputs.inicio }}
           FIN: ${{ inputs.fin }}
-          IDIOMA: ${{ inputs.idioma || 'gl' }}
           FUENTE: ${{ inputs.fuente || 'cultura-galicia' }}
           CULTURA: ${{ inputs.cultura || 'todas' }}
           ACEPTAR_INVENTARIO: ${{ inputs.aceptar_inventario }}
@@ -117,13 +111,13 @@ jobs:
           fi
           if [ "$OPERACION" = recoger ]; then
             case "$FUENTE" in
-              ninguna) piloto="" ;;
-              ambas) piloto=" --fuente cultura-galicia --fuente vidmar-f1" ;;
-              *) piloto=" --fuente $FUENTE" ;;
+              cultura-galicia|ambas)
+                pasos+=(--paso-tolerado "calendario --turso --recoger-cultura cultura-galicia$fechas") ;;
             esac
-            if [ -n "$piloto" ]; then
-              pasos+=(--paso-tolerado "calendario --turso --idioma $IDIOMA$piloto$fechas")
-            fi
+            case "$FUENTE" in
+              vidmar-f1|ambas)
+                pasos+=(--paso-tolerado "calendario --turso --fuente vidmar-f1$fechas") ;;
+            esac
             case "$CULTURA" in
               ninguna) culturas="" ;;
               todas) culturas="madrid kulturklik zaragoza cyl" ;;
