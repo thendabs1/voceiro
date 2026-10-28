@@ -63,8 +63,9 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
     if ref_f1 and nucleo.clave(ref_f1['destino']) in entidades:
         entidades[nucleo.clave(ref_f1['destino'])]['codigos'] = ['f1']
 
+    # Por ID: la lectura guarda huellas y el orden de carga no debe reescribirla.
     relaciones = [{c: deepcopy(r[c]) for c in ('tipo', 'origen', 'destino', 'ambito')}
-                  for r in n['relaciones'].values() if vigente(r)
+                  for _, r in sorted(n['relaciones'].items()) if vigente(r)
                   and nucleo.clave(r['origen']) in entidades and nucleo.clave(r['destino']) in entidades
                   and (r['ambito'] is None or nucleo.clave(r['ambito']) in entidades)]
     padres = {}
@@ -172,7 +173,7 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
 
     participaciones = {i: {c: deepcopy(p[c]) for c in
         ('id', 'evento', 'participante', 'literal', 'papel', 'orden')}
-        for i, p in n['participaciones'].items() if vigente(p)
+        for i, p in sorted(n['participaciones'].items()) if vigente(p)
         and nucleo.clave(p['evento']) in entidades
         and (p['participante'] is None or nucleo.clave(p['participante']) in entidades)}
     por_evento = {}

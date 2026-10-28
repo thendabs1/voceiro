@@ -47,6 +47,16 @@ class Lectura(unittest.TestCase):
             self.assertFalse(subir_lectura.call_args.args[0]['revision'])
             archivo.assert_not_called()
 
+    def test_el_orden_de_carga_no_cambia_la_publicacion(self):
+        # La lectura guarda huellas: un orden distinto reescribiría todas las citas.
+        n = espn_tenis.importar(None, tenis(), 'wta', AHORA)
+        n = feb.importar(n, html_feb(), AHORA)
+        invertido = deepcopy(n)
+        for coleccion in nucleo.COLECCIONES:
+            invertido[coleccion] = dict(reversed(list(invertido[coleccion].items())))
+        self.assertEqual(nucleo.json_canonico(proyectar(n, generado=AHORA)),
+                         nucleo.json_canonico(proyectar(invertido, generado=AHORA)))
+
     def test_objetivos_publicos_coinciden_con_consultas_del_nucleo_y_ambitos_de_pareja(self):
         n = espn_tenis.importar(None, tenis(), 'wta', AHORA)
         n = feb.importar(n, html_feb(), AHORA)
