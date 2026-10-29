@@ -14,6 +14,7 @@ const ok   = (m) => console.log(`  ✓ ${m}`);
 const fail = (m) => { console.error(`  ✗ ${m}`); errores++; };
 
 const shared = readFileSync(resolve(ROOT, 'shared/parser.js'), 'utf-8');
+const registro = readFileSync(resolve(ROOT, 'shared/consultas/registro.js'), 'utf-8');
 console.log(`shared/parser.js: ${shared.length} bytes\n`);
 
 // ── 1) Copias byte-idénticas ──
@@ -31,8 +32,15 @@ for (const rel of [
   }
 }
 
+for (const rel of ['public/consultas/registro.js', 'workers/deno-buscar/src/shared/consultas/registro.js']) {
+  try {
+    if (readFileSync(resolve(ROOT, rel), 'utf-8') === registro) ok(rel);
+    else fail(`${rel} DIFIERE del registro`);
+  } catch (e) { fail(`${rel} no existe (${e.message})`); }
+}
+
 // ── 2) parser-source.js: reconstruir el esperado y comparar ──
-const escaped = shared
+const escaped = shared.replace("import { PREFIJOS_CONSULTAS } from './consultas/registro.js';", registro.replaceAll('export const ', 'const '))
   .replace(/\\/g, '\\\\')
   .replace(/`/g, '\\`')
   .replace(/\$\{/g, '\\${');
