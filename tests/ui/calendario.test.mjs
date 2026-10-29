@@ -66,7 +66,7 @@ function api(u){
   const desde = Number(p.get('cursor') || 0), limite = Number(p.get('limite'));
   return { ...META, eventos: todos.slice(desde, desde + limite), siguiente: desde + limite < todos.length ? String(desde + limite) : null };
 }
-function contexto({ intl = Intl, responder = api, sitios = [], almacen = {} } = {}){
+function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, guardarFalla = false } = {}){
   const listeners = {}, pedidas = [], sugerencias = {}, buscar = { value: '', addEventListener(){} }, aplicadas = [];
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
@@ -81,7 +81,7 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {} } = 
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
     setTimeout: fn => { fn(); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
-    localStorage: { getItem: k => almacen[k] ?? null, setItem: (k, v) => { almacen[k] = String(v); } },
+    localStorage: { getItem: k => almacen[k] ?? null, setItem: (k, v) => { if (guardarFalla) throw new Error('lleno'); almacen[k] = String(v); } },
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
     escapeHtml: s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), aplicarFiltros: () => aplicadas.push(buscar.value),
@@ -361,6 +361,53 @@ test('mes con títulos en ancho: chips con hora, «+N» y la barra del GP cortad
   await c.click('mes'); await c.click('mes');
   assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['0', null]);
   assert.doesNotMatch(c.api.calContenido(), /cal-mg-semana/);
+});
+
+const PREF = 'voceiro-calendario-preferencias-v1';
+const preferencias = extra => ({ [PREF]: JSON.stringify({ v: 1, estado: 'configurado', sitio: { id: 'es:municipio:36057', nombre: 'Vigo' },
+  intereses: { cultura: ['teatro'], otraCultura: false, deporteLocal: false }, competiciones: ['f1'], ...extra }) });
+
+test('abrir por primera vez con un prefijo no hereda «Lo mío»', async () => {
+  const c = contexto({ almacen: preferencias() });
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
+  await esperar();
+  assert.deepEqual([c.resumen().get('q'), c.resumen().get('temas'), c.api.s.mio], ['f1:', null, false]);
+  // Desde la cabecera, sin prefijo, sí.
+  const d = contexto({ almacen: preferencias() });
+  await d.abrir();
+  assert.deepEqual([d.resumen().get('temas'), d.api.s.mio], ['teatro', true]);
+});
+
+test('con solo competiciones guardadas, «Lo mío» son ellas (sin ciudad)', async () => {
+  const c = contexto({ almacen: preferencias({ sitio: null, intereses: { cultura: [], otraCultura: false, deporteLocal: false } }) });
+  await c.abrir();
+  assert.deepEqual([c.api.s.mio, c.resumen().get('q'), c.resumen().get('temas'), c.resumen().get('territorio')], [true, 'f1:', null, null]);
+});
+
+test('si el dispositivo no guarda, lo elegido en el asistente vale para la sesión', async () => {
+  const c = contexto({ almacen: preferencias(), guardarFalla: true });
+  await c.abrir();
+  await c.click('asistente', '0');
+  await c.marcar('cal-as-sitio', 'es:provincia:28', true, 'Madrid');
+  await c.click('as-siguiente');
+  await c.marcar('cal-as-interes', 'teatro', false);
+  await c.marcar('cal-as-interes', 'otra', true);
+  await c.click('as-ir', '3');
+  await c.click('as-guardar');
+  assert.deepEqual([c.resumen().get('territorio'), c.resumen().get('temas')], ['es:provincia:28', 'otra:cultura']);
+});
+
+test('«Actualizar» vuelve a pedir el mes; un 409 del resumen se reintenta una vez', async () => {
+  let cambio = 1;
+  const c = contexto({ responder: u => u.pathname === '/calendario/resumen' && cambio-- > 0 && u.searchParams.get('muestras') === '3'
+    ? Response.json({ error: 'cambió' }, { status: 409 }) : api(u) });
+  await c.abrir();
+  assert.equal(c.pedidas.filter(u => u.pathname === '/calendario/resumen').length, 2);
+  assert.equal(c.api.s.error, '');
+  await c.click('mes');
+  const antes = c.pedidas.filter(u => u.searchParams.get('muestras') === '0').length;
+  await c.click('renovar');
+  assert.equal(c.pedidas.filter(u => u.searchParams.get('muestras') === '0').length, antes + 1);
 });
 
 test('la ventana se recorta al horizonte publicado y fuera de él no se pide nada', async () => {

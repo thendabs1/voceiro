@@ -138,6 +138,8 @@ export function prepararLectura(datos) {
       return ocurrencias.flatMap(o => {
         const a = extremoVisible(o.programacion?.valor?.cuando?.inicio, zona);
         if (!a.fecha || a.fecha < desdeTramos || a.fecha >= hastaTramos) return [];
+        // Misma regla que los tramos: un día excluido no tiene chip.
+        if (!programacionesCalendario(o).some(h => enDia(h, a.fecha, zona))) return [];
         const [h, m] = (a.hora || '').split(':').map(Number);
         return [[a.fecha, e.id, o.id, a.hora ? h * 60 + m : 1440, a.hora || null, o === e ? null : JSON.stringify(o.nombres)]];
       });
