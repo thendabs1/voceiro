@@ -443,6 +443,19 @@ test('resumen: cuentas por categoría que suman las del día, también lo en cur
   assert.deepEqual(r.dato.dias[0].categorias, { cultura: { citas: 0, programas: 0, en_curso: 1 }, deportes: { citas: 0, programas: 0, en_curso: 1 } });
 });
 
+test('local: lo que se celebra en el territorio más las competiciones, que no tienen territorio', async t => {
+  const b = base(); t.after(() => b.db.close());
+  // Pocas peticiones: el límite por IP es común a todo el fichero.
+  const total = async q => {
+    const [d] = (await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC&muestras=0' + q)).dato.dias;
+    return d.citas + d.programas + d.en_curso;
+  };
+  // Todo está en Pontevedra (36); los 25 de la WTA, además, son competición.
+  assert.equal(await total('&territorio=es:provincia:28'), 0);
+  assert.equal(await total('&local=es:provincia:28'), 25);
+  assert.equal(await total('&local=es:provincia:36'), await total(''));
+});
+
 test('los tramos largos se parten por meses y el rango acotado encuentra todos sus días', async t => {
   const datos = muestra();
   // Exposición de cuatro meses: un tramo de más de TRAMO_MAX_DIAS.
