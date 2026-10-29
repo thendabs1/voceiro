@@ -177,6 +177,7 @@ function wireStaticEvents(){
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
         if (ESTADISTICAS.abierto){ cerrarEstadisticas(); return; }
+        if (CALENDARIO.asistente){ CALENDARIO.asistente = null; pintarCalendario(); return; }
         if (CALENDARIO.abierto){ salirCalendario(); return; }
       }
     const tg = e.target;
