@@ -6,7 +6,9 @@ export async function consultarTurso(env, sentencias, fetchImpl = fetch) {
   if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('URL Turso inválida');
   const operaciones = [{ sql: 'BEGIN', args: [] }, ...sentencias, { sql: 'COMMIT', args: [] }];
   const pasos = operaciones.map((s, i) => ({ stmt: { sql: s.sql, args: s.args.map(v =>
-    typeof v === 'number' ? { type: 'integer', value: String(v) } : { type: 'text', value: v }) },
+    // El orden del cursor es un julianday con decimales: como integer, Turso lo rechaza.
+    typeof v !== 'number' ? { type: 'text', value: v }
+      : Number.isInteger(v) ? { type: 'integer', value: String(v) } : { type: 'float', value: v }) },
     ...(i ? { condition: { type: 'ok', step: i - 1 } } : {}) }));
   // Cloudflare no admite redirect 'error'; con 'manual' un 3xx no es ok y se rechaza abajo.
   const r = await fetchImpl(url.origin + '/v2/pipeline', { method: 'POST', redirect: 'manual',
