@@ -186,17 +186,19 @@ export function consultaResumen(c, meta) {
   return { sql: `WITH ventana AS MATERIALIZED (SELECT d.evento AS id, max(d.desde,?) AS desde, d.hasta,
       ${presentacion} AS presentacion,
       julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')) AS hora,
-      json_extract(e.tarjeta_json,'$.categoria') AS categoria
+      json_extract(e.tarjeta_json,'$.categoria') AS categoria,
+      json_extract(e.tarjeta_json,'$.competiciones') AS competiciones
       FROM agenda_lectura_tramos d JOIN agenda_lectura_eventos e ON e.id=d.evento
       WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros}),
     muestras AS (SELECT desde AS dia, id, ROW_NUMBER() OVER(PARTITION BY desde
       ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden
       FROM ventana WHERE presentacion IS NOT 'prolongada')
-    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra, categoria FROM (
-      SELECT desde AS dia, presentacion, categoria, 1 AS n FROM ventana
-      UNION ALL SELECT hasta, presentacion, categoria, -1 FROM ventana WHERE hasta<?) GROUP BY dia, presentacion, categoria
+    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra, categoria, competiciones FROM (
+      SELECT desde AS dia, presentacion, categoria, competiciones, 1 AS n FROM ventana
+      UNION ALL SELECT hasta, presentacion, categoria, competiciones, -1 FROM ventana WHERE hasta<?)
+      GROUP BY dia, presentacion, categoria, competiciones
     UNION ALL
-    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id), 1, NULL
+    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id), 1, NULL, NULL
       FROM muestras WHERE orden<=?
     ORDER BY 1, 5, 3`, args };
 }
@@ -294,17 +296,20 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
         // Sin presentación (lecturas anteriores a ella) cuenta como cita.
         const clave = { programa: 'programas', prolongada: 'en_curso' }[f.presentacion] || 'citas';
         if (!cambios.has(f.dia)) cambios.set(f.dia, []);
-        cambios.get(f.dia).push([f.categoria || 'sin_clasificar', clave, f.n]);
+        // Una fila puede sumar a varias competiciones; a las cuentas del día, una vez.
+        let codigos = [];
+        try { codigos = f.competiciones ? JSON.parse(f.competiciones) : []; } catch { /* Sin competición. */ }
+        cambios.get(f.dia).push([f.categoria || 'sin_clasificar', Array.isArray(codigos) ? codigos : [], clave, f.n]);
       }
-      const acumulado = nuevas(), porCategoria = {};
+      const acumulado = nuevas(), porCategoria = {}, porCompeticion = {};
+      const conAlgo = o => Object.fromEntries(Object.entries(o).filter(([, v]) => v.citas || v.programas || v.en_curso).map(([k, v]) => [k, { ...v }]));
       for (let dia = c.desde; dia < c.hasta; dia = sumarDiasCalendario(dia, 1)) {
-        for (const [categoria, k, n] of cambios.get(dia) || []) {
+        for (const [categoria, codigos, k, n] of cambios.get(dia) || []) {
           acumulado[k] += n; (porCategoria[categoria] ||= nuevas())[k] += n;
+          for (const codigo of codigos) (porCompeticion[codigo] ||= nuevas())[k] += n;
         }
-        const categorias = Object.fromEntries(Object.entries(porCategoria)
-          .filter(([, v]) => v.citas || v.programas || v.en_curso).map(([k, v]) => [k, { ...v }]));
         porDia.set(dia, { dia, cantidad: acumulado.citas + acumulado.programas + acumulado.en_curso,
-          ...acumulado, categorias, muestras: muestras.get(dia) || [] });
+          ...acumulado, categorias: conAlgo(porCategoria), competiciones: conAlgo(porCompeticion), muestras: muestras.get(dia) || [] });
       }
       salida = { ...base, dias: [...porDia.values()] };
     } else {

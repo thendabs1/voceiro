@@ -430,6 +430,7 @@ test('resumen: cuentas por categoría que suman las del día, también lo en cur
   const datos = muestra();
   datos.entidades['evento:081'].temas = [];
   datos.eventos[70].programacion.valor.cuando = { inicio: extremo('2026-10-20'), fin: extremo('2026-11-05') };
+  datos.entidades['evento:071'].codigos = ['wta', 'atp'];
   const b = base(datos); t.after(() => b.db.close());
   const r = await b.pedir('/calendario/resumen?desde=2026-10-23&hasta=2026-10-27&zona=UTC&muestras=0');
   for (const d of r.dato.dias) {
@@ -439,6 +440,12 @@ test('resumen: cuentas por categoría que suman las del día, también lo en cur
   const d25 = r.dato.dias.find(d => d.dia === '2026-10-25');
   assert.deepEqual(d25.categorias.sin_clasificar, { citas: 1, programas: 0, en_curso: 0 });
   assert.equal(d25.categorias.deportes.en_curso, 1);
+  // Por competición: lo de deportes es WTA, y también el 081, que sin temas no
+  // tiene categoría; el 071 lleva además ATP y suma a las dos, una vez al día.
+  const dep = d25.categorias.deportes;
+  assert.deepEqual(d25.competiciones.wta, { ...dep, citas: dep.citas + 1 });
+  assert.deepEqual(d25.competiciones.atp, { citas: 1, programas: 0, en_curso: 0 });
+  assert.ok(!('competiciones' in r.dato.dias[0]) || !r.dato.dias[0].competiciones.atp);
   // El 23 solo hay lo prolongado: la exposición 000 (cultura) y el 070 (deportes).
   assert.deepEqual(r.dato.dias[0].categorias, { cultura: { citas: 0, programas: 0, en_curso: 1 }, deportes: { citas: 0, programas: 0, en_curso: 1 } });
 });
