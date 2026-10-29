@@ -415,6 +415,34 @@ test('la tarjeta lleva formatos, precio, programa, competiciones y presentación
   assert.equal(gp.tiene_programa, true); assert.equal(gp.presentacion, 'programa'); assert.deepEqual(gp.competiciones, ['f1']);
 });
 
+test('categoría: la raíz del catálogo de sus temas; con varias, la primera del catálogo; sin ninguna, sin clave', () => {
+  const datos = muestra();
+  // 080: tenis y teatro (cultura va antes que deportes en el catálogo); 081: sin temas; 082: tema desconocido.
+  datos.entidades['evento:080'].temas = ['teatro', 'tenis'];
+  datos.entidades['evento:081'].temas = [];
+  datos.entidades['evento:082'].temas = ['inventado'];
+  const tarjetas = Object.fromEntries(prepararLectura(datos).eventos.map(e => [e[0], JSON.parse(e[3])]));
+  assert.deepEqual([tarjetas['010'].categoria, tarjetas['070'].categoria, tarjetas['080'].categoria], ['cultura', 'deportes', 'cultura']);
+  assert.ok(!('categoria' in tarjetas['081']) && !('categoria' in tarjetas['082']));
+});
+
+test('resumen: cuentas por categoría que suman las del día, también lo en curso', async t => {
+  const datos = muestra();
+  datos.entidades['evento:081'].temas = [];
+  datos.eventos[70].programacion.valor.cuando = { inicio: extremo('2026-10-20'), fin: extremo('2026-11-05') };
+  const b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir('/calendario/resumen?desde=2026-10-23&hasta=2026-10-27&zona=UTC&muestras=0');
+  for (const d of r.dato.dias) {
+    for (const k of ['citas', 'programas', 'en_curso'])
+      assert.equal(Object.values(d.categorias).reduce((n, c) => n + c[k], 0), d[k], `${d.dia} ${k}`);
+  }
+  const d25 = r.dato.dias.find(d => d.dia === '2026-10-25');
+  assert.deepEqual(d25.categorias.sin_clasificar, { citas: 1, programas: 0, en_curso: 0 });
+  assert.equal(d25.categorias.deportes.en_curso, 1);
+  // El 23 solo hay lo prolongado: la exposición 000 (cultura) y el 070 (deportes).
+  assert.deepEqual(r.dato.dias[0].categorias, { cultura: { citas: 0, programas: 0, en_curso: 1 }, deportes: { citas: 0, programas: 0, en_curso: 1 } });
+});
+
 test('los tramos largos se parten por meses y el rango acotado encuentra todos sus días', async t => {
   const datos = muestra();
   // Exposición de cuatro meses: un tramo de más de TRAMO_MAX_DIAS.

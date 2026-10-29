@@ -35,6 +35,19 @@ export function prepararLectura(datos) {
   const eventos = [], facetas = [], tramos = [], entidades = Object.entries(limpias);
   let evaluaciones = 0;
   const texto = s => ' ' + palabrasDe(s).map(p => p.t).join(' ') + ' ';
+  // Categoría (color de la tira y del mes): la raíz del catálogo de los temas
+  // de sus objetivos. Con varias, la primera en el orden del catálogo.
+  const conceptos = datos.catalogo?.conceptos || {};
+  const ordenRaices = Object.keys(conceptos).filter(i => !conceptos[i].padres?.length);
+  const raices = new Map();
+  const raicesDe = (tema, camino = new Set()) => {
+    if (!raices.has(tema)) {
+      const c = conceptos[tema];
+      raices.set(tema, !c || camino.has(tema) ? [] : !c.padres?.length ? [tema]
+        : c.padres.flatMap(p => raicesDe(p, new Set([...camino, tema]))));
+    }
+    return raices.get(tema);
+  };
   for (const original of datos.eventos) {
     const e = sinComprobado(original), objetivos = e.objetivos.map(k => limpias[k]);
     if (objetivos.some(o => !o)) throw new Error('Objetivo ausente');
@@ -57,6 +70,9 @@ export function prepararLectura(datos) {
     if (e.formatos?.length) tarjeta.formatos = e.formatos;
     if (e.precio) tarjeta.precio = e.precio;
     if (e.programa?.length) tarjeta.tiene_programa = true;
+    const propias = new Set(objetivos.flatMap(o => o.temas || []).flatMap(t => raicesDe(t)));
+    const categoria = ordenRaices.find(r => propias.has(r));
+    if (categoria) tarjeta.categoria = categoria;
     const competiciones = [...new Set(objetivos.flatMap(o => o.codigos || []))];
     if (competiciones.length) tarjeta.competiciones = competiciones;
     // Cita, programa o prolongada: una sola si coincide en las tres zonas.
