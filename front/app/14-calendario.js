@@ -92,8 +92,11 @@ function calParametros(){
   const elegidas = s.competicion ? [s.competicion] : s.deporte ? CAL_DEPORTES[s.deporte] : [];
   const ambitos = [...(o?.ambitos || []), ...elegidas];
   const q = [...ambitos.map(a => a + ':'), ...(o?.circuitos.length ? ['circuito:' + o.circuitos.join(',')] : [])].join(' ');
+  // La ciudad acota la agenda local (territorio estricto). Una competición
+  // elegida a propósito (chip o prefijo) no tiene sitio: va sin ciudad.
+  const competiciones = elegidas.length || ambitos.some(a => AMBITOS[a]?.codigo) || Boolean(o?.circuitos.length);
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: [...s.temas].join(','), precio: s.precio,
-    local: s.donde?.id || '' };
+    territorio: competiciones ? '' : s.donde?.id || '' };
 }
 // Días de la vista y su ventana [desde, hasta) dentro de lo publicado.
 // desde:/hasta: del buscador acotan la celebración; en noticias, la publicación.
