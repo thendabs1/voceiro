@@ -26,6 +26,9 @@
 .cal-hora{padding-top:10px;font-size:.85em;font-weight:600;font-variant-numeric:tabular-nums}
 .cal-cita h3{font-size:1em;margin:0}.cal-cita p{margin:2px 0 4px}
 .cal-cita h3 button{border:0;background:transparent;color:var(--fg);padding:6px 0;text-align:left;font-weight:600;line-height:1.35;overflow-wrap:anywhere}.cal-cita h3 button:hover{color:var(--accent);text-decoration:underline}
+/* GP o programa de competición que sigue ese día: la etiqueta toma el color de su barra del mes. */
+.cal-todo-dia .cal-hora{align-self:start;margin-top:8px;padding:2px 4px;border-radius:4px;font-size:.7em;line-height:1.2;text-align:center;color:var(--cat-otras-bg);background:var(--cat-otras)}
+.cal-todo-dia .cal-hora.cal-cat-deportes{color:var(--cat-deportes-bg);background:var(--cat-deportes)}.cal-todo-dia .cal-hora.cal-cat-cultura{color:var(--cat-cultura-bg);background:var(--cat-cultura)}
 .cal-plan{font-size:.8em}.cal-sin-hora{font-size:.8em;color:var(--muted);margin:12px 0 4px}
 .cal-en-curso{border:1px solid var(--border);border-radius:7px;padding:4px 10px;margin:12px 0}.cal-en-curso>button{border:0;background:transparent;color:var(--fg);font-weight:600;padding:6px 0;text-align:left;width:100%}
 /* Tira y mes: siete celdas tocables con el número del día y un punto por categoría con algo ese día. */

@@ -121,10 +121,15 @@ test('la lista pide una semana desde hoy con tres muestras; un día abre sus cit
   // Tarjeta: hora en su columna, lugar y tipo de plan con precio; sin hora, bajo su rótulo.
   assert.match(html, /<span class="cal-hora">18:00<\/span>[\s\S]*?Sala · Vigo[\s\S]*?<p class="cal-plan">Concierto · Gratis<\/p>/);
   assert.match(html, /<p class="cal-sin-hora">Sin hora confirmada<\/p>/);
+  // El GP (programa de varios días) va arriba de cada día suyo como «todo el día».
+  assert.equal(p.get('barras'), '1');
+  assert.match(html, /id="cal-dia-2026-10-31"><h2>[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-cat-deportes">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
+  assert.equal((html.match(/cal-todo-dia/g) || []).length, 2);
+  // Abrir un día pide sus chips (los mismos que cuenta y muestra), no los eventos padre.
   await c.click('ver-dia', '2026-10-26');
   let q = c.ultima().searchParams;
-  assert.deepEqual([c.ultima().pathname, q.get('desde'), q.get('hasta'), q.get('presentacion'), q.get('limite')],
-    ['/calendario/eventos', '2026-10-26', '2026-10-27', 'cita,programa', '20']);
+  assert.deepEqual([c.ultima().pathname, q.get('desde'), q.get('hasta'), q.get('chips'), q.get('limite')],
+    ['/calendario/eventos', '2026-10-26', '2026-10-27', '1', '20']);
   await c.click('mas-dia', '2026-10-26');
   assert.equal(c.ultima().searchParams.get('cursor'), '20');
   html = c.api.calContenido();

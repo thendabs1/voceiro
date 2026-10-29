@@ -511,6 +511,23 @@ test('resumen con chips: la carrera es muestra de su día con el nombre del GP; 
   assert.deepEqual([v.dato.dias[0].muestras.map(m => m.id), 'chips' in v.dato.dias[0]], [['001', '002'], false]);
 });
 
+test('eventos?chips=1: las ocurrencias del día en el orden de las muestras, paginadas con la ocurrencia', async t => {
+  const b = base(); t.after(() => b.db.close());
+  const ventana = 'desde=2026-10-25&hasta=2026-10-26&zona=Europe/Madrid';
+  const [d] = (await b.pedir('/calendario/resumen?' + ventana + '&muestras=3')).dato.dias;
+  const uno = await b.pedir('/calendario/eventos?' + ventana + '&chips=1&limite=50');
+  const dos = await b.pedir('/calendario/eventos?' + ventana + '&chips=1&limite=50&cursor=' + uno.dato.siguiente);
+  const todos = [...uno.dato.eventos, ...dos.dato.eventos];
+  assert.equal(dos.dato.siguiente, null);
+  // Lo mismo que cuenta el día y, al principio, sus muestras tal cual.
+  assert.equal(todos.length, d.chips);
+  assert.deepEqual(todos.slice(0, 3), d.muestras.map(m => ({ ...m, dia: '2026-10-25' })));
+  assert.deepEqual([todos[0].id, todos[0].hora_muestra, todos[0].presentacion], ['001', '02:30', 'cita']);
+  // Sin repetidos entre páginas; la prolongada (000) y la pendiente (003) no son chips.
+  assert.equal(new Set(todos.map(e => e.id)).size, todos.length);
+  assert.ok(!todos.some(e => ['000', '003'].includes(e.id)));
+});
+
 test('disponibilidad: eventos por tema, raíz y sin subcategoría en el sitio, y por competición', async t => {
   const datos = muestra();
   // 010–012: solo «cultura» (sin subcategoría); 013 en otra provincia.

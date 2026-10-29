@@ -140,8 +140,9 @@ async function consultarCalendario(){
   s.fecha ||= calHoy();
   const { desde, hasta } = calVentana();
   if (s.mesAbierto) cargarMesCalendario();
-  // Tira y lista salen del mismo resumen: cuentas por categoría y tres muestras por día.
-  const params = { ...calParametros(), desde, hasta, muestras: 3 };
+  // Tira y lista salen del mismo resumen: cuentas por categoría, tres muestras
+  // por día y las barras (los GP van a cada día de la lista como «todo el día»).
+  const params = { ...calParametros(), desde, hasta, muestras: 3, barras: 1 };
   const clave = JSON.stringify(params);
   if (clave === s.consulta && !s.error) return void pintarCalendario();
   s.controller?.abort();
@@ -156,14 +157,14 @@ async function consultarCalendario(){
   s.cargando = true; pintarCalendario();
   try {
     const dato = await calPedir('resumen', params, controller.signal);
-    calAnotar(dato); s.vigente = clave; s.resumen = dato.dias; s.dias.clear(); s.reintento = false;
+    calAnotar(dato); s.vigente = clave; s.resumen = dato.dias; s.barras = dato.barras || []; s.dias.clear(); s.reintento = false;
   } catch (e){
     if (controller.signal.aborted) return;
     // Republicación en curso: un reintento lee ya la revisión nueva.
     if (e.status === 409 && !s.reintento){ s.reintento = true; s.consulta = ''; s.cargando = false; return void consultarCalendario(); }
     s.error = e.status === 422 ? 'calFueraHorizonte' : 'calError';
     // Lo que quedaba a la vista era de otra consulta: no se presenta como suyo.
-    if (clave !== s.vigente) s.resumen = null;
+    if (clave !== s.vigente){ s.resumen = null; s.barras = []; }
   }
   s.cargando = false; pintarCalendario();
 }
@@ -216,9 +217,10 @@ async function cargarTemporadaCalendario(){
   }
   pintarCalendario();
 }
-// Lista de un día: sus citas y programas, o lo que está en curso. Se pide al
-// abrirla y pagina con el cursor de la API; si la publicación cambió (409),
-// se rehace desde el principio para no mezclar lecturas.
+// Lista de un día: lo que pasa ese día (los mismos chips que sus muestras y su
+// cuenta; con lecturas sin chips, citas y programas) o lo que está en curso. Se
+// pide al abrirla y pagina con el cursor de la API; si la publicación cambió
+// (409), se rehace desde el principio para no mezclar lecturas.
 async function abrirDiaCalendario(dia, tipo, mas = false){
   const s = CALENDARIO, clave = dia + '|' + tipo;
   let l = s.dias.get(clave);
@@ -229,7 +231,7 @@ async function abrirDiaCalendario(dia, tipo, mas = false){
   const controller = s.controller ||= new AbortController();
   try {
     const dato = await calPedir('eventos', { ...calParametros(), desde: dia, hasta: sumarDiasCalendario(dia, 1), limite: 20,
-      presentacion: tipo === 'curso' ? 'prolongada' : 'cita,programa', cursor: mas ? l.siguiente : '' }, controller.signal);
+      ...(tipo === 'curso' ? { presentacion: 'prolongada' } : { chips: 1 }), cursor: mas ? l.siguiente : '' }, controller.signal);
     if (s.dias.get(clave) !== l) return;
     calAnotar(dato); l.eventos.push(...dato.eventos); l.siguiente = dato.siguiente; l.cargada = true;
   } catch (e){
@@ -479,8 +481,11 @@ function calCitas(eventos){
   }).join('');
 }
 const calDiaLargo = dia => calFecha(dia, { weekday: 'long', month: 'long' });
+// Citas de un día: sus chips (cada función o carrera cuenta) o, en lecturas sin
+// ellos o pedidas sin muestras, los eventos.
+const calNDia = d => d.chips ?? d.citas + d.programas;
 function calCuentas(d){
-  return [calN('calNCitas', d.citas + d.programas), d.en_curso ? t('calNEnCurso', { n: d.en_curso }) : ''].filter(Boolean).join(' · ');
+  return [calN('calNCitas', calNDia(d)), d.en_curso ? t('calNEnCurso', { n: d.en_curso }) : ''].filter(Boolean).join(' · ');
 }
 const calCategoria = c => CAL_CATEGORIAS.includes(c) ? c : 'otras';
 // Categorías con algo ese día, para los puntos. Lo prolongado de cultura
@@ -510,9 +515,18 @@ const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-h
 const calNombreCompeticion = c => AMBITOS[c]?.noticias?.[0] || c;
 const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidden="true">${cats.map(c => `<span class="cal-punto cal-cat-${c}"></span>`).join('')}</span>` : '';
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
+// GP y programas de competición que siguen ese día: sus días sin carrera no
+// tienen chip, así que van arriba como «todo el día» (Google, Apple).
+const calBarrasDia = dia => (CALENDARIO.barras || []).filter(b => calPresentacion(b) === 'programa' && b.desde <= dia && dia < b.hasta);
+function calBarraDia(b, dia){
+  const total = calDiferencia(b.desde, b.hasta), n = calDiferencia(b.desde, dia) + 1;
+  return `<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-cat-${calCategoria(b.categoria)}">${calEsc(t('calTodoElDia'))}</span><div class="cal-cita-cuerpo">
+    <h3>${calBoton('evento', calNombre(b), b.id, 'aria-haspopup="dialog"')}</h3>
+    ${total > 1 ? `<p class="cal-nota">${calEsc(t('calDiaDeN', { n, total }))}</p>` : ''}</div></article>`;
+}
 // Un día de la lista: sus muestras y «Ver las N citas»; abierta, todas.
 function calDiaLista(d){
-  const s = CALENDARIO, l = s.dias.get(d.dia + '|citas'), citas = d.citas + d.programas;
+  const s = CALENDARIO, l = s.dias.get(d.dia + '|citas'), citas = calNDia(d);
   let cuerpo;
   if (l?.abierta && l.cargada){
     cuerpo = calCitas(l.eventos) + `<div class="cal-paginacion">${l.siguiente ? calBoton('mas-dia', t('calCargarMas'), d.dia, l.cargando ? 'disabled' : '') : ''}
@@ -521,6 +535,7 @@ function calDiaLista(d){
     cuerpo = calCitas(d.muestras) + (citas > d.muestras.length
       ? `<div class="cal-paginacion">${calBoton('ver-dia', t('calVerCitas', { n: citas, dia: calFecha(d.dia, { weekday: 'long', day: undefined, month: undefined }) }), d.dia, l?.cargando ? 'disabled' : '')}</div>` : '');
   }
+  cuerpo = calBarrasDia(d.dia).map(b => calBarraDia(b, d.dia)).join('') + cuerpo;
   const hoy = calHoy();
   return `<section class="cal-dia${d.dia < hoy ? ' cal-pasado' : ''}" id="cal-dia-${d.dia}"><h2>${calEsc(d.dia === hoy ? t('calHoy') + ' · ' + calFecha(d.dia, { weekday: 'long' }) : calDiaLargo(d.dia))}
     <small>${calEsc(calN('calNCitas', citas))}${d.dia < hoy ? ' · ' + calEsc(t('calPasado')) : ''}</small></h2>${cuerpo}</section>`;
@@ -547,7 +562,7 @@ function calDiasLista(){
 function calLista(){
   const s = CALENDARIO;
   if (!s.resumen) return '';
-  const dias = calDiasLista(), conCitas = dias.filter(d => d.citas + d.programas);
+  const dias = calDiasLista(), conCitas = dias.filter(d => calNDia(d) || calBarrasDia(d.dia).length);
   const vacio = !conCitas.length ? `<p class="cal-nota cal-vacio">${calEsc(t(s.rango ? 'calDiaSinCitas' : 'calSinCitas'))}</p>` : '';
   const mas = !s.rango && s.semanas < CAL_SEMANAS_MAX ? `<div class="cal-paginacion">${calBoton('mas-semanas', t('calSemanaSiguiente'), '', s.cargando ? 'disabled' : '')}</div>` : '';
   return calEnCurso(dias[0]) + conCitas.map(calDiaLista).join('') + vacio + mas;
