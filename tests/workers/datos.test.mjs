@@ -85,3 +85,19 @@ test('Deno conserva gzip y HEAD sin depender del worker de Cloudflare', async t 
   assert.equal(head.body, null);
   assert.deepEqual(metodos, ['GET', 'HEAD']);
 });
+
+test('Deno no firma rutas que salen del bucket configurado', async t => {
+  entornoDeno(t);
+  const pedidas = [];
+  t.mock.method(globalThis, 'fetch', async url => {
+    pedidas.push(new URL(url).pathname);
+    return new Response('{}');
+  });
+  for (const ruta of ['/..%2Fprivado%2Fnucleo%2Fv1%2Findice.json', '/a/..%2F..%2Fprivado%2Fx.json',
+                      '/.%2F..%2Fprivado%2Fx.json', '/%E0%A4%A']) {
+    assert.equal((await deno.fetch(new Request('https://datos.test' + ruta))).status, 404, ruta);
+  }
+  assert.deepEqual(pedidas, []);
+  assert.equal((await deno.fetch(new Request('https://datos.test/dias/2026-10-29.json'))).status, 200);
+  assert.deepEqual(pedidas, ['/datos/dias/2026-10-29.json']);
+});
