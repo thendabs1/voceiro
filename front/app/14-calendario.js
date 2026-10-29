@@ -30,7 +30,7 @@ const CALENDARIO = {
   // fecha: el día elegido (la lista empieza en él y la tira enseña su semana).
   fecha: '', desdeConsulta: '', rango: '', semanas: 1, mesAbierto: false, mes: null,
   zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
-  temas: new Set(), mio: false, asistente: null, deporte: '', competicion: '', temporada: null, precio: '', donde: null, dondeAuto: false, editandoDonde: false, clave: '',
+  temas: new Set(), mio: false, prefs: null, asistente: null, deporte: '', competicion: '', temporada: null, precio: '', donde: null, dondeAuto: false, editandoDonde: false, clave: '',
   escrito: { donde: '' }, sugerencias: { donde: [] },
   consulta: '', vigente: '', controller: null, resumen: null, dias: new Map(), pendientes: null, origen: null, scroll: 0,
 };
@@ -121,6 +121,7 @@ async function cargarCalendario(renovar = false){
   const s = CALENDARIO;
   if (s.orden?.desconocidos.length) return void pintarCalendario();
   if (s.meta && !renovar) return void consultarCalendario();
+  if (renovar){ s.mes = null; s.temporada = null; }
   s.controller?.abort();
   const controller = s.controller = new AbortController();
   s.cargando = true; s.error = ''; pintarCalendario();
@@ -155,9 +156,11 @@ async function consultarCalendario(){
   s.cargando = true; pintarCalendario();
   try {
     const dato = await calPedir('resumen', params, controller.signal);
-    calAnotar(dato); s.vigente = clave; s.resumen = dato.dias; s.dias.clear();
+    calAnotar(dato); s.vigente = clave; s.resumen = dato.dias; s.dias.clear(); s.reintento = false;
   } catch (e){
     if (controller.signal.aborted) return;
+    // Republicación en curso: un reintento lee ya la revisión nueva.
+    if (e.status === 409 && !s.reintento){ s.reintento = true; s.consulta = ''; s.cargando = false; return void consultarCalendario(); }
     s.error = e.status === 422 ? 'calFueraHorizonte' : 'calError';
     // Lo que quedaba a la vista era de otra consulta: no se presenta como suyo.
     if (clave !== s.vigente) s.resumen = null;
@@ -165,10 +168,16 @@ async function consultarCalendario(){
   s.cargando = false; pintarCalendario();
 }
 // Mes desplegado: solo cuentas (sin muestras) de sus 42 días, al abrirlo.
+// Ventana [desde, hasta) recortada al horizonte publicado y a desde:/hasta: del buscador.
+function calRecortar(desde, hasta){
+  const s = CALENDARIO, h = s.meta?.horizonte, p = parseQuery(s.orden?.resto || '');
+  const fin = fechaValida(p.hasta) ? sumarDiasCalendario(p.hasta, 1) : null;
+  return { desde: [desde, h?.desde, fechaValida(p.desde) ? p.desde : null].filter(Boolean).sort().at(-1),
+    hasta: [hasta, h?.hasta, fin].filter(Boolean).sort()[0] };
+}
 async function cargarMesCalendario(){
-  const s = CALENDARIO, h = s.meta?.horizonte, dias = ventanaCalendario(s.fecha, 'mes');
-  const desde = [dias[0], h?.desde].filter(Boolean).sort().at(-1);
-  const hasta = [sumarDiasCalendario(dias.at(-1), 1), h?.hasta].filter(Boolean).sort()[0];
+  const s = CALENDARIO, dias = ventanaCalendario(s.fecha, 'mes');
+  const { desde, hasta } = calRecortar(dias[0], sumarDiasCalendario(dias.at(-1), 1));
   // En ancho (rejilla con títulos) también muestras y barras; en estrecho, solo cuentas.
   const ancho = calMesAncho();
   const params = { ...calParametros(), desde, hasta, muestras: ancho ? 4 : 0, barras: ancho ? 1 : '' }, clave = JSON.stringify(params);
@@ -190,18 +199,20 @@ async function cargarMesCalendario(){
 // «Este mes en deportes»: los GP y torneos del mes natural (los partidos se
 // cuentan con el resumen). Pocos: unos 30 al mes con todas las competiciones.
 async function cargarTemporadaCalendario(){
-  const s = CALENDARIO, uno = s.fecha.slice(0, 8) + '01', mesSig = moverFecha(uno, 'mes', 1);
-  const params = { ...calParametros(), desde: uno, hasta: mesSig, presentacion: 'prolongada,programa',
+  const s = CALENDARIO, uno = s.fecha.slice(0, 8) + '01';
+  const { desde, hasta } = calRecortar(uno, moverFecha(uno, 'mes', 1));
+  const params = { ...calParametros(), desde, hasta, presentacion: 'prolongada,programa',
     circuitos: Object.keys(CAL_MARCAS).join(','), limite: 50 }, clave = JSON.stringify(params);
   if (s.temporada?.clave === clave) return;
+  if (desde >= hasta){ s.temporada = { clave, eventos: [] }; return; }
   s.temporada = { clave, eventos: null };
   try {
     const dato = await calPedir('eventos', params, (s.controllerMes ||= new AbortController()).signal);
     if (s.temporada?.clave !== clave) return;
     calAnotar(dato); s.temporada.eventos = dato.eventos;
-  } catch {
-    if (s.temporada?.clave === clave) s.temporada = null;
-    return;
+  } catch (e){
+    if (e.name === 'AbortError' || s.temporada?.clave !== clave) return;
+    s.temporada = { clave, eventos: [], error: true };
   }
   pintarCalendario();
 }
@@ -253,7 +264,7 @@ function calLimpiarFiltros(){
 }
 function calPreferencias(){
   try {
-    const p = JSON.parse(localStorage.getItem(CAL_PREF_KEY));
+    const p = CALENDARIO.prefs || JSON.parse(localStorage.getItem(CAL_PREF_KEY));
     if (p?.v !== 1 || !['configurado', 'omitido'].includes(p.estado)) return null;
     const lista = x => Array.isArray(x) ? x.filter(v => typeof v === 'string').slice(0, 40) : [];
     return { v: 1, estado: p.estado, sitio: p.sitio?.id && p.sitio?.nombre ? { id: String(p.sitio.id), nombre: String(p.sitio.nombre) } : null,
@@ -262,14 +273,17 @@ function calPreferencias(){
   } catch { return null; }
 }
 function calGuardarPreferencias(p){
+  CALENDARIO.prefs = p;
   try { localStorage.setItem(CAL_PREF_KEY, JSON.stringify(p)); return true; } catch { return false; }
 }
 // «Lo mío»: los temas de mis intereses (con «otra:cultura» y el deporte local).
 const calTemasMios = p => [...p.intereses.cultura, ...(p.intereses.otraCultura ? ['otra:cultura'] : []), ...(p.intereses.deporteLocal ? ['deportes'] : [])];
 function calVerLoMio(){
   const s = CALENDARIO, p = calPreferencias();
-  if (p?.estado !== 'configurado' || !calTemasMios(p).length) return false;
-  s.temas = new Set(calTemasMios(p)); s.mio = true; s.deporte = ''; s.competicion = '';
+  if (p?.estado !== 'configurado' || !calTemasMios(p).length && !p.competiciones.length) return false;
+  // Sin intereses locales, «Lo mío» son las competiciones que sigo.
+  s.temas = new Set(calTemasMios(p)); s.mio = true; s.competicion = '';
+  s.deporte = calTemasMios(p).length ? '' : 'seguidas';
   return true;
 }
 // La ciudad fija también la hora: la canaria en Canarias; si no, la del navegador.
@@ -289,7 +303,6 @@ function calDondePorDefecto(){
   const p = calPreferencias();
   if (p?.estado === 'configurado'){
     if (!s.donde) calElegirDonde(p.sitio);
-    if (!s.orden) calVerLoMio();
     return;
   }
   const ine = sitiosTiempo().find(x => x.lugar?.ine)?.lugar.ine;
@@ -303,26 +316,33 @@ function actualizarConsultaCalendario(orden){
   const s = CALENDARIO, clave = JSON.stringify(orden && [orden.ambitos, orden.circuitos, orden.tipos, orden.desconocidos]);
   const fecha = parseQuery(orden?.resto || '').desde || '';
   if (fecha !== s.desdeConsulta){ s.desdeConsulta = fecha; s.fecha = fechaValida(fecha) ? fecha : calHoy(); }
+  // La orden va antes que las preferencias: un prefijo no hereda «Lo mío».
+  s.orden = orden;
   if (clave !== s.clave){
     s.clave = clave; calLimpiarFiltros();
-    s.fecha = fechaValida(fecha) ? fecha : calHoy();
     // Un prefijo de agenda abre la vista completa y, al quitarlo, la cierra;
-    // cerrada a mano, sigue cerrada mientras no cambie la consulta.
+    // cerrada a mano, sigue cerrada mientras no cambie la consulta. El sitio
+    // (y con él la zona) se aplica antes de calcular «hoy».
     if (calPideAgenda(orden)){
       if (!s.abierto){ s.origen = document.getElementById('buscar'); s.scroll = window.scrollY; s.abierto = s.porPrefijo = true; calDondePorDefecto(); }
     } else if (s.porPrefijo) s.abierto = s.porPrefijo = false;
+    s.fecha = fechaValida(fecha) ? fecha : calHoy();
   }
-  s.orden = orden;
   if (s.abierto) return void cargarCalendario();
   pintarCalendario();
 }
 function abrirCalendario(origen = null){
   if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
-  // Cada entrada empieza hoy; el pasado se visita navegando.
-  if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; calElegirDia(calHoy()); }
+  // Cada entrada empieza hoy (en la zona del sitio) y, sin prefijo, en «Lo mío»;
+  // el pasado se visita navegando.
   cerrarEstadisticas(false);
-  s.abierto = true; s.porPrefijo = false; calDondePorDefecto();
+  calDondePorDefecto();
+  if (!s.abierto){
+    s.origen = origen || document.activeElement; s.scroll = window.scrollY; calElegirDia(calHoy());
+    if (!s.orden) calVerLoMio();
+  }
+  s.abierto = true; s.porPrefijo = false;
   // Tras un rato cerrado, la publicación del día pudo cambiar.
   cargarCalendario(Date.now() - s.cargado > 10 * 60000);
   requestAnimationFrame(() => {
@@ -617,6 +637,7 @@ function calTemporada(){
         ${lista.length > 4 ? `<li class="cal-nota">${calEsc(t('calYMas', { n: lista.length - 4 }))}</li>` : ''}</ul>` : ''}</li>`;
   });
   return `<section class="cal-temporada"><h2>${calEsc(t('calEsteMes', { mes: calFecha(s.fecha, { month: 'long', day: undefined }) }))}</h2>
+    ${s.temporada?.error ? `<p class="cal-aviso">${calEsc(t('calError'))}</p>` : ''}
     ${filas.length ? `<ul>${filas.join('')}</ul>` : `<p class="cal-nota">${calEsc(s.temporada?.eventos ? t('calSinDeportes') : t('calCargando'))}</p>`}</section>`;
 }
 function calPendientes(){
@@ -721,13 +742,16 @@ function calPasoAsistente(paso){
 async function calDisponibilidad(){
   const a = CALENDARIO.asistente, clave = a.b.sitio?.id || '';
   if (a.clave === clave) return;
+  a.controller?.abort();
+  const controller = a.controller = new AbortController();
   a.clave = clave; a.disp = null; pintarCalendario();
   try {
-    const d = await calPedir('catalogo', { disponibilidad: 1, territorio: clave }, new AbortController().signal);
+    const d = await calPedir('catalogo', { disponibilidad: 1, territorio: clave }, controller.signal);
     if (CALENDARIO.asistente !== a || a.clave !== clave) return;
-    a.disp = d.disponibilidad;
+    a.disp = d.disponibilidad; a.error = '';
   } catch {
-    if (CALENDARIO.asistente === a) a.error = t('calError');
+    if (controller.signal.aborted || CALENDARIO.asistente !== a || a.clave !== clave) return;
+    a.error = t('calError'); a.clave = null;
   }
   pintarCalendario();
 }
@@ -794,6 +818,7 @@ function calAsistente(){
     <div class="as-acciones">${calBoton('as-cancelar', t('calAsCancelar'))}${a.paso ? calBoton('as-anterior', t('calAsAnterior')) : ''}
     ${calBoton(ultimo ? 'as-guardar' : 'as-siguiente', t(ultimo ? 'calAsGuardar' : 'calAsSiguiente'), '', 'class="primary"')}</div></section>`;
 }
+const calEnfocarAjustes = () => document.getElementById('calendario-panel')?.querySelector('[data-cal="asistente"]')?.focus({ preventScroll: true });
 function calGuardarAsistente(){
   const s = CALENDARIO, b = s.asistente.b;
   if (!b.cultura.size && !b.otraCultura && !b.deporteLocal && !b.competiciones.size){
@@ -807,6 +832,7 @@ function calGuardarAsistente(){
   if (!calVerLoMio()){ s.temas.clear(); s.mio = false; }
   toast(t(ok ? 'calAsGuardado' : 'calAsNoGuardado'), 3000);
   consultarCalendario();
+  calEnfocarAjustes();
 }
 function pintarCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
@@ -823,8 +849,9 @@ function pintarCalendario(){
   p.setAttribute('aria-busy', String(s.cargando));
   if (s.asistente){
     p.innerHTML = `<h1 id="cal-titulo" class="sr-only" tabindex="-1">${calEsc(t('calTitulo'))}</h1>${calAsistente()}`;
-    const vuelta = id ? document.getElementById(id) : [...p.querySelectorAll('input, [data-cal]')]
-      .find(b => (b.dataset.cal === accion && b.dataset.valor === valor) || (foco?.name && b.name === foco.name && b.value === foco.value));
+    const vuelta = id ? document.getElementById(id) : foco?.name
+      ? [...p.querySelectorAll('input')].find(b => b.name === foco.name && b.value === foco.value)
+      : [...p.querySelectorAll('[data-cal]')].find(b => b.dataset.cal === accion && b.dataset.valor === valor);
     vuelta?.focus({ preventScroll: true });
     return;
   }
@@ -865,7 +892,7 @@ function wireCalendario(){
     if (a === 'ahora-no'){ calGuardarPreferencias({ v: 1, estado: 'omitido' }); return void pintarCalendario(); }
     if (s.asistente){
       const as = s.asistente;
-      if (a === 'as-cancelar'){ s.asistente = null; return void pintarCalendario(); }
+      if (a === 'as-cancelar'){ as.controller?.abort(); s.asistente = null; pintarCalendario(); return void calEnfocarAjustes(); }
       if (a === 'as-anterior') return calPasoAsistente(as.paso - 1);
       if (a === 'as-siguiente') return calPasoAsistente(as.paso + 1);
       if (a === 'as-ir') return calPasoAsistente(Number(v));

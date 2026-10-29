@@ -482,6 +482,11 @@ test('chips: una cita es su chip; de un GP solo la carrera, en su día de cada z
   assert.deepEqual(porEvento('010'), [['*', '2026-10-25', '010', '010', 1440, null, null]]);
   assert.deepEqual([porEvento('000'), porEvento('003')], [[], []]);
   assert.equal(porEvento('001').length, 3);
+  // Una cita cuyo único día está excluido no tiene chip (ni tramo).
+  const excluida = muestra();
+  excluida.eventos[10].programacion.valor.cuando = { inicio: extremo('2026-10-25'), fin: extremo(null), dias_excluidos: ['2026-10-25'] };
+  const q = prepararLectura(excluida);
+  assert.deepEqual([q.chips.filter(c => c[2] === '010'), q.tramos.filter(t => t[3] === '010')], [[], []]);
 });
 
 test('resumen con chips: la carrera es muestra de su día con el nombre del GP; lectura sin chips, como antes', async t => {
