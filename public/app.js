@@ -12,37 +12,37 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=382de95a63';
+} from './parser.js?v=a940cf3dce';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=382de95a63';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=382de95a63';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=382de95a63';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=382de95a63';
-import { comparador } from './busqueda/orden.js?v=382de95a63';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=a940cf3dce';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=a940cf3dce';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=a940cf3dce';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=a940cf3dce';
+import { comparador } from './busqueda/orden.js?v=a940cf3dce';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=382de95a63';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=382de95a63';
+} from './sync/fusion.js?v=a940cf3dce';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=a940cf3dce';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=382de95a63';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=382de95a63';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=a940cf3dce';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=a940cf3dce';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=382de95a63';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=a940cf3dce';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=382de95a63';
+} from './tiempo/avisos.js?v=a940cf3dce';
 
-import { I18N, traducir } from './idiomas/index.js?v=382de95a63';
+import { I18N, traducir } from './idiomas/index.js?v=a940cf3dce';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=382de95a63';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=382de95a63';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=382de95a63';
+import { ESPN } from './consultas/registro.js?v=a940cf3dce';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=a940cf3dce';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=a940cf3dce';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=382de95a63';
+import { ADMINISTRACION } from './territorios/administracion.js?v=a940cf3dce';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1955,7 +1955,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=382de95a63');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=a940cf3dce');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -5127,11 +5127,13 @@ function estAmbito(){
   return PRESET_ACTIVO && estModo('modo:' + PRESETS.activo) ? 'modo:' + PRESETS.activo : 'todos';
 }
 // Los temas y palabras de un modo no amplían este conjunto. ignore gana a su grupo.
-function seleccionEstadisticas(catalogo, ambito, modos = []){
-  const todos = Object.keys(catalogo);
+// `extra`: dominios con datos que ya no están en el catálogo; sin ellos «Todos»
+// no cuadra con el total del día.
+function seleccionEstadisticas(catalogo, ambito, modos = [], extra = []){
+  const todos = [...new Set([...Object.keys(catalogo), ...extra])];
   if (ambito.startsWith('grupo:')){
     const g = ambito.slice(6);
-    return todos.filter(d => catalogo[d].g === g || catalogo[d].g.startsWith(g + ' · '));
+    return todos.filter(d => catalogo[d]?.g === g || catalogo[d]?.g.startsWith(g + ' · '));
   }
   if (!ambito.startsWith('modo:')) return todos;
   const modo = modos.find(p => 'modo:' + p.id === ambito);
@@ -5150,7 +5152,7 @@ function sumarEstadisticas(medios, dominios){
   const porHora = Array(24).fill(0);
   for (const p of pubs) (p.por_hora || []).slice(0, 24).forEach((n, h) => { if (Number.isFinite(n)) porHora[h] += n; });
   return { titulares: pubs.length ? pubs.reduce((n, p) => n + p.titulares, 0) : null,
-    disponibles: pubs.length, conTitulares: pubs.filter(p => p.titulares > 0).length,
+    conHora: pubs.reduce((n, p) => n + (p.fechas?.con_hora || 0), 0), disponibles: pubs.length, conTitulares: pubs.filter(p => p.titulares > 0).length,
     seleccionados: dominios.length, porHora };
 }
 // «Regional · Galicia» se pliega bajo «Regional»; una familia de un solo grupo
@@ -5166,7 +5168,9 @@ function familiasEstadisticas(catalogo, dominios, sinGrupo){
   }
   return familias;
 }
-function estUltimoDia(indice){ return indice.dias.map(d => d.fecha).filter(f => f <= estHoy()).sort().at(-1); }
+// Días con fichero publicado (35 en el índice; la serie solo trae 30).
+function estDias(indice){ return indice.dias.map(d => d.fecha).filter(f => f <= estHoy()).sort(); }
+function estUltimoDia(indice){ return estDias(indice).at(-1); }
 // Los 30 días del índice, siempre enteros: elegir un día no mueve la gráfica.
 function serieEstadisticas(indice, dominios, campo = 'titulares'){
   return indice.serie_dias.map((fecha, i) => {
@@ -5183,7 +5187,10 @@ function validarIndiceEstadisticas(p){
       || !Object.values(p.medios).every(m => m && typeof m.n === 'string' && typeof m.g === 'string')) throw new Error('formato');
   return p;
 }
-function estDominios(){ return seleccionEstadisticas(ESTADISTICAS.indice.medios, estAmbito(), PRESETS.lista); }
+function estDominios(){
+  const { indice } = ESTADISTICAS;
+  return seleccionEstadisticas(indice.medios, estAmbito(), PRESETS.lista, [...Object.keys(indice.serie), ...Object.keys(estDatoDia()?.medios || {})]);
+}
 function estDatoDia(){ return ESTADISTICAS.dia?.fecha === ESTADISTICAS.fecha ? ESTADISTICAS.dia : null; }
 function estBoton(accion, texto, valor = ''){
   return `<button type="button" data-est="${accion}" data-valor="${escapeHtml(valor)}">${escapeHtml(texto)}</button>`;
@@ -5197,7 +5204,7 @@ function estMetricas(pares){
   return visibles.length ? `<dl class="est-metricas">${visibles.map(([clave, v]) => `<div><dt>${escapeHtml(t(clave))}</dt><dd>${typeof v === 'number' ? estNumero(v) : escapeHtml(v)}</dd></div>`).join('')}</dl>` : '';
 }
 const estAlto = (n, max) => `--est-valor:${n ? Math.max(2, n / max * 100) : 0}%`;
-function estEvolucion(dominios){
+function estEvolucion(dominios, nota = ''){
   const puntos = serieEstadisticas(ESTADISTICAS.indice, dominios);
   if (!puntos.some(p => p.valor != null)) return '';
   const max = Math.max(1, ...puntos.map(p => p.valor || 0));
@@ -5208,15 +5215,16 @@ function estEvolucion(dominios){
       return `<button type="button" data-est="fecha" data-valor="${p.fecha}"${p.fecha === ESTADISTICAS.fecha ? ' aria-current="date"' : ''}${p.valor == null ? ' disabled' : ''} style="${estAlto(p.valor, max)}" aria-label="${escapeHtml(texto)}" title="${escapeHtml(texto)}"><i></i></button>`;
     }).join('')}</div>
     <div class="est-eje"><span>${escapeHtml(estFecha(puntos[0].fecha, true))}</span><span>${escapeHtml(estFecha(puntos.at(-1).fecha, true))}</span></div></div>
-    <p class="est-nota">${escapeHtml(t('estBarrasDia'))}</p>`;
+    <p class="est-nota">${nota ? escapeHtml(nota) + ' ' : ''}${escapeHtml(t('estBarrasDia'))}</p>`;
 }
-function estHoras(porHora){
+// Sin hora de publicación, el titular cuenta a la estimada o a la de recogida.
+function estHoras(porHora, sinHora = 0){
   if (!porHora?.some(n => n > 0)) return '';
   const max = Math.max(...porHora), pico = t('estPico', { hora: porHora.indexOf(max), n: estNumero(max) });
   return `<h3>${escapeHtml(t('estPorHora'))}</h3><div class="est-grafico"><span class="est-escala">${estNumero(max)}</span>
     <div class="est-barras est-horas" role="img" aria-label="${escapeHtml(pico)}">${porHora.map((n, h) => `<span style="${estAlto(n, max)}" title="${h} h: ${estNumero(n)}"><i></i></span>`).join('')}</div>
     <div class="est-eje">${[0, 6, 12, 18, 23].map(h => `<span>${h} h</span>`).join('')}</div></div>
-    <p class="est-nota">${escapeHtml(pico)}</p>`;
+    <p class="est-nota">${escapeHtml(pico)}${sinHora > 0 ? ' ' + escapeHtml(t('estHorasEstimadas', { n: estNumero(sinHora) })) : ''}</p>`;
 }
 function estSecciones(secciones){
   const filas = Object.entries(secciones || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -5262,12 +5270,13 @@ function estSinDia(){
 }
 function estResumen(){
   const dia = estDatoDia(), ids = estDominios();
-  const titulo = `<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(t('estResumen'))}</h2>`;
+  // La pestaña ya dice dónde se está: el título queda para el lector de pantalla y el foco.
+  const titulo = `<h2 id="est-vista-titulo" class="sr-only" tabindex="-1">${escapeHtml(t('estResumen'))}</h2>`;
   if (!dia) return titulo + estSinDia() + estEvolucion(ids);
   const total = sumarEstadisticas(dia.medios, ids);
   return titulo + estMetricas([['estTitulares', total.titulares],
       ['estMediosTitulares', total.disponibles ? t('estNDe', { n: estNumero(total.conTitulares), total: estNumero(total.seleccionados) }) : null]])
-    + estEvolucion(ids) + estHoras(total.porHora) + estGrupos(dia, ids);
+    + estEvolucion(ids) + estHoras(total.porHora, total.titulares - total.conHora) + estGrupos(dia, ids);
 }
 // Miniatura de 30 días: deja ver de un vistazo un medio que se ha callado.
 function estMiniatura(valores){
@@ -5280,7 +5289,13 @@ function estMiniatura(valores){
 function estListaMedios(){
   const s = ESTADISTICAS, catalogo = s.indice.medios, dia = estDatoDia(), q = normalize(s.consulta);
   const nombre = d => catalogo[d]?.n || d, titulares = d => dia?.medios[d]?.pub?.titulares;
-  const fallo = d => dia?.medios[d]?.runs?.ultimo_estado === 'fallo' ? [t('estConFallos')] : [];
+  // Cualquier pasada fallida cuenta; que fallara la última se dice aparte.
+  const fallo = d => {
+    const r = dia?.medios[d]?.runs;
+    if (!(r?.pasadas > r?.ok)) return [];
+    return [`${t('estConFallos')} (${t('estNDe', { n: estNumero(r.pasadas - r.ok), total: estNumero(r.pasadas) })})`,
+      ...(r.ultimo_estado === 'fallo' ? [t('estFalloUltima')] : [])];
+  };
   const ids = estDominios().filter(d => normalize(d + ' ' + nombre(d)).includes(q))
     .sort((a, b) => (titulares(b) ?? -1) - (titulares(a) ?? -1) || nombre(a).localeCompare(nombre(b)));
   return ids.length ? estTabla(['estMedio', 'estTitulares', 'estUltimos30'], ids.map(d => [
@@ -5290,41 +5305,52 @@ function estListaMedios(){
 }
 // Al escribir solo cambia la lista: recrear el campo cierra el teclado del móvil.
 function estDirectorio(){
-  return `<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(t('estMedios'))}</h2>
+  return `<h2 id="est-vista-titulo" class="sr-only" tabindex="-1">${escapeHtml(t('estMedios'))}</h2>
     <label class="est-buscar">${escapeHtml(t('estBuscarMedio'))}<input type="search" id="est-buscar-medio" value="${escapeHtml(ESTADISTICAS.consulta)}" autocomplete="off"></label>
     <div id="est-lista">${estListaMedios()}</div>`;
 }
 function estFicha(){
   const s = ESTADISTICAS, d = s.dominio, m = s.indice.medios[d], dia = estDatoDia(), pub = dia?.medios[d]?.pub, runs = dia?.medios[d]?.runs;
-  const cabecera = `${estBoton('medios', t('estVolverMedios'))}<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(m?.n || d)}</h2>
-    <p class="est-nota">${[d, m?.g, pub?.fuentes && Object.keys(pub.fuentes).join(', ')].filter(Boolean).map(escapeHtml).join(' · ')}</p>`;
-  if (!m) return cabecera + `<p>${escapeHtml(t('estSinSeguimiento'))}</p>`;
-  const serie = s.indice.serie[d] || {};
+  const cabecera = `<div class="est-ficha-cab">${estBoton('medios', t('estVolverMedios'))}<h2 id="est-vista-titulo" tabindex="-1">${escapeHtml(m?.n || d)}</h2></div>
+    <p class="est-nota">${[d, m?.g || t('estSinSeguimiento'), pub?.fuentes && Object.keys(pub.fuentes).join(', ')].filter(Boolean).map(escapeHtml).join(' · ')}</p>`;
+  // Un medio que salió del catálogo conserva su ficha mientras tenga datos.
+  const serie = s.indice.serie[d];
+  if (!m && !serie && !dia?.medios[d]) return cabecera;
   // Un día con pasadas y sin titulares (feed caído) también entra en el histórico.
-  const dias = s.indice.serie_dias.map((fecha, i) => ({ fecha, titulares: serie.titulares?.[i], conHora: serie.con_hora?.[i], pasadas: serie.pasadas?.[i], ok: serie.ok?.[i] }))
+  const dias = s.indice.serie_dias.map((fecha, i) => ({ fecha, titulares: serie?.titulares?.[i], conHora: serie?.con_hora?.[i], pasadas: serie?.pasadas?.[i], ok: serie?.ok?.[i] }))
     .filter(x => Number.isFinite(x.titulares) || x.pasadas > 0);
   const conTitulares = dias.filter(x => Number.isFinite(x.titulares)), conPasadas = dias.some(x => x.pasadas > 0);
   const media = conTitulares.length ? Math.round(conTitulares.reduce((n, x) => n + x.titulares, 0) / conTitulares.length) : null;
+  // La media es de los 30 días: va con su gráfica, no entre las cifras del día.
+  const notaMedia = media == null ? '' : t('estMediaDias', { n: estNumero(media), dias: estNumero(conTitulares.length) });
+  // Como en la serie, con titulares del medio la cuenta que falta es 0, no un hueco.
+  const conHora = pub ? pub.fechas?.con_hora || 0 : null;
   const delDia = !dia ? estSinDia() : !pub ? `<p class="est-aviso">${escapeHtml(t('estSinDatos'))}</p>` : estMetricas([
     ['estTitulares', pub.titulares],
-    ['estMediaDiaria', media],
-    ['estConHora', estPorcentaje(pub.fechas?.con_hora, pub.titulares)],
+    ['estConHora', estPorcentaje(conHora, pub.titulares)],
     ['estHorario', pub.primera && pub.ultima ? `${pub.primera}–${pub.ultima}` : null],
     ['estRetraso', estDuracion(pub.retraso_min?.p50)],
   ]);
-  return cabecera + delDia + estEvolucion([d]) + estHoras(pub?.por_hora) + estSecciones(pub?.secciones) + estRecogida(runs)
+  return cabecera + delDia + estEvolucion([d], notaMedia) + estHoras(pub?.por_hora, pub ? pub.titulares - conHora : 0) + estSecciones(pub?.secciones) + estRecogida(runs)
     + (dias.length ? `<h3>${escapeHtml(t('estHistorico'))}</h3>` + estTabla(['estDia', 'estTitulares', 'estConHora', ...(conPasadas ? ['estPasadasBuenas'] : [])], dias.reverse().map(x => [
       estBoton('fecha', estFecha(x.fecha), x.fecha), estNumero(x.titulares), estPorcentaje(x.conHora, x.titulares) || '—',
       ...(conPasadas ? [x.pasadas > 0 ? t('estNDe', { n: estNumero(x.ok), total: estNumero(x.pasadas) }) : '—'] : [])])) : '');
 }
+// ‹ día › como en Plausible: se pasa de un día con datos al siguiente sin abrir
+// el calendario. El calendario solo ofrece días con fichero publicado.
 function estFiltros(){
   const s = ESTADISTICAS, ambito = estAmbito(), catalogo = s.indice?.medios || {};
   const option = (valor, texto) => `<option value="${escapeHtml(valor)}"${ambito === valor ? ' selected' : ''}>${escapeHtml(texto)}</option>`;
   // Las familias con varios grupos («Regional») van delante de los suyos.
   const grupos = [...new Set(Object.values(catalogo).flatMap(m => m.g.includes(' · ') ? [m.g, m.g.split(' · ')[0]] : [m.g]))].sort((a, b) => a.localeCompare(b));
-  const fecha = `<label>${escapeHtml(t('estDiaArchivo'))}<input id="est-fecha" type="date" value="${escapeHtml(s.fecha)}"${s.indice ? ` min="${s.indice.serie_dias[0]}"` : ''} max="${estHoy()}"></label>`;
+  const dias = s.indice ? estDias(s.indice) : [];
+  const anterior = dias.filter(f => f < s.fecha).at(-1), siguiente = dias.find(f => f > s.fecha), datos = estDatoDia();
+  const paso = (id, valor, clave, icono) => `<button type="button" id="${id}" class="est-paso" data-est="fecha" data-valor="${valor || ''}"${valor ? '' : ' disabled'} aria-label="${escapeHtml(t(clave))}" title="${escapeHtml(t(clave))}">${ico(icono)}</button>`;
+  const fecha = `<div class="est-dia">${paso('est-dia-anterior', anterior, 'estDiaAnterior', 'chevron-left')}
+    <label><span class="sr-only">${escapeHtml(t('estDiaArchivo'))}</span><input id="est-fecha" type="date" value="${escapeHtml(s.fecha)}"${dias.length ? ` min="${dias[0]}" max="${dias.at(-1)}"` : ''}></label>
+    ${paso('est-dia-siguiente', siguiente, 'estDiaSiguiente', 'chevron-right')}${datos && !datos.cerrado ? `<span class="est-revisable">${escapeHtml(t('estRevisable'))}</span>` : ''}</div>`;
   if (s.vista === 'medio') return `<div class="est-filtros">${fecha}</div>`;
-  return `<div class="est-filtros">${fecha}<label>${escapeHtml(t('estAmbito'))}<select id="est-ambito">${option('todos', t('estTodos'))}
+  return `<div class="est-filtros">${fecha}<label><span class="sr-only">${escapeHtml(t('estAmbito'))}</span><select id="est-ambito">${option('todos', t('estTodos'))}
     ${PRESETS.lista.length ? `<optgroup label="${escapeHtml(t('estModos'))}">${PRESETS.lista.map(p => option('modo:' + p.id, p.nombre)).join('')}</optgroup>` : ''}
     ${grupos.length ? `<optgroup label="${escapeHtml(t('estGrupos'))}">${grupos.map(g => option('grupo:' + g, g)).join('')}</optgroup>` : ''}</select></label></div>`;
 }
@@ -5348,12 +5374,15 @@ function pintarEstadisticas(){
     if (s.cargando && !estDatoDia() && previo) contenido = previo.innerHTML;
   }
   const datos = estDatoDia(), generado = datos?.generado || s.indice?.generado;
-  panel.innerHTML = `<div class="est-cabecera"><strong>${escapeHtml(t('estTitulo'))}</strong><div class="est-acciones">
-      <button type="button" data-est="renovar"${s.cargando ? ' disabled' : ''} aria-label="${escapeHtml(t('estActualizar'))}" title="${escapeHtml(t('estActualizar'))}">${ico('refresh-cw')}</button>
-      <button type="button" data-est="cerrar" aria-label="${escapeHtml(t('estCerrar'))}" title="${escapeHtml(t('estCerrar'))}">${ico('x')}</button></div></div>
+  // Dos filas arriba: pestañas y acciones; luego día y selección. El nombre
+  // del panel ya lo lleva su aria-label.
+  panel.innerHTML = `<div class="est-cabecera">
     <nav class="est-nav" aria-label="${escapeHtml(t('estTitulo'))}">${['resumen', 'medios'].map(v => `<button type="button" data-est="${v}"${(v === 'medios' ? s.vista !== 'resumen' : s.vista === v) ? ' aria-current="page"' : ''}>${escapeHtml(t(v === 'resumen' ? 'estResumen' : 'estMedios'))}</button>`).join('')}</nav>
-    <div class="est-cuerpo">${estFiltros()}
-    <p class="est-contexto">${escapeHtml(estFecha(s.fecha))}${datos && !datos.cerrado ? ' · ' + escapeHtml(t('estRevisable')) : ''}</p>
+    <div class="est-acciones">
+      <button type="button" data-est="renovar"${s.cargando ? ' disabled' : ''} aria-label="${escapeHtml(t('estActualizar'))}" title="${escapeHtml(t('estActualizar'))}">${ico('refresh-cw')}</button>
+      <button type="button" data-est="cerrar" aria-label="${escapeHtml(t('estCerrar'))}" title="${escapeHtml(t('estCerrar'))}">${ico('x')}</button></div>
+    ${estFiltros()}</div>
+    <div class="est-cuerpo">
     <p class="est-estado" role="status">${s.error ? escapeHtml(t('estErrorCarga')) + ' ' + estBoton('renovar', t('estReintentar')) : s.cargando ? escapeHtml(t('estCargando')) : ''}</p>
     <div class="est-contenido">${contenido}</div>
     <p id="total-r2" class="est-nota est-pie" hidden></p>
@@ -5361,7 +5390,8 @@ function pintarEstadisticas(){
   renderTotalR2();
   // Repintar una tabla no debe expulsar el teclado al body.
   const siguiente = idFoco ? document.getElementById(idFoco) : [...panel.querySelectorAll('[data-est]')].find(b => b.dataset.est === accionFoco && b.dataset.valor === valorFoco);
-  siguiente?.focus({ preventScroll: true });
+  // Al llegar al primer o último día la flecha se desactiva: el foco pasa a la fecha.
+  (siguiente?.disabled ? document.getElementById('est-fecha') : siguiente)?.focus({ preventScroll: true });
 }
 
 async function pedirEstadisticas(nombre, signal){
@@ -5548,7 +5578,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=382de95a63')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=a940cf3dce')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }

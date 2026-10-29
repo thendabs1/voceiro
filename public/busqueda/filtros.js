@@ -15,7 +15,7 @@
 //     que empiezan por x.
 //   - lang: idioma principal del medio, por código exacto.
 
-import { palabrasDe, coincide } from './texto.js?v=382de95a63';
+import { palabrasDe, coincide } from './texto.js?v=a940cf3dce';
 
 const _termino = valor => ({
   incluir: [{ partes: palabrasDe(valor).map(x => x.t), prefijo: true }],
