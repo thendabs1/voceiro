@@ -1,6 +1,9 @@
+import sqlite3
 import unittest
 from datetime import date
+from unittest.mock import patch
 
+import estadisticas as tarea
 from cosecha import estadisticas as est
 
 
@@ -120,6 +123,49 @@ class Dias(unittest.TestCase):
         self.assertEqual(s['pasadas'], [None, 144, 144])
         self.assertEqual(s['con_hora'], [None, 0, None])
         self.assertEqual(s['retraso_p50'], [None, None, None])
+
+
+class LeerRuns(unittest.TestCase):
+    """leer_runs contra SQLite con la misma clave que `runs` en Turso."""
+
+    def setUp(self):
+        self.db = sqlite3.connect(':memory:')
+        self.addCleanup(self.db.close)
+        self.db.execute("""CREATE TABLE runs (
+              ts TEXT NOT NULL, dominio TEXT NOT NULL, ok INTEGER NOT NULL,
+              fuente TEXT NOT NULL DEFAULT '', n_items INTEGER NOT NULL DEFAULT 0,
+              con_fecha INTEGER NOT NULL DEFAULT 0, ms INTEGER NOT NULL DEFAULT 0,
+              error TEXT NOT NULL DEFAULT '', intentos TEXT NOT NULL DEFAULT '',
+              PRIMARY KEY (ts, dominio)) WITHOUT ROWID""")
+        # Tres pasadas de cuatro medios el 23, y pasadas pegadas al 22 y al 24.
+        self.del_dia = [(f'2026-10-23T{h}:00+02:00', d)
+                        for h in ('00:00', '12:10', '23:50')
+                        for d in ('a.test', 'b.test', 'c.test', 'd.test')]
+        fuera = [('2026-10-22T23:50:00+02:00', 'a.test'),
+                 ('2026-10-24T00:00:00+02:00', 'a.test')]
+        self.db.executemany("INSERT INTO runs (ts, dominio, ok) VALUES (?, ?, 1)",
+                            self.del_dia + fuera)
+
+    def leer(self, pagina):
+        consultas = []
+
+        def consulta(sql, args=()):
+            consultas.append(sql)
+            return self.db.execute(sql, args).fetchall()
+
+        with patch.object(tarea, 'PAGINA', pagina), \
+             patch.object(tarea, '_consulta', consulta):
+            filas = tarea.leer_runs('2026-10-23')
+        return [(f['ts'], f['dominio']) for f in filas], len(consultas)
+
+    def test_mismas_filas_sin_perder_ni_duplicar(self):
+        # 4 y 12 son múltiplos exactos de las 12 filas: la última consulta
+        # vuelve vacía. 5 corta páginas en mitad de una misma pasada.
+        for pagina in (1, 4, 5, 12, 13):
+            with self.subTest(pagina=pagina):
+                claves, consultas = self.leer(pagina)
+                self.assertEqual(claves, self.del_dia)
+                self.assertEqual(consultas, len(self.del_dia) // pagina + 1)
 
 
 if __name__ == '__main__':
