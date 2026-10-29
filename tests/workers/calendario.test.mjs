@@ -282,6 +282,9 @@ test('HTTP Turso usa batch condicional en un snapshot, liga parámetros y cierra
       step_errors: [null, null, null] } } }, { type: 'ok', response: { type: 'close' } }] });
   };
   assert.deepEqual(await consultarTurso(env, [{ sql: 'SELECT ? AS id', args: [12] }], simular), [[{ id: 12 }]]);
+  await consultarTurso(env, [{ sql: 'SELECT ?, ?, ?', args: [2461077.2916666665, 0, 'texto'] }], simular);
+  assert.deepEqual(cuerpo.requests[0].batch.steps[1].stmt.args, [
+    { type: 'float', value: 2461077.2916666665 }, { type: 'integer', value: '0' }, { type: 'text', value: 'texto' }]);
   assert.equal(cuerpo.requests[0].batch.steps[0].stmt.sql, 'BEGIN');
   assert.equal(cuerpo.requests[0].batch.steps.at(-1).stmt.sql, 'COMMIT');
   assert.equal(cuerpo.requests[1].type, 'close');
