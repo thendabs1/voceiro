@@ -53,19 +53,21 @@ COLS_RUNS = ('ts', 'dominio', 'ok', 'fuente', 'n_items', 'con_fecha', 'ms',
 
 
 def leer_runs(dia):
-    """Filas de `runs` del día (hora de Madrid), paginadas por la clave."""
+    """Filas de `runs` del día (hora de Madrid), paginadas por la clave.
+    Tras la primera página la cota inferior es solo la tupla: con `ts >= día`
+    además, SQLite busca desde el principio del día y relee lo ya leído."""
     siguiente = (datetime.fromisoformat(dia) + timedelta(days=1)).date().isoformat()
-    filas, ultimo = [], ('', '')
+    filas, desde, args = [], "ts >= ?", (dia,)
     while True:
         lote = _consulta(
             f"SELECT {', '.join(COLS_RUNS)} FROM runs"
-            " WHERE ts >= ? AND ts < ? AND (ts, dominio) > (?, ?)"
+            f" WHERE {desde} AND ts < ?"
             f" ORDER BY ts, dominio LIMIT {PAGINA}",
-            (dia, siguiente, *ultimo))
+            (*args, siguiente))
         filas += [dict(zip(COLS_RUNS, f)) for f in lote]
         if len(lote) < PAGINA:
             return filas
-        ultimo = (lote[-1][0], lote[-1][1])
+        desde, args = "(ts, dominio) > (?, ?)", (lote[-1][0], lote[-1][1])
 
 
 def bajar_dia(client, inventario, dia):
