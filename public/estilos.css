@@ -2053,7 +2053,7 @@
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:10px;gap:6px}.est-cabecera strong{font-size:.9em}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros label{flex:1 1 120px}.est-filtros select{width:100%}.est-nav{padding-inline:10px}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
 /* Escritorio con ratón: más denso (≈ 90 %), como el calendario; en táctil se quedan los 44 px. */
 @media(pointer:fine){.estadisticas-panel{font-size:.9em}.estadisticas-panel button,.estadisticas-panel input,.estadisticas-panel select{min-height:32px}}
-.calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:16px 0 26px;overflow:hidden;scroll-margin-top:120px}
+.calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:16px 0 26px;overflow:hidden;scroll-margin-top:120px;container-type:inline-size}
 /* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
 .cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
 .cal-barra h1:focus{outline:none}.cal-barra>.ui-tira{flex-basis:100%;min-width:0}
@@ -2062,7 +2062,7 @@
 .cal-icono{min-width:44px}
 .cal-donde{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 220px}
 .cal-donde-nombre{border:0;background:transparent;color:var(--fg);font-weight:700;padding:4px 6px;text-align:left;overflow-wrap:anywhere}.cal-donde-nombre:hover{color:var(--accent)}
-.cal-cuerpo{padding:12px 16px;min-width:0}.cal-pendientes summary{cursor:pointer;min-height:44px;align-content:center}
+.cal-cuerpo{padding:12px 16px;min-width:0}
 /* Chips: seleccionados con borde y subrayado; los de categoría, con su color. */
 .cal-chips button{font-size:.85em;padding:5px 14px;border-radius:999px}
 .cal-chips [aria-pressed="true"]{color:var(--accent);border-color:var(--accent);box-shadow:inset 0 -2px var(--accent);font-weight:600}
@@ -2072,7 +2072,7 @@
 .cal-subchips button{font-size:.8em}
 .calendario-panel input{background:var(--bg);color:var(--fg);border:1px solid var(--btn-border);border-radius:5px;padding:7px}
 .cal-nota,.cal-estado{font-size:.78em;color:var(--muted);overflow-wrap:anywhere}.cal-estado:empty{display:none}.cal-aviso{font-size:.85em;color:var(--accent)}
-.cal-dia h2,.cal-pendientes h2{font-size:1.05em;margin:20px 0 12px;text-transform:capitalize}.cal-evento{border-top:1px solid var(--border);padding:14px 0;overflow-wrap:anywhere;min-width:0}
+.cal-dia h2,.cal-pendientes h2{font-size:1.05em;margin:20px 0 12px}.cal-dia h2::first-letter,.cal-tira-titulo::first-letter{text-transform:uppercase}.cal-evento{border-top:1px solid var(--border);padding:14px 0;overflow-wrap:anywhere;min-width:0}
 .cal-evento h3{font-size:1em;font-weight:600;margin:0 0 8px}.cal-evento p{margin:6px 0}.cal-cuando{font-size:.85em;color:var(--muted);font-variant-numeric:tabular-nums}
 .cal-paginacion{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:16px 0}
 /* Tarjeta de la lista: hora en su columna, título, lugar y tipo de plan. */
@@ -2089,7 +2089,7 @@
 /* Tira y mes: siete celdas tocables con el número del día y un punto por categoría con algo ese día. */
 .cal-tira{margin:0 0 8px}.cal-tira-cabecera{display:flex;align-items:center;justify-content:center;gap:4px}
 .cal-tira-cabecera>button{border:0;background:transparent;color:var(--fg);min-width:44px}
-.cal-tira-titulo{font-weight:700;text-transform:capitalize}.cal-tira-titulo:hover{color:var(--accent)}
+.cal-tira-titulo{font-weight:700}.cal-tira-titulo:hover{color:var(--accent)}
 .cal-mes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
 .cal-puntos{display:flex;gap:3px;justify-content:center;min-height:8px}
 .cal-punto{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cat-otras)}
@@ -2119,18 +2119,17 @@
 .cal-invitacion{border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin:0 0 12px}.cal-invitacion h2{font-size:1em;margin:4px 0}
 /* Calendario deportivo: capas por competición; en ancho, columna a la izquierda; en estrecho, desplegable. */
 .cal-con-lateral.cal-fijo{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
-.cal-lateral{margin:0 0 12px}.cal-lateral h2{font-size:.95em;margin:4px 0 8px}
+.cal-lateral{margin:0 0 12px;font-size:.9em}.cal-lateral h2{font-size:.95em;margin:4px 0 8px}
 .cal-lateral-boton{width:100%;text-align:left;font-weight:600}
 .cal-lateral fieldset{border:0;margin:0 0 8px;padding:0}.cal-lateral legend{font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 0 2px}
-.cal-capa{display:flex;align-items:center;gap:4px}.cal-capa label{flex:1;display:flex;align-items:center;gap:8px;min-height:40px;min-width:0;cursor:pointer}
+.cal-capa label{display:flex;align-items:center;gap:8px;min-height:40px;min-width:0;cursor:pointer;line-height:1.25}
 .cal-capa input{width:18px;height:18px;margin:0;accent-color:var(--cat-deportes)}.cal-capa .cal-marca{flex:none;min-width:2.8em;font-size:.75em}
-.cal-solo{font-size:.75em;padding:4px 8px;color:var(--muted)}
 .cal-lateral-acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cal-lateral-acciones button{font-size:.85em}
 /* Mes con títulos (ancho): semanas en cuadrícula; el día ocupa su columna entera y las barras van encima. */
 .cal-mg{border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .cal-mg-cabecera{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
-.cal-mg-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:1.8em repeat(var(--carriles),1.6em) minmax(4.6em,auto);border-top:1px solid var(--border)}
-.calendario-panel .cal-mg-dia{grid-row:1/-1;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;min-height:7.5em;padding:3px 4px;
+.cal-mg-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:1.8em repeat(var(--carriles),1.6em) minmax(0,1fr);border-top:1px solid var(--border);overflow:hidden}
+.calendario-panel .cal-mg-dia{grid-row:1/-1;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;min-height:0;overflow:hidden;padding:3px 4px;
   border:0;border-left:1px solid var(--border);border-radius:0;background:var(--bg);color:var(--fg);text-align:left;font:inherit}
 .cal-mg-dia:first-child{border-left:0}.cal-mg-dia.cal-otro-mes{background:var(--btn-bg)}
 .cal-mg-dia .cal-num{font-size:.85em;font-variant-numeric:tabular-nums}.cal-mg-dia[aria-current="date"] .cal-num{color:var(--accent);font-weight:700}
@@ -2168,8 +2167,14 @@
 /* Escritorio con ratón: más denso (≈ 90 %), como Estadísticas; en táctil se quedan los 44 px. */
 @media(pointer:fine){
   .calendario-panel,.cal-evento-dialogo{font-size:.9em}
-  .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button,.cal-pendientes summary{min-height:32px}
-  .cal-icono{min-width:32px}.cal-chips button{padding:3px 12px}.cal-capa label,.cal-as-opcion{min-height:32px}
+  .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:32px}
+  .cal-icono{min-width:32px}.cal-chips button{padding:3px 12px}.cal-capa label{min-height:28px}.cal-as-opcion{min-height:32px}
+}
+/* Escritorio: ciudad, atajos de fecha y categorías en una sola línea; las acciones al final. */
+@container (min-width:900px){
+  .cal-barra>.ui-tira{flex-basis:auto}.cal-barra>.cal-subchips{flex-basis:100%}
+  .cal-donde{flex:0 1 auto}.cal-acciones{order:1}
+  .cal-barra>.cal-rangos+.ui-tira{border-left:1px solid var(--border);padding-left:8px}
 }
 /* ═══ Consultas puntuales (libro:, pelicula:…): encima de la lista, como el tiempo ═══ */
 .consulta-panel{
