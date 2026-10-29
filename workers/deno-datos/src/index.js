@@ -23,8 +23,10 @@ export default {
       return new Response(null, { status: 204, headers: CORS });
     }
 
-    const key = decodeURIComponent(url.pathname.slice(1));
-    if (!key) return _notFound();
+    let key;
+    try { key = decodeURIComponent(url.pathname.slice(1)); } catch { return _notFound(); }
+    // «..» sobrevive a encodeURIComponent y new URL() lo resolvería fuera del bucket.
+    if (!key || key.split('/').some(s => s === '.' || s === '..')) return _notFound();
 
     const accountId       = Deno.env.get('R2_ACCOUNT_ID');
     const accessKeyId     = Deno.env.get('R2_ACCESS_KEY_ID');
@@ -38,6 +40,7 @@ export default {
     const method = request.method === 'HEAD' ? 'HEAD' : 'GET';
     const encodedKey = key.split('/').map(encodeURIComponent).join('/');
     const r2Url = `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${encodedKey}`;
+    if (!new URL(r2Url).pathname.startsWith(`/${bucket}/`)) return _notFound();
 
     const sigHeaders = await signR2Request({
       method,
