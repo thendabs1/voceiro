@@ -12,37 +12,37 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=f5f36294d8';
+} from './parser.js?v=5f6b45f7a1';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=f5f36294d8';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=f5f36294d8';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=f5f36294d8';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=f5f36294d8';
-import { comparador } from './busqueda/orden.js?v=f5f36294d8';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=5f6b45f7a1';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=5f6b45f7a1';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=5f6b45f7a1';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=5f6b45f7a1';
+import { comparador } from './busqueda/orden.js?v=5f6b45f7a1';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=f5f36294d8';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=f5f36294d8';
+} from './sync/fusion.js?v=5f6b45f7a1';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=5f6b45f7a1';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=f5f36294d8';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=f5f36294d8';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=5f6b45f7a1';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=5f6b45f7a1';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=f5f36294d8';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=5f6b45f7a1';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=f5f36294d8';
+} from './tiempo/avisos.js?v=5f6b45f7a1';
 
-import { I18N, traducir } from './idiomas/index.js?v=f5f36294d8';
+import { I18N, traducir } from './idiomas/index.js?v=5f6b45f7a1';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=f5f36294d8';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=f5f36294d8';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=f5f36294d8';
+import { ESPN } from './consultas/registro.js?v=5f6b45f7a1';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=5f6b45f7a1';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=5f6b45f7a1';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=f5f36294d8';
+import { ADMINISTRACION } from './territorios/administracion.js?v=5f6b45f7a1';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1955,7 +1955,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=f5f36294d8');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=5f6b45f7a1');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3531,7 +3531,7 @@ const CAL_CATEGORIAS = ['cultura', 'deportes'];
 const CALENDARIO = {
   abierto: false, porPrefijo: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
   // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
-  fecha: '', vista: 'lista7', dia: '', zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
+  fecha: '', desdeConsulta: '', vista: 'lista7', dia: '', zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
   temas: new Set(), fuente: '', formato: '', precio: '', donde: null, que: null, clave: '',
   escrito: { donde: '', que: '' }, sugerencias: { donde: [], que: [] },
   consulta: '', vigente: '', controller: null, resumen: null, dias: new Map(), pendientes: null, origen: null, scroll: 0,
@@ -3708,12 +3708,15 @@ function calLimpiarFiltros(){
   s.temas.clear(); s.fuente = ''; s.formato = ''; s.precio = ''; s.donde = null; s.que = null;
   s.escrito = { donde: '', que: '' }; s.sugerencias = { donde: [], que: [] };
 }
+// La identidad de la consulta son sus prefijos de agenda: editar el texto o
+// añadir otros servicios (tiempo, consultas) conserva filtros y apertura.
 function actualizarConsultaCalendario(orden){
   if (!CALENDARIO_ACTIVO) return;
-  const s = CALENDARIO, clave = JSON.stringify(orden);
+  const s = CALENDARIO, clave = JSON.stringify(orden && [orden.ambitos, orden.circuitos, orden.tipos, orden.desconocidos]);
+  const fecha = parseQuery(orden?.resto || '').desde || '';
+  if (fecha !== s.desdeConsulta){ s.desdeConsulta = fecha; s.fecha = fechaValida(fecha) ? fecha : calHoy(); }
   if (clave !== s.clave){
     s.clave = clave; calLimpiarFiltros();
-    const fecha = parseQuery(orden?.resto || '').desde;
     s.fecha = fechaValida(fecha) ? fecha : calHoy();
     // Un prefijo de agenda abre la vista completa y, al quitarlo, la cierra;
     // cerrada a mano, sigue cerrada mientras no cambie la consulta.
@@ -3747,6 +3750,19 @@ function cerrarCalendario(volver = true){
   const menu = origen?.closest?.('#cab-menu');
   (menu && !menu.open ? menu.querySelector('summary') : origen)?.focus({ preventScroll: true });
   window.scrollTo({ top: s.scroll, behavior: 'auto' });
+}
+// Salir de la vista: con una agenda que admite noticias quedan sus noticias;
+// si no, se quitan sus prefijos del buscador (como al cerrar el tiempo) para
+// no dejar un feed vacío por construcción.
+function salirCalendario(){
+  const s = CALENDARIO;
+  if (!s.orden || s.orden.noticias) return cerrarCalendario();
+  const input = document.getElementById('buscar');
+  const { antes, consulta } = partirConsulta(input.value);
+  input.value = [tokenizeQuery(antes).filter(tk => !(tk.prefix && leerConsultaCalendario(tk.raw))).map(tk => tk.raw).join(' '), consulta]
+    .filter(Boolean).join(' ');
+  cerrarCalendario();
+  aplicarFiltros();
 }
 function calHora(e){
   const c = e.programacion?.valor?.cuando;
@@ -4034,12 +4050,12 @@ function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   const boton = document.getElementById('btn-calendario');
   boton.hidden = !CALENDARIO_ACTIVO;
-  boton.addEventListener('click', e => s.abierto ? cerrarCalendario() : abrirCalendario(e.currentTarget));
+  boton.addEventListener('click', e => s.abierto ? salirCalendario() : abrirCalendario(e.currentTarget));
   p.addEventListener('click', e => {
     const b = e.target.closest('[data-cal]');
     if (!b) return;
     const a = b.dataset.cal, v = b.dataset.valor;
-    if (a === 'cerrar') return cerrarCalendario();
+    if (a === 'cerrar') return salirCalendario();
     if (a === 'elegir-fecha'){
       const f = document.getElementById('cal-fecha');
       try { return void f.showPicker(); } catch { return void f.click(); }
@@ -4110,7 +4126,8 @@ function wireCalendario(){
       s.sugerencias[campo] = []; pintarSugerencias(campo); document.getElementById('cal-' + campo)?.focus();
     }
   });
-  document.getElementById('buscar').addEventListener('input', () => cerrarCalendario(false));
+  // Escribir cierra la vista abierta desde la cabecera; la de un prefijo sigue al prefijo.
+  document.getElementById('buscar').addEventListener('input', () => { if (!s.porPrefijo) cerrarCalendario(false); });
 }
 function sugerenciasCalendario(raw){
   if (!CALENDARIO_ACTIVO) return null;
@@ -5022,7 +5039,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=f5f36294d8')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=5f6b45f7a1')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -9354,7 +9371,7 @@ function wireStaticEvents(){
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
         if (ESTADISTICAS.abierto){ cerrarEstadisticas(); return; }
-        if (CALENDARIO.abierto){ cerrarCalendario(); return; }
+        if (CALENDARIO.abierto){ salirCalendario(); return; }
       }
     const tg = e.target;
     if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT')) return;

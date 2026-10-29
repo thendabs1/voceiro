@@ -1,9 +1,9 @@
 // Selecciones creadas por el asistente. Los modos sin «regla» conservan
 // su semántica histórica (fuentes OR temas). La regla no contiene noticias
 // ni preferencias de entrega: sirve igual para el feed y un futuro bot.
-import { limpiarDominio } from './filtros.js?v=f5f36294d8';
-import { palabrasDe } from './texto.js?v=f5f36294d8';
-import { compilarTemas, temasQueCasan } from './temas.js?v=f5f36294d8';
+import { limpiarDominio } from './filtros.js?v=5f6b45f7a1';
+import { palabrasDe } from './texto.js?v=5f6b45f7a1';
+import { compilarTemas, temasQueCasan } from './temas.js?v=5f6b45f7a1';
 
 export function normalizarRegla(regla) {
   if (regla?.v !== 1 || !['todas', 'elegidas'].includes(regla.fuentes)) return null;
