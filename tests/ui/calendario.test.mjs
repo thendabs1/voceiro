@@ -633,6 +633,9 @@ test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fu
   assert.match(c.dialogo.innerHTML, /Circuito · Jerez/);
   assert.match(c.dialogo.innerHTML, /Programa<\/h4><ul><li><span>Libres 1/);
   assert.match(c.dialogo.innerHTML, /href="https:\/\/galicia.test\/1"/);
+  // Todo a la vista: la fuente al pie, sin desplegable.
+  assert.match(c.dialogo.innerHTML, /<footer class="cal-evento-fuente"><p class="cal-nota">Fuente: <a[^>]*href="https:\/\/galicia.test\/1"/);
+  assert.doesNotMatch(c.dialogo.innerHTML, /<details/);
 });
 
 test('moverse por semanas y meses reutiliza los formatos de fecha de la interfaz', async () => {
