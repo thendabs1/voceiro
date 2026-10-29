@@ -12,37 +12,37 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=cece8e5f58';
+} from './parser.js?v=470aa3766d';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=cece8e5f58';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=cece8e5f58';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=cece8e5f58';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=cece8e5f58';
-import { comparador } from './busqueda/orden.js?v=cece8e5f58';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=470aa3766d';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=470aa3766d';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=470aa3766d';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=470aa3766d';
+import { comparador } from './busqueda/orden.js?v=470aa3766d';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=cece8e5f58';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=cece8e5f58';
+} from './sync/fusion.js?v=470aa3766d';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=470aa3766d';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=cece8e5f58';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=cece8e5f58';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=470aa3766d';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=470aa3766d';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=cece8e5f58';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=470aa3766d';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=cece8e5f58';
+} from './tiempo/avisos.js?v=470aa3766d';
 
-import { I18N, traducir } from './idiomas/index.js?v=cece8e5f58';
+import { I18N, traducir } from './idiomas/index.js?v=470aa3766d';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=cece8e5f58';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=cece8e5f58';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=cece8e5f58';
+import { ESPN } from './consultas/registro.js?v=470aa3766d';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=470aa3766d';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=470aa3766d';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=cece8e5f58';
+import { ADMINISTRACION } from './territorios/administracion.js?v=470aa3766d';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1955,7 +1955,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=cece8e5f58');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=470aa3766d');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -4940,7 +4940,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=cece8e5f58')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=470aa3766d')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }

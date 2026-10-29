@@ -4,8 +4,8 @@
 // carga solo al escribir eltiempo:). El cliente busca; el worker resuelve el
 // INE a coordenadas y zona.
 
-import { normalize } from '../parser.js?v=cece8e5f58';
-import { PROVINCIAS } from '../territorios/administracion.js?v=cece8e5f58';
+import { normalize } from '../parser.js?v=470aa3766d';
+import { PROVINCIAS } from '../territorios/administracion.js?v=470aa3766d';
 
 export { PROVINCIAS };
 
