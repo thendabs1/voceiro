@@ -160,7 +160,8 @@ async function lugares(url) {
   const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
   if (q.length < 2) throw fallo(400, 'Texto demasiado corto');
   const lang = IDIOMAS.has(url.searchParams.get('lang')) ? url.searchParams.get('lang') : 'es';
-  return conCache(`lugares/v2/${lang}/${encodeURIComponent(q.toLowerCase())}`, TTL.lugares, async () => {
+  // q va en la query: como segmento, «..» lo resolvería new URL() y mezclaría idiomas.
+  return conCache(`lugares/v2/${lang}?q=${encodeURIComponent(q.toLowerCase())}`, TTL.lugares, async () => {
     const u = new URL('https://geocoding-api.open-meteo.com/v1/search');
     u.search = new URLSearchParams({ name: q, count: '8', language: lang, format: 'json' });
     const r = await fetch(u, { signal: AbortSignal.timeout(8000) });

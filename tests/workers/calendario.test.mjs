@@ -248,7 +248,10 @@ test('validación antes de Turso; fallos de transporte y cambios entre snapshots
   let consultas = 0;
   const consultar = async () => { consultas++; throw new Error('secreto no publicable'); };
   for (const ruta of ['/calendario/eventos', ventana + '&limite=100', ventana + '&zona=incorrecta', ventana + '&desde=2026-10-23',
-    ventana + '&q=desde:2026-10-01', ventana + '&q=clasificaciones:', ventana + '&cursor=***', ventana + '&sql=DROP']) {
+    ventana + '&q=desde:2026-10-01', ventana + '&q=clasificaciones:', ventana + '&cursor=***', ventana + '&sql=DROP',
+    // Órdenes que Number() acepta pero Turso no: entero inseguro, exponente, signo.
+    ...['99999999999999999999', '1e5', '-0'].map(o => ventana + '&cursor=' + Buffer.from(JSON.stringify(['r', 'h', '', o, 'x'])).toString('base64url')),
+    '/calendario/eventos/%E0%A4%A']) {
     const r = await atenderCalendario(new Request('https://datos.test' + ruta), env, { consultar });
     assert.equal(r.status, 400, ruta);
   }
