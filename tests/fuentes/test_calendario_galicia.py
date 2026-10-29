@@ -73,6 +73,10 @@ class Transicion(unittest.TestCase):
         obras = [k for k in evento['objetivos'] if k.startswith('actividad:')]
         self.assertEqual(obras, ['actividad:cultura-galicia:ficha:10'])
         self.assertEqual([f['referencia'] for f in evento['fuentes']], ['cultura-galicia:101'])
+        # El título castellano del piloto se queda en el núcleo, sin publicarse.
+        self.assertEqual(nuevo['entidades'][nucleo.clave(nuevo['referencias']['cultura-galicia:101']['destino'])]
+                         ['nombres']['es'], 'Otra traducción')
+        self.assertEqual(list(evento['nombres']), ['gl'])
 
     def test_dos_ids_previos_no_se_fusionan_y_no_se_admite_importar_castellano(self):
         separado = ampliar(construir([ficha(traducionId=None), ficha(102, traducionId=None)]))['nucleo']

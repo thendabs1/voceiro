@@ -70,7 +70,7 @@ Fotografía se reduce a `artes-visuales`; narración oral y bertsolarismo a
 | --- | --- | --- |
 | Formato (varios si coexisten) | concierto, representacion, proyeccion, exposicion, curso-taller, charla-encuentro, lectura-club, festival, feria-mercado, fiesta, visita-ruta, competicion-deportiva, practica-deportiva | Una categoría que enumera alternativas («exhibición, proyección, competición») no asigna las tres. Festival no crea funciones. Concurso, entrega de premios, ceremonia, juego, campamento, degustación: etiquetas |
 | Público (varios) | infancia, juventud, familias, mayores | **Solo dato, sin filtro** (decisión 28/10): cobertura desigual; un filtro «con niños» escondería muchas citas. Galicia sí lo ofrece al solicitar `tipoPublico` (160/209 en la revisión); el piloto no lo pedía. Destinatarios declarados, no deducidos |
-| Precio | gratis, pago | En los datos también `mixto` y `desconocido`; desconocido no es gratis |
+| Precio | gratis, pago | En los datos también `mixto` y `desconocido`; desconocido no es gratis: una tarifa sin importe numérico ≥ 0 anula «gratis» ([0, ?] sin determinar, [5, ?] pago) |
 | Acceso | libre, con-inscripcion | Inscripción no implica pago. Invitación, cupo y reserva se guardan |
 | Modalidad | presencial, en-linea | Híbrida y desconocida se guardan |
 

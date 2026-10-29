@@ -91,6 +91,10 @@ class Zaragoza(unittest.TestCase):
         # Cuatro funciones, un recinto: una sola evidencia, que no cambia con ellas.
         self.assertEqual(compartidas(b), compartidas(n))
         self.assertTrue(all(len(v) == 1 for v in compartidas(n).values()))
+        # La fecha de actualización del origen se publica una vez por fuente: la más reciente.
+        self.assertEqual(proyectar(b)['fuentes']['zaragoza']['actualizado_origen'],
+                         max(f['lastUpdated'] for f in filas))
+        self.assertNotIn('actualizado_origen', json.dumps(proyectar(b)['eventos']))
 
     def test_cita_conocida_aplazada_fuera_de_la_ventana_se_actualiza(self):
         n = zaragoza.importar(None, muestra('zaragoza'), AHORA)

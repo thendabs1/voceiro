@@ -54,9 +54,14 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
             nombres.update(o['bloques']['nombres'])
             if o['id'] in activas and o['bloques'].get('codigo_consulta'):
                 codigos.add(o['bloques']['codigo_consulta'])
-        # Sin historial, una traducción que la última respuesta omite sigue en la entidad.
+        # Sin historial, una traducción que la última respuesta omite sigue en la entidad;
+        # salvo en un idioma que la fuente ya no recoge (Galicia: el castellano del piloto).
+        recogidos = [n['fuentes'][n['referencias'][o['referencia']]['proveedor']].get('idiomas_recogida')
+                     for o in evidencias]
+        admitidos = set().union(*recogidos) if all(recogidos) else None
         for idioma, nombre in e['nombres'].items():
-            nombres.setdefault(idioma, nombre)
+            if admitidos is None or idioma in admitidos:
+                nombres.setdefault(idioma, nombre)
         entidades[k] = {c: deepcopy(e[c]) for c in ('tipo', 'id', 'clase')}
         entidades[k].update(nombres=nombres, codigos=sorted(codigos),
             temas=sorted({t['tema'] for t in e['temas'] if vigente(t)}))
@@ -309,6 +314,11 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                     for f in sorted(permitidas)},
         'entidades': entidades, 'relaciones': relaciones,
         'eventos': sorted(eventos, key=lambda e: e['id']), 'clasificaciones': tablas}
+    # Condiciones de Zaragoza: citar la última actualización del origen; una fecha por fuente, no por cita.
+    for o in observaciones.values():
+        if fecha := o['bloques'].get('actualizado_origen'):
+            f = salida['fuentes'][n['referencias'][o['referencia']]['proveedor']]
+            f['actualizado_origen'] = max(f.get('actualizado_origen', ''), fecha)
     if control:
         # Al cambiar de principal no se fusionan IDs por título ni se publican
         # simultáneamente las dos versiones de una cita deportiva.
