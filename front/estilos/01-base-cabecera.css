@@ -272,3 +272,7 @@
     background:var(--btn-bg); color:var(--fg); border-radius:6px;
     font-family:inherit; font-size:.78em;
   }
+  /* Tira horizontal de opciones (chips del calendario; pensada también para
+     temas y modos): una fila que se desplaza en vez de partirse en líneas. */
+  .ui-tira{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:4px 2px;scroll-padding-inline:8px;scrollbar-width:thin}
+  .ui-tira>*{flex:none}

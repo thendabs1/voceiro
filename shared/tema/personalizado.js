@@ -54,6 +54,9 @@ function hastaContraste(color, fondo, minimo, hacia){
   return extremo(fondo);
 }
 
+const CATEGORIAS_CLARO = { cultura: '#6b3fa0', deportes: '#006d77', otras: '#5b6470' };
+const CATEGORIAS_OSCURO = { cultura: '#cfb0f3', deportes: '#65d3d8', otras: '#bac1cb' };
+
 // { base: 'light' | 'dark', vars: { bg, fg, accent, titulos, muted, … } }.
 // 'color-scheme' va entre las vars: quien la aplica la pone como propiedad.
 export function paletaPersonalizada(colores){
@@ -72,10 +75,16 @@ export function paletaPersonalizada(colores){
       'on-solid': extremo(enlaces),
       focus: contraste(enlaces, fondo) >= 3 ? enlaces : texto,
       shadow: oscuro ? 'rgba(0,0,0,.5)' : 'rgba(0,0,0,.08)',
+      // Categorías: su tono del tema base, sobre un fondo tenue del elegido.
+      ...Object.fromEntries(Object.entries(oscuro ? CATEGORIAS_OSCURO : CATEGORIAS_CLARO).flatMap(([c, color]) => {
+        const fondoCat = mezcla(fondo, color, 0.1);
+        return [['cat-' + c + '-bg', fondoCat], ['cat-' + c, hastaContraste(hastaContraste(color, fondoCat, 4.5, texto), fondo, 4.5, texto)]];
+      })),
     }
   };
 }
 
 // Variables que pone el tema personalizado (para quitarlas al cambiar de tema).
 export const VARS_PERSONALIZADAS = ['bg', 'fg', 'accent', 'titulos', 'muted', 'border', 'quote-bg',
-  'btn-bg', 'btn-border', 'on-solid', 'focus', 'shadow'];
+  'btn-bg', 'btn-border', 'on-solid', 'focus', 'shadow',
+  ...['cultura', 'deportes', 'otras'].flatMap(c => ['cat-' + c, 'cat-' + c + '-bg'])];

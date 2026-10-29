@@ -11,7 +11,9 @@ import { traducir } from '../../front/idiomas/index.js';
 
 // La capa de datos se prueba encendida también si se apagara el cliente.
 const fuente = readFileSync(new URL('../../front/app/14-calendario.js', import.meta.url), 'utf8');
-const codigo = fuente.replace(/^const CALENDARIO_ACTIVO = (true|false);$/m, 'const CALENDARIO_ACTIVO = true;');
+// «Hoy» lo fija cada prueba (c.hoy), no el reloj.
+const codigo = fuente.replace(/^const CALENDARIO_ACTIVO = (true|false);$/m, 'const CALENDARIO_ACTIVO = true;')
+  .replace(/^const calHoy = .*$/m, 'const calHoy = () => globalThis.hoy;');
 assert.notEqual(codigo.match(/^const CALENDARIO_ACTIVO = true;$/m), null);
 const BASES = { cf: { data: 'https://cf.test' }, deno: { data: 'https://deno.test' } };
 const extremo = (fecha, hora = null) => ({ fecha, certeza_fecha: fecha ? 'confirmado' : 'desconocida',
@@ -27,21 +29,22 @@ const CONCEPTOS = { cultura: { nombres: { es: 'Cultura' }, padres: [] }, teatro:
   economia: { nombres: { es: 'Economía' }, padres: [] } };
 const esperar = async () => { for (let i = 0; i < 6; i++) await new Promise(r => setImmediate(r)); };
 
-// API simulada: cada día, 26 citas (la primera a las 18:00, concierto gratis) y
-// 4 en curso; listas paginadas por un cursor que es el desplazamiento.
+// API simulada: cada día, 26 citas (la primera a las 17:00, concierto gratis) y
+// 4 en curso, de cultura; el 27, además un GP en curso (deportes). Listas
+// paginadas por un cursor que es el desplazamiento.
 function api(u){
   const p = u.searchParams, ruta = u.pathname;
   if (ruta === '/calendario/catalogo') return { ...META, catalogo: { conceptos: CONCEPTOS }, fuentes: { galicia: { nombre: 'Galicia' } } };
   if (ruta === '/calendario/resumen') {
     const dias = [], n = Number(p.get('muestras') ?? 2);
-    for (let d = p.get('desde'); d < p.get('hasta'); d = fechas.sumarDiasCalendario(d, 1))
-      dias.push({ dia: d, cantidad: 30, citas: 25, programas: 1, en_curso: 4, muestras: [
-        tarjeta('A' + d, d, { hora: '17:00', formatos: ['concierto'], precio: 'gratis' }), tarjeta('B' + d, d), tarjeta('C' + d, d)].slice(0, n) });
+    for (let d = p.get('desde'); d < p.get('hasta'); d = fechas.sumarDiasCalendario(d, 1)) {
+      const categorias = { cultura: { citas: 25, programas: 1, en_curso: 4 } };
+      if (d === '2026-10-27') categorias.deportes = { citas: 0, programas: 0, en_curso: 1 };
+      dias.push({ dia: d, cantidad: 30, citas: 25, programas: 1, en_curso: 4, categorias, muestras: [
+        tarjeta('A' + d, d, { hora: '17:00', formatos: ['concierto'], precio: 'gratis', categoria: 'cultura' }), tarjeta('B' + d, d), tarjeta('C' + d, d)].slice(0, n) });
+    }
     return { ...META, dias };
   }
-  if (ruta === '/calendario/objetivos') return { ...META, siguiente: null, entidades: [
-    { tipo: 'agrupacion', id: 'liga', nombres: { es: 'Liga gallega' }, temas: ['teatro'] },
-    { tipo: 'territorio', id: 'vigo', nombres: { es: 'Vigo' }, temas: [] }].filter(e => !p.get('tipo') || p.get('tipo').split(',').includes(e.tipo)) };
   if (ruta.startsWith('/calendario/eventos/')) return { ...META, entidades: {}, evento: { ...tarjeta(decodeURIComponent(ruta.slice(20)), '2026-10-25'),
     lugar: { valor: { nombre: 'Circuito', municipio_literal: 'Jerez' }, conflicto: false },
     participaciones: [], enlaces: [], fuentes: [{ fuente: 'galicia', url: 'https://galicia.test/1' }],
@@ -53,7 +56,7 @@ function api(u){
   const desde = Number(p.get('cursor') || 0), limite = Number(p.get('limite'));
   return { ...META, eventos: todos.slice(desde, desde + limite), siguiente: desde + limite < todos.length ? String(desde + limite) : null };
 }
-function contexto({ intl = Intl, responder = api } = {}){
+function contexto({ intl = Intl, responder = api, sitios = [] } = {}){
   const listeners = {}, pedidas = [], sugerencias = {}, buscar = { value: '', addEventListener(){} }, aplicadas = [];
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
@@ -67,20 +70,21 @@ function contexto({ intl = Intl, responder = api } = {}){
   const c = { ...fechas, ...consulta, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
     setTimeout: fn => { fn(); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
-    DATA_BASE: BASES.cf.data, BACKENDS: BASES,
+    DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios,
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
     escapeHtml: s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), aplicarFiltros: () => aplicadas.push(buscar.value),
     document: { activeElement: null, getElementById: id => id === 'calendario-panel' ? panel : id === 'cal-evento-dialogo' ? dialogo : id === 'buscar' ? buscar
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
-  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calFiltros, calCategorias, wireCalendario, abrirCalendario,
+  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calDonde, wireCalendario, abrirCalendario,
     actualizarConsultaCalendario }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
   c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias; c.buscar = buscar; c.aplicadas = aplicadas;
   c.ultima = () => pedidas.at(-1);
+  c.resumen = () => pedidas.findLast(u => u.pathname === '/calendario/resumen').searchParams;
   c.click = async (cal, valor = '', extra = {}) => {
     listeners.click({ target: { closest: () => ({ dataset: { cal, valor, ...extra } }) } }); await esperar();
   };
@@ -90,17 +94,18 @@ function contexto({ intl = Intl, responder = api } = {}){
   return c;
 }
 const cantidad = html => (html.match(/class="cal-cita"/g) || []).length;
+const secciones = html => (html.match(/<section class="cal-dia[^"]*"/g) || []).length;
 
-test('la lista de 7 días pide el resumen con tres muestras; un día abre sus citas de 20 en 20', async () => {
+test('la lista pide una semana desde hoy con tres muestras; un día abre sus citas de 20 en 20', async () => {
   const c = contexto();
   await c.abrir();
   assert.deepEqual(c.pedidas.map(u => u.pathname), ['/calendario/catalogo', '/calendario/resumen']);
   const p = c.ultima().searchParams;
   assert.deepEqual([p.get('desde'), p.get('hasta'), p.get('muestras'), p.get('zona')], ['2026-10-25', '2026-11-01', '3', 'Europe/Madrid']);
   let html = c.api.calContenido();
-  assert.equal((html.match(/<section class="cal-dia">/g) || []).length, 7);
+  assert.equal(secciones(html), 7);
   assert.equal(cantidad(html), 21);
-  assert.match(html, /26 citas · 4 en curso/);
+  assert.match(html, /Hoy · domingo, 25 oct[\s\S]*?26 citas/);
   // Tarjeta: hora en su columna, lugar y tipo de plan con precio; sin hora, bajo su rótulo.
   assert.match(html, /<span class="cal-hora">18:00<\/span>[\s\S]*?Sala · Vigo[\s\S]*?<p class="cal-plan">Concierto · Gratis<\/p>/);
   assert.match(html, /<p class="cal-sin-hora">Sin hora confirmada<\/p>/);
@@ -115,21 +120,25 @@ test('la lista de 7 días pide el resumen con tres muestras; un día abre sus ci
   assert.doesNotMatch(html, /data-cal="mas-dia"/);
   await c.click('ocultar-dia', '2026-10-26');
   assert.match(c.api.calContenido(), /data-cal="ver-dia" data-valor="2026-10-26"/);
-  // Un filtro rehace el resumen y cierra las listas abiertas.
-  await c.click('tema', 'teatro');
+  // Una categoría rehace el resumen y cierra las listas abiertas.
+  await c.click('categoria', 'cultura');
   q = c.ultima().searchParams;
-  assert.deepEqual([c.ultima().pathname, q.get('temas')], ['/calendario/resumen', 'teatro']);
+  assert.deepEqual([c.ultima().pathname, q.get('temas')], ['/calendario/resumen', 'cultura']);
   assert.equal(c.api.s.dias.size, 0);
   // Repetir la misma consulta no vuelve a pedirla.
   const antes = c.pedidas.length;
-  c.api.abrirCalendario(); await c.click('vista', 'lista7');
+  c.api.abrirCalendario(); await c.click('categoria', 'cultura');
   assert.equal(c.pedidas.length, antes);
+  // Más días: la semana siguiente, hasta cuatro.
+  await c.click('mas-semanas');
+  assert.deepEqual([c.resumen().get('desde'), c.resumen().get('hasta')], ['2026-10-25', '2026-11-08']);
+  assert.equal(secciones(c.api.calContenido()), 14);
 });
 
-test('En curso: plegado con su cuenta; al abrirlo pide lo prolongado del día', async () => {
+test('En cartel: plegado con su cuenta; al abrirlo pide lo prolongado del día', async () => {
   const c = contexto();
   await c.abrir();
-  assert.match(c.api.calContenido(), /data-cal="curso" data-valor="2026-10-25" aria-expanded="false"/);
+  assert.match(c.api.calContenido(), /data-cal="curso" data-valor="2026-10-25" aria-expanded="false">▸ En cartel · 4/);
   await c.click('curso', '2026-10-25');
   assert.deepEqual([c.ultima().searchParams.get('presentacion'), c.ultima().searchParams.get('desde')], ['prolongada', '2026-10-25']);
   const html = c.api.calContenido();
@@ -152,51 +161,77 @@ test('si la publicación cambia entre páginas, la lista del día se rehace desd
   assert.equal(c.api.s.error, '');
 });
 
-test('14 días y mes usan el resumen; el mes no pide muestras y abre el día elegido', async () => {
+test('tira: la semana con puntos por categoría y el pasado atenuado; se despliega en mes', async () => {
   const c = contexto();
+  c.hoy = '2026-10-27';
   await c.abrir();
-  await c.click('vista', 'lista14');
-  assert.deepEqual([c.ultima().searchParams.get('desde'), c.ultima().searchParams.get('hasta')], ['2026-10-25', '2026-11-08']);
-  await c.click('vista', 'mes');
-  const resumen = c.pedidas.findLast(u => u.pathname === '/calendario/resumen').searchParams;
-  assert.deepEqual([resumen.get('desde'), resumen.get('hasta'), resumen.get('muestras')], ['2026-09-28', '2026-11-09', '0']);
-  // Hoy cae en el mes: se abre su lista.
-  assert.deepEqual([c.ultima().pathname, c.ultima().searchParams.get('desde')], ['/calendario/eventos', '2026-10-25']);
   let html = c.api.calContenido();
-  assert.match(html, /data-cal="seleccionar" data-valor="2026-10-25"\s+aria-pressed="true"[^>]*aria-label="domingo, 25 de octubre: 26 citas · 4 en curso"/);
-  assert.match(html, /<span class="cal-cuenta">26<\/span>/);
+  // Lunes 26 ya pasó y no tiene cuentas; el 27 (hoy) lleva cultura y el GP (deportes, en curso).
+  assert.match(html, /class="cal-celda cal-pasado" data-cal="dia" data-valor="2026-10-26"\s+aria-pressed="false"/);
+  assert.match(html, /data-valor="2026-10-27"\s+aria-pressed="true" aria-current="date" aria-label="martes, 27 de octubre: 26 citas · 4 en curso · Cultura, Deportes">[\s\S]*?cal-cat-cultura[\s\S]*?cal-cat-deportes/);
+  // Lo prolongado de cultura no pinta punto por sí solo; el de deportes sí.
+  assert.doesNotMatch(html.match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0], /cal-cat-deportes/);
+  assert.equal((html.match(/data-cal="dia"/g) || []).length, 7);
+  await c.click('mes');
+  assert.deepEqual([c.resumen().get('desde'), c.resumen().get('hasta'), c.resumen().get('muestras')], ['2026-09-28', '2026-11-09', '0']);
+  html = c.api.calContenido();
+  assert.equal((html.match(/data-cal="dia"/g) || []).length, 42);
   assert.match(html, /title="lunes"/);
-  await c.click('seleccionar', '2026-10-28');
-  assert.deepEqual([c.ultima().searchParams.get('desde'), c.ultima().searchParams.get('presentacion')], ['2026-10-28', 'cita,programa']);
-  assert.equal(c.api.s.dia, '2026-10-28');
+  // Tocar un día lo elige, pliega el mes y la lista empieza en él.
+  await c.click('dia', '2026-10-30');
+  assert.deepEqual([c.api.s.fecha, c.api.s.mesAbierto, c.resumen().get('desde')], ['2026-10-30', false, '2026-10-30']);
+  // Semanas vecinas: su lunes, u hoy si cae en ellas.
   await c.click('siguiente');
-  assert.equal(c.api.s.fecha, '2026-11-01');
+  assert.equal(c.api.s.fecha, '2026-11-02');
+  await c.click('anterior');
+  assert.equal(c.api.s.fecha, '2026-10-27');
 });
 
-test('Tipo de plan y precio van a sus parámetros; limpiar los quita', async () => {
+test('atajos de fecha: hoy, mañana y el finde enseñan solo sus días', async () => {
+  const c = contexto();
+  c.hoy = '2026-10-22';   // jueves
+  await c.abrir();
+  await c.click('rango', 'manana', { dia: '2026-10-23' });
+  assert.deepEqual([c.api.s.fecha, secciones(c.api.calContenido())], ['2026-10-23', 1]);
+  await c.click('rango', 'finde');
+  assert.equal(c.api.s.fecha, '2026-10-24');
+  assert.deepEqual(c.api.calContenido().match(/id="cal-dia-[\d-]+"/g), ['id="cal-dia-2026-10-24"', 'id="cal-dia-2026-10-25"']);
+  // Pulsar otra vez el atajo activo vuelve a hoy sin atajo.
+  await c.click('rango', 'finde');
+  assert.deepEqual([c.api.s.fecha, c.api.s.rango], ['2026-10-22', '']);
+});
+
+test('chips: Todo, categorías con su segunda fila, competiciones y Gratis', async () => {
   const c = contexto();
   await c.abrir();
-  const filtros = c.api.calFiltros();
-  assert.match(filtros, /<option value="curso-taller">Curso o taller<\/option>/);
-  assert.equal((filtros.match(/<option value="[a-z-]+">/g) || []).length, 13 + 3 + 1);
-  c.listeners.change({ target: { id: 'cal-formato', value: 'concierto' } }); await esperar();
-  c.listeners.change({ target: { id: 'cal-precio', value: 'gratis' } }); await esperar();
-  const p = c.ultima().searchParams;
-  assert.deepEqual([p.get('formatos'), p.get('precio')], ['concierto', 'gratis']);
-  assert.match(c.api.calFiltros(), /Filtros · 2/);
-  c.listeners.change({ target: { id: 'cal-formato', value: 'inventado' } }); await esperar();
-  assert.equal(c.ultima().searchParams.get('formatos'), null);
-  await c.click('limpiar');
-  assert.equal(c.ultima().searchParams.get('precio'), null);
+  let chips = c.api.calChips();
+  assert.match(chips, /data-valor="" class="" aria-pressed="true">Todo/);
+  assert.match(chips, /data-valor="cultura" class="cal-cat cal-cat-cultura" aria-pressed="false">Cultura/);
+  assert.doesNotMatch(chips, /Economía|cal-subchips/);
+  await c.click('categoria', 'cultura');
+  assert.match(c.api.calChips(), /cal-subchips[\s\S]*data-valor="teatro"/);
+  await c.click('tema', 'teatro');
+  assert.equal(c.resumen().get('temas'), 'teatro');
+  await c.click('tema', 'teatro');
+  assert.equal(c.resumen().get('temas'), 'cultura');
+  await c.click('categoria', 'deportes');
+  chips = c.api.calChips();
+  assert.match(chips, /data-cal="competicion" data-valor="f1"[^>]*>F1/);
+  await c.click('competicion', 'f1');
+  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('q')], ['deportes', 'f1:']);
+  await c.click('gratis');
+  assert.equal(c.resumen().get('precio'), 'gratis');
+  await c.click('categoria', '');
+  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('q'), c.resumen().get('precio')], [null, null, 'gratis']);
 });
+
 test('la ventana se recorta al horizonte publicado y fuera de él no se pide nada', async () => {
   const c = contexto();
   c.hoy = '2026-09-05';
   await c.abrir();
   assert.equal(c.ultima().searchParams.get('desde'), '2026-09-10');
   const antes = c.pedidas.length;
-  c.api.s.fecha = '2027-12-01';
-  await c.click('vista', 'lista7');
+  await c.click('dia', '2027-12-01');
   assert.equal(c.pedidas.length, antes);
   assert.match(c.api.calContenido(), /fuera de las fechas publicadas/);
 });
@@ -259,55 +294,52 @@ test('editar el texto o añadir otros servicios conserva filtros, fecha y apertu
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1: jazz eltiempo:Vigo'));
   await esperar();
   assert.deepEqual([c.api.s.donde?.id, c.api.s.fecha, c.api.s.abierto], ['es:municipio:36057', fecha, false]);
-  // Otro prefijo de agenda es otra consulta: filtros nuevos y vista abierta.
+  // Otro prefijo de agenda es otra consulta: filtros nuevos y vista abierta;
+  // la ciudad es del usuario y se queda.
+  await c.click('gratis');
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('teatro: jazz'));
   await esperar();
-  assert.deepEqual([c.api.s.donde, c.api.s.abierto], [null, true]);
+  assert.deepEqual([c.api.s.precio, c.api.s.donde?.id, c.api.s.abierto], ['', 'es:municipio:36057', true]);
 });
 
-test('dónde sugiere comunidad, provincia y municipio y filtra por su territorio común', async () => {
+test('dónde: la ciudad arriba; sugiere comunidad, provincia y municipio y filtra por su territorio', async () => {
   const c = contexto();
   await c.abrir();
+  assert.match(c.api.calDonde(), /data-cal="editar-donde"[^>]*>📍 Toda España ▾/);
+  await c.click('editar-donde');
+  assert.match(c.api.calDonde(), /id="cal-donde"/);
   await c.escribir('cal-donde', 'Gal');
   assert.match(c.sugerencias['cal-sug-donde'].innerHTML, /data-valor="es:autonomia:12"/);
   await c.escribir('cal-donde', 'vig');
   assert.match(c.sugerencias['cal-sug-donde'].innerHTML, /data-valor="es:municipio:36057"[^>]*>Vigo <small>Pontevedra/);
   await c.click('elegir-donde', 'es:municipio:36057', { nombre: 'Vigo' });
-  assert.equal(c.ultima().searchParams.get('territorio'), 'es:municipio:36057');
-  assert.match(c.api.calFiltros(), /data-cal="quitar-donde"/);
-  assert.doesNotMatch(c.api.calFiltros(), /id="cal-donde"/);
+  assert.equal(c.ultima().searchParams.get('local'), 'es:municipio:36057');
+  assert.match(c.api.calDonde(), /📍 Vigo ▾[\s\S]*data-cal="quitar-donde"/);
   await c.click('quitar-donde');
-  assert.equal(c.ultima().searchParams.get('territorio'), null);
+  assert.equal(c.ultima().searchParams.get('local'), null);
 });
 
-test('qué consulta entidades publicadas sin territorios y filtra por objetivo', async () => {
+test('la ciudad por defecto es la provincia del primer sitio del tiempo, una vez', async () => {
+  const c = contexto({ sitios: [{ nombre: 'Casa', lugar: { lat: 1, lon: 2 } }, { nombre: 'Vigo', lugar: { ine: '36057' } }] });
+  await c.abrir();
+  assert.equal(c.resumen().get('local'), 'es:provincia:36');
+  assert.match(c.api.calDonde(), /📍 Pontevedra ▾/);
+  await c.click('quitar-donde');
+  await c.abrir();
+  assert.equal(c.resumen().get('local'), null);
+});
+
+test('la ciudad fija la hora (Canarias, la suya) y cada entrada empieza hoy', async () => {
   const c = contexto();
   await c.abrir();
-  await c.escribir('cal-que', 'li');
-  assert.notEqual(c.ultima().pathname, '/calendario/objetivos');
-  await c.escribir('cal-que', 'liga');
-  assert.deepEqual([c.ultima().pathname, c.ultima().searchParams.get('texto')], ['/calendario/objetivos', 'liga']);
-  // Los tipos se filtran en el servidor, antes del límite.
-  assert.deepEqual([c.ultima().searchParams.get('tipo'), c.ultima().searchParams.get('limite')], ['agrupacion,actividad,participante,lugar', '8']);
-  const html = c.sugerencias['cal-sug-que'].innerHTML;
-  assert.match(html, /data-valor="agrupacion:liga"[^>]*>Liga gallega <small>Teatro/);
-  assert.doesNotMatch(html, /territorio:vigo/);
-  await c.click('elegir-que', 'agrupacion:liga', { nombre: 'Liga gallega' });
-  assert.equal(c.ultima().searchParams.get('objetivo'), 'agrupacion:liga');
-  // Sin buscador propio (el texto va en la barra principal); dónde y tipo de
-  // plan, dentro del panel de filtros. Cultura y Deportes, en la barra.
-  const filtros = c.api.calFiltros();
-  assert.doesNotMatch(filtros, /id="cal-texto"/);
-  assert.ok(filtros.indexOf('id="cal-donde"') > filtros.indexOf('<details'));
-  assert.ok(filtros.indexOf('id="cal-formato"') > filtros.indexOf('<details'));
-  assert.doesNotMatch(filtros, /data-cal="tema"/);
-  const barra = c.api.calCategorias();
-  assert.match(barra, /data-valor="cultura"[^>]*>Cultura/);
-  assert.match(barra, /data-valor="deportes"[^>]*>Deportes/);
-  assert.doesNotMatch(barra + filtros, /Economía/);
-  // Elegida una categoría de la barra, sus subcategorías salen en el panel.
-  await c.click('tema', 'cultura');
-  assert.match(c.api.calFiltros(), /data-valor="teatro"/);
+  await c.click('elegir-donde', 'es:municipio:38038', { nombre: 'Santa Cruz de Tenerife' });
+  assert.deepEqual([c.resumen().get('local'), c.resumen().get('zona')], ['es:municipio:38038', 'Atlantic/Canary']);
+  await c.click('elegir-donde', 'es:autonomia:12', { nombre: 'Galicia' });
+  assert.equal(c.resumen().get('zona'), 'Europe/Madrid');
+  await c.click('dia', '2026-10-29');
+  await c.click('cerrar');
+  c.api.abrirCalendario(); await esperar();
+  assert.equal(c.resumen().get('desde'), '2026-10-25');
 });
 
 test('un fallo del primer backend pasa al segundo; un error de la consulta no se repite', async () => {
@@ -328,11 +360,11 @@ test('un 429 no pasa al otro backend y se espera lo que pide Retry-After', async
     ? new Response(JSON.stringify({ error: 'demasiadas peticiones' }), { status: 429, headers: { 'Retry-After': '30' } }) : api(u) });
   await c.abrir();
   limitado = true;
-  await c.click('tema', 'teatro');
+  await c.click('categoria', 'cultura');
   assert.deepEqual(c.pedidas.slice(-1).map(u => u.hostname + u.pathname), ['cf.test/calendario/resumen']);
   assert.equal(c.api.s.error, 'calError');
   const antes = c.pedidas.length;
-  await c.click('tema', 'tenis');
+  await c.click('categoria', 'deportes');
   assert.equal(c.pedidas.length, antes);
 });
 
@@ -345,7 +377,7 @@ test('si falla la renovación se conserva el resumen anterior; otra consulta no 
   await c.click('renovar');
   assert.equal(c.api.s.error, 'calError');
   assert.equal(cantidad(c.api.calContenido()), 21);
-  await c.click('tema', 'teatro');
+  await c.click('categoria', 'cultura');
   assert.equal(c.api.s.resumen, null);
 });
 
@@ -366,14 +398,14 @@ test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fu
   assert.match(c.dialogo.innerHTML, /href="https:\/\/galicia.test\/1"/);
 });
 
-test('cambiar de vista reutiliza los formatos de fecha de la interfaz', async () => {
+test('moverse por semanas y meses reutiliza los formatos de fecha de la interfaz', async () => {
   let construidos = 0;
   const c = contexto({ intl: { DateTimeFormat: function(...args){ construidos++; return new Intl.DateTimeFormat(...args); } } });
   await c.abrir();
-  for (let i = 0; i < 5; i++) for (const vista of ['lista7', 'lista14', 'mes']){
-    await c.click('vista', vista); c.api.calContenido();
+  for (let i = 0; i < 5; i++) for (const accion of ['siguiente', 'mes', 'siguiente', 'mes']){
+    await c.click(accion); c.api.calContenido();
   }
-  assert.ok(construidos <= 8, `se crearon ${construidos} formatos`);
+  assert.ok(construidos <= 10, `se crearon ${construidos} formatos`);
   const antes = construidos;
   c.ACCES.lang = 'en';
   assert.match(c.api.calContenido(), /title="Monday"/);
