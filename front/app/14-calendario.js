@@ -16,7 +16,7 @@ const CAL_CATEGORIAS = ['cultura', 'deportes'];
 const CALENDARIO = {
   abierto: false, porPrefijo: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
   // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
-  fecha: '', vista: 'lista7', dia: '', zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
+  fecha: '', desdeConsulta: '', vista: 'lista7', dia: '', zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
   temas: new Set(), fuente: '', formato: '', precio: '', donde: null, que: null, clave: '',
   escrito: { donde: '', que: '' }, sugerencias: { donde: [], que: [] },
   consulta: '', vigente: '', controller: null, resumen: null, dias: new Map(), pendientes: null, origen: null, scroll: 0,
@@ -193,12 +193,15 @@ function calLimpiarFiltros(){
   s.temas.clear(); s.fuente = ''; s.formato = ''; s.precio = ''; s.donde = null; s.que = null;
   s.escrito = { donde: '', que: '' }; s.sugerencias = { donde: [], que: [] };
 }
+// La identidad de la consulta son sus prefijos de agenda: editar el texto o
+// añadir otros servicios (tiempo, consultas) conserva filtros y apertura.
 function actualizarConsultaCalendario(orden){
   if (!CALENDARIO_ACTIVO) return;
-  const s = CALENDARIO, clave = JSON.stringify(orden);
+  const s = CALENDARIO, clave = JSON.stringify(orden && [orden.ambitos, orden.circuitos, orden.tipos, orden.desconocidos]);
+  const fecha = parseQuery(orden?.resto || '').desde || '';
+  if (fecha !== s.desdeConsulta){ s.desdeConsulta = fecha; s.fecha = fechaValida(fecha) ? fecha : calHoy(); }
   if (clave !== s.clave){
     s.clave = clave; calLimpiarFiltros();
-    const fecha = parseQuery(orden?.resto || '').desde;
     s.fecha = fechaValida(fecha) ? fecha : calHoy();
     // Un prefijo de agenda abre la vista completa y, al quitarlo, la cierra;
     // cerrada a mano, sigue cerrada mientras no cambie la consulta.
@@ -232,6 +235,19 @@ function cerrarCalendario(volver = true){
   const menu = origen?.closest?.('#cab-menu');
   (menu && !menu.open ? menu.querySelector('summary') : origen)?.focus({ preventScroll: true });
   window.scrollTo({ top: s.scroll, behavior: 'auto' });
+}
+// Salir de la vista: con una agenda que admite noticias quedan sus noticias;
+// si no, se quitan sus prefijos del buscador (como al cerrar el tiempo) para
+// no dejar un feed vacío por construcción.
+function salirCalendario(){
+  const s = CALENDARIO;
+  if (!s.orden || s.orden.noticias) return cerrarCalendario();
+  const input = document.getElementById('buscar');
+  const { antes, consulta } = partirConsulta(input.value);
+  input.value = [tokenizeQuery(antes).filter(tk => !(tk.prefix && leerConsultaCalendario(tk.raw))).map(tk => tk.raw).join(' '), consulta]
+    .filter(Boolean).join(' ');
+  cerrarCalendario();
+  aplicarFiltros();
 }
 function calHora(e){
   const c = e.programacion?.valor?.cuando;
@@ -519,12 +535,12 @@ function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   const boton = document.getElementById('btn-calendario');
   boton.hidden = !CALENDARIO_ACTIVO;
-  boton.addEventListener('click', e => s.abierto ? cerrarCalendario() : abrirCalendario(e.currentTarget));
+  boton.addEventListener('click', e => s.abierto ? salirCalendario() : abrirCalendario(e.currentTarget));
   p.addEventListener('click', e => {
     const b = e.target.closest('[data-cal]');
     if (!b) return;
     const a = b.dataset.cal, v = b.dataset.valor;
-    if (a === 'cerrar') return cerrarCalendario();
+    if (a === 'cerrar') return salirCalendario();
     if (a === 'elegir-fecha'){
       const f = document.getElementById('cal-fecha');
       try { return void f.showPicker(); } catch { return void f.click(); }
@@ -595,7 +611,8 @@ function wireCalendario(){
       s.sugerencias[campo] = []; pintarSugerencias(campo); document.getElementById('cal-' + campo)?.focus();
     }
   });
-  document.getElementById('buscar').addEventListener('input', () => cerrarCalendario(false));
+  // Escribir cierra la vista abierta desde la cabecera; la de un prefijo sigue al prefijo.
+  document.getElementById('buscar').addEventListener('input', () => { if (!s.porPrefijo) cerrarCalendario(false); });
 }
 function sugerenciasCalendario(raw){
   if (!CALENDARIO_ACTIVO) return null;
