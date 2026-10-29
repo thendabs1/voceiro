@@ -2051,6 +2051,8 @@
 /* El panel es la vista: sin feed debajo en el que caer al desplazarse. */
 .estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:10px;gap:6px}.est-cabecera strong{font-size:.9em}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros label{flex:1 1 120px}.est-filtros select{width:100%}.est-nav{padding-inline:10px}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
+/* Escritorio con ratón: más denso (≈ 90 %), como el calendario; en táctil se quedan los 44 px. */
+@media(pointer:fine){.estadisticas-panel{font-size:.9em}.estadisticas-panel button,.estadisticas-panel input,.estadisticas-panel select{min-height:32px}}
 .calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:16px 0 26px;overflow:hidden;scroll-margin-top:120px}
 /* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
 .cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
@@ -2060,7 +2062,7 @@
 .cal-icono{min-width:44px}
 .cal-donde{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 220px}
 .cal-donde-nombre{border:0;background:transparent;color:var(--fg);font-weight:700;padding:4px 6px;text-align:left;overflow-wrap:anywhere}.cal-donde-nombre:hover{color:var(--accent)}
-.cal-cuerpo{padding:12px 16px;min-width:0}.cal-evento summary,.cal-pendientes summary{cursor:pointer;min-height:44px;align-content:center}
+.cal-cuerpo{padding:12px 16px;min-width:0}.cal-pendientes summary{cursor:pointer;min-height:44px;align-content:center}
 /* Chips: seleccionados con borde y subrayado; los de categoría, con su color. */
 .cal-chips button{font-size:.85em;padding:5px 14px;border-radius:999px}
 .cal-chips [aria-pressed="true"]{color:var(--accent);border-color:var(--accent);box-shadow:inset 0 -2px var(--accent);font-weight:600}
@@ -2159,6 +2161,16 @@
 .cal-evento-dialogo{color:var(--fg);background:var(--bg);border:1px solid var(--btn-border);border-radius:9px;width:min(650px,calc(100% - 24px));max-height:85dvh;padding:18px}.cal-evento-dialogo::backdrop{background:#0008}.cal-evento-dialogo form{display:flex;justify-content:end}
 .calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
 @media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-mes{gap:2px}}
+/* Evento desplegado en la lista: bajo su título, con una raya a la izquierda. */
+.cal-desplegado{border-left:3px solid var(--accent);padding:2px 0 4px 10px;margin:4px 0 10px}.cal-desplegado .cal-evento-fuente{margin-top:8px}
+.cal-cita h3 button[aria-expanded="true"]{color:var(--accent)}
+.cal-participantes{margin:8px 0;padding-left:1.2em;font-size:.9em}.cal-evento-fuente{border-top:1px solid var(--border);margin-top:12px;padding-top:6px}
+/* Escritorio con ratón: más denso (≈ 90 %), como Estadísticas; en táctil se quedan los 44 px. */
+@media(pointer:fine){
+  .calendario-panel,.cal-evento-dialogo{font-size:.9em}
+  .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button,.cal-pendientes summary{min-height:32px}
+  .cal-icono{min-width:32px}.cal-chips button{padding:3px 12px}.cal-capa label,.cal-as-opcion{min-height:32px}
+}
 /* ═══ Consultas puntuales (libro:, pelicula:…): encima de la lista, como el tiempo ═══ */
 .consulta-panel{
   margin: 6px 0 10px;

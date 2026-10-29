@@ -42,7 +42,7 @@ export default {
   "calFinExclusivo": "Fin no incluido", "calCancelado": "Cancelado", "calAplazado": "Aplazado",
   "calEnCurso": "En curso según la última comprobación", "calTerminado": "Terminado",
   "calConflicto": "Hay datos discrepantes entre fuentes. Se muestra la selección conservada, si existe.",
-  "calPrograma": "Programa", "calDetalles": "Fuente y detalles",
+  "calPrograma": "Programa",
   "calComprobado": "Comprobado: {fecha}", "calGenerado": "Lectura generada: {fecha}.",
   "calSinCitas": "No hay citas en este período con los filtros elegidos.",
   "calCargarMas": "Ver más citas", 
