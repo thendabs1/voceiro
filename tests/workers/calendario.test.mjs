@@ -6,7 +6,7 @@ import { prepararLectura } from '../../shared/calendario/proyeccion.js';
 import { atenderCalendario, normalizarConsulta, consultaEventos, consultaResumen } from '../../workers/comun/calendario.js';
 import { consultarTurso } from '../../workers/comun/calendario-turso.js';
 import { seleccionCalendario, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
-import { agruparPorDiaCalendario } from '../../shared/calendario/fechas.js';
+import { agruparPorDiaCalendario, presentacionCalendario, sumarDiasCalendario, TRAMO_MAX_DIAS } from '../../shared/calendario/fechas.js';
 
 const env = { CALENDARIO_TURSO_URL: 'libsql://prueba.turso.io', CALENDARIO_TURSO_TOKEN_LECTURA: 'solo-prueba' };
 const extremo = (fecha, instante = null) => ({ fecha, instante, certeza_fecha: fecha ? 'confirmado' : 'desconocido',
@@ -381,4 +381,93 @@ test('formatos y precio filtran por faceta; gratis no incluye mixto', async t =>
   assert.deepEqual(await ids('&precio=gratis'), ['004']);
   assert.deepEqual(await ids('&formatos=concierto&precio=mixto'), ['005']);
   assert.equal((await b.pedir(ventana + '&precio=barato')).status, 400);
+});
+
+test('presentación: programa, prolongada (intervalo, continua o varios días) o cita', () => {
+  const cita = (inicio, fin, extra = {}) => ({ clase: 'funcion', programacion: { valor: { cuando: { inicio, fin, ...extra } } } });
+  const z = 'Europe/Madrid';
+  assert.equal(presentacionCalendario({ ...cita(extremo('2026-10-25'), extremo(null)), programa: [{}] }, z), 'programa');
+  assert.equal(presentacionCalendario(cita(extremo('2026-10-25'), extremo(null)), z), 'cita');
+  assert.equal(presentacionCalendario({ ...cita(extremo('2026-10-25'), extremo(null)), clase: 'actividad_continua' }, z), 'prolongada');
+  const intervalo = cita(extremo('2026-10-25'), extremo(null));
+  intervalo.programacion.valor.modalidad = 'intervalo';
+  assert.equal(presentacionCalendario(intervalo, z), 'prolongada');
+  assert.equal(presentacionCalendario(cita(extremo('2026-10-25'), extremo('2026-10-27')), z), 'prolongada');
+  // Fin exclusivo a medianoche: el límite del día, no un día más.
+  assert.equal(presentacionCalendario(cita(extremo('2026-10-25'), extremo('2026-10-26'), { fin_exclusivo: true }), z), 'cita');
+  assert.equal(presentacionCalendario(cita(extremo(null), extremo(null)), z), 'cita');
+});
+
+test('la tarjeta lleva formatos, precio, programa, competiciones y presentación; por zona si difiere', () => {
+  const datos = muestra();
+  Object.assign(datos.eventos[4], { formatos: ['concierto'], precio: 'gratis' });
+  // 23:30-00:30 UTC: dos días en UTC y Canarias, uno en la península (UTC+1 tras el cambio de hora).
+  datos.eventos[5].programacion.valor.cuando = { inicio: extremo('2026-10-25', '2026-10-25T23:30:00Z'), fin: extremo('2026-10-26', '2026-10-26T00:30:00Z') };
+  const tarjetas = Object.fromEntries(prepararLectura(datos).eventos.map(e => [e[0], JSON.parse(e[3])]));
+  assert.deepEqual([tarjetas['004'].formatos, tarjetas['004'].precio], [['concierto'], 'gratis']);
+  assert.ok(!('formatos' in tarjetas['010']) && !('precio' in tarjetas['010']) && !('tiene_programa' in tarjetas['010']));
+  assert.deepEqual(tarjetas['070'].competiciones, ['wta']);
+  assert.ok(!('competiciones' in tarjetas['010']));
+  assert.equal(tarjetas['000'].presentacion, 'prolongada');
+  assert.equal(tarjetas['010'].presentacion, 'cita');
+  assert.deepEqual(tarjetas['005'].presentacion, { 'Europe/Madrid': 'cita', 'Atlantic/Canary': 'prolongada', UTC: 'prolongada' });
+  const gp = JSON.parse(prepararLectura(muestraGP()).eventos[0][3]);
+  assert.equal(gp.tiene_programa, true); assert.equal(gp.presentacion, 'programa'); assert.deepEqual(gp.competiciones, ['f1']);
+});
+
+test('los tramos largos se parten por meses y el rango acotado encuentra todos sus días', async t => {
+  const datos = muestra();
+  // Exposición de cuatro meses: un tramo de más de TRAMO_MAX_DIAS.
+  datos.eventos[0].programacion.valor.cuando = { inicio: extremo('2026-09-10'), fin: extremo('2027-01-15') };
+  const p = prepararLectura(datos);
+  const suyos = p.tramos.filter(t => t[3] === '000');
+  assert.deepEqual(suyos.map(t => [t[1], t[2]]), [['2026-09-10', '2026-10-01'], ['2026-10-01', '2026-11-01'],
+    ['2026-11-01', '2026-12-01'], ['2026-12-01', '2027-01-01'], ['2027-01-01', '2027-01-16']]);
+  assert.ok(p.tramos.every(([, d, h]) => !d || sumarDiasCalendario(d, TRAMO_MAX_DIAS) >= h));
+  const b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir('/calendario/resumen?desde=2026-10-20&hasta=2026-11-30');
+  assert.ok(r.dato.dias.every(d => d.en_curso >= 1), 'la exposición cuenta todos los días');
+  const ids = (await b.pedir('/calendario/eventos?desde=2026-11-20&hasta=2026-11-27')).dato.eventos.map(e => e.id);
+  assert.deepEqual(ids, ['000']);
+});
+
+test('resumen: citas, programas y en curso por separado; muestras sin prolongadas y por hora', async t => {
+  const datos = muestra();
+  const horas = { '012': '2026-10-25T18:00:00Z', '011': '2026-10-25T09:00:00Z' };
+  for (const e of datos.eventos) if (horas[e.id]) e.programacion.valor.cuando = { inicio: extremo('2026-10-25', horas[e.id]), fin: extremo(null) };
+  datos.eventos[6].programacion.valor.cuando = { inicio: extremo('2026-10-20'), fin: extremo('2026-11-05') };
+  const b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC');
+  const [d] = r.dato.dias;
+  assert.equal(d.cantidad, d.citas + d.programas + d.en_curso);
+  assert.equal(d.en_curso, 2);   // el 000 (23-28) y el 006
+  // Con hora primero (001 a las 00:30, 011 a las 09:00); las prolongadas, nunca.
+  assert.deepEqual(d.muestras.map(m => m.id), ['001', '011']);
+  // El filtro de presentación separa la lista de «En curso».
+  const ids = async q => {
+    const todos = [];
+    for (let cursor = ''; ;) {
+      const r = await b.pedir('/calendario/eventos?desde=2026-10-25&hasta=2026-10-26&zona=UTC&limite=50' + q + (cursor ? '&cursor=' + cursor : ''));
+      todos.push(...r.dato.eventos.map(e => e.id));
+      if (!(cursor = r.dato.siguiente)) return todos;
+    }
+  };
+  assert.deepEqual(await ids('&presentacion=prolongada'), ['000', '006']);
+  assert.equal((await ids('&presentacion=cita,programa')).length, d.citas + d.programas);
+  assert.equal((await b.pedir(ventana + '&presentacion=larga')).status, 400);
+});
+
+test('el resumen y la lista recorren solo la franja acotada del índice, sin cruzar días', t => {
+  const b = base(); t.after(() => b.db.close());
+  const c = normalizarConsulta(new URL('https://datos.test/calendario/resumen?desde=2026-10-01&hasta=2026-11-12'));
+  for (const s of [consultaEventos(c, b.meta), consultaResumen(c, b.meta)]) {
+    const plan = b.db.prepare('EXPLAIN QUERY PLAN ' + s.sql).all(...s.args).map(f => f.detail).join('\n');
+    assert.match(plan, /SEARCH d USING COVERING INDEX \S+ \(zona=\? AND hasta>\? AND hasta<\?\)/);
+    assert.doesNotMatch(plan, /SCAN v\b/);
+    assert.ok(s.args.includes('2026-12-13'), 'fin de la ventana más 31 días');
+  }
+  // Una lectura publicada antes de partir los tramos no anota el tope: sin acotar.
+  const { tramo_max_dias, ...anterior } = b.meta;
+  assert.equal(tramo_max_dias, TRAMO_MAX_DIAS);
+  for (const s of [consultaEventos(c, anterior), consultaResumen(c, anterior)]) assert.ok(s.args.includes('9999-12-31'));
 });

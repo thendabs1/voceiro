@@ -54,6 +54,22 @@ export function programacionesCalendario(evento){
   return [evento.programacion?.valor?.cuando,
     ...(evento.programa || []).map(s => s.programacion?.valor?.cuando)].filter(Boolean);
 }
+// Ningún tramo de la lectura pasa de estos días: los largos se parten por
+// meses al publicar y la API acota `hasta` a la ventana más este margen.
+export const TRAMO_MAX_DIAS = 31;
+// Cómo se presenta: con programa (sesiones declaradas), prolongada (intervalo,
+// actividad continua o más de un día civil) o cita. Un torneo de una semana
+// sigue siendo prolongado aunque se mire su último día.
+export function presentacionCalendario(evento, zona){
+  if (evento.programa?.length) return 'programa';
+  const valor = evento.programacion?.valor;
+  if (valor?.modalidad === 'intervalo' || evento.clase === 'actividad_continua') return 'prolongada';
+  const a = extremoVisible(valor?.cuando?.inicio, zona), b = extremoVisible(valor?.cuando?.fin, zona);
+  if (!a.fecha || !b.fecha) return 'cita';
+  // Un fin a medianoche es el límite del día, no un día más.
+  const ultimo = valor.cuando.fin_exclusivo && (!b.hora || b.hora === '00:00') ? sumarDiasCalendario(b.fecha, -1) : b.fecha;
+  return ultimo > a.fecha ? 'prolongada' : 'cita';
+}
 // Resolver los extremos una vez por evento y ordenar antes de agrupar.
 export function agruparPorDiaCalendario(eventos, dias, zona){
   const grupos = new Map(dias.map(dia => [dia, []]));
