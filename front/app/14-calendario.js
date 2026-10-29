@@ -11,16 +11,22 @@ const CAL_PRECIOS = { gratis: 'calPrecioGratis', pago: 'calPrecioPago', mixto: '
 const CAL_RANGOS = { hoy: 'calHoy', manana: 'calManana', finde: 'calFinde' };
 // Categorías de la barra, con su color (--cat-*); lo demás, «otras».
 const CAL_CATEGORIAS = ['cultura', 'deportes'];
-// Competiciones para la segunda fila de Deportes: los prefijos con código.
-const CAL_COMPETICIONES = Object.entries(AMBITOS).filter(([, a]) => a.codigo).map(([k, a]) => [k, a.noticias?.[0] || k]);
 const CAL_SEMANAS_MAX = 4;
+// Deportes por deporte y sus competiciones (SofaScore): dos toques hasta una liga.
+const CAL_DEPORTES = { futbol: ['primera', 'segunda'], baloncesto: ['nba', 'wnba', 'feb-endesa', 'feb-primera', 'feb-challenge'],
+  motor: ['f1', 'motogp', 'wrc'], tenis: ['atp', 'wta'] };
+const CAL_NOMBRES_DEPORTE = { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' };
+// Marcas del mes por competición, en orden de prioridad; la WTA está casi
+// todos los días y va al final para no tapar al resto.
+const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', nba: 'NBA', atp: 'ATP',
+  'feb-endesa': 'LFE', 'feb-primera': 'FEB', 'feb-challenge': 'LFC', wnba: 'WNBA', wta: 'WTA' };
 const CALENDARIO = {
   abierto: false, porPrefijo: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
   // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
   // fecha: el día elegido (la lista empieza en él y la tira enseña su semana).
   fecha: '', desdeConsulta: '', rango: '', semanas: 1, mesAbierto: false, mes: null,
   zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
-  temas: new Set(), competicion: '', precio: '', donde: null, dondeAuto: false, editandoDonde: false, clave: '',
+  temas: new Set(), deporte: '', competicion: '', temporada: null, precio: '', donde: null, dondeAuto: false, editandoDonde: false, clave: '',
   escrito: { donde: '' }, sugerencias: { donde: [] },
   consulta: '', vigente: '', controller: null, resumen: null, dias: new Map(), pendientes: null, origen: null, scroll: 0,
 };
@@ -83,7 +89,8 @@ function calAnotar(dato){
 }
 function calParametros(){
   const s = CALENDARIO, o = s.orden;
-  const ambitos = [...(o?.ambitos || []), ...(s.competicion ? [s.competicion] : [])];
+  const elegidas = s.competicion ? [s.competicion] : s.deporte ? CAL_DEPORTES[s.deporte] : [];
+  const ambitos = [...(o?.ambitos || []), ...elegidas];
   const q = [...ambitos.map(a => a + ':'), ...(o?.circuitos.length ? ['circuito:' + o.circuitos.join(',')] : [])].join(' ');
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: [...s.temas].join(','), precio: s.precio,
     local: s.donde?.id || '' };
@@ -168,6 +175,25 @@ async function cargarMesCalendario(){
     s.mes = null; s.error = 'calError';
   }
   pintarCalendario();
+  if (calModoDeportes()) cargarTemporadaCalendario();
+}
+// «Este mes en deportes»: los GP y torneos del mes natural (los partidos se
+// cuentan con el resumen). Pocos: unos 30 al mes con todas las competiciones.
+async function cargarTemporadaCalendario(){
+  const s = CALENDARIO, uno = s.fecha.slice(0, 8) + '01', mesSig = moverFecha(uno, 'mes', 1);
+  const params = { ...calParametros(), desde: uno, hasta: mesSig, presentacion: 'prolongada,programa',
+    circuitos: Object.keys(CAL_MARCAS).join(','), limite: 50 }, clave = JSON.stringify(params);
+  if (s.temporada?.clave === clave) return;
+  s.temporada = { clave, eventos: null };
+  try {
+    const dato = await calPedir('eventos', params, (s.controllerMes ||= new AbortController()).signal);
+    if (s.temporada?.clave !== clave) return;
+    calAnotar(dato); s.temporada.eventos = dato.eventos;
+  } catch {
+    if (s.temporada?.clave === clave) s.temporada = null;
+    return;
+  }
+  pintarCalendario();
 }
 // Lista de un día: sus citas y programas, o lo que está en curso. Se pide al
 // abrirla y pagina con el cursor de la API; si la publicación cambió (409),
@@ -212,7 +238,7 @@ async function pendientesCalendario(mas = false){
 }
 function calLimpiarFiltros(){
   const s = CALENDARIO;
-  s.temas.clear(); s.competicion = ''; s.precio = ''; s.rango = ''; s.semanas = 1; s.mes = null;
+  s.temas.clear(); s.deporte = ''; s.competicion = ''; s.temporada = null; s.precio = ''; s.rango = ''; s.semanas = 1; s.mes = null;
   s.escrito = { donde: '' }; s.sugerencias = { donde: [] }; s.editandoDonde = false;
 }
 // La ciudad fija también la hora: la canaria en Canarias; si no, la del navegador.
@@ -406,6 +432,20 @@ function calPuntos(d){
   }
   return [...CAL_CATEGORIAS, 'otras'].filter(c => hay.has(c));
 }
+// En Deportes el mes enseña competiciones: «NBA 9» (partidos) o «F1» (GP,
+// torneo); dos como mucho y «+N». La elegida va primero.
+const calModoDeportes = () => Boolean(CALENDARIO.meta) && (calRaizElegida() === 'deportes'
+  || Boolean(CALENDARIO.orden?.ambitos.some(a => AMBITOS[a]?.codigo)));
+function calMarcas(d){
+  const s = CALENDARIO, orden = Object.keys(CAL_MARCAS);
+  const hay = Object.entries(d?.competiciones || {}).filter(([c, n]) => CAL_MARCAS[c] && n.citas + n.programas + n.en_curso > 0)
+    .sort(([a], [b]) => (b === s.competicion) - (a === s.competicion) || orden.indexOf(a) - orden.indexOf(b));
+  return hay.map(([c, n]) => ({ c, texto: CAL_MARCAS[c] + (n.citas > 1 ? ' ' + n.citas : ''),
+    nombre: calNombreCompeticion(c) + (n.citas ? ' · ' + calN('calNPartidos', n.citas) : '') }));
+}
+const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.slice(0, 2).map(m => `<span class="cal-marca">${calEsc(m.texto)}</span>`).join('')}
+  ${marcas.length > 2 ? `<span class="cal-marca cal-mas">+${marcas.length - 2}</span>` : ''}</span>` : '';
+const calNombreCompeticion = c => AMBITOS[c]?.noticias?.[0] || c;
 const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidden="true">${cats.map(c => `<span class="cal-punto cal-cat-${c}"></span>`).join('')}</span>` : '';
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
 // Un día de la lista: sus muestras y «Ver las N citas»; abierta, todas.
@@ -452,11 +492,13 @@ function calLista(){
 }
 // Una celda de la tira o del mes: inicial del día, número y puntos.
 function calCeldaDia(dia, d, { otroMes = false } = {}){
-  const s = CALENDARIO, hoy = calHoy(), cats = calPuntos(d);
-  const etiqueta = `${calDiaLargo(dia)}: ${d ? calCuentas(d) : calN('calNCitas', 0)}${cats.length ? ' · ' + cats.map(calNombreCategoria).join(', ') : ''}`;
+  const s = CALENDARIO, hoy = calHoy(), deportes = calModoDeportes();
+  const cats = deportes ? [] : calPuntos(d), marcas = deportes ? calMarcas(d) : [];
+  const detalle = deportes ? marcas.map(m => m.nombre) : cats.map(calNombreCategoria);
+  const etiqueta = `${calDiaLargo(dia)}: ${d ? calCuentas(d) : calN('calNCitas', 0)}${detalle.length ? ' · ' + detalle.join(', ') : ''}`;
   return `<button type="button" class="cal-celda${otroMes ? ' cal-otro-mes' : ''}${dia < hoy ? ' cal-pasado' : ''}" data-cal="dia" data-valor="${dia}"
     aria-pressed="${dia === s.fecha}"${dia === hoy ? ' aria-current="date"' : ''} aria-label="${calEsc(etiqueta)}">
-    <span class="cal-num">${calEsc(calFecha(dia, { month: undefined }))}</span>${calPuntosHtml(cats)}</button>`;
+    <span class="cal-num">${calEsc(calFecha(dia, { month: undefined }))}</span>${deportes ? calMarcasHtml(marcas) : calPuntosHtml(cats)}</button>`;
 }
 const calCabeceraSemana = dias => dias.slice(0, 7).map(dia => `<abbr class="cal-semana-nombre" title="${calEsc(calFecha(dia, { weekday: 'long', day: undefined, month: undefined }))}">${calEsc(calFecha(dia, { weekday: 'narrow', day: undefined, month: undefined }))}</abbr>`).join('');
 // Tira (Apple Calendar, SofaScore): la semana del día elegido; desplegada, el mes.
@@ -469,7 +511,31 @@ function calTira(){
     ${calBoton('mes', titulo + (s.mesAbierto ? ' ▴' : ' ▾'), '', `class="cal-tira-titulo" aria-expanded="${s.mesAbierto}"`)}${calBoton('siguiente', '›', '', `aria-label="${calEsc(t(sig))}"`)}</div>
     <div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
       calCeldaDia(dia, porDia.get(dia), { otroMes: s.mesAbierto && dia.slice(0, 7) !== s.fecha.slice(0, 7) })).join('')}</div>
-    <p class="cal-leyenda">${[...CAL_CATEGORIAS, 'otras'].map(c => `<span><span class="cal-punto cal-cat-${c}" aria-hidden="true"></span>${calEsc(calNombreCategoria(c))}</span>`).join('')}</p></div>`;
+    ${calModoDeportes() ? '' : `<p class="cal-leyenda">${[...CAL_CATEGORIAS, 'otras'].map(c => `<span><span class="cal-punto cal-cat-${c}" aria-hidden="true"></span>${calEsc(calNombreCategoria(c))}</span>`).join('')}</p>`}
+    ${s.mesAbierto && calModoDeportes() ? calTemporada() : ''}</div>`;
+}
+// Este mes en deportes (calendario de temporada de la app de F1, SofaScore):
+// por competición, sus GP o torneos con fechas y los partidos publicados.
+function calTemporada(){
+  const s = CALENDARIO, mes = s.fecha.slice(0, 7), dias = (s.mes?.dias || []).filter(d => d.dia.slice(0, 7) === mes);
+  const partidos = {};
+  for (const d of dias) for (const [c, n] of Object.entries(d.competiciones || {})) partidos[c] = (partidos[c] || 0) + n.citas;
+  const largos = {};
+  for (const e of s.temporada?.eventos || []) for (const c of e.competiciones || []) (largos[c] ||= []).push(e);
+  const parcial = c => s.meta?.colecciones?.some(x => x.coleccion === c && x.calendario_completo === false);
+  const rango = e => {
+    const v = e.programacion?.valor?.cuando, a = extremoVisible(v?.inicio, s.zona).fecha, b = extremoVisible(v?.fin, s.zona).fecha;
+    return a ? calFecha(a) + (b && b !== a ? '–' + calFecha(b) : '') : t('calFechaPendiente');
+  };
+  const filas = Object.keys(CAL_MARCAS).filter(c => partidos[c] || largos[c]?.length).map(c => {
+    const lista = largos[c] || [];
+    return `<li class="cal-temporada-fila">${calBoton('competicion', calNombreCompeticion(c), c, `aria-pressed="${s.competicion === c}"`)}
+      ${partidos[c] ? `<span class="cal-nota">${calEsc(calN('calNPartidos', partidos[c]))}</span>` : ''}${parcial(c) ? `<span class="cal-nota">· ${calEsc(t('calParcial'))}</span>` : ''}
+      ${lista.length ? `<ul>${lista.slice(0, 4).map(e => `<li>${calBoton('evento', calNombre(e), e.id, 'aria-haspopup="dialog"')} <span class="cal-cuando">${calEsc(rango(e))}</span></li>`).join('')}
+        ${lista.length > 4 ? `<li class="cal-nota">${calEsc(t('calYMas', { n: lista.length - 4 }))}</li>` : ''}</ul>` : ''}</li>`;
+  });
+  return `<section class="cal-temporada"><h2>${calEsc(t('calEsteMes', { mes: calFecha(s.fecha, { month: 'long', day: undefined }) }))}</h2>
+    ${filas.length ? `<ul>${filas.join('')}</ul>` : `<p class="cal-nota">${calEsc(s.temporada?.eventos ? t('calSinDeportes') : t('calCargando'))}</p>`}</section>`;
 }
 function calPendientes(){
   const p = CALENDARIO.pendientes;
@@ -523,9 +589,13 @@ function calChips(){
     ${fijas.map(c => chip('categoria', calNombre(conceptos[c]), c, raiz === c, 'cal-cat cal-cat-' + c)).join('')}
     ${calBoton('gratis', t('calPrecioGratis'), '', `aria-pressed="${s.precio === 'gratis'}" title="${calEsc(t('calGratisNota'))}"`)}</div>`;
   let segunda = '';
-  if (raiz === 'deportes' && !s.orden?.ambitos.length) segunda = CAL_COMPETICIONES.map(([k, n]) => chip('competicion', n, k, s.competicion === k)).join('');
-  else if (raiz) segunda = calHijos(conceptos, raiz).map(i => chip('tema', calNombre(conceptos[i]), i, s.temas.has(i))).join('');
-  return primera + (segunda ? `<div class="cal-chips cal-subchips ui-tira" role="group" aria-label="${calEsc(calNombre(conceptos[raiz]))}">${segunda}</div>` : '');
+  let tercera = '';
+  if (raiz === 'deportes' && !s.orden?.ambitos.length){
+    segunda = Object.keys(CAL_DEPORTES).map(k => chip('deporte', t(CAL_NOMBRES_DEPORTE[k]), k, s.deporte === k)).join('');
+    if (s.deporte) tercera = CAL_DEPORTES[s.deporte].map(k => chip('competicion', calNombreCompeticion(k), k, s.competicion === k)).join('');
+  } else if (raiz) segunda = calHijos(conceptos, raiz).map(i => chip('tema', calNombre(conceptos[i]), i, s.temas.has(i))).join('');
+  const fila = (html, label) => html ? `<div class="cal-chips cal-subchips ui-tira" role="group" aria-label="${calEsc(label)}">${html}</div>` : '';
+  return primera + fila(segunda, calNombre(conceptos[raiz])) + fila(tercera, s.deporte ? t(CAL_NOMBRES_DEPORTE[s.deporte]) : '');
 }
 function calContenido(){
   const s = CALENDARIO;
@@ -620,7 +690,13 @@ function wireCalendario(){
       calElegirDia(propios.includes(calHoy()) ? calHoy() : propios[0]);
     }
     if (a === 'mas-semanas') s.semanas = Math.min(CAL_SEMANAS_MAX, s.semanas + 1);
-    if (a === 'categoria'){ s.temas.clear(); s.competicion = ''; if (v) s.temas.add(v); }
+    // Deportes abre el mes: sus fechas se ven mejor de un vistazo.
+    if (a === 'categoria'){
+      s.temas.clear(); s.deporte = ''; s.competicion = '';
+      if (v) s.temas.add(v);
+      if (v === 'deportes') s.mesAbierto = true;
+    }
+    if (a === 'deporte'){ s.deporte = s.deporte === v ? '' : v; s.competicion = ''; }
     // Una subcategoría sustituye a su raíz y se quita volviendo a pulsarla.
     if (a === 'tema'){
       const raiz = calRaizElegida(), pulsado = s.temas.has(v);

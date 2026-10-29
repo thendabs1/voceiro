@@ -23,7 +23,8 @@ const tarjeta = (id, dia, { hora = null, presentacion = 'cita', ...extra } = {})
     cuando: { inicio: extremo(dia || null, hora), fin: extremo(presentacion === 'prolongada' && dia ? fechas.sumarDiasCalendario(dia, 60) : null) } } },
   lugar: { nombre: 'Sala', municipio: 'Vigo' }, resultado_disponible: false, fuentes: ['galicia'], presentacion, dia, ...extra });
 const META = { version: 1, revision: 'r1', generado: '2026-10-25T06:00:00Z',
-  horizonte: { desde: '2026-09-10', hasta: '2027-10-27' }, cobertura: [{ fuente: 'galicia', comprobado: '2026-10-25T05:00:00Z' }], colecciones: [] };
+  horizonte: { desde: '2026-09-10', hasta: '2027-10-27' }, cobertura: [{ fuente: 'galicia', comprobado: '2026-10-25T05:00:00Z' }],
+  colecciones: [{ coleccion: 'nba', calendario_completo: false }, { coleccion: 'f1', calendario_completo: true }] };
 const CONCEPTOS = { cultura: { nombres: { es: 'Cultura' }, padres: [] }, teatro: { nombres: { es: 'Teatro' }, padres: ['cultura'] },
   deportes: { nombres: { es: 'Deportes' }, padres: [] }, tenis: { nombres: { es: 'Tenis' }, padres: ['deportes'] },
   economia: { nombres: { es: 'Economía' }, padres: [] } };
@@ -38,9 +39,12 @@ function api(u){
   if (ruta === '/calendario/resumen') {
     const dias = [], n = Number(p.get('muestras') ?? 2);
     for (let d = p.get('desde'); d < p.get('hasta'); d = fechas.sumarDiasCalendario(d, 1)) {
-      const categorias = { cultura: { citas: 25, programas: 1, en_curso: 4 } };
-      if (d === '2026-10-27') categorias.deportes = { citas: 0, programas: 0, en_curso: 1 };
-      dias.push({ dia: d, cantidad: 30, citas: 25, programas: 1, en_curso: 4, categorias, muestras: [
+      const categorias = { cultura: { citas: 25, programas: 1, en_curso: 4 } }, competiciones = { wta: { citas: 0, programas: 0, en_curso: 2 } };
+      if (d === '2026-10-27'){
+        categorias.deportes = { citas: 0, programas: 0, en_curso: 1 };
+        Object.assign(competiciones, { nba: { citas: 9, programas: 0, en_curso: 0 }, f1: { citas: 0, programas: 1, en_curso: 0 }, atp: { citas: 1, programas: 0, en_curso: 0 } });
+      }
+      dias.push({ dia: d, cantidad: 30, citas: 25, programas: 1, en_curso: 4, categorias, competiciones, muestras: [
         tarjeta('A' + d, d, { hora: '17:00', formatos: ['concierto'], precio: 'gratis', categoria: 'cultura' }), tarjeta('B' + d, d), tarjeta('C' + d, d)].slice(0, n) });
     }
     return { ...META, dias };
@@ -50,6 +54,9 @@ function api(u){
     participaciones: [], enlaces: [], fuentes: [{ fuente: 'galicia', url: 'https://galicia.test/1' }],
     programa: [tarjeta('Libres 1', '2026-10-24'), tarjeta('Carrera', '2026-10-26')] } };
   const dia = p.get('desde');
+  if (p.get('circuitos')) return { ...META, siguiente: null, eventos: [
+    tarjeta('GP de México', '2026-10-30', { presentacion: 'programa', competiciones: ['f1'] }),
+    ...Array.from({ length: 6 }, (_, i) => tarjeta('Torneo ' + i, '2026-10-0' + (i + 1), { presentacion: 'prolongada', competiciones: ['wta'] }))] };
   const todos = p.get('pendientes') === '1' ? Array.from({ length: 26 }, (_, i) => tarjeta('Pendiente ' + i, ''))
     : p.get('presentacion') === 'prolongada' ? Array.from({ length: 4 }, (_, i) => tarjeta(`Expo ${i} ${dia}`, dia, { presentacion: 'prolongada' }))
     : Array.from({ length: 26 }, (_, i) => tarjeta(`Cita ${String(i).padStart(2, '0')} ${dia}`, dia, i < 20 ? { hora: `${String(8 + (i >> 1)).padStart(2, '0')}:00` } : {}));
@@ -214,15 +221,45 @@ test('chips: Todo, categorías con su segunda fila, competiciones y Gratis', asy
   assert.equal(c.resumen().get('temas'), 'teatro');
   await c.click('tema', 'teatro');
   assert.equal(c.resumen().get('temas'), 'cultura');
+  // Deportes: deporte y después competición.
   await c.click('categoria', 'deportes');
   chips = c.api.calChips();
-  assert.match(chips, /data-cal="competicion" data-valor="f1"[^>]*>F1/);
+  assert.match(chips, /data-cal="deporte" data-valor="motor"[^>]*>Motor/);
+  assert.doesNotMatch(chips, /data-cal="competicion"/);
+  await c.click('deporte', 'motor');
+  assert.equal(c.resumen().get('q'), 'f1: motogp: wrc:');
+  assert.match(c.api.calChips(), /data-cal="competicion" data-valor="f1"[^>]*>F1/);
   await c.click('competicion', 'f1');
   assert.deepEqual([c.resumen().get('temas'), c.resumen().get('q')], ['deportes', 'f1:']);
   await c.click('gratis');
   assert.equal(c.resumen().get('precio'), 'gratis');
   await c.click('categoria', '');
   assert.deepEqual([c.resumen().get('temas'), c.resumen().get('q'), c.resumen().get('precio')], [null, null, 'gratis']);
+});
+
+test('Deportes abre el mes con marcas por competición y «Este mes en deportes»', async () => {
+  const c = contexto();
+  c.hoy = '2026-10-26';
+  await c.abrir();
+  await c.click('categoria', 'deportes');
+  assert.equal(c.api.s.mesAbierto, true);
+  const temporada = c.pedidas.findLast(u => u.searchParams.get('circuitos'));
+  assert.deepEqual([temporada.searchParams.get('desde'), temporada.searchParams.get('hasta'), temporada.searchParams.get('presentacion')],
+    ['2026-10-01', '2026-11-01', 'prolongada,programa']);
+  const html = c.api.calContenido();
+  // El 27: F1 primero, NBA con sus partidos; ATP y WTA en «+2». Sin puntos ni leyenda.
+  const celda = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
+  assert.match(celda, /aria-label="martes, 27 de octubre: [^"]*F1, NBA · 9 partidos, ATP · 1 partido, WTA"/);
+  assert.match(celda, /<span class="cal-marca">F1<\/span><span class="cal-marca">NBA 9<\/span>[\s\S]*\+2/);
+  assert.doesNotMatch(html, /cal-leyenda/);
+  // El bloque del mes: partidos por liga, programación parcial y los torneos (cuatro y «y 2 más»).
+  assert.match(html, /Este mes en deportes · octubre/);
+  assert.match(html, /data-valor="f1"[^>]*>F1<\/button>[\s\S]*?GP de México/);
+  assert.match(html, /data-valor="nba"[^>]*>NBA<\/button>\s*<span class="cal-nota">9 partidos<\/span><span class="cal-nota">· programación parcial/);
+  assert.match(html, /Torneo 3[\s\S]*y 2 más/);
+  // Tocar una competición del bloque la filtra y la marca va primero.
+  await c.click('competicion', 'nba');
+  assert.equal(c.resumen().get('q'), 'nba:');
 });
 
 test('la ventana se recorta al horizonte publicado y fuera de él no se pide nada', async () => {
