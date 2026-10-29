@@ -175,6 +175,8 @@ export function consultaResumen(c, meta) {
   args.push(c.zona, c.desde, topeVentana(c, meta), c.hasta);
   const filtros = filtrosSql(c, meta, args);
   args.push(c.hasta, c.muestras);
+  // Turso (libSQL) solo ordena un UNION por columnas de la salida, no por expresiones:
+  // «muestra» separa cuentas y muestras de cada día.
   return { sql: `WITH ventana AS MATERIALIZED (SELECT d.evento AS id, max(d.desde,?) AS desde, d.hasta,
       ${presentacion} AS presentacion,
       julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')) AS hora
@@ -183,13 +185,13 @@ export function consultaResumen(c, meta) {
     muestras AS (SELECT desde AS dia, id, ROW_NUMBER() OVER(PARTITION BY desde
       ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden
       FROM ventana WHERE presentacion IS NOT 'prolongada')
-    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta FROM (
+    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra FROM (
       SELECT desde AS dia, presentacion, 1 AS n FROM ventana
       UNION ALL SELECT hasta, presentacion, -1 FROM ventana WHERE hasta<?) GROUP BY dia, presentacion
     UNION ALL
-    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id)
+    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id), 1
       FROM muestras WHERE orden<=?
-    ORDER BY 1, 4 IS NOT NULL, 3`, args };
+    ORDER BY 1, 5, 3`, args };
 }
 
 // consultar se inyecta en las pruebas; ambos adaptadores usan el mismo transporte.
