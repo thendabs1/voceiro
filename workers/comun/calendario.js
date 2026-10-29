@@ -32,7 +32,7 @@ export function predicadosTexto(texto, columna, args) {
 export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
-    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'precio', 'presentacion', 'muestras',
+    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'local', 'etiqueta', 'formatos', 'precio', 'presentacion', 'muestras',
     'pendientes', 'resultados', 'revision', 'tipo']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
@@ -65,7 +65,7 @@ export function normalizarConsulta(url) {
   const c = { zona, desde, hasta, pendientes, limite, muestras, orden, resto, texto,
     temas: lista(p.get('temas')), circuitos: lista(p.get('circuitos')),
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
-    fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', etiqueta: p.get('etiqueta') || '',
+    fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', local: p.get('local') || '', etiqueta: p.get('etiqueta') || '',
     formatos: lista(p.get('formatos')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
     tipos: lista(p.get('tipo')),
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
@@ -95,6 +95,13 @@ export function filtrosSql(c, meta, args) {
   for (const objetivo of c.objetivos) faceta('objetivo', [objetivo]);
   faceta('fuente', c.fuente ? [c.fuente] : []);
   faceta('territorio', c.territorio ? [c.territorio] : []);
+  // «local»: lo que se celebra en ese territorio y las competiciones, que no
+  // tienen territorio publicado (se siguen desde cualquier sitio).
+  if (c.local) {
+    args.push(c.local);
+    condiciones.push(`(e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='territorio' AND valor=?)
+      OR e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='circuito'))`);
+  }
   faceta('etiqueta', c.etiqueta ? [c.etiqueta] : []);
   faceta('formato', c.formatos);
   faceta('precio', c.precio ? [c.precio] : []);
