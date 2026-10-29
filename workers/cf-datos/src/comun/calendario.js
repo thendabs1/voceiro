@@ -217,7 +217,7 @@ export function consultaChips(c, meta, cursor) {
 }
 // Un chip es una cita de ese día: con su hora y, si es una sesión o función,
 // con su nombre y el del GP o programa al que pertenece.
-const comoChip = (t, f) => ({ ...t, presentacion: 'cita', hora_muestra: f.hora,
+const comoChip = (t, f) => ({ ...t, presentacion: 'cita', hora_muestra: f.hora, ocurrencia: f.ocurrencia,
   ...(f.sesion ? { nombres: JSON.parse(f.sesion), padre: t.nombres } : {}) });
 
 // Turso cuenta también las filas de las tablas temporales: nada de cruzar cada
@@ -278,12 +278,12 @@ export function consultaResumen(c, meta) {
   if (c.muestras && meta.lectura_chips) {
     args.push(c.zona, c.desde, c.hasta);
     const filtrosChips = filtrosSql(c, meta, args);
-    muestras = `, muestras AS (SELECT x.dia, x.evento AS id, x.hora, x.sesion_json, ROW_NUMBER() OVER(PARTITION BY x.dia
+    muestras = `, muestras AS (SELECT x.dia, x.evento AS id, x.ocurrencia, x.hora, x.sesion_json, ROW_NUMBER() OVER(PARTITION BY x.dia
       ORDER BY x.orden, x.evento, x.ocurrencia) AS orden, COUNT(*) OVER(PARTITION BY x.dia) AS total
       FROM agenda_lectura_chips x JOIN agenda_lectura_eventos e ON e.id=x.evento
       WHERE x.zona IN (?,'*') AND x.dia>=? AND x.dia<?${filtrosChips})`;
   } else if (c.muestras) {
-    muestras = `, muestras AS (SELECT desde AS dia, id, NULL AS hora, NULL AS sesion_json, ROW_NUMBER() OVER(PARTITION BY desde
+    muestras = `, muestras AS (SELECT desde AS dia, id, NULL AS ocurrencia, NULL AS hora, NULL AS sesion_json, ROW_NUMBER() OVER(PARTITION BY desde
       ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden, NULL AS total
       FROM ventana WHERE presentacion IS NOT 'prolongada')`;
   }
@@ -299,13 +299,13 @@ export function consultaResumen(c, meta) {
       FROM agenda_lectura_tramos d JOIN agenda_lectura_eventos e ON e.id=d.evento
       WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros})${muestras}
     SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra, categoria, competiciones,
-      NULL AS hora, NULL AS sesion, NULL AS total FROM (
+      NULL AS ocurrencia, NULL AS hora, NULL AS sesion, NULL AS total FROM (
       SELECT desde AS dia, presentacion, categoria, competiciones, 1 AS n FROM ventana
       UNION ALL SELECT hasta, presentacion, categoria, competiciones, -1 FROM ventana WHERE hasta<?)
       GROUP BY dia, presentacion, categoria, competiciones
     ${muestras ? `UNION ALL
     SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id), 1, NULL, NULL,
-      hora, sesion_json, total FROM muestras WHERE orden<=?` : ''}
+      ocurrencia, hora, sesion_json, total FROM muestras WHERE orden<=?` : ''}
     ORDER BY 1, 5, 3`, args };
 }
 
@@ -365,7 +365,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     if (detalle) sentencia = { sql: 'SELECT detalle_json FROM agenda_lectura_eventos WHERE id=?', args: [id] };
     // Lecturas sin chips: la lista de eventos de siempre.
     else if (ruta === '/calendario/eventos' && c.chips && meta.lectura_chips) sentencia = consultaChips(c, meta, cursor);
-    else if (ruta === '/calendario/eventos') sentencia = consultaEventos(c, meta, cursor);
+    else if (ruta === '/calendario/eventos') sentencia = consultaEventos(c.chips && !c.presentaciones.length
+      ? { ...c, presentaciones: ['cita', 'programa'] } : c, meta, cursor);
     else if (ruta === '/calendario/resumen') sentencia = consultaResumen(c, meta);
     else if (ruta === '/calendario/catalogo' && c.disponibilidad) sentencia = consultaDisponibilidad(c, meta);
     else if (ruta === '/calendario/objetivos') {
