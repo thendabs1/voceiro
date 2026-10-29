@@ -2101,6 +2101,37 @@
 .cal-temporada-fila>button[aria-pressed="true"]{color:var(--cat-deportes);text-decoration:underline}
 .cal-temporada-fila li button{border:0;background:transparent;color:var(--fg);text-align:left;padding:4px 0;min-height:36px}
 .cal-temporada-fila ul{padding-left:12px}
+/* Asistente: un paso por pantalla, opciones grandes con su cuenta y progreso. */
+.cal-asistente{padding:16px;max-width:640px}.cal-asistente h2{font-size:1.15em;margin:6px 0 10px}.cal-asistente h2:focus{outline:none}
+.cal-as-progreso{display:flex;gap:4px;list-style:none;margin:4px 0 8px;padding:0}.cal-as-progreso li{flex:1;height:4px;border-radius:2px;background:var(--border)}
+.cal-as-progreso li.hecho{background:var(--accent)}
+.cal-as-grupo{border:0;margin:10px 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}.cal-as-grupo legend{font-weight:700;margin-bottom:6px;padding:0}
+.cal-as-opcion{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px;border:1px solid var(--btn-border);border-radius:999px;cursor:pointer}
+.cal-as-opcion:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+.cal-as-opcion small{color:var(--muted);font-weight:400}.cal-as-ayuda{display:block}
+.cal-as-resumen{margin:8px 0}.cal-as-fila{display:grid;grid-template-columns:8em 1fr auto;gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--border)}
+.cal-as-fila dt{font-weight:700}.cal-as-fila dd{margin:0}
+.cal-invitacion{border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin:0 0 12px}.cal-invitacion h2{font-size:1em;margin:4px 0}
+.cal-elegir{font-size:.85em;border-style:dashed}
+/* Mes con títulos (ancho): semanas en cuadrícula; el día ocupa su columna entera y las barras van encima. */
+.cal-mg{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.cal-mg-cabecera{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-mg-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:1.8em repeat(var(--carriles),1.6em) minmax(4.6em,auto);border-top:1px solid var(--border)}
+.calendario-panel .cal-mg-dia{grid-row:1/-1;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;min-height:7.5em;padding:3px 4px;
+  border:0;border-left:1px solid var(--border);border-radius:0;background:var(--bg);color:var(--fg);text-align:left;font:inherit}
+.cal-mg-dia:first-child{border-left:0}.cal-mg-dia.cal-otro-mes{background:var(--btn-bg)}
+.cal-mg-dia .cal-num{font-size:.85em;font-variant-numeric:tabular-nums}.cal-mg-dia[aria-current="date"] .cal-num{color:var(--accent);font-weight:700}
+.cal-mg-dia[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
+.cal-mg-hueco{display:block;height:calc(var(--carriles) * 1.6em)}
+.cal-mg-chip{display:block;font-size:.72em;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px;padding:1px 4px;
+  color:var(--cat-otras);background:var(--cat-otras-bg)}
+.cal-mg-chip.cal-cat-cultura{color:var(--cat-cultura);background:var(--cat-cultura-bg)}.cal-mg-chip.cal-cat-deportes{color:var(--cat-deportes);background:var(--cat-deportes-bg)}
+.cal-mg-mas{font-size:.72em;color:var(--muted)}
+.calendario-panel .cal-mg-barra{z-index:1;min-height:0;margin:2px 3px;padding:0 6px;border:0;border-radius:4px;font-size:.72em;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;color:var(--cat-otras-bg);background:var(--cat-otras)}
+.calendario-panel .cal-mg-barra.cal-cat-deportes{color:var(--cat-deportes-bg);background:var(--cat-deportes)}
+.calendario-panel .cal-mg-barra.cal-cat-cultura{color:var(--cat-cultura-bg);background:var(--cat-cultura)}
+.cal-mg-barra.sigue-antes{margin-left:0;border-top-left-radius:0;border-bottom-left-radius:0}.cal-mg-barra.sigue-despues{margin-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
 .cal-leyenda{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:.75em;color:var(--muted);margin:6px 0 0}
 .cal-leyenda>span{display:inline-flex;align-items:center;gap:5px}
 /* Lo pasado, atenuado y marcado: sigue consultable, pero no parece vigente. */
