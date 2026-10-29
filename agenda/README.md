@@ -208,7 +208,14 @@ huella por evento (con sus facetas y tramos) y por entidad, y solo se reescribe
 lo que cambió; sin huellas previas se reemplaza todo. Para que una cita sin
 cambios conserve su huella, la lectura no lleva «comprobado» por cita (va por
 fuente en `cobertura`), los tramos iguales en las tres zonas se guardan una vez
-con zona `*` y el recorte al horizonte va por meses enteros. Con los 4.784
+con zona `*` y el recorte al horizonte va por meses enteros. Ningún tramo pasa
+de 31 días (`TRAMO_MAX_DIAS`, los largos se parten por meses): la API solo
+recorre los que terminan entre el inicio de la ventana y su fin más ese margen
+(con la lectura del 29/10, de 336.000 a ~14.000 filas de índice el resumen de
+7 días). Turso cuenta también las filas de tablas temporales, así que el
+resumen no cruza días con tramos: acumula altas y bajas. La tarjeta lleva
+`formatos`, `precio`, `tiene_programa`, `competiciones` y `presentacion`
+(`cita`, `programa` o `prolongada`, por zona si difiere). Con los 4.784
 eventos del 26/10: de 64.015 filas reescritas por publicación a 45.662 la
 primera vez y 0 si no hay novedades. Rutas GET/HEAD del worker:
 
@@ -216,12 +223,13 @@ primera vez y 0 si no hay novedades. Rutas GET/HEAD del worker:
 | --- | --- |
 | `/calendario/eventos?desde&hasta` | 20 tarjetas por página (máx. 50), ventana `[desde,hasta)` de hasta 42 días; orden por día e instante de inicio (sin hora o ya empezadas, primero). |
 | `/calendario/eventos?pendientes=1` | Citas con fecha pendiente. |
-| `/calendario/resumen?desde&hasta` | Conteo por día y hasta dos muestras. |
+| `/calendario/resumen?desde&hasta` | Por día: `cantidad` = `citas` + `programas` + `en_curso`, y hasta dos muestras (citas o programas, primero con hora). |
 | `/calendario/eventos/:id` | Detalle con sus objetivos. |
 | `/calendario/catalogo`, `/calendario/objetivos?texto&tipo` | Temas, fuentes y zonas; entidades paginadas. |
 
 Filtros: `q` (prefijos del parser y texto), `texto`, `temas`, `circuitos`,
-`fuente`, `objetivo`, `lugar`, `municipio`, `territorio`, `etiqueta`, `zona`. El cursor va
+`fuente`, `objetivo`, `lugar`, `municipio`, `territorio`, `etiqueta`, `presentacion`
+(lista de `cita`, `programa`, `prolongada`), `zona`. El cursor va
 ligado a la revisión: si cambia la publicación responde 409. Caché de 15 s con
 clave por revisión y límite de 30 peticiones/IP/minuto.
 

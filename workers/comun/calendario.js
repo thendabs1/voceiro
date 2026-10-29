@@ -12,6 +12,7 @@ const limitar = crearLimite({ max: 30, ventanaMs: 60000 });
 const error = (codigo, mensaje) => Object.assign(new Error(mensaje), { codigo });
 const json = (dato, status = 200, headers = {}) => new Response(JSON.stringify(dato), { status,
   headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers } });
+const PRESENTACIONES = ['cita', 'programa', 'prolongada'];
 const lista = s => [...new Set((s || '').split(',').filter(Boolean))].sort();
 const escaparLike = s => s.replace(/[\\%_]/g, '\\$&');
 
@@ -31,7 +32,8 @@ export function predicadosTexto(texto, columna, args) {
 export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
-    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'precio', 'pendientes', 'resultados', 'revision', 'tipo']);
+    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'precio', 'presentacion',
+    'pendientes', 'resultados', 'revision', 'tipo']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
   }
@@ -62,14 +64,21 @@ export function normalizarConsulta(url) {
     temas: lista(p.get('temas')), circuitos: lista(p.get('circuitos')),
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', etiqueta: p.get('etiqueta') || '',
-    formatos: lista(p.get('formatos')), precio: p.get('precio') || '',
+    formatos: lista(p.get('formatos')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
     tipos: lista(p.get('tipo')),
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
   if ([c.temas, c.circuitos, c.formatos, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   // «gratis» no incluye «mixto»: el filtro no promete lo que solo vale para una tarifa.
   if (c.precio && !['gratis', 'pago', 'mixto'].includes(c.precio)) throw error(400, 'Precio desconocido');
+  if (c.presentaciones.some(v => !PRESENTACIONES.includes(v))) throw error(400, 'Presentación desconocida');
   if (c.tipos.some(t => !['evento', 'actividad', 'agrupacion', 'participante', 'lugar', 'territorio'].includes(t))) throw error(400, 'Tipo desconocido');
   return c;
+}
+
+// Presentación de la tarjeta en la zona pedida; una sola cadena si coincide en todas.
+function presentacionSql(zona, args) {
+  args.push(`$.presentacion."${zona}"`);
+  return "coalesce(json_extract(e.tarjeta_json,?),json_extract(e.tarjeta_json,'$.presentacion'))";
 }
 
 export function filtrosSql(c, meta, args) {
@@ -96,6 +105,11 @@ export function filtrosSql(c, meta, args) {
     }
     condiciones.push('(' + porAmbito.join(' OR ') + ')');
   }
+  if (c.presentaciones.length) {
+    const expresion = presentacionSql(c.zona, args);
+    args.push(...c.presentaciones);
+    condiciones.push(`${expresion} IN (${c.presentaciones.map(() => '?').join(',')})`);
+  }
   if (c.resultados) condiciones.push('e.resultado=1');
   condiciones.push(...predicadosTexto(c.resto, 'e.texto', args), ...predicadosTexto(c.texto, 'e.texto', args));
   return condiciones.length ? ' AND ' + condiciones.join(' AND ') : '';
@@ -117,11 +131,17 @@ async function firma(c) {
   return [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
+// Fin máximo de los tramos que solapan la ventana. Una lectura anterior a los
+// tramos partidos no lo anota: entonces no se acota.
+const topeVentana = (c, meta) => (meta.tramo_max_dias ? sumarDiasCalendario(c.hasta, meta.tramo_max_dias) : '9999-12-31');
+
 // zona '*': tramos iguales en todas las zonas (citas con solo fecha), una sola fila.
 export function consultaEventos(c, meta, cursor) {
-  const args = c.pendientes ? [c.zona, '', ''] : [c.desde, c.zona, c.desde, c.hasta];
+  // Ningún tramo pasa de tramo_max_dias: los que solapan la ventana terminan
+  // antes de su fin más ese margen, y el índice solo recorre esa franja.
+  const args = c.pendientes ? [c.zona, '', ''] : [c.desde, c.zona, c.desde, topeVentana(c, meta), c.hasta];
   const dia = c.pendientes ? 'd.desde' : 'max(d.desde,?)';
-  const dias = c.pendientes ? 'd.hasta=? AND d.desde=?' : 'd.hasta>? AND d.desde<?';
+  const dias = c.pendientes ? 'd.hasta=? AND d.desde=?' : 'd.hasta>? AND d.hasta<=? AND d.desde<?';
   const filtros = filtrosSql(c, meta, args);
   let continuacion = '';
   if (cursor) { continuacion = ' WHERE (dia,orden,id)>(?,?,?)'; args.push(cursor[2], Number(cursor[3]), cursor[4]); }
@@ -138,18 +158,32 @@ export function consultaEventos(c, meta, cursor) {
     SELECT id,dia,orden,tarjeta FROM ordenada${continuacion} ORDER BY dia,orden,id LIMIT ?`, args };
 }
 
+// Turso cuenta también las filas de las tablas temporales: nada de cruzar cada
+// día con la ventana. Cada tramo suma +1 el primer día que cubre y -1 al
+// terminar (los de un evento no se solapan en una zona), y las cuentas por día
+// salen de acumular esos cambios. Las muestras son citas y programas en su
+// primer día de la ventana, primero las de hora acreditada.
 export function consultaResumen(c, meta) {
-  const dias = [];
-  for (let dia = c.desde; dia < c.hasta; dia = sumarDiasCalendario(dia, 1)) dias.push(dia);
-  const args = [...dias, c.zona];
+  const args = [c.desde];
+  const presentacion = presentacionSql(c.zona, args);
+  args.push(c.zona, c.desde, topeVentana(c, meta), c.hasta);
   const filtros = filtrosSql(c, meta, args);
-  return { sql: `WITH dias(dia) AS (VALUES ${dias.map(() => '(?)').join(',')}), seleccion AS (
-    SELECT v.dia,e.id,ROW_NUMBER() OVER(PARTITION BY v.dia ORDER BY e.id) AS orden,
-      count(*) OVER(PARTITION BY v.dia) AS cantidad
-    FROM dias v JOIN agenda_lectura_tramos d ON d.zona IN (?,'*') AND d.hasta>v.dia AND d.desde<=v.dia
-    JOIN agenda_lectura_eventos e ON e.id=d.evento WHERE 1=1${filtros})
-    SELECT dia,id,cantidad,(SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=seleccion.id) AS tarjeta
-    FROM seleccion WHERE orden<=2 ORDER BY dia,id`, args };
+  args.push(c.hasta);
+  return { sql: `WITH ventana AS MATERIALIZED (SELECT d.evento AS id, max(d.desde,?) AS desde, d.hasta,
+      ${presentacion} AS presentacion,
+      julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')) AS hora
+      FROM agenda_lectura_tramos d JOIN agenda_lectura_eventos e ON e.id=d.evento
+      WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros}),
+    muestras AS (SELECT desde AS dia, id, ROW_NUMBER() OVER(PARTITION BY desde
+      ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden
+      FROM ventana WHERE presentacion IS NOT 'prolongada')
+    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta FROM (
+      SELECT desde AS dia, presentacion, 1 AS n FROM ventana
+      UNION ALL SELECT hasta, presentacion, -1 FROM ventana WHERE hasta<?) GROUP BY dia, presentacion
+    UNION ALL
+    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id)
+      FROM muestras WHERE orden<=2
+    ORDER BY 1, 4 IS NOT NULL, 3`, args };
 }
 
 // consultar se inyecta en las pruebas; ambos adaptadores usan el mismo transporte.
@@ -236,8 +270,20 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       fuentes: meta.fuentes, territorios_catalogo: meta.territorios_catalogo, zonas: meta.zonas };
     else if (ruta === '/calendario/resumen') {
       const porDia = new Map();
-      for (let dia = c.desde; dia < c.hasta; dia = sumarDiasCalendario(dia, 1)) porDia.set(dia, { dia, cantidad: 0, muestras: [] });
-      for (const f of filas) { const d = porDia.get(f.dia); d.cantidad = f.cantidad; d.muestras.push(JSON.parse(f.tarjeta)); }
+      const cambios = new Map(), muestras = new Map();
+      for (const f of filas) {
+        if (f.tarjeta) { if (!muestras.has(f.dia)) muestras.set(f.dia, []); muestras.get(f.dia).push(JSON.parse(f.tarjeta)); continue; }
+        // Sin presentación (lecturas anteriores a ella) cuenta como cita.
+        const clave = { programa: 'programas', prolongada: 'en_curso' }[f.presentacion] || 'citas';
+        if (!cambios.has(f.dia)) cambios.set(f.dia, { citas: 0, programas: 0, en_curso: 0 });
+        cambios.get(f.dia)[clave] += f.n;
+      }
+      const acumulado = { citas: 0, programas: 0, en_curso: 0 };
+      for (let dia = c.desde; dia < c.hasta; dia = sumarDiasCalendario(dia, 1)) {
+        for (const [k, n] of Object.entries(cambios.get(dia) || {})) acumulado[k] += n;
+        porDia.set(dia, { dia, cantidad: acumulado.citas + acumulado.programas + acumulado.en_curso,
+          ...acumulado, muestras: muestras.get(dia) || [] });
+      }
       salida = { ...base, dias: [...porDia.values()] };
     } else {
       const hayMas = filas.length > c.limite, pagina = filas.slice(0, c.limite), ultima = pagina.at(-1);

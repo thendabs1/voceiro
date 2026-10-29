@@ -1,12 +1,24 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
 import { palabrasDe } from '../busqueda/texto.js';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario } from './fechas.js';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, TRAMO_MAX_DIAS } from './fechas.js';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
 export const TODAS_LAS_ZONAS = '*';
 // «Comprobado» cambia en cada pasada aunque la cita no cambie. En la lectura va
 // por fuente (cobertura), así que cada pasada reescribe solo lo que cambió.
+// Los tramos largos se parten por meses: ninguno pasa de TRAMO_MAX_DIAS, así
+// la API lee solo los que terminan cerca de la ventana pedida.
+function partirTramo([desde, hasta]) {
+  if (!desde || sumarDiasCalendario(desde, TRAMO_MAX_DIAS) >= hasta) return [[desde, hasta]];
+  const trozos = [];
+  for (let a = desde; a < hasta;) {
+    const d = new Date(a.slice(0, 8) + '01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + 1);
+    const b = d.toISOString().slice(0, 10) < hasta ? d.toISOString().slice(0, 10) : hasta;
+    trozos.push([a, b]); a = b;
+  }
+  return trozos;
+}
 const sinComprobado = v => Array.isArray(v) ? v.map(sinComprobado) : v && typeof v === 'object'
   ? Object.fromEntries(Object.entries(v).filter(([k]) => k !== 'comprobado').map(([k, x]) => [k, sinComprobado(x)])) : v;
 export function prepararLectura(datos) {
@@ -41,6 +53,15 @@ export function prepararLectura(datos) {
     // clave cuando no hay: así no se reescriben las tarjetas sin obra.
     const obra = e.objetivos.find(k => limpias[k].tipo === 'actividad');
     if (obra) tarjeta.obra = { id: obra, nombres: limpias[obra].nombres };
+    // Lo que enseña la tarjeta del calendario, también sin clave cuando no hay.
+    if (e.formatos?.length) tarjeta.formatos = e.formatos;
+    if (e.precio) tarjeta.precio = e.precio;
+    if (e.programa?.length) tarjeta.tiene_programa = true;
+    const competiciones = [...new Set(objetivos.flatMap(o => o.codigos || []))];
+    if (competiciones.length) tarjeta.competiciones = competiciones;
+    // Cita, programa o prolongada: una sola si coincide en las tres zonas.
+    const presentaciones = Object.fromEntries(ZONAS.map(z => [z, presentacionCalendario(e, z)]));
+    tarjeta.presentacion = new Set(Object.values(presentaciones)).size === 1 ? presentaciones[ZONAS[0]] : presentaciones;
     eventos.push([e.id, texto(objetivos.flatMap(o => Object.values(o.nombres)).join(' ')),
       Number(Boolean(e.resultado)), JSON.stringify(tarjeta), JSON.stringify(detalle)]);
     const f = new Map();
@@ -79,7 +100,7 @@ export function prepararLectura(datos) {
         if (!tramo || tramo[1] !== dia) { tramo = [dia, '']; propios.push(tramo); }
         tramo[1] = sumarDiasCalendario(dia, 1);
       }
-      return propios;
+      return propios.flatMap(partirTramo);
     });
     // Las citas con solo fecha (casi todas las culturales) dan los mismos
     // tramos en todas las zonas: una fila en vez de tres.
@@ -92,7 +113,7 @@ export function prepararLectura(datos) {
     comprobado: observadas.filter(f => f.fuente === fuente).map(f => f.comprobado)
       .sort((a, b) => Date.parse(a) - Date.parse(b)).at(-1) || null,
     alcance: 'eventos_publicados', completa: false }));
-  return { version: 1, generado: datos.generado, desde, hasta, zonas: ZONAS,
+  return { version: 1, generado: datos.generado, desde, hasta, zonas: ZONAS, tramo_max_dias: TRAMO_MAX_DIAS,
     catalogo: datos.catalogo, territorios_catalogo: datos.territorios_catalogo,
     fuentes: datos.fuentes, cobertura: comprobaciones,
     colecciones: datos.cobertura_colecciones || [], eventos, facetas, tramos,
