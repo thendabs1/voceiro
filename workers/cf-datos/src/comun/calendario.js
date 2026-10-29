@@ -33,7 +33,7 @@ export function predicadosTexto(texto, columna, args) {
 export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
-    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'precio', 'presentacion',
+    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'precio', 'presentacion', 'muestras',
     'pendientes', 'resultados', 'revision', 'tipo']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
@@ -51,6 +51,8 @@ export function normalizarConsulta(url) {
   if (url.pathname === '/calendario/resumen' && pendientes) throw error(400, 'El resumen requiere fechas');
   const limite = p.has('limite') ? Number(p.get('limite')) : 20;
   if (!Number.isInteger(limite) || limite < 1 || limite > 50) throw error(400, 'Límite entre 1 y 50');
+  const muestras = p.has('muestras') ? Number(p.get('muestras')) : 2;
+  if (!Number.isInteger(muestras) || muestras < 0 || muestras > 5) throw error(400, 'Muestras entre 0 y 5');
   const raw = p.get('q') || '', orden = leerConsultaCalendario(raw) || {};
   if (orden.desconocidos?.length) throw error(400, 'Selección de calendario desconocida');
   if (esLista && orden.tipos?.length && !orden.tipos.some(t => ['calendario', 'resultados'].includes(t))) throw error(400, 'Esta ruta consulta eventos y resultados');
@@ -61,7 +63,7 @@ export function normalizarConsulta(url) {
   if (tokenizeQuery(texto).some(t => t.prefix)) throw error(400, 'El filtro texto solo admite texto libre');
   const terminos = [resto, texto].map(t => compilarTexto(tokenizeQuery(t)));
   if (terminos.reduce((n, t) => n + t.incluir.length + t.excluir.length, 0) > 20) throw error(400, 'Máximo 20 términos de búsqueda');
-  const c = { zona, desde, hasta, pendientes, limite, orden, resto, texto,
+  const c = { zona, desde, hasta, pendientes, limite, muestras, orden, resto, texto,
     temas: lista(p.get('temas')), circuitos: lista(p.get('circuitos')),
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', etiqueta: p.get('etiqueta') || '',
@@ -144,17 +146,20 @@ export function consultaEventos(c, meta, cursor) {
   const dia = c.pendientes ? 'd.desde' : 'max(d.desde,?)';
   const dias = c.pendientes ? 'd.hasta=? AND d.desde=?' : 'd.hasta>? AND d.hasta<=? AND d.desde<?';
   const filtros = filtrosSql(c, meta, args);
+  const presentacion = presentacionSql(c.zona, args);
   let continuacion = '';
   if (cursor) { continuacion = ' WHERE (dia,orden,id)>(?,?,?)'; args.push(cursor[2], Number(cursor[3]), cursor[4]); }
   args.push(c.limite + 1);
-  // Dentro del día, por instante de inicio (absoluto, válido en cualquier zona): primero
-  // lo que ya había empezado o no tiene hora, después cada cita por su hora.
+  // Dentro del día, por instante de inicio (absoluto, válido en cualquier zona):
+  // primero las citas con hora; al final las que no la tienen y los programas,
+  // cuyo inicio puede ser de otro día. 9999999 cabe en el cursor decimal.
   return { sql: `WITH seleccion AS (
     SELECT e.id, min(${dia}) AS dia FROM agenda_lectura_tramos d
     JOIN agenda_lectura_eventos e ON e.id=d.evento
     WHERE d.zona IN (?,'*') AND ${dias}${filtros} GROUP BY e.id),
     ordenada AS (SELECT s.id, s.dia, e.tarjeta_json AS tarjeta,
-      coalesce(julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')),0) AS orden
+      CASE WHEN ${presentacion} IS 'programa' THEN 9999999
+        ELSE coalesce(julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')),9999999) END AS orden
       FROM seleccion s JOIN agenda_lectura_eventos e ON e.id=s.id)
     SELECT id,dia,orden,tarjeta FROM ordenada${continuacion} ORDER BY dia,orden,id LIMIT ?`, args };
 }
@@ -169,7 +174,7 @@ export function consultaResumen(c, meta) {
   const presentacion = presentacionSql(c.zona, args);
   args.push(c.zona, c.desde, topeVentana(c, meta), c.hasta);
   const filtros = filtrosSql(c, meta, args);
-  args.push(c.hasta);
+  args.push(c.hasta, c.muestras);
   return { sql: `WITH ventana AS MATERIALIZED (SELECT d.evento AS id, max(d.desde,?) AS desde, d.hasta,
       ${presentacion} AS presentacion,
       julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')) AS hora
@@ -183,7 +188,7 @@ export function consultaResumen(c, meta) {
       UNION ALL SELECT hasta, presentacion, -1 FROM ventana WHERE hasta<?) GROUP BY dia, presentacion
     UNION ALL
     SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id)
-      FROM muestras WHERE orden<=2
+      FROM muestras WHERE orden<=?
     ORDER BY 1, 4 IS NOT NULL, 3`, args };
 }
 

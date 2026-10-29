@@ -92,11 +92,12 @@ export function ventanaCalendario(fecha, vista){
     const semana = (new Date(inicio + 'T12:00:00Z').getUTCDay() + 6) % 7;
     inicio = sumarDiasCalendario(inicio, -semana);
   }
-  const cantidad = vista === 'mes' ? 42 : vista === 'semana' ? 7 : 14;
+  // lista7 y lista14 empiezan en la fecha elegida; semana, en lunes.
+  const cantidad = vista === 'mes' ? 42 : vista === 'semana' || vista === 'lista7' ? 7 : 14;
   return Array.from({ length: cantidad }, (_, i) => sumarDiasCalendario(inicio, i));
 }
 export function moverFecha(fecha, vista, direccion){
-  if (vista !== 'mes') return sumarDiasCalendario(fecha, direccion * (vista === 'semana' ? 7 : 14));
+  if (vista !== 'mes') return sumarDiasCalendario(fecha, direccion * (vista === 'semana' || vista === 'lista7' ? 7 : 14));
   const d = new Date(fecha.slice(0, 8) + '01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + direccion);
   return d.toISOString().slice(0, 10);
 }
