@@ -5,6 +5,8 @@ import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, p
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
 export const TODAS_LAS_ZONAS = '*';
+// De un GP solo la carrera es chip del mes; el resto de sesiones van en su barra.
+const SESIONES_PRINCIPALES = new Set(['Race', 'RAC']);
 // «Comprobado» cambia en cada pasada aunque la cita no cambie. En la lectura va
 // por fuente (cobertura), así que cada pasada reescribe solo lo que cambió.
 // Los tramos largos se parten por meses: ninguno pasa de TRAMO_MAX_DIAS, así
@@ -32,7 +34,7 @@ export function prepararLectura(datos) {
   const desdeTramos = mes(desde, 0), hastaTramos = mes(hasta, 1);
   // Las resoluciones de lugares y territorios citan su origen, también con «comprobado».
   const limpias = sinComprobado(datos.entidades);
-  const eventos = [], facetas = [], tramos = [], entidades = Object.entries(limpias);
+  const eventos = [], facetas = [], tramos = [], chips = [], entidades = Object.entries(limpias);
   let evaluaciones = 0;
   const texto = s => ' ' + palabrasDe(s).map(p => p.t).join(' ') + ' ';
   // Categoría (color de la tira y del mes): la raíz del catálogo de los temas
@@ -123,6 +125,25 @@ export function prepararLectura(datos) {
     const iguales = porZona.every(t => JSON.stringify(t) === JSON.stringify(porZona[0]));
     (iguales ? [TODAS_LAS_ZONAS] : ZONAS).forEach((zona, i) =>
       tramos.push(...porZona[i].map(([d, h]) => [zona, d, h, e.id])));
+    // Chips del mes: lo que pasa cada día. Una cita es su chip; de un programa,
+    // sus funciones o, si es una competición, solo su carrera. Lo prolongado no
+    // tiene chips (va en «En cartel» o, si es competición, en su barra).
+    // Fila: [zona, día, evento, ocurrencia, orden (minuto del día; sin hora,
+    // al final), hora, nombres de la sesión o null].
+    const sesiones = e.programa || [];
+    const porZonaChips = ZONAS.map(zona => {
+      const ocurrencias = sesiones.length
+        ? (competiciones.length ? sesiones.filter(x => SESIONES_PRINCIPALES.has(x.agenda?.tipo_sesion)) : sesiones)
+        : presentaciones[zona] === 'cita' ? [e] : [];
+      return ocurrencias.flatMap(o => {
+        const a = extremoVisible(o.programacion?.valor?.cuando?.inicio, zona);
+        if (!a.fecha || a.fecha < desdeTramos || a.fecha >= hastaTramos) return [];
+        const [h, m] = (a.hora || '').split(':').map(Number);
+        return [[a.fecha, e.id, o.id, a.hora ? h * 60 + m : 1440, a.hora || null, o === e ? null : JSON.stringify(o.nombres)]];
+      });
+    });
+    const igualesChips = porZonaChips.every(c => JSON.stringify(c) === JSON.stringify(porZonaChips[0]));
+    (igualesChips ? [TODAS_LAS_ZONAS] : ZONAS).forEach((zona, i) => chips.push(...porZonaChips[i].map(c => [zona, ...c])));
   }
   const observadas = datos.eventos.flatMap(e => e.fuentes);
   const comprobaciones = Object.keys(datos.fuentes).map(fuente => ({ fuente,
@@ -132,6 +153,7 @@ export function prepararLectura(datos) {
   return { version: 1, generado: datos.generado, desde, hasta, zonas: ZONAS, tramo_max_dias: TRAMO_MAX_DIAS,
     catalogo: datos.catalogo, territorios_catalogo: datos.territorios_catalogo,
     fuentes: datos.fuentes, cobertura: comprobaciones,
-    colecciones: datos.cobertura_colecciones || [], eventos, facetas, tramos,
+    // lectura_chips: la API saca las muestras de los chips (lecturas anteriores no los tienen).
+    colecciones: datos.cobertura_colecciones || [], lectura_chips: 1, eventos, facetas, tramos, chips,
     entidades: entidades.map(([k, e]) => [k, e.tipo, texto(Object.values(e.nombres).join(' ')), JSON.stringify(e)]) };
 }

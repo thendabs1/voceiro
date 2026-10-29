@@ -39,10 +39,10 @@ function base(datos = muestra()) {
   const p = prepararLectura(datos), db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys=ON');
   db.exec(readFileSync(new URL('../../agenda/lectura.sql', import.meta.url), 'utf8'));
-  const meta = Object.fromEntries(Object.entries(p).filter(([k]) => !['eventos', 'facetas', 'tramos', 'entidades'].includes(k)));
+  const meta = Object.fromEntries(Object.entries(p).filter(([k]) => !['eventos', 'facetas', 'tramos', 'chips', 'entidades'].includes(k)));
   meta.revision = 'revision-1';
   db.prepare('INSERT INTO agenda_lectura_control VALUES (1,1,?,0,?)').run(meta.revision, JSON.stringify(meta));
-  for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ['entidades', 4]]) {
+  for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ['chips', 7], ['entidades', 4]]) {
     const s = db.prepare(`INSERT INTO agenda_lectura_${tabla} VALUES (${Array(n).fill('?').join(',')})`);
     for (const f of p[tabla]) s.run(...f);
   }
@@ -461,6 +461,49 @@ test('local: lo que se celebra en el territorio más las competiciones, que no t
   assert.equal(await total('&territorio=es:provincia:28'), 0);
   assert.equal(await total('&local=es:provincia:28'), 25);
   assert.equal(await total('&local=es:provincia:36'), await total(''));
+});
+
+test('chips: una cita es su chip; de un GP solo la carrera, en su día de cada zona; de un programa, sus funciones', () => {
+  const gp = muestraGP();
+  gp.eventos[0].programa[1].agenda = { rol: 'sesion', tipo_sesion: 'Race' };
+  gp.eventos[0].programa[0].agenda = { rol: 'sesion', tipo_sesion: 'FP1' };
+  const chips = prepararLectura(gp).chips;
+  // Carrera a las 23:30 UTC del 25: el 25 en UTC y Canarias (WET, UTC+0), el 26 en la península.
+  assert.deepEqual(chips.map(c => c.slice(0, 6)), [
+    ['Europe/Madrid', '2026-10-26', 'gp', 'carrera', 30, '00:30'],
+    ['Atlantic/Canary', '2026-10-25', 'gp', 'carrera', 1410, '23:30'],
+    ['UTC', '2026-10-25', 'gp', 'carrera', 1410, '23:30']]);
+  assert.deepEqual(JSON.parse(chips[0][6]), { es: 'carrera' });
+  // Un programa sin competición (un festival) da todas sus funciones.
+  delete gp.entidades['evento:gp'].codigos; gp.eventos[0].codigos = [];
+  assert.equal(new Set(prepararLectura(gp).chips.map(c => c[3])).size, 2);
+  // Citas: un chip por cita con fecha, en todas las zonas si coincide; ni prolongadas ni pendientes.
+  const p = prepararLectura(muestra()), porEvento = id => p.chips.filter(c => c[2] === id);
+  assert.deepEqual(porEvento('010'), [['*', '2026-10-25', '010', '010', 1440, null, null]]);
+  assert.deepEqual([porEvento('000'), porEvento('003')], [[], []]);
+  assert.equal(porEvento('001').length, 3);
+});
+
+test('resumen con chips: la carrera es muestra de su día con el nombre del GP; lectura sin chips, como antes', async t => {
+  const datos = muestraGP();
+  datos.eventos[0].programa[1].agenda = { rol: 'sesion', tipo_sesion: 'Race' };
+  const b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-27&zona=Europe/Madrid&muestras=3');
+  const [d25, d26] = r.dato.dias;
+  assert.deepEqual([d25.chips, d25.muestras], [0, []]);
+  assert.equal(d26.chips, 1);
+  assert.deepEqual([d26.muestras[0].id, d26.muestras[0].nombres, d26.muestras[0].padre, d26.muestras[0].hora_muestra, d26.muestras[0].presentacion],
+    ['gp', { es: 'carrera' }, { es: 'GP de prueba' }, '00:30', 'cita']);
+  // Sin muestras no hay chips que contar.
+  assert.ok(!('chips' in (await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-27&zona=UTC&muestras=0')).dato.dias[0]));
+  // Lectura publicada antes de los chips: muestras por inicio de tramo.
+  const viejo = base(); t.after(() => viejo.db.close());
+  const meta = JSON.parse(viejo.db.prepare('SELECT datos_json FROM agenda_lectura_control').get().datos_json);
+  delete meta.lectura_chips;
+  viejo.db.prepare('UPDATE agenda_lectura_control SET datos_json=?').run(JSON.stringify(meta));
+  viejo.db.exec('DELETE FROM agenda_lectura_chips');
+  const v = await viejo.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC&muestras=2');
+  assert.deepEqual([v.dato.dias[0].muestras.map(m => m.id), 'chips' in v.dato.dias[0]], [['001', '002'], false]);
 });
 
 test('los tramos largos se parten por meses y el rango acotado encuentra todos sus días', async t => {

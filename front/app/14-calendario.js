@@ -393,7 +393,8 @@ async function abrirEventoCalendario(id){
 }
 // Hora de la columna: no la llevan lo prolongado ni los programas (su inicio
 // puede ser de otro día).
-const calHoraCita = e => ['prolongada', 'programa'].includes(calPresentacion(e)) ? ''
+// Las muestras de chips traen su hora de ese día (la de la sesión, en un GP).
+const calHoraCita = e => 'hora_muestra' in e ? e.hora_muestra || '' : ['prolongada', 'programa'].includes(calPresentacion(e)) ? ''
   : extremoVisible(e.programacion?.valor?.cuando?.inicio, CALENDARIO.zona).hora || '';
 // Tarjeta de la lista: la hora en su columna; título, lugar y tipo de plan con
 // precio. Lo prolongado lleva sus fechas en vez de hora.
@@ -403,7 +404,10 @@ function calCita(e){
   const lugar = calLugar(e);
   const plan = [...(e.formatos || []).map(calNombreFormato), e.precio && CAL_PRECIOS[e.precio] ? t(CAL_PRECIOS[e.precio]) : '',
     e.tiene_programa ? '▸ ' + t('calPrograma') : ''].filter(Boolean).join(' · ');
+  // Una sesión o función lleva encima el GP o programa al que pertenece, si su nombre no lo dice ya.
+  const padre = e.padre ? calNombre({ nombres: e.padre }) : '';
   return `<article class="cal-cita"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
+    ${padre && !calNombre(e).includes(padre) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calBoton('evento', calNombre(e), e.id, 'aria-haspopup="dialog"')}</h3>
     ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
     ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}

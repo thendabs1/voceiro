@@ -180,7 +180,23 @@ export function consultaResumen(c, meta) {
   const presentacion = presentacionSql(c.zona, args);
   args.push(c.zona, c.desde, topeVentana(c, meta), c.hasta);
   const filtros = filtrosSql(c, meta, args);
-  args.push(c.hasta, c.muestras);
+  // Muestras: con chips (lecturas que los tienen), lo que pasa cada día, con su
+  // hora y el total para «+N»; si no, el inicio de cada tramo. Sin muestras, nada.
+  let muestras = '';
+  if (c.muestras && meta.lectura_chips) {
+    args.push(c.zona, c.desde, c.hasta);
+    const filtrosChips = filtrosSql(c, meta, args);
+    muestras = `, muestras AS (SELECT x.dia, x.evento AS id, x.hora, x.sesion_json, ROW_NUMBER() OVER(PARTITION BY x.dia
+      ORDER BY x.orden, x.evento, x.ocurrencia) AS orden, COUNT(*) OVER(PARTITION BY x.dia) AS total
+      FROM agenda_lectura_chips x JOIN agenda_lectura_eventos e ON e.id=x.evento
+      WHERE x.zona IN (?,'*') AND x.dia>=? AND x.dia<?${filtrosChips})`;
+  } else if (c.muestras) {
+    muestras = `, muestras AS (SELECT desde AS dia, id, NULL AS hora, NULL AS sesion_json, ROW_NUMBER() OVER(PARTITION BY desde
+      ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden, NULL AS total
+      FROM ventana WHERE presentacion IS NOT 'prolongada')`;
+  }
+  args.push(c.hasta);
+  if (muestras) args.push(c.muestras);
   // Turso (libSQL) solo ordena un UNION por columnas de la salida, no por expresiones:
   // «muestra» separa cuentas y muestras de cada día.
   return { sql: `WITH ventana AS MATERIALIZED (SELECT d.evento AS id, max(d.desde,?) AS desde, d.hasta,
@@ -189,17 +205,15 @@ export function consultaResumen(c, meta) {
       json_extract(e.tarjeta_json,'$.categoria') AS categoria,
       json_extract(e.tarjeta_json,'$.competiciones') AS competiciones
       FROM agenda_lectura_tramos d JOIN agenda_lectura_eventos e ON e.id=d.evento
-      WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros}),
-    muestras AS (SELECT desde AS dia, id, ROW_NUMBER() OVER(PARTITION BY desde
-      ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden
-      FROM ventana WHERE presentacion IS NOT 'prolongada')
-    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra, categoria, competiciones FROM (
+      WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros})${muestras}
+    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra, categoria, competiciones,
+      NULL AS hora, NULL AS sesion, NULL AS total FROM (
       SELECT desde AS dia, presentacion, categoria, competiciones, 1 AS n FROM ventana
       UNION ALL SELECT hasta, presentacion, categoria, competiciones, -1 FROM ventana WHERE hasta<?)
       GROUP BY dia, presentacion, categoria, competiciones
-    UNION ALL
-    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id), 1, NULL, NULL
-      FROM muestras WHERE orden<=?
+    ${muestras ? `UNION ALL
+    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id), 1, NULL, NULL,
+      hora, sesion_json, total FROM muestras WHERE orden<=?` : ''}
     ORDER BY 1, 5, 3`, args };
 }
 
@@ -287,12 +301,21 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       fuentes: meta.fuentes, territorios_catalogo: meta.territorios_catalogo, zonas: meta.zonas };
     else if (ruta === '/calendario/resumen') {
       const porDia = new Map();
-      const cambios = new Map(), muestras = new Map();
+      const cambios = new Map(), muestras = new Map(), totales = new Map();
       // Las cuentas llegan como altas y bajas por día; también por categoría
       // («sin_clasificar» sin ella, o en lecturas anteriores a ella).
       const nuevas = () => ({ citas: 0, programas: 0, en_curso: 0 });
       for (const f of filas) {
-        if (f.tarjeta) { if (!muestras.has(f.dia)) muestras.set(f.dia, []); muestras.get(f.dia).push(JSON.parse(f.tarjeta)); continue; }
+        if (f.tarjeta) {
+          // Un chip es una cita de ese día: con su hora y, si es una sesión o
+          // función, con su nombre y el del GP o programa al que pertenece.
+          const t = JSON.parse(f.tarjeta), m = meta.lectura_chips
+            ? { ...t, presentacion: 'cita', hora_muestra: f.hora, ...(f.sesion ? { nombres: JSON.parse(f.sesion), padre: t.nombres } : {}) } : t;
+          if (!muestras.has(f.dia)) muestras.set(f.dia, []);
+          muestras.get(f.dia).push(m);
+          if (f.total != null) totales.set(f.dia, f.total);
+          continue;
+        }
         // Sin presentación (lecturas anteriores a ella) cuenta como cita.
         const clave = { programa: 'programas', prolongada: 'en_curso' }[f.presentacion] || 'citas';
         if (!cambios.has(f.dia)) cambios.set(f.dia, []);
@@ -309,7 +332,9 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
           for (const codigo of codigos) (porCompeticion[codigo] ||= nuevas())[k] += n;
         }
         porDia.set(dia, { dia, cantidad: acumulado.citas + acumulado.programas + acumulado.en_curso,
-          ...acumulado, categorias: conAlgo(porCategoria), competiciones: conAlgo(porCompeticion), muestras: muestras.get(dia) || [] });
+          ...acumulado, categorias: conAlgo(porCategoria), competiciones: conAlgo(porCompeticion), muestras: muestras.get(dia) || [],
+          // chips: cuántas cosas pasan ese día (las muestras son las primeras).
+          ...(meta.lectura_chips && c.muestras ? { chips: totales.get(dia) || 0 } : {}) });
       }
       salida = { ...base, dias: [...porDia.values()] };
     } else {
