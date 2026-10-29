@@ -178,7 +178,7 @@ function renderChips(parsed, rawQuery){
   cont.style.display = '';
   cont.innerHTML = parsed.chips.map((c, i) =>
     `<span class="chip">
-      <span class="chip-tipo">${escapeHtml(c.type === 'eltiempo' ? t('chipTiempo') : c.type)}</span>
+      <span class="chip-tipo">${escapeHtml(c.type === 'eltiempo' ? t('chipTiempo') : c.type === 'consulta' ? nombreConsulta(c.tipo) : c.type)}</span>
       <span>${escapeHtml(c.value)}</span>
       <button type="button" class="chip-x" data-idx="${i}" title="${escapeHtml(t('chipLiteral'))}">×</button>
     </span>`
