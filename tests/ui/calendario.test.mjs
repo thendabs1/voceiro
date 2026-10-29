@@ -350,27 +350,44 @@ test('dónde: la ciudad arriba; sugiere comunidad, provincia y municipio y filtr
   await c.escribir('cal-donde', 'vig');
   assert.match(c.sugerencias['cal-sug-donde'].innerHTML, /data-valor="es:municipio:36057"[^>]*>Vigo <small>Pontevedra/);
   await c.click('elegir-donde', 'es:municipio:36057', { nombre: 'Vigo' });
-  assert.equal(c.ultima().searchParams.get('local'), 'es:municipio:36057');
+  assert.equal(c.ultima().searchParams.get('territorio'), 'es:municipio:36057');
   assert.match(c.api.calDonde(), /📍 Vigo ▾[\s\S]*data-cal="quitar-donde"/);
   await c.click('quitar-donde');
-  assert.equal(c.ultima().searchParams.get('local'), null);
+  assert.equal(c.ultima().searchParams.get('territorio'), null);
 });
 
 test('la ciudad por defecto es la provincia del primer sitio del tiempo, una vez', async () => {
   const c = contexto({ sitios: [{ nombre: 'Casa', lugar: { lat: 1, lon: 2 } }, { nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.abrir();
-  assert.equal(c.resumen().get('local'), 'es:provincia:36');
+  assert.equal(c.resumen().get('territorio'), 'es:provincia:36');
   assert.match(c.api.calDonde(), /📍 Pontevedra ▾/);
   await c.click('quitar-donde');
   await c.abrir();
-  assert.equal(c.resumen().get('local'), null);
+  assert.equal(c.resumen().get('territorio'), null);
+});
+
+test('la ciudad acota la agenda local; una competición elegida a propósito va sin ciudad', async () => {
+  const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
+  await c.abrir();
+  assert.equal(c.resumen().get('territorio'), 'es:provincia:36');
+  // Deportes sin competición elegida: solo el deporte de la ciudad.
+  await c.click('categoria', 'deportes');
+  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('territorio')], ['deportes', 'es:provincia:36']);
+  await c.click('deporte', 'motor');
+  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['f1: motogp: wrc:', null]);
+  await c.click('categoria', '');
+  assert.equal(c.resumen().get('territorio'), 'es:provincia:36');
+  // Un prefijo de competición, igual.
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
+  await esperar();
+  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['f1:', null]);
 });
 
 test('la ciudad fija la hora (Canarias, la suya) y cada entrada empieza hoy', async () => {
   const c = contexto();
   await c.abrir();
   await c.click('elegir-donde', 'es:municipio:38038', { nombre: 'Santa Cruz de Tenerife' });
-  assert.deepEqual([c.resumen().get('local'), c.resumen().get('zona')], ['es:municipio:38038', 'Atlantic/Canary']);
+  assert.deepEqual([c.resumen().get('territorio'), c.resumen().get('zona')], ['es:municipio:38038', 'Atlantic/Canary']);
   await c.click('elegir-donde', 'es:autonomia:12', { nombre: 'Galicia' });
   assert.equal(c.resumen().get('zona'), 'Europe/Madrid');
   await c.click('dia', '2026-10-29');
