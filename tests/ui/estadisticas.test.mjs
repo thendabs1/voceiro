@@ -22,7 +22,7 @@ function contexto(){
     DATA_BASE: 'https://datos.example', BACKENDS: { cf: { data: 'https://datos.example' }, deno: { data: 'https://alternativo.example' } },
     PRESETS: { lista: [], activo: '' }, PRESET_ACTIVO: false,
   };
-  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estEvolucion, estDirectorio, estListaMedios, familiasEstadisticas, estAmbito, estDominios }; pintarEstadisticas = () => {};', c);
+  runInNewContext(codigo + '\nthis.api = { s: ESTADISTICAS, seleccionEstadisticas, sumarEstadisticas, serieEstadisticas, ordenEstadisticas, validarIndiceEstadisticas, cargarEstadisticas, pedirEstadisticas, cerrarEstadisticas, estResumen, estFicha, estEvolucion, estDirectorio, estListaMedios, familiasEstadisticas, estAmbito, estDominios, estFiltros }; pintarEstadisticas = () => {};', c);
   const s = c.api.s;
   s.abierto = true; s.fecha = '2026-10-23';
   return c;
@@ -189,7 +189,8 @@ test('la ficha da el histórico de nuevo a antiguo y no pinta cifras que no exis
   const ficha = c.api.estFicha(), historico = ficha.slice(ficha.indexOf('estHistorico'));
   assert.deepEqual([...historico.matchAll(/data-valor="(\d{4}-\d{2}-\d{2})"/g)].map(m => m[1]), ['2026-10-23', '2026-10-21']);
   assert.match(historico, /33 %/);
-  assert.match(ficha, /estMediaDiaria<\/dt><dd>4<\/dd>/);
+  assert.doesNotMatch(ficha, /estMediaDiaria/);
+  assert.match(ficha, /estMediaDias\{&quot;n&quot;:&quot;4&quot;,&quot;dias&quot;:&quot;2&quot;\}/);
   assert.doesNotMatch(ficha, /estHorario|estRetraso|estSecciones|estPorHora/);
   c.api.s.dia.medios['b.es'].pub = { ...c.api.s.dia.medios['b.es'].pub, primera: '06:55', ultima: '22:50', retraso_min: { p50: 54 },
     por_hora: Array.from({ length: 24 }, (_, h) => h === 14 ? 3 : 0) };
@@ -242,4 +243,49 @@ test('las pasadas salen solo cuando hay datos, sin contadores a cero, y un feed 
   assert.match(historico, /data-valor="2026-10-22"/);
   assert.match(historico, /"n":"0","total":"40"/);
   assert.match(c.api.estListaMedios(), /b\.es · Nacional · estConFallos/);
+});
+
+test('«Todos» incluye los medios que salieron del catálogo y su ficha conserva los datos', () => {
+  const c = html(contexto());
+  c.api.s.indice = { ...indice(), serie: { ...indice().serie, 'viejo.es': { titulares: [5, 6] } } };
+  c.api.s.dia = dia('2026-10-23'); c.api.s.dia.medios['viejo.es'] = { pub: { titulares: 6 } };
+  assert.ok(c.api.estDominios().includes('viejo.es'));
+  assert.match(c.api.estResumen(), /<dd>9<\/dd>/);
+  c.api.s.ambito = 'grupo:Nacional';
+  assert.ok(!c.api.estDominios().includes('viejo.es'));
+  c.api.s.dominio = 'viejo.es';
+  const ficha = c.api.estFicha();
+  assert.match(ficha, /viejo\.es · estSinSeguimiento/); assert.match(ficha, /estHistorico/);
+});
+
+test('el día se mueve entre días con fichero; el calendario no ofrece hoy ni días sin datos', () => {
+  const c = html(contexto());
+  c.api.s.indice = { ...indice(), dias: [{ fecha: '2026-10-23' }, { fecha: '2026-10-22' }, { fecha: '2026-10-18' }] };
+  c.api.s.fecha = '2026-10-22';
+  const barra = c.api.estFiltros();
+  assert.match(barra, /id="est-dia-anterior"[^>]*data-valor="2026-10-18"/);
+  assert.match(barra, /id="est-dia-siguiente"[^>]*data-valor="2026-10-23"/);
+  assert.match(barra, /min="2026-10-18" max="2026-10-23"/);
+  c.api.s.fecha = '2026-10-23';
+  assert.match(c.api.estFiltros(), /id="est-dia-siguiente"[^>]*disabled/);
+  c.api.s.dia = { ...dia('2026-10-23'), cerrado: false };
+  assert.match(c.api.estFiltros(), /est-revisable/);
+});
+
+test('se marca cualquier pasada fallida y aparte si falló la última; la hora estimada se avisa', () => {
+  const c = html(contexto());
+  c.api.s.indice = indice(); c.api.s.dia = dia('2026-10-23');
+  c.api.s.dia.medios['b.es'].runs = { pasadas: 48, ok: 45, ultimo_estado: 'ok' };
+  const lista = c.api.estListaMedios();
+  assert.match(lista, /estConFallos \(estNDe\{&quot;n&quot;:&quot;3&quot;,&quot;total&quot;:&quot;48&quot;\}\)/);
+  assert.doesNotMatch(lista, /estFalloUltima/);
+  c.api.s.dia.medios['b.es'].runs.ultimo_estado = 'fallo';
+  assert.match(c.api.estListaMedios(), /estFalloUltima/);
+  c.api.s.dia.medios['a.es'].runs = { pasadas: 48, ok: 48, ultimo_estado: 'ok' };
+  assert.doesNotMatch(c.api.estListaMedios(), /a\.es · Nacional · estConFallos/);
+  c.api.s.dominio = 'b.es';
+  c.api.s.dia.medios['b.es'].pub.por_hora = Array.from({ length: 24 }, (_, h) => h === 9 ? 3 : 0);
+  assert.match(c.api.estFicha(), /estHorasEstimadas\{&quot;n&quot;:&quot;2&quot;\}/);
+  c.api.s.dia.medios['b.es'].pub = { titulares: 3, fechas: { estimada: 3 } };
+  assert.match(c.api.estFicha(), /estConHora<\/dt><dd>0 %<\/dd>/);
 });
