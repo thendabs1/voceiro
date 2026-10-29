@@ -50,6 +50,7 @@ function api(u){
         tarjeta('A' + d, d, { hora: '17:00', formatos: ['concierto'], precio: 'gratis', categoria: 'cultura' }), tarjeta('B' + d, d), tarjeta('C' + d, d)].slice(0, n) });
     }
     return { ...META, dias, ...(p.get('barras') ? { barras: [{ ...tarjeta('GP de México', '2026-10-30', { presentacion: 'programa', competiciones: ['f1'], categoria: 'deportes' }),
+      programacion: { valor: { modalidad: 'puntual', cuando: { inicio: extremo('2026-10-30'), fin: extremo('2026-11-01') } } },
       desde: '2026-10-30', hasta: '2026-11-02' }] } : {}) };
   }
   if (ruta.startsWith('/calendario/eventos/')) return { ...META, entidades: {}, evento: { ...tarjeta(decodeURIComponent(ruta.slice(20)), '2026-10-25'),
@@ -133,7 +134,7 @@ test('la lista pide una semana desde hoy con tres muestras; un día abre sus cit
   await c.click('mas-dia', '2026-10-26');
   assert.equal(c.ultima().searchParams.get('cursor'), '20');
   html = c.api.calContenido();
-  assert.equal(new Set(html.match(/data-valor="2026-10-26~Cita \d+ 2026-10-26"/g)).size, 26);
+  assert.equal(new Set(html.match(/data-valor="2026-10-26~~Cita \d+ 2026-10-26"/g)).size, 26);
   assert.doesNotMatch(html, /data-cal="mas-dia"/);
   await c.click('ocultar-dia', '2026-10-26');
   assert.match(c.api.calContenido(), /data-cal="ver-dia" data-valor="2026-10-26"/);
@@ -167,7 +168,7 @@ test('En cartel: plegado con su cuenta; al abrirlo pide lo prolongado del día',
   await c.click('curso', '2026-10-25');
   assert.deepEqual([c.ultima().searchParams.get('presentacion'), c.ultima().searchParams.get('desde')], ['prolongada', '2026-10-25']);
   const html = c.api.calContenido();
-  assert.equal((html.match(/data-valor="2026-10-25~Expo \d 2026-10-25"/g) || []).length, 4);
+  assert.equal((html.match(/data-valor="2026-10-25~~Expo \d 2026-10-25"/g) || []).length, 4);
   assert.match(html, /aria-expanded="true"/);
   const antes = c.pedidas.length;
   await c.click('curso', '2026-10-25');
@@ -303,6 +304,10 @@ test('calendario deportivo: capas con casillas por deporte; desplegable en estre
   html = c.api.calContenido();
   assert.match(html, /cal-con-lateral cal-fijo[\s\S]*<h2>Competiciones · 13 de 13<\/h2>/);
   assert.doesNotMatch(html, /data-cal="lateral"/);
+  // Quitar la ciudad cuando era la única capa: vuelven todas las competiciones.
+  await c.click('solo', 'local');
+  await c.click('quitar-donde');
+  assert.deepEqual([c.api.s.deporteLocal, c.api.s.capas.size, c.resumen().get('q').split(' ').length], [false, 12, 12]);
   // Cultura no tiene barra lateral.
   await c.click('categoria', 'cultura');
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral/);
@@ -386,6 +391,12 @@ test('mes con títulos en ancho: chips con hora, «+N» y la barra del GP cortad
   const dia = html.match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0];
   assert.match(dia, /<span class="cal-mg-chip cal-cat-cultura"><b>18:00<\/b> A2026-10-28<\/span>/);
   assert.match(dia, /\+23 más/);
+  // Ventana baja: las semanas se encogen para que quepa el mes y todo va a «+N».
+  c.window.innerHeight = 500;
+  const bajo = c.api.calContenido().match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0];
+  assert.doesNotMatch(bajo, /cal-mg-chip/);
+  assert.match(bajo, /\+26 más/);
+  delete c.window.innerHeight;
   // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
   assert.match(html, /class="cal-mg-barra cal-cat-deportes" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
   assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
@@ -626,7 +637,7 @@ test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fu
   assert.equal(c.ultima().searchParams.get('pendientes'), '1');
   await c.click('mas-pendientes');
   assert.equal(c.ultima().searchParams.get('cursor'), '20');
-  assert.equal((c.api.calContenido().match(/data-valor="~Pendiente \d+"/g) || []).length, 26);
+  assert.equal((c.api.calContenido().match(/data-valor="~~Pendiente \d+"/g) || []).length, 26);
   await c.click('evento', 'GP de prueba');
   assert.equal(c.ultima().pathname, '/calendario/eventos/GP%20de%20prueba');
   assert.ok(c.dialogo.open);
@@ -641,27 +652,32 @@ test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fu
 test('un evento de la lista se despliega bajo su tarjeta con todo su detalle; la ficha se pide una vez', async () => {
   const c = contexto();
   await c.abrir();
-  const clave = '2026-10-25~A2026-10-25';
-  assert.match(c.api.calContenido(), /data-cal="desplegar" data-valor="2026-10-25~A2026-10-25" aria-expanded="false" aria-controls="cal-det-2026-10-25_A2026-10-25"/);
-  await c.click('desplegar', clave);
+  const clave = '2026-10-25~~A2026-10-25', abrir = (k, id) => c.click('desplegar', k, { id });
+  assert.match(c.api.calContenido(), /data-cal="desplegar" data-valor="2026-10-25~~A2026-10-25" data-id="A2026-10-25" aria-expanded="false">/);
+  await abrir(clave, 'A2026-10-25');
   assert.equal(c.ultima().pathname, '/calendario/eventos/A2026-10-25');
   assert.ok(!c.dialogo.open);
   let html = c.api.calContenido();
   // Bajo la tarjeta: cuándo, el lugar del detalle (distinto del de la tarjeta), programa y fuente.
-  assert.match(html, /aria-expanded="true"[\s\S]*?<div class="cal-desplegado" id="cal-det-2026-10-25_A2026-10-25">[\s\S]*?Circuito · Jerez[\s\S]*?Programa<\/h4>[\s\S]*?Fuente: <a/);
+  assert.match(html, /aria-expanded="true"[\s\S]*?<div class="cal-desplegado" id="cal-det-2026-10-25__A2026-10-25">[\s\S]*?Circuito · Jerez[\s\S]*?Programa<\/h4>[\s\S]*?Fuente: <a/);
   assert.equal((html.match(/cal-desplegado/g) || []).length, 1);
   // Cerrar y volver a abrir no pide otra vez la ficha.
   const pedidas = c.pedidas.length;
-  await c.click('desplegar', clave);
+  await abrir(clave, 'A2026-10-25');
   assert.doesNotMatch(c.api.calContenido(), /cal-desplegado/);
-  await c.click('desplegar', clave);
+  await abrir(clave, 'A2026-10-25');
   assert.equal(c.pedidas.length, pedidas);
   assert.match(c.api.calContenido(), /cal-desplegado/);
   // Abrir otro cierra el anterior.
-  await c.click('desplegar', '2026-10-26~A2026-10-26');
+  await abrir('2026-10-26~~A2026-10-26', 'A2026-10-26');
   html = c.api.calContenido();
   assert.equal((html.match(/class="cal-desplegado"/g) || []).length, 1);
-  assert.match(html, /id="cal-det-2026-10-26_A2026-10-26"/);
+  assert.match(html, /aria-controls="cal-det-2026-10-26__A2026-10-26"[\s\S]*id="cal-det-2026-10-26__A2026-10-26"/);
+  // La fila «todo el día» del GP y su carrera son desplegables distintos.
+  assert.match(html, /data-valor="2026-10-30~\*~GP de México"/);
+  // «Actualizar» cierra el desplegado y olvida las fichas.
+  await c.click('renovar');
+  assert.deepEqual([c.api.s.desplegado, c.api.s.detalles.size], ['', 0]);
 });
 
 test('moverse por semanas y meses reutiliza los formatos de fecha de la interfaz', async () => {

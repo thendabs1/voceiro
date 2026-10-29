@@ -500,8 +500,8 @@ test('resumen con chips: la carrera es muestra de su día con el nombre del GP; 
   const [d25, d26] = r.dato.dias;
   assert.deepEqual([d25.chips, d25.muestras], [0, []]);
   assert.equal(d26.chips, 1);
-  assert.deepEqual([d26.muestras[0].id, d26.muestras[0].nombres, d26.muestras[0].padre, d26.muestras[0].hora_muestra, d26.muestras[0].presentacion],
-    ['gp', { es: 'carrera' }, { es: 'GP de prueba' }, '00:30', 'cita']);
+  assert.deepEqual([d26.muestras[0].id, d26.muestras[0].ocurrencia, d26.muestras[0].nombres, d26.muestras[0].padre, d26.muestras[0].hora_muestra, d26.muestras[0].presentacion],
+    ['gp', 'carrera', { es: 'carrera' }, { es: 'GP de prueba' }, '00:30', 'cita']);
   // Sin muestras no hay chips que contar.
   assert.ok(!('chips' in (await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-27&zona=UTC&muestras=0')).dato.dias[0]));
   // Lectura publicada antes de los chips: muestras por inicio de tramo.
@@ -512,6 +512,9 @@ test('resumen con chips: la carrera es muestra de su día con el nombre del GP; 
   viejo.db.exec('DELETE FROM agenda_lectura_chips');
   const v = await viejo.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC&muestras=2');
   assert.deepEqual([v.dato.dias[0].muestras.map(m => m.id), 'chips' in v.dato.dias[0]], [['001', '002'], false]);
+  // Sin chips, «Ver las N» lista citas y programas como antes: ni la exposición prolongada (000).
+  const l = await viejo.pedir('/calendario/eventos?desde=2026-10-25&hasta=2026-10-26&zona=UTC&chips=1&limite=50');
+  assert.ok(l.dato.eventos.length && !l.dato.eventos.some(e => e.id === '000'));
 });
 
 test('eventos?chips=1: las ocurrencias del día en el orden de las muestras, paginadas con la ocurrencia', async t => {
