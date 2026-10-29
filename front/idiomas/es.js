@@ -7,7 +7,7 @@ export default {
   "calSemanaSiguiente": "Cargar la semana siguiente", "calFutbol": "Fútbol", "calBaloncesto": "Baloncesto", "calMotor": "Motor", "calTenis": "Tenis",
   "calNPartidos": "{n} partidos", "calNPartidos1": "1 partido", "calParcial": "programación parcial", "calYMas": "y {n} más",
   "calEsteMes": "Este mes en deportes · {mes}", "calSinDeportes": "Sin competiciones publicadas este mes",
-  "calLoMio": "Lo mío", "calQueSigo": "Que sigo", "calLocal": "En tu zona", "calElegirCompeticiones": "Elegir competiciones",
+  "calLoMio": "Lo mío", "calCompeticiones": "Competiciones", "calCompeticionesN": "Competiciones · {n} de {total}", "calCerca": "Cerca", "calDeporteEn": "Deporte en {x}", "calTodas": "Todas", "calLasQueSigo": "Las que sigo", "calSolo": "Solo", "calVerSolo": "Ver solo {x}", "calElegirCompeticiones": "Elegir competiciones",
   "calAsTitulo": "Configurar calendario", "calAsPaso": "Paso {n} de {total}", "calAsSiguiente": "Siguiente", "calAsAnterior": "Anterior",
   "calAsCancelar": "Cancelar", "calAsGuardar": "Guardar y ver calendario", "calAsGuardado": "Calendario configurado",
   "calAsNoGuardado": "No se ha podido guardar en este dispositivo; vale para esta sesión",
