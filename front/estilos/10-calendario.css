@@ -106,6 +106,9 @@
 .cal-evento-dialogo{color:var(--fg);background:var(--bg);border:1px solid var(--btn-border);border-radius:9px;width:min(650px,calc(100% - 24px));max-height:85dvh;padding:18px}.cal-evento-dialogo::backdrop{background:#0008}.cal-evento-dialogo form{display:flex;justify-content:end}
 .calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
 @media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-mes{gap:2px}}
+/* Evento desplegado en la lista: bajo su título, con una raya a la izquierda. */
+.cal-desplegado{border-left:3px solid var(--accent);padding:2px 0 4px 10px;margin:4px 0 10px}.cal-desplegado .cal-evento-fuente{margin-top:8px}
+.cal-cita h3 button[aria-expanded="true"]{color:var(--accent)}
 .cal-participantes{margin:8px 0;padding-left:1.2em;font-size:.9em}.cal-evento-fuente{border-top:1px solid var(--border);margin-top:12px;padding-top:6px}
 /* Escritorio con ratón: más denso (≈ 90 %), como Estadísticas; en táctil se quedan los 44 px. */
 @media(pointer:fine){

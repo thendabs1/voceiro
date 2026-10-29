@@ -133,7 +133,7 @@ test('la lista pide una semana desde hoy con tres muestras; un día abre sus cit
   await c.click('mas-dia', '2026-10-26');
   assert.equal(c.ultima().searchParams.get('cursor'), '20');
   html = c.api.calContenido();
-  assert.equal(new Set(html.match(/data-valor="Cita \d+ 2026-10-26"/g)).size, 26);
+  assert.equal(new Set(html.match(/data-valor="2026-10-26~Cita \d+ 2026-10-26"/g)).size, 26);
   assert.doesNotMatch(html, /data-cal="mas-dia"/);
   await c.click('ocultar-dia', '2026-10-26');
   assert.match(c.api.calContenido(), /data-cal="ver-dia" data-valor="2026-10-26"/);
@@ -167,7 +167,7 @@ test('En cartel: plegado con su cuenta; al abrirlo pide lo prolongado del día',
   await c.click('curso', '2026-10-25');
   assert.deepEqual([c.ultima().searchParams.get('presentacion'), c.ultima().searchParams.get('desde')], ['prolongada', '2026-10-25']);
   const html = c.api.calContenido();
-  assert.equal((html.match(/data-valor="Expo \d 2026-10-25"/g) || []).length, 4);
+  assert.equal((html.match(/data-valor="2026-10-25~Expo \d 2026-10-25"/g) || []).length, 4);
   assert.match(html, /aria-expanded="true"/);
   const antes = c.pedidas.length;
   await c.click('curso', '2026-10-25');
@@ -626,7 +626,7 @@ test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fu
   assert.equal(c.ultima().searchParams.get('pendientes'), '1');
   await c.click('mas-pendientes');
   assert.equal(c.ultima().searchParams.get('cursor'), '20');
-  assert.equal((c.api.calContenido().match(/data-valor="Pendiente \d+"/g) || []).length, 26);
+  assert.equal((c.api.calContenido().match(/data-valor="~Pendiente \d+"/g) || []).length, 26);
   await c.click('evento', 'GP de prueba');
   assert.equal(c.ultima().pathname, '/calendario/eventos/GP%20de%20prueba');
   assert.ok(c.dialogo.open);
@@ -636,6 +636,32 @@ test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fu
   // Todo a la vista: la fuente al pie, sin desplegable.
   assert.match(c.dialogo.innerHTML, /<footer class="cal-evento-fuente"><p class="cal-nota">Fuente: <a[^>]*href="https:\/\/galicia.test\/1"/);
   assert.doesNotMatch(c.dialogo.innerHTML, /<details/);
+});
+
+test('un evento de la lista se despliega bajo su tarjeta con todo su detalle; la ficha se pide una vez', async () => {
+  const c = contexto();
+  await c.abrir();
+  const clave = '2026-10-25~A2026-10-25';
+  assert.match(c.api.calContenido(), /data-cal="desplegar" data-valor="2026-10-25~A2026-10-25" aria-expanded="false" aria-controls="cal-det-2026-10-25_A2026-10-25"/);
+  await c.click('desplegar', clave);
+  assert.equal(c.ultima().pathname, '/calendario/eventos/A2026-10-25');
+  assert.ok(!c.dialogo.open);
+  let html = c.api.calContenido();
+  // Bajo la tarjeta: cuándo, el lugar del detalle (distinto del de la tarjeta), programa y fuente.
+  assert.match(html, /aria-expanded="true"[\s\S]*?<div class="cal-desplegado" id="cal-det-2026-10-25_A2026-10-25">[\s\S]*?Circuito · Jerez[\s\S]*?Programa<\/h4>[\s\S]*?Fuente: <a/);
+  assert.equal((html.match(/cal-desplegado/g) || []).length, 1);
+  // Cerrar y volver a abrir no pide otra vez la ficha.
+  const pedidas = c.pedidas.length;
+  await c.click('desplegar', clave);
+  assert.doesNotMatch(c.api.calContenido(), /cal-desplegado/);
+  await c.click('desplegar', clave);
+  assert.equal(c.pedidas.length, pedidas);
+  assert.match(c.api.calContenido(), /cal-desplegado/);
+  // Abrir otro cierra el anterior.
+  await c.click('desplegar', '2026-10-26~A2026-10-26');
+  html = c.api.calContenido();
+  assert.equal((html.match(/class="cal-desplegado"/g) || []).length, 1);
+  assert.match(html, /id="cal-det-2026-10-26_A2026-10-26"/);
 });
 
 test('moverse por semanas y meses reutiliza los formatos de fecha de la interfaz', async () => {
