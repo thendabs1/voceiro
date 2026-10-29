@@ -38,7 +38,7 @@ export default {
   "calHorarioRevisar": "La fuente contiene exclusiones de fechas sin interpretar; consulta la programación original.",
   "calCargando": "Cargando calendario…", "calError": "No se pudo actualizar el calendario. Si había datos, se conserva la última lectura.",
   "calFueraHorizonte": "Este período queda fuera de las fechas publicadas.",
-  "calFechaPendiente": "Fecha pendiente", "calSinHora": "Sin hora confirmada", "calSinZona": "Hora local, zona sin confirmar",
+  "calFechaPendiente": "Fecha pendiente", "calSinHora": "Sin hora confirmada", "calTodoElDia": "Todo el día", "calDiaDeN": "Día {n} de {total}", "calSinZona": "Hora local, zona sin confirmar",
   "calFinExclusivo": "Fin no incluido", "calCancelado": "Cancelado", "calAplazado": "Aplazado",
   "calEnCurso": "En curso según la última comprobación", "calTerminado": "Terminado",
   "calConflicto": "Hay datos discrepantes entre fuentes. Se muestra la selección conservada, si existe.",
