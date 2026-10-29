@@ -54,7 +54,7 @@ function api(u){
   return { ...META, eventos: todos.slice(desde, desde + limite), siguiente: desde + limite < todos.length ? String(desde + limite) : null };
 }
 function contexto({ intl = Intl, responder = api } = {}){
-  const listeners = {}, pedidas = [], sugerencias = {};
+  const listeners = {}, pedidas = [], sugerencias = {}, buscar = { value: '', addEventListener(){} }, aplicadas = [];
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
     addEventListener(){}, querySelector: () => ({ focus(){} }) };
@@ -70,7 +70,8 @@ function contexto({ intl = Intl, responder = api } = {}){
     DATA_BASE: BASES.cf.data, BACKENDS: BASES,
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
     escapeHtml: s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
-    document: { activeElement: null, getElementById: id => id === 'calendario-panel' ? panel : id === 'cal-evento-dialogo' ? dialogo
+    partirConsulta: raw => ({ antes: raw, consulta: '' }), aplicarFiltros: () => aplicadas.push(buscar.value),
+    document: { activeElement: null, getElementById: id => id === 'calendario-panel' ? panel : id === 'cal-evento-dialogo' ? dialogo : id === 'buscar' ? buscar
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
   runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calFiltros, calCategorias, wireCalendario, abrirCalendario,
@@ -78,7 +79,7 @@ function contexto({ intl = Intl, responder = api } = {}){
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
-  c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias;
+  c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias; c.buscar = buscar; c.aplicadas = aplicadas;
   c.ultima = () => pedidas.at(-1);
   c.click = async (cal, valor = '', extra = {}) => {
     listeners.click({ target: { closest: () => ({ dataset: { cal, valor, ...extra } }) } }); await esperar();
@@ -233,11 +234,35 @@ test('un prefijo de agenda abre la vista completa; cerrada a mano, sigue cerrada
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
   await esperar();
   assert.equal(c.api.s.abierto, false);
+  // Con una agenda solo temática, salir quita sus prefijos y deja lo demás.
+  c.buscar.value = 'teatro: eltiempo:Vigo jazz';
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario(c.buscar.value));
+  await esperar();
+  assert.equal(c.api.s.abierto, true);
+  await c.click('cerrar');
+  assert.deepEqual([c.api.s.abierto, c.aplicadas.at(-1)], [false, 'eltiempo:Vigo jazz']);
   // Abierta desde la cabecera, quitar el prefijo no la cierra.
   await c.abrir();
   c.api.actualizarConsultaCalendario(null);
   await esperar();
   assert.equal(c.api.s.abierto, true);
+});
+
+test('editar el texto o añadir otros servicios conserva filtros, fecha y apertura', async () => {
+  const c = contexto();
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
+  await esperar();
+  await c.click('elegir-donde', 'es:municipio:36057', { nombre: 'Vigo' });
+  await c.click('siguiente');
+  const fecha = c.api.s.fecha;
+  await c.click('cerrar');
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1: jazz eltiempo:Vigo'));
+  await esperar();
+  assert.deepEqual([c.api.s.donde?.id, c.api.s.fecha, c.api.s.abierto], ['es:municipio:36057', fecha, false]);
+  // Otro prefijo de agenda es otra consulta: filtros nuevos y vista abierta.
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('teatro: jazz'));
+  await esperar();
+  assert.deepEqual([c.api.s.donde, c.api.s.abierto], [null, true]);
 });
 
 test('dónde sugiere comunidad, provincia y municipio y filtra por su territorio común', async () => {
