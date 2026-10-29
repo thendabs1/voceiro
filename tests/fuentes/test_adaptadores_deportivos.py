@@ -317,7 +317,7 @@ class PersistenciaYTransporte(unittest.TestCase):
         preparada = lectura.preparar(p)
         with closing(sqlite3.connect(':memory:')) as conexion:
             conexion.executescript('CREATE TABLE agenda_esquema(id INTEGER PRIMARY KEY,version INTEGER,revision INTEGER);'
-                                   'INSERT INTO agenda_esquema VALUES(1,4,1);')
+                                   'INSERT INTO agenda_esquema VALUES(1,5,1);')
             for sql, parametros in lectura.planificar(preparada, 1):
                 conexion.execute(sql, parametros)
             self.assertEqual(conexion.execute('SELECT count(*) FROM agenda_lectura_eventos').fetchone()[0], 2)

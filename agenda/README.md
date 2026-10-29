@@ -274,17 +274,24 @@ python -m agenda.retencion exportacion.json --ahora 2026-12-11T12:00:00Z
 ```
 
 SQLite solo sirve para pruebas y copias. En producción el **núcleo** vive en el
-bucket privado `voceiro-agenda` de R2, un fichero por fuente
-(`nucleo/v1/<fuente>.json.gz` más `indice.json`, [nucleo_r2.py](nucleo_r2.py));
-Turso guarda el piloto, el control deportivo, la lectura y la revisión global.
-Se guarda primero R2 (escritura condicional por ETag, solo los ficheros
-cambiados) y luego Turso; si Turso falla, la pasada siguiente parte de R2. La
-fila `nucleo_r2` de `agenda_estado` marca la migración: desde entonces un
-`Almacen` sin `AGENDA_R2_*` se niega a cargar. Las tablas del núcleo en Turso
-quedan quietas como vuelta atrás hasta la limpieza.
+bucket privado `voceiro-agenda` de R2, un objeto inmutable por fuente y
+contenido (`nucleo/v2/<fuente>/<sha256>.json.gz`, [nucleo_r2.py](nucleo_r2.py));
+Turso guarda el piloto, el control deportivo, la lectura, la revisión global y,
+en la fila `nucleo_r2` de `agenda_estado`, el manifiesto `{fuente: huella}`.
+Guardar sube primero los objetos nuevos (`IfNoneMatch: *`; uno ya existente se
+comprueba y se reutiliza) y después confirma manifiesto, esqueleto, control y
+revisión en una sola transacción. Si Turso falla, los objetos quedan huérfanos y
+la revisión sigue identificando el núcleo anterior. El catálogo no va en los
+objetos: vive en el esqueleto SQL. Un `Almacen` sin `AGENDA_R2_*` se niega a
+cargar. Los huérfanos y el formato v1 (`nucleo/v1/`, ficheros mutables más
+`indice.json`) se conservan; su limpieza es manual y sin escritores en marcha.
+
+La migración a v2 sube el esquema a 5 en la misma transacción que el
+manifiesto: un cliente que espera el esquema 4 ya no carga ni guarda. Desde
+entonces volver atrás exige reconvertir el núcleo, no solo revertir código.
 
 ```bash
-# Una sola vez: copiar el núcleo de Turso a R2 y dejar la marca.
+# Una vez (repetible): de Turso o de R2 v1 a objetos v2. En Actions: operación migrar-nucleo.
 python -m agenda.nucleo_r2 --migrar
 ```
 

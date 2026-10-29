@@ -9,7 +9,8 @@ import sqlite3
 from . import almacen_nucleo
 
 
-VERSION_ESQUEMA = 4
+# 5: núcleo R2 por manifiesto (agenda/nucleo_r2.py); sin cambios de tablas.
+VERSION_ESQUEMA = 5
 TABLAS_CLASIFICACION = {'agenda_temas', 'agenda_tema_padres', 'agenda_evento_tema',
                         'agenda_clasificacion_revisiones'}
 COLECCIONES = ('fuentes', 'regiones', 'grupos', 'eventos', 'registros', 'vinculos')
@@ -36,7 +37,7 @@ def esquema():
 
 
 def migracion():
-    """Ampliación aditiva v2/v3→v4, dentro de la transacción del llamante.
+    """Ampliación aditiva v2/v3/v4→v5, dentro de la transacción del llamante.
 
     La guardia tolera otra migración concurrente ya confirmada; una versión
     ajena o futura revierte incluso las sentencias de creación del esquema.
@@ -44,10 +45,10 @@ def migracion():
     return [
         ('INSERT INTO agenda_esquema(id, version, revision) '
          'SELECT 1, ?, -1 WHERE NOT EXISTS '
-         '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version IN (2, 3, ?))',
+         '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version IN (2, 3, 4, ?))',
          (VERSION_ESQUEMA, VERSION_ESQUEMA)),
         *esquema(),
-        ('UPDATE agenda_esquema SET version=?, revision=revision+1 WHERE id=1 AND version IN (2, 3)',
+        ('UPDATE agenda_esquema SET version=?, revision=revision+1 WHERE id=1 AND version IN (2, 3, 4)',
          (VERSION_ESQUEMA,)),
     ]
 
@@ -81,7 +82,7 @@ def abrir(ruta):
                                (_json(_contenido(json.loads(datos))), ref))
             db.execute('INSERT INTO agenda_esquema VALUES (1, ?, 0)', (VERSION_ESQUEMA,))
         version = db.execute('SELECT version FROM agenda_esquema WHERE id=1').fetchone()
-        if version in ((2,), (3,)):
+        if version in ((2,), (3,), (4,)):
             for sentencia, args in migracion():
                 db.execute(sentencia, args)
             version = (VERSION_ESQUEMA,)

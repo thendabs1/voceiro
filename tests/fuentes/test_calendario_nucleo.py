@@ -284,7 +284,7 @@ class Persistencia(unittest.TestCase):
             with almacen.abrir(ruta) as db:
                 self.assertEqual(almacen.cargar(db), a)
                 self.assertEqual(db.execute('SELECT version, revision FROM agenda_esquema').fetchone(),
-                                 (4, revision + 1))
+                                 (5, revision + 1))
                 b = ampliar(a)
                 b['nucleo'] = feb.importar(b['nucleo'], muestra('feb-revisada.json'), OBSERVADO)
                 almacen.guardar(db, b, solo_nucleo=True)
