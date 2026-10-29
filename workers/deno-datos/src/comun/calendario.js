@@ -34,7 +34,7 @@ export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
     'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'local', 'etiqueta', 'formatos', 'precio', 'presentacion', 'muestras',
-    'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad', 'barras']);
+    'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad', 'barras', 'chips']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
   }
@@ -49,6 +49,7 @@ export function normalizarConsulta(url) {
   if (esLista && (!pendientes || desde || hasta) && (!fechaValida(desde) || !fechaValida(hasta)
       || hasta <= desde || hasta > sumarDiasCalendario(desde, 42))) throw error(400, 'Ventana requerida de 1 a 42 días [desde,hasta)');
   if (url.pathname === '/calendario/resumen' && pendientes) throw error(400, 'El resumen requiere fechas');
+  if (p.get('chips') === '1' && pendientes) throw error(400, 'Los chips requieren fechas');
   const limite = p.has('limite') ? Number(p.get('limite')) : 20;
   if (!Number.isInteger(limite) || limite < 1 || limite > 50) throw error(400, 'Límite entre 1 y 50');
   const muestras = p.has('muestras') ? Number(p.get('muestras')) : 2;
@@ -68,7 +69,7 @@ export function normalizarConsulta(url) {
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', local: p.get('local') || '', etiqueta: p.get('etiqueta') || '',
     formatos: lista(p.get('formatos')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
-    tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1',
+    tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1', chips: p.get('chips') === '1',
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
   if ([c.temas, c.circuitos, c.formatos, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   // «gratis» no incluye «mixto»: el filtro no promete lo que solo vale para una tarifa.
@@ -149,7 +150,8 @@ function leerCursor(s) {
   try {
     const v = JSON.parse(atob(s.replaceAll('-', '+').replaceAll('_', '/')));
     // El orden es un julianday en decimal: sin exponentes ni signo, que Turso rechazaría.
-    if (!Array.isArray(v) || v.length !== 5 || v.some(x => typeof x !== 'string' || x.length > 1024)
+    // Seis piezas en la lista de chips: la última es la ocurrencia.
+    if (!Array.isArray(v) || ![5, 6].includes(v.length) || v.some(x => typeof x !== 'string' || x.length > 1024)
       || !/^\d{1,9}(\.\d+)?$/.test(v[3])) throw 0;
     return v;
   } catch { throw error(400, 'Cursor inválido'); }
@@ -188,6 +190,29 @@ export function consultaEventos(c, meta, cursor) {
       FROM seleccion s JOIN agenda_lectura_eventos e ON e.id=s.id)
     SELECT id,dia,orden,tarjeta FROM ordenada${continuacion} ORDER BY dia,orden,id LIMIT ?`, args };
 }
+
+// Chips de una ventana (eventos?chips=1): lo mismo que las muestras del
+// resumen, en su mismo orden, para seguir donde acaban. Cada fila es una
+// ocurrencia; el cursor lleva también la ocurrencia.
+export function consultaChips(c, meta, cursor) {
+  const args = [c.zona, c.desde, c.hasta];
+  const filtros = filtrosSql(c, meta, args);
+  let continuacion = '';
+  if (cursor) {
+    if (cursor.length !== 6) throw error(400, 'Cursor inválido');
+    continuacion = ' AND (x.dia,x.orden,x.evento,x.ocurrencia)>(?,?,?,?)';
+    args.push(cursor[2], Number(cursor[3]), cursor[4], cursor[5]);
+  }
+  args.push(c.limite + 1);
+  return { sql: `SELECT x.dia, x.orden, x.evento AS id, x.ocurrencia, x.hora, x.sesion_json AS sesion, e.tarjeta_json AS tarjeta
+      FROM agenda_lectura_chips x JOIN agenda_lectura_eventos e ON e.id=x.evento
+      WHERE x.zona IN (?,'*') AND x.dia>=? AND x.dia<?${filtros}${continuacion}
+      ORDER BY x.dia, x.orden, x.evento, x.ocurrencia LIMIT ?`, args };
+}
+// Un chip es una cita de ese día: con su hora y, si es una sesión o función,
+// con su nombre y el del GP o programa al que pertenece.
+const comoChip = (t, f) => ({ ...t, presentacion: 'cita', hora_muestra: f.hora,
+  ...(f.sesion ? { nombres: JSON.parse(f.sesion), padre: t.nombres } : {}) });
 
 // Turso cuenta también las filas de las tablas temporales: nada de cruzar cada
 // día con la ventana. Cada tramo suma +1 el primer día que cubre y -1 al
@@ -332,6 +357,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     if (acierto) return entregar(acierto);
     let sentencia;
     if (detalle) sentencia = { sql: 'SELECT detalle_json FROM agenda_lectura_eventos WHERE id=?', args: [id] };
+    // Lecturas sin chips: la lista de eventos de siempre.
+    else if (ruta === '/calendario/eventos' && c.chips && meta.lectura_chips) sentencia = consultaChips(c, meta, cursor);
     else if (ruta === '/calendario/eventos') sentencia = consultaEventos(c, meta, cursor);
     else if (ruta === '/calendario/resumen') sentencia = consultaResumen(c, meta);
     else if (ruta === '/calendario/catalogo' && c.disponibilidad) sentencia = consultaDisponibilidad(c, meta);
@@ -379,10 +406,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       const nuevas = () => ({ citas: 0, programas: 0, en_curso: 0 });
       for (const f of filas) {
         if (f.tarjeta) {
-          // Un chip es una cita de ese día: con su hora y, si es una sesión o
-          // función, con su nombre y el del GP o programa al que pertenece.
-          const t = JSON.parse(f.tarjeta), m = meta.lectura_chips
-            ? { ...t, presentacion: 'cita', hora_muestra: f.hora, ...(f.sesion ? { nombres: JSON.parse(f.sesion), padre: t.nombres } : {}) } : t;
+          const t = JSON.parse(f.tarjeta), m = meta.lectura_chips ? comoChip(t, f) : t;
           if (!muestras.has(f.dia)) muestras.set(f.dia, []);
           muestras.get(f.dia).push(m);
           if (f.total != null) totales.set(f.dia, f.total);
@@ -415,8 +439,10 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       // dia: primer día visible en la ventana pedida ('' en la lista pendiente),
       // para agrupar en el cliente con la misma regla que la consulta.
       salida = { ...base, [ruta.endsWith('/objetivos') ? 'entidades' : 'eventos']:
-        pagina.map(f => f.tarjeta ? { ...JSON.parse(f.tarjeta), dia: f.dia } : JSON.parse(f.datos_json)),
-        siguiente: hayMas ? codificar([meta.revision, huella, ultima.dia || '', String(ultima.orden ?? 0), ultima.id]) : null };
+        pagina.map(f => f.ocurrencia != null ? { ...comoChip(JSON.parse(f.tarjeta), f), dia: f.dia }
+          : f.tarjeta ? { ...JSON.parse(f.tarjeta), dia: f.dia } : JSON.parse(f.datos_json)),
+        siguiente: hayMas ? codificar([meta.revision, huella, ultima.dia || '', String(ultima.orden ?? 0), ultima.id,
+          ...(ultima.ocurrencia != null ? [ultima.ocurrencia] : [])]) : null };
     }
     const respuesta = json(salida, 200, { 'Cache-Control': 'public, max-age=30', ETag: '"' + etag + '"' });
     guardar(clave, respuesta.clone());
