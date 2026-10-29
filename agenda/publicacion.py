@@ -413,7 +413,7 @@ def main(argv=None):
         guardar(args.salida, datos)
     if args.lectura_sql:
         from turso_http import filas
-        from .lectura import cambios, estado, huellas, preparar, planificar
+        from .lectura import COMPONENTES, cambios, estado, huellas, preparar, planificar
         preparada = preparar(datos)
         previo = estado(lambda s: [filas(r) for r in remoto.cliente.transaccion(s, escritura=False)])
         remoto.cliente.transaccion(planificar(preparada, remoto.revision, previo))
@@ -421,7 +421,7 @@ def main(argv=None):
         nuevas, viejas = huellas(preparada)[0], (previo or {}).get('huellas', {})
         cambiadas = cambios(preparada, previo)
         partes = ', '.join(f'{c} {sum(c in v for (t, _), v in cambiadas.items() if t == "evento")}'
-                           for c in ('fila', 'facetas', 'tramos'))
+                           for c in COMPONENTES)
         print(f'[agenda] Lectura SQL {"diferencial" if previo else "completa"}: {len(preparada["tramos"])} tramos; '
               f'{sum(t == "evento" for t, _ in cambiadas)} eventos ({partes}) y '
               f'{sum(t == "entidad" for t, _ in cambiadas)} entidades reescritos, '
