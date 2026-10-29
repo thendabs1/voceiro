@@ -11,11 +11,13 @@ const CAL_FORMATOS = ['concierto', 'representacion', 'proyeccion', 'exposicion',
   'lectura-club', 'festival', 'feria-mercado', 'fiesta', 'visita-ruta', 'competicion-deportiva', 'practica-deportiva'];
 const CAL_PRECIOS = { gratis: 'calPrecioGratis', pago: 'calPrecioPago', mixto: 'calPrecioMixto' };
 const CAL_VISTAS = { lista7: 'calLista7', lista14: 'calLista14', mes: 'calMes' };
+// Categorías a mano en la barra; las demás raíces, en el panel de filtros.
+const CAL_CATEGORIAS = ['cultura', 'deportes'];
 const CALENDARIO = {
-  abierto: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
+  abierto: false, porPrefijo: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
   // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
   fecha: '', vista: 'lista7', dia: '', zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
-  temas: new Set(), fuente: '', formato: '', precio: '', texto: '', donde: null, que: null, clave: '',
+  temas: new Set(), fuente: '', formato: '', precio: '', donde: null, que: null, clave: '',
   escrito: { donde: '', que: '' }, sugerencias: { donde: [], que: [] },
   consulta: '', vigente: '', controller: null, resumen: null, dias: new Map(), pendientes: null, origen: null, scroll: 0,
 };
@@ -79,7 +81,7 @@ function calAnotar(dato){
 function calParametros(){
   const s = CALENDARIO, o = s.orden;
   const q = o ? [...o.ambitos.map(a => a + ':'), ...(o.circuitos.length ? ['circuito:' + o.circuitos.join(',')] : [])].join(' ') : '';
-  return { zona: s.zona, q, texto: [calLibre(o?.resto), calLibre(s.texto)].filter(Boolean).join(' '),
+  return { zona: s.zona, q, texto: calLibre(o?.resto),
     temas: [...s.temas].join(','), fuente: s.fuente, formatos: s.formato, precio: s.precio,
     objetivo: s.que?.id || '', territorio: s.donde?.id || '' };
 }
@@ -188,7 +190,7 @@ async function pendientesCalendario(mas = false){
 }
 function calLimpiarFiltros(){
   const s = CALENDARIO;
-  s.temas.clear(); s.fuente = ''; s.formato = ''; s.precio = ''; s.texto = ''; s.donde = null; s.que = null;
+  s.temas.clear(); s.fuente = ''; s.formato = ''; s.precio = ''; s.donde = null; s.que = null;
   s.escrito = { donde: '', que: '' }; s.sugerencias = { donde: [], que: [] };
 }
 function actualizarConsultaCalendario(orden){
@@ -198,9 +200,14 @@ function actualizarConsultaCalendario(orden){
     s.clave = clave; calLimpiarFiltros();
     const fecha = parseQuery(orden?.resto || '').desde;
     s.fecha = fechaValida(fecha) ? fecha : calHoy();
+    // Un prefijo de agenda abre la vista completa y, al quitarlo, la cierra;
+    // cerrada a mano, sigue cerrada mientras no cambie la consulta.
+    if (calPideAgenda(orden)){
+      if (!s.abierto){ s.origen = document.getElementById('buscar'); s.scroll = window.scrollY; s.abierto = s.porPrefijo = true; }
+    } else if (s.porPrefijo) s.abierto = s.porPrefijo = false;
   }
   s.orden = orden;
-  if (s.abierto || calPideAgenda(orden)) return void cargarCalendario();
+  if (s.abierto) return void cargarCalendario();
   pintarCalendario();
 }
 function abrirCalendario(origen = null){
@@ -208,7 +215,7 @@ function abrirCalendario(origen = null){
   const s = CALENDARIO;
   if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; }
   cerrarEstadisticas(false);
-  s.abierto = true; s.fecha ||= calHoy();
+  s.abierto = true; s.porPrefijo = false; s.fecha ||= calHoy();
   // Tras un rato cerrado, la publicación del día pudo cambiar.
   cargarCalendario(Date.now() - s.cargado > 10 * 60000);
   requestAnimationFrame(() => {
@@ -219,7 +226,7 @@ function abrirCalendario(origen = null){
 function cerrarCalendario(volver = true){
   const s = CALENDARIO;
   if (!s.abierto) return;
-  s.abierto = false; pintarCalendario();
+  s.abierto = s.porPrefijo = false; pintarCalendario();
   if (!volver) return;
   const origen = s.origen?.isConnected ? s.origen : document.getElementById('btn-calendario');
   const menu = origen?.closest?.('#cab-menu');
@@ -434,30 +441,36 @@ function calCampo(campo, label, ejemplo){
     <div id="cal-sug-${campo}" class="cal-sugerencias" role="group" aria-label="${calEsc(t('calSugerencias'))}">${calSugerenciasHtml(campo)}</div></div>`;
 }
 // Categorías: las raíces de los ámbitos; sus subcategorías, al elegir una.
+const calRaices = conceptos => Object.keys(conceptos).filter(i => !conceptos[i].padres.length && Object.values(AMBITOS).some(a => a.tema === i));
+const calChipTema = i => calBoton('tema', calNombre(CALENDARIO.meta.catalogo.conceptos[i]), i, `aria-pressed="${CALENDARIO.temas.has(i)}"`);
+function calCategorias(){
+  const m = CALENDARIO.meta;
+  if (!m) return '';
+  const fijas = CAL_CATEGORIAS.filter(i => calRaices(m.catalogo.conceptos).includes(i));
+  return fijas.length ? `<div class="cal-chips cal-categorias" role="group" aria-label="${calEsc(t('calTemas'))}">${fijas.map(calChipTema).join('')}</div>` : '';
+}
 function calTemas(){
-  const s = CALENDARIO, conceptos = s.meta.catalogo.conceptos;
-  const raices = Object.keys(conceptos).filter(i => !conceptos[i].padres.length && Object.values(AMBITOS).some(a => a.tema === i));
+  const s = CALENDARIO, conceptos = s.meta.catalogo.conceptos, todas = calRaices(conceptos);
+  const raices = todas.filter(i => !CAL_CATEGORIAS.includes(i));
   const hijos = r => Object.keys(conceptos).filter(i => conceptos[i].padres.includes(r));
-  const chip = i => calBoton('tema', calNombre(conceptos[i]), i, `aria-pressed="${s.temas.has(i)}"`);
-  return `<fieldset><legend>${calEsc(t('calTemas'))}</legend><div class="cal-chips">${calBoton('todos-temas', t('calTodas'), '', `aria-pressed="${!s.temas.size}"`)}${raices.map(chip).join('')}</div>
-    ${raices.filter(r => s.temas.has(r) || hijos(r).some(h => s.temas.has(h))).map(r => `<div class="cal-chips cal-subtemas" role="group" aria-label="${calEsc(calNombre(conceptos[r]))}">${hijos(r).map(chip).join('')}</div>`).join('')}</fieldset>`;
+  const elegidas = todas.filter(r => s.temas.has(r) || hijos(r).some(h => s.temas.has(h)));
+  if (!raices.length && !elegidas.length) return '';
+  return `<fieldset><legend>${calEsc(t('calTemas'))}</legend><div class="cal-chips">${calBoton('todos-temas', t('calTodas'), '', `aria-pressed="${!s.temas.size}"`)}${raices.map(calChipTema).join('')}</div>
+    ${elegidas.map(r => `<div class="cal-chips cal-subtemas" role="group" aria-label="${calEsc(calNombre(conceptos[r]))}">${hijos(r).map(calChipTema).join('')}</div>`).join('')}</fieldset>`;
 }
 function calFiltros(){
   const s = CALENDARIO, m = s.meta;
   if (!m) return '';
   const option = (valor, label, elegido) => `<option value="${calEsc(valor)}"${elegido === valor ? ' selected' : ''}>${calEsc(label)}</option>`;
-  const enPanel = s.temas.size + [s.precio, s.fuente, s.que].filter(Boolean).length;
-  const activos = enPanel + [s.donde, s.texto, s.formato].filter(Boolean).length;
-  return `<div class="cal-filtros"><div class="cal-campos cal-principales">${calCampo('donde', t('calDonde'), t('calDondeEjemplo'))}
-    <label class="cal-buscar">${calEsc(t('calBuscar'))}<input id="cal-texto" type="search" value="${calEsc(s.texto)}" placeholder="${calEsc(t('calBuscarEjemplo'))}"></label>
-    <label>${calEsc(t('calTipoPlan'))}<select id="cal-formato">${option('', t('calTodos'), s.formato)}${CAL_FORMATOS.map(f => option(f, calNombreFormato(f), s.formato)).join('')}</select></label></div>
-    <div class="cal-filtros-extra"><details class="cal-filtros-avanzados"><summary>${calEsc(t('calFiltrosN', { n: enPanel }))}</summary>
-    ${calTemas()}<div class="cal-campos">
+  const enPanel = [...s.temas].filter(i => !CAL_CATEGORIAS.includes(i)).length + [s.donde, s.formato, s.precio, s.fuente, s.que].filter(Boolean).length;
+  return `<details class="cal-filtros-avanzados"><summary>${calEsc(t('calFiltrosN', { n: enPanel }))}</summary>
+    <div class="cal-filtros"><div class="cal-campos">${calCampo('donde', t('calDonde'), t('calDondeEjemplo'))}
+    <label>${calEsc(t('calTipoPlan'))}<select id="cal-formato">${option('', t('calTodos'), s.formato)}${CAL_FORMATOS.map(f => option(f, calNombreFormato(f), s.formato)).join('')}</select></label>
     <label>${calEsc(t('calPrecio'))}<select id="cal-precio">${option('', t('calPrecioCualquiera'), s.precio)}${Object.entries(CAL_PRECIOS).map(([v, k]) => option(v, t(k), s.precio)).join('')}</select></label>
     <label>${calEsc(t('calServicio'))}<select id="cal-fuente">${option('', t('calTodos'), s.fuente)}${Object.entries(m.fuentes).map(([i, f]) => option(i, f.nombre, s.fuente)).join('')}</select></label>
     ${calCampo('que', t('calObjetivo'), t('calObjetivoEjemplo'))}
     <label>${calEsc(t('calZona'))}<select id="cal-zona">${CAL_ZONAS.map(z => option(z, z, s.zona)).join('')}</select></label></div>
-    </details>${activos ? calBoton('limpiar', t('calLimpiar')) : ''}</div></div>`;
+    ${calTemas()}${s.temas.size || enPanel ? calBoton('limpiar', t('calLimpiar')) : ''}</div></details>`;
 }
 function calContenido(){
   const s = CALENDARIO;
@@ -470,11 +483,10 @@ function calContenido(){
 function pintarCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   if (!p) return;
-  const visible = CALENDARIO_ACTIVO && (s.abierto || calPideAgenda(s.orden));
+  const visible = CALENDARIO_ACTIVO && s.abierto;
   p.hidden = !visible;
-  document.body.classList.toggle('calendario-abierto', visible && s.abierto);
-  document.body.classList.toggle('calendario-sin-noticias', visible && !!s.orden && !s.orden.noticias);
-  document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(visible && s.abierto));
+  document.body.classList.toggle('calendario-abierto', visible);
+  document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(visible));
   if (!visible) return;
   s.fecha ||= calHoy();
   const foco = p.contains(document.activeElement) ? document.activeElement : null;
@@ -485,15 +497,16 @@ function pintarCalendario(){
   const dias = ventanaCalendario(s.fecha, s.vista);
   const periodo = s.vista === 'mes' ? calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined })
     : `${calFecha(dias[0])} – ${calFecha(dias.at(-1), { year: 'numeric' })}`;
-  p.innerHTML = `<div class="cal-cabecera"><h1 id="cal-titulo" tabindex="-1">${calEsc(t('calTitulo'))}</h1>
+  // Una sola barra: periodo (el nombre abre el selector de fecha), vistas,
+  // categorías, acciones y, al final, el panel de filtros.
+  p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="sr-only" tabindex="-1">${calEsc(t('calTitulo'))}</h1>
+    <div class="cal-periodo">${calBoton('anterior', '←', '', `aria-label="${calEsc(t('calAnterior'))}"`)}
+    ${calBoton('elegir-fecha', periodo, '', `class="cal-periodo-nombre" title="${calEsc(t('calFecha'))}"`)}${calBoton('siguiente', '→', '', `aria-label="${calEsc(t('calSiguiente'))}"`)}
+    <input id="cal-fecha" class="sr-only" type="date" tabindex="-1" aria-hidden="true" value="${s.fecha}">${calBoton('hoy', t('calHoy'))}</div>
     <nav class="cal-nav" aria-label="${calEsc(t('calVistas'))}">${Object.entries(CAL_VISTAS).map(([v, k]) => calBoton('vista', t(k), v, s.vista === v ? 'aria-current="page"' : '')).join('')}</nav>
-    <div class="cal-acciones">${calBoton('renovar', t('calActualizar'), '', s.cargando ? 'disabled' : '')}
-    ${calBoton(s.abierto ? 'cerrar' : 'abrir', t(s.abierto ? 'calCerrar' : 'calAbrir'))}</div></div>
-    ${s.orden ? `<p class="cal-contexto">${calEsc([...s.orden.ambitos, ...s.orden.circuitos, ...s.orden.tipos].join(' · ') || t('calTodos'))}</p>` : ''}
-    <div class="cal-cuerpo"><div class="cal-periodo">${calBoton('anterior', '←', '', `aria-label="${calEsc(t('calAnterior'))}"`)}
-    <strong>${calEsc(periodo)}</strong>${calBoton('siguiente', '→', '', `aria-label="${calEsc(t('calSiguiente'))}"`)}${calBoton('hoy', t('calHoy'))}
-    <label><span class="sr-only">${calEsc(t('calFecha'))}</span><input id="cal-fecha" type="date" value="${s.fecha}"></label></div>
-    ${calFiltros()}<p class="cal-estado" role="status">${calEsc(s.error ? t(s.error) : s.cargando ? t('calCargando') : '')}</p>
+    ${calCategorias()}<div class="cal-acciones">${calBoton('renovar', '↻', '', `aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
+    ${calBoton('cerrar', t(s.orden?.noticias ? 'calVerNoticias' : 'calCerrar'))}</div>${calFiltros()}</div>
+    <div class="cal-cuerpo"><p class="cal-estado" role="status">${calEsc(s.error ? t(s.error) : s.cargando ? t('calCargando') : '')}</p>
     ${s.error === 'calError' ? calBoton('renovar', t('calReintentar')) : ''}<div class="cal-contenido">${calContenido()}</div>
     ${s.meta ? `<p class="cal-nota cal-pie">${calEsc(t('calCobertura'))} ${calEsc(t('calGenerado', { fecha: calFormato({ dateStyle: 'short', timeStyle: 'short', timeZone: s.zona }).format(new Date(s.meta.generado)) }))}</p>` : ''}
     ${s.orden?.noticias ? `<p class="cal-nota">${calEsc(t('calNoticiasTexto'))}</p>` : ''}</div>`;
@@ -502,7 +515,6 @@ function pintarCalendario(){
   siguiente?.focus({ preventScroll: true });
   if (seleccion && siguiente?.type === 'search') siguiente.setSelectionRange(...seleccion);
 }
-let calTimerTexto = 0;
 function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   const boton = document.getElementById('btn-calendario');
@@ -512,8 +524,11 @@ function wireCalendario(){
     const b = e.target.closest('[data-cal]');
     if (!b) return;
     const a = b.dataset.cal, v = b.dataset.valor;
-    if (a === 'abrir') return abrirCalendario(b);
     if (a === 'cerrar') return cerrarCalendario();
+    if (a === 'elegir-fecha'){
+      const f = document.getElementById('cal-fecha');
+      try { return void f.showPicker(); } catch { return void f.click(); }
+    }
     if (a === 'renovar') return void cargarCalendario(true);
     if (a === 'evento') return void abrirEventoCalendario(v);
     if (a === 'pendientes' || a === 'mas-pendientes') return void pendientesCalendario(a === 'mas-pendientes');
@@ -545,7 +560,7 @@ function wireCalendario(){
       }
     }
     if (a === 'todos-temas') s.temas.clear();
-    if (a === 'limpiar'){ calLimpiarFiltros(); enfocar = '#cal-texto'; }
+    if (a === 'limpiar'){ calLimpiarFiltros(); enfocar = '#cal-donde'; }
     consultarCalendario();
     if (enfocar) p.querySelector(enfocar)?.focus({ preventScroll: true });
   });
@@ -561,10 +576,6 @@ function wireCalendario(){
   });
   p.addEventListener('input', e => {
     const id = e.target.id, v = e.target.value;
-    if (id === 'cal-texto'){
-      // Una consulta al dejar de escribir: la API limita peticiones por IP.
-      s.texto = v; clearTimeout(calTimerTexto); calTimerTexto = setTimeout(consultarCalendario, 400);
-    }
     if (id === 'cal-donde'){ s.escrito.donde = v; sugerirDonde(v); }
     if (id === 'cal-que'){ s.escrito.que = v; sugerirQue(v); }
   });

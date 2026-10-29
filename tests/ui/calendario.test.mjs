@@ -73,7 +73,7 @@ function contexto({ intl = Intl, responder = api } = {}){
     document: { activeElement: null, getElementById: id => id === 'calendario-panel' ? panel : id === 'cal-evento-dialogo' ? dialogo
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
-  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calFiltros, wireCalendario, abrirCalendario,
+  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calFiltros, calCategorias, wireCalendario, abrirCalendario,
     actualizarConsultaCalendario }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
@@ -182,7 +182,7 @@ test('Tipo de plan y precio van a sus parámetros; limpiar los quita', async () 
   c.listeners.change({ target: { id: 'cal-precio', value: 'gratis' } }); await esperar();
   const p = c.ultima().searchParams;
   assert.deepEqual([p.get('formatos'), p.get('precio')], ['concierto', 'gratis']);
-  assert.match(c.api.calFiltros(), /Filtros · 1/);
+  assert.match(c.api.calFiltros(), /Filtros · 2/);
   c.listeners.change({ target: { id: 'cal-formato', value: 'inventado' } }); await esperar();
   assert.equal(c.ultima().searchParams.get('formatos'), null);
   await c.click('limpiar');
@@ -211,10 +211,33 @@ test('la consulta del buscador pasa ámbitos y texto libre, sin prefijos ni sele
   await esperar();
   assert.equal(c.pedidas.length, antes);
   assert.match(c.api.calContenido(), /Selección no reconocida/);
-  // Una orden solo de noticias no abre la agenda.
+  // Una orden solo de noticias no pide la agenda.
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('tenis:noticias'));
   await esperar();
   assert.equal(c.pedidas.length, antes);
+  // La vista que abrió un prefijo se cierra al quitarlo.
+  assert.equal(c.api.s.abierto, true);
+  c.api.actualizarConsultaCalendario(null);
+  await esperar();
+  assert.equal(c.api.s.abierto, false);
+});
+
+test('un prefijo de agenda abre la vista completa; cerrada a mano, sigue cerrada con la misma consulta', async () => {
+  const c = contexto();
+  const orden = consulta.leerConsultaCalendario('f1:');
+  c.api.actualizarConsultaCalendario(orden);
+  await esperar();
+  assert.equal(c.api.s.abierto, true);
+  await c.click('cerrar');
+  assert.equal(c.api.s.abierto, false);
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
+  await esperar();
+  assert.equal(c.api.s.abierto, false);
+  // Abierta desde la cabecera, quitar el prefijo no la cierra.
+  await c.abrir();
+  c.api.actualizarConsultaCalendario(null);
+  await esperar();
+  assert.equal(c.api.s.abierto, true);
 });
 
 test('dónde sugiere comunidad, provincia y municipio y filtra por su territorio común', async () => {
@@ -246,12 +269,20 @@ test('qué consulta entidades publicadas sin territorios y filtra por objetivo',
   assert.doesNotMatch(html, /territorio:vigo/);
   await c.click('elegir-que', 'agrupacion:liga', { nombre: 'Liga gallega' });
   assert.equal(c.ultima().searchParams.get('objetivo'), 'agrupacion:liga');
+  // Sin buscador propio (el texto va en la barra principal); dónde y tipo de
+  // plan, dentro del panel de filtros. Cultura y Deportes, en la barra.
   const filtros = c.api.calFiltros();
-  assert.ok(filtros.indexOf('id="cal-texto"') < filtros.indexOf('<details'));
-  assert.ok(filtros.indexOf('id="cal-donde"') < filtros.indexOf('<details'));
-  // Las categorías van en el panel de filtros.
-  assert.ok(filtros.indexOf('data-cal="tema"') > filtros.indexOf('<details'));
-  assert.doesNotMatch(filtros, /Economía/);
+  assert.doesNotMatch(filtros, /id="cal-texto"/);
+  assert.ok(filtros.indexOf('id="cal-donde"') > filtros.indexOf('<details'));
+  assert.ok(filtros.indexOf('id="cal-formato"') > filtros.indexOf('<details'));
+  assert.doesNotMatch(filtros, /data-cal="tema"/);
+  const barra = c.api.calCategorias();
+  assert.match(barra, /data-valor="cultura"[^>]*>Cultura/);
+  assert.match(barra, /data-valor="deportes"[^>]*>Deportes/);
+  assert.doesNotMatch(barra + filtros, /Economía/);
+  // Elegida una categoría de la barra, sus subcategorías salen en el panel.
+  await c.click('tema', 'cultura');
+  assert.match(c.api.calFiltros(), /data-valor="teatro"/);
 });
 
 test('un fallo del primer backend pasa al segundo; un error de la consulta no se repite', async () => {
