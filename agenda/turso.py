@@ -1,5 +1,6 @@
 """Calendario en una base Turso dedicada; autoridad remota y escrituras por cambios."""
 
+import json
 import os
 from contextlib import closing, contextmanager
 from contextvars import ContextVar
@@ -53,11 +54,12 @@ class Almacen:
             ficheros = nucleo_r2.Ficheros.de_entorno()
         self.ficheros = ficheros or None
         self.revision = None
+        self.manifiesto = None  # {fuente: huella} confirmado con la revisión.
         self.anterior = None
         self.reutilizar = False
         self._vigente = False  # anterior coincide con la revisión remota conocida.
 
-    def inicializar(self):
+    def inicializar(self, migrando=False):
         resultados = self.cliente.transaccion([
             ("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'", ())],
             escritura=False)
@@ -69,10 +71,15 @@ class Almacen:
         elif 'agenda_esquema' not in tablas or any(not t.startswith('agenda_') for t in tablas):
             raise ValueError('Se requiere una base Turso dedicada al calendario')
         else:
-            versiones = self.cliente.transaccion([
-                ('SELECT version FROM agenda_esquema WHERE id=1', ())], escritura=False)
-            version = filas(versiones[0])
-            if version in ([[2]], [[3]]):
+            version, en_r2 = (filas(r) for r in self.cliente.transaccion([
+                ('SELECT version FROM agenda_esquema WHERE id=1', ()),
+                ('SELECT 1 FROM agenda_estado WHERE clave=?', (nucleo_r2.MARCA,))], escritura=False))
+            if version == [[4]] and en_r2:
+                # Núcleo R2 v1: solo la migración del núcleo sube el esquema, con el manifiesto.
+                if not migrando:
+                    raise ValueError('Núcleo R2 v1: lanzar la operación migrar-nucleo '
+                                     '(python -m agenda.nucleo_r2 --migrar)')
+            elif version in ([[2]], [[3]], [[4]]):
                 self.cliente.transaccion(almacen.migracion())
             elif version != [[almacen.VERSION_ESQUEMA]]:
                 raise ValueError('Versión de base de calendario incompatible')
@@ -96,7 +103,9 @@ class Almacen:
                              else 'Núcleo R2 sin migrar: python -m agenda.nucleo_r2 --migrar')
         if self.ficheros:
             resultados.extend([] for _ in almacen_nucleo.TABLAS)
-            ficheros = self.ficheros.cargar()
+            # Manifiesto y revisión salen del mismo snapshot: la revisión identifica el núcleo.
+            manifiesto = nucleo_r2.leer_marca(en_r2[0][0])['fuentes']
+            ficheros = self.ficheros.cargar(manifiesto)
         else:
             resultados.extend(self._paginas(tabla) for tabla in almacen_nucleo.TABLAS.values())
         final = filas(self.cliente.transaccion(
@@ -107,6 +116,7 @@ class Almacen:
         if self.ficheros and 'nucleo' in calendario:
             calendario['nucleo'] = nucleo_r2.unir(calendario['nucleo'], ficheros)
         self.revision = revision
+        self.manifiesto = manifiesto if self.ficheros else None
         self.anterior = deepcopy(calendario)
         self._vigente = True
         return calendario
@@ -145,18 +155,21 @@ class Almacen:
         if cambios:
             pasos.extend(almacen.planificar(self.anterior, calendario, solo_clasificacion, solo_nucleo,
                                             nucleo_sql=not self.ficheros))
-            pasos.append(('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ()))
         # Una respuesta perdida deja la base incierta: la siguiente carga relee.
         self._vigente = False
+        manifiesto = self.manifiesto
         if cambios and self.ficheros and calendario.get('nucleo') != self.anterior.get('nucleo'):
-            # Primero R2: si Turso falla después, la siguiente pasada parte de R2 y lo rehace.
+            # Ahorro: no subir objetos si ya se sabe que otro escritor avanzó la revisión.
             if filas(self.cliente.transaccion([('SELECT revision FROM agenda_esquema WHERE id=1', ())],
                                               escritura=False)[0]) != [[self.revision]]:
                 raise ConflictoCalendario('Otra ejecución modificó el calendario; releer antes de integrar')
-            try:
-                self.ficheros.guardar(nucleo_r2.partir(calendario['nucleo']))
-            except nucleo_r2.ConflictoNucleo as error:
-                raise ConflictoCalendario(str(error)) from None
+            # Objetos nuevos primero; solo el manifiesto confirmado con la revisión los activa.
+            manifiesto = self.ficheros.subir(nucleo_r2.partir(calendario['nucleo']), self.manifiesto)
+            if manifiesto != self.manifiesto:
+                pasos.append(("UPDATE agenda_estado SET valor_json=? WHERE clave=?",
+                              (nucleo_r2.marca(self.ficheros.bucket, manifiesto), nucleo_r2.MARCA)))
+        if cambios:
+            pasos.append(('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ()))
         try:
             self.cliente.transaccion(pasos)
         except ErrorTurso as error:
@@ -164,27 +177,45 @@ class Almacen:
                 raise ConflictoCalendario('Otra ejecución modificó el calendario; releer antes de integrar') from None
             raise
         self.revision += int(cambios)
+        self.manifiesto = manifiesto
         self.anterior = deepcopy(calendario)
         self._vigente = True
 
-    def marcar_r2(self, bucket):
-        """Desde aquí el núcleo vive en R2; solo si nadie escribió desde la carga."""
-        self.cliente.transaccion([
+    def estado_nucleo(self):
+        """(versión, revisión, esqueleto, marca) de un mismo snapshot, para migrar."""
+        esquema, calendario, en_r2 = (filas(r) for r in self.cliente.transaccion([
+            ('SELECT version, revision FROM agenda_esquema WHERE id=1', ()),
+            ("SELECT valor_json FROM agenda_estado WHERE clave='calendario'", ()),
+            ('SELECT valor_json FROM agenda_estado WHERE clave=?', (nucleo_r2.MARCA,))], escritura=False))
+        return (*esquema[0], json.loads(calendario[0][0]) if calendario else None,
+                en_r2[0][0] if en_r2 else None)
+
+    def activar_r2(self, bucket, manifiesto, revision, catalogo):
+        """Desde aquí el núcleo son los objetos del manifiesto; solo si nadie escribió.
+
+        La versión de esquema sube a la vez: un cliente antiguo ya no carga ni guarda.
+        """
+        pasos = [
             ('INSERT INTO agenda_esquema(id, version, revision) SELECT 1, ?, -1 WHERE NOT EXISTS '
-             '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version=? AND revision=?)',
-             (almacen.VERSION_ESQUEMA, almacen.VERSION_ESQUEMA, self.revision)),
-            ('INSERT INTO agenda_estado VALUES (?, ?)', (nucleo_r2.MARCA, json_canonico(
-                {'bucket': bucket, 'prefijo': nucleo_r2.PREFIJO}))),
-            # Un Almacen SQL que cargó antes ya no puede guardar en las tablas viejas.
-            ('UPDATE agenda_esquema SET revision=revision+1 WHERE id=1', ())])
-        self.revision += 1
+             '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version IN (4, ?) AND revision=?)',
+             (almacen.VERSION_ESQUEMA, almacen.VERSION_ESQUEMA, revision)),
+            ('INSERT INTO agenda_estado VALUES (?, ?) ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json',
+             (nucleo_r2.MARCA, nucleo_r2.marca(bucket, manifiesto))),
+            # El catálogo de los ficheros v1 pudo ser más nuevo que el del esqueleto.
+            ("UPDATE agenda_estado SET valor_json=json_set(valor_json, '$.nucleo.catalogo', json(?)) "
+             "WHERE clave='calendario' AND json_extract(valor_json, '$.nucleo.catalogo.version') < ?",
+             (json_canonico(catalogo), catalogo['version'])),
+            # Un Almacen que cargó antes ya no puede guardar.
+            ('UPDATE agenda_esquema SET version=?, revision=revision+1 WHERE id=1', (almacen.VERSION_ESQUEMA,))]
+        self.cliente.transaccion(pasos)
+        self.revision = revision + 1
         self._vigente = False
 
     def copia(self, ruta):
         """Snapshot completo, incluido historial; sustituye la copia tras validarla."""
         if self.ficheros:
             raise ValueError('Con el núcleo en R2 el volcado de Turso no lo incluye: '
-                             f'copiar {nucleo_r2.PREFIJO} del bucket privado')
+                             f'copiar los objetos de {nucleo_r2.PREFIJO} del manifiesto')
         volcado = self.cliente.dump()
         ruta = Path(ruta)
         ruta.parent.mkdir(parents=True, exist_ok=True)

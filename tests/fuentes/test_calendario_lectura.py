@@ -36,7 +36,7 @@ class LecturaSQL(unittest.TestCase):
         self.addCleanup(self.db.close)
         self.db.execute('PRAGMA foreign_keys=ON')
         self.db.execute('CREATE TABLE agenda_esquema(id INTEGER PRIMARY KEY,version INTEGER,revision INTEGER)')
-        self.db.execute('INSERT INTO agenda_esquema VALUES (1,4,12)')
+        self.db.execute('INSERT INTO agenda_esquema VALUES (1,5,12)')
 
     def publicar(self, preparada=None, revision=12, extra=(), previo=None):
         self.db.execute('BEGIN IMMEDIATE')

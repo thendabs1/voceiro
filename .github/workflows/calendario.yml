@@ -9,7 +9,7 @@ on:
       operacion:
         description: 'Recoger, reclasificar, preparar el núcleo o publicar el estado guardado'
         type: choice
-        options: [recoger, deportes, reclasificar, preparar-nucleo, publicar]
+        options: [recoger, deportes, reclasificar, preparar-nucleo, publicar, migrar-nucleo]
         default: recoger
       inicio:
         description: 'Primer día (AAAA-MM-DD, vacío = hoy)'
@@ -58,7 +58,7 @@ jobs:
       CALENDARIO_TURSO_URL: ${{ secrets.CALENDARIO_TURSO_URL }}
       CALENDARIO_TURSO_TOKEN: ${{ secrets.CALENDARIO_TURSO_TOKEN }}
       OCBLACKTOP_API_KEY: ${{ secrets.OCBLACKTOP_API_KEY }}
-      # Núcleo en el bucket privado (un fichero por fuente); nunca en R2_BUCKET, que es público.
+      # Núcleo en el bucket privado (objetos por huella, manifiesto en Turso); nunca en R2_BUCKET, que es público.
       AGENDA_R2_BUCKET: voceiro-agenda
       AGENDA_R2_ACCESS_KEY_ID: ${{ secrets.AGENDA_R2_ACCESS_KEY_ID }}
       AGENDA_R2_SECRET_ACCESS_KEY: ${{ secrets.AGENDA_R2_SECRET_ACCESS_KEY }}
@@ -102,6 +102,11 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
+          if [ "$OPERACION" = migrar-nucleo ]; then
+            # Una vez: núcleo R2 v1 → objetos por huella y esquema 5. Repetible; no recoge ni publica.
+            python -m agenda.nucleo_r2 --migrar
+            exit
+          fi
           fechas=""
           if [ -n "$INICIO" ]; then fechas+=" --inicio $INICIO"; fi
           if [ -n "$FIN" ]; then fechas+=" --fin $FIN"; fi
