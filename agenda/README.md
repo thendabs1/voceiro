@@ -321,9 +321,11 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
   registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
   Todavía no implementados: Vidmar solo cubre su subconjunto ICS y el RSS de
   noticias no interpreta citas.
-- **Consultas puntuales:** registro único de prefijos (hoy `shared/parser.js`
-  y `shared/calendario/consulta.js` tienen listas separadas), contrato común
-  de respuesta y una salida única del worker con caché y presupuesto.
+- **Consultas puntuales:** hechas. Registro de prefijos en
+  `shared/consultas/registro.js`, salida única por `workers/deno-buscar`
+  (`/consulta`, `/consulta/ficha`, ver [fuentes](fuentes.md)) y panel encima de
+  las noticias (`front/app/14-consultas.js`). Falta unificar sus ámbitos con
+  los del calendario (`shared/calendario/consulta.js`).
 - **Seguir:** guardado y seguimiento por objetivo en un documento cifrado
   separado (`calendario-personal`, misma clave de sincronización con otra
   derivación); novedades por objetivo, tipo de cambio y revisión. Diseñado,

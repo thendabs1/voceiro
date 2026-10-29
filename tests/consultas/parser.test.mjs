@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseQuery } from '../../shared/parser.js';
+import { parseQuery, tokenizeQuery } from '../../shared/parser.js';
 import { CONSULTAS, PREFIJOS_CONSULTAS, ESPN } from '../../shared/consultas/registro.js';
 import { AMBITOS, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 import { PARSER_SOURCE } from '../../workers/deno-buscar/src/parser-source.js';
@@ -24,7 +24,31 @@ test('los siete tipos tienen prefijos en los cinco idiomas de la interfaz', () =
     en:['book','author','movie','series','standings','results','wiki'],
   };
   for (const prefijos of Object.values(idiomas)) assert.deepEqual(
-    parseQuery(prefijos.map(p=>`${p}:dato`).join(' ')).consultas.map(c=>c.tipo),Object.keys(CONSULTAS));
+    prefijos.map(p=>parseQuery(`${p}:dato`).consultas[0].tipo),Object.keys(CONSULTAS));
+});
+
+test('sin comillas, el valor de una consulta es el resto de la línea', () => {
+  const consulta = raw => parseQuery(raw).consultas;
+  assert.deepEqual(consulta('pelicula:La infiltrada'),[{tipo:'pelicula',texto:'La infiltrada'}]);
+  // «palabra:» dentro del título no corta el valor, aunque sea un prefijo conocido.
+  const hawking = parseQuery('libro:Breve historia del tiempo: del big bang');
+  assert.deepEqual(hawking.consultas,[{tipo:'libro',texto:'Breve historia del tiempo: del big bang'}]);
+  assert.equal(hawking.eltiempo,null); assert.deepEqual(hawking.titulo,[]);
+  // Lo de detrás es título; los filtros van delante o se cierra con comillas.
+  assert.deepEqual(consulta('pelicula:Misión: imposible lang:es'),[{tipo:'pelicula',texto:'Misión: imposible lang:es'}]);
+  const delante = parseQuery('lang:es pelicula:Misión: imposible');
+  assert.deepEqual(delante.consultas,[{tipo:'pelicula',texto:'Misión: imposible'}]); assert.deepEqual(delante.lang,['es']);
+  const comillas = parseQuery('incendio pelicula:"La infiltrada" lang:es');
+  assert.deepEqual(comillas.consultas,[{tipo:'pelicula',texto:'La infiltrada'}]);
+  assert.deepEqual(comillas.lang,['es']); assert.equal(comillas.q,'incendio');
+  assert.deepEqual(consulta('libro:Dune autor:Herbert'),[{tipo:'libro',texto:'Dune autor:Herbert'}]);
+  // Comilla sin cerrar mientras se escribe, prefijo vacío y espacios finales.
+  assert.deepEqual(consulta('pelicula:"La infil'),[{tipo:'pelicula',texto:'La infil'}]);
+  assert.deepEqual(consulta('pelicula: '),[{tipo:'pelicula',texto:''}]);
+  const chip = parseQuery('incendio película:La  infiltrada  ').chips.at(-1);
+  assert.deepEqual(chip,{type:'consulta',tipo:'pelicula',value:'La  infiltrada',raw:'película:La  infiltrada'});
+  // El texto de noticias sale de los tokens sin prefijo: el título no entra.
+  assert.deepEqual(tokenizeQuery('incendio pelicula:La infiltrada').filter(t=>!t.prefix).map(t=>t.raw),['incendio']);
 });
 
 test('sin colisiones con calendario; las equivalencias ESPN son circuitos existentes', () => {
@@ -44,5 +68,7 @@ test('regresión: formato previo de parsed y combinación con tiempo, avisos y f
 
 test('el parser servido por los workers es autónomo y reconoce el mismo registro', async () => {
   const modulo = await import(`data:text/javascript;base64,${Buffer.from(PARSER_SOURCE).toString('base64')}`);
-  assert.deepEqual(modulo.parseQuery('book:test movie:test'),parseQuery('book:test movie:test'));
+  const raw = 'lang:es book:Breve historia del tiempo: movie:test';
+  assert.deepEqual(modulo.parseQuery(raw),parseQuery(raw));
+  assert.equal(parseQuery(raw).consultas.length,1);
 });

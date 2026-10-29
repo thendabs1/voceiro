@@ -1,0 +1,50 @@
+/* ═══ Consultas puntuales (libro:, pelicula:…): encima de la lista, como el tiempo ═══ */
+.consulta-panel{
+  margin: 6px 0 10px;
+  padding: 6px 12px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--quote-bg);
+  font-size: .9em;
+  overflow-wrap: anywhere;
+}
+.consulta-panel[hidden]{ display: none; }
+.consulta-panel button{ font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.consulta-panel p{ margin: 6px 0; }
+.consulta-panel a{ color: inherit; }
+.consulta-cab{ display: flex; align-items: center; gap: 8px; }
+.consulta-tipo{ margin-right: auto; color: var(--muted); }
+.consulta-cab button{ min-width: 44px; min-height: 44px; padding: 0 12px; }
+.consulta-cerrar{ display: inline-flex; align-items: center; justify-content: center; }
+.consulta-cerrar .ico{ width: 1.1em; height: 1.1em; }
+.consulta-msg, .consulta-nota, .consulta-pie, .consulta-cand-det, .consulta-linea, .consulta-estado{ color: var(--muted); }
+.consulta-opciones, .consulta-otras{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.consulta-opciones button, .consulta-otras button{ min-height: 44px; padding: 0 12px; }
+.consulta-otras button[aria-pressed="true"]{ border-color: var(--fg); font-weight: 700; }
+.consulta-candidatos{ display: grid; gap: 6px; margin: 6px 0; padding: 0; list-style: none; }
+.consulta-candidatos button{ display: flex; flex-direction: column; gap: 2px; width: 100%; min-height: 44px; padding: 6px 10px; text-align: left; }
+.consulta-cand-tit{ font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.consulta-cand-det, .consulta-linea{ max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.consulta-ficha > summary{ padding: 4px 0; cursor: pointer; }
+.consulta-titulo{ font-size: 1.15em; }
+.consulta-linea{ display: block; }
+.consulta-cuerpo details{ margin: 6px 0; }
+.consulta-cuerpo summary{ padding: 4px 0; cursor: pointer; }
+.consulta-media{ display: flex; align-items: flex-start; gap: 10px; }
+.consulta-media > div{ flex: 1; min-width: 0; }
+.consulta-img{ flex: none; width: 64px; height: 96px; object-fit: cover; border-radius: 4px; background: var(--bg); }
+.consulta-enlace{ display: block; min-height: 40px; margin: 4px 0; padding: 6px 10px; text-align: left; }
+.consulta-sub{ font-weight: 600; }
+.consulta-lista{ margin: 4px 0; padding-left: 1.2em; }
+.consulta-nota, .consulta-pie{ font-size: .9em; }
+.consulta-pie{ margin-bottom: 0; }
+.consulta-pie button{ min-height: 32px; padding: 2px 10px; }
+/* Tablas de clasificación sin scroll horizontal: el nombre se parte. */
+.consulta-tabla{ width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.consulta-tabla th, .consulta-tabla td{ padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--border); }
+.consulta-tabla th:nth-child(2), .consulta-tabla td:nth-child(2){ width: 100%; text-align: left; }
+.consulta-tabla abbr{ text-decoration: none; }
+.consulta-partidos{ margin: 0; padding: 0; list-style: none; }
+.consulta-partidos li{ display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.consulta-partidos b{ font-variant-numeric: tabular-nums; }
+.consulta-estado{ grid-column: 1 / -1; font-size: .9em; }

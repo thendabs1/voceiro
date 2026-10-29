@@ -85,7 +85,16 @@ export function tokenizeQuery(raw) {
       const word = m[4];
       const pi = word.indexOf(':');
       if (pi > 0 && /^[\p{L}][\p{L}\p{N}·-]*$/u.test(word.slice(0, pi))) {
-        tokens.push({ prefix: word.slice(0, pi).toLowerCase(), text: word.slice(pi + 1), raw: word, quoted: false });
+        const prefix = word.slice(0, pi).toLowerCase();
+        // Consulta puntual sin comillas: el valor es el resto de la línea,
+        // aunque lleve «palabra:» (pelicula:Misión: imposible). Una comilla
+        // inicial sin cerrar es que aún se está escribiendo.
+        if (Object.hasOwn(PREFIJOS_CONSULTAS, prefix)) {
+          const linea = raw.slice(m.index).trimEnd();
+          tokens.push({ prefix, text: linea.slice(pi + 1).trim().replace(/^"/, ''), raw: linea, quoted: false, resto: true });
+          break;
+        }
+        tokens.push({ prefix, text: word.slice(pi + 1), raw: word, quoted: false });
       } else {
         tokens.push({ prefix: '', text: word, raw: word, quoted: false });
       }

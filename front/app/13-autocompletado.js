@@ -23,6 +23,8 @@ function scoreMatch(haystack, needle){
 }
 
 function sugerenciasBuscar(raw){
+  // Lo que sigue a una consulta puntual es su valor: nada que sugerir.
+  if (partirConsulta(raw).consulta) return [];
   const calendario = sugerenciasCalendario(raw);
   if (calendario) return calendario;
   const stats = sugerenciasEstadisticas(raw);

@@ -30,7 +30,7 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
   const sol = nodo();
   const ctx = {
     $: s => el[s], t: k => k, ico: n => `<${n}>`, escapeHtml: x => String(x),
-    PESO, empezado, Date, JSON, String, Array,
+    PESO, empezado, Date, JSON, String, Array, tokenizeQuery,
     ACCES: { lang: 'es' }, recordarLugar() {},
     cerrarCalendario() {},
     TIEMPO_ACTIVO: true, AVISOS_CABECERA: true, TIEMPO_SITIOS_KEY: 'voceiro-tiempo-sitios-v1', TIEMPO_MAX_SITIOS: 5,
@@ -43,7 +43,7 @@ function contexto({ buscar = '', sitios = [], avisos = [] } = {}) {
   };
   runInNewContext([
     linea('const PREFIJOS_TIEMPO'), linea('const RX_TIEMPO_FINAL'), linea('const RX_TOKENS_TIEMPO'), linea('const RX_HAY_TIEMPO'),
-    ...['fragmentoTiempo', 'sitiosTiempo', 'tokenTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo', 'abrirSitio',
+    ...['partirConsulta', 'fragmentoTiempo', 'sitiosTiempo', 'tokenTiempo', 'ponerTiempo', 'enfocarBuscador', 'cambiarLugarTiempo', 'abrirSitios', 'abrirTiempo', 'abrirSitio',
       'htmlPestanasTiempo', 'pulsarPestanaTiempo', 'avisosDeZona',
       'pintarBotonTiempo'].map(funcion),
   ].join('\n') + '\nthis.abrirTiempo = abrirTiempo; this.abrirSitio = abrirSitio; this.ponerTiempo = ponerTiempo; this.cambiarLugarTiempo = cambiarLugarTiempo; this.fragmentoTiempo = fragmentoTiempo; this.rxTiempoFinal = RX_TIEMPO_FINAL; this.htmlPestanasTiempo = htmlPestanasTiempo; this.pulsarPestanaTiempo = pulsarPestanaTiempo; this.avisosDeZona = avisosDeZona; this.pintarBotonTiempo = pintarBotonTiempo;', ctx);
@@ -57,6 +57,16 @@ test('el sol abre Mis sitios y lo cierra sin tocar el resto de la búsqueda', ()
   ctx.abrirTiempo();
   assert.equal(buscar.value, 'incendio medio:elpais');
   assert.equal(ctx.filtrados, 2);
+});
+
+test('el sol deja al final una consulta puntual, que toma el resto de la línea', () => {
+  const { ctx, buscar } = contexto({ buscar: 'incendio libro:Breve historia del tiempo: del big bang' });
+  ctx.abrirTiempo();
+  assert.equal(buscar.value, 'incendio eltiempo: libro:Breve historia del tiempo: del big bang');
+  assert.equal(parseQuery(buscar.value).eltiempo, '');
+  assert.equal(parseQuery(buscar.value).consultas[0].texto, 'Breve historia del tiempo: del big bang');
+  ctx.abrirTiempo();
+  assert.equal(buscar.value, 'incendio libro:Breve historia del tiempo: del big bang');
 });
 
 test('el sol, Cambiar de lugar y Mis sitios escriben el prefijo del idioma', () => {

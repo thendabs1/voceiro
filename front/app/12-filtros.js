@@ -4,16 +4,27 @@
    el estado único. aplicarFiltros lee solo de parseQuery.
    ═══════════════════════════════════════════════════════════════ */
 
+// Una consulta puntual sin comillas toma el resto de la línea
+// (shared/parser.js): lo que se añada a la búsqueda va delante de ella.
+function partirConsulta(raw) {
+  const tk = tokenizeQuery(raw).find(x => x.resto);
+  if (!tk) return { antes: raw, consulta: '' };
+  const linea = raw.trimEnd();
+  return { antes: linea.slice(0, linea.length - tk.raw.length), consulta: tk.raw };
+}
+
 // Reescribe #buscar: quita todos los tokens del prefijo indicado
 // y añade uno nuevo si `value` es no vacío. Devuelve el nuevo string.
 function rebuildInput(raw, prefix, value) {
-  const tokens = tokenizeQuery(raw);
+  const { antes, consulta } = partirConsulta(raw);
+  const tokens = tokenizeQuery(antes);
   const kept = tokens.filter(tk => (tk.prefix || '').toLowerCase() !== prefix);
   const parts = kept.map(tk => tk.raw);
   if (value !== null && value !== '' && value !== undefined) {
     const necesitaComillas = /\s/.test(value);
     parts.push(prefix + ':' + (necesitaComillas ? '"' + value + '"' : value));
   }
+  if (consulta) parts.push(consulta);
   return parts.join(' ');
 }
 
@@ -34,12 +45,13 @@ function writeFilterToInput(prefix, value) {
 function filtrarPorMedio(dominio) {
   if (!dominio) return;
   aplicarFiltrosDebounced.cancel();
-  const raw = $('#buscar').value;
+  const { antes: raw, consulta } = partirConsulta($('#buscar').value);
   const deMedio = new Set(parseQuery(raw).chips
     .filter(ch => ch.type === 'medio' || ch.type === 'dominio' || ch.type === 'grupo')
     .map(ch => ch.raw));
   const parts = tokenizeQuery(raw).filter(tk => !deMedio.has(tk.raw)).map(tk => tk.raw);
   parts.push('web:' + dominio);
+  if (consulta) parts.push(consulta);
   const nuevo = parts.join(' ');
   $('#buscar').value = nuevo;
   const clearBtn = $('#buscar-clear');
@@ -166,7 +178,7 @@ function renderChips(parsed, rawQuery){
   cont.style.display = '';
   cont.innerHTML = parsed.chips.map((c, i) =>
     `<span class="chip">
-      <span class="chip-tipo">${escapeHtml(c.type === 'eltiempo' ? t('chipTiempo') : c.type)}</span>
+      <span class="chip-tipo">${escapeHtml(c.type === 'eltiempo' ? t('chipTiempo') : c.type === 'consulta' ? nombreConsulta(c.tipo) : c.type)}</span>
       <span>${escapeHtml(c.value)}</span>
       <button type="button" class="chip-x" data-idx="${i}" title="${escapeHtml(t('chipLiteral'))}">×</button>
     </span>`

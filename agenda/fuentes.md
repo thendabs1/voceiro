@@ -168,6 +168,7 @@ candidatos en vez de elegir uno.
 Implementados en deno-buscar: `/consulta` (candidatos) y `/consulta/ficha` (identidad) para Open Library, TMDB y Wikipedia + Wikidata, con caché, límite por IP y sin persistencia en base de datos.
 ESPN admite primera, segunda, NBA, WNBA y clasificación F1; caduca en 60 s en juego, 15 min para tablas y 1 h para resultados. Presupuesto por instancia: `ESPN_MAX_PETICIONES_DIA` (1000 por defecto) y Open Library a 1 petición/s; TMDB usa `TMDB_API_READ_ACCESS_TOKEN` y atribuye JustWatch.
 Los prefijos de los cinco idiomas viven en `shared/consultas/registro.js`; la lista de ámbitos del calendario sigue separada, sin colisiones.
+Sin comillas, el valor de una consulta es el resto de la línea, aunque lleve «palabra:» (`pelicula:Misión: imposible`); los filtros van delante o se cierra el valor con comillas. El panel del front (`front/app/14-consultas.js`) pide candidatos y, al tocar uno, su ficha; las competiciones deportivas van directas a la ficha.
 
 ### Candidatas de datos.gob.es (aplazadas)
 
