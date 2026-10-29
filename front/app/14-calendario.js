@@ -86,7 +86,7 @@ function calParametros(){
   const ambitos = [...(o?.ambitos || []), ...(s.competicion ? [s.competicion] : [])];
   const q = [...ambitos.map(a => a + ':'), ...(o?.circuitos.length ? ['circuito:' + o.circuitos.join(',')] : [])].join(' ');
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: [...s.temas].join(','), precio: s.precio,
-    territorio: s.donde?.id || '' };
+    local: s.donde?.id || '' };
 }
 // Días de la vista y su ventana [desde, hasta) dentro de lo publicado.
 // desde:/hasta: del buscador acotan la celebración; en noticias, la publicación.
@@ -215,6 +215,13 @@ function calLimpiarFiltros(){
   s.temas.clear(); s.competicion = ''; s.precio = ''; s.rango = ''; s.semanas = 1; s.mes = null;
   s.escrito = { donde: '' }; s.sugerencias = { donde: [] }; s.editandoDonde = false;
 }
+// La ciudad fija también la hora: la canaria en Canarias; si no, la del navegador.
+function calElegirDonde(donde){
+  const s = CALENDARIO, [, nivel, codigo = ''] = donde?.id.split(':') || [];
+  const canarias = nivel === 'autonomia' ? codigo === '05' : ['35', '38'].includes(codigo.slice(0, 2));
+  s.donde = donde;
+  s.zona = canarias ? 'Atlantic/Canary' : donde ? 'Europe/Madrid' : CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid';
+}
 // Ciudad por defecto: la provincia del primer sitio de «Mis sitios» (el
 // tiempo), una vez por sesión; quitarla deja toda la agenda.
 function calDondePorDefecto(){
@@ -223,7 +230,7 @@ function calDondePorDefecto(){
   s.dondeAuto = true;
   const ine = sitiosTiempo().find(x => x.lugar?.ine)?.lugar.ine;
   const provincia = ine && ADMINISTRACION.provincias.find(([c]) => c === String(ine).padStart(5, '0').slice(0, 2));
-  if (provincia && !s.donde) s.donde = { id: 'es:provincia:' + provincia[0], nombre: provincia[1] };
+  if (provincia && !s.donde) calElegirDonde({ id: 'es:provincia:' + provincia[0], nombre: provincia[1] });
 }
 // La identidad de la consulta son sus prefijos de agenda: editar el texto o
 // añadir otros servicios (tiempo, consultas) conserva filtros y apertura.
@@ -248,9 +255,10 @@ function actualizarConsultaCalendario(orden){
 function abrirCalendario(origen = null){
   if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
-  if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; }
+  // Cada entrada empieza hoy; el pasado se visita navegando.
+  if (!s.abierto){ s.origen = origen || document.activeElement; s.scroll = window.scrollY; calElegirDia(calHoy()); }
   cerrarEstadisticas(false);
-  s.abierto = true; s.porPrefijo = false; s.fecha ||= calHoy(); calDondePorDefecto();
+  s.abierto = true; s.porPrefijo = false; calDondePorDefecto();
   // Tras un rato cerrado, la publicación del día pudo cambiar.
   cargarCalendario(Date.now() - s.cargado > 10 * 60000);
   requestAnimationFrame(() => {
@@ -513,7 +521,7 @@ function calChips(){
   const fijas = CAL_CATEGORIAS.filter(c => conceptos[c]);
   const primera = `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calTemas'))}">${chip('categoria', t('calTodo'), '', !raiz && !s.competicion)}
     ${fijas.map(c => chip('categoria', calNombre(conceptos[c]), c, raiz === c, 'cal-cat cal-cat-' + c)).join('')}
-    ${chip('gratis', t('calPrecioGratis'), '', s.precio === 'gratis')}</div>`;
+    ${calBoton('gratis', t('calPrecioGratis'), '', `aria-pressed="${s.precio === 'gratis'}" title="${calEsc(t('calGratisNota'))}"`)}</div>`;
   let segunda = '';
   if (raiz === 'deportes' && !s.orden?.ambitos.length) segunda = CAL_COMPETICIONES.map(([k, n]) => chip('competicion', n, k, s.competicion === k)).join('');
   else if (raiz) segunda = calHijos(conceptos, raiz).map(i => chip('tema', calNombre(conceptos[i]), i, s.temas.has(i))).join('');
@@ -594,10 +602,10 @@ function wireCalendario(){
     }
     let enfocar = '';
     if (a === 'elegir-donde'){
-      s.donde = { id: v, nombre: b.dataset.nombre }; s.escrito.donde = ''; s.sugerencias.donde = []; s.editandoDonde = false;
+      calElegirDonde({ id: v, nombre: b.dataset.nombre }); s.escrito.donde = ''; s.sugerencias.donde = []; s.editandoDonde = false;
       enfocar = '[data-cal="editar-donde"]';
     }
-    if (a === 'quitar-donde'){ s.donde = null; enfocar = '[data-cal="editar-donde"]'; }
+    if (a === 'quitar-donde'){ calElegirDonde(null); enfocar = '[data-cal="editar-donde"]'; }
     // En el mes, tocar un día lo elige y pliega la tira (Apple Calendar).
     if (a === 'dia'){ calElegirDia(v); s.mesAbierto = false; }
     if (a === 'rango'){

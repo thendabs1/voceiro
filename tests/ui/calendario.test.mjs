@@ -313,20 +313,33 @@ test('dónde: la ciudad arriba; sugiere comunidad, provincia y municipio y filtr
   await c.escribir('cal-donde', 'vig');
   assert.match(c.sugerencias['cal-sug-donde'].innerHTML, /data-valor="es:municipio:36057"[^>]*>Vigo <small>Pontevedra/);
   await c.click('elegir-donde', 'es:municipio:36057', { nombre: 'Vigo' });
-  assert.equal(c.ultima().searchParams.get('territorio'), 'es:municipio:36057');
+  assert.equal(c.ultima().searchParams.get('local'), 'es:municipio:36057');
   assert.match(c.api.calDonde(), /📍 Vigo ▾[\s\S]*data-cal="quitar-donde"/);
   await c.click('quitar-donde');
-  assert.equal(c.ultima().searchParams.get('territorio'), null);
+  assert.equal(c.ultima().searchParams.get('local'), null);
 });
 
 test('la ciudad por defecto es la provincia del primer sitio del tiempo, una vez', async () => {
   const c = contexto({ sitios: [{ nombre: 'Casa', lugar: { lat: 1, lon: 2 } }, { nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.abrir();
-  assert.equal(c.resumen().get('territorio'), 'es:provincia:36');
+  assert.equal(c.resumen().get('local'), 'es:provincia:36');
   assert.match(c.api.calDonde(), /📍 Pontevedra ▾/);
   await c.click('quitar-donde');
   await c.abrir();
-  assert.equal(c.resumen().get('territorio'), null);
+  assert.equal(c.resumen().get('local'), null);
+});
+
+test('la ciudad fija la hora (Canarias, la suya) y cada entrada empieza hoy', async () => {
+  const c = contexto();
+  await c.abrir();
+  await c.click('elegir-donde', 'es:municipio:38038', { nombre: 'Santa Cruz de Tenerife' });
+  assert.deepEqual([c.resumen().get('local'), c.resumen().get('zona')], ['es:municipio:38038', 'Atlantic/Canary']);
+  await c.click('elegir-donde', 'es:autonomia:12', { nombre: 'Galicia' });
+  assert.equal(c.resumen().get('zona'), 'Europe/Madrid');
+  await c.click('dia', '2026-10-29');
+  await c.click('cerrar');
+  c.api.abrirCalendario(); await esperar();
+  assert.equal(c.resumen().get('desde'), '2026-10-25');
 });
 
 test('un fallo del primer backend pasa al segundo; un error de la consulta no se repite', async () => {
