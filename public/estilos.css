@@ -2039,17 +2039,21 @@
 .estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:10px;gap:6px}.est-cabecera strong{font-size:.9em}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros label{flex:1 1 120px}.est-filtros select{width:100%}.est-nav{padding-inline:10px}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
 .calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:16px 0 26px;overflow:hidden;scroll-margin-top:120px}
-.cal-cabecera,.cal-nav,.cal-periodo,.cal-acciones,.cal-chips,.cal-campos{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.cal-cabecera{padding:12px 16px;border-bottom:1px solid var(--border)}
-.cal-cabecera h1{font-size:1.15em;margin:0}.cal-cabecera h1:focus{outline:none}.cal-acciones{margin-left:auto}
+/* Barra única: periodo, vistas, categorías, acciones y el panel de filtros (al abrirse, en su propia fila). */
+.cal-barra,.cal-nav,.cal-periodo,.cal-acciones,.cal-chips,.cal-campos{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.cal-barra{padding:8px 12px;border-bottom:1px solid var(--border);gap:6px 12px}
+.cal-barra h1:focus{outline:none}.cal-acciones{margin-left:auto;gap:4px}
+.cal-periodo{gap:4px;position:relative}.cal-periodo>button{padding:4px 10px}
+.cal-periodo-nombre{border:0;background:transparent;color:var(--fg);font-weight:600;text-transform:capitalize}.cal-periodo-nombre:hover{color:var(--accent)}
+.cal-categorias [aria-pressed]{font-size:.85em}
+.cal-filtros-avanzados{min-width:0}.cal-filtros-avanzados[open]{flex-basis:100%}
+.cal-filtros-avanzados>summary{cursor:pointer;min-height:44px;align-content:center;font-size:.9em}
 .calendario-panel button,.calendario-panel select,.calendario-panel input,.cal-evento-dialogo button{min-height:44px;font:inherit;max-width:100%}
 .cal-nav{gap:4px}
 .cal-nav button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent}
 .cal-nav [aria-current]{border-bottom-color:var(--accent);color:var(--accent)}
-.cal-contexto{margin:10px 16px;font-size:.8em;color:var(--muted)}
-.cal-cuerpo{padding:16px;min-width:0}.cal-periodo{margin-bottom:16px}.cal-periodo strong{font-weight:600}.cal-periodo input{min-width:0}
-.cal-filtros{margin:12px 0;padding:10px 0;border-block:1px solid var(--border)}.cal-filtros summary,.cal-evento summary,.cal-pendientes summary{cursor:pointer;min-height:44px;align-content:center}
-.cal-principales .cal-buscar{flex:2 1 220px}.cal-principales input{min-width:0}.cal-filtros-extra{display:flex;align-items:start;flex-wrap:wrap;gap:8px}.cal-filtros-avanzados{flex:1;min-width:0}.cal-filtros-extra>button{font-size:.8em}
+.cal-cuerpo{padding:12px 16px;min-width:0}
+.cal-filtros{padding:4px 0 8px}.cal-evento summary,.cal-pendientes summary{cursor:pointer;min-height:44px;align-content:center}.cal-filtros>[data-cal="limpiar"]{font-size:.8em}
 .cal-filtros fieldset{border:0;padding:10px 0;margin:0}.cal-filtros legend,.cal-campos label{font-size:.8em}.cal-chips button{font-size:.8em;padding:5px 10px}
 .cal-chips [aria-pressed="true"]{color:var(--accent);border-color:var(--accent);box-shadow:inset 0 -2px var(--accent)}
 .cal-campos{align-items:end;margin:12px 0}.cal-campos label{display:flex;flex-direction:column;gap:5px;max-width:100%;flex:1 1 160px;min-width:0}
@@ -2073,14 +2077,14 @@
 .cal-celda:disabled{opacity:.45}.cal-otro-mes{background:var(--btn-bg)}.cal-num{font-size:.8em}.cal-cuenta{font-weight:700;font-size:.9em}.cal-marca{color:var(--muted);line-height:1}
 .cal-celda[aria-current="date"] .cal-num{color:var(--accent);font-weight:700}.cal-celda[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .cal-pendientes{border-block:1px solid var(--border);margin:18px 0;padding:8px 0}
-.cal-campo-sug{display:flex;flex-direction:column;gap:5px;flex:1 1 200px;min-width:0;font-size:.8em}.cal-campo-sug input,.cal-campo-sug>button{font-size:1.25em}
+.cal-campo-sug{display:flex;flex-direction:column;gap:5px;flex:1 1 200px;min-width:0;font-size:.8em}.cal-campos .cal-campo-sug label{flex:none}.cal-campo-sug input,.cal-campo-sug>button{font-size:1.25em}
 .cal-sugerencias{display:flex;flex-direction:column;border:1px solid var(--btn-border);border-radius:5px}.cal-sugerencias:empty{display:none}
 .cal-sugerencias button{border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;text-align:left;padding:6px 8px}.cal-sugerencias small{color:var(--muted)}
 .cal-elegido{align-self:start;color:var(--accent);border-color:var(--accent)}.cal-subtemas{margin-top:8px;padding-left:12px;border-left:2px solid var(--border)}
 .cal-programa h4{font-size:.9em;margin:12px 0 4px}.cal-programa ul{margin:0;padding-left:18px}.cal-programa li{margin:4px 0}.cal-pie{margin-top:24px;padding-top:12px;border-top:1px solid var(--border)}
 .cal-evento-dialogo{color:var(--fg);background:var(--bg);border:1px solid var(--btn-border);border-radius:9px;width:min(650px,calc(100% - 24px));max-height:85dvh;padding:18px}.cal-evento-dialogo::backdrop{background:#0008}.cal-evento-dialogo form{display:flex;justify-content:end}
-.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.calendario-sin-noticias :is(#resultados,#cargar-mas-wrap,#preset-pestanas,#temas-chips),.estadisticas-abiertas #calendario-panel{display:none!important}
-@media(max-width:600px){.cal-cuerpo{padding:10px}.cal-cabecera{padding:10px}.cal-cabecera h1{font-size:1em}.cal-nav{order:-1;flex-basis:100%}.cal-nav button{flex:1}.cal-acciones{gap:4px;font-size:.75em}.cal-periodo{gap:6px}.cal-periodo strong{font-size:.85em}.cal-mes{gap:2px}}
+.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
+@media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-nav{order:-1;flex-basis:100%}.cal-nav button{flex:1}.cal-periodo-nombre{font-size:.9em}.cal-mes{gap:2px}}
 /* ═══ Consultas puntuales (libro:, pelicula:…): encima de la lista, como el tiempo ═══ */
 .consulta-panel{
   margin: 6px 0 10px;

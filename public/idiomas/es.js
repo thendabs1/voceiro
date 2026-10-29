@@ -1,10 +1,9 @@
 export default {
   "calTitulo": "Calendario",
   "calAgenda": "Agenda", "calSemana": "Semana", "calMes": "Mes", "calVistas": "Vistas del calendario",
-  "calAbrir": "Ampliar calendario", "calCerrar": "Cerrar", "calActualizar": "Actualizar", "calReintentar": "Reintentar",
-  "calAnterior": "Período anterior", "calSiguiente": "Período siguiente", "calHoy": "Hoy", "calFecha": "Fecha",
+  "calCerrar": "Cerrar", "calVerNoticias": "Ver noticias", "calActualizar": "Actualizar", "calReintentar": "Reintentar",
+  "calAnterior": "Período anterior", "calSiguiente": "Período siguiente", "calHoy": "Hoy", "calFecha": "Elegir fecha",
   "calFiltros": "Más filtros", "calTemas": "Categorías",
-  "calBuscar": "Buscar en el calendario", "calBuscarEjemplo": "Título, actividad o participante…",
   "calDonde": "Dónde", "calDondeEjemplo": "Municipio, provincia o comunidad",
   "calComunidad": "Comunidad autónoma", "calProvincia": "Provincia",
   "calObjetivo": "Competición, actividad, participante o recinto", "calObjetivoEjemplo": "Escribe al menos tres letras",

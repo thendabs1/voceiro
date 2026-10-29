@@ -6,8 +6,8 @@
 // La zona de AEMET lleva comunidad, provincia (o isla) y zona: 71 36 01 es
 // Galicia, Pontevedra, Rías Baixas; las costeras acaban en C.
 
-import { normalize } from '../parser.js?v=fb28c0f6ed';
-import { PROVINCIAS } from './lugares.js?v=fb28c0f6ed';
+import { normalize } from '../parser.js?v=f5f36294d8';
+import { PROVINCIAS } from './lugares.js?v=f5f36294d8';
 
 export const COMUNIDADES = {
   61: 'Andalucía', 62: 'Aragón', 63: 'Asturias', 64: 'Illes Balears', 65: 'Canarias',
