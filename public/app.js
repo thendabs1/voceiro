@@ -12,37 +12,37 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=0f77a65e73';
+} from './parser.js?v=0e5e171546';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=0f77a65e73';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=0f77a65e73';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=0f77a65e73';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=0f77a65e73';
-import { comparador } from './busqueda/orden.js?v=0f77a65e73';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=0e5e171546';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=0e5e171546';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=0e5e171546';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=0e5e171546';
+import { comparador } from './busqueda/orden.js?v=0e5e171546';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=0f77a65e73';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=0f77a65e73';
+} from './sync/fusion.js?v=0e5e171546';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=0e5e171546';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=0f77a65e73';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=0f77a65e73';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=0e5e171546';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=0e5e171546';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=0f77a65e73';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=0e5e171546';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=0f77a65e73';
+} from './tiempo/avisos.js?v=0e5e171546';
 
-import { I18N, traducir } from './idiomas/index.js?v=0f77a65e73';
+import { I18N, traducir } from './idiomas/index.js?v=0e5e171546';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=0f77a65e73';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=0f77a65e73';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=0f77a65e73';
+import { ESPN } from './consultas/registro.js?v=0e5e171546';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=0e5e171546';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=0e5e171546';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=0f77a65e73';
+import { ADMINISTRACION } from './territorios/administracion.js?v=0e5e171546';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1955,7 +1955,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=0f77a65e73');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=0e5e171546');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3607,8 +3607,11 @@ function calParametros(){
   const elegidas = s.competicion ? [s.competicion] : s.deporte ? CAL_DEPORTES[s.deporte] : [];
   const ambitos = [...(o?.ambitos || []), ...elegidas];
   const q = [...ambitos.map(a => a + ':'), ...(o?.circuitos.length ? ['circuito:' + o.circuitos.join(',')] : [])].join(' ');
+  // La ciudad acota la agenda local (territorio estricto). Una competición
+  // elegida a propósito (chip o prefijo) no tiene sitio: va sin ciudad.
+  const competiciones = elegidas.length || ambitos.some(a => AMBITOS[a]?.codigo) || Boolean(o?.circuitos.length);
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: [...s.temas].join(','), precio: s.precio,
-    local: s.donde?.id || '' };
+    territorio: competiciones ? '' : s.donde?.id || '' };
 }
 // Días de la vista y su ventana [desde, hasta) dentro de lo publicado.
 // desde:/hasta: del buscador acotan la celebración; en noticias, la publicación.
@@ -3905,7 +3908,8 @@ async function abrirEventoCalendario(id){
 }
 // Hora de la columna: no la llevan lo prolongado ni los programas (su inicio
 // puede ser de otro día).
-const calHoraCita = e => ['prolongada', 'programa'].includes(calPresentacion(e)) ? ''
+// Las muestras de chips traen su hora de ese día (la de la sesión, en un GP).
+const calHoraCita = e => 'hora_muestra' in e ? e.hora_muestra || '' : ['prolongada', 'programa'].includes(calPresentacion(e)) ? ''
   : extremoVisible(e.programacion?.valor?.cuando?.inicio, CALENDARIO.zona).hora || '';
 // Tarjeta de la lista: la hora en su columna; título, lugar y tipo de plan con
 // precio. Lo prolongado lleva sus fechas en vez de hora.
@@ -3915,7 +3919,10 @@ function calCita(e){
   const lugar = calLugar(e);
   const plan = [...(e.formatos || []).map(calNombreFormato), e.precio && CAL_PRECIOS[e.precio] ? t(CAL_PRECIOS[e.precio]) : '',
     e.tiene_programa ? '▸ ' + t('calPrograma') : ''].filter(Boolean).join(' · ');
+  // Una sesión o función lleva encima el GP o programa al que pertenece, si su nombre no lo dice ya.
+  const padre = e.padre ? calNombre({ nombres: e.padre }) : '';
   return `<article class="cal-cita"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
+    ${padre && !calNombre(e).includes(padre) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calBoton('evento', calNombre(e), e.id, 'aria-haspopup="dialog"')}</h3>
     ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
     ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}
@@ -5159,7 +5166,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=0f77a65e73')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=0e5e171546')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
