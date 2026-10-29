@@ -506,6 +506,29 @@ test('resumen con chips: la carrera es muestra de su día con el nombre del GP; 
   assert.deepEqual([v.dato.dias[0].muestras.map(m => m.id), 'chips' in v.dato.dias[0]], [['001', '002'], false]);
 });
 
+test('disponibilidad: eventos por tema, raíz y sin subcategoría en el sitio, y por competición', async t => {
+  const datos = muestra();
+  // 010–012: solo «cultura» (sin subcategoría); 013 en otra provincia.
+  for (const id of ['010', '011', '012']) datos.entidades['evento:' + id].temas = ['cultura'];
+  datos.eventos[13].territorios = [{ territorio: 'es:municipio:28079', papel: 'celebracion', ancestros: ['es:provincia:28'] }];
+  const b = base(datos); t.after(() => b.db.close());
+  const d = (await b.pedir('/calendario/catalogo?disponibilidad=1&territorio=es:provincia:36')).dato.disponibilidad;
+  // 65 de cultura en Pontevedra menos el 013; tres sin subcategoría.
+  assert.deepEqual([d.territorio, d.temas.teatro, d.temas.cultura, d.raices.cultura, d.sin_subcategoria.cultura, d.raices.deportes],
+    ['es:provincia:36', 61, 3, 64, 3, 25]);
+  assert.deepEqual(d.circuitos, { wta: 25 });
+  // Sin sitio, toda la agenda; sin disponibilidad=1, el catálogo de siempre.
+  assert.equal((await b.pedir('/calendario/catalogo?disponibilidad=1')).dato.disponibilidad.raices.cultura, 65);
+  assert.ok(!('disponibilidad' in (await b.pedir('/calendario/catalogo')).dato));
+  // «otra:cultura» filtra lo de cultura sin subcategoría, en OR con los demás temas.
+  const n = async q => {
+    const [x] = (await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC&muestras=0&' + q)).dato.dias;
+    return x.citas + x.programas + x.en_curso;
+  };
+  const [otra, tenis, ambos] = [await n('temas=otra:cultura'), await n('temas=tenis'), await n('temas=otra:cultura,tenis')];
+  assert.deepEqual([otra, ambos], [3, 3 + tenis]);
+});
+
 test('los tramos largos se parten por meses y el rango acotado encuentra todos sus días', async t => {
   const datos = muestra();
   // Exposición de cuatro meses: un tramo de más de TRAMO_MAX_DIAS.

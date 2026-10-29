@@ -34,7 +34,7 @@ export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
     'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'local', 'etiqueta', 'formatos', 'precio', 'presentacion', 'muestras',
-    'pendientes', 'resultados', 'revision', 'tipo']);
+    'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
   }
@@ -68,7 +68,7 @@ export function normalizarConsulta(url) {
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', local: p.get('local') || '', etiqueta: p.get('etiqueta') || '',
     formatos: lista(p.get('formatos')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
-    tipos: lista(p.get('tipo')),
+    tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1',
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
   if ([c.temas, c.circuitos, c.formatos, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   // «gratis» no incluye «mixto»: el filtro no promete lo que solo vale para una tarifa.
@@ -91,7 +91,25 @@ export function filtrosSql(c, meta, args) {
     args.push(tipo, ...valores);
     condiciones.push(`e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo=? AND valor IN (${valores.map(() => '?').join(',')}))`);
   };
-  faceta('tema', [...temasDescendientes(meta.catalogo, c.temas)]);
+  // Temas; «otra:<raíz>» es lo de esa raíz sin ninguna subcategoría (p. ej. la
+  // cultura sin más clase). Se combinan con OR.
+  const otras = c.temas.filter(t => t.startsWith('otra:')).map(t => t.slice(5));
+  const normales = c.temas.filter(t => !t.startsWith('otra:'));
+  if (otras.length) {
+    const ramas = [];
+    if (normales.length) {
+      const valores = [...temasDescendientes(meta.catalogo, normales)];
+      args.push(...valores);
+      ramas.push(`e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='tema' AND valor IN (${valores.map(() => '?').join(',')}))`);
+    }
+    for (const raiz of otras) {
+      const hijos = [...temasDescendientes(meta.catalogo, [raiz])].filter(t => t !== raiz);
+      args.push(raiz, ...hijos);
+      ramas.push(`(e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='tema' AND valor=?)`
+        + (hijos.length ? ` AND e.id NOT IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='tema' AND valor IN (${hijos.map(() => '?').join(',')})))` : ')'));
+    }
+    condiciones.push('(' + ramas.join(' OR ') + ')');
+  } else faceta('tema', [...temasDescendientes(meta.catalogo, normales)]);
   for (const cs of [c.circuitos, c.orden.circuitos || []]) faceta('circuito', cs);
   for (const objetivo of c.objetivos) faceta('objetivo', [objetivo]);
   faceta('fuente', c.fuente ? [c.fuente] : []);
@@ -176,6 +194,31 @@ export function consultaEventos(c, meta, cursor) {
 // terminar (los de un evento no se solapan en una zona), y las cuentas por día
 // salen de acumular esos cambios. Las muestras son citas y programas en su
 // primer día de la ventana, primero las de hora acreditada.
+// Disponibilidad para el asistente: eventos distintos por tema en el sitio (o
+// en toda la agenda), por raíz y sin subcategoría, y por competición (sin sitio).
+export function consultaDisponibilidad(c, meta) {
+  const args = [], conceptos = meta.catalogo?.conceptos || {};
+  const delSitio = c.territorio ? `SELECT evento FROM agenda_lectura_facetas WHERE tipo='territorio' AND valor=?` : '';
+  const temas = (valores, alias) => `SELECT ${alias}, count(DISTINCT t.evento) FROM agenda_lectura_facetas t
+    WHERE t.tipo='tema' AND t.valor IN (${valores.map(() => '?').join(',')})${delSitio ? ` AND t.evento IN (${delSitio})` : ''}`;
+  const partes = [];
+  args.push(...(c.territorio ? [c.territorio] : []));
+  partes.push(`SELECT 'tema' AS tipo, t.valor AS valor, count(DISTINCT t.evento) AS n FROM agenda_lectura_facetas t
+    WHERE t.tipo='tema'${delSitio ? ` AND t.evento IN (${delSitio})` : ''} GROUP BY t.valor`);
+  for (const raiz of Object.keys(conceptos).filter(i => !conceptos[i].padres?.length)) {
+    const todos = [...temasDescendientes(meta.catalogo, [raiz])], hijos = todos.filter(t => t !== raiz);
+    args.push(...todos, ...(c.territorio ? [c.territorio] : []));
+    partes.push(temas(todos, `'raiz', '${raiz.replaceAll("'", '')}'`));
+    if (!hijos.length) continue;
+    args.push(raiz, ...(c.territorio ? [c.territorio] : []), ...hijos);
+    partes.push(`SELECT 'otra', '${raiz.replaceAll("'", '')}', count(DISTINCT t.evento) FROM agenda_lectura_facetas t
+      WHERE t.tipo='tema' AND t.valor=?${delSitio ? ` AND t.evento IN (${delSitio})` : ''}
+      AND t.evento NOT IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='tema' AND valor IN (${hijos.map(() => '?').join(',')}))`);
+  }
+  partes.push(`SELECT 'circuito', valor, count(*) FROM agenda_lectura_facetas WHERE tipo='circuito' GROUP BY valor`);
+  return { sql: partes.join('\n    UNION ALL '), args };
+}
+
 export function consultaResumen(c, meta) {
   const args = [c.desde];
   const presentacion = presentacionSql(c.zona, args);
@@ -274,6 +317,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     if (detalle) sentencia = { sql: 'SELECT detalle_json FROM agenda_lectura_eventos WHERE id=?', args: [id] };
     else if (ruta === '/calendario/eventos') sentencia = consultaEventos(c, meta, cursor);
     else if (ruta === '/calendario/resumen') sentencia = consultaResumen(c, meta);
+    else if (ruta === '/calendario/catalogo' && c.disponibilidad) sentencia = consultaDisponibilidad(c, meta);
     else if (ruta === '/calendario/objetivos') {
       const args = [], condiciones = ['1=1', ...predicadosTexto(c.texto || c.resto, 'texto', args)];
       // Varios tipos a la vez: filtrar antes del límite, no después en el cliente.
@@ -298,8 +342,16 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     if (detalle) {
       if (!filas.length) throw error(404, 'Evento desconocido');
       salida = { ...base, ...JSON.parse(filas[0].detalle_json) };
-    } else if (ruta === '/calendario/catalogo') salida = { ...base, catalogo: meta.catalogo,
-      fuentes: meta.fuentes, territorios_catalogo: meta.territorios_catalogo, zonas: meta.zonas };
+    } else if (ruta === '/calendario/catalogo') {
+      salida = { ...base, catalogo: meta.catalogo,
+        fuentes: meta.fuentes, territorios_catalogo: meta.territorios_catalogo, zonas: meta.zonas };
+      if (c.disponibilidad) {
+        const d = { territorio: c.territorio || null, temas: {}, raices: {}, sin_subcategoria: {}, circuitos: {} };
+        const destino = { tema: d.temas, raiz: d.raices, otra: d.sin_subcategoria, circuito: d.circuitos };
+        for (const f of filas) if (f.n) destino[f.tipo][f.valor] = f.n;
+        salida.disponibilidad = d;
+      }
+    }
     else if (ruta === '/calendario/resumen') {
       const porDia = new Map();
       const cambios = new Map(), muestras = new Map(), totales = new Map();
