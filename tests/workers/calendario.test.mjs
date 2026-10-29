@@ -332,7 +332,7 @@ test('los planes de consulta usan índices por fecha y faceta, sin leer detalles
   }
 });
 
-test('dentro del día se pagina por instante de inicio: sin hora primero, después por hora', async t => {
+test('dentro del día se pagina por instante de inicio: con hora primero; sin hora y programas al final', async t => {
   const datos = muestra();
   // IDs en orden inverso a la hora; el desfase horario no altera el orden absoluto.
   const horas = { '010': '2026-10-25T20:00:00Z', '011': '2026-10-25T19:30:00+01:00', '012': '2026-10-25T09:00:00+01:00' };
@@ -346,8 +346,8 @@ test('dentro del día se pagina por instante de inicio: sin hora primero, despu�
   }
   assert.equal(new Set(ids).size, ids.length);
   const pos = id => ids.indexOf(id);
-  assert.ok(pos('005') < pos('012') && pos('012') < pos('011') && pos('011') < pos('010'), ids.join());
-  assert.ok(pos('001') < pos('012') && pos('002') > pos('010'));
+  assert.ok(pos('012') < pos('011') && pos('011') < pos('010') && pos('010') < pos('005'), ids.join());
+  assert.ok(pos('001') < pos('012') && pos('002') > pos('010') && pos('002') < pos('005'));
 });
 
 test('las etiquetas van en la tarjeta y se filtran por su clave', async t => {
@@ -443,6 +443,11 @@ test('resumen: citas, programas y en curso por separado; muestras sin prolongada
   assert.equal(d.en_curso, 2);   // el 000 (23-28) y el 006
   // Con hora primero (001 a las 00:30, 011 a las 09:00); las prolongadas, nunca.
   assert.deepEqual(d.muestras.map(m => m.id), ['001', '011']);
+  const tres = await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC&muestras=3');
+  assert.deepEqual(tres.dato.dias[0].muestras.map(m => m.id), ['001', '011', '012']);
+  const ninguna = await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC&muestras=0');
+  assert.deepEqual([ninguna.dato.dias[0].muestras, ninguna.dato.dias[0].cantidad], [[], d.cantidad]);
+  assert.equal((await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&muestras=6')).status, 400);
   // El filtro de presentación separa la lista de «En curso».
   const ids = async q => {
     const todos = [];
