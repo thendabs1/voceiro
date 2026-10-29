@@ -16,6 +16,7 @@ on:
       - 'workers/comun/calendario-turso.js'
       - 'workers/comun/limite.js'
       - 'shared/parser.js'
+      - 'shared/consultas/registro.js'
       - 'shared/busqueda/texto.js'
       - 'shared/calendario/consulta.js'
       - 'shared/calendario/fechas.js'

@@ -41,7 +41,7 @@ for (const [servicio, nombres] of Object.entries(archivos)) {
 }
 // Imports compartidos del calendario. La ruta relativa ../../shared funciona
 // tanto desde workers/comun como desde src/comun en cada despliegue aislado.
-for (const nombre of ['parser.js', 'busqueda/texto.js', 'calendario/consulta.js', 'calendario/fechas.js']) {
+for (const nombre of ['parser.js', 'consultas/registro.js', 'busqueda/texto.js', 'calendario/consulta.js', 'calendario/fechas.js']) {
   const origen = `shared/${nombre}`;
   const contenido = `// Generado desde ${origen} por scripts/sync-workers.mjs. No editar.\n`
     + readFileSync(resolve(raiz, origen), 'utf8');

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'shared/parser.js'
+      - 'shared/consultas/registro.js'
       - 'scripts/sync-parser.mjs'
       - 'scripts/test-parser.mjs'
       - '.github/workflows/sync-parser.yml'
@@ -36,7 +37,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/parser.js \
+                  public/consultas/registro.js \
                   workers/deno-buscar/src/shared/parser.js \
+                  workers/deno-buscar/src/shared/consultas/registro.js \
                   workers/cf-buscar/src/parser-source.js \
                   workers/deno-buscar/src/parser-source.js
           if git diff --staged --quiet; then

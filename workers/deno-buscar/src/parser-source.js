@@ -23,7 +23,31 @@ export const PARSER_SOURCE = `// shared/parser.js
 // y \`raw\`), para poder mostrarlo en la UI. La resolución a valor canónico
 // vive en los campos del objeto \`parsed\`, no en el chip.
 
+// Prefijos de consultas puntuales. No seleccionan noticias ni agenda.
+const CONSULTAS = {
+  libro: ['libro', 'llibre', 'liburua', 'book'],
+  autor: ['autor', 'autora', 'egilea', 'author'],
+  pelicula: ['pelicula', 'película', 'pel·lícula', 'filme', 'filma', 'film', 'movie'],
+  serie: ['serie', 'sèrie', 'series', 'telesaila'],
+  clasificacion: ['clasificacion', 'clasificación', 'clasificacións', 'classificacio', 'classificació', 'sailkapena', 'standings'],
+  resultados: ['resultados', 'resultats', 'emaitzak', 'results'],
+  contexto: ['contexto', 'context', 'testuingurua', 'wiki'],
+};
+
+const PREFIJOS_CONSULTAS = Object.fromEntries(
+  Object.entries(CONSULTAS).flatMap(([tipo, alias]) => alias.map(a => [a, tipo])),
+);
+
+// Solo circuitos con equivalencia conocida. El calendario conserva sus ámbitos.
+const ESPN = {
+  primera: ['soccer', 'esp.1'], segunda: ['soccer', 'esp.2'],
+  nba: ['basketball', 'nba'], wnba: ['basketball', 'wnba'],
+  f1: ['racing', 'f1'],
+};
+
+
 const PREFIX_ALIASES = {
+  ...Object.fromEntries(Object.keys(PREFIJOS_CONSULTAS).map(p => [p, 'consulta'])),
   medio: 'medio', medios: 'medio',
   dominio: 'dominio', domain: 'dominio', dom: 'dominio',
   web: 'dominio', webs: 'dominio',
@@ -72,7 +96,7 @@ export function normDomain(s) {
 }
 
 export function tokenizeQuery(raw) {
-  const re = /([\\p{L}][\\p{L}\\p{N}-]*):"([^"]*)"|"([^"]*)"|([^\\s"]+)/giu;
+  const re = /([\\p{L}][\\p{L}\\p{N}·-]*):"([^"]*)"|"([^"]*)"|([^\\s"]+)/giu;
   const tokens = [];
   let m;
   while ((m = re.exec(raw)) !== null) {
@@ -83,7 +107,7 @@ export function tokenizeQuery(raw) {
     } else {
       const word = m[4];
       const pi = word.indexOf(':');
-      if (pi > 0 && /^[\\p{L}][\\p{L}\\p{N}-]*$/u.test(word.slice(0, pi))) {
+      if (pi > 0 && /^[\\p{L}][\\p{L}\\p{N}·-]*$/u.test(word.slice(0, pi))) {
         tokens.push({ prefix: word.slice(0, pi).toLowerCase(), text: word.slice(pi + 1), raw: word, quoted: false });
       } else {
         tokens.push({ prefix: '', text: word, raw: word, quoted: false });
@@ -180,6 +204,12 @@ export function parseQuery(raw) {
     if (tk.prefix && !kind) { out.titulo.push(normalize(tk.raw)); continue; }
 
     switch (kind) {
+      case 'consulta': {
+        const tipo = PREFIJOS_CONSULTAS[tk.prefix];
+        (out.consultas ||= []).push({ tipo, texto: tk.text.trim() });
+        out.chips.push({ type:'consulta', tipo, value: tk.text, raw: tk.raw });
+        break;
+      }
       case 'medio':
         out.medios.push(normStrict(tk.text));
         out.chips.push({ type:'medio', value: tk.text, raw: tk.raw });

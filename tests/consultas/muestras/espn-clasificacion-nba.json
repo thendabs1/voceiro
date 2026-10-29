@@ -1,0 +1,783 @@
+{
+  "name": "National Basketball Association",
+  "season": {
+    "year": 2027,
+    "startDate": "2026-09-30T07:00Z",
+    "endDate": "2027-06-26T06:59Z",
+    "displayName": "2026-27"
+  },
+  "children": [
+    {
+      "name": "Eastern Conference",
+      "standings": {
+        "name": "overall",
+        "displayName": "Standings",
+        "season": 2027,
+        "seasonDisplayName": "2026-27",
+        "entries": [
+          {
+            "team": {
+              "id": "17",
+              "name": "Nets",
+              "displayName": "Brooklyn Nets"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 15.0
+              },
+              {
+                "name": "points",
+                "value": -2.0
+              },
+              {
+                "name": "wins",
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "4",
+              "name": "Bulls",
+              "displayName": "Chicago Bulls"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 12.0
+              },
+              {
+                "name": "points",
+                "value": -1.5
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "14",
+              "name": "Heat",
+              "displayName": "Miami Heat"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 13.0
+              },
+              {
+                "name": "points",
+                "value": -1.5
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "15",
+              "name": "Bucks",
+              "displayName": "Milwaukee Bucks"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 14.0
+              },
+              {
+                "name": "points",
+                "value": -1.5
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "19",
+              "name": "Magic",
+              "displayName": "Orlando Magic"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 11.0
+              },
+              {
+                "name": "points",
+                "value": -1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "1",
+              "name": "Hawks",
+              "displayName": "Atlanta Hawks"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 7.0
+              },
+              {
+                "name": "points",
+                "value": -0.5
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "18",
+              "name": "Knicks",
+              "displayName": "New York Knicks"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 8.0
+              },
+              {
+                "name": "points",
+                "value": -0.5
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "27",
+              "name": "Wizards",
+              "displayName": "Washington Wizards"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 9.0
+              },
+              {
+                "name": "points",
+                "value": -0.5
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "11",
+              "name": "Pacers",
+              "displayName": "Indiana Pacers"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 10.0
+              },
+              {
+                "name": "points",
+                "value": -0.5
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "30",
+              "name": "Hornets",
+              "displayName": "Charlotte Hornets"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 6.0
+              },
+              {
+                "name": "points",
+                "value": 0.5
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "28",
+              "name": "Raptors",
+              "displayName": "Toronto Raptors"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 3.0
+              },
+              {
+                "name": "points",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "2",
+              "name": "Celtics",
+              "displayName": "Boston Celtics"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 4.0
+              },
+              {
+                "name": "points",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "5",
+              "name": "Cavaliers",
+              "displayName": "Cleveland Cavaliers"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 5.0
+              },
+              {
+                "name": "points",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "8",
+              "name": "Pistons",
+              "displayName": "Detroit Pistons"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 1.0
+              },
+              {
+                "name": "points",
+                "value": 1.5
+              },
+              {
+                "name": "wins",
+                "value": 4.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "20",
+              "name": "76ers",
+              "displayName": "Philadelphia 76ers"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 2.0
+              },
+              {
+                "name": "points",
+                "value": 1.5
+              },
+              {
+                "name": "wins",
+                "value": 4.0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Western Conference",
+      "standings": {
+        "name": "overall",
+        "displayName": "Standings",
+        "season": 2027,
+        "seasonDisplayName": "2026-27",
+        "entries": [
+          {
+            "team": {
+              "id": "3",
+              "name": "Pelicans",
+              "displayName": "New Orleans Pelicans"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 14.0
+              },
+              {
+                "name": "points",
+                "value": -2.0
+              },
+              {
+                "name": "wins",
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "23",
+              "name": "Kings",
+              "displayName": "Sacramento Kings"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 15.0
+              },
+              {
+                "name": "points",
+                "value": -2.0
+              },
+              {
+                "name": "wins",
+                "value": 0.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "26",
+              "name": "Jazz",
+              "displayName": "Utah Jazz"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 13.0
+              },
+              {
+                "name": "points",
+                "value": -1.5
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "12",
+              "name": "Clippers",
+              "displayName": "LA Clippers"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 12.0
+              },
+              {
+                "name": "points",
+                "value": -1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "9",
+              "name": "Warriors",
+              "displayName": "Golden State Warriors"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 10.0
+              },
+              {
+                "name": "points",
+                "value": -0.5
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "21",
+              "name": "Suns",
+              "displayName": "Phoenix Suns"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 11.0
+              },
+              {
+                "name": "points",
+                "value": -0.5
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "7",
+              "name": "Nuggets",
+              "displayName": "Denver Nuggets"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 9.0
+              },
+              {
+                "name": "points",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "24",
+              "name": "Spurs",
+              "displayName": "San Antonio Spurs"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 6.0
+              },
+              {
+                "name": "points",
+                "value": 0.5
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "6",
+              "name": "Mavericks",
+              "displayName": "Dallas Mavericks"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 7.0
+              },
+              {
+                "name": "points",
+                "value": 0.5
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "16",
+              "name": "Timberwolves",
+              "displayName": "Minnesota Timberwolves"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 8.0
+              },
+              {
+                "name": "points",
+                "value": 0.5
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "22",
+              "name": "Trail Blazers",
+              "displayName": "Portland Trail Blazers"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 0.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 3.0
+              },
+              {
+                "name": "points",
+                "value": 1.5
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "13",
+              "name": "Lakers",
+              "displayName": "Los Angeles Lakers"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 4.0
+              },
+              {
+                "name": "points",
+                "value": 1.5
+              },
+              {
+                "name": "wins",
+                "value": 4.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "25",
+              "name": "Thunder",
+              "displayName": "Oklahoma City Thunder"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 5.0
+              },
+              {
+                "name": "points",
+                "value": 1.5
+              },
+              {
+                "name": "wins",
+                "value": 4.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "29",
+              "name": "Grizzlies",
+              "displayName": "Memphis Grizzlies"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 0.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 2.0
+              },
+              {
+                "name": "points",
+                "value": 2.0
+              },
+              {
+                "name": "wins",
+                "value": 4.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "10",
+              "name": "Rockets",
+              "displayName": "Houston Rockets"
+            },
+            "stats": [
+              {
+                "name": "losses",
+                "value": 0.0
+              },
+              {
+                "name": "playoffSeed",
+                "value": 1.0
+              },
+              {
+                "name": "points",
+                "value": 2.5
+              },
+              {
+                "name": "wins",
+                "value": 5.0
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

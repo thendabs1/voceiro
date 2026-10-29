@@ -165,6 +165,10 @@ candidatos en vez de elegir uno.
 | ESPN Site API | Resultado de un partido o clasificación | Sin clave, por el worker | Caducidad corta mientras se juega y larga al terminar. |
 | Otras | Europeana, IGDB, Open Food Facts, Overpass, calidad del aire de Open-Meteo, búsqueda web (Brave, Tavily) | Clave u otras condiciones | Por decidir según las consultas que se quieran ofrecer. Nominatim público no sirve como dependencia automática. |
 
+Implementados en deno-buscar: `/consulta` (candidatos) y `/consulta/ficha` (identidad) para Open Library, TMDB y Wikipedia + Wikidata, con caché, límite por IP y sin persistencia en base de datos.
+ESPN admite primera, segunda, NBA, WNBA y clasificación F1; caduca en 60 s en juego, 15 min para tablas y 1 h para resultados. Presupuesto por instancia: `ESPN_MAX_PETICIONES_DIA` (1000 por defecto) y Open Library a 1 petición/s; TMDB usa `TMDB_API_READ_ACCESS_TOKEN` y atribuye JustWatch.
+Los prefijos de los cinco idiomas viven en `shared/consultas/registro.js`; la lista de ámbitos del calendario sigue separada, sin colisiones.
+
 ### Candidatas de datos.gob.es (aplazadas)
 
 Cribado por títulos del 27/10/2026, sin comprobar endpoints. Aplazadas: no

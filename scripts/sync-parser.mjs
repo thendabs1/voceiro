@@ -15,6 +15,11 @@ import { fileURLToPath } from 'url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC  = resolve(ROOT, 'shared/parser.js');
 const src  = readFileSync(SRC, 'utf-8');
+const registro = readFileSync(resolve(ROOT, 'shared/consultas/registro.js'), 'utf-8');
+for (const rel of ['public/consultas/registro.js', 'workers/deno-buscar/src/shared/consultas/registro.js']) {
+  mkdirSync(dirname(resolve(ROOT, rel)), { recursive: true });
+  writeFileSync(resolve(ROOT, rel), registro, 'utf-8');
+}
 
 // ── 1. public/parser.js ──
 {
@@ -33,7 +38,8 @@ const src  = readFileSync(SRC, 'utf-8');
 }
 
 // ── 3 y 4. parser-source.js (string embebido, escapado) ──
-const escaped = src
+// /parser.js se sirve como un módulo único, sin imports de rutas del worker.
+const escaped = src.replace("import { PREFIJOS_CONSULTAS } from './consultas/registro.js';", registro.replaceAll('export const ', 'const '))
   .replace(/\\/g, '\\\\')
   .replace(/`/g, '\\`')
   .replace(/\$\{/g, '\\${');

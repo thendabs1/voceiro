@@ -3,6 +3,7 @@ import { parseQuery } from './shared/parser.js';
 import { PARSER_SOURCE } from './parser-source.js';
 import { gnews } from './sources/gnews.js';
 import { handleTiempo } from './tiempo/index.js';
+import { handleConsulta } from './consultas/index.js';
 import { crearLimite, claveIp, respuesta429 } from './comun/limite.js';
 
 const ADAPTERS = { gnews };
@@ -10,6 +11,7 @@ const ADAPTERS = { gnews };
 // cuentan) y las del tiempo (AEMET y Open-Meteo tienen cuota por clave o IP).
 const limiteBuscar = crearLimite({ max: 30, ventanaMs: 60e3 });
 const limiteTiempo = crearLimite({ max: 30, ventanaMs: 60e3 });
+const limiteConsultas = crearLimite({ max: 30, ventanaMs: 60e3 });
 
 const CACHE_NAME = 'voceiro-buscar-v1';
 
@@ -49,6 +51,12 @@ export default {
       return handleTiempo(url, CORS);
     }
     if (url.pathname === '/health') return json({ ok: true, ts: Date.now() });
+    if (url.pathname === '/consulta' || url.pathname === '/consulta/ficha') {
+      if (request.method !== 'GET') return new Response(null, { status: 405, headers: { ...CORS, Allow: 'GET, OPTIONS' } });
+      const espera = limiteConsultas(ip);
+      if (espera) return respuesta429(espera, CORS);
+      return handleConsulta(url, CORS);
+    }
 
     return new Response('Not found', { status: 404, headers: CORS });
   }

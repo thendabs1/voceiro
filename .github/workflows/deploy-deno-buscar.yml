@@ -18,6 +18,7 @@ on:
       # Las copias del parser las commitea sync-parser.yml con GITHUB_TOKEN, y
       # ese commit no dispara workflows: se sincronizan aquí antes de desplegar.
       - 'shared/parser.js'
+      - 'shared/consultas/registro.js'
       - 'scripts/sync-parser.mjs'
       - '.github/workflows/deploy-deno-buscar.yml'
   workflow_dispatch:
