@@ -169,7 +169,9 @@ async function cargarMesCalendario(){
   const s = CALENDARIO, h = s.meta?.horizonte, dias = ventanaCalendario(s.fecha, 'mes');
   const desde = [dias[0], h?.desde].filter(Boolean).sort().at(-1);
   const hasta = [sumarDiasCalendario(dias.at(-1), 1), h?.hasta].filter(Boolean).sort()[0];
-  const params = { ...calParametros(), desde, hasta, muestras: 0 }, clave = JSON.stringify(params);
+  // En ancho (rejilla con títulos) también muestras y barras; en estrecho, solo cuentas.
+  const ancho = calMesAncho();
+  const params = { ...calParametros(), desde, hasta, muestras: ancho ? 4 : 0, barras: ancho ? 1 : '' }, clave = JSON.stringify(params);
   if (s.mes?.clave === clave || desde >= hasta) return;
   s.controllerMes?.abort();
   const controller = s.controllerMes = new AbortController();
@@ -177,7 +179,7 @@ async function cargarMesCalendario(){
   try {
     const dato = await calPedir('resumen', params, controller.signal);
     if (s.mes?.clave !== clave) return;
-    calAnotar(dato); s.mes = { clave, dias: dato.dias, cargando: false };
+    calAnotar(dato); s.mes = { clave, dias: dato.dias, barras: dato.barras || [], cargando: false };
   } catch {
     if (controller.signal.aborted) return;
     s.mes = null; s.error = 'calError';
@@ -542,6 +544,46 @@ function calCeldaDia(dia, d, { otroMes = false } = {}){
 }
 const calCabeceraSemana = dias => dias.slice(0, 7).map(dia => `<abbr class="cal-semana-nombre" title="${calEsc(calFecha(dia, { weekday: 'long', day: undefined, month: undefined }))}">${calEsc(calFecha(dia, { weekday: 'narrow', day: undefined, month: undefined }))}</abbr>`).join('');
 // Tira (Apple Calendar, SofaScore): la semana del día elegido; desplegada, el mes.
+// Mes estilo Google Calendar cuando el panel deja sitio para títulos.
+const CAL_MES_ANCHO = 720;
+const calMesAncho = () => (document.getElementById('calendario-panel')?.clientWidth || 0) >= CAL_MES_ANCHO;
+const calDiferencia = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5);
+// Cada semana, una cuadrícula: el día es un botón con su número, el hueco de
+// las barras y hasta cuatro chips «hora título» (+N); las barras de los GP y
+// torneos van encima, en dos carriles, y se cortan al cambiar de semana.
+function calMesTitulos(dias){
+  const s = CALENDARIO, hoy = calHoy(), porDia = new Map((s.mes?.dias || []).map(d => [d.dia, d])), barras = s.mes?.barras || [];
+  const semanas = [];
+  for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7));
+  return `<div class="cal-mg" role="group" aria-label="${calEsc(t('calMes'))}"><div class="cal-mg-cabecera">${calCabeceraSemana(dias)}</div>${semanas.map(semana => {
+    const fin = sumarDiasCalendario(semana[6], 1), carriles = [];
+    const colocadas = barras.filter(b => b.desde < fin && b.hasta > semana[0]).map(b => {
+      const a = Math.max(0, calDiferencia(semana[0], b.desde)), z = Math.min(7, calDiferencia(semana[0], b.hasta));
+      let carril = carriles.findIndex(libre => libre <= a);
+      if (carril < 0) carril = carriles.push(0) - 1;
+      carriles[carril] = z;
+      return { b, a, z, carril };
+    });
+    const visibles = colocadas.filter(x => x.carril < 2), n = Math.min(2, carriles.length);
+    const celdas = semana.map((dia, i) => {
+      const d = porDia.get(dia), muestras = d?.muestras || [];
+      const ocultas = colocadas.filter(x => x.carril >= 2 && x.a <= i && x.z > i).length;
+      const mas = Math.max(0, (d?.chips ?? muestras.length) - muestras.length) + ocultas;
+      const chips = muestras.map(m => {
+        const titulo = calNombre(m.padre ? { nombres: m.padre } : m), hora = calHoraCita(m);
+        return `<span class="cal-mg-chip cal-cat-${calCategoria(m.categoria)}">${hora ? `<b>${calEsc(hora)}</b> ` : ''}${calEsc(titulo)}</span>`;
+      }).join('');
+      const etiqueta = `${calDiaLargo(dia)}: ${d ? calCuentas(d) : calN('calNCitas', 0)}${muestras.length ? ' · ' + muestras.map(m => calNombre(m.padre ? { nombres: m.padre } : m)).join(', ') : ''}`;
+      return `<button type="button" class="cal-mg-dia${dia.slice(0, 7) !== s.fecha.slice(0, 7) ? ' cal-otro-mes' : ''}${dia < hoy ? ' cal-pasado' : ''}" style="grid-column:${i + 1}"
+        data-cal="dia" data-valor="${dia}" aria-pressed="${dia === s.fecha}"${dia === hoy ? ' aria-current="date"' : ''} aria-label="${calEsc(etiqueta)}">
+        <span class="cal-num">${calEsc(calFecha(dia, { month: undefined }))}</span><span class="cal-mg-hueco" aria-hidden="true"></span>${chips}
+        ${mas ? `<span class="cal-mg-mas">${calEsc(t('calMasN', { n: mas }))}</span>` : ''}</button>`;
+    }).join('');
+    const lineas = visibles.map(({ b, a, z, carril }) => calBoton('evento', calNombre(b), b.id,
+      `class="cal-mg-barra cal-cat-${calCategoria(b.categoria)}${b.desde < semana[a] ? ' sigue-antes' : ''}${b.hasta > sumarDiasCalendario(semana[z - 1], 1) ? ' sigue-despues' : ''}" style="grid-column:${a + 1}/${z + 1};grid-row:${carril + 2}" aria-haspopup="dialog" title="${calEsc(calNombre(b))}"`)).join('');
+    return `<div class="cal-mg-semana" style="--carriles:${n}">${celdas}${lineas}</div>`;
+  }).join('')}</div>`;
+}
 function calTira(){
   const s = CALENDARIO, porDia = new Map([...(s.resumen || []), ...(s.mesAbierto ? s.mes?.dias || [] : [])].map(d => [d.dia, d]));
   const dias = s.mesAbierto ? ventanaCalendario(s.fecha, 'mes') : ventanaCalendario(s.fecha, 'semana');
@@ -549,8 +591,8 @@ function calTira(){
   const [ant, sig] = s.mesAbierto ? ['calMesAnterior', 'calMesSiguiente'] : ['calSemanaAnterior', 'calSemanaPosterior'];
   return `<div class="cal-tira"><div class="cal-tira-cabecera">${calBoton('anterior', '‹', '', `aria-label="${calEsc(t(ant))}"`)}
     ${calBoton('mes', titulo + (s.mesAbierto ? ' ▴' : ' ▾'), '', `class="cal-tira-titulo" aria-expanded="${s.mesAbierto}"`)}${calBoton('siguiente', '›', '', `aria-label="${calEsc(t(sig))}"`)}</div>
-    <div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
-      calCeldaDia(dia, porDia.get(dia), { otroMes: s.mesAbierto && dia.slice(0, 7) !== s.fecha.slice(0, 7) })).join('')}</div>
+    ${s.mesAbierto && calMesAncho() ? calMesTitulos(dias) : `<div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
+      calCeldaDia(dia, porDia.get(dia), { otroMes: s.mesAbierto && dia.slice(0, 7) !== s.fecha.slice(0, 7) })).join('')}</div>`}
     ${calModoDeportes() ? '' : `<p class="cal-leyenda">${[...CAL_CATEGORIAS, 'otras'].map(c => `<span><span class="cal-punto cal-cat-${c}" aria-hidden="true"></span>${calEsc(calNombreCategoria(c))}</span>`).join('')}</p>`}
     ${s.mesAbierto && calModoDeportes() ? calTemporada() : ''}</div>`;
 }
@@ -928,6 +970,14 @@ function wireCalendario(){
       p.querySelector('[data-cal="editar-donde"]')?.focus();
     }
   });
+  if (typeof ResizeObserver !== 'undefined'){
+    let ancho = calMesAncho();
+    new ResizeObserver(() => {
+      if (calMesAncho() === ancho) return;
+      ancho = calMesAncho();
+      if (s.abierto && s.mesAbierto) consultarCalendario();
+    }).observe(p);
+  }
   // Escribir cierra la vista abierta desde la cabecera; la de un prefijo sigue al prefijo.
   document.getElementById('buscar').addEventListener('input', () => { if (!s.porPrefijo) cerrarCalendario(false); });
 }

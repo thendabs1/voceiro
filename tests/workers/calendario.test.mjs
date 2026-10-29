@@ -529,6 +529,19 @@ test('disponibilidad: eventos por tema, raíz y sin subcategoría en el sitio, y
   assert.deepEqual([otra, ambos], [3, 3 + tenis]);
 });
 
+test('barras: competiciones de varios días que solapan la ventana; ni exposiciones ni partidos', async t => {
+  const gp = base(muestraGP()); t.after(() => gp.db.close());
+  const r = await gp.pedir('/calendario/resumen?desde=2026-10-24&hasta=2026-10-31&zona=UTC&muestras=0&barras=1');
+  assert.deepEqual(r.dato.barras.map(b => [b.id, b.desde, b.hasta, b.competiciones]), [['gp', '2026-10-22', '2026-10-26', ['f1']]]);
+  assert.ok(!('barras' in (await gp.pedir('/calendario/resumen?desde=2026-10-24&hasta=2026-10-31&zona=UTC&muestras=0')).dato));
+  // En la muestra: la 000 es una exposición (cultura) y la 070, un torneo de la WTA de varios días.
+  const datos = muestra();
+  datos.eventos[70].programacion.valor.cuando = { inicio: extremo('2026-10-20'), fin: extremo('2026-11-05') };
+  const b = base(datos); t.after(() => b.db.close());
+  const x = await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&zona=UTC&muestras=0&barras=1');
+  assert.deepEqual(x.dato.barras.map(v => [v.id, v.desde, v.hasta]), [['070', '2026-10-20', '2026-11-06']]);
+});
+
 test('los tramos largos se parten por meses y el rango acotado encuentra todos sus días', async t => {
   const datos = muestra();
   // Exposición de cuatro meses: un tramo de más de TRAMO_MAX_DIAS.
