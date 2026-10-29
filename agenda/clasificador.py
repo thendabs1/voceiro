@@ -116,7 +116,10 @@ def _clases(spec, campos):
     if spec['tipo'] == 'indicador':
         return {spec['valores'].get(str(v)) for v in valores} - {None}
     if spec['tipo'] == 'tarifas':
-        return {'pago' if (t.get('hasCurrencyValue') or 0) > 0 else 'gratis' for t in valores}
+        # Solo un importe numérico ≥ 0 acredita precio; ausente, nulo o negativo no es gratis.
+        importes = [t.get('hasCurrencyValue') for t in valores]
+        validos = [v for v in importes if type(v) in (int, float) and 0 <= v < float('inf')]
+        return {'pago' if v > 0 else 'gratis' for v in validos} | ({'desconocido'} if len(validos) < len(importes) else set())
     clases = set()
     for texto in valores:
         importes = [float(i.replace(',', '.')) for i in IMPORTE.findall(texto)]
@@ -129,6 +132,9 @@ def _clases(spec, campos):
 
 def _precio(precio, campos):
     clases = set().union(*(_clases(s, campos) for s in _specs(precio)))
+    # Una tarifa sin importe puede ser de pago: anula «gratis», no «pago» ni «mixto».
+    if 'desconocido' in clases:
+        clases -= {'desconocido', 'gratis'} if 'pago' not in clases else {'desconocido'}
     # Varias tarifas, gratis y de pago: el filtro «gratis» no debe prometerlo.
     return 'mixto' if {'gratis', 'pago'} <= clases else next(iter(clases), None) if len(clases) == 1 else None
 

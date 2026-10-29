@@ -71,6 +71,10 @@ class Clasificar(unittest.TestCase):
         zgz = lambda *t: clasificador.clasificar('zaragoza', [{'origen': {'price': list(t)}}])['precio']
         self.assertEqual([zgz(tarifa(0)), zgz(tarifa(2)), zgz(tarifa(0), tarifa(2)), zgz()],
                          ['gratis', 'pago', 'mixto', None])
+        # Sin importe acreditado no hay «gratis»: [0, ?] queda sin determinar.
+        self.assertEqual([zgz({}), zgz(tarifa(None)), zgz(tarifa(-1)), zgz(tarifa(True)), zgz(tarifa('0')),
+                          zgz(tarifa(0), {}), zgz(tarifa(5), {}), zgz(tarifa(0), tarifa(5), tarifa(None))],
+                         [None, None, None, None, None, None, 'pago', 'mixto'])
 
     def test_publico_declarado_sin_deducir(self):
         r = clasificador.clasificar('madrid', [madrid('Musica', audiencia='/usuario/Niños,/usuario/Familias')])
