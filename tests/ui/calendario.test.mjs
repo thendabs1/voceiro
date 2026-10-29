@@ -35,7 +35,9 @@ const esperar = async () => { for (let i = 0; i < 6; i++) await new Promise(r =>
 // paginadas por un cursor que es el desplazamiento.
 function api(u){
   const p = u.searchParams, ruta = u.pathname;
-  if (ruta === '/calendario/catalogo') return { ...META, catalogo: { conceptos: CONCEPTOS }, fuentes: { galicia: { nombre: 'Galicia' } } };
+  if (ruta === '/calendario/catalogo') return { ...META, catalogo: { conceptos: CONCEPTOS }, fuentes: { galicia: { nombre: 'Galicia' } },
+    ...(p.get('disponibilidad') ? { disponibilidad: { territorio: p.get('territorio') || null, temas: { teatro: 12 }, raices: { cultura: 15, deportes: 2 },
+      sin_subcategoria: { cultura: 3 }, circuitos: { f1: 23, nba: 113 } } } : {}) };
   if (ruta === '/calendario/resumen') {
     const dias = [], n = Number(p.get('muestras') ?? 2);
     for (let d = p.get('desde'); d < p.get('hasta'); d = fechas.sumarDiasCalendario(d, 1)) {
@@ -63,7 +65,7 @@ function api(u){
   const desde = Number(p.get('cursor') || 0), limite = Number(p.get('limite'));
   return { ...META, eventos: todos.slice(desde, desde + limite), siguiente: desde + limite < todos.length ? String(desde + limite) : null };
 }
-function contexto({ intl = Intl, responder = api, sitios = [] } = {}){
+function contexto({ intl = Intl, responder = api, sitios = [], almacen = {} } = {}){
   const listeners = {}, pedidas = [], sugerencias = {}, buscar = { value: '', addEventListener(){} }, aplicadas = [];
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
@@ -77,19 +79,20 @@ function contexto({ intl = Intl, responder = api, sitios = [] } = {}){
   const c = { ...fechas, ...consulta, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
     setTimeout: fn => { fn(); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
-    DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios,
+    DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
+    localStorage: { getItem: k => almacen[k] ?? null, setItem: (k, v) => { almacen[k] = String(v); } },
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
     escapeHtml: s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), aplicarFiltros: () => aplicadas.push(buscar.value),
     document: { activeElement: null, getElementById: id => id === 'calendario-panel' ? panel : id === 'cal-evento-dialogo' ? dialogo : id === 'buscar' ? buscar
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
-  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calDonde, wireCalendario, abrirCalendario,
+  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calDonde, calAsistente, wireCalendario, abrirCalendario,
     actualizarConsultaCalendario }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
-  c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias; c.buscar = buscar; c.aplicadas = aplicadas;
+  c.almacen = almacen; c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias; c.buscar = buscar; c.aplicadas = aplicadas;
   c.ultima = () => pedidas.at(-1);
   c.resumen = () => pedidas.findLast(u => u.pathname === '/calendario/resumen').searchParams;
   c.click = async (cal, valor = '', extra = {}) => {
@@ -97,6 +100,7 @@ function contexto({ intl = Intl, responder = api, sitios = [] } = {}){
   };
   c.listeners = listeners;
   c.escribir = async (id, value) => { listeners.input({ target: { id, value } }); await esperar(); };
+  c.marcar = async (name, value, checked = true, nombre = '') => { listeners.change({ target: { name, value, checked, id: '', dataset: { nombre } } }); await esperar(); };
   c.abrir = async () => { c.api.s.fecha = c.hoy; c.api.abrirCalendario(); await esperar(); };
   return c;
 }
@@ -268,6 +272,71 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   // Tocar una competición del bloque la filtra y la marca va primero.
   await c.click('competicion', 'nba');
   assert.equal(c.resumen().get('q'), 'nba:');
+});
+
+test('sin configurar, el calendario invita al asistente; «Ahora no» lo recuerda', async () => {
+  const c = contexto();
+  await c.abrir();
+  assert.match(c.api.calContenido(), /Tu calendario, a tu manera[\s\S]*data-cal="ahora-no"/);
+  await c.click('ahora-no');
+  assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']), { v: 1, estado: 'omitido' });
+  assert.doesNotMatch(c.api.calContenido(), /cal-invitacion/);
+});
+
+test('asistente: sitio de Mis sitios, intereses y competiciones con datos, y «Lo mío» al guardar', async () => {
+  const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
+  await c.abrir();
+  await c.click('asistente', '0');
+  let html = c.api.calAsistente();
+  assert.match(html, /Paso 1 de 4[\s\S]*value="es:municipio:36057" data-nombre="Vigo"[\s\S]*value="es:provincia:36" data-nombre="Provincia de Pontevedra"[\s\S]*Sin sitio/);
+  await c.marcar('cal-as-sitio', 'es:municipio:36057', true, 'Vigo');
+  await c.click('as-siguiente');
+  const q = c.ultima().searchParams;
+  assert.deepEqual([c.ultima().pathname, q.get('disponibilidad'), q.get('territorio')], ['/calendario/catalogo', '1', 'es:municipio:36057']);
+  html = c.api.calAsistente();
+  // Solo lo que hay: Teatro (12), Otra cultura (3) y Deporte local (2); no el resto del catálogo.
+  assert.match(html, /¿Qué te interesa en Vigo\?[\s\S]*value="teatro"[^>]*>\s*<span>Teatro <small>· 12/);
+  assert.match(html, /value="otra"[^>]*checked[\s\S]*Otra cultura <small>· 3/);
+  assert.match(html, /Deporte local <small>· 2/);
+  await c.marcar('cal-as-interes', 'teatro');
+  await c.click('as-siguiente');
+  assert.match(c.api.calAsistente(), /Baloncesto[\s\S]*value="nba"[\s\S]*Motor[\s\S]*value="f1"/);
+  assert.doesNotMatch(c.api.calAsistente(), /value="wta"/);
+  await c.marcar('cal-as-comp', 'f1');
+  await c.click('as-siguiente');
+  assert.match(c.api.calAsistente(), /Vigo[\s\S]*Teatro, Otra cultura[\s\S]*F1/);
+  await c.click('as-guardar');
+  const guardado = JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']);
+  assert.deepEqual([guardado.estado, guardado.sitio, guardado.intereses, guardado.competiciones],
+    ['configurado', { id: 'es:municipio:36057', nombre: 'Vigo' }, { cultura: ['teatro'], otraCultura: true, deporteLocal: false }, ['f1']]);
+  assert.deepEqual([c.api.s.asistente, c.api.s.mio, c.resumen().get('temas'), c.resumen().get('territorio')],
+    [null, true, 'teatro,otra:cultura', 'es:municipio:36057']);
+  assert.match(c.api.calChips(), /data-valor="mio" class="" aria-pressed="true">Lo mío[\s\S]*data-valor="" class="" aria-pressed="false">Todo/);
+  // Deportes: lo que sigo, sin ciudad; «En tu zona», con ella.
+  await c.click('categoria', 'deportes');
+  assert.deepEqual([c.api.s.deporte, c.resumen().get('q'), c.resumen().get('territorio')], ['seguidas', 'f1:', null]);
+  await c.click('deporte', '');
+  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('territorio')], ['deportes', 'es:municipio:36057']);
+  // Otra sesión: arranca con lo guardado.
+  const d = contexto({ almacen: c.almacen });
+  await d.abrir();
+  assert.deepEqual([d.resumen().get('temas'), d.resumen().get('territorio')], ['teatro,otra:cultura', 'es:municipio:36057']);
+});
+
+test('sin competiciones seguidas, Deportes ofrece elegirlas; guardar sin nada avisa', async () => {
+  const c = contexto();
+  await c.abrir();
+  await c.click('categoria', 'deportes');
+  assert.match(c.api.calChips(), /data-cal="asistente" data-valor="2"[^>]*>Elegir competiciones/);
+  await c.click('asistente', '2');
+  assert.equal(c.api.s.asistente.paso, 2);
+  await c.marcar('cal-as-interes', 'otra', false);
+  await c.click('as-ir', '3');
+  await c.click('as-guardar');
+  assert.match(c.api.calAsistente(), /Elige al menos un interés o una competición/);
+  assert.equal(c.almacen['voceiro-calendario-preferencias-v1'], undefined);
+  await c.click('as-cancelar');
+  assert.equal(c.api.s.asistente, null);
 });
 
 test('la ventana se recorta al horizonte publicado y fuera de él no se pide nada', async () => {

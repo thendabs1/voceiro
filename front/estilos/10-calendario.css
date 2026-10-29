@@ -48,6 +48,18 @@
 .cal-temporada-fila>button[aria-pressed="true"]{color:var(--cat-deportes);text-decoration:underline}
 .cal-temporada-fila li button{border:0;background:transparent;color:var(--fg);text-align:left;padding:4px 0;min-height:36px}
 .cal-temporada-fila ul{padding-left:12px}
+/* Asistente: un paso por pantalla, opciones grandes con su cuenta y progreso. */
+.cal-asistente{padding:16px;max-width:640px}.cal-asistente h2{font-size:1.15em;margin:6px 0 10px}.cal-asistente h2:focus{outline:none}
+.cal-as-progreso{display:flex;gap:4px;list-style:none;margin:4px 0 8px;padding:0}.cal-as-progreso li{flex:1;height:4px;border-radius:2px;background:var(--border)}
+.cal-as-progreso li.hecho{background:var(--accent)}
+.cal-as-grupo{border:0;margin:10px 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}.cal-as-grupo legend{font-weight:700;margin-bottom:6px;padding:0}
+.cal-as-opcion{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px;border:1px solid var(--btn-border);border-radius:999px;cursor:pointer}
+.cal-as-opcion:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+.cal-as-opcion small{color:var(--muted);font-weight:400}.cal-as-ayuda{display:block}
+.cal-as-resumen{margin:8px 0}.cal-as-fila{display:grid;grid-template-columns:8em 1fr auto;gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--border)}
+.cal-as-fila dt{font-weight:700}.cal-as-fila dd{margin:0}
+.cal-invitacion{border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin:0 0 12px}.cal-invitacion h2{font-size:1em;margin:4px 0}
+.cal-elegir{font-size:.85em;border-style:dashed}
 .cal-leyenda{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:.75em;color:var(--muted);margin:6px 0 0}
 .cal-leyenda>span{display:inline-flex;align-items:center;gap:5px}
 /* Lo pasado, atenuado y marcado: sigue consultable, pero no parece vigente. */
