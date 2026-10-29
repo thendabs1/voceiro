@@ -35,6 +35,12 @@ function uriEncode(s) {
     .replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
 }
 
+// Canonical URI: cada segmento, ya codificado por URL, se decodifica antes de
+// recodificarlo; si no, «a%20b» se firmaría como «a%2520b» y R2 daría 403.
+export function rutaCanonica(pathname) {
+  return pathname.split('/').map(seg => uriEncode(decodeURIComponent(seg))).join('/') || '/';
+}
+
 /**
  * Firma una petición GET/HEAD a R2.
  * Devuelve el objeto de headers a enviar al fetch.
@@ -44,11 +50,7 @@ export async function signR2Request({ method, url, accessKeyId, secretAccessKey 
   const { full: amzDateFull, date: amzDateShort } = amzDate();
   const host = u.host;
 
-  // Canonical URI: cada segmento del path re-encoded
-  const canonicalUri = u.pathname
-    .split('/')
-    .map(seg => uriEncode(seg))
-    .join('/') || '/';
+  const canonicalUri = rutaCanonica(u.pathname);
 
   // Canonical query (ordenada)
   const params = [...u.searchParams.entries()].sort(([a], [b]) => a < b ? -1 : 1);

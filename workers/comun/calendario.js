@@ -106,8 +106,9 @@ function leerCursor(s) {
   if (!s) return null;
   try {
     const v = JSON.parse(atob(s.replaceAll('-', '+').replaceAll('_', '/')));
+    // El orden es un julianday en decimal: sin exponentes ni signo, que Turso rechazaría.
     if (!Array.isArray(v) || v.length !== 5 || v.some(x => typeof x !== 'string' || x.length > 1024)
-      || !Number.isFinite(Number(v[3]))) throw 0;
+      || !/^\d{1,9}(\.\d+)?$/.test(v[3])) throw 0;
     return v;
   } catch { throw error(400, 'Cursor inválido'); }
 }
@@ -163,6 +164,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     const detalle = ruta.match(/^\/calendario\/eventos\/([^/]+)$/);
     if (!detalle && !['/calendario/eventos', '/calendario/resumen', '/calendario/catalogo', '/calendario/objetivos'].includes(ruta)) return json({ error: 'Recurso desconocido' }, 404);
     const c = normalizarConsulta(url), cursor = leerCursor(url.searchParams.get('cursor'));
+    let id;
+    try { id = detalle && decodeURIComponent(detalle[1]); } catch { throw error(400, 'Identificador inválido'); }
     if (!env.CALENDARIO_TURSO_URL || !env.CALENDARIO_TURSO_TOKEN_LECTURA) throw error(503, 'Lectura de calendario no activada');
     const espera = limitar(claveIp(ip));
     if (espera) return respuesta429(espera, CORS);
@@ -202,7 +205,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     try { acierto = await cache?.match(clave); } catch { /* Consultar Turso. */ }
     if (acierto) return entregar(acierto);
     let sentencia;
-    if (detalle) sentencia = { sql: 'SELECT detalle_json FROM agenda_lectura_eventos WHERE id=?', args: [decodeURIComponent(detalle[1])] };
+    if (detalle) sentencia = { sql: 'SELECT detalle_json FROM agenda_lectura_eventos WHERE id=?', args: [id] };
     else if (ruta === '/calendario/eventos') sentencia = consultaEventos(c, meta, cursor);
     else if (ruta === '/calendario/resumen') sentencia = consultaResumen(c, meta);
     else if (ruta === '/calendario/objetivos') {

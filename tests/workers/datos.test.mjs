@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import cf from '../../workers/cf-datos/src/index.js';
 import deno from '../../workers/deno-datos/src/index.js';
+import { rutaCanonica } from '../../workers/deno-datos/src/sigv4.js';
 
 function entornoDeno(t) {
   const anterior = Object.getOwnPropertyDescriptor(globalThis, 'Deno');
@@ -100,4 +101,9 @@ test('Deno no firma rutas que salen del bucket configurado', async t => {
   assert.deepEqual(pedidas, []);
   assert.equal((await deno.fetch(new Request('https://datos.test/dias/2026-10-29.json'))).status, 200);
   assert.deepEqual(pedidas, ['/datos/dias/2026-10-29.json']);
+});
+
+test('SigV4 firma la ruta codificada una sola vez', () => {
+  const ruta = new URL('https://r2.test/datos/a b/(c)/ñ.json').pathname;
+  assert.equal(rutaCanonica(ruta), '/datos/a%20b/%28c%29/%C3%B1.json');
 });

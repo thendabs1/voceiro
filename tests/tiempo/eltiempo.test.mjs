@@ -94,7 +94,8 @@ test('municipios sin previsión: el geocodificador no los reactiva como municipi
 
 test('la ruta de lugares oculta un municipio sin previsión y la ruta directa lo rechaza', async () => {
   const fetchAnterior = globalThis.fetch, cachesAnteriores = globalThis.caches;
-  globalThis.caches = { open: async () => ({ match: async () => null, put: async () => {} }) };
+  const claves = [];
+  globalThis.caches = { open: async () => ({ match: async r => { claves.push(r.url); return null; }, put: async () => {} }) };
   globalThis.fetch = async () => new Response(JSON.stringify({ results: [
     { name: 'Usánsolo', country_code: 'ES', latitude: 43.22166, longitude: -2.81567 },
     { name: 'Bilbao', country_code: 'ES', latitude: 43.263, longitude: -2.935 },
@@ -105,6 +106,9 @@ test('la ruta de lugares oculta un municipio sin previsión y la ruta directa lo
     assert.deepEqual((await lugares.json()).lugares.map(x => x.nombre), ['Bilbao']);
     const directo = await handleTiempo(new URL('https://ejemplo.test/tiempo?lat=43.22166&lon=-2.81567&cc=ES&nombre=Usansolo'), {});
     assert.equal(directo.status, 404);
+    // «..» no puede colapsar la clave de caché y mezclar idiomas.
+    for (const lang of ['es', 'gl']) await handleTiempo(new URL(`https://ejemplo.test/tiempo/lugares?q=..&lang=${lang}`), {});
+    assert.notEqual(claves.at(-1), claves.at(-2));
   } finally {
     globalThis.fetch = fetchAnterior;
     globalThis.caches = cachesAnteriores;

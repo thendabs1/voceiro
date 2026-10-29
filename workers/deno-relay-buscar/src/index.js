@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     return json({ status: 'error', message: 'url no válida' }, 400);
   }
   if (destino.protocol !== 'https:' || destino.hostname !== 'news.google.com'
-      || !destino.pathname.startsWith('/rss')) {
+      || !(destino.pathname === '/rss' || destino.pathname.startsWith('/rss/'))) {
     return json({ status: 'error', message: 'url no permitida' }, 403);
   }
 
