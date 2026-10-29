@@ -12,37 +12,37 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=470aa3766d';
+} from './parser.js?v=fb28c0f6ed';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=470aa3766d';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=470aa3766d';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=470aa3766d';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=470aa3766d';
-import { comparador } from './busqueda/orden.js?v=470aa3766d';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=fb28c0f6ed';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=fb28c0f6ed';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=fb28c0f6ed';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=fb28c0f6ed';
+import { comparador } from './busqueda/orden.js?v=fb28c0f6ed';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=470aa3766d';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=470aa3766d';
+} from './sync/fusion.js?v=fb28c0f6ed';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=fb28c0f6ed';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=470aa3766d';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=470aa3766d';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=fb28c0f6ed';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=fb28c0f6ed';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=470aa3766d';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=fb28c0f6ed';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=470aa3766d';
+} from './tiempo/avisos.js?v=fb28c0f6ed';
 
-import { I18N, traducir } from './idiomas/index.js?v=470aa3766d';
+import { I18N, traducir } from './idiomas/index.js?v=fb28c0f6ed';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=470aa3766d';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=470aa3766d';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=470aa3766d';
+import { ESPN } from './consultas/registro.js?v=fb28c0f6ed';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=fb28c0f6ed';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=fb28c0f6ed';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=470aa3766d';
+import { ADMINISTRACION } from './territorios/administracion.js?v=fb28c0f6ed';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1955,7 +1955,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=470aa3766d');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=fb28c0f6ed');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3514,23 +3514,35 @@ function wireAutocomplete(){
   });
 }
 /* Calendario: cliente de la API de agenda de los workers de datos (/calendario/*). */
-// Se pide solo lo visible: el catálogo una vez, la ventana de cada vista y el
-// detalle al abrir una cita. Resultados y clasificaciones son consultas puntuales.
-// Apagado hasta rehacer la interfaz; los datos ya llegan de la API.
-const CALENDARIO_ACTIVO = false;
+// Se pide solo lo visible: el catálogo una vez, el resumen de la ventana (cuentas
+// y unas muestras por día), la lista de un día al abrirla y el detalle de una
+// cita. Resultados y clasificaciones son consultas puntuales.
+const CALENDARIO_ACTIVO = true;
 // Zonas que prepara la publicación; con otra zona del navegador, la peninsular.
 const CAL_ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 const CAL_ZONA = Intl.DateTimeFormat().resolvedOptions().timeZone;
+// «Tipo de plan»: los formatos del clasificador (agenda/clasificacion.md), en su orden.
+const CAL_FORMATOS = ['concierto', 'representacion', 'proyeccion', 'exposicion', 'curso-taller', 'charla-encuentro',
+  'lectura-club', 'festival', 'feria-mercado', 'fiesta', 'visita-ruta', 'competicion-deportiva', 'practica-deportiva'];
+const CAL_PRECIOS = { gratis: 'calPrecioGratis', pago: 'calPrecioPago', mixto: 'calPrecioMixto' };
+const CAL_VISTAS = { lista7: 'calLista7', lista14: 'calLista14', mes: 'calMes' };
 const CALENDARIO = {
   abierto: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
-  fecha: '', vista: 'agenda', soloDia: false, zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
-  temas: new Set(), fuente: '', texto: '', donde: null, que: null, clave: '',
+  // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
+  fecha: '', vista: 'lista7', dia: '', zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
+  temas: new Set(), fuente: '', formato: '', precio: '', texto: '', donde: null, que: null, clave: '',
   escrito: { donde: '', que: '' }, sugerencias: { donde: [], que: [] },
-  consulta: '', vigente: '', controller: null, lista: null, resumen: null, pendientes: null, origen: null, scroll: 0,
+  consulta: '', vigente: '', controller: null, resumen: null, dias: new Map(), pendientes: null, origen: null, scroll: 0,
 };
 const iconoCalendario = () => '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg>';
 const calNombre = e => e?.nombres?.[ACCES.lang] || e?.nombres?.es || Object.values(e?.nombres || {})[0] || '—';
 const calEsc = s => escapeHtml(String(s ?? ''));
+// Singular y plural: «clave1» para uno.
+const calN = (clave, n) => t(n === 1 ? clave + '1' : clave, { n });
+const calNombreFormato = f => t('calFmt' + f.split('-').map(x => x[0].toUpperCase() + x.slice(1)).join(''));
+// Cita, programa o prolongada; por zona si la publicación la distingue.
+const calPresentacion = e => (e.presentacion && typeof e.presentacion === 'object'
+  ? e.presentacion[CALENDARIO.zona] : e.presentacion) || 'cita';
 const calHoy = () => diaEnZona(new Date().toISOString(), CALENDARIO.zona);
 const calFormatos = new Map();
 function calFormato(opciones){
@@ -3583,13 +3595,14 @@ function calParametros(){
   const s = CALENDARIO, o = s.orden;
   const q = o ? [...o.ambitos.map(a => a + ':'), ...(o.circuitos.length ? ['circuito:' + o.circuitos.join(',')] : [])].join(' ') : '';
   return { zona: s.zona, q, texto: [calLibre(o?.resto), calLibre(s.texto)].filter(Boolean).join(' '),
-    temas: [...s.temas].join(','), fuente: s.fuente, objetivo: s.que?.id || '', territorio: s.donde?.id || '' };
+    temas: [...s.temas].join(','), fuente: s.fuente, formatos: s.formato, precio: s.precio,
+    objetivo: s.que?.id || '', territorio: s.donde?.id || '' };
 }
 // Días de la vista y su ventana [desde, hasta) dentro de lo publicado.
 // desde:/hasta: del buscador acotan la celebración; en noticias, la publicación.
 function calVentana(){
   const s = CALENDARIO, h = s.meta?.horizonte, p = parseQuery(s.orden?.resto || '');
-  const dias = s.soloDia && s.vista === 'agenda' ? [s.fecha] : ventanaCalendario(s.fecha, s.vista);
+  const dias = ventanaCalendario(s.fecha, s.vista);
   const fin = fechaValida(p.hasta) ? sumarDiasCalendario(p.hasta, 1) : null;
   const desde = [dias[0], h?.desde, fechaValida(p.desde) ? p.desde : null].filter(Boolean).sort().at(-1);
   const hasta = [sumarDiasCalendario(dias.at(-1), 1), h?.hasta, fin].filter(Boolean).sort()[0];
@@ -3617,14 +3630,15 @@ async function consultarCalendario(){
   const s = CALENDARIO;
   if (!s.meta) return void cargarCalendario();
   s.fecha ||= calHoy();
-  const { desde, hasta } = calVentana(), agenda = s.vista === 'agenda';
-  const params = { ...calParametros(), desde, hasta, ...(agenda ? { limite: 20 } : {}) };
+  const { desde, hasta } = calVentana();
+  // El mes solo pinta cuentas; las listas, tres muestras por día.
+  const params = { ...calParametros(), desde, hasta, muestras: s.vista === 'mes' ? 0 : 3 };
   const clave = JSON.stringify([s.vista, params]);
   if (clave === s.consulta && !s.error) return void pintarCalendario();
   s.controller?.abort();
   const controller = s.controller = new AbortController();
   // Al renovar la misma consulta se deja lo que había hasta que llegue su sustituto.
-  if (clave !== s.vigente) s.lista = s.resumen = null;
+  if (clave !== s.vigente){ s.resumen = null; s.dias.clear(); }
   s.consulta = clave; s.error = '';
   // Abortar también corta la lista sin fecha en curso: se vuelve a pedir al pulsar.
   const p = s.pendientes;
@@ -3632,30 +3646,39 @@ async function consultarCalendario(){
   if (desde >= hasta){ s.cargando = false; return void pintarCalendario(); }
   s.cargando = true; pintarCalendario();
   try {
-    const dato = await calPedir(agenda ? 'eventos' : 'resumen', params, controller.signal);
-    calAnotar(dato); s.vigente = clave;
-    if (agenda) s.lista = { params, eventos: dato.eventos, siguiente: dato.siguiente, cargando: false };
-    else s.resumen = dato.dias;
+    const dato = await calPedir('resumen', params, controller.signal);
+    calAnotar(dato); s.vigente = clave; s.resumen = dato.dias; s.dias.clear();
   } catch (e){
     if (controller.signal.aborted) return;
     s.error = e.status === 422 ? 'calFueraHorizonte' : 'calError';
   }
   s.cargando = false; pintarCalendario();
+  // En el mes, la lista del día elegido: el de la fecha de la vista (hoy al
+  // abrir, el 1 al cambiar de mes) o el primero publicado.
+  if (s.vista === 'mes' && s.resumen?.length){
+    if (!s.resumen.some(d => d.dia === s.dia)) s.dia = s.resumen.some(d => d.dia === s.fecha) ? s.fecha : s.resumen[0].dia;
+    abrirDiaCalendario(s.dia, 'citas');
+  }
 }
-// «Ver más» sigue el cursor de la misma consulta. Si la publicación cambió
-// entre páginas (409), se rehace desde el principio para no mezclar lecturas.
-async function masCalendario(){
-  const s = CALENDARIO, l = s.lista, controller = s.controller;
-  if (!l?.siguiente || l.cargando) return;
+// Lista de un día: sus citas y programas, o lo que está en curso. Se pide al
+// abrirla y pagina con el cursor de la API; si la publicación cambió (409),
+// se rehace desde el principio para no mezclar lecturas.
+async function abrirDiaCalendario(dia, tipo, mas = false){
+  const s = CALENDARIO, clave = dia + '|' + tipo;
+  let l = s.dias.get(clave);
+  if (!l){ l = { eventos: [], siguiente: null, cargando: false, cargada: false }; s.dias.set(clave, l); }
+  l.abierta = true;
+  if (l.cargando || (mas ? !l.siguiente : l.cargada)) return void pintarCalendario();
   l.cargando = true; pintarCalendario();
+  const controller = s.controller ||= new AbortController();
   try {
-    const dato = await calPedir('eventos', { ...l.params, cursor: l.siguiente }, controller.signal);
-    if (s.lista !== l) return;
-    calAnotar(dato); l.eventos.push(...dato.eventos); l.siguiente = dato.siguiente;
+    const dato = await calPedir('eventos', { ...calParametros(), desde: dia, hasta: sumarDiasCalendario(dia, 1), limite: 20,
+      presentacion: tipo === 'curso' ? 'prolongada' : 'cita,programa', cursor: mas ? l.siguiente : '' }, controller.signal);
+    if (s.dias.get(clave) !== l) return;
+    calAnotar(dato); l.eventos.push(...dato.eventos); l.siguiente = dato.siguiente; l.cargada = true;
   } catch (e){
-    // Abortada al renovar: la lista conservada no se queda con «Ver más» bloqueado.
-    if (controller.signal.aborted || s.lista !== l) return void (l.cargando = false);
-    if (e.status === 409){ s.consulta = ''; return void consultarCalendario(); }
+    if (controller.signal.aborted || s.dias.get(clave) !== l) return void (l.cargando = false);
+    if (e.status === 409){ s.dias.delete(clave); return void abrirDiaCalendario(dia, tipo); }
     s.error = 'calError';
   }
   l.cargando = false; pintarCalendario();
@@ -3680,14 +3703,14 @@ async function pendientesCalendario(mas = false){
 }
 function calLimpiarFiltros(){
   const s = CALENDARIO;
-  s.temas.clear(); s.fuente = ''; s.texto = ''; s.donde = null; s.que = null;
+  s.temas.clear(); s.fuente = ''; s.formato = ''; s.precio = ''; s.texto = ''; s.donde = null; s.que = null;
   s.escrito = { donde: '', que: '' }; s.sugerencias = { donde: [], que: [] };
 }
 function actualizarConsultaCalendario(orden){
   if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO, clave = JSON.stringify(orden);
   if (clave !== s.clave){
-    s.clave = clave; calLimpiarFiltros(); s.soloDia = false;
+    s.clave = clave; calLimpiarFiltros();
     const fecha = parseQuery(orden?.resto || '').desde;
     s.fecha = fechaValida(fecha) ? fecha : calHoy();
   }
@@ -3749,14 +3772,12 @@ function calFuentes(e){
         ${fuente?.licencia ? ' · ' + calEnlace(fuente.licencia_url, fuente.licencia) : ''}</p>`;
     }).join('');
 }
-function calEvento(e, compacto = false){
+// Detalle completo, en el diálogo.
+function calEvento(e){
   const v = e.programacion?.valor, estado = v?.programacion;
   const aviso = e.programacion?.conflicto || e.lugar?.conflicto;
   const lugar = calLugar(e);
   const avisoEstado = estado === 'cancelado' || estado === 'aplazado' ? `<p class="cal-aviso">${calEsc(t(estado === 'cancelado' ? 'calCancelado' : 'calAplazado'))}</p>` : '';
-  if (compacto) return `<article class="cal-evento cal-evento-compacto"><h3>${calBoton('evento', calNombre(e), e.id, 'aria-haspopup="dialog"')}</h3>
-    <p class="cal-cuando">${calEsc(calHora(e))}</p>${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
-    ${avisoEstado}${aviso ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}</article>`;
   const horario = v?.cuando?.horario_textual, ejecucion = v?.ejecucion;
   const textoHorario = typeof horario === 'string' ? horario : horario?.[ACCES.lang] || horario?.es || Object.values(horario || {})[0];
   const dias = v?.cuando?.dias_semana?.map(d => calFecha(sumarDiasCalendario('2026-10-19', d), { weekday: 'short', day: undefined, month: undefined })).join(', ');
@@ -3793,48 +3814,92 @@ async function abrirEventoCalendario(id){
   }
   dialogo.querySelector('form button')?.focus();
 }
-function calAgenda(){
-  const s = CALENDARIO, l = s.lista;
-  if (!l) return '';
-  // La API ordena por día y luego por ID; dentro del día, por hora y nombre.
-  const intervalo = e => e.programacion?.valor?.modalidad === 'intervalo';
-  const hora = e => extremoVisible(e.programacion?.valor?.cuando?.inicio, s.zona).hora || '99:99';
-  const grupos = new Map();
-  for (const e of l.eventos) if (!intervalo(e)){
-    if (!grupos.has(e.dia)) grupos.set(e.dia, []);
-    grupos.get(e.dia).push(e);
+// Hora de la columna: no la llevan lo prolongado ni los programas (su inicio
+// puede ser de otro día).
+const calHoraCita = e => ['prolongada', 'programa'].includes(calPresentacion(e)) ? ''
+  : extremoVisible(e.programacion?.valor?.cuando?.inicio, CALENDARIO.zona).hora || '';
+// Tarjeta de la lista: la hora en su columna; título, lugar y tipo de plan con
+// precio. Lo prolongado lleva sus fechas en vez de hora.
+function calCita(e){
+  const v = e.programacion?.valor, estado = v?.programacion;
+  const prolongada = calPresentacion(e) === 'prolongada', hora = calHoraCita(e);
+  const lugar = calLugar(e);
+  const plan = [...(e.formatos || []).map(calNombreFormato), e.precio && CAL_PRECIOS[e.precio] ? t(CAL_PRECIOS[e.precio]) : '',
+    e.tiene_programa ? '▸ ' + t('calPrograma') : ''].filter(Boolean).join(' · ');
+  return `<article class="cal-cita"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
+    <h3>${calBoton('evento', calNombre(e), e.id, 'aria-haspopup="dialog"')}</h3>
+    ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
+    ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}
+    ${estado === 'cancelado' || estado === 'aplazado' ? `<p class="cal-aviso">${calEsc(t(estado === 'cancelado' ? 'calCancelado' : 'calAplazado'))}</p>` : ''}</div></article>`;
+}
+// Citas de un día: primero con hora (así llegan de la API) y después, bajo su
+// rótulo, las que no la tienen y los programas.
+function calCitas(eventos){
+  let rotulo = false;
+  return eventos.map(e => {
+    const sinHora = !rotulo && calPresentacion(e) !== 'prolongada' && !calHoraCita(e);
+    if (sinHora) rotulo = true;
+    return (sinHora ? `<p class="cal-sin-hora">${calEsc(t('calSinHora'))}</p>` : '') + calCita(e);
+  }).join('');
+}
+const calDiaLargo = dia => calFecha(dia, { weekday: 'long', month: 'long' });
+function calCuentas(d){
+  return [calN('calNCitas', d.citas + d.programas), d.en_curso ? t('calNEnCurso', { n: d.en_curso }) : ''].filter(Boolean).join(' · ');
+}
+// Un día de la lista: sus muestras y «Ver las N citas»; abierta, todas.
+function calDiaLista(d){
+  const s = CALENDARIO, l = s.dias.get(d.dia + '|citas'), citas = d.citas + d.programas;
+  let cuerpo;
+  if (!citas) cuerpo = `<p class="cal-nota">${calEsc(t('calDiaSinCitas'))}</p>`;
+  else if (l?.abierta && l.cargada){
+    cuerpo = calCitas(l.eventos) + `<div class="cal-paginacion">${l.siguiente ? calBoton('mas-dia', t('calCargarMas'), d.dia, l.cargando ? 'disabled' : '') : ''}
+      ${calBoton('ocultar-dia', t('calOcultar'), d.dia)}</div>`;
+  } else {
+    cuerpo = calCitas(d.muestras) + (citas > d.muestras.length
+      ? `<div class="cal-paginacion">${calBoton('ver-dia', t('calVerCitas', { n: citas, dia: calFecha(d.dia, { weekday: 'long', day: undefined, month: undefined }) }), d.dia, l?.cargando ? 'disabled' : '')}</div>` : '');
   }
-  for (const lista of grupos.values()) lista.sort((a, b) => hora(a).localeCompare(hora(b)) || calNombre(a).localeCompare(calNombre(b)));
-  const prolongadas = l.eventos.filter(intervalo).sort((a, b) => calNombre(a).localeCompare(calNombre(b)));
-  let html = `<div class="cal-agenda">${[...grupos].map(([dia, lista]) => `<section class="cal-dia"><h2>${calEsc(calFecha(dia, { weekday: 'short' }))}</h2>${lista.map(e => calEvento(e, true)).join('')}</section>`).join('')}
-    ${prolongadas.length ? `<section class="cal-dia cal-intervalos"><h2>${calEsc(t('calProgramaciones'))}</h2><p class="cal-nota">${calEsc(t('calProgramacionesNota'))}</p>${prolongadas.map(e => calEvento(e, true)).join('')}</section>` : ''}</div>`;
-  if (!l.eventos.length) html += `<p>${calEsc(t('calSinCitas'))}</p>`;
-  if (l.siguiente) html += `<div class="cal-paginacion">${calBoton('mas', t('calCargarMas'), '', l.cargando ? 'disabled' : '')}</div>`;
-  return html;
+  return `<section class="cal-dia"><h2>${calEsc(calFecha(d.dia, { weekday: 'short' }))} <small>${calEsc(calCuentas(d))}</small></h2>${cuerpo}</section>`;
 }
-function calSemana(){
-  const s = CALENDARIO;
-  if (!s.resumen) return '';
-  return `<div class="cal-semana">${s.resumen.map(d => `<section class="cal-dia"><h2>${calBoton('dia', calFecha(d.dia, { weekday: 'short', month: undefined }), d.dia, `aria-label="${calEsc(calFecha(d.dia, { weekday: 'long' }))} · ${d.cantidad}" ${d.dia === calHoy() ? 'aria-current="date"' : ''}`)}</h2>${d.muestras.map(e => calEvento(e, true)).join('') || `<p class="cal-nota">${calEsc(t('calSinCitas'))}</p>`}${d.cantidad > d.muestras.length ? calBoton('dia', t('calMas', { n: d.cantidad - d.muestras.length }), d.dia) : ''}</section>`).join('')}</div>`;
+// «En curso»: plegado, con su cuenta del día; al abrirlo, la lista de ese día.
+function calEnCurso(d){
+  if (!d?.en_curso) return '';
+  const s = CALENDARIO, l = s.dias.get(d.dia + '|curso'), abierta = Boolean(l?.abierta);
+  const etiqueta = d.dia === calHoy() ? t('calEnCursoHoy', { n: d.en_curso })
+    : t('calEnCursoDia', { n: d.en_curso, fecha: calFecha(d.dia, { weekday: 'short' }) });
+  return `<section class="cal-en-curso">${calBoton('curso', (abierta ? '▾ ' : '▸ ') + etiqueta, d.dia, `aria-expanded="${abierta}"`)}
+    ${abierta ? `<p class="cal-nota">${calEsc(t('calProgramacionesNota'))}</p>${(l.eventos || []).map(calCita).join('')}
+      ${l.siguiente ? `<div class="cal-paginacion">${calBoton('mas-curso', t('calCargarMas'), d.dia, l.cargando ? 'disabled' : '')}</div>` : ''}` : ''}</section>`;
 }
+function calLista(){
+  const r = CALENDARIO.resumen;
+  if (!r) return '';
+  return calEnCurso(r[0]) + r.map(calDiaLista).join('');
+}
+// Mes natural: número del día, citas y una marca si hay algo en curso. El día
+// elegido abre debajo su lista y su bloque «En curso».
 function calMes(){
-  const s = CALENDARIO, { dias } = calVentana();
-  if (!s.resumen) return '';
-  const porDia = new Map(s.resumen.map(d => [d.dia, d]));
-  return `<div class="cal-mes" aria-label="${calEsc(t('calMes'))}">${dias.slice(0, 7).map(d => `<abbr class="cal-semana-nombre" title="${calEsc(calFecha(d, { weekday: 'long', day: undefined, month: undefined }))}">${calEsc(calFecha(d, { weekday: 'narrow', day: undefined, month: undefined }))}</abbr>`).join('')}
-    ${dias.map(dia => {
-      const d = porDia.get(dia) || { cantidad: 0, muestras: [] };
-      return `<div class="cal-celda${dia.slice(0,7) !== s.fecha.slice(0,7) ? ' cal-otro-mes' : ''}">
-      ${calBoton('dia', calFecha(dia, { month: undefined }), dia, `${dia === calHoy() ? 'aria-current="date"' : ''} aria-label="${calEsc(calFecha(dia, { weekday: 'long' }))} · ${d.cantidad}"`)}
-      ${d.muestras.map(e => calBoton('evento', `${extremoVisible(e.programacion?.valor?.cuando?.inicio, s.zona).hora || '·'} ${calNombre(e)}`, e.id, `class="cal-mini-evento" aria-haspopup="dialog" title="${calEsc(calNombre(e))}"`)).join('')}
-      ${d.cantidad > d.muestras.length ? calBoton('dia', t('calMas', { n: d.cantidad - d.muestras.length }), dia) : ''}</div>`;
-    }).join('')}</div>`;
+  const s = CALENDARIO, r = s.resumen;
+  if (!r) return '';
+  const porDia = new Map(r.map(d => [d.dia, d])), dias = ventanaCalendario(s.fecha, 'mes');
+  const celdas = dias.map(dia => {
+    const d = porDia.get(dia), citas = d ? d.citas + d.programas : 0;
+    const etiqueta = `${calDiaLargo(dia)}: ${d ? calCuentas(d) : calN('calNCitas', 0)}`;
+    return `<button type="button" class="cal-celda${dia.slice(0, 7) !== s.fecha.slice(0, 7) ? ' cal-otro-mes' : ''}" data-cal="seleccionar" data-valor="${dia}"
+      aria-pressed="${dia === s.dia}"${dia === calHoy() ? ' aria-current="date"' : ''} aria-label="${calEsc(etiqueta)}"${d ? '' : ' disabled'}>
+      <span class="cal-num">${calEsc(calFecha(dia, { month: undefined }))}</span>${citas ? `<span class="cal-cuenta">${citas}</span>` : ''}
+      ${d?.en_curso ? '<span class="cal-marca" aria-hidden="true">~</span>' : ''}</button>`;
+  }).join('');
+  const d = porDia.get(s.dia), l = s.dias.get(s.dia + '|citas');
+  const lista = !d ? '' : `<section class="cal-dia"><h2>${calEsc(calDiaLargo(d.dia))} <small>${calEsc(calCuentas(d))}</small></h2>
+    ${l?.cargada ? calCitas(l.eventos) || `<p class="cal-nota">${calEsc(t('calDiaSinCitas'))}</p>` : ''}
+    ${l?.siguiente ? `<div class="cal-paginacion">${calBoton('mas-dia', t('calCargarMas'), d.dia, l.cargando ? 'disabled' : '')}</div>` : ''}</section>${calEnCurso(d)}`;
+  return `<div class="cal-mes" role="group" aria-label="${calEsc(t('calMes'))}">${dias.slice(0, 7).map(dia => `<abbr class="cal-semana-nombre" title="${calEsc(calFecha(dia, { weekday: 'long', day: undefined, month: undefined }))}">${calEsc(calFecha(dia, { weekday: 'narrow', day: undefined, month: undefined }))}</abbr>`).join('')}${celdas}</div>${lista}`;
 }
 function calPendientes(){
   const p = CALENDARIO.pendientes;
   if (!p) return `<div class="cal-pendientes">${calBoton('pendientes', t('calVerPendientes'))}</div>`;
   return `<section class="cal-pendientes"><h2>${calEsc(t('calSinFecha'))}</h2>
-    ${p.eventos.map(e => calEvento(e, true)).join('') || (p.cargando ? '' : `<p class="cal-nota">${calEsc(t('calNingunaPendiente'))}</p>`)}
+    ${p.eventos.map(calCita).join('') || (p.cargando ? '' : `<p class="cal-nota">${calEsc(t('calNingunaPendiente'))}</p>`)}
     ${p.siguiente ? calBoton('mas-pendientes', t('calCargarMas'), '', p.cargando ? 'disabled' : '') : ''}</section>`;
 }
 // Dónde: comunidades, provincias y municipios del catálogo territorial común
@@ -3896,14 +3961,16 @@ function calFiltros(){
   const s = CALENDARIO, m = s.meta;
   if (!m) return '';
   const option = (valor, label, elegido) => `<option value="${calEsc(valor)}"${elegido === valor ? ' selected' : ''}>${calEsc(label)}</option>`;
-  const avanzados = [s.que, s.fuente].filter(Boolean).length;
-  const activos = s.temas.size + avanzados + [s.donde, s.texto].filter(Boolean).length;
-  return `<div class="cal-filtros"><div class="cal-campos cal-principales"><label class="cal-buscar">${calEsc(t('calBuscar'))}<input id="cal-texto" type="search" value="${calEsc(s.texto)}" placeholder="${calEsc(t('calBuscarEjemplo'))}"></label>
-    ${calCampo('donde', t('calDonde'), t('calDondeEjemplo'))}</div>
-    ${calTemas()}
-    <div class="cal-filtros-extra"><details class="cal-filtros-avanzados"><summary>${calEsc(t('calFiltros'))}${avanzados ? ` (${avanzados})` : ''}</summary>
-    <div class="cal-campos">${calCampo('que', t('calObjetivo'), t('calObjetivoEjemplo'))}
-    <label>${calEsc(t('calFuente'))}<select id="cal-fuente">${option('', t('calTodas'), s.fuente)}${Object.entries(m.fuentes).map(([i, f]) => option(i, f.nombre, s.fuente)).join('')}</select></label>
+  const enPanel = s.temas.size + [s.precio, s.fuente, s.que].filter(Boolean).length;
+  const activos = enPanel + [s.donde, s.texto, s.formato].filter(Boolean).length;
+  return `<div class="cal-filtros"><div class="cal-campos cal-principales">${calCampo('donde', t('calDonde'), t('calDondeEjemplo'))}
+    <label class="cal-buscar">${calEsc(t('calBuscar'))}<input id="cal-texto" type="search" value="${calEsc(s.texto)}" placeholder="${calEsc(t('calBuscarEjemplo'))}"></label>
+    <label>${calEsc(t('calTipoPlan'))}<select id="cal-formato">${option('', t('calTodos'), s.formato)}${CAL_FORMATOS.map(f => option(f, calNombreFormato(f), s.formato)).join('')}</select></label></div>
+    <div class="cal-filtros-extra"><details class="cal-filtros-avanzados"><summary>${calEsc(t('calFiltrosN', { n: enPanel }))}</summary>
+    ${calTemas()}<div class="cal-campos">
+    <label>${calEsc(t('calPrecio'))}<select id="cal-precio">${option('', t('calPrecioCualquiera'), s.precio)}${Object.entries(CAL_PRECIOS).map(([v, k]) => option(v, t(k), s.precio)).join('')}</select></label>
+    <label>${calEsc(t('calServicio'))}<select id="cal-fuente">${option('', t('calTodos'), s.fuente)}${Object.entries(m.fuentes).map(([i, f]) => option(i, f.nombre, s.fuente)).join('')}</select></label>
+    ${calCampo('que', t('calObjetivo'), t('calObjetivoEjemplo'))}
     <label>${calEsc(t('calZona'))}<select id="cal-zona">${CAL_ZONAS.map(z => option(z, z, s.zona)).join('')}</select></label></div>
     </details>${activos ? calBoton('limpiar', t('calLimpiar')) : ''}</div></div>`;
 }
@@ -3913,9 +3980,7 @@ function calContenido(){
   if (!s.meta) return '';
   const { desde, hasta, acotada } = calVentana();
   if (desde >= hasta) return `<p class="cal-aviso">${calEsc(t('calFueraHorizonte'))}</p>`;
-  if (s.vista === 'mes') return calMes();
-  if (s.vista === 'semana') return calSemana();
-  return calAgenda() + (s.lista && !acotada ? calPendientes() : '');
+  return (s.vista === 'mes' ? calMes() : calLista()) + (s.resumen && !acotada ? calPendientes() : '');
 }
 function pintarCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
@@ -3934,10 +3999,9 @@ function pintarCalendario(){
   p.setAttribute('aria-busy', String(s.cargando));
   const dias = ventanaCalendario(s.fecha, s.vista);
   const periodo = s.vista === 'mes' ? calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined })
-    : s.soloDia ? calFecha(s.fecha, { weekday: 'short', year: 'numeric' })
     : `${calFecha(dias[0])} – ${calFecha(dias.at(-1), { year: 'numeric' })}`;
   p.innerHTML = `<div class="cal-cabecera"><h1 id="cal-titulo" tabindex="-1">${calEsc(t('calTitulo'))}</h1>
-    <nav class="cal-nav" aria-label="${calEsc(t('calVistas'))}">${['agenda','semana','mes'].map(v => calBoton('vista', t({agenda:'calAgenda',semana:'calSemana',mes:'calMes'}[v]), v, s.vista === v ? 'aria-current="page"' : '')).join('')}</nav>
+    <nav class="cal-nav" aria-label="${calEsc(t('calVistas'))}">${Object.entries(CAL_VISTAS).map(([v, k]) => calBoton('vista', t(k), v, s.vista === v ? 'aria-current="page"' : '')).join('')}</nav>
     <div class="cal-acciones">${calBoton('renovar', t('calActualizar'), '', s.cargando ? 'disabled' : '')}
     ${calBoton(s.abierto ? 'cerrar' : 'abrir', t(s.abierto ? 'calCerrar' : 'calAbrir'))}</div></div>
     ${s.orden ? `<p class="cal-contexto">${calEsc([...s.orden.ambitos, ...s.orden.circuitos, ...s.orden.tipos].join(' · ') || t('calTodos'))}</p>` : ''}
@@ -3967,8 +4031,15 @@ function wireCalendario(){
     if (a === 'cerrar') return cerrarCalendario();
     if (a === 'renovar') return void cargarCalendario(true);
     if (a === 'evento') return void abrirEventoCalendario(v);
-    if (a === 'mas') return void masCalendario();
     if (a === 'pendientes' || a === 'mas-pendientes') return void pendientesCalendario(a === 'mas-pendientes');
+    if (a === 'ver-dia' || a === 'mas-dia') return void abrirDiaCalendario(v, 'citas', a === 'mas-dia');
+    if (a === 'mas-curso') return void abrirDiaCalendario(v, 'curso', true);
+    if (a === 'curso' || a === 'ocultar-dia'){
+      const l = s.dias.get(v + (a === 'curso' ? '|curso' : '|citas'));
+      if (a === 'curso' && !l?.abierta) return void abrirDiaCalendario(v, 'curso');
+      l.abierta = false; return void pintarCalendario();
+    }
+    if (a === 'seleccionar'){ s.dia = v; return void abrirDiaCalendario(v, 'citas'); }
     let enfocar = '';
     if (a === 'elegir-donde' || a === 'elegir-que'){
       const campo = a.slice(7);
@@ -3976,11 +4047,9 @@ function wireCalendario(){
       enfocar = `[data-cal="quitar-${campo}"]`;
     }
     if (a === 'quitar-donde' || a === 'quitar-que'){ s[a.slice(7)] = null; enfocar = '#cal-' + a.slice(7); }
-    if (a === 'vista'){ s.vista = v; s.soloDia = false; }
-    if (a === 'anterior' || a === 'siguiente') s.fecha = s.soloDia
-      ? sumarDiasCalendario(s.fecha, a === 'anterior' ? -1 : 1) : moverFecha(s.fecha, s.vista, a === 'anterior' ? -1 : 1);
-    if (a === 'hoy') s.fecha = calHoy();
-    if (a === 'dia'){ s.fecha = v; s.vista = 'agenda'; s.soloDia = true; }
+    if (a === 'vista') s.vista = v;
+    if (a === 'anterior' || a === 'siguiente') s.fecha = moverFecha(s.fecha, s.vista, a === 'anterior' ? -1 : 1);
+    if (a === 'hoy') s.fecha = s.dia = calHoy();
     // Elegir una subcategoría acota su raíz; elegir la raíz deja sus subcategorías.
     if (a === 'tema'){
       const conceptos = s.meta.catalogo.conceptos;
@@ -3999,6 +4068,8 @@ function wireCalendario(){
     const id = e.target.id, v = e.target.value;
     if (id === 'cal-fecha' && fechaValida(v)) s.fecha = v;
     else if (id === 'cal-fuente') s.fuente = v;
+    else if (id === 'cal-formato') s.formato = CAL_FORMATOS.includes(v) ? v : '';
+    else if (id === 'cal-precio') s.precio = v in CAL_PRECIOS ? v : '';
     else if (id === 'cal-zona' && CAL_ZONAS.includes(v)) s.zona = v;
     else return;
     consultarCalendario();
@@ -4940,7 +5011,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=470aa3766d')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=fb28c0f6ed')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
