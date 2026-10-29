@@ -5,7 +5,8 @@
      tests/tema/paleta.test.mjs comprueba los contrastes (WCAG 2.2 AA).
      --on-solid es el texto sobre un fondo de color (--accent, --preset,
      --block, --save); --focus, el anillo de foco; --titulos, el de los
-     títulos. El tema «Personalizado» (shared/tema/personalizado.js) pone
+     títulos; --cat-*, el color de cada categoría de la agenda (texto y su
+     fondo tenue). El tema «Personalizado» (shared/tema/personalizado.js) pone
      encima, en línea, las variables que salen de los colores elegidos. ═══ */
   :root{
     color-scheme:light;
@@ -18,6 +19,8 @@
     --save:#1565c0; --save-bg:#e3f2fd;
     --mark:#ffe680; --mark-fg:#111;
     --on-solid:#fff; --focus:#1565c0; --titulos:#222;
+    --cat-cultura:#6b3fa0; --cat-cultura-bg:#f2ebfa; --cat-deportes:#006d77; --cat-deportes-bg:#e3f3f4;
+    --cat-otras:#5b6470; --cat-otras-bg:#eef0f3;
   }
   [data-theme="sepia"]{
     color-scheme:light;
@@ -30,6 +33,8 @@
     --save:#2e5a8b; --save-bg:#d8e3ee;
     --mark:#c9a227; --mark-fg:#2c1c08;
     --on-solid:#fff; --focus:#2e5a8b; --titulos:#3b2f1e;
+    --cat-cultura:#5e3590; --cat-cultura-bg:#e8dcef; --cat-deportes:#005c65; --cat-deportes-bg:#d6e6e2;
+    --cat-otras:#535a63; --cat-otras-bg:#e3dccb;
   }
   [data-theme="dark"]{
     color-scheme:dark;
@@ -42,6 +47,8 @@
     --save:#6cb3ff; --save-bg:#1e3550;
     --mark:#b58600; --mark-fg:#111;
     --on-solid:#111; --focus:#6cb3ff; --titulos:#e0e0e0;
+    --cat-cultura:#cfb0f3; --cat-cultura-bg:#30233f; --cat-deportes:#65d3d8; --cat-deportes-bg:#14373a;
+    --cat-otras:#bac1cb; --cat-otras-bg:#2b3037;
   }
   [data-theme="contrast"]{
     color-scheme:dark;
@@ -54,6 +61,8 @@
     --save:#0ff; --save-bg:#003333;
     --mark:#ff0; --mark-fg:#000;
     --on-solid:#000; --focus:#ff0; --titulos:#fff;
+    --cat-cultura:#f8f; --cat-cultura-bg:#000; --cat-deportes:#0ff; --cat-deportes-bg:#000;
+    --cat-otras:#fff; --cat-otras-bg:#000;
   }
   /* ═══ FIN DE LA PALETA ═══ */
   :root{
@@ -329,6 +338,10 @@
     background:var(--btn-bg); color:var(--fg); border-radius:6px;
     font-family:inherit; font-size:.78em;
   }
+  /* Tira horizontal de opciones (chips del calendario; pensada también para
+     temas y modos): una fila que se desplaza en vez de partirse en líneas. */
+  .ui-tira{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:4px 2px;scroll-padding-inline:8px;scrollbar-width:thin}
+  .ui-tira>*{flex:none}
   /* ═══ Paneles ═══ */
   .panel{
     position:fixed; inset:0;
@@ -2039,25 +2052,23 @@
 .estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:10px;gap:6px}.est-cabecera strong{font-size:.9em}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros label{flex:1 1 120px}.est-filtros select{width:100%}.est-nav{padding-inline:10px}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
 .calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:16px 0 26px;overflow:hidden;scroll-margin-top:120px}
-/* Barra única: periodo, vistas, categorías, acciones y el panel de filtros (al abrirse, en su propia fila). */
-.cal-barra,.cal-nav,.cal-periodo,.cal-acciones,.cal-chips,.cal-campos{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.cal-barra{padding:8px 12px;border-bottom:1px solid var(--border);gap:6px 12px}
-.cal-barra h1:focus{outline:none}.cal-acciones{margin-left:auto;gap:4px}
-.cal-periodo{gap:4px;position:relative}.cal-periodo>button{padding:4px 10px}
-.cal-periodo-nombre{border:0;background:transparent;color:var(--fg);font-weight:600;text-transform:capitalize}.cal-periodo-nombre:hover{color:var(--accent)}
-.cal-categorias [aria-pressed]{font-size:.85em}
-.cal-filtros-avanzados{min-width:0}.cal-filtros-avanzados[open]{flex-basis:100%}
-.cal-filtros-avanzados>summary{cursor:pointer;min-height:44px;align-content:center;font-size:.9em}
-.calendario-panel button,.calendario-panel select,.calendario-panel input,.cal-evento-dialogo button{min-height:44px;font:inherit;max-width:100%}
-.cal-nav{gap:4px}
-.cal-nav button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent}
-.cal-nav [aria-current]{border-bottom-color:var(--accent);color:var(--accent)}
-.cal-cuerpo{padding:12px 16px;min-width:0}
-.cal-filtros{padding:4px 0 8px}.cal-evento summary,.cal-pendientes summary{cursor:pointer;min-height:44px;align-content:center}.cal-filtros>[data-cal="limpiar"]{font-size:.8em}
-.cal-filtros fieldset{border:0;padding:10px 0;margin:0}.cal-filtros legend,.cal-campos label{font-size:.8em}.cal-chips button{font-size:.8em;padding:5px 10px}
-.cal-chips [aria-pressed="true"]{color:var(--accent);border-color:var(--accent);box-shadow:inset 0 -2px var(--accent)}
-.cal-campos{align-items:end;margin:12px 0}.cal-campos label{display:flex;flex-direction:column;gap:5px;max-width:100%;flex:1 1 160px;min-width:0}
-.calendario-panel input,.calendario-panel select{background:var(--bg);color:var(--fg);border:1px solid var(--btn-border);border-radius:5px;padding:7px}
+/* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
+.cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.cal-barra h1:focus{outline:none}.cal-barra>.ui-tira{flex-basis:100%;min-width:0}
+.cal-acciones{display:flex;align-items:center;gap:4px;margin-left:auto}
+.calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:44px;font:inherit;max-width:100%}
+.cal-icono{min-width:44px}
+.cal-donde{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 220px}
+.cal-donde-nombre{border:0;background:transparent;color:var(--fg);font-weight:700;padding:4px 6px;text-align:left;overflow-wrap:anywhere}.cal-donde-nombre:hover{color:var(--accent)}
+.cal-cuerpo{padding:12px 16px;min-width:0}.cal-evento summary,.cal-pendientes summary{cursor:pointer;min-height:44px;align-content:center}
+/* Chips: seleccionados con borde y subrayado; los de categoría, con su color. */
+.cal-chips button{font-size:.85em;padding:5px 14px;border-radius:999px}
+.cal-chips [aria-pressed="true"]{color:var(--accent);border-color:var(--accent);box-shadow:inset 0 -2px var(--accent);font-weight:600}
+.cal-chips .cal-cat-cultura{color:var(--cat-cultura);background:var(--cat-cultura-bg);border-color:var(--cat-cultura)}
+.cal-chips .cal-cat-deportes{color:var(--cat-deportes);background:var(--cat-deportes-bg);border-color:var(--cat-deportes)}
+.cal-chips .cal-cat[aria-pressed="true"]{box-shadow:inset 0 0 0 2px currentColor}
+.cal-subchips button{font-size:.8em}
+.calendario-panel input{background:var(--bg);color:var(--fg);border:1px solid var(--btn-border);border-radius:5px;padding:7px}
 .cal-nota,.cal-estado{font-size:.78em;color:var(--muted);overflow-wrap:anywhere}.cal-estado:empty{display:none}.cal-aviso{font-size:.85em;color:var(--accent)}
 .cal-dia h2,.cal-pendientes h2{font-size:1.05em;margin:20px 0 12px;text-transform:capitalize}.cal-evento{border-top:1px solid var(--border);padding:14px 0;overflow-wrap:anywhere;min-width:0}
 .cal-evento h3{font-size:1em;font-weight:600;margin:0 0 8px}.cal-evento p{margin:6px 0}.cal-cuando{font-size:.85em;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -2070,21 +2081,42 @@
 .cal-cita h3 button{border:0;background:transparent;color:var(--fg);padding:6px 0;text-align:left;font-weight:600;line-height:1.35;overflow-wrap:anywhere}.cal-cita h3 button:hover{color:var(--accent);text-decoration:underline}
 .cal-plan{font-size:.8em}.cal-sin-hora{font-size:.8em;color:var(--muted);margin:12px 0 4px}
 .cal-en-curso{border:1px solid var(--border);border-radius:7px;padding:4px 10px;margin:12px 0}.cal-en-curso>button{border:0;background:transparent;color:var(--fg);font-weight:600;padding:6px 0;text-align:left;width:100%}
-/* Mes: siete celdas tocables (unos 44 px a 360 px de ancho) con el número del día, las citas y «~» si hay algo en curso. */
+/* Tira y mes: siete celdas tocables con el número del día y un punto por categoría con algo ese día. */
+.cal-tira{margin:0 0 8px}.cal-tira-cabecera{display:flex;align-items:center;justify-content:center;gap:4px}
+.cal-tira-cabecera>button{border:0;background:transparent;color:var(--fg);min-width:44px}
+.cal-tira-titulo{font-weight:700;text-transform:capitalize}.cal-tira-titulo:hover{color:var(--accent)}
 .cal-mes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.cal-puntos{display:flex;gap:3px;justify-content:center;min-height:8px}
+.cal-punto{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cat-otras)}
+.cal-punto.cal-cat-cultura{background:var(--cat-cultura)}.cal-punto.cal-cat-deportes{background:var(--cat-deportes);border-radius:2px}
+/* Deportes: en cada día, hasta dos competiciones («NBA 9», «F1») y «+N». */
+.cal-marcas{display:flex;flex-direction:column;align-items:center;gap:1px;max-width:100%}
+.cal-marca{font-size:.62em;font-weight:700;line-height:1.2;color:var(--cat-deportes);white-space:nowrap;overflow:hidden;text-overflow:clip;max-width:100%}
+.cal-marca.cal-mas{color:var(--muted);font-weight:400}
+/* Este mes en deportes: una fila por competición con sus GP o torneos. */
+.cal-temporada{margin:14px 0 4px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--cat-deportes-bg)}
+.cal-temporada h2{font-size:1em;margin:4px 0 8px;color:var(--cat-deportes)}
+.cal-temporada ul{list-style:none;margin:0;padding:0}.cal-temporada-fila{padding:6px 0;border-top:1px solid var(--border)}
+.cal-temporada-fila>button{font-weight:700;border:0;background:transparent;color:var(--fg);padding:4px 0}
+.cal-temporada-fila>button[aria-pressed="true"]{color:var(--cat-deportes);text-decoration:underline}
+.cal-temporada-fila li button{border:0;background:transparent;color:var(--fg);text-align:left;padding:4px 0;min-height:36px}
+.cal-temporada-fila ul{padding-left:12px}
+.cal-leyenda{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:.75em;color:var(--muted);margin:6px 0 0}
+.cal-leyenda>span{display:inline-flex;align-items:center;gap:5px}
+/* Lo pasado, atenuado y marcado: sigue consultable, pero no parece vigente. */
+.cal-pasado{opacity:.55}.cal-dia.cal-pasado h2 small{font-style:italic}
 .cal-semana-nombre{font-size:.75em;text-align:center;padding:6px 0;text-decoration:none;color:var(--muted)}
 .cal-celda{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;min-width:0;padding:4px 0;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--fg);font-variant-numeric:tabular-nums}
-.cal-celda:disabled{opacity:.45}.cal-otro-mes{background:var(--btn-bg)}.cal-num{font-size:.8em}.cal-cuenta{font-weight:700;font-size:.9em}.cal-marca{color:var(--muted);line-height:1}
+.cal-otro-mes{background:var(--btn-bg)}.cal-num{font-size:.85em}
 .cal-celda[aria-current="date"] .cal-num{color:var(--accent);font-weight:700}.cal-celda[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .cal-pendientes{border-block:1px solid var(--border);margin:18px 0;padding:8px 0}
-.cal-campo-sug{display:flex;flex-direction:column;gap:5px;flex:1 1 200px;min-width:0;font-size:.8em}.cal-campos .cal-campo-sug label{flex:none}.cal-campo-sug input,.cal-campo-sug>button{font-size:1.25em}
+.cal-campo-sug{display:flex;flex-direction:column;align-items:stretch;gap:5px}
 .cal-sugerencias{display:flex;flex-direction:column;border:1px solid var(--btn-border);border-radius:5px}.cal-sugerencias:empty{display:none}
 .cal-sugerencias button{border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;text-align:left;padding:6px 8px}.cal-sugerencias small{color:var(--muted)}
-.cal-elegido{align-self:start;color:var(--accent);border-color:var(--accent)}.cal-subtemas{margin-top:8px;padding-left:12px;border-left:2px solid var(--border)}
 .cal-programa h4{font-size:.9em;margin:12px 0 4px}.cal-programa ul{margin:0;padding-left:18px}.cal-programa li{margin:4px 0}.cal-pie{margin-top:24px;padding-top:12px;border-top:1px solid var(--border)}
 .cal-evento-dialogo{color:var(--fg);background:var(--bg);border:1px solid var(--btn-border);border-radius:9px;width:min(650px,calc(100% - 24px));max-height:85dvh;padding:18px}.cal-evento-dialogo::backdrop{background:#0008}.cal-evento-dialogo form{display:flex;justify-content:end}
 .calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
-@media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-nav{order:-1;flex-basis:100%}.cal-nav button{flex:1}.cal-periodo-nombre{font-size:.9em}.cal-mes{gap:2px}}
+@media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-mes{gap:2px}}
 /* ═══ Consultas puntuales (libro:, pelicula:…): encima de la lista, como el tiempo ═══ */
 .consulta-panel{
   margin: 6px 0 10px;
