@@ -20,6 +20,7 @@ const CAL_PASOS = ['sitio', 'intereses', 'competiciones', 'resumen'];
 const CAL_DEPORTES = { futbol: ['primera', 'segunda'], baloncesto: ['nba', 'wnba', 'feb-endesa', 'feb-primera', 'feb-challenge'],
   motor: ['f1', 'motogp', 'wrc'], tenis: ['atp', 'wta'] };
 const CAL_NOMBRES_DEPORTE = { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' };
+const CAL_COMPETICIONES = Object.values(CAL_DEPORTES).flat();
 // Marcas del mes por competición, en orden de prioridad; la WTA está casi
 // todos los días y va al final para no tapar al resto.
 const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', nba: 'NBA', atp: 'ATP',
@@ -30,7 +31,10 @@ const CALENDARIO = {
   // fecha: el día elegido (la lista empieza en él y la tira enseña su semana).
   fecha: '', desdeConsulta: '', rango: '', semanas: 1, mesAbierto: false, mes: null,
   zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
-  temas: new Set(), mio: false, prefs: null, asistente: null, deporte: '', competicion: '', temporada: null, precio: '', donde: null, dondeAuto: false, editandoDonde: false, clave: '',
+  temas: new Set(), mio: false, prefs: null, asistente: null, temporada: null,
+  // capas: competiciones marcadas (Deportes, o «Lo mío» sin intereses locales);
+  // deporteLocal: la capa «Deporte en <ciudad>». lateral: el cajón abierto en estrecho.
+  capas: null, deporteLocal: false, lateral: false, precio: '', donde: null, dondeAuto: false, editandoDonde: false, clave: '',
   escrito: { donde: '' }, sugerencias: { donde: [] },
   consulta: '', vigente: '', controller: null, resumen: null, dias: new Map(), pendientes: null, origen: null, scroll: 0,
 };
@@ -92,16 +96,15 @@ function calAnotar(dato){
   if (m) for (const k of ['revision', 'generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
 }
 function calParametros(){
-  const s = CALENDARIO, o = s.orden;
-  const elegidas = s.competicion ? [s.competicion] : s.deporte === 'seguidas' ? calPreferencias()?.competiciones || []
-    : s.deporte ? CAL_DEPORTES[s.deporte] : [];
+  const s = CALENDARIO, o = s.orden, elegidas = [...(s.capas || [])];
   const ambitos = [...(o?.ambitos || []), ...elegidas];
   const q = [...ambitos.map(a => a + ':'), ...(o?.circuitos.length ? ['circuito:' + o.circuitos.join(',')] : [])].join(' ');
   // La ciudad acota la agenda local (territorio estricto). Una competición
-  // elegida a propósito (chip o prefijo) no tiene sitio: va sin ciudad.
+  // elegida a propósito (casilla o prefijo) no tiene sitio: va sin ciudad; con
+  // la capa «Deporte en <ciudad>», además lo de la ciudad (local=).
   const competiciones = elegidas.length || ambitos.some(a => AMBITOS[a]?.codigo) || Boolean(o?.circuitos.length);
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: [...s.temas].join(','), precio: s.precio,
-    territorio: competiciones ? '' : s.donde?.id || '' };
+    territorio: competiciones ? '' : s.donde?.id || '', local: competiciones && elegidas.length && s.deporteLocal ? s.donde?.id || '' : '' };
 }
 // Días de la vista y su ventana [desde, hasta) dentro de lo publicado.
 // desde:/hasta: del buscador acotan la celebración; en noticias, la publicación.
@@ -261,7 +264,7 @@ async function pendientesCalendario(mas = false){
 }
 function calLimpiarFiltros(){
   const s = CALENDARIO;
-  s.temas.clear(); s.mio = false; s.deporte = ''; s.competicion = ''; s.temporada = null; s.precio = ''; s.rango = ''; s.semanas = 1; s.mes = null;
+  s.temas.clear(); s.mio = false; s.capas = null; s.deporteLocal = false; s.temporada = null; s.precio = ''; s.rango = ''; s.semanas = 1; s.mes = null;
   s.escrito = { donde: '' }; s.sugerencias = { donde: [] }; s.editandoDonde = false;
 }
 function calPreferencias(){
@@ -284,8 +287,8 @@ function calVerLoMio(){
   const s = CALENDARIO, p = calPreferencias();
   if (p?.estado !== 'configurado' || !calTemasMios(p).length && !p.competiciones.length) return false;
   // Sin intereses locales, «Lo mío» son las competiciones que sigo.
-  s.temas = new Set(calTemasMios(p)); s.mio = true; s.competicion = '';
-  s.deporte = calTemasMios(p).length ? '' : 'seguidas';
+  s.temas = new Set(calTemasMios(p)); s.mio = true; s.deporteLocal = false;
+  s.capas = calTemasMios(p).length ? null : new Set(p.competiciones);
   return true;
 }
 // La ciudad fija también la hora: la canaria en Canarias; si no, la del navegador.
@@ -500,13 +503,14 @@ function calPuntos(d){
   return [...CAL_CATEGORIAS, 'otras'].filter(c => hay.has(c));
 }
 // En Deportes el mes enseña competiciones: «NBA 9» (partidos) o «F1» (GP,
-// torneo); dos como mucho y «+N». La elegida va primero.
+// torneo); dos como mucho y «+N». Con una sola capa, la suya va primero.
 const calModoDeportes = () => Boolean(CALENDARIO.meta) && (calRaizElegida() === 'deportes'
   || Boolean(CALENDARIO.orden?.ambitos.some(a => AMBITOS[a]?.codigo)));
+const calUnica = () => CALENDARIO.capas?.size === 1 && !CALENDARIO.deporteLocal ? [...CALENDARIO.capas][0] : '';
 function calMarcas(d){
-  const s = CALENDARIO, orden = Object.keys(CAL_MARCAS);
+  const s = CALENDARIO, orden = Object.keys(CAL_MARCAS), unica = calUnica();
   const hay = Object.entries(d?.competiciones || {}).filter(([c, n]) => CAL_MARCAS[c] && n.citas + n.programas + n.en_curso > 0)
-    .sort(([a], [b]) => (b === s.competicion) - (a === s.competicion) || orden.indexOf(a) - orden.indexOf(b));
+    .sort(([a], [b]) => (b === unica) - (a === unica) || orden.indexOf(a) - orden.indexOf(b));
   return hay.map(([c, n]) => ({ c, texto: CAL_MARCAS[c] + (n.citas > 1 ? ' ' + n.citas : ''),
     nombre: calNombreCompeticion(c) + (n.citas ? ' · ' + calN('calNPartidos', n.citas) : '') }));
 }
@@ -646,7 +650,7 @@ function calTemporada(){
   };
   const filas = Object.keys(CAL_MARCAS).filter(c => partidos[c] || largos[c]?.length).map(c => {
     const lista = largos[c] || [];
-    return `<li class="cal-temporada-fila">${calBoton('competicion', calNombreCompeticion(c), c, `aria-pressed="${s.competicion === c}"`)}
+    return `<li class="cal-temporada-fila">${calBoton('solo', calNombreCompeticion(c), c, `aria-pressed="${calUnica() === c}"`)}
       ${partidos[c] ? `<span class="cal-nota">${calEsc(calN('calNPartidos', partidos[c]))}</span>` : ''}${parcial(c) ? `<span class="cal-nota">· ${calEsc(t('calParcial'))}</span>` : ''}
       ${lista.length ? `<ul>${lista.slice(0, 4).map(e => `<li>${calBoton('evento', calNombre(e), e.id, 'aria-haspopup="dialog"')} <span class="cal-cuando">${calEsc(rango(e))}</span></li>`).join('')}
         ${lista.length > 4 ? `<li class="cal-nota">${calEsc(t('calYMas', { n: lista.length - 4 }))}</li>` : ''}</ul>` : ''}</li>`;
@@ -705,22 +709,12 @@ function calChips(){
   const chip = (accion, label, valor, pulsado, clase = '') => calBoton(accion, label, valor, `class="${clase}" aria-pressed="${pulsado}"`);
   const fijas = CAL_CATEGORIAS.filter(c => conceptos[c]);
   const loMio = calPreferencias()?.estado === 'configurado' ? chip('categoria', t('calLoMio'), 'mio', s.mio) : '';
-  const primera = `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calTemas'))}">${loMio}${chip('categoria', t('calTodo'), '', !raiz && !s.competicion && !s.mio)}
+  const primera = `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calTemas'))}">${loMio}${chip('categoria', t('calTodo'), '', !raiz && !s.mio)}
     ${fijas.map(c => chip('categoria', calNombre(conceptos[c]), c, raiz === c, 'cal-cat cal-cat-' + c)).join('')}
     ${calBoton('gratis', t('calPrecioGratis'), '', `aria-pressed="${s.precio === 'gratis'}" title="${calEsc(t('calGratisNota'))}"`)}</div>`;
-  let segunda = '';
-  let tercera = '';
-  if (raiz === 'deportes' && !s.orden?.ambitos.length){
-    // En tu zona (deporte con sitio), las que sigo y cada deporte; sin seguir
-    // ninguna, el acceso al paso del asistente.
-    const sigo = calPreferencias()?.competiciones.length;
-    segunda = chip('deporte', t('calLocal'), '', !s.deporte) + (sigo ? chip('deporte', t('calQueSigo'), 'seguidas', s.deporte === 'seguidas') : '')
-      + Object.keys(CAL_DEPORTES).map(k => chip('deporte', t(CAL_NOMBRES_DEPORTE[k]), k, s.deporte === k)).join('')
-      + (sigo ? '' : calBoton('asistente', t('calElegirCompeticiones'), '2', 'class="cal-elegir"'));
-    if (CAL_DEPORTES[s.deporte]) tercera = CAL_DEPORTES[s.deporte].map(k => chip('competicion', calNombreCompeticion(k), k, s.competicion === k)).join('');
-  } else if (raiz) segunda = calHijos(conceptos, raiz).map(i => chip('tema', calNombre(conceptos[i]), i, s.temas.has(i))).join('');
-  const fila = (html, label) => html ? `<div class="cal-chips cal-subchips ui-tira" role="group" aria-label="${calEsc(label)}">${html}</div>` : '';
-  return primera + fila(segunda, calNombre(conceptos[raiz])) + fila(tercera, s.deporte ? t(CAL_NOMBRES_DEPORTE[s.deporte]) : '');
+  // Deportes elige sus competiciones en la barra lateral; el resto, subcategorías.
+  const segunda = raiz && !calConLateral() ? calHijos(conceptos, raiz).map(i => chip('tema', calNombre(conceptos[i]), i, s.temas.has(i))).join('') : '';
+  return primera + (segunda ? `<div class="cal-chips cal-subchips ui-tira" role="group" aria-label="${calEsc(calNombre(conceptos[raiz]))}">${segunda}</div>` : '');
 }
 function calContenido(){
   const s = CALENDARIO;
@@ -728,7 +722,38 @@ function calContenido(){
   if (!s.meta) return '';
   const { desde, hasta, acotada } = calVentana();
   if (desde >= hasta) return `<p class="cal-aviso">${calEsc(t('calFueraHorizonte'))}</p>`;
-  return calInvitacion() + calTira() + calLista() + (s.resumen && !acotada ? calPendientes() : '');
+  const cuerpo = calInvitacion() + calTira() + calLista() + (s.resumen && !acotada ? calPendientes() : '');
+  return calConLateral() ? `<div class="cal-con-lateral${calLateralFijo() ? ' cal-fijo' : ''}">${calLateral()}<div class="cal-principal">${cuerpo}</div></div>` : cuerpo;
+}
+// Calendario deportivo («Mis calendarios» de Google Calendar, deportes de
+// SofaScore): cada competición es una capa con su casilla, por deporte, y
+// «Deporte en <ciudad>» otra más. En ancho, columna a la izquierda; en
+// estrecho, un desplegable sobre el mes. Siempre queda una capa marcada.
+const CAL_LATERAL_ANCHO = 960;
+const calLateralFijo = () => (document.getElementById('calendario-panel')?.clientWidth || 0) >= CAL_LATERAL_ANCHO;
+const calConLateral = () => Boolean(CALENDARIO.capas) && calRaizElegida() === 'deportes' && !CALENDARIO.orden?.ambitos.length;
+function calLateral(){
+  const s = CALENDARIO, fijo = calLateralFijo(), sigo = calPreferencias()?.competiciones || [];
+  const marcadas = s.capas.size + (s.deporteLocal ? 1 : 0), total = CAL_COMPETICIONES.length + (s.donde ? 1 : 0);
+  const caja = (valor, texto, marcada, marca = '') => `<div class="cal-capa"><label><input type="checkbox" name="cal-capa" value="${calEsc(valor)}"${marcada ? ' checked' : ''}${marcada && marcadas === 1 ? ' disabled' : ''}>
+    ${marca && marca !== texto ? `<span class="cal-marca">${calEsc(marca)}</span>` : ''}<span>${calEsc(texto)}</span></label>
+    ${calBoton('solo', t('calSolo'), valor, `class="cal-solo" aria-label="${calEsc(t('calVerSolo', { x: texto }))}"`)}</div>`;
+  const cuerpo = (s.donde ? `<fieldset><legend>${calEsc(t('calCerca'))}</legend>${caja('local', t('calDeporteEn', { x: s.donde.nombre }), s.deporteLocal)}</fieldset>` : '')
+    + Object.entries(CAL_DEPORTES).map(([k, cs]) => `<fieldset><legend>${calEsc(t(CAL_NOMBRES_DEPORTE[k]))}</legend>
+      ${cs.map(c => caja(c, calNombreCompeticion(c), s.capas.has(c), CAL_MARCAS[c])).join('')}</fieldset>`).join('')
+    + `<div class="cal-lateral-acciones">${calBoton('capas-todas', t('calTodas'), '', `aria-pressed="${marcadas === total}"`)}
+      ${sigo.length ? calBoton('capas-sigo', t('calLasQueSigo')) : ''}${calBoton('asistente', t('calElegirCompeticiones'), '2')}</div>`;
+  const titulo = t('calCompeticionesN', { n: marcadas, total });
+  return `<aside class="cal-lateral" aria-label="${calEsc(t('calCompeticiones'))}">${fijo ? `<h2>${calEsc(titulo)}</h2>`
+    : calBoton('lateral', titulo + (s.lateral ? ' ▴' : ' ▾'), '', `class="cal-lateral-boton" aria-expanded="${s.lateral}" aria-controls="cal-lateral"`)}
+    <div id="cal-lateral" class="cal-lateral-cuerpo"${fijo || s.lateral ? '' : ' hidden'}>${cuerpo}</div></aside>`;
+}
+// Al entrar en Deportes: las competiciones que sigo o, sin ninguna, todas; y la
+// capa de la ciudad si la hay (con preferencias, si la pedí).
+function calEntrarDeportes(){
+  const s = CALENDARIO, p = calPreferencias(), sigo = p?.competiciones.length ? p.competiciones : null;
+  s.capas = new Set(sigo || CAL_COMPETICIONES);
+  s.deporteLocal = Boolean(s.donde) && (p?.estado === 'configurado' ? Boolean(p.intereses.deporteLocal) || !sigo : true);
 }
 // Primera vez sin configurar: invitar al asistente (se puede dejar para otro día).
 function calInvitacion(){
@@ -933,6 +958,7 @@ function wireCalendario(){
       l.abierta = false; return void pintarCalendario();
     }
     if (a === 'mes'){ s.mesAbierto = !s.mesAbierto; return void consultarCalendario(); }
+    if (a === 'lateral'){ s.lateral = !s.lateral; return void pintarCalendario(); }
     if (a === 'editar-donde'){
       s.editandoDonde = true; pintarCalendario();
       return void document.getElementById('cal-donde')?.focus();
@@ -959,19 +985,24 @@ function wireCalendario(){
     if (a === 'mas-semanas') s.semanas = Math.min(CAL_SEMANAS_MAX, s.semanas + 1);
     // Deportes abre el mes: sus fechas se ven mejor de un vistazo.
     if (a === 'categoria'){
-      s.temas.clear(); s.mio = false; s.deporte = ''; s.competicion = '';
+      s.temas.clear(); s.mio = false; s.capas = null; s.deporteLocal = false;
       if (v === 'mio') calVerLoMio();
       else if (v) s.temas.add(v);
-      // Deportes abre el mes con lo que sigo, si sigo algo.
-      if (v === 'deportes'){ s.mesAbierto = true; if (calPreferencias()?.competiciones.length) s.deporte = 'seguidas'; }
+      // Deportes abre el mes con sus capas.
+      if (v === 'deportes'){ s.mesAbierto = true; calEntrarDeportes(); }
     }
-    if (a === 'deporte'){ s.deporte = s.deporte === v && v !== 'seguidas' ? '' : v; s.competicion = ''; }
+    // Capas: solo una (la del bloque del mes o «Solo»), todas o las que sigo.
+    if (a === 'solo'){ s.capas = new Set(v === 'local' ? [] : [v]); s.deporteLocal = v === 'local'; }
+    if (a === 'capas-todas'){ s.capas = new Set(CAL_COMPETICIONES); s.deporteLocal = Boolean(s.donde); }
+    if (a === 'capas-sigo'){
+      const p = calPreferencias();
+      s.capas = new Set(p.competiciones); s.deporteLocal = Boolean(s.donde && p.intereses.deporteLocal);
+    }
     // Una subcategoría sustituye a su raíz y se quita volviendo a pulsarla.
     if (a === 'tema'){
       const raiz = calRaizElegida(), pulsado = s.temas.has(v);
       s.temas.clear(); s.temas.add(pulsado ? raiz : v);
     }
-    if (a === 'competicion') s.competicion = s.competicion === v ? '' : v;
     if (a === 'gratis') s.precio = s.precio === 'gratis' ? '' : 'gratis';
     consultarCalendario();
     if (enfocar) p.querySelector(enfocar)?.focus({ preventScroll: true });
@@ -989,6 +1020,13 @@ function wireCalendario(){
       if (n === 'cal-as-comp') marcado ? b.competiciones.add(v) : b.competiciones.delete(v);
       as.error = '';
       return;
+    }
+    if (e.target.name === 'cal-capa'){
+      if (v === 'local') s.deporteLocal = e.target.checked;
+      else e.target.checked ? s.capas.add(v) : s.capas.delete(v);
+      // Nunca sin capas: la última se queda (su casilla está desactivada).
+      if (!s.capas.size && !s.deporteLocal) v === 'local' ? s.deporteLocal = true : s.capas.add(v);
+      return void consultarCalendario();
     }
     if (id !== 'cal-fecha' || !fechaValida(v)) return;
     calElegirDia(v); consultarCalendario();
@@ -1013,8 +1051,9 @@ function wireCalendario(){
     }
   });
   if (typeof ResizeObserver !== 'undefined'){
-    let ancho = calMesAncho();
+    let ancho = calMesAncho(), fijo = calLateralFijo();
     new ResizeObserver(() => {
+      if (calLateralFijo() !== fijo){ fijo = calLateralFijo(); if (s.abierto && !s.asistente) pintarCalendario(); }
       if (calMesAncho() === ancho) return;
       ancho = calMesAncho();
       if (s.abierto && s.mesAbierto) consultarCalendario();

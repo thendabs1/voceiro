@@ -461,6 +461,9 @@ test('local: lo que se celebra en el territorio más las competiciones, que no t
   assert.equal(await total('&territorio=es:provincia:28'), 0);
   assert.equal(await total('&local=es:provincia:28'), 25);
   assert.equal(await total('&local=es:provincia:36'), await total(''));
+  // Con competiciones elegidas (capas), solo esas además de lo del territorio.
+  assert.equal(await total('&local=es:provincia:28&q=wta:'), 25);
+  assert.equal(await total('&local=es:provincia:28&q=atp:'), 0);
 });
 
 test('chips: una cita es su chip; de un GP solo la carrera, en su día de cada zona; de un programa, sus funciones', () => {

@@ -115,8 +115,10 @@ export function filtrosSql(c, meta, args) {
   faceta('fuente', c.fuente ? [c.fuente] : []);
   faceta('territorio', c.territorio ? [c.territorio] : []);
   // «local»: lo que se celebra en ese territorio y las competiciones, que no
-  // tienen territorio publicado (se siguen desde cualquier sitio).
-  if (c.local) {
+  // tienen territorio publicado (se siguen desde cualquier sitio). Con ámbitos
+  // (capas del calendario deportivo), lo del territorio O esos ámbitos.
+  const ambitosLocales = Boolean(c.local && c.orden.ambitos?.length);
+  if (c.local && !ambitosLocales) {
     args.push(c.local);
     condiciones.push(`(e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='territorio' AND valor=?)
       OR e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='circuito'))`);
@@ -126,6 +128,10 @@ export function filtrosSql(c, meta, args) {
   faceta('precio', c.precio ? [c.precio] : []);
   if (c.orden.ambitos?.length) {
     const porAmbito = [];
+    if (ambitosLocales) {
+      args.push(c.local);
+      porAmbito.push("e.id IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='territorio' AND valor=?)");
+    }
     for (const ambito of c.orden.ambitos) {
       const a = AMBITOS[ambito], valores = a.codigo ? [a.codigo] : [...temasDescendientes(meta.catalogo, [a.tema])];
       args.push(a.codigo ? 'circuito' : 'tema', ...valores);
