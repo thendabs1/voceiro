@@ -2072,7 +2072,7 @@
 .cal-nota,.cal-estado{font-size:.78em;color:var(--muted);overflow-wrap:anywhere}.cal-estado:empty{display:none}.cal-aviso{font-size:.85em;color:var(--accent)}
 .cal-dia h2,.cal-pendientes h2{font-size:1.05em;margin:20px 0 12px;text-transform:capitalize}.cal-evento{border-top:1px solid var(--border);padding:14px 0;overflow-wrap:anywhere;min-width:0}
 .cal-evento h3{font-size:1em;font-weight:600;margin:0 0 8px}.cal-evento p{margin:6px 0}.cal-cuando{font-size:.85em;color:var(--muted);font-variant-numeric:tabular-nums}
-.cal-evento-compacto{padding:6px 0}.cal-evento-compacto h3{margin:0}.cal-evento-compacto h3 button{border:0;background:transparent;color:var(--fg);padding:6px 0;text-align:left;font-weight:600;line-height:1.35;overflow-wrap:anywhere}.cal-evento-compacto h3 button:hover{color:var(--accent);text-decoration:underline}.cal-evento-compacto p{margin:2px 0 5px}.cal-paginacion{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:16px 0}
+.cal-paginacion{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:16px 0}
 /* Tarjeta de la lista: hora en su columna, título, lugar y tipo de plan. */
 .cal-dia h2 small{font-size:.75em;font-weight:400;color:var(--muted);text-transform:none}
 .cal-cita{display:grid;grid-template-columns:3.4em minmax(0,1fr);gap:0 8px;border-top:1px solid var(--border);padding:6px 0;overflow-wrap:anywhere}
