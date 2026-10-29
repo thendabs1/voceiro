@@ -57,3 +57,5 @@
 /* El panel es la vista: sin feed debajo en el que caer al desplazarse. */
 .estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:10px;gap:6px}.est-cabecera strong{font-size:.9em}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros label{flex:1 1 120px}.est-filtros select{width:100%}.est-nav{padding-inline:10px}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
+/* Escritorio con ratón: más denso (≈ 90 %), como el calendario; en táctil se quedan los 44 px. */
+@media(pointer:fine){.estadisticas-panel{font-size:.9em}.estadisticas-panel button,.estadisticas-panel input,.estadisticas-panel select{min-height:32px}}

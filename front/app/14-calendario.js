@@ -398,18 +398,20 @@ function calLugar(e){
   return [...new Set([v.nombre || v.fullName || v.displayName,
     v.municipio_literal || v.municipio || v.address?.city].filter(Boolean))].join(' · ');
 }
+// Fuente: su nombre enlaza a la ficha original; luego, comprobación y licencia.
 function calFuentes(e){
   const m = CALENDARIO.meta, vistas = new Set();
   return e.fuentes.filter(f => { const k = f.fuente + '/' + f.url; if (vistas.has(k)) return false; vistas.add(k); return true; })
     .map(f => {
       const fuente = m?.fuentes?.[f.fuente];
       const comprobado = f.comprobado || m?.cobertura?.find(c => c.fuente === f.fuente)?.comprobado;
-      return `<p class="cal-nota">${calEnlace(f.url || fuente?.url, fuente?.atribucion || fuente?.nombre || f.fuente)}
+      return `<p class="cal-nota">${calEsc(t('calFuente'))}: ${calEnlace(f.url || fuente?.url, fuente?.atribucion || fuente?.nombre || f.fuente)}
         ${comprobado ? ' · ' + calEsc(t('calComprobado', { fecha: calFormato({ dateStyle: 'short', timeStyle: 'short', timeZone: CALENDARIO.zona }).format(new Date(comprobado)) })) : ''}
         ${fuente?.licencia ? ' · ' + calEnlace(fuente.licencia_url, fuente.licencia) : ''}</p>`;
     }).join('');
 }
-// Detalle completo, en el diálogo.
+// Detalle completo, en el diálogo y todo a la vista: cuándo, dónde, programa,
+// participantes y fuente (sin desplegables que repitan lo mismo).
 function calEvento(e){
   const v = e.programacion?.valor, estado = v?.programacion;
   const aviso = e.programacion?.conflicto || e.lugar?.conflicto;
@@ -425,10 +427,9 @@ function calEvento(e){
     ${ejecucion === 'en_curso' || ejecucion === 'terminado' ? `<p class="cal-nota">${calEsc(t(ejecucion === 'en_curso' ? 'calEnCurso' : 'calTerminado'))}</p>` : ''}
     ${aviso ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}
     ${e.programa?.length ? `<section class="cal-programa"><h4>${calEsc(t('calPrograma'))}</h4><ul>${e.programa.map(p => `<li><span>${calEsc(calNombre(p))}</span> <span class="cal-cuando">${calEsc(calHora(p))}</span></li>`).join('')}</ul></section>` : ''}
-    <details><summary>${calEsc(t('calDetalles'))}</summary>
-    ${e.participaciones?.length ? `<ul>${e.participaciones.map(p => `<li>${calEsc(p.literal)}</li>`).join('')}</ul>` : ''}
-    ${(e.enlaces || []).map(url => `<p>${calEnlace(url, t('calVerOriginal'))}</p>`).join('')}
-    ${calFuentes(e)}</details></article>`;
+    ${e.participaciones?.length ? `<ul class="cal-participantes">${e.participaciones.map(p => `<li>${calEsc(p.literal)}</li>`).join('')}</ul>` : ''}
+    <footer class="cal-evento-fuente">${calFuentes(e)}
+    ${(e.enlaces || []).filter(url => !e.fuentes.some(f => f.url === url)).map(url => `<p class="cal-nota">${calEnlace(url, t('calVerOriginal'))}</p>`).join('')}</footer></article>`;
 }
 async function abrirEventoCalendario(id){
   const s = CALENDARIO, dialogo = document.getElementById('cal-evento-dialogo');
