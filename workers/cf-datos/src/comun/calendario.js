@@ -34,7 +34,7 @@ export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
     'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'local', 'etiqueta', 'formatos', 'precio', 'presentacion', 'muestras',
-    'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad']);
+    'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad', 'barras']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
   }
@@ -68,7 +68,7 @@ export function normalizarConsulta(url) {
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', local: p.get('local') || '', etiqueta: p.get('etiqueta') || '',
     formatos: lista(p.get('formatos')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
-    tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1',
+    tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1',
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
   if ([c.temas, c.circuitos, c.formatos, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   // «gratis» no incluye «mixto»: el filtro no promete lo que solo vale para una tarifa.
@@ -219,6 +219,23 @@ export function consultaDisponibilidad(c, meta) {
   return { sql: partes.join('\n    UNION ALL '), args };
 }
 
+// Barras del mes: competiciones de varios días (GP, torneos) que solapan la
+// ventana, con los mismos filtros. Un evento partido en tramos (por meses) es
+// una barra de su primer a su último día.
+export const BARRAS_MAX = 60;
+export function consultaBarras(c, meta) {
+  const args = [];
+  const presentacion = presentacionSql(c.zona, args);
+  args.push(c.zona, c.desde, topeVentana(c, meta), c.hasta);
+  const filtros = filtrosSql(c, meta, args);
+  args.push(BARRAS_MAX);
+  return { sql: `SELECT d.evento AS id, min(d.desde) AS desde, max(d.hasta) AS hasta, e.tarjeta_json AS tarjeta
+      FROM agenda_lectura_tramos d JOIN agenda_lectura_eventos e ON e.id=d.evento
+      WHERE ${presentacion} IN ('prolongada','programa') AND json_extract(e.tarjeta_json,'$.competiciones') IS NOT NULL
+        AND d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros}
+      GROUP BY d.evento ORDER BY 2, 3, 1 LIMIT ?`, args };
+}
+
 export function consultaResumen(c, meta) {
   const args = [c.desde];
   const presentacion = presentacionSql(c.zona, args);
@@ -326,9 +343,11 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       args.push(c.limite + 1);
       sentencia = { sql: 'SELECT id,datos_json FROM agenda_lectura_entidades WHERE ' + condiciones.join(' AND ') + ' ORDER BY id LIMIT ?', args };
     }
-    let filas = [];
+    let filas = [], barras = null;
     if (sentencia) {
-      const [actual, respuesta] = await consultar(env, [control, sentencia]);
+      const extra = ruta === '/calendario/resumen' && c.barras ? [consultaBarras(c, meta)] : [];
+      const [actual, respuesta, conBarras] = await consultar(env, [control, sentencia, ...extra]);
+      if (extra.length) barras = conBarras;
       if (!actual[0] || JSON.parse(actual[0].datos_json).revision !== meta.revision) {
         try { await cache?.delete(controlClave); } catch { /* Expira en 15 segundos. */ }
         throw error(409, 'La publicación cambió; reinicia la consulta');
@@ -390,6 +409,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
           ...(meta.lectura_chips && c.muestras ? { chips: totales.get(dia) || 0 } : {}) });
       }
       salida = { ...base, dias: [...porDia.values()] };
+      if (barras) salida.barras = barras.map(f => ({ ...JSON.parse(f.tarjeta), desde: f.desde, hasta: f.hasta }));
     } else {
       const hayMas = filas.length > c.limite, pagina = filas.slice(0, c.limite), ultima = pagina.at(-1);
       // dia: primer día visible en la ventana pedida ('' en la lista pendiente),

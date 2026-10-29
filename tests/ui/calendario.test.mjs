@@ -46,10 +46,11 @@ function api(u){
         categorias.deportes = { citas: 0, programas: 0, en_curso: 1 };
         Object.assign(competiciones, { nba: { citas: 9, programas: 0, en_curso: 0 }, f1: { citas: 0, programas: 1, en_curso: 0 }, atp: { citas: 1, programas: 0, en_curso: 0 } });
       }
-      dias.push({ dia: d, cantidad: 30, citas: 25, programas: 1, en_curso: 4, categorias, competiciones, muestras: [
+      dias.push({ dia: d, cantidad: 30, citas: 25, programas: 1, en_curso: 4, categorias, competiciones, chips: 26, muestras: [
         tarjeta('A' + d, d, { hora: '17:00', formatos: ['concierto'], precio: 'gratis', categoria: 'cultura' }), tarjeta('B' + d, d), tarjeta('C' + d, d)].slice(0, n) });
     }
-    return { ...META, dias };
+    return { ...META, dias, ...(p.get('barras') ? { barras: [{ ...tarjeta('GP de México', '2026-10-30', { presentacion: 'programa', competiciones: ['f1'], categoria: 'deportes' }),
+      desde: '2026-10-30', hasta: '2026-11-02' }] } : {}) };
   }
   if (ruta.startsWith('/calendario/eventos/')) return { ...META, entidades: {}, evento: { ...tarjeta(decodeURIComponent(ruta.slice(20)), '2026-10-25'),
     lugar: { valor: { nombre: 'Circuito', municipio_literal: 'Jerez' }, conflicto: false },
@@ -92,7 +93,7 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {} } = 
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
-  c.almacen = almacen; c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias; c.buscar = buscar; c.aplicadas = aplicadas;
+  c.almacen = almacen; c.panel = panel; c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias; c.buscar = buscar; c.aplicadas = aplicadas;
   c.ultima = () => pedidas.at(-1);
   c.resumen = () => pedidas.findLast(u => u.pathname === '/calendario/resumen').searchParams;
   c.click = async (cal, valor = '', extra = {}) => {
@@ -337,6 +338,29 @@ test('sin competiciones seguidas, Deportes ofrece elegirlas; guardar sin nada av
   assert.equal(c.almacen['voceiro-calendario-preferencias-v1'], undefined);
   await c.click('as-cancelar');
   assert.equal(c.api.s.asistente, null);
+});
+
+test('mes con títulos en ancho: chips con hora, «+N» y la barra del GP cortada por semanas', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.abrir();
+  await c.click('mes');
+  assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['4', '1']);
+  const html = c.api.calContenido();
+  assert.equal((html.match(/class="cal-mg-semana"/g) || []).length, 6);
+  // El día: hora y título de cada muestra, coloreados por categoría, y el resto en «+N».
+  const dia = html.match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0];
+  assert.match(dia, /<span class="cal-mg-chip cal-cat-cultura"><b>18:00<\/b> A2026-10-28<\/span>/);
+  assert.match(dia, /\+23 más/);
+  // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
+  assert.match(html, /class="cal-mg-barra cal-cat-deportes" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
+  assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
+  // En estrecho, la tira con puntos de siempre (y sin pedir títulos).
+  c.panel.clientWidth = 360;
+  await c.click('mes'); await c.click('mes');
+  assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['0', null]);
+  assert.doesNotMatch(c.api.calContenido(), /cal-mg-semana/);
 });
 
 test('la ventana se recorta al horizonte publicado y fuera de él no se pide nada', async () => {

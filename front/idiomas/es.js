@@ -23,7 +23,7 @@ export default {
   "calAsResumen": "Así quedará tu calendario", "calAsCambiar": "Cambiar", "calAsNinguno": "Ninguno",
   "calAsSitioRes": "Sitio", "calAsInteresesRes": "Intereses", "calAsCompeticionesRes": "Competiciones",
   "calAsVacio": "Elige al menos un interés o una competición.",
-  "calGratisNota": "Solo lo que la fuente declara gratis; muchas citas no indican precio", "calEnCartel": "En cartel · {n}", "calPasado": "ya pasó",
+  "calMasN": "+{n} más", "calGratisNota": "Solo lo que la fuente declara gratis; muchas citas no indican precio", "calEnCartel": "En cartel · {n}", "calPasado": "ya pasó",
   "calAgenda": "Agenda", "calSemana": "Semana", "calMes": "Mes",
   "calCerrar": "Cerrar", "calVerNoticias": "Ver noticias", "calActualizar": "Actualizar", "calReintentar": "Reintentar",
   "calHoy": "Hoy", "calFecha": "Elegir fecha",
