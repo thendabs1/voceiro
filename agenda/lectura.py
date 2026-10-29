@@ -23,25 +23,28 @@ def _huella(dato):
                                      separators=(',', ':')).encode()).hexdigest()
 
 
-COMPONENTES = ('fila', 'facetas', 'tramos')
+COMPONENTES = ('fila', 'facetas', 'tramos', 'chips')
 
 
 def huellas(preparada):
-    """Huella de cada evento por componente (fila, facetas, tramos) y de cada entidad.
+    """Huella de cada evento por componente (fila, facetas, tramos, chips) y de cada entidad.
 
     La de un evento se guarda como JSON con una huella por componente: si solo
     cambian sus facetas no se reescriben su fila ni sus tramos.
     """
-    facetas, tramos = defaultdict(list), defaultdict(list)
+    facetas, tramos, chips = defaultdict(list), defaultdict(list), defaultdict(list)
     for f in preparada['facetas']:
         facetas[f[0]].append(f)
     for t in preparada['tramos']:
         tramos[t[3]].append(t)
+    for c in preparada.get('chips', []):
+        chips[c[2]].append(c)
     resultado = {('evento', e[0]): json.dumps({'fila': _huella(e), 'facetas': _huella(sorted(facetas[e[0]])),
-                                               'tramos': _huella(sorted(tramos[e[0]]))}, sort_keys=True)
+                                               'tramos': _huella(sorted(tramos[e[0]])),
+                                               'chips': _huella(sorted(chips[e[0]], key=json.dumps))}, sort_keys=True)
                  for e in preparada['eventos']}
     resultado.update({('entidad', e[0]): _huella(e) for e in preparada['entidades']})
-    return resultado, facetas, tramos
+    return resultado, facetas, tramos, chips
 
 
 def cambios(preparada, previo=None):
@@ -50,7 +53,7 @@ def cambios(preparada, previo=None):
     Las huellas guardadas antes de separar componentes (un solo hash del evento)
     siguen valiendo: si el contenido es el mismo, no se reescribe nada.
     """
-    nuevas, facetas, tramos = huellas(preparada)
+    nuevas, facetas, tramos, chips = huellas(preparada)
     guardadas = (previo or {}).get('huellas', {})
     filas = {e[0]: e for e in preparada['eventos']}
     salida = {}
@@ -65,6 +68,9 @@ def cambios(preparada, previo=None):
             salida[(tipo, i)] = {c for c in COMPONENTES if antes.get(c) != ahora[c]}
         elif vieja != _huella([filas[i], sorted(facetas[i]), sorted(tramos[i])]):
             salida[(tipo, i)] = set(COMPONENTES)
+        elif chips[i]:
+            # Huella anterior a los chips: el resto vale, faltan sus chips.
+            salida[(tipo, i)] = {'chips'}
     return salida
 
 
@@ -98,7 +104,7 @@ def planificar(preparada, revision, previo=None):
         raise ValueError('Contrato de lectura incompatible')
     cuerpo = json.dumps(preparada, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
     identificador = hashlib.sha256((str(revision) + ':' + cuerpo).encode()).hexdigest()
-    meta = {k: v for k, v in preparada.items() if k not in ('eventos', 'facetas', 'tramos', 'entidades')}
+    meta = {k: v for k, v in preparada.items() if k not in ('eventos', 'facetas', 'tramos', 'chips', 'entidades')}
     meta.update(revision=identificador, origen_revision=revision)
     sql = '\n'.join(l for l in Path(__file__).with_suffix('.sql').read_text().splitlines()
                     if not l.lstrip().startswith('--'))
@@ -108,10 +114,10 @@ def planificar(preparada, revision, previo=None):
         'SELECT 1, -1, ?, ?, ? WHERE NOT EXISTS '
         '(SELECT 1 FROM agenda_esquema WHERE id=1 AND version=? AND revision=?)',
         (identificador, revision, '{}', VERSION_ESQUEMA, revision)))
-    nuevas, facetas, tramos = huellas(preparada)
+    nuevas, facetas, tramos, chips = huellas(preparada)
     if previo is None:
         cambiadas, retiradas = {k: set(COMPONENTES) for k in nuevas}, set()
-        for tabla in ('facetas', 'tramos', 'eventos', 'entidades', 'huellas'):
+        for tabla in ('chips', 'facetas', 'tramos', 'eventos', 'entidades', 'huellas'):
             pasos.append((f'DELETE FROM agenda_lectura_{tabla}', ()))
     else:
         # Misma técnica: si la lectura publicada ya no es la leída, CHECK o PK fallan.
@@ -128,6 +134,8 @@ def planificar(preparada, revision, previo=None):
                 pasos.append(('DELETE FROM agenda_lectura_facetas WHERE evento=?', (i,)))
             if 'tramos' in componentes:
                 pasos.append(('DELETE FROM agenda_lectura_tramos WHERE evento=?', (i,)))
+            if 'chips' in componentes:
+                pasos.append(('DELETE FROM agenda_lectura_chips WHERE evento=?', (i,)))
         for tipo, i in sorted(retiradas):
             pasos.append((f'DELETE FROM agenda_lectura_{TABLAS[tipo]} WHERE id=?', (i,)))
             pasos.append(('DELETE FROM agenda_lectura_huellas WHERE tipo=? AND id=?', (tipo, i)))
@@ -141,6 +149,8 @@ def planificar(preparada, revision, previo=None):
             pasos.extend(('INSERT INTO agenda_lectura_facetas VALUES (?,?,?)', tuple(f)) for f in facetas[e[0]])
         if 'tramos' in componentes:
             pasos.extend(('INSERT INTO agenda_lectura_tramos VALUES (?,?,?,?)', tuple(t)) for t in tramos[e[0]])
+        if 'chips' in componentes:
+            pasos.extend(('INSERT INTO agenda_lectura_chips VALUES (?,?,?,?,?,?,?)', tuple(c)) for c in chips[e[0]])
     for e in preparada['entidades']:
         if ('entidad', e[0]) in cambiadas:
             pasos.append(('INSERT INTO agenda_lectura_entidades VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET '

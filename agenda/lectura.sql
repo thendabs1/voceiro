@@ -35,6 +35,18 @@ CREATE TABLE IF NOT EXISTS agenda_lectura_entidades (
     datos_json TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS agenda_lectura_entidades_tipo ON agenda_lectura_entidades(tipo,id);
+-- Chips del mes: una fila por día y ocurrencia (cita, función o carrera de un GP).
+CREATE TABLE IF NOT EXISTS agenda_lectura_chips (
+    zona TEXT NOT NULL,
+    dia TEXT NOT NULL,
+    evento TEXT NOT NULL REFERENCES agenda_lectura_eventos(id),
+    ocurrencia TEXT NOT NULL,
+    orden INTEGER NOT NULL,
+    hora TEXT,
+    sesion_json TEXT,
+    PRIMARY KEY(zona,dia,evento,ocurrencia)
+);
+CREATE INDEX IF NOT EXISTS agenda_lectura_chips_evento ON agenda_lectura_chips(evento,zona,dia);
 -- Huella de cada evento (con sus facetas y tramos) y de cada entidad publicada:
 -- cada publicación reescribe solo lo que cambió.
 CREATE TABLE IF NOT EXISTS agenda_lectura_huellas (

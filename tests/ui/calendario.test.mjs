@@ -142,6 +142,14 @@ test('la lista pide una semana desde hoy con tres muestras; un día abre sus cit
   assert.equal(secciones(c.api.calContenido()), 14);
 });
 
+test('una muestra de chip usa su hora del día y lleva encima su GP', async () => {
+  const c = contexto({ responder: u => u.pathname === '/calendario/resumen' ? { ...META, dias: [{ dia: '2026-10-25', citas: 0, programas: 1, en_curso: 0,
+    categorias: {}, competiciones: {}, chips: 1, muestras: [tarjeta('gp', '2026-10-23', { presentacion: 'cita', tiene_programa: true,
+      hora_muestra: '20:00', nombres: { es: 'Carrera' }, padre: { es: 'GP de México' } })] }] } : api(u) });
+  await c.abrir();
+  assert.match(c.api.calContenido(), /<span class="cal-hora">20:00<\/span>[\s\S]*?cal-padre">GP de México<\/p>[\s\S]*?>Carrera<\/button>/);
+});
+
 test('En cartel: plegado con su cuenta; al abrirlo pide lo prolongado del día', async () => {
   const c = contexto();
   await c.abrir();

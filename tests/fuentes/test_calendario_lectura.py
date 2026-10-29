@@ -87,7 +87,7 @@ class LecturaSQL(unittest.TestCase):
         self.assertEqual('\n'.join(self.db.iterdump()), previo)
         vacia = proyectar(self.n, [], AHORA)
         self.publicar(preparar(vacia))
-        for tabla in ('eventos', 'entidades', 'facetas', 'tramos'):
+        for tabla in ('eventos', 'entidades', 'facetas', 'tramos', 'chips'):
             self.assertEqual(self.db.execute(f'SELECT count(*) FROM agenda_lectura_{tabla}').fetchone()[0], 0)
 
     def test_no_se_publica_revision_sin_seleccion_explicita(self):
@@ -115,7 +115,7 @@ class LecturaSQL(unittest.TestCase):
     def tablas(self, db=None):
         db = db or self.db
         return {t: sorted(db.execute(f'SELECT * FROM agenda_lectura_{t}').fetchall())
-                for t in ('control', 'eventos', 'facetas', 'tramos', 'entidades', 'huellas')}
+                for t in ('control', 'eventos', 'facetas', 'tramos', 'chips', 'entidades', 'huellas')}
 
     def previo(self):
         return estado(lambda pasos: [self.db.execute(sql, args).fetchall() for sql, args in pasos])
@@ -174,7 +174,7 @@ class LecturaSQL(unittest.TestCase):
                                              'DELETE FROM agenda_lectura_')) for sql, _ in pasos))
         n = presencia.registrar(repetida, 'madrid', [], LUEGO, madrid.URL, aceptar_caida=True)
         self.publicar(preparar(proyectar(n, ['madrid'], AHORA)), previo=self.previo())
-        for tabla in ('eventos', 'facetas', 'tramos'):
+        for tabla in ('eventos', 'facetas', 'tramos', 'chips'):
             self.assertEqual(self.db.execute(f'SELECT count(*) FROM agenda_lectura_{tabla}').fetchone()[0], 0)
         self.assertFalse(self.db.execute("SELECT id FROM agenda_lectura_entidades WHERE tipo='evento'").fetchall())
         n = presencia.registrar(n, 'madrid', ids, '2026-10-28T12:00:00Z', madrid.URL)
@@ -209,7 +209,8 @@ class LecturaSQL(unittest.TestCase):
         self.assertEqual(self.tablas(), self.completa(cambiada))
 
     def test_huellas_de_un_solo_hash_siguen_valiendo(self):
-        # Lectura publicada antes de separar componentes: sin cambios no se reescribe nada.
+        # Lectura publicada antes de separar componentes: sin cambios no se reescriben
+        # fila, facetas ni tramos; solo se añaden los chips (no existían entonces).
         from agenda.lectura import _huella
         self.publicar()
         facetas = {e[0]: sorted(f for f in self.preparada['facetas'] if f[0] == e[0]) for e in self.preparada['eventos']}
@@ -218,8 +219,9 @@ class LecturaSQL(unittest.TestCase):
             self.db.execute("UPDATE agenda_lectura_huellas SET huella=? WHERE tipo='evento' AND id=?",
                             (_huella([e, facetas[e[0]], tramos[e[0]]]), e[0]))
         pasos = planificar(self.preparada, 12, self.previo())
-        self.assertEqual([sql for sql, _ in pasos if 'agenda_lectura_control' not in sql
-                          and not sql.lstrip().startswith('CREATE')], [])
+        self.assertEqual({sql.split(' VALUES')[0].split(' WHERE')[0] for sql, _ in pasos if 'agenda_lectura_control' not in sql
+                          and not sql.lstrip().startswith('CREATE')},
+                         {'DELETE FROM agenda_lectura_chips', 'INSERT INTO agenda_lectura_chips', 'INSERT INTO agenda_lectura_huellas'})
         cambiada = deepcopy(self.preparada)
         cambiada['eventos'][0][1] += 'cambio '
         self.publicar(cambiada, previo=self.previo())
