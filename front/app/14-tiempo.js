@@ -424,8 +424,9 @@ function ponerTiempo(token){
   if (document.getElementById('estadisticas-panel')?.hidden === false) cerrarEstadisticas();
   cerrarCalendario(false);
   const input = $('#buscar');
-  const resto = input.value.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
-  input.value = [resto, token].filter(Boolean).join(' ');
+  const { antes, consulta } = partirConsulta(input.value);
+  const resto = antes.replace(RX_TOKENS_TIEMPO, ' ').replace(/\s+/g, ' ').trim();
+  input.value = [resto, token, consulta].filter(Boolean).join(' ');
   if (token){
     $('.filtros-wrap').classList.add('busqueda-abierta');
     $('#btn-buscar').setAttribute('aria-expanded', 'true');
@@ -460,7 +461,7 @@ function abrirSitios(){
   if (!sitiosTiempo().length) enfocarBuscador();
 }
 function abrirTiempo(){
-  if (RX_HAY_TIEMPO.test($('#buscar').value)) ponerTiempo('');
+  if (RX_HAY_TIEMPO.test(partirConsulta($('#buscar').value).antes)) ponerTiempo('');
   else abrirSitios();
 }
 // Pestañas y ajustes, en el panel del tiempo y en el de avisos.
@@ -487,7 +488,7 @@ function pintarBotonTiempo(){
   b.innerHTML = ico('sun');
   b.title = etiqueta;
   b.setAttribute('aria-label', etiqueta);
-  b.setAttribute('aria-pressed', String(RX_HAY_TIEMPO.test($('#buscar')?.value || '')));
+  b.setAttribute('aria-pressed', String(RX_HAY_TIEMPO.test(partirConsulta($('#buscar')?.value || '').antes)));
 }
 
 // Etiqueta, idioma y «Cambiar de lugar» de la tarjeta ya pintada.
