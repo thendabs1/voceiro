@@ -2115,7 +2115,15 @@
 .cal-as-resumen{margin:8px 0}.cal-as-fila{display:grid;grid-template-columns:8em 1fr auto;gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--border)}
 .cal-as-fila dt{font-weight:700}.cal-as-fila dd{margin:0}
 .cal-invitacion{border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin:0 0 12px}.cal-invitacion h2{font-size:1em;margin:4px 0}
-.cal-elegir{font-size:.85em;border-style:dashed}
+/* Calendario deportivo: capas por competición; en ancho, columna a la izquierda; en estrecho, desplegable. */
+.cal-con-lateral.cal-fijo{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
+.cal-lateral{margin:0 0 12px}.cal-lateral h2{font-size:.95em;margin:4px 0 8px}
+.cal-lateral-boton{width:100%;text-align:left;font-weight:600}
+.cal-lateral fieldset{border:0;margin:0 0 8px;padding:0}.cal-lateral legend{font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 0 2px}
+.cal-capa{display:flex;align-items:center;gap:4px}.cal-capa label{flex:1;display:flex;align-items:center;gap:8px;min-height:40px;min-width:0;cursor:pointer}
+.cal-capa input{width:18px;height:18px;margin:0;accent-color:var(--cat-deportes)}.cal-capa .cal-marca{flex:none;min-width:2.8em;font-size:.75em}
+.cal-solo{font-size:.75em;padding:4px 8px;color:var(--muted)}
+.cal-lateral-acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cal-lateral-acciones button{font-size:.85em}
 /* Mes con títulos (ancho): semanas en cuadrícula; el día ocupa su columna entera y las barras van encima. */
 .cal-mg{border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .cal-mg-cabecera{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
