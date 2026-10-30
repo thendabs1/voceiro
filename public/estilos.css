@@ -2104,6 +2104,7 @@
 .cal-todo-dia .cal-hora{align-self:start;margin-top:8px;padding:2px 4px;border-radius:4px;font-size:.7em;line-height:1.2;text-align:center;color:var(--cat-otras-bg);background:var(--cat-otras)}
 .cal-todo-dia .cal-hora.cal-cat-deportes{color:var(--cat-deportes-bg);background:var(--cat-deportes)}.cal-todo-dia .cal-hora.cal-cat-cultura{color:var(--cat-cultura-bg);background:var(--cat-cultura)}
 .cal-plan{font-size:.8em}.cal-sin-hora{font-size:.8em;color:var(--muted);margin:12px 0 4px}
+.cal-etiquetas{display:flex;flex-wrap:wrap;gap:4px}.cal-etiqueta{display:inline-block;padding:1px 7px;border:1px solid currentColor;border-radius:999px;font-size:.75em;color:var(--cat-deportes)}.cal-etiqueta.cal-dep{color:var(--dep)}
 .cal-en-curso{border:1px solid var(--border);border-radius:7px;padding:4px 10px;margin:12px 0}.cal-en-curso>button{border:0;background:transparent;color:var(--fg);font-weight:600;padding:6px 0;text-align:left;width:100%}
 /* Tira y mes: siete celdas tocables con el número del día y un punto por categoría con algo ese día. */
 .cal-tira{margin:0 0 8px}.cal-tira-cabecera{display:flex;align-items:center;justify-content:center;gap:4px}
