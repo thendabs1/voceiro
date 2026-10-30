@@ -69,7 +69,7 @@ function api(u){
   const desde = Number(p.get('cursor') || 0), limite = Number(p.get('limite'));
   return { ...META, eventos: todos.slice(desde, desde + limite), siguiente: desde + limite < todos.length ? String(desde + limite) : null };
 }
-function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, guardarFalla = false } = {}){
+function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lugar: { ine: '36057' } }], almacen = {}, guardarFalla = false } = {}){
   const listeners = {}, pedidas = [], sugerencias = {}, buscar = { value: '', addEventListener(){} }, aplicadas = [], temporizadores = [];
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
@@ -606,7 +606,9 @@ test('abrir por primera vez con un prefijo no hereda «Lo mío»', async () => {
 test('con solo competiciones guardadas, la agenda no tiene «Lo mío» y Deportes abre con ellas', async () => {
   const c = contexto({ almacen: preferencias({ sitio: null, intereses: { cultura: [], otraCultura: false, deporteLocal: false } }) });
   await c.abrir();
-  assert.deepEqual([c.api.s.mio, c.resumen().get('q'), c.resumen().get('temas'), c.resumen().get('territorio')], [false, null, null, null]);
+  // Sin sitio no hay agenda que pedir: se pide el sitio (P05).
+  assert.equal(c.api.s.mio, false);
+  assert.equal(c.pedidas.filter(u => u.pathname === '/calendario/resumen').length, 0);
   assert.doesNotMatch(c.api.calChips(), /Lo mío/);
   await c.deportes();
   assert.deepEqual([[...c.api.s.capas], c.resumen().get('q')], [['f1'], 'f1:']);
@@ -651,10 +653,10 @@ test('la ventana se recorta al horizonte publicado y fuera de él no se pide nad
 
 test('la consulta del buscador pasa ámbitos y texto libre, sin prefijos ni selecciones desconocidas', async () => {
   const c = contexto();
-  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('tenis: circuito:wta Alcaraz web:ejemplo.es'));
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('circuito:wta Alcaraz web:ejemplo.es'));
   await esperar();
   const p = c.ultima().searchParams;
-  // La competición abre Deportes, que toma solo las competiciones (el tema es de la agenda).
+  // La competición abre Deportes con su texto libre.
   assert.deepEqual([c.api.s.vista, p.get('q'), p.get('texto')], ['deportes', 'circuito:wta', 'Alcaraz']);
   const antes = c.pedidas.length;
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('tenis:resultados'));
@@ -717,9 +719,12 @@ test('editar el texto o añadir otros servicios conserva filtros, fecha y apertu
 });
 
 test('dónde: la ciudad arriba; sugiere comunidad, provincia y municipio y filtra por su territorio', async () => {
-  const c = contexto();
+  const c = contexto({ sitios: [] });
   await c.abrir();
-  assert.match(c.api.calDonde(), /data-cal="editar-donde"[^>]*>📍 Toda España ▾/);
+  // Sin sitio: ni «Toda España» ni consulta; se pide el sitio y se ofrece Deportes.
+  assert.match(c.api.calDonde(), /data-cal="editar-donde"[^>]*>📍 Elige un sitio ▾/);
+  assert.match(c.api.calContenido(), /cal-pedir-sitio[\s\S]*data-cal="editar-donde"[\s\S]*data-cal="ir-deportes"/);
+  assert.equal(c.pedidas.filter(u => u.pathname === '/calendario/resumen').length, 0);
   await c.click('editar-donde');
   assert.match(c.api.calDonde(), /id="cal-donde"/);
   await c.escribir('cal-donde', 'Gal');
@@ -728,9 +733,9 @@ test('dónde: la ciudad arriba; sugiere comunidad, provincia y municipio y filtr
   assert.match(c.sugerencias['cal-sug-donde'].innerHTML, /data-valor="es:municipio:36057"[^>]*>Vigo <small>Pontevedra/);
   await c.click('elegir-donde', 'es:municipio:36057', { nombre: 'Vigo' });
   assert.equal(c.ultima().searchParams.get('territorio'), 'es:municipio:36057');
-  assert.match(c.api.calDonde(), /📍 Vigo ▾[\s\S]*data-cal="quitar-donde"/);
-  await c.click('quitar-donde');
-  assert.equal(c.ultima().searchParams.get('territorio'), null);
+  // El sitio se cambia, no se quita.
+  assert.match(c.api.calDonde(), /📍 Vigo ▾/);
+  assert.doesNotMatch(c.api.calDonde(), /quitar-donde/);
 });
 
 test('la ciudad por defecto es la provincia del primer sitio del tiempo, una vez', async () => {
@@ -738,9 +743,14 @@ test('la ciudad por defecto es la provincia del primer sitio del tiempo, una vez
   await c.abrir();
   assert.equal(c.resumen().get('territorio'), 'es:provincia:36');
   assert.match(c.api.calDonde(), /📍 Pontevedra ▾/);
-  await c.click('quitar-donde');
+});
+
+test('sin sitio, la agenda ofrece los de «Mis sitios» y elegir uno la consulta', async () => {
+  const c = contexto({ almacen: preferencias({ sitio: null, intereses: { cultura: [], otraCultura: false, deporteLocal: false } }) });
   await c.abrir();
-  assert.equal(c.resumen().get('territorio'), null);
+  assert.match(c.api.calContenido(), /data-cal="elegir-donde" data-valor="es:municipio:36057" data-nombre="Vigo">Vigo<\/button>/);
+  await c.click('elegir-donde', 'es:municipio:36057', { nombre: 'Vigo' });
+  assert.equal(c.resumen().get('territorio'), 'es:municipio:36057');
 });
 
 test('la agenda va siempre a su sitio; las competiciones, en Deportes y sin ciudad', async () => {
@@ -764,12 +774,33 @@ test('la agenda va siempre a su sitio; las competiciones, en Deportes y sin ciud
   assert.deepEqual([c.api.s.vista, c.resumen().get('q'), c.resumen().get('territorio')], ['agenda', 'teatro:', 'es:provincia:36']);
 });
 
+test('con un prefijo de tema, la agenda lo enseña como chip pulsado que se quita sin cerrarla', async () => {
+  const c = contexto();
+  c.buscar.value = 'tenis: jazz';
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario(c.buscar.value));
+  await esperar();
+  const chips = c.api.calChips();
+  assert.match(chips, /data-cal="quitar-prefijo" data-valor="tenis" aria-pressed="true" aria-label="Quitar el filtro Tenis">Tenis ✕</);
+  assert.doesNotMatch(chips, /data-cal="categoria"/);
+  await c.click('quitar-prefijo', 'tenis');
+  assert.deepEqual([c.aplicadas.at(-1), c.api.s.porPrefijo], ['jazz', false]);
+});
+
 test('cada vista toma de la orden solo lo suyo; una orden solo de noticias no filtra el calendario', async () => {
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   // Prefijos mixtos: Deportes pide solo la competición, no el teatro de cualquier sitio.
+  // Prefijos mixtos: no se elige en silencio; se pregunta qué parte ver y no se pide nada.
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('teatro: f1:'));
   await esperar();
-  assert.deepEqual([c.api.s.vista, c.resumen().get('q'), c.resumen().get('territorio')], ['deportes', 'f1:', null]);
+  assert.equal(c.pedidas.filter(u => u.pathname === '/calendario/resumen').length, 0);
+  assert.match(c.api.calContenido(), /cal-elegir-parte[\s\S]*data-cal="quedarse" data-valor="deportes" ?>F1 en Deportes<[\s\S]*data-valor="agenda" ?>Teatro en Pontevedra</);
+  // Elegir una parte reescribe el buscador sin la otra (texto y fechas se quedan).
+  c.buscar.value = 'teatro: f1: desde:hoy';
+  await c.click('quedarse', 'deportes');
+  assert.equal(c.aplicadas.at(-1), 'f1: desde:hoy');
+  c.buscar.value = 'teatro: f1: desde:hoy';
+  await c.click('quedarse', 'agenda');
+  assert.equal(c.aplicadas.at(-1), 'teatro: desde:hoy');
   // «f1:noticias» no abre el calendario ni lo filtra: la agenda va a su sitio, sin la F1.
   const d = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   d.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:noticias'));
@@ -826,7 +857,8 @@ test('un fallo tardío del mes de Deportes no marca error en la agenda ya cargad
 test('preferencias guardadas antes sin sitio: sus intereses no valen para toda España', async () => {
   const c = contexto({ almacen: preferencias({ sitio: null, intereses: { cultura: ['teatro'], otraCultura: true, deporteLocal: true } }) });
   await c.abrir();
-  assert.deepEqual([c.api.s.mio, c.resumen().get('temas'), c.resumen().get('territorio')], [false, null, null]);
+  assert.equal(c.api.s.mio, false);
+  assert.match(c.api.calContenido(), /cal-pedir-sitio/);
   await c.deportes();
   assert.deepEqual([...c.api.s.capas], ['f1']);
 });
