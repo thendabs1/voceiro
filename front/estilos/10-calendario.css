@@ -2,6 +2,7 @@
 /* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
 .cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
 .cal-barra h1:focus{outline:none}.cal-barra>.ui-tira{flex-basis:100%;min-width:0}
+.cal-titulo-vista{margin:0;font-size:1.1em;flex:1 1 auto}
 .cal-acciones{display:flex;align-items:center;gap:4px;margin-left:auto}
 .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:44px;font:inherit;max-width:100%}
 .cal-icono{min-width:44px}

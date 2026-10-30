@@ -1,5 +1,5 @@
 export default {
-  "calTitulo": "Calendario",
+  "calTitulo": "Calendario", "calDeportesTitulo": "Deportes",
   "calTodaEspana": "Toda España", "calCambiarSitio": "Cambiar el sitio ({x})", "calCuando": "Cuándo",
   "calManana": "Mañana", "calFinde": "Este finde", "calTodo": "Todo", "calOtras": "Otras",
   "calSemanaAnterior": "Semana anterior", "calSemanaPosterior": "Semana siguiente",
@@ -7,7 +7,7 @@ export default {
   "calSemanaSiguiente": "Cargar la semana siguiente", "calFutbol": "Fútbol", "calBaloncesto": "Baloncesto", "calMotor": "Motor", "calTenis": "Tenis",
   "calNPartidos": "{n} partidos", "calNPartidos1": "1 partido", "calParcial": "programación parcial", "calYMas": "y {n} más",
   "calEsteMes": "Este mes en deportes · {mes}", "calSinDeportes": "Sin competiciones publicadas este mes",
-  "calLoMio": "Lo mío", "calCompeticiones": "Competiciones", "calCompeticionesN": "Competiciones · {n} de {total}", "calCerca": "Cerca", "calDeporteEn": "Deporte en {x}", "calTodas": "Todas", "calLasQueSigo": "Las que sigo", "calElegirCompeticiones": "Elegir competiciones",
+  "calLoMio": "Lo mío", "calCompeticiones": "Competiciones", "calCompeticionesN": "Competiciones · {n} de {total}", "calTodas": "Todas", "calLasQueSigo": "Las que sigo", "calElegirCompeticiones": "Elegir competiciones",
   "calAsTitulo": "Configurar calendario", "calAsPaso": "Paso {n} de {total}", "calAsSiguiente": "Siguiente", "calAsAnterior": "Anterior",
   "calAsCancelar": "Cancelar", "calAsGuardar": "Guardar y ver calendario", "calAsGuardado": "Calendario configurado",
   "calAsNoGuardado": "No se ha podido guardar en este dispositivo; vale para esta sesión",
