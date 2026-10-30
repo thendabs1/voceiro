@@ -6,7 +6,7 @@
      --on-solid es el texto sobre un fondo de color (--accent, --preset,
      --block, --save); --focus, el anillo de foco; --titulos, el de los
      títulos; --cat-*, el color de cada categoría de la agenda (texto y su
-     fondo tenue). El tema «Personalizado» (shared/tema/personalizado.js) pone
+     fondo tenue); --dep-*, igual, el de cada deporte en la vista Deportes. El tema «Personalizado» (shared/tema/personalizado.js) pone
      encima, en línea, las variables que salen de los colores elegidos. ═══ */
   :root{
     color-scheme:light;
@@ -21,6 +21,8 @@
     --on-solid:#fff; --focus:#1565c0; --titulos:#222;
     --cat-cultura:#6b3fa0; --cat-cultura-bg:#f2ebfa; --cat-deportes:#006d77; --cat-deportes-bg:#e3f3f4;
     --cat-otras:#5b6470; --cat-otras-bg:#eef0f3;
+    --dep-futbol:#1d7a35; --dep-futbol-bg:#e6f4e9; --dep-baloncesto:#a84300; --dep-baloncesto-bg:#fcebdd;
+    --dep-motor:#b3261e; --dep-motor-bg:#fbe7e5; --dep-tenis:#1b5fa8; --dep-tenis-bg:#e4eefa;
   }
   [data-theme="sepia"]{
     color-scheme:light;
@@ -35,6 +37,8 @@
     --on-solid:#fff; --focus:#2e5a8b; --titulos:#3b2f1e;
     --cat-cultura:#5e3590; --cat-cultura-bg:#e8dcef; --cat-deportes:#005c65; --cat-deportes-bg:#d6e6e2;
     --cat-otras:#535a63; --cat-otras-bg:#e3dccb;
+    --dep-futbol:#2c6427; --dep-futbol-bg:#dfe8cc; --dep-baloncesto:#8a3a08; --dep-baloncesto-bg:#efd9bf;
+    --dep-motor:#962a1c; --dep-motor-bg:#eed3c8; --dep-tenis:#2a5384; --dep-tenis-bg:#d8e1e8;
   }
   [data-theme="dark"]{
     color-scheme:dark;
@@ -49,6 +53,8 @@
     --on-solid:#111; --focus:#6cb3ff; --titulos:#e0e0e0;
     --cat-cultura:#cfb0f3; --cat-cultura-bg:#30233f; --cat-deportes:#65d3d8; --cat-deportes-bg:#14373a;
     --cat-otras:#bac1cb; --cat-otras-bg:#2b3037;
+    --dep-futbol:#72d48b; --dep-futbol-bg:#16351f; --dep-baloncesto:#ffa86b; --dep-baloncesto-bg:#3d2414;
+    --dep-motor:#ff8f86; --dep-motor-bg:#3d1c1a; --dep-tenis:#8dbbff; --dep-tenis-bg:#18304d;
   }
   [data-theme="contrast"]{
     color-scheme:dark;
@@ -63,6 +69,8 @@
     --on-solid:#000; --focus:#ff0; --titulos:#fff;
     --cat-cultura:#f8f; --cat-cultura-bg:#000; --cat-deportes:#0ff; --cat-deportes-bg:#000;
     --cat-otras:#fff; --cat-otras-bg:#000;
+    --dep-futbol:#0f0; --dep-futbol-bg:#000; --dep-baloncesto:#fa0; --dep-baloncesto-bg:#000;
+    --dep-motor:#f77; --dep-motor-bg:#000; --dep-tenis:#6cf; --dep-tenis-bg:#000;
   }
   /* ═══ FIN DE LA PALETA ═══ */
   :root{
@@ -2105,7 +2113,13 @@
 .cal-puntos{display:flex;gap:3px;justify-content:center;min-height:8px}
 .cal-punto{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cat-otras)}
 .cal-punto.cal-cat-cultura{background:var(--cat-cultura)}.cal-punto.cal-cat-deportes{background:var(--cat-deportes);border-radius:2px}
-/* Deportes: en cada día, hasta dos competiciones («NBA 9», «F1») y «+N». */
+/* Deportes: cada competición con el color de su deporte (--dep-*). */
+.cal-dep-futbol{--dep:var(--dep-futbol);--dep-bg:var(--dep-futbol-bg)}.cal-dep-baloncesto{--dep:var(--dep-baloncesto);--dep-bg:var(--dep-baloncesto-bg)}
+.cal-dep-motor{--dep:var(--dep-motor);--dep-bg:var(--dep-motor-bg)}.cal-dep-tenis{--dep:var(--dep-tenis);--dep-bg:var(--dep-tenis-bg)}
+.cal-marca.cal-dep,.cal-dep .cal-marca{color:var(--dep)}.cal-capa input{accent-color:var(--dep,var(--cat-deportes))}
+.cal-todo-dia .cal-hora.cal-dep{color:var(--dep-bg);background:var(--dep)}
+.cal-mg-chip.cal-dep{color:var(--dep);background:var(--dep-bg)}.calendario-panel .cal-mg-barra.cal-dep{color:var(--dep-bg);background:var(--dep)}
+/* En cada día, hasta tres competiciones («NBA 9», «F1») y «+N». */
 .cal-marcas{display:flex;flex-direction:column;align-items:center;gap:1px;max-width:100%}
 .cal-marca{font-size:.62em;font-weight:700;line-height:1.2;color:var(--cat-deportes);white-space:nowrap;overflow:hidden;text-overflow:clip;max-width:100%}
 .cal-marca.cal-mas{color:var(--muted);font-weight:400}
@@ -2134,7 +2148,7 @@
 .cal-lateral-boton{width:100%;text-align:left;font-weight:600}
 .cal-lateral fieldset{border:0;margin:0 0 8px;padding:0}.cal-lateral legend{font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 0 2px}
 .cal-capa label{display:flex;align-items:center;gap:8px;min-height:40px;min-width:0;cursor:pointer;line-height:1.25}
-.cal-capa input{width:18px;height:18px;margin:0;accent-color:var(--cat-deportes)}.cal-capa .cal-marca{flex:none;min-width:2.8em;font-size:.75em}
+.cal-capa input{width:18px;height:18px;margin:0}.cal-capa .cal-marca{flex:none;min-width:2.8em;font-size:.75em}
 .cal-lateral-acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cal-lateral-acciones button{font-size:.85em}
 /* Mes con títulos (ancho): semanas en cuadrícula; el día ocupa su columna entera y las barras van encima. */
 .cal-mg{border:1px solid var(--border);border-radius:8px;overflow:hidden}

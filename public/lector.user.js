@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.336
+// @version      2.0.337
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.336';
+const SCRIPT_VERSION = '2.0.337';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -662,6 +662,8 @@ function hastaContraste(color, fondo, minimo, hacia){
 
 const CATEGORIAS_CLARO = { cultura: '#6b3fa0', deportes: '#006d77', otras: '#5b6470' };
 const CATEGORIAS_OSCURO = { cultura: '#cfb0f3', deportes: '#65d3d8', otras: '#bac1cb' };
+const DEPORTES_CLARO = { futbol: '#1d7a35', baloncesto: '#a84300', motor: '#b3261e', tenis: '#1b5fa8' };
+const DEPORTES_OSCURO = { futbol: '#72d48b', baloncesto: '#ffa86b', motor: '#ff8f86', tenis: '#8dbbff' };
 
 // { base: 'light' | 'dark', vars: { bg, fg, accent, titulos, muted, … } }.
 // 'color-scheme' va entre las vars: quien la aplica la pone como propiedad.
@@ -681,11 +683,12 @@ function paletaPersonalizada(colores){
       'on-solid': extremo(enlaces),
       focus: contraste(enlaces, fondo) >= 3 ? enlaces : texto,
       shadow: oscuro ? 'rgba(0,0,0,.5)' : 'rgba(0,0,0,.08)',
-      // Categorías: su tono del tema base, sobre un fondo tenue del elegido.
-      ...Object.fromEntries(Object.entries(oscuro ? CATEGORIAS_OSCURO : CATEGORIAS_CLARO).flatMap(([c, color]) => {
-        const fondoCat = mezcla(fondo, color, 0.1);
-        return [['cat-' + c + '-bg', fondoCat], ['cat-' + c, hastaContraste(hastaContraste(color, fondoCat, 4.5, texto), fondo, 4.5, texto)]];
-      })),
+      // Categorías y deportes: su tono del tema base, sobre un fondo tenue del elegido.
+      ...Object.fromEntries([['cat-', oscuro ? CATEGORIAS_OSCURO : CATEGORIAS_CLARO], ['dep-', oscuro ? DEPORTES_OSCURO : DEPORTES_CLARO]]
+        .flatMap(([prefijo, tonos]) => Object.entries(tonos).flatMap(([c, color]) => {
+          const fondoCat = mezcla(fondo, color, 0.1);
+          return [[prefijo + c + '-bg', fondoCat], [prefijo + c, hastaContraste(hastaContraste(color, fondoCat, 4.5, texto), fondo, 4.5, texto)]];
+        }))),
     }
   };
 }
@@ -693,7 +696,8 @@ function paletaPersonalizada(colores){
 // Variables que pone el tema personalizado (para quitarlas al cambiar de tema).
 const VARS_PERSONALIZADAS = ['bg', 'fg', 'accent', 'titulos', 'muted', 'border', 'quote-bg',
   'btn-bg', 'btn-border', 'on-solid', 'focus', 'shadow',
-  ...['cultura', 'deportes', 'otras'].flatMap(c => ['cat-' + c, 'cat-' + c + '-bg'])];
+  ...['cultura', 'deportes', 'otras'].flatMap(c => ['cat-' + c, 'cat-' + c + '-bg']),
+  ...Object.keys(DEPORTES_CLARO).flatMap(c => ['dep-' + c, 'dep-' + c + '-bg'])];
 
 /* ── lector/modulos/codigo-incrustado.js ── */
 // Código incrustado en el articleBody del JSON-LD.
@@ -4068,7 +4072,7 @@ function shouldShowReaderFAB(){
    ============================================================ */
 // Paleta de Voceiro (shared/tema/paleta.css), puesta aquí por
 // build.mjs: { light: {bg:'#fff', …, 'color-scheme':'light'}, sepia: {…}, … }.
-const PALETA = {"light":{"bg":"#fff","fg":"#222","muted":"#6b6b6b","accent":"#d32f2f","border":"#eee","quote-bg":"#f9f9f9","btn-bg":"#f7f7f7","btn-border":"#8a8a8a","shadow":"rgba(0,0,0,.08)","preset":"#0a7d3f","preset-bg":"#e8f5e9","block":"#b00020","block-bg":"#fde8ec","save":"#1565c0","save-bg":"#e3f2fd","mark":"#ffe680","mark-fg":"#111","on-solid":"#fff","focus":"#1565c0","titulos":"#222","cat-cultura":"#6b3fa0","cat-cultura-bg":"#f2ebfa","cat-deportes":"#006d77","cat-deportes-bg":"#e3f3f4","cat-otras":"#5b6470","cat-otras-bg":"#eef0f3","color-scheme":"light"},"sepia":{"bg":"#f4ecd8","fg":"#3b2f1e","muted":"#6b5a3c","accent":"#8f4523","border":"#e0d5b8","quote-bg":"#ede0c4","btn-bg":"#ede0c4","btn-border":"#8c7c58","shadow":"rgba(59,47,30,.15)","preset":"#33682a","preset-bg":"#e4ebd0","block":"#8b2020","block-bg":"#ebd5d0","save":"#2e5a8b","save-bg":"#d8e3ee","mark":"#c9a227","mark-fg":"#2c1c08","on-solid":"#fff","focus":"#2e5a8b","titulos":"#3b2f1e","cat-cultura":"#5e3590","cat-cultura-bg":"#e8dcef","cat-deportes":"#005c65","cat-deportes-bg":"#d6e6e2","cat-otras":"#535a63","cat-otras-bg":"#e3dccb","color-scheme":"light"},"dark":{"bg":"#1a1a1a","fg":"#e0e0e0","muted":"#999","accent":"#ff6b6b","border":"#333","quote-bg":"#252525","btn-bg":"#2a2a2a","btn-border":"#787878","shadow":"rgba(0,0,0,.5)","preset":"#4cc97a","preset-bg":"#173524","block":"#ff8a9c","block-bg":"#3d1a20","save":"#6cb3ff","save-bg":"#1e3550","mark":"#b58600","mark-fg":"#111","on-solid":"#111","focus":"#6cb3ff","titulos":"#e0e0e0","cat-cultura":"#cfb0f3","cat-cultura-bg":"#30233f","cat-deportes":"#65d3d8","cat-deportes-bg":"#14373a","cat-otras":"#bac1cb","cat-otras-bg":"#2b3037","color-scheme":"dark"},"contrast":{"bg":"#000","fg":"#fff","muted":"#ff0","accent":"#0ff","border":"#fff","quote-bg":"#111","btn-bg":"#111","btn-border":"#fff","shadow":"rgba(255,255,255,.2)","preset":"#0f0","preset-bg":"#003300","block":"#f00","block-bg":"#330000","save":"#0ff","save-bg":"#003333","mark":"#ff0","mark-fg":"#000","on-solid":"#000","focus":"#ff0","titulos":"#fff","cat-cultura":"#f8f","cat-cultura-bg":"#000","cat-deportes":"#0ff","cat-deportes-bg":"#000","cat-otras":"#fff","cat-otras-bg":"#000","color-scheme":"dark"}};
+const PALETA = {"light":{"bg":"#fff","fg":"#222","muted":"#6b6b6b","accent":"#d32f2f","border":"#eee","quote-bg":"#f9f9f9","btn-bg":"#f7f7f7","btn-border":"#8a8a8a","shadow":"rgba(0,0,0,.08)","preset":"#0a7d3f","preset-bg":"#e8f5e9","block":"#b00020","block-bg":"#fde8ec","save":"#1565c0","save-bg":"#e3f2fd","mark":"#ffe680","mark-fg":"#111","on-solid":"#fff","focus":"#1565c0","titulos":"#222","cat-cultura":"#6b3fa0","cat-cultura-bg":"#f2ebfa","cat-deportes":"#006d77","cat-deportes-bg":"#e3f3f4","cat-otras":"#5b6470","cat-otras-bg":"#eef0f3","dep-futbol":"#1d7a35","dep-futbol-bg":"#e6f4e9","dep-baloncesto":"#a84300","dep-baloncesto-bg":"#fcebdd","dep-motor":"#b3261e","dep-motor-bg":"#fbe7e5","dep-tenis":"#1b5fa8","dep-tenis-bg":"#e4eefa","color-scheme":"light"},"sepia":{"bg":"#f4ecd8","fg":"#3b2f1e","muted":"#6b5a3c","accent":"#8f4523","border":"#e0d5b8","quote-bg":"#ede0c4","btn-bg":"#ede0c4","btn-border":"#8c7c58","shadow":"rgba(59,47,30,.15)","preset":"#33682a","preset-bg":"#e4ebd0","block":"#8b2020","block-bg":"#ebd5d0","save":"#2e5a8b","save-bg":"#d8e3ee","mark":"#c9a227","mark-fg":"#2c1c08","on-solid":"#fff","focus":"#2e5a8b","titulos":"#3b2f1e","cat-cultura":"#5e3590","cat-cultura-bg":"#e8dcef","cat-deportes":"#005c65","cat-deportes-bg":"#d6e6e2","cat-otras":"#535a63","cat-otras-bg":"#e3dccb","dep-futbol":"#2c6427","dep-futbol-bg":"#dfe8cc","dep-baloncesto":"#8a3a08","dep-baloncesto-bg":"#efd9bf","dep-motor":"#962a1c","dep-motor-bg":"#eed3c8","dep-tenis":"#2a5384","dep-tenis-bg":"#d8e1e8","color-scheme":"light"},"dark":{"bg":"#1a1a1a","fg":"#e0e0e0","muted":"#999","accent":"#ff6b6b","border":"#333","quote-bg":"#252525","btn-bg":"#2a2a2a","btn-border":"#787878","shadow":"rgba(0,0,0,.5)","preset":"#4cc97a","preset-bg":"#173524","block":"#ff8a9c","block-bg":"#3d1a20","save":"#6cb3ff","save-bg":"#1e3550","mark":"#b58600","mark-fg":"#111","on-solid":"#111","focus":"#6cb3ff","titulos":"#e0e0e0","cat-cultura":"#cfb0f3","cat-cultura-bg":"#30233f","cat-deportes":"#65d3d8","cat-deportes-bg":"#14373a","cat-otras":"#bac1cb","cat-otras-bg":"#2b3037","dep-futbol":"#72d48b","dep-futbol-bg":"#16351f","dep-baloncesto":"#ffa86b","dep-baloncesto-bg":"#3d2414","dep-motor":"#ff8f86","dep-motor-bg":"#3d1c1a","dep-tenis":"#8dbbff","dep-tenis-bg":"#18304d","color-scheme":"dark"},"contrast":{"bg":"#000","fg":"#fff","muted":"#ff0","accent":"#0ff","border":"#fff","quote-bg":"#111","btn-bg":"#111","btn-border":"#fff","shadow":"rgba(255,255,255,.2)","preset":"#0f0","preset-bg":"#003300","block":"#f00","block-bg":"#330000","save":"#0ff","save-bg":"#003333","mark":"#ff0","mark-fg":"#000","on-solid":"#000","focus":"#ff0","titulos":"#fff","cat-cultura":"#f8f","cat-cultura-bg":"#000","cat-deportes":"#0ff","cat-deportes-bg":"#000","cat-otras":"#fff","cat-otras-bg":"#000","dep-futbol":"#0f0","dep-futbol-bg":"#000","dep-baloncesto":"#fa0","dep-baloncesto-bg":"#000","dep-motor":"#f77","dep-motor-bg":"#000","dep-tenis":"#6cf","dep-tenis-bg":"#000","color-scheme":"dark"}};
 
 // CSS de la paleta para un sitio: base lleva el tema claro y cada tema, su
 // selector (por defecto, base[data-theme="…"]; en un Shadow DOM, :host(…)).

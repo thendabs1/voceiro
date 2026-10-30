@@ -12,37 +12,37 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=ec7da24eed';
+} from './parser.js?v=91a1753fd0';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=ec7da24eed';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=ec7da24eed';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=ec7da24eed';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=ec7da24eed';
-import { comparador } from './busqueda/orden.js?v=ec7da24eed';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=91a1753fd0';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=91a1753fd0';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=91a1753fd0';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=91a1753fd0';
+import { comparador } from './busqueda/orden.js?v=91a1753fd0';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=ec7da24eed';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=ec7da24eed';
+} from './sync/fusion.js?v=91a1753fd0';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=91a1753fd0';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=ec7da24eed';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=ec7da24eed';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=91a1753fd0';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=91a1753fd0';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=ec7da24eed';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=91a1753fd0';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=ec7da24eed';
+} from './tiempo/avisos.js?v=91a1753fd0';
 
-import { I18N, traducir } from './idiomas/index.js?v=ec7da24eed';
+import { I18N, traducir } from './idiomas/index.js?v=91a1753fd0';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=ec7da24eed';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=ec7da24eed';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=ec7da24eed';
+import { ESPN } from './consultas/registro.js?v=91a1753fd0';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=91a1753fd0';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=91a1753fd0';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=ec7da24eed';
+import { ADMINISTRACION } from './territorios/administracion.js?v=91a1753fd0';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1955,7 +1955,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=ec7da24eed');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=91a1753fd0');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3536,6 +3536,10 @@ const CAL_DEPORTES = { futbol: ['primera', 'segunda'], baloncesto: ['nba', 'wnba
   motor: ['f1', 'motogp', 'wrc'], tenis: ['atp', 'wta'] };
 const CAL_NOMBRES_DEPORTE = { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' };
 const CAL_COMPETICIONES = Object.values(CAL_DEPORTES).flat();
+// Cada competición lleva el color de su deporte (--dep-*); lo demás, el de su categoría.
+const CAL_DEPORTE_DE = Object.fromEntries(Object.entries(CAL_DEPORTES).flatMap(([k, cs]) => cs.map(c => [c, k])));
+const calDeporte = e => (e.competiciones || []).map(c => CAL_DEPORTE_DE[c]).find(Boolean);
+const calColor = e => calDeporte(e) ? 'cal-dep cal-dep-' + calDeporte(e) : 'cal-cat-' + calCategoria(e.categoria);
 // Marcas del mes por competición, en orden de prioridad; la WTA está casi
 // todos los días y va al final para no tapar al resto.
 const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', nba: 'NBA', atp: 'ATP',
@@ -3546,7 +3550,7 @@ const CALENDARIO = {
   // fecha: el día elegido (la lista empieza en él y la tira enseña su semana).
   fecha: '', desdeConsulta: '', rango: '', semanas: 1, mesAbierto: false, mes: null,
   zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
-  temas: new Set(), mio: false, prefs: null, asistente: null, temporada: null,
+  temas: new Set(), mio: false, prefs: null, asistente: null, temporada: null, disp: null,
   // vista: «agenda» (la de un sitio: cultura y ocio, y su deporte local) o
   // «deportes» (por competición, sin sitio), cada una con su botón.
   // capas: competiciones marcadas en Deportes. lateral: el cajón abierto en estrecho.
@@ -3610,6 +3614,20 @@ async function calPedir(ruta, params, signal){
     if (r.status >= 400 && r.status < 500) throw fallo;
   }
   throw fallo;
+}
+// Temas con algo en el sitio de la agenda (precalculado al publicar): los
+// subchips solo ofrecen esos. Mientras llega, o si falla, se ofrecen todos.
+async function calDisponibilidadSitio(){
+  const s = CALENDARIO, clave = s.donde?.id || '';
+  if (s.disp?.clave === clave) return;
+  s.disp?.controller.abort();
+  const d = s.disp = { clave, temas: null, controller: new AbortController() };
+  try {
+    const dato = await calPedir('catalogo', { disponibilidad: 1, territorio: clave }, d.controller.signal);
+    if (s.disp !== d) return;
+    d.temas = dato.disponibilidad?.temas || null;
+    pintarCalendario();
+  } catch { /* Sin filtro: todas las subcategorías. */ }
 }
 // Mensaje de un fallo. Un 429 es el límite por IP: se avisa de la espera y, al
 // terminar, se vuelve a pedir solo (un reintento aunque fallen varias a la vez).
@@ -3675,7 +3693,7 @@ async function cargarCalendario(renovar = false){
   const s = CALENDARIO;
   if (s.orden?.desconocidos.length) return void pintarCalendario();
   if (s.meta && !renovar) return void consultarCalendario();
-  if (renovar){ s.mes = null; s.temporada = null; s.detalles.clear(); s.desplegado = ''; s.detalleLista?.abort(); }
+  if (renovar){ s.mes = null; s.temporada = null; s.disp = null; s.detalles.clear(); s.desplegado = ''; s.detalleLista?.abort(); }
   s.controller?.abort();
   const controller = s.controller = new AbortController();
   s.cargando = true; s.error = ''; pintarCalendario();
@@ -3694,6 +3712,8 @@ async function consultarCalendario(){
   s.fecha ||= calHoy();
   const { desde, hasta } = calVentana();
   if (s.mesAbierto) cargarMesCalendario();
+  // Los subchips solo se ven con una categoría elegida: solo entonces hace falta.
+  if (!calModoDeportes() && calRaizElegida()) calDisponibilidadSitio();
   // Tira y lista salen del mismo resumen: cuentas por categoría, tres muestras
   // por día y, en Deportes, las barras (los GP van a cada día de la lista como
   // «todo el día»; solo las competiciones tienen barra).
@@ -4160,7 +4180,8 @@ function calPuntos(d){
   return [...CAL_CATEGORIAS, 'otras'].filter(c => hay.has(c));
 }
 // En Deportes el mes enseña competiciones: «NBA 9» (partidos) o «F1» (GP,
-// torneo); dos como mucho y «+N». Con una sola capa, la suya va primero.
+// torneo), con el color de su deporte; tres como mucho y «+N». Con una sola
+// capa, la suya va primero.
 const calModoDeportes = () => CALENDARIO.vista === 'deportes';
 const calUnica = () => CALENDARIO.capas?.size === 1 ? [...CALENDARIO.capas][0] : '';
 function calMarcas(d){
@@ -4170,8 +4191,9 @@ function calMarcas(d){
   return hay.map(([c, n]) => ({ c, texto: CAL_MARCAS[c] + (n.citas > 1 ? ' ' + n.citas : ''),
     nombre: calNombreCompeticion(c) + (n.citas ? ' · ' + calN('calNPartidos', n.citas) : '') }));
 }
-const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.slice(0, 2).map(m => `<span class="cal-marca">${calEsc(m.texto)}</span>`).join('')}
-  ${marcas.length > 2 ? `<span class="cal-marca cal-mas">+${marcas.length - 2}</span>` : ''}</span>` : '';
+const CAL_MARCAS_DIA = 3;
+const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.slice(0, CAL_MARCAS_DIA).map(m => `<span class="cal-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}">${calEsc(m.texto)}</span>`).join('')}
+  ${marcas.length > CAL_MARCAS_DIA ? `<span class="cal-marca cal-mas">+${marcas.length - CAL_MARCAS_DIA}</span>` : ''}</span>` : '';
 const calNombreCompeticion = c => AMBITOS[c]?.noticias?.[0] || c;
 const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidden="true">${cats.map(c => `<span class="cal-punto cal-cat-${c}"></span>`).join('')}</span>` : '';
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
@@ -4182,7 +4204,7 @@ function calBarraDia(b, dia){
   // Duración del programa (no de los tramos que tocan la ventana); sin fechas, nada.
   const v = b.programacion?.valor?.cuando, a = extremoVisible(v?.inicio, CALENDARIO.zona).fecha, z = extremoVisible(v?.fin, CALENDARIO.zona).fecha;
   const total = a && z ? calDiferencia(a, z) + 1 : 0, n = a ? calDiferencia(a, dia) + 1 : 0;
-  return `<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-cat-${calCategoria(b.categoria)}">${calEsc(t('calTodoElDia'))}</span><div class="cal-cita-cuerpo">
+  return `<article class="cal-cita cal-todo-dia"><span class="cal-hora ${calColor(b)}">${calEsc(t('calTodoElDia'))}</span><div class="cal-cita-cuerpo">
     <h3>${calTituloDesplegable(b, dia, true)}</h3>
     ${total > 1 && n >= 1 && n <= total ? `<p class="cal-nota">${calEsc(t('calDiaDeN', { n, total }))}</p>` : ''}${calDesplegado(b, dia, true)}</div></article>`;
 }
@@ -4258,10 +4280,12 @@ const calAltoSemana = (em = calEm()) => Math.round(Math.min(em * 10, Math.max(em
 const calDiferencia = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5);
 // Cada semana, una cuadrícula: el día es un botón con su número, el hueco de
 // las barras y hasta cuatro chips «hora título» (+N); las barras de los GP y
-// torneos van encima, en dos carriles, y se cortan al cambiar de semana.
+// torneos van encima, en los carriles que quepan dejando sitio a una línea de
+// chips (al menos dos; tres con la ventana alta), y se cortan al cambiar de semana.
 function calMesTitulos(dias){
   const s = CALENDARIO, hoy = calHoy(), porDia = new Map((s.mes?.dias || []).map(d => [d.dia, d])), barras = s.mes?.barras || [];
   const em = calEm(), alto = calAltoSemana(em), semanas = [];
+  const maxCarriles = Math.max(2, Math.floor((alto - em * (1.3 + 1.1 + 1.15) - 6) / (em * 1.6)));
   for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7));
   return `<div class="cal-mg" role="group" aria-label="${calEsc(t('calMes'))}"><div class="cal-mg-cabecera">${calCabeceraSemana(dias)}</div>${semanas.map(semana => {
     const fin = sumarDiasCalendario(semana[6], 1), carriles = [];
@@ -4272,16 +4296,16 @@ function calMesTitulos(dias){
       carriles[carril] = z;
       return { b, a, z, carril };
     });
-    const visibles = colocadas.filter(x => x.carril < 2), n = Math.min(2, carriles.length);
+    const visibles = colocadas.filter(x => x.carril < maxCarriles), n = Math.min(maxCarriles, carriles.length);
     // Chips que caben bajo el número, las barras y la línea de «+N».
     const caben = Math.max(0, Math.floor((alto - em * (1.3 + 1.6 * n + 1.1) - 6) / (em * 1.15)));
     const celdas = semana.map((dia, i) => {
       const d = porDia.get(dia), muestras = (d?.muestras || []).slice(0, caben);
-      const ocultas = colocadas.filter(x => x.carril >= 2 && x.a <= i && x.z > i).length;
+      const ocultas = colocadas.filter(x => x.carril >= maxCarriles && x.a <= i && x.z > i).length;
       const mas = Math.max(0, (d?.chips ?? muestras.length) - muestras.length) + ocultas;
       const chips = muestras.map(m => {
         const titulo = calNombre(m.padre ? { nombres: m.padre } : m), hora = calHoraCita(m);
-        return `<span class="cal-mg-chip cal-cat-${calCategoria(m.categoria)}">${hora ? `<b>${calEsc(hora)}</b> ` : ''}${calEsc(titulo)}</span>`;
+        return `<span class="cal-mg-chip ${calColor(m)}">${hora ? `<b>${calEsc(hora)}</b> ` : ''}${calEsc(titulo)}</span>`;
       }).join('');
       const etiqueta = `${calDiaLargo(dia)}: ${d ? calCuentas(d) : calN('calNCitas', 0)}${muestras.length ? ' · ' + muestras.map(m => calNombre(m.padre ? { nombres: m.padre } : m)).join(', ') : ''}`;
       return `<button type="button" class="cal-mg-dia${dia.slice(0, 7) !== s.fecha.slice(0, 7) ? ' cal-otro-mes' : ''}${dia < hoy ? ' cal-pasado' : ''}" style="grid-column:${i + 1}"
@@ -4290,7 +4314,7 @@ function calMesTitulos(dias){
         ${mas ? `<span class="cal-mg-mas">${calEsc(t('calMasN', { n: mas }))}</span>` : ''}</button>`;
     }).join('');
     const lineas = visibles.map(({ b, a, z, carril }) => calBoton('evento', calNombre(b), b.id,
-      `class="cal-mg-barra cal-cat-${calCategoria(b.categoria)}${b.desde < semana[a] ? ' sigue-antes' : ''}${b.hasta > sumarDiasCalendario(semana[z - 1], 1) ? ' sigue-despues' : ''}" style="grid-column:${a + 1}/${z + 1};grid-row:${carril + 2}" aria-haspopup="dialog" title="${calEsc(calNombre(b))}"`)).join('');
+      `class="cal-mg-barra ${calColor(b)}${b.desde < semana[a] ? ' sigue-antes' : ''}${b.hasta > sumarDiasCalendario(semana[z - 1], 1) ? ' sigue-despues' : ''}" style="grid-column:${a + 1}/${z + 1};grid-row:${carril + 2}" aria-haspopup="dialog" title="${calEsc(calNombre(b))}"`)).join('');
     return `<div class="cal-mg-semana" style="--carriles:${n};height:${alto}px">${celdas}${lineas}</div>`;
   }).join('')}</div>`;
 }
@@ -4385,7 +4409,10 @@ function calChips(){
   const primera = `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calTemas'))}">${loMio}${chip('categoria', t('calTodo'), '', !raiz && !s.mio)}
     ${fijas.map(c => chip('categoria', c === 'deportes' ? t('calAsDeporteLocal') : calNombre(conceptos[c]), c, raiz === c, 'cal-cat cal-cat-' + c)).join('')}
     ${calBoton('gratis', t('calPrecioGratis'), '', `aria-pressed="${s.precio === 'gratis'}" title="${calEsc(t('calGratisNota'))}"`)}</div>`;
-  const segunda = raiz ? calHijos(conceptos, raiz).map(i => chip('tema', calNombre(conceptos[i]), i, s.temas.has(i))).join('') : '';
+  // Solo las subcategorías con algo en el sitio; la elegida se queda aunque no tenga.
+  const hay = s.disp?.clave === (s.donde?.id || '') ? s.disp.temas : null;
+  const segunda = raiz ? calHijos(conceptos, raiz).filter(i => !hay || hay[i] || s.temas.has(i))
+    .map(i => chip('tema', calNombre(conceptos[i]), i, s.temas.has(i))).join('') : '';
   return primera + (segunda ? `<div class="cal-chips cal-subchips ui-tira" role="group" aria-label="${calEsc(calNombre(conceptos[raiz]))}">${segunda}</div>` : '');
 }
 function calContenido(){
@@ -4409,7 +4436,7 @@ function calLateral(){
   const marcadas = s.capas.size, total = CAL_COMPETICIONES.length;
   const caja = (valor, texto, marcada, marca = '') => `<div class="cal-capa"><label><input type="checkbox" name="cal-capa" value="${calEsc(valor)}"${marcada ? ' checked' : ''}${marcada && marcadas === 1 ? ' disabled' : ''}>
     ${marca && marca !== texto ? `<span class="cal-marca">${calEsc(marca)}</span>` : ''}<span>${calEsc(texto)}</span></label></div>`;
-  const cuerpo = Object.entries(CAL_DEPORTES).map(([k, cs]) => `<fieldset><legend>${calEsc(t(CAL_NOMBRES_DEPORTE[k]))}</legend>
+  const cuerpo = Object.entries(CAL_DEPORTES).map(([k, cs]) => `<fieldset class="cal-dep cal-dep-${k}"><legend>${calEsc(t(CAL_NOMBRES_DEPORTE[k]))}</legend>
       ${cs.map(c => caja(c, calNombreCompeticion(c), s.capas.has(c), CAL_MARCAS[c])).join('')}</fieldset>`).join('')
     + `<div class="cal-lateral-acciones">${calBoton('capas-todas', t('calTodas'), '', `aria-pressed="${marcadas === total}"`)}
       ${sigo.length ? calBoton('capas-sigo', t('calLasQueSigo')) : ''}${calBoton('asistente', t('calElegirCompeticiones'), '2')}</div>`;
@@ -5690,7 +5717,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=ec7da24eed')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=91a1753fd0')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }

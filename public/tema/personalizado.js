@@ -56,6 +56,8 @@ function hastaContraste(color, fondo, minimo, hacia){
 
 const CATEGORIAS_CLARO = { cultura: '#6b3fa0', deportes: '#006d77', otras: '#5b6470' };
 const CATEGORIAS_OSCURO = { cultura: '#cfb0f3', deportes: '#65d3d8', otras: '#bac1cb' };
+const DEPORTES_CLARO = { futbol: '#1d7a35', baloncesto: '#a84300', motor: '#b3261e', tenis: '#1b5fa8' };
+const DEPORTES_OSCURO = { futbol: '#72d48b', baloncesto: '#ffa86b', motor: '#ff8f86', tenis: '#8dbbff' };
 
 // { base: 'light' | 'dark', vars: { bg, fg, accent, titulos, muted, … } }.
 // 'color-scheme' va entre las vars: quien la aplica la pone como propiedad.
@@ -75,11 +77,12 @@ export function paletaPersonalizada(colores){
       'on-solid': extremo(enlaces),
       focus: contraste(enlaces, fondo) >= 3 ? enlaces : texto,
       shadow: oscuro ? 'rgba(0,0,0,.5)' : 'rgba(0,0,0,.08)',
-      // Categorías: su tono del tema base, sobre un fondo tenue del elegido.
-      ...Object.fromEntries(Object.entries(oscuro ? CATEGORIAS_OSCURO : CATEGORIAS_CLARO).flatMap(([c, color]) => {
-        const fondoCat = mezcla(fondo, color, 0.1);
-        return [['cat-' + c + '-bg', fondoCat], ['cat-' + c, hastaContraste(hastaContraste(color, fondoCat, 4.5, texto), fondo, 4.5, texto)]];
-      })),
+      // Categorías y deportes: su tono del tema base, sobre un fondo tenue del elegido.
+      ...Object.fromEntries([['cat-', oscuro ? CATEGORIAS_OSCURO : CATEGORIAS_CLARO], ['dep-', oscuro ? DEPORTES_OSCURO : DEPORTES_CLARO]]
+        .flatMap(([prefijo, tonos]) => Object.entries(tonos).flatMap(([c, color]) => {
+          const fondoCat = mezcla(fondo, color, 0.1);
+          return [[prefijo + c + '-bg', fondoCat], [prefijo + c, hastaContraste(hastaContraste(color, fondoCat, 4.5, texto), fondo, 4.5, texto)]];
+        }))),
     }
   };
 }
@@ -87,4 +90,5 @@ export function paletaPersonalizada(colores){
 // Variables que pone el tema personalizado (para quitarlas al cambiar de tema).
 export const VARS_PERSONALIZADAS = ['bg', 'fg', 'accent', 'titulos', 'muted', 'border', 'quote-bg',
   'btn-bg', 'btn-border', 'on-solid', 'focus', 'shadow',
-  ...['cultura', 'deportes', 'otras'].flatMap(c => ['cat-' + c, 'cat-' + c + '-bg'])];
+  ...['cultura', 'deportes', 'otras'].flatMap(c => ['cat-' + c, 'cat-' + c + '-bg']),
+  ...Object.keys(DEPORTES_CLARO).flatMap(c => ['dep-' + c, 'dep-' + c + '-bg'])];
