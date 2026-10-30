@@ -227,7 +227,7 @@ export function consultaChips(c, meta, cursor) {
 function comoChip(t, f) {
   const sesion = f.sesion && JSON.parse(f.sesion), nombres = sesion?.nombres || sesion;
   return { ...t, presentacion: 'cita', hora_muestra: f.hora, ocurrencia: f.ocurrencia,
-    estado: f.estado || null, ...(nombres ? { nombres, padre: t.nombres } : {}) };
+    estado: f.estado || null, ...(nombres ? { nombres, padre: t.nombres } : {}), ...(sesion?.tipo ? { tipo_sesion: sesion.tipo } : {}) };
 }
 
 // Una sola selección temporal de eventos. Las facetas se buscan por evento;

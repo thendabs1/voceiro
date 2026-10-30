@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fechas from '../../shared/calendario/fechas.js';
 import * as consulta from '../../shared/calendario/consulta.js';
+import * as nombres from '../../shared/calendario/nombres.js';
 import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
 import { indexar, sugerirMunicipios, provinciaDe } from '../../shared/tiempo/lugares.js';
 import { ADMINISTRACION } from '../../shared/territorios/administracion.js';
@@ -79,7 +80,7 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, gua
     const r = await responder(u);
     return r instanceof Response ? r : Response.json(r);
   };
-  const c = { ...fechas, ...consulta, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
+  const c = { ...fechas, ...consulta, ...nombres, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
     setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
@@ -978,6 +979,49 @@ test('deportes conserva la competición en la lista y simplifica el programa sin
   for (const expresion of ['calCita(evento)', "calBarraDia(evento, '2026-10-30')"]){
     assert.match(runInContext(expresion, c), /cal-etiqueta cal-dep cal-dep-motor">MotoGP<\/span>/);
   }
+});
+
+test('las sesiones se nombran por su código y sin patrocinio; un GP de varios días da su intervalo, no «sin hora»', () => {
+  const c = contexto();
+  const sesion = (nombre, tipo, dia, hora) => ({ ...tarjeta(nombre, dia, { hora }), agenda: { rol: 'sesion', tipo_sesion: tipo } });
+  c.evento = { ...tarjeta('PETRONAS GRAND PRIX OF MALAYSIA ', '2026-10-30', { competiciones: ['motogp'] }), nombres: { und: 'PETRONAS GRAND PRIX OF MALAYSIA ' },
+    fuentes: [], programacion: { valor: { cuando: { inicio: extremo('2026-10-30'), fin: extremo('2026-11-01') } } },
+    programa: [sesion('PETRONAS GRAND PRIX OF MALAYSIA — Free Practice Nr. 1', 'FP1', '2026-10-30', '02:45'),
+      sesion('PETRONAS GRAND PRIX OF MALAYSIA — Tissot Sprint', 'SPR', '2026-10-31', '07:00'),
+      sesion('PETRONAS GRAND PRIX OF MALAYSIA — Grand Prix', 'RAC2', '2026-11-01', '07:00'),
+      sesion('PETRONAS GRAND PRIX OF MALAYSIA — Media Day', 'MEDIA', '2026-10-29', '07:00')] };
+  const html = runInContext('calEvento(evento)', c);
+  assert.match(html, /<h3>GP de Malasia<\/h3>/);
+  assert.match(html, /<p class="cal-cuando">30 oct → 1 nov<\/p>/);
+  assert.doesNotMatch(html, /Sin hora confirmada|Tissot|PETRONAS/);
+  assert.match(html, /<span>Libres 1<\/span>[\s\S]*<span>Sprint<\/span>[\s\S]*<span>Carrera<\/span>[\s\S]*<span>Media Day<\/span>/);
+  // Un solo día sin hora sigue siendo «sin hora».
+  c.evento.programacion.valor.cuando.fin = extremo('2026-10-30');
+  assert.match(runInContext('calHora(evento)', c), /Sin hora confirmada/);
+});
+
+test('el chip de una sesión lleva su GP encima y su nombre traducido', () => {
+  const c = contexto();
+  c.chip = { ...tarjeta('Mexico City Grand Prix — Race', '2026-11-01'), nombres: { und: 'Mexico City Grand Prix — Race' },
+    padre: { und: 'Mexico City Grand Prix' }, tipo_sesion: 'Race', hora_muestra: '21:00', competiciones: ['f1'] };
+  const html = runInContext('calCita(chip)', c);
+  assert.match(html, /cal-padre">GP de Ciudad de México<\/p>[\s\S]*data-cal="desplegar"[^>]*>Carrera<\/button>/);
+});
+
+test('en Deportes, lo prolongado son competiciones en curso: filas con competición, sede y fechas, sin la nota de funciones', async () => {
+  const torneo = { ...tarjeta('Toray Pan Pacific Open Tennis - Tokyo, JPN', '2026-10-25', { presentacion: 'prolongada', competiciones: ['wta'] }),
+    lugar: { nombre: 'TOKYO' } };
+  torneo.programacion.valor.cuando = { inicio: extremo('2026-10-24'), fin: extremo('2026-11-01') };
+  const c = contexto({ responder: u => u.searchParams.get('presentacion') === 'prolongada' ? { ...META, siguiente: null, eventos: [torneo] } : api(u) });
+  await c.deportes();
+  c.api.s.mesAbierto = false;
+  const clave = '2026-10-25~2026-11-01';
+  assert.match(c.api.calContenido(), /▸ En curso estos días/);
+  await c.click('curso', clave);
+  const html = c.api.calContenido();
+  assert.match(html, /<article class="cal-curso-fila"><h3><button[^>]*>Toray Pan Pacific Open Tennis<\/button><\/h3><span class="cal-cuando">24 oct–1 nov<\/span>/);
+  assert.match(html, /cal-dep-tenis">WTA<\/span> Tokyo<\/p>/);
+  assert.doesNotMatch(html, /función diaria|En cartel|Abre el/);
 });
 
 test('un evento de la lista se despliega bajo su tarjeta con todo su detalle; la ficha se pide una vez', async () => {
