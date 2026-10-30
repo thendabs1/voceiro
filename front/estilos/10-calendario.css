@@ -43,7 +43,12 @@
 /* Deportes: cada competición con el color de su deporte (--dep-*). */
 .cal-dep-futbol{--dep:var(--dep-futbol);--dep-bg:var(--dep-futbol-bg)}.cal-dep-baloncesto{--dep:var(--dep-baloncesto);--dep-bg:var(--dep-baloncesto-bg)}
 .cal-dep-motor{--dep:var(--dep-motor);--dep-bg:var(--dep-motor-bg)}.cal-dep-tenis{--dep:var(--dep-tenis);--dep-bg:var(--dep-tenis-bg)}
-.cal-marca.cal-dep,.cal-dep .cal-marca{color:var(--dep)}.cal-capa input{accent-color:var(--dep,var(--cat-deportes))}
+.cal-marca.cal-dep{color:var(--dep)}
+/* Chips de Deportes: con el color de su deporte las competiciones marcadas; un
+   deporte con solo algunas, con el borde discontinuo. */
+.cal-chips .cal-dep:is([aria-pressed="true"],[aria-pressed="mixed"]){color:var(--dep);background:var(--dep-bg);border-color:var(--dep);box-shadow:inset 0 0 0 1px currentColor;font-weight:600}
+.cal-chips .cal-dep[aria-pressed="mixed"]{border-style:dashed;box-shadow:none}
+.cal-chip-marca{font-size:.85em}
 .cal-todo-dia .cal-hora.cal-dep{color:var(--dep-bg);background:var(--dep)}
 .cal-mg-chip.cal-dep{color:var(--dep);background:var(--dep-bg)}.calendario-panel .cal-mg-barra.cal-dep{color:var(--dep-bg);background:var(--dep)}
 /* En cada día, hasta tres competiciones («NBA 9», «F1») y «+N». */
@@ -52,7 +57,7 @@
 .cal-marca.cal-mas{color:var(--muted);font-weight:400}
 /* Este mes en deportes: una fila por competición con sus GP o torneos. */
 .cal-temporada{margin:14px 0 4px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--cat-deportes-bg)}
-.cal-temporada h2{font-size:1em;margin:4px 0 8px;color:var(--cat-deportes)}
+.cal-temporada-boton{border:0;background:transparent;font-weight:700;color:var(--cat-deportes);padding:4px 0;text-align:left;width:100%}
 .cal-temporada ul{list-style:none;margin:0;padding:0}.cal-temporada-fila{padding:6px 0;border-top:1px solid var(--border)}
 .cal-temporada-fila>button{font-weight:700;border:0;background:transparent;color:var(--fg);padding:4px 0}
 .cal-temporada-fila>button[aria-pressed="true"]{color:var(--cat-deportes);text-decoration:underline}
@@ -69,24 +74,24 @@
 .cal-as-resumen{margin:8px 0}.cal-as-fila{display:grid;grid-template-columns:8em 1fr auto;gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--border)}
 .cal-as-fila dt{font-weight:700}.cal-as-fila dd{margin:0}
 .cal-invitacion{border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin:0 0 12px}.cal-invitacion h2{font-size:1em;margin:4px 0}
-/* Calendario deportivo: capas por competición; en ancho, columna a la izquierda; en estrecho, desplegable. */
-.cal-con-lateral.cal-fijo{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
-.cal-lateral{margin:0 0 12px;font-size:.9em}.cal-lateral h2{font-size:.95em;margin:4px 0 8px}
-.cal-lateral-boton{width:100%;text-align:left;font-weight:600}
-.cal-lateral fieldset{border:0;margin:0 0 8px;padding:0}.cal-lateral legend{font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 0 2px}
-.cal-capa label{display:flex;align-items:center;gap:8px;min-height:40px;min-width:0;cursor:pointer;line-height:1.25}
-.cal-capa input{width:18px;height:18px;margin:0}.cal-capa .cal-marca{flex:none;min-width:2.8em;font-size:.75em}
-.cal-lateral-acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cal-lateral-acciones button{font-size:.85em}
 /* Mes con títulos (ancho): semanas en cuadrícula; el día ocupa su columna entera y las barras van encima. */
 .cal-mg{border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .cal-mg-cabecera{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
-.cal-mg-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:1.8em repeat(var(--carriles),1.6em) minmax(0,1fr);border-top:1px solid var(--border);overflow:hidden}
+.cal-mg-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:1.8em repeat(var(--carriles),var(--carril,1.6em)) minmax(0,1fr);border-top:1px solid var(--border);overflow:hidden}
 .calendario-panel .cal-mg-dia{grid-row:1/-1;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;min-height:0;overflow:hidden;padding:3px 4px;
   border:0;border-left:1px solid var(--border);border-radius:0;background:var(--bg);color:var(--fg);text-align:left;font:inherit}
 .cal-mg-dia:first-child{border-left:0}.cal-mg-dia.cal-otro-mes{background:var(--btn-bg)}
 .cal-mg-dia .cal-num{font-size:.85em;font-variant-numeric:tabular-nums}.cal-mg-dia[aria-current="date"] .cal-num{color:var(--accent);font-weight:700}
-.cal-mg-dia[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
-.cal-mg-hueco{display:block;height:calc(var(--carriles) * 1.6em)}
+/* El número ocupa la primera fila entera (1.8em de la semana, sin el relleno ni
+   el hueco entre ambos): así lo de debajo empieza donde acaban las barras y no bajo ellas. */
+.cal-mg-dia .cal-num{flex:none;height:calc(1.8em / .85 - 5px)}
+/* Día elegido: el recuadro va por encima de las barras. */
+.calendario-panel .cal-mg-dia{position:relative}
+.cal-mg-dia[aria-pressed="true"]::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;box-shadow:inset 0 0 0 2px var(--accent)}
+.cal-mg-hueco{display:block;flex:none;height:calc(var(--carriles) * var(--carril,1.6em))}
+/* Deportes: las marcas del día, todas, en las líneas que hagan falta. */
+.cal-mg-marcas{display:flex;flex-wrap:wrap;gap:2px 3px}
+.cal-mg-marca{font-size:.72em;font-weight:700;line-height:1.35;padding:0 4px;border-radius:4px;white-space:nowrap;color:var(--dep);background:var(--dep-bg)}
 .cal-mg-chip{display:block;font-size:.72em;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px;padding:1px 4px;
   color:var(--cat-otras);background:var(--cat-otras-bg)}
 .cal-mg-chip.cal-cat-cultura{color:var(--cat-cultura);background:var(--cat-cultura-bg)}.cal-mg-chip.cal-cat-deportes{color:var(--cat-deportes);background:var(--cat-deportes-bg)}
@@ -114,6 +119,9 @@
 .cal-sugerencias button{border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;text-align:left;padding:6px 8px}.cal-sugerencias small{color:var(--muted)}
 .cal-programa h4{font-size:.9em;margin:12px 0 4px}.cal-programa ul{margin:0;padding-left:18px}.cal-programa li{margin:4px 0}.cal-pie{margin-top:24px;padding-top:12px;border-top:1px solid var(--border)}
 .cal-evento-dialogo{color:var(--fg);background:var(--bg);border:1px solid var(--btn-border);border-radius:9px;width:min(650px,calc(100% - 24px));max-height:85dvh;padding:18px}.cal-evento-dialogo::backdrop{background:#0008}.cal-evento-dialogo form{display:flex;justify-content:end}
+/* El calendario es una rejilla, no texto corrido: usa todo el ancho de la ventana
+   (no el de lectura de Aa), con el tamaño de letra elegido. */
+body.calendario-abierto{max-width:none}
 .calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
 @media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-mes{gap:2px}}
 /* Evento desplegado en la lista: bajo su título, con una raya a la izquierda. */
@@ -124,7 +132,7 @@
 @media(pointer:fine){
   .calendario-panel,.cal-evento-dialogo{font-size:.9em}
   .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:32px}
-  .cal-icono{min-width:32px}.cal-chips button{padding:3px 12px}.cal-capa label{min-height:28px}.cal-as-opcion{min-height:32px}
+  .cal-icono{min-width:32px}.cal-chips button{padding:3px 12px}.cal-as-opcion{min-height:32px}
 }
 /* Escritorio: ciudad, atajos de fecha y categorías en una sola línea; las acciones al final. */
 @container (min-width:900px){
