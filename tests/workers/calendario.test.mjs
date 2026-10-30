@@ -63,6 +63,14 @@ function base(datos = muestra()) {
 }
 const ventana = '/calendario/eventos?desde=2026-10-23&hasta=2026-10-29';
 
+// Como Deno: conserva las entradas sin interpretar max-age.
+function cacheSinCaducidad() {
+  const valores = new Map(), borradas = [];
+  return { valores, borradas, match: async k => valores.get(k.url)?.clone(),
+    put: async (k, v) => valores.set(k.url, v.clone()),
+    delete: async k => { borradas.push(k.url); return valores.delete(k.url); } };
+}
+
 function muestraGP(pendiente = false) {
   const datos = muestra();
   const gp = { id: 'gp', tipo: 'evento', clase: 'actividad_continua', nombres: { es: 'GP de prueba' },
@@ -297,11 +305,9 @@ test('HTTP Turso usa batch condicional en un snapshot, liga parámetros y cierra
   await assert.rejects(consultarTurso({ ...env, CALENDARIO_TURSO_URL: 'https://host/path' }, [], simular));
 });
 
-test('caché por revisión y selección, revalidación y 429 antes de Turso', async t => {
+test('caché por revisión y selección; los aciertos no gastan cupo y la 31.ª sin caché da 429', async t => {
   const b = base(); t.after(() => b.db.close());
-  const valores = new Map();
-  const cache = { match: async k => valores.get(k.url)?.clone(), put: async (k, v) => valores.set(k.url, v.clone()),
-    delete: async k => valores.delete(k.url) };
+  const cache = cacheSinCaducidad(), { valores } = cache;
   const opciones = { consultar: b.consultar, abrirCache: async () => cache };
   const pedir = (headers = {}) => atenderCalendario(new Request('https://datos.test' + ventana, { headers }), env, opciones);
   const primera = await pedir(); assert.equal(primera.status, 200);
@@ -314,11 +320,87 @@ test('caché por revisión y selección, revalidación y 429 antes de Turso', as
   b.meta.revision = 'nueva'; b.db.prepare('UPDATE agenda_lectura_control SET datos_json=?').run(JSON.stringify(b.meta));
   assert.equal((await (await pedir()).json()).revision, 'nueva');
   const antes = b.peticiones();
-  for (let i = 0; i < 30; i++) assert.equal((await atenderCalendario(new Request('https://datos.test' + ventana), env,
+  for (let i = 0; i < 40; i++) assert.equal((await atenderCalendario(new Request('https://datos.test' + ventana), env,
     { ...opciones, ip: '192.0.2.55' })).status, 200);
-  const bloqueada = await atenderCalendario(new Request('https://datos.test' + ventana), env, { ...opciones, ip: '192.0.2.55' });
-  assert.equal(bloqueada.status, 429); assert.ok(bloqueada.headers.get('retry-after'));
   assert.equal(b.peticiones(), antes);
+  // Control y consulta cuentan juntos una vez, incluso sin caché.
+  const sinCache = { consultar: b.consultar, ip: '192.0.2.55' };
+  for (let i = 0; i < 30; i++) assert.equal((await atenderCalendario(new Request('https://datos.test' + ventana), env, sinCache)).status, 200);
+  assert.equal(b.peticiones(), antes + 60);
+  const bloqueada = await atenderCalendario(new Request('https://datos.test' + ventana), env, sinCache);
+  assert.equal(bloqueada.status, 429); assert.ok(bloqueada.headers.get('retry-after'));
+  assert.equal(b.peticiones(), antes + 60);
+});
+
+test('el control caduca a los 15 s aunque la caché lo conserve; a los 16 s ve la revisión nueva', async t => {
+  const b = base(); t.after(() => b.db.close());
+  let ahora = Date.now(); t.mock.method(Date, 'now', () => ahora);
+  const cache = cacheSinCaducidad(), opciones = { consultar: b.consultar, abrirCache: async () => cache };
+  const pedir = () => atenderCalendario(new Request('https://datos.test' + ventana), env, opciones);
+  assert.equal((await (await pedir()).json()).revision, 'revision-1');
+  assert.equal(b.peticiones(), 2);
+  b.meta.revision = 'nueva'; b.db.prepare('UPDATE agenda_lectura_control SET datos_json=?').run(JSON.stringify(b.meta));
+  ahora += 14999;
+  assert.equal((await (await pedir()).json()).revision, 'revision-1');
+  assert.equal(b.peticiones(), 2);
+  ahora += 1001;
+  assert.equal((await (await pedir()).json()).revision, 'nueva');
+  assert.equal(b.peticiones(), 4);
+  assert.equal(cache.borradas.length, 1); assert.ok(cache.borradas[0].includes('/control/'));
+});
+
+test('la respuesta caduca a la hora; la cabecera interna no sale en GET, HEAD ni 304', async t => {
+  const b = base(); t.after(() => b.db.close());
+  let ahora = Date.now(); t.mock.method(Date, 'now', () => ahora);
+  const inicio = ahora, cache = cacheSinCaducidad();
+  const opciones = { consultar: b.consultar, abrirCache: async () => cache };
+  const pedir = (ruta = ventana, peticion = {}) => atenderCalendario(new Request('https://datos.test' + ruta, peticion), env, opciones);
+  const primera = await pedir(), etag = primera.headers.get('etag');
+  assert.equal(primera.headers.get('X-Calendario-Caduca'), null);
+  assert.equal(primera.headers.get('Cache-Control'), 'public, max-age=30');
+  const clave = [...cache.valores.keys()].find(k => k.includes('/respuesta/'));
+  assert.equal(Number(cache.valores.get(clave).headers.get('X-Calendario-Caduca')), inicio + 3600000);
+  assert.equal(cache.valores.get(clave).headers.get('Cache-Control'), 'public, max-age=3600');
+  // Renovar solo el control para aislar el vencimiento de la respuesta.
+  ahora = inicio + 3599000;
+  assert.equal((await pedir('/calendario/catalogo')).status, 200);
+  assert.equal(b.peticiones(), 3);
+  for (const [peticion, estado] of [[{}, 200], [{ method: 'HEAD' }, 200], [{ headers: { 'If-None-Match': etag } }, 304]]) {
+    const r = await pedir(ventana, peticion);
+    assert.equal(r.status, estado); assert.equal(r.headers.get('X-Calendario-Caduca'), null);
+    assert.equal(r.headers.get('Cache-Control'), 'public, max-age=30');
+  }
+  assert.equal(b.peticiones(), 3);
+  ahora = inicio + 3600000;
+  const renovada = await pedir();
+  assert.equal(renovada.status, 200); assert.equal(renovada.headers.get('etag'), etag);
+  assert.equal(renovada.headers.get('X-Calendario-Caduca'), null);
+  assert.equal(b.peticiones(), 4); assert.ok(cache.borradas.includes(clave));
+});
+
+test('las consultas con control en caché gastan cupo; un acierto sigue pasando con el cupo agotado', async t => {
+  const b = base(); t.after(() => b.db.close());
+  const cache = cacheSinCaducidad(), opciones = { consultar: b.consultar, abrirCache: async () => cache, ip: '192.0.2.56' };
+  await atenderCalendario(new Request('https://datos.test/calendario/catalogo'), env, { ...opciones, ip: '' });
+  for (let i = 1; i <= 30; i++) assert.equal((await atenderCalendario(new Request('https://datos.test' + ventana + '&limite=' + i), env, opciones)).status, 200);
+  assert.equal(b.peticiones(), 31);
+  const bloqueada = await atenderCalendario(new Request('https://datos.test' + ventana + '&limite=31'), env, opciones);
+  assert.equal(bloqueada.status, 429); assert.ok(bloqueada.headers.get('Retry-After'));
+  const acierto = await atenderCalendario(new Request('https://datos.test' + ventana + '&limite=1'), env, opciones);
+  assert.equal(acierto.status, 200); assert.equal(b.peticiones(), 31);
+});
+
+test('una entrada sin vencimiento se relee aunque falle o no termine su borrado', { timeout: 2000 }, async t => {
+  const b = base(); t.after(() => b.db.close());
+  const cache = cacheSinCaducidad(), opciones = { consultar: b.consultar, abrirCache: async () => cache };
+  const pedir = () => atenderCalendario(new Request('https://datos.test' + ventana), env, opciones);
+  assert.equal((await pedir()).status, 200);
+  for (const respuesta of cache.valores.values()) respuesta.headers.delete('X-Calendario-Caduca');
+  cache.delete = async () => { throw new Error('Borrado no disponible'); };
+  assert.equal((await pedir()).status, 200); assert.equal(b.peticiones(), 4);
+  for (const respuesta of cache.valores.values()) respuesta.headers.set('X-Calendario-Caduca', 'inválido');
+  cache.delete = () => new Promise(() => {});
+  assert.equal((await pedir()).status, 200); assert.equal(b.peticiones(), 6);
 });
 
 test('los planes de consulta usan índices por fecha y faceta, sin leer detalles para contar', t => {
