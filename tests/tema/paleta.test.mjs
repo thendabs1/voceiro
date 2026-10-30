@@ -41,6 +41,8 @@ const PARES = [
   ['btn-border', 'bg', CONTROL], ['focus', 'bg', CONTROL], ['focus', 'btn-bg', CONTROL],
   // Categorías de la agenda: el nombre sobre su fondo tenue y suelto sobre el de la página.
   ...['cultura', 'deportes', 'otras'].flatMap(c => [['cat-' + c, 'cat-' + c + '-bg', TEXTO], ['cat-' + c, 'bg', TEXTO]]),
+  // Deportes: igual; en las barras el fondo tenue va de texto sobre el color (mismo par).
+  ...['futbol', 'baloncesto', 'motor', 'tenis'].flatMap(c => [['dep-' + c, 'dep-' + c + '-bg', TEXTO], ['dep-' + c, 'bg', TEXTO]]),
 ];
 
 test('están los cuatro temas', () => {

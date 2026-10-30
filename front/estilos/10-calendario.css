@@ -40,7 +40,13 @@
 .cal-puntos{display:flex;gap:3px;justify-content:center;min-height:8px}
 .cal-punto{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cat-otras)}
 .cal-punto.cal-cat-cultura{background:var(--cat-cultura)}.cal-punto.cal-cat-deportes{background:var(--cat-deportes);border-radius:2px}
-/* Deportes: en cada día, hasta dos competiciones («NBA 9», «F1») y «+N». */
+/* Deportes: cada competición con el color de su deporte (--dep-*). */
+.cal-dep-futbol{--dep:var(--dep-futbol);--dep-bg:var(--dep-futbol-bg)}.cal-dep-baloncesto{--dep:var(--dep-baloncesto);--dep-bg:var(--dep-baloncesto-bg)}
+.cal-dep-motor{--dep:var(--dep-motor);--dep-bg:var(--dep-motor-bg)}.cal-dep-tenis{--dep:var(--dep-tenis);--dep-bg:var(--dep-tenis-bg)}
+.cal-marca.cal-dep,.cal-dep .cal-marca{color:var(--dep)}.cal-capa input{accent-color:var(--dep,var(--cat-deportes))}
+.cal-todo-dia .cal-hora.cal-dep{color:var(--dep-bg);background:var(--dep)}
+.cal-mg-chip.cal-dep{color:var(--dep);background:var(--dep-bg)}.calendario-panel .cal-mg-barra.cal-dep{color:var(--dep-bg);background:var(--dep)}
+/* En cada día, hasta tres competiciones («NBA 9», «F1») y «+N». */
 .cal-marcas{display:flex;flex-direction:column;align-items:center;gap:1px;max-width:100%}
 .cal-marca{font-size:.62em;font-weight:700;line-height:1.2;color:var(--cat-deportes);white-space:nowrap;overflow:hidden;text-overflow:clip;max-width:100%}
 .cal-marca.cal-mas{color:var(--muted);font-weight:400}
@@ -69,7 +75,7 @@
 .cal-lateral-boton{width:100%;text-align:left;font-weight:600}
 .cal-lateral fieldset{border:0;margin:0 0 8px;padding:0}.cal-lateral legend{font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 0 2px}
 .cal-capa label{display:flex;align-items:center;gap:8px;min-height:40px;min-width:0;cursor:pointer;line-height:1.25}
-.cal-capa input{width:18px;height:18px;margin:0;accent-color:var(--cat-deportes)}.cal-capa .cal-marca{flex:none;min-width:2.8em;font-size:.75em}
+.cal-capa input{width:18px;height:18px;margin:0}.cal-capa .cal-marca{flex:none;min-width:2.8em;font-size:.75em}
 .cal-lateral-acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cal-lateral-acciones button{font-size:.85em}
 /* Mes con títulos (ancho): semanas en cuadrícula; el día ocupa su columna entera y las barras van encima. */
 .cal-mg{border:1px solid var(--border);border-radius:8px;overflow:hidden}
