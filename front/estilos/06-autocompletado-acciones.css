@@ -336,3 +336,37 @@
     height:1px;
     margin-top:8px;
   }
+
+/* ═══ Accesos: ▾ al final de la barra (opciones de búsqueda de Gmail) ═══
+   La × se aparta para dejarle sitio; el panel cae a la derecha bajo la barra
+   y en móvil sube desde abajo, como una hoja. */
+.filtro-buscar-wrap > input{ padding-right: 64px; }
+.filtro-buscar-wrap .buscar-clear{ right: 36px; }
+.buscar-accesos{
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.buscar-accesos:hover, .buscar-accesos[aria-expanded="true"]{ background: var(--quote-bg); color: var(--fg); }
+.accesos-panel{
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 31;
+  width: min(320px, calc(100vw - 32px)); max-height: 75vh; overflow-y: auto;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow); padding: 4px 4px 8px;
+}
+.accesos-cab{ display: flex; align-items: center; gap: 4px; padding: 4px 6px; }
+.accesos-cab h2{ flex: 1; margin: 0; font-size: .85em; }
+.accesos-cab h2:focus{ outline: none; }
+.accesos-volver, .accesos-cerrar{ border: none; background: transparent; color: var(--fg); min-width: 32px; min-height: 32px; border-radius: 6px; cursor: pointer; font-size: 1.1em; }
+.accesos-lista{ list-style: none; margin: 0; padding: 0; }
+.accesos-lista button{
+  display: flex; justify-content: space-between; width: 100%; min-height: 40px; padding: 8px 10px;
+  border: none; border-radius: 6px; background: transparent; color: var(--fg); font: inherit; font-size: .82em; text-align: left; cursor: pointer;
+}
+.accesos-lista button:hover, .accesos-volver:hover, .accesos-cerrar:hover{ background: var(--quote-bg); }
+.accesos-estado{ margin: 4px 10px; font-size: .75em; color: var(--muted); }
+@media (max-width: 600px){
+  .accesos-panel{ position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 75dvh; border-radius: 12px 12px 0 0; padding-bottom: 16px; }
+  .accesos-lista button{ min-height: 44px; }
+}

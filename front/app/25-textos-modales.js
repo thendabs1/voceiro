@@ -80,6 +80,9 @@ function aplicarTextos(){
 
   // Modos
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
+  // Accesos del buscador
+  $('#buscar-accesos').setAttribute('aria-label', t('accAbrir'));
+  $('#buscar-accesos').title = t('accAbrir');
   // Asistentes
   $('#aj-asistentes-hint').textContent = t('ajAsistentesHint');
   $('#btn-as-modo-lbl').textContent = t('asTitulo');
