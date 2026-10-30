@@ -2,7 +2,7 @@
 /* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
 .cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
 .cal-barra h1:focus{outline:none}.cal-barra>.ui-tira{flex-basis:100%;min-width:0}
-.cal-titulo-vista{margin:0;font-size:1.1em;flex:1 1 auto}
+.cal-titulo-vista{margin:0 8px 0 0;font-size:1.1em;flex:0 1 auto}
 .cal-acciones{display:flex;align-items:center;gap:4px;margin-left:auto}
 .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:44px;font:inherit;max-width:100%}
 .cal-icono{min-width:44px}
@@ -138,12 +138,20 @@ body.calendario-abierto{max-width:none}
   .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:32px}
   .cal-icono{min-width:32px}.cal-chips button{padding:3px 12px}.cal-as-opcion{min-height:32px}
 }
-/* Escritorio: ciudad, atajos de fecha y categorías en una sola línea; las acciones al final. */
+/* Escritorio: todo desde la izquierda (Flashscore): título o ciudad con los
+   atajos de fecha y las acciones al final de esa fila; debajo, en filas propias,
+   los chips y sus competiciones. */
 @container (min-width:900px){
-  .cal-barra>.ui-tira{flex-basis:auto}.cal-barra>.cal-subchips{flex-basis:100%}
-  .cal-donde{flex:0 1 auto}.cal-acciones{order:1}.cal-barra>.cal-subchips{order:2}
-  .cal-barra>.cal-rangos+.ui-tira{border-left:1px solid var(--border);padding-left:8px}
+  .cal-donde{flex:0 1 auto}.cal-barra>.cal-rangos{flex-basis:auto;order:1}.cal-acciones{order:2}
+  .cal-barra>.ui-tira:not(.cal-rangos),.cal-pista-seguir{order:3}.cal-barra>.cal-subchips{order:4}
 }
+/* Semana y lista sin mes abierto: ancho de lectura, sin filas de 1400 px (Google
+   Calendar, agenda); el mes abierto sí usa todo el ancho. */
+.cal-compacto .cal-cuerpo{max-width:60em}
+/* Seguir una competición: ★ pegada a su chip, botón propio. */
+.cal-capa{display:inline-flex;align-items:center;flex:none}.cal-chips .cal-seguir{border-color:transparent;background:transparent;padding:3px 8px;color:var(--muted)}
+.cal-chips .cal-seguir[aria-pressed="true"]{color:var(--accent);box-shadow:none}
+.cal-pista-seguir{flex-basis:100%;margin:0}
 /* Torneos en curso de Deportes: una fila por torneo (ESPN); fechas a la derecha. */
 .cal-curso-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 12px;align-items:baseline;border-top:1px solid var(--border);padding:4px 0;overflow-wrap:anywhere}
 .cal-curso-fila>h3{font-size:1em;margin:0}.cal-curso-fila>p,.cal-curso-fila>.cal-desplegado{grid-column:1/-1}.cal-curso-fila>p{margin:0 0 4px}

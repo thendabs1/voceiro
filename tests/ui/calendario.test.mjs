@@ -82,7 +82,7 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, gua
   };
   const c = { ...fechas, ...consulta, ...nombres, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
-    setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
+    setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, cerrarAjustes(){ c.ajustesCerrados = true; }, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
     localStorage: { getItem: k => almacen[k] ?? null, setItem: (k, v) => { if (guardarFalla) throw new Error('lleno'); almacen[k] = String(v); } },
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
@@ -337,14 +337,16 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   assert.match(chips, /data-cal="capas-todas" data-valor="" class="" aria-pressed="true">Todas/);
   assert.match(chips, /data-cal="deporte" data-valor="futbol" class="cal-dep cal-dep-futbol" aria-pressed="false">Fútbol/);
   assert.doesNotMatch(chips, /cal-subchips|data-cal="capa"/);
-  assert.match(chips, /data-cal="asistente" data-valor="2"[^>]*>Elegir competiciones/);
+  // Elegir competiciones no es un filtro: sin seguir ninguna, una pista hacia la ★.
+  assert.doesNotMatch(chips, /data-cal="asistente"/);
+  assert.match(chips, /cal-pista-seguir">Elige un deporte y marca ★/);
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral/);
   // Elegir un deporte deja solo el suyo y enseña sus competiciones, con su marca y su nombre (la leyenda).
   await c.click('deporte', 'baloncesto');
   assert.equal(c.resumen().get('q'), 'nba: wnba: feb-endesa: feb-primera: feb-challenge:');
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
-  assert.match(chips, /aria-label="Competiciones · 5 de 5"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button>/);
+  assert.match(chips, /aria-label="Competiciones · 5 de 5"><span class="cal-capa"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button><button type="button" data-cal="seguir" data-valor="nba" class="cal-seguir" aria-pressed="false" aria-label="Seguir NBA">☆<\/button><\/span>/);
   assert.match(chips, /data-valor="feb-endesa"[^>]*><b class="cal-chip-marca">LFE<\/b> /);
   assert.doesNotMatch(chips, /data-valor="primera"/);
   // Quitar una competición: fuera de la consulta y su deporte, a medias.
@@ -449,19 +451,38 @@ test('«Sin sitio» son solo competiciones: el asistente salta los intereses y n
     [null, { cultura: [], otraCultura: false, deporteLocal: false }, ['f1']]);
 });
 
-test('sin competiciones seguidas, Deportes ofrece elegirlas; guardar sin nada avisa', async () => {
-  const c = contexto();
+test('★ sigue una competición sin asistente: guarda la preferencia, no cambia lo que se ve y «Las que sigo» la junta', async () => {
+  const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.deportes();
-  assert.match(c.api.calChipsDeportes(), /data-cal="asistente" data-valor="2"[^>]*>Elegir competiciones/);
-  await c.click('asistente', '2');
-  assert.equal(c.api.s.asistente.paso, 2);
-  await c.marcar('cal-as-interes', 'otra', false);
-  await c.click('as-ir', '3');
-  await c.click('as-guardar');
-  assert.match(c.api.calAsistente(), /Elige al menos un interés o una competición/);
-  assert.equal(c.almacen['voceiro-calendario-preferencias-v1'], undefined);
-  await c.click('as-cancelar');
-  assert.equal(c.api.s.asistente, null);
+  await c.click('deporte', 'motor');
+  const antes = c.resumen().get('q');
+  await c.click('seguir', 'f1');
+  // Sin asistente hecho no se da por hecho: el sitio de la agenda sigue saliendo de «Mis sitios».
+  assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).competiciones, ['f1']);
+  assert.equal(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).estado, 'omitido');
+  assert.equal(c.resumen().get('q'), antes);
+  let chips = c.api.calChipsDeportes();
+  assert.match(chips, /data-cal="seguir" data-valor="f1" class="cal-seguir" aria-pressed="true" aria-label="Dejar de seguir F1">★/);
+  assert.match(chips, /data-cal="capas-sigo"/);
+  await c.click('capas-sigo');
+  assert.equal(c.resumen().get('q'), 'f1:');
+  await c.click('seguir', 'f1');
+  assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).competiciones, []);
+  // Con el asistente hecho, la ★ conserva sitio e intereses.
+  c.almacen['voceiro-calendario-preferencias-v1'] = JSON.stringify({ v: 1, estado: 'configurado', sitio: { id: 'es:municipio:36057', nombre: 'Vigo' },
+    intereses: { cultura: ['teatro'], otraCultura: false, deporteLocal: false }, competiciones: [] });
+  c.api.s.prefs = null;
+  await c.click('seguir', 'nba');
+  const p = JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']);
+  assert.deepEqual([p.estado, p.sitio.nombre, p.intereses.cultura, p.competiciones], ['configurado', 'Vigo', ['teatro'], ['nba']]);
+});
+
+test('Ajustes → Asistentes cierra Ajustes y abre el asistente del calendario desde el principio', async () => {
+  const c = contexto();
+  runInContext('asistenteCalendarioDesdeAjustes()', c);
+  await esperar();
+  assert.equal(c.ajustesCerrados, true);
+  assert.deepEqual([c.api.s.abierto, c.api.s.asistente?.paso], [true, 0]);
 });
 
 test('mes con títulos en ancho: la agenda con chips «hora título» y «+N»', async () => {

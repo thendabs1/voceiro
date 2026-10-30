@@ -1014,14 +1014,27 @@ function calChipsDeportes(){
   const chip = (accion, html, valor, pulsado, clase = '', attrs = '') => `<button type="button" data-cal="${accion}" data-valor="${calEsc(valor)}" class="${clase}" aria-pressed="${pulsado}"${attrs}>${html}</button>`;
   const deportes = Object.entries(CAL_DEPORTES).map(([k, cs]) =>
     chip('deporte', calEsc(t(CAL_NOMBRES_DEPORTE[k])), k, k !== elegido ? 'false' : igual(cs) ? 'true' : 'mixed', `cal-dep cal-dep-${k}`)).join('');
+  // Cada competición: su nombre filtra (lo que veo) y su ★ la sigue (Apple
+  // Sports, «Mis calendarios» de Google): dos botones hermanos, sin asistente.
   const competiciones = (CAL_DEPORTES[elegido] || []).map(c => {
-    const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c];
-    return chip('capa', (marca && marca !== nombre ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, s.capas.has(c),
-      `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`);
+    const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c], sigue = sigo.includes(c);
+    return `<span class="cal-capa">${chip('capa', (marca && marca !== nombre ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, s.capas.has(c),
+      `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`)}${chip('seguir', sigue ? '★' : '☆', c, sigue, 'cal-seguir', ` aria-label="${calEsc(t(sigue ? 'calDejarDeSeguir' : 'calSeguir', { x: nombre }))}"`)}</span>`;
   }).join('');
   return `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calCompeticiones'))}">${chip('capas-todas', calEsc(t('calTodas')), '', igual(CAL_COMPETICIONES))}
-    ${sigo.length ? chip('capas-sigo', calEsc(t('calLasQueSigo')), '', igual(sigo)) : ''}${deportes}${calBoton('asistente', t('calElegirCompeticiones'), '2')}</div>
-    ${elegido ? `<div class="cal-chips cal-subchips ui-tira" role="group" aria-label="${calEsc(t('calCompeticionesN', { n: s.capas.size, total: CAL_DEPORTES[elegido].length }))}">${competiciones}</div>` : ''}`;
+    ${sigo.length ? chip('capas-sigo', calEsc(t('calLasQueSigo')), '', igual(sigo)) : ''}${deportes}</div>
+    ${elegido ? `<div class="cal-chips cal-subchips ui-tira" role="group" aria-label="${calEsc(t('calCompeticionesN', { n: s.capas.size, total: CAL_DEPORTES[elegido].length }))}">${competiciones}</div>`
+      : sigo.length ? '' : `<p class="cal-nota cal-pista-seguir">${calEsc(t('calPistaSeguir'))}</p>`}`;
+}
+// Seguir o dejar de seguir una competición: solo guarda la preferencia; lo que
+// se ve no cambia hasta pulsar «Las que sigo». Sin asistente hecho, no lo
+// marca como hecho (el sitio de la agenda sigue saliendo de «Mis sitios»).
+function calSeguir(c){
+  const p = calPreferencias() || { v: 1, estado: 'omitido' }, sigo = new Set(p.competiciones || []);
+  if (sigo.has(c)) sigo.delete(c); else sigo.add(c);
+  const ok = calGuardarPreferencias({ ...p, competiciones: [...sigo], actualizado: new Date().toISOString() });
+  if (!ok) toast(t('calAsNoGuardado'), 3000);
+  pintarCalendario();
 }
 // Al entrar en Deportes: las competiciones que sigo o, sin ninguna, todas.
 function calEntrarDeportes(){
@@ -1131,6 +1144,12 @@ function calAsistente(){
     <div class="as-acciones">${calBoton('as-cancelar', t('calAsCancelar'))}${a.paso ? calBoton('as-anterior', t('calAsAnterior')) : ''}
     ${calBoton(ultimo ? 'as-guardar' : 'as-siguiente', t(ultimo ? 'calAsGuardar' : 'calAsSiguiente'), '', 'class="primary"')}</div></section>`;
 }
+// Desde Ajustes → Asistentes: se cierra Ajustes y el asistente se abre sobre el calendario.
+function asistenteCalendarioDesdeAjustes(){
+  cerrarAjustes();
+  abrirCalendario(document.getElementById('btn-calendario'), 'agenda');
+  calAbrirAsistente(0);
+}
 const calEnfocarAjustes = () => document.getElementById('calendario-panel')?.querySelector('[data-cal="asistente"]')?.focus({ preventScroll: true });
 function calGuardarAsistente(){
   const s = CALENDARIO, b = s.asistente.b;
@@ -1165,6 +1184,7 @@ function pintarCalendario(){
   const id = foco?.id, accion = foco?.dataset.cal, valor = foco?.dataset.valor;
   const seleccion = foco?.type === 'search' ? [foco.selectionStart, foco.selectionEnd] : null;
   p.setAttribute('aria-busy', String(s.cargando));
+  p.classList.toggle('cal-compacto', !s.mesAbierto);
   if (s.asistente){
     p.innerHTML = `<h1 id="cal-titulo" class="sr-only" tabindex="-1">${calEsc(t('calTitulo'))}</h1>${calAsistente()}`;
     const vuelta = id ? document.getElementById(id) : foco?.name
@@ -1208,6 +1228,7 @@ function calElegirDia(dia, rango = ''){
 }
 function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
+  document.getElementById('btn-as-calendario')?.addEventListener('click', asistenteCalendarioDesdeAjustes);
   // Dos entradas a la misma vista: la agenda y Deportes. Pulsar la abierta la cierra.
   for (const [id, vista] of [['btn-calendario', 'agenda'], ['btn-deportes', 'deportes']]){
     const boton = document.getElementById(id);
@@ -1221,6 +1242,7 @@ function wireCalendario(){
     if (a === 'cerrar') return salirCalendario();
     if (a === 'asistente') return calAbrirAsistente(Number(v) || 0);
     if (a === 'ahora-no'){ calGuardarPreferencias({ v: 1, estado: 'omitido' }); return void pintarCalendario(); }
+    if (a === 'seguir') return calSeguir(v);
     if (s.asistente){
       const as = s.asistente;
       if (a === 'as-cancelar'){ as.controller?.abort(); s.asistente = null; pintarCalendario(); return void calEnfocarAjustes(); }
