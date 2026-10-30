@@ -195,6 +195,10 @@ async function consultarCalendario(){
   const s = CALENDARIO;
   if (!s.meta) return void cargarCalendario();
   s.fecha ||= calHoy();
+  if (calSinSitio() || calMixta()){
+    s.controller?.abort(); s.consulta = s.vigente = ''; s.resumen = null; s.barras = []; s.cargando = false;
+    return void pintarCalendario();
+  }
   const { desde, hasta } = calVentana();
   if (s.mesAbierto) cargarMesCalendario();
   // Los subchips solo se ven con una categoría elegida: solo entonces hace falta.
@@ -422,7 +426,14 @@ function actualizarConsultaCalendario(orden){
   pintarCalendario();
 }
 // Un prefijo de competición es de Deportes; el resto, de la agenda.
-const calVistaDe = o => o?.circuitos.length || o?.ambitos.some(a => AMBITOS[a]?.codigo) ? 'deportes' : 'agenda';
+const calEsDeportiva = o => Boolean(o?.circuitos.length || o?.ambitos.some(a => AMBITOS[a]?.codigo));
+const calVistaDe = o => calEsDeportiva(o) ? 'deportes' : 'agenda';
+// Una orden con competiciones y temas a la vez («f1: teatro:») no se resuelve
+// en silencio: se pregunta qué parte ver (cada vista toma solo lo suyo).
+const calMixta = () => { const o = calPideAgenda(CALENDARIO.orden) && CALENDARIO.orden;
+  return Boolean(o) && calEsDeportiva(o) && o.ambitos.some(a => !AMBITOS[a]?.codigo); };
+// La agenda es siempre de un sitio: sin él no se consulta, se pide (P05).
+const calSinSitio = () => !calModoDeportes() && !CALENDARIO.donde;
 // Deportes con un prefijo de competición manda el prefijo: solo esas, sin capas.
 const calPrefijoDeportivo = () => calPideAgenda(CALENDARIO.orden) && calVistaDe(CALENDARIO.orden) === 'deportes';
 // Cada vista con lo suyo: Deportes abre el mes con sus capas (las que sigo o
@@ -493,10 +504,12 @@ function salirCalendario(){
   cerrarCalendario();
   calQuitarPrefijos();
 }
-function calQuitarPrefijos(){
+// Quita del buscador los prefijos de agenda (o solo los que diga `quitar`).
+function calQuitarPrefijos(quitar = () => true){
   const input = document.getElementById('buscar');
   const { antes, consulta } = partirConsulta(input.value);
-  input.value = [tokenizeQuery(antes).filter(tk => !(tk.prefix && leerConsultaCalendario(tk.raw))).map(tk => tk.raw).join(' '), consulta]
+  const fuera = tk => { const o = tk.prefix && leerConsultaCalendario(tk.raw); return Boolean(o) && quitar(o); };
+  input.value = [tokenizeQuery(antes).filter(tk => !fuera(tk)).map(tk => tk.raw).join(' '), consulta]
     .filter(Boolean).join(' ');
   aplicarFiltros();
 }
@@ -943,8 +956,8 @@ function pintarSugerencias(campo){
 // La ciudad, arriba (Time Out, Fever): su nombre abre el buscador de sitios.
 function calDonde(){
   const s = CALENDARIO;
-  if (!s.editandoDonde) return `<div class="cal-donde">${calBoton('editar-donde', '📍 ' + (s.donde?.nombre || t('calTodaEspana')) + ' ▾', '', `class="cal-donde-nombre" aria-label="${calEsc(t('calCambiarSitio', { x: s.donde?.nombre || t('calTodaEspana') }))}"`)}
-    ${s.donde ? calBoton('quitar-donde', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calQuitar', { x: s.donde.nombre }))}"`) : ''}</div>`;
+  // Sin «Toda España» ni quitar el sitio: se cambia por otro (la agenda es local).
+  if (!s.editandoDonde) return `<div class="cal-donde">${calBoton('editar-donde', '📍 ' + (s.donde?.nombre || t('calEligeSitio')) + ' ▾', '', `class="cal-donde-nombre" aria-label="${calEsc(s.donde ? t('calCambiarSitio', { x: s.donde.nombre }) : t('calEligeSitio'))}"`)}</div>`;
   return `<div class="cal-donde cal-campo-sug"><label for="cal-donde" class="sr-only">${calEsc(t('calDonde'))}</label>
     <input id="cal-donde" type="search" autocomplete="off" value="${calEsc(s.escrito.donde)}" placeholder="${calEsc(t('calDondeEjemplo'))}" aria-controls="cal-sug-donde">
     <div id="cal-sug-donde" class="cal-sugerencias" role="group" aria-label="${calEsc(t('calSugerencias'))}">${calSugerenciasHtml('donde')}</div></div>`;
@@ -963,11 +976,19 @@ function calChips(){
   const conceptos = m.catalogo.conceptos, raiz = calRaizElegida();
   const chip = (accion, label, valor, pulsado, clase = '') => calBoton(accion, label, valor, `class="${clase}" aria-pressed="${pulsado}"`);
   const fijas = CAL_CATEGORIAS.filter(c => conceptos[c]);
+  const gratis = calBoton('gratis', t('calPrecioGratis'), '', `aria-pressed="${s.precio === 'gratis'}" title="${calEsc(t('calGratisNota'))}"`);
+  // Con un prefijo de tema en el buscador, manda él: se ve como chip pulsado que
+  // se quita, en vez de un «Todo» que no es verdad (como Deportes con prefijo).
+  const prefijos = calPideAgenda(s.orden) ? s.orden.ambitos.filter(a => !AMBITOS[a]?.codigo) : [];
+  if (prefijos.length) return `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calTemas'))}">${prefijos.map(a => {
+    const nombre = calNombre(conceptos[AMBITOS[a].tema]);
+    return calBoton('quitar-prefijo', nombre + ' ✕', a, `aria-pressed="true" aria-label="${calEsc(t('calQuitar', { x: nombre }))}"`);
+  }).join('')}${gratis}</div>`;
   const p = calPreferencias(), loMio = p?.estado === 'configurado' && calTemasMios(p).length ? chip('categoria', t('calLoMio'), 'mio', s.mio) : '';
   // En la agenda, «Deportes» es el deporte del sitio; las competiciones tienen su vista.
   const primera = `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calTemas'))}">${loMio}${chip('categoria', t('calTodo'), '', !raiz && !s.mio)}
     ${fijas.map(c => chip('categoria', c === 'deportes' ? t('calAsDeporteLocal') : calNombre(conceptos[c]), c, raiz === c, 'cal-cat cal-cat-' + c)).join('')}
-    ${calBoton('gratis', t('calPrecioGratis'), '', `aria-pressed="${s.precio === 'gratis'}" title="${calEsc(t('calGratisNota'))}"`)}</div>`;
+    ${gratis}</div>`;
   // Solo las subcategorías con algo en el sitio; la elegida se queda aunque no tenga.
   const hay = s.disp?.clave === (s.donde?.id || '') ? s.disp.temas : null;
   const segunda = raiz ? calHijos(conceptos, raiz).filter(i => !hay || hay[i] || s.temas.has(i))
@@ -978,9 +999,40 @@ function calContenido(){
   const s = CALENDARIO;
   if (s.orden?.desconocidos.length) return `<p class="cal-aviso">${calEsc(t('calConsultaDesconocida', { x: s.orden.desconocidos.join(', ') }))}</p>`;
   if (!s.meta) return '';
+  if (calMixta()) return calElegirParte();
+  if (calSinSitio()) return calInvitacion() + calPedirSitio();
   const { desde, hasta, acotada } = calVentana();
   if (desde >= hasta) return `<p class="cal-aviso">${calEsc(t('calFueraHorizonte'))}</p>`;
   return calInvitacion() + calTira() + calLista() + (s.resumen && !acotada ? calPendientes() : '');
+}
+// Sitios que ya conozco del usuario: los de «Mis sitios» (el tiempo) y su provincia.
+function calSitiosCandidatos(){
+  const candidatos = new Map();
+  for (const x of sitiosTiempo()){
+    const ine = x.lugar?.ine && String(x.lugar.ine).padStart(5, '0');
+    if (!ine) continue;
+    candidatos.set('es:municipio:' + ine, x.nombre);
+    const prov = ADMINISTRACION.provincias.find(([c]) => c === ine.slice(0, 2));
+    if (prov) candidatos.set('es:provincia:' + prov[0], t('calAsProvincia', { x: prov[1] }));
+  }
+  return candidatos;
+}
+function calPedirSitio(){
+  const candidatos = [...calSitiosCandidatos()];
+  return `<section class="cal-invitacion cal-pedir-sitio"><h2>${calEsc(t('calEligeSitio'))}</h2><p>${calEsc(t('calEligeSitioTexto'))}</p>
+    ${candidatos.length ? `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calSugerencias'))}">${candidatos.map(([id, nombre]) =>
+      `<button type="button" data-cal="elegir-donde" data-valor="${calEsc(id)}" data-nombre="${calEsc(nombre)}">${calEsc(nombre)}</button>`).join('')}</div>` : ''}
+    <div class="as-acciones">${calBoton('editar-donde', t('calBuscarSitio'))}${calBoton('ir-deportes', t('calIrDeportes'))}</div></section>`;
+}
+// Orden mixta: dos botones, uno por parte, con lo que se verá en cada una.
+function calElegirParte(){
+  const o = CALENDARIO.orden, conceptos = CALENDARIO.meta?.catalogo?.conceptos || {};
+  const deportes = [...o.ambitos.filter(a => AMBITOS[a]?.codigo), ...o.circuitos].map(calNombreCompeticion).join(', ');
+  const temas = o.ambitos.filter(a => !AMBITOS[a]?.codigo).map(a => calNombre(conceptos[AMBITOS[a].tema]) || a).join(', ');
+  const sitio = CALENDARIO.donde?.nombre;
+  return `<section class="cal-invitacion cal-elegir-parte"><h2>${calEsc(t('calMezcla'))}</h2><p>${calEsc(t('calMezclaTexto'))}</p>
+    <div class="as-acciones">${calBoton('quedarse', t('calVerEnDeportes', { x: deportes }), 'deportes')}
+    ${calBoton('quedarse', t(sitio ? 'calVerEnSitio' : 'calVerEnAgenda', { x: temas, sitio }), 'agenda')}</div></section>`;
 }
 // Calendario deportivo: cada competición es una capa («Mis calendarios» de
 // Google Calendar) y se eligen arriba, como los deportes de SofaScore o ESPN y
@@ -1058,14 +1110,7 @@ function calAsistente(){
   let titulo, cuerpo;
   if (paso === 'sitio'){
     titulo = t('calAsSitio');
-    const candidatos = new Map();
-    for (const x of sitiosTiempo()){
-      const ine = x.lugar?.ine && String(x.lugar.ine).padStart(5, '0');
-      if (!ine) continue;
-      candidatos.set('es:municipio:' + ine, x.nombre);
-      const prov = ADMINISTRACION.provincias.find(([c]) => c === ine.slice(0, 2));
-      if (prov) candidatos.set('es:provincia:' + prov[0], t('calAsProvincia', { x: prov[1] }));
-    }
+    const candidatos = calSitiosCandidatos();
     if (b.sitio && !candidatos.has(b.sitio.id)) candidatos.set(b.sitio.id, b.sitio.nombre);
     cuerpo = `<p class="aj-hint">${calEsc(t('calAsSitioAyuda'))}</p><fieldset class="cal-as-grupo"><legend class="sr-only">${calEsc(titulo)}</legend>
       ${[...candidatos].map(([id, nombre]) => caja('cal-as-sitio', id, nombre, b.sitio?.id === id)).join('')}
@@ -1246,7 +1291,10 @@ function wireCalendario(){
       calElegirDonde({ id: v, nombre: b.dataset.nombre }); s.escrito.donde = ''; s.sugerencias.donde = []; s.editandoDonde = false;
       enfocar = '[data-cal="editar-donde"]';
     }
-    if (a === 'quitar-donde'){ calElegirDonde(null); enfocar = '[data-cal="editar-donde"]'; }
+    // Quitar el prefijo no cierra la agenda abierta por él: se queda con lo suyo.
+    if (a === 'quitar-prefijo'){ s.porPrefijo = false; return calQuitarPrefijos(o => !calEsDeportiva(o) && o.ambitos.includes(v)); }
+    if (a === 'ir-deportes') return abrirCalendario(document.getElementById('btn-deportes'), 'deportes');
+    if (a === 'quedarse') return calQuitarPrefijos(o => v === 'deportes' ? !calEsDeportiva(o) : calEsDeportiva(o));
     // En el mes, tocar un día lo elige y pliega la tira (Apple Calendar).
     if (a === 'dia'){ calElegirDia(v); s.mesAbierto = false; }
     if (a === 'rango'){

@@ -1,6 +1,6 @@
 export default {
   "calTitulo": "Calendario", "calDeportesTitulo": "Deportes",
-  "calTodaEspana": "Toda España", "calCambiarSitio": "Cambiar el sitio ({x})", "calCuando": "Cuándo",
+  "calEligeSitio": "Elige un sitio", "calEligeSitioTexto": "La agenda es de un sitio: municipio, provincia o comunidad. Las competiciones (F1, LaLiga, NBA, ATP…) están en Deportes.", "calBuscarSitio": "Buscar un sitio", "calIrDeportes": "Ir a Deportes", "calMezcla": "Tu búsqueda mezcla dos calendarios", "calMezclaTexto": "Las competiciones están en Deportes; los temas, en la agenda de tu sitio. ¿Qué quieres ver?", "calVerEnDeportes": "{x} en Deportes", "calVerEnSitio": "{x} en {sitio}", "calVerEnAgenda": "{x} en la agenda", "calCambiarSitio": "Cambiar el sitio ({x})", "calCuando": "Cuándo",
   "calManana": "Mañana", "calFinde": "Este finde", "calTodo": "Todo", "calOtras": "Otras",
   "calSemanaAnterior": "Semana anterior", "calSemanaPosterior": "Semana siguiente",
   "calMesAnterior": "Mes anterior", "calMesSiguiente": "Mes siguiente",
