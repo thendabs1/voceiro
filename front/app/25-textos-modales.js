@@ -80,6 +80,11 @@ function aplicarTextos(){
 
   // Modos
   $('#cfg-modos-hint').textContent = t('cfgModosHint');
+  // Asistentes
+  $('#aj-asistentes-hint').textContent = t('ajAsistentesHint');
+  $('#btn-as-modo-lbl').textContent = t('asTitulo');
+  $('#btn-as-calendario-lbl').textContent = t('ajAsCalendario');
+  $('#aj-as-calendario-hint').textContent = t('ajAsCalendarioHint');
   $('#btn-nuevo-modo-lbl').textContent = t('cfgModoNuevo');
   $('#btn-asistente-modo-lbl').textContent = t('asTitulo');
   $('#as-entrada-hint').textContent = t('asEntrada');

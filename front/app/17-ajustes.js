@@ -6,9 +6,9 @@
    Rutas: '' (lista de secciones, solo en móvil), las de AJ_SECCIONES
    y 'modo' (el de MODO_EDITADO) o 'asistente' (un borrador sin guardar).
    ═══════════════════════════════════════════════════════════════ */
-const AJ_SECCIONES = ['modos', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
+const AJ_SECCIONES = ['modos', 'asistentes', 'lectura', 'feed', 'sync', 'lector', 'avanzado', 'ayuda'];
 const AJ_TITULOS = {
-  '': 'ajTitulo', modos: 'ajModos', lectura: 'ajLectura',
+  '': 'ajTitulo', modos: 'ajModos', asistentes: 'ajAsistentes', lectura: 'ajLectura',
   feed: 'ajFeed', sync: 'ajSync', lector: 'ajLector', avanzado: 'ajAvanzado', ayuda: 'ajAyuda',
   asistente: 'asTitulo',
 };
