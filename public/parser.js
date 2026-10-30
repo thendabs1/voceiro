@@ -20,7 +20,7 @@
 // y `raw`), para poder mostrarlo en la UI. La resolución a valor canónico
 // vive en los campos del objeto `parsed`, no en el chip.
 
-import { PREFIJOS_CONSULTAS } from './consultas/registro.js?v=4b1d3db4fc';
+import { PREFIJOS_CONSULTAS } from './consultas/registro.js?v=1354d389c4';
 
 const PREFIX_ALIASES = {
   ...Object.fromEntries(Object.keys(PREFIJOS_CONSULTAS).map(p => [p, 'consulta'])),
