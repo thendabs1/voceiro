@@ -7,7 +7,7 @@ export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
 export const TODAS_LAS_ZONAS = '*';
 // De un GP solo la carrera es chip del mes; el resto de sesiones van en su barra.
-const SESIONES_PRINCIPALES = new Set(['Race', 'RAC']);
+const SESIONES_PRINCIPALES = new Set(['Race', 'RAC', 'RAC2']);
 // «Comprobado» cambia en cada pasada aunque la cita no cambie. En la lectura va
 // por fuente (cobertura), así que cada pasada reescribe solo lo que cambió.
 // Los tramos largos se parten por meses: ninguno pasa de TRAMO_MAX_DIAS, así
@@ -167,7 +167,8 @@ export function prepararLectura(datos) {
         const orden = inicio?.instante && a.hora ? Date.parse(inicio.instante) / 86400000 + 2440587.5
           : a.hora ? 8000000 + (h * 60 + m) / 1440 : 9000000;
         return [[a.fecha, e.id, o.id, orden, a.hora || null, o === e ? null
-          : JSON.stringify({ nombres: o.nombres, estado: o.programacion?.valor?.programacion || null })]];
+          : JSON.stringify({ nombres: o.nombres, estado: o.programacion?.valor?.programacion || null,
+            ...(o.agenda?.tipo_sesion ? { tipo: o.agenda.tipo_sesion } : {}) })]];
       });
     });
     const igualesChips = porZonaChips.every(c => JSON.stringify(c) === JSON.stringify(porZonaChips[0]));
