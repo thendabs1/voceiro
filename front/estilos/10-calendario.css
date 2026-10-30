@@ -144,3 +144,8 @@ body.calendario-abierto{max-width:none}
   .cal-donde{flex:0 1 auto}.cal-acciones{order:1}.cal-barra>.cal-subchips{order:2}
   .cal-barra>.cal-rangos+.ui-tira{border-left:1px solid var(--border);padding-left:8px}
 }
+/* Torneos en curso de Deportes: una fila por torneo (ESPN); fechas a la derecha. */
+.cal-curso-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 12px;align-items:baseline;border-top:1px solid var(--border);padding:4px 0;overflow-wrap:anywhere}
+.cal-curso-fila>h3{font-size:1em;margin:0}.cal-curso-fila>p,.cal-curso-fila>.cal-desplegado{grid-column:1/-1}.cal-curso-fila>p{margin:0 0 4px}
+.cal-curso-fila h3 button{border:0;background:transparent;color:var(--fg);padding:6px 0;text-align:left;font-weight:600;line-height:1.35;overflow-wrap:anywhere}.cal-curso-fila h3 button:hover{color:var(--accent);text-decoration:underline}
+.cal-curso-fila .cal-cuando{white-space:nowrap;font-variant-numeric:tabular-nums}
