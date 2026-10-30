@@ -87,7 +87,7 @@ class LecturaSQL(unittest.TestCase):
         self.assertEqual('\n'.join(self.db.iterdump()), previo)
         vacia = proyectar(self.n, [], AHORA)
         self.publicar(preparar(vacia))
-        for tabla in ('eventos', 'entidades', 'facetas', 'tramos', 'chips'):
+        for tabla in ('eventos', 'entidades', 'facetas', 'tramos', 'activos', 'chips'):
             self.assertEqual(self.db.execute(f'SELECT count(*) FROM agenda_lectura_{tabla}').fetchone()[0], 0)
 
     def test_no_se_publica_revision_sin_seleccion_explicita(self):
@@ -115,7 +115,7 @@ class LecturaSQL(unittest.TestCase):
     def tablas(self, db=None):
         db = db or self.db
         return {t: sorted(db.execute(f'SELECT * FROM agenda_lectura_{t}').fetchall())
-                for t in ('control', 'eventos', 'facetas', 'tramos', 'chips', 'entidades', 'huellas')}
+                for t in ('control', 'eventos', 'facetas', 'tramos', 'activos', 'chips', 'entidades', 'huellas')}
 
     def previo(self):
         return estado(lambda pasos: [self.db.execute(sql, args).fetchall() for sql, args in pasos])
@@ -133,6 +133,7 @@ class LecturaSQL(unittest.TestCase):
         p['eventos'].append(['otro', *e[1:]])
         p['facetas'] += [['otro', *f[1:]] for f in p['facetas'] if f[0] == e[0]]
         p['tramos'] += [[*t[:3], 'otro'] for t in p['tramos'] if t[3] == e[0]]
+        p['activos'] += [[*t[:3], 'otro'] for t in p['activos'] if t[3] == e[0]]
         p['entidades'].append(['participante:otra', 'participante', ' otra ', '{}'])
         return p
 
@@ -174,7 +175,7 @@ class LecturaSQL(unittest.TestCase):
                                              'DELETE FROM agenda_lectura_')) for sql, _ in pasos))
         n = presencia.registrar(repetida, 'madrid', [], LUEGO, madrid.URL, aceptar_caida=True)
         self.publicar(preparar(proyectar(n, ['madrid'], AHORA)), previo=self.previo())
-        for tabla in ('eventos', 'facetas', 'tramos', 'chips'):
+        for tabla in ('eventos', 'facetas', 'tramos', 'activos', 'chips'):
             self.assertEqual(self.db.execute(f'SELECT count(*) FROM agenda_lectura_{tabla}').fetchone()[0], 0)
         self.assertFalse(self.db.execute("SELECT id FROM agenda_lectura_entidades WHERE tipo='evento'").fetchall())
         n = presencia.registrar(n, 'madrid', ids, '2026-10-28T12:00:00Z', madrid.URL)
@@ -221,7 +222,8 @@ class LecturaSQL(unittest.TestCase):
         pasos = planificar(self.preparada, 12, self.previo())
         self.assertEqual({sql.split(' VALUES')[0].split(' WHERE')[0] for sql, _ in pasos if 'agenda_lectura_control' not in sql
                           and not sql.lstrip().startswith('CREATE')},
-                         {'DELETE FROM agenda_lectura_chips', 'INSERT INTO agenda_lectura_chips', 'INSERT INTO agenda_lectura_huellas'})
+                         {'DELETE FROM agenda_lectura_chips', 'INSERT INTO agenda_lectura_chips', 'INSERT INTO agenda_lectura_huellas',
+                          'DELETE FROM agenda_lectura_activos', 'INSERT INTO agenda_lectura_activos'})
         cambiada = deepcopy(self.preparada)
         cambiada['eventos'][0][1] += 'cambio '
         self.publicar(cambiada, previo=self.previo())
@@ -237,3 +239,36 @@ class LecturaSQL(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.publicar(self.preparada, previo=previo)
         self.assertEqual(self.tablas(), antes)
+
+
+    def test_republicar_lectura_vieja_anade_indice_y_activos_y_no_reescribe_lo_que_no_cambia(self):
+        vieja = deepcopy(self.preparada)
+        vieja.pop('proyeccion_calendario')
+        vieja.pop('activos')
+        self.publicar(vieja)
+        self.db.execute('DROP TABLE agenda_lectura_activos')
+        self.db.execute('DROP INDEX agenda_lectura_chips_orden')
+        for tipo, i, h in self.db.execute('SELECT tipo,id,huella FROM agenda_lectura_huellas').fetchall():
+            if tipo == 'evento':
+                componentes = json.loads(h)
+                componentes.pop('activos')
+                self.db.execute('UPDATE agenda_lectura_huellas SET huella=? WHERE tipo=? AND id=?',
+                                (json.dumps(componentes), tipo, i))
+        previo = self.previo()
+        self.publicar(previo=previo)
+        self.assertEqual(self.tablas(), self.completa(self.preparada))
+        self.assertTrue(self.db.execute("SELECT name FROM sqlite_master WHERE name='agenda_lectura_chips_orden'").fetchone())
+        meta, = self.db.execute('SELECT datos_json FROM agenda_lectura_control').fetchone()
+        self.assertEqual(json.loads(meta)['proyeccion_calendario'], 2)
+        # La siguiente publicación idéntica vuelve a ser solo control y DDL aditivo.
+        pasos = planificar(self.preparada, 12, self.previo())
+        self.assertFalse(any(sql.startswith(('DELETE', 'INSERT INTO agenda_lectura_activos')) for sql, _ in pasos))
+
+    def test_un_error_al_republicar_revierte_tambien_la_marca_y_el_indice(self):
+        self.publicar()
+        self.db.execute('DROP INDEX agenda_lectura_chips_orden')
+        antes = self.tablas()
+        with self.assertRaises(sqlite3.OperationalError):
+            self.publicar(previo=self.previo(), extra=[('SELECT * FROM inexistente', ())])
+        self.assertEqual(self.tablas(), antes)
+        self.assertFalse(self.db.execute("SELECT name FROM sqlite_master WHERE name='agenda_lectura_chips_orden'").fetchall())

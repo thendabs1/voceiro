@@ -3,7 +3,7 @@
 import { tokenizeQuery } from '../../shared/parser.js';
 import { compilarTexto } from '../../shared/busqueda/texto.js';
 import { AMBITOS, leerConsultaCalendario, temasDescendientes } from '../../shared/calendario/consulta.js';
-import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
+import { fechaValida, sumarDiasCalendario, diaEnZona } from '../../shared/calendario/fechas.js';
 import { crearLimite, claveIp, respuesta429 } from './limite.js';
 import { consultarTurso } from './calendario-turso.js';
 
@@ -184,74 +184,89 @@ export function consultaEventos(c, meta, cursor) {
     SELECT id,dia,orden,tarjeta FROM ordenada${continuacion} ORDER BY dia,orden,id LIMIT ?`, args };
 }
 
-// Chips de una ventana (eventos?chips=1): lo mismo que las muestras del
-// resumen, en su mismo orden, para seguir donde acaban. Cada fila es una
-// ocurrencia; el cursor lleva también la ocurrencia.
+// La marca aparece al publicar los tramos activos (sin cancelados), el estado
+// de cada sesión y el orden por instante. Hasta republicar, la lectura anterior
+// se sirve como antes: los cancelados cuentan y el orden es el minuto del día.
+const lecturaActual = meta => meta.proyeccion_calendario === 2;
+// Estado de la ocurrencia; la cancelación del evento entero vale para todas.
+function expresionesChip(meta) {
+  const principal = "json_extract(e.tarjeta_json,'$.programacion.valor.programacion')";
+  const estado = lecturaActual(meta) ? `CASE WHEN ${principal} IN ('cancelado','aplazado') THEN ${principal}
+    ELSE coalesce(json_extract(x.sesion_json,'$.estado'),${principal}) END` : principal;
+  return { estado, orden: 'x.orden' };
+}
+
+function filasChips(c, meta, cursor, soloActivos = false) {
+  const args = [], { estado, orden } = expresionesChip(meta);
+  if (cursor && cursor.length !== 6) throw error(400, 'Cursor inválido');
+  // Dos recorridos ordenados permiten mezclar zona concreta y '*' sin ordenar
+  // todos los chips. ORDER BY usa columnas de salida, también en libSQL.
+  const partes = [c.zona, '*'].map(zona => {
+    args.push(zona, c.desde, c.hasta);
+    const filtros = filtrosSql(c, meta, args);
+    let continuacion = '';
+    if (cursor) {
+      continuacion = ` AND (x.dia,${orden},x.evento,x.ocurrencia)>(?,?,?,?)`;
+      args.push(cursor[2], Number(cursor[3]), cursor[4], cursor[5]);
+    }
+    return `SELECT x.dia AS dia, ${orden} AS orden, x.evento AS id, x.ocurrencia AS ocurrencia,
+      x.hora AS hora, x.sesion_json AS sesion, e.tarjeta_json AS tarjeta, ${estado} AS estado
+      FROM agenda_lectura_chips x ${lecturaActual(meta) ? 'INDEXED BY agenda_lectura_chips_orden' : ''}
+      JOIN agenda_lectura_eventos e ON e.id=x.evento
+      WHERE x.zona=? AND x.dia>=? AND x.dia<?${filtros}${continuacion}
+      ${soloActivos && lecturaActual(meta) ? `AND coalesce(${estado},'') NOT IN ('cancelado','aplazado')` : ''}`;
+  });
+  return { sql: partes.join(' UNION ALL ') + ' ORDER BY 1,2,3,4', args };
+}
+
 export function consultaChips(c, meta, cursor) {
-  const args = [c.zona, c.desde, c.hasta];
-  const filtros = filtrosSql(c, meta, args);
-  let continuacion = '';
-  if (cursor) {
-    if (cursor.length !== 6) throw error(400, 'Cursor inválido');
-    continuacion = ' AND (x.dia,x.orden,x.evento,x.ocurrencia)>(?,?,?,?)';
-    args.push(cursor[2], Number(cursor[3]), cursor[4], cursor[5]);
-  }
-  args.push(c.limite + 1);
-  return { sql: `SELECT x.dia, x.orden, x.evento AS id, x.ocurrencia, x.hora, x.sesion_json AS sesion, e.tarjeta_json AS tarjeta
-      FROM agenda_lectura_chips x JOIN agenda_lectura_eventos e ON e.id=x.evento
-      WHERE x.zona IN (?,'*') AND x.dia>=? AND x.dia<?${filtros}${continuacion}
-      ORDER BY x.dia, x.orden, x.evento, x.ocurrencia LIMIT ?`, args };
+  const s = filasChips(c, meta, cursor);
+  return { sql: s.sql + ' LIMIT ?', args: [...s.args, c.limite + 1] };
 }
-// Un chip es una cita de ese día: con su hora y, si es una sesión o función,
-// con su nombre y el del GP o programa al que pertenece.
-const comoChip = (t, f) => ({ ...t, presentacion: 'cita', hora_muestra: f.hora, ocurrencia: f.ocurrencia,
-  ...(f.sesion ? { nombres: JSON.parse(f.sesion), padre: t.nombres } : {}) });
 
-// Turso cuenta también las filas de las tablas temporales: nada de cruzar cada
-// día con la ventana. Cada tramo suma +1 el primer día que cubre y -1 al
-// terminar (los de un evento no se solapan en una zona), y las cuentas por día
-// salen de acumular esos cambios. Las muestras son citas y programas en su
-// primer día de la ventana, primero las de hora acreditada.
-// Disponibilidad para el asistente: eventos distintos por tema en el sitio (o
-// en toda la agenda), por raíz y sin subcategoría, y por competición (sin sitio).
+// estado es el de la ocurrencia; la cancelación del principal afecta a todas.
+function comoChip(t, f) {
+  const sesion = f.sesion && JSON.parse(f.sesion), nombres = sesion?.nombres || sesion;
+  return { ...t, presentacion: 'cita', hora_muestra: f.hora, ocurrencia: f.ocurrencia,
+    estado: f.estado || null, ...(nombres ? { nombres, padre: t.nombres } : {}) };
+}
+
+// Una sola selección temporal de eventos. Las facetas se buscan por evento;
+// ni las raíces ni «otra» vuelven a recorrer las facetas históricas.
 export function consultaDisponibilidad(c, meta) {
-  const args = [], conceptos = meta.catalogo?.conceptos || {};
-  const delSitio = c.territorio ? `SELECT evento FROM agenda_lectura_facetas WHERE tipo='territorio' AND valor=?` : '';
-  const temas = (valores, alias) => `SELECT ${alias}, count(DISTINCT t.evento) FROM agenda_lectura_facetas t
-    WHERE t.tipo='tema' AND t.valor IN (${valores.map(() => '?').join(',')})${delSitio ? ` AND t.evento IN (${delSitio})` : ''}`;
-  const partes = [];
-  args.push(...(c.territorio ? [c.territorio] : []));
-  partes.push(`SELECT 'tema' AS tipo, t.valor AS valor, count(DISTINCT t.evento) AS n FROM agenda_lectura_facetas t
-    WHERE t.tipo='tema'${delSitio ? ` AND t.evento IN (${delSitio})` : ''} GROUP BY t.valor`);
-  for (const raiz of Object.keys(conceptos).filter(i => !conceptos[i].padres?.length)) {
-    const todos = [...temasDescendientes(meta.catalogo, [raiz])], hijos = todos.filter(t => t !== raiz);
-    args.push(...todos, ...(c.territorio ? [c.territorio] : []));
-    partes.push(temas(todos, `'raiz', '${raiz.replaceAll("'", '')}'`));
-    if (!hijos.length) continue;
-    args.push(raiz, ...(c.territorio ? [c.territorio] : []), ...hijos);
-    partes.push(`SELECT 'otra', '${raiz.replaceAll("'", '')}', count(DISTINCT t.evento) FROM agenda_lectura_facetas t
-      WHERE t.tipo='tema' AND t.valor=?${delSitio ? ` AND t.evento IN (${delSitio})` : ''}
-      AND t.evento NOT IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo='tema' AND valor IN (${hijos.map(() => '?').join(',')}))`);
-  }
-  partes.push(`SELECT 'circuito', valor, count(*) FROM agenda_lectura_facetas WHERE tipo='circuito' GROUP BY valor`);
-  return { sql: partes.join('\n    UNION ALL '), args };
+  const hoy = diaEnZona(new Date(Date.now()), c.zona);
+  const desde = hoy > meta.desde ? hoy : meta.desde;
+  const args = [c.zona, desde, topeVentana({ hasta: meta.hasta }, meta), meta.hasta, ...(c.territorio ? [c.territorio] : [])];
+  // Una fila por combinación de temas (cientos, no un evento por fila: la
+  // respuesta se acota a 2 MB); las raíces se suman después con el catálogo.
+  // Las competiciones cuentan en toda la agenda, aunque se elija un sitio.
+  return { sql: `WITH vigentes AS MATERIALIZED (SELECT DISTINCT d.evento FROM agenda_lectura_${lecturaActual(meta) ? 'activos' : 'tramos'} d
+      WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?),
+    locales AS (SELECT v.evento FROM vigentes v${c.territorio ? ` WHERE EXISTS (SELECT 1 FROM agenda_lectura_facetas t
+      WHERE t.evento=v.evento AND t.tipo='territorio' AND t.valor=?)` : ''}),
+    por_evento AS (SELECT evento, json_group_array(valor) AS temas FROM (SELECT f.evento, f.valor FROM agenda_lectura_facetas f
+      JOIN locales l ON l.evento=f.evento WHERE f.tipo='tema' ORDER BY f.evento, f.valor) GROUP BY evento)
+    SELECT 'temas' AS tipo, temas AS valor, count(*) AS n FROM por_evento GROUP BY temas
+    UNION ALL SELECT 'circuito', f.valor, count(*) FROM agenda_lectura_facetas f JOIN vigentes v ON v.evento=f.evento
+      WHERE f.tipo='circuito' GROUP BY f.valor`, args };
 }
 
-// Barras del mes: competiciones de varios días (GP, torneos) que solapan la
-// ventana, con los mismos filtros. Un evento partido en tramos (por meses) es
-// una barra de su primer a su último día.
+// Barras visibles: unir solo tramos contiguos, incluidos los partidos por mes.
 export const BARRAS_MAX = 60;
 export function consultaBarras(c, meta) {
   const args = [];
   const presentacion = presentacionSql(c.zona, args);
   args.push(c.zona, c.desde, topeVentana(c, meta), c.hasta);
   const filtros = filtrosSql(c, meta, args);
-  args.push(BARRAS_MAX);
-  return { sql: `SELECT d.evento AS id, min(d.desde) AS desde, max(d.hasta) AS hasta, e.tarjeta_json AS tarjeta
+  args.push(BARRAS_MAX + 1);
+  return { sql: `WITH seleccion AS (SELECT d.evento AS id, d.desde, d.hasta, e.tarjeta_json AS tarjeta
       FROM agenda_lectura_tramos d JOIN agenda_lectura_eventos e ON e.id=d.evento
       WHERE ${presentacion} IN ('prolongada','programa') AND json_extract(e.tarjeta_json,'$.competiciones') IS NOT NULL
-        AND d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros}
-      GROUP BY d.evento ORDER BY 2, 3, 1 LIMIT ?`, args };
+        AND d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros}),
+    limites AS (SELECT *, CASE WHEN lag(hasta) OVER(PARTITION BY id ORDER BY desde)=desde THEN 0 ELSE 1 END AS nuevo FROM seleccion),
+    grupos AS (SELECT *, sum(nuevo) OVER(PARTITION BY id ORDER BY desde) AS grupo FROM limites)
+    SELECT id, min(desde) AS desde, max(hasta) AS hasta, tarjeta FROM grupos
+    GROUP BY id,grupo ORDER BY 2,3,1 LIMIT ?`, args };
 }
 
 export function consultaResumen(c, meta) {
@@ -259,41 +274,41 @@ export function consultaResumen(c, meta) {
   const presentacion = presentacionSql(c.zona, args);
   args.push(c.zona, c.desde, topeVentana(c, meta), c.hasta);
   const filtros = filtrosSql(c, meta, args);
-  // Muestras: con chips (lecturas que los tienen), lo que pasa cada día, con su
-  // hora y el total para «+N»; si no, el inicio de cada tramo. Sin muestras, nada.
   let muestras = '';
   if (c.muestras && meta.lectura_chips) {
-    args.push(c.zona, c.desde, c.hasta);
-    const filtrosChips = filtrosSql(c, meta, args);
-    muestras = `, muestras AS (SELECT x.dia, x.evento AS id, x.ocurrencia, x.hora, x.sesion_json, ROW_NUMBER() OVER(PARTITION BY x.dia
-      ORDER BY x.orden, x.evento, x.ocurrencia) AS orden, COUNT(*) OVER(PARTITION BY x.dia) AS total
-      FROM agenda_lectura_chips x JOIN agenda_lectura_eventos e ON e.id=x.evento
-      WHERE x.zona IN (?,'*') AND x.dia>=? AND x.dia<?${filtrosChips})`;
+    const chips = filasChips(c, meta, null, true);
+    args.push(...chips.args);
+    muestras = `, muestras AS (SELECT dia, id, ocurrencia, hora, sesion, tarjeta, estado,
+      ROW_NUMBER() OVER(PARTITION BY dia ORDER BY orden,id,ocurrencia) AS orden,
+      COUNT(*) OVER(PARTITION BY dia ORDER BY orden,id,ocurrencia ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS total
+      FROM (${chips.sql}))`;
   } else if (c.muestras) {
-    muestras = `, muestras AS (SELECT desde AS dia, id, NULL AS ocurrencia, NULL AS hora, NULL AS sesion_json, ROW_NUMBER() OVER(PARTITION BY desde
-      ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden, NULL AS total
-      FROM ventana WHERE presentacion IS NOT 'prolongada')`;
+    muestras = `, muestras AS (SELECT desde AS dia, id, NULL AS ocurrencia, NULL AS hora, NULL AS sesion, tarjeta, estado,
+      ROW_NUMBER() OVER(PARTITION BY desde ORDER BY presentacion IS 'programa' OR hora IS NULL, hora, id) AS orden, NULL AS total
+      FROM ventana WHERE presentacion IS NOT 'prolongada'${lecturaActual(meta) ? " AND coalesce(estado,'') NOT IN ('cancelado','aplazado')" : ''})`;
   }
+  // Turso cuenta también las filas de las tablas temporales: nada de cruzar cada
+  // día con la ventana. Cada tramo suma +1 el primer día que cubre y -1 al
+  // terminar, y las cuentas por día salen de acumular esos cambios.
   args.push(c.hasta);
-  if (muestras) args.push(c.muestras);
-  // Turso (libSQL) solo ordena un UNION por columnas de la salida, no por expresiones:
-  // «muestra» separa cuentas y muestras de cada día.
-  return { sql: `WITH ventana AS MATERIALIZED (SELECT d.evento AS id, max(d.desde,?) AS desde, d.hasta,
-      ${presentacion} AS presentacion,
-      julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')) AS hora,
-      json_extract(e.tarjeta_json,'$.categoria') AS categoria,
-      json_extract(e.tarjeta_json,'$.competiciones') AS competiciones
-      FROM agenda_lectura_tramos d JOIN agenda_lectura_eventos e ON e.id=d.evento
-      WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros})${muestras}
-    SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra, categoria, competiciones,
-      NULL AS ocurrencia, NULL AS hora, NULL AS sesion, NULL AS total FROM (
+  const cuentas = `SELECT dia, presentacion, sum(n) AS n, NULL AS tarjeta, 0 AS muestra, categoria, competiciones,
+      NULL AS ocurrencia, NULL AS hora, NULL AS sesion, NULL AS total, NULL AS estado FROM (
       SELECT desde AS dia, presentacion, categoria, competiciones, 1 AS n FROM ventana
       UNION ALL SELECT hasta, presentacion, categoria, competiciones, -1 FROM ventana WHERE hasta<?)
-      GROUP BY dia, presentacion, categoria, competiciones
-    ${muestras ? `UNION ALL
-    SELECT dia, NULL, orden, (SELECT tarjeta_json FROM agenda_lectura_eventos WHERE id=muestras.id), 1, NULL, NULL,
-      ocurrencia, hora, sesion_json, total FROM muestras WHERE orden<=?` : ''}
-    ORDER BY 1, 5, 3`, args };
+      GROUP BY dia, presentacion, categoria, competiciones`;
+  if (muestras) args.push(c.muestras);
+  return { sql: `WITH ventana AS MATERIALIZED (SELECT d.evento AS id, max(d.desde,?) AS desde, d.hasta,
+      ${presentacion} AS presentacion, e.tarjeta_json AS tarjeta,
+      julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')) AS hora,
+      json_extract(e.tarjeta_json,'$.programacion.valor.programacion') AS estado,
+      json_extract(e.tarjeta_json,'$.categoria') AS categoria,
+      json_extract(e.tarjeta_json,'$.competiciones') AS competiciones
+      FROM agenda_lectura_${lecturaActual(meta) ? 'activos' : 'tramos'} d JOIN agenda_lectura_eventos e ON e.id=d.evento
+      WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros})${muestras}
+    ${cuentas}
+    ${muestras ? `UNION ALL SELECT dia, NULL, orden, tarjeta, 1, NULL, NULL, ocurrencia, hora, sesion, total, estado
+      FROM muestras WHERE orden<=?` : ''}
+    ORDER BY 1,5,3`, args };
 }
 
 // consultar se inyecta en las pruebas; ambos adaptadores usan el mismo transporte.
@@ -351,7 +366,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     };
     let meta = guardado ? await guardado.json() : await leerControl();
     if (meta.version !== 1) throw error(503, 'Versión de lectura incompatible');
-    const huella = await firma({ ruta, ...c });
+    const huella = await firma({ api_calendario: 2, ruta, ...c,
+      ...(c.disponibilidad ? { hoy: diaEnZona(new Date(Date.now()), c.zona) } : {}) });
     const revisionPedida = url.searchParams.get('revision');
     if (guardado && (revisionPedida && revisionPedida !== meta.revision || cursor && cursor[0] !== meta.revision)) meta = await leerControl();
     if (revisionPedida && revisionPedida !== meta.revision || cursor && (cursor[0] !== meta.revision || cursor[1] !== huella)) throw error(409, 'La publicación o la selección cambió; reinicia la consulta');
@@ -408,8 +424,18 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
         fuentes: meta.fuentes, territorios_catalogo: meta.territorios_catalogo, zonas: meta.zonas };
       if (c.disponibilidad) {
         const d = { territorio: c.territorio || null, temas: {}, raices: {}, sin_subcategoria: {}, circuitos: {} };
-        const destino = { tema: d.temas, raiz: d.raices, otra: d.sin_subcategoria, circuito: d.circuitos };
-        for (const f of filas) if (f.n) destino[f.tipo][f.valor] = f.n;
+        const raices = Object.keys(meta.catalogo?.conceptos || {}).filter(k => !meta.catalogo.conceptos[k].padres?.length)
+          .map(k => [k, temasDescendientes(meta.catalogo, [k])]);
+        const sumar = (o, k, n) => { o[k] = (o[k] || 0) + n; };
+        for (const f of filas) {
+          if (f.tipo === 'circuito'){ sumar(d.circuitos, f.valor, f.n); continue; }
+          const temas = new Set(JSON.parse(f.valor));
+          for (const tema of temas) sumar(d.temas, tema, f.n);
+          for (const [raiz, rama] of raices) {
+            if ([...temas].some(t => rama.has(t))) sumar(d.raices, raiz, f.n);
+            if (temas.has(raiz) && ![...temas].some(t => t !== raiz && rama.has(t))) sumar(d.sin_subcategoria, raiz, f.n);
+          }
+        }
         salida.disponibilidad = d;
       }
     }
@@ -448,7 +474,10 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
           ...(meta.lectura_chips && c.muestras ? { chips: totales.get(dia) || 0 } : {}) });
       }
       salida = { ...base, dias: [...porDia.values()] };
-      if (barras) salida.barras = barras.map(f => ({ ...JSON.parse(f.tarjeta), desde: f.desde, hasta: f.hasta }));
+      if (barras) {
+        salida.barras = barras.slice(0, BARRAS_MAX).map(f => ({ ...JSON.parse(f.tarjeta), desde: f.desde, hasta: f.hasta }));
+        salida.barras_truncadas = barras.length > BARRAS_MAX;
+      }
     } else {
       const hayMas = filas.length > c.limite, pagina = filas.slice(0, c.limite), ultima = pagina.at(-1);
       // dia: primer día visible en la ventana pedida ('' en la lista pendiente),
