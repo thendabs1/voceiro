@@ -4,7 +4,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { prepararLectura } from '../shared/calendario/proyeccion.js';
-import { consultaEventos, consultaResumen, consultaChips, consultaBarras, consultaDisponibilidad, normalizarConsulta } from '../workers/comun/calendario.js';
+import { consultaEventos, consultaResumen, consultaChips, consultaBarras, consultaDisponibilidad, consultaDisponibilidadPrecalculada, normalizarConsulta } from '../workers/comun/calendario.js';
 import { palabrasDe } from '../shared/busqueda/texto.js';
 import { sumarDiasCalendario } from '../shared/calendario/fechas.js';
 
@@ -15,7 +15,7 @@ const db = new DatabaseSync(':memory:');
 db.exec(readFileSync(new URL('../agenda/lectura.sql', import.meta.url), 'utf8'));
 const insercion = performance.now();
 db.exec('BEGIN');
-for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ['activos', 4], ['chips', 7], ['entidades', 4]]) {
+for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ['activos', 4], ['chips', 7], ['entidades', 4], ['disponibilidad', 2]]) {
   const stmt = db.prepare(`INSERT INTO agenda_lectura_${tabla} VALUES (${Array(n).fill('?').join(',')})`);
   for (const fila of preparada[tabla]) stmt.run(...fila);
 }
@@ -49,6 +49,7 @@ const primera = medir('chips-dia-1', consultaChips(c, preparada)), ultima = prim
 medir('chips-dia-2', consultaChips(c, preparada, ultima
   ? ['', '', ultima.dia, String(ultima.orden), ultima.id, ultima.ocurrencia] : null));
 medir('disponibilidad', consultaDisponibilidad(c, preparada));
+medir('disponibilidad-precalculada', consultaDisponibilidadPrecalculada({ ...c, territorio }));
 // Entradas candidatas del índice; no son las filas facturadas por Turso.
 const estimacion = [7, 42].map(dias => {
   const fin = sumarDiasCalendario(desde, dias), tope = sumarDiasCalendario(fin, preparada.tramo_max_dias);

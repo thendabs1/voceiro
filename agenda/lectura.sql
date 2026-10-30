@@ -66,3 +66,10 @@ CREATE TABLE IF NOT EXISTS agenda_lectura_activos (
     PRIMARY KEY(zona,hasta,desde,evento)
 );
 CREATE INDEX IF NOT EXISTS agenda_lectura_activos_evento ON agenda_lectura_activos(evento,zona,desde,hasta);
+
+-- Disponibilidad precalculada: por territorio ('' = toda la agenda, con las
+-- competiciones), cuentas por tema, raíz y sin subcategoría.
+CREATE TABLE IF NOT EXISTS agenda_lectura_disponibilidad (
+    territorio TEXT PRIMARY KEY,
+    datos_json TEXT NOT NULL
+);

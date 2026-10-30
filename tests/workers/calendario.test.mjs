@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { prepararLectura } from '../../shared/calendario/proyeccion.js';
-import { atenderCalendario, normalizarConsulta, consultaEventos, consultaResumen, consultaChips, consultaBarras, consultaDisponibilidad } from '../../workers/comun/calendario.js';
+import { atenderCalendario, normalizarConsulta, consultaEventos, consultaResumen, consultaChips, consultaBarras, consultaDisponibilidad, consultaDisponibilidadPrecalculada } from '../../workers/comun/calendario.js';
 import { consultarTurso } from '../../workers/comun/calendario-turso.js';
 import { seleccionCalendario, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 import { agruparPorDiaCalendario, presentacionCalendario, sumarDiasCalendario, TRAMO_MAX_DIAS } from '../../shared/calendario/fechas.js';
@@ -42,10 +42,10 @@ function base(datos = muestra()) {
   const p = prepararLectura(datos), db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys=ON');
   db.exec(readFileSync(new URL('../../agenda/lectura.sql', import.meta.url), 'utf8'));
-  const meta = Object.fromEntries(Object.entries(p).filter(([k]) => !['eventos', 'facetas', 'tramos', 'activos', 'chips', 'entidades'].includes(k)));
+  const meta = Object.fromEntries(Object.entries(p).filter(([k]) => !['eventos', 'facetas', 'tramos', 'activos', 'chips', 'entidades', 'disponibilidad'].includes(k)));
   meta.revision = 'revision-1';
   db.prepare('INSERT INTO agenda_lectura_control VALUES (1,1,?,0,?)').run(meta.revision, JSON.stringify(meta));
-  for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ...(p.activos ? [['activos', 4]] : []), ['chips', 7], ['entidades', 4]]) {
+  for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ...(p.activos ? [['activos', 4]] : []), ['chips', 7], ['entidades', 4], ['disponibilidad', 2]]) {
     const s = db.prepare(`INSERT INTO agenda_lectura_${tabla} VALUES (${Array(n).fill('?').join(',')})`);
     for (const f of p[tabla]) s.run(...f);
   }
@@ -719,9 +719,9 @@ test('el resumen y la lista recorren solo la franja acotada del índice, sin cru
 
 
 function lecturaVieja(b) {
-  delete b.meta.proyeccion_calendario;
+  delete b.meta.proyeccion_calendario; delete b.meta.lectura_disponibilidad;
   b.db.prepare('UPDATE agenda_lectura_control SET datos_json=?').run(JSON.stringify(b.meta));
-  b.db.exec('DROP TABLE IF EXISTS agenda_lectura_activos; DROP INDEX IF EXISTS agenda_lectura_chips_orden');
+  b.db.exec('DROP TABLE IF EXISTS agenda_lectura_activos; DROP TABLE IF EXISTS agenda_lectura_disponibilidad; DROP INDEX IF EXISTS agenda_lectura_chips_orden');
   for (const f of b.db.prepare('SELECT rowid, hora, sesion_json FROM agenda_lectura_chips').all()) {
     const sesion = f.sesion_json && JSON.parse(f.sesion_json);
     const [h, m] = (f.hora || '').split(':').map(Number);
@@ -823,6 +823,32 @@ test('disponibilidad desde hoy excluye histórico y pendientes; con la lectura n
   }
 });
 
+test('disponibilidad precalculada: la misma que en vivo por sitio, sin recorrer el horizonte; otra zona, en vivo', async t => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-25T12:00:00Z'));
+  const datos = muestra();
+  for (const id of ['010', '011', '012']) datos.entidades['evento:' + id].temas = ['cultura'];
+  datos.eventos[13].territorios = [{ territorio: 'es:municipio:28079', papel: 'celebracion', ancestros: ['es:provincia:28'] }];
+  datos.eventos[20].programacion.valor.programacion = 'cancelado';
+  datos.eventos[21].programacion.valor.cuando.inicio = extremo('2026-10-24');
+  const nueva = base(datos), vieja = base(datos); t.after(() => { nueva.db.close(); vieja.db.close(); });
+  delete vieja.meta.lectura_disponibilidad;
+  vieja.db.prepare('UPDATE agenda_lectura_control SET datos_json=?').run(JSON.stringify(vieja.meta));
+  for (const sitio of ['', 'es:provincia:36', 'es:municipio:28079', 'pais:ES', 'es:municipio:99999']) {
+    const ruta = '/calendario/catalogo?disponibilidad=1' + (sitio ? '&territorio=' + sitio : '');
+    const antes = nueva.sql.length;
+    const [a, b] = await Promise.all([nueva.pedir(ruta), vieja.pedir(ruta)]);
+    assert.deepEqual(a.dato.disponibilidad, b.dato.disponibilidad, sitio);
+    assert.ok(nueva.sql.slice(antes).some(q => q.includes('agenda_lectura_disponibilidad')), sitio);
+    assert.ok(!nueva.sql.slice(antes).some(q => q.includes('agenda_lectura_activos')), sitio);
+  }
+  // Sitio sin eventos: cuentas vacías, las competiciones de toda la agenda.
+  const vacio = (await nueva.pedir('/calendario/catalogo?disponibilidad=1&territorio=es:municipio:99999')).dato.disponibilidad;
+  assert.deepEqual([vacio.temas, vacio.raices, vacio.circuitos], [{}, {}, { wta: 25 }]);
+  const antes = nueva.sql.length;
+  await nueva.pedir('/calendario/catalogo?disponibilidad=1&zona=UTC');
+  assert.ok(nueva.sql.slice(antes).some(q => q.includes('agenda_lectura_activos')));
+});
+
 test('el nombre de una etiqueta publicada se puede buscar', async t => {
   const datos = muestra(); datos.eventos[7].etiquetas = [{ id: 'ciclo', nombres: { es: 'Ciclo de jazz' } }];
   const b = base(datos); t.after(() => b.db.close());
@@ -832,7 +858,8 @@ test('el nombre de una etiqueta publicada se puede buscar', async t => {
 test('SQL de chips usa el índice en orden y todas las consultas funcionan en sqlite3 de Python', t => {
   const b = base(); t.after(() => b.db.close());
   const c = normalizarConsulta(new URL('https://datos.test/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&muestras=4'));
-  const sentencias = [consultaChips(c, b.meta), consultaResumen(c, b.meta), consultaBarras(c, b.meta), consultaDisponibilidad(c, b.meta)];
+  const sentencias = [consultaChips(c, b.meta), consultaResumen(c, b.meta), consultaBarras(c, b.meta), consultaDisponibilidad(c, b.meta),
+    consultaDisponibilidadPrecalculada({ ...c, territorio: 'es:provincia:36' })];
   const plan = b.db.prepare('EXPLAIN QUERY PLAN ' + sentencias[0].sql).all(...sentencias[0].args).map(f => f.detail).join('\n');
   assert.match(plan, /agenda_lectura_chips_orden/);
   assert.doesNotMatch(plan, /TEMP B-TREE/);

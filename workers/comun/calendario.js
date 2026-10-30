@@ -1,7 +1,7 @@
 // API pública sobre la proyección seleccionada. Nunca carga núcleo ni historial.
 import { tokenizeQuery } from '../../shared/parser.js';
 import { compilarTexto } from '../../shared/busqueda/texto.js';
-import { AMBITOS, leerConsultaCalendario, temasDescendientes } from '../../shared/calendario/consulta.js';
+import { AMBITOS, leerConsultaCalendario, temasDescendientes, sumarDisponibilidad } from '../../shared/calendario/consulta.js';
 import { fechaValida, sumarDiasCalendario, diaEnZona } from '../../shared/calendario/fechas.js';
 import { crearLimite, claveIp, respuesta429 } from './limite.js';
 import { consultarTurso } from './calendario-turso.js';
@@ -250,6 +250,15 @@ export function consultaDisponibilidad(c, meta) {
       WHERE f.tipo='circuito' GROUP BY f.valor`, args };
 }
 
+// Precalculada al publicar (lectura_disponibilidad): una fila por territorio y
+// '' para toda la agenda, que lleva también las competiciones. Las cuentas son
+// del día de la publicación y de la hora peninsular; otra zona usa la de arriba.
+const disponibilidadPrecalculada = (c, meta) => Boolean(meta.lectura_disponibilidad) && c.zona === 'Europe/Madrid';
+export function consultaDisponibilidadPrecalculada(c) {
+  return { sql: `SELECT territorio, datos_json FROM agenda_lectura_disponibilidad WHERE territorio IN ('',?)`,
+    args: [c.territorio || ''] };
+}
+
 // Barras visibles: unir solo tramos contiguos, incluidos los partidos por mes.
 export const BARRAS_MAX = 60;
 export function consultaBarras(c, meta) {
@@ -391,7 +400,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     else if (ruta === '/calendario/eventos') sentencia = consultaEventos(c.chips && !c.presentaciones.length
       ? { ...c, presentaciones: ['cita', 'programa'] } : c, meta, cursor);
     else if (ruta === '/calendario/resumen') sentencia = consultaResumen(c, meta);
-    else if (ruta === '/calendario/catalogo' && c.disponibilidad) sentencia = consultaDisponibilidad(c, meta);
+    else if (ruta === '/calendario/catalogo' && c.disponibilidad) sentencia = disponibilidadPrecalculada(c, meta)
+      ? consultaDisponibilidadPrecalculada(c) : consultaDisponibilidad(c, meta);
     else if (ruta === '/calendario/objetivos') {
       const args = [], condiciones = ['1=1', ...predicadosTexto(c.texto || c.resto, 'texto', args)];
       // Varios tipos a la vez: filtrar antes del límite, no después en el cliente.
@@ -421,22 +431,13 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     } else if (ruta === '/calendario/catalogo') {
       salida = { ...base, catalogo: meta.catalogo,
         fuentes: meta.fuentes, territorios_catalogo: meta.territorios_catalogo, zonas: meta.zonas };
-      if (c.disponibilidad) {
-        const d = { territorio: c.territorio || null, temas: {}, raices: {}, sin_subcategoria: {}, circuitos: {} };
-        const raices = Object.keys(meta.catalogo?.conceptos || {}).filter(k => !meta.catalogo.conceptos[k].padres?.length)
-          .map(k => [k, temasDescendientes(meta.catalogo, [k])]);
-        const sumar = (o, k, n) => { o[k] = (o[k] || 0) + n; };
-        for (const f of filas) {
-          if (f.tipo === 'circuito'){ sumar(d.circuitos, f.valor, f.n); continue; }
-          const temas = new Set(JSON.parse(f.valor));
-          for (const tema of temas) sumar(d.temas, tema, f.n);
-          for (const [raiz, rama] of raices) {
-            if ([...temas].some(t => rama.has(t))) sumar(d.raices, raiz, f.n);
-            if (temas.has(raiz) && ![...temas].some(t => t !== raiz && rama.has(t))) sumar(d.sin_subcategoria, raiz, f.n);
-          }
-        }
-        salida.disponibilidad = d;
-      }
+      if (c.disponibilidad && disponibilidadPrecalculada(c, meta)) {
+        // Un territorio sin eventos no tiene fila: cuentas vacías.
+        const fila = t => JSON.parse(filas.find(f => f.territorio === t)?.datos_json || '{}');
+        const global = fila(''), propia = c.territorio ? fila(c.territorio) : global;
+        salida.disponibilidad = { territorio: c.territorio || null, temas: propia.temas || {}, raices: propia.raices || {},
+          sin_subcategoria: propia.sin_subcategoria || {}, circuitos: global.circuitos || {} };
+      } else if (c.disponibilidad) salida.disponibilidad = { territorio: c.territorio || null, ...sumarDisponibilidad(meta.catalogo, filas) };
     }
     else if (ruta === '/calendario/resumen') {
       const porDia = new Map();

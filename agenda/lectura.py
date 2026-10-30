@@ -83,15 +83,20 @@ def estado(consultar):
     `consultar(sentencias)` devuelve las filas de cada sentencia. None (sin
     lectura previa o sin huellas) obliga a reemplazar la lectura entera.
     """
-    tablas, = consultar([("SELECT name FROM sqlite_master WHERE type='table' "
-                          "AND name IN ('agenda_lectura_control', 'agenda_lectura_huellas')", ())])
-    if len(tablas) != 2:
+    tablas, = consultar([("SELECT name FROM sqlite_master WHERE type='table' AND name IN "
+                          "('agenda_lectura_control', 'agenda_lectura_huellas', 'agenda_lectura_disponibilidad')", ())])
+    nombres = {t[0] for t in tablas}
+    if not {'agenda_lectura_control', 'agenda_lectura_huellas'} <= nombres:
         return None
-    control, guardadas = consultar([('SELECT revision FROM agenda_lectura_control WHERE id=1', ()),
-                                    ('SELECT tipo, id, huella FROM agenda_lectura_huellas', ())])
+    # Lecturas anteriores a la disponibilidad: sin filas, se escribe entera.
+    con = 'agenda_lectura_disponibilidad' in nombres
+    control, guardadas, *disponibilidad = consultar([('SELECT revision FROM agenda_lectura_control WHERE id=1', ()),
+        ('SELECT tipo, id, huella FROM agenda_lectura_huellas', ()),
+        *([('SELECT territorio, datos_json FROM agenda_lectura_disponibilidad', ())] if con else [])])
     if not control or not guardadas:
         return None
-    return {'revision': control[0][0], 'huellas': {(t, i): h for t, i, h in guardadas}}
+    return {'revision': control[0][0], 'huellas': {(t, i): h for t, i, h in guardadas},
+            'disponibilidad': {t: d for t, d in (disponibilidad[0] if con else [])}}
 
 
 def planificar(preparada, revision, previo=None):
@@ -107,7 +112,8 @@ def planificar(preparada, revision, previo=None):
         raise ValueError('Contrato de lectura incompatible')
     cuerpo = json.dumps(preparada, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
     identificador = hashlib.sha256((str(revision) + ':' + cuerpo).encode()).hexdigest()
-    meta = {k: v for k, v in preparada.items() if k not in ('eventos', 'facetas', 'tramos', 'chips', 'activos', 'entidades')}
+    meta = {k: v for k, v in preparada.items()
+            if k not in ('eventos', 'facetas', 'tramos', 'chips', 'activos', 'entidades', 'disponibilidad')}
     meta.update(revision=identificador, origen_revision=revision)
     sql = '\n'.join(l for l in Path(__file__).with_suffix('.sql').read_text().splitlines()
                     if not l.lstrip().startswith('--'))
@@ -120,7 +126,7 @@ def planificar(preparada, revision, previo=None):
     nuevas, facetas, tramos, chips, activos = huellas(preparada)
     if previo is None:
         cambiadas, retiradas = {k: set(COMPONENTES) for k in nuevas}, set()
-        for tabla in ('chips', 'activos', 'facetas', 'tramos', 'eventos', 'entidades', 'huellas'):
+        for tabla in ('chips', 'activos', 'facetas', 'tramos', 'eventos', 'entidades', 'huellas', 'disponibilidad'):
             pasos.append((f'DELETE FROM agenda_lectura_{tabla}', ()))
     else:
         # Misma técnica: si la lectura publicada ya no es la leída, CHECK o PK fallan.
@@ -162,6 +168,14 @@ def planificar(preparada, revision, previo=None):
         if ('entidad', e[0]) in cambiadas:
             pasos.append(('INSERT INTO agenda_lectura_entidades VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
                           'tipo=excluded.tipo, texto=excluded.texto, datos_json=excluded.datos_json', tuple(e)))
+    # Disponibilidad: solo los territorios cuyas cuentas cambiaron o desaparecen.
+    guardada = (previo or {}).get('disponibilidad', {})
+    nueva = dict(preparada.get('disponibilidad', []))
+    pasos.extend(('DELETE FROM agenda_lectura_disponibilidad WHERE territorio=?', (t,))
+                 for t in sorted(guardada.keys() - nueva.keys()))
+    pasos.extend(('INSERT INTO agenda_lectura_disponibilidad VALUES (?,?) ON CONFLICT(territorio) '
+                  'DO UPDATE SET datos_json=excluded.datos_json', (t, d))
+                 for t, d in sorted(nueva.items()) if guardada.get(t) != d)
     pasos.extend(('INSERT INTO agenda_lectura_huellas VALUES (?,?,?) ON CONFLICT(tipo,id) '
                   'DO UPDATE SET huella=excluded.huella', (tipo, i, nuevas[(tipo, i)]))
                  for tipo, i in sorted(cambiadas))

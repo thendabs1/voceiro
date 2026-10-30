@@ -115,7 +115,8 @@ class LecturaSQL(unittest.TestCase):
     def tablas(self, db=None):
         db = db or self.db
         return {t: sorted(db.execute(f'SELECT * FROM agenda_lectura_{t}').fetchall())
-                for t in ('control', 'eventos', 'facetas', 'tramos', 'activos', 'chips', 'entidades', 'huellas')}
+                for t in ('control', 'eventos', 'facetas', 'tramos', 'activos', 'chips', 'entidades', 'huellas',
+                          'disponibilidad')}
 
     def previo(self):
         return estado(lambda pasos: [self.db.execute(sql, args).fetchall() for sql, args in pasos])
@@ -158,7 +159,9 @@ class LecturaSQL(unittest.TestCase):
         fuentes = sorted(primera['fuentes'])
         self.publicar(preparar(proyectar(primera, fuentes, AHORA)))
         pasos = planificar(preparar(proyectar(segunda, fuentes, LUEGO)), 12, self.previo())
-        tocadas = [sql for sql, _ in pasos if 'agenda_lectura_control' not in sql and not sql.lstrip().startswith('CREATE')]
+        # Un día después, lo que ya pasó deja de estar disponible: cambia solo esa tabla.
+        tocadas = [sql for sql, _ in pasos if not any(t in sql for t in ('agenda_lectura_control', 'agenda_lectura_disponibilidad'))
+                   and not sql.lstrip().startswith('CREATE')]
         self.assertEqual(tocadas, [])
 
     def test_ausencia_cultural_retira_tarjeta_detalle_facetas_y_tramos_y_reaparece(self):
@@ -209,6 +212,23 @@ class LecturaSQL(unittest.TestCase):
         self.publicar(cambiada, previo=self.previo())
         self.assertEqual(self.tablas(), self.completa(cambiada))
 
+    def test_disponibilidad_reescribe_solo_los_territorios_que_cambian_y_retira_los_vacios(self):
+        self.publicar()
+        disponibilidad = dict(self.preparada['disponibilidad'])
+        self.assertIn('', disponibilidad)
+        self.assertIn('circuitos', json.loads(disponibilidad['']))
+        cambiada = deepcopy(self.preparada)
+        sitios = [t for t, _ in cambiada['disponibilidad'] if t]
+        cambiada['disponibilidad'] = [[t, '{"temas":{"x":1}}' if t == sitios[0] else d]
+                                      for t, d in cambiada['disponibilidad'] if t != sitios[-1]]
+        pasos = planificar(cambiada, 12, self.previo())
+        tocadas = [(sql.split(' VALUES')[0].split(' WHERE')[0], args[0]) for sql, args in pasos
+                   if 'agenda_lectura_disponibilidad' in sql and not sql.lstrip().startswith('CREATE')]
+        self.assertEqual(tocadas, [('DELETE FROM agenda_lectura_disponibilidad', sitios[-1]),
+                                   ('INSERT INTO agenda_lectura_disponibilidad', sitios[0])])
+        self.publicar(cambiada, previo=self.previo())
+        self.assertEqual(self.tablas(), self.completa(cambiada))
+
     def test_huellas_de_un_solo_hash_siguen_valiendo(self):
         # Lectura publicada antes de separar componentes: sin cambios no se reescriben
         # fila, facetas ni tramos; solo se añaden los chips (no existían entonces).
@@ -245,8 +265,11 @@ class LecturaSQL(unittest.TestCase):
         vieja = deepcopy(self.preparada)
         vieja.pop('proyeccion_calendario')
         vieja.pop('activos')
+        vieja.pop('lectura_disponibilidad')
+        vieja.pop('disponibilidad')
         self.publicar(vieja)
         self.db.execute('DROP TABLE agenda_lectura_activos')
+        self.db.execute('DROP TABLE agenda_lectura_disponibilidad')
         self.db.execute('DROP INDEX agenda_lectura_chips_orden')
         for tipo, i, h in self.db.execute('SELECT tipo,id,huella FROM agenda_lectura_huellas').fetchall():
             if tipo == 'evento':
@@ -260,6 +283,8 @@ class LecturaSQL(unittest.TestCase):
         self.assertTrue(self.db.execute("SELECT name FROM sqlite_master WHERE name='agenda_lectura_chips_orden'").fetchone())
         meta, = self.db.execute('SELECT datos_json FROM agenda_lectura_control').fetchone()
         self.assertEqual(json.loads(meta)['proyeccion_calendario'], 2)
+        self.assertEqual(json.loads(meta)['lectura_disponibilidad'], 1)
+        self.assertNotIn('disponibilidad', json.loads(meta))
         # La siguiente publicación idéntica vuelve a ser solo control y DDL aditivo.
         pasos = planificar(self.preparada, 12, self.previo())
         self.assertFalse(any(sql.startswith(('DELETE', 'INSERT INTO agenda_lectura_activos')) for sql, _ in pasos))

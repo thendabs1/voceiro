@@ -79,6 +79,26 @@ export function temasDescendientes(catalogo, seleccion){
   return temas;
 }
 
+// Disponibilidad de un sitio a partir de filas { tipo, valor, n }: «temas» con
+// valor = JSON de los temas de un evento (una fila por combinación) y
+// «circuito» con su código. La comparten la consulta en vivo y la precalculada.
+export function sumarDisponibilidad(catalogo, filas){
+  const d = { temas: {}, raices: {}, sin_subcategoria: {}, circuitos: {} };
+  const raices = Object.keys(catalogo?.conceptos || {}).filter(k => !catalogo.conceptos[k].padres?.length)
+    .map(k => [k, temasDescendientes(catalogo, [k])]);
+  const sumar = (o, k, n) => { o[k] = (o[k] || 0) + n; };
+  for (const f of filas) {
+    if (f.tipo === 'circuito'){ sumar(d.circuitos, f.valor, f.n); continue; }
+    const temas = new Set(JSON.parse(f.valor));
+    for (const tema of temas) sumar(d.temas, tema, f.n);
+    for (const [raiz, rama] of raices) {
+      if ([...temas].some(t => rama.has(t))) sumar(d.raices, raiz, f.n);
+      if (temas.has(raiz) && ![...temas].some(t => t !== raiz && rama.has(t))) sumar(d.sin_subcategoria, raiz, f.n);
+    }
+  }
+  return d;
+}
+
 export function seleccionCalendario(datos, orden = {}, filtros = {}){
   const temas = temasDescendientes(datos.catalogo, filtros.temas || []);
   const texto = compilarTexto(tokenizeQuery(orden.resto || '').filter(t => !t.prefix));
