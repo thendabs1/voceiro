@@ -75,7 +75,7 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, gua
   const fetch = async url => {
     const u = new URL(url);
     pedidas.push(u);
-    const r = responder(u);
+    const r = await responder(u);
     return r instanceof Response ? r : Response.json(r);
   };
   const c = { ...fechas, ...consulta, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
@@ -502,7 +502,8 @@ test('la consulta del buscador pasa ámbitos y texto libre, sin prefijos ni sele
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('tenis: circuito:wta Alcaraz web:ejemplo.es'));
   await esperar();
   const p = c.ultima().searchParams;
-  assert.deepEqual([p.get('q'), p.get('texto')], ['tenis: circuito:wta', 'Alcaraz']);
+  // La competición abre Deportes, que toma solo las competiciones (el tema es de la agenda).
+  assert.deepEqual([c.api.s.vista, p.get('q'), p.get('texto')], ['deportes', 'circuito:wta', 'Alcaraz']);
   const antes = c.pedidas.length;
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('tenis:resultados'));
   await esperar();
@@ -609,6 +610,81 @@ test('la agenda va siempre a su sitio; las competiciones, en Deportes y sin ciud
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('teatro:'));
   await esperar();
   assert.deepEqual([c.api.s.vista, c.resumen().get('q'), c.resumen().get('territorio')], ['agenda', 'teatro:', 'es:provincia:36']);
+});
+
+test('cada vista toma de la orden solo lo suyo; una orden solo de noticias no filtra el calendario', async () => {
+  const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
+  // Prefijos mixtos: Deportes pide solo la competición, no el teatro de cualquier sitio.
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('teatro: f1:'));
+  await esperar();
+  assert.deepEqual([c.api.s.vista, c.resumen().get('q'), c.resumen().get('territorio')], ['deportes', 'f1:', null]);
+  // «f1:noticias» no abre el calendario ni lo filtra: la agenda va a su sitio, sin la F1.
+  const d = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
+  d.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:noticias'));
+  await d.abrir();
+  assert.deepEqual([d.api.s.vista, d.resumen().get('q'), d.resumen().get('territorio')], ['agenda', null, 'es:provincia:36']);
+});
+
+test('con un prefijo de competición no hay capas: «Solo» y «Todas» no las crean', async () => {
+  const c = contexto();
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1: nba:'));
+  await esperar();
+  await c.click('solo', 'f1');
+  await c.click('capas-todas');
+  assert.deepEqual([c.api.s.capas, c.resumen().get('q')], [null, 'f1: nba:']);
+  assert.doesNotMatch(c.api.calContenido(), /cal-lateral|data-cal="solo"/);
+});
+
+test('Deportes abierta desde su botón conserva sus capas cuando el buscador se vacía', async () => {
+  const c = contexto();
+  await c.deportes();
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
+  await esperar();
+  c.api.actualizarConsultaCalendario(null);
+  await esperar();
+  assert.deepEqual([c.api.s.vista, c.api.s.capas?.size, c.resumen().get('q').split(' ').length], ['deportes', 12, 12]);
+});
+
+test('al cambiar de vista no se pintan los datos de la otra ni lo que tenía abierto', async () => {
+  const c = contexto();
+  await c.deportes();
+  c.api.s.desplegado = '2026-10-30~*~GP de México'; c.api.s.lateral = true;
+  assert.ok(c.api.s.barras.length);
+  // Hasta que llega el resumen de la agenda, nada de Deportes: ni barras, ni lista, ni lo desplegado.
+  c.api.abrirCalendario(null, 'agenda');
+  assert.deepEqual([c.api.s.resumen, c.api.s.barras.length, c.api.s.desplegado, c.api.s.lateral, c.api.s.mes], [null, 0, '', false, null]);
+  await esperar();
+  assert.doesNotMatch(c.api.calContenido(), /GP de México/);
+});
+
+test('un fallo tardío del mes de Deportes no marca error en la agenda ya cargada', async () => {
+  // El mes responde 503 en los dos backends, pero solo cuando se abre la puerta.
+  let abrir;
+  const puerta = new Promise(r => { abrir = r; });
+  const c = contexto({ responder: u => u.pathname === '/calendario/resumen' && u.searchParams.get('muestras') === '0'
+    ? puerta.then(() => Response.json({ error: 'no' }, { status: 503 })) : api(u) });
+  await c.deportes();
+  await c.abrir();
+  assert.equal(c.api.s.error, '');
+  abrir();
+  await esperar();
+  assert.deepEqual([c.api.s.vista, c.api.s.error], ['agenda', '']);
+});
+
+test('preferencias guardadas antes sin sitio: sus intereses no valen para toda España', async () => {
+  const c = contexto({ almacen: preferencias({ sitio: null, intereses: { cultura: ['teatro'], otraCultura: true, deporteLocal: true } }) });
+  await c.abrir();
+  assert.deepEqual([c.api.s.mio, c.resumen().get('temas'), c.resumen().get('territorio')], [false, null, null]);
+  await c.deportes();
+  assert.deepEqual([...c.api.s.capas], ['f1']);
+});
+
+test('al cerrar tras cambiar de vista, el foco vuelve al botón de la vista en la que se estaba', async () => {
+  const c = contexto();
+  const agenda = { isConnected: true }, deportes = { isConnected: true };
+  c.api.abrirCalendario(agenda, 'agenda'); await esperar();
+  c.api.abrirCalendario(deportes, 'deportes'); await esperar();
+  assert.equal(c.api.s.origen, deportes);
 });
 
 test('el botón de la otra vista quita los prefijos de agenda del buscador', async () => {

@@ -14,7 +14,8 @@
 }
 @media (max-width: 640px){
   #h-title{ font-size:1.1em; }
-  header .header-actions .btn-tiempo .cab-txt{
+  /* Tiempo, Calendario y Deportes: solo el icono (su nombre va en aria-label). */
+  header .header-actions :is(.btn-tiempo, #btn-calendario, #btn-deportes) .cab-txt{
     position:absolute; width:1px; height:1px; overflow:hidden;
     clip-path:inset(50%); white-space:nowrap;
   }
