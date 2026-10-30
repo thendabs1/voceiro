@@ -104,6 +104,7 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, gua
   c.escribir = async (id, value) => { listeners.input({ target: { id, value } }); await esperar(); };
   c.marcar = async (name, value, checked = true, nombre = '') => { listeners.change({ target: { name, value, checked, id: '', dataset: { nombre } } }); await esperar(); };
   c.abrir = async () => { c.api.s.fecha = c.hoy; c.api.abrirCalendario(); await esperar(); };
+  c.deportes = async () => { c.api.s.fecha = c.hoy; c.api.abrirCalendario(null, 'deportes'); await esperar(); };
   return c;
 }
 const cantidad = html => (html.match(/class="cal-cita"/g) || []).length;
@@ -122,10 +123,9 @@ test('la lista pide una semana desde hoy con tres muestras; un día abre sus cit
   // Tarjeta: hora en su columna, lugar y tipo de plan con precio; sin hora, bajo su rótulo.
   assert.match(html, /<span class="cal-hora">18:00<\/span>[\s\S]*?Sala · Vigo[\s\S]*?<p class="cal-plan">Concierto · Gratis<\/p>/);
   assert.match(html, /<p class="cal-sin-hora">Sin hora confirmada<\/p>/);
-  // El GP (programa de varios días) va arriba de cada día suyo como «todo el día».
-  assert.equal(p.get('barras'), '1');
-  assert.match(html, /id="cal-dia-2026-10-31"><h2>[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-cat-deportes">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
-  assert.equal((html.match(/cal-todo-dia/g) || []).length, 2);
+  // La agenda no pide barras: solo las tienen las competiciones, que van en Deportes.
+  assert.equal(p.get('barras'), null);
+  assert.doesNotMatch(html, /cal-todo-dia/);
   // Abrir un día pide sus chips (los mismos que cuenta y muestra), no los eventos padre.
   await c.click('ver-dia', '2026-10-26');
   let q = c.ultima().searchParams;
@@ -227,7 +227,7 @@ test('atajos de fecha: hoy, mañana y el finde enseñan solo sus días', async (
   assert.deepEqual([c.api.s.fecha, c.api.s.rango], ['2026-10-22', '']);
 });
 
-test('chips: Todo, categorías con su segunda fila, competiciones y Gratis', async () => {
+test('chips: Todo, categorías con su segunda fila, deporte local y Gratis', async () => {
   const c = contexto();
   await c.abrir();
   let chips = c.api.calChips();
@@ -240,11 +240,12 @@ test('chips: Todo, categorías con su segunda fila, competiciones y Gratis', asy
   assert.equal(c.resumen().get('temas'), 'teatro');
   await c.click('tema', 'teatro');
   assert.equal(c.resumen().get('temas'), 'cultura');
-  // Deportes: sin segunda fila; las competiciones van en la barra lateral.
+  // En la agenda, «Deportes» es el deporte del sitio, con sus subcategorías; las competiciones tienen su vista.
+  assert.match(c.api.calChips(), /data-valor="deportes" class="cal-cat cal-cat-deportes" aria-pressed="false">Deporte local/);
   await c.click('categoria', 'deportes');
-  assert.doesNotMatch(c.api.calChips(), /cal-subchips/);
-  await c.click('solo', 'f1');
-  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('q')], ['deportes', 'f1:']);
+  assert.match(c.api.calChips(), /cal-subchips[\s\S]*data-valor="tenis"/);
+  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('q'), c.resumen().get('barras')], ['deportes', null, null]);
+  assert.equal(c.api.s.capas, null);
   await c.click('gratis');
   assert.equal(c.resumen().get('precio'), 'gratis');
   await c.click('categoria', '');
@@ -254,8 +255,7 @@ test('chips: Todo, categorías con su segunda fila, competiciones y Gratis', asy
 test('Deportes abre el mes con marcas por competición y «Este mes en deportes»', async () => {
   const c = contexto();
   c.hoy = '2026-10-26';
-  await c.abrir();
-  await c.click('categoria', 'deportes');
+  await c.deportes();
   assert.equal(c.api.s.mesAbierto, true);
   const temporada = c.pedidas.findLast(u => u.searchParams.get('circuitos'));
   assert.deepEqual([temporada.searchParams.get('desde'), temporada.searchParams.get('hasta'), temporada.searchParams.get('presentacion')],
@@ -277,40 +277,49 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   assert.match(c.api.calContenido(), /data-cal="solo" data-valor="nba" aria-pressed="true"/);
 });
 
-test('calendario deportivo: capas con casillas por deporte; desplegable en estrecho y columna en ancho', async () => {
+test('calendario deportivo: capas con casillas por deporte, sin ciudad; desplegable en estrecho y columna en ancho', async () => {
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
-  await c.abrir();
-  await c.click('categoria', 'deportes');
+  await c.deportes();
   let html = c.api.calContenido();
-  // Estrecho: desplegable cerrado con la cuenta de capas (12 competiciones y la ciudad).
-  assert.match(html, /data-cal="lateral"[^>]*aria-expanded="false"[^>]*>Competiciones · 13 de 13 ▾/);
+  // Estrecho: desplegable cerrado con la cuenta de capas: las 12 competiciones, sin capa de ciudad.
+  assert.match(html, /data-cal="lateral"[^>]*aria-expanded="false"[^>]*>Competiciones · 12 de 12 ▾/);
   assert.match(html, /class="cal-lateral-cuerpo" hidden/);
+  assert.deepEqual([c.resumen().get('territorio'), c.resumen().get('temas')], [null, null]);
   await c.click('lateral');
   html = c.api.calContenido();
-  assert.match(html, /<legend>Cerca<\/legend>[\s\S]*Deporte en Pontevedra[\s\S]*<legend>Fútbol<\/legend>[\s\S]*value="primera" checked/);
+  assert.match(html, /<legend>Fútbol<\/legend>[\s\S]*value="primera" checked/);
+  assert.doesNotMatch(html, /Deporte en|<legend>Cerca/);
   // Desmarcar una competición la quita de la consulta.
   await c.marcar('cal-capa', 'nba', false);
   assert.ok(!c.resumen().get('q').split(' ').includes('nba:'));
-  assert.match(c.api.calContenido(), /Competiciones · 12 de 13/);
+  assert.match(c.api.calContenido(), /Competiciones · 11 de 12/);
   // Con una sola capa, su casilla no se puede desmarcar.
   await c.click('solo', 'f1');
   html = c.api.calContenido();
   assert.match(html, /value="f1" checked disabled/);
-  assert.deepEqual([c.resumen().get('q'), c.resumen().get('local')], ['f1:', null]);
+  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['f1:', null]);
   await c.click('capas-todas');
-  assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('local')], [12, 'es:provincia:36']);
+  assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('territorio')], [12, null]);
   // Ancho: columna fija a la izquierda, sin desplegable.
   c.panel.clientWidth = 1000;
   html = c.api.calContenido();
-  assert.match(html, /cal-con-lateral cal-fijo[\s\S]*<h2>Competiciones · 13 de 13<\/h2>/);
+  assert.match(html, /cal-con-lateral cal-fijo[\s\S]*<h2>Competiciones · 12 de 12<\/h2>/);
   assert.doesNotMatch(html, /data-cal="lateral"/);
-  // Quitar la ciudad cuando era la única capa: vuelven todas las competiciones.
-  await c.click('solo', 'local');
-  await c.click('quitar-donde');
-  assert.deepEqual([c.api.s.deporteLocal, c.api.s.capas.size, c.resumen().get('q').split(' ').length], [false, 12, 12]);
-  // Cultura no tiene barra lateral.
-  await c.click('categoria', 'cultura');
+  // La agenda no tiene barra lateral y va a su sitio.
+  await c.abrir();
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral/);
+  assert.deepEqual([c.resumen().get('territorio'), c.resumen().get('q')], ['es:provincia:36', null]);
+});
+
+test('en Deportes, el GP va arriba de cada día suyo como «todo el día»', async () => {
+  const c = contexto();
+  await c.deportes();
+  assert.equal(c.resumen().get('barras'), '1');
+  const html = c.api.calContenido();
+  assert.match(html, /id="cal-dia-2026-10-31"><h2>[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-cat-deportes">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
+  assert.equal((html.match(/cal-todo-dia/g) || []).length, 2);
+  // La fila «todo el día» es un desplegable propio.
+  assert.match(html, /data-valor="2026-10-30~\*~GP de México"/);
 });
 
 test('sin configurar, el calendario invita al asistente; «Ahora no» lo recuerda', async () => {
@@ -351,21 +360,38 @@ test('asistente: sitio de Mis sitios, intereses y competiciones con datos, y «L
   assert.deepEqual([c.api.s.asistente, c.api.s.mio, c.resumen().get('temas'), c.resumen().get('territorio')],
     [null, true, 'teatro,otra:cultura', 'es:municipio:36057']);
   assert.match(c.api.calChips(), /data-valor="mio" class="" aria-pressed="true">Lo mío[\s\S]*data-valor="" class="" aria-pressed="false">Todo/);
-  // Deportes: lo que sigo, sin ciudad (no pedí deporte local); su capa, sola, con ella.
-  await c.click('categoria', 'deportes');
-  assert.deepEqual([[...c.api.s.capas], c.resumen().get('q'), c.resumen().get('territorio'), c.resumen().get('local')], [['f1'], 'f1:', null, null]);
-  await c.click('solo', 'local');
-  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('territorio'), c.resumen().get('q')], ['deportes', 'es:municipio:36057', null]);
+  // Deportes: las competiciones que sigo, sin ciudad ni temas.
+  await c.deportes();
+  assert.deepEqual([[...c.api.s.capas], c.resumen().get('q'), c.resumen().get('territorio'), c.resumen().get('temas')], [['f1'], 'f1:', null, null]);
   // Otra sesión: arranca con lo guardado.
   const d = contexto({ almacen: c.almacen });
   await d.abrir();
   assert.deepEqual([d.resumen().get('temas'), d.resumen().get('territorio')], ['teatro,otra:cultura', 'es:municipio:36057']);
 });
 
-test('sin competiciones seguidas, Deportes ofrece elegirlas; guardar sin nada avisa', async () => {
+test('«Sin sitio» son solo competiciones: el asistente salta los intereses y no los guarda', async () => {
   const c = contexto();
   await c.abrir();
-  await c.click('categoria', 'deportes');
+  await c.click('asistente', '0');
+  await c.marcar('cal-as-sitio', '', true);
+  await c.click('as-siguiente');
+  assert.equal(c.api.s.asistente.paso, 2);
+  await c.marcar('cal-as-comp', 'f1');
+  await c.click('as-siguiente');
+  assert.doesNotMatch(c.api.calAsistente(), /data-valor="1"/);
+  await c.click('as-anterior'); await c.click('as-anterior');
+  assert.equal(c.api.s.asistente.paso, 0);
+  await c.click('as-ir', '3');
+  await c.click('as-guardar');
+  const guardado = JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']);
+  // «Otra cultura» venía marcada de inicio: sin sitio no se guarda.
+  assert.deepEqual([guardado.sitio, guardado.intereses, guardado.competiciones],
+    [null, { cultura: [], otraCultura: false, deporteLocal: false }, ['f1']]);
+});
+
+test('sin competiciones seguidas, Deportes ofrece elegirlas; guardar sin nada avisa', async () => {
+  const c = contexto();
+  await c.deportes();
   assert.match(c.api.calContenido(), /cal-lateral[\s\S]*data-cal="asistente" data-valor="2"[^>]*>Elegir competiciones/);
   await c.click('asistente', '2');
   assert.equal(c.api.s.asistente.paso, 2);
@@ -378,13 +404,13 @@ test('sin competiciones seguidas, Deportes ofrece elegirlas; guardar sin nada av
   assert.equal(c.api.s.asistente, null);
 });
 
-test('mes con títulos en ancho: chips con hora, «+N» y la barra del GP cortada por semanas', async () => {
+test('mes con títulos en ancho: chips con hora, «+N» y, en Deportes, la barra del GP cortada por semanas', async () => {
   const c = contexto();
   c.panel.clientWidth = 1000;
   c.hoy = '2026-10-26';
-  await c.abrir();
-  await c.click('mes');
-  assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['4', '1']);
+  await c.deportes();
+  const mes = c.pedidas.find(u => u.pathname === '/calendario/resumen' && u.searchParams.get('muestras') === '4').searchParams;
+  assert.equal(mes.get('barras'), '1');
   const html = c.api.calContenido();
   assert.equal((html.match(/class="cal-mg-semana"/g) || []).length, 6);
   // El día: hora y título de cada muestra, coloreados por categoría, y el resto en «+N».
@@ -400,6 +426,9 @@ test('mes con títulos en ancho: chips con hora, «+N» y la barra del GP cortad
   // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
   assert.match(html, /class="cal-mg-barra cal-cat-deportes" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
   assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
+  // La agenda, con títulos pero sin barras: no tiene competiciones.
+  await c.abrir(); await c.click('mes');
+  assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['4', null]);
   // En estrecho, la tira con puntos de siempre (y sin pedir títulos).
   c.panel.clientWidth = 360;
   await c.click('mes'); await c.click('mes');
@@ -422,10 +451,13 @@ test('abrir por primera vez con un prefijo no hereda «Lo mío»', async () => {
   assert.deepEqual([d.resumen().get('temas'), d.api.s.mio], ['teatro', true]);
 });
 
-test('con solo competiciones guardadas, «Lo mío» son ellas (sin ciudad)', async () => {
+test('con solo competiciones guardadas, la agenda no tiene «Lo mío» y Deportes abre con ellas', async () => {
   const c = contexto({ almacen: preferencias({ sitio: null, intereses: { cultura: [], otraCultura: false, deporteLocal: false } }) });
   await c.abrir();
-  assert.deepEqual([c.api.s.mio, c.resumen().get('q'), c.resumen().get('temas'), c.resumen().get('territorio')], [true, 'f1:', null, null]);
+  assert.deepEqual([c.api.s.mio, c.resumen().get('q'), c.resumen().get('temas'), c.resumen().get('territorio')], [false, null, null, null]);
+  assert.doesNotMatch(c.api.calChips(), /Lo mío/);
+  await c.deportes();
+  assert.deepEqual([[...c.api.s.capas], c.resumen().get('q')], [['f1'], 'f1:']);
 });
 
 test('si el dispositivo no guarda, lo elegido en el asistente vale para la sesión', async () => {
@@ -558,23 +590,37 @@ test('la ciudad por defecto es la provincia del primer sitio del tiempo, una vez
   assert.equal(c.resumen().get('territorio'), null);
 });
 
-test('la ciudad acota la agenda local; una competición elegida a propósito va sin ciudad', async () => {
+test('la agenda va siempre a su sitio; las competiciones, en Deportes y sin ciudad', async () => {
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.abrir();
   assert.equal(c.resumen().get('territorio'), 'es:provincia:36');
-  // Deportes, sin preferencias: todas las competiciones y lo de la ciudad (local=), nunca con territorio estricto.
+  // El deporte del sitio: territorio estricto, sin competiciones.
   await c.click('categoria', 'deportes');
-  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('territorio'), c.resumen().get('local'), c.resumen().get('q').split(' ').length],
-    ['deportes', null, 'es:provincia:36', 12]);
-  // Solo la capa de la ciudad: territorio estricto.
-  await c.click('solo', 'local');
-  assert.deepEqual([c.resumen().get('territorio'), c.resumen().get('local'), c.resumen().get('q')], ['es:provincia:36', null, null]);
-  await c.click('categoria', '');
-  assert.equal(c.resumen().get('territorio'), 'es:provincia:36');
-  // Un prefijo de competición, igual.
+  assert.deepEqual([c.resumen().get('temas'), c.resumen().get('territorio'), c.resumen().get('q'), c.resumen().get('local')],
+    ['deportes', 'es:provincia:36', null, null]);
+  // Deportes: todas las competiciones, sin ciudad.
+  await c.deportes();
+  assert.deepEqual([c.api.s.vista, c.resumen().get('territorio'), c.resumen().get('temas'), c.resumen().get('q').split(' ').length],
+    ['deportes', null, null, 12]);
+  // Un prefijo de competición abre Deportes con solo esa; uno de tema, la agenda.
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
   await esperar();
-  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['f1:', null]);
+  assert.deepEqual([c.api.s.vista, c.api.s.capas, c.resumen().get('q'), c.resumen().get('territorio')], ['deportes', null, 'f1:', null]);
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('teatro:'));
+  await esperar();
+  assert.deepEqual([c.api.s.vista, c.resumen().get('q'), c.resumen().get('territorio')], ['agenda', 'teatro:', 'es:provincia:36']);
+});
+
+test('el botón de la otra vista quita los prefijos de agenda del buscador', async () => {
+  const c = contexto();
+  c.buscar.value = 'f1: carrera';
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1: carrera'));
+  await esperar();
+  assert.equal(c.api.s.vista, 'deportes');
+  // Desde Deportes por prefijo, el botón de la agenda la abre limpia.
+  c.api.abrirCalendario(null, 'agenda');
+  await esperar();
+  assert.deepEqual([c.buscar.value, c.aplicadas.at(-1), c.api.s.vista], ['carrera', 'carrera', 'agenda']);
 });
 
 test('la ciudad fija la hora (Canarias, la suya) y cada entrada empieza hoy', async () => {
@@ -673,8 +719,6 @@ test('un evento de la lista se despliega bajo su tarjeta con todo su detalle; la
   html = c.api.calContenido();
   assert.equal((html.match(/class="cal-desplegado"/g) || []).length, 1);
   assert.match(html, /aria-controls="cal-det-2026-10-26__A2026-10-26"[\s\S]*id="cal-det-2026-10-26__A2026-10-26"/);
-  // La fila «todo el día» del GP y su carrera son desplegables distintos.
-  assert.match(html, /data-valor="2026-10-30~\*~GP de México"/);
   // «Actualizar» cierra el desplegado y olvida las fichas.
   await c.click('renovar');
   assert.deepEqual([c.api.s.desplegado, c.api.s.detalles.size], ['', 0]);

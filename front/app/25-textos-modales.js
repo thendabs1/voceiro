@@ -40,6 +40,8 @@ function aplicarTextos(){
   cab('#btn-estadisticas', iconoEstadisticas(), 'estTitulo');
   cab('#btn-calendario', iconoCalendario(), 'calTitulo');
   $('#btn-calendario').setAttribute('aria-label', t('calTitulo'));
+  cab('#btn-deportes', iconoDeportes(), 'calDeportesTitulo');
+  $('#btn-deportes').setAttribute('aria-label', t('calDeportesTitulo'));
   $('#btn-estadisticas').setAttribute('aria-label', t('estTitulo'));
   cab('#btn-acces', '<span class="cab-aa" aria-hidden="true">Aa</span>', 'ajLectura');
   cab('#btn-pendientes', ico('bookmark'), 'btnPendientes');
