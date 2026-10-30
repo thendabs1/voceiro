@@ -958,6 +958,28 @@ test('sin fecha se pide al pulsar y pagina; el detalle trae lugar, programa y fu
   assert.doesNotMatch(c.dialogo.innerHTML, /<details/);
 });
 
+test('deportes conserva la competición en la lista y simplifica el programa sin perder fechas ni títulos', () => {
+  const c = contexto();
+  c.evento = { ...tarjeta('GP de Malasia', '2026-10-30', { competiciones: ['motogp', 'motogp'] }),
+    fuentes: [], programa: [
+      { ...tarjeta('GP de Malasia — Libres 1', '2026-10-30', { hora: '08:00' }),
+        programacion: { valor: { cuando: { inicio: extremo('2026-10-30', '08:00'), fin: extremo('2026-10-30', '09:00') } } } },
+      tarjeta('GP de Malasia — Carrera', '2026-11-01', { hora: '08:00' }),
+      tarjeta('Otra competición — Carrera', '2026-11-01'),
+      tarjeta('GP de Malasia — ', '2026-11-01'),
+    ] };
+  const html = runInContext('calEvento(evento)', c);
+  assert.match(html, /cal-etiqueta cal-dep cal-dep-motor">MotoGP<\/span>/);
+  assert.equal((html.match(/>MotoGP<\/span>/g) || []).length, 1);
+  assert.match(html, /<span>Libres 1<\/span> <span class="cal-cuando">30 oct · 09:00 → 10:00<\/span>/);
+  assert.match(html, /<span>Carrera<\/span> <span class="cal-cuando">1 nov · 09:00/);
+  assert.match(html, /<span>Otra competición — Carrera<\/span>/);
+  assert.match(html, /<span>GP de Malasia — <\/span>/);
+  for (const expresion of ['calCita(evento)', "calBarraDia(evento, '2026-10-30')"]){
+    assert.match(runInContext(expresion, c), /cal-etiqueta cal-dep cal-dep-motor">MotoGP<\/span>/);
+  }
+});
+
 test('un evento de la lista se despliega bajo su tarjeta con todo su detalle; la ficha se pide una vez', async () => {
   const c = contexto();
   await c.abrir();
