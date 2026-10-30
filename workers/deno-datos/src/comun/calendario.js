@@ -324,24 +324,42 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     let id;
     try { id = detalle && decodeURIComponent(detalle[1]); } catch { throw error(400, 'Identificador inválido'); }
     if (!env.CALENDARIO_TURSO_URL || !env.CALENDARIO_TURSO_TOKEN_LECTURA) throw error(503, 'Lectura de calendario no activada');
-    const espera = limitar(claveIp(ip));
-    if (espera) return respuesta429(espera, CORS);
+    let contado = false;
+    const consultarConLimite = sentencias => {
+      if (!contado) {
+        const espera = limitar(claveIp(ip));
+        if (espera) throw Object.assign(error(429, 'demasiadas peticiones'), { espera });
+        contado = true;
+      }
+      return consultar(env, sentencias);
+    };
     let cache;
     try { cache = await abrirCache?.(); } catch { /* La caché es opcional. */ }
-    const guardar = (clave, respuesta) => {
-      if (cache) guardarCache(Promise.resolve().then(() => cache.put(clave, respuesta)).catch(() => {}));
+    const guardar = (clave, respuesta, segundos) => {
+      if (!cache) return;
+      respuesta.headers.set('X-Calendario-Caduca', String(Date.now() + segundos * 1000));
+      respuesta.headers.set('Cache-Control', 'public, max-age=' + segundos);
+      guardarCache(Promise.resolve().then(() => cache.put(clave, respuesta)).catch(() => {}));
+    };
+    const leerCache = async clave => {
+      try {
+        const respuesta = await cache?.match(clave);
+        if (!respuesta) return;
+        const caduca = Number(respuesta.headers.get('X-Calendario-Caduca'));
+        if (Number.isFinite(caduca) && caduca > Date.now()) return respuesta;
+        guardarCache(Promise.resolve().then(() => cache.delete(clave)).catch(() => {}));
+      } catch { /* Consultar Turso. */ }
     };
     const controlClave = new Request(url.origin + '/__calendario/control/' + await firma(env.CALENDARIO_TURSO_URL));
-    let guardado;
-    try { guardado = await cache?.match(controlClave); } catch { /* Consultar Turso. */ }
+    const guardado = await leerCache(controlClave);
     // Una primera lectura pequeña permite compilar los temas; el segundo batch
     // comprueba la MISMA revisión dentro de su snapshot junto a las filas.
     const control = { sql: 'SELECT datos_json FROM agenda_lectura_control WHERE id=1', args: [] };
     const leerControl = async () => {
-      const [[fila]] = await consultar(env, [control]);
+      const [[fila]] = await consultarConLimite([control]);
       if (!fila) throw error(503, 'Lectura de calendario aún no publicada');
       const valor = JSON.parse(fila.datos_json);
-      guardar(controlClave, json(valor, 200, { 'Cache-Control': 'public, max-age=15' }));
+      guardar(controlClave, json(valor), 15);
       return valor;
     };
     let meta = guardado ? await guardado.json() : await leerControl();
@@ -355,11 +373,14 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     const etag = await firma([meta.revision, huella, url.searchParams.get('cursor') || '']);
     const clave = new Request(url.origin + '/__calendario/respuesta/' + etag);
     const entregar = respuesta => {
-      if (request.headers.get('If-None-Match')?.replace(/^W\//, '') === respuesta.headers.get('ETag')) return new Response(null, { status: 304, headers: respuesta.headers });
-      return request.method === 'HEAD' ? new Response(null, { status: respuesta.status, headers: respuesta.headers }) : respuesta;
+      const cabeceras = new Headers(respuesta.headers);
+      cabeceras.delete('X-Calendario-Caduca');
+      cabeceras.set('Cache-Control', 'public, max-age=30');
+      if (request.headers.get('If-None-Match')?.replace(/^W\//, '') === cabeceras.get('ETag')) return new Response(null, { status: 304, headers: cabeceras });
+      return new Response(request.method === 'HEAD' ? null : respuesta.body, { status: respuesta.status, headers: cabeceras });
     };
-    let acierto;
-    try { acierto = await cache?.match(clave); } catch { /* Consultar Turso. */ }
+    // El control fresco (15 s) fija la revisión de esta clave; la respuesta es inmutable en ella.
+    const acierto = await leerCache(clave);
     if (acierto) return entregar(acierto);
     let sentencia;
     if (detalle) sentencia = { sql: 'SELECT detalle_json FROM agenda_lectura_eventos WHERE id=?', args: [id] };
@@ -380,7 +401,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     let filas = [], barras = null;
     if (sentencia) {
       const extra = ruta === '/calendario/resumen' && c.barras ? [consultaBarras(c, meta)] : [];
-      const [actual, respuesta, conBarras] = await consultar(env, [control, sentencia, ...extra]);
+      const [actual, respuesta, conBarras] = await consultarConLimite([control, sentencia, ...extra]);
       if (extra.length) barras = conBarras;
       if (!actual[0] || JSON.parse(actual[0].datos_json).revision !== meta.revision) {
         try { await cache?.delete(controlClave); } catch { /* Expira en 15 segundos. */ }
@@ -452,9 +473,10 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
           ...(ultima.ocurrencia != null ? [ultima.ocurrencia] : [])]) : null };
     }
     const respuesta = json(salida, 200, { 'Cache-Control': 'public, max-age=30', ETag: '"' + etag + '"' });
-    guardar(clave, respuesta.clone());
+    guardar(clave, respuesta.clone(), 3600);
     return entregar(respuesta);
   } catch (e) {
+    if (e.codigo === 429) return respuesta429(e.espera, CORS);
     return json({ error: e.codigo ? e.message : 'No se pudo consultar el calendario' }, e.codigo || 503);
   }
 }
