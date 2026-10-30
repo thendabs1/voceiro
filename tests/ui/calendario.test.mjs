@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fechas from '../../shared/calendario/fechas.js';
 import * as consulta from '../../shared/calendario/consulta.js';
+import * as nombres from '../../shared/calendario/nombres.js';
 import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
 import { indexar, sugerirMunicipios, provinciaDe } from '../../shared/tiempo/lugares.js';
 import { ADMINISTRACION } from '../../shared/territorios/administracion.js';
@@ -79,9 +80,9 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
     const r = await responder(u);
     return r instanceof Response ? r : Response.json(r);
   };
-  const c = { ...fechas, ...consulta, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
+  const c = { ...fechas, ...consulta, ...nombres, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
-    setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
+    setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, cerrarAjustes(){ c.ajustesCerrados = true; }, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
     localStorage: { getItem: k => almacen[k] ?? null, setItem: (k, v) => { if (guardarFalla) throw new Error('lleno'); almacen[k] = String(v); } },
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
@@ -336,14 +337,16 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   assert.match(chips, /data-cal="capas-todas" data-valor="" class="" aria-pressed="true">Todas/);
   assert.match(chips, /data-cal="deporte" data-valor="futbol" class="cal-dep cal-dep-futbol" aria-pressed="false">Fútbol/);
   assert.doesNotMatch(chips, /cal-subchips|data-cal="capa"/);
-  assert.match(chips, /data-cal="asistente" data-valor="2"[^>]*>Elegir competiciones/);
+  // Elegir competiciones no es un filtro: sin seguir ninguna, una pista hacia la ★.
+  assert.doesNotMatch(chips, /data-cal="asistente"/);
+  assert.match(chips, /cal-pista-seguir">Elige un deporte y marca ★/);
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral/);
   // Elegir un deporte deja solo el suyo y enseña sus competiciones, con su marca y su nombre (la leyenda).
   await c.click('deporte', 'baloncesto');
   assert.equal(c.resumen().get('q'), 'nba: wnba: feb-endesa: feb-primera: feb-challenge:');
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
-  assert.match(chips, /aria-label="Competiciones · 5 de 5"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button>/);
+  assert.match(chips, /aria-label="Competiciones · 5 de 5"><span class="cal-capa"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button><button type="button" data-cal="seguir" data-valor="nba" class="cal-seguir" aria-pressed="false" aria-label="Seguir NBA">☆<\/button><\/span>/);
   assert.match(chips, /data-valor="feb-endesa"[^>]*><b class="cal-chip-marca">LFE<\/b> /);
   assert.doesNotMatch(chips, /data-valor="primera"/);
   // Quitar una competición: fuera de la consulta y su deporte, a medias.
@@ -448,19 +451,38 @@ test('«Sin sitio» son solo competiciones: el asistente salta los intereses y n
     [null, { cultura: [], otraCultura: false, deporteLocal: false }, ['f1']]);
 });
 
-test('sin competiciones seguidas, Deportes ofrece elegirlas; guardar sin nada avisa', async () => {
-  const c = contexto();
+test('★ sigue una competición sin asistente: guarda la preferencia, no cambia lo que se ve y «Las que sigo» la junta', async () => {
+  const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.deportes();
-  assert.match(c.api.calChipsDeportes(), /data-cal="asistente" data-valor="2"[^>]*>Elegir competiciones/);
-  await c.click('asistente', '2');
-  assert.equal(c.api.s.asistente.paso, 2);
-  await c.marcar('cal-as-interes', 'otra', false);
-  await c.click('as-ir', '3');
-  await c.click('as-guardar');
-  assert.match(c.api.calAsistente(), /Elige al menos un interés o una competición/);
-  assert.equal(c.almacen['voceiro-calendario-preferencias-v1'], undefined);
-  await c.click('as-cancelar');
-  assert.equal(c.api.s.asistente, null);
+  await c.click('deporte', 'motor');
+  const antes = c.resumen().get('q');
+  await c.click('seguir', 'f1');
+  // Sin asistente hecho no se da por hecho: el sitio de la agenda sigue saliendo de «Mis sitios».
+  assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).competiciones, ['f1']);
+  assert.equal(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).estado, 'omitido');
+  assert.equal(c.resumen().get('q'), antes);
+  let chips = c.api.calChipsDeportes();
+  assert.match(chips, /data-cal="seguir" data-valor="f1" class="cal-seguir" aria-pressed="true" aria-label="Dejar de seguir F1">★/);
+  assert.match(chips, /data-cal="capas-sigo"/);
+  await c.click('capas-sigo');
+  assert.equal(c.resumen().get('q'), 'f1:');
+  await c.click('seguir', 'f1');
+  assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).competiciones, []);
+  // Con el asistente hecho, la ★ conserva sitio e intereses.
+  c.almacen['voceiro-calendario-preferencias-v1'] = JSON.stringify({ v: 1, estado: 'configurado', sitio: { id: 'es:municipio:36057', nombre: 'Vigo' },
+    intereses: { cultura: ['teatro'], otraCultura: false, deporteLocal: false }, competiciones: [] });
+  c.api.s.prefs = null;
+  await c.click('seguir', 'nba');
+  const p = JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']);
+  assert.deepEqual([p.estado, p.sitio.nombre, p.intereses.cultura, p.competiciones], ['configurado', 'Vigo', ['teatro'], ['nba']]);
+});
+
+test('Ajustes → Asistentes cierra Ajustes y abre el asistente del calendario desde el principio', async () => {
+  const c = contexto();
+  runInContext('asistenteCalendarioDesdeAjustes()', c);
+  await esperar();
+  assert.equal(c.ajustesCerrados, true);
+  assert.deepEqual([c.api.s.abierto, c.api.s.asistente?.paso], [true, 0]);
 });
 
 test('mes con títulos en ancho: la agenda con chips «hora título» y «+N»', async () => {
@@ -1010,6 +1032,49 @@ test('deportes conserva la competición en la lista y simplifica el programa sin
   for (const expresion of ['calCita(evento)', "calBarraDia(evento, '2026-10-30')"]){
     assert.match(runInContext(expresion, c), /cal-etiqueta cal-dep cal-dep-motor">MotoGP<\/span>/);
   }
+});
+
+test('las sesiones se nombran por su código y sin patrocinio; un GP de varios días da su intervalo, no «sin hora»', () => {
+  const c = contexto();
+  const sesion = (nombre, tipo, dia, hora) => ({ ...tarjeta(nombre, dia, { hora }), agenda: { rol: 'sesion', tipo_sesion: tipo } });
+  c.evento = { ...tarjeta('PETRONAS GRAND PRIX OF MALAYSIA ', '2026-10-30', { competiciones: ['motogp'] }), nombres: { und: 'PETRONAS GRAND PRIX OF MALAYSIA ' },
+    fuentes: [], programacion: { valor: { cuando: { inicio: extremo('2026-10-30'), fin: extremo('2026-11-01') } } },
+    programa: [sesion('PETRONAS GRAND PRIX OF MALAYSIA — Free Practice Nr. 1', 'FP1', '2026-10-30', '02:45'),
+      sesion('PETRONAS GRAND PRIX OF MALAYSIA — Tissot Sprint', 'SPR', '2026-10-31', '07:00'),
+      sesion('PETRONAS GRAND PRIX OF MALAYSIA — Grand Prix', 'RAC2', '2026-11-01', '07:00'),
+      sesion('PETRONAS GRAND PRIX OF MALAYSIA — Media Day', 'MEDIA', '2026-10-29', '07:00')] };
+  const html = runInContext('calEvento(evento)', c);
+  assert.match(html, /<h3>GP de Malasia<\/h3>/);
+  assert.match(html, /<p class="cal-cuando">30 oct → 1 nov<\/p>/);
+  assert.doesNotMatch(html, /Sin hora confirmada|Tissot|PETRONAS/);
+  assert.match(html, /<span>Libres 1<\/span>[\s\S]*<span>Sprint<\/span>[\s\S]*<span>Carrera<\/span>[\s\S]*<span>Media Day<\/span>/);
+  // Un solo día sin hora sigue siendo «sin hora».
+  c.evento.programacion.valor.cuando.fin = extremo('2026-10-30');
+  assert.match(runInContext('calHora(evento)', c), /Sin hora confirmada/);
+});
+
+test('el chip de una sesión lleva su GP encima y su nombre traducido', () => {
+  const c = contexto();
+  c.chip = { ...tarjeta('Mexico City Grand Prix — Race', '2026-11-01'), nombres: { und: 'Mexico City Grand Prix — Race' },
+    padre: { und: 'Mexico City Grand Prix' }, tipo_sesion: 'Race', hora_muestra: '21:00', competiciones: ['f1'] };
+  const html = runInContext('calCita(chip)', c);
+  assert.match(html, /cal-padre">GP de Ciudad de México<\/p>[\s\S]*data-cal="desplegar"[^>]*>Carrera<\/button>/);
+});
+
+test('en Deportes, lo prolongado son competiciones en curso: filas con competición, sede y fechas, sin la nota de funciones', async () => {
+  const torneo = { ...tarjeta('Toray Pan Pacific Open Tennis - Tokyo, JPN', '2026-10-25', { presentacion: 'prolongada', competiciones: ['wta'] }),
+    lugar: { nombre: 'TOKYO' } };
+  torneo.programacion.valor.cuando = { inicio: extremo('2026-10-24'), fin: extremo('2026-11-01') };
+  const c = contexto({ responder: u => u.searchParams.get('presentacion') === 'prolongada' ? { ...META, siguiente: null, eventos: [torneo] } : api(u) });
+  await c.deportes();
+  c.api.s.mesAbierto = false;
+  const clave = '2026-10-25~2026-11-01';
+  assert.match(c.api.calContenido(), /▸ En curso estos días/);
+  await c.click('curso', clave);
+  const html = c.api.calContenido();
+  assert.match(html, /<article class="cal-curso-fila"><h3><button[^>]*>Toray Pan Pacific Open Tennis<\/button><\/h3><span class="cal-cuando">24 oct–1 nov<\/span>/);
+  assert.match(html, /cal-dep-tenis">WTA<\/span> Tokyo<\/p>/);
+  assert.doesNotMatch(html, /función diaria|En cartel|Abre el/);
 });
 
 test('un evento de la lista se despliega bajo su tarjeta con todo su detalle; la ficha se pide una vez', async () => {

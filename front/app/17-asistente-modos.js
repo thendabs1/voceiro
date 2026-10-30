@@ -200,6 +200,7 @@ function guardarAsistenteModo(){
 }
 function wireAsistenteModo(){
   $('#btn-asistente-modo').addEventListener('click', abrirAsistenteModo);
+  $('#btn-as-modo').addEventListener('click', abrirAsistenteModo);
   const form = $('#asistente-modo');
   form.addEventListener('submit', ev => {
     ev.preventDefault();

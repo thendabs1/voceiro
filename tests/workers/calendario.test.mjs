@@ -560,7 +560,8 @@ test('chips: una cita es su chip; de un GP solo la carrera, en su día de cada z
     ['Europe/Madrid', '2026-10-26', 'gp', 'carrera', 2461339.4791666665, '00:30'],
     ['Atlantic/Canary', '2026-10-25', 'gp', 'carrera', 2461339.4791666665, '23:30'],
     ['UTC', '2026-10-25', 'gp', 'carrera', 2461339.4791666665, '23:30']]);
-  assert.deepEqual(JSON.parse(chips[0][6]), { nombres: { es: 'carrera' }, estado: null });
+  // El código de la sesión viaja con el chip: el front la nombra en su idioma.
+  assert.deepEqual(JSON.parse(chips[0][6]), { nombres: { es: 'carrera' }, estado: null, tipo: 'Race' });
   // Un programa sin competición (un festival) da todas sus funciones.
   delete gp.entidades['evento:gp'].codigos; gp.eventos[0].codigos = [];
   assert.equal(new Set(prepararLectura(gp).chips.map(c => c[3])).size, 2);
