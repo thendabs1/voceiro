@@ -41,11 +41,12 @@ CREATE TABLE IF NOT EXISTS agenda_lectura_chips (
     dia TEXT NOT NULL,
     evento TEXT NOT NULL REFERENCES agenda_lectura_eventos(id),
     ocurrencia TEXT NOT NULL,
-    orden INTEGER NOT NULL,
+    orden REAL NOT NULL,
     hora TEXT,
     sesion_json TEXT,
     PRIMARY KEY(zona,dia,evento,ocurrencia)
 );
+CREATE INDEX IF NOT EXISTS agenda_lectura_chips_orden ON agenda_lectura_chips(zona,dia,orden,evento,ocurrencia);
 CREATE INDEX IF NOT EXISTS agenda_lectura_chips_evento ON agenda_lectura_chips(evento,zona,dia);
 -- Huella de cada evento (con sus facetas y tramos) y de cada entidad publicada:
 -- cada publicación reescribe solo lo que cambió.
@@ -55,3 +56,13 @@ CREATE TABLE IF NOT EXISTS agenda_lectura_huellas (
     huella TEXT NOT NULL,
     PRIMARY KEY(tipo,id)
 );
+
+-- Mismos intervalos, excluyendo cancelaciones y aplazamientos acreditados.
+CREATE TABLE IF NOT EXISTS agenda_lectura_activos (
+    zona TEXT NOT NULL,
+    desde TEXT NOT NULL,
+    hasta TEXT NOT NULL,
+    evento TEXT NOT NULL REFERENCES agenda_lectura_eventos(id),
+    PRIMARY KEY(zona,hasta,desde,evento)
+);
+CREATE INDEX IF NOT EXISTS agenda_lectura_activos_evento ON agenda_lectura_activos(evento,zona,desde,hasta);

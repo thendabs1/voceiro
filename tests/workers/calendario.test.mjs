@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync, openSync, closeSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { prepararLectura } from '../../shared/calendario/proyeccion.js';
-import { atenderCalendario, normalizarConsulta, consultaEventos, consultaResumen } from '../../workers/comun/calendario.js';
+import { atenderCalendario, normalizarConsulta, consultaEventos, consultaResumen, consultaChips, consultaBarras, consultaDisponibilidad } from '../../workers/comun/calendario.js';
 import { consultarTurso } from '../../workers/comun/calendario-turso.js';
 import { seleccionCalendario, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 import { agruparPorDiaCalendario, presentacionCalendario, sumarDiasCalendario, TRAMO_MAX_DIAS } from '../../shared/calendario/fechas.js';
@@ -39,10 +42,10 @@ function base(datos = muestra()) {
   const p = prepararLectura(datos), db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys=ON');
   db.exec(readFileSync(new URL('../../agenda/lectura.sql', import.meta.url), 'utf8'));
-  const meta = Object.fromEntries(Object.entries(p).filter(([k]) => !['eventos', 'facetas', 'tramos', 'chips', 'entidades'].includes(k)));
+  const meta = Object.fromEntries(Object.entries(p).filter(([k]) => !['eventos', 'facetas', 'tramos', 'activos', 'chips', 'entidades'].includes(k)));
   meta.revision = 'revision-1';
   db.prepare('INSERT INTO agenda_lectura_control VALUES (1,1,?,0,?)').run(meta.revision, JSON.stringify(meta));
-  for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ['chips', 7], ['entidades', 4]]) {
+  for (const [tabla, n] of [['eventos', 5], ['facetas', 3], ['tramos', 4], ...(p.activos ? [['activos', 4]] : []), ['chips', 7], ['entidades', 4]]) {
     const s = db.prepare(`INSERT INTO agenda_lectura_${tabla} VALUES (${Array(n).fill('?').join(',')})`);
     for (const f of p[tabla]) s.run(...f);
   }
@@ -554,16 +557,16 @@ test('chips: una cita es su chip; de un GP solo la carrera, en su día de cada z
   const chips = prepararLectura(gp).chips;
   // Carrera a las 23:30 UTC del 25: el 25 en UTC y Canarias (WET, UTC+0), el 26 en la península.
   assert.deepEqual(chips.map(c => c.slice(0, 6)), [
-    ['Europe/Madrid', '2026-10-26', 'gp', 'carrera', 30, '00:30'],
-    ['Atlantic/Canary', '2026-10-25', 'gp', 'carrera', 1410, '23:30'],
-    ['UTC', '2026-10-25', 'gp', 'carrera', 1410, '23:30']]);
-  assert.deepEqual(JSON.parse(chips[0][6]), { es: 'carrera' });
+    ['Europe/Madrid', '2026-10-26', 'gp', 'carrera', 2461339.4791666665, '00:30'],
+    ['Atlantic/Canary', '2026-10-25', 'gp', 'carrera', 2461339.4791666665, '23:30'],
+    ['UTC', '2026-10-25', 'gp', 'carrera', 2461339.4791666665, '23:30']]);
+  assert.deepEqual(JSON.parse(chips[0][6]), { nombres: { es: 'carrera' }, estado: null });
   // Un programa sin competición (un festival) da todas sus funciones.
   delete gp.entidades['evento:gp'].codigos; gp.eventos[0].codigos = [];
   assert.equal(new Set(prepararLectura(gp).chips.map(c => c[3])).size, 2);
   // Citas: un chip por cita con fecha, en todas las zonas si coincide; ni prolongadas ni pendientes.
   const p = prepararLectura(muestra()), porEvento = id => p.chips.filter(c => c[2] === id);
-  assert.deepEqual(porEvento('010'), [['*', '2026-10-25', '010', '010', 1440, null, null]]);
+  assert.deepEqual(porEvento('010'), [['*', '2026-10-25', '010', '010', 9000000, null, null]]);
   assert.deepEqual([porEvento('000'), porEvento('003')], [[], []]);
   assert.equal(porEvento('001').length, 3);
   // Una cita cuyo único día está excluido no tiene chip (ni tramo).
@@ -616,6 +619,7 @@ test('eventos?chips=1: las ocurrencias del día en el orden de las muestras, pag
 });
 
 test('disponibilidad: eventos por tema, raíz y sin subcategoría en el sitio, y por competición', async t => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-25T12:00:00Z'));
   const datos = muestra();
   // 010–012: solo «cultura» (sin subcategoría); 013 en otra provincia.
   for (const id of ['010', '011', '012']) datos.entidades['evento:' + id].temas = ['cultura'];
@@ -624,10 +628,10 @@ test('disponibilidad: eventos por tema, raíz y sin subcategoría en el sitio, y
   const d = (await b.pedir('/calendario/catalogo?disponibilidad=1&territorio=es:provincia:36')).dato.disponibilidad;
   // 65 de cultura en Pontevedra menos el 013; tres sin subcategoría.
   assert.deepEqual([d.territorio, d.temas.teatro, d.temas.cultura, d.raices.cultura, d.sin_subcategoria.cultura, d.raices.deportes],
-    ['es:provincia:36', 61, 3, 64, 3, 25]);
+    ['es:provincia:36', 60, 3, 63, 3, 25]);
   assert.deepEqual(d.circuitos, { wta: 25 });
   // Sin sitio, toda la agenda; sin disponibilidad=1, el catálogo de siempre.
-  assert.equal((await b.pedir('/calendario/catalogo?disponibilidad=1')).dato.disponibilidad.raices.cultura, 65);
+  assert.equal((await b.pedir('/calendario/catalogo?disponibilidad=1')).dato.disponibilidad.raices.cultura, 64);
   assert.ok(!('disponibilidad' in (await b.pedir('/calendario/catalogo')).dato));
   // «otra:cultura» filtra lo de cultura sin subcategoría, en OR con los demás temas.
   const n = async q => {
@@ -711,4 +715,150 @@ test('el resumen y la lista recorren solo la franja acotada del índice, sin cru
   const { tramo_max_dias, ...anterior } = b.meta;
   assert.equal(tramo_max_dias, TRAMO_MAX_DIAS);
   for (const s of [consultaEventos(c, anterior), consultaResumen(c, anterior)]) assert.ok(s.args.includes('9999-12-31'));
+});
+
+
+function lecturaVieja(b) {
+  delete b.meta.proyeccion_calendario;
+  b.db.prepare('UPDATE agenda_lectura_control SET datos_json=?').run(JSON.stringify(b.meta));
+  b.db.exec('DROP TABLE IF EXISTS agenda_lectura_activos; DROP INDEX IF EXISTS agenda_lectura_chips_orden');
+  for (const f of b.db.prepare('SELECT rowid, hora, sesion_json FROM agenda_lectura_chips').all()) {
+    const sesion = f.sesion_json && JSON.parse(f.sesion_json);
+    const [h, m] = (f.hora || '').split(':').map(Number);
+    b.db.prepare('UPDATE agenda_lectura_chips SET orden=?, sesion_json=? WHERE rowid=?')
+      .run(f.hora ? h * 60 + m : 1440, sesion?.nombres ? JSON.stringify(sesion.nombres) : f.sesion_json, f.rowid);
+  }
+}
+
+for (const vieja of [false, true]) {
+  test(`cancelados y aplazados visibles sin contar, también por sesión (lectura vieja=${vieja})`, async t => {
+    const datos = muestra();
+    datos.eventos = datos.eventos.slice(4, 8);
+    datos.eventos[0].programacion.valor.programacion = 'cancelado';
+    datos.eventos[1].programacion.valor.programacion = 'aplazado';
+    const programa = datos.eventos[2];
+    programa.programacion.valor.cuando = { inicio: extremo(null), fin: extremo(null) };
+    programa.programa = ['cancelado', 'aplazado', 'programado'].map((estado, i) => ({
+      id: 'sesion-' + i, nombres: { es: estado },
+      programacion: { valor: { programacion: estado, cuando: { inicio: extremo('2026-10-25'), fin: extremo(null) } } }
+    }));
+    const b = base(datos); t.after(() => b.db.close());
+    if (vieja) lecturaVieja(b);
+    const q = 'desde=2026-10-25&hasta=2026-10-26&zona=UTC';
+    const r = await b.pedir('/calendario/resumen?' + q + '&muestras=5');
+    assert.equal(r.status, 200);
+    const [d] = r.dato.dias;
+    if (vieja) {
+      // Hasta republicar, como antes: los cancelados cuentan y nada lee el detalle de cada tramo.
+      assert.deepEqual([d.citas, d.programas, d.chips], [3, 1, 6]);
+      const c = normalizarConsulta(new URL('https://datos.test/calendario/resumen?' + q + '&muestras=5&barras=1'));
+      for (const s of [consultaResumen(c, b.meta), consultaChips(c, b.meta), consultaDisponibilidad(c, b.meta)]) assert.doesNotMatch(s.sql, /detalle_json/);
+      assert.equal((await b.pedir('/calendario/eventos?' + q + '&chips=1')).dato.eventos.length, 6);
+      return;
+    }
+    assert.deepEqual([d.citas, d.programas, d.en_curso, d.chips], [1, 1, 0, 2]);
+    assert.deepEqual(d.categorias.cultura, { citas: 1, programas: 1, en_curso: 0 });
+    assert.ok(d.muestras.every(m => !['cancelado', 'aplazado'].includes(m.estado)));
+    const l = await b.pedir('/calendario/eventos?' + q + '&chips=1');
+    assert.equal(l.dato.eventos.length, 6);
+    assert.deepEqual(l.dato.eventos.filter(e => e.id === programa.id).map(e => e.estado), ['cancelado', 'aplazado', 'programado']);
+    assert.equal((await b.pedir('/calendario/eventos?' + q)).dato.eventos.length, 4);
+    // El día de una única función cancelada tampoco cuenta el programa.
+    programa.programa.pop();
+    const soloCanceladas = base(datos); t.after(() => soloCanceladas.db.close());
+    if (vieja) lecturaVieja(soloCanceladas);
+    const x = (await soloCanceladas.pedir('/calendario/resumen?' + q)).dato.dias[0];
+    assert.deepEqual([x.programas, x.chips], [0, 1]);
+  });
+
+  test(`chips por instante absoluto, hora civil después y sin hora al final; cursor decimal (vieja=${vieja})`, async t => {
+    const datos = muestra(); datos.eventos = datos.eventos.slice(4, 9);
+    for (const [i, instante] of [[0, '2026-10-25T00:45:00Z'], [1, '2026-10-25T01:15:00Z']])
+      datos.eventos[i].programacion.valor.cuando.inicio = extremo('2026-10-25', instante);
+    datos.eventos[2].programacion.valor.cuando.inicio = { ...extremo('2026-10-25'), certeza_hora: 'confirmado', hora_local: '01:00' };
+    const b = base(datos); t.after(() => b.db.close()); if (vieja) lecturaVieja(b);
+    const q = '/calendario/eventos?desde=2026-10-25&hasta=2026-10-26&chips=1&limite=1';
+    const ids = []; let cursor = '';
+    do {
+      const r = await b.pedir(q + (cursor ? '&cursor=' + cursor : ''));
+      assert.equal(r.status, 200); ids.push(r.dato.eventos[0].id); cursor = r.dato.siguiente;
+      if (cursor) assert.match(JSON.parse(atob(cursor.replaceAll('-', '+').replaceAll('_', '/')))[3], /^\d{1,9}(\.\d+)?$/);
+    } while (cursor);
+    // La lectura vieja ordena por el minuto del día hasta republicar: pagina sin perder ni repetir.
+    if (vieja) return void assert.deepEqual([...ids].sort(), ['004', '005', '006', '007', '008']);
+    assert.deepEqual(ids, ['004', '005', '006', '007', '008']);
+    const r = await b.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&muestras=5');
+    assert.deepEqual(r.dato.dias[0].muestras.map(m => m.id), ids);
+  });
+}
+
+test('barras conservan huecos, unen meses contiguos y anuncian el límite', async t => {
+  const datos = muestraGP(true), b = base(datos); t.after(() => b.db.close());
+  const r = await b.pedir('/calendario/resumen?desde=2026-10-22&hasta=2026-10-28&zona=UTC&barras=1');
+  assert.deepEqual(r.dato.barras.map(b => [b.desde, b.hasta]), [['2026-10-22', '2026-10-23'], ['2026-10-25', '2026-10-26']]);
+  assert.equal(r.dato.barras_truncadas, false);
+  const muchos = muestra();
+  for (const e of muchos.eventos) e.programacion.valor.cuando = { inicio: extremo('2026-10-20'), fin: extremo('2026-12-05') };
+  for (const e of Object.values(muchos.entidades)) e.codigos = ['wta'];
+  const m = base(muchos); t.after(() => m.db.close());
+  const mes = await m.pedir('/calendario/resumen?desde=2026-10-25&hasta=2026-12-06&zona=UTC&barras=1');
+  assert.equal(mes.dato.barras.length, 60);
+  assert.equal(mes.dato.barras_truncadas, true);
+  assert.ok(mes.dato.barras.every(b => b.desde === '2026-10-20' && b.hasta === '2026-12-06'));
+});
+
+test('disponibilidad desde hoy excluye histórico y pendientes; con la lectura nueva, también cancelados', async t => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-25T12:00:00Z'));
+  for (const vieja of [false, true]) {
+    const datos = muestra(); datos.eventos = datos.eventos.slice(4, 9);
+    datos.eventos[0].programacion.valor.cuando.inicio = extremo('2020-01-01');
+    datos.eventos[1].programacion.valor.cuando.inicio = extremo('2026-10-24');
+    datos.eventos[2].programacion.valor.programacion = 'cancelado';
+    datos.eventos[3].programacion.valor.cuando.inicio = extremo(null);
+    const b = base(datos); t.after(() => b.db.close()); if (vieja) lecturaVieja(b);
+    const r = await b.pedir('/calendario/catalogo?disponibilidad=1');
+    assert.equal(r.status, 200);
+    // La vieja aún cuenta el cancelado (no tiene tramos activos).
+    assert.equal(r.dato.disponibilidad.raices.cultura, vieja ? 2 : 1);
+  }
+});
+
+test('el nombre de una etiqueta publicada se puede buscar', async t => {
+  const datos = muestra(); datos.eventos[7].etiquetas = [{ id: 'ciclo', nombres: { es: 'Ciclo de jazz' } }];
+  const b = base(datos); t.after(() => b.db.close());
+  assert.deepEqual((await b.pedir(ventana + '&texto=jazz')).dato.eventos.map(e => e.id), ['007']);
+});
+
+test('SQL de chips usa el índice en orden y todas las consultas funcionan en sqlite3 de Python', t => {
+  const b = base(); t.after(() => b.db.close());
+  const c = normalizarConsulta(new URL('https://datos.test/calendario/resumen?desde=2026-10-25&hasta=2026-10-26&muestras=4'));
+  const sentencias = [consultaChips(c, b.meta), consultaResumen(c, b.meta), consultaBarras(c, b.meta), consultaDisponibilidad(c, b.meta)];
+  const plan = b.db.prepare('EXPLAIN QUERY PLAN ' + sentencias[0].sql).all(...sentencias[0].args).map(f => f.detail).join('\n');
+  assert.match(plan, /agenda_lectura_chips_orden/);
+  assert.doesNotMatch(plan, /TEMP B-TREE/);
+  const python = spawnSync('python3', ['-c', `import json,sqlite3,sys
+entrada=json.loads(sys.argv[1])
+db=sqlite3.connect(':memory:')
+db.executescript(entrada['esquema'])
+for s in entrada['sentencias']: db.execute(s['sql'],s['args']).fetchall()
+print(sqlite3.sqlite_version)`, JSON.stringify({ esquema: readFileSync(new URL('../../agenda/lectura.sql', import.meta.url), 'utf8'), sentencias })], { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'pipe'] });
+  assert.equal(python.status, 0, python.stderr);
+});
+
+
+test('el medidor carga chips y mide semana, mes con muestras y barras, y dos páginas', t => {
+  const directorio = mkdtempSync(join(tmpdir(), 'calendario-medidor-'));
+  t.after(() => rmSync(directorio, { recursive: true, force: true }));
+  const archivo = join(directorio, 'publicacion.json');
+  writeFileSync(archivo, JSON.stringify(muestra()));
+  const salida = join(directorio, 'medida.json'), descriptor = openSync(salida, 'w');
+  const r = spawnSync(process.execPath, ['scripts/medir-lectura-calendario.mjs', archivo],
+    { encoding: 'utf8', timeout: 15000, stdio: ['ignore', descriptor, 'pipe'] });
+  closeSync(descriptor);
+  assert.equal(r.status, 0, r.stderr);
+  const medida = JSON.parse(readFileSync(salida, 'utf8'));
+  assert.ok(medida.chips > 0);
+  for (const nombre of ['semana-7', 'mes-42', 'mes-42-barras', 'chips-dia-1', 'chips-dia-2'])
+    assert.ok(medida.consultas.some(c => c.nombre === nombre), nombre);
+  assert.ok(medida.consultas.find(c => c.nombre === 'chips-dia-2').filas > 0);
 });
