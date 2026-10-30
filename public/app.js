@@ -12,37 +12,37 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=da16065ea5';
+} from './parser.js?v=806b2ce417';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=da16065ea5';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=da16065ea5';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=da16065ea5';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=da16065ea5';
-import { comparador } from './busqueda/orden.js?v=da16065ea5';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=806b2ce417';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=806b2ce417';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=806b2ce417';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=806b2ce417';
+import { comparador } from './busqueda/orden.js?v=806b2ce417';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=da16065ea5';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=da16065ea5';
+} from './sync/fusion.js?v=806b2ce417';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=806b2ce417';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=da16065ea5';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=da16065ea5';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=806b2ce417';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=806b2ce417';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=da16065ea5';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=806b2ce417';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=da16065ea5';
+} from './tiempo/avisos.js?v=806b2ce417';
 
-import { I18N, traducir } from './idiomas/index.js?v=da16065ea5';
+import { I18N, traducir } from './idiomas/index.js?v=806b2ce417';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=da16065ea5';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=da16065ea5';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=da16065ea5';
+import { ESPN } from './consultas/registro.js?v=806b2ce417';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=806b2ce417';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=806b2ce417';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=da16065ea5';
+import { ADMINISTRACION } from './territorios/administracion.js?v=806b2ce417';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1955,7 +1955,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=da16065ea5');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=806b2ce417');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3611,6 +3611,23 @@ async function calPedir(ruta, params, signal){
   }
   throw fallo;
 }
+// Mensaje de un fallo. Un 429 es el límite por IP: se avisa de la espera y, al
+// terminar, se vuelve a pedir solo (un reintento aunque fallen varias a la vez).
+let calReintentoPendiente = false;
+function calFallo(e){
+  if (e?.status !== 429) return e?.status === 422 ? 'calFueraHorizonte' : 'calError';
+  if (!calReintentoPendiente){
+    calReintentoPendiente = true;
+    setTimeout(() => {
+      calReintentoPendiente = false;
+      const s = CALENDARIO;
+      if (!s.abierto) return;
+      s.error = ''; s.consulta = ''; s.mes = null; consultarCalendario();
+    }, Math.max(1000, calEsperaHasta - Date.now()));
+  }
+  return 'calEspera';
+}
+const calSegundosEspera = () => Math.max(1, Math.ceil((calEsperaHasta - Date.now()) / 1000));
 // La publicación avanza a diario: cada respuesta trae su revisión y cobertura.
 function calAnotar(dato){
   const m = CALENDARIO.meta;
@@ -3630,10 +3647,20 @@ function calParametros(){
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: deportes ? '' : [...s.temas].join(','),
     precio: deportes ? '' : s.precio, territorio: deportes ? '' : s.donde?.id || '' };
 }
+// desde:/hasta: del buscador. Los relativos (hoy, ayer, 7d) el parser los
+// cuenta desde el día del navegador; el calendario, desde el hoy de su zona.
+function calFechasConsulta(resto){
+  const p = parseQuery(resto || ''), desfase = calDiferencia(parseQuery('desde:hoy').desde, calHoy());
+  const fecha = tipo => {
+    const v = p[tipo], texto = p.chips?.find(c => c.type === tipo)?.value || '';
+    return fechaValida(v) && /^(hoy|ayer|\d+[dhm])$/i.test(texto.trim()) ? sumarDiasCalendario(v, desfase) : v;
+  };
+  return { desde: fecha('desde'), hasta: fecha('hasta') };
+}
 // Días de la vista y su ventana [desde, hasta) dentro de lo publicado.
 // desde:/hasta: del buscador acotan la celebración; en noticias, la publicación.
 function calVentana(){
-  const s = CALENDARIO, h = s.meta?.horizonte, p = parseQuery(s.orden?.resto || '');
+  const s = CALENDARIO, h = s.meta?.horizonte, p = calFechasConsulta(s.orden?.resto);
   // Desde el día elegido, una semana por cada una cargada (la tira enseña la
   // semana entera; sus días anteriores, sin cuentas).
   const dias = Array.from({ length: 7 * s.semanas }, (_, i) => sumarDiasCalendario(s.fecha, i));
@@ -3654,9 +3681,9 @@ async function cargarCalendario(renovar = false){
   s.cargando = true; s.error = ''; pintarCalendario();
   try {
     s.meta = await calPedir('catalogo', {}, controller.signal); s.cargado = Date.now();
-  } catch {
+  } catch (e){
     if (controller.signal.aborted) return;
-    s.cargando = false; s.error = 'calError'; return void pintarCalendario();
+    s.cargando = false; s.error = calFallo(e); return void pintarCalendario();
   }
   s.consulta = ''; s.pendientes = null;
   consultarCalendario();
@@ -3690,7 +3717,7 @@ async function consultarCalendario(){
     if (controller.signal.aborted) return;
     // Republicación en curso: un reintento lee ya la revisión nueva.
     if (e.status === 409 && !s.reintento){ s.reintento = true; s.consulta = ''; s.cargando = false; return void consultarCalendario(); }
-    s.error = e.status === 422 ? 'calFueraHorizonte' : 'calError';
+    s.error = calFallo(e);
     // Lo que quedaba a la vista era de otra consulta: no se presenta como suyo.
     if (clave !== s.vigente){ s.resumen = null; s.barras = []; }
   }
@@ -3699,7 +3726,7 @@ async function consultarCalendario(){
 // Mes desplegado: solo cuentas (sin muestras) de sus 42 días, al abrirlo.
 // Ventana [desde, hasta) recortada al horizonte publicado y a desde:/hasta: del buscador.
 function calRecortar(desde, hasta){
-  const s = CALENDARIO, h = s.meta?.horizonte, p = parseQuery(s.orden?.resto || '');
+  const s = CALENDARIO, h = s.meta?.horizonte, p = calFechasConsulta(s.orden?.resto);
   const fin = fechaValida(p.hasta) ? sumarDiasCalendario(p.hasta, 1) : null;
   return { desde: [desde, h?.desde, fechaValida(p.desde) ? p.desde : null].filter(Boolean).sort().at(-1),
     hasta: [hasta, h?.hasta, fin].filter(Boolean).sort()[0] };
@@ -3718,16 +3745,18 @@ async function cargarMesCalendario(){
     const dato = await calPedir('resumen', params, controller.signal);
     if (s.mes?.clave !== clave) return;
     calAnotar(dato); s.mes = { clave, dias: dato.dias, barras: dato.barras || [], cargando: false };
-  } catch {
+  } catch (e){
     // Un fallo de un mes que ya no se mira (otra vista u otra selección) no es de esta.
     if (controller.signal.aborted || s.mes?.clave !== clave) return;
-    s.mes = null; s.error = 'calError';
+    s.mes = null; s.error = calFallo(e);
   }
   pintarCalendario();
-  if (calModoDeportes()) cargarTemporadaCalendario();
+  if (calModoDeportes() && s.abierto) cargarTemporadaCalendario();
 }
 // «Este mes en deportes»: los GP y torneos del mes natural (los partidos se
-// cuentan con el resumen). Pocos: unos 30 al mes con todas las competiciones.
+// cuentan con el resumen). Unos 30 al mes con todas las competiciones; se
+// siguen hasta CAL_TEMPORADA_PAGINAS páginas para no contar sobre una parcial.
+const CAL_TEMPORADA_PAGINAS = 4;
 async function cargarTemporadaCalendario(){
   const s = CALENDARIO, uno = s.fecha.slice(0, 8) + '01';
   const { desde, hasta } = calRecortar(uno, moverFecha(uno, 'mes', 1));
@@ -3735,13 +3764,24 @@ async function cargarTemporadaCalendario(){
     circuitos: Object.keys(CAL_MARCAS).join(','), limite: 50 }, clave = JSON.stringify(params);
   if (s.temporada?.clave === clave) return;
   if (desde >= hasta){ s.temporada = { clave, eventos: [] }; return; }
-  s.temporada = { clave, eventos: null };
+  // Su propio controlador: que el mes cambie de consulta no la deja a medias.
+  s.controllerTemporada?.abort();
+  const controller = s.controllerTemporada = new AbortController(), actual = s.temporada = { clave, eventos: null };
   try {
-    const dato = await calPedir('eventos', params, (s.controllerMes ||= new AbortController()).signal);
-    if (s.temporada?.clave !== clave) return;
-    calAnotar(dato); s.temporada.eventos = dato.eventos;
+    const eventos = [];
+    let cursor = '';
+    for (let i = 0; i < CAL_TEMPORADA_PAGINAS; i++){
+      const dato = await calPedir('eventos', { ...params, cursor, revision: s.meta?.revision }, controller.signal);
+      if (s.temporada !== actual) return;
+      calAnotar(dato); eventos.push(...dato.eventos);
+      if (!(cursor = dato.siguiente)) break;
+    }
+    actual.eventos = eventos; actual.parcial = Boolean(cursor);
   } catch (e){
-    if (e.name === 'AbortError' || s.temporada?.clave !== clave) return;
+    // Cortada sin respuesta, se puede volver a pedir.
+    if (controller.signal.aborted){ if (s.temporada === actual) s.temporada = null; return; }
+    if (s.temporada !== actual) return;
+    if (e.status === 409) return void cargarCalendario(true);
     s.temporada = { clave, eventos: [], error: true };
   }
   pintarCalendario();
@@ -3758,15 +3798,19 @@ async function abrirDiaCalendario(dia, tipo, mas = false){
   if (l.cargando || (mas ? !l.siguiente : l.cargada)) return void pintarCalendario();
   l.cargando = true; pintarCalendario();
   const controller = s.controller ||= new AbortController();
+  // «En cartel» va por período («desde~hasta»); las citas, por día.
+  const [desde, hasta = sumarDiasCalendario(dia, 1)] = dia.split('~');
   try {
-    const dato = await calPedir('eventos', { ...calParametros(), desde: dia, hasta: sumarDiasCalendario(dia, 1), limite: 20,
+    // Con la revisión del resumen a la vista: si la publicación cambió, 409.
+    const dato = await calPedir('eventos', { ...calParametros(), desde, hasta, limite: 20, revision: s.meta?.revision,
       ...(tipo === 'curso' ? { presentacion: 'prolongada' } : { chips: 1 }), cursor: mas ? l.siguiente : '' }, controller.signal);
     if (s.dias.get(clave) !== l) return;
     calAnotar(dato); l.eventos.push(...dato.eventos); l.siguiente = dato.siguiente; l.cargada = true;
   } catch (e){
     if (controller.signal.aborted || s.dias.get(clave) !== l) return void (l.cargando = false);
-    if (e.status === 409){ s.dias.delete(clave); return void abrirDiaCalendario(dia, tipo); }
-    s.error = 'calError';
+    // Otra publicación: se rehace todo (cuentas y listas) para no mezclar lecturas.
+    if (e.status === 409) return void cargarCalendario(true);
+    s.error = calFallo(e);
   }
   l.cargando = false; pintarCalendario();
 }
@@ -3784,7 +3828,7 @@ async function pendientesCalendario(mas = false){
   } catch (e){
     if (controller.signal.aborted || s.pendientes !== p) return;
     if (e.status === 409){ s.pendientes = null; return void pendientesCalendario(); }
-    s.error = 'calError';
+    s.error = calFallo(e);
   }
   p.cargando = false; pintarCalendario();
 }
@@ -3849,7 +3893,7 @@ function calDondePorDefecto(){
 function actualizarConsultaCalendario(orden){
   if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO, clave = JSON.stringify(orden && [orden.ambitos, orden.circuitos, orden.tipos, orden.desconocidos]);
-  const fecha = parseQuery(orden?.resto || '').desde || '';
+  const fecha = calFechasConsulta(orden?.resto).desde || '';
   if (fecha !== s.desdeConsulta){ s.desdeConsulta = fecha; s.fecha = fechaValida(fecha) ? fecha : calHoy(); }
   // La orden va antes que las preferencias: un prefijo no hereda «Lo mío».
   s.orden = orden;
@@ -3879,7 +3923,7 @@ const calPrefijoDeportivo = () => calPideAgenda(CALENDARIO.orden) && calVistaDe(
 function calEntrarVista(vista){
   const s = CALENDARIO;
   if (s.vista !== vista){
-    s.controller?.abort(); s.controllerMes?.abort(); s.detalleLista?.abort();
+    calCortarCargas();
     s.resumen = null; s.barras = []; s.vigente = s.consulta = ''; s.dias.clear(); s.pendientes = null; s.cargando = false; s.error = '';
   }
   s.vista = vista; s.mesAbierto = vista === 'deportes';
@@ -3909,9 +3953,22 @@ function abrirCalendario(origen = null, vista = 'agenda'){
     document.getElementById('calendario-panel')?.scrollIntoView({ block: 'start' });
   });
 }
+// Cerrar corta todo lo que estaba en curso; lo cortado queda sin cargar para
+// volver a pedirlo al entrar. El borrador del asistente no sobrevive al cierre.
+function calCortarCargas(){
+  const s = CALENDARIO;
+  for (const c of [s.controller, s.controllerMes, s.controllerTemporada, s.detalleLista, s.asistente?.controller]) c?.abort();
+  if (s.cargando){ s.cargando = false; s.consulta = ''; }
+  if (s.mes?.cargando) s.mes = null;
+  if (s.temporada && !s.temporada.eventos) s.temporada = null;
+  if (s.pendientes?.cargando) s.pendientes = null;
+  for (const [k, l] of s.dias) if (l.cargando) s.dias.delete(k);
+  if (s.desplegado && s.detalles.get(s.desplegado.split('~').at(-1)) === undefined) s.desplegado = '';
+}
 function cerrarCalendario(volver = true){
   const s = CALENDARIO;
   if (!s.abierto) return;
+  calCortarCargas(); s.asistente = null;
   s.abierto = s.porPrefijo = false; pintarCalendario();
   if (!volver) return;
   const origen = s.origen?.isConnected ? s.origen : document.getElementById(calModoDeportes() ? 'btn-deportes' : 'btn-calendario');
@@ -3986,7 +4043,10 @@ function calEventoCuerpo(e, lugarVisto = ''){
     ${avisoEstado}
     ${ejecucion === 'en_curso' || ejecucion === 'terminado' ? `<p class="cal-nota">${calEsc(t(ejecucion === 'en_curso' ? 'calEnCurso' : 'calTerminado'))}</p>` : ''}
     ${aviso ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}
-    ${e.programa?.length ? `<section class="cal-programa"><h4>${calEsc(t('calPrograma'))}</h4><ul>${e.programa.map(p => `<li><span>${calEsc(calNombre(p))}</span> <span class="cal-cuando">${calEsc(calHora(p))}</span></li>`).join('')}</ul></section>` : ''}
+    ${e.programa?.length ? `<section class="cal-programa"><h4>${calEsc(t('calPrograma'))}</h4><ul>${e.programa.map(p => {
+      const anulada = calEstadoAnulado(p.programacion?.valor?.programacion);
+      return `<li${anulada ? ' class="cal-anulada"' : ''}><span>${calEsc(calNombre(p))}</span> <span class="cal-cuando">${calEsc(calHora(p))}</span>${anulada ? ` · ${calEsc(t(anulada))}` : ''}</li>`;
+    }).join('')}</ul></section>` : ''}
     ${e.participaciones?.length ? `<ul class="cal-participantes">${e.participaciones.map(p => `<li>${calEsc(p.literal)}</li>`).join('')}</ul>` : ''}
     <footer class="cal-evento-fuente">${calFuentes(e)}
     ${(e.enlaces || []).filter(url => !e.fuentes.some(f => f.url === url)).map(url => `<p class="cal-nota">${calEnlace(url, t('calVerOriginal'))}</p>`).join('')}</footer>`;
@@ -4052,20 +4112,23 @@ async function desplegarEventoCalendario(clave, id){
   }
   pintarCalendario();
 }
+// Cancelado o aplazado: visible en su sitio, apagado y sin contar (SofaScore).
+const calEstadoAnulado = estado => estado === 'cancelado' || estado === 'aplazado' ? (estado === 'cancelado' ? 'calCancelado' : 'calAplazado') : '';
 function calCita(e, dia = ''){
-  const v = e.programacion?.valor, estado = v?.programacion;
+  // Un chip de sesión trae su propio estado; si no, el del evento.
+  const v = e.programacion?.valor, anulado = calEstadoAnulado(e.estado || v?.programacion);
   const prolongada = calPresentacion(e) === 'prolongada', hora = calHoraCita(e);
   const lugar = calLugar(e);
   const plan = [...(e.formatos || []).map(calNombreFormato), e.precio && CAL_PRECIOS[e.precio] ? t(CAL_PRECIOS[e.precio]) : '',
     e.tiene_programa ? '▸ ' + t('calPrograma') : ''].filter(Boolean).join(' · ');
   // Una sesión o función lleva encima el GP o programa al que pertenece, si su nombre no lo dice ya.
   const padre = e.padre ? calNombre({ nombres: e.padre }) : '';
-  return `<article class="cal-cita"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
+  return `<article class="cal-cita${anulado ? ' cal-anulada' : ''}"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
     ${padre && !calNombre(e).includes(padre) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calTituloDesplegable(e, dia)}</h3>
     ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
     ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}
-    ${estado === 'cancelado' || estado === 'aplazado' ? `<p class="cal-aviso">${calEsc(t(estado === 'cancelado' ? 'calCancelado' : 'calAplazado'))}</p>` : ''}${calDesplegado(e, dia)}</div></article>`;
+    ${anulado ? `<p class="cal-aviso">${calEsc(t(anulado))}</p>` : ''}${calDesplegado(e, dia)}</div></article>`;
 }
 // Citas de un día: primero con hora (así llegan de la API) y después, bajo su
 // rótulo, las que no la tienen y los programas.
@@ -4139,14 +4202,19 @@ function calDiaLista(d){
   return `<section class="cal-dia${d.dia < hoy ? ' cal-pasado' : ''}" id="cal-dia-${d.dia}"><h2>${calEsc(d.dia === hoy ? t('calHoy') + ' · ' + calFecha(d.dia, { weekday: 'long' }) : calDiaLargo(d.dia))}
     <small>${calEsc(calN('calNCitas', citas))}${d.dia < hoy ? ' · ' + calEsc(t('calPasado')) : ''}</small></h2>${cuerpo}</section>`;
 }
-// «En cartel»: lo prolongado (exposiciones, ciclos, torneos) del primer día
-// de la lista, plegado y aparte de las citas.
-function calEnCurso(d){
-  if (!d?.en_curso) return '';
-  const s = CALENDARIO, l = s.dias.get(d.dia + '|curso'), abierta = Boolean(l?.abierta);
-  return `<section class="cal-en-curso">${calBoton('curso', (abierta ? '▾ ' : '▸ ') + t('calEnCartel', { n: d.en_curso }), d.dia, `aria-expanded="${abierta}"`)}
-    ${abierta ? `<p class="cal-nota">${calEsc(t('calProgramacionesNota'))}</p>${(l.eventos || []).map(e => calCita(e, d.dia)).join('')}
-      ${l.siguiente ? `<div class="cal-paginacion">${calBoton('mas-curso', t('calCargarMas'), d.dia, l.cargando ? 'disabled' : '')}</div>` : ''}` : ''}</section>`;
+// «En cartel» (Time Out): lo prolongado (exposiciones, ciclos, torneos) de todos
+// los días que enseña la lista, plegado y aparte de las citas; lo que empieza
+// después del primero, con su día de apertura. Una sola lista: «desde~hasta».
+const calVentanaCartel = dias => dias.length ? dias[0].dia + '~' + sumarDiasCalendario(dias.at(-1).dia, 1) : '';
+function calEnCurso(dias){
+  if (!dias.some(d => d.en_curso)) return '';
+  const s = CALENDARIO, clave = calVentanaCartel(dias), l = s.dias.get(clave + '|curso'), abierta = Boolean(l?.abierta);
+  // Cuántas el primer día; el resto del período se ve al abrirlo.
+  const titulo = dias.length > 1 ? t('calEnCartelPeriodo') : t('calEnCartel', { n: dias[0].en_curso });
+  return `<section class="cal-en-curso">${calBoton('curso', (abierta ? '▾ ' : '▸ ') + titulo, clave, `aria-expanded="${abierta}"`)}
+    ${abierta ? `<p class="cal-nota">${calEsc(t('calProgramacionesNota'))}</p>${(l.eventos || []).map(e => (e.dia > dias[0].dia
+      ? `<p class="cal-nota cal-abre">${calEsc(t('calAbre', { dia: calFecha(e.dia, { weekday: 'short' }) }))}</p>` : '') + calCita(e, e.dia)).join('')}
+      ${l.siguiente ? `<div class="cal-paginacion">${calBoton('mas-curso', t('calCargarMas'), clave, l.cargando ? 'disabled' : '')}</div>` : ''}` : ''}</section>`;
 }
 // Días que enseña la lista: los del atajo o, sin él, desde el día elegido.
 function calDiasLista(){
@@ -4162,9 +4230,11 @@ function calLista(){
   const s = CALENDARIO;
   if (!s.resumen) return '';
   const dias = calDiasLista(), conCitas = dias.filter(d => calNDia(d) || calBarrasDia(d.dia).length);
-  const vacio = !conCitas.length ? `<p class="cal-nota cal-vacio">${calEsc(t(s.rango ? 'calDiaSinCitas' : 'calSinCitas'))}</p>` : '';
+  // Sin citas pero con algo en cartel, no es un período vacío.
+  const vacio = !conCitas.length ? `<p class="cal-nota cal-vacio">${calEsc(t(dias.some(d => d.en_curso) ? 'calSinCitasEnCartel'
+    : s.rango ? 'calDiaSinCitas' : 'calSinCitas'))}</p>` : '';
   const mas = !s.rango && s.semanas < CAL_SEMANAS_MAX ? `<div class="cal-paginacion">${calBoton('mas-semanas', t('calSemanaSiguiente'), '', s.cargando ? 'disabled' : '')}</div>` : '';
-  return calEnCurso(dias[0]) + conCitas.map(calDiaLista).join('') + vacio + mas;
+  return calEnCurso(dias) + conCitas.map(calDiaLista).join('') + vacio + mas;
 }
 // Una celda de la tira o del mes: inicial del día, número y puntos.
 function calCeldaDia(dia, d, { otroMes = false } = {}){
@@ -4258,7 +4328,8 @@ function calTemporada(){
   });
   return `<section class="cal-temporada"><h2>${calEsc(t('calEsteMes', { mes: calFecha(s.fecha, { month: 'long', day: undefined }) }))}</h2>
     ${s.temporada?.error ? `<p class="cal-aviso">${calEsc(t('calError'))}</p>` : ''}
-    ${filas.length ? `<ul>${filas.join('')}</ul>` : `<p class="cal-nota">${calEsc(s.temporada?.eventos ? t('calSinDeportes') : t('calCargando'))}</p>`}</section>`;
+    ${filas.length ? `<ul>${filas.join('')}</ul>` : `<p class="cal-nota">${calEsc(s.temporada?.eventos ? t('calSinDeportes') : t('calCargando'))}</p>`}
+    ${s.temporada?.parcial ? `<p class="cal-nota">${calEsc(t('calTemporadaParcial'))}</p>` : ''}</section>`;
 }
 function calPendientes(){
   const p = CALENDARIO.pendientes;
@@ -4474,6 +4545,7 @@ function calGuardarAsistente(){
   consultarCalendario();
   calEnfocarAjustes();
 }
+const CAL_FOCO_SUSTITUTO = { 'ver-dia': 'ocultar-dia', 'mas-dia': 'ocultar-dia', 'ocultar-dia': 'ver-dia', 'mas-curso': 'curso' };
 function pintarCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   if (!p) return;
@@ -4508,12 +4580,15 @@ function pintarCalendario(){
     ${calBoton('elegir-fecha', '📅', '', `class="cal-icono" aria-label="${calEsc(t('calFecha'))}" title="${calEsc(t('calFecha'))}"`)}
     <input id="cal-fecha" class="sr-only" type="date" tabindex="-1" aria-hidden="true" value="${s.fecha}"></div>
     ${deportes ? '' : calChips()}</div>
-    <div class="cal-cuerpo"><p class="cal-estado" role="status">${calEsc(s.error ? t(s.error) : s.cargando ? t('calCargando') : '')}</p>
+    <div class="cal-cuerpo"><p class="cal-estado" role="status">${calEsc(s.error ? t(s.error, { n: calSegundosEspera() }) : s.cargando ? t('calCargando') : '')}</p>
     ${s.error === 'calError' ? calBoton('renovar', t('calReintentar')) : ''}<div class="cal-contenido">${calContenido()}</div>
     ${s.meta ? `<p class="cal-nota cal-pie">${calEsc(t('calCobertura'))} ${calEsc(t('calGenerado', { fecha: calFormato({ dateStyle: 'short', timeStyle: 'short', timeZone: s.zona }).format(new Date(s.meta.generado)) }))}</p>` : ''}
     ${s.orden?.noticias ? `<p class="cal-nota">${calEsc(t('calNoticiasTexto'))}</p>` : ''}</div>`;
+  // Si el botón con el foco se sustituye al pintar («Ver las N» → «Mostrar menos»,
+  // y al revés), el foco pasa a su sustituto del mismo día en vez de perderse.
+  const botonCal = a => [...p.querySelectorAll('[data-cal]')].find(b => b.dataset.cal === a && b.dataset.valor === valor);
   const siguiente = id ? document.getElementById(id) : foco?.name ? [...p.querySelectorAll('input')].find(b => b.name === foco.name && b.value === foco.value)
-    : [...p.querySelectorAll('[data-cal]')].find(b => b.dataset.cal === accion && b.dataset.valor === valor);
+    : botonCal(accion) || botonCal(CAL_FOCO_SUSTITUTO[accion]);
   siguiente?.focus({ preventScroll: true });
   if (seleccion && siguiente?.type === 'search') siguiente.setSelectionRange(...seleccion);
 }
@@ -5615,7 +5690,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=da16065ea5')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=806b2ce417')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }

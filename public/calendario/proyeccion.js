@@ -1,6 +1,6 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=da16065ea5';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, TRAMO_MAX_DIAS } from './fechas.js?v=da16065ea5';
+import { palabrasDe } from '../busqueda/texto.js?v=806b2ce417';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, TRAMO_MAX_DIAS } from './fechas.js?v=806b2ce417';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -34,7 +34,7 @@ export function prepararLectura(datos) {
   const desdeTramos = mes(desde, 0), hastaTramos = mes(hasta, 1);
   // Las resoluciones de lugares y territorios citan su origen, también con «comprobado».
   const limpias = sinComprobado(datos.entidades);
-  const eventos = [], facetas = [], tramos = [], chips = [], entidades = Object.entries(limpias);
+  const eventos = [], facetas = [], tramos = [], activos = [], chips = [], entidades = Object.entries(limpias);
   let evaluaciones = 0;
   const texto = s => ' ' + palabrasDe(s).map(p => p.t).join(' ') + ' ';
   // Categoría (color de la tira y del mes): la raíz del catálogo de los temas
@@ -80,7 +80,7 @@ export function prepararLectura(datos) {
     // Cita, programa o prolongada: una sola si coincide en las tres zonas.
     const presentaciones = Object.fromEntries(ZONAS.map(z => [z, presentacionCalendario(e, z)]));
     tarjeta.presentacion = new Set(Object.values(presentaciones)).size === 1 ? presentaciones[ZONAS[0]] : presentaciones;
-    eventos.push([e.id, texto(objetivos.flatMap(o => Object.values(o.nombres)).join(' ')),
+    eventos.push([e.id, texto([...objetivos, ...(e.etiquetas || [])].flatMap(o => Object.values(o.nombres)).join(' ')),
       Number(Boolean(e.resultado)), JSON.stringify(tarjeta), JSON.stringify(detalle)]);
     const f = new Map();
     const agregar = (tipo, valores) => { for (const v of valores) f.set(JSON.stringify([tipo, v]), [e.id, tipo, v]); };
@@ -96,12 +96,16 @@ export function prepararLectura(datos) {
     agregar('precio', e.precio ? [e.precio] : []);
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
-    const porZona = ZONAS.map(zona => {
+    const inactivo = o => ['cancelado', 'aplazado'].includes(o.programacion?.valor?.programacion);
+    const proyectarTramos = (zona, contar) => {
       const propios = [];
       // Una fecha pendiente tiene su propia lista, fuera de la ventana de días.
+      if (contar && inactivo(e)) return [];
       if (!extremoVisible(cuando?.inicio, zona).fecha) propios.push(['', '']);
       const dias = new Set();
-      for (const horario of programacionesCalendario(e)) {
+      const horarios = contar ? [e, ...(e.programa || [])].filter(o => !inactivo(o))
+        .map(o => o.programacion?.valor?.cuando).filter(Boolean) : programacionesCalendario(e);
+      for (const horario of horarios) {
         const a = extremoVisible(horario.inicio, zona), b = extremoVisible(horario.fin, zona);
         if (!a.fecha) continue;
         const inicio = a.fecha > desdeTramos ? a.fecha : desdeTramos;
@@ -119,29 +123,38 @@ export function prepararLectura(datos) {
         tramo[1] = sumarDiasCalendario(dia, 1);
       }
       return propios.flatMap(partirTramo);
-    });
+    };
+    const porZona = ZONAS.map(z => proyectarTramos(z, false));
     // Las citas con solo fecha (casi todas las culturales) dan los mismos
     // tramos en todas las zonas: una fila en vez de tres.
     const iguales = porZona.every(t => JSON.stringify(t) === JSON.stringify(porZona[0]));
     (iguales ? [TODAS_LAS_ZONAS] : ZONAS).forEach((zona, i) =>
       tramos.push(...porZona[i].map(([d, h]) => [zona, d, h, e.id])));
+    const porZonaActivos = ZONAS.map(z => proyectarTramos(z, true));
+    const igualesActivos = porZonaActivos.every(t => JSON.stringify(t) === JSON.stringify(porZonaActivos[0]));
+    (igualesActivos ? [TODAS_LAS_ZONAS] : ZONAS).forEach((zona, i) =>
+      activos.push(...porZonaActivos[i].map(([d, h]) => [zona, d, h, e.id])));
     // Chips del mes: lo que pasa cada día. Una cita es su chip; de un programa,
     // sus funciones o, si es una competición, solo su carrera. Lo prolongado no
     // tiene chips (va en «En cartel» o, si es competición, en su barra).
-    // Fila: [zona, día, evento, ocurrencia, orden (minuto del día; sin hora,
-    // al final), hora, nombres de la sesión o null].
+    // Orden: instante absoluto; después, horas civiles sin zona; sin hora al
+    // final. sesion_json conserva nombres y estado propios de la ocurrencia.
     const sesiones = e.programa || [];
     const porZonaChips = ZONAS.map(zona => {
       const ocurrencias = sesiones.length
         ? (competiciones.length ? sesiones.filter(x => SESIONES_PRINCIPALES.has(x.agenda?.tipo_sesion)) : sesiones)
         : presentaciones[zona] === 'cita' ? [e] : [];
       return ocurrencias.flatMap(o => {
-        const a = extremoVisible(o.programacion?.valor?.cuando?.inicio, zona);
+        const inicio = o.programacion?.valor?.cuando?.inicio;
+        const a = extremoVisible(inicio, zona);
         if (!a.fecha || a.fecha < desdeTramos || a.fecha >= hastaTramos) return [];
         // Misma regla que los tramos: un día excluido no tiene chip.
         if (!programacionesCalendario(o).some(h => enDia(h, a.fecha, zona))) return [];
         const [h, m] = (a.hora || '').split(':').map(Number);
-        return [[a.fecha, e.id, o.id, a.hora ? h * 60 + m : 1440, a.hora || null, o === e ? null : JSON.stringify(o.nombres)]];
+        const orden = inicio?.instante && a.hora ? Date.parse(inicio.instante) / 86400000 + 2440587.5
+          : a.hora ? 8000000 + (h * 60 + m) / 1440 : 9000000;
+        return [[a.fecha, e.id, o.id, orden, a.hora || null, o === e ? null
+          : JSON.stringify({ nombres: o.nombres, estado: o.programacion?.valor?.programacion || null })]];
       });
     });
     const igualesChips = porZonaChips.every(c => JSON.stringify(c) === JSON.stringify(porZonaChips[0]));
@@ -156,6 +169,6 @@ export function prepararLectura(datos) {
     catalogo: datos.catalogo, territorios_catalogo: datos.territorios_catalogo,
     fuentes: datos.fuentes, cobertura: comprobaciones,
     // lectura_chips: la API saca las muestras de los chips (lecturas anteriores no los tienen).
-    colecciones: datos.cobertura_colecciones || [], lectura_chips: 1, eventos, facetas, tramos, chips,
+    colecciones: datos.cobertura_colecciones || [], lectura_chips: 1, proyeccion_calendario: 2, eventos, facetas, tramos, activos, chips,
     entidades: entidades.map(([k, e]) => [k, e.tipo, texto(Object.values(e.nombres).join(' ')), JSON.stringify(e)]) };
 }
