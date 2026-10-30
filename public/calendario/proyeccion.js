@@ -1,6 +1,7 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=806b2ce417';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, TRAMO_MAX_DIAS } from './fechas.js?v=806b2ce417';
+import { palabrasDe } from '../busqueda/texto.js?v=ec7da24eed';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=ec7da24eed';
+import { sumarDisponibilidad } from './consulta.js?v=ec7da24eed';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -35,6 +36,12 @@ export function prepararLectura(datos) {
   // Las resoluciones de lugares y territorios citan su origen, también con «comprobado».
   const limpias = sinComprobado(datos.entidades);
   const eventos = [], facetas = [], tramos = [], activos = [], chips = [], entidades = Object.entries(limpias);
+  // Disponibilidad (lo que hay desde hoy, en hora peninsular): por territorio,
+  // cuántos eventos activos tiene cada combinación de temas; las competiciones,
+  // en toda la agenda. Misma regla que consultaDisponibilidad en la API.
+  const hoyDisponibilidad = diaEnZona(datos.generado, ZONAS[0]);
+  const combinaciones = new Map(), circuitosVigentes = new Map();
+  const contar = (m, k, v) => { const x = m.get(k) || new Map(); x.set(v, (x.get(v) || 0) + 1); m.set(k, x); };
   let evaluaciones = 0;
   const texto = s => ' ' + palabrasDe(s).map(p => p.t).join(' ') + ' ';
   // Categoría (color de la tira y del mes): la raíz del catálogo de los temas
@@ -134,6 +141,12 @@ export function prepararLectura(datos) {
     const igualesActivos = porZonaActivos.every(t => JSON.stringify(t) === JSON.stringify(porZonaActivos[0]));
     (igualesActivos ? [TODAS_LAS_ZONAS] : ZONAS).forEach((zona, i) =>
       activos.push(...porZonaActivos[i].map(([d, h]) => [zona, d, h, e.id])));
+    if (porZonaActivos[0].some(([d, h]) => h > hoyDisponibilidad && d < hasta)) {
+      const valores = tipo => [...f.values()].filter(x => x[1] === tipo).map(x => x[2]);
+      for (const c of valores('circuito')) circuitosVigentes.set(c, (circuitosVigentes.get(c) || 0) + 1);
+      const temas = valores('tema').sort();
+      if (temas.length) for (const t of ['', ...valores('territorio')]) contar(combinaciones, t, JSON.stringify(temas));
+    }
     // Chips del mes: lo que pasa cada día. Una cita es su chip; de un programa,
     // sus funciones o, si es una competición, solo su carrera. Lo prolongado no
     // tiene chips (va en «En cartel» o, si es competición, en su barra).
@@ -160,6 +173,15 @@ export function prepararLectura(datos) {
     const igualesChips = porZonaChips.every(c => JSON.stringify(c) === JSON.stringify(porZonaChips[0]));
     (igualesChips ? [TODAS_LAS_ZONAS] : ZONAS).forEach((zona, i) => chips.push(...porZonaChips[i].map(c => [zona, ...c])));
   }
+  // Claves ordenadas: la misma disponibilidad da el mismo JSON y no se reescribe.
+  const ordenado = o => Object.fromEntries(Object.entries(o).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+    .map(([k, v]) => [k, v && typeof v === 'object' ? ordenado(v) : v]));
+  if (!combinaciones.has('')) combinaciones.set('', new Map());
+  const disponibilidad = [...combinaciones].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([territorio, m]) => {
+    const { circuitos, ...temas } = sumarDisponibilidad(datos.catalogo, [...m].map(([valor, n]) => ({ tipo: 'temas', valor, n })));
+    return [territorio, JSON.stringify(ordenado(territorio ? temas
+      : { ...temas, circuitos: Object.fromEntries(circuitosVigentes) }))];
+  });
   const observadas = datos.eventos.flatMap(e => e.fuentes);
   const comprobaciones = Object.keys(datos.fuentes).map(fuente => ({ fuente,
     comprobado: observadas.filter(f => f.fuente === fuente).map(f => f.comprobado)
@@ -169,6 +191,8 @@ export function prepararLectura(datos) {
     catalogo: datos.catalogo, territorios_catalogo: datos.territorios_catalogo,
     fuentes: datos.fuentes, cobertura: comprobaciones,
     // lectura_chips: la API saca las muestras de los chips (lecturas anteriores no los tienen).
-    colecciones: datos.cobertura_colecciones || [], lectura_chips: 1, proyeccion_calendario: 2, eventos, facetas, tramos, activos, chips,
+    colecciones: datos.cobertura_colecciones || [], lectura_chips: 1, proyeccion_calendario: 2,
+    // lectura_disponibilidad: la API lee la tabla precalculada en vez de recorrer el horizonte.
+    lectura_disponibilidad: 1, eventos, facetas, tramos, activos, chips, disponibilidad,
     entidades: entidades.map(([k, e]) => [k, e.tipo, texto(Object.values(e.nombres).join(' ')), JSON.stringify(e)]) };
 }
