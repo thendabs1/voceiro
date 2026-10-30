@@ -5,7 +5,7 @@ export default {
   "calSemanaAnterior": "Semana anterior", "calSemanaPosterior": "Semana siguiente",
   "calMesAnterior": "Mes anterior", "calMesSiguiente": "Mes siguiente",
   "calSemanaSiguiente": "Cargar la semana siguiente", "calFutbol": "Fútbol", "calBaloncesto": "Baloncesto", "calMotor": "Motor", "calTenis": "Tenis",
-  "calNPartidos": "{n} partidos", "calNPartidos1": "1 partido", "calParcial": "programación parcial", "calYMas": "y {n} más",
+  "calNPartidos": "{n} partidos", "calNPartidos1": "1 partido", "calParcial": "programación parcial", "calYMas": "y {n} más", "calSinPublicar": "aún sin publicar", "calSinPublicarNota": "Rayado: aún sin publicar. Los partidos se publican unas dos semanas antes.",
   "calEsteMes": "Este mes en deportes · {mes}", "calProximasSemanas": "Próximas semanas en deportes", "calSinDeportes": "Sin competiciones publicadas este mes",
   "calLoMio": "Lo mío", "calCompeticiones": "Competiciones", "calCompeticionesN": "Competiciones · {n} de {total}", "calTodas": "Todas", "calLasQueSigo": "Las que sigo", "calElegirCompeticiones": "Elegir competiciones",
   "calAsTitulo": "Configurar calendario", "calAsPaso": "Paso {n} de {total}", "calAsSiguiente": "Siguiente", "calAsAnterior": "Anterior",
