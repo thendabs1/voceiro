@@ -2154,6 +2154,9 @@
 .calendario-panel .cal-mg-dia{grid-row:1/-1;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;min-height:0;overflow:hidden;padding:3px 4px;
   border:0;border-left:1px solid var(--border);border-radius:0;background:var(--bg);color:var(--fg);text-align:left;font:inherit}
 .cal-mg-dia:first-child{border-left:0}.cal-mg-dia.cal-otro-mes{background:var(--btn-bg)}
+/* Deportes: más allá de lo publicado, rayado (no es un día sin partidos). */
+.calendario-panel .cal-mg-dia.cal-sin-publicar{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--border) 6px 7px)}
+.cal-leyenda-sin-publicar{margin:6px 0 0}
 .cal-mg-dia .cal-num{font-size:.85em;font-variant-numeric:tabular-nums}.cal-mg-dia[aria-current="date"] .cal-num{color:var(--accent);font-weight:700}
 /* El número ocupa la primera fila entera (1.8em de la semana, sin el relleno ni
    el hueco entre ambos): así lo de debajo empieza donde acaban las barras y no bajo ellas. */
@@ -2210,7 +2213,7 @@ body.calendario-abierto{max-width:none}
 /* Escritorio: ciudad, atajos de fecha y categorías en una sola línea; las acciones al final. */
 @container (min-width:900px){
   .cal-barra>.ui-tira{flex-basis:auto}.cal-barra>.cal-subchips{flex-basis:100%}
-  .cal-donde{flex:0 1 auto}.cal-acciones{order:1}
+  .cal-donde{flex:0 1 auto}.cal-acciones{order:1}.cal-barra>.cal-subchips{order:2}
   .cal-barra>.cal-rangos+.ui-tira{border-left:1px solid var(--border);padding-left:8px}
 }
 /* ═══ Consultas puntuales (libro:, pelicula:…): encima de la lista, como el tiempo ═══ */
