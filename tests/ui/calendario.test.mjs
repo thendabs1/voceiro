@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
+import { runInNewContext, runInContext } from 'node:vm';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fechas from '../../shared/calendario/fechas.js';
@@ -68,7 +68,7 @@ function api(u){
   return { ...META, eventos: todos.slice(desde, desde + limite), siguiente: desde + limite < todos.length ? String(desde + limite) : null };
 }
 function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, guardarFalla = false } = {}){
-  const listeners = {}, pedidas = [], sugerencias = {}, buscar = { value: '', addEventListener(){} }, aplicadas = [];
+  const listeners = {}, pedidas = [], sugerencias = {}, buscar = { value: '', addEventListener(){} }, aplicadas = [], temporizadores = [];
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
     addEventListener(){}, querySelector: () => ({ focus(){} }) };
@@ -80,7 +80,7 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, gua
   };
   const c = { ...fechas, ...consulta, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
-    setTimeout: fn => { fn(); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
+    setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
     localStorage: { getItem: k => almacen[k] ?? null, setItem: (k, v) => { if (guardarFalla) throw new Error('lleno'); almacen[k] = String(v); } },
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
@@ -90,10 +90,11 @@ function contexto({ intl = Intl, responder = api, sitios = [], almacen = {}, gua
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
   runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calDonde, calAsistente, wireCalendario, abrirCalendario,
-    actualizarConsultaCalendario }; pintarCalendario = () => {};`, c);
+    cerrarCalendario, actualizarConsultaCalendario }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
+  c.temporizadores = temporizadores;
   c.almacen = almacen; c.panel = panel; c.pedidas = pedidas; c.dialogo = dialogo; c.sugerencias = sugerencias; c.buscar = buscar; c.aplicadas = aplicadas;
   c.ultima = () => pedidas.at(-1);
   c.resumen = () => pedidas.findLast(u => u.pathname === '/calendario/resumen').searchParams;
@@ -161,30 +162,49 @@ test('una muestra de chip usa su hora del día y lleva encima su GP', async () =
   assert.match(c.api.calContenido(), /<span class="cal-hora">20:00<\/span>[\s\S]*?cal-padre">GP de México<\/p>[\s\S]*?>Carrera<\/button>/);
 });
 
-test('En cartel: plegado con su cuenta; al abrirlo pide lo prolongado del día', async () => {
-  const c = contexto();
+test('En cartel: un bloque de todo el período, plegado; al abrirlo pide lo prolongado de esos días', async () => {
+  const c = contexto({ responder: u => u.searchParams.get('presentacion') === 'prolongada' ? { ...META, siguiente: null, eventos: [
+    tarjeta('Expo A', '2026-10-25', { presentacion: 'prolongada' }), tarjeta('Expo B', '2026-10-27', { presentacion: 'prolongada' })] } : api(u) });
   await c.abrir();
-  assert.match(c.api.calContenido(), /data-cal="curso" data-valor="2026-10-25" aria-expanded="false">▸ En cartel · 4/);
-  await c.click('curso', '2026-10-25');
-  assert.deepEqual([c.ultima().searchParams.get('presentacion'), c.ultima().searchParams.get('desde')], ['prolongada', '2026-10-25']);
-  const html = c.api.calContenido();
-  assert.equal((html.match(/data-valor="2026-10-25~~Expo \d 2026-10-25"/g) || []).length, 4);
-  assert.match(html, /aria-expanded="true"/);
+  const clave = '2026-10-25~2026-11-01';
+  let html = c.api.calContenido();
+  assert.match(html, new RegExp(`data-cal="curso" data-valor="${clave}" aria-expanded="false">▸ En cartel estos días`));
+  assert.equal((html.match(/class="cal-en-curso"/g) || []).length, 1);
+  await c.click('curso', clave);
+  const q = c.ultima().searchParams;
+  assert.deepEqual([q.get('presentacion'), q.get('desde'), q.get('hasta'), q.get('revision')], ['prolongada', '2026-10-25', '2026-11-01', 'r1']);
+  html = c.api.calContenido();
+  // Lo que abre después del primer día lleva su día de apertura.
+  assert.match(html, /aria-expanded="true"[\s\S]*Expo A[\s\S]*Abre el mar[\s\S]*Expo B/);
+  assert.doesNotMatch(html.slice(0, html.indexOf('Expo A')), /Abre el/);
   const antes = c.pedidas.length;
-  await c.click('curso', '2026-10-25');
-  await c.click('curso', '2026-10-25');
+  await c.click('curso', clave);
+  await c.click('curso', clave);
   assert.equal(c.pedidas.length, antes, 'cerrar y volver a abrir no repite la petición');
+  // Un solo día (Hoy): su cuenta.
+  await c.click('rango', 'hoy', { dia: '2026-10-25' });
+  assert.match(c.api.calContenido(), /data-valor="2026-10-25~2026-10-26" aria-expanded="false">▸ En cartel · 4/);
 });
 
-test('si la publicación cambia entre páginas, la lista del día se rehace desde el principio', async () => {
+test('sin citas pero con algo en cartel a mitad de semana, la lista no dice que esté vacía (F04)', async () => {
+  const c = contexto({ responder: u => u.pathname === '/calendario/resumen' ? { ...META, dias: Array.from({ length: 7 }, (_, i) => ({
+    dia: fechas.sumarDiasCalendario('2026-10-25', i), citas: 0, programas: 0, en_curso: i === 1 ? 1 : 0, categorias: {}, competiciones: {}, chips: 0, muestras: [] })) } : api(u) });
+  await c.abrir();
+  const html = c.api.calContenido();
+  assert.match(html, /En cartel estos días/);
+  assert.match(html, /mira lo que está en cartel/);
+});
+
+test('si la publicación cambia entre páginas, se rehacen cuentas y listas: nada de mezclar lecturas (F03)', async () => {
   const c = contexto({ responder: u => u.searchParams.get('cursor')
     ? Response.json({ error: 'La publicación cambió' }, { status: 409 }) : api(u) });
   await c.abrir();
   await c.click('ver-dia', '2026-10-25');
+  // Las listas piden con la revisión del resumen que se ve.
+  assert.equal(c.ultima().searchParams.get('revision'), 'r1');
   await c.click('mas-dia', '2026-10-25');
-  assert.deepEqual(c.pedidas.slice(-2).map(u => u.searchParams.get('cursor')), ['20', null]);
-  assert.equal(c.api.s.dias.get('2026-10-25|citas').eventos.length, 20);
-  assert.equal(c.api.s.error, '');
+  assert.deepEqual(c.pedidas.slice(-3).map(u => u.pathname), ['/calendario/eventos', '/calendario/catalogo', '/calendario/resumen']);
+  assert.deepEqual([c.api.s.dias.size, c.api.s.error], [0, '']);
 });
 
 test('tira: la semana con puntos por categoría y el pasado atenuado; se despliega en mes', async () => {
@@ -724,7 +744,7 @@ test('un fallo del primer backend pasa al segundo; un error de la consulta no se
   assert.equal(d.api.s.error, 'calError');
 });
 
-test('un 429 no pasa al otro backend y se espera lo que pide Retry-After', async () => {
+test('un 429 no pasa al otro backend: avisa de la espera y vuelve a pedir solo al terminar', async () => {
   let limitado = false;
   const c = contexto({ responder: u => limitado && u.pathname === '/calendario/resumen'
     ? new Response(JSON.stringify({ error: 'demasiadas peticiones' }), { status: 429, headers: { 'Retry-After': '30' } }) : api(u) });
@@ -732,10 +752,65 @@ test('un 429 no pasa al otro backend y se espera lo que pide Retry-After', async
   limitado = true;
   await c.click('categoria', 'cultura');
   assert.deepEqual(c.pedidas.slice(-1).map(u => u.hostname + u.pathname), ['cf.test/calendario/resumen']);
-  assert.equal(c.api.s.error, 'calError');
+  assert.deepEqual([c.api.s.error, c.temporizadores.length], ['calEspera', 1]);
+  assert.match(c.t('calEspera', { n: 30 }), /vuelvo a intentarlo en 30 s/);
+  // Mientras dura la espera no se pide nada ni se programa otro reintento.
   const antes = c.pedidas.length;
   await c.click('categoria', 'deportes');
-  assert.equal(c.pedidas.length, antes);
+  assert.deepEqual([c.pedidas.length, c.temporizadores.length], [antes, 1]);
+  // Al terminar, vuelve a pedir lo que se ve.
+  limitado = false;
+  runInContext('Date.now = () => 8.64e15', c);
+  c.temporizadores.shift()(); await esperar();
+  assert.deepEqual([c.ultima().pathname, c.resumen().get('temas'), c.api.s.error], ['/calendario/resumen', 'deportes', '']);
+});
+
+test('cerrar corta lo que estaba en curso y al volver se pide de nuevo (F12)', async () => {
+  let colgar = true;
+  const c = contexto({ responder: u => colgar && u.pathname === '/calendario/resumen' ? new Promise(() => {}) : api(u) });
+  await c.deportes();
+  const controlador = c.api.s.controller;
+  c.api.cerrarCalendario(false);
+  assert.deepEqual([controlador.signal.aborted, c.api.s.mes, c.api.s.cargando], [true, null, false]);
+  colgar = false;
+  const antes = c.pedidas.length;
+  await c.deportes();
+  assert.ok(c.pedidas.slice(antes).some(u => u.pathname === '/calendario/resumen'));
+  assert.ok(c.api.s.resumen);
+});
+
+test('la temporada sigue el cursor hasta cuatro páginas y avisa si hay más (F07)', async () => {
+  let paginas = 0;
+  const c = contexto({ responder: u => {
+    if (!u.searchParams.get('circuitos')) return api(u);
+    paginas++;
+    const n = Number(u.searchParams.get('cursor') || 0);
+    return { ...META, siguiente: String(n + 50), eventos: Array.from({ length: 50 }, (_, i) =>
+      tarjeta('Torneo ' + (n + i), '2026-10-0' + (1 + i % 9), { presentacion: 'prolongada', competiciones: ['wta'] })) };
+  } });
+  await c.deportes();
+  assert.deepEqual([paginas, c.api.s.temporada.eventos.length, c.api.s.temporada.parcial], [4, 200, true]);
+  assert.match(c.api.calContenido(), /Hay más eventos este mes/);
+});
+
+test('desde:hoy es el hoy de la zona del calendario, no el del navegador (F09)', async () => {
+  const c = contexto();
+  c.hoy = '2026-10-26';
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('teatro: desde:hoy'));
+  await esperar();
+  assert.equal(c.resumen().get('desde'), '2026-10-26');
+});
+
+test('un cancelado se ve en su sitio, tachado y con su aviso; la sesión trae su estado (F06)', async () => {
+  const c = contexto({ responder: u => u.pathname === '/calendario/eventos' && u.searchParams.get('chips') ? { ...META, siguiente: null, eventos: [
+    tarjeta('Carrera', '2026-10-25', { hora: '14:00', estado: 'cancelado' }), tarjeta('Concierto', '2026-10-25', { hora: '18:00' })] } : api(u) });
+  await c.abrir();
+  await c.click('ver-dia', '2026-10-25');
+  const html = c.api.calContenido();
+  const tarjetaDe = nombre => html.match(new RegExp(`<article[^>]*>(?:(?!<article)[\\s\\S])*?${nombre}(?:(?!<article)[\\s\\S])*`))[0];
+  assert.match(tarjetaDe('Carrera'), /^<article class="cal-cita cal-anulada">[\s\S]*<p class="cal-aviso">Cancelado<\/p>/);
+  assert.match(tarjetaDe('Concierto'), /^<article class="cal-cita">/);
+  assert.doesNotMatch(tarjetaDe('Concierto'), /cal-aviso/);
 });
 
 test('si falla la renovación se conserva el resumen anterior; otra consulta no lo hereda', async () => {

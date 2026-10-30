@@ -93,7 +93,11 @@
 .cal-leyenda{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:.75em;color:var(--muted);margin:6px 0 0}
 .cal-leyenda>span{display:inline-flex;align-items:center;gap:5px}
 /* Lo pasado, atenuado y marcado: sigue consultable, pero no parece vigente. */
-.cal-pasado{opacity:.55}.cal-dia.cal-pasado h2 small{font-style:italic}
+/* Pasado: sin opacidad (bajaba el texto de AA); su encabezado y su número, en --muted. */
+.cal-dia.cal-pasado>h2,.cal-pasado .cal-num{color:var(--muted)}.cal-dia.cal-pasado h2 small{font-style:italic}
+/* Cancelado o aplazado: en su sitio, tachado y apagado; el aviso dice cuál. */
+.cal-anulada h3,.cal-anulada h3 button,.cal-anulada>span:first-child,li.cal-anulada>span{color:var(--muted);text-decoration:line-through}
+.cal-abre{margin:8px 0 0}
 .cal-semana-nombre{font-size:.75em;text-align:center;padding:6px 0;text-decoration:none;color:var(--muted)}
 .cal-celda{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;min-width:0;padding:4px 0;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--fg);font-variant-numeric:tabular-nums}
 .cal-otro-mes{background:var(--btn-bg)}.cal-num{font-size:.85em}
