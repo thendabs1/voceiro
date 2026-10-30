@@ -27,6 +27,7 @@ const META = { version: 1, revision: 'r1', generado: '2026-10-25T06:00:00Z',
   colecciones: [{ coleccion: 'nba', calendario_completo: false }, { coleccion: 'f1', calendario_completo: true }] };
 const CONCEPTOS = { cultura: { nombres: { es: 'Cultura' }, padres: [] }, teatro: { nombres: { es: 'Teatro' }, padres: ['cultura'] },
   deportes: { nombres: { es: 'Deportes' }, padres: [] }, tenis: { nombres: { es: 'Tenis' }, padres: ['deportes'] },
+  ajedrez: { nombres: { es: 'Ajedrez' }, padres: ['deportes'] },
   economia: { nombres: { es: 'Economía' }, padres: [] } };
 const esperar = async () => { for (let i = 0; i < 6; i++) await new Promise(r => setImmediate(r)); };
 
@@ -36,7 +37,7 @@ const esperar = async () => { for (let i = 0; i < 6; i++) await new Promise(r =>
 function api(u){
   const p = u.searchParams, ruta = u.pathname;
   if (ruta === '/calendario/catalogo') return { ...META, catalogo: { conceptos: CONCEPTOS }, fuentes: { galicia: { nombre: 'Galicia' } },
-    ...(p.get('disponibilidad') ? { disponibilidad: { territorio: p.get('territorio') || null, temas: { teatro: 12 }, raices: { cultura: 15, deportes: 2 },
+    ...(p.get('disponibilidad') ? { disponibilidad: { territorio: p.get('territorio') || null, temas: { teatro: 12, tenis: 2 }, raices: { cultura: 15, deportes: 2 },
       sin_subcategoria: { cultura: 3 }, circuitos: { f1: 23, nba: 113 } } } : {}) };
   if (ruta === '/calendario/resumen') {
     const dias = [], n = Number(p.get('muestras') ?? 2);
@@ -263,7 +264,9 @@ test('chips: Todo, categorías con su segunda fila, deporte local y Gratis', asy
   // En la agenda, «Deportes» es el deporte del sitio, con sus subcategorías; las competiciones tienen su vista.
   assert.match(c.api.calChips(), /data-valor="deportes" class="cal-cat cal-cat-deportes" aria-pressed="false">Deporte local/);
   await c.click('categoria', 'deportes');
+  // Solo las subcategorías con algo en el sitio: sin ajedrez.
   assert.match(c.api.calChips(), /cal-subchips[\s\S]*data-valor="tenis"/);
+  assert.doesNotMatch(c.api.calChips(), /data-valor="ajedrez"/);
   assert.deepEqual([c.resumen().get('temas'), c.resumen().get('q'), c.resumen().get('barras')], ['deportes', null, null]);
   assert.equal(c.api.s.capas, null);
   await c.click('gratis');
@@ -281,10 +284,10 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   assert.deepEqual([temporada.searchParams.get('desde'), temporada.searchParams.get('hasta'), temporada.searchParams.get('presentacion')],
     ['2026-10-01', '2026-11-01', 'prolongada,programa']);
   const html = c.api.calContenido();
-  // El 27: F1 primero, NBA con sus partidos; ATP y WTA en «+2». Sin puntos ni leyenda.
+  // El 27: F1 primero, NBA con sus partidos, ATP, y WTA en «+1», cada una con el color de su deporte. Sin puntos ni leyenda.
   const celda = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
   assert.match(celda, /aria-label="martes, 27 de octubre: [^"]*F1, NBA · 9 partidos, ATP · 1 partido, WTA"/);
-  assert.match(celda, /<span class="cal-marca">F1<\/span><span class="cal-marca">NBA 9<\/span>[\s\S]*\+2/);
+  assert.match(celda, /<span class="cal-marca cal-dep cal-dep-motor">F1<\/span><span class="cal-marca cal-dep cal-dep-baloncesto">NBA 9<\/span><span class="cal-marca cal-dep cal-dep-tenis">ATP<\/span>[\s\S]*\+1</);
   assert.doesNotMatch(html, /cal-leyenda/);
   // El bloque del mes: partidos por liga, programación parcial y los torneos (cuatro y «y 2 más»).
   assert.match(html, /Este mes en deportes · octubre/);
@@ -336,7 +339,7 @@ test('en Deportes, el GP va arriba de cada día suyo como «todo el día»', asy
   await c.deportes();
   assert.equal(c.resumen().get('barras'), '1');
   const html = c.api.calContenido();
-  assert.match(html, /id="cal-dia-2026-10-31"><h2>[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-cat-deportes">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
+  assert.match(html, /id="cal-dia-2026-10-31"><h2>[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-dep cal-dep-motor">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
   assert.equal((html.match(/cal-todo-dia/g) || []).length, 2);
   // La fila «todo el día» es un desplegable propio.
   assert.match(html, /data-valor="2026-10-30~\*~GP de México"/);
@@ -444,7 +447,7 @@ test('mes con títulos en ancho: chips con hora, «+N» y, en Deportes, la barra
   assert.match(bajo, /\+26 más/);
   delete c.window.innerHeight;
   // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
-  assert.match(html, /class="cal-mg-barra cal-cat-deportes" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
+  assert.match(html, /class="cal-mg-barra cal-dep cal-dep-motor" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
   assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
   // La agenda, con títulos pero sin barras: no tiene competiciones.
   await c.abrir(); await c.click('mes');
@@ -454,6 +457,27 @@ test('mes con títulos en ancho: chips con hora, «+N» y, en Deportes, la barra
   await c.click('mes'); await c.click('mes');
   assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['0', null]);
   assert.doesNotMatch(c.api.calContenido(), /cal-mg-semana/);
+});
+
+test('mes con títulos: tantos carriles de barras como quepan, cada una con el color de su deporte', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.deportes();
+  // Cuatro torneos a la vez en la semana del 26: F1, ATP, NBA y Primera.
+  c.api.s.mes.barras = [['f1', 'motor'], ['atp', 'tenis'], ['nba', 'baloncesto'], ['primera', 'futbol']].map(([cod]) =>
+    ({ ...tarjeta('Torneo ' + cod, '2026-10-27', { presentacion: 'programa', competiciones: [cod], categoria: 'deportes' }),
+      desde: '2026-10-27', hasta: '2026-10-30' }));
+  const barras = html => [...html.matchAll(/class="cal-mg-barra ([^"]*)" style="[^"]*grid-row:(\d)/g)].map(m => [m[1], m[2]]);
+  // Ventana alta: tres carriles y la cuarta en «+N» de sus días.
+  c.window.innerHeight = 1200;
+  const alta = c.api.calContenido();
+  assert.deepEqual(barras(alta), [['cal-dep cal-dep-motor', '2'], ['cal-dep cal-dep-tenis', '3'], ['cal-dep cal-dep-baloncesto', '4']]);
+  assert.match(alta, /--carriles:3/);
+  // Ventana baja: dos, como antes.
+  c.window.innerHeight = 500;
+  assert.equal(barras(c.api.calContenido()).length, 2);
+  delete c.window.innerHeight;
 });
 
 const PREF = 'voceiro-calendario-preferencias-v1';
