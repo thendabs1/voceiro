@@ -327,40 +327,41 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   assert.match(c.api.calContenido(), /aria-expanded="false">▸ Este mes en deportes · noviembre<\/button><\/section>/);
 });
 
-test('calendario deportivo: deportes y competiciones en chips arriba, sin ciudad ni lateral', async () => {
+test('calendario deportivo: deportes en chips arriba y sus competiciones al elegir uno, sin ciudad ni lateral', async () => {
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.deportes();
   let chips = c.api.calChipsDeportes();
-  // Las 12 competiciones, sin capa de ciudad; cada una con su marca del mes y su nombre (la leyenda).
+  // Las 12 competiciones, sin capa de ciudad; con todas, ningún deporte elegido ni fila de competiciones.
   assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('territorio'), c.resumen().get('temas')], [12, null, null]);
   assert.match(chips, /data-cal="capas-todas" data-valor="" class="" aria-pressed="true">Todas/);
-  assert.match(chips, /data-cal="deporte" data-valor="futbol" class="cal-dep cal-dep-futbol" aria-pressed="true">Fútbol/);
-  assert.match(chips, /aria-label="Competiciones · 12 de 12"><button type="button" data-cal="capa" data-valor="primera" class="cal-dep cal-dep-futbol" aria-pressed="true"><b class="cal-chip-marca">1ª<\/b> LaLiga<\/button>/);
-  assert.match(chips, /data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button>/);
+  assert.match(chips, /data-cal="deporte" data-valor="futbol" class="cal-dep cal-dep-futbol" aria-pressed="false">Fútbol/);
+  assert.doesNotMatch(chips, /cal-subchips|data-cal="capa"/);
   assert.match(chips, /data-cal="asistente" data-valor="2"[^>]*>Elegir competiciones/);
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral/);
+  // Elegir un deporte deja solo el suyo y enseña sus competiciones, con su marca y su nombre (la leyenda).
+  await c.click('deporte', 'baloncesto');
+  assert.equal(c.resumen().get('q'), 'nba: wnba: feb-endesa: feb-primera: feb-challenge:');
+  chips = c.api.calChipsDeportes();
+  assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
+  assert.match(chips, /aria-label="Competiciones · 5 de 5"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button>/);
+  assert.match(chips, /data-valor="feb-endesa"[^>]*><b class="cal-chip-marca">LFE<\/b> /);
+  assert.doesNotMatch(chips, /data-valor="primera"/);
   // Quitar una competición: fuera de la consulta y su deporte, a medias.
   await c.click('capa', 'nba');
   assert.ok(!c.resumen().get('q').split(' ').includes('nba:'));
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="mixed"/);
-  assert.match(chips, /data-valor="capas-todas"|data-cal="capas-todas" data-valor="" class="" aria-pressed="false"/);
-  assert.match(chips, /Competiciones · 11 de 12/);
-  // Un deporte a medias se completa; entero, se quita.
-  await c.click('deporte', 'baloncesto');
+  assert.match(chips, /Competiciones · 4 de 5/);
+  // Otro deporte lo sustituye; pulsar el elegido vuelve a todas.
+  await c.click('deporte', 'motor');
+  assert.equal(c.resumen().get('q'), 'f1: motogp: wrc:');
+  await c.click('deporte', 'motor');
   assert.equal(c.resumen().get('q').split(' ').length, 12);
-  await c.click('deporte', 'baloncesto');
-  assert.equal(c.resumen().get('q').split(' ').length, 7);
-  assert.match(c.api.calChipsDeportes(), /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="false"/);
-  // Nunca sin capas: con una sola, quitarla (o su deporte) no hace nada.
+  // Nunca sin capas: con una sola, quitarla no hace nada.
   await c.click('solo', 'f1');
   await c.click('capa', 'f1');
   assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['f1:', null]);
-  await c.click('capa', 'motogp');
-  await c.click('deporte', 'motor');
-  assert.equal(c.resumen().get('q'), 'f1: motogp: wrc:');
-  await c.click('deporte', 'motor');
-  assert.equal(c.resumen().get('q'), 'f1: motogp: wrc:');
+  assert.match(c.api.calChipsDeportes(), /data-valor="motor" class="cal-dep cal-dep-motor" aria-pressed="mixed"/);
   await c.click('capas-todas');
   assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('territorio')], [12, null]);
   // La agenda lleva sus chips de temas y va a su sitio.
@@ -508,7 +509,8 @@ test('mes de Deportes en ancho: marcas por competición, todas, y el motor en ba
   const dia = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
   assert.match(dia, /<span class="cal-mg-marcas"><span class="cal-mg-marca cal-dep cal-dep-baloncesto" title="NBA · 9 partidos">NBA 9<\/span><span class="cal-mg-marca cal-dep cal-dep-motor" title="F1">F1<\/span><span class="cal-mg-marca cal-dep cal-dep-tenis" title="ATP · 1 partido">ATP<\/span><span class="cal-mg-marca cal-dep cal-dep-tenis" title="WTA">WTA<\/span><\/span>/);
   assert.doesNotMatch(html, /cal-mg-chip|cal-mg-mas|;height:/);
-  assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:28px;min-height:72px"/);
+  // La semana mide lo que lleva: sin alto fijo ni mínimo.
+  assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:28px">/);
   // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
   assert.match(html, /class="cal-mg-barra cal-dep cal-dep-motor" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
   assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
@@ -533,6 +535,35 @@ test('mes de Deportes: solo el motor va en barra, en todos los carriles que haga
   assert.deepEqual(barras(html), [['cal-dep cal-dep-motor', '2', 'Torneo f1'], ['cal-dep cal-dep-motor', '3', 'Torneo motogp'], ['cal-dep cal-dep-motor', '4', 'Torneo wrc']]);
   assert.match(html, /--carriles:3;--carril:28px/);
   delete c.window.innerHeight;
+});
+
+test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y lo no publicado rayado', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.deportes();
+  // Con todas, marcas y sin muestras; la NBA no tiene calendario completo, pero con todas
+  // manda la que menos tiene publicado: sin unidades, ningún límite.
+  assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-12-07').searchParams.get('muestras'), '0');
+  await c.click('deporte', 'baloncesto');
+  await c.click('capa', 'wnba'); await c.click('capa', 'feb-endesa'); await c.click('capa', 'feb-primera');
+  assert.equal(c.resumen().get('q'), 'nba: feb-challenge:');
+  // Dos competiciones: el mes pide cinco muestras y pinta los partidos con su hora y «+N».
+  assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-12-07').searchParams.get('muestras'), '5');
+  c.api.s.meta.colecciones = [{ coleccion: 'nba', estado: 'activa', calendario_completo: false, unidades: [{ fin: '2026-11-08' }, { fin: '2026-11-11' }] }];
+  let html = c.api.calContenido();
+  const dia = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
+  assert.match(dia, /<span class="cal-mg-chip cal-cat-cultura"><b>18:00<\/b> A2026-10-27<\/span><span class="cal-mg-chip cal-cat-otras">B2026-10-27<\/span>/);
+  assert.match(dia, /<span class="cal-mg-mas">\+23 más<\/span><\/button>/);
+  assert.doesNotMatch(dia, /cal-mg-marca/);
+  // Más allá del último día publicado (11-11), rayado y con su nota.
+  assert.doesNotMatch(html.match(/data-valor="2026-11-11"[^>]*/)[0], /cal-sin-publicar/);
+  assert.match(html, /class="cal-mg-dia cal-sin-publicar" style="grid-column:4"\s+data-cal="dia" data-valor="2026-11-12"/);
+  assert.match(html, /class="cal-nota cal-leyenda-sin-publicar">Rayado: aún sin publicar/);
+  // Con calendario completo, no hay límite.
+  c.api.s.meta.colecciones[0].calendario_completo = true;
+  html = c.api.calContenido();
+  assert.doesNotMatch(html, /cal-sin-publicar/);
 });
 
 const PREF = 'voceiro-calendario-preferencias-v1';
