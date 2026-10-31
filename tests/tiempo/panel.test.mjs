@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
+import { readFileSync } from 'node:fs';
 import { parseQuery, tokenizeQuery } from '../../shared/parser.js';
 import { I18N } from '../../front/idiomas/index.js';
 import { PESO, empezado, zonaHorariaAviso } from '../../shared/tiempo/avisos.js';
@@ -336,4 +337,11 @@ test('avisos del sitio: el fallo y MeteoAlarm se dicen; con AEMET, sin pie', () 
   const html = avisosLugar({ datos: meteoalarm, error: false });
   assert.match(html, /avisosBotonTxt \(1\)/);
   assert.match(html, /MeteoAlarm.*avisosIncompleto/s);
+});
+
+test('en la plantilla, los chips del feed van bajo los paneles y justo encima de las noticias', () => {
+  const plantilla = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
+  const pos = id => { const i = plantilla.indexOf(`id="${id}"`); assert.ok(i > 0, id); return i; };
+  const orden = ['chips-busqueda', 'tiempo-tarjeta', 'avisos-panel', 'consulta-panel', 'preset-pestanas', 'temas-chips', 'resultados'];
+  assert.deepEqual([...orden].sort((a, b) => pos(a) - pos(b)), orden);
 });

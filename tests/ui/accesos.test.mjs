@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tokenizeQuery } from '../../shared/parser.js';
 import { leerConsultaCalendario, AMBITOS } from '../../shared/calendario/consulta.js';
-import { ESPN } from '../../shared/consultas/registro.js';
+import { ESPN, PREFIJOS_CONSULTAS } from '../../shared/consultas/registro.js';
 import { traducir } from '../../front/idiomas/index.js';
 
 const codigo = readFileSync(new URL('../../front/app/14-accesos.js', import.meta.url), 'utf8');
@@ -17,7 +17,7 @@ function escenario({ sigo = [], buscar = '' } = {}){
   const ids = { 'accesos-panel': el(), 'buscar-accesos': el(), 'cab-deportes': el(), buscar: { value: buscar } };
   const escritas = [];
   const c = {
-    $: sel => ids[sel.slice(1)], t: (k, v) => traducir('es', k, v), tokenizeQuery, leerConsultaCalendario, AMBITOS,
+    $: sel => ids[sel.slice(1)], t: (k, v) => traducir('es', k, v), tokenizeQuery, leerConsultaCalendario, AMBITOS, PREFIJOS_CONSULTAS,
     calEsc: s => String(s), calNombreCompeticion: x => NOMBRES[x] || x,
     calPreferencias: () => ({ competiciones: sigo }), CAL_DEPORTES, CALENDARIO: { orden: null },
     CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' }, CAL_COMPETICIONES: Object.values(CAL_DEPORTES).flat(),
@@ -66,6 +66,12 @@ test('un acceso escribe su orden en la barra y sustituye la de agenda anterior; 
   assert.equal(s.ids['accesos-panel'].hidden, true);
 });
 
+test('un acceso sustituye también una consulta deportiva, que ya no va al final de la línea', () => {
+  const s = escenario({ buscar: 'resultados:primera levante' });
+  s.run("escribirAcceso('clasificacion:nba')");
+  assert.deepEqual(s.escritas, ['levante clasificacion:nba']);
+});
+
 test('iconos de cabecera: uno por deporte seguido; escriben sus prefijos con espacio y, pulsados, los quitan', () => {
   const s = escenario({ sigo: ['nba', 'f1', 'motogp'], buscar: 'medio:as' });
   s.run('pintarIconosDeportes()');
@@ -82,4 +88,15 @@ test('iconos de cabecera: uno por deporte seguido; escriben sus prefijos con esp
   const vacio = escenario();
   vacio.run('pintarIconosDeportes()');
   assert.equal(vacio.ids['cab-deportes'].hidden, true);
+});
+
+test('«Clasificaciones…» junto a «Resultados…»: una fila por competición con tabla (F1 incluida); cada fila enseña su orden', () => {
+  const s = escenario();
+  s.run('pintarAccesos()');
+  assert.match(s.html(), /data-pantalla="resultados">Resultados…[\s\S]*data-pantalla="clasificaciones">Clasificaciones…[\s\S]*data-pantalla="competiciones">/);
+  assert.match(s.html(), /data-orden="calendario:f1">F1 · horarios<span class="accesos-orden"> calendario:f1<\/span>/);
+  s.pantalla('clasificaciones');
+  assert.match(s.html(), /<h2 id="accesos-titulo" tabindex="-1">Clasificaciones<\/h2>/);
+  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]),
+    ['clasificacion:primera', 'clasificacion:segunda', 'clasificacion:nba', 'clasificacion:wnba', 'clasificacion:f1']);
 });

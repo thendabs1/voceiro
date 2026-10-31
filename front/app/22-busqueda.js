@@ -115,7 +115,7 @@ function aplicarFiltros(){
   syncPanelFromParsed(parsed);
   actualizarTiempo(parsed.eltiempo);
   actualizarAlertas(parsed.alertas);
-  actualizarConsultaPuntual(parsed);
+  actualizarConsultaPuntual(parsed, consulta.texto);
   pintarBotonTiempo();
 
 const capas = capasRequeridas(parsed, consulta);

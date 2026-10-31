@@ -381,6 +381,8 @@ export default {
   "accNoticiasDe": "{x} · news",
   "accResultados": "Results…",
   "accResultadosTitulo": "Results",
+  "accClasificaciones": "Standings…",
+  "accClasificacionesTitulo": "Standings",
   "accCompeticiones": "Competitions and more…",
   "accCompeticionesTitulo": "Competitions",
   "accVolver": "Back",
