@@ -268,6 +268,8 @@ ajustarDiasActual(capas);
   renderPestanasPreset();
   ULT_CHIPS = infoChips;
   renderChipsTemas();
+  // Resumen de medios: buscando y sin un medio ya elegido.
+  renderResumenMedios(hayBusquedaActiva && !hayFuenteExplicita ? filtradas : null);
 
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);

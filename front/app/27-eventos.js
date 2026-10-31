@@ -81,6 +81,7 @@ function wireStaticEvents(){
   wireEstadisticas();
   wireCalendario();
   wireAccesos();
+  wireResumenMedios();
   wireAvisos();
   wirePortadas();
   // ── Chips de modo y de tema ──
