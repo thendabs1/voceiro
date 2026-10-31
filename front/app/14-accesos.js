@@ -21,10 +21,13 @@ async function accesosDisponibilidad(){
 const accesoHay = c => !ACCESOS.disp || ACCESOS.disp[c] > 0;
 
 // Sustituye en la barra lo que era de la agenda o una consulta puntual por la
-// orden elegida; el resto (medios, palabras, fechas) se queda.
+// orden elegida; el resto (medios, palabras, fechas) se queda. Las consultas
+// deportivas (resultados:primera) no van al final de la línea: se quitan aquí.
 function escribirAcceso(orden){
   const { antes } = partirConsulta($('#buscar').value);
-  const resto = tokenizeQuery(antes).filter(tk => !(tk.prefix && leerConsultaCalendario(tk.raw))).map(tk => tk.raw);
+  const resto = tokenizeQuery(antes)
+    .filter(tk => !(tk.prefix && (leerConsultaCalendario(tk.raw) || Object.hasOwn(PREFIJOS_CONSULTAS, tk.prefix))))
+    .map(tk => tk.raw);
   cerrarAccesos(false);
   // Un prefijo deja un espacio detrás: lo que se escriba después es texto (f1: alonso).
   escribirBusqueda([...resto, orden].filter(Boolean).join(' ') + (orden.endsWith(':') ? ' ' : ''));

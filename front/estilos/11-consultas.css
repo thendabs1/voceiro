@@ -47,4 +47,7 @@
 .consulta-partidos{ margin: 0; padding: 0; list-style: none; }
 .consulta-partidos li{ display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .consulta-partidos b{ font-variant-numeric: tabular-nums; }
+/* Equipo que casa con las palabras de la búsqueda: fila marcada, sin filtrar. */
+.consulta-marcada, .consulta-marcada td{ font-weight: 600; }
+.consulta-partidos li.consulta-marcada{ box-shadow: inset 3px 0 var(--mark); padding-left: 8px; }
 .consulta-estado{ grid-column: 1 / -1; font-size: .9em; }

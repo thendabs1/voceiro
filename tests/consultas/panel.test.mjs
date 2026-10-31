@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
+import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
+import { rangosResaltado } from '../../shared/busqueda/texto.js';
 import { ESPN } from '../../shared/consultas/registro.js';
 import { traducir } from '../../front/idiomas/index.js';
 
@@ -29,7 +31,7 @@ function contexto({ buscar = '', responder }) {
     BACKENDS: { deno: { buscar: BASE } }, ESPN, ACCES: { lang: 'es' },
     t: (k, v) => traducir('es', k, v), ico: n => `<${n}>`,
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
-    normalize, tokenizeQuery, Intl, Date, URLSearchParams, AbortSignal, Promise, Map, Set, JSON, Object, Error, isNaN,
+    normalize, tokenizeQuery, rangosResaltado, Intl, Date, URLSearchParams, AbortSignal, Promise, Map, Set, JSON, Object, Error, isNaN,
     setTimeout: () => 0, clearTimeout() {},
     document: { getElementById: id => (id === 'consulta-panel' ? panel : null) },
     $: s => (s === '#buscar' ? entrada : null),
@@ -40,8 +42,18 @@ function contexto({ buscar = '', responder }) {
       return responder(url.replace(BASE, ''));
     },
   };
+  // resaltarTitular vive en 06-acciones-titulares.js: la misma marca que el feed.
+  ctx.resaltarTitular = (texto, compilado) => {
+    let out = '', last = 0;
+    for (const [i, j] of rangosResaltado(texto, compilado)){ out += ctx.escapeHtml(texto.slice(last, i)) + '<mark>' + ctx.escapeHtml(texto.slice(i, j)) + '</mark>'; last = j; }
+    return out + ctx.escapeHtml(texto.slice(last));
+  };
   runInNewContext(codigo + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual };', ctx);
-  const actualizar = raw => { entrada.value = raw; ctx.api.actualizarConsultaPuntual(parseQuery(raw)); };
+  // Como aplicarFiltros: la consulta recibe el texto compilado de la búsqueda.
+  const actualizar = raw => {
+    entrada.value = raw;
+    ctx.api.actualizarConsultaPuntual(parseQuery(raw), interpretarConsulta(raw, { catalogo: {}, ahora: Date.now() }).texto);
+  };
   // Un toque: lo que llegaría a closest('button[data-accion]').
   const pulsar = dataset => panel.oyente({ target: { closest: () => ({ dataset }) } });
   return { ctx, panel, entrada, pedidas, actualizar, pulsar };
@@ -206,4 +218,24 @@ test('deportes: al caducar se ofrece Actualizar; si falla, se queda la ficha ant
   assert.equal(pedidas.length, 2);
   assert.match(panel.innerHTML, /Toronto Raptors/);
   assert.match(panel.innerHTML, /No se pudo actualizar; se muestra la anterior/);
+});
+
+test('las palabras detrás de una consulta deportiva marcan los equipos sin filtrar ni volver a pedir', async () => {
+  const ficha = { competicion: 'primera', partidos: [
+    { estado: 'final', inicio: '2026-10-31T15:00:00Z', local: 'Levante', visitante: 'Atlético Madrid', marcador: { local: 0, visitante: 2 } },
+    { estado: 'final', inicio: '2026-10-31T17:00:00Z', local: 'Celta', visitante: 'Getafe', marcador: { local: 1, visitante: 1 } },
+  ] };
+  const { panel, pedidas, actualizar } = contexto({ responder: () => json(envoltorio('resultados', {
+    ficha, fuente: 'ESPN', enlace: 'https://www.espn.com', licencia: { nombre: 'Condiciones de ESPN', enlace: 'https://disneytermsofuse.com/' },
+  })) });
+  actualizar('resultados:primera');
+  await esperar();
+  assert.doesNotMatch(panel.innerHTML, /<mark>|consulta-marcada/);
+  actualizar('resultados:primera levante');
+  await esperar();
+  assert.equal(pedidas.length, 1);
+  assert.match(panel.innerHTML, /<li class="consulta-marcada">.*<mark>Levante<\/mark>/);
+  assert.match(panel.innerHTML, /<li><span class="consulta-estado">[^<]*<\/span><span>Celta<\/span>/);
+  actualizar('resultados:primera');
+  assert.doesNotMatch(panel.innerHTML, /<mark>/);
 });

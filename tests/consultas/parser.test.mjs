@@ -51,6 +51,18 @@ test('sin comillas, el valor de una consulta es el resto de la línea', () => {
   assert.deepEqual(tokenizeQuery('incendio pelicula:La infiltrada').filter(t=>!t.prefix).map(t=>t.raw),['incendio']);
 });
 
+test('las consultas deportivas toman un código: lo de detrás es texto de noticias', () => {
+  for (const raw of ['resultados:primera levante', 'standings:nba lakers']) {
+    const p = parseQuery(raw);
+    assert.equal(p.consultas.length, 1, raw);
+    assert.equal(p.consultas[0].texto.split(' ').length, 1, raw);
+    assert.equal(p.titulo.length, 1, raw);
+  }
+  assert.deepEqual(parseQuery('resultados:primera').consultas, [{ tipo: 'resultados', texto: 'primera' }]);
+  // Entre comillas sigue valiendo lo de siempre.
+  assert.deepEqual(parseQuery('clasificacion:"nba" x').consultas, [{ tipo: 'clasificacion', texto: 'nba' }]);
+});
+
 test('sin colisiones con calendario; las equivalencias ESPN son circuitos existentes', () => {
   for (const p of Object.keys(PREFIJOS_CONSULTAS)) assert.ok(!Object.hasOwn(AMBITOS,p),p);
   for (const c of Object.keys(ESPN)) assert.equal(AMBITOS[c].codigo,c);
