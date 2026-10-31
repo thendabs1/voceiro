@@ -371,6 +371,7 @@ export default {
   "accHorarios": "{x} · horaris",
   "accResultadosDe": "{x} · resultats",
   "accClasificacionDe": "{x} · classificació",
+  "accNoticiasDe": "{x} · notícies",
   "accResultados": "Resultats…",
   "accResultadosTitulo": "Resultats",
   "accCompeticiones": "Competicions i més…",

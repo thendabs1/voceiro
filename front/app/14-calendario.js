@@ -366,6 +366,7 @@ function calPreferencias(){
 }
 function calGuardarPreferencias(p){
   CALENDARIO.prefs = p;
+  pintarIconosDeportes();
   try { localStorage.setItem(CAL_PREF_KEY, JSON.stringify(p)); return true; } catch { return false; }
 }
 // «Lo mío» de la agenda: los temas de mis intereses en mi sitio (con
@@ -409,6 +410,7 @@ function actualizarConsultaCalendario(orden){
   if (fecha !== s.desdeConsulta){ s.desdeConsulta = fecha; s.fecha = fechaValida(fecha) ? fecha : calHoy(); }
   // La orden va antes que las preferencias: un prefijo no hereda «Lo mío».
   s.orden = orden;
+  pintarIconosDeportes();
   if (clave !== s.clave){
     s.clave = clave; calLimpiarFiltros();
     // Un prefijo de agenda abre la vista completa y, al quitarlo, la cierra;

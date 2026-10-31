@@ -371,6 +371,7 @@ export default {
   "accHorarios": "{x} · ordutegiak",
   "accResultadosDe": "{x} · emaitzak",
   "accClasificacionDe": "{x} · sailkapena",
+  "accNoticiasDe": "{x} · albisteak",
   "accResultados": "Emaitzak…",
   "accResultadosTitulo": "Emaitzak",
   "accCompeticiones": "Lehiaketak eta gehiago…",
