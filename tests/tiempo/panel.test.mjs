@@ -118,7 +118,8 @@ test('al abrir y cerrar, las galletas visibles quedan bajo la barra', () => {
   };
   const panel = { hidden: false, getBoundingClientRect: () => ({ top: 240 }) };
   const busqueda = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 120 }) };
-  const temas = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 180 }) };
+  // Los chips del feed van bajo el panel.
+  const temas = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 400 }) };
   const desplazamientos = [];
   ctx.document.getElementById = id => ({
     'btn-tiempo': sol, 'barra-sup': barra, 'tiempo-tarjeta': panel,
@@ -131,9 +132,13 @@ test('al abrir y cerrar, las galletas visibles quedan bajo la barra', () => {
   ctx.abrirTiempo();
   assert.equal(desplazamientos[1].top, 516);
 
+  // Sin chips de búsqueda: al abrir, el panel (no los chips de debajo);
+  // al cerrar, los chips del feed.
   busqueda.getClientRects = () => [];
   ctx.abrirTiempo();
-  assert.equal(desplazamientos[2].top, 576);
+  assert.equal(desplazamientos[2].top, 636);
+  ctx.abrirTiempo();
+  assert.equal(desplazamientos[3].top, 796);
 });
 
 test('las pestañas cambian un prefijo del tiempo por otro', () => {
