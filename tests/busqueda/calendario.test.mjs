@@ -60,6 +60,17 @@ test('solo las competiciones suman noticias por texto; los temas solo selecciona
   assert.equal(noticiaEnAmbitos('Carrera de Fórmula 1', orden('f1:')), true);
   assert.equal(noticiaEnAmbitos('ATP anuncia su calendario', orden('calendario:tenis')), false);
 });
+test('una competición se reconoce por palabras completas; LaLiga Hypermotion no es Primera', () => {
+  assert.equal(noticiaEnAmbitos('El nuevo F15 de Ford', orden('f1:')), false);
+  assert.equal(noticiaEnAmbitos('NBATV emitirá el partido', orden('nba:')), false);
+  assert.equal(noticiaEnAmbitos('La WNBA abre la temporada', orden('nba:')), false);
+  assert.equal(noticiaEnAmbitos('Alonso, cuarto en la F1', orden('f1:')), true);
+  assert.equal(noticiaEnAmbitos('LaLiga Hypermotion: el Celta Fortuna gana', orden('primera:')), false);
+  assert.equal(noticiaEnAmbitos('LaLiga Hypermotion: el Celta Fortuna gana', orden('segunda:')), true);
+  assert.equal(noticiaEnAmbitos('LaLiga y LaLiga Hypermotion reparten los derechos', orden('primera:')), true);
+  assert.equal(noticiaEnAmbitos('El Madrid lidera LaLiga', orden('primera:')), true);
+  assert.equal(noticiaEnAmbitos('Récord en la Primera División', orden('primera:')), true);
+});
 test('cada tema que usan las tablas de la agenda tiene su prefijo', () => {
   const dir = new URL('../../agenda/tablas/', import.meta.url), temas = new Set();
   for (const f of readdirSync(dir)) {

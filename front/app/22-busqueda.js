@@ -158,9 +158,11 @@ ajustarDiasActual(capas);
   // Sin búsqueda, el modo filtra el feed (es tu forma de leerlo). Buscando,
   // el modo no esconde nada: los resultados se separan en dos pestañas,
   // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
-  // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
+  // de medio escrito en la búsqueda manda sobre el modo: sin pestañas. Una
+  // competición (f1:) también: sus noticias, en el modo o en todo. Un prefijo
+  // sin noticias (teatro:) no deja nada que separar.
   const presetEfectivo = conFiltro && !hayFuenteExplicita && !hayBusquedaActiva;
-  const conPestanas    = conFiltro && !hayFuenteExplicita && hayBusquedaActiva && !ordenCalendario;
+  const conPestanas    = conFiltro && !hayFuenteExplicita && hayBusquedaActiva && (!ordenCalendario || ordenCalendario.noticias);
 
   _avisarMediosDesconocidos(consulta);
   const ctx = {
