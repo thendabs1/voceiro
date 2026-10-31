@@ -447,6 +447,7 @@ export default {
   "accHorarios": "{x} · horarios",
   "accResultadosDe": "{x} · resultados",
   "accClasificacionDe": "{x} · clasificación",
+  "accNoticiasDe": "{x} · noticias",
   "accResultados": "Resultados…",
   "accResultadosTitulo": "Resultados",
   "accCompeticiones": "Competiciones y más…",

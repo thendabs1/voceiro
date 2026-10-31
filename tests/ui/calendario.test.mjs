@@ -82,7 +82,7 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
   };
   const c = { ...fechas, ...consulta, ...nombres, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
-    setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, cerrarAjustes(){ c.ajustesCerrados = true; }, window: { scrollY: 0, scrollTo(){} },
+    setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, pintarIconosDeportes(){}, cerrarAjustes(){ c.ajustesCerrados = true; }, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
     localStorage: { getItem: k => almacen[k] ?? null, setItem: (k, v) => { if (guardarFalla) throw new Error('lleno'); almacen[k] = String(v); } },
     TIEMPO: { indice: indexar([['Vigo', '36057', 293652], ['Vilagarcía de Arousa', '36060', 37479]]) }, municipiosTiempo: async () => {},
