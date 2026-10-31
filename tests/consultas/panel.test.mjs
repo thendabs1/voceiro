@@ -21,9 +21,13 @@ const envoltorio = (tipo, extra) => ({
 });
 
 function contexto({ buscar = '', responder }) {
+  // La ficha (<details class="consulta-ficha">) se recrea con cada innerHTML, como en el DOM.
   const panel = {
-    hidden: true, innerHTML: '', dataset: {}, oyente: null,
-    addEventListener(_, fn) { this.oyente = fn; }, querySelector: () => null,
+    hidden: true, _html: '', ficha: null, dataset: {}, oyente: null,
+    get innerHTML() { return this._html; },
+    set innerHTML(v) { this._html = v; this.ficha = /class="consulta-ficha"/.test(v) ? { open: /class="consulta-ficha" open/.test(v) } : null; },
+    addEventListener(_, fn) { this.oyente = fn; },
+    querySelector(sel) { return sel === '.consulta-ficha' ? this.ficha : null; },
   };
   const entrada = { value: buscar };
   const pedidas = [];
@@ -238,4 +242,9 @@ test('las palabras detrás de una consulta deportiva marcan los equipos sin filt
   assert.match(panel.innerHTML, /<li><span class="consulta-estado">[^<]*<\/span><span>Celta<\/span>/);
   actualizar('resultados:primera');
   assert.doesNotMatch(panel.innerHTML, /<mark>/);
+  // Plegada por el lector, cambiar las palabras no la vuelve a abrir.
+  panel.ficha.open = false;
+  actualizar('resultados:primera celta');
+  assert.match(panel.innerHTML, /<mark>Celta<\/mark>/);
+  assert.equal(panel.ficha.open, false);
 });

@@ -52,15 +52,22 @@ test('sin comillas, el valor de una consulta es el resto de la línea', () => {
 });
 
 test('las consultas deportivas toman un código: lo de detrás es texto de noticias', () => {
-  for (const raw of ['resultados:primera levante', 'standings:nba lakers']) {
+  for (const [raw, tipo, codigo, texto] of [
+    ['resultados:primera levante', 'resultados', 'primera', ['levante']],
+    ['standings:nba lakers', 'clasificacion', 'nba', ['lakers']],
+    ['emaitzak:primera real sociedad desde:7d', 'resultados', 'primera', ['real', 'sociedad']],
+  ]) {
     const p = parseQuery(raw);
-    assert.equal(p.consultas.length, 1, raw);
-    assert.equal(p.consultas[0].texto.split(' ').length, 1, raw);
-    assert.equal(p.titulo.length, 1, raw);
+    assert.deepEqual(p.consultas, [{ tipo, texto: codigo }], raw);
+    assert.deepEqual(p.titulo, texto, raw);
   }
   assert.deepEqual(parseQuery('resultados:primera').consultas, [{ tipo: 'resultados', texto: 'primera' }]);
-  // Entre comillas sigue valiendo lo de siempre.
+  // Entre comillas sigue valiendo lo de siempre; sin cerrar, mientras se
+  // escribe, el código no pasa a texto de noticias.
   assert.deepEqual(parseQuery('clasificacion:"nba" x').consultas, [{ tipo: 'clasificacion', texto: 'nba' }]);
+  const abierta = parseQuery('resultados:"prim');
+  assert.deepEqual(abierta.consultas, [{ tipo: 'resultados', texto: 'prim' }]);
+  assert.deepEqual(abierta.titulo, []);
 });
 
 test('sin colisiones con calendario; las equivalencias ESPN son circuitos existentes', () => {

@@ -97,6 +97,14 @@ export function tokenizeQuery(raw) {
           tokens.push({ prefix, text: linea.slice(pi + 1).trim().replace(/^"/, ''), raw: linea, quoted: false, resto: true });
           break;
         }
+        // Código entre comillas aún sin cerrar (resultados:"prim): sigue siendo
+        // el valor, no texto de noticias.
+        if (word.length === pi + 1 && raw[re.lastIndex] === '"' && Object.hasOwn(PREFIJOS_CONSULTAS, prefix)) {
+          const abierta = /^"[^"\s]*/.exec(raw.slice(re.lastIndex))[0];
+          re.lastIndex += abierta.length;
+          tokens.push({ prefix, text: abierta.slice(1), raw: word + abierta, quoted: false });
+          continue;
+        }
         tokens.push({ prefix, text: word.slice(pi + 1), raw: word, quoted: false });
       } else {
         tokens.push({ prefix: '', text: word, raw: word, quoted: false });

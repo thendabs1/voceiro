@@ -50,7 +50,7 @@ function actualizarConsultaPuntual(parsed, texto = null){
   Object.assign(PUNTUAL, { texto: claveTexto ? texto : null, claveTexto });
   const claveLista = JSON.stringify(lista) + idiomaConsulta();
   if (claveLista === PUNTUAL.claveLista){
-    if (otroTexto && PUNTUAL.estado === 'ficha') pintarConsulta();
+    if (otroTexto && PUNTUAL.estado === 'ficha') pintarConsulta({ conservarPlegado: true });
     return;
   }
   PUNTUAL.claveLista = claveLista;
@@ -156,11 +156,15 @@ async function abrirFichaConsulta(id, { candidato = null, callado = false } = {}
   }
 }
 
-function pintarConsulta(){
+// conservarPlegado: al cambiar solo las palabras marcadas, la ficha se queda
+// plegada si el lector la plegó.
+function pintarConsulta({ conservarPlegado = false } = {}){
   const el = document.getElementById('consulta-panel');
   if (!el || !PUNTUAL.activa) return;
   if (!el.dataset.escucha){ el.dataset.escucha = '1'; el.addEventListener('click', pulsarConsulta); }
+  const plegada = conservarPlegado && el.querySelector('.consulta-ficha')?.open === false;
   el.innerHTML = htmlConsulta();
+  if (plegada) el.querySelector('.consulta-ficha').open = false;
   el.hidden = false;
   // El foco solo se mueve tras un toque en el panel, nunca al llegar datos de lo que se escribe.
   const destino = PUNTUAL.enfocar && el.querySelector(PUNTUAL.enfocar);
