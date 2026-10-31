@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=4c0fbd6fe5';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=4c0fbd6fe5';
+import { tokenizeQuery, normalize } from '../parser.js?v=350690859a';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=350690859a';
 
 // Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
 // nombre propio no es ambiguo, suman noticias por su titular (las noticias no se
