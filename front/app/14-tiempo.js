@@ -438,9 +438,10 @@ function ponerTiempo(token){
   barra?.classList.remove('cab-oculta');
   requestAnimationFrame(() => {
     const panel = document.getElementById(token.startsWith('alertas') ? 'avisos-panel' : 'tiempo-tarjeta');
-    const chips = ['chips-busqueda', 'preset-pestanas', 'temas-chips']
-      .map(id => document.getElementById(id)).find(el => el?.getClientRects().length);
-    const destino = chips || (token && panel && !panel.hidden ? panel : null);
+    // De arriba abajo: chips de la búsqueda, el panel y, bajo él, los del feed.
+    const visible = id => { const el = document.getElementById(id); return el?.getClientRects().length ? el : null; };
+    const destino = visible('chips-busqueda') || (token && panel && !panel.hidden ? panel : null)
+      || visible('preset-pestanas') || visible('temas-chips');
     if (!destino) return;
     const altoBarra = barra?.getBoundingClientRect().height || 0;
     window.scrollTo({ top: Math.max(0, window.scrollY + destino.getBoundingClientRect().top - altoBarra - 8), behavior: 'auto' });

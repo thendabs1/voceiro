@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
+import { readFileSync } from 'node:fs';
 import { parseQuery, tokenizeQuery } from '../../shared/parser.js';
 import { I18N } from '../../front/idiomas/index.js';
 import { PESO, empezado, zonaHorariaAviso } from '../../shared/tiempo/avisos.js';
@@ -118,7 +119,8 @@ test('al abrir y cerrar, las galletas visibles quedan bajo la barra', () => {
   };
   const panel = { hidden: false, getBoundingClientRect: () => ({ top: 240 }) };
   const busqueda = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 120 }) };
-  const temas = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 180 }) };
+  // Los chips del feed van bajo el panel.
+  const temas = { getClientRects: () => [1], getBoundingClientRect: () => ({ top: 400 }) };
   const desplazamientos = [];
   ctx.document.getElementById = id => ({
     'btn-tiempo': sol, 'barra-sup': barra, 'tiempo-tarjeta': panel,
@@ -131,9 +133,13 @@ test('al abrir y cerrar, las galletas visibles quedan bajo la barra', () => {
   ctx.abrirTiempo();
   assert.equal(desplazamientos[1].top, 516);
 
+  // Sin chips de búsqueda: al abrir, el panel (no los chips de debajo);
+  // al cerrar, los chips del feed.
   busqueda.getClientRects = () => [];
   ctx.abrirTiempo();
-  assert.equal(desplazamientos[2].top, 576);
+  assert.equal(desplazamientos[2].top, 636);
+  ctx.abrirTiempo();
+  assert.equal(desplazamientos[3].top, 796);
 });
 
 test('las pestañas cambian un prefijo del tiempo por otro', () => {
@@ -331,4 +337,11 @@ test('avisos del sitio: el fallo y MeteoAlarm se dicen; con AEMET, sin pie', () 
   const html = avisosLugar({ datos: meteoalarm, error: false });
   assert.match(html, /avisosBotonTxt \(1\)/);
   assert.match(html, /MeteoAlarm.*avisosIncompleto/s);
+});
+
+test('en la plantilla, los chips del feed van bajo los paneles y justo encima de las noticias', () => {
+  const plantilla = readFileSync(new URL('../../plantilla.html', import.meta.url), 'utf8');
+  const pos = id => { const i = plantilla.indexOf(`id="${id}"`); assert.ok(i > 0, id); return i; };
+  const orden = ['chips-busqueda', 'tiempo-tarjeta', 'avisos-panel', 'consulta-panel', 'preset-pestanas', 'temas-chips', 'resultados'];
+  assert.deepEqual([...orden].sort((a, b) => pos(a) - pos(b)), orden);
 });
