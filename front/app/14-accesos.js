@@ -34,7 +34,10 @@ function pintarAccesos(){
   const panel = $('#accesos-panel');
   if (!panel) return;
   const p = ACCESOS.pantalla, nombre = calNombreCompeticion;
-  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}</button></li>`;
+  // A la derecha, en gris, lo que se escribirá en la barra: así se aprende el
+  // atajo (como los calificadores del buscador de GitHub). También lo oye el
+  // lector de pantalla, tras el texto y separado por un espacio.
+  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}<span class="accesos-orden"> ${calEsc(orden)}</span></button></li>`;
   const ir = (pantalla, texto) => `<li><button type="button" data-pantalla="${calEsc(pantalla)}">${calEsc(texto)}<span aria-hidden="true"> ›</span></button></li>`;
   let titulo = t('accTitulo'), filas = [];
   if (!p){
@@ -45,10 +48,13 @@ function pintarAccesos(){
     filas = [sigo.length > 1 ? fila('calendario:' + sigo.join(','), t('accSigoHorarios')) : '',
       ...primeras.map(c => fila('calendario:' + c, t('accHorarios', { x: nombre(c) }))),
       futbol.length > 1 && !futbol.every(c => primeras.includes(c)) ? fila('calendario:' + futbol.join(','), t('accHorarios', { x: t('calFutbol') })) : '',
-      ir('resultados', t('accResultados')), ir('competiciones', t('accCompeticiones'))];
+      ir('resultados', t('accResultados')), ir('clasificaciones', t('accClasificaciones')), ir('competiciones', t('accCompeticiones'))];
   } else if (p === 'resultados'){
     titulo = t('accResultadosTitulo');
     filas = CAL_COMPETICIONES.filter(c => codigoDeporte('resultados', c)).map(c => fila('resultados:' + c, nombre(c)));
+  } else if (p === 'clasificaciones'){
+    titulo = t('accClasificacionesTitulo');
+    filas = CAL_COMPETICIONES.filter(c => codigoDeporte('clasificacion', c)).map(c => fila('clasificacion:' + c, nombre(c)));
   } else if (p === 'competiciones'){
     titulo = t('accCompeticionesTitulo');
     filas = CAL_COMPETICIONES.map(c => ir('c:' + c, nombre(c)));
