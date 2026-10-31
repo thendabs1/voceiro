@@ -1175,6 +1175,44 @@
     .noticia .badge.tipo{display:none}
   }
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
+
+/* ═══ Resumen de medios de una búsqueda: chip plegable «Medios · N» ═══ */
+.medios-resumen{ margin: 2px 0 6px; font-size: .72em; }
+.medios-resumen[hidden]{ display: none; }
+.medios-resumen > summary{
+  display: inline-flex; align-items: center; gap: 4px; list-style: none; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; color: var(--muted); min-height: 24px;
+}
+.medios-resumen > summary::-webkit-details-marker{ display: none; }
+.medios-resumen > summary::after{ content: '▾'; }
+.medios-resumen[open] > summary{ color: var(--fg); }
+.medios-resumen[open] > summary::after{ content: '▴'; }
+.medios-resumen-cuerpo{ margin-top: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 1.1em; }
+.medios-resumen-orden{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.medios-resumen-orden button, .medios-resumen-todos{
+  font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; cursor: pointer;
+}
+.medios-resumen-orden button[aria-pressed="true"]{ background: var(--preset); border-color: var(--preset); color: var(--on-solid); }
+/* En ancho, varias columnas: la lista se lee como un esquema. */
+.medios-resumen-lista{ list-style: none; margin: 0; padding: 0; columns: 16em; column-gap: 16px; }
+.medios-resumen-lista li{ break-inside: avoid; }
+.medios-resumen-lista button, .medios-resumen-fuera, .medios-resumen-grupo > summary{
+  display: flex; justify-content: space-between; gap: 8px; width: 100%; min-height: 32px; align-items: center;
+  padding: 2px 6px; font: inherit; color: var(--fg); background: transparent; border: none; border-radius: 6px; text-align: left;
+}
+.medios-resumen-lista button{ cursor: pointer; }
+.medios-resumen-lista button:hover, .medios-resumen-grupo > summary:hover{ background: var(--quote-bg); }
+.medios-resumen-fuera{ color: var(--muted); }
+.medios-resumen-n{ color: var(--muted); font-variant-numeric: tabular-nums; }
+.medios-resumen-grupo > summary{ cursor: pointer; font-weight: 600; list-style: none; }
+.medios-resumen-grupo > summary::-webkit-details-marker{ display: none; }
+.medios-resumen-grupo > summary > span:first-child::before{ content: '▸ '; color: var(--muted); }
+.medios-resumen-grupo[open] > summary > span:first-child::before{ content: '▾ '; }
+.medios-resumen-grupo .medios-resumen-lista{ padding-left: 14px; }
+.medios-resumen-todos{ margin-top: 6px; }
+@media (max-width: 600px){
+  .medios-resumen > summary, .medios-resumen-lista button, .medios-resumen-grupo > summary, .medios-resumen-orden button, .medios-resumen-todos{ min-height: 44px; }
+}
   /* ═══ Autocomplete del buscador ═══ */
   .filtro-buscar-wrap{
     position: relative;
@@ -2107,7 +2145,7 @@
 .est-tabla [data-est="familia"][aria-expanded="true"]::before{content:'▾ '}
 .est-subgrupo{display:block;padding-left:1.4em}
 /* El panel es la vista: sin feed debajo en el que caer al desplazarse. */
-.estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap){display:none!important}
+.estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#medios-resumen,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:2px 10px 8px}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros select{width:100%}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
 @media(min-width:900px){.est-filtros{flex:0 1 auto;margin-left:12px}.est-acciones{order:1}}
 /* Escritorio con ratón: más denso (≈ 90 %), como el calendario; en táctil se quedan los 44 px. */
@@ -2240,7 +2278,7 @@
 /* El calendario es una rejilla, no texto corrido: usa todo el ancho de la ventana
    (no el de lectura de Aa), con el tamaño de letra elegido. */
 body.calendario-abierto{max-width:none}
-.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
+.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#medios-resumen,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
 @media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-mes{gap:2px}}
 /* Evento desplegado en la lista: bajo su título, con una raya a la izquierda. */
 .cal-desplegado{border-left:3px solid var(--accent);padding:2px 0 4px 10px;margin:4px 0 10px}.cal-desplegado .cal-evento-fuente{margin-top:8px}
@@ -2320,4 +2358,7 @@ body.calendario-abierto{max-width:none}
 .consulta-partidos{ margin: 0; padding: 0; list-style: none; }
 .consulta-partidos li{ display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .consulta-partidos b{ font-variant-numeric: tabular-nums; }
+/* Equipo que casa con las palabras de la búsqueda: fila marcada, sin filtrar. */
+.consulta-marcada, .consulta-marcada td{ font-weight: 600; }
+.consulta-partidos li.consulta-marcada{ box-shadow: inset 3px 0 var(--mark); padding-left: 8px; }
 .consulta-estado{ grid-column: 1 / -1; font-size: .9em; }

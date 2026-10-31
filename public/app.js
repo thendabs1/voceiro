@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=350690859a';
+} from './parser.js?v=01f619abf5';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=350690859a';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=350690859a';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=350690859a';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=350690859a';
-import { comparador } from './busqueda/orden.js?v=350690859a';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=01f619abf5';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=01f619abf5';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=01f619abf5';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=01f619abf5';
+import { comparador } from './busqueda/orden.js?v=01f619abf5';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=350690859a';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=350690859a';
+} from './sync/fusion.js?v=01f619abf5';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=01f619abf5';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=350690859a';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=350690859a';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=01f619abf5';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=01f619abf5';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=350690859a';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=01f619abf5';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=350690859a';
+} from './tiempo/avisos.js?v=01f619abf5';
 
-import { I18N, traducir } from './idiomas/index.js?v=350690859a';
+import { I18N, traducir } from './idiomas/index.js?v=01f619abf5';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN } from './consultas/registro.js?v=350690859a';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=350690859a';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=350690859a';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=350690859a';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=01f619abf5';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=01f619abf5';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=01f619abf5';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=01f619abf5';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=350690859a';
+import { ADMINISTRACION } from './territorios/administracion.js?v=01f619abf5';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1956,7 +1956,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=350690859a');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=01f619abf5');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3538,10 +3538,13 @@ async function accesosDisponibilidad(){
 const accesoHay = c => !ACCESOS.disp || ACCESOS.disp[c] > 0;
 
 // Sustituye en la barra lo que era de la agenda o una consulta puntual por la
-// orden elegida; el resto (medios, palabras, fechas) se queda.
+// orden elegida; el resto (medios, palabras, fechas) se queda. Las consultas
+// deportivas (resultados:primera) no van al final de la línea: se quitan aquí.
 function escribirAcceso(orden){
   const { antes } = partirConsulta($('#buscar').value);
-  const resto = tokenizeQuery(antes).filter(tk => !(tk.prefix && leerConsultaCalendario(tk.raw))).map(tk => tk.raw);
+  const resto = tokenizeQuery(antes)
+    .filter(tk => !(tk.prefix && (leerConsultaCalendario(tk.raw) || Object.hasOwn(PREFIJOS_CONSULTAS, tk.prefix))))
+    .map(tk => tk.raw);
   cerrarAccesos(false);
   // Un prefijo deja un espacio detrás: lo que se escriba después es texto (f1: alonso).
   escribirBusqueda([...resto, orden].filter(Boolean).join(' ') + (orden.endsWith(':') ? ' ' : ''));
@@ -5154,6 +5157,7 @@ const PUNTUAL = {
   error: '', fallo: '', reintentar: null, enfocar: '',
   seq: 0, timer: null,
   cache: new Map(), enCurso: new Map(),
+  texto: null, claveTexto: '',   // palabras de la búsqueda, marcadas en los equipos
 };
 
 const idiomaConsulta = () => {
@@ -5167,13 +5171,20 @@ const esDeporteConsulta = tipo => tipo === 'clasificacion' || tipo === 'resultad
 const codigoDeporte = (tipo, codigo) => Object.hasOwn(ESPN, codigo) && !(tipo === 'resultados' && codigo === 'f1');
 
 // Desde aplicarFiltros: la consulta activa es la última escrita, salvo que
-// se haya elegido otra entre varias.
-function actualizarConsultaPuntual(parsed){
+// se haya elegido otra entre varias. `texto` (compilado, como el del feed):
+// las palabras sueltas de la búsqueda, que se marcan en los equipos.
+function actualizarConsultaPuntual(parsed, texto = null){
   const lista = parsed.chips.filter(c => c.type === 'consulta').map(c => ({
     tipo: c.tipo, texto: c.value.trim(), prefijo: c.raw.slice(0, c.raw.indexOf(':')), raw: c.raw,
   }));
+  const claveTexto = texto?.incluir?.length ? JSON.stringify(texto.incluir) : '';
+  const otroTexto = claveTexto !== PUNTUAL.claveTexto;
+  Object.assign(PUNTUAL, { texto: claveTexto ? texto : null, claveTexto });
   const claveLista = JSON.stringify(lista) + idiomaConsulta();
-  if (claveLista === PUNTUAL.claveLista) return;
+  if (claveLista === PUNTUAL.claveLista){
+    if (otroTexto && PUNTUAL.estado === 'ficha') pintarConsulta({ conservarPlegado: true });
+    return;
+  }
   PUNTUAL.claveLista = claveLista;
   PUNTUAL.lista = lista;
   if (!lista.length){ ocultarConsulta(); return; }
@@ -5277,11 +5288,15 @@ async function abrirFichaConsulta(id, { candidato = null, callado = false } = {}
   }
 }
 
-function pintarConsulta(){
+// conservarPlegado: al cambiar solo las palabras marcadas, la ficha se queda
+// plegada si el lector la plegó.
+function pintarConsulta({ conservarPlegado = false } = {}){
   const el = document.getElementById('consulta-panel');
   if (!el || !PUNTUAL.activa) return;
   if (!el.dataset.escucha){ el.dataset.escucha = '1'; el.addEventListener('click', pulsarConsulta); }
+  const plegada = conservarPlegado && el.querySelector('.consulta-ficha')?.open === false;
   el.innerHTML = htmlConsulta();
+  if (plegada) el.querySelector('.consulta-ficha').open = false;
   el.hidden = false;
   // El foco solo se mueve tras un toque en el panel, nunca al llegar datos de lo que se escribe.
   const destino = PUNTUAL.enfocar && el.querySelector(PUNTUAL.enfocar);
@@ -5451,12 +5466,19 @@ function nombresIdioma(codigos = []){
   return codigos.slice(0, 5).map(nombre).join(', ') + (codigos.length > 5 ? ` +${codigos.length - 5}` : '');
 }
 
+// Las palabras sueltas de la búsqueda (resultados:primera levante) se marcan
+// en los equipos, con la regla del feed, sin filtrar: la lista es corta y la
+// posición en la tabla o la jornada es parte del dato.
+const casaEquipo = nombre => !!(PUNTUAL.texto && nombre && rangosResaltado(nombre, PUNTUAL.texto).length);
+const equipoConsulta = nombre => (nombre == null ? '—' : PUNTUAL.texto ? resaltarTitular(String(nombre), PUNTUAL.texto) : escapeHtml(nombre));
+const claseMarcada = si => (si ? ' class="consulta-marcada"' : '');
+
 const COLUMNAS_CONSULTA = { pj: 'conColPJ', pts: 'conColPts', g: 'conColG', e: 'conColE', p: 'conColP' };
 function tablaConsulta(filas, cols, nombre){
   const val = v => escapeHtml(v ?? '—');
   const th = k => { const [abr, largo] = t(COLUMNAS_CONSULTA[k]).split('|'); return `<th scope="col"><abbr title="${escapeHtml(largo || abr)}">${escapeHtml(abr)}</abbr></th>`; };
   return `<table class="consulta-tabla"><thead><tr><th scope="col">#</th><th scope="col">${escapeHtml(t(nombre))}</th>${cols.map(th).join('')}</tr></thead>
-    <tbody>${filas.map(r => `<tr><td>${val(r.pos)}</td><td>${val(r.equipo)}</td>${cols.map(k => `<td>${val(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    <tbody>${filas.map(r => `<tr${claseMarcada(casaEquipo(r.equipo))}><td>${val(r.pos)}</td><td>${equipoConsulta(r.equipo)}</td>${cols.map(k => `<td>${val(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
 function fichaAudiovisual(f, serie){
@@ -5525,7 +5547,8 @@ const FICHAS_CONSULTA = {
     const cols = deporte === 'basketball' ? ['g', 'p'] : deporte === 'racing' ? ['pts'] : ['pj', 'pts'];
     const nombre = deporte === 'racing' ? 'conColNombre' : 'conColEquipo';
     const tablas = grupos.length === 1 ? tablaConsulta(grupos[0].filas, cols, nombre)
-      : grupos.map((g, i) => plegadoConsulta(`${g.nombre || ''} (${g.filas.length})`, tablaConsulta(g.filas, cols, nombre), i === 0)).join('');
+      : grupos.map((g, i) => plegadoConsulta(`${g.nombre || ''} (${g.filas.length})`, tablaConsulta(g.filas, cols, nombre),
+        i === 0 || g.filas.some(r => casaEquipo(r.equipo)))).join('');
     const desglose = deporte === 'soccer'
       ? grupos.map(g => plegadoConsulta(t('conDesglose'), tablaConsulta(g.filas, ['g', 'e', 'p'], nombre))).join('') : '';
     return { titulo: [CONSULTA_DEPORTES[f.competicion] || f.competicion, f.temporada].filter(Boolean).join(' · '), linea, cuerpo: tablas + desglose };
@@ -5551,7 +5574,7 @@ const FICHAS_CONSULTA = {
       lista.map(p => {
         const inicio = new Date(p.inicio);
         const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estado[p.estado] ? t(estado[p.estado]) : ''].filter(Boolean).join(' · ');
-        return `<li><span class="consulta-estado">${escapeHtml(cab)}</span><span>${escapeHtml(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${escapeHtml(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b></li>`;
+        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))}><span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b></li>`;
       }).join('')}</ul>`).join('');
     return {
       titulo: `${CONSULTA_DEPORTES[f.competicion] || f.competicion} · ${tn('conPartidos', partidos.length)}`,
@@ -6056,7 +6079,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=350690859a')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=01f619abf5')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -8644,7 +8667,7 @@ function aplicarFiltros(){
   syncPanelFromParsed(parsed);
   actualizarTiempo(parsed.eltiempo);
   actualizarAlertas(parsed.alertas);
-  actualizarConsultaPuntual(parsed);
+  actualizarConsultaPuntual(parsed, consulta.texto);
   pintarBotonTiempo();
 
 const capas = capasRequeridas(parsed, consulta);
@@ -8797,6 +8820,8 @@ ajustarDiasActual(capas);
   renderPestanasPreset();
   ULT_CHIPS = infoChips;
   renderChipsTemas();
+  // Resumen de medios: buscando y sin un medio ya elegido.
+  renderResumenMedios(hayBusquedaActiva && !hayFuenteExplicita ? filtradas : null);
 
   actualizarFiltrosCount();
   requestAnimationFrame(renderizar);
@@ -8909,6 +8934,117 @@ function renderChipsTemas(){
     if (details) details.open = true;
   }
   el.hidden = false;
+}
+
+// ── Resumen de medios de una búsqueda ──
+// Modelo: los filtros con cifras de la barra lateral del buscador de GitHub.
+// Cuenta lo que enseña el feed (tras pestañas y chips); un medio con dominio
+// escribe web:dominio en la barra (filtrarPorMedio), como su nombre en la
+// tarjeta. Es un chip plegable: contar es una pasada por la lista ya
+// filtrada; la lista de medios solo se pinta abierta.
+const RESUMEN_MEDIOS = { lista: null, orden: 'n', todos: false };
+const RESUMEN_MEDIOS_VISIBLES = 12;
+// Google News sin <source url> deja news.google.com como dominio: esas
+// fuentes se distinguen por nombre y no filtran (no hay dominio que escribir).
+const claveResumenMedio = n => (n.dominio === 'news.google.com' ? '~' + normStrict(n.medio || 'Google News') : n.dominio);
+
+function renderResumenMedios(lista){
+  const el = document.getElementById('medios-resumen');
+  if (!el) return;
+  if (lista !== undefined) RESUMEN_MEDIOS.lista = lista;
+  const cuentas = new Map();
+  for (const n of RESUMEN_MEDIOS.lista || []){
+    const k = n.dominio && claveResumenMedio(n);
+    if (k) cuentas.set(k, (cuentas.get(k) || 0) + 1);
+  }
+  if (cuentas.size < 2){ el.hidden = true; el.open = false; el.innerHTML = ''; return; }
+  if (!el.firstElementChild) el.innerHTML = '<summary></summary><div class="medios-resumen-cuerpo"></div>';
+  el.firstElementChild.textContent = t('resMedios', { n: cuentas.size.toLocaleString() });
+  el.hidden = false;
+  const cuerpo = el.lastElementChild;
+  if (!el.open){ cuerpo.innerHTML = ''; return; }
+
+  const nombreDe = new Map();
+  for (const n of RESUMEN_MEDIOS.lista){
+    const k = n.dominio && claveResumenMedio(n);
+    if (k && !nombreDe.has(k)) nombreDe.set(k, n.medio || MEDIOS[n.dominio]?.n || n.dominio);
+  }
+  const lang = (ACCES && ACCES.lang) || 'es';
+  const porNombre = (a, b) => nombreDe.get(a).localeCompare(nombreDe.get(b), lang);
+  const porCifra = (a, b) => cuentas.get(b) - cuentas.get(a) || porNombre(a, b);
+  const fila = d => {
+    const nombre = escapeHtml(nombreDe.get(d)), n = `<span class="medios-resumen-n">${cuentas.get(d).toLocaleString()}</span>`;
+    // Con dominio real filtra aunque no esté en el catálogo (web: lo acepta);
+    // sin él (news.google.com, por nombre), solo se cuenta.
+    return !d.startsWith('~')
+      ? `<li><button type="button" data-dominio="${escapeHtml(d)}" title="${escapeHtml(t('medioFiltrarTitle', { medio: nombreDe.get(d) }))}"><span>${nombre}</span>${n}</button></li>`
+      : `<li><span class="medios-resumen-fuera"><span>${nombre}</span>${n}</span></li>`;
+  };
+  // Lo enfocado y los grupos abiertos sobreviven al repintado.
+  const foco = cuerpo.contains(document.activeElement) ? document.activeElement : null;
+  const selFoco = foco && (foco.dataset.orden ? `[data-orden="${foco.dataset.orden}"]`
+    : 'todos' in foco.dataset ? '[data-todos]'
+    : foco.dataset.dominio ? `[data-dominio="${CSS.escape(foco.dataset.dominio)}"]`
+    : foco.closest('[data-grupo]') ? `[data-grupo="${CSS.escape(foco.closest('[data-grupo]').dataset.grupo)}"] > summary` : '');
+  const abiertos = new Set([...cuerpo.querySelectorAll('.medios-resumen-grupo[open]')].map(g => g.dataset.grupo));
+
+  const o = RESUMEN_MEDIOS.orden;
+  const botonOrden = (v, clave) => `<button type="button" data-orden="${v}" aria-pressed="${o === v}">${escapeHtml(t(clave))}</button>`;
+  let html = `<div class="medios-resumen-orden" role="group" aria-label="${escapeHtml(t('resOrdenar'))}">`
+    + botonOrden('n', 'resOrdenNoticias') + botonOrden('az', 'resOrdenNombre') + botonOrden('grupo', 'resOrdenGrupo') + '</div>';
+  const dominios = [...cuentas.keys()];
+  if (o === 'grupo'){
+    // Esquema: grupo (suma de sus noticias) → medios, plegado como en Estadísticas.
+    const grupos = new Map();
+    for (const d of dominios){
+      const g = MEDIOS[d]?.g || t('resOtros');
+      if (!grupos.has(g)) grupos.set(g, { n: 0, ds: [] });
+      const x = grupos.get(g); x.n += cuentas.get(d); x.ds.push(d);
+    }
+    html += [...grupos].sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0], lang)).map(([g, x]) =>
+      `<details class="medios-resumen-grupo" data-grupo="${escapeHtml(g)}"${abiertos.has(g) ? ' open' : ''}><summary><span>${escapeHtml(g)}</span><span class="medios-resumen-n">${x.n.toLocaleString()}</span></summary>`
+      + `<ul class="medios-resumen-lista">${x.ds.sort(porCifra).map(fila).join('')}</ul></details>`).join('');
+  } else {
+    dominios.sort(o === 'az' ? porNombre : porCifra);
+    const vistos = RESUMEN_MEDIOS.todos ? dominios : dominios.slice(0, RESUMEN_MEDIOS_VISIBLES);
+    html += `<ul class="medios-resumen-lista">${vistos.map(fila).join('')}</ul>`;
+    if (vistos.length < dominios.length) html += `<button type="button" class="medios-resumen-todos" data-todos>${escapeHtml(t('resVerTodos', { n: dominios.length.toLocaleString() }))}</button>`;
+  }
+  cuerpo.innerHTML = html;
+  // Si lo enfocado ya no está (salió de las 12 primeras), al chip.
+  if (foco) (selFoco && cuerpo.querySelector(selFoco) || el.firstElementChild).focus({ preventScroll: true });
+}
+
+function wireResumenMedios(){
+  const el = document.getElementById('medios-resumen');
+  if (!el) return;
+  // toggle no burbujea: este es el del propio resumen, no el de un grupo.
+  el.addEventListener('toggle', () => {
+    if (!el.open) RESUMEN_MEDIOS.todos = false;
+    renderResumenMedios();
+  });
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.dominio){
+      el.open = false;
+      filtrarPorMedio(b.dataset.dominio);
+      // El resumen desaparece (hay un medio elegido): el foco, a la barra con web:.
+      const input = document.getElementById('buscar');
+      (input?.getClientRects().length ? input : document.getElementById('btn-buscar'))?.focus({ preventScroll: true });
+      return;
+    }
+    if (b.dataset.orden) RESUMEN_MEDIOS.orden = b.dataset.orden;
+    else if ('todos' in b.dataset){
+      RESUMEN_MEDIOS.todos = true;
+      renderResumenMedios();
+      // El foco pasa a la primera fila nueva que se pueda pulsar; si no hay, al chip.
+      const nuevas = [...el.querySelectorAll('.medios-resumen-lista > li')].slice(RESUMEN_MEDIOS_VISIBLES);
+      (nuevas.map(li => li.querySelector('button')).find(Boolean) || el.firstElementChild).focus();
+      return;
+    }
+    renderResumenMedios();
+  });
 }
 /* Pase sobre una instantánea de los resultados cargados. No filtra ni pide
    noticias al avanzar; las vistas se guardan con el mecanismo existente. */
@@ -10306,6 +10442,7 @@ function wireStaticEvents(){
   wireEstadisticas();
   wireCalendario();
   wireAccesos();
+  wireResumenMedios();
   wireAvisos();
   wirePortadas();
   // ── Chips de modo y de tema ──
