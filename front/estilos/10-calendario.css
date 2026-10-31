@@ -126,7 +126,7 @@
 /* El calendario es una rejilla, no texto corrido: usa todo el ancho de la ventana
    (no el de lectura de Aa), con el tamaño de letra elegido. */
 body.calendario-abierto{max-width:none}
-.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
+.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#medios-resumen,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
 @media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-mes{gap:2px}}
 /* Evento desplegado en la lista: bajo su título, con una raya a la izquierda. */
 .cal-desplegado{border-left:3px solid var(--accent);padding:2px 0 4px 10px;margin:4px 0 10px}.cal-desplegado .cal-evento-fuente{margin-top:8px}
