@@ -28,7 +28,7 @@
     }
   } catch(e){}
 </script>
-<link rel="stylesheet" href="./estilos.css?v=b60cbba3f3">
+<link rel="stylesheet" href="./estilos.css?v=4c0fbd6fe5">
 </head>
 <body>
 <!-- ICONOS: un solo juego, en SVG, que toma el color del texto (currentColor).
@@ -567,6 +567,7 @@
       <button id="btn-tiempo" class="btn-tiempo btn-cab" type="button" hidden></button>
       <button id="btn-calendario" class="btn-cab" type="button" aria-controls="calendario-panel" aria-expanded="false" hidden></button>
       <button id="btn-deportes" class="btn-cab" type="button" aria-controls="calendario-panel" aria-expanded="false" hidden></button>
+      <div id="cab-deportes-home"><div id="cab-deportes" class="cab-deportes" role="group" hidden></div></div>
       <div id="cab-est-home"><button id="btn-estadisticas" class="btn-cab" type="button" aria-controls="estadisticas-panel" aria-expanded="false"></button></div>
       <details id="cab-menu" class="cab-menu">
         <summary aria-controls="cab-menu-panel"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis"/></svg><span class="sr-only" id="cab-menu-label"></span></summary>
@@ -589,6 +590,8 @@
     <div class="filtro-buscar-wrap" id="buscar-wrap">
       <input type="search" id="buscar" autocomplete="off">
       <button id="buscar-clear" class="buscar-clear" type="button" hidden aria-label="×"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button id="buscar-accesos" class="buscar-accesos" type="button" aria-expanded="false" aria-controls="accesos-panel"><svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      <div id="accesos-panel" class="accesos-panel" role="region" aria-labelledby="accesos-titulo" hidden></div>
       <div id="buscar-sugerencias" class="buscar-sugerencias" style="display:none"></div>
     </div>
     <div id="cab-feed-home" class="feed-actions">
@@ -667,7 +670,7 @@
 <div id="toast-wrap"></div>
 <input type="file" id="file-import" accept=".json,application/json" style="display:none">
 
-<script type="module" src="./app.js?v=b60cbba3f3"></script>
+<script type="module" src="./app.js?v=4c0fbd6fe5"></script>
 </body>
 </html>
 

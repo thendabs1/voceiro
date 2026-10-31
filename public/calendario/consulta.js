@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=b60cbba3f3';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=b60cbba3f3';
+import { tokenizeQuery, normalize } from '../parser.js?v=4c0fbd6fe5';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=4c0fbd6fe5';
 
 // Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
 // nombre propio no es ambiguo, suman noticias por su titular (las noticias no se
@@ -30,7 +30,8 @@ export const AMBITOS = {
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
   motogp: { codigo: 'motogp', noticias: ['MotoGP'] },
   wrc: { codigo: 'wrc', noticias: ['WRC', 'Mundial de Rallies'] },
-  primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'] },
+  // «LaLiga Hypermotion» es Segunda: no cuenta como Primera aunque empiece por LaLiga.
+  primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'], noticiasNo: ['LaLiga Hypermotion'] },
   segunda: { codigo: 'segunda', noticias: ['Segunda División', 'LaLiga Hypermotion'] },
   nba: { codigo: 'nba', noticias: ['NBA'] },
   wnba: { codigo: 'wnba', noticias: ['WNBA'] },
@@ -137,11 +138,10 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
 export function noticiaEnAmbitos(titular, orden){
   if (!orden) return true;
   if (!orden.noticias || orden.desconocidos.length) return false;
+  // Palabras completas: «F15» no es F1 ni «NBATV» la NBA.
   const palabras = normalize(titular).match(/[\p{L}\p{N}]+/gu) || [];
-  const casa = a => AMBITOS[a].noticias.some(n => {
-    const partes = normalize(n).split(' ');
-    return palabras.some((_, i) => partes.every((p, j) => palabras[i + j]?.startsWith(p)));
-  });
+  const en = (frase, i) => normalize(frase).split(' ').every((p, j) => palabras[i + j] === p);
+  const casa = a => palabras.some((_, i) => AMBITOS[a].noticias.some(n => en(n, i)) && !(AMBITOS[a].noticiasNo || []).some(n => en(n, i)));
   return (!orden.ambitos.length || orden.ambitos.some(casa))
     && (!orden.circuitos.length || orden.circuitos.some(casa));
 }
