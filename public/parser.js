@@ -20,7 +20,10 @@
 // y `raw`), para poder mostrarlo en la UI. La resolución a valor canónico
 // vive en los campos del objeto `parsed`, no en el chip.
 
-import { PREFIJOS_CONSULTAS } from './consultas/registro.js?v=4c0fbd6fe5';
+import { PREFIJOS_CONSULTAS } from './consultas/registro.js';
+
+// Consultas cuyo valor es un código de una palabra, no un título.
+const CONSULTAS_DE_CODIGO = new Set(['clasificacion', 'resultados']);
 
 const PREFIX_ALIASES = {
   ...Object.fromEntries(Object.keys(PREFIJOS_CONSULTAS).map(p => [p, 'consulta'])),
@@ -87,11 +90,20 @@ export function tokenizeQuery(raw) {
         const prefix = word.slice(0, pi).toLowerCase();
         // Consulta puntual sin comillas: el valor es el resto de la línea,
         // aunque lleve «palabra:» (pelicula:Misión: imposible). Una comilla
-        // inicial sin cerrar es que aún se está escribiendo.
-        if (Object.hasOwn(PREFIJOS_CONSULTAS, prefix)) {
+        // inicial sin cerrar es que aún se está escribiendo. Las deportivas
+        // llevan un código (resultados:primera): lo de detrás es texto.
+        if (Object.hasOwn(PREFIJOS_CONSULTAS, prefix) && !CONSULTAS_DE_CODIGO.has(PREFIJOS_CONSULTAS[prefix])) {
           const linea = raw.slice(m.index).trimEnd();
           tokens.push({ prefix, text: linea.slice(pi + 1).trim().replace(/^"/, ''), raw: linea, quoted: false, resto: true });
           break;
+        }
+        // Código entre comillas aún sin cerrar (resultados:"prim): sigue siendo
+        // el valor, no texto de noticias.
+        if (word.length === pi + 1 && raw[re.lastIndex] === '"' && Object.hasOwn(PREFIJOS_CONSULTAS, prefix)) {
+          const abierta = /^"[^"\s]*/.exec(raw.slice(re.lastIndex))[0];
+          re.lastIndex += abierta.length;
+          tokens.push({ prefix, text: abierta.slice(1), raw: word + abierta, quoted: false });
+          continue;
         }
         tokens.push({ prefix, text: word.slice(pi + 1), raw: word, quoted: false });
       } else {
