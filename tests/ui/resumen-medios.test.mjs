@@ -46,7 +46,7 @@ test('sin búsqueda o con un solo medio no sale; buscando, el chip cuenta medios
   assert.equal(s.cuerpo.innerHTML, '');
 });
 
-test('abierto: por noticias, A–Z y por grupo; lo de fuera del catálogo se cuenta pero no filtra', () => {
+test('abierto: por noticias, A–Z y por grupo; un dominio fuera del catálogo también filtra', () => {
   const s = escenario();
   s.c.lista = noticias({ 'elpais.com': 3, 'abc.es': 5, 'farodevigo.es': 1, 'google-solo.com': 2 });
   s.el.open = true;
@@ -54,7 +54,7 @@ test('abierto: por noticias, A–Z y por grupo; lo de fuera del catálogo se cue
   const orden = () => [...s.cuerpo.innerHTML.matchAll(/<li>.*?<span>([^<]+)<\/span>/g)].map(m => m[1]);
   assert.deepEqual(orden(), ['ABC', 'El País', 'google-solo.com', 'Faro de Vigo']);
   assert.match(s.cuerpo.innerHTML, /data-dominio="abc.es" title="Ver noticias de ABC"/);
-  assert.doesNotMatch(s.cuerpo.innerHTML, /data-dominio="google-solo.com"/);
+  assert.match(s.cuerpo.innerHTML, /data-dominio="google-solo.com"/);
   s.run("RESUMEN_MEDIOS.orden = 'az'; renderResumenMedios()");
   assert.deepEqual(orden(), ['ABC', 'El País', 'Faro de Vigo', 'google-solo.com']);
   s.run("RESUMEN_MEDIOS.orden = 'grupo'; renderResumenMedios()");

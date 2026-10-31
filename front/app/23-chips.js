@@ -101,14 +101,14 @@ function renderChipsTemas(){
 
 // ── Resumen de medios de una búsqueda ──
 // Modelo: los filtros con cifras de la barra lateral del buscador de GitHub.
-// Cuenta lo que enseña el feed (tras pestañas y chips); un medio del catálogo
+// Cuenta lo que enseña el feed (tras pestañas y chips); un medio con dominio
 // escribe web:dominio en la barra (filtrarPorMedio), como su nombre en la
 // tarjeta. Es un chip plegable: contar es una pasada por la lista ya
 // filtrada; la lista de medios solo se pinta abierta.
 const RESUMEN_MEDIOS = { lista: null, orden: 'n', todos: false };
 const RESUMEN_MEDIOS_VISIBLES = 12;
 // Google News sin <source url> deja news.google.com como dominio: esas
-// fuentes se distinguen por nombre (y no filtran, como todo lo de fuera).
+// fuentes se distinguen por nombre y no filtran (no hay dominio que escribir).
 const claveResumenMedio = n => (n.dominio === 'news.google.com' ? '~' + normStrict(n.medio || 'Google News') : n.dominio);
 
 function renderResumenMedios(lista){
@@ -137,8 +137,9 @@ function renderResumenMedios(lista){
   const porCifra = (a, b) => cuentas.get(b) - cuentas.get(a) || porNombre(a, b);
   const fila = d => {
     const nombre = escapeHtml(nombreDe.get(d)), n = `<span class="medios-resumen-n">${cuentas.get(d).toLocaleString()}</span>`;
-    // Fuera del catálogo (lo trae la prensa): se cuenta, pero no filtra.
-    return MEDIOS[d]
+    // Con dominio real filtra aunque no esté en el catálogo (web: lo acepta);
+    // sin él (news.google.com, por nombre), solo se cuenta.
+    return !d.startsWith('~')
       ? `<li><button type="button" data-dominio="${escapeHtml(d)}" title="${escapeHtml(t('medioFiltrarTitle', { medio: nombreDe.get(d) }))}"><span>${nombre}</span>${n}</button></li>`
       : `<li><span class="medios-resumen-fuera"><span>${nombre}</span>${n}</span></li>`;
   };
