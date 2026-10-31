@@ -6,6 +6,7 @@ import { runInNewContext } from 'node:vm';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { traducir } from '../../front/idiomas/index.js';
+import { normStrict } from '../../shared/parser.js';
 
 const codigo = readFileSync(new URL('../../front/app/23-chips.js', import.meta.url), 'utf8');
 const MEDIOS = {
@@ -24,7 +25,7 @@ function escenario(){
   const c = {
     document: { getElementById: id => (id === 'medios-resumen' ? el : null), activeElement: null },
     t: (k, v) => traducir('es', k, v), escapeHtml: s => String(s).replace(/[&<>"]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x])),
-    MEDIOS, ACCES: { lang: 'es' }, CSS: { escape: s => s },
+    MEDIOS, ACCES: { lang: 'es' }, CSS: { escape: s => s }, normStrict,
   };
   runInNewContext(codigo, c);
   return { c, el, summary, cuerpo, run: e => runInNewContext(e, c) };
@@ -72,4 +73,16 @@ test('más de 12 medios: «Ver todos (N)» y luego la lista entera', () => {
   s.run('RESUMEN_MEDIOS.todos = true; renderResumenMedios()');
   assert.equal((s.cuerpo.innerHTML.match(/<li>/g) || []).length, 15);
   assert.doesNotMatch(s.cuerpo.innerHTML, /data-todos/);
+});
+
+test('fuentes de Google News sin dominio propio (news.google.com) se cuentan por nombre, sin filtrar', () => {
+  const s = escenario();
+  s.c.lista = [{ dominio: 'elpais.com', medio: 'El País' },
+    { dominio: 'news.google.com', medio: 'Diario A' }, { dominio: 'news.google.com', medio: 'Diario B' }, { dominio: 'news.google.com', medio: 'Diario B' }];
+  s.el.open = true;
+  s.run('renderResumenMedios(lista)');
+  assert.equal(s.summary.textContent, 'Medios · 3');
+  assert.match(s.cuerpo.innerHTML, /<span>Diario B<\/span><span class="medios-resumen-n">2<\/span>/);
+  assert.match(s.cuerpo.innerHTML, /<span>Diario A<\/span><span class="medios-resumen-n">1<\/span>/);
+  assert.doesNotMatch(s.cuerpo.innerHTML, /data-dominio="(news.google.com|~)/);
 });

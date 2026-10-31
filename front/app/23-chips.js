@@ -107,13 +107,19 @@ function renderChipsTemas(){
 // filtrada; la lista de medios solo se pinta abierta.
 const RESUMEN_MEDIOS = { lista: null, orden: 'n', todos: false };
 const RESUMEN_MEDIOS_VISIBLES = 12;
+// Google News sin <source url> deja news.google.com como dominio: esas
+// fuentes se distinguen por nombre (y no filtran, como todo lo de fuera).
+const claveResumenMedio = n => (n.dominio === 'news.google.com' ? '~' + normStrict(n.medio || 'Google News') : n.dominio);
 
 function renderResumenMedios(lista){
   const el = document.getElementById('medios-resumen');
   if (!el) return;
   if (lista !== undefined) RESUMEN_MEDIOS.lista = lista;
   const cuentas = new Map();
-  for (const n of RESUMEN_MEDIOS.lista || []) if (n.dominio) cuentas.set(n.dominio, (cuentas.get(n.dominio) || 0) + 1);
+  for (const n of RESUMEN_MEDIOS.lista || []){
+    const k = n.dominio && claveResumenMedio(n);
+    if (k) cuentas.set(k, (cuentas.get(k) || 0) + 1);
+  }
   if (cuentas.size < 2){ el.hidden = true; el.open = false; el.innerHTML = ''; return; }
   if (!el.firstElementChild) el.innerHTML = '<summary></summary><div class="medios-resumen-cuerpo"></div>';
   el.firstElementChild.textContent = t('resMedios', { n: cuentas.size.toLocaleString() });
@@ -122,7 +128,10 @@ function renderResumenMedios(lista){
   if (!el.open){ cuerpo.innerHTML = ''; return; }
 
   const nombreDe = new Map();
-  for (const n of RESUMEN_MEDIOS.lista) if (n.dominio && !nombreDe.has(n.dominio)) nombreDe.set(n.dominio, n.medio || MEDIOS[n.dominio]?.n || n.dominio);
+  for (const n of RESUMEN_MEDIOS.lista){
+    const k = n.dominio && claveResumenMedio(n);
+    if (k && !nombreDe.has(k)) nombreDe.set(k, n.medio || MEDIOS[n.dominio]?.n || n.dominio);
+  }
   const lang = (ACCES && ACCES.lang) || 'es';
   const porNombre = (a, b) => nombreDe.get(a).localeCompare(nombreDe.get(b), lang);
   const porCifra = (a, b) => cuentas.get(b) - cuentas.get(a) || porNombre(a, b);
@@ -136,6 +145,7 @@ function renderResumenMedios(lista){
   // Lo enfocado y los grupos abiertos sobreviven al repintado.
   const foco = cuerpo.contains(document.activeElement) ? document.activeElement : null;
   const selFoco = foco && (foco.dataset.orden ? `[data-orden="${foco.dataset.orden}"]`
+    : 'todos' in foco.dataset ? '[data-todos]'
     : foco.dataset.dominio ? `[data-dominio="${CSS.escape(foco.dataset.dominio)}"]`
     : foco.closest('[data-grupo]') ? `[data-grupo="${CSS.escape(foco.closest('[data-grupo]').dataset.grupo)}"] > summary` : '');
   const abiertos = new Set([...cuerpo.querySelectorAll('.medios-resumen-grupo[open]')].map(g => g.dataset.grupo));
@@ -163,7 +173,8 @@ function renderResumenMedios(lista){
     if (vistos.length < dominios.length) html += `<button type="button" class="medios-resumen-todos" data-todos>${escapeHtml(t('resVerTodos', { n: dominios.length.toLocaleString() }))}</button>`;
   }
   cuerpo.innerHTML = html;
-  if (selFoco) cuerpo.querySelector(selFoco)?.focus({ preventScroll: true });
+  // Si lo enfocado ya no está (salió de las 12 primeras), al chip.
+  if (foco) (selFoco && cuerpo.querySelector(selFoco) || el.firstElementChild).focus({ preventScroll: true });
 }
 
 function wireResumenMedios(){
@@ -177,13 +188,21 @@ function wireResumenMedios(){
   el.addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.dominio){ el.open = false; filtrarPorMedio(b.dataset.dominio); return; }
+    if (b.dataset.dominio){
+      el.open = false;
+      filtrarPorMedio(b.dataset.dominio);
+      // El resumen desaparece (hay un medio elegido): el foco, a la barra con web:.
+      const input = document.getElementById('buscar');
+      (input?.getClientRects().length ? input : document.getElementById('btn-buscar'))?.focus({ preventScroll: true });
+      return;
+    }
     if (b.dataset.orden) RESUMEN_MEDIOS.orden = b.dataset.orden;
     else if ('todos' in b.dataset){
       RESUMEN_MEDIOS.todos = true;
       renderResumenMedios();
-      // El foco pasa a la primera fila nueva, no se pierde con el botón.
-      el.querySelectorAll('.medios-resumen-lista li button')[RESUMEN_MEDIOS_VISIBLES]?.focus();
+      // El foco pasa a la primera fila nueva que se pueda pulsar; si no hay, al chip.
+      const nuevas = [...el.querySelectorAll('.medios-resumen-lista > li')].slice(RESUMEN_MEDIOS_VISIBLES);
+      (nuevas.map(li => li.querySelector('button')).find(Boolean) || el.firstElementChild).focus();
       return;
     }
     renderResumenMedios();
