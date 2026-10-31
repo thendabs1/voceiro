@@ -83,3 +83,14 @@ test('iconos de cabecera: uno por deporte seguido; escriben sus prefijos con esp
   vacio.run('pintarIconosDeportes()');
   assert.equal(vacio.ids['cab-deportes'].hidden, true);
 });
+
+test('«Clasificaciones…» junto a «Resultados…»: una fila por competición con tabla (F1 incluida); cada fila enseña su orden', () => {
+  const s = escenario();
+  s.run('pintarAccesos()');
+  assert.match(s.html(), /data-pantalla="resultados">Resultados…[\s\S]*data-pantalla="clasificaciones">Clasificaciones…[\s\S]*data-pantalla="competiciones">/);
+  assert.match(s.html(), /data-orden="calendario:f1">F1 · horarios<span class="accesos-orden" aria-hidden="true">calendario:f1<\/span>/);
+  s.pantalla('clasificaciones');
+  assert.match(s.html(), /<h2 id="accesos-titulo" tabindex="-1">Clasificaciones<\/h2>/);
+  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]),
+    ['clasificacion:primera', 'clasificacion:segunda', 'clasificacion:nba', 'clasificacion:wnba', 'clasificacion:f1']);
+});

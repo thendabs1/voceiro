@@ -374,6 +374,8 @@ export default {
   "accNoticiasDe": "{x} · albisteak",
   "accResultados": "Emaitzak…",
   "accResultadosTitulo": "Emaitzak",
+  "accClasificaciones": "Sailkapenak…",
+  "accClasificacionesTitulo": "Sailkapenak",
   "accCompeticiones": "Lehiaketak eta gehiago…",
   "accCompeticionesTitulo": "Lehiaketak",
   "accVolver": "Itzuli",
