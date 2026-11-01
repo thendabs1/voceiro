@@ -12,6 +12,10 @@ function renderPestanasPreset(){
         ? t('presetPestanaTemas', { n: info.nModo.toLocaleString() })
         : t('presetPestanaModo', { X: nombre, n: info.nModo.toLocaleString() });
     b.setAttribute('aria-selected', String(b.dataset.pestana === info.pestana));
+    // Lo del modo sale de filtrar «Toda la búsqueda»: con las mismas cifras son
+    // las mismas noticias y esa pestaña sobra. Si es la elegida, se queda; si
+    // luego llega más (archivo, prensa) y las cifras se separan, vuelve.
+    b.hidden = !esModo && info.pestana === 'modo' && info.nModo === info.nTodo;
   }
   el.hidden = false;
 }
