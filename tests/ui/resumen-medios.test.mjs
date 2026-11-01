@@ -75,6 +75,31 @@ test('más de 12 medios: «Ver todos (N)» y luego la lista entera', () => {
   assert.doesNotMatch(s.cuerpo.innerHTML, /data-todos/);
 });
 
+test('con más de 12 medios, el buscador filtra por nombre o dominio y avisa si no hay ninguno', () => {
+  const s = escenario();
+  const reparto = Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`m${i}.es`, i + 1]));
+  reparto['farodevigo.es'] = 4;
+  s.c.lista = noticias(reparto);
+  s.el.open = true;
+  s.run('renderResumenMedios(lista)');
+  assert.match(s.cuerpo.innerHTML, /class="medios-resumen-buscar" placeholder="Filtrar medios"/);
+  s.run("RESUMEN_MEDIOS.q = 'Fáro'; renderResumenMedios()");
+  assert.deepEqual([...s.cuerpo.innerHTML.matchAll(/data-dominio="([^"]+)"/g)].map(m => m[1]), ['farodevigo.es']);
+  s.run("RESUMEN_MEDIOS.q = 'm1'; renderResumenMedios()");
+  assert.equal((s.cuerpo.innerHTML.match(/<li>/g) || []).length, 6);
+  assert.doesNotMatch(s.cuerpo.innerHTML, /data-todos/);
+  s.run("RESUMEN_MEDIOS.q = 'zzz'; renderResumenMedios()");
+  assert.match(s.cuerpo.innerHTML, /Ningún medio coincide/);
+});
+
+test('con pocos medios no hay buscador', () => {
+  const s = escenario();
+  s.c.lista = noticias({ 'elpais.com': 3, 'abc.es': 5 });
+  s.el.open = true;
+  s.run('renderResumenMedios(lista)');
+  assert.doesNotMatch(s.cuerpo.innerHTML, /medios-resumen-buscar/);
+});
+
 test('fuentes de Google News sin dominio propio (news.google.com) se cuentan por nombre, sin filtrar', () => {
   const s = escenario();
   s.c.lista = [{ dominio: 'elpais.com', medio: 'El País' },

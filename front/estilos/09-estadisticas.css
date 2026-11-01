@@ -63,7 +63,7 @@
 .est-tabla [data-est="familia"][aria-expanded="true"]::before{content:'▾ '}
 .est-subgrupo{display:block;padding-left:1.4em}
 /* El panel es la vista: sin feed debajo en el que caer al desplazarse. */
-.estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#medios-resumen,#resultados,#cargar-mas-wrap){display:none!important}
+.estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,.res-linea,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:2px 10px 8px}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros select{width:100%}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
 @media(min-width:900px){.est-filtros{flex:0 1 auto;margin-left:12px}.est-acciones{order:1}}
 /* Escritorio con ratón: más denso (≈ 90 %), como el calendario; en táctil se quedan los 44 px. */

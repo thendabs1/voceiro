@@ -39,14 +39,15 @@ function renderTotalR2(){
 // dos modos o más): «Todo» y un chip por modo con noticias. Fila de temas
 // (un modo elegido, o el único): un chip por tema, también a 0 (atenuado),
 // y en un modo, «Medios del modo». Lleva su propio «Todo» solo si va sola;
-// con dos filas se vuelve a todos con el chip del modo.
+// con dos filas se vuelve a todos con el chip del modo. Buscando dentro de
+// un modo van en la línea de las pestañas: solo los temas con noticias (o
+// el elegido), y «Sin filtro» solo si hay alguno con el que alternar.
 function renderChipsTemas(){
   const el = document.getElementById('temas-chips');
   if (!el) return;
   const info = ULT_CHIPS;
   if (!info){ el.hidden = true; el.innerHTML = ''; return; }
   const enBusquedaModo = !!(ULT_PESTANAS && ULT_PESTANAS.pestana === 'modo' && !info.porModo);
-  const cerosAbiertos = !!el.querySelector('.temas-chips-cero[open]');
   // Solo un chip de tema se atenúa a 0: los «Todo» y los de modo, nunca.
   const chip = (attrs, label, n, pulsado, title, atenuable = false) =>
     `<button type="button" ${attrs} aria-pressed="${String(pulsado)}"`
@@ -54,7 +55,6 @@ function renderChipsTemas(){
     + (title ? ` title="${escapeHtml(title)}"` : '')
     + `>${escapeHtml(label)} · ${n.toLocaleString()}</button>`;
   const filas = [];
-  const ceros = [];
   if (info.porModo && TEMAS_TODOS.length >= 2){
     let html = chip('data-chip=""', t('temaChipTodo'), info.total, !CHIP_TEMAS);
     for (const m of [...TEMAS_TODOS].sort((a, b) => (info.porModo.get(b.id) || 0) - (info.porModo.get(a.id) || 0))){
@@ -66,36 +66,28 @@ function renderChipsTemas(){
   if (info.porTema){
     const modo = `data-modo="${escapeHtml(info.modo)}"`;
     let html = '';
-    if (!filas.length) html += chip(`data-tema="" ${modo}`, t(enBusquedaModo ? 'temaChipSinFiltro' : 'temaChipTodo'), info.totalModo, !CHIP_TEMA);
     const temasOrdenados = [...info.porTema].map(([e, n]) => ({ e, n }));
     if (info.nMedios !== null) temasOrdenados.push({ medios: true, n: info.nMedios });
     temasOrdenados.sort((a, b) => b.n - a.n);
     for (const { e, n, medios } of temasOrdenados){
+      const pulsado = medios ? !!(CHIP_TEMA && CHIP_TEMA.medios) : !!(CHIP_TEMA && CHIP_TEMA.etiqueta === e);
+      if (enBusquedaModo && n === 0 && !pulsado) continue;
       if (medios){
-        html += chip(`data-medios="1" ${modo}`, t(enBusquedaModo ? 'temaChipSoloMedios' : 'temaChipMedios'), n, !!(CHIP_TEMA && CHIP_TEMA.medios));
+        html += chip(`data-medios="1" ${modo}`, t(enBusquedaModo ? 'temaChipSoloMedios' : 'temaChipMedios'), n, pulsado);
         continue;
       }
-      const pulsado = !!(CHIP_TEMA && CHIP_TEMA.etiqueta === e);
       const etiqueta = etiquetaVisible(e);
-      const boton = chip(`data-tema="${escapeHtml(e)}" ${modo}`,
+      html += chip(`data-tema="${escapeHtml(e)}" ${modo}`,
         enBusquedaModo ? t('temaChipTema', { X: etiqueta }) : etiqueta, n, pulsado, e, true);
-      if (enBusquedaModo && n === 0 && !pulsado) ceros.push(boton);
-      else html += boton;
     }
-    filas.push(html);
+    if (!filas.length && (html || !enBusquedaModo)){
+      html = chip(`data-tema="" ${modo}`, t(enBusquedaModo ? 'temaChipSinFiltro' : 'temaChipTodo'), info.totalModo, !CHIP_TEMA) + html;
+    }
+    if (html) filas.push(html);
   }
-  const contexto = enBusquedaModo
-    ? `<div class="temas-chips-contexto"><span>${escapeHtml(t('temaFiltroEnModo', { X: PRESET.nombre }))}</span>`
-      + (ceros.length
-        ? `<details class="temas-chips-cero"><summary>${escapeHtml(t('temaChipsSinCoincidencias', { n: ceros.length.toLocaleString() }))}</summary><div class="temas-chips-cero-lista">${ceros.join('')}</div></details>`
-        : '') + '</div>'
-    : '';
+  if (!filas.length){ el.hidden = true; el.innerHTML = ''; return; }
   // Con dos filas, la de temas cuelga del modo elegido: va sangrada.
-  el.innerHTML = contexto + filas.map((h, i) => `<div class="temas-chips-fila${i ? ' hija' : ''}">${h}</div>`).join('');
-  if (cerosAbiertos){
-    const details = el.querySelector('.temas-chips-cero');
-    if (details) details.open = true;
-  }
+  el.innerHTML = filas.map((h, i) => `<div class="temas-chips-fila${i ? ' hija' : ''}">${h}</div>`).join('');
   el.hidden = false;
 }
 
@@ -103,9 +95,11 @@ function renderChipsTemas(){
 // Modelo: los filtros con cifras de la barra lateral del buscador de GitHub.
 // Cuenta lo que enseña el feed (tras pestañas y chips); un medio con dominio
 // escribe web:dominio en la barra (filtrarPorMedio), como su nombre en la
-// tarjeta. Es un chip plegable: contar es una pasada por la lista ya
-// filtrada; la lista de medios solo se pinta abierta.
-const RESUMEN_MEDIOS = { lista: null, orden: 'n', todos: false };
+// tarjeta. Es un chip plegable que flota sobre las noticias: contar es una
+// pasada por la lista ya filtrada; la lista de medios solo se pinta abierta.
+// Con más de RESUMEN_MEDIOS_VISIBLES medios lleva un buscador (como el filtro
+// de lenguajes de GitHub); al escribir solo se repinta lo de debajo.
+const RESUMEN_MEDIOS = { lista: null, orden: 'n', todos: false, q: '' };
 const RESUMEN_MEDIOS_VISIBLES = 12;
 // Google News sin <source url> deja news.google.com como dominio: esas
 // fuentes se distinguen por nombre y no filtran (no hay dominio que escribir).
@@ -145,6 +139,8 @@ function renderResumenMedios(lista){
   };
   // Lo enfocado y los grupos abiertos sobreviven al repintado.
   const foco = cuerpo.contains(document.activeElement) ? document.activeElement : null;
+  const conBuscador = cuentas.size > RESUMEN_MEDIOS_VISIBLES;
+  const q = conBuscador ? normStrict(RESUMEN_MEDIOS.q.trim()) : '';
   const selFoco = foco && (foco.dataset.orden ? `[data-orden="${foco.dataset.orden}"]`
     : 'todos' in foco.dataset ? '[data-todos]'
     : foco.dataset.dominio ? `[data-dominio="${CSS.escape(foco.dataset.dominio)}"]`
@@ -155,8 +151,9 @@ function renderResumenMedios(lista){
   const botonOrden = (v, clave) => `<button type="button" data-orden="${v}" aria-pressed="${o === v}">${escapeHtml(t(clave))}</button>`;
   let html = `<div class="medios-resumen-orden" role="group" aria-label="${escapeHtml(t('resOrdenar'))}">`
     + botonOrden('n', 'resOrdenNoticias') + botonOrden('az', 'resOrdenNombre') + botonOrden('grupo', 'resOrdenGrupo') + '</div>';
-  const dominios = [...cuentas.keys()];
-  if (o === 'grupo'){
+  const dominios = [...cuentas.keys()].filter(d => !q || normStrict(nombreDe.get(d)).includes(q) || d.includes(q));
+  if (!dominios.length) html += `<p class="medios-resumen-vacio">${escapeHtml(t('resSinMedios'))}</p>`;
+  else if (o === 'grupo'){
     // Esquema: grupo (suma de sus noticias) → medios, plegado como en Estadísticas.
     const grupos = new Map();
     for (const d of dominios){
@@ -169,13 +166,20 @@ function renderResumenMedios(lista){
       + `<ul class="medios-resumen-lista">${x.ds.sort(porCifra).map(fila).join('')}</ul></details>`).join('');
   } else {
     dominios.sort(o === 'az' ? porNombre : porCifra);
-    const vistos = RESUMEN_MEDIOS.todos ? dominios : dominios.slice(0, RESUMEN_MEDIOS_VISIBLES);
+    const vistos = RESUMEN_MEDIOS.todos || q ? dominios : dominios.slice(0, RESUMEN_MEDIOS_VISIBLES);
     html += `<ul class="medios-resumen-lista">${vistos.map(fila).join('')}</ul>`;
     if (vistos.length < dominios.length) html += `<button type="button" class="medios-resumen-todos" data-todos>${escapeHtml(t('resVerTodos', { n: dominios.length.toLocaleString() }))}</button>`;
   }
-  cuerpo.innerHTML = html;
+  // El buscador no se repinta: así conserva el foco y el cursor al escribir.
+  const contenido = cuerpo.querySelector('.medios-resumen-contenido');
+  if (conBuscador && contenido && cuerpo.querySelector('.medios-resumen-buscar')) contenido.innerHTML = html;
+  else {
+    cuerpo.innerHTML = (conBuscador
+      ? `<input type="search" class="medios-resumen-buscar" placeholder="${escapeHtml(t('resBuscar'))}" aria-label="${escapeHtml(t('resBuscar'))}" value="${escapeHtml(RESUMEN_MEDIOS.q)}">`
+      : '') + `<div class="medios-resumen-contenido">${html}</div>`;
+  }
   // Si lo enfocado ya no está (salió de las 12 primeras), al chip.
-  if (foco) (selFoco && cuerpo.querySelector(selFoco) || el.firstElementChild).focus({ preventScroll: true });
+  if (foco && !cuerpo.contains(foco)) (selFoco && cuerpo.querySelector(selFoco) || el.firstElementChild).focus({ preventScroll: true });
 }
 
 function wireResumenMedios(){
@@ -183,7 +187,20 @@ function wireResumenMedios(){
   if (!el) return;
   // toggle no burbujea: este es el del propio resumen, no el de un grupo.
   el.addEventListener('toggle', () => {
-    if (!el.open) RESUMEN_MEDIOS.todos = false;
+    if (!el.open){ RESUMEN_MEDIOS.todos = false; RESUMEN_MEDIOS.q = ''; }
+    renderResumenMedios();
+  });
+  // Flota sobre las noticias: se cierra con Esc o al pulsar fuera, como un menú.
+  const cerrar = () => { el.open = false; };
+  document.addEventListener('pointerdown', e => { if (el.open && !el.contains(e.target)) cerrar(); });
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !el.open) return;
+    e.preventDefault(); e.stopPropagation(); cerrar();
+    el.firstElementChild.focus({ preventScroll: true });
+  });
+  el.addEventListener('input', e => {
+    if (!e.target.matches('.medios-resumen-buscar')) return;
+    RESUMEN_MEDIOS.q = e.target.value;
     renderResumenMedios();
   });
   el.addEventListener('click', e => {

@@ -646,13 +646,16 @@
 <section id="calendario-panel" class="calendario-panel" aria-labelledby="cal-titulo" hidden></section>
 <dialog id="cal-evento-dialogo" class="cal-evento-dialogo"></dialog>
 <!-- Pestañas y chips del feed: bajo los paneles (tiempo, avisos, consulta),
-     junto a las noticias que filtran. -->
-<div id="preset-pestanas" class="preset-pestanas" role="tablist" hidden>
-  <button type="button" role="tab" data-pestana="modo"></button>
-  <button type="button" role="tab" data-pestana="todo"></button>
+     junto a las noticias que filtran. En una línea; Medios se despliega
+     flotando sobre la lista. -->
+<div class="res-linea">
+  <div id="preset-pestanas" class="preset-pestanas" role="tablist" hidden>
+    <button type="button" role="tab" data-pestana="modo"></button>
+    <button type="button" role="tab" data-pestana="todo"></button>
+  </div>
+  <div id="temas-chips" class="temas-chips" role="toolbar" hidden></div>
+  <details id="medios-resumen" class="medios-resumen" hidden></details>
 </div>
-<div id="temas-chips" class="temas-chips" role="toolbar" hidden></div>
-<details id="medios-resumen" class="medios-resumen" hidden></details>
 <main id="resultados"></main>
 <div id="cargar-mas-wrap" style="display:none; text-align:center; padding:20px 0;">
   <button id="btn-cargar-mas" type="button" style="padding:10px 20px; font-size:.85em;"></button>
