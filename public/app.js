@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=df446ab795';
+} from './parser.js?v=1f11c2dd29';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=df446ab795';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=df446ab795';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=df446ab795';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=df446ab795';
-import { comparador } from './busqueda/orden.js?v=df446ab795';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=1f11c2dd29';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=1f11c2dd29';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=1f11c2dd29';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=1f11c2dd29';
+import { comparador } from './busqueda/orden.js?v=1f11c2dd29';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=df446ab795';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=df446ab795';
+} from './sync/fusion.js?v=1f11c2dd29';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=1f11c2dd29';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=df446ab795';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=df446ab795';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=1f11c2dd29';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=1f11c2dd29';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=df446ab795';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=1f11c2dd29';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=df446ab795';
+} from './tiempo/avisos.js?v=1f11c2dd29';
 
-import { I18N, traducir } from './idiomas/index.js?v=df446ab795';
+import { I18N, traducir } from './idiomas/index.js?v=1f11c2dd29';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=df446ab795';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=df446ab795';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=df446ab795';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=df446ab795';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=1f11c2dd29';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=1f11c2dd29';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=1f11c2dd29';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=1f11c2dd29';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=df446ab795';
+import { ADMINISTRACION } from './territorios/administracion.js?v=1f11c2dd29';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1956,7 +1956,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=df446ab795');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=1f11c2dd29');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3996,7 +3996,9 @@ async function abrirDiaCalendario(dia, tipo, mas = false){
   const [desde, hasta = sumarDiasCalendario(dia, 1)] = dia.split('~');
   try {
     // Con la revisión del resumen a la vista: si la publicación cambió, 409.
-    const dato = await calPedir('eventos', { ...calParametros(), desde, hasta, limite: 20, revision: s.meta?.revision,
+    // En Deportes el día va entero (agrupado por deporte): 50, el máximo de la API.
+    const limite = tipo === 'citas' && calModoDeportes() ? 50 : 20;
+    const dato = await calPedir('eventos', { ...calParametros(), desde, hasta, limite, revision: s.meta?.revision,
       ...(tipo === 'curso' ? { presentacion: 'prolongada' } : { chips: 1 }), cursor: mas ? l.siguiente : '' }, controller.signal);
     if (s.dias.get(clave) !== l) return;
     calAnotar(dato); l.eventos.push(...dato.eventos); l.siguiente = dato.siguiente; l.cargada = true;
@@ -4417,8 +4419,68 @@ function calBarraDia(b, dia){
     ${calEtiquetasDeportes(b)}
     ${total > 1 && n >= 1 && n <= total ? `<p class="cal-nota">${calEsc(t('calDiaDeN', { n, total }))}</p>` : ''}${calDesplegado(b, dia, true)}</div></article>`;
 }
+// En Deportes el día va por deporte (FlashScore, SofaScore): cada grupo con
+// las cuentas de sus competiciones (del resumen, sin pedir nada) y, abierto,
+// sus citas por hora. Abierto de entrada si lleva algo que sigo o pocas citas;
+// lo que se abre o cierra a mano vale para todos los días y se recuerda en el
+// dispositivo. El día entero llega en una petición al verlo (calObservarDias).
+const CAL_GRUPOS_KEY = 'voceiro-calendario-grupos-v1', CAL_GRUPO_POCOS = 4;
+function calGrupos(){
+  const s = CALENDARIO;
+  if (!s.grupos){
+    let g = null;
+    try { g = JSON.parse(localStorage.getItem(CAL_GRUPOS_KEY)); } catch {}
+    s.grupos = Object.fromEntries(Object.entries(g && typeof g === 'object' ? g : {}).filter(([, v]) => typeof v === 'boolean'));
+  }
+  return s.grupos;
+}
+function calElegirGrupo(k, abierto){
+  const g = calGrupos();
+  g[k] = abierto;
+  try { localStorage.setItem(CAL_GRUPOS_KEY, JSON.stringify(g)); } catch {}
+}
+function calDiaDeportes(d){
+  const s = CALENDARIO, l = s.dias.get(d.dia + '|citas'), cargada = Boolean(l?.cargada), elegidos = calGrupos();
+  const sigo = new Set(calPreferencias()?.competiciones || []), sigoEn = k => (CAL_DEPORTES[k] || []).some(c => sigo.has(c));
+  const deDeporte = e => calDeporte(e) || 'otras', barras = calBarrasDia(d.dia), eventos = cargada ? l.eventos : [];
+  // Primero los deportes de lo que sigo; después, en su orden de siempre.
+  const orden = [...Object.keys(CAL_DEPORTES), 'otras'].sort((a, b) => sigoEn(b) - sigoEn(a));
+  const grupos = orden.map(k => {
+    const comps = (CAL_DEPORTES[k] || []).filter(c => d.competiciones?.[c]?.citas + d.competiciones?.[c]?.programas > 0);
+    const propias = eventos.filter(e => deDeporte(e) === k), suyas = barras.filter(b => deDeporte(b) === k);
+    if (!comps.length && !propias.length && !suyas.length) return '';
+    const total = comps.reduce((n, c) => n + d.competiciones[c].citas + d.competiciones[c].programas, 0);
+    const abierto = elegidos[k] ?? (sigoEn(k) || total <= CAL_GRUPO_POCOS);
+    const cuentas = comps.map(c => calNombreCompeticion(c) + (d.competiciones[c].citas ? ' ' + d.competiciones[c].citas : '')).join(' · ');
+    // Con una sola competición, su etiqueta en cada cita sobra.
+    const una = new Set([...comps, ...[...propias, ...suyas].flatMap(e => e.competiciones || [])]).size <= 1;
+    const id = `cal-grupo-${d.dia}-${k}`, nombre = k === 'otras' ? t('calOtras') : t(CAL_NOMBRES_DEPORTE[k]);
+    return `<div class="cal-grupo cal-dep-${k}${una ? ' cal-grupo-una' : ''}"><button type="button" class="cal-grupo-cab" data-cal="grupo" data-valor="${d.dia}|${k}" data-abierto="${abierto}" aria-expanded="${abierto}"${abierto ? ` aria-controls="${id}"` : ''}>
+      <span class="cal-grupo-nombre">${abierto ? '▾' : '▸'} ${calEsc(nombre)}</span> <span class="cal-grupo-cuentas">${calEsc(cuentas)}</span></button>
+      ${abierto ? `<div id="${id}">${suyas.map(b => calBarraDia(b, d.dia)).join('')}${cargada ? calCitas(propias, d.dia) : `<p class="cal-nota">${calEsc(t('calCargando'))}</p>`}</div>` : ''}</div>`;
+  }).join('');
+  const mas = cargada && l.siguiente ? `<div class="cal-paginacion">${calBoton('mas-dia', t('calCargarMas'), d.dia, l.cargando ? 'disabled' : '')}</div>` : '';
+  const hoy = calHoy();
+  // data-cargar: días sin pedir todavía; un fallo no se reintenta solo (se reintenta al abrir un grupo).
+  return `<section class="cal-dia${d.dia < hoy ? ' cal-pasado' : ''}" id="cal-dia-${d.dia}"${l ? '' : ` data-cargar="${d.dia}"`}><h2>${calEsc(d.dia === hoy ? t('calHoy') + ' · ' + calFecha(d.dia, { weekday: 'long' }) : calDiaLargo(d.dia))}
+    <small>${calEsc(calN('calNCitas', calNDia(d)))}${d.dia < hoy ? ' · ' + calEsc(t('calPasado')) : ''}</small></h2>${grupos}${mas}</section>`;
+}
+// Deportes carga cada día al verlo: sus grupos se rellenan sin pedir la semana
+// de golpe. Sin observador, solo el primero.
+function calObservarDias(p){
+  const s = CALENDARIO;
+  s.observador?.disconnect(); s.observador = null;
+  const pendientes = calModoDeportes() ? [...p.querySelectorAll('.cal-dia[data-cargar]')] : [];
+  if (!pendientes.length) return;
+  if (typeof IntersectionObserver !== 'function') return void abrirDiaCalendario(pendientes[0].dataset.cargar, 'citas');
+  s.observador = new IntersectionObserver(entradas => {
+    for (const x of entradas) if (x.isIntersecting) abrirDiaCalendario(x.target.dataset.cargar, 'citas');
+  }, { rootMargin: '200px 0px' });
+  pendientes.forEach(x => s.observador.observe(x));
+}
 // Un día de la lista: sus muestras y «Ver las N citas»; abierta, todas.
 function calDiaLista(d){
+  if (calModoDeportes()) return calDiaDeportes(d);
   const s = CALENDARIO, l = s.dias.get(d.dia + '|citas'), citas = calNDia(d);
   let cuerpo;
   if (l?.abierta && l.cargada){
@@ -4966,6 +5028,7 @@ function pintarCalendario(repintado = false){
     : botonCal(accion) || botonCal(CAL_FOCO_SUSTITUTO[accion]);
   siguiente?.focus({ preventScroll: true });
   if (seleccion && siguiente?.type === 'search') siguiente.setSelectionRange(...seleccion);
+  calObservarDias(p);
   // El alto de semana se midió con la barra anterior: si al pintar cambió (abrir
   // el mes la deja en una fila), se pinta otra vez con la medida buena.
   if (s.altoSemana && s.altoSemana !== calAltoSemana() && !repintado) pintarCalendario(true);
@@ -5017,6 +5080,12 @@ function wireCalendario(){
     if (a === 'pendientes' || a === 'mas-pendientes') return void pendientesCalendario(a === 'mas-pendientes');
     if (a === 'ver-dia' || a === 'mas-dia') return void abrirDiaCalendario(v, 'citas', a === 'mas-dia');
     if (a === 'mas-curso') return void abrirDiaCalendario(v, 'curso', true);
+    if (a === 'grupo'){
+      // Abrir un grupo de un día sin cargar (o que falló) lo pide.
+      const [dia, k] = v.split('|'), abrir = b.dataset.abierto !== 'true', l = s.dias.get(dia + '|citas');
+      calElegirGrupo(k, abrir);
+      return void (abrir && !l?.cargada ? abrirDiaCalendario(dia, 'citas') : pintarCalendario());
+    }
     if (a === 'curso' || a === 'ocultar-dia'){
       const l = s.dias.get(v + (a === 'curso' ? '|curso' : '|citas'));
       if (a === 'curso' && !l?.abierta) return void abrirDiaCalendario(v, 'curso');
@@ -6098,7 +6167,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=df446ab795')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=1f11c2dd29')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
