@@ -370,9 +370,3 @@
   .accesos-panel{ position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 75dvh; border-radius: 12px 12px 0 0; padding-bottom: 16px; }
   .accesos-lista button{ min-height: 44px; }
 }
-
-/* Iconos de los deportes que sigo, en la cabecera: pulsado, con el color del deporte. */
-#cab-deportes-home, .cab-deportes{ display: contents; }
-.cab-deportes[hidden]{ display: none; }
-.cab-deporte[aria-pressed="true"]{ color: var(--dep); }
-.cab-menu-panel .cab-deportes:not([hidden]){ display: flex; gap: 4px; }

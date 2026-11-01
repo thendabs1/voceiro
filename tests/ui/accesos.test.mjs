@@ -14,7 +14,7 @@ const NOMBRES = { f1: 'F1', motogp: 'MotoGP', primera: 'Primera', segunda: 'Segu
 function escenario({ sigo = [], buscar = '' } = {}){
   const el = () => ({ innerHTML: '', hidden: true, atributos: {}, setAttribute(k, v){ this.atributos[k] = v; },
     focus(){}, querySelector: () => null, addEventListener(){} });
-  const ids = { 'accesos-panel': el(), 'buscar-accesos': el(), 'cab-deportes': el(), buscar: { value: buscar } };
+  const ids = { 'accesos-panel': el(), 'buscar-accesos': el(), buscar: { value: buscar } };
   const escritas = [];
   const c = {
     $: sel => ids[sel.slice(1)], t: (k, v) => traducir('es', k, v), tokenizeQuery, leerConsultaCalendario, AMBITOS, PREFIJOS_CONSULTAS,
@@ -45,7 +45,7 @@ test('lo seguido va primero y «Las que sigo» las junta; lo que no tiene datos 
   const s = escenario({ sigo: ['motogp', 'atp', 'wnba'] });
   s.run('ACCESOS.disp = { motogp: 24, atp: 4, wnba: 0, f1: 5, primera: 20, segunda: 33, nba: 106 }; pintarAccesos()');
   const ordenes = [...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]);
-  assert.deepEqual(ordenes, ['calendario:motogp,atp', 'calendario:motogp', 'calendario:atp', 'calendario:f1', 'calendario:primera', 'calendario:primera,segunda']);
+  assert.deepEqual(ordenes, ['motogp:', 'atp:', 'calendario:motogp,atp', 'calendario:motogp', 'calendario:atp', 'calendario:f1', 'calendario:primera', 'calendario:primera,segunda']);
 });
 
 test('una competición enseña solo lo que admite: F1 sin resultados; ATP, horarios y noticias', () => {
@@ -72,22 +72,17 @@ test('un acceso sustituye también una consulta deportiva, que ya no va al final
   assert.deepEqual(s.escritas, ['levante clasificacion:nba']);
 });
 
-test('iconos de cabecera: uno por deporte seguido; escriben sus prefijos con espacio y, pulsados, los quitan', () => {
+test('deportes seguidos: una fila de noticias por deporte, arriba del ▾; escribe sus prefijos con espacio', () => {
   const s = escenario({ sigo: ['nba', 'f1', 'motogp'], buscar: 'medio:as' });
-  s.run('pintarIconosDeportes()');
-  const html = s.ids['cab-deportes'].innerHTML;
-  assert.equal(s.ids['cab-deportes'].hidden, false);
-  assert.deepEqual([...html.matchAll(/data-deporte="(\w+)"/g)].map(m => m[1]), ['baloncesto', 'motor']);
-  assert.match(html, /data-deporte="motor" aria-pressed="false" aria-label="Motor: F1, MotoGP"/);
-  s.run("escribirAcceso(deportesSeguidos().find(([k]) => k === 'motor')[1].map(c => c + ':').join(' '))");
+  s.run('pintarAccesos()');
+  const filas = [...s.html().matchAll(/data-orden="([^"]+)">([^<]+)</g)].map(m => [m[1], m[2]]);
+  assert.deepEqual(filas.slice(0, 2), [['nba:', 'Baloncesto · noticias'], ['f1: motogp:', 'Motor · noticias']]);
+  s.run("escribirAcceso('f1: motogp:')");
   assert.equal(s.escritas.at(-1), 'medio:as f1: motogp: ');
-  // Con esa orden en la barra, el icono sale pulsado.
-  s.run("CALENDARIO.orden = { ambitos: ['motogp', 'f1'], circuitos: [] }; pintarIconosDeportes()");
-  assert.match(s.ids['cab-deportes'].innerHTML, /data-deporte="motor" aria-pressed="true"/);
-  // Sin nada seguido, no hay iconos.
+  // Sin nada seguido, no hay filas de noticias.
   const vacio = escenario();
-  vacio.run('pintarIconosDeportes()');
-  assert.equal(vacio.ids['cab-deportes'].hidden, true);
+  vacio.run('pintarAccesos()');
+  assert.doesNotMatch(vacio.html(), /noticias</);
 });
 
 test('«Clasificaciones…» junto a «Resultados…»: una fila por competición con tabla (F1 incluida); la orden no se repite en la fila', () => {

@@ -169,18 +169,8 @@
   [data-theme="contrast"] .badge.estimada{
     background:#003; border-color:#0ff; color:#0ff;
   }
-  .badge.prensa{
-    background:#fef3c7; border-color:#f59e0b; color:#92400e;
-  }
-  [data-theme="dark"] .badge.prensa{
-    background:#3d2f14; border-color:#b58600; color:#ffcc66;
-  }
-  [data-theme="sepia"] .badge.prensa{
-    background:#f5e6c3; border-color:#c9a227; color:#5c4a1c;
-  }
-  [data-theme="contrast"] .badge.prensa{
-    background:#000; border-color:#ff0; color:#ff0;
-  }
+  /* ⓘ: lo que trajo la prensa casó en el cuerpo, no en el titular. */
+  .btn-info-coincide{ color:var(--muted); }
   .noticia a.titular{
     color:var(--accent); text-decoration:none;
     font-weight:600; font-size:1em; display:block; margin-top:2px;
