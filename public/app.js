@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=01f619abf5';
+} from './parser.js?v=ab672ca371';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=01f619abf5';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=01f619abf5';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=01f619abf5';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=01f619abf5';
-import { comparador } from './busqueda/orden.js?v=01f619abf5';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=ab672ca371';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=ab672ca371';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=ab672ca371';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=ab672ca371';
+import { comparador } from './busqueda/orden.js?v=ab672ca371';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=01f619abf5';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=01f619abf5';
+} from './sync/fusion.js?v=ab672ca371';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=ab672ca371';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=01f619abf5';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=01f619abf5';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=ab672ca371';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=ab672ca371';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=01f619abf5';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=ab672ca371';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=01f619abf5';
+} from './tiempo/avisos.js?v=ab672ca371';
 
-import { I18N, traducir } from './idiomas/index.js?v=01f619abf5';
+import { I18N, traducir } from './idiomas/index.js?v=ab672ca371';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=01f619abf5';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=01f619abf5';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=01f619abf5';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=01f619abf5';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=ab672ca371';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=ab672ca371';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=ab672ca371';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=ab672ca371';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=01f619abf5';
+import { ADMINISTRACION } from './territorios/administracion.js?v=ab672ca371';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1956,7 +1956,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=01f619abf5');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=ab672ca371');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3554,10 +3554,8 @@ function pintarAccesos(){
   const panel = $('#accesos-panel');
   if (!panel) return;
   const p = ACCESOS.pantalla, nombre = calNombreCompeticion;
-  // A la derecha, en gris, lo que se escribirá en la barra: así se aprende el
-  // atajo (como los calificadores del buscador de GitHub). También lo oye el
-  // lector de pantalla, tras el texto y separado por un espacio.
-  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}<span class="accesos-orden"> ${calEsc(orden)}</span></button></li>`;
+  // La orden no se repite en la fila: al pulsar se escribe en la barra y ahí se aprende.
+  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}</button></li>`;
   const ir = (pantalla, texto) => `<li><button type="button" data-pantalla="${calEsc(pantalla)}">${calEsc(texto)}<span aria-hidden="true"> ›</span></button></li>`;
   let titulo = t('accTitulo'), filas = [];
   if (!p){
@@ -3717,7 +3715,7 @@ const CALENDARIO = {
   abierto: false, porPrefijo: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
   // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
   // fecha: el día elegido (la lista empieza en él y la tira enseña su semana).
-  fecha: '', desdeConsulta: '', rango: '', semanas: 1, mesAbierto: false, mes: null,
+  fecha: '', desdeConsulta: '', rango: '', semanas: 1, mesAbierto: false, mes: null, navEnBarra: '', altoSemana: 0,
   zona: CAL_ZONAS.includes(CAL_ZONA) ? CAL_ZONA : 'Europe/Madrid',
   temas: new Set(), mio: false, prefs: null, asistente: null, temporada: null, temporadaAbierta: false, disp: null,
   // vista: «agenda» (la de un sitio: cultura y ocio, y su deporte local) o
@@ -4509,10 +4507,15 @@ function calPeriodoMes(fecha = CALENDARIO.fecha){
   if (fecha.slice(0, 7) !== hoy.slice(0, 7) || fecha < lunes) return { dias: ventanaCalendario(fecha, 'mes'), rodante: false };
   return { dias: Array.from({ length: 42 }, (_, i) => sumarDiasCalendario(lunes, i)), rodante: true };
 }
-// Alto de cada semana (Google Calendar): el mes entero cabe en la ventana con la
-// barra y la cabecera del mes (≈ 8 líneas); lo que no cabe en un día va en «+N».
+// Alto de cada semana (Google Calendar): el mes entero cabe en la ventana bajo
+// la cabecera fija, la barra del calendario (medidas) y la fila de los días con
+// los márgenes (≈ 4,5 líneas); lo que no cabe en un día va en «+N».
 const calEm = () => parseFloat(globalThis.getComputedStyle?.(document.getElementById('calendario-panel'))?.fontSize) || 16;
-const calAltoSemana = (em = calEm()) => Math.round(Math.min(em * 10, Math.max(em * 5, ((window.innerHeight || 900) - em * 8) / 6)));
+function calAltoSemana(em = calEm()){
+  const encima = (document.getElementById('barra-sup')?.offsetHeight || 0)
+    + (document.getElementById('calendario-panel')?.querySelector?.('.cal-barra')?.offsetHeight || em * 3) + em * 4.5;
+  return Math.round(Math.min(em * 10, Math.max(em * 5, ((window.innerHeight || 900) - encima) / 6)));
+}
 // Deportes con una o dos competiciones: caben sus partidos en el mes (Google
 // Calendar); con más, solo las marcas por competición.
 const calPartidosEnMes = () => calModoDeportes() && CALENDARIO.capas?.size <= 2;
@@ -4539,8 +4542,9 @@ const calDiferencia = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.
 function calMesTitulos(dias, rodante = false){
   const s = CALENDARIO, hoy = calHoy(), porDia = new Map((s.mes?.dias || []).map(d => [d.dia, d])), deportes = calModoDeportes();
   const barras = (s.mes?.barras || []).filter(b => b.competiciones?.some(c => CAL_DEPORTE_DE[c] === 'motor'));
-  // Carril de 28 px como mínimo: la barra (2 px de margen arriba y abajo) llega a los 24 de AA.
-  const em = calEm(), alto = calAltoSemana(em), carril = Math.max(em * 1.6, 28), semanas = [];
+  // Carril de 26 px como mínimo: la barra (1 px de margen arriba y abajo) llega a los 24 de AA.
+  const em = calEm(), alto = calAltoSemana(em), carril = Math.max(em * 1.3, 26), semanas = [];
+  if (!deportes) s.altoSemana = alto;
   const partidos = deportes && calPartidosEnMes(), publicado = deportes ? calPublicadoHasta() : '';
   const sinPublicar = dia => Boolean(publicado) && dia > publicado;
   for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7));
@@ -4598,9 +4602,14 @@ function calTira(){
   const titulo = rodante ? calFecha(dias[0], { month: 'short', day: undefined }) + ' – ' + calFecha(dias.at(-1), { month: 'short', year: 'numeric', day: undefined })
     : calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined });
   const [ant, sig] = s.mesAbierto ? ['calMesAnterior', 'calMesSiguiente'] : ['calSemanaAnterior', 'calSemanaPosterior'];
-  return `<div class="cal-tira"><div class="cal-tira-cabecera">${calBoton('anterior', '‹', '', `aria-label="${calEsc(t(ant))}"`)}
-    ${calBoton('mes', titulo + (s.mesAbierto ? ' ▴' : ' ▾'), '', `class="cal-tira-titulo" aria-expanded="${s.mesAbierto}"`)}${calBoton('siguiente', '›', '', `aria-label="${calEsc(t(sig))}"`)}</div>
-    ${s.mesAbierto && calMesAncho() ? calMesTitulos(dias, rodante) : `<div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
+  const nav = `<div class="cal-tira-cabecera">${calBoton('anterior', '‹', '', `aria-label="${calEsc(t(ant))}"`)}
+    ${calBoton('mes', titulo + (s.mesAbierto ? ' ▴' : ' ▾'), '', `class="cal-tira-titulo" aria-expanded="${s.mesAbierto}"`)}${calBoton('siguiente', '›', '', `aria-label="${calEsc(t(sig))}"`)}</div>`;
+  // Mes ancho (Google Calendar): ‹ mes › sube a la barra del calendario, en la
+  // fila de los atajos, y deja el alto de la ventana a las semanas.
+  const ancho = s.mesAbierto && calMesAncho();
+  if (ancho) s.navEnBarra = nav;
+  return `<div class="cal-tira">${ancho ? '' : nav}
+    ${ancho ? calMesTitulos(dias, rodante) : `<div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
       calCeldaDia(dia, porDia.get(dia), { otroMes: s.mesAbierto && !rodante && dia.slice(0, 7) !== s.fecha.slice(0, 7), rodante })).join('')}</div>`}
     ${calModoDeportes() ? '' : `<p class="cal-leyenda">${[...CAL_CATEGORIAS, 'otras'].map(c => `<span><span class="cal-punto cal-cat-${c}" aria-hidden="true"></span>${calEsc(calNombreCategoria(c))}</span>`).join('')}</p>`}
     ${s.mesAbierto && calModoDeportes() ? calTemporada(diasMes, rodante) : ''}</div>`;
@@ -4901,7 +4910,7 @@ function calGuardarAsistente(){
   calEnfocarAjustes();
 }
 const CAL_FOCO_SUSTITUTO = { 'ver-dia': 'ocultar-dia', 'mas-dia': 'ocultar-dia', 'ocultar-dia': 'ver-dia', 'mas-curso': 'curso' };
-function pintarCalendario(){
+function pintarCalendario(repintado = false){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   if (!p) return;
   const visible = CALENDARIO_ACTIVO && s.abierto;
@@ -4930,6 +4939,9 @@ function pintarCalendario(){
   // Las tiras de chips conservan su desplazamiento: si no, al elegir un chip
   // lejano la tira vuelve al principio y lo elegido queda fuera de la vista.
   const desplazadas = [...p.querySelectorAll('.ui-tira')].map(x => x.scrollLeft);
+  // El contenido va antes que la barra: el mes ancho le pasa su ‹ mes › y anota el alto de semana usado.
+  s.navEnBarra = ''; s.altoSemana = 0;
+  const contenido = calContenido();
   // Arriba la ciudad (en Deportes, el título) y las acciones; debajo, atajos de
   // fecha y chips: en la agenda, temas; en Deportes, deportes y competiciones.
   p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="${deportes ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(t(deportes ? 'calDeportesTitulo' : 'calTitulo'))}</h1>
@@ -4938,9 +4950,9 @@ function pintarCalendario(){
     <div class="cal-chips cal-rangos ui-tira" role="group" aria-label="${calEsc(t('calCuando'))}">${rango('hoy', hoy)}${rango('manana', manana)}${rango('finde')}
     ${calBoton('elegir-fecha', '📅', '', `class="cal-icono" aria-label="${calEsc(t('calFecha'))}" title="${calEsc(t('calFecha'))}"`)}
     <input id="cal-fecha" class="sr-only" type="date" tabindex="-1" aria-hidden="true" value="${s.fecha}"></div>
-    ${deportes ? s.capas ? calChipsDeportes() : '' : calChips()}</div>
+    ${s.navEnBarra}${deportes ? s.capas ? calChipsDeportes() : '' : calChips()}</div>
     <div class="cal-cuerpo"><p class="cal-estado" role="status">${calEsc(s.error ? t(s.error, { n: calSegundosEspera() }) : s.cargando ? t('calCargando') : '')}</p>
-    ${s.error === 'calError' ? calBoton('renovar', t('calReintentar')) : ''}<div class="cal-contenido">${calContenido()}</div>
+    ${s.error === 'calError' ? calBoton('renovar', t('calReintentar')) : ''}<div class="cal-contenido">${contenido}</div>
     ${s.meta ? `<p class="cal-nota cal-pie">${calEsc(t('calCobertura'))} ${calEsc(t('calGenerado', { fecha: calFormato({ dateStyle: 'short', timeStyle: 'short', timeZone: s.zona }).format(new Date(s.meta.generado)) }))}</p>` : ''}
     ${s.orden?.noticias ? `<p class="cal-nota">${calEsc(t('calNoticiasTexto'))}</p>` : ''}</div>`;
   p.querySelectorAll('.ui-tira').forEach((x, i) => { if (desplazadas[i]) x.scrollLeft = desplazadas[i]; });
@@ -4951,6 +4963,9 @@ function pintarCalendario(){
     : botonCal(accion) || botonCal(CAL_FOCO_SUSTITUTO[accion]);
   siguiente?.focus({ preventScroll: true });
   if (seleccion && siguiente?.type === 'search') siguiente.setSelectionRange(...seleccion);
+  // El alto de semana se midió con la barra anterior: si al pintar cambió (abrir
+  // el mes la deja en una fila), se pinta otra vez con la medida buena.
+  if (s.altoSemana && s.altoSemana !== calAltoSemana() && !repintado) pintarCalendario(true);
 }
 // Fecha elegida: la tira salta a su semana y la lista empieza en ese día.
 function calElegirDia(dia, rango = ''){
@@ -6079,7 +6094,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=01f619abf5')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=ab672ca371')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
