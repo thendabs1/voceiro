@@ -108,13 +108,20 @@ function _badgeTema(marcados){
   const title = marcados.map(x => x.etiqueta + ' · ' + nombreDe(x.id)).join('\n');
   return `<span class="badge tema" title="${escapeHtml(title)}"><span class="tema-txt">${escapeHtml(txt(marcados[0]))}</span>${extra}</span>`;
 }
+// Palabras vacías cortas de los idiomas de la interfaz. En un tema casan
+// como palabra completa («caldas de reis»), pero resaltadas sueltas llenan el
+// titular de «de»: van como término débil (rangosResaltado). Siglas como PP,
+// IA o UE no están: se resaltan siempre.
+const VACIAS_RESALTE = new Set(['a', 'al', 'ao', 'as', 'at', 'by', 'da', 'de', 'do', 'e', 'el', 'en', 'es',
+  'i', 'in', 'is', 'it', 'la', 'le', 'lo', 'na', 'no', 'o', 'of', 'on', 'or', 'os', 'se', 'su', 'to', 'u', 'un', 'y']);
+const _marcaTema = t => (t.partes.length === 1 && VACIAS_RESALTE.has(t.partes[0]) ? { ...t, debil: true } : t);
 // Lo que se resalta en el titular: el texto de la búsqueda y los temas
 // marcados (sus términos incluidos). null si no hay nada que resaltar.
 function _compiladoMarcas(marcados){
   const incluir = ULT_TEXTO ? [...ULT_TEXTO.incluir] : [];
   for (const m of TEMAS_TODOS){
     const etiquetas = marcados.filter(x => x.id === m.id).map(x => x.etiqueta);
-    if (etiquetas.length) incluir.push(...compiladoDeTemas(m.temas, etiquetas).incluir);
+    if (etiquetas.length) incluir.push(...compiladoDeTemas(m.temas, etiquetas).incluir.map(_marcaTema));
   }
   return incluir.length ? { incluir, excluir: [] } : null;
 }
@@ -171,8 +178,11 @@ function renderItemHtml(n, idx){
   const medioHtml = (n.dominio && MEDIOS[n.dominio])
     ? `<button class="medio" type="button" data-dominio="${escapeHtml(n.dominio)}" title="${escapeHtml(t('medioFiltrarTitle', { medio: n.medio || n.dominio }))}">${n._medioEsc}</button>`
     : `<span class="medio">${n._medioEsc}</span>`;
-  const prensaBadge = (n._capas && n._capas.size === 1 && n._capas.has('prensa'))
-    ? `<span class="badge prensa" title="Encontrado en prensa externa">${ico('globe')} prensa</span>`
+  // Lo que trae la prensa puede casar solo en el cuerpo: una ⓘ lo dice (sin
+  // etiqueta «prensa»: de dónde venga da igual, importa dónde casó).
+  const infoTexto = ULT_TEXTO && n._capas && _soloDeConsulta(n)
+    && !coincide(n._palabras || (n._palabras = palabrasDe(n.titular)), ULT_TEXTO)
+    ? `<button class="btn-mini btn-info-coincide" type="button" title="${escapeHtml(t('coincideEnTexto'))}" aria-label="${escapeHtml(t('coincideEnTexto'))}">${ico('info')}</button>`
     : '';
 
   // Añadir al modo, bloquear y reportar van en el menú ⋯ (abrirMenuMas).
@@ -204,8 +214,8 @@ function renderItemHtml(n, idx){
       ${n.tipo ? `<span class="badge tipo">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
       ${temaBadge}
-      ${prensaBadge}
       ${fechaHtml}
+      ${infoTexto}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" data-estado="${estadoGuardar}" title="${escapeHtml(t(GUARDAR_ESTADOS[estadoGuardar].titulo))}">${guardarHtml(estadoGuardar)}</button>
       <span class="cab-spacer"></span>
       ${shareBtnHtml}
@@ -345,6 +355,12 @@ function wireResultadosDelegation(){
         actualizarBotonPreset();
         aplicarFiltros();
       }
+      return;
+    }
+    // En móvil no hay title: la ⓘ lo dice con un aviso.
+    if (e.target.closest('.btn-info-coincide')){
+      e.preventDefault();
+      toast(t('coincideEnTexto'), 3200);
       return;
     }
     const masBtn = e.target.closest('.btn-mas-item');

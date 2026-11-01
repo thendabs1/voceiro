@@ -118,19 +118,36 @@ export function coincide(palabras, compilado, titular) {
 }
 
 // Rangos [i, j) del titular original que hay que resaltar: todas las
-// apariciones de los términos incluidos (no los excluidos).
+// apariciones de los términos incluidos (no los excluidos). Un término
+// `debil` (una palabra vacía de un tema: «de» en «caldas de reis») solo se
+// resalta pegado a otro resaltado: «Caldas de Reis» sí, «más de dos» no.
 export function rangosResaltado(titular, compilado) {
   if (!compilado || !compilado.incluir.length) return [];
   const palabras = tokenizar(titular);
-  const rangos = [];
+  const fuertes = [];
+  const debiles = [];
   for (const t of compilado.incluir) {
     const n = t.partes.length;
     for (let i = 0; i + n <= palabras.length; i++) {
-      if (_buscar(palabras.slice(i, i + n), t, titular) === 0) {
-        rangos.push([palabras[i].i, palabras[i + n - 1].j]);
-      }
+      if (_buscar(palabras.slice(i, i + n), t, titular) === 0) (t.debil ? debiles : fuertes).push([i, i + n]);
     }
   }
+  // En índices de palabra; las débiles se suman mientras toquen algo marcado
+  // («de la» entre dos términos).
+  const marcadas = new Set();
+  for (const [a, b] of fuertes) for (let k = a; k < b; k++) marcadas.add(k);
+  for (let cambio = true; cambio;) {
+    cambio = false;
+    for (let x = debiles.length - 1; x >= 0; x--) {
+      const [a, b] = debiles[x];
+      if (!marcadas.has(a - 1) && !marcadas.has(b)) continue;
+      for (let k = a; k < b; k++) marcadas.add(k);
+      fuertes.push(debiles[x]);
+      debiles.splice(x, 1);
+      cambio = true;
+    }
+  }
+  const rangos = fuertes.map(([a, b]) => [palabras[a].i, palabras[b - 1].j]);
   rangos.sort((a, b) => a[0] - b[0]);
   const unidos = [];
   for (const r of rangos) {

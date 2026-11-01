@@ -46,7 +46,8 @@ function pintarAccesos(){
     const sigo = (calPreferencias()?.competiciones || []).filter(accesoHay);
     const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c) && accesoHay(c))].slice(0, ACCESOS_PRIMERAS);
     const futbol = CAL_DEPORTES.futbol.filter(accesoHay);
-    filas = [sigo.length > 1 ? fila('calendario:' + sigo.join(','), t('accSigoHorarios')) : '',
+    filas = [...deportesSeguidos().map(([k, cs]) => fila(cs.map(c => c + ':').join(' '), t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) }))),
+      sigo.length > 1 ? fila('calendario:' + sigo.join(','), t('accSigoHorarios')) : '',
       ...primeras.map(c => fila('calendario:' + c, t('accHorarios', { x: nombre(c) }))),
       futbol.length > 1 && !futbol.every(c => primeras.includes(c)) ? fila('calendario:' + futbol.join(','), t('accHorarios', { x: t('calFutbol') })) : '',
       ir('resultados', t('accResultados')), ir('clasificaciones', t('accClasificaciones')), ir('competiciones', t('accCompeticiones'))];
@@ -95,7 +96,6 @@ function cerrarAccesos(volver = true){
 }
 
 function wireAccesos(){
-  wireIconosDeportes();
   const boton = $('#buscar-accesos'), panel = $('#accesos-panel');
   if (!boton || !panel) return;
   boton.addEventListener('click', () => ACCESOS.abierto ? cerrarAccesos() : abrirAccesos());
@@ -121,45 +121,10 @@ function wireAccesos(){
   });
 }
 
-// ── Iconos de deporte en la cabecera ──
-// Un icono por deporte de las competiciones que sigo (★ de Deportes): escribe
-// sus prefijos en la barra (f1: motogp:), que abren Deportes y filtran las
-// noticias respetando el modo; pulsado otra vez, los quita (como el ☀).
-const ICONOS_DEPORTE = {
-  futbol: '<circle cx="12" cy="12" r="9"/><path d="m12 7.5 4 2.9-1.5 4.7h-5L8 10.4Z"/>',
-  baloncesto: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6a9 9 0 0 1 0 12.8M18.4 5.6a9 9 0 0 0 0 12.8"/>',
-  motor: '<path d="M5 21V4h13l-2 4 2 4H5"/><path d="M9 4v8M13 4v8M5 8h13"/>',
-  tenis: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6a9 9 0 0 1 0 12.8M18.4 5.6a9 9 0 0 0 0 12.8"/>',
-};
+// Deportes que sigo (★ de Deportes): [deporte, competiciones con datos].
+// Cada uno da una fila «Fútbol · noticias» arriba del ▾, que escribe sus
+// prefijos (primera: segunda:), como antes los iconos de la cabecera.
 function deportesSeguidos(){
   const sigo = calPreferencias()?.competiciones || [];
-  return Object.entries(CAL_DEPORTES).map(([k, cs]) => [k, cs.filter(c => sigo.includes(c))]).filter(([, cs]) => cs.length);
-}
-// Pulsado si la barra pide exactamente esas competiciones.
-function iconoPulsado(cs){
-  const o = CALENDARIO.orden, ambitos = o && !o.circuitos.length ? o.ambitos : [];
-  return ambitos.length === cs.length && cs.every(c => ambitos.includes(c));
-}
-function pintarIconosDeportes(){
-  const el = $('#cab-deportes');
-  if (!el) return;
-  const deportes = deportesSeguidos();
-  el.hidden = !deportes.length;
-  el.setAttribute('aria-label', t('calCompeticiones'));
-  el.innerHTML = deportes.map(([k, cs]) => {
-    const etiqueta = t(CAL_NOMBRES_DEPORTE[k]) + ': ' + cs.map(calNombreCompeticion).join(', ');
-    return `<button type="button" class="btn-cab cab-deporte cal-dep-${k}" data-deporte="${k}" aria-pressed="${iconoPulsado(cs)}" aria-label="${calEsc(etiqueta)}" title="${calEsc(etiqueta)}">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONOS_DEPORTE[k]}</svg></button>`;
-  }).join('');
-}
-function wireIconosDeportes(){
-  const el = $('#cab-deportes');
-  if (!el) return;
-  el.addEventListener('click', e => {
-    const b = e.target.closest('[data-deporte]');
-    if (!b) return;
-    const cs = deportesSeguidos().find(([k]) => k === b.dataset.deporte)?.[1] || [];
-    escribirAcceso(iconoPulsado(cs) ? '' : cs.map(c => c + ':').join(' '));
-  });
-  pintarIconosDeportes();
+  return Object.entries(CAL_DEPORTES).map(([k, cs]) => [k, cs.filter(c => sigo.includes(c) && accesoHay(c))]).filter(([, cs]) => cs.length);
 }

@@ -14,7 +14,7 @@ import {
 } from './parser.js';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
 import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js';
 import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js';
 import { normalizarRegla, compilarRegla } from './busqueda/reglas.js';
 import { comparador } from './busqueda/orden.js';

@@ -319,6 +319,7 @@ export default {
   "resOtros": "Other",
   "resBuscar": "Filter sources",
   "resSinMedios": "No matching sources",
+  "coincideEnTexto": "Matches the article text, not the headline",
   "deletePending": "Remove",
   "confirmDeletePending": "Remove this news from queue?",
   "readItems": "Read",

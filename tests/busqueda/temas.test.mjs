@@ -104,3 +104,17 @@ test('etiqueta visible: sin exclusiones ni prefijos', () => {
   assert.equal(etiquetaVisible('"san salvador"  poio'), '"san salvador" poio');
   assert.equal(etiquetaVisible('galicia -PP medio:lavoz.es'), 'galicia');
 });
+
+test('término débil: «de» solo se resalta pegado a otro resaltado; el casado no cambia', () => {
+  const titular = 'Caldas de Reis recupera más de dos siglos de la memoria de Reis';
+  const temas = compilarTemas(['caldas de reis']);
+  const etiquetas = temasQueCasan(palabrasDe(titular), temas, titular);
+  assert.deepEqual(etiquetas, ['caldas de reis']);
+  const compilado = compiladoDeTemas(temas, etiquetas);
+  const debil = { incluir: compilado.incluir.map(t => (t.partes[0] === 'de' ? { ...t, debil: true } : t)) };
+  const marcas = c => rangosResaltado(titular, c).map(([i, j]) => titular.slice(i, j));
+  assert.deepEqual(marcas(compilado), ['Caldas', 'de', 'Reis', 'de', 'de', 'de', 'Reis']);
+  assert.deepEqual(marcas(debil), ['Caldas', 'de', 'Reis', 'de', 'Reis']);
+  // Solo débiles: no se resalta nada.
+  assert.deepEqual(rangosResaltado('más de dos', { incluir: [{ partes: ['de'], prefijo: false, debil: true }] }), []);
+});

@@ -319,6 +319,7 @@ export default {
   "resOtros": "Altres",
   "resBuscar": "Filtra mitjans",
   "resSinMedios": "Cap mitjà coincideix",
+  "coincideEnTexto": "Coincideix en el text de l'article, no en el titular",
   "deletePending": "Treure",
   "confirmDeletePending": "Treure aquesta notícia de pendents?",
   "readItems": "Llegides",

@@ -319,6 +319,7 @@ export default {
   "resOtros": "Besteak",
   "resBuscar": "Iragazi hedabideak",
   "resSinMedios": "Ez dago bat datorren hedabiderik",
+  "coincideEnTexto": "Artikuluaren testuan dator bat, ez izenburuan",
   "deletePending": "Kendu",
   "confirmDeletePending": "Albiste hau zaintik kendu?",
   "readItems": "Irakurriak",

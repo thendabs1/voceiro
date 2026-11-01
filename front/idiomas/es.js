@@ -395,6 +395,7 @@ export default {
   "resOtros": "Otros",
   "resBuscar": "Filtrar medios",
   "resSinMedios": "Ningún medio coincide",
+  "coincideEnTexto": "Coincide en el texto del artículo, no en el titular",
   "deletePending": "Quitar",
   "confirmDeletePending": "¿Quitar esta noticia de pendientes?",
   "readItems": "Leídas",
