@@ -858,10 +858,20 @@
   color: var(--fg);
 }
 /* ═══ Pestañas de búsqueda con modo activo: «Modo · N» / «Todo · M» ═══ */
+/* Pestañas, chips de tema y «Medios» comparten una línea; si no caben,
+   bajan a la siguiente. */
+.res-linea{
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 8px 0 6px;
+}
+.res-linea:not(:has(> :not([hidden]))){ display: none; }
 .preset-pestanas{
   display: flex;
   gap: 6px;
-  margin: 8px 0 4px;
   font-size: .75em;
 }
 .preset-pestanas[hidden]{ display: none; }
@@ -975,9 +985,12 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin: 6px 0 4px;
+  min-width: 0;
+  max-width: 100%;
   font-size: .72em;
 }
+/* Con dos filas (vista Temas) los chips ocupan la línea entera. */
+.temas-chips:has(.hija){ flex-basis: 100%; }
 .temas-chips-fila{
   display: flex;
   gap: 6px;
@@ -986,10 +999,6 @@
 }
 .temas-chips-fila::-webkit-scrollbar{ display: none; }
 .temas-chips[hidden]{ display: none; }
-.temas-chips-contexto{ display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; color: var(--muted); }
-.temas-chips-cero > summary{ cursor: pointer; }
-.temas-chips-cero[open]{ flex-basis: 100%; }
-.temas-chips-cero-lista{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .temas-chips button.cero{ opacity: .45; cursor: default; }
 .temas-chips button{
   flex: none;
@@ -1168,8 +1177,9 @@
   }
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
-/* ═══ Resumen de medios de una búsqueda: chip plegable «Medios · N» ═══ */
-.medios-resumen{ margin: 2px 0 6px; font-size: .72em; }
+/* ═══ Resumen de medios de una búsqueda: chip «Medios · N ▾» que despliega
+   la lista flotando sobre las noticias (bajo la cabecera fija, z-index 9). ═══ */
+.medios-resumen{ position: relative; font-size: .72em; }
 .medios-resumen[hidden]{ display: none; }
 .medios-resumen > summary{
   display: inline-flex; align-items: center; gap: 4px; list-style: none; cursor: pointer;
@@ -1179,7 +1189,17 @@
 .medios-resumen > summary::after{ content: '▾'; }
 .medios-resumen[open] > summary{ color: var(--fg); }
 .medios-resumen[open] > summary::after{ content: '▴'; }
-.medios-resumen-cuerpo{ margin-top: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 1.1em; }
+.medios-resumen-cuerpo{
+  position: absolute; left: 0; top: calc(100% + 4px); z-index: 8;
+  width: min(34em, calc(100vw - 32px)); max-height: min(60vh, 480px); overflow-y: auto;
+  padding: 6px 8px; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px var(--shadow); font-size: 1.1em;
+}
+.medios-resumen-buscar{
+  width: 100%; box-sizing: border-box; margin-bottom: 6px; padding: 6px 8px; font: inherit;
+  color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+}
+.medios-resumen-vacio{ margin: 6px; color: var(--muted); }
 .medios-resumen-orden{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .medios-resumen-orden button, .medios-resumen-todos{
   font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; cursor: pointer;
@@ -1203,6 +1223,10 @@
 .medios-resumen-grupo .medios-resumen-lista{ padding-left: 14px; }
 .medios-resumen-todos{ margin-top: 6px; }
 @media (max-width: 600px){
+  /* En estrecho, la lista va a todo el ancho de la línea. */
+  .medios-resumen{ position: static; }
+  .medios-resumen-cuerpo{ right: 0; width: auto; }
+  .medios-resumen-buscar{ min-height: 44px; }
   .medios-resumen > summary, .medios-resumen-lista button, .medios-resumen-grupo > summary, .medios-resumen-orden button, .medios-resumen-todos{ min-height: 44px; }
 }
   /* ═══ Autocomplete del buscador ═══ */
@@ -2106,7 +2130,7 @@
 .est-tabla [data-est="familia"][aria-expanded="true"]::before{content:'▾ '}
 .est-subgrupo{display:block;padding-left:1.4em}
 /* El panel es la vista: sin feed debajo en el que caer al desplazarse. */
-.estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#medios-resumen,#resultados,#cargar-mas-wrap){display:none!important}
+.estadisticas-abiertas :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,.res-linea,#resultados,#cargar-mas-wrap){display:none!important}
 @media(max-width:500px){.est-cuerpo{padding:12px}.est-cabecera{padding:2px 10px 8px}.est-acciones{gap:4px}.est-acciones button{padding:6px}.est-filtros select{width:100%}.est-metricas{gap:10px;grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
 @media(min-width:900px){.est-filtros{flex:0 1 auto;margin-left:12px}.est-acciones{order:1}}
 /* Escritorio con ratón: más denso (≈ 90 %), como el calendario; en táctil se quedan los 44 px. */
@@ -2244,7 +2268,7 @@
 /* El calendario es una rejilla, no texto corrido: usa todo el ancho de la ventana
    (no el de lectura de Aa), con el tamaño de letra elegido. */
 body.calendario-abierto{max-width:none}
-.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,#preset-pestanas,#temas-chips,#medios-resumen,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
+.calendario-abierto :is(#tiempo-tarjeta,#avisos-panel,#chips-busqueda,.res-linea,#resultados,#cargar-mas-wrap),.estadisticas-abiertas #calendario-panel{display:none!important}
 @media(max-width:600px){.cal-cuerpo{padding:10px}.cal-barra{padding:6px 10px}.cal-mes{gap:2px}}
 /* Evento desplegado en la lista: bajo su título, con una raya a la izquierda. */
 .cal-desplegado{border-left:3px solid var(--accent);padding:2px 0 4px 10px;margin:4px 0 10px}.cal-desplegado .cal-evento-fuente{margin-top:8px}
