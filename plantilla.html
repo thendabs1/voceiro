@@ -569,6 +569,10 @@
       <button id="btn-deportes" class="btn-cab" type="button" aria-controls="calendario-panel" aria-expanded="false" hidden></button>
       <div id="cab-deportes-home"><div id="cab-deportes" class="cab-deportes" role="group" hidden></div></div>
       <div id="cab-est-home"><button id="btn-estadisticas" class="btn-cab" type="button" aria-controls="estadisticas-panel" aria-expanded="false"></button></div>
+      <div id="cab-ajustes-home" class="cab-ajustes">
+        <button id="btn-acces" class="btn-cab" type="button"></button>
+        <button id="btn-config" class="btn-cab" type="button"></button>
+      </div>
       <details id="cab-menu" class="cab-menu">
         <summary aria-controls="cab-menu-panel"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis"/></svg><span class="sr-only" id="cab-menu-label"></span></summary>
         <div id="cab-menu-panel" class="cab-menu-panel"></div>
@@ -597,8 +601,6 @@
     <div id="cab-feed-home" class="feed-actions">
       <button id="btn-pase" class="btn-dup-inline btn-view-settings btn-cab" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span class="cab-txt"></span></button>
       <button id="btn-lectura" class="btn-dup-inline btn-view-settings btn-cab" type="button" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg><span class="cab-txt"></span></button>
-      <button id="btn-acces" class="btn-cab" type="button"></button>
-      <button id="btn-config" class="btn-cab" type="button"></button>
     </div>
     <button id="btn-filtros" class="btn-dup-inline btn-view-settings" type="button"
             aria-expanded="false" aria-haspopup="dialog" aria-controls="filtros-panel">
@@ -616,32 +618,20 @@
     <div class="filtros">
       <label><span data-filtro-label="grupo"></span><select id="grupo"><option value=""></option></select></label>
       <label><span data-filtro-label="tipo"></span><select id="tipo"><option value=""></option></select></label>
-      <label><span data-filtro-label="periodo"></span><select id="rango">
-        <option value=""></option>
-        <option value="1"></option>
-        <option value="2"></option>
-      </select></label>
       <label><span data-filtro-label="orden"></span><select id="orden">
         <option value="recientes"></option>
         <option value="antiguos"></option>
         <option value="relevancia"></option>
       </select></label>
-      <label><span data-filtro-label="desde"></span><input type="date" id="fecha-desde"></label>
-      <label><span data-filtro-label="hasta"></span><input type="date" id="fecha-hasta"></label>
+      <label><span data-filtro-label="periodo"></span><select id="rango">
+        <option value=""></option>
+        <option value="1"></option>
+        <option value="2"></option>
+        <option value="intervalo"></option>
+      </select></label>
+      <label class="filtro-fecha" hidden><span data-filtro-label="desde"></span><input type="date" id="fecha-desde"></label>
+      <label class="filtro-fecha" hidden><span data-filtro-label="hasta"></span><input type="date" id="fecha-hasta"></label>
     </div>
-    <fieldset>
-      <legend id="vs-title-hide"></legend>
-      <details class="vs-ayuda">
-        <summary><span class="temas-ayuda-q" aria-hidden="true">?</span><span id="vs-ayuda-lbl"></span></summary>
-        <ul class="vs-ayuda-lista"></ul>
-      </details>
-      <div class="filtros-lectura">
-        <label class="vs-radio"><input type="radio" name="vs-hide" value="off"><span id="vs-hide-off"></span></label>
-        <label class="vs-radio"><input type="radio" name="vs-hide" value="read"><span id="vs-hide-read"></span></label>
-        <label class="vs-radio"><input type="radio" name="vs-hide" value="viewed"><span id="vs-hide-viewed"></span></label>
-        <label class="vs-radio"><input type="radio" name="vs-hide" value="both"><span id="vs-hide-both"></span></label>
-      </div>
-    </fieldset>
   </dialog>
 </section>
 </div>

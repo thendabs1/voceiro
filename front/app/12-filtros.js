@@ -119,16 +119,26 @@ function syncPanelFromParsed(parsed) {
   if (fD && fD.value !== desde) fD.value = desde;
   if (fH && fH.value !== hasta) fH.value = hasta;
 
-  // Rango: «24 h» y «48 h» son exactamente desde:24h y desde:48h. Otro desde
-  // (hoy, ayer, 2d, una fecha) no es una ventana móvil: el selector, en «Todo».
+  // Rango: «24 h» y «48 h» son exactamente desde:24h y desde:48h (sin hasta:).
+  // Otro desde (hoy, ayer, 2d, una fecha) o un hasta: es «Intervalo…», con las
+  // fechas a la vista. «Intervalo…» elegido a mano sigue hasta cambiarlo,
+  // aunque aún no haya fecha.
   const selR = $('#rango');
   if (selR) {
     // parsed.desde ya es un día: se mira lo escrito (gana el último desde:).
     const chD = (parsed.chips || []).filter(ch => ch.type === 'desde').pop();
     const vD = chD ? String(chD.value).toLowerCase() : '';
-    const rMatch = vD === '24h' ? '1' : vD === '48h' ? '2' : '';
+    const rMatch = !hasta && vD === '24h' ? '1'
+      : !hasta && vD === '48h' ? '2'
+      : desde || hasta || selR.value === 'intervalo' ? 'intervalo' : '';
     if (selR.value !== rMatch) selR.value = rMatch;
+    pintarFechasFiltro();
   }
+}
+
+function pintarFechasFiltro() {
+  const ver = $('#rango')?.value === 'intervalo';
+  document.querySelectorAll('.filtros .filtro-fecha').forEach(l => { l.hidden = !ver; });
 }
 
 /* ═══════════════════════════════════════════════════════════════

@@ -12,6 +12,7 @@ function escenario(){
   class Elemento {
     hijos = []; eventos = {}; open = false;
     classList = { remove() {} };
+    get parentElement(){ return this.padre; }
     append(el){
       if (el.padre) el.padre.hijos = el.padre.hijos.filter(h => h !== el);
       el.padre = this; this.hijos.push(el);

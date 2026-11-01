@@ -255,7 +255,7 @@ function actualizarFiltrosCount(){
   const g = $('#grupo'), tp = $('#tipo'), r = $('#rango'), o = $('#orden');
   if (g  && g.value)  n++;
   if (tp && tp.value) n++;
-  if ((r && r.value) || $('#fecha-desde').value) n++;
+  if ((r && (r.value === '1' || r.value === '2')) || $('#fecha-desde').value) n++;
   if ($('#fecha-hasta').value) n++;
   if (o  && o.value && o.value !== 'recientes') n++;
 
@@ -267,12 +267,11 @@ function actualizarFiltrosCount(){
   }
   if (btn){
     btn.classList.toggle('active', n > 0);
-    btn.classList.toggle('lectura-activa', HIDE_MODE !== 'off');
   }
 }
 
 // El ojo de la barra alterna entre ver todos y el último modo de ocultar
-// elegido en Filtros o Ajustes (por defecto, ya leídos).
+// elegido en Ajustes (por defecto, ya leídos).
 function hideModeUltimo(){
   try {
     const raw = localStorage.getItem(HIDE_ULTIMO_KEY);
@@ -287,6 +286,8 @@ function pintarBotonLectura(){
   const clave = { read: 'vsHideRead', viewed: 'vsHideViewed', both: 'vsHideBoth' }[modo];
   const txt = `${t('vsTitleHide')} ${t(clave).toLowerCase()}`;
   b.classList.toggle('active', activo);
+  // En columna estrecha el ojo va dentro de ⋯: el menú lleva la marca.
+  $('#cab-menu')?.classList.toggle('lectura-activa', activo);
   b.setAttribute('aria-pressed', String(activo));
   b.setAttribute('aria-label', txt);
   b.title = txt;
@@ -295,19 +296,12 @@ function pintarBotonLectura(){
   b.querySelector('use').setAttribute('href', activo ? '#i-eye-off' : '#i-eye');
 }
 
-function pintarFiltroLectura(){
-  document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
-    r.checked = (r.value === HIDE_MODE);
-  });
-}
-
-// Lectura se cambia desde Filtros y Ajustes › Feed.
+// Lectura se cambia con el ojo y en Ajustes › Feed.
 function ponerHideMode(v){
   if (!HIDE_MODES.includes(v)) return;
   HIDE_MODE = v;
   guardarHideMode();
   if (v !== 'off') try{ localStorage.setItem(HIDE_ULTIMO_KEY, v); }catch(e){}
-  pintarFiltroLectura();
   ajPintarVista();
   pintarBotonLectura();
   aplicarFiltros();
