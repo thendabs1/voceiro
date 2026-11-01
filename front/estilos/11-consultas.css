@@ -40,14 +40,16 @@
 .consulta-pie{ margin-bottom: 0; }
 .consulta-pie button{ min-height: 32px; padding: 2px 10px; }
 /* Tablas de clasificación sin scroll horizontal: el nombre se parte. */
-.consulta-tabla{ width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.consulta-tabla{ width: 100%; max-width: 42em; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .consulta-tabla th, .consulta-tabla td{ padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--border); }
 .consulta-tabla th:nth-child(2), .consulta-tabla td:nth-child(2){ width: 100%; text-align: left; }
 .consulta-tabla abbr{ text-decoration: none; }
-.consulta-partidos{ margin: 0; padding: 0; list-style: none; }
-.consulta-partidos li{ display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+/* Resultados: tarjetas de marcador en rejilla (ESPN, Google), con el tanteo
+   junto al equipo; no filas de lado a lado de la pantalla. */
+.consulta-partidos{ display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14em, 100%), 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.consulta-partidos li{ display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 4px 10px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
 .consulta-partidos b{ font-variant-numeric: tabular-nums; }
 /* Equipo que casa con las palabras de la búsqueda: fila marcada, sin filtrar. */
 .consulta-marcada, .consulta-marcada td{ font-weight: 600; }
-.consulta-partidos li.consulta-marcada{ box-shadow: inset 3px 0 var(--mark); padding-left: 8px; }
-.consulta-estado{ grid-column: 1 / -1; font-size: .9em; }
+.consulta-partidos li.consulta-marcada{ box-shadow: inset 3px 0 var(--mark); }
+.consulta-estado{ grid-column: 1 / -1; font-size: .8em; }
