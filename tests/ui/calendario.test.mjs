@@ -378,10 +378,50 @@ test('en Deportes, el GP va arriba de cada día suyo como «todo el día»', asy
   await c.deportes();
   assert.equal(c.resumen().get('barras'), '1');
   const html = c.api.calContenido();
-  assert.match(html, /id="cal-dia-2026-10-31"><h2>[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-dep cal-dep-motor">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
+  assert.match(html, /id="cal-dia-2026-10-31"[^>]*><h2>[\s\S]*?data-valor="2026-10-31\|motor"[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-dep cal-dep-motor">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
   assert.equal((html.match(/cal-todo-dia/g) || []).length, 2);
   // La fila «todo el día» es un desplegable propio.
   assert.match(html, /data-valor="2026-10-30~\*~GP de México"/);
+});
+
+test('en Deportes, el día va por deporte: cuentas del resumen sin pedir nada; abrir un grupo pide el día entero', async () => {
+  const responder = u => u.pathname === '/calendario/eventos' && u.searchParams.get('chips') ? { ...META, siguiente: null, eventos: [
+    tarjeta('Lakers — Celtics', '2026-10-27', { hora: '01:00', competiciones: ['nba'] }),
+    tarjeta('Sinner — Alcaraz', '2026-10-27', { hora: '15:00', competiciones: ['atp'] })] } : api(u);
+  const c = contexto({ responder });
+  await c.deportes();
+  const dia = () => c.api.calContenido().match(/<section class="cal-dia" id="cal-dia-2026-10-27"[\s\S]*?<\/section>/)[0];
+  let html = dia();
+  // Sin pedir: el día espera a verse; los grupos llevan las cuentas del resumen.
+  assert.equal(c.pedidas.filter(u => u.pathname === '/calendario/eventos').length, 0);
+  assert.match(html, /data-cargar="2026-10-27"/);
+  assert.match(html, /data-valor="2026-10-27\|baloncesto" data-abierto="false" aria-expanded="false">\s*<span class="cal-grupo-nombre">▸ Baloncesto<\/span> <span class="cal-grupo-cuentas">NBA 9<\/span>/);
+  // Pocas citas: abierto de entrada (cargando hasta que llegue el día).
+  assert.match(html, /data-valor="2026-10-27\|motor" data-abierto="true"[\s\S]*?▾ Motor[\s\S]*?F1<\/span>[\s\S]*?Cargando/);
+  assert.ok(html.indexOf('|baloncesto') < html.indexOf('|motor') && html.indexOf('|motor') < html.indexOf('|tenis'));
+  await c.click('grupo', '2026-10-27|baloncesto', { abierto: 'false' });
+  const p = c.ultima().searchParams;
+  assert.deepEqual([c.ultima().pathname, p.get('desde'), p.get('limite'), p.get('chips')], ['/calendario/eventos', '2026-10-27', '50', '1']);
+  assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-grupos-v1']), { baloncesto: true });
+  html = dia();
+  assert.doesNotMatch(html, /data-cargar|Cargando/);
+  assert.match(html, /\|baloncesto" data-abierto="true"[\s\S]*?Lakers — Celtics[\s\S]*?\|motor"[\s\S]*?\|tenis"[\s\S]*?Sinner — Alcaraz/);
+  // Con una sola competición, el grupo esconde las etiquetas repetidas.
+  assert.match(html, /class="cal-grupo cal-dep-tenis cal-grupo-una"/);
+  const pedidas = c.pedidas.length;
+  await c.click('grupo', '2026-10-27|baloncesto', { abierto: 'true' });
+  assert.equal(c.pedidas.length, pedidas);
+  assert.doesNotMatch(dia(), /Lakers/);
+});
+
+test('en Deportes, lo que sigo va primero y abierto; lo elegido a mano se recuerda', async () => {
+  const c = contexto({ almacen: { 'voceiro-calendario-preferencias-v1': JSON.stringify({ v: 1, estado: 'omitido', competiciones: ['nba'] }),
+    'voceiro-calendario-grupos-v1': JSON.stringify({ motor: false, tenis: 'x' }) } });
+  await c.deportes();
+  const html = c.api.calContenido().match(/id="cal-dia-2026-10-27"[\s\S]*?<\/section>/)[0];
+  assert.match(html, /^[^]*?data-valor="2026-10-27\|baloncesto" data-abierto="true"/);
+  assert.match(html, /\|motor" data-abierto="false"/);
+  assert.match(html, /\|tenis" data-abierto="true"/);
 });
 
 test('sin configurar, el calendario invita al asistente; «Ahora no» lo recuerda', async () => {
