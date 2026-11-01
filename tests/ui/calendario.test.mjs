@@ -220,26 +220,26 @@ test('tira: la semana con puntos por categoría y el pasado atenuado; se desplie
   // Lo prolongado de cultura no pinta punto por sí solo; el de deportes sí.
   assert.doesNotMatch(html.match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0], /cal-cat-deportes/);
   assert.equal((html.match(/data-cal="dia"/g) || []).length, 7);
-  // El mes en curso empieza en la semana de hoy (sin resultados, lo pasado no
-  // aporta): seis semanas, sin días «de otro mes», y el 1 lleva el suyo.
+  // Desplegado, cuatro semanas desde la de hoy (sin resultados, lo pasado no
+  // aporta; caben en una ventana baja): sin días «de otro mes», y el 1 lleva el suyo.
   await c.click('mes');
-  assert.deepEqual([c.resumen().get('desde'), c.resumen().get('hasta'), c.resumen().get('muestras')], ['2026-10-26', '2026-12-07', '0']);
+  assert.deepEqual([c.resumen().get('desde'), c.resumen().get('hasta'), c.resumen().get('muestras')], ['2026-10-26', '2026-11-23', '0']);
   html = c.api.calContenido();
-  assert.equal((html.match(/data-cal="dia"/g) || []).length, 42);
+  assert.equal((html.match(/data-cal="dia"/g) || []).length, 28);
   assert.match(html, /title="lunes"/);
-  assert.match(html, /data-cal="mes"[^>]*>oct – dic 2026 ▴/);
+  assert.match(html, /data-cal="mes"[^>]*>oct – nov 2026 ▴/);
   assert.match(html, /data-valor="2026-11-01"[\s\S]*?<span class="cal-num">1 nov<\/span>/);
   assert.doesNotMatch(html, /cal-otro-mes/);
-  // El anterior, entero: del lunes de la semana del 1 de septiembre, con sus días de otro mes.
+  // ‹ › van de cuatro en cuatro semanas, sin huecos: su lunes, u hoy si cae en ellas.
   await c.click('anterior');
-  assert.deepEqual([c.api.s.fecha, c.resumen().get('desde')], ['2026-09-01', '2026-09-10']);
+  assert.deepEqual([c.api.s.fecha, c.resumen().get('desde'), c.resumen().get('hasta')], ['2026-09-28', '2026-09-28', '2026-10-05']);
   await c.click('siguiente');
   assert.equal(c.api.s.fecha, '2026-10-27');
-  assert.match(c.api.calContenido(), /data-cal="mes"[^>]*>oct – dic 2026 ▴/);
-  // El siguiente, entero y con su nombre; sus días de octubre, como de otro mes.
+  assert.match(c.api.calContenido(), /data-cal="mes"[^>]*>oct – nov 2026 ▴/);
   await c.click('siguiente');
-  assert.equal(c.api.s.fecha, '2026-11-01');
-  assert.match(c.api.calContenido(), /data-cal="mes"[^>]*>noviembre de 2026 ▴[\s\S]*cal-otro-mes/);
+  assert.deepEqual([c.api.s.fecha, c.resumen().get('desde'), c.resumen().get('hasta')], ['2026-11-23', '2026-11-23', '2026-11-30']);
+  assert.match(c.api.calContenido(), /data-cal="mes"[^>]*>nov – dic 2026 ▴/);
+  assert.doesNotMatch(c.api.calContenido(), /cal-otro-mes/);
   await c.click('anterior');
   // Tocar un día lo elige, pliega el mes y la lista empieza en él.
   await c.click('dia', '2026-10-30');
@@ -303,7 +303,7 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   await c.click('temporada');
   const temporada = c.pedidas.findLast(u => u.searchParams.get('circuitos'));
   assert.deepEqual([temporada.searchParams.get('desde'), temporada.searchParams.get('hasta'), temporada.searchParams.get('presentacion')],
-    ['2026-10-26', '2026-12-07', 'prolongada,programa']);
+    ['2026-10-26', '2026-11-23', 'prolongada,programa']);
   const html = c.api.calContenido();
   // El 27: F1 primero, NBA con sus partidos, ATP, y WTA en «+1», cada una con el color de su deporte. Sin puntos ni leyenda.
   const celda = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
@@ -319,13 +319,13 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   await c.click('solo', 'nba');
   assert.equal(c.resumen().get('q'), 'nba:');
   assert.match(c.api.calContenido(), /data-cal="solo" data-valor="nba" aria-pressed="true"/);
-  // Otro mes, entero y con su nombre; el bloque sigue abierto y pide ese mes.
+  // Las cuatro semanas siguientes: el bloque sigue abierto y pide esas semanas.
   await c.click('siguiente');
   const otro = c.pedidas.findLast(u => u.searchParams.get('circuitos')).searchParams;
-  assert.deepEqual([c.api.s.fecha, otro.get('desde'), otro.get('hasta')], ['2026-11-01', '2026-11-01', '2026-12-01']);
-  assert.match(c.api.calContenido(), /▾ Este mes en deportes · noviembre/);
+  assert.deepEqual([c.api.s.fecha, otro.get('desde'), otro.get('hasta')], ['2026-11-23', '2026-11-23', '2026-12-21']);
+  assert.match(c.api.calContenido(), /▾ Próximas semanas en deportes/);
   await c.click('temporada');
-  assert.match(c.api.calContenido(), /aria-expanded="false">▸ Este mes en deportes · noviembre<\/button><\/section>/);
+  assert.match(c.api.calContenido(), /aria-expanded="false">▸ Próximas semanas en deportes<\/button><\/section>/);
 });
 
 test('calendario deportivo: deportes en chips arriba y sus competiciones al elegir uno, sin ciudad ni lateral', async () => {
@@ -492,22 +492,22 @@ test('mes con títulos en ancho: la agenda con chips «hora título» y «+N»',
   await c.abrir(); await c.click('mes');
   assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['4', null]);
   const html = c.api.calContenido();
-  assert.equal((html.match(/class="cal-mg-semana"/g) || []).length, 6);
+  assert.equal((html.match(/class="cal-mg-semana"/g) || []).length, 4);
   // El día: hora y título de cada muestra, coloreados por categoría, y el resto en «+N».
   const dia = html.match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0];
   assert.match(dia, /<span class="cal-mg-chip cal-cat-cultura"><b>18:00<\/b> A2026-10-28<\/span>/);
   assert.match(dia, /\+23 más/);
   // Ventana baja: las semanas se encogen para que quepa el mes y el resto va a «+N».
-  c.window.innerHeight = 500;
+  c.window.innerHeight = 400;
   const bajo = c.api.calContenido().match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0];
   assert.equal((bajo.match(/cal-mg-chip/g) || []).length, 1);
   assert.match(bajo, /\+25 más/);
   delete c.window.innerHeight;
   // Lo que hay encima del mes se mide: con la barra del calendario más alta, caben menos.
   const sinBarra = c.panel.querySelector;
-  c.panel.querySelector = sel => sel === '.cal-barra' ? { offsetHeight: 200 } : null;
+  c.panel.querySelector = sel => sel === '.cal-barra' ? { offsetHeight: 450 } : null;
   const alta = c.api.calContenido().match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0];
-  assert.equal((alta.match(/cal-mg-chip/g) || []).length, 3);
+  assert.equal((alta.match(/cal-mg-chip/g) || []).length, 2);
   c.panel.querySelector = sinBarra;
   // ‹ mes › sube a la barra del calendario; la tira no lo repite.
   assert.doesNotMatch(html, /cal-tira-cabecera/);
@@ -531,7 +531,7 @@ test('mes de Deportes en ancho: marcas por competición, todas, y el motor en ba
   c.hoy = '2026-10-26';
   await c.deportes();
   // Sin muestras: los días llevan marcas, que salen de las cuentas.
-  const mes = c.pedidas.find(u => u.pathname === '/calendario/resumen' && u.searchParams.get('hasta') === '2026-12-07').searchParams;
+  const mes = c.pedidas.find(u => u.pathname === '/calendario/resumen' && u.searchParams.get('hasta') === '2026-11-23').searchParams;
   assert.deepEqual([mes.get('desde'), mes.get('muestras'), mes.get('barras')], ['2026-10-26', '0', '1']);
   // El GP también tiene marca el viernes: va en la barra, no se repite.
   c.api.s.mes.dias.find(d => d.dia === '2026-10-30').competiciones.f1 = { citas: 0, programas: 1, en_curso: 0 };
@@ -542,7 +542,7 @@ test('mes de Deportes en ancho: marcas por competición, todas, y el motor en ba
   assert.match(dia, /<span class="cal-mg-marcas"><span class="cal-mg-marca cal-dep cal-dep-baloncesto" title="NBA · 9 partidos">NBA 9<\/span><span class="cal-mg-marca cal-dep cal-dep-motor" title="F1">F1<\/span><span class="cal-mg-marca cal-dep cal-dep-tenis" title="ATP · 1 partido">ATP<\/span><span class="cal-mg-marca cal-dep cal-dep-tenis" title="WTA">WTA<\/span><\/span>/);
   assert.doesNotMatch(html, /cal-mg-chip|cal-mg-mas|;height:/);
   // La semana mide lo que lleva: sin alto fijo ni mínimo.
-  assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:26px">/);
+  assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:24px">/);
   // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
   assert.match(html, /class="cal-mg-barra cal-dep cal-dep-motor" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
   assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
@@ -565,7 +565,7 @@ test('mes de Deportes: solo el motor va en barra, en todos los carriles que haga
   c.window.innerHeight = 500;
   const html = c.api.calContenido();
   assert.deepEqual(barras(html), [['cal-dep cal-dep-motor', '2', 'Torneo f1'], ['cal-dep cal-dep-motor', '3', 'Torneo motogp'], ['cal-dep cal-dep-motor', '4', 'Torneo wrc']]);
-  assert.match(html, /--carriles:3;--carril:26px/);
+  assert.match(html, /--carriles:3;--carril:24px/);
   delete c.window.innerHeight;
 });
 
@@ -576,12 +576,12 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   await c.deportes();
   // Con todas, marcas y sin muestras; la NBA no tiene calendario completo, pero con todas
   // manda la que menos tiene publicado: sin unidades, ningún límite.
-  assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-12-07').searchParams.get('muestras'), '0');
+  assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-11-23').searchParams.get('muestras'), '0');
   await c.click('deporte', 'baloncesto');
   await c.click('capa', 'wnba'); await c.click('capa', 'feb-endesa'); await c.click('capa', 'feb-primera');
   assert.equal(c.resumen().get('q'), 'nba: feb-challenge:');
   // Dos competiciones: el mes pide cinco muestras y pinta los partidos con su hora y «+N».
-  assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-12-07').searchParams.get('muestras'), '5');
+  assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-11-23').searchParams.get('muestras'), '5');
   c.api.s.meta.colecciones = [{ coleccion: 'nba', estado: 'activa', calendario_completo: false, unidades: [{ fin: '2026-11-08' }, { fin: '2026-11-11' }] }];
   let html = c.api.calContenido();
   const dia = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
