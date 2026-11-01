@@ -37,10 +37,8 @@ function pintarAccesos(){
   const panel = $('#accesos-panel');
   if (!panel) return;
   const p = ACCESOS.pantalla, nombre = calNombreCompeticion;
-  // A la derecha, en gris, lo que se escribirá en la barra: así se aprende el
-  // atajo (como los calificadores del buscador de GitHub). También lo oye el
-  // lector de pantalla, tras el texto y separado por un espacio.
-  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}<span class="accesos-orden"> ${calEsc(orden)}</span></button></li>`;
+  // La orden no se repite en la fila: al pulsar se escribe en la barra y ahí se aprende.
+  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}</button></li>`;
   const ir = (pantalla, texto) => `<li><button type="button" data-pantalla="${calEsc(pantalla)}">${calEsc(texto)}<span aria-hidden="true"> ›</span></button></li>`;
   let titulo = t('accTitulo'), filas = [];
   if (!p){
