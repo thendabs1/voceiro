@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=3fa3a2b905';
+} from './parser.js?v=fccdec9e93';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=3fa3a2b905';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=3fa3a2b905';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=3fa3a2b905';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=3fa3a2b905';
-import { comparador } from './busqueda/orden.js?v=3fa3a2b905';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=fccdec9e93';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=fccdec9e93';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=fccdec9e93';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=fccdec9e93';
+import { comparador } from './busqueda/orden.js?v=fccdec9e93';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=3fa3a2b905';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=3fa3a2b905';
+} from './sync/fusion.js?v=fccdec9e93';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=fccdec9e93';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=3fa3a2b905';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=3fa3a2b905';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=fccdec9e93';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=fccdec9e93';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=3fa3a2b905';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=fccdec9e93';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=3fa3a2b905';
+} from './tiempo/avisos.js?v=fccdec9e93';
 
-import { I18N, traducir } from './idiomas/index.js?v=3fa3a2b905';
+import { I18N, traducir } from './idiomas/index.js?v=fccdec9e93';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=3fa3a2b905';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=3fa3a2b905';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=3fa3a2b905';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=3fa3a2b905';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=fccdec9e93';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=fccdec9e93';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=fccdec9e93';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=fccdec9e93';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=3fa3a2b905';
+import { ADMINISTRACION } from './territorios/administracion.js?v=fccdec9e93';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=3fa3a2b905');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=fccdec9e93');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2082,7 +2082,6 @@ function wireMenuCabecera(barra){
   const destinos = [
     [document.querySelector('header .meta'), document.getElementById('cab-meta-home')],
     [document.getElementById('btn-estadisticas'), document.getElementById('cab-est-home')],
-    [document.getElementById('cab-deportes'), document.getElementById('cab-deportes-home')],
     ...[...document.querySelectorAll('#cab-feed-home > button, #cab-ajustes-home > button')]
       .map(b => [b, b.parentElement]),
   ].filter(([el]) => el);
@@ -3567,7 +3566,8 @@ function pintarAccesos(){
     const sigo = (calPreferencias()?.competiciones || []).filter(accesoHay);
     const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c) && accesoHay(c))].slice(0, ACCESOS_PRIMERAS);
     const futbol = CAL_DEPORTES.futbol.filter(accesoHay);
-    filas = [sigo.length > 1 ? fila('calendario:' + sigo.join(','), t('accSigoHorarios')) : '',
+    filas = [...deportesSeguidos().map(([k, cs]) => fila(cs.map(c => c + ':').join(' '), t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) }))),
+      sigo.length > 1 ? fila('calendario:' + sigo.join(','), t('accSigoHorarios')) : '',
       ...primeras.map(c => fila('calendario:' + c, t('accHorarios', { x: nombre(c) }))),
       futbol.length > 1 && !futbol.every(c => primeras.includes(c)) ? fila('calendario:' + futbol.join(','), t('accHorarios', { x: t('calFutbol') })) : '',
       ir('resultados', t('accResultados')), ir('clasificaciones', t('accClasificaciones')), ir('competiciones', t('accCompeticiones'))];
@@ -3616,7 +3616,6 @@ function cerrarAccesos(volver = true){
 }
 
 function wireAccesos(){
-  wireIconosDeportes();
   const boton = $('#buscar-accesos'), panel = $('#accesos-panel');
   if (!boton || !panel) return;
   boton.addEventListener('click', () => ACCESOS.abierto ? cerrarAccesos() : abrirAccesos());
@@ -3642,47 +3641,12 @@ function wireAccesos(){
   });
 }
 
-// ── Iconos de deporte en la cabecera ──
-// Un icono por deporte de las competiciones que sigo (★ de Deportes): escribe
-// sus prefijos en la barra (f1: motogp:), que abren Deportes y filtran las
-// noticias respetando el modo; pulsado otra vez, los quita (como el ☀).
-const ICONOS_DEPORTE = {
-  futbol: '<circle cx="12" cy="12" r="9"/><path d="m12 7.5 4 2.9-1.5 4.7h-5L8 10.4Z"/>',
-  baloncesto: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6a9 9 0 0 1 0 12.8M18.4 5.6a9 9 0 0 0 0 12.8"/>',
-  motor: '<path d="M5 21V4h13l-2 4 2 4H5"/><path d="M9 4v8M13 4v8M5 8h13"/>',
-  tenis: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6a9 9 0 0 1 0 12.8M18.4 5.6a9 9 0 0 0 0 12.8"/>',
-};
+// Deportes que sigo (★ de Deportes): [deporte, competiciones con datos].
+// Cada uno da una fila «Fútbol · noticias» arriba del ▾, que escribe sus
+// prefijos (primera: segunda:), como antes los iconos de la cabecera.
 function deportesSeguidos(){
   const sigo = calPreferencias()?.competiciones || [];
-  return Object.entries(CAL_DEPORTES).map(([k, cs]) => [k, cs.filter(c => sigo.includes(c))]).filter(([, cs]) => cs.length);
-}
-// Pulsado si la barra pide exactamente esas competiciones.
-function iconoPulsado(cs){
-  const o = CALENDARIO.orden, ambitos = o && !o.circuitos.length ? o.ambitos : [];
-  return ambitos.length === cs.length && cs.every(c => ambitos.includes(c));
-}
-function pintarIconosDeportes(){
-  const el = $('#cab-deportes');
-  if (!el) return;
-  const deportes = deportesSeguidos();
-  el.hidden = !deportes.length;
-  el.setAttribute('aria-label', t('calCompeticiones'));
-  el.innerHTML = deportes.map(([k, cs]) => {
-    const etiqueta = t(CAL_NOMBRES_DEPORTE[k]) + ': ' + cs.map(calNombreCompeticion).join(', ');
-    return `<button type="button" class="btn-cab cab-deporte cal-dep-${k}" data-deporte="${k}" aria-pressed="${iconoPulsado(cs)}" aria-label="${calEsc(etiqueta)}" title="${calEsc(etiqueta)}">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONOS_DEPORTE[k]}</svg></button>`;
-  }).join('');
-}
-function wireIconosDeportes(){
-  const el = $('#cab-deportes');
-  if (!el) return;
-  el.addEventListener('click', e => {
-    const b = e.target.closest('[data-deporte]');
-    if (!b) return;
-    const cs = deportesSeguidos().find(([k]) => k === b.dataset.deporte)?.[1] || [];
-    escribirAcceso(iconoPulsado(cs) ? '' : cs.map(c => c + ':').join(' '));
-  });
-  pintarIconosDeportes();
+  return Object.entries(CAL_DEPORTES).map(([k, cs]) => [k, cs.filter(c => sigo.includes(c) && accesoHay(c))]).filter(([, cs]) => cs.length);
 }
 /* Calendario: cliente de la API de agenda de los workers de datos (/calendario/*). */
 // Se pide solo lo visible: el catálogo una vez, el resumen de la ventana (cuentas
@@ -4054,7 +4018,6 @@ function calPreferencias(){
 }
 function calGuardarPreferencias(p){
   CALENDARIO.prefs = p;
-  pintarIconosDeportes();
   try { localStorage.setItem(CAL_PREF_KEY, JSON.stringify(p)); return true; } catch { return false; }
 }
 // «Lo mío» de la agenda: los temas de mis intereses en mi sitio (con
@@ -4098,7 +4061,6 @@ function actualizarConsultaCalendario(orden){
   if (fecha !== s.desdeConsulta){ s.desdeConsulta = fecha; s.fecha = fechaValida(fecha) ? fecha : calHoy(); }
   // La orden va antes que las preferencias: un prefijo no hereda «Lo mío».
   s.orden = orden;
-  pintarIconosDeportes();
   if (clave !== s.clave){
     s.clave = clave; calLimpiarFiltros();
     // Un prefijo de agenda abre la vista completa y, al quitarlo, la cierra;
@@ -6171,7 +6133,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=3fa3a2b905')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=fccdec9e93')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -9495,13 +9457,20 @@ function _badgeTema(marcados){
   const title = marcados.map(x => x.etiqueta + ' · ' + nombreDe(x.id)).join('\n');
   return `<span class="badge tema" title="${escapeHtml(title)}"><span class="tema-txt">${escapeHtml(txt(marcados[0]))}</span>${extra}</span>`;
 }
+// Palabras vacías cortas de los idiomas de la interfaz. En un tema casan
+// como palabra completa («caldas de reis»), pero resaltadas sueltas llenan el
+// titular de «de»: van como término débil (rangosResaltado). Siglas como PP,
+// IA o UE no están: se resaltan siempre.
+const VACIAS_RESALTE = new Set(['a', 'al', 'ao', 'as', 'at', 'by', 'da', 'de', 'do', 'e', 'el', 'en', 'es',
+  'i', 'in', 'is', 'it', 'la', 'le', 'lo', 'na', 'no', 'o', 'of', 'on', 'or', 'os', 'se', 'su', 'to', 'u', 'un', 'y']);
+const _marcaTema = t => (t.partes.length === 1 && VACIAS_RESALTE.has(t.partes[0]) ? { ...t, debil: true } : t);
 // Lo que se resalta en el titular: el texto de la búsqueda y los temas
 // marcados (sus términos incluidos). null si no hay nada que resaltar.
 function _compiladoMarcas(marcados){
   const incluir = ULT_TEXTO ? [...ULT_TEXTO.incluir] : [];
   for (const m of TEMAS_TODOS){
     const etiquetas = marcados.filter(x => x.id === m.id).map(x => x.etiqueta);
-    if (etiquetas.length) incluir.push(...compiladoDeTemas(m.temas, etiquetas).incluir);
+    if (etiquetas.length) incluir.push(...compiladoDeTemas(m.temas, etiquetas).incluir.map(_marcaTema));
   }
   return incluir.length ? { incluir, excluir: [] } : null;
 }
@@ -9558,8 +9527,11 @@ function renderItemHtml(n, idx){
   const medioHtml = (n.dominio && MEDIOS[n.dominio])
     ? `<button class="medio" type="button" data-dominio="${escapeHtml(n.dominio)}" title="${escapeHtml(t('medioFiltrarTitle', { medio: n.medio || n.dominio }))}">${n._medioEsc}</button>`
     : `<span class="medio">${n._medioEsc}</span>`;
-  const prensaBadge = (n._capas && n._capas.size === 1 && n._capas.has('prensa'))
-    ? `<span class="badge prensa" title="Encontrado en prensa externa">${ico('globe')} prensa</span>`
+  // Lo que trae la prensa puede casar solo en el cuerpo: una ⓘ lo dice (sin
+  // etiqueta «prensa»: de dónde venga da igual, importa dónde casó).
+  const infoTexto = ULT_TEXTO && n._capas && _soloDeConsulta(n)
+    && !coincide(n._palabras || (n._palabras = palabrasDe(n.titular)), ULT_TEXTO)
+    ? `<button class="btn-mini btn-info-coincide" type="button" title="${escapeHtml(t('coincideEnTexto'))}" aria-label="${escapeHtml(t('coincideEnTexto'))}">${ico('info')}</button>`
     : '';
 
   // Añadir al modo, bloquear y reportar van en el menú ⋯ (abrirMenuMas).
@@ -9591,8 +9563,8 @@ function renderItemHtml(n, idx){
       ${n.tipo ? `<span class="badge tipo">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
       ${temaBadge}
-      ${prensaBadge}
       ${fechaHtml}
+      ${infoTexto}
       <button class="btn-save-text btn-save-item" type="button" data-idx="${idx}" data-estado="${estadoGuardar}" title="${escapeHtml(t(GUARDAR_ESTADOS[estadoGuardar].titulo))}">${guardarHtml(estadoGuardar)}</button>
       <span class="cab-spacer"></span>
       ${shareBtnHtml}
@@ -9732,6 +9704,12 @@ function wireResultadosDelegation(){
         actualizarBotonPreset();
         aplicarFiltros();
       }
+      return;
+    }
+    // En móvil no hay title: la ⓘ lo dice con un aviso.
+    if (e.target.closest('.btn-info-coincide')){
+      e.preventDefault();
+      toast(t('coincideEnTexto'), 3200);
       return;
     }
     const masBtn = e.target.closest('.btn-mas-item');
