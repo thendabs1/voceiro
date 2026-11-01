@@ -2149,7 +2149,7 @@
 @media(min-width:900px){.est-filtros{flex:0 1 auto;margin-left:12px}.est-acciones{order:1}}
 /* Escritorio con ratón: más denso (≈ 90 %), como el calendario; en táctil se quedan los 44 px. */
 @media(pointer:fine){.estadisticas-panel{font-size:.9em}.estadisticas-panel button,.estadisticas-panel input,.estadisticas-panel select{min-height:32px}}
-.calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:16px 0 26px;overflow:hidden;scroll-margin-top:120px;container-type:inline-size}
+.calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:8px 0 26px;overflow:hidden;scroll-margin-top:120px;container-type:inline-size}
 /* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
 .cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
 .cal-barra h1:focus{outline:none}.cal-barra>.ui-tira{flex-basis:100%;min-width:0}
@@ -2159,7 +2159,7 @@
 .cal-icono{min-width:44px}
 .cal-donde{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 220px}
 .cal-donde-nombre{border:0;background:transparent;color:var(--fg);font-weight:700;padding:4px 6px;text-align:left;overflow-wrap:anywhere}.cal-donde-nombre:hover{color:var(--accent)}
-.cal-cuerpo{padding:12px 16px;min-width:0}
+.cal-cuerpo{padding:8px 16px 12px;min-width:0}
 /* Chips: seleccionados con borde y subrayado; los de categoría, con su color. */
 .cal-chips button{font-size:.85em;padding:5px 14px;border-radius:999px}
 .cal-chips [aria-pressed="true"]{color:var(--accent);border-color:var(--accent);box-shadow:inset 0 -2px var(--accent);font-weight:600}
@@ -2291,10 +2291,10 @@ body.calendario-abierto{max-width:none}
 }
 /* Escritorio: una sola fila desde la izquierda (Flashscore, Google Calendar):
    título o ciudad, atajos de fecha, ‹ mes › si está abierto, chips (se desplazan;
-   si no les quedan 16em, bajan) y las acciones al final; debajo, las competiciones. */
+   si no les quedan 8em, bajan) y las acciones al final; debajo, las competiciones. */
 @container (min-width:900px){
   .cal-donde{flex:0 1 auto}.cal-barra>:is(.cal-rangos,.cal-tira-cabecera){flex-basis:auto;order:1}
-  .cal-barra>.ui-tira:not(.cal-rangos,.cal-subchips){flex:1 1 16em;order:2}.cal-acciones{order:3}
+  .cal-barra>.ui-tira:not(.cal-rangos,.cal-subchips){flex:1 1 8em;order:2}.cal-acciones{order:3}
   .cal-barra>.cal-subchips,.cal-pista-seguir{order:4}
 }
 /* Semana y lista sin mes abierto: ancho de lectura, sin filas de 1400 px (Google
