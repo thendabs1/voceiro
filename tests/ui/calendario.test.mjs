@@ -503,11 +503,21 @@ test('mes con títulos en ancho: la agenda con chips «hora título» y «+N»',
   assert.equal((bajo.match(/cal-mg-chip/g) || []).length, 1);
   assert.match(bajo, /\+25 más/);
   delete c.window.innerHeight;
+  // Lo que hay encima del mes se mide: con la barra del calendario más alta, caben menos.
+  const sinBarra = c.panel.querySelector;
+  c.panel.querySelector = sel => sel === '.cal-barra' ? { offsetHeight: 200 } : null;
+  const alta = c.api.calContenido().match(/data-valor="2026-10-28"[\s\S]*?<\/button>/)[0];
+  assert.equal((alta.match(/cal-mg-chip/g) || []).length, 3);
+  c.panel.querySelector = sinBarra;
+  // ‹ mes › sube a la barra del calendario; la tira no lo repite.
+  assert.doesNotMatch(html, /cal-tira-cabecera/);
+  assert.match(c.api.s.navEnBarra, /^<div class="cal-tira-cabecera">[\s\S]*data-cal="mes"/);
   // En estrecho, la tira con puntos de siempre (y sin pedir títulos).
   c.panel.clientWidth = 360;
   await c.click('mes'); await c.click('mes');
   assert.deepEqual([c.resumen().get('muestras'), c.resumen().get('barras')], ['0', null]);
   assert.doesNotMatch(c.api.calContenido(), /cal-mg-semana/);
+  assert.match(c.api.calContenido(), /class="cal-tira-cabecera"/);
   // El ancho se cuenta en em: con la letra grande de Aa, 1000 px es estrecho.
   c.panel.clientWidth = 1000;
   c.getComputedStyle = () => ({ fontSize: '28.8px' });
@@ -532,7 +542,7 @@ test('mes de Deportes en ancho: marcas por competición, todas, y el motor en ba
   assert.match(dia, /<span class="cal-mg-marcas"><span class="cal-mg-marca cal-dep cal-dep-baloncesto" title="NBA · 9 partidos">NBA 9<\/span><span class="cal-mg-marca cal-dep cal-dep-motor" title="F1">F1<\/span><span class="cal-mg-marca cal-dep cal-dep-tenis" title="ATP · 1 partido">ATP<\/span><span class="cal-mg-marca cal-dep cal-dep-tenis" title="WTA">WTA<\/span><\/span>/);
   assert.doesNotMatch(html, /cal-mg-chip|cal-mg-mas|;height:/);
   // La semana mide lo que lleva: sin alto fijo ni mínimo.
-  assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:28px">/);
+  assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:26px">/);
   // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
   assert.match(html, /class="cal-mg-barra cal-dep cal-dep-motor" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
   assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
@@ -555,7 +565,7 @@ test('mes de Deportes: solo el motor va en barra, en todos los carriles que haga
   c.window.innerHeight = 500;
   const html = c.api.calContenido();
   assert.deepEqual(barras(html), [['cal-dep cal-dep-motor', '2', 'Torneo f1'], ['cal-dep cal-dep-motor', '3', 'Torneo motogp'], ['cal-dep cal-dep-motor', '4', 'Torneo wrc']]);
-  assert.match(html, /--carriles:3;--carril:28px/);
+  assert.match(html, /--carriles:3;--carril:26px/);
   delete c.window.innerHeight;
 });
 
