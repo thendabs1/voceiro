@@ -252,10 +252,20 @@
   color: var(--fg);
 }
 /* ═══ Pestañas de búsqueda con modo activo: «Modo · N» / «Todo · M» ═══ */
+/* Pestañas, chips de tema y «Medios» comparten una línea; si no caben,
+   bajan a la siguiente. */
+.res-linea{
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 8px 0 6px;
+}
+.res-linea:not(:has(> :not([hidden]))){ display: none; }
 .preset-pestanas{
   display: flex;
   gap: 6px;
-  margin: 8px 0 4px;
   font-size: .75em;
 }
 .preset-pestanas[hidden]{ display: none; }

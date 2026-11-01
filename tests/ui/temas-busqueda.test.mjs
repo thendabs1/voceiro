@@ -9,8 +9,6 @@ const textos = {
   temaChipSinFiltro: 'Sin filtro',
   temaChipSoloMedios: 'Solo medios',
   temaChipTema: 'Tema: {X}',
-  temaFiltroEnModo: 'Filtrar dentro de {X}:',
-  temaChipsSinCoincidencias: 'Temas sin coincidencias · {n}',
 };
 
 const html = leerAplicacion();
@@ -18,18 +16,7 @@ const inicio = html.indexOf('function renderChipsTemas(){');
 const funcion = html.slice(inicio, html.indexOf('\n}', inicio) + 2);
 
 function crearContexto({ buscando = true, elegido = 'pontevedra' } = {}) {
-  const elemento = {
-    hidden: true,
-    abierto: false,
-    contenido: '',
-    get innerHTML() { return this.contenido; },
-    set innerHTML(valor) { this.contenido = valor; this.abierto = false; },
-    querySelector(selector) {
-      if (!this.contenido.includes('class="temas-chips-cero"')) return null;
-      if (selector.endsWith('[open]') && !this.abierto) return null;
-      return { get open() { return elemento.abierto; }, set open(valor) { elemento.abierto = valor; } };
-    },
-  };
+  const elemento = { hidden: true, innerHTML: '' };
   const contexto = {
     document: { getElementById: () => elemento },
     ULT_PESTANAS: buscando ? { pestana: 'modo' } : null,
@@ -51,31 +38,36 @@ function crearContexto({ buscando = true, elegido = 'pontevedra' } = {}) {
   return { elemento, contexto };
 }
 
-test(`la búsqueda distingue alcance y filtro, y recoge los temas a cero`, () => {
+test(`buscando en un modo solo salen los temas con noticias, sin etiqueta`, () => {
   const { elemento, contexto } = crearContexto();
   contexto.renderChipsTemas();
   assert.equal(elemento.hidden, false);
-  assert.match(elemento.innerHTML, /Filtrar dentro de LOCAL:/);
+  assert.doesNotMatch(elemento.innerHTML, /Filtrar dentro|sin coincidencias/);
   assert.match(elemento.innerHTML, /Sin filtro · 34/);
   assert.match(elemento.innerHTML, /Solo medios · 32/);
   assert.match(elemento.innerHTML, /Tema: pontevedra · 5/);
-  assert.match(elemento.innerHTML, /Temas sin coincidencias · 2/);
-  const [, fila] = elemento.innerHTML.split('<div class="temas-chips-fila">');
-  assert.doesNotMatch(fila, /caldas|portas/);
-  assert.match(elemento.innerHTML, /data-tema="caldas"[^>]*disabled/);
-  elemento.abierto = true;
-  contexto.renderChipsTemas();
-  assert.equal(elemento.abierto, true);
+  assert.doesNotMatch(elemento.innerHTML, /caldas|portas/);
 });
 
 test(`un tema seleccionado sigue visible aunque tenga cero resultados`, () => {
   const { elemento, contexto } = crearContexto({ elegido: 'caldas' });
   contexto.renderChipsTemas();
-  const [, fila] = elemento.innerHTML.split('<div class="temas-chips-fila">');
-  assert.match(fila, /Tema: caldas · 0/);
-  assert.match(fila, /data-tema="caldas"[^>]*aria-pressed="true"/);
-  assert.doesNotMatch(fila, /data-tema="caldas"[^>]*disabled/);
-  assert.match(elemento.innerHTML, /Temas sin coincidencias · 1/);
+  assert.match(elemento.innerHTML, /Tema: caldas · 0/);
+  assert.match(elemento.innerHTML, /data-tema="caldas"[^>]*aria-pressed="true"/);
+  assert.doesNotMatch(elemento.innerHTML, /data-tema="caldas"[^>]*disabled/);
+  assert.doesNotMatch(elemento.innerHTML, /portas/);
+});
+
+test(`sin temas con noticias no queda un «Sin filtro» suelto`, () => {
+  const { elemento, contexto } = crearContexto({ elegido: null });
+  contexto.ULT_CHIPS.porTema = new Map([['caldas', 0], ['portas', 0]]);
+  contexto.ULT_CHIPS.nMedios = 0;
+  contexto.renderChipsTemas();
+  assert.equal(elemento.hidden, true);
+  assert.equal(elemento.innerHTML, '');
+  contexto.ULT_CHIPS.nMedios = null;
+  contexto.renderChipsTemas();
+  assert.equal(elemento.hidden, true);
 });
 
 test(`fuera de la búsqueda se conservan todos los temas`, () => {
