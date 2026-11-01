@@ -8,7 +8,7 @@
 // Cada límite se devuelve como { ms, dia }: ms para el filtro local y dia
 // (YYYY-MM-DD de Madrid) para la cota gruesa que se manda a la prensa.
 
-import { parseRelativeDate } from '../parser.js?v=1f11c2dd29';
+import { parseRelativeDate } from '../parser.js?v=286528211d';
 
 const _FMT = new Intl.DateTimeFormat('en-US', {
   timeZone: 'Europe/Madrid', hourCycle: 'h23',

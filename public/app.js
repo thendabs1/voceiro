@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=1f11c2dd29';
+} from './parser.js?v=286528211d';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=1f11c2dd29';
-import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=1f11c2dd29';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=1f11c2dd29';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=1f11c2dd29';
-import { comparador } from './busqueda/orden.js?v=1f11c2dd29';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=286528211d';
+import { palabrasDe, rangosResaltado } from './busqueda/texto.js?v=286528211d';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=286528211d';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=286528211d';
+import { comparador } from './busqueda/orden.js?v=286528211d';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=1f11c2dd29';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=1f11c2dd29';
+} from './sync/fusion.js?v=286528211d';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=286528211d';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=1f11c2dd29';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=1f11c2dd29';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=286528211d';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=286528211d';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=1f11c2dd29';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=286528211d';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=1f11c2dd29';
+} from './tiempo/avisos.js?v=286528211d';
 
-import { I18N, traducir } from './idiomas/index.js?v=1f11c2dd29';
+import { I18N, traducir } from './idiomas/index.js?v=286528211d';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=1f11c2dd29';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=1f11c2dd29';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=1f11c2dd29';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=1f11c2dd29';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=286528211d';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=286528211d';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=286528211d';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=286528211d';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=1f11c2dd29';
+import { ADMINISTRACION } from './territorios/administracion.js?v=286528211d';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -800,7 +800,7 @@ function actualizarFiltrosCount(){
   const g = $('#grupo'), tp = $('#tipo'), r = $('#rango'), o = $('#orden');
   if (g  && g.value)  n++;
   if (tp && tp.value) n++;
-  if ((r && r.value) || $('#fecha-desde').value) n++;
+  if ((r && (r.value === '1' || r.value === '2')) || $('#fecha-desde').value) n++;
   if ($('#fecha-hasta').value) n++;
   if (o  && o.value && o.value !== 'recientes') n++;
 
@@ -812,12 +812,11 @@ function actualizarFiltrosCount(){
   }
   if (btn){
     btn.classList.toggle('active', n > 0);
-    btn.classList.toggle('lectura-activa', HIDE_MODE !== 'off');
   }
 }
 
 // El ojo de la barra alterna entre ver todos y el último modo de ocultar
-// elegido en Filtros o Ajustes (por defecto, ya leídos).
+// elegido en Ajustes (por defecto, ya leídos).
 function hideModeUltimo(){
   try {
     const raw = localStorage.getItem(HIDE_ULTIMO_KEY);
@@ -832,6 +831,8 @@ function pintarBotonLectura(){
   const clave = { read: 'vsHideRead', viewed: 'vsHideViewed', both: 'vsHideBoth' }[modo];
   const txt = `${t('vsTitleHide')} ${t(clave).toLowerCase()}`;
   b.classList.toggle('active', activo);
+  // En columna estrecha el ojo va dentro de ⋯: el menú lleva la marca.
+  $('#cab-menu')?.classList.toggle('lectura-activa', activo);
   b.setAttribute('aria-pressed', String(activo));
   b.setAttribute('aria-label', txt);
   b.title = txt;
@@ -840,19 +841,12 @@ function pintarBotonLectura(){
   b.querySelector('use').setAttribute('href', activo ? '#i-eye-off' : '#i-eye');
 }
 
-function pintarFiltroLectura(){
-  document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
-    r.checked = (r.value === HIDE_MODE);
-  });
-}
-
-// Lectura se cambia desde Filtros y Ajustes › Feed.
+// Lectura se cambia con el ojo y en Ajustes › Feed.
 function ponerHideMode(v){
   if (!HIDE_MODES.includes(v)) return;
   HIDE_MODE = v;
   guardarHideMode();
   if (v !== 'off') try{ localStorage.setItem(HIDE_ULTIMO_KEY, v); }catch(e){}
-  pintarFiltroLectura();
   ajPintarVista();
   pintarBotonLectura();
   aplicarFiltros();
@@ -1956,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=1f11c2dd29');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=286528211d');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2089,8 +2083,8 @@ function wireMenuCabecera(barra){
     [document.querySelector('header .meta'), document.getElementById('cab-meta-home')],
     [document.getElementById('btn-estadisticas'), document.getElementById('cab-est-home')],
     [document.getElementById('cab-deportes'), document.getElementById('cab-deportes-home')],
-    ...[...document.querySelectorAll('#cab-feed-home > button')]
-      .map(b => [b, document.getElementById('cab-feed-home')]),
+    ...[...document.querySelectorAll('#cab-feed-home > button, #cab-ajustes-home > button')]
+      .map(b => [b, b.parentElement]),
   ].filter(([el]) => el);
   let compacto;
   new ResizeObserver(([entrada]) => {
@@ -3120,16 +3114,26 @@ function syncPanelFromParsed(parsed) {
   if (fD && fD.value !== desde) fD.value = desde;
   if (fH && fH.value !== hasta) fH.value = hasta;
 
-  // Rango: «24 h» y «48 h» son exactamente desde:24h y desde:48h. Otro desde
-  // (hoy, ayer, 2d, una fecha) no es una ventana móvil: el selector, en «Todo».
+  // Rango: «24 h» y «48 h» son exactamente desde:24h y desde:48h (sin hasta:).
+  // Otro desde (hoy, ayer, 2d, una fecha) o un hasta: es «Intervalo…», con las
+  // fechas a la vista. «Intervalo…» elegido a mano sigue hasta cambiarlo,
+  // aunque aún no haya fecha.
   const selR = $('#rango');
   if (selR) {
     // parsed.desde ya es un día: se mira lo escrito (gana el último desde:).
     const chD = (parsed.chips || []).filter(ch => ch.type === 'desde').pop();
     const vD = chD ? String(chD.value).toLowerCase() : '';
-    const rMatch = vD === '24h' ? '1' : vD === '48h' ? '2' : '';
+    const rMatch = !hasta && vD === '24h' ? '1'
+      : !hasta && vD === '48h' ? '2'
+      : desde || hasta || selR.value === 'intervalo' ? 'intervalo' : '';
     if (selR.value !== rMatch) selR.value = rMatch;
+    pintarFechasFiltro();
   }
+}
+
+function pintarFechasFiltro() {
+  const ver = $('#rango')?.value === 'intervalo';
+  document.querySelectorAll('.filtros .filtro-fecha').forEach(l => { l.hidden = !ver; });
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -6167,7 +6171,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=1f11c2dd29')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=286528211d')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -9977,8 +9981,6 @@ function aplicarTextos(){
   $('#btn-pase').title = t('paseCapa');
   $('#btn-pase').setAttribute('aria-label', t('paseCapa'));
   $('#btn-pase .cab-txt').textContent = t('paseCapa');
-  $('#vs-title-hide').textContent  = t('vsTitleHide');
-  $('#vs-ayuda-lbl').textContent = t('vsAyudaLbl');
   $('#aj-hide-ayuda-lbl').textContent = t('vsAyudaLbl');
   const descripcionesOcultar = t('vsAyuda').split('|');
   const opcionesOcultar = ['vsHideOff', 'vsHideRead', 'vsHideViewed', 'vsHideBoth'];
@@ -9987,14 +9989,6 @@ function aplicarTextos(){
       `<li><strong>${escapeHtml(t(clave))}:</strong> ${escapeHtml(descripcionesOcultar[i])}</li>`
     ).join('');
   });
-  $('#vs-hide-off').innerHTML    = escapeHtml(t('vsHideOff'));
-  $('#vs-hide-read').innerHTML   = escapeHtml(t('vsHideRead'))
-    + `<small>${escapeHtml(t('vsHideReadHint'))}</small>`;
-  $('#vs-hide-viewed').innerHTML = escapeHtml(t('vsHideViewed'))
-    + `<small>${escapeHtml(t('vsHideViewedHint'))}</small>`;
-  $('#vs-hide-both').innerHTML   = escapeHtml(t('vsHideBoth'));
-
-  pintarFiltroLectura();
   pintarBotonLectura();
   actualizarFiltrosCount();
 
@@ -10218,6 +10212,7 @@ function aplicarTextos(){
   rOpts[0].text = t('fltTodo');
   rOpts[1].text = t('flt24h');
   rOpts[2].text = t('flt48h');
+  rOpts[3].text = t('fltIntervalo');
   const oOpts = $('#orden').options;
   oOpts[0].text = t('ordenRecientes');
   oOpts[1].text = t('ordenAntiguos');
@@ -10476,9 +10471,6 @@ function wireStaticEvents(){
       abrirPresetMenu();
     }
   });
-  document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
-    r.addEventListener('change', () => { if (r.checked) ponerHideMode(r.value); });
-  });
 
   $('#btn-lectura').addEventListener('click', () =>
     ponerHideMode(HIDE_MODE === 'off' ? hideModeUltimo() : 'off'));
@@ -10736,6 +10728,15 @@ function wireStaticEvents(){
 
   const selR = $('#rango');
   if (selR) selR.addEventListener('change', () => {
+    if (selR.value === 'intervalo') {
+      pintarFechasFiltro();
+      // Desde 24 h/48 h, el día que ya marca Desde queda escrito: la lista no cambia.
+      const desde = $('#fecha-desde').value;
+      if (desde) writeFilterToInput('desde', desde);
+      return;
+    }
+    // Sin «Intervalo…» las fechas no se ven: el hasta: también se quita.
+    $('#buscar').value = rebuildInput($('#buscar').value, 'hasta', null);
     // «24 h»/«48 h» → desde:24h / desde:48h: ventana móvil, la misma para la
     // lista, el archivo y la prensa. "Todo" quita el desde.
     if (selR.value === '1')      writeFilterToInput('desde', '24h');
@@ -10750,14 +10751,14 @@ function wireStaticEvents(){
 
   const fH = $('#fecha-hasta');
   if (fH) fH.addEventListener('change', () => writeFilterToInput('hasta', fH.value));
-// ── Panel de filtros: en escritorio va en línea bajo la barra y recuerda si
-// estaba abierto; en móvil es una hoja modal ──
+// ── Panel de filtros: en escritorio va en línea bajo la barra, cerrado salvo
+// que se dejara abierto; en móvil es una hoja modal ──
 const btnFiltros   = $('#btn-filtros');
 const filtrosPanel = $('#filtros-panel');
 if (btnFiltros && filtrosPanel){
   const FILTROS_OPEN_KEY = 'voceiro-filtros-abierto';
   const preferenciaEnLinea = () => {
-    try { return localStorage.getItem(FILTROS_OPEN_KEY) !== 'false'; } catch(e){ return true; }
+    try { return localStorage.getItem(FILTROS_OPEN_KEY) === 'true'; } catch(e){ return false; }
   };
   // Con el atributo y no con show(): show() movería el foco al panel.
   const ponerEnLinea = abierto => {
@@ -10775,7 +10776,6 @@ if (btnFiltros && filtrosPanel){
 
   btnFiltros.addEventListener('click', () => {
     cerrarPresetMenu();
-    pintarFiltroLectura();
     if (!ajEsMovil()){
       const abrir = !filtrosPanel.open;
       try { localStorage.setItem(FILTROS_OPEN_KEY, String(abrir)); } catch(e){}
