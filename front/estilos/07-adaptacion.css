@@ -2,15 +2,16 @@
    al menú según el ancho real de la columna elegida en Lectura. */
 .btn-cab{ display:inline-flex; align-items:center; gap:.4em; }
 .filtros-row > .btn-pendientes .cab-txt,
-.feed-actions .cab-txt{
+.feed-actions .cab-txt,
+.cab-ajustes .cab-txt{
   position:absolute; width:1px; height:1px; overflow:hidden;
   clip-path:inset(50%); white-space:nowrap;
 }
 @container barra (width < 900px){
   .cab-menu{ display:block; }
-  #cab-meta-home, #cab-est-home, #cab-feed-home{ display:none; }
+  #cab-meta-home, #cab-est-home, #cab-feed-home, #cab-ajustes-home{ display:none; }
   .filtros-row{ grid-template-columns:minmax(0, auto) auto minmax(0, 1fr) auto; }
-  #btn-filtros.lectura-activa{ background:var(--preset-bg); border-color:var(--preset); color:var(--preset); }
+  .cab-menu.lectura-activa > summary{ background:var(--preset-bg); color:var(--preset); }
 }
 @media (max-width: 640px){
   #h-title{ font-size:1.1em; }
@@ -104,37 +105,6 @@
   .btn-view-settings[aria-expanded="true"] .vs-caret{
     transform: rotate(180deg);
   }
-  .vs-radio{
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: .78em;
-    cursor: pointer;
-    user-select: none;
-    line-height: 1.3;
-  }
-  .vs-radio:hover{ background: var(--quote-bg); }
-  .vs-radio input{
-    accent-color: var(--save);
-    width: 1.1em;
-    height: 1.1em;
-    flex-shrink: 0;
-    margin: 0;
-  }
-  .vs-radio span{ flex: 1; }
-  .vs-radio small{
-    display: block;
-    font-size: .85em;
-    color: var(--muted);
-    font-weight: 400;
-    margin-top: 1px;
-  }
-  .vs-ayuda{ margin:4px 8px 6px; font-size:.72em; color:var(--muted); }
-  .vs-ayuda summary{ cursor:pointer; list-style:none; }
-  .vs-ayuda summary::-webkit-details-marker{ display:none; }
-  .vs-ayuda ul{ margin:6px 0 0; padding-left:1.2em; line-height:1.5; }
   .dups-details{
     margin-top:8px;
     font-size:.72em;

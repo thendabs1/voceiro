@@ -27,9 +27,6 @@ function wireStaticEvents(){
       abrirPresetMenu();
     }
   });
-  document.querySelectorAll('input[name="vs-hide"]').forEach(r => {
-    r.addEventListener('change', () => { if (r.checked) ponerHideMode(r.value); });
-  });
 
   $('#btn-lectura').addEventListener('click', () =>
     ponerHideMode(HIDE_MODE === 'off' ? hideModeUltimo() : 'off'));
@@ -287,6 +284,15 @@ function wireStaticEvents(){
 
   const selR = $('#rango');
   if (selR) selR.addEventListener('change', () => {
+    if (selR.value === 'intervalo') {
+      pintarFechasFiltro();
+      // Desde 24 h/48 h, el día que ya marca Desde queda escrito: la lista no cambia.
+      const desde = $('#fecha-desde').value;
+      if (desde) writeFilterToInput('desde', desde);
+      return;
+    }
+    // Sin «Intervalo…» las fechas no se ven: el hasta: también se quita.
+    $('#buscar').value = rebuildInput($('#buscar').value, 'hasta', null);
     // «24 h»/«48 h» → desde:24h / desde:48h: ventana móvil, la misma para la
     // lista, el archivo y la prensa. "Todo" quita el desde.
     if (selR.value === '1')      writeFilterToInput('desde', '24h');
@@ -301,14 +307,14 @@ function wireStaticEvents(){
 
   const fH = $('#fecha-hasta');
   if (fH) fH.addEventListener('change', () => writeFilterToInput('hasta', fH.value));
-// ── Panel de filtros: en escritorio va en línea bajo la barra y recuerda si
-// estaba abierto; en móvil es una hoja modal ──
+// ── Panel de filtros: en escritorio va en línea bajo la barra, cerrado salvo
+// que se dejara abierto; en móvil es una hoja modal ──
 const btnFiltros   = $('#btn-filtros');
 const filtrosPanel = $('#filtros-panel');
 if (btnFiltros && filtrosPanel){
   const FILTROS_OPEN_KEY = 'voceiro-filtros-abierto';
   const preferenciaEnLinea = () => {
-    try { return localStorage.getItem(FILTROS_OPEN_KEY) !== 'false'; } catch(e){ return true; }
+    try { return localStorage.getItem(FILTROS_OPEN_KEY) === 'true'; } catch(e){ return false; }
   };
   // Con el atributo y no con show(): show() movería el foco al panel.
   const ponerEnLinea = abierto => {
@@ -326,7 +332,6 @@ if (btnFiltros && filtrosPanel){
 
   btnFiltros.addEventListener('click', () => {
     cerrarPresetMenu();
-    pintarFiltroLectura();
     if (!ajEsMovil()){
       const abrir = !filtrosPanel.open;
       try { localStorage.setItem(FILTROS_OPEN_KEY, String(abrir)); } catch(e){}

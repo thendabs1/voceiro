@@ -263,6 +263,7 @@ export default {
   "fltTodo": "Tot",
   "flt24h": "24 h",
   "flt48h": "48 h",
+  "fltIntervalo": "Interval…",
   "flt7d": "7 dies",
   "ordenRecientes": "Més recents",
   "ordenAntiguos": "Més antics",

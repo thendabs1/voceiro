@@ -263,6 +263,7 @@ export default {
   "fltTodo": "Guztia",
   "flt24h": "24 h",
   "flt48h": "48 h",
+  "fltIntervalo": "Tartea…",
   "flt7d": "7 egun",
   "ordenRecientes": "Berrienak lehenengo",
   "ordenAntiguos": "Zaharrenak lehenengo",

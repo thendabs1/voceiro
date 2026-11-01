@@ -41,8 +41,8 @@ function wireMenuCabecera(barra){
     [document.querySelector('header .meta'), document.getElementById('cab-meta-home')],
     [document.getElementById('btn-estadisticas'), document.getElementById('cab-est-home')],
     [document.getElementById('cab-deportes'), document.getElementById('cab-deportes-home')],
-    ...[...document.querySelectorAll('#cab-feed-home > button')]
-      .map(b => [b, document.getElementById('cab-feed-home')]),
+    ...[...document.querySelectorAll('#cab-feed-home > button, #cab-ajustes-home > button')]
+      .map(b => [b, b.parentElement]),
   ].filter(([el]) => el);
   let compacto;
   new ResizeObserver(([entrada]) => {

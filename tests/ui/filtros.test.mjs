@@ -17,6 +17,8 @@ const crearContexto = () => {
     'filtros-count', 'btn-filtros',
   ].map(id => [`#${id}`, elemento(id === 'orden' ? 'recientes' : '')]));
   const icono = { href: '', setAttribute(_, v) { this.href = v; } };
+  elementos['#cab-menu'] = { marcado: false,
+    classList: { toggle(_, v) { elementos['#cab-menu'].marcado = v; } } };
   elementos['#btn-lectura'] = {
     attrs: {}, activo: false, title: '',
     classList: { toggle(_, v) { elementos['#btn-lectura'].activo = v; } },
@@ -51,6 +53,16 @@ test(`fechas cuentan sin duplicar período y fecha desde`, () => {
   assert.equal(e['#filtros-count'].dataset.count, '2');
 });
 
+test(`«Intervalo…» sin fechas no cuenta como filtro`, () => {
+  const { ctx, elementos: e } = crearContexto();
+  e['#rango'].value = 'intervalo';
+  ctx.actualizarFiltrosCount();
+  assert.equal(e['#filtros-count'].dataset.count, '0');
+  e['#fecha-hasta'].value = '2026-10-20';
+  ctx.actualizarFiltrosCount();
+  assert.equal(e['#filtros-count'].dataset.count, '1');
+});
+
 test(`el ojo marca la lectura activa y no suma en Filtros`, () => {
   const { ctx, elementos: e, icono } = crearContexto();
   const ojo = e['#btn-lectura'];
@@ -61,6 +73,7 @@ test(`el ojo marca la lectura activa y no suma en Filtros`, () => {
     assert.equal(ojo.activo, true);
     assert.equal(ojo.attrs['aria-pressed'], 'true');
     assert.equal(icono.href, '#i-eye-off');
+    assert.equal(e['#cab-menu'].marcado, true);
     assert.equal(e['#filtros-count'].dataset.count, '0');
   }
   ctx.HIDE_MODE = 'off';
@@ -68,6 +81,7 @@ test(`el ojo marca la lectura activa y no suma en Filtros`, () => {
   assert.equal(ojo.activo, false);
   assert.equal(ojo.attrs['aria-pressed'], 'false');
   assert.equal(icono.href, '#i-eye');
+  assert.equal(e['#cab-menu'].marcado, false);
 });
 
 test(`el ojo vuelve al último modo de ocultar, o a leídos`, () => {
@@ -79,23 +93,22 @@ test(`el ojo vuelve al último modo de ocultar, o a leídos`, () => {
   assert.equal(ctx.hideModeUltimo(), 'read');
 });
 
-test(`cambiar lectura sincroniza Filtros y Ajustes y persiste`, () => {
+test(`cambiar lectura sincroniza el ojo y Ajustes y persiste`, () => {
   const { ctx, guardado } = crearContexto();
   const llamadas = [];
   Object.assign(ctx, {
     guardarHideMode: () => llamadas.push(`guardar:${ctx.HIDE_MODE}`),
-    pintarFiltroLectura: () => llamadas.push('filtros'),
     ajPintarVista: () => llamadas.push('ajustes'),
     pintarBotonLectura: () => llamadas.push('ojo'),
     aplicarFiltros: () => llamadas.push('resultados'),
   });
   runInNewContext(funcion('ponerHideMode'), ctx);
   ctx.ponerHideMode('viewed');
-  assert.deepEqual(llamadas, ['guardar:viewed', 'filtros', 'ajustes', 'ojo', 'resultados']);
+  assert.deepEqual(llamadas, ['guardar:viewed', 'ajustes', 'ojo', 'resultados']);
   assert.equal(guardado.get('ultimo'), 'viewed');
   ctx.ponerHideMode('off');
   assert.equal(guardado.get('ultimo'), 'viewed');
   ctx.ponerHideMode('invalido');
   assert.equal(ctx.HIDE_MODE, 'off');
-  assert.equal(llamadas.length, 10);
+  assert.equal(llamadas.length, 8);
 });

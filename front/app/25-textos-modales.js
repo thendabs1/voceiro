@@ -51,8 +51,6 @@ function aplicarTextos(){
   $('#btn-pase').title = t('paseCapa');
   $('#btn-pase').setAttribute('aria-label', t('paseCapa'));
   $('#btn-pase .cab-txt').textContent = t('paseCapa');
-  $('#vs-title-hide').textContent  = t('vsTitleHide');
-  $('#vs-ayuda-lbl').textContent = t('vsAyudaLbl');
   $('#aj-hide-ayuda-lbl').textContent = t('vsAyudaLbl');
   const descripcionesOcultar = t('vsAyuda').split('|');
   const opcionesOcultar = ['vsHideOff', 'vsHideRead', 'vsHideViewed', 'vsHideBoth'];
@@ -61,14 +59,6 @@ function aplicarTextos(){
       `<li><strong>${escapeHtml(t(clave))}:</strong> ${escapeHtml(descripcionesOcultar[i])}</li>`
     ).join('');
   });
-  $('#vs-hide-off').innerHTML    = escapeHtml(t('vsHideOff'));
-  $('#vs-hide-read').innerHTML   = escapeHtml(t('vsHideRead'))
-    + `<small>${escapeHtml(t('vsHideReadHint'))}</small>`;
-  $('#vs-hide-viewed').innerHTML = escapeHtml(t('vsHideViewed'))
-    + `<small>${escapeHtml(t('vsHideViewedHint'))}</small>`;
-  $('#vs-hide-both').innerHTML   = escapeHtml(t('vsHideBoth'));
-
-  pintarFiltroLectura();
   pintarBotonLectura();
   actualizarFiltrosCount();
 
@@ -292,6 +282,7 @@ function aplicarTextos(){
   rOpts[0].text = t('fltTodo');
   rOpts[1].text = t('flt24h');
   rOpts[2].text = t('flt48h');
+  rOpts[3].text = t('fltIntervalo');
   const oOpts = $('#orden').options;
   oOpts[0].text = t('ordenRecientes');
   oOpts[1].text = t('ordenAntiguos');
