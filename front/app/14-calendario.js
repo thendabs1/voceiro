@@ -270,8 +270,8 @@ async function cargarMesCalendario(){
 // siguen hasta CAL_TEMPORADA_PAGINAS páginas para no contar sobre una parcial.
 const CAL_TEMPORADA_PAGINAS = 4;
 async function cargarTemporadaCalendario(){
-  const s = CALENDARIO, uno = s.fecha.slice(0, 8) + '01', { dias, rodante } = calPeriodoMes();
-  const { desde, hasta } = rodante ? calRecortar(dias[0], sumarDiasCalendario(dias.at(-1), 1)) : calRecortar(uno, moverFecha(uno, 'mes', 1));
+  const s = CALENDARIO, { dias } = calPeriodoMes();
+  const { desde, hasta } = calRecortar(dias[0], sumarDiasCalendario(dias.at(-1), 1));
   const params = { ...calParametros(), desde, hasta, presentacion: 'prolongada,programa',
     circuitos: Object.keys(CAL_MARCAS).join(','), limite: 50 }, clave = JSON.stringify(params);
   if (s.temporada?.clave === clave) return;
@@ -817,13 +817,15 @@ const calCabeceraSemana = dias => dias.slice(0, 7).map(dia => `<abbr class="cal-
 // para que la letra grande de Aa cuente como un panel estrecho.
 const CAL_MES_ANCHO_EM = 44;
 const calMesAncho = () => (document.getElementById('calendario-panel')?.clientWidth || 0) >= CAL_MES_ANCHO_EM * calEm();
-// Días del mes desplegado: los del mes del día elegido (seis semanas desde el
-// lunes de la del día 1). El mes en curso empieza en la semana de hoy, como las
-// «próximas semanas» de Google Calendar: el calendario no da resultados.
+// Mes desplegado: bloques de CAL_SEMANAS_MES semanas alineados con la de hoy
+// (vista «4 semanas» de Google Calendar): el primero empieza en la semana de hoy
+// y ‹ › van de bloque en bloque, sin huecos ni semanas repetidas. Cuatro semanas
+// caben en una ventana baja; el calendario no da resultados.
+const CAL_SEMANAS_MES = 4;
 function calPeriodoMes(fecha = CALENDARIO.fecha){
-  const hoy = calHoy(), lunes = ventanaCalendario(hoy, 'semana')[0];
-  if (fecha.slice(0, 7) !== hoy.slice(0, 7) || fecha < lunes) return { dias: ventanaCalendario(fecha, 'mes'), rodante: false };
-  return { dias: Array.from({ length: 42 }, (_, i) => sumarDiasCalendario(lunes, i)), rodante: true };
+  const lunes = ventanaCalendario(calHoy(), 'semana')[0], n = CAL_SEMANAS_MES * 7;
+  const inicio = sumarDiasCalendario(lunes, Math.floor(calDiferencia(lunes, fecha) / n) * n);
+  return { dias: Array.from({ length: n }, (_, i) => sumarDiasCalendario(inicio, i)), rodante: true };
 }
 // Alto de cada semana (Google Calendar): el mes entero cabe en la ventana bajo
 // la cabecera fija, la barra del calendario (medidas) y la fila de los días con
@@ -832,7 +834,7 @@ const calEm = () => parseFloat(globalThis.getComputedStyle?.(document.getElement
 function calAltoSemana(em = calEm()){
   const encima = (document.getElementById('barra-sup')?.offsetHeight || 0)
     + (document.getElementById('calendario-panel')?.querySelector?.('.cal-barra')?.offsetHeight || em * 3) + em * 4.5;
-  return Math.round(Math.min(em * 10, Math.max(em * 5, ((window.innerHeight || 900) - encima) / 6)));
+  return Math.round(Math.min(em * 10, Math.max(em * 4.5, ((window.innerHeight || 900) - encima) / CAL_SEMANAS_MES)));
 }
 // Deportes con una o dos competiciones: caben sus partidos en el mes (Google
 // Calendar); con más, solo las marcas por competición.
@@ -860,8 +862,9 @@ const calDiferencia = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.
 function calMesTitulos(dias, rodante = false){
   const s = CALENDARIO, hoy = calHoy(), porDia = new Map((s.mes?.dias || []).map(d => [d.dia, d])), deportes = calModoDeportes();
   const barras = (s.mes?.barras || []).filter(b => b.competiciones?.some(c => CAL_DEPORTE_DE[c] === 'motor'));
-  // Carril de 26 px como mínimo: la barra (1 px de margen arriba y abajo) llega a los 24 de AA.
-  const em = calEm(), alto = calAltoSemana(em), carril = Math.max(em * 1.3, 26), semanas = [];
+  // Carril de 24 px como mínimo: barra de 22 con 1 px de margen arriba y abajo; las
+  // barras quedan a 24 px una de otra (excepción de espaciado de AA, 2.5.8).
+  const em = calEm(), alto = calAltoSemana(em), carril = Math.max(em * 1.3, 24), semanas = [];
   if (!deportes) s.altoSemana = alto;
   const partidos = deportes && calPartidosEnMes(), publicado = deportes ? calPublicadoHasta() : '';
   const sinPublicar = dia => Boolean(publicado) && dia > publicado;
@@ -1362,11 +1365,12 @@ function wireCalendario(){
       else calElegirDia(v === 'finde' ? ventanaCalendario(calHoy(), 'semana')[5] : b.dataset.dia, v);
       if (v === 'finde' && s.fecha < calHoy()) s.fecha = calHoy();
     }
-    // Semana o mes vecinos: su primer día, o hoy si cae en ellos.
+    // Semana o bloque de semanas vecinos: su primer día, o hoy si cae en ellos.
     if (a === 'anterior' || a === 'siguiente'){
-      const vista = s.mesAbierto ? 'mes' : 'semana', dias = ventanaCalendario(moverFecha(s.fecha, vista, a === 'anterior' ? -1 : 1), vista);
-      const propios = s.mesAbierto ? dias.filter(d => d.slice(0, 7) === dias[15].slice(0, 7)) : dias;
-      calElegirDia(propios.includes(calHoy()) ? calHoy() : propios[0]);
+      const paso = a === 'anterior' ? -1 : 1;
+      const dias = s.mesAbierto ? calPeriodoMes(sumarDiasCalendario(calPeriodoMes().dias[0], paso * CAL_SEMANAS_MES * 7)).dias
+        : ventanaCalendario(moverFecha(s.fecha, 'semana', paso), 'semana');
+      calElegirDia(dias.includes(calHoy()) ? calHoy() : dias[0]);
     }
     if (a === 'mas-semanas') s.semanas = Math.min(CAL_SEMANAS_MAX, s.semanas + 1);
     if (a === 'categoria'){
