@@ -291,6 +291,10 @@ function _adoptarTitularMasReciente(n, otra){
   const visto = _vistoTitular(otra);
   const actual = n._vistoTit !== undefined ? n._vistoTit : _vistoTitular(n);
   if (!(visto > actual)) return false;
+  // El titular viejo ya no está en la tarjeta: deja de unir, para que otra
+  // URL que lo traiga no se descarte como duplicada.
+  const viejo = normalize(n.t || '');
+  if (_itemPorTitulo.get(viejo) === n) _itemPorTitulo.delete(viejo);
   n.t = otra.t;
   n._vistoTit = visto;
   const tn = normalize(otra.t);

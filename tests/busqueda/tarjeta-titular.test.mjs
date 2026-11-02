@@ -112,3 +112,17 @@ test('sin recogida fechada (prensa, ficheros viejos) o con empate, se queda el q
   assert.equal(b.ctx.NOTICIAS[0].titular, 'LaLiga denuncia 10 incidentes en el Clásico');
   assert.equal(b.ctx._titularesCambiados, 0);
 });
+
+test('al cambiar de titular, el viejo deja de unir: otra URL con él es otra noticia', () => {
+  const { ctx, meter, hidratar } = crear();
+  meter([v10(), v17()]);                                 // la tarjeta pasa a «17»
+  const otra = { d: 'marca.com', u: '/otra-url/', t: 'LaLiga denuncia 10 incidentes en el Clásico',
+                 p: '16:00', c: '16:40', _dia: '2026-10-27' };
+  assert.equal(meter([otra]), 1);                        // antes se descartaba como duplicada
+  hidratar();
+  assert.deepEqual(ctx.NOTICIAS.map(n => n.titular), [
+    'LaLiga denuncia 17 incidentes en el Clásico',
+    'LaLiga denuncia 10 incidentes en el Clásico',
+  ]);
+  assert.equal(ctx._itemPorTitulo.get('laliga denuncia 10 incidentes en el clásico'), ctx.NOTICIAS[1]);
+});
