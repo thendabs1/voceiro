@@ -16,13 +16,19 @@ Una cita nueva se une automáticamente a una identidad existente cuando:
 
 - Existe una sola identidad candidata, sin lecturas ambiguas ni otra cita
   de la misma distribución que ya ocupe esa identidad.
-- Las fechas completas coinciden y no hay contradicciones de distancia,
-  edad, edición, sexo, formato o modalidad publicados.
-- Hay enlace directo a la misma ficha federativa; o coinciden sede y al
-  menos tres palabras significativas, con similitud de conjuntos de palabras
-  de al menos 0,90 (coeficiente Dice).
-- No hay indicios de conjunto/partes. Si dos citas del mismo lote reclaman
-  una misma identidad, ambas quedan sin fusionar para revisión.
+- Hay enlace directo a la misma ficha federativa ya identificada. Esa
+  referencia tiene prioridad sobre parecidos de nombre, traducciones,
+  paréntesis o discrepancias de datos. El enlace se cruza con la referencia
+  de la ficha (por ejemplo `championship/64831`); la URL no se usa como ID.
+- Sin ese enlace: coinciden fechas completas, sede y al menos tres palabras
+  significativas, con similitud de conjuntos de palabras de al menos 0,90
+  (coeficiente Dice), sin contradicciones de distancia, edad, edición, sexo,
+  formato, modalidad ni indicios de conjunto/partes.
+
+Si dos citas del mismo lote reclaman una misma identidad o varias fichas
+explícitas apuntan a identidades distintas, quedan para revisión. Las
+discrepancias de fecha o modalidad de una identidad enlazada generan issues
+de datos, sin duplicar la competición.
 
 No bastan fecha y sede, ni la portada compartida de un organizador. Tampoco
 se confunden controles semanales con el mismo nombre y recinto. Un enlace
@@ -37,9 +43,12 @@ Las correspondencias editoriales siguen teniendo prioridad. No se fusionan
 dos identidades que ya estaban guardadas: ese caso pide conciliación explícita.
 
 La muestra catalana de noviembre-diciembre contiene 15 enlaces directos a
-fichas RFEA; no se depende solo de semejanzas de títulos. Atapuerca sigue
-requiriendo revisión de alcance porque el título catalán reúne campeonato y
-cross internacional. No se afirma que todas las coincidencias estén resueltas.
+fichas RFEA; no se depende solo de semejanzas de títulos. Atapuerca queda
+resuelto: FCA 83650 enlaza al campeonato de clubes RFEA 64831, del 22/11.
+Ambos comparten identidad automáticamente. El cross internacional RFEA
+64930, del 21 al 22/11, conserva otra identidad. Se comprueban los dos órdenes
+de importación sin añadir una equivalencia manual específica para Atapuerca.
+No se afirma que toda la cobertura de atletismo esté completada.
 
 ## Nivel II
 

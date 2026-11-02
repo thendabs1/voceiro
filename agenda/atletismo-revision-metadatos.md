@@ -152,7 +152,7 @@ de nombres, fechas, lugares y fichas; no se ha aplicado deduplicación automáti
 | --- | --- | --- |
 | España 5 km máster, Negreira, 15/11 | RFEA 64837, FGA 113590, FCA 82885 | Primera correspondencia revisada incorporada: una identidad con tres procedencias y capas; diferencias literales de sede conservadas como discrepancia |
 | Cross Ponte Romana, San Martiño, A Clásica Negreira y Memorial Belarmino | Coinciden entre FGA y RFEA por nombre/fecha; San Martiño tiene sede RFEA «San Martiño» y FGA «Ourense» | Candidatos revisados; preservar las diferencias de sede y comprobar identidad antes de consolidar |
-| Atapuerca | RFEA separa Cross Internacional 21–22/11 y campeonato de España clubes 22/11; FCA 83650 reúne los dos en su título el 22/11 | Relación entre campeonato y reunión, no fusión de tres filas en una sola duración |
+| Atapuerca | RFEA separa Cross Internacional 64930, 21–22/11, y campeonato de España clubes 64831, 22/11; FCA 83650 enlaza expresamente a la ficha 64831 | Resuelto por referencia directa: FCA y el campeonato comparten identidad; el cross conserva otra identidad y duración. El paréntesis del título no bloquea la correspondencia |
 | Marcha Castro Urdiales, 13/12 | Una ficha RFEA para promoción + 10 km máster; FCA 80237 y 80239 separadas | Correspondencia de conjunto y partes. Ni borrar una categoría ni duplicar íntegramente el programa |
 | Juegos de la Juventud | RFEA Excel 30/10–15/11; FCA 83346 8–10/11 | Conflicto de alcance/fechas por resolver con programa oficial; no escoger automáticamente la fecha RFEA |
 | España short track máster clubes | RFEA 64833 5–6/12, sede «a designar»; FCA 83644 5/12, Madrid | Discrepancia de fecha final y sede; no tratar Madrid como dato confirmado en ambas fuentes |

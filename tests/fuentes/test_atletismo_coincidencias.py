@@ -61,6 +61,49 @@ class Coincidencias(unittest.TestCase):
         for fuente in ('rfea', 'fca'):
             self.assertEqual(publicacion.proyectar(n, fuentes=[fuente])['eventos'][0]['id'], vista[0]['id'])
 
+    def test_atapuerca_enlaza_al_campeonato_sin_absorber_el_cross_internacional(self):
+        fca = next(e for e in atletismo.leer_cataluna(json.loads((MUESTRAS / 'fca.json').read_text())) if e['id'] == '83650')
+        campeonato = entrada('rfea', '64831', nombre='Campeonato de España de Campo a Través por Clubes',
+            inicio='2026-11-22', fin='2026-11-22', lugar={'nombre': 'Atapuerca'},
+            url=fca['metadatos']['web_organizador'])['eventos'][0]
+        cross = entrada('rfea', '64930', nombre='XXII Cross Internacional de Atapuerca',
+            inicio='2026-11-21', fin='2026-11-22', lugar={'nombre': 'BURGOS'},
+            url='https://atletismorfea.es/calendario/campeonato/xxii-cross-internacional-de-atapuerca')['eventos'][0]
+        paginas = [{'version': 1, 'fuente': 'rfea', 'eventos': [cross, campeonato]},
+                   {'version': 1, 'fuente': 'fca', 'eventos': [fca]}]
+        for orden in (paginas, list(reversed(paginas))):
+            n = None
+            for pagina in orden:
+                n = atletismo.importar(n, pagina, AHORA)
+            refs = {(r['proveedor'], r['id_externo']): r['destino'] for r in n['referencias'].values()
+                    if r['tipo_externo'] == 'competicion'}
+            self.assertEqual(refs['rfea', '64831'], refs['fca', '83650'])
+            self.assertNotEqual(refs['rfea', '64930'], refs['fca', '83650'])
+            self.assertEqual(len(publicacion.proyectar(n)['eventos']), 2)
+            self.assertEqual(c.incidencias(n), [])
+
+    def test_enlace_resuelve_identidad_y_discrepancia_de_fecha_genera_issue_de_datos(self):
+        a = entrada('rfea', url='https://atletismorfea.es/calendario/campeonato/prueba')
+        b = entrada('fca', nombre='Campeonato en otro idioma (Cross Internacional)',
+                    inicio='2026-11-08', fin='2026-11-08',
+                    metadatos={'web_organizador': a['eventos'][0]['url']})
+        n = atletismo.importar(None, a, AHORA)
+        n = atletismo.importar(n, b, AHORA)
+        e, = publicacion.proyectar(n)['eventos']
+        self.assertTrue(e['programacion']['conflicto'])
+        caso, = c.incidencias(n)
+        self.assertIn('fechas', caso['motivo'])
+
+    def test_el_enlace_tiene_prioridad_sobre_otro_nombre_parecido(self):
+        p = entrada('rfea', 'referenciada', url='https://atletismorfea.es/calendario/campeonato/referenciada')
+        p['eventos'].append({**p['eventos'][0], 'id': 'parecida',
+                            'url': 'https://atletismorfea.es/calendario/campeonato/otra'})
+        n = atletismo.importar(None, p, AHORA)
+        e = entrada('fca', metadatos={'web_organizador': p['eventos'][0]['url']})['eventos'][0]
+        d = c.decidir_lote(n, 'fca', [e])['uno']
+        self.assertEqual(d['estado'], 'automatica')
+        self.assertEqual(d['cita']['id'], 'referenciada')
+
     def test_no_fusiona_distancia_edad_sexo_edicion_ni_alcance_compuesto(self):
         base = entrada('rfea', nombre='Campeonato de España de 5 km Master Masculino')['eventos'][0]
         for nombre in ('Campeonato de España de 10 km Master Masculino',

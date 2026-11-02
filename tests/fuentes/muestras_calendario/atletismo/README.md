@@ -28,3 +28,9 @@ de noviembre sin filtros de ámbito, contrastada el 2/11/2026 con la ficha
 https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/ .
 Se usa para comprobar la correspondencia con Nivel II, incluida la discrepancia
 AL/Marcha. El identificador Nivel II es editorial, no publicado por RFEA.
+
+El test de coincidencias contrasta además FCA 83650 de `fca.json` con las
+fichas oficiales de Atapuerca: RFEA `championship/64831` (campeonato de clubes,
+22/11) y `championship/64930` (cross internacional, 21–22/11), comprobadas el
+2/11/2026. La primera es el enlace publicado por FCA; la segunda permanece
+separada. No son identidades ni fechas ficticias del programa de sesiones.

@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 
 from . import nucleo
 
-VERSION = 1
+VERSION = 2
 FUENTES = {'rfea', 'fga', 'fca'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
@@ -69,6 +69,19 @@ def modalidades(e):
 
 def comparar(a, b):
     enlace = bool(enlaces(a) & enlaces(b))
+    fechas = bool(a.get('inicio') and a.get('fin') and
+                  (a['inicio'], a['fin']) == (b.get('inicio'), b.get('fin')))
+    if enlace:
+        # La ficha enlazada identifica la competición. Un título más amplio,
+        # su traducción o las fechas discrepantes no crean otra identidad.
+        # Las discrepancias de datos se revisan después de compartir el ID.
+        ma, mb = modalidades(a), modalidades(b)
+        datos = ([] if fechas else ['fechas diferentes o incompletas'])
+        if ma and mb and ma != mb:
+            datos.append('modalidades diferentes')
+        return {'estado': 'automatica', 'enlace_directo': True, 'nombre': None,
+                'misma_fecha': fechas, 'misma_sede': bool(sede(a) and sede(a) == sede(b)),
+                'datos_revisar': datos, 'motivos': [], 'version': VERSION}
     solapan = all(e.get('inicio') and e.get('fin') for e in (a, b)) and max(a['inicio'], b['inicio']) <= min(a['fin'], b['fin'])
     if not enlace and not solapan:
         # Dos controles semanales con el mismo título y recinto pueden ser
@@ -80,8 +93,6 @@ def comparar(a, b):
     ta.discard((a.get('inicio') or '')[:4])
     tb.discard((b.get('inicio') or '')[:4])
     parecido = 2 * len(ta & tb) / (len(ta) + len(tb)) if ta and tb else 0
-    fechas = bool(a.get('inicio') and a.get('fin') and
-                  (a['inicio'], a['fin']) == (b.get('inicio'), b.get('fin')))
     lugar = bool(sede(a) and sede(a) == sede(b))
     numeros_a = {t for t in ta if t.isdigit() or re.fullmatch(r'[ivxlcdm]+', t)} - {(a.get('inicio') or '')[:4]}
     numeros_b = {t for t in tb if t.isdigit() or re.fullmatch(r'[ivxlcdm]+', t)} - {(b.get('inicio') or '')[:4]}
@@ -107,11 +118,7 @@ def comparar(a, b):
         motivos.append('modalidades diferentes')
     if compuesto:
         motivos.append('posible relación entre conjunto y partes')
-    # Un enlace explícito permite conservar distintas descripciones de sede.
-    # Las discrepancias de fechas o alcance requieren revisión.
     automatica = fechas and lugar and numeros and categorias and distancias and modalidad and not compuesto and len(ta & tb) >= 3 and parecido >= .9
-    if enlace and fechas and numeros and categorias and distancias and modalidad and not compuesto:
-        automatica = True
     if automatica:
         estado = 'automatica'
     elif enlace or parecido >= .65 and (fechas or lugar):
@@ -159,6 +166,11 @@ def decidir(fuente, evento, conocidos):
         comparacion = comparar(evento, c)
         if comparacion['estado'] != 'distintas':
             candidatos.append({'cita': c, 'comparacion': comparacion})
+    directos = [c for c in candidatos if c['comparacion']['enlace_directo']]
+    if directos:
+        # El nombre de un meeting puede aparecer en la ficha de su campeonato.
+        # Su enlace explícito tiene prioridad sobre otros parecidos del título.
+        candidatos = directos
     destinos = {c['cita']['destino']['id'] for c in candidatos}
     automaticos = [c for c in candidatos if c['comparacion']['estado'] == 'automatica']
     # Una sola identidad candidata y ninguna variante ambigua. No elegir el
@@ -191,6 +203,8 @@ def incidencias(n):
             if distribucion(a['fuente'], a['id']) == distribucion(b['fuente'], b['id']):
                 continue
             comparacion = comparar(a, b)
+            if a['destino'] == b['destino'] and comparacion.get('datos_revisar'):
+                comparacion = {**comparacion, 'estado': 'revisar', 'motivos': comparacion['datos_revisar']}
             if a['destino'] == b['destino'] and not comparacion['misma_fecha']:
                 comparacion = {**comparacion, 'estado': 'revisar', 'motivos': ['discrepancia de fechas en una identidad ya compartida']}
             if comparacion['estado'] == 'distintas':
