@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { normalizarPendiente, urlWebValida } from '../../shared/sync/fusion.js';
+import { separarImagenesDeGalerias, claveImagenGaleria, pieImagenGaleria } from '../../lector/modulos/galerias.js';
 
 const leer = f => readFileSync(new URL('../../' + f, import.meta.url), 'utf8');
 const fusion = leer('shared/sync/fusion.js').replace(/^export /gm, '');
@@ -47,6 +48,7 @@ test('la portada del artículo solo carga una URL web válida', () => {
     insertAdjacentHTML(_pos, contenido){ html = contenido; throw new Error('HTML capturado'); }
   };
   Object.assign(l.contexto, {
+    separarImagenesDeGalerias, claveImagenGaleria, pieImagenGaleria,
     t: k => k, getDefaultDict: () => null, detectPageLang: () => 'es',
     buildBlocksFromText: () => [{ tipo: 'p', html: 'Contenido de la noticia' }],
     sinImagenesRepetidas: a => a, agruparGalerias: a => a,

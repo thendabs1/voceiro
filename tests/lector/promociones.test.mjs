@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { limpiarPromosTextoFinal } from '../../lector/modulos/mixto.js';
 import { limpiarCodigoIncrustado } from '../../lector/modulos/codigo-incrustado.js';
+import { retirarGaleriasDelDOM } from '../../lector/modulos/galerias.js';
 
 // Texto de las dos cajas que PontevedraViva añade al HTML y al JSON-LD.
 const WHATSAPP = 'Subscríbete á nosa canle de WhatsApp\n\n' +
@@ -32,8 +33,8 @@ test('conserva menciones, llamadas aisladas, cajas incompletas y promociones den
 
 const fuente = readFileSync(new URL('../../lector/src/17-extractores-de-articulo.js', import.meta.url), 'utf8');
 function extractor(extra = {}){
-  const contexto = vm.createContext({ limpiarPromosTextoFinal, limpiarCodigoIncrustado,
-    metaContent: () => '', UI: { extractMinChars: 100 }, ...extra });
+  const contexto = vm.createContext({ limpiarPromosTextoFinal, limpiarCodigoIncrustado, retirarGaleriasDelDOM,
+    location: { href: 'https://pontevedraviva.com/noticia' }, metaContent: () => '', UI: { extractMinChars: 100 }, ...extra });
   vm.runInContext(fuente, contexto);
   // Sin HTML en esta muestra JSON: no hace falta un DOM para decodificarlo.
   contexto.decodeEnt = s => s;

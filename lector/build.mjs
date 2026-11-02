@@ -53,7 +53,7 @@ function version(){
 // probarlos con node --test (tests/lector).
 const COMPARTIDOS = ['../shared/sync/fusion.js', '../shared/sync/cripto.js', '../shared/sync/cliente.js',
                      '../shared/tema/personalizado.js',
-                     'modulos/codigo-incrustado.js', 'modulos/mixto.js'];
+                     'modulos/codigo-incrustado.js', 'modulos/mixto.js', 'modulos/galerias.js'];
 const TRAS = '02-plataforma.js';
 
 function compartido(rel, n){

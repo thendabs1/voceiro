@@ -22,7 +22,7 @@ function openReader(art){
   const rawHTML = String(art.rawHTML || '');
   const useHTML = !!rawHTML;
   const plainBody = useHTML ? stripTags(rawHTML).replace(/\s+/g,' ').trim() : rawBody;
-  if (!plainBody || plainBody.length < 100){ toast(t('noArticle')); return; }
+  if ((!plainBody || plainBody.length < 100) && !art.galeriaPrincipal){ toast(t('noArticle')); return; }
 
   const headline = art.headline || document.title || '';
   const description = art.description || '';
@@ -43,9 +43,14 @@ function openReader(art){
   // Fuera las imágenes repetidas y, si viene del DOM, las promociones del
   // medio al principio y al final («¿Ya nos sigues?», newsletters…).
   let parrafos = art.bloques || (useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody));
+  const galeriasExtraidas = art.galerias || [];
+  parrafos = separarImagenesDeGalerias(parrafos, galeriasExtraidas);
   parrafos = sinImagenesRepetidas(parrafos);
   if (srcKey !== 'jsonld') parrafos = sinPromosEnBordes(parrafos, textoDeBloque);
   parrafos = agruparGalerias(parrafos);
+  parrafos = [...galeriasExtraidas, ...parrafos];
+  const galeriasVista = parrafos.filter(b => b.tipo === 'galeria');
+  const LOTE_GALERIA = 12;
   // Las palabras del texto que se ve, no las de lo que se ha quitado.
   const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
@@ -58,7 +63,7 @@ function openReader(art){
   // La portada repetida como primera imagen del cuerpo sale una sola vez,
   // en el cuerpo y con su pie.
   const imagenesCuerpo = parrafos.flatMap(b => b.tipo === 'galeria' ? b.imagenes : b.tipo === 'img' ? [b] : []);
-  const enCuerpo = iu ? imagenesCuerpo.find(b => claveImagen(b.src) === claveImagen(iu)) : null;
+  const enCuerpo = iu ? imagenesCuerpo.find(b => claveImagenGaleria(b.src) === claveImagenGaleria(iu)) : null;
   if (enCuerpo && !enCuerpo.caption && cap) enCuerpo.caption = cap;
 
   function renderBlock(b){
@@ -70,14 +75,7 @@ function openReader(art){
         (b.caption ? '<figcaption>' + esc(b.caption) + '</figcaption>' : '') +
       '</figure>';
     }
-    if (b.tipo === 'galeria'){
-      const n = b.imagenes.length;
-      return '<figure class="il-galeria' + (b.imagenes.some(x => x.caption) ? ' il-con-pie' : '') + '">' +
-        '<div class="il-galeria-rejilla">' + b.imagenes.map(x =>
-          '<img src="' + esc(x.src) + '" alt="' + esc(x.alt || '') + '" loading="lazy"' +
-          (x.caption ? ' data-pie="' + esc(x.caption) + '"' : '') + (x === enCuerpo ? ' id="il-portada"' : '') + '>').join('') +
-        '</div><figcaption>' + esc(t('galeria').replace('{N}', n)) + ' · ' + esc(t('galeriaPulsa')) + '</figcaption></figure>';
-    }
+    if (b.tipo === 'galeria') return renderGaleria(b);
     if (b.tipo === 'embed'){
       // Tarjeta con enlace al original: no se carga nada de terceros.
       const nombre = NOMBRES_REDES[b.red] || b.red;
@@ -103,6 +101,21 @@ function openReader(art){
       return '<' + tag + '>' + b.items.map(i => '<li>' + process(i) + '</li>').join('') + '</' + tag + '>';
     }
     return '<p>' + process(b.html || '') + '</p>';
+  }
+  function miniaturaGaleria(x, indice){
+    return '<img src="' + esc(x.miniatura || x.src) + '" data-src-grande="' + esc(x.src) + '"' +
+      ' alt="' + esc(x.alt || x.caption || '') + '" loading="lazy" data-foto="' + indice + '"' +
+      ' data-pie="' + esc(pieImagenGaleria(x)) + '"' + (x === enCuerpo ? ' id="il-portada"' : '') + '>';
+  }
+  function renderGaleria(g){
+    const indice = galeriasVista.indexOf(g);
+    return '<details class="il-galeria' + (g.imagenes.some(x => pieImagenGaleria(x)) ? ' il-con-pie' : '') +
+      '" data-galeria="' + indice + '"' + (g.principal ? ' open' : '') + '>' +
+      '<summary>' + esc(t('galeriaTitulo')) + ' · ' + esc(t('galeria').replace('{N}', g.imagenes.length)) + '</summary>' +
+      (g.titulo && g.titulo !== headline ? '<p class="il-galeria-titulo">' + esc(g.titulo) + '</p>' : '') +
+      '<p class="il-galeria-ayuda">' + esc(t('galeriaPulsa')) + '</p>' +
+      '<div class="il-galeria-rejilla"></div>' +
+      '<button type="button" class="il-galeria-mas">' + esc(t('galeriaMas')) + '</button></details>';
   }
   function renderBody(){ return parrafos.map(renderBlock).join(''); }
 
@@ -246,7 +259,7 @@ function openReader(art){
       panelAa + menuMasHTML +
     '</div>';
 
-  const figura = iuFinal && !enCuerpo
+  const figura = iuFinal && !enCuerpo && !art.galeriaPrincipal
     ? '<figure class="il-figure' + (cap || auImg ? ' il-con-pie' : '') + '"><img src="' + esc(iuFinal) + '"' +
       (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') +
       ' alt="' + esc(headline) + '" loading="lazy"><figcaption>' +
@@ -434,9 +447,13 @@ function openReader(art){
     return fc && !im.closest('.il-galeria') ? (fc.textContent || '').trim() : '';
   }
   function abrirVisor(desde){
-    const lista = [...ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img')]
+    const grupo = desde.closest('[data-galeria]');
+    const galeria = grupo && galeriasVista[Number(grupo.dataset.galeria)];
+    const elementos = galeria ? [] : [...ov.querySelectorAll('.il-figure img, .il-inline-figure img')]
       .filter(x => x.getClientRects().length && x.style.display !== 'none');
-    let i = Math.max(0, lista.indexOf(desde));
+    const lista = galeria ? galeria.imagenes.map(x => ({ src: x.src, alt: x.alt, pie: pieImagenGaleria(x) }))
+      : elementos.map(x => ({ src: x.currentSrc || x.src, alt: x.alt, pie: pieDe(x) }));
+    let i = galeria ? Number(desde.dataset.foto) : Math.max(0, elementos.indexOf(desde));
     const lb = document.createElement('div');
     lb.className = 'il-visor';
     lb.tabIndex = -1;
@@ -454,13 +471,19 @@ function openReader(art){
     function mostrar(n){
       i = (n + lista.length) % lista.length;
       const x = lista[i];
-      big.src = x.currentSrc || x.src;
+      big.src = x.src;
       big.alt = x.alt || '';
-      const texto = pieDe(x);
+      const texto = x.pie;
       pie.textContent = (varias ? (i + 1) + ' / ' + lista.length + (texto ? ' · ' : '') : '') + texto;
       lb.setAttribute('aria-label', x.alt || texto || t('ampliarImagen'));
     }
-    const cerrar = () => { lb.remove(); (lista[i] || desde).focus(); };
+    const cerrar = () => {
+      lb.remove();
+      if (galeria){
+        completarRejilla(grupo, i + 1);
+        (grupo.querySelector('[data-foto="' + i + '"]') || desde).focus();
+      } else (elementos[i] || desde).focus();
+    };
     lb.onclick = e => { if (e.target === lb || e.target === big) cerrar(); };
     lb.querySelector('.il-visor-cerrar').onclick = cerrar;
     if (varias){
@@ -471,13 +494,48 @@ function openReader(art){
       if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cerrar(); }
       else if (varias && e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); mostrar(i - 1); }
       else if (varias && e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); mostrar(i + 1); }
+      else if (e.key === 'Tab'){
+        const botones = [...lb.querySelectorAll('button')];
+        const pos = botones.indexOf(document.activeElement);
+        e.preventDefault(); e.stopPropagation();
+        botones[(pos + (e.shiftKey ? -1 : 1) + botones.length) % botones.length].focus();
+      }
     };
+    let toque;
+    lb.addEventListener('touchstart', e => { toque = e.touches.length === 1 ? e.touches[0] : null; }, { passive: true });
+    lb.addEventListener('touchend', e => {
+      if (!toque || !varias || e.touches.length) return;
+      const fin = e.changedTouches[0], dx = fin.clientX - toque.clientX, dy = fin.clientY - toque.clientY;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) mostrar(i + (dx < 0 ? 1 : -1));
+      toque = null;
+    }, { passive: true });
     mostrar(i);
     ov.appendChild(lb);
     lb.focus();
   }
 
+  function completarRejilla(grupo, minimo){
+    const g = galeriasVista[Number(grupo.dataset.galeria)];
+    const rejilla = grupo.querySelector('.il-galeria-rejilla');
+    const desde = rejilla.children.length;
+    const hasta = Math.min(g.imagenes.length, Math.max(minimo || desde + LOTE_GALERIA, desde));
+    rejilla.insertAdjacentHTML('beforeend', g.imagenes.slice(desde, hasta).map((x, i) => miniaturaGaleria(x, desde + i)).join(''));
+    grupo.querySelector('.il-galeria-mas').hidden = hasta >= g.imagenes.length;
+    wireImages();
+  }
+  function wireGalerias(){
+    ov.querySelectorAll('[data-galeria]').forEach(grupo => {
+      if (grupo.dataset.ilWired === '1') return;
+      grupo.dataset.ilWired = '1';
+      grupo.addEventListener('toggle', () => {
+        if (grupo.open && !grupo.querySelector('.il-galeria-rejilla').children.length) completarRejilla(grupo);
+      });
+      grupo.querySelector('.il-galeria-mas').onclick = () => completarRejilla(grupo);
+      if (grupo.open) completarRejilla(grupo);
+    });
+  }
   function wireImages(){
+    wireGalerias();
     ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img, #il-ambi-img').forEach(im => {
       if (im.dataset.ilWired === '1') return;
       im.dataset.ilWired = '1';
@@ -699,6 +757,12 @@ function openReader(art){
   ov.querySelector('.il-img-meta').onclick = cambiarImagenes;
   const miniatura = ov.querySelector('.il-miniatura');
   if (miniatura) miniatura.onclick = () => {
+    const indice = galeriasVista.findIndex(g => g.imagenes.includes(enCuerpo));
+    if (indice >= 0){
+      const grupo = ov.querySelector('[data-galeria="' + indice + '"]');
+      grupo.open = true;
+      completarRejilla(grupo, galeriasVista[indice].imagenes.indexOf(enCuerpo) + 1);
+    }
     const fig = ov.querySelector('#il-portada');
     if (!fig) return;
     fig.scrollIntoView({ behavior: 'smooth', block: 'center' });

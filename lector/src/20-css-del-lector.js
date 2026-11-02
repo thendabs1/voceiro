@@ -182,9 +182,14 @@ ${cssPaleta('#il-full')}
 #il-full[data-imagenes="conPie"] .il-miniatura:not(.il-con-pie){display:none}
 #il-full .il-miniatura{float:right;width:96px;height:96px;margin:4px 0 12px 18px;padding:0;border:1px solid var(--btn-border);border-radius:8px;overflow:hidden;background:var(--quote-bg);cursor:pointer}
 #il-full .il-miniatura img{width:100%;height:100%;object-fit:cover;display:block}
-#il-full .il-galeria{margin:2em 0}
+#il-full .il-galeria{margin:1.5em 0;border:1px solid var(--btn-border);border-radius:6px;padding:0 12px 12px;background:var(--quote-bg)}
+#il-full .il-galeria summary{padding:12px 0;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:.9em;font-weight:600;min-height:44px;box-sizing:border-box}
+#il-full .il-galeria:not([open]){padding-bottom:0}
+#il-full .il-galeria .il-galeria-titulo{margin:0 0 8px;font-weight:600}
+#il-full .il-galeria .il-galeria-ayuda{margin:0 0 12px;font-size:.85em;color:var(--muted)}
+#il-full .il-galeria-mas{display:block;margin:12px auto 0;min-height:44px}
 #il-full .il-galeria-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
-#il-full .il-body .il-galeria-rejilla img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:4px;margin:0;cursor:zoom-in}
+#il-full .il-body .il-galeria-rejilla img{width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;border-radius:4px;margin:0;cursor:zoom-in}
 #il-full .il-galeria figcaption{font-size:.85em;color:var(--muted);text-align:center;padding:8px 14px 0;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-embed{margin:1.6em 0;padding:12px 16px;border:1px solid var(--btn-border);border-left:4px solid var(--accent);border-radius:6px;background:var(--quote-bg);font-size:.92em}
 #il-full .il-embed-red{margin:0 0 4px;font-size:.78em;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,sans-serif}

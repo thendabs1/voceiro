@@ -8,7 +8,7 @@ function isArticlePage(){
   const scripts = document.querySelectorAll('script[type="application/ld+json"]');
   for (const s of scripts){
     const txt = (s.textContent || '').slice(0, 4000);
-    if (/"@type"\s*:\s*"(NewsArticle|Article|BlogPosting|ReportageNewsArticle|TechArticle|ScholarlyArticle)"/i.test(txt)) return true;
+    if (/"@type"\s*:\s*"(NewsArticle|Article|BlogPosting|ReportageNewsArticle|TechArticle|ScholarlyArticle|ImageGallery)"/i.test(txt)) return true;
   }
   return false;
 }
