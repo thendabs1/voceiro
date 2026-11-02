@@ -1,9 +1,9 @@
 // El catálogo municipal completo se proporciona solo donde sea necesario.
 // El tiempo sigue cargando sus sugerencias AEMET bajo demanda.
-import { ADMINISTRACION } from './administracion.js?v=8c8df79045';
-import { PAISES } from './paises.js?v=8c8df79045';
+import { ADMINISTRACION } from './administracion.js?v=00811c1769';
+import { PAISES } from './paises.js?v=00811c1769';
 
-export { PROVINCIAS } from './administracion.js?v=8c8df79045';
+export { PROVINCIAS } from './administracion.js?v=00811c1769';
 
 export function crearCatalogo(municipios, administracion = ADMINISTRACION, paises = PAISES) {
   const entidades = new Map();
