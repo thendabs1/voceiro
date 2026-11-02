@@ -249,6 +249,7 @@ def importar(anterior, pagina, observado):
             identidad=nucleo.identificador('programa-atletismo-revisado', equivalencia['id']) if equivalencia else None)
         principal, _ = a.evento('competicion', e['id'], 'encuentro', e.get('nombre'),
             deporte.dias(inicio.isoformat(), fin.isoformat()), padre=grupo,
+            estado=e.get('estado', 'desconocido'),
             sitio=e.get('lugar'), url=enlace(fuente, e['url']), identidad=identidad,
             bloques={'atletismo': {**(e.get('metadatos') or {}),
                 **({'equivalencia_revisada': equivalencia} if equivalencia else {})},

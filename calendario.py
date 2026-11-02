@@ -1,6 +1,7 @@
 """Calendario común: Turso, recogidas acotadas y exportaciones recuperables."""
 
 import argparse
+from copy import deepcopy
 from datetime import date, datetime, timedelta
 import json
 from pathlib import Path
@@ -8,7 +9,7 @@ import tempfile
 from zoneinfo import ZoneInfo
 
 from agenda.cultura_galicia import FUENTES, leer_pagina, normalizar, recoger
-from agenda import almacen, atletismo, deportes, vidmar_f1
+from agenda import almacen, atletismo, deportes, nucleo, vidmar_f1
 from agenda.modelo import integrar
 from agenda.registro import CULTURA
 from agenda.clasificacion import aplicar as clasificar
@@ -96,6 +97,11 @@ def operar_nucleo(args):
                     except presencia.InventarioDesplomado as aviso:
                         # Los contenidos sí se actualizan; solo no se acreditan ausencias.
                         print(f'::warning::{aviso}. Repetir con --aceptar-inventario {fuente} si es real.')
+        if modificar:
+            # Todas las entradas se guardan juntas. Las selecciones anteriores
+            # proceden del estado persistido, no de un paso intermedio del lote.
+            calendario['nucleo']['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
+            nucleo.recalcular_selecciones(calendario['nucleo'])
         return calendario
 
     if args.turso:

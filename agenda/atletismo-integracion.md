@@ -199,3 +199,7 @@ fuentes oficiales, adaptadores deportivos, publicación, lectura e interfaz.
 La suite completa pasó en [CI](https://github.com/thendabs1/voceiro/actions/runs/41466633236)
 para el commit `adc3a2fa` del [PR 259](https://github.com/thendabs1/voceiro/pull/259).
 La entrega sigue sin activar recogida ni publicación en producción.
+
+Continuación: [extracción Nivel II y resolución de identidades](atletismo-nivel-ii.md).
+Se extraen 441 filas del PDF completo; una tiene correspondencia revisada
+con FGA y 440 siguen pendientes. Esto no cierra la cobertura RFEA.

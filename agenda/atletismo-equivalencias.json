@@ -13,6 +13,18 @@
           "https://fcatletisme.cat/event/campionat-despanya-de-5-km-master/"
         ]
       }
+    },
+    {
+      "id": "xunta-galicia-marcha-invierno-2026",
+      "referencias": {"rfea": "nivel-ii:xunta-galicia-marcha-invierno-2026", "fga": "112621"},
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Mismo XIX campeonato gallego de marcha de invierno, 21/11/2026, Pontevedra. Referencia RFEA Nivel II editorial porque el PDF no publica IDs. Se conserva la discrepancia AL/Marcha y la antigüedad del documento. No se equipara con la sesión técnica PGTA del 14/11.",
+        "evidencias": [
+          "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
+          "https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/"
+        ]
+      }
     }
   ]
 }

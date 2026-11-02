@@ -16,3 +16,15 @@ RFEA 64837, FGA 113590 y FCA 82885, campeonato de España de 5 km máster del
 15/11/2026. Procede del mensual/ficha RFEA y de las capturas FGA/FCA descritas
 arriba. Los tres IDs se vinculan en el registro de equivalencias revisadas;
 se conservan los lugares y metadatos distintos de cada fuente.
+
+`nivel-ii-2026.txt` es la extracción íntegra con `pdftotext -layout` del
+PDF general Nivel II enlazado desde RFEA, descargado el 2/11/2026:
+https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf .
+Conserva las 15 páginas y 441 filas, actualización 15/10/2026. El lector
+todavía no acredita identidad para todas esas filas.
+
+`nivel-ii-fga-marcha.json` conserva la entrada 112621 del listado gallego
+de noviembre sin filtros de ámbito, contrastada el 2/11/2026 con la ficha
+https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/ .
+Se usa para comprobar la correspondencia con Nivel II, incluida la discrepancia
+AL/Marcha. El identificador Nivel II es editorial, no publicado por RFEA.
