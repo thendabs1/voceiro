@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.346
+// @version      2.0.349
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.346';
+const SCRIPT_VERSION = '2.0.349';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -969,6 +969,207 @@ function agruparGalerias(bloques){
   return out;
 }
 
+/* ── lector/modulos/galerias.js ── */
+// Galerías independientes del origen del texto. Solo se recogen colecciones
+// declaradas o contenedores de galería; nunca todas las imágenes de la página.
+
+const SEL_GALERIAS = [
+  '[itemtype$="/ImageGallery"]', '[data-component="gallery"]',
+  '.wp-block-gallery', '.gallery', '.photo-gallery', '.photogallery',
+  '.fotogaleria', '.galeria', '.c-detail__gallery'
+].join(',');
+const AJENOS_GALERIA = 'nav,aside,footer,[role="navigation"],.related,.related-news,[class*="recommend"],#il-full';
+const PIE_GALERIA = 'figcaption,[itemprop="caption"],.gallery-caption';
+const AUTOR_GALERIA = '[itemprop="author"],[itemprop="creditText"],.c-detail__media__author,.credit,.author';
+const arrayGaleria = x => x == null ? [] : Array.isArray(x) ? x : [x];
+const textoGaleria = x => typeof x === 'string' ? x.replace(/\s+/g, ' ').trim() : '';
+const tipoGaleria = (x, tipo) => arrayGaleria(x && x['@type']).some(t => String(t).split(/[\/#]/).pop() === tipo);
+const nombreGaleria = x => arrayGaleria(x).map(a => typeof a === 'string' ? a : a && a.name || '').filter(Boolean).join(', ');
+
+function urlGaleria(valor, base){
+  if (typeof valor !== 'string' || !valor.trim()) return '';
+  try {
+    const u = new URL(valor, base);
+    return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.href : '';
+  } catch(e){ return ''; }
+}
+function claveImagenGaleria(url){
+  // Este CMS inserta la transformación antes de /uploads/ (Diario de León).
+  const ruta = String(url || '').replace(/\/files\/[^/]+(?=\/uploads\/)/, '');
+  if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(ruta)) return claveImagen(ruta);
+  // Una foto numerada (partido-125.jpg) no es una versión de partido.jpg.
+  return ruta.replace(/^(?:[a-z]+:)?\/\/[^/]+/i, '').split(/[?#]/)[0]
+    .replace(/\.(?:jpe?g|png|webp|gif|avif)$/i, '')
+    .replace(/(?:[_-](?:\d{2,4}x\d{2,4}|\d{2,4}w(?:_\d+)?|orig|original|large|medium|small|thumb)|@\dx)$/i, '').toLowerCase();
+}
+function imagenGaleria(im, base){
+  if (typeof im === 'string') im = { url: im };
+  if (!im || typeof im !== 'object') return null;
+  const src = urlGaleria(im.contentUrl || im.url, base);
+  if (!src || /\/(?:logo|logos|avatar|avatars|icons)\//i.test(src) ||
+      /(?:pixel|tracker|beacon|spacer|blank|transparent)\.(?:gif|png|jpe?g)(?:[?#]|$)/i.test(src)) return null;
+  const miniatura = urlGaleria(im.thumbnailUrl, base);
+  return { tipo: 'img', src,
+    miniatura: miniatura && !/(?:pixel|tracker|beacon|spacer|blank|transparent)\.(?:gif|png|jpe?g)(?:[?#]|$)/i.test(miniatura) ? miniatura : src,
+    alt: textoGaleria(im.alt || im.name),
+    caption: textoGaleria(im.caption || im.description),
+    autor: textoGaleria(im.creditText || nombreGaleria(im.creator || im.author)),
+    posicion: Number(im.position) || 0 };
+}
+function unicasGaleria(imagenes){
+  const vistas = new Map();
+  for (const im of imagenes.filter(Boolean)){
+    const k = claveImagenGaleria(im.src);
+    const antes = vistas.get(k);
+    if (!antes){ vistas.set(k, { ...im }); continue; }
+    for (const campo of ['caption', 'autor', 'alt']) if (!antes[campo]) antes[campo] = im[campo];
+  }
+  return [...vistas.values()];
+}
+
+function galeriasDeJSONLD(datos, base){
+  const out = [];
+  const nodos = new Map();
+  const objetos = [];
+  function indexar(x){
+    if (!x || typeof x !== 'object') return;
+    objetos.push(x);
+    if (x['@id'] && Object.keys(x).length > 1) nodos.set(x['@id'], x);
+    Object.values(x).forEach(v => { if (Array.isArray(v)) v.forEach(indexar); else if (v && typeof v === 'object') indexar(v); });
+  }
+  datos.forEach(indexar);
+  // Un bloque ImageGallery suelto no demuestra que sea el contenido principal
+  // si la página también declara una noticia con texto propio.
+  const hayArticuloConTexto = objetos.some(o => /Article$|BlogPosting/.test(arrayGaleria(o['@type']).join(' ')) && textoGaleria(o.articleBody));
+  const resolver = x => x && x['@id'] && nodos.get(x['@id']) || x;
+  const secundarias = new Set(), propietarios = new Map();
+  for (const o of objetos){
+    for (const parte of arrayGaleria(o.hasPart)) secundarias.add(resolver(parte));
+    if (/Article$|BlogPosting/.test(arrayGaleria(o['@type']).join(' '))){
+      for (const parte of [...arrayGaleria(o.hasPart), ...arrayGaleria(o.mainEntityOfPage), ...arrayGaleria(o.mainEntity)])
+        propietarios.set(resolver(parte), o);
+    }
+  }
+  const visitados = new Set();
+  function visitar(x, propietario, principal){
+    for (let o of arrayGaleria(x)){
+      o = resolver(o);
+      if (!o || typeof o !== 'object' || visitados.has(o)) continue;
+      visitados.add(o);
+      const esArticulo = /Article$|BlogPosting/.test(arrayGaleria(o['@type']).join(' '));
+      const meta = esArticulo ? o : propietarios.get(o) || propietario;
+      // Algunos medios declaran la fotogalería como NewsArticle y ponen las
+      // fotos en image. Solo se interpreta así en rutas de fotogalerías.
+      const rutaFotos = /\/(?:fotos|fotogalerias?|galleries)\//i.test(new URL(base).pathname);
+      if (tipoGaleria(o, 'ImageGallery') || esArticulo && rutaFotos){
+        const pagina = urlGaleria(o.url || o['@id'], base);
+        if (pagina && new URL(pagina).origin + new URL(pagina).pathname !== new URL(base).origin + new URL(base).pathname) continue;
+        const lista = o.image || o.associatedMedia || o.itemListElement || [];
+        const imagenes = unicasGaleria(arrayGaleria(lista).map(x => {
+          x = resolver(x);
+          return imagenGaleria(resolver(x && x.item || x), base);
+        }));
+        if (imagenes.every(im => im.posicion)) imagenes.sort((a, b) => a.posicion - b.posicion);
+        if (imagenes.length >= 2) out.push({ tipo: 'galeria', titulo: textoGaleria(o.headline || o.name),
+          imagenes, principal: !secundarias.has(o) && principal && (!!meta || !hayArticuloConTexto),
+          metadata: { ...meta, ...o, articleBody: meta && meta.articleBody || o.articleBody || '' } });
+      }
+      visitar(o['@graph'], meta, principal);
+      visitar(o.mainEntityOfPage, meta, true);
+      visitar(o.mainEntity, meta, principal);
+      visitar(o.hasPart, meta, false);
+    }
+  }
+  datos.forEach(x => visitar(x, null, true));
+  return out;
+}
+
+function srcsetGaleria(valor){
+  return String(valor || '').split(',').map(s => s.trim().split(/\s+/))
+    .sort((a, b) => (parseFloat(b[1]) || 0) - (parseFloat(a[1]) || 0))[0]?.[0] || '';
+}
+function galeriasDelDOM(root, base, exclude = ''){
+  const raices = [...root.querySelectorAll(SEL_GALERIAS)];
+  if (root.matches && root.matches(SEL_GALERIAS)) raices.unshift(root);
+  const out = [];
+  for (const nodo of raices){
+    if (nodo.closest(AJENOS_GALERIA) || out.some(g => g.nodo.contains(nodo))) continue;
+    if (exclude && nodo.closest(exclude)) continue;
+    const imagenes = unicasGaleria([...nodo.querySelectorAll('img')].map(im => {
+      if (im.closest(AJENOS_GALERIA) || exclude && im.closest(exclude)) return null;
+      const ancho = Number(im.getAttribute('width')), alto = Number(im.getAttribute('height'));
+      if (ancho > 0 && ancho <= 3 || alto > 0 && alto <= 3) return null;
+      const src = ['data-full-src', 'data-original', 'data-src'].map(a => im.getAttribute(a)).find(u => urlGaleria(u, base)) ||
+        srcsetGaleria(im.getAttribute('data-srcset') || im.getAttribute('srcset')) || im.getAttribute('src');
+      const figura = im.closest('figure') || im.parentElement;
+      const pie = figura.querySelector(PIE_GALERIA);
+      const autor = figura.querySelector(AUTOR_GALERIA);
+      const limpio = pie && pie.cloneNode(true);
+      if (limpio){
+        if (limpio.matches(AUTOR_GALERIA)) limpio.textContent = '';
+        else limpio.querySelectorAll(AUTOR_GALERIA).forEach(n => n.remove());
+      }
+      return imagenGaleria({ url: src, thumbnailUrl: im.getAttribute('src'), alt: im.getAttribute('alt'),
+        caption: limpio && limpio.textContent, creditText: autor && autor.textContent }, base);
+    }));
+    if (imagenes.length >= 2) out.push({ tipo: 'galeria', nodo, imagenes,
+      titulo: textoGaleria(nodo.getAttribute('aria-label') || nodo.getAttribute('data-title')),
+      principal: false });
+  }
+  return out;
+}
+
+function detectarGalerias(doc, base, { root = doc, exclude = '' } = {}){
+  if (exclude){ try { root.querySelector(exclude); } catch(e){ exclude = ''; } }
+  const datos = [];
+  // Un selector manual delimita también las fotos: no recupera colecciones
+  // del JSON de otra zona de la página.
+  if (root === doc) for (const s of doc.querySelectorAll('script[type="application/ld+json"]')){
+    try { datos.push(JSON.parse(s.textContent)); } catch(e){}
+  }
+  const json = galeriasDeJSONLD(datos, base);
+  const dom = galeriasDelDOM(root, base, exclude);
+  const principalDOM = root === doc ? !!doc.querySelector('body.article-gallery,body.gallery-page')
+    : !!root.matches && root.matches(SEL_GALERIAS);
+  const galerias = [...json];
+  for (const g of dom){
+    const claves = new Set(g.imagenes.map(im => claveImagenGaleria(im.src)));
+    const coincide = galerias.find(j => {
+      const comunes = j.imagenes.filter(im => claves.has(claveImagenGaleria(im.src))).length;
+      return comunes >= 2 && comunes >= Math.min(j.imagenes.length, g.imagenes.length) / 2;
+    });
+    if (coincide){
+      // El DOM suele ofrecer el original y el JSON una versión recortada.
+      const originales = new Map(g.imagenes.map(im => [claveImagenGaleria(im.src), im]));
+      coincide.imagenes = unicasGaleria([...coincide.imagenes.map(im => {
+        const original = originales.get(claveImagenGaleria(im.src));
+        return original ? { ...im, ...original, alt: original.alt || im.alt,
+          caption: original.caption || im.caption, autor: original.autor || im.autor } : im;
+      }), ...g.imagenes]);
+    } else galerias.push({ ...g, principal: principalDOM });
+  }
+  return { galerias, principal: galerias.some(g => g.principal) };
+}
+
+// Solo las raíces comprobadas, sobre copias desconectadas del documento.
+// Así los contadores y los títulos repetidos no llegan al texto del lector.
+function retirarGaleriasDelDOM(root, base){
+  for (const g of galeriasDelDOM(root, base)){
+    if (g.nodo !== root) g.nodo.remove();
+    else g.nodo.replaceChildren();
+  }
+  return root;
+}
+
+function separarImagenesDeGalerias(bloques, galerias){
+  const claves = new Set(galerias.flatMap(g => g.imagenes.map(im => claveImagenGaleria(im.src))));
+  return bloques.filter(b => b.tipo !== 'img' || !claves.has(claveImagenGaleria(b.src)));
+}
+
+function pieImagenGaleria(im){
+  return [im.caption, im.autor && im.autor !== im.caption ? im.autor : ''].filter(Boolean).join(' — ');
+}
+
 /* ============================================================
    1c. CATÁLOGO DE MEDIOS
    ------------------------------------------------------------
@@ -1114,6 +1315,7 @@ const I18N = {
     letraMenor: 'Letra más pequeña', letraMayor: 'Letra más grande',
     masEstrecho: 'Más estrecho', masAncho: 'Más ancho',
     imgTodas: 'Con imágenes', imgConPie: 'Solo con pie', imgNinguna: 'Sin imágenes', imgMedio: 'Imágenes en este medio', imgComoSiempre: 'Como en todos los medios', imgEnEsteMedio: 'en este medio', imgCambiarA: 'Pulsa para pasar a', verPortada: 'Ver la portada en el artículo', embebidoDe: 'Contenido de {X}', tabla: 'Tabla', grafico: 'Gráfico', mapa: 'Mapa', verEn: 'Ver en {X}', galeria: '{N} imágenes', galeriaPulsa: 'pulsa una para verlas en grande', visorAnterior: 'Imagen anterior', visorSiguiente: 'Imagen siguiente', sitesHint: 'Medios con ajustes propios: si el lector se abre solo, de dónde saca el texto, las imágenes y las secciones que se ignoran. Los demás medios usan lo de siempre.', medioSinReglas: 'Este medio aún no tiene ajustes propios', ampliarImagen: 'Ampliar imagen',
+    galeriaTitulo: 'Galería', galeriaMas: 'Mostrar más fotos',
     readItems: 'Leídas', 
     keepReadItems: 'Guardar historial de leídas',
     clearRead: 'Borrar leídas',
@@ -1326,6 +1528,7 @@ const I18N = {
     letraMenor: 'Letra máis pequena', letraMayor: 'Letra máis grande',
     masEstrecho: 'Máis estreito', masAncho: 'Máis ancho',
     imgTodas: 'Con imaxes', imgConPie: 'Só con pé', imgNinguna: 'Sen imaxes', imgMedio: 'Imaxes neste medio', imgComoSiempre: 'Como en todos os medios', imgEnEsteMedio: 'neste medio', imgCambiarA: 'Preme para pasar a', verPortada: 'Ver a portada no artigo', embebidoDe: 'Contido de {X}', tabla: 'Táboa', grafico: 'Gráfico', mapa: 'Mapa', verEn: 'Ver en {X}', galeria: '{N} imaxes', galeriaPulsa: 'preme nunha para velas en grande', visorAnterior: 'Imaxe anterior', visorSiguiente: 'Imaxe seguinte', sitesHint: 'Medios con axustes propios: se o lector se abre só, de onde colle o texto, as imaxes e as seccións que se ignoran. Os demais medios usan o de sempre.', medioSinReglas: 'Este medio aínda non ten axustes propios', ampliarImagen: 'Ampliar imaxe',
+    galeriaTitulo: 'Galería', galeriaMas: 'Amosar máis fotos',
     readItems: 'Lidas', 
     keepReadItems: 'Gardar historial de lidas',
     clearRead: 'Borrar lidas',
@@ -1543,6 +1746,7 @@ const I18N = {
     letraMenor: 'Lletra més petita', letraMayor: 'Lletra més grossa',
     masEstrecho: 'Més estret', masAncho: 'Més ample',
     imgTodas: 'Amb imatges', imgConPie: 'Només amb peu', imgNinguna: 'Sense imatges', imgMedio: 'Imatges en aquest mitjà', imgComoSiempre: 'Com a tots els mitjans', imgEnEsteMedio: 'en aquest mitjà', imgCambiarA: 'Prem per passar a', verPortada: 'Veure la portada a l\'article', embebidoDe: 'Contingut de {X}', tabla: 'Taula', grafico: 'Gràfic', mapa: 'Mapa', verEn: 'Veure a {X}', galeria: '{N} imatges', galeriaPulsa: 'prem-ne una per veure-les en gran', visorAnterior: 'Imatge anterior', visorSiguiente: 'Imatge següent', sitesHint: 'Mitjans amb ajustos propis: si el lector s\'obre sol, d\'on treu el text, les imatges i les seccions que s\'ignoren. La resta de mitjans fan servir el de sempre.', medioSinReglas: 'Aquest mitjà encara no té ajustos propis', ampliarImagen: 'Amplia la imatge',
+    galeriaTitulo: 'Galeria', galeriaMas: 'Mostra més fotos',
     readItems: 'Llegides', 
     keepReadItems: 'Desar historial de llegides',
     clearRead: 'Esborrar llegides',
@@ -1749,6 +1953,7 @@ const I18N = {
     letraMenor: 'Smaller text', letraMayor: 'Larger text',
     masEstrecho: 'Narrower', masAncho: 'Wider',
     imgTodas: 'With images', imgConPie: 'Captioned only', imgNinguna: 'No images', imgMedio: 'Images on this site', imgComoSiempre: 'Same as all sites', imgEnEsteMedio: 'on this site', imgCambiarA: 'Press to switch to', verPortada: 'See the cover in the article', embebidoDe: 'Content from {X}', tabla: 'Table', grafico: 'Chart', mapa: 'Map', verEn: 'View on {X}', galeria: '{N} images', galeriaPulsa: 'press one to see them full size', visorAnterior: 'Previous image', visorSiguiente: 'Next image', sitesHint: 'Sites with their own settings: whether the reader opens by itself, where the text comes from, images and ignored sections. Other sites use the defaults.', medioSinReglas: 'This site has no settings of its own yet', ampliarImagen: 'Enlarge image',
+    galeriaTitulo: 'Gallery', galeriaMas: 'Show more photos',
     readItems: 'Read', 
     keepReadItems: 'Keep history of read items',
     clearRead: 'Clear read',
@@ -1961,6 +2166,7 @@ const I18N = {
     letraMenor: 'Letra txikiagoa', letraMayor: 'Letra handiagoa',
     masEstrecho: 'Estuagoa', masAncho: 'Zabalagoa',
     imgTodas: 'Irudiekin', imgConPie: 'Oinarekin soilik', imgNinguna: 'Irudirik gabe', imgMedio: 'Irudiak hedabide honetan', imgComoSiempre: 'Hedabide guztietan bezala', imgEnEsteMedio: 'hedabide honetan', imgCambiarA: 'Sakatu hona aldatzeko', verPortada: 'Ikusi azala artikuluan', embebidoDe: '{X} edukia', tabla: 'Taula', grafico: 'Grafikoa', mapa: 'Mapa', verEn: 'Ikusi {X}-n', galeria: '{N} irudi', galeriaPulsa: 'sakatu bat handian ikusteko', visorAnterior: 'Aurreko irudia', visorSiguiente: 'Hurrengo irudia', sitesHint: 'Ezarpen propioak dituzten hedabideak: irakurgailua bere kabuz irekitzen den, testua nondik ateratzen duen, irudiak eta alde batera uzten diren atalak. Gainerakoek ohikoa erabiltzen dute.', medioSinReglas: 'Hedabide honek ez du oraindik ezarpen propiorik', ampliarImagen: 'Irudia handitu',
+    galeriaTitulo: 'Galeria', galeriaMas: 'Erakutsi argazki gehiago',
     readItems: 'Irakurriak', 
     keepReadItems: 'Irakurrien historia gorde',
     clearRead: 'Irakurriak ezabatu',
@@ -3645,7 +3851,7 @@ function marcarEmbebidos(raiz){
 function extractFromReadability(){
   if (typeof Readability !== 'function') return null;
   try {
-    const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
+    const clone = marcarEmbebidos(limpiarPublicidad(retirarGaleriasDelDOM(document.cloneNode(true), location.href)));
     const reader = new Readability(clone);
     const art = reader.parse();
     if (!art || !art.textContent || art.textContent.trim().length < 200) return null;
@@ -3679,6 +3885,7 @@ function extractFromSelector(rootSel, excludeSel, minChars){
   if (excludeSel){
     try { clone.querySelectorAll(excludeSel).forEach(n => n.remove()); } catch(e){}
   }
+  retirarGaleriasDelDOM(clone, location.href);
   const rawHTML = clone.innerHTML;
   const rawBody = (clone.textContent || '').replace(/\s+/g, ' ').trim();
   if (!rawBody || rawBody.length < (minChars || UI.extractMinChars)) return null;
@@ -3758,7 +3965,7 @@ function collectAllText(){
 function extractFromAll(){
   try {
     if (typeof Readability === 'function'){
-      const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
+      const clone = marcarEmbebidos(limpiarPublicidad(retirarGaleriasDelDOM(document.cloneNode(true), location.href)));
       clone.querySelectorAll('script,style,iframe,noscript,svg,canvas,video,audio,form,button,select,textarea,input,nav,header,footer,aside,[role="navigation"],[role="banner"],[role="complementary"]').forEach(n => n.remove());
       const reader = new Readability(clone);
       const art = reader.parse();
@@ -3818,7 +4025,7 @@ function extractAuto(){
   });
 }
 
-function extractArticleWithConfig(extraction, overrideSrc){
+function extractTextWithConfig(extraction, overrideSrc){
   const ex = extraction || currentExtraction();
   if (ex.mode === 'selector'){
     return extractFromSelector(ex.root, ex.exclude, ex.minChars);
@@ -3842,6 +4049,31 @@ function extractArticleWithConfig(extraction, overrideSrc){
     return art;
   }
   return extractAuto();
+}
+function extractArticleWithConfig(extraction, overrideSrc){
+  const ex = extraction || currentExtraction();
+  let root = document;
+  if (ex.mode === 'selector'){
+    try { root = document.querySelector(ex.root); } catch(e){ return null; }
+    if (!root) return null;
+  }
+  const datos = detectarGalerias(document, location.href, { root, exclude: ex.exclude || '' });
+  let art = extractTextWithConfig(ex, overrideSrc);
+  if (!datos.galerias.length) return art;
+  if (datos.principal){
+    const principal = datos.galerias.find(g => g.principal);
+    const meta = principal.metadata;
+    // Una fotogalería puede tener entradilla pero ningún articleBody. No
+    // necesita los 200 caracteres que Readability exige a una noticia.
+    const base = meta ? buildFromJSONLD(meta) : {
+      headline: metaContent('meta[property="og:title"]') || document.querySelector('h1')?.textContent || document.title,
+      description: metaContent('meta[name="description"]') || '', rawBody: '', rawHTML: '',
+      image: '', autores: metaContent('meta[name="author"]') || ''
+    };
+    art = { ...art, ...base, bloques: undefined, _source: meta ? 'jsonld' : 'readability' };
+  }
+  if (!art) return null;
+  return { ...art, galerias: datos.galerias.map(({ nodo, metadata, ...g }) => g), galeriaPrincipal: datos.principal };
 }
 function extractArticle(){
   return extractArticleWithConfig(currentExtraction());
@@ -4057,7 +4289,7 @@ function isArticlePage(){
   const scripts = document.querySelectorAll('script[type="application/ld+json"]');
   for (const s of scripts){
     const txt = (s.textContent || '').slice(0, 4000);
-    if (/"@type"\s*:\s*"(NewsArticle|Article|BlogPosting|ReportageNewsArticle|TechArticle|ScholarlyArticle)"/i.test(txt)) return true;
+    if (/"@type"\s*:\s*"(NewsArticle|Article|BlogPosting|ReportageNewsArticle|TechArticle|ScholarlyArticle|ImageGallery)"/i.test(txt)) return true;
   }
   return false;
 }
@@ -4271,9 +4503,14 @@ ${cssPaleta('#il-full')}
 #il-full[data-imagenes="conPie"] .il-miniatura:not(.il-con-pie){display:none}
 #il-full .il-miniatura{float:right;width:96px;height:96px;margin:4px 0 12px 18px;padding:0;border:1px solid var(--btn-border);border-radius:8px;overflow:hidden;background:var(--quote-bg);cursor:pointer}
 #il-full .il-miniatura img{width:100%;height:100%;object-fit:cover;display:block}
-#il-full .il-galeria{margin:2em 0}
+#il-full .il-galeria{margin:1.5em 0;border:1px solid var(--btn-border);border-radius:6px;padding:0 12px 12px;background:var(--quote-bg)}
+#il-full .il-galeria summary{padding:12px 0;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:.9em;font-weight:600;min-height:44px;box-sizing:border-box}
+#il-full .il-galeria:not([open]){padding-bottom:0}
+#il-full .il-galeria .il-galeria-titulo{margin:0 0 8px;font-weight:600}
+#il-full .il-galeria .il-galeria-ayuda{margin:0 0 12px;font-size:.85em;color:var(--muted)}
+#il-full .il-galeria-mas{display:block;margin:12px auto 0;min-height:44px}
 #il-full .il-galeria-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
-#il-full .il-body .il-galeria-rejilla img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:4px;margin:0;cursor:zoom-in}
+#il-full .il-body .il-galeria-rejilla img{width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;border-radius:4px;margin:0;cursor:zoom-in}
 #il-full .il-galeria figcaption{font-size:.85em;color:var(--muted);text-align:center;padding:8px 14px 0;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #il-full .il-embed{margin:1.6em 0;padding:12px 16px;border:1px solid var(--btn-border);border-left:4px solid var(--accent);border-radius:6px;background:var(--quote-bg);font-size:.92em}
 #il-full .il-embed-red{margin:0 0 4px;font-size:.78em;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -4695,7 +4932,7 @@ function openReader(art){
   const rawHTML = String(art.rawHTML || '');
   const useHTML = !!rawHTML;
   const plainBody = useHTML ? stripTags(rawHTML).replace(/\s+/g,' ').trim() : rawBody;
-  if (!plainBody || plainBody.length < 100){ toast(t('noArticle')); return; }
+  if ((!plainBody || plainBody.length < 100) && !art.galeriaPrincipal){ toast(t('noArticle')); return; }
 
   const headline = art.headline || document.title || '';
   const description = art.description || '';
@@ -4716,9 +4953,14 @@ function openReader(art){
   // Fuera las imágenes repetidas y, si viene del DOM, las promociones del
   // medio al principio y al final («¿Ya nos sigues?», newsletters…).
   let parrafos = art.bloques || (useHTML ? buildBlocksFromHTML(rawHTML) : buildBlocksFromText(rawBody));
+  const galeriasExtraidas = art.galerias || [];
+  parrafos = separarImagenesDeGalerias(parrafos, galeriasExtraidas);
   parrafos = sinImagenesRepetidas(parrafos);
   if (srcKey !== 'jsonld') parrafos = sinPromosEnBordes(parrafos, textoDeBloque);
   parrafos = agruparGalerias(parrafos);
+  parrafos = [...galeriasExtraidas, ...parrafos];
+  const galeriasVista = parrafos.filter(b => b.tipo === 'galeria');
+  const LOTE_GALERIA = 12;
   // Las palabras del texto que se ve, no las de lo que se ha quitado.
   const wordsCount = countWords(parrafos.filter(esDeTexto).map(textoDeBloque).join(' '));
 
@@ -4731,7 +4973,7 @@ function openReader(art){
   // La portada repetida como primera imagen del cuerpo sale una sola vez,
   // en el cuerpo y con su pie.
   const imagenesCuerpo = parrafos.flatMap(b => b.tipo === 'galeria' ? b.imagenes : b.tipo === 'img' ? [b] : []);
-  const enCuerpo = iu ? imagenesCuerpo.find(b => claveImagen(b.src) === claveImagen(iu)) : null;
+  const enCuerpo = iu ? imagenesCuerpo.find(b => claveImagenGaleria(b.src) === claveImagenGaleria(iu)) : null;
   if (enCuerpo && !enCuerpo.caption && cap) enCuerpo.caption = cap;
 
   function renderBlock(b){
@@ -4743,14 +4985,7 @@ function openReader(art){
         (b.caption ? '<figcaption>' + esc(b.caption) + '</figcaption>' : '') +
       '</figure>';
     }
-    if (b.tipo === 'galeria'){
-      const n = b.imagenes.length;
-      return '<figure class="il-galeria' + (b.imagenes.some(x => x.caption) ? ' il-con-pie' : '') + '">' +
-        '<div class="il-galeria-rejilla">' + b.imagenes.map(x =>
-          '<img src="' + esc(x.src) + '" alt="' + esc(x.alt || '') + '" loading="lazy"' +
-          (x.caption ? ' data-pie="' + esc(x.caption) + '"' : '') + (x === enCuerpo ? ' id="il-portada"' : '') + '>').join('') +
-        '</div><figcaption>' + esc(t('galeria').replace('{N}', n)) + ' · ' + esc(t('galeriaPulsa')) + '</figcaption></figure>';
-    }
+    if (b.tipo === 'galeria') return renderGaleria(b);
     if (b.tipo === 'embed'){
       // Tarjeta con enlace al original: no se carga nada de terceros.
       const nombre = NOMBRES_REDES[b.red] || b.red;
@@ -4776,6 +5011,21 @@ function openReader(art){
       return '<' + tag + '>' + b.items.map(i => '<li>' + process(i) + '</li>').join('') + '</' + tag + '>';
     }
     return '<p>' + process(b.html || '') + '</p>';
+  }
+  function miniaturaGaleria(x, indice){
+    return '<img src="' + esc(x.miniatura || x.src) + '" data-src-grande="' + esc(x.src) + '"' +
+      ' alt="' + esc(x.alt || x.caption || '') + '" loading="lazy" data-foto="' + indice + '"' +
+      ' data-pie="' + esc(pieImagenGaleria(x)) + '"' + (x === enCuerpo ? ' id="il-portada"' : '') + '>';
+  }
+  function renderGaleria(g){
+    const indice = galeriasVista.indexOf(g);
+    return '<details class="il-galeria' + (g.imagenes.some(x => pieImagenGaleria(x)) ? ' il-con-pie' : '') +
+      '" data-galeria="' + indice + '"' + (g.principal ? ' open' : '') + '>' +
+      '<summary>' + esc(t('galeriaTitulo')) + ' · ' + esc(t('galeria').replace('{N}', g.imagenes.length)) + '</summary>' +
+      (g.titulo && g.titulo !== headline ? '<p class="il-galeria-titulo">' + esc(g.titulo) + '</p>' : '') +
+      '<p class="il-galeria-ayuda">' + esc(t('galeriaPulsa')) + '</p>' +
+      '<div class="il-galeria-rejilla"></div>' +
+      '<button type="button" class="il-galeria-mas">' + esc(t('galeriaMas')) + '</button></details>';
   }
   function renderBody(){ return parrafos.map(renderBlock).join(''); }
 
@@ -4919,7 +5169,7 @@ function openReader(art){
       panelAa + menuMasHTML +
     '</div>';
 
-  const figura = iuFinal && !enCuerpo
+  const figura = iuFinal && !enCuerpo && !art.galeriaPrincipal
     ? '<figure class="il-figure' + (cap || auImg ? ' il-con-pie' : '') + '"><img src="' + esc(iuFinal) + '"' +
       (iuFallback ? ' data-fallback="' + esc(iuFallback) + '"' : '') +
       ' alt="' + esc(headline) + '" loading="lazy"><figcaption>' +
@@ -5107,9 +5357,13 @@ function openReader(art){
     return fc && !im.closest('.il-galeria') ? (fc.textContent || '').trim() : '';
   }
   function abrirVisor(desde){
-    const lista = [...ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img')]
+    const grupo = desde.closest('[data-galeria]');
+    const galeria = grupo && galeriasVista[Number(grupo.dataset.galeria)];
+    const elementos = galeria ? [] : [...ov.querySelectorAll('.il-figure img, .il-inline-figure img')]
       .filter(x => x.getClientRects().length && x.style.display !== 'none');
-    let i = Math.max(0, lista.indexOf(desde));
+    const lista = galeria ? galeria.imagenes.map(x => ({ src: x.src, alt: x.alt, pie: pieImagenGaleria(x) }))
+      : elementos.map(x => ({ src: x.currentSrc || x.src, alt: x.alt, pie: pieDe(x) }));
+    let i = galeria ? Number(desde.dataset.foto) : Math.max(0, elementos.indexOf(desde));
     const lb = document.createElement('div');
     lb.className = 'il-visor';
     lb.tabIndex = -1;
@@ -5127,13 +5381,19 @@ function openReader(art){
     function mostrar(n){
       i = (n + lista.length) % lista.length;
       const x = lista[i];
-      big.src = x.currentSrc || x.src;
+      big.src = x.src;
       big.alt = x.alt || '';
-      const texto = pieDe(x);
+      const texto = x.pie;
       pie.textContent = (varias ? (i + 1) + ' / ' + lista.length + (texto ? ' · ' : '') : '') + texto;
       lb.setAttribute('aria-label', x.alt || texto || t('ampliarImagen'));
     }
-    const cerrar = () => { lb.remove(); (lista[i] || desde).focus(); };
+    const cerrar = () => {
+      lb.remove();
+      if (galeria){
+        completarRejilla(grupo, i + 1);
+        (grupo.querySelector('[data-foto="' + i + '"]') || desde).focus();
+      } else (elementos[i] || desde).focus();
+    };
     lb.onclick = e => { if (e.target === lb || e.target === big) cerrar(); };
     lb.querySelector('.il-visor-cerrar').onclick = cerrar;
     if (varias){
@@ -5144,13 +5404,48 @@ function openReader(art){
       if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cerrar(); }
       else if (varias && e.key === 'ArrowLeft'){ e.preventDefault(); e.stopPropagation(); mostrar(i - 1); }
       else if (varias && e.key === 'ArrowRight'){ e.preventDefault(); e.stopPropagation(); mostrar(i + 1); }
+      else if (e.key === 'Tab'){
+        const botones = [...lb.querySelectorAll('button')];
+        const pos = botones.indexOf(document.activeElement);
+        e.preventDefault(); e.stopPropagation();
+        botones[(pos + (e.shiftKey ? -1 : 1) + botones.length) % botones.length].focus();
+      }
     };
+    let toque;
+    lb.addEventListener('touchstart', e => { toque = e.touches.length === 1 ? e.touches[0] : null; }, { passive: true });
+    lb.addEventListener('touchend', e => {
+      if (!toque || !varias || e.touches.length) return;
+      const fin = e.changedTouches[0], dx = fin.clientX - toque.clientX, dy = fin.clientY - toque.clientY;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) mostrar(i + (dx < 0 ? 1 : -1));
+      toque = null;
+    }, { passive: true });
     mostrar(i);
     ov.appendChild(lb);
     lb.focus();
   }
 
+  function completarRejilla(grupo, minimo){
+    const g = galeriasVista[Number(grupo.dataset.galeria)];
+    const rejilla = grupo.querySelector('.il-galeria-rejilla');
+    const desde = rejilla.children.length;
+    const hasta = Math.min(g.imagenes.length, Math.max(minimo || desde + LOTE_GALERIA, desde));
+    rejilla.insertAdjacentHTML('beforeend', g.imagenes.slice(desde, hasta).map((x, i) => miniaturaGaleria(x, desde + i)).join(''));
+    grupo.querySelector('.il-galeria-mas').hidden = hasta >= g.imagenes.length;
+    wireImages();
+  }
+  function wireGalerias(){
+    ov.querySelectorAll('[data-galeria]').forEach(grupo => {
+      if (grupo.dataset.ilWired === '1') return;
+      grupo.dataset.ilWired = '1';
+      grupo.addEventListener('toggle', () => {
+        if (grupo.open && !grupo.querySelector('.il-galeria-rejilla').children.length) completarRejilla(grupo);
+      });
+      grupo.querySelector('.il-galeria-mas').onclick = () => completarRejilla(grupo);
+      if (grupo.open) completarRejilla(grupo);
+    });
+  }
   function wireImages(){
+    wireGalerias();
     ov.querySelectorAll('.il-figure img, .il-inline-figure img, .il-galeria img, #il-ambi-img').forEach(im => {
       if (im.dataset.ilWired === '1') return;
       im.dataset.ilWired = '1';
@@ -5372,6 +5667,12 @@ function openReader(art){
   ov.querySelector('.il-img-meta').onclick = cambiarImagenes;
   const miniatura = ov.querySelector('.il-miniatura');
   if (miniatura) miniatura.onclick = () => {
+    const indice = galeriasVista.findIndex(g => g.imagenes.includes(enCuerpo));
+    if (indice >= 0){
+      const grupo = ov.querySelector('[data-galeria="' + indice + '"]');
+      grupo.open = true;
+      completarRejilla(grupo, galeriasVista[indice].imagenes.indexOf(enCuerpo) + 1);
+    }
     const fig = ov.querySelector('#il-portada');
     if (!fig) return;
     fig.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -6361,7 +6662,7 @@ function activateReader(){
     }
 
     const plain = art.rawHTML ? stripTags(art.rawHTML).trim() : String(art.rawBody || '').trim();
-    if (!plain || plain.length < 100){
+    if ((!plain || plain.length < 100) && !art.galeriaPrincipal){
       if (ex.mode === 'selector') toast(t('srcNoCustom'));
       else if (ex.mode === 'all') toast(t('srcNoAll'));
       else toast(t('noArticle'));
