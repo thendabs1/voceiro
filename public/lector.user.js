@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.345
+// @version      2.0.346
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.345';
+const SCRIPT_VERSION = '2.0.346';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -903,6 +903,24 @@ function sinImagenesRepetidas(bloques){
     if (!primera.caption && b.caption) primera.caption = b.caption;
     return false;
   });
+}
+
+// PontevedraViva incluye estas cajas también en articleBody, sin etiquetas.
+// Se reconoce cada promoción completa y solo al final, antes de dividir
+// el texto en bloques (una caja puede quedar pegada al último párrafo).
+const PROMOS_TEXTO_FINAL = [
+  /(?:^|\s)Subscríbete\s+á\s+nosa\s+canle\s+de\s+WhatsApp\s+Recibe\s+as\s+noticias\s+de\s+actualidade\s+directamente\s+no\s+teu\s+móbil\.\s+Subscribirse\s*$/i,
+  /(?:^|\s)Engade\s+Pontevedra\s+Viva\s+como\s+fonte\s+preferida\s+de\s+Google\s+de\s+balde\s+Mantente\s+informado\s+coas\s+últimas\s+noticias\s+de\s+actualidade\.\s+Activar\s+agora\s*$/i
+];
+function limpiarPromosTextoFinal(texto){
+  texto = String(texto || '');
+  const original = texto;
+  let anterior;
+  do {
+    anterior = texto;
+    for (const promo of PROMOS_TEXTO_FINAL) texto = texto.replace(promo, '');
+  } while (texto !== anterior);
+  return texto === original ? texto : texto.trimEnd();
 }
 
 // Promociones del medio al principio o al final del texto: «¿Ya nos
@@ -3469,7 +3487,7 @@ function buildFromJSONLD(ld){
     articleSection: decodeEnt(ld.articleSection || ''),
     autores: decodeEnt(normAuth(ld.author).join(', ')),
     // Hay CMS que dejan dentro el CSS y el JS de los gráficos (Onm).
-    rawBody: limpiarCodigoIncrustado(decodeEnt(String(ld.articleBody || ''))),
+    rawBody: limpiarPromosTextoFinal(limpiarCodigoIncrustado(decodeEnt(String(ld.articleBody || '')))),
     rawHTML: '',
     image: imgUrlFrom(im),
     imageCaption: decodeEnt(imgCaptionFrom(im)),
@@ -3483,7 +3501,9 @@ function buildFromJSONLD(ld){
 const SEL_PUBLICIDAD = [
   '.ad-slot', '[data-mark^="Publici"]', 'a[href*="/ads/"]', 'ins.adsbygoogle', '[id^="div-gpt-ad"]',
   '[class*="outbrain"]', '[id*="outbrain"]', '[class*="taboola"]', '[id*="taboola"]',
-  '[class~="publicidad"]', '[class~="publicidade"]', '[class~="publicitat"]', '[class~="advertisement"]'
+  '[class~="publicidad"]', '[class~="publicidade"]', '[class~="publicitat"]', '[class~="advertisement"]',
+  // Cajas promocionales de PontevedraViva: título, explicación y botón.
+  '.c-whatsapp-subscribe', '.c-fonts-preferred'
 ].join(',');
 const ALT_PUBLICIDAD = /^\s*(publicidad|publicidade|publicitat|advertisement|anuncio)\b/i;
 function limpiarPublicidad(doc){
@@ -3653,7 +3673,7 @@ function extractFromSelector(rootSel, excludeSel, minChars){
   let root;
   try { root = document.querySelector(rootSel); } catch(e){ return null; }
   if (!root) return null;
-  const clone = root.cloneNode(true);
+  const clone = limpiarPublicidad(root.cloneNode(true));
   marcarEmbebidos(clone);
   clone.querySelectorAll('script,style,noscript').forEach(n => n.remove());
   if (excludeSel){
