@@ -12,6 +12,12 @@ Normaliza mayúsculas, acentos, puntuación, orden de palabras, año de la fecha
 y una tabla explícita de variantes castellanas, gallegas y catalanas.
 Los originales se conservan íntegros.
 
+La versión 3 también compara `103a`/`103` y `60è`/`60`, manteniendo el número
+de edición, y omite solo el paréntesis administrativo exacto `(RFEA)`.
+No elimina otros paréntesis ni reduce el umbral de semejanza. Las
+[revisiones por referencia y conciliaciones preparadas](atletismo-revision-incidencias.md)
+documentan los casos reales; no se migran identidades existentes al importar.
+
 Una cita nueva se une automáticamente a una identidad existente cuando:
 
 - Existe una sola identidad candidata, sin lecturas ambiguas ni otra cita

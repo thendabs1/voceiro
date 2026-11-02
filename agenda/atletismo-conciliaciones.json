@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "conciliaciones": [
+    {
+      "id": "jean-bouin-2026",
+      "referencias": {"fca": "88393", "rfea": "69005"},
+      "conservar": "fca",
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Misma edición 103 de Allianz Jean Bouin, Barcelona, 29/11/2026. El ordinal y la etiqueta administrativa (RFEA) no cambian el alcance. Se conserva el ID ya guardado por FCA, sin derivar uno nuevo del nombre.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/103a-allianz-jean-bouin-rfea/",
+          "https://atletismorfea.es/calendario/campeonato/103-allianz-jean-bouin"
+        ]
+      }
+    },
+    {
+      "id": "cross-granollers-2026",
+      "referencias": {"fca": "89086", "rfea": "69182"},
+      "conservar": "fca",
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Misma edición 60 del Cros Internacional de Catalunya Ciutat de Granollers, Granollers, 8/11/2026. El sufijo ordinal catalán y (RFEA) son las únicas diferencias significativas del título.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/60e-cros-internacional-de-catalunya-ciutat-de-granollers-rfea/",
+          "https://atletismorfea.es/calendario/campeonato/60-cros-internacional-de-catalunya-ciutat-de-granollers"
+        ]
+      }
+    },
+    {
+      "id": "san-martino-2026",
+      "referencias": {"fga": "113279", "rfea": "69339"},
+      "conservar": "fga",
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Misma XLIX Carreira Popular do San Martiño del 8/11/2026. FGA acredita Ourense y su organizador municipal; RFEA repite el nombre de la carrera como sede literal. Se conserva la discrepancia original, sin declarar que San Martiño sea un alias geográfico de Ourense.",
+        "evidencias": [
+          "https://atletismo.gal/competicions/xlix-carreira-pedestre-popular-do-san-martino/",
+          "https://atletismorfea.es/calendario/campeonato/xlix-carreira-popular-do-san-martino"
+        ]
+      }
+    }
+  ]
+}

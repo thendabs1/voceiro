@@ -115,6 +115,46 @@ class Coincidencias(unittest.TestCase):
                 self.assertNotEqual(c.comparar(base, {**base, 'nombre': nombre})['estado'], 'automatica')
         self.assertNotEqual(c.comparar(base, {**base, 'nombre': base['nombre'] + ' II'})['estado'], 'automatica')
 
+    def test_ordinales_y_marca_federativa_sin_rebajar_umbral_ni_borrar_edicion(self):
+        for a, b in [('103a Allianz Jean Bouin (RFEA)', '103 Allianz Jean Bouin'),
+                     ('60è Cros Internacional de Catalunya Ciutat de Granollers (RFEA)',
+                      '60 Cros internacional de Catalunya Ciutat de Granollers'),
+                     ('27ª Carrera Popular del Puerto', '27 Carrera Popular del Puerto')]:
+            base = entrada('fca', nombre=a)['eventos'][0]
+            self.assertEqual(c.comparar(base, {**base, 'nombre': b})['estado'], 'automatica')
+            self.assertEqual(base['nombre'], a)
+        self.assertNotEqual(c.nombre_comparable('103a Allianz Jean Bouin (RFEA)'),
+                            c.nombre_comparable('104a Allianz Jean Bouin (RFEA)'))
+        self.assertIn('campeonato', c.nombre_comparable('Carrera (Campeonato de España)'))
+        self.assertIn('10 km', c.nombre_comparable('Carrera 10km Sub16'))
+
+    def test_revision_de_san_martino_acredita_identidad_no_alias_de_sede_ni_fecha(self):
+        a = {**entrada('fga', '113279', lugar={'nombre': 'Ourense'})['eventos'][0], 'fuente': 'fga'}
+        b = {**entrada('rfea', '69339', lugar={'nombre': 'San Martiño'})['eventos'][0], 'fuente': 'rfea'}
+        self.assertEqual(c.comparar(a, b)['estado'], 'revisar')
+        self.assertEqual(c.comparar_referencias(a, b)['estado'], 'automatica')
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'fga', 'eventos': [a]}, AHORA)
+        n = atletismo.importar(n, {'version': 1, 'fuente': 'rfea', 'eventos': [b]}, AHORA)
+        self.assertEqual(c.incidencias(n), [])
+        e, = publicacion.proyectar(n)['eventos']
+        self.assertTrue(e['lugar']['conflicto'])
+        b.update(inicio='2026-11-02', fin='2026-11-02')
+        n = atletismo.importar(n, {'version': 1, 'fuente': 'rfea', 'eventos': [b]}, '2026-11-03T20:00:00+01:00')
+        self.assertIn('fechas', c.incidencias(n)[0]['motivo'])
+        self.assertEqual(c.comparar_referencias(a, {**b, 'id': 'otra'})['estado'], 'distintas')
+
+    def test_enlace_y_revision_con_destinos_contradictorios_no_eligen_uno(self):
+        a = entrada('fga', '113279', nombre='XLIX Carreira Pedestre Popular do San Martiño',
+                    lugar={'nombre': 'Ourense'})
+        otro = entrada('fca', 'otro', nombre='Otra prueba distinta',
+                        url='https://fcatletisme.cat/event/otra-prueba/')
+        n = atletismo.importar(None, a, AHORA)
+        n = atletismo.importar(n, otro, AHORA)
+        b = entrada('rfea', '69339', nombre='XLIX Carreira Popular do San Martiño',
+                    lugar={'nombre': 'San Martiño'},
+                    metadatos={'web_organizador': otro['eventos'][0]['url']})
+        self.assertEqual(c.decidir_lote(n, 'rfea', b['eventos'])['69339']['estado'], 'revisar')
+
     def test_no_fusiona_por_fecha_y_sede_solas_ni_por_portada_de_organizador(self):
         a = entrada('rfea')['eventos'][0]
         b = entrada('fga', nombre='Campeonato de España 5 km Master')['eventos'][0]

@@ -360,8 +360,8 @@ def validar(n):
         if r['tipo'] == 'pertenece_al_club' and (a['clase'] != 'equipo' or b['clase'] != 'club'):
             raise ValueError('Pertenencia de equipo y club inválida')
         if r['tipo'] == 'es_edicion_de' and (a['clase'] != 'edicion'
-                                            or b['clase'] not in ('competicion', 'ciclo', 'festival')):
-            raise ValueError('Edición sin competición/ciclo recurrente')
+                                            or b['clase'] not in ('competicion', 'circuito', 'ciclo', 'festival')):
+            raise ValueError('Edición sin competición/circuito/ciclo recurrente')
         if vigente(n, r, activas):
             if r['tipo'] in ('es_edicion_de', 'celebracion_de'):
                 t = (clave(r['origen']), r['tipo'])
