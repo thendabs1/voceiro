@@ -87,8 +87,19 @@ todos los medios**. Si existe una preferencia propia, el botón cambia esa;
 en caso contrario cambia la general.
 
 Pulsa una imagen para ampliarla. En el visor puedes recorrer las imágenes
-con las flechas izquierda y derecha y cerrarlo con `Esc`. Las galerías
-agrupan imágenes consecutivas.
+con las flechas izquierda y derecha y cerrarlo con `Esc`. En pantallas
+táctiles también puedes pasar de foto deslizando horizontalmente.
+
+Las galerías reconocidas en los datos de la página o en su HTML aparecen
+en una rejilla plegable. Si son el contenido principal, se abre al entrar;
+si acompañan a una noticia, se ofrece plegada al principio del cuerpo.
+Se muestran doce miniaturas cada vez; **Mostrar más fotos** amplía la
+rejilla. El visor recorre toda la galería aunque aún no hayas desplegado
+todas sus miniaturas, y conserva los pies y los créditos disponibles.
+Funciona también cuando eliges JSON como origen del texto. Las fotos
+intercaladas en el artículo mantienen su posición; tres o más imágenes
+consecutivas también se agrupan. No se recuperan fotos que el medio no
+haya incluido en los datos o el HTML disponibles.
 
 Los vídeos, publicaciones sociales, gráficos y mapas reconocidos se
 presentan como tarjetas con un enlace al original. El lector no ejecuta

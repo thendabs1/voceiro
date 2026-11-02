@@ -37,7 +37,7 @@ function activateReader(){
     }
 
     const plain = art.rawHTML ? stripTags(art.rawHTML).trim() : String(art.rawBody || '').trim();
-    if (!plain || plain.length < 100){
+    if ((!plain || plain.length < 100) && !art.galeriaPrincipal){
       if (ex.mode === 'selector') toast(t('srcNoCustom'));
       else if (ex.mode === 'all') toast(t('srcNoAll'));
       else toast(t('noArticle'));

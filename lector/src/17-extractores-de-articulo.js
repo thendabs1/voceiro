@@ -226,7 +226,7 @@ function marcarEmbebidos(raiz){
 function extractFromReadability(){
   if (typeof Readability !== 'function') return null;
   try {
-    const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
+    const clone = marcarEmbebidos(limpiarPublicidad(retirarGaleriasDelDOM(document.cloneNode(true), location.href)));
     const reader = new Readability(clone);
     const art = reader.parse();
     if (!art || !art.textContent || art.textContent.trim().length < 200) return null;
@@ -260,6 +260,7 @@ function extractFromSelector(rootSel, excludeSel, minChars){
   if (excludeSel){
     try { clone.querySelectorAll(excludeSel).forEach(n => n.remove()); } catch(e){}
   }
+  retirarGaleriasDelDOM(clone, location.href);
   const rawHTML = clone.innerHTML;
   const rawBody = (clone.textContent || '').replace(/\s+/g, ' ').trim();
   if (!rawBody || rawBody.length < (minChars || UI.extractMinChars)) return null;
@@ -339,7 +340,7 @@ function collectAllText(){
 function extractFromAll(){
   try {
     if (typeof Readability === 'function'){
-      const clone = marcarEmbebidos(limpiarPublicidad(document.cloneNode(true)));
+      const clone = marcarEmbebidos(limpiarPublicidad(retirarGaleriasDelDOM(document.cloneNode(true), location.href)));
       clone.querySelectorAll('script,style,iframe,noscript,svg,canvas,video,audio,form,button,select,textarea,input,nav,header,footer,aside,[role="navigation"],[role="banner"],[role="complementary"]').forEach(n => n.remove());
       const reader = new Readability(clone);
       const art = reader.parse();
@@ -399,7 +400,7 @@ function extractAuto(){
   });
 }
 
-function extractArticleWithConfig(extraction, overrideSrc){
+function extractTextWithConfig(extraction, overrideSrc){
   const ex = extraction || currentExtraction();
   if (ex.mode === 'selector'){
     return extractFromSelector(ex.root, ex.exclude, ex.minChars);
@@ -423,6 +424,31 @@ function extractArticleWithConfig(extraction, overrideSrc){
     return art;
   }
   return extractAuto();
+}
+function extractArticleWithConfig(extraction, overrideSrc){
+  const ex = extraction || currentExtraction();
+  let root = document;
+  if (ex.mode === 'selector'){
+    try { root = document.querySelector(ex.root); } catch(e){ return null; }
+    if (!root) return null;
+  }
+  const datos = detectarGalerias(document, location.href, { root, exclude: ex.exclude || '' });
+  let art = extractTextWithConfig(ex, overrideSrc);
+  if (!datos.galerias.length) return art;
+  if (datos.principal){
+    const principal = datos.galerias.find(g => g.principal);
+    const meta = principal.metadata;
+    // Una fotogalería puede tener entradilla pero ningún articleBody. No
+    // necesita los 200 caracteres que Readability exige a una noticia.
+    const base = meta ? buildFromJSONLD(meta) : {
+      headline: metaContent('meta[property="og:title"]') || document.querySelector('h1')?.textContent || document.title,
+      description: metaContent('meta[name="description"]') || '', rawBody: '', rawHTML: '',
+      image: '', autores: metaContent('meta[name="author"]') || ''
+    };
+    art = { ...art, ...base, bloques: undefined, _source: meta ? 'jsonld' : 'readability' };
+  }
+  if (!art) return null;
+  return { ...art, galerias: datos.galerias.map(({ nodo, metadata, ...g }) => g), galeriaPrincipal: datos.principal };
 }
 function extractArticle(){
   return extractArticleWithConfig(currentExtraction());
