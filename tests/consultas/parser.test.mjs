@@ -15,13 +15,13 @@ test('todos los alias del registro crean chips de consulta conservando texto y r
   }
 });
 
-test('los siete tipos tienen prefijos en los cinco idiomas de la interfaz', () => {
+test('los tipos tienen prefijos en los cinco idiomas de la interfaz', () => {
   const idiomas = {
-    es:['libro','autor','película','serie','clasificación','resultados','contexto'],
-    gl:['libro','autor','filme','serie','clasificación','resultados','contexto'],
-    ca:['llibre','autor','pel·lícula','sèrie','classificació','resultats','context'],
-    eu:['liburua','egilea','filma','telesaila','sailkapena','emaitzak','testuingurua'],
-    en:['book','author','movie','series','standings','results','wiki'],
+    es:['libro','autor','película','serie','clasificación','resultados','partido','contexto'],
+    gl:['libro','autor','filme','serie','clasificación','resultados','partido','contexto'],
+    ca:['llibre','autor','pel·lícula','sèrie','classificació','resultats','partit','context'],
+    eu:['liburua','egilea','filma','telesaila','sailkapena','emaitzak','partida','testuingurua'],
+    en:['book','author','movie','series','standings','results','match','wiki'],
   };
   for (const prefijos of Object.values(idiomas)) assert.deepEqual(
     prefijos.map(p=>parseQuery(`${p}:dato`).consultas[0].tipo),Object.keys(CONSULTAS));
@@ -55,6 +55,8 @@ test('las consultas deportivas toman un código: lo de detrás es texto de notic
   for (const [raw, tipo, codigo, texto] of [
     ['resultados:primera levante', 'resultados', 'primera', ['levante']],
     ['standings:nba lakers', 'clasificacion', 'nba', ['lakers']],
+    ['partido:primera/401882817 villarreal', 'partido', 'primera/401882817', ['villarreal']],
+    ['match:nba celtics', 'partido', 'nba', ['celtics']],
     ['emaitzak:primera real sociedad desde:7d', 'resultados', 'primera', ['real', 'sociedad']],
   ]) {
     const p = parseQuery(raw);

@@ -98,17 +98,31 @@ export function clasificacion(d, competicion, deporte) {
   return { competicion, temporada, grupos };
 }
 
+export function estadoPartido(status) {
+  const tipo = status?.type || {};
+  if (['STATUS_CANCELED', 'STATUS_CANCELLED'].includes(tipo.name)) return 'cancelado';
+  if (tipo.name === 'STATUS_POSTPONED') return 'aplazado';
+  if (tipo.name === 'STATUS_DELAYED') return 'retrasado';
+  if (['STATUS_SUSPENDED', 'STATUS_ABANDONED'].includes(tipo.name)) return 'suspendido';
+  if (tipo.state === 'in') return 'en_juego';
+  if (tipo.completed === true) return 'final';
+  return tipo.state === 'pre' ? 'programado' : 'desconocido';
+}
+
+export const referenciaPartido = (competicion, id) => /^[1-9]\d{0,11}$/.test(String(id || ''))
+  ? `espn:partido/${competicion}/${id}` : null;
+
 export function resultados(d, competicion) {
   return { competicion, temporada: d.season?.year || null, partidos: (d.events || []).flatMap(e =>
     (e.competitions || []).flatMap(c => {
       const local = c.competitors?.find(p => p.homeAway === 'home');
       const visitante = c.competitors?.find(p => p.homeAway === 'away');
       if (!local || !visitante) return [];
-      const status = c.status?.type || e.status?.type;
-      const estado = status?.state === 'in' ? 'en_juego' : status?.completed || status?.state === 'post' ? 'final' : 'programado';
+      const estado = estadoPartido(c.status || e.status);
       const score = p => p.score?.displayValue ?? p.score;
-      return [{ inicio: c.date || e.date, estado, local: local.team.displayName, visitante: visitante.team.displayName,
-        marcador: estado === 'programado' ? null : { local: score(local) ?? null, visitante: score(visitante) ?? null } }];
+      return [{ id: referenciaPartido(competicion, e.id), inicio: c.date || e.date, estado,
+        local: local.team.displayName, visitante: visitante.team.displayName,
+        marcador: ['en_juego', 'final', 'suspendido'].includes(estado) ? { local: score(local) ?? null, visitante: score(visitante) ?? null } : null }];
     })) };
 }
 

@@ -277,3 +277,96 @@ test('los grupos cambian sin red, conservan su elección al actualizar y la bús
   await esperar();
   assert.match(panel.innerHTML, /data-i="0" aria-pressed="true"/);
 });
+
+const partidoReal = async codigo => {
+  const { normalizarPartido } = await import('../../workers/deno-buscar/src/consultas/partido.js');
+  const d=JSON.parse(readFileSync(new URL(`./muestras/espn-partido-${codigo}.json`,import.meta.url)));
+  return normalizarPartido(d,codigo,...ESPN[codigo],d.header.id);
+};
+
+test('un marcador abre su ficha, permite volver sin red y reutiliza el detalle cacheado',async()=>{
+  const partido=await partidoReal('nba');
+  const lista={competicion:'nba',partidos:[partido]};
+  const {panel,pedidas,actualizar,pulsar}=contexto({responder:ruta=>json(envoltorio(ruta.includes('partido')?'partido':'resultados',{
+    fuente:'ESPN',ficha:ruta.includes('partido')?partido:lista,
+  }))});
+  actualizar('resultados:nba'); await esperar();
+  assert.equal(pedidas.length,1);
+  assert.match(panel.innerHTML,/data-accion="partido" data-id="espn:partido\/nba\/401909903"/);
+  pulsar({accion:'partido',id:partido.id}); await esperar();
+  assert.equal(pedidas.length,2);
+  assert.match(panel.innerHTML,/<span class="consulta-tipo">Partido<\/span>/);
+  assert.match(panel.innerHTML,/Volver a resultados/);
+  assert.match(panel.innerHTML,/Period|Parciales/);
+  assert.match(panel.innerHTML,/Estadísticas de jugadores/);
+  assert.match(panel.innerHTML,/Orlando Magic/); assert.match(panel.innerHTML,/<b>97<\/b>/);
+  pulsar({accion:'volver'});
+  assert.match(panel.innerHTML,/NBA · 1 partido/); assert.equal(pedidas.length,2);
+  assert.doesNotMatch(panel.innerHTML,/Volver a resultados/);
+  pulsar({accion:'partido',id:partido.id}); await esperar();
+  assert.equal(pedidas.length,2); assert.match(panel.innerHTML,/Parciales/);
+  actualizar('clasificacion:nba'); await esperar();
+  assert.doesNotMatch(panel.innerHTML,/Volver a resultados/);
+});
+
+test('partido: ofrece encuentros elegibles y permite cambiar después de ver el detalle',async()=>{
+  const partido=await partidoReal('primera');
+  const candidatos=[{id:partido.id,titulo:'Villarreal · Espanyol',detalle:'0–1',inicio:partido.inicio,estado:'final'}];
+  const {panel,pedidas,actualizar,pulsar}=contexto({responder:ruta=>json(envoltorio('partido',ruta.startsWith('/consulta/ficha')?{ficha:partido}:{candidatos}))});
+  actualizar('partido:primera'); await esperar();
+  assert.match(pedidas[0],/tipo=partido&texto=primera/);
+  assert.match(panel.innerHTML,/Villarreal · Espanyol/); assert.match(panel.innerHTML,/Final · 0–1/);
+  pulsar({accion:'candidato',i:'0'}); await esperar();
+  assert.equal(pedidas.length,2); assert.match(panel.innerHTML,/Incidencias/);
+  assert.match(panel.innerHTML,/Alineaciones/); assert.match(panel.innerHTML,/Posesión/);
+  assert.doesNotMatch(panel.innerHTML,/Parciales|conStat|conInc/);
+  pulsar({accion:'cambiar'}); assert.match(panel.innerHTML,/data-accion="candidato"/);
+  assert.equal(pedidas.length,2);
+});
+
+test('partido por identidad va directo al resumen; los vacíos y competiciones ajenas no inventan fichas',async()=>{
+  const partido=await partidoReal('wnba');
+  const {panel,pedidas,actualizar}=contexto({responder:()=>json(envoltorio('partido',{ficha:partido}))});
+  actualizar('partido:wnba/401918311'); await esperar();
+  assert.deepEqual(pedidas,['/consulta/ficha?id=espn%3Apartido%2Fwnba%2F401918311&idioma=es']);
+  assert.match(panel.innerHTML,/WNBA/);
+  actualizar('partido:f1'); assert.equal(pedidas.length,1);
+  assert.match(panel.innerHTML,/Elige una competición/); assert.doesNotMatch(panel.innerHTML,/data-valor="f1"/);
+  const vacio=contexto({responder:()=>json(envoltorio('partido',{estado:'vacio'}))});
+  vacio.actualizar('partido:nba'); await esperar();
+  assert.match(vacio.panel.innerHTML,/No hay partidos/);
+});
+
+test('partido: una respuesta no_disponible al actualizar conserva la última ficha buena',async()=>{
+  const partido=await partidoReal('segunda'); let n=0;
+  const {panel,pedidas,actualizar,pulsar}=contexto({responder:()=>json(envoltorio('partido',++n===1
+    ? {ficha:partido,caduca:new Date(Date.now()-1000).toISOString()}
+    : {estado:'no_disponible',ficha:null,caduca:null}))});
+  actualizar('partido:segunda/401883124'); await esperar();
+  assert.match(panel.innerHTML,/Granada/); assert.match(panel.innerHTML,/data-accion="actualizar"/);
+  pulsar({accion:'actualizar'}); await esperar();
+  assert.equal(pedidas.length,2); assert.match(panel.innerHTML,/Granada/);
+  assert.match(panel.innerHTML,/No se pudo actualizar; se muestra la anterior/);
+});
+
+test('partido: escapa los textos del proveedor y omite los bloques ausentes',async()=>{
+  const partido={competicion:'primera',estado:'programado',inicio:'sin hora',local:'<img onerror=1>',visitante:'& visitante',lugar:'<script>1</script>'};
+  const {panel,actualizar}=contexto({responder:()=>json(envoltorio('partido',{ficha:partido}))});
+  actualizar('partido:primera/123'); await esperar();
+  assert.match(panel.innerHTML,/&lt;img onerror=1&gt;/); assert.match(panel.innerHTML,/&lt;script&gt;1&lt;\/script&gt;/);
+  assert.doesNotMatch(panel.innerHTML,/<img onerror|<script>|Invalid Date|Estadísticas|Alineaciones|Parciales/);
+});
+
+test('volver desde un partido pendiente impide que su respuesta tardía sustituya la parrilla',async()=>{
+  const partido=await partidoReal('nba'); let resolver;
+  const pendiente=new Promise(resolve=>{resolver=resolve;});
+  const {panel,pedidas,actualizar,pulsar}=contexto({responder:ruta=>ruta.includes('partido')?pendiente
+    :json(envoltorio('resultados',{ficha:{competicion:'nba',partidos:[partido]}}))});
+  actualizar('resultados:nba'); await esperar();
+  pulsar({accion:'partido',id:partido.id});
+  assert.match(panel.innerHTML,/Consultando/); assert.match(panel.innerHTML,/Volver a resultados/);
+  pulsar({accion:'volver'});
+  resolver(json(envoltorio('partido',{ficha:partido}))); await esperar();
+  assert.equal(pedidas.length,2); assert.match(panel.innerHTML,/NBA · 1 partido/);
+  assert.doesNotMatch(panel.innerHTML,/Parciales|Volver a resultados/);
+});

@@ -66,6 +66,7 @@ function pintarAccesos(){
     titulo = nombre(c);
     filas = [accesoHay(c) ? fila('calendario:' + c, t('accHorarios', { x: nombre(c) })) : '',
       codigoDeporte('resultados', c) ? fila('resultados:' + c, t('accResultadosDe', { x: nombre(c) })) : '',
+      codigoDeporte('partido', c) ? fila('partido:' + c, t('accPartidoDe', { x: nombre(c) })) : '',
       codigoDeporte('clasificacion', c) ? fila('clasificacion:' + c, t('accClasificacionDe', { x: nombre(c) })) : '',
       // Solo noticias, sin abrir Deportes; en el modo o en todo, con sus pestañas.
       AMBITOS[c]?.noticias ? fila(c + ':noticias', t('accNoticiasDe', { x: nombre(c) })) : ''];
