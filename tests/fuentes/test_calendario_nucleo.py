@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from agenda import almacen, almacen_nucleo, espn_tenis, feb, nucleo, tiempos, vidmar_f1
+from agenda import almacen, almacen_nucleo, deporte, espn_tenis, feb, nucleo, publicacion, tiempos, vidmar_f1
 from agenda.transicion import ampliar
 from agenda.turso import Almacen, ConflictoCalendario
 from agenda.modelo import integrar
@@ -43,6 +43,36 @@ def destino(n, tipo_externo, externo, contexto=None):
 
 
 class ModeloDeportivo(unittest.TestCase):
+    def test_meeting_en_dos_ediciones_de_circuitos_se_publica_una_vez_con_ambos_codigos(self):
+        a = deporte.Agenda(None, 'ensayo-wa', 'Ensayo de circuitos', 'https://example.org',
+                          'atletismo', OBSERVADO)
+        circuitos, ediciones = [], []
+        for codigo in ('cross', 'continental'):
+            circuito = a.grupo('circuito', codigo, 'circuito', codigo, codigo='wa-' + codigo)
+            edicion = a.grupo('temporada', '2026', 'edicion', codigo + ' 2026',
+                             contexto={'circuito': codigo}, padre=circuito, relacion='es_edicion_de')
+            circuitos.append(circuito)
+            ediciones.append(edicion)
+        grupo = a.grupo('programa', 'meeting', 'competicion', 'Meeting', padre=ediciones[0])
+        evento, evidencia = a.evento('competicion', 'meeting', 'encuentro', 'Meeting',
+            deporte.dias('2026-11-01', '2026-11-02'), padre=grupo,
+            bloques={'agenda': {'rol': 'principal', 'grupo': grupo}})
+        a.c.relacion('es_parte_de', grupo, ediciones[1], evidencia)
+        n = a.terminar()
+        publicado, = publicacion.proyectar(n, fuentes=['ensayo-wa'])['eventos']
+        self.assertEqual(publicado['id'], evento['id'])
+        for circuito in circuitos:
+            self.assertIn(nucleo.clave(circuito), publicado['objetivos'])
+            self.assertEqual(nucleo.eventos_alcanzados(n, circuito), [evento['id']])
+        entidades = publicacion.proyectar(n, fuentes=['ensayo-wa'])['entidades']
+        self.assertEqual({codigo for c in circuitos for codigo in entidades[nucleo.clave(c)]['codigos']},
+                         {'wa-cross', 'wa-continental'})
+        # La ampliación no permite que cualquier agrupación se declare edición.
+        relacion = next(r for r in n['relaciones'].values() if r['tipo'] == 'es_edicion_de')
+        relacion['origen'] = grupo
+        with self.assertRaisesRegex(ValueError, 'Edición sin'):
+            nucleo.validar(n)
+
     def test_feb_competicion_edicion_horario_sin_zona_resultado_y_clasificacion(self):
         n = importar_feb()
         partido = destino(n, 'partido', '2522807')

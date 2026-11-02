@@ -105,5 +105,12 @@ sigue vigente, con estos puntos reforzados por datos reales:
    pertenencias múltiples, fechas indeterminadas, enlaces/IDs contrastados,
    reconciliación fuera de ventana y manejo de presupuesto/429/caché.
 
+La revisión del modelo encontró y corrigió otro bloqueo: `es_edicion_de`
+rechazaba un padre de clase `circuito`, aunque el contrato separa circuito y
+edición anual. La prueba sintética verifica un meeting de dos días en dos
+ediciones de circuitos distintos, con ambos códigos y una sola cita publicada.
+También conserva el rechazo de relaciones cuyo origen no sea una edición.
+Falta contrastar esta pertenencia con una muestra real y el adaptador WA.
+
 Publicación y periodicidad requieren validación posterior; esta revisión no
 las activa ni equivale a terminar WA.

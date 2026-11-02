@@ -53,7 +53,10 @@ Los pendientes del PDF aún no se convierten automáticamente en issues.
   pasó y la segunda recogida verificó el guardado real de las tres federaciones.
 - El núcleo admite varias relaciones de pertenencia. `publicacion.proyectar`
   reúne todos los padres y la lectura compartida indexa sus códigos. Falta
-  una prueba específica de un meeting WA perteneciente a varios circuitos.
+  contrastar una pertenencia múltiple real de WA; la prueba sintética ya
+  comprueba dos circuitos con ediciones anuales, ambos códigos y un único
+  meeting publicado. Se ha corregido el validador para admitir una edición
+  de una agrupación de clase `circuito`.
 - La proyección federativa resuelve las variantes usando las fuentes
   permitidas; las pruebas de atletismo cubren las vistas por proveedor.
 - El importador RFEA/territorial exige inicio y fin acreditados. No debe
