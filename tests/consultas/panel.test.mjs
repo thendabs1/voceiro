@@ -75,7 +75,7 @@ test('un código deportivo pide la ficha directamente, sin candidatos', async ()
   })) });
   actualizar('clasificacion:NBA');
   await esperar();
-  assert.deepEqual(pedidas, ['/consulta/ficha?id=espn%3Aclasificacion%2Fnba&idioma=es']);
+  assert.deepEqual(pedidas, ['/consulta/ficha?id=espn%3Aclasificacion%2Fnba&idioma=es&v=2']);
   assert.equal(panel.hidden, false);
   assert.match(panel.innerHTML, /NBA · 2026-27/);
   assert.match(panel.innerHTML, /data-accion="grupo" data-i="0" aria-pressed="true"/);
@@ -109,13 +109,13 @@ test('un candidato también se elige; la ficha y la vuelta no repiten peticiones
     ? envoltorio('pelicula', { ficha }) : envoltorio('pelicula', { candidatos })) });
   actualizar('pelicula:La infiltrada');
   await esperar();
-  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=La+infiltrada&idioma=es']);
+  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=La+infiltrada&idioma=es&v=2']);
   assert.match(panel.innerHTML, /data-accion="candidato" data-i="0"/);
   assert.match(panel.innerHTML, /<span class="consulta-cand-det">2024<\/span>/);   // el original igual no se repite
   pulsar({ accion: 'candidato', i: '0' });
   await esperar();
   assert.equal(pedidas.length, 2);
-  assert.match(pedidas[1], /^\/consulta\/ficha\?id=tmdb%3Amovie%2F1215185&idioma=es$/);
+  assert.match(pedidas[1], /^\/consulta\/ficha\?id=tmdb%3Amovie%2F1215185&idioma=es&v=2$/);
   assert.match(panel.innerHTML, /<strong class="consulta-titulo">La infiltrada<\/strong><span class="consulta-linea">2024 · 119 min<\/span>/);
   assert.match(panel.innerHTML, /\/t\/p\/w185\/x\.jpg/);
   assert.match(panel.innerHTML, /Suscripción \(1\)/);
@@ -154,7 +154,7 @@ test('un texto corto espera a que se pida; sin texto, ayuda sin red', async () =
   assert.deepEqual(pedidas, []);
   pulsar({ accion: 'forzar' });
   await esperar();
-  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=Up&idioma=es']);
+  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=Up&idioma=es&v=2']);
   assert.match(panel.innerHTML, /Sin coincidencias para «Up»/);
 });
 
@@ -284,6 +284,26 @@ const partidoReal = async codigo => {
   return normalizarPartido(d,codigo,...ESPN[codigo],d.header.id);
 };
 
+test('NBA: una respuesta HTTP antigua sin IDs no impide abrir los partidos',async()=>{
+  const partido=await partidoReal('nba');
+  const {id,...sinId}=partido;
+  const antigua='/consulta/ficha?id=espn%3Aresultados%2Fnba&idioma=es';
+  // El navegador ya tiene una respuesta aún vigente de antes del despliegue.
+  const cacheHttp=new Map([[antigua,json(envoltorio('resultados',{
+    ficha:{competicion:'nba',partidos:[sinId]},
+  }))]]);
+  const {panel,pedidas,actualizar,pulsar}=contexto({responder:ruta=>cacheHttp.get(ruta)
+    || json(envoltorio(ruta.includes('partido')?'partido':'resultados',{
+      ficha:ruta.includes('partido')?partido:{competicion:'nba',partidos:[partido]},
+    }))});
+  actualizar('resultados:nba'); await esperar();
+  assert.match(panel.innerHTML,/data-accion="partido"/);
+  pulsar({accion:'partido',id}); await esperar();
+  assert.equal(pedidas.length,2);
+  assert.match(panel.innerHTML,/Parciales/);
+  assert.match(panel.innerHTML,/Volver a resultados/);
+});
+
 test('un marcador abre su ficha, permite volver sin red y reutiliza el detalle cacheado',async()=>{
   const partido=await partidoReal('nba');
   const lista={competicion:'nba',partidos:[partido]};
@@ -328,7 +348,7 @@ test('partido por identidad va directo al resumen; los vacíos y competiciones a
   const partido=await partidoReal('wnba');
   const {panel,pedidas,actualizar}=contexto({responder:()=>json(envoltorio('partido',{ficha:partido}))});
   actualizar('partido:wnba/401918311'); await esperar();
-  assert.deepEqual(pedidas,['/consulta/ficha?id=espn%3Apartido%2Fwnba%2F401918311&idioma=es']);
+  assert.deepEqual(pedidas,['/consulta/ficha?id=espn%3Apartido%2Fwnba%2F401918311&idioma=es&v=2']);
   assert.match(panel.innerHTML,/WNBA/);
   actualizar('partido:f1'); assert.equal(pedidas.length,1);
   assert.match(panel.innerHTML,/Elige una competición/); assert.doesNotMatch(panel.innerHTML,/data-valor="f1"/);

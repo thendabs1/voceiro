@@ -107,7 +107,9 @@ const errorConsulta = motivo => Object.assign(new Error(motivo), { motivo });
 // Una petición por URL: lo vigente sale de la caché y lo que está en camino
 // se comparte. Los fallos no se guardan.
 function pedirConsulta(ruta, params){
-  const url = `${CONSULTA_URL}${ruta}?${new URLSearchParams({ ...params, idioma: idiomaConsulta() })}`;
+  // Versionar también la URL pública: el navegador puede conservar respuestas
+  // anteriores a las fichas de partido, cuyos marcadores no incluían un ID.
+  const url = `${CONSULTA_URL}${ruta}?${new URLSearchParams({ ...params, idioma: idiomaConsulta(), v: '2' })}`;
   const guardada = PUNTUAL.cache.get(url);
   if (guardada && guardada.caduca > Date.now()) return Promise.resolve(guardada.datos);
   if (PUNTUAL.enCurso.has(url)) return PUNTUAL.enCurso.get(url);
