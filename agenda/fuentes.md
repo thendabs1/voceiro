@@ -90,32 +90,13 @@ ciudad, Valladolid y A Coruña. No se abre una ronda de scraping para ellas.
 
 ## Atletismo
 
-Estado del código a 2/11/2026: recogida manual de RFEA, Galicia y Cataluña
-([recogida](atletismo-recogida.md)); cron y publicación sin activar.
-El [diseño común](atletismo-diseno.md) fija el alcance; el contrato y uso local
-están en [la integración](atletismo-integracion.md),
-[Nivel II](atletismo-nivel-ii.md) y
-[correspondencias automáticas](atletismo-coincidencias.md).
-
-World Athletics queda para una entrega posterior independiente.
-
-| Fuente | Acceso contrastado | Cobertura y situación |
-| --- | --- | --- |
-| [RFEA](https://atletismorfea.es/calendario) | Mensual Drupal, fichas con `championship` y SFID; Excel anual sin IDs; PDF Nivel II | Calendario deportivo de todas las edades y ámbitos; identidad y cobertura de Nivel II incompletas |
-| [Federació Catalana](https://fcatletisme.cat/wp-json/tribe/events/v1/events) | API con ID propio, total y paginación; preferida al ICS de 30 citas | Lectura local de competiciones y tecnificación |
-| [Federación Galega](https://atletismo.gal/competicions/) | HTML con ID WordPress y fichas | Lectura local; circuitos y planes requieren clasificación revisada |
-| [World Athletics](https://worldathletics.org/competition/calendar-results) | JSON embebido, filtros y páginas de 100 | Circuitos y campeonatos internacionales; [contrato pendiente](atletismo-world-athletics.md) |
-| [Federación Andaluza](https://atletismofaa.es/carreraspopulares/) | HTML y PDF federativo | Sin integrar |
-| [CarrerasPopulares](https://carreraspopulares.com/aviso-legal) | Web; RSS de noticias | Sin integrar |
-| Tenerife deportiva | JSON sin URL única | Requiere acreditar identidad |
-
-Las agendas municipales también aportan carreras: Madrid, Zaragoza y la
-candidata Málaga. La asignación de `atletismo` depende de la tabla de cada
-fuente. Una territorial conserva identidad y cobertura propias; RFEA no se
-considera un calendario universal que las sustituya. Las coincidencias se
-resuelven al importar con evidencia y los casos ambiguos van a revisión.
-
-Resultados, clasificaciones y marcas siguen sin conector de atletismo.
+RFEA (con Nivel II), Galicia y Cataluña tienen recogida manual, y World
+Athletics, contrato sin adaptador: [atletismo.md](atletismo.md). Sin integrar:
+[Federación Andaluza](https://atletismofaa.es/carreraspopulares/) (HTML y PDF),
+[CarrerasPopulares](https://carreraspopulares.com/) (web; su RSS son noticias)
+y Tenerife deportiva (JSON sin URL única: acreditar identidad). Madrid, Zaragoza
+y la candidata Málaga aportan carreras por su propia tabla de clasificación.
+Una territorial conserva identidad y cobertura propias; RFEA no las sustituye.
 
 ## Agenda: otras candidatas
 

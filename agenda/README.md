@@ -27,7 +27,7 @@ parser de búsqueda.
 ## Estado del código (2/11/2026)
 
 Atletismo (2/11/2026): capas RFEA, Galicia y Cataluña con
-[recogida manual preparada](atletismo-recogida.md); sin cron ni publicación.
+[recogida manual preparada](atletismo.md#recogida); sin cron ni publicación.
 
 - **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
@@ -335,7 +335,7 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
   [jornadas oficiales](resultados-diseno.md).
 - **Atletismo:** conciliar identidades ya guardadas, resolver incidencias y
   Nivel II antes de activar cron y publicación;
-  [alcance pendiente](atletismo-diseno.md#entregas-y-comprobación).
+  [pendiente](atletismo.md#pendiente-antes-de-conectar).
 - **Seguir:** guardado y seguimiento por objetivo en un documento cifrado
   separado (`calendario-personal`, misma clave de sincronización con otra
   derivación); novedades por objetivo, tipo de cambio y revisión. Diseñado,
