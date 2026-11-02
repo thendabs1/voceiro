@@ -55,7 +55,11 @@ def filas(coleccion, datos):
 
 def tiempos(n):
     salida = {}
+    entidades = n.get('entidades', {})
     for s in n.get('selecciones', {}).values():
+        # Una identidad conciliada solo se consulta a través de la conservada.
+        if (entidades.get(nucleo.clave(s['objetivo'])) or {}).get('conciliada_en'):
+            continue
         if s['bloque'] == 'programacion' and s['seleccion']['valor']:
             c = s['seleccion']['valor']['cuando']
             a, b, d = c['inicio'], c['fin'], s['objetivo']
@@ -113,7 +117,22 @@ def planificar(anterior, nuevo):
             if c in ('documentos', 'resultados', 'clasificaciones') and k in viejos:
                 raise ValueError('Un documento o resultado conserva su contenido e historial')
             if c == 'referencias' and k in viejos and viejos[k] != nuevos[k]:
-                raise ValueError('Conciliación de identidades pendiente de revisión explícita')
+                # Solo cambia el destino, ambas entidades documentan la
+                # conciliación y esta figura tal cual en el registro versionado
+                # del repositorio (agenda/atletismo_conciliacion.py).
+                from .atletismo_coincidencias import revisiones_identidad
+                antes, despues = viejos[k], nuevos[k]
+                absorbida = nuevo['entidades'].get(nucleo.clave(antes['destino']), {})
+                elegida = nuevo['entidades'].get(nucleo.clave(despues['destino']), {})
+                registro = {r['id']: r for r in revisiones_identidad()}
+                if ({a: v for a, v in antes.items() if a != 'destino'} != {a: v for a, v in despues.items() if a != 'destino'}
+                        or antes['tipo_externo'] != 'competicion' or antes['contexto'] != {}
+                        or absorbida.get('conciliada_en') != despues['destino']
+                        or not any(antes['destino'] in x.get('anteriores', [])
+                                   and registro.get((x.get('revision') or {}).get('id')) == x['revision']
+                                   and x['revision']['referencias'].get(antes['proveedor']) == antes['id_externo']
+                                   for x in elegida.get('conciliaciones', []))):
+                    raise ValueError('Conciliación de identidades pendiente de revisión explícita')
             cambios = ', '.join(f'{a}=excluded.{a}' for a in columnas if a not in claves)
             sql = (f'INSERT INTO {tabla} ({", ".join(columnas)}) VALUES '
                    f'({", ".join("?" for _ in columnas)}) ON CONFLICT ({", ".join(claves)}) '

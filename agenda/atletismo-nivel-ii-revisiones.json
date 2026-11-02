@@ -14,6 +14,34 @@
         "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
         "https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/"
       ]
+    },
+    {
+      "id": "nivel-ii:xunta-galicia-clubs-sub16-pc-2026",
+      "huella": "187e23bf44dbcbde0a6f0475bb105a8a554f87eb72d8ca07f0060381d790c790",
+      "decision": "equivalencia",
+      "estado": "desconocido",
+      "fecha_revision": "2026-11-02",
+      "inicio": "2026-12-12",
+      "fin": "2026-12-12",
+      "criterio": "Mismo campeonato que FGA 112623 (conciliación xunta-galicia-clubs-sub16-pc-2026). ID editorial: el PDF no publica IDs. El documento Nivel II no acredita el estado actual.",
+      "evidencias": [
+        "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
+        "https://atletismo.gal/competicions/ii-campionato-xunta-de-galicia-de-clubs-sub16-en-pista-curta/"
+      ]
+    },
+    {
+      "id": "nivel-ii:lanzamentos-longos-ordes-2026",
+      "huella": "1a928fe74a98692be1de0c55acb4df546c2ae03c0b025d166309ba63aaee756f",
+      "decision": "equivalencia",
+      "estado": "desconocido",
+      "fecha_revision": "2026-11-02",
+      "inicio": "2026-12-12",
+      "fin": "2026-12-13",
+      "criterio": "Misma jornada que FGA 112625 (conciliación lanzamentos-longos-ordes-2026). El PDF solo admite una fecha por fila; la ficha FGA acredita 12 y 13/12. ID editorial; el documento no acredita el estado actual.",
+      "evidencias": [
+        "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
+        "https://atletismo.gal/competicions/ii-circuito-galego-de-lanzamentos-longos-5a-xornada/"
+      ]
     }
   ]
 }

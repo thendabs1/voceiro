@@ -1,5 +1,7 @@
 """Presencia cultural acreditada por un catálogo completo, independiente del horario."""
 
+import json
+
 from . import nucleo, tiempos
 from .registro import CULTURA
 
@@ -52,6 +54,13 @@ def registrar(n, fuente, ids, observado, url, *, aceptar_caida=False):
 
 def validar(n):
     for fuente, datos in n['fuentes'].items():
+        ausencias = datos.get('ausencias')
+        if ausencias is not None and (
+                ausencias.get('tipo_externo') != 'competicion' or not isinstance(ausencias.get('ids'), dict)
+                or not ausencias['ids'] or any(
+                    not isinstance(i, str) or not i or not isinstance(a, dict) or not a.get('motivo')
+                    or not a.get('comprobado') for i, a in ausencias['ids'].items())):
+            raise ValueError('Ausencias sin cita ni comprobación acreditadas')
         respuesta = datos.get('respuesta_completa')
         if respuesta is None:
             continue
@@ -70,6 +79,25 @@ def validar(n):
 def referencias_ausentes(n):
     inventarios = {f: set(n['documentos'][d['respuesta_completa']['documento']]['contenido']['ids'])
                    for f, d in n['fuentes'].items() if d.get('respuesta_completa')}
+    # Atletismo: citas cuya ficha ya no sostiene la fecha guardada (atletismo_recogida),
+    # con las sesiones de su programa (ID externo JSON [competición, sesión]).
+    retiradas = {f: d['ausencias'] for f, d in n['fuentes'].items() if d.get('ausencias')}
+
+    def retirada(r):
+        ids = retiradas[r['proveedor']]['ids']
+        if r['contexto'] != {}:
+            return False
+        if r['tipo_externo'] == retiradas[r['proveedor']]['tipo_externo']:
+            return r['id_externo'] in ids
+        if r['tipo_externo'] != 'sesion':
+            return False
+        try:
+            competicion = json.loads(r['id_externo'])[0]
+        except (ValueError, TypeError, IndexError, KeyError):
+            return False
+        return isinstance(competicion, str) and competicion in ids
+
     return {i for i, r in n['referencias'].items() if r['proveedor'] in inventarios
             and r['tipo_externo'] == TIPOS[r['proveedor']]
-            and r['id_externo'] not in inventarios[r['proveedor']]}
+            and r['id_externo'] not in inventarios[r['proveedor']]
+            or r['proveedor'] in retiradas and retirada(r)}

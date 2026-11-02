@@ -1194,6 +1194,18 @@ test('Nivel II avisa cuando solo se conoce el día publicado', () => {
   assert.doesNotMatch(runInContext('calEventoCuerpo(evento)', c), /Duración y programa sin confirmar/);
 });
 
+test('en atletismo solo avisan las fechas discrepantes, no la descripción de la sede', () => {
+  const c = contexto();
+  c.evento = { ...tarjeta('Compartida', '2026-11-15'), fuentes: [], atletismo: { valor: {} },
+    lugar: { valor: { nombre: 'Barcelona' }, conflicto: true } };
+  assert.doesNotMatch(runInContext('calEventoCuerpo(evento)', c), /cal-aviso/);
+  c.evento.programacion = { ...c.evento.programacion, conflicto: true };
+  assert.match(runInContext('calEventoCuerpo(evento)', c), /datos discrepantes/);
+  delete c.evento.atletismo;
+  c.evento.programacion = { ...c.evento.programacion, conflicto: false };
+  assert.match(runInContext('calEventoCuerpo(evento)', c), /datos discrepantes/);
+});
+
 test('la cita compartida conserva inscripciones por fuente aunque difieran los metadatos', () => {
   const c = contexto();
   c.evento = { ...tarjeta('Compartida', '2026-11-15'), fuentes: [], atletismo: {

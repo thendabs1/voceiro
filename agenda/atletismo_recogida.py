@@ -12,11 +12,12 @@ import re
 import subprocess
 import tempfile
 import time
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_nivel_ii, recogida
+from . import atletismo, atletismo_coincidencias as coincidencias, atletismo_nivel_ii, recogida
 
 
 def meses(desde, hasta):
@@ -187,7 +188,105 @@ def galicia(desde, hasta, obtener):
 LECTORES = {'rfea': rfea, 'fga': galicia, 'fca': cataluna}
 
 
-def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200, cache=None):
+def url_ficha(fuente, cita):
+    if fuente == 'fca':
+        return 'https://fcatletisme.cat/wp-json/tribe/events/v1/events/' + cita['id']
+    return cita['url']
+
+
+def ficha_cataluna(cita, contenido, obtener):
+    p = json.loads(contenido)
+    if not isinstance(p, dict) or str(p.get('id')) != cita['id']:
+        raise ValueError('FCA: la ficha no corresponde a la cita guardada')
+    if p.get('status') != 'publish' or p.get('hide_from_listings') is not False:
+        return {'ausencia': 'fuera del listado'}
+    return {'entrada': {'eventos': atletismo.leer_cataluna([{'total': 1, 'total_pages': 1, 'events': [p]}])}}
+
+
+def ficha_galicia(cita, contenido, obtener):
+    s = BeautifulSoup(contenido, 'html.parser')
+    articulo = s.select_one('main article.type-competition')
+    if articulo is None or 'post-' + cita['id'] not in articulo.get('class', []):
+        raise ValueError('FGA: la ficha no corresponde a la cita guardada')
+    # Cabecera «12/12/2026 - 13/12/2026 - Ordes»: la primera fecha y la última.
+    fechas = [datetime.strptime(x, '%d/%m/%Y').date() for x in
+              (atletismo.texto(e) for e in articulo.select('span')[:3]) if re.fullmatch(r'\d{2}/\d{2}/\d{4}', x)]
+    if not fechas or fechas[-1] < fechas[0] or (fechas[-1] - fechas[0]).days > 90:
+        raise ValueError('FGA: ficha sin fechas acreditadas')
+    # Los errores de este listado o de otras fichas no son de esta cita: interrumpen la fuente.
+    entrada, informe = galicia(fechas[0], fechas[-1], obtener)
+    if any(x['id'] == cita['id'] for x in informe['pendientes']):
+        return {'pendiente': 'trasladada; agrupación o jornadas por acreditar'}
+    eventos = [e for e in entrada['eventos'] if e['id'] == cita['id']]
+    if not eventos:
+        return {'ausencia': 'ficha sin listado en sus fechas'}
+    return {'entrada': {'eventos': eventos, 'agrupaciones': entrada['agrupaciones']}}
+
+
+def ficha_rfea(cita, contenido, obtener):
+    s = BeautifulSoup(contenido, 'html.parser')
+    ajustes = s.select_one('script[data-drupal-selector="drupal-settings-json"]')
+    if not ajustes or json.loads(ajustes.string)['path']['currentPath'] != 'championship/' + cita['id']:
+        raise ValueError('RFEA: la ficha no corresponde a la cita guardada')
+    # La ficha no publica el año: se oculta hasta que una ventana la vuelva a leer.
+    return {'ausencia': 'trasladada: ' + (atletismo.texto(s.select_one('.c_e_date')) or 'sin fecha')}
+
+
+FICHAS = {'rfea': ficha_rfea, 'fga': ficha_galicia, 'fca': ficha_cataluna}
+
+
+def retirada(fuente, error):
+    if error.code in (404, 410):
+        return True
+    if fuente != 'fca' or error.code != 400:
+        return False
+    # Tribe valida el ID: un evento borrado no es un parámetro válido.
+    try:
+        cuerpo = json.loads(error.read())
+    except (ValueError, OSError):
+        return False
+    return cuerpo.get('code') == 'rest_invalid_param' and 'id' in ((cuerpo.get('data') or {}).get('params') or {})
+
+
+def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, observado):
+    """Citas guardadas en la ventana que una lectura completa ya no trae.
+
+    Se pide su ficha: si da otra fecha, se reimporta; si no la sostiene o ya
+    no existe, la cita deja de publicarse sin cancelarse. Solo el 404/410 de
+    la propia ficha acredita la retirada; otros errores interrumpen la fuente
+    y conservan la última lectura buena.
+    """
+    leidas = {str(x['id']) for x in (*entrada['eventos'], *informe['pendientes'], *entrada.get('agrupaciones', []))}
+    ausencias, reimportadas = [], []
+    for c in conocidas:
+        if c['id'] in leidas or c['fin'] < desde.isoformat() or c['inicio'] > hasta.isoformat():
+            continue
+        try:
+            contenido = obtener(url_ficha(fuente, c))
+        except HTTPError as error:
+            if not retirada(fuente, error):
+                raise
+            ausencias.append({'id': c['id'], 'url': c['url'], 'comprobado': observado,
+                              'motivo': f'ficha retirada (HTTP {error.code})'})
+            continue
+        r = FICHAS[fuente](c, contenido, obtener)
+        if 'pendiente' in r:
+            # Conserva la última lectura y deja la recogida incompleta.
+            informe['pendientes'].append({'id': c['id'], 'url': c['url'], 'motivo': r['pendiente']})
+            informe['completo'] = False
+        elif 'ausencia' in r:
+            ausencias.append({'id': c['id'], 'url': c['url'], 'motivo': r['ausencia'], 'comprobado': observado})
+        else:
+            nueva = r['entrada']
+            vistas = {g['id'] for g in entrada.get('agrupaciones', [])}
+            entrada.setdefault('agrupaciones', []).extend(g for g in nueva.get('agrupaciones', []) if g['id'] not in vistas)
+            entrada['eventos'].extend(nueva['eventos'])
+            reimportadas.append(c['id'])
+    return {'ausencias': ausencias, 'reimportadas': reimportadas}
+
+
+def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200, cache=None,
+            conocidas=(), observado=None):
     if fuente not in LECTORES or not 1 <= max_peticiones <= 500:
         raise ValueError('Fuente o presupuesto de atletismo desconocidos')
     desde, hasta = ventana(inicio, fin)
@@ -222,6 +321,8 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
         return html
 
     entrada, informe = LECTORES[fuente](desde, hasta, obtener)
+    informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
+                               observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
                       'peticiones': peticiones, 'citas': len(entrada['eventos']), **informe}
 
@@ -244,10 +345,16 @@ def nivel_ii(n, inicio, fin):
     resultado = atletismo_nivel_ii.resolver(inventario, revisiones, n, incorporar_nuevas=True)
     resultado['entrada']['eventos'] = [e for e in resultado['entrada']['eventos']
         if e['fin'] >= inicio and e['inicio'] <= fin]
+    # La completitud es la de la ventana; las filas de otras fechas se cuentan aparte.
+    fechas = {f['huella']: f['fila']['fecha'] for f in inventario['filas']}
+    pendientes = [p for p in resultado['pendientes'] if inicio <= p['fila']['fecha'] <= fin]
+    incidencias = [i for i in resultado['incidencias'] if inicio <= fechas[i['huella']] <= fin]
     return resultado['entrada'], {'temporada': inventario['temporada'], 'actualizado': inventario['actualizado'],
-        'filas': len(inventario['filas']), 'completo': resultado['completo'],
+        'filas': len(inventario['filas']),
+        'completo': not pendientes and not resultado['revisiones_no_aplicadas'],
         'citas_ventana': len(resultado['entrada']['eventos']),
-        'pendientes': resultado['pendientes'], 'incidencias': resultado['incidencias'],
+        'pendientes': pendientes, 'incidencias': incidencias,
+        'pendientes_fuera_ventana': len(resultado['pendientes']) - len(pendientes),
         'revisiones_no_aplicadas': resultado['revisiones_no_aplicadas']}
 
 
@@ -275,13 +382,17 @@ def main(argv=None):
     def preparar(anterior):
         anterior = anterior or integrar(None, [], {}, observado)
         calendario = ampliar(anterior)
-        entrada, informe = recoger(args.fuente, desde.isoformat(), hasta.isoformat(), cache=args.cache)
+        conocidas = [c for c in coincidencias.actuales(calendario['nucleo'])
+                     if c['fuente'] == args.fuente and not c['id'].startswith('nivel-ii:')]
+        entrada, informe = recoger(args.fuente, desde.isoformat(), hasta.isoformat(), cache=args.cache,
+                                   conocidas=conocidas, observado=observado)
         n = atletismo.importar(calendario['nucleo'], entrada, observado)
         if args.fuente == 'rfea':
             entrada_ii, informe_ii = nivel_ii(n, desde.isoformat(), hasta.isoformat())
             n = atletismo.importar(n, entrada_ii, observado)
             informe['nivel_ii'] = informe_ii
             informe['completo'] = informe['completo'] and informe_ii['completo']
+        n = atletismo.registrar_ausencias(n, args.fuente, informe.get('ausencias'))
         n['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
         nucleo.recalcular_selecciones(n)
         calendario['nucleo'] = n
@@ -307,7 +418,8 @@ def main(argv=None):
     if args.informe:
         from calendario import guardar
         guardar(args.informe, informe)
-    print(json.dumps({k: informe[k] for k in ('fuente', 'inicio', 'fin', 'peticiones', 'citas', 'completo')}, ensure_ascii=False))
+    print(json.dumps({**{k: informe[k] for k in ('fuente', 'inicio', 'fin', 'peticiones', 'citas', 'completo')},
+                      'ausencias': len(informe.get('ausencias', [])), 'reimportadas': len(informe.get('reimportadas', []))}, ensure_ascii=False))
 
 
 if __name__ == '__main__':

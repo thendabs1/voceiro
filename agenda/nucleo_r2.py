@@ -63,6 +63,10 @@ def partir(n):
             continue
         k = nucleo.clave(r['destino'])
         dueno[k] = min(dueno.get(k, r['proveedor']), r['proveedor'])
+    # Una identidad conciliada ya no tiene referencias: viaja con la conservada.
+    for k, e in n['entidades'].items():
+        if k not in dueno and e.get('conciliada_en') and nucleo.clave(e['conciliada_en']) in dueno:
+            dueno[k] = dueno[nucleo.clave(e['conciliada_en'])]
     sin_fuente = n['entidades'].keys() - dueno.keys()
     if sin_fuente:
         raise ValueError(f'Entidad sin referencia de ninguna fuente: {min(sin_fuente)}')

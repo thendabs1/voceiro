@@ -333,9 +333,8 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
 - **Consultas puntuales:** unificar sus ámbitos con los del calendario
   (`shared/consultas/registro.js` y `shared/calendario/consulta.js`) y acreditar
   [jornadas oficiales](resultados-diseno.md).
-- **Atletismo:** conciliar identidades ya guardadas, resolver incidencias y
-  Nivel II antes de activar cron y publicación;
-  [pendiente](atletismo.md#pendiente-antes-de-conectar).
+- **Atletismo:** circuitos, filtros y World Athletics;
+  [pendiente](atletismo.md#pendiente).
 - **Seguir:** guardado y seguimiento por objetivo en un documento cifrado
   separado (`calendario-personal`, misma clave de sincronización con otra
   derivación); novedades por objetivo, tipo de cambio y revisión. Diseñado,

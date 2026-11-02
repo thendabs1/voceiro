@@ -97,8 +97,9 @@ def resolver(inventario, revisiones, n=None, *, incorporar_nuevas=False):
             # la ausencia como cancelación. Se informa para reconciliación.
             continue
         if r.get('decision') == 'equivalencia':
-            e = atletismo.equivalencias().get(('rfea', i))
-            if not e:
+            # Con la otra cita ya guardada, la equivalencia es una conciliación.
+            if not (atletismo.equivalencias().get(('rfea', i)) or any(
+                    c['referencias'].get('rfea') == i for c in coincidencias.revisiones_identidad())):
                 raise ValueError('Nivel II: falta equivalencia revisada')
         elif r.get('decision') != 'nueva':
             raise ValueError('Nivel II: falta decidir identidad o equivalencia')
