@@ -15,7 +15,7 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
   Antes de activar cron y publicación: aplicar la conciliación revisada en
   remoto, resolver los issues de coincidencias y las filas pendientes de
   Nivel II. World Athletics queda para otra entrega
-  ([diseño y alcance pendiente](agenda/atletismo-diseno.md#entregas-y-comprobación)).
+  ([pendiente](agenda/atletismo.md#pendiente-antes-de-conectar)).
 - Resultados deportivos: acreditar jornadas oficiales y su pertenencia por
   proveedor; las consultas por fecha y las fichas de partido ya funcionan
   ([pendientes](agenda/resultados-diseno.md)).

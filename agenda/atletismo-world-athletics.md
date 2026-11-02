@@ -1,88 +1,64 @@
-# Contrato propuesto: World Athletics
+# World Athletics
 
-Diseño de 2 de noviembre de 2026; sin adaptador activado.
-Alcance confirmado en [diseño común](atletismo-diseno.md).
-Fuente: https://worldathletics.org/competition/calendar-results .
+Contrato a 2/11/2026, **sin adaptador**. Va en una entrega aparte de las
+federaciones ([atletismo.md](atletismo.md)), que ya aportan la base común:
+identidades compartidas en R2, varias pertenencias por cita y proyección por
+fuentes permitidas. Fuente: https://worldathletics.org/competition/calendar-results .
 
-Revisión posterior a la recogida federativa:
-[base validada y requisitos previos a WA](atletismo-preparacion-wa.md).
-Se han contrastado el filtro `competitionGroupId`, dos páginas y un circuito
-completo. Esto actualiza las comprobaciones iniciales de este documento;
-todavía no hay adaptador WA ni cobertura de todos los circuitos seleccionados.
+## Selección
 
-## Selección de interés
+Diamond League (meetings `627` y final `3520`), Continental Tour `3773`,
+Indoor Tour `3677`, Label Road Races `3775`, Combined Events `3767`, Race
+Walking `3692` y Cross Country Tour `3664`, con todos sus niveles; campeonatos
+mundiales y continentales, incluidas sub-20, sub-23 y otras categorías
+inferiores; Juegos Olímpicos y de la Juventud solo en su parte de atletismo.
+La tabla de grupos y subgrupos debe versionarse a partir del catálogo de WA.
 
-Todos los niveles de Diamond League (meetings y final), Continental Tour,
-Indoor Tour, Label Road Races, Combined Events Tour, Race Walking Tour y
-Cross Country Tour; campeonatos mundiales y continentales, incluidos sub-20,
-sub-23 y otras categorías inferiores publicadas. Incluir Juegos Olímpicos
-y de la Juventud en su componente de atletismo. La tabla exacta de grupos
-seleccionados debe quedar versionada y respaldada por las opciones de WA.
+No importar el calendario mundial. Fuera: campeonatos nacionales, meetings con
+permiso continental genérico que no estén en un circuito elegido, grupos
+históricos extintos y ventanas administrativas. Montaña/trail y FISU/juegos
+regionales quedan pendientes de decidir. `competitionGroups`,
+`rankingCategories` y `permitLevels` son vocabularios distintos.
 
-No importar todo el calendario mundial. Los campeonatos nacionales de cada
-país y los meetings con permiso continental genérico no se incorporan por
-el mero permiso: verificar si pertenecen al circuito seleccionado. La categoría
-de puntuación WA no equivale al circuito ni a la edad. Los grupos históricos
-extintos no se activan solo por seguir en las opciones.
+## Lo contrastado
 
-Hay que revisar explícitamente la cobertura de montaña/trail y FISU/juegos
-regionales antes de incluirlos en esta selección: estar publicados no demuestra
-que formen parte de los circuitos acordados. Excluir ventanas administrativas
-como National Championships Window; no son un campeonato con sede concreta.
+- JSON Next en `props.pageProps.initialEvents`; filtros `startDate`, `endDate`,
+  `competitionGroupId` y `offset` (páginas de 100). No depender del ID de
+  compilación de Next.
+- Sin filtros, `hits=40277` con historia: no es el volumen a importar.
+  Noviembre–diciembre: `hits=572`; las páginas 0 y 100 mantienen el total y no
+  repiten IDs. No se recorrió la ventana completa.
+- Cross Country Tour en esa ventana: 16 de 16, con subgrupos Gold, Silver y
+  Bronze. Tres de esos IDs coincidían en nombre, sede, fechas e `iaafId` con la
+  consulta general, pero la pertenencia se expresa distinto (cadena «… –
+  Bronze» frente a grupo + subgrupo). No separar cadenas por comas ni
+  identificar circuitos por texto: consultar por grupo y conservar parámetros.
+- Brisbane 2032 (ID 7173264) figura del 23/7 al 8/8: las fechas de unos Juegos
+  no acreditan los días de atletismo (mismo problema que Dakar en RFEA).
+- No se ha visto aún una fecha indeterminada real. `hasResults`,
+  `hasApiResults` y `hasStartlist` son señales, no resultados ni programa.
 
-## Extracción y modelo
+## Modelo
 
-La página contiene JSON Next en `props.pageProps.initialEvents`. Comprobados:
-filtros `startDate`, `endDate`, páginas de 100 y `offset=100`. Faltan pruebas
-del filtro por cada grupo seleccionado y lectura completa de una ventana.
-No depender del identificador de compilación de Next ni copiar claves de red.
+Proveedor `world-athletics`, tipo `competition`, ID `results[].id`; `iaafId`
+como referencia adicional. No suponer que coincide con `championship`, SFID
+ni IDs territoriales. Un meeting es un evento; circuito y edición anual son
+agrupaciones (el validador ya admite `es_edicion_de` hacia `circuito`), y un
+meeting en varios circuitos se publica una sola vez con todos sus códigos.
+Conservar fechas indeterminadas y sede TBC, sin instantes UTC inventados ni
+municipio deducido de la sede. Usar solo enlaces publicados.
 
-Identidad candidata: proveedor `world-athletics`, tipo `competition`, ID
-numérico `results[].id`. Guardar `iaafId` cuando exista como referencia
-adicional, sin asumir equivalencia. No incorporar fecha, nombre o sede al ID.
-Comprobar persistencia del ID entre ventanas y cambios antes de fijar contrato.
+## Para integrarlo
 
-Una competición/meeting es un evento. Circuito y edición anual son agrupaciones
-distintas; relacionar el evento con todos los grupos acreditados. La pertenencia
-múltiple debe llegar a la lectura sin duplicar el evento. El `padre` único del
-constructor deportivo no basta por sí solo para todas estas relaciones.
-La revisión confirma que `agenda/publicacion.py` recorre varios padres y la
-lectura indexa todos sus códigos. El adaptador deberá emitir las relaciones
-múltiples y comprobarlas de extremo a extremo, sin duplicar el meeting.
-
-Campos útiles: nombre, ID, inicio/fin, sede literal, área geográfica, disciplinas,
-grupo/subgrupo, categoría WA y URL original. Conservar fecha indeterminada y
-sede TBC como tales. No confundir área geográfica con federación ni inferir
-un municipio/recinto desde la cadena de sede. Inicio/fin con precisión día
-se conservan sin convertirlos a instantes UTC.
-
-`hasResults`, `hasApiResults` y `hasStartlist` se pueden conservar como señales
-del proveedor; no son resultados ni garantía de programa. Una competición
-pasada no se marca finalizada solo por la fecha. No construir URLs de detalle
-por un patrón aún sin contrastar; usar enlaces publicados acreditados.
-
-## Recogida, cobertura y coste
-
-Unidad de cobertura: ventana de fechas y selección explícita de grupos,
-independiente de las otras fuentes. Conservar parámetros, total y páginas
-recibidas. Comprobar selección y ausencia de IDs repetidos; si se consulta por
-grupo, consolidar un ID presente en varios grupos y conservar sus pertenencias.
-Totales por grupo no pueden sumarse como número de competiciones únicas.
-
-Validar estabilidad de totales entre páginas; si hay cambios incompatibles,
-fallar la unidad y conservar la publicación anterior. Revisar eventos conocidos
-movidos fuera de la ventana mediante una estrategia contrastada de detalle o
-reconciliación más amplia. Leer páginas completas no resuelve por sí solo ese caso.
-
-Coste por pasada: suma de páginas por selección más reconciliaciones y errores;
-la estrategia de una ventana amplia filtrada localmente frente a varias por
-grupo se decidirá con mediciones. La revisión posterior de noviembre-diciembre
-declaraba 572 eventos de todo el mundo, no 572 del alcance elegido. No sirve para estimar
-todavía el volumen anual seleccionado.
-
-## Condiciones para darlo por integrado
-
-Selección acordada demostrable con ejemplos, identidad y enlaces contrastados,
-todos los niveles de circuitos, categoría inferior, meeting de varios días,
-pertenencia múltiple, cita indeterminada y recorrido completo paginado.
-Publicación local revisada y tests CI del contrato antes de activar recogida.
+1. Selección versionada y lector propio con todas las páginas de cada unidad
+   (grupo + ventana); comprobar que el servidor aplicó los filtros para no
+   importar el mundo por accidente, y consolidar IDs repetidos entre grupos.
+2. El importador federativo exige inicio y fin acreditados: adaptarlo a fechas
+   indeterminadas.
+3. Pruebas: varios circuitos y niveles, varios días, categoría inferior, fecha
+   indeterminada, cambio de ventana, enlaces reales; casos Nassos/marcha
+   (programa y partes) y Juegos.
+4. Contraste RFEA/WA con la conciliación explícita; informes con todas las
+   peticiones, fallos y `Retry-After`; caché de fichas aunque falle otro paso.
+5. Reconciliar meetings trasladados fuera de ventana; presupuesto y última
+   lectura válida ante paginación inestable, cambios de esquema o 429.

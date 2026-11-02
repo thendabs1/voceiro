@@ -23,10 +23,17 @@ requiere resolver su identidad; aún no está implementado.
 - Tenis: contrastar cobertura, costes y estados de retiradas, incomparecencias
   y superdesempates antes de ofrecer resultados por cuadro y ronda.
 - Motor: acreditar resultados por sesión, sanciones, tiempos y diferencias;
-  F1 solo tiene clasificación en el panel. La investigación de MotoGP está
-  en [la revisión de fuentes](atletismo-motogp-revision-2026-11-02.md).
-- Atletismo: acreditar recursos de resultados, marcas y rankings; conservar
-  la separación entre ranking mundial, marcas y puntos de circuito.
+  F1 solo tiene clasificación en el panel. MotoGP: la ruta ESPN probada
+  responde 400; la API oficial `api.pulselive.motogp.com/motogp/v1/results`
+  respondió sin clave con temporadas, eventos, categorías, sesiones,
+  clasificación por sesión y mundial (2/11/2026). Relacionar sus UUID con la
+  agenda por referencias, no por nombre del GP; no traducir estados como
+  `INSTND` por intuición.
+- Atletismo: sin conector. Candidatas web sin extracción acreditada: Diamond
+  League (marcas y récords), ranking de marcas RFEA y World Rankings (corte
+  semanal, sin recalcular). Stats Pro de WA exige acceso. Mantener separados
+  ranking mundial, mejores marcas y puntos de circuito; viento, pista corta,
+  cronometraje y DNS/DNF/DQ importan al comparar.
 
 Se mantiene la consulta bajo demanda con caché. Una base de resultados y la
 recogida programada solo se reconsiderarán ante una necesidad concreta que
