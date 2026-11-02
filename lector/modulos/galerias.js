@@ -67,6 +67,9 @@ export function galeriasDeJSONLD(datos, base){
     Object.values(x).forEach(v => { if (Array.isArray(v)) v.forEach(indexar); else if (v && typeof v === 'object') indexar(v); });
   }
   datos.forEach(indexar);
+  // Un bloque ImageGallery suelto no demuestra que sea el contenido principal
+  // si la página también declara una noticia con texto propio.
+  const hayArticuloConTexto = objetos.some(o => /Article$|BlogPosting/.test(arrayGaleria(o['@type']).join(' ')) && textoGaleria(o.articleBody));
   const resolver = x => x && x['@id'] && nodos.get(x['@id']) || x;
   const secundarias = new Set(), propietarios = new Map();
   for (const o of objetos){
@@ -97,7 +100,7 @@ export function galeriasDeJSONLD(datos, base){
         }));
         if (imagenes.every(im => im.posicion)) imagenes.sort((a, b) => a.posicion - b.posicion);
         if (imagenes.length >= 2) out.push({ tipo: 'galeria', titulo: textoGaleria(o.headline || o.name),
-          imagenes, principal: !secundarias.has(o) && principal,
+          imagenes, principal: !secundarias.has(o) && principal && (!!meta || !hayArticuloConTexto),
           metadata: { ...meta, ...o, articleBody: meta && meta.articleBody || o.articleBody || '' } });
       }
       visitar(o['@graph'], meta, principal);

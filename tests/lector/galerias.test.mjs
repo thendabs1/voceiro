@@ -110,6 +110,33 @@ test('añade una galería declarada sin cambiar el texto ni el origen elegido', 
   assert.equal(r.galerias.length, 1);
 });
 
+test('una ImageGallery suelta no sustituye una noticia con articleBody propio', () => {
+  const noticia = { '@type': 'NewsArticle', articleBody: 'Texto propio de la noticia. '.repeat(20) };
+  for (const nodos of [[noticia, galeria()], [galeria(), noticia]]){
+    for (const datos of [nodos, [{ '@graph': nodos }]]){
+      for (const fuente of ['readability', 'jsonld', 'mixto', 'selector']){
+        const art = { headline: 'Noticia', rawBody: 'Texto extraído de la noticia. '.repeat(20),
+          rawHTML: '<p>Texto con formato.</p>', bloques: [{ tipo: 'p', html: 'Texto' }], _source: fuente };
+        const r = completar(art, datos);
+        assert.equal(r.galeriaPrincipal, false);
+        assert.equal(r.galerias[0].principal, false);
+        assert.equal(r.galerias.length, 1);
+        assert.equal(r.rawBody, art.rawBody);
+        assert.equal(r.rawHTML, art.rawHTML);
+        assert.equal(r.bloques, art.bloques);
+        assert.equal(r._source, fuente);
+      }
+    }
+  }
+});
+
+test('una ImageGallery suelta puede abrirse sin texto ni artículo propietario', () => {
+  const r = completar(null, [galeria({ name: 'Fotogalería' })]);
+  assert.equal(r.galeriaPrincipal, true);
+  assert.equal(r.galerias[0].imagenes.length, 3);
+  assert.equal(r.rawBody, '');
+});
+
 test('una fotogalería puede abrirse sin artículo de Readability ni articleBody', () => {
   const r = completar(null, [{ '@type': 'NewsArticle', headline: 'Partido en fotos', description: 'Entradilla',
     articleBody: '', mainEntityOfPage: galeria() }]);
