@@ -1,7 +1,8 @@
 # Atletismo
 
 Estado a 2/11/2026. Capas RFEA, Galicia (FGA) y Cataluña (FCA) con recogida
-manual operativa; **sin cron ni publicación**. World Athletics tiene contrato
+completa y conciliaciones revisadas; cron y publicación se activan con las
+variables de Actions (ver Recogida). World Athletics tiene contrato
 propio, sin adaptador: [atletismo-world-athletics.md](atletismo-world-athletics.md).
 
 ## Alcance y modelo
@@ -106,10 +107,21 @@ identidades ya guardadas no se fusionan al importar: exigen conciliación.
 - `atletismo-equivalencias.json`: equivalencias editoriales (Negreira 5 km
   máster: RFEA 64837, FGA 113590, FCA 82885).
 - `atletismo-conciliaciones.json`: pares revisados con evidencia y la fuente
-  cuyo ID se conserva (Jean Bouin, Granollers, San Martiño).
-  `atletismo_conciliacion` prepara una copia **local** del núcleo: solo
-  principales sin sesiones, resultados ni políticas afectados, sin reescribir
-  documentos ni observaciones. No escribe en remoto.
+  cuyo ID se conserva. En una importación nueva comparten identidad; si ya
+  hay dos guardadas, `atletismo_conciliacion --turso [--simular]` las une
+  sobre una carga fresca con la guardia de revisión (`--nucleo` para una
+  copia local). Solo principales sin sesiones, resultados ni políticas
+  afectados; documentos y observaciones intactos. La entidad absorbida se
+  conserva sin referencias con `conciliada_en` (el almacén no retira
+  entidades) y no se publica; el almacén solo acepta el cambio de destino de
+  una referencia con esas dos marcas.
+- Una cita contada en una parte por una fuente (Nassos 5 km, marcha máster
+  de Castro) es la misma cita si comparte día y sede; las partes solo se
+  modelan con días distintos.
+- Fechas discrepantes en una identidad compartida (short track clubes
+  máster, Dakar) quedan como conflicto visible, sin elegir fuente.
+- Nivel II enlaza con una cita guardada mediante `decision: equivalencia` y
+  una conciliación con su ID editorial (Ourense y Ordes, 12/12).
 - `atletismo_revision --issues` corre en cada pasada del workflow: un issue
   por par estable de IDs (marcador oculto, abiertos y cerrados), cinco nuevos
   como máximo por pasada. Cerrar un issue no fusiona datos.
@@ -122,44 +134,36 @@ python -m agenda.atletismo_recogida --db /tmp/atletismo.db --fuente fga --inicio
 
 Fuentes `fga`, `fca` y `rfea` (incluye Nivel II y requiere Poppler); `--turso`
 sustituye a `--db`. Ventana máxima de 91 días; por defecto, hoy y 60 días más.
-El informe (consultas, ventana, peticiones, pendientes y completitud) se guarda
-con el núcleo en `agenda_estado`, clave `atletismo-informe-{fuente}`. Un fallo
-conserva la última lectura buena. En el workflow: input `atletismo`; el cron
+El informe (consultas, ventana, peticiones, pendientes, ausencias y
+completitud) se guarda con el núcleo en `agenda_estado`, clave
+`atletismo-informe-{fuente}`. Un fallo conserva la última lectura buena. En
+Nivel II, `completo` mide la ventana; las filas de otras fechas se cuentan en
+`pendientes_fuera_ventana`.
+
+Una cita guardada en la ventana que la lectura ya no trae se reconsulta por
+su ficha: FCA (API por ID) y FGA (fechas de la ficha y su listado) se
+reimportan con la fecha actual; si la ficha no sostiene la fecha (RFEA no
+publica el año) o ya no existe (404/410; FCA 400 `rest_invalid_param`), se
+anota en `fuentes.{fuente}.ausencias` y deja de publicarse sin cancelarse.
+Otra lectura del ID la vuelve a publicar. Otros errores interrumpen la
+fuente. En el workflow: input `atletismo`; el cron
 solo recoge con `CALENDARIO_ATLETISMO_RECOGIDA=true` (sin fijar) y la
 publicación requiere añadir las fuentes a `CALENDARIO_FUENTES_PUBLICAS`.
 
-Primera recogida real (run 41529257572, 1/11–31/12): FGA 64 peticiones y 56
-citas; FCA 2 y 53; RFEA 66 y 61. Son recuentos por fuente, no competiciones
-únicas. Nivel II: 11 citas en ventana y 36 filas pendientes del anual.
+Volumen de una pasada de 60 días: unas 130 peticiones (FGA ~63, FCA 2, RFEA
+~65 sin caché).
 
 Para revisar sin red: `calendario.py --entrada-atletismo` importa un documento
 revisado v1 (`version`, `fuente`, `eventos` con `id`, `nombre`, `url`,
 `inicio`, `fin`, `lugar`, `metadatos` y opcionales `grupo`/`programa`); es
 repetible y reimportar un ID actualiza sin duplicar.
 
-## Pendiente antes de conectar
+## Pendiente
 
-1. Aplicar en remoto las tres conciliaciones sobre una carga nueva, con
-   control de revisión; no subir el snapshot local usado para probarlas.
-2. Incidencias abiertas, sin elegir dato por orden de descarga:
-   [261](https://github.com/thendabs1/voceiro/issues/261) clubes máster short
-   track (FCA 5/12 Madrid; RFEA 5–6/12 «a designar»);
-   [262](https://github.com/thendabs1/voceiro/issues/262) marcha máster y
-   [263](https://github.com/thendabs1/voceiro/issues/263) Nassos, relación
-   programa/parte sin modelar (Nassos RFEA 67588 solo tiene 5 km); Dakar (FCA
-   8–10/11; RFEA el periodo de los Juegos 30/10–15/11), sin issue todavía.
-   [264](https://github.com/thendabs1/voceiro/issues/264) y
-   [265](https://github.com/thendabs1/voceiro/issues/265) quedan resueltos al
-   aplicar la conciliación.
-3. Nivel II: Ourense 12/12 (FGA 112623) y Ordes 12/12 (FGA 112625, 12–13/12)
-   requieren revisión concreta; separar la cobertura de la ventana de la del
-   anual y llevar los pendientes del PDF a issues.
-4. Reconciliar citas conocidas trasladadas fuera de la ventana; la última
-   lectura buena no equivale a fecha vigente.
-5. Clasificar circuitos y tecnificación desde las fichas y resolver
-   conjunto/partes (marcha de Castro Urdiales, Vic: campeonato y cross).
-6. Interfaz: el detalle solo muestra inscripción; faltan modalidades
-   normalizadas y filtros comunes.
+- Clasificar circuitos y tecnificación desde las fichas.
+- Interfaz: el detalle solo muestra inscripción; faltan modalidades
+  normalizadas y filtros comunes.
+- World Athletics: [contrato](atletismo-world-athletics.md).
 
 Resultados, marcas y rankings siguen sin conector; ver
 [resultados](resultados-diseno.md#otras-ampliaciones).

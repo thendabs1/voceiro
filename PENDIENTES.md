@@ -11,11 +11,9 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
 - Correspondencias Kulturklik, más recintos de Madrid, vigencias, relaciones
   meteorológicas y cobertura editorial múltiple:
   [relacionador territorial](shared/territorios/relacionador.md#pendiente).
-- Atletismo: la recogida manual de RFEA, Galicia y Cataluña ya funciona.
-  Antes de activar cron y publicación: aplicar la conciliación revisada en
-  remoto, resolver los issues de coincidencias y las filas pendientes de
-  Nivel II. World Athletics queda para otra entrega
-  ([pendiente](agenda/atletismo.md#pendiente-antes-de-conectar)).
+- Atletismo: RFEA, Galicia y Cataluña listas para cron y publicación; quedan
+  clasificación de circuitos, filtros de interfaz y World Athletics
+  ([pendiente](agenda/atletismo.md#pendiente)).
 - Resultados deportivos: acreditar jornadas oficiales y su pertenencia por
   proveedor; las consultas por fecha y las fichas de partido ya funcionan
   ([pendientes](agenda/resultados-diseno.md)).

@@ -590,7 +590,8 @@ function calInscripcionesAtletismo(e){
 }
 function calEventoCuerpo(e, lugarVisto = ''){
   const v = e.programacion?.valor, estado = v?.programacion;
-  const aviso = e.programacion?.conflicto || e.lugar?.conflicto;
+  // Atletismo: cada federación describe la sede a su manera; solo avisan las fechas.
+  const aviso = e.programacion?.conflicto || (!e.atletismo && e.lugar?.conflicto);
   const lugar = calLugar(e);
   const avisoEstado = estado === 'cancelado' || estado === 'aplazado' ? `<p class="cal-aviso">${calEsc(t(estado === 'cancelado' ? 'calCancelado' : 'calAplazado'))}</p>` : '';
   const horario = v?.cuando?.horario_textual, ejecucion = v?.ejecucion;

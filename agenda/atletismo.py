@@ -4,6 +4,7 @@ Los lectores reciben capturas públicas guardadas. La cobertura de una captura
 no acredita ni el calendario anual ni equivalencias con otra federación.
 """
 
+from copy import deepcopy
 from datetime import date, datetime, timedelta
 from functools import lru_cache
 import json
@@ -217,6 +218,7 @@ def importar(anterior, pagina, observado):
         raise ValueError('Contrato de atletismo desconocido')
     nombre, url = FUENTES[fuente]
     eventos = list(deporte.unicos(deporte.filas(pagina, 'eventos'), 'id'))
+    ausencias = deepcopy(((anterior or {}).get('fuentes', {}).get(fuente) or {}).get('ausencias'))
     decisiones = coincidencias.decidir_lote(anterior, fuente, eventos)
     conocidas = coincidencias.actuales(anterior)
     a = deporte.Agenda(anterior, fuente, nombre, url, 'atletismo', observado)
@@ -228,7 +230,11 @@ def importar(anterior, pagina, observado):
             raise ValueError('Agrupación previamente importada como cita: requiere conciliación explícita')
         if g.get('clase') not in ('circuito', 'ciclo', 'coleccion'):
             raise ValueError('Agrupación de atletismo sin clase acreditada')
-        grupos[i] = a.grupo('agrupacion', i, g['clase'], g.get('nombre'), padre=capa,
+        # La clase de una identidad no cambia: un padre leído fuera de ventana
+        # (colección) la conserva aunque otra lectura lo presente como circuito.
+        previa = a.anterior('agrupacion', i)
+        clase = a.c.n['entidades'][nucleo.clave(previa)]['clase'] if previa else g['clase']
+        grupos[i] = a.grupo('agrupacion', i, clase, g.get('nombre'), padre=capa,
             url=enlace(fuente, g['url']))
     for e in eventos:
         equivalencia = equivalencias().get((fuente, deporte.literal(e['id'])))
@@ -284,4 +290,26 @@ def importar(anterior, pagina, observado):
                 sitio=s.get('lugar') or e.get('lugar'), url=enlace(fuente, s.get('url') or e['url']),
                 bloques={'agenda': {'rol': 'sesion', 'principal': principal,
                     'tipo_sesion': deporte.literal(s.get('tipo_sesion'), 'tipo de sesión')}})
+    if ausencias:
+        # Una lectura nueva del ID vuelve a sostener la cita.
+        for e in eventos:
+            ausencias['ids'].pop(deporte.literal(e['id']), None)
+        if ausencias['ids']:
+            a.c.n['fuentes'][fuente]['ausencias'] = ausencias
     return a.terminar()
+
+
+def registrar_ausencias(anterior, fuente, ausencias):
+    """Citas guardadas que la fuente ya no sostiene en su fecha.
+
+    No cancela ni borra observaciones: la proyección deja de publicarlas
+    hasta que una lectura posterior de la fuente vuelva a traer su ID.
+    """
+    if not ausencias:
+        return anterior
+    n = deepcopy(anterior)
+    datos = n['fuentes'][fuente].setdefault('ausencias', {'tipo_externo': 'competicion', 'ids': {}})
+    for x in ausencias:
+        datos['ids'][deporte.literal(x['id'])] = {k: x[k] for k in ('motivo', 'url', 'comprobado', 'detalle') if k in x}
+    nucleo.validar(n)
+    return n

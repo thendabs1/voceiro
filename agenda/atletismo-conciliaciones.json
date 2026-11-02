@@ -39,6 +39,58 @@
           "https://atletismorfea.es/calendario/campeonato/xlix-carreira-popular-do-san-martino"
         ]
       }
+    },
+    {
+      "id": "nassos-2026",
+      "referencias": {"fca": "83074", "rfea": "67588"},
+      "conservar": "fca",
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Misma B100 Cursa dels Nassos, Barcelona, 31/12/2026. FCA anuncia las pruebas de 5 y 10 km; la ficha RFEA 67588 solo recoge 5 km. Comparten día y sede: una cita con alcance distinto por fuente, sin modelar partes. Cada fuente conserva su nombre.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/b100-cursa-dels-nassos-5-i-10-km/",
+          "https://atletismorfea.es/calendario/campeonato/b100-cursa-dels-nassos"
+        ]
+      }
+    },
+    {
+      "id": "marcha-invierno-castro-2026",
+      "referencias": {"fca": "80239", "rfea": "64834"},
+      "conservar": "fca",
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Mismo campeonato de España de marcha de invierno, Castro Urdiales, 13/12/2026. RFEA lo publica como promoción y 10 km máster; FCA solo anuncia la parte máster de 10 km. Comparten día y sede: una cita, sin modelar partes. Cada fuente conserva su nombre.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/campionat-despanya-de-10-km-marxa-en-ruta-master-4/",
+          "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-marcha-de-invierno-de-promocion-y-10-km-master-0"
+        ]
+      }
+    },
+    {
+      "id": "xunta-galicia-clubs-sub16-pc-2026",
+      "referencias": {"fga": "112623", "rfea": "nivel-ii:xunta-galicia-clubs-sub16-pc-2026"},
+      "conservar": "fga",
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Mismo II campeonato Xunta de Galicia de clubs sub-16 en pista cubierta, Ourense, 12/12/2026. «(i)» del PDF indica instalación cubierta, no otra sede; el PDF omite el ordinal. La fila del 3/10 en Ferrol es otro campeonato al aire libre.",
+        "evidencias": [
+          "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
+          "https://atletismo.gal/competicions/ii-campionato-xunta-de-galicia-de-clubs-sub16-en-pista-curta/"
+        ]
+      }
+    },
+    {
+      "id": "lanzamentos-longos-ordes-2026",
+      "referencias": {"fga": "112625", "rfea": "nivel-ii:lanzamentos-longos-ordes-2026"},
+      "conservar": "fga",
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Misma 5.ª jornada del II Circuíto Galego de Lanzamentos Longos, Ordes. «V» y «5ª» son el mismo ordinal. El PDF tiene una sola columna de fecha (12/12); la ficha FGA acredita 12 y 13/12.",
+        "evidencias": [
+          "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
+          "https://atletismo.gal/competicions/ii-circuito-galego-de-lanzamentos-longos-5a-xornada/"
+        ]
+      }
     }
   ]
 }

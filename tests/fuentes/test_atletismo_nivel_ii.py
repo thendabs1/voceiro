@@ -12,8 +12,14 @@ MUESTRAS = Path(__file__).with_name('muestras_calendario') / 'atletismo'
 AHORA = '2026-11-02T20:00:00+01:00'
 
 
-def revisiones():
+def registro():
     return json.loads(Path(nivel.__file__).with_name('atletismo-nivel-ii-revisiones.json').read_text())
+
+
+def revisiones():
+    # Casos de las pruebas: la marcha de Pontevedra. El registro completo se comprueba aparte.
+    r = registro()
+    return {**r, 'revisiones': [x for x in r['revisiones'] if x['id'] == 'nivel-ii:xunta-galicia-marcha-invierno-2026']}
 
 
 class NivelII(unittest.TestCase):
@@ -55,6 +61,22 @@ class NivelII(unittest.TestCase):
         e = resultado['entrada']['eventos'][0]
         self.assertEqual(e['metadatos']['nivel_ii']['actualizado'], '2026-10-15')
         self.assertEqual(e['metadatos']['modalidad_literal'], 'AL')
+        todo = nivel.resolver(self.inventario, registro())
+        self.assertEqual(todo['revisiones_no_aplicadas'], [])
+        self.assertEqual(len(todo['entrada']['eventos']), len(registro()['revisiones']))
+
+    def test_conciliacion_revisada_comparte_identidad_con_la_cita_territorial(self):
+        from agenda import atletismo_coincidencias as c
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'fga', 'eventos': [{
+            'id': '112623', 'nombre': 'II Campionato Xunta de Galicia de Clubs Sub16 en Pista Curta',
+            'inicio': '2026-12-12', 'fin': '2026-12-12', 'lugar': {'nombre': 'Ourense'},
+            'url': 'https://atletismo.gal/competicions/ii-campionato-xunta-de-galicia-de-clubs-sub16-en-pista-curta/',
+            'metadatos': {'modalidad_literal': 'Pista Curta'}}]}, AHORA)
+        n = atletismo.importar(n, nivel.resolver(self.inventario, registro(), n)['entrada'], AHORA)
+        destinos = {r['id_externo']: r['destino']['id'] for r in n['referencias'].values()
+                    if r['tipo_externo'] == 'competicion'}
+        self.assertEqual(destinos['112623'], destinos['nivel-ii:xunta-galicia-clubs-sub16-pc-2026'])
+        self.assertEqual(c.incidencias(n), [])
 
     def test_misma_cita_en_rfea_y_fga_con_sus_capas_y_discrepancia(self):
         entrada = nivel.resolver(self.inventario, revisiones())['entrada']

@@ -1,4 +1,4 @@
-"""Prepara una copia local conciliada; nunca escribe en Turso ni publica."""
+"""Concilia identidades revisadas en una copia local o en Turso; nunca publica."""
 import argparse
 from copy import deepcopy
 import json
@@ -18,7 +18,8 @@ def conciliar(anterior, revisiones=None):
 
     Conserva documentos y observaciones byte a byte, grupos de cada fuente,
     pertenencias, ID elegido y todos los conflictos. Cada destino absorbido
-    queda documentado en la entidad conservada. Cualquier dependencia fuera
+    queda documentado en la entidad conservada y se mantiene, sin referencias,
+    con `conciliada_en`: el almacén no retira entidades ni sus selecciones. Cualquier dependencia fuera
     de este alcance exige otra revisión; no se intenta una migración genérica.
     """
     nucleo.validar(anterior)
@@ -59,7 +60,10 @@ def conciliar(anterior, revisiones=None):
 
         elegida = n['entidades'][nucleo.clave(conservar)]
         for d in absorbidos:
-            entidad = n['entidades'].pop(nucleo.clave(d))
+            # El almacén nunca retira entidades: la absorbida queda sin
+            # referencias, con su selección anterior, y apunta a la conservada.
+            entidad = n['entidades'][nucleo.clave(d)]
+            entidad['conciliada_en'] = deepcopy(conservar)
             elegida['evidencias'] = sorted(set(elegida['evidencias']) | set(entidad['evidencias']))
             for tema in entidad['temas']:
                 if tema not in elegida['temas']:
@@ -83,7 +87,6 @@ def conciliar(anterior, revisiones=None):
                 previa['evidencias'] = sorted(set(previa['evidencias']) | set(r['evidencias']))
             else:
                 n['relaciones'][r['id']] = r
-        n['selecciones'] = {k: s for k, s in n['selecciones'].items() if s['objetivo'] not in absorbidos}
         informe.append({'revision': revision['id'], 'estado': 'conciliada',
                         'conservada': conservar, 'absorbidas': absorbidos})
     nucleo.recalcular_selecciones(n)
@@ -93,10 +96,32 @@ def conciliar(anterior, revisiones=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--nucleo', required=True, help='Snapshot v2 local')
-    ap.add_argument('--salida', required=True, help='Otra ruta para la copia conciliada')
-    ap.add_argument('--informe', required=True)
+    origen = ap.add_mutually_exclusive_group(required=True)
+    origen.add_argument('--nucleo', help='Snapshot v2 local')
+    origen.add_argument('--turso', action='store_true',
+                        help='Carga nueva del remoto; guarda con la guardia de revisión')
+    ap.add_argument('--salida', help='Otra ruta para la copia conciliada (solo --nucleo)')
+    ap.add_argument('--informe', help='Informe JSON (obligatorio con --nucleo)')
+    ap.add_argument('--simular', action='store_true', help='Con --turso: informar sin escribir')
     args = ap.parse_args(argv)
+    if args.turso:
+        if args.salida:
+            ap.error('--salida solo se usa con --nucleo')
+        from .turso import abrir
+        remoto = abrir()
+        calendario = remoto.cargar()
+        if not calendario or 'nucleo' not in calendario:
+            raise ValueError('Turso sin núcleo que conciliar')
+        n, informe = conciliar(calendario['nucleo'])
+        if not args.simular and any(r['estado'] == 'conciliada' for r in informe):
+            # Otro escritor entre la carga y el guardado hace fallar la guardia.
+            remoto.guardar({**calendario, 'nucleo': n}, solo_nucleo=True)
+        if args.informe:
+            Path(args.informe).write_text(json.dumps(informe, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        print(json.dumps({'simulado': args.simular, 'conciliaciones': informe}, ensure_ascii=False))
+        return
+    if args.simular or not args.salida or not args.informe:
+        ap.error('--nucleo requiere --salida e --informe, sin --simular')
     rutas = [Path(p).resolve() for p in (args.nucleo, args.salida, args.informe)]
     if len(set(rutas)) != 3:
         ap.error('Entrada, salida e informe deben ser archivos distintos')

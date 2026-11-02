@@ -47,7 +47,8 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
     entidades = {}
     for k, e in n['entidades'].items():
         evidencias = [observaciones[i] for i in e['evidencias'] if i in observaciones]
-        if not evidencias:
+        # Una identidad conciliada se publica solo a través de la conservada.
+        if not evidencias or e.get('conciliada_en'):
             continue
         nombres, codigos = {}, set()
         for o in sorted(evidencias, key=lambda o: (instante(o['ultima_observacion']), o['id'])):

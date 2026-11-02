@@ -542,7 +542,8 @@ def consultar(n, inicio, fin, tema=None, destino=None, territorio=None, zona='Eu
             hijos.update(nuevos)
     salida = []
     for e in n['entidades'].values():
-        if e['tipo'] != 'evento' or (permitidos is not None and e['id'] not in permitidos):
+        if (e['tipo'] != 'evento' or e.get('conciliada_en')
+                or permitidos is not None and e['id'] not in permitidos):
             continue
         if territorio is not None and not en_lugar(objetivo('evento', e['id'])):
             continue
