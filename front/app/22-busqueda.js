@@ -120,9 +120,9 @@ function aplicarFiltros(){
 
 const capas = capasRequeridas(parsed, consulta);
 
-// El cursor solo sirve para las capas que se cargaron con él. Al cambiar de
-// modo o de medio, la nueva capa empieza tras los días cargados en memoria.
-ajustarDiasActual(capas);
+// El cursor pertenece al medio elegido. Al cambiar de medio, empieza tras
+// los días de su carga inicial; grupos y modos no amplían el histórico.
+ajustarDiasActual(capasHistorico(parsed, consulta));
     // Disparo R2 en background
   if (capas.size) {
     const signal = new AbortController().signal;
