@@ -1,18 +1,10 @@
-# Revisión de atletismo y MotoGP — 2 de noviembre de 2026
+# Fuentes de resultados: MotoGP y atletismo
 
-Continuación: [diseño común](atletismo-diseno.md),
-[contrato WA](atletismo-world-athletics.md) y
-[contrato RFEA y territoriales](atletismo-rfea.md). La revisión posterior
-identifica candidatos de identidad RFEA (`championship` y SFID) en la ficha;
-la estabilidad entre cambios sigue pendiente de contrastar.
-
-## Alcance acordado
-
-Circuitos internacionales de World Athletics (WA) y calendario deportivo
-completo de RFEA. El usuario deja para después la revisión de robots y
-condiciones; no son un bloqueo de diseño en esta revisión. Esta decisión
-sustituye el aplazamiento por permisos descrito en `fuentes.md` para estas dos
-fuentes. No se han activado adaptadores, recogidas ni publicaciones.
+Investigación del 2/11/2026. Recursos observados, sin conector de resultados
+activado. Los calendarios se documentan en el [diseño común](atletismo-diseno.md),
+[World Athletics](atletismo-world-athletics.md) y [RFEA](atletismo-rfea.md).
+La importación local de RFEA, Galicia y Cataluña está en
+[la integración](atletismo-integracion.md).
 
 ## MotoGP: comprobación directa
 
@@ -42,60 +34,6 @@ deben relacionarse mediante referencias acreditadas, nunca por nombre del GP.
 Recomendación: fuente oficial y caché para resultados y clasificación. Como
 alternativa comercial, Sportradar documenta calendario y resultados poscarrera:
 https://developer.sportradar.com/racing/reference/motogp-overview .
-
-## Calendario WA
-
-https://worldathletics.org/competition/calendar-results contiene JSON de Next
-en `props.pageProps.initialEvents`. Se comprobaron `startDate`, `endDate` y
-`offset` como parámetros de URL. Para noviembre-diciembre de 2026 declara
-568 registros, páginas de 100; se comprobaron offsets 0 y 100, con comienzos
-distintos. No se descargó la ventana completa.
-
-Cada evento aporta ID numérico, inicio/fin, sede textual, disciplinas,
-categoría y grupo/subgrupo, y señales `hasResults`, `hasApiResults` y
-`hasStartlist`. Esas señales no equivalen a un contrato de resultados probado.
-Sin filtros, el total de 40.240 incluye histórico y competiciones nacionales:
-no es el volumen anual ni el número que se propone importar.
-
-Grupos anunciados por la fuente: Diamond League meetings (627) y finals
-(3520), Continental Tour (3773), Indoor Tour (3677), Label Road Races (3775),
-Combined Events Tour (3767), Race Walking Tour (3692), Cross Country Tour
-(3664), además de campeonatos mundiales y continentales y Juegos Olímpicos.
-Seleccionar mediante esos IDs, tras comprobar los filtros por grupo; no por
-palabras del título. Conservar los grupos originales, incluidos los múltiples.
-Excluir ventanas administrativas sin competición concreta. Fechas sin hora
-siguen siendo fechas: no inventar medianoche, zona o recinto geocodificado.
-
-El lector debe recorrer todas las páginas de su selección y comprobar totales,
-IDs repetidos y parámetros antes de publicar. Un fallo conserva la lectura
-anterior y no acredita cancelaciones. Usar ventanas acotadas y presupuesto;
-no consultar el sitio por cada visitante del calendario.
-
-## Calendario RFEA
-
-https://atletismorfea.es/calendario carga sus citas mediante
-`/modules/custom/calendario/js/calendar.js`. El script acredita esta ruta:
-
-`/ajax/calendario/{timestamp}/{tipo}/{area}/{disciplina}/{rankingWA}/{categoria}/{temporada}/{desde}/{hasta}/{titulo}`
-
-Se comprobó `1/Deportivo/0/0/0/0/464/2026-11-01/2026-12-31/0`:
-respuesta Drupal JSON con HTML insertado en `#calendar_container`. Aunque
-se pidieron dos meses, el contenido declara **noviembre de 2026** y contiene
-navegación mensual. No asumir que los filtros eliminan esa paginación.
-Se contaron 52 apariciones y 35 URLs distintas de campeonato: una prueba de
-varios días se repite por día. Consolidar dentro de la fuente sin fabricar
-52 eventos independientes. Las fechas de inscripción no son celebración.
-
-La página publica IDs de temporada: 2026=464 y 2027=482; descubrirlos de las
-opciones en cada recogida, no fijarlos en código. Separar `Deportivo` de las
-actividades federativas. Hay disciplina, título, localidad y URL de ficha.
-La ficha probada no permitió acreditar un ID inmutable de competición ni
-un contrato completo de fechas: los IDs de patrocinadores del pie no sirven.
-Pendiente resolver identidad y reprogramaciones antes de importar.
-
-RFEA incluye pruebas internacionales (por ejemplo Dakar), por lo que solapa
-con WA. Conservar las dos referencias y unir solo mediante correspondencia
-verificada; no fusionar automáticamente por título, sede o fecha.
 
 ## Resultados, estadísticas y almacenamiento
 
@@ -136,17 +74,9 @@ identidades y rectificaciones y aprovechar el núcleo/R2/Turso existente.
 Para mostrar tablas oficiales bajo demanda, empezar con caché evita una
 recopilación masiva y su mantenimiento sin una utilidad definida.
 
-## Implementación propuesta y verificación
+## Alcance de la comprobación
 
-Dos adaptadores de agenda; registro en proveedores y colecciones; filtros
-comunes de atletismo; recogida mensual RFEA y paginada WA; límites de red y
-publicación atómica existentes. No activar resultados persistidos en esa entrega.
-El coste depende de páginas WA + meses RFEA + fichas necesarias para acreditar
-identidad, revisiones y errores; todavía no hay medición anual ni importe.
-
-Verificado: código de agenda y consultas actual, muestras HTTP indicadas,
-JSON embebido, dos páginas WA y duplicaciones mensuales RFEA. Muestras de
-trabajo en `/tmp/voceiro-atletismo` (temporales). No se ejecutaron tests ni CI:
-esta entrega solo añade documentación. La implementación debe probar en CI
-paginación incompleta, reprogramaciones, pruebas de varios días, solapes,
-temporadas, límites y conservación de la última lectura buena.
+Se revisaron código y muestras HTTP acotadas. Las observaciones no acreditan
+cobertura universal ni estabilidad futura. Para implementar conectores quedan
+por contrastar identidades, estados, cobertura y presupuestos; validación completa
+en CI cuando exista código.

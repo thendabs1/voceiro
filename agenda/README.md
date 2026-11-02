@@ -24,11 +24,10 @@ Las tres capas comparten el catálogo temático
 territorio común ([shared/territorios](../shared/territorios/README.md)) y el
 parser de búsqueda.
 
-## Estado (28/10/2026)
+## Estado del código (2/11/2026)
 
-Avance de atletismo (2/11/2026): [primera integración local de RFEA, Galicia y
-Cataluña](atletismo-integracion.md), con capas e inscripción como metadatos;
-recogida automática y publicación pendientes.
+Atletismo (2/11/2026): capas RFEA, Galicia y Cataluña con
+[recogida manual preparada](atletismo-recogida.md); sin cron ni publicación.
 
 - **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
@@ -37,8 +36,12 @@ recogida automática y publicación pendientes.
   entra en el cron de las 04:30 UTC: cada colección decide si le toca.
 - **API de lectura:** activa en `cf-datos` y `deno-datos`
   (`CALENDARIO_LECTURA_SQL=true`), con publicación diferencial.
-- **Cliente:** `CALENDARIO_ACTIVO = false` en `front/app/14-calendario.js`; la
-  capa de datos usa la API y la interfaz está por rehacer.
+- **Cliente:** `CALENDARIO_ACTIVO = true` en `front/app/14-calendario.js`, con
+  vistas de Agenda y Deportes sobre la API de lectura. Queda revisar la interfaz;
+  esta comprobación del código no acredita la versión desplegada.
+- **Consultas puntuales:** resultados por fecha, clasificaciones y fichas de
+  partido implementados; [funcionamiento](resultados-revision-2026-11-02.md) y
+  [jornadas pendientes](resultados-diseno.md).
 
 ## Flujo
 
@@ -240,7 +243,7 @@ clave por revisión y límite de 30 peticiones/IP/minuto.
 **Configuración:** secretos `CALENDARIO_TURSO_URL` y
 `CALENDARIO_TURSO_TOKEN_LECTURA` (token de solo lectura) en CF y Deno,
 variable `CALENDARIO_LECTURA_SQL=true` en Actions. El cliente ya consulta
-esta API; su interfaz sigue desactivada mientras se rediseña.
+esta API; su interfaz está activada en el código.
 `node scripts/medir-lectura-calendario.mjs publicacion.json` mide la proyección
 sin red.
 
@@ -311,20 +314,14 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
 
 ## Pendiente
 
-- **Rediseñar y reactivar el cliente:** la lectura paginada, los resúmenes y
-  el detalle bajo demanda ya están conectados. Revisar la interfaz antes
-  de reactivar `CALENDARIO_ACTIVO`.
+- **Revisar el cliente:** comprobar la interfaz de Agenda y Deportes, ya
+  activada en el código, y su comportamiento en móvil y con teclado.
 - **Retención y retirada:** borrado transaccional de dependencias exclusivas
   antes de activar la poda de 45 días; retirada por ventanas e idiomas en
   Galicia y adaptación del inventario completo a nuevas fuentes (requisito
   de CyL y Málaga, cuya identidad de función incluye la fecha).
-- **Clasificación común y reconstrucción cultural:** diseño cerrado en
-  [clasificacion.md](clasificacion.md) (temas compartidos con las noticias,
-  filtros del calendario, etiquetas; un clasificador con tablas por fuente).
-  Las cinco culturales ya clasifican al publicar conservando sus referencias
-  externas. Galicia se recoge directamente en gallego; su retirada por ventana
-  sigue pendiente. El piloto queda como compatibilidad y no se actualiza para
-  Galicia tras la transición.
+- **Clasificación:** revisar únicamente los asuntos abiertos del
+  [clasificador común](clasificacion.md#pendiente-de-revisar).
 - **Fuentes nuevas:** por el orden de la [lista cerrada](fuentes.md#lista-cerrada)
   (Barcelona, Cataluña, Málaga, esMadrid…), cada una con el
   [contrato de fuente](fuentes.md#contrato-de-fuente); sus recintos con
@@ -333,11 +330,12 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
   registro declarativo de fuentes, para ampliar a comunidades y ayuntamientos.
   Todavía no implementados: Vidmar solo cubre su subconjunto ICS y el RSS de
   noticias no interpreta citas.
-- **Consultas puntuales:** hechas. Registro de prefijos en
-  `shared/consultas/registro.js`, salida única por `workers/deno-buscar`
-  (`/consulta`, `/consulta/ficha`, ver [fuentes](fuentes.md)) y panel encima de
-  las noticias (`front/app/14-consultas.js`). Falta unificar sus ámbitos con
-  los del calendario (`shared/calendario/consulta.js`).
+- **Consultas puntuales:** unificar sus ámbitos con los del calendario
+  (`shared/consultas/registro.js` y `shared/calendario/consulta.js`) y acreditar
+  [jornadas oficiales](resultados-diseno.md).
+- **Atletismo:** conciliar identidades ya guardadas, resolver incidencias y
+  Nivel II antes de activar cron y publicación;
+  [alcance pendiente](atletismo-diseno.md#entregas-y-comprobación).
 - **Seguir:** guardado y seguimiento por objetivo en un documento cifrado
   separado (`calendario-personal`, misma clave de sincronización con otra
   derivación); novedades por objetivo, tipo de cambio y revisión. Diseñado,

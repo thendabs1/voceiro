@@ -29,18 +29,11 @@ mezcla edades, formato, distancia y actividades: conservar valores originales
 y normalizar por una tabla explícita; no transformarlos todos en edad.
 «Internacional» entre disciplinas tampoco acredita modalidad deportiva.
 
-La ficha de IV Edición 21K Ciudad de Huelva acredita dos referencias:
-
-- Configuración Drupal `path.currentPath = championship/65127`.
-- `data-sfid = a0bQs00000FQCJSIA5`, también usado en el enlace público de
-  pruebas de la competición y en el script de documentos.
-
-Esto mejora la revisión inicial, que solo había identificado el slug. Son
-**candidatos a identidad**, no estabilidad demostrada: contrastar varias
-competiciones y temporadas, cardinalidad entre ambos y conducta al cambiar
-de URL/fecha. Propuesta: referencia interna RFEA por `championship`, SFID como
-segunda referencia y URL canónica como enlace. No asignar aún el SFID como
-identificador común con territoriales sin observar el mismo valor allí.
+El lector usa `championship` como referencia de ficha y conserva el SFID.
+Se contrastaron cinco fichas, descritas en la
+[revisión de identidad](atletismo-revision-metadatos.md#rfea-lo-que-sí-se-ha-contrastado).
+Queda acreditar estabilidad ante cambios de temporada, slug y edición; no
+se usa SFID como identificador común con territoriales sin observarlo allí.
 
 Descargar fichas para resolver identidad encarece la carga inicial. Persistir
 la correspondencia URL/referencias, actualizarla cuando proceda y medir el
@@ -77,36 +70,24 @@ calendario RFEA incluya todos los calendarios territoriales**.
 Fuente primaria:
 https://www.atletismorfea.es/sites/default/files/2025-07/136-2025%20Inscripcion%20de%20Competiciones%20en%20Calendario%20RFEA%202026.pdf
 
-La web enlaza un calendario nacional Nivel II separado. Antes de declarar
-«RFEA completa», comprobar si todas esas citas están en el mensual o si hace
-falta otra distribución, sin importar dos veces la misma competición.
+Nivel II aporta citas ausentes del mensual. Ya existe
+[extracción del PDF y resolución de identidades](atletismo-nivel-ii.md),
+con cobertura incompleta. No representa otra capa independiente de RFEA.
 Nivel II, categoría WA y ámbito territorial son dimensiones distintas.
 
-Sondeo inicial de las dos territoriales, posteriormente seleccionadas para
-la primera integración. La revisión posterior acredita una API catalana
-con ID propio y paginación (véase el documento de integración):
-
-| Fuente | Comprobado en muestra | Pendiente |
-| --- | --- | --- |
-| Galicia, https://atletismo.gal/competicions/ | Calendario propio WordPress, tipo `competition`, filtros `cp_date`, `cp_ambit[]` (GAL en la muestra), `cp_competition_type[]`; enlaces a servicios RFEA | Identidad de cita, paginación, cobertura, exportaciones y correspondencias con RFEA |
-| Cataluña, https://fcatletisme.cat/events/?ical=1 | iCalendar con 30 VEVENT, URL de ficha, categorías, lugar, organizador y modificación; UID incluye un número y marcas temporales | El feed no acredita calendario completo; estabilidad del identificador al reprogramar y paginación/ventanas |
-
-No confundir un `wp-json` anunciado por un formulario de contacto con una API
-de calendario: en Galicia la referencia observada pertenece a Contact Form 7.
-En Cataluña, `DTEND;VALUE=DATE` es exclusivo; no añade un día de celebración.
-El UID completo contiene fechas, por lo que no se debe asumir inmutable ni
-extraer un supuesto ID de su prefijo sin contrastar ficha/API.
-
-El SFID visto en RFEA es una pista para buscar referencias compartidas en
-fichas/documentos territoriales. No se encontró una correspondencia demostrada
-en estas muestras. Enlaces a la intranet o a homologaciones no la acreditan.
+Galicia usa IDs WordPress y Cataluña una API paginada con ID propio,
+preferida al ICS. El [contrato de integración](atletismo-integracion.md)
+documenta muestras, límites y uso local. La
+[comparación automática](atletismo-coincidencias.md) cruza referencias directas
+y coincidencias inequívocas, y envía las dudas a revisión. No se exige registrar
+manualmente cada correspondencia ni se deduce identidad del UID con fechas.
 
 ## Incorporar una territorial después
 
 Lector e identidad propios, relación de federación organizadora separada del
 lugar y del proveedor. Comparar una ventana común por referencias verificables
 y medir citas adicionales (controles, ligas provinciales, jornadas escolares,
-campeonatos autonómicos). Revisar candidatos a solape sin fusionar por título.
+campeonatos autonómicos). Aplicar el contrato de coincidencias y revisar los casos ambiguos.
 La autoridad sobre fecha/estado puede variar por competición y debe declararse,
 sin dar prioridad automática a RFEA o a la territorial para todos los campos.
 

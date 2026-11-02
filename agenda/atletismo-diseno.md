@@ -66,19 +66,20 @@ supuestos de temporada que habrá que contrastar con estos calendarios abiertos.
 
 ## Entregas y comprobación
 
-La prioridad posterior es RFEA + Galicia + Cataluña. Ya existe importación
-local y selección de sus tres capas, sin activar recogida ni publicación.
-El orden original de investigación que sigue se conserva como alcance pendiente,
-con WA aplazada respecto a las federaciones seleccionadas.
+Ya existen importación local, selección de las tres capas, representación
+de circuitos/programas y comparación automática con revisión de casos ambiguos.
+La [recogida manual](atletismo-recogida.md) ya guarda las tres fuentes; cron
+y publicación siguen sin activar. Queda:
 
-1. Cerrar contrato WA con muestras por circuito, categorías inferiores y
-   paginación completa de una ventana; preparar importación local revisable.
-2. Cerrar contrato RFEA con identidad en varias fichas, meses consecutivos,
-   cambio de año y prueba de varios días; revisar Nivel II.
-3. Integrar cada fuente por separado en recogida y publicación; revisar solapes
-   antes de activar ambas. Mantener los presupuestos actuales hasta medir.
-4. Elegir una territorial y medir qué citas nuevas aporta; su lector se incorpora
-   usando el mismo contrato, sin cambiar retrospectivamente las identidades.
+1. Aplicar en remoto la conciliación revisada y resolver las
+   [incidencias abiertas](atletismo-revision-incidencias.md); completar
+   Nivel II y contrastar cambio de año y citas de varios días.
+2. Extender la clasificación de circuitos y tecnificación desde las fichas,
+   resolver relaciones de conjunto/parte y medir solapes en una ventana común.
+3. Reconciliar citas trasladadas fuera de ventana y, después, activar cron
+   y publicación con presupuesto por fuente y última lectura válida.
+4. World Athletics, en otra entrega: cerrar filtros por circuito, categorías
+   inferiores, identidad y paginación completa antes de importar.
 
 Propuesta operativa a medir: carga de la temporada actual y la siguiente que
 esté anunciada; actualización por ventanas, con mayor frecuencia cerca de la
@@ -87,11 +88,11 @@ mundial en cada pasada. Si una ventana excede el presupuesto, dividirla en
 unidades con cobertura explícita antes de publicar; no aceptar un prefijo
 truncado ni elevar límites automáticamente.
 
-Tests completos en CI cuando exista código: identidad ante reprogramación,
-paginación y fallo parcial, repetición por día/circuito, fin inclusivo frente
-al iCalendar exclusivo, filtros múltiples, cambio de temporada, solapes,
-presupuesto y conservación de lectura válida. En esta fase se revisaron código,
-muestras públicas y documentos; solo hay cambios de documentación.
+La suite completa corresponde a CI. Los contratos implementados y sus
+comprobaciones se documentan en [integración](atletismo-integracion.md),
+[Nivel II](atletismo-nivel-ii.md) y [coincidencias](atletismo-coincidencias.md).
+La operación futura deberá cubrir además presupuestos, ventanas incompletas,
+cambios de temporada y conservación de lectura válida.
 
 Resultados y estadísticas quedan en su diseño aparte. Los calendarios pueden
 conservar enlaces a ellos sin descargar inscritos o resultados para crear citas.

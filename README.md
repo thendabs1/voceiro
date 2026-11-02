@@ -27,8 +27,8 @@ enlazados. El historial de cambios y decisiones cerradas se consulta en Git.
   **no almacena noticias**. La agenda usa una base Turso independiente.
 - La sincronización opcional cifra en el dispositivo y guarda el bloque en
   D1. Cloudflare y Deno comparten esa base.
-- La interfaz del calendario está desactivada mientras se revisa su diseño.
-  La recogida y la API de lectura conservan su implementación.
+- La interfaz del calendario está activada en el código y consulta la API de
+  lectura. Su estado y las revisiones pendientes están en el manual de agenda.
 
 ## Trabajar en local
 

@@ -1,4 +1,4 @@
-# Resultados por fecha en Voceiro
+# Resultados por fecha y fichas de partido
 
 La parrilla de `resultados:primera`, `resultados:segunda`, `resultados:nba`
 y `resultados:wnba` permite consultar días anteriores y posteriores, elegir
@@ -38,6 +38,30 @@ No hay refresco automático ni consultas a otros días al abrir la vista.
 Cada día cuesta un GET de origen cuando no está cacheado; abrir las estadísticas
 añade otro GET si falta el detalle en caché. No se añaden base de resultados,
 recogida programada, jornadas oficiales ni cruces de proveedores.
+
+## Ficha de partido
+
+Se abre desde una tarjeta de resultados o mediante `partido:primera`,
+`partido:segunda`, `partido:nba` y `partido:wnba`, que ofrecen los encuentros
+actuales para elegir. `partido:primera/401882817` abre una identidad concreta.
+Hay acceso desde el menú de cada competición. Se conserva el ID entre lista,
+ficha y caché; volver recupera la parrilla, su fecha y el foco sin otra consulta.
+
+El detalle se obtiene de `summary?event=ID` solo al abrirlo. Muestra cabecera
+con marcador, estado, hora y lugar; estadísticas comparadas; goles, tarjetas
+y cambios en fútbol; parciales y destacados en baloncesto. Alineaciones y
+estadísticas individuales van plegadas. Solo se publican bloques utilizables,
+sin devolver el JSON completo del proveedor. Las muestras están en
+`tests/consultas/muestras/espn-partido-*.json`.
+
+La caché del detalle incluye competición, ID e idioma: 60 segundos en juego,
+una hora finalizado y quince minutos en otros estados. Las solicitudes
+concurrentes de la misma consulta comparten la petición dentro de una instancia.
+Los fallos no se cachean; una actualización fallida conserva la ficha anterior.
+No hay refresco periódico del panel.
+
+Las [jornadas oficiales y otras ampliaciones](resultados-diseno.md) siguen
+pendientes.
 
 ## Casos contrastados
 

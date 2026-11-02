@@ -5,12 +5,20 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
 
 ## Agenda y territorios
 
-- Rediseñar y reactivar el calendario; la conexión del cliente con la API ya
-  existe. Retención, retirada, nuevas fuentes y seguimiento se mantienen en
+- Revisar la interfaz del calendario, ya activada en el código. Retención,
+  retirada, nuevas fuentes y seguimiento se mantienen en
   el [manual de agenda](agenda/README.md#pendiente).
 - Correspondencias Kulturklik, más recintos de Madrid, vigencias, relaciones
   meteorológicas y cobertura editorial múltiple:
   [relacionador territorial](shared/territorios/relacionador.md#pendiente).
+- Atletismo: la recogida manual de RFEA, Galicia y Cataluña ya funciona.
+  Antes de activar cron y publicación: aplicar la conciliación revisada en
+  remoto, resolver los issues de coincidencias y las filas pendientes de
+  Nivel II. World Athletics queda para otra entrega
+  ([diseño y alcance pendiente](agenda/atletismo-diseno.md#entregas-y-comprobación)).
+- Resultados deportivos: acreditar jornadas oficiales y su pertenencia por
+  proveedor; las consultas por fecha y las fichas de partido ya funcionan
+  ([pendientes](agenda/resultados-diseno.md)).
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores
 
@@ -39,8 +47,9 @@ clasificación por ciudad no es fiable (16 % de sedes resueltas en el sondeo).
   que recuperar el histórico de las fuentes adicionales (hoy solo se relee
   `all`), dar cadencia y umbral de suficiencia por emisor (hoy cinco titulares
   para todos) y medir el recolector antes de crecer.
-- Confirmar quién lanza `actualizar.yml` y con qué cadencia: el repositorio
-  solo tiene `workflow_dispatch`.
+- Confirmar el lanzador externo de `actualizar.yml` y su cadencia: el
+  repositorio solo tiene `workflow_dispatch`. La propuesta anterior incluía
+  pasadas a la 01, 02, 04 y 05 de Madrid, pero aquí no consta su configuración.
 - Selección por territorio (directa, contenida, superior) como operador del
   parser compartido: solo cuando se pida buscar «todo lo de Andalucía».
 - Portadas configurables o bajo demanda: aparcado. La opción recomendada es
@@ -48,9 +57,6 @@ clasificación por ciudad no es fiable (16 % de sedes resueltas en el sondeo).
   dominios en filtros explícitos sin grupo, selección guardada como lista de
   dominios para clientes antiguos); medir antes selecciones distintas, bytes y
   tiempos en móvil.
-- Atletismo: pedir permiso a la RFEA para su calendario
-  ([fuentes](agenda/fuentes.md#atletismo)); World Athletics solo con
-  autorización escrita.
 
 ## Cosecha y fechas
 
@@ -62,9 +68,6 @@ clasificación por ciudad no es fiable (16 % de sedes resueltas en el sondeo).
   en análisis intradiarios. No corregirlas automáticamente ni asumir que toda
   medianoche es inventada. Quedan por contrastar horas sistemáticas de fuentes
   concretas y fechas ISO sin zona; solo modificar reglas con ejemplos reales.
-- Verificar la cadencia nocturna del lanzador externo de `actualizar.yml`:
-  la nota anterior pedía pasadas a la 01, 02, 04 y 05 de Madrid, pero ese
-  lanzador no está en el repositorio y aquí no se acredita su configuración.
 - Mejorar el control de actividad con los logs y `runs.intentos` existentes:
   extracción correcta, frescura y periodicidad son señales diferentes. No
   repetir un barrido diario de todos los medios ni retirarlos por el umbral

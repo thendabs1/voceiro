@@ -29,43 +29,15 @@ como lista independiente, sin crear sesiones fechadas si no hay programa horario
 Edad, sexo, formato y actividad serían dimensiones separadas y opcionales.
 Una competición puede ofrecer varias pruebas: no imponer un único valor.
 
-## Reutilizar el modelo de los GP
+## Circuitos y programas
 
-**Sí: la validación ya se ha generalizado para reutilizar esta estructura.** Se han
-revisado `motogp.py`, `oficial_f1.py`, `deporte.py`, `nucleo.py`, `tiempos.py`,
-`publicacion.py` y la lectura compartida `shared/calendario/{fechas,proyeccion}.js`.
+El contrato ya admite circuitos, planes y sesiones fechadas reutilizando la
+estructura de programa, sin convertir campeonatos en GP ni cambiar identidades.
+Se documenta en [la integración](atletismo-integracion.md#circuitos-planes-y-programa-fechado).
 
-| Caso de atletismo | Representación propuesta | Soporte actual |
-| --- | --- | --- |
-| Carrera de un día | Cita con inicio=fin y precisión de día, o con hora acreditada | Ya existe; no necesita sesiones ni contenedor adicional |
-| Campeonato/meeting de días consecutivos, sin programa | Una cita con intervalo inclusivo | Ya existe; no hay que convertirla en GP. La interfaz detecta varios días y la presenta como prolongada aunque su clase sea `encuentro` |
-| Campeonato/meeting con jornadas o sesiones fechadas | Agrupación `competicion`, cita principal con sus días, sesiones dentro de `programa` | Contrato de importación y validación implementados. La proyección reúne sesiones en una tarjeta y la interfaz muestra el programa; todavía falta obtener programas fechados reales de las fuentes |
-| Circuito con jornadas 7, 14 y 28 | Agrupación `circuito`; tres citas relacionadas | El núcleo ya admite la clase. No representar 7–28 como celebración diaria ni usar el artículo padre como cuarta cita |
-| Plan de tecnificación | Agrupación `ciclo` o `coleccion`, sesiones técnicas fechadas y tipo de actividad separado | Clases existentes; falta adaptar el importador y resolver IDs de padres |
-
-La limitación inicial de `nucleo.validar` exigía `actividad_continua` y grupo
-`gran_premio`. Ahora admite también contenedor `competicion` con principal
-`encuentro` o `actividad_continua`; conserva las exigencias previas para GP.
-No se falsea la clase del campeonato como `gran_premio`. Una sesión necesita
-principal y `tipo_sesion`; al publicar se comprueba que pertenezca a la
-agrupación de su principal. El programa puede añadirse más tarde a un
-`encuentro` sin cambiar su clase ni identidad.
-
-No hace falta migrar tablas para estas clases o intervalos: ya existen. El
-importador actual de atletismo genera `agenda`/`programa` y acepta padres de
-circuito o plan declarados en una entrada revisada. No clasifica ni resuelve
-esos padres automáticamente a partir de títulos.
-
-La identidad de sesión debe proceder de la fuente o de una correspondencia
-revisada; no crear una por cada fila de «Pruebas» ni usar nombre+fecha como
-ID estable. Una prueba puede tener series, semifinal y final en días distintos.
-Se pueden incorporar sesiones con fecha sin hora si está acreditada; el Excel
-RFEA contrastado no acredita ni siquiera esa fecha de cada prueba.
-
-Verificación temporal en memoria: un encuentro 12–13/12/2026 se publica y
-solapa ambos días, sin solapar 11/12 ni 14/12. Las inscripciones siguen siendo
-metadatos ajenos a ese intervalo. Las correspondencias entre federaciones
-son otro problema: el modelo GP no resuelve por sí mismo los duplicados.
+Queda obtener programas fechados reales, clasificar circuitos y tecnificación
+desde las fichas y resolver IDs de padres. El Excel de pruebas RFEA no acredita
+fechas de sesiones. La inscripción sigue separada de la celebración.
 
 ## RFEA: lo que sí se ha contrastado
 
@@ -138,15 +110,16 @@ Contrastes concretos con el mensual de enero (39 URLs) y noviembre/diciembre:
 El PDF no es una segunda capa deportiva independiente: describe nivel y
 referencias de citas que también pueden estar en FGA/FCA. Hace falta resolver
 identidad y actualización antes de incorporarlo automáticamente. «RFEA completa»
-sigue pendiente; el importador local actual no cubre este PDF.
+sigue pendiente. La [extracción local](atletismo-nivel-ii.md) ya lee el PDF
+y resuelve parte de las identidades; no acredita cobertura completa.
 
 ## Solapamientos contrastados
 
 Ventana común 1/11–31/12/2026. Capturas FGA con `cp_date` explícito, sin filtros
 de ámbito: 35 artículos de noviembre y 22 de diciembre. FCA: 53 citas, dos páginas.
 RFEA: 35 URLs en noviembre y 26 en diciembre. Son **171 entradas por fuente**,
-no competiciones únicas ni medida de completitud anual. Comparación manual
-de nombres, fechas, lugares y fichas; no se ha aplicado deduplicación automática.
+no competiciones únicas ni medida de completitud anual. Los casos de esta tabla proceden del contraste manual inicial. El criterio
+vigente de importación es la [comparación automática](atletismo-coincidencias.md).
 
 | Caso | Evidencia observada | Tratamiento propuesto |
 | --- | --- | --- |
@@ -163,28 +136,10 @@ España clubes sub-16/sub-20, clubes máster mixtos, Europa de cross, Venta de B
 Cursa dels Nassos y San Silvestre Vallecana. Una capa territorial incluye citas
 fuera de su territorio; no usar el proveedor como filtro geográfico.
 
-La demo anterior de **89 entradas** (35 FGA + 53 FCA + 1 RFEA) no acreditaba
-89 competiciones diferentes: ya incluía el solape Negreira y el artículo padre
-del circuito. Mantener referencias independientes evita fusiones equivocadas,
-pero permite duplicados visibles donde aún no se acreditaron equivalencias.
-Ya existe una tabla revisada con Negreira; falta extenderla y resolver relaciones conjunto/parte;
-la semejanza de títulos solo puede proponer candidatos.
+## Pendiente
 
-## Cambios mínimos de esta revisión y verificación
-
-- FGA acepta el separador de rango explícito `12/12/2026 - 13/12/2026`;
-  antes fallaba el mes de diciembre. Mantiene rechazo de fechas sueltas no
-  consecutivas y rangos invertidos. Conserva etiquetas de listado (incluida
-  homologación) e iconos de ámbito que antes se omitían.
-- RFEA conserva fecha literal de ficha y enlaces rotulados, incluido Excel
-  de pruebas. La fecha sin año no sustituye a los días acreditados del calendario.
-- Pruebas de atletismo: trece casos, incluidos rangos, etiquetas, identidad,
-  enlaces, inscripción, paginación, programa, circuitos y equivalencias con
-  varias procedencias. La suite completa pasó en el
-  [CI del commit adc3a2fa](https://github.com/thendabs1/voceiro/actions/runs/41466633236).
-  Ninguna fuente activada ni publicada.
-
-Siguientes decisiones de diseño: correspondencias entre federaciones,
-modalidades comunes y presentación en detalle; extender la resolución de
-circuitos/tecnificación desde las fichas.
-La recogida automática vendría una vez cerradas esas decisiones y Nivel II.
+Resolver relaciones de conjunto/parte, modalidades comunes y presentación de
+metadatos en detalle; extender la clasificación de circuitos y tecnificación
+desde las fichas. Completar cobertura de Nivel II y medir solapes antes de
+activar recogida y publicación. La comparación inequívoca y Atapuerca ya están
+resueltos en el [contrato de coincidencias](atletismo-coincidencias.md).
