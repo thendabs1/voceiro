@@ -26,6 +26,7 @@ const PUNTUAL = {
   seq: 0, timer: null,
   cache: new Map(), enCurso: new Map(),
   texto: null, claveTexto: '',   // palabras de la búsqueda, marcadas en los equipos
+  grupo: null,               // grupo visible en una columna; en ancho se ven todos
 };
 
 const idiomaConsulta = () => {
@@ -47,6 +48,7 @@ function actualizarConsultaPuntual(parsed, texto = null){
   }));
   const claveTexto = texto?.incluir?.length ? JSON.stringify(texto.incluir) : '';
   const otroTexto = claveTexto !== PUNTUAL.claveTexto;
+  if (otroTexto) PUNTUAL.grupo = null;
   Object.assign(PUNTUAL, { texto: claveTexto ? texto : null, claveTexto });
   const claveLista = JSON.stringify(lista) + idiomaConsulta();
   if (claveLista === PUNTUAL.claveLista){
@@ -65,6 +67,7 @@ function activarConsulta(c){
   PUNTUAL.activa = c;
   if (clave === PUNTUAL.clave){ pintarConsulta(); return; }
   PUNTUAL.clave = clave;
+  PUNTUAL.grupo = null;
   PUNTUAL.seq++;   // lo que esté en camino ya no se pinta
   clearTimeout(PUNTUAL.timer);
   Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '' });
@@ -195,6 +198,14 @@ function pulsarConsulta(ev){
     case 'reintentar': p.reintentar?.(); break;
     case 'actualizar': abrirFichaConsulta(p.id, { candidato: p.candidato, callado: true }); break;
     case 'valor': cambiarTextoConsulta(b.dataset.valor); break;
+    case 'grupo': {
+      const i = Number(b.dataset.i);
+      if (!Number.isInteger(i) || !p.ficha?.ficha?.grupos?.[i]) break;
+      p.grupo = i;
+      p.enfocar = `[data-accion="grupo"][data-i="${i}"]`;
+      pintarConsulta({ conservarPlegado: true });
+      break;
+    }
     case 'forzar': cargarCandidatos(p.activa); break;
   }
 }
@@ -299,9 +310,10 @@ function htmlFicha(d){
   if (!FICHAS_CONSULTA[d.tipo] || !d.ficha) return msgConsulta('conNoAdmitida');
   const r = FICHAS_CONSULTA[d.tipo](d.ficha);
   const linea = [r.linea, d.incompleto ? t('conParcial') : ''].filter(Boolean).join(' · ');
-  return `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
+  const ficha = `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
     linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}</summary>
     <div class="consulta-cuerpo">${r.cuerpo}</div></details>${htmlPieConsulta(d)}`;
+  return esDeporteConsulta(d.tipo) ? `<div class="consulta-deporte">${ficha}</div>` : ficha;
 }
 
 // Fuente y licencia, siempre a la vista; en deportes, la hora y Actualizar.
@@ -347,6 +359,22 @@ function tablaConsulta(filas, cols, nombre){
   const th = k => { const [abr, largo] = t(COLUMNAS_CONSULTA[k]).split('|'); return `<th scope="col"><abbr title="${escapeHtml(largo || abr)}">${escapeHtml(abr)}</abbr></th>`; };
   return `<table class="consulta-tabla"><thead><tr><th scope="col">#</th><th scope="col">${escapeHtml(t(nombre))}</th>${cols.map(th).join('')}</tr></thead>
     <tbody>${filas.map(r => `<tr${claseMarcada(casaEquipo(r.equipo))}><td>${val(r.pos)}</td><td>${equipoConsulta(r.equipo)}</td>${cols.map(k => `<td>${val(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+function nombreGrupoConsulta(g){
+  const clave = { 'Eastern Conference': 'conEste', 'Western Conference': 'conOeste' }[g.nombre];
+  return clave ? t(clave) : g.nombre || '';
+}
+
+function gruposConsulta(grupos, pintar){
+  if (grupos.length === 1) return pintar(grupos[0]);
+  const marcado = grupos.findIndex(g => g.filas.some(r => casaEquipo(r.equipo)));
+  const elegido = PUNTUAL.grupo !== null && grupos[PUNTUAL.grupo] ? PUNTUAL.grupo : marcado >= 0 ? marcado : 0;
+  const titulo = g => `${nombreGrupoConsulta(g)} (${g.filas.length})`;
+  return `<div class="consulta-grupos-nav" role="group" aria-label="${escapeHtml(t('conGrupos'))}">${grupos.map((g, i) =>
+    botonConsulta('grupo', titulo(g), ` data-i="${i}" aria-pressed="${i === elegido}"`)).join('')}</div>
+    <div class="consulta-grupos">${grupos.map((g, i) => `<section data-seleccionado="${i === elegido}">
+      <h3>${escapeHtml(titulo(g))}</h3>${pintar(g)}</section>`).join('')}</div>`;
 }
 
 function fichaAudiovisual(f, serie){
@@ -409,17 +437,11 @@ const FICHAS_CONSULTA = {
     const grupos = f.grupos || [];
     const primero = grupos[0]?.filas?.[0];
     let linea = '';
-    if (primero) linea = deporte === 'basketball'
-      ? `${grupos[0].nombre ? grupos[0].nombre + ': ' : ''}${primero.equipo} · ${primero.g ?? '—'}–${primero.p ?? '—'}`
-      : `${primero.pos ?? '—'}. ${primero.equipo}${primero.pts != null ? ' · ' + tn('conPuntos', primero.pts) : ''}`;
-    const cols = deporte === 'basketball' ? ['g', 'p'] : deporte === 'racing' ? ['pts'] : ['pj', 'pts'];
+    if (primero && grupos.length === 1) linea = `${primero.pos ?? '—'}. ${primero.equipo}${primero.pts != null ? ' · ' + tn('conPuntos', primero.pts) : ''}`;
+    const cols = deporte === 'basketball' ? ['g', 'p'] : deporte === 'racing' ? ['pts'] : ['pj', 'g', 'e', 'p', 'pts'];
     const nombre = deporte === 'racing' ? 'conColNombre' : 'conColEquipo';
-    const tablas = grupos.length === 1 ? tablaConsulta(grupos[0].filas, cols, nombre)
-      : grupos.map((g, i) => plegadoConsulta(`${g.nombre || ''} (${g.filas.length})`, tablaConsulta(g.filas, cols, nombre),
-        i === 0 || g.filas.some(r => casaEquipo(r.equipo)))).join('');
-    const desglose = deporte === 'soccer'
-      ? grupos.map(g => plegadoConsulta(t('conDesglose'), tablaConsulta(g.filas, ['g', 'e', 'p'], nombre))).join('') : '';
-    return { titulo: [CONSULTA_DEPORTES[f.competicion] || f.competicion, f.temporada].filter(Boolean).join(' · '), linea, cuerpo: tablas + desglose };
+    const tablas = gruposConsulta(grupos, g => tablaConsulta(g.filas, cols, nombre));
+    return { titulo: [CONSULTA_DEPORTES[f.competicion] || f.competicion, f.temporada].filter(Boolean).join(' · '), linea, cuerpo: tablas };
   },
   resultados(f){
     const lang = idiomaConsulta();
@@ -442,7 +464,7 @@ const FICHAS_CONSULTA = {
       lista.map(p => {
         const inicio = new Date(p.inicio);
         const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estado[p.estado] ? t(estado[p.estado]) : ''].filter(Boolean).join(' · ');
-        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))}><span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b></li>`;
+        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}"><span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b></li>`;
       }).join('')}</ul>`).join('');
     return {
       titulo: `${CONSULTA_DEPORTES[f.competicion] || f.competicion} · ${tn('conPartidos', partidos.length)}`,
