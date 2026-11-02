@@ -70,7 +70,7 @@ function buildFromJSONLD(ld){
     articleSection: decodeEnt(ld.articleSection || ''),
     autores: decodeEnt(normAuth(ld.author).join(', ')),
     // Hay CMS que dejan dentro el CSS y el JS de los gráficos (Onm).
-    rawBody: limpiarCodigoIncrustado(decodeEnt(String(ld.articleBody || ''))),
+    rawBody: limpiarPromosTextoFinal(limpiarCodigoIncrustado(decodeEnt(String(ld.articleBody || '')))),
     rawHTML: '',
     image: imgUrlFrom(im),
     imageCaption: decodeEnt(imgCaptionFrom(im)),
@@ -84,7 +84,9 @@ function buildFromJSONLD(ld){
 const SEL_PUBLICIDAD = [
   '.ad-slot', '[data-mark^="Publici"]', 'a[href*="/ads/"]', 'ins.adsbygoogle', '[id^="div-gpt-ad"]',
   '[class*="outbrain"]', '[id*="outbrain"]', '[class*="taboola"]', '[id*="taboola"]',
-  '[class~="publicidad"]', '[class~="publicidade"]', '[class~="publicitat"]', '[class~="advertisement"]'
+  '[class~="publicidad"]', '[class~="publicidade"]', '[class~="publicitat"]', '[class~="advertisement"]',
+  // Cajas promocionales de PontevedraViva: título, explicación y botón.
+  '.c-whatsapp-subscribe', '.c-fonts-preferred'
 ].join(',');
 const ALT_PUBLICIDAD = /^\s*(publicidad|publicidade|publicitat|advertisement|anuncio)\b/i;
 function limpiarPublicidad(doc){
@@ -254,7 +256,7 @@ function extractFromSelector(rootSel, excludeSel, minChars){
   let root;
   try { root = document.querySelector(rootSel); } catch(e){ return null; }
   if (!root) return null;
-  const clone = root.cloneNode(true);
+  const clone = limpiarPublicidad(root.cloneNode(true));
   marcarEmbebidos(clone);
   clone.querySelectorAll('script,style,noscript').forEach(n => n.remove());
   if (excludeSel){
