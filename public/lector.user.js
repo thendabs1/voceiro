@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lector Universal
 // @namespace    https://thendabs1.github.io/voceiro/
-// @version      2.0.349
+// @version      2.0.350
 // @description  Modo lectura accesible para medios: perfil de lectura, pendientes, diccionarios, lectura rápida, extracción asistida y atajos. Complemento de Voceiro.
 // @author       Voceiro
 // @license      MIT
@@ -32,7 +32,7 @@
 /* ============================================================
    1. CONSTANTES
    ============================================================ */
-const SCRIPT_VERSION = '2.0.349';
+const SCRIPT_VERSION = '2.0.350';
 const READER_SOURCES = ['auto','jsonld','readability','custom'];
 // Imágenes del artículo: todas, solo las que traen pie, ninguna. Hay un
 // valor para todos los medios (prefs.imagenes) y otro, opcional, por medio.
@@ -976,15 +976,25 @@ function agruparGalerias(bloques){
 const SEL_GALERIAS = [
   '[itemtype$="/ImageGallery"]', '[data-component="gallery"]',
   '.wp-block-gallery', '.gallery', '.photo-gallery', '.photogallery',
-  '.fotogaleria', '.galeria', '.c-detail__gallery'
+  '.fotogaleria', '.galeria', '.c-detail__gallery',
+  'article .ft-mol-gallery', '#mainarticle-body.c-gallery', '#mainarticle-body .c-gallery',
+  'article.root .txt-blk article.media-gallery',
+  'article.c-detail--gallery .c-detail__gallery--media-content',
+  '.gallery-slider-container', '.gallery-summary-container'
 ].join(',');
-const AJENOS_GALERIA = 'nav,aside,footer,[role="navigation"],.related,.related-news,[class*="recommend"],#il-full';
-const PIE_GALERIA = 'figcaption,[itemprop="caption"],.gallery-caption';
-const AUTOR_GALERIA = '[itemprop="author"],[itemprop="creditText"],.c-detail__media__author,.credit,.author';
+const AJENOS_GALERIA = 'nav,aside,footer,[role="navigation"],.related,.related-news,[class*="recommend"],.c-gallery__full-wrapper,#il-full';
+const PIE_GALERIA = 'figcaption,[itemprop="caption"],.gallery-caption,.figure-caption-gallery .sz-dk-90';
+const AUTOR_GALERIA = '[itemprop="author"],[itemprop="creditText"],.c-detail__media__author,.credit,.author,.c-gallery__fig-author,.m-author__name,.figure-caption-gallery .t-bld';
 const arrayGaleria = x => x == null ? [] : Array.isArray(x) ? x : [x];
 const textoGaleria = x => typeof x === 'string' ? x.replace(/\s+/g, ' ').trim() : '';
-const tipoGaleria = (x, tipo) => arrayGaleria(x && x['@type']).some(t => String(t).split(/[\/#]/).pop() === tipo);
+const tiposGaleria = x => arrayGaleria(x && (x['@type'] || x.type));
+const tipoGaleria = (x, tipo) => tiposGaleria(x).some(t => String(t).split(/[\/#]/).pop() === tipo);
+const esArticuloGaleria = x => tiposGaleria(x).some(t => /Article$|BlogPosting$/.test(String(t)));
 const nombreGaleria = x => arrayGaleria(x).map(a => typeof a === 'string' ? a : a && a.name || '').filter(Boolean).join(', ');
+const esAlbumVoz = base => {
+  const u = new URL(base);
+  return /(^|\.)lavozdegalicia\.es$/i.test(u.hostname) && u.pathname.startsWith('/album/');
+};
 
 function urlGaleria(valor, base){
   if (typeof valor !== 'string' || !valor.trim()) return '';
@@ -1034,18 +1044,25 @@ function galeriasDeJSONLD(datos, base){
   function indexar(x){
     if (!x || typeof x !== 'object') return;
     objetos.push(x);
-    if (x['@id'] && Object.keys(x).length > 1) nodos.set(x['@id'], x);
+    if (x['@id'] && Object.keys(x).length > 1){
+      const anterior = nodos.get(x['@id']);
+      const tipado = tiposGaleria(x).length > 0, tipoAnterior = tiposGaleria(anterior).length > 0;
+      // El breadcrumb puede repetir el @id solo con un nombre. Conservamos
+      // la definición tipada y, entre definiciones equivalentes, la más completa.
+      if (!anterior || tipado && !tipoAnterior || tipado === tipoAnterior && Object.keys(x).length > Object.keys(anterior).length)
+        nodos.set(x['@id'], x);
+    }
     Object.values(x).forEach(v => { if (Array.isArray(v)) v.forEach(indexar); else if (v && typeof v === 'object') indexar(v); });
   }
   datos.forEach(indexar);
   // Un bloque ImageGallery suelto no demuestra que sea el contenido principal
   // si la página también declara una noticia con texto propio.
-  const hayArticuloConTexto = objetos.some(o => /Article$|BlogPosting/.test(arrayGaleria(o['@type']).join(' ')) && textoGaleria(o.articleBody));
+  const hayArticuloConTexto = objetos.some(o => esArticuloGaleria(o) && textoGaleria(o.articleBody));
   const resolver = x => x && x['@id'] && nodos.get(x['@id']) || x;
   const secundarias = new Set(), propietarios = new Map();
   for (const o of objetos){
     for (const parte of arrayGaleria(o.hasPart)) secundarias.add(resolver(parte));
-    if (/Article$|BlogPosting/.test(arrayGaleria(o['@type']).join(' '))){
+    if (esArticuloGaleria(o)){
       for (const parte of [...arrayGaleria(o.hasPart), ...arrayGaleria(o.mainEntityOfPage), ...arrayGaleria(o.mainEntity)])
         propietarios.set(resolver(parte), o);
     }
@@ -1056,7 +1073,7 @@ function galeriasDeJSONLD(datos, base){
       o = resolver(o);
       if (!o || typeof o !== 'object' || visitados.has(o)) continue;
       visitados.add(o);
-      const esArticulo = /Article$|BlogPosting/.test(arrayGaleria(o['@type']).join(' '));
+      const esArticulo = esArticuloGaleria(o);
       const meta = esArticulo ? o : propietarios.get(o) || propietario;
       // Algunos medios declaran la fotogalería como NewsArticle y ponen las
       // fotos en image. Solo se interpreta así en rutas de fotogalerías.
@@ -1064,11 +1081,14 @@ function galeriasDeJSONLD(datos, base){
       if (tipoGaleria(o, 'ImageGallery') || esArticulo && rutaFotos){
         const pagina = urlGaleria(o.url || o['@id'], base);
         if (pagina && new URL(pagina).origin + new URL(pagina).pathname !== new URL(base).origin + new URL(base).pathname) continue;
-        const lista = o.image || o.associatedMedia || o.itemListElement || [];
-        const imagenes = unicasGaleria(arrayGaleria(lista).map(x => {
+        // Una portada, incluso con varios tamaños, no debe ocultar la lista
+        // de fotos. No la sumamos a esa lista: podría ser una foto ajena.
+        const listas = [o.image, o.associatedMedia, o.itemListElement,
+          tipoGaleria(o, 'ImageGallery') ? arrayGaleria(o.hasPart).filter(x => tipoGaleria(resolver(x), 'ImageObject')) : null];
+        const imagenes = listas.map(lista => unicasGaleria(arrayGaleria(lista).map(x => {
           x = resolver(x);
           return imagenGaleria(resolver(x && x.item || x), base);
-        }));
+        }))).find(lista => lista.length >= 2) || [];
         if (imagenes.every(im => im.posicion)) imagenes.sort((a, b) => a.posicion - b.posicion);
         if (imagenes.length >= 2) out.push({ tipo: 'galeria', titulo: textoGaleria(o.headline || o.name),
           imagenes, principal: !secundarias.has(o) && principal && (!!meta || !hayArticuloConTexto),
@@ -1091,23 +1111,34 @@ function srcsetGaleria(valor){
 function galeriasDelDOM(root, base, exclude = ''){
   const raices = [...root.querySelectorAll(SEL_GALERIAS)];
   if (root.matches && root.matches(SEL_GALERIAS)) raices.unshift(root);
+  // Los álbumes de La Voz no tienen una clase de galería en el contenedor.
+  // Sus pies identifican la columna de fotos, solo en las rutas de álbumes.
+  if (esAlbumVoz(base)) for (const pie of root.querySelectorAll('.figure-caption-gallery')){
+    const nodo = pie.closest('.txt-blk');
+    if (nodo && (nodo === root || root.contains(nodo)) && !raices.includes(nodo)) raices.push(nodo);
+  }
   const out = [];
   for (const nodo of raices){
+    // Una clase de plantilla en body no convierte toda la página en galería.
+    if (/^(BODY|HTML)$/.test(nodo.tagName)) continue;
     if (nodo.closest(AJENOS_GALERIA) || out.some(g => g.nodo.contains(nodo))) continue;
     if (exclude && nodo.closest(exclude)) continue;
+    const albumVoz = esAlbumVoz(base) && nodo.matches('.txt-blk');
     const imagenes = unicasGaleria([...nodo.querySelectorAll('img')].map(im => {
       if (im.closest(AJENOS_GALERIA) || exclude && im.closest(exclude)) return null;
       const ancho = Number(im.getAttribute('width')), alto = Number(im.getAttribute('height'));
       if (ancho > 0 && ancho <= 3 || alto > 0 && alto <= 3) return null;
       const src = ['data-full-src', 'data-original', 'data-src'].map(a => im.getAttribute(a)).find(u => urlGaleria(u, base)) ||
         srcsetGaleria(im.getAttribute('data-srcset') || im.getAttribute('srcset')) || im.getAttribute('src');
-      const figura = im.closest('figure') || im.parentElement;
+      const figura = im.closest('figure,.c-gallery__item,.figure') || im.parentElement;
+      if (albumVoz && !figura.querySelector('.figure-caption-gallery')) return null;
       const pie = figura.querySelector(PIE_GALERIA);
       const autor = figura.querySelector(AUTOR_GALERIA);
       const limpio = pie && pie.cloneNode(true);
       if (limpio){
         if (limpio.matches(AUTOR_GALERIA)) limpio.textContent = '';
         else limpio.querySelectorAll(AUTOR_GALERIA).forEach(n => n.remove());
+        limpio.querySelectorAll('.c-gallery__fig-number,.m-social-share').forEach(n => n.remove());
       }
       return imagenGaleria({ url: src, thumbnailUrl: im.getAttribute('src'), alt: im.getAttribute('alt'),
         caption: limpio && limpio.textContent, creditText: autor && autor.textContent }, base);
@@ -1129,8 +1160,8 @@ function detectarGalerias(doc, base, { root = doc, exclude = '' } = {}){
   }
   const json = galeriasDeJSONLD(datos, base);
   const dom = galeriasDelDOM(root, base, exclude);
-  const principalDOM = root === doc ? !!doc.querySelector('body.article-gallery,body.gallery-page')
-    : !!root.matches && root.matches(SEL_GALERIAS);
+  const principalDOM = root === doc ? !!doc.querySelector('body.article-gallery,body.gallery-page,body.galeriav,body.galeria-page,body.tpl-a-fotogaleria,body.gallery') || esAlbumVoz(base)
+    : !!root.matches && !/^(BODY|HTML)$/.test(root.tagName) && root.matches(SEL_GALERIAS);
   const galerias = [...json];
   for (const g of dom){
     const claves = new Set(g.imagenes.map(im => claveImagenGaleria(im.src)));
