@@ -112,8 +112,13 @@ export function estadoPartido(status) {
 export const referenciaPartido = (competicion, id) => /^[1-9]\d{0,11}$/.test(String(id || ''))
   ? `espn:partido/${competicion}/${id}` : null;
 
-export function resultados(d, competicion) {
-  return { competicion, temporada: d.season?.year || null, partidos: (d.events || []).flatMap(e =>
+export const fechaResultadosValida = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)
+  && !isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s;
+
+export function resultados(d, competicion, fecha = null) {
+  return { competicion, temporada: d.season?.year || null,
+    fecha: fecha || (fechaResultadosValida(d.day?.date) ? d.day.date : null),
+    partidos: (d.events || []).flatMap(e =>
     (e.competitions || []).flatMap(c => {
       const local = c.competitors?.find(p => p.homeAway === 'home');
       const visitante = c.competitors?.find(p => p.homeAway === 'away');

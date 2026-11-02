@@ -122,6 +122,52 @@ test('resultados: programados y finales; marcador sigue local/visitante, no el o
   assert.equal(n.r.headers.get('cache-control'), 'public, max-age=3600');
 });
 
+test('resultados por fecha: un GET del día, caché separada y fecha inicial declarada por ESPN', async () => {
+  const id='espn:resultados/primera';
+  const anterior=muestra('espn-resultados-primera');
+  anterior.day={date:'2026-10-29'};
+  const b=banco({respuestas:['espn-resultados-primera',anterior,'espn-resultados-primera']});
+  const actual=await ficha(b,id);
+  assert.equal(actual.d.ficha.fecha,'2026-10-30');
+  assert.equal(b.peticiones[0].url.search,'');
+  const a=await b.pedir({id,fecha:'2026-10-29'},true);
+  assert.equal(a.d.ficha.fecha,'2026-10-29');
+  assert.equal(b.peticiones[1].url.searchParams.get('dates'),'20261029');
+  assert.equal((await b.pedir({id,fecha:'2026-10-29'},true)).r.headers.get('x-cache'),'HIT');
+  assert.equal((await ficha(b,id)).r.headers.get('x-cache'),'HIT');
+  await b.pedir({id,fecha:'2026-10-30'},true);
+  assert.equal(b.peticiones.length,3);
+  assert.equal(b.guardadas.size,3);
+});
+
+test('resultados: valida fechas civiles y su ámbito antes de consultar o cachear',async()=>{
+  const b=banco();
+  for(const fecha of ['', '2026-02-29', '2026-02-30', '2026-13-01', '2026-1-02', '20261030', '2026-10-30-2026-11-02']){
+    assert.equal((await b.pedir({id:'espn:resultados/nba',fecha},true)).r.status,400,fecha);
+  }
+  for(const id of ['espn:clasificacion/nba','espn:partido/nba/401909903','openlibrary:OL17317015W']){
+    assert.equal((await b.pedir({id,fecha:'2026-10-30'},true)).r.status,400,id);
+  }
+  assert.equal((await b.pedir({tipo:'resultados',texto:'nba',fecha:'2026-10-30'})).r.status,400);
+  assert.equal(b.peticiones.length,0); assert.equal(b.guardadas.size,0);
+  const valido=banco({respuestas:[{events:[]}]});
+  const vacio=await valido.pedir({id:'espn:resultados/nba',fecha:'2024-02-29'},true);
+  assert.equal(vacio.d.estado,'vacio'); assert.equal(vacio.d.ficha.fecha,'2024-02-29');
+  assert.equal(valido.peticiones.length,1);
+});
+
+test('resultados: conserva el día deportivo NBA y rechaza otro día al pedir una fecha',async()=>{
+  const nba=muestra('espn-resultados-nba');
+  nba.day={date:'2026-10-30'};
+  const b=banco({respuestas:[nba,nba,{events:[]}]});
+  assert.equal((await ficha(b,'espn:resultados/nba')).d.ficha.fecha,'2026-10-30');
+  const params={id:'espn:resultados/nba',fecha:'2026-10-29'};
+  assert.equal((await b.pedir(params,true)).d.estado,'no_disponible');
+  assert.equal(b.guardadas.size,1);
+  assert.equal((await b.pedir(params,true)).d.estado,'vacio');
+  assert.equal(b.peticiones.length,3);
+});
+
 test('ESPN en juego: caché de 60 segundos para resultados y clasificación', async () => {
   const jugando = muestra('espn-resultados-primera');
   jugando.events[0].status.type.state = 'in'; jugando.events[0].competitions[0].status.type.state = 'in';
