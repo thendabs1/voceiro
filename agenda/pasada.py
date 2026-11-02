@@ -20,6 +20,10 @@ def _cli(nombre):
         from .operacion import main
     elif nombre == 'publicacion':
         from .publicacion import main
+    elif nombre == 'atletismo-revision':
+        from .atletismo_revision import main
+    elif nombre == 'atletismo-recogida':
+        from .atletismo_recogida import main
     else:
         raise ValueError(f'Paso desconocido: {nombre}')
     return main

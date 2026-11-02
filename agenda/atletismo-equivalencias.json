@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "equivalencias": [
+    {
+      "id": "espana-5km-master-2026-negreira",
+      "referencias": {"rfea": "64837", "fga": "113590", "fca": "82885"},
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Mismo campeonato de España de 5 km máster, 15/11/2026, Negreira. Se conserva cada descripción de sede y metadatos; no se equipara con la carrera popular A Clásica celebrada ese día.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-5-km-master",
+          "https://atletismo.gal/competicions/campionato-de-espana-master-5-km-ruta-2026/",
+          "https://fcatletisme.cat/event/campionat-despanya-de-5-km-master/"
+        ]
+      }
+    },
+    {
+      "id": "xunta-galicia-marcha-invierno-2026",
+      "referencias": {"rfea": "nivel-ii:xunta-galicia-marcha-invierno-2026", "fga": "112621"},
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Mismo XIX campeonato gallego de marcha de invierno, 21/11/2026, Pontevedra. Referencia RFEA Nivel II editorial porque el PDF no publica IDs. Se conserva la discrepancia AL/Marcha y la antigüedad del documento. No se equipara con la sesión técnica PGTA del 14/11.",
+        "evidencias": [
+          "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
+          "https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/"
+        ]
+      }
+    }
+  ]
+}

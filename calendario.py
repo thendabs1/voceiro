@@ -1,6 +1,7 @@
 """Calendario común: Turso, recogidas acotadas y exportaciones recuperables."""
 
 import argparse
+from copy import deepcopy
 from datetime import date, datetime, timedelta
 import json
 from pathlib import Path
@@ -8,7 +9,7 @@ import tempfile
 from zoneinfo import ZoneInfo
 
 from agenda.cultura_galicia import FUENTES, leer_pagina, normalizar, recoger
-from agenda import almacen, deportes, vidmar_f1
+from agenda import almacen, atletismo, deportes, nucleo, vidmar_f1
 from agenda.modelo import integrar
 from agenda.registro import CULTURA
 from agenda.clasificacion import aplicar as clasificar
@@ -54,7 +55,7 @@ def operar_nucleo(args):
         if any(r and r.get('estado') == 'fallida' for r in resultados):
             raise ValueError('Falló una selección deportiva; se conserva su última lectura válida')
 
-    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.entrada_deporte
+    modificar = bool(args.preparar_nucleo or args.entrada_feb or args.entrada_tenis or args.entrada_deporte or args.entrada_atletismo
                      or args.recoger_cultura or any(getattr(args, 'entrada_' + f.replace('-', '_')) for f in CULTURA))
     observado = datetime.now(ZoneInfo('Europe/Madrid')).isoformat(timespec='microseconds')
 
@@ -76,6 +77,9 @@ def operar_nucleo(args):
             coleccion, _, ruta = entrada.partition('=')
             calendario['nucleo'] = deportes.importar(calendario['nucleo'], coleccion,
                 json.loads(Path(ruta).read_text(encoding='utf-8')), observado, temporada=args.temporada_deporte)
+        for ruta in args.entrada_atletismo or []:
+            calendario['nucleo'] = atletismo.importar(calendario['nucleo'],
+                json.loads(Path(ruta).read_text(encoding='utf-8')), observado)
         from agenda import presencia, recogida
         for fuente, modulo in CULTURA.items():
             for ruta in getattr(args, 'entrada_' + fuente.replace('-', '_')) or []:
@@ -93,6 +97,11 @@ def operar_nucleo(args):
                     except presencia.InventarioDesplomado as aviso:
                         # Los contenidos sí se actualizan; solo no se acreditan ausencias.
                         print(f'::warning::{aviso}. Repetir con --aceptar-inventario {fuente} si es real.')
+        if modificar:
+            # Todas las entradas se guardan juntas. Las selecciones anteriores
+            # proceden del estado persistido, no de un paso intermedio del lote.
+            calendario['nucleo']['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
+            nucleo.recalcular_selecciones(calendario['nucleo'])
         return calendario
 
     if args.turso:
@@ -131,6 +140,8 @@ def main(argv=None):
                     help='Exportar solo el contrato v2 con --salida, sin recoger proveedores')
     ap.add_argument('--entrada-feb', action='append', help='Extracción FEB revisada v1 guardada, sin red')
     ap.add_argument('--entrada-tenis', action='append', help='JSON Site API de tenis guardado, sin red')
+    ap.add_argument('--entrada-atletismo', action='append',
+                    help='Calendario federativo revisado v1 (RFEA/FGA/FCA), sin red; repetible')
     ap.add_argument('--entrada-deporte', action='append', metavar='COLECCION=JSON',
                     help='Importar solo agenda de una de las doce colecciones desde un archivo, sin red')
     for fuente in CULTURA:
@@ -168,7 +179,7 @@ def main(argv=None):
     if set(args.aceptar_inventario or []) - set(args.recoger_cultura or []):
         ap.error('--aceptar-inventario requiere recoger esa fuente con --recoger-cultura')
     operacion_nucleo = any((args.preparar_nucleo, args.exportar_nucleo, args.entrada_feb,
-                           args.entrada_tenis, args.entrada_deporte, args.recoger_deporte, args.recoger_cultura,
+                           args.entrada_tenis, args.entrada_deporte, args.entrada_atletismo, args.recoger_deporte, args.recoger_cultura,
                            *(getattr(args, 'entrada_' + f.replace('-', '_')) for f in CULTURA)))
     for entrada in args.entrada_deporte or []:
         coleccion, separador, ruta = entrada.partition('=')

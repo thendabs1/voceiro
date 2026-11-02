@@ -24,7 +24,7 @@ def controlar(antes, despues):
         _CONTROL.reset(token)
 
 
-def descargar(url, cabeceras=None):
+def descargar(url, cabeceras=None, *, binario=False):
     req = Request(url, headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)', **(cabeceras or {})})
     control = _CONTROL.get()
     if control:
@@ -46,7 +46,7 @@ def descargar(url, cabeceras=None):
             control[1](url, estado, seleccion, len(contenido))
     if len(contenido) > MAX_BYTES:
         raise ValueError('Respuesta demasiado grande; no se importa truncada')
-    return contenido.decode('utf-8-sig')
+    return contenido if binario else contenido.decode('utf-8-sig')
 
 
 def tenis(circuito):

@@ -57,6 +57,24 @@ def deportes_y_madrid():
     return calendario
 
 
+def con_compartidas(n, fuentes):
+    c = nucleo.Constructor(n)
+    for fuente in fuentes:
+        c.n['fuentes'][fuente] = {'nombre': fuente}
+        doc = c.documento(fuente, {'prueba': 'identidad compartida'})
+        capa, ev = c.entidad(fuente, 'calendario', 'capa', {}, 'agrupacion', 'coleccion',
+                            {'und': fuente}, doc, '/capa', AHORA)
+        grupo, ev = c.entidad(fuente, 'grupo', 'campeonato', {}, 'agrupacion', 'competicion',
+                             {'und': 'Campeonato'}, doc, '/grupo', AHORA,
+                             identidad=nucleo.identificador('prueba-grupo-compartido'))
+        c.relacion('es_parte_de', grupo, capa, ev)
+        evento, ev = c.entidad(fuente, 'evento', 'jornada', {}, 'evento', 'encuentro',
+                              {'und': 'Jornada'}, doc, '/evento', AHORA,
+                              identidad=nucleo.identificador('prueba-evento-compartido'))
+        c.relacion('pertenece_a', evento, grupo, ev)
+    return c.terminar()
+
+
 class Partir(unittest.TestCase):
     def test_ida_y_vuelta_y_un_fichero_por_fuente(self):
         n = compactar(deportes_y_madrid()['nucleo'])
@@ -67,14 +85,27 @@ class Partir(unittest.TestCase):
             self.assertTrue(all(d['fuente'] == fuente for d in datos['documentos'].values()))
             self.assertTrue(all(r['proveedor'] == fuente for r in datos['referencias'].values()))
 
-    def test_una_entidad_de_dos_fuentes_es_un_error(self):
+    def test_una_entidad_de_dos_fuentes_se_guarda_una_vez(self):
         n = deportes_y_madrid()['nucleo']
         evento = next(r['destino'] for r in n['referencias'].values() if r['proveedor'] == 'madrid')
         otra = next(f for f in n['fuentes'] if f != 'madrid')
         n['referencias']['cruce'] = {'id': 'cruce', 'proveedor': otra, 'tipo_externo': 'prueba',
                                      'contexto': {}, 'id_externo': '1', 'destino': evento}
-        with self.assertRaisesRegex(ValueError, 'dos fuentes'):
-            nucleo_r2.partir(n)
+        ficheros = nucleo_r2.partir(n)
+        k = nucleo.clave(evento)
+        self.assertEqual(sum(k in d['entidades'] for d in ficheros.values()), 1)
+        self.assertEqual(nucleo_r2.unir(n, ficheros), n)
+        invertido = {**n, 'referencias': dict(reversed(list(n['referencias'].items())))}
+        self.assertEqual(nucleo_r2.partir(invertido), ficheros)
+
+    def test_unir_rechaza_versiones_contradictorias_de_un_mismo_objeto(self):
+        n = deportes_y_madrid()['nucleo']
+        ficheros = nucleo_r2.partir(n)
+        fuentes = list(ficheros)
+        i, d = next(iter(ficheros[fuentes[0]]['entidades'].items()))
+        ficheros[fuentes[1]]['entidades'][i] = {**d, 'nombres': {'und': 'Contenido contradictorio'}}
+        with self.assertRaisesRegex(ValueError, 'contradictorio'):
+            nucleo_r2.unir(n, ficheros)
 
     def test_el_catalogo_va_en_el_esqueleto_y_v1_lo_eleva(self):
         n = compactar(deportes_y_madrid()['nucleo'])
@@ -150,6 +181,29 @@ class AlmacenR2(unittest.TestCase):
         self.assertEqual(self.esquema()[0], almacen.VERSION_ESQUEMA)
         with self.assertRaisesRegex(ValueError, 'está en R2'):
             self.nuevo(ficheros=False)
+
+    def test_fuentes_comparten_evento_y_grupo_tras_guardar_y_recargar_r2(self):
+        remoto = self.nuevo()
+        calendario = remoto.cargar()
+        calendario['nucleo'] = con_compartidas(calendario['nucleo'], ['fga'])
+        remoto.guardar(calendario, solo_nucleo=True)
+        antes = remoto.manifiesto['fga']
+        remoto = self.nuevo()
+        calendario = remoto.cargar()
+        calendario['nucleo'] = con_compartidas(calendario['nucleo'], ['fca', 'rfea'])
+        esperado = compactar(calendario['nucleo'])
+        remoto.guardar(calendario, solo_nucleo=True)
+        self.assertNotEqual(remoto.manifiesto['fga'], antes)
+        releido = self.nuevo().cargar()['nucleo']
+        self.assertEqual(releido, esperado)
+        nucleo.validar(releido)
+        for tipo in ('evento', 'grupo'):
+            destino = nucleo.objetivo('evento' if tipo == 'evento' else 'agrupacion',
+                nucleo.identificador('prueba-evento-compartido' if tipo == 'evento' else 'prueba-grupo-compartido'))
+            referencias = [r for r in releido['referencias'].values() if r['destino'] == destino]
+            self.assertEqual({r['proveedor'] for r in referencias}, {'fga', 'fca', 'rfea'})
+            piezas = self.ficheros().cargar(remoto.manifiesto)
+            self.assertEqual(sum(nucleo.clave(destino) in d['entidades'] for d in piezas.values()), 1)
 
     def test_migracion_repetible_sin_escrituras_y_copia_de_turso_rechazada(self):
         self.r2.puts.clear()

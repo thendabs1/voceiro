@@ -320,12 +320,16 @@ def validar(n):
                 raise ValueError('Programa de agenda sin evento')
             if agenda.get('rol') == 'principal':
                 grupo = entidad(agenda.get('grupo'))
-                if propia['clase'] != 'actividad_continua' or grupo['clase'] != 'gran_premio':
-                    raise ValueError('Cita principal sin gran premio')
+                clases = {'gran_premio': {'actividad_continua'},
+                          'competicion': {'encuentro', 'actividad_continua'}}
+                if (grupo['tipo'] != 'agrupacion'
+                        or propia['clase'] not in clases.get(grupo['clase'], set())):
+                    raise ValueError('Cita principal sin agrupación deportiva válida')
             elif agenda.get('rol') == 'sesion':
                 principal = entidad(agenda.get('principal'))
                 if (propia['clase'] != 'sesion' or principal['tipo'] != 'evento'
-                        or principal['clase'] != 'actividad_continua' or not agenda.get('tipo_sesion')):
+                        or principal['clase'] not in ('encuentro', 'actividad_continua')
+                        or not agenda.get('tipo_sesion')):
                     raise ValueError('Sesión sin cita principal válida')
             else:
                 raise ValueError('Papel de agenda desconocido')

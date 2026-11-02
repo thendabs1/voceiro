@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "fuente": "fga",
+  "eventos": [
+    {
+      "id": "112621",
+      "nombre": "XIX Campionato Xunta de Galicia de Marcha de Inverno",
+      "url": "https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/",
+      "inicio": "2026-11-21",
+      "fin": "2026-11-21",
+      "lugar": {
+        "nombre": "Pontevedra"
+      },
+      "metadatos": {
+        "modalidad_literal": "Marcha",
+        "etiquetas_listado": [
+          "Marcha"
+        ],
+        "ambitos_literales": [],
+        "delegaciones": [
+          "pontevedra"
+        ],
+        "circuito_declarado": {
+          "nombre": "Circuíto Galego de Marcha Atlética 2026",
+          "url": "https://atletismo.gal/competicions/circuito-galego-de-marcha-atletica-2026/"
+        }
+      }
+    }
+  ]
+}

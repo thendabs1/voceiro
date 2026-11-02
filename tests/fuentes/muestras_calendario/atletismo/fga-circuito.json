@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "fuente": "fga",
+  "agrupaciones": [
+    {
+      "id": "127481",
+      "nombre": "IV Circuíto Deputación A Coruña en Pista 2026",
+      "url": "https://atletismo.gal/competicions/iv-circuito-deputacion-a-coruna-en-pista-2026/",
+      "clase": "circuito"
+    }
+  ],
+  "eventos": [
+    {
+      "id": "127459",
+      "nombre": "IV Circuíto Deputación A Coruña en Pista 2026 – 1ª Xornada",
+      "url": "https://atletismo.gal/competicions/iv-circuito-deputacion-a-coruna-en-pista-2026-1a-xornada/",
+      "inicio": "2026-11-07",
+      "fin": "2026-11-07",
+      "lugar": {
+        "nombre": "Santiago de Compostela"
+      },
+      "metadatos": {
+        "modalidad_literal": "Pista Aire Libre",
+        "etiquetas_listado": [
+          "Pista Aire Libre"
+        ],
+        "ambitos_literales": [],
+        "delegaciones": [
+          "santiago"
+        ],
+        "circuito_declarado": {
+          "nombre": "IV Circuíto Deputación A Coruña en Pista 2026",
+          "url": "https://atletismo.gal/competicions/iv-circuito-deputacion-a-coruna-en-pista-2026/"
+        }
+      },
+      "grupo": "127481"
+    },
+    {
+      "id": "127463",
+      "nombre": "IV Circuíto Deputación A Coruña en Pista 2026 – 2ª Xornada",
+      "url": "https://atletismo.gal/competicions/iv-circuito-deputacion-a-coruna-en-pista-2025-2a-xornada/",
+      "inicio": "2026-11-14",
+      "fin": "2026-11-14",
+      "lugar": {
+        "nombre": "A Coruña"
+      },
+      "metadatos": {
+        "modalidad_literal": "Pista Aire Libre",
+        "etiquetas_listado": [
+          "Pista Aire Libre"
+        ],
+        "ambitos_literales": [],
+        "delegaciones": [
+          "a-coruna"
+        ],
+        "circuito_declarado": {
+          "nombre": "IV Circuíto Deputación A Coruña en Pista 2026",
+          "url": "https://atletismo.gal/competicions/iv-circuito-deputacion-a-coruna-en-pista-2026/"
+        }
+      },
+      "grupo": "127481"
+    },
+    {
+      "id": "127473",
+      "nombre": "IV Circuíto Deputación A Coruña en Pista 2026 – 3ª Xornada",
+      "url": "https://atletismo.gal/competicions/iv-circuito-deputacion-a-coruna-en-pista-2026-3a-xornada/",
+      "inicio": "2026-11-28",
+      "fin": "2026-11-28",
+      "lugar": {
+        "nombre": "Ferrol"
+      },
+      "metadatos": {
+        "modalidad_literal": "Pista Aire Libre",
+        "etiquetas_listado": [
+          "Pista Aire Libre"
+        ],
+        "ambitos_literales": [],
+        "delegaciones": [
+          "ferrol"
+        ],
+        "circuito_declarado": {
+          "nombre": "IV Circuíto Deputación A Coruña en Pista 2026",
+          "url": "https://atletismo.gal/competicions/iv-circuito-deputacion-a-coruna-en-pista-2026/"
+        }
+      },
+      "grupo": "127481"
+    }
+  ]
+}

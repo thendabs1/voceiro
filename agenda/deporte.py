@@ -140,12 +140,12 @@ class Agenda:
             nombres, doc, '/bloques', self.observado, bloques=bloques, identidad=identidad)
 
     def grupo(self, tipo_externo, externo, clase, nombre, *, padre=None, relacion='es_parte_de',
-              contexto=None, codigo=None, identidad=None):
+              contexto=None, codigo=None, identidad=None, url=None):
         bloques = {'pertenencia': {'tipo': relacion, 'destino': padre} if padre else None}
         if codigo:
             bloques['codigo_consulta'] = codigo
         destino, evidencia = self.entidad(tipo_externo, externo, 'agrupacion', clase, nombre,
-            contexto=contexto, bloques=bloques, identidad=identidad)
+            contexto=contexto, bloques=bloques, identidad=identidad, url=url)
         if padre:
             self.c.relacion(relacion, destino, padre, evidencia)
         self.c.tema(destino, self.tema, evidencia, self.fuente + ':agenda-v1')
@@ -153,7 +153,7 @@ class Agenda:
 
     def evento(self, tipo_externo, externo, clase, nombre, cuando, *, padre=None,
                estado='desconocido', sitio=None, url=None, bloques=None, conservar_fecha=False,
-               equipos=None):
+               equipos=None, identidad=None):
         p = programacion(cuando, estado)
         previo = self.anterior(tipo_externo, externo)
         if conservar_fecha and previo and cuando['inicio']['precision'] == 'desconocida':
@@ -179,7 +179,7 @@ class Agenda:
         contenido = {**(bloques or {}), 'programacion': p, 'lugar': lugar(sitio),
                      'url_evento': url or self.url, 'pertenencia': padre, 'equipos': lados}
         destino, evidencia = self.entidad(tipo_externo, externo, 'evento', clase, nombre,
-            bloques=contenido, url=url)
+            bloques=contenido, url=url, identidad=identidad)
         if padre:
             self.c.relacion('pertenece_a', destino, padre, evidencia)
         self.c.tema(destino, self.tema, evidencia, self.fuente + ':agenda-v1')

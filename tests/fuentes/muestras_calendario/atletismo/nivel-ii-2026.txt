@@ -1,0 +1,773 @@
+                           Calendario Pruebas Nivel II 2026
+
+                                                                                                                                                               Actualizado a:                            15/10/2026
+Fed     Fecha      Tipo                                          Nombre de la competición                                          Instalación                                              Ciudad
+
+MAD   3/1/2026      ST                                          Reunión FAM 14 Gallur                                  Pabellon de atletismo CDM Gallur                                   Madrid (i)
+
+MAD   3/1/2026      ST                                          Reunión FAM 13 Gallur                                  Pabellon de atletismo CDM Gallur                                   Madrid (i)
+
+NAV   3/1/2026      ST                                 SEIEN ATLETISMO TOPAKETA "TORNEO"                           Módulo Atletismo Espacio S.D. Ardoi Norte                           Zizur Mayor (i)
+
+GAL   3/1/2026    Cross                 CTO.XUNTA GALICIA CROSS DE CLUBES ABS.SUB23,SUB20,SUB18,SUB16                                                                                      La Rúa
+ARA   10/1/2026     ST                            Cto de Aragón de PPCC- ST Zaragoza-10-01-2026                        Palacio de Deportes de Zaragoza                                  Zaragoza (i)
+
+BAL   10/1/2026     AL                                   Control escolar y federado PI 2026                           Polideportivo Príncipes de España                             Palma de Mallorca-PRI
+
+CAN   10/1/2026     ST                                        I Control de Invierno FCA                            Complejo Deportivo Municipal Ruth Beitia                              Santander
+
+CVA   10/1/2026     AL                           I Control Federado Tipo B - Delegación de Castellón                   Pista de Atletismo Gaetà Huguet                                 Castellón-MGH
+AND   10/1/2026     ST                                  IV Control Federativo FAA Short Track                               Pista indoor Antequera                                      Antequera (i)
+
+MAD   10/1/2026     ST            Campeonato de Madrid de Combinadas y 3.000m Marcha Máster - Control Pértiga          Pabellon de atletismo CDM Gallur                                   Madrid (i)
+
+GAL   10/1/2026     ST                               Control FGA pista curta - xornada 1 (mañá)                     Pista de atletismo Cuberta de Ourense                                Ourense (i)
+
+GAL   10/1/2026     ST                     VIII COPA XUNTA DE GALICIA DE CLUBS MÁSTER EN PISTA CURTA                Pista de atletismo Cuberta de Ourense                                Ourense (i)
+
+EXT   10/1/2026     AL                                   I jornada Liga Individual de Invierno                                                                                            Cáceres
+CLM   10/1/2026   Cross        CTO DE CLM INDIVIDUAL Y MASTER (IND. Y EQUIPOS) DE CROSS Y VILLA DE LOS MOLINOS                                                                       Campo de Criptana
+
+ARA   11/1/2026     ST                               Control B FAA- ST (RFEA Nivel II)-11-01-2026                      Palacio de Deportes de Zaragoza                                  Zaragoza (i)
+
+NAV   11/1/2026     ST                                Campeonato Navarro de Clubes Mixto ST                        Palacio Mun. de Deportes Antonio Elorza                            San Sebastián (i)
+CVA   11/1/2026     ST                           I Control Federado Tipo A - Delegación de Valencia                        P.C. Velódromo Luis Puig                                      Valencia (i)
+
+MAD   11/1/2026     ST                                          Reunión FAM 15 Gallur                                  Pabellon de atletismo CDM Gallur                                   Madrid (i)
+
+EXT   11/1/2026   Cross                           Campeonato de Extremadura de Campo a Través                            Estadio de Herrera del Duque                                 Herrera del Duque
+
+CAN   11/1/2026   Cross             XLV Cross 'Villa de Colindres' / Campeonato de Cantabria de Campo a Través                                                                            Colindres
+
+GAL   11/1/2026     ST                VII Control Pista Cuberta SG Pontevedra-CA Sada - 400 Homes Nacional II                                                                             OURENSE
+
+RIO   11/1/2026   Cross              FINAL CROSS - FEDERADOS INDIVIDUAL Y JJDD INDIVIDUAL Y POR EQUIPOS                                                                         SANTO DOMINGO DE LA CALZADA
+
+GAL   11/1/2026     AL                             I Xornada Circuito Galego Lanzamentos Longos                                                                                            Ordes
+
+NAV   16/1/2026     ST                                                PLP "B" PC                                   Módulo Atletismo Espacio S.D. Ardoi Norte                           Zizur Mayor (i)
+
+CLM   17/1/2026   Marcha            XXXV Cto de Castilla La Mancha de Marcha en Ruta Y Trofeo Tierra de Gigantes     Marcha Atletica Villa de Los Molinos                            Campo de Criptana
+CVA   17/1/2026     ST                  II Control Federado Tipo B - Delegación de Valencia                                      P.C. Velódromo Luis Puig                              Valencia (i)
+
+CAN   17/1/2026     ST     II Control de Invierno FCA / Cto. Cantabria Absoluto de Combinadas de Invierno               Complejo Deportivo Municipal Ruth Beitia                        Santander
+
+MAD   17/1/2026    AL                          Jornada de Lanzamiento de Jabalina                                           Pista de atletismo C.D.M. ALUCHE                           Madrid-AL
+
+CVA   17/1/2026    AL                        I Control Federado Tipo A - Deleg. Alicante                                Estadio municipal atletismo Joaquín Villar                       Alicante
+
+CVA   17/1/2026     AL                   I Control Federado Tipo A - Delegación de Alicante                             Estadio municipal atletismo Joaquín Villar                       Alicante
+
+CVA   17/1/2026     AL                  II Control Federado Tipo A - Delegación de Castellón                                 Pista de Atletismo Gaetà Huguet                         Castellón-MGH
+CYL   17/1/2026     AL                1ª Jornada liga autonomico de lanzamientos de invierno                                Pista Atmo. Campo de la Juventud                            Palencia
+
+CYL   17/1/2026     ST          Cto de La Rioja de Pruebas Combinadas + Control 60m y 60m vallas                             Modulo Cubierto "Los Pajaritos"                             Soria (i)
+
+BAL   17/1/2026     AL                      Control escolar y federado PI Mallorca 2026                                            Pista atletisme Calviá                                 Calvià
+MAD   17/1/2026     ST                                  Reunión FAM 16 Gallur                                               Pabellon de atletismo CDM Gallur                            Madrid (i)
+
+GAL   17/1/2026     ST                     XXI COPA XUNTA DE GALICIA DE CLUBS EN PC                                       Pista de atletismo Cuberta de Ourense                        Ourense (i)
+
+GAL   17/1/2026     ST               Control FGA - PC 17/01/2026-Xornada Tarde- 4ª Xornada                                Pista de atletismo Cuberta de Ourense                        Ourense (i)
+
+GAL   17/1/2026     ST               Control FGA - PC 17/01/2026-Xornada Mañá - 3ª Xornada                                Pista de atletismo Cuberta de Ourense                        Ourense (i)
+
+ARA   18/1/2026     ST                       Control B FAA-ST (RFEA Nivel II) 18-01-2026                                    Palacio de Deportes de Zaragoza                            Zaragoza (i)
+
+AND   18/1/2026     ST                          V Control Federativo FAA Short Track                                              Pista indoor Antequera                              Antequera (i)
+
+MAD   18/1/2026   Marcha               Campeonato de Madrid de Clubes de Marcha en Ruta                             Trofeo de Marcha en Ruta Paracuellos del Jarama               Paracuellos del Jarama
+
+CAT   18/1/2026                      Campionat de Catalunya de Mitja Marató Absolut i Màster                Mitja Marató Internacional Granollers - Les Franqueses - La Garriga         Granollers
+
+ARA   24/1/2026     ST                       Control A FAA-RFEA Nivel II ST- 24-01-2026                                     Palacio de Deportes de Zaragoza                            Zaragoza (i)
+
+ARA   24/1/2026     ST       Cto de Aragón Sub23- ST Zaragoza- 24-01-2026+ Control Altura y Longitud                        Palacio de Deportes de Zaragoza                            Zaragoza (i)
+
+ARA   24/1/2026     AL      Control de Lanzamientos de invierno FAA-RFEA Nivel II- Monzón 24-01-2026                         Estadio de atletismo de Monzón                              Monzón
+CYL   24/1/2026     AL                2ª Jornada liga autonomica de lanzamientos de invierno                                  Pista de Atletismo Río Esgueva                         Valladolid-ESG
+
+MAD   24/1/2026     AL       Campeonato de Madrid de Lanzamientos Largos (Disco Absoluto y Sub 20)                          Pista de atletismo C.D.M. ALUCHE                           Madrid-AL
+
+CVA   24/1/2026     AL                  III Control Federado Tipo B - Delegación de Castellón                                Pista de Atletismo Gaetà Huguet                         Castellón-MGH
+CVA   24/1/2026     AL                  III Control Federado Tipo A - Delegación de Valencia                               Pista de Atletismo Jardín del Rio Turia                    Valencia-JAD
+
+CAT   24/1/2026     ST                                5è Control Sub20 i Absolut                                 Pista coberta de Atletisme de Catalunya - Carme Valero                Sabadell (i)
+
+CVA   24/1/2026    AL                       II Control Federado Tipo B - Deleg. Alicante                                        Pista de Atletismo de Elda                                 Elda
+
+CVA   24/1/2026     AL                  II Control Federado Tipo B - Delegación de Alicante                                     Pista de Atletismo de Elda                                 Elda
+
+NAV   24/1/2026     ST                     Jornada Combinadas JDN U16-18 y Federados                                    Módulo Atletismo Espacio S.D. Ardoi Norte                     Zizur Mayor (i)
+
+EXT   24/1/2026     AL             Campeonato de Extremadura Master de Invierno (1ª parte) NII                                                                                           Cáceres
+EXT   24/1/2026     AL                     II Jornada Liga Individual Pista de Invierno (NII)                                                                                            Cáceres
+PVA   25/1/2026     AL                                 2026/01/25 P.L.P. DURANGO                                             Polideportivo Landako                        Durango
+
+AND   25/1/2026     ST                            VI Control Federativo FAA Short Track                                      Pista indoor Antequera                     Antequera (i)
+
+CVA   30/1/2026     AL                     III Control Federado Tipo A - Delegación de Alicante                           Pista de Atletismo El Barxell                    Petrer
+
+CVA   31/1/2026   Marcha   Campeonato Autonómico de Marcha en Ruta FACV-JECV Comunidad Valenciana 2026         Gran Premio de Marcha en Ruta Ciudad de Burjassot          Burjassot
+
+ARA   31/1/2026     ST                  Cto de Aragón Clubes Absoluto - ST Zaragoza-31-01-2026                          Palacio de Deportes de Zaragoza                 Zaragoza (i)
+
+CAN   31/1/2026     ST            XXXII Campeonato de Cantabria Absoluto de Invierno - 1ª y 2ª Jornada              Complejo Deportivo Municipal Ruth Beitia             Santander
+
+CYL   31/1/2026     AL                   3ª Jornada liga autonomica de lanzamientos de invierno                           Pista Municipal El Montecillo               Aranda de Duero
+
+CLM   31/1/2026    AL         Cto de CLM de 10.000m en pista, Cto de CLM de Lanz. largos y Control de anillo         Pista de Atletismo Talavera de la Reina         Talavera de la Reina
+
+PVA   31/1/2026     AL                                     2026-01-31 BASAURI                                              Polideportivo Artunduaga                        Basauri
+
+RIO   31/1/2026     AL                             Cto de La Rioja de Marcha Invierno                                       C. T. D. Javier Adarraga                      Logroño
+RIO   31/1/2026     AL                              Cto de La Rioja de 5000m invierno                                       C. T. D. Javier Adarraga                      Logroño
+RIO   31/1/2026     AL                            Cto de La Rioja Lanzamientos Largos                                       C. T. D. Javier Adarraga                      Logroño
+RIO   31/1/2026     AL                           Cto de La Rioja Master Invierno + Control                                  C. T. D. Javier Adarraga                      Logroño
+CVA   31/1/2026     AL                    IV Control Federado Tipo A - Delegación de Castellón                          Pista de Atletismo Gaetà Huguet                Castellón-MGH
+BAL   31/1/2026     AL                              Control escolar y federado PI 2026                                       Pista atletisme Calviá                        Calvià
+MAD   31/1/2026   Marcha                       Campeonato de Madrid de Marcha en Ruta                                  Trofeo Marcha Ciudad de Mostoles                   Móstoles
+EXT   31/1/2026     AL                                 Copa de Clubes de Invierno                                                                                         Cáceres
+EXT   31/1/2026     AL                    Cto de Extremadura Lanzamientos Largos Menores NII                                                                              Cáceres
+GAL   31/1/2026     AL           X CAMPIONATO XUNTA DE GALICIA DE LANZAMENTOS LONGOS MÁSTER                                                                                 Lugo
+
+GAL   1/2/2026      AL          CAMPIONATO XUNTA DE GALICIA DE LANZAMENTOS LONGOS ABS E SUB 23                   Pista Universitaria de Santiago de Compostela     Santiago de Compostela
+
+MAD   1/2/2026      AL         Campeonato de Madrid de Lanzamientos Largos (Martillo Absoluto y Sub 20)                     Estadio de Vallehermoso                      Madrid-VLL
+
+CAT   1/2/2026    Marcha            Campionat de Catalunya de Marxa Individual + 5km marxa Màster                                                                       Canet de Mar
+
+CVA   6/2/2026      ST                     IV Control Federado Tipo B - Delegación de Valencia                              P.C. Velódromo Luis Puig                     Valencia (i)
+
+NAV   6/2/2026      ST                                          PLP "C" PC                                         Módulo Atletismo Espacio S.D. Ardoi Norte           Zizur Mayor (i)
+
+ARA   7/2/2026      ST                       Cto de Aragón PPCC Master-ST-07/08-02-2026                                 Palacio de Deportes de Zaragoza                 Zaragoza (i)
+
+ARA   7/2/2026      ST          Cto de Aragón PPCC Sub18-Sub20-Master+ Control PPCC Sub16- Absoluto                     Palacio de Deportes de Zaragoza                 Zaragoza (i)
+
+ARA   7/2/2026      ST                         Control A FAA-RFEA Nivel II ST- 07-02-2026                               Palacio de Deportes de Zaragoza                 Zaragoza (i)
+
+ARA   7/2/2026      AL          Cto de Aragón de Lanzamientos de Invierno- Sub16-Sub18-Sub20- Monzón                    Estadio de atletismo de Monzón                     Monzón
+CAN   7/2/2026      ST              XXXII Campeonato de Cantabria Absoluto de Invierno - 3ª Jornada                 Complejo Deportivo Municipal Ruth Beitia             Santander
+
+GAL   7/2/2026      AL         CAMPIONATO XUNTA DE GALICIA DE LANZAMENTOS LONGOS SUB 20 E SUB 18                        Centro Galego de Tecnificación                   Pontevedra
+RIO   7/2/2026         AL                                    Cto de La Rioja de Clubes ST                                          C. T. D. Javier Adarraga                   Logroño
+CVA   7/2/2026         AL               Campeonato Autonómico de Lanzamientos de Invierno Sub18 Sub20 2026                Estadio municipal atletismo Joaquín Villar           Alicante
+
+CVA   7/2/2026         AL                        V Control Federado Tipo B - Delegación de Castellón                          Pista de Atletismo Gaetà Huguet               Castellón-MGH
+CVA   7/2/2026         AL                         V Control Federado Tipo A - Delegación de Valencia                           Pista de atletismo de Sagunto                   Sagunto
+
+BAL   7/2/2026         AL                             Campeonato IB absoluto individual PI 2026                                     Pista atletisme Calviá                      Calvià
+BAL   7/2/2026         AL                        Campeonato IB absoluto relevos 4×60-4×400 PI 2026                                  Pista atletisme Calviá                      Calvià
+CLM   7/2/2026         ST                          XI Campeonato de CLM de Short Track por Clubes                   Centro de Especialidades Deportivas Javier Bermejo      Puertollano (i)
+
+GAL   7/2/2026         ST                          XXI CAMPIONATO XUNTA DE GALICIA MÁSTER PC                               Pista de atletismo Cuberta de Ourense             Ourense (i)
+
+CVA   7/2/2026         AL                         IV Control Federado Tipo B - Delegación de Alicante                           Estadi Olimpic Camilo Cano                    La Nucía
+CYL   7/2/2026         AL                               Jornada final liga aut. Cto. Autonomico                                  Estadio Hispánico de León                    León-HIS
+ARA   8/2/2026         AL               Cto de Aragón de Lanzamientos de Invierno- Master-Abs-Sub23-Monzón                    Estadio de atletismo de Monzón                   Monzón
+MAD   8/2/2026         AL             Campeonato de Madrid de Lanzamientos Largos (Jabalina Absoluto y Sub 20)                Pista de atletismo C.D.M. ALUCHE                Madrid-AL
+
+CVA   8/2/2026         AL              Campeonato Autonómico Lanzamientos de Invierno Absoluto y Master 2026                  Pista de Atletismo Gaetà Huguet               Castellón-MGH
+GAL   8/2/2026         AL                 CAMPIONATO XUNTA DE GALICIA DE LANZAMENTOS LONGOS SUB 16                              Pista de atletismo da Estrada                 A Estrada
+
+EXT   8/2/2026        Ruta                         Maratón y Media Maratón Ciudad de Don Benito                                                                              Don Benito
+
+CVA   13/2/2026        ST                        VI Control Federado Tipo B - Delegación de Valencia                              P.C. Velódromo Luis Puig                   Valencia (i)
+
+CLM   14/2/2026        AL                       XXVI Campeonato de CLM de Pruebas de Anillo Invernal                           Polid. Mun. Príncipe Juan Carlos              Ciudad Real
+
+EXT   14/2/2026        AL                        Campeonato de Extremadura Absoluto de Invierno NII                                                                            Cáceres
+GAL   14/2/2026   Trail Running   XI CTO. XUNTA DE GALICIA DE TRAIL RUNNING INDIVIDUAL ABSOLUTO, SUB 23 E MÁSTER                                                              Barbadás
+ARA   15/2/2026        ST                     Cto de Aragón Absoluto ST+ Control Vallas y Peso -15-2-2026                     Palacio de Deportes de Zaragoza                Zaragoza (i)
+
+PVA   15/2/2026        AL                                      2026-02-15 P.L.P. GETXO                                       Polideportivo Municipal de Fadura                  Getxo
+
+RIO   15/2/2026        AL                                Cto de La Rioja Absoluto Individual ST                                    C. T. D. Javier Adarraga                   Logroño
+AND   15/2/2026        ST                                X Control Federativo FAA Short Track                                      Pista indoor Antequera                   Antequera (i)
+
+CVA   20/2/2026        ST                      Control Federado Sub16 Combinadas ST 2026+ Control S16                             P.C. Velódromo Luis Puig                   Valencia (i)
+
+CAN   21/2/2026        AL                              XXX LIga Escolar de Menores - 1ª Jornada                          Complejo Deportivo Municipal Ruth Beitia             Santander
+
+CAT   21/2/2026        ST                   Campionat de Catalunya de Proves combinades Sub18-20 en ST             Pista coberta de Atletisme de Catalunya - Carme Valero    Sabadell (i)
+
+MAD   21/2/2026        ST                                   Campeonato de Madrid Sub 16                                       Pabellon de atletismo CDM Gallur                Madrid (i)
+
+MAD   21/2/2026        ST                                   Campeonato de Madrid Máster                                       Pabellon de atletismo CDM Gallur                Madrid (i)
+
+GAL   21/2/2026        ST                        XXXVII CAMPIONATO XUNTA DE GALICIA SUB 16 EN PC                           Pista de atletismo Cuberta de Ourense             Ourense (i)
+
+CVA   21/2/2026        AL                         VI Control Federado Tipo B - Delegación de Alicante                           Estadi Olimpic Camilo Cano                    La Nucía
+EXT   21/2/2026        AL                           III Jornada Liga Individual de Invierno (NII)                                                                                   Cáceres
+EXT   21/2/2026        AL                 (NII) Campeonato de Extremadura Master de Invierno (2ª parte)                                                                             Cáceres
+CAT   21/2/2026   Trail Running                   Campionat de Catalunya de Trail de Promoció                                                                               Les Franqueses del Vallès
+ARA   22/2/2026        ST                        Cto de Aragón Master- ST+ Control -22-02-2026                               Palacio de Deportes de Zaragoza                      Zaragoza (i)
+
+CAT   22/2/2026        ST                                      Control Sub18 i Sub20                              Pista coberta de Atletisme de Catalunya - Carme Valero          Sabadell (i)
+
+GAL   27/2/2026        ST                                       Control FGA - IFEVI                                          Módulo Cubierto pabellón 5 IFEVI                       Vigo (i)
+
+ARA   28/2/2026        ST            Cto. de Aragón Sub18-ST+ Control FAA/RFEA Nivel II- Zaragoza 28-02-2026                 Palacio de Deportes de Zaragoza                      Zaragoza (i)
+
+CVA   28/2/2026        AL                      VI Control Federado Tipo A - Delegación de Castellón                          Pista de Atletismo Gaetà Huguet                    Castellón-MGH
+CVA   28/2/2026        AL                       V Control Federado Tipo A - Delegación de Alicante                           Polideportivo Municipal de Denia                        Denia
+
+CAN   28/2/2026        AL              Campeonato de Cantabria de 10.000 + Sub20 y Sub18 de 5.000 metros         Complejo Deportivo Municipal Luis Andrés Samperio Sañudo    Los Corrales de Buelna
+
+BAL   28/2/2026        AL                           Control escolar y federado PI Mallorca 2026                            Pista d´Atletisme Torre des Enegistes                    Manacor
+
+CLM   1/3/2026        Ruta              XXXVIII Cto de CLM de MM Absoluto y Master, Individual y por Clubes         Muy Heroica Media Maraton Ciudad de Valdepeñas                Valdepeñas
+CAT   1/3/2026         ST                             41è Campionat de Catalunya Sub18 ST                         Pista coberta de Atletisme de Catalunya - Carme Valero          Sabadell (i)
+
+ARA   7/3/2026         ST            Cto. de Aragón Sub20-ST+ Control FAA/RFEA Nivel II- Zaragoza 07-3-2026                  Palacio de Deportes de Zaragoza                      Zaragoza (i)
+
+MAD   7/3/2026         ST                                     Reunión FAM 26 Gallur                                          Pabellon de atletismo CDM Gallur                      Madrid (i)
+
+GAL   7/3/2026         ST                Control FGA - Aire Libre Lanzamento Longos - 14ª Xornada 2026                         Pista de atletismo da Estrada                       A Estrada
+
+GAL   7/3/2026      Marcha                 Circuíto Galego de Marcha Atlética 2026 – Xornada A Estrada                         Pista de atletismo da Estrada                       A Estrada
+
+CAN   8/3/2026        Ruta                         III Carrera Popular de Villaverde de Pontones                                                                             Villaverde de Pontones
+
+BAL   14/3/2026        AL            Campeonato IB absoluto de fondo en pista 2026 - CT IB sub18-sub20 5.000                 Polideportivo Príncipes de España               Palma de Mallorca-PRI
+
+CNR   14/3/2026        AL                              Control Lanzamiento de Martillo FCA                                     Estadio Municipal Los Llanos                        Vecindario
+
+CAN   14/3/2026        AL                            XXX Liga Escolar de Menores - 2ª Jornada                            Complejo Deportivo Municipal Ruth Beitia                  Santander
+
+CAT   14/3/2026        AL                           Campionat de Catalunya Universitari 2026                                  Pista de Atletismo de Camp Clar                      Tarragona
+
+MAD   14/3/2026        AL                               Jornada de Martillo Sub 16 y Sub 18                                   Polideportivo Municipal El Soto                       Móstoles
+EXT   14/3/2026        AL                       Campeonato de Extremadura de Fondo en Pista NII                                                                                     Cáceres
+CAT   15/3/2026        ST                         Campionat de Catalunya de Clubs ST Sub 16 "B"                   Pista coberta de Atletisme de Catalunya - Carme Valero          Sabadell (i)
+
+CAT   15/3/2026        ST                         Campionat de Catalunya de Clubs ST Sub 16 "A"                   Pista coberta de Atletisme de Catalunya - Carme Valero          Sabadell (i)
+
+MAD   21/3/2026        AL         Campeonato de Madrid de Lanzamientos Largos Máster (Disco y Martillo Pesado)                Pista de Atletismo “C.D.Europa”                       Leganés
+PVA   21/3/2026        AL                                  2026-03-21 P.L.P. DURANGO                                              Polideportivo Landako                             Durango
+
+RIO   21/3/2026        AL                             Cto de La Rioja 10.000m pista + Control                                     C. T. D. Javier Adarraga                          Logroño
+CAN   21/3/2026        AL                            XXX Liga Escolar de Menores - 3ª Jornada                                    Estario Deportivo Riomar                       Castro Urdiales
+CAT   22/3/2026        AL                     43è Campionat de Catalunya Absolut de Marxa per Clubs                            Camp de Atletisme Antonio Amoros                Santa Coloma de Gramenet
+
+CAT   22/3/2026   Trail Running                   Campionat de Catalunya de Trail Absolut i Sub23                                                                               Els Hostalets de Balenyà
+CNR   28/3/2026        AL                        Liga Canaria de Clubes (1ª Jornada - 1ª Categoría)                                Estadio Municipal Los Llanos                       Vecindario
+
+GAL   28/3/2026        AL                    III Ourense Series Provinciais de Atletismo 2026 – Xornada 1                    Complejo Lúdico-deportivo de Monterrei                Pereiro de Aguiar
+
+MAD   28/3/2026        AL                                    Jornada de Martillo Getafe                                            Polid. Mpal Juan de la Cierva                        Getafe
+
+MAD   28/3/2026        AL                         Jornada de Lanzamiento de Disco Sub 16 y Sub 18                                 Polideportivo Municipal El Soto                      Móstoles
+CVA   28/3/2026        AL            Campeonato Autonómico de 10000m Abs-Sub23 5000m Sub18 Sub20 2026                             Pista de atletismo de Sagunto                        Sagunto
+
+CAN   28/3/2026        AL            Campeonato de Cantabria de 5.000 metros y de Menores de Fondo en Pista         Complejo Deportivo Municipal Luis Andrés Samperio Sañudo     Los Corrales de Buelna
+
+CAT   28/3/2026        AL                  Campionat Territorial Gironí de curses de fons en pista i relleus                       Estadi Municipal Albert Gurt                        Figueres
+
+GAL   29/3/2026       Ruta        CTO. XUNTA DE GALICIA DE 5 KM RUTA ABSOLUTO, SUB 18, SUB 20, SUB 23 E MÁSTER                                                                           Oroso
+
+GAL   5/4/2026         AL           CTO. XUNTA DE GALICIA - 10.000 ABS, SUB 23, MASTER - 5.000 SUB 18 E SUB 20                Pista de Atletismo Municipal de A Veiga                    Cervo
+
+GAL   8/4/2026         AL                        III Control Escola de Atletismo SGP – I Xornada Froiz                           Centro Galego de Tecnificación                       Pontevedra
+
+GAL   10/4/2026        AL                      III Ourense Series Provinciais de Atletismo – Xornada 2                       Complejo Lúdico-deportivo de Monterrei                Pereiro de Aguiar
+
+ARA   11/4/2026        AL                       Cto de Aragón 5000m Sub18-Sub20-Sub23-Absoluto                                Estadio de Atletismo Corona de Aragón                 Zaragoza-CAD
+
+ARA   11/4/2026        AL                         Control A -AL -FAA/RFEA Nivel II- Zgz-11-04-2026                           Estadio de Atletismo Corona de Aragón                  Zaragoza-CAD
+
+CAT   11/4/2026        AL                      Jornada Prèvia Campionat de Catalunya de Relleus AL                                Pista de Atletismo Can Jofresa                       Terrassa
+
+PVA   11/4/2026        AL                                  260411-PLP Programa C-Vitoria                                        Complejo Dep. Mpal. Mendizorroza                        Vitoria
+
+CVA   11/4/2026        AL                     Cto. Provincial Absoluto Clubes Aire Libre- Deleg. Alicante                        Polideportivo Municipal de Denia                        Denia
+
+CNR   11/4/2026        AL                        Liga Canaria de Clubes (2ª Jornada - 1ª Categoría)                           Centro Insular de Atletismo de Tenerife            Santa Cruz de Tenerife
+
+CAT   11/4/2026        AL                      1a Jornada Campionat Catalunya Clubs 2026 grup "A"                              Camp de Atletisme Antonio Amoros                Santa Coloma de Gramenet
+
+MAD   11/4/2026        AL         Campeonato de Madrid 10.000 Abs, Sub 23 - 5000 Sub 20 y Sub 18 -Trofeo Pegasito                Pista de Atletismo CDM Vicalvaro                     Madrid-VIC
+
+RIO   12/4/2026       Ruta                            10k CALAHORRA CIUDAD DE LA VERDURA                                      10K de Calahorra Ciudad de la Verdura                   CalahoRra
+
+CAN   12/4/2026        AL                             XXX Liga Escolar de Menores - 4ª Jornada                              Complejo Deportivo Municipal Ruth Beitia                  Santander
+
+GAL   12/4/2026        AL                                        III Trofeo Gus Dacal                                            Centro Galego de Tecnificación                       Pontevedra
+
+PVA   12/4/2026        AL                   260412-PLP Programa D-CtoAlava3000m,5kmMarcha-Vitoria                               Complejo Dep. Mpal. Mendizorroza                        Vitoria
+
+PVA   12/4/2026        AL                                      2026-04-12 PLP GETXO                                             Polideportivo Municipal de Fadura                        Getxo
+
+CAT   12/4/2026        AL                                  Control Sub 16-18 (1a Jornada)                               Pista Atletisme Municipal de Vilafranca del Penedès      Vilafranca del Penedès
+EXT   12/4/2026       Ruta                            (NII) Campeonato de Extremadura de 5K                                                                                             Mérida
+GAL   12/4/2026       Ruta                  XVIII CAMPIONATO XUNTA GALICIA DE MILLA e 1 KM. EN RUTA                                                                                   Redondela
+CAT   17/4/2026    AL                            1ª Jornada Circuit Serrahima - AAC                               Estadio Joan Serrahima                 Barcelona-SE
+
+CVA   17/4/2026    AL                        I Control Federado Tipo C AL - Del. Alicante                        Pista de Atletismo El Barxell               Petrer
+
+ARA   18/4/2026     AL                  Cto de Aragón de Clubes AL- 18-04-2026- Zaragoza                   Estadio de Atletismo Corona de Aragón        Zaragoza-CAD
+
+BAL   18/4/2026    AL                         MA-Control escolar y federado PV 2026                          Polideportivo Príncipes de España       Palma de Mallorca-PRI
+
+CAT   18/4/2026     AL                         Campionat de Catalunya Fons en Pista                     Complex Esportiu Municipal Tomàs Claramunt          Calella
+
+CAT   18/4/2026     AL                        Control Proves Combinades Sub14-16-18                           Pista Municipal Atmo. J. Mª Pallás              Vic
+
+CAT   18/4/2026    AL                                    2n Control Sub16-18                                  Pista Municipal Atmo. J. Mª Pallás              Vic
+
+GAL   18/4/2026     AL                               I Trofeo Germán González                             Complejo Lúdico-deportivo de Monterrei       Pereiro de Aguiar
+
+GAL   18/4/2026   Marcha        Circuíto Galego de Marcha Atlética 2026 – Xornada Pereiro de Aguiar       Complejo Lúdico-deportivo de Monterrei       Pereiro de Aguiar
+
+GAL   18/4/2026    AL            Campionato Xunta de Galicia de Clubs de Combinadas e Criterium               Centro Galego de Tecnificación              Pontevedra
+
+GAL   18/4/2026     AL           III Ourense Series Provinciais de Atletismo – Valdeorras - Xornada 1         Estadio Mpal. de Calabagueiros         O Barco de Valdeorras
+
+MAD   18/4/2026    AL                    Campeonato de Madrid de Clubes Absoluto (Plata)                      Pista de Atletismo “C.D.Europa”              Leganés
+EXT   18/4/2026    AL                          (NII) I Jornada Liga de Clubes Aire Libre                         Pista C.T. Ciudad Deportiva             Cáceres-CIU
+CNR   18/4/2026     AL                          XVIII Mitin de Santa Cruz de Tenerife                      Centro Insular de Atletismo de Tenerife   Santa Cruz de Tenerife
+
+PVA   18/4/2026     AL        2026/04/18 y 19 CAMPEONATO DE EUSKADI DE PRUEBAS COMBINADAS AL                                                               Durango
+
+PVA   18/4/2026    AL      2026/04/18 CAMPEONATO DE EUSKADI PENTATHLON MASTER DE LANZAMIENTOS                                                              Durango
+
+BAL   19/4/2026    AL                         MA-Control escolar y federado PV 2026                          Polideportivo Príncipes de España       Palma de Mallorca-PRI
+
+CAN   19/4/2026    AL                 Campeonato de Cantabria de Marcha y Relevos Mixtos                  Complejo Deportivo Municipal Ruth Beitia        Santander
+
+CAT   19/4/2026    AL                                      1r Control Sub14                                   Pista Municipal Atmo. J. Mª Pallás              Vic
+
+MAD   19/4/2026    AL                    Campeonato de Madrid de Clubes Absoluto (Oro)                            Estadio de Vallehermoso                 Madrid-VLL
+
+GAL   22/4/2026     AL                    III Xornada Circuíto Galego Lanzamentos Longos                      Ciudad Deportiva de Vistaalegre               ORdés
+GAL   24/4/2026    AL                III Ourense Series Provinciais de Atletismo 2026 – Xornada 3         Complejo Lúdico-deportivo de Monterrei       Pereiro de Aguiar
+
+BAL   25/4/2026    AL                         MA-Control escolar y federado PV 2026                          Polideportivo Príncipes de España       Palma de Mallorca-PRI
+
+CAN   25/4/2026    AL                             Campeonato de Cantabria Sub16                           Complejo Deportivo Municipal Ruth Beitia        Santander
+
+CAT   25/4/2026    AL                  Jornada Final Campionat de Catalunya de Relleus AL                   Pista Municipal Atmo. Castellar Vallés    Castellar del Vallès
+CAT   25/4/2026     AL                  Campionat Territorial Gironí de Proves Combinades                     Estadio Municipal J. Pla Arbones            Palafrugell
+
+GAL   25/4/2026     AL            III Ourense Series Provinciais de Atletismo – Valdeorras Xornada 3          Estadio Mpal. de Calabagueiros         O Barco de Valdeorras
+
+MAD   25/4/2026     AL                               Reunión FAM Abril Leganés                                Pista de Atletismo “C.D.Europa”              Leganés
+PVA   25/4/2026    AL                               260425-CtoAlavaSub16+PLP                                 Complejo Dep. Mpal. Mendizorroza               Vitoria
+RIO   25/4/2026   AL                    Cto de La Rioja de Clubes sub20 mixto + Pruebas Control                                C. T. D. Javier Adarraga                         Logroño
+CAN   25/4/2026   AL                      Campeonato de Cantabria Sub16 de Disco y Martillo                   Complejo Deportivo Municipal Luis Andrés Samperio Sañudo   Los Corrales de Buelna
+
+CNR   25/4/2026   AL   CAMPEONATO DE CANARIAS DE ATLETISMO EN EDAD ESCOLAR DEL GOBIERNO DE CANARIAS                         Pista de Atletismo de Corralejo                    Corralejo
+
+CAT   26/4/2026   AL            8è Gran Premi de Marxa Ciutat de Gavà + Control de salts i llançaments                       Estadi Municipal “La Bóbila”                        Gavà
+CAT   26/4/2026   AL                      Campionat de Catalunya de 10.000m marxa Màster                                     Estadi Municipal “La Bóbila”                        Gavà
+CAT   26/4/2026   AL                                      3r Control Sub16-18                                      Pista de Atletismo Municipal La Pedra Salvadora          Mollet del Vallès
+PVA   1/5/2026    AL                                  2026-05-01 P.L.P. DURANGO                                                 Polideportivo Landako                          Durango
+
+ARA   2/5/2026    AL         Control B -AL-FAA/RFEA Nivel II + Trofeo Atletismo Inclusivo - 02/05/2026- Zgz            Estadio de Atletismo Corona de Aragón                Zaragoza-CAD
+
+CAN   2/5/2026    AL                  Campeonato de Cantabria Absoluto de Clubes al Aire Libre                        Complejo Deportivo Municipal Ruth Beitia                Santander
+
+CAT   2/5/2026    AL                    2a Jornada Campionat Catalunya Clubs 2026 grup "D"                              Pista Municipal Atmo. Castellar Vallés            Castellar del Vallès
+CAT   2/5/2026    AL                                        2n Control Sub14                                                 Estadi Municipal “La Bóbila”                        Gavà
+CAT   2/5/2026    AL                    2a Jornada Campionat Catalunya Clubs 2026 grup "C"                             Pista Municipal de Atletismo Sant Celoni               Sant Celoni
+
+GAL   2/5/2026    AL                 CAMPIONATO XUNTA DE GALICIA DE CLUBS ABSOLUTO 2026                                    Centro Galego de Tecnificación                     Pontevedra
+
+MAD   2/5/2026    AL                                      Reunión FAM Aluche                                              Pista de atletismo C.D.M. ALUCHE                    Madrid-AL
+
+CVA   2/5/2026    AL               ESTADILLO Campeonato Autonómico Absoluto de Clubes AL 2026                             Pista de Atletismo "Manolo Jaén"                       Elche
+
+CAN   2/5/2026    AL          Campeonato de Cantabria Absoluto de Clubes al Aire Libre (Disco y Martillo)     Complejo Deportivo Municipal Luis Andrés Samperio Sañudo   Los Corrales de Buelna
+
+EXT   2/5/2026    AL                    (NII) Campeonato de Extremadura de relevos Aire Libre                                Pista C.T. Ciudad Deportiva                     Cáceres-CIU
+EXT   2/5/2026    AL                            (NII) I Jornada Liga Individual Aire Libre                                   Pista C.T. Ciudad Deportiva                     Cáceres-CIU
+CAT   2/5/2026    AL                                      4t Control Sub16-18                                         Estadi Municipal de Cornellà de Llobregat          Cornellà de Llobregat
+CAT   3/5/2026    AL                    2a Jornada Campionat Catalunya Clubs 2026 grup "A"                                     Estadio Joan Serrahima                        Barcelona-SE
+
+CAT   3/5/2026    AL                    2a Jornada Campionat Catalunya Clubs 2026 grup "B"                                   Pistes Municipals d'Atletisme                     Granollers
+
+MAD   3/5/2026    AL                               Jornada Jabalina Sub 16 y Sub 18                                          Polid. Mpal Juan de la Cierva                      Getafe
+
+GAL   6/5/2026    AL                              LII Trofeo Boa Vila – II Xornada Froiz                                   Centro Galego de Tecnificación                     Pontevedra
+
+GAL   7/5/2026    AL                     III Ourense Series Provinciais de Atletismo – Xornada 4                      Complejo Lúdico-deportivo de Monterrei               Pereiro de Aguiar
+
+CAT   8/5/2026    AL                              2ª Jornada Circuit Serrahima - AAC                                           Estadio Joan Serrahima                        Barcelona-SE
+
+GAL   8/5/2026    AL            III Ourense Series Provinciais de Atletismo 2026 – Valdeorras - Xornada 4                  Estadio Mpal. de Calabagueiros                O Barco de Valdeorras
+
+CAN   9/5/2026    AL                Campeonato de Cantabria Sub14, Sub12 y Sub10 + 4x100 y 4x400                      Complejo Deportivo Municipal Ruth Beitia                Santander
+
+CLM   9/5/2026    AL                            VI Trofeo Mondas - Talavera de la Reina                                 Pista de Atletismo Talavera de la Reina           Talavera de la Reina
+
+CAT   9/5/2026    AL                   Campionat de Catalunya de Proves Combinades Sub12-14                             Pista de Atletismo Vilanova i la Geltrú           Vilanova i la Geltrú
+CAT   9/5/2026         AL                                     5è Control Sub16-18                               Pista de Atletismo Vilanova i la Geltrú        Vilanova i la Geltrú
+CAT   9/5/2026         AL                        Campionat Territorial Gironí Sub16 Ind.+Clubs                    Estadio Municipal J. Pla Arbones                 Palafrugell
+
+MAD   9/5/2026         AL                             Campeonato de Madrid de Relevos                             Pista de atletismo C.D.M. ALUCHE                 Madrid-AL
+
+MAD   9/5/2026         AL                               Reunión FAM Arganda del Rey                            Pista de Atletismo de Arganda del Rey            Arganda del Rey
+
+PVA   9/5/2026         AL                    2026/05/09 CAMPEONATO DE EUSKADI SUB18/20 AL                        Complejo Dep. Mpal. Mendizorroza                    Vitoria
+
+CVA   9/5/2026         AL                         II Control Federado Tipo B - Deleg. Alicante                Estadio municipal atletismo Joaquín Villar            Alicante
+
+EXT   9/5/2026         AL                          (NII) II Jornada Liga de Clubes Aire Libre                        Pista C.T. Ciudad Deportiva                  Cáceres-CIU
+MAD   9/5/2026         AL                                 Reunión FAM Vallehermoso                                    Estadio de Vallehermoso                     Madrid-VLL
+
+MAD   9/5/2026         AL                        Campeonato de Madrid Combinadas Sub 16                               Estadio de Vallehermoso                     Madrid-VLL
+
+ARA   10/5/2026        AL         Cto de Aragón Master- AL+ Control A FAA-RFEA Nivel II-10-05-2026-Zaragoza    Estadio de Atletismo Corona de Aragón             Zaragoza-CAD
+
+CAT   10/5/2026        AL                               1r Control FCA Aire Lliure 2026                             Pistes Municipals d'Atletisme                  Granollers
+
+CAT   10/5/2026        AL                                 Control de Perxa a Manresa                                Estadio Municipal El Congost                    Manresa
+
+CAT   10/5/2026        AL                                       3r Control Sub14                                    Estadio Municipal El Congost                    Manresa
+
+CVA   10/5/2026        AL                             II Control AL Tipo C Valencia 2026                           Pista de atletismo de Sagunto                    Sagunto
+
+CAT   10/5/2026   Trail Running              3r Campionat de Catalunya de Relleus Mixtos de Trail                                                                Lloret de Mar
+
+BAL   13/5/2026        AL                        MA-Control corto escolar y federado PV 2026                            Pista atletisme Calviá                       Calvià
+MAD   15/5/2026        AL                                   Reunión FAM San Isidro                                Pista de atletismo C.D.M. ALUCHE                 Madrid-AL
+
+CVA   15/5/2026        AL                             III control federado tipo C Castelló                        Pista de Atletismo Gaetà Huguet               Castellón-MGH
+CVA   15/5/2026        AL                             III Control AL Tipo B Valencia 2026                       Pista de Atletismo Jardín del Rio Turia          Valencia-JAD
+
+CAN   16/5/2026        AL                 Campeonato de Cantabria Máster de Pruebas Combinadas                Complejo Deportivo Municipal Ruth Beitia             Santander
+
+CAN   16/5/2026        AL           Campeonato de Cantabria Sub18, Sub16 y Sub14 de Pruebas Combinadas        Complejo Deportivo Municipal Ruth Beitia             Santander
+
+CAT   16/5/2026        AL                             10è Meeting Màster Ciutat de Gavà                             Estadi Municipal “La Bóbila”                      Gavà
+CAT   16/5/2026        AL                           21è Miting Internacional de L'Hospitalet                       Complexe Esportiu L’Hp. Nord             L’Hospitalet de Llobregat
+CAT   16/5/2026        AL                   Campionat de Catalunya de Proves Combinades Sub16                       Estadio Municipal de Mataró                      Mataró
+MAD   16/5/2026        AL                              Reunión FAM Primavera Leganés                               Pista de Atletismo “C.D.Europa”                  Leganés
+RIO   16/5/2026        AL                              Cto de La Rioja y Navarra Master                                C. T. D. Javier Adarraga                     Logroño
+CVA   16/5/2026        AL                          3 Control Provincial Tipo A - Delg Alicante                    Polideportivo Municipal de Denia                   Denia
+
+CAT   16/5/2026        AL                                       4t Control Sub14                                 Camp de Atletisme Antonio Amoros          Santa Coloma de Gramenet
+
+MAD   16/5/2026        AL                     Campeonato de Madrid Marcha Pista (1ª Jornada)                      Pista de Atletismo CDM Vicalvaro                Madrid-VIC
+CAT   16/5/2026   Trail Running                         Campionat de Catalunya de Trail Vertical                                                                            Vila de Cercs
+
+CLM   17/5/2026        AL                    CTO DE CLM DE MARTILLO Y PRUEBA FEDERADA PAL - CUENCA                            Pista de Atletismo Luis Ocaña                    Cuenca
+
+CAT   17/5/2026        AL                           Jornada Prèvia - Campionat de Catalunya Sub16                             Estadio Municipal de Mataró                      Mataró
+CAT   17/5/2026        AL         1a J. CAMPIONAT TERRITORIAL GIRONÍ ABSOLUT, SUB18 I SUB 20 INDIVIDUAL I PER CLUB         Pista de Atletismo de Lloret de Mar              Lloret de Mar
+
+MAD   17/5/2026        AL                          Campeonato de Madrid Marcha Pista (2ª Jornada)                             Polid. Mpal Juan de la Cierva                    Getafe
+
+MAD   18/5/2026        AL                        ESTADILLO Campeonato de Madrid Máster de Clubes                                Estadio de Vallehermoso                      Madrid-VLL
+
+EXT   20/5/2026        AL                             Gran Premio Villafranca Ciudad del Deporte                          Polideportivo Municipal de Villafranca       Villafranca de los Barros
+
+GAL   20/5/2026        AL                              L Trofeo Sociedad Gimnástica Pontevedra                               Centro Galego de Tecnificación                  Pontevedra
+
+GAL   21/5/2026        AL                       III Ourense Series Provinciais de Atletismo - Xornada Extra             Complejo Lúdico-deportivo de Monterrei            Pereiro de Aguiar
+
+CAT   22/5/2026        AL                  IX Míting Ciutat de Mollet del Vallès - Gran Premi Aura Seguros 2026      Pista de Atletismo Municipal La Pedra Salvadora       Mollet del Vallès
+MAD   22/5/2026        AL                        Jornada de Menores 51 Arganda del Rey - Control FAM                      Pista de Atletismo de Arganda del Rey           Arganda del Rey
+
+ARA   23/5/2026        AL           Control B-AL-FAA/RFEA Nivel II+ XVIII Trofeo Atl. Adaptado-23-05-2026-Zaragoza       Estadio de Atletismo Corona de Aragón             Zaragoza-CAD
+
+CAT   23/5/2026        AL             Campionat de Catalunya d'Atletisme per a persones amb discapacitat OPEN               Pista de Atletismo de Camp Clar                   Tarragona
+
+GAL   23/5/2026        AL                           XXXVIII CAMPIONATO XUNTA DE GALICIA SUB 16                              Pista de Atletismo “Aspedreiras”                    Lugo
+
+MAD   23/5/2026        AL                                    Campeonato de Madrid Sub 16                                     Pista de Atletismo “C.D.Europa”                   Leganés
+PVA   23/5/2026        AL                              260523-CtoAlavaS16S18S20S23Abs-Vitoria                              Complejo Dep. Mpal. Mendizorroza                     Vitoria
+
+PVA   23/5/2026        AL                        2026-05-23/24 CAMPEONATO BIZKAIA SUB18-20 + PLP                                Polideportivo Artunduaga                       Basauri
+
+EXT   23/5/2026        AL                                (NII) II Jornada Liga Individual Aire Libre                           Pista C.T. Ciudad Deportiva                  Cáceres-CIU
+EXT   23/5/2026        AL                           (NII) Cto Extremadura Master Aire Libre (1ª Parte)                         Pista C.T. Ciudad Deportiva                  Cáceres-CIU
+PVA   23/5/2026        AL                                    PLP + CTO MENORES ARRASATE                                     Musakola, Polideportivo Arrasate                   Arrasate
+
+CAT   23/5/2026        AL              Campionat de Catalunya Proves Combinades Absolut-Sub23-Sub20-Sub18               Estadi Municipal de Cornellà de Llobregat       Cornellà de Llobregat
+CAT   23/5/2026        AL                                           Control Perxa FCA                                   Estadi Municipal de Cornellà de Llobregat       Cornellà de Llobregat
+CVA   23/5/2026        AL                                  IV Control AL Tipo A Valencia 2026                                      Ciutat de L´Esport                           Xátiva
+ARA   23/5/2026        AL                         Cto de Aragón PPCC AL S18/S20S/23/ABS J1 (RFEA II)                         Pista de Atletismo de Barbastro                  Barbastro
+
+CAN   24/5/2026        AL                     Campeonato de Cantabria Sub14, Sub12 y Sub10 - 2ª Jornada                 Complejo Deportivo Municipal Ruth Beitia              Santander
+
+CAT   24/5/2026        AL                     2n Control FCA Aire Lliure 2026 - Memorial Donato Pacheco                  Pista Municipal de Atletismo Sant Celoni            Sant Celoni
+
+MAD   24/5/2026        AL                                      800 ml Aluche (sin marcas)                                   Pista de atletismo C.D.M. ALUCHE                 Madrid-AL
+
+MAD   24/5/2026        AL                                 Jornada de Martillo Getafe 24 mayo                                  Polid. Mpal Juan de la Cierva                    Getafe
+
+MAD   24/5/2026        AL                              Jornada de Menores 52 Pinto - Control FAM                         Pista de Atletismo Parque Juan Carlos I                Pinto
+CVA   24/5/2026   AL                            4-5 Control Tipo B-C - Deleg. Alicante                               Estadio municipal atletismo Joaquín Villar                    Alicante
+
+CAT   24/5/2026   AL                           Campionat de Catalunya de Clubs Màster                                   Camp de Atletisme Antonio Amoros                  Santa Coloma de Gramenet
+
+CAT   24/5/2026   AL                        Jornada Final - Campionat de Catalunya Sub16                                  Pista de Atletismo de El Vendrell                       El Vendrell
+
+PVA   30/5/2026   AL                      2026/05/30 CAMPEONATO DE EUSKADI MASTER AL                                           Polideportivo Landako                               Durango
+
+RIO   30/5/2026   AL                             Cto de La Rioja de Clubes Absoluto AL                                        C. T. D. Javier Adarraga                             Logroño
+MAD 30/5/2026     AL                           Campeonato de Madrid de Clubes Master                                          Estadio de Vallehermoso                            Madrid-VLL
+
+ARA   31/5/2026   AL                       Control FAA Disco y Martillo- 31-05-2026- Teruel                     Pista Atletismo "José Navarro Bau" - C.D. “Las Viñas”               Teruel
+
+ARA   31/5/2026   AL                      Control A FAA-RFEA Nivel II-31-05-2026- Zaragoza                            Estadio de Atletismo Corona de Aragón                    Zaragoza-CAD
+
+CAT   31/5/2026   AL               3r Control FCA Aire Lliure 2026 - 2n Memorial David Pérez Bruque                         Estadio Municipal El Congost                           Manresa
+
+CAT   31/5/2026   AL                                       6è Control Sub18                                       Pista de Atletismo Municipal La Pedra Salvadora              Mollet del Vallès
+CAT   31/5/2026   AL          2a J. Campionat Territorial Gironí Absolut-Sub18-Sub20 individual i per clubs                 Pista de atletismo del GEIEG                            Girona
+
+GAL   31/5/2026   AL                               IX COPA GALICIA CLUBS MASTER                                      Complejo Lúdico-deportivo de Monterrei                   Pereiro de Aguiar
+
+PVA   31/5/2026   AL   XXVIII. MEETING PARALIMPICO ASOCIACION DE COMERCIANTES "GRAN PREMIO JAVI CONDE"                       Polideportivo Artunduaga                               Basauri
+
+CVA   31/5/2026   AL                               V Control Al Tipo C Valencia 2026                                       Pista de atletismo de Sagunto                           Sagunto
+
+MAD   31/5/2026   AL                   Reunión FAM Collado Villalba - Cto Madrid Relevos Mixtos               Ciudad Deportiva de Collado Villalba - Pista de Atletismo        Collado Villalba
+
+MAD   31/5/2026   AL                            Campeonato de Madrid de Obstáculos                                       Pista de Atletismo CDM Vicalvaro                        Madrid-VIC
+
+GAL   3/6/2026    AL                     XXXI Trofeo Cidade de Pontevedra - IV Xornada Froiz                              Centro Galego de Tecnificación                         Pontevedra
+
+MAD   3/6/2026    AL                                  Reunión Fiestas de Coslada                                         Pista de Atletismo de Valleaguado                         Coslada
+
+GAL   5/6/2026    AL                        Copa Deputación Ourense - Final Sub10 - Sub12                            Complejo Lúdico-deportivo de Monterrei                   Pereiro de Aguiar
+
+PVA   5/6/2026    AL                                  260605-PLPViernes-Vitoria                                         Complejo Dep. Mpal. Mendizorroza                            Vitoria
+
+CAN   6/6/2026    AL                               Campeonato de Cantabria Sub18                                     Complejo Deportivo Municipal Ruth Beitia                     Santander
+
+CAT   6/6/2026    AL                              3ª Jornada Circuit Serrahima - AAC                                          Estadio Joan Serrahima                            Barcelona-SE
+
+CAT   6/6/2026    AL                                        7è Control Sub18                                           Pista de Atletismo Vilanova i la Geltrú                Vilanova i la Geltrú
+MAD   6/6/2026    AL                 Campeonato de Madrid Máster (Jabalina y Martillo Pesado)                            Pista de atletismo C.D.M. ALUCHE                         Madrid-AL
+
+CVA   6/6/2026    AL                               VI Control AL Tipo B Valencia 2026                                  Pista de Atletismo Jardín del Rio Turia                  Valencia-JAD
+
+EXT   6/6/2026    AL                           (NII) III Jornada Liga Individual Aire Libre                                 Pista C.T. Ciudad Deportiva                          Cáceres-CIU
+EXT   6/6/2026    AL                       (NII) Cto Extremadura Master Aire Libre (2ª Parte)                               Pista C.T. Ciudad Deportiva                          Cáceres-CIU
+MAD   6/6/2026    AL                       Campeonato de Madrid Sub 18 y Sub 23 (Martillo)                                    Estadio de Vallehermoso                            Madrid-VLL
+
+MAD   6/6/2026    AL                                  Reunión FAM Vallehermoso                                                Estadio de Vallehermoso                            Madrid-VLL
+MAD   6/6/2026    AL                          Campeonato de Madrid Máster                                       Estadio de Vallehermoso                 Madrid-VLL
+
+ARA   6/6/2026    AL                 X Meeting Ciudad de Fraga- 06-06-2026- Fraga                       Instalaciones Polideportivas La Estacada           Fraga
+
+CAT   6/6/2026    AL                                   Control Intern                                       Pista de Atletismo de El Vendrell            El Vendrell
+
+ARA   7/6/2026    AL               Control A/B FAA RFEA Nivel II-07-06-2026- Zaragoza                    Estadio de Atletismo Corona de Aragón         Zaragoza-CAD
+
+ARA   7/6/2026    AL       FAA Campeonato de Aragón Equipos S18/S20-07-06-2026-Zaragoza                  Estadio de Atletismo Corona de Aragón         Zaragoza-CAD
+
+CAT   7/6/2026    AL                 Jornada Prèvia - Campionat de Catalunya Sub14                      Pista Municipal de Atletismo Sant Celoni         Sant Celoni
+
+GAL   7/6/2026    AL                   XXXV CAMPIONATO XUNTA DE GALICIA SUB 14                              Estadio Mpal. de Calabagueiros          O Barco de Valdeorras
+
+MAD   10/6/2026   AL                        Jornada de Lanzamientos Coslada                                Pista de Atletismo de Valleaguado              Coslada
+
+MAD   10/6/2026   AL                             Jornada salto con pértiga                                      Estadio de Vallehermoso                 Madrid-VLL
+
+CAT   11/6/2026   AL                              Control de Martell i Disc                                 Pista Mpal. de Atmo. Les Basses                Lleida
+
+GAL   12/6/2026   AL      I Circuíto de Atletismo en Pista Deputación de Pontevedra - Xornada 2              Pista de Atletismo de Balaidos                 Vigo
+
+ARA   13/6/2026   AL                        Control CAM- 13-06-2026- Monzón                                 Estadio de atletismo de Monzón                Monzón
+CAN   13/6/2026   AL           Campeonato de Cantabria Sub14, Sub12 y Sub10 - 3ª Jornada                Complejo Deportivo Municipal Ruth Beitia         Santander
+
+CYL   13/6/2026   AL                    Campeonato de España de menores FEDC                                       Pista Antonio Prieto                   Segovia
+
+CAT   13/6/2026   AL                 11è Critèrium de Llançaments <<Ciutat de Gavà>>                          Estadi Municipal “La Bóbila”                 Gavà
+CAT   13/6/2026   AL                             Control de Perxa a Mataró                                    Estadio Municipal de Mataró                  Mataró
+GAL   13/6/2026   AL                Copa Deputación Ourense – Final Sub-14 – Sub-16                         Estadio Mpal. de Calabagueiros          O Barco de Valdeorras
+
+MAD   13/6/2026   AL                          Reunión FAM San Juan Leganés                                  Pista de Atletismo “C.D.Europa”               Leganés
+PVA   13/6/2026   AL                   2026-06-13/14 CAMPEONATO BIZKAIA SUB16                                    Polideportivo Landako                    Durango
+
+RIO   13/6/2026   AL                    Cto de La Rioja de Pruebas Combinadas AL                                 C. T. D. Javier Adarraga                 Logroño
+CVA   13/6/2026   AL                         6 Control Tipo A - Deleg. Alicante                              Estadio Atletismo Daniel Plaza              Torrevieja
+
+CVA   13/6/2026   AL                    Campeonato Autonómico Master AL 2026                              Pista de Atletismo Jardín del Rio Turia       Valencia-JAD
+
+PVA   13/6/2026   AL                              PLP ARRASATE 13 JUNIO                                     Musakola, Polideportivo Arrasate              Arrasate
+
+CAN   14/6/2026   AL                        Campeonato de Cantabria Máster                              Complejo Deportivo Municipal Ruth Beitia         Santander
+
+CLM   14/6/2026   AL   XX REUNION DE ATLETISMO CLUB QUIRON-MEMORIAL JULIAN MARCO MARIGIL                 Estadio de Atletismo Fuente de La Niña         Guadalajara
+
+CAT   14/6/2026   AL    3a J. Campionat Territorial Gironí Absolut-Sub18-Sub20 individual i per clubs       Estadio Municipal J. Pla Arbones             Palafrugell
+
+CAT   14/6/2026   AL                  Jornada Final - Campionat de Catalunya Sub14                          Pista Mpal. de Atmo. Les Basses                Lleida
+
+CAT   14/6/2026   AL                           4t Control FCA Aire Lliure 2026                              Pista de Atletismo de Camp Clar              Tarragona
+
+GAL   14/6/2026   AL                  XXXIX CAMPIONATO XUNTA DE GALICIA MASTER                               Pista de Atletismo de Balaidos                 Vigo
+GAL   14/6/2026   Trail Running         XI CTO DE GALICIA DE TRAIL RUNNING POR CLUBS ABS E II PROMOCION                                                               Esgos
+
+GAL   16/6/2026        AL                        I circuíto de atletismo Concello de Vigo - 1ª Xornada                   Pista de Atletismo de Balaidos               Vigo
+
+MAD   17/6/2026        AL                                Memorial Adrian Blazquez Arganda                            Pista de Atletismo de Arganda del Rey      Arganda del Rey
+
+GAL   17/6/2026        AL                         IV Xornada Circuíto Galego Lanzamentos Longos                        Ciudad Deportiva de Vistaalegre               Ordés
+ARA   20/6/2026        AL              Meeting Huesca 2026+Control A/B FAA-RFEA Nivel II- 20-06-2026-Huesca           Pista Atletismo José Maria Escriche            Huesca
+
+ARA   20/6/2026        AL         Cto Aragón AL Sub18 + Cto de Aragón Sub23 (Pértiga y Marcha)-20-06-2026- Huesca     Pista Atletismo José Maria Escriche            Huesca
+
+CAT   20/6/2026        AL                            Campionat de Catalunya de Clubs Sub16 A                         Pista Municipal Atmo. Castellar Vallés    Castellar del Vallès
+MAD 20/6/2026          AL                                    Jornada de Martillo Getafe                                  Polid. Mpal Juan de la Cierva               Getafe
+
+PVA   20/6/2026        AL                              260620-CtoAlavaS18S20S23Abs-Vitoria                            Complejo Dep. Mpal. Mendizorroza               Vitoria
+
+PVA   20/6/2026        AL           2026-06-20/21 CAMPEONATO BIZKAIA INDIVIDUAL, POR CLUBES Y DE RELEVOS                    Polideportivo Landako                   Durango
+
+RIO   20/6/2026        AL                               Cto de La Rioja Absoluto - 1a Jornada                               C. T. D. Javier Adarraga                Logroño
+BAL   20/6/2026        AL                            Campeonato IB absoluto individual PV 2026                               Pista atletisme Calviá                  Calvià
+BAL   20/6/2026        AL                             Campeonato IB absoluto relevos PV 2026                                 Pista atletisme Calviá                  Calvià
+CAT   21/6/2026        AL                                  5è Control FCA Aire Lliure 2026                                Estadi Municipal “La Bóbila”                Gavà
+GAL   21/6/2026        AL                      XIII CTO. XUNTA DE GALICIA DE CLUBS SUB 12 suspendido                    Estadio Mpal. de Calabagueiros        O Barco de Valdeorras
+
+GAL   21/6/2026        AL                           XIII CTO. XUNTA DE GALICIA DE CLUBS SUB 10                          Estadio Mpal. de Calabagueiros        O Barco de Valdeorras
+
+CVA   23/6/2026        AL                        III Gran Premio Ciudad de Paterna Short Track 2026                 Pista Municipal de Atletismo de Paterna         Paterna
+
+GAL   24/6/2026        AL                 XLIII Copa Deputación Ourense Atletismo – Final Absoluta – Máster         Complejo Lúdico-deportivo de Monterrei      Pereiro de Aguiar
+
+GAL   26/6/2026        AL                        I circuíto de atletismo Concello de Vigo - 2ª xornada                   Pista de Atletismo de Balaidos               Vigo
+
+PVA   26/6/2026        AL                                      260626y27-PLP VITORIA                                  Complejo Dep. Mpal. Mendizorroza               Vitoria
+
+ARA   27/6/2026        AL           LXXVI Trofeo Ernesto Bribián+Control FAA/RFEA Nivel II- - 27-06-2026- Monzón        Estadio de atletismo de Monzón              Monzón
+ARA   27/6/2026        AL                          Cto. de Aragón Sub23 AL- 27-06-2026- Monzón                          Estadio de atletismo de Monzón              Monzón
+CAT   27/6/2026        AL                                4ª Jornada Circuit Serrahima - AAC                                 Estadio Joan Serrahima                Barcelona-SE
+
+PVA   27/6/2026        AL                                    2026-06-27 PLP DURANGO                                         Polideportivo Landako                   Durango
+
+CAT   27/6/2026        AL                        Campionat per Delegacions Territorials (promoció)                         Estadio Ramón Bellmunt                    Arbeca
+
+CAT   28/6/2026        AL                                  Campionat de Catalunya Sub20                                Pista Municipal Atmo. J. Mª Pallás              Vic
+
+GAL   28/6/2026        AL                         XIII Campeonato Xunta de Galicia de Clubs Sub 14                       Pista de Atletismo de Balaidos               Vigo
+
+GAL   29/6/2026        AL                                   XI Festa do Atletismo Galego                                Centro Galego de Tecnificación             Pontevedra
+
+EXT   1/7/2026         AL                           (NII) Control de Marcas Lanzamientos Montijo                         Pistas de Atletismo de Montijo             MoNtijo
+MAD   1/7/2026         AL                                    III Memorial Raul Cera Cubo                             Pista de atletismo Valle de las Cañas      Pozuelo de Alarcón
+MAD   3/7/2026         AL                               Reunión FAM Vallehermoso 3 de julio                                Estadio de Vallehermoso                  Madrid-VLL
+
+ARA   4/7/2026         AL            Cto de Aragón Sub20 AL+ Control FAA- RFEA Nivel II- 04-07-2026- Zaragoza       Estadio de Atletismo Corona de Aragón         Zaragoza-CAD
+
+CAT   4/7/2026         AL                        Campionat de Catalunya Absolut + 5.000mm Sub23                          Pista de atletismo del GEIEG                 Girona
+
+GAL   4/7/2026         AL                   CAMPIONATO XUNTA DE GALICIA DE CLUBS SUB 16 - Aprazado                     Pista de Atletismo “Aspedreiras”                Lugo
+
+PVA   4/7/2026         AL             2026-07-04 Encuentro Pentatlón Lanzamientos "Txabalotes - Txabalotas"               Polideportivo Artunduaga                    Basauri
+
+RIO   4/7/2026         AL                               Cto de La Rioja Absoluto - 2a Jornada                              C. T. D. Javier Adarraga                  Logroño
+MAD   4/7/2026         AL                               Reunión FAM Vallehermoso 4 de julio                                Estadio de Vallehermoso                  Madrid-VLL
+
+ARA   5/7/2026         AL              Cto de Aragón de Lanzamientos Sub20 y Absoluto- 05-07-2026- Monzón           Estadio de Atletismo Corona de Aragón         Zaragoza-CAD
+
+CAT   5/7/2026         AL                            Campionat Catalunya Màster individual AL                            Estadi Muncipal Josep Molins                Sabadell
+
+PVA   5/7/2026         AL                                     2026-07-05 PLP BASAURI                                      Polideportivo Artunduaga                    Basauri
+
+MAD   8/7/2026         AL                                       Reunión FAM Coslada                                   Pista de Atletismo de Valleaguado               Coslada
+
+ARA   11/7/2026        AL           Cto de Aragón Absoluto AL+ Control FAA- RFEA Nivel II- 11-07-2026- Zaragoza     Estadio de Atletismo Corona de Aragón         Zaragoza-CAD
+
+CAT   11/7/2026        AL                                  6è Control FCA Aire Lliure 2026                               Estadio Municipal de Mataró                  Mataró
+MAD   11/7/2026        AL                                        Reunión FAM Aluche                                   Pista de atletismo C.D.M. ALUCHE              Madrid-AL
+
+RIO   11/7/2026        AL                                         Control Federacion                                       C. T. D. Javier Adarraga                  Logroño
+CYL   11/7/2026        AL                             II Trofeo Coloman Trabado de Ponferrada                        Pista de atletismo Colomán Trabado             Ponferrada
+
+RIO   11/7/2026   Trail Running                             KM VERTICAL VALDEZCARAY                                                                               VALDEZCARAY
+
+CAT   12/7/2026        AL                              Campionat Catalunya Clubs Sub20 AL                              Pista Mpal. de Atmo. Les Basses                 Lleida
+
+GAL   17/7/2026        AL                            L Trofeo Virxe Peregrina – VI Xornada Froiz                       Centro Galego de Tecnificación               Pontevedra
+
+CVA   18/7/2026        AL                Campeonato Autonómico Pentatlón Lanzamientos Master AL 2026                   Pista de Atletismo "Manolo Jaén"                Elche
+
+CAN   25/7/2026   Trail Running      III Medio Kilómetro Vertical 'El Carmen' / Campeonato de Cantabria Vertical                                                      Sámano
+GAL   1/8/2026        Ruta                  CTO XUNTA DE GALICIA DE 10KM RUTA - INDIVIDUAL E CLUBS                                                              Vilagarcía de Arousa
+CAN   2/8/2026        Ruta                                  XXXV Milla Urbana de Polanco                                 XXX Milla Urbana de Polanco                  Polanco
+
+CAN   23/8/2026   Trail Running                      XIII Medio Kilómetro Vertical 'San Emeterio'                                                                     Samano
+
+GAL   29/8/2026   Trail Running        XVIII Campionato Xunta de Galicia Trail Running – Carreiras de Montaña                                                    Folgoso do Caurel
+
+GAL   6/9/2026    Trail Running             II Campionato Xunta de Galicia Trail Running – Subida Vertical                                                    Vilamartín de Valdeorras
+PVA   12/9/2026        AL                    2026-09-12 DURANGO PENTATLÓN LANZAMIENTOS MASTER                               Polideportivo Landako                    Durango
+
+MAD   19/9/2026        AL                              Campeonato Madrid de Clubes Sub 16                                  Estadio de Vallehermoso                  Madrid-VLL
+
+CAT   26/9/2026        AL                      Campionat de Catalunya Màster de Proves Combinades                      Estadio Municipal J. Pla Arbones             Palafrugell
+
+CAT   26/9/2026        AL                   Campionat de Catalunya Màster de Pentatló de llançaments                   Estadio Municipal J. Pla Arbones             Palafrugell
+
+CAT   26/9/2026        AL                                     Control 10.000m en pista                                 Estadio Municipal J. Pla Arbones             Palafrugell
+
+MAD 26/9/2026          AL                          Campeonato de Madrid de Combinadas Máster                               Estadio de Vallehermoso                  Madrid-VLL
+
+MAD 26/9/2026          AL                    Campeonato Madrid de Pentatlón de Lanzamientos Máster                         Estadio de Vallehermoso                  Madrid-VLL
+
+CAT   27/9/2026        AL                        Campionat Gironí Absolut i Màster de milla en pista                   Estadio Municipal J. Pla Arbones             Palafrugell
+
+CAN   27/9/2026       Ruta                       XXXIX Subida Pedestre al Desfiladero de La Hermida                                                                    Potes
+
+CAN   27/9/2026   Trail Running                         III Medio Kilómetro Vertical 'El Rosario'                                                                     Samano
+
+CNR   3/10/2026        AL                        XIX Reunión Nacional Master - Ciudad de La Laguna                      Estadio Municipal Fco. Peraza               La Laguna
+
+CAN   3/10/2026        AL         Campeonato de Cantabria Sub12 y Sub10 de Pruebas Combinadas + Martillo Pesado    Complejo Deportivo Municipal Ruth Beitia         Santander
+GAL   3/10/2026     AL                   CAMPIONATO XUNTA DE GALICIA DE CLUBS SUB 16                                        Pista de Atletismo A Malata                            Ferrol
+
+GAL 10/10/2026      AL                   CAMPIONATO XUNTA DE GALICIA DE CLUBS SUB 20                                      Centro Galego de Tecnificación                        Pontevedra
+
+MAD 10/10/2026      AL                       Campeonato de Madrid de Clubes Sub 20                                           Estadio de Vallehermoso                            Madrid-VLL
+
+CAN 12/10/2026      AL               XLIV Trofeo Olimpia & XVII Memorial Antonio López Cortés                        Complejo Deportivo Municipal Ruth Beitia                    Santander
+
+CVA   17/10/2026    AL             SUSPENDIDO-Campeonato Autonómico Clubes Sub20 AL 2026                                 Pista de Atletismo Gaetà Huguet                    Castellón de la Plana
+CAN 17/10/2026      AL     Final de la XXX Liga Escolar de Menores + Cto. Cantabria de 4x300 y 8x50 metros   Complejo Deportivo Municipal Luis Andrés Samperio Sañudo      Los Corrales de Buelna
+
+GAL   17/10/2026   Cross   VIII CAMPIONATO XUNTA DE GALICIA DE CAMPO A TRAVÉS DE REMUDAS MIXTO                                                                            Santiago de Compostela
+
+GAL 24/10/2026      AL                      XIII CTO. XUNTA DE GALICIA DE CLUBS SUB 12                                    Estadio Mpal. de Calabagueiros                   O Barco de Valdeorras
+
+GAL 24/10/2026      AL                      XIII CTO. XUNTA DE GALICIA DE CLUBS SUB 10                                    Estadio Mpal. de Calabagueiros                   O Barco de Valdeorras
+
+PVA 24/10/2026      AL                              2026/10/24 P.L.P. DURANGO                                                 Polideportivo Landako                               Durango
+
+RIO   25/10/2026   Cross            Cto de La Rioja de Clubes de Cross - 1ª jornada de Cross JJDD                                                                       Santo Domingo de La Calzada
+
+MAD 31/10/2026      ST                                  Reunión FAM 1 Gallur                                             Pabellon de atletismo CDM Gallur                        Madrid (i)
+
+CAT   1/11/2026    Cross                     Campionat de Catalunya de Cros per Clubs                                                                                               Vic
+
+ARA   7/11/2026    Ruta                             MEDIA MARATÓN DE TERUEL                                              Media Maraton Ciudad de Teruel                            Teruel
+
+MAD   7/11/2026     ST                                  Reunión FAM 2 Gallur                                             Pabellon de atletismo CDM Gallur                        Madrid (i)
+
+MAD   8/11/2026     ST                                  Reunión FAM 3 Gallur                                             Pabellon de atletismo CDM Gallur                        Madrid (i)
+
+RIO   8/11/2026    Cross                   2º Cross Clasificatorio - 2ª jornada Cross JJDD                                                                                        Albelda
+
+CAN   15/11/2026   Ruta                        XLIV Subida Pedestre a Peña Cabarga                                                                                                 Heras
+
+GAL   21/11/2026    AL             XIX CAMPIONATO XUNTA DE GALICIA DE MARCHA DE INVERNO                                   Centro Galego de Tecnificación                        Pontevedra
+
+MAD 22/11/2026      ST                                  Reunión FAM 4 Gallur                                             Pabellon de atletismo CDM Gallur                        Madrid (i)
+
+      12/12/2026    AL         VI Criterium de Invierno de Saltos, Lanzamientos y Pruebas Combinadas                  Centro Insular de Atletismo de Tenerife              Santa Cruz de Tenerife
+
+GAL   12/12/2026    ST                 CAMPIONATO XUNTA DE GALICIA DE CLUBS SUB 16 PC                                  Pista de atletismo Cuberta de Ourense                     Ourense (i)
+
+GAL   12/12/2026    AL                    V Xornada Circuíto Galego Lanzamentos Longos                                   Ciudad Deportiva de Vistaalegre                           Ordes
+
+RIO   13/12/2026   Cross                    3ºCross Clasificatorio -3ª jornada Cross JJDD                                                                                          Najera
+
+CAN 31/12/2026     Ruta                     XXII Carrera San Silvestre de Castro Urdiales                                                                                     Castro-Urdiales
+

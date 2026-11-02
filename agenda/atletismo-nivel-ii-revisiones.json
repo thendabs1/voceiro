@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "revisiones": [
+    {
+      "id": "nivel-ii:xunta-galicia-marcha-invierno-2026",
+      "huella": "ccbcf186d8f3f64d3bf3b6479b1b46360ccaf65e488d760ca92b1d09e5581192",
+      "decision": "equivalencia",
+      "inicio": "2026-11-21",
+      "fin": "2026-11-21",
+      "estado": "desconocido",
+      "fecha_revision": "2026-11-02",
+      "criterio": "Mismo XIX campeonato gallego de marcha de invierno, Pontevedra, 21/11/2026. El identificador nivel-ii es editorial, no un ID publicado por RFEA. Se conserva AL del PDF sin sustituir Marcha de FGA. La ficha territorial acredita un día de celebración; el documento Nivel II se actualizó el 15/10/2026 y no acredita el estado actual.",
+      "evidencias": [
+        "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
+        "https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/"
+      ]
+    }
+  ]
+}

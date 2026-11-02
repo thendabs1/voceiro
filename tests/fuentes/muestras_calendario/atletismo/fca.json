@@ -1,0 +1,1509 @@
+[
+  {
+    "total": 53,
+    "total_pages": 2,
+    "rest_url": "https://fcatletisme.cat/wp-json/tribe/events/v1/events/?page=1&per_page=50&start_date=2026-11-01 00:00:00&end_date=2026-12-31 23:59:59&status=publish",
+    "next_rest_url": "https://fcatletisme.cat/wp-json/tribe/events/v1/events/?per_page=50&start_date=2026-11-01+00%3A00%3A00&end_date=2026-12-31+23%3A59%3A59&status=publish&page=2",
+    "events": [
+      {
+        "id": 89082,
+        "title": "Campionat de Catalunya de Cros per Clubs (totes les categories) (43è Cros Ciutat de Vic)",
+        "url": "https://fcatletisme.cat/event/campionat-de-catalunya-de-cros-per-clubs-43e-cros-ciutat-de-vic/",
+        "start_date": "2026-11-01 00:00:00",
+        "end_date": "2026-11-01 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-11-02 12:37:15",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 622,
+            "organizer": "CA Vic",
+            "website": "http://www.cavic.cat"
+          },
+          {
+            "id": 221,
+            "organizer": "Federació Catalana d&#8217;Atletisme",
+            "website": "http://www.fcatletisme.cat"
+          }
+        ],
+        "venue": {
+          "id": 2688,
+          "venue": "Vic"
+        }
+      },
+      {
+        "id": 89084,
+        "title": "26è Cros Ciutat de Cerdanyola",
+        "url": "https://fcatletisme.cat/event/26e-cros-ciutat-de-cerdanyola/",
+        "start_date": "2026-11-07 00:00:00",
+        "end_date": "2026-11-07 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://www.atcerdanyola.com/curses/crosCerdanyola/",
+        "modified_utc": "2026-10-22 10:50:22",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 624,
+            "organizer": "CE Cerdanyola Atletisme i Triatló",
+            "website": "http://www.atcerdanyola.com/"
+          }
+        ],
+        "venue": {
+          "id": 1770,
+          "venue": "Cerdanyola del Vallès"
+        }
+      },
+      {
+        "id": 89595,
+        "title": "Control intern",
+        "url": "https://fcatletisme.cat/event/control-intern-74/",
+        "start_date": "2026-11-07 00:00:00",
+        "end_date": "2026-11-07 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-26 18:53:44",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 616,
+            "organizer": "L&#8217;Hospitalet Atletisme",
+            "website": "http://www.hospitaletatletisme.cat"
+          }
+        ],
+        "venue": {
+          "id": 466,
+          "venue": "L&#8217;Hospitalet de Llobregat (Complex Esportiu L&#8217;Hospitalet Nord)"
+        }
+      },
+      {
+        "id": 83346,
+        "title": "Jocs Olímpics de la Joventut",
+        "url": "https://fcatletisme.cat/event/jocs-olimpics-de-la-joventut/",
+        "start_date": "2026-11-08 00:00:00",
+        "end_date": "2026-11-10 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/juegos-olimpicos-de-la-juventud",
+        "modified_utc": "2026-11-02 12:42:38",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 83347,
+          "venue": "Dakar (SEN)"
+        }
+      },
+      {
+        "id": 83648,
+        "title": "XLIV Cross Internacional de Itálica",
+        "url": "https://fcatletisme.cat/event/xliv-cross-internacional-de-italica/",
+        "start_date": "2026-11-08 00:00:00",
+        "end_date": "2026-11-08 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/xliv-cross-internacional-de-italica",
+        "modified_utc": "2026-07-21 10:39:55",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 3242,
+          "venue": "Santiponce (Sevilla)"
+        }
+      },
+      {
+        "id": 88336,
+        "title": "Campionat de Catalunya de 10 Km (27a Vueling Cursa Bombers Barcelona)",
+        "url": "https://fcatletisme.cat/event/campionat-de-catalunya-de-10-km-27a-vueling-cursa-bombers-barcelona/",
+        "start_date": "2026-11-08 00:00:00",
+        "end_date": "2026-11-08 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://cursadebombers.barcelona/",
+        "modified_utc": "2026-11-01 18:21:32",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 41853,
+            "organizer": "SEVEN MARKETING ON SPORTS &#038; LEISURE SL"
+          }
+        ],
+        "venue": {
+          "id": 910,
+          "venue": "Barcelona"
+        }
+      },
+      {
+        "id": 89086,
+        "title": "60è Cros Internacional de Catalunya Ciutat de Granollers (RFEA)",
+        "url": "https://fcatletisme.cat/event/60e-cros-internacional-de-catalunya-ciutat-de-granollers-rfea/",
+        "start_date": "2026-11-08 00:00:00",
+        "end_date": "2026-11-08 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://fcatletisme.cat/wp-content/uploads/2026/09/reg-20261108-crosgranollersdiptic.pdf",
+        "modified_utc": "2026-09-27 18:01:29",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 245,
+            "organizer": "CA Granollers",
+            "website": "http://www.cagranollers.com/"
+          }
+        ],
+        "venue": {
+          "id": 1767,
+          "venue": "Granollers"
+        }
+      },
+      {
+        "id": 89284,
+        "title": "Trofeu Promoció (3a Jornada)",
+        "url": "https://fcatletisme.cat/event/trofeu-promocio-3a-jornada-4/",
+        "start_date": "2026-11-14 00:00:00",
+        "end_date": "2026-11-14 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-14 15:46:11",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 717,
+          "venue": "a designar"
+        }
+      },
+      {
+        "id": 89286,
+        "title": "Trofeu Promoció (4a Jornada)",
+        "url": "https://fcatletisme.cat/event/trofeu-promocio-4a-jornada-4/",
+        "start_date": "2026-11-14 00:00:00",
+        "end_date": "2026-11-14 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-14 15:46:06",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 717,
+          "venue": "a designar"
+        }
+      },
+      {
+        "id": 89925,
+        "title": "Control de Proves Combinades per a PC",
+        "url": "https://fcatletisme.cat/event/control-de-proves-combinades-per-a-pc-4/",
+        "start_date": "2026-11-14 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-28 15:10:33",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 603,
+            "organizer": "Cornellà At.",
+            "website": "http://www.cornellaatletic.com"
+          }
+        ],
+        "venue": {
+          "id": 82,
+          "venue": "Cornellà de Llobregat (Estadi Municipal Pilar Pons)"
+        }
+      },
+      {
+        "id": 89927,
+        "title": "Control de Curses",
+        "url": "https://fcatletisme.cat/event/control-de-curses-6/",
+        "start_date": "2026-11-14 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-28 15:10:12",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 603,
+            "organizer": "Cornellà At.",
+            "website": "http://www.cornellaatletic.com"
+          }
+        ],
+        "venue": {
+          "id": 82,
+          "venue": "Cornellà de Llobregat (Estadi Municipal Pilar Pons)"
+        }
+      },
+      {
+        "id": 82885,
+        "title": "Campionat d&#8217;Espanya de 5 Km Màster",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-5-km-master/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-5-km-master",
+        "modified_utc": "2026-01-13 15:59:24",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 714,
+            "organizer": "Real Federación Española de Atletismo",
+            "website": "http://www.rfea.es"
+          }
+        ],
+        "venue": {
+          "id": 2466,
+          "venue": "Negreira (La Coruña)"
+        }
+      },
+      {
+        "id": 84867,
+        "title": "32a Cursa de Muntanya del Farell",
+        "url": "https://fcatletisme.cat/event/32a-cursa-de-muntanya-del-farell-2/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://cncaldes.cat/",
+        "modified_utc": "2026-03-02 10:40:01",
+        "categories": [
+          {
+            "id": 74,
+            "name": "Trail-Muntanya"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 646,
+            "organizer": "CN Caldes",
+            "website": "http://cncaldes.cat"
+          }
+        ],
+        "venue": {
+          "id": 1764,
+          "venue": "Caldes de Montbui"
+        }
+      },
+      {
+        "id": 86872,
+        "title": "38a Milla de la Sagrada Familia",
+        "url": "https://fcatletisme.cat/event/38a-milla-de-la-sagrada-familia/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://claror.cat/la-milla/",
+        "modified_utc": "2026-10-26 10:38:24",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 1825,
+            "organizer": "Fundació Claror",
+            "website": "http://www.claror.cat/"
+          }
+        ],
+        "venue": {
+          "id": 910,
+          "venue": "Barcelona"
+        }
+      },
+      {
+        "id": 89025,
+        "title": "2a Cursa de 5 i 10k de Vic",
+        "url": "https://fcatletisme.cat/event/2a-cursa-de-5-i-10k-de-vic/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://5k10kvic.cat/",
+        "modified_utc": "2026-07-30 11:11:56",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 80059,
+            "organizer": "Club Natació Vic-ETB",
+            "website": "https://cnvic.cat/"
+          }
+        ],
+        "venue": {
+          "id": 2688,
+          "venue": "Vic"
+        }
+      },
+      {
+        "id": 89088,
+        "title": "26è Cros Ciutat de Gavà",
+        "url": "https://fcatletisme.cat/event/26e-cros-ciutat-de-gava/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-08-07 09:45:43",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 602,
+            "organizer": "CA Gavà",
+            "website": "http://www.clubatletismegava.com"
+          }
+        ],
+        "venue": {
+          "id": 61169,
+          "venue": "Gavà (Bosc de La Sentiu)"
+        }
+      },
+      {
+        "id": 89090,
+        "title": "51è Cros de Santa Coloma de Farners",
+        "url": "https://fcatletisme.cat/event/51e-cros-de-santa-coloma-de-farners/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-08-07 09:46:36",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 231,
+            "organizer": "Consell Esportiu de la Selva",
+            "website": "http://www.selvaesports.cat/"
+          }
+        ],
+        "venue": {
+          "id": 2520,
+          "venue": "Santa Coloma de Farners"
+        }
+      },
+      {
+        "id": 89398,
+        "title": "47è Campionat d’Atletisme de Fons del Ripollés (Mitja Marató)",
+        "url": "https://fcatletisme.cat/event/47e-campionat-datletisme-de-fons-del-ripolles-mitja-marato/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://www.mitjamarato.cat/",
+        "modified_utc": "2026-09-26 10:25:16",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 674,
+            "organizer": "Ajuntament de Ripoll",
+            "website": "http://www.ripoll.cat/"
+          }
+        ],
+        "venue": {
+          "id": 1654,
+          "venue": "Ripoll"
+        }
+      },
+      {
+        "id": 89447,
+        "title": "Gran Premi de Marxa Ciutat de Manresa (Memorial Enric Vilaplana)",
+        "url": "https://fcatletisme.cat/event/gran-premi-de-marxa-ciutat-de-manresa-memorial-enric-vilaplana-4/",
+        "start_date": "2026-11-15 00:00:00",
+        "end_date": "2026-11-15 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-23 09:46:10",
+        "categories": [
+          {
+            "id": 29,
+            "name": "Marxa"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 596,
+            "organizer": "Avinent CA Manresa",
+            "website": "http://clubatleticmanresa.cat/"
+          }
+        ],
+        "venue": {
+          "id": 1885,
+          "venue": "Manresa"
+        }
+      },
+      {
+        "id": 89500,
+        "title": "9è Cros de Cardedeu",
+        "url": "https://fcatletisme.cat/event/9e-cros-de-cardedeu/",
+        "start_date": "2026-11-21 00:00:00",
+        "end_date": "2026-11-21 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-22 10:36:06",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 647,
+            "organizer": "CA Cardedeu",
+            "website": "http://corrigaires.cat"
+          }
+        ],
+        "venue": {
+          "id": 1790,
+          "venue": "Cardedeu"
+        }
+      },
+      {
+        "id": 89984,
+        "title": "38a Milles de Cerdanyola (5 Km)",
+        "url": "https://fcatletisme.cat/event/38a-milles-de-cerdanyola-5-km/",
+        "start_date": "2026-11-21 00:00:00",
+        "end_date": "2026-11-21 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://www.atcerdanyola.com/curses/milles-cerdanyola/",
+        "modified_utc": "2026-11-02 12:27:47",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 624,
+            "organizer": "CE Cerdanyola Atletisme i Triatló",
+            "website": "http://www.atcerdanyola.com/"
+          }
+        ],
+        "venue": {
+          "id": 1770,
+          "venue": "Cerdanyola del Vallès"
+        }
+      },
+      {
+        "id": 81350,
+        "title": "47a Mitja Marató Espirall – Vilafranca",
+        "url": "https://fcatletisme.cat/event/47a-mitja-marato-espirall-vilafranca/",
+        "start_date": "2026-11-22 00:00:00",
+        "end_date": "2026-11-22 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://mitja.vilafranca.cat/",
+        "modified_utc": "2026-09-15 14:06:03",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 1821,
+            "organizer": "Ajuntament de Vilafranca del Penedès",
+            "website": "http://www.vilafranca.cat/"
+          }
+        ],
+        "venue": {
+          "id": 1693,
+          "venue": "Vilafranca del Penedès"
+        }
+      },
+      {
+        "id": 83650,
+        "title": "Campionat d&#8217;Espanya de Cros per Clubs (XXII Cross Internacional de Atapuerca)",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-cros-per-clubs-xxii-cross-internacional-de-atapuerca/",
+        "start_date": "2026-11-22 00:00:00",
+        "end_date": "2026-11-22 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-campo-traves-por-clubes-0",
+        "modified_utc": "2026-07-21 10:40:35",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 2465,
+          "venue": "Atapuerca (Burgos)"
+        }
+      },
+      {
+        "id": 89094,
+        "title": "27è Cros Ciutat de Girona",
+        "url": "https://fcatletisme.cat/event/27e-cros-ciutat-de-girona/",
+        "start_date": "2026-11-22 00:00:00",
+        "end_date": "2026-11-22 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-08-07 09:48:38",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 84322,
+            "organizer": "Consell Esportiu del Gironès"
+          }
+        ],
+        "venue": {
+          "id": 1787,
+          "venue": "Girona"
+        }
+      },
+      {
+        "id": 89223,
+        "title": "53è Cros Antoni Amorós",
+        "url": "https://fcatletisme.cat/event/53e-cros-antoni-amoros/",
+        "start_date": "2026-11-22 00:00:00",
+        "end_date": "2026-11-22 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-06 14:28:48",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 617,
+            "organizer": "Unió Colomenca At.",
+            "website": "http://www.uca.cat"
+          }
+        ],
+        "venue": {
+          "id": 1785,
+          "venue": "Santa Coloma de Gramenet"
+        }
+      },
+      {
+        "id": 89505,
+        "title": "20a Cursa de Parets (5 i 10 Km) (Circuits no homologats)",
+        "url": "https://fcatletisme.cat/event/20a-cursa-de-parets-5-i-10-km-circuits-no-homologats/",
+        "start_date": "2026-11-22 00:00:00",
+        "end_date": "2026-11-22 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-01 13:33:47",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 14567,
+            "organizer": "CA Parets",
+            "website": "http://www.caparets.com/"
+          }
+        ],
+        "venue": {
+          "id": 14566,
+          "venue": "Parets del Vallès"
+        }
+      },
+      {
+        "id": 83655,
+        "title": "Campionat d&#8217;Espanya de Clubs Sub16 ST",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-clubs-sub16-st/",
+        "start_date": "2026-11-28 00:00:00",
+        "end_date": "2026-11-28 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-short-track-sub-16-por-clubes",
+        "modified_utc": "2026-11-02 09:35:38",
+        "categories": [
+          {
+            "id": 30,
+            "name": "Pista Coberta"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 714,
+            "organizer": "Real Federación Española de Atletismo",
+            "website": "http://www.rfea.es"
+          }
+        ],
+        "venue": {
+          "id": 3504,
+          "venue": "Antequera (Màlaga)"
+        }
+      },
+      {
+        "id": 89449,
+        "title": "Gran Premi de Marxa Ciutat de Barberà",
+        "url": "https://fcatletisme.cat/event/gran-premi-de-marxa-ciutat-de-barbera-4/",
+        "start_date": "2026-11-28 00:00:00",
+        "end_date": "2026-11-28 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-19 11:28:21",
+        "categories": [
+          {
+            "id": 29,
+            "name": "Marxa"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 636,
+            "organizer": "UA Barberà",
+            "website": "http://www.uabarbera.com"
+          }
+        ],
+        "venue": {
+          "id": 10887,
+          "venue": "Barberà del Vallès"
+        }
+      },
+      {
+        "id": 89579,
+        "title": "Obrim la Pista Coberta! Categoria Sub 8",
+        "url": "https://fcatletisme.cat/event/obrim-la-pista-coberta-categoria-sub-8/",
+        "start_date": "2026-11-28 00:00:00",
+        "end_date": "2026-11-28 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-06 14:26:00",
+        "categories": [
+          {
+            "id": 30,
+            "name": "Pista Coberta"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 221,
+            "organizer": "Federació Catalana d&#8217;Atletisme",
+            "website": "http://www.fcatletisme.cat"
+          }
+        ],
+        "venue": {
+          "id": 213,
+          "venue": "Sabadell (Pista Coberta de Catalunya Carme Valero)"
+        }
+      },
+      {
+        "id": 89582,
+        "title": "Obrim la Pista Coberta! Categoria Sub 10",
+        "url": "https://fcatletisme.cat/event/obrim-la-pista-coberta-categoria-sub-10/",
+        "start_date": "2026-11-28 00:00:00",
+        "end_date": "2026-11-28 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-06 14:25:28",
+        "categories": [
+          {
+            "id": 30,
+            "name": "Pista Coberta"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 221,
+            "organizer": "Federació Catalana d&#8217;Atletisme",
+            "website": "http://www.fcatletisme.cat"
+          }
+        ],
+        "venue": {
+          "id": 213,
+          "venue": "Sabadell (Pista Coberta de Catalunya Carme Valero)"
+        }
+      },
+      {
+        "id": 89911,
+        "title": "20è Míting Català de Veteranes i Veterans (8è Memorial Valentí Huch)",
+        "url": "https://fcatletisme.cat/event/20e-miting-catala-de-veteranes-i-veterans-8e-memorial-valenti-huch/",
+        "start_date": "2026-11-28 00:00:00",
+        "end_date": "2026-11-28 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-28 08:49:03",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 34,
+            "name": "Màster"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 1937,
+            "organizer": "Barcelona Atletisme Club",
+            "website": "http://www.bcnatletisme.cat/"
+          }
+        ],
+        "venue": {
+          "id": 243,
+          "venue": "Barcelona (Estadi Joan Serrahima)"
+        }
+      },
+      {
+        "id": 89915,
+        "title": "Campionat d&#8217;Espanya de Clubs Màster Mixt",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-clubs-master-mixt-3/",
+        "start_date": "2026-11-28 00:00:00",
+        "end_date": "2026-11-28 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-master-por-clubes-mixto",
+        "modified_utc": "2026-10-28 09:41:40",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 34,
+            "name": "Màster"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 714,
+            "organizer": "Real Federación Española de Atletismo",
+            "website": "http://www.rfea.es"
+          }
+        ],
+        "venue": {
+          "id": 27459,
+          "venue": "Santa Cruz de Tenerife"
+        }
+      },
+      {
+        "id": 83653,
+        "title": "CIC Alcobendas-Comunidad de Madrid",
+        "url": "https://fcatletisme.cat/event/cic-alcobendas-comunidad-de-madrid/",
+        "start_date": "2026-11-29 00:00:00",
+        "end_date": "2026-11-29 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/cic-alcobendas-comunidad-de-madrid-memorial-antonio-rodriguez-benavente-0",
+        "modified_utc": "2026-08-07 10:06:15",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 2473,
+          "venue": "Alcobendas (Madrid)"
+        }
+      },
+      {
+        "id": 88393,
+        "title": "103a Allianz Jean Bouin (RFEA)",
+        "url": "https://fcatletisme.cat/event/103a-allianz-jean-bouin-rfea/",
+        "start_date": "2026-11-29 00:00:00",
+        "end_date": "2026-11-29 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://allianzjeanbouin.mundodeportivo.com/",
+        "modified_utc": "2026-06-22 15:39:29",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 911,
+            "organizer": "Zona Vip Events",
+            "website": "http://www.zonavipevents.com"
+          }
+        ],
+        "venue": {
+          "id": 910,
+          "venue": "Barcelona"
+        }
+      },
+      {
+        "id": 89069,
+        "title": "35è Cros de Vidreres (Campionat Gironí)",
+        "url": "https://fcatletisme.cat/event/35e-cros-de-vidreres/",
+        "start_date": "2026-11-29 00:00:00",
+        "end_date": "2026-11-29 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-09-24 11:31:00",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 231,
+            "organizer": "Consell Esportiu de la Selva",
+            "website": "http://www.selvaesports.cat/"
+          }
+        ],
+        "venue": {
+          "id": 228,
+          "venue": "Vidreres",
+          "city": "Vidreres"
+        }
+      },
+      {
+        "id": 83644,
+        "title": "Campionat d&#8217;Espanya de Clubs Màster ST",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-clubs-master-st/",
+        "start_date": "2026-12-05 00:00:00",
+        "end_date": "2026-12-05 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-short-track-master-por-clubes",
+        "modified_utc": "2026-10-30 22:40:51",
+        "categories": [
+          {
+            "id": 34,
+            "name": "Màster"
+          },
+          {
+            "id": 30,
+            "name": "Pista Coberta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 714,
+            "organizer": "Real Federación Española de Atletismo",
+            "website": "http://www.rfea.es"
+          }
+        ],
+        "venue": {
+          "id": 924,
+          "venue": "Madrid"
+        }
+      },
+      {
+        "id": 83627,
+        "title": "Maratón Valencia Trinidad Alfonso Zurich",
+        "url": "https://fcatletisme.cat/event/maraton-valencia-trinidad-alfonso-zurich/",
+        "start_date": "2026-12-06 00:00:00",
+        "end_date": "2026-12-06 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/maraton-valencia-trinidad-alfonso-zurich",
+        "modified_utc": "2026-07-21 10:44:57",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 919,
+          "venue": "Valencia"
+        }
+      },
+      {
+        "id": 89338,
+        "title": "47a Cursa de Sant Andreu (5 Km)",
+        "url": "https://fcatletisme.cat/event/47a-cursa-de-sant-andreu-5-km/",
+        "start_date": "2026-12-06 00:00:00",
+        "end_date": "2026-12-06 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://www.cnsantandreu.com/cursa-de-sant-andreu-2025/",
+        "modified_utc": "2026-09-23 10:07:47",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 680,
+            "organizer": "CN Sant Andreu",
+            "website": "http://www.cnsantandreu.com"
+          }
+        ],
+        "venue": {
+          "id": 910,
+          "venue": "Barcelona"
+        }
+      },
+      {
+        "id": 89465,
+        "title": "10a Mitja Marató de Figueres i 10 Km de Figueres",
+        "url": "https://fcatletisme.cat/event/10a-mitja-marato-de-figueres-i-10-km-de-figueres/",
+        "start_date": "2026-12-06 00:00:00",
+        "end_date": "2026-12-06 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://mitjafigueres.com/",
+        "modified_utc": "2026-10-13 09:13:22",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 2387,
+            "organizer": "AA Mitja Marató de Figueres",
+            "website": "www.mitjafigueres.com"
+          }
+        ],
+        "venue": {
+          "id": 2868,
+          "venue": "Figueres"
+        }
+      },
+      {
+        "id": 89597,
+        "title": "Control intern",
+        "url": "https://fcatletisme.cat/event/control-intern-75/",
+        "start_date": "2026-12-12 00:00:00",
+        "end_date": "2026-12-12 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-06 14:47:03",
+        "categories": [
+          {
+            "id": 33,
+            "name": "Aire Lliure"
+          },
+          {
+            "id": 32,
+            "name": "Promoció"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 617,
+            "organizer": "Unió Colomenca At.",
+            "website": "http://www.uca.cat"
+          }
+        ],
+        "venue": {
+          "id": 577,
+          "venue": "Santa Coloma de Gramenet (Camp d&#8217;Atletisme Antoni Amorós)"
+        }
+      },
+      {
+        "id": 80237,
+        "title": "Campionat d’Espanya de Marxa d’Hivern de Promoció",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-marxa-dhivern-de-promocio-9/",
+        "start_date": "2026-12-13 00:00:00",
+        "end_date": "2026-12-13 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-marcha-de-invierno-de-promocion-3",
+        "modified_utc": "2026-01-13 15:46:15",
+        "categories": [
+          {
+            "id": 29,
+            "name": "Marxa"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 714,
+            "organizer": "Real Federación Española de Atletismo",
+            "website": "http://www.rfea.es"
+          }
+        ],
+        "venue": {
+          "id": 71595,
+          "venue": "Castro Urdiales"
+        }
+      },
+      {
+        "id": 80239,
+        "title": "Campionat d’Espanya de 10 Km Marxa en ruta Màster",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-10-km-marxa-en-ruta-master-4/",
+        "start_date": "2026-12-13 00:00:00",
+        "end_date": "2026-12-13 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-10-km-marcha-master",
+        "modified_utc": "2026-01-13 15:46:28",
+        "categories": [
+          {
+            "id": 29,
+            "name": "Marxa"
+          },
+          {
+            "id": 34,
+            "name": "Màster"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 714,
+            "organizer": "Real Federación Española de Atletismo",
+            "website": "http://www.rfea.es"
+          }
+        ],
+        "venue": {
+          "id": 71595,
+          "venue": "Castro Urdiales"
+        }
+      },
+      {
+        "id": 83631,
+        "title": "Campionat d&#8217;Europa de Cros",
+        "url": "https://fcatletisme.cat/event/campionat-deuropa-de-cros-11/",
+        "start_date": "2026-12-13 00:00:00",
+        "end_date": "2026-12-13 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-europa-de-campo-traves-1",
+        "modified_utc": "2026-07-21 10:45:50",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 713,
+            "organizer": "EA (European Athletics)",
+            "website": "http://www.european-athletics.org"
+          }
+        ],
+        "venue": {
+          "id": 3580,
+          "venue": "Belgrado (SRB)"
+        }
+      },
+      {
+        "id": 88289,
+        "title": "48a Cursa de La Sagrera (5 i 10 Km)",
+        "url": "https://fcatletisme.cat/event/48a-cursa-de-la-sagrera-5-i-10-km/",
+        "start_date": "2026-12-13 00:00:00",
+        "end_date": "2026-12-13 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://www.cursadelasagrera.cat/",
+        "modified_utc": "2026-06-18 08:51:48",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 1814,
+            "organizer": "Comissió de Festes de La Sagrera",
+            "website": "http://www.festesdelasagrera.cat/"
+          }
+        ],
+        "venue": {
+          "id": 910,
+          "venue": "Barcelona"
+        }
+      },
+      {
+        "id": 89096,
+        "title": "23è Cros de Banyoles",
+        "url": "https://fcatletisme.cat/event/23e-cros-de-banyoles/",
+        "start_date": "2026-12-13 00:00:00",
+        "end_date": "2026-12-13 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-08-07 09:49:51",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 659,
+            "organizer": "CN Banyoles",
+            "website": "http://banyolesatletisme.blogspot.com.es/"
+          }
+        ],
+        "venue": {
+          "id": 1780,
+          "venue": "Banyoles"
+        }
+      },
+      {
+        "id": 89225,
+        "title": "44è Cros Vila de Ripollet",
+        "url": "https://fcatletisme.cat/event/44e-cros-vila-de-ripollet/",
+        "start_date": "2026-12-13 00:00:00",
+        "end_date": "2026-12-13 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-14 11:39:32",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 631,
+            "organizer": "Ripollet UA",
+            "website": "http://www.ripolletua.com"
+          }
+        ],
+        "venue": {
+          "id": 726,
+          "venue": "Ripollet"
+        }
+      },
+      {
+        "id": 83646,
+        "title": "Campionat d&#8217;Espanya de Clubs Sub20 ST",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-clubs-sub20-st/",
+        "start_date": "2026-12-19 00:00:00",
+        "end_date": "2026-12-19 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-short-track-sub-20-por-clubes-trofeo-antonio-ferrer-1",
+        "modified_utc": "2026-11-02 09:41:53",
+        "categories": [
+          {
+            "id": 30,
+            "name": "Pista Coberta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 714,
+            "organizer": "Real Federación Española de Atletismo",
+            "website": "http://www.rfea.es"
+          }
+        ],
+        "venue": {
+          "id": 223,
+          "venue": "Zaragoza",
+          "city": "Zaragoza",
+          "country": "Espanya"
+        }
+      },
+      {
+        "id": 83629,
+        "title": "XLVI Cross Internacional de Venta de Baños",
+        "url": "https://fcatletisme.cat/event/xlvi-cross-internacional-de-venta-de-banos/",
+        "start_date": "2026-12-20 00:00:00",
+        "end_date": "2026-12-20 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/xlvi-cross-internacional-de-venta-de-banos",
+        "modified_utc": "2026-07-21 10:46:21",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 51186,
+          "venue": "Venta de Baños (Palencia)"
+        }
+      },
+      {
+        "id": 89100,
+        "title": "Campionat de Catalunya de Cros (totes les categories) (11è Cros ATE de Tortosa – GP Eduard Fornós)",
+        "url": "https://fcatletisme.cat/event/campionat-de-catalunya-de-cros-11e-cros-ate-de-tortosa-gp-eduard-fornos/",
+        "start_date": "2026-12-20 00:00:00",
+        "end_date": "2026-12-20 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "",
+        "modified_utc": "2026-10-05 09:10:51",
+        "categories": [
+          {
+            "id": 24,
+            "name": "Cros"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 670,
+            "organizer": "CA Terres de l&#8217;Ebre",
+            "website": "http://www.ate.cat"
+          }
+        ],
+        "venue": {
+          "id": 26588,
+          "venue": "Tortosa"
+        }
+      },
+      {
+        "id": 83089,
+        "title": "43a Cursa de l&#8217;Indiot &#8211; Mollerussa (5 i 10 Km)",
+        "url": "https://fcatletisme.cat/event/43a-cursa-de-lindiot-mollerussa-5-i-10-km/",
+        "start_date": "2026-12-26 00:00:00",
+        "end_date": "2026-12-26 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://sites.google.com/mollerussa.cat/indiot",
+        "modified_utc": "2026-01-18 11:51:33",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 7194,
+            "organizer": "AA Xafatolls",
+            "website": "www.xafatolls.cat"
+          }
+        ],
+        "venue": {
+          "id": 1779,
+          "venue": "Mollerussa"
+        }
+      }
+    ]
+  },
+  {
+    "total": 53,
+    "total_pages": 2,
+    "rest_url": "https://fcatletisme.cat/wp-json/tribe/events/v1/events/?page=2&per_page=50&start_date=2026-11-01 00:00:00&end_date=2026-12-31 23:59:59&status=publish",
+    "events": [
+      {
+        "id": 89192,
+        "title": "47a Sant Silvestre del Masnou (5 Km)",
+        "url": "https://fcatletisme.cat/event/47a-sant-silvestre-del-masnou-5-km/",
+        "start_date": "2026-12-26 00:00:00",
+        "end_date": "2026-12-26 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://www.lasansi.com/es/sant-silvestre-masnou",
+        "modified_utc": "2026-10-09 15:19:41",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 657,
+            "organizer": "CA La Sansi",
+            "website": "http://www.lasansi.com"
+          }
+        ],
+        "venue": {
+          "id": 1782,
+          "venue": "El Masnou"
+        }
+      },
+      {
+        "id": 83074,
+        "title": "B100 Cursa dels Nassos (5 i 10 Km)",
+        "url": "https://fcatletisme.cat/event/b100-cursa-dels-nassos-5-i-10-km/",
+        "start_date": "2026-12-31 00:00:00",
+        "end_date": "2026-12-31 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://www.cursadenassos.barcelona/ca",
+        "modified_utc": "2026-01-18 10:47:25",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [
+          {
+            "id": 657,
+            "organizer": "CA La Sansi",
+            "website": "http://www.lasansi.com"
+          }
+        ],
+        "venue": {
+          "id": 910,
+          "venue": "Barcelona"
+        }
+      },
+      {
+        "id": 83625,
+        "title": "LXII Nationale-Nederlanden San Silvestre Vallecana",
+        "url": "https://fcatletisme.cat/event/lxii-nationale-nederlanden-san-silvestre-vallecana/",
+        "start_date": "2026-12-31 00:00:00",
+        "end_date": "2026-12-31 23:59:59",
+        "all_day": true,
+        "timezone": "Europe/Madrid",
+        "website": "https://atletismorfea.es/calendario/campeonato/lxii-nationale-nederlanden-san-silvestre-vallecana",
+        "modified_utc": "2026-07-21 10:47:49",
+        "categories": [
+          {
+            "id": 35,
+            "name": "Ruta"
+          }
+        ],
+        "organizer": [],
+        "venue": {
+          "id": 924,
+          "venue": "Madrid"
+        }
+      }
+    ]
+  }
+]

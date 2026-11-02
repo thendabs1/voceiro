@@ -38,6 +38,10 @@ on:
         description: 'Deportes: revisar ya, sin esperar su cadencia (requiere colecciones)'
         type: boolean
         default: false
+      atletismo:
+        description: 'Recoger RFEA/Nivel II, Galicia y Cataluña (no habilita su publicación)'
+        type: boolean
+        default: false
       publicar:
         description: 'Publicar la lectura en R2 (por defecto Galicia, Madrid, Kulturklik, Zaragoza y CyL)'
         type: boolean
@@ -45,6 +49,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: calendario-turso
@@ -73,11 +78,21 @@ jobs:
           node-version: '24'
       - name: Dependencias de las recogidas y publicación
         run: pip install beautifulsoup4 boto3
+      - name: Extracción de Nivel II
+        if: inputs.atletismo || (github.event_name == 'schedule' && vars.CALENDARIO_ATLETISMO_RECOGIDA == 'true')
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - name: Límites municipales del IGN (se descargan de R2 solo las provincias usadas)
         uses: actions/cache@v4
         with:
           path: ~/.cache/voceiro/limites
           key: limites-${{ hashFiles('shared/territorios/limites.json') }}
+      - name: Fichas de RFEA (caducidad de 24 horas en el recolector)
+        if: inputs.atletismo || (github.event_name == 'schedule' && vars.CALENDARIO_ATLETISMO_RECOGIDA == 'true')
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/voceiro/atletismo
+          key: atletismo-fichas-${{ github.run_id }}
+          restore-keys: atletismo-fichas-
       - name: Recoger, revisar temporadas y publicar con una sola carga del núcleo
         # Cada fuente guarda al terminar. Si una falla, las demás siguen, se publica
         # el estado válido y el job se marca fallido al final (agenda/pasada.py).
@@ -94,9 +109,11 @@ jobs:
           DEPORTES: ${{ github.event_name == 'schedule' || inputs.operacion == 'deportes' }}
           COLECCIONES: ${{ inputs.colecciones }}
           FORZAR: ${{ inputs.forzar }}
+          ATLETISMO: ${{ inputs.atletismo || (github.event_name == 'schedule' && vars.CALENDARIO_ATLETISMO_RECOGIDA == 'true') }}
           PUBLICAR: ${{ github.event_name == 'schedule' || inputs.publicar || inputs.operacion == 'publicar' || inputs.operacion == 'deportes' }}
           FUENTES_PUBLICAS: ${{ vars.CALENDARIO_FUENTES_PUBLICAS || 'cultura-galicia,madrid,kulturklik,zaragoza,cyl' }}
           LECTURA_SQL: ${{ vars.CALENDARIO_LECTURA_SQL || 'false' }}
+          GH_TOKEN: ${{ github.token }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -142,8 +159,19 @@ jobs:
             if [ "$FORZAR" = true ]; then paso+=" --forzar"; fi
             pasos+=(--paso-tolerado "$paso")
           fi
+          if [ "$ATLETISMO" = true ]; then
+            # Primero las fichas territoriales: dan referencias a Nivel II.
+            # Cada fuente conserva su última lectura válida si falla otra.
+            for a in fga fca rfea; do
+              pasos+=(--paso-tolerado "atletismo-recogida --turso --fuente $a$fechas")
+            done
+          fi
           paso="publicacion --turso --revisar"
           if [ "$PUBLICAR" = true ]; then paso+=" --fuentes $FUENTES_PUBLICAS --fuentes-control --publicar"; fi
           if [ "$PUBLICAR" = true ] && [ "$LECTURA_SQL" = true ]; then paso+=" --lectura-sql"; fi
           pasos+=(--paso "$paso")
+          # Revisa lo ya guardado; no recoge ni activa las fuentes de atletismo.
+          # Sin incidencias no consulta GitHub. El grupo de concurrencia del
+          # workflow serializa la comprobación y creación de issues.
+          pasos+=(--paso-tolerado "atletismo-revision --turso --issues --repo $GITHUB_REPOSITORY")
           python -m agenda.pasada "${pasos[@]}"
