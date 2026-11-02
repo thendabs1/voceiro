@@ -13,7 +13,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from . import deporte, nucleo
+from . import atletismo_coincidencias as coincidencias, deporte, nucleo
 
 
 FUENTES = {
@@ -214,6 +214,9 @@ def importar(anterior, pagina, observado):
     if pagina.get('version') != 1 or fuente not in FUENTES:
         raise ValueError('Contrato de atletismo desconocido')
     nombre, url = FUENTES[fuente]
+    eventos = list(deporte.unicos(deporte.filas(pagina, 'eventos'), 'id'))
+    decisiones = coincidencias.decidir_lote(anterior, fuente, eventos)
+    conocidas = coincidencias.actuales(anterior)
     a = deporte.Agenda(anterior, fuente, nombre, url, 'atletismo', observado)
     capa = a.grupo('calendario', fuente, 'coleccion', nombre, codigo='atletismo-' + fuente)
     grupos = {}
@@ -225,13 +228,22 @@ def importar(anterior, pagina, observado):
             raise ValueError('Agrupación de atletismo sin clase acreditada')
         grupos[i] = a.grupo('agrupacion', i, g['clase'], g.get('nombre'), padre=capa,
             url=enlace(fuente, g['url']))
-    for e in deporte.unicos(deporte.filas(pagina, 'eventos'), 'id'):
+    for e in eventos:
         equivalencia = equivalencias().get((fuente, deporte.literal(e['id'])))
         identidad = (nucleo.identificador('atletismo-revisado', equivalencia['id'])
                      if equivalencia else None)
         previa = a.anterior('competicion', e['id'])
         if identidad and previa and previa['id'] != identidad:
             raise ValueError('Equivalencia nueva sobre una cita existente: requiere conciliación explícita')
+        identidad_grupo = nucleo.identificador('programa-atletismo-revisado', equivalencia['id']) if equivalencia else None
+        decision = decisiones[str(e['id'])]
+        automatica = next((c['metadatos'].get('coincidencia_automatica') for c in conocidas
+                           if c['fuente'] == fuente and c['id'] == str(e['id'])), None)
+        if not equivalencia and not previa and decision['estado'] == 'automatica':
+            identidad = decision['cita']['destino']['id']
+            identidad_grupo = decision['cita']['grupo']['id']
+            automatica = {'version': coincidencias.VERSION, 'referencia': decision['cita']['referencia'],
+                          'criterio': decision['comparacion']}
         if deporte.literal(e['id']) in grupos:
             raise ValueError('Una agrupación no debe importarse también como cita')
         padre = capa
@@ -246,12 +258,13 @@ def importar(anterior, pagina, observado):
             raise ValueError('Calendario con fin anterior al inicio')
         grupo = a.grupo('programa_competicion', e['id'], 'competicion', e.get('nombre'),
             padre=padre, url=enlace(fuente, e['url']),
-            identidad=nucleo.identificador('programa-atletismo-revisado', equivalencia['id']) if equivalencia else None)
+            identidad=identidad_grupo)
         principal, _ = a.evento('competicion', e['id'], 'encuentro', e.get('nombre'),
             deporte.dias(inicio.isoformat(), fin.isoformat()), padre=grupo,
             estado=e.get('estado', 'desconocido'),
             sitio=e.get('lugar'), url=enlace(fuente, e['url']), identidad=identidad,
             bloques={'atletismo': {**(e.get('metadatos') or {}),
+                **({'coincidencia_automatica': automatica} if automatica else {}),
                 **({'equivalencia_revisada': equivalencia} if equivalencia else {})},
                 'agenda': {'rol': 'principal', 'grupo': grupo}})
         for s in deporte.unicos(deporte.filas({'programa': e.get('programa', [])}, 'programa'), 'id'):

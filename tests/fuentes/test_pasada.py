@@ -90,6 +90,13 @@ class Pasada(unittest.TestCase):
             pasada.main(['--paso', 'calendario --turso --preparar-nucleo', '--paso', 'publicar --turso'])
         self.assertEqual(self.servidor.consultas, [])
 
+    def test_revision_de_atletismo_reutiliza_la_carga_y_no_consulta_github_sin_casos(self):
+        with patch('sys.stdout', new_callable=io.StringIO), patch('agenda.atletismo_revision._gh') as gh:
+            pasada.main(['--paso', 'calendario --turso --preparar-nucleo',
+                         '--paso-tolerado', 'atletismo-revision --turso --issues --repo thendabs1/voceiro'])
+        self.assertEqual(sum(sql == CARGA for sql, _ in self.servidor.consultas), 1)
+        gh.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

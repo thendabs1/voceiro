@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 
-from . import atletismo, deporte
+from . import atletismo, atletismo_coincidencias as coincidencias, deporte
 
 URL = 'https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf'
 TIPOS = {'AL', 'ST', 'Cross', 'Marcha', 'Ruta', 'Trail Running'}
@@ -67,7 +67,7 @@ def leer(texto, paginas_esperadas):
             'paginas': len(paginas), 'huella_texto': sha256(texto.encode()).hexdigest(), 'filas': filas}
 
 
-def resolver(inventario, revisiones):
+def resolver(inventario, revisiones, n=None):
     """Separa entradas revisadas y pendientes, sin publicar un prefijo como completo.
 
     Un cambio de contenido exige revisar su huella y conservar el ID editorial.
@@ -118,6 +118,43 @@ def resolver(inventario, revisiones):
                     'huella_texto': inventario['huella_texto'], 'pagina': observacion['pagina'],
                     'revision': r}}})
         resueltas.add(h)
+    # Las filas coincidentes con una cita identificada no necesitan revisión
+    # individual. Su ID editorial deriva de esa referencia estable, no del PDF.
+    candidatos = []
+    conocidos = coincidencias.actuales(n)
+    for observacion in inventario['filas']:
+        f = observacion['fila']
+        if observacion['huella'] in resueltas or len(indice[observacion['huella']]) != 1:
+            continue
+        e = {'id': 'nivel-ii:candidata', 'nombre': f['nombre'], 'inicio': f['fecha'], 'fin': f['fecha'],
+             'lugar': {'nombre': f['instalacion'], 'city': f['ciudad']}, 'url': URL,
+             'metadatos': {'modalidad_literal': f['tipo_literal'], 'nivel_rfea': 'II'}}
+        guardadas = [c for c in conocidos if c['fuente'] == 'rfea' and c['id'].startswith('nivel-ii:auto-')
+                     and not c['lectura_ambigua'] and
+                     (c['metadatos'].get('nivel_ii') or {}).get('huella') == observacion['huella']]
+        if len(guardadas) == 1:
+            e['id'] = guardadas[0]['id']
+            candidatos.append((observacion, e, {'cita': guardadas[0]}))
+            continue
+        decision = coincidencias.decidir('rfea', e, conocidos)
+        if decision['estado'] == 'automatica':
+            candidatos.append((observacion, e, decision))
+    cantidades = {}
+    for _, _, d in candidatos:
+        destino = d['cita']['destino']['id']
+        cantidades[destino] = cantidades.get(destino, 0) + 1
+    for observacion, e, d in candidatos:
+        if cantidades[d['cita']['destino']['id']] != 1:
+            continue
+        if e['id'] == 'nivel-ii:candidata':
+            e['id'] = 'nivel-ii:auto-' + d['cita']['referencia']
+        e['metadatos']['nivel_ii'] = {'fila': observacion['fila'], 'huella': observacion['huella'],
+            'actualizado': inventario['actualizado'], 'huella_texto': inventario['huella_texto'],
+            'pagina': observacion['pagina'], 'referencia_coincidente':
+                (d['cita']['metadatos'].get('nivel_ii') or {}).get('referencia_coincidente') or d['cita']['referencia']}
+        e['url'] = URL + '#page=' + str(observacion['pagina'])
+        eventos.append(e)
+        resueltas.add(observacion['huella'])
     pendientes = [f for f in inventario['filas'] if f['huella'] not in resueltas]
     sin_aplicar = [r['id'] for r in revisiones['revisiones'] if r['huella'] not in resueltas]
     return {'entrada': {'version': 1, 'fuente': 'rfea', 'eventos': eventos},
@@ -132,9 +169,12 @@ def main():
     ap.add_argument('--salida', required=True, help='Inventario de revisión, no entrada de importación')
     ap.add_argument('--revisiones', help='Registro de identidades y fechas revisadas')
     ap.add_argument('--entrada', help='Guardar solo las citas resueltas para --entrada-atletismo')
+    ap.add_argument('--nucleo', help='Núcleo v2 local para resolver coincidencias automáticamente')
     args = ap.parse_args()
     if bool(args.revisiones) != bool(args.entrada):
         ap.error('--revisiones y --entrada deben indicarse juntos')
+    if args.nucleo and not args.revisiones:
+        ap.error('--nucleo requiere --revisiones y --entrada')
     info = subprocess.run(['pdfinfo', args.pdf], check=True, capture_output=True, text=True).stdout
     paginas = re.search(r'^Pages:\s+(\d+)$', info, re.M)
     if not paginas:
@@ -145,7 +185,8 @@ def main():
     inventario['huella_pdf'] = sha256(Path(args.pdf).read_bytes()).hexdigest()
     resultado = None
     if args.revisiones:
-        resultado = resolver(inventario, json.loads(Path(args.revisiones).read_text(encoding='utf-8')))
+        n = json.loads(Path(args.nucleo).read_text(encoding='utf-8')) if args.nucleo else None
+        resultado = resolver(inventario, json.loads(Path(args.revisiones).read_text(encoding='utf-8')), n)
         inventario['resolucion'] = {k: v for k, v in resultado.items() if k != 'entrada'}
     Path(args.salida).write_text(json.dumps(inventario, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     if resultado is not None:

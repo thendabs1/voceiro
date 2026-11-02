@@ -3,6 +3,11 @@
 2/11/2026. Primera extracción local; cobertura de identidad **incompleta**.
 No activa recogida periódica ni publicación. World Athletics sigue aparte.
 
+Continuación acordada: [comparación automática e issues](atletismo-coincidencias.md).
+Con `--nucleo` también se resuelven filas coincidentes con citas ya identificadas,
+sin tener que añadir cada fila al registro manual. Los recuentos de este
+documento describen la primera extracción, sin ese contraste adicional.
+
 El enlace Nivel II del calendario RFEA sigue apuntando al PDF general 2026,
 actualizado el 15/10/2026. Su nombre interno es `Calendario NII.xlsx`, pero
 la descarga publicada es PDF: no se ha acreditado acceso a esa hoja original.

@@ -203,3 +203,7 @@ La entrega sigue sin activar recogida ni publicación en producción.
 Continuación: [extracción Nivel II y resolución de identidades](atletismo-nivel-ii.md).
 Se extraen 441 filas del PDF completo; una tiene correspondencia revisada
 con FGA y 440 siguen pendientes. Esto no cierra la cobertura RFEA.
+
+Continuación posterior: [comparación automática e issues de revisión](atletismo-coincidencias.md).
+Las correspondencias ya no requieren siempre una tabla manual: se resuelven
+al importar cuando las señales son inequívocas y se envían a revisión las dudas.

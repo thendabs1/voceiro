@@ -122,6 +122,26 @@ class NivelII(unittest.TestCase):
         n = atletismo.importar(None, entrada, AHORA)
         self.assertEqual(publicacion.proyectar(n)['eventos'][0]['programacion']['valor']['programacion'], 'aplazado')
 
+    def test_coincidencia_automatica_sin_revision_por_fila_y_repeticion_estable(self):
+        # Referencia ficticia para comprobar el contrato sobre una fila real.
+        observacion = next(f for f in self.inventario['filas'] if f['fila']['nombre'] == 'Reunión FAM 2 Gallur')
+        f = observacion['fila']
+        e = {'id': 'ensayo-fam', 'nombre': f['nombre'], 'inicio': f['fecha'], 'fin': f['fecha'],
+             'lugar': {'nombre': f['ciudad']}, 'url': atletismo.FUENTES['rfea'][1] + '/campeonato/ensayo'}
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'rfea', 'eventos': [e]}, AHORA)
+        identidad = publicacion.proyectar(n)['eventos'][0]['id']
+        resultado = nivel.resolver(self.inventario, {'version': 1, 'revisiones': []}, n)
+        self.assertEqual(len(resultado['entrada']['eventos']), 1)
+        self.assertEqual(len(resultado['pendientes']), 440)
+        identificador = resultado['entrada']['eventos'][0]['id']
+        n = atletismo.importar(n, resultado['entrada'], AHORA)
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)
+        self.assertEqual(publicacion.proyectar(n)['eventos'][0]['id'], identidad)
+        repetida = nivel.resolver(self.inventario, {'version': 1, 'revisiones': []}, n)['entrada']
+        self.assertEqual(repetida['eventos'][0]['id'], identificador)
+        n = atletismo.importar(n, repetida, '2026-11-03T20:00:00+01:00')
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)
+
     def test_cli_guarda_un_lote_con_equivalencia_y_conflicto_de_sede(self):
         entrada = nivel.resolver(self.inventario, revisiones())['entrada']
         fga = MUESTRAS / 'nivel-ii-fga-marcha.json'

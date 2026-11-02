@@ -49,11 +49,12 @@ duplicados.
 
 ## Solapamientos y actualizaciones
 
-Conservar observaciones y referencias por proveedor. Una correspondencia
-verificada permite representar un mismo evento con ambas procedencias; no
-deduplicar por nombre/fecha/localidad ni elegir la versión más reciente de
-cualquier web sin una autoridad definida por campo. Hasta resolver una
-coincidencia, mostrar la procedencia y no ocultar una cita automáticamente.
+Conservar observaciones y referencias por proveedor. El usuario confirma
+[comparación automática e issues para los casos dudosos](atletismo-coincidencias.md).
+Una coincidencia inequívoca permite compartir identidad usando fechas, sede,
+nombre y referencias, con comprobaciones de categorías y alcance. Las
+discrepancias conservan ambas observaciones; no se elige la última descarga
+como autoridad. Los casos ambiguos mantienen sus identidades hasta revisión.
 Antes de activar ambas fuentes juntas se debe medir el solape de una ventana
 y revisar los casos principales para que la vista no se llene de duplicados.
 
