@@ -1,7 +1,8 @@
 """Núcleo en R2 privado: un objeto inmutable por fuente, nombrado por su huella.
 
-Ninguna entidad cruza fuentes, así que cada objeto es un trozo completo del
-núcleo. Turso guarda el resto (piloto, control deportivo, lectura y revisión) y
+Las entidades compartidas se guardan una vez, en la fuente menor por orden
+lexicográfico. Los fragmentos pueden referenciar otros fragmentos: se cargan
+siempre todos los del manifiesto. Turso guarda el resto (piloto, control deportivo, lectura y revisión) y
 el manifiesto {fuente: huella} en la fila MARCA, que se confirma en la misma
 transacción que la revisión. Guardar sube primero los objetos nuevos y después
 confirma el manifiesto: si Turso falla, los objetos quedan huérfanos y la
@@ -50,14 +51,18 @@ def marca(bucket, manifiesto):
 
 
 def partir(n):
-    """{fuente: datos} con todo lo que pertenece a cada fuente; un cruce es un error."""
+    """Partición reproducible, con una sola copia de cada entidad compartida.
+
+    El dueño físico no establece autoridad editorial. Referencias, documentos
+    y observaciones conservan sus proveedores originales. El manifiesto
+    confirma todos los fragmentos juntos cuando cambia el dueño físico.
+    """
     dueno = {}
     for r in n['referencias'].values():
         if r['destino'] is None:
             continue
         k = nucleo.clave(r['destino'])
-        if dueno.setdefault(k, r['proveedor']) != r['proveedor']:
-            raise ValueError(f'Entidad con referencias de dos fuentes: {k}')
+        dueno[k] = min(dueno.get(k, r['proveedor']), r['proveedor'])
     sin_fuente = n['entidades'].keys() - dueno.keys()
     if sin_fuente:
         raise ValueError(f'Entidad sin referencia de ninguna fuente: {min(sin_fuente)}')
@@ -67,9 +72,9 @@ def partir(n):
 
     def de(*objetivos):
         fuentes = {dueno[nucleo.clave(o)] for o in objetivos if o}
-        if len(fuentes) != 1:
-            raise ValueError('Relación entre fuentes distintas: ' + ', '.join(sorted(fuentes)))
-        return fuentes.pop()
+        if not fuentes:
+            raise ValueError('Objeto del núcleo sin fuente identificable')
+        return min(fuentes)
 
     for c, datos in n.items():
         if c not in nucleo.COLECCIONES:
@@ -109,6 +114,9 @@ def unir(esqueleto, ficheros):
             raise ValueError(f'Fichero de núcleo incompatible: {fuente}')
         n['fuentes'][fuente] = deepcopy(datos['datos_fuente'])
         for c in nucleo.COLECCIONES:
+            for i, d in datos[c].items():
+                if i in n[c] and n[c][i] != d:
+                    raise ValueError(f'Objeto del núcleo contradictorio entre fragmentos: {c}/{i}')
             n[c].update(deepcopy(datos[c]))
     # El mismo orden que la carga paginada de Turso: la publicación no depende de él,
     # pero así un cambio de almacén no reordena nada.
