@@ -78,7 +78,7 @@ test('un código deportivo pide la ficha directamente, sin candidatos', async ()
   assert.deepEqual(pedidas, ['/consulta/ficha?id=espn%3Aclasificacion%2Fnba&idioma=es']);
   assert.equal(panel.hidden, false);
   assert.match(panel.innerHTML, /NBA · 2026-27/);
-  assert.match(panel.innerHTML, /Este: Detroit Pistons · 4–1/);
+  assert.match(panel.innerHTML, /data-accion="grupo" data-i="0" aria-pressed="true"/);
   assert.match(panel.innerHTML, /Oeste \(1\)/);
   assert.match(panel.innerHTML, /ESPN<\/a> · <a [^>]+>Condiciones<\/a> · Consultado a las/);
   // Vigente: sin Actualizar, que no forzaría nada.
@@ -238,8 +238,8 @@ test('las palabras detrás de una consulta deportiva marcan los equipos sin filt
   actualizar('resultados:primera levante');
   await esperar();
   assert.equal(pedidas.length, 1);
-  assert.match(panel.innerHTML, /<li class="consulta-marcada">.*<mark>Levante<\/mark>/);
-  assert.match(panel.innerHTML, /<li><span class="consulta-estado">[^<]*<\/span><span>Celta<\/span>/);
+  assert.match(panel.innerHTML, /<li class="consulta-marcada" data-estado="final">.*<mark>Levante<\/mark>/);
+  assert.match(panel.innerHTML, /<li data-estado="final"><span class="consulta-estado">[^<]*<\/span><span>Celta<\/span>/);
   actualizar('resultados:primera');
   assert.doesNotMatch(panel.innerHTML, /<mark>/);
   // Plegada por el lector, cambiar las palabras no la vuelve a abrir.
@@ -247,4 +247,33 @@ test('las palabras detrás de una consulta deportiva marcan los equipos sin filt
   actualizar('resultados:primera celta');
   assert.match(panel.innerHTML, /<mark>Celta<\/mark>/);
   assert.equal(panel.ficha.open, false);
+});
+
+test('los grupos cambian sin red, conservan su elección al actualizar y la búsqueda revela el equipo', async () => {
+  const ficha = { competicion: 'nba', grupos: [
+    { nombre: 'Eastern Conference', filas: [{ equipo: 'Detroit Pistons', g: 4, p: 1 }] },
+    { nombre: 'Western Conference', filas: [{ equipo: 'Denver Nuggets', g: 5, p: 0 }] },
+  ] };
+  const { panel, pedidas, actualizar, pulsar } = contexto({ responder: () => json(envoltorio('clasificacion', { ficha })) });
+  actualizar('clasificacion:nba');
+  await esperar();
+  assert.match(panel.innerHTML, /data-i="0" aria-pressed="true">Este \(1\)/);
+  assert.match(panel.innerHTML, /data-i="1" aria-pressed="false">Oeste \(1\)/);
+  pulsar({ accion: 'grupo', i: '1' });
+  assert.match(panel.innerHTML, /data-i="1" aria-pressed="true"/);
+  pulsar({ accion: 'actualizar' });
+  await esperar();
+  assert.match(panel.innerHTML, /data-i="1" aria-pressed="true"/);
+  assert.equal(pedidas.length, 1);
+  actualizar('clasificacion:nba detroit');
+  assert.match(panel.innerHTML, /data-i="0" aria-pressed="true"/);
+  assert.match(panel.innerHTML, /<mark>Detroit<\/mark>/);
+  // La marca no impide consultar voluntariamente el otro grupo.
+  pulsar({ accion: 'grupo', i: '1' });
+  assert.match(panel.innerHTML, /data-i="1" aria-pressed="true"/);
+  pulsar({ accion: 'grupo', i: '99' });
+  assert.match(panel.innerHTML, /data-i="1" aria-pressed="true"/);
+  actualizar('clasificacion:wnba');
+  await esperar();
+  assert.match(panel.innerHTML, /data-i="0" aria-pressed="true"/);
 });
