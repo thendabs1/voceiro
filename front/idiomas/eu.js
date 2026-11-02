@@ -1,4 +1,5 @@
 export default {
+  "calAtletismo": "Atletismoa", "calInscripcion": "Izen-ematea",
   "asEstadosHint": "Automatikoak iturrien edo taldeen hautaketa jarraitzen du. Gehitu aukerak hedabidea sartzen du hautatutako taldeetatik kanpo egon arren. Isildu aukerak beti baztertzen du. Gaiak jarraitzean, gehitutako hedabideek ere hitzekin bat egin behar dute.",
   "asTitulo": "Sortu modua gidarekin",
   "asEntrada": "Aukeratu iturriak eta gaiak, egiaztatu titularrak eta gorde hautaketa. Modua zuzenean ere sor dezakezu.",

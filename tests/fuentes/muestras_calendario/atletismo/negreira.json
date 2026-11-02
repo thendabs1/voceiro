@@ -1,0 +1,100 @@
+[
+  {
+    "version": 1,
+    "fuente": "rfea",
+    "eventos": [
+      {
+        "id": "64837",
+        "nombre": "Campeonato de España 5 km Master",
+        "url": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-5-km-master",
+        "dias_observados": [
+          "2026-11-15"
+        ],
+        "lugar": {
+          "nombre": "Negreira"
+        },
+        "metadatos": {
+          "modalidad_literal": "Ruta",
+          "area_literal": "RFEA",
+          "categoria_literal": "",
+          "fecha_literal": "15 de Noviembre",
+          "enlaces_ficha": [
+            {
+              "nombre": "Acreditación de medios",
+              "url": "https://rfea.typeform.com/to/jcCKbDYN"
+            },
+            {
+              "nombre": "Pruebas de la competición",
+              "url": "https://atletismorfea.es/calendario/pruebas/excel/a0bQs00000DqlHFIAZ"
+            }
+          ],
+          "sfid": [
+            "a0bQs00000DqlHFIAZ"
+          ]
+        },
+        "inicio": "2026-11-15",
+        "fin": "2026-11-15"
+      }
+    ]
+  },
+  {
+    "version": 1,
+    "fuente": "fga",
+    "eventos": [
+      {
+        "id": "113590",
+        "nombre": "Campionato de España Master 5 Km. ruta 2026",
+        "url": "https://atletismo.gal/competicions/campionato-de-espana-master-5-km-ruta-2026/",
+        "inicio": "2026-11-15",
+        "fin": "2026-11-15",
+        "lugar": {
+          "nombre": "Negreira"
+        },
+        "metadatos": {
+          "modalidad_literal": "Ruta",
+          "delegaciones": [
+            "santiago"
+          ],
+          "circuito_declarado": null
+        }
+      }
+    ]
+  },
+  {
+    "version": 1,
+    "fuente": "fca",
+    "eventos": [
+      {
+        "id": "82885",
+        "nombre": "Campionat d’Espanya de 5 Km Màster",
+        "url": "https://fcatletisme.cat/event/campionat-despanya-de-5-km-master/",
+        "inicio": "2026-11-15",
+        "fin": "2026-11-15",
+        "lugar": {
+          "id": 2466,
+          "nombre": "Negreira (La Coruña)",
+          "city": null,
+          "country": null
+        },
+        "metadatos": {
+          "categorias": [
+            {
+              "id": 35,
+              "nombre": "Ruta"
+            }
+          ],
+          "organizaciones": [
+            {
+              "id": 714,
+              "nombre": "Real Federación Española de Atletismo",
+              "url": "http://www.rfea.es"
+            }
+          ],
+          "web_organizador": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-5-km-master",
+          "modificado": "2026-01-13 15:59:24",
+          "zona_fuente": "Europe/Madrid"
+        }
+      }
+    ]
+  }
+]

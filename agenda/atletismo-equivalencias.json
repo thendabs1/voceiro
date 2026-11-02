@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "equivalencias": [
+    {
+      "id": "espana-5km-master-2026-negreira",
+      "referencias": {"rfea": "64837", "fga": "113590", "fca": "82885"},
+      "revision": {
+        "fecha": "2026-11-02",
+        "criterio": "Mismo campeonato de España de 5 km máster, 15/11/2026, Negreira. Se conserva cada descripción de sede y metadatos; no se equipara con la carrera popular A Clásica celebrada ese día.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-5-km-master",
+          "https://atletismo.gal/competicions/campionato-de-espana-master-5-km-ruta-2026/",
+          "https://fcatletisme.cat/event/campionat-despanya-de-5-km-master/"
+        ]
+      }
+    }
+  ]
+}

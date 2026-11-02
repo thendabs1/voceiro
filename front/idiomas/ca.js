@@ -1,4 +1,5 @@
 export default {
+  "calAtletismo": "Atletisme", "calInscripcion": "Inscripció",
   "asEstadosHint": "Automàtic segueix la tria de fonts o grups. Incloure afegeix el mitjà encara que no sigui als grups triats. Silenciar l'exclou sempre. Si segueixes temes, els mitjans inclosos també han de complir les paraules.",
   "asTitulo": "Crear un mode amb guia",
   "asEntrada": "Tria fonts i temes, comprova titulars i desa la selecció. També pots crear un mode directament.",

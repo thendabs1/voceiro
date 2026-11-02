@@ -18,8 +18,8 @@ const CAL_PREF_KEY = 'voceiro-calendario-preferencias-v1';
 const CAL_PASOS = ['sitio', 'intereses', 'competiciones', 'resumen'];
 // Deportes por deporte y sus competiciones (SofaScore): dos toques hasta una liga.
 const CAL_DEPORTES = { futbol: ['primera', 'segunda'], baloncesto: ['nba', 'wnba', 'feb-endesa', 'feb-primera', 'feb-challenge'],
-  motor: ['f1', 'motogp', 'wrc'], tenis: ['atp', 'wta'] };
-const CAL_NOMBRES_DEPORTE = { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' };
+  motor: ['f1', 'motogp', 'wrc'], tenis: ['atp', 'wta'], atletismo: ['atletismo-rfea', 'atletismo-fga', 'atletismo-fca'] };
+const CAL_NOMBRES_DEPORTE = { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis', atletismo: 'calAtletismo' };
 const CAL_COMPETICIONES = Object.values(CAL_DEPORTES).flat();
 // Cada competición lleva el color de su deporte (--dep-*); lo demás, el de su categoría.
 const CAL_DEPORTE_DE = Object.fromEntries(Object.entries(CAL_DEPORTES).flatMap(([k, cs]) => cs.map(c => [c, k])));
@@ -28,7 +28,8 @@ const calColor = e => calDeporte(e) ? 'cal-dep cal-dep-' + calDeporte(e) : 'cal-
 // Marcas del mes por competición, en orden de prioridad; la WTA está casi
 // todos los días y va al final para no tapar al resto.
 const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', nba: 'NBA', atp: 'ATP',
-  'feb-endesa': 'LFE', 'feb-primera': 'FEB', 'feb-challenge': 'LFC', wnba: 'WNBA', wta: 'WTA' };
+  'feb-endesa': 'LFE', 'feb-primera': 'FEB', 'feb-challenge': 'LFC', wnba: 'WNBA', wta: 'WTA',
+  'atletismo-rfea': 'RFEA', 'atletismo-fga': 'FGA', 'atletismo-fca': 'FCA' };
 const CALENDARIO = {
   abierto: false, porPrefijo: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
   // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
@@ -568,6 +569,23 @@ function calNombreSesion(p, e){
   return separador ? resto.slice(separador[0].length).trim() || nombre : nombre;
 }
 // Cuerpo del detalle; desplegado en la lista, sin el lugar si la tarjeta ya lo dice.
+function calInscripcionesAtletismo(e){
+  const variantes = e.atletismo?.variantes?.length ? e.atletismo.variantes : [{ valor: e.atletismo?.valor }];
+  const plazos = new Map();
+  for (const v of variantes){
+    const inscripcion = v.valor?.inscripcion;
+    if (!inscripcion) continue;
+    const clave = JSON.stringify(inscripcion);
+    if (!plazos.has(clave)) plazos.set(clave, { inscripcion, fuentes: new Set() });
+    const fuente = v.procedencia?.fuente;
+    if (fuente) plazos.get(clave).fuentes.add(CALENDARIO.meta?.fuentes?.[fuente]?.nombre || fuente);
+  }
+  if (!plazos.size) return '';
+  return `<section class="cal-inscripcion"><h4>${calEsc(t('calInscripcion'))}</h4>${[...plazos.values()].map(({ inscripcion, fuentes }) => `
+    ${fuentes.size ? `<p class="cal-nota">${calEsc(t('calFuente'))}: ${calEsc([...fuentes].join(' · '))}</p>` : ''}
+    <p>${calEsc(inscripcion.plazo_textual || '')}</p>
+    ${(inscripcion.enlaces || []).map(a => `<p>${calEnlace(a.url, a.nombre)}</p>`).join('')}`).join('')}</section>`;
+}
 function calEventoCuerpo(e, lugarVisto = ''){
   const v = e.programacion?.valor, estado = v?.programacion;
   const aviso = e.programacion?.conflicto || e.lugar?.conflicto;
@@ -581,6 +599,7 @@ function calEventoCuerpo(e, lugarVisto = ''){
     ${avisoEstado}
     ${ejecucion === 'en_curso' || ejecucion === 'terminado' ? `<p class="cal-nota">${calEsc(t(ejecucion === 'en_curso' ? 'calEnCurso' : 'calTerminado'))}</p>` : ''}
     ${aviso ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}
+    ${calInscripcionesAtletismo(e)}
     ${e.programa?.length ? `<section class="cal-programa"><h4>${calEsc(t('calPrograma'))}</h4><ul>${e.programa.map(p => {
       const anulada = calEstadoAnulado(p.programacion?.valor?.programacion);
       return `<li${anulada ? ' class="cal-anulada"' : ''}><span>${calEsc(calNombreSesion(p, e))}</span> <span class="cal-cuando">${calEsc(calHora(p, true))}</span>${anulada ? ` · ${calEsc(t(anulada))}` : ''}</li>`;
@@ -720,7 +739,7 @@ function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
 const CAL_MARCAS_DIA = 3;
 const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.slice(0, CAL_MARCAS_DIA).map(m => `<span class="cal-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}">${calEsc(m.texto)}</span>`).join('')}
   ${marcas.length > CAL_MARCAS_DIA ? `<span class="cal-marca cal-mas">+${marcas.length - CAL_MARCAS_DIA}</span>` : ''}</span>` : '';
-const calNombreCompeticion = c => AMBITOS[c]?.noticias?.[0] || c;
+const calNombreCompeticion = c => AMBITOS[c]?.nombre || AMBITOS[c]?.noticias?.[0] || c;
 const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidden="true">${cats.map(c => `<span class="cal-punto cal-cat-${c}"></span>`).join('')}</span>` : '';
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
 // GP y programas de competición que siguen ese día: sus días sin carrera no

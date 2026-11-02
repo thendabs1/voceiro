@@ -110,10 +110,16 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
 
     def seleccion(k, bloque):
         s = selecciones.get((k, bloque))
-        if s is None and bloque in ('identificadores', 'agenda'):
+        # Una cita federativa compartida puede publicarse solo con una parte
+        # de sus fuentes. Resolver con las permitidas, sin reutilizar una
+        # preferencia implícita causada por el orden de importación.
+        atletismo = 'atletismo' in entidades[k].get('temas', [])
+        politica = nucleo.identificador('seleccion', nucleo.objetivo(entidades[k]['tipo'], entidades[k]['id']), bloque)
+        if ((atletismo and politica not in n['politicas'])
+                or s is None and bloque in ('identificadores', 'agenda', 'atletismo')):
             e = entidades[k]
             s = nucleo.seleccionar(n, nucleo.objetivo(e['tipo'], e['id']), bloque, activas,
-                [i for i in n['entidades'][k]['evidencias'] if i in activas])
+                [i for i in n['entidades'][k]['evidencias'] if i in activas and i in observaciones])
         if s is None:
             return None
         # Tampoco publicar un valor anterior que proceda de una fuente excluida.
@@ -263,6 +269,16 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
         agenda = seleccion(k, 'agenda')
         if agenda and agenda.get('valor'):
             eventos[-1]['agenda'] = agenda['valor']
+        atletismo = seleccion(k, 'atletismo')
+        variantes = [{'valor': deepcopy(observaciones[i]['bloques']['atletismo']),
+                      'nombres': deepcopy(observaciones[i]['bloques']['nombres']),
+                      'programacion': deepcopy(observaciones[i]['bloques'].get('programacion')),
+                      'lugar': deepcopy(observaciones[i]['bloques'].get('lugar')),
+                      'procedencia': procedencia(i)}
+                     for i in sorted(propias) if observaciones[i]['bloques'].get('atletismo')]
+        if atletismo and (atletismo.get('valor') or variantes):
+            eventos[-1]['atletismo'] = atletismo
+            eventos[-1]['atletismo']['variantes'] = variantes
         # Unión por clave: las traducciones de una misma etiqueta suman nombres.
         etiquetas = {}
         for i in propias:
@@ -281,7 +297,9 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
             continue
         principal = por_id.get(agenda['principal']['id'])
         if not principal or (principal.get('agenda') or {}).get('rol') != 'principal':
-            raise ValueError('Sesión publicada sin su gran premio principal')
+            raise ValueError('Sesión publicada sin su cita principal')
+        if nucleo.clave(principal['agenda']['grupo']) not in e['objetivos']:
+            raise ValueError('Sesión publicada fuera de la agrupación de su principal')
         principal.setdefault('programa', []).append(deepcopy(e))
         principal['objetivos'] = sorted(set(principal['objetivos']) | set(e['objetivos']))
         sesiones.add(e['id'])

@@ -332,8 +332,8 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.deportes();
   let chips = c.api.calChipsDeportes();
-  // Las 12 competiciones, sin capa de ciudad; con todas, ningún deporte elegido ni fila de competiciones.
-  assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('territorio'), c.resumen().get('temas')], [12, null, null]);
+  // Las 15 capas, sin capa de ciudad; con todas, ningún deporte elegido ni fila de competiciones.
+  assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('territorio'), c.resumen().get('temas')], [15, null, null]);
   assert.match(chips, /data-cal="capas-todas" data-valor="" class="" aria-pressed="true">Todas/);
   assert.match(chips, /data-cal="deporte" data-valor="futbol" class="cal-dep cal-dep-futbol" aria-pressed="false">Fútbol/);
   assert.doesNotMatch(chips, /cal-subchips|data-cal="capa"/);
@@ -359,14 +359,14 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   await c.click('deporte', 'motor');
   assert.equal(c.resumen().get('q'), 'f1: motogp: wrc:');
   await c.click('deporte', 'motor');
-  assert.equal(c.resumen().get('q').split(' ').length, 12);
+  assert.equal(c.resumen().get('q').split(' ').length, 15);
   // Nunca sin capas: con una sola, quitarla no hace nada.
   await c.click('solo', 'f1');
   await c.click('capa', 'f1');
   assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['f1:', null]);
   assert.match(c.api.calChipsDeportes(), /data-valor="motor" class="cal-dep cal-dep-motor" aria-pressed="mixed"/);
   await c.click('capas-todas');
-  assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('territorio')], [12, null]);
+  assert.deepEqual([c.resumen().get('q').split(' ').length, c.resumen().get('territorio')], [15, null]);
   // La agenda lleva sus chips de temas y va a su sitio.
   await c.abrir();
   assert.doesNotMatch(c.api.calChips(), /data-cal="deporte"|data-cal="capa"/);
@@ -814,7 +814,7 @@ test('la agenda va siempre a su sitio; las competiciones, en Deportes y sin ciud
   // Deportes: todas las competiciones, sin ciudad.
   await c.deportes();
   assert.deepEqual([c.api.s.vista, c.resumen().get('territorio'), c.resumen().get('temas'), c.resumen().get('q').split(' ').length],
-    ['deportes', null, null, 12]);
+    ['deportes', null, null, 15]);
   // Un prefijo de competición abre Deportes con solo esa; uno de tema, la agenda.
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
   await esperar();
@@ -868,6 +868,19 @@ test('con un prefijo de competición no hay capas: «Solo» y «Todas» no las c
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral|data-cal="solo"/);
 });
 
+test('Atletismo permite seleccionar los tres calendarios federativos como capas', async () => {
+  const c = contexto();
+  await c.deportes();
+  await c.click('deporte', 'atletismo');
+  assert.equal(c.resumen().get('q'), 'atletismo-rfea: atletismo-fga: atletismo-fca:');
+  const chips = c.api.calChipsDeportes();
+  assert.match(chips, /RFEA/);
+  assert.match(chips, /Galicia · FGA/);
+  assert.match(chips, /Cataluña · FCA/);
+  await c.click('capa', 'atletismo-rfea');
+  assert.equal(c.resumen().get('q'), 'atletismo-fga: atletismo-fca:');
+});
+
 test('Deportes abierta desde su botón conserva sus capas cuando el buscador se vacía', async () => {
   const c = contexto();
   await c.deportes();
@@ -875,7 +888,7 @@ test('Deportes abierta desde su botón conserva sus capas cuando el buscador se 
   await esperar();
   c.api.actualizarConsultaCalendario(null);
   await esperar();
-  assert.deepEqual([c.api.s.vista, c.api.s.capas?.size, c.resumen().get('q').split(' ').length], ['deportes', 12, 12]);
+  assert.deepEqual([c.api.s.vista, c.api.s.capas?.size, c.resumen().get('q').split(' ').length], ['deportes', 15, 15]);
 });
 
 test('al cambiar de vista no se pintan los datos de la otra ni lo que tenía abierto', async () => {
@@ -1154,6 +1167,34 @@ test('un evento de la lista se despliega bajo su tarjeta con todo su detalle; la
   // «Actualizar» cierra el desplegado y olvida las fichas.
   await c.click('renovar');
   assert.deepEqual([c.api.s.desplegado, c.api.s.detalles.size], ['', 0]);
+});
+
+test('la inscripción se muestra en el detalle sin ocupar el horario de la competición', () => {
+  const c = contexto();
+  c.evento = { ...tarjeta('Jornada', '2026-11-07'), fuentes: [],
+    atletismo: { valor: { inscripcion: { plazo_textual: 'Hasta el 2/11 a las 20:00 <aviso>',
+      enlaces: [{ nombre: 'Inscribirse', url: 'https://federacion.test/inscripcion' }] } } } };
+  const html = runInContext('calEventoCuerpo(evento)', c);
+  assert.match(html, /<h4>Inscripción<\/h4>/);
+  assert.match(html, /20:00 &lt;aviso/);
+  assert.doesNotMatch(html, /<aviso>/);
+  assert.match(html, /href="https:\/\/federacion.test\/inscripcion"/);
+  assert.doesNotMatch(runInContext('calHoraCita(evento)', c), /20:00|2\/11/);
+});
+
+test('la cita compartida conserva inscripciones por fuente aunque difieran los metadatos', () => {
+  const c = contexto();
+  c.evento = { ...tarjeta('Compartida', '2026-11-15'), fuentes: [], atletismo: {
+    valor: null, conflicto: true, variantes: [
+      { valor: { categorias: [{ nombre: 'Ruta' }] }, procedencia: { fuente: 'rfea' } },
+      { valor: { inscripcion: { plazo_textual: 'Hasta el 10/11', enlaces: [
+        { nombre: 'Inscripción FGA', url: 'https://atletismo.gal/inscripcion' }] } }, procedencia: { fuente: 'fga' } }
+    ] } };
+  const html = runInContext('calEventoCuerpo(evento)', c);
+  assert.match(html, /Hasta el 10\/11/);
+  assert.match(html, /Inscripción FGA/);
+  assert.match(html, /fga/);
+  assert.doesNotMatch(runInContext('calHoraCita(evento)', c), /10\/11/);
 });
 
 test('moverse por semanas y meses reutiliza los formatos de fecha de la interfaz', async () => {

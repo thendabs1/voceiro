@@ -26,6 +26,10 @@ parser de búsqueda.
 
 ## Estado (28/10/2026)
 
+Avance de atletismo (2/11/2026): [primera integración local de RFEA, Galicia y
+Cataluña](atletismo-integracion.md), con capas e inscripción como metadatos;
+recogida automática y publicación pendientes.
+
 - **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
 - **Deportes:** doce colecciones con adaptador y control de temporadas, todas
