@@ -1,7 +1,7 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=ffc56e4e54';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=ffc56e4e54';
-import { sumarDisponibilidad } from './consulta.js?v=ffc56e4e54';
+import { palabrasDe } from '../busqueda/texto.js?v=00ea1838a7';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=00ea1838a7';
+import { sumarDisponibilidad } from './consulta.js?v=00ea1838a7';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.

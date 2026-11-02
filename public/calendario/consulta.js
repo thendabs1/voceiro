@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=ffc56e4e54';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=ffc56e4e54';
+import { tokenizeQuery, normalize } from '../parser.js?v=00ea1838a7';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=00ea1838a7';
 
 // Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
 // nombre propio no es ambiguo, suman noticias por su titular (las noticias no se
@@ -10,6 +10,9 @@ export const AMBITOS = {
   baloncesto: { tema: 'baloncesto' },
   automovilismo: { tema: 'automovilismo' },
   atletismo: { tema: 'atletismo' },
+  'atletismo-rfea': { codigo: 'atletismo-rfea', nombre: 'RFEA' },
+  'atletismo-fga': { codigo: 'atletismo-fga', nombre: 'Galicia · FGA' },
+  'atletismo-fca': { codigo: 'atletismo-fca', nombre: 'Cataluña · FCA' },
   deportes: { tema: 'deportes' },
   cultura: { tema: 'cultura' },
   teatro: { tema: 'teatro' },

@@ -2170,6 +2170,7 @@
 /* Deportes: cada competición con el color de su deporte (--dep-*). */
 .cal-dep-futbol{--dep:var(--dep-futbol);--dep-bg:var(--dep-futbol-bg)}.cal-dep-baloncesto{--dep:var(--dep-baloncesto);--dep-bg:var(--dep-baloncesto-bg)}
 .cal-dep-motor{--dep:var(--dep-motor);--dep-bg:var(--dep-motor-bg)}.cal-dep-tenis{--dep:var(--dep-tenis);--dep-bg:var(--dep-tenis-bg)}
+.cal-dep-atletismo{--dep:var(--cat-deportes);--dep-bg:var(--cat-deportes-bg)}
 .cal-marca.cal-dep{color:var(--dep)}
 /* Chips de Deportes: con el color de su deporte las competiciones marcadas; un
    deporte con solo algunas, con el borde discontinuo. */
