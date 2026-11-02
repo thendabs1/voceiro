@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import { galeriasDeJSONLD, detectarGalerias, claveImagenGaleria, separarImagenesDeGalerias,
   pieImagenGaleria } from '../../lector/modulos/galerias.js';
 import { limpiarCodigoIncrustado } from '../../lector/modulos/codigo-incrustado.js';
+import { limpiarPromosTextoFinal } from '../../lector/modulos/mixto.js';
 
 const URL_ART = 'https://medio.example/deportes/partido.html';
 const imagen = (n, extra = {}) => ({ '@type': 'ImageObject', contentUrl: '/fotos/partido-' + n + '.jpg', ...extra });
@@ -94,7 +95,7 @@ test('tolera JSON roto y solo recorre el contenido elegido con un selector manua
 const extractor = readFileSync(new URL('../../lector/src/17-extractores-de-articulo.js', import.meta.url), 'utf8');
 function completar(art, datos){
   const ctx = vm.createContext({ document: documento(datos.map(JSON.stringify)), location: { href: URL_ART },
-    detectarGalerias, limpiarCodigoIncrustado, currentExtraction: () => ({ mode: 'auto' }), art });
+    detectarGalerias, limpiarCodigoIncrustado, limpiarPromosTextoFinal, currentExtraction: () => ({ mode: 'auto' }), art });
   vm.runInContext(extractor, ctx);
   vm.runInContext('decodeEnt = s => s || ""; extractTextWithConfig = () => art;', ctx);
   return vm.runInContext('extractArticleWithConfig()', ctx);
