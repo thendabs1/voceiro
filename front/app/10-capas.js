@@ -149,8 +149,6 @@ async function _cargarCapa(key, signal) {
     if (f) files.push(f);
   }
 
-  if (!files.length) return 0;
-
   // Fetch con concurrencia 3
   const cola = files.slice();
   const nuevos = [];
@@ -158,7 +156,7 @@ async function _cargarCapa(key, signal) {
     while (cola.length) {
       if (signal.aborted) return;
       const f = cola.shift();
-      const data = await _fetchJSON(f, signal);
+      const data = await _fetchJSON(f, signal, true);
       if (!data) continue;
       if (data.medios) {
         for (const d in data.medios) MEDIOS[d] = data.medios[d];
@@ -196,7 +194,12 @@ async function _cargarCapa(key, signal) {
 // Extiende una o varias capas pidiendo días [desde, hasta) desde el manifest.
 // Diferencia con _cargarCapa: aquella carga [0, DIAS_MEMORIA), esta carga
 // un rango arbitrario para paginación.
-async function extenderCapasR2(capas, desde, hasta) {
+async function extenderCapasR2(capas, desde, hasta, vigente = () => true) {
+  if (_itemsCargadosDeCapas >= LAYER_MAX_ITEMS) {
+    const error = new Error('Límite de titulares del histórico');
+    error.code = 'LIMITE';
+    throw error;
+  }
   for (const key of capas) {
     const [tipo, valor] = key.split(':', 2);
     const dias = (_manifest.dias || []).slice(desde, hasta);
@@ -211,14 +214,14 @@ async function extenderCapasR2(capas, desde, hasta) {
 
     const cola = files.slice();
     const nuevos = [];
-    const workers = Array.from({ length: Math.min(8, cola.length) }, async () => {
+    const catalogos = [];
+    const workers = Array.from({ length: Math.min(3, cola.length) }, async () => {
       while (cola.length) {
+        if (!vigente()) return;
         const f = cola.shift();
-        const data = await _fetchJSON(f);
+        const data = await _fetchJSON(f, undefined, true);
         if (!data) continue;
-        if (data.medios) {
-          for (const d in data.medios) MEDIOS[d] = data.medios[d];
-        }
+        if (data.medios) catalogos.push(data.medios);
         const diaFecha = data.fecha || '';
         const generadoIso = data.generado || '';
         for (const n of (data.noticias || [])) {
@@ -228,7 +231,20 @@ async function extenderCapasR2(capas, desde, hasta) {
         }
       }
     });
-    await Promise.all(workers);
+    // Esperar también a las peticiones que ya estaban en vuelo si una falla.
+    const cargas = await Promise.allSettled(workers);
+    if (!vigente()) return;
+    const fallo = cargas.find(c => c.status === 'rejected');
+    if (fallo) throw fallo.reason;
+    // Comprobación conservadora antes de mezclar: nunca rebasar el límite,
+    // tampoco con un lote grande o una carga inicial que acaba de terminar.
+    if (_itemsCargadosDeCapas + nuevos.length > LAYER_MAX_ITEMS) {
+      const error = new Error('Límite de titulares del histórico');
+      error.code = 'LIMITE';
+      throw error;
+    }
+
+    for (const medios of catalogos) Object.assign(MEDIOS, medios);
 
     const añadidos = _mergearItemsEnNoticias(nuevos, key);
     if (añadidos > 0) {
@@ -298,6 +314,10 @@ async function cargarBase() {
     if (BACKEND_ACTIVO === 'deno') _probarCFEnBackground();
 
     // 2) Reset
+    DIAS_ACTUAL = 0;
+    DIAS_CAPAS_KEY = '';
+    DIAS_GENERACION++;
+    HISTORICO_ERROR = false;
     MEDIOS = {};
     NOTICIAS = [];
     BASE.items = [];

@@ -122,6 +122,9 @@ function aplicarDiasMemoria(v){
   LAYERS.clear();
   _itemsCargadosDeCapas = 0;
   DIAS_ACTUAL = 0;
+  DIAS_CAPAS_KEY = '';
+  DIAS_GENERACION++;
+  HISTORICO_ERROR = false;
   _hidratadasHasta = 0;
   _dupsHechosHasta = 0;
 

@@ -15,6 +15,14 @@ son secciones de una aplicación, como las de `lector/src/`. Un cambio de este
 modelo requiere hacer explícitas sus dependencias. Los imports de esas piezas
 se resuelven desde el `app.js` publicado, no desde el directorio de las fuentes.
 
+«Ver titulares anteriores» amplía manualmente el archivo de un único medio
+elegido en la búsqueda (`medio:` o `web:`), en tramos de siete entradas de días
+del manifest y respetando los filtros. Grupos y modos conservan su carga
+inicial, sin ampliación manual. El scroll solo muestra titulares ya descargados.
+Un fallo de descarga conserva el cursor y permite reintentar; los 404 de los
+ficheros de medio se consideran días sin titulares. La ampliación respeta el
+límite de memoria (con una estimación conservadora antes de deduplicar).
+
 El estado de resultados, la paginación y la prensa están separados. Los chips
 y el pase también tienen archivos propios. `99-inicio.js` inicia la aplicación.
 

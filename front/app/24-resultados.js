@@ -40,8 +40,6 @@ function renderizar(){
   sentinel.id = 'render-sentinel';
   cont.appendChild(sentinel);
 
-  appendBatch();
-
   if (SENTINEL_OBSERVER) SENTINEL_OBSERVER.disconnect();
   SENTINEL_OBSERVER = new IntersectionObserver(entries => {
     if (PASE) return;
@@ -50,18 +48,10 @@ function renderizar(){
     // Si aún quedan items filtrados sin renderizar → siguiente batch
     if (RENDER_OFFSET < ULT_FILTRADAS.length) {
       appendBatch();
-      return;
-    }
-
-    // Lista agotada → pedir más días de R2 si hay
-    const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
-    const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
-    const puedeR2 = capas.size > 0 && DIAS_ACTUAL < totalDias;
-    if (puedeR2) {
-      solicitarMas(cargarMas);
     }
   }, { rootMargin: '400px' });
   SENTINEL_OBSERVER.observe(sentinel);
+  appendBatch();
 
   if (ACCES.focus) requestAnimationFrame(updateFocus);
   actualizarBotonCargarMas();
@@ -253,13 +243,22 @@ function appendBatch(){
   }
 }
 
-// Scroll infinito y «Cargar más»: R2 (ficheros estáticos: gratis y sin cuota).
+// El scroll solo muestra lo descargado. El histórico se amplía a mano.
 async function solicitarMas(pedir){
   if (_cargandoMas) return;
   _cargandoMas = true;
+  const generacion = DIAS_GENERACION;
+  const scope = _scopeGeneration;
+  HISTORICO_ERROR = false;
   actualizarBotonCargarMas();
   try { await pedir(); }
-  catch(e){ console.warn('[cargar más]', e); }
+  catch(e){
+    console.warn('[histórico]', e);
+    if (generacion === DIAS_GENERACION && scope === _scopeGeneration){
+      HISTORICO_ERROR = true;
+      toast(t(e.code === 'LIMITE' ? 'historicoLimite' : 'historicoFallo'), 4000);
+    }
+  }
   finally {
     _cargandoMas = false;
     actualizarBotonCargarMas();
@@ -269,18 +268,24 @@ async function solicitarMas(pedir){
 async function cargarMas() {
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
-  const capas = capasRequeridas(parsed);
+  const capas = capasHistorico(parsed);
   if (!capas.size || claveCapas(capas) !== DIAS_CAPAS_KEY) return;
 
   const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
   if (DIAS_ACTUAL >= totalDias) return;
 
-  const clave = DIAS_CAPAS_KEY;
+  const generacion = DIAS_GENERACION;
+  const scope = _scopeGeneration;
+  const vigente = () => generacion === DIAS_GENERACION && scope === _scopeGeneration;
   const desde = DIAS_ACTUAL;
   const hasta = Math.min(DIAS_ACTUAL + DIAS_R2_STEP, totalDias);
 
-  await extenderCapasR2(capas, desde, hasta);
-  if (DIAS_CAPAS_KEY !== clave) return;
+  // La carga inicial puede seguir en vuelo cuando se pulsa el botón.
+  await asegurarCapas(capas, new AbortController().signal);
+  if (!vigente()) return;
+  if ([...capas].some(k => !LAYERS.has(k))) throw new Error('Capa inicial pendiente');
+  await extenderCapasR2(capas, desde, hasta, vigente);
+  if (!vigente()) return;
   DIAS_ACTUAL = hasta;
 
   aplicarFiltros();
@@ -294,12 +299,13 @@ function actualizarBotonCargarMas() {
   // R2: extender días si quedan en el manifest
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
-  const capas = capasRequeridas(parsed);
+  const capas = capasHistorico(parsed);
   if (capas.size) {
     const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
     if (DIAS_ACTUAL < totalDias) {
       wrap.style.display = '';
-      btn.textContent = _cargandoMas ? 'Cargando…' : `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
+      btn.textContent = _cargandoMas ? t('historicoCargando')
+        : t(HISTORICO_ERROR ? 'historicoReintentar' : 'historicoAnteriores');
       btn.disabled = _cargandoMas;
       return;
     }

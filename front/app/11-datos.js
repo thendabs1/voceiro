@@ -75,13 +75,20 @@ function _claveUrl(u, dominio) {
 // (d-<dominio>-<fecha>) se reescriben con el mismo nombre mientras el día
 // está vivo: caché normal, con la duración que da el worker (60 s y 304 si
 // sigue igual; 1 día los congelados).
-async function _fetchJSON(path, signal) {
+// El histórico necesita distinguir un día sin fichero (404) de un fallo:
+// con estricto, los demás errores se propagan para poder reintentar.
+async function _fetchJSON(path, signal, estricto = false) {
   const cache = path.startsWith('d-') ? 'default' : 'force-cache';
   const intentar = async () => {
     const url = `${DATA_BASE}/${path}`;
     const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(url, { cache, signal: sig });
-    if (r.status >= 400 && r.status < 500) return null;   // 4xx: no retry
+    if (r.status >= 400 && r.status < 500) {
+      if (!estricto || r.status === 404) return null;
+      const error = new Error('HTTP ' + r.status);
+      error.sinReintento = true;
+      throw error;
+    }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return await r.json();
   };
@@ -89,10 +96,17 @@ async function _fetchJSON(path, signal) {
   try {
     return await intentar();
   } catch(e){
+    if (estricto && e.sinReintento) throw e;
     if (signal && signal.aborted) return null;   // cancelado por el caller
-    if (BACKEND_ACTIVO !== 'cf') return null;    // ya en Deno y falla: nada más
+    if (BACKEND_ACTIVO !== 'cf') {
+      if (estricto) throw e;
+      return null;
+    }
     await _conmutarBackendPorFallo();
-    try { return await intentar(); } catch { return null; }
+    try { return await intentar(); } catch (error) {
+      if (estricto) throw error;
+      return null;
+    }
   }
 }
 
