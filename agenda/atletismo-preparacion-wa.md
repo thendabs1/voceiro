@@ -4,6 +4,9 @@
 No se han habilitado publicación ni cron de atletismo. Esta revisión no amplía
 la selección acordada en [el contrato WA](atletismo-world-athletics.md).
 
+Seguimiento: [revisión de los siete casos y correcciones preparadas](atletismo-revision-incidencias.md).
+Incluye comprobación del snapshot remoto y sus dos pendientes futuros de Nivel II.
+
 ## Resultado de la primera recogida compartida
 
 El [PR 259](https://github.com/thendabs1/voceiro/pull/259) está fusionado por
@@ -29,7 +32,8 @@ cinco issues por pasada creó [261](https://github.com/thendabs1/voceiro/issues/
 [263](https://github.com/thendabs1/voceiro/issues/263),
 [264](https://github.com/thendabs1/voceiro/issues/264) y
 [265](https://github.com/thendabs1/voceiro/issues/265); dos casos quedaron sin
-issue por ese límite. No se han conciliado identidades ni cerrado esos casos.
+issue por ese límite. Hay tres conciliaciones preparadas y verificadas en una
+copia local; no se han aplicado al núcleo remoto ni cerrado esos casos.
 
 Los casos ilustran problemas relevantes también para WA: discrepancia de
 fechas y sede en una cita enlazada, conjunto/partes en marcha y Nassos, títulos

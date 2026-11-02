@@ -6,13 +6,15 @@ La referencia de la primera cita conserva su identidad en futuras recogidas.
 from collections import Counter
 from functools import lru_cache
 from hashlib import sha256
+import json
+from pathlib import Path
 import re
 import unicodedata
 from urllib.parse import urlsplit
 
 from . import nucleo
 
-VERSION = 2
+VERSION = 3
 FUENTES = {'rfea', 'fga', 'fca'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
@@ -26,6 +28,53 @@ def normalizar(texto):
     s = re.sub(r'campo\s+a\s+traves', 'cross', s)
     s = re.sub(r'(?<=\d)(?=[a-z])|(?<=[a-z])(?=\d)', ' ', s)
     return ' '.join(PALABRAS.get(t, t) for t in re.findall(r'[a-z0-9]+', s) if t not in OMITIR)
+
+
+def nombre_comparable(texto):
+    # Etiqueta administrativa exacta, no palabras ni paréntesis deportivos.
+    texto = re.sub(r'\(\s*RFEA\s*\)', '', texto, flags=re.I)
+    texto = ''.join(c for c in unicodedata.normalize('NFD', texto.lower())
+                    if unicodedata.category(c) != 'Mn')
+    # 103a / 60è / 27ª: conservar el número de edición. No tocar 10km o Sub16.
+    texto = re.sub(r'\b(\d+)(?:a|e|o|ª|º)\b', r'\1', texto)
+    return normalizar(texto)
+
+
+@lru_cache(maxsize=1)
+def revisiones_identidad():
+    datos = json.loads(Path(__file__).with_name('atletismo-conciliaciones.json').read_text(encoding='utf-8'))
+    if datos.get('version') != 1:
+        raise ValueError('Versión de conciliaciones desconocida')
+    from datetime import date
+    revisiones, vistas = [], set()
+    for r in datos['conciliaciones']:
+        refs = {(f, str(i)) for f, i in r['referencias'].items()}
+        date.fromisoformat(r['revision']['fecha'])
+        if (r['id'] in vistas or len(refs) < 2 or set(r['referencias']) - FUENTES
+                or r['conservar'] not in r['referencias']
+                or not r['revision'].get('criterio') or not r['revision'].get('evidencias')):
+            raise ValueError('Conciliación sin revisión o referencias válidas')
+        if any(refs & {(f, str(i)) for f, i in anterior['referencias'].items()} for anterior in revisiones):
+            raise ValueError('Referencia en más de una conciliación')
+        vistas.add(r['id'])
+        revisiones.append(r)
+    return revisiones
+
+
+def comparar_referencias(a, b):
+    comparacion = comparar(a, b)
+    par = {(e.get('fuente'), str(e['id'])) for e in (a, b)}
+    revision = next((r for r in revisiones_identidad()
+                     if len(par) == 2 and par <= {(f, str(i)) for f, i in r['referencias'].items()}), None)
+    if revision:
+        # La decisión acredita identidad, no la vigencia de fechas o modalidades.
+        datos = [] if comparacion['misma_fecha'] else ['fechas diferentes o incompletas']
+        ma, mb = modalidades(a), modalidades(b)
+        if ma and mb and ma != mb:
+            datos.append('modalidades diferentes')
+        return {**comparacion, 'estado': 'automatica', 'motivos': [],
+                'datos_revisar': datos, 'revision_identidad': revision}
+    return comparacion
 
 
 def sede(e):
@@ -89,7 +138,7 @@ def comparar(a, b):
         # aparte, incluso cuando se trasladan fuera de su ventana anterior.
         return {'estado': 'distintas', 'enlace_directo': False, 'nombre': None,
                 'misma_fecha': False, 'misma_sede': None, 'motivos': ['fechas sin solapamiento'], 'version': VERSION}
-    ta, tb = set(normalizar(a['nombre']).split()), set(normalizar(b['nombre']).split())
+    ta, tb = set(nombre_comparable(a['nombre']).split()), set(nombre_comparable(b['nombre']).split())
     ta.discard((a.get('inicio') or '')[:4])
     tb.discard((b.get('inicio') or '')[:4])
     parecido = 2 * len(ta & tb) / (len(ta) + len(tb)) if ta and tb else 0
@@ -164,13 +213,15 @@ def decidir(fuente, evento, conocidos):
     for c in conocidos:
         if distribucion(c['fuente'], c['id']) == distribucion(fuente, evento['id']):
             continue
-        comparacion = comparar(evento, c)
+        comparacion = comparar_referencias({**evento, 'fuente': fuente}, c)
         if comparacion['estado'] != 'distintas':
             candidatos.append({'cita': c, 'comparacion': comparacion})
-    directos = [c for c in candidatos if c['comparacion']['enlace_directo']]
+    directos = [c for c in candidatos if c['comparacion']['enlace_directo']
+                or c['comparacion'].get('revision_identidad')]
     if directos:
         # El nombre de un meeting puede aparecer en la ficha de su campeonato.
-        # Su enlace explícito tiene prioridad sobre otros parecidos del título.
+        # Un enlace o revisión explícitos tienen prioridad sobre los parecidos.
+        # Si se contradicen entre sí, conservar ambos candidatos para revisión.
         candidatos = directos
     destinos = {c['cita']['destino']['id'] for c in candidatos}
     automaticos = [c for c in candidatos if c['comparacion']['estado'] == 'automatica']
@@ -203,7 +254,7 @@ def incidencias(n):
         for b in conocidos[pos + 1:]:
             if distribucion(a['fuente'], a['id']) == distribucion(b['fuente'], b['id']):
                 continue
-            comparacion = comparar(a, b)
+            comparacion = comparar_referencias(a, b)
             if a['destino'] == b['destino'] and comparacion.get('datos_revisar'):
                 comparacion = {**comparacion, 'estado': 'revisar', 'motivos': comparacion['datos_revisar']}
             if a['destino'] == b['destino'] and not comparacion['misma_fecha']:

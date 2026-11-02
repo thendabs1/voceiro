@@ -76,8 +76,8 @@ reconciliación más amplia. Leer páginas completas no resuelve por sí solo es
 
 Coste por pasada: suma de páginas por selección más reconciliaciones y errores;
 la estrategia de una ventana amplia filtrada localmente frente a varias por
-grupo se decidirá con mediciones. La muestra de noviembre-diciembre declaraba
-568 eventos de todo el mundo, no 568 del alcance elegido. No sirve para estimar
+grupo se decidirá con mediciones. La revisión posterior de noviembre-diciembre
+declaraba 572 eventos de todo el mundo, no 572 del alcance elegido. No sirve para estimar
 todavía el volumen anual seleccionado.
 
 ## Condiciones para darlo por integrado
