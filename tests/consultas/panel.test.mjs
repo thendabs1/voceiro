@@ -373,14 +373,18 @@ test('una fecha pendiente no sustituye los resultados de otra competición al ll
   assert.match(panel.innerHTML,/Los partidos de madrugada/);
 });
 
-test('una respuesta de otro día no se muestra bajo la fecha solicitada',async()=>{
-  const {panel,actualizar,elegirFecha}=contexto({responder:()=>json(envoltorio('resultados',{
-    ficha:{competicion:'primera',fecha:'2026-11-02',partidos:[]},
+test('una respuesta de otro día no se muestra ni se cachea bajo la fecha solicitada',async()=>{
+  let n=0;
+  const {panel,pedidas,actualizar,elegirFecha,pulsar}=contexto({responder:()=>json(envoltorio('resultados',{
+    ficha:{competicion:'primera',fecha:++n<3?'2026-11-02':'2026-11-01',partidos:[]},
   }))});
   actualizar('resultados:primera'); await esperar();
   elegirFecha('2026-11-01'); await esperar();
   assert.match(panel.innerHTML,/value="2026-11-02"/);
   assert.match(panel.innerHTML,/No se pudo actualizar/);
+  pulsar({accion:'actualizar'}); await esperar();
+  assert.match(panel.innerHTML,/value="2026-11-01"/);
+  assert.equal(pedidas.length,3);
 });
 
 test('NBA: una respuesta HTTP antigua sin IDs no impide abrir los partidos',async()=>{

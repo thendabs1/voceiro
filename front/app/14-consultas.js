@@ -122,6 +122,7 @@ function pedirConsulta(ruta, params){
     const datos = await r.json().catch(() => null);
     if (!datos || typeof datos !== 'object' || !datos.estado) throw errorConsulta('red');
     if (r.status === 400) datos.estado = 'invalida';
+    if (params.fecha && ['ok', 'vacio'].includes(datos.estado) && datos.ficha?.fecha !== params.fecha) throw errorConsulta('red');
     const caduca = Date.parse(datos.caduca);
     if (r.ok && datos.estado !== 'no_disponible' && caduca > Date.now()){
       PUNTUAL.cache.delete(url);
@@ -163,7 +164,6 @@ async function abrirFichaConsulta(id, { candidato = null, callado = false, fecha
   try {
     const d = await pedirConsulta('/consulta/ficha', { id, ...(resultados && fecha ? { fecha } : {}) });
     if (seq !== PUNTUAL.seq) return;
-    if (resultados && fecha && ['ok', 'vacio'].includes(d.estado) && d.ficha?.fecha !== fecha) throw errorConsulta('red');
     if (callado && !['ok', 'vacio'].includes(d.estado) && PUNTUAL.ficha) PUNTUAL.fallo = 'red';
     else Object.assign(PUNTUAL, { ficha: d, estado: 'ficha', fallo: '',
       fecha: resultados ? fecha || (fechaValida(d.ficha?.fecha) ? d.ficha.fecha : '') : '' });
