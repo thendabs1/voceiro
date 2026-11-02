@@ -196,5 +196,6 @@ jornadas, programa añadido después sin cambio de identidad, sesiones sin
 fecha o fuera de intervalo, rechazo de asociaciones entre competiciones y
 regresiones de GP. Pasan trece pruebas de atletismo y las selecciones de núcleo,
 fuentes oficiales, adaptadores deportivos, publicación, lectura e interfaz.
-La suite completa queda para CI; no se ha ejecutado remotamente
-ni se ha publicado esta entrega.
+La suite completa pasó en [CI](https://github.com/thendabs1/voceiro/actions/runs/41466633236)
+para el commit `adc3a2fa` del [PR 259](https://github.com/thendabs1/voceiro/pull/259).
+La entrega sigue sin activar recogida ni publicación en producción.

@@ -178,9 +178,11 @@ la semejanza de títulos solo puede proponer candidatos.
   homologación) e iconos de ámbito que antes se omitían.
 - RFEA conserva fecha literal de ficha y enlaces rotulados, incluido Excel
   de pruebas. La fecha sin año no sustituye a los días acreditados del calendario.
-- Pruebas locales de atletismo: siete casos, incluidos rangos, etiquetas,
-  identidad, enlaces, inscripción, paginación, publicación y lectura. Suite
-  completa pendiente de CI. Ninguna fuente activada ni publicada.
+- Pruebas de atletismo: trece casos, incluidos rangos, etiquetas, identidad,
+  enlaces, inscripción, paginación, programa, circuitos y equivalencias con
+  varias procedencias. La suite completa pasó en el
+  [CI del commit adc3a2fa](https://github.com/thendabs1/voceiro/actions/runs/41466633236).
+  Ninguna fuente activada ni publicada.
 
 Siguientes decisiones de diseño: correspondencias entre federaciones,
 modalidades comunes y presentación en detalle; extender la resolución de
