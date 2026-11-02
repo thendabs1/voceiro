@@ -21,7 +21,7 @@ function escenario({ sigo = [], buscar = '' } = {}){
     calEsc: s => String(s), calNombreCompeticion: x => NOMBRES[x] || x,
     calPreferencias: () => ({ competiciones: sigo }), CAL_DEPORTES, CALENDARIO: { orden: null },
     CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' }, CAL_COMPETICIONES: Object.values(CAL_DEPORTES).flat(),
-    codigoDeporte: (tipo, x) => Object.hasOwn(ESPN, x) && !(tipo === 'resultados' && x === 'f1'),
+    codigoDeporte: (tipo, x) => Object.hasOwn(ESPN, x) && !(tipo !== 'clasificacion' && x === 'f1'),
     calPedir: async () => ({ disponibilidad: { circuitos: {} } }),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), cerrarSugerencias(){},
     escribirBusqueda: v => escritas.push(v), document: { addEventListener(){} },
@@ -55,6 +55,8 @@ test('una competición enseña solo lo que admite: F1 sin resultados; ATP, horar
   s.pantalla('c:atp');
   assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['calendario:atp', 'atp:noticias']);
   assert.match(s.html(), /data-volver="competiciones"/);
+  s.pantalla('c:nba');
+  assert.match(s.html(), /data-orden="partido:nba">NBA · partido/);
   s.pantalla('resultados');
   assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['resultados:primera', 'resultados:segunda', 'resultados:nba', 'resultados:wnba']);
 });

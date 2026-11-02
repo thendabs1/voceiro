@@ -4,8 +4,13 @@
 
 Primero la presentación, con las consultas actuales: tablas compactas, grupos
 visibles juntos cuando caben y selector en una columna, columnas de fútbol
-en una sola tabla y parrilla común de marcadores. Hoy/Ayer/Últimos 4 días,
-jornadas, recogida y persistencia se estudian en el siguiente bloque.
+en una sola tabla y parrilla común de marcadores. La ampliación prioritaria
+ahora es estudiar una ficha puntual de partido y las jornadas/periodos,
+manteniendo las consultas a ESPN con caché. No se plantea crear una base de
+resultados ni activar crons para esta ampliación.
+
+Las opciones de recogida, cierre y persistencia descritas más abajo quedan
+como estudio de una posible ampliación futura, fuera del alcance actual.
 
 Validación local: once pruebas del panel, construcción y sintaxis del frontend;
 revisión en Chromium de clasificaciones NBA, Primera y F1 y resultados NBA a
@@ -16,8 +21,9 @@ La suite completa se ejecuta en el workflow Tests de la PR.
 
 - `front/app/14-consultas.js` y `workers/deno-buscar/src/consultas/` sirven
   resultados y clasificaciones de Primera, Segunda, NBA y WNBA; F1 solo tiene
-  clasificación en esta vía. Se consulta sin fechas. La normalización descarta
-  la identidad del encuentro y el estado original, que harán falta para integrar.
+  clasificación en esta vía. Se consulta sin fechas. La ampliación de partido
+  conserva la identidad del encuentro y diferencia aplazados, cancelados,
+  retrasados, suspendidos y estados desconocidos.
 - La caché puntual dura 60 segundos si hay encuentros en juego; resultados
   sin directo, una hora; clasificación sin directo, quince minutos. La clave
   incluye idioma e identidad, pero no periodo. No hay refresco periódico del front.
@@ -71,8 +77,10 @@ revisiones de contenido. La persistencia evita multiplicar consultas al proveedo
 por lector, pero habrá que cachear la lectura pública para no trasladar esa
 multiplicación a SQL.
 
-El primer piloto propuesto es **pospartido, sin directo**: empezar por fútbol y
-NBA, con una demora objetivo por decidir. Una estimación de duración solo agenda
+Como posible ampliación posterior, el piloto de recogida programada sería
+**pospartido, sin directo**: empezar por fútbol y NBA, con una demora objetivo
+por decidir. Esto no sustituiría las consultas puntuales con encuentros en juego.
+Una estimación de duración solo agenda
 un intento; jamás acredita que terminó. Tras la primera consulta, los estados
 en curso o desconocidos se reprograman con espera creciente y límite de intentos.
 Aplazados, cancelados, interrumpidos y horarios desconocidos tienen tratamiento
@@ -148,3 +156,82 @@ Validación futura en CI: UTC y zonas con cambios de hora, madrugada NBA,
 aplazados y reprogramaciones, final provisional/rectificado, partidos ausentes,
 duplicación entre días, fallos parciales, concurrencia, presupuesto agotado,
 caché por periodo y correcciones tras el cierre.
+
+## Revisión tras los comentarios: consultas con caché y ficha de partido
+
+Mantener la separación actual: citas para el calendario; resultados y
+clasificaciones mediante consultas puntuales a ESPN con caché. No hay una
+necesidad acreditada para añadir una base de resultados ni recogida programada.
+La persistencia solo se reconsideraría si aparece una necesidad concreta que
+la caché no cubra.
+
+Ahora una petición que encuentra datos vigentes reutiliza la caché; cuando
+faltan o caducan, el worker consulta ESPN y guarda la respuesta normalizada.
+Los encuentros en juego tienen una caducidad de 60 segundos; el panel no los
+actualiza automáticamente. Ampliar a fechas o partidos exige incluir ese ámbito
+en las claves y revisar la frescura por estado, sin cambiar por ello el núcleo.
+
+### Datos contrastados para una ficha de partido
+
+El recurso `summary?event=ID` devuelve detalle de un partido. Se comprobaron
+encuentros finalizados de Primera, Segunda, NBA y WNBA; las muestras seleccionadas
+están en `tests/consultas/muestras/espn-partido-*.json`. Acreditan campos presentes,
+no cobertura completa de ligas ni de estados previos o en juego.
+
+| Capa | Primera: partido 401882817 | NBA: partido 401909903 |
+| --- | --- | --- |
+| Cabecera común | Identidad, equipos, marcador, fecha, temporada y estado | Los mismos campos |
+| Lugar | Estadio y asistencia | Pabellón, asistencia y árbitros |
+| Desarrollo | Goles con participantes y minuto, tarjetas y sustituciones en `keyEvents` | Parciales por cuarto en `header.competitions[].competitors[].linescores`; jugadas en `plays` |
+| Equipos | Posesión, tiros, tiros a puerta, córners, faltas y tarjetas en `boxscore.teams` | Tiros de campo, triples, libres, rebotes, asistencias y pérdidas en `boxscore.teams` |
+| Jugadores | Titulares, suplentes, posiciones y cambios en `rosters` | Titulares y estadísticas individuales en `boxscore.players`; destacados en `leaders` |
+
+Fuentes comprobadas:
+[resumen de Primera](https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/summary?event=401882817)
+y [resumen NBA](https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909903).
+También se contrastaron
+[Segunda](https://site.api.espn.com/apis/site/v2/sports/soccer/esp.2/summary?event=401883124)
+y [WNBA](https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/summary?event=401918311).
+
+La ficha implementada tiene cabecera común con marcador, estado, hora y lugar;
+estadísticas comparadas; goles, tarjetas y cambios en fútbol; parciales y
+destacados en baloncesto. Alineaciones y tablas de jugadores van plegadas.
+Solo se muestran los bloques con información utilizable.
+
+Se abre desde una tarjeta de resultados; «Volver a resultados» recupera la
+parrilla y el foco sin consultar de nuevo. Otra entrada es `partido:primera`,
+`partido:segunda`, `partido:nba` o `partido:wnba`: devuelve los encuentros de la
+respuesta actual para elegir uno. `partido:primera/401882817` abre directamente
+un partido identificado. Hay acceso desde el menú de cada competición.
+Se conserva el mismo ID entre lista, ficha y caché. Esto amplía el contrato de
+consulta, sin cambiar el almacenamiento de agenda. Buscar por nombres de rivales
+y fecha seguiría necesitando resolver la identidad y no está incluido.
+
+El detalle se pide solo al abrirlo, con caché por competición, ID e idioma:
+60 segundos en juego, una hora finalizado y quince minutos en otros estados.
+La ausencia o caducidad de la caché requiere un GET a `summary`; abrir una parrilla
+no descarga los detalles. Dentro de una instancia, solicitudes concurrentes
+de la misma consulta comparten la petición. Los fallos no se cachean y una
+actualización fallida conserva la ficha anterior en el panel.
+Los JSON completos examinados ocupan aproximadamente 389 kB (fútbol) y 461 kB
+(NBA), sin comprimir: el worker debe devolver solo los campos elegidos para la
+ficha. La política de actualización debe permitir correcciones de finales.
+
+### Jornadas y periodos
+
+Siguen siendo útiles para encontrar el lunes los partidos del fin de semana.
+No requieren por sí mismos una base de resultados: primero acreditar cómo
+consultarlos e identificarlos en el proveedor, después cachear por ese ámbito.
+
+Las muestras guardadas de `scoreboard` de Primera no contienen una jornada
+acreditada. Tampoco se identificó en el resumen Site ni en el evento Core de
+`401882817`, consultados en esta revisión. Core enlaza temporada y tipo de
+temporada, pero la colección `seasons/2026/types/1/weeks` de Primera devuelve
+`count: 0`. Esto no descarta otros recursos con jornadas. Falta contrastar un
+índice de pertenencia a jornada, su cobertura en Primera/Segunda y los aplazados.
+Un rango viernes–lunes es una vista por fechas y no equivale a una jornada oficial.
+
+Queda preparada la identidad común que permite relacionar una futura jornada
+con las fichas, pero no se publica una consulta de jornada sin datos acreditados
+de pertenencia. La siguiente investigación sería localizar ese recurso; no
+depende de rediseñar la ficha. Recogida automática y persistencia quedan fuera.

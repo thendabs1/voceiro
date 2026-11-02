@@ -230,3 +230,118 @@ test('rutas del worker: límite por IP, CORS y método', async () => {
   assert.equal((await worker.fetch(new Request(req(),{method:'POST'}))).status,405);
   assert.equal((await worker.fetch(new Request(req(),{method:'OPTIONS'}))).status,204);
 });
+
+for (const [codigo, evento] of [['primera','401882817'], ['segunda','401883124'], ['nba','401909903'], ['wnba','401918311']]) {
+  test(`partido ${codigo}: un resumen, identidad validada y bloques del deporte`, async () => {
+    const b = banco({ respuestas: [`espn-partido-${codigo}`] });
+    const { d, r } = await ficha(b, `espn:partido/${codigo}/${evento}`);
+    envoltorio(d, 'partido'); assert.equal(d.estado, 'ok');
+    assert.equal(b.peticiones.length, 1);
+    assert.match(b.peticiones[0].url.pathname, /\/summary$/);
+    assert.equal(b.peticiones[0].url.searchParams.get('event'), evento);
+    assert.equal(d.ficha.id, `espn:partido/${codigo}/${evento}`);
+    assert.equal(d.ficha.estado, 'final'); assert.ok(d.ficha.local); assert.ok(d.ficha.visitante);
+    assert.ok(d.ficha.lugar); assert.ok(d.ficha.estadisticas.length);
+    assert.equal(r.headers.get('cache-control'), 'public, max-age=3600');
+    assert.equal('news' in d.ficha, false); assert.equal('commentary' in d.ficha, false);
+    assert.equal('plays' in d.ficha, false);
+    if (['nba','wnba'].includes(codigo)) {
+      assert.equal(d.ficha.parciales.length,4); assert.equal(d.ficha.alineaciones.length,0);
+      assert.equal(d.ficha.jugadores.length,2); assert.ok(d.ficha.destacados.length);
+      if (codigo === 'nba') {
+        assert.deepEqual(d.ficha.marcador,{local:'97',visitante:'108'});
+        assert.deepEqual(d.ficha.parciales[0],{periodo:1,local:'23',visitante:'24'});
+      }
+    } else {
+      assert.equal(d.ficha.parciales.length,0); assert.equal(d.ficha.jugadores.length,0);
+      assert.equal(d.ficha.alineaciones.length,2);
+      assert.ok(d.ficha.incidencias.some(e=>e.tipo==='gol'));
+    }
+    assert.equal((await ficha(b,`espn:partido/${codigo}/${evento}`)).r.headers.get('x-cache'),'HIT');
+    assert.equal(b.peticiones.length,1);
+  });
+}
+
+test('partido: lista de encuentros elegibles y misma identidad desde resultados', async () => {
+  const b = banco({respuestas:['espn-resultados-nba','espn-resultados-nba']});
+  const candidatos = await buscar(b,'partido','nba');
+  const resultados = await ficha(b,'espn:resultados/nba');
+  assert.equal(candidatos.d.ficha,null); assert.ok(candidatos.d.candidatos.length);
+  assert.equal(candidatos.d.candidatos[0].id,resultados.d.ficha.partidos[0].id);
+  assert.match(candidatos.d.candidatos[0].id,/^espn:partido\/nba\/[1-9]\d+$/);
+  assert.ok(candidatos.d.candidatos[0].inicio); assert.equal(candidatos.d.candidatos[0].estado,'final');
+  assert.equal((await buscar(b,'partido','nba')).r.headers.get('x-cache'),'HIT');
+});
+
+test('partido: rechaza identidades y competiciones ajenas antes de red y valida el resumen recibido', async () => {
+  const b=banco();
+  for (const id of ['espn:partido/f1/123','espn:partido/atp/123','espn:partido/nba/0','espn:partido/nba/123?x=1','espn:partido/nba/../123']) {
+    assert.equal((await ficha(b,id)).r.status,400,id);
+  }
+  assert.equal((await buscar(b,'partido','f1')).r.status,400);
+  assert.equal((await buscar(b,'partido','nba/123')).r.status,400);
+  assert.equal(b.peticiones.length,0);
+  for (const cambiar of [d=>{d.header.id='123';},d=>{d.header.competitions[0].id='123';},d=>{d.header.league.slug='wnba';},d=>{d.header.competitions[0].competitors.pop();},d=>{delete d.header.competitions[0].competitors[0].id;}]) {
+    const d=muestra('espn-partido-nba'); cambiar(d);
+    const otro=banco({respuestas:[d]});
+    assert.equal((await ficha(otro,'espn:partido/nba/401909903')).d.estado,'no_disponible');
+    assert.equal(otro.guardadas.size,0);
+  }
+});
+
+test('partido: reloj en juego, actualización al caducar y sin campos inventados antes de empezar', async () => {
+  const jugando=muestra('espn-partido-nba');
+  jugando.header.competitions[0].status={displayClock:'3:42',type:{name:'STATUS_IN_PROGRESS',state:'in',completed:false}};
+  const b=banco({respuestas:[jugando,'espn-partido-nba']});
+  const a=await ficha(b,'espn:partido/nba/401909903');
+  assert.equal(a.d.ficha.estado,'en_juego'); assert.equal(a.d.ficha.reloj,'3:42');
+  assert.equal(a.r.headers.get('cache-control'),'public, max-age=60');
+  b.avanzar(60001);
+  const final=await ficha(b,'espn:partido/nba/401909903');
+  assert.equal(final.d.ficha.estado,'final'); assert.equal(final.d.ficha.reloj,null);
+  assert.equal(b.peticiones.length,2);
+  const previo=muestra('espn-partido-nba');
+  previo.header.competitions[0].status={type:{state:'pre',name:'STATUS_SCHEDULED',completed:false}};
+  for (const k of ['boxscore','leaders','gameInfo']) delete previo[k];
+  const p=await ficha(banco({respuestas:[previo]}),'espn:partido/nba/401909903');
+  assert.equal(p.d.ficha.marcador,null); assert.deepEqual(p.d.ficha.parciales,[]);
+  assert.deepEqual(p.d.ficha.estadisticas,[]); assert.deepEqual(p.d.ficha.jugadores,[]); assert.equal(p.d.ficha.lugar,null);
+});
+
+for (const [nombre,estado] of [['STATUS_POSTPONED','aplazado'],['STATUS_CANCELED','cancelado'],['STATUS_DELAYED','retrasado'],['STATUS_SUSPENDED','suspendido'],['STATUS_UNKNOWN','desconocido']]) {
+  test(`partido y resultados: ${nombre} no se confunde con final`,async()=>{
+    const d=muestra('espn-partido-nba'), r=muestra('espn-resultados-nba');
+    const status={type:{name:nombre,state:'post',completed:false}};
+    d.header.competitions[0].status=status;
+    r.events[0].competitions[0].status=status;
+    const b=banco({respuestas:[d,r]});
+    assert.equal((await ficha(b,'espn:partido/nba/401909903')).d.ficha.estado,estado);
+    assert.equal((await ficha(b,'espn:resultados/nba')).d.ficha.partidos[0].estado,estado);
+  });
+}
+
+test('partido: lados por identidad, estadística ausente no es cero y prórrogas conservadas',async()=>{
+  const d=muestra('espn-partido-nba');
+  d.header.competitions[0].competitors.reverse(); d.boxscore.teams.reverse();
+  d.boxscore.teams.find(t=>t.team.id==='19').statistics=[];
+  for (const p of d.header.competitions[0].competitors) p.linescores.push({displayValue:'10'});
+  const {d:r}=await ficha(banco({respuestas:[d]}),'espn:partido/nba/401909903');
+  assert.equal(r.ficha.local,'Orlando Magic');
+  assert.deepEqual(r.ficha.marcador,{local:'97',visitante:'108'});
+  assert.equal(r.ficha.estadisticas.find(s=>s.id==='rebotes').local,null);
+  assert.equal(r.ficha.parciales.length,5); assert.equal(r.ficha.parciales[4].periodo,5);
+});
+
+test('partido: peticiones concurrentes comparten el GET y los errores permiten reintentar',async()=>{
+  let terminar;
+  const pendiente=new Promise(resolve=>{terminar=resolve;});
+  const b=banco({presupuesto:async(_,tarea)=>{await pendiente;return tarea();},respuestas:['espn-partido-nba']});
+  const a=ficha(b,'espn:partido/nba/401909903'), c=ficha(b,'espn:partido/nba/401909903');
+  terminar();
+  const respuestas=await Promise.all([a,c]);
+  assert.equal(b.peticiones.length,1); assert.ok(respuestas.every(r=>r.d.estado==='ok'));
+  const fallo=banco({respuestas:[new Error('sin red'),'espn-partido-nba']});
+  assert.equal((await ficha(fallo,'espn:partido/nba/401909903')).d.estado,'no_disponible');
+  assert.equal(fallo.guardadas.size,0);
+  assert.equal((await ficha(fallo,'espn:partido/nba/401909903')).d.estado,'ok');
+});

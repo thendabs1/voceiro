@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    CONSULTAS PUNTUALES: libro:, autor:, pelicula:, serie:, contexto:,
-   clasificacion: y resultados: (alias en shared/consultas/registro.js).
+   clasificacion:, resultados: y partido: (alias en shared/consultas/registro.js).
    Un panel encima de las noticias, como el tiempo, con una consulta
    activa. Los candidatos se eligen con un toque aunque haya uno solo (el
    nombre no asegura la identidad); los deportes van directos a su ficha.
@@ -27,6 +27,7 @@ const PUNTUAL = {
   cache: new Map(), enCurso: new Map(),
   texto: null, claveTexto: '',   // palabras de la búsqueda, marcadas en los equipos
   grupo: null,               // grupo visible en una columna; en ancho se ven todos
+  origen: null,              // parrilla a la que volver desde un partido
 };
 
 const idiomaConsulta = () => {
@@ -36,8 +37,13 @@ const idiomaConsulta = () => {
 const nombreConsulta = tipo => t('con' + tipo[0].toUpperCase() + tipo.slice(1));
 // Singular y plural: «clave1» para uno.
 const tn = (clave, n) => t(n === 1 ? clave + '1' : clave, { n });
-const esDeporteConsulta = tipo => tipo === 'clasificacion' || tipo === 'resultados';
-const codigoDeporte = (tipo, codigo) => Object.hasOwn(ESPN, codigo) && !(tipo === 'resultados' && codigo === 'f1');
+const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido'].includes(tipo);
+const codigoDeporte = (tipo, codigo) => Object.hasOwn(ESPN, codigo) && !(tipo !== 'clasificacion' && codigo === 'f1');
+const ESTADOS_PARTIDO = { en_juego: 'conEnJuego', final: 'conFinal', programado: 'conProgramado',
+  aplazado: 'conAplazado', cancelado: 'conCancelado', retrasado: 'conRetrasado', suspendido: 'conSuspendido', desconocido: 'conEstadoDesconocido' };
+const estadoTextoPartido = estado => t(ESTADOS_PARTIDO[estado] || 'conEstadoDesconocido');
+const fechaPartidoConsulta = inicio => isNaN(Date.parse(inicio)) ? ''
+  : new Intl.DateTimeFormat(idiomaConsulta(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(inicio));
 
 // Desde aplicarFiltros: la consulta activa es la última escrita, salvo que
 // se haya elegido otra entre varias. `texto` (compilado, como el del feed):
@@ -70,10 +76,17 @@ function activarConsulta(c){
   PUNTUAL.grupo = null;
   PUNTUAL.seq++;   // lo que esté en camino ya no se pinta
   clearTimeout(PUNTUAL.timer);
-  Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '' });
+  Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null });
   if (esDeporteConsulta(c.tipo)){
     const codigo = normalize(c.texto);
-    if (codigoDeporte(c.tipo, codigo)){ abrirFichaConsulta(`espn:${c.tipo}/${codigo}`); return; }
+    if (c.tipo === 'partido' && /^(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(codigo)){
+      abrirFichaConsulta(`espn:partido/${codigo}`); return;
+    }
+    if (codigoDeporte(c.tipo, codigo)){
+      if (c.tipo === 'partido') cargarCandidatos({ ...c, texto: codigo });
+      else abrirFichaConsulta(`espn:${c.tipo}/${codigo}`);
+      return;
+    }
     PUNTUAL.estado = 'ayuda';
   } else if (!c.texto) PUNTUAL.estado = 'ayuda';
   else if (c.texto.length < CONSULTA_MIN_LETRAS) PUNTUAL.estado = 'corta';
@@ -145,13 +158,19 @@ async function abrirFichaConsulta(id, { candidato = null, callado = false } = {}
   try {
     const d = await pedirConsulta('/consulta/ficha', { id });
     if (seq !== PUNTUAL.seq) return;
-    Object.assign(PUNTUAL, { ficha: d, estado: 'ficha', fallo: '' });
+    if (callado && d.estado === 'no_disponible' && PUNTUAL.ficha?.estado === 'ok') PUNTUAL.fallo = 'red';
+    else Object.assign(PUNTUAL, { ficha: d, estado: 'ficha', fallo: '' });
   } catch(e){
     if (seq !== PUNTUAL.seq) return;
     if (callado) PUNTUAL.fallo = e.motivo || 'red';
     else Object.assign(PUNTUAL, { estado: 'error', error: e.motivo || 'red' });
   }
   pintarConsulta();
+  programarCaducidadConsulta();
+}
+
+function programarCaducidadConsulta(){
+  clearTimeout(PUNTUAL.timer);
   // Deportes: al caducar se ofrece Actualizar; no se pide nada solo.
   const caduca = Date.parse(PUNTUAL.ficha?.caduca);
   if (PUNTUAL.estado === 'ficha' && esDeporteConsulta(PUNTUAL.ficha.tipo) && caduca > Date.now()){
@@ -190,6 +209,24 @@ function pulsarConsulta(ev){
       break;
     }
     case 'ficha': p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(b.dataset.id); break;
+    case 'partido': {
+      const partido = p.ficha?.ficha?.partidos?.find(x => x.id === b.dataset.id);
+      if (!partido || !/^espn:partido\/(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(partido.id)) break;
+      p.origen = { ficha: p.ficha, id: p.id, candidato: p.candidato, fallo: p.fallo,
+        grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id };
+      p.enfocar = '.consulta-ficha summary';
+      abrirFichaConsulta(partido.id);
+      break;
+    }
+    case 'volver': {
+      if (!p.origen) break;
+      const { idPartido, ...origen } = p.origen;
+      p.seq++;
+      Object.assign(p, origen, { origen: null, estado: 'ficha', enfocar: `[data-accion="partido"][data-id="${idPartido}"]` });
+      pintarConsulta();
+      programarCaducidadConsulta();
+      break;
+    }
     case 'cambiar':
       p.seq++;
       Object.assign(p, { estado: 'candidatos', ficha: null, id: '', candidato: null, enfocar: '.consulta-candidatos button' });
@@ -255,12 +292,14 @@ const historialWikipedia = () => (PUNTUAL.id.startsWith('wikipedia:')
 function htmlConsulta(){
   const p = PUNTUAL, c = p.activa;
   const cerrar = t('conCerrar');
-  const cambiar = p.id && p.candidatos?.estado === 'ok' ? botonConsulta('cambiar', t('conCambiar')) : '';
+  const cambiar = p.origen ? botonConsulta('volver', t('conVolverResultados'))
+    : p.id && p.candidatos?.estado === 'ok' ? botonConsulta('cambiar', t('conCambiar')) : '';
   const otras = p.lista.length > 1
     ? `<div class="consulta-otras">${escapeHtml(t('conVarias'))} ${p.lista.map((o, i) =>
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
     : '';
-  return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(c.tipo))}</span>${cambiar}
+  const tipo = p.id.startsWith('espn:partido/') ? 'partido' : c.tipo;
+  return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(tipo))}</span>${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
     ${otras}${cuerpoConsulta()}`;
 }
@@ -293,10 +332,12 @@ function estadoConsulta(d, claveVacio, vars){
 }
 
 function htmlCandidatos(d){
-  const estado = estadoConsulta(d, 'conSinResultados', { x: PUNTUAL.activa.texto });
+  const estado = estadoConsulta(d, d.tipo === 'partido' ? 'conSinPartidos' : 'conSinResultados', { x: PUNTUAL.activa.texto });
   if (estado) return estado + htmlPieConsulta(d);
   const items = d.candidatos.map((x, i) => {
-    const det = [x.detalle && x.detalle !== x.titulo ? x.detalle : '', x.anio || ''].filter(Boolean).join(' · ');
+    const det = (d.tipo === 'partido'
+      ? [fechaPartidoConsulta(x.inicio), estadoTextoPartido(x.estado), x.detalle]
+      : [x.detalle && x.detalle !== x.titulo ? x.detalle : '', x.anio || '']).filter(Boolean).join(' · ');
     return `<li><button type="button" data-accion="candidato" data-i="${i}"><span class="consulta-cand-tit">${escapeHtml(x.titulo || '')}</span>${
       det ? `<span class="consulta-cand-det">${escapeHtml(det)}</span>` : ''}</button></li>`;
   }).join('');
@@ -377,6 +418,55 @@ function gruposConsulta(grupos, pintar){
       <h3>${escapeHtml(titulo(g))}</h3>${pintar(g)}</section>`).join('')}</div>`;
 }
 
+const statPartido = id => t('conStat' + id[0].toUpperCase() + id.slice(1));
+
+function fichaPartido(f){
+  const val = v => escapeHtml(v ?? '—');
+  const equipo = lado => f[lado] || '—';
+  const equipos = pintar => `<div class="consulta-equipos">${['local', 'visitante'].map(pintar).join('')}</div>`;
+  const estadisticas = (f.estadisticas || []).length ? `<table class="consulta-comparativa">
+    <caption>${escapeHtml(t('conEstadisticas'))}</caption><thead><tr><th scope="col">${equipoConsulta(f.local)}</th>
+    <td></td><th scope="col">${equipoConsulta(f.visitante)}</th></tr></thead><tbody>${f.estadisticas.map(s => {
+      const formato = v => v == null ? '—' : s.id === 'posesion' && !String(v).includes('%') ? v + '%' : v;
+      return `<tr><td>${val(formato(s.local))}</td><th scope="row">${escapeHtml(statPartido(s.id))}</th><td>${val(formato(s.visitante))}</td></tr>`;
+    }).join('')}</tbody></table>` : '';
+  const incidencias = (f.incidencias || []).length ? `<h3 class="consulta-sub">${escapeHtml(t('conIncidencias'))}</h3>
+    <ul class="consulta-incidencias">${f.incidencias.map(e => `<li><span>${val(e.minuto)}</span><span>
+      <strong>${escapeHtml(t('conInc' + e.tipo[0].toUpperCase() + e.tipo.slice(1)))}</strong> · ${equipoConsulta(equipo(e.equipo))}
+      ${e.jugadores.length ? `<span class="consulta-inc-jugadores">${escapeHtml(e.jugadores.join(' · '))}</span>` : ''}</span></li>`).join('')}</ul>` : '';
+  const alineaciones = (f.alineaciones || []).length ? plegadoConsulta(t('conAlineaciones'), equipos(lado => {
+    const a = f.alineaciones.find(x => x.equipo === lado);
+    if (!a) return '';
+    return `<section><h4>${equipoConsulta(equipo(lado))}${a.formacion ? ' · ' + escapeHtml(a.formacion) : ''}</h4>${[true, false].map(titular => {
+      const lista = a.jugadores.filter(p => p.titular === titular);
+      return lista.length ? `<p class="consulta-sub">${escapeHtml(t(titular ? 'conTitulares' : 'conSuplentes'))}</p>
+        <ul class="consulta-alineacion">${lista.map(p => `<li><span>${val(p.dorsal)}</span><span>${escapeHtml(p.nombre)}${p.posicion ? ` <small>(${escapeHtml(p.posicion)})</small>` : ''}</span></li>`).join('')}</ul>` : '';
+    }).join('')}</section>`;
+  })) : '';
+  const parciales = (f.parciales || []).length ? `<div class="consulta-tabla-scroll"><table class="consulta-parciales">
+    <caption>${escapeHtml(t('conParciales'))}</caption><thead><tr><th scope="col">${escapeHtml(t('conColEquipo'))}</th>${f.parciales.map(p =>
+      `<th scope="col"><abbr title="${escapeHtml(t(p.periodo <= 4 ? 'conCuarto' : 'conProrroga', { n: p.periodo <= 4 ? p.periodo : p.periodo - 4 }))}">${p.periodo <= 4 ? p.periodo : 'P' + (p.periodo - 4)}</abbr></th>`).join('')}</tr></thead>
+    <tbody>${['local', 'visitante'].map(lado => `<tr><th scope="row">${equipoConsulta(equipo(lado))}</th>${f.parciales.map(p => `<td>${val(p[lado])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '';
+  const destacados = (f.destacados || []).length ? `<h3 class="consulta-sub">${escapeHtml(t('conDestacados'))}</h3>${equipos(lado => {
+    const lista = f.destacados.filter(p => p.equipo === lado);
+    return lista.length ? `<section><h4>${equipoConsulta(equipo(lado))}</h4>${listaConsulta(lista.map(p => `${p.nombre} · ${p.valor} ${statPartido(p.tipo)}`))}</section>` : '';
+  })}` : '';
+  const jugadores = (f.jugadores || []).length ? plegadoConsulta(t('conJugadores'), equipos(lado => {
+    const tabla = f.jugadores.find(p => p.equipo === lado);
+    return tabla ? `<section><div class="consulta-tabla-scroll"><table class="consulta-jugadores"><caption>${equipoConsulta(equipo(lado))}</caption>
+      <thead><tr><th scope="col">${escapeHtml(t('conJugador'))}</th>${['minutos', 'puntos', 'rebotes', 'asistencias'].map(k => `<th scope="col"><abbr title="${escapeHtml(statPartido(k))}">${escapeHtml(t('conAbrev' + k[0].toUpperCase() + k.slice(1)))}</abbr></th>`).join('')}</tr></thead>
+      <tbody>${tabla.filas.map(p => `<tr><th scope="row">${escapeHtml(p.nombre)}</th>${['minutos', 'puntos', 'rebotes', 'asistencias'].map(k => `<td>${val(p[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>` : '';
+  })) : '';
+  return {
+    titulo: `${f.local} · ${f.visitante}`,
+    linea: [CONSULTA_DEPORTES[f.competicion], fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj].filter(Boolean).join(' · '),
+    cuerpo: `<div class="consulta-marcador"><span>${equipoConsulta(f.local)}</span><b>${val(f.marcador?.local)}</b>
+      <span>${equipoConsulta(f.visitante)}</span><b>${val(f.marcador?.visitante)}</b></div>
+      ${f.lugar ? `<p class="consulta-lugar">${escapeHtml([f.lugar, f.ciudad].filter(Boolean).join(' · '))}</p>` : ''}
+      ${parciales}${estadisticas}${incidencias}${destacados}${alineaciones}${jugadores}`,
+  };
+}
+
 function fichaAudiovisual(f, serie){
   const personas = (serie ? f.creacion : f.direccion) || [];
   const modos = { suscripcion: [], alquiler: [], compra: [] };
@@ -432,6 +522,7 @@ const FICHAS_CONSULTA = {
   },
   pelicula: f => fichaAudiovisual(f, false),
   serie: f => fichaAudiovisual(f, true),
+  partido: fichaPartido,
   clasificacion(f){
     const deporte = ESPN[f.competicion]?.[0];
     const grupos = f.grupos || [];
@@ -450,7 +541,6 @@ const FICHAS_CONSULTA = {
     const partidos = f.partidos || [];
     const cuenta = {};
     for (const p of partidos) cuenta[p.estado] = (cuenta[p.estado] || 0) + 1;
-    const estado = { en_juego: 'conEnJuego', final: 'conFinal', programado: 'conProgramado' };
     // Por día en la zona del lector, en el orden de la respuesta.
     const dias = new Map();
     for (const p of partidos){
@@ -463,8 +553,10 @@ const FICHAS_CONSULTA = {
     const cuerpo = [...dias].map(([fecha, lista]) => `${fecha ? `<p class="consulta-sub">${escapeHtml(fecha)}</p>` : ''}<ul class="consulta-partidos">${
       lista.map(p => {
         const inicio = new Date(p.inicio);
-        const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estado[p.estado] ? t(estado[p.estado]) : ''].filter(Boolean).join(' · ');
-        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}"><span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b></li>`;
+        const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estadoTextoPartido(p.estado)].filter(Boolean).join(' · ');
+        const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b>`;
+        const abrir = /^espn:partido\/(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(p.id || '');
+        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}">${abrir ? `<button type="button" data-accion="partido" data-id="${escapeHtml(p.id)}" aria-label="${escapeHtml(t('conAbrirPartido', { x: `${p.local} · ${p.visitante}` }))}">${contenido}</button>` : contenido}</li>`;
       }).join('')}</ul>`).join('');
     return {
       titulo: `${CONSULTA_DEPORTES[f.competicion] || f.competicion} · ${tn('conPartidos', partidos.length)}`,

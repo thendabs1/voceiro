@@ -31,6 +31,7 @@ const CONSULTAS = {
   serie: ['serie', 'sèrie', 'series', 'telesaila'],
   clasificacion: ['clasificacion', 'clasificación', 'clasificacións', 'classificacio', 'classificació', 'sailkapena', 'standings'],
   resultados: ['resultados', 'resultats', 'emaitzak', 'results'],
+  partido: ['partido', 'partit', 'partida', 'match'],
   contexto: ['contexto', 'context', 'testuingurua', 'wiki'],
 };
 
@@ -47,7 +48,7 @@ const ESPN = {
 
 
 // Consultas cuyo valor es un código de una palabra, no un título.
-const CONSULTAS_DE_CODIGO = new Set(['clasificacion', 'resultados']);
+const CONSULTAS_DE_CODIGO = new Set(['clasificacion', 'resultados', 'partido']);
 
 const PREFIX_ALIASES = {
   ...Object.fromEntries(Object.keys(PREFIJOS_CONSULTAS).map(p => [p, 'consulta'])),

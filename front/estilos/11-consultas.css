@@ -62,6 +62,10 @@
    junto al equipo; no filas de lado a lado de la pantalla. */
 .consulta-partidos{ display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16em, 100%), 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
 .consulta-partidos li{ display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.consulta-partidos li:has(>button){ display: block; padding: 0; }
+.consulta-partidos li>button{ display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 12px; width: 100%; padding: 8px 10px; border: 0; border-radius: inherit; text-align: left; background: transparent; }
+.consulta-partidos li>button:hover{ background: var(--btn-bg); }
+.consulta-partidos li>button:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
 .consulta-partidos b{ min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
 .consulta-partidos [data-estado="en_juego"]{ border-color: var(--accent); }
 .consulta-partidos [data-estado="en_juego"] .consulta-estado{ color: var(--accent); font-weight: 600; }
@@ -69,10 +73,33 @@
 .consulta-marcada, .consulta-marcada td{ font-weight: 600; }
 .consulta-partidos li.consulta-marcada{ box-shadow: inset 3px 0 var(--mark); }
 .consulta-estado{ grid-column: 1 / -1; font-size: .8em; }
+/* Ficha: una cabecera común, con los bloques propios de cada deporte. */
+.consulta-marcador{ display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 16px; max-width: 28em; font-size: 1.15em; }
+.consulta-marcador b{ text-align: right; font-variant-numeric: tabular-nums; }
+.consulta-lugar{ color: var(--muted); }
+.consulta-comparativa, .consulta-parciales, .consulta-jugadores{ width: 100%; max-width: 40em; margin: 12px 0; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.consulta-comparativa caption, .consulta-parciales caption, .consulta-jugadores caption{ text-align: left; font-weight: 600; margin-bottom: 6px; }
+.consulta-comparativa th, .consulta-comparativa td, .consulta-parciales th, .consulta-parciales td, .consulta-jugadores th, .consulta-jugadores td{ padding: 5px 4px; border-bottom: 1px solid var(--border); }
+.consulta-comparativa{ table-layout: fixed; }
+.consulta-comparativa th, .consulta-comparativa td{ text-align: center; overflow-wrap: anywhere; }
+.consulta-comparativa tbody th{ font-weight: 400; color: var(--muted); }
+.consulta-equipos{ display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; max-width: 56em; }
+.consulta-equipos>section{ min-width: 0; }
+.consulta-equipos h4{ font-size: 1em; margin: 8px 0; }
+.consulta-alineacion, .consulta-incidencias{ margin: 4px 0; padding: 0; list-style: none; }
+.consulta-alineacion li, .consulta-incidencias li{ display: grid; grid-template-columns: 3em minmax(0,1fr); gap: 6px; padding: 4px 0; }
+.consulta-alineacion li>span:first-child, .consulta-incidencias li>span:first-child{ color: var(--muted); font-variant-numeric: tabular-nums; }
+.consulta-inc-jugadores{ display: block; }
+.consulta-tabla-scroll{ max-width: 100%; overflow-x: auto; }
+.consulta-parciales th:first-child, .consulta-jugadores th:first-child{ text-align: left; overflow-wrap: anywhere; }
+.consulta-parciales td, .consulta-parciales th:not(:first-child), .consulta-jugadores td, .consulta-jugadores th:not(:first-child){ text-align: right; white-space: nowrap; }
+.consulta-jugadores tbody th, .consulta-parciales tbody th{ font-weight: 400; }
+.consulta-parciales abbr, .consulta-jugadores abbr{ text-decoration: none; }
 @container (min-width:52em){
   .consulta-grupos-nav{ display: none; }
   .consulta-grupos{ grid-template-columns: repeat(2,minmax(0,28em)); }
   .consulta-grupos>section[data-seleccionado="false"]{ display: block; }
+  .consulta-equipos{ grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media(pointer:fine){
   .consulta-deporte{ font-size: .9em; }

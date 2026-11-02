@@ -1,5 +1,6 @@
 import { CONSULTAS, ESPN } from '../shared/consultas/registro.js';
 import * as normalizar from './normalizar.js';
+import { normalizarPartido } from './partido.js';
 
 const DIA = 86400;
 const IDIOMAS = new Set(['es', 'gl', 'ca', 'eu', 'en']);
@@ -40,6 +41,7 @@ const FUENTES = {
   serie: ['TMDB', 'https://www.themoviedb.org', 'Condiciones de TMDB', 'https://www.themoviedb.org/terms-of-use'],
   clasificacion: ['ESPN', 'https://www.espn.com', 'Condiciones de ESPN', 'https://disneytermsofuse.com/'],
   resultados: ['ESPN', 'https://www.espn.com', 'Condiciones de ESPN', 'https://disneytermsofuse.com/'],
+  partido: ['ESPN', 'https://www.espn.com', 'Condiciones de ESPN', 'https://disneytermsofuse.com/'],
   contexto: ['Wikipedia + Wikidata', 'https://www.wikipedia.org', 'CC BY-SA', 'https://creativecommons.org/licenses/by-sa/4.0/'],
 };
 
@@ -47,6 +49,7 @@ const FUENTES = {
 export function crearConsultas({ fetch: descargar = (...args) => fetch(...args), ahora = Date.now,
   abrirCache = () => caches.open('voceiro-consultas-v1'),
   entorno = nombre => globalThis.Deno?.env.get(nombre), presupuesto = crearPresupuesto({ ahora }) } = {}) {
+  const enCurso = new Map();
   async function pedir(proveedor, url) {
     const headers = { 'User-Agent': UA, Accept: 'application/json' };
     if (proveedor === 'tmdb') {
@@ -74,6 +77,16 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
   async function producir(tipo, texto, id, idioma) {
     const wp = `https://${idioma}.wikipedia.org`;
     if (!id) {
+      if (tipo === 'partido') {
+        const circuito = ESPN[texto].join('/');
+        const d = await pedir('espn', `https://site.api.espn.com/apis/site/v2/sports/${circuito}/scoreboard`);
+        if (!Array.isArray(d.events)) throw fallo('ESPN: marcador no válido');
+        const partidos = normalizar.resultados(d, texto).partidos;
+        return { candidatos: partidos.filter(p => p.id).map(p => ({ id: p.id,
+          titulo: `${p.local} · ${p.visitante}`, detalle: p.marcador ? `${p.marcador.local ?? '—'}–${p.marcador.visitante ?? '—'}` : null,
+          inicio: p.inicio, estado: p.estado, anio: null, imagen: null, enlace: FUENTES.partido[1] })),
+          ttl: partidos.some(p => p.estado === 'en_juego') ? 60 : 900 };
+      }
       if (tipo === 'clasificacion' || tipo === 'resultados') {
         return { candidatos: [{ id: `espn:${tipo}/${texto}`, titulo: texto, detalle: tipo,
           anio: null, imagen: null, enlace: FUENTES[tipo][1] }] };
@@ -92,6 +105,15 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       return { candidatos: normalizar.paginas(await pedir('wikipedia', url(`${wp}/w/rest.php/v1/search/page`, { q: texto, limit: '10' })), idioma) };
     }
     const valor = id.slice(id.indexOf(':') + 1);
+    if (tipo === 'partido') {
+      const [, codigo, evento] = valor.split('/');
+      const [deporte, liga] = ESPN[codigo];
+      const d = await pedir('espn', `https://site.api.espn.com/apis/site/v2/sports/${deporte}/${liga}/summary?event=${evento}`);
+      const ficha = normalizarPartido(d, codigo, deporte, liga, evento);
+      const seccion = deporte === 'soccer' ? 'soccer/match' : `${codigo}/game`;
+      return { ficha, enlace: `https://www.espn.com/${seccion}/_/gameId/${evento}`,
+        ttl: ficha.estado === 'en_juego' ? 60 : ficha.estado === 'final' ? 3600 : 900 };
+    }
     if (tipo === 'libro') {
       const obra = await pedir('openlibrary', `${OL}/works/${valor}.json`);
       if (!obra.title) throw fallo('Open Library: obra no válida');
@@ -156,12 +178,14 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
         else if (/^tmdb:(movie|tv)\/[1-9]\d*$/.test(id || '')) tipo = id.startsWith('tmdb:movie/') ? 'pelicula' : 'serie';
         else if (/^espn:(clasificacion|resultados)\/[a-z0-9-]+$/.test(id || '')) {
           const partes = id.slice(5).split('/'); tipo = partes[0]; texto = partes[1];
+        } else if (/^espn:partido\/[a-z0-9-]+\/[1-9]\d{0,11}$/.test(id || '')) {
+          tipo = 'partido'; texto = id.split('/')[1];
         } else if (/^wikipedia:[^\x00-\x1f]{1,250}$/.test(id || '')) tipo = 'contexto';
         else throw fallo('Identificador no válido', 400);
       } else if (id || !texto || texto.length > 250 || !Object.hasOwn(CONSULTAS, tipo)) throw fallo('Tipo o texto no válido', 400);
-      if (tipo === 'clasificacion' || tipo === 'resultados') {
+      if (tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido') {
         if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
-        if (tipo === 'resultados' && texto === 'f1') throw fallo('F1 no tiene partidos local/visitante; solo clasificación', 400);
+        if (tipo !== 'clasificacion' && texto === 'f1') throw fallo('F1 no tiene partidos local/visitante; solo clasificación', 400);
       }
       const [fuente, enlace, nombre, licenciaUrl] = FUENTES[tipo];
       const base = { tipo, estado: 'ok', candidatos: [], ficha: null, fuente, enlace,
@@ -169,7 +193,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
           : tipo === 'pelicula' || tipo === 'serie' ? 'TMDB; JustWatch' : fuente,
         consultado: new Date(ahora()).toISOString(), caduca: null, incompleto: false };
       const clave = new URL('/consulta/cache', url);
-      clave.search = new URLSearchParams({ v: '1', idioma, ...(id ? { id } : { tipo, texto }) });
+      clave.search = new URLSearchParams({ v: '2', idioma, ...(id ? { id } : { tipo, texto }) });
       const req = new Request(clave);
       const cache = await abrirCache();
       const hit = await cache.match(req);
@@ -180,17 +204,23 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
           const r = responder(datos, 200, restante); r.headers.set('X-Cache', 'HIT'); return r;
         }
       }
-      try {
-        const { ttl = tipo === 'pelicula' || tipo === 'serie' ? DIA : tipo === 'clasificacion' || tipo === 'resultados' ? 900 : 7 * DIA,
-          vacio = false, ...datos } = await producir(tipo, texto, id, idioma);
-        const cuerpo = { ...base, ...datos, caduca: new Date(ahora() + ttl * 1000).toISOString() };
-        if (vacio || (!cuerpo.ficha && !cuerpo.candidatos.length)) cuerpo.estado = 'vacio';
-        const r = responder(cuerpo, 200, ttl);
-        await cache.put(req, r.clone()).catch(() => {});
-        return r;
-      } catch (e) {
-        return responder({ ...base, estado: 'no_disponible', incompleto: true, motivo: String(e.message).slice(0, 160) }, 200);
-      }
+      if (enCurso.has(req.url)) return (await enCurso.get(req.url)).clone();
+      const produccion = (async () => {
+        try {
+          const { ttl = tipo === 'pelicula' || tipo === 'serie' ? DIA : tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido' ? 900 : 7 * DIA,
+            vacio = false, ...datos } = await producir(tipo, texto, id, idioma);
+          const cuerpo = { ...base, ...datos, caduca: new Date(ahora() + ttl * 1000).toISOString() };
+          if (vacio || (!cuerpo.ficha && !cuerpo.candidatos.length)) cuerpo.estado = 'vacio';
+          const r = responder(cuerpo, 200, ttl);
+          await cache.put(req, r.clone()).catch(() => {});
+          return r;
+        } catch (e) {
+          return responder({ ...base, estado: 'no_disponible', incompleto: true, motivo: String(e.message).slice(0, 160) }, 200);
+        }
+      })();
+      enCurso.set(req.url, produccion);
+      try { return (await produccion).clone(); }
+      finally { enCurso.delete(req.url); }
     } catch (e) {
       return responder({ tipo, estado: e.status === 400 ? 'vacio' : 'no_disponible', candidatos: [], ficha: null,
         fuente: FUENTES[tipo]?.[0] || null, enlace: FUENTES[tipo]?.[1] || null, licencia: null, atribucion: null,
