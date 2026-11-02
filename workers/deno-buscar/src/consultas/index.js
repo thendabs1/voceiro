@@ -74,7 +74,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     return u.href;
   }
 
-  async function producir(tipo, texto, id, idioma) {
+  async function producir(tipo, texto, id, idioma, fecha) {
     const wp = `https://${idioma}.wikipedia.org`;
     if (!id) {
       if (tipo === 'partido') {
@@ -139,9 +139,11 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     if (tipo === 'clasificacion' || tipo === 'resultados') {
       const codigo = valor.split('/')[1];
       const circuito = ESPN[codigo].join('/');
-      const scoreboard = await pedir('espn', `https://site.api.espn.com/apis/site/v2/sports/${circuito}/scoreboard`);
+      const recurso = `https://site.api.espn.com/apis/site/v2/sports/${circuito}/scoreboard`;
+      const scoreboard = await pedir('espn', fecha ? url(recurso, { dates: fecha.replaceAll('-', '') }) : recurso);
       if (!Array.isArray(scoreboard.events)) throw fallo('ESPN: marcador no válido');
-      const partidos = normalizar.resultados(scoreboard, codigo);
+      if (fecha && scoreboard.day?.date && scoreboard.day.date !== fecha) throw fallo('ESPN: fecha distinta de la solicitada');
+      const partidos = normalizar.resultados(scoreboard, codigo, fecha);
       const enJuego = partidos.partidos.some(p => p.estado === 'en_juego') || (scoreboard.events || []).some(e => e.status?.type?.state === 'in');
       if (tipo === 'resultados') return { ficha: partidos, ttl: enJuego ? 60 : 3600, vacio: !partidos.partidos.length };
       const d = await pedir('espn', `https://site.api.espn.com/apis/v2/sports/${circuito}/standings`);
@@ -166,6 +168,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     let tipo = url.searchParams.get('tipo') || null;
     const id = url.searchParams.get('id');
     const idioma = url.searchParams.get('idioma') || 'es';
+    const fecha = url.searchParams.get('fecha');
     let texto = (url.searchParams.get('texto') || '').trim().replace(/\s+/g, ' ');
     const responder = (datos, status, ttl = 0) => new Response(JSON.stringify(datos), { status, headers: {
       ...cabeceras, 'Content-Type': 'application/json; charset=utf-8',
@@ -187,13 +190,15 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
         if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
         if (tipo !== 'clasificacion' && texto === 'f1') throw fallo('F1 no tiene partidos local/visitante; solo clasificación', 400);
       }
+      if (fecha !== null && (tipo !== 'resultados' || url.pathname !== '/consulta/ficha'
+          || !normalizar.fechaResultadosValida(fecha))) throw fallo('Fecha de resultados no válida', 400);
       const [fuente, enlace, nombre, licenciaUrl] = FUENTES[tipo];
       const base = { tipo, estado: 'ok', candidatos: [], ficha: null, fuente, enlace,
         licencia: { nombre, enlace: licenciaUrl }, atribucion: tipo === 'contexto' ? 'Wikipedia (autores en el historial) y Wikidata (CC0)'
           : tipo === 'pelicula' || tipo === 'serie' ? 'TMDB; JustWatch' : fuente,
         consultado: new Date(ahora()).toISOString(), caduca: null, incompleto: false };
       const clave = new URL('/consulta/cache', url);
-      clave.search = new URLSearchParams({ v: '2', idioma, ...(id ? { id } : { tipo, texto }) });
+      clave.search = new URLSearchParams({ v: '3', idioma, ...(id ? { id } : { tipo, texto }), ...(fecha ? { fecha } : {}) });
       const req = new Request(clave);
       const cache = await abrirCache();
       const hit = await cache.match(req);
@@ -208,7 +213,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       const produccion = (async () => {
         try {
           const { ttl = tipo === 'pelicula' || tipo === 'serie' ? DIA : tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido' ? 900 : 7 * DIA,
-            vacio = false, ...datos } = await producir(tipo, texto, id, idioma);
+            vacio = false, ...datos } = await producir(tipo, texto, id, idioma, fecha);
           const cuerpo = { ...base, ...datos, caduca: new Date(ahora() + ttl * 1000).toISOString() };
           if (vacio || (!cuerpo.ficha && !cuerpo.candidatos.length)) cuerpo.estado = 'vacio';
           const r = responder(cuerpo, 200, ttl);

@@ -1,116 +1,51 @@
-# Revisión de resultados y jornadas — 2 de noviembre de 2026
+# Resultados por fecha en Voceiro
 
-Continúa el [diseño de resultados](resultados-diseno.md), incluidos los
-comentarios sobre consultar encuentros anteriores. Esta revisión propone el
-siguiente paso; solo se ha preparado la corrección de caché del cliente.
+La parrilla de `resultados:primera`, `resultados:segunda`, `resultados:nba`
+y `resultados:wnba` permite consultar días anteriores y posteriores, elegir
+una fecha y abrir las estadísticas de cada partido.
 
-## Tarjetas NBA sin acceso al partido
+## Navegación
 
-Las capturas muestran la parrilla actual de Segunda y cuatro finales NBA.
-Las respuestas publicadas de NBA, consultadas en castellano y gallego, incluyen
-ahora los cuatro IDs `espn:partido/nba/401909903` a `401909906`.
-La ficha publicada de `401909903` también devuelve estado `ok`.
+Al abrir Resultados se mantiene la selección actual de ESPN y se muestra
+`day.date`, la fecha declarada por el proveedor. No equivale necesariamente
+a hoy: en las respuestas comprobadas del 2 de noviembre, Segunda declaraba
+ese día; NBA, el 1 de noviembre; WNBA, el 31 de octubre.
 
-El código solo dibuja el botón cuando el marcador trae un ID válido.
-La entrega de fichas cambió la clave interna de caché a `v=2`, pero conservó
-la URL pública. Una respuesta HTTP anterior, vigente durante una hora y sin
-IDs, puede seguir llegando desde el navegador o una caché intermedia.
-Es una explicación compatible con la captura; no se dispone de la respuesta
-de red original para confirmar que fuese esa la causa en esa sesión.
+Los controles anterior, fecha y siguiente consultan un día cada vez, solo por
+acción del lector. Un día vacío muestra «Sin partidos» y conserva los controles.
+Al abrir un partido y volver se recuperan la fecha, la parrilla y el foco sin
+volver a pedir los resultados. Si falla otra fecha, se mantiene la vista buena
+con su fecha y se permite reintentar la consulta fallida.
 
-La corrección añade `v=2` a las URLs del cliente. Una prueba simula la respuesta
-antigua aún vigente y comprueba que se recupera una parrilla con botones y se
-abre la ficha. La versión de la URL deberá acompañar futuros cambios de contrato.
+La navegación NBA/WNBA usa el día deportivo ESPN. Los encuentros mantienen
+sus horas y agrupaciones por fecha local; una nota explica que un partido de
+madrugada puede aparecer en la fecha anterior. No se deduce el día del proveedor
+a partir de la hora del primer partido.
 
-## Qué ofrece cada fuente
+## Consulta y caché
 
-| Consulta comprobada | Datos observados | Peticiones de origen sin caché |
-| --- | --- | --- |
-| [LaLiga Primera, jornada 11](https://www.laliga.com/laliga-easports/resultados/2026-27/jornada-11) | Jornada ID 10385; diez encuentros, resultados y estados; catálogo de jornadas | Un GET de la página HTML |
-| [LaLiga Primera, jornada 10](https://www.laliga.com/laliga-easports/resultados/2026-27/jornada-10) | Diez encuentros de la jornada anterior, todos `FullTime` | Un GET |
-| [LaLiga Segunda, jornada 12](https://www.laliga.com/laliga-hypermotion/resultados/2026-27/jornada-12) | Jornada ID 10424; once encuentros finalizados, en juego o pendientes | Un GET |
-| [LaLiga Segunda, jornada 11](https://www.laliga.com/laliga-hypermotion/resultados/2026-27/jornada-11) | Once encuentros anteriores, todos `FullTime` | Un GET |
-| [ESPN Primera, 31 de octubre](https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard?dates=20261031) | Cuatro encuentros con los IDs que utiliza la ficha actual | Un GET por día |
-| [ESPN Segunda, 31 de octubre](https://site.api.espn.com/apis/site/v2/sports/soccer/esp.2/scoreboard?dates=20261031) | Cuatro encuentros con sus IDs ESPN | Un GET por día |
-| [ESPN NBA, 1 de noviembre](https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261101) | Cuatro encuentros; sus horas abarcan el 1 y el 2 de noviembre en Madrid | Un GET por día ESPN |
-| [ESPN NBA, 31 de octubre](https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261031) | Siete encuentros del día anterior | Un GET |
-| [ESPN WNBA, 1 de octubre](https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard?dates=20261001) | Un encuentro histórico | Un GET |
+`/consulta/ficha?id=espn:resultados/segunda&fecha=2026-11-01` consulta
+`scoreboard?dates=20261101`. `fecha` es opcional, debe ser una fecha civil ISO
+válida y solo se admite en fichas de resultados. Las fichas individuales
+conservan sus IDs y su consulta actual, sin parámetro de fecha.
 
-También se comprobó Primera el 25 de octubre: cuatro encuentros.
-El intento de Segunda con `dates=20261030-20261102&limit=100` devuelve HTTP 400.
-Esto no acredita que todos los formatos de intervalo fallen, pero no permite
-presupuestar el fin de semana como una sola consulta ESPN.
+La fecha forma parte de las claves de caché del cliente y del worker. La URL
+pública y la clave interna usan la versión 3 del contrato para evitar respuestas
+antiguas sin IDs de partido o sin fecha. Se conservan las caducidades actuales:
+60 segundos si hay encuentros en juego y una hora para los demás resultados.
+No hay refresco automático ni consultas a otros días al abrir la vista.
 
-## LaLiga ya se usa para el calendario
+Cada día cuesta un GET de origen cuando no está cacheado; abrir las estadísticas
+añade otro GET si falta el detalle en caché. No se añaden base de resultados,
+recogida programada, jornadas oficiales ni cruces de proveedores.
 
-`agenda/proveedores.py` selecciona `laliga-primera` y `laliga-segunda` como
-fuentes principales de agenda. `agenda/oficial_laliga.py` lee el bloque
-`__NEXT_DATA__` de las páginas de resultados: `gameweekList`, `gameweek`
-y `matches`. Conserva jornada y horarios, pero descarta `home_score` y
-`away_score` y trata un `FullTime` como una cita programada. Es deliberado:
-ese adaptador construye agenda, no resultados.
+## Casos contrastados
 
-Por tanto, las jornadas oficiales sí tienen una fuente localizada. Se puede
-mostrar su pertenencia y su marcador usando únicamente LaLiga. Para resultados
-haría falta un contrato de lectura propio que conserve y normalice los estados;
-no reutilizar la conversión de estados de agenda.
+- Segunda, lunes 2 de noviembre: cuatro partidos; al consultar el domingo 1,
+  tres finales con sus IDs ESPN, válidos para abrir las estadísticas.
+- NBA, día 1 de noviembre: cuatro encuentros que abarcan el 1 y el 2 en Madrid.
+- Primera, 3 de noviembre: respuesta sin partidos, distinta de un fallo.
+- En las muestras de pruebas: fechas inválidas y bisiestas, separación de cachés,
+  respuestas tardías, error al cambiar de fecha y vuelta desde estadísticas.
 
-Los IDs no son intercambiables: Villarreal–Espanyol de la jornada 11 es
-`102358` en LaLiga y `401882817` en ESPN. En las páginas oficiales examinadas
-no aparece una referencia ESPN y el repositorio no tiene una correspondencia
-entre ambos proveedores. Mostrar esa jornada no exige resolverla; abrir nuestra
-ficha ESPN desde ella sí. El enlace oficial `/partido/{slug}` permite abrir el
-detalle de LaLiga mientras no exista esa correspondencia. No unir por nombres
-o proximidad de fechas, especialmente ante aplazamientos.
-
-## Contraste adicional de actualización y detalle
-
-En consultas directas aproximadamente a las 13:20 UTC, LaLiga y ESPN mostraban
-Tenerife–Andorra 1–0, en la primera parte; ESPN indicaba el minuto 19. Esto
-acredita coincidencia en esa observación, no mide el retraso respecto al gol.
-No se ha medido la demora de publicación del resultado final.
-
-Las cabeceras de origen observadas sí introducen una diferencia importante:
-la página de jornada de LaLiga devuelve `Cache-Control: public, max-age=600`,
-y el `scoreboard` ESPN, `max-age=1`. No permiten deducir el retraso real del
-proveedor, pero una página de jornada reutilizable durante diez minutos no
-acredita frescura comparable al marcador ESPN.
-
-La ficha final Villarreal–Espanyol de LaLiga también contiene `events`,
-`data.lineups`, `data.stats`, comentarios y reloj, además del marcador y la
-jornada. Hay información de las mismas familias que en nuestra ficha ESPN,
-pero con otro contrato; no se ha validado equivalencia campo por campo.
-Su HTML ocupa unos 1,12 MB, frente a unos 389 kB del resumen JSON de ESPN.
-El tiempo de descarga observado fue 4,54 s y 1,51 s, respectivamente: son
-dos mediciones puntuales, no la demora en publicar un resultado ni una media.
-
-## Propuesta revisada para decidir la siguiente entrega
-
-Mantener ESPN como proveedor de resultados y fichas de todos los deportes
-actuales. Haber localizado marcadores en LaLiga no justifica sustituirlo sin
-contrastar actualización y cobertura del detalle.
-
-El primer paso mínimo sería un selector de fecha y anterior/siguiente, también
-en fútbol. Añadir la fecha a la consulta ESPN y a las claves de caché; conservar
-los IDs actuales y el periodo al volver desde la ficha. En NBA, explicar que el
-día ESPN puede incluir la madrugada siguiente en España.
-
-Las jornadas oficiales podrían añadirse después como índice de navegación:
-LaLiga aporta la pertenencia, ESPN sigue aportando el resultado y la ficha.
-Eso requiere una correspondencia acreditada entre los partidos de ambos
-proveedores. Un parser de la consulta no puede crear esa correspondencia;
-tampoco basta asignar una jornada por fechas. No se ha localizado en ESPN una
-consulta por jornada utilizable para evitar ese cruce.
-
-Estas opciones pueden convivir sin una base de resultados ni recogida programada.
-Una jornada completa de fútbol cuesta un GET de LaLiga en un fallo de caché;
-una vista ESPN de cuatro días necesitaría hasta cuatro GET. La consulta
-individual de un detalle ESPN añade su propio GET si no está cacheado.
-El coste descrito es de red, no una estimación monetaria.
-
-Antes de activar jornadas quedan por verificar los aplazados y cambios de
-jornada, temporadas anteriores, fases de Segunda y respuestas vacías o con error.
-Las muestras revisadas acreditan las jornadas indicadas, no toda la cobertura.
-El presupuesto ESPN existente no cubre LaLiga: su consulta necesitará un límite
-propio y errores que conserven la última vista buena. Esta revisión no incorpora
-todavía el selector ni cruces entre proveedores.
+La revisión visual queda a cargo del usuario. La suite completa se ejecuta en CI.

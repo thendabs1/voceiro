@@ -9,6 +9,7 @@ import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
 import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
 import { rangosResaltado } from '../../shared/busqueda/texto.js';
 import { ESPN } from '../../shared/consultas/registro.js';
+import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
 import { traducir } from '../../front/idiomas/index.js';
 
 const codigo = readFileSync(new URL('../../front/app/14-consultas.js', import.meta.url), 'utf8');
@@ -26,7 +27,8 @@ function contexto({ buscar = '', responder }) {
     hidden: true, _html: '', ficha: null, dataset: {}, oyente: null,
     get innerHTML() { return this._html; },
     set innerHTML(v) { this._html = v; this.ficha = /class="consulta-ficha"/.test(v) ? { open: /class="consulta-ficha" open/.test(v) } : null; },
-    addEventListener(_, fn) { this.oyente = fn; },
+    oyentes: {},
+    addEventListener(tipo, fn) { this.oyentes[tipo] = fn; if (tipo === 'click') this.oyente = fn; },
     querySelector(sel) { return sel === '.consulta-ficha' ? this.ficha : null; },
   };
   const entrada = { value: buscar };
@@ -35,7 +37,7 @@ function contexto({ buscar = '', responder }) {
     BACKENDS: { deno: { buscar: BASE } }, ESPN, ACCES: { lang: 'es' },
     t: (k, v) => traducir('es', k, v), ico: n => `<${n}>`,
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
-    normalize, tokenizeQuery, rangosResaltado, Intl, Date, URLSearchParams, AbortSignal, Promise, Map, Set, JSON, Object, Error, isNaN,
+    normalize, tokenizeQuery, rangosResaltado, fechaValida, sumarDiasCalendario, Intl, Date, URLSearchParams, AbortSignal, Promise, Map, Set, JSON, Object, Error, isNaN,
     setTimeout: () => 0, clearTimeout() {},
     document: { getElementById: id => (id === 'consulta-panel' ? panel : null) },
     $: s => (s === '#buscar' ? entrada : null),
@@ -60,7 +62,8 @@ function contexto({ buscar = '', responder }) {
   };
   // Un toque: lo que llegaría a closest('button[data-accion]').
   const pulsar = dataset => panel.oyente({ target: { closest: () => ({ dataset }) } });
-  return { ctx, panel, entrada, pedidas, actualizar, pulsar };
+  const elegirFecha = value => panel.oyentes.change({ target: { dataset: { fechaResultados: '' }, value } });
+  return { ctx, panel, entrada, pedidas, actualizar, pulsar, elegirFecha };
 }
 const json = (cuerpo, status = 200) => ({ status, ok: status >= 200 && status < 300, json: async () => cuerpo });
 const esperar = async () => { for (let i = 0; i < 8; i++) await new Promise(r => setImmediate(r)); };
@@ -75,7 +78,7 @@ test('un código deportivo pide la ficha directamente, sin candidatos', async ()
   })) });
   actualizar('clasificacion:NBA');
   await esperar();
-  assert.deepEqual(pedidas, ['/consulta/ficha?id=espn%3Aclasificacion%2Fnba&idioma=es&v=2']);
+  assert.deepEqual(pedidas, ['/consulta/ficha?id=espn%3Aclasificacion%2Fnba&idioma=es&v=3']);
   assert.equal(panel.hidden, false);
   assert.match(panel.innerHTML, /NBA · 2026-27/);
   assert.match(panel.innerHTML, /data-accion="grupo" data-i="0" aria-pressed="true"/);
@@ -109,13 +112,13 @@ test('un candidato también se elige; la ficha y la vuelta no repiten peticiones
     ? envoltorio('pelicula', { ficha }) : envoltorio('pelicula', { candidatos })) });
   actualizar('pelicula:La infiltrada');
   await esperar();
-  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=La+infiltrada&idioma=es&v=2']);
+  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=La+infiltrada&idioma=es&v=3']);
   assert.match(panel.innerHTML, /data-accion="candidato" data-i="0"/);
   assert.match(panel.innerHTML, /<span class="consulta-cand-det">2024<\/span>/);   // el original igual no se repite
   pulsar({ accion: 'candidato', i: '0' });
   await esperar();
   assert.equal(pedidas.length, 2);
-  assert.match(pedidas[1], /^\/consulta\/ficha\?id=tmdb%3Amovie%2F1215185&idioma=es&v=2$/);
+  assert.match(pedidas[1], /^\/consulta\/ficha\?id=tmdb%3Amovie%2F1215185&idioma=es&v=3$/);
   assert.match(panel.innerHTML, /<strong class="consulta-titulo">La infiltrada<\/strong><span class="consulta-linea">2024 · 119 min<\/span>/);
   assert.match(panel.innerHTML, /\/t\/p\/w185\/x\.jpg/);
   assert.match(panel.innerHTML, /Suscripción \(1\)/);
@@ -154,7 +157,7 @@ test('un texto corto espera a que se pida; sin texto, ayuda sin red', async () =
   assert.deepEqual(pedidas, []);
   pulsar({ accion: 'forzar' });
   await esperar();
-  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=Up&idioma=es&v=2']);
+  assert.deepEqual(pedidas, ['/consulta?tipo=pelicula&texto=Up&idioma=es&v=3']);
   assert.match(panel.innerHTML, /Sin coincidencias para «Up»/);
 });
 
@@ -284,6 +287,102 @@ const partidoReal = async codigo => {
   return normalizarPartido(d,codigo,...ESPN[codigo],d.header.id);
 };
 
+test('resultados: del lunes al domingo, estadísticas y vuelta al mismo día sin red',async()=>{
+  const partido=await partidoReal('segunda');
+  const {panel,pedidas,actualizar,pulsar}=contexto({responder:ruta=>{
+    const u=new URL(ruta,BASE);
+    if(u.searchParams.get('id').startsWith('espn:partido/')) return json(envoltorio('partido',{ficha:partido}));
+    return json(envoltorio('resultados',{ficha:{competicion:'segunda',
+      fecha:u.searchParams.get('fecha')||'2026-11-02',partidos:[partido]}}));
+  }});
+  actualizar('resultados:segunda'); await esperar();
+  assert.match(panel.innerHTML,/data-fecha-resultados value="2026-11-02"/);
+  assert.equal(pedidas.length,1);
+  pulsar({accion:'dia',direccion:'-1'}); await esperar();
+  assert.equal(new URL(pedidas[1],BASE).searchParams.get('fecha'),'2026-11-01');
+  assert.match(panel.innerHTML,/data-fecha-resultados value="2026-11-01"/);
+  pulsar({accion:'partido',id:partido.id}); await esperar();
+  assert.equal(new URL(pedidas[2],BASE).searchParams.has('fecha'),false);
+  assert.match(panel.innerHTML,/Volver a resultados/);
+  assert.doesNotMatch(panel.innerHTML,/data-fecha-resultados/);
+  pulsar({accion:'volver'});
+  assert.match(panel.innerHTML,/data-fecha-resultados value="2026-11-01"/);
+  assert.equal(pedidas.length,3);
+});
+
+test('resultados: fecha concreta, día vacío y navegación civil al cambiar de mes',async()=>{
+  const {panel,pedidas,actualizar,pulsar,elegirFecha}=contexto({responder:ruta=>{
+    const fecha=new URL(ruta,BASE).searchParams.get('fecha')||'2026-03-01';
+    return json(envoltorio('resultados',{estado:'vacio',ficha:{competicion:'primera',fecha,partidos:[]}}));
+  }});
+  actualizar('resultados:primera'); await esperar();
+  assert.match(panel.innerHTML,/No hay partidos/);
+  pulsar({accion:'dia',direccion:'-1'}); await esperar();
+  assert.equal(new URL(pedidas[1],BASE).searchParams.get('fecha'),'2026-02-28');
+  elegirFecha('2024-02-29'); await esperar();
+  assert.match(panel.innerHTML,/value="2024-02-29"/);
+  pulsar({accion:'dia',direccion:'1'}); await esperar();
+  assert.equal(new URL(pedidas[3],BASE).searchParams.get('fecha'),'2024-03-01');
+  elegirFecha('2026-02-30'); elegirFecha(''); await esperar();
+  assert.equal(pedidas.length,4);
+});
+
+test('NBA: fecha del proveedor sin deducirla de la madrugada local y sin peticiones adicionales',async()=>{
+  const partido={id:'espn:partido/nba/401909905',inicio:'2026-11-02T01:30Z',estado:'final',local:'Warriors',visitante:'Clippers'};
+  const {panel,pedidas,actualizar}=contexto({responder:()=>json(envoltorio('resultados',{
+    ficha:{competicion:'nba',fecha:'2026-11-01',partidos:[partido]},
+  }))});
+  actualizar('resultados:nba'); await esperar();
+  assert.match(panel.innerHTML,/value="2026-11-01"/);
+  assert.match(panel.innerHTML,/Los partidos de madrugada/);
+  assert.equal(pedidas.length,1);
+});
+
+test('al fallar otra fecha se conserva el día visible y Actualizar reintenta el solicitado',async()=>{
+  let n=0;
+  const {panel,pedidas,actualizar,elegirFecha,pulsar}=contexto({responder:ruta=>{
+    n++;
+    if(n===2) return json(envoltorio('resultados',{estado:'no_disponible',ficha:null,caduca:null}));
+    return json(envoltorio('resultados',{ficha:{competicion:'primera',partidos:[],
+      fecha:new URL(ruta,BASE).searchParams.get('fecha')||'2026-11-02'}}));
+  }});
+  actualizar('resultados:primera'); await esperar();
+  elegirFecha('2026-11-01'); await esperar();
+  assert.match(panel.innerHTML,/value="2026-11-02"/);
+  assert.match(panel.innerHTML,/No se pudo actualizar/);
+  pulsar({accion:'actualizar'}); await esperar();
+  assert.match(panel.innerHTML,/value="2026-11-01"/);
+  assert.equal(pedidas[1],pedidas[2]);
+});
+
+test('una fecha pendiente no sustituye los resultados de otra competición al llegar tarde',async()=>{
+  let resolver;
+  const pendiente=new Promise(r=>{resolver=r;});
+  const {panel,actualizar,elegirFecha}=contexto({responder:ruta=>{
+    const u=new URL(ruta,BASE);
+    if(u.searchParams.has('fecha')) return pendiente;
+    const competicion=u.searchParams.get('id').split('/')[1];
+    return json(envoltorio('resultados',{ficha:{competicion,fecha:'2026-11-02',partidos:[]}}));
+  }});
+  actualizar('resultados:primera'); await esperar();
+  elegirFecha('2026-11-01');
+  actualizar('resultados:nba'); await esperar();
+  resolver(json(envoltorio('resultados',{ficha:{competicion:'primera',fecha:'2026-11-01',partidos:[]}})));
+  await esperar();
+  assert.match(panel.innerHTML,/value="2026-11-02"/);
+  assert.match(panel.innerHTML,/Los partidos de madrugada/);
+});
+
+test('una respuesta de otro día no se muestra bajo la fecha solicitada',async()=>{
+  const {panel,actualizar,elegirFecha}=contexto({responder:()=>json(envoltorio('resultados',{
+    ficha:{competicion:'primera',fecha:'2026-11-02',partidos:[]},
+  }))});
+  actualizar('resultados:primera'); await esperar();
+  elegirFecha('2026-11-01'); await esperar();
+  assert.match(panel.innerHTML,/value="2026-11-02"/);
+  assert.match(panel.innerHTML,/No se pudo actualizar/);
+});
+
 test('NBA: una respuesta HTTP antigua sin IDs no impide abrir los partidos',async()=>{
   const partido=await partidoReal('nba');
   const {id,...sinId}=partido;
@@ -348,7 +447,7 @@ test('partido por identidad va directo al resumen; los vacíos y competiciones a
   const partido=await partidoReal('wnba');
   const {panel,pedidas,actualizar}=contexto({responder:()=>json(envoltorio('partido',{ficha:partido}))});
   actualizar('partido:wnba/401918311'); await esperar();
-  assert.deepEqual(pedidas,['/consulta/ficha?id=espn%3Apartido%2Fwnba%2F401918311&idioma=es&v=2']);
+  assert.deepEqual(pedidas,['/consulta/ficha?id=espn%3Apartido%2Fwnba%2F401918311&idioma=es&v=3']);
   assert.match(panel.innerHTML,/WNBA/);
   actualizar('partido:f1'); assert.equal(pedidas.length,1);
   assert.match(panel.innerHTML,/Elige una competición/); assert.doesNotMatch(panel.innerHTML,/data-valor="f1"/);
