@@ -4,6 +4,12 @@ Diseño de 2 de noviembre de 2026; sin adaptador activado.
 Alcance confirmado en [diseño común](atletismo-diseno.md).
 Fuente: https://worldathletics.org/competition/calendar-results .
 
+Revisión posterior a la recogida federativa:
+[base validada y requisitos previos a WA](atletismo-preparacion-wa.md).
+Se han contrastado el filtro `competitionGroupId`, dos páginas y un circuito
+completo. Esto actualiza las comprobaciones iniciales de este documento;
+todavía no hay adaptador WA ni cobertura de todos los circuitos seleccionados.
+
 ## Selección de interés
 
 Todos los niveles de Diamond League (meetings y final), Continental Tour,
@@ -39,8 +45,10 @@ Comprobar persistencia del ID entre ventanas y cambios antes de fijar contrato.
 Una competición/meeting es un evento. Circuito y edición anual son agrupaciones
 distintas; relacionar el evento con todos los grupos acreditados. La pertenencia
 múltiple debe llegar a la lectura sin duplicar el evento. El `padre` único del
-constructor deportivo no basta por sí solo para todas estas relaciones: revisar
-la proyección de ancestros en `agenda/publicacion.py` antes de implementar.
+constructor deportivo no basta por sí solo para todas estas relaciones.
+La revisión confirma que `agenda/publicacion.py` recorre varios padres y la
+lectura indexa todos sus códigos. El adaptador deberá emitir las relaciones
+múltiples y comprobarlas de extremo a extremo, sin duplicar el meeting.
 
 Campos útiles: nombre, ID, inicio/fin, sede literal, área geográfica, disciplinas,
 grupo/subgrupo, categoría WA y URL original. Conservar fecha indeterminada y
