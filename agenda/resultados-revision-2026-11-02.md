@@ -63,20 +63,46 @@ ficha ESPN desde ella sí. El enlace oficial `/partido/{slug}` permite abrir el
 detalle de LaLiga mientras no exista esa correspondencia. No unir por nombres
 o proximidad de fechas, especialmente ante aplazamientos.
 
-## Propuesta para decidir la siguiente entrega
+## Contraste adicional de actualización y detalle
 
-- Fútbol: selector de temporada y jornada, con anterior/siguiente. Consultar
-  resultados de LaLiga bajo demanda y cachear por competición, temporada,
-  jornada y versión. Enlazar cada partido a su detalle oficial. Mantener las
-  consultas actuales de ESPN y sus fichas como otra entrada identificada.
-- NBA/WNBA: selector de fecha y anterior/siguiente sobre ESPN. Cachear por
-  competición, fecha e idioma y conservar los IDs de las fichas actuales.
-  Explicar que el día ESPN puede incluir la madrugada siguiente en España;
-  seguir agrupando las horas por fecha local, como ahora.
-- Compartir la presentación de los marcadores, conservando la fuente y el
-  periodo consultados. Volver desde un detalle debe recuperar ese mismo periodo.
+En consultas directas aproximadamente a las 13:20 UTC, LaLiga y ESPN mostraban
+Tenerife–Andorra 1–0, en la primera parte; ESPN indicaba el minuto 19. Esto
+acredita coincidencia en esa observación, no mide el retraso respecto al gol.
+No se ha medido la demora de publicación del resultado final.
 
-Ambas vías pueden convivir sin una base de resultados ni recogida programada.
+Las cabeceras de origen observadas sí introducen una diferencia importante:
+la página de jornada de LaLiga devuelve `Cache-Control: public, max-age=600`,
+y el `scoreboard` ESPN, `max-age=1`. No permiten deducir el retraso real del
+proveedor, pero una página de jornada reutilizable durante diez minutos no
+acredita frescura comparable al marcador ESPN.
+
+La ficha final Villarreal–Espanyol de LaLiga también contiene `events`,
+`data.lineups`, `data.stats`, comentarios y reloj, además del marcador y la
+jornada. Hay información de las mismas familias que en nuestra ficha ESPN,
+pero con otro contrato; no se ha validado equivalencia campo por campo.
+Su HTML ocupa unos 1,12 MB, frente a unos 389 kB del resumen JSON de ESPN.
+El tiempo de descarga observado fue 4,54 s y 1,51 s, respectivamente: son
+dos mediciones puntuales, no la demora en publicar un resultado ni una media.
+
+## Propuesta revisada para decidir la siguiente entrega
+
+Mantener ESPN como proveedor de resultados y fichas de todos los deportes
+actuales. Haber localizado marcadores en LaLiga no justifica sustituirlo sin
+contrastar actualización y cobertura del detalle.
+
+El primer paso mínimo sería un selector de fecha y anterior/siguiente, también
+en fútbol. Añadir la fecha a la consulta ESPN y a las claves de caché; conservar
+los IDs actuales y el periodo al volver desde la ficha. En NBA, explicar que el
+día ESPN puede incluir la madrugada siguiente en España.
+
+Las jornadas oficiales podrían añadirse después como índice de navegación:
+LaLiga aporta la pertenencia, ESPN sigue aportando el resultado y la ficha.
+Eso requiere una correspondencia acreditada entre los partidos de ambos
+proveedores. Un parser de la consulta no puede crear esa correspondencia;
+tampoco basta asignar una jornada por fechas. No se ha localizado en ESPN una
+consulta por jornada utilizable para evitar ese cruce.
+
+Estas opciones pueden convivir sin una base de resultados ni recogida programada.
 Una jornada completa de fútbol cuesta un GET de LaLiga en un fallo de caché;
 una vista ESPN de cuatro días necesitaría hasta cuatro GET. La consulta
 individual de un detalle ESPN añade su propio GET si no está cacheado.
