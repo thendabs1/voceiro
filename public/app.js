@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=77c60fb0fc';
+} from './parser.js?v=8c8df79045';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=77c60fb0fc';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=77c60fb0fc';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=77c60fb0fc';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=77c60fb0fc';
-import { comparador } from './busqueda/orden.js?v=77c60fb0fc';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=8c8df79045';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=8c8df79045';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=8c8df79045';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=8c8df79045';
+import { comparador } from './busqueda/orden.js?v=8c8df79045';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=77c60fb0fc';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=77c60fb0fc';
+} from './sync/fusion.js?v=8c8df79045';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=8c8df79045';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=77c60fb0fc';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=77c60fb0fc';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=8c8df79045';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=8c8df79045';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=77c60fb0fc';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=8c8df79045';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=77c60fb0fc';
+} from './tiempo/avisos.js?v=8c8df79045';
 
-import { I18N, traducir } from './idiomas/index.js?v=77c60fb0fc';
+import { I18N, traducir } from './idiomas/index.js?v=8c8df79045';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=77c60fb0fc';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=77c60fb0fc';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=77c60fb0fc';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=77c60fb0fc';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=8c8df79045';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=8c8df79045';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=8c8df79045';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=8c8df79045';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=77c60fb0fc';
+import { ADMINISTRACION } from './territorios/administracion.js?v=8c8df79045';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=77c60fb0fc');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=8c8df79045');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -5287,6 +5287,7 @@ const PUNTUAL = {
   seq: 0, timer: null,
   cache: new Map(), enCurso: new Map(),
   texto: null, claveTexto: '',   // palabras de la búsqueda, marcadas en los equipos
+  grupo: null,               // grupo visible en una columna; en ancho se ven todos
 };
 
 const idiomaConsulta = () => {
@@ -5308,6 +5309,7 @@ function actualizarConsultaPuntual(parsed, texto = null){
   }));
   const claveTexto = texto?.incluir?.length ? JSON.stringify(texto.incluir) : '';
   const otroTexto = claveTexto !== PUNTUAL.claveTexto;
+  if (otroTexto) PUNTUAL.grupo = null;
   Object.assign(PUNTUAL, { texto: claveTexto ? texto : null, claveTexto });
   const claveLista = JSON.stringify(lista) + idiomaConsulta();
   if (claveLista === PUNTUAL.claveLista){
@@ -5326,6 +5328,7 @@ function activarConsulta(c){
   PUNTUAL.activa = c;
   if (clave === PUNTUAL.clave){ pintarConsulta(); return; }
   PUNTUAL.clave = clave;
+  PUNTUAL.grupo = null;
   PUNTUAL.seq++;   // lo que esté en camino ya no se pinta
   clearTimeout(PUNTUAL.timer);
   Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '' });
@@ -5456,6 +5459,14 @@ function pulsarConsulta(ev){
     case 'reintentar': p.reintentar?.(); break;
     case 'actualizar': abrirFichaConsulta(p.id, { candidato: p.candidato, callado: true }); break;
     case 'valor': cambiarTextoConsulta(b.dataset.valor); break;
+    case 'grupo': {
+      const i = Number(b.dataset.i);
+      if (!Number.isInteger(i) || !p.ficha?.ficha?.grupos?.[i]) break;
+      p.grupo = i;
+      p.enfocar = `[data-accion="grupo"][data-i="${i}"]`;
+      pintarConsulta({ conservarPlegado: true });
+      break;
+    }
     case 'forzar': cargarCandidatos(p.activa); break;
   }
 }
@@ -5560,9 +5571,10 @@ function htmlFicha(d){
   if (!FICHAS_CONSULTA[d.tipo] || !d.ficha) return msgConsulta('conNoAdmitida');
   const r = FICHAS_CONSULTA[d.tipo](d.ficha);
   const linea = [r.linea, d.incompleto ? t('conParcial') : ''].filter(Boolean).join(' · ');
-  return `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
+  const ficha = `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
     linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}</summary>
     <div class="consulta-cuerpo">${r.cuerpo}</div></details>${htmlPieConsulta(d)}`;
+  return esDeporteConsulta(d.tipo) ? `<div class="consulta-deporte">${ficha}</div>` : ficha;
 }
 
 // Fuente y licencia, siempre a la vista; en deportes, la hora y Actualizar.
@@ -5608,6 +5620,22 @@ function tablaConsulta(filas, cols, nombre){
   const th = k => { const [abr, largo] = t(COLUMNAS_CONSULTA[k]).split('|'); return `<th scope="col"><abbr title="${escapeHtml(largo || abr)}">${escapeHtml(abr)}</abbr></th>`; };
   return `<table class="consulta-tabla"><thead><tr><th scope="col">#</th><th scope="col">${escapeHtml(t(nombre))}</th>${cols.map(th).join('')}</tr></thead>
     <tbody>${filas.map(r => `<tr${claseMarcada(casaEquipo(r.equipo))}><td>${val(r.pos)}</td><td>${equipoConsulta(r.equipo)}</td>${cols.map(k => `<td>${val(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+function nombreGrupoConsulta(g){
+  const clave = { 'Eastern Conference': 'conEste', 'Western Conference': 'conOeste' }[g.nombre];
+  return clave ? t(clave) : g.nombre || '';
+}
+
+function gruposConsulta(grupos, pintar){
+  if (grupos.length === 1) return pintar(grupos[0]);
+  const marcado = grupos.findIndex(g => g.filas.some(r => casaEquipo(r.equipo)));
+  const elegido = PUNTUAL.grupo !== null && grupos[PUNTUAL.grupo] ? PUNTUAL.grupo : marcado >= 0 ? marcado : 0;
+  const titulo = g => `${nombreGrupoConsulta(g)} (${g.filas.length})`;
+  return `<div class="consulta-grupos-nav" role="group" aria-label="${escapeHtml(t('conGrupos'))}">${grupos.map((g, i) =>
+    botonConsulta('grupo', titulo(g), ` data-i="${i}" aria-pressed="${i === elegido}"`)).join('')}</div>
+    <div class="consulta-grupos">${grupos.map((g, i) => `<section data-seleccionado="${i === elegido}">
+      <h3>${escapeHtml(titulo(g))}</h3>${pintar(g)}</section>`).join('')}</div>`;
 }
 
 function fichaAudiovisual(f, serie){
@@ -5670,17 +5698,11 @@ const FICHAS_CONSULTA = {
     const grupos = f.grupos || [];
     const primero = grupos[0]?.filas?.[0];
     let linea = '';
-    if (primero) linea = deporte === 'basketball'
-      ? `${grupos[0].nombre ? grupos[0].nombre + ': ' : ''}${primero.equipo} · ${primero.g ?? '—'}–${primero.p ?? '—'}`
-      : `${primero.pos ?? '—'}. ${primero.equipo}${primero.pts != null ? ' · ' + tn('conPuntos', primero.pts) : ''}`;
-    const cols = deporte === 'basketball' ? ['g', 'p'] : deporte === 'racing' ? ['pts'] : ['pj', 'pts'];
+    if (primero && grupos.length === 1) linea = `${primero.pos ?? '—'}. ${primero.equipo}${primero.pts != null ? ' · ' + tn('conPuntos', primero.pts) : ''}`;
+    const cols = deporte === 'basketball' ? ['g', 'p'] : deporte === 'racing' ? ['pts'] : ['pj', 'g', 'e', 'p', 'pts'];
     const nombre = deporte === 'racing' ? 'conColNombre' : 'conColEquipo';
-    const tablas = grupos.length === 1 ? tablaConsulta(grupos[0].filas, cols, nombre)
-      : grupos.map((g, i) => plegadoConsulta(`${g.nombre || ''} (${g.filas.length})`, tablaConsulta(g.filas, cols, nombre),
-        i === 0 || g.filas.some(r => casaEquipo(r.equipo)))).join('');
-    const desglose = deporte === 'soccer'
-      ? grupos.map(g => plegadoConsulta(t('conDesglose'), tablaConsulta(g.filas, ['g', 'e', 'p'], nombre))).join('') : '';
-    return { titulo: [CONSULTA_DEPORTES[f.competicion] || f.competicion, f.temporada].filter(Boolean).join(' · '), linea, cuerpo: tablas + desglose };
+    const tablas = gruposConsulta(grupos, g => tablaConsulta(g.filas, cols, nombre));
+    return { titulo: [CONSULTA_DEPORTES[f.competicion] || f.competicion, f.temporada].filter(Boolean).join(' · '), linea, cuerpo: tablas };
   },
   resultados(f){
     const lang = idiomaConsulta();
@@ -5703,7 +5725,7 @@ const FICHAS_CONSULTA = {
       lista.map(p => {
         const inicio = new Date(p.inicio);
         const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estado[p.estado] ? t(estado[p.estado]) : ''].filter(Boolean).join(' · ');
-        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))}><span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b></li>`;
+        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}"><span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b></li>`;
       }).join('')}</ul>`).join('');
     return {
       titulo: `${CONSULTA_DEPORTES[f.competicion] || f.competicion} · ${tn('conPartidos', partidos.length)}`,
@@ -6208,7 +6230,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=77c60fb0fc')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=8c8df79045')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
