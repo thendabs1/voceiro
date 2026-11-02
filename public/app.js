@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=3a33991351';
+} from './parser.js?v=77c60fb0fc';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=3a33991351';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=3a33991351';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=3a33991351';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=3a33991351';
-import { comparador } from './busqueda/orden.js?v=3a33991351';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=77c60fb0fc';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=77c60fb0fc';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=77c60fb0fc';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=77c60fb0fc';
+import { comparador } from './busqueda/orden.js?v=77c60fb0fc';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=3a33991351';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=3a33991351';
+} from './sync/fusion.js?v=77c60fb0fc';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=77c60fb0fc';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=3a33991351';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=3a33991351';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=77c60fb0fc';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=77c60fb0fc';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=3a33991351';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=77c60fb0fc';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=3a33991351';
+} from './tiempo/avisos.js?v=77c60fb0fc';
 
-import { I18N, traducir } from './idiomas/index.js?v=3a33991351';
+import { I18N, traducir } from './idiomas/index.js?v=77c60fb0fc';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=3a33991351';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=3a33991351';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=3a33991351';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=3a33991351';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=77c60fb0fc';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=77c60fb0fc';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=77c60fb0fc';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=77c60fb0fc';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=3a33991351';
+import { ADMINISTRACION } from './territorios/administracion.js?v=77c60fb0fc';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=3a33991351');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=77c60fb0fc');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2379,8 +2379,6 @@ async function _cargarCapa(key, signal) {
     if (f) files.push(f);
   }
 
-  if (!files.length) return 0;
-
   // Fetch con concurrencia 3
   const cola = files.slice();
   const nuevos = [];
@@ -2388,7 +2386,7 @@ async function _cargarCapa(key, signal) {
     while (cola.length) {
       if (signal.aborted) return;
       const f = cola.shift();
-      const data = await _fetchJSON(f, signal);
+      const data = await _fetchJSON(f, signal, true);
       if (!data) continue;
       if (data.medios) {
         for (const d in data.medios) MEDIOS[d] = data.medios[d];
@@ -2426,7 +2424,12 @@ async function _cargarCapa(key, signal) {
 // Extiende una o varias capas pidiendo días [desde, hasta) desde el manifest.
 // Diferencia con _cargarCapa: aquella carga [0, DIAS_MEMORIA), esta carga
 // un rango arbitrario para paginación.
-async function extenderCapasR2(capas, desde, hasta) {
+async function extenderCapasR2(capas, desde, hasta, vigente = () => true) {
+  if (_itemsCargadosDeCapas >= LAYER_MAX_ITEMS) {
+    const error = new Error('Límite de titulares del histórico');
+    error.code = 'LIMITE';
+    throw error;
+  }
   for (const key of capas) {
     const [tipo, valor] = key.split(':', 2);
     const dias = (_manifest.dias || []).slice(desde, hasta);
@@ -2441,14 +2444,14 @@ async function extenderCapasR2(capas, desde, hasta) {
 
     const cola = files.slice();
     const nuevos = [];
-    const workers = Array.from({ length: Math.min(8, cola.length) }, async () => {
+    const catalogos = [];
+    const workers = Array.from({ length: Math.min(3, cola.length) }, async () => {
       while (cola.length) {
+        if (!vigente()) return;
         const f = cola.shift();
-        const data = await _fetchJSON(f);
+        const data = await _fetchJSON(f, undefined, true);
         if (!data) continue;
-        if (data.medios) {
-          for (const d in data.medios) MEDIOS[d] = data.medios[d];
-        }
+        if (data.medios) catalogos.push(data.medios);
         const diaFecha = data.fecha || '';
         const generadoIso = data.generado || '';
         for (const n of (data.noticias || [])) {
@@ -2458,7 +2461,20 @@ async function extenderCapasR2(capas, desde, hasta) {
         }
       }
     });
-    await Promise.all(workers);
+    // Esperar también a las peticiones que ya estaban en vuelo si una falla.
+    const cargas = await Promise.allSettled(workers);
+    if (!vigente()) return;
+    const fallo = cargas.find(c => c.status === 'rejected');
+    if (fallo) throw fallo.reason;
+    // Comprobación conservadora antes de mezclar: nunca rebasar el límite,
+    // tampoco con un lote grande o una carga inicial que acaba de terminar.
+    if (_itemsCargadosDeCapas + nuevos.length > LAYER_MAX_ITEMS) {
+      const error = new Error('Límite de titulares del histórico');
+      error.code = 'LIMITE';
+      throw error;
+    }
+
+    for (const medios of catalogos) Object.assign(MEDIOS, medios);
 
     const añadidos = _mergearItemsEnNoticias(nuevos, key);
     if (añadidos > 0) {
@@ -2528,6 +2544,10 @@ async function cargarBase() {
     if (BACKEND_ACTIVO === 'deno') _probarCFEnBackground();
 
     // 2) Reset
+    DIAS_ACTUAL = 0;
+    DIAS_CAPAS_KEY = '';
+    DIAS_GENERACION++;
+    HISTORICO_ERROR = false;
     MEDIOS = {};
     NOTICIAS = [];
     BASE.items = [];
@@ -2738,13 +2758,20 @@ function _claveUrl(u, dominio) {
 // (d-<dominio>-<fecha>) se reescriben con el mismo nombre mientras el día
 // está vivo: caché normal, con la duración que da el worker (60 s y 304 si
 // sigue igual; 1 día los congelados).
-async function _fetchJSON(path, signal) {
+// El histórico necesita distinguir un día sin fichero (404) de un fallo:
+// con estricto, los demás errores se propagan para poder reintentar.
+async function _fetchJSON(path, signal, estricto = false) {
   const cache = path.startsWith('d-') ? 'default' : 'force-cache';
   const intentar = async () => {
     const url = `${DATA_BASE}/${path}`;
     const sig = _signalConTimeout(signal, BACKEND_TIMEOUT_CF_MS);
     const r = await fetch(url, { cache, signal: sig });
-    if (r.status >= 400 && r.status < 500) return null;   // 4xx: no retry
+    if (r.status >= 400 && r.status < 500) {
+      if (!estricto || r.status === 404) return null;
+      const error = new Error('HTTP ' + r.status);
+      error.sinReintento = true;
+      throw error;
+    }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return await r.json();
   };
@@ -2752,10 +2779,17 @@ async function _fetchJSON(path, signal) {
   try {
     return await intentar();
   } catch(e){
+    if (estricto && e.sinReintento) throw e;
     if (signal && signal.aborted) return null;   // cancelado por el caller
-    if (BACKEND_ACTIVO !== 'cf') return null;    // ya en Deno y falla: nada más
+    if (BACKEND_ACTIVO !== 'cf') {
+      if (estricto) throw e;
+      return null;
+    }
     await _conmutarBackendPorFallo();
-    try { return await intentar(); } catch { return null; }
+    try { return await intentar(); } catch (error) {
+      if (estricto) throw error;
+      return null;
+    }
   }
 }
 
@@ -2940,6 +2974,10 @@ function _adoptarTitularMasReciente(n, otra){
   const visto = _vistoTitular(otra);
   const actual = n._vistoTit !== undefined ? n._vistoTit : _vistoTitular(n);
   if (!(visto > actual)) return false;
+  // El titular viejo ya no está en la tarjeta: deja de unir, para que otra
+  // URL que lo traiga no se descarte como duplicada.
+  const viejo = normalize(n.t || '');
+  if (_itemPorTitulo.get(viejo) === n) _itemPorTitulo.delete(viejo);
   n.t = otra.t;
   n._vistoTit = visto;
   const tn = normalize(otra.t);
@@ -6170,7 +6208,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=3a33991351')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=77c60fb0fc')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -8355,15 +8393,28 @@ let ULT_CTX = null;                // contexto del último filtrado
 // ── Paginación R2 ──
 let DIAS_ACTUAL = 0;               // días cargados vía R2 para la query actual
 let DIAS_CAPAS_KEY = '';            // las capas a las que pertenece ese contador
-const DIAS_R2_STEP = 30;           // días por click en "Cargar más"
+const DIAS_R2_STEP = 7;            // días por pulsación del histórico de un medio
+let DIAS_GENERACION = 0;
+let HISTORICO_ERROR = false;
 // Sin tope: se extiende hasta agotar el manifest.
 
 function claveCapas(capas){ return [...capas].sort().join('|'); }
+
+// Solo un medio elegido explícitamente; los grupos y modos conservan su
+// carga inicial, pero no ofrecen ampliar todo su archivo.
+function capasHistorico(parsed, consulta = ULT_CTX && ULT_CTX.consulta){
+  const dominios = consulta && consulta.medios.dominios;
+  if (!((parsed.medios || []).length || (parsed.dominios || []).length)
+      || !dominios || dominios.size !== 1) return new Set();
+  return new Set(['dominio:' + [...dominios][0]]);
+}
 
 function ajustarDiasActual(capas){
   const clave = claveCapas(capas);
   const total = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
   if (clave !== DIAS_CAPAS_KEY){
+    DIAS_GENERACION++;
+    HISTORICO_ERROR = false;
     DIAS_CAPAS_KEY = clave;
     DIAS_ACTUAL = clave ? Math.min(DIAS_MEMORIA, total) : 0;
   } else {
@@ -8763,9 +8814,9 @@ function aplicarFiltros(){
 
 const capas = capasRequeridas(parsed, consulta);
 
-// El cursor solo sirve para las capas que se cargaron con él. Al cambiar de
-// modo o de medio, la nueva capa empieza tras los días cargados en memoria.
-ajustarDiasActual(capas);
+// El cursor pertenece al medio elegido. Al cambiar de medio, empieza tras
+// los días de su carga inicial; grupos y modos no amplían el histórico.
+ajustarDiasActual(capasHistorico(parsed, consulta));
     // Disparo R2 en background
   if (capas.size) {
     const signal = new AbortController().signal;
@@ -9430,8 +9481,6 @@ function renderizar(){
   sentinel.id = 'render-sentinel';
   cont.appendChild(sentinel);
 
-  appendBatch();
-
   if (SENTINEL_OBSERVER) SENTINEL_OBSERVER.disconnect();
   SENTINEL_OBSERVER = new IntersectionObserver(entries => {
     if (PASE) return;
@@ -9440,18 +9489,10 @@ function renderizar(){
     // Si aún quedan items filtrados sin renderizar → siguiente batch
     if (RENDER_OFFSET < ULT_FILTRADAS.length) {
       appendBatch();
-      return;
-    }
-
-    // Lista agotada → pedir más días de R2 si hay
-    const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
-    const capas = capasRequeridas(parseQuery(preprocesarInput($('#buscar').value.trim())));
-    const puedeR2 = capas.size > 0 && DIAS_ACTUAL < totalDias;
-    if (puedeR2) {
-      solicitarMas(cargarMas);
     }
   }, { rootMargin: '400px' });
   SENTINEL_OBSERVER.observe(sentinel);
+  appendBatch();
 
   if (ACCES.focus) requestAnimationFrame(updateFocus);
   actualizarBotonCargarMas();
@@ -9643,13 +9684,22 @@ function appendBatch(){
   }
 }
 
-// Scroll infinito y «Cargar más»: R2 (ficheros estáticos: gratis y sin cuota).
+// El scroll solo muestra lo descargado. El histórico se amplía a mano.
 async function solicitarMas(pedir){
   if (_cargandoMas) return;
   _cargandoMas = true;
+  const generacion = DIAS_GENERACION;
+  const scope = _scopeGeneration;
+  HISTORICO_ERROR = false;
   actualizarBotonCargarMas();
   try { await pedir(); }
-  catch(e){ console.warn('[cargar más]', e); }
+  catch(e){
+    console.warn('[histórico]', e);
+    if (generacion === DIAS_GENERACION && scope === _scopeGeneration){
+      HISTORICO_ERROR = true;
+      toast(t(e.code === 'LIMITE' ? 'historicoLimite' : 'historicoFallo'), 4000);
+    }
+  }
   finally {
     _cargandoMas = false;
     actualizarBotonCargarMas();
@@ -9659,18 +9709,24 @@ async function solicitarMas(pedir){
 async function cargarMas() {
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
-  const capas = capasRequeridas(parsed);
+  const capas = capasHistorico(parsed);
   if (!capas.size || claveCapas(capas) !== DIAS_CAPAS_KEY) return;
 
   const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
   if (DIAS_ACTUAL >= totalDias) return;
 
-  const clave = DIAS_CAPAS_KEY;
+  const generacion = DIAS_GENERACION;
+  const scope = _scopeGeneration;
+  const vigente = () => generacion === DIAS_GENERACION && scope === _scopeGeneration;
   const desde = DIAS_ACTUAL;
   const hasta = Math.min(DIAS_ACTUAL + DIAS_R2_STEP, totalDias);
 
-  await extenderCapasR2(capas, desde, hasta);
-  if (DIAS_CAPAS_KEY !== clave) return;
+  // La carga inicial puede seguir en vuelo cuando se pulsa el botón.
+  await asegurarCapas(capas, new AbortController().signal);
+  if (!vigente()) return;
+  if ([...capas].some(k => !LAYERS.has(k))) throw new Error('Capa inicial pendiente');
+  await extenderCapasR2(capas, desde, hasta, vigente);
+  if (!vigente()) return;
   DIAS_ACTUAL = hasta;
 
   aplicarFiltros();
@@ -9684,12 +9740,13 @@ function actualizarBotonCargarMas() {
   // R2: extender días si quedan en el manifest
   const raw = $('#buscar').value.trim();
   const parsed = parseQuery(preprocesarInput(raw));
-  const capas = capasRequeridas(parsed);
+  const capas = capasHistorico(parsed);
   if (capas.size) {
     const totalDias = (_manifest && _manifest.dias) ? _manifest.dias.length : 0;
     if (DIAS_ACTUAL < totalDias) {
       wrap.style.display = '';
-      btn.textContent = _cargandoMas ? 'Cargando…' : `Cargar más · ${DIAS_ACTUAL}/${totalDias} días`;
+      btn.textContent = _cargandoMas ? t('historicoCargando')
+        : t(HISTORICO_ERROR ? 'historicoReintentar' : 'historicoAnteriores');
       btn.disabled = _cargandoMas;
       return;
     }
@@ -10389,6 +10446,9 @@ function aplicarDiasMemoria(v){
   LAYERS.clear();
   _itemsCargadosDeCapas = 0;
   DIAS_ACTUAL = 0;
+  DIAS_CAPAS_KEY = '';
+  DIAS_GENERACION++;
+  HISTORICO_ERROR = false;
   _hidratadasHasta = 0;
   _dupsHechosHasta = 0;
 
