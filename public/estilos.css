@@ -2325,6 +2325,11 @@ body.calendario-abierto{max-width:none}
 .consulta-nota, .consulta-pie{ font-size: .9em; }
 .consulta-pie{ margin-bottom: 0; }
 .consulta-pie button{ min-height: 32px; padding: 2px 10px; }
+.consulta-fechas{ display: grid; grid-template-columns: 44px minmax(0,14em) 44px; gap: 6px; max-width: 100%; margin: 8px 0; }
+.consulta-fechas button{ min-height: 44px; font-size: 1.3em; }
+.consulta-fechas label{ min-width: 0; }
+.consulta-fechas input{ width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: 4px 6px; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+.consulta-fechas :disabled{ opacity: .55; cursor: default; }
 /* Cuadros deportivos: el ancho disponible decide cuántos grupos caben.
    Las filas conservan el tamaño de letra elegido y los nombres completos. */
 .consulta-deporte{ container-type: inline-size; line-height: 1.35; }

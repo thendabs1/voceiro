@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=00811c1769';
+} from './parser.js?v=ffc56e4e54';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=00811c1769';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=00811c1769';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=00811c1769';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=00811c1769';
-import { comparador } from './busqueda/orden.js?v=00811c1769';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=ffc56e4e54';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=ffc56e4e54';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=ffc56e4e54';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=ffc56e4e54';
+import { comparador } from './busqueda/orden.js?v=ffc56e4e54';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=00811c1769';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=00811c1769';
+} from './sync/fusion.js?v=ffc56e4e54';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=ffc56e4e54';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=00811c1769';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=00811c1769';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=ffc56e4e54';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=ffc56e4e54';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=00811c1769';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=ffc56e4e54';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=00811c1769';
+} from './tiempo/avisos.js?v=ffc56e4e54';
 
-import { I18N, traducir } from './idiomas/index.js?v=00811c1769';
+import { I18N, traducir } from './idiomas/index.js?v=ffc56e4e54';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=00811c1769';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=00811c1769';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=00811c1769';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=00811c1769';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=ffc56e4e54';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=ffc56e4e54';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=ffc56e4e54';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=ffc56e4e54';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=00811c1769';
+import { ADMINISTRACION } from './territorios/administracion.js?v=ffc56e4e54';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=00811c1769');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=ffc56e4e54');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -5290,6 +5290,7 @@ const PUNTUAL = {
   texto: null, claveTexto: '',   // palabras de la búsqueda, marcadas en los equipos
   grupo: null,               // grupo visible en una columna; en ancho se ven todos
   origen: null,              // parrilla a la que volver desde un partido
+  fecha: '', cargandoFecha: false,
 };
 
 const idiomaConsulta = () => {
@@ -5338,7 +5339,7 @@ function activarConsulta(c){
   PUNTUAL.grupo = null;
   PUNTUAL.seq++;   // lo que esté en camino ya no se pinta
   clearTimeout(PUNTUAL.timer);
-  Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null });
+  Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null, fecha: '', cargandoFecha: false });
   if (esDeporteConsulta(c.tipo)){
     const codigo = normalize(c.texto);
     if (c.tipo === 'partido' && /^(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(codigo)){
@@ -5369,7 +5370,9 @@ const errorConsulta = motivo => Object.assign(new Error(motivo), { motivo });
 // Una petición por URL: lo vigente sale de la caché y lo que está en camino
 // se comparte. Los fallos no se guardan.
 function pedirConsulta(ruta, params){
-  const url = `${CONSULTA_URL}${ruta}?${new URLSearchParams({ ...params, idioma: idiomaConsulta() })}`;
+  // Versionar también la URL pública: el navegador puede conservar respuestas
+  // anteriores a las fichas de partido, cuyos marcadores no incluían un ID.
+  const url = `${CONSULTA_URL}${ruta}?${new URLSearchParams({ ...params, idioma: idiomaConsulta(), v: '3' })}`;
   const guardada = PUNTUAL.cache.get(url);
   if (guardada && guardada.caduca > Date.now()) return Promise.resolve(guardada.datos);
   if (PUNTUAL.enCurso.has(url)) return PUNTUAL.enCurso.get(url);
@@ -5381,6 +5384,7 @@ function pedirConsulta(ruta, params){
     const datos = await r.json().catch(() => null);
     if (!datos || typeof datos !== 'object' || !datos.estado) throw errorConsulta('red');
     if (r.status === 400) datos.estado = 'invalida';
+    if (params.fecha && ['ok', 'vacio'].includes(datos.estado) && datos.ficha?.fecha !== params.fecha) throw errorConsulta('red');
     const caduca = Date.parse(datos.caduca);
     if (r.ok && datos.estado !== 'no_disponible' && caduca > Date.now()){
       PUNTUAL.cache.delete(url);
@@ -5409,24 +5413,28 @@ async function cargarCandidatos(c){
 }
 
 // callado: al actualizar se deja la ficha que había hasta que llegue la nueva.
-async function abrirFichaConsulta(id, { candidato = null, callado = false } = {}){
+async function abrirFichaConsulta(id, { candidato = null, callado = false, fecha = '' } = {}){
   const seq = ++PUNTUAL.seq;
+  const resultados = id.startsWith('espn:resultados/');
   clearTimeout(PUNTUAL.timer);
+  PUNTUAL.cargandoFecha = resultados && callado;
+  PUNTUAL.reintentar = () => abrirFichaConsulta(id, { candidato, callado, fecha });
   if (!callado){
-    Object.assign(PUNTUAL, { id, candidato, ficha: null, fallo: '', estado: 'cargando',
-      reintentar: () => abrirFichaConsulta(id, { candidato }) });
-    pintarConsulta();
+    Object.assign(PUNTUAL, { id, candidato, ficha: null, fallo: '', estado: 'cargando', fecha: resultados ? fecha : '' });
   }
+  pintarConsulta();
   try {
-    const d = await pedirConsulta('/consulta/ficha', { id });
+    const d = await pedirConsulta('/consulta/ficha', { id, ...(resultados && fecha ? { fecha } : {}) });
     if (seq !== PUNTUAL.seq) return;
-    if (callado && d.estado === 'no_disponible' && PUNTUAL.ficha?.estado === 'ok') PUNTUAL.fallo = 'red';
-    else Object.assign(PUNTUAL, { ficha: d, estado: 'ficha', fallo: '' });
+    if (callado && !['ok', 'vacio'].includes(d.estado) && PUNTUAL.ficha) PUNTUAL.fallo = 'red';
+    else Object.assign(PUNTUAL, { ficha: d, estado: 'ficha', fallo: '',
+      fecha: resultados ? fecha || (fechaValida(d.ficha?.fecha) ? d.ficha.fecha : '') : '' });
   } catch(e){
     if (seq !== PUNTUAL.seq) return;
     if (callado) PUNTUAL.fallo = e.motivo || 'red';
     else Object.assign(PUNTUAL, { estado: 'error', error: e.motivo || 'red' });
   }
+  PUNTUAL.cargandoFecha = false;
   pintarConsulta();
   programarCaducidadConsulta();
 }
@@ -5445,14 +5453,18 @@ function programarCaducidadConsulta(){
 function pintarConsulta({ conservarPlegado = false } = {}){
   const el = document.getElementById('consulta-panel');
   if (!el || !PUNTUAL.activa) return;
-  if (!el.dataset.escucha){ el.dataset.escucha = '1'; el.addEventListener('click', pulsarConsulta); }
+  if (!el.dataset.escucha){
+    el.dataset.escucha = '1';
+    el.addEventListener('click', pulsarConsulta);
+    el.addEventListener('change', cambiarFechaConsulta);
+  }
   const plegada = conservarPlegado && el.querySelector('.consulta-ficha')?.open === false;
   el.innerHTML = htmlConsulta();
   if (plegada) el.querySelector('.consulta-ficha').open = false;
   el.hidden = false;
   // El foco solo se mueve tras un toque en el panel, nunca al llegar datos de lo que se escribe.
   const destino = PUNTUAL.enfocar && el.querySelector(PUNTUAL.enfocar);
-  if (destino){ PUNTUAL.enfocar = ''; destino.focus(); }
+  if (destino && !destino.disabled){ PUNTUAL.enfocar = ''; destino.focus(); }
 }
 
 function pulsarConsulta(ev){
@@ -5475,7 +5487,7 @@ function pulsarConsulta(ev){
       const partido = p.ficha?.ficha?.partidos?.find(x => x.id === b.dataset.id);
       if (!partido || !/^espn:partido\/(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(partido.id)) break;
       p.origen = { ficha: p.ficha, id: p.id, candidato: p.candidato, fallo: p.fallo,
-        grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id };
+        grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id, fecha: p.fecha };
       p.enfocar = '.consulta-ficha summary';
       abrirFichaConsulta(partido.id);
       break;
@@ -5495,7 +5507,16 @@ function pulsarConsulta(ev){
       pintarConsulta();
       break;
     case 'reintentar': p.reintentar?.(); break;
-    case 'actualizar': abrirFichaConsulta(p.id, { candidato: p.candidato, callado: true }); break;
+    case 'actualizar':
+      if (p.fallo) p.reintentar?.();
+      else abrirFichaConsulta(p.id, { candidato: p.candidato, callado: true, fecha: p.fecha });
+      break;
+    case 'dia':
+      if (fechaValida(p.fecha) && ['-1', '1'].includes(b.dataset.direccion)){
+        consultarFechaResultados(sumarDiasCalendario(p.fecha, Number(b.dataset.direccion)),
+          `[data-accion="dia"][data-direccion="${b.dataset.direccion}"]`);
+      }
+      break;
     case 'valor': cambiarTextoConsulta(b.dataset.valor); break;
     case 'grupo': {
       const i = Number(b.dataset.i);
@@ -5507,6 +5528,18 @@ function pulsarConsulta(ev){
     }
     case 'forzar': cargarCandidatos(p.activa); break;
   }
+}
+
+function cambiarFechaConsulta(ev){
+  if (ev.target.dataset.fechaResultados !== undefined){
+    consultarFechaResultados(ev.target.value, '[data-fecha-resultados]');
+  }
+}
+function consultarFechaResultados(fecha, foco){
+  const p = PUNTUAL;
+  if (!p.id.startsWith('espn:resultados/') || p.cargandoFecha || !fechaValida(fecha) || fecha < '0001-01-01') return;
+  p.enfocar = foco;
+  abrirFichaConsulta(p.id, { fecha, callado: Boolean(p.ficha) });
 }
 
 function escribirBusqueda(nuevo){
@@ -5563,7 +5596,19 @@ function htmlConsulta(){
   const tipo = p.id.startsWith('espn:partido/') ? 'partido' : c.tipo;
   return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(tipo))}</span>${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
-    ${otras}${cuerpoConsulta()}`;
+    ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
+}
+
+function htmlFechasResultados(){
+  const p = PUNTUAL;
+  if (!p.id.startsWith('espn:resultados/')) return '';
+  const cargando = p.cargandoFecha || p.estado === 'cargando';
+  const mover = (direccion, texto, flecha) => botonConsulta('dia', flecha,
+    ` data-direccion="${direccion}" title="${escapeHtml(t(texto))}" aria-label="${escapeHtml(t(texto))}"${cargando || !fechaValida(p.fecha) ? ' disabled' : ''}`);
+  return `<div class="consulta-fechas" role="group" aria-label="${escapeHtml(t('conFechaResultados'))}" aria-busy="${cargando}">
+    ${mover(-1, 'conDiaAnterior', '‹')}
+    <label><span class="sr-only">${escapeHtml(t('conFechaResultados'))}</span><input type="date" data-fecha-resultados value="${escapeHtml(p.fecha)}" min="0001-01-01" max="9999-12-31"${cargando ? ' disabled' : ''}></label>
+    ${mover(1, 'conDiaSiguiente', '›')}</div>${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
 }
 
 function cuerpoConsulta(){
@@ -6323,7 +6368,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=00811c1769')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=ffc56e4e54')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
