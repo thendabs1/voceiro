@@ -1,5 +1,8 @@
 # Primera integración: RFEA, Galicia y Cataluña
 
+Actualización: [recogida preparada y acuerdos de cobertura](atletismo-recogida.md).
+Las limitaciones y recuentos siguientes describen las entregas previas.
+
 2 de noviembre de 2026. Primera entrega **local y revisable**, sin activar
 recogida periódica ni publicar estas fuentes. World Athletics se mantiene
 para otra entrega. Se incluyen competiciones y tecnificación, según la

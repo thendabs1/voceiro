@@ -156,7 +156,7 @@ def leer_ficha_galicia(html):
     return salida
 
 
-def leer_rfea(mes, respuesta, fichas):
+def leer_rfea(mes, respuesta, fichas, *, urls=None):
     """Mes Drupal y fichas por URL: no usa el slug como identidad de la cita.
 
     Los días son apariciones de esta ventana, no límites definitivos de una
@@ -179,6 +179,8 @@ def leer_rfea(mes, respuesta, fichas):
         fecha = primero.replace(day=int(texto(dia.select_one('.monthday')))).isoformat()
         for a in dia.select('.calendar-item > a[href]'):
             url = enlace('rfea', a['href'])
+            if urls is not None and url not in urls:
+                continue
             if url not in fichas:
                 raise ValueError('Falta ficha RFEA para acreditar identidad: ' + url)
             ficha = BeautifulSoup(fichas[url], 'html.parser')

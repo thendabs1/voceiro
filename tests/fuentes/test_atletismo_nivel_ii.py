@@ -161,6 +161,49 @@ class NivelII(unittest.TestCase):
                 # una selección válida anterior que nunca estuvo persistida.
                 self.assertIsNone(eventos[0]['lugar']['valor'])
 
+    def test_exclusiva_id_interno_persistido_y_duracion_sin_confirmar(self):
+        i = {**self.inventario, 'filas': [deepcopy(self.inventario['filas'][0])]}
+        vacias = {'version': 1, 'revisiones': []}
+        primera = nivel.resolver(i, vacias, incorporar_nuevas=True)
+        e = primera['entrada']['eventos'][0]
+        self.assertRegex(e['id'], r'^nivel-ii:local-[a-f0-9]{32}$')
+        self.assertFalse(e['metadatos']['duracion_confirmada'])
+        self.assertEqual(e['inicio'], e['fin'])
+        self.assertEqual(e['estado'], 'desconocido')
+        n = atletismo.importar(None, primera['entrada'], AHORA)
+        otra = nivel.resolver(i, vacias, n, incorporar_nuevas=True)
+        self.assertEqual(otra['entrada']['eventos'][0]['id'], e['id'])
+        n = atletismo.importar(n, otra['entrada'], AHORA)
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)
+        self.assertTrue(otra['completo'])
+        # Ausencia no significa cancelación ni eliminación.
+        vacio = nivel.resolver({**i, 'filas': []}, vacias, n, incorporar_nuevas=True)
+        n = atletismo.importar(n, vacio['entrada'], AHORA)
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)
+
+    def test_exclusiva_reprogramada_no_recibe_otro_id(self):
+        i = {**self.inventario, 'filas': [deepcopy(self.inventario['filas'][0])]}
+        vacias = {'version': 1, 'revisiones': []}
+        primera = nivel.resolver(i, vacias, incorporar_nuevas=True)
+        n = atletismo.importar(None, primera['entrada'], AHORA)
+        i['filas'][0]['fila']['fecha'] = '2026-02-04'
+        i['filas'][0]['huella'] = nivel.huella(i['filas'][0]['fila'])
+        cambio = nivel.resolver(i, vacias, n, incorporar_nuevas=True)
+        self.assertEqual(cambio['entrada']['eventos'], [])
+        self.assertFalse(cambio['completo'])
+        self.assertEqual(cambio['incidencias'][0]['referencias'], [primera['entrada']['eventos'][0]['id']])
+
+    def test_exclusivas_repetidas_y_suspendidas_se_revisan(self):
+        f = deepcopy(self.inventario['filas'][0])
+        for filas in ([f, deepcopy(f)], [{**f, 'fila': {**f['fila'], 'nombre': 'SUSPENDIDO ' + f['fila']['nombre']}}]):
+            for observacion in filas:
+                observacion['huella'] = nivel.huella(observacion['fila'])
+            resultado = nivel.resolver({**self.inventario, 'filas': filas},
+                {'version': 1, 'revisiones': []}, incorporar_nuevas=True)
+            self.assertEqual(resultado['entrada']['eventos'], [])
+            self.assertTrue(resultado['incidencias'])
+            self.assertFalse(resultado['completo'])
+
 
 if __name__ == '__main__':
     unittest.main()

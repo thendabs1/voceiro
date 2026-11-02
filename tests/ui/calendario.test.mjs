@@ -1182,6 +1182,18 @@ test('la inscripción se muestra en el detalle sin ocupar el horario de la compe
   assert.doesNotMatch(runInContext('calHoraCita(evento)', c), /20:00|2\/11/);
 });
 
+test('Nivel II avisa cuando solo se conoce el día publicado', () => {
+  const c = contexto();
+  c.evento = { ...tarjeta('Control', '2026-11-07'), fuentes: [],
+    atletismo: { valor: { duracion_confirmada: false } } };
+  assert.match(runInContext('calEventoCuerpo(evento)', c), /Duración y programa sin confirmar/);
+  c.evento.atletismo = { variantes: [
+    { valor: { duracion_confirmada: false }, procedencia: { fuente: 'rfea' } },
+    { valor: { duracion_confirmada: true }, procedencia: { fuente: 'fga' } }
+  ] };
+  assert.doesNotMatch(runInContext('calEventoCuerpo(evento)', c), /Duración y programa sin confirmar/);
+});
+
 test('la cita compartida conserva inscripciones por fuente aunque difieran los metadatos', () => {
   const c = contexto();
   c.evento = { ...tarjeta('Compartida', '2026-11-15'), fuentes: [], atletismo: {

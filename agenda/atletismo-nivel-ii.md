@@ -1,5 +1,8 @@
 # Nivel II: extracción y resolución revisada
 
+Actualización: [recogida preparada y acuerdos de cobertura](atletismo-recogida.md).
+Las limitaciones y recuentos siguientes describen las entregas previas.
+
 2/11/2026. Primera extracción local; cobertura de identidad **incompleta**.
 No activa recogida periódica ni publicación. World Athletics sigue aparte.
 

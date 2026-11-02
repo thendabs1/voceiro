@@ -1,5 +1,5 @@
 export default {
-  "calAtletismo": "Athletics", "calInscripcion": "Registration",
+  "calAtletismo": "Athletics", "calDuracionSinConfirmar": "The published day is shown. Duration and programme are unconfirmed.", "calInscripcion": "Registration",
   "asEstadosHint": "Automatic follows your choice of sources or groups. Include adds the outlet even if it is outside your chosen groups. Mute always excludes it. When following topics, included outlets must also match the words.",
   "asTitulo": "Create a mode with guidance",
   "asEntrada": "Choose sources and topics, check headlines and save your selection. You can also create a mode directly.",

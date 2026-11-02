@@ -147,6 +147,7 @@ def actuales(n):
         salida.append({'fuente': r['proveedor'], 'id': r['id_externo'],
             'nombre': next(iter(b['nombres'].values())), 'url': b.get('url_evento'),
             'inicio': cuando['inicio']['fecha'], 'fin': cuando['fin']['fecha'],
+            'estado': b['programacion'].get('programacion', 'desconocido'),
             'lugar': b.get('lugar'), 'metadatos': b.get('atletismo') or {},
             'destino': r['destino'], 'grupo': (b.get('agenda') or {}).get('grupo'),
             'referencia': r['id'], 'lectura_ambigua': recuento[r['id']] > 1})

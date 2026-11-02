@@ -1,5 +1,5 @@
 export default {
-  "calAtletismo": "Atletismo", "calInscripcion": "Inscrición",
+  "calAtletismo": "Atletismo", "calDuracionSinConfirmar": "Amósase o día publicado. Duración e programa sen confirmar.", "calInscripcion": "Inscrición",
   "asEstadosHint": "Automático segue a elección de fontes ou grupos. Incluír engade ese medio aínda que non estea nos grupos escollidos. Silenciar exclúeo sempre. Se segues temas, os medios incluídos tamén deben cumprir as palabras.",
   "asTitulo": "Crear un modo con guía",
   "asEntrada": "Escolle fontes e temas, comproba titulares e garda a selección. Tamén podes crear un modo directamente.",

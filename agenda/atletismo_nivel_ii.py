@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+from uuid import uuid4
 
 from . import atletismo, atletismo_coincidencias as coincidencias, deporte
 
@@ -67,7 +68,7 @@ def leer(texto, paginas_esperadas):
             'paginas': len(paginas), 'huella_texto': sha256(texto.encode()).hexdigest(), 'filas': filas}
 
 
-def resolver(inventario, revisiones, n=None):
+def resolver(inventario, revisiones, n=None, *, incorporar_nuevas=False):
     """Separa entradas revisadas y pendientes, sin publicar un prefijo como completo.
 
     Un cambio de contenido exige revisar su huella y conservar el ID editorial.
@@ -155,10 +156,72 @@ def resolver(inventario, revisiones, n=None):
         e['url'] = URL + '#page=' + str(observacion['pagina'])
         eventos.append(e)
         resueltas.add(observacion['huella'])
+    incidencias = []
+    if incorporar_nuevas:
+        # Las referencias internas viven en el núcleo, junto a su última fila.
+        # Una huella permite reconocer una lectura, pero nunca genera el ID.
+        anteriores = [c for c in conocidos if c['fuente'] == 'rfea'
+                      and c['id'].startswith('nivel-ii:') and c['metadatos'].get('nivel_ii')]
+        for observacion in inventario['filas']:
+            h, f = observacion['huella'], observacion['fila']
+            if h in resueltas:
+                continue
+            iguales = [c for c in anteriores if c['metadatos']['nivel_ii'].get('huella') == h]
+            if len(indice[h]) != 1 or len(iguales) > 1:
+                incidencias.append({'huella': h, 'motivo': 'fila o identidad duplicada'})
+                continue
+            if len(iguales) == 1 and not iguales[0]['lectura_ambigua']:
+                # Reutilizar también las identidades editoriales que ya estaban
+                # guardadas; la ausencia del registro no autoriza a cambiarlas.
+                c = iguales[0]
+                eventos.append({'id': c['id'], 'nombre': f['nombre'], 'url': c['url'],
+                    'inicio': c['inicio'], 'fin': c['fin'], 'lugar': c['lugar'], 'estado': c['estado'],
+                    'metadatos': {**c['metadatos'], 'nivel_ii': {**c['metadatos']['nivel_ii'],
+                        'actualizado': inventario['actualizado'], 'huella_texto': inventario['huella_texto'],
+                        'pagina': observacion['pagina']}}})
+                resueltas.add(h)
+                continue
+            # No convertir una reprogramación en una nueva competición. El
+            # contraste de nombres ignora aquí la fecha deliberadamente: los
+            # controles recurrentes también pueden requerir revisión.
+            def parecida(a, b):
+                ta = set(coincidencias.normalizar(a['nombre']).split())
+                tb = set(coincidencias.normalizar(b['nombre']).split())
+                numeros_a = {t for t in ta if t.isdigit()}
+                numeros_b = {t for t in tb if t.isdigit()}
+                return bool(ta and tb and numeros_a == numeros_b
+                            and 2 * len(ta & tb) / (len(ta) + len(tb)) >= .9)
+
+            dudosas = [c['id'] for c in anteriores
+                       if c['metadatos']['nivel_ii'].get('fila', {}).get('federacion_literal') == f['federacion_literal']
+                       and c['inicio'][:4] == f['fecha'][:4] and parecida(f, c)]
+            e = {'id': 'nivel-ii:candidata', 'nombre': f['nombre'], 'inicio': f['fecha'], 'fin': f['fecha'],
+                 'lugar': {'nombre': f['instalacion'], 'city': f['ciudad']}, 'url': URL,
+                 'metadatos': {'modalidad_literal': f['tipo_literal'], 'nivel_rfea': 'II'}}
+            decision = coincidencias.decidir('rfea', e, conocidos)
+            repetidas = [o['huella'] for o in inventario['filas'] if o['huella'] != h
+                         and o['fila']['federacion_literal'] == f['federacion_literal']
+                         and parecida(f, o['fila'])]
+            if dudosas or repetidas or decision['estado'] != 'nueva' or re.search(
+                    r'aprazad|aplazad|suspendid|cancelad', f['nombre'], re.I):
+                incidencias.append({'huella': h, 'motivo': 'identidad, alcance o estado por revisar',
+                    'referencias': dudosas, 'otras_filas': repetidas,
+                    'candidatos': decision.get('candidatos', [])})
+                continue
+            e['id'] = 'nivel-ii:local-' + uuid4().hex
+            e['url'] = URL + '#page=' + str(observacion['pagina'])
+            e['estado'] = 'desconocido'
+            e['metadatos'].update(duracion_confirmada=False, nivel_ii={
+                'fila': f, 'huella': h, 'actualizado': inventario['actualizado'],
+                'huella_texto': inventario['huella_texto'], 'pagina': observacion['pagina'],
+                'identidad_interna': True, 'criterio': 'fila nueva sin correspondencias ni ambigüedades'})
+            eventos.append(e)
+            resueltas.add(h)
     pendientes = [f for f in inventario['filas'] if f['huella'] not in resueltas]
     sin_aplicar = [r['id'] for r in revisiones['revisiones'] if r['huella'] not in resueltas]
     return {'entrada': {'version': 1, 'fuente': 'rfea', 'eventos': eventos},
             'pendientes': pendientes, 'revisiones_no_aplicadas': sin_aplicar,
+            'incidencias': incidencias,
             'completo': not pendientes and not sin_aplicar}
 
 
@@ -170,11 +233,15 @@ def main():
     ap.add_argument('--revisiones', help='Registro de identidades y fechas revisadas')
     ap.add_argument('--entrada', help='Guardar solo las citas resueltas para --entrada-atletismo')
     ap.add_argument('--nucleo', help='Núcleo v2 local para resolver coincidencias automáticamente')
+    ap.add_argument('--incorporar-nuevas', action='store_true',
+                    help='Asignar IDs internos a filas nuevas inequívocas; importar y conservar el núcleo resultante')
     args = ap.parse_args()
     if bool(args.revisiones) != bool(args.entrada):
         ap.error('--revisiones y --entrada deben indicarse juntos')
     if args.nucleo and not args.revisiones:
         ap.error('--nucleo requiere --revisiones y --entrada')
+    if args.incorporar_nuevas and not args.revisiones:
+        ap.error('--incorporar-nuevas requiere --revisiones y --entrada')
     info = subprocess.run(['pdfinfo', args.pdf], check=True, capture_output=True, text=True).stdout
     paginas = re.search(r'^Pages:\s+(\d+)$', info, re.M)
     if not paginas:
@@ -186,7 +253,8 @@ def main():
     resultado = None
     if args.revisiones:
         n = json.loads(Path(args.nucleo).read_text(encoding='utf-8')) if args.nucleo else None
-        resultado = resolver(inventario, json.loads(Path(args.revisiones).read_text(encoding='utf-8')), n)
+        resultado = resolver(inventario, json.loads(Path(args.revisiones).read_text(encoding='utf-8')), n,
+                             incorporar_nuevas=args.incorporar_nuevas)
         inventario['resolucion'] = {k: v for k, v in resultado.items() if k != 'entrada'}
     Path(args.salida).write_text(json.dumps(inventario, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     if resultado is not None:

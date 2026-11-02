@@ -571,6 +571,8 @@ function calNombreSesion(p, e){
 // Cuerpo del detalle; desplegado en la lista, sin el lugar si la tarjeta ya lo dice.
 function calInscripcionesAtletismo(e){
   const variantes = e.atletismo?.variantes?.length ? e.atletismo.variantes : [{ valor: e.atletismo?.valor }];
+  const duracion = variantes.every(v => v.valor?.duracion_confirmada === false)
+    ? `<p class="cal-nota">${calEsc(t('calDuracionSinConfirmar'))}</p>` : '';
   const plazos = new Map();
   for (const v of variantes){
     const inscripcion = v.valor?.inscripcion;
@@ -580,8 +582,8 @@ function calInscripcionesAtletismo(e){
     const fuente = v.procedencia?.fuente;
     if (fuente) plazos.get(clave).fuentes.add(CALENDARIO.meta?.fuentes?.[fuente]?.nombre || fuente);
   }
-  if (!plazos.size) return '';
-  return `<section class="cal-inscripcion"><h4>${calEsc(t('calInscripcion'))}</h4>${[...plazos.values()].map(({ inscripcion, fuentes }) => `
+  if (!plazos.size) return duracion;
+  return duracion + `<section class="cal-inscripcion"><h4>${calEsc(t('calInscripcion'))}</h4>${[...plazos.values()].map(({ inscripcion, fuentes }) => `
     ${fuentes.size ? `<p class="cal-nota">${calEsc(t('calFuente'))}: ${calEsc([...fuentes].join(' · '))}</p>` : ''}
     <p>${calEsc(inscripcion.plazo_textual || '')}</p>
     ${(inscripcion.enlaces || []).map(a => `<p>${calEnlace(a.url, a.nombre)}</p>`).join('')}`).join('')}</section>`;

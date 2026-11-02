@@ -1,5 +1,5 @@
 export default {
-  "calAtletismo": "Atletismo", "calInscripcion": "Inscripción",
+  "calAtletismo": "Atletismo", "calDuracionSinConfirmar": "Se muestra el día publicado. Duración y programa sin confirmar.", "calInscripcion": "Inscripción",
   "historicoAnteriores": "Ver titulares anteriores", "historicoCargando": "Cargando histórico…",
   "historicoReintentar": "Reintentar titulares anteriores",
   "historicoFallo": "No se pudo ampliar el histórico. Puedes reintentarlo.",
