@@ -20,14 +20,15 @@ const funcion = nombre => {
 function crear() {
   const ctx = {
     NOTICIAS: [], _itemPorUrl: new Map(), _itemPorTitulo: new Map(),
-    _urlsCargadas: new Set(), _titulosCargados: new Set(),
+    _urlsCargadas: new Set(), _titulosCargados: new Set(), _titularesCambiados: 0,
     PRENSA_ACTIVA: true, PRENSA_LANG: 'es', PRENSA_PAIS: 'ES',
     normalizeUrlForMatch: s => s, normalize: s => s.toLowerCase(), palabrasDe,
     HORIZONTE_FUTURO_MS: 3600e3,
   };
   for (const f of ['_mergearItemsEnNoticias', '_claveUrl', '_pasaVista', '_pasaConsulta',
                    '_pasaExterno', '_soloDeConsulta', '_clavePrensa', '_ocultaPorLectura',
-                   '_calcularFechas', '_adoptarPublicacion', 'reconstruirFecha', 'parseFecha']) {
+                   '_calcularFechas', '_adoptarPublicacion', '_adoptarTitularMasReciente',
+                   '_vistoTitular', 'escapeHtml', 'limpiarCdata', 'reconstruirFecha', 'parseFecha']) {
     runInNewContext(funcion(f), ctx);
   }
   // Lo que hace hidratarNoticias con los campos que mira el filtro.

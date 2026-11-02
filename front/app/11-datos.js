@@ -260,6 +260,38 @@ function _adoptarPublicacion(n, otra){
   _calcularFechas(n, Date.now() + HORIZONTE_FUTURO_MS);
 }
 
+// Cuándo se vio por primera vez el titular de una entrada: su `c`, relativa
+// al día de su fichero. Sin `c` (prensa, ficheros viejos) no se sabe: NaN.
+function _vistoTitular(n){
+  return parseFecha(reconstruirFecha(n.c, n._dia || ''));
+}
+
+// El medio cambió el titular de esta URL: el histórico guarda cada titular
+// como entrada propia y aquí se unen por URL. Se queda el que se vio más
+// tarde (antes, el primero en llegar: en un fichero, el primero por orden
+// alfabético si las horas empataban). Publicación, recogida y orden no
+// cambian: la tarjeta no sube por cambiar de titular. Devuelve si cambió.
+let _titularesCambiados = 0;
+function _adoptarTitularMasReciente(n, otra){
+  if (!otra.t || otra.t === n.t) return false;
+  const visto = _vistoTitular(otra);
+  const actual = n._vistoTit !== undefined ? n._vistoTit : _vistoTitular(n);
+  if (!(visto > actual)) return false;
+  n.t = otra.t;
+  n._vistoTit = visto;
+  const tn = normalize(otra.t);
+  _titulosCargados.add(tn);
+  if (!_itemPorTitulo.has(tn)) _itemPorTitulo.set(tn, n);
+  if (n._hidratada){
+    n.titular = limpiarCdata(n.t);
+    n._titularEsc = escapeHtml(n.titular);
+  }
+  n._palabras = undefined;
+  n._temasVer = undefined;
+  _titularesCambiados++;
+  return true;
+}
+
 function construirMediosUnicos(){
   MEDIOS_UNICOS = Object.entries(MEDIOS).map(([dominio, m]) => ({
     dominio,

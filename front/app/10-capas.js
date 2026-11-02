@@ -98,6 +98,7 @@ function _mergearItemsEnNoticias(items, capaKey, clave = null, rangoBase = null)
       const existente = _itemPorUrl.get(u);
       if (existente) {
         _adoptarPublicacion(existente, n);
+        _adoptarTitularMasReciente(existente, n);
         existente._capas.add(capaKey);
         marcar(existente);
         continue;
@@ -246,6 +247,7 @@ async function extenderCapasR2(capas, desde, hasta) {
 async function asegurarCapas(capas, signal) {
   const faltantes = [...capas].filter(k => !LAYERS.has(k));
   if (!faltantes.length) return false;
+  const cambiados = _titularesCambiados;
 
   // Si ya hay una carga en curso, nos colgamos de ella. Cuando termine,
   // re-evaluamos: puede que ya no falte nada (caso típico: aplicarFiltros
@@ -275,7 +277,8 @@ async function asegurarCapas(capas, signal) {
   })();
 
   try {
-    return (await _capaEnVuelo) > 0;
+    // También repinta si solo cambió el titular de tarjetas ya cargadas.
+    return (await _capaEnVuelo) > 0 || _titularesCambiados !== cambiados;
   } finally {
     _capaEnVuelo = null;
   }
@@ -418,7 +421,9 @@ function wirePortadas() {
     if (chk.checked) PORTADAS_ACTIVAS.push(slug);
     guardarPortadasActivas();
     if (chk.checked) {
-      if (_mergearPortadasExtra(await _fetchPortadasExtra([slug]))) {
+      const cambiados = _titularesCambiados;
+      if (_mergearPortadasExtra(await _fetchPortadasExtra([slug]))
+          || _titularesCambiados !== cambiados) {
         refrescarVistaCompleta();
       }
     } else {
