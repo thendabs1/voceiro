@@ -30,9 +30,11 @@ https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.
    Comprueba páginas, temporada, actualización y todas las líneas. Conserva
    federación, fecha, tipo, nombre, instalación, ciudad y página. Un cambio
    incompatible de distribución falla; no se acepta una extracción parcial.
-2. `resolver(inventario, revisiones)` solo genera citas para filas con revisión
-   explícita. Devuelve también pendientes, revisiones que ya no se aplican y
-   `completo`. No equivale a declarar cubierta toda la temporada RFEA.
+2. `resolver(inventario, revisiones, n=None)` genera citas con revisión explícita
+   o, si recibe el núcleo, con coincidencia automática inequívoca según el
+   [contrato de comparación](atletismo-coincidencias.md#nivel-ii). Devuelve también
+   pendientes, revisiones que ya no se aplican y `completo`. No equivale a
+   declarar cubierta toda la temporada RFEA.
 
 Una huella identifica el contenido de una fila; **no identifica una cita**.
 El registro `atletismo-nivel-ii-revisiones.json` asigna un ID editorial estable
@@ -49,8 +51,9 @@ Dos filas exactamente iguales se mantienen pendientes: no se elige una por
 posición. La ausencia no cancela ni retira una cita ya importada.
 
 La equivalencia se aplica al importar, antes de publicar o servir consultas.
-La lectura pública recibe una cita con varias procedencias. La comparación
-aproximada puede proponer candidatos para revisión; no decide la fusión.
+La lectura pública recibe una cita con varias procedencias. La comparación automática
+solo comparte identidad cuando se cumplen las señales inequívocas del contrato;
+los casos ambiguos requieren revisión.
 Si ya existen dos identidades distintas en una base, el importador exige
 conciliación explícita; añadir una equivalencia no reescribe el historial.
 
@@ -65,7 +68,7 @@ XIX campeonato gallego de marcha de invierno, 21/11/2026, Pontevedra:
   tipo `AL` del PDF frente a `Marcha` de la territorial; no se corrige el PDF.
   La fecha de actualización del documento queda en los metadatos.
 
-Las otras **440 filas** no están aprobadas para importación. Entre los casos
+Sin contraste con el núcleo, las otras **440 filas** siguen pendientes. Entre los casos
 que requieren revisar alcance está Vic: la ficha catalana reúne campeonato
 de clubes y Cros Ciutat de Vic. Tampoco se ha resuelto el campeonato sub-16
 aplazado en julio y anunciado en octubre. No prometer Nivel II completo ni
@@ -83,7 +86,8 @@ python calendario.py --db /tmp/nivel-ii.db --entrada-atletismo /tmp/nivel-ii-rev
 ```
 
 El inventario conserva huellas del PDF y del texto, además de los pendientes.
-La entrada importable contiene únicamente citas revisadas: actualmente una.
+Sin `--nucleo`, el registro manual produce una cita; con él también se incluyen
+las coincidencias automáticas inequívocas. Las demás filas siguen pendientes.
 La captura íntegra de texto está en las muestras; no contiene inscritos.
 
 Verificación local: extracción del PDF real y 21 pruebas de atletismo,

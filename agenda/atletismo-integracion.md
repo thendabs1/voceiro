@@ -8,9 +8,10 @@ recogida periódica ni publicar estas fuentes. World Athletics se mantiene
 para otra entrega. Se incluyen competiciones y tecnificación, según la
 selección confirmada por el usuario.
 
-Revisión posterior: [metadatos, cobertura RFEA y solapamientos](atletismo-revision-metadatos.md).
-Las 89 entradas de la demostración no son 89 competiciones únicas; faltan
-correspondencias entre fuentes y separar artículos de circuito de sus jornadas.
+La [revisión de metadatos y cobertura](atletismo-revision-metadatos.md)
+recoge las carencias abiertas. El contrato ya admite circuitos y programas;
+las [coincidencias automáticas](atletismo-coincidencias.md) resuelven los solapes
+inequívocos. El lector bruto aún requiere clasificación revisada de circuitos.
 
 ## Capas y modelo
 
@@ -57,8 +58,8 @@ contiene 464 filas de datos y cinco columnas: fecha, disciplina, competición,
 La hoja no contiene hipervínculos ni una columna de ID. Es útil para contrastar
 fechas; no se une automáticamente a una ficha por nombre. El mensual observado
 repite las competiciones por día: tampoco convertir sus límites de ventana en
-inicio/fin definitivos. La revisión posterior confirma que Nivel II incluye
-citas ausentes del mensual: su integración e identidad siguen pendientes.
+inicio/fin definitivos. Nivel II incluye citas ausentes del mensual: existe
+[extracción local](atletismo-nivel-ii.md), con cobertura de identidad incompleta.
 
 ## Inscripción y documentación
 
@@ -123,21 +124,22 @@ python calendario.py --db /tmp/atletismo.db --entrada-atletismo /tmp/fca.json --
 
 La opción es repetible para cargar las tres fuentes en la misma base. La
 proyección y la lectura existentes reciben las nuevas capas. Repetir una cita
-con el mismo ID actualiza fecha/nombre sin duplicarla. No se fusionan citas de
-federaciones distintas sin correspondencia contrastada.
+con el mismo ID actualiza fecha/nombre sin duplicarla. Las coincidencias entre
+federaciones se resuelven con el [criterio de comparación](atletismo-coincidencias.md).
 
 ### Una cita con varias procedencias
 
 El usuario confirma este criterio: una sola cita con varias capas cuando se
 acredite equivalencia; discrepancias de fecha o sede pendientes de revisión.
-`atletismo-equivalencias.json` registra IDs por federación, clave común estable,
-fecha/motivo de revisión y enlaces de evidencia. La primera equivalencia es
-España 5 km máster 2026 en Negreira: RFEA 64837, FGA 113590 y FCA 82885.
+Las correspondencias automáticas siguen el [contrato vigente](atletismo-coincidencias.md).
+Para las editoriales, `atletismo-equivalencias.json` registra IDs por federación,
+clave común estable, fecha/motivo de revisión y enlaces de evidencia. La primera
+equivalencia es España 5 km máster 2026 en Negreira: RFEA 64837, FGA 113590 y FCA 82885.
 La carrera popular A Clásica sigue siendo otra cita.
 
 El importador asigna identidad compartida al encuentro y su contenedor. Cada
 referencia y observación conserva su proveedor. Las relaciones permiten llegar
-a las tres capas. No se compara el título para consolidar. Una equivalencia
+a las tres capas. El título por sí solo no acredita equivalencia. Una equivalencia
 nueva sobre identidades anteriores distintas exige conciliación explícita;
 no se reescribe el historial ni se borran filas automáticamente. Los borradores
 locales anteriores se pueden regenerar en una base nueva con las entradas revisadas.
@@ -184,29 +186,17 @@ verifican el contrato; no acreditan horario real de ninguna competición.
 
 ## Antes de activar la recogida
 
-Cerrar cobertura RFEA y Nivel II, extender la resolución revisada de circuitos gallegos,
-medir solapes de una ventana común y preparar recogida incremental con
-presupuesto por fuente. Las inscripciones requieren lectura de fichas adicional:
+La recogida manual ya existe ([recogida](atletismo-recogida.md)). Antes del
+cron: cerrar Nivel II, extender la resolución revisada de circuitos gallegos
+y medir solapes de una ventana común. Las inscripciones requieren lectura de fichas adicional:
 no hacer una petición por cita y visitante. Conservar última lectura válida y
 no deducir cancelación de una ausencia. El control por temporadas deportivas
 cerradas no debe reutilizarse sin adaptación para calendarios federativos abiertos.
 
-Verificación de esta entrega: muestras públicas acotadas, importación y
-publicación locales, lectura SQL del detalle con inscripción, identidad ante
-reprogramación, rechazo de páginas truncadas/repetidas y selección de capas en
-la interfaz. La ampliación del modelo comprueba además circuito con tres
-jornadas, programa añadido después sin cambio de identidad, sesiones sin
-fecha o fuera de intervalo, rechazo de asociaciones entre competiciones y
-regresiones de GP. Pasan trece pruebas de atletismo y las selecciones de núcleo,
-fuentes oficiales, adaptadores deportivos, publicación, lectura e interfaz.
-La suite completa pasó en [CI](https://github.com/thendabs1/voceiro/actions/runs/41466633236)
-para el commit `adc3a2fa` del [PR 259](https://github.com/thendabs1/voceiro/pull/259).
-La entrega sigue sin activar recogida ni publicación en producción.
+## Comprobación
 
-Continuación: [extracción Nivel II y resolución de identidades](atletismo-nivel-ii.md).
-Se extraen 441 filas del PDF completo; una tiene correspondencia revisada
-con FGA y 440 siguen pendientes. Esto no cierra la cobertura RFEA.
-
-Continuación posterior: [comparación automática e issues de revisión](atletismo-coincidencias.md).
-Las correspondencias ya no requieren siempre una tabla manual: se resuelven
-al importar cuando las señales son inequívocas y se envían a revisión las dudas.
+Las pruebas de atletismo cubren identidad ante reprogramación, integridad de
+páginas, inscripción, capas, equivalencias, circuitos y programas fechados;
+las de Nivel II cubren extracción completa e identidades revisadas o automáticas.
+La suite completa corresponde a CI. La validación local no acredita activación
+ni cobertura completa de las fuentes.

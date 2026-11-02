@@ -5,8 +5,8 @@ revisado con datos el 28/10/2026. **Implementado en Galicia, Madrid, CyL, Kultur
 Zaragoza** ([clasificador.py](clasificador.py) con las tablas de
 [tablas/](tablas/)): los lectores guardan el vocabulario en bruto y la
 clasificación se decide al publicar. Galicia se recoge solo en gallego,
-directamente al núcleo, manteniendo sus referencias del piloto. Las fases y lo
-pendiente de revisar están al final.
+directamente al núcleo, manteniendo sus referencias del piloto. Lo pendiente
+de revisar está al final.
 
 ## Para qué sirve
 
@@ -53,9 +53,9 @@ titulares reales antes de publicarlos, porque el comparador busca por prefijo
 | **medio-ambiente** | Naturaleza, ecología, sostenibilidad | Una excursión por ser al aire libre | `medio ambiente`, `biodiversidad` |
 | **gastronomia** | Cocina y cultura alimentaria | Comida social sin contenido culinario | `gastronomía`, `cocina` |
 
-`exposiciones:` deja de ser ámbito (es un formato) y su contenido pasa a
-`artes-visuales:` o al tema de la exposición. Se cambia ahora, con el
-calendario apagado, sin transición.
+`exposiciones:` ya no es un ámbito: la exposición es un formato y su tema
+es `artes-visuales:` o el contenido acreditado. El ID antiguo se conserva
+en el catálogo por compatibilidad.
 
 Quedan como **etiqueta**, buscables pero sin ámbito: artes escénicas sin
 disciplina, historia y humanidades, idiomas, educación, empleo y empresa,
@@ -171,43 +171,16 @@ clasificar: tema 80 % (CyL), 78 % (Kulturklik), 63 % (Madrid) y 65 %
 
 ## Pendiente de revisar
 
-Notas que dejó la implementación; las de cada valor están en su tabla (`nota`).
+Las notas de cada valor están en su tabla (`nota`).
 
-1. **Galicia (resuelto):** tabla con los 35 tipos del catálogo oficial gallego,
-   público y entrada. «Espectáculo» → `cultura` + representación;
-   «Proxección audiovisual» → proyección sin tema; «Festa de interese turístico»
-   → fiesta sin tema. «Divulgación» es hija de exposición, no acredita ciencia.
-   Se retira el prefijo `exposiciones:`; el ID antiguo se conserva en el catálogo.
-   La recogida castellana queda aplazada: el 28/10 declaró 202 resultados pero
-   devolvió 200 incluso paginando; cuatro traducciones diferían en horario y
-   había un enlace ambiguo. No se relaja la comprobación de integridad.
-2. **Política de publicación (aplazada):** culto, actos partidistas y
-   formación restringida aún se publican. Madrid solo trae 2 «ActosReligiosos»,
-   y uno es patrimonio; la regla de no publicar se hará cuando una fuente
-   traiga volumen.
-3. **Temas antiguos en el núcleo:** los `c.tema` que asignaban los lectores
-   siguen en las entidades hasta que su observación se compacte; al publicar
-   se ignoran en las fuentes con tabla.
-
-Resuelto el 28-10: Madrid toma el precio de `PRECIO` (texto) y `GRATUITO=1`,
-porque `GRATUITO=0` no implica pago; Zaragoza «Imagen y sonido» → `cultura`;
-en Kulturklik «Invitación» es gratis y «Inscripción» sin más sigue sin precio.
-Cada tema de las tablas tiene su prefijo en el buscador (solo agenda; las
-competiciones suman noticias por titular) y el worker filtra por `formatos=`
-y `precio=`.
-
-## Fases
-
-1. **Clasificador único:** catálogo de ejes, tablas declarativas por fuente,
-   estados por valor, sustitución de generaciones e informe de cobertura.
-   Sustituye `c.tema` cultural y la clasificación del piloto; los deportes
-   pasan por el mismo contrato. Los ámbitos de `consulta.js` se generan desde
-   el catálogo (las raíces reúnen también los términos de noticias de sus
-   hijos).
-2. **Reconstrucción cultural:** copia de la generación anterior; se conservan
-   las referencias externas (identidad irreversible) y los deportes; las cinco
-   fuentes culturales se regeneran de una vez con evidencia completa (público,
-   precio y vocabularios que hoy se descartan).
-3. **Ampliación:** fuentes en el orden de [fuentes.md](fuentes.md#lista-cerrada).
-4. **Lectura e interfaz:** facetas de todos los filtros, «Sin clasificar»
-   visible y nueva interfaz antes de activar el calendario.
+- **Galicia en castellano (aplazado):** el 28/10 declaró 202 resultados pero
+  devolvió 200 incluso paginando; cuatro traducciones diferían en horario y
+  había un enlace ambiguo. No se relaja la comprobación de integridad.
+- **Política de publicación (aplazada):** culto, actos partidistas y
+  formación restringida aún se publican. Madrid solo trae dos «ActosReligiosos»,
+  y uno es patrimonio; aplicar la exclusión exige evidencia por cita.
+- **Temas antiguos en el núcleo:** los `c.tema` que asignaban los lectores
+  siguen en las entidades hasta que su observación se compacte; al publicar
+  se ignoran en las fuentes con tabla.
+- **Ampliación:** fuentes en el orden de [fuentes.md](fuentes.md#lista-cerrada).
+- **Lectura e interfaz:** completar facetas y la presentación de «Sin clasificar».

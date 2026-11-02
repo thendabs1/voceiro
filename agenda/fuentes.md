@@ -90,44 +90,32 @@ ciudad, Valladolid y A Coruña. No se abre una ronda de scraping para ellas.
 
 ## Atletismo
 
-Comprobado el 27/10/2026 (muestras locales y 43 GET a páginas públicas).
-Carreras populares, maratones, cross, trail y pista son citas de agenda; los
-resultados, clasificaciones y marcas, consulta puntual, y solo con una fuente
-que permita reutilizarlos (un worker no elimina las restricciones).
+Estado del código a 2/11/2026: recogida manual de RFEA, Galicia y Cataluña
+([recogida](atletismo-recogida.md)); cron y publicación sin activar.
+El [diseño común](atletismo-diseno.md) fija el alcance; el contrato y uso local
+están en [la integración](atletismo-integracion.md),
+[Nivel II](atletismo-nivel-ii.md) y
+[correspondencias automáticas](atletismo-coincidencias.md).
 
-**Ya disponible en fuentes abiertas:** Madrid (`CarrerasMaratones`, p. ej.
-Cross de la Constitución de Villaverde), Zaragoza (categoría Deporte: trail y
-carreras entre unas 300 obras deportivas) y Málaga (Maratón, Carrera de la
-Prensa). `Deporte` o `Eventos deportivos` no bastan para asignar `atletismo`:
-la tabla de la fuente lo decide por campo, nunca por título.
+World Athletics queda para una entrega posterior independiente.
 
-| Fuente | Acceso | Cobertura | Condiciones | Veredicto |
-| --- | --- | --- | --- | --- |
-| [RFEA](https://atletismorfea.es/calendario) | HTML con filtros (temporada, disciplina, ámbito); fichas por URL; ID estable sin acreditar; la descarga Excel no devolvió datos | Ruta, maratón, cross, pista, marcha y trail; temporadas hasta 2027 | Copyright, sin licencia de datos | Pedir permiso; es la fuente para «campeonatos de España» y «maratones de la temporada» |
-| [Federació Catalana](https://fcatletisme.cat/events/?ical=1) | ICS con 30 citas, `UID` (incluye fechas), lugar, categorías y modificación | Ruta, cross, trail, pista | Aviso legal: solo uso personal | Pedir permiso |
-| [Federación Galega](https://atletismo.gal/competicions/) | HTML y Excel anunciado | Por disciplina, municipio y temporada | Autorización escrita para reproducir | Pedir permiso |
-| [Federación Andaluza](https://atletismofaa.es/carreraspopulares/) | HTML de próximas carreras; PDF federativo | Carreras, cross y trail hasta 03/2027 | Derechos reservados | Pendiente |
-| [World Athletics](https://worldathletics.org/terms-and-conditions) | HTML con datos embebidos | Internacional | Sus condiciones prohíben bases de datos y acceso automatizado sin autorización escrita | No |
-| [CarrerasPopulares](https://carreraspopulares.com/aviso-legal) | Web; su RSS son noticias | Amplia | Autorización previa | No |
-| Tenerife deportiva | JSON, URL no única | Cabildo | CC BY | Solo si acredita identidad |
+| Fuente | Acceso contrastado | Cobertura y situación |
+| --- | --- | --- |
+| [RFEA](https://atletismorfea.es/calendario) | Mensual Drupal, fichas con `championship` y SFID; Excel anual sin IDs; PDF Nivel II | Calendario deportivo de todas las edades y ámbitos; identidad y cobertura de Nivel II incompletas |
+| [Federació Catalana](https://fcatletisme.cat/wp-json/tribe/events/v1/events) | API con ID propio, total y paginación; preferida al ICS de 30 citas | Lectura local de competiciones y tecnificación |
+| [Federación Galega](https://atletismo.gal/competicions/) | HTML con ID WordPress y fichas | Lectura local; circuitos y planes requieren clasificación revisada |
+| [World Athletics](https://worldathletics.org/competition/calendar-results) | JSON embebido, filtros y páginas de 100 | Circuitos y campeonatos internacionales; [contrato pendiente](atletismo-world-athletics.md) |
+| [Federación Andaluza](https://atletismofaa.es/carreraspopulares/) | HTML y PDF federativo | Sin integrar |
+| [CarrerasPopulares](https://carreraspopulares.com/aviso-legal) | Web; RSS de noticias | Sin integrar |
+| Tenerife deportiva | JSON sin URL única | Requiere acreditar identidad |
 
-En el núcleo: agrupación para circuito, campeonato o temporada; evento por
-prueba fechada; disciplina (ruta, cross, trail, pista), distancia y
-superficie como datos. Una carrera que aparezca en la RFEA y en una agenda
-municipal solo se une por correspondencia revisada entre referencias.
+Las agendas municipales también aportan carreras: Madrid, Zaragoza y la
+candidata Málaga. La asignación de `atletismo` depende de la tabla de cada
+fuente. Una territorial conserva identidad y cobertura propias; RFEA no se
+considera un calendario universal que las sustituya. Las coincidencias se
+resuelven al importar con evidencia y los casos ambiguos van a revisión.
 
-Criterio (27/10/2026): el atletismo tiene un **calendario universal** como el
-resto de deportes. Se empieza por la RFEA (España; hay que pedirle permiso).
-World Athletics queda para después y solo con autorización escrita, porque
-prohíbe el acceso automatizado. Los calendarios autonómicos y municipales no
-son fuentes aparte: entran por el clasificador común y se quedan si aportan
-citas que el universal no tiene. Hasta tener permiso se sigue con las agendas
-municipales.
-
-Fases: (1) atletismo bien clasificado en Madrid, Zaragoza y Málaga con la
-reconstrucción («carreras cerca de mí este mes»); (2) calendario universal
-tras conseguir permiso y acreditar identidad y lectura completa; (3)
-resultados por worker con un proveedor autorizado.
+Resultados, clasificaciones y marcas siguen sin conector de atletismo.
 
 ## Agenda: otras candidatas
 
@@ -166,7 +154,7 @@ candidatos en vez de elegir uno.
 | Otras | Europeana, IGDB, Open Food Facts, Overpass, calidad del aire de Open-Meteo, búsqueda web (Brave, Tavily) | Clave u otras condiciones | Por decidir según las consultas que se quieran ofrecer. Nominatim público no sirve como dependencia automática. |
 
 Implementados en deno-buscar: `/consulta` (candidatos) y `/consulta/ficha` (identidad) para Open Library, TMDB y Wikipedia + Wikidata, con caché, límite por IP y sin persistencia en base de datos.
-ESPN admite primera, segunda, NBA, WNBA y clasificación F1; caduca en 60 s en juego, 15 min para tablas y 1 h para resultados. Presupuesto por instancia: `ESPN_MAX_PETICIONES_DIA` (1000 por defecto) y Open Library a 1 petición/s; TMDB usa `TMDB_API_READ_ACCESS_TOKEN` y atribuye JustWatch.
+ESPN admite resultados por fecha y fichas de partido de Primera, Segunda, NBA y WNBA, y clasificación de esas ligas y F1 ([contrato](resultados-revision-2026-11-02.md)); caduca en 60 s en juego, 15 min para tablas y 1 h para resultados. Presupuesto por instancia: `ESPN_MAX_PETICIONES_DIA` (1000 por defecto) y Open Library a 1 petición/s; TMDB usa `TMDB_API_READ_ACCESS_TOKEN` y atribuye JustWatch.
 Los prefijos de los cinco idiomas viven en `shared/consultas/registro.js`; la lista de ámbitos del calendario sigue separada, sin colisiones.
 Sin comillas, el valor de una consulta es el resto de la línea, aunque lleve «palabra:» (`pelicula:Misión: imposible`); los filtros van delante o se cierra el valor con comillas. El panel del front (`front/app/14-consultas.js`) pide candidatos y, al tocar uno, su ficha; las competiciones deportivas van directas a la ficha.
 

@@ -35,9 +35,9 @@ anterior si el candidato no se construye o no supera las comprobaciones.
 
 ## Calendario
 
-El calendario está desactivado mediante `CALENDARIO_ACTIVO = false`: botón,
-panel, órdenes y sugerencias quedan inactivos. La interfaz está pendiente
-de rediseño; las recogidas del servidor siguen funcionando.
+El calendario está activado mediante `CALENDARIO_ACTIVO = true`, con vistas
+de Agenda y Deportes, órdenes y sugerencias. La revisión de la interfaz
+sigue abierta; este estado del código no acredita el despliegue publicado.
 
 `app/14-calendario.js` ya consulta la API `/calendario/*` de los backends de
 datos. Carga el catálogo bajo demanda, páginas de 20 citas en agenda,
@@ -49,11 +49,12 @@ de espera de 429, sin repetirlos en el otro backend.
 `shared/calendario/` reúne las fechas y la interpretación de consultas. Una
 fecha civil sin hora conserva su significado; solo se convierten instantes
 con zona acreditada. Los filtros de noticias y los de agenda tienen ámbitos
-distintos. Los resultados y clasificaciones deportivos son consultas
-puntuales pendientes de implementación.
+distintos. Los resultados y clasificaciones deportivos se sirven como
+consultas puntuales; los resultados permiten cambiar de fecha y abrir
+la ficha de partido ([funcionamiento](../agenda/resultados-revision-2026-11-02.md)).
 
 El [manual de agenda](../agenda/README.md) documenta rutas, publicación,
-control de temporadas y trabajo pendiente para reactivar la interfaz.
+control de temporadas y trabajo pendiente.
 
 ## Modos y cabecera
 
