@@ -121,6 +121,24 @@ export function sinImagenesRepetidas(bloques){
   });
 }
 
+// PontevedraViva incluye estas cajas también en articleBody, sin etiquetas.
+// Se reconoce cada promoción completa y solo al final, antes de dividir
+// el texto en bloques (una caja puede quedar pegada al último párrafo).
+const PROMOS_TEXTO_FINAL = [
+  /(?:^|\s)Subscríbete\s+á\s+nosa\s+canle\s+de\s+WhatsApp\s+Recibe\s+as\s+noticias\s+de\s+actualidade\s+directamente\s+no\s+teu\s+móbil\.\s+Subscribirse\s*$/i,
+  /(?:^|\s)Engade\s+Pontevedra\s+Viva\s+como\s+fonte\s+preferida\s+de\s+Google\s+de\s+balde\s+Mantente\s+informado\s+coas\s+últimas\s+noticias\s+de\s+actualidade\.\s+Activar\s+agora\s*$/i
+];
+export function limpiarPromosTextoFinal(texto){
+  texto = String(texto || '');
+  const original = texto;
+  let anterior;
+  do {
+    anterior = texto;
+    for (const promo of PROMOS_TEXTO_FINAL) texto = texto.replace(promo, '');
+  } while (texto !== anterior);
+  return texto === original ? texto : texto.trimEnd();
+}
+
 // Promociones del medio al principio o al final del texto: «¿Ya nos
 // sigues?», newsletters, «Si deseas leer más artículos…». Solo en los
 // bordes y solo bloques cortos, para no tocar el artículo.
