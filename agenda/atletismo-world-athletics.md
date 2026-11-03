@@ -34,3 +34,9 @@ con sus circuitos (Diamond, Continental, Pista cubierta, Cross, Marcha,
 Combinadas, Ruta, Campeonatos). Los circuitos también se escriben en la barra;
 «Diamond League» filtra agenda y noticias por titular. Requiere entradas en el
 catálogo de `consulta.js` y añadir `wa` a `CALENDARIO_FUENTES_PUBLICAS`.
+
+Identidad con las federaciones: WA no publica ningún ID compartido (`iaafId` y
+`wasUrl` vacíos; ninguna ficha federativa enlaza a WA; el «Área» de RFEA no
+marca de forma coherente las pruebas con permiso WA). Por ahora cada unión es
+una conciliación editorial. Pendiente de decidir un método estable;
+investigación local en `docs/atletismo-identidades-2026-11-03/`.
