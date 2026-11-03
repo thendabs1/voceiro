@@ -236,9 +236,12 @@ primera vez y 0 si no hay novedades. Rutas GET/HEAD del worker:
 
 Filtros: `q` (prefijos del parser y texto), `texto`, `temas`, `circuitos`,
 `fuente`, `objetivo`, `lugar`, `municipio`, `territorio`, `etiqueta`, `presentacion`
-(lista de `cita`, `programa`, `prolongada`), `zona`. El cursor va
-ligado a la revisión: si cambia la publicación responde 409. Caché de 15 s con
-clave por revisión y límite de 30 peticiones/IP/minuto.
+(lista de `cita`, `programa`, `prolongada`), `zona`. El cursor y `revision`
+van ligados a la publicación: si cambia, responde 409 con la `revision`
+vigente. El cliente fija en todas sus peticiones la del catálogo y, ante un
+409, recarga el catálogo pedido por la vigente (URL nueva: ni la caché de 30 s
+del navegador ni la del worker sirven otra). Caché de 15 s con clave por
+revisión y límite de 30 peticiones/IP/minuto.
 
 **Configuración:** secretos `CALENDARIO_TURSO_URL` y
 `CALENDARIO_TURSO_TOKEN_LECTURA` (token de solo lectura) en CF y Deno,

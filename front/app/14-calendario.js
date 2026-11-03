@@ -85,7 +85,7 @@ const calLibre = raw => tokenizeQuery(raw || '').filter(tk => !tk.prefix).map(tk
 // backend respondería lo mismo, así que no se repite. Tampoco el 429: es el
 // límite por IP y ambos leen la misma base; se espera lo que diga Retry-After.
 let calEsperaHasta = 0;
-async function calPedir(ruta, params, signal){
+async function calPedir(ruta, params, signal, { fresco = false } = {}){
   if (Date.now() < calEsperaHasta) throw Object.assign(new Error('HTTP 429'), { status: 429 });
   const qs = String(new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null)));
   let fallo;
@@ -93,11 +93,12 @@ async function calPedir(ruta, params, signal){
     let r;
     try {
       r = await fetch(`${base}/calendario/${ruta}${qs ? '?' + qs : ''}`, {
-        signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]) });
+        signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]), ...(fresco ? { cache: 'reload' } : {}) });
     } catch (e){ if (signal.aborted) throw e; fallo = e; continue; }
     const dato = await r.json().catch(() => null);
     if (r.ok && dato) return dato;
-    fallo = Object.assign(new Error(dato?.error || `HTTP ${r.status}`), { status: r.status });
+    fallo = Object.assign(new Error(dato?.error || `HTTP ${r.status}`),
+      { status: r.status, vigente: dato?.revision || '', pedida: params.revision || '' });
     if (r.status === 429) calEsperaHasta = Date.now() + (Number(r.headers.get('Retry-After')) || 60) * 1000;
     if (r.status >= 400 && r.status < 500) throw fallo;
   }
@@ -111,11 +112,11 @@ async function calDisponibilidadSitio(){
   s.disp?.controller.abort();
   const d = s.disp = { clave, temas: null, controller: new AbortController() };
   try {
-    const dato = await calPedir('catalogo', { disponibilidad: 1, territorio: clave }, d.controller.signal);
+    const dato = await calPedir('catalogo', { disponibilidad: 1, territorio: clave, revision: s.meta?.revision }, d.controller.signal);
     if (s.disp !== d) return;
     d.temas = dato.disponibilidad?.temas || null;
     pintarCalendario();
-  } catch { /* Sin filtro: todas las subcategorías. */ }
+  } catch (e){ if (e.status === 409) calOtraPublicacion(e); /* Si no, sin filtro: todas las subcategorías. */ }
 }
 // Mensaje de un fallo. Un 429 es el límite por IP: se avisa de la espera y, al
 // terminar, se vuelve a pedir solo (un reintento aunque fallen varias a la vez).
@@ -135,11 +136,25 @@ function calFallo(e){
 }
 const calSegundosEspera = () => Math.max(1, Math.ceil((calEsperaHasta - Date.now()) / 1000));
 // La publicación avanza a diario: cada respuesta trae su revisión y cobertura.
+// Solo el catálogo cambia de revisión: una respuesta tardía de otra no toca nada.
 function calAnotar(dato){
   const m = CALENDARIO.meta;
-  // Otra publicación: las fichas guardadas pueden haber cambiado.
-  if (m && dato.revision && dato.revision !== m.revision) CALENDARIO.detalles.clear();
-  if (m) for (const k of ['revision', 'generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
+  if (!m || dato.revision !== m.revision) return false;
+  for (const k of ['generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
+  return true;
+}
+// Toda petición lleva la revisión del catálogo: una URL con revisión solo trae
+// datos de esa publicación, aunque salga de la caché (30 s). Otra publicación
+// da 409 con la vigente y se recarga su catálogo, pedido por ella (otra URL:
+// ni la caché del navegador ni la del worker sirven otra). Solo recarga el 409
+// de una petición hecha con la revisión actual; uno tardío de otra no. Con la
+// vigente igual a la pedida no cambió la publicación sino la selección del
+// cursor: se rehace todo.
+function calOtraPublicacion(e){
+  const s = CALENDARIO;
+  if (!e.pedida || e.pedida !== s.meta?.revision || s.recargando === e.pedida) return;
+  if (e.vigente === e.pedida) return void cargarCalendario(true);
+  cargarCalendario(true, e.vigente, e.pedida);
 }
 function calParametros(){
   // Cada vista toma de la orden solo lo suyo: Deportes, las competiciones; la
@@ -176,7 +191,10 @@ function calVentana(){
   return { dias, desde, hasta, acotada: Boolean(p.desde || fin) };
 }
 const calPideAgenda = o => Boolean(o) && (o.desconocidos.length > 0 || !o.tipos.length || o.tipos.includes('calendario'));
-async function cargarCalendario(renovar = false){
+// `caida`: la revisión que dio 409. Si el catálogo vuelve con ella (worker
+// anterior, sin la vigente, o con su control aún en caché), se sigue una vez;
+// a la segunda se avisa en vez de repetir.
+async function cargarCalendario(renovar = false, revision = '', caida = ''){
   if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
   if (s.orden?.desconocidos.length) return void pintarCalendario();
@@ -186,11 +204,25 @@ async function cargarCalendario(renovar = false){
   const controller = s.controller = new AbortController();
   s.cargando = true; s.error = ''; pintarCalendario();
   try {
-    s.meta = await calPedir('catalogo', {}, controller.signal); s.cargado = Date.now();
+    s.recargando = caida;
+    // Al renovar, sin caché del navegador; tras un 409, por la revisión vigente.
+    const meta = await calPedir('catalogo', { revision }, controller.signal, { fresco: renovar });
+    s.recargando = '';
+    if (caida && meta.revision === caida){
+      if (s.repetida === caida) throw Object.assign(new Error('Sin publicación nueva'), { status: 409 });
+      s.repetida = caida;
+    } else s.repetida = '';
+    s.meta = meta; s.cargado = Date.now();
   } catch (e){
-    if (controller.signal.aborted) return;
+    // Cortada (otro filtro u otra recarga): la siguiente 409 vuelve a recargar.
+    if (controller.signal.aborted){ if (caida && s.recargando === caida) s.recargando = ''; return; }
+    s.recargando = '';
+    // Mientras se pedía, otra más nueva: se sigue hacia ella.
+    if (e.status === 409 && e.vigente && e.vigente !== revision) return void cargarCalendario(true, e.vigente, caida);
     s.cargando = false; s.error = calFallo(e); return void pintarCalendario();
   }
+  // El asistente abierto vuelve a pedir lo que hay con la publicación nueva.
+  if (renovar && s.asistente?.paso > 0){ s.asistente.clave = null; calDisponibilidad(); }
   s.consulta = ''; s.pendientes = null;
   consultarCalendario();
 }
@@ -209,7 +241,7 @@ async function consultarCalendario(){
   // Tira y lista salen del mismo resumen: cuentas por categoría, tres muestras
   // por día y, en Deportes, las barras (los GP van a cada día de la lista como
   // «todo el día»; solo las competiciones tienen barra).
-  const params = { ...calParametros(), desde, hasta, muestras: 3, barras: calModoDeportes() ? 1 : '' };
+  const params = { ...calParametros(), desde, hasta, muestras: 3, barras: calModoDeportes() ? 1 : '', revision: s.meta.revision };
   const clave = JSON.stringify(params);
   if (clave === s.consulta && !s.error) return void pintarCalendario();
   s.controller?.abort();
@@ -224,11 +256,10 @@ async function consultarCalendario(){
   s.cargando = true; pintarCalendario();
   try {
     const dato = await calPedir('resumen', params, controller.signal);
-    calAnotar(dato); s.vigente = clave; s.resumen = dato.dias; s.barras = dato.barras || []; s.dias.clear(); s.reintento = false;
+    calAnotar(dato); s.vigente = clave; s.resumen = dato.dias; s.barras = dato.barras || []; s.dias.clear();
   } catch (e){
     if (controller.signal.aborted) return;
-    // Republicación en curso: un reintento lee ya la revisión nueva.
-    if (e.status === 409 && !s.reintento){ s.reintento = true; s.consulta = ''; s.cargando = false; return void consultarCalendario(); }
+    if (e.status === 409){ s.consulta = ''; s.cargando = false; return void calOtraPublicacion(e); }
     s.error = calFallo(e);
     // Lo que quedaba a la vista era de otra consulta: no se presenta como suyo.
     if (clave !== s.vigente){ s.resumen = null; s.barras = []; }
@@ -249,7 +280,8 @@ async function cargarMesCalendario(){
   // En ancho (rejilla con títulos), la agenda pide muestras y Deportes, barras
   // (sus días llevan marcas, que salen de las cuentas); en estrecho, solo cuentas.
   const ancho = calMesAncho(), deportes = calModoDeportes();
-  const params = { ...calParametros(), desde, hasta, muestras: !ancho ? 0 : !deportes ? 4 : calPartidosEnMes() ? 5 : 0, barras: ancho && deportes ? 1 : '' }, clave = JSON.stringify(params);
+  const params = { ...calParametros(), desde, hasta, muestras: !ancho ? 0 : !deportes ? 4 : calPartidosEnMes() ? 5 : 0, barras: ancho && deportes ? 1 : '',
+    revision: s.meta?.revision }, clave = JSON.stringify(params);
   // Mismos días, otro período (este mes desde hoy y el siguiente entero): el
   // bloque de Deportes sigue al mes elegido aunque la rejilla no cambie.
   if (s.mes?.clave === clave || desde >= hasta) return void (deportes && s.abierto && s.temporadaAbierta && cargarTemporadaCalendario());
@@ -263,7 +295,9 @@ async function cargarMesCalendario(){
   } catch (e){
     // Un fallo de un mes que ya no se mira (otra vista u otra selección) no es de esta.
     if (controller.signal.aborted || s.mes?.clave !== clave) return;
-    s.mes = null; s.error = calFallo(e);
+    s.mes = null;
+    if (e.status === 409) return void calOtraPublicacion(e);
+    s.error = calFallo(e);
   }
   pintarCalendario();
   if (calModoDeportes() && s.abierto && s.temporadaAbierta) cargarTemporadaCalendario();
@@ -296,7 +330,7 @@ async function cargarTemporadaCalendario(){
     // Cortada sin respuesta, se puede volver a pedir.
     if (controller.signal.aborted){ if (s.temporada === actual) s.temporada = null; return; }
     if (s.temporada !== actual) return;
-    if (e.status === 409) return void cargarCalendario(true);
+    if (e.status === 409) return void calOtraPublicacion(e);
     s.temporada = { clave, eventos: [], error: true };
   }
   pintarCalendario();
@@ -326,7 +360,7 @@ async function abrirDiaCalendario(dia, tipo, mas = false){
   } catch (e){
     if (controller.signal.aborted || s.dias.get(clave) !== l) return void (l.cargando = false);
     // Otra publicación: se rehace todo (cuentas y listas) para no mezclar lecturas.
-    if (e.status === 409) return void cargarCalendario(true);
+    if (e.status === 409) return void calOtraPublicacion(e);
     s.error = calFallo(e);
   }
   l.cargando = false; pintarCalendario();
@@ -339,12 +373,13 @@ async function pendientesCalendario(mas = false){
   p.cargando = true; pintarCalendario();
   const controller = s.controller;
   try {
-    const dato = await calPedir('eventos', { ...filtros, pendientes: 1, limite: 20, cursor: mas ? p.siguiente : '' }, controller.signal);
+    const dato = await calPedir('eventos', { ...filtros, pendientes: 1, limite: 20, cursor: mas ? p.siguiente : '', revision: s.meta?.revision },
+      controller.signal);
     if (s.pendientes !== p) return;
     calAnotar(dato); p.eventos.push(...dato.eventos); p.siguiente = dato.siguiente;
   } catch (e){
     if (controller.signal.aborted || s.pendientes !== p) return;
-    if (e.status === 409){ s.pendientes = null; return void pendientesCalendario(); }
+    if (e.status === 409){ s.pendientes = null; return void calOtraPublicacion(e); }
     s.error = calFallo(e);
   }
   p.cargando = false; pintarCalendario();
@@ -623,13 +658,14 @@ async function abrirEventoCalendario(id){
   const controller = s.detalle = new AbortController();
   dialogo.addEventListener('close', () => controller.abort(), { once: true });
   try {
-    const d = await calPedir('eventos/' + encodeURIComponent(id), {}, controller.signal);
-    calAnotar(d);
+    const d = await calPedir('eventos/' + encodeURIComponent(id), { revision: s.meta?.revision }, controller.signal);
+    if (!calAnotar(d)) throw new Error('Ficha de otra publicación');
     dialogo.innerHTML = cerrar + calEvento(d.evento);
     dialogo.querySelector('h3').id = 'cal-evento-titulo';
     dialogo.removeAttribute('aria-label'); dialogo.setAttribute('aria-labelledby', 'cal-evento-titulo');
-  } catch {
+  } catch (e){
     if (controller.signal.aborted) return;
+    if (e.status === 409) calOtraPublicacion(e);
     dialogo.innerHTML = cerrar + `<p class="cal-aviso" role="status">${calEsc(t('calError'))}</p>`;
   }
   dialogo.querySelector('form button')?.focus();
@@ -666,10 +702,12 @@ async function desplegarEventoCalendario(clave, id){
   s.detalles.delete(id); pintarCalendario();
   const controller = s.detalleLista = new AbortController();
   try {
-    const d = await calPedir('eventos/' + encodeURIComponent(id), {}, controller.signal);
-    calAnotar(d); s.detalles.set(id, d.evento);
-  } catch {
+    const d = await calPedir('eventos/' + encodeURIComponent(id), { revision: s.meta?.revision }, controller.signal);
+    if (!calAnotar(d)) return;  // De otra publicación: la recarga ya plegó la lista.
+    s.detalles.set(id, d.evento);
+  } catch (e){
     if (controller.signal.aborted) return;
+    if (e.status === 409) return void calOtraPublicacion(e);
     s.detalles.set(id, null);
   }
   pintarCalendario();
@@ -1236,11 +1274,14 @@ async function calDisponibilidad(){
   const controller = a.controller = new AbortController();
   a.clave = clave; a.disp = null; pintarCalendario();
   try {
-    const d = await calPedir('catalogo', { disponibilidad: 1, territorio: clave }, controller.signal);
+    const d = await calPedir('catalogo', { disponibilidad: 1, territorio: clave, revision: CALENDARIO.meta?.revision }, controller.signal);
     if (CALENDARIO.asistente !== a || a.clave !== clave) return;
     a.disp = d.disponibilidad; a.error = '';
-  } catch {
+  } catch (e){
     if (controller.signal.aborted || CALENDARIO.asistente !== a || a.clave !== clave) return;
+    // Otra publicación: se vuelve a pedir al llegar su catálogo. Pedida antes
+    // del primer catálogo (sin revisión), es un fallo más que se puede reintentar.
+    if (e.status === 409 && e.pedida){ a.clave = null; return void calOtraPublicacion(e); }
     a.error = t('calError'); a.clave = null;
   }
   pintarCalendario();

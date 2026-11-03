@@ -74,10 +74,13 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
     addEventListener(){}, querySelector: () => ({ focus(){} }) };
-  const fetch = async url => {
+  const fetch = async (url, opciones = {}) => {
     const u = new URL(url);
+    u.cache = opciones.cache;
     pedidas.push(u);
     const r = await responder(u);
+    // Como fetch: una petición cortada no entrega su respuesta.
+    if (opciones.signal?.aborted) throw new DOMException('Cortada', 'AbortError');
     return r instanceof Response ? r : Response.json(r);
   };
   const c = { ...fechas, ...consulta, ...nombres, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
@@ -92,7 +95,7 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
   runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calChipsDeportes, calDonde, calAsistente, wireCalendario, abrirCalendario,
-    cerrarCalendario, actualizarConsultaCalendario }; pintarCalendario = () => {};`, c);
+    cerrarCalendario, actualizarConsultaCalendario, calOtraPublicacion }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
@@ -207,6 +210,137 @@ test('si la publicación cambia entre páginas, se rehacen cuentas y listas: nad
   await c.click('mas-dia', '2026-10-25');
   assert.deepEqual(c.pedidas.slice(-3).map(u => u.pathname), ['/calendario/eventos', '/calendario/catalogo', '/calendario/resumen']);
   assert.deepEqual([c.api.s.dias.size, c.api.s.error], [0, '']);
+});
+
+// Como el worker: otra revisión da 409 con la vigente; el catálogo pedido sin
+// revisión sale de la caché del navegador con r1.
+function publicador(){
+  const p = { actual: { revision: 'r1', generado: '2026-10-25T06:00:00Z' }, fallos: {} };
+  p.publicar = revision => { p.actual = { revision, generado: '2026-10-26T06:00:00Z' }; };
+  p.responder = u => {
+    // fallos[ruta?revisión] = [código, veces]: un 5xx se reintenta en el otro backend.
+    const pedida = u.searchParams.get('revision'), fallo = p.fallos[u.pathname + '?' + pedida];
+    if (fallo && fallo[1]-- > 0) return Response.json({ error: 'caído' }, { status: fallo[0] });
+    if (u.pathname === '/calendario/catalogo' && !pedida && !u.searchParams.get('disponibilidad'))
+      return { ...api(u), revision: 'r1', generado: '2026-10-25T06:00:00Z' };
+    if (pedida && pedida !== p.actual.revision) return Response.json({ error: 'cambió', revision: p.actual.revision }, { status: 409 });
+    const d = api(u);
+    return d instanceof Response ? d : { ...d, ...p.actual };
+  };
+  return p;
+}
+const catalogosDe = c => c.pedidas.filter(u => u.pathname === '/calendario/catalogo' && !u.searchParams.get('disponibilidad'))
+  .map(u => u.searchParams.get('revision'));
+
+test('todas las peticiones llevan la revisión del catálogo; otra publicación recarga por la vigente, sin bucles por la caché', async () => {
+  // Codex (3/11/2026): deducir la revisión de respuestas cacheadas recargaba en bucle hasta un 429.
+  const p = publicador(), c = contexto({ responder: p.responder });
+  await c.abrir();
+  await c.click('ver-dia', '2026-10-25');
+  assert.equal(c.api.s.dias.size, 1);
+  assert.ok(c.pedidas.filter(u => u.pathname !== '/calendario/catalogo').every(u => u.searchParams.get('revision') === 'r1'));
+  // Se publica r2: el mes, con r1, recibe 409 y la vigente.
+  p.publicar('r2');
+  const antes = c.pedidas.length;
+  await c.click('mes'); await esperar();
+  assert.deepEqual(catalogosDe(c), [null, 'r2'], 'una sola recarga, con el catálogo de la vigente');
+  assert.deepEqual([c.api.s.meta.revision, c.api.s.dias.size, c.api.s.error, c.api.s.cargando], ['r2', 0, '', false]);
+  assert.ok(c.pedidas.slice(antes).some(u => u.pathname === '/calendario/resumen' && u.searchParams.get('revision') === 'r2'));
+  assert.ok(c.pedidas.length - antes < 10, 'sin bucle');
+  // Un 409 tardío de una petición con r1 no recarga ni deja nada a medias.
+  c.api.calOtraPublicacion({ status: 409, pedida: 'r1', vigente: 'r3' });
+  await esperar();
+  assert.deepEqual([catalogosDe(c).length, c.api.s.cargando], [2, false]);
+});
+
+test('una recarga fallida no bloquea la siguiente', async () => {
+  const p = publicador(), c = contexto({ responder: p.responder });
+  await c.abrir();
+  p.publicar('r2');
+  p.fallos['/calendario/catalogo?r2'] = [503, 2];  // Los dos backends.
+  await c.click('mes'); await esperar();
+  assert.equal(c.api.s.error, 'calError');
+  await c.click('mes'); await c.click('mes'); await esperar();
+  // r2 falla en los dos backends; la siguiente acción vuelve a recargar.
+  assert.deepEqual([catalogosDe(c), c.api.s.meta.revision, c.api.s.error], [[null, 'r2', 'r2', 'r2'], 'r2', '']);
+});
+
+test('una recarga cortada por otro filtro no bloquea la siguiente', async () => {
+  // Codex (3/11/2026): el aborto salía antes de limpiar la recarga en curso.
+  const p = publicador();
+  let soltar = null;
+  const c = contexto({ responder: u => u.pathname === '/calendario/catalogo' && u.searchParams.get('revision') === 'r2' && !soltar
+    ? new Promise(r => { soltar = () => r(p.responder(u)); }) : p.responder(u) });
+  await c.abrir();
+  p.publicar('r2');
+  c.api.calOtraPublicacion({ status: 409, pedida: 'r1', vigente: 'r2' });
+  await esperar();
+  await c.click('dia', '2026-11-03');  // Otra ventana: corta la recarga.
+  soltar(); await esperar();
+  await c.click('mes'); await esperar();
+  assert.deepEqual([catalogosDe(c), c.api.s.meta.revision, c.api.s.error], [[null, 'r2', 'r2'], 'r2', '']);
+});
+
+test('una ficha tardía de otra publicación no hace retroceder la revisión', async () => {
+  // Codex (3/11/2026): calAnotar adoptaba la revisión de cualquier respuesta.
+  const p = publicador();
+  let soltar = null;
+  const c = contexto({ responder: u => u.pathname.startsWith('/calendario/eventos/') && !soltar
+    ? new Promise(r => { soltar = () => r({ ...api(u), revision: 'r1', evento: tarjeta('Tarde', '2026-10-25') }); }) : p.responder(u) });
+  await c.abrir();
+  const ficha = c.click('evento', 'Tarde');
+  await esperar();
+  p.publicar('r2');
+  await c.click('mes'); await esperar();
+  assert.equal(c.api.s.meta.revision, 'r2');
+  soltar(); await ficha; await esperar();
+  assert.equal(c.api.s.meta.revision, 'r2');
+  assert.match(c.dialogo.innerHTML, /cal-aviso/);
+});
+
+test('el asistente que pide antes del primer catálogo no se queda cargando ante un 409', async () => {
+  // Codex (3/11/2026): sin revisión pedida, el 409 se descartaba y no había reintento.
+  let soltar = null;
+  const c = contexto({ responder: u => {
+    if (u.searchParams.get('disponibilidad')) return Response.json({ error: 'cambió', revision: 'r2' }, { status: 409 });
+    if (u.pathname === '/calendario/catalogo' && !soltar) return new Promise(r => { soltar = () => r(api(u)); });
+    return api(u);
+  } });
+  c.api.s.fecha = c.hoy; c.api.abrirCalendario(); await esperar();
+  assert.equal(c.api.s.meta, null);
+  await c.click('asistente', '0');
+  await c.marcar('cal-as-sitio', '', true);
+  await c.click('as-siguiente'); await esperar();
+  const a = c.api.s.asistente;
+  assert.equal(c.pedidas.filter(u => u.searchParams.get('disponibilidad')).at(-1).searchParams.get('revision'), null);
+  assert.deepEqual([a.error, a.clave], [c.t('calError'), null]);
+  soltar(); await esperar();
+});
+
+test('el asistente vuelve a pedir la disponibilidad con la publicación nueva', async () => {
+  const p = publicador(), c = contexto({ responder: p.responder });
+  await c.abrir();
+  await c.click('asistente', '0');
+  p.publicar('r2');
+  await c.marcar('cal-as-sitio', '', true);
+  await c.click('as-siguiente'); await esperar();
+  const a = c.api.s.asistente;
+  assert.deepEqual([c.api.s.meta.revision, a.error, Boolean(a.disp)], ['r2', '', true]);
+  assert.equal(c.pedidas.filter(u => u.searchParams.get('disponibilidad')).at(-1).searchParams.get('revision'), 'r2');
+});
+
+test('un 409 sin la vigente (worker anterior) recarga una vez sin caché y después avisa', async () => {
+  let fallar = false;
+  const c = contexto({ responder: u => fallar && u.pathname === '/calendario/resumen'
+    ? Response.json({ error: 'cambió' }, { status: 409 }) : api(u) });
+  await c.abrir();
+  fallar = true;
+  await c.click('renovar'); await esperar();
+  const catalogos = c.pedidas.filter(u => u.pathname === '/calendario/catalogo');
+  assert.deepEqual(catalogos.slice(-2).map(u => u.cache), ['reload', 'reload']);
+  // Abrir, «Actualizar», una recarga que sigue con la misma revisión y otra que ya avisa.
+  assert.equal(catalogos.length, 4);
+  assert.equal(c.api.s.error, 'calError');
 });
 
 test('tira: la semana con puntos por categoría y el pasado atenuado; se despliega en mes', async () => {
