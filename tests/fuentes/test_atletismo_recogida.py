@@ -255,7 +255,7 @@ class RecogidaAtletismo(unittest.TestCase):
                                                        'comprobado': AHORA}])
         self.assertEqual(publicacion.proyectar(n)['eventos'], [])
 
-    def test_fga_solo_el_404_de_la_propia_ficha_retira_y_pendientes_no_se_ocultan(self):
+    def test_fga_solo_el_404_de_la_propia_ficha_retira_y_un_pendiente_trasladado_se_oculta(self):
         cita = {'id': '7', 'url': 'https://atletismo.gal/competicions/siete/', 'inicio': '2026-11-10', 'fin': '2026-11-10'}
         ficha = ('<main><article class="type-competition post-7"><div><span>12/12/2026</span>'
                  '<span>Ordes</span></div><h1>Siete</h1></article></main>')
@@ -276,12 +276,17 @@ class RecogidaAtletismo(unittest.TestCase):
         with self.assertRaises(HTTPError):
             r.reconsultar('fga', [cita], deepcopy(vacia), {'pendientes': [], 'completo': True},
                           date(2026, 11, 1), date(2026, 11, 30), caido, AHORA)
-        informe = {'pendientes': [], 'completo': True}
-        resultado = r.reconsultar('fga', [cita], deepcopy(vacia), informe,
-                                  date(2026, 11, 1), date(2026, 11, 30), pendiente, AHORA)
-        self.assertEqual(resultado['ausencias'], [])
-        self.assertFalse(informe['completo'])
-        self.assertEqual([p['id'] for p in informe['pendientes']], ['7'])
+        # La ficha la lleva al 12/12 y ese listado la deja pendiente como circuito:
+        # la fecha guardada (10/11) está desmentida y deja de publicarse (Codex, 3/11/2026).
+        for guardada, ausente in (('2026-11-10', True), ('2026-12-12', False)):
+            with self.subTest(guardada=guardada):
+                informe = {'pendientes': [], 'completo': True}
+                resultado = r.reconsultar('fga', [{**cita, 'inicio': guardada, 'fin': guardada}], deepcopy(vacia),
+                                          informe, date(2026, 11, 1), date(2026, 12, 31), pendiente, AHORA)
+                self.assertEqual([a['motivo'] for a in resultado['ausencias']], [
+                    'fechas cambiadas (2026-12-12 – 2026-12-12); agrupación o jornadas por acreditar'] if ausente else [])
+                self.assertFalse(informe['completo'])
+                self.assertEqual([(p['id'], p['inicio']) for p in informe['pendientes']], [('7', '2026-12-12')])
 
     def test_agrupacion_conserva_su_clase_al_releerse_como_circuito(self):
         entrada = {'version': 1, 'fuente': 'fga', 'agrupaciones': [{'id': '9', 'nombre': 'Circuito',

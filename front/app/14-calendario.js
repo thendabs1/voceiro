@@ -923,15 +923,15 @@ function calAltoSemana(em = calEm()){
 // Deportes con una o dos competiciones: caben sus partidos en el mes (Google
 // Calendar); con más, solo las marcas por competición.
 const calPartidosEnMes = () => calModoDeportes() && CALENDARIO.capas?.size <= 2;
-// Último día publicado de lo elegido en Deportes: las competiciones sin
-// calendario completo se publican a unas dos semanas; las que lo tienen (F1,
-// MotoGP) no ponen límite; atletismo, el fin de la ventana leída de cada
-// federación. Más allá, el mes no está vacío sino sin publicar.
 // Competiciones pedidas en Deportes: las escritas (`nba:`) y las capas elegidas.
 function calCompeticionesPedidas(){
   const s = CALENDARIO, o = calPideAgenda(s.orden) ? s.orden : null;
   return [...new Set([...(o?.ambitos || []).filter(a => AMBITOS[a]?.codigo), ...(s.capas || [])])];
 }
+// Último día publicado de lo elegido en Deportes: las competiciones sin
+// calendario completo se publican a unas dos semanas; las que lo tienen (F1,
+// MotoGP) no ponen límite; atletismo, el fin de la ventana leída de cada
+// federación. Más allá, el mes no está vacío sino sin publicar.
 function calPublicadoHasta(){
   const s = CALENDARIO, fines = [];
   for (const c of calCompeticionesPedidas()){

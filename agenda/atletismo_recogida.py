@@ -217,8 +217,9 @@ def ficha_galicia(cita, contenido, obtener):
         raise ValueError('FGA: ficha sin fechas acreditadas')
     # Los errores de este listado o de otras fichas no son de esta cita: interrumpen la fuente.
     entrada, informe = galicia(fechas[0], fechas[-1], obtener)
-    if any(x['id'] == cita['id'] for x in informe['pendientes']):
-        return {'pendiente': 'trasladada; agrupación o jornadas por acreditar'}
+    p = next((x for x in informe['pendientes'] if x['id'] == cita['id']), None)
+    if p:
+        return {'pendiente': 'agrupación o jornadas por acreditar', 'inicio': p['inicio'], 'fin': p['fin']}
     eventos = [e for e in entrada['eventos'] if e['id'] == cita['id']]
     if not eventos:
         return {'ausencia': 'ficha sin listado en sus fechas'}
@@ -271,11 +272,18 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
         raise ValueError(f'{fuente}: la lectura no trae {len(faltan)} de {len(en_ventana)} citas conocidas; '
                          'no se retira nada')
     ausencias, reimportadas = [], []
+
+    def desmentida(c, p, motivo):
+        # Pendiente con otras fechas (del listado o de su ficha): la guardada ya no vale.
+        if 'inicio' not in p or (p['inicio'], p['fin']) == (c['inicio'], c['fin']):
+            return False
+        ausencias.append({'id': c['id'], 'url': c['url'], 'comprobado': observado,
+                          'motivo': f"fechas cambiadas ({p['inicio']} – {p['fin']}); {motivo}"})
+        return True
+
     for c in conocidas:
         p = pendientes.get(c['id'])
-        if p and 'inicio' in p and (p['inicio'], p['fin']) != (c['inicio'], c['fin']):
-            ausencias.append({'id': c['id'], 'url': c['url'], 'comprobado': observado,
-                              'motivo': f"fechas cambiadas ({p['inicio']} – {p['fin']}); {p['motivo']}"})
+        if p and desmentida(c, p, p['motivo']):
             continue
         if c['id'] in leidas or c['fin'] < desde.isoformat() or c['inicio'] > hasta.isoformat():
             continue
@@ -289,9 +297,12 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
             continue
         r = FICHAS[fuente](c, contenido, obtener)
         if 'pendiente' in r:
-            # Conserva la última lectura y deja la recogida incompleta.
-            informe['pendientes'].append({'id': c['id'], 'url': c['url'], 'motivo': r['pendiente']})
+            # Queda para revisar y la recogida, incompleta; con las mismas fechas
+            # se conserva la última lectura.
+            informe['pendientes'].append({'id': c['id'], 'url': c['url'], 'motivo': r['pendiente'],
+                                          **{k: r[k] for k in ('inicio', 'fin') if k in r}})
             informe['completo'] = False
+            desmentida(c, r, r['pendiente'])
         elif 'ausencia' in r:
             ausencias.append({'id': c['id'], 'url': c['url'], 'motivo': r['ausencia'], 'comprobado': observado})
         else:
