@@ -101,9 +101,10 @@ def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, 
         nueva = por_recurso.get((c['unidad'], c['recurso'])) or {}
         if c['unidad'] in unidades:
             ausentes = set(c.get('eventos', [])) - set(nueva.get('eventos', [])) - recibidos
-            if ventana:
+            if ventana and proveedores.limitado_a_ventana(c['proveedor'], c['recurso']):
                 # La unidad es la temporada, pero solo se piden las jornadas o
                 # programas de la ventana: lo ya jugado o lo posterior no falta.
+                # Un recurso que llega entero no se filtra: ocultaría una lista recortada.
                 ausentes = {i for i in ausentes if i not in guardados or _en_ventana(guardados[i], *ventana)}
             if ausentes:
                 incidencias.append({'tipo': 'ausentes_en_respuesta', 'unidad': c['unidad'],

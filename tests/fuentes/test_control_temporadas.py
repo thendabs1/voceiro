@@ -7,7 +7,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from agenda import almacen, deportes, operacion, temporadas
+from agenda import almacen, deportes, operacion, proveedores, temporadas
 from agenda.control import ConflictoControl, PresupuestoAgotado, Repositorio
 from agenda.transicion import ampliar
 from agenda.turso import Almacen, ConflictoCalendario
@@ -404,7 +404,8 @@ class IncidenciasDeRespuesta(unittest.TestCase):
     def test_lo_ya_jugado_fuera_de_la_ventana_pedida_no_falta(self):
         # LaLiga pide las jornadas de los próximos 14 días con la temporada como
         # unidad: los partidos de la semana pasada ya no vuelven (2/11/2026).
-        previa = [{'unidad': '2026', 'recurso': 'calendario', 'eventos': ['jugado', 'proximo', 'sin_fecha', 'otro']}]
+        previa = [{'proveedor': 'laliga-primera', 'unidad': '2026', 'recurso': 'calendario',
+                   'eventos': ['jugado', 'proximo', 'sin_fecha', 'otro']}]
         nuevas = [{'unidad': '2026', 'recurso': 'calendario', 'eventos': []}]
         guardados = {'jugado': {'inicio': '2026-10-25', 'fin': '2026-10-25'},
                      'proximo': {'inicio': '2026-11-08', 'fin': '2026-11-08'},
@@ -418,6 +419,24 @@ class IncidenciasDeRespuesta(unittest.TestCase):
         incidencias = operacion._incidencias(previa, nuevas, [], ['2026'], '2026-11-02T00:00:00Z',
                                              guardados=guardados, ventana=('2026-11-02', '2026-11-15'))
         self.assertEqual(incidencias[0]['eventos'], ['otro', 'sin_fecha'])
+
+    def test_un_calendario_entero_recortado_sigue_faltando(self):
+        # F1 trae su calendario entero y solo los programas de la ventana: un GP
+        # posterior que desaparece de la lista es un recorte, no algo no pedido.
+        previa = [{'proveedor': 'formula1', 'unidad': '2026', 'recurso': 'calendario', 'eventos': ['abu', 'qatar']},
+                  {'proveedor': 'formula1', 'unidad': '2026', 'recurso': 'programa:brasil', 'eventos': ['libres']}]
+        nuevas = [{'proveedor': 'formula1', 'unidad': '2026', 'recurso': 'calendario', 'eventos': ['qatar']}]
+        guardados = {'abu': {'inicio': '2026-12-06', 'fin': '2026-12-06'},
+                     'qatar': {'inicio': '2026-11-29', 'fin': '2026-11-29'},
+                     'libres': {'inicio': '2026-11-07', 'fin': '2026-11-07'}}
+        incidencias = operacion._incidencias(previa, nuevas, [], ['2026'], '2026-11-10T00:00:00Z',
+                                             guardados=guardados, ventana=('2026-11-10', '2026-11-23'))
+        # El programa de Brasil ya pasó y no falta; el GP de Abu Dabi sí.
+        self.assertEqual(incidencias, [{'tipo': 'ausentes_en_respuesta', 'unidad': '2026',
+                                        'recurso': 'calendario', 'eventos': ['abu']}])
+        for proveedor in ('motogp', 'ocblacktop-wrc'):
+            self.assertFalse(proveedores.limitado_a_ventana(proveedor, 'calendario'))
+            self.assertFalse(proveedores.limitado_a_ventana(proveedor, 'programa:gp'))
 
 
 if __name__ == '__main__':
