@@ -1279,8 +1279,9 @@ async function calDisponibilidad(){
     a.disp = d.disponibilidad; a.error = '';
   } catch (e){
     if (controller.signal.aborted || CALENDARIO.asistente !== a || a.clave !== clave) return;
-    // Otra publicación: se vuelve a pedir al llegar su catálogo.
-    if (e.status === 409){ a.clave = null; return void calOtraPublicacion(e); }
+    // Otra publicación: se vuelve a pedir al llegar su catálogo. Pedida antes
+    // del primer catálogo (sin revisión), es un fallo más que se puede reintentar.
+    if (e.status === 409 && e.pedida){ a.clave = null; return void calOtraPublicacion(e); }
     a.error = t('calError'); a.clave = null;
   }
   pintarCalendario();

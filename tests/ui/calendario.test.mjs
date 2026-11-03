@@ -298,6 +298,25 @@ test('una ficha tardía de otra publicación no hace retroceder la revisión', a
   assert.match(c.dialogo.innerHTML, /cal-aviso/);
 });
 
+test('el asistente que pide antes del primer catálogo no se queda cargando ante un 409', async () => {
+  // Codex (3/11/2026): sin revisión pedida, el 409 se descartaba y no había reintento.
+  let soltar = null;
+  const c = contexto({ responder: u => {
+    if (u.searchParams.get('disponibilidad')) return Response.json({ error: 'cambió', revision: 'r2' }, { status: 409 });
+    if (u.pathname === '/calendario/catalogo' && !soltar) return new Promise(r => { soltar = () => r(api(u)); });
+    return api(u);
+  } });
+  c.api.s.fecha = c.hoy; c.api.abrirCalendario(); await esperar();
+  assert.equal(c.api.s.meta, null);
+  await c.click('asistente', '0');
+  await c.marcar('cal-as-sitio', '', true);
+  await c.click('as-siguiente'); await esperar();
+  const a = c.api.s.asistente;
+  assert.equal(c.pedidas.filter(u => u.searchParams.get('disponibilidad')).at(-1).searchParams.get('revision'), null);
+  assert.deepEqual([a.error, a.clave], [c.t('calError'), null]);
+  soltar(); await esperar();
+});
+
 test('el asistente vuelve a pedir la disponibilidad con la publicación nueva', async () => {
   const p = publicador(), c = contexto({ responder: p.responder });
   await c.abrir();
