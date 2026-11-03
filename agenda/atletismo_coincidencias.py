@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 from . import nucleo
 
 VERSION = 3
-FUENTES = {'rfea', 'fga', 'fca'}
+FUENTES = {'rfea', 'fga', 'fca', 'wa'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
             'clubs': 'clubes', 'masters': 'master', 'curta': 'corta', 'xornada': 'jornada'}

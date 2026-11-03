@@ -11,6 +11,11 @@ Capturas reducidas a los campos usados; sin listas de inscritos ni contactos per
 
 La reducción no acredita cobertura anual, coincidencias entre fuentes ni estabilidad histórica de los IDs.
 
+`wa-2027.json` contiene siete eventos de `sel2027.json` y las entradas de grupo
+relevantes del catálogo `grupos2027.json`: un ID repetido entre 6 y 3806,
+Diamond League, niveles del Continental Tour y sede TBC. Las fechas y campos
+de esos eventos conservan los literales WA; no representa ventanas completas.
+
 `negreira.json` es una entrada revisada por cada una de las tres federaciones:
 RFEA 64837, FGA 113590 y FCA 82885, campeonato de España de 5 km máster del
 15/11/2026. Procede del mensual/ficha RFEA y de las capturas FGA/FCA descritas

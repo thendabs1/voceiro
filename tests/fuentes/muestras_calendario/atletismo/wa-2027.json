@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "periodo": {
+    "inicio": "2027-01-01",
+    "fin": "2027-12-31"
+  },
+  "eventos": {
+    "3806": [
+      {
+        "__typename": "CalendarEvent",
+        "id": 7216591,
+        "iaafId": null,
+        "hasResults": false,
+        "hasApiResults": false,
+        "hasStartlist": false,
+        "name": "World Athletics Championships, Beijing 2027",
+        "venue": "National Stadium, Beijing (CHN)",
+        "area": "Asia",
+        "rankingCategory": "OW",
+        "disciplines": "Combined Events, Road Running, Race Walking, Track and Field",
+        "competitionGroup": "World Athletics Championships, World Athletics Series",
+        "competitionSubgroup": null,
+        "startDate": "2027-09-10",
+        "endDate": "2027-09-19",
+        "dateRange": "10–19 SEP 2027",
+        "hasCompetitionInformation": false,
+        "undeterminedCompetitionPeriod": null,
+        "season": null,
+        "wasUrl": "/competitions/world-athletics-championships/iaaf-world-championships-chn-2027-7216591/timetable"
+      }
+    ],
+    "6": [
+      {
+        "__typename": "CalendarEvent",
+        "id": 7216591,
+        "iaafId": null,
+        "hasResults": false,
+        "hasApiResults": false,
+        "hasStartlist": false,
+        "name": "World Athletics Championships, Beijing 2027",
+        "venue": "National Stadium, Beijing (CHN)",
+        "area": "Asia",
+        "rankingCategory": "OW",
+        "disciplines": "Combined Events, Road Running, Race Walking, Track and Field",
+        "competitionGroup": "World Athletics Championships, World Athletics Series",
+        "competitionSubgroup": null,
+        "startDate": "2027-09-10",
+        "endDate": "2027-09-19",
+        "dateRange": "10–19 SEP 2027",
+        "hasCompetitionInformation": false,
+        "undeterminedCompetitionPeriod": null,
+        "season": "2027",
+        "wasUrl": "/competitions/world-athletics-championships/iaaf-world-championships-chn-2027-7216591/timetable"
+      }
+    ],
+    "627": [
+      {
+        "__typename": "CalendarEvent",
+        "id": 7220887,
+        "iaafId": null,
+        "hasResults": false,
+        "hasApiResults": false,
+        "hasStartlist": false,
+        "name": "Weltklasse Zürich",
+        "venue": "Letzigrund, Zürich (SUI)",
+        "area": "Europe",
+        "rankingCategory": "DF",
+        "disciplines": "Track and Field",
+        "competitionGroup": "Wanda Diamond League Meeting",
+        "competitionSubgroup": null,
+        "startDate": "2027-08-25",
+        "endDate": "2027-08-26",
+        "dateRange": "25–26 AUG 2027",
+        "hasCompetitionInformation": false,
+        "undeterminedCompetitionPeriod": null,
+        "season": "2027",
+        "wasUrl": null
+      }
+    ],
+    "3773": [
+      {
+        "__typename": "CalendarEvent",
+        "id": 7231707,
+        "iaafId": null,
+        "hasResults": false,
+        "hasApiResults": false,
+        "hasStartlist": false,
+        "name": "Gyulai István Memorial - Hungarian Athletics Grand Prix",
+        "venue": "Nemzeti Atlétikai Központ, Budapest (HUN)",
+        "area": "Europe",
+        "rankingCategory": "A",
+        "disciplines": "Track and Field",
+        "competitionGroup": "World Athletics Continental Tour",
+        "competitionSubgroup": "Gold",
+        "startDate": "2027-08-11",
+        "endDate": "2027-08-11",
+        "dateRange": "11 AUG 2027",
+        "hasCompetitionInformation": false,
+        "undeterminedCompetitionPeriod": null,
+        "season": "2027",
+        "wasUrl": null
+      },
+      {
+        "__typename": "CalendarEvent",
+        "id": 7247511,
+        "iaafId": null,
+        "hasResults": false,
+        "hasApiResults": false,
+        "hasStartlist": false,
+        "name": "Saudi Athletics Grand Prix",
+        "venue": "King Fahd Sports City, At Ta'if (KSA)",
+        "area": "Asia",
+        "rankingCategory": "B",
+        "disciplines": "Combined Events, Track and Field",
+        "competitionGroup": "World Athletics Continental Tour",
+        "competitionSubgroup": "Silver",
+        "startDate": "2027-07-17",
+        "endDate": "2027-07-17",
+        "dateRange": "17 JUL 2027",
+        "hasCompetitionInformation": true,
+        "undeterminedCompetitionPeriod": null,
+        "season": "2027",
+        "wasUrl": null
+      }
+    ],
+    "3664": [
+      {
+        "__typename": "CalendarEvent",
+        "id": 7244491,
+        "iaafId": null,
+        "hasResults": false,
+        "hasApiResults": false,
+        "hasStartlist": false,
+        "name": "LVI Gran Premio de Cáceres de Campo a Través",
+        "venue": "TBC (ESP)",
+        "area": "Europe",
+        "rankingCategory": "A",
+        "disciplines": "Cross Country",
+        "competitionGroup": "World Athletics Cross Country Tour",
+        "competitionSubgroup": "Silver",
+        "startDate": "2027-01-11",
+        "endDate": "2027-01-11",
+        "dateRange": "11 JAN 2027",
+        "hasCompetitionInformation": true,
+        "undeterminedCompetitionPeriod": null,
+        "season": "2026/27",
+        "wasUrl": null
+      }
+    ],
+    "3692": [
+      {
+        "__typename": "CalendarEvent",
+        "id": 7244487,
+        "iaafId": null,
+        "hasResults": false,
+        "hasApiResults": false,
+        "hasStartlist": false,
+        "name": "XL Gran Premio Cantones de A Coruña de Marcha",
+        "venue": "La Coruña (ESP)",
+        "area": "Europe",
+        "rankingCategory": "GL",
+        "disciplines": "Race Walking",
+        "competitionGroup": "World Athletics Race Walking Tour",
+        "competitionSubgroup": "Gold",
+        "startDate": "2027-06-12",
+        "endDate": "2027-06-12",
+        "dateRange": "12 JUN 2027",
+        "hasCompetitionInformation": true,
+        "undeterminedCompetitionPeriod": null,
+        "season": "2027",
+        "wasUrl": null
+      }
+    ]
+  },
+  "catalogo": {
+    "competitionGroups": [
+      {
+        "id": 5,
+        "name": "Olympic Games"
+      },
+      {
+        "id": 6,
+        "name": "World Athletics Championships"
+      },
+      {
+        "id": 627,
+        "name": "Wanda Diamond League Meeting"
+      },
+      {
+        "id": 3771,
+        "name": "Area Regional Senior Championships"
+      },
+      {
+        "id": 3804,
+        "name": "FISU Events"
+      },
+      {
+        "id": 329,
+        "name": "Youth Olympic Games"
+      },
+      {
+        "id": 3925,
+        "name": "World Mountain Running"
+      }
+    ]
+  }
+}
