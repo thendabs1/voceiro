@@ -38,8 +38,8 @@ y reuniones. La inscripción es un metadato, no otra cita.
   proyección elige con las fuentes permitidas; `atletismo.variantes` conserva
   nombre, metadatos, programación, lugar y procedencia por fuente, y una
   discrepancia activa `conflicto` sin dar prioridad a RFEA ni a la última
-  descarga. El detalle solo avisa de las fechas: cada federación describe la
-  sede a su manera.
+  descarga. El detalle solo avisa de las fechas y, si discrepan, muestra las de
+  cada fuente: cada federación describe la sede a su manera.
 
 La ausencia de una cita no la cancela. Conservar la última lectura buena;
 «ventana leída completa» no significa «temporada terminada».
@@ -123,8 +123,9 @@ identidades ya guardadas no se fusionan al importar: exigen conciliación.
 - Nivel II enlaza con una cita guardada mediante `decision: equivalencia` y
   una conciliación con su ID editorial (Ourense y Ordes, 12/12).
 - `atletismo_revision --issues` corre en cada pasada del workflow: un issue
-  por par estable de IDs (marcador oculto, abiertos y cerrados), cinco nuevos
-  como máximo por pasada. Cerrar un issue no fusiona datos.
+  por par estable de IDs (marcador oculto, abiertos y cerrados), cinco
+  escrituras como máximo por pasada. Cerrar un issue no fusiona datos; una
+  huella de los datos comparados lo reescribe y reabre si cambian.
 
 ## Recogida
 
@@ -137,8 +138,8 @@ sustituye a `--db`. Ventana máxima de 91 días; por defecto, hoy y 60 días má
 El informe (consultas, ventana, peticiones, pendientes, ausencias y
 completitud) se guarda con el núcleo en `agenda_estado`, clave
 `atletismo-informe-{fuente}`. Un fallo conserva la última lectura buena. En
-Nivel II, `completo` mide la ventana; las filas de otras fechas se cuentan en
-`pendientes_fuera_ventana`.
+Nivel II, `completo` mide la ventana; las filas y revisiones de otras fechas se
+cuentan en `pendientes_fuera_ventana` y `revisiones_no_aplicadas_fuera_ventana`.
 
 Una cita guardada en la ventana que la lectura ya no trae se reconsulta por
 su ficha: FCA (API por ID) y FGA (fechas de la ficha y su listado) se
@@ -167,8 +168,8 @@ repetible y reimportar un ID actualiza sin duplicar.
 ## Pendiente
 
 - Clasificar circuitos y tecnificación desde las fichas.
-- Interfaz: el detalle solo muestra inscripción; faltan modalidades
-  normalizadas y filtros comunes.
+- Interfaz: el detalle muestra inscripción y fechas por fuente; faltan
+  modalidades normalizadas y filtros comunes.
 - World Athletics: interfaz de circuitos y filtros (fase 2).
 
 Resultados, marcas y rankings siguen sin conector; ver

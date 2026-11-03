@@ -245,6 +245,25 @@ class RecogidaAtletismo(unittest.TestCase):
         self.assertFalse(informe['completo'])
         self.assertEqual(informe['temporadas_sin_documento'], ['2027'])
 
+    def test_nivel_ii_revision_no_aplicada_solo_afecta_a_su_ventana(self):
+        # Revisión versionada del 21/11/2026: fuera de diciembre no rompe la completitud.
+        inventario = {'version': 1, 'url': r.atletismo_nivel_ii.URL, 'temporada': '2026',
+                      'actualizado': '2026-10-15', 'huella_texto': 'x', 'filas': []}
+        hecho = type('Hecho', (), {'stdout': 'Pages: 15\n'})()
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'rfea', 'eventos': []}, AHORA)
+        with patch.object(r.recogida, 'descargar', return_value=b''), \
+                patch.object(r.subprocess, 'run', return_value=hecho), \
+                patch.object(r.atletismo_nivel_ii, 'leer', return_value=inventario), \
+                patch.object(r.atletismo_nivel_ii, 'resolver', return_value={
+                    'entrada': {'version': 1, 'fuente': 'rfea', 'eventos': []}, 'pendientes': [],
+                    'incidencias': [], 'revisiones_no_aplicadas': ['nivel-ii:xunta-galicia-marcha-invierno-2026']}):
+            fuera = r.nivel_ii(n, '2026-12-01', '2026-12-31')[1]
+            dentro = r.nivel_ii(n, '2026-11-01', '2026-11-30')[1]
+        self.assertTrue(fuera['completo'])
+        self.assertEqual(fuera['revisiones_no_aplicadas_fuera_ventana'], 1)
+        self.assertFalse(dentro['completo'])
+        self.assertEqual(dentro['revisiones_no_aplicadas'], ['nivel-ii:xunta-galicia-marcha-invierno-2026'])
+
     def test_ausencia_oculta_tambien_las_sesiones_de_la_cita(self):
         e = {'id': '5', 'nombre': 'Control', 'inicio': '2026-11-08', 'fin': '2026-11-08',
              'url': 'https://fcatletisme.cat/event/control/', 'programa': [{'id': 's1', 'nombre': 'Mañana',

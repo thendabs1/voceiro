@@ -1382,6 +1382,20 @@ test('en atletismo solo avisan las fechas discrepantes, no la descripción de la
   assert.match(runInContext('calEventoCuerpo(evento)', c), /datos discrepantes/);
 });
 
+test('con fechas en conflicto el detalle muestra las de cada federación', () => {
+  const c = contexto();
+  const variante = (fuente, inicio, fin) => ({ valor: {}, procedencia: { fuente },
+    programacion: { modalidad: 'puntual', cuando: { inicio: extremo(inicio), fin: extremo(fin) } } });
+  c.evento = { ...tarjeta('Short track', '2026-12-05'), fuentes: [], atletismo: { valor: {}, variantes: [
+    variante('rfea', '2026-12-05', '2026-12-06'), variante('fca', '2026-12-05', null),
+    variante('fga', '2026-12-05', null)] } };
+  assert.doesNotMatch(runInContext('calEventoCuerpo(evento)', c), /fca/);
+  c.evento.programacion = { ...c.evento.programacion, conflicto: true };
+  const html = runInContext('calEventoCuerpo(evento)', c);
+  assert.match(html, /<p class="cal-nota">rfea: [^<]*→/);
+  assert.match(html, /<p class="cal-nota">fca · fga: /);
+});
+
 test('la cita compartida conserva inscripciones por fuente aunque difieran los metadatos', () => {
   const c = contexto();
   c.evento = { ...tarjeta('Compartida', '2026-11-15'), fuentes: [], atletismo: {
