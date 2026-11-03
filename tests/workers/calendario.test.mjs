@@ -473,6 +473,27 @@ test('formatos y precio filtran por faceta; gratis no incluye mixto', async t =>
   assert.equal((await b.pedir(ventana + '&precio=barato')).status, 400);
 });
 
+test('la modalidad de atletismo es faceta y dato de tarjeta; filtra con OR y valida el código', async t => {
+  const datos = muestra();
+  Object.assign(datos.eventos[4], { atletismo: { valor: {}, variantes: [], modalidades: ['cross'] } });
+  Object.assign(datos.eventos[5], { atletismo: { valor: {}, variantes: [], modalidades: ['ruta', 'cross'] } });
+  Object.assign(datos.eventos[6], { atletismo: { valor: {}, variantes: [] } });
+  const lectura = prepararLectura(datos);
+  const de = id => lectura.facetas.filter(([e, tipo]) => e === id && tipo === 'modalidad').map(f => f[2]);
+  assert.deepEqual([de('004'), de('005'), de('006')], [['cross'], ['ruta', 'cross'], []]);
+  const tarjetas = Object.fromEntries(lectura.eventos.map(e => [e[0], JSON.parse(e[3])]));
+  assert.deepEqual(tarjetas['005'].modalidades, ['ruta', 'cross']);
+  assert.ok(!('modalidades' in tarjetas['006']) && !('modalidades' in tarjetas['010']));
+  const b = base(datos); t.after(() => b.db.close());
+  const ids = async q => (await b.pedir(ventana + q)).dato.eventos.map(e => e.id);
+  assert.deepEqual(await ids('&modalidades=cross'), ['004', '005']);
+  assert.deepEqual(await ids('&modalidades=ruta,pista-cubierta'), ['005']);
+  // Misma selección que la referencia compartida.
+  const esperado = seleccionCalendario(datos, {}, { modalidades: ['ruta'] }).eventos.map(e => e.id);
+  assert.ok(esperado.includes('005') && !esperado.includes('004') && !esperado.includes('006'));
+  assert.equal((await b.pedir(ventana + '&modalidades=montana')).status, 400);
+});
+
 test('presentación: programa, prolongada (intervalo, continua o varios días) o cita', () => {
   const cita = (inicio, fin, extra = {}) => ({ clase: 'funcion', programacion: { valor: { cuando: { inicio, fin, ...extra } } } });
   const z = 'Europe/Madrid';

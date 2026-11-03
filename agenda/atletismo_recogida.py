@@ -17,7 +17,7 @@ from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_coincidencias as coincidencias, atletismo_nivel_ii, recogida
+from . import atletismo, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, recogida
 
 
 def meses(desde, hasta):
@@ -588,6 +588,7 @@ def main(argv=None):
         entrada, informe = recoger(args.fuente, desde.isoformat(), hasta.isoformat(), cache=args.cache,
                                    conocidas=conocidas, observado=observado)
         n = atletismo.importar(calendario['nucleo'], entrada, observado)
+        leidas = list(entrada['eventos'])
         if args.fuente == 'rfea':
             # Documento aparte: si falla, se guarda la lectura mensual y Nivel II
             # conserva su última lectura buena; el paso se señala como fallido.
@@ -597,9 +598,13 @@ def main(argv=None):
                 informe_ii = {'completo': False, 'error': f'{type(error).__name__}: {error}'[:500]}
             else:
                 n = atletismo.importar(n, entrada_ii, observado)
+                leidas += entrada_ii['eventos']
             informe['nivel_ii'] = informe_ii
             informe['completo'] = informe['completo'] and informe_ii['completo']
         n = atletismo.registrar_ausencias(n, args.fuente, informe.get('ausencias'))
+        # Literal nuevo: se avisa para ampliar la tabla; no hace incompleta la lectura.
+        informe['modalidades_desconocidas'] = sorted({x for e in leidas
+                                                      for x in atletismo_modalidades.de(e.get('metadatos'))[1]})
         # Hasta dónde se ha leído la fuente: más allá, el calendario no está vacío sino sin recoger.
         n['fuentes'][args.fuente]['ventana'] = {'inicio': informe['inicio'], 'fin': informe['fin']}
         n['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
@@ -642,7 +647,9 @@ def main(argv=None):
         from calendario import guardar
         guardar(args.informe, informe)
     print(json.dumps({**{k: informe[k] for k in ('fuente', 'inicio', 'fin', 'peticiones', 'citas', 'completo')},
-                      'ausencias': len(informe.get('ausencias', [])), 'reimportadas': len(informe.get('reimportadas', []))}, ensure_ascii=False))
+                      'ausencias': len(informe.get('ausencias', [])), 'reimportadas': len(informe.get('reimportadas', [])),
+                      **({'modalidades_desconocidas': informe['modalidades_desconocidas']}
+                         if informe.get('modalidades_desconocidas') else {})}, ensure_ascii=False))
     if error := informe.get('nivel_ii', {}).get('error'):
         raise SystemExit('Nivel II no se leyó; RFEA mensual guardada: ' + error)
 

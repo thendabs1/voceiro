@@ -26,8 +26,8 @@ parser de búsqueda.
 
 ## Estado del código (2/11/2026)
 
-Atletismo (2/11/2026): capas RFEA, Galicia y Cataluña con
-[recogida manual preparada](atletismo.md#recogida); sin cron ni publicación.
+Atletismo (3/11/2026): capas RFEA, FGA y FCA recogidas en el cron y
+publicadas; World Athletics se recoge sin publicar. Ver [atletismo](atletismo.md).
 
 - **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.

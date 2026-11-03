@@ -2,6 +2,10 @@
 import { tokenizeQuery, normalize } from '../parser.js';
 import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js';
 
+// Modalidad común de atletismo: códigos de shared/calendario/atletismo-modalidades.json
+// (una prueba lo comprueba). Los calcula la publicación; aquí solo se filtra.
+export const MODALIDADES_ATLETISMO = ['ruta', 'cross', 'pista-cubierta', 'pista-aire-libre', 'marcha', 'trail'];
+
 // Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
 // nombre propio no es ambiguo, suman noticias por su titular (las noticias no se
 // clasifican). El texto sin prefijo no pasa por la agenda.
@@ -128,6 +132,9 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
     if (filtros.municipio && !dato.objetivos.includes(filtros.municipio)) return false;
     const fuente = esTabla ? dato.seleccion?.procedencia?.fuente : dato.fuentes.map(f => f.fuente);
     if (filtros.fuente && !(Array.isArray(fuente) ? fuente.includes(filtros.fuente) : fuente === filtros.fuente)) return false;
+    // Varias modalidades se combinan con OR; una cita sin modalidad no casa.
+    const modalidades = esTabla ? [] : dato.atletismo?.modalidades || [];
+    if (filtros.modalidades?.length && !filtros.modalidades.some(m => modalidades.includes(m))) return false;
     if (!buscarTexto) return true;
     const nombres = objetivos.flatMap(e => Object.values(e.nombres)).join(' ');
     const palabras = palabrasDe(nombres);
