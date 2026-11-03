@@ -1,9 +1,8 @@
 # Atletismo
 
-Estado a 2/11/2026. Capas RFEA, Galicia (FGA) y Cataluña (FCA) con recogida
-completa y conciliaciones revisadas; cron y publicación se activan con las
-variables de Actions (ver Recogida). World Athletics tiene contrato
-propio, con recogida de datos en fase 1: [atletismo-world-athletics.md](atletismo-world-athletics.md).
+Estado a 3/11/2026. Capas RFEA, Galicia (FGA) y Cataluña (FCA) recogidas en
+el cron y publicadas (variables de Actions, ver Recogida). World Athletics se
+recoge sin publicar: [atletismo-world-athletics.md](atletismo-world-athletics.md).
 
 ## Alcance y modelo
 
