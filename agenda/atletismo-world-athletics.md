@@ -26,4 +26,11 @@ un año a cada lado; puede reaparecer con nuevas fechas o dejar de publicarse
 como ausencia. Un 429 interrumpe la recogida y deja `Retry-After` en el
 informe local si se pidió `--informe`.
 
-Pendiente para fase 2: interfaz de circuitos, filtros y publicación pública.
+WA corta a veces la conexión (timeout o reset): el paso tolerado falla y
+conserva la última lectura buena.
+
+Fase 2, acordada: un solo chip «WA» en Atletismo; al marcarlo aparece una fila
+con sus circuitos (Diamond, Continental, Pista cubierta, Cross, Marcha,
+Combinadas, Ruta, Campeonatos). Los circuitos también se escriben en la barra;
+«Diamond League» filtra agenda y noticias por titular. Requiere entradas en el
+catálogo de `consulta.js` y añadir `wa` a `CALENDARIO_FUENTES_PUBLICAS`.
