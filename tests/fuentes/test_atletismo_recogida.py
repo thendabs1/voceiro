@@ -80,7 +80,8 @@ class RecogidaAtletismo(unittest.TestCase):
             if '?' in url:
                 return listado
             if url.endswith('/plan-galego-de-tecnificacion-atletica-2026/'):
-                return '<main><article class="type-competition post-9"><h1>Plan</h1></article></main>'
+                return ('<main><h1>Calendario e resultados</h1>'
+                        '<article class="type-competition post-9"><h1>Plan</h1></article></main>')
             if url.endswith('/i-circuito-de-atletismo-concello-de-vigo/'):
                 return '<main><article class="type-competition post-10"><h1>Circuito</h1></article></main>'
             return ficha
@@ -89,6 +90,7 @@ class RecogidaAtletismo(unittest.TestCase):
         self.assertTrue(informe['completo'])
         self.assertEqual(len(entrada['eventos']), 4)
         self.assertEqual({g['id'] for g in entrada['agrupaciones']}, {'9', '10'})
+        self.assertEqual(next(g for g in entrada['agrupaciones'] if g['id'] == '9')['nombre'], 'Plan')
         self.assertEqual(next(e for e in entrada['eventos'] if e['id'] == '121152')['grupo'], '9')
 
     def test_ventana_acotada_y_cambio_de_ano(self):

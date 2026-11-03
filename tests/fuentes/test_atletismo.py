@@ -182,6 +182,9 @@ class Atletismo(unittest.TestCase):
         plazo = ficha['inscripcion']
         self.assertEqual(plazo['periodo']['fin']['fecha'], '2026-11-02')
         self.assertEqual(plazo['hora_cierre_literal'], '20:00')
+        vacio = (MUESTRAS / 'fga-ficha.html').read_text().replace(
+            'href="https://atletismorfea.es/user/login-registro"', 'href=""')
+        self.assertEqual(atletismo.leer_ficha_galicia(vacio)['inscripcion']['enlaces'], [])
         jornada['metadatos'].update(ficha)
         n = atletismo.importar(None, {'version': 1, 'fuente': 'fga', 'eventos': eventos}, AHORA)
         vista = publicacion.proyectar(n, fuentes=['fga'], generado=AHORA)
@@ -225,6 +228,13 @@ class Atletismo(unittest.TestCase):
             atletismo.leer_galicia(ampliado.replace('<span>-</span>', ''))
         with self.assertRaises(ValueError):
             atletismo.leer_galicia(html.replace('13/12/2026', '11/12/2026'))
+        # FGA enumera los campeonatos de tres días: «21/02 - 22/02 - 23/02».
+        tres = html.replace('<span>13/12/2026</span>',
+                            '<span>13/12/2026</span>\n<span>-</span>\n<span>14/12/2026</span>')
+        self.assertEqual((atletismo.leer_galicia(tres)[1]['inicio'], atletismo.leer_galicia(tres)[1]['fin']),
+                         ('2026-12-12', '2026-12-14'))
+        with self.assertRaises(ValueError):
+            atletismo.leer_galicia(tres.replace('14/12/2026', '16/12/2026'))
 
     def test_reprogramar_conserva_identidad_y_fuentes_independientes(self):
         eventos = atletismo.leer_cataluna(cataluna())[:1]

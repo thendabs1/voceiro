@@ -112,9 +112,12 @@ def leer_galicia(html):
         if len(ids) != 1 or titulo is None:
             raise ValueError('Competición gallega sin identidad')
         literales = [texto(x) for x in a.select('div.space-x-2 > div > span')]
+        # «a - b» es un rango; tres o más fechas separadas por «-» enumeran
+        # días (campeonatos de tres días) y deben ser consecutivos.
         rango = len(literales) == 3 and literales[1] == '-'
+        lista = len(literales) > 3 and len(literales) % 2 and set(literales[1::2]) == {'-'}
         fechas = [datetime.strptime(x, '%d/%m/%Y').date()
-                  for x in (literales[::2] if rango else literales)]
+                  for x in (literales[::2] if rango or lista else literales)]
         if rango and fechas[1] < fechas[0]:
             raise ValueError('Rango gallego invertido')
         fechas = sorted(set(fechas))
@@ -150,7 +153,8 @@ def leer_ficha_galicia(html):
             'plazo_textual': ' '.join(texto(p) for p in seccion.select('p')),
             'enlaces': [{'nombre': texto(a), 'url': urljoin(FUENTES['fga'][1], a['href'])}
                         for a in seccion.select('a[href]')
-                        if urlparse(urljoin(FUENTES['fga'][1], a['href'])).scheme == 'https']}
+                        # Un href vacío apuntaría a la portada del calendario.
+                        if a['href'].strip() and urlparse(urljoin(FUENTES['fga'][1], a['href'])).scheme == 'https']}
         plazo = salida['inscripcion']['plazo_textual']
         m = re.fullmatch(r'Datas: (\d{2}/\d{2}/\d{4}) a (\d{2}/\d{2}/\d{4})(?: ás (\d{2}:\d{2}))?', plazo)
         if m:

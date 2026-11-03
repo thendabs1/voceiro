@@ -158,7 +158,8 @@ def galicia(desde, hasta, obtener):
         s = BeautifulSoup(obtener(url), 'html.parser')
         articulo = s.select_one('main article.type-competition')
         ids = [c[5:] for c in (articulo.get('class', []) if articulo else []) if re.fullmatch(r'post-\d+', c)]
-        nombre = atletismo.texto(s.select_one('main h1'))
+        # El primer h1 de la página es la cabecera «Calendario e resultados».
+        nombre = atletismo.texto(articulo.select_one('h1')) if articulo else ''
         if len(ids) != 1 or not nombre:
             raise ValueError('FGA: agrupación enlazada sin identidad acreditada')
         grupos[url] = ids[0]
