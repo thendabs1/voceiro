@@ -12,8 +12,9 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
   meteorológicas y cobertura editorial múltiple:
   [relacionador territorial](shared/territorios/relacionador.md#pendiente).
 - Atletismo: RFEA, Galicia y Cataluña publicadas; World Athletics se recoge
-  sin publicar. Quedan su fase 2 (chip WA y fila de circuitos), clasificación
-  de circuitos federativos y filtros de interfaz
+  sin publicar. Prioridad: granularidad fiel por fuente (comparador
+  conservador, bloque v2, adaptadores, separación de Castro/Nassos/Dakar);
+  después WA fase 2, interfaz y territoriales
   ([pendiente](agenda/atletismo.md#pendiente)).
 - Resultados deportivos: acreditar jornadas oficiales y su pertenencia por
   proveedor; las consultas por fecha y las fichas de partido ya funcionan
