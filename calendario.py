@@ -88,6 +88,8 @@ def operar_nucleo(args):
             if fuente in (args.recoger_cultura or []):
                 conocidos = {r['id_externo'] for r in calendario['nucleo']['referencias'].values()
                              if r['proveedor'] == fuente and r['tipo_externo'] == modulo.TIPO_EXTERNO}
+                if hasattr(modulo, 'conocidos'):
+                    conocidos = modulo.conocidos(calendario['nucleo'])
                 filas, url, ids = recogida.cultura(fuente, args.inicio, args.fin, conocidos)
                 calendario['nucleo'] = modulo.importar(calendario['nucleo'], filas, observado, url)
                 if ids is not None:

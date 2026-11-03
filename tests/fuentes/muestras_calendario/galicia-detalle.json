@@ -1,0 +1,27 @@
+{
+  "evento": {
+    "id": 101,
+    "nid": 10,
+    "traducionId": 102,
+    "titulo": "Un concerto trasladado",
+    "idioma": "gl",
+    "publicar": 1,
+    "url": "https://www.cultura.gal/gl/evento/10/13/101",
+    "dataActualizacion": "2026-10-25 10:00:00",
+    "estado": {"chave": "postponed"},
+    "data": {"dataInicio": "2026-12-05 19:00:00", "dataFin": null},
+    "dataOrixinal": {"dataInicio": "2026-10-26 18:00:00", "dataFin": null},
+    "lugarCelebracion": {
+      "nome": "Teatro",
+      "espazoId": "34",
+      "localizacion": {"latitude": 42.43, "lonxitude": -8.65},
+      "concello": {"tid": 487, "nome": "Pontevedra", "cod_ine": "360388"}
+    },
+    "tipoEvento": {"tid": 7, "nome": "Concerto"},
+    "ciclo": {"tid": 50, "nome": "Festival"},
+    "eventoOnline": false,
+    "urlEventoOnline": null,
+    "tipoPublico": [{"tid": 29, "nome": "Público infantil"}],
+    "tipoEntrada": [{"tid": 71, "nome": "Entrada de balde"}]
+  }
+}

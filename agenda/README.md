@@ -270,7 +270,7 @@ obliga a releer.
 python calendario.py --turso --recoger-cultura madrid --recoger-cultura kulturklik \
   --inicio 2026-10-25 --fin 2026-11-24
 
-# Galicia: solo gallego, ventana completa; no acredita un inventario global.
+# Galicia: ventana gallega y revalidación de conocidas; inventario de IDs comprobados.
 python calendario.py --turso --recoger-cultura cultura-galicia
 
 # Deportes: estado, pasada con descubrimiento y recogida manual de una colección.
@@ -317,9 +317,8 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
 - **Revisar el cliente:** comprobar la interfaz de Agenda y Deportes, ya
   activada en el código, y su comportamiento en móvil y con teclado.
 - **Retención y retirada:** borrado transaccional de dependencias exclusivas
-  antes de activar la poda de 45 días; retirada por ventanas e idiomas en
-  Galicia y adaptación del inventario completo a nuevas fuentes (requisito
-  de CyL y Málaga, cuya identidad de función incluye la fecha).
+  antes de activar la poda de 45 días; inventario completo por función en
+  Málaga, cuya identidad incluye la fecha (como ya hace CyL).
 - **Clasificación:** revisar únicamente los asuntos abiertos del
   [clasificador común](clasificacion.md#pendiente-de-revisar).
 - **Fuentes nuevas:** por el orden de la [lista cerrada](fuentes.md#lista-cerrada)
@@ -352,7 +351,7 @@ sabe una cosa y las fuentes nuevas se suman declarando, no ramificando código.
 | Familia | `familias.py` (`ckan`, `euskadi`, `zaragoza`, `opendatasoft`) | Recorre una API paginada entera y devuelve filas e inventario de IDs; lanza ante total cambiante, ID repetido o página vacía | No conoce el núcleo ni la ventana |
 | Fuente | `madrid.py`, `kulturklik.py`, `zaragoza.py`, `cyl.py` | Declara `FUENTE`, `FAMILIA`, `URL_RECOGIDA`, `CAMPO_ID`, `TIPO_EXTERNO`, `FECHAS`; `importar` traduce sus campos al núcleo | No descarga |
 | Registro | `registro.CULTURA` | Lista única de fuentes culturales para la CLI, la recogida y el inventario | — |
-| Comunes | `presencia.py`, límites municipales, constructor | Retirada por inventario completo, municipio por coordenadas | No dependen de la fuente |
+| Comunes | `presencia.py`, límites municipales, constructor | Retirada con alcance acreditado, municipio por coordenadas | No deducen ausencias fuera del alcance |
 
 Reglas para cada fuente nueva:
 
@@ -360,6 +359,11 @@ Reglas para cada fuente nueva:
    cero declarado), respuesta parcial y fallo; solo la completa acredita
    ausencias. La ventana de fechas filtra después, nunca antes del inventario,
    y no excluye una cita ya conocida: aplazada lejos, se actualiza igual.
+   Con una API por ventanas (Galicia) se revalidan por ID, en gallego, las
+   conocidas cuya fecha guardada solapa la ventana y no llegaron (también sin
+   fecha). Solo `publicar: 0` en el detalle acredita retirada; un 404, 403,
+   timeout o detalle parcial avisa y conserva el estado. El inventario declara
+   `alcance: ids_comprobados` y guarda solo las despublicaciones con evidencia.
 2. **Identidad de función.** ID propio si la fuente lo da (Zaragoza
    `subEvent.id`); si no, obra + fecha de inicio (CyL, Málaga) con un
    `TIPO_EXTERNO` que lo diga (`funcion_obra_fecha_v1`). Es una entrada de
