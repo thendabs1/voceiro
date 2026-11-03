@@ -11,8 +11,8 @@
 // Una línea sin nada que incluir (solo -excluir, o solo prefijos medio:…) no
 // es un tema: no casaría nada.
 
-import { tokenizeQuery } from '../parser.js?v=072b81c6ee';
-import { compilarTexto, coincide, palabrasDe, tokenizar } from './texto.js?v=072b81c6ee';
+import { tokenizeQuery } from '../parser.js?v=550c40a19b';
+import { compilarTexto, coincide, palabrasDe, tokenizar } from './texto.js?v=550c40a19b';
 
 const MIN_LONGITUD = 3;   // la de texto.js: por debajo, compilarTexto la ignora
 const PALABRA_LITERAL = /^=[\p{L}\p{N}]+$/u;
