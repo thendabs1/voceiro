@@ -17,23 +17,15 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
 - Resultados deportivos: acreditar jornadas oficiales y su pertenencia por
   proveedor; las consultas por fecha y las fichas de partido ya funcionan
   ([pendientes](agenda/resultados-diseno.md)).
-- Revisión del calendario (3/11/2026), comprobada y sin arreglar:
+- Revisión del calendario (3/11/2026), sin arreglar por bajo impacto:
   - MotoGP y F1 dan la temporada por completa con cualquier lista no vacía
-    (`proveedores.describir`, `oficial_f1`); solo importa si la lista llega
-    recortada.
-  - Cultura de Galicia (`recoger_ventana`) no revalida citas conocidas que se
-    trasladan fuera de la ventana.
+    (`proveedores.describir`, `oficial_f1`). Un recorte posterior se detecta
+    como ausencia; una primera lista ya recortada, no.
   - La cobertura publicada es siempre `completa:false` y su comprobación sale
     de los eventos publicados (`proyeccion.js`), no de la recogida.
-  - `descubrir` solo prueba el año actual y el siguiente: en enero no
-    encontraría una liga nueva 2026/27.
-  - Un prefijo que el calendario no aplica (`precio:gratis`) se descarta sin
-    aviso; decidir con la regla de la barra.
-  - CyL: una hora ambigua del cambio horario se fija a `+02:00` y una
-    inexistente rompe la importación.
+  - `descubrir` solo prueba el año actual y el siguiente: una instalación nueva
+    en enero no encontraría una liga 2026/27.
   - La lectura SQL lee todas las huellas en cada publicación (hoy, pocas filas).
-  - Por reproducir: un mes con revisión nueva no invalida otras vistas ya
-    cargadas del frontal.
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores
 
