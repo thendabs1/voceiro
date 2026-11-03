@@ -418,7 +418,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       if (extra.length) barras = conBarras;
       if (!actual[0] || JSON.parse(actual[0].datos_json).revision !== meta.revision) {
         try { await cache?.delete(controlClave); } catch { /* Expira en 15 segundos. */ }
-        throw error(409, 'La publicación cambió; reinicia la consulta');
+        throw Object.assign(error(409, 'La publicación cambió; reinicia la consulta'),
+          actual[0] ? { revision: JSON.parse(actual[0].datos_json).revision } : {});
       }
       filas = respuesta;
     }

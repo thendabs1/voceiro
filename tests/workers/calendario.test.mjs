@@ -281,7 +281,9 @@ test('validación antes de Turso; fallos de transporte y cambios entre snapshots
       }
       return resultado;
     };
-    assert.equal((await atenderCalendario(new Request('https://datos.test' + ventana), env, { consultar: cambiante })).status, 409);
+    const cambiada = await atenderCalendario(new Request('https://datos.test' + ventana), env, { consultar: cambiante });
+    // Cambio entre lecturas: también dice la vigente.
+    assert.deepEqual([cambiada.status, (await cambiada.json()).revision], [409, 'nueva']);
     assert.equal((await b.pedir('/calendario/eventos?desde=2025-01-01&hasta=2025-01-02')).status, 422);
   } finally { b.db.close(); }
 });

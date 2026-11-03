@@ -93,7 +93,7 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
   runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calChipsDeportes, calDonde, calAsistente, wireCalendario, abrirCalendario,
-    cerrarCalendario, actualizarConsultaCalendario }; pintarCalendario = () => {};`, c);
+    cerrarCalendario, actualizarConsultaCalendario, calOtraPublicacion }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
@@ -210,37 +210,69 @@ test('si la publicación cambia entre páginas, se rehacen cuentas y listas: nad
   assert.deepEqual([c.api.s.dias.size, c.api.s.error], [0, '']);
 });
 
-test('todas las peticiones llevan la revisión del catálogo; otra publicación recarga por la vigente, sin bucles por la caché', async () => {
-  // Como el worker: otra revisión da 409 con la vigente. El catálogo pedido sin
-  // revisión sale de la caché con r1 (Codex, 3/11/2026: la recarga repetía el
-  // cambio hasta un 429 cuando el cliente deducía la revisión de las respuestas).
-  const R1 = { revision: 'r1', generado: '2026-10-25T06:00:00Z' }, R2 = { revision: 'r2', generado: '2026-10-26T06:00:00Z' };
-  let actual = R1;
-  const c = contexto({ responder: u => {
-    const pedida = u.searchParams.get('revision');
-    if (u.pathname === '/calendario/catalogo' && !pedida) return { ...api(u), ...R1 };
-    if (pedida && pedida !== actual.revision) return Response.json({ error: 'cambió', revision: actual.revision }, { status: 409 });
+// Como el worker: otra revisión da 409 con la vigente; el catálogo pedido sin
+// revisión sale de la caché del navegador con r1.
+function publicador(){
+  const p = { actual: { revision: 'r1', generado: '2026-10-25T06:00:00Z' }, fallos: {} };
+  p.publicar = revision => { p.actual = { revision, generado: '2026-10-26T06:00:00Z' }; };
+  p.responder = u => {
+    // fallos[ruta?revisión] = [código, veces]: un 5xx se reintenta en el otro backend.
+    const pedida = u.searchParams.get('revision'), fallo = p.fallos[u.pathname + '?' + pedida];
+    if (fallo && fallo[1]-- > 0) return Response.json({ error: 'caído' }, { status: fallo[0] });
+    if (u.pathname === '/calendario/catalogo' && !pedida && !u.searchParams.get('disponibilidad'))
+      return { ...api(u), revision: 'r1', generado: '2026-10-25T06:00:00Z' };
+    if (pedida && pedida !== p.actual.revision) return Response.json({ error: 'cambió', revision: p.actual.revision }, { status: 409 });
     const d = api(u);
-    return d instanceof Response ? d : { ...d, ...actual };
-  } });
-  const catalogos = () => c.pedidas.filter(u => u.pathname === '/calendario/catalogo' && !u.searchParams.get('disponibilidad'))
-    .map(u => u.searchParams.get('revision'));
+    return d instanceof Response ? d : { ...d, ...p.actual };
+  };
+  return p;
+}
+const catalogosDe = c => c.pedidas.filter(u => u.pathname === '/calendario/catalogo' && !u.searchParams.get('disponibilidad'))
+  .map(u => u.searchParams.get('revision'));
+
+test('todas las peticiones llevan la revisión del catálogo; otra publicación recarga por la vigente, sin bucles por la caché', async () => {
+  // Codex (3/11/2026): deducir la revisión de respuestas cacheadas recargaba en bucle hasta un 429.
+  const p = publicador(), c = contexto({ responder: p.responder });
   await c.abrir();
   await c.click('ver-dia', '2026-10-25');
   assert.equal(c.api.s.dias.size, 1);
   assert.ok(c.pedidas.filter(u => u.pathname !== '/calendario/catalogo').every(u => u.searchParams.get('revision') === 'r1'));
   // Se publica r2: el mes, con r1, recibe 409 y la vigente.
-  actual = R2;
+  p.publicar('r2');
   const antes = c.pedidas.length;
   await c.click('mes'); await esperar();
-  assert.deepEqual(catalogos(), [null, 'r2'], 'una sola recarga, con el catálogo de la vigente');
-  assert.deepEqual([c.api.s.meta.revision, c.api.s.dias.size, c.api.s.error], ['r2', 0, '']);
-  const despues = c.pedidas.slice(antes).filter(u => u.pathname !== '/calendario/catalogo');
-  assert.ok(despues.some(u => u.searchParams.get('revision') === 'r2'), 'vuelve a pedir lo que se ve');
+  assert.deepEqual(catalogosDe(c), [null, 'r2'], 'una sola recarga, con el catálogo de la vigente');
+  assert.deepEqual([c.api.s.meta.revision, c.api.s.dias.size, c.api.s.error, c.api.s.cargando], ['r2', 0, '', false]);
+  assert.ok(c.pedidas.slice(antes).some(u => u.pathname === '/calendario/resumen' && u.searchParams.get('revision') === 'r2'));
   assert.ok(c.pedidas.length - antes < 10, 'sin bucle');
-  // Un 409 tardío de la revisión anterior no recarga otra vez.
+  // Un 409 tardío de una petición con r1 no recarga ni deja nada a medias.
+  c.api.calOtraPublicacion({ status: 409, pedida: 'r1', vigente: 'r3' });
+  await esperar();
+  assert.deepEqual([catalogosDe(c).length, c.api.s.cargando], [2, false]);
+});
+
+test('una recarga fallida no bloquea la siguiente', async () => {
+  const p = publicador(), c = contexto({ responder: p.responder });
+  await c.abrir();
+  p.publicar('r2');
+  p.fallos['/calendario/catalogo?r2'] = [503, 2];  // Los dos backends.
+  await c.click('mes'); await esperar();
+  assert.equal(c.api.s.error, 'calError');
   await c.click('mes'); await c.click('mes'); await esperar();
-  assert.equal(catalogos().length, 2);
+  // r2 falla en los dos backends; la siguiente acción vuelve a recargar.
+  assert.deepEqual([catalogosDe(c), c.api.s.meta.revision, c.api.s.error], [[null, 'r2', 'r2', 'r2'], 'r2', '']);
+});
+
+test('el asistente vuelve a pedir la disponibilidad con la publicación nueva', async () => {
+  const p = publicador(), c = contexto({ responder: p.responder });
+  await c.abrir();
+  await c.click('asistente', '0');
+  p.publicar('r2');
+  await c.marcar('cal-as-sitio', '', true);
+  await c.click('as-siguiente'); await esperar();
+  const a = c.api.s.asistente;
+  assert.deepEqual([c.api.s.meta.revision, a.error, Boolean(a.disp)], ['r2', '', true]);
+  assert.equal(c.pedidas.filter(u => u.searchParams.get('disponibilidad')).at(-1).searchParams.get('revision'), 'r2');
 });
 
 test('un 409 sin la vigente (worker anterior) recarga una vez sin caché y después avisa', async () => {
@@ -252,7 +284,8 @@ test('un 409 sin la vigente (worker anterior) recarga una vez sin caché y despu
   await c.click('renovar'); await esperar();
   const catalogos = c.pedidas.filter(u => u.pathname === '/calendario/catalogo');
   assert.deepEqual(catalogos.slice(-2).map(u => u.cache), ['reload', 'reload']);
-  assert.equal(catalogos.length, 3, 'abrir, «Actualizar» y una sola recarga por el 409');
+  // Abrir, «Actualizar», una recarga que sigue con la misma revisión y otra que ya avisa.
+  assert.equal(catalogos.length, 4);
   assert.equal(c.api.s.error, 'calError');
 });
 
