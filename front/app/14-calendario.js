@@ -625,18 +625,21 @@ function calInscripcionesAtletismo(e){
     <p>${calEsc(inscripcion.plazo_textual || '')}</p>
     ${(inscripcion.enlaces || []).map(a => `<p>${calEnlace(a.url, a.nombre)}</p>`).join('')}`).join('')}</section>`;
 }
-// Fechas en conflicto: las de cada federación, agrupadas, sin elegir ninguna.
+// Fechas en conflicto: los días de cada federación, agrupados, sin elegir
+// ninguna. Una variante sin programación no oculta las de las demás.
 function calFechasAtletismo(e){
   if (!e.programacion?.conflicto) return '';
   const fechas = new Map();
   for (const v of e.atletismo?.variantes || []){
-    if (!v.programacion) continue;
-    const texto = calHora({ programacion: { valor: v.programacion } });
+    const c = v.programacion?.cuando;
+    const a = extremoVisible(c?.inicio, CALENDARIO.zona), b = extremoVisible(c?.fin, CALENDARIO.zona);
+    if (!a.fecha) continue;
+    const texto = calFecha(a.fecha) + (b.fecha && b.fecha !== a.fecha ? ' → ' + calFecha(b.fecha) : '');
     if (!fechas.has(texto)) fechas.set(texto, new Set());
     const fuente = v.procedencia?.fuente;
     if (fuente) fechas.get(texto).add(CALENDARIO.meta?.fuentes?.[fuente]?.nombre || fuente);
   }
-  return fechas.size > 1 ? [...fechas].map(([texto, fuentes]) =>
+  return fechas.size ? [...fechas].map(([texto, fuentes]) =>
     `<p class="cal-nota">${calEsc([...fuentes].join(' · '))}: ${calEsc(texto)}</p>`).join('') : '';
 }
 function calEventoCuerpo(e, lugarVisto = ''){

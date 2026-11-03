@@ -220,28 +220,45 @@ class Issues(unittest.TestCase):
             self.assertEqual(gh.call_count, 1)
             self.assertIn('--paginate', gh.call_args.args[0])
 
-    def test_un_cambio_en_los_datos_reabre_el_issue_cerrado(self):
+    def test_un_cambio_en_los_datos_reabre_el_issue_cerrado_y_conserva_el_cuerpo(self):
         anterior = self.caso()
         cambiado = self.caso()
         cambiado['citas'][0] = {**cambiado['citas'][0], 'fin': '2026-12-06'}
         self.assertNotEqual(revision.huella(anterior), revision.huella(cambiado))
-        paginas = [[{'html_url': 'https://github.com/issue/1', 'number': 1, 'state': 'closed',
-                     'body': revision.cuerpo(anterior)}]]
-        with patch.object(revision, '_gh', side_effect=[json.dumps(paginas), '{}']) as gh:
+        nota = revision.cuerpo(anterior) + '\n\nNota editorial: pendiente de la circular.'
+        paginas = [[{'html_url': 'https://github.com/issue/1', 'number': 1, 'state': 'closed', 'body': nota}]]
+        with patch.object(revision, '_gh', side_effect=[json.dumps(paginas), '{}', '{}']) as gh:
             r = revision.enviar([cambiado, cambiado], 'thendabs1/voceiro')
         self.assertEqual((r['reabiertos'], r['existentes']), (['https://github.com/issue/1'], ['https://github.com/issue/1']))
-        argumentos, datos = gh.call_args.args
-        self.assertEqual(argumentos[:4], ['api', '--method', 'PATCH', 'repos/thendabs1/voceiro/issues/1'])
-        self.assertEqual(json.loads(datos)['state'], 'open')
-        self.assertIn(revision.marcador_huella(revision.huella(cambiado)), json.loads(datos)['body'])
+        self.assertEqual(gh.call_count, 3)
+        comentario, parche = gh.call_args_list[1].args, gh.call_args_list[2].args
+        self.assertEqual(comentario[0][:4], ['api', '--method', 'POST', 'repos/thendabs1/voceiro/issues/1/comments'])
+        self.assertIn('2026-12-06', json.loads(comentario[1])['body'])
+        self.assertEqual(parche[0][:4], ['api', '--method', 'PATCH', 'repos/thendabs1/voceiro/issues/1'])
+        datos = json.loads(parche[1])
+        self.assertEqual(datos['state'], 'open')
+        self.assertIn('Nota editorial: pendiente de la circular.', datos['body'])
+        self.assertIn(revision.marcador_huella(revision.huella(cambiado)), datos['body'])
+        self.assertNotIn(revision.marcador_huella(revision.huella(anterior)), datos['body'])
 
-    def test_issue_anterior_sin_huella_la_recibe_sin_reabrirse(self):
+    def test_la_huella_cambia_con_la_modalidad_aunque_no_cambie_el_motivo(self):
+        anterior = self.caso()
+        cambiado = self.caso()
+        cambiado['citas'][0] = {**cambiado['citas'][0], 'metadatos': {
+            **(cambiado['citas'][0].get('metadatos') or {}), 'modalidad_literal': 'Trail Running'}}
+        self.assertEqual(anterior['motivo'], cambiado['motivo'])
+        self.assertNotEqual(revision.huella(anterior), revision.huella(cambiado))
+
+    def test_issue_anterior_sin_huella_la_recibe_sin_reabrirse_ni_perder_texto(self):
         paginas = [[{'html_url': 'https://github.com/issue/1', 'number': 1, 'state': 'closed',
-                     'body': revision.marcador('a' * 24)}]]
+                     'body': revision.marcador('a' * 24) + '\nTexto escrito a mano'}]]
         with patch.object(revision, '_gh', side_effect=[json.dumps(paginas), '{}']) as gh:
             r = revision.enviar([self.caso()], 'thendabs1/voceiro')
         self.assertEqual((r['reabiertos'], r['existentes']), ([], ['https://github.com/issue/1']))
-        self.assertNotIn('state', json.loads(gh.call_args.args[1]))
+        datos = json.loads(gh.call_args.args[1])
+        self.assertNotIn('state', datos)
+        self.assertTrue(datos['body'].startswith(revision.marcador('a' * 24) + '\nTexto escrito a mano'))
+        self.assertIn(revision.marcador_huella(revision.huella(self.caso())), datos['body'])
 
     def test_envio_estructurado_limite_y_repeticion_del_mismo_par(self):
         caso = self.caso()

@@ -125,7 +125,8 @@ identidades ya guardadas no se fusionan al importar: exigen conciliación.
 - `atletismo_revision --issues` corre en cada pasada del workflow: un issue
   por par estable de IDs (marcador oculto, abiertos y cerrados), cinco
   escrituras como máximo por pasada. Cerrar un issue no fusiona datos; una
-  huella de los datos comparados lo reescribe y reabre si cambian.
+  huella de lo que usa el comparador (incluidas modalidades y enlaces) comenta
+  los datos nuevos y lo reabre si cambian; el cuerpo conserva lo escrito a mano.
 
 ## Recogida
 
