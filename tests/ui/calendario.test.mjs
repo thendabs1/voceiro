@@ -1392,8 +1392,16 @@ test('con fechas en conflicto el detalle muestra las de cada federación', () =>
   assert.doesNotMatch(runInContext('calEventoCuerpo(evento)', c), /fca/);
   c.evento.programacion = { ...c.evento.programacion, conflicto: true };
   const html = runInContext('calEventoCuerpo(evento)', c);
-  assert.match(html, /<p class="cal-nota">rfea: [^<]*→/);
-  assert.match(html, /<p class="cal-nota">fca · fga: /);
+  const dia5 = runInContext("calFecha('2026-12-05')", c), dia6 = runInContext("calFecha('2026-12-06')", c);
+  assert.ok(html.includes(`<p class="cal-nota">rfea: ${dia5} → ${dia6}</p>`));
+  assert.ok(html.includes(`<p class="cal-nota">fca · fga: ${dia5}</p>`));
+  // Días distintos de un solo día no se confunden («sin hora») y una variante
+  // sin programación no oculta la fecha conocida de otra.
+  c.evento.atletismo.variantes = [variante('rfea', '2026-12-05', null), variante('fca', '2026-12-06', null)];
+  const distintos = runInContext('calEventoCuerpo(evento)', c);
+  assert.ok(distintos.includes(`rfea: ${dia5}<`) && distintos.includes(`fca: ${dia6}<`));
+  c.evento.atletismo.variantes = [variante('rfea', '2026-12-05', null), { valor: {}, procedencia: { fuente: 'fca' } }];
+  assert.ok(runInContext('calEventoCuerpo(evento)', c).includes(`rfea: ${dia5}<`));
 });
 
 test('la cita compartida conserva inscripciones por fuente aunque difieran los metadatos', () => {
