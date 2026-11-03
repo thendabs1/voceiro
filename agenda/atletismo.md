@@ -3,7 +3,7 @@
 Estado a 2/11/2026. Capas RFEA, Galicia (FGA) y Cataluña (FCA) con recogida
 completa y conciliaciones revisadas; cron y publicación se activan con las
 variables de Actions (ver Recogida). World Athletics tiene contrato
-propio, sin adaptador: [atletismo-world-athletics.md](atletismo-world-athletics.md).
+propio, con recogida de datos en fase 1: [atletismo-world-athletics.md](atletismo-world-athletics.md).
 
 ## Alcance y modelo
 
@@ -133,7 +133,7 @@ identidades ya guardadas no se fusionan al importar: exigen conciliación.
 python -m agenda.atletismo_recogida --db /tmp/atletismo.db --fuente fga --inicio 2026-11-01 --fin 2026-12-31 --informe /tmp/fga.json
 ```
 
-Fuentes `fga`, `fca` y `rfea` (incluye Nivel II y requiere Poppler); `--turso`
+Fuentes `fga`, `fca`, `rfea` (incluye Nivel II y requiere Poppler) y `wa`; `--turso`
 sustituye a `--db`. Ventana máxima de 91 días; por defecto, hoy y 60 días más.
 El informe (consultas, ventana, peticiones, pendientes, ausencias y
 completitud) se guarda con el núcleo en `agenda_estado`, clave
@@ -170,7 +170,7 @@ repetible y reimportar un ID actualiza sin duplicar.
 - Clasificar circuitos y tecnificación desde las fichas.
 - Interfaz: el detalle solo muestra inscripción; faltan modalidades
   normalizadas y filtros comunes.
-- World Athletics: [contrato](atletismo-world-athletics.md).
+- World Athletics: interfaz de circuitos y filtros (fase 2).
 
 Resultados, marcas y rankings siguen sin conector; ver
 [resultados](resultados-diseno.md#otras-ampliaciones).

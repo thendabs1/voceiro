@@ -21,6 +21,7 @@ FUENTES = {
     'rfea': ('RFEA', 'https://atletismorfea.es/calendario'),
     'fga': ('Federación Galega de Atletismo', 'https://atletismo.gal/competicions/'),
     'fca': ('Federació Catalana d’Atletisme', 'https://fcatletisme.cat/events/'),
+    'wa': ('World Athletics', 'https://worldathletics.org/competition/calendar-results'),
 }
 
 
@@ -240,7 +241,7 @@ def importar(anterior, pagina, observado):
         previa = a.anterior('agrupacion', i)
         clase = a.c.n['entidades'][nucleo.clave(previa)]['clase'] if previa else g['clase']
         grupos[i] = a.grupo('agrupacion', i, clase, g.get('nombre'), padre=capa,
-            url=enlace(fuente, g['url']))
+            url=enlace(fuente, g['url']), codigo=g.get('codigo_consulta'))
     for e in eventos:
         equivalencia = equivalencias().get((fuente, deporte.literal(e['id'])))
         identidad = (nucleo.identificador('atletismo-revisado', equivalencia['id'])
@@ -259,11 +260,12 @@ def importar(anterior, pagina, observado):
                           'criterio': decision['comparacion']}
         if deporte.literal(e['id']) in grupos:
             raise ValueError('Una agrupación no debe importarse también como cita')
-        padre = capa
-        if e.get('grupo') is not None:
-            padre = grupos.get(deporte.literal(e['grupo']))
-            if padre is None:
-                raise ValueError('Cita con agrupación no acreditada')
+        ids_grupo = [e['grupo']] if e.get('grupo') is not None else []
+        ids_grupo.extend(e.get('grupos', []))
+        padres = [grupos.get(deporte.literal(i)) for i in ids_grupo]
+        if any(p is None for p in padres):
+            raise ValueError('Cita con agrupación no acreditada')
+        padre = padres[0] if padres else capa
         if not e.get('inicio') or not e.get('fin'):
             raise ValueError('Faltan extremos acreditados de celebración')
         inicio, fin = date.fromisoformat(e['inicio']), date.fromisoformat(e['fin'])
@@ -272,7 +274,7 @@ def importar(anterior, pagina, observado):
         grupo = a.grupo('programa_competicion', e['id'], 'competicion', e.get('nombre'),
             padre=padre, url=enlace(fuente, e['url']),
             identidad=identidad_grupo)
-        principal, _ = a.evento('competicion', e['id'], 'encuentro', e.get('nombre'),
+        principal, evidencia = a.evento('competicion', e['id'], 'encuentro', e.get('nombre'),
             deporte.dias(inicio.isoformat(), fin.isoformat()), padre=grupo,
             estado=e.get('estado', 'desconocido'),
             sitio=e.get('lugar'), url=enlace(fuente, e['url']), identidad=identidad,
@@ -280,6 +282,8 @@ def importar(anterior, pagina, observado):
                 **({'coincidencia_automatica': automatica} if automatica else {}),
                 **({'equivalencia_revisada': equivalencia} if equivalencia else {})},
                 'agenda': {'rol': 'principal', 'grupo': grupo}})
+        for adicional in padres[1:]:
+            a.c.relacion('pertenece_a', principal, adicional, evidencia)
         for s in deporte.unicos(deporte.filas({'programa': e.get('programa', [])}, 'programa'), 'id'):
             cuando = deporte.intervalo(s.get('inicio'), s.get('fin'), zona=s.get('zona'))
             # Una lista de pruebas sin fecha no acredita sesiones de agenda.

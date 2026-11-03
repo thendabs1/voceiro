@@ -162,7 +162,7 @@ jobs:
           if [ "$ATLETISMO" = true ]; then
             # Primero las fichas territoriales: dan referencias a Nivel II.
             # Cada fuente conserva su última lectura válida si falla otra.
-            for a in fga fca rfea; do
+            for a in fga fca rfea wa; do
               pasos+=(--paso-tolerado "atletismo-recogida --turso --fuente $a$fechas")
             done
           fi
