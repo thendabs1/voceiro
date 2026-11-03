@@ -135,8 +135,10 @@ const calSegundosEspera = () => Math.max(1, Math.ceil((calEsperaHasta - Date.now
 // La publicación avanza a diario: cada respuesta trae su revisión y cobertura.
 function calAnotar(dato){
   const m = CALENDARIO.meta;
-  // Otra publicación: las fichas guardadas pueden haber cambiado.
-  if (m && dato.revision && dato.revision !== m.revision) CALENDARIO.detalles.clear();
+  // Otra publicación, aunque llegue por una petición sin `revision` (los
+  // resúmenes): lo ya cargado es de la anterior. Se rehace todo, como ante un
+  // 409, cuando quien pidió haya guardado su respuesta.
+  if (m?.revision && dato.revision && dato.revision !== m.revision) Promise.resolve().then(() => cargarCalendario(true));
   if (m) for (const k of ['revision', 'generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
 }
 function calParametros(){

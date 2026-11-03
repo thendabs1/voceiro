@@ -209,6 +209,27 @@ test('si la publicación cambia entre páginas, se rehacen cuentas y listas: nad
   assert.deepEqual([c.api.s.dias.size, c.api.s.error], [0, '']);
 });
 
+test('una revisión nueva traída por el mes rehace lo cargado de la anterior', async () => {
+  let revision = 'r1';
+  const c = contexto({ responder: u => {
+    const d = api(u);
+    return d instanceof Response ? d : { ...d, revision };
+  } });
+  const catalogos = () => c.pedidas.filter(u => u.pathname === '/calendario/catalogo').length;
+  await c.abrir();
+  await c.click('ver-dia', '2026-10-25');
+  assert.equal(c.api.s.dias.size, 1);
+  // El mes pide su resumen sin `revision`: no hay 409 que avise del cambio.
+  revision = 'r2';
+  let antes = catalogos();
+  await c.click('mes'); await esperar();
+  assert.equal(catalogos(), antes + 1, 'vuelve a pedir el catálogo');
+  assert.deepEqual([c.api.s.meta.revision, c.api.s.dias.size, c.api.s.error], ['r2', 0, '']);
+  antes = catalogos();
+  await c.click('mes'); await c.click('mes'); await esperar();
+  assert.equal(catalogos(), antes, 'la misma revisión no recarga');
+});
+
 test('tira: la semana con puntos por categoría y el pasado atenuado; se despliega en mes', async () => {
   const c = contexto();
   c.hoy = '2026-10-27';
