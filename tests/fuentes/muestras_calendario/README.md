@@ -29,6 +29,16 @@ de las pruebas son entradas sintéticas explícitas, no una fecha de publicació
 Las condiciones de cada fuente están en [agenda/fuentes.md](../../../agenda/fuentes.md).
 Estas muestras permiten verificar estructura, identidad y conservación;
 no acreditan reutilización pública, frescura ni disponibilidad de la fuente.
+
+# Galicia (3/11/2026, simulada)
+
+`galicia-detalle.json` simula la envoltura `evento` del detalle
+`https://www.cultura.gal/v1/axenda/eventos/{id}.json` y los campos solicitados
+por el adaptador, incluido `publicar`. Usa la celebración ficticia 101 de las
+pruebas y un traslado fuera de ventana; los tests derivan despublicación,
+respuesta parcial e idioma inesperado. No es una captura del proveedor; el
+detalle real de la celebración 157127 trae los mismos campos (contrastado ese día).
+
 # Contraste del recolector HTML
 
 `feb-calendario.html` y `feb-resultados.html` contienen fragmentos retenidos

@@ -172,12 +172,83 @@ def recoger(inicio, fin, idioma='gl', descargar=None, limite=1000, max_paginas=2
     raise ValueError('Galicia supera el límite de páginas; reducir el intervalo')
 
 
-def recoger_ventana(inicio, fin, descargar):
-    """Producción solo en gallego; una ventana completa no es inventario global."""
+def conocidos(n):
+    """Una consulta por celebración, con la fecha seleccionada en el núcleo."""
+    referencias = {i: r for i, r in n['referencias'].items()
+                   if r['proveedor'] == FUENTE and r['tipo_externo'] == TIPO_EXTERNO}
+    grupos = {}
+    for r in referencias.values():
+        grupos.setdefault(nucleo.clave(r['destino']), []).append(r['id_externo'])
+    candidatas = {}
+    for i in nucleo.ultimas(n):
+        o = n['observaciones'][i]
+        if o['referencia'] not in referencias:
+            continue
+        r = referencias[o['referencia']]
+        k = nucleo.clave(r['destino'])
+        contenido = n['documentos'][o['documento']]['contenido']
+        original = contenido.get('original', contenido)
+        gallego = 'gl' in o['bloques']['nombres']
+        identificador = r['id_externo'] if gallego else str(original.get('traducionId') or r['id_externo'])
+        prioridad = (gallego, tiempos.instante(o['ultima_observacion']), i)
+        if k not in candidatas or prioridad > candidatas[k][0]:
+            seleccion = n['selecciones'].get(nucleo.identificador('seleccion', r['destino'], 'programacion'), {})
+            valor = seleccion.get('seleccion', {}).get('valor') or {}
+            candidatas[k] = (prioridad, identificador, valor.get('cuando'))
+    return {i: {'cuando': cuando, 'equivalentes': grupos[k]}
+            for k, (_, i, cuando) in candidatas.items()}
+
+
+def recoger_ventana(inicio, fin, descargar, conocidos=()):
+    """Ventana completa y detalles acreditados; un fallo individual no es ausencia."""
     registros = recoger(inicio, fin, 'gl', descargar=lambda url: json.loads(descargar(url)))
     if any(r['idioma'] != 'gl' for r in registros):
         raise ValueError('La recogida de Galicia debe estar en gallego')
-    return [r['original'] for r in registros]
+    filas = [r['original'] for r in registros]
+    presentes = {r['id_externo'] for r in registros}
+    recibidos = presentes | {i for r in registros for i in r['equivalentes']}
+    despublicados = {}
+    # Sin metadatos de fecha se comprueba: no se puede descartar el solape.
+    pendientes = conocidos if isinstance(conocidos, dict) else {i: {} for i in conocidos}
+    for identificador, datos in sorted(pendientes.items()):
+        alias = {identificador, *datos.get('equivalentes', [])}
+        if alias & recibidos:
+            continue
+        cuando = datos.get('cuando') or {}
+        primero = (cuando.get('inicio') or {}).get('fecha')
+        ultimo = (cuando.get('fin') or {}).get('fecha') or primero
+        if primero and (primero > fin or ultimo < inicio):
+            continue
+        url = URL.removesuffix('.json') + '/' + _id(identificador) + '.json?' + urlencode(
+            {'campos': CAMPOS + ',publicar'})
+        try:
+            respuesta = json.loads(descargar(url))
+            detalle = respuesta.get('evento') if isinstance(respuesta, dict) else None
+            # No sustituir datos guardados con un detalle recortado o de otro idioma.
+            if (not isinstance(detalle, dict) or not set(CAMPOS.split(',')) <= detalle.keys()
+                    or detalle.get('idioma') != 'gl' or _id(detalle['id']) != identificador
+                    or type(detalle.get('publicar')) is not int or detalle['publicar'] not in (0, 1)):
+                raise ValueError('Detalle parcial, ID, idioma o publicación inesperados')
+            for campo in ('data', 'dataOrixinal'):
+                fecha = detalle[campo]
+                if fecha is not None and (not isinstance(fecha, dict)
+                        or not {'dataInicio', 'dataFin'} <= fecha.keys()):
+                    raise ValueError('Fechas incompletas en el detalle')
+            registro = normalizar(detalle, 'gl')
+            # Validar también el horario antes de admitir el detalle al lote.
+            bloques(registro)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+            print(f'::warning::Galicia {identificador}: sin revalidar ({error}); se conserva su estado')
+            continue
+        if detalle['publicar'] == 0:
+            despublicados[identificador] = {'url': url, 'evento': {
+                k: detalle[k] for k in ('id', 'idioma', 'publicar')}}
+        else:
+            filas.append(detalle)
+            presentes.add(identificador)
+        recibidos.update(alias | set(registro['equivalentes']))
+    return filas, {'alcance': 'ids_comprobados', 'presentes': sorted(presentes),
+                   'despublicados': despublicados}
 
 
 def bloques(registro):

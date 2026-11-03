@@ -7,8 +7,9 @@ Opcional: inventario(filas) cuando la presencia se acredita por otra identidad
 (Zaragoza: funciones dentro de cada obra); obra(id) cuando la identidad de
 función incluye la fecha (CyL), para actualizar fuera de la ventana las filas
 de una obra conocida.
-Una fuente acotada declara recoger_ventana(inicio, fin, descargar) y
-INVENTARIO_COMPLETO=False: no usa las familias ni acredita ausencias globales.
+Una fuente acotada declara recoger_ventana(inicio, fin, descargar, conocidos),
+que devuelve filas e inventario de IDs comprobados, y conocidos(nucleo) para
+conservar fecha y equivalencias. INVENTARIO_COMPLETO=False impide ausencias globales.
 """
 
 from . import cultura_galicia, cyl, kulturklik, madrid, zaragoza

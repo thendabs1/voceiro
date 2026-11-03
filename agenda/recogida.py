@@ -79,7 +79,7 @@ def feb(temporada, competicion='4', *, solo_agenda=False):
 def cultura(fuente, inicio=None, fin=None, conocidos=()):
     """Pasada completa paginada antes de importar; nunca guardar un prefijo.
 
-    Devuelve las filas de la ventana, la URL y el inventario completo de IDs.
+    Devuelve las filas de la ventana, la URL y el inventario con su alcance.
     Las filas con alguna identidad de `conocidos` se devuelven aunque queden
     fuera: una cita aplazada lejos no puede conservar su fecha anterior. Si la
     fuente declara `obra`, basta con que la obra sea conocida (CyL).
@@ -96,9 +96,9 @@ def cultura(fuente, inicio=None, fin=None, conocidos=()):
     if not 0 <= (hasta - desde).days <= 90:
         raise ValueError('La ventana cultural debe cubrir entre 1 y 91 días')
     if hasattr(m, 'recoger_ventana'):
-        filas = m.recoger_ventana(desde.isoformat(), hasta.isoformat(), descargar)
+        filas, ids = m.recoger_ventana(desde.isoformat(), hasta.isoformat(), descargar, conocidos)
         print(f'[agenda] {fuente}: {len(filas)} registros en {desde} → {hasta}; sin inventario global')
-        return filas, m.URL_RECOGIDA, None
+        return filas, m.URL_RECOGIDA, ids
     filas, ids = recorrer(descargar, m.URL_RECOGIDA, m.CAMPO_ID, FAMILIAS[m.FAMILIA])
     if hasattr(m, 'inventario'):
         ids = m.inventario(filas)
