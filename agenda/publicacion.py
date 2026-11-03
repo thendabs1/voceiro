@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import json
 import os
 
-from . import clasificador, nucleo, presencia
+from . import atletismo_modalidades, clasificador, nucleo, presencia
 from .clasificacion import cargar_catalogo
 from .tiempos import instante
 from shared.territorios import cargar as cargar_territorios
@@ -280,6 +280,10 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
         if atletismo and (atletismo.get('valor') or variantes):
             eventos[-1]['atletismo'] = atletismo
             eventos[-1]['atletismo']['variantes'] = variantes
+            # Modalidad común: alguna fuente publicada la acredita (faceta del filtro).
+            modalidades = atletismo_modalidades.de_variantes([v['valor'] for v in variantes])
+            if modalidades:
+                eventos[-1]['atletismo']['modalidades'] = modalidades
         # Unión por clave: las traducciones de una misma etiqueta suman nombres.
         etiquetas = {}
         for i in propias:

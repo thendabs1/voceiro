@@ -28,8 +28,17 @@ y reuniones. La inscripción es un metadato, no otra cita.
   formato (individual, clubes, relevos), actividad (competición,
   tecnificación), ámbito/área/categoría WA y homologación. Se conservan los
   literales de cada fuente; no se extraen edades del título. «Promoció» no
-  acredita edad e «Internacional» no es modalidad. Normalizar modalidad y
-  ofrecer filtros requiere tablas de correspondencia acordadas.
+  acredita edad e «Internacional» no es modalidad.
+- Modalidad común (acordada el 3/11/2026): `ruta`, `cross`, `pista-cubierta`,
+  `pista-aire-libre`, `marcha` y `trail`, según
+  `shared/calendario/atletismo-modalidades.json` (literal normalizado → código,
+  o `null` si es conocido y no indica modalidad: Promoció, Màster,
+  Internacional, Track and Field). `atletismo_modalidades` es la única
+  interpretación; la publicación guarda en `atletismo.modalidades` la unión de
+  las variantes publicadas (faceta `modalidad`, parámetro `modalidades` del
+  worker, OR entre códigos). El «Tipo» de Nivel II solo cuenta si ninguna otra
+  fuente acredita modalidad. Un literal desconocido no recibe código y aparece
+  en `modalidades_desconocidas` del informe de recogida.
 - `metadatos.inscripcion`: `plazo_textual`, `periodo` (días acreditados),
   `hora_cierre_literal` sin zona inventada y `enlaces`. Un enlace de login no
   acredita inscripción abierta. Se publica en `atletismo.valor.inscripcion`
@@ -169,8 +178,10 @@ repetible y reimportar un ID actualiza sin duplicar.
 ## Pendiente
 
 - Clasificar circuitos y tecnificación desde las fichas.
-- Interfaz: el detalle muestra inscripción y fechas por fuente; faltan
-  modalidades normalizadas y filtros comunes.
+- Interfaz: filas de fuentes, circuitos WA y modalidad en Deportes (semana y
+  lista en pantallas bajas; ☆ solo en fuentes). Cómo combinan circuitos y
+  fuentes se decide con el ámbito (territorial, nacional, internacional), en
+  estudio; no se ofrece hasta acreditarlo.
 - World Athletics: interfaz de circuitos y filtros (fase 2).
 
 Resultados, marcas y rankings siguen sin conector; ver

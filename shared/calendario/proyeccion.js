@@ -78,6 +78,8 @@ export function prepararLectura(datos) {
     // Lo que enseña la tarjeta del calendario, también sin clave cuando no hay.
     if (e.formatos?.length) tarjeta.formatos = e.formatos;
     if (e.precio) tarjeta.precio = e.precio;
+    // Atletismo: modalidad común (publicacion.py); sin clave cuando no hay.
+    if (e.atletismo?.modalidades?.length) tarjeta.modalidades = e.atletismo.modalidades;
     if (e.programa?.length) tarjeta.tiene_programa = true;
     const propias = new Set(objetivos.flatMap(o => o.temas || []).flatMap(t => raicesDe(t)));
     const categoria = ordenRaices.find(r => propias.has(r));
@@ -101,6 +103,7 @@ export function prepararLectura(datos) {
     // Filtros del calendario (clasificador.py); el público es dato, no faceta.
     agregar('formato', e.formatos || []);
     agregar('precio', e.precio ? [e.precio] : []);
+    agregar('modalidad', e.atletismo?.modalidades || []);
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
     const inactivo = o => ['cancelado', 'aplazado'].includes(o.programacion?.valor?.programacion);

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "nota": "Modalidad común de atletismo. Clave: literal de la fuente en minúsculas, sin acentos y con cualquier signo como espacio. Valor: código común, o null si el literal es conocido pero no indica modalidad. Las fuentes conservan siempre su literal.",
+  "modalidades": ["ruta", "cross", "pista-cubierta", "pista-aire-libre", "marcha", "trail"],
+  "literales": {
+    "ruta": "ruta",
+    "road running": "ruta",
+    "cross": "cross",
+    "cros": "cross",
+    "campo a traves": "cross",
+    "cross country": "cross",
+    "short track": "pista-cubierta",
+    "st": "pista-cubierta",
+    "pista curta": "pista-cubierta",
+    "pista corta": "pista-cubierta",
+    "pista coberta": "pista-cubierta",
+    "pista cubierta": "pista-cubierta",
+    "pista aire libre": "pista-aire-libre",
+    "al": "pista-aire-libre",
+    "aire lliure": "pista-aire-libre",
+    "marcha": "marcha",
+    "marxa": "marcha",
+    "race walking": "marcha",
+    "trail": "trail",
+    "trail running": "trail",
+    "trail muntanya": "trail",
+    "promocio": null,
+    "master": null,
+    "internacional": null,
+    "track and field": null
+  }
+}

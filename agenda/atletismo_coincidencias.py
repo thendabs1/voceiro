@@ -12,9 +12,9 @@ import re
 import unicodedata
 from urllib.parse import urlsplit
 
-from . import nucleo
+from . import atletismo_modalidades, nucleo
 
-VERSION = 3
+VERSION = 4
 FUENTES = {'rfea', 'fga', 'fca', 'wa'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
@@ -107,13 +107,8 @@ def enlaces(e):
 
 
 def modalidades(e):
-    m = e.get('metadatos') or {}
-    literales = [m.get('modalidad_literal') or '', *(x.get('nombre') or '' for x in (m.get('categorias') or []))]
-    tabla = {'al': 'al', 'pista aire libre': 'al', 'aire lliure': 'al',
-             'st': 'st', 'short track': 'st', 'pista corta': 'st', 'pista coberta': 'st',
-             'cross': 'cross', 'ruta': 'ruta', 'marcha': 'marcha',
-             'trail': 'trail', 'trail running': 'trail'}
-    return {tabla[normalizar(x)] for x in literales if normalizar(x) in tabla}
+    # Tabla común compartida con la publicación; incluye WA.
+    return atletismo_modalidades.de(e.get('metadatos'))[0]
 
 
 def comparar(a, b):
