@@ -82,6 +82,12 @@ def validar(cuando):
         elif a['zona'] == b['zona'] and not a['instante'] and not b['instante']:
             primero = datetime.fromisoformat(a['fecha'] + 'T' + a['hora_local'])
             ultimo = datetime.fromisoformat(b['fecha'] + 'T' + b['hora_local'])
+    elif (a['fecha'] and b['fecha'] and
+          (not a['zona'] or not b['zona'] or a['zona'] == b['zona'])):
+        # Distinta precisión no impide demostrar una inversión de días civiles.
+        primero, ultimo = date.fromisoformat(a['fecha']), date.fromisoformat(b['fecha'])
+        if primero == ultimo and not (exclusivo and b['precision'] == 'fecha'):
+            primero = ultimo = None
     if primero is not None and (ultimo < primero or (exclusivo and ultimo == primero)):
         raise ValueError('Fin anterior al inicio o intervalo exclusivo vacío')
     if 'dias_semana' in cuando and (not isinstance(cuando['dias_semana'], list)
@@ -108,7 +114,19 @@ def desde_legado(c):
             e['certeza_hora'] = 'provisional'
         return e
     return validar({'inicio': convertir(c.get('inicio')), 'fin': convertir(c.get('fin')),
-                    'fin_exclusivo': c.get('fin_exclusivo'), 'horario_textual': None})
+                    'fin_exclusivo': c.get('fin_exclusivo'), 'horario_textual': c.get('horario_textual')})
+
+
+def _extremo_visible(e, zona):
+    """Cada instante confirmado cambia de zona; cada fecha civil conserva su día."""
+    if e['certeza_fecha'] != 'confirmado':
+        return None, None
+    if e['instante'] and e['certeza_hora'] == 'confirmado':
+        local = instante(e['instante']).astimezone(ZoneInfo(zona))
+        return local.date(), local.time()
+    return (date.fromisoformat(e['fecha']) if e['fecha'] else None,
+            time.fromisoformat(e['hora_local'])
+            if e['hora_local'] and e['certeza_hora'] == 'confirmado' else None)
 
 
 def en_intervalo(cuando, inicio, fin, zona='Europe/Madrid'):
@@ -127,24 +145,12 @@ def en_intervalo(cuando, inicio, fin, zona='Europe/Madrid'):
                 return True
             dia = siguiente
         return False
-    a, b = cuando['inicio'], cuando['fin']
-    if a['certeza_fecha'] != 'confirmado':
+    dia, _ = _extremo_visible(cuando['inicio'], zona)
+    cierre, hora = _extremo_visible(cuando['fin'], zona)
+    if dia is None:
         return False
-    if a['instante'] and a['certeza_hora'] == 'confirmado':
-        z = ZoneInfo(zona)
-        comienzo = instante(a['instante'])
-        desde = datetime.combine(primero, time(), z)
-        hasta = datetime.combine(ultimo, time(), z)
-        if b['instante'] and b['certeza_fecha'] == 'confirmado' and b['certeza_hora'] == 'confirmado':
-            cierre = instante(b['instante'])
-            return comienzo < hasta and (cierre > desde if cuando['fin_exclusivo'] else cierre >= desde)
-        return primero <= comienzo.astimezone(z).date() < ultimo
-    if not a['fecha']:
-        return False
-    dia = date.fromisoformat(a['fecha'])
-    if b['fecha'] and b['certeza_fecha'] == 'confirmado':
-        cierre = date.fromisoformat(b['fecha'])
-        # Un fin con hora durante el primer día de ventana sí solapa, incluso si es exclusivo.
-        termina_despues = cierre > primero or (cierre == primero and bool(b['hora_local']))
+    if cierre is not None:
+        # Medianoche exclusiva es el límite del día; una hora posterior sí solapa.
+        termina_despues = cierre > primero or (cierre == primero and hora is not None and hora > time())
         return dia < ultimo and (termina_despues if cuando['fin_exclusivo'] else cierre >= primero)
     return primero <= dia < ultimo

@@ -1,0 +1,336 @@
+[
+  {
+    "id": "medianoche-local-exclusiva",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": "18:00:00", "zona": null, "instante": null, "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-03", "hora_local": "00:00:00", "zona": null, "instante": null, "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": "18:00", "sinZona": true}, "fin": {"fecha": "2026-11-03", "hora": "00:00", "sinZona": true}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "cyl-inicio-instante-fin-civil",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-03", "hora_local": "00:30", "zona": "Europe/Madrid", "instante": "2026-11-03T00:30:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-03", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-11-03", "hora": "00:30", "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": null, "sinZona": false}, "ultimo": "2026-11-03", "incluidos": ["2026-11-03"]},
+      {"zonas": ["Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": "23:30", "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": null, "sinZona": false}, "ultimo": "2026-11-03", "incluidos": ["2026-11-02", "2026-11-03"]}
+    ]
+  },
+  {
+    "id": "inversion-hora-fecha",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-03", "hora_local": "18:00", "zona": null, "instante": null, "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": false,
+    "dias": [],
+    "vistas": [
+    ]
+  },
+  {
+    "id": "inversion-fecha-hora",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-03", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-02", "hora_local": "18:00", "zona": null, "instante": null, "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": false,
+    "dias": [],
+    "vistas": [
+    ]
+  },
+  {
+    "id": "inversion-instante-fecha",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-03", "hora_local": "18:00", "zona": "Europe/Madrid", "instante": "2026-11-03T18:00:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": false,
+    "dias": [],
+    "vistas": [
+    ]
+  },
+  {
+    "id": "civil-inclusivo",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-03", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": null, "sinZona": false}, "ultimo": "2026-11-03", "incluidos": ["2026-11-02", "2026-11-03"]}
+    ]
+  },
+  {
+    "id": "civil-exclusivo",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-03", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": null, "sinZona": false}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "fin-desconocido",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": null, "hora_local": null, "zona": null, "instante": null, "precision": "desconocida", "certeza_fecha": "desconocida", "certeza_hora": "desconocida"},
+      "fin_exclusivo": null,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": null, "hora": null, "sinZona": false}, "ultimo": null, "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "inicio-provisional",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "provisional", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-03", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": null, "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": null, "sinZona": false}, "ultimo": "2026-11-03", "incluidos": []}
+    ]
+  },
+  {
+    "id": "hora-provisional-no-desplaza-dia",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-03", "hora_local": "00:30", "zona": "Europe/Madrid", "instante": "2026-11-03T00:30:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "provisional"},
+      "fin": {"fecha": null, "hora_local": null, "zona": null, "instante": null, "precision": "desconocida", "certeza_fecha": "desconocida", "certeza_hora": "desconocida"},
+      "fin_exclusivo": null,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-03", "hora": null, "sinZona": false}, "fin": {"fecha": null, "hora": null, "sinZona": false}, "ultimo": null, "incluidos": ["2026-11-03"]}
+    ]
+  },
+  {
+    "id": "fin-provisional",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-03", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "provisional", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": null, "hora": null, "sinZona": false}, "ultimo": null, "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "hora-fin-provisional-exclusivo",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-03", "hora_local": "12:00", "zona": null, "instante": null, "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "provisional"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": null, "sinZona": true}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "semana-y-exclusiones",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-06", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null,
+      "dias_semana": [0, 2, 4],
+      "dias_excluidos": ["2026-11-04"]
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-06", "hora": null, "sinZona": false}, "ultimo": "2026-11-06", "incluidos": ["2026-11-02", "2026-11-06"]}
+    ]
+  },
+  {
+    "id": "madrid-cambio-primavera",
+    "cuando": {
+      "inicio": {"fecha": "2026-03-29", "hora_local": "01:30", "zona": "Europe/Madrid", "instante": "2026-03-29T01:30:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-03-29", "hora_local": "03:30", "zona": "Europe/Madrid", "instante": "2026-03-29T03:30:00+02:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-03-28", "2026-03-29", "2026-03-30"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-03-29", "hora": "01:30", "sinZona": false}, "fin": {"fecha": "2026-03-29", "hora": "03:30", "sinZona": false}, "ultimo": "2026-03-29", "incluidos": ["2026-03-29"]},
+      {"zonas": ["Atlantic/Canary"], "inicio": {"fecha": "2026-03-29", "hora": "00:30", "sinZona": false}, "fin": {"fecha": "2026-03-29", "hora": "02:30", "sinZona": false}, "ultimo": "2026-03-29", "incluidos": ["2026-03-29"]},
+      {"zonas": ["UTC"], "inicio": {"fecha": "2026-03-29", "hora": "00:30", "sinZona": false}, "fin": {"fecha": "2026-03-29", "hora": "01:30", "sinZona": false}, "ultimo": "2026-03-29", "incluidos": ["2026-03-29"]}
+    ]
+  },
+  {
+    "id": "madrid-cambio-otono",
+    "cuando": {
+      "inicio": {"fecha": "2026-10-25", "hora_local": "02:30", "zona": "Europe/Madrid", "instante": "2026-10-25T02:30:00+02:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-10-25", "hora_local": "02:30", "zona": "Europe/Madrid", "instante": "2026-10-25T02:30:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-10-24", "2026-10-25", "2026-10-26"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-10-25", "hora": "02:30", "sinZona": false}, "fin": {"fecha": "2026-10-25", "hora": "02:30", "sinZona": false}, "ultimo": "2026-10-25", "incluidos": ["2026-10-25"]},
+      {"zonas": ["Atlantic/Canary"], "inicio": {"fecha": "2026-10-25", "hora": "01:30", "sinZona": false}, "fin": {"fecha": "2026-10-25", "hora": "01:30", "sinZona": false}, "ultimo": "2026-10-25", "incluidos": ["2026-10-25"]},
+      {"zonas": ["UTC"], "inicio": {"fecha": "2026-10-25", "hora": "00:30", "sinZona": false}, "fin": {"fecha": "2026-10-25", "hora": "01:30", "sinZona": false}, "ultimo": "2026-10-25", "incluidos": ["2026-10-25"]}
+    ]
+  },
+  {
+    "id": "canarias-cambio-primavera",
+    "cuando": {
+      "inicio": {"fecha": "2026-03-29", "hora_local": "00:30", "zona": "Atlantic/Canary", "instante": "2026-03-29T00:30:00+00:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-03-29", "hora_local": "02:30", "zona": "Atlantic/Canary", "instante": "2026-03-29T02:30:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-03-28", "2026-03-29", "2026-03-30"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-03-29", "hora": "01:30", "sinZona": false}, "fin": {"fecha": "2026-03-29", "hora": "03:30", "sinZona": false}, "ultimo": "2026-03-29", "incluidos": ["2026-03-29"]},
+      {"zonas": ["Atlantic/Canary"], "inicio": {"fecha": "2026-03-29", "hora": "00:30", "sinZona": false}, "fin": {"fecha": "2026-03-29", "hora": "02:30", "sinZona": false}, "ultimo": "2026-03-29", "incluidos": ["2026-03-29"]},
+      {"zonas": ["UTC"], "inicio": {"fecha": "2026-03-29", "hora": "00:30", "sinZona": false}, "fin": {"fecha": "2026-03-29", "hora": "01:30", "sinZona": false}, "ultimo": "2026-03-29", "incluidos": ["2026-03-29"]}
+    ]
+  },
+  {
+    "id": "canarias-cambio-otono",
+    "cuando": {
+      "inicio": {"fecha": "2026-10-25", "hora_local": "01:30", "zona": "Atlantic/Canary", "instante": "2026-10-25T01:30:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-10-25", "hora_local": "01:30", "zona": "Atlantic/Canary", "instante": "2026-10-25T01:30:00+00:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-10-24", "2026-10-25", "2026-10-26"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-10-25", "hora": "02:30", "sinZona": false}, "fin": {"fecha": "2026-10-25", "hora": "02:30", "sinZona": false}, "ultimo": "2026-10-25", "incluidos": ["2026-10-25"]},
+      {"zonas": ["Atlantic/Canary"], "inicio": {"fecha": "2026-10-25", "hora": "01:30", "sinZona": false}, "fin": {"fecha": "2026-10-25", "hora": "01:30", "sinZona": false}, "ultimo": "2026-10-25", "incluidos": ["2026-10-25"]},
+      {"zonas": ["UTC"], "inicio": {"fecha": "2026-10-25", "hora": "00:30", "sinZona": false}, "fin": {"fecha": "2026-10-25", "hora": "01:30", "sinZona": false}, "ultimo": "2026-10-25", "incluidos": ["2026-10-25"]}
+    ]
+  },
+  {
+    "id": "medianoche-instantes-exclusiva",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": "18:00", "zona": "Europe/Madrid", "instante": "2026-11-02T18:00:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-03", "hora_local": "00:00", "zona": "Europe/Madrid", "instante": "2026-11-03T00:00:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-11-02", "hora": "18:00", "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": "00:00", "sinZona": false}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]},
+      {"zonas": ["Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": "17:00", "sinZona": false}, "fin": {"fecha": "2026-11-02", "hora": "23:00", "sinZona": false}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "medianoche-instantes-inclusiva",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": "18:00", "zona": "Europe/Madrid", "instante": "2026-11-02T18:00:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-03", "hora_local": "00:00", "zona": "Europe/Madrid", "instante": "2026-11-03T00:00:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-11-02", "hora": "18:00", "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": "00:00", "sinZona": false}, "ultimo": "2026-11-03", "incluidos": ["2026-11-02", "2026-11-03"]},
+      {"zonas": ["Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": "17:00", "sinZona": false}, "fin": {"fecha": "2026-11-02", "hora": "23:00", "sinZona": false}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "segundos-tras-medianoche-local",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": "18:00:00", "zona": null, "instante": null, "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-03", "hora_local": "00:00:30", "zona": null, "instante": null, "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": "18:00", "sinZona": true}, "fin": {"fecha": "2026-11-03", "hora": "00:00", "sinZona": true}, "ultimo": "2026-11-03", "incluidos": ["2026-11-02", "2026-11-03"]}
+    ]
+  },
+  {
+    "id": "segundos-tras-medianoche-instante",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": "18:00", "zona": "Europe/Madrid", "instante": "2026-11-02T18:00:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin": {"fecha": "2026-11-03", "hora_local": "00:00:30", "zona": "Europe/Madrid", "instante": "2026-11-03T00:00:30+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": true,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-11-02", "hora": "18:00", "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": "00:00", "sinZona": false}, "ultimo": "2026-11-03", "incluidos": ["2026-11-02", "2026-11-03"]},
+      {"zonas": ["Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": "17:00", "sinZona": false}, "fin": {"fecha": "2026-11-02", "hora": "23:00", "sinZona": false}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]}
+    ]
+  },
+  {
+    "id": "inicio-desconocido",
+    "cuando": {
+      "inicio": {"fecha": null, "hora_local": null, "zona": null, "instante": null, "precision": "desconocida", "certeza_fecha": "desconocida", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-03", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid", "Atlantic/Canary", "UTC"], "inicio": {"fecha": null, "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": null, "sinZona": false}, "ultimo": "2026-11-03", "incluidos": []}
+    ]
+  },
+  {
+    "id": "inicio-civil-fin-instante",
+    "cuando": {
+      "inicio": {"fecha": "2026-11-02", "hora_local": null, "zona": null, "instante": null, "precision": "fecha", "certeza_fecha": "confirmado", "certeza_hora": "desconocida"},
+      "fin": {"fecha": "2026-11-03", "hora_local": "00:30", "zona": "Europe/Madrid", "instante": "2026-11-03T00:30:00+01:00", "precision": "hora", "certeza_fecha": "confirmado", "certeza_hora": "confirmado"},
+      "fin_exclusivo": false,
+      "horario_textual": null
+    },
+    "valido": true,
+    "dias": ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"],
+    "vistas": [
+      {"zonas": ["Europe/Madrid"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-03", "hora": "00:30", "sinZona": false}, "ultimo": "2026-11-03", "incluidos": ["2026-11-02", "2026-11-03"]},
+      {"zonas": ["Atlantic/Canary", "UTC"], "inicio": {"fecha": "2026-11-02", "hora": null, "sinZona": false}, "fin": {"fecha": "2026-11-02", "hora": "23:30", "sinZona": false}, "ultimo": "2026-11-02", "incluidos": ["2026-11-02"]}
+    ]
+  }
+]

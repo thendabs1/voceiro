@@ -27,6 +27,9 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
   - `descubrir` solo prueba el año actual y el siguiente: una instalación nueva
     en enero no encontraría una liga 2026/27.
   - La lectura SQL lee todas las huellas en cada publicación (hoy, pocas filas).
+  - Fechas: FGA no contrasta la fecha de la ficha con la del listado; la
+    `ventana` federativa se publica aunque el informe no esté completo y el
+    frontal no lo distingue.
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores
 

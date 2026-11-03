@@ -35,6 +35,41 @@ def detalle(**cambios):
 
 
 class Transicion(unittest.TestCase):
+    def test_hora_local_ambigua_o_inexistente_conserva_dia_y_texto(self):
+        for fecha in ('2026-10-25 02:30:00', '2026-03-29 02:30:00'):
+            with self.subTest(fecha=fecha):
+                original = fila(data={'dataInicio': fecha, 'dataFin': fecha})
+                evento, = proyectar(galicia.importar(None, [original], AHORA))['eventos']
+                cuando = evento['programacion']['valor']['cuando']
+                self.assertEqual(cuando['inicio']['fecha'], fecha[:10])
+                self.assertEqual(cuando['inicio']['precision'], 'fecha')
+                self.assertIsNone(cuando['inicio']['hora_local'])
+                self.assertIsNone(cuando['inicio']['instante'])
+                self.assertEqual(cuando['horario_textual'], fecha)
+                self.assertEqual(cuando['fin']['precision'], 'desconocida')
+
+    def test_medianoche_y_fin_igual_conservan_su_tratamiento(self):
+        for fecha, certeza in (('2026-11-03 00:00:00', 'provisional'),
+                              ('2026-11-03 18:00:00', 'confirmado')):
+            with self.subTest(fecha=fecha):
+                r = galicia.normalizar(fila(data={'dataInicio': fecha, 'dataFin': fecha}), 'gl')
+                cuando = galicia.bloques(r)['programacion']['cuando']
+                self.assertEqual(cuando['inicio']['certeza_hora'], certeza)
+                self.assertEqual(cuando['fin']['precision'], 'desconocida')
+                self.assertIsNone(cuando['fin_exclusivo'])
+
+    def test_solo_hora_del_fin_no_resoluble_conserva_su_dia(self):
+        for fecha in ('2026-10-25 02:30:00', '2026-03-29 02:30:00'):
+            with self.subTest(fecha=fecha):
+                datos = {'dataInicio': '2026-03-01 18:00:00', 'dataFin': fecha}
+                r = galicia.normalizar(fila(data=datos, dataOrixinal=datos), 'gl')
+                bloques = galicia.bloques(r)
+                for cuando in (bloques['programacion']['cuando'], bloques['cuando_original']):
+                    self.assertEqual(cuando['inicio']['precision'], 'hora')
+                    self.assertEqual(cuando['fin']['fecha'], fecha[:10])
+                    self.assertEqual(cuando['fin']['precision'], 'fecha')
+                    self.assertIn(fecha, cuando['horario_textual'])
+
     def test_conserva_todas_las_referencias_y_clases_del_piloto(self):
         anterior = ampliar(construir([fila()]))['nucleo']
         cambio = fila(titulo='Un concerto revisado',

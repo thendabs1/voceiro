@@ -116,6 +116,17 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
 const cantidad = html => (html.match(/class="cal-cita"/g) || []).length;
 const secciones = html => (html.match(/<section class="cal-dia[^"]*"/g) || []).length;
 
+test('el rango mostrado descuenta la medianoche y el día civil exclusivos', () => {
+  const c = contexto();
+  for (const fin of [extremo('2026-11-04'), extremo('2026-11-04', '00:00')]){
+    c.evento = { programacion: { valor: { cuando: { inicio: extremo('2026-11-02'), fin, fin_exclusivo: true } } } };
+    c.api.s.zona = 'UTC';
+    assert.equal(runInContext('calRango(evento)', c), '2 nov–3 nov');
+    c.evento.programacion.valor.cuando.fin_exclusivo = false;
+    assert.equal(runInContext('calRango(evento)', c), '2 nov–4 nov');
+  }
+});
+
 test('la lista pide una semana desde hoy con tres muestras; un día abre sus citas de 20 en 20', async () => {
   const c = contexto();
   await c.abrir();
