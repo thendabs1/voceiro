@@ -378,7 +378,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       ...(c.disponibilidad ? { hoy: diaEnZona(new Date(Date.now()), c.zona) } : {}) });
     const revisionPedida = url.searchParams.get('revision');
     if (guardado && (revisionPedida && revisionPedida !== meta.revision || cursor && cursor[0] !== meta.revision)) meta = await leerControl();
-    if (revisionPedida && revisionPedida !== meta.revision || cursor && (cursor[0] !== meta.revision || cursor[1] !== huella)) throw error(409, 'La publicación o la selección cambió; reinicia la consulta');
+    // Con la revisión vigente: el cliente pide su catálogo por ella, sin cachés.
+    if (revisionPedida && revisionPedida !== meta.revision || cursor && (cursor[0] !== meta.revision || cursor[1] !== huella)) throw Object.assign(error(409, 'La publicación o la selección cambió; reinicia la consulta'), { revision: meta.revision });
     if (!c.pendientes && ['/calendario/eventos', '/calendario/resumen'].includes(ruta)
         && (c.desde < meta.desde || c.hasta > meta.hasta)) throw error(422, 'Ventana fuera del horizonte publicado');
     const etag = await firma([meta.revision, huella, url.searchParams.get('cursor') || '']);
@@ -493,6 +494,6 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     return entregar(respuesta);
   } catch (e) {
     if (e.codigo === 429) return respuesta429(e.espera, CORS);
-    return json({ error: e.codigo ? e.message : 'No se pudo consultar el calendario' }, e.codigo || 503);
+    return json({ error: e.codigo ? e.message : 'No se pudo consultar el calendario', ...(e.revision ? { revision: e.revision } : {}) }, e.codigo || 503);
   }
 }

@@ -74,8 +74,9 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
   const panel = { addEventListener: (tipo, fn) => { listeners[tipo] = fn; }, querySelector: () => null, querySelectorAll: () => [] };
   const dialogo = { innerHTML: '', open: false, showModal(){ this.open = true; }, setAttribute(){}, removeAttribute(){},
     addEventListener(){}, querySelector: () => ({ focus(){} }) };
-  const fetch = async url => {
+  const fetch = async (url, opciones = {}) => {
     const u = new URL(url);
+    u.cache = opciones.cache;
     pedidas.push(u);
     const r = await responder(u);
     return r instanceof Response ? r : Response.json(r);
@@ -209,30 +210,50 @@ test('si la publicación cambia entre páginas, se rehacen cuentas y listas: nad
   assert.deepEqual([c.api.s.dias.size, c.api.s.error], [0, '']);
 });
 
-test('una revisión nueva traída por el mes rehace lo cargado de la anterior, sin bucles por la caché', async () => {
-  // Las respuestas pasan 30 s por caché: el catálogo pedido sin revisión sigue
-  // dando r1 (Codex, 3/11/2026: la recarga repetía el cambio hasta un 429).
+test('todas las peticiones llevan la revisión del catálogo; otra publicación recarga por la vigente, sin bucles por la caché', async () => {
+  // Como el worker: otra revisión da 409 con la vigente. El catálogo pedido sin
+  // revisión sale de la caché con r1 (Codex, 3/11/2026: la recarga repetía el
+  // cambio hasta un 429 cuando el cliente deducía la revisión de las respuestas).
   const R1 = { revision: 'r1', generado: '2026-10-25T06:00:00Z' }, R2 = { revision: 'r2', generado: '2026-10-26T06:00:00Z' };
-  let actual = R1, viejo = false;
+  let actual = R1;
   const c = contexto({ responder: u => {
+    const pedida = u.searchParams.get('revision');
+    if (u.pathname === '/calendario/catalogo' && !pedida) return { ...api(u), ...R1 };
+    if (pedida && pedida !== actual.revision) return Response.json({ error: 'cambió', revision: actual.revision }, { status: 409 });
     const d = api(u);
-    if (d instanceof Response) return d;
-    if (u.pathname === '/calendario/catalogo') return { ...d, ...(u.searchParams.get('revision') === 'r2' ? R2 : R1) };
-    return { ...d, ...(viejo ? R1 : actual) };
+    return d instanceof Response ? d : { ...d, ...actual };
   } });
-  const catalogos = () => c.pedidas.filter(u => u.pathname === '/calendario/catalogo').map(u => u.searchParams.get('revision'));
+  const catalogos = () => c.pedidas.filter(u => u.pathname === '/calendario/catalogo' && !u.searchParams.get('disponibilidad'))
+    .map(u => u.searchParams.get('revision'));
   await c.abrir();
   await c.click('ver-dia', '2026-10-25');
   assert.equal(c.api.s.dias.size, 1);
-  // El mes pide su resumen sin `revision`: no hay 409 que avise del cambio.
+  assert.ok(c.pedidas.filter(u => u.pathname !== '/calendario/catalogo').every(u => u.searchParams.get('revision') === 'r1'));
+  // Se publica r2: el mes, con r1, recibe 409 y la vigente.
   actual = R2;
+  const antes = c.pedidas.length;
   await c.click('mes'); await esperar();
-  assert.deepEqual(catalogos(), [null, 'r2'], 'una sola recarga, con el catálogo de la revisión vista');
+  assert.deepEqual(catalogos(), [null, 'r2'], 'una sola recarga, con el catálogo de la vigente');
   assert.deepEqual([c.api.s.meta.revision, c.api.s.dias.size, c.api.s.error], ['r2', 0, '']);
-  // Una respuesta vieja de la caché no retrocede ni recarga.
-  viejo = true;
+  const despues = c.pedidas.slice(antes).filter(u => u.pathname !== '/calendario/catalogo');
+  assert.ok(despues.some(u => u.searchParams.get('revision') === 'r2'), 'vuelve a pedir lo que se ve');
+  assert.ok(c.pedidas.length - antes < 10, 'sin bucle');
+  // Un 409 tardío de la revisión anterior no recarga otra vez.
   await c.click('mes'); await c.click('mes'); await esperar();
-  assert.deepEqual([catalogos().length, c.api.s.meta.revision], [2, 'r2']);
+  assert.equal(catalogos().length, 2);
+});
+
+test('un 409 sin la vigente (worker anterior) recarga una vez sin caché y después avisa', async () => {
+  let fallar = false;
+  const c = contexto({ responder: u => fallar && u.pathname === '/calendario/resumen'
+    ? Response.json({ error: 'cambió' }, { status: 409 }) : api(u) });
+  await c.abrir();
+  fallar = true;
+  await c.click('renovar'); await esperar();
+  const catalogos = c.pedidas.filter(u => u.pathname === '/calendario/catalogo');
+  assert.deepEqual(catalogos.slice(-2).map(u => u.cache), ['reload', 'reload']);
+  assert.equal(catalogos.length, 3, 'abrir, «Actualizar» y una sola recarga por el 409');
+  assert.equal(c.api.s.error, 'calError');
 });
 
 test('tira: la semana con puntos por categoría y el pasado atenuado; se despliega en mes', async () => {

@@ -237,7 +237,10 @@ test('cursor de otra selección y publicación nueva se rechazan; detalle acotad
   b.meta.revision = 'revision-2';
   b.db.prepare('UPDATE agenda_lectura_control SET datos_json=?').run(JSON.stringify(b.meta));
   assert.equal((await b.pedir(ventana + '&cursor=' + a.dato.siguiente)).status, 409);
-  assert.equal((await b.pedir('/calendario/eventos/000?revision=revision-1')).status, 409);
+  const cambio = await b.pedir('/calendario/eventos/000?revision=revision-1');
+  // El 409 dice la vigente: el cliente pide su catálogo por ella, sin cachés.
+  assert.deepEqual([cambio.status, cambio.dato.revision], [409, 'revision-2']);
+  assert.equal((await b.pedir('/calendario/catalogo?revision=revision-2')).dato.revision, 'revision-2');
   const d = await b.pedir('/calendario/eventos/000');
   assert.equal(d.status, 200); assert.deepEqual(Object.keys(d.dato.entidades), ['evento:000']);
   assert.equal((await b.pedir('/calendario/eventos/ausente')).status, 404);
