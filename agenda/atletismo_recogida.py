@@ -542,15 +542,21 @@ def nivel_ii(n, inicio, fin):
     fechas = {f['huella']: f['fila']['fecha'] for f in inventario['filas']}
     pendientes = [p for p in resultado['pendientes'] if inicio <= p['fila']['fecha'] <= fin]
     incidencias = [i for i in resultado['incidencias'] if inicio <= fechas[i['huella']] <= fin]
+    # Una revisión sin fechas cuenta siempre; con fechas, solo si toca la ventana.
+    por_id = {v['id']: v for v in revisiones['revisiones']}
+    no_aplicadas = [i for i in resultado['revisiones_no_aplicadas']
+                    if not por_id.get(i, {}).get('inicio')
+                    or por_id[i]['inicio'] <= fin and por_id[i].get('fin', por_id[i]['inicio']) >= inicio]
     # Una ventana a caballo de dos años no está completa con el documento de uno.
     sin_documento = sorted({inicio[:4], fin[:4]} - {inventario['temporada']})
     return resultado['entrada'], {'temporada': inventario['temporada'], 'actualizado': inventario['actualizado'],
         'filas': len(inventario['filas']), 'temporadas_sin_documento': sin_documento,
-        'completo': not pendientes and not resultado['revisiones_no_aplicadas'] and not sin_documento,
+        'completo': not pendientes and not no_aplicadas and not sin_documento,
         'citas_ventana': len(resultado['entrada']['eventos']),
         'pendientes': pendientes, 'incidencias': incidencias,
         'pendientes_fuera_ventana': len(resultado['pendientes']) - len(pendientes),
-        'revisiones_no_aplicadas': resultado['revisiones_no_aplicadas']}
+        'revisiones_no_aplicadas': no_aplicadas,
+        'revisiones_no_aplicadas_fuera_ventana': len(resultado['revisiones_no_aplicadas']) - len(no_aplicadas)}
 
 
 def main(argv=None):

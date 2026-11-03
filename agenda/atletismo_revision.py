@@ -1,5 +1,6 @@
 """Revisiones de coincidencias y envío explícito de incidencias a GitHub."""
 import argparse
+from hashlib import sha256
 import json
 from pathlib import Path
 import re
@@ -12,20 +13,36 @@ def marcador(clave):
     return '<!-- voceiro:atletismo:' + clave + ' -->'
 
 
+def sede(e):
+    sitio = e.get('lugar') or {}
+    return sitio.get('municipio_literal') or sitio.get('city') or sitio.get('nombre') or 'sin dato'
+
+
+def huella(caso):
+    """Datos comparados del par: si cambian, el caso vuelve a revisión."""
+    datos = {'motivo': caso['motivo'], 'citas': [
+        {k: e.get(k) for k in ('fuente', 'id', 'nombre', 'inicio', 'fin', 'url')} | {'sede': sede(e)}
+        for e in caso['citas']]}
+    return sha256(json.dumps(datos, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:24]
+
+
+def marcador_huella(valor):
+    return '<!-- voceiro:atletismo-huella:' + valor + ' -->'
+
+
 def cuerpo(caso):
-    lineas = [marcador(caso['clave']),
+    lineas = [marcador(caso['clave']), marcador_huella(huella(caso)),
               'La comparación automática solicita revisar estas referencias de atletismo.',
               '', 'Motivo: ' + caso['motivo'], '']
     for e in caso['citas']:
-        sitio = e.get('lugar') or {}
         lineas += [f"- Fuente e ID: {e['fuente']} / {e['id']}",
                    f"  Nombre: {e['nombre']}", f"  Fechas: {e['inicio']} — {e['fin']}",
-                   '  Sede: ' + (sitio.get('municipio_literal') or sitio.get('city') or sitio.get('nombre') or 'sin dato'),
+                   '  Sede: ' + sede(e),
                    '  Ficha: ' + (e.get('url') or 'sin enlace'), '']
     lineas += ['Comparación:', '```json', json.dumps(caso['comparacion'], ensure_ascii=False, indent=2), '```', '',
                'Decidir si es la misma cita, citas distintas o una relación entre conjunto y partes. '
                'Registrar la decisión en las correspondencias de atletismo o conciliar las identidades existentes. '
-               'Cerrar este issue no fusiona datos ni borra observaciones.']
+               'Cerrar este issue no fusiona datos ni borra observaciones; si cambian los datos comparados, se reabre.']
     return '\n'.join(lineas)
 
 
@@ -37,7 +54,8 @@ def _gh(argumentos, entrada=None):
 def enviar(casos, repo, limite=5):
     """Un issue por par estable de IDs, incluidos los casos ya cerrados.
 
-    Usa listado paginado, no el buscador de GitHub (puede tardar en indexar).
+    Si cambian los datos comparados, se reescribe el cuerpo y un issue cerrado
+    se reabre; uno anterior sin huella solo la recibe. Usa listado paginado, no el buscador de GitHub (puede tardar en indexar).
     Una escritura con resultado incierto falla sin reintentar; la siguiente
     pasada vuelve a consultar los issues antes de enviar nada.
     """
@@ -52,24 +70,38 @@ def enviar(casos, repo, limite=5):
         for issue in pagina:
             if 'pull_request' in issue:
                 continue
-            for clave in re.findall(r'<!-- voceiro:atletismo:([a-f0-9]{24}) -->', issue.get('body') or ''):
-                existentes[clave] = issue['html_url']
-    creados, reutilizados, pendientes = [], [], 0
+            texto = issue.get('body') or ''
+            previa = re.search(r'<!-- voceiro:atletismo-huella:([a-f0-9]{24}) -->', texto)
+            for clave in re.findall(r'<!-- voceiro:atletismo:([a-f0-9]{24}) -->', texto):
+                existentes[clave] = {'url': issue['html_url'], 'numero': issue.get('number'),
+                                     'cerrado': issue.get('state') == 'closed', 'huella': previa and previa[1]}
+    creados, reutilizados, reabiertos, pendientes, escrituras = [], [], [], 0, 0
     for caso in casos:
         clave = caso['clave']
-        if clave in existentes:
-            reutilizados.append(existentes[clave])
-        elif len(creados) >= limite:
+        if clave in existentes and existentes[clave]['huella'] == huella(caso):
+            reutilizados.append(existentes[clave]['url'])
+        elif escrituras >= limite:
             pendientes += 1
+        elif clave in existentes:
+            e, datos = existentes[clave], {'body': cuerpo(caso)}
+            if e['huella'] and e['cerrado']:
+                datos['state'] = 'open'
+            _gh(['api', '--method', 'PATCH', f"repos/{repo}/issues/{int(e['numero'])}", '--input', '-'],
+                json.dumps(datos, ensure_ascii=False))
+            (reabiertos if 'state' in datos else reutilizados).append(e['url'])
+            existentes[clave] = {**e, 'huella': huella(caso), 'cerrado': e['cerrado'] and 'state' not in datos}
+            escrituras += 1
         else:
             # JSON por stdin y argumentos separados: ningún texto de las fuentes
             # se interpreta como shell, opciones de gh o plantilla de comandos.
             titulo = 'Atletismo: revisar coincidencia — ' + re.sub(r'\s+', ' ', caso['citas'][0]['nombre'])[:140]
             respuesta = json.loads(_gh(['api', '--method', 'POST', f'repos/{repo}/issues', '--input', '-'],
                                       json.dumps({'title': titulo, 'body': cuerpo(caso)}, ensure_ascii=False)))
-            existentes[clave] = respuesta['html_url']
+            existentes[clave] = {'url': respuesta['html_url'], 'numero': respuesta.get('number'),
+                                 'cerrado': False, 'huella': huella(caso)}
             creados.append(respuesta['html_url'])
-    return {'creados': creados, 'existentes': reutilizados, 'pendientes': pendientes}
+            escrituras += 1
+    return {'creados': creados, 'existentes': reutilizados, 'reabiertos': reabiertos, 'pendientes': pendientes}
 
 
 def main(argv=None):

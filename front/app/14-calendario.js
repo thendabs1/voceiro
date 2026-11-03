@@ -625,6 +625,20 @@ function calInscripcionesAtletismo(e){
     <p>${calEsc(inscripcion.plazo_textual || '')}</p>
     ${(inscripcion.enlaces || []).map(a => `<p>${calEnlace(a.url, a.nombre)}</p>`).join('')}`).join('')}</section>`;
 }
+// Fechas en conflicto: las de cada federación, agrupadas, sin elegir ninguna.
+function calFechasAtletismo(e){
+  if (!e.programacion?.conflicto) return '';
+  const fechas = new Map();
+  for (const v of e.atletismo?.variantes || []){
+    if (!v.programacion) continue;
+    const texto = calHora({ programacion: { valor: v.programacion } });
+    if (!fechas.has(texto)) fechas.set(texto, new Set());
+    const fuente = v.procedencia?.fuente;
+    if (fuente) fechas.get(texto).add(CALENDARIO.meta?.fuentes?.[fuente]?.nombre || fuente);
+  }
+  return fechas.size > 1 ? [...fechas].map(([texto, fuentes]) =>
+    `<p class="cal-nota">${calEsc([...fuentes].join(' · '))}: ${calEsc(texto)}</p>`).join('') : '';
+}
 function calEventoCuerpo(e, lugarVisto = ''){
   const v = e.programacion?.valor, estado = v?.programacion;
   // Atletismo: cada federación describe la sede a su manera; solo avisan las fechas.
@@ -639,6 +653,7 @@ function calEventoCuerpo(e, lugarVisto = ''){
     ${avisoEstado}
     ${ejecucion === 'en_curso' || ejecucion === 'terminado' ? `<p class="cal-nota">${calEsc(t(ejecucion === 'en_curso' ? 'calEnCurso' : 'calTerminado'))}</p>` : ''}
     ${aviso ? `<p class="cal-aviso">${calEsc(t('calConflicto'))}</p>` : ''}
+    ${calFechasAtletismo(e)}
     ${calInscripcionesAtletismo(e)}
     ${e.programa?.length ? `<section class="cal-programa"><h4>${calEsc(t('calPrograma'))}</h4><ul>${e.programa.map(p => {
       const anulada = calEstadoAnulado(p.programacion?.valor?.programacion);

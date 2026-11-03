@@ -210,15 +210,38 @@ class Issues(unittest.TestCase):
 
     def test_issues_paginados_abiertos_y_cerrados_se_reutilizan(self):
         paginas = [[{'html_url': 'https://github.com/issue/1', 'state': 'closed',
-                     'body': revision.marcador('a' * 24)}],
+                     'body': revision.cuerpo(self.caso())}],
                    [{'html_url': 'https://github.com/issue/2', 'state': 'open',
-                     'body': revision.marcador('b' * 24)}]]
+                     'body': revision.cuerpo(self.caso('b' * 24))}]]
         with patch.object(revision, '_gh', return_value=json.dumps(paginas)) as gh:
             r = revision.enviar([self.caso(), self.caso('b' * 24)], 'thendabs1/voceiro')
             self.assertEqual(len(r['existentes']), 2)
             self.assertEqual(r['creados'], [])
             self.assertEqual(gh.call_count, 1)
             self.assertIn('--paginate', gh.call_args.args[0])
+
+    def test_un_cambio_en_los_datos_reabre_el_issue_cerrado(self):
+        anterior = self.caso()
+        cambiado = self.caso()
+        cambiado['citas'][0] = {**cambiado['citas'][0], 'fin': '2026-12-06'}
+        self.assertNotEqual(revision.huella(anterior), revision.huella(cambiado))
+        paginas = [[{'html_url': 'https://github.com/issue/1', 'number': 1, 'state': 'closed',
+                     'body': revision.cuerpo(anterior)}]]
+        with patch.object(revision, '_gh', side_effect=[json.dumps(paginas), '{}']) as gh:
+            r = revision.enviar([cambiado, cambiado], 'thendabs1/voceiro')
+        self.assertEqual((r['reabiertos'], r['existentes']), (['https://github.com/issue/1'], ['https://github.com/issue/1']))
+        argumentos, datos = gh.call_args.args
+        self.assertEqual(argumentos[:4], ['api', '--method', 'PATCH', 'repos/thendabs1/voceiro/issues/1'])
+        self.assertEqual(json.loads(datos)['state'], 'open')
+        self.assertIn(revision.marcador_huella(revision.huella(cambiado)), json.loads(datos)['body'])
+
+    def test_issue_anterior_sin_huella_la_recibe_sin_reabrirse(self):
+        paginas = [[{'html_url': 'https://github.com/issue/1', 'number': 1, 'state': 'closed',
+                     'body': revision.marcador('a' * 24)}]]
+        with patch.object(revision, '_gh', side_effect=[json.dumps(paginas), '{}']) as gh:
+            r = revision.enviar([self.caso()], 'thendabs1/voceiro')
+        self.assertEqual((r['reabiertos'], r['existentes']), ([], ['https://github.com/issue/1']))
+        self.assertNotIn('state', json.loads(gh.call_args.args[1]))
 
     def test_envio_estructurado_limite_y_repeticion_del_mismo_par(self):
         caso = self.caso()
