@@ -37,6 +37,15 @@ export function extremoVisible(e, zona){
   return { fecha: e.fecha, hora: e.certeza_hora === 'confirmado' ? e.hora_local?.slice(0, 5) || null : null,
     sinZona: Boolean(e.hora_local && !e.zona && !e.instante) };
 }
+// El extremo visible conserva la zona elegida; solo la medianoche exacta resta un día.
+export function ultimoDiaIncluido(cuando, fin){
+  if (!fin.fecha) return null;
+  if (!cuando.fin_exclusivo || (fin.hora && fin.hora !== '00:00')) return fin.fecha;
+  const e = cuando.fin;
+  const sinSegundos = e.instante && e.certeza_hora === 'confirmado'
+    ? new Date(e.instante).getTime() % 60000 === 0 : !/[1-9]/.test(e.hora_local?.slice(5) || '');
+  return !fin.hora || sinSegundos ? sumarDiasCalendario(fin.fecha, -1) : fin.fecha;
+}
 export function enDia(cuando, dia, zona){
   if (!cuando) return false;
   return enDiaVisible(cuando, dia, extremoVisible(cuando.inicio, zona), extremoVisible(cuando.fin, zona));
@@ -46,9 +55,7 @@ function enDiaVisible(cuando, dia, a, b, semana){
   if (cuando.dias_semana && !cuando.dias_semana.includes(semana ?? (new Date(dia + 'T12:00:00Z').getUTCDay() + 6) % 7)) return false;
   if (!a.fecha || a.fecha > dia) return false;
   if (!b.fecha) return a.fecha === dia;
-  // Un fin a medianoche es el límite del día, no parte de él.
-  if (cuando.fin_exclusivo && b.fecha === dia && (!b.hora || b.hora === '00:00')) return false;
-  return b.fecha >= dia;
+  return ultimoDiaIncluido(cuando, b) >= dia;
 }
 export function programacionesCalendario(evento){
   return [evento.programacion?.valor?.cuando,
@@ -66,8 +73,7 @@ export function presentacionCalendario(evento, zona){
   if (valor?.modalidad === 'intervalo' || evento.clase === 'actividad_continua') return 'prolongada';
   const a = extremoVisible(valor?.cuando?.inicio, zona), b = extremoVisible(valor?.cuando?.fin, zona);
   if (!a.fecha || !b.fecha) return 'cita';
-  // Un fin a medianoche es el límite del día, no un día más.
-  const ultimo = valor.cuando.fin_exclusivo && (!b.hora || b.hora === '00:00') ? sumarDiasCalendario(b.fecha, -1) : b.fecha;
+  const ultimo = ultimoDiaIncluido(valor.cuando, b);
   return ultimo > a.fecha ? 'prolongada' : 'cita';
 }
 // Resolver los extremos una vez por evento y ordenar antes de agrupar.

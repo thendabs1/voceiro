@@ -127,7 +127,9 @@ class Fechas(unittest.TestCase):
                              ('2026-03-29 02:30:00', 'hora_local_inexistente')]:
             with self.subTest(fecha=fecha):
                 registro = normalizar(ficha(data={'dataInicio': fecha}), 'gl')
-                self.assertIsNone(registro['datos']['cuando']['inicio'])
+                self.assertEqual(registro['datos']['cuando']['inicio'], fecha[:10])
+                self.assertEqual(registro['datos']['cuando']['precision'], 'dia')
+                self.assertEqual(registro['datos']['cuando']['horario_textual'], fecha)
                 self.assertIn(aviso, registro['datos']['cuando']['avisos'])
                 self.assertEqual(registro['original']['data']['dataInicio'], fecha)
 

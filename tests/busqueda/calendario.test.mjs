@@ -1,11 +1,31 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AMBITOS, leerConsultaCalendario, seleccionCalendario, noticiaEnAmbitos } from '../../shared/calendario/consulta.js';
-import { extremoVisible, enDia, agruparPorDiaCalendario, ventanaCalendario, moverFecha } from '../../shared/calendario/fechas.js';
+import { extremoVisible, enDia, agruparPorDiaCalendario, ventanaCalendario, moverFecha, ultimoDiaIncluido, presentacionCalendario } from '../../shared/calendario/fechas.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 
 const orden = leerConsultaCalendario;
+const casosTemporales = JSON.parse(readFileSync(new URL('../casos_temporales.json', import.meta.url), 'utf8'));
+for (const caso of casosTemporales.filter(c => c.valido)){
+  test('fechas compartidas con Python: ' + caso.id, () => {
+    const cuando = structuredClone(caso.cuando), evento = { id: caso.id, programacion: { valor: { cuando } } };
+    for (const vista of caso.vistas) for (const zona of vista.zonas){
+      assert.deepEqual(extremoVisible(cuando.inicio, zona), vista.inicio, zona);
+      const fin = extremoVisible(cuando.fin, zona);
+      assert.deepEqual(fin, vista.fin, zona);
+      assert.equal(ultimoDiaIncluido(cuando, fin), vista.ultimo, zona);
+      assert.equal(presentacionCalendario(evento, zona), vista.inicio.fecha && vista.ultimo > vista.inicio.fecha ? 'prolongada' : 'cita', zona);
+      const grupos = agruparPorDiaCalendario([evento], caso.dias, zona);
+      for (const dia of caso.dias){
+        const esperado = vista.incluidos.includes(dia);
+        assert.equal(enDia(cuando, dia, zona), esperado, zona + ' ' + dia);
+        assert.deepEqual(grupos.get(dia), esperado ? [evento] : [], zona + ' ' + dia);
+      }
+    }
+    assert.deepEqual(cuando, caso.cuando);
+  });
+}
 const e = (id, temas, codigos = [], objetivos = []) => ({ id, tipo: codigos.length ? 'agrupacion' : 'evento',
   nombres: { es: id }, temas, codigos, objetivos });
 const atp = e('a', ['tenis'], ['atp'], ['agrupacion:a']);

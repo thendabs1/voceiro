@@ -879,7 +879,8 @@ function calDiaLista(d){
 const calVentanaCartel = dias => dias.length ? dias[0].dia + '~' + sumarDiasCalendario(dias.at(-1).dia, 1) : '';
 // Fechas de un evento de varios días: «24 oct.–1 nov.».
 function calRango(e){
-  const v = e.programacion?.valor?.cuando, a = extremoVisible(v?.inicio, CALENDARIO.zona).fecha, b = extremoVisible(v?.fin, CALENDARIO.zona).fecha;
+  const v = e.programacion?.valor?.cuando, a = extremoVisible(v?.inicio, CALENDARIO.zona).fecha,
+    b = ultimoDiaIncluido(v, extremoVisible(v?.fin, CALENDARIO.zona));
   return a ? calFecha(a) + (b && b !== a ? '–' + calFecha(b) : '') : t('calFechaPendiente');
 }
 // En Deportes, torneos en curso (calendario de ESPN): una fila por torneo con

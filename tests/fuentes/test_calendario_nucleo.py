@@ -238,6 +238,27 @@ class Contrato(unittest.TestCase):
 
 
 class Tiempo(unittest.TestCase):
+    def test_casos_temporales_compartidos_con_js(self):
+        casos = json.loads((Path(__file__).parents[1] / 'casos_temporales.json').read_text())
+        for caso in casos:
+            with self.subTest(caso=caso['id']):
+                cuando = deepcopy(caso['cuando'])
+                if not caso['valido']:
+                    with self.assertRaises(ValueError):
+                        tiempos.validar(cuando)
+                    continue
+                tiempos.validar(cuando)
+                for vista in caso['vistas']:
+                    for zona in vista['zonas']:
+                        # Todas las ventanas posibles, incluidas las que cruzan días excluidos.
+                        dias = caso['dias']
+                        for i, inicio in enumerate(dias):
+                            for fin in dias[i + 1:]:
+                                esperado = any(inicio <= d < fin for d in vista['incluidos'])
+                                with self.subTest(zona=zona, inicio=inicio, fin=fin):
+                                    self.assertEqual(tiempos.en_intervalo(cuando, inicio, fin, zona), esperado)
+                self.assertEqual(cuando, caso['cuando'])
+
     def test_dias_exclusivos_y_fin_desconocido(self):
         c = {'inicio': tiempos.extremo('2026-10-24'), 'fin': tiempos.extremo('2026-10-26'),
              'fin_exclusivo': True, 'horario_textual': None}

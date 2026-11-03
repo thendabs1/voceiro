@@ -45,16 +45,13 @@ def _fecha(valor):
     local = datetime.fromisoformat(valor)
     if local.tzinfo:
         return local.isoformat(), 'hora', []
-    variantes = []
-    for fold in (0, 1):
-        candidata = local.replace(tzinfo=ZONA, fold=fold)
-        vuelta = candidata.astimezone(timezone.utc).astimezone(ZONA)
-        if vuelta.replace(tzinfo=None) == local and candidata.isoformat() not in variantes:
-            variantes.append(candidata.isoformat())
-    if len(variantes) != 1:
-        return None, 'desconocida', ['hora_local_ambigua' if variantes else 'hora_local_inexistente']
+    e = tiempos.hora_local(local.date().isoformat(), local.time().isoformat(), 'Europe/Madrid')
+    if e is None:
+        vuelta = local.replace(tzinfo=ZONA).astimezone(timezone.utc).astimezone(ZONA)
+        aviso = 'hora_local_ambigua' if vuelta.replace(tzinfo=None) == local else 'hora_local_inexistente'
+        return local.date().isoformat(), 'dia', [aviso]
     avisos = ['hora_cero_sin_confirmar'] if local.time().isoformat() == '00:00:00' else []
-    return variantes[0], 'hora', avisos
+    return e['instante'], 'hora', avisos
 
 
 def _cuando(datos):
@@ -66,6 +63,9 @@ def _cuando(datos):
         fin = None
     return {'inicio': inicio, 'fin': fin, 'precision': precision,
             'zona': 'Europe/Madrid', 'fin_exclusivo': None,
+            'horario_textual': ' – '.join(dict.fromkeys(v for v in (
+                datos.get('dataInicio'), datos.get('dataFin')) if v))
+                if any(a in avisos for a in ('hora_local_ambigua', 'hora_local_inexistente')) else None,
             'avisos': sorted(set(avisos))}
 
 
@@ -253,15 +253,28 @@ def recoger_ventana(inicio, fin, descargar, conocidos=()):
 
 def bloques(registro):
     """Evidencia común para la transición guardada y las recogidas nativas."""
+    def convertir(datos, legado):
+        cuando = tiempos.desde_legado(legado)
+        if legado.get('horario_textual'):
+            # El legado descarta fines de distinta precisión; v2 conserva su día
+            # cuando solo la hora del extremo resulta ambigua o inexistente.
+            for campo, origen in (('inicio', 'dataInicio'), ('fin', 'dataFin')):
+                fecha, precision, avisos = _fecha((datos or {}).get(origen))
+                if precision == 'dia' and avisos:
+                    cuando[campo] = tiempos.extremo(fecha)
+            if cuando['inicio'] == cuando['fin']:
+                cuando['fin'] = tiempos.extremo()
+        return tiempos.validar(cuando)
+
     d, original = registro['datos'], registro['original']
-    programacion = {'cuando': tiempos.desde_legado(d['cuando']),
+    programacion = {'cuando': convertir(original.get('data'), d['cuando']),
         'programacion': d['estado'], 'ejecucion': 'desconocido',
         'estado_original': d['estado']}
     salida = {'programacion': programacion, 'lugar': d['lugar'],
         'url_evento': registro.get('url'), 'tipo_original': original.get('tipoEvento'),
         'origen': {k: original[k] for k in ('tipoPublico', 'tipoEntrada', 'eventoOnline') if k in original}}
     if d.get('cuando_original'):
-        salida['cuando_original'] = tiempos.desde_legado(d['cuando_original'])
+        salida['cuando_original'] = convertir(original.get('dataOrixinal'), d['cuando_original'])
     etiquetas = [{'id': i, 'nombres': g['nombres']} for i, g in sorted(registro['grupos'].items())
                  if g['tipo'] == 'ciclo']
     if etiquetas:

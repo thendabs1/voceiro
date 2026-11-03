@@ -75,7 +75,7 @@ Reglas que no hay que romper:
 - **Traducciones:** títulos por idioma en el mismo evento; las equivalencias
   vienen declaradas por la fuente.
 - **Tiempo:** cada extremo con fecha civil, instante con offset si consta,
-  zona, precisión (`dia`, `hora`, `desconocida`) y certeza. No se fabrican
+  zona, precisión (`fecha`, `hora`, `desconocida`) y certeza. No se fabrican
   medianoches, duraciones ni zonas; el fin exclusivo de ICS se conserva.
 - **Programación:** nueva fecha, aplazamiento y cancelación solo si la
   fuente los declara. Desaparecer de una respuesta no cancela ni borra.
@@ -88,8 +88,9 @@ Reglas que no hay que romper:
   se vuelve a pedir. Referencias y entidades no se borran nunca. El núcleo se
   carga de Turso por páginas (ninguna respuesta crece con el total).
 - **Selección entre fuentes, por bloque** (horario, sede, programación):
-  corrección editorial > referencia preferida por política > última
-  observación válida > conflicto sin resolver.
+  coincidencia entre observaciones vigentes o política explícita (corrección
+  editorial o referencia preferida). Ante discrepancia sin política que la
+  resuelva, se marca conflicto y se conserva la selección anterior.
 - **Territorio:** municipio por código INE acreditado. El dominio de la
   fuente, el domicilio de un equipo o el país de una competición no sitúan
   una cita. Una cita sin lugar sigue siendo importable.
