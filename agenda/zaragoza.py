@@ -24,8 +24,13 @@ DIAS = {'Lunes': 0, 'Martes': 1, 'Miércoles': 2, 'Jueves': 3, 'Viernes': 4, 'S�
 
 
 def inventario(filas):
-    """La presencia se acredita por función: una obra puede perder una sesión."""
-    return sorted(str(s['id']) for f in filas for s in f.get('subEvent') or [])
+    """La presencia se acredita por función: una obra puede perder una sesión.
+
+    Una función sin `startDate` no es una cita (importar la omite); si siguiera
+    en el inventario, una conocida que pierde la fecha seguiría publicada con
+    la anterior.
+    """
+    return sorted(str(s['id']) for f in filas for s in f.get('subEvent') or [] if s.get('startDate'))
 
 
 def coordenadas(lugar):

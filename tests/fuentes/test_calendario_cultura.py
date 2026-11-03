@@ -255,7 +255,8 @@ class Paginacion(unittest.TestCase):
         for segunda in ({'totalItems': 2, 'currentPage': 2, 'items': [fila]},
                         {'totalItems': 3, 'currentPage': 2, 'items': []},
                         {'totalItems': 2, 'currentPage': 2, 'items': []}):
-            with patch('agenda.recogida.descargar', side_effect=[json.dumps(primera), json.dumps(segunda)]):
+            # El cambio de total se relee una vez: la relectura vuelve a cambiar.
+            with patch('agenda.recogida.descargar', side_effect=[json.dumps(primera), json.dumps(segunda)] * 2):
                 with self.assertRaises(ValueError):
                     recogida.cultura('kulturklik')
 

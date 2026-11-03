@@ -70,9 +70,15 @@ class CastillaLeon(unittest.TestCase):
         self.assertIn('offset=0', pedida)
         self.assertEqual(ids, cyl.inventario(filas))
         self.assertEqual(len(seleccion), 3)  # León el 27 y las dos exposiciones en curso.
-        with patch('agenda.recogida.descargar', side_effect=[pagina(filas[:4], 7), pagina(filas[4:], 8)]):
+        # Un total que cambia a mitad se relee entero una vez; dos veces, falla.
+        with patch('agenda.recogida.descargar', side_effect=[pagina(filas[:4], 7), pagina(filas[4:], 8),
+                                                             pagina(filas[:4], 8), pagina(filas[4:], 7)]):
             with self.assertRaisesRegex(ValueError, 'El total cambió'):
                 recogida.cultura('cyl')
+        with patch('agenda.recogida.descargar', side_effect=[pagina(filas[:4], 7), pagina(filas[4:], 8),
+                                                             pagina(filas, len(filas))]) as descargar:
+            self.assertEqual(recogida.cultura('cyl')[2], cyl.inventario(filas))
+        self.assertEqual(descargar.call_count, 3)
         with patch('agenda.recogida.descargar', return_value=pagina([filas[0], filas[0]], 2)):
             with self.assertRaisesRegex(ValueError, 'Identidad repetida'):
                 recogida.cultura('cyl')
