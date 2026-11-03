@@ -9,7 +9,6 @@ el Centro Cultural…») o un ciclo, y su título queda en la evidencia.
 from datetime import date, datetime
 import math
 from urllib.parse import parse_qs, urlsplit
-from zoneinfo import ZoneInfo
 
 from . import nucleo, tiempos
 
@@ -64,14 +63,10 @@ def programacion(fila):
               'fin_exclusivo': False if fin else None, 'horario_textual': hora or None}
     if hora and not larga and (not fin or fin == inicio):
         try:
-            extremo = tiempos.extremo(inicio, datetime.strptime(hora, '%H:%M').strftime('%H:%M'), 'Europe/Madrid')
-            tiempos.validar_extremo(extremo)
+            h = datetime.strptime(hora, '%H:%M').strftime('%H:%M')
         except ValueError:
-            pass  # Un horario textual/ambiguo no se convierte en hora confirmada.
-        else:
-            extremo['instante'] = datetime.fromisoformat(inicio + 'T' + extremo['hora_local']).replace(
-                tzinfo=ZoneInfo('Europe/Madrid')).isoformat()
-            cuando['inicio'] = extremo
+            h = None  # Un horario textual no se convierte en hora confirmada.
+        cuando['inicio'] = (h and tiempos.hora_local(inicio, h, 'Europe/Madrid')) or cuando['inicio']
     dias = (fila.get('DIAS-SEMANA') or '').strip()
     if larga and dias:
         tokens = [d.strip() for d in dias.split(',')]

@@ -9,7 +9,6 @@ las deja sin tema salvo lo que acredita su tabla (tablas/zaragoza.json).
 
 from datetime import date, datetime
 import math
-from zoneinfo import ZoneInfo
 
 from . import nucleo, tiempos
 
@@ -56,15 +55,10 @@ def programacion(funcion, obra):
               'fin_exclusivo': False, 'horario_textual': texto or None}
     if inicio == fin and len(horas) == 1:
         try:
-            extremo = tiempos.extremo(inicio, datetime.strptime(horas[0]['startTime'], '%H:%M').strftime('%H:%M'),
-                                      'Europe/Madrid')
-            tiempos.validar_extremo(extremo)
+            h = datetime.strptime(horas[0]['startTime'], '%H:%M').strftime('%H:%M')
         except ValueError:
-            pass  # Una hora ilegible queda solo en el texto.
-        else:
-            extremo['instante'] = datetime.fromisoformat(inicio + 'T' + extremo['hora_local']).replace(
-                tzinfo=ZoneInfo('Europe/Madrid')).isoformat()
-            cuando['inicio'] = extremo
+            h = None  # Una hora ilegible queda solo en el texto.
+        cuando['inicio'] = (h and tiempos.hora_local(inicio, h, 'Europe/Madrid')) or cuando['inicio']
     dias = [h.get('dayOfWeek') for h in horas]
     if any(d not in DIAS and d != 'Sin determinar' for d in dias):
         raise ValueError('Día de semana Zaragoza desconocido')
