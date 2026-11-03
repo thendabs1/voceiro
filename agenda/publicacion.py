@@ -321,7 +321,8 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                            'objetivos': sorted(set(ascendientes(k)) | participantes_tabla)})
     # Los temas de las tablas pueden ser más nuevos que el catálogo del núcleo.
     catalogo = max(n['catalogo'], cargar_catalogo(), key=lambda c: c['version'])
-    campos_fuente = ('nombre', 'url', 'atribucion', 'licencia', 'licencia_url', 'condiciones', 'capacidades', 'modo')
+    campos_fuente = ('nombre', 'url', 'atribucion', 'licencia', 'licencia_url', 'condiciones', 'capacidades', 'modo',
+                     'ventana')
     salida = {'version': 1, 'nucleo_version': 2,
         'generado': generado or datetime.now(timezone.utc).isoformat(timespec='seconds'),
         'revision': fuentes is None,

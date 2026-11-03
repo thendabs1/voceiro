@@ -1,11 +1,14 @@
 """Transición de Galicia: IDs del piloto, gallego y evidencia de los filtros."""
 
+from contextlib import redirect_stdout
 from copy import deepcopy
+import io
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
 
 from agenda import almacen, almacen_nucleo, clasificador, cultura_galicia as galicia, nucleo, presencia, recogida
@@ -22,6 +25,13 @@ def fila(**cambios):
                  tipoPublico=[{'tid': 29, 'nome': 'Público infantil'}],
                  tipoEntrada=[{'tid': 71, 'nome': 'Entrada de balde'},
                               {'tid': 120, 'nome': 'Inscrición previa'}], **cambios)
+
+
+def detalle(**cambios):
+    muestra = Path(__file__).with_name('muestras_calendario') / 'galicia-detalle.json'
+    respuesta = json.loads(muestra.read_text())
+    respuesta['evento'].update(cambios)
+    return respuesta
 
 
 class Transicion(unittest.TestCase):
@@ -107,11 +117,145 @@ class Recogida(unittest.TestCase):
         with patch('agenda.recogida.descargar', return_value=json.dumps(
                 {'listaAxenda': [fila()], 'totalResultados': 1})) as descargar:
             filas, _, ids = recogida.cultura(galicia.FUENTE, '2026-10-28', '2026-11-27')
-        self.assertIsNone(ids)
+        self.assertEqual(ids, {'alcance': 'ids_comprobados', 'presentes': ['101'], 'despublicados': {}})
         self.assertEqual(filas, [fila()])
         params = parse_qs(urlsplit(descargar.call_args.args[0]).query)
         self.assertEqual(params['idioma'], ['gl'])
         self.assertTrue({'tipoPublico', 'tipoEntrada'} <= set(params['campos'][0].split(',')))
+
+    def recoger(self, n, respuesta, filas=()):
+        if isinstance(respuesta, HTTPError):
+            self.addCleanup(respuesta.close)
+        paginas = [json.dumps({'listaAxenda': list(filas), 'totalResultados': len(filas)}),
+                   respuesta if isinstance(respuesta, Exception) else json.dumps(respuesta)]
+        with patch('agenda.recogida.descargar', side_effect=paginas) as descargar:
+            recogidas, url, inventario = recogida.cultura(galicia.FUENTE, '2026-10-26', '2026-10-26',
+                                                        galicia.conocidos(n))
+        nuevo = galicia.importar(n, recogidas, DESPUES, url)
+        return presencia.registrar(nuevo, galicia.FUENTE, inventario, DESPUES, url), descargar, inventario
+
+    def test_conocida_se_traslada_fuera_y_no_se_consulta_el_alias(self):
+        es = fila(identificador=102, traducionId=101, idioma='es')
+        n = ampliar(construir([fila(), es]))['nucleo']
+        nuevo, descargar, inventario = self.recoger(n, detalle())
+        self.assertEqual(descargar.call_count, 2)
+        url = urlsplit(descargar.call_args.args[0])
+        self.assertEqual(url.path, '/v1/axenda/eventos/101.json')
+        self.assertEqual(set(parse_qs(url.query)['campos'][0].split(',')),
+                         set(galicia.CAMPOS.split(',')) | {'publicar'})
+        evento = proyectar(nuevo)['eventos'][0]
+        self.assertEqual(evento['programacion']['valor']['cuando']['inicio']['fecha'], '2026-12-05')
+        self.assertEqual(nuevo['referencias'], n['referencias'])
+        self.assertEqual(inventario['presentes'], ['101'])
+
+    def test_despublicacion_tiene_evidencia_persiste_y_reaparece(self):
+        n = galicia.importar(None, [fila(), fila(identificador=201)], AHORA)
+        # La segunda cita ya llegó en la ventana; solo falta la 101.
+        retirada, descargar, inventario = self.recoger(n, detalle(publicar=0), [fila(identificador=201)])
+        self.assertEqual(descargar.call_count, 2)
+        self.assertEqual(len(proyectar(retirada)['eventos']), 1)
+        self.assertEqual(presencia.referencias_ausentes(retirada),
+                         {'cultura-galicia:101', 'cultura-galicia:102'})
+        documento = retirada['documentos'][retirada['fuentes'][galicia.FUENTE]['respuesta_completa']['documento']]
+        self.assertEqual(documento['contenido']['despublicados']['101']['evento']['publicar'], 0)
+        # Los presentes de cada pasada no se guardan: otra ventana no reescribe el documento.
+        self.assertNotIn('presentes', documento['contenido'])
+        self.assertEqual(retirada['referencias'], n['referencias'])
+        # Ni una ventana ajena ni un fallo posterior borran una retirada acreditada.
+        for respuesta in ({'alcance': 'ids_comprobados', 'presentes': [], 'despublicados': {}}, inventario,
+                          {'alcance': 'ids_comprobados', 'presentes': ['201', '999'], 'despublicados': {}}):
+            repetida = presencia.registrar(retirada, galicia.FUENTE, respuesta, DESPUES, galicia.URL)
+            self.assertEqual(proyectar(compactar(repetida))['eventos'], proyectar(retirada)['eventos'])
+            self.assertEqual(repetida['documentos'], retirada['documentos'])
+        fallo, _, _ = self.recoger(retirada, HTTPError(galicia.URL, 404, 'No encontrado', {}, io.BytesIO()),
+                                  [fila(identificador=201)])
+        self.assertEqual(presencia.referencias_ausentes(fallo), presencia.referencias_ausentes(retirada))
+        recuperada, _, _ = self.recoger(retirada, detalle(), [fila(identificador=201)])
+        self.assertEqual(len(proyectar(recuperada)['eventos']), 2)
+        self.assertEqual(presencia.referencias_ausentes(recuperada), set())
+        self.assertEqual(recuperada['referencias'], n['referencias'])
+
+    def test_reaparicion_por_alias_declara_presente_la_misma_celebracion(self):
+        n = galicia.importar(None, [fila()], AHORA)
+        retirada, _, _ = self.recoger(n, detalle(publicar=0))
+        cambio = detalle(id=102, traducionId=101)['evento']
+        recuperada, descargar, _ = self.recoger(retirada, {}, [cambio])
+        self.assertEqual(descargar.call_count, 1)
+        self.assertEqual(presencia.referencias_ausentes(recuperada), set())
+        self.assertEqual(len(proyectar(recuperada)['eventos']), 1)
+
+    def test_fallos_de_detalle_no_actualizan_ni_acreditan_ausencia_y_la_ventana_se_importa(self):
+        n = galicia.importar(None, [fila()], AHORA)
+        sin_fecha = detalle()
+        del sin_fecha['evento']['data']
+        respuestas = [HTTPError(galicia.URL, 404, 'No encontrado', {}, io.BytesIO()),
+                      HTTPError(galicia.URL, 403, 'Prohibido', {}, io.BytesIO()), TimeoutError('Tiempo agotado'),
+                      {'erros': [{'codigo': 52, 'mesaxe': 'Evento no encontrado'}]},
+                      detalle(idioma='es', publicar=0), detalle(id=999, publicar=0),
+                      detalle(publicar=False), detalle(publicar='0'), detalle(publicar=None),
+                      {'evento': {'id': 101, 'idioma': 'gl', 'publicar': 0}}, sin_fecha,
+                      detalle(data={}, publicar=0), detalle(data={'dataInicio': '2026-10-26'}, publicar=0)]
+        for respuesta in respuestas:
+            with self.subTest(respuesta=respuesta), redirect_stdout(io.StringIO()) as salida:
+                nuevo, _, inventario = self.recoger(n, respuesta, [fila(identificador=201)])
+                self.assertIn('::warning::', salida.getvalue())
+                self.assertEqual(inventario, {'alcance': 'ids_comprobados', 'presentes': ['201'], 'despublicados': {}})
+                self.assertEqual(len(proyectar(nuevo)['eventos']), 2)
+                self.assertEqual(presencia.referencias_ausentes(nuevo), set())
+                anteriores = {i: o for i, o in nuevo['observaciones'].items()
+                              if o['referencia'] == 'cultura-galicia:101'}
+                self.assertEqual(anteriores, {i: o for i, o in n['observaciones'].items()
+                                             if o['referencia'] == 'cultura-galicia:101'})
+
+    def test_fuera_de_ventana_o_ya_recibida_no_se_consulta_sin_fecha_si(self):
+        casos = [(fila(data={'dataInicio': '2026-12-05', 'dataFin': None}), [], 1),
+                 (fila(data={'dataInicio': '2026-09-05', 'dataFin': None}), [], 1),
+                 (fila(), [fila()], 1), (fila(data={}), [], 2),
+                 (fila(data={'dataInicio': '2026-10-01', 'dataFin': '2026-11-01'}), [], 2)]
+        for conocida, ventana, consultas in casos:
+            with self.subTest(conocida=conocida):
+                n = galicia.importar(None, [conocida], AHORA)
+                _, descargar, inventario = self.recoger(n, detalle(), ventana)
+                self.assertEqual(descargar.call_count, consultas)
+                self.assertFalse(inventario['despublicados'])
+
+    def test_inventario_acotado_rechaza_evidencia_y_alcance_invalidos(self):
+        n = galicia.importar(None, [fila()], AHORA)
+        retirada, _, inventario = self.recoger(n, detalle(publicar=0))
+        for campo, valor in (('publicar', False), ('idioma', 'es'), ('id', 102)):
+            malo = deepcopy(inventario)
+            malo['despublicados']['101']['evento'][campo] = valor
+            with self.assertRaisesRegex(ValueError, 'acotado inválido'):
+                presencia.registrar(n, galicia.FUENTE, malo, DESPUES, galicia.URL)
+        mala = deepcopy(retirada)
+        documento = mala['fuentes'][galicia.FUENTE]['respuesta_completa']['documento']
+        mala['documentos'][documento]['contenido']['alcance'] = 'global'
+        with self.assertRaisesRegex(ValueError, 'acotado acreditado'):
+            presencia.validar(mala)
+        with self.assertRaisesRegex(ValueError, 'anterior'):
+            presencia.registrar(retirada, galicia.FUENTE, inventario, AHORA, galicia.URL)
+
+    def test_cli_revalida_con_fecha_del_nucleo_y_guarda_la_retirada(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / 'agenda.sqlite'
+            piloto = construir([fila()])
+            with almacen.abrir(db) as base:
+                almacen.guardar(base, piloto)
+            args = ['--db', str(db), '--recoger-cultura', galicia.FUENTE,
+                    '--inicio', '2026-10-26', '--fin', '2026-10-26']
+            for respuesta in (detalle(), detalle(publicar=0)):
+                # Trasladada fuera: ampliar la ventana para volver a esperar su fecha.
+                if respuesta['evento']['publicar'] == 0:
+                    args[-3], args[-1] = '2026-12-05', '2026-12-05'
+                with patch('agenda.recogida.descargar', side_effect=[
+                        json.dumps({'listaAxenda': [], 'totalResultados': 0}), json.dumps(respuesta)]) as descargar:
+                    main(args)
+                self.assertEqual(descargar.call_count, 2)
+                with almacen.abrir(db) as base:
+                    guardado = almacen.cargar(base)
+                    self.assertEqual(base.execute('PRAGMA foreign_key_check').fetchall(), [])
+                self.assertEqual({k: v for k, v in guardado.items() if k != 'nucleo'}, piloto)
+                self.assertEqual(len(proyectar(guardado['nucleo'])['eventos']), respuesta['evento']['publicar'])
 
     def test_recogida_incompleta_no_guarda_ni_cambia_el_piloto(self):
         with tempfile.TemporaryDirectory() as tmp:

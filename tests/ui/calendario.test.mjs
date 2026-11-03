@@ -664,6 +664,20 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   assert.doesNotMatch(html, /cal-sin-publicar/);
 });
 
+test('Deportes escrita con prefijo (`nba:`) también raya lo aún sin publicar', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.deportes();
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('nba:'));
+  await esperar();
+  assert.equal(c.api.s.capas, null);
+  c.api.s.meta.colecciones = [{ coleccion: 'nba', estado: 'activa', calendario_completo: false, unidades: [{ fin: '2026-11-11' }] }];
+  const html = c.api.calContenido();
+  assert.match(html, /class="cal-mg-dia cal-sin-publicar" style="grid-column:4"\s+data-cal="dia" data-valor="2026-11-12"/);
+  assert.match(html, /Los partidos se publican/);
+});
+
 const PREF = 'voceiro-calendario-preferencias-v1';
 const preferencias = extra => ({ [PREF]: JSON.stringify({ v: 1, estado: 'configurado', sitio: { id: 'es:municipio:36057', nombre: 'Vigo' },
   intereses: { cultura: ['teatro'], otraCultura: false, deporteLocal: false }, competiciones: ['f1'], ...extra }) });
@@ -905,6 +919,23 @@ test('Atletismo permite seleccionar los tres calendarios federativos como capas'
   assert.match(chips, /Cataluña · FCA/);
   await c.click('capa', 'atletismo-rfea');
   assert.equal(c.resumen().get('q'), 'atletismo-fga: atletismo-fca:');
+});
+
+test('Atletismo raya en el mes lo posterior a la ventana leída de cada federación', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.deportes();
+  await c.click('deporte', 'atletismo');
+  // Sin ventana publicada, ningún límite.
+  assert.doesNotMatch(c.api.calContenido(), /cal-sin-publicar/);
+  c.api.s.meta.fuentes = { ...c.api.s.meta.fuentes, fga: { ventana: { inicio: '2026-10-01', fin: '2026-11-11' } },
+    fca: { ventana: { inicio: '2026-10-01', fin: '2026-11-20' } } };
+  const html = c.api.calContenido();
+  // Manda la que menos tiene leído (FGA, 11-11); RFEA, sin ventana, no limita.
+  assert.doesNotMatch(html.match(/data-valor="2026-11-11"[^>]*/)[0], /cal-sin-publicar/);
+  assert.match(html, /class="cal-mg-dia cal-sin-publicar" style="grid-column:4"\s+data-cal="dia" data-valor="2026-11-12"/);
+  assert.match(html, /class="cal-nota cal-leyenda-sin-publicar">Rayado: aún sin publicar. El atletismo se recoge/);
 });
 
 test('Deportes abierta desde su botón conserva sus capas cuando el buscador se vacía', async () => {

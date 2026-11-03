@@ -18,6 +18,22 @@ def extremo(fecha=None, hora=None, zona=None, utc=None, certeza='confirmado'):
             'certeza_hora': certeza if hora or utc else 'desconocida'}
 
 
+def hora_local(fecha, hora, zona):
+    """Extremo con hora local e instante; None si esa hora no existe o se repite.
+
+    Sin desplazamiento acreditado, una hora del cambio horario no se resuelve
+    eligiendo uno: la cita se queda en el día y su texto conserva la hora.
+    """
+    e = extremo(fecha, hora, zona)
+    try:
+        validar_extremo(e)
+    except ValueError:
+        return None
+    e['instante'] = datetime.combine(date.fromisoformat(fecha), time.fromisoformat(hora),
+                                     ZoneInfo(zona)).isoformat()
+    return e
+
+
 def validar_extremo(e):
     if e['precision'] not in ('fecha', 'hora', 'desconocida'):
         raise ValueError('Precisión temporal inválida')

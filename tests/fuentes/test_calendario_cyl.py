@@ -49,6 +49,18 @@ class CastillaLeon(unittest.TestCase):
             with self.subTest(texto=texto):
                 self.assertEqual(cyl.hora(texto), hora)
 
+    def test_hora_del_cambio_horario_se_queda_en_el_dia(self):
+        # 28/3/2027 02:30 no existe y 31/10/2027 02:30 se repite: sin
+        # desplazamiento acreditado, la cita conserva el día y su texto.
+        for fecha in ('2027-03-28', '2027-10-31'):
+            with self.subTest(fecha=fecha):
+                p = cyl.programacion({'fecha_inicio': fecha, 'hora_inicio': '02:30'})
+                inicio = p['cuando']['inicio']
+                self.assertEqual((inicio['fecha'], inicio['hora_local'], inicio['instante']), (fecha, None, None))
+                self.assertEqual(p['cuando']['horario_textual'], '02:30')
+        inicio = cyl.programacion({'fecha_inicio': '2027-10-31', 'hora_inicio': '20:00'})['cuando']['inicio']
+        self.assertEqual(inicio['instante'], '2027-10-31T20:00:00+01:00')
+
     def test_inventario_por_funcion_retira_solo_la_fecha_ausente(self):
         filas = muestra('cyl')
         n = cyl.importar(None, filas, AHORA)
@@ -70,9 +82,15 @@ class CastillaLeon(unittest.TestCase):
         self.assertIn('offset=0', pedida)
         self.assertEqual(ids, cyl.inventario(filas))
         self.assertEqual(len(seleccion), 3)  # León el 27 y las dos exposiciones en curso.
-        with patch('agenda.recogida.descargar', side_effect=[pagina(filas[:4], 7), pagina(filas[4:], 8)]):
+        # Un total que cambia a mitad se relee entero una vez; dos veces, falla.
+        with patch('agenda.recogida.descargar', side_effect=[pagina(filas[:4], 7), pagina(filas[4:], 8),
+                                                             pagina(filas[:4], 8), pagina(filas[4:], 7)]):
             with self.assertRaisesRegex(ValueError, 'El total cambió'):
                 recogida.cultura('cyl')
+        with patch('agenda.recogida.descargar', side_effect=[pagina(filas[:4], 7), pagina(filas[4:], 8),
+                                                             pagina(filas, len(filas))]) as descargar:
+            self.assertEqual(recogida.cultura('cyl')[2], cyl.inventario(filas))
+        self.assertEqual(descargar.call_count, 3)
         with patch('agenda.recogida.descargar', return_value=pagina([filas[0], filas[0]], 2)):
             with self.assertRaisesRegex(ValueError, 'Identidad repetida'):
                 recogida.cultura('cyl')

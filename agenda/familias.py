@@ -17,11 +17,25 @@ def _url(base, params):
     return base + ('&' if '?' in base else '?') + urlencode(params)
 
 
+class TotalCambiado(ValueError):
+    pass
+
+
 def recorrer(descargar, base, campo, pagina):
     """`pagina.url(base, n, leidas)` pide la página n; `pagina.leer` devuelve (items, total).
 
     `campo` es el nombre del ID o una función que lo compone (CyL: obra + fecha).
+    Un total que cambia a mitad (Kulturklik `/upcoming`, 2/11/2026) se relee
+    entero una vez; si vuelve a cambiar, falla sin resultado parcial.
     """
+    try:
+        return _recorrer(descargar, base, campo, pagina)
+    except TotalCambiado:
+        print('::warning::El total cambió durante la recogida cultural; se relee entera una vez', flush=True)
+        return _recorrer(descargar, base, campo, pagina)
+
+
+def _recorrer(descargar, base, campo, pagina):
     filas, vistos, total = [], set(), None
     for n in range(1, MAX_PAGINAS + 1):
         items, cuenta = pagina.leer(json.loads(descargar(pagina.url(base, n, len(filas)))), n)
@@ -30,7 +44,7 @@ def recorrer(descargar, base, campo, pagina):
         if total is None:
             total = cuenta
         if cuenta != total:
-            raise ValueError('El total cambió durante la recogida cultural')
+            raise TotalCambiado('El total cambió durante la recogida cultural')
         for item in items:
             identidad = campo(item) if callable(campo) else str(item.get(campo) or '')
             if not identidad or identidad in vistos:

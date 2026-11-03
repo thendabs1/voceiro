@@ -48,6 +48,15 @@ def recoger(proveedor, *, temporada=None, fecha=None, inicio=None, fin=None):
     return deportes.recoger(proveedor, temporada=temporada, fecha=fecha)
 
 
+def limitado_a_ventana(proveedor, recurso):
+    """Si `recoger` pide ese recurso solo para la ventana (inicio..fin).
+
+    LaLiga trae las jornadas de la ventana y F1 los programas de sus GP; el
+    calendario de F1, MotoGP o WRC llega entero y cualquier ausencia cuenta.
+    """
+    return proveedor.startswith('laliga-') or (proveedor == 'formula1' and recurso.startswith('programa:'))
+
+
 def importar(anterior, proveedor, pagina, observado, url=None, temporada=None):
     if proveedor in OFICIALES:
         extra = {'competicion': proveedor.removeprefix('laliga-')} if proveedor.startswith('laliga-') else {}

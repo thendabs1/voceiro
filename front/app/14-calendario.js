@@ -30,6 +30,8 @@ const calColor = e => calDeporte(e) ? 'cal-dep cal-dep-' + calDeporte(e) : 'cal-
 const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', nba: 'NBA', atp: 'ATP',
   'feb-endesa': 'LFE', 'feb-primera': 'FEB', 'feb-challenge': 'LFC', wnba: 'WNBA', wta: 'WTA',
   'atletismo-rfea': 'RFEA', 'atletismo-fga': 'FGA', 'atletismo-fca': 'FCA' };
+// Atletismo no tiene temporadas: cada federación se recoge hasta el fin de su ventana.
+const CAL_FUENTE_ATLETISMO = { 'atletismo-rfea': 'rfea', 'atletismo-fga': 'fga', 'atletismo-fca': 'fca' };
 const CALENDARIO = {
   abierto: false, porPrefijo: false, orden: null, meta: null, cargado: 0, cargando: false, error: '',
   // dia: el elegido en el mes. dias: listas abiertas por «día|citas» o «día|curso».
@@ -927,12 +929,23 @@ function calAltoSemana(em = calEm()){
 // Deportes con una o dos competiciones: caben sus partidos en el mes (Google
 // Calendar); con más, solo las marcas por competición.
 const calPartidosEnMes = () => calModoDeportes() && CALENDARIO.capas?.size <= 2;
+// Competiciones pedidas en Deportes: las escritas (`nba:`) y las capas elegidas.
+function calCompeticionesPedidas(){
+  const s = CALENDARIO, o = calPideAgenda(s.orden) ? s.orden : null;
+  return [...new Set([...(o?.ambitos || []).filter(a => AMBITOS[a]?.codigo), ...(s.capas || [])])];
+}
 // Último día publicado de lo elegido en Deportes: las competiciones sin
 // calendario completo se publican a unas dos semanas; las que lo tienen (F1,
-// MotoGP) no ponen límite. Más allá, el mes no está vacío sino sin publicar.
+// MotoGP) no ponen límite; atletismo, el fin de la ventana leída de cada
+// federación. Más allá, el mes no está vacío sino sin publicar.
 function calPublicadoHasta(){
   const s = CALENDARIO, fines = [];
-  for (const c of s.capas || []){
+  for (const c of calCompeticionesPedidas()){
+    if (CAL_FUENTE_ATLETISMO[c]){
+      const fin = s.meta?.fuentes?.[CAL_FUENTE_ATLETISMO[c]]?.ventana?.fin;
+      if (fin) fines.push(fin);
+      continue;
+    }
     const activas = (s.meta?.colecciones || []).filter(x => x.coleccion === c && x.estado === 'activa');
     if (!activas.length || activas.some(x => x.calendario_completo)) continue;
     const fin = activas.flatMap(x => x.unidades || []).map(u => u.fin).filter(Boolean).sort().at(-1);
@@ -1002,7 +1015,8 @@ function calMesTitulos(dias, rodante = false){
     const lineas = colocadas.map(({ b, a, z, carril: c }) => calBoton('evento', calNombreEvento(b), b.id,
       `class="cal-mg-barra ${calColor(b)}${b.desde < semana[a] ? ' sigue-antes' : ''}${b.hasta > sumarDiasCalendario(semana[z - 1], 1) ? ' sigue-despues' : ''}" style="grid-column:${a + 1}/${z + 1};grid-row:${c + 2}" aria-haspopup="dialog" title="${calEsc(calNombreEvento(b))}"`)).join('');
     return `<div class="cal-mg-semana" style="--carriles:${n};--carril:${carril}px${deportes ? '' : `;height:${alto}px`}">${celdas}${lineas}</div>`;
-  }).join('')}</div>${dias.some(sinPublicar) ? `<p class="cal-nota cal-leyenda-sin-publicar">${calEsc(t('calSinPublicarNota'))}</p>` : ''}`;
+  }).join('')}</div>${dias.some(sinPublicar) ? `<p class="cal-nota cal-leyenda-sin-publicar">${calEsc(t(
+    calCompeticionesPedidas().every(c => CAL_FUENTE_ATLETISMO[c]) ? 'calSinPublicarNotaAtletismo' : 'calSinPublicarNota'))}</p>` : ''}`;
 }
 function calTira(){
   const s = CALENDARIO, porDia = new Map([...(s.resumen || []), ...(s.mesAbierto ? s.mes?.dias || [] : [])].map(d => [d.dia, d]));

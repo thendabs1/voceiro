@@ -1,4 +1,5 @@
 """Zaragoza: obra con funciones, recintos con coordenadas, inventario por función y paginación."""
+from copy import deepcopy
 
 import json
 import unittest
@@ -63,6 +64,11 @@ class Zaragoza(unittest.TestCase):
         p = proyectar(n)
         self.assertEqual(len(p['eventos']), 6)
         self.assertEqual(sum(e['tipo'] == 'actividad' for e in p['entidades'].values()), 1)
+        # Una función que pierde su fecha sale del inventario: no sigue con la anterior.
+        sin_fecha = deepcopy(filas)
+        del sin_fecha[2]['subEvent'][0]['startDate']
+        self.assertNotIn(str(filas[2]['subEvent'][0]['id']), zaragoza.inventario(sin_fecha))
+        self.assertEqual(len(zaragoza.inventario(sin_fecha)), 6)
 
     def test_paginacion_rows_start_ordenada_y_errores(self):
         filas = muestra('zaragoza')

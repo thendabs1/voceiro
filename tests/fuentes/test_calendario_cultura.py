@@ -255,22 +255,24 @@ class Paginacion(unittest.TestCase):
         for segunda in ({'totalItems': 2, 'currentPage': 2, 'items': [fila]},
                         {'totalItems': 3, 'currentPage': 2, 'items': []},
                         {'totalItems': 2, 'currentPage': 2, 'items': []}):
-            with patch('agenda.recogida.descargar', side_effect=[json.dumps(primera), json.dumps(segunda)]):
+            # El cambio de total se relee una vez: la relectura vuelve a cambiar.
+            with patch('agenda.recogida.descargar', side_effect=[json.dumps(primera), json.dumps(segunda)] * 2):
                 with self.assertRaises(ValueError):
                     recogida.cultura('kulturklik')
 
 
 class RetiradaCultural(unittest.TestCase):
     def test_ausencia_y_reaparicion_conservan_identidad_horario_e_historial(self):
-        for modulo, campo in ((madrid, 'ID-EVENTO'), (kulturklik, 'id')):
+        for modulo in (madrid, kulturklik, zaragoza, cyl):
             with self.subTest(fuente=modulo.FUENTE):
                 filas = muestra(modulo.FUENTE)
                 n = modulo.importar(None, filas, AHORA)
-                ids = [str(f[campo]) for f in filas]
+                ids = modulo.inventario(filas) if hasattr(modulo, 'inventario') else [
+                    str(f[modulo.CAMPO_ID]) for f in filas]
                 completa = presencia.registrar(n, modulo.FUENTE, ids, AHORA, modulo.URL)
                 # Una importación parcial no acredita retirada.
                 parcial = modulo.importar(completa, filas[:1], LUEGO)
-                self.assertEqual(len(proyectar(parcial)['eventos']), len(filas))
+                self.assertEqual(len(proyectar(parcial)['eventos']), len(ids))
                 with self.assertRaises(presencia.InventarioDesplomado):
                     presencia.registrar(parcial, modulo.FUENTE, [], LUEGO, modulo.URL)
                 retirada = presencia.registrar(parcial, modulo.FUENTE, [], LUEGO, modulo.URL, aceptar_caida=True)

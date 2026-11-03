@@ -170,6 +170,81 @@ class RecogidaAtletismo(unittest.TestCase):
         with self.assertRaises(HTTPError):
             r.recoger('fca', '2026-11-01', '2026-11-30', descargar=caida, conocidas=conocidas)
 
+    def test_lectura_rota_no_retira_nada_ni_consulta_fichas(self):
+        conocidas = [{'id': str(i), 'fuente': 'fca', 'url': f'https://fcatletisme.cat/event/c{i}/',
+                      'inicio': '2026-11-10', 'fin': '2026-11-10'} for i in range(6)]
+        pedidas = []
+
+        def vacia(url):
+            pedidas.append(url)
+            return json.dumps({'total': 0, 'total_pages': 0, 'events': []})
+
+        with self.assertRaisesRegex(ValueError, 'no trae 6 de 6'):
+            r.recoger('fca', '2026-11-01', '2026-11-30', descargar=vacia, conocidas=conocidas)
+        self.assertEqual(len(pedidas), 1)
+        # Cuatro ausentes de seis no es una lectura rota: se reconsultan.
+        vacia = {'version': 1, 'fuente': 'fca', 'eventos': [{'id': '4'}, {'id': '5'}]}
+        with self.assertRaises(HTTPError):
+            r.reconsultar('fca', conocidas, vacia, {'pendientes': [], 'completo': True},
+                          date(2026, 11, 1), date(2026, 11, 30),
+                          lambda u: (_ for _ in ()).throw(HTTPError(u, 503, '', {}, io.BytesIO(b''))), AHORA)
+
+    def test_pendiente_del_listado_con_otras_fechas_se_oculta(self):
+        cita = {'id': '7', 'url': 'https://atletismo.gal/competicions/siete/', 'inicio': '2026-11-10', 'fin': '2026-11-10'}
+        vacia = {'version': 1, 'fuente': 'fga', 'eventos': [], 'agrupaciones': []}
+
+        def sin_red(url):
+            raise AssertionError('una cita pendiente del listado no se reconsulta')
+
+        for inicio, ausente in (('2026-11-10', False), ('2026-11-17', True)):
+            with self.subTest(inicio=inicio):
+                informe = {'completo': False, 'pendientes': [{'id': '7', 'url': cita['url'], 'inicio': inicio,
+                           'fin': inicio, 'motivo': 'agrupación o jornadas por acreditar'}]}
+                resultado = r.reconsultar('fga', [cita], deepcopy(vacia), informe,
+                                          date(2026, 11, 1), date(2026, 11, 30), sin_red, AHORA)
+                self.assertEqual([a['motivo'] for a in resultado['ausencias']], [
+                    'fechas cambiadas (2026-11-17 – 2026-11-17); agrupación o jornadas por acreditar'] if ausente else [])
+
+    def test_fallo_de_nivel_ii_conserva_la_lectura_mensual_de_rfea(self):
+        e = {'version': 1, 'fuente': 'rfea', 'eventos': [{
+            'id': '9', 'nombre': 'Cross ensayo', 'inicio': '2026-11-15', 'fin': '2026-11-15',
+            'url': 'https://atletismorfea.es/calendario/campeonato/cross-ensayo'}]}
+        informe = {'fuente': 'rfea', 'inicio': '2026-11-01', 'fin': '2026-11-30',
+                   'peticiones': 1, 'citas': 1, 'completo': True}
+        with tempfile.TemporaryDirectory() as carpeta:
+            db = str(Path(carpeta) / 'agenda.db')
+            args = ['--db', db, '--fuente', 'rfea', '--inicio', '2026-11-01', '--fin', '2026-11-30']
+            with patch.object(r, 'recoger', return_value=(e, informe)), \
+                    patch.object(r, 'nivel_ii', side_effect=ValueError('maqueta desconocida')):
+                with self.assertRaisesRegex(SystemExit, 'Nivel II no se leyó.*maqueta desconocida'):
+                    r.main(args)
+            with almacen.abrir(db) as conexion:
+                n = almacen.cargar(conexion)['nucleo']
+                guardado = json.loads(conexion.execute('SELECT valor_json FROM agenda_estado WHERE clave=?',
+                                                       ('atletismo-informe-rfea',)).fetchone()[0])
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)
+        self.assertFalse(guardado['completo'])
+        self.assertIn('maqueta desconocida', guardado['nivel_ii']['error'])
+        # La ventana leída se publica con la fuente: el frontal raya lo posterior.
+        self.assertEqual(publicacion.proyectar(n, ['rfea'])['fuentes']['rfea']['ventana'],
+                         {'inicio': '2026-11-01', 'fin': '2026-11-30'})
+
+    def test_nivel_ii_sin_documento_de_un_ano_de_la_ventana_no_esta_completo(self):
+        inventario = {'version': 1, 'url': r.atletismo_nivel_ii.URL, 'temporada': '2026',
+                      'actualizado': '2026-10-15', 'huella_texto': 'x', 'filas': []}
+        hecho = type('Hecho', (), {'stdout': 'Pages: 15\n'})()
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'rfea', 'eventos': []}, AHORA)
+        with patch.object(r.recogida, 'descargar', return_value=b''), \
+                patch.object(r.subprocess, 'run', return_value=hecho), \
+                patch.object(r.atletismo_nivel_ii, 'leer', return_value=inventario), \
+                patch.object(r.atletismo_nivel_ii, 'resolver', return_value={
+                    'entrada': {'version': 1, 'fuente': 'rfea', 'eventos': []}, 'pendientes': [],
+                    'incidencias': [], 'revisiones_no_aplicadas': []}):
+            self.assertTrue(r.nivel_ii(n, '2026-11-01', '2026-12-31')[1]['completo'])
+            informe = r.nivel_ii(n, '2026-11-02', '2027-01-01')[1]
+        self.assertFalse(informe['completo'])
+        self.assertEqual(informe['temporadas_sin_documento'], ['2027'])
+
     def test_ausencia_oculta_tambien_las_sesiones_de_la_cita(self):
         e = {'id': '5', 'nombre': 'Control', 'inicio': '2026-11-08', 'fin': '2026-11-08',
              'url': 'https://fcatletisme.cat/event/control/', 'programa': [{'id': 's1', 'nombre': 'Mañana',
@@ -180,7 +255,7 @@ class RecogidaAtletismo(unittest.TestCase):
                                                        'comprobado': AHORA}])
         self.assertEqual(publicacion.proyectar(n)['eventos'], [])
 
-    def test_fga_solo_el_404_de_la_propia_ficha_retira_y_pendientes_no_se_ocultan(self):
+    def test_fga_solo_el_404_de_la_propia_ficha_retira_y_un_pendiente_trasladado_se_oculta(self):
         cita = {'id': '7', 'url': 'https://atletismo.gal/competicions/siete/', 'inicio': '2026-11-10', 'fin': '2026-11-10'}
         ficha = ('<main><article class="type-competition post-7"><div><span>12/12/2026</span>'
                  '<span>Ordes</span></div><h1>Siete</h1></article></main>')
@@ -201,12 +276,17 @@ class RecogidaAtletismo(unittest.TestCase):
         with self.assertRaises(HTTPError):
             r.reconsultar('fga', [cita], deepcopy(vacia), {'pendientes': [], 'completo': True},
                           date(2026, 11, 1), date(2026, 11, 30), caido, AHORA)
-        informe = {'pendientes': [], 'completo': True}
-        resultado = r.reconsultar('fga', [cita], deepcopy(vacia), informe,
-                                  date(2026, 11, 1), date(2026, 11, 30), pendiente, AHORA)
-        self.assertEqual(resultado['ausencias'], [])
-        self.assertFalse(informe['completo'])
-        self.assertEqual([p['id'] for p in informe['pendientes']], ['7'])
+        # La ficha la lleva al 12/12 y ese listado la deja pendiente como circuito:
+        # la fecha guardada (10/11) está desmentida y deja de publicarse (Codex, 3/11/2026).
+        for guardada, ausente in (('2026-11-10', True), ('2026-12-12', False)):
+            with self.subTest(guardada=guardada):
+                informe = {'pendientes': [], 'completo': True}
+                resultado = r.reconsultar('fga', [{**cita, 'inicio': guardada, 'fin': guardada}], deepcopy(vacia),
+                                          informe, date(2026, 11, 1), date(2026, 12, 31), pendiente, AHORA)
+                self.assertEqual([a['motivo'] for a in resultado['ausencias']], [
+                    'fechas cambiadas (2026-12-12 – 2026-12-12); agrupación o jornadas por acreditar'] if ausente else [])
+                self.assertFalse(informe['completo'])
+                self.assertEqual([(p['id'], p['inicio']) for p in informe['pendientes']], [('7', '2026-12-12')])
 
     def test_agrupacion_conserva_su_clase_al_releerse_como_circuito(self):
         entrada = {'version': 1, 'fuente': 'fga', 'agrupaciones': [{'id': '9', 'nombre': 'Circuito',

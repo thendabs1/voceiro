@@ -699,7 +699,7 @@ export default {
   "calParcial": "programazio partziala",
   "calYMas": "eta beste {n}",
   "calSinPublicar": "oraindik argitaratu gabe",
-  "calSinPublicarNota": "Marraduna: oraindik argitaratu gabe. Partidak bi aste inguru lehenago argitaratzen dira.",
+  "calSinPublicarNota": "Marraduna: oraindik argitaratu gabe. Partidak bi aste inguru lehenago argitaratzen dira.", "calSinPublicarNotaAtletismo": "Marraduna: oraindik argitaratu gabe. Atletismoa bi hilabete inguru lehenago biltzen da.",
   "calEsteMes": "Hilabete honetan kiroletan · {mes}",
   "calProximasSemanas": "Hurrengo asteak kiroletan",
   "calSinDeportes": "Ez dago hilabete honetarako lehiaketarik argitaratuta",
