@@ -219,7 +219,9 @@ def resolver(inventario, revisiones, n=None, *, incorporar_nuevas=False):
             eventos.append(e)
             resueltas.add(h)
     pendientes = [f for f in inventario['filas'] if f['huella'] not in resueltas]
-    sin_aplicar = [r['id'] for r in revisiones['revisiones'] if r['huella'] not in resueltas]
+    # Las revisiones de otra temporada no se esperan en este documento.
+    sin_aplicar = [r['id'] for r in revisiones['revisiones'] if r['huella'] not in resueltas
+                   and r.get('inicio', inventario['temporada'])[:4] == inventario['temporada']]
     return {'entrada': {'version': 1, 'fuente': 'rfea', 'eventos': eventos},
             'pendientes': pendientes, 'revisiones_no_aplicadas': sin_aplicar,
             'incidencias': incidencias,

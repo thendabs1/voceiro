@@ -48,6 +48,10 @@ def texto(el):
     return el.get_text(' ', strip=True) if el else ''
 
 
+def html_texto(valor):
+    return texto(BeautifulSoup(valor, 'html.parser')) if valor else valor
+
+
 def enlace(fuente, valor):
     base = FUENTES[fuente][1]
     u = urlparse(urljoin(base, valor))
@@ -83,8 +87,9 @@ def leer_cataluna(paginas):
                 'url': enlace('fca', e['url']), 'inicio': inicio, 'fin': fin,
                 'lugar': {'id': sitio.get('id'), 'nombre': texto(BeautifulSoup(sitio.get('venue', ''), 'html.parser')),
                           'city': sitio.get('city'), 'country': sitio.get('country')},
-                'metadatos': {'categorias': [{'id': c['id'], 'nombre': c['name']} for c in e.get('categories', [])],
-                    'organizaciones': [{'id': o['id'], 'nombre': o.get('organizer'), 'url': o.get('website')}
+                # Tribe entrega los nombres con entidades HTML (`d&#8217;Atletisme`).
+                'metadatos': {'categorias': [{'id': c['id'], 'nombre': html_texto(c['name'])} for c in e.get('categories', [])],
+                    'organizaciones': [{'id': o['id'], 'nombre': html_texto(o.get('organizer')), 'url': o.get('website')}
                                        for o in e.get('organizer', [])],
                     'web_organizador': e.get('website'), 'modificado': e.get('modified_utc'),
                     'zona_fuente': e.get('timezone')}})

@@ -156,6 +156,15 @@ class Atletismo(unittest.TestCase):
         with self.assertRaises(ValueError):
             atletismo.leer_cataluna(paginas)
 
+    def test_cataluna_decodifica_entidades_de_organizadores_y_categorias(self):
+        paginas = cataluna()
+        evento = paginas[0]['events'][0]
+        evento['organizer'] = [{'id': 1, 'organizer': 'L&#8217;Hospitalet &#038; Co', 'website': ''}]
+        evento['categories'] = [{'id': 2, 'name': 'Promoci&oacute;'}]
+        e = next(e for e in atletismo.leer_cataluna(paginas) if e['id'] == str(evento['id']))
+        self.assertEqual(e['metadatos']['organizaciones'][0]['nombre'], 'L’Hospitalet & Co')
+        self.assertEqual(e['metadatos']['categorias'][0]['nombre'], 'Promoció')
+
     def test_cataluna_dias_sin_medianoches_ni_horas_artificiales(self):
         e = next(e for e in atletismo.leer_cataluna(cataluna()) if e['id'] == '89084')
         self.assertEqual((e['inicio'], e['fin']), ('2026-11-07', '2026-11-07'))

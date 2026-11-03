@@ -39,7 +39,8 @@ y reuniones. La inscripción es un metadato, no otra cita.
   proyección elige con las fuentes permitidas; `atletismo.variantes` conserva
   nombre, metadatos, programación, lugar y procedencia por fuente, y una
   discrepancia activa `conflicto` sin dar prioridad a RFEA ni a la última
-  descarga.
+  descarga. El detalle solo avisa de las fechas: cada federación describe la
+  sede a su manera.
 
 La ausencia de una cita no la cancela. Conservar la última lectura buena;
 «ventana leída completa» no significa «temporada terminada».
@@ -146,7 +147,13 @@ reimportan con la fecha actual; si la ficha no sostiene la fecha (RFEA no
 publica el año) o ya no existe (404/410; FCA 400 `rest_invalid_param`), se
 anota en `fuentes.{fuente}.ausencias` y deja de publicarse sin cancelarse.
 Otra lectura del ID la vuelve a publicar. Otros errores interrumpen la
-fuente. En el workflow: input `atletismo`; el cron
+fuente. Una cita que el listado deja pendiente con otras fechas también se
+oculta. Si faltan al menos cinco citas conocidas y son más de la mitad de la
+ventana, la lectura se da por rota y no se retira nada. Un fallo de Nivel II
+no impide guardar la lectura mensual de RFEA: el paso se señala fallido y el
+informe, incompleto; una ventana con un año sin documento Nivel II tampoco
+está completa. `fuentes.{fuente}.ventana` se publica y el frontal raya en
+Deportes los días posteriores a su `fin`. En el workflow: input `atletismo`; el cron
 solo recoge con `CALENDARIO_ATLETISMO_RECOGIDA=true` (sin fijar) y la
 publicación requiere añadir las fuentes a `CALENDARIO_FUENTES_PUBLICAS`.
 

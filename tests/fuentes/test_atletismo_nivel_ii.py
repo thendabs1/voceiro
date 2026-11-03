@@ -120,6 +120,14 @@ class NivelII(unittest.TestCase):
         self.assertEqual(eventos[0]['id'], id_anterior)
         self.assertEqual(eventos[0]['programacion']['valor']['cuando']['inicio']['fecha'], '2026-11-22')
 
+    def test_revisiones_de_otra_temporada_no_cuentan_como_no_aplicadas(self):
+        siguiente = {**deepcopy(self.inventario), 'temporada': '2027', 'filas': []}
+        r = revisiones()
+        self.assertEqual(nivel.resolver(siguiente, r)['revisiones_no_aplicadas'], [])
+        r['revisiones'].append({**r['revisiones'][0], 'id': 'nivel-ii:ensayo-2027', 'huella': 'f' * 64,
+                                'inicio': '2027-01-10', 'fin': '2027-01-10'})
+        self.assertEqual(nivel.resolver(siguiente, r)['revisiones_no_aplicadas'], ['nivel-ii:ensayo-2027'])
+
     def test_filas_identicas_y_ausencias_no_se_reconcilian_automaticamente(self):
         i = deepcopy(self.inventario)
         fila = next(f for f in i['filas'] if f['huella'] == revisiones()['revisiones'][0]['huella'])
