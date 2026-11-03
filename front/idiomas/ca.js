@@ -699,7 +699,7 @@ export default {
   "calParcial": "programació parcial",
   "calYMas": "i {n} més",
   "calSinPublicar": "encara sense publicar",
-  "calSinPublicarNota": "Amb ratlles: encara sense publicar. Els partits es publiquen unes dues setmanes abans.",
+  "calSinPublicarNota": "Amb ratlles: encara sense publicar. Els partits es publiquen unes dues setmanes abans.", "calSinPublicarNotaAtletismo": "Amb ratlles: encara sense publicar. L’atletisme es recull a uns dos mesos vista.",
   "calEsteMes": "Aquest mes en esports · {mes}",
   "calProximasSemanas": "Pròximes setmanes en esports",
   "calSinDeportes": "Sense competicions publicades aquest mes",

@@ -101,7 +101,8 @@ def rfea(desde, hasta, obtener):
             continue
         if any(date.fromisoformat(b) - date.fromisoformat(a) != timedelta(days=1)
                for a, b in zip(dias, dias[1:])):
-            pendientes.append({'id': e['id'], 'motivo': 'días no consecutivos', 'dias': dias})
+            pendientes.append({'id': e['id'], 'motivo': 'días no consecutivos', 'dias': dias,
+                               'inicio': dias[0], 'fin': dias[-1]})
             continue
         eventos.append({**e, 'inicio': dias[0], 'fin': dias[-1],
                         'metadatos': {**e['metadatos'], 'duracion_confirmada': True}})
@@ -171,7 +172,8 @@ def galicia(desde, hasta, obtener):
         revision = revisadas['fga'].get(e['id'])
         if padre and padre['url'] not in grupos or (re.search(r'circu[ií]t|circuito', e['nombre'], re.I)
                                                     and not padre and not revision):
-            pendientes.append({'id': e['id'], 'url': e['url'], 'motivo': 'agrupación o jornadas por acreditar'})
+            pendientes.append({'id': e['id'], 'url': e['url'], 'motivo': 'agrupación o jornadas por acreditar',
+                               'inicio': e['inicio'], 'fin': e['fin']})
             continue
         if padre:
             e['grupo'] = grupos[padre['url']]
@@ -255,10 +257,26 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
     no existe, la cita deja de publicarse sin cancelarse. Solo el 404/410 de
     la propia ficha acredita la retirada; otros errores interrumpen la fuente
     y conservan la última lectura buena.
+
+    Una cita que el listado deja pendiente con otras fechas no se reconsulta:
+    deja de publicarse, porque su fecha guardada ya está desmentida. Si la
+    lectura trae menos de la mitad de lo conocido (al menos cinco ausentes),
+    se trata como lectura rota: falla sin retirar nada.
     """
     leidas = {str(x['id']) for x in (*entrada['eventos'], *informe['pendientes'], *entrada.get('agrupaciones', []))}
+    pendientes = {str(x['id']): x for x in informe['pendientes']}
+    en_ventana = [c for c in conocidas if c['fin'] >= desde.isoformat() and c['inicio'] <= hasta.isoformat()]
+    faltan = [c for c in en_ventana if c['id'] not in leidas]
+    if len(faltan) >= 5 and 2 * len(faltan) > len(en_ventana):
+        raise ValueError(f'{fuente}: la lectura no trae {len(faltan)} de {len(en_ventana)} citas conocidas; '
+                         'no se retira nada')
     ausencias, reimportadas = [], []
     for c in conocidas:
+        p = pendientes.get(c['id'])
+        if p and 'inicio' in p and (p['inicio'], p['fin']) != (c['inicio'], c['fin']):
+            ausencias.append({'id': c['id'], 'url': c['url'], 'comprobado': observado,
+                              'motivo': f"fechas cambiadas ({p['inicio']} – {p['fin']}); {p['motivo']}"})
+            continue
         if c['id'] in leidas or c['fin'] < desde.isoformat() or c['inicio'] > hasta.isoformat():
             continue
         try:
@@ -349,9 +367,11 @@ def nivel_ii(n, inicio, fin):
     fechas = {f['huella']: f['fila']['fecha'] for f in inventario['filas']}
     pendientes = [p for p in resultado['pendientes'] if inicio <= p['fila']['fecha'] <= fin]
     incidencias = [i for i in resultado['incidencias'] if inicio <= fechas[i['huella']] <= fin]
+    # Una ventana a caballo de dos años no está completa con el documento de uno.
+    sin_documento = sorted({inicio[:4], fin[:4]} - {inventario['temporada']})
     return resultado['entrada'], {'temporada': inventario['temporada'], 'actualizado': inventario['actualizado'],
-        'filas': len(inventario['filas']),
-        'completo': not pendientes and not resultado['revisiones_no_aplicadas'],
+        'filas': len(inventario['filas']), 'temporadas_sin_documento': sin_documento,
+        'completo': not pendientes and not resultado['revisiones_no_aplicadas'] and not sin_documento,
         'citas_ventana': len(resultado['entrada']['eventos']),
         'pendientes': pendientes, 'incidencias': incidencias,
         'pendientes_fuera_ventana': len(resultado['pendientes']) - len(pendientes),
@@ -388,11 +408,19 @@ def main(argv=None):
                                    conocidas=conocidas, observado=observado)
         n = atletismo.importar(calendario['nucleo'], entrada, observado)
         if args.fuente == 'rfea':
-            entrada_ii, informe_ii = nivel_ii(n, desde.isoformat(), hasta.isoformat())
-            n = atletismo.importar(n, entrada_ii, observado)
+            # Documento aparte: si falla, se guarda la lectura mensual y Nivel II
+            # conserva su última lectura buena; el paso se señala como fallido.
+            try:
+                entrada_ii, informe_ii = nivel_ii(n, desde.isoformat(), hasta.isoformat())
+            except Exception as error:
+                informe_ii = {'completo': False, 'error': f'{type(error).__name__}: {error}'[:500]}
+            else:
+                n = atletismo.importar(n, entrada_ii, observado)
             informe['nivel_ii'] = informe_ii
             informe['completo'] = informe['completo'] and informe_ii['completo']
         n = atletismo.registrar_ausencias(n, args.fuente, informe.get('ausencias'))
+        # Hasta dónde se ha leído la fuente: más allá, el calendario no está vacío sino sin recoger.
+        n['fuentes'][args.fuente]['ventana'] = {'inicio': informe['inicio'], 'fin': informe['fin']}
         n['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
         nucleo.recalcular_selecciones(n)
         calendario['nucleo'] = n
@@ -420,6 +448,8 @@ def main(argv=None):
         guardar(args.informe, informe)
     print(json.dumps({**{k: informe[k] for k in ('fuente', 'inicio', 'fin', 'peticiones', 'citas', 'completo')},
                       'ausencias': len(informe.get('ausencias', [])), 'reimportadas': len(informe.get('reimportadas', []))}, ensure_ascii=False))
+    if error := informe.get('nivel_ii', {}).get('error'):
+        raise SystemExit('Nivel II no se leyó; RFEA mensual guardada: ' + error)
 
 
 if __name__ == '__main__':

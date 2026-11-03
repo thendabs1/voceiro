@@ -699,7 +699,7 @@ export default {
   "calParcial": "partial schedule",
   "calYMas": "and {n} more",
   "calSinPublicar": "not published yet",
-  "calSinPublicarNota": "Striped: not published yet. Matches are published about two weeks in advance.",
+  "calSinPublicarNota": "Striped: not published yet. Matches are published about two weeks in advance.", "calSinPublicarNotaAtletismo": "Striped: not published yet. Athletics is collected about two months ahead.",
   "calEsteMes": "This month in sports · {mes}",
   "calProximasSemanas": "Coming weeks in sports",
   "calSinDeportes": "No competitions published for this month",

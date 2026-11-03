@@ -881,6 +881,23 @@ test('Atletismo permite seleccionar los tres calendarios federativos como capas'
   assert.equal(c.resumen().get('q'), 'atletismo-fga: atletismo-fca:');
 });
 
+test('Atletismo raya en el mes lo posterior a la ventana leída de cada federación', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.deportes();
+  await c.click('deporte', 'atletismo');
+  // Sin ventana publicada, ningún límite.
+  assert.doesNotMatch(c.api.calContenido(), /cal-sin-publicar/);
+  c.api.s.meta.fuentes = { ...c.api.s.meta.fuentes, fga: { ventana: { inicio: '2026-10-01', fin: '2026-11-11' } },
+    fca: { ventana: { inicio: '2026-10-01', fin: '2026-11-20' } } };
+  const html = c.api.calContenido();
+  // Manda la que menos tiene leído (FGA, 11-11); RFEA, sin ventana, no limita.
+  assert.doesNotMatch(html.match(/data-valor="2026-11-11"[^>]*/)[0], /cal-sin-publicar/);
+  assert.match(html, /class="cal-mg-dia cal-sin-publicar" style="grid-column:4"\s+data-cal="dia" data-valor="2026-11-12"/);
+  assert.match(html, /class="cal-nota cal-leyenda-sin-publicar">Rayado: aún sin publicar. El atletismo se recoge/);
+});
+
 test('Deportes abierta desde su botón conserva sus capas cuando el buscador se vacía', async () => {
   const c = contexto();
   await c.deportes();

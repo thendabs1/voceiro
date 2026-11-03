@@ -699,7 +699,7 @@ export default {
   "calParcial": "programación parcial",
   "calYMas": "e {n} máis",
   "calSinPublicar": "aínda sen publicar",
-  "calSinPublicarNota": "Raiado: aínda sen publicar. Os partidos publícanse unhas dúas semanas antes.",
+  "calSinPublicarNota": "Raiado: aínda sen publicar. Os partidos publícanse unhas dúas semanas antes.", "calSinPublicarNotaAtletismo": "Raiado: aínda sen publicar. O atletismo recóllese a uns dous meses vista.",
   "calEsteMes": "Este mes en deportes · {mes}",
   "calProximasSemanas": "Próximas semanas en deportes",
   "calSinDeportes": "Sen competicións publicadas este mes",
