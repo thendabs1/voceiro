@@ -135,11 +135,13 @@ const calSegundosEspera = () => Math.max(1, Math.ceil((calEsperaHasta - Date.now
 // La publicación avanza a diario: cada respuesta trae su revisión y cobertura.
 function calAnotar(dato){
   const m = CALENDARIO.meta;
-  // Otra publicación, aunque llegue por una petición sin `revision` (los
-  // resúmenes): lo ya cargado es de la anterior. Se rehace todo, como ante un
-  // 409, cuando quien pidió haya guardado su respuesta.
-  if (m?.revision && dato.revision && dato.revision !== m.revision) Promise.resolve().then(() => cargarCalendario(true));
-  if (m) for (const k of ['revision', 'generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
+  // Las respuestas pasan 30 s por caché: una más vieja no cambia nada (ni
+  // provoca recargas de ida y vuelta). Una más nueva, aunque llegue por una
+  // petición sin `revision` (los resúmenes), deja lo ya cargado en la anterior:
+  // se rehace todo con su catálogo cuando quien pidió haya guardado su respuesta.
+  if (!m || !dato.generado || (m.generado && dato.generado < m.generado)) return;
+  if (m.generado && dato.generado > m.generado) Promise.resolve().then(() => cargarCalendario(true, dato.revision));
+  for (const k of ['revision', 'generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
 }
 function calParametros(){
   // Cada vista toma de la orden solo lo suyo: Deportes, las competiciones; la
@@ -176,7 +178,7 @@ function calVentana(){
   return { dias, desde, hasta, acotada: Boolean(p.desde || fin) };
 }
 const calPideAgenda = o => Boolean(o) && (o.desconocidos.length > 0 || !o.tipos.length || o.tipos.includes('calendario'));
-async function cargarCalendario(renovar = false){
+async function cargarCalendario(renovar = false, revision = ''){
   if (!CALENDARIO_ACTIVO) return;
   const s = CALENDARIO;
   if (s.orden?.desconocidos.length) return void pintarCalendario();
@@ -186,9 +188,11 @@ async function cargarCalendario(renovar = false){
   const controller = s.controller = new AbortController();
   s.cargando = true; s.error = ''; pintarCalendario();
   try {
-    s.meta = await calPedir('catalogo', {}, controller.signal); s.cargado = Date.now();
+    // Con la revisión vista, otra URL: no sirve el catálogo anterior de la caché.
+    s.meta = await calPedir('catalogo', { revision }, controller.signal); s.cargado = Date.now();
   } catch (e){
     if (controller.signal.aborted) return;
+    if (revision && e.status === 409) return void cargarCalendario(true);  // Ya hay otra más nueva.
     s.cargando = false; s.error = calFallo(e); return void pintarCalendario();
   }
   s.consulta = ''; s.pendientes = null;

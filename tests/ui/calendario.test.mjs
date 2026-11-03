@@ -209,25 +209,30 @@ test('si la publicación cambia entre páginas, se rehacen cuentas y listas: nad
   assert.deepEqual([c.api.s.dias.size, c.api.s.error], [0, '']);
 });
 
-test('una revisión nueva traída por el mes rehace lo cargado de la anterior', async () => {
-  let revision = 'r1';
+test('una revisión nueva traída por el mes rehace lo cargado de la anterior, sin bucles por la caché', async () => {
+  // Las respuestas pasan 30 s por caché: el catálogo pedido sin revisión sigue
+  // dando r1 (Codex, 3/11/2026: la recarga repetía el cambio hasta un 429).
+  const R1 = { revision: 'r1', generado: '2026-10-25T06:00:00Z' }, R2 = { revision: 'r2', generado: '2026-10-26T06:00:00Z' };
+  let actual = R1, viejo = false;
   const c = contexto({ responder: u => {
     const d = api(u);
-    return d instanceof Response ? d : { ...d, revision };
+    if (d instanceof Response) return d;
+    if (u.pathname === '/calendario/catalogo') return { ...d, ...(u.searchParams.get('revision') === 'r2' ? R2 : R1) };
+    return { ...d, ...(viejo ? R1 : actual) };
   } });
-  const catalogos = () => c.pedidas.filter(u => u.pathname === '/calendario/catalogo').length;
+  const catalogos = () => c.pedidas.filter(u => u.pathname === '/calendario/catalogo').map(u => u.searchParams.get('revision'));
   await c.abrir();
   await c.click('ver-dia', '2026-10-25');
   assert.equal(c.api.s.dias.size, 1);
   // El mes pide su resumen sin `revision`: no hay 409 que avise del cambio.
-  revision = 'r2';
-  let antes = catalogos();
+  actual = R2;
   await c.click('mes'); await esperar();
-  assert.equal(catalogos(), antes + 1, 'vuelve a pedir el catálogo');
+  assert.deepEqual(catalogos(), [null, 'r2'], 'una sola recarga, con el catálogo de la revisión vista');
   assert.deepEqual([c.api.s.meta.revision, c.api.s.dias.size, c.api.s.error], ['r2', 0, '']);
-  antes = catalogos();
+  // Una respuesta vieja de la caché no retrocede ni recarga.
+  viejo = true;
   await c.click('mes'); await c.click('mes'); await esperar();
-  assert.equal(catalogos(), antes, 'la misma revisión no recarga');
+  assert.deepEqual([catalogos().length, c.api.s.meta.revision], [2, 'r2']);
 });
 
 test('tira: la semana con puntos por categoría y el pasado atenuado; se despliega en mes', async () => {
