@@ -42,14 +42,15 @@
     },
     {
       "id": "nassos-2026",
-      "referencias": {"fca": "83074", "rfea": "67588"},
+      "referencias": {"fca": "83074", "rfea": "67588", "wa": "7244650"},
       "conservar": "fca",
       "revision": {
-        "fecha": "2026-11-02",
-        "criterio": "Misma B100 Cursa dels Nassos, Barcelona, 31/12/2026. FCA anuncia las pruebas de 5 y 10 km; la ficha RFEA 67588 solo recoge 5 km. Comparten día y sede: una cita con alcance distinto por fuente, sin modelar partes. Cada fuente conserva su nombre.",
+        "fecha": "2026-11-03",
+        "criterio": "Misma B100 Cursa dels Nassos, Barcelona, 31/12/2026. FCA anuncia las pruebas de 5 y 10 km; la ficha RFEA 67588 solo recoge 5 km. Comparten día y sede: una cita con alcance distinto por fuente, sin modelar partes. WA 7244650 publica la misma cita ese día en Barcelona (añadida el 3/11). Cada fuente conserva su nombre.",
         "evidencias": [
           "https://fcatletisme.cat/event/b100-cursa-dels-nassos-5-i-10-km/",
-          "https://atletismorfea.es/calendario/campeonato/b100-cursa-dels-nassos"
+          "https://atletismorfea.es/calendario/campeonato/b100-cursa-dels-nassos",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-12-31&endDate=2026-12-31&regionType=country&regionId=13188350"
         ]
       }
     },
@@ -89,6 +90,100 @@
         "evidencias": [
           "https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf#page=15",
           "https://atletismo.gal/competicions/ii-circuito-galego-de-lanzamentos-longos-5a-xornada/"
+        ]
+      }
+    },
+    {
+      "id": "maraton-valencia-2026",
+      "referencias": {"rfea": "64933", "fca": "83627", "wa": "7235578"},
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-03",
+        "criterio": "Mismo Maratón Valencia Trinidad Alfonso Zurich, Valencia, 6/12/2026, con el mismo título en las tres fuentes. WA añade el código de país a la sede literal. Se conserva el ID ya guardado por RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/maraton-valencia-trinidad-alfonso-zurich",
+          "https://fcatletisme.cat/event/maraton-valencia-trinidad-alfonso-zurich/",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-12-06&endDate=2026-12-06&regionType=country&regionId=13188350"
+        ]
+      }
+    },
+    {
+      "id": "cross-venta-de-banos-2026",
+      "referencias": {"rfea": "64942", "fca": "83629", "wa": "7246800"},
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-03",
+        "criterio": "Mismo XLVI Cross Internacional de Venta de Baños, 20/12/2026. WA omite el ordinal de edición. Se conserva el ID ya guardado por RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/xlvi-cross-internacional-de-venta-de-banos",
+          "https://fcatletisme.cat/event/xlvi-cross-internacional-de-venta-de-banos/",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-12-20&endDate=2026-12-20&regionType=country&regionId=13188350"
+        ]
+      }
+    },
+    {
+      "id": "cross-italica-2026",
+      "referencias": {"rfea": "64671", "fca": "83648", "wa": "7242994"},
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-03",
+        "criterio": "Mismo XLIV Cross Internacional de Itálica, 8/11/2026. Cada fuente describe la sede a su manera (Sevilla, Santiponce, conjunto arqueológico de Itálica); se conservan sin declarar alias geográficos. Se conserva el ID ya guardado por RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/xliv-cross-internacional-de-italica",
+          "https://fcatletisme.cat/event/xliv-cross-internacional-de-italica/",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-11-08&endDate=2026-11-08&regionType=country&regionId=13188350"
+        ]
+      }
+    },
+    {
+      "id": "cross-soria-2026",
+      "referencias": {"rfea": "65798", "wa": "7243496"},
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-03",
+        "criterio": "Mismo cross internacional de Soria, edición 32 (XXXII en RFEA), Monte Valonsadero, 15/11/2026. Se conserva el ID ya guardado por RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/xxxii-cross-internacional-de-soria",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-11-15&endDate=2026-11-15&regionType=country&regionId=13188350"
+        ]
+      }
+    },
+    {
+      "id": "cross-amurrio-2026",
+      "referencias": {"rfea": "64694", "wa": "7244490"},
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-03",
+        "criterio": "Mismo VIII Cross Internacional de Amurrio, 27/12/2026, con el mismo título bilingüe en ambas fuentes. Se conserva el ID ya guardado por RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/amurrioko-viii-nazioarteko-krosa-viii-cross-internacional-de-amurrio",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-12-27&endDate=2026-12-27&regionType=country&regionId=13188350"
+        ]
+      }
+    },
+    {
+      "id": "maraton-malaga-2026",
+      "referencias": {"rfea": "66018", "wa": "7244448"},
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-03",
+        "criterio": "Mismo Generali Maratón de Málaga, 8/11/2026. Se conserva el ID ya guardado por RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/generali-maraton-malaga-0",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-11-08&endDate=2026-11-08&regionType=country&regionId=13188350"
+        ]
+      }
+    },
+    {
+      "id": "medio-maraton-sevilla-2026",
+      "referencias": {"rfea": "67108", "wa": "7244016"},
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-03",
+        "criterio": "Mismo Medio Maratón de Sevilla, 13/12/2026. Se conserva el ID ya guardado por RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/medio-maraton-de-sevilla-2",
+          "https://worldathletics.org/competition/calendar-results?startDate=2026-12-13&endDate=2026-12-13&regionType=country&regionId=13188350"
         ]
       }
     }
