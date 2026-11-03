@@ -85,7 +85,13 @@ def _eventos(n, proveedor, observado, unidad, referencias=None):
     return salida
 
 
-def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False):
+def _en_ventana(e, inicio, fin):
+    if not e.get('inicio'):
+        return True  # Sin fecha guardada no se sabe si se pidió: se sigue esperando.
+    return (e.get('fin') or e['inicio']) >= inicio and e['inicio'] <= fin
+
+
+def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, guardados=None, ventana=None):
     incidencias = []
     por_recurso = {(c['unidad'], c['recurso']): c for c in nuevas}
     recibidos = {e['evento'] for e in eventos}
@@ -95,6 +101,10 @@ def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False):
         nueva = por_recurso.get((c['unidad'], c['recurso'])) or {}
         if c['unidad'] in unidades:
             ausentes = set(c.get('eventos', [])) - set(nueva.get('eventos', [])) - recibidos
+            if ventana:
+                # La unidad es la temporada, pero solo se piden las jornadas o
+                # programas de la ventana: lo ya jugado o lo posterior no falta.
+                ausentes = {i for i in ausentes if i not in guardados or _en_ventana(guardados[i], *ventana)}
             if ausentes:
                 incidencias.append({'tipo': 'ausentes_en_respuesta', 'unidad': c['unidad'],
                                     'recurso': c['recurso'], 'eventos': sorted(ausentes)})
@@ -187,14 +197,18 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
     if t.get('acreditacion'):
         alcance = {**alcance, **t['acreditacion']}
     incompleto = bool(alcance.get('programa')) and not alcance.get('programa_completo')
-    incidencias = _incidencias(cobertura, coberturas, eventos, unidades, ahora, incompleto=incompleto)
+    guardados = {e['evento']: e for e in repo.eventos(t['id']) if e['proveedor'] == proveedor}
+    ventana = ((coberturas[0]['inicio'], coberturas[0]['fin'])
+               if proveedores.modo(proveedor) == 'temporada' and coberturas else None)
+    incidencias = _incidencias(cobertura, coberturas, eventos, unidades, ahora, incompleto=incompleto,
+                               guardados=guardados, ventana=ventana)
     if any(i['tipo'] == 'ausentes_en_respuesta' for i in incidencias):
         error = ValueError('Respuesta parcial: faltan citas previamente acreditadas en la misma selección')
         repo.fallar(t, pasada, ahora, error)
         return {'temporada': t['id'], 'estado': 'fallida', 'error': str(error), 'incidencias': incidencias}
     # Una cita aplazada o pendiente previamente guardada sigue bloqueando el cierre
     # aunque desaparezca de la respuesta posterior.
-    vigentes = {e['evento']: e for e in repo.eventos(t['id']) if e['proveedor'] == proveedor}
+    vigentes = dict(guardados)
     vigentes.update({e['evento']: e for e in eventos})
     for e in vigentes.values():
         if e['evento'] not in {x['evento'] for x in eventos} and (e['conflicto'] or e['estado'] == 'aplazado' or not e['inicio']):

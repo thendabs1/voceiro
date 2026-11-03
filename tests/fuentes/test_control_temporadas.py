@@ -401,6 +401,24 @@ class IncidenciasDeRespuesta(unittest.TestCase):
         # Una unidad que no se pidió en esta pasada no se compara.
         self.assertEqual(operacion._incidencias(previa, nuevas, recibidos, ['2027'], '2026-10-27T00:00:00Z'), [])
 
+    def test_lo_ya_jugado_fuera_de_la_ventana_pedida_no_falta(self):
+        # LaLiga pide las jornadas de los próximos 14 días con la temporada como
+        # unidad: los partidos de la semana pasada ya no vuelven (2/11/2026).
+        previa = [{'unidad': '2026', 'recurso': 'calendario', 'eventos': ['jugado', 'proximo', 'sin_fecha', 'otro']}]
+        nuevas = [{'unidad': '2026', 'recurso': 'calendario', 'eventos': []}]
+        guardados = {'jugado': {'inicio': '2026-10-25', 'fin': '2026-10-25'},
+                     'proximo': {'inicio': '2026-11-08', 'fin': '2026-11-08'},
+                     'sin_fecha': {'inicio': None, 'fin': None}}
+        incidencias = operacion._incidencias(previa, nuevas, [], ['2026'], '2026-11-02T00:00:00Z',
+                                             guardados=guardados, ventana=('2026-11-02', '2026-11-15'))
+        self.assertEqual(incidencias, [{'tipo': 'ausentes_en_respuesta', 'unidad': '2026',
+                                        'recurso': 'calendario', 'eventos': ['otro', 'proximo', 'sin_fecha']}])
+        guardados['proximo'] = {'inicio': '2026-11-20', 'fin': '2026-11-20'}
+        guardados['otro'] = {'inicio': '2026-10-31', 'fin': '2026-11-02'}
+        incidencias = operacion._incidencias(previa, nuevas, [], ['2026'], '2026-11-02T00:00:00Z',
+                                             guardados=guardados, ventana=('2026-11-02', '2026-11-15'))
+        self.assertEqual(incidencias[0]['eventos'], ['otro', 'sin_fecha'])
+
 
 if __name__ == '__main__':
     unittest.main()
