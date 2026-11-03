@@ -79,6 +79,8 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
     u.cache = opciones.cache;
     pedidas.push(u);
     const r = await responder(u);
+    // Como fetch: una petición cortada no entrega su respuesta.
+    if (opciones.signal?.aborted) throw new DOMException('Cortada', 'AbortError');
     return r instanceof Response ? r : Response.json(r);
   };
   const c = { ...fechas, ...consulta, ...nombres, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
@@ -261,6 +263,39 @@ test('una recarga fallida no bloquea la siguiente', async () => {
   await c.click('mes'); await c.click('mes'); await esperar();
   // r2 falla en los dos backends; la siguiente acción vuelve a recargar.
   assert.deepEqual([catalogosDe(c), c.api.s.meta.revision, c.api.s.error], [[null, 'r2', 'r2', 'r2'], 'r2', '']);
+});
+
+test('una recarga cortada por otro filtro no bloquea la siguiente', async () => {
+  // Codex (3/11/2026): el aborto salía antes de limpiar la recarga en curso.
+  const p = publicador();
+  let soltar = null;
+  const c = contexto({ responder: u => u.pathname === '/calendario/catalogo' && u.searchParams.get('revision') === 'r2' && !soltar
+    ? new Promise(r => { soltar = () => r(p.responder(u)); }) : p.responder(u) });
+  await c.abrir();
+  p.publicar('r2');
+  c.api.calOtraPublicacion({ status: 409, pedida: 'r1', vigente: 'r2' });
+  await esperar();
+  await c.click('dia', '2026-11-03');  // Otra ventana: corta la recarga.
+  soltar(); await esperar();
+  await c.click('mes'); await esperar();
+  assert.deepEqual([catalogosDe(c), c.api.s.meta.revision, c.api.s.error], [[null, 'r2', 'r2'], 'r2', '']);
+});
+
+test('una ficha tardía de otra publicación no hace retroceder la revisión', async () => {
+  // Codex (3/11/2026): calAnotar adoptaba la revisión de cualquier respuesta.
+  const p = publicador();
+  let soltar = null;
+  const c = contexto({ responder: u => u.pathname.startsWith('/calendario/eventos/') && !soltar
+    ? new Promise(r => { soltar = () => r({ ...api(u), revision: 'r1', evento: tarjeta('Tarde', '2026-10-25') }); }) : p.responder(u) });
+  await c.abrir();
+  const ficha = c.click('evento', 'Tarde');
+  await esperar();
+  p.publicar('r2');
+  await c.click('mes'); await esperar();
+  assert.equal(c.api.s.meta.revision, 'r2');
+  soltar(); await ficha; await esperar();
+  assert.equal(c.api.s.meta.revision, 'r2');
+  assert.match(c.dialogo.innerHTML, /cal-aviso/);
 });
 
 test('el asistente vuelve a pedir la disponibilidad con la publicación nueva', async () => {

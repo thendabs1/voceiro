@@ -136,9 +136,12 @@ function calFallo(e){
 }
 const calSegundosEspera = () => Math.max(1, Math.ceil((calEsperaHasta - Date.now()) / 1000));
 // La publicación avanza a diario: cada respuesta trae su revisión y cobertura.
+// Solo el catálogo cambia de revisión: una respuesta tardía de otra no toca nada.
 function calAnotar(dato){
   const m = CALENDARIO.meta;
-  if (m) for (const k of ['revision', 'generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
+  if (!m || dato.revision !== m.revision) return false;
+  for (const k of ['generado', 'horizonte', 'cobertura', 'colecciones']) m[k] = dato[k];
+  return true;
 }
 // Toda petición lleva la revisión del catálogo: una URL con revisión solo trae
 // datos de esa publicación, aunque salga de la caché (30 s). Otra publicación
@@ -211,7 +214,8 @@ async function cargarCalendario(renovar = false, revision = '', caida = ''){
     } else s.repetida = '';
     s.meta = meta; s.cargado = Date.now();
   } catch (e){
-    if (controller.signal.aborted) return;
+    // Cortada (otro filtro u otra recarga): la siguiente 409 vuelve a recargar.
+    if (controller.signal.aborted){ if (caida && s.recargando === caida) s.recargando = ''; return; }
     s.recargando = '';
     // Mientras se pedía, otra más nueva: se sigue hacia ella.
     if (e.status === 409 && e.vigente && e.vigente !== revision) return void cargarCalendario(true, e.vigente, caida);
@@ -655,7 +659,7 @@ async function abrirEventoCalendario(id){
   dialogo.addEventListener('close', () => controller.abort(), { once: true });
   try {
     const d = await calPedir('eventos/' + encodeURIComponent(id), { revision: s.meta?.revision }, controller.signal);
-    calAnotar(d);
+    if (!calAnotar(d)) throw new Error('Ficha de otra publicación');
     dialogo.innerHTML = cerrar + calEvento(d.evento);
     dialogo.querySelector('h3').id = 'cal-evento-titulo';
     dialogo.removeAttribute('aria-label'); dialogo.setAttribute('aria-labelledby', 'cal-evento-titulo');
@@ -699,7 +703,8 @@ async function desplegarEventoCalendario(clave, id){
   const controller = s.detalleLista = new AbortController();
   try {
     const d = await calPedir('eventos/' + encodeURIComponent(id), { revision: s.meta?.revision }, controller.signal);
-    calAnotar(d); s.detalles.set(id, d.evento);
+    if (!calAnotar(d)) return;  // De otra publicación: la recarga ya plegó la lista.
+    s.detalles.set(id, d.evento);
   } catch (e){
     if (controller.signal.aborted) return;
     if (e.status === 409) return void calOtraPublicacion(e);
