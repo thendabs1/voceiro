@@ -4,8 +4,8 @@
 // local (fusionarDocumento) y, si el resultado no es lo que ya había, lo
 // sube cifrado. Si otro dispositivo escribió entre medias (409), vuelve a
 // empezar. Devuelve el documento fusionado: quien llama lo vuelca en local.
-import { derivar, cifrar, descifrar } from './cripto.js?v=550c40a19b';
-import { fusionarDocumento, huella } from './fusion.js?v=550c40a19b';
+import { derivar, cifrar, descifrar } from './cripto.js?v=3382eb522f';
+import { fusionarDocumento, huella } from './fusion.js?v=3382eb522f';
 
 // CF y, si está bloqueado, el respaldo en Deno (workers/deno-sync): la misma
 // base. Los usan Voceiro y el lector.
