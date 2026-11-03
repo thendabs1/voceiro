@@ -8,10 +8,9 @@ seguir una programación. El recinto guarda sus coordenadas WGS84 y el
 municipio lo acreditan los límites del IGN.
 """
 
-from datetime import date, datetime
+from datetime import date
 import math
 import re
-from zoneinfo import ZoneInfo
 
 from . import nucleo, tiempos
 
@@ -81,10 +80,7 @@ def programacion(fila):
               'fin_exclusivo': False, 'horario_textual': texto or None}
     h = hora(fila.get('hora_inicio')) if inicio == fin else None
     if h:
-        extremo = tiempos.extremo(inicio, h, 'Europe/Madrid')
-        extremo['instante'] = datetime.fromisoformat(inicio + 'T' + h).replace(
-            tzinfo=ZoneInfo('Europe/Madrid')).isoformat()
-        cuando['inicio'] = extremo
+        cuando['inicio'] = tiempos.hora_local(inicio, h, 'Europe/Madrid') or cuando['inicio']
     return {'cuando': tiempos.validar(cuando), 'programacion': 'programado', 'ejecucion': 'desconocido',
             'modalidad': 'intervalo' if inicio != fin else 'cita', 'estado_original': None}
 
