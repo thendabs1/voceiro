@@ -179,9 +179,13 @@ repetible y reimportar un ID actualiza sin duplicar.
 
 - Clasificar circuitos y tecnificación desde las fichas.
 - Interfaz: filas de fuentes, circuitos WA y modalidad en Deportes (semana y
-  lista en pantallas bajas; ☆ solo en fuentes). Cómo combinan circuitos y
-  fuentes se decide con el ámbito (territorial, nacional, internacional), en
-  estudio; no se ofrece hasta acreditarlo.
+  lista en pantallas bajas; ☆ solo en fuentes). OR dentro de cada fila y AND
+  entre filas: un circuito marcado restringe toda la selección.
+- Sin filtro de ámbito (3/11/2026): con reglas prudentes el 82 % de las citas
+  federativas quedaría sin ámbito y las etiquetas federativas lo contradicen
+  (FGA «Autonómico» y «Nacional» a la vez; área RFEA en crosses WA Gold). Solo
+  está acreditada la pertenencia a WA, que ya cubre su chip. Estudio local en
+  `docs/atletismo-ambito-2026-11-03/`.
 - World Athletics: interfaz de circuitos y filtros (fase 2).
 
 Resultados, marcas y rankings siguen sin conector; ver
