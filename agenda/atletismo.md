@@ -29,6 +29,18 @@ y reuniones. La inscripción es un metadato, no otra cita.
   tecnificación), ámbito/área/categoría WA y homologación. Se conservan los
   literales de cada fuente; no se extraen edades del título. «Promoció» no
   acredita edad e «Internacional» no es modalidad.
+- Granularidad (acordada el 3/11/2026, en implementación): un ID de fuente es
+  una publicación de alcance variable (reunión, varios títulos, un título,
+  sesión, jornada, serie o Juegos). Se reproduce la de cada fuente y se
+  acredita con ficha, información técnica, normas u horario; nunca por título,
+  fecha o sede. Entre identidades: misma entidad (solo mismo alcance), dentro
+  de (título en reunión, atletismo en Juegos: `es_parte_de` entre sus
+  competiciones), celebración conjunta, pertenencia a serie y sustitución. Lo
+  que la fuente no permite decidir abre issue. Se añadirán la relación con la
+  fuente (propio o reflejo de otra federación) y la clase de actividad
+  (competición, control, tecnificación con concentraciones; marca escolar).
+  Resultados: solo el enlace oficial en su nivel, sin marcas. Diseño, mapa de
+  huecos y plan en `docs/atletismo-fuentes-2026-11-03/DISENO.md` (local).
 - Modalidad común (acordada el 3/11/2026): `ruta`, `cross`, `pista-cubierta`,
   `pista-aire-libre`, `marcha` y `trail`, según
   `shared/calendario/atletismo-modalidades.json` (literal normalizado → código,
@@ -96,7 +108,7 @@ hasta contrastar el convenio UTC/local.
 
 ## Coincidencias e identidad
 
-`atletismo_coincidencias` (versión 3) compara federaciones y las dos
+`atletismo_coincidencias` (versión 4) compara federaciones y las dos
 distribuciones RFEA sin consultar webs. Normaliza mayúsculas, acentos,
 puntuación, año, variantes castellano/gallego/catalán, sufijos ordinales
 (`103a`→`103`, `60è`→`60`) y la etiqueta exacta `(RFEA)`. Una cita nueva
@@ -124,11 +136,14 @@ identidades ya guardadas no se fusionan al importar: exigen conciliación.
   conserva sin referencias con `conciliada_en` (el almacén no retira
   entidades) y no se publica; el almacén solo acepta el cambio de destino de
   una referencia con esas dos marcas.
-- Una cita contada en una parte por una fuente (Nassos 5 km, marcha máster
-  de Castro) es la misma cita si comparte día y sede; las partes solo se
-  modelan con días distintos.
-- Fechas discrepantes en una identidad compartida (short track clubes
-  máster, Dakar) quedan como conflicto visible, sin elegir fuente.
+- Una parte no es el todo aunque compartan día y sede, ni un enlace basta si
+  el alcance difiere (hoy el comparador lo acepta: pendiente). Castro (RFEA
+  64834 promoción y máster frente a FCA 80239 máster; FCA 80237 aparte),
+  Nassos (FCA 5+10 km frente a RFEA 5 km) y Dakar (RFEA Juegos frente al
+  atletismo de FCA/WA) están unidos con alcances distintos y se separarán con
+  una operación revisada, empezando por Castro.
+- Fechas discrepantes en una identidad del mismo alcance (short track clubes
+  máster) quedan como conflicto visible, sin elegir fuente.
 - Nivel II enlaza con una cita guardada mediante `decision: equivalencia` y
   una conciliación con su ID editorial (Ourense y Ordes, 12/12).
 - `atletismo_revision --issues` corre en cada pasada del workflow: un issue
@@ -177,12 +192,32 @@ repetible y reimportar un ID actualiza sin duplicar.
 
 ## Pendiente
 
-- Clasificar circuitos y tecnificación desde las fichas.
-- Interfaz: filas de fuentes, circuitos WA y modalidad en Deportes (semana y
-  lista en pantallas bajas; ☆ solo en fuentes). Cómo combinan circuitos y
-  fuentes se decide con el ámbito (territorial, nacional, internacional), en
-  estudio; no se ofrece hasta acreditarlo.
-- World Athletics: interfaz de circuitos y filtros (fase 2).
+En orden (detalle en el diseño local):
 
-Resultados, marcas y rankings siguen sin conector; ver
+1. Comparador conservador: enlace sin alcance, pares de la misma fuente y ya
+   unidos en vigilancia, motivos conservados.
+2. Bloque `atletismo` v2: alcance, temporalidad y estado, documentos con rol,
+   resultados, relación con la fuente y actividad.
+3. Adaptadores FGA (todos los ámbitos, función de padres: PGTA y
+   clasificaciones no son citas), RFEA (información técnica y documentos) y
+   FCA (`description`, ficha, reglamentos de series).
+4. Registro editorial con varias referencias por fuente y separación revisada
+   (Castro, Nassos, Dakar).
+5. Circuitos, ligas, controles y tecnificación solo con documento oficial.
+- Interfaz: filas de fuentes, circuitos WA y modalidad en Deportes (semana y
+  lista en pantallas bajas; ☆ solo en fuentes). OR dentro de cada fila y AND
+  entre filas: un circuito marcado restringe toda la selección.
+- Sin filtro de ámbito (3/11/2026): con reglas prudentes el 82 % de las citas
+  federativas quedaría sin ámbito y las etiquetas federativas lo contradicen
+  (FGA «Autonómico» y «Nacional» a la vez; área RFEA en crosses WA Gold). Solo
+  está acreditada la pertenencia a WA, que ya cubre su chip. Estudio local en
+  `docs/atletismo-ambito-2026-11-03/`. Distinto de la relación propio/reflejo,
+  que se acredita por enlaces entre federaciones.
+- World Athletics: estados, Juegos y resultados; interfaz de circuitos
+  (fase 2).
+- Territoriales: esperan al modelo. Extremadura (HTML con ID) y Cantabria
+  (ICS con UID) cumplen el contrato; ver el diseño local.
+
+Resultados y marcas se delegan a la fuente oficial: se enlaza su documento o
+página, sin extraer marcas. Rankings, sin conector; ver
 [resultados](resultados-diseno.md#otras-ampliaciones).

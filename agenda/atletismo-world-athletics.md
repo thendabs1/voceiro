@@ -18,9 +18,12 @@ usa `wasUrl` cuando WA lo publica; el calendario es la URL de la fuente.
 
 Las fechas normales son `startDate` y `endDate`. Las fechas ausentes o con
 `undeterminedCompetitionPeriod` quedan pendientes y hacen incompleta la
-ventana. Las fechas de los Juegos corresponden al conjunto de deportes: solo
+ventana; ese campo también lleva estados (`Cancelled`, `Postponed` con
+observación) que hoy se pierden como «periodo indeterminado». Los Juegos solo
 se importan con inicio, fin y evidencia editorial del atletismo en
-[atletismo-wa-juegos.json](atletismo-wa-juegos.json) (Dakar 2026: 8–10/11).
+[atletismo-wa-juegos.json](atletismo-wa-juegos.json) (Dakar 2026: 8–10/11);
+WA ya publica a veces el intervalo atlético (Dakar, París 2024), así que la
+regla se revisará en la fase 2. Las ediciones cambian de ID cada año.
 Una cita ausente se busca por su ID en el mismo grupo y una ventana ampliada
 un año a cada lado; puede reaparecer con nuevas fechas o dejar de publicarse
 como ausencia. Un 429 interrumpe la recogida y deja `Retry-After` en el
@@ -35,8 +38,12 @@ Combinadas, Ruta, Campeonatos). Los circuitos también se escriben en la barra;
 «Diamond League» filtra agenda y noticias por titular. Requiere entradas en el
 catálogo de `consulta.js` y añadir `wa` a `CALENDARIO_FUENTES_PUBLICAS`.
 
-Identidad con las federaciones: WA no publica ningún ID compartido (`iaafId` y
-`wasUrl` vacíos; ninguna ficha federativa enlaza a WA; el «Área» de RFEA no
-marca de forma coherente las pruebas con permiso WA). Por ahora cada unión es
-una conciliación editorial. Pendiente de decidir un método estable;
-investigación local en `docs/atletismo-identidades-2026-11-03/`.
+Identidad con las federaciones: WA no publica ningún ID compartido con ellas
+(`wasUrl` aparece en 3–4 registros al año e `iaafId` en uno; ninguna ficha
+federativa enlaza a WA; el «Área» de RFEA no marca de forma coherente las
+pruebas con permiso WA). Cada unión es una conciliación editorial con alcance
+revisado: un registro WA puede ser la reunión, una carrera o el atletismo de
+unos Juegos (Atapuerca, Dakar). Fase 2: estados, resultados por
+`/competition/calendar-results/results/{id}` verificado cuando `hasResults`,
+y «Campeonatos» como colección, no circuito. Auditoría local en
+`docs/atletismo-fuentes-2026-11-03/wa/`.

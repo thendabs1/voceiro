@@ -29,7 +29,9 @@ requiere resolver su identidad; aún no está implementado.
   clasificación por sesión y mundial (2/11/2026). Relacionar sus UUID con la
   agenda por referencias, no por nombre del GP; no traducir estados como
   `INSTND` por intuición.
-- Atletismo: sin conector. Candidatas web sin extracción acreditada: Diamond
+- Atletismo: los resultados se delegan a la fuente oficial (enlace al
+  documento o página en su nivel, sin marcas; decidido el 3/11/2026).
+  Rankings sin conector. Candidatas web sin extracción acreditada: Diamond
   League (marcas y récords), ranking de marcas RFEA y World Rankings (corte
   semanal, sin recalcular). Stats Pro de WA exige acceso. Mantener separados
   ranking mundial, mejores marcas y puntos de circuito; viento, pista corta,
