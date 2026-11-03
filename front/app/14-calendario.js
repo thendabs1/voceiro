@@ -927,9 +927,14 @@ const calPartidosEnMes = () => calModoDeportes() && CALENDARIO.capas?.size <= 2;
 // calendario completo se publican a unas dos semanas; las que lo tienen (F1,
 // MotoGP) no ponen límite; atletismo, el fin de la ventana leída de cada
 // federación. Más allá, el mes no está vacío sino sin publicar.
+// Competiciones pedidas en Deportes: las escritas (`nba:`) y las capas elegidas.
+function calCompeticionesPedidas(){
+  const s = CALENDARIO, o = calPideAgenda(s.orden) ? s.orden : null;
+  return [...new Set([...(o?.ambitos || []).filter(a => AMBITOS[a]?.codigo), ...(s.capas || [])])];
+}
 function calPublicadoHasta(){
   const s = CALENDARIO, fines = [];
-  for (const c of s.capas || []){
+  for (const c of calCompeticionesPedidas()){
     if (CAL_FUENTE_ATLETISMO[c]){
       const fin = s.meta?.fuentes?.[CAL_FUENTE_ATLETISMO[c]]?.ventana?.fin;
       if (fin) fines.push(fin);
@@ -1005,7 +1010,7 @@ function calMesTitulos(dias, rodante = false){
       `class="cal-mg-barra ${calColor(b)}${b.desde < semana[a] ? ' sigue-antes' : ''}${b.hasta > sumarDiasCalendario(semana[z - 1], 1) ? ' sigue-despues' : ''}" style="grid-column:${a + 1}/${z + 1};grid-row:${c + 2}" aria-haspopup="dialog" title="${calEsc(calNombreEvento(b))}"`)).join('');
     return `<div class="cal-mg-semana" style="--carriles:${n};--carril:${carril}px${deportes ? '' : `;height:${alto}px`}">${celdas}${lineas}</div>`;
   }).join('')}</div>${dias.some(sinPublicar) ? `<p class="cal-nota cal-leyenda-sin-publicar">${calEsc(t(
-    [...s.capas].every(c => CAL_FUENTE_ATLETISMO[c]) ? 'calSinPublicarNotaAtletismo' : 'calSinPublicarNota'))}</p>` : ''}`;
+    calCompeticionesPedidas().every(c => CAL_FUENTE_ATLETISMO[c]) ? 'calSinPublicarNotaAtletismo' : 'calSinPublicarNota'))}</p>` : ''}`;
 }
 function calTira(){
   const s = CALENDARIO, porDia = new Map([...(s.resumen || []), ...(s.mesAbierto ? s.mes?.dias || [] : [])].map(d => [d.dia, d]));

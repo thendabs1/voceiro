@@ -638,6 +638,20 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   assert.doesNotMatch(html, /cal-sin-publicar/);
 });
 
+test('Deportes escrita con prefijo (`nba:`) también raya lo aún sin publicar', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.deportes();
+  c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('nba:'));
+  await esperar();
+  assert.equal(c.api.s.capas, null);
+  c.api.s.meta.colecciones = [{ coleccion: 'nba', estado: 'activa', calendario_completo: false, unidades: [{ fin: '2026-11-11' }] }];
+  const html = c.api.calContenido();
+  assert.match(html, /class="cal-mg-dia cal-sin-publicar" style="grid-column:4"\s+data-cal="dia" data-valor="2026-11-12"/);
+  assert.match(html, /Los partidos se publican/);
+});
+
 const PREF = 'voceiro-calendario-preferencias-v1';
 const preferencias = extra => ({ [PREF]: JSON.stringify({ v: 1, estado: 'configurado', sitio: { id: 'es:municipio:36057', nombre: 'Vigo' },
   intereses: { cultura: ['teatro'], otraCultura: false, deporteLocal: false }, competiciones: ['f1'], ...extra }) });
