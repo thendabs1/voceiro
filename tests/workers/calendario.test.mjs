@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, mkdtempSync, writeFileSync, rmSync, openSync, closeSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -492,6 +493,40 @@ test('la modalidad de atletismo es faceta y dato de tarjeta; filtra con OR y val
   const esperado = seleccionCalendario(datos, {}, { modalidades: ['ruta'] }).eventos.map(e => e.id);
   assert.ok(esperado.includes('005') && !esperado.includes('004') && !esperado.includes('006'));
   assert.equal((await b.pedir(ventana + '&modalidades=montana')).status, 400);
+});
+
+test('titular y actividad de atletismo son facetas; filtran con OR y validan el valor', async t => {
+  const datos = muestra();
+  Object.assign(datos.eventos[4], { atletismo: { valor: {}, variantes: [], titulares: ['fga:reflejo', 'rfea:propio'], actividades: ['competicion'] } });
+  Object.assign(datos.eventos[5], { atletismo: { valor: {}, variantes: [], titulares: ['fga:desconocido'], actividades: ['tecnificacion'] } });
+  const lectura = prepararLectura(datos);
+  const de = (id, tipo) => lectura.facetas.filter(([e, x]) => e === id && x === tipo).map(f => f[2]);
+  assert.deepEqual(de('004', 'titular'), ['fga:reflejo', 'rfea:propio']);
+  assert.deepEqual(de('005', 'actividad'), ['tecnificacion']);
+  assert.deepEqual(de('006', 'titular'), []);
+  const b = base(datos); t.after(() => b.db.close());
+  const ids = async q => (await b.pedir(ventana + q)).dato.eventos.map(e => e.id);
+  // El mismo chip con y sin lo reflejado: la API no decide qué se muestra.
+  assert.deepEqual(await ids('&titular=fga:propio,fga:desconocido'), ['005']);
+  assert.deepEqual(await ids('&titular=fga:reflejo,fga:desconocido'), ['004', '005']);
+  assert.deepEqual(await ids('&actividades=control'), []);
+  assert.deepEqual(await ids('&actividades=competicion,tecnificacion'), ['004', '005']);
+  for (const [filtros, q] of [[{ titular: ['fga:reflejo'] }, '&titular=fga:reflejo'], [{ actividades: ['tecnificacion'] }, '&actividades=tecnificacion']])
+    assert.deepEqual(seleccionCalendario(datos, {}, filtros).eventos.map(e => e.id).filter(i => ['004', '005'].includes(i)), await ids(q));
+  for (const q of ['&titular=fga', '&titular=fga:ajeno', '&titular=sevilla:propio', '&actividades=escolar', '&actividades=desconocida'])
+    assert.equal((await b.pedir(ventana + q)).status, 400, q);
+});
+
+test('sin titular ni actividad la firma no cambia: un cursor en curso sobrevive al despliegue', async t => {
+  const b = base(muestra()); t.after(() => b.db.close());
+  const huella = async q => {
+    const { siguiente } = (await b.pedir(ventana + '&limite=1' + q)).dato;
+    return JSON.parse(atob(siguiente.replaceAll('-', '+').replaceAll('_', '/')))[1];
+  };
+  const { titular, actividades, ...anterior } = normalizarConsulta(new URL('https://x.test' + ventana + '&limite=1'));
+  assert.deepEqual([titular, actividades], [[], []]);
+  const esperada = createHash('sha256').update(JSON.stringify({ api_calendario: 2, ruta: '/calendario/eventos', ...anterior })).digest('hex');
+  assert.equal(await huella(''), esperada);
 });
 
 test('presentación: programa, prolongada (intervalo, continua o varios días) o cita', () => {

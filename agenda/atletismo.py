@@ -14,7 +14,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from . import atletismo_coincidencias as coincidencias, deporte, nucleo
+from . import atletismo_bloque, atletismo_coincidencias as coincidencias, deporte, nucleo
 
 
 FUENTES = {
@@ -275,6 +275,7 @@ def importar(anterior, pagina, observado):
         inicio, fin = date.fromisoformat(e['inicio']), date.fromisoformat(e['fin'])
         if fin < inicio:
             raise ValueError('Calendario con fin anterior al inicio')
+        atletismo_bloque.validar(e.get('metadatos') or {}, inicio.isoformat(), fin.isoformat())
         grupo = a.grupo('programa_competicion', e['id'], 'competicion', e.get('nombre'),
             padre=padre, url=enlace(fuente, e['url']),
             identidad=identidad_grupo)
