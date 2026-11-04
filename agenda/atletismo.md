@@ -327,7 +327,8 @@ decisión y `veredicto` y `motivos`, el resultado del comparador.
   máster) quedan como conflicto visible, sin elegir fuente.
 - Nivel II enlaza con una cita guardada mediante `decision: equivalencia` y
   una conciliación con su ID editorial (Ourense y Ordes, 12/12).
-- `atletismo_revision --issues` corre en cada pasada del workflow: un issue
+- `atletismo_revision --issues` corre al final del workflow cuando hubo escrituras
+  en Turso o venció el reloj de publicación (siempre en ejecución manual): un issue
   por par estable de IDs (marcador oculto, abiertos y cerrados), cinco
   escrituras como máximo por pasada. Cerrar un issue no fusiona datos; una
   huella de lo que usa el comparador (incluidas modalidades y enlaces) comenta
@@ -341,6 +342,10 @@ python -m agenda.atletismo_recogida --db /tmp/atletismo.db --fuente fga --inicio
 
 Fuentes `fga`, `fca`, `rfea` (incluye Nivel II y requiere Poppler) y `wa`; `--turso`
 sustituye a `--db`. Ventana máxima de 91 días; por defecto, hoy y 60 días más.
+El cron corre cada 6 h y cada fuente tiene un reloj diario independiente
+(`atletismo-fga`, `atletismo-fca`, `atletismo-rfea`, `atletismo-wa`), con 3 h de
+margen. Solo se anota tras éxito; un fallo se reintenta en el siguiente tick.
+Las ejecuciones manuales no aplican ni anotan estos relojes.
 El informe (consultas, ventana, peticiones, pendientes, ausencias y
 completitud) se guarda con el núcleo en `agenda_estado`, clave
 `atletismo-informe-{fuente}`. Un fallo conserva la última lectura buena. En

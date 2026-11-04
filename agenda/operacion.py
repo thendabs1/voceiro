@@ -217,8 +217,8 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
     if incidencias:
         for c in coberturas:
             c['completa'] = False
-    proximas = [e['inicio'] for e in vigentes.values() if e['inicio']]
-    nuevo = temporadas.exitosa(t, ahora, alcance, incidencias, proximas)
+    citas = [(e['inicio'], e['fin']) for e in vigentes.values() if e['inicio']]
+    nuevo = temporadas.exitosa(t, ahora, alcance, incidencias, citas)
     nuevo['seleccion'] = {**t['seleccion'], **alcance['seleccion']}
     nuevo['etiqueta'] = alcance.get('etiqueta', t.get('etiqueta', t['referencia']))
     nuevo['limites_proveedor'] = alcance.get('limites_proveedor', t.get('limites_proveedor'))
