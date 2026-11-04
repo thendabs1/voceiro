@@ -1368,6 +1368,14 @@ function asistenteCalendarioDesdeAjustes(){
   calAbrirAsistente(0);
 }
 const calEnfocarAjustes = () => document.getElementById('calendario-panel')?.querySelector('[data-cal="asistente"]')?.focus({ preventScroll: true });
+// Cancelar y Escape salen igual: abortan lo pedido y vuelven al engranaje.
+function calCancelarAsistente(){
+  const s = CALENDARIO;
+  s.asistente?.controller?.abort();
+  s.asistente = null;
+  pintarCalendario();
+  calEnfocarAjustes();
+}
 function calGuardarAsistente(){
   const s = CALENDARIO, b = s.asistente.b;
   // Sin sitio, solo competiciones: no quedan intereses de toda España.
@@ -1469,7 +1477,7 @@ function wireCalendario(){
     if (a === 'seguir') return calSeguir(v);
     if (s.asistente){
       const as = s.asistente;
-      if (a === 'as-cancelar'){ as.controller?.abort(); s.asistente = null; pintarCalendario(); return void calEnfocarAjustes(); }
+      if (a === 'as-cancelar') return calCancelarAsistente();
       // Sin sitio no hay agenda local: del sitio se pasa a las competiciones.
       const salto = !as.b.sitio && as.paso === (a === 'as-siguiente' ? 0 : 2) ? 2 : 1;
       if (a === 'as-anterior') return calPasoAsistente(as.paso - salto);
