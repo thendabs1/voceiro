@@ -43,121 +43,145 @@
     },
     "6": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "12": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "13": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "14": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "7": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "42": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "15": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "4000": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "601": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "43": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3806": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3660": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3765": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3759": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3758": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3723": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3690": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3766": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3683": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3798": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3799": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "3800": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "5": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     },
     "329": {
       "id": "campeonatos",
+      "clase": "coleccion",
       "nombre": "Campeonatos mundiales y continentales",
       "codigo_consulta": "atletismo-wa-campeonatos"
     }

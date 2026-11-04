@@ -20,6 +20,11 @@ from bs4 import BeautifulSoup
 from . import atletismo, atletismo_calendario_pdf, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, recogida
 
 
+WA_ESTADOS = {'Cancelled': 'cancelado', 'Postponed': 'aplazado'}
+WA_JUEGOS = (5, 329)
+WA_RESULTADOS = 'https://worldathletics.org/competition/calendar-results/results/'
+
+
 def meses(desde, hasta):
     d = desde.replace(day=1)
     while d <= hasta:
@@ -189,18 +194,23 @@ def wa_unidad(grupo, desde, hasta, obtener):
     raise ValueError('WA excede el límite de mil páginas')
 
 
+def wa_agrupacion(circuito):
+    return {'id': circuito['id'], 'nombre': circuito['nombre'], 'clase': circuito.get('clase', 'circuito'),
+            'codigo_consulta': circuito['codigo_consulta'], 'url': atletismo.FUENTES['wa'][1]}
+
+
 def wa_evento(e, circuitos, juegos):
     i = str(e['id'])
     inicio, fin = e.get('startDate'), e.get('endDate')
-    if e.get('undeterminedCompetitionPeriod') is not None or not inicio or not fin:
+    periodo = e.get('undeterminedCompetitionPeriod')
+    estado = WA_ESTADOS.get(periodo.get('status')) if isinstance(periodo, dict) else None
+    if periodo is not None and not estado or not inicio or not fin:
         return None, {'id': i, 'nombre': e.get('name'), 'motivo': 'periodo indeterminado o fechas ausentes',
                       'inicio': inicio, 'fin': fin}
     revision = None
-    if any(g in (5, 329) for g in circuitos):
-        revision = juegos.get(i)
-        if not revision:
-            return None, {'id': i, 'nombre': e.get('name'), 'motivo': 'Juegos sin fechas editoriales de atletismo',
-                          'inicio': inicio, 'fin': fin}
+    es_juegos = any(g in WA_JUEGOS for g in circuitos)
+    if es_juegos and (revision := juegos.get(i)):
+        # Una revisión solo corrige a WA cuando publica el periodo de los Juegos enteros.
         if not revision.get('evidencia') or not revision.get('url'):
             raise ValueError('WA: Juegos sin evidencia editorial')
         inicio, fin = revision['inicio'], revision['fin']
@@ -209,11 +219,28 @@ def wa_evento(e, circuitos, juegos):
     if fin < inicio:
         raise ValueError('WA: fin anterior al inicio')
     was = e.get('wasUrl')
-    return {'id': i, 'nombre': e['name'], 'url': atletismo.enlace('wa', was) if was else atletismo.FUENTES['wa'][1],
+    base = atletismo.FUENTES['wa'][1]
+
+    def evidencia(campo, literal):
+        return {'superficie': 'calendario', 'url': base, 'localizador': f'results[id={i}].{campo}', 'literal': literal}
+
+    return {'id': i, 'nombre': e['name'], 'url': atletismo.enlace('wa', was) if was else base,
             'inicio': inicio, 'fin': fin, 'lugar': {'nombre': e.get('venue')},
+            **({'estado': estado} if estado else {}),
             'grupos': sorted({c['id'] for grupo in circuitos for c in circuitos[grupo]}),
             'metadatos': {**({'iaafId': e['iaafId']} if e.get('iaafId') is not None else {}),
                 **({'fechas_juegos': revision} if revision else {}),
+                **({'temporalidad': {
+                        **({'texto': e['dateRange']} if e.get('dateRange') else {}),
+                        'estado': estado, 'estado_literal': periodo.get('label') or periodo['status'],
+                        'evidencia': evidencia('undeterminedCompetitionPeriod', periodo.get('remark') or periodo['status'])}}
+                   if estado else {}),
+                **({'alcance': {'tipo': 'juegos', 'literal': e.get('competitionGroup') or e['name'],
+                                'evidencia': evidencia('competitionGroup', e.get('competitionGroup') or e['name'])}}
+                   if es_juegos else {}),
+                **({'calendarios': [{'calendario': 'wa', 'categoria_literal': e['rankingCategory'],
+                                     'evidencia': evidencia('rankingCategory', e['rankingCategory'])}]}
+                   if e.get('rankingCategory') else {}),
                 'area': e.get('area'),
                 'rankingCategory': e.get('rankingCategory'), 'competitionSubgroup': e.get('competitionSubgroup'),
                 'disciplines': e.get('disciplines'), 'season': e.get('season'),
@@ -246,11 +273,49 @@ def wa(desde, hasta, obtener):
             eventos.append(cita)
     usados = {g for gs in grupos_por_id.values() for g in gs}
     circuitos = {c['id']: c for g in sorted(usados) for c in seleccion[g]}
-    agrupaciones = [{'id': c['id'], 'nombre': c['nombre'], 'clase': 'circuito',
-                     'codigo_consulta': c['codigo_consulta'], 'url': atletismo.FUENTES['wa'][1]}
-                    for c in circuitos.values()]
+    agrupaciones = [wa_agrupacion(c) for c in circuitos.values()]
     return {'version': 1, 'fuente': 'wa', 'eventos': eventos, 'agrupaciones': agrupaciones}, {
         'consultas': consultas, 'pendientes': pendientes, 'completo': not pendientes}
+
+
+def wa_competicion_resultados(html, i):
+    """Competición de la página de resultados, o None si no es la de esa cita."""
+    try:
+        datos = json.loads(BeautifulSoup(html, 'html.parser').select_one('script#__NEXT_DATA__').string)['props']['pageProps']
+        competicion = datos['calendarEventsResults']['competition']
+        return competicion if str(datos['query']['competitionId']) == i else None
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+
+
+def wa_resultados(eventos, obtener):
+    """Solo se publica el enlace que responde: algunas fichas con `hasResults` dan 500.
+
+    Un 403 o 429 interrumpe la fuente y el presupuesto agotado no se atrapa;
+    cualquier otro fallo deja la cita sin enlace, sin perder la lectura.
+    """
+    informe = {'verificados': 0, 'descartados': []}
+    for e in eventos:
+        if not e['metadatos'].get('hasResults'):
+            continue
+        url = WA_RESULTADOS + e['id']
+        try:
+            competicion = wa_competicion_resultados(obtener(url), e['id'])
+            motivo = None if competicion else 'la página no acredita la cita'
+        except HTTPError as error:
+            if error.code in (403, 429):
+                raise
+            motivo = f'HTTP {error.code}'
+        except OSError as error:
+            motivo = f'{type(error).__name__}: {error}'[:200]
+        if motivo:
+            informe['descartados'].append({'id': e['id'], 'motivo': motivo})
+            continue
+        e['metadatos']['documentos'] = [{'url': url, 'nombre': 'Resultados', 'rol': 'resultados',
+            'evidencia': {'superficie': 'resultados', 'url': url, 'localizador': 'calendarEventsResults.competition',
+                          'literal': competicion.get('name') or e['nombre']}}]
+        informe['verificados'] += 1
+    return informe
 
 
 LECTORES = {'rfea': rfea, 'fga': galicia, 'fca': cataluna, 'wa': wa}
@@ -388,9 +453,7 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
             existentes = {g['id'] for g in entrada.get('agrupaciones', [])}
             for circuito in {c['id']: c for lista in presentes.values() for c in lista}.values():
                 if circuito['id'] not in existentes:
-                    entrada.setdefault('agrupaciones', []).append({
-                        'id': circuito['id'], 'nombre': circuito['nombre'], 'clase': 'circuito',
-                        'codigo_consulta': circuito['codigo_consulta'], 'url': atletismo.FUENTES['wa'][1]})
+                    entrada.setdefault('agrupaciones', []).append(wa_agrupacion(circuito))
             reimportadas.append(c['id'])
             continue
         try:
@@ -491,6 +554,8 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
                         else LECTORES[fuente](desde, hasta, obtener))
     informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
                                observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
+    if fuente == 'wa':
+        informe['resultados'] = wa_resultados(entrada['eventos'], obtener)
     if fuente == 'rfea':
         informe['calendario_pdf'] = calendario_pdf(entrada, desde, hasta, obtener, conocidas)
         informe['calendario_pdf'].update(peticiones_indice=sum(not b for _, b in memoria),
