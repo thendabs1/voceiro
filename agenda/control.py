@@ -112,8 +112,18 @@ class Repositorio:
     def anotar_reloj(self, grupo, ahora):
         if grupo not in cadencias.RELOJES:
             raise ValueError(f'Grupo de reloj desconocido: {grupo}')
-        valor = {'ultima': temporadas.marca(ahora), 'proxima_revision': temporadas.despues(
-            ahora, hours=cadencias.RELOJES[grupo] - cadencias.MARGEN_HORAS)}
+        self._guardar_reloj(grupo, {'ultima': temporadas.marca(ahora), 'proxima_revision': temporadas.despues(
+            ahora, hours=cadencias.horas_reloj(grupo))})
+
+    def fallar_reloj(self, grupo, ahora, retry_after=None):
+        """Espera creciente tras un fallo; conserva la última lectura buena."""
+        previo = self.reloj(grupo) or {}
+        errores = previo.get('errores', 0) + 1
+        self._guardar_reloj(grupo, {**previo, 'errores': errores, 'ultimo_error': temporadas.marca(ahora),
+            'proxima_revision': max(temporadas.esperar_retry(retry_after, ahora) or temporadas.marca(ahora),
+                                    temporadas.despues(ahora, hours=cadencias.espera_fallo(grupo, errores)))})
+
+    def _guardar_reloj(self, grupo, valor):
         self.escribir([('INSERT INTO agenda_estado(clave,valor_json) VALUES (?,?) '
             'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json',
             ('reloj:' + grupo, codificar(valor)))])
