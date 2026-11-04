@@ -556,9 +556,11 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         if peticiones >= max_peticiones:
             raise ValueError('Atletismo agotó su presupuesto; no se importa una recogida parcial')
         peticiones += 1
-        if fuente in ('fga', 'rfea', 'fca') and descargar is None and ultimo_fin is not None:
-            time.sleep(max(0, 2.5 - (time.monotonic() - ultimo_fin)))
-        if fuente == 'wa' and peticiones > 1 and descargar is None:
+        if fuente in ('fga', 'rfea') and descargar is None and ultimo_fin is not None:
+            pausa = 2.5 if fuente == 'fga' else 1
+            time.sleep(max(0, pausa - (time.monotonic() - ultimo_fin)))
+        ficha_fca = fuente == 'fca' and ('/event/' in url or binario)
+        if (ficha_fca or fuente == 'wa' and peticiones > 1) and descargar is None:
             time.sleep(1)  # Sin reintentos: un 429 interrumpe la fuente.
         if fuente == 'wa':
             consultas_wa.append(url)

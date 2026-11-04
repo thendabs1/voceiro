@@ -112,7 +112,7 @@ esquema AJAX roto o un mes incoherente interrumpen. Una ficha sin SFID único si
 siendo válida, sin documentos. Una convocatoria técnica sin documento acreditativo
 no se publica y queda como aviso: no bloquea ausencias ni deja incompleta la lectura.
 Cada superficie informa ventana, filtros, consultas e IDs observados/resueltos.
-Todas las peticiones RFEA respetan 2,5 s de pausa; la memoria reutiliza respuestas
+Todas las peticiones RFEA respetan 1 s de pausa; la memoria reutiliza respuestas
 y fallos dentro de la pasada, y las fichas tienen caché de 24 h.
 
 El calendario web devuelve un solo mes y repite cada cita por día.
@@ -215,7 +215,7 @@ Tribe y de la ficha: descripción en texto normalizado, documentos con rol por
 etiqueta o sección y su evidencia, organizaciones bajo el rótulo contrastado
 «Organitzador(s)», dirección y títulos de nombre reservado. `Reglament` y
 `Resultats` solo constan en la ficha, cuya clase `post-{id}` acredita la cita:
-una por cita, con pausa de 2,5 s entre peticiones. Si falla, conserva los documentos anteriores; un
+una por cita, con pausa de 1 s. Si falla, conserva los documentos anteriores; un
 403 o 429 corta las fichas sin perder el inventario de la API. La ficha no lee PDF ni
 clasifica por categorías o título. Los avisos de estado solo en el título no
 cambian la programación. `status=publish` es editorial.
@@ -236,14 +236,15 @@ duplicado entre páginas o continuación incoherente interrumpe sin reemplazar e
 JSON anterior. Reglaments no publica número ni fecha: quedan desconocidos.
 
 El barrido es independiente, como máximo semanal por archivo de salida, con
-presupuesto de 400 peticiones RFEA y 200 por territorial y pausa de 2,5 s:
+presupuesto de 400 peticiones RFEA y 200 por territorial y pausa de 2,5 s. No
+está programado: el índice RFEA cuesta 231 peticiones y nada lo consume aún:
 
 ```sh
-/home/debs4/voceiro/venv/bin/python -m agenda.atletismo_circulares --fuente rfea --salida /tmp/circulares-rfea.json
+venv/bin/python -m agenda.atletismo_circulares --fuente rfea --salida /tmp/circulares-rfea.json
 ```
 
 Antes de lanzarlo se comprueba que no haya una recogida de producción en marcha.
-No se ha añadido un segundo barrido al cron diario. `atletismo_recogida
+`atletismo_recogida
 --indice-circulares ARCHIVO` incorpora al informe las asociaciones por URL
 exacta de documentos ya enlazados en ficha. No compara títulos, números, fechas
 ni sedes para asociarlas; las URL distintas, incluidas redirecciones sin resolver,
@@ -381,13 +382,10 @@ En orden (detalle en el diseño local):
 1. Lectores de documentos. Cada fuente oficial se lee entera y el comparador la
    une a las demás; el dato se copia literal de quien lo publica y lo dudoso no se
    enlaza. Pendientes: índice general de circulares
-   de las tres federaciones implementados como barrido semanal independiente;
-   falta programar su ejecución coordinada con producción. Las declaraciones se
-   conservan sin resolverlas por parecido ni número; las URL distintas sin
-   redirección acreditada no se asocian. Lectura de contenido con revisión
-   compartida por las tres fuentes, con cobertura todavía parcial (ver
-   `INFORME-CIRCULARES.md`). Sin lectura acreditada, actividad y alcance siguen
-   desconocidos.
+   de las tres federaciones, sin programar y sin resolver sustituciones ni
+   redirecciones. Lectura de contenido con revisión: cobertura parcial (ampliar
+   `atletismo-{fuente}-documentos.json`). Sin lectura acreditada, actividad y
+   alcance siguen desconocidos.
    Call Room no da datos públicos. RFEA: contenido de los documentos y
    convocatorias técnicas que los filtros no devuelven. FCA: columna de calendario,
    reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic. Los

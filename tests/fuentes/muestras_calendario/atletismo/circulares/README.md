@@ -16,9 +16,3 @@ sustituyen estas capturas.
 - Extractos FGA 180, FGA 168, Vigo y RFEA 160: únicamente los pasajes usados por
   la revisión, sin listas de atletas. Sus catálogos guardan el hash del PDF
   íntegro descargado; el extracto no suplanta esos bytes en la prueba SHA.
-
-`medicion-real.json` registra los intentos de descarga de esta sesión, incluidos
-un timeout FGA y el 403 que detuvo la ampliación RFEA. Sus cifras son llamadas al
-cliente de descarga, no saltos internos de redirección de urllib. Los originales
-completos y los JSON de índices y ventanas están en `/tmp/voceiro-circulares/`.
-La medición no requiere salir a red para ejecutar los tests.

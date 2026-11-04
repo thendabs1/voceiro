@@ -102,7 +102,7 @@ def leer_indice(html, url=INDICE, *, permitir_sin_archivo=False):
 def seleccionar(entradas, temporada):
     candidatas = [e for e in entradas if re.fullmatch(
         rf'Calendario(?: Nacional| RFEA)? {temporada}', e['nombre'], re.I)
-        and not re.search('proyecto', e['archivo'] + ' ' + e['url'], re.I)]
+        and not re.search('proyecto', e['archivo'] + ' ' + (e['url'] or ''), re.I)]
     if not candidatas:
         raise SinCalendario(f'Calendario RFEA: sin candidata clara para {temporada}')
     fecha = max(e['fecha'] for e in candidatas)
