@@ -60,14 +60,17 @@ def leer(texto):
 
 
 def _url(valor, base):
+    if not isinstance(valor, str) or not valor.strip() or valor.startswith('#'):
+        raise ValueError('Calendario RFEA: enlace vacío')
     url = urljoin(base, valor)
     p = urlsplit(url)
-    if p.scheme != 'https' or p.hostname != 'atletismorfea.es' or p.username or p.password:
+    if (p.scheme != 'https' or p.hostname != 'atletismorfea.es' or p.username or p.password
+            or any(c.isspace() for c in url)):
         raise ValueError('Calendario RFEA: enlace ajeno al índice oficial')
     return url
 
 
-def leer_indice(html, url=INDICE):
+def leer_indice(html, url=INDICE, *, permitir_sin_archivo=False):
     s = BeautifulSoup(html, 'html.parser')
     tabla = s.select_one('table')
     if tabla is None or not tabla.select_one('.views-field-field-circular-name'):
@@ -78,11 +81,14 @@ def leer_indice(html, url=INDICE):
         numero = tr.select_one('.views-field-title')
         fecha = tr.select_one('time[datetime]')
         enlaces = tr.select('.documento_descargar a[href]')
-        if nombre is None or numero is None or fecha is None or len(enlaces) != 1:
+        celda_archivo = tr.select_one('td.views-field-field-circular-file')
+        sin_archivo = (permitir_sin_archivo and celda_archivo is not None and not enlaces
+                       and not celda_archivo.get_text(strip=True) and not celda_archivo.find())
+        if nombre is None or numero is None or fecha is None or len(enlaces) != 1 and not sin_archivo:
             raise ValueError('Calendario RFEA: entrada incompleta del índice')
         entradas.append({'nombre': nombre.get_text(' ', strip=True),
             'numero': numero.get_text(strip=True), 'fecha': date.fromisoformat(fecha['datetime'][:10]).isoformat(),
-            'url': _url(enlaces[0]['href'], url),
+            'url': _url(enlaces[0]['href'], url) if enlaces else None,
             'archivo': ' '.join(x.get_text(' ', strip=True) for x in tr.select('.documento_nombre'))})
     siguientes = {_url(a['href'], url) for a in s.select('.pager a[rel~=next][href]')}
     if len(siguientes) > 1:
@@ -96,7 +102,7 @@ def leer_indice(html, url=INDICE):
 def seleccionar(entradas, temporada):
     candidatas = [e for e in entradas if re.fullmatch(
         rf'Calendario(?: Nacional| RFEA)? {temporada}', e['nombre'], re.I)
-        and not re.search('proyecto', e['archivo'] + ' ' + e['url'], re.I)]
+        and not re.search('proyecto', e['archivo'] + ' ' + (e['url'] or ''), re.I)]
     if not candidatas:
         raise SinCalendario(f'Calendario RFEA: sin candidata clara para {temporada}')
     fecha = max(e['fecha'] for e in candidatas)

@@ -139,7 +139,8 @@ se lee con su paginación. Entre calendarios de la temporada, sin proyectos,
 gana la fecha de publicación mayor, no el número de circular; la portada
 confirma título, año y número. El informe `calendario_pdf` guarda número,
 fecha, actualización, URL, SHA-256, filas y peticiones extra (índice y PDF,
-dentro del presupuesto de 200). `atletismo_calendario_pdf` lee el texto de
+dentro del presupuesto RFEA de 400). Un índice general local completo evita
+reconsultar el índice filtrado. `atletismo_calendario_pdf` lee el texto de
 Poppler íntegro y falla ante líneas desconocidas: 379 filas en la captura de
 65/2026 del 27/4, actualizada a 21/4. Conserva categoría y sede literales,
 rangos entre meses y días discontinuos. Para cada ficha mensual, solo una
@@ -215,7 +216,7 @@ etiqueta o sección y su evidencia, organizaciones bajo el rótulo contrastado
 «Organitzador(s)», dirección y títulos de nombre reservado. `Reglament` y
 `Resultats` solo constan en la ficha, cuya clase `post-{id}` acredita la cita:
 una por cita, con pausa de 1 s. Si falla, conserva los documentos anteriores; un
-403 o 429 corta las fichas sin perder el inventario de la API. No lee PDF ni
+403 o 429 corta las fichas sin perder el inventario de la API. La ficha no lee PDF ni
 clasifica por categorías o título. Los avisos de estado solo en el título no
 cambian la programación. `status=publish` es editorial.
 
@@ -225,6 +226,40 @@ hace propio, también con clubes. Un `website` RFEA sin resolver conserva la se�
 literal y deja la relación desconocida: puede apuntar a otra edición o a 404. Solo
 clubes, o la FCA con otra federación, queda desconocido. La API no publica la
 columna de calendario.
+
+**Índices y lecturas revisadas.** `atletismo_circulares` lee el índice general
+RFEA, las circulares FGA y los comunicats y archivos de reglaments FCA. Conserva
+los literales, incluidas erratas y declaraciones de modificación, sustitución
+o anexo; no resuelve una sustitución por número. Una circular publicada sin
+archivo conserva URL desconocida y aviso. Un esquema roto, contador cambiante,
+duplicado entre páginas o continuación incoherente interrumpe sin reemplazar el
+JSON anterior. Reglaments no publica número ni fecha: quedan desconocidos.
+
+El barrido es independiente, como máximo semanal por archivo de salida, con
+presupuesto de 400 peticiones RFEA y 200 por territorial y pausa de 2,5 s. No
+está programado: el índice RFEA cuesta 231 peticiones y nada lo consume aún:
+
+```sh
+venv/bin/python -m agenda.atletismo_circulares --fuente rfea --salida /tmp/circulares-rfea.json
+```
+
+Antes de lanzarlo se comprueba que no haya una recogida de producción en marcha.
+`atletismo_recogida
+--indice-circulares ARCHIVO` incorpora al informe las asociaciones por URL
+exacta de documentos ya enlazados en ficha. No compara títulos, números, fechas
+ni sedes para asociarlas; las URL distintas, incluidas redirecciones sin resolver,
+no se unen. El índice nunca crea citas.
+
+`atletismo_documentos` comparte la verificación SHA-256 de FGA con RFEA y FCA
+(`atletismo-{fuente}-documentos.json`). Solo descarga documentos enlazados con
+lectura revisada; excluye inscritos, resultados y clasificaciones. La revisión
+puede precisar IDs nativos en `citas` cuando el documento describe varios objetos.
+Alcance, actividad, títulos con autoridad, organización y sesiones llevan
+evidencia del documento. Un cambio de bytes no aplica lectura ni huella y avisa;
+un fallo transitorio conserva la lectura revisada. Un 403/429 detiene la red,
+incluido Nivel II, y no acredita ausencias. Las discrepancias entre lecturas no
+eligen la última. Las sesiones conservan su evidencia en el núcleo; sin zona
+horaria acreditada, se conservan como día, sin inventar un instante.
 
 ## Coincidencias e identidad
 
@@ -347,9 +382,10 @@ En orden (detalle en el diseño local):
 1. Lectores de documentos. Cada fuente oficial se lee entera y el comparador la
    une a las demás; el dato se copia literal de quien lo publica y lo dudoso no se
    enlaza. Pendientes: índice general de circulares
-   de las tres federaciones, con sustituciones, enlazadas solo si la ficha las
-   enlaza; lectura de su contenido (títulos, convocatoria, organizador) con
-   revisión. Sin ellos, `actividad` y `alcance` de FGA quedan desconocidos.
+   de las tres federaciones, sin programar y sin resolver sustituciones ni
+   redirecciones. Lectura de contenido con revisión: cobertura parcial (ampliar
+   `atletismo-{fuente}-documentos.json`). Sin lectura acreditada, actividad y
+   alcance siguen desconocidos.
    Call Room no da datos públicos. RFEA: contenido de los documentos y
    convocatorias técnicas que los filtros no devuelven. FCA: columna de calendario,
    reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic. Los

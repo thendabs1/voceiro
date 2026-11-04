@@ -1,0 +1,92 @@
+[
+  {
+    "archivo": "fga-0.html",
+    "url": "https://atletismo.gal/circulares/",
+    "sha256": "5bec315c85fede9e8204d0e60bb55f0b65c31fe86723def1ad14918638ef3557",
+    "origen": "normativa/fga/circulares-indice.html"
+  },
+  {
+    "archivo": "fca-circulars.html",
+    "url": "https://fcatletisme.cat/circulars/",
+    "sha256": "7d19f6db285253b9cdd2961c0d37629b18823a2f6e9feafce5570b10451a71b9",
+    "origen": "normativa/fca/circulars-indice.html"
+  },
+  {
+    "archivo": "fca-reglaments.html",
+    "url": "https://fcatletisme.cat/reglaments/",
+    "sha256": "0236c80d8392438f6b2ca95b9a440ed764d95f43266d5cff30325aefd4e3a305",
+    "origen": "normativa/fca/reglaments-indice.html"
+  },
+  {
+    "archivo": "rfea-0.html",
+    "url": "https://atletismorfea.es/federacion/communication-hub/circulares",
+    "sha256": "9e074be21dddf72778276d83a1bd4960269f3672a3ac97bb7a57322fe7deafde",
+    "capturado": "2026-11-04T13:04:27.792727+00:00"
+  },
+  {
+    "archivo": "rfea-1.html",
+    "url": "https://atletismorfea.es/federacion/communication-hub/circulares?page=1",
+    "sha256": "7d3ab6d06a9683e54042b2597a0088fcb25daa4292826e502862308c41e6dbdb",
+    "capturado": "2026-11-04T13:04:42.360872+00:00"
+  },
+  {
+    "archivo": "rfea-norma-21.pdf",
+    "url": "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/21/descarga",
+    "sha256": "461cafa73aaf5b4b5d1891e3073aaf163e05f7cf43598b5e71d8d3bc329972ea",
+    "origen": "cruce/muestras/f0819aa8de2dbc554d82.body"
+  },
+  {
+    "archivo": "rfea-norma-22.pdf",
+    "url": "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/22/descarga",
+    "sha256": "0108949f748f45f298eae4c1722f03b9d4f645dc5c532b7be83824d0e6957f29",
+    "origen": "cruce/muestras/0e6664a1d41a4feb4b2e.body"
+  },
+  {
+    "archivo": "fca-combinades.pdf",
+    "url": "https://fcatletisme.cat/wp-content/uploads/2026/10/reg-2026111415-controlcombinadesperapc.pdf",
+    "sha256": "72579574bae9f431d52865220c8a9cbb7a96580d32fd0b3e1234a409e363a303",
+    "origen": "fca/muestras/c43adf687978e375.pdf"
+  },
+  {
+    "archivo": "fca-curses.pdf",
+    "url": "https://fcatletisme.cat/wp-content/uploads/2026/10/reg-2026111415-controlcurses.pdf",
+    "sha256": "857c01e90a4e3416cf1c8359dfd4a0c9ff6adbc86d2d80630cbe49de5e09c6c0",
+    "origen": "fca/muestras/4f1ee6beed34ec3e.pdf"
+  },
+  {
+    "archivo": "rfea-209.html",
+    "url": "https://atletismorfea.es/federacion/communication-hub/circulares?page=209",
+    "sha256": "a1b8f0709832e97758f9c0dfce6f8603913cd84df7f41467b2bf3cb079afa556",
+    "capturado": "2026-11-04T13:17:12.925487+00:00"
+  },
+  {
+    "archivo": "fca-api-1.json",
+    "url": "https://fcatletisme.cat/wp-json/wp/v2/posts?categories=52&per_page=100&page=1&_envelope=1&_fields=id%2Cdate%2Clink%2Ctitle%2Ccategories",
+    "sha256": "bdcec1a34a68ab47fbc2d5fb13e2b3231d20e0b866f27083dd9cb901d7420f42",
+    "capturado": "2026-11-04T13:21:03.410354+00:00"
+  },
+  {
+    "archivo": "fca-api-4.json",
+    "url": "https://fcatletisme.cat/wp-json/wp/v2/posts?categories=52&per_page=100&page=4&_envelope=1&_fields=id%2Cdate%2Clink%2Ctitle%2Ccategories",
+    "sha256": "5c1e2498db0754b905689d9d80fe0f1b6517a357c32047c088e2b5c4fa1c7e63",
+    "capturado": "2026-11-04T13:21:41.572961+00:00"
+  },
+  {
+    "archivo": "fga-43.html",
+    "url": "https://atletismo.gal/circulares/?paper_page=43",
+    "sha256": "9996531f03ec64da7a8dca5dce6cb38b8ef28bf2daa3155aba6c570168c17233",
+    "capturado": "2026-11-04T13:25:34.660223+00:00"
+  },
+  {
+    "archivo": "fga-79.html",
+    "url": "https://atletismo.gal/circulares/?paper_page=79",
+    "sha256": "33a8ce7622ac248f68b4961c9e23afafe3591a617f183901afa8ed01b32374bd",
+    "capturado": "2026-11-04T13:28:50.818826+00:00"
+  },
+  {
+    "archivo": "fga-80.html",
+    "url": "https://atletismo.gal/circulares/?paper_page=80",
+    "sha256": "5bf902570acca7a916b392610b12d994c9fe5035ef4f85a406648015681bb949",
+    "capturado": "2026-11-04T13:28:53.829348+00:00"
+  }
+]

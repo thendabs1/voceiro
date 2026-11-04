@@ -23,7 +23,9 @@ def ficha(nombre):
                         lecturas=f.lecturas_documentales())
 
 
-def captura(url):
+def captura(url, *, binario=False):
+    if binario:
+        raise FileNotFoundError('PDF no capturado: ' + url)
     indice = json.loads((M / 'capturas.json').read_text())
     if url not in indice:
         raise FileNotFoundError('Captura no disponible: ' + url)
@@ -63,7 +65,9 @@ class CasosFGA(unittest.TestCase):
         self.assertEqual((x['id'], len(x['hijos']), x['clase']), ('119957', 25, 'coleccion'))
         self.assertEqual(x['metadatos']['alcance']['tipo'], 'publicacion')
         self.assertTrue(any('??/10' in p for p in x['pendientes']))
-        def obtener(url):
+        def obtener(url, *, binario=False):
+            if binario:
+                raise FileNotFoundError('PDF no capturado: ' + url)
             if url.startswith(f.API):
                 return json.dumps([{'id': 119957, 'title': x['nombre'], 'main_date': '2026-01-01', 'all_dates': ['2026-01-01']}])
             if '?' in url:
@@ -241,7 +245,7 @@ class CasosFGA(unittest.TestCase):
         self.assertEqual(jornada['metadatos']['pertenencias'][0]['clase'],'coleccion')
         coruna = next(g for g in entrada['agrupaciones'] if g['id']=='127481')
         self.assertEqual(coruna['clase'],'circuito')
-        self.assertEqual(informe['peticiones'],77)  # Incluye tres documentos con lectura revisada.
+        self.assertEqual(informe['peticiones'],80)  # Incluye seis documentos con lectura revisada.
         self.assertEqual(len(informe['consultas']),len(set(informe['consultas'])))
         self.assertFalse(any('.pdf' in u for u in informe['consultas']))
         api = [s for s in informe['superficies'] if s['superficie']=='api']

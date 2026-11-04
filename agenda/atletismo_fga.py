@@ -6,9 +6,7 @@ El resto queda desconocido o pendiente de revisión.
 from calendar import monthrange
 from datetime import date, datetime
 from functools import lru_cache
-from hashlib import sha256
 import json
-from pathlib import Path
 import re
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urljoin, urlsplit
@@ -16,6 +14,7 @@ from urllib.parse import urlencode, urljoin, urlsplit
 from bs4 import BeautifulSoup
 
 from . import atletismo as a
+from . import atletismo_documentos
 
 BASE = 'https://atletismo.gal/competicions/'
 API = 'https://atletismo.gal/wp-json/fga/v1/competitions'
@@ -172,7 +171,7 @@ def rol(nombre, seccion):
 
 @lru_cache(maxsize=1)
 def lecturas_documentales():
-    return json.loads(Path(__file__).with_name('atletismo-fga-documentos.json').read_text(encoding='utf-8'))
+    return atletismo_documentos.lecturas_documentales('fga')
 
 
 def leer_ficha(html, *, url=BASE, lecturas=None):
@@ -217,22 +216,24 @@ def leer_ficha(html, *, url=BASE, lecturas=None):
     if ESPANA.search(nombre):
         salida['titulos'] = [{'literal': nombre, 'autoridad': 'federacion_espanola', 'base': 'nombre_reservado',
                               'evidencia': evidencia(url, 'h1', nombre)}]
-    revisadas, programa = [], []
+    revisadas, programa, acreditados = [], [], {}
     for d in salida['documentos']:
         lectura = (lecturas or {}).get(d['url'])
         if not lectura:
             continue
-        ev = evidencia(d['url'], lectura['localizador'], lectura['literal'], 'documento')
         if lectura.get('sha256'):
             d['hash'] = lectura['sha256']
+        datos = lectura.get('citas', {}).get(i) if 'citas' in lectura else lectura
+        if not datos:
+            continue
+        lectura = {**lectura, **datos}
+        ev = evidencia(d['url'], lectura['localizador'], lectura['literal'], 'documento')
         revisadas.append((lectura, ev))
-        for k in ('actividad', 'alcance'):
-            if k in lectura:
-                salida[k] = {**lectura[k], 'evidencia': ev}
-        if 'titulos' in lectura:
-            salida['titulos'] = [{'literal': t, 'base': 'documento', 'evidencia': ev} for t in lectura['titulos']]
+        for k, valor in atletismo_documentos.campos(lectura, d['url']).items():
+            acreditados.setdefault(k, []).append(valor)
         avisos.extend(lectura.get('pendientes', []))
-        programa.extend(lectura.get('programa', []))
+        programa.extend({'evidencia': ev, **s} for s in lectura.get('programa', []))
+    avisos.extend(a['motivo'] for a in atletismo_documentos.combinar(salida, acreditados, i))
     hijos = [a.enlace('fga', x['href']) for x in art.select('.competition-list h2 a[href]')]
     clase = 'coleccion'
     if hijos:
@@ -296,28 +297,11 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
     from .atletismo_recogida import meses
     superficies, consultas, pendientes, avisos, datos, inventario, fichas = [], [], [], [], {}, {}, {}
     bloqueada = False
-    verificadas = {}
+    documentos = atletismo_documentos.Lecturas('fga', obtener, catalogo=lecturas_documentales())
 
     def leer(html, url):
         ficha = leer_ficha(html, url=url)
-        for d in ficha['metadatos']['documentos']:
-            u = d['url']
-            lectura = lecturas_documentales().get(u)
-            if not lectura or d['rol'] == 'inscritos' or u in verificadas:
-                continue
-            try:
-                contenido = obtener(u, binario=True)
-                if not isinstance(contenido, bytes):
-                    raise ValueError('la descarga no conserva bytes')
-                coincide = sha256(contenido).hexdigest() == lectura['sha256']
-            except Exception as error:
-                verificadas[u] = lectura
-                avisos.append({'id': ficha['id'], 'url': u, 'motivo': 'descarga fallida; se conserva la lectura revisada',
-                               'error': f'{type(error).__name__}: {error}'[:500]})
-            else:
-                verificadas[u] = lectura if coincide else None
-                if not coincide:
-                    avisos.append({'id': ficha['id'], 'url': u, 'motivo': 'bytes distintos; documento pendiente de nueva lectura'})
+        verificadas = documentos.verificar(ficha['metadatos']['documentos'], ficha['id'])
         return leer_ficha(html, url=url, lecturas=verificadas)
 
     def superficie(tipo, ventana, filtros, urls, leer):
@@ -385,6 +369,7 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
     if bloqueada:
         return {'version': 1, 'fuente': 'fga', 'eventos': [], 'agrupaciones': []}, {
             'consultas': consultas, 'superficies': superficies, 'pendientes': pendientes,
+            'documentos_revisados': {'superficies': documentos.superficies},
             'completo': False, 'conservar_lectura': True, 'aplicar_ausencias': False}
     cuarentena = {p['id'] for p in pendientes if p.get('cuarentena')}
     agrupaciones, eventos, publicaciones, grupos = {}, [], [], {}
@@ -467,6 +452,7 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
     if bloqueada:
         return {'version': 1, 'fuente': 'fga', 'eventos': [], 'agrupaciones': []}, {
             'consultas': consultas, 'superficies': superficies, 'pendientes': pendientes,
+            'documentos_revisados': {'superficies': documentos.superficies},
             'completo': False, 'conservar_lectura': True, 'aplicar_ausencias': False}
     for i, e in datos.items():
         if i in cuarentena or e['url'] in grupos:
@@ -521,4 +507,6 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
     completa = not cuarentena and all(s['estado'] == 'completa' for s in superficies)
     return {'version': 1, 'fuente': 'fga', 'eventos': eventos, 'agrupaciones': list(agrupaciones.values())}, {
         'consultas': consultas, 'superficies': superficies, 'publicaciones': publicaciones,
-        'pendientes': pendientes, 'avisos': avisos, 'completo': completa and not pendientes, 'aplicar_ausencias': completa}
+        'pendientes': pendientes, 'avisos': avisos + documentos.avisos,
+        'documentos_revisados': {'superficies': documentos.superficies},
+        'completo': completa and not pendientes, 'aplicar_ausencias': completa}
