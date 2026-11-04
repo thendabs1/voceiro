@@ -1,7 +1,7 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=613e83772b';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=613e83772b';
-import { sumarDisponibilidad } from './consulta.js?v=613e83772b';
+import { palabrasDe } from '../busqueda/texto.js?v=c671dbf86a';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=c671dbf86a';
+import { sumarDisponibilidad } from './consulta.js?v=c671dbf86a';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -104,6 +104,8 @@ export function prepararLectura(datos) {
     agregar('formato', e.formatos || []);
     agregar('precio', e.precio ? [e.precio] : []);
     agregar('modalidad', e.atletismo?.modalidades || []);
+    agregar('titular', e.atletismo?.titulares || []);
+    agregar('actividad', e.atletismo?.actividades || []);
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
     const inactivo = o => ['cancelado', 'aplazado'].includes(o.programacion?.valor?.programacion);

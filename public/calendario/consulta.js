@@ -1,10 +1,14 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=613e83772b';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=613e83772b';
+import { tokenizeQuery, normalize } from '../parser.js?v=c671dbf86a';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=c671dbf86a';
 
 // Modalidad común de atletismo: códigos de shared/calendario/atletismo-modalidades.json
 // (una prueba lo comprueba). Los calcula la publicación; aquí solo se filtra.
 export const MODALIDADES_ATLETISMO = ['ruta', 'cross', 'pista-cubierta', 'pista-aire-libre', 'marcha', 'trail'];
+// Relación con la fuente y actividad acreditadas: agenda/atletismo_bloque.py (la
+// misma prueba lo comprueba). `titular` combina fuente y relación: «fga:reflejo».
+export const ACTIVIDADES_ATLETISMO = ['competicion', 'control', 'tecnificacion'];
+export const TITULAR_ATLETISMO = /^(rfea|fga|fca|wa):(propio|reflejo|desconocido)$/;
 
 // Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
 // nombre propio no es ambiguo, suman noticias por su titular (las noticias no se
@@ -135,6 +139,10 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
     // Varias modalidades se combinan con OR; una cita sin modalidad no casa.
     const modalidades = esTabla ? [] : dato.atletismo?.modalidades || [];
     if (filtros.modalidades?.length && !filtros.modalidades.some(m => modalidades.includes(m))) return false;
+    const titulares = esTabla ? [] : dato.atletismo?.titulares || [];
+    if (filtros.titular?.length && !filtros.titular.some(x => titulares.includes(x))) return false;
+    const actividades = esTabla ? [] : dato.atletismo?.actividades || [];
+    if (filtros.actividades?.length && !filtros.actividades.some(a => actividades.includes(a))) return false;
     if (!buscarTexto) return true;
     const nombres = objetivos.flatMap(e => Object.values(e.nombres)).join(' ');
     const palabras = palabrasDe(nombres);
