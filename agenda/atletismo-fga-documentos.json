@@ -1,0 +1,148 @@
+{
+  "https://atletismo.gal/wp-content/uploads/2026/04/Circular-85-2026.-Calendario-sesions-tecnicas-tecnificacion-2026.pdf": {
+    "literal": "CALENDARIO SESIÓNS TÉCNICAS TECNIFICACIÓN 2026",
+    "localizador": "página 1; tabla página 2: ??/10 LUGO PNTD VELOCIDADE",
+    "alcance": {
+      "tipo": "publicacion"
+    },
+    "actividad": {
+      "valor": "tecnificacion"
+    },
+    "pendientes": [
+      "Plan provisional: ??/10 LUGO PNTD VELOCIDADE, sin día acreditado"
+    ],
+    "sha256": "2887a9c4e477e1c1efb73141f3537f7716a236054d02bdda283fc68ae02cc380"
+  },
+  "https://atletismo.gal/wp-content/uploads/2026/05/Circular-118-2026.-Campionato-Xunta-de-Galicia-Sub-16-AL-2026.pdf.-Actualizada.pdf": {
+    "literal": "Trala suspensión da xornada de tarde do Campionato de Galicia Sub 16, comunícase o aprazamento da mesma para o mércores 27 de maio",
+    "localizador": "página 1, apertura",
+    "dias": [
+      "2026-05-24",
+      "2026-05-27"
+    ],
+    "sha256": "cba4fbb93763e55acd2627b66e2a135e610cbfd0094449323f8170c6be5ee952"
+  },
+  "https://atletismo.gal/wp-content/uploads/2025/02/control-domingo-16-de-febreiro-manana-.pdf": {
+    "literal": "CIRCULAR 42-2025. CONTROL FGA PC– 16/2/2025 (Xornada de mañá) Art.1) A Federación Galega de Atletismo organiza este control o día 16 de febreriro de 2025 en Expourense (Ourense).",
+    "localizador": "cabecera y artículo 1",
+    "actividad": {
+      "valor": "control"
+    },
+    "sha256": "dd204cd87d27f13f35a15a5b9f1f701ee56ae645290627d249992e4a16a31d6e",
+    "alcance": {
+      "tipo": "reunion"
+    },
+    "programa": [
+      {
+        "id": "manana",
+        "nombre": "Control FGA PC – Xornada de mañá",
+        "tipo_sesion": "control",
+        "inicio": "2025-02-16",
+        "fin": "2025-02-16"
+      }
+    ]
+  },
+  "https://atletismo.gal/wp-content/uploads/2025/02/control-domingo-16-de-febreiro-TARDE.pdf": {
+    "literal": "CIRCULAR 43-2025. CONTROL FGA PC– 16/2/2025 (Xornada de tarde) Art.1) A Federación Galega de Atletismo organiza este control o día 16 de febreriro de 2025 en Expourense (Ourense).",
+    "localizador": "cabecera y artículo 1",
+    "actividad": {
+      "valor": "control"
+    },
+    "sha256": "d44233068c86abd384ea69f666e07c91898b81b2d65fd6de5c11aa9412f09761",
+    "alcance": {
+      "tipo": "reunion"
+    },
+    "programa": [
+      {
+        "id": "tarde",
+        "nombre": "Control FGA PC – Xornada de tarde",
+        "tipo_sesion": "control",
+        "inicio": "2025-02-16",
+        "fin": "2025-02-16"
+      }
+    ]
+  },
+  "https://atletismo.gal/wp-content/uploads/2024/01/Circular-13-2024.pdf": {
+    "literal": "A Federación Galega de Atletismo organiza este control o día 20 de xaneiro de 2024 en Expourense (Ourense).",
+    "localizador": "artículo 1",
+    "actividad": {
+      "valor": "control"
+    },
+    "sha256": "0f5be1a2164aa91d459789b3e74bd24c723f8e8b21b35bfd95af0b79367ead40",
+    "alcance": {
+      "tipo": "sesion"
+    }
+  },
+  "https://atletismo.gal/wp-content/uploads/2024/01/Circular-14-2024.pdf": {
+    "literal": "A Federación Galega de Atletismo organiza este control o día 20 de xaneiro de 2024 en Expourense (Ourense).",
+    "localizador": "artículo 1",
+    "actividad": {
+      "valor": "control"
+    },
+    "sha256": "95dcb1049a4ffca387c70f2752b8027fd8d8b3747472dd76c5475cb1c6bb6529",
+    "alcance": {
+      "tipo": "sesion"
+    }
+  },
+  "https://atletismo.gal/wp-content/uploads/2025/01/Circular-Combinadas-Abs-S23-S20-Master.pdf": {
+    "literal": "os Campionatos Xunta de Galicia de Probas Combinadas Absoluto, Sub 23, Sub 20 e Máster.",
+    "localizador": "artículo 1",
+    "alcance": {
+      "tipo": "titulos"
+    },
+    "actividad": {
+      "valor": "competicion"
+    },
+    "titulos": [
+      "Probas Combinadas Absoluto",
+      "Probas Combinadas Sub 23",
+      "Probas Combinadas Sub 20",
+      "Probas Combinadas Máster"
+    ],
+    "sha256": "474ab7d12a36b19b065c201bb71cc4344828ea893b2954158ca8773eecc2b5a4"
+  },
+  "https://atletismo.gal/wp-content/uploads/2026/05/Circular-117-2026-Cto-Xunta-de-Galicia-Absoluto-AL-2026.pdf": {
+    "literal": "Celebrarase, tamén, o Cto. de Galicia Sub 20 e Sub 23 de 5000m marcha.",
+    "localizador": "artículo 1 (artículo 2: admisión desde Sub 16)",
+    "alcance": {
+      "tipo": "titulos"
+    },
+    "actividad": {
+      "valor": "competicion"
+    },
+    "titulos": [
+      "Campionato Xunta de Galicia Absoluto",
+      "Cto. de Galicia Sub 20 de 5000m marcha",
+      "Cto. de Galicia Sub 23 de 5000m marcha"
+    ],
+    "sha256": "f1e107e9575981eff064195a8e9d7f399319049a6b18225b95962972b3082141"
+  },
+  "https://atletismo.gal/wp-content/uploads/2024/02/ATLETISMO_PISTA_2023_24.pdf": {
+    "literal": "XOGADE (Xogos Galegos Deportivos) en Idade Escolar",
+    "localizador": "página 2, INSCRICIÓN",
+    "actividad": {
+      "valor": "competicion",
+      "escolar": true
+    },
+    "sha256": "a960643e4f8a2f4d46e4e6590e7767ca348fb1e118a87825752cec22ab731fa8"
+  },
+  "https://atletismo.gal/wp-content/uploads/2026/10/Normativa-Cros-Carballo-Curso-2026-2027-1.pdf": {
+    "literal": "PDF escaneado, sin texto extraíble",
+    "localizador": "documento completo",
+    "pendientes": [
+      "PDF escaneado: requiere revisión visual; no se considera documento vacío"
+    ],
+    "sha256": "22ddc052762e399ccdb12c427a6f9eab94a7a08b0d0e10e9495168cc7e830a89"
+  },
+  "https://atletismo.gal/wp-content/uploads/2026/10/rcircuitodepcoruna2026pista.pdf": {
+    "literal": "Art.1).- A Federación Galega de Atletismo organiza, co patrocinio da Deputación Provincial da Coruña, o “IV Circuíto de atletismo de probas en pista da Provincia da Coruña”, a celebrar nas seguintes datas: 7 de novembro Santiago de Compostela ( Pista USC) xornada de mañá 14 de novembro A Coruña (Pista UDC – Elviña) xornada de mañá 28 de novembro A Malata ( Ferrol) xornada de mañá",
+    "localizador": "artículo 1, declaración y tres jornadas",
+    "clase": "circuito",
+    "jornadas": [
+      "2026-11-07",
+      "2026-11-14",
+      "2026-11-28"
+    ],
+    "sha256": "01eafd0bc4822ad058c74a77683fa980b90bbbbb8bc4004b42ef123d672713d3"
+  }
+}

@@ -131,61 +131,9 @@ def cataluna(desde, hasta, obtener):
     raise ValueError('FCA excede el límite de cien páginas')
 
 
-def galicia(desde, hasta, obtener):
-    revisadas = json.loads(Path(__file__).with_name('atletismo-citas-revisadas.json').read_text())
-    if revisadas.get('version') != 1:
-        raise ValueError('Registro de citas revisadas desconocido')
-    datos, urls = {}, []
-    for mes in meses(desde, hasta):
-        url = atletismo.FUENTES['fga'][1] + '?' + urlencode({'cp_date': mes.strftime('%d/%m/%Y')})
-        html = obtener(url)
-        s = BeautifulSoup(html, 'html.parser')
-        if s.select('.pagination a, .page-numbers, .load-more'):
-            raise ValueError('FGA anuncia paginación aún no contrastada')
-        for e in atletismo.leer_galicia(html):
-            if e['id'] in datos and datos[e['id']] != e:
-                raise ValueError('FGA cambió una competición entre meses')
-            datos[e['id']] = e
-        urls.append(url)
-    padres = {e['metadatos']['circuito_declarado']['url']
-              for e in datos.values() if e['metadatos'].get('circuito_declarado')}
-    agrupaciones, grupos, eventos, pendientes = [], {}, [], []
-    for e in datos.values():
-        if e['url'] in padres:
-            grupos[e['url']] = e['id']
-            agrupaciones.append({k: e[k] for k in ('id', 'nombre', 'url')} | {'clase': 'circuito'})
-    for url in sorted(padres - grupos.keys()):
-        s = BeautifulSoup(obtener(url), 'html.parser')
-        articulo = s.select_one('main article.type-competition')
-        ids = [c[5:] for c in (articulo.get('class', []) if articulo else []) if re.fullmatch(r'post-\d+', c)]
-        # El primer h1 de la página es la cabecera «Calendario e resultados».
-        nombre = atletismo.texto(articulo.select_one('h1')) if articulo else ''
-        if len(ids) != 1 or not nombre:
-            raise ValueError('FGA: agrupación enlazada sin identidad acreditada')
-        grupos[url] = ids[0]
-        # El vínculo acredita una colección. Su nombre no decide si es un
-        # circuito deportivo o un plan de tecnificación.
-        agrupaciones.append({'id': ids[0], 'nombre': nombre, 'url': url, 'clase': 'coleccion'})
-    for e in datos.values():
-        if e['url'] in grupos or e['fin'] < desde.isoformat() or e['inicio'] > hasta.isoformat():
-            continue
-        padre = e['metadatos'].get('circuito_declarado')
-        revision = revisadas['fga'].get(e['id'])
-        if padre and padre['url'] not in grupos or (re.search(r'circu[ií]t|circuito', e['nombre'], re.I)
-                                                    and not padre and not revision):
-            pendientes.append({'id': e['id'], 'url': e['url'], 'motivo': 'agrupación o jornadas por acreditar',
-                               'inicio': e['inicio'], 'fin': e['fin']})
-            continue
-        if padre:
-            e['grupo'] = grupos[padre['url']]
-        if revision:
-            if not revision.get('criterio') or e['url'] not in revision.get('evidencias', []):
-                raise ValueError('Cita revisada sin evidencia aplicable')
-            e['metadatos']['actividad_revisada'] = revision
-        e['metadatos'].update(atletismo.leer_ficha_galicia(obtener(e['url'])))
-        eventos.append(e)
-    return {'version': 1, 'fuente': 'fga', 'eventos': eventos, 'agrupaciones': agrupaciones}, {
-        'consultas': urls, 'pendientes': pendientes, 'completo': not pendientes}
+def galicia(desde, hasta, obtener, *, conocidas=()):
+    from .atletismo_fga import recoger
+    return recoger(desde, hasta, obtener, conocidas=conocidas)
 
 
 def wa_configuracion():
@@ -324,20 +272,19 @@ def ficha_cataluna(cita, contenido, obtener):
 
 
 def ficha_galicia(cita, contenido, obtener):
-    s = BeautifulSoup(contenido, 'html.parser')
-    articulo = s.select_one('main article.type-competition')
-    if articulo is None or 'post-' + cita['id'] not in articulo.get('class', []):
+    from . import atletismo_fga as fga
+    try:
+        ficha = fga.leer_ficha(contenido, url=cita['url'])
+    except fga.FechasDudosas as error:
+        return {'pendiente': str(error)}
+    if ficha['id'] != cita['id']:
         raise ValueError('FGA: la ficha no corresponde a la cita guardada')
-    # Cabecera «12/12/2026 - 13/12/2026 - Ordes»: la primera fecha y la última.
-    fechas = [datetime.strptime(x, '%d/%m/%Y').date() for x in
-              (atletismo.texto(e) for e in articulo.select('span')[:3]) if re.fullmatch(r'\d{2}/\d{2}/\d{4}', x)]
-    if not fechas or fechas[-1] < fechas[0] or (fechas[-1] - fechas[0]).days > 90:
-        raise ValueError('FGA: ficha sin fechas acreditadas')
-    # Los errores de este listado o de otras fichas no son de esta cita: interrumpen la fuente.
-    entrada, informe = galicia(fechas[0], fechas[-1], obtener)
-    p = next((x for x in informe['pendientes'] if x['id'] == cita['id']), None)
-    if p:
-        return {'pendiente': 'agrupación o jornadas por acreditar', 'inicio': p['inicio'], 'fin': p['fin']}
+    t = ficha['metadatos']['temporalidad']
+    entrada, informe = galicia(date.fromisoformat(t['dias'][0]), date.fromisoformat(t['dias'][-1]), obtener)
+    if informe.get('conservar_lectura'):
+        return {'bloqueo': True}
+    if not informe.get('aplicar_ausencias', False):
+        return {'pendiente': 'superficie parcial; se conserva la última lectura'}
     eventos = [e for e in entrada['eventos'] if e['id'] == cita['id']]
     if not eventos:
         return {'ausencia': 'ficha sin listado en sus fechas'}
@@ -382,6 +329,8 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
     lectura trae menos de la mitad de lo conocido (al menos cinco ausentes),
     se trata como lectura rota: falla sin retirar nada.
     """
+    if fuente == 'fga' and not informe.get('aplicar_ausencias', True):
+        return {'ausencias': [], 'reimportadas': []}
     leidas = {str(x['id']) for x in (*entrada['eventos'], *informe['pendientes'], *entrada.get('agrupaciones', []))}
     pendientes = {str(x['id']): x for x in informe['pendientes']}
     en_ventana = [c for c in conocidas if c['fin'] >= desde.isoformat() and c['inicio'] <= hasta.isoformat()]
@@ -453,6 +402,11 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
                               'motivo': f'ficha retirada (HTTP {error.code})'})
             continue
         r = FICHAS[fuente](c, contenido, obtener)
+        if r.get('bloqueo'):
+            # La fuente ha dejado de responder: nada de esta pasada acredita ausencias.
+            informe['pendientes'].append({'id': c['id'], 'url': c['url'], 'motivo': 'lectura bloqueada en la reconsulta'})
+            informe.update(completo=False, aplicar_ausencias=False, conservar_lectura=True)
+            return {'ausencias': [], 'reimportadas': []}
         if 'pendiente' in r:
             # Queda para revisar y la recogida, incompleta; con las mismas fechas
             # se conserva la última lectura.
@@ -478,9 +432,13 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
     desde, hasta = ventana(inicio, fin)
     peticiones = 0
     consultas_wa = []
+    memoria_fga = {}
+    ultimo_fin_fga = None
 
     def obtener(url):
-        nonlocal peticiones
+        nonlocal peticiones, ultimo_fin_fga
+        if fuente == 'fga' and url in memoria_fga:
+            return memoria_fga[url]
         archivo = None
         ficha = fuente == 'rfea' and '/calendario/campeonato/' in url
         if ficha and cache:
@@ -495,6 +453,8 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
         if peticiones >= max_peticiones:
             raise ValueError('Atletismo agotó su presupuesto; no se importa una recogida parcial')
         peticiones += 1
+        if fuente == 'fga' and descargar is None and ultimo_fin_fga is not None:
+            time.sleep(max(0, 2.5 - (time.monotonic() - ultimo_fin_fga)))
         if (ficha or fuente == 'wa' and peticiones > 1) and descargar is None:
             time.sleep(1)  # Sin reintentos: un 429 interrumpe la fuente.
         if fuente == 'wa':
@@ -505,6 +465,11 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
             if fuente == 'wa':
                 error.wa_consultas = consultas_wa[:]
             raise
+        finally:
+            if fuente == 'fga':
+                ultimo_fin_fga = time.monotonic()
+        if fuente == 'fga':
+            memoria_fga[url] = html
         if archivo:
             s = BeautifulSoup(html, 'html.parser')
             ajustes = s.select_one('script[data-drupal-selector="drupal-settings-json"]')
@@ -514,7 +479,8 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
             guardar(archivo, {'url': url, 'html': html})
         return html
 
-    entrada, informe = LECTORES[fuente](desde, hasta, obtener)
+    entrada, informe = (galicia(desde, hasta, obtener, conocidas=conocidas) if fuente == 'fga'
+                        else LECTORES[fuente](desde, hasta, obtener))
     informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
                                observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
@@ -588,6 +554,8 @@ def main(argv=None):
                      if c['fuente'] == args.fuente and not c['id'].startswith('nivel-ii:')]
         entrada, informe = recoger(args.fuente, desde.isoformat(), hasta.isoformat(), cache=args.cache,
                                    conocidas=conocidas, observado=observado)
+        if informe.get('conservar_lectura'):
+            return calendario, informe
         n = atletismo.importar(calendario['nucleo'], entrada, observado)
         leidas = list(entrada['eventos'])
         if args.fuente == 'rfea':

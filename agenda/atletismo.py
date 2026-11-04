@@ -100,71 +100,13 @@ def leer_cataluna(paginas):
 
 
 def leer_galicia(html):
-    """Mes visible FGA; conserva tecnificación y el circuito declarado en la lista."""
-    s = BeautifulSoup(html, 'html.parser')
-    lista = s.select_one('#competitionList')
-    if lista is None:
-        raise ValueError('Falta el calendario gallego')
-    eventos = []
-    for a in lista.select('article.type-competition'):
-        ids = [c[5:] for c in a.get('class', []) if re.fullmatch(r'post-\d+', c)]
-        titulo = a.select_one('h2 a[href]')
-        if len(ids) != 1 or titulo is None:
-            raise ValueError('Competición gallega sin identidad')
-        literales = [texto(x) for x in a.select('div.space-x-2 > div > span')]
-        # «a - b» es un rango; tres o más fechas separadas por «-» enumeran
-        # días (campeonatos de tres días) y deben ser consecutivos.
-        rango = len(literales) == 3 and literales[1] == '-'
-        lista = len(literales) > 3 and len(literales) % 2 and set(literales[1::2]) == {'-'}
-        fechas = [datetime.strptime(x, '%d/%m/%Y').date()
-                  for x in (literales[::2] if rango or lista else literales)]
-        if rango and fechas[1] < fechas[0]:
-            raise ValueError('Rango gallego invertido')
-        fechas = sorted(set(fechas))
-        if not fechas or not rango and any(b - x != timedelta(days=1) for x, b in zip(fechas, fechas[1:])):
-            raise ValueError('Fechas gallegas ausentes o no consecutivas: requieren varias celebraciones')
-        padre = a.select_one('h2 + a[href]')
-        sitio = a.select_one('div.basis-5\\/12')
-        modalidad = a.select_one('div.space-x-2 > span')
-        eventos.append({'id': ids[0], 'nombre': texto(titulo), 'url': enlace('fga', titulo['href']),
-            'inicio': fechas[0].isoformat(), 'fin': fechas[-1].isoformat(),
-            'lugar': {'nombre': texto(sitio)},
-            'metadatos': {'modalidad_literal': texto(modalidad),
-                'etiquetas_listado': [texto(x) for x in a.select('div.space-x-2 > span')],
-                'ambitos_literales': sorted({x['alt'] for x in a.select('img[alt]')
-                    if x['alt'] in ('Autonómico', 'Nacional', 'Internacional')}),
-                'delegaciones': [c.removeprefix('delegation-') for c in a.get('class', []) if c.startswith('delegation-')],
-                'circuito_declarado': {'nombre': texto(padre), 'url': enlace('fga', padre['href'])} if padre else None}})
-    return eventos
+    from .atletismo_fga import leer_listado
+    return leer_listado(html)
 
 
 def leer_ficha_galicia(html):
-    """Información complementaria; inscripción nunca se usa como celebración."""
-    s = BeautifulSoup(html, 'html.parser')
-    articulo = s.select_one('main article.type-competition')
-    if articulo is None:
-        raise ValueError('Ficha gallega sin competición')
-    salida = {'etiquetas_literales': [texto(x) for x in articulo.select('.competition-label__text')]}
-    for h in articulo.select('h2'):
-        if texto(h) != 'Inscrición':
-            continue
-        seccion = h.parent
-        salida['inscripcion'] = {
-            'plazo_textual': ' '.join(texto(p) for p in seccion.select('p')),
-            'enlaces': [{'nombre': texto(a), 'url': urljoin(FUENTES['fga'][1], a['href'])}
-                        for a in seccion.select('a[href]')
-                        # Un href vacío apuntaría a la portada del calendario.
-                        if a['href'].strip() and urlparse(urljoin(FUENTES['fga'][1], a['href'])).scheme == 'https']}
-        plazo = salida['inscripcion']['plazo_textual']
-        m = re.fullmatch(r'Datas: (\d{2}/\d{2}/\d{4}) a (\d{2}/\d{2}/\d{4})(?: ás (\d{2}:\d{2}))?', plazo)
-        if m:
-            inicio, fin = (datetime.strptime(x, '%d/%m/%Y').date().isoformat() for x in m.group(1, 2))
-            salida['inscripcion']['periodo'] = deporte.dias(inicio, fin)
-            salida['inscripcion']['hora_cierre_literal'] = m[3]
-    salida['documentos'] = [{'nombre': texto(a), 'url': a['href']}
-                            for a in articulo.select('.competition-links a[href]')
-                            if urlparse(a['href']).scheme == 'https' and urlparse(a['href']).path.lower().endswith('.pdf')]
-    return salida
+    from .atletismo_fga import leer_ficha
+    return leer_ficha(html)['metadatos']
 
 
 def leer_rfea(mes, respuesta, fichas, *, urls=None):
@@ -275,12 +217,19 @@ def importar(anterior, pagina, observado):
         inicio, fin = date.fromisoformat(e['inicio']), date.fromisoformat(e['fin'])
         if fin < inicio:
             raise ValueError('Calendario con fin anterior al inicio')
-        atletismo_bloque.validar(e.get('metadatos') or {}, inicio.isoformat(), fin.isoformat())
+        atletismo_bloque.validar(e.get('metadatos') or {}, inicio.isoformat(), fin.isoformat(), fuente=fuente)
+        cuando = deporte.dias(inicio.isoformat(), fin.isoformat())
+        if fuente == 'fga' and (dias := (e.get('metadatos') or {}).get('temporalidad', {}).get('dias')):
+            # Mantener una identidad nativa sin ocupar los huecos del intervalo.
+            huecos = [(inicio + timedelta(days=i)).isoformat() for i in range((fin - inicio).days + 1)
+                      if (inicio + timedelta(days=i)).isoformat() not in dias]
+            if huecos:
+                cuando['dias_excluidos'] = huecos
         grupo = a.grupo('programa_competicion', e['id'], 'competicion', e.get('nombre'),
             padre=padre, url=enlace(fuente, e['url']),
             identidad=identidad_grupo)
         principal, evidencia = a.evento('competicion', e['id'], 'encuentro', e.get('nombre'),
-            deporte.dias(inicio.isoformat(), fin.isoformat()), padre=grupo,
+            cuando, padre=grupo,
             estado=e.get('estado', 'desconocido'),
             sitio=e.get('lugar'), url=enlace(fuente, e['url']), identidad=identidad,
             bloques={'atletismo': {**(e.get('metadatos') or {}),

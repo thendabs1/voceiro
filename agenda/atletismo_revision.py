@@ -22,8 +22,10 @@ def huella(caso):
     """Lo que usa el comparador, con su resultado: si cambia, el caso vuelve a revisión.
 
     Sin fechas de recogida ni de modificación de la fuente."""
-    # `veredicto` se deriva del resto: por sí solo no devuelve un caso a revisión.
-    comparacion = {k: v for k, v in (caso.get('comparacion') or {}).items() if k != 'veredicto'}
+    # Veredicto y revisión son decisiones sobre los datos, no datos: registrar una
+    # conciliación nueva no devuelve a revisión un caso ya cerrado.
+    comparacion = {k: v for k, v in (caso.get('comparacion') or {}).items()
+                   if k not in ('veredicto', 'revision_identidad')}
     datos = {'motivo': caso['motivo'], 'comparacion': comparacion or caso.get('comparacion'), 'citas': [
         {k: e.get(k) for k in ('fuente', 'id', 'nombre', 'inicio', 'fin', 'url', 'lugar')}
         | {'modalidades': sorted(coincidencias.modalidades(e)), 'enlaces': sorted(coincidencias.enlaces(e))}
