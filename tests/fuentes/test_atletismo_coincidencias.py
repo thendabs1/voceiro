@@ -19,6 +19,74 @@ def entrada(fuente, identificador='uno', **cambios):
     return {'version': 1, 'fuente': fuente, 'eventos': [e]}
 
 
+def alcance(tipo):
+    prueba = {'superficie': 'ficha', 'url': 'https://example.org/a', 'localizador': 'cuerpo', 'literal': tipo}
+    return {'tipo': tipo, 'evidencia': prueba} if tipo != 'desconocido' else {'tipo': tipo}
+
+
+class Alcance(unittest.TestCase):
+    def cita(self, fuente, tipo=None, **cambios):
+        e = entrada(fuente, fuente, **cambios)['eventos'][0]
+        if tipo:
+            e['metadatos'] = {**e['metadatos'], 'alcance': alcance(tipo)}
+        return {**e, 'fuente': fuente}
+
+    def test_desconocido_no_cambia_la_decision_y_queda_marcado(self):
+        for a, b in ((None, None), ('desconocido', 'titulo'), ('reunion', 'desconocido')):
+            r = c.comparar(self.cita('rfea', a), self.cita('fga', b))
+            self.assertEqual((r['estado'], r['alcance']), ('automatica', 'desconocido'))
+
+    def test_mismo_alcance_acreditado_une(self):
+        r = c.comparar(self.cita('rfea', 'titulo'), self.cita('fga', 'titulo'))
+        self.assertEqual((r['estado'], r['alcance']), ('automatica', 'igual'))
+
+    def test_alcances_acreditados_distintos_nunca_se_unen_solos(self):
+        casos = (('reunion', 'titulo', 'dentro_de', 'una cita dentro de la otra'),
+                 ('titulo', 'juegos', 'dentro_de', 'una cita dentro de la otra'),
+                 ('publicacion', 'titulo', 'diferente', 'alcances diferentes'))
+        for a, b, relacion, motivo in casos:
+            for cambios in ({}, {'url': atletismo.FUENTES['rfea'][1] + '/calendario/campeonato/igual'}):
+                r = c.comparar(self.cita('rfea', a, **cambios), self.cita('fga', b, **cambios))
+                self.assertEqual((r['estado'], r['alcance']), ('revisar', relacion))
+                self.assertIn(motivo, r['motivos'])
+
+    def test_una_union_guardada_de_distinto_alcance_abre_issue(self):
+        n = atletismo.importar(None, entrada('rfea', 'juegos'), AHORA)
+        n = atletismo.importar(n, entrada('fca', 'parte'), AHORA)
+        self.assertEqual(c.incidencias(n), [])
+        p = deepcopy(entrada('rfea', 'juegos'))
+        p['eventos'][0]['metadatos'] = {'alcance': alcance('juegos')}
+        n = atletismo.importar(n, p, AHORA)
+        p = deepcopy(entrada('fca', 'parte'))
+        p['eventos'][0]['metadatos'] = {'alcance': alcance('titulo')}
+        n = atletismo.importar(n, p, AHORA)
+        caso, = c.incidencias(n)
+        self.assertEqual(caso['comparacion']['alcance'], 'dentro_de')
+
+    def test_una_conciliacion_revisada_no_oculta_alcances_distintos(self):
+        fca = {**self.cita('fca', 'titulo'), 'id': '88393'}
+        rfea = {**self.cita('rfea', 'reunion'), 'id': '69005'}
+        r = c.comparar_referencias(fca, rfea)
+        self.assertEqual((r['estado'], r['veredicto']), ('automatica', 'revisar'))
+        self.assertIn('alcances diferentes en una identidad revisada', r['datos_revisar'])
+        r = c.comparar_referencias({**fca, 'metadatos': {}}, {**rfea, 'metadatos': {}})
+        self.assertNotIn('alcances diferentes en una identidad revisada', r['datos_revisar'])
+
+    def test_dias_distintos_con_los_mismos_extremos_no_son_las_mismas_fechas(self):
+        def con_dias(fuente, lista):
+            return self.cita(fuente, inicio='2026-11-01', fin='2026-11-03',
+                             metadatos={'temporalidad': {'dias': lista}})
+        juntos = ['2026-11-01', '2026-11-02', '2026-11-03']
+        self.assertTrue(c.comparar(con_dias('rfea', juntos), con_dias('fga', juntos))['misma_fecha'])
+        self.assertFalse(c.comparar(con_dias('rfea', juntos), con_dias('fga', juntos[::2]))['misma_fecha'])
+        self.assertTrue(c.comparar(con_dias('rfea', juntos), self.cita('fca', inicio='2026-11-01', fin='2026-11-03'))['misma_fecha'])
+
+    def test_la_huella_cambia_con_el_alcance_acreditado(self):
+        a, b = self.cita('rfea'), self.cita('fga')
+        caso = {'motivo': 'x', 'comparacion': {}, 'citas': [a, b]}
+        self.assertNotEqual(revision.huella(caso), revision.huella({**caso, 'citas': [self.cita('rfea', 'titulo'), b]}))
+
+
 class Coincidencias(unittest.TestCase):
     def test_tres_fuentes_comparten_cita_y_no_crean_incidencias(self):
         n = None
@@ -200,8 +268,8 @@ class Coincidencias(unittest.TestCase):
         self.assertEqual(len(publicacion.proyectar(n)['eventos']), 3)
 
     def test_la_revision_acredita_identidad_sin_borrar_lo_calculado(self):
-        rfea = entrada('rfea', '67588', nombre='B100 Cursa dels Nassos', lugar={'nombre': 'Barcelona'})['eventos'][0]
-        fca = entrada('fca', '83074', nombre='B100 Cursa dels Nassos (5 i 10 Km)', lugar={'nombre': 'Barcelona'})['eventos'][0]
+        rfea = entrada('rfea', '69005', nombre='B100 Cursa dels Nassos', lugar={'nombre': 'Barcelona'})['eventos'][0]
+        fca = entrada('fca', '88393', nombre='B100 Cursa dels Nassos (5 i 10 Km)', lugar={'nombre': 'Barcelona'})['eventos'][0]
         comparacion = c.comparar_referencias({**rfea, 'fuente': 'rfea'}, {**fca, 'fuente': 'fca'})
         self.assertEqual((comparacion['estado'], comparacion['veredicto']), ('automatica', 'revisar'))
         self.assertIn('categoría, formato o distancia de distinto alcance', comparacion['motivos'])

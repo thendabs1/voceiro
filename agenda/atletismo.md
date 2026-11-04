@@ -262,7 +262,7 @@ horaria acreditada, se conservan como día, sin inventar un instante.
 
 ## Coincidencias e identidad
 
-`atletismo_coincidencias` (versión 4) compara federaciones y las dos
+`atletismo_coincidencias` (versión 5) compara federaciones y las dos
 distribuciones RFEA sin consultar webs. Normaliza mayúsculas, acentos,
 puntuación, año, variantes castellano/gallego/catalán, sufijos ordinales
 (`103a`→`103`, `60è`→`60`) y la etiqueta exacta `(RFEA)`. Una cita nueva
@@ -274,6 +274,15 @@ comparte identidad cuando hay un único candidato y:
 - coinciden fechas completas, sede y al menos tres palabras significativas,
   con Dice ≥ 0,90 y sin contradicciones de distancia, edad, edición, sexo,
   formato, modalidad ni conjunto/partes.
+
+El alcance solo limita (decisión del 4/11/2026): dos alcances acreditados y
+distintos nunca se unen solos y van a revisión, marcados `dentro_de` o
+`diferente` en `alcance`, aunque haya enlace. Con alguno `desconocido` se
+decide como si no existiera y queda marcado: desconocido no es igualdad, pero
+casi nada lo tiene acreditado hasta leer las circulares. `CONTIENE` orienta al
+revisor y no crea relaciones. Una conciliación revisada conserva la identidad y
+avisa si llegan alcances que la contradicen. Con los días enumerados por ambas
+fuentes se compara el conjunto, no solo los extremos.
 
 Fecha y sede no bastan. Dos citas que reclaman una misma identidad, o enlaces
 que se contradicen, quedan para revisión. Nombre, fecha y sede nunca son ID:
@@ -300,12 +309,19 @@ decisión y `veredicto` y `motivos`, el resultado del comparador.
   entidades) y no se publica; el almacén solo acepta el cambio de destino de
   una referencia con esas dos marcas.
 - Una parte no es el todo aunque compartan día y sede, ni un enlace basta si
-  el alcance difiere (con las mismas fechas el comparador aún lo acepta: falta
-  acreditar el alcance). Castro (RFEA
-  64834 promoción y máster frente a FCA 80239 máster; FCA 80237 aparte),
-  Nassos (FCA 5+10 km frente a RFEA 5 km) y Dakar (RFEA Juegos frente al
-  atletismo de FCA/WA) están unidos con alcances distintos y se separarán con
-  una operación revisada, empezando por Castro.
+  el alcance difiere.
+- `atletismo-separaciones.json`: operaciones revisadas que devuelven una
+  referencia a la entidad absorbida (`atletismo_conciliacion --separar`, con
+  `--turso [--simular]` o `--nucleo`). Mueven referencia, evidencias y
+  pertenencia y no tocan observaciones. El almacén solo lo acepta con la entrada
+  registrada, y una cosecha posterior no lo deshace: la referencia ya tiene destino.
+  La relación entre conjunto y parte (`contiene`, `contenida_en`) queda en el
+  registro y evita el issue del par; no va al grafo porque un `es_parte_de` entre
+  grupos haría heredar a la parte la capa del conjunto y la mostraría en el chip de
+  otra federación. Castro (RFEA 64834 reúne FCA 80237, FCA 80239 y FGA 112768) y
+  Nassos (RFEA 67588 es parte de FCA 83074; WA 7244650 sigue con FCA, sin alcance
+  acreditado). Dakar (RFEA Juegos frente al atletismo de FCA/WA) sigue unido: no
+  tiene entidad absorbida que recuperar.
 - Fechas discrepantes en una identidad del mismo alcance (short track clubes
   máster) quedan como conflicto visible, sin elegir fuente.
 - Nivel II enlaza con una cita guardada mediante `decision: equivalencia` y
@@ -376,11 +392,9 @@ En orden (detalle en el diseño local):
    convocatorias técnicas que los filtros no devuelven. FCA: columna de calendario,
    reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic. Los
    destinos RFEA de `website` quedan sin resolver.
-2. Comparador por alcance, con los datos del paso anterior: enlaces resueltos,
-   conjunto de días y veredicto `dentro_de`. Subir su versión cambia la huella
-   y reabre una vez los issues cerrados.
-3. Registro editorial con varias referencias por fuente y separación revisada
-   (Castro, Nassos, Dakar).
+2. Comparador: faltan enlaces resueltos (destino, HTTP y edición) y sustitución
+   entre IDs, que necesitan esos datos en la lectura.
+3. Dakar: separar exige crear una identidad o unir FCA con WA tras revisar.
 4. Circuitos, ligas, controles y tecnificación solo con documento oficial.
 - Interfaz: filas de fuentes, circuitos WA y modalidad en Deportes (semana y
   lista en pantallas bajas; ☆ solo en fuentes). OR dentro de cada fila y AND
@@ -388,8 +402,7 @@ En orden (detalle en el diseño local):
 - Filtro de ámbito: sin decidir (4/11/2026). «Territorial, nacional, internacional»
   falsearía la norma, porque no hay un ámbito único. Con los adaptadores hechos se
   decidirá, con cifras de cobertura, si conviene filtrar por calendario o autoridad.
-- World Athletics: estados, Juegos y resultados; interfaz de circuitos
-  (fase 2).
+- World Athletics: publicación y fila de circuitos, con el refactor de la interfaz.
 - Territoriales: esperan al modelo. Extremadura (HTML con ID) y Cantabria
   (ICS con UID) cumplen el contrato; ver el diseño local.
 

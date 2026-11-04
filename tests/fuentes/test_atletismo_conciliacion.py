@@ -124,5 +124,88 @@ class Conciliacion(unittest.TestCase):
             conciliacion.main(['--turso', '--salida', 'x.json'])
 
 
+class Separacion(unittest.TestCase):
+    def unidas(self):
+        """RFEA reúne dos títulos y una revisión antigua lo unió a la parte de FCA."""
+        rfea = entrada('rfea', '69339', nombre='Campeonato de Promoción y Máster', lugar={'nombre': 'Lugo'})
+        fca = entrada('fca', '113279', nombre='Campionat Màster', lugar={'nombre': 'Lugo'})
+        revision = {'id': 'prueba', 'referencias': {'fca': '113279', 'rfea': '69339'}, 'conservar': 'fca',
+                    'revision': {'fecha': '2026-11-02', 'criterio': 'x', 'evidencias': ['https://example.org']}}
+        with patch.object(c, 'revisiones_identidad', return_value=[]):
+            n = atletismo.importar(atletismo.importar(None, fca, AHORA), rfea, AHORA)
+        with patch.object(c, 'revisiones_identidad', return_value=[revision]):
+            n, informe = conciliacion.conciliar(n)
+        conservada, absorbida = informe[0]['conservada'], informe[0]['absorbidas'][0]
+        registro = {'id': 'separa', 'referencia': {'fuente': 'rfea', 'id': '69339'},
+                    'desde': conservada['id'], 'hasta': absorbida['id'], 'contiene': [['fca', '113279']],
+                    'revision': {'fecha': '2026-11-04', 'criterio': 'x', 'evidencias': ['https://example.org']}}
+        return n, rfea, fca, registro
+
+    def destino(self, n, fuente, identificador):
+        return next(r['destino']['id'] for r in n['referencias'].values() if r['tipo_externo'] == 'competicion'
+                    and (r['proveedor'], r['id_externo']) == (fuente, identificador))
+
+    def test_devuelve_cada_cita_a_su_identidad_sin_tocar_lo_observado(self):
+        anterior, _, _, s = self.unidas()
+        n, informe = conciliacion.separar(anterior, [s])
+        self.assertEqual(informe[0]['estado'], 'separada')
+        self.assertEqual(self.destino(n, 'rfea', '69339'), s['hasta'])
+        self.assertEqual(self.destino(n, 'fca', '113279'), s['desde'])
+        self.assertEqual(n['observaciones'], anterior['observaciones'])
+        self.assertEqual(n['documentos'], anterior['documentos'])
+        eventos = {e['id']: e for e in publicacion.proyectar(n)['eventos']}
+        self.assertEqual({k: [f['fuente'] for f in e['fuentes']] for k, e in eventos.items()},
+                         {s['desde']: ['fca'], s['hasta']: ['rfea']})
+        self.assertEqual(nucleo_r2.unir(n, nucleo_r2.partir(n)), n)
+
+    def test_es_idempotente_y_una_cosecha_no_la_deshace(self):
+        anterior, rfea, fca, s = self.unidas()
+        n, _ = conciliacion.separar(anterior, [s])
+        self.assertEqual(conciliacion.separar(n, [s])[1][0]['estado'], 'ya separada')
+        for p in (rfea, fca, rfea):
+            n = atletismo.importar(n, p, '2026-11-05T20:00:00+01:00')
+        self.assertEqual(self.destino(n, 'rfea', '69339'), s['hasta'])
+        self.assertEqual(self.destino(n, 'fca', '113279'), s['desde'])
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 2)
+
+    def test_almacen_exige_la_separacion_registrada_tal_cual(self):
+        anterior, _, _, s = self.unidas()
+        n, _ = conciliacion.separar(anterior, [s])
+        with patch.object(c, 'separaciones', return_value=[s]):
+            self.assertTrue(almacen_nucleo.planificar(anterior, n))
+        for registro in ([], [{**s, 'hasta': 'otra'}]):
+            with patch.object(c, 'separaciones', return_value=registro):
+                with self.assertRaisesRegex(ValueError, 'revisión explícita'):
+                    almacen_nucleo.planificar(anterior, n)
+
+    def test_falla_ante_un_destino_o_dependencias_no_revisados(self):
+        anterior, _, _, s = self.unidas()
+        with self.assertRaisesRegex(ValueError, 'destino inesperado'):
+            conciliacion.separar(anterior, [{**s, 'desde': 'otra', 'hasta': 'tercera'}])
+        n = deepcopy(anterior)
+        destino = {'tipo': 'evento', 'id': s['desde']}
+        n['participaciones']['x'] = {'id': 'x', 'evento': destino, 'slot': 'a', 'participante': None}
+        with patch.object(nucleo, 'validar'):
+            with self.assertRaisesRegex(ValueError, 'participaciones'):
+                conciliacion.separar(n, [s])
+
+    def test_una_separacion_sin_otra_referencia_no_deja_la_cita_vacia(self):
+        anterior, _, _, s = self.unidas()
+        n = deepcopy(anterior)
+        for r in n['referencias'].values():
+            if r['proveedor'] == 'fca' and r['tipo_externo'] == 'competicion':
+                r['destino'] = {'tipo': 'evento', 'id': s['hasta']}
+        with patch.object(nucleo, 'validar'):
+            with self.assertRaisesRegex(ValueError, 'sin referencias'):
+                conciliacion.separar(n, [s])
+
+    def test_la_relacion_revisada_no_reabre_issues(self):
+        anterior, _, _, s = self.unidas()
+        n, _ = conciliacion.separar(anterior, [s])
+        with patch.object(c, 'separaciones', return_value=[s]):
+            self.assertEqual(c.incidencias(n), [])
+
+
+
 if __name__ == '__main__':
     unittest.main()

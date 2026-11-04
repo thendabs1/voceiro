@@ -14,12 +14,17 @@ from urllib.parse import urlsplit
 
 from . import atletismo_modalidades, nucleo
 
-VERSION = 4
+VERSION = 5
 FUENTES = {'rfea', 'fga', 'fca', 'wa'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
             'clubs': 'clubes', 'masters': 'master', 'curta': 'corta', 'xornada': 'jornada'}
 OMITIR = {'de', 'del', 'do', 'da', 'd', 'en', 'a', 'o', 'la', 'el', 'les', 'los', 'las', 'per', 'por'}
+# Qué alcance puede contener a cuál. Orienta la revisión: nunca une ni relaciona solo.
+CONTIENE = {'juegos': {'serie', 'reunion', 'jornada', 'titulos', 'titulo', 'sesion'},
+            'serie': {'reunion', 'jornada', 'titulos', 'titulo', 'sesion'},
+            'reunion': {'titulos', 'titulo', 'sesion'}, 'jornada': {'titulos', 'titulo', 'sesion'},
+            'titulos': {'titulo', 'sesion'}, 'titulo': {'sesion'}}
 
 
 @lru_cache(maxsize=10000)
@@ -61,6 +66,32 @@ def revisiones_identidad():
     return revisiones
 
 
+@lru_cache(maxsize=1)
+def separaciones():
+    datos = json.loads(Path(__file__).with_name('atletismo-separaciones.json').read_text(encoding='utf-8'))
+    if datos.get('version') != 1:
+        raise ValueError('Versión de separaciones desconocida')
+    vistas, salida = set(), []
+    for s in datos['separaciones']:
+        if (s['id'] in vistas or s['referencia']['fuente'] not in FUENTES or s['desde'] == s['hasta']
+                or not s.get('contiene', []) + s.get('contenida_en', [])
+                or not s['revision'].get('criterio') or not s['revision'].get('evidencias')):
+            raise ValueError('Separación sin revisión o relaciones válidas')
+        vistas.add(s['id'])
+        salida.append(s)
+    return salida
+
+
+def relacion_revisada(a, b):
+    """Par ya decidido por una separación: conjunto y parte siguen aparte."""
+    par = {(e['fuente'], str(e['id'])) for e in (a, b)}
+    for s in separaciones():
+        propia = (s['referencia']['fuente'], s['referencia']['id'])
+        if propia in par and any((f, i) in par for f, i in s.get('contiene', []) + s.get('contenida_en', [])):
+            return s
+    return None
+
+
 def comparar_referencias(a, b):
     comparacion = comparar(a, b)
     par = {(e.get('fuente'), str(e['id'])) for e in (a, b)}
@@ -72,6 +103,9 @@ def comparar_referencias(a, b):
         ma, mb = modalidades(a), modalidades(b)
         if ma and mb and ma != mb:
             datos.append('modalidades diferentes')
+        if comparacion['alcance'] in ('dentro_de', 'diferente'):
+            # Una revisión no convierte una inclusión en igualdad.
+            datos.append('alcances diferentes en una identidad revisada')
         # Decisión y cálculo por separado: la revisión no borra los motivos.
         return {**comparacion, 'veredicto': comparacion['estado'], 'estado': 'automatica',
                 'datos_revisar': datos, 'revision_identidad': revision}
@@ -112,10 +146,47 @@ def modalidades(e):
     return atletismo_modalidades.de(e.get('metadatos'))[0]
 
 
+def alcance(e):
+    # Desconocido no es un valor con el que comparar.
+    tipo = ((e.get('metadatos') or {}).get('alcance') or {}).get('tipo')
+    return None if tipo == 'desconocido' else tipo
+
+
+def dias(e):
+    return set(((e.get('metadatos') or {}).get('temporalidad') or {}).get('dias') or ())
+
+
+def relacion_alcance(a, b):
+    """Solo dos alcances acreditados pueden contradecirse."""
+    ta, tb = alcance(a), alcance(b)
+    if not ta or not tb:
+        return 'desconocido'
+    if ta == tb:
+        return 'igual'
+    return 'dentro_de' if tb in CONTIENE.get(ta, ()) or ta in CONTIENE.get(tb, ()) else 'diferente'
+
+
 def comparar(a, b, por_enlace=True):
+    """El alcance solo limita: dos acreditados y distintos nunca se unen solos."""
+    comparacion = comparar_datos(a, b, por_enlace)
+    relacion = relacion_alcance(a, b)
+    comparacion['alcance'] = relacion
+    if relacion in ('dentro_de', 'diferente') and comparacion['estado'] != 'distintas':
+        motivo = 'una cita dentro de la otra' if relacion == 'dentro_de' else 'alcances diferentes'
+        comparacion['estado'] = 'revisar'
+        comparacion['motivos'] = [*comparacion['motivos'], motivo]
+        if 'datos_revisar' in comparacion:
+            comparacion['datos_revisar'] = [*comparacion['datos_revisar'], motivo]
+    return comparacion
+
+
+def comparar_datos(a, b, por_enlace):
     enlace = por_enlace and bool(enlaces(a) & enlaces(b))
     fechas = bool(a.get('inicio') and a.get('fin') and
                   (a['inicio'], a['fin']) == (b.get('inicio'), b.get('fin')))
+    if fechas and dias(a) and dias(b) and dias(a) != dias(b):
+        # Mismos extremos con huecos distintos: un aplazamiento parcial o otra parte.
+        fechas = False
     if enlace:
         # Con las mismas fechas, la ficha enlazada identifica la competición:
         # un título más amplio o su traducción no crean otra identidad. Con
@@ -283,6 +354,8 @@ def incidencias(n):
                               else 'posible duplicado de la misma fuente')
                     salida[clave] = {'clave': clave, 'citas': citas, 'motivo': motivo,
                                      'comparacion': {**comparacion, 'estado': 'revisar', 'motivos': [motivo]}}
+                continue
+            if a['destino'] != b['destino'] and relacion_revisada(a, b):
                 continue
             comparacion = comparar_referencias(a, b)
             if a['destino'] == b['destino'] and comparacion.get('datos_revisar'):
