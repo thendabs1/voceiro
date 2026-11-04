@@ -17,7 +17,7 @@ from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, recogida
+from . import atletismo, atletismo_calendario_pdf, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, recogida
 
 
 def meses(desde, hasta):
@@ -432,13 +432,17 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
     desde, hasta = ventana(inicio, fin)
     peticiones = 0
     consultas_wa = []
-    memoria_fga = {}
+    memoria = {}
     ultimo_fin_fga = None
 
-    def obtener(url):
+    def obtener(url, *, binario=False):
         nonlocal peticiones, ultimo_fin_fga
-        if fuente == 'fga' and url in memoria_fga:
-            return memoria_fga[url]
+        clave = (url, binario)
+        if clave in memoria:
+            guardada = memoria[clave]
+            if isinstance(guardada, Exception):
+                raise guardada
+            return guardada
         archivo = None
         ficha = fuente == 'rfea' and '/calendario/campeonato/' in url
         if ficha and cache:
@@ -455,21 +459,25 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
         peticiones += 1
         if fuente == 'fga' and descargar is None and ultimo_fin_fga is not None:
             time.sleep(max(0, 2.5 - (time.monotonic() - ultimo_fin_fga)))
-        if (ficha or fuente == 'wa' and peticiones > 1) and descargar is None:
+        documento_rfea = fuente == 'rfea' and (binario or '/communication-hub/circulares' in url)
+        if (ficha or documento_rfea or fuente == 'wa' and peticiones > 1) and descargar is None:
             time.sleep(1)  # Sin reintentos: un 429 interrumpe la fuente.
         if fuente == 'wa':
             consultas_wa.append(url)
         try:
-            html = (descargar or recogida.descargar)(url)
-        except HTTPError as error:
-            if fuente == 'wa':
+            html = ((descargar or recogida.descargar)(url, binario=True) if binario
+                    else (descargar or recogida.descargar)(url))
+        except Exception as error:
+            if fuente == 'fga' or documento_rfea:
+                memoria[clave] = error
+            if fuente == 'wa' and isinstance(error, HTTPError):
                 error.wa_consultas = consultas_wa[:]
             raise
         finally:
             if fuente == 'fga':
                 ultimo_fin_fga = time.monotonic()
-        if fuente == 'fga':
-            memoria_fga[url] = html
+        if fuente == 'fga' or documento_rfea:
+            memoria[clave] = html
         if archivo:
             s = BeautifulSoup(html, 'html.parser')
             ajustes = s.select_one('script[data-drupal-selector="drupal-settings-json"]')
@@ -483,8 +491,63 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
                         else LECTORES[fuente](desde, hasta, obtener))
     informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
                                observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
+    if fuente == 'rfea':
+        informe['calendario_pdf'] = calendario_pdf(entrada, desde, hasta, obtener, conocidas)
+        informe['calendario_pdf'].update(peticiones_indice=sum(not b for _, b in memoria),
+                                         peticiones_pdf=sum(b for _, b in memoria))
+        informe['completo'] = informe['completo'] and informe['calendario_pdf']['completo']
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
                       'peticiones': peticiones, 'citas': len(entrada['eventos']), **informe}
+
+
+def calendario_pdf(entrada, desde, hasta, obtener, conocidas=()):
+    """Informe independiente: un documento caído no invalida el mensual."""
+    lector = atletismo_calendario_pdf
+    informe = {'completo': True, 'consultas_indice': [], 'consultas_pdf': [], 'documentos': [],
+               'automaticas': 0, 'a_revision': 0, 'sin_fila': 0, 'avisos': []}
+    entradas, url = [], lector.INDICE
+    try:
+        while url:
+            if url in informe['consultas_indice'] or len(informe['consultas_indice']) >= 100:
+                raise ValueError('Calendario RFEA: paginación repetida o excesiva')
+            informe['consultas_indice'].append(url)
+            pagina, url = lector.leer_indice(obtener(url), url)
+            entradas.extend(pagina)
+    except Exception as error:
+        lector.conservar(entrada['eventos'], conocidas)
+        informe.update(completo=False, error=f'{type(error).__name__}: {error}'[:500])
+        informe['avisos'].append('No se leyó el índice; se conserva el calendario anterior')
+    else:
+        for temporada in sorted({e['inicio'][:4] for e in entrada['eventos']}):
+            eventos = [e for e in entrada['eventos'] if e['inicio'][:4] == temporada]
+            try:
+                candidata = lector.seleccionar(entradas, temporada)
+                informe['consultas_pdf'].append(candidata['url'])
+                contenido = obtener(candidata['url'], binario=True)
+                with tempfile.TemporaryDirectory() as carpeta:
+                    pdf = Path(carpeta) / 'calendario.pdf'
+                    pdf.write_bytes(contenido)
+                    texto = subprocess.run(['pdftotext', '-layout', str(pdf), '-'], check=True,
+                        capture_output=True, text=True, encoding='utf-8', timeout=30).stdout
+                lector.confirmar_portada(texto, candidata, temporada)
+                inventario = lector.leer(texto)
+                if inventario['temporada'] != temporada:
+                    raise ValueError('Calendario RFEA: temporada diferente de la portada')
+                resultado = lector.enlazar(eventos, inventario, candidata['url'])
+            except lector.SinCalendario as error:
+                lector.conservar(eventos, conocidas)
+                informe['avisos'].append(str(error))
+            except Exception as error:
+                lector.conservar(eventos, conocidas)
+                informe['completo'] = False
+                informe['avisos'].append(f'{temporada}: {type(error).__name__}: {error}'[:500])
+            else:
+                informe['documentos'].append({k: candidata[k] for k in ('numero', 'fecha', 'url')} | {
+                    'temporada': temporada, 'actualizado': inventario['actualizado'],
+                    'sha256': sha256(contenido).hexdigest(), 'filas': len(inventario['filas'])})
+                for k, valor in resultado.items():
+                    informe[k] += valor
+    return informe
 
 
 def nivel_ii(n, inicio, fin):
@@ -617,10 +680,16 @@ def main(argv=None):
         guardar(args.informe, informe)
     print(json.dumps({**{k: informe[k] for k in ('fuente', 'inicio', 'fin', 'peticiones', 'citas', 'completo')},
                       'ausencias': len(informe.get('ausencias', [])), 'reimportadas': len(informe.get('reimportadas', [])),
+                      **({'avisos': informe['avisos']} if informe.get('avisos') else {}),
+                      **({'calendario_pdf': {k: v for k, v in informe['calendario_pdf'].items()
+                                             if k in ('automaticas', 'a_revision', 'sin_fila', 'avisos')}}
+                         if 'calendario_pdf' in informe else {}),
                       **({'modalidades_desconocidas': informe['modalidades_desconocidas']}
                          if informe.get('modalidades_desconocidas') else {})}, ensure_ascii=False))
     if error := informe.get('nivel_ii', {}).get('error'):
         raise SystemExit('Nivel II no se leyó; RFEA mensual guardada: ' + error)
+    if not informe.get('calendario_pdf', {}).get('completo', True):
+        raise SystemExit('Calendario PDF no se leyó; RFEA mensual guardada')
 
 
 if __name__ == '__main__':

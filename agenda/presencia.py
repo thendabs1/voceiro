@@ -106,6 +106,10 @@ def registrar(n, fuente, ids, observado, url, *, aceptar_caida=False):
 
 def validar(n):
     for fuente, datos in n['fuentes'].items():
+        sesiones = datos.get('sesiones_ausentes', [])
+        if (not isinstance(sesiones, list) or any(not isinstance(s, str) or not s for s in sesiones)
+                or sesiones != sorted(set(sesiones))):
+            raise ValueError('Sesiones ausentes sin referencias válidas')
         ausencias = datos.get('ausencias')
         if ausencias is not None and (
                 ausencias.get('tipo_externo') != 'competicion' or not isinstance(ausencias.get('ids'), dict)
@@ -171,4 +175,6 @@ def referencias_ausentes(n):
             and r['tipo_externo'] == TIPOS[r['proveedor']]
             and r['id_externo'] not in inventarios[r['proveedor']]
             or (r['proveedor'], nucleo.clave(r['destino'])) in acotadas
+            or r['tipo_externo'] == 'sesion' and r['contexto'] == {}
+            and r['id_externo'] in n['fuentes'][r['proveedor']].get('sesiones_ausentes', [])
             or r['proveedor'] in retiradas and retirada(r)}

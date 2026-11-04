@@ -45,6 +45,8 @@ class RecogidaAtletismo(unittest.TestCase):
 
         def obtener(url):
             llamadas.append(url)
+            if '/communication-hub/circulares' in url:
+                raise FileNotFoundError('Sin captura del índice de circulares')
             if url == 'https://atletismorfea.es/calendario':
                 return '<select class="calendar-field-season"><option value="464">2026</option></select>'
             if url in muestra['fichas']:
@@ -61,10 +63,10 @@ class RecogidaAtletismo(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as carpeta:
             entrada, informe = r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=obtener, cache=carpeta)
-            self.assertEqual(len(llamadas), 5)
+            self.assertEqual(len(llamadas), 6)
             llamadas.clear()
             r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=obtener, cache=carpeta)
-            self.assertEqual(len(llamadas), 4)  # Siempre meses; ficha reutilizada.
+            self.assertEqual(len(llamadas), 5)  # Siempre meses e índice; ficha reutilizada.
         self.assertEqual(len(entrada['eventos']), 1)
         self.assertEqual(entrada['eventos'][0]['inicio'], '2026-11-01')
         self.assertEqual(entrada['eventos'][0]['fin'], '2026-11-01')

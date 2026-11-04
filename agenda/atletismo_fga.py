@@ -1,11 +1,12 @@
 """Adaptador FGA: publicaciones nativas, evidencia y cobertura por superficie.
 
-No descarga documentos: usa sus enlaces y, donde existe, la lectura documental
-revisada del catálogo local. El resto queda desconocido o pendiente de revisión.
+Verifica los bytes de las lecturas documentales revisadas del catálogo local.
+El resto queda desconocido o pendiente de revisión.
 """
 from calendar import monthrange
 from datetime import date, datetime
 from functools import lru_cache
+from hashlib import sha256
 import json
 from pathlib import Path
 import re
@@ -174,7 +175,7 @@ def lecturas_documentales():
     return json.loads(Path(__file__).with_name('atletismo-fga-documentos.json').read_text(encoding='utf-8'))
 
 
-def leer_ficha(html, *, url=BASE):
+def leer_ficha(html, *, url=BASE, lecturas=None):
     s = BeautifulSoup(html, 'html.parser')
     art = s.select_one('main article.type-competition')
     if art is None or art.select_one('h1') is None:
@@ -218,7 +219,7 @@ def leer_ficha(html, *, url=BASE):
                               'evidencia': evidencia(url, 'h1', nombre)}]
     revisadas, programa = [], []
     for d in salida['documentos']:
-        lectura = lecturas_documentales().get(d['url'])
+        lectura = (lecturas or {}).get(d['url'])
         if not lectura:
             continue
         ev = evidencia(d['url'], lectura['localizador'], lectura['literal'], 'documento')
@@ -295,6 +296,29 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
     from .atletismo_recogida import meses
     superficies, consultas, pendientes, avisos, datos, inventario, fichas = [], [], [], [], {}, {}, {}
     bloqueada = False
+    verificadas = {}
+
+    def leer(html, url):
+        ficha = leer_ficha(html, url=url)
+        for d in ficha['metadatos']['documentos']:
+            u = d['url']
+            lectura = lecturas_documentales().get(u)
+            if not lectura or d['rol'] == 'inscritos' or u in verificadas:
+                continue
+            try:
+                contenido = obtener(u, binario=True)
+                if not isinstance(contenido, bytes):
+                    raise ValueError('la descarga no conserva bytes')
+                coincide = sha256(contenido).hexdigest() == lectura['sha256']
+            except Exception as error:
+                verificadas[u] = lectura
+                avisos.append({'id': ficha['id'], 'url': u, 'motivo': 'descarga fallida; se conserva la lectura revisada',
+                               'error': f'{type(error).__name__}: {error}'[:500]})
+            else:
+                verificadas[u] = lectura if coincide else None
+                if not coincide:
+                    avisos.append({'id': ficha['id'], 'url': u, 'motivo': 'bytes distintos; documento pendiente de nueva lectura'})
+        return leer_ficha(html, url=url, lecturas=verificadas)
 
     def superficie(tipo, ventana, filtros, urls, leer):
         nonlocal bloqueada
@@ -376,7 +400,7 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
     for u in trabajo:
         if ids_por_url.get(u) in cuarentena:
             continue
-        r = superficie('ficha', {'inicio': desde.isoformat(), 'fin': hasta.isoformat()}, {}, [u], lambda html: leer_ficha(html, url=u))
+        r = superficie('ficha', {'inicio': desde.isoformat(), 'fin': hasta.isoformat()}, {}, [u], lambda html: leer(html, u))
         if r is None:
             if bloqueada:
                 break
@@ -419,7 +443,7 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
                 pendientes.append({'id': i, 'motivo': 'permalink fuera de FGA', 'cuarentena': True})
                 continue
             # Releer los mismos bytes semánticos con el permalink acreditado.
-            ficha = leer_ficha(str(ficha['soup']), url=url)
+            ficha = leer(str(ficha['soup']), url)
             t = ficha['metadatos']['temporalidad']
             datos[i] = {'id': i, 'nombre': ficha['nombre'], 'url': url, 'inicio': t['dias'][0], 'fin': t['dias'][-1],
                         'metadatos': {'ambitos_literales': sorted(set(ficha['metadatos']['etiquetas_literales']) & set(AMBITOS)),
