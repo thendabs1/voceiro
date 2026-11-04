@@ -94,15 +94,85 @@ class WorldAthletics(unittest.TestCase):
         self.assertIsNone(r.wa_evento({**e, 'undeterminedCompetitionPeriod': 'TBC'}, {627: self.seleccion[627]}, {})[0])
         self.assertIsNone(r.wa_evento({**e, 'startDate': None}, {627: self.seleccion[627]}, {})[0])
 
-    def test_juegos_exigen_entrada_editorial(self):
-        e = {**MUESTRA['eventos']['627'][0], 'id': 7173264}
-        self.assertIn('Juegos', r.wa_evento(e, {5: self.seleccion[5]}, {})[1]['motivo'])
+    def test_juegos_usan_el_dato_de_wa_salvo_revision(self):
+        e = {**MUESTRA['eventos']['627'][0], 'id': 7173264, 'competitionGroup': 'Youth Olympic Games'}
+        cita, pendiente = r.wa_evento(e, {5: self.seleccion[5]}, {})
+        self.assertIsNone(pendiente)
+        self.assertEqual((cita['inicio'], cita['fin']), (e['startDate'], e['endDate']))
+        self.assertNotIn('fechas_juegos', cita['metadatos'])
+        self.assertEqual(cita['metadatos']['alcance']['tipo'], 'juegos')
         juegos = {'7173264': {'inicio': '2027-08-01', 'fin': '2027-08-05',
                               'evidencia': 'programa oficial', 'url': 'https://worldathletics.org/competition/calendar-results'}}
         cita, pendiente = r.wa_evento(e, {5: self.seleccion[5]}, juegos)
         self.assertIsNone(pendiente)
         self.assertEqual((cita['inicio'], cita['fin']), ('2027-08-01', '2027-08-05'))
         self.assertEqual(cita['metadatos']['fechas_juegos']['evidencia'], 'programa oficial')
+
+    def test_estados_literales_conservan_la_cita(self):
+        base = MUESTRA['eventos']['627'][0]
+        periodo = {'status': 'Postponed', 'label': 'Postponed', 'remark': 'Postponed until further notice'}
+        cita, pendiente = r.wa_evento({**base, 'dateRange': '30 MAR 2025', 'undeterminedCompetitionPeriod': periodo},
+                                      {627: self.seleccion[627]}, {})
+        self.assertIsNone(pendiente)
+        self.assertEqual(cita['estado'], 'aplazado')
+        t = cita['metadatos']['temporalidad']
+        self.assertEqual((t['estado'], t['estado_literal'], t['texto']), ('aplazado', 'Postponed', '30 MAR 2025'))
+        self.assertEqual(t['evidencia']['literal'], 'Postponed until further notice')
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'wa', 'eventos': [cita],
+                                      'agrupaciones': [r.wa_agrupacion(self.seleccion[627][0])]}, AHORA)
+        self.assertIsNotNone(n)
+        cancelada, _ = r.wa_evento({**base, 'undeterminedCompetitionPeriod': {
+            'status': 'Cancelled', 'label': 'Cancelled', 'remark': None}}, {627: self.seleccion[627]}, {})
+        self.assertEqual(cancelada['estado'], 'cancelado')
+        self.assertEqual(cancelada['metadatos']['temporalidad']['evidencia']['literal'], 'Cancelled')
+        desconocido, pendiente = r.wa_evento({**base, 'undeterminedCompetitionPeriod': {'status': 'Moved'}},
+                                             {627: self.seleccion[627]}, {})
+        self.assertIsNone(desconocido)
+        self.assertIn('indeterminado', pendiente['motivo'])
+
+    def test_campeonatos_son_coleccion_y_conservan_clase_guardada(self):
+        coleccion = r.wa_agrupacion(self.seleccion[6][0])
+        self.assertEqual(coleccion['clase'], 'coleccion')
+        self.assertEqual(r.wa_agrupacion(self.seleccion[627][0])['clase'], 'circuito')
+
+    def test_categoria_de_ranking_literal(self):
+        e = {**MUESTRA['eventos']['627'][0], 'rankingCategory': 'GL'}
+        cita, _ = r.wa_evento(e, {627: self.seleccion[627]}, {})
+        c = cita['metadatos']['calendarios']
+        self.assertEqual([(x['calendario'], x['categoria_literal']) for x in c], [('wa', 'GL')])
+
+    def test_resultados_solo_si_la_pagina_acredita_la_cita(self):
+        def pagina(i, competicion={'name': 'Cross'}):
+            return '<script id="__NEXT_DATA__" type="application/json">' + json.dumps({'props': {'pageProps': {
+                'query': {'competitionId': str(i)}, 'calendarEventsResults': {'competition': competicion}}}}) + '</script>'
+        eventos = [{'id': str(i), 'nombre': 'Cita', 'metadatos': {'hasResults': i != 6}} for i in range(1, 7)]
+        vistas = []
+        def obtener(url):
+            vistas.append(url)
+            i = int(url.rsplit('/', 1)[1])
+            if i == 2:
+                raise HTTPError(url, 500, 'error', {}, io.BytesIO())
+            if i == 3:
+                raise TimeoutError('corte')
+            return {4: pagina(99), 5: pagina(5, None)}.get(i, pagina(i))
+        informe = r.wa_resultados(eventos, obtener)
+        self.assertEqual(len(vistas), 5)
+        self.assertEqual(informe['verificados'], 1)
+        self.assertEqual([d['id'] for d in informe['descartados']], ['2', '3', '4', '5'])
+        d = eventos[0]['metadatos']['documentos'][0]
+        self.assertEqual((d['rol'], d['url']), ('resultados', r.WA_RESULTADOS + '1'))
+        self.assertNotIn('documentos', eventos[1]['metadatos'])
+
+    def test_resultados_no_tragan_bloqueo_ni_presupuesto(self):
+        eventos = [{'id': '1', 'nombre': 'Cita', 'metadatos': {'hasResults': True}}]
+        def bloqueada(url):
+            raise HTTPError(url, 429, 'limite', {}, io.BytesIO())
+        with self.assertRaises(HTTPError):
+            r.wa_resultados(eventos, bloqueada)
+        def agotada(url):
+            raise ValueError('Atletismo agotó su presupuesto; no se importa una recogida parcial')
+        with self.assertRaisesRegex(ValueError, 'presupuesto'):
+            r.wa_resultados(eventos, agotada)
 
     def test_pendiente_de_ventana_deja_informe_incompleto(self):
         e = {**MUESTRA['eventos']['627'][0], 'undeterminedCompetitionPeriod': 'TBC'}
