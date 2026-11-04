@@ -7,7 +7,7 @@ import sqlite3
 from uuid import uuid4
 
 from turso_http import ErrorTurso, filas
-from . import almacen, temporadas
+from . import almacen, cadencias, temporadas
 
 
 class ConflictoControl(RuntimeError):
@@ -98,6 +98,25 @@ class Repositorio:
                         if not l.lstrip().startswith('--'))
         self.escribir([*[(s, ()) for s in sql.split(';') if s.strip()],
             ('INSERT INTO agenda_control_esquema VALUES (1,1,0) ON CONFLICT(id) DO NOTHING', ())])
+
+    def reloj(self, grupo):
+        if grupo not in cadencias.RELOJES:
+            raise ValueError(f'Grupo de reloj desconocido: {grupo}')
+        filas_ = self.consultar('SELECT valor_json FROM agenda_estado WHERE clave=?', ('reloj:' + grupo,))
+        return json.loads(filas_[0][0]) if filas_ else None
+
+    def reloj_vencido(self, grupo, ahora):
+        reloj = self.reloj(grupo)
+        return reloj is None or temporadas.momento(reloj['proxima_revision']) <= temporadas.momento(ahora)
+
+    def anotar_reloj(self, grupo, ahora):
+        if grupo not in cadencias.RELOJES:
+            raise ValueError(f'Grupo de reloj desconocido: {grupo}')
+        valor = {'ultima': temporadas.marca(ahora), 'proxima_revision': temporadas.despues(
+            ahora, hours=cadencias.RELOJES[grupo] - cadencias.MARGEN_HORAS)}
+        self.escribir([('INSERT INTO agenda_estado(clave,valor_json) VALUES (?,?) '
+            'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json',
+            ('reloj:' + grupo, codificar(valor)))])
 
     def temporadas(self, coleccion=None):
         filtro, args = (' WHERE coleccion=?', (coleccion,)) if coleccion else ('', ())

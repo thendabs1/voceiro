@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import unittest
 
-from agenda import temporadas
+from agenda import cadencias, temporadas
 
 
 CREADA = '2026-10-26T12:00:00Z'
@@ -128,6 +128,66 @@ class CicloTemporadas(unittest.TestCase):
                 operacion()
 
 
+class Cadencias(unittest.TestCase):
+    def test_catalogo_completo_y_perfiles(self):
+        self.assertEqual(set(cadencias.COLECCIONES), set(temporadas.CATALOGO))
+        self.assertEqual({c for c, p in cadencias.COLECCIONES.items() if p == 'gran-premio'},
+                         {'f1', 'motogp', 'wrc'})
+
+    def test_perfiles_base_cerca_y_competicion_con_margen(self):
+        for coleccion in temporadas.CATALOGO:
+            for citas, horas in (
+                ([], 72),
+                ([('2026-11-03', None)], 72),  # A ocho días.
+                ([('2026-11-02', None)], 24),  # Límite de siete días incluido.
+                ([('2026-10-24', '2026-10-28')],
+                 6 if coleccion in ('f1', 'motogp', 'wrc') else 24),
+                ([('2026-10-26', None)],
+                 6 if coleccion in ('f1', 'motogp', 'wrc') else 24),
+                ([('2026-10-20', '2026-10-26')],
+                 6 if coleccion in ('f1', 'motogp', 'wrc') else 24),
+                ([('2026-10-20', None), (None, None)], 72),
+            ):
+                with self.subTest(coleccion=coleccion, citas=citas):
+                    self.assertEqual(cadencias.horas_temporada(
+                        coleccion, temporadas.momento(CREADA).date(), citas), horas)
+                    t = temporadas.exitosa(temporada(coleccion), CREADA, {}, citas=citas)
+                    self.assertEqual(t['proxima_revision'], temporadas.despues(
+                        CREADA, hours=horas - cadencias.MARGEN_HORAS))
+
+    def test_programacion_pendiente_no_acelera_y_otra_incidencia_si(self):
+        pendientes = [{'tipo': tipo} for tipo in
+                      ('programacion_pendiente', 'programacion_pendiente_conservada')]
+        for coleccion in ('f1', 'atp'):
+            for incidencias, horas in ((pendientes, 72),
+                                      (pendientes + [{'tipo': 'programa_incompleto'}], 24)):
+                with self.subTest(coleccion=coleccion, incidencias=incidencias):
+                    t = temporadas.exitosa(temporada(coleccion), CREADA, {}, incidencias)
+                    self.assertEqual(t['proxima_revision'], temporadas.despues(CREADA, hours=horas - 3))
+
+    def test_politica_antigua_no_impone_frecuencias(self):
+        t = temporada('atp')
+        t['politica'].update(revision_proxima_horas=1, revision_lejana_horas=999)
+        for citas, horas in (([], 69), ([('2026-10-26', '2026-11-01')], 21)):
+            with self.subTest(citas=citas):
+                nuevo = temporadas.exitosa(t, CREADA, {}, citas=citas)
+                self.assertEqual(nuevo['proxima_revision'], temporadas.despues(CREADA, hours=horas))
+        self.assertNotIn('revision_proxima_horas', temporadas.POLITICA)
+        self.assertNotIn('revision_lejana_horas', temporadas.POLITICA)
+
+    def test_margen_absorbe_retraso_hasta_tick_normal(self):
+        retraso = '2026-10-26T04:50:00Z'
+        for coleccion, citas, siguiente in (
+            ('f1', [('2026-10-26', None)], '2026-10-26T10:30:00Z'),
+            ('atp', [('2026-10-26', None)], '2026-10-27T04:30:00Z'),
+            ('atp', [], '2026-10-29T04:30:00Z'),
+        ):
+            with self.subTest(coleccion=coleccion, citas=citas):
+                t = temporadas.nueva(coleccion, '2026', retraso)
+                t = temporadas.exitosa(t, retraso, {}, citas=citas)
+                self.assertTrue(temporadas.vencida(t, siguiente))
+
+
 class ErroresTemporadas(unittest.TestCase):
     def test_fallo_conserva_ultima_valida_y_limites(self):
         t = temporadas.exitosa(temporada(), CREADA, ALCANCE)
@@ -224,6 +284,47 @@ class PlanFechas(unittest.TestCase):
         self.assertEqual(temporadas.plan_fechas(t, self.AHORA, []), [])
         t = temporadas.exitosa(t, self.AHORA, {**ALCANCE, 'inicio': '2026-03-01', 'fin': '2026-10-31'})
         self.assertEqual(temporadas.plan_fechas(t, self.AHORA, []), ['2026-10-31'])
+
+    def test_atp_2027_respeta_startdate_sin_inicio_hasta_entrar_en_horizonte(self):
+        t = temporadas.nueva('atp', '2027', self.AHORA)
+        t['limites_proveedor'] = {'startDate': '2027-01-01T08:00Z'}
+        for ahora in (self.AHORA, '2026-12-18T12:00:00Z'):
+            with self.subTest(ahora=ahora):
+                self.assertEqual(temporadas.plan_fechas(t, ahora, []), [])
+        self.assertEqual(temporadas.plan_fechas(t, '2026-12-19T12:00:00Z', []), ['2027-01-01'])
+        t['inicio'] = '2027-01-02'  # El inicio acreditado tiene prioridad.
+        self.assertEqual(temporadas.plan_fechas(t, '2026-12-19T12:00:00Z', []), [])
+
+    def test_enddate_no_pide_fechas_de_la_temporada_siguiente(self):
+        t = temporadas.nueva('atp', '2026', self.AHORA)
+        t['limites_proveedor'] = {'startDate': '2026-01-01T08:00Z', 'endDate': '2027-01-01T07:59Z'}
+        plan = temporadas.plan_fechas(t, '2026-12-25T12:00:00Z', [])
+        self.assertEqual((plan[0], plan[-1]), ('2026-12-25', '2026-12-31'))
+        self.assertEqual(temporadas.plan_fechas(t, '2027-01-01T12:00:00Z', []), [])
+        # Terminada según el proveedor, sin fin confirmado: nada que pedir, ni hoy.
+        t = temporadas.nueva('wnba', '2026', self.AHORA)
+        t['limites_proveedor'] = {'endDate': '2026-11-05T07:59Z'}
+        self.assertEqual(temporadas.plan_fechas(t, '2026-11-04T12:00:00Z', []), ['2026-11-04'])
+        self.assertEqual(temporadas.plan_fechas(t, '2026-11-05T12:00:00Z', []), [])
+
+    def test_fin_futuro_confirmado_no_revisa_ultimo_dia_fuera_del_horizonte(self):
+        t = temporadas.nueva('atp', '2027', self.AHORA)
+        t.update(fin='2027-11-30', fin_confirmado=True, limites_evidencia={'url': 'https://ejemplo.test'},
+                 limites_proveedor={'startDate': '2027-01-01T08:00Z'})
+        self.assertEqual(temporadas.plan_fechas(t, self.AHORA, []), [])
+        self.assertEqual(temporadas.plan_fechas(t, '2026-12-19T12:00:00Z', []), ['2027-01-01'])
+        t['inicio'] = '2027-01-01'
+        self.assertEqual(temporadas.plan_fechas(t, self.AHORA, []), [])
+
+    def test_caducidad_diaria_del_perfil_ignora_politica_antigua(self):
+        for coleccion in ('f1', 'atp'):
+            t = temporadas.nueva(coleccion, '2026', self.AHORA, politica={'horizonte_dias': 1})
+            t['politica']['revision_proxima_horas'] = 1
+            for comprobado, esperado in (('2026-10-31T15:00:01Z', []),
+                                         ('2026-10-31T15:00:00Z', ['2026-11-01'])):
+                with self.subTest(coleccion=coleccion, comprobado=comprobado):
+                    cobertura = [self.cobertura('2026-11-01', comprobado, proveedor=t['principal'])]
+                    self.assertEqual(temporadas.plan_fechas(t, self.AHORA, cobertura), esperado)
 
     def test_sin_trabajo_para_cerrada_pausada_bloqueada_o_presupuesto_agotado(self):
         t = self.nueva()

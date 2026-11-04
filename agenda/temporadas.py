@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
-from . import nucleo, tiempos
+from . import cadencias, nucleo, tiempos
 
 
 ESTADOS = {'anunciada', 'activa', 'en_cierre', 'cerrada', 'pausada'}
@@ -24,7 +24,6 @@ CATALOGO = {
 }
 POLITICA = {
     'horizonte_dias': 14, 'margen_cierre_dias': 2, 'revision_cierre_horas': 24,
-    'revision_proxima_horas': 12, 'revision_lejana_horas': 72,
     'revision_anunciada_horas': 168, 'descubrimiento_horas': 168,
     'max_peticiones_pasada': 32, 'max_peticiones_dia': 64,
 }
@@ -140,7 +139,7 @@ def reintento(ahora, errores, retry_after=None):
                despues(ahora, minutes=min(1440, 15 * 2 ** min(errores, 6))))
 
 
-def exitosa(t, ahora, alcance, incidencias=(), proximas=()):
+def exitosa(t, ahora, alcance, incidencias=(), citas=()):
     """Cierre en dos pasadas: nunca desde el máximo de las citas descargadas."""
     editable(t, ahora)
     if (any(alcance.get(campo) and alcance[campo] != t[campo] for campo in ('inicio', 'fin'))
@@ -171,11 +170,10 @@ def exitosa(t, ahora, alcance, incidencias=(), proximas=()):
                  proxima_revision=despues(ahora, hours=r['politica']['revision_cierre_horas']))
     else:
         anunciada = bool(r['inicio'] and hoy < date.fromisoformat(r['inicio']))
-        cercanas = any(hoy <= date.fromisoformat(d) <= hoy + timedelta(days=7) for d in proximas if d)
-        cadencia = ('revision_anunciada_horas' if anunciada else
-                    'revision_proxima_horas' if cercanas or incidencias else 'revision_lejana_horas')
+        horas = (r['politica']['revision_anunciada_horas'] if anunciada else
+                 cadencias.horas_temporada(r['coleccion'], hoy, citas, incidencias) - cadencias.MARGEN_HORAS)
         r.update(estado='anunciada' if anunciada else 'activa', en_cierre_desde=None,
-                 proxima_revision=despues(ahora, hours=r['politica'][cadencia]))
+                 proxima_revision=despues(ahora, hours=horas))
     return validar(r)
 
 
@@ -187,12 +185,17 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
     if t['estado'] in ('cerrada', 'pausada') or t['bloqueada']:
         return []
     hoy = momento(ahora).date()
-    primero = max(hoy, date.fromisoformat(t['inicio'])) if t['inicio'] else hoy
+    inicio = t['inicio'] or (t.get('limites_proveedor') or {}).get('startDate')
+    primero = max(hoy, date.fromisoformat(inicio[:10])) if inicio else hoy
     ultimo = hoy + timedelta(days=t['politica']['horizonte_dias'] - 1)
+    limite_fin = (t.get('limites_proveedor') or {}).get('endDate')
     if t['fin'] and t['fin_confirmado']:
         ultimo = min(ultimo, date.fromisoformat(t['fin']))
+    elif limite_fin:
+        # ESPN cierra a medianoche de EE. UU.: el día UTC de endDate ya es el siguiente.
+        ultimo = min(ultimo, date.fromisoformat(limite_fin[:10]) - timedelta(days=1))
     # Tras el fin se revalida el último día declarado para el cierre, no hoy.
-    if ultimo < primero and t['fin_confirmado']:
+    if ultimo < primero and t['fin_confirmado'] and date.fromisoformat(t['fin']) < hoy:
         primero = ultimo = date.fromisoformat(t['fin'])
     dias = [(primero + timedelta(days=i)).isoformat() for i in range(max(0, (ultimo - primero).days + 1))]
     comprobadas = {}
@@ -201,7 +204,7 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
             d = c['unidad']
             if d not in comprobadas or momento(c['comprobado']) > momento(comprobadas[d]):
                 comprobadas[d] = marca(c['comprobado'])
-    horas = t['politica']['revision_proxima_horas']
+    horas = cadencias.perfil(t['coleccion'])['cerca'] - cadencias.MARGEN_HORAS
     pendientes = [d for d in dias if d not in comprobadas or
                   momento(comprobadas[d]) + timedelta(hours=horas) <= momento(ahora)]
     pendientes.sort(key=lambda d: (d in comprobadas, comprobadas.get(d, ''), d))

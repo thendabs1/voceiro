@@ -7,7 +7,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from agenda import almacen, deportes, operacion, proveedores, temporadas
+from agenda import almacen, cadencias, deportes, operacion, proveedores, temporadas
 from agenda.control import ConflictoControl, PresupuestoAgotado, Repositorio
 from agenda.transicion import ampliar
 from agenda.turso import Almacen, ConflictoCalendario
@@ -23,6 +23,50 @@ UNIDAD = '2026-11-01'
 
 
 class ContratoControl:
+    def test_relojes_persisten_sin_avanzar_revision_ni_alterar_calendario(self):
+        revision = self.revision()
+        calendario = self.repo.cargar_calendario()
+        for grupo in cadencias.RELOJES:
+            with self.subTest(grupo=grupo):
+                self.assertIsNone(self.repo.reloj(grupo))
+                self.assertTrue(self.repo.reloj_vencido(grupo, AHORA))
+                self.repo.anotar_reloj(grupo, AHORA)
+                reloj = self.repo.reloj(grupo)
+                self.assertEqual(reloj, {'ultima': temporadas.marca(AHORA),
+                    'proxima_revision': temporadas.despues(AHORA, hours=21)})
+                self.assertFalse(self.repo.reloj_vencido(grupo, DESPUES))
+                self.assertFalse(self.repo.reloj_vencido(grupo, '2026-11-02T08:59:59Z'))
+                self.assertTrue(self.repo.reloj_vencido(grupo, '2026-11-02T09:00:00Z'))
+                self.assertEqual(self.otro_repositorio().reloj(grupo), reloj)
+        self.assertEqual(self.revision(), revision)
+        self.assertEqual(self.repo.cargar_calendario(), calendario)
+        self.repo.escribir([], calendario)
+        self.assertEqual(self.repo.reloj('madrid'), reloj)
+        # Un segundo éxito retrasado no desplaza el siguiente tick diario.
+        self.repo.anotar_reloj('madrid', '2026-11-02T12:20:00Z')
+        self.assertTrue(self.repo.reloj_vencido('madrid', '2026-11-03T12:00:00Z'))
+
+    def test_reloj_desconocido_rechazado_sin_escrituras(self):
+        revision = self.revision()
+        for accion in (lambda: self.repo.reloj('desconocido'),
+                       lambda: self.repo.reloj_vencido('desconocido', AHORA),
+                       lambda: self.repo.anotar_reloj('desconocido', AHORA)):
+            with self.assertRaisesRegex(ValueError, 'Grupo de reloj desconocido'):
+                accion()
+        self.assertEqual(self.revision(), revision)
+
+    def test_atp_2027_no_consulta_en_noviembre_y_si_al_entrar_en_horizonte(self):
+        t = temporadas.nueva('atp', '2027', AHORA, seleccion={'year': 2027})
+        t['limites_proveedor'] = {'startDate': '2027-01-01T08:00Z'}
+        t = self.repo.registrar(t)
+        with patch.object(proveedores, 'recoger', side_effect=ValueError('respuesta simulada')) as recoger:
+            r = operacion.ejecutar_temporada(self.repo, t, AHORA)
+            self.assertEqual(r['estado'], 'omitida')
+            recoger.assert_not_called()
+            operacion.ejecutar_temporada(self.repo, t, '2026-12-19T12:00:00Z')
+            recoger.assert_called_once()
+            self.assertEqual(recoger.call_args.kwargs['fecha'], '2027-01-01')
+
     def revision(self):
         return self.repo.consultar('SELECT revision FROM agenda_esquema WHERE id=1')[0][0]
 

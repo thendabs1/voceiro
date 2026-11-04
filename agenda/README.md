@@ -29,11 +29,11 @@ parser de búsqueda.
 Atletismo (3/11/2026): capas RFEA, FGA y FCA recogidas en el cron y
 publicadas; World Athletics se recoge sin publicar. Ver [atletismo](atletismo.md).
 
-- **Cultura:** pasada diaria a las 04:30 UTC de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
+- **Cultura:** recogida diaria de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
 - **Deportes:** doce colecciones con adaptador y control de temporadas, todas
   publicadas; MotoGP y WTA ya tienen registrada la temporada 2027. La revisión
-  entra en el cron de las 04:30 UTC: cada colección decide si le toca.
+  entra en el cron de las 04:30, 10:30, 16:30 y 22:30 UTC: cada temporada decide si le toca.
 - **API de lectura:** activa en `cf-datos` y `deno-datos`
   (`CALENDARIO_LECTURA_SQL=true`), con publicación diferencial.
 - **Cliente:** `CALENDARIO_ACTIVO = true` en `front/app/14-calendario.js`, con
@@ -148,6 +148,16 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
   2 h… hasta 24 h. El descubrimiento busca la temporada siguiente sin años
   fijos cada semana; que aún no esté publicada no es un fallo. Solo una
   colección sin ninguna temporada reintenta con espera creciente.
+- **Cadencias** (`cadencias.py`, solo calendario): base de 72 h, 24 h si una
+  cita empieza en los próximos 7 días o hay una incidencia real. Durante una
+  competición (inicio y fin incluidos), 24 h salvo F1, MotoGP y WRC: 6 h.
+  `programacion_pendiente` y `programacion_pendiente_conservada` no aceleran.
+  Se restan 3 h al programar para absorber retrasos del cron; la cobertura por
+  día caduca a las 21 h. Anuncio, cierre y descubrimiento conservan sus reglas.
+  Sin inicio acreditado, el plan respeta `limites_proveedor.startDate`: una
+  temporada futura fuera del horizonte no genera consultas por fecha. Sin fin
+  confirmado, `endDate` corta igual el plan: las fechas de la temporada
+  siguiente no se piden con la anterior.
 - La publicación (`--fuentes-control`) añade los principales validados y su
   cobertura por colección.
 
@@ -255,9 +265,9 @@ sin red.
 
 Workflow **Calendario**: `recoger` (cultura), `deportes` (temporadas y
 descubrimiento; publica), `reclasificar`, `preparar-nucleo` y `publicar`. El
-cron diario hace `recoger` y `deportes`. Para revisar ya una colección sin
-esperar su cadencia: `deportes` con `colecciones` (p. ej. `wrc,nba`) y
-`forzar`; no salta la espera tras un error de temporada. Cada pasada revisa
+cron cada 6 h hace `recoger` y `deportes` con `--cadencia`. Para revisar ya una
+colección sin esperar su cadencia: `deportes` con `colecciones` (p. ej. `wrc,nba`) y
+`forzar`; no salta la espera tras un error de temporada. Cada publicación revisa
 las fuentes guardadas (`python -m agenda.publicacion --turso --revisar`, el
 mismo informe que `agenda.revision`) con la carga que usa para publicar.
 
@@ -265,9 +275,20 @@ El workflow ejecuta todo en un proceso, `python -m agenda.pasada --paso "CLI
 args" … --paso-tolerado "CLI args"`, con un `Almacen` compartido
 (`turso.compartido`): el núcleo se lee una vez y cada paso guarda al terminar
 (cada agenda cultural por separado). Un paso tolerado que falla conserva lo ya
-guardado y la pasada sigue y publica; sale con 1 al final. Un conflicto de
+guardado y la pasada sigue hasta los pasos finales; sale con 1 al final. Un conflicto de
 revisión (otro escritor) o un error de Turso la detienen; un guardado incierto
 obliga a releer.
+
+Solo el cron activa `--cadencia`. `--paso-reloj "GRUPO::CLI args"` es tolerado:
+cultura y cada fuente de atletismo tienen relojes de 24 h menos 3 h de margen,
+anotados solo tras éxito en `agenda_estado` (`reloj:<grupo>`, `ultima` y
+`proxima_revision`), sin avanzar la revisión del núcleo. Sin fila, toca recoger;
+si falla, se reintenta en el siguiente tick. Preparación del núcleo y operación
+se permiten en todos los ticks. `--paso-final` (publicación) y
+`--paso-final-tolerado` (revisión de atletismo) se omiten si no hubo filas
+escritas en Turso y no venció `publicacion`; solo el final no tolerado anota ese
+reloj tras éxito. Cada omisión aparece en el log. Sin `--cadencia`, incluidos
+los lanzamientos manuales, todos los pasos se ejecutan y no anotan relojes.
 
 ```sh
 # Cultura en Turso (ventana inclusiva, 31 días por defecto, máximo 91).

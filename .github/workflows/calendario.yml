@@ -3,7 +3,7 @@ name: Calendario
 # Recogida → Turso → lectura pública. Sin copias ni artefactos intermedios.
 on:
   schedule:
-    - cron: '30 4 * * *'
+    - cron: '30 4,10,16,22 * * *'
   workflow_dispatch:
     inputs:
       operacion:
@@ -95,8 +95,9 @@ jobs:
           restore-keys: atletismo-fichas-
       - name: Recoger, revisar temporadas y publicar con una sola carga del núcleo
         # Cada fuente guarda al terminar. Si una falla, las demás siguen, se publica
-        # el estado válido y el job se marca fallido al final (agenda/pasada.py).
+        # cuando toca y el job se marca fallido al final (agenda/pasada.py).
         env:
+          EVENTO: ${{ github.event_name }}
           OPERACION: ${{ inputs.operacion || 'recoger' }}
           INICIO: ${{ inputs.inicio }}
           FIN: ${{ inputs.fin }}
@@ -104,8 +105,9 @@ jobs:
           CULTURA: ${{ inputs.cultura || 'todas' }}
           ACEPTAR_INVENTARIO: ${{ inputs.aceptar_inventario }}
           # Temporadas: cada colección decide si le toca (cadencia, reintentos y
-          # presupuesto en agenda/temporadas.py). Un cron diario cabe en el
-          # presupuesto de ESPN: 3 colecciones por fecha × 14 días = 42 de 64.
+          # presupuesto en agenda/temporadas.py y agenda/cadencias.py). Cuatro ticks
+          # diarios no multiplican la ventana de ESPN: caduca a las 21 h; se
+          # mantienen los límites de 32 peticiones/pasada y 64/día por proveedor.
           DEPORTES: ${{ github.event_name == 'schedule' || inputs.operacion == 'deportes' }}
           COLECCIONES: ${{ inputs.colecciones }}
           FORZAR: ${{ inputs.forzar }}
@@ -128,13 +130,14 @@ jobs:
           if [ -n "$INICIO" ]; then fechas+=" --inicio $INICIO"; fi
           if [ -n "$FIN" ]; then fechas+=" --fin $FIN"; fi
           pasos=()
+          if [ "$EVENTO" = schedule ]; then pasos+=(--cadencia); fi
           if [ "$OPERACION" = reclasificar ]; then
             pasos+=(--paso "calendario --turso --reclasificar")
           fi
           if [ "$OPERACION" = recoger ]; then
             case "$FUENTE" in
               cultura-galicia|ambas)
-                pasos+=(--paso-tolerado "calendario --turso --recoger-cultura cultura-galicia$fechas") ;;
+                pasos+=(--paso-reloj "cultura-galicia::calendario --turso --recoger-cultura cultura-galicia$fechas") ;;
             esac
             case "$FUENTE" in
               vidmar-f1|ambas)
@@ -149,7 +152,7 @@ jobs:
             for c in $culturas; do
               paso="calendario --turso --recoger-cultura $c$fechas"
               if [ "$ACEPTAR_INVENTARIO" = true ]; then paso+=" --aceptar-inventario $c"; fi
-              pasos+=(--paso-tolerado "$paso")
+              pasos+=(--paso-reloj "$c::$paso")
             done
           fi
           pasos+=(--paso "calendario --turso --preparar-nucleo")
@@ -163,15 +166,15 @@ jobs:
             # Primero las fichas territoriales: dan referencias a Nivel II.
             # Cada fuente conserva su última lectura válida si falla otra.
             for a in fga fca rfea wa; do
-              pasos+=(--paso-tolerado "atletismo-recogida --turso --fuente $a$fechas")
+              pasos+=(--paso-reloj "atletismo-$a::atletismo-recogida --turso --fuente $a$fechas")
             done
           fi
           paso="publicacion --turso --revisar"
           if [ "$PUBLICAR" = true ]; then paso+=" --fuentes $FUENTES_PUBLICAS --fuentes-control --publicar"; fi
           if [ "$PUBLICAR" = true ] && [ "$LECTURA_SQL" = true ]; then paso+=" --lectura-sql"; fi
-          pasos+=(--paso "$paso")
+          pasos+=(--paso-final "$paso")
           # Revisa lo ya guardado; no recoge ni activa las fuentes de atletismo.
           # Sin incidencias no consulta GitHub. El grupo de concurrencia del
           # workflow serializa la comprobación y creación de issues.
-          pasos+=(--paso-tolerado "atletismo-revision --turso --issues --repo $GITHUB_REPOSITORY")
+          pasos+=(--paso-final-tolerado "atletismo-revision --turso --issues --repo $GITHUB_REPOSITORY")
           python -m agenda.pasada "${pasos[@]}"
