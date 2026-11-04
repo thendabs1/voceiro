@@ -19,6 +19,14 @@ ACTIVIDADES = ('competicion', 'control', 'tecnificacion', 'desconocida')
 ROLES = ('normas', 'reglamento', 'informacion_tecnica', 'horario', 'inscritos', 'resultados',
          'clasificacion', 'circular', 'acta', 'otro')
 CLASES_SERIE = ('circuito', 'ciclo', 'coleccion')
+# La norma no da un ámbito único: clasifica por calendario, nivel y prueba. Por
+# eso se guarda en qué calendarios está cada cita y quién la organiza o autoriza.
+CALENDARIOS = ('fga', 'fca', 'rfea', 'rfea-nivel-ii', 'wa', 'ea')
+ROLES_ORGANIZACION = ('organiza', 'coorganiza', 'autoriza', 'reconoce', 'convoca')
+# `federacion_espanola`: la ley reserva «Campeonato de España» a las federaciones
+# españolas, no solo a la RFEA (Ley 39/2022, art. 79.3).
+AUTORIDADES = ('rfea', 'fga', 'fca', 'wa', 'ea', 'federacion_espanola', 'otra', 'desconocida')
+BASES_TITULO = ('documento', 'nombre_reservado')
 EVIDENCIA = {'superficie', 'url', 'localizador', 'literal'}
 
 
@@ -31,12 +39,12 @@ def _texto(campo, valor):
         _fallo(campo, 'debe ser texto no vacío')
 
 
-def _url(campo, valor):
+def _url(campo, valor, http=False):
     _texto(campo, valor)
     try:
         partes = urlsplit(valor)
         partes.port  # Lanza ValueError si el puerto no es válido.
-        valida = (partes.scheme == 'https' and partes.hostname and not (partes.username or partes.password)
+        valida = (partes.scheme in (('https', 'http') if http else ('https',)) and partes.hostname and not (partes.username or partes.password)
                   and not any(c.isspace() for c in valor))
     except ValueError:
         valida = False
@@ -130,16 +138,38 @@ def _actividad(v):
 
 def _titulos(v):
     for campo, t in _lista('titulos', v):
-        _claves(campo, t, {'literal', 'evidencia'}, ('literal', 'evidencia'))
+        _claves(campo, t, {'literal', 'autoridad', 'base', 'evidencia'}, ('literal', 'evidencia'))
         _texto(campo + '.literal', t['literal'])
         _evidencia(campo + '.evidencia', t['evidencia'])
+        if 'autoridad' in t:
+            _opcion(campo + '.autoridad', t['autoridad'], AUTORIDADES)
+        if 'base' in t:
+            _opcion(campo + '.base', t['base'], BASES_TITULO)
 
 
-def _documentos(v):
-    # `rol` aún es opcional: FGA publica hoy {nombre, url} y lo añadirá su adaptador.
+def _calendarios(v):
+    for campo, c in _lista('calendarios', v):
+        _claves(campo, c, {'calendario', 'categoria_literal', 'evidencia'}, ('calendario', 'evidencia'))
+        _opcion(campo + '.calendario', c['calendario'], CALENDARIOS)
+        _textos(campo, c, ('categoria_literal',))
+        _evidencia(campo + '.evidencia', c['evidencia'])
+
+
+def _organizacion(v):
+    for campo, o in _lista('organizacion', v):
+        _claves(campo, o, {'rol', 'entidad_literal', 'evidencia'}, ('rol', 'entidad_literal', 'evidencia'))
+        _opcion(campo + '.rol', o['rol'], ROLES_ORGANIZACION)
+        _texto(campo + '.entidad_literal', o['entidad_literal'])
+        _evidencia(campo + '.evidencia', o['evidencia'])
+
+
+def _documentos(v, fuente=None):
+    # Las fuentes se adoptan por separado; FGA exige rol en las nuevas entradas.
     for campo, d in _lista('documentos', v):
         _claves(campo, d, {'url', 'nombre', 'rol', 'alcance_literal', 'hash', 'evidencia'}, ('url',))
-        _url(campo + '.url', d['url'])
+        if fuente == 'fga' and 'rol' not in d:
+            _fallo(campo, 'necesita rol para FGA')
+        _url(campo + '.url', d['url'], http=fuente == 'fga')
         _textos(campo, d, ('nombre', 'alcance_literal', 'hash'))
         if 'rol' in d:
             _opcion(campo + '.rol', d['rol'], ROLES)
@@ -155,12 +185,15 @@ def _pertenencias(v):
         _evidencia(campo + '.evidencia', p['evidencia'])
 
 
-def validar(metadatos, inicio, fin):
+def validar(metadatos, inicio, fin, *, fuente=None):
     """Rechaza lo mal formado; `inicio` y `fin` son los días ISO de la cita."""
     for clave, comprobar in (('alcance', _alcance), ('fuente', _fuente), ('actividad', _actividad),
-                             ('titulos', _titulos), ('documentos', _documentos), ('pertenencias', _pertenencias)):
+                             ('titulos', _titulos), ('pertenencias', _pertenencias),
+                             ('calendarios', _calendarios), ('organizacion', _organizacion)):
         if clave in metadatos:
             comprobar(metadatos[clave])
+    if 'documentos' in metadatos:
+        _documentos(metadatos['documentos'], fuente)
     if 'temporalidad' in metadatos:
         _temporalidad(metadatos['temporalidad'], inicio, fin)
 

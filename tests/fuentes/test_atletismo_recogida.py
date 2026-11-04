@@ -70,28 +70,14 @@ class RecogidaAtletismo(unittest.TestCase):
         self.assertEqual(entrada['eventos'][0]['fin'], '2026-11-01')
         self.assertEqual(len(informe['consultas']), 3)
 
-    def test_fga_resuelve_plan_fuera_de_ventana_sin_inventar_otra_jornada(self):
-        listado = (MUESTRAS / 'fga.html').read_text()
-        ficha = (MUESTRAS / 'fga-ficha.html').read_text()
-        contador = []
-
-        def obtener(url):
-            contador.append(url)
-            if '?' in url:
-                return listado
-            if url.endswith('/plan-galego-de-tecnificacion-atletica-2026/'):
-                return ('<main><h1>Calendario e resultados</h1>'
-                        '<article class="type-competition post-9"><h1>Plan</h1></article></main>')
-            if url.endswith('/i-circuito-de-atletismo-concello-de-vigo/'):
-                return '<main><article class="type-competition post-10"><h1>Circuito</h1></article></main>'
-            return ficha
-
-        entrada, informe = r.recoger('fga', '2026-11-01', '2026-11-30', descargar=obtener)
-        self.assertTrue(informe['completo'])
-        self.assertEqual(len(entrada['eventos']), 4)
-        self.assertEqual({g['id'] for g in entrada['agrupaciones']}, {'9', '10'})
-        self.assertEqual(next(g for g in entrada['agrupaciones'] if g['id'] == '9')['nombre'], 'Plan')
-        self.assertEqual(next(e for e in entrada['eventos'] if e['id'] == '121152')['grupo'], '9')
+    def test_fga_ficha_no_disponible_conserva_capturas_buenas_y_cobertura_parcial(self):
+        from test_atletismo_fga import captura
+        entrada, informe = r.recoger('fga', '2026-11-01', '2026-11-30', descargar=captura)
+        self.assertFalse(informe['completo'])
+        self.assertFalse(informe['aplicar_ausencias'])
+        self.assertIn('124035', {e['id'] for e in entrada['eventos']})
+        self.assertEqual(next(g for g in entrada['agrupaciones'] if g['id'] == '119957')['clase'], 'coleccion')
+        self.assertTrue(any(s['estado'] == 'no_disponible' for s in informe['superficies']))
 
     def test_ventana_acotada_y_cambio_de_ano(self):
         self.assertEqual(list(r.meses(date(2026, 12, 15), date(2027, 1, 2))), [date(2026, 12, 1), date(2027, 1, 1)])
@@ -276,38 +262,21 @@ class RecogidaAtletismo(unittest.TestCase):
                                                        'comprobado': AHORA}])
         self.assertEqual(publicacion.proyectar(n)['eventos'], [])
 
-    def test_fga_solo_el_404_de_la_propia_ficha_retira_y_un_pendiente_trasladado_se_oculta(self):
-        cita = {'id': '7', 'url': 'https://atletismo.gal/competicions/siete/', 'inicio': '2026-11-10', 'fin': '2026-11-10'}
-        ficha = ('<main><article class="type-competition post-7"><div><span>12/12/2026</span>'
-                 '<span>Ordes</span></div><h1>Siete</h1></article></main>')
-        listado = ('<div id="competitionList"><article class="type-competition post-7">'
-                   '<h2><a href="/competicions/siete/">II Circuito Siete</a></h2>'
-                   '<div class="space-x-2"><div><span>12/12/2026</span></div></div>'
-                   '<div class="basis-5/12">Ordes</div></article></div>')
-
-        def caido(url):
+    def test_fga_reconsulta_parcial_no_oculta_ni_reimporta_una_fecha_dudosa(self):
+        cita = {'id': '7', 'url': 'https://atletismo.gal/competicions/siete/',
+                'inicio': '2026-11-10', 'fin': '2026-11-10'}
+        ficha = ('<main><article class="type-competition post-7"><header><span>12/12/2026</span>'
+                 '<h1>Siete</h1></header></article></main>')
+        def caida(url):
             if url == cita['url']:
                 return ficha
             raise HTTPError(url, 404, 'Not Found', {}, io.BytesIO(b''))
-
-        def pendiente(url):
-            return ficha if url == cita['url'] else listado
-
         vacia = {'version': 1, 'fuente': 'fga', 'eventos': [], 'agrupaciones': []}
-        with self.assertRaises(HTTPError):
-            r.reconsultar('fga', [cita], deepcopy(vacia), {'pendientes': [], 'completo': True},
-                          date(2026, 11, 1), date(2026, 11, 30), caido, AHORA)
-        # La ficha la lleva al 12/12 y ese listado la deja pendiente como circuito:
-        # la fecha guardada (10/11) está desmentida y deja de publicarse (Codex, 3/11/2026).
-        for guardada, ausente in (('2026-11-10', True), ('2026-12-12', False)):
-            with self.subTest(guardada=guardada):
-                informe = {'pendientes': [], 'completo': True}
-                resultado = r.reconsultar('fga', [{**cita, 'inicio': guardada, 'fin': guardada}], deepcopy(vacia),
-                                          informe, date(2026, 11, 1), date(2026, 12, 31), pendiente, AHORA)
-                self.assertEqual([a['motivo'] for a in resultado['ausencias']], [
-                    'fechas cambiadas (2026-12-12 – 2026-12-12); agrupación o jornadas por acreditar'] if ausente else [])
-                self.assertFalse(informe['completo'])
-                self.assertEqual([(p['id'], p['inicio']) for p in informe['pendientes']], [('7', '2026-12-12')])
+        informe = {'pendientes': [], 'completo': True}
+        resultado = r.reconsultar('fga', [cita], vacia, informe, date(2026,11,1), date(2026,12,31), caida, AHORA)
+        self.assertEqual(resultado, {'ausencias': [], 'reimportadas': []})
+        self.assertFalse(informe['completo'])
+        self.assertEqual(informe['pendientes'][0]['id'], '7')
 
     def test_agrupacion_conserva_su_clase_al_releerse_como_circuito(self):
         entrada = {'version': 1, 'fuente': 'fga', 'agrupaciones': [{'id': '9', 'nombre': 'Circuito',

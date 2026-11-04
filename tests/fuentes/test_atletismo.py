@@ -220,12 +220,14 @@ class Atletismo(unittest.TestCase):
         self.assertIn('Homologada', homologada['metadatos']['etiquetas_listado'])
         rango = next(e for e in eventos if '5ª Xornada' in e['nombre'])
         self.assertEqual((rango['inicio'], rango['fin']), ('2026-12-12', '2026-12-13'))
-        # Un rango explícito puede durar más de dos días; dos fechas sueltas no
-        # acreditan que se celebre también durante los días intermedios.
+        # El envolvente puede durar más de dos días; el guion no acredita
+        # actividad en los días intermedios sin un programa documental.
         ampliado = html.replace('13/12/2026', '15/12/2026')
         self.assertEqual(atletismo.leer_galicia(ampliado)[1]['fin'], '2026-12-15')
-        with self.assertRaises(ValueError):
-            atletismo.leer_galicia(ampliado.replace('<span>-</span>', ''))
+        self.assertEqual(atletismo.leer_galicia(ampliado)[1]['metadatos']['temporalidad']['dias'],
+                         ['2026-12-12', '2026-12-15'])
+        sueltas = atletismo.leer_galicia(ampliado.replace('<span>-</span>', ''))[1]
+        self.assertEqual(sueltas['metadatos']['temporalidad']['dias'], ['2026-12-12', '2026-12-15'])
         with self.assertRaises(ValueError):
             atletismo.leer_galicia(html.replace('13/12/2026', '11/12/2026'))
         # FGA enumera los campeonatos de tres días: «21/02 - 22/02 - 23/02».
@@ -233,8 +235,9 @@ class Atletismo(unittest.TestCase):
                             '<span>13/12/2026</span>\n<span>-</span>\n<span>14/12/2026</span>')
         self.assertEqual((atletismo.leer_galicia(tres)[1]['inicio'], atletismo.leer_galicia(tres)[1]['fin']),
                          ('2026-12-12', '2026-12-14'))
-        with self.assertRaises(ValueError):
-            atletismo.leer_galicia(tres.replace('14/12/2026', '16/12/2026'))
+        separadas = atletismo.leer_galicia(tres.replace('14/12/2026', '16/12/2026'))[1]
+        self.assertEqual(separadas['metadatos']['temporalidad']['dias'],
+                         ['2026-12-12', '2026-12-13', '2026-12-16'])
 
     def test_reprogramar_conserva_identidad_y_fuentes_independientes(self):
         eventos = atletismo.leer_cataluna(cataluna())[:1]

@@ -3,7 +3,10 @@
   "conciliaciones": [
     {
       "id": "jean-bouin-2026",
-      "referencias": {"fca": "88393", "rfea": "69005"},
+      "referencias": {
+        "fca": "88393",
+        "rfea": "69005"
+      },
       "conservar": "fca",
       "revision": {
         "fecha": "2026-11-02",
@@ -16,7 +19,10 @@
     },
     {
       "id": "cross-granollers-2026",
-      "referencias": {"fca": "89086", "rfea": "69182"},
+      "referencias": {
+        "fca": "89086",
+        "rfea": "69182"
+      },
       "conservar": "fca",
       "revision": {
         "fecha": "2026-11-02",
@@ -29,7 +35,10 @@
     },
     {
       "id": "san-martino-2026",
-      "referencias": {"fga": "113279", "rfea": "69339"},
+      "referencias": {
+        "fga": "113279",
+        "rfea": "69339"
+      },
       "conservar": "fga",
       "revision": {
         "fecha": "2026-11-02",
@@ -42,7 +51,11 @@
     },
     {
       "id": "nassos-2026",
-      "referencias": {"fca": "83074", "rfea": "67588", "wa": "7244650"},
+      "referencias": {
+        "fca": "83074",
+        "rfea": "67588",
+        "wa": "7244650"
+      },
       "conservar": "fca",
       "revision": {
         "fecha": "2026-11-03",
@@ -56,7 +69,10 @@
     },
     {
       "id": "marcha-invierno-castro-2026",
-      "referencias": {"fca": "80239", "rfea": "64834"},
+      "referencias": {
+        "fca": "80239",
+        "rfea": "64834"
+      },
       "conservar": "fca",
       "revision": {
         "fecha": "2026-11-02",
@@ -69,7 +85,10 @@
     },
     {
       "id": "xunta-galicia-clubs-sub16-pc-2026",
-      "referencias": {"fga": "112623", "rfea": "nivel-ii:xunta-galicia-clubs-sub16-pc-2026"},
+      "referencias": {
+        "fga": "112623",
+        "rfea": "nivel-ii:xunta-galicia-clubs-sub16-pc-2026"
+      },
       "conservar": "fga",
       "revision": {
         "fecha": "2026-11-02",
@@ -82,7 +101,10 @@
     },
     {
       "id": "lanzamentos-longos-ordes-2026",
-      "referencias": {"fga": "112625", "rfea": "nivel-ii:lanzamentos-longos-ordes-2026"},
+      "referencias": {
+        "fga": "112625",
+        "rfea": "nivel-ii:lanzamentos-longos-ordes-2026"
+      },
       "conservar": "fga",
       "revision": {
         "fecha": "2026-11-02",
@@ -95,7 +117,11 @@
     },
     {
       "id": "maraton-valencia-2026",
-      "referencias": {"rfea": "64933", "fca": "83627", "wa": "7235578"},
+      "referencias": {
+        "rfea": "64933",
+        "fca": "83627",
+        "wa": "7235578"
+      },
       "conservar": "rfea",
       "revision": {
         "fecha": "2026-11-03",
@@ -109,7 +135,11 @@
     },
     {
       "id": "cross-venta-de-banos-2026",
-      "referencias": {"rfea": "64942", "fca": "83629", "wa": "7246800"},
+      "referencias": {
+        "rfea": "64942",
+        "fca": "83629",
+        "wa": "7246800"
+      },
       "conservar": "rfea",
       "revision": {
         "fecha": "2026-11-03",
@@ -123,7 +153,11 @@
     },
     {
       "id": "cross-italica-2026",
-      "referencias": {"rfea": "64671", "fca": "83648", "wa": "7242994"},
+      "referencias": {
+        "rfea": "64671",
+        "fca": "83648",
+        "wa": "7242994"
+      },
       "conservar": "rfea",
       "revision": {
         "fecha": "2026-11-03",
@@ -137,7 +171,10 @@
     },
     {
       "id": "cross-soria-2026",
-      "referencias": {"rfea": "65798", "wa": "7243496"},
+      "referencias": {
+        "rfea": "65798",
+        "wa": "7243496"
+      },
       "conservar": "rfea",
       "revision": {
         "fecha": "2026-11-03",
@@ -150,7 +187,10 @@
     },
     {
       "id": "cross-amurrio-2026",
-      "referencias": {"rfea": "64694", "wa": "7244490"},
+      "referencias": {
+        "rfea": "64694",
+        "wa": "7244490"
+      },
       "conservar": "rfea",
       "revision": {
         "fecha": "2026-11-03",
@@ -163,7 +203,10 @@
     },
     {
       "id": "maraton-malaga-2026",
-      "referencias": {"rfea": "66018", "wa": "7244448"},
+      "referencias": {
+        "rfea": "66018",
+        "wa": "7244448"
+      },
       "conservar": "rfea",
       "revision": {
         "fecha": "2026-11-03",
@@ -176,7 +219,10 @@
     },
     {
       "id": "medio-maraton-sevilla-2026",
-      "referencias": {"rfea": "67108", "wa": "7244016"},
+      "referencias": {
+        "rfea": "67108",
+        "wa": "7244016"
+      },
       "conservar": "rfea",
       "revision": {
         "fecha": "2026-11-03",
@@ -184,6 +230,108 @@
         "evidencias": [
           "https://atletismorfea.es/calendario/campeonato/medio-maraton-de-sevilla-2",
           "https://worldathletics.org/competition/calendar-results?startDate=2026-12-13&endDate=2026-12-13&regionType=country&regionId=13188350"
+        ]
+      }
+    },
+    {
+      "id": "espana-clubs-sub16-st-2026",
+      "referencias": {
+        "rfea": "64832",
+        "fca": "83655",
+        "fga": "112762"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "Mismo Campeonato de España de Short Track sub-16 por clubes, Antequera, 28/11/2026. La ficha FGA declara organización RFEA y etiqueta Nacional; el Calendario RFEA 2026 le da categoría RFEA. FGA publica además el 29/11: discrepancia visible, sin elegir fuente.",
+        "evidencias": [
+          "https://atletismorfea.es/sites/default/files/2026-04/065-2026%20Calendario%202026.pdf",
+          "https://atletismo.gal/competicions/campionato-de-espana-clubs-sub16-short-track-2026/",
+          "https://fcatletisme.cat/event/campionat-despanya-de-clubs-sub16-st/"
+        ]
+      }
+    },
+    {
+      "id": "espana-clubs-sub20-st-2026",
+      "referencias": {
+        "rfea": "69634",
+        "fca": "83646",
+        "fga": "112770"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "Mismo Campeonato de España de Short Track sub-20 por clubes, 19/12/2026. La ficha FGA declara organización RFEA y etiqueta Nacional.",
+        "evidencias": [
+          "https://atletismo.gal/competicions/campionato-de-espana-clubs-sub20-short-track-2026/",
+          "https://fcatletisme.cat/event/campionat-despanya-de-clubs-sub20-st/"
+        ]
+      }
+    },
+    {
+      "id": "espana-clubs-master-st-2026",
+      "referencias": {
+        "rfea": "64833",
+        "fca": "83644",
+        "fga": "112764"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "Mismo Campeonato de España de Short Track máster por clubes. La ficha FGA declara organización RFEA y etiqueta Nacional. La Circular RFEA 192/2026 fija el 5/12 en Gallur; RFEA y FGA siguen publicando 5–6/12: discrepancia visible.",
+        "evidencias": [
+          "https://atletismo.gal/competicions/campionato-de-espana-de-clubs-master-short-track-2026/",
+          "https://fcatletisme.cat/event/campionat-despanya-de-clubs-master-st/"
+        ]
+      }
+    },
+    {
+      "id": "espana-cross-clubs-2026",
+      "referencias": {
+        "rfea": "64831",
+        "fca": "83650",
+        "fga": "112760"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "Mismo Campeonato de España de Campo a Través por clubes, Atapuerca, 22/11/2026. La ficha FGA declara organización RFEA. Es el campeonato, no el cross internacional RFEA 64930 que lo acoge.",
+        "evidencias": [
+          "https://atletismo.gal/competicions/campionato-de-espana-de-campo-a-traves-clubs-2026/"
+        ]
+      }
+    },
+    {
+      "id": "europa-cross-2026",
+      "referencias": {
+        "rfea": "65029",
+        "fca": "83631",
+        "fga": "112824"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "Mismo Campeonato de Europa de Campo a Través, Belgrado, 13/12/2026. La ficha FGA declara organización European Athletics; el Calendario RFEA 2026 le da categoría EA.",
+        "evidencias": [
+          "https://atletismorfea.es/sites/default/files/2026-04/065-2026%20Calendario%202026.pdf",
+          "https://atletismo.gal/competicions/campionato-de-europa-de-campo-a-traves-2026/",
+          "https://fcatletisme.cat/event/campionat-deuropa-de-cros-11/"
+        ]
+      }
+    },
+    {
+      "id": "espana-marcha-promocion-2026",
+      "referencias": {
+        "fca": "80237",
+        "fga": "112766"
+      },
+      "conservar": "fca",
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "Mismo Campeonato de España de Marcha de Invierno de Promoción, Castro Urdiales, 13/12/2026: FCA y FGA publican solo la parte de promoción. RFEA 64834 cubre promoción y máster: queda fuera, a la espera de la separación revisada de Castro.",
+        "evidencias": [
+          "https://atletismo.gal/competicions/campionato-de-espana-de-marcha-de-inverno-de-promocion-2026/",
+          "https://fcatletisme.cat/event/campionat-despanya-de-marxa-dhivern-de-promocio-9/"
         ]
       }
     }
