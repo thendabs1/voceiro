@@ -189,6 +189,7 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
     primero = max(hoy, date.fromisoformat(inicio[:10])) if inicio else hoy
     ultimo = hoy + timedelta(days=t['politica']['horizonte_dias'] - 1)
     limite_fin = (t.get('limites_proveedor') or {}).get('endDate')
+    horas = cadencias.perfil(t['coleccion'])['cerca'] - cadencias.MARGEN_HORAS
     if t['fin'] and t['fin_confirmado']:
         ultimo = min(ultimo, date.fromisoformat(t['fin']))
     elif limite_fin:
@@ -197,6 +198,9 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
     # Tras el fin se revalida el último día declarado para el cierre, no hoy.
     if ultimo < primero and t['fin_confirmado'] and date.fromisoformat(t['fin']) < hoy:
         primero = ultimo = date.fromisoformat(t['fin'])
+    elif ultimo < primero and limite_fin and not t['fin_confirmado'] and ultimo < hoy:
+        # Sin fin acreditado no se cierra: una sonda semanal del último día deja ver si el proveedor amplía.
+        primero, horas = ultimo, cadencias.SONDA_HORAS - cadencias.MARGEN_HORAS
     dias = [(primero + timedelta(days=i)).isoformat() for i in range(max(0, (ultimo - primero).days + 1))]
     comprobadas = {}
     for c in cobertura:
@@ -204,7 +208,6 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
             d = c['unidad']
             if d not in comprobadas or momento(c['comprobado']) > momento(comprobadas[d]):
                 comprobadas[d] = marca(c['comprobado'])
-    horas = cadencias.perfil(t['coleccion'])['cerca'] - cadencias.MARGEN_HORAS
     pendientes = [d for d in dias if d not in comprobadas or
                   momento(comprobadas[d]) + timedelta(hours=horas) <= momento(ahora)]
     pendientes.sort(key=lambda d: (d in comprobadas, comprobadas.get(d, ''), d))

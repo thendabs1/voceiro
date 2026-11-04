@@ -67,6 +67,43 @@ class ContratoControl:
             recoger.assert_called_once()
             self.assertEqual(recoger.call_args.kwargs['fecha'], '2027-01-01')
 
+    def test_cita_aplazada_no_relee_la_ventana_en_cada_tick(self):
+        pagina = muestra('espn-nba')
+        for evento in pagina['events']:
+            evento['competitions'][0]['status']['type']['name'] = 'STATUS_POSTPONED'
+        t = self.repo.registrar(temporadas.nueva('nba', '2027', AHORA, seleccion={'year': '2027'}))
+        with patch.object(proveedores, 'recoger', return_value=(pagina, 'https://ejemplo.test')) as recoger:
+            r = operacion.ejecutar_temporada(self.repo, t, AHORA)
+            self.assertEqual(recoger.call_count, 14)
+            t = self.repo.obtener(t['id'])
+            self.assertTrue(any(i['tipo'] == 'programacion_pendiente' for i in t['incidencias']))
+            self.assertGreater(temporadas.momento(t['proxima_revision']), temporadas.momento(AHORA))
+            self.assertTrue(all(c['completa'] for c in self.repo.cobertura(t['id'])))
+            r = operacion.ejecutar_temporada(self.repo, t, '2026-11-01T18:00:00Z')
+            self.assertEqual(r['motivo'], 'aún no vence')
+            self.assertEqual(recoger.call_count, 14)
+
+    def test_incidencia_real_sigue_invalidando_la_cobertura(self):
+        pagina = muestra('espn-nba')
+        t = self.repo.registrar(temporadas.nueva('nba', '2027', AHORA, seleccion={'year': '2027'}))
+        with patch.object(proveedores, 'recoger', return_value=(pagina, 'https://ejemplo.test')), \
+                patch.object(operacion, '_incidencias', return_value=[{'tipo': 'programa_incompleto'}]):
+            operacion.ejecutar_temporada(self.repo, t, AHORA)
+        self.assertFalse(any(c['completa'] for c in self.repo.cobertura(t['id'])))
+
+    def test_sonda_tras_enddate_recoge_la_ampliacion_del_proveedor(self):
+        t = temporadas.nueva('atp', '2026', '2026-01-01T00:00:00Z', seleccion={'year': '2026'})
+        t['limites_proveedor'] = {'startDate': '2026-01-01T08:00Z', 'endDate': '2026-10-28T07:59Z'}
+        t = self.repo.registrar(t)
+        pagina = muestra('espn-atp')  # Publica endDate ampliado a enero de 2027.
+        with patch.object(proveedores, 'recoger', return_value=(pagina, 'https://ejemplo.test')) as recoger:
+            r = operacion.ejecutar_temporada(self.repo, t, AHORA)
+        self.assertEqual(recoger.call_args.kwargs['fecha'], '2026-10-27')
+        self.assertEqual(r['estado'], 'activa')
+        guardada = self.repo.obtener(t['id'])
+        self.assertGreater(guardada['limites_proveedor']['endDate'], '2026-12-31')
+        self.assertTrue(temporadas.plan_fechas(guardada, AHORA, self.repo.cobertura(t['id'])))
+
     def revision(self):
         return self.repo.consultar('SELECT revision FROM agenda_esquema WHERE id=1')[0][0]
 

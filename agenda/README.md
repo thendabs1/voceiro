@@ -157,7 +157,10 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
   Sin inicio acreditado, el plan respeta `limites_proveedor.startDate`: una
   temporada futura fuera del horizonte no genera consultas por fecha. Sin fin
   confirmado, `endDate` corta igual el plan: las fechas de la temporada
-  siguiente no se piden con la anterior.
+  siguiente no se piden con la anterior. Pasado `endDate`, una sonda semanal
+  del último día deja ver si el proveedor amplía los límites, sin cerrar nada.
+  Una cita aplazada mantiene su incidencia y bloquea el cierre, pero el día
+  queda leído: no se relee toda la ventana en cada tick.
 - La publicación (`--fuentes-control`) añade los principales validados y su
   cobertura por colección.
 
