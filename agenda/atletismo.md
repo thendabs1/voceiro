@@ -179,7 +179,7 @@ no impide guardar la lectura mensual de RFEA: el paso se señala fallido y el
 informe, incompleto; una ventana con un año sin documento Nivel II tampoco
 está completa. `fuentes.{fuente}.ventana` se publica y el frontal raya en
 Deportes los días posteriores a su `fin`. En el workflow: input `atletismo`; el cron
-solo recoge con `CALENDARIO_ATLETISMO_RECOGIDA=true` (sin fijar) y la
+solo recoge con `CALENDARIO_ATLETISMO_RECOGIDA=true` y la
 publicación requiere añadir las fuentes a `CALENDARIO_FUENTES_PUBLICAS`.
 
 Volumen de una pasada de 60 días: unas 130 peticiones (FGA ~63, FCA 2, RFEA

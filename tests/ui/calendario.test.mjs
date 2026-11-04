@@ -95,7 +95,7 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
   runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calChipsDeportes, calDonde, calAsistente, wireCalendario, abrirCalendario,
-    cerrarCalendario, actualizarConsultaCalendario, calOtraPublicacion }; pintarCalendario = () => {};`, c);
+    calCancelarAsistente, cerrarCalendario, actualizarConsultaCalendario, calOtraPublicacion }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
   c.hoy = '2026-10-25';
@@ -326,6 +326,22 @@ test('el asistente que pide antes del primer catálogo no se queda cargando ante
   assert.equal(c.pedidas.filter(u => u.searchParams.get('disponibilidad')).at(-1).searchParams.get('revision'), null);
   assert.deepEqual([a.error, a.clave], [c.t('calError'), null]);
   soltar(); await esperar();
+});
+
+test('Escape sale del asistente como Cancelar: aborta lo pedido y devuelve el foco', async () => {
+  const eventos = readFileSync(new URL('../../front/app/27-eventos.js', import.meta.url), 'utf8');
+  assert.match(eventos, /if \(CALENDARIO\.asistente\)\{ calCancelarAsistente\(\); return; \}/);
+  for (const salir of [c => c.click('as-cancelar'), c => c.api.calCancelarAsistente()]){
+    const c = contexto();
+    await c.abrir();
+    await c.click('asistente', '0');
+    const controller = new AbortController();
+    let enfocado = false;
+    c.api.s.asistente.controller = controller;
+    c.panel.querySelector = sel => sel === '[data-cal="asistente"]' ? { focus(){ enfocado = true; } } : null;
+    await salir(c);
+    assert.deepEqual([controller.signal.aborted, c.api.s.asistente, enfocado], [true, null, true]);
+  }
 });
 
 test('el asistente vuelve a pedir la disponibilidad con la publicación nueva', async () => {
