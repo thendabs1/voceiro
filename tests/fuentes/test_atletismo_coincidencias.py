@@ -268,8 +268,8 @@ class Coincidencias(unittest.TestCase):
         self.assertEqual(len(publicacion.proyectar(n)['eventos']), 3)
 
     def test_la_revision_acredita_identidad_sin_borrar_lo_calculado(self):
-        rfea = entrada('rfea', '67588', nombre='B100 Cursa dels Nassos', lugar={'nombre': 'Barcelona'})['eventos'][0]
-        fca = entrada('fca', '83074', nombre='B100 Cursa dels Nassos (5 i 10 Km)', lugar={'nombre': 'Barcelona'})['eventos'][0]
+        rfea = entrada('rfea', '69005', nombre='B100 Cursa dels Nassos', lugar={'nombre': 'Barcelona'})['eventos'][0]
+        fca = entrada('fca', '88393', nombre='B100 Cursa dels Nassos (5 i 10 Km)', lugar={'nombre': 'Barcelona'})['eventos'][0]
         comparacion = c.comparar_referencias({**rfea, 'fuente': 'rfea'}, {**fca, 'fuente': 'fca'})
         self.assertEqual((comparacion['estado'], comparacion['veredicto']), ('automatica', 'revisar'))
         self.assertIn('categoría, formato o distancia de distinto alcance', comparacion['motivos'])

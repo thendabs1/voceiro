@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "separaciones": [
+    {
+      "id": "castro-2026-rfea",
+      "referencia": {"fuente": "rfea", "id": "64834"},
+      "desde": "fcc00b3e-54eb-53ef-b997-927c9d936fd9",
+      "hasta": "aa89bbe5-b6d4-5c6f-a5df-e5131dff5ea0",
+      "contiene": [["fca", "80237"], ["fca", "80239"], ["fga", "112768"]],
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "RFEA 64834 reúne el Campeonato de España de Marcha de Invierno de Promoción y el de 10 km Máster, con celebración conjunta y horario común (normas 21 y 22, art. 5). FCA los publica por separado en 80237 y 80239, y FGA 112768 solo el máster. Son partes de la reunión RFEA, no la misma cita. Sustituye a marcha-invierno-castro-2026.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-marcha-de-invierno-de-promocion-y-10-km-master-0",
+          "https://fcatletisme.cat/event/campionat-despanya-de-10-km-marxa-en-ruta-master-4/",
+          "https://atletismo.gal/competicions/campionato-de-espana-10-km-marcha-ruta-master/"
+        ]
+      }
+    },
+    {
+      "id": "nassos-2026-rfea",
+      "referencia": {"fuente": "rfea", "id": "67588"},
+      "desde": "abaf1e5b-5016-55fa-950f-d09f2bbcdf03",
+      "hasta": "9c1cba73-ca28-5852-8e48-908a8df5dd30",
+      "contenida_en": [["fca", "83074"]],
+      "revision": {
+        "fecha": "2026-11-04",
+        "criterio": "FCA 83074 anuncia las pruebas de 5 y 10 km; el Excel de pruebas de RFEA 67588 solo trae 5 km masculino y femenino. RFEA es una parte de la cita FCA, no la misma cita. WA 7244650 sigue con FCA: solo publica el nombre y su alcance está sin acreditar.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/b100-cursa-dels-nassos-5-i-10-km/",
+          "https://atletismorfea.es/calendario/campeonato/b100-cursa-dels-nassos"
+        ]
+      }
+    }
+  ]
+}

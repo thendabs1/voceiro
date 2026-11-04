@@ -66,6 +66,32 @@ def revisiones_identidad():
     return revisiones
 
 
+@lru_cache(maxsize=1)
+def separaciones():
+    datos = json.loads(Path(__file__).with_name('atletismo-separaciones.json').read_text(encoding='utf-8'))
+    if datos.get('version') != 1:
+        raise ValueError('Versión de separaciones desconocida')
+    vistas, salida = set(), []
+    for s in datos['separaciones']:
+        if (s['id'] in vistas or s['referencia']['fuente'] not in FUENTES or s['desde'] == s['hasta']
+                or not s.get('contiene', []) + s.get('contenida_en', [])
+                or not s['revision'].get('criterio') or not s['revision'].get('evidencias')):
+            raise ValueError('Separación sin revisión o relaciones válidas')
+        vistas.add(s['id'])
+        salida.append(s)
+    return salida
+
+
+def relacion_revisada(a, b):
+    """Par ya decidido por una separación: conjunto y parte siguen aparte."""
+    par = {(e['fuente'], str(e['id'])) for e in (a, b)}
+    for s in separaciones():
+        propia = (s['referencia']['fuente'], s['referencia']['id'])
+        if propia in par and any((f, i) in par for f, i in s.get('contiene', []) + s.get('contenida_en', [])):
+            return s
+    return None
+
+
 def comparar_referencias(a, b):
     comparacion = comparar(a, b)
     par = {(e.get('fuente'), str(e['id'])) for e in (a, b)}
@@ -328,6 +354,8 @@ def incidencias(n):
                               else 'posible duplicado de la misma fuente')
                     salida[clave] = {'clave': clave, 'citas': citas, 'motivo': motivo,
                                      'comparacion': {**comparacion, 'estado': 'revisar', 'motivos': [motivo]}}
+                continue
+            if a['destino'] != b['destino'] and relacion_revisada(a, b):
                 continue
             comparacion = comparar_referencias(a, b)
             if a['destino'] == b['destino'] and comparacion.get('datos_revisar'):
