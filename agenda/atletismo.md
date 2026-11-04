@@ -24,7 +24,9 @@ y reuniones. La inscripción es un metadato, no otra cita.
 - `programa` opcional: sesiones con ID propio, `tipo_sesion` e `inicio` como
   fecha o instante con offset, dentro de los días de la cita. La clase sigue
   siendo `encuentro` al añadir sesiones. Una lista de pruebas sin fechas
-  (Excel RFEA) no crea sesiones.
+  (Excel RFEA) no crea sesiones. Al reimportar una cita se reconcilia su
+  programa: las sesiones omitidas dejan de publicarse (`sesiones_ausentes`
+  por fuente), conservan su historia y pueden reaparecer.
 - Dimensiones separadas, sin un `tipo` único: modalidad, pruebas, edad y sexo,
   formato (individual, clubes, relevos), actividad (competición,
   tecnificación), ámbito/área/categoría WA y homologación. Se conservan los
@@ -105,6 +107,23 @@ parcial. El Excel anual (464 filas sin IDs, con repeticiones) solo sirve para
 contrastar fechas; no se une a fichas por título. Los documentos
 (`/ajax/championship-documents/{sfid}`) aún no se incorporan.
 
+**Calendario RFEA en PDF.** El índice de circulares filtrado por `calendario`
+se lee con su paginación. Entre calendarios de la temporada, sin proyectos,
+gana la fecha de publicación mayor, no el número de circular; la portada
+confirma título, año y número. El informe `calendario_pdf` guarda número,
+fecha, actualización, URL, SHA-256, filas y peticiones extra (índice y PDF,
+dentro del presupuesto de 200). `atletismo_calendario_pdf` lee el texto de
+Poppler íntegro y falla ante líneas desconocidas: 379 filas en la captura de
+65/2026 del 27/4, actualizada a 21/4. Conserva categoría y sede literales,
+rangos entre meses y días discontinuos. Para cada ficha mensual, solo una
+fila automática y ninguna a revisión según `comparar()` acredita
+`calendarios[]` con categoría, URL, página y fila. La sede se compara sin la
+provincia entre paréntesis. No crea citas, modifica sus datos ni interpreta
+ausencias. Una temporada sin calendario aprobado solo avisa. Un fallo conserva
+la categoría anterior y permite guardar la lectura mensual; las
+automáticas, revisiones y citas sin fila se cuentan aparte. La evidencia es
+estable entre pasadas y no entra en la huella de issues.
+
 **Nivel II.** PDF general enlazado por RFEA, 15 páginas y 441 filas,
 actualizado el 15/10/2026 (la carpeta `2025-03` de la URL no es la fecha).
 Recoge pruebas autonómicas, incluidos controles, ausentes del mensual; no es
@@ -131,9 +150,10 @@ e identidades ya guardadas se conservan; un padre antes importado como cita
 queda en cuarentena para una corrección revisada. No se migra automáticamente.
 
 Las citas emiten bloque v2 con evidencias estables, documentos con rol y
-resultados en el nivel de la publicación, sin descargar documentos ni extraer
-marcas. Se conservan los destinos HTTP que FGA suministra para resultados,
-sin convertirlos a HTTPS. El bloque «Organización» de la ficha (con entidad en 60
+resultados en el nivel de la publicación, sin extraer marcas. Solo se descargan
+los documentos con lectura revisada enlazados por las fichas de la pasada;
+nunca listas de inscritos. Se conservan los destinos HTTP que FGA suministra
+para resultados, sin convertirlos a HTTPS. El bloque «Organización» de la ficha (con entidad en 60
 de 72 fichas de nov.–dic. de 2026; otras 10 lo traen vacío) da `organizacion[]`.
 Una organización ajena hace reflejo aunque la cita lleve «Autonómico»: un Campeonato
 de España en Galicia está en el calendario gallego y sigue siendo de la RFEA. Ese
@@ -145,8 +165,11 @@ El estado se lee del título, donde la FGA lo anuncia, y del cuerpo solo un avis
 parcial explícito: una cláusula de reglamento no es un estado. Actividad, títulos
 por documento y sesiones solo se acreditan mediante lecturas locales revisadas
 (`atletismo-fga-documentos.json`, con huella de la captura); otras convocatorias
-quedan desconocidas. No se presume que un PDF bajo la misma URL mantenga el
-contenido revisado: falta vigilancia de versiones documentales.
+quedan desconocidas. Se compara SHA-256 de los bytes descargados, una vez por
+pasada y con pausa de 2,5 s. Si cambian, no se aplica la lectura ni se copia su
+hash; el enlace permanece y un aviso pide nueva lectura. Si falla la descarga,
+se conserva la lectura revisada y se avisa. Ningún aviso documental bloquea
+ausencias. `leer_ficha` recibe las lecturas verificadas y no descarga.
 
 Los días enumerados no rellenan huecos. Suspensión total se programa como
 aplazamiento; suspensión parcial conserva la parte celebrada y sus resultados.
@@ -239,8 +262,8 @@ anota en `fuentes.{fuente}.ausencias` y deja de publicarse sin cancelarse.
 Otra lectura del ID la vuelve a publicar. Otros errores interrumpen la
 fuente. Una cita que el listado deja pendiente con otras fechas también se
 oculta. Si faltan al menos cinco citas conocidas y son más de la mitad de la
-ventana, la lectura se da por rota y no se retira nada. Un fallo de Nivel II
-no impide guardar la lectura mensual de RFEA: el paso se señala fallido y el
+ventana, la lectura se da por rota y no se retira nada. Un fallo del Calendario
+PDF o de Nivel II no impide guardar la lectura mensual de RFEA: el paso se señala fallido y el
 informe, incompleto; una ventana con un año sin documento Nivel II tampoco
 está completa. `fuentes.{fuente}.ventana` se publica y el frontal raya en
 Deportes los días posteriores a su `fin`. En el workflow: input `atletismo`; el cron
@@ -248,7 +271,7 @@ solo recoge con `CALENDARIO_ATLETISMO_RECOGIDA=true` y la
 publicación requiere añadir las fuentes a `CALENDARIO_FUENTES_PUBLICAS`.
 
 Volumen orientativo de una pasada de dos meses: FCA 2, RFEA ~65 sin caché y FGA
-74 (4 de inventario y 70 fichas y padres, sin documentos), medidas en lectura real
+74 antes de documentos (4 de inventario y 70 fichas y padres), medidas en lectura real
 el 4/11/2026, con 2,5 s entre peticiones. La caché evita repetirlas en una pasada.
 
 Para revisar sin red: `calendario.py --entrada-atletismo` importa un documento
@@ -262,13 +285,10 @@ En orden (detalle en el diseño local):
 
 1. Lectores de documentos. Cada fuente oficial se lee entera y el comparador la
    une a las demás; el dato se copia literal de quien lo publica y lo dudoso no se
-   enlaza. Por fases: versión de cada documento leído, para no atribuir una lectura
-   a un PDF sustituido, y sesiones que pierden su documento; categoría del
-   Calendario RFEA en PDF (hoy, Circular 65/2026, actualizado a 21/4/2026) y filtros
-   del calendario web; índice de circulares de las tres federaciones, con
-   sustituciones, enlazadas solo si la ficha las enlaza; lectura de su contenido
-   (títulos, convocatoria, organizador) con revisión. Sin ellos, `actividad` y
-   `alcance` de FGA quedan desconocidos.
+   enlaza. Pendientes: filtros del calendario web; índice general de circulares
+   de las tres federaciones, con sustituciones, enlazadas solo si la ficha las
+   enlaza; lectura de su contenido (títulos, convocatoria, organizador) con
+   revisión. Sin ellos, `actividad` y `alcance` de FGA quedan desconocidos.
    Call Room no da datos públicos. RFEA: información técnica, documentos y
    concentraciones del Federativo. FCA: `organizaciones`, `description`, ficha,
    columna de calendario y reglamentos de series.

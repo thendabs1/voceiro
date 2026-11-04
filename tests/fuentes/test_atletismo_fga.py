@@ -19,7 +19,8 @@ def html(nombre):
 
 
 def ficha(nombre):
-    return f.leer_ficha(html(nombre), url='https://atletismo.gal/competicions/prueba/')
+    return f.leer_ficha(html(nombre), url='https://atletismo.gal/competicions/prueba/',
+                        lecturas=f.lecturas_documentales())
 
 
 def captura(url):
@@ -240,7 +241,7 @@ class CasosFGA(unittest.TestCase):
         self.assertEqual(jornada['metadatos']['pertenencias'][0]['clase'],'coleccion')
         coruna = next(g for g in entrada['agrupaciones'] if g['id']=='127481')
         self.assertEqual(coruna['clase'],'circuito')
-        self.assertEqual(informe['peticiones'],74)
+        self.assertEqual(informe['peticiones'],77)  # Incluye tres documentos con lectura revisada.
         self.assertEqual(len(informe['consultas']),len(set(informe['consultas'])))
         self.assertFalse(any('.pdf' in u for u in informe['consultas']))
         api = [s for s in informe['superficies'] if s['superficie']=='api']

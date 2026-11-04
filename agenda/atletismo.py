@@ -171,6 +171,7 @@ def importar(anterior, pagina, observado):
     nombre, url = FUENTES[fuente]
     eventos = list(deporte.unicos(deporte.filas(pagina, 'eventos'), 'id'))
     ausencias = deepcopy(((anterior or {}).get('fuentes', {}).get(fuente) or {}).get('ausencias'))
+    sesiones_ausentes = set(((anterior or {}).get('fuentes', {}).get(fuente) or {}).get('sesiones_ausentes', []))
     decisiones = coincidencias.decidir_lote(anterior, fuente, eventos)
     conocidas = coincidencias.actuales(anterior)
     a = deporte.Agenda(anterior, fuente, nombre, url, 'atletismo', observado)
@@ -238,6 +239,7 @@ def importar(anterior, pagina, observado):
                 'agenda': {'rol': 'principal', 'grupo': grupo}})
         for adicional in padres[1:]:
             a.c.relacion('pertenece_a', principal, adicional, evidencia)
+        sesiones = set()
         for s in deporte.unicos(deporte.filas({'programa': e.get('programa', [])}, 'programa'), 'id'):
             cuando = deporte.intervalo(s.get('inicio'), s.get('fin'), zona=s.get('zona'))
             # Una lista de pruebas sin fecha no acredita sesiones de agenda.
@@ -248,11 +250,28 @@ def importar(anterior, pagina, observado):
                 raise ValueError('Sesión fuera de los días de la competición')
             # El ID de sesión pertenece al espacio de la competición, aunque
             # dos programas reutilicen la misma referencia local.
-            a.evento('sesion', json.dumps([deporte.literal(e['id']), deporte.literal(s['id'])]),
+            externo = json.dumps([deporte.literal(e['id']), deporte.literal(s['id'])])
+            sesiones.add(externo)
+            a.evento('sesion', externo,
                 'sesion', s.get('nombre'), cuando, padre=grupo,
                 sitio=s.get('lugar') or e.get('lugar'), url=enlace(fuente, s.get('url') or e['url']),
                 bloques={'agenda': {'rol': 'sesion', 'principal': principal,
                     'tipo_sesion': deporte.literal(s.get('tipo_sesion'), 'tipo de sesión')}})
+        # Solo se reconcilia el programa de esta publicación y esta fuente.
+        for tipo, contexto, externo in a.referencias:
+            if tipo != 'sesion' or contexto != '{}':
+                continue
+            try:
+                ids = json.loads(externo)
+            except ValueError:
+                continue
+            if isinstance(ids, list) and len(ids) == 2 and ids[0] == deporte.literal(e['id']):
+                if externo in sesiones:
+                    sesiones_ausentes.discard(externo)
+                else:
+                    sesiones_ausentes.add(externo)
+    if sesiones_ausentes:
+        a.c.n['fuentes'][fuente]['sesiones_ausentes'] = sorted(sesiones_ausentes)
     if ausencias:
         # Una lectura nueva del ID vuelve a sostener la cita.
         for e in eventos:
