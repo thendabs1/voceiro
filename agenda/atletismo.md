@@ -228,7 +228,7 @@ columna de calendario.
 
 ## Coincidencias e identidad
 
-`atletismo_coincidencias` (versión 4) compara federaciones y las dos
+`atletismo_coincidencias` (versión 5) compara federaciones y las dos
 distribuciones RFEA sin consultar webs. Normaliza mayúsculas, acentos,
 puntuación, año, variantes castellano/gallego/catalán, sufijos ordinales
 (`103a`→`103`, `60è`→`60`) y la etiqueta exacta `(RFEA)`. Una cita nueva
@@ -240,6 +240,15 @@ comparte identidad cuando hay un único candidato y:
 - coinciden fechas completas, sede y al menos tres palabras significativas,
   con Dice ≥ 0,90 y sin contradicciones de distancia, edad, edición, sexo,
   formato, modalidad ni conjunto/partes.
+
+El alcance solo limita (decisión del 4/11/2026): dos alcances acreditados y
+distintos nunca se unen solos y van a revisión, marcados `dentro_de` o
+`diferente` en `alcance`, aunque haya enlace. Con alguno `desconocido` se
+decide como si no existiera y queda marcado: desconocido no es igualdad, pero
+casi nada lo tiene acreditado hasta leer las circulares. `CONTIENE` orienta al
+revisor y no crea relaciones. Una conciliación revisada conserva la identidad y
+avisa si llegan alcances que la contradicen. Con los días enumerados por ambas
+fuentes se compara el conjunto, no solo los extremos.
 
 Fecha y sede no bastan. Dos citas que reclaman una misma identidad, o enlaces
 que se contradicen, quedan para revisión. Nombre, fecha y sede nunca son ID:
@@ -266,8 +275,7 @@ decisión y `veredicto` y `motivos`, el resultado del comparador.
   entidades) y no se publica; el almacén solo acepta el cambio de destino de
   una referencia con esas dos marcas.
 - Una parte no es el todo aunque compartan día y sede, ni un enlace basta si
-  el alcance difiere (con las mismas fechas el comparador aún lo acepta: falta
-  acreditar el alcance). Castro (RFEA
+  el alcance difiere. Castro (RFEA
   64834 promoción y máster frente a FCA 80239 máster; FCA 80237 aparte),
   Nassos (FCA 5+10 km frente a RFEA 5 km) y Dakar (RFEA Juegos frente al
   atletismo de FCA/WA) están unidos con alcances distintos y se separarán con
@@ -338,9 +346,8 @@ En orden (detalle en el diseño local):
    convocatorias técnicas que los filtros no devuelven. FCA: columna de calendario,
    reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic. Los
    destinos RFEA de `website` quedan sin resolver.
-2. Comparador por alcance, con los datos del paso anterior: enlaces resueltos,
-   conjunto de días y veredicto `dentro_de`. Subir su versión cambia la huella
-   y reabre una vez los issues cerrados.
+2. Comparador: faltan enlaces resueltos (destino, HTTP y edición) y sustitución
+   entre IDs, que necesitan esos datos en la lectura.
 3. Registro editorial con varias referencias por fuente y separación revisada
    (Castro, Nassos, Dakar).
 4. Circuitos, ligas, controles y tecnificación solo con documento oficial.
