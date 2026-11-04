@@ -78,6 +78,12 @@ Fuera: administración, jueces, cursos y reuniones. La inscripción es un metada
   worker, OR entre códigos). El «Tipo» de Nivel II solo cuenta si ninguna otra
   fuente acredita modalidad. Un literal desconocido no recibe código y aparece
   en `modalidades_desconocidas` del informe de recogida.
+- `atletismo.resultados_enlazados` y `resultados_enlazados` en la tarjeta: alguna
+  variante enlaza un documento con `rol: resultados` y la cita ya ha empezado;
+  antes, el rol no acredita nada (FCA 89595). Es un enlace oficial, no un resultado
+  estructurado: no activa `resultado_disponible` ni `resultados=1`, y la interfaz debe
+  rotularlo como enlace. Puede ser una página de directo o de un tercero que la
+  federación enlaza.
 - `metadatos.inscripcion`: `plazo_textual`, `periodo` (días acreditados),
   `hora_cierre_literal` sin zona inventada y `enlaces`. Un enlace de login no
   acredita inscripción abierta. Se publica en `atletismo.valor.inscripcion`
@@ -370,6 +376,19 @@ Deportes los días posteriores a su `fin`. En el workflow: input `atletismo`; el
 solo recoge con `CALENDARIO_ATLETISMO_RECOGIDA=true` y la
 publicación requiere añadir las fuentes a `CALENDARIO_FUENTES_PUBLICAS`.
 
+**Citas terminadas.** La ventana empieza hoy y los resultados llegan después:
+`atletismo_relectura` relee en cada pasada, tras el inventario, las fichas de las
+citas terminadas en los últimos 30 días. Solo añade documentos con `rol: resultados`
+a la lectura guardada (`atletismo.anadir_documentos`), que hereda las evidencias de
+la anterior para conservar capa, circuito y sesiones. No cambia fechas ni estados y
+no acredita ausencias. Cupo por pasada: FCA 12 citas, FGA 8 y RFEA 4 (ficha y AJAX),
+unas 28 peticiones; WA espera a publicarse. Va antes lo que no tiene resultados y
+lleva más sin comprobar (`fuentes.{fuente}.relectura`, sin publicar). Quien ya los
+tiene sigue en cola hasta los 30 días: un enlace previo a la cita puede no serlo.
+Un fallo conserva lo guardado; un 403 o 429 corta la cola y la pasada se da por
+bloqueada. Medido el 4/11/2026: 4 de 5 citas terminadas tenían enlace. Solo recupera
+citas conocidas: octubre, sin guardar, no se recarga.
+
 Volumen de referencia: FGA 74 antes de documentos (4 de inventario y 70 fichas y
 padres), con 2,5 s de pausa. RFEA tiene un presupuesto propio de 400 peticiones
 (`PRESUPUESTO_RFEA`), el resto 200: cada cita son ficha y documentos, y la rotación
@@ -412,5 +431,5 @@ En orden (detalle en el diseño local):
   (ICS con UID) cumplen el contrato; ver el diseño local.
 
 Resultados y marcas se delegan a la fuente oficial: se enlaza su documento o
-página, sin extraer marcas. Rankings, sin conector; ver
+página, sin extraer marcas (ver Citas terminadas). Rankings, sin conector; ver
 [resultados](resultados-diseno.md#otras-ampliaciones).

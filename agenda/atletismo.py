@@ -277,6 +277,43 @@ def importar(anterior, pagina, observado):
     return a.terminar()
 
 
+def anadir_documentos(anterior, fuente, hallados, observado):
+    """Añade documentos a la lectura guardada de cada referencia, sin reimportar.
+
+    Reimportar quitaría sesiones, agrupaciones y ausencias. La observación nueva
+    copia la anterior y hereda sus evidencias: una relación solo sigue vigente si
+    la respalda la última observación de la referencia.
+    """
+    if not hallados:
+        return anterior
+    c = nucleo.Constructor(anterior)
+    n, activas = c.n, nucleo.ultimas(c.n)
+    for ref, documentos in hallados.items():
+        previas = [i for i in activas if n['observaciones'][i]['referencia'] == ref]
+        if len(previas) != 1:
+            continue
+        previa, r = n['observaciones'][previas[0]], n['referencias'][ref]
+        bloques = deepcopy(previa['bloques'])
+        nombres, clase = bloques.pop('nombres'), bloques.pop('clase')
+        meta = bloques['atletismo']
+        vistos = {(d['url'], d['rol']) for d in meta.get('documentos', [])}
+        nuevos = [d for d in documentos if (d['url'], d['rol']) not in vistos]
+        if not nuevos:
+            continue
+        cuando = bloques['programacion']['cuando']
+        atletismo_bloque.validar({'documentos': nuevos}, cuando['inicio']['fecha'], cuando['fin']['fecha'], fuente=fuente)
+        meta.setdefault('documentos', []).extend(nuevos)
+        doc = c.documento(fuente, {'id': r['id_externo'], 'documentos': nuevos}, url=bloques.get('url_evento'),
+                          clase=n['documentos'][previa['documento']]['clase'])
+        destino, oid = c.entidad(r['proveedor'], r['tipo_externo'], r['id_externo'], r['contexto'],
+                                 r['destino']['tipo'], clase, nombres, doc, '/documentos', observado, bloques=bloques)
+        for dato in (*n['relaciones'].values(), *n['participaciones'].values(),
+                     *n['entidades'][nucleo.clave(destino)]['temas']):
+            if previa['id'] in dato['evidencias'] and oid not in dato['evidencias']:
+                dato['evidencias'].append(oid)
+    return c.terminar()
+
+
 def registrar_ausencias(anterior, fuente, ausencias):
     """Citas guardadas que la fuente ya no sostiene en su fecha.
 

@@ -204,6 +204,16 @@ def titulares(variantes):
                    for v in variantes})
 
 
+def resultados_enlazados(variantes, hoy):
+    """Enlace a resultados de una cita ya empezada; antes el rol no acredita nada.
+
+    Es solo un enlace oficial: no equivale a un resultado estructurado.
+    """
+    return any(d.get('rol') == 'resultados' for v in variantes
+               if ((v.get('programacion') or {}).get('cuando', {}).get('inicio', {}).get('fecha') or '9999') <= hoy
+               for d in v['valor'].get('documentos', ()))
+
+
 def actividades(variantes):
     """Unión de lo acreditado; «desconocida» no filtra ni contradice."""
     valores = {(v['valor'].get('actividad') or {}).get('valor') for v in variantes}

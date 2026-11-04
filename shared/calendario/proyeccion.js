@@ -80,6 +80,8 @@ export function prepararLectura(datos) {
     if (e.precio) tarjeta.precio = e.precio;
     // Atletismo: modalidad común (publicacion.py); sin clave cuando no hay.
     if (e.atletismo?.modalidades?.length) tarjeta.modalidades = e.atletismo.modalidades;
+    // Enlace oficial, no un resultado estructurado: no activa `resultado_disponible`.
+    if (e.atletismo?.resultados_enlazados) tarjeta.resultados_enlazados = true;
     if (e.programa?.length) tarjeta.tiene_programa = true;
     const propias = new Set(objetivos.flatMap(o => o.temas || []).flatMap(t => raicesDe(t)));
     const categoria = ordenRaices.find(r => propias.has(r));

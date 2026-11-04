@@ -478,13 +478,15 @@ test('la modalidad de atletismo es faceta y dato de tarjeta; filtra con OR y val
   const datos = muestra();
   Object.assign(datos.eventos[4], { atletismo: { valor: {}, variantes: [], modalidades: ['cross'] } });
   Object.assign(datos.eventos[5], { atletismo: { valor: {}, variantes: [], modalidades: ['ruta', 'cross'] } });
-  Object.assign(datos.eventos[6], { atletismo: { valor: {}, variantes: [] } });
+  Object.assign(datos.eventos[6], { atletismo: { valor: {}, variantes: [], resultados_enlazados: true } });
   const lectura = prepararLectura(datos);
   const de = id => lectura.facetas.filter(([e, tipo]) => e === id && tipo === 'modalidad').map(f => f[2]);
   assert.deepEqual([de('004'), de('005'), de('006')], [['cross'], ['ruta', 'cross'], []]);
   const tarjetas = Object.fromEntries(lectura.eventos.map(e => [e[0], JSON.parse(e[3])]));
   assert.deepEqual(tarjetas['005'].modalidades, ['ruta', 'cross']);
   assert.ok(!('modalidades' in tarjetas['006']) && !('modalidades' in tarjetas['010']));
+  assert.ok(tarjetas['006'].resultados_enlazados && !tarjetas['006'].resultado_disponible);
+  assert.ok(!('resultados_enlazados' in tarjetas['005']));
   const b = base(datos); t.after(() => b.db.close());
   const ids = async q => (await b.pedir(ventana + q)).dato.eventos.map(e => e.id);
   assert.deepEqual(await ids('&modalidades=cross'), ['004', '005']);
