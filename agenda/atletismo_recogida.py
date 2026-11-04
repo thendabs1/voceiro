@@ -281,6 +281,8 @@ def ficha_galicia(cita, contenido, obtener):
         raise ValueError('FGA: la ficha no corresponde a la cita guardada')
     t = ficha['metadatos']['temporalidad']
     entrada, informe = galicia(date.fromisoformat(t['dias'][0]), date.fromisoformat(t['dias'][-1]), obtener)
+    if informe.get('conservar_lectura'):
+        return {'bloqueo': True}
     if not informe.get('aplicar_ausencias', False):
         return {'pendiente': 'superficie parcial; se conserva la última lectura'}
     eventos = [e for e in entrada['eventos'] if e['id'] == cita['id']]
@@ -400,6 +402,11 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
                               'motivo': f'ficha retirada (HTTP {error.code})'})
             continue
         r = FICHAS[fuente](c, contenido, obtener)
+        if r.get('bloqueo'):
+            # La fuente ha dejado de responder: nada de esta pasada acredita ausencias.
+            informe['pendientes'].append({'id': c['id'], 'url': c['url'], 'motivo': 'lectura bloqueada en la reconsulta'})
+            informe.update(completo=False, aplicar_ausencias=False, conservar_lectura=True)
+            return {'ausencias': [], 'reimportadas': []}
         if 'pendiente' in r:
             # Queda para revisar y la recogida, incompleta; con las mismas fechas
             # se conserva la última lectura.

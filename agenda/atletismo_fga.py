@@ -19,8 +19,9 @@ from . import atletismo as a
 BASE = 'https://atletismo.gal/competicions/'
 API = 'https://atletismo.gal/wp-json/fga/v1/competitions'
 AMBITOS = ('Autonómico', 'Nacional', 'Internacional')
+ETIQUETAS_DESDE = 2026
 ESPANA = re.compile(r'\bcamp(?:ionato|eonato) de espa[ñn]a\b', re.I)
-PROPIA = re.compile(r'federaci[oó]n galega de atletismo|\bFGA\b')
+PROPIA = re.compile(r'federaci[oó]n galega de atletismo|\bFGA\b', re.I)
 AJENAS = ((re.compile(r'\bRFEA\b|federaci[oó]n espa[ñn]ola de atletismo', re.I), 'rfea'),
           (re.compile(r'european athletics', re.I), 'ea'), (re.compile(r'world athletics', re.I), 'wa'))
 
@@ -75,23 +76,29 @@ def temporalidad(literales, url, localizador):
             'estado': 'desconocido', 'evidencia': evidencia(url, localizador, ' '.join(literales))}
 
 
-def relacion(url, ambitos, entidades, nombre):
+def relacion(url, ambitos, entidades, nombre, anio):
     """Propio o reflejo por autoridad, con el calendario de reserva.
 
     Lo decide quién organiza, que la ficha suele declarar. Una organización ajena
     pesa más que la etiqueta: un Campeonato de España en Galicia está en el
-    calendario gallego y sigue siendo de la RFEA. Si no consta, se usa la etiqueta,
-    que solo sirve desde 2026: sin «Autonómico», la cita no es del calendario gallego.
+    calendario gallego y sigue siendo de la RFEA. Ese título está reservado por ley
+    (Ley 39/2022, art. 79.3): manda aunque la FGA organice o coorganice. Si no consta
+    o es compartida, se usa la etiqueta, que solo sirve desde 2026: sin «Autonómico»,
+    la cita no es del calendario gallego.
     """
-    ajena = next((codigo for e in entidades if not PROPIA.search(e)
-                  for patron, codigo in AJENAS if patron.search(e)), None)
-    if ajena and not any(PROPIA.search(e) for e in entidades):
+    propia = any(PROPIA.search(e) for e in entidades)
+    ajena = next((codigo for e in entidades for patron, codigo in AJENAS if patron.search(e)), None)
+    espana = ESPANA.search(nombre)
+    if ajena and (espana or not propia):
         return {'relacion': 'reflejo', 'de': ajena, 'evidencia': evidencia(url, 'Organización', ', '.join(entidades))}
-    if ambitos and 'Autonómico' not in ambitos:
-        return {'relacion': 'reflejo', 'evidencia': evidencia(url, 'etiquetas', ', '.join(sorted(ambitos)))}
-    if ESPANA.search(nombre) and not any(PROPIA.search(e) for e in entidades):
+    if espana:
         return {'relacion': 'reflejo', 'evidencia': evidencia(url, 'h1', nombre)}
-    if 'Autonómico' in ambitos:
+    if propia and not ajena:
+        return {'relacion': 'propio', 'evidencia': evidencia(url, 'Organización', ', '.join(entidades))}
+    etiquetas = ambitos if anio >= ETIQUETAS_DESDE else set()
+    if etiquetas and 'Autonómico' not in etiquetas:
+        return {'relacion': 'reflejo', 'evidencia': evidencia(url, 'etiquetas', ', '.join(sorted(etiquetas)))}
+    if 'Autonómico' in etiquetas:
         return {'relacion': 'propio', 'evidencia': evidencia(url, 'etiquetas', 'Autonómico')}
     return {'relacion': 'desconocido'}
 
@@ -201,20 +208,14 @@ def leer_ficha(html, *, url=BASE):
                  'evidencia': evidencia(url, seccion + '/a', a.texto(x) or seccion)}
             if d not in salida['documentos']:
                 salida['documentos'].append(d)
-    ambitos = set(salida['etiquetas_literales']) & set(AMBITOS)
-    if 'Autonómico' in ambitos:
-        literal = ', '.join(sorted(ambitos))
-        salida['calendarios'] = [{'calendario': 'fga', 'categoria_literal': literal,
-                                  'evidencia': evidencia(url, 'etiquetas', literal)}]
     bloque = secciones.get('Organización')
-    entidades = [a.texto(x) for x in bloque.select('.font-semibold')] if bloque else []
+    entidades = [a.texto(x) for x in bloque.select('.font-semibold:not(h2)')] if bloque else []
     if entidades := [e for e in entidades if e]:
         salida['organizacion'] = [{'rol': 'organiza', 'entidad_literal': e, 'evidencia': evidencia(url, 'Organización', e)}
                                   for e in entidades]
     if ESPANA.search(nombre):
         salida['titulos'] = [{'literal': nombre, 'autoridad': 'federacion_espanola', 'base': 'nombre_reservado',
                               'evidencia': evidencia(url, 'h1', nombre)}]
-    salida['fuente'] = relacion(url, ambitos, entidades, nombre)
     revisadas, programa = [], []
     for d in salida['documentos']:
         lectura = lecturas_documentales().get(d['url'])
@@ -276,6 +277,12 @@ def leer_ficha(html, *, url=BASE):
     if literal:
         t['estado_literal'] = literal
     salida['temporalidad'] = t
+    ambitos, anio = set(salida['etiquetas_literales']) & set(AMBITOS), int(t['dias'][0][:4])
+    if 'Autonómico' in ambitos and anio >= ETIQUETAS_DESDE:
+        categoria = ', '.join(sorted(ambitos))
+        salida['calendarios'] = [{'calendario': 'fga', 'categoria_literal': categoria,
+                                  'evidencia': evidencia(url, 'etiquetas', categoria)}]
+    salida['fuente'] = relacion(url, ambitos, entidades, nombre, anio)
     return {'id': i, 'nombre': nombre, 'metadatos': salida, 'hijos': hijos, 'clase': clase,
             'pendientes': avisos, 'soup': s, 'padre': padre, 'programa': programa}
 

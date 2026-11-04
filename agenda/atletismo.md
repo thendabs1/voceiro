@@ -133,11 +133,13 @@ queda en cuarentena para una corrección revisada. No se migra automáticamente.
 Las citas emiten bloque v2 con evidencias estables, documentos con rol y
 resultados en el nivel de la publicación, sin descargar documentos ni extraer
 marcas. Se conservan los destinos HTTP que FGA suministra para resultados,
-sin convertirlos a HTTPS. El bloque «Organización» de la ficha (70 de 72 fichas
-de nov.–dic. de 2026) da `organizacion[]`, y una organización ajena hace reflejo
-aunque la cita lleve «Autonómico»: un Campeonato de España en Galicia está en el
-calendario gallego y sigue siendo de la RFEA. Si no consta, cuenta la etiqueta: sin
-«Autonómico» es reflejo y con ella, propio. Eso solo vale desde 2026, y «Nacional»
+sin convertirlos a HTTPS. El bloque «Organización» de la ficha (con entidad en 60
+de 72 fichas de nov.–dic. de 2026; otras 10 lo traen vacío) da `organizacion[]`.
+Una organización ajena hace reflejo aunque la cita lleve «Autonómico»: un Campeonato
+de España en Galicia está en el calendario gallego y sigue siendo de la RFEA. Ese
+título reservado por ley hace reflejo aunque la FGA organice o coorganice. La FGA
+como única organizadora hace propio. Si no consta o es compartida, cuenta la etiqueta:
+sin «Autonómico» es reflejo y con ella, propio. Eso solo vale desde 2026, y «Nacional»
 no significa «en calendario RFEA»: no está definida. Un enlace a la RFEA no decide.
 El estado se lee del título, donde la FGA lo anuncia, y del cuerpo solo un aviso
 parcial explícito: una cláusula de reglamento no es un estado. Actividad, títulos
@@ -258,11 +260,15 @@ repetible y reimportar un ID actualiza sin duplicar.
 
 En orden (detalle en el diseño local):
 
-1. Lectores de documentos, por fases: categoría oficial por cita del Calendario
-   RFEA en PDF (hoy, Circular 65/2026, actualizado a 21/4/2026); índice de
-   circulares de las tres federaciones, con sustituciones, enlazadas solo si la
-   ficha las enlaza; lectura de su contenido (títulos, convocatoria, organizador)
-   con revisión. Sin ellos, `actividad` y `alcance` de FGA quedan desconocidos.
+1. Lectores de documentos. Cada fuente oficial se lee entera y el comparador la
+   une a las demás; el dato se copia literal de quien lo publica y lo dudoso no se
+   enlaza. Por fases: versión de cada documento leído, para no atribuir una lectura
+   a un PDF sustituido, y sesiones que pierden su documento; categoría del
+   Calendario RFEA en PDF (hoy, Circular 65/2026, actualizado a 21/4/2026) y filtros
+   del calendario web; índice de circulares de las tres federaciones, con
+   sustituciones, enlazadas solo si la ficha las enlaza; lectura de su contenido
+   (títulos, convocatoria, organizador) con revisión. Sin ellos, `actividad` y
+   `alcance` de FGA quedan desconocidos.
    Call Room no da datos públicos. RFEA: información técnica, documentos y
    concentraciones del Federativo. FCA: `organizaciones`, `description`, ficha,
    columna de calendario y reglamentos de series.

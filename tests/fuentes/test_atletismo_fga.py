@@ -291,11 +291,11 @@ class CasosFGA(unittest.TestCase):
             atletismo.importar(None,{'version':1,'fuente':'fga','eventos':[e]},AHORA)
         atletismo_bloque.validar(e['metadatos'],e['inicio'],e['fin'],fuente='rfea')
 
-    def ficha_sintetica(self, *, titulo='Proba', etiquetas=('Autonómico',), organizacion='', cuerpo='', enlace=''):
-        return f.leer_ficha(f'''<main><article class="type-competition post-7"><header><span>12/12/2026</span>
+    def ficha_sintetica(self, *, titulo='Proba', etiquetas=('Autonómico',), organizacion='', cuerpo='', enlace='', fecha='12/12/2026'):
+        return f.leer_ficha(f'''<main><article class="type-competition post-7"><header><span>{fecha}</span>
             <h1>{titulo}</h1></header>{''.join(f'<span class="competition-label__text">{e}</span>' for e in etiquetas)}
             <div class="html-description">{cuerpo}{enlace}</div>
-            <div><h2>Organización</h2><div><div class="font-semibold">{organizacion}</div></div></div></article></main>''',
+            <div><h2 class="font-semibold">Organización</h2><div><div class="font-semibold">{organizacion}</div></div></div></article></main>''',
             url='https://atletismo.gal/competicions/proba/')['metadatos']
 
     def test_una_clausula_de_reglamento_no_es_un_estado(self):
@@ -319,6 +319,39 @@ class CasosFGA(unittest.TestCase):
         self.assertEqual(fuente(etiquetas=('Nacional',))['relacion'], 'reflejo')
         self.assertEqual(fuente(etiquetas=())['relacion'], 'desconocido')
 
+    def test_la_organizacion_propia_acredita_sin_etiquetas_y_compartida_no_decide(self):
+        fuente = lambda **k: self.ficha_sintetica(**k)['fuente']
+        for nombre in ('Federación Galega de Atletismo', 'FEDERACIÓN GALEGA DE ATLETISMO', 'FGA'):
+            self.assertEqual(fuente(etiquetas=(), organizacion=nombre)['relacion'], 'propio', nombre)
+        # Pesa más que la etiqueta, que no define quién organiza.
+        self.assertEqual(fuente(etiquetas=('Nacional',), organizacion='FGA')['relacion'], 'propio')
+        for nombre in ('Federación Galega de Atletismo, RFEA', 'FGA - RFEA'):
+            self.assertEqual(fuente(etiquetas=(), organizacion=nombre)['relacion'], 'desconocido', nombre)
+        # El título reservado no pasa a propio aunque organice o coorganice la FGA.
+        self.assertEqual(fuente(titulo='Campionato de España', organizacion='FGA')['relacion'], 'reflejo')
+        negreira = fuente(titulo='Campionato de España Master 5 Km. ruta', etiquetas=('Autonómico', 'Nacional'),
+                          organizacion='RFEA - Federación Galega de Atletismo')
+        self.assertEqual((negreira['relacion'], negreira['de']), ('reflejo', 'rfea'))
+
+    def test_las_etiquetas_no_valen_antes_de_2026(self):
+        antigua = dict(fecha='12/12/2025')
+        self.assertEqual(self.ficha_sintetica(etiquetas=('Nacional',), **antigua)['fuente']['relacion'], 'desconocido')
+        m = self.ficha_sintetica(etiquetas=('Autonómico',), **antigua)
+        self.assertEqual(m['fuente']['relacion'], 'desconocido')
+        self.assertNotIn('calendarios', m)
+        self.assertEqual(self.ficha_sintetica(etiquetas=(), organizacion='RFEA', **antigua)['fuente']['relacion'], 'reflejo')
+
+    def test_la_cabecera_no_es_una_entidad_y_el_bloque_vacio_no_inventa_nada(self):
+        lleno = self.ficha_sintetica(organizacion='Concello de Lugo')['organizacion']
+        self.assertEqual([x['entidad_literal'] for x in lleno], ['Concello de Lugo'])
+        self.assertNotIn('organizacion', self.ficha_sintetica())
+        for archivo in sorted(p.name for p in M.glob('*.html')):
+            try:
+                m = ficha(archivo)['metadatos']
+            except (ValueError, TypeError):
+                continue
+            self.assertNotIn('Organización', [x['entidad_literal'] for x in m.get('organizacion', [])], archivo)
+
     def test_calendario_organizacion_y_titulo_reservado(self):
         m = self.ficha_sintetica(titulo='Campionato de España Máster', etiquetas=('Autonómico', 'Nacional'), organizacion='RFEA')
         self.assertEqual(m['calendarios'][0]['calendario'], 'fga')
@@ -333,6 +366,33 @@ class CasosFGA(unittest.TestCase):
         m = self.ficha_sintetica(etiquetas=('Autonómico', 'Nacional'), enlace=enlace)
         self.assertEqual(m['fuente']['relacion'], 'propio')
         self.assertNotIn('web_organizador', m)
+
+    def test_un_bloqueo_en_la_reconsulta_descarta_las_ausencias_de_toda_la_pasada(self):
+        citas = [{'id': i, 'url': f'https://atletismo.gal/competicions/{i}/', 'inicio': '2026-11-10',
+                  'fin': '2026-11-10', 'metadatos': {}} for i in ('7', '8', '9')]
+        vistas = []
+        def obtener(url):
+            vistas.append(url)
+            if url == citas[0]['url']:
+                raise HTTPError(url, 404, 'Not Found', {}, None)
+            if url == citas[1]['url']:
+                return 'trasladada'
+            raise AssertionError('no debe seguir consultando tras el bloqueo: ' + url)
+        informe = {'pendientes': [], 'completo': True, 'aplicar_ausencias': True}
+        vacia = {'version': 1, 'fuente': 'fga', 'eventos': [], 'agrupaciones': []}
+        with patch.dict(r.FICHAS, fga=lambda *_: {'bloqueo': True}):
+            salida = r.reconsultar('fga', citas, vacia, informe, atletismo.date(2026, 11, 1),
+                                   atletismo.date(2026, 11, 30), obtener, AHORA)
+        self.assertEqual(salida, {'ausencias': [], 'reimportadas': []})
+        self.assertEqual(vistas, [citas[0]['url'], citas[1]['url']])
+        self.assertEqual((informe['completo'], informe['aplicar_ausencias'], informe['conservar_lectura']), (False, False, True))
+
+    def test_la_ficha_de_una_cita_trasladada_avisa_si_la_lectura_de_su_fecha_se_bloquea(self):
+        cita = {'id': '7', 'url': 'https://atletismo.gal/competicions/siete/'}
+        lectura = {'id': '7', 'metadatos': {'temporalidad': {'dias': ['2026-12-12']}}}
+        bloqueada = ({'eventos': [], 'agrupaciones': []}, {'conservar_lectura': True, 'aplicar_ausencias': False})
+        with patch.object(f, 'leer_ficha', return_value=lectura), patch.object(r, 'galicia', return_value=bloqueada):
+            self.assertEqual(r.ficha_galicia(cita, '', None), {'bloqueo': True})
 
     def test_el_404_de_la_propia_ficha_retira_la_cita_y_otro_error_interrumpe(self):
         cita = {'id': '7', 'url': 'https://atletismo.gal/competicions/siete/', 'inicio': '2026-11-10',
