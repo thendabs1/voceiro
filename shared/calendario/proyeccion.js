@@ -104,6 +104,8 @@ export function prepararLectura(datos) {
     agregar('formato', e.formatos || []);
     agregar('precio', e.precio ? [e.precio] : []);
     agregar('modalidad', e.atletismo?.modalidades || []);
+    agregar('titular', e.atletismo?.titulares || []);
+    agregar('actividad', e.atletismo?.actividades || []);
     facetas.push(...f.values());
     const cuando = e.programacion?.valor?.cuando;
     const inactivo = o => ['cancelado', 'aplazado'].includes(o.programacion?.valor?.programacion);

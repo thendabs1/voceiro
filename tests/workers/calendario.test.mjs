@@ -494,6 +494,28 @@ test('la modalidad de atletismo es faceta y dato de tarjeta; filtra con OR y val
   assert.equal((await b.pedir(ventana + '&modalidades=montana')).status, 400);
 });
 
+test('titular y actividad de atletismo son facetas; filtran con OR y validan el valor', async t => {
+  const datos = muestra();
+  Object.assign(datos.eventos[4], { atletismo: { valor: {}, variantes: [], titulares: ['fga:reflejo', 'rfea:propio'], actividades: ['competicion'] } });
+  Object.assign(datos.eventos[5], { atletismo: { valor: {}, variantes: [], titulares: ['fga:desconocido'], actividades: ['tecnificacion'] } });
+  const lectura = prepararLectura(datos);
+  const de = (id, tipo) => lectura.facetas.filter(([e, x]) => e === id && x === tipo).map(f => f[2]);
+  assert.deepEqual(de('004', 'titular'), ['fga:reflejo', 'rfea:propio']);
+  assert.deepEqual(de('005', 'actividad'), ['tecnificacion']);
+  assert.deepEqual(de('006', 'titular'), []);
+  const b = base(datos); t.after(() => b.db.close());
+  const ids = async q => (await b.pedir(ventana + q)).dato.eventos.map(e => e.id);
+  // El mismo chip con y sin lo reflejado: la API no decide qué se muestra.
+  assert.deepEqual(await ids('&titular=fga:propio,fga:desconocido'), ['005']);
+  assert.deepEqual(await ids('&titular=fga:reflejo,fga:desconocido'), ['004', '005']);
+  assert.deepEqual(await ids('&actividades=control'), []);
+  assert.deepEqual(await ids('&actividades=competicion,tecnificacion'), ['004', '005']);
+  for (const [filtros, q] of [[{ titular: ['fga:reflejo'] }, '&titular=fga:reflejo'], [{ actividades: ['tecnificacion'] }, '&actividades=tecnificacion']])
+    assert.deepEqual(seleccionCalendario(datos, {}, filtros).eventos.map(e => e.id).filter(i => ['004', '005'].includes(i)), await ids(q));
+  for (const q of ['&titular=fga', '&titular=fga:ajeno', '&titular=sevilla:propio', '&actividades=escolar', '&actividades=desconocida'])
+    assert.equal((await b.pedir(ventana + q)).status, 400, q);
+});
+
 test('presentación: programa, prolongada (intervalo, continua o varios días) o cita', () => {
   const cita = (inicio, fin, extra = {}) => ({ clase: 'funcion', programacion: { valor: { cuando: { inicio, fin, ...extra } } } });
   const z = 'Europe/Madrid';

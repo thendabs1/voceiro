@@ -36,11 +36,22 @@ y reuniones. La inscripción es un metadato, no otra cita.
   fecha o sede. Entre identidades: misma entidad (solo mismo alcance), dentro
   de (título en reunión, atletismo en Juegos: `es_parte_de` entre sus
   competiciones), celebración conjunta, pertenencia a serie y sustitución. Lo
-  que la fuente no permite decidir abre issue. Se añadirán la relación con la
-  fuente (propio o reflejo de otra federación) y la clase de actividad
-  (competición, control, tecnificación con concentraciones; marca escolar).
-  Resultados: solo el enlace oficial en su nivel, sin marcas. Diseño, mapa de
-  huecos y plan en `docs/atletismo-fuentes-2026-11-03/DISENO.md` (local).
+  que la fuente no permite decidir abre issue. Resultados: solo el enlace
+  oficial en su nivel, sin marcas. Diseño, mapa de huecos y plan en
+  `docs/atletismo-fuentes-2026-11-03/DISENO.md` (local).
+- Bloque v2 (`atletismo_bloque.py`, validado al importar): `alcance`,
+  `temporalidad`, `fuente`, `actividad`, `titulos`, `documentos` y
+  `pertenencias`, todos opcionales hasta que cada adaptador los emita. Lo
+  acreditado lleva `evidencia` (superficie, URL, localizador y literal); lo
+  desconocido, no. La evidencia nunca lleva fecha de lectura: el núcleo
+  identifica la observación por su contenido y crearía otra en cada pasada. Un
+  resultado es un documento con `rol: resultados`. `temporalidad.estado` es más
+  fino que `programacion`; traducirlo es del adaptador. La publicación añade
+  `atletismo.titulares` (`fuente:relacion` por variante, faceta `titular`) y
+  `atletismo.actividades` (unión de lo acreditado, faceta `actividad`), con OR
+  dentro de cada parámetro. `titular=fga:propio,fga:desconocido` da el chip sin
+  reflejos: la API no decide qué se muestra. Las concentraciones son
+  `tecnificacion`, solo con convocatoria, circular o reglamento.
 - Modalidad común (acordada el 3/11/2026): `ruta`, `cross`, `pista-cubierta`,
   `pista-aire-libre`, `marcha` y `trail`, según
   `shared/calendario/atletismo-modalidades.json` (literal normalizado → código,
@@ -204,17 +215,16 @@ repetible y reimportar un ID actualiza sin duplicar.
 
 En orden (detalle en el diseño local):
 
-1. Bloque `atletismo` v2: alcance, temporalidad y estado, documentos con rol,
-   resultados, relación con la fuente y actividad.
-2. Adaptadores FGA (todos los ámbitos, función de padres: PGTA y
-   clasificaciones no son citas), RFEA (información técnica y documentos) y
-   FCA (`description`, ficha, reglamentos de series).
-3. Comparador por alcance, con los datos de los pasos anteriores: enlaces
-   resueltos, conjunto de días y veredicto `dentro_de`. Subir su versión cambia
-   la huella y reabre una vez los issues cerrados.
-4. Registro editorial con varias referencias por fuente y separación revisada
+1. Adaptadores FGA (todos los ámbitos, función de padres: PGTA y
+   clasificaciones no son citas; `rol` obligatorio en sus documentos), RFEA
+   (información técnica y documentos; concentraciones del Federativo) y FCA
+   (`description`, ficha, reglamentos de series).
+2. Comparador por alcance, con los datos del paso anterior: enlaces resueltos,
+   conjunto de días y veredicto `dentro_de`. Subir su versión cambia la huella
+   y reabre una vez los issues cerrados.
+3. Registro editorial con varias referencias por fuente y separación revisada
    (Castro, Nassos, Dakar).
-5. Circuitos, ligas, controles y tecnificación solo con documento oficial.
+4. Circuitos, ligas, controles y tecnificación solo con documento oficial.
 - Interfaz: filas de fuentes, circuitos WA y modalidad en Deportes (semana y
   lista en pantallas bajas; ☆ solo en fuentes). OR dentro de cada fila y AND
   entre filas: un circuito marcado restringe toda la selección.
