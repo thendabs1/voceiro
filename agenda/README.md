@@ -320,8 +320,11 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
 
 - **Revisar el cliente:** comprobar la interfaz de Agenda y Deportes, ya
   activada en el código, y su comportamiento en móvil y con teclado.
-- **Retención y retirada:** borrado transaccional de dependencias exclusivas
-  antes de activar la poda de 45 días; inventario completo por función en
+- **Retención y retirada:** poda de 45 días sin activar, a revisar en enero de
+  2027: hoy retiraría 11 eventos y 10 KB; con el stock actual serían 5.204 y un
+  44 % de R2 a 90 días. Los eventos deportivos de fuentes culturales pueden
+  borrarse. Antes de activarla: política de reimportación y borrado
+  transaccional de dependencias exclusivas, incluidas evidencias parciales; inventario completo por función en
   Málaga, cuya identidad incluye la fecha (como ya hace CyL).
 - **Clasificación:** revisar únicamente los asuntos abiertos del
   [clasificador común](clasificacion.md#pendiente-de-revisar).
