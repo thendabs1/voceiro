@@ -17,7 +17,7 @@ from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_calendario_pdf, atletismo_circulares, atletismo_coincidencias as coincidencias, atletismo_documentos, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_relectura, atletismo_rfea, recogida
+from . import atletismo, atletismo_calendario_pdf, atletismo_circulares, atletismo_coincidencias as coincidencias, atletismo_documentos, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_relectura, atletismo_rfea, cadencias, recogida
 
 
 # Ficha y documentos por cita, más meses y filtros: unas 300 en temporada alta.
@@ -546,7 +546,7 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         ficha = fuente == 'rfea' and '/calendario/campeonato/' in url
         if ficha and cache:
             archivo = Path(cache) / (sha256(url.encode()).hexdigest() + '.json')
-            if archivo.exists() and time.time() - archivo.stat().st_mtime < 86400:
+            if archivo.exists() and time.time() - archivo.stat().st_mtime < cadencias.horas_reloj('atletismo-rfea') * 3600:
                 try:
                     guardada = json.loads(archivo.read_text())
                     if guardada.get('url') == url and isinstance(guardada.get('html'), str):
@@ -744,7 +744,7 @@ def main(argv=None):
     ap.add_argument('--informe', help='Informe JSON local de cobertura e incidencias')
     ap.add_argument('--indice-circulares', help='Índice local completo; asocia solo URL enlazadas por ficha, sin red adicional')
     ap.add_argument('--cache', default=str(Path.home() / '.cache/voceiro/atletismo'),
-                    help='Caché de fichas RFEA durante 24 horas; los meses se consultan siempre')
+                    help='Caché de fichas RFEA hasta que vence su reloj; los meses se consultan siempre')
     args = ap.parse_args(argv)
     desde, hasta = ventana(args.inicio, args.fin)
     observado = datetime.now(timezone.utc).isoformat(timespec='microseconds')
@@ -841,9 +841,9 @@ def main(argv=None):
                       **({'modalidades_desconocidas': informe['modalidades_desconocidas']}
                          if informe.get('modalidades_desconocidas') else {})}, ensure_ascii=False))
     if error := informe.get('nivel_ii', {}).get('error'):
-        raise SystemExit('Nivel II no se leyó; RFEA mensual guardada: ' + error)
+        raise cadencias.GuardadoParcial('Nivel II no se leyó; RFEA mensual guardada: ' + error)
     if not informe.get('calendario_pdf', {}).get('completo', True):
-        raise SystemExit('Calendario PDF no se leyó; RFEA mensual guardada')
+        raise cadencias.GuardadoParcial('Calendario PDF no se leyó; RFEA mensual guardada')
 
 
 if __name__ == '__main__':

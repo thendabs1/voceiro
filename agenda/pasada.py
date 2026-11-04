@@ -90,6 +90,14 @@ def main(argv=None):
                     raise
                 print(f'::error::{texto}: {error}', flush=True)
                 fallidos.append(texto)
+                if args.cadencia and tipo == 'reloj':
+                    if isinstance(error, cadencias.GuardadoParcial):
+                        repo.anotar_reloj(grupo, ahora_utc())
+                    else:
+                        # Anotar un fallo no es un cambio que publicar.
+                        antes = remoto.cliente.escritas
+                        repo.fallar_reloj(grupo, ahora_utc(), (getattr(error, 'headers', None) or {}).get('Retry-After'))
+                        escritas_inicio += remoto.cliente.escritas - antes
             finally:
                 print('::endgroup::', flush=True)
         print(f'[agenda] Pasada: {remoto.cliente.leidas} filas leídas, '

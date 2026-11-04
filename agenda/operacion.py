@@ -9,7 +9,7 @@ from pathlib import Path
 import sqlite3
 
 from turso_http import ErrorTurso
-from . import almacen, nucleo, proveedores, recogida, temporadas
+from . import almacen, cadencias, nucleo, proveedores, recogida, temporadas
 from .control import Repositorio, ConflictoControl, PresupuestoAgotado
 
 
@@ -214,7 +214,7 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
     for e in vigentes.values():
         if e['evento'] not in {x['evento'] for x in eventos} and (e['conflicto'] or e['estado'] == 'aplazado' or not e['inicio']):
             incidencias.append({'tipo': 'programacion_pendiente_conservada', 'evento': e['evento']})
-    if incidencias:
+    if any(i['tipo'] not in cadencias.PROGRAMACION_PENDIENTE for i in incidencias):
         for c in coberturas:
             c['completa'] = False
     citas = [(e['inicio'], e['fin']) for e in vigentes.values() if e['inicio']]

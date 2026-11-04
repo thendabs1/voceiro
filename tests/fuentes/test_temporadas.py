@@ -300,12 +300,23 @@ class PlanFechas(unittest.TestCase):
         t['limites_proveedor'] = {'startDate': '2026-01-01T08:00Z', 'endDate': '2027-01-01T07:59Z'}
         plan = temporadas.plan_fechas(t, '2026-12-25T12:00:00Z', [])
         self.assertEqual((plan[0], plan[-1]), ('2026-12-25', '2026-12-31'))
-        self.assertEqual(temporadas.plan_fechas(t, '2027-01-01T12:00:00Z', []), [])
-        # Terminada según el proveedor, sin fin confirmado: nada que pedir, ni hoy.
+        # Pasado endDate solo se sondea el último día: nunca hoy, que sería de otra temporada.
+        self.assertEqual(temporadas.plan_fechas(t, '2027-01-01T12:00:00Z', []), ['2026-12-31'])
         t = temporadas.nueva('wnba', '2026', self.AHORA)
         t['limites_proveedor'] = {'endDate': '2026-11-05T07:59Z'}
         self.assertEqual(temporadas.plan_fechas(t, '2026-11-04T12:00:00Z', []), ['2026-11-04'])
-        self.assertEqual(temporadas.plan_fechas(t, '2026-11-05T12:00:00Z', []), [])
+        self.assertEqual(temporadas.plan_fechas(t, '2026-11-05T12:00:00Z', []), ['2026-11-04'])
+
+    def test_sonda_tras_enddate_es_semanal_y_no_afecta_a_temporadas_futuras(self):
+        t = temporadas.nueva('wnba', '2026', self.AHORA)
+        t['limites_proveedor'] = {'endDate': '2026-11-05T07:59Z'}
+        cobertura = [{'unidad': '2026-11-04', 'proveedor': t['principal'], 'completa': True,
+                      'comprobado': '2026-11-10T00:00:00+00:00'}]
+        self.assertEqual(temporadas.plan_fechas(t, '2026-11-16T00:00:00Z', cobertura), [])
+        self.assertEqual(temporadas.plan_fechas(t, '2026-11-16T21:00:00Z', cobertura), ['2026-11-04'])
+        t = temporadas.nueva('atp', '2027', self.AHORA)
+        t['limites_proveedor'] = {'startDate': '2027-01-01T08:00Z', 'endDate': '2028-01-01T07:59Z'}
+        self.assertEqual(temporadas.plan_fechas(t, self.AHORA, []), [])
 
     def test_fin_futuro_confirmado_no_revisa_ultimo_dia_fuera_del_horizonte(self):
         t = temporadas.nueva('atp', '2027', self.AHORA)

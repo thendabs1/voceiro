@@ -7,8 +7,9 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
+from urllib.error import HTTPError
 
-from agenda import pasada, turso
+from agenda import cadencias, pasada, turso
 from agenda.control import ConflictoControl, Repositorio
 from agenda.turso import Almacen, ConflictoCalendario
 from test_agenda import construir, ficha
@@ -84,15 +85,64 @@ class Pasada(unittest.TestCase):
                     with self.assertRaises(SystemExit) as fin:
                         pasada.main(['--cadencia', '--paso-reloj', 'madrid::calendario'])
                 self.assertEqual(fin.exception.code, 1)
-                self.assertIsNone(self.reloj('madrid'))
+                self.assertEqual(self.reloj('madrid')['errores'], 1)
+                self.assertNotIn('ultima', self.reloj('madrid'))
                 cli.side_effect = None
                 with patch.object(pasada, '_cli', return_value=cli), \
                         patch.object(pasada, 'ahora_utc', return_value='2026-11-04T10:30:00Z'), \
                         patch('sys.stdout', new_callable=io.StringIO):
                     pasada.main(['--cadencia', '--paso-reloj', 'madrid::calendario'])
                 self.assertEqual(cli.call_count, 2)
-                self.assertIsNotNone(self.reloj('madrid'))
+                self.assertNotIn('errores', self.reloj('madrid'))
                 self.servidor.db.execute("DELETE FROM agenda_estado WHERE clave='reloj:madrid'")
+
+    def tick(self, cli, ahora, grupo='madrid'):
+        with patch.object(pasada, '_cli', side_effect=lambda nombre: Mock() if nombre == 'publicacion' else cli), \
+                patch.object(pasada, 'ahora_utc', return_value=ahora), \
+                patch('sys.stdout', new_callable=io.StringIO) as salida:
+            try:
+                pasada.main(['--cadencia', '--paso-reloj', f'{grupo}::calendario', '--paso-final', 'publicacion'])
+            except SystemExit:
+                pass
+        return salida.getvalue()
+
+    def test_fallos_seguidos_esperan_cada_vez_mas_y_conservan_la_ultima_lectura(self):
+        self.anotar('madrid', '2026-11-01T04:30:00Z')
+        ultima = self.reloj('madrid')['ultima']
+        cli = Mock(side_effect=ValueError('fuente caída'))
+        ticks = [f'2026-11-04T{h}:30:00Z' for h in ('04', '10', '16', '22')] + \
+                [f'2026-11-05T{h}:30:00Z' for h in ('04', '10', '16', '22')] + ['2026-11-06T04:30:00Z']
+        for ahora in ticks:
+            self.tick(cli, ahora)
+        # Primer fallo, siguiente tick, dos ticks después y luego 21 h: 04:30, 10:30, 22:30, 22:30.
+        self.assertEqual(cli.call_count, 4)
+        self.assertEqual(self.reloj('madrid')['ultima'], ultima)
+        self.assertEqual(self.reloj('madrid')['errores'], 4)
+
+    def test_retry_after_alarga_la_espera(self):
+        error = HTTPError('https://ejemplo.test', 429, 'límite', {'Retry-After': '172800'}, None)
+        cli = Mock(side_effect=error)
+        for ahora in ('2026-11-04T04:30:00Z', '2026-11-04T22:30:00Z', '2026-11-05T22:30:00Z'):
+            self.tick(cli, ahora)
+        self.assertEqual(cli.call_count, 1)
+        self.tick(cli, '2026-11-06T04:30:00Z')
+        self.assertEqual(cli.call_count, 2)
+
+    def test_anotar_un_fallo_no_fuerza_la_publicacion(self):
+        self.anotar('publicacion')
+        cli = Mock(side_effect=ValueError('fuente caída'))
+        salida = self.tick(cli, '2026-11-04T10:30:00Z')
+        self.assertEqual(cli.call_count, 1)
+        self.assertIn('sin escrituras y reloj publicacion no vencido', salida)
+
+    def test_guardado_parcial_avanza_el_reloj_y_deja_el_paso_fallido(self):
+        cli = Mock(side_effect=cadencias.GuardadoParcial('Calendario PDF no se leyó'))
+        with patch.object(pasada, '_cli', return_value=cli), patch.object(pasada, 'ahora_utc', return_value=AHORA), \
+                patch('sys.stdout', new_callable=io.StringIO):
+            with self.assertRaises(SystemExit) as fin:
+                pasada.main(['--cadencia', '--paso-reloj', 'atletismo-rfea::calendario'])
+        self.assertEqual(fin.exception.code, 1)
+        self.assertFalse(Repositorio(remoto=Almacen()).reloj_vencido('atletismo-rfea', '2026-11-04T10:30:00Z'))
 
     def test_final_fallido_no_anota_publicacion(self):
         cli = Mock(side_effect=ValueError('fallo de publicación'))

@@ -86,7 +86,7 @@ jobs:
         with:
           path: ~/.cache/voceiro/limites
           key: limites-${{ hashFiles('shared/territorios/limites.json') }}
-      - name: Fichas de RFEA (caducidad de 24 horas en el recolector)
+      - name: Fichas de RFEA (caducan con el reloj de 21 horas de la fuente)
         if: inputs.atletismo || (github.event_name == 'schedule' && vars.CALENDARIO_ATLETISMO_RECOGIDA == 'true')
         uses: actions/cache@v4
         with:

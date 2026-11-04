@@ -5,6 +5,10 @@ from datetime import date, timedelta
 
 MARGEN_HORAS = 3
 CERCA_DIAS = 7
+SONDA_HORAS = 168
+# Una cita sin programación resuelta bloquea el cierre, pero no acelera la revisión
+# ni invalida el día que se leyó entero.
+PROGRAMACION_PENDIENTE = ('programacion_pendiente', 'programacion_pendiente_conservada')
 PERFILES = {
     'calendario': {'base': 72, 'cerca': 24, 'competicion': 24},
     'gran-premio': {'base': 72, 'cerca': 24, 'competicion': 6},
@@ -20,6 +24,20 @@ RELOJES = dict.fromkeys((
     'cultura-galicia', 'madrid', 'kulturklik', 'zaragoza', 'cyl',
     'atletismo-fga', 'atletismo-fca', 'atletismo-rfea', 'atletismo-wa', 'publicacion',
 ), 24)
+TICK_HORAS = 6
+
+
+class GuardadoParcial(SystemExit):
+    """La fuente quedó guardada; solo falló un complemento: se señala sin repetir la recogida."""
+
+
+def horas_reloj(grupo):
+    return RELOJES[grupo] - MARGEN_HORAS
+
+
+def espera_fallo(grupo, errores):
+    """Tras un fallo: el tick siguiente, dos ticks y después el ritmo normal del reloj."""
+    return min(RELOJES[grupo], TICK_HORAS * 2 ** (errores - 1)) - MARGEN_HORAS
 
 
 def perfil(coleccion):
@@ -34,7 +52,6 @@ def horas_temporada(coleccion, hoy, citas=(), incidencias=()):
     if any(inicio <= hoy <= fin for inicio, fin in fechas):
         return horas['competicion']
     if (any(hoy <= inicio <= hoy + timedelta(days=CERCA_DIAS) for inicio, _ in fechas)
-            or any(i.get('tipo') not in ('programacion_pendiente', 'programacion_pendiente_conservada')
-                   for i in incidencias)):
+            or any(i.get('tipo') not in PROGRAMACION_PENDIENTE for i in incidencias)):
         return horas['cerca']
     return horas['base']
