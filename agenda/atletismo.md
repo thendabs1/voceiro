@@ -125,9 +125,12 @@ Fecha y sede no bastan. Dos citas que reclaman una misma identidad, o enlaces
 que se contradicen, quedan para revisión. Nombre, fecha y sede nunca son ID:
 la primera referencia conserva la identidad aunque se reprograme. Dos
 identidades ya guardadas no se fusionan al importar: exigen conciliación.
-Dos IDs de una misma distribución tampoco se unen nunca; solo se avisa si
-coinciden día y sede con Dice ≥ 0,90 y sin contradicciones (posible duplicado,
-como Samarkand en WA): jornadas y categorías del mismo día son citas distintas.
+Dos IDs de una misma distribución tampoco se unen nunca. Se avisa si comparten
+identidad, o si coinciden día y sede con Dice ≥ 0,90 y sin contradicciones
+(posible duplicado, como Samarkand en WA), aunque compartan enlace: jornadas y
+categorías del mismo día son citas distintas. Una fuente que aún no ha recogido
+una reprogramación deja su enlace con otras fechas: lo que llegue antes queda
+como identidad aparte y se resuelve por conciliación.
 Una revisión acredita la identidad sin borrar lo calculado: `estado` da la
 decisión y `veredicto` y `motivos`, el resultado del comparador.
 

@@ -206,8 +206,15 @@ class Coincidencias(unittest.TestCase):
         self.assertEqual((comparacion['estado'], comparacion['veredicto']), ('automatica', 'revisar'))
         self.assertIn('categoría, formato o distancia de distinto alcance', comparacion['motivos'])
 
+    def test_el_veredicto_no_cambia_la_huella_de_un_caso_revisado(self):
+        caso = {'motivo': 'modalidades diferentes', 'citas': [],
+                'comparacion': {'estado': 'revisar', 'motivos': ['modalidades diferentes'], 'version': c.VERSION}}
+        con_veredicto = {**caso, 'comparacion': {**caso['comparacion'], 'veredicto': 'automatica'}}
+        self.assertEqual(revision.huella(con_veredicto), revision.huella(caso))
+
     def test_misma_fuente_solo_avisa_de_lo_que_parece_duplicado_y_nunca_une(self):
         cita = lambda i, nombre='Samarkand Marathon': entrada('fca', i, nombre=nombre, lugar={'nombre': 'Samarkand'})['eventos'][0]
+        larga = 'Gran Premio Internacional Cross Ponte Romana Ciudad Lugo Galicia'
         n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': [cita('a'), cita('b')]}, AHORA)
         self.assertEqual(len(publicacion.proyectar(n)['eventos']), 2)
         aviso, = c.incidencias(n)
@@ -217,11 +224,27 @@ class Coincidencias(unittest.TestCase):
         ruido = {'otro título': [cita('a', 'Trofeu Promoció (3a Jornada)'), cita('b', 'Trofeu Promoció (4a Jornada)')],
                  'otra sede': [cita('a'), {**cita('b'), 'lugar': {'nombre': 'Milano'}}],
                  'otro día': [cita('a'), {**cita('b'), 'inicio': '2026-11-02', 'fin': '2026-11-02'}],
-                 'otra categoría': [cita('a', 'Control Sub 16-18 ST'), cita('b', 'Control Absolut-Sub20 ST')]}
+                 'otra categoría': [cita('a', 'Control Sub 16-18 ST'), cita('b', 'Control Absolut-Sub20 ST')],
+                 'título casi igual con otra edad': [cita('a', larga + ' Sub 16'), cita('b', larga + ' Sub 18')]}
         for caso, eventos in ruido.items():
             with self.subTest(caso):
                 n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': eventos}, AHORA)
                 self.assertEqual(c.incidencias(n), [])
+
+    def test_compartir_enlace_no_oculta_un_duplicado_de_la_misma_fuente(self):
+        url = 'https://atletismorfea.es/calendario/campeonato/prueba'
+        p = entrada('fca', 'a', metadatos={'web_organizador': url})
+        p['eventos'].append({**p['eventos'][0], 'id': 'b'})
+        n = atletismo.importar(None, p, AHORA)
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 2)
+        aviso, = c.incidencias(n)
+        self.assertEqual(aviso['motivo'], 'posible duplicado de la misma fuente')
+
+    def test_dos_lecturas_de_una_referencia_no_son_dos_registros(self):
+        n = atletismo.importar(None, entrada('fca', 'a'), AHORA)
+        n = atletismo.importar(n, entrada('fca', 'a', nombre='IX Cross Ponte Romana'), AHORA)
+        self.assertEqual(len(c.actuales(n)), 2)
+        self.assertEqual(c.incidencias(n), [])
 
     def test_dos_registros_de_una_fuente_en_una_identidad_se_vigilan(self):
         p = entrada('fca', 'a', nombre='Cursa del Port')

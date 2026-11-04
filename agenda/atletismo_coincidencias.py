@@ -112,8 +112,8 @@ def modalidades(e):
     return atletismo_modalidades.de(e.get('metadatos'))[0]
 
 
-def comparar(a, b):
-    enlace = bool(enlaces(a) & enlaces(b))
+def comparar(a, b, por_enlace=True):
+    enlace = por_enlace and bool(enlaces(a) & enlaces(b))
     fechas = bool(a.get('inicio') and a.get('fin') and
                   (a['inicio'], a['fin']) == (b.get('inicio'), b.get('fin')))
     if enlace:
@@ -265,17 +265,22 @@ def incidencias(n):
     salida = {}
     for pos, a in enumerate(conocidos):
         for b in conocidos[pos + 1:]:
-            comparacion = comparar_referencias(a, b)
             par = sorted([(a['fuente'], a['id']), (b['fuente'], b['id'])])
             clave = sha256(nucleo.json_canonico(par).encode()).hexdigest()[:24]
             citas = sorted([a, b], key=lambda c: (c['fuente'], c['id']))
             if distribucion(a['fuente'], a['id']) == distribucion(b['fuente'], b['id']):
+                # Dos lecturas de una referencia no son dos registros, y dentro
+                # de una fuente compartir enlace no identifica ni distingue.
+                if a['referencia'] == b['referencia']:
+                    continue
+                comparacion = comparar(a, b, por_enlace=False)
                 if a['destino'] == b['destino'] or posible_duplicado(comparacion):
                     motivo = ('dos registros de una fuente en la misma identidad' if a['destino'] == b['destino']
                               else 'posible duplicado de la misma fuente')
                     salida[clave] = {'clave': clave, 'citas': citas, 'motivo': motivo,
                                      'comparacion': {**comparacion, 'estado': 'revisar', 'motivos': [motivo]}}
                 continue
+            comparacion = comparar_referencias(a, b)
             if a['destino'] == b['destino'] and comparacion.get('datos_revisar'):
                 comparacion = {**comparacion, 'estado': 'revisar', 'motivos': comparacion['datos_revisar']}
             if a['destino'] == b['destino'] and not comparacion['misma_fecha']:
