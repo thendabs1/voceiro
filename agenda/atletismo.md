@@ -114,8 +114,9 @@ puntuación, año, variantes castellano/gallego/catalán, sufijos ordinales
 (`103a`→`103`, `60è`→`60`) y la etiqueta exacta `(RFEA)`. Una cita nueva
 comparte identidad cuando hay un único candidato y:
 
-- enlaza directamente a la ficha ya identificada (prioritario: cruza con la
-  referencia, no con la URL); o
+- enlaza directamente a la ficha ya identificada y tiene las mismas fechas
+  (prioritario: cruza con la referencia, no con la URL). Con otras fechas puede
+  ser otra edición o una parte del enlazado: queda para revisión, sin unir; o
 - coinciden fechas completas, sede y al menos tres palabras significativas,
   con Dice ≥ 0,90 y sin contradicciones de distancia, edad, edición, sexo,
   formato, modalidad ni conjunto/partes.
@@ -124,6 +125,14 @@ Fecha y sede no bastan. Dos citas que reclaman una misma identidad, o enlaces
 que se contradicen, quedan para revisión. Nombre, fecha y sede nunca son ID:
 la primera referencia conserva la identidad aunque se reprograme. Dos
 identidades ya guardadas no se fusionan al importar: exigen conciliación.
+Dos IDs de una misma distribución tampoco se unen nunca. Se avisa si comparten
+identidad, o si coinciden día y sede con Dice ≥ 0,90 y sin contradicciones
+(posible duplicado, como Samarkand en WA), aunque compartan enlace: jornadas y
+categorías del mismo día son citas distintas. Una fuente que aún no ha recogido
+una reprogramación deja su enlace con otras fechas: lo que llegue antes queda
+como identidad aparte y se resuelve por conciliación.
+Una revisión acredita la identidad sin borrar lo calculado: `estado` da la
+decisión y `veredicto` y `motivos`, el resultado del comparador.
 
 - `atletismo-equivalencias.json`: equivalencias editoriales (Negreira 5 km
   máster: RFEA 64837, FGA 113590, FCA 82885).
@@ -137,7 +146,8 @@ identidades ya guardadas no se fusionan al importar: exigen conciliación.
   entidades) y no se publica; el almacén solo acepta el cambio de destino de
   una referencia con esas dos marcas.
 - Una parte no es el todo aunque compartan día y sede, ni un enlace basta si
-  el alcance difiere (hoy el comparador lo acepta: pendiente). Castro (RFEA
+  el alcance difiere (con las mismas fechas el comparador aún lo acepta: falta
+  acreditar el alcance). Castro (RFEA
   64834 promoción y máster frente a FCA 80239 máster; FCA 80237 aparte),
   Nassos (FCA 5+10 km frente a RFEA 5 km) y Dakar (RFEA Juegos frente al
   atletismo de FCA/WA) están unidos con alcances distintos y se separarán con
@@ -194,13 +204,14 @@ repetible y reimportar un ID actualiza sin duplicar.
 
 En orden (detalle en el diseño local):
 
-1. Comparador conservador: enlace sin alcance, pares de la misma fuente y ya
-   unidos en vigilancia, motivos conservados.
-2. Bloque `atletismo` v2: alcance, temporalidad y estado, documentos con rol,
+1. Bloque `atletismo` v2: alcance, temporalidad y estado, documentos con rol,
    resultados, relación con la fuente y actividad.
-3. Adaptadores FGA (todos los ámbitos, función de padres: PGTA y
+2. Adaptadores FGA (todos los ámbitos, función de padres: PGTA y
    clasificaciones no son citas), RFEA (información técnica y documentos) y
    FCA (`description`, ficha, reglamentos de series).
+3. Comparador por alcance, con los datos de los pasos anteriores: enlaces
+   resueltos, conjunto de días y veredicto `dentro_de`. Subir su versión cambia
+   la huella y reabre una vez los issues cerrados.
 4. Registro editorial con varias referencias por fuente y separación revisada
    (Castro, Nassos, Dakar).
 5. Circuitos, ligas, controles y tecnificación solo con documento oficial.

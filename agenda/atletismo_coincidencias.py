@@ -72,7 +72,8 @@ def comparar_referencias(a, b):
         ma, mb = modalidades(a), modalidades(b)
         if ma and mb and ma != mb:
             datos.append('modalidades diferentes')
-        return {**comparacion, 'estado': 'automatica', 'motivos': [],
+        # Decisión y cálculo por separado: la revisión no borra los motivos.
+        return {**comparacion, 'veredicto': comparacion['estado'], 'estado': 'automatica',
                 'datos_revisar': datos, 'revision_identidad': revision}
     return comparacion
 
@@ -111,21 +112,23 @@ def modalidades(e):
     return atletismo_modalidades.de(e.get('metadatos'))[0]
 
 
-def comparar(a, b):
-    enlace = bool(enlaces(a) & enlaces(b))
+def comparar(a, b, por_enlace=True):
+    enlace = por_enlace and bool(enlaces(a) & enlaces(b))
     fechas = bool(a.get('inicio') and a.get('fin') and
                   (a['inicio'], a['fin']) == (b.get('inicio'), b.get('fin')))
     if enlace:
-        # La ficha enlazada identifica la competición. Un título más amplio,
-        # su traducción o las fechas discrepantes no crean otra identidad.
-        # Las discrepancias de datos se revisan después de compartir el ID.
+        # Con las mismas fechas, la ficha enlazada identifica la competición:
+        # un título más amplio o su traducción no crean otra identidad. Con
+        # otras fechas puede ser otra edición o una parte del enlazado, así que
+        # no une: separar una unión falsa es mucho más caro que revisar.
         ma, mb = modalidades(a), modalidades(b)
         datos = ([] if fechas else ['fechas diferentes o incompletas'])
         if ma and mb and ma != mb:
             datos.append('modalidades diferentes')
-        return {'estado': 'automatica', 'enlace_directo': True, 'nombre': None,
+        return {'estado': 'automatica' if fechas else 'revisar', 'enlace_directo': True, 'nombre': None,
                 'misma_fecha': fechas, 'misma_sede': bool(sede(a) and sede(a) == sede(b)),
-                'datos_revisar': datos, 'motivos': [], 'version': VERSION}
+                'datos_revisar': datos, 'motivos': [] if fechas else ['enlace con fechas diferentes: otra edición o alcance sin acreditar'],
+                'version': VERSION}
     solapan = all(e.get('inicio') and e.get('fin') for e in (a, b)) and max(a['inicio'], b['inicio']) <= min(a['fin'], b['fin'])
     if not enlace and not solapan:
         # Dos controles semanales con el mismo título y recinto pueden ser
@@ -241,13 +244,41 @@ def decidir_lote(n, fuente, eventos):
     return decisiones
 
 
+def posible_duplicado(comparacion):
+    """Mismo día, sede y título, sin contradicciones: nada más distingue los dos IDs.
+
+    Una fuente publica a menudo varias citas parecidas el mismo día (jornadas,
+    categorías, carreras de un mismo evento) y por eso el umbral es más alto.
+    """
+    return bool(comparacion['misma_fecha'] and comparacion['misma_sede']
+                and (comparacion['nombre'] or 0) >= .9
+                and set(comparacion['motivos']) <= {'nombre insuficientemente coincidente'})
+
+
 def incidencias(n):
-    """Casos pendientes entre identidades distintas, con clave estable por par."""
+    """Casos pendientes con clave estable por par.
+
+    Entre fuentes, identidades distintas o discrepancias de una ya compartida.
+    Dentro de una fuente, que nunca se une sola, solo lo que parece un duplicado.
+    """
     conocidos = actuales(n)
     salida = {}
     for pos, a in enumerate(conocidos):
         for b in conocidos[pos + 1:]:
+            par = sorted([(a['fuente'], a['id']), (b['fuente'], b['id'])])
+            clave = sha256(nucleo.json_canonico(par).encode()).hexdigest()[:24]
+            citas = sorted([a, b], key=lambda c: (c['fuente'], c['id']))
             if distribucion(a['fuente'], a['id']) == distribucion(b['fuente'], b['id']):
+                # Dos lecturas de una referencia no son dos registros, y dentro
+                # de una fuente compartir enlace no identifica ni distingue.
+                if a['referencia'] == b['referencia']:
+                    continue
+                comparacion = comparar(a, b, por_enlace=False)
+                if a['destino'] == b['destino'] or posible_duplicado(comparacion):
+                    motivo = ('dos registros de una fuente en la misma identidad' if a['destino'] == b['destino']
+                              else 'posible duplicado de la misma fuente')
+                    salida[clave] = {'clave': clave, 'citas': citas, 'motivo': motivo,
+                                     'comparacion': {**comparacion, 'estado': 'revisar', 'motivos': [motivo]}}
                 continue
             comparacion = comparar_referencias(a, b)
             if a['destino'] == b['destino'] and comparacion.get('datos_revisar'):
@@ -261,9 +292,7 @@ def incidencias(n):
                 manual_b = b['metadatos'].get('equivalencia_revisada')
                 if comparacion['estado'] == 'automatica' or (manual_a and manual_a == manual_b and comparacion['misma_fecha']):
                     continue
-            par = sorted([(a['fuente'], a['id']), (b['fuente'], b['id'])])
-            clave = sha256(nucleo.json_canonico(par).encode()).hexdigest()[:24]
-            salida[clave] = {'clave': clave, 'citas': sorted([a, b], key=lambda c: (c['fuente'], c['id'])),
+            salida[clave] = {'clave': clave, 'citas': citas,
                              'comparacion': comparacion,
                              'motivo': 'Identidades ya existentes: requieren conciliación explícita'
                                 if comparacion['estado'] == 'automatica' else '; '.join(comparacion['motivos'])}
