@@ -82,17 +82,34 @@ class Coincidencias(unittest.TestCase):
             self.assertEqual(len(publicacion.proyectar(n)['eventos']), 2)
             self.assertEqual(c.incidencias(n), [])
 
-    def test_enlace_resuelve_identidad_y_discrepancia_de_fecha_genera_issue_de_datos(self):
-        a = entrada('rfea', url='https://atletismorfea.es/calendario/campeonato/prueba')
-        b = entrada('fca', nombre='Campeonato en otro idioma (Cross Internacional)',
-                    inicio='2026-11-08', fin='2026-11-08',
-                    metadatos={'web_organizador': a['eventos'][0]['url']})
-        n = atletismo.importar(None, a, AHORA)
+    def test_un_enlace_con_otras_fechas_no_une_y_pide_revision(self):
+        url = 'https://atletismorfea.es/calendario/campeonato/prueba'
+        casos = {'otra edición': ('2027-12-12', '2027-12-12'), 'semana distinta': ('2026-11-08', '2026-11-08'),
+                 'parte de unos Juegos': ('2026-11-01', '2026-11-03')}
+        for caso, (inicio, fin) in casos.items():
+            with self.subTest(caso):
+                n = atletismo.importar(None, entrada('rfea', url=url, inicio='2026-11-01', fin='2026-11-15'), AHORA)
+                b = entrada('fca', nombre='Campeonato en otro idioma', inicio=inicio, fin=fin,
+                            metadatos={'web_organizador': url})
+                self.assertEqual(c.decidir_lote(n, 'fca', b['eventos'])['uno']['estado'], 'revisar')
+                n = atletismo.importar(n, b, AHORA)
+                self.assertEqual(len(publicacion.proyectar(n)['eventos']), 2)
+                aviso, = c.incidencias(n)
+                self.assertIn('enlace con fechas diferentes', aviso['motivo'])
+                self.assertTrue(aviso['comparacion']['enlace_directo'])
+
+    def test_identidad_ya_compartida_conserva_su_issue_de_fechas(self):
+        url = 'https://atletismorfea.es/calendario/campeonato/prueba'
+        b = entrada('fca', nombre='Campeonato en otro idioma', metadatos={'web_organizador': url})
+        n = atletismo.importar(None, entrada('rfea', url=url), AHORA)
         n = atletismo.importar(n, b, AHORA)
+        self.assertEqual((len(publicacion.proyectar(n)['eventos']), c.incidencias(n)), (1, []))
+        b['eventos'][0].update(inicio='2026-11-08', fin='2026-11-08')
+        n = atletismo.importar(n, b, '2026-11-03T20:00:00+01:00')
         e, = publicacion.proyectar(n)['eventos']
         self.assertTrue(e['programacion']['conflicto'])
-        caso, = c.incidencias(n)
-        self.assertIn('fechas', caso['motivo'])
+        aviso, = c.incidencias(n)
+        self.assertEqual(aviso['motivo'], 'discrepancia de fechas en una identidad ya compartida')
 
     def test_el_enlace_tiene_prioridad_sobre_otro_nombre_parecido(self):
         p = entrada('rfea', 'referenciada', url='https://atletismorfea.es/calendario/campeonato/referenciada')
@@ -181,6 +198,40 @@ class Coincidencias(unittest.TestCase):
         self.assertTrue(all(d['estado'] == 'revisar' for d in c.decidir_lote(n, 'fga', p['eventos']).values()))
         n = atletismo.importar(n, p, AHORA)
         self.assertEqual(len(publicacion.proyectar(n)['eventos']), 3)
+
+    def test_la_revision_acredita_identidad_sin_borrar_lo_calculado(self):
+        rfea = entrada('rfea', '67588', nombre='B100 Cursa dels Nassos', lugar={'nombre': 'Barcelona'})['eventos'][0]
+        fca = entrada('fca', '83074', nombre='B100 Cursa dels Nassos (5 i 10 Km)', lugar={'nombre': 'Barcelona'})['eventos'][0]
+        comparacion = c.comparar_referencias({**rfea, 'fuente': 'rfea'}, {**fca, 'fuente': 'fca'})
+        self.assertEqual((comparacion['estado'], comparacion['veredicto']), ('automatica', 'revisar'))
+        self.assertIn('categoría, formato o distancia de distinto alcance', comparacion['motivos'])
+
+    def test_misma_fuente_solo_avisa_de_lo_que_parece_duplicado_y_nunca_une(self):
+        cita = lambda i, nombre='Samarkand Marathon': entrada('fca', i, nombre=nombre, lugar={'nombre': 'Samarkand'})['eventos'][0]
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': [cita('a'), cita('b')]}, AHORA)
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 2)
+        aviso, = c.incidencias(n)
+        self.assertEqual(aviso['motivo'], 'posible duplicado de la misma fuente')
+        self.assertEqual(aviso['comparacion']['estado'], 'revisar')
+        self.assertEqual({e['id'] for e in aviso['citas']}, {'a', 'b'})
+        ruido = {'otro título': [cita('a', 'Trofeu Promoció (3a Jornada)'), cita('b', 'Trofeu Promoció (4a Jornada)')],
+                 'otra sede': [cita('a'), {**cita('b'), 'lugar': {'nombre': 'Milano'}}],
+                 'otro día': [cita('a'), {**cita('b'), 'inicio': '2026-11-02', 'fin': '2026-11-02'}],
+                 'otra categoría': [cita('a', 'Control Sub 16-18 ST'), cita('b', 'Control Absolut-Sub20 ST')]}
+        for caso, eventos in ruido.items():
+            with self.subTest(caso):
+                n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': eventos}, AHORA)
+                self.assertEqual(c.incidencias(n), [])
+
+    def test_dos_registros_de_una_fuente_en_una_identidad_se_vigilan(self):
+        p = entrada('fca', 'a', nombre='Cursa del Port')
+        p['eventos'].append({**p['eventos'][0], 'id': 'b', 'nombre': 'Campionat de Marxa', 'lugar': {'nombre': 'Reus'}})
+        n = atletismo.importar(None, p, AHORA)
+        self.assertEqual(c.incidencias(n), [])
+        r = [r for r in n['referencias'].values() if r['tipo_externo'] == 'competicion']
+        r[1]['destino'] = r[0]['destino']
+        aviso, = c.incidencias(n)
+        self.assertEqual(aviso['motivo'], 'dos registros de una fuente en la misma identidad')
 
     def test_la_clave_de_issue_no_cambia_con_el_orden_o_los_datos(self):
         n = atletismo.importar(None, entrada('rfea', lugar={'nombre': 'Ourense'}), AHORA)
