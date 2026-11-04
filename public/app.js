@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=e10e56e560';
+} from './parser.js?v=613e83772b';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=e10e56e560';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e10e56e560';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e10e56e560';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=e10e56e560';
-import { comparador } from './busqueda/orden.js?v=e10e56e560';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=613e83772b';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=613e83772b';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=613e83772b';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=613e83772b';
+import { comparador } from './busqueda/orden.js?v=613e83772b';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=e10e56e560';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=e10e56e560';
+} from './sync/fusion.js?v=613e83772b';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=613e83772b';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=e10e56e560';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=e10e56e560';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=613e83772b';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=613e83772b';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=e10e56e560';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=613e83772b';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=e10e56e560';
+} from './tiempo/avisos.js?v=613e83772b';
 
-import { I18N, traducir } from './idiomas/index.js?v=e10e56e560';
+import { I18N, traducir } from './idiomas/index.js?v=613e83772b';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=e10e56e560';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=e10e56e560';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=e10e56e560';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=e10e56e560';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=613e83772b';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=613e83772b';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=613e83772b';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=613e83772b';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=e10e56e560';
+import { ADMINISTRACION } from './territorios/administracion.js?v=613e83772b';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=e10e56e560');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=613e83772b');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -5094,6 +5094,14 @@ function asistenteCalendarioDesdeAjustes(){
   calAbrirAsistente(0);
 }
 const calEnfocarAjustes = () => document.getElementById('calendario-panel')?.querySelector('[data-cal="asistente"]')?.focus({ preventScroll: true });
+// Cancelar y Escape salen igual: abortan lo pedido y vuelven al engranaje.
+function calCancelarAsistente(){
+  const s = CALENDARIO;
+  s.asistente?.controller?.abort();
+  s.asistente = null;
+  pintarCalendario();
+  calEnfocarAjustes();
+}
 function calGuardarAsistente(){
   const s = CALENDARIO, b = s.asistente.b;
   // Sin sitio, solo competiciones: no quedan intereses de toda España.
@@ -5195,7 +5203,7 @@ function wireCalendario(){
     if (a === 'seguir') return calSeguir(v);
     if (s.asistente){
       const as = s.asistente;
-      if (a === 'as-cancelar'){ as.controller?.abort(); s.asistente = null; pintarCalendario(); return void calEnfocarAjustes(); }
+      if (a === 'as-cancelar') return calCancelarAsistente();
       // Sin sitio no hay agenda local: del sitio se pasa a las competiciones.
       const salto = !as.b.sitio && as.paso === (a === 'as-siguiente' ? 0 : 2) ? 2 : 1;
       if (a === 'as-anterior') return calPasoAsistente(as.paso - salto);
@@ -6464,7 +6472,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=e10e56e560')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=613e83772b')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -10972,7 +10980,7 @@ function wireStaticEvents(){
         const abierto = document.querySelector('.panel.open');
         if (abierto){ cerrarPanel(abierto.id); return; }
         if (ESTADISTICAS.abierto){ cerrarEstadisticas(); return; }
-        if (CALENDARIO.asistente){ CALENDARIO.asistente = null; pintarCalendario(); return; }
+        if (CALENDARIO.asistente){ calCancelarAsistente(); return; }
         if (CALENDARIO.abierto){ salirCalendario(); return; }
       }
     const tg = e.target;
