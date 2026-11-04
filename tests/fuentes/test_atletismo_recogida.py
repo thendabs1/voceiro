@@ -21,10 +21,12 @@ class RecogidaAtletismo(unittest.TestCase):
         # La muestra contiene la lista completa de páginas.
         if isinstance(paginas, dict):
             paginas = paginas['paginas']
-        with patch.object(r.recogida, 'descargar', side_effect=[json.dumps(p) for p in paginas]):
-            entrada, informe = r.recoger('fca', '2026-11-01', '2026-12-31')
+        api = iter(paginas)
+        entrada, informe = r.recoger('fca', '2026-11-01', '2026-12-31', descargar=lambda url: (
+            json.dumps(next(api)) if 'wp-json' in url else '<html></html>'))
         self.assertEqual(len(entrada['eventos']), 53)
-        self.assertEqual(informe['peticiones'], 2)
+        self.assertEqual(informe['peticiones'], 55)  # Dos páginas de API y una ficha por cita.
+        self.assertEqual(len(informe['fichas']['fallidas']), 53)
         self.assertTrue(informe['completo'])
         with self.assertRaisesRegex(ValueError, 'presupuesto'):
             r.recoger('fca', '2026-11-01', '2026-12-31', max_peticiones=1,
@@ -218,8 +220,9 @@ class RecogidaAtletismo(unittest.TestCase):
         self.assertFalse(guardado['completo'])
         self.assertIn('maqueta desconocida', guardado['nivel_ii']['error'])
         # La ventana leída se publica con la fuente: el frontal raya lo posterior.
+        # Aquí falló Nivel II: el fin leído no acredita una lectura completa.
         self.assertEqual(publicacion.proyectar(n, ['rfea'])['fuentes']['rfea']['ventana'],
-                         {'inicio': '2026-11-01', 'fin': '2026-11-30'})
+                         {'inicio': '2026-11-01', 'fin': '2026-11-30', 'completa': False})
 
     def test_nivel_ii_sin_documento_de_un_ano_de_la_ventana_no_esta_completo(self):
         inventario = {'version': 1, 'url': r.atletismo_nivel_ii.URL, 'temporada': '2026',

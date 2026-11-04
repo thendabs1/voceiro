@@ -1,0 +1,235 @@
+{
+  "total": 7,
+  "total_pages": 1,
+  "events": [
+    {
+      "id": 80770,
+      "url": "https://fcatletisme.cat/event/campionat-de-catalunya-de-proves-combinades-absolut-i-sub23-st/",
+      "title": "Campionat de Catalunya de Proves Combinades Absolut i Sub23 ST",
+      "description": "<p>&nbsp;</p>\n<p><strong>· <a href=\"https://fcatletisme.cat/wp-content/uploads/2026/01/reg-2026011011-catcombinadesabssub23pcadmesos.pdf\" target=\"_blank\" rel=\"noopener\">Atletes admesos</a></strong></p>",
+      "all_day": true,
+      "start_date": "2026-01-10 00:00:00",
+      "end_date": "2026-01-11 23:59:59",
+      "timezone": "Europe/Madrid",
+      "modified_utc": "2026-01-11 15:50:56",
+      "website": "",
+      "cost": "",
+      "tags": [],
+      "categories": [
+        {
+          "id": 30,
+          "name": "Pista Coberta"
+        }
+      ],
+      "organizer": [
+        {
+          "id": 221,
+          "organizer": "Federació Catalana d&#8217;Atletisme",
+          "website": "http://www.fcatletisme.cat"
+        }
+      ],
+      "venue": {
+        "id": 213,
+        "venue": "Sabadell (Pista Coberta de Catalunya Carme Valero)",
+        "address": "Camí de Can Quadres, 190 - Sabadell"
+      }
+    },
+    {
+      "id": 84320,
+      "url": "https://fcatletisme.cat/event/lliga-territorial-de-promocio-16/",
+      "title": "Lliga Territorial de Promoció &#8211; *Ajornat",
+      "description": "",
+      "all_day": true,
+      "start_date": "2026-02-22 00:00:00",
+      "end_date": "2026-02-22 23:59:59",
+      "timezone": "Europe/Madrid",
+      "modified_utc": "2026-02-18 13:54:20",
+      "website": "",
+      "cost": "",
+      "tags": [],
+      "categories": [
+        {
+          "id": 33,
+          "name": "Aire Lliure"
+        },
+        {
+          "id": 32,
+          "name": "Promoció"
+        }
+      ],
+      "organizer": [
+        {
+          "id": 84322,
+          "organizer": "Consell Esportiu del Gironès"
+        }
+      ],
+      "venue": {
+        "id": 464,
+        "venue": "Girona (Estadi Palau Sacosta)",
+        "address": "Creu de Palau - Av. Montilivi, 149 - Girona"
+      }
+    },
+    {
+      "id": 80500,
+      "url": "https://fcatletisme.cat/event/campionat-de-catalunya-de-trail-absolut-i-sub23-cursa-del-roc-gros-trscmt/",
+      "title": "Campionat de Catalunya de Trail Absolut i Sub23 (Cursa del Roc Gros) (TRS)+(CMT)",
+      "description": "<p>&nbsp;</p>\n<p><strong>· <a href=\"https://fcatletisme.cat/wp-content/uploads/2026/03/reg-20260322-cattrailabsolutsub23inscrits.pdf\" target=\"_blank\" rel=\"noopener\">Atletes inscrits</a></strong></p>",
+      "all_day": true,
+      "start_date": "2026-03-22 00:00:00",
+      "end_date": "2026-03-22 23:59:59",
+      "timezone": "Europe/Madrid",
+      "modified_utc": "2026-03-24 11:25:37",
+      "website": "https://www.cursadelrocgros.com/",
+      "cost": "",
+      "tags": [],
+      "categories": [
+        {
+          "id": 74,
+          "name": "Trail-Muntanya"
+        }
+      ],
+      "organizer": [
+        {
+          "id": 62074,
+          "organizer": "Associació Cursa del Roc Gros",
+          "website": "https://www.cursadelrocgros.com/"
+        },
+        {
+          "id": 221,
+          "organizer": "Federació Catalana d&#8217;Atletisme",
+          "website": "http://www.fcatletisme.cat"
+        }
+      ],
+      "venue": {
+        "id": 62073,
+        "venue": "Els Hostalets de Balenyà"
+      }
+    },
+    {
+      "id": 89925,
+      "url": "https://fcatletisme.cat/event/control-de-proves-combinades-per-a-pc-4/",
+      "title": "Control de Proves Combinades per a PC",
+      "description": "",
+      "all_day": true,
+      "start_date": "2026-11-14 00:00:00",
+      "end_date": "2026-11-15 23:59:59",
+      "timezone": "Europe/Madrid",
+      "modified_utc": "2026-11-03 11:07:09",
+      "website": "",
+      "cost": "",
+      "tags": [],
+      "categories": [
+        {
+          "id": 32,
+          "name": "Promoció"
+        }
+      ],
+      "organizer": [
+        {
+          "id": 603,
+          "organizer": "Cornellà At.",
+          "website": "http://www.cornellaatletic.com"
+        }
+      ],
+      "venue": {
+        "id": 82,
+        "venue": "Cornellà de Llobregat (Estadi Municipal Pilar Pons)",
+        "address": "Carrer del Rugby, s/n - Cornellà de Llobregat"
+      }
+    },
+    {
+      "id": 90048,
+      "url": "https://fcatletisme.cat/event/control-de-proves-combinades-sub-14-femeni-st/",
+      "title": "Control de Proves Combinades Sub 14 Femení ST",
+      "description": "",
+      "all_day": true,
+      "start_date": "2026-12-05 00:00:00",
+      "end_date": "2026-12-05 23:59:59",
+      "timezone": "Europe/Madrid",
+      "modified_utc": "2026-11-03 11:33:44",
+      "website": "",
+      "cost": "",
+      "tags": [],
+      "categories": [
+        {
+          "id": 32,
+          "name": "Promoció"
+        }
+      ],
+      "organizer": [
+        {
+          "id": 221,
+          "organizer": "Federació Catalana d&#8217;Atletisme",
+          "website": "http://www.fcatletisme.cat"
+        }
+      ],
+      "venue": {
+        "id": 213,
+        "venue": "Sabadell (Pista Coberta de Catalunya Carme Valero)",
+        "address": "Camí de Can Quadres, 190 - Sabadell"
+      }
+    },
+    {
+      "id": 80237,
+      "url": "https://fcatletisme.cat/event/campionat-despanya-de-marxa-dhivern-de-promocio-9/",
+      "title": "Campionat d’Espanya de Marxa d’Hivern de Promoció",
+      "description": "",
+      "all_day": true,
+      "start_date": "2026-12-13 00:00:00",
+      "end_date": "2026-12-13 23:59:59",
+      "timezone": "Europe/Madrid",
+      "modified_utc": "2026-01-13 15:46:15",
+      "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-marcha-de-invierno-de-promocion-3",
+      "cost": "",
+      "tags": [],
+      "categories": [
+        {
+          "id": 29,
+          "name": "Marxa"
+        }
+      ],
+      "organizer": [
+        {
+          "id": 714,
+          "organizer": "Real Federación Española de Atletismo",
+          "website": "http://www.rfea.es"
+        }
+      ],
+      "venue": {
+        "id": 71595,
+        "venue": "Castro Urdiales"
+      }
+    },
+    {
+      "id": 80239,
+      "url": "https://fcatletisme.cat/event/campionat-despanya-de-10-km-marxa-en-ruta-master-4/",
+      "title": "Campionat d’Espanya de 10 Km Marxa en ruta Màster",
+      "description": "",
+      "all_day": true,
+      "start_date": "2026-12-13 00:00:00",
+      "end_date": "2026-12-13 23:59:59",
+      "timezone": "Europe/Madrid",
+      "modified_utc": "2026-11-03 11:12:07",
+      "website": "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-10-km-marcha-master",
+      "cost": "",
+      "tags": [],
+      "categories": [
+        {
+          "id": 34,
+          "name": "Màster"
+        }
+      ],
+      "organizer": [
+        {
+          "id": 714,
+          "organizer": "Real Federación Española de Atletismo",
+          "website": "http://www.rfea.es"
+        }
+      ],
+      "venue": {
+        "id": 71595,
+        "venue": "Castro Urdiales"
+      }
+    }
+  ]
+}

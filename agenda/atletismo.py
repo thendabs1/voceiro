@@ -14,7 +14,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from . import atletismo_bloque, atletismo_coincidencias as coincidencias, deporte, nucleo
+from . import atletismo_bloque, atletismo_coincidencias as coincidencias, atletismo_fca, deporte, nucleo
 
 
 FUENTES = {
@@ -73,6 +73,7 @@ def leer_cataluna(paginas):
         if (p.get('total'), p.get('total_pages')) != (total, numero):
             raise ValueError('La paginación catalana cambió durante la lectura')
         for e in deporte.filas(p, 'events', 100):
+            metadatos = atletismo_fca.enriquecer(e)
             i = deporte.literal(e.get('id'))
             if i in vistos:
                 raise ValueError('Página catalana repetida')
@@ -93,7 +94,7 @@ def leer_cataluna(paginas):
                     'organizaciones': [{'id': o['id'], 'nombre': html_texto(o.get('organizer')), 'url': o.get('website')}
                                        for o in e.get('organizer', [])],
                     'web_organizador': e.get('website'), 'modificado': e.get('modified_utc'),
-                    'zona_fuente': e.get('timezone')}})
+                    'zona_fuente': e.get('timezone'), **metadatos}})
     if len(eventos) != total:
         raise ValueError('El total catalán no coincide con las citas recibidas')
     return eventos

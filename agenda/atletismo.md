@@ -209,7 +209,22 @@ se reutilizan en memoria durante la pasada, con pausa de 2,5 s entre descargas.
 **FCA.** API `tribe/events/v1` con ID propio, preferida al ICS. Devuelve 50
 por página aunque se pidan 100; se exigen todas las páginas, total coherente
 e IDs únicos. Las muestras son de día completo; un horario con hora falla
-hasta contrastar el convenio UTC/local.
+hasta contrastar el convenio UTC/local. `atletismo_fca` añade bloque v2 desde
+Tribe y de la ficha: descripción en texto normalizado, documentos con rol por
+etiqueta o sección y su evidencia, organizaciones bajo el rótulo contrastado
+«Organitzador(s)», dirección y títulos de nombre reservado. `Reglament` y
+`Resultats` solo constan en la ficha, cuya clase `post-{id}` acredita la cita:
+una por cita, con pausa de 1 s. Si falla, conserva los documentos anteriores; un
+403 o 429 corta las fichas sin perder el inventario de la API. No lee PDF ni
+clasifica por categorías o título. Los avisos de estado solo en el título no
+cambian la programación. `status=publish` es editorial.
+
+La autoridad sigue la regla de FGA: el título reservado por ley hace reflejo aunque
+la FCA organice; RFEA/EA/WA sin la FCA hace reflejo; la FCA sin otra federación
+hace propio, también con clubes. Un `website` RFEA sin resolver conserva la señal
+literal y deja la relación desconocida: puede apuntar a otra edición o a 404. Solo
+clubes, o la FCA con otra federación, queda desconocido. La API no publica la
+columna de calendario.
 
 ## Coincidencias e identidad
 
@@ -320,8 +335,9 @@ En orden (detalle en el diseño local):
    enlaza; lectura de su contenido (títulos, convocatoria, organizador) con
    revisión. Sin ellos, `actividad` y `alcance` de FGA quedan desconocidos.
    Call Room no da datos públicos. RFEA: contenido de los documentos y
-   convocatorias técnicas que los filtros no devuelven. FCA: `organizaciones`, `description`, ficha,
-   columna de calendario y reglamentos de series.
+   convocatorias técnicas que los filtros no devuelven. FCA: columna de calendario,
+   reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic. Los
+   destinos RFEA de `website` quedan sin resolver.
 2. Comparador por alcance, con los datos del paso anterior: enlaces resueltos,
    conjunto de días y veredicto `dentro_de`. Subir su versión cambia la huella
    y reabre una vez los issues cerrados.

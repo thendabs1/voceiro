@@ -17,11 +17,14 @@ from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_calendario_pdf, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, atletismo_rfea, recogida
+from . import atletismo, atletismo_calendario_pdf, atletismo_coincidencias as coincidencias, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_rfea, recogida
 
 
 # Ficha y documentos por cita, más meses y filtros: unas 300 en temporada alta.
 PRESUPUESTO_RFEA = 400
+WA_ESTADOS = {'Cancelled': 'cancelado', 'Postponed': 'aplazado'}
+WA_JUEGOS = (5, 329)
+WA_RESULTADOS = 'https://worldathletics.org/competition/calendar-results/results/'
 
 
 def meses(desde, hasta):
@@ -119,23 +122,46 @@ def _rfea_mensual(desde, hasta, obtener, *, tipo='Deportivo', categoria='0', ady
 
 
 def cataluna(desde, hasta, obtener):
+    fca = atletismo_fca
     base = 'https://fcatletisme.cat/wp-json/tribe/events/v1/events'
     parametros = {'start_date': desde.isoformat(), 'end_date': hasta.isoformat(), 'per_page': 100}
-    paginas, urls = [], []
+    paginas, urls, superficies = [], [], []
+
+    def terminar(eventos):
+        return {'version': 1, 'fuente': 'fca', 'eventos': eventos}, {
+            'consultas': urls, 'superficies': superficies, 'completo': True,
+            'avisos': fca.avisos(eventos),
+            'pendientes': [], 'pendientes_superficies': [
+                {'superficie': 'documento', 'motivo': 'reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic fuera de esta lectura'},
+                {'superficie': 'calendario', 'motivo': 'Tribe no publica la columna de calendario; no se deduce de las categorías'}]}
     for numero in range(1, 101):
         url = base + '?' + urlencode({**parametros, 'page': numero})
         p = json.loads(obtener(url))
-        if not isinstance(p, dict) or type(p.get('total_pages')) is not int:
+        if (not isinstance(p, dict) or type(p.get('total_pages')) is not int
+                or type(p.get('total')) is not int or p['total'] < 0
+                or not 0 <= p['total_pages'] <= 100 or not isinstance(p.get('events'), list)):
             raise ValueError('FCA sin paginación acreditada')
+        if paginas and (p['total'], p['total_pages']) != (paginas[0]['total'], paginas[0]['total_pages']):
+            raise ValueError('La paginación catalana cambió durante la lectura')
+        if p['total_pages'] == 0 and (p['total'] != 0 or p['events']):
+            raise ValueError('FCA sin paginación acreditada')
+        ids = [str(e['id']) for e in p['events']]
+        vistos = {i for s in superficies for i in s['ids_observados']}
+        if len(set(ids)) != len(ids) or vistos.intersection(ids):
+            raise ValueError('Página catalana repetida')
         urls.append(url)
         paginas.append(p)
+        superficies.append({'superficie': 'api',
+            'ventana': {'inicio': desde.isoformat(), 'fin': hasta.isoformat()},
+            'filtros': {**parametros, 'page': numero}, 'consultas': [url],
+            'ids_observados': ids, 'ids_resueltos': ids, 'estado': 'completa'})
         if p['total_pages'] == 0 and p.get('total') == 0 and p.get('events') == []:
             if numero != 1:
                 raise ValueError('FCA cambió el total entre páginas')
-            return {'version': 1, 'fuente': 'fca', 'eventos': []}, {'consultas': urls, 'completo': True, 'pendientes': []}
+            return terminar([])
         if numero == p['total_pages']:
             eventos = atletismo.leer_cataluna(paginas)
-            return {'version': 1, 'fuente': 'fca', 'eventos': eventos}, {'consultas': urls, 'completo': True, 'pendientes': []}
+            return terminar(eventos)
     raise ValueError('FCA excede el límite de cien páginas')
 
 
@@ -197,18 +223,23 @@ def wa_unidad(grupo, desde, hasta, obtener):
     raise ValueError('WA excede el límite de mil páginas')
 
 
+def wa_agrupacion(circuito):
+    return {'id': circuito['id'], 'nombre': circuito['nombre'], 'clase': circuito.get('clase', 'circuito'),
+            'codigo_consulta': circuito['codigo_consulta'], 'url': atletismo.FUENTES['wa'][1]}
+
+
 def wa_evento(e, circuitos, juegos):
     i = str(e['id'])
     inicio, fin = e.get('startDate'), e.get('endDate')
-    if e.get('undeterminedCompetitionPeriod') is not None or not inicio or not fin:
+    periodo = e.get('undeterminedCompetitionPeriod')
+    estado = WA_ESTADOS.get(periodo.get('status')) if isinstance(periodo, dict) else None
+    if periodo is not None and not estado or not inicio or not fin:
         return None, {'id': i, 'nombre': e.get('name'), 'motivo': 'periodo indeterminado o fechas ausentes',
                       'inicio': inicio, 'fin': fin}
     revision = None
-    if any(g in (5, 329) for g in circuitos):
-        revision = juegos.get(i)
-        if not revision:
-            return None, {'id': i, 'nombre': e.get('name'), 'motivo': 'Juegos sin fechas editoriales de atletismo',
-                          'inicio': inicio, 'fin': fin}
+    es_juegos = any(g in WA_JUEGOS for g in circuitos)
+    if es_juegos and (revision := juegos.get(i)):
+        # Una revisión solo corrige a WA cuando publica el periodo de los Juegos enteros.
         if not revision.get('evidencia') or not revision.get('url'):
             raise ValueError('WA: Juegos sin evidencia editorial')
         inicio, fin = revision['inicio'], revision['fin']
@@ -217,11 +248,28 @@ def wa_evento(e, circuitos, juegos):
     if fin < inicio:
         raise ValueError('WA: fin anterior al inicio')
     was = e.get('wasUrl')
-    return {'id': i, 'nombre': e['name'], 'url': atletismo.enlace('wa', was) if was else atletismo.FUENTES['wa'][1],
+    base = atletismo.FUENTES['wa'][1]
+
+    def evidencia(campo, literal):
+        return {'superficie': 'calendario', 'url': base, 'localizador': f'results[id={i}].{campo}', 'literal': literal}
+
+    return {'id': i, 'nombre': e['name'], 'url': atletismo.enlace('wa', was) if was else base,
             'inicio': inicio, 'fin': fin, 'lugar': {'nombre': e.get('venue')},
+            **({'estado': estado} if estado else {}),
             'grupos': sorted({c['id'] for grupo in circuitos for c in circuitos[grupo]}),
             'metadatos': {**({'iaafId': e['iaafId']} if e.get('iaafId') is not None else {}),
                 **({'fechas_juegos': revision} if revision else {}),
+                **({'temporalidad': {
+                        **({'texto': e['dateRange']} if e.get('dateRange') else {}),
+                        'estado': estado, 'estado_literal': periodo.get('label') or periodo['status'],
+                        'evidencia': evidencia('undeterminedCompetitionPeriod', periodo.get('remark') or periodo['status'])}}
+                   if estado else {}),
+                **({'alcance': {'tipo': 'juegos', 'literal': e.get('competitionGroup') or e['name'],
+                                'evidencia': evidencia('competitionGroup', e.get('competitionGroup') or e['name'])}}
+                   if es_juegos else {}),
+                **({'calendarios': [{'calendario': 'wa', 'categoria_literal': e['rankingCategory'],
+                                     'evidencia': evidencia('rankingCategory', e['rankingCategory'])}]}
+                   if e.get('rankingCategory') else {}),
                 'area': e.get('area'),
                 'rankingCategory': e.get('rankingCategory'), 'competitionSubgroup': e.get('competitionSubgroup'),
                 'disciplines': e.get('disciplines'), 'season': e.get('season'),
@@ -254,11 +302,49 @@ def wa(desde, hasta, obtener):
             eventos.append(cita)
     usados = {g for gs in grupos_por_id.values() for g in gs}
     circuitos = {c['id']: c for g in sorted(usados) for c in seleccion[g]}
-    agrupaciones = [{'id': c['id'], 'nombre': c['nombre'], 'clase': 'circuito',
-                     'codigo_consulta': c['codigo_consulta'], 'url': atletismo.FUENTES['wa'][1]}
-                    for c in circuitos.values()]
+    agrupaciones = [wa_agrupacion(c) for c in circuitos.values()]
     return {'version': 1, 'fuente': 'wa', 'eventos': eventos, 'agrupaciones': agrupaciones}, {
         'consultas': consultas, 'pendientes': pendientes, 'completo': not pendientes}
+
+
+def wa_competicion_resultados(html, i):
+    """Competición de la página de resultados, o None si no es la de esa cita."""
+    try:
+        datos = json.loads(BeautifulSoup(html, 'html.parser').select_one('script#__NEXT_DATA__').string)['props']['pageProps']
+        competicion = datos['calendarEventsResults']['competition']
+        return competicion if str(datos['query']['competitionId']) == i else None
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+
+
+def wa_resultados(eventos, obtener):
+    """Solo se publica el enlace que responde: algunas fichas con `hasResults` dan 500.
+
+    Un 403 o 429 interrumpe la fuente y el presupuesto agotado no se atrapa;
+    cualquier otro fallo deja la cita sin enlace, sin perder la lectura.
+    """
+    informe = {'verificados': 0, 'descartados': []}
+    for e in eventos:
+        if not e['metadatos'].get('hasResults'):
+            continue
+        url = WA_RESULTADOS + e['id']
+        try:
+            competicion = wa_competicion_resultados(obtener(url), e['id'])
+            motivo = None if competicion else 'la página no acredita la cita'
+        except HTTPError as error:
+            if error.code in (403, 429):
+                raise
+            motivo = f'HTTP {error.code}'
+        except OSError as error:
+            motivo = f'{type(error).__name__}: {error}'[:200]
+        if motivo:
+            informe['descartados'].append({'id': e['id'], 'motivo': motivo})
+            continue
+        e['metadatos']['documentos'] = [{'url': url, 'nombre': 'Resultados', 'rol': 'resultados',
+            'evidencia': {'superficie': 'resultados', 'url': url, 'localizador': 'calendarEventsResults.competition',
+                          'literal': competicion.get('name') or e['nombre']}}]
+        informe['verificados'] += 1
+    return informe
 
 
 LECTORES = {'rfea': rfea, 'fga': galicia, 'fca': cataluna, 'wa': wa}
@@ -396,9 +482,7 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
             existentes = {g['id'] for g in entrada.get('agrupaciones', [])}
             for circuito in {c['id']: c for lista in presentes.values() for c in lista}.values():
                 if circuito['id'] not in existentes:
-                    entrada.setdefault('agrupaciones', []).append({
-                        'id': circuito['id'], 'nombre': circuito['nombre'], 'clase': 'circuito',
-                        'codigo_consulta': circuito['codigo_consulta'], 'url': atletismo.FUENTES['wa'][1]})
+                    entrada.setdefault('agrupaciones', []).append(wa_agrupacion(circuito))
             reimportadas.append(c['id'])
             continue
         try:
@@ -469,7 +553,8 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         if fuente in ('fga', 'rfea') and descargar is None and ultimo_fin is not None:
             pausa = 2.5 if fuente == 'fga' else 1
             time.sleep(max(0, pausa - (time.monotonic() - ultimo_fin)))
-        if fuente == 'wa' and peticiones > 1 and descargar is None:
+        ficha_fca = fuente == 'fca' and '/event/' in url
+        if (ficha_fca or fuente == 'wa' and peticiones > 1) and descargar is None:
             time.sleep(1)  # Sin reintentos: un 429 interrumpe la fuente.
         if fuente == 'wa':
             consultas_wa.append(url)
@@ -501,6 +586,11 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
                         else LECTORES[fuente](desde, hasta, obtener))
     informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
                                observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
+    if fuente == 'fca':
+        informe['fichas'] = atletismo_fca.completar_fichas(entrada['eventos'], obtener, conocidas)
+        informe.setdefault('avisos', []).extend(informe['fichas']['fallidas'])
+    if fuente == 'wa':
+        informe['resultados'] = wa_resultados(entrada['eventos'], obtener)
     if fuente == 'rfea' and informe.get('bloqueada'):
         # La fuente pidió parar: no se le piden más documentos en esta pasada.
         atletismo_calendario_pdf.conservar(entrada['eventos'], conocidas)
@@ -655,7 +745,8 @@ def main(argv=None):
         informe['modalidades_desconocidas'] = sorted({x for e in leidas
                                                       for x in atletismo_modalidades.de(e.get('metadatos'))[1]})
         # Hasta dónde se ha leído la fuente: más allá, el calendario no está vacío sino sin recoger.
-        n['fuentes'][args.fuente]['ventana'] = {'inicio': informe['inicio'], 'fin': informe['fin']}
+        n['fuentes'][args.fuente]['ventana'] = {'inicio': informe['inicio'], 'fin': informe['fin'],
+                                                'completa': bool(informe['completo'])}
         n['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
         nucleo.recalcular_selecciones(n)
         calendario['nucleo'] = n
@@ -701,6 +792,9 @@ def main(argv=None):
                       **({'calendario_pdf': {k: v for k, v in informe['calendario_pdf'].items()
                                              if k in ('automaticas', 'a_revision', 'sin_fila', 'avisos')}}
                          if 'calendario_pdf' in informe else {}),
+                      **({'resultados': {'verificados': informe['resultados']['verificados'],
+                                         'descartados': len(informe['resultados']['descartados'])}}
+                         if 'resultados' in informe else {}),
                       **({'modalidades_desconocidas': informe['modalidades_desconocidas']}
                          if informe.get('modalidades_desconocidas') else {})}, ensure_ascii=False))
     if error := informe.get('nivel_ii', {}).get('error'):

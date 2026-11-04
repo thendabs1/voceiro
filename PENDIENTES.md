@@ -19,18 +19,6 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
 - Resultados deportivos: acreditar jornadas oficiales y su pertenencia por
   proveedor; las consultas por fecha y las fichas de partido ya funcionan
   ([pendientes](agenda/resultados-diseno.md)).
-- Revisión del calendario (3/11/2026), sin arreglar por bajo impacto:
-  - MotoGP y F1 dan la temporada por completa con cualquier lista no vacía
-    (`proveedores.describir`, `oficial_f1`). Un recorte posterior se detecta
-    como ausencia; una primera lista ya recortada, no.
-  - La cobertura publicada es siempre `completa:false` y su comprobación sale
-    de los eventos publicados (`proyeccion.js`), no de la recogida.
-  - `descubrir` solo prueba el año actual y el siguiente: una instalación nueva
-    en enero no encontraría una liga 2026/27.
-  - La lectura SQL lee todas las huellas en cada publicación (hoy, pocas filas).
-  - Fechas: FGA no contrasta la fecha de la ficha con la del listado; la
-    `ventana` federativa se publica aunque el informe no esté completo y el
-    frontal no lo distingue.
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores
 
