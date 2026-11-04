@@ -288,6 +288,8 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
             actividades = atletismo_bloque.actividades(variantes)
             if actividades:
                 eventos[-1]['atletismo']['actividades'] = actividades
+            if atletismo_bloque.resultados_enlazados(variantes, (generado or datetime.now(timezone.utc).isoformat())[:10]):
+                eventos[-1]['atletismo']['resultados_enlazados'] = True
         # Unión por clave: las traducciones de una misma etiqueta suman nombres.
         etiquetas = {}
         for i in propias:

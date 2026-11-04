@@ -17,7 +17,7 @@ from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_calendario_pdf, atletismo_circulares, atletismo_coincidencias as coincidencias, atletismo_documentos, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_rfea, recogida
+from . import atletismo, atletismo_calendario_pdf, atletismo_circulares, atletismo_coincidencias as coincidencias, atletismo_documentos, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_relectura, atletismo_rfea, recogida
 
 
 # Ficha y documentos por cita, más meses y filtros: unas 300 en temporada alta.
@@ -518,7 +518,7 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
 
 
 def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=None, cache=None,
-            conocidas=(), observado=None, indice_circulares=None):
+            conocidas=(), observado=None, indice_circulares=None, relectura=None):
     max_peticiones = max_peticiones or (PRESUPUESTO_RFEA if fuente == 'rfea' else 200)
     if fuente not in LECTORES or not 1 <= max_peticiones <= 500:
         raise ValueError('Fuente o presupuesto de atletismo desconocidos')
@@ -628,6 +628,10 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         informe['circulares'] = {'observado': indice_circulares['observado'],
             'superficies': indice_circulares['superficies'],
             'asociaciones': atletismo_circulares.enlazar(entrada['eventos'], indice_circulares)}
+    if relectura is not None and fuente in atletismo_relectura.CUPOS and bloqueo is None and not informe.get('conservar_lectura'):
+        excluidas = {*relectura['retiradas'], *(str(e['id']) for e in entrada['eventos'])}
+        informe['relectura'] = atletismo_relectura.leer(fuente, conocidas, relectura['comprobadas'], excluidas,
+            date.today(), obtener, observado or datetime.now(timezone.utc).isoformat(timespec='microseconds'))
     if bloqueo is not None:
         informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[])
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
@@ -750,9 +754,12 @@ def main(argv=None):
         calendario = ampliar(anterior)
         conocidas = [c for c in coincidencias.actuales(calendario['nucleo'])
                      if c['fuente'] == args.fuente and not c['id'].startswith('nivel-ii:')]
+        previa = calendario['nucleo'].get('fuentes', {}).get(args.fuente) or {}
         entrada, informe = recoger(args.fuente, desde.isoformat(), hasta.isoformat(), cache=args.cache,
                                    conocidas=conocidas, observado=observado,
-                                   indice_circulares=json.loads(Path(args.indice_circulares).read_text()) if args.indice_circulares else None)
+                                   indice_circulares=json.loads(Path(args.indice_circulares).read_text()) if args.indice_circulares else None,
+                                   relectura={'comprobadas': previa.get('relectura', {}),
+                                              'retiradas': (previa.get('ausencias') or {}).get('ids', {})})
         if informe.get('conservar_lectura'):
             return calendario, informe
         n = atletismo.importar(calendario['nucleo'], entrada, observado)
@@ -770,6 +777,11 @@ def main(argv=None):
             informe['nivel_ii'] = informe_ii
             informe['completo'] = informe['completo'] and informe_ii['completo']
         n = atletismo.registrar_ausencias(n, args.fuente, informe.get('ausencias'))
+        relectura = informe.get('relectura')
+        n = atletismo.anadir_documentos(n, args.fuente, relectura['hallados'] if relectura else {}, observado)
+        # Importar rehace la fuente: como la ventana, se anota después.
+        if comprobadas := (relectura.pop('comprobadas') if relectura else previa.get('relectura')):
+            n['fuentes'][args.fuente]['relectura'] = comprobadas
         # Literal nuevo: se avisa para ampliar la tabla; no hace incompleta la lectura.
         informe['modalidades_desconocidas'] = sorted({x for e in leidas
                                                       for x in atletismo_modalidades.de(e.get('metadatos'))[1]})
@@ -824,6 +836,8 @@ def main(argv=None):
                       **({'resultados': {'verificados': informe['resultados']['verificados'],
                                          'descartados': len(informe['resultados']['descartados'])}}
                          if 'resultados' in informe else {}),
+                      **({'relectura': {k: informe['relectura'][k] for k in ('candidatas', 'leidas', 'fallidas')}
+                         | {'hallados': len(informe['relectura']['hallados'])}} if 'relectura' in informe else {}),
                       **({'modalidades_desconocidas': informe['modalidades_desconocidas']}
                          if informe.get('modalidades_desconocidas') else {})}, ensure_ascii=False))
     if error := informe.get('nivel_ii', {}).get('error'):
