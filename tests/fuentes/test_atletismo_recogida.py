@@ -21,10 +21,12 @@ class RecogidaAtletismo(unittest.TestCase):
         # La muestra contiene la lista completa de páginas.
         if isinstance(paginas, dict):
             paginas = paginas['paginas']
-        with patch.object(r.recogida, 'descargar', side_effect=[json.dumps(p) for p in paginas]):
-            entrada, informe = r.recoger('fca', '2026-11-01', '2026-12-31')
+        api = iter(paginas)
+        entrada, informe = r.recoger('fca', '2026-11-01', '2026-12-31', descargar=lambda url: (
+            json.dumps(next(api)) if 'wp-json' in url else '<html></html>'))
         self.assertEqual(len(entrada['eventos']), 53)
-        self.assertEqual(informe['peticiones'], 2)
+        self.assertEqual(informe['peticiones'], 55)  # Dos páginas de API y una ficha por cita.
+        self.assertEqual(len(informe['fichas']['fallidas']), 53)
         self.assertTrue(informe['completo'])
         with self.assertRaisesRegex(ValueError, 'presupuesto'):
             r.recoger('fca', '2026-11-01', '2026-12-31', max_peticiones=1,

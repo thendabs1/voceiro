@@ -17,7 +17,7 @@ from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_calendario_pdf, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, recogida
+from . import atletismo, atletismo_calendario_pdf, atletismo_fca, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, recogida
 
 
 def meses(desde, hasta):
@@ -111,23 +111,46 @@ def rfea(desde, hasta, obtener):
 
 
 def cataluna(desde, hasta, obtener):
+    fca = atletismo_fca
     base = 'https://fcatletisme.cat/wp-json/tribe/events/v1/events'
     parametros = {'start_date': desde.isoformat(), 'end_date': hasta.isoformat(), 'per_page': 100}
-    paginas, urls = [], []
+    paginas, urls, superficies = [], [], []
+
+    def terminar(eventos):
+        return {'version': 1, 'fuente': 'fca', 'eventos': eventos}, {
+            'consultas': urls, 'superficies': superficies, 'completo': True,
+            'avisos': fca.avisos(eventos),
+            'pendientes': [], 'pendientes_superficies': [
+                {'superficie': 'documento', 'motivo': 'reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic fuera de esta lectura'},
+                {'superficie': 'calendario', 'motivo': 'Tribe no publica la columna de calendario; no se deduce de las categorías'}]}
     for numero in range(1, 101):
         url = base + '?' + urlencode({**parametros, 'page': numero})
         p = json.loads(obtener(url))
-        if not isinstance(p, dict) or type(p.get('total_pages')) is not int:
+        if (not isinstance(p, dict) or type(p.get('total_pages')) is not int
+                or type(p.get('total')) is not int or p['total'] < 0
+                or not 0 <= p['total_pages'] <= 100 or not isinstance(p.get('events'), list)):
             raise ValueError('FCA sin paginación acreditada')
+        if paginas and (p['total'], p['total_pages']) != (paginas[0]['total'], paginas[0]['total_pages']):
+            raise ValueError('La paginación catalana cambió durante la lectura')
+        if p['total_pages'] == 0 and (p['total'] != 0 or p['events']):
+            raise ValueError('FCA sin paginación acreditada')
+        ids = [str(e['id']) for e in p['events']]
+        vistos = {i for s in superficies for i in s['ids_observados']}
+        if len(set(ids)) != len(ids) or vistos.intersection(ids):
+            raise ValueError('Página catalana repetida')
         urls.append(url)
         paginas.append(p)
+        superficies.append({'superficie': 'api',
+            'ventana': {'inicio': desde.isoformat(), 'fin': hasta.isoformat()},
+            'filtros': {**parametros, 'page': numero}, 'consultas': [url],
+            'ids_observados': ids, 'ids_resueltos': ids, 'estado': 'completa'})
         if p['total_pages'] == 0 and p.get('total') == 0 and p.get('events') == []:
             if numero != 1:
                 raise ValueError('FCA cambió el total entre páginas')
-            return {'version': 1, 'fuente': 'fca', 'eventos': []}, {'consultas': urls, 'completo': True, 'pendientes': []}
+            return terminar([])
         if numero == p['total_pages']:
             eventos = atletismo.leer_cataluna(paginas)
-            return {'version': 1, 'fuente': 'fca', 'eventos': eventos}, {'consultas': urls, 'completo': True, 'pendientes': []}
+            return terminar(eventos)
     raise ValueError('FCA excede el límite de cien páginas')
 
 
@@ -460,7 +483,8 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
         if fuente == 'fga' and descargar is None and ultimo_fin_fga is not None:
             time.sleep(max(0, 2.5 - (time.monotonic() - ultimo_fin_fga)))
         documento_rfea = fuente == 'rfea' and (binario or '/communication-hub/circulares' in url)
-        if (ficha or documento_rfea or fuente == 'wa' and peticiones > 1) and descargar is None:
+        ficha_fca = fuente == 'fca' and '/event/' in url
+        if (ficha or documento_rfea or ficha_fca or fuente == 'wa' and peticiones > 1) and descargar is None:
             time.sleep(1)  # Sin reintentos: un 429 interrumpe la fuente.
         if fuente == 'wa':
             consultas_wa.append(url)
@@ -491,6 +515,9 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
                         else LECTORES[fuente](desde, hasta, obtener))
     informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
                                observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
+    if fuente == 'fca':
+        informe['fichas'] = atletismo_fca.completar_fichas(entrada['eventos'], obtener, conocidas)
+        informe.setdefault('avisos', []).extend(informe['fichas']['fallidas'])
     if fuente == 'rfea':
         informe['calendario_pdf'] = calendario_pdf(entrada, desde, hasta, obtener, conocidas)
         informe['calendario_pdf'].update(peticiones_indice=sum(not b for _, b in memoria),
