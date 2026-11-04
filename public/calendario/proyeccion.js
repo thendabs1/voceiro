@@ -1,7 +1,7 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=c671dbf86a';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=c671dbf86a';
-import { sumarDisponibilidad } from './consulta.js?v=c671dbf86a';
+import { palabrasDe } from '../busqueda/texto.js?v=ea52ef898b';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=ea52ef898b';
+import { sumarDisponibilidad } from './consulta.js?v=ea52ef898b';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -80,6 +80,8 @@ export function prepararLectura(datos) {
     if (e.precio) tarjeta.precio = e.precio;
     // Atletismo: modalidad común (publicacion.py); sin clave cuando no hay.
     if (e.atletismo?.modalidades?.length) tarjeta.modalidades = e.atletismo.modalidades;
+    // Enlace oficial, no un resultado estructurado: no activa `resultado_disponible`.
+    if (e.atletismo?.resultados_enlazados) tarjeta.resultados_enlazados = true;
     if (e.programa?.length) tarjeta.tiene_programa = true;
     const propias = new Set(objetivos.flatMap(o => o.temas || []).flatMap(t => raicesDe(t)));
     const categoria = ordenRaices.find(r => propias.has(r));
