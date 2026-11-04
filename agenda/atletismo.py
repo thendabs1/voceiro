@@ -117,6 +117,7 @@ def leer_rfea(mes, respuesta, fichas, *, urls=None):
     como capturas de revisión hasta completar los extremos.
     """
     primero = date.fromisoformat(mes + '-01')
+    from .atletismo_rfea import leer_ficha  # Aquí: ese módulo importa este.
     comandos = [c for c in respuesta if c.get('selector') == '#calendar_container' and c.get('command') == 'insert']
     if len(comandos) != 1:
         raise ValueError('Respuesta RFEA sin calendario inequívoco')
@@ -144,17 +145,10 @@ def leer_rfea(mes, respuesta, fichas, *, urls=None):
                 raise ValueError('Ficha RFEA sin championship ID')
             i = m[1]
             if i not in eventos:
-                enlaces = [{'nombre': texto(x), 'url': urljoin(url, x['href'])}
-                           for x in ficha.select('a.c_e_link[href]')
-                           if urlparse(urljoin(url, x['href'])).scheme == 'https']
+                metadatos = leer_ficha(fichas[url], url=url)['metadatos']
                 eventos[i] = {'id': i, 'nombre': texto(a.select_one('.event__title')), 'url': url,
                     'dias_observados': [], 'lugar': {'nombre': texto(a.select_one('.event__location'))},
-                    'metadatos': {'modalidad_literal': texto(a.select_one('.event__discipline')),
-                        'area_literal': texto(ficha.select_one('.c_e_area')),
-                        'categoria_literal': texto(ficha.select_one('.c_e_cat')),
-                        'fecha_literal': texto(ficha.select_one('.c_e_date')),
-                        'enlaces_ficha': enlaces,
-                        'sfid': sorted({x['data-sfid'] for x in ficha.select('[data-sfid]')})}}
+                    'metadatos': {'modalidad_literal': texto(a.select_one('.event__discipline')), **metadatos}}
             eventos[i]['dias_observados'].append(fecha)
     return list(eventos.values())
 

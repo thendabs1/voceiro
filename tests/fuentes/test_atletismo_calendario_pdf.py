@@ -173,7 +173,7 @@ class RecogidaCalendarioPDF(unittest.TestCase):
         e, obtener, llamadas = self.preparar()
         entrada = {'version': 1, 'fuente': 'rfea', 'eventos': [e]}
         proceso = subprocess.CompletedProcess([], 0, stdout=TEXTO)
-        with patch.dict(r.LECTORES, rfea=lambda *a: (deepcopy(entrada), {'completo': True, 'pendientes': []})), \
+        with patch.dict(r.LECTORES, rfea=lambda *a, **kw: (deepcopy(entrada), {'completo': True, 'pendientes': []})), \
                 patch.object(r.subprocess, 'run', return_value=proceso):
             primera, informe = r.recoger('rfea', '2026-11-01', '2026-12-31', descargar=obtener)
             n = atletismo.importar(None, primera, AHORA)
@@ -200,7 +200,7 @@ class RecogidaCalendarioPDF(unittest.TestCase):
         e, obtener, llamadas = self.preparar()
         e['inicio'] = e['fin'] = '2027-01-10'
         entrada = {'version': 1, 'fuente': 'rfea', 'eventos': [e]}
-        with patch.dict(r.LECTORES, rfea=lambda *a: (entrada, {'completo': True, 'pendientes': []})):
+        with patch.dict(r.LECTORES, rfea=lambda *a, **kw: (entrada, {'completo': True, 'pendientes': []})):
             _, informe = r.recoger('rfea', '2026-12-01', '2027-01-31', descargar=obtener)
         self.assertTrue(informe['completo'])
         self.assertEqual(informe['calendario_pdf']['consultas_pdf'], [])
@@ -213,7 +213,7 @@ class RecogidaCalendarioPDF(unittest.TestCase):
         n = atletismo.importar(None, pagina, AHORA)
         entrada = deepcopy(pagina)
         entrada['eventos'][0]['metadatos'].pop('calendarios')
-        with patch.dict(r.LECTORES, rfea=lambda *a: (entrada, {'completo': True, 'pendientes': []})):
+        with patch.dict(r.LECTORES, rfea=lambda *a, **kw: (entrada, {'completo': True, 'pendientes': []})):
             leida, informe = r.recoger('rfea', '2026-11-01', '2026-12-31', descargar=obtener,
                                       conocidas=c.actuales(n))
         otra = atletismo.importar(n, leida, OTRA)
