@@ -28,7 +28,8 @@ def huella(caso):
                    if k not in ('veredicto', 'revision_identidad')}
     datos = {'motivo': caso['motivo'], 'comparacion': comparacion or caso.get('comparacion'), 'citas': [
         {k: e.get(k) for k in ('fuente', 'id', 'nombre', 'inicio', 'fin', 'url', 'lugar')}
-        | {'modalidades': sorted(coincidencias.modalidades(e)), 'enlaces': sorted(coincidencias.enlaces(e))}
+        | {'modalidades': sorted(coincidencias.modalidades(e)), 'enlaces': sorted(coincidencias.enlaces(e)),
+           'alcance': coincidencias.alcance(e), 'dias': sorted(coincidencias.dias(e))}
         for e in caso['citas']]}
     return sha256(json.dumps(datos, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:24]
 
