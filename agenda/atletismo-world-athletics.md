@@ -28,7 +28,9 @@ ediciones cambian de ID cada año. `rankingCategory` va literal en `calendarios[
 Con `hasResults` se comprueba `/competition/calendar-results/results/{id}` y solo
 se publica un documento `resultados` si la página responde y acredita ese ID. Un
 403 o 429 interrumpe la fuente; otro fallo deja la cita sin enlace y consta en
-`informe.resultados`. «Campeonatos» es una colección nuestra, no una serie de WA.
+`informe.resultados`. «Campeonatos» es una colección nuestra, no una serie de WA;
+en producción conserva la clase `circuito` con la que nació, porque la clase de una
+identidad no cambia y nada filtra por ella (las facetas usan `codigo_consulta`).
 Una cita ausente se busca por su ID en el mismo grupo y una ventana ampliada
 un año a cada lado; puede reaparecer con nuevas fechas o dejar de publicarse
 como ausencia. Un 429 interrumpe la recogida y deja `Retry-After` en el

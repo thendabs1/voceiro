@@ -749,6 +749,9 @@ def main(argv=None):
                       **({'calendario_pdf': {k: v for k, v in informe['calendario_pdf'].items()
                                              if k in ('automaticas', 'a_revision', 'sin_fila', 'avisos')}}
                          if 'calendario_pdf' in informe else {}),
+                      **({'resultados': {'verificados': informe['resultados']['verificados'],
+                                         'descartados': len(informe['resultados']['descartados'])}}
+                         if 'resultados' in informe else {}),
                       **({'modalidades_desconocidas': informe['modalidades_desconocidas']}
                          if informe.get('modalidades_desconocidas') else {})}, ensure_ascii=False))
     if error := informe.get('nivel_ii', {}).get('error'):

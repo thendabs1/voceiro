@@ -231,6 +231,13 @@ class Coincidencias(unittest.TestCase):
                 n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': eventos}, AHORA)
                 self.assertEqual(c.incidencias(n), [])
 
+    def test_id_retirado_por_la_fuente_no_es_un_duplicado(self):
+        cita = lambda i: entrada('fca', i, nombre='Samarkand Marathon', lugar={'nombre': 'Samarkand'})['eventos'][0]
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': [cita('a'), cita('b')]}, AHORA)
+        n = atletismo.registrar_ausencias(n, 'fca', [{'id': 'a', 'url': 'https://fcatletisme.cat/x', 'comprobado': AHORA,
+                                                       'motivo': 'no aparece en la reconsulta amplia'}])
+        self.assertEqual(c.incidencias(n), [])
+
     def test_compartir_enlace_no_oculta_un_duplicado_de_la_misma_fuente(self):
         url = 'https://atletismorfea.es/calendario/campeonato/prueba'
         p = entrada('fca', 'a', metadatos={'web_organizador': url})

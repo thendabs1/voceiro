@@ -261,6 +261,7 @@ def incidencias(n):
     Entre fuentes, identidades distintas o discrepancias de una ya compartida.
     Dentro de una fuente, que nunca se une sola, solo lo que parece un duplicado.
     """
+    ausentes = {(f, i) for f, d in n['fuentes'].items() for i in (d.get('ausencias') or {}).get('ids', {})}
     conocidos = actuales(n)
     salida = {}
     for pos, a in enumerate(conocidos):
@@ -272,6 +273,9 @@ def incidencias(n):
                 # Dos lecturas de una referencia no son dos registros, y dentro
                 # de una fuente compartir enlace no identifica ni distingue.
                 if a['referencia'] == b['referencia']:
+                    continue
+                # Un ID retirado por la fuente no es un duplicado: la sustituyó otro.
+                if {(a['fuente'], a['id']), (b['fuente'], b['id'])} & ausentes:
                     continue
                 comparacion = comparar(a, b, por_enlace=False)
                 if a['destino'] == b['destino'] or posible_duplicado(comparacion):
