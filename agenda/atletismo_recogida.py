@@ -17,7 +17,7 @@ from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_calendario_pdf, atletismo_coincidencias as coincidencias, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_rfea, recogida
+from . import atletismo, atletismo_calendario_pdf, atletismo_circulares, atletismo_coincidencias as coincidencias, atletismo_documentos, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_rfea, recogida
 
 
 # Ficha y documentos por cita, más meses y filtros: unas 300 en temporada alta.
@@ -518,18 +518,24 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
 
 
 def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=None, cache=None,
-            conocidas=(), observado=None):
+            conocidas=(), observado=None, indice_circulares=None):
     max_peticiones = max_peticiones or (PRESUPUESTO_RFEA if fuente == 'rfea' else 200)
     if fuente not in LECTORES or not 1 <= max_peticiones <= 500:
         raise ValueError('Fuente o presupuesto de atletismo desconocidos')
     desde, hasta = ventana(inicio, fin)
+    if indice_circulares is not None and (indice_circulares.get('version') != 1
+            or not indice_circulares.get('completo') or indice_circulares.get('fuente') != fuente):
+        raise ValueError('Índice de circulares incompleto o de otra fuente')
     peticiones = 0
     consultas_wa = []
     memoria = {}
     ultimo_fin = None
+    bloqueo = None
 
     def obtener(url, *, binario=False):
-        nonlocal peticiones, ultimo_fin
+        nonlocal peticiones, ultimo_fin, bloqueo
+        if bloqueo is not None:
+            raise bloqueo
         clave = (url, binario)
         if clave in memoria:
             guardada = memoria[clave]
@@ -550,11 +556,9 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         if peticiones >= max_peticiones:
             raise ValueError('Atletismo agotó su presupuesto; no se importa una recogida parcial')
         peticiones += 1
-        if fuente in ('fga', 'rfea') and descargar is None and ultimo_fin is not None:
-            pausa = 2.5 if fuente == 'fga' else 1
-            time.sleep(max(0, pausa - (time.monotonic() - ultimo_fin)))
-        ficha_fca = fuente == 'fca' and '/event/' in url
-        if (ficha_fca or fuente == 'wa' and peticiones > 1) and descargar is None:
+        if fuente in ('fga', 'rfea', 'fca') and descargar is None and ultimo_fin is not None:
+            time.sleep(max(0, 2.5 - (time.monotonic() - ultimo_fin)))
+        if fuente == 'wa' and peticiones > 1 and descargar is None:
             time.sleep(1)  # Sin reintentos: un 429 interrumpe la fuente.
         if fuente == 'wa':
             consultas_wa.append(url)
@@ -562,15 +566,17 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
             html = ((descargar or recogida.descargar)(url, binario=True) if binario
                     else (descargar or recogida.descargar)(url))
         except Exception as error:
-            if fuente in ('fga', 'rfea'):
+            if isinstance(error, HTTPError) and error.code in (403, 429):
+                bloqueo = error
+            if fuente in ('fga', 'rfea', 'fca'):
                 memoria[clave] = error
             if fuente == 'wa' and isinstance(error, HTTPError):
                 error.wa_consultas = consultas_wa[:]
             raise
         finally:
-            if fuente in ('fga', 'rfea'):
+            if fuente in ('fga', 'rfea', 'fca'):
                 ultimo_fin = time.monotonic()
-        if fuente in ('fga', 'rfea'):
+        if fuente in ('fga', 'rfea', 'fca'):
             memoria[clave] = html
         if archivo:
             s = BeautifulSoup(html, 'html.parser')
@@ -589,30 +595,49 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
     if fuente == 'fca':
         informe['fichas'] = atletismo_fca.completar_fichas(entrada['eventos'], obtener, conocidas)
         informe.setdefault('avisos', []).extend(informe['fichas']['fallidas'])
+    if fuente in ('rfea', 'fca') and bloqueo is None:
+        try:
+            informe['documentos_revisados'] = atletismo_documentos.completar(fuente, entrada['eventos'], obtener)
+            informe.setdefault('avisos', []).extend(informe['documentos_revisados']['avisos'])
+        except HTTPError as error:
+            if error.code not in (403, 429):
+                raise
+            informe['documentos_revisados'] = error.documentos_revisados
+            informe.setdefault('avisos', []).extend(error.documentos_revisados['avisos'])
+            informe.setdefault('avisos', []).append({'motivo': f'HTTP {error.code}; lectura documental detenida'})
+    if bloqueo is not None:
+        informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[])
     if fuente == 'wa':
         informe['resultados'] = wa_resultados(entrada['eventos'], obtener)
     if fuente == 'rfea' and informe.get('bloqueada'):
         # La fuente pidió parar: no se le piden más documentos en esta pasada.
         atletismo_calendario_pdf.conservar(entrada['eventos'], conocidas)
     elif fuente == 'rfea':
-        informe['calendario_pdf'] = calendario_pdf(entrada, desde, hasta, obtener, conocidas)
+        informe['calendario_pdf'] = calendario_pdf(entrada, desde, hasta, obtener, conocidas,
+            entradas=indice_circulares['entradas'] if indice_circulares is not None else None)
         informe['calendario_pdf'].update(peticiones_indice=sum(not b and '/communication-hub/circulares' in u for u, b in memoria),
-                                         peticiones_pdf=sum(b for _, b in memoria))
+            peticiones_pdf=sum(b and u in informe['calendario_pdf']['consultas_pdf'] for u, b in memoria))
         informe['completo'] = informe['completo'] and informe['calendario_pdf']['completo']
     if fuente == 'rfea':
         for e in entrada['eventos']:
             if 'fuente' in e.get('metadatos', {}):
                 atletismo_rfea.relacion(e)
+    if indice_circulares is not None:
+        informe['circulares'] = {'observado': indice_circulares['observado'],
+            'superficies': indice_circulares['superficies'],
+            'asociaciones': atletismo_circulares.enlazar(entrada['eventos'], indice_circulares)}
+    if bloqueo is not None:
+        informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[])
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
                       'peticiones': peticiones, 'citas': len(entrada['eventos']), **informe}
 
 
-def calendario_pdf(entrada, desde, hasta, obtener, conocidas=()):
+def calendario_pdf(entrada, desde, hasta, obtener, conocidas=(), *, entradas=None):
     """Informe independiente: un documento caído no invalida el mensual."""
     lector = atletismo_calendario_pdf
     informe = {'completo': True, 'consultas_indice': [], 'consultas_pdf': [], 'documentos': [],
                'automaticas': 0, 'a_revision': 0, 'sin_fila': 0, 'avisos': []}
-    entradas, url = [], lector.INDICE
+    entradas, url = ([], lector.INDICE) if entradas is None else (entradas, None)
     try:
         while url:
             if url in informe['consultas_indice'] or len(informe['consultas_indice']) >= 100:
@@ -711,6 +736,7 @@ def main(argv=None):
     ap.add_argument('--inicio')
     ap.add_argument('--fin')
     ap.add_argument('--informe', help='Informe JSON local de cobertura e incidencias')
+    ap.add_argument('--indice-circulares', help='Índice local completo; asocia solo URL enlazadas por ficha, sin red adicional')
     ap.add_argument('--cache', default=str(Path.home() / '.cache/voceiro/atletismo'),
                     help='Caché de fichas RFEA durante 24 horas; los meses se consultan siempre')
     args = ap.parse_args(argv)
@@ -723,12 +749,13 @@ def main(argv=None):
         conocidas = [c for c in coincidencias.actuales(calendario['nucleo'])
                      if c['fuente'] == args.fuente and not c['id'].startswith('nivel-ii:')]
         entrada, informe = recoger(args.fuente, desde.isoformat(), hasta.isoformat(), cache=args.cache,
-                                   conocidas=conocidas, observado=observado)
+                                   conocidas=conocidas, observado=observado,
+                                   indice_circulares=json.loads(Path(args.indice_circulares).read_text()) if args.indice_circulares else None)
         if informe.get('conservar_lectura'):
             return calendario, informe
         n = atletismo.importar(calendario['nucleo'], entrada, observado)
         leidas = list(entrada['eventos'])
-        if args.fuente == 'rfea':
+        if args.fuente == 'rfea' and not informe.get('bloqueada'):
             # Documento aparte: si falla, se guarda la lectura mensual y Nivel II
             # conserva su última lectura buena; el paso se señala como fallido.
             try:

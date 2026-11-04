@@ -144,5 +144,138 @@
       "2026-11-28"
     ],
     "sha256": "01eafd0bc4822ad058c74a77683fa980b90bbbbb8bc4004b42ef123d672713d3"
+  },
+  "https://atletismo.gal/wp-content/uploads/2026/10/Circular-180-2026.-Xornada-de-formacion-tecnica-de-especializacion-e-seguemento-de-marcha-atletica.pdf": {
+    "sha256": "eaea261271b67164008a76dd4dcf9ed10c2d77ff25ad988e6e6aa54421cd23f7",
+    "literal": "A Federación Galega de Atletismo (FGA) e a Real Federación Española de Atletismo (RFEA), no eido do Programa Nacional de Tecnificación Deportiva (PNTD) para 2026 da RFEA, coa colaboración coa universidade de Santiago, organizan a seguinte Xornada Técnica de Especialización e Seguemento de marcha atlética",
+    "localizador": "página 1, párrafo inicial y distribución horaria",
+    "citas": {
+      "121156": {
+        "alcance": {
+          "tipo": "jornada"
+        },
+        "actividad": {
+          "valor": "tecnificacion"
+        },
+        "organizacion": [
+          {
+            "rol": "coorganiza",
+            "entidad_literal": "Federación Galega de Atletismo (FGA)"
+          },
+          {
+            "rol": "coorganiza",
+            "entidad_literal": "Real Federación Española de Atletismo (RFEA)"
+          }
+        ],
+        "programa": [
+          {
+            "id": "teorica",
+            "nombre": "Sesión teórica",
+            "tipo_sesion": "tecnificacion",
+            "inicio": "2026-11-14",
+            "fin": "2026-11-14",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismo.gal/wp-content/uploads/2026/10/Circular-180-2026.-Xornada-de-formacion-tecnica-de-especializacion-e-seguemento-de-marcha-atletica.pdf",
+              "localizador": "página 1, Data y Distribución horaria da xornada",
+              "literal": "10:00 a 11:30 Sesión teórica"
+            }
+          },
+          {
+            "id": "practica-1",
+            "nombre": "Sesión práctica 1",
+            "tipo_sesion": "tecnificacion",
+            "inicio": "2026-11-14",
+            "fin": "2026-11-14",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismo.gal/wp-content/uploads/2026/10/Circular-180-2026.-Xornada-de-formacion-tecnica-de-especializacion-e-seguemento-de-marcha-atletica.pdf",
+              "localizador": "página 1, Data y Distribución horaria da xornada",
+              "literal": "11:30 a 13:00 Sesión práctica 1"
+            }
+          },
+          {
+            "id": "practica-2",
+            "nombre": "Sesión práctica 2",
+            "tipo_sesion": "tecnificacion",
+            "inicio": "2026-11-14",
+            "fin": "2026-11-14",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismo.gal/wp-content/uploads/2026/10/Circular-180-2026.-Xornada-de-formacion-tecnica-de-especializacion-e-seguemento-de-marcha-atletica.pdf",
+              "localizador": "página 1, Data y Distribución horaria da xornada",
+              "literal": "16:15 a 17:45 Sesión práctica 2"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "https://atletismo.gal/wp-content/uploads/2026/10/Circular-168-2026.-Cto-Xunta-de.-Galicia-Marcha-Inverno-2026.pdf": {
+    "sha256": "708f7d814034476bb05c1c935ca7910cc29a8a03878a77a18194f097bad02a4c",
+    "literal": "Art.1).- A Federación Galega de Atletismo organiza, o 21 de novembro nas pistas do CGTD (Pontevedra), o Campionato Xunta de Galicia de marcha en pista de inverno.",
+    "localizador": "página 1, artículo 1",
+    "citas": {
+      "112621": {
+        "actividad": {
+          "valor": "competicion",
+          "evidencia": {
+            "superficie": "documento",
+            "url": "https://atletismo.gal/wp-content/uploads/2026/10/Circular-168-2026.-Cto-Xunta-de.-Galicia-Marcha-Inverno-2026.pdf",
+            "localizador": "página 2, artículo 8",
+            "literal": "Os/as tres primeiros/as atletas clasificados/as das categorías Sub 10, Sub 12, Sub 14, Sub 16, Sub 18, Sub 20, Sub 23, Absoluta e as diferentes categorías Máster, recibirán unha medalla conmemorativa do Campionato, sendo de obrigado cumprimento acudir ao protocolo de entrega de premios."
+          }
+        },
+        "titulos": [
+          {
+            "literal": "Campionato Xunta de Galicia de marcha en pista de inverno",
+            "autoridad": "fga",
+            "base": "documento",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismo.gal/wp-content/uploads/2026/10/Circular-168-2026.-Cto-Xunta-de.-Galicia-Marcha-Inverno-2026.pdf",
+              "localizador": "página 1, artículo 1",
+              "literal": "Art.1).- A Federación Galega de Atletismo organiza, o 21 de novembro nas pistas do CGTD (Pontevedra), o Campionato Xunta de Galicia de marcha en pista de inverno."
+            }
+          }
+        ],
+        "organizacion": [
+          {
+            "rol": "organiza",
+            "entidad_literal": "Federación Galega de Atletismo",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismo.gal/wp-content/uploads/2026/10/Circular-168-2026.-Cto-Xunta-de.-Galicia-Marcha-Inverno-2026.pdf",
+              "localizador": "página 1, artículo 1",
+              "literal": "Art.1).- A Federación Galega de Atletismo organiza, o 21 de novembro nas pistas do CGTD (Pontevedra), o Campionato Xunta de Galicia de marcha en pista de inverno."
+            }
+          }
+        ],
+        "pendientes": [
+          "La cabecera menciona «I TROFEO CHAMOSA», pero el articulado no delimita su relación con el campeonato; alcance desconocido."
+        ]
+      }
+    }
+  },
+  "https://atletismo.gal/wp-content/uploads/2026/03/2026-11-21-vigo-serie-provincial-3-regulamento.pdf": {
+    "sha256": "46f4ef224f96d508df27e043f0865a06720c5a96b0f195d8af3d49e7329de3c4",
+    "literal": "Art.1) A Federación Galega de Atletismo, co patrocinio da Deputación Provincial de Pontevedra organiza a terceira xornada do Circuíto de Atletismo en Pista o día 21 de novembro de 2026 nas pistas do IFEVI (Vigo).",
+    "localizador": "página 1, artículo 1",
+    "citas": {
+      "120010": {
+        "alcance": {
+          "tipo": "jornada"
+        },
+        "organizacion": [
+          {
+            "rol": "organiza",
+            "entidad_literal": "Federación Galega de Atletismo"
+          }
+        ],
+        "pendientes": [
+          "El programa se rotula «HORARIO CONTROL 21/11/2026», sin una declaración de actividad en el articulado revisado; actividad desconocida."
+        ]
+      }
+    }
   }
 }

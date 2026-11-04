@@ -1,0 +1,98 @@
+{
+  "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/21/descarga": {
+    "sha256": "461cafa73aaf5b4b5d1891e3073aaf163e05f7cf43598b5e71d8d3bc329972ea",
+    "literal": "El Campeonato de España de Marcha de Invierno de Promoción se disputará en ruta junto con el Campeonato de España de 10 km marcha Master (este horario podrá sufrir cambio):",
+    "localizador": "página 3, artículo 5; artículo 1 en página 1",
+    "citas": {
+      "64834": {
+        "alcance": {
+          "tipo": "titulos"
+        },
+        "actividad": {
+          "valor": "competicion"
+        },
+        "titulos": [
+          {
+            "literal": "Campeonato de España de Marcha de Invierno de Promoción",
+            "autoridad": "rfea",
+            "base": "documento",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/21/descarga",
+              "localizador": "página 1, cabecera y artículo 1",
+              "literal": "La Real Federacion Española de Atletismo, en colaboración con la Federación Cántabra de Atletismo y el Ayuntamiento de Castro Urdiales, organizará el Campeonato de España de Marcha de Invierno de Promoción el domingo 13 de diciembre en Castro Urdiales (Cantabria)."
+            }
+          }
+        ],
+        "organizacion": [
+          {
+            "rol": "organiza",
+            "entidad_literal": "Real Federacion Española de Atletismo",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/21/descarga",
+              "localizador": "página 1, artículo 1",
+              "literal": "La Real Federacion Española de Atletismo, en colaboración con la Federación Cántabra de Atletismo y el Ayuntamiento de Castro Urdiales, organizará el Campeonato de España de Marcha de Invierno de Promoción el domingo 13 de diciembre en Castro Urdiales (Cantabria)."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/22/descarga": {
+    "sha256": "0108949f748f45f298eae4c1722f03b9d4f645dc5c532b7be83824d0e6957f29",
+    "literal": "Esta competición se celebrará juntamente con el Campeonato de España de Marcha de Invierno de Promoción. (este horario podrá sufrir cambio):",
+    "localizador": "página 3, artículo 5; artículo 1 en página 1",
+    "citas": {
+      "64834": {
+        "alcance": {
+          "tipo": "titulos"
+        },
+        "actividad": {
+          "valor": "competicion"
+        },
+        "titulos": [
+          {
+            "literal": "Campeonato de España de 10 km Marcha en Ruta para atletas Master",
+            "autoridad": "rfea",
+            "base": "documento",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/22/descarga",
+              "localizador": "página 1, cabecera y artículo 1",
+              "literal": "La Real Federación Española de Atletismo, en colaboración con la Federación Cántabra de Atletismo y el Ayuntamiento de Castro Urdiales, organizará el Campeonato de España de 10 km Marcha en Ruta para atletas Master en Castro Urdiales (Cantabria) el 13 de diciembre de 2026."
+            }
+          }
+        ],
+        "organizacion": [
+          {
+            "rol": "organiza",
+            "entidad_literal": "Real Federación Española de Atletismo",
+            "evidencia": {
+              "superficie": "documento",
+              "url": "https://atletismorfea.es/admin/ajax/rfea/documentos/rfea_norma/22/descarga",
+              "localizador": "página 1, artículo 1",
+              "literal": "La Real Federación Española de Atletismo, en colaboración con la Federación Cántabra de Atletismo y el Ayuntamiento de Castro Urdiales, organizará el Campeonato de España de 10 km Marcha en Ruta para atletas Master en Castro Urdiales (Cantabria) el 13 de diciembre de 2026."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "https://atletismorfea.es/sites/default/files/2026-09/160-2026%20Preselecci%C3%B3n%20espa%C3%B1ola%20para%20los%20Juegos%20Ol%C3%ADmpicos%20de%20la%20Juventud.pdf": {
+    "sha256": "7d81c61938981b4814d3d4fb62882b088e6789d91ddac52ddd2169b7af3e5d9e",
+    "literal": "El Seleccionador Nacional de la RFEA, en base a los criterios generales de preselección (Circular 111/2022) y condiciones de designación de plazas (Circular 072/2026) con el visto bueno de la Dirección Deportiva, ha preseleccionado para la competición de referencia a los siguientes atletas:",
+    "localizador": "página 1, párrafo inicial",
+    "citas": {
+      "65028": {
+        "actividad": {
+          "valor": "competicion"
+        },
+        "pendientes": [
+          "La circular de preselección no acredita el alcance del registro: Juegos completos o atletismo; no se enlaza como si fueran iguales.",
+          "La circular dice «Dakar (Senegal), 9 al 11 de noviembre de 2026»; la ficha conserva su intervalo de Juegos. No se modifica la fecha base."
+        ]
+      }
+    }
+  }
+}

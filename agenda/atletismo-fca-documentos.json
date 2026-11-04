@@ -1,0 +1,52 @@
+{
+  "https://fcatletisme.cat/wp-content/uploads/2026/10/reg-2026111415-controlcombinadesperapc.pdf": {
+    "sha256": "72579574bae9f431d52865220c8a9cbb7a96580d32fd0b3e1234a409e363a303",
+    "literal": "El Cornellà Atlètic, amb la col·laboració de l’Ajuntament de Cornellà de Llobregat, l’autorització de la Federació Catalana d’Atletisme i el control del Col·legi de Jutges de la FCA, organitza un control de proves combinades els dies 14 i 15 de novembre del 2026.",
+    "localizador": "página 1, párrafo inicial",
+    "citas": {
+      "89925": {
+        "actividad": {
+          "valor": "control"
+        },
+        "alcance": {
+          "tipo": "reunion"
+        },
+        "organizacion": [
+          {
+            "rol": "organiza",
+            "entidad_literal": "Cornellà Atlètic"
+          },
+          {
+            "rol": "autoriza",
+            "entidad_literal": "Federació Catalana d’Atletisme"
+          }
+        ]
+      }
+    }
+  },
+  "https://fcatletisme.cat/wp-content/uploads/2026/10/reg-2026111415-controlcurses.pdf": {
+    "sha256": "857c01e90a4e3416cf1c8359dfd4a0c9ff6adbc86d2d80630cbe49de5e09c6c0",
+    "literal": "El Cornellà Atlètic, amb la col·laboració de l’Ajuntament de Cornellà de Llobregat, l’autorització de la Federació Catalana d’Atletisme i el control del Col·legi de Jutges de la FCA, organitza un control de curses els dies 14 i 15 de novembre del 2026.",
+    "localizador": "página 1, párrafo inicial",
+    "citas": {
+      "89927": {
+        "actividad": {
+          "valor": "control"
+        },
+        "alcance": {
+          "tipo": "reunion"
+        },
+        "organizacion": [
+          {
+            "rol": "organiza",
+            "entidad_literal": "Cornellà Atlètic"
+          },
+          {
+            "rol": "autoriza",
+            "entidad_literal": "Federació Catalana d’Atletisme"
+          }
+        ]
+      }
+    }
+  }
+}

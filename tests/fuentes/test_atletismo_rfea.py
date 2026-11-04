@@ -111,6 +111,13 @@ class LectorRFEA(unittest.TestCase):
 
 
 class RecogidaRFEA(unittest.TestCase):
+    def setUp(self):
+        # Esta clase prueba el inventario/AJAX sin contenido documental. Las
+        # lecturas revisadas y sus bytes se ejercitan con capturas propias.
+        lectura = patch.object(r.atletismo_documentos, 'lecturas_documentales', return_value={})
+        lectura.start()
+        self.addCleanup(lectura.stop)
+
     def descarga(self, *, tecnica=False, acreditada=False, fallo=None, categoria=True):
         llamadas = []
         def descargar(url, *, binario=False):

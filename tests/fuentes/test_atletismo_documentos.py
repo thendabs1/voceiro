@@ -4,6 +4,7 @@ from hashlib import sha256
 import json
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
 
 from bs4 import BeautifulSoup
 
@@ -76,6 +77,16 @@ class DocumentosFGA(unittest.TestCase):
         x = f.leer_ficha(html('fga-0101-813fd655cc9a.html'))
         self.assertEqual(x['programa'], [])
         self.assertEqual(x['metadatos']['actividad'], {'valor': 'desconocida'})
+
+    def test_proteccion_del_pdf_detiene_fga_y_conserva_la_lectura_anterior(self):
+        for codigo in (403, 429):
+            entrada, informe, llamadas = self.recogida(HTTPError('https://atletismo.gal/control.pdf', codigo, 'límite', {}, None))
+            self.assertEqual(entrada['eventos'], [])
+            self.assertTrue(informe['conservar_lectura'])
+            self.assertFalse(informe['aplicar_ausencias'])
+            self.assertEqual(len([u for u, binario in llamadas if binario]), 1)
+            self.assertTrue(llamadas[-1][1])
+            self.assertEqual(informe['documentos_revisados']['superficies'][0]['estado'], 'fallida')
 
     def test_sesiones_99497_sin_circulares_no_se_publican_y_pueden_volver(self):
         e = evento_de_ficha('fga-0101-813fd655cc9a.html')

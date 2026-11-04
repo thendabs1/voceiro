@@ -250,7 +250,8 @@ def importar(anterior, pagina, observado):
             a.evento('sesion', externo,
                 'sesion', s.get('nombre'), cuando, padre=grupo,
                 sitio=s.get('lugar') or e.get('lugar'), url=enlace(fuente, s.get('url') or e['url']),
-                bloques={'agenda': {'rol': 'sesion', 'principal': principal,
+                bloques={**({'atletismo': {'evidencia': s['evidencia']}} if 'evidencia' in s else {}),
+                    'agenda': {'rol': 'sesion', 'principal': principal,
                     'tipo_sesion': deporte.literal(s.get('tipo_sesion'), 'tipo de sesión')}})
         # Solo se reconcilia el programa de esta publicación y esta fuente.
         for tipo, contexto, externo in a.referencias:
