@@ -13,13 +13,15 @@ import subprocess
 import tempfile
 import time
 from urllib.error import HTTPError
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 
-from . import atletismo, atletismo_calendario_pdf, atletismo_fca, atletismo_coincidencias as coincidencias, atletismo_modalidades, atletismo_nivel_ii, recogida
+from . import atletismo, atletismo_calendario_pdf, atletismo_coincidencias as coincidencias, atletismo_fca, atletismo_modalidades, atletismo_nivel_ii, atletismo_rfea, recogida
 
 
+# Ficha y documentos por cita, más meses y filtros: unas 300 en temporada alta.
+PRESUPUESTO_RFEA = 400
 WA_ESTADOS = {'Cancelled': 'cancelado', 'Postponed': 'aplazado'}
 WA_JUEGOS = (5, 329)
 WA_RESULTADOS = 'https://worldathletics.org/competition/calendar-results/results/'
@@ -40,14 +42,18 @@ def ventana(inicio, fin):
     return desde, hasta
 
 
-def rfea(desde, hasta, obtener):
+def rfea(desde, hasta, obtener, *, conocidas=()):
+    return atletismo_rfea.recoger(desde, hasta, obtener, conocidas=conocidas)
+
+
+def _rfea_mensual(desde, hasta, obtener, *, tipo='Deportivo', categoria='0', adyacentes=True):
     base = atletismo.FUENTES['rfea'][1]
     portada = BeautifulSoup(obtener(base), 'html.parser')
     temporadas = {o.get_text(strip=True): o.get('value')
                   for o in portada.select('.calendar-field-season option')}
     # Los meses adyacentes acreditan los extremos, incluso al cambiar de año.
-    inicio = (desde.replace(day=1) - timedelta(days=1)).replace(day=1)
-    fin = (hasta.replace(day=28) + timedelta(days=4)).replace(day=1)
+    inicio = ((desde.replace(day=1) - timedelta(days=1)).replace(day=1) if adyacentes else desde.replace(day=1))
+    fin = ((hasta.replace(day=28) + timedelta(days=4)).replace(day=1) if adyacentes else hasta.replace(day=1))
     consultas, fichas, datos, respuestas, seleccionadas = {}, {}, {}, {}, set()
     for _ in range(12):
         for mes in meses(inicio, fin):
@@ -57,7 +63,7 @@ def rfea(desde, hasta, obtener):
             if not temporada or not str(temporada).isdigit():
                 raise ValueError(f'RFEA no publica la temporada {mes.year} necesaria para comprobar extremos')
             timestamp = int(datetime(mes.year, mes.month, 1, tzinfo=timezone.utc).timestamp())
-            url = f'https://atletismorfea.es/ajax/calendario/{timestamp}/Deportivo/0/0/0/0/{temporada}/0/0/0'
+            url = f'https://atletismorfea.es/ajax/calendario/{timestamp}/{quote(tipo)}/0/0/0/{categoria}/{temporada}/0/0/0'
             respuesta = json.loads(obtener(url))
             if not isinstance(respuesta, list):
                 raise ValueError('RFEA no devuelve comandos Drupal')
@@ -417,7 +423,7 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
     lectura trae menos de la mitad de lo conocido (al menos cinco ausentes),
     se trata como lectura rota: falla sin retirar nada.
     """
-    if fuente == 'fga' and not informe.get('aplicar_ausencias', True):
+    if fuente in ('fga', 'rfea') and not informe.get('aplicar_ausencias', True):
         return {'ausencias': [], 'reimportadas': []}
     leidas = {str(x['id']) for x in (*entrada['eventos'], *informe['pendientes'], *entrada.get('agrupaciones', []))}
     pendientes = {str(x['id']): x for x in informe['pendientes']}
@@ -511,18 +517,19 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
     return {'ausencias': ausencias, 'reimportadas': reimportadas}
 
 
-def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200, cache=None,
+def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=None, cache=None,
             conocidas=(), observado=None):
+    max_peticiones = max_peticiones or (PRESUPUESTO_RFEA if fuente == 'rfea' else 200)
     if fuente not in LECTORES or not 1 <= max_peticiones <= 500:
         raise ValueError('Fuente o presupuesto de atletismo desconocidos')
     desde, hasta = ventana(inicio, fin)
     peticiones = 0
     consultas_wa = []
     memoria = {}
-    ultimo_fin_fga = None
+    ultimo_fin = None
 
     def obtener(url, *, binario=False):
-        nonlocal peticiones, ultimo_fin_fga
+        nonlocal peticiones, ultimo_fin
         clave = (url, binario)
         if clave in memoria:
             guardada = memoria[clave]
@@ -543,11 +550,11 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
         if peticiones >= max_peticiones:
             raise ValueError('Atletismo agotó su presupuesto; no se importa una recogida parcial')
         peticiones += 1
-        if fuente == 'fga' and descargar is None and ultimo_fin_fga is not None:
-            time.sleep(max(0, 2.5 - (time.monotonic() - ultimo_fin_fga)))
-        documento_rfea = fuente == 'rfea' and (binario or '/communication-hub/circulares' in url)
+        if fuente in ('fga', 'rfea') and descargar is None and ultimo_fin is not None:
+            pausa = 2.5 if fuente == 'fga' else 1
+            time.sleep(max(0, pausa - (time.monotonic() - ultimo_fin)))
         ficha_fca = fuente == 'fca' and '/event/' in url
-        if (ficha or documento_rfea or ficha_fca or fuente == 'wa' and peticiones > 1) and descargar is None:
+        if (ficha_fca or fuente == 'wa' and peticiones > 1) and descargar is None:
             time.sleep(1)  # Sin reintentos: un 429 interrumpe la fuente.
         if fuente == 'wa':
             consultas_wa.append(url)
@@ -555,15 +562,15 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
             html = ((descargar or recogida.descargar)(url, binario=True) if binario
                     else (descargar or recogida.descargar)(url))
         except Exception as error:
-            if fuente == 'fga' or documento_rfea:
+            if fuente in ('fga', 'rfea'):
                 memoria[clave] = error
             if fuente == 'wa' and isinstance(error, HTTPError):
                 error.wa_consultas = consultas_wa[:]
             raise
         finally:
-            if fuente == 'fga':
-                ultimo_fin_fga = time.monotonic()
-        if fuente == 'fga' or documento_rfea:
+            if fuente in ('fga', 'rfea'):
+                ultimo_fin = time.monotonic()
+        if fuente in ('fga', 'rfea'):
             memoria[clave] = html
         if archivo:
             s = BeautifulSoup(html, 'html.parser')
@@ -575,6 +582,7 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
         return html
 
     entrada, informe = (galicia(desde, hasta, obtener, conocidas=conocidas) if fuente == 'fga'
+                        else LECTORES[fuente](desde, hasta, obtener, conocidas=conocidas) if fuente == 'rfea'
                         else LECTORES[fuente](desde, hasta, obtener))
     informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
                                observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
@@ -583,11 +591,18 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=200
         informe.setdefault('avisos', []).extend(informe['fichas']['fallidas'])
     if fuente == 'wa':
         informe['resultados'] = wa_resultados(entrada['eventos'], obtener)
-    if fuente == 'rfea':
+    if fuente == 'rfea' and informe.get('bloqueada'):
+        # La fuente pidió parar: no se le piden más documentos en esta pasada.
+        atletismo_calendario_pdf.conservar(entrada['eventos'], conocidas)
+    elif fuente == 'rfea':
         informe['calendario_pdf'] = calendario_pdf(entrada, desde, hasta, obtener, conocidas)
-        informe['calendario_pdf'].update(peticiones_indice=sum(not b for _, b in memoria),
+        informe['calendario_pdf'].update(peticiones_indice=sum(not b and '/communication-hub/circulares' in u for u, b in memoria),
                                          peticiones_pdf=sum(b for _, b in memoria))
         informe['completo'] = informe['completo'] and informe['calendario_pdf']['completo']
+    if fuente == 'rfea':
+        for e in entrada['eventos']:
+            if 'fuente' in e.get('metadatos', {}):
+                atletismo_rfea.relacion(e)
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
                       'peticiones': peticiones, 'citas': len(entrada['eventos']), **informe}
 

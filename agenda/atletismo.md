@@ -8,8 +8,9 @@ recoge sin publicar: [atletismo-world-athletics.md](atletismo-world-athletics.md
 
 Calendario deportivo RFEA completo (edades, máster, clubes, ruta, pista,
 short track, cross, marcha, trail e internacionales que publique), más FGA y
-FCA con competiciones y tecnificación. Fuera: actividades federativas, cursos
-y reuniones. La inscripción es un metadato, no otra cita.
+FCA con competiciones y tecnificación. RFEA añade concentraciones acreditadas
+con convocatoria, circular o reglamento; los filtros técnicos solo las descubren.
+Fuera: administración, jueces, cursos y reuniones. La inscripción es un metadato, no otra cita.
 
 - Tres capas seguibles como las ligas: `atletismo-rfea`, `atletismo-fga`,
   `atletismo-fca` (`agrupacion/coleccion`). Una cita es `evento/encuentro` con
@@ -93,19 +94,45 @@ La ausencia de una cita no la cancela. Conservar la última lectura buena;
 
 ## Fuentes
 
-**RFEA.** `calendar.js` construye
-`/ajax/calendario/{timestamp}/{tipo}/{area}/{disciplina}/{rankingWA}/{categoria}/{temporada}/{desde}/{hasta}/{titulo}`;
-la respuesta es JSON Drupal con HTML y siempre un solo mes, con la cita
-repetida por día. Los IDs de temporada se descubren de las opciones (2026=464,
-2027=482). `tipo=Deportivo`. «Área» (EA, RFEA, WA) no es federación
-territorial y «Categoría» mezcla edad, formato y distancia. La identidad es
-`championship` de la ficha; se guarda también el SFID (contrastado en cinco
-fichas; falta acreditar estabilidad al cambiar de temporada o slug). La
-recogida consulta los meses adyacentes para cerrar extremos, descarga solo las
-fichas necesarias con pausa y caché de 24 h, y ante un 429 falla sin guardar
-parcial. El Excel anual (464 filas sin IDs, con repeticiones) solo sirve para
-contrastar fechas; no se une a fichas por título. Los documentos
-(`/ajax/championship-documents/{sfid}`) aún no se incorporan.
+**RFEA.** `atletismo_rfea` conserva el `championship` y el SFID nativos.
+Lee el mensual Deportivo y los adyacentes para cerrar extremos, sin cambiar
+nombre, sede ni fechas. La ficha aporta área, categoría, fecha e información
+literales, enlaces e inscripción; un login no acredita apertura. El estado
+requiere un campo declarado: el título no lo decide. El bloque v2 deja alcance y
+actividad desconocidos cuando falta acreditación. Los títulos reservados
+acreditan `federacion_espanola`, sin convertirla en RFEA.
+
+`/ajax/championship-documents/{sfid}` y los enlaces directos aportan documentos
+con rol y evidencia estable, sin descargar sus PDF. La familia `rfea_norma`
+acredita normas; los demás roles se leen del rótulo publicado. Compartir un
+documento no relaciona fichas. Un fallo opcional conserva documentos y evidencias
+anteriores y avisa. Un 403 o 429 tras leer el inventario corta documentos, filtros
+y Calendario PDF, sin perder lo leído y sin aplicar ausencias en esa pasada; un
+esquema AJAX roto o un mes incoherente interrumpen. Una ficha sin SFID único sigue
+siendo válida, sin documentos. Una convocatoria técnica sin documento acreditativo
+no se publica y queda como aviso: no bloquea ausencias ni deja incompleta la lectura.
+Cada superficie informa ventana, filtros, consultas e IDs observados/resueltos.
+Todas las peticiones RFEA respetan 1 s de pausa; la memoria reutiliza respuestas
+y fallos dentro de la pasada, y las fichas tienen caché de 24 h.
+
+El calendario web devuelve un solo mes y repite cada cita por día.
+Las 31 categorías deportivas se consultan en un mes de la ventana por pasada,
+en rotación diaria; los adyacentes solo cierran extremos. `filtros_calendario`
+guarda ID, etiqueta y evidencia positiva, conservada entre pasadas. No completa
+edades, modalidades, actividad ni autoridad; una ausencia no acredita nada.
+Área y disciplina ya constan en ficha/listado. Las 11 categorías WA no se
+consultan: las 11 devuelven cero en la muestra de noviembre de 2026, incluido GL
+con Atapuerca. Se excluyen las 11 categorías administrativas.
+
+Federativo (`Eventos internas RFEA`) se consulta exclusivamente mediante
+Concentración=387 y PNTD=389, en los meses de la ventana, ampliados solo para
+cerrar extremos. Una convocatoria técnica declarada en un documento enlazado
+(circular, reglamento o convocatoria) acredita `tecnificacion`; sin ella la cita
+queda pendiente. Las convocatorias ya acreditadas se conservan si el filtro no
+las devuelve. El mensual es una vía de descubrimiento incompleta: enero de 2024
+publica dos concentraciones sin filtrar, pero ambos filtros dan cero. No se
+sustituye por un barrido federativo general. El Excel anual sin IDs no se une
+por título; el Excel de pruebas sigue como enlace, sin inventar sesiones.
 
 **Calendario RFEA en PDF.** El índice de circulares filtrado por `calendario`
 se lee con su paginación. Entre calendarios de la temporada, sin proyectos,
@@ -285,9 +312,12 @@ Deportes los días posteriores a su `fin`. En el workflow: input `atletismo`; el
 solo recoge con `CALENDARIO_ATLETISMO_RECOGIDA=true` y la
 publicación requiere añadir las fuentes a `CALENDARIO_FUENTES_PUBLICAS`.
 
-Volumen orientativo de una pasada de dos meses: FCA 2, RFEA ~65 sin caché y FGA
-74 antes de documentos (4 de inventario y 70 fichas y padres), medidas en lectura real
-el 4/11/2026, con 2,5 s entre peticiones. La caché evita repetirlas en una pasada.
+Volumen de referencia: FGA 74 antes de documentos (4 de inventario y 70 fichas y
+padres), con 2,5 s de pausa. RFEA tiene un presupuesto propio de 400 peticiones
+(`PRESUPUESTO_RFEA`), el resto 200: cada cita son ficha y documentos, y la rotación
+añade 31 filtros deportivos y dos técnicos por mes de ventana. Nivel II mantiene
+su descarga separada. Medido el 4/11/2026: 59 citas, 171 peticiones sin caché y
+unos 5,5 minutos.
 
 Para revisar sin red: `calendario.py --entrada-atletismo` importa un documento
 revisado v1 (`version`, `fuente`, `eventos` con `id`, `nombre`, `url`,
@@ -300,13 +330,14 @@ En orden (detalle en el diseño local):
 
 1. Lectores de documentos. Cada fuente oficial se lee entera y el comparador la
    une a las demás; el dato se copia literal de quien lo publica y lo dudoso no se
-   enlaza. Pendientes: filtros del calendario web; índice general de circulares
+   enlaza. Pendientes: índice general de circulares
    de las tres federaciones, con sustituciones, enlazadas solo si la ficha las
    enlaza; lectura de su contenido (títulos, convocatoria, organizador) con
    revisión. Sin ellos, `actividad` y `alcance` de FGA quedan desconocidos.
-   Call Room no da datos públicos. RFEA: información técnica, documentos y
-   concentraciones del Federativo. FCA: columna de calendario, reglamentos de series (TRS, Copas, Lliga) y convocatorias
-   del Comitè Tècnic. Los destinos RFEA de `website` quedan sin resolver.
+   Call Room no da datos públicos. RFEA: contenido de los documentos y
+   convocatorias técnicas que los filtros no devuelven. FCA: columna de calendario,
+   reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic. Los
+   destinos RFEA de `website` quedan sin resolver.
 2. Comparador por alcance, con los datos del paso anterior: enlaces resueltos,
    conjunto de días y veredicto `dentro_de`. Subir su versión cambia la huella
    y reabre una vez los issues cerrados.

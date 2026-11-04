@@ -50,12 +50,14 @@ class RecogidaAtletismo(unittest.TestCase):
             if '/communication-hub/circulares' in url:
                 raise FileNotFoundError('Sin captura del índice de circulares')
             if url == 'https://atletismorfea.es/calendario':
-                return '<select class="calendar-field-season"><option value="464">2026</option></select>'
+                return (MUESTRAS / 'rfea' / 'formulario.html').read_text()
             if url in muestra['fichas']:
                 return muestra['fichas'][url]
+            if '/championship-documents/' in url:
+                return (MUESTRAS / 'rfea' / 'documentos-vacios.json').read_text()
             timestamp = int(url.split('/ajax/calendario/')[1].split('/')[0])
             mes = datetime.fromtimestamp(timestamp, timezone.utc).date()
-            if mes.month == 11:
+            if mes.month == 11 and '/Deportivo/0/0/0/0/' in url:
                 return json.dumps(muestra['respuesta'])
             previo = (mes - timedelta(days=1)).replace(day=1)
             siguiente = (mes.replace(day=28) + timedelta(days=4)).replace(day=1)
@@ -65,14 +67,14 @@ class RecogidaAtletismo(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as carpeta:
             entrada, informe = r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=obtener, cache=carpeta)
-            self.assertEqual(len(llamadas), 6)
+            self.assertEqual(len(llamadas), 40)
             llamadas.clear()
             r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=obtener, cache=carpeta)
-            self.assertEqual(len(llamadas), 5)  # Siempre meses e índice; ficha reutilizada.
+            self.assertEqual(len(llamadas), 39)  # La ficha se reutiliza; documentos y filtros se reconsultan.
         self.assertEqual(len(entrada['eventos']), 1)
         self.assertEqual(entrada['eventos'][0]['inicio'], '2026-11-01')
         self.assertEqual(entrada['eventos'][0]['fin'], '2026-11-01')
-        self.assertEqual(len(informe['consultas']), 3)
+        self.assertEqual(len(informe['consultas']), 37)
 
     def test_fga_ficha_no_disponible_conserva_capturas_buenas_y_cobertura_parcial(self):
         from test_atletismo_fga import captura
