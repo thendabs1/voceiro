@@ -24,6 +24,20 @@ RELOJES = dict.fromkeys((
     'cultura-galicia', 'madrid', 'kulturklik', 'zaragoza', 'cyl',
     'atletismo-fga', 'atletismo-fca', 'atletismo-rfea', 'atletismo-wa', 'publicacion',
 ), 24)
+TICK_HORAS = 6
+
+
+class GuardadoParcial(SystemExit):
+    """La fuente quedó guardada; solo falló un complemento: se señala sin repetir la recogida."""
+
+
+def horas_reloj(grupo):
+    return RELOJES[grupo] - MARGEN_HORAS
+
+
+def espera_fallo(grupo, errores):
+    """Tras un fallo: el tick siguiente, dos ticks y después el ritmo normal del reloj."""
+    return min(RELOJES[grupo], TICK_HORAS * 2 ** (errores - 1)) - MARGEN_HORAS
 
 
 def perfil(coleccion):

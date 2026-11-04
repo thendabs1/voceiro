@@ -113,7 +113,7 @@ siendo válida, sin documentos. Una convocatoria técnica sin documento acredita
 no se publica y queda como aviso: no bloquea ausencias ni deja incompleta la lectura.
 Cada superficie informa ventana, filtros, consultas e IDs observados/resueltos.
 Todas las peticiones RFEA respetan 1 s de pausa; la memoria reutiliza respuestas
-y fallos dentro de la pasada, y las fichas tienen caché de 24 h.
+y fallos dentro de la pasada, y las fichas caducan a las 21 h, con el reloj de la fuente.
 
 El calendario web devuelve un solo mes y repite cada cita por día.
 Las 31 categorías deportivas se consultan en un mes de la ventana por pasada,
@@ -344,7 +344,9 @@ Fuentes `fga`, `fca`, `rfea` (incluye Nivel II y requiere Poppler) y `wa`; `--tu
 sustituye a `--db`. Ventana máxima de 91 días; por defecto, hoy y 60 días más.
 El cron corre cada 6 h y cada fuente tiene un reloj diario independiente
 (`atletismo-fga`, `atletismo-fca`, `atletismo-rfea`, `atletismo-wa`), con 3 h de
-margen. Solo se anota tras éxito; un fallo se reintenta en el siguiente tick.
+margen. Tras un fallo se espera el tick siguiente, luego dos y después un día, o
+más si la fuente pide `Retry-After`. Si solo falla Calendario PDF o Nivel II, el
+mensual ya está guardado: el reloj avanza y el paso se señala fallido.
 Las ejecuciones manuales no aplican ni anotan estos relojes.
 El informe (consultas, ventana, peticiones, pendientes, ausencias y
 completitud) se guarda con el núcleo en `agenda_estado`, clave

@@ -284,9 +284,12 @@ obliga a releer.
 
 Solo el cron activa `--cadencia`. `--paso-reloj "GRUPO::CLI args"` es tolerado:
 cultura y cada fuente de atletismo tienen relojes de 24 h menos 3 h de margen,
-anotados solo tras éxito en `agenda_estado` (`reloj:<grupo>`, `ultima` y
-`proxima_revision`), sin avanzar la revisión del núcleo. Sin fila, toca recoger;
-si falla, se reintenta en el siguiente tick. Preparación del núcleo y operación
+anotados en `agenda_estado` (`reloj:<grupo>`, `ultima` y `proxima_revision`,
+más `errores` y `ultimo_error` tras un fallo), sin avanzar la revisión del núcleo.
+Sin fila, toca recoger. Un fallo espera creciente (tick siguiente, dos ticks, 21 h)
+o lo que pida `Retry-After`, y esa anotación no fuerza publicar. `GuardadoParcial`
+indica que la fuente guardó y solo falló un complemento: avanza el reloj y el paso
+queda fallido. Preparación del núcleo y operación
 se permiten en todos los ticks. `--paso-final` (publicación) y
 `--paso-final-tolerado` (revisión de atletismo) se omiten si no hubo filas
 escritas en Turso y no venció `publicacion`; solo el final no tolerado anota ese
