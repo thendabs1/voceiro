@@ -57,6 +57,12 @@ class Contrato(unittest.TestCase):
         self.rechaza('https', documentos=[{'url': 'https://u:c@a.es/b.pdf'}])
         self.rechaza('evidencia', titulos=[{'literal': 'Máster'}])
         self.rechaza('objeto', alcance='reunion')
+        for url in ('https://a.es:roto/r.pdf', 'https://a.es:99999/r.pdf', 'https://a b.es/r.pdf'):
+            self.rechaza('https', documentos=[{'url': url}])
+        self.rechaza('texto', alcance={'tipo': 'reunion', 'literal': [], 'evidencia': EVIDENCIA})
+        self.rechaza('texto', temporalidad={'texto': {}, 'evidencia': EVIDENCIA})
+        self.rechaza('texto', temporalidad={'estado_literal': [], 'evidencia': EVIDENCIA})
+        self.rechaza('texto', documentos=[{'url': 'https://a.es/b.pdf', 'nombre': 3}])
         self.rechaza('lista', documentos={})
 
     def test_los_dias_son_de_la_cita(self):
@@ -91,6 +97,10 @@ class Publicacion(unittest.TestCase):
         e, = publicacion.proyectar(n)['eventos']
         self.assertEqual(e['atletismo']['titulares'], ['fga:reflejo', 'rfea:propio'])
         self.assertEqual(e['atletismo']['actividades'], ['competicion'])
+
+    def test_una_cita_sin_metadatos_tambien_es_de_su_fuente(self):
+        e, = publicacion.proyectar(atletismo.importar(None, cita(), AHORA))['eventos']
+        self.assertEqual(e['atletismo']['titulares'], ['fga:desconocido'])
 
     def test_la_misma_lectura_no_crea_otra_observacion(self):
         p = cita(alcance={'tipo': 'titulo', 'evidencia': EVIDENCIA})

@@ -381,7 +381,10 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     };
     let meta = guardado ? await guardado.json() : await leerControl();
     if (meta.version !== 1) throw error(503, 'Versión de lectura incompatible');
-    const huella = await firma({ api_calendario: 2, ruta, ...c,
+    // Sin esos filtros la firma no cambia: un cursor en curso sobrevive al despliegue.
+    const { titular, actividades, ...resto } = c;
+    const huella = await firma({ api_calendario: 2, ruta, ...resto,
+      ...(titular.length ? { titular } : {}), ...(actividades.length ? { actividades } : {}),
       ...(c.disponibilidad ? { hoy: diaEnZona(new Date(Date.now()), c.zona) } : {}) });
     const revisionPedida = url.searchParams.get('revision');
     if (guardado && (revisionPedida && revisionPedida !== meta.revision || cursor && cursor[0] !== meta.revision)) meta = await leerControl();

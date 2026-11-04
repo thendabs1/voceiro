@@ -35,7 +35,9 @@ def _url(campo, valor):
     _texto(campo, valor)
     try:
         partes = urlsplit(valor)
-        valida = partes.scheme == 'https' and partes.hostname and not (partes.username or partes.password)
+        partes.port  # Lanza ValueError si el puerto no es válido.
+        valida = (partes.scheme == 'https' and partes.hostname and not (partes.username or partes.password)
+                  and not any(c.isspace() for c in valor))
     except ValueError:
         valida = False
     if not valida:
@@ -51,6 +53,12 @@ def _claves(campo, valor, admitidas, obligatorias=()):
         _fallo(campo, f'no tiene {sorted(faltan)}')
 
 
+def _textos(campo, valor, claves):
+    for k in claves:
+        if k in valor:
+            _texto(f'{campo}.{k}', valor[k])
+
+
 def _opcion(campo, valor, opciones):
     if valor not in opciones:
         _fallo(campo, f'tiene un valor desconocido: {valor!r}')
@@ -60,8 +68,7 @@ def _evidencia(campo, valor):
     _claves(campo, valor, EVIDENCIA, ('superficie', 'url'))
     _texto(campo + '.superficie', valor['superficie'])
     _url(campo + '.url', valor['url'])
-    for k in EVIDENCIA & set(valor) - {'superficie', 'url'}:
-        _texto(f'{campo}.{k}', valor[k])
+    _textos(campo, valor, ('localizador', 'literal'))
 
 
 def _acreditado(campo, valor, exigida):
@@ -80,12 +87,14 @@ def _lista(campo, valor):
 def _alcance(v):
     _claves('alcance', v, {'tipo', 'literal', 'evidencia'}, ('tipo',))
     _opcion('alcance.tipo', v['tipo'], ALCANCES)
+    _textos('alcance', v, ('literal',))
     _acreditado('alcance', v, v['tipo'] != 'desconocido')
 
 
 def _temporalidad(v, inicio, fin):
     _claves('temporalidad', v, {'texto', 'dias', 'precision', 'estado', 'estado_literal', 'evidencia'}, ('evidencia',))
     _evidencia('temporalidad.evidencia', v['evidencia'])
+    _textos('temporalidad', v, ('texto', 'estado_literal'))
     if 'precision' in v:
         _opcion('temporalidad.precision', v['precision'], PRECISIONES)
     if 'estado' in v:
@@ -107,8 +116,7 @@ def _temporalidad(v, inicio, fin):
 def _fuente(v):
     _claves('fuente', v, {'relacion', 'de', 'evidencia'}, ('relacion',))
     _opcion('fuente.relacion', v['relacion'], RELACIONES)
-    if 'de' in v:
-        _texto('fuente.de', v['de'])
+    _textos('fuente', v, ('de',))
     _acreditado('fuente', v, v['relacion'] != 'desconocido')
 
 
@@ -132,6 +140,7 @@ def _documentos(v):
     for campo, d in _lista('documentos', v):
         _claves(campo, d, {'url', 'nombre', 'rol', 'alcance_literal', 'hash', 'evidencia'}, ('url',))
         _url(campo + '.url', d['url'])
+        _textos(campo, d, ('nombre', 'alcance_literal', 'hash'))
         if 'rol' in d:
             _opcion(campo + '.rol', d['rol'], ROLES)
         _acreditado(campo, d, 'rol' in d)

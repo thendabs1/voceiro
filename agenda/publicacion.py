@@ -276,7 +276,7 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                       'programacion': deepcopy(observaciones[i]['bloques'].get('programacion')),
                       'lugar': deepcopy(observaciones[i]['bloques'].get('lugar')),
                       'procedencia': procedencia(i)}
-                     for i in sorted(propias) if observaciones[i]['bloques'].get('atletismo')]
+                     for i in sorted(propias) if 'atletismo' in observaciones[i]['bloques']]
         if atletismo and (atletismo.get('valor') or variantes):
             eventos[-1]['atletismo'] = atletismo
             eventos[-1]['atletismo']['variantes'] = variantes
