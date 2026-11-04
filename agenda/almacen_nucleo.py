@@ -75,6 +75,22 @@ def tiempos(n):
     return salida
 
 
+def separacion_registrada(antes, despues, nuevo):
+    """La inversa de una conciliación solo con la separación registrada, tal cual."""
+    from .atletismo_coincidencias import separaciones
+    registro = {s['id']: s for s in separaciones()}
+    origen = nuevo['entidades'].get(nucleo.clave(antes['destino']), {})
+    destino = nuevo['entidades'].get(nucleo.clave(despues['destino']), {})
+    return ({a: v for a, v in antes.items() if a != 'destino'} == {a: v for a, v in despues.items() if a != 'destino'}
+            and antes['tipo_externo'] == 'competicion' and antes['contexto'] == {}
+            and bool(destino) and not destino.get('conciliada_en')
+            and any(registro.get((x.get('revision') or {}).get('id')) == x['revision']
+                    and x['revision']['desde'] == antes['destino']['id']
+                    and x['revision']['hasta'] == despues['destino']['id']
+                    and x['revision']['referencia'] == {'fuente': antes['proveedor'], 'id': antes['id_externo']}
+                    for x in origen.get('separaciones', [])))
+
+
 def planificar(anterior, nuevo):
     if anterior == nuevo:
         return []
@@ -116,7 +132,7 @@ def planificar(anterior, nuevo):
                     raise ValueError('Una observación conserva su contenido y no retrocede')
             if c in ('documentos', 'resultados', 'clasificaciones') and k in viejos:
                 raise ValueError('Un documento o resultado conserva su contenido e historial')
-            if c == 'referencias' and k in viejos and viejos[k] != nuevos[k]:
+            if c == 'referencias' and k in viejos and viejos[k] != nuevos[k] and not separacion_registrada(viejos[k], nuevos[k], nuevo):
                 # Solo cambia el destino, ambas entidades documentan la
                 # conciliación y esta figura tal cual en el registro versionado
                 # del repositorio (agenda/atletismo_conciliacion.py).

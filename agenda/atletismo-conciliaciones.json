@@ -53,33 +53,15 @@
       "id": "nassos-2026",
       "referencias": {
         "fca": "83074",
-        "rfea": "67588",
         "wa": "7244650"
       },
       "conservar": "fca",
       "revision": {
         "fecha": "2026-11-03",
-        "criterio": "Misma B100 Cursa dels Nassos, Barcelona, 31/12/2026. FCA anuncia las pruebas de 5 y 10 km; la ficha RFEA 67588 solo recoge 5 km. Comparten día y sede: una cita con alcance distinto por fuente, sin modelar partes. WA 7244650 publica la misma cita ese día en Barcelona (añadida el 3/11). Cada fuente conserva su nombre.",
+        "criterio": "Misma B100 Cursa dels Nassos, Barcelona, 31/12/2026. WA 7244650 publica la cita ese día en Barcelona (añadida el 3/11) sin programa: su alcance sigue sin acreditar. RFEA 67588 se separó (nassos-2026-rfea). Cada fuente conserva su nombre.",
         "evidencias": [
           "https://fcatletisme.cat/event/b100-cursa-dels-nassos-5-i-10-km/",
-          "https://atletismorfea.es/calendario/campeonato/b100-cursa-dels-nassos",
           "https://worldathletics.org/competition/calendar-results?startDate=2026-12-31&endDate=2026-12-31&regionType=country&regionId=13188350"
-        ]
-      }
-    },
-    {
-      "id": "marcha-invierno-castro-2026",
-      "referencias": {
-        "fca": "80239",
-        "rfea": "64834"
-      },
-      "conservar": "fca",
-      "revision": {
-        "fecha": "2026-11-02",
-        "criterio": "Mismo campeonato de España de marcha de invierno, Castro Urdiales, 13/12/2026. RFEA lo publica como promoción y 10 km máster; FCA solo anuncia la parte máster de 10 km. Comparten día y sede: una cita, sin modelar partes. Cada fuente conserva su nombre.",
-        "evidencias": [
-          "https://fcatletisme.cat/event/campionat-despanya-de-10-km-marxa-en-ruta-master-4/",
-          "https://atletismorfea.es/calendario/campeonato/campeonato-de-espana-de-marcha-de-invierno-de-promocion-y-10-km-master-0"
         ]
       }
     },
