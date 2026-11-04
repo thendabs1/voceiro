@@ -638,7 +638,8 @@ def main(argv=None):
         informe['modalidades_desconocidas'] = sorted({x for e in leidas
                                                       for x in atletismo_modalidades.de(e.get('metadatos'))[1]})
         # Hasta dónde se ha leído la fuente: más allá, el calendario no está vacío sino sin recoger.
-        n['fuentes'][args.fuente]['ventana'] = {'inicio': informe['inicio'], 'fin': informe['fin']}
+        n['fuentes'][args.fuente]['ventana'] = {'inicio': informe['inicio'], 'fin': informe['fin'],
+                                                'completa': bool(informe['completo'])}
         n['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
         nucleo.recalcular_selecciones(n)
         calendario['nucleo'] = n
