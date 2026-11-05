@@ -31,6 +31,14 @@ class GuardadoParcial(SystemExit):
     """La fuente quedó guardada; solo falló un complemento: se señala sin repetir la recogida."""
 
 
+class LecturaInterrumpida(Exception):
+    """La fuente cortó la lectura: lo válido quedó guardado y el reloj espera como tras un fallo."""
+
+    def __init__(self, mensaje, retry_after=None):
+        super().__init__(mensaje)
+        self.headers = {'Retry-After': retry_after}
+
+
 def horas_reloj(grupo):
     return RELOJES[grupo] - MARGEN_HORAS
 

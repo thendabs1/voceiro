@@ -26,6 +26,12 @@ def _huella(dato):
 COMPONENTES = ('fila', 'facetas', 'tramos', 'chips', 'activos')
 
 
+def _fila(e):
+    """Tarjeta y detalle llegan serializados, con las claves en el orden del objeto:
+    distinto si la cita se acaba de importar o se cargó del núcleo, sin ser un cambio."""
+    return [*e[:3], json.loads(e[3]), json.loads(e[4])]
+
+
 def huellas(preparada):
     """Huella de cada evento por componente (fila, facetas, tramos, chips) y de cada entidad.
 
@@ -41,7 +47,7 @@ def huellas(preparada):
         activos[t[3]].append(t)
     for c in preparada.get('chips', []):
         chips[c[2]].append(c)
-    resultado = {('evento', e[0]): json.dumps({'fila': _huella(e), 'facetas': _huella(sorted(facetas[e[0]])),
+    resultado = {('evento', e[0]): json.dumps({'fila': _huella(_fila(e)), 'facetas': _huella(sorted(facetas[e[0]])),
                                                'tramos': _huella(sorted(tramos[e[0]])),
                                                'activos': _huella(sorted(activos[e[0]])),
                                                'chips': _huella(sorted(chips[e[0]], key=json.dumps))}, sort_keys=True)

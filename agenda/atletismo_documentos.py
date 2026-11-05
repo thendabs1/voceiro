@@ -155,6 +155,32 @@ class Lecturas:
             evento['programa'] = programa
 
 
+def conservar(eventos, conocidas, revisados):
+    """Tras un corte: lo acreditado por documentos que la ficha sigue enlazando y no se comprobaron.
+
+    Un documento ya comprobado manda, también si sus bytes cambiaron.
+    """
+    comprobados = {u for s in revisados.get('superficies', []) if s['estado'] != 'fallida' for u in s['consultas']}
+    anteriores = {str(c['id']): c['metadatos'] for c in conocidas if not c.get('lectura_ambigua')}
+    for e in eventos:
+        previa = anteriores.get(str(e['id']), {})
+        meta = e['metadatos']
+        vigentes = {d['url'] for d in meta.get('documentos', [])} - comprobados
+        acreditado = lambda v: v.get('evidencia', {}).get('superficie') == 'documento' and v['evidencia']['url'] in vigentes
+        for k in CAMPOS:
+            valor = previa.get(k)
+            if isinstance(valor, list):
+                lista = meta.get(k, [])
+                if nuevos := [deepcopy(v) for v in valor if acreditado(v) and v not in lista]:
+                    meta[k] = lista + nuevos
+            elif valor and acreditado(valor):
+                meta[k] = deepcopy(valor)
+        hashes = {d['url']: d['hash'] for d in previa.get('documentos', []) if d.get('hash')}
+        for d in meta.get('documentos', []):
+            if d['url'] in vigentes and d['url'] in hashes:
+                d.setdefault('hash', hashes[d['url']])
+
+
 def completar(fuente, eventos, obtener):
     lector = Lecturas(fuente, obtener)
     try:

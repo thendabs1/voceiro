@@ -113,7 +113,9 @@ con rol y evidencia estable, sin descargar sus PDF. La familia `rfea_norma`
 acredita normas; los demás roles se leen del rótulo publicado. Compartir un
 documento no relaciona fichas. Un fallo opcional conserva documentos y evidencias
 anteriores y avisa. Un 403 o 429 tras leer el inventario corta documentos, filtros
-y Calendario PDF, sin perder lo leído y sin aplicar ausencias en esa pasada; un
+y Calendario PDF, sin perder lo leído y sin aplicar ausencias en esa pasada: lo
+acreditado por documentos aún enlazados y sin comprobar se conserva, el paso
+falla y el reloj espera como tras un fallo, respetando `Retry-After`; un
 esquema AJAX roto o un mes incoherente interrumpen. Una ficha sin SFID único sigue
 siendo válida, sin documentos. Una convocatoria técnica sin documento acreditativo
 no se publica y queda como aviso: no bloquea ausencias ni deja incompleta la lectura.

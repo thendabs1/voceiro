@@ -633,7 +633,10 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         informe['relectura'] = atletismo_relectura.leer(fuente, conocidas, relectura['comprobadas'], excluidas,
             date.today(), obtener, observado or datetime.now(timezone.utc).isoformat(timespec='microseconds'))
     if bloqueo is not None:
-        informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[])
+        informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[],
+                       retry_after=(bloqueo.headers or {}).get('Retry-After'))
+        if fuente in ('rfea', 'fca'):
+            atletismo_documentos.conservar(entrada['eventos'], conocidas, informe.get('documentos_revisados', {}))
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
                       'peticiones': peticiones, 'citas': len(entrada['eventos']), **informe}
 
@@ -840,6 +843,9 @@ def main(argv=None):
                          | {'hallados': len(informe['relectura']['hallados'])}} if 'relectura' in informe else {}),
                       **({'modalidades_desconocidas': informe['modalidades_desconocidas']}
                          if informe.get('modalidades_desconocidas') else {})}, ensure_ascii=False))
+    if informe.get('bloqueada') or informe.get('conservar_lectura'):
+        raise cadencias.LecturaInterrumpida(f'{args.fuente}: lectura interrumpida; se guarda solo lo válido',
+                                            informe.get('retry_after'))
     if error := informe.get('nivel_ii', {}).get('error'):
         raise cadencias.GuardadoParcial('Nivel II no se leyó; RFEA mensual guardada: ' + error)
     if not informe.get('calendario_pdf', {}).get('completo', True):

@@ -278,7 +278,8 @@ class CasosFGA(unittest.TestCase):
             with almacen.abrir(db) as conexion:
                 antes=almacen.cargar(conexion)
             fallo={**informe,'completo':False,'conservar_lectura':True}
-            with patch.object(r,'recoger',return_value=({'eventos':[]},fallo)):
+            with patch.object(r,'recoger',return_value=({'eventos':[]},fallo)), \
+                    self.assertRaises(r.cadencias.LecturaInterrumpida):
                 r.main(args)
             with almacen.abrir(db) as conexion:
                 self.assertEqual(almacen.cargar(conexion)['nucleo'],antes['nucleo'])

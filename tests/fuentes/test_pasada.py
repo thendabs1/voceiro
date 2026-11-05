@@ -144,6 +144,18 @@ class Pasada(unittest.TestCase):
         self.assertEqual(fin.exception.code, 1)
         self.assertFalse(Repositorio(remoto=Almacen()).reloj_vencido('atletismo-rfea', '2026-11-04T10:30:00Z'))
 
+    def test_lectura_interrumpida_no_cuenta_como_exito_y_respeta_retry_after(self):
+        cli = Mock(side_effect=cadencias.LecturaInterrumpida('fga: lectura interrumpida', '172800'))
+        with patch.object(pasada, '_cli', return_value=cli), patch.object(pasada, 'ahora_utc', return_value=AHORA), \
+                patch('sys.stdout', new_callable=io.StringIO):
+            with self.assertRaises(SystemExit) as fin:
+                pasada.main(['--cadencia', '--paso-reloj', 'atletismo-fga::calendario'])
+        self.assertEqual(fin.exception.code, 1)
+        reloj = self.reloj('atletismo-fga')
+        self.assertEqual(reloj['errores'], 1)
+        self.assertNotIn('ultima', reloj)
+        self.assertEqual(reloj['proxima_revision'], '2026-11-06T04:50:00.000000+00:00')
+
     def test_final_fallido_no_anota_publicacion(self):
         cli = Mock(side_effect=ValueError('fallo de publicación'))
         with patch.object(pasada, '_cli', return_value=cli), \

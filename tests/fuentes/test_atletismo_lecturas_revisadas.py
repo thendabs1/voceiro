@@ -1,15 +1,18 @@
 """Lecturas de documentos reales y fallo cerrado ante bytes distintos."""
 from copy import deepcopy
 from hashlib import sha256
+import io
 import json
 from pathlib import Path
 import shutil
+import sqlite3
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
 
-from agenda import atletismo, atletismo_bloque, atletismo_documentos as d, atletismo_fga, atletismo_rfea, atletismo_recogida as r
+from agenda import atletismo, atletismo_bloque, atletismo_coincidencias, atletismo_documentos as d, atletismo_fga, atletismo_rfea, atletismo_recogida as r, cadencias
 
 M = Path(__file__).with_name('muestras_calendario') / 'atletismo'
 C = M / 'circulares'
@@ -91,6 +94,61 @@ class LecturasRevisadas(unittest.TestCase):
             self.assertNotIn('calendario_pdf', informe)
             self.assertFalse(informe['documentos_revisados']['completo'])
             self.assertEqual(informe['documentos_revisados']['superficies'][0]['estado'], 'fallida')
+
+    def corte(self, codigo=429, ficha=None):
+        """Cita con sus normas leídas y una pasada posterior que se corta en el primer documento."""
+        correcta = castro()
+        d.completar('rfea', [correcta], bytes_castro)
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'rfea', 'eventos': [correcta]}, AHORA)
+        conocidas = atletismo_coincidencias.actuales(n)
+        nueva = ficha or castro()
+        with patch.dict(r.LECTORES, rfea=lambda *a, **k: ({'version': 1, 'fuente': 'rfea', 'eventos': [nueva]}, {'pendientes': [], 'completo': True})):
+            entrada, informe = r.recoger('rfea', '2026-11-04', '2027-01-03', conocidas=conocidas,
+                descargar=lambda *a, **k: (_ for _ in ()).throw(HTTPError('https://atletismorfea.es/x', codigo, 'límite', {'Retry-After': '172800'}, None)))
+        return correcta, entrada, informe, n
+
+    def test_un_corte_conserva_lo_acreditado_por_documentos_sin_comprobar(self):
+        correcta, entrada, informe, n = self.corte()
+        self.assertEqual(informe['retry_after'], '172800')
+        self.assertTrue(informe['bloqueada'])
+        meta, antes = entrada['eventos'][0]['metadatos'], correcta['metadatos']
+        for campo in d.CAMPOS:
+            self.assertEqual(meta[campo], antes[campo], campo)
+        self.assertEqual([x.get('hash') for x in meta['documentos']], [x.get('hash') for x in antes['documentos']])
+        tras = atletismo_coincidencias.actuales(atletismo.importar(n, entrada, '2026-11-05T13:00:00+00:00'))
+        self.assertEqual(tras[0]['metadatos']['alcance']['tipo'], 'titulos')
+
+    def test_un_documento_que_ya_no_se_enlaza_retira_lo_que_acreditaba(self):
+        ficha = castro()
+        ficha['metadatos']['documentos'] = [x for x in ficha['metadatos']['documentos'] if x['url'] not in d.lecturas_documentales('rfea')]
+        _, entrada, _, _ = self.corte(ficha=ficha)
+        meta = entrada['eventos'][0]['metadatos']
+        self.assertEqual(meta['alcance'], {'tipo': 'desconocido'})
+        self.assertEqual(meta['actividad'], {'valor': 'desconocida'})
+
+    def test_bytes_distintos_antes_del_corte_no_recuperan_la_lectura(self):
+        correcta = castro()
+        d.completar('rfea', [correcta], bytes_castro)
+        conocidas = atletismo_coincidencias.actuales(atletismo.importar(None, {'version': 1, 'fuente': 'rfea', 'eventos': [correcta]}, AHORA))
+        e = castro()
+        revisados = {'superficies': [{'estado': 'parcial', 'consultas': [x['url'] for x in e['metadatos']['documentos']]}]}
+        d.conservar([e], conocidas, revisados)
+        self.assertEqual(e['metadatos']['alcance'], {'tipo': 'desconocido'})
+
+    def test_la_lectura_interrumpida_guarda_y_lleva_retry_after_al_reloj(self):
+        from agenda import almacen
+        for fuente, informe in (('rfea', {'bloqueada': True, 'retry_after': '172800'}), ('fga', {'conservar_lectura': True})):
+            base = {'version': 1, 'fuente': fuente, 'inicio': '2026-11-04', 'fin': '2027-01-03',
+                    'peticiones': 1, 'citas': 0, 'completo': False, **informe}
+            with tempfile.TemporaryDirectory() as carpeta, \
+                    patch.object(r, 'recoger', return_value=({'version': 1, 'fuente': fuente, 'eventos': [], 'agrupaciones': []}, base)), \
+                    patch('sys.stdout', new_callable=io.StringIO):
+                ruta = str(Path(carpeta) / 'a.sqlite')
+                with self.assertRaises(cadencias.LecturaInterrumpida) as fallo:
+                    r.main(['--db', ruta, '--fuente', fuente, '--inicio', '2026-11-04', '--fin', '2027-01-03'])
+                self.assertEqual(fallo.exception.headers['Retry-After'], informe.get('retry_after'))
+                with sqlite3.connect(ruta) as db:
+                    self.assertEqual(db.execute('SELECT count(*) FROM agenda_estado WHERE clave=?', ('atletismo-informe-' + fuente,)).fetchone()[0], 1)
 
     def test_discrepancia_no_elije_ultima_y_presupuesto_no_se_oculta(self):
         e = castro()
