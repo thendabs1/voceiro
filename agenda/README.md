@@ -225,7 +225,8 @@ proyección: solo fuentes permitidas (`CALENDARIO_FUENTES_PUBLICAS`, por defecto
 Con `--lectura-sql` prepara además tablas indexadas por tramos de días
 consecutivos (de 329.000 filas diarias a 25.000 tramos en la medición del
 25/10). La publicación es diferencial: `agenda_lectura_huellas` guarda una
-huella por evento (con sus facetas y tramos) y por entidad, y solo se reescribe
+huella por evento (con sus facetas y tramos, sin contar el orden de las claves)
+y por entidad, y solo se reescribe
 lo que cambió; sin huellas previas se reemplaza todo. Para que una cita sin
 cambios conserve su huella, la lectura no lleva «comprobado» por cita (va por
 fuente en `cobertura`), los tramos iguales en las tres zonas se guardan una vez

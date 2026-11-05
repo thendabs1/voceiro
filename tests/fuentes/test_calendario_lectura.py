@@ -5,8 +5,8 @@ import sqlite3
 import unittest
 from unittest.mock import patch
 
-from agenda import espn_tenis, feb, kulturklik, madrid, presencia
-from agenda.lectura import estado, preparar, planificar
+from agenda import espn_tenis, feb, kulturklik, madrid, nucleo_r2, presencia
+from agenda.lectura import cambios, estado, preparar, planificar
 from agenda.publicacion import proyectar, main
 from agenda.transicion import ampliar
 from test_agenda import construir, ficha
@@ -228,6 +228,25 @@ class LecturaSQL(unittest.TestCase):
                                    ('INSERT INTO agenda_lectura_disponibilidad', sitios[0])])
         self.publicar(cambiada, previo=self.previo())
         self.assertEqual(self.tablas(), self.completa(cambiada))
+
+    def test_guardar_y_cargar_el_nucleo_no_reescribe_filas(self):
+        # Las claves vuelven ordenadas: sin normalizar, cada alternancia entre una
+        # pasada que importa y otra que solo carga reescribía casi toda la lectura.
+        self.publicar()
+        vuelta = nucleo_r2.unir(self.n, {f: json.loads(nucleo_r2._cuerpo(d)) for f, d in nucleo_r2.partir(self.n).items()})
+        self.assertEqual(vuelta, self.n)
+        cargada = preparar(proyectar(vuelta, ['cultura-galicia'], AHORA))
+        self.assertNotEqual([e[3:] for e in cargada['eventos']], [e[3:] for e in self.preparada['eventos']])
+        self.assertEqual(cambios(cargada, self.previo()), {})
+
+    def test_una_lista_reordenada_si_es_un_cambio_de_fila(self):
+        self.publicar()
+        cambiada = deepcopy(self.preparada)
+        e = cambiada['eventos'][0]
+        tarjeta = json.loads(e[3])
+        tarjeta['fuentes'] = ['otra', *tarjeta['fuentes']]
+        e[3] = json.dumps(tarjeta)
+        self.assertEqual(cambios(cambiada, self.previo()), {('evento', e[0]): {'fila'}})
 
     def test_huellas_de_un_solo_hash_siguen_valiendo(self):
         # Lectura publicada antes de separar componentes: sin cambios no se reescriben
