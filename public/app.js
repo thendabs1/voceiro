@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=ee3395a7cf';
+} from './parser.js?v=af9646e79c';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=ee3395a7cf';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=ee3395a7cf';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=ee3395a7cf';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=ee3395a7cf';
-import { comparador } from './busqueda/orden.js?v=ee3395a7cf';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=af9646e79c';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=af9646e79c';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=af9646e79c';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=af9646e79c';
+import { comparador } from './busqueda/orden.js?v=af9646e79c';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=ee3395a7cf';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=ee3395a7cf';
+} from './sync/fusion.js?v=af9646e79c';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=af9646e79c';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=ee3395a7cf';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=ee3395a7cf';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=af9646e79c';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=af9646e79c';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=ee3395a7cf';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=af9646e79c';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=ee3395a7cf';
+} from './tiempo/avisos.js?v=af9646e79c';
 
-import { I18N, traducir } from './idiomas/index.js?v=ee3395a7cf';
+import { I18N, traducir } from './idiomas/index.js?v=af9646e79c';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=ee3395a7cf';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=ee3395a7cf';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=ee3395a7cf';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=ee3395a7cf';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=af9646e79c';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=af9646e79c';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=af9646e79c';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=af9646e79c';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=ee3395a7cf';
+import { ADMINISTRACION } from './territorios/administracion.js?v=af9646e79c';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=ee3395a7cf');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=af9646e79c');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2686,6 +2686,8 @@ function wirePortadas() {
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
 let MEDIOS = {};
+// Solo se acortan URL del medio: un `h` ajeno es un error de tablas antiguas.
+const hostDeRuta = (h, d) => h && (h.replace(/^www\./, '') === d || h.endsWith('.' + d)) ? h : `www.${d}`;
 let MEDIOS_UNICOS = [];
 let MEDIOS_STRICT   = new Map();
 let DOMINIOS_STRICT = new Map();
@@ -2883,7 +2885,7 @@ function hidratarNoticias(){
       n.enlace = u_raw;
     } else if (u_raw.startsWith('/')){
       const m = MEDIOS[n.dominio] || {};
-      const host = m.h || `www.${n.dominio}`;
+      const host = hostDeRuta(m.h, n.dominio);
       n.enlace = `https://${host}${u_raw}`;
     } else {
       n.enlace = u_raw;
@@ -3023,7 +3025,7 @@ function construirGruposDuplicados(){
           enlace = u_raw;
         } else if (u_raw.startsWith('/')){
           const m = MEDIOS[dom] || {};
-          const host = m.h || `www.${dom}`;
+          const host = hostDeRuta(m.h, dom);
           enlace = `https://${host}${u_raw}`;
         } else {
           enlace = u_raw;
@@ -6967,7 +6969,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=ee3395a7cf')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=af9646e79c')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
