@@ -48,17 +48,17 @@ test('lo seguido va primero y «Las que sigo» las junta; lo que no tiene datos 
   assert.deepEqual(ordenes, ['motogp:', 'atp:', 'calendario:motogp,atp', 'calendario:motogp', 'calendario:atp', 'calendario:f1', 'calendario:primera', 'calendario:primera,segunda']);
 });
 
-test('una competición enseña solo lo que admite: F1 sin resultados; ATP, horarios y noticias', () => {
+test('una competición enseña solo lo que admite: F1 sin resultados; ATP con resultados y noticias', () => {
   const s = escenario();
   s.pantalla('c:f1');
   assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['calendario:f1', 'clasificacion:f1', 'f1:noticias']);
   s.pantalla('c:atp');
-  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['calendario:atp', 'atp:noticias']);
+  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['calendario:atp', 'resultados:atp', 'partido:atp', 'atp:noticias']);
   assert.match(s.html(), /data-volver="competiciones"/);
   s.pantalla('c:nba');
   assert.match(s.html(), /data-orden="partido:nba">NBA · partido/);
   s.pantalla('resultados');
-  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['resultados:primera', 'resultados:segunda', 'resultados:nba', 'resultados:wnba']);
+  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['resultados:primera', 'resultados:segunda', 'resultados:nba', 'resultados:wnba', 'resultados:atp', 'resultados:wta']);
 });
 
 test('un acceso escribe su orden en la barra y sustituye la de agenda anterior; el resto se queda', () => {
