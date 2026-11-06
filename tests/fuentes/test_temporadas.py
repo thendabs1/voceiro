@@ -240,12 +240,12 @@ class PlanFechas(unittest.TestCase):
         t = temporadas.nueva('primera', '2026-27', self.AHORA, politica={'horizonte_dias': 14})
         hoy = temporadas.momento(self.AHORA).date()
         dias = [(hoy + timedelta(days=i)).isoformat() for i in range(14)]
-        comprobado = temporadas.marca(temporadas.momento(self.AHORA) - timedelta(hours=30))
+        comprobado = (temporadas.momento(self.AHORA) - timedelta(hours=30)).isoformat()
         cobertura = [{'proveedor': t['principal'], 'completa': True, 'unidad': d, 'comprobado': comprobado}
                      for d in dias]
         plan = temporadas.plan_fechas(t, self.AHORA, cobertura)
         self.assertEqual(plan, dias[:cadencias.CERCA_DIAS + 1])
-        viejo = temporadas.marca(temporadas.momento(self.AHORA) - timedelta(hours=70))
+        viejo = (temporadas.momento(self.AHORA) - timedelta(hours=70)).isoformat()
         for c in cobertura:
             c['comprobado'] = viejo
         self.assertEqual(temporadas.plan_fechas(t, self.AHORA, cobertura), dias)
