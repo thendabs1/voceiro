@@ -1,7 +1,7 @@
 .calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:8px 0 26px;overflow:hidden;scroll-margin-top:120px;container-type:inline-size}
 /* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
 .cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
-.cal-barra h1:focus{outline:none}.cal-barra>.ui-tira{flex-basis:100%;min-width:0}
+.cal-barra h1:focus{outline:none}.cal-barra>:is(.ui-tira,.cal-tira-cabecera){flex-basis:100%;min-width:0}
 .cal-titulo-vista{margin:0 8px 0 0;font-size:1.1em;flex:0 1 auto}
 .cal-acciones{display:flex;align-items:center;gap:4px;margin-left:auto}
 .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:44px;font:inherit;max-width:100%}
@@ -58,10 +58,11 @@
 .cal-chip-marca{font-size:.85em}
 .cal-todo-dia .cal-hora.cal-dep{color:var(--dep-bg);background:var(--dep)}
 .cal-mg-chip.cal-dep{color:var(--dep);background:var(--dep-bg)}.calendario-panel .cal-mg-barra.cal-dep{color:var(--dep-bg);background:var(--dep)}
-/* En cada día, hasta tres competiciones («NBA 9», «F1») y «+N». */
-.cal-marcas{display:flex;flex-direction:column;align-items:center;gap:1px;max-width:100%}
-.cal-marca{font-size:.62em;font-weight:700;line-height:1.2;color:var(--cat-deportes);white-space:nowrap;overflow:hidden;text-overflow:clip;max-width:100%}
-.cal-marca.cal-mas{color:var(--muted);font-weight:400}
+/* En cada día, todas sus competiciones («NBA 9», «F1»), las que quepan por línea. */
+.cal-marcas{display:flex;flex-wrap:wrap;gap:2px 3px;max-width:100%}.cal-celda .cal-marcas{justify-content:center;padding:0 2px}
+.cal-marca{font-size:.72em;font-weight:700;line-height:1.35;padding:0 4px;border-radius:4px;background:var(--dep-bg);white-space:nowrap;overflow:hidden;max-width:100%}
+.cal-marcas-mas{display:none;font-size:.72em;color:var(--muted)}
+@media(max-width:600px){.cal-celda .cal-marca:nth-child(n+6){display:none}.cal-celda .cal-marcas-mas{display:inline}}
 /* Este mes en deportes: una fila por competición con sus GP o torneos. */
 .cal-temporada{margin:14px 0 4px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--cat-deportes-bg)}
 .cal-temporada-boton{border:0;background:transparent;font-weight:700;color:var(--cat-deportes);padding:4px 0;text-align:left;width:100%}
@@ -100,9 +101,6 @@
 .calendario-panel .cal-mg-dia{position:relative}
 .cal-mg-dia[aria-pressed="true"]::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;box-shadow:inset 0 0 0 2px var(--accent)}
 .cal-mg-hueco{display:block;flex:none;height:calc(var(--carriles) * var(--carril,1.6em))}
-/* Deportes: las marcas del día, todas, en las líneas que hagan falta. */
-.cal-mg-marcas{display:flex;flex-wrap:wrap;gap:2px 3px}
-.cal-mg-marca{font-size:.72em;font-weight:700;line-height:1.35;padding:0 4px;border-radius:4px;white-space:nowrap;color:var(--dep);background:var(--dep-bg)}
 .cal-mg-chip{display:block;font-size:.72em;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px;padding:1px 4px;
   color:var(--cat-otras);background:var(--cat-otras-bg)}
 .cal-mg-chip.cal-cat-cultura{color:var(--cat-cultura);background:var(--cat-cultura-bg)}.cal-mg-chip.cal-cat-deportes{color:var(--cat-deportes);background:var(--cat-deportes-bg)}

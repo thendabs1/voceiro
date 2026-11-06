@@ -234,16 +234,16 @@ function pulsarConsulta(ev){
       break;
     case 'candidato': {
       const c = p.candidatos?.candidatos?.[+b.dataset.i];
-      if (c){ p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(c.id, { candidato: c }); }
+      if (c){ p.enfocar = '.consulta-foco'; abrirFichaConsulta(c.id, { candidato: c }); }
       break;
     }
-    case 'ficha': p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(b.dataset.id); break;
+    case 'ficha': p.enfocar = '.consulta-foco'; abrirFichaConsulta(b.dataset.id); break;
     case 'partido': {
       const partido = p.ficha?.ficha?.partidos?.find(x => x.id === b.dataset.id);
       if (!partido || !(partido.vista === 'sesion_motor' ? idSesionMotorValido(partido.id) : idPartidoConsultaValido(partido.id))) break;
       p.origen = { ficha: p.ficha, id: p.id, candidato: p.candidato, fallo: p.fallo,
         grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id, fecha: p.fecha };
-      p.enfocar = '.consulta-ficha summary';
+      p.enfocar = '.consulta-foco';
       abrirFichaConsulta(partido.id);
       break;
     }
@@ -350,8 +350,8 @@ const historialWikipedia = () => (PUNTUAL.id.startsWith('wikipedia:')
 function htmlConsulta(){
   const p = PUNTUAL, c = p.activa;
   const cerrar = t('conCerrar');
-  const cambiar = p.origen ? botonConsulta('volver', t('conVolverResultados'))
-    : p.id && p.candidatos?.estado === 'ok' ? botonConsulta('cambiar', t('conCambiar')) : '';
+  const volver = p.origen ? botonConsulta('volver', '‹ ' + t('conResultados'), ` class="consulta-volver" aria-label="${escapeHtml(t('conVolverResultados'))}"`) : '';
+  const cambiar = !p.origen && p.id && p.candidatos?.estado === 'ok' ? botonConsulta('cambiar', t('conCambiar')) : '';
   const otras = p.lista.length > 1
     ? `<div class="consulta-otras">${escapeHtml(t('conVarias'))} ${p.lista.map((o, i) =>
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
@@ -359,23 +359,24 @@ function htmlConsulta(){
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   const competicion = competicionConsulta();
   const vista = p.estado === 'ayuda' && ['resultados', 'clasificacion'].includes(c.tipo);
-  const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo)
-    : `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
+  const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo) : volver
+    || `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
   return `<div class="consulta-cab">${rotulo}${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
-    ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
+    ${otras}${p.estado === 'ficha' ? '' : htmlFechasResultados()}${cuerpoConsulta()}`;
 }
 
-function htmlFechasResultados(){
+// `resumen`: lo que dice la lista del día, en la misma fila que la fecha.
+function htmlFechasResultados(resumen = ''){
   const p = PUNTUAL;
   if (!idResultadosConsulta(p.id)) return '';
   const cargando = p.cargandoFecha || p.estado === 'cargando';
   const mover = (direccion, texto, flecha) => botonConsulta('dia', flecha,
     ` data-direccion="${direccion}" title="${escapeHtml(t(texto))}" aria-label="${escapeHtml(t(texto))}"${cargando || !fechaValida(p.fecha) ? ' disabled' : ''}`);
-  return `<div class="consulta-fechas" role="group" aria-label="${escapeHtml(t('conFechaResultados'))}" aria-busy="${cargando}">
+  return `<div class="consulta-fechas-fila"><div class="consulta-fechas" role="group" aria-label="${escapeHtml(t('conFechaResultados'))}" aria-busy="${cargando}">
     ${mover(-1, 'conDiaAnterior', '‹')}
     <label><span class="sr-only">${escapeHtml(t('conFechaResultados'))}</span><input type="date" data-fecha-resultados value="${escapeHtml(p.fecha)}" min="0001-01-01" max="9999-12-31"${cargando ? ' disabled' : ''}></label>
-    ${mover(1, 'conDiaSiguiente', '›')}</div>${notaFechaMotor(p.id)}${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
+    ${mover(1, 'conDiaSiguiente', '›')}</div>${resumen}</div>${notaFechaMotor(p.id)}${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
 }
 
 function cuerpoConsulta(){
@@ -422,15 +423,19 @@ function htmlCandidatos(d){
 function htmlFicha(d){
   const vacio = idResultadosMotorValido(PUNTUAL.id) ? 'conMotorSinSesiones' : d.tipo === 'resultados' ? 'conSinPartidos' : d.tipo === 'clasificacion' ? 'conSinTabla' : 'conSinResultados';
   const estado = estadoConsulta(d, vacio, { x: PUNTUAL.activa.texto });
-  if (estado) return estado + htmlPieConsulta(d);
+  if (estado) return htmlFechasResultados() + estado + htmlPieConsulta(d);
   const pintar = d.ficha?.vista ? VISTAS_CONSULTA[d.ficha.vista]?.ficha : FICHAS_CONSULTA[d.tipo];
-  if (!pintar || !d.ficha) return msgConsulta('conNoAdmitida');
+  if (!pintar || !d.ficha) return htmlFechasResultados() + msgConsulta('conNoAdmitida');
   const r = pintar(d.ficha);
   const linea = [r.linea, d.incompleto ? t('conParcial') : ''].filter(Boolean).join(' · ');
-  const ficha = `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
-    linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}</summary>
+  const titulo = `<strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}`;
+  if (!esDeporteConsulta(d.tipo)) return `<details class="consulta-ficha" open><summary class="consulta-foco">${titulo}</summary>
     <div class="consulta-cuerpo">${r.cuerpo}</div></details>${htmlPieConsulta(d)}`;
-  return esDeporteConsulta(d.tipo) ? `<div class="consulta-deporte">${ficha}</div>` : ficha;
+  // Deportes: sin plegable, que repetía el título y restaba una línea; la
+  // lista del día comparte fila con la fecha y el partido lleva su marcador.
+  const resumen = `<p class="consulta-resumen consulta-foco" tabindex="-1">${titulo}</p>`;
+  const cabecera = htmlFechasResultados(resumen) || r.cabecera?.(linea) || resumen;
+  return `<div class="consulta-deporte"><div class="consulta-ficha">${cabecera}<div class="consulta-cuerpo">${r.cuerpo}</div></div>${htmlPieConsulta(d)}</div>`;
 }
 
 // Fuente y licencia, siempre a la vista; en deportes, la hora y Actualizar.
@@ -513,6 +518,28 @@ function textoEliminatoria(f){
   ].filter(Boolean).join(' · ');
 }
 
+const INCIDENCIAS_POR_TIPO = [['conGoles', ['gol', 'propia', 'penalti']], ['conStatAmarillas', ['amarilla']], ['conStatRojas', ['roja', 'segundaAmarilla']]];
+const nombreIncidencia = e => t('conInc' + e.tipo[0].toUpperCase() + e.tipo.slice(1));
+
+// Por tipo y equipo, para leerlo de un vistazo, y debajo la cronología, que es
+// el partido en orden. El proveedor no dice quién entra y quién sale en un
+// cambio: se cuentan por tipo y sus nombres van, sin rol, en la cronología.
+function htmlIncidencias(f){
+  const lista = f.incidencias || [];
+  if (!lista.length) return '';
+  const nombres = (tipos, lado) => lista.filter(e => e.equipo === lado && tipos.includes(e.tipo)).map(e =>
+    `<span class="consulta-inc">${escapeHtml([e.jugadores.join(' · '), e.minuto, e.tipo === tipos[0] ? '' : `(${nombreIncidencia(e)})`].filter(Boolean).join(' '))}</span>`).join('');
+  const cambios = lado => lista.filter(e => e.equipo === lado && e.tipo === 'cambio').length;
+  const fila = (clave, local, visitante) => local || visitante ? `<tr><td>${local || '—'}</td><th scope="row">${escapeHtml(t(clave))}</th><td>${visitante || '—'}</td></tr>` : '';
+  const porTipo = INCIDENCIAS_POR_TIPO.map(([clave, tipos]) => fila(clave, nombres(tipos, 'local'), nombres(tipos, 'visitante'))).join('')
+    + fila('conCambios', cambios('local'), cambios('visitante'));
+  const cronologia = `<ul class="consulta-incidencias">${lista.map(e => `<li><span>${escapeHtml(e.minuto ?? '—')}</span><span><strong>${escapeHtml(nombreIncidencia(e))}</strong>${
+    e.jugadores.length ? ` · ${escapeHtml(e.jugadores.join(' · '))}` : ''} · ${equipoConsulta(f[e.equipo] || '—')}</span></li>`).join('')}</ul>`;
+  return `<table class="consulta-comparativa consulta-por-tipo"><caption>${escapeHtml(t('conIncidencias'))}</caption><thead><tr><th scope="col">${equipoConsulta(f.local)}</th>
+    <td></td><th scope="col">${equipoConsulta(f.visitante)}</th></tr></thead><tbody>${porTipo}</tbody></table>
+    ${plegadoConsulta(t('conCronologia'), cronologia, !globalThis.matchMedia?.('(max-width: 600px)').matches)}`;
+}
+
 function fichaPartido(f){
   const val = v => escapeHtml(v ?? '—');
   const equipo = lado => f[lado] || '—';
@@ -523,10 +550,7 @@ function fichaPartido(f){
       const formato = v => v == null ? '—' : s.id === 'posesion' && !String(v).includes('%') ? v + '%' : v;
       return `<tr><td>${val(formato(s.local))}</td><th scope="row">${escapeHtml(statPartido(s.id))}</th><td>${val(formato(s.visitante))}</td></tr>`;
     }).join('')}</tbody></table>` : '';
-  const incidencias = (f.incidencias || []).length ? `<h3 class="consulta-sub">${escapeHtml(t('conIncidencias'))}</h3>
-    <ul class="consulta-incidencias">${f.incidencias.map(e => `<li><span>${val(e.minuto)}</span><span>
-      <strong>${escapeHtml(t('conInc' + e.tipo[0].toUpperCase() + e.tipo.slice(1)))}</strong> · ${equipoConsulta(equipo(e.equipo))}
-      ${e.jugadores.length ? `<span class="consulta-inc-jugadores">${escapeHtml(e.jugadores.join(' · '))}</span>` : ''}</span></li>`).join('')}</ul>` : '';
+  const incidencias = htmlIncidencias(f);
   const alineaciones = (f.alineaciones || []).length ? plegadoConsulta(t('conAlineaciones'), equipos(lado => {
     const a = f.alineaciones.find(x => x.equipo === lado);
     if (!a) return '';
@@ -550,14 +574,15 @@ function fichaPartido(f){
       <thead><tr><th scope="col">${escapeHtml(t('conJugador'))}</th>${['minutos', 'puntos', 'rebotes', 'asistencias'].map(k => `<th scope="col"><abbr title="${escapeHtml(statPartido(k))}">${escapeHtml(t('conAbrev' + k[0].toUpperCase() + k.slice(1)))}</abbr></th>`).join('')}</tr></thead>
       <tbody>${tabla.filas.map(p => `<tr><th scope="row">${escapeHtml(p.nombre)}</th>${['minutos', 'puntos', 'rebotes', 'asistencias'].map(k => `<td>${val(p[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>` : '';
   })) : '';
+  // Sin tanteo (por jugar, aplazado) no se pinta un marcador vacío de dos cifras.
+  const tanteo = f.marcador ? `${val(f.marcador.local)} – ${val(f.marcador.visitante)}` : '–';
+  const bloques = [parciales + estadisticas, incidencias + destacados].filter(Boolean).map(b => `<div>${b}</div>`).join('');
   return {
     titulo: `${f.local || t('conEquipoPendiente')} · ${f.visitante || t('conEquipoPendiente')}`,
-    linea: [nombreDeporteConsulta(f.competicion), fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj].filter(Boolean).join(' · '),
-    cuerpo: `<div class="consulta-marcador"><span>${equipoConsulta(f.local)}</span><b>${val(f.marcador?.local)}</b>
-      <span>${equipoConsulta(f.visitante)}</span><b>${val(f.marcador?.visitante)}</b></div>
-      ${textoEliminatoria(f) ? `<p class="consulta-nota">${escapeHtml(textoEliminatoria(f))}</p>` : ''}
-      ${f.lugar ? `<p class="consulta-lugar">${escapeHtml([f.lugar, f.ciudad].filter(Boolean).join(' · '))}</p>` : ''}
-      ${parciales}${estadisticas}${incidencias}${destacados}${alineaciones}${jugadores}`,
+    linea: [nombreDeporteConsulta(f.competicion), fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj, f.lugar, f.ciudad].filter(Boolean).join(' · '),
+    cabecera: linea => `<div class="consulta-partido consulta-foco" tabindex="-1"><p class="consulta-marcador"><span>${equipoConsulta(f.local)}</span><b>${tanteo}</b><span>${equipoConsulta(f.visitante)}</span></p>
+      <p class="consulta-datos">${escapeHtml(linea)}</p>${textoEliminatoria(f) ? `<p class="consulta-nota">${escapeHtml(textoEliminatoria(f))}</p>` : ''}</div>`,
+    cuerpo: `${bloques ? `<div class="consulta-bloques">${bloques}</div>` : ''}${alineaciones}${jugadores}`,
   };
 }
 
@@ -647,20 +672,24 @@ const FICHAS_CONSULTA = {
       if (!dias.has(clave)) dias.set(clave, []);
       dias.get(clave).push(p);
     }
-    const marcador = v => escapeHtml(v ?? '—');
-    const cuerpo = [...dias].map(([fecha, lista]) => `${fecha ? `<p class="consulta-sub">${escapeHtml(fecha)}</p>` : ''}<ul class="consulta-partidos">${
+    const marcador = v => escapeHtml(v ?? '');
+    // Un solo día, el del selector: el encabezado lo repetiría. NBA puede traer
+    // otro día en la zona del lector y entonces sí hace falta.
+    const fijado = dias.size === 1 && fechaValida(PUNTUAL.fecha) && dias.has(dia.format(new Date(PUNTUAL.fecha + 'T12:00:00')));
+    const cuerpo = [...dias].map(([fecha, lista]) => `${fecha && !fijado ? `<p class="consulta-sub">${escapeHtml(fecha)}</p>` : ''}<ul class="consulta-partidos">${
       lista.map(p => {
         if (p.vista) return VISTAS_CONSULTA[p.vista]?.fila?.(p) || '';
         const inicio = new Date(p.inicio);
-        const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estadoTextoPartido(p.estado)].filter(Boolean).join(' · ');
+        const cab = p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : estadoTextoPartido(p.estado);
         const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b>${textoEliminatoria(p) ? `<span class="consulta-estado">${escapeHtml(textoEliminatoria(p))}</span>` : ''}`;
         const abrir = idPartidoConsultaValido(p.id);
         return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}">${abrir ? `<button type="button" data-accion="partido" data-id="${escapeHtml(p.id)}" aria-label="${escapeHtml(t('conAbrirPartido', { x: `${p.local || t('conEquipoPendiente')} · ${p.visitante || t('conEquipoPendiente')}` }))}">${contenido}</button>` : contenido}</li>`;
       }).join('')}</ul>`).join('');
+    const estados = [['en_juego', 'conNEnJuego'], ['final', 'conNFinal'], ['programado', 'conNProgramado']].filter(([e]) => cuenta[e]);
     return {
       titulo: `${nombreDeporteConsulta(f.competicion)} · ${tn('conPartidos', partidos.length)}`,
-      linea: [['en_juego', 'conNEnJuego'], ['final', 'conNFinal'], ['programado', 'conNProgramado']]
-        .filter(([e]) => cuenta[e]).map(([e, k]) => tn(k, cuenta[e])).join(' · '),
+      // Todos en el mismo estado: las tarjetas ya lo dicen.
+      linea: estados.length > 1 ? estados.map(([e, k]) => tn(k, cuenta[e])).join(' · ') : '',
       cuerpo,
     };
   },

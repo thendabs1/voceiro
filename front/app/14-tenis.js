@@ -41,7 +41,7 @@ VISTAS_CONSULTA.encuentro_tenis = {
   resultados(f){
     const partidos = f.partidos || [];
     return { titulo: `${CONSULTA_DEPORTES[f.competicion]} · ${tn('conEncuentrosTenis', partidos.length)}`,
-      linea: f.fecha || '', cuerpo: `<p class="consulta-nota">${escapeHtml(t('conFechaTenis'))}</p>
+      cuerpo: `<p class="consulta-nota">${escapeHtml(t('conFechaTenis'))}</p>
         <ul class="consulta-partidos">${partidos.map(filaTenis).join('')}</ul>` };
   },
   ficha(f){

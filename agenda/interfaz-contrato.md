@@ -34,6 +34,18 @@ de ahí salen las cuatro entradas, y cada enlace escribe su orden en la barra.
 - Solo se ofrece lo que existe: capacidades de `shared/consultas/registro.js` y
   citas en `disponibilidad`. Euroliga no es capa de `CAL_DEPORTES`: no tiene calendario.
 
+## Calendario y fichas de Deportes
+
+- `‹ mes ›` va siempre en la barra, junto a los atajos: no cambia de sitio con la
+  semana, el mes ni el ancho. Las marcas de competición son la misma pastilla en
+  ambas vistas, todas; solo en móvil se cortan en cinco con `+N`.
+- Las fichas deportivas no van en un `<details>`, y `.consulta-foco` marca dónde
+  cae el foco. Libros, películas y contexto lo conservan.
+- Partido: marcador, y bajo él fecha, estado y sede. Las incidencias van por tipo
+  y equipo y la cronología queda en el orden del proveedor: `minuto` es texto
+  (`45'+2'`). Un cambio no dice quién entra, así que por tipo solo se cuenta.
+- El encabezado del día se omite solo si coincide con el selector de fecha.
+
 ## Enlace a resultados
 
 Cada cita de hoy o anterior enlaza por `destinoResultados(tarjeta, dia)`
