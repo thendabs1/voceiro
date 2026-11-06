@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=2606a23c55';
+} from './parser.js?v=83e245ade0';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=2606a23c55';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=2606a23c55';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=2606a23c55';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=2606a23c55';
-import { comparador } from './busqueda/orden.js?v=2606a23c55';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=83e245ade0';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=83e245ade0';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=83e245ade0';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=83e245ade0';
+import { comparador } from './busqueda/orden.js?v=83e245ade0';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=2606a23c55';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=2606a23c55';
+} from './sync/fusion.js?v=83e245ade0';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=83e245ade0';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=2606a23c55';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=2606a23c55';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=83e245ade0';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=83e245ade0';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=2606a23c55';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=83e245ade0';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=2606a23c55';
+} from './tiempo/avisos.js?v=83e245ade0';
 
-import { I18N, traducir } from './idiomas/index.js?v=2606a23c55';
+import { I18N, traducir } from './idiomas/index.js?v=83e245ade0';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor } from './consultas/registro.js?v=2606a23c55';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=2606a23c55';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=2606a23c55';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=2606a23c55';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=83e245ade0';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=83e245ade0';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=83e245ade0';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=83e245ade0';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=2606a23c55';
+import { ADMINISTRACION } from './territorios/administracion.js?v=83e245ade0';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=2606a23c55');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=83e245ade0');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3336,7 +3336,8 @@ function sugerenciasBuscar(raw){
   // Lo que sigue a una consulta puntual es su valor: nada que sugerir.
   if (partirConsulta(raw).consulta) return [];
   const calendario = sugerenciasCalendario(raw);
-  if (calendario) return calendario;
+  // Un prefijo ya empezado solo se completa; una palabra suelta también busca medios.
+  if (calendario && /:[^\s]*$/.test(raw)) return calendario;
   const stats = sugerenciasEstadisticas(raw);
   if (stats) return stats;
   // eltiempo: sugiere municipios, no medios.
@@ -3359,6 +3360,8 @@ function sugerenciasBuscar(raw){
   }
 
   if (!low) return out;
+
+  out.push(...[...(calendario || []), ...sugerenciasDeportes(low)].slice(0, 5));
 
   const grupos = [...new Set(MEDIOS_UNICOS.map(m => m.grupo).filter(Boolean))];
   const grupoHits = grupos
@@ -3449,6 +3452,13 @@ function aplicarSugerencia(idx){
   if (s.kind === 'calendario'){
     input.value = input.value.replace(/[^\s"]*$/, s.value);
     cerrarSugerencias(); aplicarFiltros(); return;
+  }
+
+  // Sustituye la palabra escrita y una consulta vacía («resultados: nba»), que
+  // no es un valor: el parser deja `nba` suelta.
+  if (s.kind === 'orden'){
+    input.value = input.value.replace(/[^\s"]*\s*$/, '');
+    cerrarSugerencias(); escribirAcceso(s.value); return;
   }
 
   if (s.kind === 'estadisticas'){
@@ -3595,25 +3605,13 @@ function wireAutocomplete(){
 }
 /* ═══════════════════════════════════════════════════════════════
    ACCESOS DEL BUSCADOR (▾ al final de la barra, como las opciones de Gmail)
-   Horarios, resultados y clasificación de las competiciones con el ratón.
+   Lanzador corto: lo que sigo y el camino a la vista general de deportes.
    Cada acceso escribe su orden en la barra y la aplica (modelo GitHub: el
    filtro activo se ve y se aprende); los botones de las vistas no escriben.
    ═══════════════════════════════════════════════════════════════ */
-const ACCESOS = { abierto: false, pantalla: '', disp: null, cargando: null };
+const ACCESOS = { abierto: false };
 const ACCESOS_PRIMERAS = 4;
 const ACCESOS_POR_DEFECTO = ['f1', 'primera', 'nba'];
-
-// Competiciones con algo publicado (disponibilidad global del catálogo): una
-// petición al abrir por primera vez; si falla, se ofrecen todas.
-async function accesosDisponibilidad(){
-  if (ACCESOS.disp || ACCESOS.cargando) return;
-  const controller = ACCESOS.cargando = new AbortController();
-  try { ACCESOS.disp = (await calPedir('catalogo', { disponibilidad: 1 }, controller.signal)).disponibilidad?.circuitos || {}; }
-  catch { ACCESOS.disp = null; }
-  ACCESOS.cargando = null;
-  if (ACCESOS.abierto) pintarAccesos();
-}
-const accesoHay = c => !ACCESOS.disp || ACCESOS.disp[c] > 0;
 
 // Sustituye en la barra lo que era de la agenda o una consulta puntual por la
 // orden elegida; el resto (medios, palabras, fechas) se queda. Las consultas
@@ -3631,58 +3629,27 @@ function escribirAcceso(orden){
 function pintarAccesos(){
   const panel = $('#accesos-panel');
   if (!panel) return;
-  const p = ACCESOS.pantalla, nombre = calNombreCompeticion;
-  // La orden no se repite en la fila: al pulsar se escribe en la barra y ahí se aprende.
-  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}</button></li>`;
-  const ir = (pantalla, texto) => `<li><button type="button" data-pantalla="${calEsc(pantalla)}">${calEsc(texto)}<span aria-hidden="true"> ›</span></button></li>`;
-  let titulo = t('accTitulo'), filas = [];
-  if (!p){
-    // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
-    const sigo = (calPreferencias()?.competiciones || []).filter(accesoHay);
-    const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c) && accesoHay(c))].slice(0, ACCESOS_PRIMERAS);
-    const futbol = CAL_DEPORTES.futbol.filter(accesoHay);
-    filas = [...deportesSeguidos().map(([k, cs]) => fila(cs.map(c => c + ':').join(' '), t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) }))),
-      sigo.length > 1 ? fila('calendario:' + sigo.join(','), t('accSigoHorarios')) : '',
-      ...primeras.map(c => fila('calendario:' + c, t('accHorarios', { x: nombre(c) }))),
-      futbol.length > 1 && !futbol.every(c => primeras.includes(c)) ? fila('calendario:' + futbol.join(','), t('accHorarios', { x: t('calFutbol') })) : '',
-      ir('resultados', t('accResultados')), ir('clasificaciones', t('accClasificaciones')), ir('competiciones', t('accCompeticiones'))];
-  } else if (p === 'resultados'){
-    titulo = t('accResultadosTitulo');
-    filas = [...CAL_COMPETICIONES, 'euroliga'].filter(c => codigoDeporte('resultados', c))
-      .map(c => fila('resultados:' + c, c === 'euroliga' ? t('conEuroliga') : nombre(c)));
-  } else if (p === 'clasificaciones'){
-    titulo = t('accClasificacionesTitulo');
-    filas = CAL_COMPETICIONES.filter(c => codigoDeporte('clasificacion', c)).map(c => fila('clasificacion:' + c, nombre(c)));
-  } else if (p === 'competiciones'){
-    titulo = t('accCompeticionesTitulo');
-    filas = CAL_COMPETICIONES.map(c => ir('c:' + c, nombre(c)));
-  } else {
-    // Una competición: solo las operaciones que admite (F1 no tiene resultados).
-    const c = p.slice(2);
-    titulo = nombre(c);
-    filas = [accesoHay(c) ? fila('calendario:' + c, t('accHorarios', { x: nombre(c) })) : '',
-      codigoDeporte('resultados', c) ? fila('resultados:' + c, t('accResultadosDe', { x: nombre(c) })) : '',
-      codigoDeporte('partido', c) ? fila('partido:' + c, t('accPartidoDe', { x: nombre(c) })) : '',
-      codigoDeporte('clasificacion', c) ? fila('clasificacion:' + c, t('accClasificacionDe', { x: nombre(c) })) : '',
-      // Solo noticias, sin abrir Deportes; en el modo o en todo, con sus pestañas.
-      AMBITOS[c]?.noticias ? fila(c + ':noticias', t('accNoticiasDe', { x: nombre(c) })) : ''];
-  }
-  const volver = p ? `<button type="button" class="accesos-volver" data-volver="${p.startsWith('c:') ? 'competiciones' : ''}" aria-label="${calEsc(t('accVolver'))}">‹</button>` : '';
-  panel.innerHTML = `<div class="accesos-cab">${volver}<h2 id="accesos-titulo" tabindex="-1">${calEsc(titulo)}</h2>
+  const fila = (atributo, texto) => `<li><button type="button" ${atributo}>${calEsc(texto)}</button></li>`;
+  // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
+  const sigo = calPreferencias()?.competiciones || [];
+  const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c)).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
+  const noticias = deportesSeguidos().map(([k, cs]) => fila(`data-orden="${calEsc(cs.map(c => c + ':').join(' '))}"`, t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) })));
+  panel.innerHTML = `<div class="accesos-cab"><h2 id="accesos-titulo" tabindex="-1">${calEsc(t('accTitulo'))}</h2>
     <button type="button" class="accesos-cerrar" data-cerrar aria-label="${calEsc(t('calCerrar'))}">×</button></div>
-    <ul class="accesos-lista">${filas.filter(Boolean).join('')}</ul>
-    ${ACCESOS.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
+    <div class="accesos-filas">${primeras.join('')}</div>
+    <ul class="accesos-lista">${[...noticias, fila('data-orden="resultados:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
+    ${DEPORTES_DISP.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
 }
 
 function abrirAccesos(){
-  ACCESOS.abierto = true; ACCESOS.pantalla = '';
+  ACCESOS.abierto = true;
   cerrarSugerencias();
   const panel = $('#accesos-panel');
   panel.hidden = false;
   $('#buscar-accesos').setAttribute('aria-expanded', 'true');
+  pedirDisponibilidadDeportes();
   pintarAccesos();
-  accesosDisponibilidad();
-  panel.querySelector('.accesos-lista button')?.focus({ preventScroll: true });
+  panel.querySelector('.dep-accion, .accesos-lista button')?.focus({ preventScroll: true });
 }
 function cerrarAccesos(volver = true){
   if (!ACCESOS.abierto) return;
@@ -3701,16 +3668,11 @@ function wireAccesos(){
     if (!b) return;
     if ('orden' in b.dataset) return escribirAcceso(b.dataset.orden);
     if ('cerrar' in b.dataset) return cerrarAccesos();
-    if ('pantalla' in b.dataset || 'volver' in b.dataset){
-      ACCESOS.pantalla = b.dataset.pantalla ?? b.dataset.volver;
-      pintarAccesos();
-      $('#accesos-titulo')?.focus({ preventScroll: true });
-    }
+    if ('deportes' in b.dataset){ cerrarAccesos(false); abrirCalendario(document.getElementById('btn-deportes'), 'deportes'); }
   });
   // Escape cierra y vuelve al ▾; un clic fuera o salir con el tabulador, también.
   panel.addEventListener('keydown', e => { if (e.key === 'Escape'){ e.stopPropagation(); cerrarAccesos(); } });
   document.addEventListener('click', e => {
-    // composedPath: al cambiar de pantalla, el botón pulsado ya no está en el panel.
     if (ACCESOS.abierto && !e.composedPath().some(n => n === panel || n === boton)) cerrarAccesos(false);
   });
   panel.addEventListener('focusout', e => {
@@ -3719,8 +3681,8 @@ function wireAccesos(){
 }
 
 // Deportes que sigo (★ de Deportes): [deporte, competiciones con datos].
-// Cada uno da una fila «Fútbol · noticias» arriba del ▾, que escribe sus
-// prefijos (primera: segunda:), como antes los iconos de la cabecera.
+// Cada uno da una fila «Fútbol · noticias» en el ▾, que escribe sus prefijos
+// (primera: segunda:), como antes los iconos de la cabecera.
 function deportesSeguidos(){
   const sigo = calPreferencias()?.competiciones || [];
   return Object.entries(CAL_DEPORTES).map(([k, cs]) => [k, cs.filter(c => sigo.includes(c) && accesoHay(c))]).filter(([, cs]) => cs.length);
@@ -4476,10 +4438,13 @@ function calCita(e, dia = ''){
   // Una sesión o función lleva encima el GP o programa al que pertenece, si su nombre no lo dice ya.
   const padre = e.padre ? calNombreEvento({ nombres: e.padre, lugar: e.lugar }) : '';
   const titulo = e.padre ? calNombreSesion(e, { nombres: e.padre }) : calNombreEvento(e);
+  // Lo que aún no ha empezado no tiene resultados que ver.
+  const destino = dia && dia <= calHoy() && !anulado ? destinoResultados(e, dia) : null;
   return `<article class="cal-cita${anulado ? ' cal-anulada' : ''}"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
     ${padre && !titulo.includes(calNombre({ nombres: e.padre })) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calTituloDesplegable(e, dia, false, titulo)}</h3>
     ${calEtiquetasDeportes(e)}
+    ${destino ? calBoton('ver-resultados', t('conResultados'), destino.codigo, `class="cal-resultados" data-fecha="${calEsc(destino.fecha)}" data-id="${calEsc(destino.id)}"`) : ''}
     ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
     ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}
     ${anulado ? `<p class="cal-aviso">${calEsc(t(anulado))}</p>` : ''}${calDesplegado(e, dia)}</div></article>`;
@@ -4518,6 +4483,18 @@ function calPuntos(d){
 // capa, la suya va primero.
 const calModoDeportes = () => CALENDARIO.vista === 'deportes';
 const calUnica = () => CALENDARIO.capas?.size === 1 ? [...CALENDARIO.capas][0] : '';
+// Una sola competición a la vista, por sus capas o por la orden de la barra.
+function calCompeticionVista(){
+  const { capas, orden } = CALENDARIO;
+  const cs = capas ? [...capas] : [...(orden?.ambitos || []).filter(a => AMBITOS[a]?.codigo), ...(orden?.circuitos || [])];
+  return cs.length === 1 ? cs[0] : '';
+}
+// Con una competición, sus resultados y su tabla; con varias, la vista general.
+function calEnlacesDeportes(){
+  const c = calCompeticionVista();
+  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'resultados:' }])
+    .map(a => calBoton('orden', a.texto, a.orden)).join('');
+}
 function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
   const unica = calUnica();
   const hay = Object.entries(d?.competiciones || {}).filter(([c, n]) => CAL_MARCAS[c] && n.citas + n.programas + n.en_curso > 0)
@@ -5158,7 +5135,7 @@ function pintarCalendario(repintado = false){
   // Arriba la ciudad (en Deportes, el título) y las acciones; debajo, atajos de
   // fecha y chips: en la agenda, temas; en Deportes, deportes y competiciones.
   p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="${deportes ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(t(deportes ? 'calDeportesTitulo' : 'calTitulo'))}</h1>
-    ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? '' : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
+    ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? calEnlacesDeportes() : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
     ${s.orden?.noticias ? calBoton('cerrar', t('calVerNoticias')) : calBoton('cerrar', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calCerrar'))}" title="${calEsc(t('calCerrar'))}"`)}</div>
     <div class="cal-chips cal-rangos ui-tira" role="group" aria-label="${calEsc(t('calCuando'))}">${rango('hoy', hoy)}${rango('manana', manana)}${rango('finde')}
     ${calBoton('elegir-fecha', '📅', '', `class="cal-icono" aria-label="${calEsc(t('calFecha'))}" title="${calEsc(t('calFecha'))}"`)}
@@ -5200,6 +5177,8 @@ function wireCalendario(){
     if (!b) return;
     const a = b.dataset.cal, v = b.dataset.valor;
     if (a === 'cerrar') return salirCalendario();
+    if (a === 'orden') return irDesdeCalendario(v);
+    if (a === 'ver-resultados') return abrirResultadosDelDia(v, b.dataset.fecha, b.dataset.id);
     if (a === 'asistente') return calAbrirAsistente(Number(v) || 0);
     if (a === 'ahora-no'){ calGuardarPreferencias({ v: 1, estado: 'omitido' }); return void pintarCalendario(); }
     if (a === 'seguir') return calSeguir(v);
@@ -5379,8 +5358,9 @@ const CONSULTA_URL = BACKENDS.deno.buscar;
 const CONSULTA_MIN_LETRAS = 3;
 const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
-const CONSULTA_DEPORTES = { primera: 'Primera', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
-  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
+const CONSULTA_DEPORTES = { primera: 'LaLiga', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
+  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', 'feb-endesa': 'LF Endesa', 'feb-challenge': 'LF Challenge',
+  f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
 const VISTAS_CONSULTA = {};
 const nombreDeporteConsulta = codigo => codigo === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[codigo] || codigo;
 const CONSULTA_EJEMPLOS = {
@@ -5400,6 +5380,7 @@ const PUNTUAL = {
   grupo: null,               // grupo visible en una columna; en ancho se ven todos
   origen: null,              // parrilla a la que volver desde un partido
   fecha: '', cargandoFecha: false,
+  fechaPedida: '',           // día que pide una tarjeta del calendario
 };
 
 const idiomaConsulta = () => {
@@ -5455,16 +5436,19 @@ function activarConsulta(c){
   PUNTUAL.grupo = null;
   PUNTUAL.seq++;   // lo que esté en camino ya no se pinta
   clearTimeout(PUNTUAL.timer);
+  const fecha = PUNTUAL.fechaPedida;
+  PUNTUAL.fechaPedida = '';
   Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null, fecha: '', cargandoFecha: false });
   if (esDeporteConsulta(c.tipo)){
     const codigo = normalize(c.texto);
-    if (admiteConsultaMotor(c.tipo, codigo)) { abrirFichaConsulta(`${MOTOR[codigo]}:resultados/${codigo}`); return; }
+    pedirDisponibilidadDeportes();
+    if (admiteConsultaMotor(c.tipo, codigo)) { abrirFichaConsulta(`${MOTOR[codigo]}:resultados/${codigo}`, { fecha }); return; }
     if (c.tipo === 'partido' && idPartidoConsultaValido(`espn:partido/${codigo}`)){
       abrirFichaConsulta(`espn:partido/${codigo}`); return;
     }
     if (codigoDeporte(c.tipo, codigo)){
       if (c.tipo === 'partido') cargarCandidatos({ ...c, texto: codigo });
-      else abrirFichaConsulta(codigo === 'euroliga' ? 'euroliga:resultados' : `espn:${c.tipo}/${codigo}`);
+      else abrirFichaConsulta(codigo === 'euroliga' ? 'euroliga:resultados' : `espn:${c.tipo}/${codigo}`, { fecha });
       return;
     }
     PUNTUAL.estado = 'ayuda';
@@ -5580,7 +5564,8 @@ function pintarConsulta({ conservarPlegado = false } = {}){
   if (plegada) el.querySelector('.consulta-ficha').open = false;
   el.hidden = false;
   // El foco solo se mueve tras un toque en el panel, nunca al llegar datos de lo que se escribe.
-  const destino = PUNTUAL.enfocar && el.querySelector(PUNTUAL.enfocar);
+  // Mientras carga no: la ficha repinta el panel y el foco se perdería.
+  const destino = PUNTUAL.enfocar && PUNTUAL.estado !== 'cargando' && el.querySelector(PUNTUAL.enfocar);
   if (destino && !destino.disabled){ PUNTUAL.enfocar = ''; destino.focus(); }
 }
 
@@ -5635,6 +5620,14 @@ function pulsarConsulta(ev){
       }
       break;
     case 'valor': cambiarTextoConsulta(b.dataset.valor); break;
+    case 'orden':
+      escribirAcceso(b.dataset.orden);
+      // Después: activar la consulta limpia el foco pendiente.
+      if (/^(resultados|clasificacion):/.test(b.dataset.orden)){
+        p.enfocar = '.dep-tabs [aria-current], .dep-accion';
+        if (p.estado !== 'cargando') pintarConsulta();
+      }
+      break;
     case 'grupo': {
       const i = Number(b.dataset.i);
       if (!Number.isInteger(i) || !p.ficha?.ficha?.grupos?.[i]) break;
@@ -5711,7 +5704,11 @@ function htmlConsulta(){
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
     : '';
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
-  return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(tipo))}</span>${cambiar}
+  const competicion = competicionConsulta();
+  const vista = p.estado === 'ayuda' && ['resultados', 'clasificacion'].includes(c.tipo);
+  const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo)
+    : `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
+  return `<div class="consulta-cab">${rotulo}${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
     ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
 }
@@ -5732,10 +5729,11 @@ function cuerpoConsulta(){
   const p = PUNTUAL, c = p.activa;
   switch (p.estado){
     case 'ayuda':
-      if (esDeporteConsulta(c.tipo)){
-        return msgConsulta('conCompeticion') + opcionesConsulta([...new Set([...Object.keys(ESPN), ...Object.keys(MOTOR), 'euroliga'])].filter(k => codigoDeporte(c.tipo, k))
+      if (c.tipo === 'partido'){
+        return msgConsulta('conCompeticion') + opcionesConsulta(DEPORTES_ORDEN.flatMap(competicionesDeporte).filter(k => codigoDeporte(c.tipo, k))
           .map(k => botonConsulta('valor', nombreDeporteConsulta(k), ` data-valor="${k}"`)).join(''));
       }
+      if (esDeporteConsulta(c.tipo)) return htmlVistaDeportes(c.tipo);
       return msgConsulta('conAyuda', { p: c.prefijo, ej: CONSULTA_EJEMPLOS[c.tipo] });
     case 'corta': return msgConsulta('conCorta') + opcionesConsulta(botonConsulta('forzar', t('conBuscarIgual', { x: c.texto })));
     case 'cargando': return msgConsulta('conCargando');
@@ -6027,6 +6025,124 @@ const FICHAS_CONSULTA = {
     };
   },
 };
+/* ═══════════════════════════════════════════════════════════════
+   DEPORTES: UNA SOLA LISTA PARA TODAS LAS ENTRADAS
+   Competiciones por deporte y lo que ofrece cada una. De aquí salen la
+   vista general (resultados: sin competición), el ▾, las pestañas de una
+   competición y las sugerencias. Cada enlace escribe su orden en la barra.
+   ═══════════════════════════════════════════════════════════════ */
+// El orden de los bloques equilibra las tres columnas de la vista general.
+const DEPORTES_ORDEN = ['futbol', 'tenis', 'baloncesto', 'motor', 'atletismo'];
+// [orden, texto, columna de la matriz]; lo que no existe deja su hueco.
+const DEPORTES_ACCIONES = [['resultados', 'conResultados', 2], ['calendario', 'calTitulo', 3], ['clasificacion', 'conClasificacion', 4]];
+const DEPORTES_DISP = { circuitos: null, cargando: false };
+
+// Competiciones con algo publicado: una petición al abrir la primera entrada;
+// si falla se ofrecen todas y se reintenta en la siguiente.
+const accesoHay = c => !DEPORTES_DISP.circuitos || DEPORTES_DISP.circuitos[c] > 0;
+async function pedirDisponibilidadDeportes(){
+  const d = DEPORTES_DISP;
+  if (d.circuitos || d.cargando) return;
+  d.cargando = true;
+  try { d.circuitos = (await calPedir('catalogo', { disponibilidad: 1 }, new AbortController().signal)).disponibilidad?.circuitos || {}; }
+  catch { d.circuitos = null; }
+  d.cargando = false;
+  conservandoFoco(() => {
+    if (ACCESOS.abierto) pintarAccesos();
+    if (PUNTUAL.activa && esDeporteConsulta(PUNTUAL.activa.tipo)) pintarConsulta({ conservarPlegado: true });
+  });
+}
+// Los datos llegan mientras se navega con el teclado: repintar no debe perder el botón.
+function conservandoFoco(pintar){
+  const orden = document.activeElement?.dataset?.orden;
+  pintar();
+  if (orden) document.querySelector(`[data-orden="${orden}"]`)?.focus({ preventScroll: true });
+}
+
+// Euroliga tiene resultados y no calendario: por eso no es una capa de CAL_DEPORTES.
+function competicionesDeporte(k){
+  const cs = CAL_DEPORTES[k] || [];
+  if (k !== 'baloncesto') return cs;
+  const i = cs.indexOf('wnba') + 1;
+  return [...cs.slice(0, i), 'euroliga', ...cs.slice(i)];
+}
+const nombreCompeticionCorto = c => c === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[c] || calNombreCompeticion(c);
+
+// Solo lo que existe: capacidades de shared/consultas/registro.js y citas publicadas.
+function accionesCompeticion(c, { noticias = false } = {}){
+  const hay = { resultados: codigoDeporte('resultados', c), clasificacion: codigoDeporte('clasificacion', c),
+    calendario: Object.hasOwn(AMBITOS, c) && accesoHay(c) };
+  const acciones = DEPORTES_ACCIONES.filter(([tipo]) => hay[tipo])
+    .map(([tipo, texto, columna]) => ({ tipo, texto: t(texto), columna, orden: `${tipo}:${c}` }));
+  return noticias && AMBITOS[c]?.noticias ? [...acciones, { tipo: 'noticias', texto: t('conNoticias'), orden: `${c}:noticias` }] : acciones;
+}
+
+// Una fila de la matriz, también en el ▾.
+function filaCompeticion(c, resaltada = ''){
+  const acciones = accionesCompeticion(c), nombre = nombreCompeticionCorto(c);
+  if (!acciones.length) return '';
+  return `<div class="dep-fila" data-desde="${acciones[0].columna}"><span class="dep-nombre">${escapeHtml(nombre)}</span>${acciones.map(a =>
+    `<button type="button" class="dep-accion dep-col-${a.columna}" data-accion="orden" data-orden="${escapeHtml(a.orden)}"${a.tipo === resaltada ? ' data-resaltada="1"' : ''} aria-label="${escapeHtml(`${nombre}: ${a.texto}`)}">${escapeHtml(a.texto)}</button>`).join('')}</div>`;
+}
+
+// Vista general: en pantalla ancha, todo a la vista; en móvil, plegada salvo lo
+// que sigo o, sin nada seguido, el primer bloque.
+function htmlVistaDeportes(tipo){
+  const sigo = calPreferencias()?.competiciones || [];
+  const estrecha = globalThis.matchMedia?.('(max-width: 600px)').matches;
+  const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, tipo)).join('') }))
+    .filter(b => b.filas);
+  return `<div class="dep-vista">${bloques.map((b, i) => {
+    const abierto = !estrecha || b.cs.some(c => sigo.includes(c)) || (!sigo.length && i === 0);
+    return `<details class="dep-bloque"${abierto ? ' open' : ''}><summary>${escapeHtml(t(CAL_NOMBRES_DEPORTE[b.k]))}</summary>${b.filas}</details>`;
+  }).join('')}</div>`;
+}
+
+// Competición que enseña el panel, si es una ficha de resultados o clasificación.
+function competicionConsulta(){
+  const { activa: c, estado, origen } = PUNTUAL;
+  if (!c || !['resultados', 'clasificacion'].includes(c.tipo) || estado === 'ayuda' || origen) return '';
+  const codigo = normalize(c.texto);
+  return codigoDeporte(c.tipo, codigo) ? codigo : '';
+}
+function htmlCabeceraCompeticion(codigo, tipo){
+  const boton = (orden, texto, actual, valorActual) => `<button type="button" data-accion="orden" data-orden="${escapeHtml(orden)}"${actual ? ` aria-current="${valorActual}"` : ''}>${escapeHtml(texto)}</button>`;
+  const deporte = DEPORTES_ORDEN.find(k => competicionesDeporte(k).includes(codigo));
+  const hermanas = competicionesDeporte(deporte).filter(c => codigoDeporte(tipo, c));
+  return `<nav class="dep-cab" aria-label="${escapeHtml(t('conSecciones'))}">${boton('resultados:', '‹ ' + t('calDeportesTitulo'))}
+    <div class="dep-tabs">${accionesCompeticion(codigo, { noticias: true }).map(a => boton(a.orden, a.texto, a.tipo === tipo, 'page')).join('')}</div>
+    ${hermanas.length > 1 ? `<div class="dep-hermanas ui-tira" role="group" aria-label="${escapeHtml(t('conOtrasCompeticiones'))}">${hermanas.map(c =>
+      boton(`${tipo}:${c}`, nombreCompeticionCorto(c), c === codigo, 'true')).join('')}</div>` : ''}</nav>`;
+}
+
+// Desde el calendario: Deportes abierto con su botón no se cierra al escribir la orden.
+function irDesdeCalendario(orden){
+  cerrarCalendario(false);
+  window.scrollTo({ top: 0, behavior: 'auto' });
+  escribirAcceso(orden);
+}
+// Tarjeta: resultados de su competición en ese día. Si esa consulta ya estaba
+// abierta, la barra no cambia y nadie recoge la fecha; puede estar en un partido.
+function abrirResultadosDelDia(codigo, fecha, id){
+  PUNTUAL.fechaPedida = fecha;
+  irDesdeCalendario('resultados:' + codigo);
+  if (!PUNTUAL.fechaPedida) return;
+  Object.assign(PUNTUAL, { fechaPedida: '', origen: null });
+  abrirFichaConsulta(id, { fecha });
+}
+
+// Prefijos de consulta y competiciones por su nombre, para el autocompletado.
+function sugerenciasDeportes(q){
+  if (q.length < 3) return [];
+  const tipos = new Set();
+  const prefijos = Object.entries(PREFIJOS_CONSULTAS).filter(([a, tipo]) => normalize(a).startsWith(q) && !tipos.has(tipo) && tipos.add(tipo))
+    .map(([a, tipo]) => ({ kind: 'orden', value: a + ':', label: a + ':', tipo: nombreConsulta(tipo) }));
+  const competiciones = DEPORTES_ORDEN.flatMap(competicionesDeporte)
+    .filter(c => c.startsWith(q) || normalize(nombreCompeticionCorto(c)).startsWith(q))
+    .flatMap(c => accionesCompeticion(c).filter(a => a.tipo !== 'calendario').map(a => ({ kind: 'orden', value: a.orden,
+      label: `${nombreCompeticionCorto(c)} · ${a.texto}`, tipo: t('calDeportesTitulo') })));
+  return [...prefijos, ...competiciones];
+}
 /* Panel técnico: lee los resúmenes públicos ya calculados, bajo demanda.
    Cuenta los titulares guardados en el archivo de cada día, no artículos
    únicos por publicación. Solo se muestra lo que trae datos: un hueco no es un cero. */
@@ -6607,7 +6723,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=2606a23c55')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=83e245ade0')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
