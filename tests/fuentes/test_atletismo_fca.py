@@ -26,7 +26,7 @@ class AdaptadorFCA(unittest.TestCase):
         self.assertEqual({o['rol'] for o in m['organizacion']}, {'organiza'})
         self.assertEqual(m['fuente']['relacion'], 'propio')  # La FCA coorganiza con un club.
         self.assertEqual(eventos['90048']['metadatos']['fuente']['relacion'], 'propio')
-        self.assertEqual(eventos['89925']['metadatos']['fuente']['relacion'], 'desconocido')
+        self.assertEqual(eventos['89925']['metadatos']['fuente']['relacion'], 'propio')  # Solo un club: está en su calendario.
         for e in eventos.values():
             meta = e['metadatos']
             self.assertEqual(meta['alcance']['tipo'], 'desconocido')
@@ -140,6 +140,21 @@ class AdaptadorFCA(unittest.TestCase):
         m = fca.enriquecer({**base, 'title': 'Campionat d’Espanya de Clubs Màster ST'})
         self.assertEqual((m['fuente']['relacion'], m['fuente']['evidencia']['localizador']), ('reflejo', 'title'))
         self.assertEqual(fca.enriquecer({**base, 'title': 'Campionat de Catalunya'})['fuente']['relacion'], 'propio')
+
+    def test_estar_en_su_calendario_basta_si_ninguna_autoridad_ajena_la_reclama(self):
+        u = 'https://fcatletisme.cat/x'
+        club = fca.relacion(u, 'Cursa', None, ['Joventut Atlètica Sabadell'], '')
+        self.assertEqual((club['relacion'], club['evidencia']['localizador']), ('propio', 'organizer'))
+        sin_organizador = fca.relacion(u, 'Campionat de Catalunya', None, [], '')
+        self.assertEqual((sin_organizador['relacion'], sin_organizador['evidencia']['literal']), ('propio', 'Campionat de Catalunya'))
+        conjunta = fca.relacion(u, 'Cursa', None, ['Federació Catalana d’Atletisme', 'Real Federación Española de Atletismo'], '')
+        self.assertEqual(conjunta['relacion'], 'propio')
+        # Otra federación, aunque sea en una pista catalana, no es de la FCA.
+        andorra = fca.relacion(u, 'Control', None, ['Federació Andorrana d’Atletisme'], '')
+        self.assertEqual((andorra['relacion'], andorra['de']), ('reflejo', 'faa'))
+        # Maratón de Valencia y similares: enlace a RFEA sin organizador. No se reclaman.
+        web = 'https://atletismorfea.es/calendario/campeonato/maraton-valencia'
+        self.assertEqual(fca.relacion(u, 'Maratón Valencia', None, [], web)['relacion'], 'desconocido')
 
     def test_proteccion_y_esquema_roto_interrumpen_sin_mas_peticiones(self):
         for error in (403, 429):

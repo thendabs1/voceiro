@@ -218,6 +218,11 @@ def resolver(inventario, revisiones, n=None, *, incorporar_nuevas=False):
                 'identidad_interna': True, 'criterio': 'fila nueva sin correspondencias ni ambigüedades'})
             eventos.append(e)
             resueltas.add(h)
+    # Nivel II tiene «carácter autonómico» (circular de inscripción en el calendario
+    # 2027, p. 2), aunque el Reglamento lo coloque en categoría nacional: reflejo.
+    for e in eventos:
+        e['metadatos']['fuente'] = {'relacion': 'reflejo', 'evidencia': {'superficie': 'calendario_pdf',
+            'url': e['url'], 'localizador': 'fila', 'literal': 'Nivel II'}}
     pendientes = [f for f in inventario['filas'] if f['huella'] not in resueltas]
     # Las revisiones de otra temporada no se esperan en este documento.
     sin_aplicar = [r['id'] for r in revisiones['revisiones'] if r['huella'] not in resueltas

@@ -15,7 +15,7 @@ ALCANCES = ('reunion', 'titulo', 'titulos', 'sesion', 'jornada', 'serie', 'juego
 ESTADOS = ('programado', 'aplazado', 'suspendido', 'suspension_parcial', 'cancelado', 'desconocido')
 PRECISIONES = ('dia', 'mes', 'desconocida')
 RELACIONES = ('propio', 'reflejo', 'desconocido')
-ACTIVIDADES = ('competicion', 'control', 'tecnificacion', 'desconocida')
+ACTIVIDADES = ('competicion', 'control', 'tecnificacion', 'formacion', 'institucional', 'desconocida')
 ROLES = ('normas', 'reglamento', 'informacion_tecnica', 'horario', 'inscritos', 'resultados',
          'clasificacion', 'circular', 'acta', 'otro')
 CLASES_SERIE = ('circuito', 'ciclo', 'coleccion')

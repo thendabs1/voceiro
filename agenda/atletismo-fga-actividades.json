@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "nota": "Actividad revisada por ID de las fichas FGA que no declaran su tipo en ningún campo. Último recurso: la ficha, los documentos o el calendario mandan si lo declaran.",
+  "citas": {
+    "128150": "formacion",
+    "128153": "formacion",
+    "128155": "formacion",
+    "128157": "formacion"
+  }
+}

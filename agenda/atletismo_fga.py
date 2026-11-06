@@ -7,6 +7,7 @@ from calendar import monthrange
 from datetime import date, datetime
 from functools import lru_cache
 import json
+from pathlib import Path
 import re
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urljoin, urlsplit
@@ -174,6 +175,13 @@ def lecturas_documentales():
     return atletismo_documentos.lecturas_documentales('fga')
 
 
+@lru_cache(maxsize=1)
+def actividades_revisadas():
+    """Fichas que no declaran qué son, revisadas por ID: nunca se deduce del título."""
+    ruta = Path(__file__).with_name('atletismo-fga-actividades.json')
+    return json.loads(ruta.read_text(encoding='utf-8'))['citas']
+
+
 def leer_ficha(html, *, url=BASE, lecturas=None):
     s = BeautifulSoup(html, 'html.parser')
     art = s.select_one('main article.type-competition')
@@ -285,6 +293,9 @@ def leer_ficha(html, *, url=BASE, lecturas=None):
         salida['calendarios'] = [{'calendario': 'fga', 'categoria_literal': categoria,
                                   'evidencia': evidencia(url, 'etiquetas', categoria)}]
     salida['fuente'] = relacion(url, ambitos, entidades, nombre, anio)
+    revisada = actividades_revisadas().get(i)
+    if revisada and salida['actividad']['valor'] == 'desconocida':
+        salida['actividad'] = {'valor': revisada, 'evidencia': evidencia(url, 'h1', nombre, 'revision_editorial')}
     return {'id': i, 'nombre': nombre, 'metadatos': salida, 'hijos': hijos, 'clase': clase,
             'pendientes': avisos, 'soup': s, 'padre': padre, 'programa': programa}
 

@@ -69,21 +69,21 @@ class RecogidaAtletismo(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as carpeta:
             entrada, informe = r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=obtener, cache=carpeta)
-            self.assertEqual(len(llamadas), 40)
+            self.assertEqual(len(llamadas), 39)
             llamadas.clear()
             r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=obtener, cache=carpeta)
-            self.assertEqual(len(llamadas), 39)  # La ficha se reutiliza; documentos y filtros se reconsultan.
+            self.assertEqual(len(llamadas), 38)  # La ficha se reutiliza; documentos y filtros se reconsultan.
             # Caduca con el reloj de la fuente: la pasada diaria siempre relee la ficha.
             vencida = time.time() - 21 * 3600 - 1
             for archivo in Path(carpeta).iterdir():
                 os.utime(archivo, (vencida, vencida))
             llamadas.clear()
             r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=obtener, cache=carpeta)
-            self.assertEqual(len(llamadas), 40)
+            self.assertEqual(len(llamadas), 39)
         self.assertEqual(len(entrada['eventos']), 1)
         self.assertEqual(entrada['eventos'][0]['inicio'], '2026-11-01')
         self.assertEqual(entrada['eventos'][0]['fin'], '2026-11-01')
-        self.assertEqual(len(informe['consultas']), 37)
+        self.assertEqual(len(informe['consultas']), 36)
 
     def test_fga_ficha_no_disponible_conserva_capturas_buenas_y_cobertura_parcial(self):
         from test_atletismo_fga import captura

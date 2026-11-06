@@ -8,7 +8,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from bs4 import BeautifulSoup
-from agenda import atletismo as a, atletismo_bloque as b, atletismo_recogida as r, atletismo_rfea as f
+from agenda import atletismo as a, atletismo_bloque as b, atletismo_modalidades as am, atletismo_recogida as r, atletismo_rfea as f
 
 M = Path(__file__).with_name('muestras_calendario') / 'atletismo'
 URL = 'https://atletismorfea.es/calendario/campeonato/ensayo'
@@ -96,18 +96,37 @@ class LectorRFEA(unittest.TestCase):
         with self.assertRaises(ValueError):
             f.urls_mes(mensual(mes), date(2026, 11, 1))
 
-    def test_relacion_por_categoria_documental_y_nunca_por_area_o_filtro(self):
+    def test_relacion_por_categoria_documental(self):
         for literal, relacion, de in [('RFEA', 'propio', None), ('Nacional', 'propio', None),
                 ('Autonómico', 'reflejo', None), ('EA', 'reflejo', 'ea'), ('WACCT Gold', 'reflejo', 'wa'),
-                ('CIO', 'reflejo', 'cio'), ('Internacional 1', 'desconocido', None)]:
+                ('CIO', 'reflejo', 'cio'), ('Internacional 1', 'propio', None), ('Internacional 2', 'propio', None)]:
             meta = {'area_literal': 'RFEA', 'fuente': {'relacion': 'desconocido'}, 'calendarios': [
                 {'calendario': 'rfea', 'categoria_literal': literal, 'evidencia': f.evidencia(URL, 'fila 1', literal, 'documento')}]}
-            f.relacion({'metadatos': meta})
+            f.relacion({'url': URL, 'metadatos': meta})
             self.assertEqual(meta['fuente']['relacion'], relacion)
             self.assertEqual(meta['fuente'].get('de'), de)
-        meta = {'area_literal': 'WA', 'fuente': {'relacion': 'desconocido'}}
-        f.relacion({'metadatos': meta})
-        self.assertEqual(meta['fuente']['relacion'], 'desconocido')
+            self.assertEqual(meta['fuente']['evidencia']['localizador'], 'fila 1')
+
+    def test_relacion_sin_categoria_estar_en_su_calendario_basta_si_nadie_mas_la_reclama(self):
+        def relacion(**campos):
+            meta = {'fuente': {'relacion': 'desconocido'}, **campos}
+            f.relacion({'url': URL, 'metadatos': meta})
+            return meta['fuente']
+        en_calendario = relacion(area_literal='RFEA', calendario_tipo='Deportivo')
+        self.assertEqual(en_calendario['relacion'], 'propio')
+        self.assertEqual(en_calendario['evidencia']['literal'], 'Deportivo')
+        self.assertEqual(relacion(area_literal='', calendario_tipo='Federativo')['evidencia']['literal'], 'Federativo')
+        # Área RFEA se mezcla en el PDF con categorías ajenas: por sí sola no decide nada.
+        self.assertEqual(relacion(area_literal='RFEA')['relacion'], 'desconocido')
+        for area in ('WA', 'EA'):
+            ajena = relacion(area_literal=area, calendario_tipo='Deportivo', evidencias_ficha={'area_literal': f.evidencia(URL, '.c_e_area', area)})
+            self.assertEqual((ajena['relacion'], ajena['de']), ('reflejo', area.lower()))
+        # Un título reservado en el calendario de la RFEA es suyo, también con Área ajena.
+        titulo = {'literal': 'Campeonato de España', 'autoridad': 'federacion_espanola', 'base': 'nombre_reservado',
+                  'evidencia': f.evidencia(URL, '.c_e_title', 'Campeonato de España')}
+        reservado = relacion(area_literal='WA', calendario_tipo='Deportivo', titulos=[titulo],
+                             evidencias_ficha={'area_literal': f.evidencia(URL, '.c_e_area', 'WA')})
+        self.assertEqual((reservado['relacion'], reservado['evidencia']['localizador']), ('propio', '.c_e_title'))
 
 
 class RecogidaRFEA(unittest.TestCase):
@@ -118,7 +137,7 @@ class RecogidaRFEA(unittest.TestCase):
         lectura.start()
         self.addCleanup(lectura.stop)
 
-    def descarga(self, *, tecnica=False, acreditada=False, fallo=None, categoria=True):
+    def descarga(self, *, tecnica=None, acreditada=False, fallo=None, categoria=True, fallo_federativo=None):
         llamadas = []
         def descargar(url, *, binario=False):
             llamadas.append(url)
@@ -134,9 +153,11 @@ class RecogidaRFEA(unittest.TestCase):
                     raise fallo
                 return muestra('documentos-castro.json')
             if '/ajax/calendario/' in url:
+                if fallo_federativo and 'internas' in url:
+                    raise fallo_federativo
                 campos = url.split('/ajax/calendario/')[1].split('/')
                 mes = datetime.fromtimestamp(int(campos[0]), timezone.utc).date()
-                publicada = mes.month == 12 and ((tecnica and campos[1] != 'Deportivo' and campos[5] == '387') or
+                publicada = mes.month == 12 and ((tecnica and campos[1] != 'Deportivo' and campos[5] in ('0', tecnica)) or
                     (not tecnica and campos[1] == 'Deportivo' and (campos[5] == '0' or categoria and campos[5] == '211')))
                 return mensual(mes, url=URL if publicada else None)
             if '/communication-hub/' in url:
@@ -161,21 +182,92 @@ class RecogidaRFEA(unittest.TestCase):
         self.assertEqual(set(a.importar(n, segunda, '2026-11-05T12:00:00+01:00')['observaciones']), set(n['observaciones']))
         self.assertTrue(otro['avisos'])
 
-    def test_tecnificacion_solo_con_documento_no_por_filtro(self):
+    def test_una_concentracion_se_publica_y_solo_su_convocatoria_la_acredita(self):
         for acreditada in (False, True):
-            descargar, llamadas = self.descarga(tecnica=True, acreditada=acreditada)
+            descargar, llamadas = self.descarga(tecnica='387', acreditada=acreditada)
             entrada, informe = r.recoger('rfea', '2026-12-01', '2026-12-31', descargar=descargar)
-            self.assertEqual(len(entrada['eventos']), int(acreditada))
-            # Sin documento no se publica, pero no bloquea ausencias ni la lectura.
-            self.assertEqual(informe['pendientes'], [])
+            self.assertEqual(len(entrada['eventos']), 1)
+            meta = entrada['eventos'][0]['metadatos']
+            self.assertEqual(meta['actividad']['valor'], 'tecnificacion' if acreditada else 'desconocida')
+            self.assertEqual([x['id'] for x in meta['filtros_calendario']], ['387'])
+            self.assertEqual(meta['calendario_tipo'], 'Federativo')
             self.assertEqual(any('sin convocatoria' in a['motivo'] for a in informe['avisos']), not acreditada)
+            self.assertEqual(informe['pendientes'], [])
             self.assertIs(informe['aplicar_ausencias'], True)
-            if acreditada:
-                meta = entrada['eventos'][0]['metadatos']
-                self.assertEqual(meta['actividad']['valor'], 'tecnificacion')
-                self.assertEqual([x['id'] for x in meta['filtros_calendario']], ['387'])
-            self.assertFalse(any('/Eventos%20internas%20RFEA/0/0/0/0/' in u for u in llamadas))
+            self.assertTrue(any('/Eventos%20internas%20RFEA/0/0/0/0/' in u for u in llamadas))
             self.assertFalse(any(u.endswith('.pdf') for u in llamadas))
+
+    def federativo_real(self):
+        """Noviembre de 2026 tal como lo publica RFEA, con sus dos actos del CNJ."""
+        respuesta = muestra('federativo-2026-11.json')
+        fichas = {'webinar-cnj': 'ficha-federativo-webinar.html', 'examen-acceso': 'ficha-federativo-examen.html'}
+        enlaces = [x['href'] for c in json.loads(respuesta) if c.get('selector') == '#calendar_container'
+                   for x in BeautifulSoup(c['data'], 'html.parser').select('.calendar-item > a[href]')]
+        categorias = {'382': next(u for u in enlaces if 'webinar' in u), '381': next(u for u in enlaces if 'examen' in u)}
+        llamadas = []
+
+        def descargar(url, *, binario=False):
+            llamadas.append(url)
+            if url == f.BASE:
+                return muestra('formulario.html')
+            if '/calendario/campeonato/' in url:
+                return muestra(next(v for k, v in fichas.items() if k in url))
+            if '/championship-documents/' in url:
+                return muestra('documentos-vacios.json')
+            if '/ajax/calendario/' in url:
+                campos = url.split('/ajax/calendario/')[1].split('/')
+                mes = datetime.fromtimestamp(int(campos[0]), timezone.utc).date()
+                if campos[1] == 'Deportivo' or mes.month != 11:
+                    return mensual(mes)
+                if campos[5] == '0':
+                    return respuesta
+                return mensual(mes, url=categorias.get(campos[5]))
+            if '/communication-hub/' in url:
+                raise FileNotFoundError('índice no capturado')
+            raise AssertionError(url)
+        return descargar, llamadas
+
+    def test_federativo_entero_publica_jueces_y_cada_acto_declara_su_categoria(self):
+        descargar, llamadas = self.federativo_real()
+        entrada, informe = r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=descargar)
+        citas = {e['id']: e for e in entrada['eventos']}
+        self.assertEqual(set(citas), {'69573', '69066'})
+        webinar, examen = citas['69573']['metadatos'], citas['69066']['metadatos']
+        self.assertEqual((webinar['actividad']['valor'], webinar['filtros_calendario'][0]['etiqueta']), ('formacion', 'Formación'))
+        self.assertEqual((examen['actividad']['valor'], examen['filtros_calendario'][0]['etiqueta']), ('formacion', 'Exámenes'))
+        self.assertEqual(webinar['fuente']['relacion'], 'propio')
+        self.assertEqual(webinar['fuente']['evidencia']['literal'], 'Federativo')
+        self.assertEqual(am.de(webinar), (set(), []))  # CNJ es un literal conocido sin modalidad.
+        for e in citas.values():
+            b.validar(e['metadatos'], e['inicio'], e['fin'], fuente='rfea')
+        self.assertFalse(any('jueces' in a['motivo'] for a in informe['avisos']))
+        # La categoría ya guardada no vuelve a costar sus trece filtros.
+        filtros = [u for u in llamadas if 'internas' in u and '/0/0/0/0/' not in u]
+        self.assertTrue(filtros)
+        llamadas.clear()
+        conocidas = [{'fuente': 'rfea', **e} for e in entrada['eventos']]
+        segunda, _ = r.recoger('rfea', '2026-11-01', '2026-11-30', descargar=descargar, conocidas=conocidas)
+        self.assertFalse([u for u in llamadas if 'internas' in u and '/0/0/0/0/' not in u])
+        self.assertEqual(segunda, entrada)
+
+    def test_sin_leer_federativo_sus_citas_se_conservan_y_leido_ya_no(self):
+        descargar, _ = self.descarga(tecnica='387')
+        primera, _ = r.recoger('rfea', '2026-12-01', '2026-12-31', descargar=descargar)
+        conocidas = [{'fuente': 'rfea', **e} for e in primera['eventos']]
+        caido, _ = self.descarga(tecnica='387', fallo_federativo=OSError('caído'))
+        conservada, informe = r.recoger('rfea', '2026-12-01', '2026-12-31', descargar=caido, conocidas=conocidas)
+        self.assertEqual([e['id'] for e in conservada['eventos']], ['64834'])
+        self.assertFalse(informe['completo'])
+        self.assertTrue(any('se conserva la cita anterior' in a['motivo'] for a in informe['avisos']))
+        # Leído bien y sin la cita, no se conserva: la ausencia sigue su camino normal.
+        vacio, _ = self.descarga()
+        def sin_nada(url, **k):
+            if '/ajax/calendario/' in url:
+                mes = datetime.fromtimestamp(int(url.split('/ajax/calendario/')[1].split('/')[0]), timezone.utc).date()
+                return mensual(mes)
+            return vacio(url, **k)
+        retirada, _ = r.recoger('rfea', '2026-12-01', '2026-12-31', descargar=sin_nada, conocidas=conocidas)
+        self.assertEqual(retirada['eventos'], [])
 
     def test_proteccion_corta_lo_opcional_y_conserva_el_inventario(self):
         for error in (HTTPError(DOCS, 403, 'protegido', {}, None), HTTPError(DOCS, 429, 'límite', {}, None)):

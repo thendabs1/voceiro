@@ -32,7 +32,7 @@ export function predicadosTexto(texto, columna, args) {
 export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
-    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'modalidades', 'titular', 'actividades', 'precio', 'presentacion', 'muestras',
+    'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'modalidades', 'titular', 'actividades', 'excluir_actividades', 'precio', 'presentacion', 'muestras',
     'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad', 'barras', 'chips']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
@@ -67,13 +67,13 @@ export function normalizarConsulta(url) {
     temas: lista(p.get('temas')), circuitos: lista(p.get('circuitos')),
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', etiqueta: p.get('etiqueta') || '',
-    formatos: lista(p.get('formatos')), modalidades: lista(p.get('modalidades')), titular: lista(p.get('titular')), actividades: lista(p.get('actividades')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
+    formatos: lista(p.get('formatos')), modalidades: lista(p.get('modalidades')), titular: lista(p.get('titular')), actividades: lista(p.get('actividades')), excluirActividades: lista(p.get('excluir_actividades')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
     tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1', chips: p.get('chips') === '1',
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
-  if ([c.temas, c.circuitos, c.formatos, c.modalidades, c.titular, c.actividades, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
+  if ([c.temas, c.circuitos, c.formatos, c.modalidades, c.titular, c.actividades, c.excluirActividades, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   if (c.modalidades.some(m => !MODALIDADES_ATLETISMO.includes(m))) throw error(400, 'Modalidad desconocida');
   if (c.titular.some(x => !TITULAR_ATLETISMO.test(x))) throw error(400, 'Titular desconocido');
-  if (c.actividades.some(a => !ACTIVIDADES_ATLETISMO.includes(a))) throw error(400, 'Actividad desconocida');
+  if ([...c.actividades, ...c.excluirActividades].some(a => !ACTIVIDADES_ATLETISMO.includes(a))) throw error(400, 'Actividad desconocida');
   // «gratis» no incluye «mixto»: el filtro no promete lo que solo vale para una tarifa.
   if (c.precio && !['gratis', 'pago', 'mixto'].includes(c.precio)) throw error(400, 'Precio desconocido');
   if (c.presentaciones.some(v => !PRESENTACIONES.includes(v))) throw error(400, 'Presentación desconocida');
@@ -123,6 +123,10 @@ export function filtrosSql(c, meta, args) {
   faceta('modalidad', c.modalidades);
   faceta('titular', c.titular);
   faceta('actividad', c.actividades);
+  if (c.excluirActividades.length) {
+    args.push('actividad', ...c.excluirActividades);
+    condiciones.push(`e.id NOT IN (SELECT evento FROM agenda_lectura_facetas WHERE tipo=? AND valor IN (${c.excluirActividades.map(() => '?').join(',')}))`);
+  }
   if (c.orden.ambitos?.length) {
     const porAmbito = [];
     for (const ambito of c.orden.ambitos) {
@@ -381,9 +385,10 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     let meta = guardado ? await guardado.json() : await leerControl();
     if (meta.version !== 1) throw error(503, 'Versión de lectura incompatible');
     // Sin esos filtros la firma no cambia: un cursor en curso sobrevive al despliegue.
-    const { titular, actividades, ...resto } = c;
+    const { titular, actividades, excluirActividades, ...resto } = c;
     const huella = await firma({ api_calendario: 2, ruta, ...resto,
       ...(titular.length ? { titular } : {}), ...(actividades.length ? { actividades } : {}),
+      ...(excluirActividades.length ? { excluirActividades } : {}),
       ...(c.disponibilidad ? { hoy: diaEnZona(new Date(Date.now()), c.zona) } : {}) });
     const revisionPedida = url.searchParams.get('revision');
     if (guardado && (revisionPedida && revisionPedida !== meta.revision || cursor && cursor[0] !== meta.revision)) meta = await leerControl();

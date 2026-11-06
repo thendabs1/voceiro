@@ -11,14 +11,13 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
 - Correspondencias Kulturklik, más recintos de Madrid, vigencias, relaciones
   meteorológicas y cobertura editorial múltiple:
   [relacionador territorial](shared/territorios/relacionador.md#pendiente).
-- Atletismo: RFEA, Galicia y Cataluña publicadas; World Athletics se recoge
-  sin publicar hasta el refactor de la interfaz. Adaptadores y comparador por
-  alcance hechos. Faltan las circulares y su lectura, y después interfaz y
-  territoriales ([pendiente](agenda/atletismo.md#pendiente)).
+- Atletismo: RFEA, Galicia y Cataluña publicadas, con titular y actividad listos
+  para la interfaz; World Athletics se recoge sin publicar hasta el refactor.
+  Quedan interfaz y territoriales ([pendiente](agenda/atletismo.md#pendiente)).
 - Resultados deportivos: fútbol, baloncesto, tenis, Euroliga y motor funcionan.
   Falta acreditar jornadas oficiales por proveedor y las comprobaciones de
   [resultados](agenda/resultados-diseno.md#comprobar).
-- Siguiente paso: circulares de atletismo y, después, refactor de la interfaz.
+- Siguiente paso: refactor de la interfaz.
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores
 
