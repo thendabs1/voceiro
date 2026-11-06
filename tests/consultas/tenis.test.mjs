@@ -7,6 +7,7 @@ import { leerIdTenis, normalizarTenis } from '../../workers/deno-buscar/src/cons
 import { ESPN, admiteConsultaESPN } from '../../shared/consultas/registro.js';
 import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
 import { traducir } from '../../front/idiomas/index.js';
+import { codigoDeportes, stubsDeportes } from './deportes-contexto.mjs';
 
 const leer = ruta => readFileSync(new URL(ruta, import.meta.url), 'utf8');
 const muestra = circuito => JSON.parse(leer(`./muestras/espn-tenis-${circuito}.json`));
@@ -190,7 +191,7 @@ function panelTenis(idioma = 'es') {
   const peticiones = [];
   const panel = { dataset: {}, html: '', hidden: true, addEventListener() {}, querySelector() { return null; },
     set innerHTML(v) { this.html = v; } };
-  const ctx = { ESPN, admiteConsultaESPN, fechaValida, sumarDiasCalendario, ACCES: { lang: idioma },
+  const ctx = { ...stubsDeportes(), ESPN, admiteConsultaESPN, fechaValida, sumarDiasCalendario, ACCES: { lang: idioma },
     BACKENDS: { deno: { buscar: 'https://voceiro.test' } },
     t: (k, v) => traducir(idioma, k, v), ico: () => '',
     escapeHtml: v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
@@ -204,7 +205,7 @@ function panelTenis(idioma = 'es') {
         estado: 'ok', ficha: f, candidatos: [], fuente: 'Atribución incorrecta', enlace: 'https://incorrecta.test',
         caduca: new Date(Date.now() + 3600e3).toISOString() }) };
     } };
-  runInNewContext(leer('../../front/app/14-consultas.js') + '\n' + leer('../../front/app/14-motor.js') + '\n' + leer('../../front/app/14-tenis.js')
+  runInNewContext(leer('../../front/app/14-consultas.js') + '\n' + leer('../../front/app/14-motor.js') + '\n' + leer('../../front/app/14-tenis.js') + '\n' + codigoDeportes
     + '\nthis.api = { PUNTUAL, abrirFichaConsulta, pulsarConsulta, consultarFechaResultados, idPartidoConsultaValido, ficha: VISTAS_CONSULTA.encuentro_tenis.ficha };', ctx);
   ctx.api.PUNTUAL.activa = { tipo: 'resultados', texto: 'atp' };
   const pulsar = dataset => ctx.api.pulsarConsulta({ target: { closest: () => ({ dataset }) } });

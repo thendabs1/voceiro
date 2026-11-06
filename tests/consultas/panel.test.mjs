@@ -11,6 +11,7 @@ import { rangosResaltado } from '../../shared/busqueda/texto.js';
 import { ESPN, admiteConsultaESPN, MOTOR, admiteConsultaMotor } from '../../shared/consultas/registro.js';
 import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
 import { traducir } from '../../front/idiomas/index.js';
+import { codigoDeportes, stubsDeportes } from './deportes-contexto.mjs';
 import { resultadosEuroliga, partidoEuroliga } from '../../workers/deno-buscar/src/consultas/euroliga.js';
 
 const codigo = ['14-consultas.js', '14-motor.js', '14-tenis.js'].map(n => readFileSync(new URL(`../../front/app/${n}`, import.meta.url), 'utf8')).join('\n');
@@ -35,6 +36,7 @@ function contexto({ buscar = '', responder }) {
   const entrada = { value: buscar };
   const pedidas = [];
   const ctx = {
+    ...stubsDeportes(), cerrarCalendario() {},
     BACKENDS: { deno: { buscar: BASE } }, ESPN, admiteConsultaESPN, MOTOR, admiteConsultaMotor, ACCES: { lang: 'es' },
     t: (k, v) => traducir('es', k, v), ico: n => `<${n}>`,
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
@@ -55,7 +57,7 @@ function contexto({ buscar = '', responder }) {
     for (const [i, j] of rangosResaltado(texto, compilado)){ out += ctx.escapeHtml(texto.slice(last, i)) + '<mark>' + ctx.escapeHtml(texto.slice(i, j)) + '</mark>'; last = j; }
     return out + ctx.escapeHtml(texto.slice(last));
   };
-  runInNewContext(codigo + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual };', ctx);
+  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia };', ctx);
   // Como aplicarFiltros: la consulta recibe el texto compilado de la búsqueda.
   const actualizar = raw => {
     entrada.value = raw;
@@ -118,11 +120,10 @@ test('un código desconocido no pide nada y ofrece competiciones, incluidas las 
   actualizar('incendio resultados:desconocido');
   await esperar();
   assert.deepEqual(pedidas, []);
-  assert.match(panel.innerHTML, /Elige una competición/);
-  assert.match(panel.innerHTML, /data-valor="f1"/);
-  assert.match(panel.innerHTML, /data-valor="motogp"/);
-  assert.match(panel.innerHTML, /data-valor="wnba"/);
-  pulsar({ accion: 'valor', valor: 'primera' });
+  assert.match(panel.innerHTML, /data-orden="resultados:f1"/);
+  assert.match(panel.innerHTML, /data-orden="resultados:motogp"/);
+  assert.match(panel.innerHTML, /data-orden="resultados:wnba"/);
+  pulsar({ accion: 'orden', orden: 'resultados:primera' });
   assert.equal(entrada.value, 'incendio resultados:primera');
 });
 
@@ -381,8 +382,8 @@ test('clasificación de Champions: fase liga, 36 equipos y DG solo si hay dato; 
   const { panel, pedidas, actualizar } = contexto({ responder: () => json(envoltorio('clasificacion', { ficha })) });
   actualizar('clasificacion:copa-del-rey'); await esperar();
   assert.equal(pedidas.length, 0);
-  assert.doesNotMatch(panel.innerHTML, /data-valor="copa-del-rey"|data-valor="liga-f"/);
-  assert.match(panel.innerHTML, /data-valor="champions"/);
+  assert.doesNotMatch(panel.innerHTML, /data-orden="clasificacion:(copa-del-rey|liga-f)"/);
+  assert.match(panel.innerHTML, /data-orden="clasificacion:champions"[^>]*data-resaltada/);
   actualizar('clasificacion:champions'); await esperar();
   assert.match(panel.innerHTML, /Champions/); assert.match(panel.innerHTML, /Fase liga/);
   assert.match(panel.innerHTML, /<abbr title="Diferencia de goles">DG<\/abbr>/);
@@ -605,4 +606,54 @@ test('volver desde un partido pendiente impide que su respuesta tardía sustituy
   resolver(json(envoltorio('partido',{ficha:partido}))); await esperar();
   assert.equal(pedidas.length,2); assert.match(panel.innerHTML,/NBA · 1 partido/);
   assert.doesNotMatch(panel.innerHTML,/Parciales|Volver a resultados/);
+});
+
+test('vista general: bloques por deporte, solo lo que existe y sin peticiones de consulta', async () => {
+  const { panel, pedidas, actualizar } = contexto({ responder: () => assert.fail('no debe pedir') });
+  actualizar('resultados:'); await esperar();
+  assert.deepEqual(pedidas, []);
+  assert.match(panel.innerHTML, /consulta-tipo">Deportes</);
+  assert.deepEqual([...panel.innerHTML.matchAll(/<summary>([^<]+)/g)].map(m => m[1]), ['Fútbol', 'Tenis', 'Baloncesto', 'Motor', 'Atletismo']);
+  // Euroliga tiene resultados y no calendario; FEB, al revés.
+  assert.match(panel.innerHTML, /data-orden="resultados:euroliga"/);
+  assert.doesNotMatch(panel.innerHTML, /data-orden="calendario:euroliga"|data-orden="resultados:feb-endesa"/);
+  assert.match(panel.innerHTML, /LaLiga<\/span>/);
+  assert.match(panel.innerHTML, /data-orden="resultados:primera"[^>]*data-resaltada/);
+  actualizar('clasificacion:');
+  assert.match(panel.innerHTML, /data-orden="clasificacion:primera"[^>]*data-resaltada/);
+  assert.match(panel.innerHTML, /data-orden="resultados:primera"/);
+});
+
+test('sin citas publicadas no se ofrece su calendario, y los resultados siguen', async () => {
+  const { ctx, panel, actualizar } = contexto({ responder: () => assert.fail('no debe pedir') });
+  ctx.calPedir = async () => ({ disponibilidad: { circuitos: { primera: 20 } } });
+  actualizar('resultados:'); await esperar();
+  assert.match(panel.innerHTML, /data-orden="calendario:primera"/);
+  assert.doesNotMatch(panel.innerHTML, /data-orden="calendario:(champions|wnba)"/);
+  assert.match(panel.innerHTML, /data-orden="resultados:champions"/);
+});
+
+test('una competición enlaza sus secciones, las de su deporte y la vista general', async () => {
+  const { panel, entrada, actualizar, pulsar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  actualizar('resultados:primera'); await esperar();
+  assert.match(panel.innerHTML, /data-orden="resultados:"[^>]*>‹ Deportes/);
+  assert.match(panel.innerHTML, /data-orden="resultados:primera" aria-current="page">Resultados/);
+  assert.match(panel.innerHTML, /data-orden="clasificacion:primera">Clasificación/);
+  assert.match(panel.innerHTML, /data-orden="primera:noticias">Noticias/);
+  assert.match(panel.innerHTML, /data-orden="resultados:copa-del-rey">Copa del Rey/);
+  assert.doesNotMatch(panel.innerHTML, /data-orden="resultados:nba"/);
+  pulsar({ accion: 'orden', orden: 'clasificacion:primera' });
+  assert.equal(entrada.value, 'clasificacion:primera');
+  assert.doesNotMatch(panel.innerHTML, /clasificacion:copa-del-rey/);
+});
+
+test('la tarjeta abre los resultados de su día, también con esa consulta ya abierta', async () => {
+  const { ctx, pedidas, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  ctx.aplicarFiltros = () => actualizar(ctx.$('#buscar').value);
+  ctx.api.abrirResultadosDelDia('primera', '2026-11-02'); await esperar();
+  assert.deepEqual(pedidas, ['/consulta/ficha?id=espn%3Aresultados%2Fprimera&fecha=2026-11-02&idioma=es&v=3']);
+  ctx.api.abrirResultadosDelDia('primera', '2026-11-01'); await esperar();
+  assert.equal(pedidas.length, 2);
+  assert.match(pedidas[1], /fecha=2026-11-01/);
+  assert.equal(ctx.api.PUNTUAL.fechaPedida, '');
 });

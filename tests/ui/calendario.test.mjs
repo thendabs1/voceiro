@@ -11,6 +11,8 @@ import { ADMINISTRACION } from '../../shared/territorios/administracion.js';
 import { traducir } from '../../front/idiomas/index.js';
 
 // La capa de datos se prueba encendida también si se apagara el cliente.
+import { destinoResultados } from '../../shared/consultas/registro.js';
+
 const fuente = readFileSync(new URL('../../front/app/14-calendario.js', import.meta.url), 'utf8');
 // «Hoy» lo fija cada prueba (c.hoy), no el reloj.
 const codigo = fuente.replace(/^const CALENDARIO_ACTIVO = (true|false);$/m, 'const CALENDARIO_ACTIVO = true;')
@@ -83,7 +85,7 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
     if (opciones.signal?.aborted) throw new DOMException('Cortada', 'AbortError');
     return r instanceof Response ? r : Response.json(r);
   };
-  const c = { ...fechas, ...consulta, ...nombres, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
+  const c = { ...fechas, ...consulta, ...nombres, destinoResultados, accionesCompeticion: () => [], parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
     setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, pintarIconosDeportes(){}, cerrarAjustes(){ c.ajustesCerrados = true; }, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},
@@ -1461,3 +1463,24 @@ test('moverse por semanas y meses reutiliza los formatos de fecha de la interfaz
   assert.match(c.api.calContenido(), /title="Monday"/);
   assert.ok(construidos > antes);
 });
+
+test('una cita enlaza sus resultados hasta hoy; la futura y la anulada, no', () => {
+  const c = contexto();
+  c.evento = { id: 'a', competiciones: ['primera'], nombres: { und: 'Sevilla at Alavés' }, programacion: { valor: { cuando: { inicio: {} } } } };
+  assert.match(runInContext('calCita(evento, "2020-01-05")', c), /data-cal="ver-resultados" data-valor="primera" class="cal-resultados" data-fecha="2020-01-05"/);
+  assert.doesNotMatch(runInContext('calCita(evento, "2099-01-05")', c), /ver-resultados/);
+  c.evento.estado = 'cancelado';
+  assert.doesNotMatch(runInContext('calCita(evento, "2020-01-05")', c), /ver-resultados/);
+});
+
+test('Deportes enlaza la vista general; con una competición, sus resultados y su tabla', () => {
+  const c = contexto();
+  c.accionesCompeticion = () => [{ tipo: 'resultados', texto: 'Resultados', orden: 'resultados:nba' }, { tipo: 'calendario', texto: 'Calendario', orden: 'calendario:nba' }];
+  runInContext("CALENDARIO.capas = new Set(['primera', 'nba'])", c);
+  assert.match(runInContext('calEnlacesDeportes()', c), /data-valor="resultados:"/);
+  runInContext("CALENDARIO.capas = new Set(['nba'])", c);
+  const uno = runInContext('calEnlacesDeportes()', c);
+  assert.match(uno, /data-valor="resultados:nba"/);
+  assert.doesNotMatch(uno, /calendario:nba/);
+});
+

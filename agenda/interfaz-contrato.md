@@ -21,14 +21,33 @@ días o varias fuentes cuenta una vez. Es por ventana (máximo 42 días). No adm
 `chips=1` ni `pendientes=1`. No hay contadores por filtro: se solapan y no suman
 el total (225 apariciones para 197 citas de atletismo).
 
+## Navegación de Deportes
+
+Una lista por deporte y lo que ofrece cada competición en `front/app/14-deportes.js`:
+de ahí salen las cuatro entradas, y cada enlace escribe su orden en la barra.
+
+- `resultados:` o `clasificacion:` sin competición abren la vista general. `partido:`
+  conserva sus botones.
+- El `▾` es un lanzador: lo que sigo, «Todos los deportes» y el calendario. Un
+  submenú sería otra fila de `pintarAccesos`.
+- Una competición lleva pestañas, las demás de su deporte y vuelta a la general.
+- Solo se ofrece lo que existe: capacidades de `shared/consultas/registro.js` y
+  citas en `disponibilidad`. Euroliga no es capa de `CAL_DEPORTES`: no tiene calendario.
+
 ## Enlace a resultados
 
-`destinoResultados(tarjeta, dia)` (`shared/consultas/registro.js`) da el `id` y
-la `fecha` para `abrirFichaConsulta`, o `null` si la competición no tiene
-resultados. Lleva al panel de ese día, no al partido: `referencias_agenda` son
-identificadores del proveedor y la tarjeta solo publica los nuestros. Comprobado
-con datos reales en Primera, Segunda, Copa, Liga F, Champions, NBA, WNBA, ATP,
-WTA, F1 y MotoGP. Un enlace al partido sería un añadido posterior.
+Cada cita de hoy o anterior enlaza por `destinoResultados(tarjeta, dia)`
+(`shared/consultas/registro.js`) con el panel de ese día, no con el partido:
+`referencias_agenda` son identificadores del proveedor y la tarjeta solo publica
+los nuestros. Comprobado con datos reales en Primera, Segunda, Copa, Liga F,
+Champions, NBA, WNBA, ATP, WTA, F1 y MotoGP. Un enlace al partido sería un añadido
+posterior.
+
+## Noticias de una competición
+
+La pestaña Noticias escribe `competicion:noticias`. El filtro casa el titular con
+`AMBITOS[c].noticias` en el cliente (`noticiaEnAmbitos`), sin clasificar la noticia.
+Por deporte no existe aún: `futbol:` no es un ámbito.
 
 ## Rótulos y detalle
 

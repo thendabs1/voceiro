@@ -351,7 +351,7 @@
 .buscar-accesos:hover, .buscar-accesos[aria-expanded="true"]{ background: var(--quote-bg); color: var(--fg); }
 .accesos-panel{
   position: absolute; top: calc(100% + 4px); right: 0; z-index: 31;
-  width: min(320px, calc(100vw - 32px)); max-height: 75vh; overflow-y: auto;
+  width: min(400px, calc(100vw - 32px)); max-height: 75vh; overflow-y: auto;
   background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
   box-shadow: 0 8px 24px var(--shadow); padding: 4px 4px 8px;
 }
@@ -359,6 +359,7 @@
 .accesos-cab h2{ flex: 1; margin: 0; font-size: .85em; }
 .accesos-cab h2:focus{ outline: none; }
 .accesos-volver, .accesos-cerrar{ border: none; background: transparent; color: var(--fg); min-width: 32px; min-height: 32px; border-radius: 6px; cursor: pointer; font-size: 1.1em; }
+.accesos-filas{ padding: 0 10px 4px; border-bottom: 1px solid var(--border); margin-bottom: 4px; font-size: .9em; }
 .accesos-lista{ list-style: none; margin: 0; padding: 0; }
 .accesos-lista button{
   display: flex; justify-content: space-between; width: 100%; min-height: 40px; padding: 8px 10px;
@@ -369,4 +370,5 @@
 @media (max-width: 600px){
   .accesos-panel{ position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 75dvh; border-radius: 12px 12px 0 0; padding-bottom: 16px; }
   .accesos-lista button{ min-height: 44px; }
+  .buscar-sugerencias{ left: auto; right: 0; min-width: 0; width: calc(100vw - 32px); }
 }

@@ -165,3 +165,4 @@ body.calendario-abierto{max-width:none}
 .cal-curso-fila>h3{font-size:1em;margin:0}.cal-curso-fila>p,.cal-curso-fila>.cal-desplegado{grid-column:1/-1}.cal-curso-fila>p{margin:0 0 4px}
 .cal-curso-fila h3 button{border:0;background:transparent;color:var(--fg);padding:6px 0;text-align:left;font-weight:600;line-height:1.35;overflow-wrap:anywhere}.cal-curso-fila h3 button:hover{color:var(--accent);text-decoration:underline}
 .cal-curso-fila .cal-cuando{white-space:nowrap;font-variant-numeric:tabular-nums}
+.cal-resultados{padding:0;border:0;background:none;color:var(--fg);font:inherit;font-size:.82em;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
