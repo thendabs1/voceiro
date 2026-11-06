@@ -11,7 +11,8 @@ const CONSULTA_URL = BACKENDS.deno.buscar;
 const CONSULTA_MIN_LETRAS = 3;
 const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
-const CONSULTA_DEPORTES = { primera: 'Primera', segunda: 'Segunda', nba: 'NBA', wnba: 'WNBA', f1: 'F1' };
+const CONSULTA_DEPORTES = { primera: 'Primera', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
+  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1' };
 const CONSULTA_EJEMPLOS = {
   libro: 'Los besos en el pan', autor: 'Almudena Grandes', pelicula: 'La infiltrada',
   serie: 'La mesías', contexto: 'Almudena Grandes',
@@ -39,7 +40,11 @@ const nombreConsulta = tipo => t('con' + tipo[0].toUpperCase() + tipo.slice(1));
 // Singular y plural: «clave1» para uno.
 const tn = (clave, n) => t(n === 1 ? clave + '1' : clave, { n });
 const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido'].includes(tipo);
-const codigoDeporte = (tipo, codigo) => Object.hasOwn(ESPN, codigo) && !(tipo !== 'clasificacion' && codigo === 'f1');
+const codigoDeporte = admiteConsultaESPN;
+const idPartidoConsultaValido = id => {
+  const partes = /^espn:partido\/([a-z0-9-]+)\/[1-9]\d{0,11}$/.exec(id || '');
+  return !!partes && codigoDeporte('partido', partes[1]);
+};
 const ESTADOS_PARTIDO = { en_juego: 'conEnJuego', final: 'conFinal', programado: 'conProgramado',
   aplazado: 'conAplazado', cancelado: 'conCancelado', retrasado: 'conRetrasado', suspendido: 'conSuspendido', desconocido: 'conEstadoDesconocido' };
 const estadoTextoPartido = estado => t(ESTADOS_PARTIDO[estado] || 'conEstadoDesconocido');
@@ -80,7 +85,7 @@ function activarConsulta(c){
   Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null, fecha: '', cargandoFecha: false });
   if (esDeporteConsulta(c.tipo)){
     const codigo = normalize(c.texto);
-    if (c.tipo === 'partido' && /^(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(codigo)){
+    if (c.tipo === 'partido' && idPartidoConsultaValido(`espn:partido/${codigo}`)){
       abrirFichaConsulta(`espn:partido/${codigo}`); return;
     }
     if (codigoDeporte(c.tipo, codigo)){
@@ -223,7 +228,7 @@ function pulsarConsulta(ev){
     case 'ficha': p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(b.dataset.id); break;
     case 'partido': {
       const partido = p.ficha?.ficha?.partidos?.find(x => x.id === b.dataset.id);
-      if (!partido || !/^espn:partido\/(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(partido.id)) break;
+      if (!partido || !idPartidoConsultaValido(partido.id)) break;
       p.origen = { ficha: p.ficha, id: p.id, candidato: p.candidato, fallo: p.fallo,
         grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id, fecha: p.fecha };
       p.enfocar = '.consulta-ficha summary';
@@ -436,10 +441,10 @@ function nombresIdioma(codigos = []){
 // en los equipos, con la regla del feed, sin filtrar: la lista es corta y la
 // posición en la tabla o la jornada es parte del dato.
 const casaEquipo = nombre => !!(PUNTUAL.texto && nombre && rangosResaltado(nombre, PUNTUAL.texto).length);
-const equipoConsulta = nombre => (nombre == null ? '—' : PUNTUAL.texto ? resaltarTitular(String(nombre), PUNTUAL.texto) : escapeHtml(nombre));
+const equipoConsulta = nombre => (nombre == null ? escapeHtml(t('conEquipoPendiente')) : PUNTUAL.texto ? resaltarTitular(String(nombre), PUNTUAL.texto) : escapeHtml(nombre));
 const claseMarcada = si => (si ? ' class="consulta-marcada"' : '');
 
-const COLUMNAS_CONSULTA = { pj: 'conColPJ', pts: 'conColPts', g: 'conColG', e: 'conColE', p: 'conColP' };
+const COLUMNAS_CONSULTA = { pj: 'conColPJ', pts: 'conColPts', g: 'conColG', e: 'conColE', p: 'conColP', dg: 'conColDG' };
 function tablaConsulta(filas, cols, nombre){
   const val = v => escapeHtml(v ?? '—');
   const th = k => { const [abr, largo] = t(COLUMNAS_CONSULTA[k]).split('|'); return `<th scope="col"><abbr title="${escapeHtml(largo || abr)}">${escapeHtml(abr)}</abbr></th>`; };
@@ -448,7 +453,7 @@ function tablaConsulta(filas, cols, nombre){
 }
 
 function nombreGrupoConsulta(g){
-  const clave = { 'Eastern Conference': 'conEste', 'Western Conference': 'conOeste' }[g.nombre];
+  const clave = { 'Eastern Conference': 'conEste', 'Western Conference': 'conOeste', 'League Phase': 'conFaseLiga' }[g.nombre];
   return clave ? t(clave) : g.nombre || '';
 }
 
@@ -464,6 +469,19 @@ function gruposConsulta(grupos, pintar){
 }
 
 const statPartido = id => t('conStat' + id[0].toUpperCase() + id.slice(1));
+
+function textoEliminatoria(f){
+  const e = f.eliminatoria;
+  if (!e) return '';
+  const marcador = m => `${m.local ?? '—'}–${m.visitante ?? '—'}`;
+  return [e.ida_vuelta ? t(e.ida_vuelta === 'ida' ? 'conIda' : 'conVuelta') : '',
+    e.global ? t('conGlobal', { x: marcador(e.global) }) : '',
+    e.resolucion === 'prorroga' ? t('conTrasProrroga') : '',
+    e.penaltis ? t('conPenaltis', { x: marcador(e.penaltis) }) : e.resolucion === 'penaltis' ? t('conTrasPenaltis') : '',
+    e.clasificado && f[e.clasificado] ? t('conPasa', { x: f[e.clasificado] })
+      : e.ganador && f[e.ganador] ? t('conGana', { x: f[e.ganador] }) : '',
+  ].filter(Boolean).join(' · ');
+}
 
 function fichaPartido(f){
   const val = v => escapeHtml(v ?? '—');
@@ -503,10 +521,11 @@ function fichaPartido(f){
       <tbody>${tabla.filas.map(p => `<tr><th scope="row">${escapeHtml(p.nombre)}</th>${['minutos', 'puntos', 'rebotes', 'asistencias'].map(k => `<td>${val(p[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>` : '';
   })) : '';
   return {
-    titulo: `${f.local} · ${f.visitante}`,
+    titulo: `${f.local || t('conEquipoPendiente')} · ${f.visitante || t('conEquipoPendiente')}`,
     linea: [CONSULTA_DEPORTES[f.competicion], fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj].filter(Boolean).join(' · '),
     cuerpo: `<div class="consulta-marcador"><span>${equipoConsulta(f.local)}</span><b>${val(f.marcador?.local)}</b>
       <span>${equipoConsulta(f.visitante)}</span><b>${val(f.marcador?.visitante)}</b></div>
+      ${textoEliminatoria(f) ? `<p class="consulta-nota">${escapeHtml(textoEliminatoria(f))}</p>` : ''}
       ${f.lugar ? `<p class="consulta-lugar">${escapeHtml([f.lugar, f.ciudad].filter(Boolean).join(' · '))}</p>` : ''}
       ${parciales}${estadisticas}${incidencias}${destacados}${alineaciones}${jugadores}`,
   };
@@ -574,10 +593,12 @@ const FICHAS_CONSULTA = {
     const primero = grupos[0]?.filas?.[0];
     let linea = '';
     if (primero && grupos.length === 1) linea = `${primero.pos ?? '—'}. ${primero.equipo}${primero.pts != null ? ' · ' + tn('conPuntos', primero.pts) : ''}`;
-    const cols = deporte === 'basketball' ? ['g', 'p'] : deporte === 'racing' ? ['pts'] : ['pj', 'g', 'e', 'p', 'pts'];
+    const dg = f.competicion === 'champions' && grupos.some(g => g.filas.some(r => r.dg != null));
+    const cols = deporte === 'basketball' ? ['g', 'p'] : deporte === 'racing' ? ['pts'] : ['pj', 'g', 'e', 'p', ...(dg ? ['dg'] : []), 'pts'];
     const nombre = deporte === 'racing' ? 'conColNombre' : 'conColEquipo';
     const tablas = gruposConsulta(grupos, g => tablaConsulta(g.filas, cols, nombre));
-    return { titulo: [CONSULTA_DEPORTES[f.competicion] || f.competicion, f.temporada].filter(Boolean).join(' · '), linea, cuerpo: tablas };
+    return { titulo: [CONSULTA_DEPORTES[f.competicion] || f.competicion, f.temporada].filter(Boolean).join(' · '), linea,
+      cuerpo: (f.competicion === 'champions' ? `<p class="consulta-sub">${escapeHtml(t('conFaseLiga'))}</p>` : '') + tablas };
   },
   resultados(f){
     const lang = idiomaConsulta();
@@ -599,9 +620,9 @@ const FICHAS_CONSULTA = {
       lista.map(p => {
         const inicio = new Date(p.inicio);
         const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estadoTextoPartido(p.estado)].filter(Boolean).join(' · ');
-        const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b>`;
-        const abrir = /^espn:partido\/(primera|segunda|nba|wnba)\/[1-9]\d{0,11}$/.test(p.id || '');
-        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}">${abrir ? `<button type="button" data-accion="partido" data-id="${escapeHtml(p.id)}" aria-label="${escapeHtml(t('conAbrirPartido', { x: `${p.local} · ${p.visitante}` }))}">${contenido}</button>` : contenido}</li>`;
+        const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b>${textoEliminatoria(p) ? `<span class="consulta-estado">${escapeHtml(textoEliminatoria(p))}</span>` : ''}`;
+        const abrir = idPartidoConsultaValido(p.id);
+        return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}">${abrir ? `<button type="button" data-accion="partido" data-id="${escapeHtml(p.id)}" aria-label="${escapeHtml(t('conAbrirPartido', { x: `${p.local || t('conEquipoPendiente')} · ${p.visitante || t('conEquipoPendiente')}` }))}">${contenido}</button>` : contenido}</li>`;
       }).join('')}</ul>`).join('');
     return {
       titulo: `${CONSULTA_DEPORTES[f.competicion] || f.competicion} · ${tn('conPartidos', partidos.length)}`,

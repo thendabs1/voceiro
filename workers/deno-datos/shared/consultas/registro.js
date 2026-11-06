@@ -18,6 +18,22 @@ export const PREFIJOS_CONSULTAS = Object.fromEntries(
 // Solo circuitos con equivalencia conocida. El calendario conserva sus ámbitos.
 export const ESPN = {
   primera: ['soccer', 'esp.1'], segunda: ['soccer', 'esp.2'],
+  'copa-del-rey': ['soccer', 'esp.copa_del_rey'], champions: ['soccer', 'uefa.champions'],
+  'liga-f': ['soccer', 'esp.w.1'],
   nba: ['basketball', 'nba'], wnba: ['basketball', 'wnba'],
   f1: ['racing', 'f1'],
 };
+
+// Capacidades acreditadas por competición. Standings es una tabla, nunca un cuadro.
+export const CAPACIDADES_ESPN = {
+  primera: ['resultados', 'partido', 'clasificacion'],
+  segunda: ['resultados', 'partido', 'clasificacion'],
+  'copa-del-rey': ['resultados', 'partido'],
+  champions: ['resultados', 'partido', 'clasificacion'],
+  'liga-f': ['resultados', 'partido'],
+  nba: ['resultados', 'partido', 'clasificacion'],
+  wnba: ['resultados', 'partido', 'clasificacion'],
+  f1: ['clasificacion'],
+};
+export const admiteConsultaESPN = (tipo, codigo) => Object.hasOwn(CAPACIDADES_ESPN, codigo)
+  && CAPACIDADES_ESPN[codigo].includes(tipo);

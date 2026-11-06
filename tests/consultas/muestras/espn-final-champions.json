@@ -1,0 +1,111 @@
+{
+  "leagues": [
+    {
+      "id": "775",
+      "uid": "s:600~l:775",
+      "name": "UEFA Champions League",
+      "slug": "uefa.champions",
+      "season": {
+        "year": 2025,
+        "displayName": "2025-26 UEFA Champions League",
+        "startDate": "2025-07-01T04:00Z",
+        "endDate": "2026-07-01T03:59Z"
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "401862897",
+      "uid": "s:600~l:775~e:401862897",
+      "name": "Arsenal at Paris Saint-Germain",
+      "date": "2026-05-30T16:00Z",
+      "season": {
+        "year": 2025,
+        "type": 13677,
+        "slug": "final"
+      },
+      "status": {
+        "clock": 7200.0,
+        "displayClock": "120'",
+        "period": 5,
+        "type": {
+          "id": "47",
+          "name": "STATUS_FINAL_PEN",
+          "state": "post",
+          "completed": true,
+          "description": "Final Score - After Penalties",
+          "detail": "FT-Pens",
+          "shortDetail": "FT-Pens"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401862897",
+          "uid": "s:600~l:775~e:401862897~c:401862897",
+          "date": "2026-05-30T16:00Z",
+          "startDate": "2026-05-30T16:00Z",
+          "timeValid": true,
+          "status": {
+            "clock": 7200.0,
+            "displayClock": "120'",
+            "period": 5,
+            "type": {
+              "id": "47",
+              "name": "STATUS_FINAL_PEN",
+              "state": "post",
+              "completed": true,
+              "description": "Final Score - After Penalties",
+              "detail": "FT-Pens",
+              "shortDetail": "FT-Pens"
+            }
+          },
+          "notes": [
+            {
+              "text": "Paris Saint-Germain win 4-3 on penalties",
+              "headline": "Paris Saint-Germain win 4-3 on penalties",
+              "type": "event"
+            }
+          ],
+          "venue": {
+            "id": "8121",
+            "fullName": "Puskás Aréna",
+            "address": {
+              "city": "Budapest",
+              "country": "Hungary"
+            }
+          },
+          "competitors": [
+            {
+              "id": "160",
+              "uid": "s:600~t:160",
+              "homeAway": "home",
+              "winner": true,
+              "score": "1",
+              "shootoutScore": 4,
+              "team": {
+                "id": "160",
+                "uid": "s:600~t:160",
+                "displayName": "Paris Saint-Germain",
+                "name": "Paris Saint-Germain"
+              }
+            },
+            {
+              "id": "359",
+              "uid": "s:600~t:359",
+              "homeAway": "away",
+              "winner": false,
+              "score": "1",
+              "shootoutScore": 3,
+              "team": {
+                "id": "359",
+                "uid": "s:600~t:359",
+                "displayName": "Arsenal",
+                "name": "Arsenal"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

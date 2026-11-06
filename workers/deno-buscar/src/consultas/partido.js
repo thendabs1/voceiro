@@ -1,4 +1,4 @@
-import { estadoPartido, referenciaPartido } from './normalizar.js';
+import { estadoPartido, referenciaPartido, eliminatoria, nombreEquipoPartido, idEquipoPartidoValido } from './normalizar.js';
 
 const texto = v => typeof v === 'string' && v.trim() ? v.trim().slice(0, 160) : null;
 const valor = v => typeof v === 'number' && Number.isFinite(v) ? String(v) : texto(v);
@@ -22,13 +22,16 @@ export function normalizarPartido(d, codigo, deporte, liga, evento) {
   const lados = c?.competitors || [];
   const local = lados.find(p => p.homeAway === 'home');
   const visitante = lados.find(p => p.homeAway === 'away');
+  const mismoId = local?.id != null && String(local.id) === String(visitante?.id);
   if (String(h?.id) !== evento || String(c?.id) !== evento || h?.league?.slug !== liga || h.competitions.length !== 1
-      || lados.length !== 2 || !texto(local?.team?.displayName) || !texto(visitante?.team?.displayName)
+      || lados.length !== 2 || !local || !visitante
       || local.id == null || visitante.id == null
-      || String(local.id) === String(visitante.id) || !referenciaPartido(codigo, evento)) {
+      || (mismoId && !(/^-?\d+$/.test(String(local.id)) && Number(local.id) <= 0))
+      || !referenciaPartido(codigo, evento)) {
     throw new Error('ESPN: identidad o lados del partido no válidos');
   }
-  const lado = id => String(id) === String(local.id) ? 'local' : String(id) === String(visitante.id) ? 'visitante' : null;
+  const lado = id => !mismoId && idEquipoPartidoValido(id)
+    ? String(id) === String(local.id) ? 'local' : String(id) === String(visitante.id) ? 'visitante' : null : null;
   const estado = estadoPartido(c.status || h.status);
   const enMarcador = ['en_juego', 'final', 'suspendido'].includes(estado);
   const equipos = Object.fromEntries((d.boxscore?.teams || []).map(t => [lado(t.team?.id),
@@ -83,8 +86,9 @@ export function normalizarPartido(d, codigo, deporte, liga, evento) {
   return {
     id: referenciaPartido(codigo, evento), competicion: codigo, temporada: h.season?.year ?? null,
     inicio: c.date || null, estado, reloj: estado === 'en_juego' ? texto(c.status?.displayClock) : null,
-    local: texto(local.team.displayName), visitante: texto(visitante.team.displayName),
+    local: nombreEquipoPartido(local), visitante: nombreEquipoPartido(visitante),
     marcador: enMarcador ? { local: valor(local.score), visitante: valor(visitante.score) } : null,
+    ...eliminatoria(c, codigo, c.status || h.status),
     lugar: texto(d.gameInfo?.venue?.fullName), ciudad: texto(d.gameInfo?.venue?.address?.city),
     estadisticas, incidencias, alineaciones, parciales, jugadores, destacados,
   };

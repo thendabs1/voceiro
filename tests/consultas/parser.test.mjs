@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseQuery, tokenizeQuery } from '../../shared/parser.js';
-import { CONSULTAS, PREFIJOS_CONSULTAS, ESPN } from '../../shared/consultas/registro.js';
+import { CONSULTAS, PREFIJOS_CONSULTAS, ESPN, CAPACIDADES_ESPN, admiteConsultaESPN } from '../../shared/consultas/registro.js';
 import { AMBITOS, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 import { PARSER_SOURCE } from '../../workers/deno-buscar/src/parser-source.js';
 
@@ -76,6 +76,22 @@ test('sin colisiones con calendario; las equivalencias ESPN son circuitos existe
   for (const p of Object.keys(PREFIJOS_CONSULTAS)) assert.ok(!Object.hasOwn(AMBITOS,p),p);
   for (const c of Object.keys(ESPN)) assert.equal(AMBITOS[c].codigo,c);
   assert.deepEqual(leerConsultaCalendario('primera:agenda').ambitos,['primera']);
+});
+
+test('Copa, Champions y Liga F tienen código propio; solo Champions añade tabla', () => {
+  assert.deepEqual(Object.keys(CAPACIDADES_ESPN), Object.keys(ESPN));
+  for (const [codigo, slug] of [['copa-del-rey', 'esp.copa_del_rey'], ['champions', 'uefa.champions'], ['liga-f', 'esp.w.1']]) {
+    assert.deepEqual(ESPN[codigo], ['soccer', slug]);
+    assert.equal(AMBITOS[codigo].codigo, codigo);
+    assert.equal(admiteConsultaESPN('clasificacion', codigo), codigo === 'champions');
+    for (const tipo of ['resultados', 'partido']) {
+      assert.equal(admiteConsultaESPN(tipo, codigo), true);
+      const texto = tipo === 'partido' ? `${codigo}/401862895` : codigo;
+      assert.deepEqual(parseQuery(`${tipo}:${texto} madrid`).consultas, [{ tipo, texto }]);
+    }
+  }
+  assert.equal(admiteConsultaESPN('resultados', 'champions_qual'), false);
+  assert.equal(admiteConsultaESPN('clasificacion', '__proto__'), false);
 });
 
 test('regresión: formato previo de parsed y combinación con tiempo, avisos y filtros', () => {

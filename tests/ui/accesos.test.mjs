@@ -4,14 +4,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tokenizeQuery } from '../../shared/parser.js';
 import { leerConsultaCalendario, AMBITOS } from '../../shared/calendario/consulta.js';
-import { ESPN, PREFIJOS_CONSULTAS } from '../../shared/consultas/registro.js';
+import { PREFIJOS_CONSULTAS, admiteConsultaESPN } from '../../shared/consultas/registro.js';
 import { traducir } from '../../front/idiomas/index.js';
 
 const codigo = readFileSync(new URL('../../front/app/14-accesos.js', import.meta.url), 'utf8');
 const CAL_DEPORTES = { futbol: ['primera', 'segunda'], baloncesto: ['nba', 'wnba'], motor: ['f1', 'motogp'], tenis: ['atp', 'wta'] };
 const NOMBRES = { f1: 'F1', motogp: 'MotoGP', primera: 'Primera', segunda: 'Segunda', nba: 'NBA', wnba: 'WNBA', atp: 'ATP', wta: 'WTA' };
 
-function escenario({ sigo = [], buscar = '' } = {}){
+function escenario({ sigo = [], buscar = '', deportes = CAL_DEPORTES } = {}){
   const el = () => ({ innerHTML: '', hidden: true, atributos: {}, setAttribute(k, v){ this.atributos[k] = v; },
     focus(){}, querySelector: () => null, addEventListener(){} });
   const ids = { 'accesos-panel': el(), 'buscar-accesos': el(), buscar: { value: buscar } };
@@ -19,9 +19,9 @@ function escenario({ sigo = [], buscar = '' } = {}){
   const c = {
     $: sel => ids[sel.slice(1)], t: (k, v) => traducir('es', k, v), tokenizeQuery, leerConsultaCalendario, AMBITOS, PREFIJOS_CONSULTAS,
     calEsc: s => String(s), calNombreCompeticion: x => NOMBRES[x] || x,
-    calPreferencias: () => ({ competiciones: sigo }), CAL_DEPORTES, CALENDARIO: { orden: null },
-    CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' }, CAL_COMPETICIONES: Object.values(CAL_DEPORTES).flat(),
-    codigoDeporte: (tipo, x) => Object.hasOwn(ESPN, x) && !(tipo !== 'clasificacion' && x === 'f1'),
+    calPreferencias: () => ({ competiciones: sigo }), CAL_DEPORTES: deportes, CALENDARIO: { orden: null },
+    CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' }, CAL_COMPETICIONES: Object.values(deportes).flat(),
+    codigoDeporte: admiteConsultaESPN,
     calPedir: async () => ({ disponibilidad: { circuitos: {} } }),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), cerrarSugerencias(){},
     escribirBusqueda: v => escritas.push(v), document: { addEventListener(){} },
@@ -96,4 +96,18 @@ test('«Clasificaciones…» junto a «Resultados…»: una fila por competició
   assert.match(s.html(), /<h2 id="accesos-titulo" tabindex="-1">Clasificaciones<\/h2>/);
   assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]),
     ['clasificacion:primera', 'clasificacion:segunda', 'clasificacion:nba', 'clasificacion:wnba', 'clasificacion:f1']);
+});
+
+test('los accesos ofrecen Copa, Champions y Liga F con sus capacidades declaradas', () => {
+  const calendario = readFileSync(new URL('../../front/app/14-calendario.js', import.meta.url), 'utf8');
+  const deportes = runInNewContext(calendario.match(/const CAL_DEPORTES = .*?;/s)[0] + '\nCAL_DEPORTES');
+  const s = escenario({ deportes });
+  s.pantalla('resultados');
+  for (const c of ['copa-del-rey', 'champions', 'liga-f']) assert.ok(s.html().includes(`data-orden="resultados:${c}"`));
+  s.pantalla('clasificaciones');
+  assert.match(s.html(), /data-orden="clasificacion:champions"/);
+  assert.doesNotMatch(s.html(), /clasificacion:copa-del-rey|clasificacion:liga-f/);
+  s.pantalla('c:copa-del-rey');
+  assert.match(s.html(), /data-orden="partido:copa-del-rey"/);
+  assert.doesNotMatch(s.html(), /clasificacion:copa-del-rey/);
 });

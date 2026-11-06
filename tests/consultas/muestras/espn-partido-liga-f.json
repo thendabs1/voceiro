@@ -1,0 +1,562 @@
+{
+  "header": {
+    "id": "401882476",
+    "season": {
+      "year": 2026,
+      "current": true,
+      "type": 14353,
+      "name": "2026-27 Spanish Liga F"
+    },
+    "league": {
+      "id": "20956",
+      "slug": "esp.w.1"
+    },
+    "competitions": [
+      {
+        "id": "401882476",
+        "uid": "s:600~l:20956~e:401882476~c:401882476",
+        "date": "2026-11-01T11:00Z",
+        "status": {
+          "type": {
+            "id": "28",
+            "name": "STATUS_FULL_TIME",
+            "state": "post",
+            "completed": true,
+            "description": "Full Time",
+            "detail": "FT",
+            "shortDetail": "FT"
+          }
+        },
+        "notes": [],
+        "neutralSite": false,
+        "competitors": [
+          {
+            "id": "21378",
+            "uid": "s:600~t:21378",
+            "homeAway": "home",
+            "winner": false,
+            "score": "1",
+            "team": {
+              "id": "21378",
+              "uid": "s:600~t:21378",
+              "displayName": "Alavés",
+              "name": "Alavés"
+            }
+          },
+          {
+            "id": "21428",
+            "uid": "s:600~t:21428",
+            "homeAway": "away",
+            "winner": false,
+            "score": "1",
+            "team": {
+              "id": "21428",
+              "uid": "s:600~t:21428",
+              "displayName": "Real Sociedad",
+              "name": "Real Sociedad"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "boxscore": {
+    "teams": [
+      {
+        "team": {
+          "id": "21378"
+        },
+        "statistics": [
+          {
+            "name": "foulsCommitted",
+            "displayValue": "10"
+          },
+          {
+            "name": "yellowCards",
+            "displayValue": "1"
+          },
+          {
+            "name": "redCards",
+            "displayValue": "0"
+          },
+          {
+            "name": "offsides",
+            "displayValue": "1"
+          },
+          {
+            "name": "wonCorners",
+            "displayValue": "3"
+          },
+          {
+            "name": "saves",
+            "displayValue": "0"
+          },
+          {
+            "name": "possessionPct",
+            "displayValue": "27.2"
+          },
+          {
+            "name": "totalShots",
+            "displayValue": "10"
+          },
+          {
+            "name": "shotsOnTarget",
+            "displayValue": "5"
+          },
+          {
+            "name": "shotPct",
+            "displayValue": "0.5"
+          },
+          {
+            "name": "penaltyKickGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "penaltyKickShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "accuratePasses",
+            "displayValue": "121"
+          },
+          {
+            "name": "totalPasses",
+            "displayValue": "213"
+          },
+          {
+            "name": "passPct",
+            "displayValue": "0.6"
+          },
+          {
+            "name": "crossPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "longballPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "blockedShots",
+            "displayValue": "2"
+          },
+          {
+            "name": "effectiveTackles",
+            "displayValue": "16"
+          },
+          {
+            "name": "totalTackles",
+            "displayValue": "19"
+          },
+          {
+            "name": "tacklePct",
+            "displayValue": "0.8"
+          },
+          {
+            "name": "effectiveClearance",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalClearance",
+            "displayValue": "36"
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "21428"
+        },
+        "statistics": [
+          {
+            "name": "foulsCommitted",
+            "displayValue": "10"
+          },
+          {
+            "name": "yellowCards",
+            "displayValue": "4"
+          },
+          {
+            "name": "redCards",
+            "displayValue": "0"
+          },
+          {
+            "name": "offsides",
+            "displayValue": "3"
+          },
+          {
+            "name": "wonCorners",
+            "displayValue": "8"
+          },
+          {
+            "name": "saves",
+            "displayValue": "4"
+          },
+          {
+            "name": "possessionPct",
+            "displayValue": "72.8"
+          },
+          {
+            "name": "totalShots",
+            "displayValue": "12"
+          },
+          {
+            "name": "shotsOnTarget",
+            "displayValue": "1"
+          },
+          {
+            "name": "shotPct",
+            "displayValue": "0.1"
+          },
+          {
+            "name": "penaltyKickGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "penaltyKickShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "accuratePasses",
+            "displayValue": "467"
+          },
+          {
+            "name": "totalPasses",
+            "displayValue": "574"
+          },
+          {
+            "name": "passPct",
+            "displayValue": "0.8"
+          },
+          {
+            "name": "crossPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "longballPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "blockedShots",
+            "displayValue": "6"
+          },
+          {
+            "name": "effectiveTackles",
+            "displayValue": "8"
+          },
+          {
+            "name": "totalTackles",
+            "displayValue": "8"
+          },
+          {
+            "name": "tacklePct",
+            "displayValue": "1.0"
+          },
+          {
+            "name": "effectiveClearance",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalClearance",
+            "displayValue": "10"
+          }
+        ]
+      }
+    ]
+  },
+  "gameInfo": {
+    "venue": {
+      "fullName": "Mendizorrotza",
+      "address": {
+        "city": "Vitoria-Gasteiz"
+      }
+    }
+  },
+  "keyEvents": [
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "18'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Ainhoa Marín"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "21'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Esther Laborde"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "29'"
+      },
+      "team": {
+        "id": "21378"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Inés Juan"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "32'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Claudia Florentino"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "40'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Ainoa Campo"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "49'"
+      },
+      "team": {
+        "id": "21378"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Merche Izal"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "57'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Ainhoa Moraza"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Intza Eguiguren"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "57'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Arola Aparicio"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Esther Laborde"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "70'"
+      },
+      "team": {
+        "id": "21378"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Sarah Brasero"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Ainhoa Guallar"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "82'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Sonya Keefe"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Ainhoa Marín"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "89'"
+      },
+      "team": {
+        "id": "21378"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Amaya Garcia"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Merche Izal"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "90'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Ava Seelenfreund"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Maren Lezeta"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "90'"
+      },
+      "team": {
+        "id": "21378"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Reyes Moreno"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Laura Navajas"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "90'+1'"
+      },
+      "team": {
+        "id": "21428"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Arola Aparicio"
+          }
+        }
+      ]
+    }
+  ]
+}

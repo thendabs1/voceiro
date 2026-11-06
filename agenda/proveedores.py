@@ -23,7 +23,7 @@ def modo(proveedor):
 def fuente_nucleo(proveedor):
     if proveedor.startswith('laliga-'):
         return 'laliga'
-    if proveedor in ('espn-primera', 'espn-segunda', 'espn-copa-del-rey', 'espn-champions'):
+    if proveedor in ('espn-primera', 'espn-segunda', 'espn-copa-del-rey', 'espn-champions', 'espn-liga-f'):
         return 'espn-futbol'
     if proveedor in ('espn-nba', 'espn-wnba'):
         return 'espn-baloncesto'
