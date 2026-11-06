@@ -98,6 +98,7 @@ function abrirAjustes(ruta){
   AJ_PILA = [ruta];
   if (ruta !== 'modo') MODO_EDITADO = null;
   _ajSinReglas = new Set(PRESETS.lista.filter(p => !presetTieneReglas(p)).map(p => p.id));
+  anotarPaso();   // volver no debe borrar lo escrito
   history.pushState({ aj: 1 }, '');
   ajPintar();
 }

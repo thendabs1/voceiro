@@ -14,6 +14,7 @@ export const stubsDeportes = () => ({
   AMBITOS, CAL_DEPORTES, PREFIJOS_CONSULTAS, MOTOR, admiteConsultaMotor, leerConsultaCalendario, tokenizeQuery, normalize, window: { scrollTo() {} },
   CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis', atletismo: 'calAtletismo' },
   calNombreCompeticion: c => AMBITOS[c]?.nombre || AMBITOS[c]?.noticias?.[0] || c,
+  CALENDARIO: {}, history: { state: null, replaceState(s) { this.state = s; }, pushState(s) { this.state = s; } }, calCabCompeticion: () => '', calModoDeportes: () => false, calHoy: () => '2026-11-06',
   calPreferencias: () => null, calPedir: async () => { throw new Error('sin red'); }, AbortController,
   partirConsulta: raw => {
     const tk = tokenizeQuery(raw).find(x => x.resto);

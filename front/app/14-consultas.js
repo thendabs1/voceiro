@@ -216,6 +216,7 @@ function pintarConsulta({ conservarPlegado = false } = {}){
   el.innerHTML = htmlConsulta();
   if (plegada) el.querySelector('.consulta-ficha').open = false;
   el.hidden = false;
+  pintarCabeceraCompeticion();
   // El foco solo se mueve tras un toque en el panel, nunca al llegar datos de lo que se escribe.
   // Mientras carga no: la ficha repinta el panel y el foco se perdería.
   const destino = PUNTUAL.enfocar && PUNTUAL.estado !== 'cargando' && el.querySelector(PUNTUAL.enfocar);
@@ -277,8 +278,9 @@ function pulsarConsulta(ev){
       escribirAcceso(b.dataset.orden);
       // Después: activar la consulta limpia el foco pendiente.
       if (/^(resultados|clasificacion|deportes):/.test(b.dataset.orden)){
-        p.enfocar = '.dep-tabs [aria-current], .dep-nombre';
+        p.enfocar = '.dep-nombre';
         if (p.estado !== 'cargando') pintarConsulta();
+        document.querySelector('#competicion-cab .dep-tabs [aria-current]')?.focus({ preventScroll: true });
       }
       break;
     case 'grupo': {
@@ -359,10 +361,11 @@ function htmlConsulta(){
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   const competicion = competicionConsulta();
   const vista = p.estado === 'ayuda' && c.tipo === 'deportes';
-  const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo) : volver
-    || `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
-  return `<div class="consulta-cab">${rotulo}${cambiar}
-    <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
+  const rotulo = volver || (competicion ? '' : `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`);
+  // Con competición, la navegación y el cierre van en su cabecera (#competicion-cab).
+  const cabecera = rotulo || cambiar || !competicion ? `<div class="consulta-cab">${rotulo}${cambiar}
+    ${competicion ? '' : `<button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button>`}</div>` : '';
+  return `${cabecera}
     ${otras}${p.estado === 'ficha' ? '' : htmlFechasResultados()}${cuerpoConsulta()}`;
 }
 

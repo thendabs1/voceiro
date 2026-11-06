@@ -42,7 +42,7 @@ function contexto({ buscar = '', responder }) {
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
     normalize, tokenizeQuery, rangosResaltado, fechaValida, sumarDiasCalendario, Intl, Date, URLSearchParams, AbortSignal, Promise, Map, Set, JSON, Object, Error, isNaN,
     setTimeout: () => 0, clearTimeout() {},
-    document: { getElementById: id => (id === 'consulta-panel' ? panel : null) },
+    document: { getElementById: id => (id === 'consulta-panel' ? panel : null), querySelector: () => null },
     $: s => (s === '#buscar' ? entrada : null),
     aplicarFiltrosDebounced: { cancel() {} },
     aplicarFiltros() { ctx.filtrados++; }, filtrados: 0,
@@ -57,7 +57,7 @@ function contexto({ buscar = '', responder }) {
     for (const [i, j] of rangosResaltado(texto, compilado)){ out += ctx.escapeHtml(texto.slice(last, i)) + '<mark>' + ctx.escapeHtml(texto.slice(i, j)) + '</mark>'; last = j; }
     return out + ctx.escapeHtml(texto.slice(last));
   };
-  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia };', ctx);
+  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia, htmlCabeceraCompeticion, vistaCompeticion };', ctx);
   // Como aplicarFiltros: la consulta recibe el texto compilado de la búsqueda.
   const actualizar = raw => {
     entrada.value = raw;
@@ -673,17 +673,22 @@ test('sin citas publicadas no se ofrece su calendario, y los resultados siguen',
 });
 
 test('una competición enlaza sus secciones, las de su deporte y la vista general', async () => {
-  const { panel, entrada, actualizar, pulsar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  const { ctx, panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
   actualizar('resultados:primera'); await esperar();
-  assert.match(panel.innerHTML, /data-orden="deportes:"[^>]*>‹ Deportes/);
-  assert.match(panel.innerHTML, /data-orden="resultados:primera" aria-current="page">Resultados/);
-  assert.match(panel.innerHTML, /data-orden="clasificacion:primera">Clasificación/);
-  assert.match(panel.innerHTML, /data-orden="primera:noticias">Noticias/);
-  assert.match(panel.innerHTML, /data-orden="resultados:copa-del-rey">Copa del Rey/);
-  assert.doesNotMatch(panel.innerHTML, /data-orden="resultados:nba"/);
-  pulsar({ accion: 'orden', orden: 'clasificacion:primera' });
-  assert.equal(entrada.value, 'clasificacion:primera');
-  assert.doesNotMatch(panel.innerHTML, /clasificacion:copa-del-rey/);
+  // La navegación vive fuera del panel y sigue ahí mientras carga o falla.
+  assert.doesNotMatch(panel.innerHTML, /dep-cab|consulta-cerrar/);
+  assert.equal(ctx.api.vistaCompeticion().codigo, 'primera');
+  const html = ctx.api.htmlCabeceraCompeticion('primera', 'resultados');
+  assert.match(html, /data-orden="deportes:"[^>]*>‹ Deportes/);
+  assert.match(html, /data-orden="resultados:primera" aria-current="page">Resultados/);
+  assert.match(html, /data-orden="clasificacion:primera">Clasificación/);
+  assert.match(html, /data-orden="primera:noticias">Noticias/);
+  assert.match(html, /data-orden="resultados:copa-del-rey">Copa del Rey/);
+  assert.doesNotMatch(html, /data-orden="resultados:nba"/);
+  // Las mismas hermanas en todas las vistas: la Copa no tiene tabla y lleva a lo suyo.
+  const tabla = ctx.api.htmlCabeceraCompeticion('primera', 'clasificacion');
+  assert.match(tabla, /data-orden="clasificacion:segunda">Segunda/);
+  assert.match(tabla, /data-orden="resultados:copa-del-rey">Copa del Rey/);
 });
 
 test('la tarjeta abre los resultados de su día, también con esa consulta ya abierta', async () => {

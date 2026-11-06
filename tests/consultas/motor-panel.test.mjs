@@ -29,7 +29,7 @@ function banco(competicion, { idioma = 'es', transformar = f => f } = {}) {
     t: (k, v) => traducir(idioma, k, v), ico: () => '',
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]),
     setTimeout: () => 0, clearTimeout() {}, URLSearchParams, AbortSignal,
-    document: { getElementById: () => panel },
+    document: { getElementById: id => (id === 'competicion-cab' ? null : panel), querySelector: () => null },
     fetch: async direccion => {
       const u = new URL(direccion); pedidos.push(u);
       const id = u.searchParams.get('id'), detalle = id === ficha.id;

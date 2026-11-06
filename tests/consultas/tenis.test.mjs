@@ -196,7 +196,7 @@ function panelTenis(idioma = 'es') {
     t: (k, v) => traducir(idioma, k, v), ico: () => '',
     escapeHtml: v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
     Date, Intl, URLSearchParams, AbortSignal, setTimeout: () => 0, clearTimeout() {},
-    document: { getElementById: () => panel },
+    document: { getElementById: id => (id === 'competicion-cab' ? null : panel), querySelector: () => null },
     fetch: async url => {
       const u = new URL(url), id = u.searchParams.get('id'); peticiones.push(u);
       const fecha = u.searchParams.get('fecha') || '2026-11-05';

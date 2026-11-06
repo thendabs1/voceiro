@@ -27,6 +27,7 @@ function escenario({ sigo = [], buscar = '' } = {}){
     calPedir: async () => ({ disponibilidad: { circuitos: {} } }),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), cerrarSugerencias(){},
     PUNTUAL: {}, escribirBusqueda: v => escritas.push(v), document: { addEventListener(){} },
+    CALENDARIO: {}, history: { state: null, replaceState(s){ this.state = s; }, pushState(s){ this.state = s; } }, calCabCompeticion: () => '',
   };
   runInNewContext(codigo, c);
   return { c, ids, escritas, html: () => ids['accesos-panel'].innerHTML, run: expr => runInNewContext(expr, c) };
@@ -51,6 +52,18 @@ test('lo seguido va primero, hasta cuatro; sin citas pierde el calendario, no su
   assert.ok(ordenes(s).includes('calendario:motogp'));
   assert.ok(!ordenes(s).includes('calendario:wnba'));
   assert.ok(ordenes(s).includes('resultados:wnba'));
+});
+
+test('Atrás: una vista elegida crea un paso con lo que había antes', () => {
+  const s = escenario({ buscar: 'lo tecleado' });
+  s.run("conPaso(() => { $('#buscar').value = 'resultados:nba'; })");
+  assert.equal(s.c.history.state.paso.barra, 'resultados:nba');
+  assert.equal(s.run("mismoPaso({ barra: 'a', vista: '' }, { barra: 'a', vista: '' })"), true);
+  s.run("volverAPaso({ state: { paso: { barra: 'lo tecleado', vista: '' } } })");
+  assert.deepEqual([...s.escritas], ['lo tecleado']);
+  // Un paso de Ajustes no es de la barra.
+  s.run("volverAPaso({ state: { aj: 1 } })");
+  assert.equal(s.escritas.length, 1);
 });
 
 test('pedir lo que una competición no tiene lo dice y ofrece lo que sí', () => {
