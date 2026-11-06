@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=f131ddf4b8';
+} from './parser.js?v=cac9f66eb2';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=f131ddf4b8';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=f131ddf4b8';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=f131ddf4b8';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=f131ddf4b8';
-import { comparador } from './busqueda/orden.js?v=f131ddf4b8';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=cac9f66eb2';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=cac9f66eb2';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=cac9f66eb2';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=cac9f66eb2';
+import { comparador } from './busqueda/orden.js?v=cac9f66eb2';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=f131ddf4b8';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=f131ddf4b8';
+} from './sync/fusion.js?v=cac9f66eb2';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=cac9f66eb2';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=f131ddf4b8';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=f131ddf4b8';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=cac9f66eb2';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=cac9f66eb2';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=f131ddf4b8';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=cac9f66eb2';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=f131ddf4b8';
+} from './tiempo/avisos.js?v=cac9f66eb2';
 
-import { I18N, traducir } from './idiomas/index.js?v=f131ddf4b8';
+import { I18N, traducir } from './idiomas/index.js?v=cac9f66eb2';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN } from './consultas/registro.js?v=f131ddf4b8';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=f131ddf4b8';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=f131ddf4b8';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=f131ddf4b8';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor } from './consultas/registro.js?v=cac9f66eb2';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=cac9f66eb2';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=cac9f66eb2';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=cac9f66eb2';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=f131ddf4b8';
+import { ADMINISTRACION } from './territorios/administracion.js?v=cac9f66eb2';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=f131ddf4b8');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=cac9f66eb2');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3648,7 +3648,8 @@ function pintarAccesos(){
       ir('resultados', t('accResultados')), ir('clasificaciones', t('accClasificaciones')), ir('competiciones', t('accCompeticiones'))];
   } else if (p === 'resultados'){
     titulo = t('accResultadosTitulo');
-    filas = CAL_COMPETICIONES.filter(c => codigoDeporte('resultados', c)).map(c => fila('resultados:' + c, nombre(c)));
+    filas = [...CAL_COMPETICIONES, 'euroliga'].filter(c => codigoDeporte('resultados', c))
+      .map(c => fila('resultados:' + c, c === 'euroliga' ? t('conEuroliga') : nombre(c)));
   } else if (p === 'clasificaciones'){
     titulo = t('accClasificacionesTitulo');
     filas = CAL_COMPETICIONES.filter(c => codigoDeporte('clasificacion', c)).map(c => fila('clasificacion:' + c, nombre(c)));
@@ -3888,7 +3889,8 @@ function calParametros(){
   const s = CALENDARIO, o = calPideAgenda(s.orden) ? s.orden : null, deportes = calModoDeportes();
   const ambitos = [...(o?.ambitos || []).filter(a => Boolean(AMBITOS[a]?.codigo) === deportes), ...(deportes ? s.capas || [] : [])];
   const circuitos = deportes ? o?.circuitos || [] : [];
-  const q = [...ambitos.map(a => a + ':'), ...(circuitos.length ? ['circuito:' + circuitos.join(',')] : [])].join(' ');
+  // Con `deporte:` el worker ignora una competición que aún no conozca; con prefijos sueltos, 400.
+  const q = [...(ambitos.length ? ['deporte:' + ambitos.join(',')] : []), ...(circuitos.length ? ['circuito:' + circuitos.join(',')] : [])].join(' ');
   // La agenda va siempre acotada a su sitio (territorio estricto); Deportes,
   // por competición y sin sitio: las competiciones no tienen territorio.
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: deportes ? '' : [...s.temas].join(','),
@@ -5378,7 +5380,9 @@ const CONSULTA_MIN_LETRAS = 3;
 const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
 const CONSULTA_DEPORTES = { primera: 'Primera', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
-  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1' };
+  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
+const VISTAS_CONSULTA = {};
+const nombreDeporteConsulta = codigo => codigo === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[codigo] || codigo;
 const CONSULTA_EJEMPLOS = {
   libro: 'Los besos en el pan', autor: 'Almudena Grandes', pelicula: 'La infiltrada',
   serie: 'La mesías', contexto: 'Almudena Grandes',
@@ -5406,10 +5410,13 @@ const nombreConsulta = tipo => t('con' + tipo[0].toUpperCase() + tipo.slice(1));
 // Singular y plural: «clave1» para uno.
 const tn = (clave, n) => t(n === 1 ? clave + '1' : clave, { n });
 const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido'].includes(tipo);
-const codigoDeporte = admiteConsultaESPN;
+const codigoDeporte = (tipo, codigo) => tipo === 'resultados' && codigo === 'euroliga' || admiteConsultaESPN(tipo, codigo) || admiteConsultaMotor(tipo, codigo);
+const idResultadosConsulta = id => id === 'euroliga:resultados' || id.startsWith('espn:resultados/') || idResultadosMotorValido(id);
 const idPartidoConsultaValido = id => {
+  if (/^euroliga:partido\/E\d{4}\/[1-9]\d{0,3}$/.test(id || '')) return true;
   const partes = /^espn:partido\/([a-z0-9-]+)\/[1-9]\d{0,11}$/.exec(id || '');
-  return !!partes && codigoDeporte('partido', partes[1]);
+  return (!!partes && !['atp', 'wta'].includes(partes[1]) && codigoDeporte('partido', partes[1]))
+    || Object.values(VISTAS_CONSULTA).some(v => v.idValido?.(id));
 };
 const ESTADOS_PARTIDO = { en_juego: 'conEnJuego', final: 'conFinal', programado: 'conProgramado',
   aplazado: 'conAplazado', cancelado: 'conCancelado', retrasado: 'conRetrasado', suspendido: 'conSuspendido', desconocido: 'conEstadoDesconocido' };
@@ -5451,12 +5458,13 @@ function activarConsulta(c){
   Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null, fecha: '', cargandoFecha: false });
   if (esDeporteConsulta(c.tipo)){
     const codigo = normalize(c.texto);
+    if (admiteConsultaMotor(c.tipo, codigo)) { abrirFichaConsulta(`${MOTOR[codigo]}:resultados/${codigo}`); return; }
     if (c.tipo === 'partido' && idPartidoConsultaValido(`espn:partido/${codigo}`)){
       abrirFichaConsulta(`espn:partido/${codigo}`); return;
     }
     if (codigoDeporte(c.tipo, codigo)){
       if (c.tipo === 'partido') cargarCandidatos({ ...c, texto: codigo });
-      else abrirFichaConsulta(`espn:${c.tipo}/${codigo}`);
+      else abrirFichaConsulta(codigo === 'euroliga' ? 'euroliga:resultados' : `espn:${c.tipo}/${codigo}`);
       return;
     }
     PUNTUAL.estado = 'ayuda';
@@ -5524,7 +5532,7 @@ async function cargarCandidatos(c){
 // callado: al actualizar se deja la ficha que había hasta que llegue la nueva.
 async function abrirFichaConsulta(id, { candidato = null, callado = false, fecha = '' } = {}){
   const seq = ++PUNTUAL.seq;
-  const resultados = id.startsWith('espn:resultados/');
+  const resultados = idResultadosConsulta(id);
   clearTimeout(PUNTUAL.timer);
   PUNTUAL.cargandoFecha = resultados && callado;
   PUNTUAL.reintentar = () => abrirFichaConsulta(id, { candidato, callado, fecha });
@@ -5594,7 +5602,7 @@ function pulsarConsulta(ev){
     case 'ficha': p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(b.dataset.id); break;
     case 'partido': {
       const partido = p.ficha?.ficha?.partidos?.find(x => x.id === b.dataset.id);
-      if (!partido || !idPartidoConsultaValido(partido.id)) break;
+      if (!partido || !(partido.vista === 'sesion_motor' ? idSesionMotorValido(partido.id) : idPartidoConsultaValido(partido.id))) break;
       p.origen = { ficha: p.ficha, id: p.id, candidato: p.candidato, fallo: p.fallo,
         grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id, fecha: p.fecha };
       p.enfocar = '.consulta-ficha summary';
@@ -5646,7 +5654,7 @@ function cambiarFechaConsulta(ev){
 }
 function consultarFechaResultados(fecha, foco){
   const p = PUNTUAL;
-  if (!p.id.startsWith('espn:resultados/') || p.cargandoFecha || !fechaValida(fecha) || fecha < '0001-01-01') return;
+  if (!idResultadosConsulta(p.id) || p.cargandoFecha || !fechaValida(fecha) || fecha < '0001-01-01') return;
   p.enfocar = foco;
   abrirFichaConsulta(p.id, { fecha, callado: Boolean(p.ficha) });
 }
@@ -5702,7 +5710,7 @@ function htmlConsulta(){
     ? `<div class="consulta-otras">${escapeHtml(t('conVarias'))} ${p.lista.map((o, i) =>
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
     : '';
-  const tipo = p.id.startsWith('espn:partido/') ? 'partido' : c.tipo;
+  const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(tipo))}</span>${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
     ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
@@ -5710,14 +5718,14 @@ function htmlConsulta(){
 
 function htmlFechasResultados(){
   const p = PUNTUAL;
-  if (!p.id.startsWith('espn:resultados/')) return '';
+  if (!idResultadosConsulta(p.id)) return '';
   const cargando = p.cargandoFecha || p.estado === 'cargando';
   const mover = (direccion, texto, flecha) => botonConsulta('dia', flecha,
     ` data-direccion="${direccion}" title="${escapeHtml(t(texto))}" aria-label="${escapeHtml(t(texto))}"${cargando || !fechaValida(p.fecha) ? ' disabled' : ''}`);
   return `<div class="consulta-fechas" role="group" aria-label="${escapeHtml(t('conFechaResultados'))}" aria-busy="${cargando}">
     ${mover(-1, 'conDiaAnterior', '‹')}
     <label><span class="sr-only">${escapeHtml(t('conFechaResultados'))}</span><input type="date" data-fecha-resultados value="${escapeHtml(p.fecha)}" min="0001-01-01" max="9999-12-31"${cargando ? ' disabled' : ''}></label>
-    ${mover(1, 'conDiaSiguiente', '›')}</div>${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
+    ${mover(1, 'conDiaSiguiente', '›')}</div>${notaFechaMotor(p.id)}${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
 }
 
 function cuerpoConsulta(){
@@ -5725,8 +5733,8 @@ function cuerpoConsulta(){
   switch (p.estado){
     case 'ayuda':
       if (esDeporteConsulta(c.tipo)){
-        return msgConsulta('conCompeticion') + opcionesConsulta(Object.keys(ESPN).filter(k => codigoDeporte(c.tipo, k))
-          .map(k => botonConsulta('valor', CONSULTA_DEPORTES[k] || k, ` data-valor="${k}"`)).join(''));
+        return msgConsulta('conCompeticion') + opcionesConsulta([...new Set([...Object.keys(ESPN), ...Object.keys(MOTOR), 'euroliga'])].filter(k => codigoDeporte(c.tipo, k))
+          .map(k => botonConsulta('valor', nombreDeporteConsulta(k), ` data-valor="${k}"`)).join(''));
       }
       return msgConsulta('conAyuda', { p: c.prefijo, ej: CONSULTA_EJEMPLOS[c.tipo] });
     case 'corta': return msgConsulta('conCorta') + opcionesConsulta(botonConsulta('forzar', t('conBuscarIgual', { x: c.texto })));
@@ -5761,11 +5769,12 @@ function htmlCandidatos(d){
 }
 
 function htmlFicha(d){
-  const vacio = d.tipo === 'resultados' ? 'conSinPartidos' : d.tipo === 'clasificacion' ? 'conSinTabla' : 'conSinResultados';
+  const vacio = idResultadosMotorValido(PUNTUAL.id) ? 'conMotorSinSesiones' : d.tipo === 'resultados' ? 'conSinPartidos' : d.tipo === 'clasificacion' ? 'conSinTabla' : 'conSinResultados';
   const estado = estadoConsulta(d, vacio, { x: PUNTUAL.activa.texto });
   if (estado) return estado + htmlPieConsulta(d);
-  if (!FICHAS_CONSULTA[d.tipo] || !d.ficha) return msgConsulta('conNoAdmitida');
-  const r = FICHAS_CONSULTA[d.tipo](d.ficha);
+  const pintar = d.ficha?.vista ? VISTAS_CONSULTA[d.ficha.vista]?.ficha : FICHAS_CONSULTA[d.tipo];
+  if (!pintar || !d.ficha) return msgConsulta('conNoAdmitida');
+  const r = pintar(d.ficha);
   const linea = [r.linea, d.incompleto ? t('conParcial') : ''].filter(Boolean).join(' · ');
   const ficha = `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
     linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}</summary>
@@ -5777,7 +5786,11 @@ function htmlFicha(d){
 function htmlPieConsulta(d){
   const enlace = (url, texto) => enlaceConsulta(url, texto) || escapeHtml(texto);
   const partes = [];
-  if (d.tipo === 'contexto'){
+  if (d.ficha?.fuente){
+    const f = d.ficha.fuente;
+    if (f.nombre) partes.push(enlace(f.url, f.nombre));
+    if (f.licencia) partes.push(enlace(f.licencia_url, /^Condiciones/.test(f.licencia) ? t('conCondiciones') : f.licencia));
+  } else if (d.tipo === 'contexto'){
     partes.push(enlace('https://www.wikipedia.org', 'Wikipedia'), enlace(d.licencia?.enlace, 'CC BY-SA'));
     if (d.ficha && historialWikipedia()) partes.push(enlace(historialWikipedia(), t('conAutores')));
   } else {
@@ -5888,7 +5901,7 @@ function fichaPartido(f){
   })) : '';
   return {
     titulo: `${f.local || t('conEquipoPendiente')} · ${f.visitante || t('conEquipoPendiente')}`,
-    linea: [CONSULTA_DEPORTES[f.competicion], fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj].filter(Boolean).join(' · '),
+    linea: [nombreDeporteConsulta(f.competicion), fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj].filter(Boolean).join(' · '),
     cuerpo: `<div class="consulta-marcador"><span>${equipoConsulta(f.local)}</span><b>${val(f.marcador?.local)}</b>
       <span>${equipoConsulta(f.visitante)}</span><b>${val(f.marcador?.visitante)}</b></div>
       ${textoEliminatoria(f) ? `<p class="consulta-nota">${escapeHtml(textoEliminatoria(f))}</p>` : ''}
@@ -5967,6 +5980,8 @@ const FICHAS_CONSULTA = {
       cuerpo: (f.competicion === 'champions' ? `<p class="consulta-sub">${escapeHtml(t('conFaseLiga'))}</p>` : '') + tablas };
   },
   resultados(f){
+    const vista = Object.values(VISTAS_CONSULTA).find(v => v.admiteResultados?.(f));
+    if (vista) return vista.resultados(f);
     const lang = idiomaConsulta();
     const dia = new Intl.DateTimeFormat(lang, { weekday: 'short', day: 'numeric', month: 'short' });
     const hora = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' });
@@ -5976,7 +5991,7 @@ const FICHAS_CONSULTA = {
     // Por día en la zona del lector, en el orden de la respuesta.
     const dias = new Map();
     for (const p of partidos){
-      const fecha = new Date(p.inicio);
+      const fecha = new Date(p.inicio || NaN);
       const clave = isNaN(fecha) ? '' : dia.format(fecha);
       if (!dias.has(clave)) dias.set(clave, []);
       dias.get(clave).push(p);
@@ -5984,6 +5999,7 @@ const FICHAS_CONSULTA = {
     const marcador = v => escapeHtml(v ?? '—');
     const cuerpo = [...dias].map(([fecha, lista]) => `${fecha ? `<p class="consulta-sub">${escapeHtml(fecha)}</p>` : ''}<ul class="consulta-partidos">${
       lista.map(p => {
+        if (p.vista) return VISTAS_CONSULTA[p.vista]?.fila?.(p) || '';
         const inicio = new Date(p.inicio);
         const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estadoTextoPartido(p.estado)].filter(Boolean).join(' · ');
         const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b>${textoEliminatoria(p) ? `<span class="consulta-estado">${escapeHtml(textoEliminatoria(p))}</span>` : ''}`;
@@ -5991,7 +6007,7 @@ const FICHAS_CONSULTA = {
         return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}">${abrir ? `<button type="button" data-accion="partido" data-id="${escapeHtml(p.id)}" aria-label="${escapeHtml(t('conAbrirPartido', { x: `${p.local || t('conEquipoPendiente')} · ${p.visitante || t('conEquipoPendiente')}` }))}">${contenido}</button>` : contenido}</li>`;
       }).join('')}</ul>`).join('');
     return {
-      titulo: `${CONSULTA_DEPORTES[f.competicion] || f.competicion} · ${tn('conPartidos', partidos.length)}`,
+      titulo: `${nombreDeporteConsulta(f.competicion)} · ${tn('conPartidos', partidos.length)}`,
       linea: [['en_juego', 'conNEnJuego'], ['final', 'conNFinal'], ['programado', 'conNProgramado']]
         .filter(([e]) => cuenta[e]).map(([e, k]) => tn(k, cuenta[e])).join(' · '),
       cuerpo,
@@ -6456,6 +6472,104 @@ function wireEstadisticas(){
     }
   }, true);
 }
+// Fichas por sesión: los identificadores de equipos conservan su pintado.
+const idResultadosMotorValido = id => /^(openf1:resultados\/f1|motogp:resultados\/motogp)$/.test(id || '');
+const idSesionMotorValido = id => /^openf1:sesion\/20\d{2}\/[1-9]\d{0,7}$/.test(id || '')
+  || /^motogp:sesion\/20\d{2}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id || '');
+const notaFechaMotor = id => idResultadosMotorValido(id)
+  ? `<p class="consulta-nota">${escapeHtml(t(id.startsWith('openf1:') ? 'conMotorFechaF1' : 'conMotorFechaMoto'))}</p>` : '';
+const CONDICIONES_MOTOR = { retirada: 'conMotorRetirada', 'no salió': 'conMotorNoSalio', descalificado: 'conMotorDescalificado',
+  'no clasificado': 'conMotorNoClasificado' };
+const condicionMotor = c => Object.hasOwn(CONDICIONES_MOTOR, c) ? t(CONDICIONES_MOTOR[c]) : c || '';
+
+function fichaSesionMotor(f){
+  const valor = v => escapeHtml(v ?? '—');
+  const tiempo = v => Array.isArray(v) ? v.map((x, i) => `Q${i + 1}: ${x ?? '—'}`).join(' · ') : v;
+  const diferencia = v => v && typeof v === 'object' && !Array.isArray(v)
+    ? v.vueltas != null && String(v.vueltas) !== '0'
+      ? t(String(v.vueltas) === '1' ? 'conMotorVueltas1' : 'conMotorVueltas', { n: v.vueltas }) : v.tiempo : tiempo(v);
+  const filas = f.filas || [];
+  const cols = ['conMotorPosicion', 'conMotorDorsal', 'conMotorPiloto', 'conColEquipo', 'conMotorVueltasCol',
+    f.competicion === 'f1' ? 'conMotorTiempoSegundos' : 'conMotorTiempo', f.competicion === 'f1' ? 'conMotorDiferenciaSegundos' : 'conMotorDiferencia', 'conColPts', 'conMotorCondicion'];
+  return { titulo: [f.gp?.nombre, f.sesion?.nombre].filter(Boolean).join(' · '),
+    linea: [f.categoria, f.temporada, fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado)].filter(Boolean).join(' · '),
+    cuerpo: filas.length ? `<div class="consulta-tabla-scroll"><table class="consulta-tabla consulta-motor"><thead><tr>${cols.map(c => `<th scope="col">${escapeHtml(t(c).split('|')[0])}</th>`).join('')}</tr></thead><tbody>${filas.map(r => `<tr${claseMarcada(casaEquipo(r.piloto) || casaEquipo(r.equipo))}>
+      <td>${valor(r.posicion)}</td><td>${valor(r.dorsal)}</td><td>${r.piloto == null ? '—' : equipoConsulta(r.piloto)}</td><td>${valor(r.equipo)}</td>
+      <td>${valor(r.vueltas)}</td><td>${valor(tiempo(r.tiempo))}</td><td>${valor(diferencia(r.diferencia))}</td><td>${valor(r.puntos)}</td><td>${valor(condicionMotor(r.condicion))}</td></tr>`).join('')}</tbody></table></div>`
+      : msgConsulta('conMotorSinResultado'),
+  };
+}
+function resultadosMotor(f){
+  const grupos = new Map();
+  for (const p of f.partidos || []) {
+    const clave = p.gp?.id;
+    if (!grupos.has(clave)) grupos.set(clave, []);
+    grupos.get(clave).push(p);
+  }
+  return { titulo: CONSULTA_DEPORTES[f.competicion] || f.competicion, linea: tn('conMotorSesiones', f.partidos?.length || 0),
+    cuerpo: [...grupos.values()].map(lista => `<section>${lista[0].gp?.nombre ? `<p class="consulta-sub">${escapeHtml(lista[0].gp.nombre)}</p>` : ''}<ul class="consulta-lista">${lista.map(p => `<li>${
+      idSesionMotorValido(p.id) ? botonConsulta('partido', p.sesion?.nombre || t('conMotorSesion'), ` data-id="${escapeHtml(p.id)}"`) : escapeHtml(p.sesion?.nombre || t('conMotorSesion'))
+    } <span class="consulta-estado">${escapeHtml([fechaPartidoConsulta(p.inicio), p.estado === 'desconocido' ? '' : estadoTextoPartido(p.estado)].filter(Boolean).join(' · '))}</span></li>`).join('')}</ul></section>`).join('') };
+}
+
+VISTAS_CONSULTA.sesion_motor = { idValido: idSesionMotorValido, ficha: fichaSesionMotor, resultados: resultadosMotor,
+  admiteResultados: f => ['f1', 'motogp'].includes(f.competicion) };
+// Vista de consultas de tenis. No usa los lados local/visitante ni cambia la agenda.
+function idTenisConsultaValido(id){
+  const p = /^espn:tenis\/(atp|wta)\/(\d{4})(\d{2})(\d{2})\/([1-9]\d{0,8}-\d{4})\/([1-9]\d{0,11})$/.exec(id || '');
+  return !!p && p[0] === id && fechaValida(`${p[2]}-${p[3]}-${p[4]}`) && `${p[2]}-${p[3]}-${p[4]}` >= '0001-01-01';
+}
+const participantesTenis = lado => (lado?.participantes || []).map(n => n || t('conParticipantePendiente')).join(' / ');
+const tituloTenis = f => (f.lados || []).map(participantesTenis).join(' · ');
+const condicionTenis = f => f.condicion === 'retirada' ? t('conRetiradaTenis')
+  : f.condicion === 'incomparecencia' ? t('conIncomparecenciaTenis') : f.condicion || '';
+const estadoTenis = f => condicionTenis(f) || estadoTextoPartido(f.estado);
+const contextoTenis = f => [f.torneo?.nombre, f.cuadro?.nombre, f.ronda].filter(Boolean).join(' · ');
+
+function parcialesTenis(f){
+  const lados = f.lados || [];
+  const cantidad = Math.max(0, ...lados.map(l => l.sets?.length || 0));
+  if (!cantidad) return '';
+  const columnas = Array.from({ length: cantidad }, (_, i) => i);
+  return `<div class="consulta-tabla-scroll"><table class="consulta-parciales"><caption>${escapeHtml(t('conParciales'))}</caption>
+    <thead><tr><th scope="col">${escapeHtml(t('conParticipantesTenis'))}</th>${columnas.map(i => `<th scope="col">${escapeHtml(t('conParcialTenis', { n: i + 1 }))}</th>`).join('')}</tr></thead>
+    <tbody>${lados.map(l => `<tr><th scope="row">${equipoConsulta(participantesTenis(l))}${l.ganador === true ? ` <small>(${escapeHtml(t('conGanadorTenis'))})</small>` : ''}</th>${columnas.map(i => {
+      const s = l.sets?.[i];
+      return `<td>${escapeHtml(s?.juegos ?? '—')}${s?.desempate != null ? ` <sup title="${escapeHtml(t('conDesempateTenis', { n: s.desempate }))}" aria-label="${escapeHtml(t('conDesempateTenis', { n: s.desempate }))}">${escapeHtml(s.desempate)}</sup>` : ''}</td>`;
+    }).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function filaTenis(f){
+  const nombres = (f.lados || []).map(participantesTenis);
+  const contexto = contextoTenis(f);
+  const cab = [estadoTenis(f), f.inicio ? fechaPartidoConsulta(f.inicio) : t('conHoraSinConfirmar')].filter(Boolean).join(' · ');
+  const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span>${nombres.map((n, i) => `<span>${equipoConsulta(n)}</span><b>${
+    (f.lados[i].sets || []).map(s => `${escapeHtml(s.juegos ?? '—')}${s.desempate != null ? `<sup title="${escapeHtml(t('conDesempateTenis', { n: s.desempate }))}" aria-label="${escapeHtml(t('conDesempateTenis', { n: s.desempate }))}">${escapeHtml(s.desempate)}</sup>` : ''}`).join(' · ') || '—'}</b>`).join('')}
+    ${contexto ? `<span class="consulta-estado">${escapeHtml(contexto)}</span>` : ''}`;
+  const abrir = idTenisConsultaValido(f.id);
+  return `<li${claseMarcada(nombres.some(casaEquipo))} data-estado="${escapeHtml(f.estado || '')}">${abrir ? `<button type="button" data-accion="partido" data-id="${escapeHtml(f.id)}" aria-label="${escapeHtml(t('conAbrirPartido', { x: nombres.join(' · ') }))}">${contenido}</button>` : contenido}</li>`;
+}
+
+VISTAS_CONSULTA.encuentro_tenis = {
+  idValido: idTenisConsultaValido,
+  fila: filaTenis,
+  admiteResultados: f => ['atp', 'wta'].includes(f.competicion),
+  resultados(f){
+    const partidos = f.partidos || [];
+    return { titulo: `${CONSULTA_DEPORTES[f.competicion]} · ${tn('conEncuentrosTenis', partidos.length)}`,
+      linea: f.fecha || '', cuerpo: `<p class="consulta-nota">${escapeHtml(t('conFechaTenis'))}</p>
+        <ul class="consulta-partidos">${partidos.map(filaTenis).join('')}</ul>` };
+  },
+  ficha(f){
+    const ganadores = (f.lados || []).filter(l => l.ganador === true).map(participantesTenis);
+    const parciales = parcialesTenis(f);
+    return { titulo: tituloTenis(f),
+      linea: [contextoTenis(f), f.inicio ? fechaPartidoConsulta(f.inicio) : t('conHoraSinConfirmar'), estadoTenis(f)].filter(Boolean).join(' · '),
+      cuerpo: `${ganadores.length ? `<p>${escapeHtml(t('conGanadorTenis'))}: ${escapeHtml(ganadores.join(' · '))}</p>` : ''}
+        ${parciales}${parciales ? `<p class="consulta-nota">${escapeHtml(t('conParcialesTenis'))}</p>` : ''}
+        ${f.estado_original ? `<p class="consulta-nota">${escapeHtml(t('conEstadoFuenteTenis', { x: f.estado_original }))}</p>` : ''}` };
+  },
+};
 /* ═══════════════════════════════════════════════════════════════
    EL TIEMPO (eltiempo:Lugar o tiempo:Lugar)
    Tarjeta encima de la lista, fuera del flujo de noticias. Los municipios
@@ -6493,7 +6607,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=f131ddf4b8')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=cac9f66eb2')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
