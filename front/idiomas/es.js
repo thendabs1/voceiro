@@ -77,7 +77,7 @@ export default {
   "calNingunaPendiente": "No hay citas sin fecha con estos filtros.",
   "calCobertura": "La cobertura depende de las fuentes recogidas. Una cita no observada de nuevo no implica cancelación ni confirma su vigencia.",
   "calNoticiasTexto": "Las noticias se seleccionan por coincidencias en el titular; todavía no están enlazadas con partidos o participantes concretos.",
-  "calConsultaDesconocida": "Selección no reconocida: {x}",
+  "calConsultaDesconocida": "Selección no reconocida: {x}", "calConsultaPrueba": "Prueba {x}:hoy, {x}:finde, {x}:horarios o {x}:noticias.",
   
   "calPrecioGratis": "Gratis",
   "calPrecioPago": "De pago",
@@ -479,6 +479,7 @@ export default {
   "ajModos": "Modos y medios",
   "accAbrir": "Accesos: resultados, calendario y clasificación",
   "accTitulo": "Accesos",
+  "accHoyDeportes": "Hoy en deportes",
   "accTodosDeportes": "Todos los deportes",
   "accCalendarioDeportes": "Calendario de deportes",
   "conNoticias": "Noticias",

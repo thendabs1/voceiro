@@ -39,7 +39,7 @@ test('sin nada seguido: unas pocas competiciones y el camino a todos los deporte
   s.run('pintarAccesos()');
   assert.deepEqual(ordenes(s), ['resultados:f1', 'calendario:f1', 'clasificacion:f1',
     'resultados:primera', 'calendario:primera', 'clasificacion:primera',
-    'resultados:nba', 'calendario:nba', 'clasificacion:nba', 'deportes:']);
+    'resultados:nba', 'calendario:nba', 'clasificacion:nba', 'hoy:deportes', 'deportes:']);
   assert.match(s.html(), /data-orden="deportes:">Todos los deportes ›/);
   assert.match(s.html(), /data-deportes>Calendario de deportes ›/);
   assert.doesNotMatch(s.html(), /data-pantalla|data-volver/);

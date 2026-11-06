@@ -54,7 +54,7 @@ function pintarAccesos(){
   panel.innerHTML = `<div class="accesos-cab"><h2 id="accesos-titulo" tabindex="-1">${calEsc(t('accTitulo'))}</h2>
     <button type="button" class="accesos-cerrar" data-cerrar aria-label="${calEsc(t('calCerrar'))}">×</button></div>
     <div class="accesos-filas">${primeras.join('')}</div>
-    <ul class="accesos-lista">${[...noticias, fila('data-orden="deportes:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
+    <ul class="accesos-lista">${[...noticias, fila('data-orden="hoy:deportes"', t('accHoyDeportes') + ' ›'), fila('data-orden="deportes:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
     ${DEPORTES_DISP.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
 }
 

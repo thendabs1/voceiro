@@ -42,6 +42,21 @@ de ahí salen las cuatro entradas, y cada enlace escribe su orden en la barra.
 - Solo se ofrece lo que existe: capacidades de `shared/consultas/registro.js` y
   citas en `disponibilidad`. Euroliga no es capa de `CAL_DEPORTES`: no tiene calendario.
 
+## Atajos
+
+Se escriben sin espacios; `f1: hoy` es el prefijo más la palabra. Admiten alias en los
+cinco idiomas (`shared/calendario/consulta.js`).
+
+| Orden | Alias | Qué abre |
+|---|---|---|
+| `f1:hoy`, `f1:manana`, `f1:finde` | `hoy:f1`… | Lista de esa competición en esos días |
+| `f1:horarios` | | Lista desde hoy; en motor, además, la ficha del GP en curso o siguiente |
+| `hoy:`, `manana:`, `finde:` | | Agenda del sitio |
+| `hoy:deportes`, `finde:deportes` | `hoy:horarios` | Las competiciones que sigo o todas |
+
+Finde es sábado y domingo, como el botón. Un atajo abre la lista, no el mes.
+Lo que no se entiende se dice y se enseña qué admite.
+
 ## Calendario y fichas de Deportes
 
 - `‹ mes ›` va siempre en la barra, junto a los atajos: no cambia de sitio con la

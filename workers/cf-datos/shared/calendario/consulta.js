@@ -55,6 +55,12 @@ export const AMBITOS = {
   'feb-primera': { codigo: 'feb-primera', noticias: ['Primera FEB'] },
   'feb-challenge': { codigo: 'feb-challenge', noticias: ['Liga Femenina Challenge'] },
 };
+// Atajos de fecha, en cualquier idioma: `hoy:`, `f1:hoy` o `hoy:f1`. Sin dos puntos
+// siguen siendo palabras de búsqueda. `f1: hoy` es el prefijo más la palabra.
+const RANGOS = { hoy: 'hoy', hoxe: 'hoy', avui: 'hoy', gaur: 'hoy', today: 'hoy',
+  manana: 'manana', mana: 'manana', dema: 'manana', bihar: 'manana', tomorrow: 'manana',
+  finde: 'finde', 'fin-de-semana': 'finde', 'cap-de-setmana': 'finde', asteburu: 'finde', asteburua: 'finde', weekend: 'finde' };
+const HORARIOS = new Set(['horarios', 'horaris', 'ordutegiak', 'schedule']);
 // Resultados y clasificaciones son consultas puntuales, no parte del calendario.
 const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario', noticias: 'noticias' };
 const lista = s => normalize(s).split(',').map(v => v.trim()).filter(Boolean);
@@ -63,12 +69,22 @@ const lista = s => normalize(s).split(',').map(v => v.trim()).filter(Boolean);
 // una competición nueva, y eso no debe tirar la vista entera.
 export function leerConsultaCalendario(raw, { tolerante = false } = {}){
   const ambitos = new Set(), tipos = new Set(), circuitos = new Set(), desconocidos = [], resto = [];
-  let activa = false, ignoradas = 0;
+  let activa = false, ignoradas = 0, rango = '', horarios = false, todoDeporte = false;
   for (const tk of tokenizeQuery(raw)){
     const p = normalize(tk.prefix), v = normalize(tk.text);
-    if (Object.hasOwn(AMBITOS, p) && p !== 'deportes'){
+    if (Object.hasOwn(RANGOS, p)){
+      // `hoy:deportes` y `hoy:horarios`: las competiciones, no la agenda del sitio.
+      activa = true; rango = RANGOS[p]; tipos.add('calendario');
+      for (const a of lista(tk.text)){
+        if (a === 'deportes' || HORARIOS.has(a)) todoDeporte = true;
+        else if (Object.hasOwn(AMBITOS, a)) ambitos.add(a);
+        else desconocidos.push(tk.raw);
+      }
+    } else if (Object.hasOwn(AMBITOS, p) && p !== 'deportes'){
       activa = true; ambitos.add(p);
-      if (v){
+      if (Object.hasOwn(RANGOS, v)){ rango = RANGOS[v]; tipos.add('calendario'); }
+      else if (HORARIOS.has(v)){ horarios = true; tipos.add('calendario'); }
+      else if (v){
         if (Object.hasOwn(TIPOS, v)) tipos.add(TIPOS[v]);
         else desconocidos.push(tk.raw);
       }
@@ -86,6 +102,7 @@ export function leerConsultaCalendario(raw, { tolerante = false } = {}){
   const conNoticias = [...ambitos, ...circuitos].every(a => AMBITOS[a].noticias);
   if (tipos.has('noticias') && !conNoticias) desconocidos.push(raw);
   return activa ? { ambitos: [...ambitos], circuitos: [...circuitos], tipos: [...tipos],
+    ...(rango ? { rango } : {}), ...(horarios ? { horarios } : {}), ...(todoDeporte ? { todoDeporte } : {}),
     desconocidos, resto: resto.join(' '), noticias: (!tipos.size || tipos.has('noticias')) && conNoticias,
     // Solo competiciones ignoradas: sin esto la selección vacía se leería como «todo».
     ...(ignoradas && !ambitos.size && !circuitos.size ? { seleccionVacia: true } : {}) } : null;
