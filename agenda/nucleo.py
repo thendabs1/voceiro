@@ -302,7 +302,7 @@ def validar(n):
         t = (o['referencia'], b)
         hechos = {k: v for k, v in o['bloques'].items()
                   if k in ('programacion', 'lugar', 'resultado', 'clasificacion',
-                           'pertenencia', 'equipos', 'agenda', 'ronda_torneo')}
+                           'pertenencia', 'equipos', 'agenda')}
         if t in por_ref_fecha and por_ref_fecha[t] != hechos:
             raise ValueError('Observaciones contradictorias en el mismo instante')
         por_ref_fecha[t] = hechos

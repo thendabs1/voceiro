@@ -69,12 +69,10 @@ class Partidos(unittest.TestCase):
                          {'ronda-nueva'})
         self.assertFalse(any('nombre' in e['ronda_torneo'] for e in eventos('espn-copa-del-rey', pagina)['eventos']))
 
-    def test_ida_y_vuelta_contradictorias_no_conviven(self):
-        vuelta = muestra('espn-champions')
-        ida = muestra('espn-champions')
-        ida['events'][0]['competitions'][0]['leg'] = {'value': 1}
-        with self.assertRaises(ValueError):
-            importar('espn-champions', ida, importar('espn-champions', vuelta))
+    def test_una_ronda_incompleta_no_rechaza_la_importacion(self):
+        sin_vuelta = muestra('espn-champions')
+        del sin_vuelta['events'][0]['competitions'][0]['leg']
+        importar('espn-champions', muestra('espn-champions'), importar('espn-champions', sin_vuelta))
 
     def test_las_ligas_no_cambian(self):
         self.assertFalse(any('ronda_torneo' in e for e in eventos('espn-nba')['eventos']))
@@ -131,6 +129,16 @@ class PartidoMovido(unittest.TestCase):
         self.assertFalse([i for i in t['incidencias'] if 'evento' in i])
         self.assertFalse(any(e.get('ausente_de_su_fecha') for e in self.repo.eventos(t['id'])))
 
+    def test_una_cobertura_antigua_no_resucita_un_partido_ya_movido(self):
+        self.repo.registrar(temporadas.nueva('copa-del-rey', '2026', AHORA, seleccion={'year': '2026'}))
+        pagina = muestra('espn-copa-del-rey')
+        self.pasada(pagina, AHORA, ['2026-11-10'])
+        self.pasada(pagina, '2026-11-02T12:00:00Z', ['2026-11-18'])
+        self.pasada({**pagina, 'events': []}, '2026-11-03T12:00:00Z', ['2026-11-10'])
+        t = next(iter(self.repo.temporadas('copa-del-rey')))
+        self.assertFalse([i for i in t['incidencias'] if 'evento' in i])
+        self.assertFalse(any(e.get('ausente_de_su_fecha') for e in self.repo.eventos(t['id'])))
+
     def consumir(self, peticiones):
         self.repo.escribir([('INSERT INTO agenda_control_consumo VALUES (?,?,?,?)',
                              ('espn', AHORA[:10], peticiones, '{}'))])
@@ -143,6 +151,15 @@ class PartidoMovido(unittest.TestCase):
         self.assertEqual(recoger.call_count, 8)
         self.assertNotEqual(r['estado'], 'fallida')
         self.assertEqual(len({c['unidad'] for c in self.repo.cobertura(t['id'])}), 8)
+
+    def test_las_fechas_explicitas_tambien_respetan_el_cupo(self):
+        t = self.repo.registrar(temporadas.nueva('nba', '2027', AHORA, seleccion={'year': '2027'}))
+        self.consumir(63)
+        with patch.object(proveedores, 'recoger', return_value=(muestra('espn-nba'), 'https://ejemplo.test')) as recoger:
+            r = operacion.ejecutar_temporada(self.repo, t, AHORA, fechas=['2026-11-01', '2026-11-02'], forzar=True)
+        self.assertEqual(recoger.call_count, 1)
+        self.assertNotEqual(r['estado'], 'fallida')
+        self.assertEqual({c['unidad'] for c in self.repo.cobertura(t['id'])}, {'2026-11-01'})
 
     def test_sin_cupo_la_pasada_espera_sin_contar_como_error(self):
         t = self.repo.registrar(temporadas.nueva('nba', '2027', AHORA, seleccion={'year': '2027'}))

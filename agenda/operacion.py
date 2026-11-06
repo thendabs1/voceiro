@@ -109,8 +109,10 @@ def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, 
             if ausentes and proveedores.modo(c.get('proveedor')) == 'fecha':
                 # Leer un día solo acredita ese día: el partido puede haberse movido a
                 # otro que esta pasada no lee. Conserva lo guardado hasta que reaparezca.
+                # Si su fila ya acredita otro día, esta cobertura es la antigua: no falta.
                 incidencias.extend({'tipo': 'ausente_de_su_fecha', 'unidad': c['unidad'], 'evento': i}
-                                   for i in sorted(ausentes))
+                                   for i in sorted(ausentes)
+                                   if (guardados or {}).get(i, {}).get('unidad', c['unidad']) == c['unidad'])
             elif ausentes:
                 incidencias.append({'tipo': 'ausentes_en_respuesta', 'unidad': c['unidad'],
                                     'recurso': c['recurso'], 'eventos': sorted(ausentes)})
@@ -141,8 +143,8 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
         # Una selección se confirma entera: leer solo lo que cabe en el cupo del
         # día conserva esa lectura; agotarlo a mitad de pasada la perdería.
         restantes = repo.restantes(t, proveedor, ahora)
-        unidades = fechas or temporadas.plan_fechas(t, ahora, cobertura,
-            limite=min(t['politica']['max_peticiones_pasada'], restantes))
+        limite = min(t['politica']['max_peticiones_pasada'], restantes)
+        unidades = (fechas or temporadas.plan_fechas(t, ahora, cobertura, limite=limite))[:limite]
         if not unidades and not restantes:
             return {'temporada': t['id'], 'estado': 'omitida', 'motivo': 'cupo del día agotado'}
         for d in unidades:
