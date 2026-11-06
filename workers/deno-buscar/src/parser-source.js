@@ -68,6 +68,21 @@ const admiteConsultaESPN = (tipo, codigo) => Object.hasOwn(CAPACIDADES_ESPN, cod
 const MOTOR = { f1: 'openf1', motogp: 'motogp' };
 const admiteConsultaMotor = (tipo, codigo) => tipo === 'resultados' && Object.hasOwn(MOTOR, codigo);
 
+// Panel de resultados de una tarjeta: su competición en el día que se mira. Sin
+// partido exacto: fútbol y WTA no traen referencias con las que cruzar la ficha.
+// ESPN agrupa NBA y WNBA por día de EE. UU.; la madrugada de Madrid cae en el anterior.
+const ZONA_RESULTADOS = { nba: 'America/New_York', wnba: 'America/New_York' };
+export function destinoResultados(tarjeta, dia) {
+  const codigo = (tarjeta.competiciones || []).find(c => c === 'euroliga'
+    || admiteConsultaMotor('resultados', c) || admiteConsultaESPN('resultados', c));
+  if (!codigo) return null;
+  const id = codigo === 'euroliga' ? 'euroliga:resultados'
+    : MOTOR[codigo] ? \`\${MOTOR[codigo]}:resultados/\${codigo}\` : \`espn:resultados/\${codigo}\`;
+  const instante = tarjeta.programacion?.valor?.cuando?.inicio?.instante, zona = ZONA_RESULTADOS[codigo];
+  return { id, fecha: zona && instante ? new Intl.DateTimeFormat('en-CA',
+    { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instante)) : dia };
+}
+
 
 // Consultas cuyo valor es un código de una palabra, no un título.
 const CONSULTAS_DE_CODIGO = new Set(['clasificacion', 'resultados', 'partido']);

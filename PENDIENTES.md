@@ -17,7 +17,9 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
 - Resultados deportivos: fútbol, baloncesto, tenis, Euroliga y motor funcionan.
   Falta acreditar jornadas oficiales por proveedor y las comprobaciones de
   [resultados](agenda/resultados-diseno.md#comprobar).
-- Siguiente paso: refactor de la interfaz.
+- Siguiente paso: refactor de la interfaz, con el
+  [contrato de datos](agenda/interfaz-contrato.md). Territorio de las citas
+  deportivas, aplazado.
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores
 

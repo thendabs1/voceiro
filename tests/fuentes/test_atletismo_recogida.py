@@ -233,6 +233,25 @@ class RecogidaAtletismo(unittest.TestCase):
         self.assertEqual(publicacion.proyectar(n, ['rfea'])['fuentes']['rfea']['ventana'],
                          {'inicio': '2026-11-01', 'fin': '2026-11-30', 'completa': False})
 
+    def test_la_ventana_publica_el_ano_sin_documento_de_nivel_ii(self):
+        e = {'version': 1, 'fuente': 'rfea', 'eventos': [{
+            'id': '9', 'nombre': 'Cross ensayo', 'inicio': '2026-11-15', 'fin': '2026-11-15',
+            'url': 'https://atletismorfea.es/calendario/campeonato/cross-ensayo'}]}
+        informe = {'fuente': 'rfea', 'inicio': '2026-11-02', 'fin': '2027-01-01',
+                   'peticiones': 1, 'citas': 1, 'completo': True}
+        vacia = {'version': 1, 'fuente': 'rfea', 'eventos': []}
+        ii = {'temporada': '2026', 'temporadas_sin_documento': ['2027'], 'completo': False}
+        with tempfile.TemporaryDirectory() as carpeta:
+            db = str(Path(carpeta) / 'agenda.db')
+            with patch.object(r, 'recoger', return_value=(e, informe)), \
+                    patch.object(r, 'nivel_ii', return_value=(vacia, ii)):
+                r.main(['--db', db, '--fuente', 'rfea', '--inicio', '2026-11-02', '--fin', '2027-01-01'])
+            with almacen.abrir(db) as conexion:
+                n = almacen.cargar(conexion)['nucleo']
+        self.assertEqual(publicacion.proyectar(n, ['rfea'])['fuentes']['rfea']['ventana'],
+                         {'inicio': '2026-11-02', 'fin': '2027-01-01', 'completa': False,
+                          'temporadas_sin_documento': ['2027']})
+
     def test_nivel_ii_sin_documento_de_un_ano_de_la_ventana_no_esta_completo(self):
         inventario = {'version': 1, 'url': r.atletismo_nivel_ii.URL, 'temporada': '2026',
                       'actualizado': '2026-10-15', 'huella_texto': 'x', 'filas': []}

@@ -31,9 +31,10 @@ publicadas; World Athletics se recoge sin publicar. Ver [atletismo](atletismo.md
 
 - **Cultura:** recogida diaria de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
-- **Deportes:** doce colecciones con adaptador y control de temporadas, todas
+- **Deportes:** quince colecciones con adaptador y control de temporadas, todas
   publicadas; MotoGP y WTA ya tienen registrada la temporada 2027. La revisión
-  entra en el cron de las 04:30, 10:30, 16:30 y 22:30 UTC: cada temporada decide si le toca.
+  entra en el cron programado a las 04:30, 10:30, 16:30 y 22:30 UTC (en la práctica,
+  unas tres pasadas al día con horas de retraso): cada temporada decide si le toca.
 - **API de lectura:** activa en `cf-datos` y `deno-datos`
   (`CALENDARIO_LECTURA_SQL=true`), con publicación diferencial.
 - **Cliente:** `CALENDARIO_ACTIVO = true` en `front/app/14-calendario.js`, con
@@ -58,7 +59,7 @@ batch con `BEGIN IMMEDIATE`, guardia de revisión y un único COMMIT; si otro
 escritor avanzó, se revierte y hay que releer. Una respuesta perdida tras
 COMMIT no se reintenta a ciegas.
 
-## Modelo: núcleo v2 (esquema 4)
+## Modelo: núcleo v2 (esquema 5)
 
 Tipos: `evento` (la cita), `agrupacion` (competición, edición, fase, GP),
 `actividad` (obra declarada por la fuente), `participante`,
@@ -224,8 +225,7 @@ Contrato común para las fuentes culturales:
   páginas incompletas o archivos sueltos no acreditan ausencias. Solo se
   guarda el inventario vigente; repetirlo solo renueva la comprobación. Si el inventario cae más del 30 % no se acredita (aviso en
   Actions); `--aceptar-inventario FUENTE` o la casilla del workflow lo
-  aceptan. Galicia todavía conserva las ausentes: su respuesta está
-  acotada por fechas e idiomas y necesita una política con ese alcance.
+  aceptan.
 
 ## Lectura pública
 
@@ -280,7 +280,7 @@ sin red.
 
 Workflow **Calendario**: `recoger` (cultura), `deportes` (temporadas y
 descubrimiento; publica), `reclasificar`, `preparar-nucleo` y `publicar`. El
-cron cada 6 h hace `recoger` y `deportes` con `--cadencia`. Para revisar ya una
+cron hace `recoger` y `deportes` con `--cadencia`. Para revisar ya una
 colección sin esperar su cadencia: `deportes` con `colecciones` (p. ej. `wrc,nba`) y
 `forzar`; no salta la espera tras un error de temporada. Cada publicación revisa
 las fuentes guardadas (`python -m agenda.publicacion --turso --revisar`, el
@@ -359,6 +359,11 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
 
 - **Revisar el cliente:** comprobar la interfaz de Agenda y Deportes, ya
   activada en el código, y su comportamiento en móvil y con teclado.
+- **Antes de separar workflows o particionar:** WTA oficial y ESPN WTA crean la
+  misma identidad de circuito (`agenda/oficial_wta.py`, `agenda/espn_tenis.py`), y
+  publicar lee el núcleo antes que el control, sin captura conjunta. Hoy no fallan
+  porque el workflow serializa `calendario-turso`; con escritores independientes sí
+  podrían.
 - **Fecha de un partido movido:** hasta que reaparece en la ventana sigue
   publicada la fecha anterior; falta distinguirlo en la tarjeta.
 - **Retención y retirada:** poda de 45 días sin activar, a revisar en enero de

@@ -791,6 +791,9 @@ def main(argv=None):
         # Hasta dónde se ha leído la fuente: más allá, el calendario no está vacío sino sin recoger.
         n['fuentes'][args.fuente]['ventana'] = {'inicio': informe['inicio'], 'fin': informe['fin'],
                                                 'completa': bool(informe['completo'])}
+        # Por qué no está completa, si es porque aún falta el documento de un año.
+        if sin_documento := informe.get('nivel_ii', {}).get('temporadas_sin_documento'):
+            n['fuentes'][args.fuente]['ventana']['temporadas_sin_documento'] = sin_documento
         n['selecciones'] = deepcopy(anterior.get('nucleo', {}).get('selecciones', {}))
         nucleo.recalcular_selecciones(n)
         calendario['nucleo'] = n
