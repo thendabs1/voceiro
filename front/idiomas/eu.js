@@ -549,6 +549,7 @@ export default {
   "conEstadoDesconocido": "Egoera baieztatu gabe",
   "conEstadisticas": "Estatistikak",
   "conIncidencias": "Gertakariak",
+  "conDeportes": "Kirolak",
   "conGoles": "Golak",
   "conCambios": "Aldaketak",
   "conCronologia": "Kronologia",

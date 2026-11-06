@@ -26,8 +26,11 @@ el total (225 apariciones para 197 citas de atletismo).
 Una lista por deporte y lo que ofrece cada competición en `front/app/14-deportes.js`:
 de ahí salen las cuatro entradas, y cada enlace escribe su orden en la barra.
 
-- `resultados:` o `clasificacion:` sin competición abren la vista general. `partido:`
-  conserva sus botones.
+- `deportes:` abre la vista general. `resultados:` y `clasificacion:` sin competición
+  enseñan las que tienen eso. `partido:` conserva sus botones. El tema de la agenda
+  sigue en su chip y en `deporte:deportes`.
+- El nombre hace lo pedido y lo demás queda al lado; sin contexto, lleva a lo primero
+  que haya, escrito junto al nombre. Los datos se piden al elegir competición.
 - El `▾` es un lanzador: lo que sigo, «Todos los deportes» y el calendario. Un
   submenú sería otra fila de `pintarAccesos`.
 - Una competición lleva pestañas, las demás de su deporte y vuelta a la general.

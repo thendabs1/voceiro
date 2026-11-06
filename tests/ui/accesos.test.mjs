@@ -25,7 +25,7 @@ function escenario({ sigo = [], buscar = '' } = {}){
     codigoDeporte: (tipo, x) => admiteConsultaESPN(tipo, x) || admiteConsultaMotor(tipo, x),
     calPedir: async () => ({ disponibilidad: { circuitos: {} } }),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), cerrarSugerencias(){},
-    escribirBusqueda: v => escritas.push(v), document: { addEventListener(){} },
+    PUNTUAL: {}, escribirBusqueda: v => escritas.push(v), document: { addEventListener(){} },
   };
   runInNewContext(codigo, c);
   return { c, ids, escritas, html: () => ids['accesos-panel'].innerHTML, run: expr => runInNewContext(expr, c) };
@@ -37,8 +37,8 @@ test('sin nada seguido: unas pocas competiciones y el camino a todos los deporte
   s.run('pintarAccesos()');
   assert.deepEqual(ordenes(s), ['resultados:f1', 'calendario:f1', 'clasificacion:f1',
     'resultados:primera', 'calendario:primera', 'clasificacion:primera',
-    'resultados:nba', 'calendario:nba', 'clasificacion:nba', 'resultados:']);
-  assert.match(s.html(), /data-orden="resultados:">Todos los deportes ›/);
+    'resultados:nba', 'calendario:nba', 'clasificacion:nba', 'deportes:']);
+  assert.match(s.html(), /data-orden="deportes:">Todos los deportes ›/);
   assert.match(s.html(), /data-deportes>Calendario de deportes ›/);
   assert.doesNotMatch(s.html(), /data-pantalla|data-volver/);
 });
@@ -46,18 +46,24 @@ test('sin nada seguido: unas pocas competiciones y el camino a todos los deporte
 test('lo seguido va primero, hasta cuatro; sin citas pierde el calendario, no sus resultados', () => {
   const s = escenario({ sigo: ['motogp', 'atp', 'wnba'] });
   s.run('DEPORTES_DISP.circuitos = { motogp: 24, atp: 4, wnba: 0, f1: 5, primera: 20, segunda: 33, nba: 106 }; pintarAccesos()');
-  assert.deepEqual([...s.html().matchAll(/dep-nombre">([^<]+)/g)].map(m => m[1]), ['MotoGP', 'ATP', 'WNBA', 'F1']);
+  assert.deepEqual([...s.html().matchAll(/class="dep-nombre"[^>]*>([^<]+?) </g)].map(m => m[1]), ['MotoGP', 'ATP', 'WNBA', 'F1']);
   assert.ok(ordenes(s).includes('calendario:motogp'));
   assert.ok(!ordenes(s).includes('calendario:wnba'));
   assert.ok(ordenes(s).includes('resultados:wnba'));
 });
 
-test('la matriz deja el hueco de lo que no existe y el nombre ocupa las columnas libres', () => {
+test('el nombre abre lo primero que haya o lo pedido, y lo demás queda al lado', () => {
   const s = escenario();
   const fila = c => s.run(`filaCompeticion('${c}')`);
-  assert.match(fila('motogp'), /data-desde="2"[\s\S]*dep-col-2[\s\S]*dep-col-3/);
-  assert.doesNotMatch(fila('motogp'), /dep-col-4/);
-  assert.match(s.run("DEPORTES_DISP.circuitos = { 'feb-endesa': 3 }; CAL_DEPORTES.baloncesto.push('feb-endesa'); filaCompeticion('feb-endesa')"), /data-desde="3"/);
+  assert.match(fila('f1'), /class="dep-nombre" data-accion="orden" data-orden="resultados:f1"[^>]*>F1 <small>· Resultados<\/small>/);
+  assert.match(fila('f1'), /class="dep-accion"[^>]*data-orden="calendario:f1"/);
+  // En clasificacion:, el nombre basta y Resultados pasa a alternativa.
+  const tabla = s.run("filaCompeticion('f1', 'clasificacion')");
+  assert.match(tabla, /class="dep-nombre"[^>]*data-orden="clasificacion:f1"[^>]*>F1<\/button>/);
+  assert.match(tabla, /class="dep-accion"[^>]*data-orden="resultados:f1"/);
+  // Sin lo pedido no hay fila; sin resultados, el nombre lleva a su calendario.
+  assert.equal(s.run("filaCompeticion('wrc', 'resultados')"), '');
+  assert.match(s.run("DEPORTES_DISP.circuitos = { 'feb-endesa': 3 }; CAL_DEPORTES.baloncesto.push('feb-endesa'); filaCompeticion('feb-endesa')"), /class="dep-nombre"[^>]*data-orden="calendario:feb-endesa"/);
   assert.equal(s.run("filaCompeticion('no-existe')"), '');
 });
 

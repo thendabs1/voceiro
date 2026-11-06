@@ -549,6 +549,7 @@ export default {
   "conEstadoDesconocido": "Status unconfirmed",
   "conEstadisticas": "Statistics",
   "conIncidencias": "Key events",
+  "conDeportes": "Sports",
   "conGoles": "Goals",
   "conCambios": "Substitutions",
   "conCronologia": "Timeline",

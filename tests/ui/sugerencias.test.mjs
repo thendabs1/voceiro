@@ -25,7 +25,7 @@ const abre = raw => runInNewContext(`haySugerencias(sugerenciasBuscar(${JSON.str
 test('una sola coincidencia de calendario abre la lista y no esconde los medios', () => {
   for (const raw of ['f1', 'de', 'ma']) assert.equal(abre(raw), true, raw);
   assert.ok(valores('f1').includes('f1:'));
-  assert.ok(valores('de').includes('deportes:'));
+  assert.ok(valores('dep').includes('deportes:'));
   assert.ok(valores('diario de').includes('dn.es'));
   assert.ok(valores('ma').includes('marca.com'));
 });

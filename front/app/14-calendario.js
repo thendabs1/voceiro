@@ -803,7 +803,7 @@ function calCompeticionVista(){
 // Con una competición, sus resultados y su tabla; con varias, la vista general.
 function calEnlacesDeportes(){
   const c = calCompeticionVista();
-  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'resultados:' }])
+  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'deportes:' }])
     .map(a => calBoton('orden', a.texto, a.orden)).join('');
 }
 function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
