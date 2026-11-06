@@ -7,6 +7,7 @@ export const CONSULTAS = {
   clasificacion: ['clasificacion', 'clasificación', 'clasificacións', 'classificacio', 'classificació', 'sailkapena', 'standings'],
   resultados: ['resultados', 'resultats', 'emaitzak', 'results'],
   partido: ['partido', 'partit', 'partida', 'match'],
+  deportes: ['deportes', 'esports', 'kirolak', 'sports'],
   contexto: ['contexto', 'context', 'testuingurua', 'wiki'],
 };
 
