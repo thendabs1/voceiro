@@ -215,16 +215,33 @@ def _dominio_de_url(url):
         return ''
 
 
+def _sin_www(host):
+    return host[4:] if host.startswith('www.') else host
+
+
+def _host_de_rutas(host, dominio):
+    """Host con el que se reconstruyen las rutas de un medio, o '' si no vale.
+    Solo el del propio dominio: de cualquier otro se conserva la URL completa."""
+    return host if _sin_www(host or '') == dominio else ''
+
+
+def _host_al_leer(h, dominio, defecto=None):
+    """Host para una ruta ya guardada. Solo se acortaron URL del dominio o sus
+    subdominios: un `h` ajeno es un error de tablas antiguas y se descarta."""
+    h = h or ''
+    propio = _sin_www(h) == dominio or h.endswith('.' + dominio)
+    return h if propio else (defecto or f'www.{dominio}')
+
+
 def _url_corta(url, dominio):
-    """Si la URL es del mismo dominio, devuelve solo el path."""
+    """Si la URL es del host del medio, devuelve solo el path. Un subdominio
+    se conserva entero: `h` guarda un único host por medio."""
     if not url:
         return ''
     try:
         p = urlparse(url)
         host = (p.netloc or '').lower()
-        if host.startswith('www.'):
-            host = host[4:]
-        if host == dominio or host.endswith('.' + dominio):
+        if _sin_www(host) == dominio:
             path = p.path or '/'
             if p.query:
                 from urllib.parse import parse_qsl, urlencode

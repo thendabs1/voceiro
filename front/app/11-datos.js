@@ -3,6 +3,8 @@
    ═══════════════════════════════════════════════════════════════ */
 let NOTICIAS = [];
 let MEDIOS = {};
+// Solo se acortan URL del medio: un `h` ajeno es un error de tablas antiguas.
+const hostDeRuta = (h, d) => h && (h.replace(/^www\./, '') === d || h.endsWith('.' + d)) ? h : `www.${d}`;
 let MEDIOS_UNICOS = [];
 let MEDIOS_STRICT   = new Map();
 let DOMINIOS_STRICT = new Map();
@@ -200,7 +202,7 @@ function hidratarNoticias(){
       n.enlace = u_raw;
     } else if (u_raw.startsWith('/')){
       const m = MEDIOS[n.dominio] || {};
-      const host = m.h || `www.${n.dominio}`;
+      const host = hostDeRuta(m.h, n.dominio);
       n.enlace = `https://${host}${u_raw}`;
     } else {
       n.enlace = u_raw;
@@ -340,7 +342,7 @@ function construirGruposDuplicados(){
           enlace = u_raw;
         } else if (u_raw.startsWith('/')){
           const m = MEDIOS[dom] || {};
-          const host = m.h || `www.${dom}`;
+          const host = hostDeRuta(m.h, dom);
           enlace = `https://${host}${u_raw}`;
         } else {
           enlace = u_raw;

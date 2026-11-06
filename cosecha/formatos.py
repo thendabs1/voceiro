@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from . import config
 from .fechas import _fecha_corta, _fecha_orden
-from .texto import _slug_grupo, _url_corta
+from .texto import _host_de_rutas, _slug_grupo, _url_corta
 
 
 def _noticia_a_formato_corto(n, dia=None):
@@ -53,7 +53,7 @@ def _tabla_medios_de(items):
                 'tags': n.get('tags', []),
             }
         h = n.get('_host')
-        if h and d not in hosts:
+        if _host_de_rutas(h, d) and d not in hosts:
             hosts[d] = h
     for d, h in hosts.items():
         medios[d]['h'] = h

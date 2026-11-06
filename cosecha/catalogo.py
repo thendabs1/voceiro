@@ -2,6 +2,7 @@
 
 from medios import todos_los_medios
 from shared.territorios import territorios_medio
+from .texto import _host_de_rutas
 
 
 _MEDIOS_POR_DOMINIO = None
@@ -38,7 +39,7 @@ def _tabla_medios_slice(items):
                 'l': lang, 'tags': tags or [],
                 **_territorio_medio(_MEDIOS_POR_DOMINIO.get(d, {})),
             }
-        if host and d not in hosts:
+        if _host_de_rutas(host, d) and d not in hosts:
             hosts[d] = host
 
     for n in items:
