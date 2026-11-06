@@ -4,61 +4,61 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tokenizeQuery } from '../../shared/parser.js';
 import { leerConsultaCalendario, AMBITOS } from '../../shared/calendario/consulta.js';
-import { PREFIJOS_CONSULTAS, admiteConsultaESPN } from '../../shared/consultas/registro.js';
+import { PREFIJOS_CONSULTAS, admiteConsultaESPN, admiteConsultaMotor } from '../../shared/consultas/registro.js';
 import { traducir } from '../../front/idiomas/index.js';
 
-const codigo = readFileSync(new URL('../../front/app/14-accesos.js', import.meta.url), 'utf8');
+const leer = n => readFileSync(new URL(`../../front/app/${n}`, import.meta.url), 'utf8');
+const codigo = leer('14-accesos.js') + '\n' + leer('14-deportes.js');
 const CAL_DEPORTES = { futbol: ['primera', 'segunda'], baloncesto: ['nba', 'wnba'], motor: ['f1', 'motogp'], tenis: ['atp', 'wta'] };
-const NOMBRES = { f1: 'F1', motogp: 'MotoGP', primera: 'Primera', segunda: 'Segunda', nba: 'NBA', wnba: 'WNBA', atp: 'ATP', wta: 'WTA' };
+const NOMBRES = { f1: 'F1', motogp: 'MotoGP', primera: 'LaLiga', segunda: 'Segunda', nba: 'NBA', wnba: 'WNBA', atp: 'ATP', wta: 'WTA' };
 
-function escenario({ sigo = [], buscar = '', deportes = CAL_DEPORTES } = {}){
+function escenario({ sigo = [], buscar = '' } = {}){
   const el = () => ({ innerHTML: '', hidden: true, atributos: {}, setAttribute(k, v){ this.atributos[k] = v; },
     focus(){}, querySelector: () => null, addEventListener(){} });
   const ids = { 'accesos-panel': el(), 'buscar-accesos': el(), buscar: { value: buscar } };
   const escritas = [];
   const c = {
     $: sel => ids[sel.slice(1)], t: (k, v) => traducir('es', k, v), tokenizeQuery, leerConsultaCalendario, AMBITOS, PREFIJOS_CONSULTAS,
-    calEsc: s => String(s), calNombreCompeticion: x => NOMBRES[x] || x,
-    calPreferencias: () => ({ competiciones: sigo }), CAL_DEPORTES: deportes, CALENDARIO: { orden: null },
-    CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' }, CAL_COMPETICIONES: Object.values(deportes).flat(),
-    codigoDeporte: admiteConsultaESPN,
+    calEsc: s => String(s), escapeHtml: s => String(s), calNombreCompeticion: x => NOMBRES[x] || x, CONSULTA_DEPORTES: NOMBRES,
+    calPreferencias: () => ({ competiciones: sigo }), CAL_DEPORTES: structuredClone(CAL_DEPORTES),
+    CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' },
+    codigoDeporte: (tipo, x) => admiteConsultaESPN(tipo, x) || admiteConsultaMotor(tipo, x),
     calPedir: async () => ({ disponibilidad: { circuitos: {} } }),
     partirConsulta: raw => ({ antes: raw, consulta: '' }), cerrarSugerencias(){},
     escribirBusqueda: v => escritas.push(v), document: { addEventListener(){} },
   };
   runInNewContext(codigo, c);
-  return { c, ids, escritas, html: () => ids['accesos-panel'].innerHTML,
-    run: expr => runInNewContext(expr, c), pantalla: p => { runInNewContext(`ACCESOS.pantalla = ${JSON.stringify(p)}; pintarAccesos()`, c); } };
+  return { c, ids, escritas, html: () => ids['accesos-panel'].innerHTML, run: expr => runInNewContext(expr, c) };
 }
+const ordenes = s => [...s.html().matchAll(/data-orden="([^"]*)"/g)].map(m => m[1]);
 
-test('sin nada seguido: horarios de F1, Primera y NBA, fútbol junto, resultados y competiciones', () => {
+test('sin nada seguido: unas pocas competiciones y el camino a todos los deportes', () => {
   const s = escenario();
   s.run('pintarAccesos()');
-  const ordenes = [...s.html().matchAll(/data-orden="([^"]+)">([^<]+)</g)].map(m => [m[1], m[2]]);
-  assert.deepEqual(ordenes, [['calendario:f1', 'F1 · horarios'], ['calendario:primera', 'Primera · horarios'],
-    ['calendario:nba', 'NBA · horarios'], ['calendario:primera,segunda', 'Fútbol · horarios']]);
-  assert.match(s.html(), /data-pantalla="resultados">Resultados…[\s\S]*data-pantalla="competiciones">Competiciones y más…/);
-  assert.doesNotMatch(s.html(), /Las que sigo/);
+  assert.deepEqual(ordenes(s), ['resultados:f1', 'calendario:f1', 'clasificacion:f1',
+    'resultados:primera', 'calendario:primera', 'clasificacion:primera',
+    'resultados:nba', 'calendario:nba', 'clasificacion:nba', 'resultados:']);
+  assert.match(s.html(), /data-orden="resultados:">Todos los deportes ›/);
+  assert.match(s.html(), /data-deportes>Calendario de deportes ›/);
+  assert.doesNotMatch(s.html(), /data-pantalla|data-volver/);
 });
 
-test('lo seguido va primero y «Las que sigo» las junta; lo que no tiene datos no se ofrece', () => {
+test('lo seguido va primero, hasta cuatro; sin citas pierde el calendario, no sus resultados', () => {
   const s = escenario({ sigo: ['motogp', 'atp', 'wnba'] });
-  s.run('ACCESOS.disp = { motogp: 24, atp: 4, wnba: 0, f1: 5, primera: 20, segunda: 33, nba: 106 }; pintarAccesos()');
-  const ordenes = [...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]);
-  assert.deepEqual(ordenes, ['motogp:', 'atp:', 'calendario:motogp,atp', 'calendario:motogp', 'calendario:atp', 'calendario:f1', 'calendario:primera', 'calendario:primera,segunda']);
+  s.run('DEPORTES_DISP.circuitos = { motogp: 24, atp: 4, wnba: 0, f1: 5, primera: 20, segunda: 33, nba: 106 }; pintarAccesos()');
+  assert.deepEqual([...s.html().matchAll(/dep-nombre">([^<]+)/g)].map(m => m[1]), ['MotoGP', 'ATP', 'WNBA', 'F1']);
+  assert.ok(ordenes(s).includes('calendario:motogp'));
+  assert.ok(!ordenes(s).includes('calendario:wnba'));
+  assert.ok(ordenes(s).includes('resultados:wnba'));
 });
 
-test('una competición enseña solo lo que admite: F1 sin resultados; ATP con resultados y noticias', () => {
+test('la matriz deja el hueco de lo que no existe y el nombre ocupa las columnas libres', () => {
   const s = escenario();
-  s.pantalla('c:f1');
-  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['calendario:f1', 'clasificacion:f1', 'f1:noticias']);
-  s.pantalla('c:atp');
-  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['calendario:atp', 'resultados:atp', 'partido:atp', 'atp:noticias']);
-  assert.match(s.html(), /data-volver="competiciones"/);
-  s.pantalla('c:nba');
-  assert.match(s.html(), /data-orden="partido:nba">NBA · partido/);
-  s.pantalla('resultados');
-  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]), ['resultados:primera', 'resultados:segunda', 'resultados:nba', 'resultados:wnba', 'resultados:atp', 'resultados:wta']);
+  const fila = c => s.run(`filaCompeticion('${c}')`);
+  assert.match(fila('motogp'), /data-desde="2"[\s\S]*dep-col-2[\s\S]*dep-col-3/);
+  assert.doesNotMatch(fila('motogp'), /dep-col-4/);
+  assert.match(s.run("DEPORTES_DISP.circuitos = { 'feb-endesa': 3 }; CAL_DEPORTES.baloncesto.push('feb-endesa'); filaCompeticion('feb-endesa')"), /data-desde="3"/);
+  assert.equal(s.run("filaCompeticion('no-existe')"), '');
 });
 
 test('un acceso escribe su orden en la barra y sustituye la de agenda anterior; el resto se queda', () => {
@@ -74,40 +74,32 @@ test('un acceso sustituye también una consulta deportiva, que ya no va al final
   assert.deepEqual(s.escritas, ['levante clasificacion:nba']);
 });
 
-test('deportes seguidos: una fila de noticias por deporte, arriba del ▾; escribe sus prefijos con espacio', () => {
+test('deportes seguidos: una fila de noticias por deporte; escribe sus prefijos con espacio', () => {
   const s = escenario({ sigo: ['nba', 'f1', 'motogp'], buscar: 'medio:as' });
   s.run('pintarAccesos()');
-  const filas = [...s.html().matchAll(/data-orden="([^"]+)">([^<]+)</g)].map(m => [m[1], m[2]]);
-  assert.deepEqual(filas.slice(0, 2), [['nba:', 'Baloncesto · noticias'], ['f1: motogp:', 'Motor · noticias']]);
+  assert.match(s.html(), /data-orden="nba:">Baloncesto · noticias/);
+  assert.match(s.html(), /data-orden="f1: motogp:">Motor · noticias/);
   s.run("escribirAcceso('f1: motogp:')");
   assert.equal(s.escritas.at(-1), 'medio:as f1: motogp: ');
-  // Sin nada seguido, no hay filas de noticias.
   const vacio = escenario();
   vacio.run('pintarAccesos()');
   assert.doesNotMatch(vacio.html(), /noticias</);
 });
 
-test('«Clasificaciones…» junto a «Resultados…»: una fila por competición con tabla (F1 incluida); la orden no se repite en la fila', () => {
+test('la lista por deporte incluye Euroliga junto a su deporte, sin ser capa del calendario', () => {
   const s = escenario();
-  s.run('pintarAccesos()');
-  assert.match(s.html(), /data-pantalla="resultados">Resultados…[\s\S]*data-pantalla="clasificaciones">Clasificaciones…[\s\S]*data-pantalla="competiciones">/);
-  assert.match(s.html(), /data-orden="calendario:f1">F1 · horarios<\/button>/);
-  s.pantalla('clasificaciones');
-  assert.match(s.html(), /<h2 id="accesos-titulo" tabindex="-1">Clasificaciones<\/h2>/);
-  assert.deepEqual([...s.html().matchAll(/data-orden="([^"]+)"/g)].map(m => m[1]),
-    ['clasificacion:primera', 'clasificacion:segunda', 'clasificacion:nba', 'clasificacion:wnba', 'clasificacion:f1']);
+  assert.deepEqual([...s.run("competicionesDeporte('baloncesto')")], ['nba', 'wnba', 'euroliga']);
+  assert.deepEqual([...CAL_DEPORTES.baloncesto], ['nba', 'wnba']);
 });
 
-test('los accesos ofrecen Copa, Champions y Liga F con sus capacidades declaradas', () => {
-  const calendario = readFileSync(new URL('../../front/app/14-calendario.js', import.meta.url), 'utf8');
-  const deportes = runInNewContext(calendario.match(/const CAL_DEPORTES = .*?;/s)[0] + '\nCAL_DEPORTES');
-  const s = escenario({ deportes });
-  s.pantalla('resultados');
-  for (const c of ['copa-del-rey', 'champions', 'liga-f']) assert.ok(s.html().includes(`data-orden="resultados:${c}"`));
-  s.pantalla('clasificaciones');
-  assert.match(s.html(), /data-orden="clasificacion:champions"/);
-  assert.doesNotMatch(s.html(), /clasificacion:copa-del-rey|clasificacion:liga-f/);
-  s.pantalla('c:copa-del-rey');
-  assert.match(s.html(), /data-orden="partido:copa-del-rey"/);
-  assert.doesNotMatch(s.html(), /clasificacion:copa-del-rey/);
+test('repintar al llegar los datos conserva el botón con el foco', () => {
+  const s = escenario();
+  let enfocado = '';
+  s.c.document = { activeElement: { dataset: { orden: 'resultados:nba' } }, querySelector: sel => ({ focus(){ enfocado = sel; } }) };
+  let pintado = 0;
+  s.c.pintar = () => { pintado++; };
+  s.run('conservandoFoco(pintar)');
+  assert.equal(pintado, 1);
+  assert.equal(enfocado, '[data-orden="resultados:nba"]');
 });
+

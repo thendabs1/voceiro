@@ -11,8 +11,9 @@ const CONSULTA_URL = BACKENDS.deno.buscar;
 const CONSULTA_MIN_LETRAS = 3;
 const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
-const CONSULTA_DEPORTES = { primera: 'Primera', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
-  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
+const CONSULTA_DEPORTES = { primera: 'LaLiga', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
+  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', 'feb-endesa': 'LF Endesa', 'feb-challenge': 'LF Challenge',
+  f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
 const VISTAS_CONSULTA = {};
 const nombreDeporteConsulta = codigo => codigo === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[codigo] || codigo;
 const CONSULTA_EJEMPLOS = {
@@ -32,6 +33,7 @@ const PUNTUAL = {
   grupo: null,               // grupo visible en una columna; en ancho se ven todos
   origen: null,              // parrilla a la que volver desde un partido
   fecha: '', cargandoFecha: false,
+  fechaPedida: '',           // día que pide una tarjeta del calendario
 };
 
 const idiomaConsulta = () => {
@@ -87,16 +89,19 @@ function activarConsulta(c){
   PUNTUAL.grupo = null;
   PUNTUAL.seq++;   // lo que esté en camino ya no se pinta
   clearTimeout(PUNTUAL.timer);
+  const fecha = PUNTUAL.fechaPedida;
+  PUNTUAL.fechaPedida = '';
   Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null, fecha: '', cargandoFecha: false });
   if (esDeporteConsulta(c.tipo)){
     const codigo = normalize(c.texto);
-    if (admiteConsultaMotor(c.tipo, codigo)) { abrirFichaConsulta(`${MOTOR[codigo]}:resultados/${codigo}`); return; }
+    pedirDisponibilidadDeportes();
+    if (admiteConsultaMotor(c.tipo, codigo)) { abrirFichaConsulta(`${MOTOR[codigo]}:resultados/${codigo}`, { fecha }); return; }
     if (c.tipo === 'partido' && idPartidoConsultaValido(`espn:partido/${codigo}`)){
       abrirFichaConsulta(`espn:partido/${codigo}`); return;
     }
     if (codigoDeporte(c.tipo, codigo)){
       if (c.tipo === 'partido') cargarCandidatos({ ...c, texto: codigo });
-      else abrirFichaConsulta(codigo === 'euroliga' ? 'euroliga:resultados' : `espn:${c.tipo}/${codigo}`);
+      else abrirFichaConsulta(codigo === 'euroliga' ? 'euroliga:resultados' : `espn:${c.tipo}/${codigo}`, { fecha });
       return;
     }
     PUNTUAL.estado = 'ayuda';
@@ -212,7 +217,8 @@ function pintarConsulta({ conservarPlegado = false } = {}){
   if (plegada) el.querySelector('.consulta-ficha').open = false;
   el.hidden = false;
   // El foco solo se mueve tras un toque en el panel, nunca al llegar datos de lo que se escribe.
-  const destino = PUNTUAL.enfocar && el.querySelector(PUNTUAL.enfocar);
+  // Mientras carga no: la ficha repinta el panel y el foco se perdería.
+  const destino = PUNTUAL.enfocar && PUNTUAL.estado !== 'cargando' && el.querySelector(PUNTUAL.enfocar);
   if (destino && !destino.disabled){ PUNTUAL.enfocar = ''; destino.focus(); }
 }
 
@@ -267,6 +273,14 @@ function pulsarConsulta(ev){
       }
       break;
     case 'valor': cambiarTextoConsulta(b.dataset.valor); break;
+    case 'orden':
+      escribirAcceso(b.dataset.orden);
+      // Después: activar la consulta limpia el foco pendiente.
+      if (/^(resultados|clasificacion):/.test(b.dataset.orden)){
+        p.enfocar = '.dep-tabs [aria-current], .dep-accion';
+        if (p.estado !== 'cargando') pintarConsulta();
+      }
+      break;
     case 'grupo': {
       const i = Number(b.dataset.i);
       if (!Number.isInteger(i) || !p.ficha?.ficha?.grupos?.[i]) break;
@@ -343,7 +357,11 @@ function htmlConsulta(){
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
     : '';
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
-  return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(tipo))}</span>${cambiar}
+  const competicion = competicionConsulta();
+  const vista = p.estado === 'ayuda' && ['resultados', 'clasificacion'].includes(c.tipo);
+  const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo)
+    : `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
+  return `<div class="consulta-cab">${rotulo}${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
     ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
 }
@@ -364,10 +382,11 @@ function cuerpoConsulta(){
   const p = PUNTUAL, c = p.activa;
   switch (p.estado){
     case 'ayuda':
-      if (esDeporteConsulta(c.tipo)){
-        return msgConsulta('conCompeticion') + opcionesConsulta([...new Set([...Object.keys(ESPN), ...Object.keys(MOTOR), 'euroliga'])].filter(k => codigoDeporte(c.tipo, k))
+      if (c.tipo === 'partido'){
+        return msgConsulta('conCompeticion') + opcionesConsulta(DEPORTES_ORDEN.flatMap(competicionesDeporte).filter(k => codigoDeporte(c.tipo, k))
           .map(k => botonConsulta('valor', nombreDeporteConsulta(k), ` data-valor="${k}"`)).join(''));
       }
+      if (esDeporteConsulta(c.tipo)) return htmlVistaDeportes(c.tipo);
       return msgConsulta('conAyuda', { p: c.prefijo, ej: CONSULTA_EJEMPLOS[c.tipo] });
     case 'corta': return msgConsulta('conCorta') + opcionesConsulta(botonConsulta('forzar', t('conBuscarIgual', { x: c.texto })));
     case 'cargando': return msgConsulta('conCargando');

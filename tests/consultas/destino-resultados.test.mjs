@@ -7,9 +7,9 @@ const tarjeta = (competiciones, instante = null) =>
 
 test('la tarjeta abre el panel de su competición en el día que se mira', () => {
   assert.deepEqual(destinoResultados(tarjeta(['primera'], '2026-11-02T20:00:00+00:00'), '2026-11-02'),
-    { id: 'espn:resultados/primera', fecha: '2026-11-02' });
-  assert.deepEqual(destinoResultados(tarjeta(['atp']), '2026-11-05'), { id: 'espn:resultados/atp', fecha: '2026-11-05' });
-  assert.deepEqual(destinoResultados(tarjeta(['liga-f']), '2026-11-07'), { id: 'espn:resultados/liga-f', fecha: '2026-11-07' });
+    { id: 'espn:resultados/primera', codigo: 'primera', fecha: '2026-11-02' });
+  assert.deepEqual(destinoResultados(tarjeta(['atp']), '2026-11-05'), { id: 'espn:resultados/atp', codigo: 'atp', fecha: '2026-11-05' });
+  assert.deepEqual(destinoResultados(tarjeta(['liga-f']), '2026-11-07'), { id: 'espn:resultados/liga-f', codigo: 'liga-f', fecha: '2026-11-07' });
 });
 
 test('motor usa su proveedor de resultados y no el de clasificación', () => {
@@ -19,7 +19,7 @@ test('motor usa su proveedor de resultados y no el de clasificación', () => {
 
 test('NBA y WNBA piden el día de EE. UU.: casos reales del 3/11 y el 1/11 en Madrid', () => {
   assert.deepEqual(destinoResultados(tarjeta(['nba'], '2026-11-03T00:30:00+00:00'), '2026-11-03'),
-    { id: 'espn:resultados/nba', fecha: '2026-11-02' });
+    { id: 'espn:resultados/nba', codigo: 'nba', fecha: '2026-11-02' });
   assert.equal(destinoResultados(tarjeta(['wnba'], '2026-11-01T01:00:00+00:00'), '2026-11-01').fecha, '2026-10-31');
   // Tarde en EE. UU., misma fecha; sin instante se queda el día mirado.
   assert.equal(destinoResultados(tarjeta(['nba'], '2026-11-03T22:00:00+00:00'), '2026-11-03').fecha, '2026-11-03');

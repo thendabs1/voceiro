@@ -7,6 +7,7 @@ import { parseQuery, normalize } from '../../shared/parser.js';
 import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
 import { traducir } from '../../front/idiomas/index.js';
 import { baseF1, baseMoto, filasF1, filasMoto } from '../../workers/deno-buscar/src/consultas/motor-normalizar.js';
+import { codigoDeportes, stubsDeportes } from './deportes-contexto.mjs';
 
 const muestra = n => JSON.parse(readFileSync(new URL(`./muestras/${n}.json`, import.meta.url)));
 const codigo = ['14-consultas.js', '14-motor.js', '14-tenis.js'].map(n => readFileSync(new URL(`../../front/app/${n}`, import.meta.url), 'utf8')).join('\n');
@@ -23,7 +24,7 @@ function fichaReal(competicion) {
 function banco(competicion, { idioma = 'es', transformar = f => f } = {}) {
   const ficha = transformar(fichaReal(competicion)), pedidos = [];
   const panel = { dataset: {}, innerHTML: '', addEventListener(tipo, fn) { this[tipo] = fn; }, querySelector() { return null; } };
-  const ctx = { ESPN, admiteConsultaESPN, MOTOR, admiteConsultaMotor, BACKENDS: { deno: { buscar: 'https://consulta.test' } },
+  const ctx = { ...stubsDeportes(), ESPN, admiteConsultaESPN, MOTOR, admiteConsultaMotor, BACKENDS: { deno: { buscar: 'https://consulta.test' } },
     ACCES: { lang: idioma }, normalize, fechaValida, sumarDiasCalendario,
     t: (k, v) => traducir(idioma, k, v), ico: () => '',
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]),
@@ -40,7 +41,7 @@ function banco(competicion, { idioma = 'es', transformar = f => f } = {}) {
         consultado: new Date().toISOString(), caduca: new Date(Date.now() + 3600000).toISOString() };
       return { status: 200, ok: true, json: async () => cuerpo };
     } };
-  runInNewContext(codigo + '\nthis.api = { actualizarConsultaPuntual, idSesionMotorValido };', ctx);
+  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { actualizarConsultaPuntual, idSesionMotorValido };', ctx);
   return { panel, ficha, pedidos,
     activar: () => ctx.api.actualizarConsultaPuntual(parseQuery(`resultados:${competicion}`)),
     pulsar: dataset => panel.click({ target: { closest: () => ({ dataset }) } }),

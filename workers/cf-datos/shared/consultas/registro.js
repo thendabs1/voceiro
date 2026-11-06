@@ -55,6 +55,6 @@ export function destinoResultados(tarjeta, dia) {
   const id = codigo === 'euroliga' ? 'euroliga:resultados'
     : MOTOR[codigo] ? `${MOTOR[codigo]}:resultados/${codigo}` : `espn:resultados/${codigo}`;
   const instante = tarjeta.programacion?.valor?.cuando?.inicio?.instante, zona = ZONA_RESULTADOS[codigo];
-  return { id, fecha: zona && instante ? new Intl.DateTimeFormat('en-CA',
+  return { id, codigo, fecha: zona && instante ? new Intl.DateTimeFormat('en-CA',
     { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instante)) : dia };
 }

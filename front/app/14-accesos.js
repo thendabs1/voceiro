@@ -1,24 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════
    ACCESOS DEL BUSCADOR (▾ al final de la barra, como las opciones de Gmail)
-   Horarios, resultados y clasificación de las competiciones con el ratón.
+   Lanzador corto: lo que sigo y el camino a la vista general de deportes.
    Cada acceso escribe su orden en la barra y la aplica (modelo GitHub: el
    filtro activo se ve y se aprende); los botones de las vistas no escriben.
    ═══════════════════════════════════════════════════════════════ */
-const ACCESOS = { abierto: false, pantalla: '', disp: null, cargando: null };
+const ACCESOS = { abierto: false };
 const ACCESOS_PRIMERAS = 4;
 const ACCESOS_POR_DEFECTO = ['f1', 'primera', 'nba'];
-
-// Competiciones con algo publicado (disponibilidad global del catálogo): una
-// petición al abrir por primera vez; si falla, se ofrecen todas.
-async function accesosDisponibilidad(){
-  if (ACCESOS.disp || ACCESOS.cargando) return;
-  const controller = ACCESOS.cargando = new AbortController();
-  try { ACCESOS.disp = (await calPedir('catalogo', { disponibilidad: 1 }, controller.signal)).disponibilidad?.circuitos || {}; }
-  catch { ACCESOS.disp = null; }
-  ACCESOS.cargando = null;
-  if (ACCESOS.abierto) pintarAccesos();
-}
-const accesoHay = c => !ACCESOS.disp || ACCESOS.disp[c] > 0;
 
 // Sustituye en la barra lo que era de la agenda o una consulta puntual por la
 // orden elegida; el resto (medios, palabras, fechas) se queda. Las consultas
@@ -36,58 +24,27 @@ function escribirAcceso(orden){
 function pintarAccesos(){
   const panel = $('#accesos-panel');
   if (!panel) return;
-  const p = ACCESOS.pantalla, nombre = calNombreCompeticion;
-  // La orden no se repite en la fila: al pulsar se escribe en la barra y ahí se aprende.
-  const fila = (orden, texto) => `<li><button type="button" data-orden="${calEsc(orden)}">${calEsc(texto)}</button></li>`;
-  const ir = (pantalla, texto) => `<li><button type="button" data-pantalla="${calEsc(pantalla)}">${calEsc(texto)}<span aria-hidden="true"> ›</span></button></li>`;
-  let titulo = t('accTitulo'), filas = [];
-  if (!p){
-    // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
-    const sigo = (calPreferencias()?.competiciones || []).filter(accesoHay);
-    const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c) && accesoHay(c))].slice(0, ACCESOS_PRIMERAS);
-    const futbol = CAL_DEPORTES.futbol.filter(accesoHay);
-    filas = [...deportesSeguidos().map(([k, cs]) => fila(cs.map(c => c + ':').join(' '), t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) }))),
-      sigo.length > 1 ? fila('calendario:' + sigo.join(','), t('accSigoHorarios')) : '',
-      ...primeras.map(c => fila('calendario:' + c, t('accHorarios', { x: nombre(c) }))),
-      futbol.length > 1 && !futbol.every(c => primeras.includes(c)) ? fila('calendario:' + futbol.join(','), t('accHorarios', { x: t('calFutbol') })) : '',
-      ir('resultados', t('accResultados')), ir('clasificaciones', t('accClasificaciones')), ir('competiciones', t('accCompeticiones'))];
-  } else if (p === 'resultados'){
-    titulo = t('accResultadosTitulo');
-    filas = [...CAL_COMPETICIONES, 'euroliga'].filter(c => codigoDeporte('resultados', c))
-      .map(c => fila('resultados:' + c, c === 'euroliga' ? t('conEuroliga') : nombre(c)));
-  } else if (p === 'clasificaciones'){
-    titulo = t('accClasificacionesTitulo');
-    filas = CAL_COMPETICIONES.filter(c => codigoDeporte('clasificacion', c)).map(c => fila('clasificacion:' + c, nombre(c)));
-  } else if (p === 'competiciones'){
-    titulo = t('accCompeticionesTitulo');
-    filas = CAL_COMPETICIONES.map(c => ir('c:' + c, nombre(c)));
-  } else {
-    // Una competición: solo las operaciones que admite (F1 no tiene resultados).
-    const c = p.slice(2);
-    titulo = nombre(c);
-    filas = [accesoHay(c) ? fila('calendario:' + c, t('accHorarios', { x: nombre(c) })) : '',
-      codigoDeporte('resultados', c) ? fila('resultados:' + c, t('accResultadosDe', { x: nombre(c) })) : '',
-      codigoDeporte('partido', c) ? fila('partido:' + c, t('accPartidoDe', { x: nombre(c) })) : '',
-      codigoDeporte('clasificacion', c) ? fila('clasificacion:' + c, t('accClasificacionDe', { x: nombre(c) })) : '',
-      // Solo noticias, sin abrir Deportes; en el modo o en todo, con sus pestañas.
-      AMBITOS[c]?.noticias ? fila(c + ':noticias', t('accNoticiasDe', { x: nombre(c) })) : ''];
-  }
-  const volver = p ? `<button type="button" class="accesos-volver" data-volver="${p.startsWith('c:') ? 'competiciones' : ''}" aria-label="${calEsc(t('accVolver'))}">‹</button>` : '';
-  panel.innerHTML = `<div class="accesos-cab">${volver}<h2 id="accesos-titulo" tabindex="-1">${calEsc(titulo)}</h2>
+  const fila = (atributo, texto) => `<li><button type="button" ${atributo}>${calEsc(texto)}</button></li>`;
+  // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
+  const sigo = calPreferencias()?.competiciones || [];
+  const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c)).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
+  const noticias = deportesSeguidos().map(([k, cs]) => fila(`data-orden="${calEsc(cs.map(c => c + ':').join(' '))}"`, t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) })));
+  panel.innerHTML = `<div class="accesos-cab"><h2 id="accesos-titulo" tabindex="-1">${calEsc(t('accTitulo'))}</h2>
     <button type="button" class="accesos-cerrar" data-cerrar aria-label="${calEsc(t('calCerrar'))}">×</button></div>
-    <ul class="accesos-lista">${filas.filter(Boolean).join('')}</ul>
-    ${ACCESOS.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
+    <div class="accesos-filas">${primeras.join('')}</div>
+    <ul class="accesos-lista">${[...noticias, fila('data-orden="resultados:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
+    ${DEPORTES_DISP.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
 }
 
 function abrirAccesos(){
-  ACCESOS.abierto = true; ACCESOS.pantalla = '';
+  ACCESOS.abierto = true;
   cerrarSugerencias();
   const panel = $('#accesos-panel');
   panel.hidden = false;
   $('#buscar-accesos').setAttribute('aria-expanded', 'true');
+  pedirDisponibilidadDeportes();
   pintarAccesos();
-  accesosDisponibilidad();
-  panel.querySelector('.accesos-lista button')?.focus({ preventScroll: true });
+  panel.querySelector('.dep-accion, .accesos-lista button')?.focus({ preventScroll: true });
 }
 function cerrarAccesos(volver = true){
   if (!ACCESOS.abierto) return;
@@ -106,16 +63,11 @@ function wireAccesos(){
     if (!b) return;
     if ('orden' in b.dataset) return escribirAcceso(b.dataset.orden);
     if ('cerrar' in b.dataset) return cerrarAccesos();
-    if ('pantalla' in b.dataset || 'volver' in b.dataset){
-      ACCESOS.pantalla = b.dataset.pantalla ?? b.dataset.volver;
-      pintarAccesos();
-      $('#accesos-titulo')?.focus({ preventScroll: true });
-    }
+    if ('deportes' in b.dataset){ cerrarAccesos(false); abrirCalendario(document.getElementById('btn-deportes'), 'deportes'); }
   });
   // Escape cierra y vuelve al ▾; un clic fuera o salir con el tabulador, también.
   panel.addEventListener('keydown', e => { if (e.key === 'Escape'){ e.stopPropagation(); cerrarAccesos(); } });
   document.addEventListener('click', e => {
-    // composedPath: al cambiar de pantalla, el botón pulsado ya no está en el panel.
     if (ACCESOS.abierto && !e.composedPath().some(n => n === panel || n === boton)) cerrarAccesos(false);
   });
   panel.addEventListener('focusout', e => {
@@ -124,8 +76,8 @@ function wireAccesos(){
 }
 
 // Deportes que sigo (★ de Deportes): [deporte, competiciones con datos].
-// Cada uno da una fila «Fútbol · noticias» arriba del ▾, que escribe sus
-// prefijos (primera: segunda:), como antes los iconos de la cabecera.
+// Cada uno da una fila «Fútbol · noticias» en el ▾, que escribe sus prefijos
+// (primera: segunda:), como antes los iconos de la cabecera.
 function deportesSeguidos(){
   const sigo = calPreferencias()?.competiciones || [];
   return Object.entries(CAL_DEPORTES).map(([k, cs]) => [k, cs.filter(c => sigo.includes(c) && accesoHay(c))]).filter(([, cs]) => cs.length);

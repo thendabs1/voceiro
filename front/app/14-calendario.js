@@ -749,10 +749,13 @@ function calCita(e, dia = ''){
   // Una sesión o función lleva encima el GP o programa al que pertenece, si su nombre no lo dice ya.
   const padre = e.padre ? calNombreEvento({ nombres: e.padre, lugar: e.lugar }) : '';
   const titulo = e.padre ? calNombreSesion(e, { nombres: e.padre }) : calNombreEvento(e);
+  // Lo que aún no ha empezado no tiene resultados que ver.
+  const destino = dia && dia <= calHoy() && !anulado ? destinoResultados(e, dia) : null;
   return `<article class="cal-cita${anulado ? ' cal-anulada' : ''}"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
     ${padre && !titulo.includes(calNombre({ nombres: e.padre })) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calTituloDesplegable(e, dia, false, titulo)}</h3>
     ${calEtiquetasDeportes(e)}
+    ${destino ? calBoton('ver-resultados', t('conResultados'), destino.codigo, `class="cal-resultados" data-fecha="${calEsc(destino.fecha)}" data-id="${calEsc(destino.id)}"`) : ''}
     ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
     ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}
     ${anulado ? `<p class="cal-aviso">${calEsc(t(anulado))}</p>` : ''}${calDesplegado(e, dia)}</div></article>`;
@@ -791,6 +794,18 @@ function calPuntos(d){
 // capa, la suya va primero.
 const calModoDeportes = () => CALENDARIO.vista === 'deportes';
 const calUnica = () => CALENDARIO.capas?.size === 1 ? [...CALENDARIO.capas][0] : '';
+// Una sola competición a la vista, por sus capas o por la orden de la barra.
+function calCompeticionVista(){
+  const { capas, orden } = CALENDARIO;
+  const cs = capas ? [...capas] : [...(orden?.ambitos || []).filter(a => AMBITOS[a]?.codigo), ...(orden?.circuitos || [])];
+  return cs.length === 1 ? cs[0] : '';
+}
+// Con una competición, sus resultados y su tabla; con varias, la vista general.
+function calEnlacesDeportes(){
+  const c = calCompeticionVista();
+  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'resultados:' }])
+    .map(a => calBoton('orden', a.texto, a.orden)).join('');
+}
 function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
   const unica = calUnica();
   const hay = Object.entries(d?.competiciones || {}).filter(([c, n]) => CAL_MARCAS[c] && n.citas + n.programas + n.en_curso > 0)
@@ -1431,7 +1446,7 @@ function pintarCalendario(repintado = false){
   // Arriba la ciudad (en Deportes, el título) y las acciones; debajo, atajos de
   // fecha y chips: en la agenda, temas; en Deportes, deportes y competiciones.
   p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="${deportes ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(t(deportes ? 'calDeportesTitulo' : 'calTitulo'))}</h1>
-    ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? '' : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
+    ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? calEnlacesDeportes() : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
     ${s.orden?.noticias ? calBoton('cerrar', t('calVerNoticias')) : calBoton('cerrar', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calCerrar'))}" title="${calEsc(t('calCerrar'))}"`)}</div>
     <div class="cal-chips cal-rangos ui-tira" role="group" aria-label="${calEsc(t('calCuando'))}">${rango('hoy', hoy)}${rango('manana', manana)}${rango('finde')}
     ${calBoton('elegir-fecha', '📅', '', `class="cal-icono" aria-label="${calEsc(t('calFecha'))}" title="${calEsc(t('calFecha'))}"`)}
@@ -1473,6 +1488,8 @@ function wireCalendario(){
     if (!b) return;
     const a = b.dataset.cal, v = b.dataset.valor;
     if (a === 'cerrar') return salirCalendario();
+    if (a === 'orden') return irDesdeCalendario(v);
+    if (a === 'ver-resultados') return abrirResultadosDelDia(v, b.dataset.fecha, b.dataset.id);
     if (a === 'asistente') return calAbrirAsistente(Number(v) || 0);
     if (a === 'ahora-no'){ calGuardarPreferencias({ v: 1, estado: 'omitido' }); return void pintarCalendario(); }
     if (a === 'seguir') return calSeguir(v);

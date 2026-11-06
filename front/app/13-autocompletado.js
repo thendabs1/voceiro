@@ -26,7 +26,8 @@ function sugerenciasBuscar(raw){
   // Lo que sigue a una consulta puntual es su valor: nada que sugerir.
   if (partirConsulta(raw).consulta) return [];
   const calendario = sugerenciasCalendario(raw);
-  if (calendario) return calendario;
+  // Un prefijo ya empezado solo se completa; una palabra suelta también busca medios.
+  if (calendario && /:[^\s]*$/.test(raw)) return calendario;
   const stats = sugerenciasEstadisticas(raw);
   if (stats) return stats;
   // eltiempo: sugiere municipios, no medios.
@@ -49,6 +50,8 @@ function sugerenciasBuscar(raw){
   }
 
   if (!low) return out;
+
+  out.push(...[...(calendario || []), ...sugerenciasDeportes(low)].slice(0, 5));
 
   const grupos = [...new Set(MEDIOS_UNICOS.map(m => m.grupo).filter(Boolean))];
   const grupoHits = grupos
@@ -139,6 +142,13 @@ function aplicarSugerencia(idx){
   if (s.kind === 'calendario'){
     input.value = input.value.replace(/[^\s"]*$/, s.value);
     cerrarSugerencias(); aplicarFiltros(); return;
+  }
+
+  // Sustituye la palabra escrita y una consulta vacía («resultados: nba»), que
+  // no es un valor: el parser deja `nba` suelta.
+  if (s.kind === 'orden'){
+    input.value = input.value.replace(/[^\s"]*\s*$/, '');
+    cerrarSugerencias(); escribirAcceso(s.value); return;
   }
 
   if (s.kind === 'estadisticas'){
