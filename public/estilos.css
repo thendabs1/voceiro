@@ -2124,7 +2124,7 @@
 .calendario-panel{border:1px solid var(--btn-border);border-radius:9px;margin:8px 0 26px;overflow:hidden;scroll-margin-top:120px;container-type:inline-size}
 /* Barra: ciudad y acciones arriba; atajos de fecha y chips en filas propias que se desplazan. */
 .cal-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;border-bottom:1px solid var(--border)}
-.cal-barra h1:focus{outline:none}.cal-barra>.ui-tira{flex-basis:100%;min-width:0}
+.cal-barra h1:focus{outline:none}.cal-barra>:is(.ui-tira,.cal-tira-cabecera){flex-basis:100%;min-width:0}
 .cal-titulo-vista{margin:0 8px 0 0;font-size:1.1em;flex:0 1 auto}
 .cal-acciones{display:flex;align-items:center;gap:4px;margin-left:auto}
 .calendario-panel button,.calendario-panel input,.cal-evento-dialogo button{min-height:44px;font:inherit;max-width:100%}
@@ -2181,10 +2181,11 @@
 .cal-chip-marca{font-size:.85em}
 .cal-todo-dia .cal-hora.cal-dep{color:var(--dep-bg);background:var(--dep)}
 .cal-mg-chip.cal-dep{color:var(--dep);background:var(--dep-bg)}.calendario-panel .cal-mg-barra.cal-dep{color:var(--dep-bg);background:var(--dep)}
-/* En cada día, hasta tres competiciones («NBA 9», «F1») y «+N». */
-.cal-marcas{display:flex;flex-direction:column;align-items:center;gap:1px;max-width:100%}
-.cal-marca{font-size:.62em;font-weight:700;line-height:1.2;color:var(--cat-deportes);white-space:nowrap;overflow:hidden;text-overflow:clip;max-width:100%}
-.cal-marca.cal-mas{color:var(--muted);font-weight:400}
+/* En cada día, todas sus competiciones («NBA 9», «F1»), las que quepan por línea. */
+.cal-marcas{display:flex;flex-wrap:wrap;gap:2px 3px;max-width:100%}.cal-celda .cal-marcas{justify-content:center;padding:0 2px}
+.cal-marca{font-size:.72em;font-weight:700;line-height:1.35;padding:0 4px;border-radius:4px;background:var(--dep-bg);white-space:nowrap;overflow:hidden;max-width:100%}
+.cal-marcas-mas{display:none;font-size:.72em;color:var(--muted)}
+@media(max-width:600px){.cal-celda .cal-marca:nth-child(n+6){display:none}.cal-celda .cal-marcas-mas{display:inline}}
 /* Este mes en deportes: una fila por competición con sus GP o torneos. */
 .cal-temporada{margin:14px 0 4px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--cat-deportes-bg)}
 .cal-temporada-boton{border:0;background:transparent;font-weight:700;color:var(--cat-deportes);padding:4px 0;text-align:left;width:100%}
@@ -2223,9 +2224,6 @@
 .calendario-panel .cal-mg-dia{position:relative}
 .cal-mg-dia[aria-pressed="true"]::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;box-shadow:inset 0 0 0 2px var(--accent)}
 .cal-mg-hueco{display:block;flex:none;height:calc(var(--carriles) * var(--carril,1.6em))}
-/* Deportes: las marcas del día, todas, en las líneas que hagan falta. */
-.cal-mg-marcas{display:flex;flex-wrap:wrap;gap:2px 3px}
-.cal-mg-marca{font-size:.72em;font-weight:700;line-height:1.35;padding:0 4px;border-radius:4px;white-space:nowrap;color:var(--dep);background:var(--dep-bg)}
 .cal-mg-chip{display:block;font-size:.72em;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px;padding:1px 4px;
   color:var(--cat-otras);background:var(--cat-otras-bg)}
 .cal-mg-chip.cal-cat-cultura{color:var(--cat-cultura);background:var(--cat-cultura-bg)}.cal-mg-chip.cal-cat-deportes{color:var(--cat-deportes);background:var(--cat-deportes-bg)}
@@ -2310,6 +2308,7 @@ body.calendario-abierto{max-width:none}
 .consulta-panel a{ color: inherit; }
 .consulta-cab{ display: flex; align-items: center; gap: 8px; }
 .consulta-tipo{ margin-right: auto; color: var(--muted); }
+.consulta-cab .consulta-volver{ margin-right: auto; padding: 0 2px; border: 0; background: none; }
 .consulta-cab button{ min-width: 44px; min-height: 44px; padding: 0 12px; }
 .consulta-cerrar{ display: inline-flex; align-items: center; justify-content: center; }
 .consulta-cerrar .ico{ width: 1.1em; height: 1.1em; }
@@ -2335,9 +2334,14 @@ body.calendario-abierto{max-width:none}
 .consulta-nota, .consulta-pie{ font-size: .9em; }
 .consulta-pie{ margin-bottom: 0; }
 .consulta-pie button{ min-height: 32px; padding: 2px 10px; }
-.consulta-fechas{ display: grid; grid-template-columns: 44px minmax(0,14em) 44px; gap: 6px; max-width: 100%; margin: 8px 0; }
-.consulta-fechas button{ min-height: 44px; font-size: 1.3em; }
+/* Mismo patrón que ‹ mes › del calendario; lo que dice el día, al lado. */
+.consulta-fechas-fila{ display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 4px 0 8px; }
+.consulta-fechas{ display: grid; grid-template-columns: 44px minmax(0,10.5em) 44px; align-items: center; max-width: 100%; }
+.consulta-fechas button{ min-height: 44px; border: 0; background: none; font-size: 1.3em; }
 .consulta-fechas label{ min-width: 0; }
+.consulta-resumen{ margin: 2px 0; }
+.consulta-resumen:focus, .consulta-partido:focus{ outline: none; }
+.consulta-resumen .consulta-linea{ display: inline; margin-left: 8px; }
 .consulta-fechas input{ width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: 4px 6px; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
 .consulta-fechas :disabled{ opacity: .55; cursor: default; }
 /* Cuadros deportivos: el ancho disponible decide cuántos grupos caben.
@@ -2375,9 +2379,20 @@ body.calendario-abierto{max-width:none}
 .consulta-partidos li.consulta-marcada{ box-shadow: inset 3px 0 var(--mark); }
 .consulta-estado{ grid-column: 1 / -1; font-size: .8em; }
 /* Ficha: una cabecera común, con los bloques propios de cada deporte. */
-.consulta-marcador{ display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 16px; max-width: 28em; font-size: 1.15em; }
-.consulta-marcador b{ text-align: right; font-variant-numeric: tabular-nums; }
-.consulta-lugar{ color: var(--muted); }
+.consulta-partido{ margin: 2px 0 8px; text-align: center; }
+.consulta-panel .consulta-marcador{ display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 16px; margin: 0 auto; max-width: 40em; font-size: 1.25em; font-weight: 600; }
+.consulta-marcador span:first-child{ text-align: right; }
+.consulta-marcador span:last-child{ text-align: left; }
+.consulta-marcador b{ font-size: 1.2em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.consulta-datos{ color: var(--muted); }
+.consulta-panel .consulta-partido p{ margin-block: 2px; }
+/* Dos columnas si caben; con un solo bloque, ocupa la fila. */
+.consulta-bloques{ display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24em, 100%), 1fr)); gap: 0 28px; align-items: start; }
+.consulta-bloques>div{ min-width: 0; }
+.consulta-bloques .consulta-comparativa{ margin-top: 4px; }
+.consulta-por-tipo thead td:nth-child(2){ width: 6em; }
+.consulta-por-tipo td{ vertical-align: top; }
+.consulta-inc{ display: block; }
 .consulta-comparativa, .consulta-parciales, .consulta-jugadores{ width: 100%; max-width: 40em; margin: 12px 0; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .consulta-comparativa caption, .consulta-parciales caption, .consulta-jugadores caption{ text-align: left; font-weight: 600; margin-bottom: 6px; }
 .consulta-comparativa th, .consulta-comparativa td, .consulta-parciales th, .consulta-parciales td, .consulta-jugadores th, .consulta-jugadores td{ padding: 5px 4px; border-bottom: 1px solid var(--border); }
@@ -2388,9 +2403,8 @@ body.calendario-abierto{max-width:none}
 .consulta-equipos>section{ min-width: 0; }
 .consulta-equipos h4{ font-size: 1em; margin: 8px 0; }
 .consulta-alineacion, .consulta-incidencias{ margin: 4px 0; padding: 0; list-style: none; }
-.consulta-alineacion li, .consulta-incidencias li{ display: grid; grid-template-columns: 3em minmax(0,1fr); gap: 6px; padding: 4px 0; }
+.consulta-alineacion li, .consulta-incidencias li{ display: grid; grid-template-columns: 3em minmax(0,1fr); gap: 6px; padding: 2px 0; }
 .consulta-alineacion li>span:first-child, .consulta-incidencias li>span:first-child{ color: var(--muted); font-variant-numeric: tabular-nums; }
-.consulta-inc-jugadores{ display: block; }
 .consulta-tabla-scroll{ max-width: 100%; overflow-x: auto; }
 .consulta-parciales th:first-child, .consulta-jugadores th:first-child{ text-align: left; overflow-wrap: anywhere; }
 .consulta-parciales td, .consulta-parciales th:not(:first-child), .consulta-jugadores td, .consulta-jugadores th:not(:first-child){ text-align: right; white-space: nowrap; }
@@ -2404,6 +2418,9 @@ body.calendario-abierto{max-width:none}
 }
 @media(pointer:fine){
   .consulta-deporte{ font-size: .9em; }
+  .consulta-cab button{ min-width: 32px; min-height: 32px; }
+  .consulta-fechas{ grid-template-columns: 32px minmax(0,10.5em) 32px; }
+  .consulta-fechas button, .consulta-fechas input{ min-height: 32px; }
   .consulta-grupos-nav button{ min-height: 32px; }
 }
 

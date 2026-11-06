@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=83e245ade0';
+} from './parser.js?v=a7a0327c0d';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=83e245ade0';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=83e245ade0';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=83e245ade0';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=83e245ade0';
-import { comparador } from './busqueda/orden.js?v=83e245ade0';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=a7a0327c0d';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=a7a0327c0d';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=a7a0327c0d';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=a7a0327c0d';
+import { comparador } from './busqueda/orden.js?v=a7a0327c0d';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=83e245ade0';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=83e245ade0';
+} from './sync/fusion.js?v=a7a0327c0d';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=a7a0327c0d';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=83e245ade0';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=83e245ade0';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=a7a0327c0d';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=a7a0327c0d';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=83e245ade0';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=a7a0327c0d';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=83e245ade0';
+} from './tiempo/avisos.js?v=a7a0327c0d';
 
-import { I18N, traducir } from './idiomas/index.js?v=83e245ade0';
+import { I18N, traducir } from './idiomas/index.js?v=a7a0327c0d';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=83e245ade0';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=83e245ade0';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=83e245ade0';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=83e245ade0';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=a7a0327c0d';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=a7a0327c0d';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=a7a0327c0d';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=a7a0327c0d';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=83e245ade0';
+import { ADMINISTRACION } from './territorios/administracion.js?v=a7a0327c0d';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=83e245ade0');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=a7a0327c0d');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -4502,9 +4502,11 @@ function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
   return hay.map(([c, n]) => ({ c, texto: CAL_MARCAS[c] + (n.citas > 1 ? ' ' + n.citas : ''),
     nombre: calNombreCompeticion(c) + (n.citas ? ' · ' + calN('calNPartidos', n.citas) : '') }));
 }
-const CAL_MARCAS_DIA = 3;
-const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.slice(0, CAL_MARCAS_DIA).map(m => `<span class="cal-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}">${calEsc(m.texto)}</span>`).join('')}
-  ${marcas.length > CAL_MARCAS_DIA ? `<span class="cal-marca cal-mas">+${marcas.length - CAL_MARCAS_DIA}</span>` : ''}</span>` : '';
+// La misma pastilla en la tira y en el mes, con las que quepan por línea; el
+// botón del día lleva la lista completa en su etiqueta. En móvil cabe una por
+// línea: pasadas cinco, el CSS las oculta y enseña el «+N».
+const CAL_MARCAS_MOVIL = 5;
+const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.map(m => `<span class="cal-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}" title="${calEsc(m.nombre)}">${calEsc(m.texto)}</span>`).join('')}${marcas.length > CAL_MARCAS_MOVIL ? `<span class="cal-marcas-mas">+${marcas.length - CAL_MARCAS_MOVIL}</span>` : ''}</span>` : '';
 const calNombreCompeticion = c => AMBITOS[c]?.nombre || AMBITOS[c]?.noticias?.[0] || c;
 const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidden="true">${cats.map(c => `<span class="cal-punto cal-cat-${c}"></span>`).join('')}</span>` : '';
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
@@ -4753,7 +4755,7 @@ function calMesTitulos(dias, rodante = false){
         // Lo que ya va en barra ese día no se repite como marca.
         const enBarra = new Set(colocadas.filter(x => x.a <= i && x.z > i).flatMap(x => x.b.competiciones || []));
         const marcas = calMarcas(d, CAL_COMPETICIONES).filter(m => !enBarra.has(m.c));
-        contenido = marcas.length ? `<span class="cal-mg-marcas">${marcas.map(m => `<span class="cal-mg-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}" title="${calEsc(m.nombre)}">${calEsc(m.texto)}</span>`).join('')}</span>` : '';
+        contenido = calMarcasHtml(marcas);
         detalle = calMarcas(d).map(m => m.nombre);
       } else {
         const muestras = (d?.muestras || []).slice(0, caben), mas = Math.max(0, (d?.chips ?? muestras.length) - muestras.length);
@@ -4774,20 +4776,25 @@ function calMesTitulos(dias, rodante = false){
   }).join('')}</div>${dias.some(sinPublicar) ? `<p class="cal-nota cal-leyenda-sin-publicar">${calEsc(t(
     calCompeticionesPedidas().every(c => CAL_FUENTE_ATLETISMO[c]) ? 'calSinPublicarNotaAtletismo' : 'calSinPublicarNota'))}</p>` : ''}`;
 }
+// Semana o mes que empieza en esta semana: un mes si no cruza; si cruza, los dos.
+function calTituloPeriodo(desde, hasta){
+  const corto = { month: 'short', day: undefined }, conAnio = { ...corto, year: 'numeric' };
+  if (desde.slice(0, 7) === hasta.slice(0, 7)) return calFecha(desde, { month: 'long', year: 'numeric', day: undefined });
+  return `${calFecha(desde, desde.slice(0, 4) === hasta.slice(0, 4) ? corto : conAnio)} – ${calFecha(hasta, conAnio)}`;
+}
 function calTira(){
   const s = CALENDARIO, porDia = new Map([...(s.resumen || []), ...(s.mesAbierto ? s.mes?.dias || [] : [])].map(d => [d.dia, d]));
   const { dias: diasMes, rodante } = s.mesAbierto ? calPeriodoMes() : { dias: null, rodante: false };
   const dias = diasMes || ventanaCalendario(s.fecha, 'semana');
-  const titulo = rodante ? calFecha(dias[0], { month: 'short', day: undefined }) + ' – ' + calFecha(dias.at(-1), { month: 'short', year: 'numeric', day: undefined })
-    : calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined });
+  const titulo = s.mesAbierto && !rodante ? calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined }) : calTituloPeriodo(dias[0], dias.at(-1));
   const [ant, sig] = s.mesAbierto ? ['calMesAnterior', 'calMesSiguiente'] : ['calSemanaAnterior', 'calSemanaPosterior'];
   const nav = `<div class="cal-tira-cabecera">${calBoton('anterior', '‹', '', `aria-label="${calEsc(t(ant))}"`)}
     ${calBoton('mes', titulo + (s.mesAbierto ? ' ▴' : ' ▾'), '', `class="cal-tira-titulo" aria-expanded="${s.mesAbierto}"`)}${calBoton('siguiente', '›', '', `aria-label="${calEsc(t(sig))}"`)}</div>`;
-  // Mes ancho (Google Calendar): ‹ mes › sube a la barra del calendario, en la
-  // fila de los atajos, y deja el alto de la ventana a las semanas.
+  // ‹ mes › va siempre en la barra, junto a los atajos: no se mueve al abrir el
+  // mes ni al cambiar de ancho, y deja el alto de la ventana a las semanas.
+  s.navEnBarra = nav;
   const ancho = s.mesAbierto && calMesAncho();
-  if (ancho) s.navEnBarra = nav;
-  return `<div class="cal-tira">${ancho ? '' : nav}
+  return `<div class="cal-tira">
     ${ancho ? calMesTitulos(dias, rodante) : `<div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
       calCeldaDia(dia, porDia.get(dia), { otroMes: s.mesAbierto && !rodante && dia.slice(0, 7) !== s.fecha.slice(0, 7), rodante })).join('')}</div>`}
     ${calModoDeportes() ? '' : `<p class="cal-leyenda">${[...CAL_CATEGORIAS, 'otras'].map(c => `<span><span class="cal-punto cal-cat-${c}" aria-hidden="true"></span>${calEsc(calNombreCategoria(c))}</span>`).join('')}</p>`}
@@ -4934,6 +4941,13 @@ function calElegirParte(){
 // nombre, que hacen de leyenda. Con color, las marcadas. Siempre queda una.
 // El deporte elegido: el único al que pertenecen todas las capas.
 const calDeporteElegido = () => Object.keys(CAL_DEPORTES).find(k => [...CALENDARIO.capas].every(c => CAL_DEPORTE_DE[c] === k)) || '';
+// La marca enseña qué significa en las celdas; si ya se lee en el nombre
+// («Copa del Rey», las iniciales de «Liga F»), repetirla no explica nada.
+function calMarcaAporta(marca, nombre){
+  if (!marca) return false;
+  const iniciales = nombre.split(/\s+/).map(p => p[0]).join('');
+  return !nombre.includes(marca) && marca !== iniciales;
+}
 function calChipsDeportes(){
   const s = CALENDARIO, sigo = calPreferencias()?.competiciones || [], elegido = calDeporteElegido();
   const igual = cs => cs.length === s.capas.size && cs.every(c => s.capas.has(c));
@@ -4944,7 +4958,7 @@ function calChipsDeportes(){
   // Sports, «Mis calendarios» de Google): dos botones hermanos, sin asistente.
   const competiciones = (CAL_DEPORTES[elegido] || []).map(c => {
     const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c], sigue = sigo.includes(c);
-    return `<span class="cal-capa">${chip('capa', (marca && marca !== nombre ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, s.capas.has(c),
+    return `<span class="cal-capa">${chip('capa', (calMarcaAporta(marca, nombre) ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, s.capas.has(c),
       `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`)}${chip('seguir', sigue ? '★' : '☆', c, sigue, 'cal-seguir', ` aria-label="${calEsc(t(sigue ? 'calDejarDeSeguir' : 'calSeguir', { x: nombre }))}"`)}</span>`;
   }).join('');
   return `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calCompeticiones'))}">${chip('capas-todas', calEsc(t('calTodas')), '', igual(CAL_COMPETICIONES))}
@@ -5581,16 +5595,16 @@ function pulsarConsulta(ev){
       break;
     case 'candidato': {
       const c = p.candidatos?.candidatos?.[+b.dataset.i];
-      if (c){ p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(c.id, { candidato: c }); }
+      if (c){ p.enfocar = '.consulta-foco'; abrirFichaConsulta(c.id, { candidato: c }); }
       break;
     }
-    case 'ficha': p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(b.dataset.id); break;
+    case 'ficha': p.enfocar = '.consulta-foco'; abrirFichaConsulta(b.dataset.id); break;
     case 'partido': {
       const partido = p.ficha?.ficha?.partidos?.find(x => x.id === b.dataset.id);
       if (!partido || !(partido.vista === 'sesion_motor' ? idSesionMotorValido(partido.id) : idPartidoConsultaValido(partido.id))) break;
       p.origen = { ficha: p.ficha, id: p.id, candidato: p.candidato, fallo: p.fallo,
         grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id, fecha: p.fecha };
-      p.enfocar = '.consulta-ficha summary';
+      p.enfocar = '.consulta-foco';
       abrirFichaConsulta(partido.id);
       break;
     }
@@ -5697,8 +5711,8 @@ const historialWikipedia = () => (PUNTUAL.id.startsWith('wikipedia:')
 function htmlConsulta(){
   const p = PUNTUAL, c = p.activa;
   const cerrar = t('conCerrar');
-  const cambiar = p.origen ? botonConsulta('volver', t('conVolverResultados'))
-    : p.id && p.candidatos?.estado === 'ok' ? botonConsulta('cambiar', t('conCambiar')) : '';
+  const volver = p.origen ? botonConsulta('volver', '‹ ' + t('conResultados'), ` class="consulta-volver" aria-label="${escapeHtml(t('conVolverResultados'))}"`) : '';
+  const cambiar = !p.origen && p.id && p.candidatos?.estado === 'ok' ? botonConsulta('cambiar', t('conCambiar')) : '';
   const otras = p.lista.length > 1
     ? `<div class="consulta-otras">${escapeHtml(t('conVarias'))} ${p.lista.map((o, i) =>
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
@@ -5706,23 +5720,24 @@ function htmlConsulta(){
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   const competicion = competicionConsulta();
   const vista = p.estado === 'ayuda' && ['resultados', 'clasificacion'].includes(c.tipo);
-  const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo)
-    : `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
+  const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo) : volver
+    || `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
   return `<div class="consulta-cab">${rotulo}${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
-    ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
+    ${otras}${p.estado === 'ficha' ? '' : htmlFechasResultados()}${cuerpoConsulta()}`;
 }
 
-function htmlFechasResultados(){
+// `resumen`: lo que dice la lista del día, en la misma fila que la fecha.
+function htmlFechasResultados(resumen = ''){
   const p = PUNTUAL;
   if (!idResultadosConsulta(p.id)) return '';
   const cargando = p.cargandoFecha || p.estado === 'cargando';
   const mover = (direccion, texto, flecha) => botonConsulta('dia', flecha,
     ` data-direccion="${direccion}" title="${escapeHtml(t(texto))}" aria-label="${escapeHtml(t(texto))}"${cargando || !fechaValida(p.fecha) ? ' disabled' : ''}`);
-  return `<div class="consulta-fechas" role="group" aria-label="${escapeHtml(t('conFechaResultados'))}" aria-busy="${cargando}">
+  return `<div class="consulta-fechas-fila"><div class="consulta-fechas" role="group" aria-label="${escapeHtml(t('conFechaResultados'))}" aria-busy="${cargando}">
     ${mover(-1, 'conDiaAnterior', '‹')}
     <label><span class="sr-only">${escapeHtml(t('conFechaResultados'))}</span><input type="date" data-fecha-resultados value="${escapeHtml(p.fecha)}" min="0001-01-01" max="9999-12-31"${cargando ? ' disabled' : ''}></label>
-    ${mover(1, 'conDiaSiguiente', '›')}</div>${notaFechaMotor(p.id)}${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
+    ${mover(1, 'conDiaSiguiente', '›')}</div>${resumen}</div>${notaFechaMotor(p.id)}${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
 }
 
 function cuerpoConsulta(){
@@ -5769,15 +5784,19 @@ function htmlCandidatos(d){
 function htmlFicha(d){
   const vacio = idResultadosMotorValido(PUNTUAL.id) ? 'conMotorSinSesiones' : d.tipo === 'resultados' ? 'conSinPartidos' : d.tipo === 'clasificacion' ? 'conSinTabla' : 'conSinResultados';
   const estado = estadoConsulta(d, vacio, { x: PUNTUAL.activa.texto });
-  if (estado) return estado + htmlPieConsulta(d);
+  if (estado) return htmlFechasResultados() + estado + htmlPieConsulta(d);
   const pintar = d.ficha?.vista ? VISTAS_CONSULTA[d.ficha.vista]?.ficha : FICHAS_CONSULTA[d.tipo];
-  if (!pintar || !d.ficha) return msgConsulta('conNoAdmitida');
+  if (!pintar || !d.ficha) return htmlFechasResultados() + msgConsulta('conNoAdmitida');
   const r = pintar(d.ficha);
   const linea = [r.linea, d.incompleto ? t('conParcial') : ''].filter(Boolean).join(' · ');
-  const ficha = `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
-    linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}</summary>
+  const titulo = `<strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}`;
+  if (!esDeporteConsulta(d.tipo)) return `<details class="consulta-ficha" open><summary class="consulta-foco">${titulo}</summary>
     <div class="consulta-cuerpo">${r.cuerpo}</div></details>${htmlPieConsulta(d)}`;
-  return esDeporteConsulta(d.tipo) ? `<div class="consulta-deporte">${ficha}</div>` : ficha;
+  // Deportes: sin plegable, que repetía el título y restaba una línea; la
+  // lista del día comparte fila con la fecha y el partido lleva su marcador.
+  const resumen = `<p class="consulta-resumen consulta-foco" tabindex="-1">${titulo}</p>`;
+  const cabecera = htmlFechasResultados(resumen) || r.cabecera?.(linea) || resumen;
+  return `<div class="consulta-deporte"><div class="consulta-ficha">${cabecera}<div class="consulta-cuerpo">${r.cuerpo}</div></div>${htmlPieConsulta(d)}</div>`;
 }
 
 // Fuente y licencia, siempre a la vista; en deportes, la hora y Actualizar.
@@ -5860,6 +5879,28 @@ function textoEliminatoria(f){
   ].filter(Boolean).join(' · ');
 }
 
+const INCIDENCIAS_POR_TIPO = [['conGoles', ['gol', 'propia', 'penalti']], ['conStatAmarillas', ['amarilla']], ['conStatRojas', ['roja', 'segundaAmarilla']]];
+const nombreIncidencia = e => t('conInc' + e.tipo[0].toUpperCase() + e.tipo.slice(1));
+
+// Por tipo y equipo, para leerlo de un vistazo, y debajo la cronología, que es
+// el partido en orden. El proveedor no dice quién entra y quién sale en un
+// cambio: se cuentan por tipo y sus nombres van, sin rol, en la cronología.
+function htmlIncidencias(f){
+  const lista = f.incidencias || [];
+  if (!lista.length) return '';
+  const nombres = (tipos, lado) => lista.filter(e => e.equipo === lado && tipos.includes(e.tipo)).map(e =>
+    `<span class="consulta-inc">${escapeHtml([e.jugadores.join(' · '), e.minuto, e.tipo === tipos[0] ? '' : `(${nombreIncidencia(e)})`].filter(Boolean).join(' '))}</span>`).join('');
+  const cambios = lado => lista.filter(e => e.equipo === lado && e.tipo === 'cambio').length;
+  const fila = (clave, local, visitante) => local || visitante ? `<tr><td>${local || '—'}</td><th scope="row">${escapeHtml(t(clave))}</th><td>${visitante || '—'}</td></tr>` : '';
+  const porTipo = INCIDENCIAS_POR_TIPO.map(([clave, tipos]) => fila(clave, nombres(tipos, 'local'), nombres(tipos, 'visitante'))).join('')
+    + fila('conCambios', cambios('local'), cambios('visitante'));
+  const cronologia = `<ul class="consulta-incidencias">${lista.map(e => `<li><span>${escapeHtml(e.minuto ?? '—')}</span><span><strong>${escapeHtml(nombreIncidencia(e))}</strong>${
+    e.jugadores.length ? ` · ${escapeHtml(e.jugadores.join(' · '))}` : ''} · ${equipoConsulta(f[e.equipo] || '—')}</span></li>`).join('')}</ul>`;
+  return `<table class="consulta-comparativa consulta-por-tipo"><caption>${escapeHtml(t('conIncidencias'))}</caption><thead><tr><th scope="col">${equipoConsulta(f.local)}</th>
+    <td></td><th scope="col">${equipoConsulta(f.visitante)}</th></tr></thead><tbody>${porTipo}</tbody></table>
+    ${plegadoConsulta(t('conCronologia'), cronologia, !globalThis.matchMedia?.('(max-width: 600px)').matches)}`;
+}
+
 function fichaPartido(f){
   const val = v => escapeHtml(v ?? '—');
   const equipo = lado => f[lado] || '—';
@@ -5870,10 +5911,7 @@ function fichaPartido(f){
       const formato = v => v == null ? '—' : s.id === 'posesion' && !String(v).includes('%') ? v + '%' : v;
       return `<tr><td>${val(formato(s.local))}</td><th scope="row">${escapeHtml(statPartido(s.id))}</th><td>${val(formato(s.visitante))}</td></tr>`;
     }).join('')}</tbody></table>` : '';
-  const incidencias = (f.incidencias || []).length ? `<h3 class="consulta-sub">${escapeHtml(t('conIncidencias'))}</h3>
-    <ul class="consulta-incidencias">${f.incidencias.map(e => `<li><span>${val(e.minuto)}</span><span>
-      <strong>${escapeHtml(t('conInc' + e.tipo[0].toUpperCase() + e.tipo.slice(1)))}</strong> · ${equipoConsulta(equipo(e.equipo))}
-      ${e.jugadores.length ? `<span class="consulta-inc-jugadores">${escapeHtml(e.jugadores.join(' · '))}</span>` : ''}</span></li>`).join('')}</ul>` : '';
+  const incidencias = htmlIncidencias(f);
   const alineaciones = (f.alineaciones || []).length ? plegadoConsulta(t('conAlineaciones'), equipos(lado => {
     const a = f.alineaciones.find(x => x.equipo === lado);
     if (!a) return '';
@@ -5897,14 +5935,15 @@ function fichaPartido(f){
       <thead><tr><th scope="col">${escapeHtml(t('conJugador'))}</th>${['minutos', 'puntos', 'rebotes', 'asistencias'].map(k => `<th scope="col"><abbr title="${escapeHtml(statPartido(k))}">${escapeHtml(t('conAbrev' + k[0].toUpperCase() + k.slice(1)))}</abbr></th>`).join('')}</tr></thead>
       <tbody>${tabla.filas.map(p => `<tr><th scope="row">${escapeHtml(p.nombre)}</th>${['minutos', 'puntos', 'rebotes', 'asistencias'].map(k => `<td>${val(p[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>` : '';
   })) : '';
+  // Sin tanteo (por jugar, aplazado) no se pinta un marcador vacío de dos cifras.
+  const tanteo = f.marcador ? `${val(f.marcador.local)} – ${val(f.marcador.visitante)}` : '–';
+  const bloques = [parciales + estadisticas, incidencias + destacados].filter(Boolean).map(b => `<div>${b}</div>`).join('');
   return {
     titulo: `${f.local || t('conEquipoPendiente')} · ${f.visitante || t('conEquipoPendiente')}`,
-    linea: [nombreDeporteConsulta(f.competicion), fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj].filter(Boolean).join(' · '),
-    cuerpo: `<div class="consulta-marcador"><span>${equipoConsulta(f.local)}</span><b>${val(f.marcador?.local)}</b>
-      <span>${equipoConsulta(f.visitante)}</span><b>${val(f.marcador?.visitante)}</b></div>
-      ${textoEliminatoria(f) ? `<p class="consulta-nota">${escapeHtml(textoEliminatoria(f))}</p>` : ''}
-      ${f.lugar ? `<p class="consulta-lugar">${escapeHtml([f.lugar, f.ciudad].filter(Boolean).join(' · '))}</p>` : ''}
-      ${parciales}${estadisticas}${incidencias}${destacados}${alineaciones}${jugadores}`,
+    linea: [nombreDeporteConsulta(f.competicion), fechaPartidoConsulta(f.inicio), estadoTextoPartido(f.estado), f.reloj, f.lugar, f.ciudad].filter(Boolean).join(' · '),
+    cabecera: linea => `<div class="consulta-partido consulta-foco" tabindex="-1"><p class="consulta-marcador"><span>${equipoConsulta(f.local)}</span><b>${tanteo}</b><span>${equipoConsulta(f.visitante)}</span></p>
+      <p class="consulta-datos">${escapeHtml(linea)}</p>${textoEliminatoria(f) ? `<p class="consulta-nota">${escapeHtml(textoEliminatoria(f))}</p>` : ''}</div>`,
+    cuerpo: `${bloques ? `<div class="consulta-bloques">${bloques}</div>` : ''}${alineaciones}${jugadores}`,
   };
 }
 
@@ -5994,20 +6033,24 @@ const FICHAS_CONSULTA = {
       if (!dias.has(clave)) dias.set(clave, []);
       dias.get(clave).push(p);
     }
-    const marcador = v => escapeHtml(v ?? '—');
-    const cuerpo = [...dias].map(([fecha, lista]) => `${fecha ? `<p class="consulta-sub">${escapeHtml(fecha)}</p>` : ''}<ul class="consulta-partidos">${
+    const marcador = v => escapeHtml(v ?? '');
+    // Un solo día, el del selector: el encabezado lo repetiría. NBA puede traer
+    // otro día en la zona del lector y entonces sí hace falta.
+    const fijado = dias.size === 1 && fechaValida(PUNTUAL.fecha) && dias.has(dia.format(new Date(PUNTUAL.fecha + 'T12:00:00')));
+    const cuerpo = [...dias].map(([fecha, lista]) => `${fecha && !fijado ? `<p class="consulta-sub">${escapeHtml(fecha)}</p>` : ''}<ul class="consulta-partidos">${
       lista.map(p => {
         if (p.vista) return VISTAS_CONSULTA[p.vista]?.fila?.(p) || '';
         const inicio = new Date(p.inicio);
-        const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estadoTextoPartido(p.estado)].filter(Boolean).join(' · ');
+        const cab = p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : estadoTextoPartido(p.estado);
         const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b>${textoEliminatoria(p) ? `<span class="consulta-estado">${escapeHtml(textoEliminatoria(p))}</span>` : ''}`;
         const abrir = idPartidoConsultaValido(p.id);
         return `<li${claseMarcada(casaEquipo(p.local) || casaEquipo(p.visitante))} data-estado="${escapeHtml(p.estado || '')}">${abrir ? `<button type="button" data-accion="partido" data-id="${escapeHtml(p.id)}" aria-label="${escapeHtml(t('conAbrirPartido', { x: `${p.local || t('conEquipoPendiente')} · ${p.visitante || t('conEquipoPendiente')}` }))}">${contenido}</button>` : contenido}</li>`;
       }).join('')}</ul>`).join('');
+    const estados = [['en_juego', 'conNEnJuego'], ['final', 'conNFinal'], ['programado', 'conNProgramado']].filter(([e]) => cuenta[e]);
     return {
       titulo: `${nombreDeporteConsulta(f.competicion)} · ${tn('conPartidos', partidos.length)}`,
-      linea: [['en_juego', 'conNEnJuego'], ['final', 'conNFinal'], ['programado', 'conNProgramado']]
-        .filter(([e]) => cuenta[e]).map(([e, k]) => tn(k, cuenta[e])).join(' · '),
+      // Todos en el mismo estado: las tarjetas ya lo dicen.
+      linea: estados.length > 1 ? estados.map(([e, k]) => tn(k, cuenta[e])).join(' · ') : '',
       cuerpo,
     };
   },
@@ -6673,7 +6716,7 @@ VISTAS_CONSULTA.encuentro_tenis = {
   resultados(f){
     const partidos = f.partidos || [];
     return { titulo: `${CONSULTA_DEPORTES[f.competicion]} · ${tn('conEncuentrosTenis', partidos.length)}`,
-      linea: f.fecha || '', cuerpo: `<p class="consulta-nota">${escapeHtml(t('conFechaTenis'))}</p>
+      cuerpo: `<p class="consulta-nota">${escapeHtml(t('conFechaTenis'))}</p>
         <ul class="consulta-partidos">${partidos.map(filaTenis).join('')}</ul>` };
   },
   ficha(f){
@@ -6723,7 +6766,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=83e245ade0')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=a7a0327c0d')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
