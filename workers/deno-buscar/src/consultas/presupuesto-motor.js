@@ -2,7 +2,7 @@
 export function crearPresupuestoMotor({ ahora, dormir }) {
   const proveedores = new Map();
   return async (proveedor, tarea) => {
-    if (!['openf1', 'motogp'].includes(proveedor)) return tarea();
+    if (!['openf1', 'motogp', 'euroliga'].includes(proveedor)) return tarea();
     if (!proveedores.has(proveedor)) proveedores.set(proveedor, { cola: Promise.resolve(), pendientes: 0, ultima: -Infinity });
     const p = proveedores.get(proveedor);
     if (p.pendientes >= 6) throw new Error(`Presupuesto de ${proveedor} ocupado`);

@@ -6,6 +6,8 @@ const uuid = new RegExp(`^${UUID_MOTOR}$`);
 const lista = d => { if (!Array.isArray(d)) throw new Error('Motor: respuesta sin lista'); return d; };
 const url = (base, parametros) => `${base}?${new URLSearchParams(parametros)}`;
 // Los nombres se resuelven por temporada; Moto2 y Moto3 no son consultas públicas.
+// Un vacío puede dejar de serlo en minutos: guardarlo aquí alargaría el TTL de la ficha.
+const sinDatos = d => Array.isArray(d) ? !d.length : Array.isArray(d?.classification) && !d.classification.length;
 const CATEGORIAS = { motogp: 'MotoGP™', moto2: 'Moto2™', moto3: 'Moto3™' };
 
 export function crearMotor({ pedir, ahora, abrirCache }) {
@@ -20,7 +22,7 @@ export function crearMotor({ pedir, ahora, abrirCache }) {
     if (enCurso.has(direccion)) return enCurso.get(direccion);
     const tarea = (async () => {
       const datos = await pedir(proveedor, direccion);
-      await cache.put(req, Response.json({ datos, caduca: ahora() + ttl * 1000 })).catch(() => {});
+      if (!sinDatos(datos)) await cache.put(req, Response.json({ datos, caduca: ahora() + ttl * 1000 })).catch(() => {});
       return datos;
     })();
     enCurso.set(direccion, tarea);

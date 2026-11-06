@@ -15,7 +15,7 @@ const TMDB = 'https://api.themoviedb.org/3';
 const fallo = (mensaje, status = 503) => Object.assign(new Error(mensaje), { status });
 
 // Presupuestos por instancia, como el límite por IP. No son cuotas globales
-// entre réplicas. Open Library y EuroLeague se serializan por instancia.
+// entre réplicas. Open Library se serializa para espaciar también las fichas.
 export function crearPresupuesto({ ahora = Date.now, dormir = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
   const motor = crearPresupuestoMotor({ ahora, dormir });
   let cola = Promise.resolve(), pendientes = 0, ultima = -Infinity, dia = '', cuenta = 0;
@@ -26,8 +26,8 @@ export function crearPresupuesto({ ahora = Date.now, dormir = ms => new Promise(
       if (cuenta >= maxDiario) throw fallo('Presupuesto diario de ESPN agotado');
       cuenta++;
     }
-    if (proveedor !== 'openlibrary' && proveedor !== 'euroliga') return motor(proveedor, tarea);
-    if (pendientes >= 6) throw fallo(`Presupuesto de ${proveedor} ocupado`);
+    if (proveedor !== 'openlibrary') return motor(proveedor, tarea);
+    if (pendientes >= 6) throw fallo('Presupuesto de Open Library ocupado');
     pendientes++;
     const trabajo = cola.then(async () => {
       const espera = ultima + 1000 - ahora();
@@ -218,8 +218,10 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
         } else if (/^wikipedia:[^\x00-\x1f]{1,250}$/.test(id || '')) tipo = 'contexto';
         else throw fallo('Identificador no válido', 400);
       } else if (id || !texto || texto.length > 250 || !Object.hasOwn(CONSULTAS, tipo)) throw fallo('Tipo o texto no válido', 400);
+      // Con ID manda el ID: `texto` no debe cambiar proveedor ni atribución.
+      const euroliga = id ? id.startsWith('euroliga:') : texto === 'euroliga';
       if ((tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido') && !leerIdMotor(id) && !(!id && admiteConsultaMotor(tipo, texto))) {
-        if (texto === 'euroliga') {
+        if (euroliga) {
           if (tipo !== 'resultados' && tipo !== 'partido') throw fallo('Consulta no disponible para esta competición', 400);
         } else {
           if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
@@ -229,7 +231,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       }
       if (fecha !== null && (tipo !== 'resultados' || url.pathname !== '/consulta/ficha'
           || !normalizar.fechaResultadosValida(fecha))) throw fallo('Fecha de resultados no válida', 400);
-      const propia = texto === 'euroliga' ? FUENTE_EUROLIGA
+      const propia = euroliga ? FUENTE_EUROLIGA
         : FUENTES_MOTOR[leerIdMotor(id)?.proveedor || (!id && admiteConsultaMotor(tipo, texto) ? texto === 'f1' ? 'openf1' : 'motogp' : '')];
       const [fuente, enlace, nombre, licenciaUrl] = propia
         ? [propia.nombre, propia.url, propia.licencia, propia.licencia_url] : FUENTES[tipo];

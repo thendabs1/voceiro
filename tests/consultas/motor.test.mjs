@@ -42,8 +42,8 @@ function banco({ resultadoF1, carreraMoto } = {}) {
     }
     assert.fail(`Petición no prevista: ${direccion}`);
   } });
-  return { peticiones, guardadas, pausas, async pedir(id, fecha) {
-    const r = await consultar(new URL(`https://voceiro.test/consulta/ficha?${new URLSearchParams({ id, ...(fecha === undefined ? {} : { fecha }) })}`));
+  return { peticiones, guardadas, pausas, async pedir(id, fecha, idioma) {
+    const r = await consultar(new URL(`https://voceiro.test/consulta/ficha?${new URLSearchParams({ id, ...(fecha === undefined ? {} : { fecha }), ...(idioma ? { idioma } : {}) })}`));
     return { r, d: await r.json() };
   } };
 }
@@ -173,4 +173,23 @@ test('presupuestos: OpenF1 queda por debajo de 30/min y MotoGP a una petición/s
   for (const inicio of inicios) assert.ok(inicios.filter(t => t >= inicio && t < inicio + 60000).length <= 30);
   const moto = []; for (let i = 0; i < 3; i++) await presupuesto('motogp', async () => { moto.push(t); });
   assert.deepEqual(moto.map(t => t - moto[0]), [0, 1000, 2000]);
+});
+
+test('Euroliga y Open Library no comparten cola: seis pendientes de una no bloquean la otra', async () => {
+  let t = 0, soltar; const espera = new Promise(r => { soltar = r; });
+  const presupuesto = crearPresupuesto({ ahora: () => t, dormir: async ms => { t += ms; } });
+  const pendientes = Array.from({ length: 6 }, () => presupuesto('euroliga', () => espera));
+  assert.equal(await presupuesto('openlibrary', async () => 'libro'), 'libro');
+  soltar(); await Promise.all(pendientes);
+});
+
+test('una sesión sin resultados no se guarda como vacío en la caché de origen', async () => {
+  let vacio = true;
+  const b = banco({ resultadoF1: () => vacio ? new Response(null, { status: 404 }) : null });
+  assert.deepEqual((await b.pedir(idF1)).d.ficha.filas, []);
+  const antes = b.peticiones.filter(u => u.pathname === '/v1/session_result').length;
+  vacio = false;
+  const d = (await b.pedir(idF1, undefined, 'gl')).d;
+  assert.equal(b.peticiones.filter(u => u.pathname === '/v1/session_result').length, antes + 1);
+  assert.equal(d.ficha.filas.length, 3);
 });

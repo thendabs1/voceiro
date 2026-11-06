@@ -53,7 +53,8 @@ function pintarAccesos(){
       ir('resultados', t('accResultados')), ir('clasificaciones', t('accClasificaciones')), ir('competiciones', t('accCompeticiones'))];
   } else if (p === 'resultados'){
     titulo = t('accResultadosTitulo');
-    filas = CAL_COMPETICIONES.filter(c => codigoDeporte('resultados', c)).map(c => fila('resultados:' + c, nombre(c)));
+    filas = [...CAL_COMPETICIONES, 'euroliga'].filter(c => codigoDeporte('resultados', c))
+      .map(c => fila('resultados:' + c, c === 'euroliga' ? t('conEuroliga') : nombre(c)));
   } else if (p === 'clasificaciones'){
     titulo = t('accClasificacionesTitulo');
     filas = CAL_COMPETICIONES.filter(c => codigoDeporte('clasificacion', c)).map(c => fila('clasificacion:' + c, nombre(c)));
