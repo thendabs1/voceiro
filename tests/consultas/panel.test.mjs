@@ -8,12 +8,12 @@ import { runInNewContext } from 'node:vm';
 import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
 import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
 import { rangosResaltado } from '../../shared/busqueda/texto.js';
-import { ESPN, admiteConsultaESPN } from '../../shared/consultas/registro.js';
+import { ESPN, admiteConsultaESPN, MOTOR, admiteConsultaMotor } from '../../shared/consultas/registro.js';
 import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
 import { traducir } from '../../front/idiomas/index.js';
 import { resultadosEuroliga, partidoEuroliga } from '../../workers/deno-buscar/src/consultas/euroliga.js';
 
-const codigo = readFileSync(new URL('../../front/app/14-consultas.js', import.meta.url), 'utf8');
+const codigo = ['14-consultas.js', '14-motor.js', '14-tenis.js'].map(n => readFileSync(new URL(`../../front/app/${n}`, import.meta.url), 'utf8')).join('\n');
 const BASE = 'https://buscar.example';
 const futuro = () => new Date(Date.now() + 3600e3).toISOString();
 const envoltorio = (tipo, extra) => ({
@@ -35,7 +35,7 @@ function contexto({ buscar = '', responder }) {
   const entrada = { value: buscar };
   const pedidas = [];
   const ctx = {
-    BACKENDS: { deno: { buscar: BASE } }, ESPN, admiteConsultaESPN, ACCES: { lang: 'es' },
+    BACKENDS: { deno: { buscar: BASE } }, ESPN, admiteConsultaESPN, MOTOR, admiteConsultaMotor, ACCES: { lang: 'es' },
     t: (k, v) => traducir('es', k, v), ico: n => `<${n}>`,
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
     normalize, tokenizeQuery, rangosResaltado, fechaValida, sumarDiasCalendario, Intl, Date, URLSearchParams, AbortSignal, Promise, Map, Set, JSON, Object, Error, isNaN,
@@ -113,13 +113,14 @@ test('un código deportivo pide la ficha directamente, sin candidatos', async ()
   assert.doesNotMatch(panel.innerHTML, /data-accion="actualizar"/);
 });
 
-test('resultados:f1 y un código desconocido no piden nada y ofrecen competiciones', async () => {
+test('un código desconocido no pide nada y ofrece competiciones, incluidas las de motor', async () => {
   const { panel, pedidas, actualizar, pulsar, entrada } = contexto({ responder: () => assert.fail('no debe pedir') });
-  actualizar('incendio resultados:f1');
+  actualizar('incendio resultados:desconocido');
   await esperar();
   assert.deepEqual(pedidas, []);
   assert.match(panel.innerHTML, /Elige una competición/);
-  assert.doesNotMatch(panel.innerHTML, /data-valor="f1"/);
+  assert.match(panel.innerHTML, /data-valor="f1"/);
+  assert.match(panel.innerHTML, /data-valor="motogp"/);
   assert.match(panel.innerHTML, /data-valor="wnba"/);
   pulsar({ accion: 'valor', valor: 'primera' });
   assert.equal(entrada.value, 'incendio resultados:primera');

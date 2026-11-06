@@ -64,6 +64,10 @@ const CAPACIDADES_ESPN = {
 const admiteConsultaESPN = (tipo, codigo) => Object.hasOwn(CAPACIDADES_ESPN, codigo)
   && CAPACIDADES_ESPN[codigo].includes(tipo);
 
+// Resultados por sesión; la clasificación F1 sigue en ESPN.
+const MOTOR = { f1: 'openf1', motogp: 'motogp' };
+const admiteConsultaMotor = (tipo, codigo) => tipo === 'resultados' && Object.hasOwn(MOTOR, codigo);
+
 
 // Consultas cuyo valor es un código de una palabra, no un título.
 const CONSULTAS_DE_CODIGO = new Set(['clasificacion', 'resultados', 'partido']);
