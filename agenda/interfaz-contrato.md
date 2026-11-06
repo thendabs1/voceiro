@@ -42,6 +42,11 @@ de ahí salen las cuatro entradas, y cada enlace escribe su orden en la barra.
 - `‹ mes ›` va siempre en la barra, junto a los atajos: no cambia de sitio con la
   semana, el mes ni el ancho. Las marcas de competición son la misma pastilla en
   ambas vistas, todas; solo en móvil se cortan en cinco con `+N`.
+- Con una o dos competiciones, escritas o elegidas, el mes enseña sus partidos (hasta
+  cinco por día y `+N`) y sus GP y torneos en barra, y «Próximas semanas» no se pinta:
+  repetiría la rejilla. Con más, solo marcas.
+- Una consulta sobre lo que una competición no tiene (`resultados:feb-primera`) lo
+  dice y ofrece lo que sí tiene, encima de la vista general.
 - Las fichas deportivas no van en un `<details>`, y `.consulta-foco` marca dónde
   cae el foco. Libros, películas y contexto lo conservan.
 - Partido: marcador, y bajo él fecha, estado y sede. Las incidencias van por tipo

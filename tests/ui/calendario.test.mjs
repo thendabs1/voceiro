@@ -96,7 +96,7 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
     document: { activeElement: null, getElementById: id => id === 'calendario-panel' ? panel : id === 'cal-evento-dialogo' ? dialogo : id === 'buscar' ? buscar
       : id.startsWith('cal-sug-') ? (sugerencias[id] ??= { innerHTML: '' }) : { addEventListener(){}, setAttribute(){}, focus(){} } },
   };
-  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calContenido, calChips, calChipsDeportes, calTituloPeriodo, calMarcasHtml, calDonde, calAsistente, wireCalendario, abrirCalendario,
+  runInNewContext(codigo + `\nthis.api = { s: CALENDARIO, calPartidosEnMes, calCompeticionesPedidas, calCuentas, calContenido, calChips, calChipsDeportes, calTituloPeriodo, calMarcasHtml, calDonde, calAsistente, wireCalendario, abrirCalendario,
     calCancelarAsistente, cerrarCalendario, actualizarConsultaCalendario, calOtraPublicacion }; pintarCalendario = () => {};`, c);
   c.api.wireCalendario();
   c.api.s.zona = 'Europe/Madrid';
@@ -503,7 +503,9 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   // Tocar una competición del bloque deja solo su capa.
   await c.click('solo', 'nba');
   assert.equal(c.resumen().get('q'), 'deporte:nba');
-  assert.match(c.api.calContenido(), /data-cal="solo" data-valor="nba" aria-pressed="true"/);
+  // Con una competición el bloque repetiría la rejilla: no se pinta.
+  assert.doesNotMatch(c.api.calContenido(), /cal-temporada/);
+  await c.click('capas-todas');
   // Las cuatro semanas siguientes: el bloque sigue abierto y pide esas semanas.
   await c.click('siguiente');
   const otro = c.pedidas.findLast(u => u.searchParams.get('circuitos')).searchParams;
@@ -815,7 +817,7 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   c.api.s.meta.colecciones = [{ coleccion: 'nba', estado: 'activa', calendario_completo: false, unidades: [{ fin: '2026-11-08' }, { fin: '2026-11-11' }] }];
   let html = c.api.calContenido();
   const dia = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
-  assert.match(dia, /<span class="cal-mg-chip cal-cat-cultura"><b>18:00<\/b> A2026-10-27<\/span><span class="cal-mg-chip cal-cat-otras">B2026-10-27<\/span>/);
+  assert.match(dia, /<span class="cal-mg-chip cal-cat-cultura" title="A2026-10-27"><b>18:00<\/b> A2026-10-27<\/span><span class="cal-mg-chip cal-cat-otras" title="B2026-10-27">B2026-10-27<\/span>/);
   assert.match(dia, /<span class="cal-mg-mas">\+23 más<\/span><\/button>/);
   assert.doesNotMatch(dia, /cal-marca/);
   // Más allá del último día publicado (11-11), rayado y con su nota.
@@ -826,6 +828,26 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   c.api.s.meta.colecciones[0].calendario_completo = true;
   html = c.api.calContenido();
   assert.doesNotMatch(html, /cal-sin-publicar/);
+});
+
+test('Deportes escrita con prefijo: sus partidos, sus torneos en barra y sin «Próximas semanas»', async () => {
+  const c = contexto();
+  c.hoy = '2026-10-26';
+  c.api.s.vista = 'deportes'; c.api.s.mesAbierto = true; c.api.s.capas = null;
+  c.api.s.orden = consulta.leerConsultaCalendario('nba:');
+  assert.equal(c.api.calPartidosEnMes(), true);
+  assert.deepEqual([...c.api.calCompeticionesPedidas()], ['nba']);
+  c.api.s.orden = consulta.leerConsultaCalendario('circuito:atp');
+  assert.deepEqual([...c.api.calCompeticionesPedidas()], ['atp']);
+  c.api.s.orden = consulta.leerConsultaCalendario('nba: atp: f1:');
+  assert.equal(c.api.calPartidosEnMes(), false);
+});
+
+test('el día de un GP en curso no dice «0 citas»', () => {
+  const c = contexto();
+  assert.equal(c.api.calCuentas({ citas: 0, programas: 0, en_curso: 1 }), '1 en curso');
+  assert.equal(c.api.calCuentas({ citas: 0, programas: 0, en_curso: 0 }), '0 citas');
+  assert.equal(c.api.calCuentas({ citas: 2, programas: 0, en_curso: 1 }), '2 citas · 1 en curso');
 });
 
 test('Deportes escrita con prefijo (`nba:`) también raya lo aún sin publicar', async () => {

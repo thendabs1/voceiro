@@ -387,7 +387,7 @@ function cuerpoConsulta(){
         return msgConsulta('conCompeticion') + opcionesConsulta(DEPORTES_ORDEN.flatMap(competicionesDeporte).filter(k => codigoDeporte(c.tipo, k))
           .map(k => botonConsulta('valor', nombreDeporteConsulta(k), ` data-valor="${k}"`)).join(''));
       }
-      if (esDeporteConsulta(c.tipo)) return htmlVistaDeportes(c.tipo);
+      if (esDeporteConsulta(c.tipo)) return avisoSinConsulta(c) + htmlVistaDeportes(c.tipo);
       return msgConsulta('conAyuda', { p: c.prefijo, ej: CONSULTA_EJEMPLOS[c.tipo] });
     case 'corta': return msgConsulta('conCorta') + opcionesConsulta(botonConsulta('forzar', t('conBuscarIgual', { x: c.texto })));
     case 'cargando': return msgConsulta('conCargando');
@@ -488,7 +488,7 @@ function tablaConsulta(filas, cols, nombre){
 }
 
 function nombreGrupoConsulta(g){
-  const clave = { 'Eastern Conference': 'conEste', 'Western Conference': 'conOeste', 'League Phase': 'conFaseLiga' }[g.nombre];
+  const clave = { 'Eastern Conference': 'conEste', 'Western Conference': 'conOeste', 'League Phase': 'conFaseLiga', 'Driver Standings': 'conPilotos', 'Constructor Standings': 'conConstructores' }[g.nombre];
   return clave ? t(clave) : g.nombre || '';
 }
 

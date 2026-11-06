@@ -18,7 +18,8 @@ function escenario({ sigo = [], buscar = '' } = {}){
   const ids = { 'accesos-panel': el(), 'buscar-accesos': el(), buscar: { value: buscar } };
   const escritas = [];
   const c = {
-    $: sel => ids[sel.slice(1)], t: (k, v) => traducir('es', k, v), tokenizeQuery, leerConsultaCalendario, AMBITOS, PREFIJOS_CONSULTAS,
+    $: sel => ids[sel.slice(1)], t: (k, v) => traducir('es', k, v), tokenizeQuery, normalize: x => x.toLowerCase(),
+    msgConsulta: (k, v) => traducir('es', k, v), opcionesConsulta: x => x, nombreConsulta: () => 'Resultados', leerConsultaCalendario, AMBITOS, PREFIJOS_CONSULTAS,
     calEsc: s => String(s), escapeHtml: s => String(s), calNombreCompeticion: x => NOMBRES[x] || x, CONSULTA_DEPORTES: NOMBRES,
     calPreferencias: () => ({ competiciones: sigo }), CAL_DEPORTES: structuredClone(CAL_DEPORTES),
     CAL_NOMBRES_DEPORTE: { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis' },
@@ -50,6 +51,15 @@ test('lo seguido va primero, hasta cuatro; sin citas pierde el calendario, no su
   assert.ok(ordenes(s).includes('calendario:motogp'));
   assert.ok(!ordenes(s).includes('calendario:wnba'));
   assert.ok(ordenes(s).includes('resultados:wnba'));
+});
+
+test('pedir lo que una competición no tiene lo dice y ofrece lo que sí', () => {
+  const s = escenario();
+  const aviso = (tipo, texto) => s.run(`avisoSinConsulta({ tipo: '${tipo}', texto: '${texto}' })`);
+  s.run("DEPORTES_DISP.circuitos = { 'feb-primera': 27 }; CAL_DEPORTES.baloncesto.push('feb-primera')");
+  assert.match(aviso('resultados', 'feb-primera'), /De .+ no hay resultados[\s\S]*data-orden="calendario:feb-primera"/);
+  assert.match(aviso('resultados', 'xyz'), /«xyz» no es una competición/);
+  assert.equal(aviso('resultados', ''), '');
 });
 
 test('el nombre abre lo primero que haya o lo pedido, y lo demás queda al lado', () => {
