@@ -162,7 +162,8 @@ function calParametros(){
   const s = CALENDARIO, o = calPideAgenda(s.orden) ? s.orden : null, deportes = calModoDeportes();
   const ambitos = [...(o?.ambitos || []).filter(a => Boolean(AMBITOS[a]?.codigo) === deportes), ...(deportes ? s.capas || [] : [])];
   const circuitos = deportes ? o?.circuitos || [] : [];
-  const q = [...ambitos.map(a => a + ':'), ...(circuitos.length ? ['circuito:' + circuitos.join(',')] : [])].join(' ');
+  // Con `deporte:` el worker ignora una competición que aún no conozca; con prefijos sueltos, 400.
+  const q = [...(ambitos.length ? ['deporte:' + ambitos.join(',')] : []), ...(circuitos.length ? ['circuito:' + circuitos.join(',')] : [])].join(' ');
   // La agenda va siempre acotada a su sitio (territorio estricto); Deportes,
   // por competición y sin sitio: las competiciones no tienen territorio.
   return { zona: s.zona, q, texto: calLibre(o?.resto), temas: deportes ? '' : [...s.temas].join(','),

@@ -289,6 +289,37 @@ test('validación antes de Turso; fallos de transporte y cambios entre snapshots
   } finally { b.db.close(); }
 });
 
+test('prefijos deporte y circuito ignoran competiciones desconocidas sin vaciar mezclas ni abrir el filtro', async t => {
+  const b = base(muestraGP()); t.after(() => b.db.close());
+  const q = 'deporte:f1,competicion-futura';
+  const parametros = ventana.slice(ventana.indexOf('?'));
+  const conocida = await b.pedir(`/calendario/eventos${parametros}&q=${encodeURIComponent(q)}`);
+  assert.equal(conocida.status, 200);
+  assert.deepEqual(conocida.dato.eventos.map(e => e.id), ['gp']);
+  const conocidaSolo = await b.pedir(`/calendario/eventos${parametros}&q=${encodeURIComponent('deporte:f1')}`);
+  assert.deepEqual(conocidaSolo.dato.eventos.map(e => e.id), ['gp']);
+  const cMixto = normalizarConsulta(new URL(`https://x.test${ventana}&q=${encodeURIComponent(q)}`));
+  const cSolo = normalizarConsulta(new URL(`https://x.test${ventana}&q=${encodeURIComponent('deporte:f1')}`));
+  assert.deepEqual(cMixto, cSolo);
+
+  for (const prefijo of ['deporte', 'circuito']) {
+    const soloDesconocidas = encodeURIComponent(`${prefijo}:competicion-futura`);
+    const lista = await b.pedir(`/calendario/eventos${parametros}&q=${soloDesconocidas}`);
+    assert.equal(lista.status, 200); assert.deepEqual(lista.dato.eventos, []);
+    const chips = await b.pedir(`/calendario/eventos${parametros}&chips=1&q=${soloDesconocidas}`);
+    assert.equal(chips.status, 200); assert.deepEqual(chips.dato.eventos, []);
+    const resumen = await b.pedir(`/calendario/resumen?desde=2026-10-23&hasta=2026-10-29&muestras=2&q=${soloDesconocidas}`);
+    assert.equal(resumen.status, 200);
+    assert.ok(resumen.dato.dias.every(d => d.cantidad === 0 && d.muestras.length === 0));
+  }
+  // Forma real que envía la vista Deportes.
+  assert.deepEqual((await b.pedir(`/calendario/eventos${parametros}&q=${encodeURIComponent('deporte:f1,competicion-futura circuito:futuro')}`)).dato.eventos.map(e => e.id), ['gp']);
+  for (const qInvalida of ['eventos:desconocido', 'circuito:tenis', 'f1: competicion-futura:']) {
+    const r = await b.pedir(`/calendario/eventos${parametros}&q=${encodeURIComponent(qInvalida)}`);
+    assert.equal(r.status, 400, qInvalida);
+  }
+});
+
 test('HTTP Turso usa batch condicional en un snapshot, liga parámetros y cierra', async () => {
   let cuerpo;
   const simular = async (url, opciones) => {

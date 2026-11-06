@@ -54,7 +54,7 @@ export function normalizarConsulta(url) {
   if (!Number.isInteger(limite) || limite < 1 || limite > 50) throw error(400, 'Límite entre 1 y 50');
   const muestras = p.has('muestras') ? Number(p.get('muestras')) : 2;
   if (!Number.isInteger(muestras) || muestras < 0 || muestras > 5) throw error(400, 'Muestras entre 0 y 5');
-  const raw = p.get('q') || '', orden = leerConsultaCalendario(raw) || {};
+  const raw = p.get('q') || '', orden = leerConsultaCalendario(raw, { tolerante: true }) || {};
   if (orden.desconocidos?.length) throw error(400, 'Selección de calendario desconocida');
   if (esLista && orden.tipos?.length && !orden.tipos.some(t => ['calendario', 'resultados'].includes(t))) throw error(400, 'Esta ruta consulta eventos y resultados');
   const resto = orden.resto ?? raw;
@@ -89,7 +89,7 @@ function presentacionSql(zona, args) {
 }
 
 export function filtrosSql(c, meta, args) {
-  const condiciones = [];
+  const condiciones = c.orden.seleccionVacia ? ['0'] : [];
   const faceta = (tipo, valores) => {
     if (!valores.length) return;
     args.push(tipo, ...valores);
