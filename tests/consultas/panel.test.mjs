@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import { noticiaEnAmbitos } from '../../shared/calendario/consulta.js';
 import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
 import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
 import { rangosResaltado } from '../../shared/busqueda/texto.js';
@@ -57,7 +58,7 @@ function contexto({ buscar = '', responder }) {
     for (const [i, j] of rangosResaltado(texto, compilado)){ out += ctx.escapeHtml(texto.slice(last, i)) + '<mark>' + ctx.escapeHtml(texto.slice(i, j)) + '</mark>'; last = j; }
     return out + ctx.escapeHtml(texto.slice(last));
   };
-  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia, htmlCabeceraCompeticion, vistaCompeticion };', ctx);
+  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia, htmlCabeceraCompeticion, vistaCompeticion, noticiasDeLaFicha };', ctx);
   // Como aplicarFiltros: la consulta recibe el texto compilado de la búsqueda.
   const actualizar = raw => {
     entrada.value = raw;
@@ -689,6 +690,17 @@ test('una competición enlaza sus secciones, las de su deporte y la vista genera
   const tabla = ctx.api.htmlCabeceraCompeticion('primera', 'clasificacion');
   assert.match(tabla, /data-orden="clasificacion:segunda">Segunda/);
   assert.match(tabla, /data-orden="resultados:copa-del-rey">Copa del Rey/);
+});
+
+test('bajo una ficha, las noticias de su competición sin pedir a la prensa', async () => {
+  const { ctx, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  actualizar('resultados:primera'); await esperar();
+  const o = ctx.api.noticiasDeLaFicha();
+  assert.deepEqual([[...o.ambitos], o.noticias, o.sinPrensa], [['primera'], true, true]);
+  assert.equal(noticiaEnAmbitos('LaLiga: el Sevilla gana', o), true);
+  assert.equal(noticiaEnAmbitos('Hadassah abre un centro', o), false);
+  actualizar('resultados:'); await esperar();
+  assert.equal(ctx.api.noticiasDeLaFicha(), null);
 });
 
 test('la tarjeta abre los resultados de su día, también con esa consulta ya abierta', async () => {

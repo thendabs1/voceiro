@@ -85,6 +85,9 @@ posterior.
 
 ## Noticias de una competición
 
+Bajo resultados y clasificación salen las noticias de esa competición con ese mismo
+filtro, solo entre los titulares descargados y sin pedir a la prensa.
+
 La pestaña Noticias escribe `competicion:noticias`. El filtro casa el titular con
 `AMBITOS[c].noticias` en el cliente (`noticiaEnAmbitos`), sin clasificar la noticia.
 Por deporte no existe aún: `futbol:` no es un ámbito.

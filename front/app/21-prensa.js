@@ -195,7 +195,7 @@ function programarPrensa(consulta){
   const calendario = consulta.calendario;
   const ambitos = calendario ? (calendario.circuitos.length ? calendario.circuitos : calendario.ambitos) : [];
   const tieneQuery = !consulta.imposible
-    && (!calendario || calendario.noticias && !calendario.desconocidos.length)
+    && (!calendario || calendario.noticias && !calendario.desconocidos.length && !calendario.sinPrensa)
     && (consulta.texto.incluir.length || dominios !== null || ambitos.length)
     && !(dominios && dominios.size > 3);
   if (!tieneQuery || !PRENSA_ACTIVA){
