@@ -145,7 +145,7 @@ function htmlCabeceraCompeticion(codigo, tipo){
       boton(destino(c).orden, nombreCompeticionCorto(c), c === codigo, 'true')).join('')}</div>` : ''}
     <button type="button" class="dep-cerrar" data-cerrar aria-label="${escapeHtml(t('conCerrar'))}" title="${escapeHtml(t('conCerrar'))}">${ico('x')}</button></div>`;
 }
-const DEPORTES_CAB = { html: '', dia: '' };
+const DEPORTES_CAB = { html: '', dia: '', agenda: false };
 function pintarCabeceraCompeticion(){
   const nav = document.getElementById('competicion-cab');
   if (!nav) return;
@@ -155,9 +155,15 @@ function pintarCabeceraCompeticion(){
   clases.toggle('vista-deportes', deportes);
   document.getElementById('btn-deportes')?.setAttribute('aria-expanded', String(deportes));
   clases.toggle('con-competicion', Boolean(v));
-  // Las etiquetas de las consultas repiten la cabecera; las de otros filtros, no.
-  clases.toggle('sin-chips', document.querySelectorAll('#chips-busqueda .chip').length <= PUNTUAL.lista.length);
+  // Las etiquetas de las consultas repiten la cabecera o el cuadro; las de otros filtros, no.
+  const repite = Boolean(v) || activa?.tipo === 'deportes';
+  clases.toggle('sin-chips', repite && document.querySelectorAll('#chips-busqueda .chip').length <= PUNTUAL.lista.length);
   const html = v ? htmlCabeceraCompeticion(v.codigo, v.tipo) : '';
+  // Abrir o cerrar la agenda con una ficha a la vista cambia quién lleva su cierre.
+  if (s.abierto !== DEPORTES_CAB.agenda){
+    DEPORTES_CAB.agenda = s.abierto;
+    if (activa && competicionConsulta()) pintarConsulta({ conservarPlegado: true });
+  }
   // Al salir del calendario hay un repintado sin competición: no es dejarla.
   if (!v && !PASOS.dentro) DEPORTES_CAB.dia = '';
   if (html === DEPORTES_CAB.html) return;
@@ -173,7 +179,8 @@ function pintarCabeceraCompeticion(){
 // para la vuelta. Resultados solo sabe de días pasados y de hoy.
 function irACompeticion(orden){
   const s = CALENDARIO, p = PUNTUAL, tipo = orden.slice(0, orden.indexOf(':'));
-  const dia = DEPORTES_CAB.dia = (s.abierto ? s.fecha : p.origen?.fecha || p.fecha) || DEPORTES_CAB.dia;
+  // Sin ficha activa, su fecha es de una visita anterior: vale la recordada.
+  const dia = DEPORTES_CAB.dia = (s.abierto ? s.fecha : p.activa && (p.origen?.fecha || p.fecha)) || DEPORTES_CAB.dia;
   if (tipo === 'resultados' && fechaValida(dia) && dia <= calHoy()) p.fechaPedida = dia;
   if (tipo === 'calendario') s.diaPedido = dia;
   conPaso(() => {
