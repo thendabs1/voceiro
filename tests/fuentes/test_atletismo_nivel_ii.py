@@ -61,7 +61,11 @@ class NivelII(unittest.TestCase):
         e = resultado['entrada']['eventos'][0]
         self.assertEqual(e['metadatos']['nivel_ii']['actualizado'], '2026-10-15')
         self.assertEqual(e['metadatos']['modalidad_literal'], 'AL')
+        # Carácter autonómico: está en el documento de la RFEA, pero no es suya.
+        self.assertEqual(e['metadatos']['fuente']['relacion'], 'reflejo')
+        self.assertEqual(e['metadatos']['fuente']['evidencia']['url'], e['url'])
         todo = nivel.resolver(self.inventario, registro())
+        self.assertEqual({x['metadatos']['fuente']['relacion'] for x in todo['entrada']['eventos']}, {'reflejo'})
         self.assertEqual(todo['revisiones_no_aplicadas'], [])
         self.assertEqual(len(todo['entrada']['eventos']), len(registro()['revisiones']))
 

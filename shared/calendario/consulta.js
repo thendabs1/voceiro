@@ -7,7 +7,7 @@ import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/tex
 export const MODALIDADES_ATLETISMO = ['ruta', 'cross', 'pista-cubierta', 'pista-aire-libre', 'marcha', 'trail'];
 // Relación con la fuente y actividad acreditadas: agenda/atletismo_bloque.py (la
 // misma prueba lo comprueba). `titular` combina fuente y relación: «fga:reflejo».
-export const ACTIVIDADES_ATLETISMO = ['competicion', 'control', 'tecnificacion'];
+export const ACTIVIDADES_ATLETISMO = ['competicion', 'control', 'tecnificacion', 'formacion', 'institucional'];
 export const TITULAR_ATLETISMO = /^(rfea|fga|fca|wa):(propio|reflejo|desconocido)$/;
 
 // Prefijos del buscador. Todos seleccionan agenda; solo las competiciones, cuyo
@@ -151,6 +151,8 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
     if (filtros.titular?.length && !filtros.titular.some(x => titulares.includes(x))) return false;
     const actividades = esTabla ? [] : dato.atletismo?.actividades || [];
     if (filtros.actividades?.length && !filtros.actividades.some(a => actividades.includes(a))) return false;
+    // Ocultar actos: solo se quita lo acreditado; una actividad desconocida se queda.
+    if (filtros.excluirActividades?.some(a => actividades.includes(a))) return false;
     if (!buscarTexto) return true;
     const nombres = objetivos.flatMap(e => Object.values(e.nombres)).join(' ');
     const palabras = palabrasDe(nombres);

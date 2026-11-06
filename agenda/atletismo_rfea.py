@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 import json
 import re
 from urllib.error import HTTPError
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
@@ -146,41 +146,62 @@ def leer_documentos(contenido, *, url):
     return salida
 
 
-def relacion(evento):
-    """Autoridad del título; en su ausencia, calendario con categoría acreditada.
-
-    Área y las etiquetas de filtros carecen de definición de autoridad. Tampoco
-    se convierte «federacion_espanola» en RFEA sin evidencia adicional.
-    """
+def autoridad(evento):
+    """Autoridad acreditada y su evidencia, de lo más explícito a lo más general."""
     meta = evento['metadatos']
-    autoridades = {t.get('autoridad') for t in meta.get('titulos', [])} - {None, 'desconocida', 'federacion_espanola'}
+    titulos = meta.get('titulos', [])
+    autoridades = {t.get('autoridad') for t in titulos} - {None, 'desconocida', 'federacion_espanola'}
     if len(autoridades) == 1:
-        autoridad = autoridades.pop()
-        ev = next(t['evidencia'] for t in meta['titulos'] if t.get('autoridad') == autoridad)
-    else:
-        calendarios = [c for c in meta.get('calendarios', []) if c.get('categoria_literal')]
-        if not calendarios:
-            return
-        c = calendarios[-1]
-        literal = c['categoria_literal']
-        autoridad = {'RFEA': 'rfea', 'Nacional': 'rfea', 'Nacional 1': 'rfea', 'EA': 'ea',
-                     'Autonómico': 'autonomica', 'WA/EA': 'wa/ea'}.get(literal)
+        valor = autoridades.pop()
+        return valor, next(t['evidencia'] for t in titulos if t.get('autoridad') == valor)
+    calendarios = [c for c in meta.get('calendarios', []) if c.get('categoria_literal')]
+    if calendarios:
+        literal = calendarios[-1]['categoria_literal']
+        valor = {'RFEA': 'rfea', 'Nacional': 'rfea', 'Nacional 1': 'rfea', 'Internacional 1': 'rfea',
+                 'Internacional 2': 'rfea', 'EA': 'ea', 'Autonómico': 'autonomica', 'WA/EA': 'wa/ea'}.get(literal)
         if re.match(r'WA(?:$|[ /]|CCT|CT|IT|RRL|RWT)', literal):
-            autoridad = 'wa' if literal != 'WA/EA' else 'wa/ea'
+            valor = 'wa' if literal != 'WA/EA' else 'wa/ea'
         if literal in ('COE', 'CIO', 'CSD', 'AIA', 'ECF', 'EMA', 'FISU', 'IAU', 'WMA', 'WMRA'):
-            autoridad = literal.lower()
-        if autoridad is None:
-            return  # Internacional I/II no identifica autoridad.
-        ev = c['evidencia']
-    meta['fuente'] = {'relacion': 'propio' if autoridad == 'rfea' else 'reflejo', 'evidencia': ev}
-    if autoridad not in ('rfea', 'autonomica'):
-        meta['fuente']['de'] = autoridad
+            valor = literal.lower()
+        if valor:
+            return valor, calendarios[-1]['evidencia']
+    if reservado := next((t for t in titulos if t.get('autoridad') == 'federacion_espanola'), None):
+        return 'rfea', reservado['evidencia']  # Título reservado en el calendario de la propia RFEA.
+    area = meta.get('area_literal')
+    if area in ('WA', 'EA') and (ev := meta.get('evidencias_ficha', {}).get('area_literal')):
+        return area.lower(), ev
+    if tipo := meta.get('calendario_tipo'):
+        return 'rfea', evidencia(evento['url'], 'calendar-item/a[href]', tipo, 'calendario_web')
+    return None, None
+
+
+def relacion(evento):
+    """Propio: está en el calendario RFEA y ninguna autoridad ajena la reclama.
+
+    Las competiciones nacionales e internacionales son «organizadas o autorizadas
+    por la RFEA» (Reglamento, arts. 14.1 y 15.1). Reflejo es lo que acredita otra
+    autoridad. `Área` no tiene definición escrita: solo WA y EA cuentan, porque nunca
+    coincidieron con categorías RFEA en el Calendario en PDF; `Área=RFEA` sí se mezcla.
+    """
+    valor, ev = autoridad(evento)
+    if valor is None:
+        return
+    meta = evento['metadatos']
+    meta['fuente'] = {'relacion': 'propio' if valor == 'rfea' else 'reflejo', 'evidencia': ev}
+    if valor not in ('rfea', 'autonomica'):
+        meta['fuente']['de'] = valor
 
 
 # Las categorías mezclan edad, formato y distancia; ninguna se interpreta como
 # clasificación. Ranking WA dio cero en sus once opciones (noviembre de 2026).
-ADMINISTRATIVAS = {'380', '392', '384', '383', '390', '391', '381', '382', '386', '388', '385'}
+# Federativo sí declara qué es cada acto. Una concentración necesita además su
+# convocatoria: la categoría solo la señala (ver `recoger`).
 TECNIFICACION = {'387': 'Concentración', '389': 'PNTD'}
+ACTIVIDAD_FEDERATIVA = {'381': 'formacion', '382': 'formacion', '390': 'formacion', '391': 'formacion',
+                        '380': 'institucional', '383': 'institucional', '384': 'institucional', '385': 'institucional',
+                        '386': 'institucional', '388': 'institucional', '392': 'institucional'}
+FEDERATIVAS = {*TECNIFICACION, *ACTIVIDAD_FEDERATIVA}
+FEDERATIVO = 'Eventos internas RFEA'
 
 
 def opciones(html):
@@ -238,51 +259,76 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
             'fin': mes_consulta.replace(day=monthrange(mes_consulta.year, mes_consulta.month)[1]).isoformat()})
         return urls
 
-    for u in list(consultas):
-        cobertura_mes('mensual', u, datos.values(), {'tipo': 'Deportivo'})
-    tecnicas, filtros_tecnicos = set(), {}
-    for i, etiqueta in TECNIFICACION.items():
-        intentadas = []
-
-        def obtener_tecnica(u):
-            if '/ajax/calendario/' in u:
-                intentadas.append(u)
-            return obtener(u)
-
+    def filtro_mes(superficie, tipo, mes, i, etiqueta):
+        """Una categoría en un mes. Acredita su etiqueta; una ausencia no acredita nada."""
+        nonlocal bloqueada
+        ts = int(datetime(mes.year, mes.month, 1, tzinfo=timezone.utc).timestamp())
+        u = f'https://atletismorfea.es/ajax/calendario/{ts}/{quote(tipo)}/0/0/0/{i}/{temporadas[str(mes.year)]}/0/0/0'
+        consultas.append(u)
+        registro = cobertura(superficie, u, [], filtros={'familia': 'categoria', 'id': i, 'etiqueta': etiqueta})
+        registro['ventana'] = {'inicio': mes.isoformat(), 'fin': mes.replace(day=monthrange(mes.year, mes.month)[1]).isoformat()}
         try:
-            tecnica, parcial = _rfea_mensual(desde, hasta, obtener_tecnica, tipo='Eventos internas RFEA', categoria=i, adyacentes=False)
+            urls = urls_mes(obtener(u), mes)
         except (HTTPError, OSError) as error:
             bloqueada = isinstance(error, HTTPError) and error.code in (403, 429)
-            consultas.extend(intentadas)
-            for u in intentadas:
-                registro = cobertura('federativo', u, [], estado='fallida', filtros={'categoria': i, 'etiqueta': etiqueta})
-                registro['error'] = f'{type(error).__name__}: {error}'[:500]
-            avisos.append({'motivo': 'Federativo no disponible; se conserva la tecnificación anterior', 'categoria': i})
-            if bloqueada:
-                break
-            continue
+            registro.update(estado='fallida', error=f'{type(error).__name__}: {error}'[:500])
+            avisos.append({'url': u, 'motivo': 'filtro no disponible; se conservan evidencias positivas anteriores'})
+            return registro, None
+        registro['urls_observadas'] = urls
+        return registro, urls
+
+    for u in list(consultas):
+        cobertura_mes('mensual', u, datos.values(), {'tipo': 'Deportivo'})
+    deportivas = set(datos)
+    # Federativo se lee entero: son pocos actos al año y sus filtros no lo descubren
+    # todo (enero de 2024 da concentraciones sin filtrar y ninguna filtrando). Solo
+    # se filtra lo que aún no tiene categoría, y cada acto nuevo cuesta una vez.
+    federativas, filtros_federativos, intentadas, federativo_leido = set(), {}, [], False
+
+    def obtener_federativo(u):
+        if '/ajax/calendario/' in u:
+            intentadas.append(u)
+        return obtener(u)
+
+    try:
+        federativo, parcial = _rfea_mensual(desde, hasta, obtener_federativo, tipo=FEDERATIVO, adyacentes=False)
+    except (HTTPError, OSError) as error:
+        bloqueada = isinstance(error, HTTPError) and error.code in (403, 429)
+        consultas.extend(intentadas)
+        for u in intentadas:
+            registro = cobertura('federativo', u, [], estado='fallida', filtros={'tipo': 'Federativo'})
+            registro['error'] = f'{type(error).__name__}: {error}'[:500]
+        avisos.append({'motivo': 'Federativo no disponible; se conservan sus citas anteriores'})
+    else:
+        federativo_leido = True
         informe['pendientes'].extend(parcial['pendientes'])
         consultas.extend(parcial['consultas'])
-        etiquetas_por_url = {}
-        for u in parcial['consultas']:
-            for url_ficha in cobertura_mes('federativo', u, tecnica['eventos'], {'tipo': 'Federativo', 'categoria': i, 'etiqueta': etiqueta}):
-                etiquetas_por_url.setdefault(url_ficha, []).append({'familia': 'categoria', 'id': i, 'etiqueta': etiqueta,
-                    'evidencia': evidencia(u, 'calendar-item/a[href]', etiqueta, 'filtro_calendario')})
-        for e in tecnica['eventos']:
-            # Solo los dos filtros autorizados: nunca inventario federativo general.
-            if e['metadatos'].get('modalidad_literal') == 'CNJ':
-                avisos.append({'id': e['id'], 'motivo': 'jueces excluidos del descubrimiento técnico'})
-                continue
+        for e in federativo['eventos']:
             if e['id'] in datos and any(datos[e['id']][k] != e[k] for k in ('nombre', 'inicio', 'fin', 'lugar', 'url')):
                 avisos.append({'id': e['id'], 'motivo': 'ficha distinta entre Deportivo y Federativo; manda Deportivo'})
                 continue
             datos.setdefault(e['id'], e)
-            tecnicas.add(e['id'])
-            filtros_tecnicos.setdefault(e['id'], []).extend(etiquetas_por_url[e['url']])
+            federativas.add(e['id'])
+        sin_categoria = {datos[i]['url'] for i in federativas if not any(
+            x.get('id') in FEDERATIVAS for x in anteriores.get(i, {}).get('filtros_calendario', []))}
+        for u in parcial['consultas']:
+            pendientes_mes = sin_categoria & set(cobertura_mes('federativo', u, federativo['eventos'], {'tipo': 'Federativo'}))
+            mes = datetime.fromtimestamp(int(u.split('/ajax/calendario/')[1].split('/')[0]), timezone.utc).date()
+            for i, etiqueta in categorias:
+                if i not in FEDERATIVAS or not pendientes_mes or bloqueada:
+                    continue
+                registro, urls = filtro_mes('federativo', FEDERATIVO, mes, i, etiqueta)
+                if urls is None:
+                    continue
+                for url_ficha in pendientes_mes & set(urls):
+                    filtros_federativos.setdefault(url_ficha, []).append({'familia': 'categoria', 'id': i, 'etiqueta': etiqueta,
+                        'evidencia': evidencia(registro['consultas'][0], 'calendar-item/a[href]', etiqueta, 'filtro_calendario')})
+                pendientes_mes -= set(urls)
     for i, e in datos.items():
         meta = e['metadatos']
+        meta['calendario_tipo'] = 'Deportivo' if i in deportivas else 'Federativo'
         meta['filtros_calendario'] = deepcopy(anteriores.get(i, {}).get('filtros_calendario', []))
-        for filtro in filtros_tecnicos.get(i, []):
+        for filtro in filtros_federativos.get(e['url'], []):
             if filtro not in meta['filtros_calendario']:
                 meta['filtros_calendario'].append(filtro)
         meta['temporalidad']['dias'] = [(date.fromisoformat(e['inicio']) + timedelta(days=n)).isoformat()
@@ -307,19 +353,20 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
                 registro.update(estado='fallida', ids_resueltos=[], error=f'{type(error).__name__}: {error}'[:500])
                 avisos.append({'id': i, 'url': u, 'motivo': 'documentos no disponibles; se conserva la lectura anterior'})
         meta['documentos'].extend(d for d in documentos if d not in meta['documentos'])
-        if i in tecnicas:
-            # El enlace ha de declarar convocatoria técnica, no basta el filtro ni
-            # la mera existencia de unas normas. No se descargan los PDF.
+        if i in federativas:
+            # La tecnificación exige que el enlace declare una convocatoria técnica: no
+            # basta el filtro ni la mera existencia de unas normas. No se descargan los
+            # PDF. Lo demás lo declara la categoría, y sin ella queda desconocido.
             acreditan = [d for d in meta['documentos'] if (d['rol'] in ('circular', 'reglamento') or re.search(r'convocatoria', d['nombre'], re.I))
                          and re.search(r'concentraci[oó]n|tecnificaci[oó]n|\bPNTD\b', d['nombre'], re.I)]
+            declarada = next((x for x in meta['filtros_calendario'] if x.get('id') in ACTIVIDAD_FEDERATIVA), None)
             if acreditan:
                 meta['actividad'] = {'valor': 'tecnificacion', 'evidencia': acreditan[0]['evidencia']}
-            else:
-                # Aviso, no pendiente: una convocatoria sin documento no debe impedir
-                # retirar citas ni dejar incompleta cada lectura.
+            elif declarada:
+                meta['actividad'] = {'valor': ACTIVIDAD_FEDERATIVA[declarada['id']], 'evidencia': declarada['evidencia']}
+            elif any(x.get('id') in TECNIFICACION for x in meta['filtros_calendario']):
+                # Aviso, no pendiente: se publica igual y no impide retirar citas.
                 avisos.append({'id': i, 'url': e['url'], 'motivo': 'filtro técnico sin convocatoria, circular o reglamento acreditativo'})
-                if i not in {x['id'] for x in entrada['eventos']}:
-                    continue
         if e not in entrada['eventos']:
             entrada['eventos'].append(e)
 
@@ -329,40 +376,29 @@ def recoger(desde, hasta, obtener, *, conocidas=()):
     mes = ventana[date.today().toordinal() % len(ventana)]
     pendientes_rotacion = [m.isoformat()[:7] for m in ventana if m != mes]
     for i, etiqueta in categorias:
-        if i in ADMINISTRATIVAS or i in TECNIFICACION or bloqueada:
+        if i in FEDERATIVAS or bloqueada:
             continue
-        ts = int(datetime(mes.year, mes.month, 1, tzinfo=timezone.utc).timestamp())
-        u = f'https://atletismorfea.es/ajax/calendario/{ts}/Deportivo/0/0/0/{i}/{temporadas[str(mes.year)]}/0/0/0'
-        consultas.append(u)
-        registro = cobertura('filtro', u, [], filtros={'familia': 'categoria', 'id': i, 'etiqueta': etiqueta})
-        registro['ventana'] = {'inicio': mes.isoformat(), 'fin': mes.replace(day=monthrange(mes.year, mes.month)[1]).isoformat()}
-        try:
-            urls = urls_mes(obtener(u), mes)
-        except (HTTPError, OSError) as error:
-            bloqueada = isinstance(error, HTTPError) and error.code in (403, 429)
-            registro.update(estado='fallida', error=f'{type(error).__name__}: {error}'[:500])
-            avisos.append({'url': u, 'motivo': 'filtro no disponible; se conservan evidencias positivas anteriores'})
+        registro, urls = filtro_mes('filtro', 'Deportivo', mes, i, etiqueta)
+        if urls is None:
             continue
-        registro['urls_observadas'] = urls
         for e in entrada['eventos']:
             if e['url'] not in urls:
                 continue
             registro['ids_observados'].append(e['id'])
             registro['ids_resueltos'].append(e['id'])
             filtro = {'familia': 'categoria', 'id': i, 'etiqueta': etiqueta,
-                      'evidencia': evidencia(u, 'calendar-item/a[href]', etiqueta, 'filtro_calendario')}
+                      'evidencia': evidencia(registro['consultas'][0], 'calendar-item/a[href]', etiqueta, 'filtro_calendario')}
             lista = e['metadatos']['filtros_calendario']
             if filtro not in lista:
                 lista.append(filtro)
-    # Los filtros técnicos son imperfectos: ni siquiera una consulta vacía permite
-    # retirar una convocatoria acreditada en la pasada anterior.
+    # Si Federativo no se pudo leer, sus citas no están ausentes: se conservan.
     for c in conocidas:
-        if (c.get('fuente') == 'rfea' and not c.get('lectura_ambigua')
-                and c['metadatos'].get('actividad', {}).get('valor') == 'tecnificacion'
+        if (c.get('fuente') == 'rfea' and not c.get('lectura_ambigua') and not federativo_leido
+                and c['metadatos'].get('calendario_tipo') == 'Federativo'
                 and c['inicio'] <= hasta.isoformat() and c['fin'] >= desde.isoformat()
                 and c['id'] not in {e['id'] for e in entrada['eventos']}):
             entrada['eventos'].append(deepcopy({k: c[k] for k in ('id', 'nombre', 'url', 'inicio', 'fin', 'lugar', 'metadatos', 'estado', 'programa') if k in c}))
-            avisos.append({'id': c['id'], 'motivo': 'los filtros no acreditan ausencia; se conserva la convocatoria anterior'})
+            avisos.append({'id': c['id'], 'motivo': 'Federativo sin leer; se conserva la cita anterior'})
     informe.update(superficies=superficies, avisos=avisos,
         rotacion_filtros={'mes': mes.isoformat()[:7], 'meses_pendientes': pendientes_rotacion},
         completo=not informe['pendientes'] and not bloqueada and all(s['estado'] == 'completa' for s in superficies),

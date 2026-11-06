@@ -1,16 +1,15 @@
 # Atletismo
 
-Estado a 4/11/2026. Capas RFEA, Galicia (FGA) y Cataluña (FCA) recogidas en
+Estado a 6/11/2026. Capas RFEA, Galicia (FGA) y Cataluña (FCA) recogidas en
 el cron y publicadas (variables de Actions, ver Recogida). World Athletics se
 recoge sin publicar: [atletismo-world-athletics.md](atletismo-world-athletics.md).
 
 ## Alcance y modelo
 
-Calendario deportivo RFEA completo (edades, máster, clubes, ruta, pista,
-short track, cross, marcha, trail e internacionales que publique), más FGA y
-FCA con competiciones y tecnificación. RFEA añade concentraciones acreditadas
-con convocatoria, circular o reglamento; los filtros técnicos solo las descubren.
-Fuera: administración, jueces, cursos y reuniones. La inscripción es un metadato, no otra cita.
+Se publica todo lo que sale en el calendario de cada federación: RFEA Deportivo y
+Federativo, FGA y FCA, con competiciones, tecnificación, formación y actos
+institucionales. Lo que no es competición se etiqueta con `actividad` y se puede
+ocultar: nunca se descarta. La inscripción es un metadato, no otra cita.
 
 - Tres capas seguibles como las ligas: `atletismo-rfea`, `atletismo-fga`,
   `atletismo-fca` (`agrupacion/coleccion`). Una cita es `evento/encuentro` con
@@ -53,10 +52,12 @@ Fuera: administración, jueces, cursos y reuniones. La inscripción es un metada
   importar documentos FGA y sigue siendo opcional para las demás fuentes. `temporalidad.estado` es más
   fino que `programacion`; traducirlo es del adaptador. La publicación añade
   `atletismo.titulares` (`fuente:relacion` por variante, faceta `titular`) y
-  `atletismo.actividades` (unión de lo acreditado, faceta `actividad`), con OR
-  dentro de cada parámetro. `titular=fga:propio,fga:desconocido` da el chip sin
-  reflejos: la API no decide qué se muestra. Las concentraciones son
-  `tecnificacion`, solo con convocatoria, circular o reglamento.
+  `atletismo.actividades` (unión de lo acreditado, faceta `actividad`, también en
+  la tarjeta), con OR dentro de cada parámetro. `titular=fga:propio,fga:desconocido`
+  da el chip sin reflejos: la API no decide qué se muestra.
+  `excluir_actividades=formacion,institucional` oculta los actos sin quitar lo
+  desconocido. Las concentraciones son `tecnificacion` solo con convocatoria,
+  circular o reglamento; sin ellos se publican con actividad desconocida.
 - La norma no da un ámbito único por cita: clasifica por carácter, nivel según
   participantes y calendario, y a veces prueba a prueba (Reglamento RFEA, arts.
   7, 15 y 18). Por eso el bloque guarda los ejes y no un ámbito: `calendarios[]`
@@ -64,10 +65,16 @@ Fuera: administración, jueces, cursos y reuniones. La inscripción es un metada
   organiza, autoriza o convoca) y la autoridad de cada título en `titulos[]`, con
   `base` documento o nombre reservado. «Campeonato de España» está reservado a las
   federaciones españolas, no solo a la RFEA (Ley 39/2022, art. 79.3), de ahí
-  `federacion_espanola`. Propio o reflejo se decide por autoridad, con el calendario
-  de reserva. Ninguna federación tiene regla escrita de prelación entre calendario
-  y circular: las discrepancias quedan visibles con su fuente. Citas y documentos
-  en `docs/atletismo-fuentes-2026-11-03/normativa/INFORME.md` (local).
+  `federacion_espanola`. Ninguna federación tiene regla escrita de prelación entre
+  calendario y circular: las discrepancias quedan visibles con su fuente. Citas y
+  documentos en `docs/atletismo-fuentes-2026-11-03/normativa/INFORME.md` (local).
+- Propio o reflejo (acordado el 6/11/2026): **propio es estar en el calendario de
+  la federación sin que otra autoridad lo reclame**, no que la federación lo
+  organice. La norma lo sostiene: las nacionales e internacionales son «organizadas o
+  autorizadas por la RFEA» (arts. 14.1 y 15.1) y las autonómicas, por su federación
+  (art. 16.1). Reflejo es lo que acredita otra autoridad: título reservado en una
+  territorial, organizador ajeno o categoría del Calendario en PDF. Un club
+  organizador no hace ajena una cita.
 - Modalidad común (acordada el 3/11/2026): `ruta`, `cross`, `pista-cubierta`,
   `pista-aire-libre`, `marcha` y `trail`, según
   `shared/calendario/atletismo-modalidades.json` (literal normalizado → código,
@@ -105,8 +112,14 @@ Lee el mensual Deportivo y los adyacentes para cerrar extremos, sin cambiar
 nombre, sede ni fechas. La ficha aporta área, categoría, fecha e información
 literales, enlaces e inscripción; un login no acredita apertura. El estado
 requiere un campo declarado: el título no lo decide. El bloque v2 deja alcance y
-actividad desconocidos cuando falta acreditación. Los títulos reservados
-acreditan `federacion_espanola`, sin convertirla en RFEA.
+actividad desconocidos cuando falta acreditación.
+
+Titular, de lo más explícito a lo más general: autoridad de un título documentado;
+categoría del Calendario en PDF (`Internacional 1` y `2` son propias, art. 14.1);
+título reservado en su calendario, propio; `Área` WA o EA, reflejo; y, si no, propio
+por estar en el calendario, con `calendario_tipo` (`Deportivo` o `Federativo`) como
+evidencia. `Área` no tiene definición escrita: WA y EA solo se usan porque nunca
+coincidieron con categorías RFEA en el PDF; `Área=RFEA` sí se mezcla y no decide nada.
 
 `/ajax/championship-documents/{sfid}` y los enlaces directos aportan documentos
 con rol y evidencia estable, sin descargar sus PDF. La familia `rfea_norma`
@@ -118,7 +131,7 @@ acreditado por documentos aún enlazados y sin comprobar se conserva, el paso
 falla y el reloj espera como tras un fallo, respetando `Retry-After`; un
 esquema AJAX roto o un mes incoherente interrumpen. Una ficha sin SFID único sigue
 siendo válida, sin documentos. Una convocatoria técnica sin documento acreditativo
-no se publica y queda como aviso: no bloquea ausencias ni deja incompleta la lectura.
+se publica con actividad desconocida y un aviso: no bloquea ausencias ni deja incompleta la lectura.
 Cada superficie informa ventana, filtros, consultas e IDs observados/resueltos.
 Todas las peticiones RFEA respetan 1 s de pausa; la memoria reutiliza respuestas
 y fallos dentro de la pasada, y las fichas caducan a las 21 h, con el reloj de la fuente.
@@ -130,17 +143,21 @@ guarda ID, etiqueta y evidencia positiva, conservada entre pasadas. No completa
 edades, modalidades, actividad ni autoridad; una ausencia no acredita nada.
 Área y disciplina ya constan en ficha/listado. Las 11 categorías WA no se
 consultan: las 11 devuelven cero en la muestra de noviembre de 2026, incluido GL
-con Atapuerca. Se excluyen las 11 categorías administrativas.
+con Atapuerca. Las 13 categorías federativas quedan fuera de esta rotación.
 
-Federativo (`Eventos internas RFEA`) se consulta exclusivamente mediante
-Concentración=387 y PNTD=389, en los meses de la ventana, ampliados solo para
-cerrar extremos. Una convocatoria técnica declarada en un documento enlazado
-(circular, reglamento o convocatoria) acredita `tecnificacion`; sin ella la cita
-queda pendiente. Las convocatorias ya acreditadas se conservan si el filtro no
-las devuelve. El mensual es una vía de descubrimiento incompleta: enero de 2024
-publica dos concentraciones sin filtrar, pero ambos filtros dan cero. No se
-sustituye por un barrido federativo general. El Excel anual sin IDs no se une
-por título; el Excel de pruebas sigue como enlace, sin inventar sesiones.
+Federativo (`Eventos internas RFEA`) se lee entero, un mes por petición: medido el
+6/11/2026, en nueve meses de 2026 solo hay cuatro actos, todos del CNJ (exámenes, un
+webinar y una gala), y ninguna asamblea ni junta. Sus filtros no descubren todo
+(enero de 2024 da dos concentraciones sin filtrar y ninguna filtrando), así que solo
+clasifican: cada acto sin categoría guardada se prueba contra las 13 hasta dar con
+la suya, una vez, y un acto sin categoría repite esa prueba en cada pasada.
+`Exámenes`, `Formación` y `Cursos` acreditan `formacion`; `Actividad`, `Asamblea`,
+`Comisiones`, `Junta de Gobierno`, `Reunión` y similares, `institucional`.
+`Concentración` y `PNTD` necesitan un documento enlazado (circular, reglamento o
+convocatoria) para ser `tecnificacion`. Si Federativo no se puede leer, sus citas
+guardadas se conservan; leído bien, la ausencia sigue el camino normal. El Excel
+anual sin IDs no se une por título; el Excel de pruebas sigue como enlace, sin
+inventar sesiones.
 
 **Calendario RFEA en PDF.** El índice de circulares filtrado por `calendario`
 se lee con su paginación. Entre calendarios de la temporada, sin proyectos,
@@ -170,7 +187,9 @@ identifica una fila, no una cita. El ID sale de
 coincidencia inequívoca con una cita ya identificada (`nivel-ii:auto-…`,
 anclado a esa referencia y persistido). Las filas iguales o ambiguas quedan
 pendientes. El «Tipo» del PDF no tiene autoridad (marcha de Pontevedra: `AL`
-frente a «Marcha» de FGA).
+frente a «Marcha» de FGA). Sus filas son reflejo: tienen «carácter autonómico»
+(circular de inscripción en el calendario 2027, p. 2), aunque el Reglamento las
+coloque en categoría nacional.
 
 **FGA.** Inventario mensual `fga/v1/competitions` y listado HTML con GAL,
 NAC e INT explícitos, unidos por post, sin consultas de delegación. Los IDs sin
@@ -201,7 +220,9 @@ El estado se lee del título, donde la FGA lo anuncia, y del cuerpo solo un avis
 parcial explícito: una cláusula de reglamento no es un estado. Actividad, títulos
 por documento y sesiones solo se acreditan mediante lecturas locales revisadas
 (`atletismo-fga-documentos.json`, con huella de la captura); otras convocatorias
-quedan desconocidas. Se compara SHA-256 de los bytes descargados, una vez por
+quedan desconocidas. Una ficha que no declara qué es en ningún campo, como las charlas
+de psicología, solo se clasifica por revisión de su ID
+(`atletismo-fga-actividades.json`), nunca por el título. Se compara SHA-256 de los bytes descargados, una vez por
 pasada y con pausa de 2,5 s. Si cambian, no se aplica la lectura ni se copia su
 hash; el enlace permanece y un aviso pide nueva lectura. Si falla la descarga,
 se conserva la lectura revisada y se avisa. Ningún aviso documental bloquea
@@ -228,12 +249,12 @@ una por cita, con pausa de 1 s. Si falla, conserva los documentos anteriores; un
 clasifica por categorías o título. Los avisos de estado solo en el título no
 cambian la programación. `status=publish` es editorial.
 
-La autoridad sigue la regla de FGA: el título reservado por ley hace reflejo aunque
-la FCA organice; RFEA/EA/WA sin la FCA hace reflejo; la FCA sin otra federación
-hace propio, también con clubes. Un `website` RFEA sin resolver conserva la señal
-literal y deja la relación desconocida: puede apuntar a otra edición o a 404. Solo
-clubes, o la FCA con otra federación, queda desconocido. La API no publica la
-columna de calendario.
+El título reservado por ley hace reflejo aunque la FCA organice; otra federación
+sin la FCA (RFEA, EA, WA, Andorra) hace reflejo; lo demás es propio, también con
+clubes, en coorganización o sin organizador. Un `website` RFEA sin resolver conserva
+la señal literal y deja la relación desconocida: puede apuntar a otra edición o a
+404, y suelen ser citas de fuera de Cataluña (Maratón de Valencia, Vallecana). La API
+no publica la columna de calendario.
 
 **Índices y lecturas revisadas.** `atletismo_circulares` lee el índice general
 RFEA, las circulares FGA y los comunicats y archivos de reglaments FCA. Conserva
@@ -245,7 +266,8 @@ JSON anterior. Reglaments no publica número ni fecha: quedan desconocidos.
 
 El barrido es independiente, como máximo semanal por archivo de salida, con
 presupuesto de 400 peticiones RFEA y 200 por territorial y pausa de 2,5 s. No
-está programado: el índice RFEA cuesta 231 peticiones y nada lo consume aún:
+está programado ni hace falta para la interfaz: el índice RFEA cuesta 231 peticiones
+y nada lo consume, porque titular y actividad ya no dependen de leer documentos:
 
 ```sh
 venv/bin/python -m agenda.atletismo_circulares --fuente rfea --salida /tmp/circulares-rfea.json
@@ -412,8 +434,8 @@ En orden (detalle en el diseño local):
    enlaza. Pendientes: índice general de circulares
    de las tres federaciones, sin programar y sin resolver sustituciones ni
    redirecciones. Lectura de contenido con revisión: cobertura parcial (ampliar
-   `atletismo-{fuente}-documentos.json`). Sin lectura acreditada, actividad y
-   alcance siguen desconocidos.
+   `atletismo-{fuente}-documentos.json`). Sin lectura acreditada, el alcance y la
+   actividad de las competiciones siguen desconocidos; la interfaz no los necesita.
    Call Room no da datos públicos. RFEA: contenido de los documentos y
    convocatorias técnicas que los filtros no devuelven. FCA: columna de calendario,
    reglamentos de series (TRS, Copas, Lliga) y convocatorias del Comitè Tècnic. Los
@@ -424,7 +446,9 @@ En orden (detalle en el diseño local):
 4. Circuitos, ligas, controles y tecnificación solo con documento oficial.
 - Interfaz: filas de fuentes, circuitos WA y modalidad en Deportes (semana y
   lista en pantallas bajas; ☆ solo en fuentes). OR dentro de cada fila y AND
-  entre filas: un circuito marcado restringe toda la selección.
+  entre filas: un circuito marcado restringe toda la selección. Los actos que no son
+  competición van visibles, con la etiqueta de `actividades` de la tarjeta y un
+  filtro para ocultarlos (`excluir_actividades`).
 - Filtro de ámbito: sin decidir (4/11/2026). «Territorial, nacional, internacional»
   falsearía la norma, porque no hay un ámbito único. Con los adaptadores hechos se
   decidirá, con cifras de cobertura, si conviene filtrar por calendario o autoridad.

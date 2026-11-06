@@ -537,6 +537,9 @@ test('titular y actividad de atletismo son facetas; filtran con OR y validan el 
   assert.deepEqual(de('004', 'titular'), ['fga:reflejo', 'rfea:propio']);
   assert.deepEqual(de('005', 'actividad'), ['tecnificacion']);
   assert.deepEqual(de('006', 'titular'), []);
+  const tarjeta = id => JSON.parse(lectura.eventos.find(e => e[0] === id)[3]);
+  assert.deepEqual(tarjeta('005').actividades, ['tecnificacion']);
+  assert.equal('actividades' in tarjeta('006'), false);
   const b = base(datos); t.after(() => b.db.close());
   const ids = async q => (await b.pedir(ventana + q)).dato.eventos.map(e => e.id);
   // El mismo chip con y sin lo reflejado: la API no decide qué se muestra.
@@ -544,9 +547,16 @@ test('titular y actividad de atletismo son facetas; filtran con OR y validan el 
   assert.deepEqual(await ids('&titular=fga:reflejo,fga:desconocido'), ['004', '005']);
   assert.deepEqual(await ids('&actividades=control'), []);
   assert.deepEqual(await ids('&actividades=competicion,tecnificacion'), ['004', '005']);
+  // Ocultar actos: se quita lo acreditado y lo desconocido se queda.
+  const todos = await ids('&limite=50');
+  const sinTecnificacion = await ids('&limite=50&excluir_actividades=tecnificacion');
+  assert.deepEqual(['004', '005'].map(i => [todos.includes(i), sinTecnificacion.includes(i)]), [[true, true], [true, false]]);
+  assert.deepEqual(await ids('&limite=50&excluir_actividades=formacion,institucional'), todos);
+  assert.deepEqual(await ids('&actividades=competicion,tecnificacion&excluir_actividades=tecnificacion'), ['004']);
+  assert.deepEqual(seleccionCalendario(datos, {}, { excluirActividades: ['tecnificacion'] }).eventos.map(e => e.id).filter(i => ['004', '005'].includes(i)), ['004']);
   for (const [filtros, q] of [[{ titular: ['fga:reflejo'] }, '&titular=fga:reflejo'], [{ actividades: ['tecnificacion'] }, '&actividades=tecnificacion']])
     assert.deepEqual(seleccionCalendario(datos, {}, filtros).eventos.map(e => e.id).filter(i => ['004', '005'].includes(i)), await ids(q));
-  for (const q of ['&titular=fga', '&titular=fga:ajeno', '&titular=sevilla:propio', '&actividades=escolar', '&actividades=desconocida'])
+  for (const q of ['&titular=fga', '&titular=fga:ajeno', '&titular=sevilla:propio', '&actividades=escolar', '&actividades=desconocida', '&excluir_actividades=desconocida'])
     assert.equal((await b.pedir(ventana + q)).status, 400, q);
 });
 
@@ -556,8 +566,8 @@ test('sin titular ni actividad la firma no cambia: un cursor en curso sobrevive 
     const { siguiente } = (await b.pedir(ventana + '&limite=1' + q)).dato;
     return JSON.parse(atob(siguiente.replaceAll('-', '+').replaceAll('_', '/')))[1];
   };
-  const { titular, actividades, ...anterior } = normalizarConsulta(new URL('https://x.test' + ventana + '&limite=1'));
-  assert.deepEqual([titular, actividades], [[], []]);
+  const { titular, actividades, excluirActividades, ...anterior } = normalizarConsulta(new URL('https://x.test' + ventana + '&limite=1'));
+  assert.deepEqual([titular, actividades, excluirActividades], [[], [], []]);
   const esperada = createHash('sha256').update(JSON.stringify({ api_calendario: 2, ruta: '/calendario/eventos', ...anterior })).digest('hex');
   assert.equal(await huella(''), esperada);
 });

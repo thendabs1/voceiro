@@ -15,6 +15,7 @@ ESPANA = re.compile(r'\bcamp(?:ionat|eonato) d(?:e |[’\'])espa(?:nya|ña)\b', 
 ESTADO_TITULO = re.compile(r'\b(?:ajornat|ajornada|suspès|suspesa|cancel·lat|cancel·lada|anul·lat|anul·lada)\b', re.I)
 AUTORIDADES = {'Federació Catalana d’Atletisme': 'fca',
                'Real Federación Española de Atletismo': 'rfea',
+               'Federació Andorrana d’Atletisme': 'faa',
                'WA (World Athletics)': 'wa', 'EA (European Athletics)': 'ea'}
 CAMPOS_FICHA = {'Reglament': 'reglamento', 'Resultats': 'resultados'}
 
@@ -86,11 +87,13 @@ def documentos(html, url, localizador='description', superficie='api', *, base=N
 
 
 def relacion(url, nombre, espana, entidades, web):
-    """Propio o reflejo por autoridad, con la misma regla que FGA.
+    """Propio si está en su calendario y ninguna autoridad ajena la reclama.
 
-    El título reservado por ley manda aunque la FCA organice o coorganice. Un
-    destino RFEA sin resolver (también hay otra edición y 404) no acredita
-    reflejo: conserva la señal literal y deja la relación desconocida.
+    Las autonómicas son «organizadas o autorizadas» por su federación (Reglamento
+    RFEA, art. 16.1): un club organizador no la hace ajena. El título reservado por
+    ley manda aunque la FCA organice o coorganice. Un destino RFEA sin resolver
+    (también hay otra edición y 404) no acredita reflejo, pero suelen ser citas de
+    fuera de Cataluña: conserva la señal literal y deja la relación desconocida.
     """
     autoridades = [AUTORIDADES.get(o) for o in entidades]
     ajena = next((a for a in autoridades if a and a != 'fca'), None)
@@ -100,9 +103,9 @@ def relacion(url, nombre, espana, entidades, web):
         return {'relacion': 'reflejo', 'evidencia': evidencia(url, 'title', nombre)}
     if web and urlsplit(web).hostname == 'atletismorfea.es':
         return {'relacion': 'desconocido', 'evidencia': evidencia(url, 'website', web)}
-    if 'fca' in autoridades and not ajena:
+    if entidades:
         return {'relacion': 'propio', 'evidencia': evidencia(url, 'organizer', ' / '.join(entidades))}
-    return {'relacion': 'desconocido'}
+    return {'relacion': 'propio', 'evidencia': evidencia(url, 'calendario', nombre)}
 
 
 def enriquecer(e):

@@ -202,6 +202,17 @@ class CasosFGA(unittest.TestCase):
         self.assertEqual(set(n['observaciones']),set(nuevo['observaciones']))
         self.assertEqual(set(nuevo['fuentes']), {'fga'})
 
+    def test_una_ficha_sin_tipo_declarado_solo_se_clasifica_por_revision_de_su_id(self):
+        charla = ficha('fga-charla-128150.html')
+        self.assertEqual(charla['id'], '128150')
+        actividad = charla['metadatos']['actividad']
+        self.assertEqual((actividad['valor'], actividad['evidencia']['superficie']), ('formacion', 'revision_editorial'))
+        self.assertEqual(charla['metadatos']['fuente']['relacion'], 'propio')
+        otra = html('fga-charla-128150.html').replace('post-128150', 'post-999999')
+        self.assertEqual(f.leer_ficha(otra)['metadatos']['actividad'], {'valor': 'desconocida'})
+        for valor in f.actividades_revisadas().values():
+            self.assertIn(valor, atletismo_bloque.ACTIVIDADES)
+
     def test_fuente_reflejo_por_ficha_rfea_o_solo_nac_int_propio_con_senal(self):
         texto = html('fga-0114-5080770a6c0e.html')
         for valor in ('Nacional','Internacional'):

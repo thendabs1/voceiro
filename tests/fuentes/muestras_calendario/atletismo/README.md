@@ -9,6 +9,9 @@ Capturas reducidas a los campos usados; sin listas de inscritos ni contactos per
 - `fga-circuito.json`: entrada revisada del IV Circuíto Deputación A Coruña en Pista 2026 (127481), con jornadas 127459, 127463 y 127473. Identidades/fechas/enlaces del listado de noviembre con `cp_date=01%2F11%2F2026`, contrastadas las jornadas en la ficha del circuito. El padre se declara como agrupación, no como cuarta cita; no es una clasificación automática por título. La URL de la segunda jornada conserva `2025`, tal como la publica la fuente: no se usa ese fragmento como año de celebración.
 - `rfea.json`: calendario mensual reducido a la cita de Huelva y su ficha; conserva navegación de noviembre. No representa el mes completo. El año proviene del calendario; la identidad, de `championship/65127` en la ficha.
 
+- `rfea/federativo-2026-11.json`, `rfea/ficha-federativo-webinar.html` y `rfea/ficha-federativo-examen.html`: calendario Federativo de noviembre de 2026 sin filtrar y sus dos fichas, sin el texto de información.
+- `fga/fga-charla-128150.html`: ficha sin tipo declarado, con título, delegación y organizador.
+
 La reducción no acredita cobertura anual, coincidencias entre fuentes ni estabilidad histórica de los IDs.
 
 `wa-2027.json` contiene siete eventos de `sel2027.json` y las entradas de grupo
