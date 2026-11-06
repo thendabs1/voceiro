@@ -2,7 +2,8 @@
    ACCESOS DEL BUSCADOR (▾ al final de la barra, como las opciones de Gmail)
    Lanzador corto: lo que sigo y el camino a la vista general de deportes.
    Cada acceso escribe su orden en la barra y la aplica (modelo GitHub: el
-   filtro activo se ve y se aprende); los botones de las vistas no escriben.
+   filtro activo se ve y se aprende). El botón Agenda no escribe; el de Deportes
+   abre el cuadro general, que es una consulta, y por eso escribe `deportes:`.
    ═══════════════════════════════════════════════════════════════ */
 const ACCESOS = { abierto: false };
 const ACCESOS_PRIMERAS = 4;
@@ -18,10 +19,12 @@ function marcarPaso(){
   const paso = pasoActual();
   if (!mismoPaso(history.state?.paso, paso)) history.pushState({ paso }, '');
 }
-function conPaso(cambio){
-  if (!PASOS.dentro++) anotarPaso();
+function conPaso(cambio, anotar = true){
+  if (!PASOS.dentro++ && anotar) anotarPaso();
   try { cambio(); } finally { if (!--PASOS.dentro) marcarPaso(); }
 }
+// Completar lo que se teclea: lo escrito a medias no es un paso al que volver.
+const pasoDeSugerencia = cambio => conPaso(cambio, false);
 function volverAPaso(e){
   const paso = e.state?.paso, s = CALENDARIO;
   if (!paso || mismoPaso(paso, pasoActual())) return;
@@ -78,7 +81,6 @@ function cerrarAccesos(volver = true){
 
 function wireAccesos(){
   const boton = $('#buscar-accesos'), panel = $('#accesos-panel');
-  anotarPaso();
   window.addEventListener('popstate', volverAPaso);
   document.getElementById('competicion-cab')?.addEventListener('click', pulsarCabeceraCompeticion);
   // Después de que las sugerencias apliquen la suya.

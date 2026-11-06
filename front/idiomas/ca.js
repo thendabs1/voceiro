@@ -717,7 +717,7 @@ export default {
   "avisosAmarillos": "Grocs: {n}",
   "avisosVarios": "diversos períodes",
   // Calendario y Deportes.
-  "calTitulo": "Calendari",
+  "calTitulo": "Calendari", "calAgenda": "Agenda",
   "calDeportesTitulo": "Esports",
   "calEligeSitio": "Tria un lloc",
   "calEligeSitioTexto": "L'agenda és d'un lloc: municipi, província o comunitat. Les competicions (F1, LaLiga, NBA, ATP…) són a Esports.",

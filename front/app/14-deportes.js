@@ -63,6 +63,24 @@ function filaCompeticion(c, contexto = ''){
 }
 const contextoDeportes = tipo => ['resultados', 'clasificacion'].includes(tipo) ? tipo : '';
 
+// Arriba del cuadro: lo de hoy y el finde, el calendario y lo que sigo.
+function htmlInicioDeportes(sigo){
+  const orden = (o, texto) => `<button type="button" data-accion="orden" data-orden="${escapeHtml(o)}">${escapeHtml(texto)}</button>`;
+  const filas = sigo.map(c => filaCompeticion(c)).join('');
+  return `<div class="dep-inicio"><div class="dep-atajos ui-tira">${orden('hoy:deportes', t('calHoy'))}${orden('finde:deportes', t('calFinde'))}
+    <button type="button" data-accion="calendario-deportes">${escapeHtml(t('calTitulo'))}</button></div>
+    ${filas ? `<div class="dep-sigo">${filas}</div>` : ''}</div>`;
+}
+// El botón Deportes: el cuadro general, que es una consulta y se escribe como
+// «‹ Deportes». Pulsado con el cuadro abierto, lo cierra.
+function pulsarBotonDeportes(){
+  cerrarEstadisticas(false);
+  if (PUNTUAL.activa?.tipo === 'deportes' && !CALENDARIO.abierto) return conPaso(quitarConsultas);
+  irDesdeCalendario('deportes:');
+}
+function abrirCalendarioDeportes(){
+  conPaso(() => { quitarConsultas(); abrirCalendario(document.getElementById('btn-deportes'), 'deportes'); });
+}
 // Vista general: en pantalla ancha, todo a la vista; en móvil, plegada salvo lo
 // que sigo o, sin nada seguido, el primer bloque.
 function htmlVistaDeportes(tipo){
@@ -70,7 +88,7 @@ function htmlVistaDeportes(tipo){
   const estrecha = globalThis.matchMedia?.('(max-width: 600px)').matches;
   const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, contextoDeportes(tipo))).join('') }))
     .filter(b => b.filas);
-  return `<div class="dep-vista">${bloques.map((b, i) => {
+  return `${tipo === 'deportes' ? htmlInicioDeportes(sigo) : ''}<div class="dep-vista">${bloques.map((b, i) => {
     const abierto = !estrecha || b.cs.some(c => sigo.includes(c)) || (!sigo.length && i === 0);
     return `<details class="dep-bloque"${abierto ? ' open' : ''}><summary>${escapeHtml(t(CAL_NOMBRES_DEPORTE[b.k]))}</summary>${b.filas}</details>`;
   }).join('')}</div>`;
@@ -127,18 +145,27 @@ function htmlCabeceraCompeticion(codigo, tipo){
       boton(destino(c).orden, nombreCompeticionCorto(c), c === codigo, 'true')).join('')}</div>` : ''}
     <button type="button" class="dep-cerrar" data-cerrar aria-label="${escapeHtml(t('conCerrar'))}" title="${escapeHtml(t('conCerrar'))}">${ico('x')}</button></div>`;
 }
-const DEPORTES_CAB = { html: '', dia: '' };
+const DEPORTES_CAB = { html: '', dia: '', agenda: false };
 function pintarCabeceraCompeticion(){
   const nav = document.getElementById('competicion-cab');
   if (!nav) return;
   const v = vistaCompeticion(), s = CALENDARIO, activa = PUNTUAL.activa;
   const clases = document.body.classList;
-  clases.toggle('vista-deportes', Boolean(v) || (s.abierto ? calModoDeportes() : Boolean(activa && esDeporteConsulta(activa.tipo))));
+  const deportes = Boolean(v) || (s.abierto ? calModoDeportes() : Boolean(activa && esDeporteConsulta(activa.tipo)));
+  clases.toggle('vista-deportes', deportes);
+  document.getElementById('btn-deportes')?.setAttribute('aria-expanded', String(deportes));
   clases.toggle('con-competicion', Boolean(v));
-  // Una sola etiqueta bajo la barra es la consulta, que ya dice la cabecera.
-  clases.toggle('sin-chips', document.querySelectorAll('#chips-busqueda .chip').length <= 1);
+  // Las etiquetas de las consultas repiten la cabecera o el cuadro; las de otros filtros, no.
+  const repite = Boolean(v) || activa?.tipo === 'deportes';
+  clases.toggle('sin-chips', repite && document.querySelectorAll('#chips-busqueda .chip').length <= PUNTUAL.lista.length);
   const html = v ? htmlCabeceraCompeticion(v.codigo, v.tipo) : '';
-  if (!v) DEPORTES_CAB.dia = '';
+  // Abrir o cerrar la agenda con una ficha a la vista cambia quién lleva su cierre.
+  if (s.abierto !== DEPORTES_CAB.agenda){
+    DEPORTES_CAB.agenda = s.abierto;
+    if (activa && competicionConsulta()) pintarConsulta({ conservarPlegado: true });
+  }
+  // Al salir del calendario hay un repintado sin competición: no es dejarla.
+  if (!v && !PASOS.dentro) DEPORTES_CAB.dia = '';
   if (html === DEPORTES_CAB.html) return;
   const foco = nav.contains(document.activeElement) ? document.activeElement : null;
   const orden = foco?.dataset.orden, zona = foco?.closest('.dep-hermanas') ? '.dep-hermanas' : '.dep-tabs';
@@ -152,7 +179,8 @@ function pintarCabeceraCompeticion(){
 // para la vuelta. Resultados solo sabe de días pasados y de hoy.
 function irACompeticion(orden){
   const s = CALENDARIO, p = PUNTUAL, tipo = orden.slice(0, orden.indexOf(':'));
-  const dia = DEPORTES_CAB.dia = (s.abierto ? s.fecha : p.fecha) || DEPORTES_CAB.dia;
+  // Sin ficha activa, su fecha es de una visita anterior: vale la recordada.
+  const dia = DEPORTES_CAB.dia = (s.abierto ? s.fecha : p.activa && (p.origen?.fecha || p.fecha)) || DEPORTES_CAB.dia;
   if (tipo === 'resultados' && fechaValida(dia) && dia <= calHoy()) p.fechaPedida = dia;
   if (tipo === 'calendario') s.diaPedido = dia;
   conPaso(() => {
@@ -177,8 +205,9 @@ function pulsarCabeceraCompeticion(e){
     irACompeticion(b.dataset.orden);
     return void document.querySelector(`#competicion-cab ${zona} [aria-current]`)?.focus({ preventScroll: true });
   }
-  PUNTUAL.enfocar = '.dep-nombre';
   irACompeticion('deportes:');
+  // Después: activar la consulta limpia el foco pendiente.
+  PUNTUAL.enfocar = '.dep-nombre';
   pintarConsulta();
 }
 

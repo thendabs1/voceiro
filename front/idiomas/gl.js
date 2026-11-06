@@ -717,7 +717,7 @@ export default {
   "avisosAmarillos": "Amarelos: {n}",
   "avisosVarios": "varios períodos",
   // Calendario y Deportes.
-  "calTitulo": "Calendario",
+  "calTitulo": "Calendario", "calAgenda": "Axenda",
   "calDeportesTitulo": "Deportes",
   "calEligeSitio": "Escolle un sitio",
   "calEligeSitioTexto": "A axenda é dun sitio: municipio, provincia ou comunidade. As competicións (F1, LaLiga, NBA, ATP…) están en Deportes.",

@@ -151,7 +151,7 @@ ajustarDiasActual(capasHistorico(parsed, consulta));
   const hayFuenteExplicita = hayDominio || hayMedio;
   const hayBusquedaActiva =
     hayTitulo || hayGrupo || hayTipo || hayTag ||
-    !!g || !!t2 || !!parsed.desde || !!parsed.hasta || !!ordenCalendario;
+    !!g || !!t2 || !!parsed.desde || !!parsed.hasta || !!ordenCalendario || !!deLaFicha;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
   // La vista 🔖 Temas filtra como un modo, con los temas de todos los modos.

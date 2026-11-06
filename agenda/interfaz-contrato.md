@@ -26,6 +26,9 @@ el total (225 apariciones para 197 citas de atletismo).
 Una lista por deporte y lo que ofrece cada competición en `front/app/14-deportes.js`:
 de ahí salen las cuatro entradas, y cada enlace escribe su orden en la barra.
 
+- Cabecera: «Agenda» abre la del sitio y «Deportes», la vista general, escribiendo
+  `deportes:`: es una consulta. Arriba lleva Hoy, Finde, el calendario de todas las
+  competiciones y lo que sigo.
 - `deportes:` abre la vista general. `resultados:` y `clasificacion:` sin competición
   enseñan las que tienen eso. `partido:` conserva sus botones. El tema de la agenda
   sigue en su chip y en `deporte:deportes`.

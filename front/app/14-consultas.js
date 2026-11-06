@@ -228,10 +228,11 @@ function pulsarConsulta(ev){
   if (!b) return;
   const p = PUNTUAL;
   switch (b.dataset.accion){
-    case 'cerrar': quitarConsultas(); break;
+    case 'cerrar': conPaso(quitarConsultas); break;
     case 'elegir':
       p.elegida = +b.dataset.i;
       activarConsulta(p.lista[p.elegida]);
+      aplicarFiltros();   // las noticias de debajo son de la consulta elegida
       break;
     case 'candidato': {
       const c = p.candidatos?.candidatos?.[+b.dataset.i];
@@ -283,6 +284,7 @@ function pulsarConsulta(ev){
         document.querySelector('#competicion-cab .dep-tabs [aria-current]')?.focus({ preventScroll: true });
       }
       break;
+    case 'calendario-deportes': abrirCalendarioDeportes(); break;
     case 'grupo': {
       const i = Number(b.dataset.i);
       if (!Number.isInteger(i) || !p.ficha?.ficha?.grupos?.[i]) break;
@@ -359,7 +361,8 @@ function htmlConsulta(){
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
     : '';
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
-  const competicion = competicionConsulta();
+  // Con la agenda abierta no hay cabecera común: la ficha conserva su cierre.
+  const competicion = !CALENDARIO.abierto && competicionConsulta();
   const vista = p.estado === 'ayuda' && c.tipo === 'deportes';
   const rotulo = volver || (competicion ? '' : `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`);
   // Con competición, la navegación y el cierre van en su cabecera (#competicion-cab).

@@ -58,7 +58,7 @@ function contexto({ buscar = '', responder }) {
     for (const [i, j] of rangosResaltado(texto, compilado)){ out += ctx.escapeHtml(texto.slice(last, i)) + '<mark>' + ctx.escapeHtml(texto.slice(i, j)) + '</mark>'; last = j; }
     return out + ctx.escapeHtml(texto.slice(last));
   };
-  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia, htmlCabeceraCompeticion, vistaCompeticion, noticiasDeLaFicha };', ctx);
+  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia, htmlCabeceraCompeticion, vistaCompeticion, noticiasDeLaFicha, irACompeticion, DEPORTES_CAB };', ctx);
   // Como aplicarFiltros: la consulta recibe el texto compilado de la búsqueda.
   const actualizar = raw => {
     entrada.value = raw;
@@ -690,6 +690,47 @@ test('una competición enlaza sus secciones, las de su deporte y la vista genera
   const tabla = ctx.api.htmlCabeceraCompeticion('primera', 'clasificacion');
   assert.match(tabla, /data-orden="clasificacion:segunda">Segunda/);
   assert.match(tabla, /data-orden="resultados:copa-del-rey">Copa del Rey/);
+});
+
+test('el cuadro de deportes empieza por hoy, finde y calendario; resultados: no', async () => {
+  const { panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  actualizar('deportes:'); await esperar();
+  assert.match(panel.innerHTML, /data-orden="hoy:deportes">Hoy[\s\S]*data-orden="finde:deportes">[\s\S]*data-accion="calendario-deportes">Calendario/);
+  assert.doesNotMatch(panel.innerHTML, /dep-sigo/);
+  actualizar('resultados:'); await esperar();
+  assert.doesNotMatch(panel.innerHTML, /dep-inicio/);
+});
+
+test('el cuadro pone primero lo que sigo', async () => {
+  const { ctx, panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  ctx.calPreferencias = () => ({ competiciones: ['nba'] });
+  actualizar('deportes:'); await esperar();
+  assert.match(panel.innerHTML, /dep-sigo">[\s\S]*data-orden="resultados:nba"/);
+});
+
+test('sin ficha activa, su fecha antigua no pisa el día recordado', async () => {
+  const { ctx } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  let pedido = '';
+  ctx.aplicarFiltros = () => { pedido = ctx.CALENDARIO.diaPedido; };
+  Object.assign(ctx.api.PUNTUAL, { activa: null, fecha: '2026-10-20' });
+  ctx.api.DEPORTES_CAB.dia = '2026-10-22';
+  ctx.api.irACompeticion('calendario:nba');
+  assert.equal(pedido, '2026-10-22');
+});
+
+test('con la agenda abierta, la ficha conserva su cierre', async () => {
+  const { ctx, panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  ctx.CALENDARIO.abierto = true;
+  actualizar('resultados:nba'); await esperar();
+  assert.match(panel.innerHTML, /consulta-cerrar/);
+});
+
+test('elegir otra consulta vuelve a filtrar las noticias de debajo', async () => {
+  const { ctx, actualizar, pulsar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  actualizar('resultados:primera resultados:nba'); await esperar();
+  const antes = ctx.filtrados;
+  pulsar({ accion: 'elegir', i: '0' });
+  assert.equal(ctx.filtrados, antes + 1);
 });
 
 test('bajo una ficha, las noticias de su competición sin pedir a la prensa', async () => {
