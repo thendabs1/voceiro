@@ -15,8 +15,9 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
   sin publicar hasta el refactor de la interfaz. Adaptadores y comparador por
   alcance hechos. Faltan las circulares y su lectura, y después interfaz y
   territoriales ([pendiente](agenda/atletismo.md#pendiente)).
-- Resultados deportivos: acreditar jornadas oficiales y su pertenencia por
-  proveedor; las consultas por fecha y las fichas de partido ya funcionan
+- Resultados deportivos: faltan tenis y motor, que necesitan una ficha sin
+  local ni visitante, y acreditar jornadas oficiales por proveedor. Fútbol,
+  incluidas Copa, Champions y Liga F, y baloncesto ESPN ya funcionan
   ([pendientes](agenda/resultados-diseno.md)).
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores

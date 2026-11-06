@@ -4,6 +4,25 @@ Resultados por fecha, clasificaciones y fichas de partido ya están
 implementados mediante consultas a ESPN con caché. El contrato vigente está
 en [Resultados por fecha y fichas de partido](resultados-revision-2026-11-02.md).
 
+## Próximos bloques
+
+Van antes del refactor de la interfaz, con un PR por bloque.
+
+1. **Ficha sin local ni visitante y ATP.** Hay que diseñarla antes de encargarla:
+   el contrato actual pierde jugadores, parrillas, sets, retiradas y tiempos.
+   ATP sale de ESPN, con cuadro, sets y retiradas ya comprobados.
+2. **F1 y MotoGP**, sobre esa ficha. F1 con OpenF1: Voceiro es uso no comercial.
+   MotoGP con su API oficial: sus ID no son los del calendario y falta el puente
+   de identidad; no unir por nombre.
+3. **Euroliga y WTA.** A Euroliga le falta un listado de partidos; WTA no tiene
+   correspondencia con la agenda oficial.
+
+Fuera por ahora, sin API directa: FEB, ACB, ASOBAL, WRC, ciclismo y pádel.
+
+Al añadir una competición con prefijo nuevo, vigilar `Deploy Worker Datos`: el
+worker antiguo responde 400 a un prefijo que no conoce y la vista Deportes los
+envía todos.
+
 ## Jornadas oficiales
 
 Falta acreditar un índice de pertenencia a jornada en Primera y Segunda,
