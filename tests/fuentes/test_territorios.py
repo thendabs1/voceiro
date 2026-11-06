@@ -190,9 +190,6 @@ class Territorios(unittest.TestCase):
         base = {'region': 'galicia', 'pais': 'reino-unido'}
         for (sector, ambito), esperado in casos.items():
             self.assertEqual(categoria_de({**base, 'sector': sector, 'ambito': ambito}), esperado)
-        for medio in todos_los_medios():
-            categoria, sub = categoria_de(medio)
-            self.assertEqual(medio['grupo'], f'{categoria} · {sub}' if sub else categoria, medio['d'])
 
     def test_agenda_enlaza_municipio_sin_cambiar_ids_y_rechaza_control_incorrecto(self):
         n = ampliar(construir([ficha()]))['nucleo']

@@ -2,7 +2,8 @@
 // Casos 22-27 de la especificación: fechas en hora de Madrid.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { parseQuery } from '../../shared/parser.js';
 import {
   resolverVentana, resolverLimite, ultimasHoras, pasaVentana, inicioDiaMadrid,
@@ -67,13 +68,13 @@ test('27 · sin fecha: fuera con filtro de fecha, dentro sin filtro', () => {
   assert.ok(pasaVentana(NaN, resolverVentana(parseQuery('sanchez'), A)));
 });
 
-test('no depende de la zona horaria del sistema', () => {
+test('no depende de la zona horaria del sistema', async () => {
   const codigo = `
     import { resolverLimite } from './shared/busqueda/tiempo.js';
     const A = ${A};
     console.log(JSON.stringify([resolverLimite('hoy', A), resolverLimite('ayer', A), resolverLimite('7d', A)]));`;
-  const correr = tz => execFileSync(process.execPath, ['--input-type=module', '-e', codigo],
-    { env: { ...process.env, TZ: tz }, cwd: new URL('../..', import.meta.url).pathname }).toString();
-  const base = correr('Europe/Madrid');
-  for (const tz of ['UTC', 'America/Los_Angeles', 'Asia/Tokyo']) assert.equal(correr(tz), base, tz);
+  const correr = async tz => (await promisify(execFile)(process.execPath, ['--input-type=module', '-e', codigo],
+    { env: { ...process.env, TZ: tz }, cwd: new URL('../..', import.meta.url).pathname })).stdout;
+  const base = await correr('Europe/Madrid');
+  for (const tz of ['UTC', 'America/Los_Angeles', 'Asia/Tokyo']) assert.equal(await correr(tz), base, tz);
 });
