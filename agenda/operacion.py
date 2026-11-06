@@ -162,7 +162,7 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
                 lambda url, http, cabeceras, cantidad: repo.recibida(pasada, http, cabeceras, cantidad)):
             for unidad in unidades:
                 inicio = temporadas.momento(ahora).date().isoformat()
-                fin = (date.fromisoformat(inicio) + timedelta(days=t['politica']['horizonte_dias'] - 1)).isoformat()
+                fin = (date.fromisoformat(inicio) + timedelta(days=temporadas.horizonte(t) - 1)).isoformat()
                 # La comprobación final necesita el programa del último GP.
                 if t['fin_confirmado'] and t['fin'] and t['fin'] < inicio:
                     inicio = fin = t['fin']

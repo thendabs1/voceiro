@@ -106,8 +106,8 @@ jobs:
           ACEPTAR_INVENTARIO: ${{ inputs.aceptar_inventario }}
           # Temporadas: cada colección decide si le toca (cadencia, reintentos y
           # presupuesto en agenda/temporadas.py y agenda/cadencias.py). Cuatro ticks
-          # diarios no multiplican la ventana de ESPN: caduca a las 21 h; se
-          # mantienen los límites de 32 peticiones/pasada y 64/día por proveedor.
+          # diarios no multiplican la ventana de ESPN: un día cercano caduca a las
+          # 21 h y uno lejano a las 69 h; límites: 32 peticiones/pasada y 64/día.
           DEPORTES: ${{ github.event_name == 'schedule' || inputs.operacion == 'deportes' }}
           COLECCIONES: ${{ inputs.colecciones }}
           FORZAR: ${{ inputs.forzar }}

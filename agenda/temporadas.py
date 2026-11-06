@@ -30,6 +30,8 @@ POLITICA = {
     'revision_anunciada_horas': 168, 'descubrimiento_horas': 168,
     'max_peticiones_pasada': 32, 'max_peticiones_dia': 64,
 }
+# Copas: sus partidos caen en semanas sueltas; con 14 días una ronda aparece tarde.
+HORIZONTES = {'copa-del-rey': 28, 'champions': 28}
 
 
 def momento(valor):
@@ -180,6 +182,10 @@ def exitosa(t, ahora, alcance, incidencias=(), citas=()):
     return validar(r)
 
 
+def horizonte(t):
+    return HORIZONTES.get(t['coleccion'], t['politica']['horizonte_dias'])
+
+
 def plan_fechas(t, ahora, cobertura, *, limite=None):
     """Huecos primero; después días caducados. Conserva cada día como unidad."""
     validar(t)
@@ -190,9 +196,10 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
     hoy = momento(ahora).date()
     inicio = t['inicio'] or (t.get('limites_proveedor') or {}).get('startDate')
     primero = max(hoy, date.fromisoformat(inicio[:10])) if inicio else hoy
-    ultimo = hoy + timedelta(days=t['politica']['horizonte_dias'] - 1)
+    ultimo = hoy + timedelta(days=horizonte(t) - 1)
     limite_fin = (t.get('limites_proveedor') or {}).get('endDate')
-    horas = cadencias.perfil(t['coleccion'])['cerca'] - cadencias.MARGEN_HORAS
+    perfil = cadencias.perfil(t['coleccion'])
+    horas, horas_lejos = perfil['cerca'] - cadencias.MARGEN_HORAS, perfil['base'] - cadencias.MARGEN_HORAS
     if t['fin'] and t['fin_confirmado']:
         ultimo = min(ultimo, date.fromisoformat(t['fin']))
     elif limite_fin:
@@ -204,6 +211,7 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
     elif ultimo < primero and limite_fin and not t['fin_confirmado'] and ultimo < hoy:
         # Sin fin acreditado no se cierra: una sonda semanal del último día deja ver si el proveedor amplía.
         primero, horas = ultimo, cadencias.SONDA_HORAS - cadencias.MARGEN_HORAS
+        horas_lejos = horas
     dias = [(primero + timedelta(days=i)).isoformat() for i in range(max(0, (ultimo - primero).days + 1))]
     comprobadas = {}
     for c in cobertura:
@@ -211,7 +219,9 @@ def plan_fechas(t, ahora, cobertura, *, limite=None):
             d = c['unidad']
             if d not in comprobadas or momento(c['comprobado']) > momento(comprobadas[d]):
                 comprobadas[d] = marca(c['comprobado'])
-    pendientes = [d for d in dias if d not in comprobadas or
-                  momento(comprobadas[d]) + timedelta(hours=horas) <= momento(ahora)]
+    # Una fecha lejana apenas cambia: releerla a diario desbordaría el cupo compartido.
+    cerca = (hoy + timedelta(days=cadencias.CERCA_DIAS)).isoformat()
+    pendientes = [d for d in dias if d not in comprobadas or momento(comprobadas[d])
+                  + timedelta(hours=horas if d <= cerca else horas_lejos) <= momento(ahora)]
     pendientes.sort(key=lambda d: (d in comprobadas, comprobadas.get(d, ''), d))
     return pendientes[:limite] if limite is not None else pendientes
