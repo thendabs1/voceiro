@@ -5,21 +5,22 @@ funciona. Las propuestas requieren diseño o validación antes de implementarse.
 
 ## Agenda y territorios
 
-- Revisar la interfaz del calendario, ya activada en el código. Retención,
-  retirada, nuevas fuentes y seguimiento se mantienen en
-  el [manual de agenda](agenda/README.md#pendiente).
+- Retención, retirada, nuevas fuentes y seguimiento se mantienen en el
+  [manual de agenda](agenda/README.md#pendiente).
 - Correspondencias Kulturklik, más recintos de Madrid, vigencias, relaciones
   meteorológicas y cobertura editorial múltiple:
   [relacionador territorial](shared/territorios/relacionador.md#pendiente).
 - Atletismo: RFEA, Galicia y Cataluña publicadas, con titular y actividad listos
-  para la interfaz; World Athletics se recoge sin publicar hasta el refactor.
-  Quedan interfaz y territoriales ([pendiente](agenda/atletismo.md#pendiente)).
+  para la interfaz; World Athletics se recoge sin publicar.
+  Quedan sus filtros en la interfaz y territoriales ([pendiente](agenda/atletismo.md#pendiente)).
 - Resultados deportivos: fútbol, baloncesto, tenis, Euroliga y motor funcionan.
   Falta acreditar jornadas oficiales por proveedor y las comprobaciones de
   [resultados](agenda/resultados-diseno.md#comprobar).
-- Siguiente paso: refactor de la interfaz, con el
-  [contrato de datos](agenda/interfaz-contrato.md). Territorio de las citas
-  deportivas, aplazado.
+- Interfaz de Deportes: navegación, cabecera común, Atrás y atajos publicados
+  ([contrato](agenda/interfaz-contrato.md)). Quedan revisarla en producción,
+  decidir si «Próximas semanas» sale también de la vista con todas las
+  competiciones, y estudiar «Lo mío hoy» y seguir equipos. Territorio de las
+  citas deportivas, aplazado.
 
 ## Fuentes de noticias: clubes, federaciones y otros emisores
 
