@@ -16,7 +16,7 @@ const c = {
   partirConsulta: raw => ({ consulta: tokenizeQuery(raw).find(x => x.resto)?.raw || '' }), sugerenciasEstadisticas: () => null, fragmentoTiempo: () => null,
   CAL_DEPORTES: { futbol: ['primera', 'segunda'], baloncesto: ['nba'] }, CONSULTA_DEPORTES: { primera: 'LaLiga', nba: 'NBA' }, calNombreCompeticion: x => x,
   codigoDeporte: (tipo, x) => admiteConsultaESPN(tipo, x) || admiteConsultaMotor(tipo, x), nombreConsulta: tipo => traducir('es', 'con' + tipo[0].toUpperCase() + tipo.slice(1)),
-  document: { getElementById: () => entrada }, escribirAcceso: orden => escritas.push([entrada.value, orden]), cerrarSugerencias(){},
+  document: { getElementById: () => entrada }, escribirAcceso: orden => escritas.push([entrada.value, orden]), pasoDeSugerencia: fn => fn(), cerrarSugerencias(){},
 };
 runInNewContext(leer('13-autocompletado.js') + '\n' + leer('14-deportes.js') + '\n' + sugerenciasCalendario, c);
 const valores = raw => Array.from(runInNewContext(`sugerenciasBuscar(${JSON.stringify(raw)})`, c), s => s.value);

@@ -66,6 +66,18 @@ test('Atrás: una vista elegida crea un paso con lo que había antes', () => {
   assert.equal(s.escritas.length, 1);
 });
 
+test('Atrás: elegir una sugerencia no pisa el paso con lo escrito a medias', () => {
+  const s = escenario({ buscar: 'deportes:' });
+  s.run('anotarPaso()');
+  const antes = s.c.history.state;
+  const empujados = [];
+  s.c.history.pushState = (st) => { empujados.push(st.paso.barra); };
+  s.c.history.replaceState = () => { throw new Error('no debe anotar'); };
+  s.run("$('#buscar').value = 'f1:hoy'; pasoDeSugerencia(() => {})");
+  assert.deepEqual([...empujados], ['f1:hoy']);
+  assert.equal(s.c.history.state, antes);
+});
+
 test('pedir lo que una competición no tiene lo dice y ofrece lo que sí', () => {
   const s = escenario();
   const aviso = (tipo, texto) => s.run(`avisoSinConsulta({ tipo: '${tipo}', texto: '${texto}' })`);

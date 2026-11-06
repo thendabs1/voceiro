@@ -155,10 +155,11 @@ function pintarCabeceraCompeticion(){
   clases.toggle('vista-deportes', deportes);
   document.getElementById('btn-deportes')?.setAttribute('aria-expanded', String(deportes));
   clases.toggle('con-competicion', Boolean(v));
-  // Una sola etiqueta bajo la barra es la consulta, que ya dice la cabecera.
-  clases.toggle('sin-chips', document.querySelectorAll('#chips-busqueda .chip').length <= 1);
+  // Las etiquetas de las consultas repiten la cabecera; las de otros filtros, no.
+  clases.toggle('sin-chips', document.querySelectorAll('#chips-busqueda .chip').length <= PUNTUAL.lista.length);
   const html = v ? htmlCabeceraCompeticion(v.codigo, v.tipo) : '';
-  if (!v) DEPORTES_CAB.dia = '';
+  // Al salir del calendario hay un repintado sin competición: no es dejarla.
+  if (!v && !PASOS.dentro) DEPORTES_CAB.dia = '';
   if (html === DEPORTES_CAB.html) return;
   const foco = nav.contains(document.activeElement) ? document.activeElement : null;
   const orden = foco?.dataset.orden, zona = foco?.closest('.dep-hermanas') ? '.dep-hermanas' : '.dep-tabs';
@@ -172,7 +173,7 @@ function pintarCabeceraCompeticion(){
 // para la vuelta. Resultados solo sabe de días pasados y de hoy.
 function irACompeticion(orden){
   const s = CALENDARIO, p = PUNTUAL, tipo = orden.slice(0, orden.indexOf(':'));
-  const dia = DEPORTES_CAB.dia = (s.abierto ? s.fecha : p.fecha) || DEPORTES_CAB.dia;
+  const dia = DEPORTES_CAB.dia = (s.abierto ? s.fecha : p.origen?.fecha || p.fecha) || DEPORTES_CAB.dia;
   if (tipo === 'resultados' && fechaValida(dia) && dia <= calHoy()) p.fechaPedida = dia;
   if (tipo === 'calendario') s.diaPedido = dia;
   conPaso(() => {
@@ -197,8 +198,9 @@ function pulsarCabeceraCompeticion(e){
     irACompeticion(b.dataset.orden);
     return void document.querySelector(`#competicion-cab ${zona} [aria-current]`)?.focus({ preventScroll: true });
   }
-  PUNTUAL.enfocar = '.dep-nombre';
   irACompeticion('deportes:');
+  // Después: activar la consulta limpia el foco pendiente.
+  PUNTUAL.enfocar = '.dep-nombre';
   pintarConsulta();
 }
 

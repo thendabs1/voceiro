@@ -53,6 +53,8 @@ async function init(){
     } catch(e){}
   }
 
+  anotarPaso();   // tras restaurar la búsqueda, que es lo que hay en este paso
+
   // ── 2) Carga inicial (await) ──
   try {
     await cargarBase();

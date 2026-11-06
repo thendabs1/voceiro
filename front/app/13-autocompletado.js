@@ -141,14 +141,14 @@ function aplicarSugerencia(idx){
 
   if (s.kind === 'calendario'){
     input.value = input.value.replace(/[^\s"]*$/, s.value);
-    cerrarSugerencias(); aplicarFiltros(); return;
+    cerrarSugerencias(); pasoDeSugerencia(aplicarFiltros); return;
   }
 
   // Sustituye la palabra escrita y una consulta vacía («resultados: nba»), que
   // no es un valor: el parser deja `nba` suelta.
   if (s.kind === 'orden'){
     input.value = input.value.replace(/[^\s"]*\s*$/, '');
-    cerrarSugerencias(); escribirAcceso(s.value); return;
+    cerrarSugerencias(); pasoDeSugerencia(() => escribirAcceso(s.value)); return;
   }
 
   if (s.kind === 'estadisticas'){

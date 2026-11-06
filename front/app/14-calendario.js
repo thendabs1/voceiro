@@ -476,11 +476,12 @@ function actualizarConsultaCalendario(orden){
 async function calAbrirHorarios(){
   const s = CALENDARIO, hoy = calHoy(), competiciones = calCompeticionesPedidas();
   if (competiciones.length !== 1 || CAL_DEPORTE_DE[competiciones[0]] !== 'motor') return;
-  const orden = s.orden, signal = (s.controllerHorarios = new AbortController()).signal;
+  // La clave y no el objeto: cada aplicación de filtros crea otra orden igual.
+  const clave = s.clave, signal = (s.controllerHorarios = new AbortController()).signal;
   try {
     const { eventos } = await calPedir('eventos', { ...calParametros(), desde: hoy, hasta: sumarDiasCalendario(hoy, CAL_VENTANA_DIAS),
       presentacion: 'prolongada,programa', limite: 5, revision: s.meta?.revision }, signal);
-    if (s.orden === orden && s.abierto && eventos?.[0]) abrirEventoCalendario(eventos[0].id);
+    if (s.clave === clave && s.abierto && eventos?.[0]) abrirEventoCalendario(eventos[0].id);
   } catch { /* Queda la lista: un fallo aquí no es un fallo del calendario. */ }
 }
 // Un prefijo de competición es de Deportes; el resto, de la agenda.

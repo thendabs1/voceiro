@@ -708,6 +708,21 @@ test('el cuadro pone primero lo que sigo', async () => {
   assert.match(panel.innerHTML, /dep-sigo">[\s\S]*data-orden="resultados:nba"/);
 });
 
+test('con la agenda abierta, la ficha conserva su cierre', async () => {
+  const { ctx, panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  ctx.CALENDARIO.abierto = true;
+  actualizar('resultados:nba'); await esperar();
+  assert.match(panel.innerHTML, /consulta-cerrar/);
+});
+
+test('elegir otra consulta vuelve a filtrar las noticias de debajo', async () => {
+  const { ctx, actualizar, pulsar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  actualizar('resultados:primera resultados:nba'); await esperar();
+  const antes = ctx.filtrados;
+  pulsar({ accion: 'elegir', i: '0' });
+  assert.equal(ctx.filtrados, antes + 1);
+});
+
 test('bajo una ficha, las noticias de su competición sin pedir a la prensa', async () => {
   const { ctx, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
   actualizar('resultados:primera'); await esperar();

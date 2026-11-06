@@ -19,10 +19,12 @@ function marcarPaso(){
   const paso = pasoActual();
   if (!mismoPaso(history.state?.paso, paso)) history.pushState({ paso }, '');
 }
-function conPaso(cambio){
-  if (!PASOS.dentro++) anotarPaso();
+function conPaso(cambio, anotar = true){
+  if (!PASOS.dentro++ && anotar) anotarPaso();
   try { cambio(); } finally { if (!--PASOS.dentro) marcarPaso(); }
 }
+// Completar lo que se teclea: lo escrito a medias no es un paso al que volver.
+const pasoDeSugerencia = cambio => conPaso(cambio, false);
 function volverAPaso(e){
   const paso = e.state?.paso, s = CALENDARIO;
   if (!paso || mismoPaso(paso, pasoActual())) return;
@@ -79,7 +81,6 @@ function cerrarAccesos(volver = true){
 
 function wireAccesos(){
   const boton = $('#buscar-accesos'), panel = $('#accesos-panel');
-  anotarPaso();
   window.addEventListener('popstate', volverAPaso);
   document.getElementById('competicion-cab')?.addEventListener('click', pulsarCabeceraCompeticion);
   // Después de que las sugerencias apliquen la suya.

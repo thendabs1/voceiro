@@ -378,9 +378,11 @@ if (btnFiltros && filtrosPanel){
     syncClear();
     buscarInput.addEventListener('input', syncClear);
     buscarClear.addEventListener('click', () => {
-      buscarInput.value = '';
-      syncClear();
-      aplicarFiltros();
+      conPaso(() => {
+        buscarInput.value = '';
+        syncClear();
+        aplicarFiltros();
+      });
       buscarInput.focus();
     });
   }

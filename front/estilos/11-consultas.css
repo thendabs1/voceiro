@@ -146,7 +146,7 @@
 body.vista-deportes{ max-width: none; }
 .vista-deportes :is(#competicion-cab, .consulta-panel, #calendario-panel){ width: min(100vw - 32px, 1600px); margin-left: calc(50% - min(50vw - 16px, 800px)); box-sizing: border-box; }
 .vista-deportes:not(.calendario-abierto) :is(.res-linea, #resultados, #cargar-mas-wrap, #tiempo-tarjeta, #avisos-panel){ max-width: var(--w); margin-inline: auto; }
-.con-competicion.sin-chips #chips-busqueda, .estadisticas-abiertas #competicion-cab{ display: none !important; }
+.vista-deportes.sin-chips #chips-busqueda, .estadisticas-abiertas #competicion-cab{ display: none !important; }
 .competicion-cab{ margin-block: 6px; padding: 2px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--quote-bg); font-size: .9em; }
 .competicion-cab[hidden]{ display: none; }
 .con-competicion #calendario-panel{ margin-top: 6px; }
