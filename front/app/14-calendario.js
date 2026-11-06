@@ -775,7 +775,8 @@ const calDiaLargo = dia => calFecha(dia, { weekday: 'long', month: 'long' });
 // ellos o pedidas sin muestras, los eventos.
 const calNDia = d => d.chips ?? d.citas + d.programas;
 function calCuentas(d){
-  return [calN('calNCitas', calNDia(d)), d.en_curso ? t('calNEnCurso', { n: d.en_curso }) : ''].filter(Boolean).join(' · ');
+  // Un GP en curso no son «0 citas» aunque ese día no tenga sesiones publicadas.
+  return [calNDia(d) || !d.en_curso ? calN('calNCitas', calNDia(d)) : '', d.en_curso ? t('calNEnCurso', { n: d.en_curso }) : ''].filter(Boolean).join(' · ');
 }
 const calCategoria = c => CAL_CATEGORIAS.includes(c) ? c : 'otras';
 // Categorías con algo ese día, para los puntos. Lo prolongado de cultura
@@ -877,7 +878,7 @@ function calDiaDeportes(d){
   const hoy = calHoy();
   // data-cargar: días sin pedir todavía; un fallo no se reintenta solo (se reintenta al abrir un grupo).
   return `<section class="cal-dia${d.dia < hoy ? ' cal-pasado' : ''}" id="cal-dia-${d.dia}"${l ? '' : ` data-cargar="${d.dia}"`}><h2>${calEsc(d.dia === hoy ? t('calHoy') + ' · ' + calFecha(d.dia, { weekday: 'long' }) : calDiaLargo(d.dia))}
-    <small>${calEsc(calN('calNCitas', calNDia(d)))}${d.dia < hoy ? ' · ' + calEsc(t('calPasado')) : ''}</small></h2>${grupos}${mas}</section>`;
+    <small>${calEsc(calNDia(d) || !barras.length ? calCuentas(d) : '')}${d.dia < hoy ? ' · ' + calEsc(t('calPasado')) : ''}</small></h2>${grupos}${mas}</section>`;
 }
 // Deportes carga cada día al verlo: sus grupos se rellenan sin pedir la semana
 // de golpe. Sin observador, solo el primero.
@@ -995,13 +996,14 @@ function calAltoSemana(em = calEm()){
     + (document.getElementById('calendario-panel')?.querySelector?.('.cal-barra')?.offsetHeight || em * 3) + em * 4.5;
   return Math.round(Math.min(em * 10, Math.max(em * 4.5, ((window.innerHeight || 900) - encima) / CAL_SEMANAS_MES)));
 }
-// Deportes con una o dos competiciones: caben sus partidos en el mes (Google
-// Calendar); con más, solo las marcas por competición.
-const calPartidosEnMes = () => calModoDeportes() && CALENDARIO.capas?.size <= 2;
+// Deportes con una o dos competiciones: caben sus partidos en el mes y sus torneos
+// en barra (Google Calendar); con más, solo las marcas por competición.
+// Vale para lo escrito (`feb-primera:`) y para las capas elegidas.
+const calPartidosEnMes = () => calModoDeportes() && [1, 2].includes(calCompeticionesPedidas().length);
 // Competiciones pedidas en Deportes: las escritas (`nba:`) y las capas elegidas.
 function calCompeticionesPedidas(){
   const s = CALENDARIO, o = calPideAgenda(s.orden) ? s.orden : null;
-  return [...new Set([...(o?.ambitos || []).filter(a => AMBITOS[a]?.codigo), ...(s.capas || [])])];
+  return [...new Set([...(o?.ambitos || []).filter(a => AMBITOS[a]?.codigo), ...(o?.circuitos || []), ...(s.capas || [])])];
 }
 // Último día publicado de lo elegido en Deportes: las competiciones sin
 // calendario completo se publican a unas dos semanas; las que lo tienen (F1,
@@ -1028,15 +1030,18 @@ const calDiferencia = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.
 // Deportes no caben los partidos (un sábado, diez competiciones y cuarenta
 // partidos): cada día lleva sus marcas («NBA 12», «ATP»), todas, y la semana
 // crece lo que haga falta. Solo el motor va en barra encima (un GP o rally a la
-// vez); los torneos de tenis (varios a la vez, toda la temporada) son marcas.
+// vez); los torneos de tenis (varios a la vez, toda la temporada) son marcas,
+// salvo con una o dos competiciones elegidas (calPartidosEnMes).
 function calMesTitulos(dias, rodante = false){
   const s = CALENDARIO, hoy = calHoy(), porDia = new Map((s.mes?.dias || []).map(d => [d.dia, d])), deportes = calModoDeportes();
-  const barras = (s.mes?.barras || []).filter(b => b.competiciones?.some(c => CAL_DEPORTE_DE[c] === 'motor'));
+  const partidos = calPartidosEnMes();
+  // Con pocas competiciones también caben en barra los torneos de tenis.
+  const barras = (s.mes?.barras || []).filter(b => partidos || b.competiciones?.some(c => CAL_DEPORTE_DE[c] === 'motor'));
   // Carril de 24 px como mínimo: barra de 22 con 1 px de margen arriba y abajo; las
   // barras quedan a 24 px una de otra (excepción de espaciado de AA, 2.5.8).
   const em = calEm(), alto = calAltoSemana(em), carril = Math.max(em * 1.3, 24), semanas = [];
   if (!deportes) s.altoSemana = alto;
-  const partidos = deportes && calPartidosEnMes(), publicado = deportes ? calPublicadoHasta() : '';
+  const publicado = deportes ? calPublicadoHasta() : '';
   const sinPublicar = dia => Boolean(publicado) && dia > publicado;
   for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7));
   return `<div class="cal-mg" role="group" aria-label="${calEsc(t('calMes'))}"><div class="cal-mg-cabecera">${calCabeceraSemana(dias)}</div>${semanas.map(semana => {
@@ -1054,13 +1059,15 @@ function calMesTitulos(dias, rodante = false){
     const celdas = semana.map((dia, i) => {
       const d = porDia.get(dia);
       let contenido, detalle;
-      if (deportes && partidos){
+      if (partidos){
         // Una o dos competiciones: sus partidos, hasta cinco, y «+N»; lo que va en barra no se repite.
         const enBarra = new Set(colocadas.filter(x => x.a <= i && x.z > i).flatMap(x => x.b.competiciones || []));
         const muestras = (d?.muestras || []).filter(m => !(m.competiciones || []).some(c => enBarra.has(c)));
         const mas = Math.max(0, (d ? calNDia(d) : 0) - (d?.muestras || []).length);
-        contenido = muestras.map(m => `<span class="cal-mg-chip ${calColor(m)}">${calHoraCita(m) ? `<b>${calEsc(calHoraCita(m))}</b> ` : ''}${calEsc(calNombreEvento(m))}</span>`).join('')
-          + (mas ? `<span class="cal-mg-mas">${calEsc(t('calMasN', { n: mas }))}</span>` : '');
+        // Un día sin partidos sueltos ni barra (un torneo sin programa) conserva su marca.
+        contenido = muestras.map(m => `<span class="cal-mg-chip ${calColor(m)}" title="${calEsc(calNombreEvento(m))}">${calHoraCita(m) ? `<b>${calEsc(calHoraCita(m))}</b> ` : ''}${calEsc(calNombreEvento(m))}</span>`).join('')
+          + (mas ? `<span class="cal-mg-mas">${calEsc(t('calMasN', { n: mas }))}</span>` : '')
+          || calMarcasHtml(calMarcas(d, CAL_COMPETICIONES).filter(m => !enBarra.has(m.c)));
         detalle = muestras.map(m => calNombreEvento(m));
       } else if (deportes){
         // Lo que ya va en barra ese día no se repite como marca.
@@ -1109,11 +1116,12 @@ function calTira(){
     ${ancho ? calMesTitulos(dias, rodante) : `<div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
       calCeldaDia(dia, porDia.get(dia), { otroMes: s.mesAbierto && !rodante && dia.slice(0, 7) !== s.fecha.slice(0, 7), rodante })).join('')}</div>`}
     ${calModoDeportes() ? '' : `<p class="cal-leyenda">${[...CAL_CATEGORIAS, 'otras'].map(c => `<span><span class="cal-punto cal-cat-${c}" aria-hidden="true"></span>${calEsc(calNombreCategoria(c))}</span>`).join('')}</p>`}
-    ${s.mesAbierto && calModoDeportes() ? calTemporada(diasMes, rodante) : ''}</div>`;
+    ${s.mesAbierto && calModoDeportes() && !calPartidosEnMes() ? calTemporada(diasMes, rodante) : ''}</div>`;
 }
 // Este mes en deportes (calendario de temporada de la app de F1, SofaScore):
 // por competición, sus GP o torneos con fechas y los partidos publicados. Va
 // plegado y se pide al abrirlo: abierto empujaba la lista una pantalla abajo.
+// Con pocas competiciones repetiría la rejilla, que ya enseña partidos y barras.
 // Con el mes que empieza en esta semana, el mismo período que la rejilla.
 function calTemporada(periodo, rodante){
   const s = CALENDARIO, mes = s.fecha.slice(0, 7), abierta = s.temporadaAbierta;

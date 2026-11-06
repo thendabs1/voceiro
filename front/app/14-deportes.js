@@ -75,6 +75,17 @@ function htmlVistaDeportes(tipo){
   }).join('')}</div>`;
 }
 
+// `resultados:feb-primera` o `resultados:xyz`: se dice por qué sale la vista general
+// y, si la competición existe, se ofrece lo que sí tiene.
+function avisoSinConsulta({ tipo, texto }){
+  const codigo = normalize(texto);
+  if (!codigo) return '';
+  const acciones = accionesCompeticion(codigo);
+  if (!acciones.length && !Object.hasOwn(AMBITOS, codigo)) return msgConsulta('conNoReconocida', { x: texto });
+  return msgConsulta('conSinVista', { x: nombreCompeticionCorto(codigo), y: nombreConsulta(tipo).toLowerCase() })
+    + opcionesConsulta(acciones.map(a => `<button type="button" data-accion="orden" data-orden="${escapeHtml(a.orden)}">${escapeHtml(a.texto)}</button>`).join(''));
+}
+
 // Competición que enseña el panel, si es una ficha de resultados o clasificación.
 function competicionConsulta(){
   const { activa: c, estado, origen } = PUNTUAL;
