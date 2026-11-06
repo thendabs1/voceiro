@@ -154,8 +154,10 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
   cita empieza en los próximos 7 días o hay una incidencia real. Durante una
   competición (inicio y fin incluidos), 24 h salvo F1, MotoGP y WRC: 6 h.
   `programacion_pendiente` y `programacion_pendiente_conservada` no aceleran.
-  Se restan 3 h al programar para absorber retrasos del cron; la cobertura por
-  día caduca a las 21 h. Anuncio, cierre y descubrimiento conservan sus reglas.
+  Se restan 3 h al programar para absorber retrasos del cron; la cobertura de un
+  día caduca a las 21 h, y a las 69 h si faltan más de 7 días, porque ESPN comparte
+  64 peticiones/día. La ventana es de 14 días; Copa y Champions, 28. Anuncio,
+  cierre y descubrimiento conservan sus reglas.
   Sin inicio acreditado, el plan respeta `limites_proveedor.startDate`: una
   temporada futura fuera del horizonte no genera consultas por fecha. Sin fin
   confirmado, `endDate` corta igual el plan: las fechas de la temporada

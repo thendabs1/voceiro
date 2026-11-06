@@ -236,6 +236,29 @@ class PlanFechas(unittest.TestCase):
         return {'unidad': unidad, 'comprobado': comprobado or self.AHORA,
                 'proveedor': proveedor, 'completa': completa}
 
+    def test_una_fecha_lejana_caduca_mas_despacio_que_una_cercana(self):
+        t = temporadas.nueva('primera', '2026-27', self.AHORA, politica={'horizonte_dias': 14})
+        hoy = temporadas.momento(self.AHORA).date()
+        dias = [(hoy + timedelta(days=i)).isoformat() for i in range(14)]
+        comprobado = temporadas.marca(temporadas.momento(self.AHORA) - timedelta(hours=30))
+        cobertura = [{'proveedor': t['principal'], 'completa': True, 'unidad': d, 'comprobado': comprobado}
+                     for d in dias]
+        plan = temporadas.plan_fechas(t, self.AHORA, cobertura)
+        self.assertEqual(plan, dias[:cadencias.CERCA_DIAS + 1])
+        viejo = temporadas.marca(temporadas.momento(self.AHORA) - timedelta(hours=70))
+        for c in cobertura:
+            c['comprobado'] = viejo
+        self.assertEqual(temporadas.plan_fechas(t, self.AHORA, cobertura), dias)
+
+    def test_las_copas_miran_mas_lejos_sin_tocar_la_politica_guardada(self):
+        hoy = temporadas.momento(self.AHORA).date()
+        for coleccion, dias in (('champions', 28), ('copa-del-rey', 28), ('liga-f', 14), ('nba', 14)):
+            with self.subTest(coleccion):
+                t = temporadas.nueva(coleccion, '2026-27', self.AHORA)
+                self.assertEqual(t['politica']['horizonte_dias'], 14)
+                self.assertEqual(temporadas.plan_fechas(t, self.AHORA, [])[-1],
+                                 (hoy + timedelta(days=dias - 1)).isoformat())
+
     def test_presupuesto_acotado_reanuda_por_huecos_sin_repetir_primeros_dias(self):
         t = self.nueva()
         a = temporadas.plan_fechas(t, self.AHORA, [], limite=2)
