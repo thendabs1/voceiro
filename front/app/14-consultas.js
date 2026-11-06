@@ -283,6 +283,7 @@ function pulsarConsulta(ev){
         document.querySelector('#competicion-cab .dep-tabs [aria-current]')?.focus({ preventScroll: true });
       }
       break;
+    case 'calendario-deportes': abrirCalendarioDeportes(); break;
     case 'grupo': {
       const i = Number(b.dataset.i);
       if (!Number.isInteger(i) || !p.ficha?.ficha?.grupos?.[i]) break;

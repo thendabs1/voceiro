@@ -1465,7 +1465,6 @@ function pintarCalendario(repintado = false){
   p.hidden = !visible;
   document.body.classList.toggle('calendario-abierto', visible);
   document.getElementById('btn-calendario')?.setAttribute('aria-expanded', String(visible && !calModoDeportes()));
-  document.getElementById('btn-deportes')?.setAttribute('aria-expanded', String(visible && calModoDeportes()));
   pintarCabeceraCompeticion();
   if (!visible) return;
   s.fecha ||= calHoy();
@@ -1493,7 +1492,7 @@ function pintarCalendario(repintado = false){
   const contenido = calContenido();
   // Arriba la ciudad (en Deportes, el título) y las acciones; debajo, atajos de
   // fecha y chips: en la agenda, temas; en Deportes, deportes y competiciones.
-  p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="${deportes && !cab ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(cab ? calNombreCompeticion(cab) : t(deportes ? 'calDeportesTitulo' : 'calTitulo'))}</h1>
+  p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="${deportes && !cab ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(cab ? calNombreCompeticion(cab) : t(deportes ? 'calDeportesTitulo' : 'calAgenda'))}</h1>
     ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? calEnlacesDeportes() : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
     ${cab ? '' : s.orden?.noticias ? calBoton('cerrar', t('calVerNoticias')) : calBoton('cerrar', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calCerrar'))}" title="${calEsc(t('calCerrar'))}"`)}</div>
     <div class="cal-chips cal-rangos ui-tira" role="group" aria-label="${calEsc(t('calCuando'))}">${rango('hoy', hoy)}${rango('manana', manana)}${rango('finde')}
@@ -1531,12 +1530,11 @@ function calElegirRango(rango){
 function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   document.getElementById('btn-as-calendario')?.addEventListener('click', asistenteCalendarioDesdeAjustes);
-  // Dos entradas a la misma vista: la agenda y Deportes. Pulsar la abierta la cierra.
-  for (const [id, vista] of [['btn-calendario', 'agenda'], ['btn-deportes', 'deportes']]){
-    const boton = document.getElementById(id);
-    boton.hidden = !CALENDARIO_ACTIVO;
-    boton.addEventListener('click', e => { const b = e.currentTarget; conPaso(() => s.abierto && s.vista === vista ? salirCalendario() : abrirCalendario(b, vista)); });
-  }
+  // Agenda abre esta vista y Deportes, su cuadro general. Pulsar la abierta la cierra.
+  const agenda = document.getElementById('btn-calendario'), deportes = document.getElementById('btn-deportes');
+  agenda.hidden = deportes.hidden = !CALENDARIO_ACTIVO;
+  agenda.addEventListener('click', () => conPaso(() => s.abierto && s.vista === 'agenda' ? salirCalendario() : abrirCalendario(agenda, 'agenda')));
+  deportes.addEventListener('click', pulsarBotonDeportes);
   p.addEventListener('click', e => {
     const b = e.target.closest('[data-cal]');
     if (!b) return;

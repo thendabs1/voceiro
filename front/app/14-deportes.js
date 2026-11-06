@@ -63,6 +63,24 @@ function filaCompeticion(c, contexto = ''){
 }
 const contextoDeportes = tipo => ['resultados', 'clasificacion'].includes(tipo) ? tipo : '';
 
+// Arriba del cuadro: lo de hoy y el finde, el calendario y lo que sigo.
+function htmlInicioDeportes(sigo){
+  const orden = (o, texto) => `<button type="button" data-accion="orden" data-orden="${escapeHtml(o)}">${escapeHtml(texto)}</button>`;
+  const filas = sigo.map(c => filaCompeticion(c)).join('');
+  return `<div class="dep-inicio"><div class="dep-atajos ui-tira">${orden('hoy:deportes', t('calHoy'))}${orden('finde:deportes', t('calFinde'))}
+    <button type="button" data-accion="calendario-deportes">${escapeHtml(t('calTitulo'))}</button></div>
+    ${filas ? `<div class="dep-sigo">${filas}</div>` : ''}</div>`;
+}
+// El botón Deportes: el cuadro general, que es una consulta y se escribe como
+// «‹ Deportes». Pulsado con el cuadro abierto, lo cierra.
+function pulsarBotonDeportes(){
+  cerrarEstadisticas(false);
+  if (PUNTUAL.activa?.tipo === 'deportes' && !CALENDARIO.abierto) return conPaso(quitarConsultas);
+  irDesdeCalendario('deportes:');
+}
+function abrirCalendarioDeportes(){
+  conPaso(() => { quitarConsultas(); abrirCalendario(document.getElementById('btn-deportes'), 'deportes'); });
+}
 // Vista general: en pantalla ancha, todo a la vista; en móvil, plegada salvo lo
 // que sigo o, sin nada seguido, el primer bloque.
 function htmlVistaDeportes(tipo){
@@ -70,7 +88,7 @@ function htmlVistaDeportes(tipo){
   const estrecha = globalThis.matchMedia?.('(max-width: 600px)').matches;
   const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, contextoDeportes(tipo))).join('') }))
     .filter(b => b.filas);
-  return `<div class="dep-vista">${bloques.map((b, i) => {
+  return `${tipo === 'deportes' ? htmlInicioDeportes(sigo) : ''}<div class="dep-vista">${bloques.map((b, i) => {
     const abierto = !estrecha || b.cs.some(c => sigo.includes(c)) || (!sigo.length && i === 0);
     return `<details class="dep-bloque"${abierto ? ' open' : ''}><summary>${escapeHtml(t(CAL_NOMBRES_DEPORTE[b.k]))}</summary>${b.filas}</details>`;
   }).join('')}</div>`;
@@ -133,7 +151,9 @@ function pintarCabeceraCompeticion(){
   if (!nav) return;
   const v = vistaCompeticion(), s = CALENDARIO, activa = PUNTUAL.activa;
   const clases = document.body.classList;
-  clases.toggle('vista-deportes', Boolean(v) || (s.abierto ? calModoDeportes() : Boolean(activa && esDeporteConsulta(activa.tipo))));
+  const deportes = Boolean(v) || (s.abierto ? calModoDeportes() : Boolean(activa && esDeporteConsulta(activa.tipo)));
+  clases.toggle('vista-deportes', deportes);
+  document.getElementById('btn-deportes')?.setAttribute('aria-expanded', String(deportes));
   clases.toggle('con-competicion', Boolean(v));
   // Una sola etiqueta bajo la barra es la consulta, que ya dice la cabecera.
   clases.toggle('sin-chips', document.querySelectorAll('#chips-busqueda .chip').length <= 1);

@@ -717,7 +717,7 @@ export default {
   "avisosAmarillos": "Horiak: {n}",
   "avisosVarios": "hainbat aldi",
   // Calendario y Deportes.
-  "calTitulo": "Egutegia",
+  "calTitulo": "Egutegia", "calAgenda": "Agenda",
   "calDeportesTitulo": "Kirolak",
   "calEligeSitio": "Aukeratu leku bat",
   "calEligeSitioTexto": "Agenda leku bati dagokio: udalerri, probintzia edo autonomia-erkidego bati. Lehiaketak (F1, LaLiga, NBA, ATP…) Kirolak atalean daude.",

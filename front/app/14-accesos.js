@@ -2,7 +2,8 @@
    ACCESOS DEL BUSCADOR (▾ al final de la barra, como las opciones de Gmail)
    Lanzador corto: lo que sigo y el camino a la vista general de deportes.
    Cada acceso escribe su orden en la barra y la aplica (modelo GitHub: el
-   filtro activo se ve y se aprende); los botones de las vistas no escriben.
+   filtro activo se ve y se aprende). El botón Agenda no escribe; el de Deportes
+   abre el cuadro general, que es una consulta, y por eso escribe `deportes:`.
    ═══════════════════════════════════════════════════════════════ */
 const ACCESOS = { abierto: false };
 const ACCESOS_PRIMERAS = 4;

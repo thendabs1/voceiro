@@ -36,7 +36,8 @@ anterior si el candidato no se construye o no supera las comprobaciones.
 ## Calendario
 
 El calendario está activado mediante `CALENDARIO_ACTIVO = true`, con vistas
-de Agenda y Deportes, órdenes y sugerencias. La revisión de la interfaz
+de Agenda y Deportes, órdenes y sugerencias. El botón Agenda abre la del sitio;
+el de Deportes, el cuadro general, desde el que se llega al calendario de todas. La revisión de la interfaz
 sigue abierta; este estado del código no acredita el despliegue publicado.
 
 `app/14-calendario.js` ya consulta la API `/calendario/*` de los backends de

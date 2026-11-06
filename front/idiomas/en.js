@@ -717,7 +717,7 @@ export default {
   "avisosAmarillos": "Yellow: {n}",
   "avisosVarios": "several periods",
   // Calendario y Deportes.
-  "calTitulo": "Calendar",
+  "calTitulo": "Calendar", "calAgenda": "Agenda",
   "calDeportesTitulo": "Sports",
   "calEligeSitio": "Choose a place",
   "calEligeSitioTexto": "The local calendar covers one place: a municipality, province or autonomous community. Competitions (F1, LaLiga, NBA, ATP…) are in Sports.",

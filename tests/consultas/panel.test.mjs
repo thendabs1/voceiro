@@ -692,6 +692,22 @@ test('una competición enlaza sus secciones, las de su deporte y la vista genera
   assert.match(tabla, /data-orden="resultados:copa-del-rey">Copa del Rey/);
 });
 
+test('el cuadro de deportes empieza por hoy, finde y calendario; resultados: no', async () => {
+  const { panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  actualizar('deportes:'); await esperar();
+  assert.match(panel.innerHTML, /data-orden="hoy:deportes">Hoy[\s\S]*data-orden="finde:deportes">[\s\S]*data-accion="calendario-deportes">Calendario/);
+  assert.doesNotMatch(panel.innerHTML, /dep-sigo/);
+  actualizar('resultados:'); await esperar();
+  assert.doesNotMatch(panel.innerHTML, /dep-inicio/);
+});
+
+test('el cuadro pone primero lo que sigo', async () => {
+  const { ctx, panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
+  ctx.calPreferencias = () => ({ competiciones: ['nba'] });
+  actualizar('deportes:'); await esperar();
+  assert.match(panel.innerHTML, /dep-sigo">[\s\S]*data-orden="resultados:nba"/);
+});
+
 test('bajo una ficha, las noticias de su competición sin pedir a la prensa', async () => {
   const { ctx, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
   actualizar('resultados:primera'); await esperar();
