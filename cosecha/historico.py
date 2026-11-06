@@ -10,7 +10,7 @@ import unicodedata
 from . import config
 from .fechas import (_es_dia, _fecha_agrupacion_dt, _fecha_orden,
                      _parse_iso_flexible, _reconstruir_fecha)
-from .texto import _limpiar_cdata, _url_corta
+from .texto import _host_al_leer, _limpiar_cdata, _url_corta
 
 
 # Titulares programáticos: se filtran al fusionar para cubrir todas las
@@ -130,7 +130,7 @@ def cargar_historico_payload():
                     if u_raw.startswith('http://') or u_raw.startswith('https://'):
                         u_iso = u_raw
                     elif u_raw.startswith('/'):
-                        u_iso = f"https://{dom}{u_raw}"
+                        u_iso = f"https://{_host_al_leer(m_info.get('h'), dom, dom)}{u_raw}"
                     else:
                         u_iso = u_raw
 
@@ -165,7 +165,7 @@ def cargar_historico_payload():
                         if u_alt.startswith('http://') or u_alt.startswith('https://'):
                             enlace_alt = u_alt
                         elif u_alt.startswith('/'):
-                            host_alt = m_alt.get('h') or f"www.{dom_alt}"
+                            host_alt = _host_al_leer(m_alt.get('h'), dom_alt)
                             enlace_alt = f"https://{host_alt}{u_alt}"
                         else:
                             enlace_alt = u_alt
