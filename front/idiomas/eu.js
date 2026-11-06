@@ -505,6 +505,7 @@ export default {
   "conSerie": "Telesaila",
   "conClasificacion": "Sailkapena",
   "conResultados": "Emaitzak",
+  "conEuroliga": "Euroliga",
   "conFechaResultados": "Emaitzen data",
   "conDiaAnterior": "Aurreko eguna",
   "conDiaSiguiente": "Hurrengo eguna",

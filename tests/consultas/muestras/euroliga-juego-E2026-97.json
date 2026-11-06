@@ -1,0 +1,69 @@
+{
+  "identifier": "E2026_97",
+  "gameCode": 97,
+  "season": {
+    "name": "EuroLeague 2026-27",
+    "code": "E2026",
+    "alias": "2026-27",
+    "competitionCode": "E",
+    "year": 2026,
+    "startDate": "2026-07-01T00:00:00"
+  },
+  "played": false,
+  "utcDate": "2026-11-06T17:00:00Z",
+  "local": {
+    "club": {
+      "code": "BES",
+      "name": "Besiktas Istanbul",
+      "abbreviatedName": "Besiktas",
+      "editorialName": "Besiktas",
+      "tvCode": "BJK",
+      "isVirtual": false,
+      "images": {
+        "crest": "https://media-cdn.cortextech.io/1dU3kpCqReRp93/1BSdBWIjChWbHH/b05e3c54-e672-4b31-9f86-c91e9de7715c.png"
+      }
+    },
+    "score": 0,
+    "standingsScore": 0,
+    "partials": {
+      "partials1": 0,
+      "partials2": 0,
+      "partials3": 0,
+      "partials4": 0,
+      "extraPeriods": {}
+    }
+  },
+  "road": {
+    "club": {
+      "code": "ZAL",
+      "name": "Zalgiris Kaunas",
+      "abbreviatedName": "Zalgiris",
+      "editorialName": "Zalgiris",
+      "tvCode": "ZAL",
+      "isVirtual": false,
+      "images": {
+        "crest": "https://media-cdn.incrowdsports.com/0aa09358-3847-4c4e-b228-3582ee4e536d.png"
+      }
+    },
+    "score": 0,
+    "standingsScore": 0,
+    "partials": {
+      "partials1": 0,
+      "partials2": 0,
+      "partials3": 0,
+      "partials4": 0,
+      "extraPeriods": {}
+    }
+  },
+  "venue": {
+    "name": "TURKCELL BASKETBALL DEVELOPMENT CENTER",
+    "code": "AVG2",
+    "capacity": 10000,
+    "address": "Kazliçesme Mah. 10. Yil Caddesi No: 2/1 Zeytinburnu / Turkiye",
+    "images": {
+      "medium": null
+    },
+    "active": true,
+    "notes": ""
+  }
+}

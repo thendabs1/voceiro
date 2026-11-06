@@ -1,0 +1,69 @@
+{
+  "identifier": "E2026_1",
+  "gameCode": 1,
+  "season": {
+    "name": "EuroLeague 2026-27",
+    "code": "E2026",
+    "alias": "2026-27",
+    "competitionCode": "E",
+    "year": 2026,
+    "startDate": "2026-07-01T00:00:00"
+  },
+  "played": true,
+  "utcDate": "2026-09-24T18:00:00Z",
+  "local": {
+    "club": {
+      "code": "RED",
+      "name": "Crvena Zvezda Meridianbet Belgrade",
+      "abbreviatedName": "Crvena Zvezda",
+      "editorialName": "Crvena",
+      "tvCode": "CZV",
+      "isVirtual": false,
+      "images": {
+        "crest": "https://media-cdn.incrowdsports.com/d2eef4a8-62df-4fdd-9076-276004268515.png"
+      }
+    },
+    "score": 77,
+    "standingsScore": 77,
+    "partials": {
+      "partials1": 21,
+      "partials2": 24,
+      "partials3": 12,
+      "partials4": 20,
+      "extraPeriods": {}
+    }
+  },
+  "road": {
+    "club": {
+      "code": "ZAL",
+      "name": "Zalgiris Kaunas",
+      "abbreviatedName": "Zalgiris",
+      "editorialName": "Zalgiris",
+      "tvCode": "ZAL",
+      "isVirtual": false,
+      "images": {
+        "crest": "https://media-cdn.incrowdsports.com/0aa09358-3847-4c4e-b228-3582ee4e536d.png"
+      }
+    },
+    "score": 83,
+    "standingsScore": 83,
+    "partials": {
+      "partials1": 28,
+      "partials2": 15,
+      "partials3": 16,
+      "partials4": 24,
+      "extraPeriods": {}
+    }
+  },
+  "venue": {
+    "name": "BELGRADE ARENA",
+    "code": "ATM8",
+    "capacity": 21000,
+    "address": "Bulevar Arsenija Carnojevica 58, 11070 Belgrade - Serbia",
+    "images": {
+      "medium": null
+    },
+    "active": true,
+    "notes": ""
+  }
+}

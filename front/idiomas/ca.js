@@ -505,6 +505,7 @@ export default {
   "conSerie": "Sèrie",
   "conClasificacion": "Classificació",
   "conResultados": "Resultats",
+  "conEuroliga": "Eurolliga",
   "conFechaResultados": "Data dels resultats",
   "conDiaAnterior": "Dia anterior",
   "conDiaSiguiente": "Dia següent",

@@ -585,6 +585,7 @@ export default {
   "conSerie": "Serie",
   "conClasificacion": "Clasificación",
   "conResultados": "Resultados",
+  "conEuroliga": "Euroliga",
   "conFechaResultados": "Fecha de los resultados",
   "conDiaAnterior": "Día anterior",
   "conDiaSiguiente": "Día siguiente",
