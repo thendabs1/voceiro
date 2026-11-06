@@ -7,8 +7,8 @@ MARGEN_HORAS = 3
 CERCA_DIAS = 7
 SONDA_HORAS = 168
 # Una cita sin programación resuelta bloquea el cierre, pero no acelera la revisión
-# ni invalida el día que se leyó entero.
-PROGRAMACION_PENDIENTE = ('programacion_pendiente', 'programacion_pendiente_conservada')
+# ni invalida el día que se leyó entero. Tampoco un partido que dejó su fecha.
+PROGRAMACION_PENDIENTE = ('programacion_pendiente', 'programacion_pendiente_conservada', 'ausente_de_su_fecha')
 PERFILES = {
     'calendario': {'base': 72, 'cerca': 24, 'competicion': 24},
     'gran-premio': {'base': 72, 'cerca': 24, 'competicion': 6},
@@ -16,6 +16,7 @@ PERFILES = {
 COLECCIONES = {
     'atp': 'calendario', 'wta': 'calendario',
     'primera': 'calendario', 'segunda': 'calendario',
+    'copa-del-rey': 'calendario', 'champions': 'calendario',
     'nba': 'calendario', 'wnba': 'calendario',
     'feb-endesa': 'calendario', 'feb-primera': 'calendario', 'feb-challenge': 'calendario',
     'f1': 'gran-premio', 'motogp': 'gran-premio', 'wrc': 'gran-premio',

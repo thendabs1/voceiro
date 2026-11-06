@@ -13,6 +13,8 @@ CATALOGO = {
     'wta': ('WTA', 'espn-wta', 'fecha'),
     'primera': ('Primera', 'espn-primera', 'fecha'),
     'segunda': ('Segunda', 'espn-segunda', 'fecha'),
+    'copa-del-rey': ('Copa del Rey', 'espn-copa-del-rey', 'fecha'),
+    'champions': ('Champions', 'espn-champions', 'fecha'),
     'nba': ('NBA', 'espn-nba', 'fecha'),
     'wnba': ('WNBA', 'espn-wnba', 'fecha'),
     'feb-endesa': ('LF Endesa', 'feb-endesa', 'temporada'),

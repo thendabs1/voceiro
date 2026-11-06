@@ -91,6 +91,13 @@ test('una competición se reconoce por palabras completas; LaLiga Hypermotion no
   assert.equal(noticiaEnAmbitos('El Madrid lidera LaLiga', orden('primera:')), true);
   assert.equal(noticiaEnAmbitos('Récord en la Primera División', orden('primera:')), true);
 });
+test('Copa del Rey y Champions son competiciones con prefijo propio', () => {
+  assert.deepEqual(orden('copa-del-rey: champions:').ambitos, ['copa-del-rey', 'champions']);
+  assert.deepEqual(orden('circuito:copa-del-rey,champions').circuitos, ['copa-del-rey', 'champions']);
+  assert.equal(noticiaEnAmbitos('El Mallorca cae en la Copa del Rey', orden('copa-del-rey:')), true);
+  assert.equal(noticiaEnAmbitos('Noche grande de Champions League', orden('champions:')), true);
+  assert.equal(noticiaEnAmbitos('La Copa del Mundo empieza en junio', orden('copa-del-rey:')), false);
+});
 test('cada tema que usan las tablas de la agenda tiene su prefijo', () => {
   const dir = new URL('../../agenda/tablas/', import.meta.url), temas = new Set();
   for (const f of readdirSync(dir)) {

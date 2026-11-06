@@ -83,6 +83,8 @@ export function prepararLectura(datos) {
     // Enlace oficial, no un resultado estructurado: no activa `resultado_disponible`.
     if (e.atletismo?.resultados_enlazados) tarjeta.resultados_enlazados = true;
     if (e.programa?.length) tarjeta.tiene_programa = true;
+    // Ronda e ida/vuelta de Copa y Champions: dato para la tarjeta, sin clave en el resto.
+    if (e.ronda_torneo) tarjeta.ronda_torneo = e.ronda_torneo;
     const propias = new Set(objetivos.flatMap(o => o.temas || []).flatMap(t => raicesDe(t)));
     const categoria = ordenRaices.find(r => propias.has(r));
     if (categoria) tarjeta.categoria = categoria;

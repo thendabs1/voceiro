@@ -224,11 +224,20 @@ class Repositorio:
                 '(SELECT 1 FROM agenda_pasadas WHERE id=? AND estado=? AND lease_hasta=? AND datos_json=?)',
                 (p['id'], 'en_curso', p['lease_hasta'], codificar(p)))
 
+    @staticmethod
+    def _cupo(proveedor):
+        return 'espn' if proveedor.startswith('espn-') else 'feb' if proveedor.startswith('feb-') else proveedor
+
+    def restantes(self, t, proveedor, ahora):
+        dia = temporadas.momento(ahora).strftime('%Y-%m-%d')
+        filas = self.consultar('SELECT peticiones FROM agenda_control_consumo WHERE proveedor=? AND periodo=?',
+                               (self._cupo(proveedor), dia))
+        return max(0, t['politica']['max_peticiones_dia'] - (filas[0][0] if filas else 0))
+
     def reservar(self, t, p, url, ahora):
         if len(p['peticiones']) >= t['politica']['max_peticiones_pasada']:
             raise PresupuestoAgotado('Presupuesto de la pasada agotado')
-        proveedor = ('espn' if p['proveedor'].startswith('espn-') else
-                     'feb' if p['proveedor'].startswith('feb-') else p['proveedor'])
+        proveedor = self._cupo(p['proveedor'])
         dia = temporadas.momento(ahora).strftime('%Y-%m-%d')
         periodos = [(dia, t['politica']['max_peticiones_dia'])]
         if proveedor == 'ocblacktop-wrc':

@@ -117,7 +117,7 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
         atletismo = 'atletismo' in entidades[k].get('temas', [])
         politica = nucleo.identificador('seleccion', nucleo.objetivo(entidades[k]['tipo'], entidades[k]['id']), bloque)
         if ((atletismo and politica not in n['politicas'])
-                or s is None and bloque in ('identificadores', 'agenda', 'atletismo')):
+                or s is None and bloque in ('identificadores', 'agenda', 'atletismo', 'ronda_torneo')):
             e = entidades[k]
             s = nucleo.seleccionar(n, nucleo.objetivo(e['tipo'], e['id']), bloque, activas,
                 [i for i in n['entidades'][k]['evidencias'] if i in activas and i in observaciones])
@@ -270,6 +270,9 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
         agenda = seleccion(k, 'agenda')
         if agenda and agenda.get('valor'):
             eventos[-1]['agenda'] = agenda['valor']
+        ronda = seleccion(k, 'ronda_torneo')
+        if ronda and ronda.get('valor'):
+            eventos[-1]['ronda_torneo'] = ronda['valor']
         atletismo = seleccion(k, 'atletismo')
         variantes = [{'valor': deepcopy(observaciones[i]['bloques']['atletismo']),
                       'nombres': deepcopy(observaciones[i]['bloques']['nombres']),

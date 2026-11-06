@@ -44,6 +44,8 @@ export const AMBITOS = {
   // «LaLiga Hypermotion» es Segunda: no cuenta como Primera aunque empiece por LaLiga.
   primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'], noticiasNo: ['LaLiga Hypermotion'] },
   segunda: { codigo: 'segunda', noticias: ['Segunda División', 'LaLiga Hypermotion'] },
+  'copa-del-rey': { codigo: 'copa-del-rey', nombre: 'Copa del Rey', noticias: ['Copa del Rey'] },
+  champions: { codigo: 'champions', nombre: 'Champions', noticias: ['Champions League', 'Liga de Campeones', 'Champions'] },
   nba: { codigo: 'nba', noticias: ['NBA'] },
   wnba: { codigo: 'wnba', noticias: ['WNBA'] },
   'feb-endesa': { codigo: 'feb-endesa', noticias: ['Liga Femenina Endesa'] },
