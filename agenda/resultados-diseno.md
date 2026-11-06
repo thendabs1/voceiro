@@ -27,7 +27,6 @@ En MotoGP, `date` de resultados lleva offset UTC falso y es hora local, y
 
 ## Comprobar
 
-- Panel en navegador con tenis, Euroliga y motor.
 - Consumo real de ESPN: la estimación es 56 peticiones/día con cinco colecciones.
   Con WNBA a la vez son unas 69, sobre el cupo de 64: revisar en mayo de 2027.
 - Sprint de F1 contra la fuente oficial y playoffs de Euroliga.
