@@ -59,7 +59,7 @@ for (const competicion of ['f1', 'motogp']) {
     b.fecha('2026-11-01'); await esperar();
     b.pulsar({ accion: 'partido', id: b.ficha.id }); await esperar();
     assert.equal(b.pedidos.length, 3); assert.equal(b.pedidos[2].searchParams.has('fecha'), false);
-    assert.match(b.panel.innerHTML, /Volver a resultados/); assert.match(b.panel.innerHTML, /<span class="consulta-tipo">Sesión/);
+    assert.match(b.panel.innerHTML, /Volver a resultados/); assert.match(b.panel.innerHTML, /‹ Resultados/);
     assert.doesNotMatch(b.panel.innerHTML, /data-fecha-resultados|ESPN/);
     assert.ok(b.panel.innerHTML.includes(b.ficha.fuente.licencia_url));
     if (competicion === 'f1') assert.match(b.panel.innerHTML, /Q1: 77.341 · Q2: 76.953 · Q3: 76.514/);

@@ -813,9 +813,11 @@ function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
   return hay.map(([c, n]) => ({ c, texto: CAL_MARCAS[c] + (n.citas > 1 ? ' ' + n.citas : ''),
     nombre: calNombreCompeticion(c) + (n.citas ? ' · ' + calN('calNPartidos', n.citas) : '') }));
 }
-const CAL_MARCAS_DIA = 3;
-const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.slice(0, CAL_MARCAS_DIA).map(m => `<span class="cal-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}">${calEsc(m.texto)}</span>`).join('')}
-  ${marcas.length > CAL_MARCAS_DIA ? `<span class="cal-marca cal-mas">+${marcas.length - CAL_MARCAS_DIA}</span>` : ''}</span>` : '';
+// La misma pastilla en la tira y en el mes, con las que quepan por línea; el
+// botón del día lleva la lista completa en su etiqueta. En móvil cabe una por
+// línea: pasadas cinco, el CSS las oculta y enseña el «+N».
+const CAL_MARCAS_MOVIL = 5;
+const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.map(m => `<span class="cal-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}" title="${calEsc(m.nombre)}">${calEsc(m.texto)}</span>`).join('')}${marcas.length > CAL_MARCAS_MOVIL ? `<span class="cal-marcas-mas">+${marcas.length - CAL_MARCAS_MOVIL}</span>` : ''}</span>` : '';
 const calNombreCompeticion = c => AMBITOS[c]?.nombre || AMBITOS[c]?.noticias?.[0] || c;
 const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidden="true">${cats.map(c => `<span class="cal-punto cal-cat-${c}"></span>`).join('')}</span>` : '';
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
@@ -1064,7 +1066,7 @@ function calMesTitulos(dias, rodante = false){
         // Lo que ya va en barra ese día no se repite como marca.
         const enBarra = new Set(colocadas.filter(x => x.a <= i && x.z > i).flatMap(x => x.b.competiciones || []));
         const marcas = calMarcas(d, CAL_COMPETICIONES).filter(m => !enBarra.has(m.c));
-        contenido = marcas.length ? `<span class="cal-mg-marcas">${marcas.map(m => `<span class="cal-mg-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}" title="${calEsc(m.nombre)}">${calEsc(m.texto)}</span>`).join('')}</span>` : '';
+        contenido = calMarcasHtml(marcas);
         detalle = calMarcas(d).map(m => m.nombre);
       } else {
         const muestras = (d?.muestras || []).slice(0, caben), mas = Math.max(0, (d?.chips ?? muestras.length) - muestras.length);
@@ -1085,20 +1087,25 @@ function calMesTitulos(dias, rodante = false){
   }).join('')}</div>${dias.some(sinPublicar) ? `<p class="cal-nota cal-leyenda-sin-publicar">${calEsc(t(
     calCompeticionesPedidas().every(c => CAL_FUENTE_ATLETISMO[c]) ? 'calSinPublicarNotaAtletismo' : 'calSinPublicarNota'))}</p>` : ''}`;
 }
+// Semana o mes que empieza en esta semana: un mes si no cruza; si cruza, los dos.
+function calTituloPeriodo(desde, hasta){
+  const corto = { month: 'short', day: undefined }, conAnio = { ...corto, year: 'numeric' };
+  if (desde.slice(0, 7) === hasta.slice(0, 7)) return calFecha(desde, { month: 'long', year: 'numeric', day: undefined });
+  return `${calFecha(desde, desde.slice(0, 4) === hasta.slice(0, 4) ? corto : conAnio)} – ${calFecha(hasta, conAnio)}`;
+}
 function calTira(){
   const s = CALENDARIO, porDia = new Map([...(s.resumen || []), ...(s.mesAbierto ? s.mes?.dias || [] : [])].map(d => [d.dia, d]));
   const { dias: diasMes, rodante } = s.mesAbierto ? calPeriodoMes() : { dias: null, rodante: false };
   const dias = diasMes || ventanaCalendario(s.fecha, 'semana');
-  const titulo = rodante ? calFecha(dias[0], { month: 'short', day: undefined }) + ' – ' + calFecha(dias.at(-1), { month: 'short', year: 'numeric', day: undefined })
-    : calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined });
+  const titulo = s.mesAbierto && !rodante ? calFecha(s.fecha, { month: 'long', year: 'numeric', day: undefined }) : calTituloPeriodo(dias[0], dias.at(-1));
   const [ant, sig] = s.mesAbierto ? ['calMesAnterior', 'calMesSiguiente'] : ['calSemanaAnterior', 'calSemanaPosterior'];
   const nav = `<div class="cal-tira-cabecera">${calBoton('anterior', '‹', '', `aria-label="${calEsc(t(ant))}"`)}
     ${calBoton('mes', titulo + (s.mesAbierto ? ' ▴' : ' ▾'), '', `class="cal-tira-titulo" aria-expanded="${s.mesAbierto}"`)}${calBoton('siguiente', '›', '', `aria-label="${calEsc(t(sig))}"`)}</div>`;
-  // Mes ancho (Google Calendar): ‹ mes › sube a la barra del calendario, en la
-  // fila de los atajos, y deja el alto de la ventana a las semanas.
+  // ‹ mes › va siempre en la barra, junto a los atajos: no se mueve al abrir el
+  // mes ni al cambiar de ancho, y deja el alto de la ventana a las semanas.
+  s.navEnBarra = nav;
   const ancho = s.mesAbierto && calMesAncho();
-  if (ancho) s.navEnBarra = nav;
-  return `<div class="cal-tira">${ancho ? '' : nav}
+  return `<div class="cal-tira">
     ${ancho ? calMesTitulos(dias, rodante) : `<div class="cal-mes" role="group" aria-label="${calEsc(t(s.mesAbierto ? 'calMes' : 'calSemana'))}">${calCabeceraSemana(dias)}${dias.map(dia =>
       calCeldaDia(dia, porDia.get(dia), { otroMes: s.mesAbierto && !rodante && dia.slice(0, 7) !== s.fecha.slice(0, 7), rodante })).join('')}</div>`}
     ${calModoDeportes() ? '' : `<p class="cal-leyenda">${[...CAL_CATEGORIAS, 'otras'].map(c => `<span><span class="cal-punto cal-cat-${c}" aria-hidden="true"></span>${calEsc(calNombreCategoria(c))}</span>`).join('')}</p>`}
@@ -1245,6 +1252,13 @@ function calElegirParte(){
 // nombre, que hacen de leyenda. Con color, las marcadas. Siempre queda una.
 // El deporte elegido: el único al que pertenecen todas las capas.
 const calDeporteElegido = () => Object.keys(CAL_DEPORTES).find(k => [...CALENDARIO.capas].every(c => CAL_DEPORTE_DE[c] === k)) || '';
+// La marca enseña qué significa en las celdas; si ya se lee en el nombre
+// («Copa del Rey», las iniciales de «Liga F»), repetirla no explica nada.
+function calMarcaAporta(marca, nombre){
+  if (!marca) return false;
+  const iniciales = nombre.split(/\s+/).map(p => p[0]).join('');
+  return !nombre.includes(marca) && marca !== iniciales;
+}
 function calChipsDeportes(){
   const s = CALENDARIO, sigo = calPreferencias()?.competiciones || [], elegido = calDeporteElegido();
   const igual = cs => cs.length === s.capas.size && cs.every(c => s.capas.has(c));
@@ -1255,7 +1269,7 @@ function calChipsDeportes(){
   // Sports, «Mis calendarios» de Google): dos botones hermanos, sin asistente.
   const competiciones = (CAL_DEPORTES[elegido] || []).map(c => {
     const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c], sigue = sigo.includes(c);
-    return `<span class="cal-capa">${chip('capa', (marca && marca !== nombre ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, s.capas.has(c),
+    return `<span class="cal-capa">${chip('capa', (calMarcaAporta(marca, nombre) ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, s.capas.has(c),
       `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`)}${chip('seguir', sigue ? '★' : '☆', c, sigue, 'cal-seguir', ` aria-label="${calEsc(t(sigue ? 'calDejarDeSeguir' : 'calSeguir', { x: nombre }))}"`)}</span>`;
   }).join('');
   return `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calCompeticiones'))}">${chip('capas-todas', calEsc(t('calTodas')), '', igual(CAL_COMPETICIONES))}

@@ -14,6 +14,7 @@
 .consulta-panel a{ color: inherit; }
 .consulta-cab{ display: flex; align-items: center; gap: 8px; }
 .consulta-tipo{ margin-right: auto; color: var(--muted); }
+.consulta-cab .consulta-volver{ margin-right: auto; padding: 0 2px; border: 0; background: none; }
 .consulta-cab button{ min-width: 44px; min-height: 44px; padding: 0 12px; }
 .consulta-cerrar{ display: inline-flex; align-items: center; justify-content: center; }
 .consulta-cerrar .ico{ width: 1.1em; height: 1.1em; }
@@ -39,9 +40,14 @@
 .consulta-nota, .consulta-pie{ font-size: .9em; }
 .consulta-pie{ margin-bottom: 0; }
 .consulta-pie button{ min-height: 32px; padding: 2px 10px; }
-.consulta-fechas{ display: grid; grid-template-columns: 44px minmax(0,14em) 44px; gap: 6px; max-width: 100%; margin: 8px 0; }
-.consulta-fechas button{ min-height: 44px; font-size: 1.3em; }
+/* Mismo patrón que ‹ mes › del calendario; lo que dice el día, al lado. */
+.consulta-fechas-fila{ display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 4px 0 8px; }
+.consulta-fechas{ display: grid; grid-template-columns: 44px minmax(0,10.5em) 44px; align-items: center; max-width: 100%; }
+.consulta-fechas button{ min-height: 44px; border: 0; background: none; font-size: 1.3em; }
 .consulta-fechas label{ min-width: 0; }
+.consulta-resumen{ margin: 2px 0; }
+.consulta-resumen:focus, .consulta-partido:focus{ outline: none; }
+.consulta-resumen .consulta-linea{ display: inline; margin-left: 8px; }
 .consulta-fechas input{ width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: 4px 6px; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
 .consulta-fechas :disabled{ opacity: .55; cursor: default; }
 /* Cuadros deportivos: el ancho disponible decide cuántos grupos caben.
@@ -79,9 +85,20 @@
 .consulta-partidos li.consulta-marcada{ box-shadow: inset 3px 0 var(--mark); }
 .consulta-estado{ grid-column: 1 / -1; font-size: .8em; }
 /* Ficha: una cabecera común, con los bloques propios de cada deporte. */
-.consulta-marcador{ display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 16px; max-width: 28em; font-size: 1.15em; }
-.consulta-marcador b{ text-align: right; font-variant-numeric: tabular-nums; }
-.consulta-lugar{ color: var(--muted); }
+.consulta-partido{ margin: 2px 0 8px; text-align: center; }
+.consulta-panel .consulta-marcador{ display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 16px; margin: 0 auto; max-width: 40em; font-size: 1.25em; font-weight: 600; }
+.consulta-marcador span:first-child{ text-align: right; }
+.consulta-marcador span:last-child{ text-align: left; }
+.consulta-marcador b{ font-size: 1.2em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.consulta-datos{ color: var(--muted); }
+.consulta-panel .consulta-partido p{ margin-block: 2px; }
+/* Dos columnas si caben; con un solo bloque, ocupa la fila. */
+.consulta-bloques{ display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24em, 100%), 1fr)); gap: 0 28px; align-items: start; }
+.consulta-bloques>div{ min-width: 0; }
+.consulta-bloques .consulta-comparativa{ margin-top: 4px; }
+.consulta-por-tipo thead td:nth-child(2){ width: 6em; }
+.consulta-por-tipo td{ vertical-align: top; }
+.consulta-inc{ display: block; }
 .consulta-comparativa, .consulta-parciales, .consulta-jugadores{ width: 100%; max-width: 40em; margin: 12px 0; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .consulta-comparativa caption, .consulta-parciales caption, .consulta-jugadores caption{ text-align: left; font-weight: 600; margin-bottom: 6px; }
 .consulta-comparativa th, .consulta-comparativa td, .consulta-parciales th, .consulta-parciales td, .consulta-jugadores th, .consulta-jugadores td{ padding: 5px 4px; border-bottom: 1px solid var(--border); }
@@ -92,9 +109,8 @@
 .consulta-equipos>section{ min-width: 0; }
 .consulta-equipos h4{ font-size: 1em; margin: 8px 0; }
 .consulta-alineacion, .consulta-incidencias{ margin: 4px 0; padding: 0; list-style: none; }
-.consulta-alineacion li, .consulta-incidencias li{ display: grid; grid-template-columns: 3em minmax(0,1fr); gap: 6px; padding: 4px 0; }
+.consulta-alineacion li, .consulta-incidencias li{ display: grid; grid-template-columns: 3em minmax(0,1fr); gap: 6px; padding: 2px 0; }
 .consulta-alineacion li>span:first-child, .consulta-incidencias li>span:first-child{ color: var(--muted); font-variant-numeric: tabular-nums; }
-.consulta-inc-jugadores{ display: block; }
 .consulta-tabla-scroll{ max-width: 100%; overflow-x: auto; }
 .consulta-parciales th:first-child, .consulta-jugadores th:first-child{ text-align: left; overflow-wrap: anywhere; }
 .consulta-parciales td, .consulta-parciales th:not(:first-child), .consulta-jugadores td, .consulta-jugadores th:not(:first-child){ text-align: right; white-space: nowrap; }
@@ -108,6 +124,9 @@
 }
 @media(pointer:fine){
   .consulta-deporte{ font-size: .9em; }
+  .consulta-cab button{ min-width: 32px; min-height: 32px; }
+  .consulta-fechas{ grid-template-columns: 32px minmax(0,10.5em) 32px; }
+  .consulta-fechas button, .consulta-fechas input{ min-height: 32px; }
   .consulta-grupos-nav button{ min-height: 32px; }
 }
 

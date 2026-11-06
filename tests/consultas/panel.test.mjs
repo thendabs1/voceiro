@@ -88,7 +88,7 @@ test('Euroliga: fecha, marcador y ficha por ID con vuelta al listado', async () 
   pulsar({ accion: 'partido', id: 'euroliga:partido/E2026/1' });
   await esperar();
   assert.match(pedidas[1], /id=euroliga%3Apartido%2FE2026%2F1/);
-  assert.match(panel.innerHTML, /<strong class="consulta-titulo">Crvena Zvezda Meridianbet Belgrade · Zalgiris Kaunas<\/strong>/);
+  assert.match(panel.innerHTML, /<p class="consulta-marcador"><span>Crvena Zvezda Meridianbet Belgrade<\/span><b>[^<]+ – [^<]+<\/b><span>Zalgiris Kaunas<\/span>/);
   assert.match(panel.innerHTML, /<caption>Parciales<\/caption>/);
   pulsar({ accion: 'volver' });
   assert.equal(pedidas.length, 2);
@@ -370,7 +370,7 @@ test('prórroga, penaltis sin tanteo y plazas pendientes se explican en castella
   assert.doesNotMatch(panel.innerHTML, /null|undefined|TBD/);
   partido.eliminatoria = { resolucion: 'penaltis' };
   pulsar({ accion: 'partido', id: partido.id }); await esperar();
-  assert.match(panel.innerHTML, /Por determinar · Por determinar/);
+  assert.match(panel.innerHTML, /<span>Por determinar<\/span><b>[^<]+<\/b><span>Por determinar<\/span>/);
   assert.match(panel.innerHTML, /Tras penaltis/);
   assert.doesNotMatch(panel.innerHTML, /Penaltis 0|Gana |Pasa /);
 });
@@ -532,11 +532,11 @@ test('un marcador abre su ficha, permite volver sin red y reutiliza el detalle c
   assert.match(panel.innerHTML,/data-accion="partido" data-id="espn:partido\/nba\/401909903"/);
   pulsar({accion:'partido',id:partido.id}); await esperar();
   assert.equal(pedidas.length,2);
-  assert.match(panel.innerHTML,/<span class="consulta-tipo">Partido<\/span>/);
-  assert.match(panel.innerHTML,/Volver a resultados/);
+  assert.doesNotMatch(panel.innerHTML,/consulta-tipo/);
+  assert.match(panel.innerHTML,/class="consulta-volver" aria-label="Volver a resultados">‹ Resultados</);
   assert.match(panel.innerHTML,/Period|Parciales/);
   assert.match(panel.innerHTML,/Estadísticas de jugadores/);
-  assert.match(panel.innerHTML,/Orlando Magic/); assert.match(panel.innerHTML,/<b>97<\/b>/);
+  assert.match(panel.innerHTML,/Orlando Magic/); assert.match(panel.innerHTML,/<b>[^<]*97[^<]*<\/b>/);
   pulsar({accion:'volver'});
   assert.match(panel.innerHTML,/NBA · 1 partido/); assert.equal(pedidas.length,2);
   assert.doesNotMatch(panel.innerHTML,/Volver a resultados/);
@@ -592,6 +592,44 @@ test('partido: escapa los textos del proveedor y omite los bloques ausentes',asy
   actualizar('partido:primera/123'); await esperar();
   assert.match(panel.innerHTML,/&lt;img onerror=1&gt;/); assert.match(panel.innerHTML,/&lt;script&gt;1&lt;\/script&gt;/);
   assert.doesNotMatch(panel.innerHTML,/<img onerror|<script>|Invalid Date|Estadísticas|Alineaciones|Parciales/);
+});
+
+test('partido: incidencias por tipo y equipo, con la cronología en orden',async()=>{
+  const partido={competicion:'primera',estado:'final',inicio:'2026-11-02T20:00:00Z',local:'Tenerife',visitante:'Athletic Club',
+    marcador:{local:2,visitante:0},lugar:'Heliodoro',ciudad:'Santa Cruz',incidencias:[
+      {tipo:'amarilla',equipo:'local',minuto:"42'",jugadores:['Quiles']},
+      {tipo:'gol',equipo:'local',minuto:"45'+2'",jugadores:['Padilla']},
+      {tipo:'cambio',equipo:'visitante',minuto:"60'",jugadores:['Ana','Eva']},
+      {tipo:'propia',equipo:'local',minuto:"70'",jugadores:['Rey']},
+      {tipo:'segundaAmarilla',equipo:'visitante',minuto:"80'",jugadores:['Sara']},
+    ]};
+  const {panel,actualizar}=contexto({responder:()=>json(envoltorio('partido',{ficha:partido}))});
+  actualizar('partido:primera/123'); await esperar();
+  assert.match(panel.innerHTML,/<b>2 – 0<\/b>/);
+  assert.match(panel.innerHTML,/class="consulta-datos">[^<]*Final · Heliodoro · Santa Cruz</);
+  const html=panel.innerHTML.replaceAll('&#39;',"'");
+  const porTipo=html.match(/<table class="consulta-comparativa consulta-por-tipo">[\s\S]*?<\/table>/)[0];
+  const filas=[...porTipo.matchAll(/<tr><td>(.*?)<\/td><th scope="row">([^<]+)<\/th><td>(.*?)<\/td><\/tr>/g)].map(m=>[m[2],m[1].replace(/<[^>]+>/g,'|'),m[3]]);
+  assert.deepEqual(filas.map(f=>f[0]),['Goles','Amarillas','Rojas','Cambios']);
+  assert.equal(filas[0][1],"|Padilla 45'+2'||Rey 70' (Gol en propia puerta)|");
+  assert.equal(filas[3][2],'1');
+  assert.match(filas[2][2],/Sara 80' \(Segunda amarilla\)/);
+  // La cronología conserva el orden del proveedor (no ordena por número de minuto).
+  const crono=[...html.matchAll(/<li><span>([^<]+)<\/span><span><strong>([^<]+)/g)].map(m=>m[1]+m[2]);
+  assert.deepEqual(crono,["42'Amarilla","45'+2'Gol","60'Cambio","70'Gol en propia puerta","80'Segunda amarilla"]);
+  assert.match(panel.innerHTML,/<details open><summary>Cronología/);
+  assert.match(panel.innerHTML,/class="consulta-bloques"/);
+});
+
+test('partido sin jugar: sin tanteo ni bloques vacíos; en la lista, la hora sin rótulo',async()=>{
+  const ficha={competicion:'primera',estado:'programado',inicio:'2026-11-02T20:00:00Z',local:'A',visitante:'B',marcador:null};
+  const lista={competicion:'primera',partidos:[{...ficha,marcador:null,id:'espn:partido/primera/9'}]};
+  const {panel,actualizar}=contexto({responder:ruta=>json(envoltorio(ruta.includes('resultados')?'resultados':'partido',{ficha:ruta.includes('resultados')?lista:ficha}))});
+  actualizar('partido:primera/123'); await esperar();
+  assert.match(panel.innerHTML,/<b>–<\/b>/); assert.doesNotMatch(panel.innerHTML,/consulta-bloques|0 – 0/);
+  actualizar('resultados:primera'); await esperar();
+  assert.match(panel.innerHTML,/class="consulta-estado">\d\d:\d\d<\/span>/);
+  assert.doesNotMatch(panel.innerHTML,/Programado|—/);
 });
 
 test('volver desde un partido pendiente impide que su respuesta tardía sustituya la parrilla',async()=>{
