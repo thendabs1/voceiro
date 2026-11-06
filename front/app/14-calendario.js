@@ -12,6 +12,7 @@ const CAL_RANGOS = { hoy: 'calHoy', manana: 'calManana', finde: 'calFinde' };
 // Categorías de la barra, con su color (--cat-*); lo demás, «otras».
 const CAL_CATEGORIAS = ['cultura', 'deportes'];
 const CAL_SEMANAS_MAX = 4;
+const CAL_VENTANA_DIAS = 42;   // tope de la API por consulta
 // Preferencias del calendario, solo en este dispositivo: sitio, intereses y
 // competiciones que sigo. «omitido» recuerda «Ahora no».
 const CAL_PREF_KEY = 'voceiro-calendario-preferencias-v1';
@@ -445,7 +446,7 @@ function calDondePorDefecto(){
 // añadir otros servicios (tiempo, consultas) conserva filtros y apertura.
 function actualizarConsultaCalendario(orden){
   if (!CALENDARIO_ACTIVO) return;
-  const s = CALENDARIO, clave = JSON.stringify(orden && [orden.ambitos, orden.circuitos, orden.tipos, orden.desconocidos]);
+  const s = CALENDARIO, clave = JSON.stringify(orden && [orden.ambitos, orden.circuitos, orden.tipos, orden.desconocidos, orden.rango, orden.horarios, orden.todoDeporte]);
   const fecha = calFechasConsulta(orden?.resto).desde || '';
   if (fecha !== s.desdeConsulta){ s.desdeConsulta = fecha; s.fecha = fechaValida(fecha) ? fecha : calHoy(); }
   // La orden va antes que las preferencias: un prefijo no hereda «Lo mío».
@@ -462,12 +463,28 @@ function actualizarConsultaCalendario(orden){
     // Abierta desde su botón, la vista repone lo suyo (las capas de Deportes, «Lo mío»).
     else if (s.abierto) calEntrarVista(s.vista);
     s.fecha = fechaValida(fecha) ? fecha : s.diaPedido || calHoy();
+    // Un atajo pide una lista, no el mes: a 553 px el mes la dejaría fuera de la vista.
+    if (orden?.rango) calElegirRango(orden.rango);
+    if (s.abierto && (orden?.rango || orden?.horarios)) s.mesAbierto = false;
+    if (s.abierto && orden?.horarios) calAbrirHorarios();
   }
   if (s.abierto) return void cargarCalendario();
   pintarCalendario();
 }
+// `f1:horarios`: la ficha del GP o rally en curso o del siguiente, con sus sesiones. Sin
+// programa, o en competiciones de partidos, basta la lista desde hoy.
+async function calAbrirHorarios(){
+  const s = CALENDARIO, hoy = calHoy(), competiciones = calCompeticionesPedidas();
+  if (competiciones.length !== 1 || CAL_DEPORTE_DE[competiciones[0]] !== 'motor') return;
+  const orden = s.orden, signal = (s.controllerHorarios = new AbortController()).signal;
+  try {
+    const { eventos } = await calPedir('eventos', { ...calParametros(), desde: hoy, hasta: sumarDiasCalendario(hoy, CAL_VENTANA_DIAS),
+      presentacion: 'prolongada,programa', limite: 5, revision: s.meta?.revision }, signal);
+    if (s.orden === orden && s.abierto && eventos?.[0]) abrirEventoCalendario(eventos[0].id);
+  } catch { /* Queda la lista: un fallo aquí no es un fallo del calendario. */ }
+}
 // Un prefijo de competición es de Deportes; el resto, de la agenda.
-const calEsDeportiva = o => Boolean(o?.circuitos.length || o?.ambitos.some(a => AMBITOS[a]?.codigo));
+const calEsDeportiva = o => Boolean(o?.todoDeporte || o?.circuitos.length || o?.ambitos.some(a => AMBITOS[a]?.codigo));
 const calVistaDe = o => calEsDeportiva(o) ? 'deportes' : 'agenda';
 // Una orden con competiciones y temas a la vez («f1: teatro:») no se resuelve
 // en silencio: se pregunta qué parte ver (cada vista toma solo lo suyo).
@@ -476,7 +493,8 @@ const calMixta = () => { const o = calPideAgenda(CALENDARIO.orden) && CALENDARIO
 // La agenda es siempre de un sitio: sin él no se consulta, se pide (P05).
 const calSinSitio = () => !calModoDeportes() && !CALENDARIO.donde;
 // Deportes con un prefijo de competición manda el prefijo: solo esas, sin capas.
-const calPrefijoDeportivo = () => calPideAgenda(CALENDARIO.orden) && calVistaDe(CALENDARIO.orden) === 'deportes';
+// `hoy:deportes` no nombra competiciones: valen las capas, las que sigo o todas.
+const calPrefijoDeportivo = () => calPideAgenda(CALENDARIO.orden) && calVistaDe(CALENDARIO.orden) === 'deportes' && !CALENDARIO.orden.todoDeporte;
 // Cada vista con lo suyo: Deportes abre el mes con sus capas (las que sigo o
 // todas); la agenda, la semana y, sin prefijo, «Lo mío». Al cambiar de vista
 // no queda nada de la anterior: ni sus datos, ni sus peticiones, ni lo abierto.
@@ -1219,7 +1237,11 @@ function calChips(){
 }
 function calContenido(){
   const s = CALENDARIO;
-  if (s.orden?.desconocidos.length) return `<p class="cal-aviso">${calEsc(t('calConsultaDesconocida', { x: s.orden.desconocidos.join(', ') }))}</p>`;
+  if (s.orden?.desconocidos.length){
+    // Se conserva lo escrito y se enseña qué admite: el prefijo se aprende aquí.
+    const a = s.orden.ambitos.find(x => AMBITOS[x]?.codigo);
+    return `<p class="cal-aviso">${calEsc(t('calConsultaDesconocida', { x: s.orden.desconocidos.join(', ') }))}${a ? ' ' + calEsc(t('calConsultaPrueba', { x: a })) : ''}</p>`;
+  }
   if (!s.meta) return '';
   if (calMixta()) return calElegirParte();
   if (calSinSitio()) return calInvitacion() + calPedirSitio();
@@ -1500,6 +1522,12 @@ function calElegirDia(dia, rango = ''){
   const s = CALENDARIO;
   s.fecha = dia; s.rango = rango; s.semanas = 1;
 }
+function calElegirRango(rango){
+  const s = CALENDARIO, hoy = calHoy();
+  calElegirDia(rango === 'finde' ? ventanaCalendario(hoy, 'semana')[5] : rango === 'manana' ? sumarDiasCalendario(hoy, 1) : hoy, rango);
+  // El domingo, el finde es lo que queda de él.
+  if (rango === 'finde' && s.fecha < hoy) s.fecha = hoy;
+}
 function wireCalendario(){
   const s = CALENDARIO, p = document.getElementById('calendario-panel');
   document.getElementById('btn-as-calendario')?.addEventListener('click', asistenteCalendarioDesdeAjustes);
@@ -1577,8 +1605,7 @@ function wireCalendario(){
     if (a === 'dia'){ calElegirDia(v); s.mesAbierto = false; }
     if (a === 'rango'){
       if (s.rango === v) calElegirDia(calHoy());
-      else calElegirDia(v === 'finde' ? ventanaCalendario(calHoy(), 'semana')[5] : b.dataset.dia, v);
-      if (v === 'finde' && s.fecha < calHoy()) s.fecha = calHoy();
+      else calElegirRango(v);
     }
     // Semana o bloque de semanas vecinos: su primer día, o hoy si cae en ellos.
     if (a === 'anterior' || a === 'siguiente'){
@@ -1676,7 +1703,9 @@ function sugerenciasCalendario(raw){
   const m = raw.match(/(?:^|\s)([^\s"]*)$/);
   if (!m || !m[1]) return null;
   const q = normalize(m[1]);
-  const opciones = [...Object.keys(AMBITOS).map(a => a + ':'), 'calendario:', 'circuito:atp,wta'];
+  // Tras una competición, lo que admite: f1:h → f1:hoy, f1:horarios.
+  const comp = q.split(':')[0], valores = q.includes(':') && AMBITOS[comp]?.codigo ? ['hoy', 'manana', 'finde', 'horarios', 'noticias'].map(v => `${comp}:${v}`) : [];
+  const opciones = [...Object.keys(AMBITOS).map(a => a + ':'), 'hoy:', 'manana:', 'finde:', 'hoy:deportes', ...valores, 'calendario:', 'circuito:atp,wta'];
   const seleccion = opciones.filter(v => normalize(v).startsWith(q));
   if (!seleccion.length) return q.includes(':') && leerConsultaCalendario(q) ? [] : null;
   return seleccion.slice(0,8).map(value => ({ kind: 'calendario', value, label: value,

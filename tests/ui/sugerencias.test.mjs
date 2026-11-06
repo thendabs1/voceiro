@@ -22,6 +22,12 @@ runInNewContext(leer('13-autocompletado.js') + '\n' + leer('14-deportes.js') + '
 const valores = raw => Array.from(runInNewContext(`sugerenciasBuscar(${JSON.stringify(raw)})`, c), s => s.value);
 const abre = raw => runInNewContext(`haySugerencias(sugerenciasBuscar(${JSON.stringify(raw)}))`, c);
 
+test('tras una competición se sugiere lo que admite', () => {
+  assert.ok(valores('f1:h').includes('f1:hoy'));
+  assert.ok(valores('f1:h').includes('f1:horarios'));
+  assert.ok(valores('fin').includes('finde:'));
+});
+
 test('una sola coincidencia de calendario abre la lista y no esconde los medios', () => {
   for (const raw of ['f1', 'de', 'ma']) assert.equal(abre(raw), true, raw);
   assert.ok(valores('f1').includes('f1:'));
@@ -43,8 +49,8 @@ test('una competición ofrece sus resultados y su tabla por su nombre', () => {
   assert.ok(valores('nba').includes('resultados:nba'));
 });
 
-test('un prefijo ya empezado solo se completa y una consulta no sugiere nada', () => {
-  assert.deepEqual(valores('f1:'), ['f1:']);
+test('un prefijo ya empezado enseña lo que admite y una consulta no sugiere nada', () => {
+  assert.deepEqual(Array.from(valores('f1:')), ['f1:', 'f1:hoy', 'f1:manana', 'f1:finde', 'f1:horarios', 'f1:noticias']);
   assert.deepEqual(valores('resultados:pri'), []);
 });
 

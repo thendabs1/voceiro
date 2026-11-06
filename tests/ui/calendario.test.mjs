@@ -843,6 +843,41 @@ test('Deportes escrita con prefijo: sus partidos, sus torneos en barra y sin «P
   assert.equal(c.api.calPartidosEnMes(), false);
 });
 
+test('atajos: f1:hoy es lo mismo que hoy:f1 y abre la lista, no el mes', async () => {
+  const lee = consulta.leerConsultaCalendario;
+  for (const raw of ['f1:hoy', 'hoy:f1', 'hoxe:f1', 'F1:avui', 'gaur:f1', 'today:f1']){
+    const o = lee(raw);
+    assert.deepEqual([[...o.ambitos], o.rango, [...o.tipos], o.noticias, o.desconocidos.length], [['f1'], 'hoy', ['calendario'], false, 0], raw);
+  }
+  assert.equal(lee('nba:finde').rango, 'finde');
+  assert.equal(lee('mañá:nba').rango, 'manana');
+  assert.equal(lee('fin-de-semana:').rango, 'finde');
+  assert.equal(lee('f1:horarios').horarios, true);
+  assert.equal(lee('primera:ordutegiak').horarios, true);
+  assert.equal(lee('hoy:horarios').todoDeporte, true);
+  assert.equal(lee('hoy:deportes').todoDeporte, true);
+  assert.deepEqual([...lee('hoy:f1,motogp').ambitos], ['f1', 'motogp']);
+  // Lo que no es orden no cambia: la palabra sigue siendo palabra.
+  assert.equal(lee('hoy'), null);
+  assert.equal(lee('f1: hoy').rango, undefined);
+  assert.equal(lee('f1: hoy').resto, 'hoy');
+  assert.equal(lee('f1:xyz').desconocidos[0], 'f1:xyz');
+  assert.equal(lee('hoy:xyz').desconocidos[0], 'hoy:xyz');
+  const c = contexto();
+  c.hoy = '2026-10-30';
+  c.api.actualizarConsultaCalendario(lee('f1:finde'));
+  assert.deepEqual([c.api.s.abierto, c.api.s.vista, c.api.s.mesAbierto, c.api.s.rango, c.api.s.fecha], [true, 'deportes', false, 'finde', '2026-10-31']);
+  c.api.actualizarConsultaCalendario(lee('hoy:deportes'));
+  assert.equal(c.api.s.vista, 'deportes');
+  assert.ok(c.api.s.capas?.size > 2, 'sin competiciones escritas valen las capas');
+});
+
+test('lo no reconocido enseña qué admite la competición', () => {
+  const c = contexto();
+  c.api.s.orden = consulta.leerConsultaCalendario('f1:xyz');
+  assert.match(c.api.calContenido(), /no reconocida: f1:xyz Prueba f1:hoy, f1:finde, f1:horarios o f1:noticias/);
+});
+
 test('el día de un GP en curso no dice «0 citas»', () => {
   const c = contexto();
   assert.equal(c.api.calCuentas({ citas: 0, programas: 0, en_curso: 1 }), '1 en curso');
