@@ -343,6 +343,7 @@ async function cargarTemporadaCalendario(){
 // (409), se rehace desde el principio para no mezclar lecturas.
 async function abrirDiaCalendario(dia, tipo, mas = false){
   const s = CALENDARIO, clave = dia + '|' + tipo;
+  if (tipo === 'citas') calPedirProgramas(dia);
   let l = s.dias.get(clave);
   if (!l){ l = { eventos: [], siguiente: null, cargando: false, cargada: false }; s.dias.set(clave, l); }
   l.abierta = true;
@@ -537,7 +538,8 @@ function abrirCalendario(origen = null, vista = 'agenda'){
 // volver a pedirlo al entrar. El borrador del asistente no sobrevive al cierre.
 function calCortarCargas(){
   const s = CALENDARIO;
-  for (const c of [s.controller, s.controllerMes, s.controllerTemporada, s.detalleLista, s.asistente?.controller]) c?.abort();
+  for (const c of [s.controller, s.controllerMes, s.controllerTemporada, s.detalleLista, s.controllerProgramas, s.asistente?.controller]) c?.abort();
+  s.controllerProgramas = null;
   if (s.cargando){ s.cargando = false; s.consulta = ''; }
   if (s.mes?.cargando) s.mes = null;
   if (s.temporada && !s.temporada.eventos) s.temporada = null;
@@ -729,7 +731,7 @@ function calDesplegado(e, dia, barra = false){
   const s = CALENDARIO, clave = calClaveDesplegable(dia, e, barra);
   if (s.desplegado !== clave) return '';
   const d = s.detalles.get(e.id);
-  return `<div class="cal-desplegado" id="${calIdDesplegado(clave)}">${d ? calEventoCuerpo(d, calLugar(e))
+  return `<div class="cal-desplegado" id="${calIdDesplegado(clave)}">${d ? calEventoCuerpo(d, calFilaPartido(e) ? '' : calLugar(e))
     : d === null ? `<p class="cal-aviso">${calEsc(t('calError'))}</p>` : `<p class="cal-nota">${calEsc(t('calCargando'))}</p>`}</div>`;
 }
 // Con su propio controlador: el diálogo del mes no corta la carga de la lista.
@@ -759,11 +761,14 @@ function calEtiquetasDeportes(e){
   return competiciones.length ? `<p class="cal-etiquetas">${competiciones.map(c =>
     `<span class="cal-etiqueta ${calColor({ competiciones: [c], categoria: 'deportes' })}">${calEsc(calNombreCompeticion(c))}</span>`).join('')}</p>` : '';
 }
+// Un partido en Deportes es una línea: hora y equipos. El estadio queda al desplegarlo.
+const calFilaPartido = e => calModoDeportes() && e.clase === 'encuentro';
+const calEnlaceResultados = d => d ? calBoton('ver-resultados', t('conResultados'), d.codigo, `class="cal-resultados" data-fecha="${calEsc(d.fecha)}" data-id="${calEsc(d.id)}"`) : '';
 function calCita(e, dia = ''){
   // Un chip de sesión trae su propio estado; si no, el del evento.
   const v = e.programacion?.valor, anulado = calEstadoAnulado(e.estado || v?.programacion);
   const prolongada = calPresentacion(e) === 'prolongada', hora = calHoraCita(e);
-  const lugar = calLugar(e);
+  const fila = calFilaPartido(e), lugar = fila ? '' : calLugar(e);
   const plan = [...(e.formatos || []).map(calNombreFormato), e.precio && CAL_PRECIOS[e.precio] ? t(CAL_PRECIOS[e.precio]) : '',
     e.tiene_programa ? '▸ ' + t('calPrograma') : ''].filter(Boolean).join(' · ');
   // Una sesión o función lleva encima el GP o programa al que pertenece, si su nombre no lo dice ya.
@@ -771,11 +776,11 @@ function calCita(e, dia = ''){
   const titulo = e.padre ? calNombreSesion(e, { nombres: e.padre }) : calNombreEvento(e);
   // Lo que aún no ha empezado no tiene resultados que ver.
   const destino = dia && dia <= calHoy() && !anulado ? destinoResultados(e, dia) : null;
-  return `<article class="cal-cita${anulado ? ' cal-anulada' : ''}"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
+  return `<article class="cal-cita${fila ? ' cal-fila' : ''}${anulado ? ' cal-anulada' : ''}"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
     ${padre && !titulo.includes(calNombre({ nombres: e.padre })) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calTituloDesplegable(e, dia, false, titulo)}</h3>
-    ${calEtiquetasDeportes(e)}
-    ${destino ? calBoton('ver-resultados', t('conResultados'), destino.codigo, `class="cal-resultados" data-fecha="${calEsc(destino.fecha)}" data-id="${calEsc(destino.id)}"`) : ''}
+    ${calModoDeportes() ? '' : calEtiquetasDeportes(e)}
+    ${calEnlaceResultados(destino)}
     ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
     ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}
     ${anulado ? `<p class="cal-aviso">${calEsc(t(anulado))}</p>` : ''}${calDesplegado(e, dia)}</div></article>`;
@@ -847,22 +852,65 @@ const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidde
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
 // GP y programas de competición que siguen ese día: sus días sin carrera no
 // tienen chip, así que van arriba como «todo el día» (Google, Apple).
-const calBarrasDia = dia => (CALENDARIO.barras || []).filter(b => calPresentacion(b) === 'programa' && b.desde <= dia && dia < b.hasta);
-function calBarraDia(b, dia){
-  // Duración del programa (no de los tramos que tocan la ventana); sin fechas, nada.
+// En Deportes también el rally, que no tiene sesiones publicadas.
+const calEnSuDia = b => calPresentacion(b) === 'programa' || (calModoDeportes() && calDeporte(b) === 'motor');
+const calBarrasDia = dia => (CALENDARIO.barras || []).filter(b => calEnSuDia(b) && b.desde <= dia && dia < b.hasta);
+// Duración del programa (no de los tramos que tocan la ventana); sin fechas, nada.
+function calDiaDeN(b, dia){
   const v = b.programacion?.valor?.cuando, a = extremoVisible(v?.inicio, CALENDARIO.zona).fecha, z = extremoVisible(v?.fin, CALENDARIO.zona).fecha;
   const total = a && z ? calDiferencia(a, z) + 1 : 0, n = a ? calDiferencia(a, dia) + 1 : 0;
+  return total > 1 && n >= 1 && n <= total ? t('calDiaDeN', { n, total }) : '';
+}
+function calBarraDia(b, dia){
+  const dias = calDiaDeN(b, dia);
   return `<article class="cal-cita cal-todo-dia"><span class="cal-hora ${calColor(b)}">${calEsc(t('calTodoElDia'))}</span><div class="cal-cita-cuerpo">
     <h3>${calTituloDesplegable(b, dia, true)}</h3>
     ${calEtiquetasDeportes(b)}
-    ${total > 1 && n >= 1 && n <= total ? `<p class="cal-nota">${calEsc(t('calDiaDeN', { n, total }))}</p>` : ''}${calDesplegado(b, dia, true)}</div></article>`;
+    ${dias ? `<p class="cal-nota">${calEsc(dias)}</p>` : ''}${calDesplegado(b, dia, true)}</div></article>`;
+}
+// Horarios de los GP de un día de Deportes: la ficha de cada uno, una vez y al
+// verlo. Los bloques ya vistos no la vuelven a pedir: `detalles` guarda el hueco.
+async function calPedirProgramas(dia){
+  const s = CALENDARIO;
+  if (!calModoDeportes()) return;
+  const faltan = calBarrasDia(dia).filter(b => b.tiene_programa && !s.detalles.has(b.id));
+  if (!faltan.length) return;
+  for (const b of faltan) s.detalles.set(b.id, undefined);
+  const { signal } = s.controllerProgramas ||= new AbortController();
+  await Promise.all(faltan.map(async b => {
+    try {
+      const d = await calPedir('eventos/' + encodeURIComponent(b.id), { revision: s.meta?.revision }, signal);
+      if (calAnotar(d)) s.detalles.set(b.id, d.evento);
+    } catch (e){
+      if (signal.aborted) return void s.detalles.delete(b.id);
+      if (e.status === 409) return void calOtraPublicacion(e);
+      s.detalles.set(b.id, null);
+    }
+  }));
+  if (!signal.aborted) pintarCalendario();
+}
+// Un GP o rally en su día: las sesiones de ese día en hora local o, si no hay,
+// qué día es. «Todo el día» no vale: un GP son unas horas de varios días.
+function calGpDia(b, dia){
+  const s = CALENDARIO, ficha = s.detalles.get(b.id), lugar = calLugar(b);
+  const sesiones = (ficha?.programa || []).map(p => ({ p, ...extremoVisible(p.programacion?.valor?.cuando?.inicio, s.zona) }))
+    .filter(x => x.fecha === dia).sort((x, y) => (x.hora || '').localeCompare(y.hora || ''));
+  const filas = sesiones.map(({ p, hora }) => {
+    const anulada = calEstadoAnulado(p.programacion?.valor?.programacion);
+    return `<p class="cal-cita cal-fila${anulada ? ' cal-anulada' : ''}"><span class="cal-hora">${calEsc(hora || '')}</span><span class="cal-cita-cuerpo">${calEsc(calNombreSesion(p, ficha))}${anulada ? ` · ${calEsc(t(anulada))}` : ''}</span></p>`;
+  }).join('');
+  const nota = ficha === undefined && b.tiene_programa ? t('calCargando') : [calDiaDeN(b, dia), lugar].filter(Boolean).join(' · ');
+  const titulo = [...(b.competiciones || []).map(calNombreCompeticion), calNombreEvento(b)].join(' · ');
+  const destino = dia <= calHoy() ? destinoResultados(b, dia) : null;
+  return `<article class="cal-gp"><div class="cal-gp-cab"><h3>${calTituloDesplegable(b, dia, true, titulo)}</h3>${calEnlaceResultados(destino)}</div>
+    ${filas || `<p class="cal-nota">${calEsc(nota)}</p>`}${calDesplegado(b, dia, true)}</article>`;
 }
 // En Deportes el día va por deporte (FlashScore, SofaScore): cada grupo con
 // las cuentas de sus competiciones (del resumen, sin pedir nada) y, abierto,
 // sus citas por hora. Abierto de entrada si lleva algo que sigo o pocas citas;
 // lo que se abre o cierra a mano vale para todos los días y se recuerda en el
 // dispositivo. El día entero llega en una petición al verlo (calObservarDias).
-const CAL_GRUPOS_KEY = 'voceiro-calendario-grupos-v1', CAL_GRUPO_POCOS = 4;
+const CAL_GRUPOS_KEY = 'voceiro-calendario-grupos-v1', CAL_GRUPO_POCOS = 12;
 function calGrupos(){
   const s = CALENDARIO;
   if (!s.grupos){
@@ -877,6 +925,17 @@ function calElegirGrupo(k, abierto){
   g[k] = abierto;
   try { localStorage.setItem(CAL_GRUPOS_KEY, JSON.stringify(g)); } catch {}
 }
+// Cada competición bajo su rótulo; con una sola, ya la dice el grupo.
+function calPorCompeticion(eventos, dia, k, una){
+  if (una) return calCitas(eventos, dia);
+  const orden = c => (CAL_DEPORTES[k] || []).indexOf(c.split(',')[0]), grupos = new Map();
+  for (const e of eventos){
+    const c = (e.competiciones || []).join();
+    grupos.set(c, [...(grupos.get(c) || []), e]);
+  }
+  return [...grupos].sort(([a], [b]) => orden(a) - orden(b)).map(([c, lista]) =>
+    `${c ? `<p class="cal-competicion">${calEsc(c.split(',').map(calNombreCompeticion).join(' · '))}</p>` : ''}${calCitas(lista, dia)}`).join('');
+}
 function calDiaDeportes(d){
   const s = CALENDARIO, l = s.dias.get(d.dia + '|citas'), cargada = Boolean(l?.cargada), elegidos = calGrupos();
   const sigo = new Set(calPreferencias()?.competiciones || []), sigoEn = k => (CAL_DEPORTES[k] || []).some(c => sigo.has(c));
@@ -884,24 +943,26 @@ function calDiaDeportes(d){
   // Primero los deportes de lo que sigo; después, en su orden de siempre.
   const orden = [...Object.keys(CAL_DEPORTES), 'otras'].sort((a, b) => sigoEn(b) - sigoEn(a));
   const grupos = orden.map(k => {
-    const comps = (CAL_DEPORTES[k] || []).filter(c => d.competiciones?.[c]?.citas + d.competiciones?.[c]?.programas > 0);
-    const propias = eventos.filter(e => deDeporte(e) === k), suyas = barras.filter(b => deDeporte(b) === k);
+    const suyas = barras.filter(b => deDeporte(b) === k);
+    const comps = (CAL_DEPORTES[k] || []).filter(c => d.competiciones?.[c]?.citas + d.competiciones?.[c]?.programas > 0 || suyas.some(b => b.competiciones?.includes(c)));
+    // La carrera ya sale con su GP; si la ficha falló, se queda como cita.
+    const conGp = e => e.padre && suyas.some(b => b.id === e.id && s.detalles.get(b.id) !== null);
+    const propias = eventos.filter(e => deDeporte(e) === k && !conGp(e));
     if (!comps.length && !propias.length && !suyas.length) return '';
-    const total = comps.reduce((n, c) => n + d.competiciones[c].citas + d.competiciones[c].programas, 0);
+    const total = comps.reduce((n, c) => n + (d.competiciones?.[c]?.citas || 0) + (d.competiciones?.[c]?.programas || 0), 0);
     const abierto = elegidos[k] ?? (sigoEn(k) || total <= CAL_GRUPO_POCOS);
-    const cuentas = comps.map(c => calNombreCompeticion(c) + (d.competiciones[c].citas ? ' ' + d.competiciones[c].citas : '')).join(' · ');
-    // Con una sola competición, su etiqueta en cada cita sobra.
+    const cuentas = comps.map(c => calNombreCompeticion(c) + (d.competiciones?.[c]?.citas ? ' ' + d.competiciones[c].citas : '')).join(' · ');
     const una = new Set([...comps, ...[...propias, ...suyas].flatMap(e => e.competiciones || [])]).size <= 1;
     const id = `cal-grupo-${d.dia}-${k}`, nombre = k === 'otras' ? t('calOtras') : t(CAL_NOMBRES_DEPORTE[k]);
-    return `<div class="cal-grupo cal-dep-${k}${una ? ' cal-grupo-una' : ''}"><button type="button" class="cal-grupo-cab" data-cal="grupo" data-valor="${d.dia}|${k}" data-abierto="${abierto}" aria-expanded="${abierto}"${abierto ? ` aria-controls="${id}"` : ''}>
+    return `<div class="cal-grupo cal-dep-${k}"><button type="button" class="cal-grupo-cab" data-cal="grupo" data-valor="${d.dia}|${k}" data-abierto="${abierto}" aria-expanded="${abierto}"${abierto ? ` aria-controls="${id}"` : ''}>
       <span class="cal-grupo-nombre">${abierto ? '▾' : '▸'} ${calEsc(nombre)}</span> <span class="cal-grupo-cuentas">${calEsc(cuentas)}</span></button>
-      ${abierto ? `<div id="${id}">${suyas.map(b => calBarraDia(b, d.dia)).join('')}${cargada ? calCitas(propias, d.dia) : `<p class="cal-nota">${calEsc(t('calCargando'))}</p>`}</div>` : ''}</div>`;
+      ${abierto ? `<div id="${id}">${suyas.map(b => calGpDia(b, d.dia)).join('')}${cargada ? calPorCompeticion(propias, d.dia, k, una) : `<p class="cal-nota">${calEsc(t('calCargando'))}</p>`}</div>` : ''}</div>`;
   }).join('');
   const mas = cargada && l.siguiente ? `<div class="cal-paginacion">${calBoton('mas-dia', t('calCargarMas'), d.dia, l.cargando ? 'disabled' : '')}</div>` : '';
   const hoy = calHoy();
   // data-cargar: días sin pedir todavía; un fallo no se reintenta solo (se reintenta al abrir un grupo).
   return `<section class="cal-dia${d.dia < hoy ? ' cal-pasado' : ''}" id="cal-dia-${d.dia}"${l ? '' : ` data-cargar="${d.dia}"`}><h2>${calEsc(d.dia === hoy ? t('calHoy') + ' · ' + calFecha(d.dia, { weekday: 'long' }) : calDiaLargo(d.dia))}
-    <small>${calEsc(calNDia(d) || !barras.length ? calCuentas(d) : '')}${d.dia < hoy ? ' · ' + calEsc(t('calPasado')) : ''}</small></h2>${grupos}${mas}</section>`;
+    <small>${calEsc(calNDia(d) || !barras.length ? calCuentas(d) : '')}${d.dia < hoy ? ' · ' + calEsc(t('calPasado')) : ''}</small></h2><div class="cal-dia-grupos">${grupos}</div>${mas}</section>`;
 }
 // Deportes carga cada día al verlo: sus grupos se rellenan sin pedir la semana
 // de golpe. Sin observador, solo el primero.
@@ -980,7 +1041,8 @@ function calLista(){
   const vacio = !conCitas.length ? `<p class="cal-nota cal-vacio">${calEsc(t(dias.some(d => d.en_curso) ? (calModoDeportes() ? 'calSinCitasEnCurso' : 'calSinCitasEnCartel')
     : s.rango ? 'calDiaSinCitas' : 'calSinCitas'))}</p>` : '';
   const mas = !s.rango && s.semanas < CAL_SEMANAS_MAX ? `<div class="cal-paginacion">${calBoton('mas-semanas', t('calSemanaSiguiente'), '', s.cargando ? 'disabled' : '')}</div>` : '';
-  return calEnCurso(dias) + conCitas.map(calDiaLista).join('') + vacio + mas;
+  const lista = conCitas.map(calDiaLista).join('');
+  return calEnCurso(dias) + (calModoDeportes() && lista ? `<div class="cal-dias">${lista}</div>` : lista) + vacio + mas;
 }
 // Una celda de la tira o del mes: inicial del día, número y puntos.
 function calCeldaDia(dia, d, { otroMes = false, rodante = false } = {}){
@@ -1474,7 +1536,7 @@ function pintarCalendario(repintado = false){
   const id = foco?.id, accion = foco?.dataset.cal, valor = foco?.dataset.valor;
   const seleccion = foco?.type === 'search' ? [foco.selectionStart, foco.selectionEnd] : null;
   p.setAttribute('aria-busy', String(s.cargando));
-  p.classList.toggle('cal-compacto', !s.mesAbierto);
+  p.classList.toggle('cal-compacto', !s.mesAbierto && !calModoDeportes());
   if (s.asistente){
     p.innerHTML = `<h1 id="cal-titulo" class="sr-only" tabindex="-1">${calEsc(t('calTitulo'))}</h1>${calAsistente()}`;
     const vuelta = id ? document.getElementById(id) : foco?.name

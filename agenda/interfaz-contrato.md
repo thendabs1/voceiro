@@ -68,6 +68,12 @@ Lo que no se entiende se dice y se enseña qué admite.
 - Con una o dos competiciones, escritas o elegidas, el mes enseña sus partidos (hasta
   cinco por día y `+N`) y sus GP y torneos en barra, y «Próximas semanas» no se pinta:
   repetiría la rejilla. Con más, solo marcas.
+- En pantalla ancha cada día es una columna; un solo día reparte sus deportes. En
+  móvil, una. Cada competición va bajo su rótulo y el partido es una línea: hora y
+  equipos; el estadio, al desplegarlo.
+- Un GP lleva en cada día sus sesiones en la hora del calendario, pedidas a su ficha al
+  ver el día. Sin sesiones ese día, como el rally (WRC solo publica fechas y sede),
+  dice qué día es y dónde. Nunca «Todo el día»: eso queda para la agenda.
 - Una consulta sobre lo que una competición no tiene (`resultados:feb-primera`) lo
   dice y ofrece lo que sí tiene, encima de la vista general.
 - Las fichas deportivas no van en un `<details>`, y `.consulta-foco` marca dónde
