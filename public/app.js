@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=a7a0327c0d';
+} from './parser.js?v=b8e5367f85';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=a7a0327c0d';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=a7a0327c0d';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=a7a0327c0d';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=a7a0327c0d';
-import { comparador } from './busqueda/orden.js?v=a7a0327c0d';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=b8e5367f85';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b8e5367f85';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b8e5367f85';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=b8e5367f85';
+import { comparador } from './busqueda/orden.js?v=b8e5367f85';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=a7a0327c0d';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=a7a0327c0d';
+} from './sync/fusion.js?v=b8e5367f85';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b8e5367f85';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=a7a0327c0d';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=a7a0327c0d';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=b8e5367f85';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b8e5367f85';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=a7a0327c0d';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b8e5367f85';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=a7a0327c0d';
+} from './tiempo/avisos.js?v=b8e5367f85';
 
-import { I18N, traducir } from './idiomas/index.js?v=a7a0327c0d';
+import { I18N, traducir } from './idiomas/index.js?v=b8e5367f85';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=a7a0327c0d';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=a7a0327c0d';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=a7a0327c0d';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=a7a0327c0d';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=b8e5367f85';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=b8e5367f85';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=b8e5367f85';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=b8e5367f85';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=a7a0327c0d';
+import { ADMINISTRACION } from './territorios/administracion.js?v=b8e5367f85';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=a7a0327c0d');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=b8e5367f85');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3632,12 +3632,12 @@ function pintarAccesos(){
   const fila = (atributo, texto) => `<li><button type="button" ${atributo}>${calEsc(texto)}</button></li>`;
   // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
   const sigo = calPreferencias()?.competiciones || [];
-  const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c)).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
+  const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c, contextoDeportes(PUNTUAL.activa?.tipo))).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
   const noticias = deportesSeguidos().map(([k, cs]) => fila(`data-orden="${calEsc(cs.map(c => c + ':').join(' '))}"`, t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) })));
   panel.innerHTML = `<div class="accesos-cab"><h2 id="accesos-titulo" tabindex="-1">${calEsc(t('accTitulo'))}</h2>
     <button type="button" class="accesos-cerrar" data-cerrar aria-label="${calEsc(t('calCerrar'))}">×</button></div>
     <div class="accesos-filas">${primeras.join('')}</div>
-    <ul class="accesos-lista">${[...noticias, fila('data-orden="resultados:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
+    <ul class="accesos-lista">${[...noticias, fila('data-orden="deportes:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
     ${DEPORTES_DISP.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
 }
 
@@ -3649,7 +3649,7 @@ function abrirAccesos(){
   $('#buscar-accesos').setAttribute('aria-expanded', 'true');
   pedirDisponibilidadDeportes();
   pintarAccesos();
-  panel.querySelector('.dep-accion, .accesos-lista button')?.focus({ preventScroll: true });
+  panel.querySelector('.dep-nombre, .accesos-lista button')?.focus({ preventScroll: true });
 }
 function cerrarAccesos(volver = true){
   if (!ACCESOS.abierto) return;
@@ -4492,7 +4492,7 @@ function calCompeticionVista(){
 // Con una competición, sus resultados y su tabla; con varias, la vista general.
 function calEnlacesDeportes(){
   const c = calCompeticionVista();
-  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'resultados:' }])
+  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'deportes:' }])
     .map(a => calBoton('orden', a.texto, a.orden)).join('');
 }
 function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
@@ -5404,7 +5404,7 @@ const idiomaConsulta = () => {
 const nombreConsulta = tipo => t('con' + tipo[0].toUpperCase() + tipo.slice(1));
 // Singular y plural: «clave1» para uno.
 const tn = (clave, n) => t(n === 1 ? clave + '1' : clave, { n });
-const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido'].includes(tipo);
+const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido', 'deportes'].includes(tipo);
 const codigoDeporte = (tipo, codigo) => tipo === 'resultados' && codigo === 'euroliga' || admiteConsultaESPN(tipo, codigo) || admiteConsultaMotor(tipo, codigo);
 const idResultadosConsulta = id => id === 'euroliga:resultados' || id.startsWith('espn:resultados/') || idResultadosMotorValido(id);
 const idPartidoConsultaValido = id => {
@@ -5637,8 +5637,8 @@ function pulsarConsulta(ev){
     case 'orden':
       escribirAcceso(b.dataset.orden);
       // Después: activar la consulta limpia el foco pendiente.
-      if (/^(resultados|clasificacion):/.test(b.dataset.orden)){
-        p.enfocar = '.dep-tabs [aria-current], .dep-accion';
+      if (/^(resultados|clasificacion|deportes):/.test(b.dataset.orden)){
+        p.enfocar = '.dep-tabs [aria-current], .dep-nombre';
         if (p.estado !== 'cargando') pintarConsulta();
       }
       break;
@@ -5719,7 +5719,7 @@ function htmlConsulta(){
     : '';
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   const competicion = competicionConsulta();
-  const vista = p.estado === 'ayuda' && ['resultados', 'clasificacion'].includes(c.tipo);
+  const vista = p.estado === 'ayuda' && c.tipo === 'deportes';
   const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo) : volver
     || `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
   return `<div class="consulta-cab">${rotulo}${cambiar}
@@ -6071,13 +6071,12 @@ const FICHAS_CONSULTA = {
 /* ═══════════════════════════════════════════════════════════════
    DEPORTES: UNA SOLA LISTA PARA TODAS LAS ENTRADAS
    Competiciones por deporte y lo que ofrece cada una. De aquí salen la
-   vista general (resultados: sin competición), el ▾, las pestañas de una
+   vista general (deportes:, resultados: sin competición), el ▾, las pestañas de una
    competición y las sugerencias. Cada enlace escribe su orden en la barra.
    ═══════════════════════════════════════════════════════════════ */
 // El orden de los bloques equilibra las tres columnas de la vista general.
 const DEPORTES_ORDEN = ['futbol', 'tenis', 'baloncesto', 'motor', 'atletismo'];
-// [orden, texto, columna de la matriz]; lo que no existe deja su hueco.
-const DEPORTES_ACCIONES = [['resultados', 'conResultados', 2], ['calendario', 'calTitulo', 3], ['clasificacion', 'conClasificacion', 4]];
+const DEPORTES_ACCIONES = [['resultados', 'conResultados'], ['calendario', 'calTitulo'], ['clasificacion', 'conClasificacion']];
 const DEPORTES_DISP = { circuitos: null, cargando: false };
 
 // Competiciones con algo publicado: una petición al abrir la primera entrada;
@@ -6116,24 +6115,29 @@ function accionesCompeticion(c, { noticias = false } = {}){
   const hay = { resultados: codigoDeporte('resultados', c), clasificacion: codigoDeporte('clasificacion', c),
     calendario: Object.hasOwn(AMBITOS, c) && accesoHay(c) };
   const acciones = DEPORTES_ACCIONES.filter(([tipo]) => hay[tipo])
-    .map(([tipo, texto, columna]) => ({ tipo, texto: t(texto), columna, orden: `${tipo}:${c}` }));
+    .map(([tipo, texto]) => ({ tipo, texto: t(texto), orden: `${tipo}:${c}` }));
   return noticias && AMBITOS[c]?.noticias ? [...acciones, { tipo: 'noticias', texto: t('conNoticias'), orden: `${c}:noticias` }] : acciones;
 }
 
-// Una fila de la matriz, también en el ▾.
-function filaCompeticion(c, resaltada = ''){
+// El nombre hace lo que se pidió; lo demás queda al lado. Con `contexto`
+// (resultados:, clasificacion:) solo salen las competiciones que lo tienen y el
+// nombre basta; sin él, abre lo primero que haya y escribe adónde lleva.
+function filaCompeticion(c, contexto = ''){
   const acciones = accionesCompeticion(c), nombre = nombreCompeticionCorto(c);
-  if (!acciones.length) return '';
-  return `<div class="dep-fila" data-desde="${acciones[0].columna}"><span class="dep-nombre">${escapeHtml(nombre)}</span>${acciones.map(a =>
-    `<button type="button" class="dep-accion dep-col-${a.columna}" data-accion="orden" data-orden="${escapeHtml(a.orden)}"${a.tipo === resaltada ? ' data-resaltada="1"' : ''} aria-label="${escapeHtml(`${nombre}: ${a.texto}`)}">${escapeHtml(a.texto)}</button>`).join('')}</div>`;
+  const principal = contexto ? acciones.find(a => a.tipo === contexto) : acciones[0];
+  if (!principal) return '';
+  const boton = (a, clase, html) => `<button type="button" class="${clase}" data-accion="orden" data-orden="${escapeHtml(a.orden)}" aria-label="${escapeHtml(`${nombre}: ${a.texto}`)}">${html}</button>`;
+  const otras = acciones.filter(a => a !== principal).map(a => boton(a, 'dep-accion', escapeHtml(a.texto))).join('');
+  return `<div class="dep-fila">${boton(principal, 'dep-nombre', escapeHtml(nombre) + (contexto ? '' : ` <small>· ${escapeHtml(principal.texto)}</small>`))}${otras ? `<span class="dep-otras">${otras}</span>` : ''}</div>`;
 }
+const contextoDeportes = tipo => ['resultados', 'clasificacion'].includes(tipo) ? tipo : '';
 
 // Vista general: en pantalla ancha, todo a la vista; en móvil, plegada salvo lo
 // que sigo o, sin nada seguido, el primer bloque.
 function htmlVistaDeportes(tipo){
   const sigo = calPreferencias()?.competiciones || [];
   const estrecha = globalThis.matchMedia?.('(max-width: 600px)').matches;
-  const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, tipo)).join('') }))
+  const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, contextoDeportes(tipo))).join('') }))
     .filter(b => b.filas);
   return `<div class="dep-vista">${bloques.map((b, i) => {
     const abierto = !estrecha || b.cs.some(c => sigo.includes(c)) || (!sigo.length && i === 0);
@@ -6152,7 +6156,7 @@ function htmlCabeceraCompeticion(codigo, tipo){
   const boton = (orden, texto, actual, valorActual) => `<button type="button" data-accion="orden" data-orden="${escapeHtml(orden)}"${actual ? ` aria-current="${valorActual}"` : ''}>${escapeHtml(texto)}</button>`;
   const deporte = DEPORTES_ORDEN.find(k => competicionesDeporte(k).includes(codigo));
   const hermanas = competicionesDeporte(deporte).filter(c => codigoDeporte(tipo, c));
-  return `<nav class="dep-cab" aria-label="${escapeHtml(t('conSecciones'))}">${boton('resultados:', '‹ ' + t('calDeportesTitulo'))}
+  return `<nav class="dep-cab" aria-label="${escapeHtml(t('conSecciones'))}">${boton('deportes:', '‹ ' + t('calDeportesTitulo'))}
     <div class="dep-tabs">${accionesCompeticion(codigo, { noticias: true }).map(a => boton(a.orden, a.texto, a.tipo === tipo, 'page')).join('')}</div>
     ${hermanas.length > 1 ? `<div class="dep-hermanas ui-tira" role="group" aria-label="${escapeHtml(t('conOtrasCompeticiones'))}">${hermanas.map(c =>
       boton(`${tipo}:${c}`, nombreCompeticionCorto(c), c === codigo, 'true')).join('')}</div>` : ''}</nav>`;
@@ -6766,7 +6770,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=a7a0327c0d')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=b8e5367f85')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
