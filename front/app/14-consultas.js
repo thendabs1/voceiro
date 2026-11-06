@@ -12,7 +12,8 @@ const CONSULTA_MIN_LETRAS = 3;
 const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
 const CONSULTA_DEPORTES = { primera: 'Primera', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
-  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1' };
+  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1', atp: 'ATP', wta: 'WTA' };
+const VISTAS_CONSULTA = {};
 const CONSULTA_EJEMPLOS = {
   libro: 'Los besos en el pan', autor: 'Almudena Grandes', pelicula: 'La infiltrada',
   serie: 'La mesías', contexto: 'Almudena Grandes',
@@ -43,7 +44,8 @@ const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido'].inc
 const codigoDeporte = admiteConsultaESPN;
 const idPartidoConsultaValido = id => {
   const partes = /^espn:partido\/([a-z0-9-]+)\/[1-9]\d{0,11}$/.exec(id || '');
-  return !!partes && codigoDeporte('partido', partes[1]);
+  return (!!partes && !['atp', 'wta'].includes(partes[1]) && codigoDeporte('partido', partes[1]))
+    || Object.values(VISTAS_CONSULTA).some(v => v.idValido?.(id));
 };
 const ESTADOS_PARTIDO = { en_juego: 'conEnJuego', final: 'conFinal', programado: 'conProgramado',
   aplazado: 'conAplazado', cancelado: 'conCancelado', retrasado: 'conRetrasado', suspendido: 'conSuspendido', desconocido: 'conEstadoDesconocido' };
@@ -336,7 +338,7 @@ function htmlConsulta(){
     ? `<div class="consulta-otras">${escapeHtml(t('conVarias'))} ${p.lista.map((o, i) =>
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
     : '';
-  const tipo = p.id.startsWith('espn:partido/') ? 'partido' : c.tipo;
+  const tipo = idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(tipo))}</span>${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
     ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
@@ -398,8 +400,9 @@ function htmlFicha(d){
   const vacio = d.tipo === 'resultados' ? 'conSinPartidos' : d.tipo === 'clasificacion' ? 'conSinTabla' : 'conSinResultados';
   const estado = estadoConsulta(d, vacio, { x: PUNTUAL.activa.texto });
   if (estado) return estado + htmlPieConsulta(d);
-  if (!FICHAS_CONSULTA[d.tipo] || !d.ficha) return msgConsulta('conNoAdmitida');
-  const r = FICHAS_CONSULTA[d.tipo](d.ficha);
+  const pintar = d.ficha?.vista ? VISTAS_CONSULTA[d.ficha.vista]?.ficha : FICHAS_CONSULTA[d.tipo];
+  if (!pintar || !d.ficha) return msgConsulta('conNoAdmitida');
+  const r = pintar(d.ficha);
   const linea = [r.linea, d.incompleto ? t('conParcial') : ''].filter(Boolean).join(' · ');
   const ficha = `<details class="consulta-ficha" open><summary><strong class="consulta-titulo">${escapeHtml(r.titulo || '')}</strong>${
     linea ? `<span class="consulta-linea">${escapeHtml(linea)}</span>` : ''}</summary>
@@ -411,7 +414,11 @@ function htmlFicha(d){
 function htmlPieConsulta(d){
   const enlace = (url, texto) => enlaceConsulta(url, texto) || escapeHtml(texto);
   const partes = [];
-  if (d.tipo === 'contexto'){
+  if (d.ficha?.fuente){
+    const f = d.ficha.fuente;
+    if (f.nombre) partes.push(enlace(f.url, f.nombre));
+    if (f.licencia) partes.push(enlace(f.licencia_url, /^Condiciones/.test(f.licencia) ? t('conCondiciones') : f.licencia));
+  } else if (d.tipo === 'contexto'){
     partes.push(enlace('https://www.wikipedia.org', 'Wikipedia'), enlace(d.licencia?.enlace, 'CC BY-SA'));
     if (d.ficha && historialWikipedia()) partes.push(enlace(historialWikipedia(), t('conAutores')));
   } else {
@@ -601,6 +608,8 @@ const FICHAS_CONSULTA = {
       cuerpo: (f.competicion === 'champions' ? `<p class="consulta-sub">${escapeHtml(t('conFaseLiga'))}</p>` : '') + tablas };
   },
   resultados(f){
+    const vista = Object.values(VISTAS_CONSULTA).find(v => v.admiteResultados?.(f));
+    if (vista) return vista.resultados(f);
     const lang = idiomaConsulta();
     const dia = new Intl.DateTimeFormat(lang, { weekday: 'short', day: 'numeric', month: 'short' });
     const hora = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' });
@@ -610,7 +619,7 @@ const FICHAS_CONSULTA = {
     // Por día en la zona del lector, en el orden de la respuesta.
     const dias = new Map();
     for (const p of partidos){
-      const fecha = new Date(p.inicio);
+      const fecha = new Date(p.inicio || NaN);
       const clave = isNaN(fecha) ? '' : dia.format(fecha);
       if (!dias.has(clave)) dias.set(clave, []);
       dias.get(clave).push(p);
@@ -618,6 +627,7 @@ const FICHAS_CONSULTA = {
     const marcador = v => escapeHtml(v ?? '—');
     const cuerpo = [...dias].map(([fecha, lista]) => `${fecha ? `<p class="consulta-sub">${escapeHtml(fecha)}</p>` : ''}<ul class="consulta-partidos">${
       lista.map(p => {
+        if (p.vista) return VISTAS_CONSULTA[p.vista]?.fila?.(p) || '';
         const inicio = new Date(p.inicio);
         const cab = [p.estado === 'programado' && !isNaN(inicio) ? hora.format(inicio) : '', estadoTextoPartido(p.estado)].filter(Boolean).join(' · ');
         const contenido = `<span class="consulta-estado">${escapeHtml(cab)}</span><span>${equipoConsulta(p.local)}</span><b>${marcador(p.marcador?.local)}</b><span>${equipoConsulta(p.visitante)}</span><b>${marcador(p.marcador?.visitante)}</b>${textoEliminatoria(p) ? `<span class="consulta-estado">${escapeHtml(textoEliminatoria(p))}</span>` : ''}`;

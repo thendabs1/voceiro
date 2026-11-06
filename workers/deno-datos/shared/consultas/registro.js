@@ -22,6 +22,7 @@ export const ESPN = {
   'liga-f': ['soccer', 'esp.w.1'],
   nba: ['basketball', 'nba'], wnba: ['basketball', 'wnba'],
   f1: ['racing', 'f1'],
+  atp: ['tennis', 'atp'], wta: ['tennis', 'wta'],
 };
 
 // Capacidades acreditadas por competición. Standings es una tabla, nunca un cuadro.
@@ -34,6 +35,7 @@ export const CAPACIDADES_ESPN = {
   nba: ['resultados', 'partido', 'clasificacion'],
   wnba: ['resultados', 'partido', 'clasificacion'],
   f1: ['clasificacion'],
+  atp: ['resultados', 'partido'], wta: ['resultados', 'partido'],
 };
 export const admiteConsultaESPN = (tipo, codigo) => Object.hasOwn(CAPACIDADES_ESPN, codigo)
   && CAPACIDADES_ESPN[codigo].includes(tipo);

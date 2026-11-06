@@ -1,0 +1,1150 @@
+{
+  "leagues": [
+    {
+      "id": "900",
+      "name": "WTA",
+      "slug": "wta"
+    }
+  ],
+  "events": [
+    {
+      "id": "380-2026",
+      "uid": "s:850~l:900~e:380-2026",
+      "name": "Prudential Hong Kong Tennis Open",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "status": {
+        "period": 2,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "groupings": [
+        {
+          "grouping": {
+            "id": "2",
+            "slug": "womens-singles",
+            "displayName": "Women's Singles"
+          },
+          "competitions": [
+            {
+              "id": "187314",
+              "uid": "s:850~l:900~e:380-2026~c:187314",
+              "date": "2026-10-31T02:05Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "11",
+                "displayName": "Qualifying 1st Round"
+              },
+              "competitors": [
+                {
+                  "id": "5538",
+                  "uid": "s:850~l:900~a:5538",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 4.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 2.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Hong Yi Cody Wong"
+                  }
+                },
+                {
+                  "id": "11317",
+                  "uid": "s:850~l:900~a:11317",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Himeno Sakatsume"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186624",
+              "uid": "s:850~l:900~e:380-2026~c:186624",
+              "date": "2026-11-02T06:05Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "1",
+                "displayName": "Round 1"
+              },
+              "competitors": [
+                {
+                  "id": "2054",
+                  "uid": "s:850~l:900~a:2054",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 7.0,
+                      "tiebreak": 7,
+                      "winner": true
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Katie Boulter"
+                  }
+                },
+                {
+                  "id": "2458",
+                  "uid": "s:850~l:900~a:2458",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 2.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 6.0,
+                      "tiebreak": 2,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Viktorija Golubic"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186615",
+              "uid": "s:850~l:900~e:380-2026~c:186615",
+              "date": "2026-11-03T13:25Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "38",
+                  "name": "STATUS_RETIRED",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Retired",
+                  "detail": "Retired",
+                  "shortDetail": "Retired"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "1",
+                "displayName": "Round 1"
+              },
+              "competitors": [
+                {
+                  "id": "2731",
+                  "uid": "s:850~l:900~a:2731",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 5.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Paula Badosa"
+                  }
+                },
+                {
+                  "id": "14946",
+                  "uid": "s:850~l:900~a:14946",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 7.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Elena Pridankina"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186640",
+              "uid": "s:850~l:900~e:380-2026~c:186640",
+              "date": "2026-11-05T06:05Z",
+              "timeValid": true,
+              "status": {
+                "period": 3,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "2",
+                "displayName": "Round 2"
+              },
+              "competitors": [
+                {
+                  "id": "10858",
+                  "uid": "s:850~l:900~a:10858",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "tiebreak": 6,
+                      "winner": false
+                    },
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Alexandra Shubladze"
+                  }
+                },
+                {
+                  "id": "14946",
+                  "uid": "s:850~l:900~a:14946",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 7.0,
+                      "tiebreak": 8,
+                      "winner": true
+                    },
+                    {
+                      "value": 1.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 3.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Elena Pridankina"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186637",
+              "uid": "s:850~l:900~e:380-2026~c:186637",
+              "date": "2026-11-06T08:55Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "2nd Set",
+                  "shortDetail": "2nd"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "5",
+                "displayName": "Quarterfinal"
+              },
+              "competitors": [
+                {
+                  "id": "10858",
+                  "uid": "s:850~l:900~a:10858",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 3.0
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Alexandra Shubladze"
+                  }
+                },
+                {
+                  "id": "1774",
+                  "uid": "s:850~l:900~a:1774",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "linescores": [
+                    {
+                      "value": 2.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 1.0
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Sorana Cirstea"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186635",
+              "uid": "s:850~l:900~e:380-2026~c:186635",
+              "date": "2026-11-06T10:30Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "1",
+                  "name": "STATUS_SCHEDULED",
+                  "state": "pre",
+                  "completed": false,
+                  "description": "Scheduled",
+                  "detail": "Fri, November 6th at 5:30 AM EST",
+                  "shortDetail": "11/6 - 5:30 AM EST"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "5",
+                "displayName": "Quarterfinal"
+              },
+              "competitors": [
+                {
+                  "id": "3018",
+                  "uid": "s:850~l:900~a:3018",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "athlete": {
+                    "displayName": "Maria Sakkari"
+                  }
+                },
+                {
+                  "id": "1809",
+                  "uid": "s:850~l:900~a:1809",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "athlete": {
+                    "displayName": "Aliaksandra Sasnovich"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186644",
+              "uid": "s:850~l:900~e:380-2026~c:186644",
+              "date": "2026-11-07T05:00Z",
+              "timeValid": false,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "1",
+                  "name": "STATUS_SCHEDULED",
+                  "state": "pre",
+                  "completed": false,
+                  "description": "Scheduled",
+                  "detail": "M/d - 'TBD'",
+                  "shortDetail": "TBD"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "6",
+                "displayName": "Semifinal"
+              },
+              "competitors": [
+                {
+                  "id": "2980",
+                  "uid": "s:850~l:900~a:2980",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "athlete": {
+                    "displayName": "Claire Liu"
+                  }
+                },
+                {
+                  "id": "-3",
+                  "uid": "s:850~l:900~a:-3",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "athlete": {
+                    "displayName": "TBD"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "grouping": {
+            "id": "4",
+            "slug": "womens-doubles",
+            "displayName": "Women's Doubles"
+          },
+          "competitions": [
+            {
+              "id": "186658",
+              "uid": "s:850~l:900~e:380-2026~c:186658",
+              "date": "2026-11-02T07:35Z",
+              "timeValid": true,
+              "status": {
+                "period": 3,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "4",
+                "text": "Women's Doubles",
+                "slug": "womens-doubles"
+              },
+              "round": {
+                "id": "1",
+                "displayName": "Round 1"
+              },
+              "competitors": [
+                {
+                  "id": "6708-2584",
+                  "uid": "s:850~l:900~t:6708-2584",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 5.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 1.0,
+                      "tiebreak": 11,
+                      "winner": true
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Talia Gibson"
+                      },
+                      {
+                        "displayName": "Maddison Inglis"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "15341-2397",
+                  "uid": "s:850~l:900~t:15341-2397",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 7.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 4.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 0.0,
+                      "tiebreak": 9,
+                      "winner": false
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Mariia Kozyreva"
+                      },
+                      {
+                        "displayName": "Maia Lumsden"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186649",
+              "uid": "s:850~l:900~e:380-2026~c:186649",
+              "date": "2026-11-05T09:15Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "4",
+                "text": "Women's Doubles",
+                "slug": "womens-doubles"
+              },
+              "round": {
+                "id": "5",
+                "displayName": "Quarterfinal"
+              },
+              "competitors": [
+                {
+                  "id": "3478-2575",
+                  "uid": "s:850~l:900~t:3478-2575",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 3.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 4.0,
+                      "winner": false
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Tang Qianhui"
+                      },
+                      {
+                        "displayName": "Ye Qiu Yu"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "6708-2584",
+                  "uid": "s:850~l:900~t:6708-2584",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Talia Gibson"
+                      },
+                      {
+                        "displayName": "Maddison Inglis"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186645",
+              "uid": "s:850~l:900~e:380-2026~c:186645",
+              "date": "2026-11-06T10:05Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "1",
+                  "name": "STATUS_SCHEDULED",
+                  "state": "pre",
+                  "completed": false,
+                  "description": "Scheduled",
+                  "detail": "Fri, November 6th at 5:05 AM EST",
+                  "shortDetail": "11/6 - 5:05 AM EST"
+                }
+              },
+              "type": {
+                "id": "4",
+                "text": "Women's Doubles",
+                "slug": "womens-doubles"
+              },
+              "round": {
+                "id": "6",
+                "displayName": "Semifinal"
+              },
+              "competitors": [
+                {
+                  "id": "7830-2048",
+                  "uid": "s:850~l:900~t:7830-2048",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Miriam Skoch"
+                      },
+                      {
+                        "displayName": "Jesika Maleckova"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "6708-2584",
+                  "uid": "s:850~l:900~t:6708-2584",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Talia Gibson"
+                      },
+                      {
+                        "displayName": "Maddison Inglis"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186656",
+              "uid": "s:850~l:900~e:380-2026~c:186656",
+              "date": "2026-11-07T05:00Z",
+              "timeValid": false,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "1",
+                  "name": "STATUS_SCHEDULED",
+                  "state": "pre",
+                  "completed": false,
+                  "description": "Scheduled",
+                  "detail": "M/d - 'TBD'",
+                  "shortDetail": "TBD"
+                }
+              },
+              "type": {
+                "id": "4",
+                "text": "Women's Doubles",
+                "slug": "womens-doubles"
+              },
+              "round": {
+                "id": "6",
+                "displayName": "Semifinal"
+              },
+              "competitors": [
+                {
+                  "id": "2167-1877",
+                  "uid": "s:850~l:900~t:2167-1877",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Hao-Ching Chan"
+                      },
+                      {
+                        "displayName": "Miyu Kato"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "3477-5538",
+                  "uid": "s:850~l:900~t:3477-5538",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Jiang Xinyu"
+                      },
+                      {
+                        "displayName": "Hong Yi Cody Wong"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "889-2026",
+      "uid": "s:850~l:900~e:889-2026",
+      "name": "Chennai Open",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "status": {
+        "period": 2,
+        "type": {
+          "id": "38",
+          "name": "STATUS_RETIRED",
+          "state": "post",
+          "completed": true,
+          "description": "Retired",
+          "detail": "Retired",
+          "shortDetail": "Retired"
+        }
+      },
+      "groupings": [
+        {
+          "grouping": {
+            "id": "2",
+            "slug": "womens-singles",
+            "displayName": "Women's Singles"
+          },
+          "competitions": [
+            {
+              "id": "187324",
+              "uid": "s:850~l:900~e:889-2026~c:187324",
+              "date": "2026-10-31T09:35Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "38",
+                  "name": "STATUS_RETIRED",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Retired",
+                  "detail": "Retired",
+                  "shortDetail": "Retired"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "11",
+                "displayName": "Qualifying 1st Round"
+              },
+              "competitors": [
+                {
+                  "id": "17855",
+                  "uid": "s:850~l:900~a:17855",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 2.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Rada Zolotareva"
+                  }
+                },
+                {
+                  "id": "11466",
+                  "uid": "s:850~l:900~a:11466",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 1.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 1.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Mariia Tkacheva"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1082-2026",
+      "uid": "s:850~l:900~e:1082-2026",
+      "name": "Angola Ladies Open",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "status": {
+        "period": 2,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "groupings": [
+        {
+          "grouping": {
+            "id": "2",
+            "slug": "womens-singles",
+            "displayName": "Women's Singles"
+          },
+          "competitions": [
+            {
+              "id": "186690",
+              "uid": "s:850~l:900~e:1082-2026~c:186690",
+              "date": "2026-11-08T05:00Z",
+              "timeValid": false,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "5",
+                  "name": "STATUS_CANCELED",
+                  "state": "post",
+                  "completed": false,
+                  "description": "Canceled",
+                  "detail": "Canceled",
+                  "shortDetail": "Canceled"
+                }
+              },
+              "type": {
+                "id": "2",
+                "text": "Women's Singles",
+                "slug": "womens-singles"
+              },
+              "round": {
+                "id": "7",
+                "displayName": "Final"
+              },
+              "competitors": [
+                {
+                  "id": "-4",
+                  "uid": "s:850~l:900~a:-4",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "athlete": {
+                    "displayName": "TBD"
+                  }
+                },
+                {
+                  "id": "-3",
+                  "uid": "s:850~l:900~a:-3",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "athlete": {
+                    "displayName": "TBD"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "grouping": {
+            "id": "4",
+            "slug": "womens-doubles",
+            "displayName": "Women's Doubles"
+          },
+          "competitions": [
+            {
+              "id": "186694",
+              "uid": "s:850~l:900~e:1082-2026~c:186694",
+              "date": "2026-11-04T11:30Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "40",
+                  "name": "STATUS_WALKOVER",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Walkover",
+                  "detail": "Walkover",
+                  "shortDetail": "Walkover"
+                }
+              },
+              "type": {
+                "id": "4",
+                "text": "Women's Doubles",
+                "slug": "womens-doubles"
+              },
+              "round": {
+                "id": "1",
+                "displayName": "Round 1"
+              },
+              "competitors": [
+                {
+                  "id": "19309-19306",
+                  "uid": "s:850~l:900~t:19309-19306",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": false,
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Farah Heddar"
+                      },
+                      {
+                        "displayName": "Emma Van Poppel"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "19314-14237",
+                  "uid": "s:850~l:900~t:19314-14237",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": true,
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Maayan Laron"
+                      },
+                      {
+                        "displayName": "Madhurima Sawant"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186704",
+              "uid": "s:850~l:900~e:1082-2026~c:186704",
+              "date": "2026-11-06T09:10Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "2nd Set",
+                  "shortDetail": "2nd"
+                }
+              },
+              "type": {
+                "id": "4",
+                "text": "Women's Doubles",
+                "slug": "womens-doubles"
+              },
+              "round": {
+                "id": "6",
+                "displayName": "Semifinal"
+              },
+              "competitors": [
+                {
+                  "id": "5205-19312",
+                  "uid": "s:850~l:900~t:5205-19312",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "linescores": [
+                    {
+                      "value": 7.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 2.0
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Sada Nahimana"
+                      },
+                      {
+                        "displayName": "Angella Okutoyi"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "13680-16776",
+                  "uid": "s:850~l:900~t:13680-16776",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "linescores": [
+                    {
+                      "value": 5.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 1.0
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Li Zongyu"
+                      },
+                      {
+                        "displayName": "Kristina Novak"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

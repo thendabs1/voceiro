@@ -1,0 +1,718 @@
+{
+  "leagues": [
+    {
+      "id": "851",
+      "name": "ATP",
+      "slug": "atp"
+    }
+  ],
+  "events": [
+    {
+      "id": "13-2026",
+      "uid": "s:850~l:851~e:13-2026",
+      "name": "Rolex Paris Masters",
+      "season": {
+        "year": 2026,
+        "type": 2
+      },
+      "status": {
+        "period": 2,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "groupings": [
+        {
+          "grouping": {
+            "id": "1",
+            "slug": "mens-singles",
+            "displayName": "Men's Singles"
+          },
+          "competitions": [
+            {
+              "id": "187334",
+              "uid": "s:850~l:851~e:13-2026~c:187334",
+              "date": "2026-10-31T10:05Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "1",
+                "text": "Men's Singles",
+                "slug": "mens-singles"
+              },
+              "round": {
+                "id": "11",
+                "displayName": "Qualifying 1st Round"
+              },
+              "competitors": [
+                {
+                  "id": "10153",
+                  "uid": "s:850~l:851~a:10153",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 7.0,
+                      "tiebreak": 7,
+                      "winner": true
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Mattia Bellucci"
+                  }
+                },
+                {
+                  "id": "1590",
+                  "uid": "s:850~l:851~a:1590",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 1.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 6.0,
+                      "tiebreak": 3,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Pablo Carreno Busta"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186466",
+              "uid": "s:850~l:851~e:13-2026~c:186466",
+              "date": "2026-11-02T18:20Z",
+              "timeValid": true,
+              "status": {
+                "period": 3,
+                "type": {
+                  "id": "38",
+                  "name": "STATUS_RETIRED",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Retired",
+                  "detail": "Retired",
+                  "shortDetail": "Retired"
+                }
+              },
+              "type": {
+                "id": "1",
+                "text": "Men's Singles",
+                "slug": "mens-singles"
+              },
+              "round": {
+                "id": "1",
+                "displayName": "Round 1"
+              },
+              "competitors": [
+                {
+                  "id": "2367",
+                  "uid": "s:850~l:851~a:2367",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 6.0,
+                      "tiebreak": 6,
+                      "winner": false
+                    },
+                    {
+                      "value": 1.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Karen Khachanov"
+                  }
+                },
+                {
+                  "id": "2860",
+                  "uid": "s:850~l:851~a:2860",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 3.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 7.0,
+                      "tiebreak": 8,
+                      "winner": true
+                    },
+                    {
+                      "value": 4.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Denis Shapovalov"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186496",
+              "uid": "s:850~l:851~e:13-2026~c:186496",
+              "date": "2026-11-05T10:10Z",
+              "timeValid": true,
+              "status": {
+                "period": 2,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "1",
+                "text": "Men's Singles",
+                "slug": "mens-singles"
+              },
+              "round": {
+                "id": "3",
+                "displayName": "Round 3"
+              },
+              "competitors": [
+                {
+                  "id": "2362",
+                  "uid": "s:850~l:851~a:2362",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "tiebreak": 3,
+                      "winner": false
+                    },
+                    {
+                      "value": 4.0,
+                      "winner": false
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Quentin Halys"
+                  }
+                },
+                {
+                  "id": "2964",
+                  "uid": "s:850~l:851~a:2964",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 7.0,
+                      "tiebreak": 7,
+                      "winner": true
+                    },
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    }
+                  ],
+                  "athlete": {
+                    "displayName": "Tommy Paul"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186502",
+              "uid": "s:850~l:851~e:13-2026~c:186502",
+              "date": "2026-11-05T18:00Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "40",
+                  "name": "STATUS_WALKOVER",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Walkover",
+                  "detail": "Walkover",
+                  "shortDetail": "Walkover"
+                }
+              },
+              "type": {
+                "id": "1",
+                "text": "Men's Singles",
+                "slug": "mens-singles"
+              },
+              "round": {
+                "id": "3",
+                "displayName": "Round 3"
+              },
+              "competitors": [
+                {
+                  "id": "3782",
+                  "uid": "s:850~l:851~a:3782",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "athlete": {
+                    "displayName": "Carlos Alcaraz"
+                  }
+                },
+                {
+                  "id": "2622",
+                  "uid": "s:850~l:851~a:2622",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "athlete": {
+                    "displayName": "Matteo Berrettini"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186500",
+              "uid": "s:850~l:851~e:13-2026~c:186500",
+              "date": "2026-11-06T13:00Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "1",
+                  "name": "STATUS_SCHEDULED",
+                  "state": "pre",
+                  "completed": false,
+                  "description": "Scheduled",
+                  "detail": "Fri, November 6th at 8:00 AM EST",
+                  "shortDetail": "11/6 - 8:00 AM EST"
+                }
+              },
+              "type": {
+                "id": "1",
+                "text": "Men's Singles",
+                "slug": "mens-singles"
+              },
+              "round": {
+                "id": "5",
+                "displayName": "Quarterfinal"
+              },
+              "competitors": [
+                {
+                  "id": "2964",
+                  "uid": "s:850~l:851~a:2964",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "athlete": {
+                    "displayName": "Tommy Paul"
+                  }
+                },
+                {
+                  "id": "9250",
+                  "uid": "s:850~l:851~a:9250",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "athlete": {
+                    "displayName": "Ben Shelton"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186504",
+              "uid": "s:850~l:851~e:13-2026~c:186504",
+              "date": "2026-11-07T05:00Z",
+              "timeValid": false,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "1",
+                  "name": "STATUS_SCHEDULED",
+                  "state": "pre",
+                  "completed": false,
+                  "description": "Scheduled",
+                  "detail": "M/d - 'TBD'",
+                  "shortDetail": "TBD"
+                }
+              },
+              "type": {
+                "id": "1",
+                "text": "Men's Singles",
+                "slug": "mens-singles"
+              },
+              "round": {
+                "id": "6",
+                "displayName": "Semifinal"
+              },
+              "competitors": [
+                {
+                  "id": "-4",
+                  "uid": "s:850~l:851~a:-4",
+                  "type": "athlete",
+                  "order": 2,
+                  "homeAway": "away",
+                  "athlete": {
+                    "displayName": "TBD"
+                  }
+                },
+                {
+                  "id": "-3",
+                  "uid": "s:850~l:851~a:-3",
+                  "type": "athlete",
+                  "order": 1,
+                  "homeAway": "home",
+                  "athlete": {
+                    "displayName": "TBD"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "grouping": {
+            "id": "3",
+            "slug": "mens-doubles",
+            "displayName": "Men's Doubles"
+          },
+          "competitions": [
+            {
+              "id": "187298",
+              "uid": "s:850~l:851~e:13-2026~c:187298",
+              "date": "2026-11-02T11:45Z",
+              "timeValid": true,
+              "status": {
+                "period": 3,
+                "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+                }
+              },
+              "type": {
+                "id": "3",
+                "text": "Men's Doubles",
+                "slug": "mens-doubles"
+              },
+              "round": {
+                "id": "1",
+                "displayName": "Round 1"
+              },
+              "competitors": [
+                {
+                  "id": "2362-1613",
+                  "uid": "s:850~l:851~t:2362-1613",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "linescores": [
+                    {
+                      "value": 7.0,
+                      "tiebreak": 7,
+                      "winner": true
+                    },
+                    {
+                      "value": 1.0,
+                      "winner": false
+                    },
+                    {
+                      "value": 1.0,
+                      "tiebreak": 10,
+                      "winner": true
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Quentin Halys"
+                      },
+                      {
+                        "displayName": "Pierre-Hugues Herbert"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "878-1524",
+                  "uid": "s:850~l:851~t:878-1524",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "linescores": [
+                    {
+                      "value": 6.0,
+                      "tiebreak": 5,
+                      "winner": false
+                    },
+                    {
+                      "value": 6.0,
+                      "winner": true
+                    },
+                    {
+                      "value": 0.0,
+                      "tiebreak": 7,
+                      "winner": false
+                    }
+                  ],
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Austin Krajicek"
+                      },
+                      {
+                        "displayName": "Nikola Mektic"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "187305",
+              "uid": "s:850~l:851~e:13-2026~c:187305",
+              "date": "2026-11-03T17:30Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "40",
+                  "name": "STATUS_WALKOVER",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Walkover",
+                  "detail": "Walkover",
+                  "shortDetail": "Walkover"
+                }
+              },
+              "type": {
+                "id": "3",
+                "text": "Men's Doubles",
+                "slug": "mens-doubles"
+              },
+              "round": {
+                "id": "1",
+                "displayName": "Round 1"
+              },
+              "competitors": [
+                {
+                  "id": "9376-8814",
+                  "uid": "s:850~l:851~t:9376-8814",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": false,
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Valentin Vacherot"
+                      },
+                      {
+                        "displayName": "Luca Van Assche"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "4001-3774",
+                  "uid": "s:850~l:851~t:4001-3774",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": true,
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Robert Cash"
+                      },
+                      {
+                        "displayName": "Brandon Nakashima"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186512",
+              "uid": "s:850~l:851~e:13-2026~c:186512",
+              "date": "2026-11-05T05:00Z",
+              "timeValid": false,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "40",
+                  "name": "STATUS_WALKOVER",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Walkover",
+                  "detail": "Walkover",
+                  "shortDetail": "Walkover"
+                }
+              },
+              "type": {
+                "id": "3",
+                "text": "Men's Doubles",
+                "slug": "mens-doubles"
+              },
+              "round": {
+                "id": "2",
+                "displayName": "Round 2"
+              },
+              "competitors": [
+                {
+                  "id": "2293-2699",
+                  "uid": "s:850~l:851~t:2293-2699",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "winner": true,
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Christian Harrison"
+                      },
+                      {
+                        "displayName": "Neal Skupski"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "3700-3739",
+                  "uid": "s:850~l:851~t:3700-3739",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "winner": false,
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Francisco Cerundolo"
+                      },
+                      {
+                        "displayName": "Tomas Martin Etcheverry"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "186521",
+              "uid": "s:850~l:851~e:13-2026~c:186521",
+              "date": "2026-11-06T13:00Z",
+              "timeValid": true,
+              "status": {
+                "period": 1,
+                "type": {
+                  "id": "1",
+                  "name": "STATUS_SCHEDULED",
+                  "state": "pre",
+                  "completed": false,
+                  "description": "Scheduled",
+                  "detail": "Fri, November 6th at 8:00 AM EST",
+                  "shortDetail": "11/6 - 8:00 AM EST"
+                }
+              },
+              "type": {
+                "id": "3",
+                "text": "Men's Doubles",
+                "slug": "mens-doubles"
+              },
+              "round": {
+                "id": "5",
+                "displayName": "Quarterfinal"
+              },
+              "competitors": [
+                {
+                  "id": "2293-2699",
+                  "uid": "s:850~l:851~t:2293-2699",
+                  "type": "team",
+                  "order": 2,
+                  "homeAway": "away",
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Christian Harrison"
+                      },
+                      {
+                        "displayName": "Neal Skupski"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "4001-3774",
+                  "uid": "s:850~l:851~t:4001-3774",
+                  "type": "team",
+                  "order": 1,
+                  "homeAway": "home",
+                  "roster": {
+                    "athletes": [
+                      {
+                        "displayName": "Robert Cash"
+                      },
+                      {
+                        "displayName": "Brandon Nakashima"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

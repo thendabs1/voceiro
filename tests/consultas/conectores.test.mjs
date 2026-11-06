@@ -214,7 +214,7 @@ test('vacío no es un fallo de proveedor; errores HTTP, JSON y de red no se cach
 
 test('validación: competiciones explícitas, tipos, idiomas e identificadores', async () => {
   const b = banco();
-  for (const texto of ['Barcelona','atp','motogp','nba?x=1','__proto__']) {
+  for (const texto of ['Barcelona','wrc','motogp','nba?x=1','__proto__']) {
     const { r, d } = await buscar(b, 'clasificacion', texto); assert.equal(r.status,400); assert.match(d.motivo,/equivalencia/);
   }
   assert.equal((await buscar(b,'otro')).r.status,400);
