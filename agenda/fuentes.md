@@ -28,7 +28,7 @@ Reglas comunes:
 | [Vidmar F1](https://f1.vidmar.net/) | F1 (piloto) | ICS completo | Republicación sin verificar; no se publica | 128 sesiones; UID con nombres; alarmas que no son citas. |
 | ESPN Site API | ATP, NBA, WNBA, Copa del Rey, Champions (sin previas), Liga F; contraste de WTA, LaLiga y F1 | JSON sin clave, no documentado | Sin autorización de republicación acreditada | Una consulta por día y liga; los intervalos de fechas dan 400. `leagues[].calendar` sirve para planificar, no es la lista de citas. |
 | WTA oficial (`api.wtatennis.com`) | WTA | JSON público de su web | Sin licencia publicada | Principal de WTA. |
-| LaLiga oficial (`laliga.com`) | Primera y Segunda | HTML con datos de la web | Sin licencia publicada | Principal de fútbol. |
+| LaLiga oficial (`laliga.com`) | Primera y Segunda | HTML con datos de la web | Sin licencia publicada | Principal de fútbol. Su `Canceled` es un aplazado: se relee su jornada hasta que tenga fecha y se juegue. |
 | F1 oficial (`api.formula1.com`) | F1 | API de la web con su clave pública de configuración | Sin licencia publicada | Principal de F1. Si cambia la web, se rompe la lectura de la clave. |
 | [FEB](https://baloncestoenvivo.feb.es/) | LF Endesa (4), Primera FEB (1), LF Challenge (67) | HTML; dos páginas por liga y pasada | Derechos reservados; sin robots.txt | Sin pabellón acreditado; hora local sin zona. El calendario sustituye horarios por marcadores en partidos jugados. |
 | [MotoGP oficial](https://www.motogp.com/en/calendar/2026) (`api.pulselive.motogp.com`) | MotoGP | JSON sin clave | Sin licencia publicada | GP y sesiones `type=SESSION` de la categoría MotoGP; `show_in_calendar=false` no cancela. |

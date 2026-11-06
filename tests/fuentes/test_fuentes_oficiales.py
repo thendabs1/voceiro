@@ -6,7 +6,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from agenda import nucleo, oficial_f1, oficial_laliga, oficial_wta, publicacion
+from agenda import nucleo, oficial_f1, oficial_laliga, oficial_wta, operacion, publicacion
 
 
 MUESTRAS = Path(__file__).with_name('muestras_calendario') / 'oficiales'
@@ -248,6 +248,39 @@ class LaLigaOficial(unittest.TestCase):
         self.assertFalse(any(e['tipo'] == 'participante' for e in n['entidades'].values()))
         self.assertEqual(len(n['participaciones']), 2)
         self.assertTrue(all(p['participante'] is None for p in n['participaciones'].values()))
+
+    def test_cancelado_de_laliga_es_aplazado_y_guarda_su_jornada(self):
+        def cancelar(d):
+            d['props']['pageProps']['matches'][0]['status'] = 'Canceled'
+        html = reescribir_next(html_laliga('laliga-futuro-correcto'), cancelar)
+        dato = oficial_laliga.leer(html, '2026', 'primera', 11)
+        self.assertEqual([m['programacion'] for m in dato['partidos']], ['aplazado', 'programado'])
+        p = {'year': '2026', 'competicion': 'primera', 'jornadas': dato['jornadas'],
+             'seleccion': {'inicio': '2026-10-01', 'fin': '2026-11-01', 'jornadas': [11]},
+             'paginas': [{'jornada': dato['jornada'], 'partidos': dato['partidos']}]}
+        n = oficial_laliga.importar(None, p, OBSERVADO)
+        filas = operacion._eventos(n, 'laliga-primera', OBSERVADO, '2026')
+        self.assertEqual(sorted((e['estado'], e['ronda']) for e in filas), [('aplazado', 11), ('programado', 11)])
+
+    def test_se_relee_la_jornada_de_un_aplazado_fuera_de_la_ventana(self):
+        # Jornada 13 pasada: un aplazado sin fecha y otro con fecha nueva en la ventana.
+        filas = [{'ronda': 13, 'estado': 'aplazado', 'inicio': '2026-11-06', 'fin': '2026-11-06'},
+                 {'ronda': 12, 'estado': 'programado', 'inicio': '2026-12-03', 'fin': '2026-12-03'},
+                 {'ronda': 11, 'estado': 'programado', 'inicio': '2026-10-25', 'fin': '2026-10-25'},
+                 {'estado': 'aplazado', 'inicio': '2026-11-06', 'fin': '2026-11-06'}]
+        self.assertEqual(operacion._jornadas_pendientes(filas, '2026-12-01', '2026-12-14'), [12, 13])
+        catalogo = [{'id': str(w), 'week': w, 'name': f'J{w}', 'date': f'2026-{m}T00:00:00+00:00'}
+                    for w, m in ((1, '08-15'), (13, '11-08'), (16, '11-29'), (17, '12-06'))]
+        leidas = []
+
+        def leer(_, year, liga, jornada):
+            leidas.append(jornada)
+            return {'jornada': next(g for g in catalogo if g['week'] == jornada), 'jornadas': catalogo, 'partidos': []}
+
+        with patch.object(oficial_laliga.recogida, 'descargar', return_value=''), patch.object(oficial_laliga, 'leer', leer):
+            salida, _ = oficial_laliga.recoger('2026', 'segunda', '2026-12-01', '2026-12-14', jornadas=[13])
+        self.assertEqual(salida['seleccion']['jornadas'], [13, 16, 17])
+        self.assertEqual(leidas, [1, 13, 16, 17])
 
     def test_html_home_200_y_seleccion_ajena_se_rechazan(self):
         html = html_laliga('laliga-futuro-correcto')
