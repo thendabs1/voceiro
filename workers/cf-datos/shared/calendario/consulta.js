@@ -58,9 +58,11 @@ export const AMBITOS = {
 const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario', noticias: 'noticias' };
 const lista = s => normalize(s).split(',').map(v => v.trim()).filter(Boolean);
 
-export function leerConsultaCalendario(raw){
+// `tolerante` es para el worker: el front puede llegar antes que su despliegue con
+// una competición nueva, y eso no debe tirar la vista entera.
+export function leerConsultaCalendario(raw, { tolerante = false } = {}){
   const ambitos = new Set(), tipos = new Set(), circuitos = new Set(), desconocidos = [], resto = [];
-  let activa = false;
+  let activa = false, ignoradas = 0;
   for (const tk of tokenizeQuery(raw)){
     const p = normalize(tk.prefix), v = normalize(tk.text);
     if (Object.hasOwn(AMBITOS, p)){
@@ -73,7 +75,8 @@ export function leerConsultaCalendario(raw){
       activa = true;
       if (Object.hasOwn(TIPOS, p)) tipos.add(TIPOS[p]);
       for (const a of lista(tk.text)){
-        if (!Object.hasOwn(AMBITOS, a) || (p === 'circuito' && !AMBITOS[a].codigo)) desconocidos.push(a);
+        if (tolerante && !Object.hasOwn(TIPOS, p) && !Object.hasOwn(AMBITOS, a)) ignoradas++;
+        else if (!Object.hasOwn(AMBITOS, a) || (p === 'circuito' && !AMBITOS[a].codigo)) desconocidos.push(a);
         else (p === 'circuito' ? circuitos : ambitos).add(a);
       }
     } else resto.push(tk.raw);
@@ -82,7 +85,9 @@ export function leerConsultaCalendario(raw){
   const conNoticias = [...ambitos, ...circuitos].every(a => AMBITOS[a].noticias);
   if (tipos.has('noticias') && !conNoticias) desconocidos.push(raw);
   return activa ? { ambitos: [...ambitos], circuitos: [...circuitos], tipos: [...tipos],
-    desconocidos, resto: resto.join(' '), noticias: (!tipos.size || tipos.has('noticias')) && conNoticias } : null;
+    desconocidos, resto: resto.join(' '), noticias: (!tipos.size || tipos.has('noticias')) && conNoticias,
+    // Solo competiciones ignoradas: sin esto la selección vacía se leería como «todo».
+    ...(ignoradas && !ambitos.size && !circuitos.size ? { seleccionVacia: true } : {}) } : null;
 }
 
 export function temasDescendientes(catalogo, seleccion){
