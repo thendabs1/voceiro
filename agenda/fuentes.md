@@ -90,8 +90,8 @@ ciudad, Valladolid y A Coruña. No se abre una ronda de scraping para ellas.
 
 ## Atletismo
 
-RFEA (con Nivel II), Galicia y Cataluña tienen recogida manual, y World
-Athletics, contrato sin adaptador: [atletismo.md](atletismo.md). Sin integrar:
+RFEA (con Nivel II), Galicia y Cataluña se recogen en el cron y se publican;
+World Athletics se recoge sin publicar: [atletismo.md](atletismo.md). Sin integrar:
 [Federación Andaluza](https://atletismofaa.es/carreraspopulares/) (HTML y PDF),
 [CarrerasPopulares](https://carreraspopulares.com/) (web; su RSS son noticias)
 y Tenerife deportiva (JSON sin URL única: acreditar identidad). Madrid, Zaragoza

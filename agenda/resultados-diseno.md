@@ -10,8 +10,10 @@ demanda y caché. El contrato base está en
 `encuentro_tenis` y `sesion_motor` son las otras dos. Cada vista se registra en
 `VISTAS_CONSULTA` (`front/app/14-tenis.js`, `14-motor.js`). Las fichas nuevas
 llevan `estado_original`, `condicion`, `fuente` con la atribución real y
-`referencias_agenda` con los ID de la agenda, listas para enlazarlas desde la
-tarjeta. Con ID en la petición manda el ID: `texto` no elige proveedor.
+`referencias_agenda` con los identificadores del proveedor. La tarjeta solo
+publica los nuestros, así que no se cruzan: el enlace desde la tarjeta lleva al
+panel del día ([contrato](interfaz-contrato.md#enlace-a-resultados)). Con ID en
+la petición manda el ID: `texto` no elige proveedor.
 
 | Competición | Fuente | Puente con la agenda |
 | --- | --- | --- |
@@ -29,8 +31,10 @@ En MotoGP, `date` de resultados lleva offset UTC falso y es hora local, y
 
 - Consumo real de ESPN: la estimación es 56 peticiones/día con cinco colecciones.
   Con WNBA a la vez son unas 69, sobre el cupo de 64: revisar en mayo de 2027.
-- Sprint de F1 contra la fuente oficial y playoffs de Euroliga.
 - Términos de uso de EuroLeague: siguen sin revisar y la ficha no muestra licencia.
+
+Comprobado el 6/11/2026: el sprint de F1 coincide con la fuente oficial. Euroliga
+da Play-In, playoff y final; la ficha no indica la fase.
 
 Fuera por ahora, sin API directa: FEB, ACB, ASOBAL, WRC, ciclismo y pádel.
 

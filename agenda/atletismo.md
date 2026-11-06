@@ -372,7 +372,7 @@ python -m agenda.atletismo_recogida --db /tmp/atletismo.db --fuente fga --inicio
 
 Fuentes `fga`, `fca`, `rfea` (incluye Nivel II y requiere Poppler) y `wa`; `--turso`
 sustituye a `--db`. Ventana máxima de 91 días; por defecto, hoy y 60 días más.
-El cron corre cada 6 h y cada fuente tiene un reloj diario independiente
+El cron está programado cada 6 h, con pasadas reales más espaciadas, y cada fuente tiene un reloj diario independiente
 (`atletismo-fga`, `atletismo-fca`, `atletismo-rfea`, `atletismo-wa`), con 3 h de
 margen. Tras un fallo se espera el tick siguiente, luego dos y después un día, o
 más si la fuente pide `Retry-After`. Si solo falla Calendario PDF o Nivel II, el

@@ -43,3 +43,18 @@ export const admiteConsultaESPN = (tipo, codigo) => Object.hasOwn(CAPACIDADES_ES
 // Resultados por sesión; la clasificación F1 sigue en ESPN.
 export const MOTOR = { f1: 'openf1', motogp: 'motogp' };
 export const admiteConsultaMotor = (tipo, codigo) => tipo === 'resultados' && Object.hasOwn(MOTOR, codigo);
+
+// Panel de resultados de una tarjeta: su competición en el día que se mira. Sin
+// partido exacto: fútbol y WTA no traen referencias con las que cruzar la ficha.
+// ESPN agrupa NBA y WNBA por día de EE. UU.; la madrugada de Madrid cae en el anterior.
+const ZONA_RESULTADOS = { nba: 'America/New_York', wnba: 'America/New_York' };
+export function destinoResultados(tarjeta, dia) {
+  const codigo = (tarjeta.competiciones || []).find(c => c === 'euroliga'
+    || admiteConsultaMotor('resultados', c) || admiteConsultaESPN('resultados', c));
+  if (!codigo) return null;
+  const id = codigo === 'euroliga' ? 'euroliga:resultados'
+    : MOTOR[codigo] ? `${MOTOR[codigo]}:resultados/${codigo}` : `espn:resultados/${codigo}`;
+  const instante = tarjeta.programacion?.valor?.cuando?.inicio?.instante, zona = ZONA_RESULTADOS[codigo];
+  return { id, fecha: zona && instante ? new Intl.DateTimeFormat('en-CA',
+    { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instante)) : dia };
+}

@@ -33,7 +33,7 @@ export function normalizarConsulta(url) {
   const p = url.searchParams;
   const admitidos = new Set(['desde', 'hasta', 'zona', 'limite', 'cursor', 'q', 'texto', 'temas', 'circuitos',
     'fuente', 'objetivo', 'lugar', 'municipio', 'territorio', 'etiqueta', 'formatos', 'modalidades', 'titular', 'actividades', 'excluir_actividades', 'precio', 'presentacion', 'muestras',
-    'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad', 'barras', 'chips']);
+    'pendientes', 'resultados', 'revision', 'tipo', 'disponibilidad', 'barras', 'chips', 'total']);
   for (const [k, v] of p) {
     if (!admitidos.has(k) || p.getAll(k).length !== 1 || v.length > 1024) throw error(400, 'Parámetro inválido: ' + k);
   }
@@ -43,7 +43,8 @@ export function normalizarConsulta(url) {
   const pendientes = p.get('pendientes') === '1';
   if (pendientes && (desde || hasta)) throw error(400, 'La lista pendiente no admite ventana de fechas');
   if (p.has('pendientes') && !['0', '1'].includes(p.get('pendientes'))
-      || p.has('resultados') && !['0', '1'].includes(p.get('resultados'))) throw error(400, 'Indicador inválido');
+      || p.has('resultados') && !['0', '1'].includes(p.get('resultados'))
+      || p.has('total') && !['0', '1'].includes(p.get('total'))) throw error(400, 'Indicador inválido');
   const esLista = url.pathname === '/calendario/eventos' || url.pathname === '/calendario/resumen';
   if (esLista && (!pendientes || desde || hasta) && (!fechaValida(desde) || !fechaValida(hasta)
       || hasta <= desde || hasta > sumarDiasCalendario(desde, 42))) throw error(400, 'Ventana requerida de 1 a 42 días [desde,hasta)');
@@ -68,8 +69,9 @@ export function normalizarConsulta(url) {
     objetivos: ['objetivo', 'lugar', 'municipio'].map(k => p.get(k) || '').filter(Boolean),
     fuente: p.get('fuente') || '', territorio: p.get('territorio') || '', etiqueta: p.get('etiqueta') || '',
     formatos: lista(p.get('formatos')), modalidades: lista(p.get('modalidades')), titular: lista(p.get('titular')), actividades: lista(p.get('actividades')), excluirActividades: lista(p.get('excluir_actividades')), precio: p.get('precio') || '', presentaciones: lista(p.get('presentacion')),
-    tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1', chips: p.get('chips') === '1',
+    tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1', chips: p.get('chips') === '1', total: p.get('total') === '1',
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
+  if (c.total && (url.pathname !== '/calendario/eventos' || c.chips || c.pendientes)) throw error(400, 'El total solo se da en la lista de eventos con fechas');
   if ([c.temas, c.circuitos, c.formatos, c.modalidades, c.titular, c.actividades, c.excluirActividades, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   if (c.modalidades.some(m => !MODALIDADES_ATLETISMO.includes(m))) throw error(400, 'Modalidad desconocida');
   if (c.titular.some(x => !TITULAR_ATLETISMO.test(x))) throw error(400, 'Titular desconocido');
@@ -191,6 +193,16 @@ export function consultaEventos(c, meta, cursor) {
         ELSE coalesce(julianday(json_extract(e.tarjeta_json,'$.programacion.valor.cuando.inicio.instante')),9999999) END AS orden
       FROM seleccion s JOIN agenda_lectura_eventos e ON e.id=s.id)
     SELECT id,dia,orden,tarjeta FROM ordenada${continuacion} ORDER BY dia,orden,id LIMIT ?`, args };
+}
+
+// Citas distintas de la selección, con los filtros de la lista: una cita de varios
+// días o varias fuentes cuenta una vez. Solo se pide en la primera página.
+export function consultaTotal(c, meta) {
+  const args = [c.zona, c.desde, topeVentana(c, meta), c.hasta];
+  const filtros = filtrosSql(c, meta, args);
+  return { sql: `SELECT count(DISTINCT e.id) AS n FROM agenda_lectura_tramos d
+    JOIN agenda_lectura_eventos e ON e.id=d.evento
+    WHERE d.zona IN (?,'*') AND d.hasta>? AND d.hasta<=? AND d.desde<?${filtros}`, args };
 }
 
 // La marca aparece al publicar los tramos activos (sin cancelados), el estado
@@ -385,7 +397,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     let meta = guardado ? await guardado.json() : await leerControl();
     if (meta.version !== 1) throw error(503, 'Versión de lectura incompatible');
     // Sin esos filtros la firma no cambia: un cursor en curso sobrevive al despliegue.
-    const { titular, actividades, excluirActividades, ...resto } = c;
+    // `total` no selecciona nada: las páginas siguientes pueden pedirse sin él.
+    const { titular, actividades, excluirActividades, total: pideTotal, ...resto } = c;
     const huella = await firma({ api_calendario: 2, ruta, ...resto,
       ...(titular.length ? { titular } : {}), ...(actividades.length ? { actividades } : {}),
       ...(excluirActividades.length ? { excluirActividades } : {}),
@@ -396,7 +409,7 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
     if (revisionPedida && revisionPedida !== meta.revision || cursor && (cursor[0] !== meta.revision || cursor[1] !== huella)) throw Object.assign(error(409, 'La publicación o la selección cambió; reinicia la consulta'), { revision: meta.revision });
     if (!c.pendientes && ['/calendario/eventos', '/calendario/resumen'].includes(ruta)
         && (c.desde < meta.desde || c.hasta > meta.hasta)) throw error(422, 'Ventana fuera del horizonte publicado');
-    const etag = await firma([meta.revision, huella, url.searchParams.get('cursor') || '']);
+    const etag = await firma([meta.revision, huella, url.searchParams.get('cursor') || '', ...(pideTotal ? ['total'] : [])]);
     const clave = new Request(url.origin + '/__calendario/respuesta/' + etag);
     const entregar = respuesta => {
       const cabeceras = new Headers(respuesta.headers);
@@ -425,11 +438,13 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
       args.push(c.limite + 1);
       sentencia = { sql: 'SELECT id,datos_json FROM agenda_lectura_entidades WHERE ' + condiciones.join(' AND ') + ' ORDER BY id LIMIT ?', args };
     }
-    let filas = [], barras = null;
+    let filas = [], barras = null, total = null;
     if (sentencia) {
-      const extra = ruta === '/calendario/resumen' && c.barras ? [consultaBarras(c, meta)] : [];
-      const [actual, respuesta, conBarras] = await consultarConLimite([control, sentencia, ...extra]);
-      if (extra.length) barras = conBarras;
+      const extra = ruta === '/calendario/resumen' && c.barras ? [consultaBarras(c, meta)]
+        : ruta === '/calendario/eventos' && pideTotal && !cursor ? [consultaTotal(c, meta)] : [];
+      const [actual, respuesta, adicional] = await consultarConLimite([control, sentencia, ...extra]);
+      if (extra.length && ruta === '/calendario/resumen') barras = adicional;
+      else if (extra.length) total = Number(adicional[0].n);
       if (!actual[0] || JSON.parse(actual[0].datos_json).revision !== meta.revision) {
         try { await cache?.delete(controlClave); } catch { /* Expira en 15 segundos. */ }
         throw Object.assign(error(409, 'La publicación cambió; reinicia la consulta'),
@@ -502,7 +517,8 @@ export async function atenderCalendario(request, env, { ip = '', consultar = con
         pagina.map(f => f.ocurrencia != null ? { ...comoChip(JSON.parse(f.tarjeta), f), dia: f.dia }
           : f.tarjeta ? { ...JSON.parse(f.tarjeta), dia: f.dia } : JSON.parse(f.datos_json)),
         siguiente: hayMas ? codificar([meta.revision, huella, ultima.dia || '', String(ultima.orden ?? 0), ultima.id,
-          ...(ultima.ocurrencia != null ? [ultima.ocurrencia] : [])]) : null };
+          ...(ultima.ocurrencia != null ? [ultima.ocurrencia] : [])]) : null,
+        ...(total === null ? {} : { total }) };
     }
     const respuesta = json(salida, 200, { 'Cache-Control': 'public, max-age=30', ETag: '"' + etag + '"' });
     guardar(clave, respuesta.clone(), 3600);

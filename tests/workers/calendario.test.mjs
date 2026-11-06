@@ -190,6 +190,26 @@ test('paginación completa, filtros antes de LIMIT y revisión en todas las pág
   assert.ok(b.sql.every(s => !/agenda_(observaciones|documentos|entidades)\b/.test(s)));
 });
 
+test('total: citas distintas con los filtros de la lista, solo en la primera página y sin romper el cursor', async t => {
+  const b = base(); t.after(() => b.db.close());
+  const sin = await b.pedir(ventana);
+  assert.equal('total' in sin.dato, false);
+  const antes = b.sql.length, con = await b.pedir(ventana + '&total=1');
+  assert.equal(con.dato.total, 89);
+  assert.deepEqual(con.dato.eventos.map(e => e.id), sin.dato.eventos.map(e => e.id));
+  assert.equal(b.sql.slice(antes).filter(s => /count\(DISTINCT e\.id\)/.test(s)).length, 1);
+  // La misma selección con y sin total no comparte respuesta en caché.
+  assert.notEqual(con.headers.get('etag'), sin.headers.get('etag'));
+  // El cursor de una vale para la otra, y las páginas siguientes no vuelven a contar.
+  const siguiente = await b.pedir(ventana + '&total=1&cursor=' + con.dato.siguiente);
+  assert.equal(siguiente.status, 200); assert.equal('total' in siguiente.dato, false);
+  assert.equal((await b.pedir(ventana + '&cursor=' + con.dato.siguiente)).status, 200);
+  assert.equal((await b.pedir(ventana + '&texto=musica%20-coruna&total=1')).dato.total, 0);
+  for (const ruta of ['&total=2', '&total=1&chips=1']) assert.equal((await b.pedir(ventana + ruta)).status, 400);
+  assert.equal((await b.pedir('/calendario/resumen?desde=2026-10-23&hasta=2026-10-29&total=1')).status, 400);
+  assert.equal((await b.pedir('/calendario/eventos?pendientes=1&total=1')).status, 400);
+});
+
 test('semántica del parser, ámbitos, circuitos y filtros coincide con selección local', async t => {
   const b = base(); t.after(() => b.db.close());
   for (const [q, texto] of [['cultura:calendario', '-prob'], ['deportes:agenda', 'musica'],
@@ -560,14 +580,14 @@ test('titular y actividad de atletismo son facetas; filtran con OR y validan el 
     assert.equal((await b.pedir(ventana + q)).status, 400, q);
 });
 
-test('sin titular ni actividad la firma no cambia: un cursor en curso sobrevive al despliegue', async t => {
+test('sin titular, actividad ni total la firma no cambia: un cursor en curso sobrevive al despliegue', async t => {
   const b = base(muestra()); t.after(() => b.db.close());
   const huella = async q => {
     const { siguiente } = (await b.pedir(ventana + '&limite=1' + q)).dato;
     return JSON.parse(atob(siguiente.replaceAll('-', '+').replaceAll('_', '/')))[1];
   };
-  const { titular, actividades, excluirActividades, ...anterior } = normalizarConsulta(new URL('https://x.test' + ventana + '&limite=1'));
-  assert.deepEqual([titular, actividades, excluirActividades], [[], [], []]);
+  const { titular, actividades, excluirActividades, total, ...anterior } = normalizarConsulta(new URL('https://x.test' + ventana + '&limite=1'));
+  assert.deepEqual([titular, actividades, excluirActividades, total], [[], [], [], false]);
   const esperada = createHash('sha256').update(JSON.stringify({ api_calendario: 2, ruta: '/calendario/eventos', ...anterior })).digest('hex');
   assert.equal(await huella(''), esperada);
 });

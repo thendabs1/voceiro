@@ -15,7 +15,7 @@ on:
         description: 'Primer día (AAAA-MM-DD, vacío = hoy)'
         required: false
       fin:
-        description: 'Último día incluido (vacío = inicio + 30 días; máximo 91 días)'
+        description: 'Último día incluido (vacío = inicio + 30 días, atletismo 60; máximo 91 días)'
         required: false
       fuente:
         description: 'Galicia solo en gallego, o ICS completo de Vidmar F1'
@@ -39,7 +39,7 @@ on:
         type: boolean
         default: false
       atletismo:
-        description: 'Recoger RFEA/Nivel II, Galicia y Cataluña (no habilita su publicación)'
+        description: 'Recoger RFEA/Nivel II, Galicia, Cataluña y World Athletics (no habilita su publicación)'
         type: boolean
         default: false
       publicar:
