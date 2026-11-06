@@ -25,7 +25,8 @@ function renderizar(){
       actualizarBotonCargarMas();
       return;
     }
-    cont.innerHTML = `<div class="vacio">${escapeHtml(t('vacio'))}${pista ? `
+    // Bajo una ficha, «sin resultados» se leería como que no hay partidos.
+    cont.innerHTML = competicionConsulta() ? '' : `<div class="vacio">${escapeHtml(t('vacio'))}${pista ? `
       <p class="vacio-pista">${escapeHtml(t('pistaModoSinResultados', { X: PRESET.nombre }))}</p>
       <div class="vacio-acciones">
         <button type="button" data-vacio="editar">${escapeHtml(t('pistaEditarModo'))}</button>

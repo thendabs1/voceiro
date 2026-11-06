@@ -95,6 +95,13 @@ function competicionConsulta(){
   const codigo = normalize(c.texto);
   return codigoDeporte(c.tipo, codigo) ? codigo : '';
 }
+// Bajo resultados y clasificación, las noticias de esa competición y no el feed
+// general: el filtro de `primera:noticias`, solo con lo ya descargado. Abrir una
+// ficha no debe pedir a la prensa.
+function noticiasDeLaFicha(){
+  const c = competicionConsulta();
+  return AMBITOS[c]?.noticias ? { ambitos: [c], circuitos: [], tipos: ['noticias'], desconocidos: [], resto: '', noticias: true, sinPrensa: true } : null;
+}
 // Competición y vista en pantalla: la misma cabecera para las cuatro vistas.
 function vistaCompeticion(){
   if (CALENDARIO.abierto){

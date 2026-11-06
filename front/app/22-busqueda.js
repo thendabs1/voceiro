@@ -117,6 +117,8 @@ function aplicarFiltros(){
   actualizarAlertas(parsed.alertas);
   actualizarConsultaPuntual(parsed, consulta.texto);
   pintarCabeceraCompeticion();
+  const deLaFicha = ordenCalendario ? null : noticiasDeLaFicha();
+  if (deLaFicha){ consulta.calendario = deLaFicha; consulta.clave += '|' + JSON.stringify(deLaFicha); }
   pintarBotonTiempo();
 
 const capas = capasRequeridas(parsed, consulta);
