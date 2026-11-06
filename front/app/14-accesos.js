@@ -26,7 +26,7 @@ function pintarAccesos(){
   if (!panel) return;
   const fila = (atributo, texto) => `<li><button type="button" ${atributo}>${calEsc(texto)}</button></li>`;
   // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
-  const sigo = (calPreferencias()?.competiciones || []).filter(accesoHay);
+  const sigo = calPreferencias()?.competiciones || [];
   const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c)).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
   const noticias = deportesSeguidos().map(([k, cs]) => fila(`data-orden="${calEsc(cs.map(c => c + ':').join(' '))}"`, t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) })));
   panel.innerHTML = `<div class="accesos-cab"><h2 id="accesos-titulo" tabindex="-1">${calEsc(t('accTitulo'))}</h2>

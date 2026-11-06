@@ -1467,7 +1467,7 @@ test('moverse por semanas y meses reutiliza los formatos de fecha de la interfaz
 test('una cita enlaza sus resultados hasta hoy; la futura y la anulada, no', () => {
   const c = contexto();
   c.evento = { id: 'a', competiciones: ['primera'], nombres: { und: 'Sevilla at Alavés' }, programacion: { valor: { cuando: { inicio: {} } } } };
-  assert.match(runInContext('calCita(evento, "2020-01-05")', c), /data-cal="ver-resultados" data-valor="primera" class="cal-resultados" data-fecha="2020-01-05"/);
+  assert.match(runInContext('calCita(evento, "2020-01-05")', c), /data-cal="ver-resultados" data-valor="primera" class="cal-resultados" data-fecha="2020-01-05" data-id="espn:resultados\/primera"/);
   assert.doesNotMatch(runInContext('calCita(evento, "2099-01-05")', c), /ver-resultados/);
   c.evento.estado = 'cancelado';
   assert.doesNotMatch(runInContext('calCita(evento, "2020-01-05")', c), /ver-resultados/);

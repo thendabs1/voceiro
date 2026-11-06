@@ -650,10 +650,16 @@ test('una competición enlaza sus secciones, las de su deporte y la vista genera
 test('la tarjeta abre los resultados de su día, también con esa consulta ya abierta', async () => {
   const { ctx, pedidas, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
   ctx.aplicarFiltros = () => actualizar(ctx.$('#buscar').value);
-  ctx.api.abrirResultadosDelDia('primera', '2026-11-02'); await esperar();
+  const id = 'espn:resultados/primera';
+  ctx.api.abrirResultadosDelDia('primera', '2026-11-02', id); await esperar();
   assert.deepEqual(pedidas, ['/consulta/ficha?id=espn%3Aresultados%2Fprimera&fecha=2026-11-02&idioma=es&v=3']);
-  ctx.api.abrirResultadosDelDia('primera', '2026-11-01'); await esperar();
+  ctx.api.abrirResultadosDelDia('primera', '2026-11-01', id); await esperar();
   assert.equal(pedidas.length, 2);
   assert.match(pedidas[1], /fecha=2026-11-01/);
   assert.equal(ctx.api.PUNTUAL.fechaPedida, '');
+  // Dentro de un partido de esa misma consulta: vuelve a los resultados, no al partido.
+  Object.assign(ctx.api.PUNTUAL, { id: 'espn:partido/primera/1', origen: { id } });
+  ctx.api.abrirResultadosDelDia('primera', '2026-10-31', id); await esperar();
+  assert.match(pedidas.at(-1), /id=espn%3Aresultados%2Fprimera&fecha=2026-10-31/);
+  assert.equal(ctx.api.PUNTUAL.origen, null);
 });

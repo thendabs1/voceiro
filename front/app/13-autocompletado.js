@@ -144,6 +144,13 @@ function aplicarSugerencia(idx){
     cerrarSugerencias(); aplicarFiltros(); return;
   }
 
+  // Sustituye la palabra escrita y una consulta vacía («resultados: nba»), que
+  // no es un valor: el parser deja `nba` suelta.
+  if (s.kind === 'orden'){
+    input.value = input.value.replace(/[^\s"]*\s*$/, '');
+    cerrarSugerencias(); escribirAcceso(s.value); return;
+  }
+
   if (s.kind === 'estadisticas'){
     input.value = input.value.replace(/(^|\s)(?:estadisticas|stats):(?:"[^"]*|[^\s"]*)$/i, (_, antes) => antes + 'estadisticas:' + s.value);
     consumirOrdenEstadisticas();

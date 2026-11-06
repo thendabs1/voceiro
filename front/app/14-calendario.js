@@ -755,7 +755,7 @@ function calCita(e, dia = ''){
     ${padre && !titulo.includes(calNombre({ nombres: e.padre })) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calTituloDesplegable(e, dia, false, titulo)}</h3>
     ${calEtiquetasDeportes(e)}
-    ${destino ? calBoton('ver-resultados', t('conResultados'), destino.codigo, `class="cal-resultados" data-fecha="${calEsc(destino.fecha)}"`) : ''}
+    ${destino ? calBoton('ver-resultados', t('conResultados'), destino.codigo, `class="cal-resultados" data-fecha="${calEsc(destino.fecha)}" data-id="${calEsc(destino.id)}"`) : ''}
     ${prolongada ? `<p class="cal-cuando">${calEsc(calHora(e))}</p>` : ''}${lugar ? `<p class="cal-nota">${calEsc(lugar)}</p>` : ''}
     ${plan ? `<p class="cal-plan">${calEsc(plan)}</p>` : ''}
     ${anulado ? `<p class="cal-aviso">${calEsc(t(anulado))}</p>` : ''}${calDesplegado(e, dia)}</div></article>`;
@@ -1489,7 +1489,7 @@ function wireCalendario(){
     const a = b.dataset.cal, v = b.dataset.valor;
     if (a === 'cerrar') return salirCalendario();
     if (a === 'orden') return irDesdeCalendario(v);
-    if (a === 'ver-resultados') return abrirResultadosDelDia(v, b.dataset.fecha);
+    if (a === 'ver-resultados') return abrirResultadosDelDia(v, b.dataset.fecha, b.dataset.id);
     if (a === 'asistente') return calAbrirAsistente(Number(v) || 0);
     if (a === 'ahora-no'){ calGuardarPreferencias({ v: 1, estado: 'omitido' }); return void pintarCalendario(); }
     if (a === 'seguir') return calSeguir(v);

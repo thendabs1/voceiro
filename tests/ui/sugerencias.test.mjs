@@ -9,13 +9,14 @@ import { traducir } from '../../front/idiomas/index.js';
 
 const leer = n => readFileSync(new URL(`../../front/app/${n}`, import.meta.url), 'utf8');
 const sugerenciasCalendario = leer('14-calendario.js').match(/function sugerenciasCalendario[\s\S]*?\n}\n/)[0];
+const entrada = { value: '', style: {} }, escritas = [];
 const c = {
   normalize, tokenizeQuery, AMBITOS, leerConsultaCalendario, PREFIJOS_CONSULTAS, CALENDARIO_ACTIVO: true, TIEMPO_ACTIVO: false,
   t: (k, v) => traducir('es', k, v), MEDIOS_UNICOS: [{ medio: 'Diario de Noticias', dominio: 'dn.es' }, { medio: 'Marca', dominio: 'marca.com', grupo: 'Deportes · España' }],
   partirConsulta: raw => ({ consulta: tokenizeQuery(raw).find(x => x.resto)?.raw || '' }), sugerenciasEstadisticas: () => null, fragmentoTiempo: () => null,
   CAL_DEPORTES: { futbol: ['primera', 'segunda'], baloncesto: ['nba'] }, CONSULTA_DEPORTES: { primera: 'LaLiga', nba: 'NBA' }, calNombreCompeticion: x => x,
   codigoDeporte: (tipo, x) => admiteConsultaESPN(tipo, x) || admiteConsultaMotor(tipo, x), nombreConsulta: tipo => traducir('es', 'con' + tipo[0].toUpperCase() + tipo.slice(1)),
-  document: {},
+  document: { getElementById: () => entrada }, escribirAcceso: orden => escritas.push([entrada.value, orden]), cerrarSugerencias(){},
 };
 runInNewContext(leer('13-autocompletado.js') + '\n' + leer('14-deportes.js') + '\n' + sugerenciasCalendario, c);
 const valores = raw => Array.from(runInNewContext(`sugerenciasBuscar(${JSON.stringify(raw)})`, c), s => s.value);
@@ -46,3 +47,15 @@ test('un prefijo ya empezado solo se completa y una consulta no sugiere nada', (
   assert.deepEqual(valores('f1:'), ['f1:']);
   assert.deepEqual(valores('resultados:pri'), []);
 });
+
+test('una orden sustituye la palabra escrita, con espacio detrás o tras una consulta vacía', () => {
+  const elegir = (raw, value) => {
+    entrada.value = raw;
+    runInNewContext(`SUG_STATE.items = [{ kind: 'orden', value: ${JSON.stringify(value)} }]; aplicarSugerencia(0)`, c);
+    return escritas.at(-1);
+  };
+  assert.deepEqual(elegir('res ', 'resultados:'), ['', 'resultados:']);
+  assert.deepEqual(elegir('noticias res', 'resultados:'), ['noticias ', 'resultados:']);
+  assert.deepEqual(elegir('resultados: nba', 'resultados:nba'), ['resultados: ', 'resultados:nba']);
+});
+

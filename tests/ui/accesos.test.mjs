@@ -43,12 +43,13 @@ test('sin nada seguido: unas pocas competiciones y el camino a todos los deporte
   assert.doesNotMatch(s.html(), /data-pantalla|data-volver/);
 });
 
-test('lo seguido va primero, hasta cuatro; lo que no tiene citas no ofrece calendario', () => {
+test('lo seguido va primero, hasta cuatro; sin citas pierde el calendario, no sus resultados', () => {
   const s = escenario({ sigo: ['motogp', 'atp', 'wnba'] });
   s.run('DEPORTES_DISP.circuitos = { motogp: 24, atp: 4, wnba: 0, f1: 5, primera: 20, segunda: 33, nba: 106 }; pintarAccesos()');
-  assert.deepEqual([...s.html().matchAll(/dep-nombre">([^<]+)/g)].map(m => m[1]), ['MotoGP', 'ATP', 'F1', 'LaLiga']);
+  assert.deepEqual([...s.html().matchAll(/dep-nombre">([^<]+)/g)].map(m => m[1]), ['MotoGP', 'ATP', 'WNBA', 'F1']);
   assert.ok(ordenes(s).includes('calendario:motogp'));
   assert.ok(!ordenes(s).includes('calendario:wnba'));
+  assert.ok(ordenes(s).includes('resultados:wnba'));
 });
 
 test('la matriz deja el hueco de lo que no existe y el nombre ocupa las columnas libres', () => {
@@ -90,3 +91,15 @@ test('la lista por deporte incluye Euroliga junto a su deporte, sin ser capa del
   assert.deepEqual([...s.run("competicionesDeporte('baloncesto')")], ['nba', 'wnba', 'euroliga']);
   assert.deepEqual([...CAL_DEPORTES.baloncesto], ['nba', 'wnba']);
 });
+
+test('repintar al llegar los datos conserva el botón con el foco', () => {
+  const s = escenario();
+  let enfocado = '';
+  s.c.document = { activeElement: { dataset: { orden: 'resultados:nba' } }, querySelector: sel => ({ focus(){ enfocado = sel; } }) };
+  let pintado = 0;
+  s.c.pintar = () => { pintado++; };
+  s.run('conservandoFoco(pintar)');
+  assert.equal(pintado, 1);
+  assert.equal(enfocado, '[data-orden="resultados:nba"]');
+});
+

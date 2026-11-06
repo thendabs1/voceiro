@@ -20,8 +20,16 @@ async function pedirDisponibilidadDeportes(){
   try { d.circuitos = (await calPedir('catalogo', { disponibilidad: 1 }, new AbortController().signal)).disponibilidad?.circuitos || {}; }
   catch { d.circuitos = null; }
   d.cargando = false;
-  if (ACCESOS.abierto) pintarAccesos();
-  if (PUNTUAL.activa && esDeporteConsulta(PUNTUAL.activa.tipo)) pintarConsulta({ conservarPlegado: true });
+  conservandoFoco(() => {
+    if (ACCESOS.abierto) pintarAccesos();
+    if (PUNTUAL.activa && esDeporteConsulta(PUNTUAL.activa.tipo)) pintarConsulta({ conservarPlegado: true });
+  });
+}
+// Los datos llegan mientras se navega con el teclado: repintar no debe perder el botón.
+function conservandoFoco(pintar){
+  const orden = document.activeElement?.dataset?.orden;
+  pintar();
+  if (orden) document.querySelector(`[data-orden="${orden}"]`)?.focus({ preventScroll: true });
 }
 
 // Euroliga tiene resultados y no calendario: por eso no es una capa de CAL_DEPORTES.
@@ -87,13 +95,13 @@ function irDesdeCalendario(orden){
   escribirAcceso(orden);
 }
 // Tarjeta: resultados de su competición en ese día. Si esa consulta ya estaba
-// abierta, la barra no cambia y nadie recoge la fecha pedida.
-function abrirResultadosDelDia(codigo, fecha){
+// abierta, la barra no cambia y nadie recoge la fecha; puede estar en un partido.
+function abrirResultadosDelDia(codigo, fecha, id){
   PUNTUAL.fechaPedida = fecha;
   irDesdeCalendario('resultados:' + codigo);
   if (!PUNTUAL.fechaPedida) return;
-  PUNTUAL.fechaPedida = '';
-  abrirFichaConsulta(PUNTUAL.id, { fecha });
+  Object.assign(PUNTUAL, { fechaPedida: '', origen: null });
+  abrirFichaConsulta(id, { fecha });
 }
 
 // Prefijos de consulta y competiciones por su nombre, para el autocompletado.
@@ -101,10 +109,10 @@ function sugerenciasDeportes(q){
   if (q.length < 3) return [];
   const tipos = new Set();
   const prefijos = Object.entries(PREFIJOS_CONSULTAS).filter(([a, tipo]) => normalize(a).startsWith(q) && !tipos.has(tipo) && tipos.add(tipo))
-    .map(([a, tipo]) => ({ kind: 'calendario', value: a + ':', label: a + ':', tipo: nombreConsulta(tipo) }));
+    .map(([a, tipo]) => ({ kind: 'orden', value: a + ':', label: a + ':', tipo: nombreConsulta(tipo) }));
   const competiciones = DEPORTES_ORDEN.flatMap(competicionesDeporte)
     .filter(c => c.startsWith(q) || normalize(nombreCompeticionCorto(c)).startsWith(q))
-    .flatMap(c => accionesCompeticion(c).filter(a => a.tipo !== 'calendario').map(a => ({ kind: 'calendario', value: a.orden,
+    .flatMap(c => accionesCompeticion(c).filter(a => a.tipo !== 'calendario').map(a => ({ kind: 'orden', value: a.orden,
       label: `${nombreCompeticionCorto(c)} · ${a.texto}`, tipo: t('calDeportesTitulo') })));
   return [...prefijos, ...competiciones];
 }
