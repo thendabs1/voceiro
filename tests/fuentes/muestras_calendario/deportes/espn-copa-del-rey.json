@@ -1,0 +1,181 @@
+{
+ "leagues": [
+  {
+   "id": "3951",
+   "uid": "s:600~l:3951",
+   "name": "Spanish Copa del Rey",
+   "abbreviation": "Copa del Rey",
+   "slug": "esp.copa_del_rey",
+   "season": {
+    "year": 2026,
+    "startDate": "2026-07-01T04:00Z",
+    "endDate": "2027-07-01T03:59Z",
+    "displayName": "2026-27 Spanish Copa del Rey",
+    "type": {
+     "id": "2",
+     "type": 14558,
+     "name": "First Round",
+     "abbreviation": "First Round"
+    }
+   }
+  }
+ ],
+ "events": [
+  {
+   "id": "401928490",
+   "uid": "s:600~l:3951~e:401928490",
+   "date": "2026-10-29T17:00Z",
+   "name": "Real Oviedo at Numancia",
+   "shortName": "OVI @ NUM",
+   "season": {
+    "year": 2026,
+    "type": 14558,
+    "slug": "first-round"
+   },
+   "competitions": [
+    {
+     "id": "401928490",
+     "uid": "s:600~l:3951~e:401928490~c:401928490",
+     "date": "2026-10-29T17:00Z",
+     "startDate": "2026-10-29T17:00Z",
+     "timeValid": true,
+     "status": {
+      "type": {
+       "name": "STATUS_FINAL_PEN"
+      }
+     },
+     "venue": {
+      "id": "1566",
+      "fullName": "Los Pajaritos",
+      "address": {
+       "city": "Soria",
+       "country": "Spain"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "100",
+        "uid": "s:600~t:100",
+        "displayName": "Numancia"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "92",
+        "uid": "s:600~t:92",
+        "displayName": "Real Oviedo"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401928515",
+   "uid": "s:600~l:3951~e:401928515",
+   "date": "2026-10-29T17:00Z",
+   "name": "Huesca at Peña Sport",
+   "shortName": "HUE @ PEN",
+   "season": {
+    "year": 2026,
+    "type": 14558,
+    "slug": "first-round"
+   },
+   "competitions": [
+    {
+     "id": "401928515",
+     "uid": "s:600~l:3951~e:401928515~c:401928515",
+     "date": "2026-10-29T17:00Z",
+     "startDate": "2026-10-29T17:00Z",
+     "timeValid": true,
+     "status": {
+      "type": {
+       "name": "STATUS_FULL_TIME"
+      }
+     },
+     "venue": {
+      "id": "11902",
+      "fullName": "Estadio de San Francisco",
+      "address": {
+       "city": "Tafalia",
+       "country": "Spain"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "7041",
+        "uid": "s:600~t:7041",
+        "displayName": "Peña Sport"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "5413",
+        "uid": "s:600~t:5413",
+        "displayName": "Huesca"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401928535",
+   "uid": "s:600~l:3951~e:401928535",
+   "date": "2026-10-29T18:00Z",
+   "name": "Coria at San Sebastián de los Reyes",
+   "shortName": "COR @ SEB",
+   "season": {
+    "year": 2026,
+    "type": 14558,
+    "slug": "first-round"
+   },
+   "competitions": [
+    {
+     "id": "401928535",
+     "uid": "s:600~l:3951~e:401928535~c:401928535",
+     "date": "2026-10-29T18:00Z",
+     "startDate": "2026-10-29T18:00Z",
+     "timeValid": true,
+     "status": {
+      "type": {
+       "name": "STATUS_FINAL_AET"
+      }
+     },
+     "venue": {
+      "id": "11907",
+      "fullName": "Estadio Municipal Nuevo Matapiñonera",
+      "address": {
+       "city": "San Sebastian",
+       "country": "Spain"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "18342",
+        "uid": "s:600~t:18342",
+        "displayName": "San Sebastián de los Reyes"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "20821",
+        "uid": "s:600~t:20821",
+        "displayName": "Coria"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

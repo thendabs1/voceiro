@@ -75,9 +75,9 @@ def mover_fechas(dato, zona=None):
 
 
 class Adaptadores(unittest.TestCase):
-    def test_doce_colecciones_con_publicacion_sin_resultados(self):
-        self.assertEqual(len(deportes.COLECCIONES), 12)
-        tarjetas = {'feb-endesa': 2, 'feb-primera': 3, 'feb-challenge': 3, 'ocblacktop-wrc': 2}
+    def test_colecciones_con_publicacion_sin_resultados(self):
+        self.assertEqual(len(deportes.COLECCIONES), 14)
+        tarjetas = {'espn-copa-del-rey': 3, 'feb-endesa': 2, 'feb-primera': 3, 'feb-challenge': 3, 'ocblacktop-wrc': 2}
         for coleccion in deportes.COLECCIONES:
             with self.subTest(coleccion=coleccion):
                 entrada = muestra(coleccion)

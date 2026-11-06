@@ -1,4 +1,4 @@
-"""Las doce colecciones iniciales; selección manual, sin programación automática."""
+"""Las colecciones deportivas de agenda: despacho de recogida e importación."""
 
 from . import blacktop, espn, espn_baloncesto, espn_f1, espn_futbol, espn_tenis, feb, motogp, recogida
 
@@ -6,6 +6,7 @@ from . import blacktop, espn, espn_baloncesto, espn_f1, espn_futbol, espn_tenis,
 COLECCIONES = {
     'espn-atp': ('tenis', 'atp'), 'espn-wta': ('tenis', 'wta'),
     'espn-primera': ('futbol', 'esp.1'), 'espn-segunda': ('futbol', 'esp.2'),
+    'espn-copa-del-rey': ('futbol', 'esp.copa_del_rey'), 'espn-champions': ('futbol', 'uefa.champions'),
     'espn-nba': ('baloncesto', 'nba'), 'espn-wnba': ('baloncesto', 'wnba'),
     'feb-endesa': ('feb', '4'), 'feb-primera': ('feb', '1'), 'feb-challenge': ('feb', '67'),
     'espn-f1': ('f1', 'f1'), 'motogp': ('motogp', None), 'ocblacktop-wrc': ('wrc', None),

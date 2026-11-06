@@ -106,7 +106,12 @@ def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, 
                 # programas de la ventana: lo ya jugado o lo posterior no falta.
                 # Un recurso que llega entero no se filtra: ocultaría una lista recortada.
                 ausentes = {i for i in ausentes if i not in guardados or _en_ventana(guardados[i], *ventana)}
-            if ausentes:
+            if ausentes and proveedores.modo(c.get('proveedor')) == 'fecha':
+                # Leer un día solo acredita ese día: el partido puede haberse movido a
+                # otro que esta pasada no lee. Conserva lo guardado hasta que reaparezca.
+                incidencias.extend({'tipo': 'ausente_de_su_fecha', 'unidad': c['unidad'], 'evento': i}
+                                   for i in sorted(ausentes))
+            elif ausentes:
                 incidencias.append({'tipo': 'ausentes_en_respuesta', 'unidad': c['unidad'],
                                     'recurso': c['recurso'], 'eventos': sorted(ausentes)})
     for e in eventos:

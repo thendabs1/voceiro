@@ -119,6 +119,7 @@ competición, edición, actividad, equipo o persona.
 | ATP | `espn-atp` | — | torneo (cita continua) |
 | WTA | oficial WTA | `espn-wta` | torneo |
 | Primera, Segunda | oficial LaLiga | `espn-primera`, `espn-segunda` | partido |
+| Copa del Rey, Champions | `espn-copa-del-rey`, `espn-champions` | — | partido, con su ronda e ida/vuelta en `ronda_torneo` |
 | NBA, WNBA | `espn-nba`, `espn-wnba` | — | partido |
 | LF Endesa, Primera FEB, LF Challenge | `feb-*` (competiciones 4, 1, 67) | — | partido |
 | Fórmula 1 | oficial F1 | `espn-f1` | GP con sesiones |

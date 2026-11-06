@@ -1,0 +1,81 @@
+{
+ "leagues": [
+  {
+   "id": "775",
+   "uid": "s:600~l:775",
+   "name": "UEFA Champions League",
+   "abbreviation": "UEFA Champions League",
+   "slug": "uefa.champions",
+   "season": {
+    "year": 2025,
+    "startDate": "2025-07-01T04:00Z",
+    "endDate": "2026-07-01T03:59Z",
+    "displayName": "2025-26 UEFA Champions League",
+    "type": {
+     "id": "6",
+     "type": 13677,
+     "name": "Final",
+     "abbreviation": "Final"
+    }
+   }
+  }
+ ],
+ "events": [
+  {
+   "id": "401862895",
+   "uid": "s:600~l:775~e:401862895",
+   "date": "2026-05-06T19:00Z",
+   "name": "Paris Saint-Germain at Bayern Munich",
+   "shortName": "PSG @ MUN",
+   "season": {
+    "year": 2025,
+    "type": 13678,
+    "slug": "semifinals"
+   },
+   "competitions": [
+    {
+     "id": "401862895",
+     "uid": "s:600~l:775~e:401862895~c:401862895",
+     "date": "2026-05-06T19:00Z",
+     "startDate": "2026-05-06T19:00Z",
+     "timeValid": true,
+     "status": {
+      "type": {
+       "name": "STATUS_FULL_TIME"
+      }
+     },
+     "venue": {
+      "id": "1935",
+      "fullName": "Allianz Arena",
+      "address": {
+       "city": "München",
+       "country": "Germany"
+      }
+     },
+     "leg": {
+      "value": 2,
+      "displayValue": "2nd Leg"
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "132",
+        "uid": "s:600~t:132",
+        "displayName": "Bayern Munich"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "160",
+        "uid": "s:600~t:160",
+        "displayName": "Paris Saint-Germain"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
