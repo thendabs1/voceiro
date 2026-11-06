@@ -1,7 +1,7 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=ea52ef898b';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=ea52ef898b';
-import { sumarDisponibilidad } from './consulta.js?v=ea52ef898b';
+import { palabrasDe } from '../busqueda/texto.js?v=cad17b084d';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=cad17b084d';
+import { sumarDisponibilidad } from './consulta.js?v=cad17b084d';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -83,6 +83,8 @@ export function prepararLectura(datos) {
     // Enlace oficial, no un resultado estructurado: no activa `resultado_disponible`.
     if (e.atletismo?.resultados_enlazados) tarjeta.resultados_enlazados = true;
     if (e.programa?.length) tarjeta.tiene_programa = true;
+    // Ronda e ida/vuelta de Copa y Champions: dato para la tarjeta, sin clave en el resto.
+    if (e.ronda_torneo) tarjeta.ronda_torneo = e.ronda_torneo;
     const propias = new Set(objetivos.flatMap(o => o.temas || []).flatMap(t => raicesDe(t)));
     const categoria = ordenRaices.find(r => propias.has(r));
     if (categoria) tarjeta.categoria = categoria;

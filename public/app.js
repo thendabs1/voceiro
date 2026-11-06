@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=ea52ef898b';
+} from './parser.js?v=cad17b084d';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=ea52ef898b';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=ea52ef898b';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=ea52ef898b';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=ea52ef898b';
-import { comparador } from './busqueda/orden.js?v=ea52ef898b';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=cad17b084d';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=cad17b084d';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=cad17b084d';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=cad17b084d';
+import { comparador } from './busqueda/orden.js?v=cad17b084d';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=ea52ef898b';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=ea52ef898b';
+} from './sync/fusion.js?v=cad17b084d';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=cad17b084d';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=ea52ef898b';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=ea52ef898b';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=cad17b084d';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=cad17b084d';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=ea52ef898b';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=cad17b084d';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=ea52ef898b';
+} from './tiempo/avisos.js?v=cad17b084d';
 
-import { I18N, traducir } from './idiomas/index.js?v=ea52ef898b';
+import { I18N, traducir } from './idiomas/index.js?v=cad17b084d';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=ea52ef898b';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=ea52ef898b';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=ea52ef898b';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=ea52ef898b';
+import { ESPN, PREFIJOS_CONSULTAS } from './consultas/registro.js?v=cad17b084d';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=cad17b084d';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=cad17b084d';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=cad17b084d';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=ea52ef898b';
+import { ADMINISTRACION } from './territorios/administracion.js?v=cad17b084d';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=ea52ef898b');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=cad17b084d');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3743,7 +3743,7 @@ const CAL_SEMANAS_MAX = 4;
 const CAL_PREF_KEY = 'voceiro-calendario-preferencias-v1';
 const CAL_PASOS = ['sitio', 'intereses', 'competiciones', 'resumen'];
 // Deportes por deporte y sus competiciones (SofaScore): dos toques hasta una liga.
-const CAL_DEPORTES = { futbol: ['primera', 'segunda'], baloncesto: ['nba', 'wnba', 'feb-endesa', 'feb-primera', 'feb-challenge'],
+const CAL_DEPORTES = { futbol: ['primera', 'segunda', 'champions', 'copa-del-rey'], baloncesto: ['nba', 'wnba', 'feb-endesa', 'feb-primera', 'feb-challenge'],
   motor: ['f1', 'motogp', 'wrc'], tenis: ['atp', 'wta'], atletismo: ['atletismo-rfea', 'atletismo-fga', 'atletismo-fca'] };
 const CAL_NOMBRES_DEPORTE = { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis', atletismo: 'calAtletismo' };
 const CAL_COMPETICIONES = Object.values(CAL_DEPORTES).flat();
@@ -3753,7 +3753,7 @@ const calDeporte = e => (e.competiciones || []).map(c => CAL_DEPORTE_DE[c]).find
 const calColor = e => calDeporte(e) ? 'cal-dep cal-dep-' + calDeporte(e) : 'cal-cat-' + calCategoria(e.categoria);
 // Marcas del mes por competición, en orden de prioridad; la WTA está casi
 // todos los días y va al final para no tapar al resto.
-const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', nba: 'NBA', atp: 'ATP',
+const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', champions: 'UCL', 'copa-del-rey': 'Copa', nba: 'NBA', atp: 'ATP',
   'feb-endesa': 'LFE', 'feb-primera': 'FEB', 'feb-challenge': 'LFC', wnba: 'WNBA', wta: 'WTA',
   'atletismo-rfea': 'RFEA', 'atletismo-fga': 'FGA', 'atletismo-fca': 'FCA' };
 // Atletismo no tiene temporadas: cada federación se recoge hasta el fin de su ventana.
@@ -6472,7 +6472,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=ea52ef898b')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=cad17b084d')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
