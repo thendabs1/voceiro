@@ -2,6 +2,7 @@ import { CONSULTAS, ESPN, admiteConsultaESPN } from '../shared/consultas/registr
 import * as normalizar from './normalizar.js';
 import { normalizarPartido } from './partido.js';
 import { crearTenis, leerIdTenis } from './tenis.js';
+import { FUENTE_EUROLIGA, temporadaEuroliga, urlJuegosEuroliga, urlJuegoEuroliga, resultadosEuroliga, partidoEuroliga } from './euroliga.js';
 
 const DIA = 86400;
 const IDIOMAS = new Set(['es', 'gl', 'ca', 'eu', 'en']);
@@ -11,7 +12,7 @@ const TMDB = 'https://api.themoviedb.org/3';
 const fallo = (mensaje, status = 503) => Object.assign(new Error(mensaje), { status });
 
 // Presupuestos por instancia, como el límite por IP. No son cuotas globales
-// entre réplicas. Open Library se serializa para espaciar también las fichas.
+// entre réplicas. Open Library y EuroLeague se serializan por instancia.
 export function crearPresupuesto({ ahora = Date.now, dormir = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
   let cola = Promise.resolve(), pendientes = 0, ultima = -Infinity, dia = '', cuenta = 0;
   return async (proveedor, tarea, maxDiario = 1000) => {
@@ -21,8 +22,8 @@ export function crearPresupuesto({ ahora = Date.now, dormir = ms => new Promise(
       if (cuenta >= maxDiario) throw fallo('Presupuesto diario de ESPN agotado');
       cuenta++;
     }
-    if (proveedor !== 'openlibrary') return tarea();
-    if (pendientes >= 6) throw fallo('Presupuesto de Open Library ocupado');
+    if (proveedor !== 'openlibrary' && proveedor !== 'euroliga') return tarea();
+    if (pendientes >= 6) throw fallo(`Presupuesto de ${proveedor} ocupado`);
     pendientes++;
     const trabajo = cola.then(async () => {
       const espera = ultima + 1000 - ahora();
@@ -61,7 +62,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     const configurado = Number(entorno('ESPN_MAX_PETICIONES_DIA') ?? 1000);
     const max = Number.isInteger(configurado) && configurado >= 0 ? configurado : 1000;
     return presupuesto(proveedor, async () => {
-      const r = await descargar(url, { headers, signal: AbortSignal.timeout(8000) });
+      const r = await descargar(url, { headers, signal: AbortSignal.timeout(proveedor === 'euroliga' ? 15000 : 8000) });
       if (!r.ok) throw fallo(`${proveedor}: respuesta ${r.status}`);
       const d = await r.json();
       if (!d || typeof d !== 'object' || d.error || d.errors || d.success === false) throw fallo(`${proveedor}: respuesta no válida`);
@@ -81,6 +82,10 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     if (['resultados', 'partido'].includes(tipo) && ['atp', 'wta'].includes(texto)) return tenis({ tipo, id, circuito: texto, fecha });
     const wp = `https://${idioma}.wikipedia.org`;
     if (!id) {
+      if (tipo === 'resultados' && texto === 'euroliga') {
+        return { candidatos: [{ id: 'euroliga:resultados', titulo: 'EuroLeague', detalle: tipo,
+          anio: null, imagen: null, enlace: FUENTE_EUROLIGA.url }] };
+      }
       if (tipo === 'partido') {
         const circuito = ESPN[texto].join('/');
         const d = await pedir('espn', `https://site.api.espn.com/apis/site/v2/sports/${circuito}/scoreboard`);
@@ -109,6 +114,17 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       return { candidatos: normalizar.paginas(await pedir('wikipedia', url(`${wp}/w/rest.php/v1/search/page`, { q: texto, limit: '10' })), idioma) };
     }
     const valor = id.slice(id.indexOf(':') + 1);
+    if (id === 'euroliga:resultados') {
+      const dia = fecha || new Date(ahora()).toISOString().slice(0, 10);
+      const temporada = temporadaEuroliga(dia);
+      const ficha = resultadosEuroliga(await pedir('euroliga', urlJuegosEuroliga(temporada)), dia, temporada, ahora());
+      return { ficha, ttl: 900, vacio: !ficha.partidos.length };
+    }
+    if (id.startsWith('euroliga:partido/')) {
+      const [temporada, codigo] = id.slice('euroliga:partido/'.length).split('/');
+      const ficha = partidoEuroliga(await pedir('euroliga', urlJuegoEuroliga(temporada, codigo)), temporada, codigo, ahora());
+      return { ficha, ttl: ficha.estado === 'final' ? 3600 : 900 };
+    }
     if (tipo === 'partido') {
       const [, codigo, evento] = valor.split('/');
       const [deporte, liga] = ESPN[codigo];
@@ -183,6 +199,8 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       if (url.pathname === '/consulta/ficha') {
         if (/^openlibrary:OL\d+[WA]$/.test(id || '')) tipo = id.endsWith('W') ? 'libro' : 'autor';
         else if (/^tmdb:(movie|tv)\/[1-9]\d*$/.test(id || '')) tipo = id.startsWith('tmdb:movie/') ? 'pelicula' : 'serie';
+        else if (id === 'euroliga:resultados') { tipo = 'resultados'; texto = 'euroliga'; }
+        else if (/^euroliga:partido\/E\d{4}\/[1-9]\d{0,3}$/.test(id || '')) { tipo = 'partido'; texto = 'euroliga'; }
         else if (/^espn:(clasificacion|resultados)\/[a-z0-9-]+$/.test(id || '')) {
           const partes = id.slice(5).split('/'); tipo = partes[0]; texto = partes[1];
         } else if (/^espn:partido\/[a-z0-9-]+\/[1-9]\d{0,11}$/.test(id || '')) {
@@ -192,15 +210,21 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
         else throw fallo('Identificador no válido', 400);
       } else if (id || !texto || texto.length > 250 || !Object.hasOwn(CONSULTAS, tipo)) throw fallo('Tipo o texto no válido', 400);
       if (tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido') {
-        if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
-        if (!admiteConsultaESPN(tipo, texto)) throw fallo('Consulta no disponible para esta competición', 400);
-        if (tipo === 'partido' && ['atp', 'wta'].includes(texto) && id && !leerIdTenis(id)) throw fallo('Identificador de tenis no válido', 400);
+        if (texto === 'euroliga') {
+          if (tipo !== 'resultados' && tipo !== 'partido') throw fallo('Consulta no disponible para esta competición', 400);
+        } else {
+          if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
+          if (!admiteConsultaESPN(tipo, texto)) throw fallo('Consulta no disponible para esta competición', 400);
+          if (tipo === 'partido' && ['atp', 'wta'].includes(texto) && id && !leerIdTenis(id)) throw fallo('Identificador de tenis no válido', 400);
+        }
       }
       if (fecha !== null && (tipo !== 'resultados' || url.pathname !== '/consulta/ficha'
           || !normalizar.fechaResultadosValida(fecha))) throw fallo('Fecha de resultados no válida', 400);
       const [fuente, enlace, nombre, licenciaUrl] = FUENTES[tipo];
-      const base = { tipo, estado: 'ok', candidatos: [], ficha: null, fuente, enlace,
-        licencia: { nombre, enlace: licenciaUrl }, atribucion: tipo === 'contexto' ? 'Wikipedia (autores en el historial) y Wikidata (CC0)'
+      const euroliga = texto === 'euroliga';
+      const base = { tipo, estado: 'ok', candidatos: [], ficha: null, fuente: euroliga ? FUENTE_EUROLIGA.nombre : fuente,
+        enlace: euroliga ? FUENTE_EUROLIGA.url : enlace,
+        licencia: euroliga ? null : { nombre, enlace: licenciaUrl }, atribucion: euroliga ? FUENTE_EUROLIGA.nombre : tipo === 'contexto' ? 'Wikipedia (autores en el historial) y Wikidata (CC0)'
           : tipo === 'pelicula' || tipo === 'serie' ? 'TMDB; JustWatch' : fuente,
         consultado: new Date(ahora()).toISOString(), caduca: null, incompleto: false };
       const clave = new URL('/consulta/cache', url);

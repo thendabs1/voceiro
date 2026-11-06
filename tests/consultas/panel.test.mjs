@@ -11,6 +11,7 @@ import { rangosResaltado } from '../../shared/busqueda/texto.js';
 import { ESPN, admiteConsultaESPN } from '../../shared/consultas/registro.js';
 import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
 import { traducir } from '../../front/idiomas/index.js';
+import { resultadosEuroliga, partidoEuroliga } from '../../workers/deno-buscar/src/consultas/euroliga.js';
 
 const codigo = readFileSync(new URL('../../front/app/14-consultas.js', import.meta.url), 'utf8');
 const BASE = 'https://buscar.example';
@@ -67,6 +68,30 @@ function contexto({ buscar = '', responder }) {
 }
 const json = (cuerpo, status = 200) => ({ status, ok: status >= 200 && status < 300, json: async () => cuerpo });
 const esperar = async () => { for (let i = 0; i < 8; i++) await new Promise(r => setImmediate(r)); };
+
+test('Euroliga: fecha, marcador y ficha por ID con vuelta al listado', async () => {
+  const datos = JSON.parse(readFileSync(new URL('./muestras/euroliga-juegos-E2026.json', import.meta.url)));
+  const juego = JSON.parse(readFileSync(new URL('./muestras/euroliga-juego-E2026-1.json', import.meta.url)));
+  const resultados = resultadosEuroliga(datos, '2026-09-24', 'E2026');
+  const partido = partidoEuroliga(juego, 'E2026', '1');
+  const { panel, pedidas, actualizar, pulsar } = contexto({ responder: ruta => json(envoltorio(
+    ruta.includes('partido') ? 'partido' : 'resultados',
+    { ficha: ruta.includes('partido') ? partido : resultados, fuente: 'EuroLeague Basketball', licencia: null },
+  )) });
+  actualizar('resultados:euroliga');
+  await esperar();
+  assert.match(pedidas[0], /id=euroliga%3Aresultados/);
+  assert.match(panel.innerHTML, /data-fecha-resultados/);
+  assert.match(panel.innerHTML, /data-id="euroliga:partido\/E2026\/1"/);
+  pulsar({ accion: 'partido', id: 'euroliga:partido/E2026/1' });
+  await esperar();
+  assert.match(pedidas[1], /id=euroliga%3Apartido%2FE2026%2F1/);
+  assert.match(panel.innerHTML, /<strong class="consulta-titulo">Crvena Zvezda Meridianbet Belgrade · Zalgiris Kaunas<\/strong>/);
+  assert.match(panel.innerHTML, /<caption>Parciales<\/caption>/);
+  pulsar({ accion: 'volver' });
+  assert.equal(pedidas.length, 2);
+  assert.match(panel.innerHTML, /data-fecha-resultados/);
+});
 
 test('un código deportivo pide la ficha directamente, sin candidatos', async () => {
   const ficha = { competicion: 'nba', temporada: '2026-27', grupos: [
