@@ -1,0 +1,90 @@
+{
+  "classification": [
+    {
+      "position": 1,
+      "rider": {
+        "full_name": "Marc Marquez",
+        "number": 93
+      },
+      "team": {
+        "name": "Ducati Lenovo Team"
+      },
+      "constructor": {
+        "name": "Ducati"
+      },
+      "time": "40:14.236",
+      "gap": {
+        "first": "0.000",
+        "lap": "0"
+      },
+      "points": 25,
+      "total_laps": 20,
+      "status": "INSTND"
+    },
+    {
+      "position": 2,
+      "rider": {
+        "full_name": "Pedro Acosta",
+        "number": 37
+      },
+      "team": {
+        "name": "Red Bull KTM Factory Racing"
+      },
+      "constructor": {
+        "name": "KTM"
+      },
+      "time": "40:18.408",
+      "gap": {
+        "first": "4.172",
+        "lap": "0"
+      },
+      "points": 20,
+      "total_laps": 20,
+      "status": "INSTND"
+    },
+    {
+      "position": null,
+      "rider": {
+        "full_name": "Johann Zarco",
+        "number": 5
+      },
+      "team": {
+        "name": "Castrol Honda LCR"
+      },
+      "constructor": {
+        "name": "Honda"
+      },
+      "time": "35:17.309",
+      "gap": {
+        "first": "0.000",
+        "lap": "3"
+      },
+      "points": 0,
+      "total_laps": 17,
+      "status": "OUTSTND"
+    },
+    {
+      "position": null,
+      "rider": {
+        "full_name": "Diogo Moreira",
+        "number": 11
+      },
+      "team": {
+        "name": "Pro Honda LCR"
+      },
+      "constructor": {
+        "name": "Honda"
+      },
+      "time": "29:46.196",
+      "gap": {
+        "first": "0.000",
+        "lap": "6"
+      },
+      "points": 0,
+      "total_laps": 14,
+      "status": "OUTSTND"
+    }
+  ],
+  "file": "https://resources.motogp.com/files/results/2026/MAL/MotoGP/RAC/Classification.pdf",
+  "files": null
+}

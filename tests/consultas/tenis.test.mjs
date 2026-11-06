@@ -204,7 +204,7 @@ function panelTenis(idioma = 'es') {
         estado: 'ok', ficha: f, candidatos: [], fuente: 'Atribución incorrecta', enlace: 'https://incorrecta.test',
         caduca: new Date(Date.now() + 3600e3).toISOString() }) };
     } };
-  runInNewContext(leer('../../front/app/14-consultas.js') + '\n' + leer('../../front/app/14-tenis.js')
+  runInNewContext(leer('../../front/app/14-consultas.js') + '\n' + leer('../../front/app/14-motor.js') + '\n' + leer('../../front/app/14-tenis.js')
     + '\nthis.api = { PUNTUAL, abrirFichaConsulta, pulsarConsulta, consultarFechaResultados, idPartidoConsultaValido, ficha: VISTAS_CONSULTA.encuentro_tenis.ficha };', ctx);
   ctx.api.PUNTUAL.activa = { tipo: 'resultados', texto: 'atp' };
   const pulsar = dataset => ctx.api.pulsarConsulta({ target: { closest: () => ({ dataset }) } });

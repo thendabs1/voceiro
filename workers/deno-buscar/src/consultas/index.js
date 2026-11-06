@@ -1,8 +1,11 @@
-import { CONSULTAS, ESPN, admiteConsultaESPN } from '../shared/consultas/registro.js';
+import { CONSULTAS, ESPN, admiteConsultaESPN, admiteConsultaMotor } from '../shared/consultas/registro.js';
 import * as normalizar from './normalizar.js';
 import { normalizarPartido } from './partido.js';
 import { crearTenis, leerIdTenis } from './tenis.js';
 import { FUENTE_EUROLIGA, temporadaEuroliga, urlJuegosEuroliga, urlJuegoEuroliga, resultadosEuroliga, partidoEuroliga } from './euroliga.js';
+import { crearMotor } from './motor.js';
+import { leerIdMotor, FUENTES_MOTOR } from './motor-normalizar.js';
+import { crearPresupuestoMotor } from './presupuesto-motor.js';
 
 const DIA = 86400;
 const IDIOMAS = new Set(['es', 'gl', 'ca', 'eu', 'en']);
@@ -12,8 +15,9 @@ const TMDB = 'https://api.themoviedb.org/3';
 const fallo = (mensaje, status = 503) => Object.assign(new Error(mensaje), { status });
 
 // Presupuestos por instancia, como el límite por IP. No son cuotas globales
-// entre réplicas. Open Library y EuroLeague se serializan por instancia.
+// entre réplicas. Open Library se serializa para espaciar también las fichas.
 export function crearPresupuesto({ ahora = Date.now, dormir = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const motor = crearPresupuestoMotor({ ahora, dormir });
   let cola = Promise.resolve(), pendientes = 0, ultima = -Infinity, dia = '', cuenta = 0;
   return async (proveedor, tarea, maxDiario = 1000) => {
     if (proveedor === 'espn') {
@@ -22,8 +26,8 @@ export function crearPresupuesto({ ahora = Date.now, dormir = ms => new Promise(
       if (cuenta >= maxDiario) throw fallo('Presupuesto diario de ESPN agotado');
       cuenta++;
     }
-    if (proveedor !== 'openlibrary' && proveedor !== 'euroliga') return tarea();
-    if (pendientes >= 6) throw fallo(`Presupuesto de ${proveedor} ocupado`);
+    if (proveedor !== 'openlibrary') return motor(proveedor, tarea);
+    if (pendientes >= 6) throw fallo('Presupuesto de Open Library ocupado');
     pendientes++;
     const trabajo = cola.then(async () => {
       const espera = ultima + 1000 - ahora();
@@ -52,6 +56,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
   abrirCache = () => caches.open('voceiro-consultas-v1'),
   entorno = nombre => globalThis.Deno?.env.get(nombre), presupuesto = crearPresupuesto({ ahora }) } = {}) {
   const enCurso = new Map();
+  const motor = crearMotor({ pedir, ahora, abrirCache });
   async function pedir(proveedor, url) {
     const headers = { 'User-Agent': UA, Accept: 'application/json' };
     if (proveedor === 'tmdb') {
@@ -63,6 +68,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     const max = Number.isInteger(configurado) && configurado >= 0 ? configurado : 1000;
     return presupuesto(proveedor, async () => {
       const r = await descargar(url, { headers, signal: AbortSignal.timeout(proveedor === 'euroliga' ? 15000 : 8000) });
+      if (r.status === 404 && proveedor === 'openf1' && new URL(url).pathname === '/v1/session_result') return [];
       if (!r.ok) throw fallo(`${proveedor}: respuesta ${r.status}`);
       const d = await r.json();
       if (!d || typeof d !== 'object' || d.error || d.errors || d.success === false) throw fallo(`${proveedor}: respuesta no válida`);
@@ -79,6 +85,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
   const tenis = crearTenis({ pedir, abrirCache, ahora });
 
   async function producir(tipo, texto, id, idioma, fecha) {
+    if (leerIdMotor(id) || (!id && admiteConsultaMotor(tipo, texto))) return motor(texto, id, fecha);
     if (['resultados', 'partido'].includes(tipo) && ['atp', 'wta'].includes(texto)) return tenis({ tipo, id, circuito: texto, fecha });
     const wp = `https://${idioma}.wikipedia.org`;
     if (!id) {
@@ -197,7 +204,9 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     try {
       if (!IDIOMAS.has(idioma)) throw fallo('Idioma no admitido', 400);
       if (url.pathname === '/consulta/ficha') {
-        if (/^openlibrary:OL\d+[WA]$/.test(id || '')) tipo = id.endsWith('W') ? 'libro' : 'autor';
+        const motor = leerIdMotor(id);
+        if (motor) { tipo = motor.lista ? 'resultados' : 'partido'; texto = motor.competicion; }
+        else if (/^openlibrary:OL\d+[WA]$/.test(id || '')) tipo = id.endsWith('W') ? 'libro' : 'autor';
         else if (/^tmdb:(movie|tv)\/[1-9]\d*$/.test(id || '')) tipo = id.startsWith('tmdb:movie/') ? 'pelicula' : 'serie';
         else if (id === 'euroliga:resultados') { tipo = 'resultados'; texto = 'euroliga'; }
         else if (/^euroliga:partido\/E\d{4}\/[1-9]\d{0,3}$/.test(id || '')) { tipo = 'partido'; texto = 'euroliga'; }
@@ -209,8 +218,10 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
         } else if (/^wikipedia:[^\x00-\x1f]{1,250}$/.test(id || '')) tipo = 'contexto';
         else throw fallo('Identificador no válido', 400);
       } else if (id || !texto || texto.length > 250 || !Object.hasOwn(CONSULTAS, tipo)) throw fallo('Tipo o texto no válido', 400);
-      if (tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido') {
-        if (texto === 'euroliga') {
+      // Con ID manda el ID: `texto` no debe cambiar proveedor ni atribución.
+      const euroliga = id ? id.startsWith('euroliga:') : texto === 'euroliga';
+      if ((tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido') && !leerIdMotor(id) && !(!id && admiteConsultaMotor(tipo, texto))) {
+        if (euroliga) {
           if (tipo !== 'resultados' && tipo !== 'partido') throw fallo('Consulta no disponible para esta competición', 400);
         } else {
           if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
@@ -220,11 +231,12 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       }
       if (fecha !== null && (tipo !== 'resultados' || url.pathname !== '/consulta/ficha'
           || !normalizar.fechaResultadosValida(fecha))) throw fallo('Fecha de resultados no válida', 400);
-      const [fuente, enlace, nombre, licenciaUrl] = FUENTES[tipo];
-      const euroliga = texto === 'euroliga';
-      const base = { tipo, estado: 'ok', candidatos: [], ficha: null, fuente: euroliga ? FUENTE_EUROLIGA.nombre : fuente,
-        enlace: euroliga ? FUENTE_EUROLIGA.url : enlace,
-        licencia: euroliga ? null : { nombre, enlace: licenciaUrl }, atribucion: euroliga ? FUENTE_EUROLIGA.nombre : tipo === 'contexto' ? 'Wikipedia (autores en el historial) y Wikidata (CC0)'
+      const propia = euroliga ? FUENTE_EUROLIGA
+        : FUENTES_MOTOR[leerIdMotor(id)?.proveedor || (!id && admiteConsultaMotor(tipo, texto) ? texto === 'f1' ? 'openf1' : 'motogp' : '')];
+      const [fuente, enlace, nombre, licenciaUrl] = propia
+        ? [propia.nombre, propia.url, propia.licencia, propia.licencia_url] : FUENTES[tipo];
+      const base = { tipo, estado: 'ok', candidatos: [], ficha: null, fuente, enlace,
+        licencia: nombre ? { nombre, enlace: licenciaUrl } : null, atribucion: propia ? propia.nombre : tipo === 'contexto' ? 'Wikipedia (autores en el historial) y Wikidata (CC0)'
           : tipo === 'pelicula' || tipo === 'serie' ? 'TMDB; JustWatch' : fuente,
         consultado: new Date(ahora()).toISOString(), caduca: null, incompleto: false };
       const clave = new URL('/consulta/cache', url);

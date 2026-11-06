@@ -1,0 +1,37 @@
+[
+  {
+    "meeting_key": 1304,
+    "year": 2026,
+    "meeting_name": "Pre-Season Testing",
+    "location": "Bahrain",
+    "country_name": "Bahrain"
+  },
+  {
+    "meeting_key": 1282,
+    "year": 2026,
+    "meeting_name": "Bahrain Grand Prix",
+    "location": "Sakhir",
+    "country_name": "Bahrain"
+  },
+  {
+    "meeting_key": 1308,
+    "year": 2026,
+    "meeting_name": "Bahrain Grand Prix",
+    "location": "Kuala Lumpur",
+    "country_name": "Bahrain"
+  },
+  {
+    "meeting_key": 1298,
+    "year": 2026,
+    "meeting_name": "Mexico City Grand Prix",
+    "location": "Mexico City",
+    "country_name": "Mexico"
+  },
+  {
+    "meeting_key": 1302,
+    "year": 2026,
+    "meeting_name": "Abu Dhabi Grand Prix",
+    "location": "Yas Marina",
+    "country_name": "United Arab Emirates"
+  }
+]

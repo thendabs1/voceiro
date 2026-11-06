@@ -1,0 +1,5 @@
+/* La tabla de motor reserva el ancho al piloto, no al dorsal. */
+.consulta-tabla.consulta-motor{ max-width: none; width: max-content; min-width: 100%; }
+.consulta-tabla.consulta-motor th:nth-child(2), .consulta-tabla.consulta-motor td:nth-child(2){ width: auto; text-align: right; white-space: nowrap; }
+.consulta-tabla.consulta-motor th:nth-child(3), .consulta-tabla.consulta-motor td:nth-child(3),
+.consulta-tabla.consulta-motor th:nth-child(4), .consulta-tabla.consulta-motor td:nth-child(4){ text-align: left; white-space: normal; max-width: 16em; }

@@ -12,7 +12,7 @@ const CONSULTA_MIN_LETRAS = 3;
 const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
 const CONSULTA_DEPORTES = { primera: 'Primera', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
-  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1', atp: 'ATP', wta: 'WTA' };
+  'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
 const VISTAS_CONSULTA = {};
 const nombreDeporteConsulta = codigo => codigo === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[codigo] || codigo;
 const CONSULTA_EJEMPLOS = {
@@ -42,8 +42,8 @@ const nombreConsulta = tipo => t('con' + tipo[0].toUpperCase() + tipo.slice(1));
 // Singular y plural: «clave1» para uno.
 const tn = (clave, n) => t(n === 1 ? clave + '1' : clave, { n });
 const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido'].includes(tipo);
-const codigoDeporte = (tipo, codigo) => tipo === 'resultados' && codigo === 'euroliga' || admiteConsultaESPN(tipo, codigo);
-const idResultadosConsulta = id => id === 'euroliga:resultados' || id.startsWith('espn:resultados/');
+const codigoDeporte = (tipo, codigo) => tipo === 'resultados' && codigo === 'euroliga' || admiteConsultaESPN(tipo, codigo) || admiteConsultaMotor(tipo, codigo);
+const idResultadosConsulta = id => id === 'euroliga:resultados' || id.startsWith('espn:resultados/') || idResultadosMotorValido(id);
 const idPartidoConsultaValido = id => {
   if (/^euroliga:partido\/E\d{4}\/[1-9]\d{0,3}$/.test(id || '')) return true;
   const partes = /^espn:partido\/([a-z0-9-]+)\/[1-9]\d{0,11}$/.exec(id || '');
@@ -90,6 +90,7 @@ function activarConsulta(c){
   Object.assign(PUNTUAL, { candidatos: null, ficha: null, id: '', candidato: null, error: '', fallo: '', reintentar: null, enfocar: '', origen: null, fecha: '', cargandoFecha: false });
   if (esDeporteConsulta(c.tipo)){
     const codigo = normalize(c.texto);
+    if (admiteConsultaMotor(c.tipo, codigo)) { abrirFichaConsulta(`${MOTOR[codigo]}:resultados/${codigo}`); return; }
     if (c.tipo === 'partido' && idPartidoConsultaValido(`espn:partido/${codigo}`)){
       abrirFichaConsulta(`espn:partido/${codigo}`); return;
     }
@@ -233,7 +234,7 @@ function pulsarConsulta(ev){
     case 'ficha': p.enfocar = '.consulta-ficha summary'; abrirFichaConsulta(b.dataset.id); break;
     case 'partido': {
       const partido = p.ficha?.ficha?.partidos?.find(x => x.id === b.dataset.id);
-      if (!partido || !idPartidoConsultaValido(partido.id)) break;
+      if (!partido || !(partido.vista === 'sesion_motor' ? idSesionMotorValido(partido.id) : idPartidoConsultaValido(partido.id))) break;
       p.origen = { ficha: p.ficha, id: p.id, candidato: p.candidato, fallo: p.fallo,
         grupo: p.grupo, reintentar: p.reintentar, idPartido: partido.id, fecha: p.fecha };
       p.enfocar = '.consulta-ficha summary';
@@ -341,7 +342,7 @@ function htmlConsulta(){
     ? `<div class="consulta-otras">${escapeHtml(t('conVarias'))} ${p.lista.map((o, i) =>
         botonConsulta('elegir', `${nombreConsulta(o.tipo)}: ${o.texto}`, ` data-i="${i}" aria-pressed="${i === p.elegida}"`)).join('')}</div>`
     : '';
-  const tipo = idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
+  const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   return `<div class="consulta-cab"><span class="consulta-tipo">${escapeHtml(nombreConsulta(tipo))}</span>${cambiar}
     <button type="button" class="consulta-cerrar" data-accion="cerrar" title="${escapeHtml(cerrar)}" aria-label="${escapeHtml(cerrar)}">${ico('x')}</button></div>
     ${otras}${htmlFechasResultados()}${cuerpoConsulta()}`;
@@ -356,7 +357,7 @@ function htmlFechasResultados(){
   return `<div class="consulta-fechas" role="group" aria-label="${escapeHtml(t('conFechaResultados'))}" aria-busy="${cargando}">
     ${mover(-1, 'conDiaAnterior', '‹')}
     <label><span class="sr-only">${escapeHtml(t('conFechaResultados'))}</span><input type="date" data-fecha-resultados value="${escapeHtml(p.fecha)}" min="0001-01-01" max="9999-12-31"${cargando ? ' disabled' : ''}></label>
-    ${mover(1, 'conDiaSiguiente', '›')}</div>${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
+    ${mover(1, 'conDiaSiguiente', '›')}</div>${notaFechaMotor(p.id)}${/^espn:resultados\/(nba|wnba)$/.test(p.id) ? `<p class="consulta-nota">${escapeHtml(t('conFechaMadrugada'))}</p>` : ''}`;
 }
 
 function cuerpoConsulta(){
@@ -364,7 +365,7 @@ function cuerpoConsulta(){
   switch (p.estado){
     case 'ayuda':
       if (esDeporteConsulta(c.tipo)){
-        return msgConsulta('conCompeticion') + opcionesConsulta([...Object.keys(ESPN), 'euroliga'].filter(k => codigoDeporte(c.tipo, k))
+        return msgConsulta('conCompeticion') + opcionesConsulta([...new Set([...Object.keys(ESPN), ...Object.keys(MOTOR), 'euroliga'])].filter(k => codigoDeporte(c.tipo, k))
           .map(k => botonConsulta('valor', nombreDeporteConsulta(k), ` data-valor="${k}"`)).join(''));
       }
       return msgConsulta('conAyuda', { p: c.prefijo, ej: CONSULTA_EJEMPLOS[c.tipo] });
@@ -400,7 +401,7 @@ function htmlCandidatos(d){
 }
 
 function htmlFicha(d){
-  const vacio = d.tipo === 'resultados' ? 'conSinPartidos' : d.tipo === 'clasificacion' ? 'conSinTabla' : 'conSinResultados';
+  const vacio = idResultadosMotorValido(PUNTUAL.id) ? 'conMotorSinSesiones' : d.tipo === 'resultados' ? 'conSinPartidos' : d.tipo === 'clasificacion' ? 'conSinTabla' : 'conSinResultados';
   const estado = estadoConsulta(d, vacio, { x: PUNTUAL.activa.texto });
   if (estado) return estado + htmlPieConsulta(d);
   const pintar = d.ficha?.vista ? VISTAS_CONSULTA[d.ficha.vista]?.ficha : FICHAS_CONSULTA[d.tipo];

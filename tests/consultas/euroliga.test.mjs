@@ -67,3 +67,17 @@ test('consulta sin red: fecha, ficha, atribución y separación de peticiones', 
   assert.equal((await pedir({ id: 'euroliga:partido/E2026/1', fecha: '2026-09-24' })).r.status, 400);
   assert.equal(peticiones.length, 2);
 });
+
+test('con ID manda el ID: texto no cambia la atribución y espn:partido no llega a Euroliga', async () => {
+  const peticiones = [];
+  const consultar = crearConsultas({ ahora: () => 0, presupuesto: crearPresupuesto({ ahora: () => 0, dormir: async () => {} }),
+    abrirCache: async () => ({ match: async () => undefined, put: async () => {} }),
+    fetch: async url => { peticiones.push(url); return Response.json({}); } });
+  const pedir = async parametros => consultar(new URL(`https://voceiro.test/consulta/ficha?${new URLSearchParams(parametros)}`));
+  const autor = await (await pedir({ id: 'openlibrary:OL1394865A', texto: 'euroliga' })).json();
+  assert.equal(autor.fuente, 'Open Library');
+  assert.notEqual(autor.licencia, null);
+  peticiones.length = 0;
+  assert.equal((await pedir({ id: 'espn:partido/euroliga/1' })).status, 400);
+  assert.equal(peticiones.length, 0);
+});
