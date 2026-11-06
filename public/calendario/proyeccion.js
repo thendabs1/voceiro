@@ -1,7 +1,7 @@
 // Preparación fuera del camino HTTP. Usa las mismas reglas que las vistas.
-import { palabrasDe } from '../busqueda/texto.js?v=cac9f66eb2';
-import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=cac9f66eb2';
-import { sumarDisponibilidad } from './consulta.js?v=cac9f66eb2';
+import { palabrasDe } from '../busqueda/texto.js?v=56eeef8a5f';
+import { extremoVisible, enDia, sumarDiasCalendario, programacionesCalendario, presentacionCalendario, diaEnZona, TRAMO_MAX_DIAS } from './fechas.js?v=56eeef8a5f';
+import { sumarDisponibilidad } from './consulta.js?v=56eeef8a5f';
 
 export const ZONAS = ['Europe/Madrid', 'Atlantic/Canary', 'UTC'];
 // Tramo válido en todas las zonas: citas cuyos días no dependen de un instante.
@@ -80,6 +80,8 @@ export function prepararLectura(datos) {
     if (e.precio) tarjeta.precio = e.precio;
     // Atletismo: modalidad común (publicacion.py); sin clave cuando no hay.
     if (e.atletismo?.modalidades?.length) tarjeta.modalidades = e.atletismo.modalidades;
+    // Acreditada: la etiqueta de los actos que no son competición.
+    if (e.atletismo?.actividades?.length) tarjeta.actividades = e.atletismo.actividades;
     // Enlace oficial, no un resultado estructurado: no activa `resultado_disponible`.
     if (e.atletismo?.resultados_enlazados) tarjeta.resultados_enlazados = true;
     if (e.programa?.length) tarjeta.tiene_programa = true;
