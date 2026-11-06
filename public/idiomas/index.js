@@ -1,8 +1,8 @@
-import es from './es.js?v=af9646e79c';
-import gl from './gl.js?v=af9646e79c';
-import ca from './ca.js?v=af9646e79c';
-import en from './en.js?v=af9646e79c';
-import eu from './eu.js?v=af9646e79c';
+import es from './es.js?v=b2a0d8aee9';
+import gl from './gl.js?v=b2a0d8aee9';
+import ca from './ca.js?v=b2a0d8aee9';
+import en from './en.js?v=b2a0d8aee9';
+import eu from './eu.js?v=b2a0d8aee9';
 
 export const I18N = { es, gl, ca, en, eu };
 
