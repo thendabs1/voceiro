@@ -1,6 +1,6 @@
 # Contrato de datos para la interfaz
 
-Reglas fijadas para el refactor de Agenda y Deportes, y qué ofrecen los datos.
+Reglas fijadas para Agenda y Deportes, y qué ofrecen los datos.
 Lo que no figura aquí no está acordado.
 
 ## Filtros

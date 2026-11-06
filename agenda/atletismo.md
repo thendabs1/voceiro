@@ -452,7 +452,7 @@ En orden (detalle en el diseño local):
 - Filtro de ámbito: sin decidir (4/11/2026). «Territorial, nacional, internacional»
   falsearía la norma, porque no hay un ámbito único. Con los adaptadores hechos se
   decidirá, con cifras de cobertura, si conviene filtrar por calendario o autoridad.
-- World Athletics: publicación y fila de circuitos, con el refactor de la interfaz.
+- World Athletics: publicación y fila de circuitos, junto con sus filtros en la interfaz.
 - Territoriales: esperan al modelo. Extremadura (HTML con ID) y Cantabria
   (ICS con UID) cumplen el contrato; ver el diseño local.
 
