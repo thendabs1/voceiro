@@ -8,7 +8,7 @@ import { runInNewContext } from 'node:vm';
 import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
 import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
 import { rangosResaltado } from '../../shared/busqueda/texto.js';
-import { ESPN } from '../../shared/consultas/registro.js';
+import { ESPN, admiteConsultaESPN } from '../../shared/consultas/registro.js';
 import { fechaValida, sumarDiasCalendario } from '../../shared/calendario/fechas.js';
 import { traducir } from '../../front/idiomas/index.js';
 
@@ -34,7 +34,7 @@ function contexto({ buscar = '', responder }) {
   const entrada = { value: buscar };
   const pedidas = [];
   const ctx = {
-    BACKENDS: { deno: { buscar: BASE } }, ESPN, ACCES: { lang: 'es' },
+    BACKENDS: { deno: { buscar: BASE } }, ESPN, admiteConsultaESPN, ACCES: { lang: 'es' },
     t: (k, v) => traducir('es', k, v), ico: n => `<${n}>`,
     escapeHtml: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
     normalize, tokenizeQuery, rangosResaltado, fechaValida, sumarDiasCalendario, Intl, Date, URLSearchParams, AbortSignal, Promise, Map, Set, JSON, Object, Error, isNaN,
@@ -286,6 +286,93 @@ const partidoReal = async codigo => {
   const d=JSON.parse(readFileSync(new URL(`./muestras/espn-partido-${codigo}.json`,import.meta.url)));
   return normalizarPartido(d,codigo,...ESPN[codigo],d.header.id);
 };
+
+for (const [codigo, nombre, esperado] of [['copa-del-rey', 'Copa del Rey', /Penaltis 4–2 · Gana Numancia/],
+  ['champions', 'Champions', /Vuelta · Global 5–6 · Pasa Paris Saint-Germain/], ['liga-f', 'Liga F', /Alavés/]]) {
+  test(`${nombre}: abre tarjeta, conserva el contexto al volver y acepta partido por ID`, async () => {
+    const partido = await partidoReal(codigo);
+    const { panel, pedidas, actualizar, pulsar, elegirFecha } = contexto({ responder: ruta => {
+      const u = new URL(ruta, BASE), detalle = u.searchParams.get('id').startsWith('espn:partido/');
+      return json(envoltorio(detalle ? 'partido' : 'resultados', { fuente: 'ESPN',
+        ficha: detalle ? partido : { competicion: codigo, fecha: u.searchParams.get('fecha') || '2026-11-01', partidos: [partido] } }));
+    } });
+    actualizar(`resultados:${codigo}`); await esperar();
+    assert.ok(panel.innerHTML.includes(`${nombre} · 1 partido`));
+    assert.ok(panel.innerHTML.includes(`data-accion="partido" data-id="${partido.id}"`));
+    assert.match(panel.innerHTML, esperado);
+    assert.doesNotMatch(panel.innerHTML, /on aggregate|advance|penalties|2nd Leg/);
+    elegirFecha('2026-10-29'); await esperar();
+    pulsar({ accion: 'partido', id: partido.id }); await esperar();
+    assert.equal(pedidas.length, 3);
+    assert.match(panel.innerHTML, /Volver a resultados/);
+    assert.match(panel.innerHTML, esperado);
+    assert.ok(panel.innerHTML.includes(nombre));
+    pulsar({ accion: 'volver' });
+    assert.match(panel.innerHTML, /data-fecha-resultados value="2026-10-29"/);
+    assert.equal(pedidas.length, 3);
+    actualizar(`partido:${codigo}/${partido.id.split('/').pop()}`); await esperar();
+    assert.match(panel.innerHTML, esperado); assert.equal(pedidas.length, 3);
+    assert.doesNotMatch(panel.innerHTML, /Elige una competición/);
+  });
+}
+
+test('la tarjeta y la ficha distinguen el 2–0 de la vuelta del global 2–3', async () => {
+  const partido = await partidoReal('champions');
+  partido.marcador = { local: '2', visitante: '0' };
+  partido.eliminatoria.global = { local: '2', visitante: '3' };
+  const { panel, actualizar, pulsar } = contexto({ responder: ruta => json(envoltorio(ruta.includes('partido') ? 'partido' : 'resultados', {
+    ficha: ruta.includes('partido') ? partido : { competicion: 'champions', partidos: [partido] },
+  })) });
+  actualizar('resultados:champions'); await esperar();
+  assert.match(panel.innerHTML, /<b>2<\/b>[\s\S]*<b>0<\/b>/);
+  assert.match(panel.innerHTML, /Global 2–3 · Pasa Paris Saint-Germain/);
+  pulsar({ accion: 'partido', id: partido.id }); await esperar();
+  assert.match(panel.innerHTML, /Global 2–3 · Pasa Paris Saint-Germain/);
+  assert.doesNotMatch(panel.innerHTML, /Pasa Bayern Munich/);
+});
+
+test('prórroga, penaltis sin tanteo y plazas pendientes se explican en castellano', async () => {
+  const partido = await partidoReal('copa-del-rey');
+  partido.local = null; partido.visitante = null; partido.marcador = null;
+  partido.eliminatoria = { resolucion: 'prorroga' };
+  const { panel, actualizar, pulsar } = contexto({ responder: ruta => json(envoltorio(ruta.includes('partido') ? 'partido' : 'resultados', {
+    ficha: ruta.includes('partido') ? partido : { competicion: 'copa-del-rey', partidos: [partido] },
+  })) });
+  actualizar('resultados:copa-del-rey'); await esperar();
+  assert.match(panel.innerHTML, /Por determinar/); assert.match(panel.innerHTML, /Tras prórroga/);
+  assert.doesNotMatch(panel.innerHTML, /null|undefined|TBD/);
+  partido.eliminatoria = { resolucion: 'penaltis' };
+  pulsar({ accion: 'partido', id: partido.id }); await esperar();
+  assert.match(panel.innerHTML, /Por determinar · Por determinar/);
+  assert.match(panel.innerHTML, /Tras penaltis/);
+  assert.doesNotMatch(panel.innerHTML, /Penaltis 0|Gana |Pasa /);
+});
+
+test('clasificación de Champions: fase liga, 36 equipos y DG solo si hay dato; Copa no se ofrece', async () => {
+  const { clasificacion } = await import('../../workers/deno-buscar/src/consultas/normalizar.js');
+  const datos = JSON.parse(readFileSync(new URL('./muestras/espn-clasificacion-champions.json', import.meta.url)));
+  const ficha = clasificacion(datos, 'champions', 'soccer');
+  const { panel, pedidas, actualizar } = contexto({ responder: () => json(envoltorio('clasificacion', { ficha })) });
+  actualizar('clasificacion:copa-del-rey'); await esperar();
+  assert.equal(pedidas.length, 0);
+  assert.doesNotMatch(panel.innerHTML, /data-valor="copa-del-rey"|data-valor="liga-f"/);
+  assert.match(panel.innerHTML, /data-valor="champions"/);
+  actualizar('clasificacion:champions'); await esperar();
+  assert.match(panel.innerHTML, /Champions/); assert.match(panel.innerHTML, /Fase liga/);
+  assert.match(panel.innerHTML, /<abbr title="Diferencia de goles">DG<\/abbr>/);
+  assert.equal((panel.innerHTML.match(/<tr/g) || []).length, 37);
+  assert.doesNotMatch(panel.innerHTML, /League Phase|Qualifies|on aggregate|cuadro/);
+  const primera = contexto({ responder: () => json(envoltorio('clasificacion', { ficha: { ...ficha, competicion: 'primera' } })) });
+  primera.actualizar('clasificacion:primera'); await esperar();
+  assert.doesNotMatch(primera.panel.innerHTML, /Diferencia de goles|>DG</);
+  const sinDG = structuredClone(ficha);
+  for (const fila of sinDG.grupos[0].filas) delete fila.dg;
+  const otra = contexto({ responder: () => json(envoltorio('clasificacion', { ficha: sinDG })) });
+  otra.actualizar('clasificacion:champions'); await esperar();
+  assert.doesNotMatch(otra.panel.innerHTML, /Diferencia de goles|>DG</);
+  actualizar('partido:champions_qual/123'); await esperar();
+  assert.equal(pedidas.length, 1);
+});
 
 test('resultados: del lunes al domingo, estadísticas y vuelta al mismo día sin red',async()=>{
   const partido=await partidoReal('segunda');

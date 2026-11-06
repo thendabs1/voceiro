@@ -391,3 +391,55 @@ test('partido: peticiones concurrentes comparten el GET y los errores permiten r
   assert.equal(fallo.guardadas.size,0);
   assert.equal((await ficha(fallo,'espn:partido/nba/401909903')).d.estado,'ok');
 });
+
+for (const [codigo, slug, evento] of [['copa-del-rey', 'esp.copa_del_rey', '401928490'],
+  ['champions', 'uefa.champions', '401862895'], ['liga-f', 'esp.w.1', '401882476']]) {
+  test(`${codigo}: resultados por día, candidatos y summary por el slug acreditado, con caché`, async () => {
+    const datos = muestra(`espn-resultados-${codigo}`);
+    const fecha = datos.day?.date || datos.events[0].date.slice(0, 10);
+    const b = banco({ respuestas: [datos, datos, `espn-partido-${codigo}`] });
+    const params = { id: `espn:resultados/${codigo}`, fecha };
+    const { d, r } = await b.pedir(params, true);
+    assert.equal(d.estado, 'ok');
+    assert.equal(d.ficha.fecha, fecha);
+    assert.ok(d.ficha.partidos.some(p => p.id === `espn:partido/${codigo}/${evento}`));
+    assert.equal(b.peticiones.length, 1);
+    assert.equal(b.peticiones[0].url.pathname, `/apis/site/v2/sports/soccer/${slug}/scoreboard`);
+    assert.equal(b.peticiones[0].url.search, `?dates=${fecha.replaceAll('-', '')}`);
+    assert.equal(r.headers.get('cache-control'), 'public, max-age=3600');
+    assert.equal((await b.pedir(params, true)).r.headers.get('x-cache'), 'HIT');
+    const candidatos = await buscar(b, 'partido', codigo);
+    assert.ok(candidatos.d.candidatos.some(p => p.id === `espn:partido/${codigo}/${evento}`));
+    const f = await ficha(b, `espn:partido/${codigo}/${evento}`);
+    assert.equal(f.d.estado, 'ok'); assert.equal(f.d.ficha.competicion, codigo);
+    assert.equal(b.peticiones[2].url.pathname, `/apis/site/v2/sports/soccer/${slug}/summary`);
+    assert.equal(b.peticiones[2].url.search, `?event=${evento}`);
+    assert.equal(f.r.headers.get('cache-control'), 'public, max-age=3600');
+    assert.equal((await ficha(b, f.d.ficha.id)).r.headers.get('x-cache'), 'HIT');
+    assert.equal(b.peticiones.length, 3);
+    assert.ok(b.peticiones.every(p => !('Origin' in p.opciones.headers)));
+  });
+}
+
+test('Copa sin tabla: rechaza búsqueda y ficha antes de caché, red o presupuesto; previas fuera', async () => {
+  const b = banco({ maxDiario: 1, respuestas: ['espn-resultados-copa-del-rey'] });
+  for (const codigo of ['copa-del-rey', 'liga-f', 'champions_qual', 'uefa.champions_qual']) {
+    assert.equal((await buscar(b, 'clasificacion', codigo)).r.status, 400);
+    assert.equal((await ficha(b, `espn:clasificacion/${codigo}`)).r.status, 400);
+  }
+  assert.equal((await ficha(b, 'espn:resultados/champions_qual')).r.status, 400);
+  assert.equal(b.peticiones.length, 0); assert.equal(b.guardadas.size, 0);
+  assert.equal((await ficha(b, 'espn:resultados/copa-del-rey')).d.estado, 'ok');
+  assert.equal(b.peticiones.length, 1);
+});
+
+test('Champions standings conserva dos GET, tabla completa y caducidad actual', async () => {
+  const b = banco({ respuestas: [{ events: [] }, 'espn-clasificacion-champions'] });
+  const { d, r } = await ficha(b, 'espn:clasificacion/champions');
+  assert.equal(d.estado, 'ok'); assert.equal(d.ficha.grupos[0].filas.length, 36);
+  assert.equal(b.peticiones.length, 2);
+  assert.equal(b.peticiones[1].url.pathname, '/apis/v2/sports/soccer/uefa.champions/standings');
+  assert.equal(r.headers.get('cache-control'), 'public, max-age=900');
+  assert.equal((await ficha(b, 'espn:clasificacion/champions')).r.headers.get('x-cache'), 'HIT');
+  assert.equal(b.peticiones.length, 2);
+});

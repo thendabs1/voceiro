@@ -12,12 +12,14 @@ COLECCIONES = {
     'espn-atp': ('tennis', 'atp'), 'espn-wta': ('tennis', 'wta'),
     'espn-primera': ('soccer', 'esp.1'), 'espn-segunda': ('soccer', 'esp.2'),
     'espn-copa-del-rey': ('soccer', 'esp.copa_del_rey'), 'espn-champions': ('soccer', 'uefa.champions'),
+    'espn-liga-f': ('soccer', 'esp.w.1'),
     'espn-nba': ('basketball', 'nba'), 'espn-wnba': ('basketball', 'wnba'),
     'espn-f1': ('racing', 'f1'),
 }
 # Torneos por rondas: su código público no es el slug de ESPN. Sin previas de
 # Champions: son otra liga (`uefa.champions_qual`) y quedan fuera del alcance.
 TORNEOS = {'esp.copa_del_rey': 'copa-del-rey', 'uefa.champions': 'champions'}
+CODIGOS = {**TORNEOS, 'esp.w.1': 'liga-f'}
 # Por el slug de la fase, comprobados con las rondas de 2025/26 y 2026/27. Otro
 # slug conserva su código sin nombre: nunca se deduce la ronda de la fecha.
 RONDAS = {'qualifying-round': 'Previa', 'first-round': 'Primera eliminatoria',
@@ -102,7 +104,7 @@ def partidos(anterior, pagina, liga, observado, *, deporte_id, tema, remoto=Fals
     base = 'https://www.espn.com/' + ('soccer/' if deporte_id == 'soccer' else 'nba/' if liga == 'nba' else 'wnba/')
     a = deporte.Agenda(anterior, fuente, 'ESPN', base, tema, observado, remoto)
     campeonato = a.grupo('liga_uid', cabecera['uid'], 'competicion', cabecera['name'],
-                         codigo=TORNEOS.get(liga, liga))
+                         codigo=CODIGOS.get(liga, liga))
     for e in eventos:
         competiciones = deporte.filas(e, 'competitions', 2)
         if len(competiciones) != 1:

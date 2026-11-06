@@ -1,0 +1,774 @@
+{
+  "header": {
+    "id": "401928490",
+    "season": {
+      "year": 2026,
+      "current": true,
+      "type": 14558,
+      "name": "2026-27 Spanish Copa del Rey, First Round"
+    },
+    "league": {
+      "id": "3951",
+      "slug": "esp.copa_del_rey"
+    },
+    "competitions": [
+      {
+        "id": "401928490",
+        "uid": "s:600~l:3951~e:401928490~c:401928490",
+        "date": "2026-10-29T17:00Z",
+        "status": {
+          "type": {
+            "id": "47",
+            "name": "STATUS_FINAL_PEN",
+            "state": "post",
+            "completed": true,
+            "description": "Final Score - After Penalties",
+            "detail": "FT-Pens",
+            "shortDetail": "FT-Pens"
+          }
+        },
+        "notes": [
+          {
+            "type": "event",
+            "headline": "Numancia win 4-2 on penalties"
+          }
+        ],
+        "neutralSite": false,
+        "competitors": [
+          {
+            "id": "100",
+            "uid": "s:600~t:100",
+            "homeAway": "home",
+            "winner": true,
+            "score": "3",
+            "shootoutScore": 4.0,
+            "team": {
+              "id": "100",
+              "uid": "s:600~t:100",
+              "displayName": "Numancia",
+              "name": "Numancia"
+            }
+          },
+          {
+            "id": "92",
+            "uid": "s:600~t:92",
+            "homeAway": "away",
+            "winner": false,
+            "score": "3",
+            "shootoutScore": 2.0,
+            "team": {
+              "id": "92",
+              "uid": "s:600~t:92",
+              "displayName": "Real Oviedo",
+              "name": "Real Oviedo"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "boxscore": {
+    "teams": [
+      {
+        "team": {
+          "id": "100"
+        },
+        "statistics": [
+          {
+            "name": "foulsCommitted",
+            "displayValue": "0"
+          },
+          {
+            "name": "yellowCards",
+            "displayValue": "5"
+          },
+          {
+            "name": "redCards",
+            "displayValue": "0"
+          },
+          {
+            "name": "offsides",
+            "displayValue": "0"
+          },
+          {
+            "name": "wonCorners",
+            "displayValue": "0"
+          },
+          {
+            "name": "saves",
+            "displayValue": "0"
+          },
+          {
+            "name": "possessionPct",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "shotsOnTarget",
+            "displayValue": "0"
+          },
+          {
+            "name": "shotPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "penaltyKickGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "penaltyKickShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "accuratePasses",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalPasses",
+            "displayValue": "0"
+          },
+          {
+            "name": "passPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "crossPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "longballPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "blockedShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "effectiveTackles",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalTackles",
+            "displayValue": "0"
+          },
+          {
+            "name": "tacklePct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "effectiveClearance",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalClearance",
+            "displayValue": "0"
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "92"
+        },
+        "statistics": [
+          {
+            "name": "foulsCommitted",
+            "displayValue": "0"
+          },
+          {
+            "name": "yellowCards",
+            "displayValue": "1"
+          },
+          {
+            "name": "redCards",
+            "displayValue": "0"
+          },
+          {
+            "name": "offsides",
+            "displayValue": "0"
+          },
+          {
+            "name": "wonCorners",
+            "displayValue": "0"
+          },
+          {
+            "name": "saves",
+            "displayValue": "0"
+          },
+          {
+            "name": "possessionPct",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "shotsOnTarget",
+            "displayValue": "0"
+          },
+          {
+            "name": "shotPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "penaltyKickGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "penaltyKickShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "accuratePasses",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalPasses",
+            "displayValue": "0"
+          },
+          {
+            "name": "passPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "crossPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "longballPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "blockedShots",
+            "displayValue": "0"
+          },
+          {
+            "name": "effectiveTackles",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalTackles",
+            "displayValue": "0"
+          },
+          {
+            "name": "tacklePct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "effectiveClearance",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalClearance",
+            "displayValue": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "gameInfo": {
+    "venue": {
+      "fullName": "Los Pajaritos",
+      "address": {
+        "city": "Soria"
+      }
+    }
+  },
+  "keyEvents": [
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "8'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Cesar Moreno"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "11'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Pablo Cortés"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "42'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Aitor Aranzabe"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "52'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Luis Roldán"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "56'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Víctor Charlez Romeo"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Aitor Aranzabe"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "57'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Jean Lauture"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Fran González"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "57'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Iker León Gutiérrez"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "59'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Borja López"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "61'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Mikel Goti"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Estanis Pedrola"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "62'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Alexandru Mihai Isfan"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Diego Menéndez"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "62'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Pablo Sáenz"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Marco Esteban"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "66'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Jorge Domínguez Martínez"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Luis Roldán"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "67'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Mouhamadou Moustapha Gning"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Pablo Cortés"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "69'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "José Luis Morales"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Víctor García Mingo"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "70'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Enzo Cazorla Santirso"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "David Jiménez"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "74'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Alexandru Mihai Isfan"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "75'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Mikel Goti"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "84'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Jonatan González Crespo"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Iker León Gutiérrez"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "86'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Jonatan González Crespo"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "goal"
+      },
+      "clock": {
+        "displayValue": "89'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Mikel Goti"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "90'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Alberto Reina"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Jacobo González"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "substitution"
+      },
+      "clock": {
+        "displayValue": "96'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Rafa Roldán"
+          }
+        },
+        {
+          "athlete": {
+            "displayName": "Marcos Lopes Marqués"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "115'"
+      },
+      "team": {
+        "id": "92"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Alexandru Mihai Isfan"
+          }
+        }
+      ]
+    },
+    {
+      "type": {
+        "type": "yellow-card"
+      },
+      "clock": {
+        "displayValue": "118'"
+      },
+      "team": {
+        "id": "100"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "displayName": "Víctor Charlez Romeo"
+          }
+        }
+      ]
+    }
+  ]
+}

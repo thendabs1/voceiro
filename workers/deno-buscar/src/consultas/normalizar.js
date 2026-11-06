@@ -88,6 +88,7 @@ export function clasificacion(d, competicion, deporte) {
           g: stats.wins ?? null, e: stats.ties ?? null, p: stats.losses ?? null,
           // En baloncesto `points` es la diferencia de puntos: se ordena por victorias.
           pts: stats.championshipPts ?? (deporte === 'basketball' ? null : stats.points) ?? null,
+          ...(deporte === 'soccer' && stats.pointDifferential != null ? { dg: stats.pointDifferential } : {}),
         };
       }).sort((a, b) => (a.pos ?? Infinity) - (b.pos ?? Infinity));
       if (filas.length) grupos.push({ nombre: nodo.name || s.displayName, filas });
@@ -115,6 +116,40 @@ export const referenciaPartido = (competicion, id) => /^[1-9]\d{0,11}$/.test(Str
 export const fechaResultadosValida = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)
   && !isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s;
 
+export function nombreEquipoPartido(p) {
+  const nombre = typeof p?.team?.displayName === 'string' ? p.team.displayName.trim().slice(0, 160) : null;
+  return nombre && nombre !== 'TBD' ? nombre : null;
+}
+export const idEquipoPartidoValido = id => /^[1-9]\d*$/.test(String(id ?? ''));
+
+// Mismo contrato en scoreboard y summary (series es objeto en uno y array en otro).
+// Las notas y los títulos del proveedor no se interpretan ni se publican.
+export function eliminatoria(c, codigo, status) {
+  if (!['copa-del-rey', 'champions'].includes(codigo)) return {};
+  const local = c.competitors?.find(p => p.homeAway === 'home');
+  const visitante = c.competitors?.find(p => p.homeAway === 'away');
+  const numero = v => (typeof v === 'number' || typeof v === 'string') && /^\d+(?:\.0+)?$/.test(String(v)) ? String(Number(v)) : null;
+  const pareja = (a, b) => a != null || b != null ? { local: a, visitante: b } : null;
+  const serie = Array.isArray(c.series) ? c.series.length === 1 ? c.series[0] : null : c.series;
+  const porId = p => idEquipoPartidoValido(p?.id) ? (serie?.competitors || []).find(s => String(s.id) === String(p.id)) : null;
+  // En la ida el global solo repetiría el marcador (el summary lo trae y el scoreboard no).
+  const global = c.leg?.value === 1 ? null : pareja(numero(porId(local)?.aggregateScore), numero(porId(visitante)?.aggregateScore));
+  const estado = estadoPartido(status);
+  const penaltis = ['en_juego', 'final', 'suspendido'].includes(estado)
+    ? pareja(numero(local?.shootoutScore), numero(visitante?.shootoutScore)) : null;
+  const ganador = (a, b) => a === true && b === false ? 'local' : b === true && a === false ? 'visitante' : null;
+  const clasificado = estado === 'final' && c.leg?.value !== 1 && serie?.completed === true
+    ? ganador(porId(local)?.winner, porId(visitante)?.winner) : null;
+  return { eliminatoria: {
+    ida_vuelta: c.leg?.value === 1 ? 'ida' : c.leg?.value === 2 ? 'vuelta' : null,
+    global, penaltis,
+    resolucion: status?.type?.name === 'STATUS_FINAL_AET' ? 'prorroga' : status?.type?.name === 'STATUS_FINAL_PEN' ? 'penaltis' : null,
+    clasificado,
+    // Sin serie no se convierte el ganador de un partido en clasificado.
+    ganador: estado === 'final' && !c.series && !c.leg ? ganador(local?.winner, visitante?.winner) : null,
+  } };
+}
+
 export function resultados(d, competicion, fecha = null) {
   return { competicion, temporada: d.season?.year || null,
     fecha: fecha || (fechaResultadosValida(d.day?.date) ? d.day.date : null),
@@ -126,8 +161,9 @@ export function resultados(d, competicion, fecha = null) {
       const estado = estadoPartido(c.status || e.status);
       const score = p => p.score?.displayValue ?? p.score;
       return [{ id: referenciaPartido(competicion, e.id), inicio: c.date || e.date, estado,
-        local: local.team.displayName, visitante: visitante.team.displayName,
-        marcador: ['en_juego', 'final', 'suspendido'].includes(estado) ? { local: score(local) ?? null, visitante: score(visitante) ?? null } : null }];
+        local: nombreEquipoPartido(local), visitante: nombreEquipoPartido(visitante),
+        marcador: ['en_juego', 'final', 'suspendido'].includes(estado) ? { local: score(local) ?? null, visitante: score(visitante) ?? null } : null,
+        ...eliminatoria(c, competicion, c.status || e.status) }];
     })) };
 }
 

@@ -1,0 +1,1281 @@
+{
+  "name": "UEFA Champions League",
+  "season": {
+    "year": 2026,
+    "startDate": "2026-07-01T04:00Z",
+    "endDate": "2027-07-01T03:59Z",
+    "displayName": "2026-27 UEFA Champions League"
+  },
+  "children": [
+    {
+      "name": "League Phase",
+      "standings": {
+        "displayName": "Standings",
+        "season": 2026,
+        "seasonDisplayName": "2026-27 UEFA Champions League",
+        "entries": [
+          {
+            "team": {
+              "displayName": "Paris Saint-Germain"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 0.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 15.0
+              },
+              {
+                "name": "points",
+                "value": 12.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 4.0
+              },
+              {
+                "name": "rank",
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Real Madrid"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 0.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 6.0
+              },
+              {
+                "name": "points",
+                "value": 12.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 4.0
+              },
+              {
+                "name": "rank",
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Arsenal"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 0.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 5.0
+              },
+              {
+                "name": "points",
+                "value": 10.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 3.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Como"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 13.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 4.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Barcelona"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 8.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 5.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Aston Villa"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 6.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 6.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Manchester City"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 5.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 7.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Liverpool"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 4.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 8.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Club Brugge"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 4.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 9.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Sporting CP"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 4.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 10.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Real Betis"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 2.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 11.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Borussia Dortmund"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 2.0
+              },
+              {
+                "name": "points",
+                "value": 9.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 3.0
+              },
+              {
+                "name": "rank",
+                "value": 12.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Bayern Munich"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 0.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 7.0
+              },
+              {
+                "name": "points",
+                "value": 8.0
+              },
+              {
+                "name": "ties",
+                "value": 2.0
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              },
+              {
+                "name": "rank",
+                "value": 13.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "VfB Stuttgart"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 3.0
+              },
+              {
+                "name": "points",
+                "value": 7.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              },
+              {
+                "name": "rank",
+                "value": 14.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Internazionale"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 2.0
+              },
+              {
+                "name": "points",
+                "value": 6.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              },
+              {
+                "name": "rank",
+                "value": 15.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "LASK Linz"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 1.0
+              },
+              {
+                "name": "points",
+                "value": 6.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              },
+              {
+                "name": "rank",
+                "value": 16.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Manchester United"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 0.0
+              },
+              {
+                "name": "points",
+                "value": 6.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              },
+              {
+                "name": "rank",
+                "value": 17.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Galatasaray"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -1.0
+              },
+              {
+                "name": "points",
+                "value": 6.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 2.0
+              },
+              {
+                "name": "rank",
+                "value": 18.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Fenerbahce"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 1.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -5.0
+              },
+              {
+                "name": "points",
+                "value": 5.0
+              },
+              {
+                "name": "ties",
+                "value": 2.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 19.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "AS Roma"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 2.0
+              },
+              {
+                "name": "points",
+                "value": 4.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 20.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Shakhtar Donetsk"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": 0.0
+              },
+              {
+                "name": "points",
+                "value": 4.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 21.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Viking FK"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -1.0
+              },
+              {
+                "name": "points",
+                "value": 4.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 22.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Atlético Madrid"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -1.0
+              },
+              {
+                "name": "points",
+                "value": 4.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 23.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "PSV Eindhoven"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -1.0
+              },
+              {
+                "name": "points",
+                "value": 4.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 24.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Bodo/Glimt"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 2.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -5.0
+              },
+              {
+                "name": "points",
+                "value": 4.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 25.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "FC Porto"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -1.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 26.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Napoli"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -5.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 27.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Villarreal"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -6.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 28.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "AEK Athens"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -6.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 29.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "RB Leipzig"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -6.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 30.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Sabah FK"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -6.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 31.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Feyenoord Rotterdam"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -7.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 32.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Lens"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -12.0
+              },
+              {
+                "name": "points",
+                "value": 3.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 1.0
+              },
+              {
+                "name": "rank",
+                "value": 33.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Slavia Prague"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -4.0
+              },
+              {
+                "name": "points",
+                "value": 1.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 0.0
+              },
+              {
+                "name": "rank",
+                "value": 34.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Lille"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 3.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -6.0
+              },
+              {
+                "name": "points",
+                "value": 1.0
+              },
+              {
+                "name": "ties",
+                "value": 1.0
+              },
+              {
+                "name": "wins",
+                "value": 0.0
+              },
+              {
+                "name": "rank",
+                "value": 35.0
+              }
+            ]
+          },
+          {
+            "team": {
+              "displayName": "Slovan Bratislava"
+            },
+            "stats": [
+              {
+                "name": "gamesPlayed",
+                "value": 4.0
+              },
+              {
+                "name": "losses",
+                "value": 4.0
+              },
+              {
+                "name": "pointDifferential",
+                "value": -16.0
+              },
+              {
+                "name": "points",
+                "value": 0.0
+              },
+              {
+                "name": "ties",
+                "value": 0.0
+              },
+              {
+                "name": "wins",
+                "value": 0.0
+              },
+              {
+                "name": "rank",
+                "value": 36.0
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

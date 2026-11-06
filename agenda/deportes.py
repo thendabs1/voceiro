@@ -7,6 +7,7 @@ COLECCIONES = {
     'espn-atp': ('tenis', 'atp'), 'espn-wta': ('tenis', 'wta'),
     'espn-primera': ('futbol', 'esp.1'), 'espn-segunda': ('futbol', 'esp.2'),
     'espn-copa-del-rey': ('futbol', 'esp.copa_del_rey'), 'espn-champions': ('futbol', 'uefa.champions'),
+    'espn-liga-f': ('futbol', 'esp.w.1'),
     'espn-nba': ('baloncesto', 'nba'), 'espn-wnba': ('baloncesto', 'wnba'),
     'feb-endesa': ('feb', '4'), 'feb-primera': ('feb', '1'), 'feb-challenge': ('feb', '67'),
     'espn-f1': ('f1', 'f1'), 'motogp': ('motogp', None), 'ocblacktop-wrc': ('wrc', None),

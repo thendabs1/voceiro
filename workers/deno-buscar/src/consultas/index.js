@@ -1,4 +1,4 @@
-import { CONSULTAS, ESPN } from '../shared/consultas/registro.js';
+import { CONSULTAS, ESPN, admiteConsultaESPN } from '../shared/consultas/registro.js';
 import * as normalizar from './normalizar.js';
 import { normalizarPartido } from './partido.js';
 
@@ -83,7 +83,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
         if (!Array.isArray(d.events)) throw fallo('ESPN: marcador no válido');
         const partidos = normalizar.resultados(d, texto).partidos;
         return { candidatos: partidos.filter(p => p.id).map(p => ({ id: p.id,
-          titulo: `${p.local} · ${p.visitante}`, detalle: p.marcador ? `${p.marcador.local ?? '—'}–${p.marcador.visitante ?? '—'}` : null,
+          titulo: `${p.local || 'Por determinar'} · ${p.visitante || 'Por determinar'}`, detalle: p.marcador ? `${p.marcador.local ?? '—'}–${p.marcador.visitante ?? '—'}` : null,
           inicio: p.inicio, estado: p.estado, anio: null, imagen: null, enlace: FUENTES.partido[1] })),
           ttl: partidos.some(p => p.estado === 'en_juego') ? 60 : 900 };
       }
@@ -188,7 +188,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       } else if (id || !texto || texto.length > 250 || !Object.hasOwn(CONSULTAS, tipo)) throw fallo('Tipo o texto no válido', 400);
       if (tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido') {
         if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
-        if (tipo !== 'clasificacion' && texto === 'f1') throw fallo('F1 no tiene partidos local/visitante; solo clasificación', 400);
+        if (!admiteConsultaESPN(tipo, texto)) throw fallo('Consulta no disponible para esta competición', 400);
       }
       if (fecha !== null && (tipo !== 'resultados' || url.pathname !== '/consulta/ficha'
           || !normalizar.fechaResultadosValida(fecha))) throw fallo('Fecha de resultados no válida', 400);

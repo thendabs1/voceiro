@@ -1,0 +1,281 @@
+{
+  "leagues": [
+    {
+      "id": "3951",
+      "uid": "s:600~l:3951",
+      "name": "Spanish Copa del Rey",
+      "slug": "esp.copa_del_rey",
+      "season": {
+        "year": 2026,
+        "displayName": "2026-27 Spanish Copa del Rey",
+        "startDate": "2026-07-01T04:00Z",
+        "endDate": "2027-07-01T03:59Z"
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "401928515",
+      "uid": "s:600~l:3951~e:401928515",
+      "name": "Huesca at Peña Sport",
+      "date": "2026-10-29T17:00Z",
+      "season": {
+        "year": 2026,
+        "type": 14558,
+        "slug": "first-round"
+      },
+      "status": {
+        "clock": 5400.0,
+        "displayClock": "90'",
+        "period": 2,
+        "type": {
+          "id": "28",
+          "name": "STATUS_FULL_TIME",
+          "state": "post",
+          "completed": true,
+          "description": "Full Time",
+          "detail": "FT",
+          "shortDetail": "FT"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401928515",
+          "uid": "s:600~l:3951~e:401928515~c:401928515",
+          "date": "2026-10-29T17:00Z",
+          "startDate": "2026-10-29T17:00Z",
+          "timeValid": true,
+          "status": {
+            "clock": 5400.0,
+            "displayClock": "90'",
+            "period": 2,
+            "type": {
+              "id": "28",
+              "name": "STATUS_FULL_TIME",
+              "state": "post",
+              "completed": true,
+              "description": "Full Time",
+              "detail": "FT",
+              "shortDetail": "FT"
+            }
+          },
+          "notes": [],
+          "venue": {
+            "id": "11902",
+            "fullName": "Estadio de San Francisco",
+            "address": {
+              "city": "Tafalia",
+              "country": "Spain"
+            }
+          },
+          "competitors": [
+            {
+              "id": "7041",
+              "uid": "s:600~t:7041",
+              "homeAway": "home",
+              "winner": false,
+              "score": "1",
+              "team": {
+                "id": "7041",
+                "uid": "s:600~t:7041",
+                "displayName": "Peña Sport",
+                "name": "Peña Sport"
+              }
+            },
+            {
+              "id": "5413",
+              "uid": "s:600~t:5413",
+              "homeAway": "away",
+              "winner": true,
+              "score": "5",
+              "team": {
+                "id": "5413",
+                "uid": "s:600~t:5413",
+                "displayName": "Huesca",
+                "name": "Huesca"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401928535",
+      "uid": "s:600~l:3951~e:401928535",
+      "name": "Coria at San Sebastián de los Reyes",
+      "date": "2026-10-29T18:00Z",
+      "season": {
+        "year": 2026,
+        "type": 14558,
+        "slug": "first-round"
+      },
+      "status": {
+        "clock": 7200.0,
+        "displayClock": "120'+1'",
+        "period": 4,
+        "type": {
+          "id": "45",
+          "name": "STATUS_FINAL_AET",
+          "state": "post",
+          "completed": true,
+          "description": "Final Score - After Extra Time",
+          "detail": "AET",
+          "shortDetail": "AET"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401928535",
+          "uid": "s:600~l:3951~e:401928535~c:401928535",
+          "date": "2026-10-29T18:00Z",
+          "startDate": "2026-10-29T18:00Z",
+          "timeValid": true,
+          "status": {
+            "clock": 7200.0,
+            "displayClock": "120'+1'",
+            "period": 4,
+            "type": {
+              "id": "45",
+              "name": "STATUS_FINAL_AET",
+              "state": "post",
+              "completed": true,
+              "description": "Final Score - After Extra Time",
+              "detail": "AET",
+              "shortDetail": "AET"
+            }
+          },
+          "notes": [],
+          "venue": {
+            "id": "11907",
+            "fullName": "Estadio Municipal Nuevo Matapiñonera",
+            "address": {
+              "city": "San Sebastian",
+              "country": "Spain"
+            }
+          },
+          "competitors": [
+            {
+              "id": "18342",
+              "uid": "s:600~t:18342",
+              "homeAway": "home",
+              "winner": false,
+              "score": "1",
+              "team": {
+                "id": "18342",
+                "uid": "s:600~t:18342",
+                "displayName": "San Sebastián de los Reyes",
+                "name": "San Sebastián de los Reyes"
+              }
+            },
+            {
+              "id": "20821",
+              "uid": "s:600~t:20821",
+              "homeAway": "away",
+              "winner": true,
+              "score": "2",
+              "team": {
+                "id": "20821",
+                "uid": "s:600~t:20821",
+                "displayName": "Coria",
+                "name": "Coria"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401928490",
+      "uid": "s:600~l:3951~e:401928490",
+      "name": "Real Oviedo at Numancia",
+      "date": "2026-10-29T17:00Z",
+      "season": {
+        "year": 2026,
+        "type": 14558,
+        "slug": "first-round"
+      },
+      "status": {
+        "clock": 7200.0,
+        "displayClock": "120'",
+        "period": 5,
+        "type": {
+          "id": "47",
+          "name": "STATUS_FINAL_PEN",
+          "state": "post",
+          "completed": true,
+          "description": "Final Score - After Penalties",
+          "detail": "FT-Pens",
+          "shortDetail": "FT-Pens"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401928490",
+          "uid": "s:600~l:3951~e:401928490~c:401928490",
+          "date": "2026-10-29T17:00Z",
+          "startDate": "2026-10-29T17:00Z",
+          "timeValid": true,
+          "status": {
+            "clock": 7200.0,
+            "displayClock": "120'",
+            "period": 5,
+            "type": {
+              "id": "47",
+              "name": "STATUS_FINAL_PEN",
+              "state": "post",
+              "completed": true,
+              "description": "Final Score - After Penalties",
+              "detail": "FT-Pens",
+              "shortDetail": "FT-Pens"
+            }
+          },
+          "notes": [
+            {
+              "text": "Numancia win 4-2 on penalties",
+              "headline": "Numancia win 4-2 on penalties",
+              "type": "event"
+            }
+          ],
+          "venue": {
+            "id": "1566",
+            "fullName": "Los Pajaritos",
+            "address": {
+              "city": "Soria",
+              "country": "Spain"
+            }
+          },
+          "competitors": [
+            {
+              "id": "100",
+              "uid": "s:600~t:100",
+              "homeAway": "home",
+              "winner": true,
+              "score": "3",
+              "shootoutScore": 4,
+              "team": {
+                "id": "100",
+                "uid": "s:600~t:100",
+                "displayName": "Numancia",
+                "name": "Numancia"
+              }
+            },
+            {
+              "id": "92",
+              "uid": "s:600~t:92",
+              "homeAway": "away",
+              "winner": false,
+              "score": "3",
+              "shootoutScore": 2,
+              "team": {
+                "id": "92",
+                "uid": "s:600~t:92",
+                "displayName": "Real Oviedo",
+                "name": "Real Oviedo"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -16,6 +16,7 @@ PERFILES = {
 COLECCIONES = {
     'atp': 'calendario', 'wta': 'calendario',
     'primera': 'calendario', 'segunda': 'calendario',
+    'liga-f': 'calendario',
     'copa-del-rey': 'calendario', 'champions': 'calendario',
     'nba': 'calendario', 'wnba': 'calendario',
     'feb-endesa': 'calendario', 'feb-primera': 'calendario', 'feb-challenge': 'calendario',
