@@ -85,7 +85,7 @@ function contexto({ intl = Intl, responder = api, sitios = [{ nombre: 'Vigo', lu
     if (opciones.signal?.aborted) throw new DOMException('Cortada', 'AbortError');
     return r instanceof Response ? r : Response.json(r);
   };
-  const c = { ...fechas, ...consulta, ...nombres, destinoResultados, accionesCompeticion: () => [], parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
+  const c = { ...fechas, ...consulta, ...nombres, destinoResultados, accionesCompeticion: () => [], conPaso: fn => fn(), pintarCabeceraCompeticion(){}, parseQuery, tokenizeQuery, normalize, sugerirMunicipios, provinciaDe, ADMINISTRACION,
     Intl: intl, ACCES: { lang: 'es' }, t: (k, v) => traducir('es', k, v), fetch, URL, URLSearchParams, AbortController, AbortSignal,
     setTimeout: fn => { temporizadores.push(fn); return 0; }, clearTimeout(){}, requestAnimationFrame(){}, cerrarEstadisticas(){}, pintarIconosDeportes(){}, cerrarAjustes(){ c.ajustesCerrados = true; }, window: { scrollY: 0, scrollTo(){} },
     DATA_BASE: BASES.cf.data, BACKENDS: BASES, sitiosTiempo: () => sitios, toast(){},

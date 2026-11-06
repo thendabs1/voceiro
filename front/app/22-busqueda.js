@@ -116,6 +116,7 @@ function aplicarFiltros(){
   actualizarTiempo(parsed.eltiempo);
   actualizarAlertas(parsed.alertas);
   actualizarConsultaPuntual(parsed, consulta.texto);
+  pintarCabeceraCompeticion();
   pintarBotonTiempo();
 
 const capas = capasRequeridas(parsed, consulta);

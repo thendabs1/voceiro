@@ -33,7 +33,12 @@ de ahí salen las cuatro entradas, y cada enlace escribe su orden en la barra.
   que haya, escrito junto al nombre. Los datos se piden al elegir competición.
 - El `▾` es un lanzador: lo que sigo, «Todos los deportes» y el calendario. Un
   submenú sería otra fila de `pintarAccesos`.
-- Una competición lleva pestañas, las demás de su deporte y vuelta a la general.
+- Una competición lleva una sola cabecera en sus cuatro vistas (`#competicion-cab`), fuera
+  de los paneles: pestañas, las demás de su deporte y vuelta a la general. Solo sale
+  con una competición escrita; las hermanas no dependen de la vista. Cambiar de vista
+  conserva el día: resultados solo acepta hoy o antes, y clasificación es la tabla actual.
+- Atrás recorre lo elegido: cada vista escribe un paso con la barra y lo abierto desde
+  su botón. Lo tecleado solo crea paso al pulsar Intro. Sin URL propia por ahora.
 - Solo se ofrece lo que existe: capacidades de `shared/consultas/registro.js` y
   citas en `disponibilidad`. Euroliga no es capa de `CAL_DEPORTES`: no tiene calendario.
 

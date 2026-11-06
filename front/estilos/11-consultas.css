@@ -141,10 +141,19 @@
 .dep-nombre small{ font-size: .8em; font-weight: 400; color: var(--muted); }
 .dep-otras{ display: flex; flex-wrap: wrap; gap: 0 10px; }
 .dep-fila .dep-accion{ font-size: .8em; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
-/* Los datos de deportes usan el ancho de la ventana aunque el de lectura sea menor. */
-.consulta-panel:has(.dep-vista, .consulta-deporte){ width: min(100vw - 32px, 1600px); margin-left: calc(50% - min(50vw - 16px, 800px)); box-sizing: border-box; }
-.dep-cab{ display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; }
+/* Deportes usa el ancho de la ventana: toda la vista, para que nada salte al cambiar de
+   pestaña ni mientras carga. Las noticias de debajo conservan su ancho de lectura. */
+body.vista-deportes{ max-width: none; }
+.vista-deportes :is(#competicion-cab, .consulta-panel, #calendario-panel){ width: min(100vw - 32px, 1600px); margin-left: calc(50% - min(50vw - 16px, 800px)); box-sizing: border-box; }
+.vista-deportes:not(.calendario-abierto) :is(.res-linea, #resultados, #cargar-mas-wrap, #tiempo-tarjeta, #avisos-panel){ max-width: var(--w); margin-inline: auto; }
+.con-competicion.sin-chips #chips-busqueda, .estadisticas-abiertas #competicion-cab{ display: none !important; }
+.competicion-cab{ margin-block: 6px; padding: 2px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--quote-bg); font-size: .9em; }
+.competicion-cab[hidden]{ display: none; }
+.con-competicion #calendario-panel{ margin-top: 6px; }
+.dep-cab{ display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; }
 .dep-cab button{ flex: none; min-width: 0; min-height: 32px; padding: 0 2px; border: 0; background: none; color: var(--fg); font: inherit; white-space: nowrap; overflow-wrap: normal; cursor: pointer; }
+.dep-cab .dep-cerrar{ display: inline-flex; align-items: center; justify-content: center; min-width: 32px; }
+.dep-tabs + .dep-cerrar{ margin-left: auto; }
 .dep-tabs{ display: flex; gap: 12px; min-width: 0; max-width: 100%; overflow-x: auto; }
 .dep-tabs button[aria-current]{ border-bottom: 2px solid currentColor; font-weight: 700; }
 .dep-hermanas{ display: flex; gap: 6px; margin-left: auto; min-width: 0; max-width: 100%; }
@@ -155,9 +164,10 @@
   .dep-bloque > summary{ padding: 8px 0; }
   .dep-fila button{ min-height: 44px; }
   .dep-cab button{ min-height: 44px; }
-  .dep-tabs{ width: 100%; font-size: .92em; }
-  .dep-hermanas{ margin-left: 0; width: 100%; }
+  /* Primera fila: volver, hermanas (se desplazan) y cierre; las pestañas, debajo. */
+  .dep-tabs{ order: 1; width: 100%; font-size: .92em; }
+  .dep-hermanas{ flex: 1; margin: 0 44px 0 0; }
   /* El cierre, a la altura de «‹ Deportes»: las pestañas necesitan todo el ancho. */
-  .consulta-cab:has(.dep-cab){ position: relative; display: block; }
-  .consulta-cab:has(.dep-cab) .consulta-cerrar{ position: absolute; top: 0; right: 0; }
+  .dep-cab{ position: relative; }
+  .dep-cab .dep-cerrar{ position: absolute; top: 0; right: 0; min-width: 44px; }
 }
