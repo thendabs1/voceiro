@@ -1,6 +1,7 @@
 import { CONSULTAS, ESPN, admiteConsultaESPN } from '../shared/consultas/registro.js';
 import * as normalizar from './normalizar.js';
 import { normalizarPartido } from './partido.js';
+import { crearTenis, leerIdTenis } from './tenis.js';
 
 const DIA = 86400;
 const IDIOMAS = new Set(['es', 'gl', 'ca', 'eu', 'en']);
@@ -74,7 +75,10 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
     return u.href;
   }
 
+  const tenis = crearTenis({ pedir, abrirCache, ahora });
+
   async function producir(tipo, texto, id, idioma, fecha) {
+    if (['resultados', 'partido'].includes(tipo) && ['atp', 'wta'].includes(texto)) return tenis({ tipo, id, circuito: texto, fecha });
     const wp = `https://${idioma}.wikipedia.org`;
     if (!id) {
       if (tipo === 'partido') {
@@ -183,12 +187,14 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
           const partes = id.slice(5).split('/'); tipo = partes[0]; texto = partes[1];
         } else if (/^espn:partido\/[a-z0-9-]+\/[1-9]\d{0,11}$/.test(id || '')) {
           tipo = 'partido'; texto = id.split('/')[1];
+        } else if (leerIdTenis(id)) { tipo = 'partido'; texto = leerIdTenis(id).circuito;
         } else if (/^wikipedia:[^\x00-\x1f]{1,250}$/.test(id || '')) tipo = 'contexto';
         else throw fallo('Identificador no válido', 400);
       } else if (id || !texto || texto.length > 250 || !Object.hasOwn(CONSULTAS, tipo)) throw fallo('Tipo o texto no válido', 400);
       if (tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido') {
         if (!Object.hasOwn(ESPN, texto)) throw fallo('Competición sin equivalencia ESPN', 400);
         if (!admiteConsultaESPN(tipo, texto)) throw fallo('Consulta no disponible para esta competición', 400);
+        if (tipo === 'partido' && ['atp', 'wta'].includes(texto) && id && !leerIdTenis(id)) throw fallo('Identificador de tenis no válido', 400);
       }
       if (fecha !== null && (tipo !== 'resultados' || url.pathname !== '/consulta/ficha'
           || !normalizar.fechaResultadosValida(fecha))) throw fallo('Fecha de resultados no válida', 400);
@@ -215,6 +221,11 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
           const { ttl = tipo === 'pelicula' || tipo === 'serie' ? DIA : tipo === 'clasificacion' || tipo === 'resultados' || tipo === 'partido' ? 900 : 7 * DIA,
             vacio = false, ...datos } = await producir(tipo, texto, id, idioma, fecha);
           const cuerpo = { ...base, ...datos, caduca: new Date(ahora() + ttl * 1000).toISOString() };
+          if (cuerpo.ficha?.fuente) {
+            const f = cuerpo.ficha.fuente;
+            Object.assign(cuerpo, { fuente: f.nombre, enlace: f.url, atribucion: f.nombre,
+              licencia: f.licencia ? { nombre: f.licencia, enlace: f.licencia_url } : null });
+          }
           if (vacio || (!cuerpo.ficha && !cuerpo.candidatos.length)) cuerpo.estado = 'vacio';
           const r = responder(cuerpo, 200, ttl);
           await cache.put(req, r.clone()).catch(() => {});
