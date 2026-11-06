@@ -162,6 +162,13 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
   del último día deja ver si el proveedor amplía los límites, sin cerrar nada.
   Una cita aplazada mantiene su incidencia y bloquea el cierre, pero el día
   queda leído: no se relee toda la ventana en cada tick.
+- **Partido que deja su fecha:** leer un día solo acredita ese día. En las
+  colecciones por fecha, una cita que falta de su día queda marcada
+  (`ausente_de_su_fecha`) con su fecha anterior publicada, no tumba la pasada y
+  bloquea el cierre hasta que reaparece con el mismo ID. En las de temporada,
+  una lista recortada sigue rechazándose.
+- **Cupo diario:** las colecciones por fecha planifican solo los días que caben
+  en lo que queda del cupo de su proveedor; sin cupo, esperan sin contar error.
 - La publicación (`--fuentes-control`) añade los principales validados y su
   cobertura por colección.
 
@@ -349,6 +356,8 @@ Las claves (`OCBLACKTOP_API_KEY`, las de Turso y `AGENDA_R2_*`) viven solo en el
 
 - **Revisar el cliente:** comprobar la interfaz de Agenda y Deportes, ya
   activada en el código, y su comportamiento en móvil y con teclado.
+- **Fecha de un partido movido:** hasta que reaparece en la ventana sigue
+  publicada la fecha anterior; falta distinguirlo en la tarjeta.
 - **Retención y retirada:** poda de 45 días sin activar, a revisar en enero de
   2027: hoy retiraría 11 eventos y 10 KB; con el stock actual serían 5.204 y un
   44 % de R2 a 90 días. Los eventos deportivos de fuentes culturales pueden

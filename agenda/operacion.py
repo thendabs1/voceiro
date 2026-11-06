@@ -138,8 +138,13 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
         return {'temporada': t['id'], 'estado': 'omitida', 'motivo': 'enfriamiento'}
     cobertura = [c for c in repo.cobertura(t['id']) if c['proveedor'] == proveedor]
     if proveedores.modo(proveedor) == 'fecha':
+        # Una selección se confirma entera: leer solo lo que cabe en el cupo del
+        # día conserva esa lectura; agotarlo a mitad de pasada la perdería.
+        restantes = repo.restantes(t, proveedor, ahora)
         unidades = fechas or temporadas.plan_fechas(t, ahora, cobertura,
-            limite=t['politica']['max_peticiones_pasada'])
+            limite=min(t['politica']['max_peticiones_pasada'], restantes))
+        if not unidades and not restantes:
+            return {'temporada': t['id'], 'estado': 'omitida', 'motivo': 'cupo del día agotado'}
         for d in unidades:
             date.fromisoformat(d)
     else:
@@ -216,8 +221,14 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
     # aunque desaparezca de la respuesta posterior.
     vigentes = dict(guardados)
     vigentes.update({e['evento']: e for e in eventos})
+    # La cobertura nueva ya no lo lista: la marca dura en su fila hasta que reaparezca.
+    movidos = [{**guardados[i['evento']], 'unidad': i['unidad'], 'ausente_de_su_fecha': i['unidad']}
+               for i in incidencias if i['tipo'] == 'ausente_de_su_fecha' and i['evento'] in guardados]
+    vigentes.update({e['evento']: e for e in movidos})
+    leidos = {e['evento'] for e in eventos}
     for e in vigentes.values():
-        if e['evento'] not in {x['evento'] for x in eventos} and (e['conflicto'] or e['estado'] == 'aplazado' or not e['inicio']):
+        if e['evento'] not in leidos and (e['conflicto'] or e['estado'] == 'aplazado' or not e['inicio']
+                                          or e.get('ausente_de_su_fecha')):
             incidencias.append({'tipo': 'programacion_pendiente_conservada', 'evento': e['evento']})
     if any(i['tipo'] not in cadencias.PROGRAMACION_PENDIENTE for i in incidencias):
         for c in coberturas:
@@ -234,7 +245,7 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
         if temporadas.plan_fechas(nuevo, ahora, nuevas_c.values(), limite=1):
             nuevo['proxima_revision'] = temporadas.marca(ahora)  # Quedan huecos; avanzar en la siguiente pasada.
     calendario['nucleo'] = n
-    repo.confirmar(t, pasada, nuevo, calendario, coberturas, eventos, ahora)
+    repo.confirmar(t, pasada, nuevo, calendario, coberturas, eventos + movidos, ahora)
     return {'temporada': t['id'], 'estado': nuevo['estado'], 'proveedor': proveedor,
             'citas': len({e['evento'] for e in eventos}), 'peticiones': len(pasada['peticiones']),
             'incidencias': incidencias}

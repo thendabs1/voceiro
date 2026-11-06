@@ -69,6 +69,13 @@ class Partidos(unittest.TestCase):
                          {'ronda-nueva'})
         self.assertFalse(any('nombre' in e['ronda_torneo'] for e in eventos('espn-copa-del-rey', pagina)['eventos']))
 
+    def test_ida_y_vuelta_contradictorias_no_conviven(self):
+        vuelta = muestra('espn-champions')
+        ida = muestra('espn-champions')
+        ida['events'][0]['competitions'][0]['leg'] = {'value': 1}
+        with self.assertRaises(ValueError):
+            importar('espn-champions', ida, importar('espn-champions', vuelta))
+
     def test_las_ligas_no_cambian(self):
         self.assertFalse(any('ronda_torneo' in e for e in eventos('espn-nba')['eventos']))
         self.assertFalse(any('ronda_torneo' in e for e in eventos('espn-primera')['eventos']))
@@ -106,6 +113,45 @@ class PartidoMovido(unittest.TestCase):
                          ['ausente_de_su_fecha'])
         self.assertTrue(all(c['completa'] for c in self.repo.cobertura(t['id'])))
         self.assertEqual(len(self.repo.eventos(t['id'])), 3)
+
+    def test_la_ausencia_dura_hasta_que_el_partido_reaparece(self):
+        self.repo.registrar(temporadas.nueva('copa-del-rey', '2026', AHORA, seleccion={'year': '2026'}))
+        pagina = muestra('espn-copa-del-rey')
+        self.pasada(pagina, AHORA, ['2026-11-10'])
+        recortada = {**pagina, 'events': pagina['events'][1:]}
+        self.pasada(recortada, '2026-11-03T12:00:00Z', ['2026-11-10'])
+        # La misma lectura recortada ya no lo compara, pero sigue bloqueando el cierre.
+        self.pasada(recortada, '2026-11-04T12:00:00Z', ['2026-11-10'])
+        t = next(iter(self.repo.temporadas('copa-del-rey')))
+        self.assertEqual([i['tipo'] for i in t['incidencias'] if 'evento' in i], ['programacion_pendiente_conservada'])
+        self.assertEqual(sum(bool(e.get('ausente_de_su_fecha')) for e in self.repo.eventos(t['id'])), 1)
+        # Reaparece en otro día con el mismo ID: la marca se va sola.
+        self.pasada({**pagina, 'events': pagina['events'][:1]}, '2026-11-05T12:00:00Z', ['2026-11-18'])
+        t = next(iter(self.repo.temporadas('copa-del-rey')))
+        self.assertFalse([i for i in t['incidencias'] if 'evento' in i])
+        self.assertFalse(any(e.get('ausente_de_su_fecha') for e in self.repo.eventos(t['id'])))
+
+    def consumir(self, peticiones):
+        self.repo.escribir([('INSERT INTO agenda_control_consumo VALUES (?,?,?,?)',
+                             ('espn', AHORA[:10], peticiones, '{}'))])
+
+    def test_el_cupo_diario_recorta_la_pasada_sin_perder_lo_leido(self):
+        t = self.repo.registrar(temporadas.nueva('nba', '2027', AHORA, seleccion={'year': '2027'}))
+        self.consumir(56)
+        with patch.object(proveedores, 'recoger', return_value=(muestra('espn-nba'), 'https://ejemplo.test')) as recoger:
+            r = operacion.ejecutar_temporada(self.repo, t, AHORA)
+        self.assertEqual(recoger.call_count, 8)
+        self.assertNotEqual(r['estado'], 'fallida')
+        self.assertEqual(len({c['unidad'] for c in self.repo.cobertura(t['id'])}), 8)
+
+    def test_sin_cupo_la_pasada_espera_sin_contar_como_error(self):
+        t = self.repo.registrar(temporadas.nueva('nba', '2027', AHORA, seleccion={'year': '2027'}))
+        self.consumir(64)
+        with patch.object(proveedores, 'recoger') as recoger:
+            r = operacion.ejecutar_temporada(self.repo, t, AHORA)
+        recoger.assert_not_called()
+        self.assertEqual((r['estado'], r['motivo']), ('omitida', 'cupo del día agotado'))
+        self.assertEqual(next(iter(self.repo.temporadas('nba')))['errores_consecutivos'], 0)
 
     def test_el_modo_temporada_sigue_rechazando_una_lista_recortada(self):
         previa = [{'unidad': '2026', 'recurso': 'calendario', 'proveedor': 'motogp', 'eventos': ['a']}]
