@@ -1,27 +1,39 @@
 # Resultados deportivos: decisiones pendientes
 
-Resultados por fecha, clasificaciones y fichas de partido ya están
-implementados mediante consultas a ESPN con caché. El contrato vigente está
-en [Resultados por fecha y fichas de partido](resultados-revision-2026-11-02.md).
+Resultados por fecha, clasificaciones y fichas se sirven con consultas bajo
+demanda y caché. El contrato base está en
+[Resultados por fecha y fichas de partido](resultados-revision-2026-11-02.md).
 
-## Próximos bloques
+## Fichas sin local ni visitante
 
-Van antes del refactor de la interfaz, con un PR por bloque.
+`ficha.vista` distingue la forma: sin ese campo es la ficha de equipos;
+`encuentro_tenis` y `sesion_motor` son las otras dos. Cada vista se registra en
+`VISTAS_CONSULTA` (`front/app/14-tenis.js`, `14-motor.js`). Las fichas nuevas
+llevan `estado_original`, `condicion`, `fuente` con la atribución real y
+`referencias_agenda` con los ID de la agenda, listas para enlazarlas desde la
+tarjeta. Con ID en la petición manda el ID: `texto` no elige proveedor.
 
-1. **Ficha sin local ni visitante y ATP.** Hay que diseñarla antes de encargarla:
-   el contrato actual pierde jugadores, parrillas, sets, retiradas y tiempos.
-   ATP sale de ESPN, con cuadro, sets y retiradas ya comprobados.
-2. **F1 y MotoGP**, sobre esa ficha. F1 con OpenF1: Voceiro es uso no comercial.
-   MotoGP con su API oficial: sus ID no son los del calendario y falta el puente
-   de identidad; no unir por nombre.
-3. **Euroliga y WTA.** A Euroliga le falta un listado de partidos; WTA no tiene
-   correspondencia con la agenda oficial.
+| Competición | Fuente | Puente con la agenda |
+| --- | --- | --- |
+| ATP | ESPN | UID de torneo |
+| WTA | ESPN | Sin correspondencia con la agenda oficial |
+| Euroliga | `api-live.euroleague.net/v2/.../games` | Sin agenda |
+| F1 | OpenF1, uso no comercial | `session_key` = `meeting_session_key` |
+| MotoGP | API oficial `/results` | `toad_api_uuid` = ID del GP; sesión por `type+number` |
+
+No unir por nombre: OpenF1 trae un GP con país Bahrain y lugar Kuala Lumpur.
+En MotoGP, `date` de resultados lleva offset UTC falso y es hora local, y
+`OUTSTND` solo significa no clasificado.
+
+## Comprobar
+
+- Panel en navegador con tenis, Euroliga y motor.
+- Consumo real de ESPN: la estimación es 56 peticiones/día con cinco colecciones.
+  Con WNBA a la vez son unas 69, sobre el cupo de 64: revisar en mayo de 2027.
+- Sprint de F1 contra la fuente oficial y playoffs de Euroliga.
+- Términos de uso de EuroLeague: siguen sin revisar y la ficha no muestra licencia.
 
 Fuera por ahora, sin API directa: FEB, ACB, ASOBAL, WRC, ciclismo y pádel.
-
-Al añadir una competición con prefijo nuevo, vigilar `Deploy Worker Datos`: el
-worker antiguo responde 400 a un prefijo que no conoce y la vista Deportes los
-envía todos.
 
 ## Jornadas oficiales
 
@@ -39,15 +51,8 @@ requiere resolver su identidad; aún no está implementado.
 
 ## Otras ampliaciones
 
-- Tenis: contrastar cobertura, costes y estados de retiradas, incomparecencias
-  y superdesempates antes de ofrecer resultados por cuadro y ronda.
-- Motor: acreditar resultados por sesión, sanciones, tiempos y diferencias;
-  F1 solo tiene clasificación en el panel. MotoGP: la ruta ESPN probada
-  responde 400; la API oficial `api.pulselive.motogp.com/motogp/v1/results`
-  respondió sin clave con temporadas, eventos, categorías, sesiones,
-  clasificación por sesión y mundial (2/11/2026). Relacionar sus UUID con la
-  agenda por referencias, no por nombre del GP; no traducir estados como
-  `INSTND` por intuición.
+- Tenis: cuadro completo por torneo y ronda; hoy solo hay vista por fecha.
+- Motor: Moto2 y Moto3 preparados sin exponer, y `clasificacion:motogp`.
 - Atletismo: los resultados se delegan a la fuente oficial (enlace al
   documento o página en su nivel, sin marcas; decidido el 3/11/2026).
   Rankings sin conector. Candidatas web sin extracción acreditada: Diamond

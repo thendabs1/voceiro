@@ -136,6 +136,7 @@ candidatos en vez de elegir uno.
 
 Implementados en deno-buscar: `/consulta` (candidatos) y `/consulta/ficha` (identidad) para Open Library, TMDB y Wikipedia + Wikidata, con caché, límite por IP y sin persistencia en base de datos.
 ESPN admite resultados por fecha y fichas de partido de Primera, Segunda, NBA, WNBA, Copa del Rey, Champions y Liga F; clasificación de Primera, Segunda, NBA, WNBA, F1 y la fase liga de Champions ([contrato](resultados-revision-2026-11-02.md)). Copa no tiene tabla. Caduca en 60 s en juego, 15 min para tablas y 1 h para resultados. Presupuesto por instancia: `ESPN_MAX_PETICIONES_DIA` (1000 por defecto) y Open Library a 1 petición/s; TMDB usa `TMDB_API_READ_ACCESS_TOKEN` y atribuye JustWatch.
+ATP y WTA salen de ESPN; Euroliga, de su listado oficial; F1, de OpenF1 (CC BY-NC-SA, uso no comercial, 30 peticiones/min), y MotoGP, de su API oficial, cada una con su atribución y presupuesto ([fichas](resultados-diseno.md#fichas-sin-local-ni-visitante)).
 Los prefijos de los cinco idiomas viven en `shared/consultas/registro.js`; la lista de ámbitos del calendario sigue separada, sin colisiones.
 Sin comillas, el valor de una consulta es el resto de la línea, aunque lleve «palabra:» (`pelicula:Misión: imposible`); los filtros van delante o se cierra el valor con comillas. El panel del front (`front/app/14-consultas.js`) pide candidatos y, al tocar uno, su ficha; las competiciones deportivas van directas a la ficha.
 
