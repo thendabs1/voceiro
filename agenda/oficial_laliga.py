@@ -52,9 +52,11 @@ def _cuando(partido):
 
 
 def _estado(valor):
+    # LaLiga publica `Canceled` en partidos aplazados (ESPN los da como `Postponed`,
+    # jornada 13 de Segunda 2026/27): una liga los juega en otra fecha.
     return {'PreMatch': 'programado', 'FullTime': 'programado', 'InPlay': 'programado',
-            'HalfTime': 'programado', 'Postponed': 'aplazado', 'Cancelled': 'cancelado',
-            'Canceled': 'cancelado', 'Suspended': 'aplazado'}.get(valor, 'desconocido')
+            'HalfTime': 'programado', 'Postponed': 'aplazado', 'Cancelled': 'aplazado',
+            'Canceled': 'aplazado', 'Suspended': 'aplazado'}.get(valor, 'desconocido')
 
 
 def _extraer_partido(p, year, competicion):
@@ -100,7 +102,8 @@ def leer(texto, temporada, competicion, jornada=None):
     return {'jornada': seleccion, 'jornadas': jornadas, 'partidos': partidos}
 
 
-def recoger(temporada, competicion='primera', inicio=None, fin=None):
+def recoger(temporada, competicion='primera', inicio=None, fin=None, jornadas=()):
+    """Jornadas de la ventana y `jornadas`: las de partidos que dejaron su fecha."""
     year = deporte.temporada(temporada)
     _competicion(competicion)
     desde = date.fromisoformat(inicio) if inicio else datetime.now(ZoneInfo('Europe/Madrid')).date()
@@ -112,12 +115,10 @@ def recoger(temporada, competicion='primera', inicio=None, fin=None):
     catalogo = primera['jornadas']
     seleccionadas = []
     # Las fechas de jornada solo planifican GET, nunca se asignan a partidos.
-    # El margen cubre viernes/lunes habituales; no acredita todos los aplazados.
+    # El margen cubre viernes/lunes habituales; los aplazados llegan en `jornadas`.
     for g in catalogo:
-        if not g['date']:
-            continue
-        dia = date.fromisoformat(g['date'][:10])
-        if desde - timedelta(days=4) <= dia <= hasta + timedelta(days=4):
+        dia = date.fromisoformat(g['date'][:10]) if g['date'] else None
+        if g['week'] in jornadas or (dia and desde - timedelta(days=4) <= dia <= hasta + timedelta(days=4)):
             seleccionadas.append(g['week'])
     if len(seleccionadas) > MAX_JORNADAS:
         raise ValueError('La selección LaLiga supera el presupuesto de jornadas')
@@ -198,6 +199,6 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
             a.evento('match_id', m['id'], 'encuentro', ' — '.join(e['nombre'] for e in equipos),
                 _cuando(m), padre=fase, estado=m['programacion'], sitio=m.get('venue'),
                 url=URL + '/partido/' + m['slug'], equipos=equipos,
-                bloques={'temporada_declarada': year,
+                bloques={'temporada_declarada': year, 'ronda': g['week'],
                     'limites_proveedor': {'date': m.get('date'), 'time': m.get('time')}})
     return a.terminar()

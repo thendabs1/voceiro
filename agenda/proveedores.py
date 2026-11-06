@@ -37,11 +37,12 @@ def _oficial(proveedor):
     return import_module('.' + OFICIALES[proveedor], __package__)
 
 
-def recoger(proveedor, *, temporada=None, fecha=None, inicio=None, fin=None):
+def recoger(proveedor, *, temporada=None, fecha=None, inicio=None, fin=None, jornadas=()):
     if proveedor in OFICIALES:
         modulo = _oficial(proveedor)
         if proveedor.startswith('laliga-'):
-            return modulo.recoger(temporada, competicion=proveedor.removeprefix('laliga-'), inicio=inicio, fin=fin)
+            return modulo.recoger(temporada, competicion=proveedor.removeprefix('laliga-'),
+                                  inicio=inicio, fin=fin, jornadas=jornadas)
         if proveedor == 'formula1':
             return modulo.recoger(temporada, inicio=inicio, fin=fin)
         return modulo.recoger(temporada)

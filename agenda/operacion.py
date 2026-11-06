@@ -71,6 +71,7 @@ def _eventos(n, proveedor, observado, unidad, referencias=None):
         destino = nucleo.objetivo('evento', e['id'])
         s = nucleo.seleccionar(n, destino, 'programacion', candidatas=evidencias)
         agenda = nucleo.seleccionar(n, destino, 'agenda', candidatas=evidencias).get('valor') or {}
+        ronda = nucleo.seleccionar(n, destino, 'ronda', candidatas=evidencias).get('valor')
         p = s.get('valor') or {}
         c = p.get('cuando') or {}
         a, b = c.get('inicio') or {}, c.get('fin') or {}
@@ -81,7 +82,7 @@ def _eventos(n, proveedor, observado, unidad, referencias=None):
             'inicio': a.get('fecha'), 'fin': b.get('fecha'), 'precision': a.get('precision'),
             'estado': p.get('programacion'), 'conflicto': bool(s.get('conflicto')),
             'fecha_conservada': bool(conservada), 'rol': agenda.get('rol'),
-            'huella': nucleo.json_canonico(p)})
+            'huella': nucleo.json_canonico(p), **({'ronda': ronda} if ronda else {})})
     return salida
 
 
@@ -89,6 +90,16 @@ def _en_ventana(e, inicio, fin):
     if not e.get('inicio'):
         return True  # Sin fecha guardada no se sabe si se pidió: se sigue esperando.
     return (e.get('fin') or e['inicio']) >= inicio and e['inicio'] <= fin
+
+
+def _jornadas_pendientes(filas, inicio, fin):
+    """Un partido aplazado sigue en su jornada: se relee hasta que tenga fecha y se juegue.
+
+    Con fecha nueva dentro de la ventana también: su jornada ya no cae en ella y, sin
+    leerla, la cita contaría como ausente de la respuesta.
+    """
+    return sorted({e['ronda'] for e in filas if e.get('ronda')
+                   and (e.get('estado') == 'aplazado' or _en_ventana(e, inicio, fin))})
 
 
 def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, guardados=None, ventana=None):
@@ -170,8 +181,11 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
                     pagina, url = precargada
                     precargada = None
                 else:
+                    jornadas = (_jornadas_pendientes(repo.eventos(t['id']), inicio, fin)
+                                if proveedor.startswith('laliga-') else ())
                     pagina, url = proveedores.recoger(proveedor, temporada=t['seleccion'].get('year', t['referencia']),
-                        fecha=unidad if proveedores.modo(proveedor) == 'fecha' else None, inicio=inicio, fin=fin)
+                        fecha=unidad if proveedores.modo(proveedor) == 'fecha' else None, inicio=inicio, fin=fin,
+                        jornadas=jornadas)
                 alcance = proveedores.describir(proveedor, pagina, url)
                 proveedores.comprobar_temporada(t, alcance)
                 # Una respuesta puede repetir un torneo en varios días. Su lista
