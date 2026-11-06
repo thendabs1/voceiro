@@ -10,10 +10,10 @@
 //   c.clave                                      → identidad de la búsqueda
 //   paraPrensa(c)                                → texto para /buscar?raw=
 
-import { parseQuery, tokenizeQuery } from '../parser.js?v=cad17b084d';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from './texto.js?v=cad17b084d';
-import { resolverMedios, pasaMedios } from './filtros.js?v=cad17b084d';
-import { resolverVentana, pasaVentana, hayVentana } from './tiempo.js?v=cad17b084d';
+import { parseQuery, tokenizeQuery } from '../parser.js?v=f131ddf4b8';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from './texto.js?v=f131ddf4b8';
+import { resolverMedios, pasaMedios } from './filtros.js?v=f131ddf4b8';
+import { resolverVentana, pasaVentana, hayVentana } from './tiempo.js?v=f131ddf4b8';
 
 const ORDENES = new Set(['recientes', 'antiguos', 'relevancia']);
 
