@@ -48,7 +48,7 @@ function api(u){
       const categorias = { cultura: { citas: 25, programas: 1, en_curso: 4 } }, competiciones = { wta: { citas: 0, programas: 0, en_curso: 2 } };
       if (d === '2026-10-27'){
         categorias.deportes = { citas: 0, programas: 0, en_curso: 1 };
-        Object.assign(competiciones, { nba: { citas: 9, programas: 0, en_curso: 0 }, f1: { citas: 0, programas: 1, en_curso: 0 }, atp: { citas: 1, programas: 0, en_curso: 0 } });
+        Object.assign(competiciones, { nba: { citas: 13, programas: 0, en_curso: 0 }, f1: { citas: 0, programas: 1, en_curso: 0 }, atp: { citas: 1, programas: 0, en_curso: 0 } });
       }
       dias.push({ dia: d, cantidad: 30, citas: 25, programas: 1, en_curso: 4, categorias, competiciones, chips: 26, muestras: [
         tarjeta('A' + d, d, { hora: '17:00', formatos: ['concierto'], precio: 'gratis', categoria: 'cultura' }), tarjeta('B' + d, d), tarjeta('C' + d, d)].slice(0, n) });
@@ -488,8 +488,8 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   const html = c.api.calContenido();
   // El 27: F1 primero, NBA con sus partidos, ATP y WTA, todas sin «+N» y con el color de su deporte. Sin puntos ni leyenda.
   const celda = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
-  assert.match(celda, /aria-label="martes, 27 de octubre: [^"]*F1, NBA · 9 partidos, ATP · 1 partido, WTA"/);
-  assert.match(celda, /<span class="cal-marca cal-dep cal-dep-motor"[^>]*>F1<\/span><span class="cal-marca cal-dep cal-dep-baloncesto"[^>]*>NBA 9<\/span><span class="cal-marca cal-dep cal-dep-tenis"[^>]*>ATP<\/span><span class="cal-marca cal-dep cal-dep-tenis"[^>]*>WTA<\/span>/);
+  assert.match(celda, /aria-label="martes, 27 de octubre: [^"]*F1, NBA · 13 partidos, ATP · 1 partido, WTA"/);
+  assert.match(celda, /<span class="cal-marca cal-dep cal-dep-motor"[^>]*>F1<\/span><span class="cal-marca cal-dep cal-dep-baloncesto"[^>]*>NBA 13<\/span><span class="cal-marca cal-dep cal-dep-tenis"[^>]*>ATP<\/span><span class="cal-marca cal-dep cal-dep-tenis"[^>]*>WTA<\/span>/);
   assert.doesNotMatch(celda, /cal-marcas-mas/);
   // Pasadas cinco, el «+N» que el CSS solo enseña en móvil.
   const seis = ['f1', 'motogp', 'primera', 'segunda', 'nba', 'atp'].map(x => ({ c: x, texto: x, nombre: x }));
@@ -498,7 +498,7 @@ test('Deportes abre el mes con marcas por competición y «Este mes en deportes�
   // El bloque: partidos por liga, programación parcial y los torneos (cuatro y «y 2 más»).
   assert.match(html, /aria-expanded="true">▾ Próximas semanas en deportes/);
   assert.match(html, /data-valor="f1"[^>]*>F1<\/button>[\s\S]*?GP de México/);
-  assert.match(html, /data-valor="nba"[^>]*>NBA<\/button>\s*<span class="cal-nota">9 partidos<\/span><span class="cal-nota">· programación parcial/);
+  assert.match(html, /data-valor="nba"[^>]*>NBA<\/button>\s*<span class="cal-nota">13 partidos<\/span><span class="cal-nota">· programación parcial/);
   assert.match(html, /Torneo 3[\s\S]*y 2 más/);
   // Tocar una competición del bloque deja solo su capa.
   await c.click('solo', 'nba');
@@ -560,15 +560,84 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   assert.deepEqual([c.resumen().get('territorio'), c.resumen().get('q')], ['es:provincia:36', null]);
 });
 
-test('en Deportes, el GP va arriba de cada día suyo como «todo el día»', async () => {
-  const c = contexto();
+// GP con programa: sesiones reales y su carrera como chip del día, igual que la API.
+const sesionGp = (tipo, dia, hora) => ({ ...tarjeta('s' + tipo, dia, { hora }), agenda: { rol: 'sesion', tipo_sesion: tipo } });
+const conProgramaGp = (programa, { fallo = false } = {}) => u => {
+  const r = api(u);
+  if (u.pathname === '/calendario/resumen') return { ...r, barras: r.barras?.map(b => ({ ...b, tiene_programa: true })) };
+  if (u.pathname.startsWith('/calendario/eventos/')) return fallo ? new Response('{}', { status: 500 }) : { ...r, evento: { ...r.evento, nombres: { es: 'GP de México' }, programa } };
+  if (u.searchParams.get('chips')) return { ...META, siguiente: null, eventos: u.searchParams.get('desde') === '2026-10-31' ? [{ ...tarjeta('GP de México', '2026-10-31', { hora_muestra: '20:00', competiciones: ['f1'] }), padre: { es: 'GP de México' }, nombres: { es: 'Carrera' }, tipo_sesion: 'Race' }] : [] };
+  return r;
+};
+const diaDeportes = (c, dia) => c.api.calContenido().match(new RegExp(`<section class="cal-dia[^"]*" id="cal-dia-${dia}"[\\s\\S]*?</section>`))[0];
+
+test('en Deportes, cada día del GP lleva sus sesiones con su hora y nunca «todo el día»', async () => {
+  const c = contexto({ responder: conProgramaGp([sesionGp('FP1', '2026-10-30', '15:30'), sesionGp('Race', '2026-10-31', '19:00'), sesionGp('Qualifying', '2026-10-31', '23:30')]) });
   await c.deportes();
   assert.equal(c.resumen().get('barras'), '1');
+  // Antes de verlo, sin pedir la ficha.
+  assert.match(diaDeportes(c, '2026-10-31'), /GP de México[\s\S]*Cargando/);
+  assert.equal(c.pedidas.filter(u => u.pathname.startsWith('/calendario/eventos/')).length, 0);
+  await c.click('grupo', '2026-10-31|motor', { abierto: 'false' });
+  await esperar();
+  const html = diaDeportes(c, '2026-10-31');
+  assert.doesNotMatch(html, /cal-todo-dia|Todo el día/);
+  // Hora de Madrid; la clasificación de las 23:30 UTC cae en el día siguiente.
+  assert.match(html, /F1 · GP de México[\s\S]*?<span class="cal-hora">20:00<\/span><span class="cal-cita-cuerpo">Carrera<\/span>/);
+  assert.doesNotMatch(html, /Clasificación/);
+  assert.match(diaDeportes(c, '2026-10-30'), /16:30<\/span><span class="cal-cita-cuerpo">Libres 1/);
+  // La carrera del día va con su GP, no además como cita; el rótulo se despliega.
+  assert.equal((html.match(/Carrera/g) || []).length, 1);
+  assert.match(html, /data-valor="2026-10-31~\*~GP de México"/);
+  // La ficha se pide una vez, aunque se vean más días.
+  const pedidas = c.pedidas.filter(u => u.pathname.startsWith('/calendario/eventos/')).length;
+  await c.click('grupo', '2026-10-30|motor', { abierto: 'false' });
+  await esperar();
+  assert.equal(pedidas, 1);
+  assert.equal(c.pedidas.filter(u => u.pathname.startsWith('/calendario/eventos/')).length, 1);
+});
+
+test('en Deportes, si la ficha del GP falla la carrera sigue como cita y el día dice cuál es', async () => {
+  const c = contexto({ responder: conProgramaGp([], { fallo: true }) });
+  await c.deportes();
+  await c.click('grupo', '2026-10-31|motor', { abierto: 'false' });
+  await esperar();
+  const html = diaDeportes(c, '2026-10-31');
+  assert.match(html, /Día 2 de 3/);
+  assert.match(html, /<span class="cal-hora">20:00<\/span>[\s\S]*?>Carrera<\/button>/);
+  assert.doesNotMatch(html, /cal-todo-dia|Cargando/);
+});
+
+test('en Deportes, el rally sin sesiones sale en sus días con su sede; en la agenda sigue fuera', async () => {
+  const rally = { ...tarjeta('Rally Saudi Arabia', '2026-10-30', { presentacion: 'prolongada', competiciones: ['wrc'], categoria: 'deportes' }),
+    lugar: { nombre: 'Jeddah', municipio: 'Jeddah' }, programacion: { valor: { cuando: { inicio: extremo('2026-10-30'), fin: extremo('2026-11-01') } } }, desde: '2026-10-30', hasta: '2026-11-02' };
+  const c = contexto({ responder: u => { const r = api(u); return u.pathname === '/calendario/resumen' ? { ...r, barras: r.barras && [rally] } : r; } });
+  await c.deportes();
+  const html = diaDeportes(c, '2026-10-30');
+  assert.match(html, /WRC · Rally de Arabia Saudí[\s\S]*?Día 1 de 3 · Jeddah/);
+  assert.match(html, /data-valor="2026-10-30\|motor" data-abierto="true"[\s\S]*?cal-grupo-cuentas">WRC</);
+  assert.doesNotMatch(html, /cal-todo-dia/);
+  assert.equal(c.pedidas.filter(u => u.pathname.startsWith('/calendario/eventos/')).length, 0);
+});
+
+test('en Deportes, un partido es una línea: el estadio queda al desplegarlo y cada liga va bajo su rótulo', async () => {
+  const partido = (id, c, hora) => tarjeta(id, '2026-10-27', { hora, clase: 'encuentro', competiciones: [c], categoria: 'deportes' });
+  const c = contexto({ responder: u => u.pathname === '/calendario/eventos' && u.searchParams.get('chips')
+    ? { ...META, siguiente: null, eventos: [partido('Liga F', 'liga-f', '12:00'), partido('Sevilla — Alavés', 'primera', '21:00'), tarjeta('Cros', '2026-10-27', { competiciones: ['atletismo-rfea'] })] } : api(u) });
+  await c.deportes();
+  await c.click('grupo', '2026-10-27|baloncesto', { abierto: 'false' });
+  await esperar();
   const html = c.api.calContenido();
-  assert.match(html, /id="cal-dia-2026-10-31"[^>]*><h2>[\s\S]*?data-valor="2026-10-31\|motor"[\s\S]*?<article class="cal-cita cal-todo-dia"><span class="cal-hora cal-dep cal-dep-motor">Todo el día<\/span>[\s\S]*?GP de México[\s\S]*?Día 2 de 3/);
-  assert.equal((html.match(/cal-todo-dia/g) || []).length, 2);
-  // La fila «todo el día» es un desplegable propio.
-  assert.match(html, /data-valor="2026-10-30~\*~GP de México"/);
+  assert.match(html, /<article class="cal-cita cal-fila"><span class="cal-hora">22:00/);
+  // Primero la liga masculina por el orden del deporte, no por la hora.
+  assert.ok(html.indexOf('Sevilla') < html.indexOf('>Liga F<'));
+  assert.match(html, /<p class="cal-competicion">/);
+  assert.doesNotMatch(html.match(/<article class="cal-cita cal-fila">[\s\S]*?<\/article>/)[0], /Sala|cal-etiqueta/);
+  // Lo que no es un partido conserva su sede.
+  assert.match(html, /Cros[\s\S]*?Sala/);
+  c.api.s.detalles.set('Sevilla — Alavés', { ...tarjeta('Sevilla — Alavés', '2026-10-27'), participaciones: [], enlaces: [], fuentes: [] });
+  c.api.s.desplegado = '2026-10-27~~Sevilla — Alavés';
+  assert.match(c.api.calContenido(), /cal-desplegado[\s\S]*?Sala/);
 });
 
 test('en Deportes, el día va por deporte: cuentas del resumen sin pedir nada; abrir un grupo pide el día entero', async () => {
@@ -582,7 +651,7 @@ test('en Deportes, el día va por deporte: cuentas del resumen sin pedir nada; a
   // Sin pedir: el día espera a verse; los grupos llevan las cuentas del resumen.
   assert.equal(c.pedidas.filter(u => u.pathname === '/calendario/eventos').length, 0);
   assert.match(html, /data-cargar="2026-10-27"/);
-  assert.match(html, /data-valor="2026-10-27\|baloncesto" data-abierto="false" aria-expanded="false">\s*<span class="cal-grupo-nombre">▸ Baloncesto<\/span> <span class="cal-grupo-cuentas">NBA 9<\/span>/);
+  assert.match(html, /data-valor="2026-10-27\|baloncesto" data-abierto="false" aria-expanded="false">\s*<span class="cal-grupo-nombre">▸ Baloncesto<\/span> <span class="cal-grupo-cuentas">NBA 13<\/span>/);
   // Pocas citas: abierto de entrada (cargando hasta que llegue el día).
   assert.match(html, /data-valor="2026-10-27\|motor" data-abierto="true"[\s\S]*?▾ Motor[\s\S]*?F1<\/span>[\s\S]*?Cargando/);
   assert.ok(html.indexOf('|baloncesto') < html.indexOf('|motor') && html.indexOf('|motor') < html.indexOf('|tenis'));
@@ -593,8 +662,8 @@ test('en Deportes, el día va por deporte: cuentas del resumen sin pedir nada; a
   html = dia();
   assert.doesNotMatch(html, /data-cargar|Cargando/);
   assert.match(html, /\|baloncesto" data-abierto="true"[\s\S]*?Lakers — Celtics[\s\S]*?\|motor"[\s\S]*?\|tenis"[\s\S]*?Sinner — Alcaraz/);
-  // Con una sola competición, el grupo esconde las etiquetas repetidas.
-  assert.match(html, /class="cal-grupo cal-dep-tenis cal-grupo-una"/);
+  // Con una sola competición, el grupo ya la dice: ni rótulo ni etiquetas.
+  assert.doesNotMatch(html, /cal-competicion|cal-etiqueta/);
   const pedidas = c.pedidas.length;
   await c.click('grupo', '2026-10-27|baloncesto', { abierto: 'true' });
   assert.equal(c.pedidas.length, pedidas);
@@ -771,7 +840,7 @@ test('mes de Deportes en ancho: marcas por competición, todas, y el motor en ba
   // El 27, todas sus competiciones por deporte (baloncesto, motor, tenis), con su nombre al pasar;
   // la semana crece lo que haga falta (sin alto fijo ni «+N»).
   const dia = html.match(/data-valor="2026-10-27"[\s\S]*?<\/button>/)[0];
-  assert.match(dia, /<span class="cal-marcas" aria-hidden="true"><span class="cal-marca cal-dep cal-dep-baloncesto" title="NBA · 9 partidos">NBA 9<\/span><span class="cal-marca cal-dep cal-dep-motor" title="F1">F1<\/span><span class="cal-marca cal-dep cal-dep-tenis" title="ATP · 1 partido">ATP<\/span><span class="cal-marca cal-dep cal-dep-tenis" title="WTA">WTA<\/span><\/span>/);
+  assert.match(dia, /<span class="cal-marcas" aria-hidden="true"><span class="cal-marca cal-dep cal-dep-baloncesto" title="NBA · 13 partidos">NBA 13<\/span><span class="cal-marca cal-dep cal-dep-motor" title="F1">F1<\/span><span class="cal-marca cal-dep cal-dep-tenis" title="ATP · 1 partido">ATP<\/span><span class="cal-marca cal-dep cal-dep-tenis" title="WTA">WTA<\/span><\/span>/);
   assert.doesNotMatch(html, /cal-mg-chip|cal-mg-mas|;height:/);
   // La semana mide lo que lleva: sin alto fijo ni mínimo.
   assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:24px">/);
