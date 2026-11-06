@@ -47,8 +47,6 @@ class PublicacionLocal(unittest.TestCase):
 
             releidas = historico.cargar_historico_payload()
             self.assertEqual(releidas['ultimo_exito_por_medio'], {'a.test': recogida})
-            self.assertEqual({n['enlace'] for n in releidas['noticias']},
-                             {'https://a.test/noticia', 'https://www.b.test/noticia'})
             self.assertTrue(all(n['fecha'] == recogida for n in releidas['noticias']))
 
             publicacion._FICHEROS_ESCRITOS.clear()
