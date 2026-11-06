@@ -17,11 +17,11 @@ test('todos los alias del registro crean chips de consulta conservando texto y r
 
 test('los tipos tienen prefijos en los cinco idiomas de la interfaz', () => {
   const idiomas = {
-    es:['libro','autor','película','serie','clasificación','resultados','partido','contexto'],
-    gl:['libro','autor','filme','serie','clasificación','resultados','partido','contexto'],
-    ca:['llibre','autor','pel·lícula','sèrie','classificació','resultats','partit','context'],
-    eu:['liburua','egilea','filma','telesaila','sailkapena','emaitzak','partida','testuingurua'],
-    en:['book','author','movie','series','standings','results','match','wiki'],
+    es:['libro','autor','película','serie','clasificación','resultados','partido','deportes','contexto'],
+    gl:['libro','autor','filme','serie','clasificación','resultados','partido','deportes','contexto'],
+    ca:['llibre','autor','pel·lícula','sèrie','classificació','resultats','partit','esports','context'],
+    eu:['liburua','egilea','filma','telesaila','sailkapena','emaitzak','partida','kirolak','testuingurua'],
+    en:['book','author','movie','series','standings','results','match','sports','wiki'],
   };
   for (const prefijos of Object.values(idiomas)) assert.deepEqual(
     prefijos.map(p=>parseQuery(`${p}:dato`).consultas[0].tipo),Object.keys(CONSULTAS));
@@ -73,7 +73,7 @@ test('las consultas deportivas toman un código: lo de detrás es texto de notic
 });
 
 test('sin colisiones con calendario; las equivalencias ESPN son circuitos existentes', () => {
-  for (const p of Object.keys(PREFIJOS_CONSULTAS)) assert.ok(!Object.hasOwn(AMBITOS,p),p);
+  for (const p of Object.keys(PREFIJOS_CONSULTAS).filter(p=>p!=="deportes")) assert.ok(!Object.hasOwn(AMBITOS,p),p);
   for (const c of Object.keys(ESPN)) assert.equal(AMBITOS[c].codigo,c);
   assert.deepEqual(leerConsultaCalendario('primera:agenda').ambitos,['primera']);
 });

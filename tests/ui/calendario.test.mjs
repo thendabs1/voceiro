@@ -1491,7 +1491,7 @@ test('Deportes enlaza la vista general; con una competición, sus resultados y s
   const c = contexto();
   c.accionesCompeticion = () => [{ tipo: 'resultados', texto: 'Resultados', orden: 'resultados:nba' }, { tipo: 'calendario', texto: 'Calendario', orden: 'calendario:nba' }];
   runInContext("CALENDARIO.capas = new Set(['primera', 'nba'])", c);
-  assert.match(runInContext('calEnlacesDeportes()', c), /data-valor="resultados:"/);
+  assert.match(runInContext('calEnlacesDeportes()', c), /data-valor="deportes:"/);
   runInContext("CALENDARIO.capas = new Set(['nba'])", c);
   const uno = runInContext('calEnlacesDeportes()', c);
   assert.match(uno, /data-valor="resultados:nba"/);

@@ -43,7 +43,7 @@ const idiomaConsulta = () => {
 const nombreConsulta = tipo => t('con' + tipo[0].toUpperCase() + tipo.slice(1));
 // Singular y plural: «clave1» para uno.
 const tn = (clave, n) => t(n === 1 ? clave + '1' : clave, { n });
-const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido'].includes(tipo);
+const esDeporteConsulta = tipo => ['clasificacion', 'resultados', 'partido', 'deportes'].includes(tipo);
 const codigoDeporte = (tipo, codigo) => tipo === 'resultados' && codigo === 'euroliga' || admiteConsultaESPN(tipo, codigo) || admiteConsultaMotor(tipo, codigo);
 const idResultadosConsulta = id => id === 'euroliga:resultados' || id.startsWith('espn:resultados/') || idResultadosMotorValido(id);
 const idPartidoConsultaValido = id => {
@@ -276,8 +276,8 @@ function pulsarConsulta(ev){
     case 'orden':
       escribirAcceso(b.dataset.orden);
       // Después: activar la consulta limpia el foco pendiente.
-      if (/^(resultados|clasificacion):/.test(b.dataset.orden)){
-        p.enfocar = '.dep-tabs [aria-current], .dep-accion';
+      if (/^(resultados|clasificacion|deportes):/.test(b.dataset.orden)){
+        p.enfocar = '.dep-tabs [aria-current], .dep-nombre';
         if (p.estado !== 'cargando') pintarConsulta();
       }
       break;
@@ -358,7 +358,7 @@ function htmlConsulta(){
     : '';
   const tipo = idSesionMotorValido(p.id) ? 'motorSesion' : idPartidoConsultaValido(p.id) ? 'partido' : c.tipo;
   const competicion = competicionConsulta();
-  const vista = p.estado === 'ayuda' && ['resultados', 'clasificacion'].includes(c.tipo);
+  const vista = p.estado === 'ayuda' && c.tipo === 'deportes';
   const rotulo = competicion ? htmlCabeceraCompeticion(competicion, c.tipo) : volver
     || `<span class="consulta-tipo">${escapeHtml(vista ? t('calDeportesTitulo') : nombreConsulta(tipo))}</span>`;
   return `<div class="consulta-cab">${rotulo}${cambiar}

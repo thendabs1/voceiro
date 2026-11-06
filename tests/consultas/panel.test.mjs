@@ -383,7 +383,7 @@ test('clasificación de Champions: fase liga, 36 equipos y DG solo si hay dato; 
   actualizar('clasificacion:copa-del-rey'); await esperar();
   assert.equal(pedidas.length, 0);
   assert.doesNotMatch(panel.innerHTML, /data-orden="clasificacion:(copa-del-rey|liga-f)"/);
-  assert.match(panel.innerHTML, /data-orden="clasificacion:champions"[^>]*data-resaltada/);
+  assert.match(panel.innerHTML, /class="dep-nombre"[^>]*data-orden="clasificacion:champions"/);
   actualizar('clasificacion:champions'); await esperar();
   assert.match(panel.innerHTML, /Champions/); assert.match(panel.innerHTML, /Fase liga/);
   assert.match(panel.innerHTML, /<abbr title="Diferencia de goles">DG<\/abbr>/);
@@ -648,18 +648,19 @@ test('volver desde un partido pendiente impide que su respuesta tardía sustituy
 
 test('vista general: bloques por deporte, solo lo que existe y sin peticiones de consulta', async () => {
   const { panel, pedidas, actualizar } = contexto({ responder: () => assert.fail('no debe pedir') });
-  actualizar('resultados:'); await esperar();
+  actualizar('deportes:'); await esperar();
   assert.deepEqual(pedidas, []);
   assert.match(panel.innerHTML, /consulta-tipo">Deportes</);
   assert.deepEqual([...panel.innerHTML.matchAll(/<summary>([^<]+)/g)].map(m => m[1]), ['Fútbol', 'Tenis', 'Baloncesto', 'Motor', 'Atletismo']);
   // Euroliga tiene resultados y no calendario; FEB, al revés.
   assert.match(panel.innerHTML, /data-orden="resultados:euroliga"/);
   assert.doesNotMatch(panel.innerHTML, /data-orden="calendario:euroliga"|data-orden="resultados:feb-endesa"/);
-  assert.match(panel.innerHTML, /LaLiga<\/span>/);
-  assert.match(panel.innerHTML, /data-orden="resultados:primera"[^>]*data-resaltada/);
+  assert.match(panel.innerHTML, /data-orden="resultados:primera"[^>]*>LaLiga <small>· Resultados/);
+  // Con el prefijo, el nombre lo ejecuta y solo salen las que lo tienen.
   actualizar('clasificacion:');
-  assert.match(panel.innerHTML, /data-orden="clasificacion:primera"[^>]*data-resaltada/);
-  assert.match(panel.innerHTML, /data-orden="resultados:primera"/);
+  assert.match(panel.innerHTML, /class="dep-nombre"[^>]*data-orden="clasificacion:primera"[^>]*>LaLiga</);
+  assert.match(panel.innerHTML, /class="dep-accion"[^>]*data-orden="resultados:primera"/);
+  assert.doesNotMatch(panel.innerHTML, /copa-del-rey/);
 });
 
 test('sin citas publicadas no se ofrece su calendario, y los resultados siguen', async () => {
@@ -674,7 +675,7 @@ test('sin citas publicadas no se ofrece su calendario, y los resultados siguen',
 test('una competición enlaza sus secciones, las de su deporte y la vista general', async () => {
   const { panel, entrada, actualizar, pulsar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
   actualizar('resultados:primera'); await esperar();
-  assert.match(panel.innerHTML, /data-orden="resultados:"[^>]*>‹ Deportes/);
+  assert.match(panel.innerHTML, /data-orden="deportes:"[^>]*>‹ Deportes/);
   assert.match(panel.innerHTML, /data-orden="resultados:primera" aria-current="page">Resultados/);
   assert.match(panel.innerHTML, /data-orden="clasificacion:primera">Clasificación/);
   assert.match(panel.innerHTML, /data-orden="primera:noticias">Noticias/);

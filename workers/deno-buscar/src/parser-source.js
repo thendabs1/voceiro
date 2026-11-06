@@ -32,6 +32,7 @@ const CONSULTAS = {
   clasificacion: ['clasificacion', 'clasificación', 'clasificacións', 'classificacio', 'classificació', 'sailkapena', 'standings'],
   resultados: ['resultados', 'resultats', 'emaitzak', 'results'],
   partido: ['partido', 'partit', 'partida', 'match'],
+  deportes: ['deportes', 'esports', 'kirolak', 'sports'],
   contexto: ['contexto', 'context', 'testuingurua', 'wiki'],
 };
 
@@ -85,7 +86,7 @@ export function destinoResultados(tarjeta, dia) {
 
 
 // Consultas cuyo valor es un código de una palabra, no un título.
-const CONSULTAS_DE_CODIGO = new Set(['clasificacion', 'resultados', 'partido']);
+const CONSULTAS_DE_CODIGO = new Set(['clasificacion', 'resultados', 'partido', 'deportes']);
 
 const PREFIX_ALIASES = {
   ...Object.fromEntries(Object.keys(PREFIJOS_CONSULTAS).map(p => [p, 'consulta'])),

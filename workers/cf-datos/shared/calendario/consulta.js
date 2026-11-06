@@ -22,7 +22,6 @@ export const AMBITOS = {
   'atletismo-rfea': { codigo: 'atletismo-rfea', nombre: 'RFEA' },
   'atletismo-fga': { codigo: 'atletismo-fga', nombre: 'Galicia · FGA' },
   'atletismo-fca': { codigo: 'atletismo-fca', nombre: 'Cataluña · FCA' },
-  deportes: { tema: 'deportes' },
   cultura: { tema: 'cultura' },
   teatro: { tema: 'teatro' },
   musica: { tema: 'musica' },
@@ -37,6 +36,8 @@ export const AMBITOS = {
   'medio-ambiente': { tema: 'medio-ambiente' },
   gastronomia: { tema: 'gastronomia' },
   tecnologia: { tema: 'tecnologia' },
+  // Solo para deporte:deportes; deportes: abre la vista general.
+  deportes: { tema: 'deportes' },
   atp: { codigo: 'atp', noticias: ['ATP'] },
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
@@ -65,7 +66,7 @@ export function leerConsultaCalendario(raw, { tolerante = false } = {}){
   let activa = false, ignoradas = 0;
   for (const tk of tokenizeQuery(raw)){
     const p = normalize(tk.prefix), v = normalize(tk.text);
-    if (Object.hasOwn(AMBITOS, p)){
+    if (Object.hasOwn(AMBITOS, p) && p !== 'deportes'){
       activa = true; ambitos.add(p);
       if (v){
         if (Object.hasOwn(TIPOS, v)) tipos.add(TIPOS[v]);

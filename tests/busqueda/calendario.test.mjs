@@ -63,7 +63,9 @@ test('los ámbitos se suman sin duplicar eventos; circuitos, tema, fuente y text
   assert.deepEqual(ids('atp: wta:'), ['ATP final','WTA dobles']);
   assert.deepEqual(ids('tenis: atp:'), ['ATP final','WTA dobles']);
   assert.deepEqual(ids('tenis: circuito:wta'), ['WTA dobles']);
-  assert.deepEqual(ids('deportes:', { circuitos: ['atp','wta'] }), ['ATP final','WTA dobles']);
+  assert.deepEqual(ids('tenis:', { circuitos: ['atp','wta'] }), ['ATP final','WTA dobles']);
+  assert.deepEqual(ids('deporte:deportes', { circuitos: ['atp','wta'] }), ['ATP final','WTA dobles']);
+  assert.equal(leerConsultaCalendario('deportes:'), null);
   assert.deepEqual(ids('tenis: dobles'), ['WTA dobles']);
   assert.deepEqual(ids('tenis:', { temas: ['automovilismo'] }), []);
   assert.deepEqual(ids('tenis:', { fuente: 'otra' }), []);

@@ -27,12 +27,12 @@ function pintarAccesos(){
   const fila = (atributo, texto) => `<li><button type="button" ${atributo}>${calEsc(texto)}</button></li>`;
   // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
   const sigo = calPreferencias()?.competiciones || [];
-  const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c)).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
+  const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c, contextoDeportes(PUNTUAL.activa?.tipo))).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
   const noticias = deportesSeguidos().map(([k, cs]) => fila(`data-orden="${calEsc(cs.map(c => c + ':').join(' '))}"`, t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) })));
   panel.innerHTML = `<div class="accesos-cab"><h2 id="accesos-titulo" tabindex="-1">${calEsc(t('accTitulo'))}</h2>
     <button type="button" class="accesos-cerrar" data-cerrar aria-label="${calEsc(t('calCerrar'))}">×</button></div>
     <div class="accesos-filas">${primeras.join('')}</div>
-    <ul class="accesos-lista">${[...noticias, fila('data-orden="resultados:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
+    <ul class="accesos-lista">${[...noticias, fila('data-orden="deportes:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
     ${DEPORTES_DISP.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
 }
 
@@ -44,7 +44,7 @@ function abrirAccesos(){
   $('#buscar-accesos').setAttribute('aria-expanded', 'true');
   pedirDisponibilidadDeportes();
   pintarAccesos();
-  panel.querySelector('.dep-accion, .accesos-lista button')?.focus({ preventScroll: true });
+  panel.querySelector('.dep-nombre, .accesos-lista button')?.focus({ preventScroll: true });
 }
 function cerrarAccesos(volver = true){
   if (!ACCESOS.abierto) return;

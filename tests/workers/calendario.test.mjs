@@ -212,7 +212,7 @@ test('total: citas distintas con los filtros de la lista, solo en la primera pá
 
 test('semántica del parser, ámbitos, circuitos y filtros coincide con selección local', async t => {
   const b = base(); t.after(() => b.db.close());
-  for (const [q, texto] of [['cultura:calendario', '-prob'], ['deportes:agenda', 'musica'],
+  for (const [q, texto] of [['cultura:calendario', '-prob'], ['deporte:deportes agenda', 'musica'],
     ['circuito:wta', 'coru'], ['', '"teatro de"'], ['', '-teatro']]) {
     const orden = leerConsultaCalendario(q) || {};
     let esperado = seleccionCalendario(b.datos, orden, { texto }).eventos.filter(e => e.id !== '003');

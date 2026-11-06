@@ -1,13 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════
    DEPORTES: UNA SOLA LISTA PARA TODAS LAS ENTRADAS
    Competiciones por deporte y lo que ofrece cada una. De aquí salen la
-   vista general (resultados: sin competición), el ▾, las pestañas de una
+   vista general (deportes:, resultados: sin competición), el ▾, las pestañas de una
    competición y las sugerencias. Cada enlace escribe su orden en la barra.
    ═══════════════════════════════════════════════════════════════ */
 // El orden de los bloques equilibra las tres columnas de la vista general.
 const DEPORTES_ORDEN = ['futbol', 'tenis', 'baloncesto', 'motor', 'atletismo'];
-// [orden, texto, columna de la matriz]; lo que no existe deja su hueco.
-const DEPORTES_ACCIONES = [['resultados', 'conResultados', 2], ['calendario', 'calTitulo', 3], ['clasificacion', 'conClasificacion', 4]];
+const DEPORTES_ACCIONES = [['resultados', 'conResultados'], ['calendario', 'calTitulo'], ['clasificacion', 'conClasificacion']];
 const DEPORTES_DISP = { circuitos: null, cargando: false };
 
 // Competiciones con algo publicado: una petición al abrir la primera entrada;
@@ -46,24 +45,29 @@ function accionesCompeticion(c, { noticias = false } = {}){
   const hay = { resultados: codigoDeporte('resultados', c), clasificacion: codigoDeporte('clasificacion', c),
     calendario: Object.hasOwn(AMBITOS, c) && accesoHay(c) };
   const acciones = DEPORTES_ACCIONES.filter(([tipo]) => hay[tipo])
-    .map(([tipo, texto, columna]) => ({ tipo, texto: t(texto), columna, orden: `${tipo}:${c}` }));
+    .map(([tipo, texto]) => ({ tipo, texto: t(texto), orden: `${tipo}:${c}` }));
   return noticias && AMBITOS[c]?.noticias ? [...acciones, { tipo: 'noticias', texto: t('conNoticias'), orden: `${c}:noticias` }] : acciones;
 }
 
-// Una fila de la matriz, también en el ▾.
-function filaCompeticion(c, resaltada = ''){
+// El nombre hace lo que se pidió; lo demás queda al lado. Con `contexto`
+// (resultados:, clasificacion:) solo salen las competiciones que lo tienen y el
+// nombre basta; sin él, abre lo primero que haya y escribe adónde lleva.
+function filaCompeticion(c, contexto = ''){
   const acciones = accionesCompeticion(c), nombre = nombreCompeticionCorto(c);
-  if (!acciones.length) return '';
-  return `<div class="dep-fila" data-desde="${acciones[0].columna}"><span class="dep-nombre">${escapeHtml(nombre)}</span>${acciones.map(a =>
-    `<button type="button" class="dep-accion dep-col-${a.columna}" data-accion="orden" data-orden="${escapeHtml(a.orden)}"${a.tipo === resaltada ? ' data-resaltada="1"' : ''} aria-label="${escapeHtml(`${nombre}: ${a.texto}`)}">${escapeHtml(a.texto)}</button>`).join('')}</div>`;
+  const principal = contexto ? acciones.find(a => a.tipo === contexto) : acciones[0];
+  if (!principal) return '';
+  const boton = (a, clase, html) => `<button type="button" class="${clase}" data-accion="orden" data-orden="${escapeHtml(a.orden)}" aria-label="${escapeHtml(`${nombre}: ${a.texto}`)}">${html}</button>`;
+  const otras = acciones.filter(a => a !== principal).map(a => boton(a, 'dep-accion', escapeHtml(a.texto))).join('');
+  return `<div class="dep-fila">${boton(principal, 'dep-nombre', escapeHtml(nombre) + (contexto ? '' : ` <small>· ${escapeHtml(principal.texto)}</small>`))}${otras ? `<span class="dep-otras">${otras}</span>` : ''}</div>`;
 }
+const contextoDeportes = tipo => ['resultados', 'clasificacion'].includes(tipo) ? tipo : '';
 
 // Vista general: en pantalla ancha, todo a la vista; en móvil, plegada salvo lo
 // que sigo o, sin nada seguido, el primer bloque.
 function htmlVistaDeportes(tipo){
   const sigo = calPreferencias()?.competiciones || [];
   const estrecha = globalThis.matchMedia?.('(max-width: 600px)').matches;
-  const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, tipo)).join('') }))
+  const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, contextoDeportes(tipo))).join('') }))
     .filter(b => b.filas);
   return `<div class="dep-vista">${bloques.map((b, i) => {
     const abierto = !estrecha || b.cs.some(c => sigo.includes(c)) || (!sigo.length && i === 0);
@@ -82,7 +86,7 @@ function htmlCabeceraCompeticion(codigo, tipo){
   const boton = (orden, texto, actual, valorActual) => `<button type="button" data-accion="orden" data-orden="${escapeHtml(orden)}"${actual ? ` aria-current="${valorActual}"` : ''}>${escapeHtml(texto)}</button>`;
   const deporte = DEPORTES_ORDEN.find(k => competicionesDeporte(k).includes(codigo));
   const hermanas = competicionesDeporte(deporte).filter(c => codigoDeporte(tipo, c));
-  return `<nav class="dep-cab" aria-label="${escapeHtml(t('conSecciones'))}">${boton('resultados:', '‹ ' + t('calDeportesTitulo'))}
+  return `<nav class="dep-cab" aria-label="${escapeHtml(t('conSecciones'))}">${boton('deportes:', '‹ ' + t('calDeportesTitulo'))}
     <div class="dep-tabs">${accionesCompeticion(codigo, { noticias: true }).map(a => boton(a.orden, a.texto, a.tipo === tipo, 'page')).join('')}</div>
     ${hermanas.length > 1 ? `<div class="dep-hermanas ui-tira" role="group" aria-label="${escapeHtml(t('conOtrasCompeticiones'))}">${hermanas.map(c =>
       boton(`${tipo}:${c}`, nombreCompeticionCorto(c), c === codigo, 'true')).join('')}</div>` : ''}</nav>`;
