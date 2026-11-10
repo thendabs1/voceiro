@@ -125,7 +125,7 @@ competición, edición, actividad, equipo o persona.
 | NBA, WNBA | `espn-nba`, `espn-wnba` | — | partido |
 | LF Endesa, Primera FEB, LF Challenge | `feb-*` (competiciones 4, 1, 67) | — | partido |
 | Fórmula 1 | oficial F1 | `espn-f1` | GP con sesiones |
-| MotoGP | oficial MotoGP | — | GP con sesiones |
+| MotoGP, Moto2, Moto3 | oficial MotoGP (`motogp`, `moto2`, `moto3`) | — | GP con sesiones; Moto2 y Moto3, solo con sesiones suyas |
 | WRC | OCBlacktop | — | rally (cita continua) |
 
 El código de circuito (`circuitos=` en la API, `circuito:` y los ámbitos de
@@ -153,7 +153,7 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
   colección sin ninguna temporada reintenta con espera creciente.
 - **Cadencias** (`cadencias.py`, solo calendario): base de 72 h, 24 h si una
   cita empieza en los próximos 7 días o hay una incidencia real. Durante una
-  competición (inicio y fin incluidos), 24 h salvo F1, MotoGP y WRC: 6 h.
+  competición (inicio y fin incluidos), 24 h salvo F1, MotoGP, Moto2, Moto3 y WRC: 6 h.
   `programacion_pendiente` y `programacion_pendiente_conservada` no aceleran.
   Se restan 3 h al programar para absorber retrasos del cron; la cobertura de un
   día caduca a las 21 h, y a las 69 h si faltan más de 7 días, porque ESPN comparte

@@ -31,7 +31,7 @@ Reglas comunes:
 | LaLiga oficial (`laliga.com`) | Primera y Segunda | HTML con datos de la web | Sin licencia publicada | Principal de fútbol. Su `Canceled` es un aplazado: se relee su jornada hasta que tenga fecha y se juegue. |
 | F1 oficial (`api.formula1.com`) | F1 | API de la web con su clave pública de configuración | Sin licencia publicada | Principal de F1. Si cambia la web, se rompe la lectura de la clave. |
 | [FEB](https://baloncestoenvivo.feb.es/) | LF Endesa (4), Primera FEB (1), LF Challenge (67) | HTML; dos páginas por liga y pasada | Derechos reservados; sin robots.txt | Sin pabellón acreditado; hora local sin zona. El calendario sustituye horarios por marcadores en partidos jugados. |
-| [MotoGP oficial](https://www.motogp.com/en/calendar/2026) (`api.pulselive.motogp.com`) | MotoGP | JSON sin clave | Sin licencia publicada | GP y sesiones `type=SESSION` de la categoría MotoGP; `show_in_calendar=false` no cancela. |
+| [MotoGP oficial](https://www.motogp.com/en/calendar/2026) (`api.pulselive.motogp.com`) | MotoGP, Moto2, Moto3 | JSON sin clave | Sin licencia publicada | GP y sesiones `type=SESSION` de cada categoría, del mismo listado anual; Moto2 y Moto3 solo en los GP con sesiones suyas. `show_in_calendar=false` no cancela. |
 | [OCBlacktop](https://ocblacktop.com/api) | WRC | `x-api-key` desde servidor | Free: 7.500/mes, 60/min, no comercial; incluso un 400 consume | `/v1/wrc/seasons/{año}`: temporada completa en una petición. Tiene F1 y MotoGP con UUID propios. |
 
 ## Contrato de fuente
@@ -136,7 +136,7 @@ candidatos en vez de elegir uno.
 
 Implementados en deno-buscar: `/consulta` (candidatos) y `/consulta/ficha` (identidad) para Open Library, TMDB y Wikipedia + Wikidata, con caché, límite por IP y sin persistencia en base de datos.
 ESPN admite resultados por fecha y fichas de partido de Primera, Segunda, NBA, WNBA, Copa del Rey, Champions y Liga F; clasificación de Primera, Segunda, NBA, WNBA, F1 y la fase liga de Champions ([contrato](resultados-revision-2026-11-02.md)). Copa no tiene tabla. Caduca en 60 s en juego, 15 min para tablas y 1 h para resultados. Presupuesto por instancia: `ESPN_MAX_PETICIONES_DIA` (1000 por defecto) y Open Library a 1 petición/s; TMDB usa `TMDB_API_READ_ACCESS_TOKEN` y atribuye JustWatch.
-ATP y WTA salen de ESPN; Euroliga, de su listado oficial; F1, de OpenF1 (CC BY-NC-SA, uso no comercial, 30 peticiones/min), y MotoGP, de su API oficial, cada una con su atribución y presupuesto ([fichas](resultados-diseno.md#fichas-sin-local-ni-visitante)).
+ATP y WTA salen de ESPN; Euroliga, de su listado oficial; F1, de OpenF1 (CC BY-NC-SA, uso no comercial, 30 peticiones/min), y MotoGP, Moto2 y Moto3, de su API oficial, cada una con su atribución y presupuesto ([fichas](resultados-diseno.md#fichas-sin-local-ni-visitante)).
 Los prefijos de los cinco idiomas viven en `shared/consultas/registro.js`; la lista de ámbitos del calendario sigue separada, sin colisiones.
 Sin comillas, el valor de una consulta es el resto de la línea, aunque lleve «palabra:» (`pelicula:Misión: imposible`); los filtros van delante o se cierra el valor con comillas. El panel del front (`front/app/14-consultas.js`) pide candidatos y, al tocar uno, su ficha; las competiciones deportivas van directas a la ficha.
 

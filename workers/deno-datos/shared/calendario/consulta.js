@@ -42,6 +42,8 @@ export const AMBITOS = {
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
   motogp: { codigo: 'motogp', noticias: ['MotoGP'] },
+  moto2: { codigo: 'moto2', noticias: ['Moto2'] },
+  moto3: { codigo: 'moto3', noticias: ['Moto3'] },
   wrc: { codigo: 'wrc', noticias: ['WRC', 'Mundial de Rallies'] },
   // «LaLiga Hypermotion» es Segunda: no cuenta como Primera aunque empiece por LaLiga.
   primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'], noticiasNo: ['LaLiga Hypermotion'] },

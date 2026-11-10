@@ -89,7 +89,7 @@ Cada cita de hoy o anterior enlaza por `destinoResultados(tarjeta, dia)`
 (`shared/consultas/registro.js`) con el panel de ese día, no con el partido:
 `referencias_agenda` son identificadores del proveedor y la tarjeta solo publica
 los nuestros. Comprobado con datos reales en Primera, Segunda, Copa, Liga F,
-Champions, NBA, WNBA, ATP, WTA, F1 y MotoGP. Un enlace al partido sería un añadido
+Champions, NBA, WNBA, ATP, WTA, F1 y MotoGP; Moto2 y Moto3 usan el mismo panel. Un enlace al partido sería un añadido
 posterior.
 
 ## Noticias de una competición

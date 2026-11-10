@@ -515,7 +515,7 @@ class IncidenciasDeRespuesta(unittest.TestCase):
         # El programa de Brasil ya pasó y no falta; el GP de Abu Dabi sí.
         self.assertEqual(incidencias, [{'tipo': 'ausentes_en_respuesta', 'unidad': '2026',
                                         'recurso': 'calendario', 'eventos': ['abu']}])
-        for proveedor in ('motogp', 'ocblacktop-wrc'):
+        for proveedor in ('motogp', 'moto2', 'moto3', 'ocblacktop-wrc'):
             self.assertFalse(proveedores.limitado_a_ventana(proveedor, 'calendario'))
             self.assertFalse(proveedores.limitado_a_ventana(proveedor, 'programa:gp'))
 

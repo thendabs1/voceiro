@@ -13,7 +13,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from zoneinfo import ZoneInfo
 
-from agenda import almacen, deportes, espn, espn_tenis, lectura, motogp, nucleo, publicacion, recogida, tiempos
+from agenda import almacen, deportes, espn, espn_tenis, lectura, motogp, nucleo, proveedores, publicacion, recogida, tiempos
 from agenda.transicion import ampliar
 from calendario import main
 from test_agenda import construir, ficha
@@ -24,8 +24,16 @@ OBSERVADO = '2026-10-26T12:00:00+01:00'
 DESPUES = '2026-10-27T12:00:00+01:00'
 
 
+# Moto2 y Moto3 salen de la misma respuesta de MotoGP.
+ARCHIVOS = {'moto2': 'motogp', 'moto3': 'motogp'}
+
+
+def archivo(coleccion):
+    return MUESTRAS / (ARCHIVOS.get(coleccion, coleccion) + '.json')
+
+
 def muestra(coleccion):
-    return json.loads((MUESTRAS / (coleccion + '.json')).read_text())
+    return json.loads(archivo(coleccion).read_text())
 
 
 def importar(coleccion, datos=None, anterior=None, observado=OBSERVADO, url=None):
@@ -76,7 +84,7 @@ def mover_fechas(dato, zona=None):
 
 class Adaptadores(unittest.TestCase):
     def test_colecciones_con_publicacion_sin_resultados(self):
-        self.assertEqual(len(deportes.COLECCIONES), 15)
+        self.assertEqual(len(deportes.COLECCIONES), 17)
         tarjetas = {'espn-copa-del-rey': 3, 'feb-endesa': 2, 'feb-primera': 3, 'feb-challenge': 3, 'ocblacktop-wrc': 2}
         for coleccion in deportes.COLECCIONES:
             with self.subTest(coleccion=coleccion):
@@ -192,6 +200,29 @@ class Adaptadores(unittest.TestCase):
         self.assertEqual(len(p['eventos']), 1)
         self.assertNotIn('programa', p['eventos'][0])
 
+    def test_moto2_y_moto3_son_competiciones_propias_con_sus_sesiones(self):
+        motogp_ids = set(importar('motogp')['entidades'])
+        for coleccion, nombre in (('moto2', 'Moto2'), ('moto3', 'Moto3')):
+            with self.subTest(coleccion=coleccion):
+                n = importar(coleccion)
+                self.assertEqual(set(n['fuentes']), {coleccion})
+                self.assertFalse(motogp_ids & set(n['entidades']))
+                gp = publicacion.proyectar(n)['eventos'][0]
+                self.assertEqual({s['agenda']['tipo_sesion'] for s in gp['programa']},
+                                 {'FP1', 'PR', 'FP2', 'Q1', 'Q2', 'RAC'})
+                self.assertEqual(len(gp['programa']), 6)
+                pr = lectura.preparar(publicacion.proyectar(n, list(n['fuentes']), generado=OBSERVADO))
+                self.assertEqual({f[2] for f in pr['facetas'] if f[1] == 'circuito'}, {coleccion})
+                alcance = proveedores.describir(coleccion, [muestra(coleccion)])
+                self.assertTrue(alcance['programa_completo'])
+                # Sin sesiones de su categoría el GP no es suyo: ni se importa ni acredita temporada.
+                otra = muestra(coleccion)
+                otra['broadcasts'] = [b for b in otra['broadcasts'] if (b.get('category') or {}).get('name') != nombre]
+                self.assertFalse(publicacion.proyectar(importar(coleccion, otra))['eventos'])
+                with self.assertRaisesRegex(ValueError, nombre + ' no acredita'):
+                    proveedores.describir(coleccion, [otra])
+                self.assertEqual(len(publicacion.proyectar(importar('motogp', otra))['eventos']), 1)
+
     def test_wrc_intervalo_incluye_ultimo_dia_sin_inventar_horas(self):
         p = publicacion.proyectar(importar('ocblacktop-wrc'))
         e = next(e for e in p['eventos'] if 'Monte Carlo' in e['nombres']['und'])
@@ -288,12 +319,12 @@ class PersistenciaYTransporte(unittest.TestCase):
             db, salida = Path(carpeta) / 'agenda.sqlite', Path(carpeta) / 'nucleo.json'
             args = ['--db', str(db), '--exportar-nucleo', '--salida', str(salida)]
             for c in deportes.COLECCIONES:
-                args.extend(['--entrada-deporte', c + '=' + str(MUESTRAS / (c + '.json'))])
+                args.extend(['--entrada-deporte', c + '=' + str(archivo(c))])
             with patch('agenda.recogida.urlopen', side_effect=AssertionError('No debe consultar red')):
                 main(args)
                 with almacen.abrir(db) as conexion:
                     a = almacen.cargar(conexion)
-                self.assertEqual(len(a['nucleo']['fuentes']), 8)
+                self.assertEqual(len(a['nucleo']['fuentes']), 10)
                 self.assertFalse(a['nucleo']['resultados'])
                 self.assertFalse(a['nucleo']['clasificaciones'])
                 self.assertEqual(json.loads(salida.read_text()), a['nucleo'])

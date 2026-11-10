@@ -10,7 +10,9 @@ COLECCIONES = {
     'espn-liga-f': ('futbol', 'esp.w.1'),
     'espn-nba': ('baloncesto', 'nba'), 'espn-wnba': ('baloncesto', 'wnba'),
     'feb-endesa': ('feb', '4'), 'feb-primera': ('feb', '1'), 'feb-challenge': ('feb', '67'),
-    'espn-f1': ('f1', 'f1'), 'motogp': ('motogp', None), 'ocblacktop-wrc': ('wrc', None),
+    'espn-f1': ('f1', 'f1'), 'ocblacktop-wrc': ('wrc', None),
+    # Las tres categorías salen del mismo listado anual de MotoGP.
+    'motogp': ('motogp', 'motogp'), 'moto2': ('motogp', 'moto2'), 'moto3': ('motogp', 'moto3'),
 }
 
 
@@ -33,7 +35,7 @@ def importar(anterior, coleccion, pagina, observado, url=None, temporada=None):
     if deporte == 'f1':
         return espn_f1.importar(anterior, pagina, observado, url)
     if deporte == 'motogp':
-        return motogp.importar(anterior, pagina, observado, url, temporada)
+        return motogp.importar(anterior, pagina, observado, url, temporada, competicion=liga)
     return blacktop.importar(anterior, pagina, observado, url, temporada)
 
 
