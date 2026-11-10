@@ -6,7 +6,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from agenda import nucleo, oficial_f1, oficial_laliga, oficial_wta, operacion, publicacion
+from agenda import deporte, nucleo, oficial_f1, oficial_laliga, oficial_wta, operacion, publicacion
 
 
 MUESTRAS = Path(__file__).with_name('muestras_calendario') / 'oficiales'
@@ -142,7 +142,8 @@ class Formula1Oficial(unittest.TestCase):
             oficial_f1.leer_programa((MUESTRAS / 'f1-mexico-programa.html').read_text(), '1300', '2026')
 
     def test_alias_iana_acreditado_y_enlace_de_programa_restringido(self):
-        self.assertEqual(oficial_f1._zona('US/Central'), 'America/Chicago')
+        self.assertEqual(deporte.zona_iana('US/Central'), 'America/Chicago')
+        self.assertEqual(deporte.zona_iana('AMERICA/BUENOS_AIRES'), 'America/Argentina/Buenos_Aires')
         p = f1()
         gp = next(e for e in p['events'] if e['meetingKey'] == '1298')
         gp['url'] = 'https://ejemplo.invalid/en/racing/2026/mexico'
