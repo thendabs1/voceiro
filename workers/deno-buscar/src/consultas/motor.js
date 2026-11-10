@@ -5,7 +5,7 @@ const MOTOGP = 'https://api.pulselive.motogp.com/motogp/v1/results';
 const uuid = new RegExp(`^${UUID_MOTOR}$`);
 const lista = d => { if (!Array.isArray(d)) throw new Error('Motor: respuesta sin lista'); return d; };
 const url = (base, parametros) => `${base}?${new URLSearchParams(parametros)}`;
-// Los nombres se resuelven por temporada; Moto2 y Moto3 no son consultas públicas.
+// Los nombres de categoría se resuelven por temporada.
 // Un vacío puede dejar de serlo en minutos: guardarlo aquí alargaría el TTL de la ficha.
 const sinDatos = d => Array.isArray(d) ? !d.length : Array.isArray(d?.classification) && !d.classification.length;
 const CATEGORIAS = { motogp: 'MotoGP™', moto2: 'Moto2™', moto3: 'Moto3™' };
@@ -59,7 +59,7 @@ export function crearMotor({ pedir, ahora, abrirCache }) {
     const year = id.temporada || Number(fecha.slice(0, 4));
     const temporadas = lista(await recurso('motogp', `${MOTOGP}/seasons`, 86400));
     const temporada = temporadas.find(s => s.year === year && uuid.test(s.id));
-    const vacia = { ficha: { competicion: 'motogp', temporada: year, fecha, partidos: [], fuente: FUENTES_MOTOR.motogp }, vacio: true, ttl: 900 };
+    const vacia = { ficha: { competicion: id.competicion, temporada: year, fecha, partidos: [], fuente: FUENTES_MOTOR.motogp }, vacio: true, ttl: 900 };
     if (!temporada) { if (id.lista) return vacia; throw new Error('MotoGP: temporada no encontrada'); }
     const eventos = lista(await recurso('motogp', url(`${MOTOGP}/events`, { seasonUuid: temporada.id, isFinished: 'true' })));
     // Primero el intervalo de días del evento, nunca su hora de sesión como UTC.
@@ -77,7 +77,7 @@ export function crearMotor({ pedir, ahora, abrirCache }) {
             || !uuid.test(s.id) || !claveSesionMoto(s)) continue;
         // El prefijo es el día local publicado, sin aceptar el offset falso.
         if (id.lista ? s.date?.slice(0, 10) !== fecha : s.id !== id.sesion) continue;
-        bases.push(baseMoto(s, e, year));
+        bases.push(baseMoto(s, e, year, id.competicion));
       }
     }
     if (id.lista) return { ...vacia, ficha: { ...vacia.ficha, partidos: bases }, vacio: !bases.length };

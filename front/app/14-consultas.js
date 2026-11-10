@@ -13,7 +13,7 @@ const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
 const CONSULTA_DEPORTES = { primera: 'LaLiga', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
   'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', 'feb-endesa': 'LF Endesa', 'feb-challenge': 'LF Challenge',
-  f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
+  f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP', moto2: 'Moto2', moto3: 'Moto3' };
 const VISTAS_CONSULTA = {};
 const nombreDeporteConsulta = codigo => codigo === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[codigo] || codigo;
 const CONSULTA_EJEMPLOS = {

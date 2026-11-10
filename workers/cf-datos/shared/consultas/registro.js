@@ -41,8 +41,9 @@ export const CAPACIDADES_ESPN = {
 export const admiteConsultaESPN = (tipo, codigo) => Object.hasOwn(CAPACIDADES_ESPN, codigo)
   && CAPACIDADES_ESPN[codigo].includes(tipo);
 
-// Resultados por sesión; la clasificación F1 sigue en ESPN.
-export const MOTOR = { f1: 'openf1', motogp: 'motogp' };
+// Resultados por sesión; la clasificación F1 sigue en ESPN. Moto2 y Moto3 salen
+// de la misma API que MotoGP.
+export const MOTOR = { f1: 'openf1', motogp: 'motogp', moto2: 'motogp', moto3: 'motogp' };
 export const admiteConsultaMotor = (tipo, codigo) => tipo === 'resultados' && Object.hasOwn(MOTOR, codigo);
 
 // Panel de resultados de una tarjeta: su competición en el día que se mira. Sin

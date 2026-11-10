@@ -9,7 +9,7 @@ const evento = muestra('motogp-eventos')[0];
 const sesionMoto = muestra('motogp-sesiones').find(s => s.type === 'RAC');
 const idMoto = `motogp:sesion/2026/${evento.id}/${sesionMoto.id}`;
 const idF1 = 'openf1:sesion/2026/11404';
-function banco({ resultadoF1, carreraMoto } = {}) {
+function banco({ resultadoF1, carreraMoto, categoria = sesionMoto.category.id } = {}) {
   let tiempo = Date.parse('2026-11-06T12:00:00Z');
   const peticiones = [], guardadas = new Map(), pausas = [];
   const ahora = () => tiempo;
@@ -32,7 +32,9 @@ function banco({ resultadoF1, carreraMoto } = {}) {
       if (['categories', 'events'].includes(ruta)) assert.equal(u.searchParams.get('seasonUuid'), evento.season.id);
       if (ruta === 'sessions') {
         assert.equal(u.searchParams.get('eventUuid'), evento.id);
-        assert.equal(u.searchParams.get('categoryUuid'), sesionMoto.category.id);
+        assert.equal(u.searchParams.get('categoryUuid'), categoria);
+        // Las sesiones de otra categoría: las mismas de la muestra con su categoría.
+        return Response.json(muestra('motogp-sesiones').map(x => ({ ...x, category: { ...x.category, id: categoria } })));
       }
       return Response.json(muestra(archivos[ruta]));
     }
@@ -82,7 +84,8 @@ test('MotoGP: OUTSTND solo significa no clasificado, sin inventar retirada o cer
 test('IDs de motor estrictos y separados: no aceptan parámetros, rutas ni categorías no expuestas', async () => {
   const b = banco();
   for (const id of ['openf1:sesion/2026/0', 'openf1:sesion/26/11404', `${idF1}?x=1`, `${idMoto}/x`, idMoto.toUpperCase(),
-    'motogp:resultados/moto2', 'openf1:resultados/motogp', 'espn:resultados/f1', 'espn:partido/f1/11404']) {
+    'motogp:resultados/moto4', 'motogp:resultados/wrc', idMoto.replace('sesion/', 'sesion/motogp/'), idMoto.replace('sesion/', 'sesion/moto4/'),
+    'openf1:resultados/motogp', 'espn:resultados/f1', 'espn:partido/f1/11404']) {
     assert.equal((await b.pedir(id)).r.status, 400, id);
     assert.equal(leerIdMotor(id), null);
   }
@@ -148,6 +151,24 @@ test('MotoGP: lista fría 4 GET, detalle añade 1; metadatos y fechas comparten 
   const prueba = muestra('motogp-eventos')[1];
   assert.equal((await b.pedir('motogp:resultados/motogp', prueba.date_start)).d.estado, 'vacio');
   assert.ok(!/records|session_files|constructor|event_files/.test(JSON.stringify(detalle.d.ficha)));
+});
+
+test('Moto2 y Moto3: su categoría en la lista y en el detalle; MotoGP conserva sus ID', async () => {
+  const categorias = muestra('motogp-categorias');
+  assert.equal(leerIdMotor(idMoto).competicion, 'motogp');
+  for (const [competicion, nombre] of [['moto2', 'Moto2'], ['moto3', 'Moto3']]) {
+    const categoria = categorias.find(c => c.name === nombre + '™').id;
+    assert.deepEqual(leerIdMotor(`motogp:resultados/${competicion}`), { proveedor: 'motogp', competicion, lista: true });
+    const id = `motogp:sesion/${competicion}/2026/${evento.id}/${sesionMoto.id}`;
+    assert.deepEqual(leerIdMotor(id), { proveedor: 'motogp', competicion, temporada: 2026, evento: evento.id, sesion: sesionMoto.id });
+    const b = banco({ categoria });
+    const { d } = await b.pedir(`motogp:resultados/${competicion}`, '2026-11-01');
+    assert.equal(d.estado, 'ok'); assert.equal(d.ficha.competicion, competicion);
+    assert.ok(d.ficha.partidos.length && d.ficha.partidos.every(p => p.id.startsWith(`motogp:sesion/${competicion}/2026/`)
+      && p.categoria === nombre && p.competicion === competicion && p.referencias_agenda.every(r => r.proveedor === competicion)));
+    const detalle = await b.pedir(id);
+    assert.equal(detalle.d.estado, 'ok'); assert.equal(detalle.d.ficha.id, id); assert.equal(detalle.d.ficha.categoria, nombre);
+  }
 });
 
 test('MotoGP: detalle frío 5 GET y un día sin GP 2 GET; sin clasificación conserva ficha', async () => {

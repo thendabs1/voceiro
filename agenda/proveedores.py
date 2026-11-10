@@ -100,18 +100,19 @@ def describir(proveedor, pagina, url=None):
             seleccion_valida=bool(pagina.get('partidos')))
         # Las dos páginas actuales acreditan esa fase, no todos los playoffs.
         return base
-    if proveedor == 'motogp':
-        gps = [e for e in pagina if e.get('kind') == 'GP']
+    if proveedor in motogp.CATEGORIAS:
+        # Moto2 y Moto3 solo cuentan los GP con sesiones suyas, como al importar.
+        gps = [e for e in pagina if e.get('kind') == 'GP'
+               and (proveedor == 'motogp' or motogp.sesiones(e, proveedor))]
         years = {deporte.temporada((e.get('season') or {}).get('year')) for e in gps}
         if len(years) != 1:
-            raise ValueError('MotoGP no acredita una temporada única con GP')
+            raise ValueError(motogp.CATEGORIAS[proveedor] + ' no acredita una temporada única con GP')
         year = next(iter(years))
         dias = [deporte.dias(e.get('date_start'), e.get('date_end'),
                             zona=deporte.zona_iana(e.get('time_zone'))) for e in gps]
         completos = all(d['inicio']['fecha'] and d['fin']['fecha'] for d in dias)
-        programa = all({'FP1', 'PR', 'FP2', 'Q1', 'Q2', 'SPR', 'WUP', 'RAC'} <= {
-            s.get('shortname') for s in e.get('broadcasts', [])
-            if s.get('type') == 'SESSION' and (s.get('category') or {}).get('name') == 'MotoGP'} for e in gps)
+        programa = all(motogp.PROGRAMAS[proveedor] <= {s.get('shortname') for s in motogp.sesiones(e, proveedor)}
+                       for e in gps)
         base.update(referencia=year, seleccion={'year': year},
             inicio=min((d['inicio']['fecha'] for d in dias if d['inicio']['fecha']), default=None),
             fin=max((d['fin']['fecha'] for d in dias if d['fin']['fecha']), default=None),

@@ -128,11 +128,14 @@ class CicloTemporadas(unittest.TestCase):
                 operacion()
 
 
+GRANDES_PREMIOS = ('f1', 'motogp', 'moto2', 'moto3', 'wrc')
+
+
 class Cadencias(unittest.TestCase):
     def test_catalogo_completo_y_perfiles(self):
         self.assertEqual(set(cadencias.COLECCIONES), set(temporadas.CATALOGO))
         self.assertEqual({c for c, p in cadencias.COLECCIONES.items() if p == 'gran-premio'},
-                         {'f1', 'motogp', 'wrc'})
+                         {'f1', 'motogp', 'moto2', 'moto3', 'wrc'})
 
     def test_perfiles_base_cerca_y_competicion_con_margen(self):
         for coleccion in temporadas.CATALOGO:
@@ -141,11 +144,11 @@ class Cadencias(unittest.TestCase):
                 ([('2026-11-03', None)], 72),  # A ocho días.
                 ([('2026-11-02', None)], 24),  # Límite de siete días incluido.
                 ([('2026-10-24', '2026-10-28')],
-                 6 if coleccion in ('f1', 'motogp', 'wrc') else 24),
+                 6 if coleccion in GRANDES_PREMIOS else 24),
                 ([('2026-10-26', None)],
-                 6 if coleccion in ('f1', 'motogp', 'wrc') else 24),
+                 6 if coleccion in GRANDES_PREMIOS else 24),
                 ([('2026-10-20', '2026-10-26')],
-                 6 if coleccion in ('f1', 'motogp', 'wrc') else 24),
+                 6 if coleccion in GRANDES_PREMIOS else 24),
                 ([('2026-10-20', None), (None, None)], 72),
             ):
                 with self.subTest(coleccion=coleccion, citas=citas):

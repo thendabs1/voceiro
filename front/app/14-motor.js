@@ -1,7 +1,7 @@
 // Fichas por sesión: los identificadores de equipos conservan su pintado.
-const idResultadosMotorValido = id => /^(openf1:resultados\/f1|motogp:resultados\/motogp)$/.test(id || '');
+const idResultadosMotorValido = id => /^(openf1:resultados\/f1|motogp:resultados\/moto(gp|2|3))$/.test(id || '');
 const idSesionMotorValido = id => /^openf1:sesion\/20\d{2}\/[1-9]\d{0,7}$/.test(id || '')
-  || /^motogp:sesion\/20\d{2}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id || '');
+  || /^motogp:sesion\/(moto[23]\/)?20\d{2}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id || '');
 const notaFechaMotor = id => idResultadosMotorValido(id)
   ? `<p class="consulta-nota">${escapeHtml(t(id.startsWith('openf1:') ? 'conMotorFechaF1' : 'conMotorFechaMoto'))}</p>` : '';
 const CONDICIONES_MOTOR = { retirada: 'conMotorRetirada', 'no salió': 'conMotorNoSalio', descalificado: 'conMotorDescalificado',
@@ -39,4 +39,4 @@ function resultadosMotor(f){
 }
 
 VISTAS_CONSULTA.sesion_motor = { idValido: idSesionMotorValido, ficha: fichaSesionMotor, resultados: resultadosMotor,
-  admiteResultados: f => ['f1', 'motogp'].includes(f.competicion) };
+  admiteResultados: f => ['f1', 'motogp', 'moto2', 'moto3'].includes(f.competicion) };

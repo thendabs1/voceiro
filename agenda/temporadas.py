@@ -23,6 +23,8 @@ CATALOGO = {
     'feb-challenge': ('LF Challenge', 'feb-challenge', 'temporada'),
     'f1': ('Fórmula 1', 'espn-f1', 'fecha'),
     'motogp': ('MotoGP', 'motogp', 'temporada'),
+    'moto2': ('Moto2', 'moto2', 'temporada'),
+    'moto3': ('Moto3', 'moto3', 'temporada'),
     'wrc': ('WRC', 'ocblacktop-wrc', 'temporada'),
 }
 POLITICA = {

@@ -21,7 +21,7 @@ la petición manda el ID: `texto` no elige proveedor.
 | WTA | ESPN | Sin correspondencia con la agenda oficial |
 | Euroliga | `api-live.euroleague.net/v2/.../games` | Sin agenda |
 | F1 | OpenF1, uso no comercial | `session_key` = `meeting_session_key` |
-| MotoGP | API oficial `/results` | `toad_api_uuid` = ID del GP; sesión por `type+number` |
+| MotoGP, Moto2, Moto3 | API oficial `/results` | `toad_api_uuid` = ID del GP; sesión por `type+number`; Moto2 y Moto3 llevan la categoría en el ID (`motogp:sesion/moto2/…`) |
 
 No unir por nombre: OpenF1 trae un GP con país Bahrain y lugar Kuala Lumpur.
 En MotoGP, `date` de resultados lleva offset UTC falso y es hora local, y
@@ -55,7 +55,7 @@ requiere resolver su identidad; aún no está implementado.
 ## Otras ampliaciones
 
 - Tenis: cuadro completo por torneo y ronda; hoy solo hay vista por fecha.
-- Motor: Moto2 y Moto3 preparados sin exponer, y `clasificacion:motogp`.
+- Motor: `clasificacion:motogp` (y de Moto2 y Moto3).
 - Atletismo: los resultados se delegan a la fuente oficial (enlace al
   documento o página en su nivel, sin marcas; decidido el 3/11/2026).
   Rankings sin conector. Candidatas web sin extracción acreditada: Diamond

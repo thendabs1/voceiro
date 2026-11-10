@@ -519,8 +519,8 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.deportes();
   let chips = c.api.calChipsDeportes();
-  // Las 18 capas, sin capa de ciudad; con todas, ningún deporte elegido ni fila de competiciones.
-  assert.deepEqual([c.resumen().get('q').split(',').length, c.resumen().get('territorio'), c.resumen().get('temas')], [18, null, null]);
+  // Las 20 capas, sin capa de ciudad; con todas, ningún deporte elegido ni fila de competiciones.
+  assert.deepEqual([c.resumen().get('q').split(',').length, c.resumen().get('territorio'), c.resumen().get('temas')], [20, null, null]);
   assert.match(chips, /data-cal="capas-todas" data-valor="" class="" aria-pressed="true">Todas/);
   assert.match(chips, /data-cal="deporte" data-valor="futbol" class="cal-dep cal-dep-futbol" aria-pressed="false">Fútbol/);
   assert.doesNotMatch(chips, /cal-subchips|data-cal="capa"/);
@@ -544,16 +544,16 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   assert.match(chips, /Competiciones · 4 de 5/);
   // Otro deporte lo sustituye; pulsar el elegido vuelve a todas.
   await c.click('deporte', 'motor');
-  assert.equal(c.resumen().get('q'), 'deporte:f1,motogp,wrc');
+  assert.equal(c.resumen().get('q'), 'deporte:f1,motogp,moto2,moto3,wrc');
   await c.click('deporte', 'motor');
-  assert.equal(c.resumen().get('q').split(',').length, 18);
+  assert.equal(c.resumen().get('q').split(',').length, 20);
   // Nunca sin capas: con una sola, quitarla no hace nada.
   await c.click('solo', 'f1');
   await c.click('capa', 'f1');
   assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['deporte:f1', null]);
   assert.match(c.api.calChipsDeportes(), /data-valor="motor" class="cal-dep cal-dep-motor" aria-pressed="mixed"/);
   await c.click('capas-todas');
-  assert.deepEqual([c.resumen().get('q').split(',').length, c.resumen().get('territorio')], [18, null]);
+  assert.deepEqual([c.resumen().get('q').split(',').length, c.resumen().get('territorio')], [20, null]);
   // La agenda lleva sus chips de temas y va a su sitio.
   await c.abrir();
   assert.doesNotMatch(c.api.calChips(), /data-cal="deporte"|data-cal="capa"/);
@@ -1144,7 +1144,7 @@ test('la agenda va siempre a su sitio; las competiciones, en Deportes y sin ciud
   // Deportes: todas las competiciones, sin ciudad.
   await c.deportes();
   assert.deepEqual([c.api.s.vista, c.resumen().get('territorio'), c.resumen().get('temas'), c.resumen().get('q').split(',').length],
-    ['deportes', null, null, 18]);
+    ['deportes', null, null, 20]);
   // Un prefijo de competición abre Deportes con solo esa; uno de tema, la agenda.
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:'));
   await esperar();
@@ -1235,7 +1235,7 @@ test('Deportes abierta desde su botón conserva sus capas cuando el buscador se 
   await esperar();
   c.api.actualizarConsultaCalendario(null);
   await esperar();
-  assert.deepEqual([c.api.s.vista, c.api.s.capas?.size, c.resumen().get('q').split(',').length], ['deportes', 18, 18]);
+  assert.deepEqual([c.api.s.vista, c.api.s.capas?.size, c.resumen().get('q').split(',').length], ['deportes', 20, 20]);
 });
 
 test('al cambiar de vista no se pintan los datos de la otra ni lo que tenía abierto', async () => {
