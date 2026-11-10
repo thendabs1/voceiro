@@ -140,7 +140,9 @@ def partidos(anterior, pagina, liga, observado, *, deporte_id, tema, remoto=Fals
         fase_torneo = ronda(temporada, partido) if liga in TORNEOS else None
         if fase_torneo:
             bloques['ronda_torneo'] = fase_torneo
-        a.evento('event_uid', e['uid'], 'encuentro', e.get('name'),
+        # «Local — Visitante», como FEB y LaLiga, no el «Visitante at Local» de ESPN.
+        nombre = ' — '.join(q['nombre'] for q in sorted(equipos, key=lambda q: q['papel']))
+        a.evento('event_uid', e['uid'], 'encuentro', nombre,
             comienzo(e, partido), padre=padre, estado=estado(partido),
             sitio=partido.get('venue') or e.get('venue'), url=url, equipos=equipos, bloques=bloques or None)
     return a.terminar()

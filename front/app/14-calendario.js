@@ -828,12 +828,17 @@ function calCompeticionVista(){
 }
 // Competición escrita en la barra: lleva la cabecera común (#competicion-cab).
 const calCabCompeticion = () => calPrefijoDeportivo() && !calMixta() ? calCompeticionVista() : '';
-// Con una competición, sus resultados y su tabla; con varias, la vista general.
+// Con una competición, sus resultados, su tabla y su ★ (se sigue lo que se
+// está viendo, como en Apple Sports); con varias, la vista general.
 function calEnlacesDeportes(){
   if (calCabCompeticion()) return '';
   const c = calCompeticionVista();
-  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'deportes:' }])
+  const enlaces = (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'deportes:' }])
     .map(a => calBoton('orden', a.texto, a.orden)).join('');
+  if (!c || !CALENDARIO.capas) return enlaces;
+  const sigue = (calPreferencias()?.competiciones || []).includes(c), nombre = calNombreCompeticion(c);
+  return enlaces + calBoton('seguir', (sigue ? '★ ' : '☆ ') + t('calSeguirCorto'), c,
+    `class="cal-seguir" aria-pressed="${sigue}" aria-label="${calEsc(t(sigue ? 'calDejarDeSeguir' : 'calSeguir', { x: nombre }))}"`);
 }
 function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
   const unica = calUnica();
@@ -1362,12 +1367,13 @@ function calChipsDeportes(){
   const chip = (accion, html, valor, pulsado, clase = '', attrs = '') => `<button type="button" data-cal="${accion}" data-valor="${calEsc(valor)}" class="${clase}" aria-pressed="${pulsado}"${attrs}>${html}</button>`;
   const deportes = Object.entries(CAL_DEPORTES).map(([k, cs]) =>
     chip('deporte', calEsc(t(CAL_NOMBRES_DEPORTE[k])), k, k !== elegido ? 'false' : igual(cs) ? 'true' : 'mixed', `cal-dep cal-dep-${k}`)).join('');
-  // Cada competición: su nombre filtra (lo que veo) y su ★ la sigue (Apple
-  // Sports, «Mis calendarios» de Google): dos botones hermanos, sin asistente.
+  // Cada competición filtra; su ★ va en las acciones al verla sola.
+  // Con el deporte entero no hay filtro: ninguna marcada (SofaScore, facetas).
+  const entero = igual(CAL_DEPORTES[elegido] || []);
   const competiciones = (CAL_DEPORTES[elegido] || []).map(c => {
-    const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c], sigue = sigo.includes(c);
-    return `<span class="cal-capa">${chip('capa', (calMarcaAporta(marca, nombre) ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, s.capas.has(c),
-      `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`)}${chip('seguir', sigue ? '★' : '☆', c, sigue, 'cal-seguir', ` aria-label="${calEsc(t(sigue ? 'calDejarDeSeguir' : 'calSeguir', { x: nombre }))}"`)}</span>`;
+    const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c];
+    return chip('capa', (calMarcaAporta(marca, nombre) ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, !entero && s.capas.has(c),
+      `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`);
   }).join('');
   return `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calCompeticiones'))}">${chip('capas-todas', calEsc(t('calTodas')), '', igual(CAL_COMPETICIONES))}
     ${sigo.length ? chip('capas-sigo', calEsc(t('calLasQueSigo')), '', igual(sigo)) : ''}${deportes}</div>
@@ -1556,7 +1562,7 @@ function pintarCalendario(repintado = false){
   const contenido = calContenido();
   // Arriba la ciudad (en Deportes, el título) y las acciones; debajo, atajos de
   // fecha y chips: en la agenda, temas; en Deportes, deportes y competiciones.
-  p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="${deportes && !cab ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(cab ? calNombreCompeticion(cab) : t(deportes ? 'calDeportesTitulo' : 'calAgenda'))}</h1>
+  p.innerHTML = `<div class="cal-barra${deportes ? ' cal-barra-deportes' : ''}"><h1 id="cal-titulo" class="${deportes && !cab ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(cab ? calNombreCompeticion(cab) : t(deportes ? 'calDeportesTitulo' : 'calAgenda'))}</h1>
     ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? calEnlacesDeportes() : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
     ${cab ? '' : s.orden?.noticias ? calBoton('cerrar', t('calVerNoticias')) : calBoton('cerrar', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calCerrar'))}" title="${calEsc(t('calCerrar'))}"`)}</div>
     <div class="cal-chips cal-rangos ui-tira" role="group" aria-label="${calEsc(t('calCuando'))}">${rango('hoy', hoy)}${rango('manana', manana)}${rango('finde')}
@@ -1688,13 +1694,19 @@ function wireCalendario(){
       if (a === 'solo') s.capas = new Set([v]);
       if (a === 'capas-todas') s.capas = new Set(CAL_COMPETICIONES);
       if (a === 'capas-sigo') s.capas = new Set(calPreferencias().competiciones);
-      // Un deporte se elige entero y, pulsado otra vez, vuelve a todas; dentro
-      // de él, cada competición se enciende o se apaga. Nunca sin capas.
-      if (a === 'deporte') s.capas = new Set(calDeporteElegido() === v ? CAL_COMPETICIONES : CAL_DEPORTES[v]);
+      // Un deporte se elige entero (también desde «a medias») y, pulsado entero,
+      // vuelve a todas. Dentro, como un filtro: con el deporte entero, la
+      // competición pulsada queda sola; después cada una se suma o se quita, y
+      // quitar la última vuelve al deporte entero. Nunca sin capas.
+      if (a === 'deporte'){
+        const cs = CAL_DEPORTES[v], entero = cs.length === s.capas.size && cs.every(c => s.capas.has(c));
+        s.capas = new Set(entero ? CAL_COMPETICIONES : cs);
+      }
       if (a === 'capa'){
-        const capas = new Set(s.capas);
+        const deporte = CAL_DEPORTES[calDeporteElegido()] || [...s.capas];
+        const capas = new Set(s.capas.size === deporte.length ? [] : s.capas);
         capas.has(v) ? capas.delete(v) : capas.add(v);
-        if (capas.size) s.capas = capas;
+        s.capas = capas.size ? capas : new Set(deporte);
       }
     }
     // Una subcategoría sustituye a su raíz y se quita volviendo a pulsarla.

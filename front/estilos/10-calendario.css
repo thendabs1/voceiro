@@ -65,7 +65,9 @@
    deporte con solo algunas, con el borde discontinuo. */
 .cal-chips .cal-dep:is([aria-pressed="true"],[aria-pressed="mixed"]){color:var(--dep);background:var(--dep-bg);border-color:var(--dep);box-shadow:inset 0 0 0 1px currentColor;font-weight:600}
 .cal-chips .cal-dep[aria-pressed="mixed"]{border-style:dashed;box-shadow:none}
-.cal-chip-marca{font-size:.85em}
+/* La marca del chip es la leyenda de las celdas: con su mismo aspecto. */
+.cal-chip-marca{font-size:.85em;padding:0 4px;border-radius:4px;color:var(--dep);background:var(--dep-bg)}
+.cal-chips [aria-pressed="true"] .cal-chip-marca{background:var(--bg)}
 .cal-todo-dia .cal-hora.cal-dep{color:var(--dep-bg);background:var(--dep)}
 .cal-mg-chip.cal-dep{color:var(--dep);background:var(--dep-bg)}.calendario-panel .cal-mg-barra.cal-dep{color:var(--dep-bg);background:var(--dep)}
 /* En cada día, todas sus competiciones («NBA 9», «F1»), las que quepan por línea. */
@@ -133,6 +135,8 @@
 .cal-otro-mes{background:var(--btn-bg)}.cal-num{font-size:.85em}
 .cal-celda[aria-current="date"] .cal-num{color:var(--accent);font-weight:700}.cal-celda[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .cal-pendientes{border-block:1px solid var(--border);margin:18px 0;padding:8px 0}
+/* Botones de más: secundarios, sin rayas propias mientras están plegados. */
+:is(.cal-paginacion,div.cal-pendientes) button{font-size:.85em}div.cal-pendientes{border:0;margin:8px 0;padding:0}
 .cal-campo-sug{display:flex;flex-direction:column;align-items:stretch;gap:5px}
 .cal-sugerencias{display:flex;flex-direction:column;border:1px solid var(--btn-border);border-radius:5px}.cal-sugerencias:empty{display:none}
 .cal-sugerencias button{border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;text-align:left;padding:6px 8px}.cal-sugerencias small{color:var(--muted)}
@@ -161,6 +165,9 @@ body.calendario-abierto{max-width:none}
   .cal-donde{flex:0 1 auto}.cal-barra>:is(.cal-rangos,.cal-tira-cabecera){flex-basis:auto;order:1}
   .cal-barra>.ui-tira:not(.cal-rangos,.cal-subchips){flex:1 1 8em;order:2}.cal-acciones{order:3}
   .cal-barra>.cal-subchips,.cal-pista-seguir{order:4}
+  /* Deportes tiene dos niveles de chips: los deportes no se aprietan en la
+     fila de arriba, bajan enteros sobre sus competiciones. */
+  .cal-barra-deportes>.ui-tira:not(.cal-rangos,.cal-subchips){flex-basis:100%;order:4}
 }
 /* Semana y lista sin mes abierto: ancho de lectura, sin filas de 1400 px (Google
    Calendar, agenda); el mes abierto sí usa todo el ancho. */
@@ -171,9 +178,8 @@ body.calendario-abierto{max-width:none}
   .cal-dias,.cal-dia:only-child>.cal-dia-grupos{display:grid;grid-template-columns:repeat(auto-fit,minmax(20em,1fr));gap:0 28px;align-items:start}
   .cal-dias .cal-dia h2{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 }
-/* Seguir una competición: ★ pegada a su chip, botón propio. */
-.cal-capa{display:inline-flex;align-items:center;flex:none}.cal-chips .cal-seguir{border-color:transparent;background:transparent;padding:3px 8px;color:var(--muted)}
-.cal-chips .cal-seguir[aria-pressed="true"]{color:var(--accent);box-shadow:none}
+/* Seguir la competición que se ve: en las acciones, marcada en el color de acento. */
+.cal-acciones .cal-seguir[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
 .cal-pista-seguir{flex-basis:100%;margin:0}
 /* Torneos en curso de Deportes: una fila por torneo (ESPN); fechas a la derecha. */
 .cal-curso-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 12px;align-items:baseline;border-top:1px solid var(--border);padding:4px 0;overflow-wrap:anywhere}

@@ -125,11 +125,13 @@ test('Liga F aparece entre las competiciones de fútbol y se puede seguir y cons
   assert.match(chips, /data-cal="capa" data-valor="primera"[^>]*><b class="cal-chip-marca">1ª<\/b> /);
   assert.match(chips, /data-cal="capa" data-valor="liga-f"[^>]*>Liga F</);
   assert.match(chips, /data-cal="capa" data-valor="copa-del-rey"[^>]*>Copa del Rey</);
-  assert.match(chips, /data-cal="seguir" data-valor="liga-f"/);
-  await c.click('seguir', 'liga-f');
-  assert.ok(c.almacen['voceiro-calendario-preferencias-v1'].includes('liga-f'));
+  // La ★ no va en la tira: sale en las acciones al ver la competición sola.
+  assert.doesNotMatch(chips, /data-cal="seguir"/);
   await c.click('solo', 'liga-f');
   assert.equal(c.resumen().get('q'), 'deporte:liga-f');
+  assert.match(runInContext('calEnlacesDeportes()', c), /data-cal="seguir" data-valor="liga-f" class="cal-seguir" aria-pressed="false" aria-label="Seguir Liga F">☆ Seguir</);
+  await c.click('seguir', 'liga-f');
+  assert.ok(c.almacen['voceiro-calendario-preferencias-v1'].includes('liga-f'));
 });
 const cantidad = html => (html.match(/class="cal-cita"/g) || []).length;
 const secciones = html => (html.match(/<section class="cal-dia[^"]*"/g) || []).length;
@@ -526,32 +528,42 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   assert.doesNotMatch(chips, /cal-subchips|data-cal="capa"/);
   // Elegir competiciones no es un filtro: sin seguir ninguna, una pista hacia la ★.
   assert.doesNotMatch(chips, /data-cal="asistente"/);
-  assert.match(chips, /cal-pista-seguir">Elige un deporte y marca ★/);
+  assert.match(chips, /cal-pista-seguir">Elige una competición y pulsa ☆ Seguir/);
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral/);
   // Elegir un deporte deja solo el suyo y enseña sus competiciones, con su marca y su nombre (la leyenda).
   await c.click('deporte', 'baloncesto');
   assert.equal(c.resumen().get('q'), 'deporte:nba,wnba,feb-endesa,feb-primera,feb-challenge');
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
-  assert.match(chips, /aria-label="Competiciones · 5 de 5"><span class="cal-capa"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button><button type="button" data-cal="seguir" data-valor="nba" class="cal-seguir" aria-pressed="false" aria-label="Seguir NBA">☆<\/button><\/span>/);
+  assert.match(chips, /aria-label="Competiciones · 5 de 5"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="false">NBA<\/button>/);
   assert.match(chips, /data-valor="feb-endesa"[^>]*>Liga Femenina Endesa</);
   assert.doesNotMatch(chips, /data-valor="primera"/);
-  // Quitar una competición: fuera de la consulta y su deporte, a medias.
+  // Con el deporte entero, ninguna marcada; pulsar una la deja sola, la
+  // siguiente se suma y quitar la última vuelve al deporte entero.
   await c.click('capa', 'nba');
-  assert.ok(!c.resumen().get('q').split(/[:,]/).includes('nba'));
+  assert.equal(c.resumen().get('q'), 'deporte:nba');
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="mixed"/);
-  assert.match(chips, /Competiciones · 4 de 5/);
+  assert.match(chips, /data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
+  assert.match(chips, /Competiciones · 1 de 5/);
+  await c.click('capa', 'wnba');
+  assert.equal(c.resumen().get('q'), 'deporte:nba,wnba');
+  await c.click('capa', 'nba'); await c.click('capa', 'wnba');
+  assert.equal(c.resumen().get('q'), 'deporte:nba,wnba,feb-endesa,feb-primera,feb-challenge');
+  // A medias, el deporte vuelve a entero, no a todas.
+  await c.click('capa', 'nba');
+  await c.click('deporte', 'baloncesto');
+  assert.equal(c.resumen().get('q'), 'deporte:nba,wnba,feb-endesa,feb-primera,feb-challenge');
   // Otro deporte lo sustituye; pulsar el elegido vuelve a todas.
   await c.click('deporte', 'motor');
   assert.equal(c.resumen().get('q'), 'deporte:f1,motogp,moto2,moto3,wrc');
   await c.click('deporte', 'motor');
   assert.equal(c.resumen().get('q').split(',').length, 20);
-  // Nunca sin capas: con una sola, quitarla no hace nada.
+  // Nunca sin capas: con una sola, quitarla vuelve a su deporte entero.
   await c.click('solo', 'f1');
-  await c.click('capa', 'f1');
-  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['deporte:f1', null]);
   assert.match(c.api.calChipsDeportes(), /data-valor="motor" class="cal-dep cal-dep-motor" aria-pressed="mixed"/);
+  await c.click('capa', 'f1');
+  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['deporte:f1,motogp,moto2,moto3,wrc', null]);
   await c.click('capas-todas');
   assert.deepEqual([c.resumen().get('q').split(',').length, c.resumen().get('territorio')], [20, null]);
   // La agenda lleva sus chips de temas y va a su sitio.
@@ -751,15 +763,17 @@ test('★ sigue una competición sin asistente: guarda la preferencia, no cambia
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.deportes();
   await c.click('deporte', 'motor');
+  // Ningún ★ con el deporte entero; sí al ver una competición sola.
+  assert.doesNotMatch(runInContext('calEnlacesDeportes()', c), /data-cal="seguir"/);
+  await c.click('capa', 'f1');
   const antes = c.resumen().get('q');
   await c.click('seguir', 'f1');
   // Sin asistente hecho no se da por hecho: el sitio de la agenda sigue saliendo de «Mis sitios».
   assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).competiciones, ['f1']);
   assert.equal(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).estado, 'omitido');
   assert.equal(c.resumen().get('q'), antes);
-  let chips = c.api.calChipsDeportes();
-  assert.match(chips, /data-cal="seguir" data-valor="f1" class="cal-seguir" aria-pressed="true" aria-label="Dejar de seguir F1">★/);
-  assert.match(chips, /data-cal="capas-sigo"/);
+  assert.match(runInContext('calEnlacesDeportes()', c), /data-cal="seguir" data-valor="f1" class="cal-seguir" aria-pressed="true" aria-label="Dejar de seguir F1">★ Seguir/);
+  assert.match(c.api.calChipsDeportes(), /data-cal="capas-sigo"/);
   await c.click('capas-sigo');
   assert.equal(c.resumen().get('q'), 'deporte:f1');
   await c.click('seguir', 'f1');
@@ -879,7 +893,7 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   // manda la que menos tiene publicado: sin unidades, ningún límite.
   assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-11-23').searchParams.get('muestras'), '0');
   await c.click('deporte', 'baloncesto');
-  await c.click('capa', 'wnba'); await c.click('capa', 'feb-endesa'); await c.click('capa', 'feb-primera');
+  await c.click('capa', 'nba'); await c.click('capa', 'feb-challenge');
   assert.equal(c.resumen().get('q'), 'deporte:nba,feb-challenge');
   // Dos competiciones: el mes pide cinco muestras y pinta los partidos con su hora y «+N».
   assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-11-23').searchParams.get('muestras'), '5');
@@ -1207,7 +1221,7 @@ test('Atletismo permite seleccionar los tres calendarios federativos como capas'
   assert.match(chips, /RFEA/);
   assert.match(chips, /Galicia · FGA/);
   assert.match(chips, /Cataluña · FCA/);
-  await c.click('capa', 'atletismo-rfea');
+  await c.click('capa', 'atletismo-fga'); await c.click('capa', 'atletismo-fca');
   assert.equal(c.resumen().get('q'), 'deporte:atletismo-fga,atletismo-fca');
 });
 
