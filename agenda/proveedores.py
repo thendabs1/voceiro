@@ -9,7 +9,8 @@ from . import blacktop, deporte, deportes, espn, motogp, temporadas, tiempos
 PRINCIPALES = {'f1': 'formula1', 'wta': 'wta',
                'primera': 'laliga-primera', 'segunda': 'laliga-segunda'}
 OFICIALES = {'formula1': 'oficial_f1', 'wta': 'oficial_wta',
-             'laliga-primera': 'oficial_laliga', 'laliga-segunda': 'oficial_laliga'}
+             'laliga-primera': 'oficial_laliga', 'laliga-segunda': 'oficial_laliga',
+             'formula2': 'oficial_fia', 'formula3': 'oficial_fia'}
 
 
 def principal(coleccion):
@@ -37,6 +38,13 @@ def _oficial(proveedor):
     return import_module('.' + OFICIALES[proveedor], __package__)
 
 
+def _extra(proveedor):
+    if proveedor.startswith('laliga-'):
+        return {'competicion': proveedor.removeprefix('laliga-')}
+    # F2 y F3 comparten adaptador: cada una es su propia fuente.
+    return {'proveedor': proveedor} if OFICIALES[proveedor] == 'oficial_fia' else {}
+
+
 def recoger(proveedor, *, temporada=None, fecha=None, inicio=None, fin=None, jornadas=()):
     if proveedor in OFICIALES:
         modulo = _oficial(proveedor)
@@ -45,7 +53,7 @@ def recoger(proveedor, *, temporada=None, fecha=None, inicio=None, fin=None, jor
                                   inicio=inicio, fin=fin, jornadas=jornadas)
         if proveedor == 'formula1':
             return modulo.recoger(temporada, inicio=inicio, fin=fin)
-        return modulo.recoger(temporada)
+        return modulo.recoger(temporada, **_extra(proveedor))
     return deportes.recoger(proveedor, temporada=temporada, fecha=fecha)
 
 
@@ -53,22 +61,21 @@ def limitado_a_ventana(proveedor, recurso):
     """Si `recoger` pide ese recurso solo para la ventana (inicio..fin).
 
     LaLiga trae las jornadas de la ventana y F1 los programas de sus GP; el
-    calendario de F1, MotoGP o WRC llega entero y cualquier ausencia cuenta.
+    calendario de F1, F2, F3, MotoGP o WRC llega entero y cualquier ausencia cuenta.
     """
     return proveedor.startswith('laliga-') or (proveedor == 'formula1' and recurso.startswith('programa:'))
 
 
 def importar(anterior, proveedor, pagina, observado, url=None, temporada=None):
     if proveedor in OFICIALES:
-        extra = {'competicion': proveedor.removeprefix('laliga-')} if proveedor.startswith('laliga-') else {}
-        return _oficial(proveedor).importar(anterior, pagina, observado, url=url, temporada=temporada, **extra)
+        return _oficial(proveedor).importar(anterior, pagina, observado, url=url, temporada=temporada,
+                                            **_extra(proveedor))
     return deportes.importar(anterior, proveedor, pagina, observado, url=url, temporada=temporada)
 
 
 def describir(proveedor, pagina, url=None):
     if proveedor in OFICIALES:
-        extra = {'competicion': proveedor.removeprefix('laliga-')} if proveedor.startswith('laliga-') else {}
-        alcance = _oficial(proveedor).describir(pagina, url=url, **extra)
+        alcance = _oficial(proveedor).describir(pagina, url=url, **_extra(proveedor))
         if proveedor.startswith('laliga-'):
             alcance['seleccion_valida'] = any(p.get('partidos') for p in pagina.get('paginas', []))
         return alcance

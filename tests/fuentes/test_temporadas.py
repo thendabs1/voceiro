@@ -128,14 +128,14 @@ class CicloTemporadas(unittest.TestCase):
                 operacion()
 
 
-GRANDES_PREMIOS = ('f1', 'motogp', 'moto2', 'moto3', 'wrc')
+GRANDES_PREMIOS = ('f1', 'f2', 'f3', 'motogp', 'moto2', 'moto3', 'wrc')
 
 
 class Cadencias(unittest.TestCase):
     def test_catalogo_completo_y_perfiles(self):
         self.assertEqual(set(cadencias.COLECCIONES), set(temporadas.CATALOGO))
         self.assertEqual({c for c, p in cadencias.COLECCIONES.items() if p == 'gran-premio'},
-                         {'f1', 'motogp', 'moto2', 'moto3', 'wrc'})
+                         set(GRANDES_PREMIOS))
 
     def test_perfiles_base_cerca_y_competicion_con_margen(self):
         for coleccion in temporadas.CATALOGO:

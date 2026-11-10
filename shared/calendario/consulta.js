@@ -40,6 +40,8 @@ export const AMBITOS = {
   atp: { codigo: 'atp', noticias: ['ATP'] },
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
+  f2: { codigo: 'f2', noticias: ['F2', 'Fórmula 2'] },
+  f3: { codigo: 'f3', noticias: ['F3', 'Fórmula 3'] },
   motogp: { codigo: 'motogp', noticias: ['MotoGP'] },
   moto2: { codigo: 'moto2', noticias: ['Moto2'] },
   moto3: { codigo: 'moto3', noticias: ['Moto3'] },

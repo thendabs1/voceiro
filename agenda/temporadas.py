@@ -22,6 +22,8 @@ CATALOGO = {
     'feb-primera': ('Primera FEB', 'feb-primera', 'temporada'),
     'feb-challenge': ('LF Challenge', 'feb-challenge', 'temporada'),
     'f1': ('Fórmula 1', 'espn-f1', 'fecha'),
+    'f2': ('Fórmula 2', 'formula2', 'temporada'),
+    'f3': ('Fórmula 3', 'formula3', 'temporada'),
     'motogp': ('MotoGP', 'motogp', 'temporada'),
     'moto2': ('Moto2', 'moto2', 'temporada'),
     'moto3': ('Moto3', 'moto3', 'temporada'),
