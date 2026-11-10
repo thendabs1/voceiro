@@ -533,25 +533,35 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   assert.equal(c.resumen().get('q'), 'deporte:nba,wnba,feb-endesa,feb-primera,feb-challenge');
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
-  assert.match(chips, /aria-label="Competiciones · 5 de 5"><span class="cal-capa"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true">NBA<\/button><button type="button" data-cal="seguir" data-valor="nba" class="cal-seguir" aria-pressed="false" aria-label="Seguir NBA">☆<\/button><\/span>/);
+  assert.match(chips, /aria-label="Competiciones · 5 de 5"><span class="cal-capa"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="false">NBA<\/button><button type="button" data-cal="seguir" data-valor="nba" class="cal-seguir" aria-pressed="false" aria-label="Seguir NBA">☆<\/button><\/span>/);
   assert.match(chips, /data-valor="feb-endesa"[^>]*>Liga Femenina Endesa</);
   assert.doesNotMatch(chips, /data-valor="primera"/);
-  // Quitar una competición: fuera de la consulta y su deporte, a medias.
+  // Con el deporte entero, ninguna marcada; pulsar una la deja sola, la
+  // siguiente se suma y quitar la última vuelve al deporte entero.
   await c.click('capa', 'nba');
-  assert.ok(!c.resumen().get('q').split(/[:,]/).includes('nba'));
+  assert.equal(c.resumen().get('q'), 'deporte:nba');
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="mixed"/);
-  assert.match(chips, /Competiciones · 4 de 5/);
+  assert.match(chips, /data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
+  assert.match(chips, /Competiciones · 1 de 5/);
+  await c.click('capa', 'wnba');
+  assert.equal(c.resumen().get('q'), 'deporte:nba,wnba');
+  await c.click('capa', 'nba'); await c.click('capa', 'wnba');
+  assert.equal(c.resumen().get('q'), 'deporte:nba,wnba,feb-endesa,feb-primera,feb-challenge');
+  // A medias, el deporte vuelve a entero, no a todas.
+  await c.click('capa', 'nba');
+  await c.click('deporte', 'baloncesto');
+  assert.equal(c.resumen().get('q'), 'deporte:nba,wnba,feb-endesa,feb-primera,feb-challenge');
   // Otro deporte lo sustituye; pulsar el elegido vuelve a todas.
   await c.click('deporte', 'motor');
   assert.equal(c.resumen().get('q'), 'deporte:f1,motogp,moto2,moto3,wrc');
   await c.click('deporte', 'motor');
   assert.equal(c.resumen().get('q').split(',').length, 20);
-  // Nunca sin capas: con una sola, quitarla no hace nada.
+  // Nunca sin capas: con una sola, quitarla vuelve a su deporte entero.
   await c.click('solo', 'f1');
-  await c.click('capa', 'f1');
-  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['deporte:f1', null]);
   assert.match(c.api.calChipsDeportes(), /data-valor="motor" class="cal-dep cal-dep-motor" aria-pressed="mixed"/);
+  await c.click('capa', 'f1');
+  assert.deepEqual([c.resumen().get('q'), c.resumen().get('territorio')], ['deporte:f1,motogp,moto2,moto3,wrc', null]);
   await c.click('capas-todas');
   assert.deepEqual([c.resumen().get('q').split(',').length, c.resumen().get('territorio')], [20, null]);
   // La agenda lleva sus chips de temas y va a su sitio.
@@ -879,7 +889,7 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   // manda la que menos tiene publicado: sin unidades, ningún límite.
   assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-11-23').searchParams.get('muestras'), '0');
   await c.click('deporte', 'baloncesto');
-  await c.click('capa', 'wnba'); await c.click('capa', 'feb-endesa'); await c.click('capa', 'feb-primera');
+  await c.click('capa', 'nba'); await c.click('capa', 'feb-challenge');
   assert.equal(c.resumen().get('q'), 'deporte:nba,feb-challenge');
   // Dos competiciones: el mes pide cinco muestras y pinta los partidos con su hora y «+N».
   assert.equal(c.pedidas.findLast(u => u.searchParams.get('hasta') === '2026-11-23').searchParams.get('muestras'), '5');
@@ -1207,7 +1217,7 @@ test('Atletismo permite seleccionar los tres calendarios federativos como capas'
   assert.match(chips, /RFEA/);
   assert.match(chips, /Galicia · FGA/);
   assert.match(chips, /Cataluña · FCA/);
-  await c.click('capa', 'atletismo-rfea');
+  await c.click('capa', 'atletismo-fga'); await c.click('capa', 'atletismo-fca');
   assert.equal(c.resumen().get('q'), 'deporte:atletismo-fga,atletismo-fca');
 });
 
