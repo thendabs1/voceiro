@@ -159,6 +159,15 @@ class Adaptadores(unittest.TestCase):
         e = publicacion.proyectar(importar('espn-nba', otra))['eventos'][0]
         self.assertIsNone(e['lugar']['valor'])
 
+    def test_espn_nombra_el_partido_local_primero(self):
+        lados = muestra('espn-champions')['events'][0]['competitions'][0]['competitors']
+        local, visitante = (next(p['team']['displayName'] for p in lados if p['homeAway'] == papel)
+                            for papel in ('home', 'away'))
+        nombres = [e['nombres']['und'] for e in importar('espn-champions')['entidades'].values()
+                   if e['tipo'] == 'evento']
+        self.assertIn(f'{local} — {visitante}', nombres)
+        self.assertFalse(any(' at ' in n for n in nombres))
+
     def test_equipo_compartido_entre_ligas_por_uid_y_plaza_sin_identidad(self):
         a = importar('espn-primera')
         otra = muestra('espn-segunda')

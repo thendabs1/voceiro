@@ -1556,7 +1556,7 @@ function pintarCalendario(repintado = false){
   const contenido = calContenido();
   // Arriba la ciudad (en Deportes, el título) y las acciones; debajo, atajos de
   // fecha y chips: en la agenda, temas; en Deportes, deportes y competiciones.
-  p.innerHTML = `<div class="cal-barra"><h1 id="cal-titulo" class="${deportes && !cab ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(cab ? calNombreCompeticion(cab) : t(deportes ? 'calDeportesTitulo' : 'calAgenda'))}</h1>
+  p.innerHTML = `<div class="cal-barra${deportes ? ' cal-barra-deportes' : ''}"><h1 id="cal-titulo" class="${deportes && !cab ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(cab ? calNombreCompeticion(cab) : t(deportes ? 'calDeportesTitulo' : 'calAgenda'))}</h1>
     ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? calEnlacesDeportes() : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
     ${cab ? '' : s.orden?.noticias ? calBoton('cerrar', t('calVerNoticias')) : calBoton('cerrar', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calCerrar'))}" title="${calEsc(t('calCerrar'))}"`)}</div>
     <div class="cal-chips cal-rangos ui-tira" role="group" aria-label="${calEsc(t('calCuando'))}">${rango('hoy', hoy)}${rango('manana', manana)}${rango('finde')}
