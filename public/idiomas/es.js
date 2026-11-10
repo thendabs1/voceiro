@@ -71,7 +71,7 @@ export default {
   "calConflicto": "Hay datos discrepantes entre fuentes. Se muestra la selección conservada, si existe.",
   "calPrograma": "Programa",
   "calComprobado": "Fuente comprobada: {fecha}", "calGenerado": "Lectura generada: {fecha}.",
-  "calSinCitas": "No hay citas en este período con los filtros elegidos.", "calSinCitasEnCartel": "No hay citas con día y hora en este período; mira lo que está en cartel.",
+  "calSinCitas": "No hay citas en este período con los filtros elegidos.", "calSaltoSiguiente": "Sin citas hasta el {dia}.", "calSaltoAnterior": "Sin citas desde el {dia}.", "calSinCitasEnCartel": "No hay citas con día y hora en este período; mira lo que está en cartel.",
   "calCargarMas": "Ver más citas", 
   "calVerPendientes": "Ver citas sin fecha confirmada", "calSinFecha": "Citas sin fecha confirmada",
   "calNingunaPendiente": "No hay citas sin fecha con estos filtros.",

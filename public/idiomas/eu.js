@@ -840,7 +840,7 @@ export default {
   "calPrograma": "Egitaraua",
   "calComprobado": "Iturria egiaztatuta: {fecha}",
   "calGenerado": "Irakurketa sortuta: {fecha}.",
-  "calSinCitas": "Ez dago ekitaldirik aldi honetan aukeratutako iragazkiekin.",
+  "calSinCitas": "Ez dago ekitaldirik aldi honetan aukeratutako iragazkiekin.", "calSaltoSiguiente": "Hurrengo hitzordua: {dia}.", "calSaltoAnterior": "Aurreko hitzordua: {dia}.",
   "calSinCitasEnCartel": "Ez dago egun eta ordu zehatza duen ekitaldirik aldi honetan; begiratu kartelean daudenak.",
   "calCargarMas": "Ikusi ekitaldi gehiago",
   "calVerPendientes": "Ikusi data baieztatu gabe duten ekitaldiak",

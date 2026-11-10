@@ -840,7 +840,7 @@ export default {
   "calPrograma": "Programa",
   "calComprobado": "Font comprovada: {fecha}",
   "calGenerado": "Lectura generada: {fecha}.",
-  "calSinCitas": "No hi ha esdeveniments en aquest període amb els filtres triats.",
+  "calSinCitas": "No hi ha esdeveniments en aquest període amb els filtres triats.", "calSaltoSiguiente": "Sense cites fins al {dia}.", "calSaltoAnterior": "Sense cites des del {dia}.",
   "calSinCitasEnCartel": "No hi ha esdeveniments amb dia i hora en aquest període; mira el que està en cartell.",
   "calCargarMas": "Veure més esdeveniments",
   "calVerPendientes": "Veure esdeveniments sense data confirmada",
