@@ -759,7 +759,7 @@ export default {
   "calLasQueSigo": "Following",
   "calSeguir": "Follow {x}",
   "calDejarDeSeguir": "Unfollow {x}",
-  "calPistaSeguir": "Choose a sport and mark ★ on the competitions you follow: “Following” brings them together.",
+  "calSeguirCorto": "Follow", "calPistaSeguir": "Choose a competition and press ☆ Follow: “Following” brings them together.",
   "calAsTitulo": "Set up calendar",
   "calAsPaso": "Step {n} of {total}",
   "calAsSiguiente": "Next",

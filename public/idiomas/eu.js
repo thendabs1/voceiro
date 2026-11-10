@@ -759,7 +759,7 @@ export default {
   "calLasQueSigo": "Jarraitzen ditudanak",
   "calSeguir": "Jarraitu: {x}",
   "calDejarDeSeguir": "Utzi jarraitzeari: {x}",
-  "calPistaSeguir": "Aukeratu kirol bat eta markatu ★ jarraitzen dituzun lehiaketetan: «Jarraitzen ditudanak» aukerak elkartzen ditu.",
+  "calSeguirCorto": "Jarraitu", "calPistaSeguir": "Aukeratu lehiaketa bat eta sakatu ☆ Jarraitu: «Jarraitzen ditudanak» aukerak elkartzen ditu.",
   "calAsTitulo": "Konfiguratu egutegia",
   "calAsPaso": "{n}. urratsa / {total}",
   "calAsSiguiente": "Hurrengoa",

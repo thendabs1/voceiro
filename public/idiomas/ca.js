@@ -759,7 +759,7 @@ export default {
   "calLasQueSigo": "Les que segueixo",
   "calSeguir": "Seguir {x}",
   "calDejarDeSeguir": "Deixar de seguir {x}",
-  "calPistaSeguir": "Tria un esport i marca ★ a les competicions que segueixes: «Les que segueixo» les aplega.",
+  "calSeguirCorto": "Seguir", "calPistaSeguir": "Tria una competició i prem ☆ Seguir: «Les que segueixo» les aplega.",
   "calAsTitulo": "Configurar el calendari",
   "calAsPaso": "Pas {n} de {total}",
   "calAsSiguiente": "Següent",

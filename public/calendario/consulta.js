@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=7d48f7ed68';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=7d48f7ed68';
+import { tokenizeQuery, normalize } from '../parser.js?v=77193b489d';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=77193b489d';
 
 // Modalidad común de atletismo: códigos de shared/calendario/atletismo-modalidades.json
 // (una prueba lo comprueba). Los calcula la publicación; aquí solo se filtra.
