@@ -1638,3 +1638,59 @@ test('Deportes enlaza la vista general; con una competición, sus resultados y s
   assert.doesNotMatch(uno, /calendario:nba/);
 });
 
+
+// ‹ › en Deportes salta las semanas vacías con el filtro; con semanas llenas,
+// el paso de siempre. El resumen simulado solo tiene citas en `dias`.
+const conCitasEn = dias => u => {
+  const r = api(u);
+  if (u.pathname !== '/calendario/resumen') return r;
+  const vacio = { cantidad: 0, citas: 0, programas: 0, en_curso: 0, chips: 0, categorias: {}, competiciones: {}, muestras: [] };
+  return { ...r, dias: r.dias.map(d => dias.includes(d.dia) ? d : { ...d, ...vacio }) };
+};
+const sondeos = c => c.pedidas.filter(u => u.pathname === '/calendario/resumen' && u.searchParams.get('muestras') === '0').map(u => u.searchParams);
+// Deportes abre con el mes desplegado; el salto es de la semana (el mes plegado).
+const deportesSemana = async c => { await c.deportes(); c.api.s.mesAbierto = false; };
+
+test('‹ › en Deportes salta semanas vacías hasta la cita más cercana y lo anuncia', async () => {
+  const c = contexto({ responder: conCitasEn(['2026-10-28', '2026-10-30', '2026-11-24']) });
+  await deportesSemana(c);
+  await c.click('solo', 'champions');
+  // Del domingo 25 a la semana siguiente, que tiene citas: el paso de siempre.
+  await c.click('siguiente'); await esperar();
+  assert.deepEqual([c.api.s.fecha, c.api.s.salto], ['2026-10-26', '']);
+  assert.deepEqual([sondeos(c).at(-1).get('desde'), sondeos(c).at(-1).get('hasta')], ['2026-10-26', '2026-12-07']);
+  // La siguiente está vacía: hasta el martes 24, que se elige y se pide.
+  await c.click('siguiente'); await esperar();
+  assert.equal(c.api.s.fecha, '2026-11-24');
+  assert.match(c.api.s.salto, /^Sin citas hasta el martes, 24 de noviembre/);
+  assert.equal(c.resumen().get('desde'), '2026-11-24');
+  assert.equal(c.resumen().get('q'), 'deporte:champions');
+  // Hacia atrás, la semana de la última cita, desde su primera (el 28, no el 30).
+  await c.click('anterior'); await esperar();
+  assert.equal(c.api.s.fecha, '2026-10-28');
+  assert.match(c.api.s.salto, /^Sin citas desde el miércoles, 28 de octubre/);
+  // Otro clic quita el aviso.
+  await c.click('capas-todas'); await esperar();
+  assert.equal(c.api.s.salto, '');
+});
+
+test('‹ › sin citas en el horizonte, con el mes abierto o en la agenda: el paso de siempre', async () => {
+  let c = contexto({ responder: conCitasEn([]) });
+  await deportesSemana(c);
+  let antes = sondeos(c).length;
+  await c.click('siguiente'); await esperar();
+  // Dos consultas de 42 días y, sin nada, la semana siguiente.
+  assert.deepEqual(sondeos(c).slice(antes).map(u => u.get('desde')), ['2026-10-26', '2026-12-07']);
+  assert.deepEqual([c.api.s.fecha, c.api.s.salto, c.api.s.saltando], ['2026-10-26', '', false]);
+  c = contexto({ responder: conCitasEn(['2026-11-24']) });
+  await c.deportes();
+  c.api.s.mesAbierto = true;
+  await c.click('siguiente'); await esperar();
+  assert.notEqual(c.api.s.fecha, '2026-11-24');
+  assert.equal(c.api.s.salto, '');
+  c = contexto({ responder: conCitasEn(['2026-11-24']) });
+  await c.abrir();
+  antes = sondeos(c).length;
+  await c.click('siguiente'); await esperar();
+  assert.deepEqual([c.api.s.fecha, sondeos(c).length - antes], ['2026-10-26', 0]);
+});

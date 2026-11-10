@@ -840,7 +840,7 @@ export default {
   "calPrograma": "Programa",
   "calComprobado": "Fonte comprobada: {fecha}",
   "calGenerado": "Lectura xerada: {fecha}.",
-  "calSinCitas": "Non hai citas neste período cos filtros escollidos.",
+  "calSinCitas": "Non hai citas neste período cos filtros escollidos.", "calSaltoSiguiente": "Sen citas ata o {dia}.", "calSaltoAnterior": "Sen citas desde o {dia}.",
   "calSinCitasEnCartel": "Non hai citas con día e hora neste período; mira o que está en cartaz.",
   "calCargarMas": "Ver máis citas",
   "calVerPendientes": "Ver citas sen data confirmada",

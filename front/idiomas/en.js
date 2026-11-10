@@ -840,7 +840,7 @@ export default {
   "calPrograma": "Programme",
   "calComprobado": "Source checked: {fecha}",
   "calGenerado": "Snapshot generated: {fecha}.",
-  "calSinCitas": "No events in this period with the selected filters.",
+  "calSinCitas": "No events in this period with the selected filters.", "calSaltoSiguiente": "Nothing until {dia}.", "calSaltoAnterior": "Nothing since {dia}.",
   "calSinCitasEnCartel": "No events with a specific day and time in this period; see what is on now.",
   "calCargarMas": "View more events",
   "calVerPendientes": "View events with unconfirmed dates",
