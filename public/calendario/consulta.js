@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=b2a0d8aee9';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=b2a0d8aee9';
+import { tokenizeQuery, normalize } from '../parser.js?v=7d48f7ed68';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=7d48f7ed68';
 
 // Modalidad común de atletismo: códigos de shared/calendario/atletismo-modalidades.json
 // (una prueba lo comprueba). Los calcula la publicación; aquí solo se filtra.
@@ -41,6 +41,8 @@ export const AMBITOS = {
   wta: { codigo: 'wta', noticias: ['WTA'] },
   f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
   motogp: { codigo: 'motogp', noticias: ['MotoGP'] },
+  moto2: { codigo: 'moto2', noticias: ['Moto2'] },
+  moto3: { codigo: 'moto3', noticias: ['Moto3'] },
   wrc: { codigo: 'wrc', noticias: ['WRC', 'Mundial de Rallies'] },
   // «LaLiga Hypermotion» es Segunda: no cuenta como Primera aunque empiece por LaLiga.
   primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'], noticiasNo: ['LaLiga Hypermotion'] },

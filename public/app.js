@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=b2a0d8aee9';
+} from './parser.js?v=7d48f7ed68';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=b2a0d8aee9';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=b2a0d8aee9';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=b2a0d8aee9';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=b2a0d8aee9';
-import { comparador } from './busqueda/orden.js?v=b2a0d8aee9';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=7d48f7ed68';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=7d48f7ed68';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=7d48f7ed68';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=7d48f7ed68';
+import { comparador } from './busqueda/orden.js?v=7d48f7ed68';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=b2a0d8aee9';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=b2a0d8aee9';
+} from './sync/fusion.js?v=7d48f7ed68';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=7d48f7ed68';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=b2a0d8aee9';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=b2a0d8aee9';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=7d48f7ed68';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=7d48f7ed68';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=b2a0d8aee9';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=7d48f7ed68';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=b2a0d8aee9';
+} from './tiempo/avisos.js?v=7d48f7ed68';
 
-import { I18N, traducir } from './idiomas/index.js?v=b2a0d8aee9';
+import { I18N, traducir } from './idiomas/index.js?v=7d48f7ed68';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=b2a0d8aee9';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=b2a0d8aee9';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=b2a0d8aee9';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=b2a0d8aee9';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=7d48f7ed68';
+import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js?v=7d48f7ed68';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=7d48f7ed68';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=7d48f7ed68';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=b2a0d8aee9';
+import { ADMINISTRACION } from './territorios/administracion.js?v=7d48f7ed68';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1950,7 +1950,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=b2a0d8aee9');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=7d48f7ed68');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -3739,7 +3739,7 @@ const CAL_PREF_KEY = 'voceiro-calendario-preferencias-v1';
 const CAL_PASOS = ['sitio', 'intereses', 'competiciones', 'resumen'];
 // Deportes por deporte y sus competiciones (SofaScore): dos toques hasta una liga.
 const CAL_DEPORTES = { futbol: ['primera', 'segunda', 'liga-f', 'champions', 'copa-del-rey'], baloncesto: ['nba', 'wnba', 'feb-endesa', 'feb-primera', 'feb-challenge'],
-  motor: ['f1', 'motogp', 'wrc'], tenis: ['atp', 'wta'], atletismo: ['atletismo-rfea', 'atletismo-fga', 'atletismo-fca'] };
+  motor: ['f1', 'motogp', 'moto2', 'moto3', 'wrc'], tenis: ['atp', 'wta'], atletismo: ['atletismo-rfea', 'atletismo-fga', 'atletismo-fca'] };
 const CAL_NOMBRES_DEPORTE = { futbol: 'calFutbol', baloncesto: 'calBaloncesto', motor: 'calMotor', tenis: 'calTenis', atletismo: 'calAtletismo' };
 const CAL_COMPETICIONES = Object.values(CAL_DEPORTES).flat();
 // Cada competición lleva el color de su deporte (--dep-*); lo demás, el de su categoría.
@@ -3748,7 +3748,7 @@ const calDeporte = e => (e.competiciones || []).map(c => CAL_DEPORTE_DE[c]).find
 const calColor = e => calDeporte(e) ? 'cal-dep cal-dep-' + calDeporte(e) : 'cal-cat-' + calCategoria(e.categoria);
 // Marcas del mes por competición, en orden de prioridad; la WTA está casi
 // todos los días y va al final para no tapar al resto.
-const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', wrc: 'WRC', primera: '1ª', segunda: '2ª', 'liga-f': 'LF', champions: 'UCL', 'copa-del-rey': 'Copa', nba: 'NBA', atp: 'ATP',
+const CAL_MARCAS = { f1: 'F1', motogp: 'MGP', moto2: 'M2', moto3: 'M3', wrc: 'WRC', primera: '1ª', segunda: '2ª', 'liga-f': 'LF', champions: 'UCL', 'copa-del-rey': 'Copa', nba: 'NBA', atp: 'ATP',
   'feb-endesa': 'LFE', 'feb-primera': 'FEB', 'feb-challenge': 'LFC', wnba: 'WNBA', wta: 'WTA',
   'atletismo-rfea': 'RFEA', 'atletismo-fga': 'FGA', 'atletismo-fca': 'FCA' };
 // Atletismo no tiene temporadas: cada federación se recoge hasta el fin de su ventana.
@@ -5508,7 +5508,7 @@ const CONSULTA_CACHE_MAX = 30;
 const CONSULTA_IDIOMAS = ['es', 'gl', 'ca', 'eu', 'en'];
 const CONSULTA_DEPORTES = { primera: 'LaLiga', segunda: 'Segunda', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
   'liga-f': 'Liga F', nba: 'NBA', wnba: 'WNBA', 'feb-endesa': 'LF Endesa', 'feb-challenge': 'LF Challenge',
-  f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP' };
+  f1: 'F1', atp: 'ATP', wta: 'WTA', motogp: 'MotoGP', moto2: 'Moto2', moto3: 'Moto3' };
 const VISTAS_CONSULTA = {};
 const nombreDeporteConsulta = codigo => codigo === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[codigo] || codigo;
 const CONSULTA_EJEMPLOS = {
@@ -6897,9 +6897,9 @@ function wireEstadisticas(){
   }, true);
 }
 // Fichas por sesión: los identificadores de equipos conservan su pintado.
-const idResultadosMotorValido = id => /^(openf1:resultados\/f1|motogp:resultados\/motogp)$/.test(id || '');
+const idResultadosMotorValido = id => /^(openf1:resultados\/f1|motogp:resultados\/moto(gp|2|3))$/.test(id || '');
 const idSesionMotorValido = id => /^openf1:sesion\/20\d{2}\/[1-9]\d{0,7}$/.test(id || '')
-  || /^motogp:sesion\/20\d{2}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id || '');
+  || /^motogp:sesion\/(moto[23]\/)?20\d{2}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id || '');
 const notaFechaMotor = id => idResultadosMotorValido(id)
   ? `<p class="consulta-nota">${escapeHtml(t(id.startsWith('openf1:') ? 'conMotorFechaF1' : 'conMotorFechaMoto'))}</p>` : '';
 const CONDICIONES_MOTOR = { retirada: 'conMotorRetirada', 'no salió': 'conMotorNoSalio', descalificado: 'conMotorDescalificado',
@@ -6937,7 +6937,7 @@ function resultadosMotor(f){
 }
 
 VISTAS_CONSULTA.sesion_motor = { idValido: idSesionMotorValido, ficha: fichaSesionMotor, resultados: resultadosMotor,
-  admiteResultados: f => ['f1', 'motogp'].includes(f.competicion) };
+  admiteResultados: f => ['f1', 'motogp', 'moto2', 'moto3'].includes(f.competicion) };
 // Vista de consultas de tenis. No usa los lados local/visitante ni cambia la agenda.
 function idTenisConsultaValido(id){
   const p = /^espn:tenis\/(atp|wta)\/(\d{4})(\d{2})(\d{2})\/([1-9]\d{0,8}-\d{4})\/([1-9]\d{0,11})$/.exec(id || '');
@@ -7031,7 +7031,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=b2a0d8aee9')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=7d48f7ed68')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
