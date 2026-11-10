@@ -43,7 +43,8 @@ const CALENDARIO = {
   // vista: «agenda» (la de un sitio: cultura y ocio, y su deporte local) o
   // «deportes» (por competición, sin sitio), cada una con su botón.
   // capas: competiciones marcadas en Deportes.
-  vista: 'agenda', capas: null,
+  // salto: aviso de ‹ › al pasar por encima de semanas vacías; saltando, mientras busca.
+  vista: 'agenda', capas: null, salto: '', saltando: false,
   // desplegado: «día~id» del evento abierto en la lista; detalles: su ficha por id
   // (null si falló), hasta renovar.
   desplegado: '', detalles: new Map(), precio: '', donde: null, dondeAuto: false, editandoDonde: false, clave: '',
@@ -275,6 +276,50 @@ function calRecortar(desde, hasta){
   const fin = fechaValida(p.hasta) ? sumarDiasCalendario(p.hasta, 1) : null;
   return { desde: [desde, h?.desde, fechaValida(p.desde) ? p.desde : null].filter(Boolean).sort().at(-1),
     hasta: [hasta, h?.hasta, fin].filter(Boolean).sort()[0] };
+}
+// Deportes con la semana a la vista: si en la semana a la que se va no hay
+// nada con el filtro, ‹ › sigue hasta la cita más cercana en ese sentido y la
+// elige. Con semanas llenas (todas, un deporte) es el paso de siempre. Busca
+// con cuentas sin muestras, 42 días por consulta (el tope de la API), como
+// mucho CAL_SALTO_CONSULTAS y dentro del horizonte publicado: lo rayado (aún
+// sin publicar) se sigue recorriendo semana a semana.
+const CAL_SALTO_CONSULTAS = 2;
+const calHayCita = d => Boolean(calNDia(d) || d.en_curso);
+async function calSaltarHueco(paso){
+  const s = CALENDARIO, fecha = s.fecha, semana = ventanaCalendario(fecha, 'semana');
+  const controller = s.controllerSalto = new AbortController();
+  s.saltando = true; pintarCalendario();
+  let destino = '';
+  try {
+    for (let i = 0; i < CAL_SALTO_CONSULTAS; i++){
+      // Hacia delante, desde el día elegido; hacia atrás, hasta el fin de su semana.
+      const borde = paso > 0 ? sumarDiasCalendario(fecha, i * CAL_VENTANA_DIAS) : sumarDiasCalendario(semana[6], 1 - i * CAL_VENTANA_DIAS);
+      const { desde, hasta } = paso > 0 ? calRecortar(borde, sumarDiasCalendario(borde, CAL_VENTANA_DIAS))
+        : calRecortar(sumarDiasCalendario(borde, -CAL_VENTANA_DIAS), borde);
+      if (desde >= hasta) break;
+      const dato = await calPedir('resumen', { ...calParametros(), desde, hasta, muestras: 0, revision: s.meta?.revision }, controller.signal);
+      calAnotar(dato);
+      const con = (dato.dias || []).filter(calHayCita).map(d => d.dia).sort();
+      const cerca = paso > 0 ? con[0] : con.at(-1);
+      if (!cerca) continue;
+      // Con algo en la semana a la que se va, el paso de siempre. Hacia atrás,
+      // la primera cita de la semana de la última, para verla entera.
+      if (cerca < semana[0] || cerca > semana[6]){
+        const inicio = ventanaCalendario(cerca, 'semana')[0];
+        destino = paso > 0 ? cerca : con.find(d => d >= inicio);
+      }
+      break;
+    }
+  } catch (e){
+    // Cortada por otro clic, manda ese; con un fallo, el paso de siempre.
+    if (controller.signal.aborted){
+      if (s.controllerSalto === controller){ s.saltando = false; pintarCalendario(); }
+      return;
+    }
+  }
+  s.saltando = false;
+  if (destino){ calElegirDia(destino); s.salto = t(paso > 0 ? 'calSaltoSiguiente' : 'calSaltoAnterior', { dia: calDiaLargo(destino) }); }
+  consultarCalendario();
 }
 async function cargarMesCalendario(){
   const s = CALENDARIO, { dias } = calPeriodoMes();
@@ -538,7 +583,7 @@ function abrirCalendario(origen = null, vista = 'agenda'){
 // volver a pedirlo al entrar. El borrador del asistente no sobrevive al cierre.
 function calCortarCargas(){
   const s = CALENDARIO;
-  for (const c of [s.controller, s.controllerMes, s.controllerTemporada, s.detalleLista, s.controllerProgramas, s.asistente?.controller]) c?.abort();
+  for (const c of [s.controller, s.controllerMes, s.controllerTemporada, s.controllerSalto, s.detalleLista, s.controllerProgramas, s.asistente?.controller]) c?.abort();
   s.controllerProgramas = null;
   if (s.cargando){ s.cargando = false; s.consulta = ''; }
   if (s.mes?.cargando) s.mes = null;
@@ -1569,7 +1614,7 @@ function pintarCalendario(repintado = false){
     ${calBoton('elegir-fecha', '📅', '', `class="cal-icono" aria-label="${calEsc(t('calFecha'))}" title="${calEsc(t('calFecha'))}"`)}
     <input id="cal-fecha" class="sr-only" type="date" tabindex="-1" aria-hidden="true" value="${s.fecha}"></div>
     ${s.navEnBarra}${deportes ? s.capas ? calChipsDeportes() : '' : calChips()}</div>
-    <div class="cal-cuerpo"><p class="cal-estado" role="status">${calEsc(s.error ? t(s.error, { n: calSegundosEspera() }) : s.cargando ? t('calCargando') : '')}</p>
+    <div class="cal-cuerpo"><p class="cal-estado" role="status">${calEsc(s.error ? t(s.error, { n: calSegundosEspera() }) : s.cargando || s.saltando ? t('calCargando') : s.salto)}</p>
     ${s.error === 'calError' ? calBoton('renovar', t('calReintentar')) : ''}<div class="cal-contenido">${contenido}</div>
     ${s.meta ? `<p class="cal-nota cal-pie">${calEsc(t('calCobertura'))} ${calEsc(t('calGenerado', { fecha: calFormato({ dateStyle: 'short', timeStyle: 'short', timeZone: s.zona }).format(new Date(s.meta.generado)) }))}</p>` : ''}
     ${s.orden?.noticias ? `<p class="cal-nota">${calEsc(t('calNoticiasTexto'))}</p>` : ''}</div>`;
@@ -1609,6 +1654,7 @@ function wireCalendario(){
     const b = e.target.closest('[data-cal]');
     if (!b) return;
     const a = b.dataset.cal, v = b.dataset.valor;
+    s.controllerSalto?.abort(); s.salto = '';
     if (a === 'cerrar') return conPaso(salirCalendario);
     if (a === 'orden') return irDesdeCalendario(v);
     if (a === 'ver-resultados') return abrirResultadosDelDia(v, b.dataset.fecha, b.dataset.id);
@@ -1681,6 +1727,7 @@ function wireCalendario(){
       const dias = s.mesAbierto ? calPeriodoMes(sumarDiasCalendario(calPeriodoMes().dias[0], paso * CAL_SEMANAS_MES * 7)).dias
         : ventanaCalendario(moverFecha(s.fecha, 'semana', paso), 'semana');
       calElegirDia(dias.includes(calHoy()) ? calHoy() : dias[0]);
+      if (calModoDeportes() && !s.mesAbierto) return void calSaltarHueco(paso);
     }
     if (a === 'mas-semanas') s.semanas = Math.min(CAL_SEMANAS_MAX, s.semanas + 1);
     if (a === 'categoria'){
