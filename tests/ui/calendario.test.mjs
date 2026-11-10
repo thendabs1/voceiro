@@ -125,11 +125,13 @@ test('Liga F aparece entre las competiciones de fútbol y se puede seguir y cons
   assert.match(chips, /data-cal="capa" data-valor="primera"[^>]*><b class="cal-chip-marca">1ª<\/b> /);
   assert.match(chips, /data-cal="capa" data-valor="liga-f"[^>]*>Liga F</);
   assert.match(chips, /data-cal="capa" data-valor="copa-del-rey"[^>]*>Copa del Rey</);
-  assert.match(chips, /data-cal="seguir" data-valor="liga-f"/);
-  await c.click('seguir', 'liga-f');
-  assert.ok(c.almacen['voceiro-calendario-preferencias-v1'].includes('liga-f'));
+  // La ★ no va en la tira: sale en las acciones al ver la competición sola.
+  assert.doesNotMatch(chips, /data-cal="seguir"/);
   await c.click('solo', 'liga-f');
   assert.equal(c.resumen().get('q'), 'deporte:liga-f');
+  assert.match(runInContext('calEnlacesDeportes()', c), /data-cal="seguir" data-valor="liga-f" class="cal-seguir" aria-pressed="false" aria-label="Seguir Liga F">☆ Seguir</);
+  await c.click('seguir', 'liga-f');
+  assert.ok(c.almacen['voceiro-calendario-preferencias-v1'].includes('liga-f'));
 });
 const cantidad = html => (html.match(/class="cal-cita"/g) || []).length;
 const secciones = html => (html.match(/<section class="cal-dia[^"]*"/g) || []).length;
@@ -526,14 +528,14 @@ test('calendario deportivo: deportes en chips arriba y sus competiciones al eleg
   assert.doesNotMatch(chips, /cal-subchips|data-cal="capa"/);
   // Elegir competiciones no es un filtro: sin seguir ninguna, una pista hacia la ★.
   assert.doesNotMatch(chips, /data-cal="asistente"/);
-  assert.match(chips, /cal-pista-seguir">Elige un deporte y marca ★/);
+  assert.match(chips, /cal-pista-seguir">Elige una competición y pulsa ☆ Seguir/);
   assert.doesNotMatch(c.api.calContenido(), /cal-lateral/);
   // Elegir un deporte deja solo el suyo y enseña sus competiciones, con su marca y su nombre (la leyenda).
   await c.click('deporte', 'baloncesto');
   assert.equal(c.resumen().get('q'), 'deporte:nba,wnba,feb-endesa,feb-primera,feb-challenge');
   chips = c.api.calChipsDeportes();
   assert.match(chips, /data-valor="baloncesto" class="cal-dep cal-dep-baloncesto" aria-pressed="true"/);
-  assert.match(chips, /aria-label="Competiciones · 5 de 5"><span class="cal-capa"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="false">NBA<\/button><button type="button" data-cal="seguir" data-valor="nba" class="cal-seguir" aria-pressed="false" aria-label="Seguir NBA">☆<\/button><\/span>/);
+  assert.match(chips, /aria-label="Competiciones · 5 de 5"><button type="button" data-cal="capa" data-valor="nba" class="cal-dep cal-dep-baloncesto" aria-pressed="false">NBA<\/button>/);
   assert.match(chips, /data-valor="feb-endesa"[^>]*>Liga Femenina Endesa</);
   assert.doesNotMatch(chips, /data-valor="primera"/);
   // Con el deporte entero, ninguna marcada; pulsar una la deja sola, la
@@ -761,15 +763,17 @@ test('★ sigue una competición sin asistente: guarda la preferencia, no cambia
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   await c.deportes();
   await c.click('deporte', 'motor');
+  // Ningún ★ con el deporte entero; sí al ver una competición sola.
+  assert.doesNotMatch(runInContext('calEnlacesDeportes()', c), /data-cal="seguir"/);
+  await c.click('capa', 'f1');
   const antes = c.resumen().get('q');
   await c.click('seguir', 'f1');
   // Sin asistente hecho no se da por hecho: el sitio de la agenda sigue saliendo de «Mis sitios».
   assert.deepEqual(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).competiciones, ['f1']);
   assert.equal(JSON.parse(c.almacen['voceiro-calendario-preferencias-v1']).estado, 'omitido');
   assert.equal(c.resumen().get('q'), antes);
-  let chips = c.api.calChipsDeportes();
-  assert.match(chips, /data-cal="seguir" data-valor="f1" class="cal-seguir" aria-pressed="true" aria-label="Dejar de seguir F1">★/);
-  assert.match(chips, /data-cal="capas-sigo"/);
+  assert.match(runInContext('calEnlacesDeportes()', c), /data-cal="seguir" data-valor="f1" class="cal-seguir" aria-pressed="true" aria-label="Dejar de seguir F1">★ Seguir/);
+  assert.match(c.api.calChipsDeportes(), /data-cal="capas-sigo"/);
   await c.click('capas-sigo');
   assert.equal(c.resumen().get('q'), 'deporte:f1');
   await c.click('seguir', 'f1');

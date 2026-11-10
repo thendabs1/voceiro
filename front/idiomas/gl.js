@@ -759,7 +759,7 @@ export default {
   "calLasQueSigo": "As que sigo",
   "calSeguir": "Seguir {x}",
   "calDejarDeSeguir": "Deixar de seguir {x}",
-  "calPistaSeguir": "Escolle un deporte e marca ★ nas competicións que segues: «As que sigo» xúntaas.",
+  "calSeguirCorto": "Seguir", "calPistaSeguir": "Escolle unha competición e preme ☆ Seguir: «As que sigo» xúntaas.",
   "calAsTitulo": "Configurar calendario",
   "calAsPaso": "Paso {n} de {total}",
   "calAsSiguiente": "Seguinte",

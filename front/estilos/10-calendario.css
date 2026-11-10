@@ -65,7 +65,9 @@
    deporte con solo algunas, con el borde discontinuo. */
 .cal-chips .cal-dep:is([aria-pressed="true"],[aria-pressed="mixed"]){color:var(--dep);background:var(--dep-bg);border-color:var(--dep);box-shadow:inset 0 0 0 1px currentColor;font-weight:600}
 .cal-chips .cal-dep[aria-pressed="mixed"]{border-style:dashed;box-shadow:none}
-.cal-chip-marca{font-size:.85em}
+/* La marca del chip es la leyenda de las celdas: con su mismo aspecto. */
+.cal-chip-marca{font-size:.85em;padding:0 4px;border-radius:4px;color:var(--dep);background:var(--dep-bg)}
+.cal-chips [aria-pressed="true"] .cal-chip-marca{background:var(--bg)}
 .cal-todo-dia .cal-hora.cal-dep{color:var(--dep-bg);background:var(--dep)}
 .cal-mg-chip.cal-dep{color:var(--dep);background:var(--dep-bg)}.calendario-panel .cal-mg-barra.cal-dep{color:var(--dep-bg);background:var(--dep)}
 /* En cada día, todas sus competiciones («NBA 9», «F1»), las que quepan por línea. */
@@ -176,9 +178,8 @@ body.calendario-abierto{max-width:none}
   .cal-dias,.cal-dia:only-child>.cal-dia-grupos{display:grid;grid-template-columns:repeat(auto-fit,minmax(20em,1fr));gap:0 28px;align-items:start}
   .cal-dias .cal-dia h2{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 }
-/* Seguir una competición: ★ pegada a su chip, botón propio. */
-.cal-capa{display:inline-flex;align-items:center;flex:none}.cal-chips .cal-seguir{border-color:transparent;background:transparent;padding:3px 12px 3px 3px;color:var(--muted)}
-.cal-chips .cal-seguir[aria-pressed="true"]{color:var(--accent);box-shadow:none}
+/* Seguir la competición que se ve: en las acciones, marcada en el color de acento. */
+.cal-acciones .cal-seguir[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
 .cal-pista-seguir{flex-basis:100%;margin:0}
 /* Torneos en curso de Deportes: una fila por torneo (ESPN); fechas a la derecha. */
 .cal-curso-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 12px;align-items:baseline;border-top:1px solid var(--border);padding:4px 0;overflow-wrap:anywhere}

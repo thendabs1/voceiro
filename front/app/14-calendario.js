@@ -828,12 +828,17 @@ function calCompeticionVista(){
 }
 // Competición escrita en la barra: lleva la cabecera común (#competicion-cab).
 const calCabCompeticion = () => calPrefijoDeportivo() && !calMixta() ? calCompeticionVista() : '';
-// Con una competición, sus resultados y su tabla; con varias, la vista general.
+// Con una competición, sus resultados, su tabla y su ★ (se sigue lo que se
+// está viendo, como en Apple Sports); con varias, la vista general.
 function calEnlacesDeportes(){
   if (calCabCompeticion()) return '';
   const c = calCompeticionVista();
-  return (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'deportes:' }])
+  const enlaces = (c ? accionesCompeticion(c).filter(a => a.tipo !== 'calendario') : [{ texto: t('conResultados'), orden: 'deportes:' }])
     .map(a => calBoton('orden', a.texto, a.orden)).join('');
+  if (!c || !CALENDARIO.capas) return enlaces;
+  const sigue = (calPreferencias()?.competiciones || []).includes(c), nombre = calNombreCompeticion(c);
+  return enlaces + calBoton('seguir', (sigue ? '★ ' : '☆ ') + t('calSeguirCorto'), c,
+    `class="cal-seguir" aria-pressed="${sigue}" aria-label="${calEsc(t(sigue ? 'calDejarDeSeguir' : 'calSeguir', { x: nombre }))}"`);
 }
 function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
   const unica = calUnica();
@@ -1362,14 +1367,13 @@ function calChipsDeportes(){
   const chip = (accion, html, valor, pulsado, clase = '', attrs = '') => `<button type="button" data-cal="${accion}" data-valor="${calEsc(valor)}" class="${clase}" aria-pressed="${pulsado}"${attrs}>${html}</button>`;
   const deportes = Object.entries(CAL_DEPORTES).map(([k, cs]) =>
     chip('deporte', calEsc(t(CAL_NOMBRES_DEPORTE[k])), k, k !== elegido ? 'false' : igual(cs) ? 'true' : 'mixed', `cal-dep cal-dep-${k}`)).join('');
-  // Cada competición: su nombre filtra (lo que veo) y su ★ la sigue (Apple
-  // Sports, «Mis calendarios» de Google): dos botones hermanos, sin asistente.
+  // Cada competición filtra; su ★ va en las acciones al verla sola.
   // Con el deporte entero no hay filtro: ninguna marcada (SofaScore, facetas).
   const entero = igual(CAL_DEPORTES[elegido] || []);
   const competiciones = (CAL_DEPORTES[elegido] || []).map(c => {
-    const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c], sigue = sigo.includes(c);
-    return `<span class="cal-capa">${chip('capa', (calMarcaAporta(marca, nombre) ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, !entero && s.capas.has(c),
-      `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`)}${chip('seguir', sigue ? '★' : '☆', c, sigue, 'cal-seguir', ` aria-label="${calEsc(t(sigue ? 'calDejarDeSeguir' : 'calSeguir', { x: nombre }))}"`)}</span>`;
+    const nombre = calNombreCompeticion(c), marca = CAL_MARCAS[c];
+    return chip('capa', (calMarcaAporta(marca, nombre) ? `<b class="cal-chip-marca">${calEsc(marca)}</b> ` : '') + calEsc(nombre), c, !entero && s.capas.has(c),
+      `cal-dep cal-dep-${CAL_DEPORTE_DE[c]}`);
   }).join('');
   return `<div class="cal-chips ui-tira" role="group" aria-label="${calEsc(t('calCompeticiones'))}">${chip('capas-todas', calEsc(t('calTodas')), '', igual(CAL_COMPETICIONES))}
     ${sigo.length ? chip('capas-sigo', calEsc(t('calLasQueSigo')), '', igual(sigo)) : ''}${deportes}</div>
