@@ -354,6 +354,27 @@ test('partido: reloj en juego, actualización al caducar y sin campos inventados
   assert.deepEqual(p.d.ficha.estadisticas,[]); assert.deepEqual(p.d.ficha.jugadores,[]); assert.equal(p.d.ficha.lugar,null);
 });
 
+test('lo programado caduca en su saque: resultados y partido ofrecen Actualizar al empezar', async () => {
+  const saque = offset => new Date(Date.parse('2026-10-29T12:00:00Z') + offset).toISOString();
+  const pre = { type: { name: 'STATUS_SCHEDULED', state: 'pre', completed: false } };
+  const dia = muestra('espn-resultados-nba');
+  dia.events = dia.events.slice(0, 2).map((e, i) => ({ ...e, date: saque((i + 1) * 1800e3),
+    competitions: e.competitions.map(c => ({ ...c, date: saque((i + 1) * 1800e3), status: pre })) }));
+  const b = banco({ respuestas: [dia] });
+  // Saques a los 30 y 60 minutos: caduca en el primero, no en una hora.
+  assert.equal((await ficha(b, 'espn:resultados/nba')).r.headers.get('cache-control'), 'public, max-age=1800');
+  // Saque pasado sin empezar (retraso): se vigila cada minuto.
+  dia.events[0].competitions[0].date = dia.events[0].date = saque(-600e3);
+  const r = (await banco({ respuestas: [dia] }).pedir({ id: 'espn:resultados/nba' }, true)).r;
+  assert.equal(r.headers.get('cache-control'), 'public, max-age=60');
+  const previo = muestra('espn-partido-nba');
+  previo.header.competitions[0].status = pre;
+  previo.header.competitions[0].date = saque(300e3);
+  const p = await ficha(banco({ respuestas: [previo] }), 'espn:partido/nba/401909903');
+  assert.equal(p.d.ficha.estado, 'programado');
+  assert.equal(p.r.headers.get('cache-control'), 'public, max-age=300');
+});
+
 for (const [nombre,estado] of [['STATUS_POSTPONED','aplazado'],['STATUS_CANCELED','cancelado'],['STATUS_DELAYED','retrasado'],['STATUS_SUSPENDED','suspendido'],['STATUS_UNKNOWN','desconocido']]) {
   test(`partido y resultados: ${nombre} no se confunde con final`,async()=>{
     const d=muestra('espn-partido-nba'), r=muestra('espn-resultados-nba');
