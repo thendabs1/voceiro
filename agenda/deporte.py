@@ -45,9 +45,19 @@ def zonas_iana():
     return {z.upper(): z for z in available_timezones()}
 
 
+# Alias que publica la propia IANA (tzdb/backward). Ubuntu 24.04 los separa en
+# tzdata-legacy y el runner no los trae: se resuelven a la zona canónica.
+ALIASES_IANA = {
+    'US/CENTRAL': 'America/Chicago',  # F1, GP de Austin
+    'AMERICA/BUENOS_AIRES': 'America/Argentina/Buenos_Aires',  # MotoGP 2027, GP de Argentina
+}
+
+
 def zona_iana(valor):
     if valor is None or valor == '':
         return None
+    if isinstance(valor, str):
+        valor = ALIASES_IANA.get(valor.upper(), valor)
     if not isinstance(valor, str) or valor.upper() not in zonas_iana():
         raise ValueError('Zona de agenda desconocida')
     return zonas_iana()[valor.upper()]

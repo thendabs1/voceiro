@@ -20,12 +20,6 @@ CAMPOS_GP = ('meetingKey', 'meetingName', 'meetingOfficialName', 'meetingStartDa
     'circuitLocation', 'meetingCountryName', 'url', 'roundText', 'isTestEvent', 'type', 'status')
 CAMPOS_SESION = ('meetingSessionKey', 'shortName', 'description', 'startTime', 'endTime',
                  'gmtOffset', 'timezone', 'state')
-# Alias publicado por IANA (tzdb/backward), presente en el GP de Austin.
-ALIASES_IANA = {'US/Central': 'America/Chicago'}
-
-
-def _zona(valor):
-    return deporte.zona_iana(ALIASES_IANA.get(valor, valor))
 
 
 def _flight(texto):
@@ -101,7 +95,7 @@ def _enlace(gp, year):
 
 
 def _dias(gp):
-    zona = _zona(gp.get('meetingTimezone'))
+    zona = deporte.zona_iana(gp.get('meetingTimezone'))
     if not zona:
         return deporte.dias()
     limites = []
@@ -117,7 +111,7 @@ def _dias(gp):
 
 
 def _sesion(s, zona):
-    zona = _zona(s.get('timezone') or zona)
+    zona = deporte.zona_iana(s.get('timezone') or zona)
     limites = []
     for campo in ('startTime', 'endTime'):
         valor = s.get(campo)
