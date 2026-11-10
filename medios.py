@@ -44,7 +44,8 @@ MEDIA_CATALOG = [
         { 'd':'estadiodeportivo.com','n':'Estadio Deportivo','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','andalucia'],
           'fuentes':[('rss', 'https://www.estadiodeportivo.com/sitemaps/rss.xml'), ('scrape',)] },
         { 'd':'marca.com','n':'Marca','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','futbol'],
-          'fuentes':[('rss', 'https://e00-marca.uecdn.es/rss/portada.xml'), ('scrape',)] },
+          # Su portada.xml redirige a /rss/googlenews/, que se renueva a saltos (3 tandas en 7 días, nov. 2026).
+          'fuentes':[('scrape',), ('rss', 'https://e00-marca.uecdn.es/rss/portada.xml')] },
         { 'd':'mundodeportivo.com','n':'Mundo Deportivo','type':'diario','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','futbol','catalan'],
           'fuentes':[('rss', 'https://www.mundodeportivo.com/feed/rss/home/'), ('scrape',)] },
         { 'd':'palco23.com','n':'Palco23','type':'digital','sector':'deportes','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['deportes','negocio'],
@@ -81,7 +82,8 @@ MEDIA_CATALOG = [
         { 'd':'estrategiasdeinversion.com','n':'Estrategias de Inversión','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','inversion'],
           'fuentes':[('rss', 'https://estrategiasdeinversion.com/feed/'), ('scrape',)] },
         { 'd':'expansion.com','n':'Expansión','type':'diario','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','negocios'],
-          'fuentes':[('rss', 'https://e00-expansion.uecdn.es/rss/portada.xml'), ('scrape',)] },
+          # Su portada.xml dejó de renovarse el 5-11-2026; responde bien, así que no caía al scraping.
+          'fuentes':[('scrape',), ('rss', 'https://e00-expansion.uecdn.es/rss/portada.xml')] },
         { 'd':'finect.com','n':'Finect','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','finanzas'],
           'fuentes':[('rss', 'https://www.finect.com/v4/bff/rss/articles.rss'), ('scrape',)] },
         { 'd':'idealista.com','n':'Idealista News','type':'digital','sector':'economia','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['economia','vivienda'],
@@ -229,7 +231,8 @@ MEDIA_CATALOG = [
         { 'd':'elespanol.com','n':'El Español','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'],
           'fuentes':[('rss', 'https://www.elespanol.com/rss/'), ('scrape',)] },
         { 'd':'elindependiente.com','n':'El Independiente','type':'digital','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','digital'],
-          'fuentes':[('rss', 'https://www.elindependiente.com/rss/'), ('scrape',)] },
+          # Su RSS se renueva a saltos (6 tandas en 7 días, nov. 2026); WP-API está al día y trae fecha real.
+          'fuentes':[('wp',), ('scrape',), ('rss', 'https://www.elindependiente.com/rss/')] },
         { 'd':'elmundo.es','n':'El Mundo','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional'],
           'fuentes':[('rss', 'https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml'), ('scrape',)] },
         { 'd':'elpais.com','n':'El País','type':'diario','sector':'generalista','ambito':'nacional','region':None,'pais':None,'langs':['es'],'lang_principal':'es','tags':['generalista','nacional'],
