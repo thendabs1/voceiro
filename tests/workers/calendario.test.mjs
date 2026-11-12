@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { prepararLectura } from '../../shared/calendario/proyeccion.js';
 import { atenderCalendario, normalizarConsulta, consultaEventos, consultaResumen, consultaChips, consultaBarras, consultaDisponibilidad, consultaDisponibilidadPrecalculada } from '../../workers/comun/calendario.js';
 import { consultarTurso } from '../../workers/comun/calendario-turso.js';
-import { seleccionCalendario, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
+import { AMBITOS, seleccionCalendario, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 import { agruparPorDiaCalendario, presentacionCalendario, sumarDiasCalendario, TRAMO_MAX_DIAS } from '../../shared/calendario/fechas.js';
 
 const env = { CALENDARIO_TURSO_URL: 'libsql://prueba.turso.io', CALENDARIO_TURSO_TOKEN_LECTURA: 'solo-prueba' };
@@ -307,6 +307,19 @@ test('validación antes de Turso; fallos de transporte y cambios entre snapshots
     assert.deepEqual([cambiada.status, (await cambiada.json()).revision], [409, 'nueva']);
     assert.equal((await b.pedir('/calendario/eventos?desde=2025-01-01&hasta=2025-01-02')).status, 422);
   } finally { b.db.close(); }
+});
+
+test('«Todas» en Deportes pide todas las competiciones del catálogo sin topar en 20', () => {
+  const todas = Object.entries(AMBITOS).filter(([k, a]) => a.codigo && k !== 'deportes').map(([k]) => k);
+  assert.ok(todas.length > 20);
+  const c = normalizarConsulta(new URL(`https://x.test${ventana}&q=${encodeURIComponent('deporte:' + todas.join(','))}`));
+  assert.deepEqual(new Set(c.orden.ambitos), new Set(todas));
+  // «Próximas semanas en deportes» las manda en `circuitos`.
+  const t = normalizarConsulta(new URL(`https://x.test${ventana}&circuitos=${todas.join(',')}`));
+  assert.deepEqual(t.circuitos, [...todas].sort());
+  const libres = Array.from({ length: 21 }, (_, i) => 't' + i).join(',');
+  for (const p of ['temas', 'circuitos'])
+    assert.throws(() => normalizarConsulta(new URL(`https://x.test${ventana}&${p}=${libres}`)), /Demasiados filtros/);
 });
 
 test('prefijos deporte y circuito ignoran competiciones desconocidas sin vaciar mezclas ni abrir el filtro', async t => {
