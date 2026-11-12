@@ -72,7 +72,9 @@ export function normalizarConsulta(url) {
     tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1', chips: p.get('chips') === '1', total: p.get('total') === '1',
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
   if (c.total && (url.pathname !== '/calendario/eventos' || c.chips || c.pendientes)) throw error(400, 'El total solo se da en la lista de eventos con fechas');
-  if ([c.temas, c.circuitos, c.formatos, c.modalidades, c.titular, c.actividades, c.excluirActividades, c.orden.ambitos || [], c.orden.circuitos || []].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
+  // Los ámbitos y circuitos de q salen del catálogo cerrado (AMBITOS) sin repetir:
+  // ya están acotados, y «Todas» en Deportes pide todas las competiciones a la vez.
+  if ([c.temas, c.circuitos, c.formatos, c.modalidades, c.titular, c.actividades, c.excluirActividades].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   if (c.modalidades.some(m => !MODALIDADES_ATLETISMO.includes(m))) throw error(400, 'Modalidad desconocida');
   if (c.titular.some(x => !TITULAR_ATLETISMO.test(x))) throw error(400, 'Titular desconocido');
   if ([...c.actividades, ...c.excluirActividades].some(a => !ACTIVIDADES_ATLETISMO.includes(a))) throw error(400, 'Actividad desconocida');
