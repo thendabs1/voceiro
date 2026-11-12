@@ -7,6 +7,18 @@ from . import deporte, recogida
 
 
 BASE = 'https://api.ocblacktop.com/v1/wrc/seasons/'
+CANCELADOS = ('cancelled', 'canceled')
+
+
+def total_cuadra(pagina, rallies):
+    """roundCount cuenta todos los rallies o solo los no cancelados.
+
+    En 2026 OCBlacktop dejó de contar Arabia Saudí al cancelarla (13 de 14),
+    pero la sigue enviando y con su ronda. Ambos totales acreditan que no
+    falta ninguno; cualquier otro, que la lista llega recortada."""
+    total = pagina.get('roundCount')
+    vigentes = sum(r.get('status') not in CANCELADOS for r in rallies)
+    return type(total) is int and total in (len(rallies), vigentes)
 
 
 def importar(anterior, pagina, observado, url=None, temporada=None):
@@ -17,7 +29,7 @@ def importar(anterior, pagina, observado, url=None, temporada=None):
         raise ValueError('Temporada WRC distinta de la solicitada')
     rallies = deporte.filas(pagina, 'rallies', 100)
     total = pagina.get('roundCount')
-    if total is not None and (type(total) is not int or total != len(rallies)):
+    if total is not None and not total_cuadra(pagina, rallies):
         raise ValueError('Temporada WRC incompleta')
     a = deporte.Agenda(anterior, 'ocblacktop-wrc', 'OCBlacktop WRC', 'https://ocblacktop.com/api/wrc',
                        'automovilismo', observado, bool(url))
