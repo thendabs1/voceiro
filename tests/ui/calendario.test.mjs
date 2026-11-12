@@ -1627,6 +1627,17 @@ test('una cita enlaza sus resultados hasta hoy; la futura y la anulada, no', () 
   assert.doesNotMatch(runInContext('calCita(evento, "2020-01-05")', c), /ver-resultados/);
 });
 
+test('el partido de hoy enlaza sus resultados al empezar, no antes', () => {
+  const c = contexto();
+  const inicio = Date.now() + 3600e3;
+  c.evento = { id: 'a', competiciones: ['primera'], nombres: { und: 'Sevilla — Alavés' },
+    programacion: { valor: { cuando: { inicio: { instante: new Date(inicio).toISOString() } } } } };
+  const hoy = runInContext('calHoy()', c);
+  assert.doesNotMatch(runInContext(`calCita(evento, "${hoy}")`, c), /ver-resultados/);
+  runInContext(`Date.now = () => ${inicio}`, c);
+  assert.match(runInContext(`calCita(evento, "${hoy}")`, c), /ver-resultados/);
+});
+
 test('Deportes enlaza la vista general; con una competición, sus resultados y su tabla', () => {
   const c = contexto();
   c.accionesCompeticion = () => [{ tipo: 'resultados', texto: 'Resultados', orden: 'resultados:nba' }, { tipo: 'calendario', texto: 'Calendario', orden: 'calendario:nba' }];

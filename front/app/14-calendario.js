@@ -808,6 +808,8 @@ function calEtiquetasDeportes(e){
 }
 // Un partido en Deportes es una línea: hora y equipos. El estadio queda al desplegarlo.
 const calFilaPartido = e => calModoDeportes() && e.clase === 'encuentro';
+// Sin hora conocida vale el día; con ella, el partido de las 21:00 no enlaza a las 20:00.
+const calEmpezada = e => !(Date.parse(e.programacion?.valor?.cuando?.inicio?.instante) > Date.now());
 const calEnlaceResultados = d => d ? calBoton('ver-resultados', t('conResultados'), d.codigo, `class="cal-resultados" data-fecha="${calEsc(d.fecha)}" data-id="${calEsc(d.id)}"`) : '';
 function calCita(e, dia = ''){
   // Un chip de sesión trae su propio estado; si no, el del evento.
@@ -820,7 +822,7 @@ function calCita(e, dia = ''){
   const padre = e.padre ? calNombreEvento({ nombres: e.padre, lugar: e.lugar }) : '';
   const titulo = e.padre ? calNombreSesion(e, { nombres: e.padre }) : calNombreEvento(e);
   // Lo que aún no ha empezado no tiene resultados que ver.
-  const destino = dia && dia <= calHoy() && !anulado ? destinoResultados(e, dia) : null;
+  const destino = dia && dia <= calHoy() && !anulado && calEmpezada(e) ? destinoResultados(e, dia) : null;
   return `<article class="cal-cita${fila ? ' cal-fila' : ''}${anulado ? ' cal-anulada' : ''}"><span class="cal-hora">${calEsc(hora)}</span><div class="cal-cita-cuerpo">
     ${padre && !titulo.includes(calNombre({ nombres: e.padre })) ? `<p class="cal-nota cal-padre">${calEsc(padre)}</p>` : ''}
     <h3>${calTituloDesplegable(e, dia, false, titulo)}</h3>
@@ -951,7 +953,7 @@ function calGpDia(b, dia){
   }).join('');
   const nota = ficha === undefined && b.tiene_programa ? t('calCargando') : [calDiaDeN(b, dia), lugar].filter(Boolean).join(' · ');
   const titulo = [...(b.competiciones || []).map(calNombreCompeticion), calNombreEvento(b)].join(' · ');
-  const destino = dia <= calHoy() ? destinoResultados(b, dia) : null;
+  const destino = dia <= calHoy() && calEmpezada(b) ? destinoResultados(b, dia) : null;
   return `<article class="cal-gp"><div class="cal-gp-cab"><h3>${calTituloDesplegable(b, dia, true, titulo)}</h3>${calEnlaceResultados(destino)}</div>
     ${filas || `<p class="cal-nota">${calEsc(nota)}</p>`}${calDesplegado(b, dia, true)}</article>`;
 }

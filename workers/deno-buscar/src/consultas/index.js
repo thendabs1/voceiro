@@ -57,6 +57,12 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
   entorno = nombre => globalThis.Deno?.env.get(nombre), presupuesto = crearPresupuesto({ ahora }) } = {}) {
   const enCurso = new Map();
   const motor = crearMotor({ pedir, ahora, abrirCache });
+  // Lo programado caduca en su saque, no una hora después: así el panel ofrece
+  // Actualizar en cuanto puede haber marcador. Un saque que se retrasa se vigila
+  // cada minuto durante una hora.
+  const hastaSaque = (partidos, tope) => Math.min(tope, ...partidos.filter(p => p.estado === 'programado')
+    .map(p => Date.parse(p.inicio)).filter(i => i > ahora() - 3600e3)
+    .map(i => Math.max(60, Math.ceil((i - ahora()) / 1000))));
   async function pedir(proveedor, url) {
     const headers = { 'User-Agent': UA, Accept: 'application/json' };
     if (proveedor === 'tmdb') {
@@ -139,7 +145,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       const ficha = normalizarPartido(d, codigo, deporte, liga, evento);
       const seccion = deporte === 'soccer' ? 'soccer/match' : `${codigo}/game`;
       return { ficha, enlace: `https://www.espn.com/${seccion}/_/gameId/${evento}`,
-        ttl: ficha.estado === 'en_juego' ? 60 : ficha.estado === 'final' ? 3600 : 900 };
+        ttl: ficha.estado === 'en_juego' ? 60 : ficha.estado === 'final' ? 3600 : hastaSaque([ficha], 900) };
     }
     if (tipo === 'libro') {
       const obra = await pedir('openlibrary', `${OL}/works/${valor}.json`);
@@ -172,7 +178,7 @@ export function crearConsultas({ fetch: descargar = (...args) => fetch(...args),
       if (fecha && scoreboard.day?.date && scoreboard.day.date !== fecha) throw fallo('ESPN: fecha distinta de la solicitada');
       const partidos = normalizar.resultados(scoreboard, codigo, fecha);
       const enJuego = partidos.partidos.some(p => p.estado === 'en_juego') || (scoreboard.events || []).some(e => e.status?.type?.state === 'in');
-      if (tipo === 'resultados') return { ficha: partidos, ttl: enJuego ? 60 : 3600, vacio: !partidos.partidos.length };
+      if (tipo === 'resultados') return { ficha: partidos, ttl: enJuego ? 60 : hastaSaque(partidos.partidos, 3600), vacio: !partidos.partidos.length };
       const d = await pedir('espn', `https://site.api.espn.com/apis/v2/sports/${circuito}/standings`);
       if (!Array.isArray(d.children) && !d.standings) throw fallo('ESPN: clasificación no válida');
       const ficha = normalizar.clasificacion(d, codigo, ESPN[codigo][0]);
