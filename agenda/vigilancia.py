@@ -10,6 +10,7 @@ consultas de URL ni cadenas con aspecto de clave.
 import argparse
 from hashlib import sha256
 import json
+import os
 import re
 import subprocess
 
@@ -20,10 +21,23 @@ def marcador(paso):
     return '<!-- voceiro:vigilancia:' + paso + ' -->'
 
 
+SENSIBLE = re.compile(r'TOKEN|KEY|SECRET|PASSWORD|CLAVE', re.I)
+
+
 def limpiar(texto):
-    # Sin consulta ni fragmento: ahí van claves (apikey, token) de algunas fuentes.
+    # Primero los valores literales de los secretos del job, estén donde estén.
+    for nombre, valor in os.environ.items():
+        if SENSIBLE.search(nombre) and len(valor) >= 6:
+            texto = texto.replace(valor, '[oculto]')
+    # URL sin credenciales, consulta ni fragmento: ahí van claves (apikey, token) de algunas fuentes.
+    texto = re.sub(r'(https?://)[^\s/@"\'<>]+@', r'\1', texto)
     texto = re.sub(r'(https?://[^\s?#"\'<>]+)[?#][^\s"\'<>]*', r'\1', texto)
-    texto = re.sub(r'[A-Za-z0-9_+=-]{32,}', '[oculto]', texto)
+    # `token=…`, `Authorization: Bearer …` y similares.
+    texto = re.sub(r'(?i)\b((?:api[_-]?)?(?:key|token|secret|password|clave|authorization)\b["\']?\s*[=:]\s*'
+                   r'(?:bearer\s+)?)["\']?[^\s"\'&,;]+', r'\1[oculto]', texto)
+    texto = re.sub(r'(?i)\bbearer\s+[^\s"\']+', 'Bearer [oculto]', texto)
+    # Cadenas largas con aspecto de clave, también partidas por / o .
+    texto = re.sub(r'[A-Za-z0-9_+=-]{24,}(?:[/.][A-Za-z0-9_+=-]{8,})*', '[oculto]', texto)
     return texto.replace('```', "'''")[:600]
 
 

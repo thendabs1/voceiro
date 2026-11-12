@@ -97,7 +97,22 @@ class Vigilancia(unittest.TestCase):
         self.assertNotIn('SECRETO', limpio)
         self.assertNotIn('eyJhbGci', limpio)
         self.assertNotIn('```', limpio)
+        # Casos que reprodujo la review: clave corta, credenciales en la URL, clave partida y secretos del job.
+        with patch.dict('os.environ', {'CALENDARIO_TURSO_TOKEN': 'abc.def-corto'}):
+            for fuga, secreto in (('token=secreto-de-20-letras', 'secreto'),
+                                  ('https://usuario:clave-corta@api.x/y', 'clave-corta'),
+                                  ('ABCDEFGHIJKLMNOPQRSTUVWXYZabc/DEFGHIJKLMNOP', 'DEFGHIJ'),
+                                  ('Authorization: Bearer xyz123', 'xyz123'),
+                                  ('turso abc.def-corto', 'abc.def')):
+                self.assertNotIn(secreto, vigilancia.limpiar(fuga), fuga)
+        real = 'fca: la lectura no trae 67 de 83 citas conocidas; no se retira nada'
+        self.assertEqual(vigilancia.limpiar(real), real)
         self.assertEqual(len(vigilancia.limpiar('error de red ' * 200)), 600)
+
+    def test_base_nueva_sin_agenda_estado_no_tiene_vigilancias(self):
+        import sqlite3
+        from agenda.control import Repositorio
+        self.assertEqual(Repositorio(db=sqlite3.connect(':memory:')).vigilancias(), {})
 
     def test_repositorio_y_umbral_validos(self):
         for repo, umbral in (('o/r; rm', 2), ('o/r', 0)):

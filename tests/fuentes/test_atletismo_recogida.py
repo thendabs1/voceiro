@@ -413,6 +413,64 @@ class RecogidaAtletismo(unittest.TestCase):
             r.recoger('fca', '2026-11-01', '2026-11-30', conocidas=conocidas,
                       descargar=lambda u: json.dumps(pagina(*otras)) if '?' in u else obtener(u))
 
+    def test_fca_renumerada_dos_veces_bloqueo_y_reaparicion(self):
+        def tribe(i, slug):
+            return {'id': i, 'title': 'Cursa ' + slug, 'url': f'https://fcatletisme.cat/event/{slug}/',
+                    'start_date': '2026-11-14 00:00:00', 'end_date': '2026-11-14 23:59:59', 'all_day': True,
+                    'venue': {'id': 1, 'venue': 'Pista', 'city': 'Lleida'}, 'categories': [], 'organizer': [],
+                    'status': 'publish', 'hide_from_listings': False}
+
+        def pagina(*eventos):
+            return {'total': len(eventos), 'total_pages': 1, 'events': list(eventos)}
+
+        def leer(base):
+            return [tribe(base + i, f'c{i}') for i in range(5)]
+
+        def fuente(base, ficha_html=None):
+            def obtener(url):
+                if '?' in url:
+                    return json.dumps(pagina(*leer(base)))
+                if '/event/' in url and ficha_html:
+                    raise HTTPError(url, ficha_html, 'Bloqueo', {}, io.BytesIO(b''))
+                raise HTTPError(url, 404, 'Not Found', {}, io.BytesIO(b''))
+            return obtener
+
+        def pasar(n, base, observado, ficha_html=None):
+            conocidas = [c for c in atletismo_coincidencias.actuales(n) if c['fuente'] == 'fca'
+                         and c['id'] not in r.renumerados(n['fuentes']['fca'])]
+            entrada, informe = r.recoger('fca', '2026-11-01', '2026-11-30', descargar=fuente(base, ficha_html),
+                                         conocidas=conocidas, observado=observado)
+            n = atletismo.registrar_ausencias(atletismo.importar(n, entrada, observado), 'fca', informe['ausencias'])
+            return n, entrada, informe
+
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'fca',
+                                      'eventos': atletismo.leer_cataluna([pagina(*leer(1))])}, AHORA)
+        destinos = {c['url']: c['destino'] for c in atletismo_coincidencias.actuales(n)}
+        # Un 403 de las fichas tras acreditar la renumeración: ni hereda ni importa el ID nuevo.
+        n, entrada, informe = pasar(n, 101, '2026-11-03T20:00:00+01:00', ficha_html=403)
+        self.assertEqual((entrada['eventos'], informe['renumeradas'], informe['ausencias']), ([], [], []))
+        self.assertNotIn('101', {c['id'] for c in atletismo_coincidencias.actuales(n)})
+        # La pasada siguiente la acredita; la otra, sin cambios, no reconsulta los sustituidos.
+        n, _, informe = pasar(n, 101, '2026-11-04T20:00:00+01:00')
+        self.assertEqual(len(informe['renumeradas']), 5)
+        n, _, informe = pasar(n, 101, '2026-11-05T20:00:00+01:00')
+        self.assertEqual((informe['ausencias'], informe['renumeradas']), ([], []))
+        self.assertEqual({x['motivo'] for x in n['fuentes']['fca']['ausencias']['ids'].values()},
+                         {f'renumerada como {i} (HTTP 404)' for i in range(101, 106)})
+        # Una segunda renumeración no la bloquean los IDs ya sustituidos.
+        n, _, informe = pasar(n, 201, '2026-11-06T20:00:00+01:00')
+        self.assertEqual(len(informe['renumeradas']), 5)
+        actuales = {c['id']: c for c in atletismo_coincidencias.actuales(n)}
+        for i in range(201, 206):
+            self.assertEqual(actuales[str(i)]['destino'], destinos[actuales[str(i)]['url']])
+            self.assertEqual(actuales[str(i)]['metadatos']['renumerada_de'], str(i - 200))
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 5)
+        self.assertEqual(atletismo_coincidencias.incidencias(n), [])
+        # El ID original que reaparece junto a su sustituto no se une solo.
+        vuelve = atletismo.leer_cataluna([pagina(tribe(1, 'c0'), tribe(201, 'c0'))])
+        with self.assertRaisesRegex(ValueError, 'reaparece con su sustituto'):
+            atletismo.importar(n, {'version': 1, 'fuente': 'fca', 'eventos': vuelve}, '2026-11-07T20:00:00+01:00')
+
 
 AHORA = '2026-11-02T20:00:00+01:00'
 

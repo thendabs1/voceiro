@@ -434,6 +434,12 @@ def renumeraciones(conocidas, eventos, faltan):
     return {i: nuevo for i, nuevo in candidatas.items() if reclamadas[nuevo] == 1}
 
 
+def renumerados(fuente_guardada):
+    """IDs retirados por renumeración: los sustituye otro y no se reconsultan."""
+    ids = ((fuente_guardada or {}).get('ausencias') or {}).get('ids', {})
+    return {i for i, x in ids.items() if (x.get('detalle') or {}).get('renumerada_como')}
+
+
 def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, observado):
     """Citas guardadas en la ventana que una lectura completa ya no trae.
 
@@ -518,12 +524,13 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
         except HTTPError as error:
             if not retirada(fuente, error):
                 raise
+            ausencia = {'id': c['id'], 'url': c['url'], 'comprobado': observado,
+                        'motivo': f'ficha retirada (HTTP {error.code})'}
             if c['id'] in candidatas:
                 renumeradas.append({'id': c['id'], 'nuevo': candidatas[c['id']]})
-                motivo = f"renumerada como {candidatas[c['id']]} (HTTP {error.code})"
-            else:
-                motivo = f'ficha retirada (HTTP {error.code})'
-            ausencias.append({'id': c['id'], 'url': c['url'], 'comprobado': observado, 'motivo': motivo})
+                ausencia.update(motivo=f"renumerada como {candidatas[c['id']]} (HTTP {error.code})",
+                                detalle={'renumerada_como': candidatas[c['id']]})
+            ausencias.append(ausencia)
             continue
         r = FICHAS[fuente](c, contenido, obtener)
         if r.get('bloqueo'):
@@ -665,6 +672,10 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         informe['relectura'] = atletismo_relectura.leer(fuente, conocidas, relectura['comprobadas'], excluidas,
             date.today(), obtener, observado or datetime.now(timezone.utc).isoformat(timespec='microseconds'))
     if bloqueo is not None:
+        # Sin la ausencia del guardado no se hereda, y el ID nuevo no se importa
+        # con identidad propia: la pasada siguiente vuelve a acreditar la renumeración.
+        nuevos = {x['nuevo'] for x in informe.get('renumeradas', [])}
+        entrada['eventos'] = [e for e in entrada['eventos'] if str(e['id']) not in nuevos]
         informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[],
                        renumeradas=[], retry_after=(bloqueo.headers or {}).get('Retry-After'))
         if fuente in ('rfea', 'fca'):
@@ -791,9 +802,11 @@ def main(argv=None):
     def preparar(anterior):
         anterior = anterior or integrar(None, [], {}, observado)
         calendario = ampliar(anterior)
-        conocidas = [c for c in coincidencias.actuales(calendario['nucleo'])
-                     if c['fuente'] == args.fuente and not c['id'].startswith('nivel-ii:')]
         previa = calendario['nucleo'].get('fuentes', {}).get(args.fuente) or {}
+        sustituidos = renumerados(previa)
+        conocidas = [c for c in coincidencias.actuales(calendario['nucleo'])
+                     if c['fuente'] == args.fuente and not c['id'].startswith('nivel-ii:')
+                     and c['id'] not in sustituidos]
         entrada, informe = recoger(args.fuente, desde.isoformat(), hasta.isoformat(), cache=args.cache,
                                    conocidas=conocidas, observado=observado,
                                    indice_circulares=json.loads(Path(args.indice_circulares).read_text()) if args.indice_circulares else None,

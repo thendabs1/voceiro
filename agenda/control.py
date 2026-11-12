@@ -124,7 +124,12 @@ class Repositorio:
                                     temporadas.despues(ahora, hours=cadencias.espera_fallo(grupo, errores)))})
 
     def vigilancias(self):
-        """Estado de los pasos tolerados de la pasada (agenda/vigilancia.py)."""
+        """Estado de los pasos tolerados de la pasada (agenda/vigilancia.py).
+
+        Una base nueva aún no tiene agenda_estado: la crea el primer paso que la inicializa.
+        """
+        if not self.consultar("SELECT 1 FROM sqlite_master WHERE type='table' AND name='agenda_estado'"):
+            return {}
         return {clave.removeprefix('vigilancia:'): json.loads(valor) for clave, valor in self.consultar(
             "SELECT clave, valor_json FROM agenda_estado WHERE clave LIKE 'vigilancia:%'")}
 

@@ -184,6 +184,20 @@ def importar(anterior, pagina, observado):
         clase = a.c.n['entidades'][nucleo.clave(previa)]['clase'] if previa else g['clase']
         grupos[i] = a.grupo('agrupacion', i, clase, g.get('nombre'), padre=capa,
             url=enlace(fuente, g['url']), codigo=g.get('codigo_consulta'))
+    # Un ID retirado por renumeración que reaparece junto a quien lo sustituyó
+    # dejaría dos IDs vivos en una identidad: eso solo lo decide una conciliación.
+    retirados = {i for i, x in ((ausencias or {}).get('ids') or {}).items()
+                 if (x.get('detalle') or {}).get('renumerada_como')}
+    destinos = {}
+    for e in eventos:
+        i = deporte.literal(e.get('renumerada_de') if e.get('renumerada_de') is not None
+                            and not a.anterior('competicion', e['id']) else e['id'])
+        if d := a.anterior('competicion', i):
+            destinos.setdefault(nucleo.clave(d), []).append(deporte.literal(e['id']))
+    for ids in destinos.values():
+        if len(ids) > 1 and retirados & set(ids):
+            raise ValueError('ID renumerado que reaparece con su sustituto: requiere conciliación explícita ('
+                             + ', '.join(sorted(ids)) + ')')
     for e in eventos:
         previa = a.anterior('competicion', e['id'])
         # La fuente publica la cita guardada con otro ID (atletismo_recogida.renumeraciones):

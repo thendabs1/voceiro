@@ -86,6 +86,12 @@ class Alcance(unittest.TestCase):
         caso = {'motivo': 'x', 'comparacion': {}, 'citas': [a, b]}
         self.assertNotEqual(revision.huella(caso), revision.huella({**caso, 'citas': [self.cita('rfea', 'titulo'), b]}))
 
+    def test_la_huella_no_cambia_si_la_fuente_renumera(self):
+        a, b = self.cita('fca'), self.cita('rfea')
+        caso = {'motivo': 'x', 'comparacion': {}, 'citas': [a, b]}
+        renumerada = {**a, 'id': a['id'] + '-nuevo', 'metadatos': {**a['metadatos'], 'renumerada_de': a['id']}}
+        self.assertEqual(revision.huella(caso), revision.huella({**caso, 'citas': [renumerada, b]}))
+
 
 class Coincidencias(unittest.TestCase):
     def test_tres_fuentes_comparten_cita_y_no_crean_incidencias(self):

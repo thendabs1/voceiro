@@ -326,6 +326,11 @@ def posible_duplicado(comparacion):
                 and set(comparacion['motivos']) <= {'nombre insuficientemente coincidente'})
 
 
+def id_estable(cita):
+    """El primer ID guardado de una cita que la fuente renumeró (atletismo.importar)."""
+    return cita['metadatos'].get('renumerada_de') or cita['id']
+
+
 def incidencias(n):
     """Casos pendientes con clave estable por par.
 
@@ -335,11 +340,11 @@ def incidencias(n):
     ausentes = {(f, i): x for f, d in n['fuentes'].items() for i, x in (d.get('ausencias') or {}).get('ids', {}).items()}
     # Un ID que la fuente renumeró lo sustituye el nuevo, que hereda la clave del par.
     conocidos = [c for c in actuales(n)
-                 if not ausentes.get((c['fuente'], c['id']), {}).get('motivo', '').startswith('renumerada como ')]
+                 if not (ausentes.get((c['fuente'], c['id']), {}).get('detalle') or {}).get('renumerada_como')]
     salida = {}
     for pos, a in enumerate(conocidos):
         for b in conocidos[pos + 1:]:
-            par = sorted([(c['fuente'], c['metadatos'].get('renumerada_de') or c['id']) for c in (a, b)])
+            par = sorted([(c['fuente'], id_estable(c)) for c in (a, b)])
             clave = sha256(nucleo.json_canonico(par).encode()).hexdigest()[:24]
             citas = sorted([a, b], key=lambda c: (c['fuente'], c['id']))
             if distribucion(a['fuente'], a['id']) == distribucion(b['fuente'], b['id']):
