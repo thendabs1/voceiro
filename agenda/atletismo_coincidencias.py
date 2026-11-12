@@ -318,8 +318,17 @@ def decidir(fuente, evento, conocidos):
     return {'estado': 'revisar' if candidatos else 'nueva', 'candidatos': candidatos}
 
 
+def sustituidos(n):
+    """(fuente, ID) que la fuente renumeró: los sustituye el nuevo, que hereda su identidad."""
+    return {(f, i) for f, d in ((n or {}).get('fuentes') or {}).items()
+            for i, x in ((d.get('ausencias') or {}).get('ids') or {}).items()
+            if (x.get('detalle') or {}).get('renumerada_como')}
+
+
 def decidir_lote(n, fuente, eventos):
-    conocidos = actuales(n)
+    # Un ID renumerado conserva su última lectura: no debe atraer citas con datos ya superados.
+    retirados = sustituidos(n)
+    conocidos = [c for c in actuales(n) if (c['fuente'], c['id']) not in retirados]
     decisiones = {str(e['id']): decidir(fuente, e, conocidos) for e in eventos}
     destinos = Counter(d['cita']['destino']['id'] for d in decisiones.values() if d['estado'] == 'automatica')
     for d in decisiones.values():
@@ -352,8 +361,8 @@ def incidencias(n):
     """
     ausentes = {(f, i): x for f, d in n['fuentes'].items() for i, x in (d.get('ausencias') or {}).get('ids', {}).items()}
     # Un ID que la fuente renumeró lo sustituye el nuevo, que hereda la clave del par.
-    conocidos = [c for c in actuales(n)
-                 if not (ausentes.get((c['fuente'], c['id']), {}).get('detalle') or {}).get('renumerada_como')]
+    retirados = sustituidos(n)
+    conocidos = [c for c in actuales(n) if (c['fuente'], c['id']) not in retirados]
     salida = {}
     for pos, a in enumerate(conocidos):
         for b in conocidos[pos + 1:]:

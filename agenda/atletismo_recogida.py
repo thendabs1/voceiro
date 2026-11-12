@@ -638,7 +638,10 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         informe.setdefault('avisos', []).extend(informe['fichas']['fallidas'])
     if fuente in ('rfea', 'fca') and bloqueo is None:
         try:
-            informe['documentos_revisados'] = atletismo_documentos.completar(fuente, entrada['eventos'], obtener)
+            # El catálogo documental cita el primer ID guardado; la fuente puede haberlo renumerado.
+            estables = {c['id']: coincidencias.id_estable(c) for c in conocidas}
+            estables.update({x['nuevo']: estables.get(x['id'], x['id']) for x in informe.get('renumeradas', [])})
+            informe['documentos_revisados'] = atletismo_documentos.completar(fuente, entrada['eventos'], obtener, estables)
             informe.setdefault('avisos', []).extend(informe['documentos_revisados']['avisos'])
         except HTTPError as error:
             if error.code not in (403, 429):

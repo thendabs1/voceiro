@@ -183,6 +183,8 @@ jobs:
         # También tras una pasada fallida: abre un issue por paso con fallos
         # seguidos y lo cierra cuando se recupera (agenda/vigilancia.py).
         if: always() && steps.pasada.outcome != 'skipped' && inputs.operacion != 'migrar-nucleo'
+        # Auxiliar: un fallo de la API de GitHub no debe marcar fallida una pasada correcta.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: python -m agenda.vigilancia --turso --issues --repo "$GITHUB_REPOSITORY"

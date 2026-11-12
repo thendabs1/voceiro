@@ -470,7 +470,9 @@ def main(argv=None):
                 p.error('--forzar requiere --coleccion')
             salida = ejecutar(repo, ahora, colecciones=args.coleccion, descubrimiento=args.descubrir,
                               forzar=args.forzar)
-        espera = (pendientes(repo, colecciones=args.coleccion, descubrimiento=args.descubrir)
+        # Todas las colecciones: la vigilancia de `pasada` es del paso entero, y una
+        # ejecución parcial no acredita que se hayan recuperado las que no revisó.
+        espera = (pendientes(repo, descubrimiento=args.descubrir)
                   if args.ejecutar else [])
     print(json.dumps(salida, ensure_ascii=False, indent=2))
     resultados = salida if isinstance(salida, list) else [salida]
