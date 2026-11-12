@@ -164,6 +164,15 @@ class Pasada(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 pasada.main(['--paso-tolerado', 'operacion --turso --descubrir'])
         self.assertEqual(estado()['operacion']['mensaje'], 'operacion --turso --descubrir: 1')
+        # Si operacion solo omitió lo fallido por su enfriamiento, no es recuperación ni fallo nuevo.
+        for pendientes, errores in ((['wrc 2026'], 1), ([], 0)):
+            with patch.object(pasada, '_cli', return_value=Mock(return_value={'pendientes': pendientes})), \
+                    patch.object(pasada, 'ahora_utc', return_value='2026-11-05T04:30:00Z'), \
+                    patch('sys.stdout', new_callable=io.StringIO) as salida:
+                pasada.main(['--paso-tolerado', 'operacion --turso --descubrir'])
+            self.assertEqual(estado()['operacion']['errores'], errores)
+            self.assertEqual('sin recuperar; esperan reintento: wrc 2026' in salida.getvalue(), bool(pendientes))
+        self.assertEqual(estado()['operacion']['recuperado'], '2026-11-05T04:30:00Z')
 
     def test_guardado_parcial_avanza_el_reloj_y_deja_el_paso_fallido(self):
         cli = Mock(side_effect=cadencias.GuardadoParcial('Calendario PDF no se leyó'))

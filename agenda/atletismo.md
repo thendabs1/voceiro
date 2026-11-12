@@ -398,7 +398,8 @@ FCA renumeró sus eventos entre el 8 y el 10/11/2026 con la misma URL y fechas:
 una guardada ausente cuya URL y fechas trae una única cita leída con un ID no
 guardado no cuenta para ese umbral; si su ficha está retirada, la ausencia lleva
 `renumerada como <ID>` y el ID nuevo hereda identidad, programa y revisiones
-(`renumerada_de` guarda el primer ID, que mantiene la clave de su incidencia).
+(`renumerada_de` guarda el primer ID, que mantiene la clave de su incidencia y con
+el que siguen valiendo equivalencias, separaciones y revisiones de identidad).
 Si la ficha antigua sigue viva, no hay renumeración: son dos citas. Un fallo del Calendario
 PDF o de Nivel II no impide guardar la lectura mensual de RFEA: el paso se señala fallido y el
 informe, incompleto; una ventana con un año sin documento Nivel II tampoco

@@ -207,22 +207,23 @@ def importar(anterior, pagina, observado):
             origen = deporte.literal(e['renumerada_de'])
             if a.anterior('competicion', origen) is None:
                 raise ValueError('Renumeración sin la cita guardada')
-        equivalencia = equivalencias().get((fuente, origen))
-        identidad = (nucleo.identificador('atletismo-revisado', equivalencia['id'])
-                     if equivalencia else None)
-        if identidad and previa and previa['id'] != identidad:
-            raise ValueError('Equivalencia nueva sobre una cita existente: requiere conciliación explícita')
-        identidad_grupo = nucleo.identificador('programa-atletismo-revisado', equivalencia['id']) if equivalencia else None
         renumerada = origen != deporte.literal(e['id'])
-        if renumerada:
-            identidad = a.anterior('competicion', origen)['id']
-            identidad_grupo = (a.anterior('programa_competicion', origen) or {}).get('id')
-        decision = decisiones[str(e['id'])]
         guardada = next((c for c in conocidas if c['fuente'] == fuente and c['id'] == origen), None)
         automatica = guardada and guardada['metadatos'].get('coincidencia_automatica')
         # Siempre el primer ID guardado, también al reimportar: las incidencias
         # conservan su clave aunque la fuente renumere otra vez.
         raiz = (guardada and guardada['metadatos'].get('renumerada_de')) or (origen if renumerada else None)
+        # La equivalencia editorial puede citar el ID actual o el primero guardado.
+        equivalencia = equivalencias().get((fuente, origen)) or (raiz and equivalencias().get((fuente, raiz)))
+        identidad = (nucleo.identificador('atletismo-revisado', equivalencia['id'])
+                     if equivalencia else None)
+        if identidad and previa and previa['id'] != identidad:
+            raise ValueError('Equivalencia nueva sobre una cita existente: requiere conciliación explícita')
+        identidad_grupo = nucleo.identificador('programa-atletismo-revisado', equivalencia['id']) if equivalencia else None
+        if renumerada:
+            identidad = a.anterior('competicion', origen)['id']
+            identidad_grupo = (a.anterior('programa_competicion', origen) or {}).get('id')
+        decision = decisiones[str(e['id'])]
         if not equivalencia and not previa and not renumerada and decision['estado'] == 'automatica':
             identidad = decision['cita']['destino']['id']
             identidad_grupo = decision['cita']['grupo']['id']

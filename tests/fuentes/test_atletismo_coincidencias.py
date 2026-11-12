@@ -92,6 +92,37 @@ class Alcance(unittest.TestCase):
         renumerada = {**a, 'id': a['id'] + '-nuevo', 'metadatos': {**a['metadatos'], 'renumerada_de': a['id']}}
         self.assertEqual(revision.huella(caso), revision.huella({**caso, 'citas': [renumerada, b]}))
 
+    def test_renumerar_no_cambia_la_huella_de_un_duplicado(self):
+        # Duplicado dentro de FCA: renumerar 100 como 300 no debe invertir el orden de las citas.
+        n = None
+        for i in ('100', '200'):
+            n = atletismo.importar(n, entrada('fca', i, url=atletismo.FUENTES['fca'][1] + '/' + i), AHORA)
+        caso, = c.incidencias(n)
+        luego = '2026-11-03T20:00:00+01:00'
+        e = {**entrada('fca', '300', url=atletismo.FUENTES['fca'][1] + '/100')['eventos'][0], 'renumerada_de': '100'}
+        n = atletismo.registrar_ausencias(atletismo.importar(n, {'version': 1, 'fuente': 'fca', 'eventos': [e]}, luego),
+            'fca', [{'id': '100', 'motivo': 'renumerada como 300 (HTTP 404)', 'url': e['url'], 'comprobado': luego,
+                     'detalle': {'renumerada_como': '300'}}])
+        nuevo, = c.incidencias(n)
+        self.assertEqual([x['id'] for x in nuevo['citas']], ['300', '200'])
+        self.assertEqual((nuevo['clave'], revision.huella(nuevo)), (caso['clave'], revision.huella(caso)))
+
+    def test_decisiones_editoriales_reconocen_el_primer_id_de_una_renumerada(self):
+        def renumerar(cita, nuevo):
+            return {**cita, 'id': nuevo, 'metadatos': {**cita['metadatos'], 'renumerada_de': cita['id']}}
+
+        # Separación real: RFEA 67588 contenida en FCA 83074.
+        fca, rfea = {**self.cita('fca'), 'id': '83074'}, {**self.cita('rfea'), 'id': '67588'}
+        self.assertTrue(c.relacion_revisada(fca, rfea))
+        self.assertTrue(c.relacion_revisada(renumerar(fca, '99999'), rfea))
+        self.assertTrue(c.relacion_revisada(rfea, renumerar(fca, '99999')))
+        self.assertIsNone(c.relacion_revisada({**fca, 'id': '99999'}, rfea))
+        # Revisión de identidad real: FCA 88393 y RFEA 69005.
+        fca = {**self.cita('fca', 'titulo'), 'id': '88393'}
+        rfea = {**self.cita('rfea', 'reunion'), 'id': '69005'}
+        self.assertEqual(c.comparar_referencias(renumerar(fca, '99999'), rfea), c.comparar_referencias(fca, rfea))
+        self.assertNotEqual(c.comparar_referencias({**fca, 'id': '99999'}, rfea), c.comparar_referencias(fca, rfea))
+
 
 class Coincidencias(unittest.TestCase):
     def test_tres_fuentes_comparten_cita_y_no_crean_incidencias(self):

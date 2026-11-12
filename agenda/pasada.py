@@ -88,14 +88,19 @@ def main(argv=None):
             paso = grupo or nombre
             print(f'::group::{texto}', flush=True)
             try:
+                resultado = None
                 try:
-                    _cli(nombre)(resto)
+                    resultado = _cli(nombre)(resto)
                 except SystemExit as error:
                     if error.code:
                         raise
                 if args.cadencia and tipo in ('reloj', 'final'):
                     repo.anotar_reloj(grupo if tipo == 'reloj' else 'publicacion', ahora_utc())
-                if tolerado and vigilados.get(paso, {}).get('errores'):
+                # Lo fallido que el paso solo omitió (operacion.pendientes) no es recuperación ni fallo nuevo.
+                espera = resultado.get('pendientes') if isinstance(resultado, dict) else None
+                if tolerado and vigilados.get(paso, {}).get('errores') and espera:
+                    print(f'[agenda] {texto}: sin recuperar; esperan reintento: {", ".join(espera)}', flush=True)
+                elif tolerado and vigilados.get(paso, {}).get('errores'):
                     previo = vigilados[paso]
                     vigilar(paso, {'errores': 0, 'desde': previo['desde'], 'recuperado': ahora_utc(),
                                    'fallos': previo['errores'], 'mensaje': previo.get('mensaje', '')})

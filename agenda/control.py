@@ -360,6 +360,10 @@ class Repositorio:
         r = self.consultar('SELECT datos_json FROM agenda_descubrimientos WHERE coleccion=?', (coleccion,))
         return json.loads(r[0][0]) if r else None
 
+    def descubrimientos(self):
+        return [json.loads(r[0]) for r in self.consultar(
+            'SELECT datos_json FROM agenda_descubrimientos ORDER BY coleccion')]
+
     def guardar_descubrimiento(self, coleccion, dato):
         self.escribir([('INSERT INTO agenda_descubrimientos VALUES (?,?,?) '
             'ON CONFLICT(coleccion) DO UPDATE SET proxima_revision=excluded.proxima_revision,datos_json=excluded.datos_json',

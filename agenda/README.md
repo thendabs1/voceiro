@@ -311,7 +311,8 @@ los lanzamientos manuales, todos los pasos se ejecutan y no anotan relojes.
 
 Cada paso tolerado que llega a ejecutarse anota en `agenda_estado`
 (`vigilancia:<grupo o CLI>`) sus fallos seguidos, desde cuándo y el último error,
-y su recuperación; un paso omitido por su reloj no cuenta. Tras la pasada, aunque
+y su recuperación; un paso omitido por su reloj no cuenta, ni `operacion` mientras
+lo que falló solo se omite por su enfriamiento (`operacion.pendientes`). Tras la pasada, aunque
 falle, `agenda.vigilancia --issues` abre un issue por paso con dos fallos seguidos,
 lo actualiza en silencio (comenta solo un error distinto) y lo cierra al
 recuperarse; si vuelve a fallar, reabre el mismo. El repositorio es público: el
