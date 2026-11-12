@@ -282,6 +282,21 @@ class ContratoControl:
         self.assertFalse(temporadas.vencida(guardada, DESPUES))
         self.assertEqual(otro.cobertura(t['id']), [])
 
+    def test_pendientes_son_lo_fallido_que_espera_su_reintento(self):
+        # La vigilancia de pasada no da por recuperado lo que operacion solo omitió.
+        t, p = self.comenzar()
+        self.assertEqual(operacion.pendientes(self.repo), [])
+        self.reservar(t, p)
+        self.repo.recibida(p, 429, {'retry-after': '86400'}, 100)
+        t = self.repo.fallar(t, p, AHORA, 'Cuota temporal')
+        self.assertEqual(operacion.pendientes(self.repo), [t['coleccion'] + ' ' + t['referencia']])
+        self.assertEqual(operacion.pendientes(self.repo, colecciones=['wrc']), [])
+        d = self.repo.comenzar_descubrimiento('wrc', 'ocblacktop-wrc', AHORA)
+        self.repo.terminar_descubrimiento(d, AHORA, error='respuesta vacía')
+        self.assertEqual(operacion.pendientes(self.repo, colecciones=['wrc']), [])
+        self.assertEqual(operacion.pendientes(self.repo, colecciones=['wrc'], descubrimiento=True),
+                         ['descubrimiento wrc'])
+
     def test_temporada_cerrada_no_admite_pasadas_hasta_reabrirla(self):
         alcance = {'inicio': '2026-03-06', 'fin': '2026-12-06', 'evidencia': {'url': 'https://oficial.test'},
                    'fin_confirmado': True, 'cobertura_completa': True,

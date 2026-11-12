@@ -63,6 +63,16 @@ def main(argv=None):
     with compartido() as remoto:
         repo = Repositorio(remoto=remoto)
         escritas_inicio = remoto.cliente.escritas
+        vigilados = repo.vigilancias()
+
+        def vigilar(paso, valor):
+            # Como el reloj fallido: anotar el estado de un paso no es un cambio que publicar.
+            nonlocal escritas_inicio
+            antes = remoto.cliente.escritas
+            repo.anotar_vigilancia(paso, valor)
+            escritas_inicio += remoto.cliente.escritas - antes
+            vigilados[paso] = valor
+
         for tipo, grupo, nombre, resto in pasos:
             texto = shlex.join([nombre, *resto])
             if args.cadencia:
@@ -74,15 +84,26 @@ def main(argv=None):
                     print(f'[agenda] Omitido {texto}: sin escrituras y reloj publicacion no vencido', flush=True)
                     continue
             tolerado = tipo in ('tolerado', 'reloj', 'final-tolerado')
+            # Un paso de reloj se vigila por su grupo; los demás, por su CLI.
+            paso = grupo or nombre
             print(f'::group::{texto}', flush=True)
             try:
+                resultado = None
                 try:
-                    _cli(nombre)(resto)
+                    resultado = _cli(nombre)(resto)
                 except SystemExit as error:
                     if error.code:
                         raise
                 if args.cadencia and tipo in ('reloj', 'final'):
                     repo.anotar_reloj(grupo if tipo == 'reloj' else 'publicacion', ahora_utc())
+                # Lo fallido que el paso solo omitió (operacion.pendientes) no es recuperación ni fallo nuevo.
+                espera = resultado.get('pendientes') if isinstance(resultado, dict) else None
+                if tolerado and vigilados.get(paso, {}).get('errores') and espera:
+                    print(f'[agenda] {texto}: sin recuperar; esperan reintento: {", ".join(espera)}', flush=True)
+                elif tolerado and vigilados.get(paso, {}).get('errores'):
+                    previo = vigilados[paso]
+                    vigilar(paso, {'errores': 0, 'desde': previo['desde'], 'recuperado': ahora_utc(),
+                                   'fallos': previo['errores'], 'mensaje': previo.get('mensaje', '')})
             except (ErrorTurso, *_conflictos()):
                 raise
             except (Exception, SystemExit) as error:
@@ -90,6 +111,11 @@ def main(argv=None):
                     raise
                 print(f'::error::{texto}: {error}', flush=True)
                 fallidos.append(texto)
+                previo = vigilados.get(paso, {})
+                ahora = ahora_utc()
+                vigilar(paso, {'errores': previo.get('errores', 0) + 1,
+                               'desde': previo['desde'] if previo.get('errores') else ahora,
+                               'ultimo_error': ahora, 'mensaje': f'{texto}: {error}'[:1000]})
                 if args.cadencia and tipo == 'reloj':
                     if isinstance(error, cadencias.GuardadoParcial):
                         repo.anotar_reloj(grupo, ahora_utc())

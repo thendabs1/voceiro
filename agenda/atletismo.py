@@ -184,18 +184,47 @@ def importar(anterior, pagina, observado):
         clase = a.c.n['entidades'][nucleo.clave(previa)]['clase'] if previa else g['clase']
         grupos[i] = a.grupo('agrupacion', i, clase, g.get('nombre'), padre=capa,
             url=enlace(fuente, g['url']), codigo=g.get('codigo_consulta'))
+    # Un ID retirado por renumeración que reaparece junto a quien lo sustituyó
+    # dejaría dos IDs vivos en una identidad: eso solo lo decide una conciliación.
+    retirados = {i for i, x in ((ausencias or {}).get('ids') or {}).items()
+                 if (x.get('detalle') or {}).get('renumerada_como')}
+    destinos = {}
     for e in eventos:
-        equivalencia = equivalencias().get((fuente, deporte.literal(e['id'])))
+        i = deporte.literal(e.get('renumerada_de') if e.get('renumerada_de') is not None
+                            and not a.anterior('competicion', e['id']) else e['id'])
+        if d := a.anterior('competicion', i):
+            destinos.setdefault(nucleo.clave(d), []).append(deporte.literal(e['id']))
+    for ids in destinos.values():
+        if len(ids) > 1 and retirados & set(ids):
+            raise ValueError('ID renumerado que reaparece con su sustituto: requiere conciliación explícita ('
+                             + ', '.join(sorted(ids)) + ')')
+    for e in eventos:
+        previa = a.anterior('competicion', e['id'])
+        # La fuente publica la cita guardada con otro ID (atletismo_recogida.renumeraciones):
+        # el nuevo hereda identidad, programa y revisiones del ID guardado.
+        origen = deporte.literal(e['id'])
+        if e.get('renumerada_de') is not None and not previa:
+            origen = deporte.literal(e['renumerada_de'])
+            if a.anterior('competicion', origen) is None:
+                raise ValueError('Renumeración sin la cita guardada')
+        renumerada = origen != deporte.literal(e['id'])
+        guardada = next((c for c in conocidas if c['fuente'] == fuente and c['id'] == origen), None)
+        automatica = guardada and guardada['metadatos'].get('coincidencia_automatica')
+        # Siempre el primer ID guardado, también al reimportar: las incidencias
+        # conservan su clave aunque la fuente renumere otra vez.
+        raiz = (guardada and guardada['metadatos'].get('renumerada_de')) or (origen if renumerada else None)
+        # La equivalencia editorial puede citar el ID actual o el primero guardado.
+        equivalencia = equivalencias().get((fuente, origen)) or (raiz and equivalencias().get((fuente, raiz)))
         identidad = (nucleo.identificador('atletismo-revisado', equivalencia['id'])
                      if equivalencia else None)
-        previa = a.anterior('competicion', e['id'])
         if identidad and previa and previa['id'] != identidad:
             raise ValueError('Equivalencia nueva sobre una cita existente: requiere conciliación explícita')
         identidad_grupo = nucleo.identificador('programa-atletismo-revisado', equivalencia['id']) if equivalencia else None
+        if renumerada:
+            identidad = a.anterior('competicion', origen)['id']
+            identidad_grupo = (a.anterior('programa_competicion', origen) or {}).get('id')
         decision = decisiones[str(e['id'])]
-        automatica = next((c['metadatos'].get('coincidencia_automatica') for c in conocidas
-                           if c['fuente'] == fuente and c['id'] == str(e['id'])), None)
-        if not equivalencia and not previa and decision['estado'] == 'automatica':
+        if not equivalencia and not previa and not renumerada and decision['estado'] == 'automatica':
             identidad = decision['cita']['destino']['id']
             identidad_grupo = decision['cita']['grupo']['id']
             automatica = {'version': coincidencias.VERSION, 'referencia': decision['cita']['referencia'],
@@ -230,6 +259,7 @@ def importar(anterior, pagina, observado):
             sitio=e.get('lugar'), url=enlace(fuente, e['url']), identidad=identidad,
             bloques={'atletismo': {**(e.get('metadatos') or {}),
                 **({'coincidencia_automatica': automatica} if automatica else {}),
+                **({'renumerada_de': raiz} if raiz else {}),
                 **({'equivalencia_revisada': equivalencia} if equivalencia else {})},
                 'agenda': {'rol': 'principal', 'grupo': grupo}})
         for adicional in padres[1:]:

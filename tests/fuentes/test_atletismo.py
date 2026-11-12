@@ -45,6 +45,29 @@ class Atletismo(unittest.TestCase):
                 self.assertFalse(parcial['atletismo']['conflicto'])
         self.assertEqual(len(identidades), 1)
 
+    def test_renumerada_conserva_la_equivalencia_revisada_al_reimportar(self):
+        from agenda import atletismo_coincidencias
+        paginas = json.loads((MUESTRAS / 'negreira.json').read_text())
+        n = None
+        for pagina in paginas:
+            n = atletismo.importar(n, pagina, AHORA)
+        id_cita = publicacion.proyectar(n)['eventos'][0]['id']
+        fca = next(p for p in paginas if p['fuente'] == 'fca')
+        viejo = fca['eventos'][0]['id']
+        nuevo = {**fca['eventos'][0], 'id': '99999'}
+        ausencia = [{'id': viejo, 'motivo': 'renumerada como 99999 (HTTP 404)', 'url': fca['eventos'][0]['url'],
+                     'comprobado': '2026-11-03T20:00:00+01:00', 'detalle': {'renumerada_como': '99999'}}]
+        n = atletismo.registrar_ausencias(atletismo.importar(
+            n, {**fca, 'eventos': [{**nuevo, 'renumerada_de': viejo}]}, '2026-11-03T20:00:00+01:00'), 'fca', ausencia)
+        # La lectura siguiente ya no trae la marca: la equivalencia se busca por el primer ID.
+        for paso in ('2026-11-04T20:00:00+01:00', '2026-11-05T20:00:00+01:00'):
+            n = atletismo.importar(n, {**fca, 'eventos': [nuevo]}, paso)
+            cita = next(c for c in atletismo_coincidencias.actuales(n) if c['id'] == '99999')
+            self.assertEqual(cita['metadatos']['renumerada_de'], viejo)
+            self.assertIn('equivalencia_revisada', cita['metadatos'])
+            self.assertEqual(atletismo_coincidencias.incidencias(n), [])
+            self.assertEqual([e['id'] for e in publicacion.proyectar(n)['eventos']], [id_cita])
+
     def test_discrepancia_posterior_conserva_identidad_y_evidencia_del_conflicto(self):
         paginas = json.loads((MUESTRAS / 'negreira.json').read_text())
         n = None

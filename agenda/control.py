@@ -123,6 +123,21 @@ class Repositorio:
             'proxima_revision': max(temporadas.esperar_retry(retry_after, ahora) or temporadas.marca(ahora),
                                     temporadas.despues(ahora, hours=cadencias.espera_fallo(grupo, errores)))})
 
+    def vigilancias(self):
+        """Estado de los pasos tolerados de la pasada (agenda/vigilancia.py).
+
+        Una base nueva aún no tiene agenda_estado: la crea el primer paso que la inicializa.
+        """
+        if not self.consultar("SELECT 1 FROM sqlite_master WHERE type='table' AND name='agenda_estado'"):
+            return {}
+        return {clave.removeprefix('vigilancia:'): json.loads(valor) for clave, valor in self.consultar(
+            "SELECT clave, valor_json FROM agenda_estado WHERE clave LIKE 'vigilancia:%'")}
+
+    def anotar_vigilancia(self, paso, valor):
+        self.escribir([('INSERT INTO agenda_estado(clave,valor_json) VALUES (?,?) '
+            'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json',
+            ('vigilancia:' + paso, codificar(valor)))])
+
     def _guardar_reloj(self, grupo, valor):
         self.escribir([('INSERT INTO agenda_estado(clave,valor_json) VALUES (?,?) '
             'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json',
@@ -344,6 +359,10 @@ class Repositorio:
     def descubrimiento(self, coleccion):
         r = self.consultar('SELECT datos_json FROM agenda_descubrimientos WHERE coleccion=?', (coleccion,))
         return json.loads(r[0][0]) if r else None
+
+    def descubrimientos(self):
+        return [json.loads(r[0]) for r in self.consultar(
+            'SELECT datos_json FROM agenda_descubrimientos ORDER BY coleccion')]
 
     def guardar_descubrimiento(self, coleccion, dato):
         self.escribir([('INSERT INTO agenda_descubrimientos VALUES (?,?,?) '

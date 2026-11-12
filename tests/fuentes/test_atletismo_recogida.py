@@ -330,9 +330,146 @@ class RecogidaAtletismo(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no corresponde'):
             r.ficha_rfea({**cita, 'id': '8'}, ficha, None)
         for fuente, codigo, cuerpo, esperado in (('fga', 404, b'', True), ('rfea', 410, b'', True),
-                                                  ('fca', 400, b'{"code": "otro"}', False), ('fga', 400, b'', False)):
+                                                  ('fca', 400, b'{"code": "otro"}', False), ('fga', 400, b'', False),
+                                                  ('fca', 400, b'{"code": "rest-invalid-event-id"}', True)):
             with self.subTest(fuente=fuente, codigo=codigo):
                 self.assertEqual(r.retirada(fuente, HTTPError('u', codigo, '', {}, io.BytesIO(cuerpo))), esperado)
+
+    def test_fca_renumerada_conserva_identidad_y_clave_de_incidencia(self):
+        # FCA renumeró sus eventos (9/11/2026): misma URL y fechas, otro ID, ficha antigua 404/400.
+        def tribe(i, slug, dia, **cambios):
+            return {'id': i, 'title': 'Cursa ' + slug, 'url': f'https://fcatletisme.cat/event/{slug}/',
+                    'start_date': dia + ' 00:00:00', 'end_date': dia + ' 23:59:59', 'all_day': True,
+                    'venue': {'id': 1, 'venue': 'Pista', 'city': 'Lleida'}, 'categories': [], 'organizer': [],
+                    'status': 'publish', 'hide_from_listings': False, **cambios}
+
+        def pagina(*eventos):
+            return {'total': len(eventos), 'total_pages': 1, 'events': list(eventos)}
+
+        dias = {f'c{i}': f'2026-11-{10 + i}' for i in range(6)}
+        antes = [tribe(i + 1, s, d) for i, (s, d) in enumerate(dias.items())]
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'fca',
+                                      'eventos': atletismo.leer_cataluna([pagina(*antes)])}, AHORA)
+        conocidas = [c for c in atletismo_coincidencias.actuales(n) if c['fuente'] == 'fca']
+        destinos = {c['url']: c['destino'] for c in conocidas}
+        # c5 cambia de fecha con el ID nuevo: no se da por renumerada.
+        despues = [tribe(i + 101, s, '2026-11-25' if s == 'c5' else d) for i, (s, d) in enumerate(dias.items())]
+
+        def obtener(url, vivas=()):
+            if '?' in url:
+                return json.dumps(pagina(*despues))
+            i = int(url.rsplit('/', 1)[1])
+            if i in vivas:
+                return json.dumps(antes[i - 1])
+            if i == 2:
+                cuerpo = {'code': 'rest-invalid-event-id', 'data': {'status': 400}}
+                raise HTTPError(url, 400, 'Bad Request', {}, io.BytesIO(json.dumps(cuerpo).encode()))
+            raise HTTPError(url, 404, 'Not Found', {}, io.BytesIO(b'{"code": "rest-event-not-found"}'))
+
+        luego = '2026-11-10T20:00:00+01:00'
+        entrada, informe = r.recoger('fca', '2026-11-01', '2026-11-30', descargar=obtener,
+                                     conocidas=conocidas, observado=luego)
+        self.assertEqual(sorted(informe['renumeradas'], key=lambda x: x['id']),
+                         [{'id': str(i), 'nuevo': str(i + 100)} for i in range(1, 6)])
+        self.assertEqual({a['id']: a['motivo'] for a in informe['ausencias']}, {
+            **{str(i): f'renumerada como {i + 100} (HTTP 404)' for i in (1, 3, 4, 5)},
+            '2': 'renumerada como 102 (HTTP 400)', '6': 'ficha retirada (HTTP 404)'})
+        self.assertEqual({e['id']: e.get('renumerada_de') for e in entrada['eventos']},
+                         {**{str(i + 100): str(i) for i in range(1, 6)}, '106': None})
+        n = atletismo.registrar_ausencias(atletismo.importar(n, entrada, luego), 'fca', informe['ausencias'])
+        nuevas = {c['id']: c for c in atletismo_coincidencias.actuales(n) if c['fuente'] == 'fca'}
+        for i in range(101, 106):
+            self.assertEqual(nuevas[str(i)]['destino'], destinos[nuevas[str(i)]['url']])
+            self.assertEqual(nuevas[str(i)]['metadatos']['renumerada_de'], str(i - 100))
+        self.assertNotEqual(nuevas['106']['destino'], destinos[nuevas['106']['url']])
+        publicadas = publicacion.proyectar(n)['eventos']
+        self.assertEqual(len(publicadas), 6)  # Cinco heredadas y c5 en su fecha nueva.
+        self.assertEqual(atletismo_coincidencias.incidencias(n), [])
+        # Una segunda renumeración conserva el primer ID como raíz.
+        n2 = atletismo.importar(n, {'version': 1, 'fuente': 'fca', 'eventos': [
+            {**e, 'id': '201', 'renumerada_de': '101'} for e in entrada['eventos'] if e['id'] == '101']},
+            '2026-11-11T20:00:00+01:00')
+        raiz = next(c for c in atletismo_coincidencias.actuales(n2) if c['id'] == '201')
+        self.assertEqual((raiz['destino'], raiz['metadatos']['renumerada_de']), (nuevas['101']['destino'], '1'))
+        # Reimportar el ID nuevo sin la marca la conserva.
+        n3 = atletismo.importar(n, {'version': 1, 'fuente': 'fca', 'eventos': [
+            {k: v for k, v in e.items() if k != 'renumerada_de'} for e in entrada['eventos']]},
+            '2026-11-11T20:00:00+01:00')
+        self.assertEqual({c['id']: c['metadatos'].get('renumerada_de') for c in atletismo_coincidencias.actuales(n3)
+                          if c['id'] in ('101', '106')}, {'101': '1', '106': None})
+
+        # Si el ID guardado sigue vivo no es una renumeración: se reimporta y no se une.
+        _, informe = r.recoger('fca', '2026-11-01', '2026-11-30', conocidas=conocidas, observado=luego,
+                               descargar=lambda u: obtener(u, vivas={1, 2, 3, 4, 5, 6}))
+        self.assertEqual((informe['renumeradas'], informe['ausencias']), ([], []))
+        self.assertEqual(len(informe['reimportadas']), 6)
+        # Dos citas leídas con la misma URL no acreditan cuál sustituye a la guardada.
+        dobles = [*despues[:5], {**despues[0], 'id': 999}]
+        self.assertEqual(r.renumeraciones(conocidas, atletismo.leer_cataluna([pagina(*dobles)]),
+                                           [c for c in conocidas if c['url'].endswith('/c0/')]), {})
+        # Sin URL que encaje sigue siendo una lectura rota.
+        otras = [{**e, 'url': e['url'].replace('/c', '/x')} for e in despues]
+        with self.assertRaisesRegex(ValueError, 'no trae 6 de 6'):
+            r.recoger('fca', '2026-11-01', '2026-11-30', conocidas=conocidas,
+                      descargar=lambda u: json.dumps(pagina(*otras)) if '?' in u else obtener(u))
+
+    def test_fca_renumerada_dos_veces_bloqueo_y_reaparicion(self):
+        def tribe(i, slug):
+            return {'id': i, 'title': 'Cursa ' + slug, 'url': f'https://fcatletisme.cat/event/{slug}/',
+                    'start_date': '2026-11-14 00:00:00', 'end_date': '2026-11-14 23:59:59', 'all_day': True,
+                    'venue': {'id': 1, 'venue': 'Pista', 'city': 'Lleida'}, 'categories': [], 'organizer': [],
+                    'status': 'publish', 'hide_from_listings': False}
+
+        def pagina(*eventos):
+            return {'total': len(eventos), 'total_pages': 1, 'events': list(eventos)}
+
+        def leer(base):
+            return [tribe(base + i, f'c{i}') for i in range(5)]
+
+        def fuente(base, ficha_html=None):
+            def obtener(url):
+                if '?' in url:
+                    return json.dumps(pagina(*leer(base)))
+                if '/event/' in url and ficha_html:
+                    raise HTTPError(url, ficha_html, 'Bloqueo', {}, io.BytesIO(b''))
+                raise HTTPError(url, 404, 'Not Found', {}, io.BytesIO(b''))
+            return obtener
+
+        def pasar(n, base, observado, ficha_html=None):
+            conocidas = [c for c in atletismo_coincidencias.actuales(n) if c['fuente'] == 'fca'
+                         and c['id'] not in r.renumerados(n['fuentes']['fca'])]
+            entrada, informe = r.recoger('fca', '2026-11-01', '2026-11-30', descargar=fuente(base, ficha_html),
+                                         conocidas=conocidas, observado=observado)
+            n = atletismo.registrar_ausencias(atletismo.importar(n, entrada, observado), 'fca', informe['ausencias'])
+            return n, entrada, informe
+
+        n = atletismo.importar(None, {'version': 1, 'fuente': 'fca',
+                                      'eventos': atletismo.leer_cataluna([pagina(*leer(1))])}, AHORA)
+        destinos = {c['url']: c['destino'] for c in atletismo_coincidencias.actuales(n)}
+        # Un 403 de las fichas tras acreditar la renumeración: ni hereda ni importa el ID nuevo.
+        n, entrada, informe = pasar(n, 101, '2026-11-03T20:00:00+01:00', ficha_html=403)
+        self.assertEqual((entrada['eventos'], informe['renumeradas'], informe['ausencias']), ([], [], []))
+        self.assertNotIn('101', {c['id'] for c in atletismo_coincidencias.actuales(n)})
+        # La pasada siguiente la acredita; la otra, sin cambios, no reconsulta los sustituidos.
+        n, _, informe = pasar(n, 101, '2026-11-04T20:00:00+01:00')
+        self.assertEqual(len(informe['renumeradas']), 5)
+        n, _, informe = pasar(n, 101, '2026-11-05T20:00:00+01:00')
+        self.assertEqual((informe['ausencias'], informe['renumeradas']), ([], []))
+        self.assertEqual({x['motivo'] for x in n['fuentes']['fca']['ausencias']['ids'].values()},
+                         {f'renumerada como {i} (HTTP 404)' for i in range(101, 106)})
+        # Una segunda renumeración no la bloquean los IDs ya sustituidos.
+        n, _, informe = pasar(n, 201, '2026-11-06T20:00:00+01:00')
+        self.assertEqual(len(informe['renumeradas']), 5)
+        actuales = {c['id']: c for c in atletismo_coincidencias.actuales(n)}
+        for i in range(201, 206):
+            self.assertEqual(actuales[str(i)]['destino'], destinos[actuales[str(i)]['url']])
+            self.assertEqual(actuales[str(i)]['metadatos']['renumerada_de'], str(i - 200))
+        self.assertEqual(len(publicacion.proyectar(n)['eventos']), 5)
+        self.assertEqual(atletismo_coincidencias.incidencias(n), [])
+        # El ID original que reaparece junto a su sustituto no se une solo.
+        vuelve = atletismo.leer_cataluna([pagina(tribe(1, 'c0'), tribe(201, 'c0'))])
+        with self.assertRaisesRegex(ValueError, 'reaparece con su sustituto'):
+            atletismo.importar(n, {'version': 1, 'fuente': 'fca', 'eventos': vuelve}, '2026-11-07T20:00:00+01:00')
 
 
 AHORA = '2026-11-02T20:00:00+01:00'

@@ -309,6 +309,15 @@ escritas en Turso y no venció `publicacion`; solo el final no tolerado anota es
 reloj tras éxito. Cada omisión aparece en el log. Sin `--cadencia`, incluidos
 los lanzamientos manuales, todos los pasos se ejecutan y no anotan relojes.
 
+Cada paso tolerado que llega a ejecutarse anota en `agenda_estado`
+(`vigilancia:<grupo o CLI>`) sus fallos seguidos, desde cuándo y el último error,
+y su recuperación; un paso omitido por su reloj no cuenta, ni `operacion` mientras
+lo que falló solo se omite por su enfriamiento (`operacion.pendientes`). Tras la pasada, aunque
+falle, `agenda.vigilancia --issues` abre un issue por paso con dos fallos seguidos,
+lo actualiza en silencio (comenta solo un error distinto) y lo cierra al
+recuperarse; si vuelve a fallar, reabre el mismo. El repositorio es público: el
+error se publica sin consultas de URL ni cadenas con aspecto de clave.
+
 ```sh
 # Cultura en Turso (ventana inclusiva, 31 días por defecto, máximo 91).
 python calendario.py --turso --recoger-cultura madrid --recoger-cultura kulturklik \

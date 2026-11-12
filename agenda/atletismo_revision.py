@@ -27,7 +27,8 @@ def huella(caso):
     comparacion = {k: v for k, v in (caso.get('comparacion') or {}).items()
                    if k not in ('veredicto', 'revision_identidad')}
     datos = {'motivo': caso['motivo'], 'comparacion': comparacion or caso.get('comparacion'), 'citas': [
-        {k: e.get(k) for k in ('fuente', 'id', 'nombre', 'inicio', 'fin', 'url', 'lugar')}
+        # Con el ID estable: una renumeración no son datos nuevos ni reabre lo revisado.
+        {k: e.get(k) for k in ('fuente', 'nombre', 'inicio', 'fin', 'url', 'lugar')} | {'id': coincidencias.id_estable(e)}
         | {'modalidades': sorted(coincidencias.modalidades(e)), 'enlaces': sorted(coincidencias.enlaces(e)),
            'alcance': coincidencias.alcance(e), 'dias': sorted(coincidencias.dias(e))}
         for e in caso['citas']]}

@@ -82,21 +82,34 @@ def separaciones():
     return salida
 
 
+def claves(e):
+    """Cómo puede citarla una decisión editorial: ID actual y, si la fuente la renumeró, el primero."""
+    ids = {str(e['id'])}
+    if raiz := (e.get('metadatos') or {}).get('renumerada_de'):
+        ids.add(str(raiz))
+    return {(e.get('fuente'), i) for i in ids}
+
+
 def relacion_revisada(a, b):
     """Par ya decidido por una separación: conjunto y parte siguen aparte."""
-    par = {(e['fuente'], str(e['id'])) for e in (a, b)}
+    ka, kb = claves(a), claves(b)
     for s in separaciones():
         propia = (s['referencia']['fuente'], s['referencia']['id'])
-        if propia in par and any((f, i) in par for f, i in s.get('contiene', []) + s.get('contenida_en', [])):
+        otras = {(f, i) for f, i in s.get('contiene', []) + s.get('contenida_en', [])}
+        if any(propia in x and otras & y for x, y in ((ka, kb), (kb, ka))):
             return s
     return None
 
 
 def comparar_referencias(a, b):
     comparacion = comparar(a, b)
-    par = {(e.get('fuente'), str(e['id'])) for e in (a, b)}
-    revision = next((r for r in revisiones_identidad()
-                     if len(par) == 2 and par <= {(f, str(i)) for f, i in r['referencias'].items()}), None)
+    ka, kb = claves(a), claves(b)
+
+    def revisa(r):
+        refs = {(f, str(i)) for f, i in r['referencias'].items()}
+        return not ka & kb and ka & refs and kb & refs
+
+    revision = next((r for r in revisiones_identidad() if revisa(r)), None)
     if revision:
         # La decisión acredita identidad, no la vigencia de fechas o modalidades.
         datos = [] if comparacion['misma_fecha'] else ['fechas diferentes o incompletas']
@@ -326,27 +339,35 @@ def posible_duplicado(comparacion):
                 and set(comparacion['motivos']) <= {'nombre insuficientemente coincidente'})
 
 
+def id_estable(cita):
+    """El primer ID guardado de una cita que la fuente renumeró (atletismo.importar)."""
+    return cita['metadatos'].get('renumerada_de') or cita['id']
+
+
 def incidencias(n):
     """Casos pendientes con clave estable por par.
 
     Entre fuentes, identidades distintas o discrepancias de una ya compartida.
     Dentro de una fuente, que nunca se une sola, solo lo que parece un duplicado.
     """
-    ausentes = {(f, i) for f, d in n['fuentes'].items() for i in (d.get('ausencias') or {}).get('ids', {})}
-    conocidos = actuales(n)
+    ausentes = {(f, i): x for f, d in n['fuentes'].items() for i, x in (d.get('ausencias') or {}).get('ids', {}).items()}
+    # Un ID que la fuente renumeró lo sustituye el nuevo, que hereda la clave del par.
+    conocidos = [c for c in actuales(n)
+                 if not (ausentes.get((c['fuente'], c['id']), {}).get('detalle') or {}).get('renumerada_como')]
     salida = {}
     for pos, a in enumerate(conocidos):
         for b in conocidos[pos + 1:]:
-            par = sorted([(a['fuente'], a['id']), (b['fuente'], b['id'])])
+            par = sorted([(c['fuente'], id_estable(c)) for c in (a, b)])
             clave = sha256(nucleo.json_canonico(par).encode()).hexdigest()[:24]
-            citas = sorted([a, b], key=lambda c: (c['fuente'], c['id']))
+            # Por ID estable: renumerar no invierte el orden ni, con él, la huella del caso.
+            citas = sorted([a, b], key=lambda c: (c['fuente'], id_estable(c)))
             if distribucion(a['fuente'], a['id']) == distribucion(b['fuente'], b['id']):
                 # Dos lecturas de una referencia no son dos registros, y dentro
                 # de una fuente compartir enlace no identifica ni distingue.
                 if a['referencia'] == b['referencia']:
                     continue
                 # Un ID retirado por la fuente no es un duplicado: la sustituyó otro.
-                if {(a['fuente'], a['id']), (b['fuente'], b['id'])} & ausentes:
+                if {(a['fuente'], a['id']), (b['fuente'], b['id'])} & ausentes.keys():
                     continue
                 comparacion = comparar(a, b, por_enlace=False)
                 if a['destino'] == b['destino'] or posible_duplicado(comparacion):

@@ -369,6 +369,21 @@ def ejecutar(repo, ahora, *, colecciones=None, descubrimiento=False, forzar=Fals
     return salida
 
 
+def pendientes(repo, *, colecciones=None, descubrimiento=False):
+    """Lo que falló y espera su reintento (enfriamiento, Retry-After o bloqueo).
+
+    Una pasada que solo lo omite no acredita que el proveedor haya vuelto:
+    la vigilancia de `pasada` no lo da por recuperado."""
+    seleccion = set(colecciones or temporadas.CATALOGO)
+    salida = [t['coleccion'] + ' ' + t['referencia'] for t in repo.temporadas()
+              if t['coleccion'] in seleccion and t['estado'] not in ('cerrada', 'pausada')
+              and t['errores_consecutivos']]
+    if descubrimiento:
+        salida += ['descubrimiento ' + d['coleccion'] for d in repo.descubrimientos()
+                   if d['coleccion'] in seleccion and d.get('errores_consecutivos')]
+    return salida
+
+
 def manual(repo, proveedor, ahora, *, year=None, fecha=None):
     coleccion = next((c for c, (_, p, _) in temporadas.CATALOGO.items() if p == proveedor), None)
     coleccion = coleccion or next((c for c, p in proveedores.PRINCIPALES.items() if p == proveedor), None)
@@ -455,10 +470,13 @@ def main(argv=None):
                 p.error('--forzar requiere --coleccion')
             salida = ejecutar(repo, ahora, colecciones=args.coleccion, descubrimiento=args.descubrir,
                               forzar=args.forzar)
+        espera = (pendientes(repo, colecciones=args.coleccion, descubrimiento=args.descubrir)
+                  if args.ejecutar else [])
     print(json.dumps(salida, ensure_ascii=False, indent=2))
     resultados = salida if isinstance(salida, list) else [salida]
     if (args.ejecutar or args.contrastar) and any(r and r.get('estado') == 'fallida' for r in resultados):
         raise SystemExit(1)
+    return {'pendientes': espera}
 
 
 if __name__ == '__main__':
