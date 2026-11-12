@@ -58,8 +58,8 @@ def _caminar(dato):
             yield from _caminar(valor)
 
 
-def leer_programa(texto, identidad, temporada):
-    encontrados = []
+def objetos(texto):
+    """Objetos del estado Next de una página (también F2 y F3, misma plataforma)."""
     for linea in _flight(texto).splitlines():
         m = re.match(r'[a-f0-9]+:(.*)', linea)
         if not m:
@@ -68,12 +68,17 @@ def leer_programa(texto, identidad, temporada):
             dato = json.loads(m[1])
         except ValueError:
             continue  # Referencias y módulos de Next no son objetos de agenda.
-        for candidato in _caminar(dato):
-            if 'meetingSessions' in candidato and str(candidato.get('meetingKey')) == str(identidad):
-                if str(candidato.get('season')) != str(temporada):
-                    raise ValueError('Programa F1 de otra temporada')
-                encontrados.append([{k: s.get(k) for k in CAMPOS_SESION}
-                    for s in deporte.filas(candidato, 'meetingSessions', 20)])
+        yield from _caminar(dato)
+
+
+def leer_programa(texto, identidad, temporada):
+    encontrados = []
+    for candidato in objetos(texto):
+        if 'meetingSessions' in candidato and str(candidato.get('meetingKey')) == str(identidad):
+            if str(candidato.get('season')) != str(temporada):
+                raise ValueError('Programa F1 de otra temporada')
+            encontrados.append([{k: s.get(k) for k in CAMPOS_SESION}
+                for s in deporte.filas(candidato, 'meetingSessions', 20)])
     if not encontrados or any(dato != encontrados[0] for dato in encontrados[1:]):
         raise ValueError('Programa F1 ausente o contradictorio para el GP solicitado')
     return encontrados[0]

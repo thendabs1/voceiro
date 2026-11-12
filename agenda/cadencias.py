@@ -20,8 +20,8 @@ COLECCIONES = {
     'copa-del-rey': 'calendario', 'champions': 'calendario',
     'nba': 'calendario', 'wnba': 'calendario',
     'feb-endesa': 'calendario', 'feb-primera': 'calendario', 'feb-challenge': 'calendario',
-    'f1': 'gran-premio', 'motogp': 'gran-premio', 'moto2': 'gran-premio', 'moto3': 'gran-premio',
-    'wrc': 'gran-premio',
+    'f1': 'gran-premio', 'f2': 'gran-premio', 'f3': 'gran-premio',
+    'motogp': 'gran-premio', 'moto2': 'gran-premio', 'moto3': 'gran-premio', 'wrc': 'gran-premio',
 }
 RELOJES = dict.fromkeys((
     'cultura-galicia', 'madrid', 'kulturklik', 'zaragoza', 'cyl',

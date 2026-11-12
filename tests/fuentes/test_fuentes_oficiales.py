@@ -6,7 +6,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from agenda import deporte, nucleo, oficial_f1, oficial_laliga, oficial_wta, operacion, publicacion
+from agenda import deporte, lectura, nucleo, oficial_f1, oficial_fia, oficial_laliga, oficial_wta, operacion, proveedores, publicacion
 
 
 MUESTRAS = Path(__file__).with_name('muestras_calendario') / 'oficiales'
@@ -149,6 +149,123 @@ class Formula1Oficial(unittest.TestCase):
         gp['url'] = 'https://ejemplo.invalid/en/racing/2026/mexico'
         with self.assertRaisesRegex(ValueError, 'Enlace'):
             oficial_f1.importar(None, p, OBSERVADO)
+
+
+def fia(categoria='f2'):
+    return json.loads((MUESTRAS / (categoria + '-rondas-2026.json')).read_text())
+
+
+def pagina_ronda(gp):
+    """Envoltorio Next de una ronda, con la forma de su web, desde la muestra."""
+    race = {k: v for k, v in gp.items() if k != 'sesiones'}
+    race['meetingSessions'] = gp['sesiones']
+    linea = '6:' + json.dumps(['$', 'div', None, {'pageData': {'race': race}}]) + '\n'
+    return '<script>self.__next_f.push(' + json.dumps([1, linea]) + ')</script>'
+
+
+def sesion(eventos, clave):
+    for e in eventos:
+        for s in e.get('programa', []):
+            if s['id'] == clave or s['nombres']['und'].endswith(clave):
+                return s
+    raise AssertionError(clave)
+
+
+class FormulaFIAOficial(unittest.TestCase):
+    def test_rondas_reales_f2_dias_sesiones_y_tbc_solo_con_dia(self):
+        n = oficial_fia.importar(None, fia(), OBSERVADO, proveedor='formula2')
+        self.assertEqual(set(n['fuentes']), {'formula2'})
+        p = publicacion.proyectar(n)
+        self.assertEqual(len(p['eventos']), 14)
+        self.assertEqual(sum(len(e.get('programa', [])) for e in p['eventos']), 59)
+        baku = next(e for e in p['eventos'] if 'Azerbaijan' in e['nombres']['und'])
+        c = baku['programacion']['valor']['cuando']
+        self.assertEqual((c['inicio']['fecha'], c['fin']['fecha']), ('2026-09-24', '2026-09-26'))
+        practica = next(s for s in baku['programa'] if s['agenda']['tipo_sesion'] == 'Practice')
+        self.assertEqual(practica['programacion']['valor']['cuando']['inicio']['instante'], '2026-09-24T10:00:00+04:00')
+        self.assertEqual(practica['programacion']['valor']['cuando']['inicio']['zona'], 'Asia/Baku')
+        # Lusail publica horas de relleno con «TBC»: solo el día.
+        lusail = next(e for e in p['eventos'] if 'Qatar' in e['nombres']['und'])
+        for s in lusail['programa']:
+            inicio = s['programacion']['valor']['cuando']['inicio']
+            self.assertIsNone(inicio['instante'])
+            self.assertIsNone(inicio['hora_local'])
+        carrera = next(s for s in lusail['programa'] if s['agenda']['tipo_sesion'] == 'Feature Race')
+        self.assertEqual(carrera['programacion']['valor']['cuando']['inicio']['fecha'], '2026-11-29')
+        self.assertFalse(n['resultados'])
+        self.assertFalse(n['participaciones'])
+
+    def test_f2_y_f3_son_fuentes_propias_aunque_compartan_gp_de_f1(self):
+        f2 = oficial_fia.importar(None, fia(), OBSERVADO, proveedor='formula2')
+        f3 = oficial_fia.importar(None, fia('f3'), OBSERVADO, proveedor='formula3')
+        self.assertEqual(set(f3['fuentes']), {'formula3'})
+        self.assertFalse(set(f2['entidades']) & set(f3['entidades']))
+        for n, codigo in ((f2, 'f2'), (f3, 'f3')):
+            pr = lectura.preparar(publicacion.proyectar(n, list(n['fuentes']), generado=OBSERVADO))
+            self.assertEqual({f[2] for f in pr['facetas'] if f[1] == 'circuito'}, {codigo})
+
+    def test_f3_errata_de_fin_anterior_conserva_el_inicio(self):
+        p = publicacion.proyectar(oficial_fia.importar(None, fia('f3'), OBSERVADO, proveedor='formula3'))
+        austria = next(e for e in p['eventos'] if 'Austrian' in e['nombres']['und'])
+        sprint = next(s for s in austria['programa'] if s['agenda']['tipo_sesion'] == 'Sprint Race')
+        c = sprint['programacion']['valor']['cuando']
+        self.assertEqual(c['inicio']['instante'], '2026-06-27T10:05:00+02:00')
+        self.assertIsNone(c['fin']['instante'])
+        self.assertIsNone(c['fin']['fecha'])
+
+    def test_transporte_calendario_y_todas_sus_rondas(self):
+        rondas = {g['url']: g for g in fia()['events']}
+        calendario = (MUESTRAS / 'f2-calendario-2026.html').read_text()
+        lusail = (MUESTRAS / 'f2-lusail-ronda.html').read_text()
+        web = 'https://www.fiaformula2.com'
+
+        def descargar(url, cabeceras=None):
+            if url == web + '/en/racing/2026':
+                return calendario
+            ruta = url.removeprefix(web)
+            return lusail if ruta.endswith('/lusail') else pagina_ronda(rondas[ruta])
+        with patch('agenda.oficial_fia.recogida.descargar', side_effect=descargar) as get:
+            pagina, url = oficial_fia.recoger('2026', 'formula2')
+        self.assertEqual(get.call_count, 15)
+        self.assertEqual(url, web + '/en/racing/2026')
+        self.assertEqual(pagina, fia())
+        self.assertTrue(all(c.kwargs['cabeceras']['User-Agent'] for c in get.call_args_list))
+
+    def test_describir_cierra_solo_con_la_ultima_ronda_numerada_y_sin_tbc(self):
+        d = proveedores.describir('formula2', fia())
+        self.assertEqual((d['inicio'], d['fin']), ('2026-03-06', '2026-12-06'))
+        self.assertTrue(d['fin_confirmado'])
+        self.assertTrue(d['cobertura_completa'])
+        self.assertFalse(d['programa_completo'])  # Lusail y Abu Dabi siguen en TBC.
+        self.assertNotIn('programa', d)  # Sin selección por ventana: TBC no es incidencia.
+        self.assertTrue(proveedores.describir('formula3', fia('f3'))['programa_completo'])
+        # Si falta una ronda, la última numerada (14) ya no cuadra con lo leído.
+        p = fia()
+        p['events'] = [g for g in p['events'] if g['meetingKey'] != '1293']
+        d = proveedores.describir('formula2', p)
+        self.assertFalse(d['fin_confirmado'])
+        self.assertTrue(d['cobertura_completa'])
+
+    def test_rechaza_otra_temporada_categoria_enlace_y_ronda_ausente(self):
+        with self.assertRaisesRegex(ValueError, 'otra temporada'):
+            oficial_fia.importar(None, fia(), OBSERVADO, temporada='2027', proveedor='formula2')
+        with self.assertRaisesRegex(ValueError, 'inválido'):
+            oficial_fia.importar(None, fia('f3'), OBSERVADO, proveedor='formula2')
+        p = fia()
+        p['events'][0]['url'] = 'https://ejemplo.invalid/en/racing/2026/melbourne'
+        with self.assertRaisesRegex(ValueError, 'Enlace'):
+            oficial_fia.importar(None, p, OBSERVADO, proveedor='formula2')
+        p = fia()
+        p['events'] = [g for g in p['events'] if g['meetingKey'] != '1302']
+        with self.assertRaisesRegex(ValueError, 'numerada'):
+            oficial_fia.describir(p)
+        html = (MUESTRAS / 'f2-lusail-ronda.html').read_text()
+        with self.assertRaisesRegex(ValueError, 'ausente'):
+            oficial_fia.leer_ronda(html, '/en/racing/2026/yas-marina', '2026')
+        with self.assertRaisesRegex(ValueError, 'otra temporada'):
+            oficial_fia.leer_ronda(html, '/en/racing/2026/lusail', '2027')
+        with self.assertRaisesRegex(ValueError, 'sin rondas'):
+            oficial_fia.leer_calendario((MUESTRAS / 'f2-calendario-2026.html').read_text(), '2027')
 
 
 class WTAOficial(unittest.TestCase):

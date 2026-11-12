@@ -9,7 +9,7 @@ const CLASIFICACION = n('Clasificación', 'Clasificación', 'Classificació', 'S
 const CLASIFICACION_SPRINT = n('Clasificación sprint', 'Clasificación sprint', 'Classificació esprint', 'Sprint sailkapena', 'Sprint qualifying');
 const SPRINT = n('Sprint', 'Sprint', 'Esprint', 'Sprint', 'Sprint');
 const CARRERA = n('Carrera', 'Carreira', 'Cursa', 'Lasterketa', 'Race');
-// F1 oficial (shortName), ESPN F1 (abreviatura) y MotoGP (shortname). Los mismos
+// F1, F2 y F3 oficiales (shortName), ESPN F1 (abreviatura) y MotoGP (shortname). Los mismos
 // códigos significan lo mismo en las tres en un GP; los tests no se importan
 // (allí FP1 es «Día 1»). Véase docs/sesiones-motor-tenis-2026-10-30.md.
 export const SESIONES = {
@@ -22,6 +22,10 @@ export const SESIONES = {
   Q1: n('Clasificación Q1', 'Clasificación Q1', 'Classificació Q1', 'Q1 sailkapena', 'Qualifying Q1'),
   Q2: n('Clasificación Q2', 'Clasificación Q2', 'Classificació Q2', 'Q2 sailkapena', 'Qualifying Q2'),
   WUP: n('Warm Up', 'Warm Up', 'Warm Up', 'Warm Up', 'Warm-up'),
+  // F2 y F3: una sola libre y dos carreras; las variantes numeradas llegan tal cual.
+  Practice: n('Libres', 'Libres', 'Lliures', 'Libreak', 'Practice'),
+  'Sprint Race': n('Carrera sprint', 'Carreira sprint', 'Cursa esprint', 'Sprint lasterketa', 'Sprint Race'),
+  'Feature Race': n('Carrera principal', 'Carreira principal', 'Cursa principal', 'Lasterketa nagusia', 'Feature Race'),
 };
 export const nombresSesion = tipo => typeof tipo === 'string' && Object.hasOwn(SESIONES, tipo) ? SESIONES[tipo] : null;
 

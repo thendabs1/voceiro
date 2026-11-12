@@ -7,7 +7,11 @@ test('sesiones: los alias de cada fuente dan el mismo nombre en los cinco idioma
   assert.deepEqual(nombresSesion('Race'), nombresSesion('RAC2'));
   assert.equal(nombresSesion('SPR').es, 'Sprint');
   assert.equal(nombresSesion('FP1').ca, 'Lliures 1');
-  for (const tipo of ['FP1', 'PR', 'Q1', 'WUP', 'Qualifying', 'Race']) assert.deepEqual(Object.keys(nombresSesion(tipo)), ['es', 'gl', 'ca', 'eu', 'en']);
+  // F2 y F3: las dos carreras; sus variantes numeradas («Feature Race 1») llegan tal cual.
+  assert.equal(nombresSesion('Feature Race').es, 'Carrera principal');
+  assert.equal(nombresSesion('Sprint Race').gl, 'Carreira sprint');
+  assert.equal(nombresSesion('Feature Race 1'), null);
+  for (const tipo of ['FP1', 'PR', 'Q1', 'WUP', 'Qualifying', 'Race', 'Practice', 'Sprint Race', 'Feature Race']) assert.deepEqual(Object.keys(nombresSesion(tipo)), ['es', 'gl', 'ca', 'eu', 'en']);
   for (const tipo of ['MEDIA', 'race', '', null, 'toString']) assert.equal(nombresSesion(tipo), null);
 });
 
