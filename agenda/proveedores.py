@@ -132,7 +132,7 @@ def describir(proveedor, pagina, url=None):
         # valen como selección, pero no acreditan que no falte una última.
         rondas = sorted(r.get('round') for r in rallies if type(r.get('round')) is int)
         seguidas = bool(rallies) and rondas == list(range(1, len(rallies) + 1))
-        completos = seguidas and pagina.get('roundCount') == len(rallies)
+        completos = seguidas and blacktop.total_cuadra(pagina, rallies)
         fechas = all(r.get('dateStart') and r.get('dateEnd') and
                      len(r['dateStart']) == len(r['dateEnd']) == 10 for r in rallies)
         base.update(referencia=year, seleccion={'year': year},

@@ -253,6 +253,25 @@ class Adaptadores(unittest.TestCase):
         hueco = proveedores.describir('ocblacktop-wrc', pagina)
         self.assertFalse(hueco['seleccion_valida'] or hueco['cobertura_completa'])
 
+    def test_wrc_round_count_puede_excluir_rallies_cancelados(self):
+        # OCBlacktop 2026: Arabia Saudí cancelada, 14 rallies y roundCount 13.
+        from agenda import proveedores
+        pagina = muestra('ocblacktop-wrc')
+        pagina['rallies'][1]['status'] = 'cancelled'
+        for total in (1, 2):
+            with self.subTest(total=total):
+                pagina['roundCount'] = total
+                self.assertTrue(proveedores.describir('ocblacktop-wrc', pagina)['cobertura_completa'])
+                importar('ocblacktop-wrc', deepcopy(pagina))
+        pagina['roundCount'] = 0
+        self.assertFalse(proveedores.describir('ocblacktop-wrc', pagina)['cobertura_completa'])
+        with self.assertRaisesRegex(ValueError, 'incompleta'):
+            importar('ocblacktop-wrc', pagina)
+        pagina['rallies'][1]['status'] = 'completed'
+        pagina['roundCount'] = 1
+        with self.assertRaisesRegex(ValueError, 'incompleta'):
+            importar('ocblacktop-wrc', pagina)
+
     def test_feb_conserva_horario_que_desaparece_sin_tomar_fecha_de_jornada(self):
         a = importar('feb-endesa')
         otra = muestra('feb-endesa')
