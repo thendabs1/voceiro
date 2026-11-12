@@ -387,12 +387,19 @@ cuentan en `pendientes_fuera_ventana` y `revisiones_no_aplicadas_fuera_ventana`.
 Una cita guardada en la ventana que la lectura ya no trae se reconsulta por
 su ficha: FCA (API por ID) y FGA (fechas de la ficha y su listado) se
 reimportan con la fecha actual; si la ficha no sostiene la fecha (RFEA no
-publica el año) o ya no existe (404/410; FCA 400 `rest_invalid_param`), se
-anota en `fuentes.{fuente}.ausencias` y deja de publicarse sin cancelarse.
+publica el año) o ya no existe (404/410; FCA 400 `rest_invalid_param` o
+`rest-invalid-event-id`), se anota en `fuentes.{fuente}.ausencias` y deja de
+publicarse sin cancelarse.
 Otra lectura del ID la vuelve a publicar. Otros errores interrumpen la
 fuente. Una cita que el listado deja pendiente con otras fechas también se
 oculta. Si faltan al menos cinco citas conocidas y son más de la mitad de la
-ventana, la lectura se da por rota y no se retira nada. Un fallo del Calendario
+ventana, la lectura se da por rota y no se retira nada.
+FCA renumeró sus eventos entre el 8 y el 10/11/2026 con la misma URL y fechas:
+una guardada ausente cuya URL y fechas trae una única cita leída con un ID no
+guardado no cuenta para ese umbral; si su ficha está retirada, la ausencia lleva
+`renumerada como <ID>` y el ID nuevo hereda identidad, programa y revisiones
+(`renumerada_de` guarda el primer ID, que mantiene la clave de su incidencia).
+Si la ficha antigua sigue viva, no hay renumeración: son dos citas. Un fallo del Calendario
 PDF o de Nivel II no impide guardar la lectura mensual de RFEA: el paso se señala fallido y el
 informe, incompleto; una ventana con un año sin documento Nivel II tampoco
 está completa. `fuentes.{fuente}.ventana` se publica y el frontal raya en

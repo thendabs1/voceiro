@@ -135,6 +135,36 @@ class Pasada(unittest.TestCase):
         self.assertEqual(cli.call_count, 1)
         self.assertIn('sin escrituras y reloj publicacion no vencido', salida)
 
+    def test_vigilancia_cuenta_fallos_seguidos_por_paso_y_anota_la_recuperacion(self):
+        def estado():
+            return Repositorio(remoto=Almacen()).vigilancias()
+
+        cli = Mock(side_effect=ValueError('fca: la lectura no trae 67 de 83 citas conocidas'))
+        self.tick(cli, '2026-11-04T04:30:00Z', grupo='atletismo-fca')
+        self.tick(cli, '2026-11-04T10:30:00Z', grupo='atletismo-fca')
+        self.assertEqual(estado(), {'atletismo-fca': {
+            'errores': 2, 'desde': '2026-11-04T04:30:00Z', 'ultimo_error': '2026-11-04T10:30:00Z',
+            'mensaje': 'calendario: fca: la lectura no trae 67 de 83 citas conocidas'}})
+        # Un paso omitido por su reloj no cuenta como éxito ni como fallo.
+        salida = self.tick(cli, '2026-11-04T16:30:00Z', grupo='atletismo-fca')
+        self.assertIn('Omitido calendario: reloj atletismo-fca no vencido', salida)
+        self.assertEqual(estado()['atletismo-fca']['errores'], 2)
+        cli.side_effect = None
+        self.tick(cli, '2026-11-05T04:30:00Z', grupo='atletismo-fca')
+        self.assertEqual(estado()['atletismo-fca'], {
+            'errores': 0, 'desde': '2026-11-04T04:30:00Z', 'recuperado': '2026-11-05T04:30:00Z', 'fallos': 2,
+            'mensaje': 'calendario: fca: la lectura no trae 67 de 83 citas conocidas'})
+        # Sin fallos previos, un éxito no escribe nada; un paso sin reloj se vigila por su CLI.
+        with patch.object(Repositorio, 'anotar_vigilancia') as anotar, patch.object(pasada, '_cli', return_value=Mock()), \
+                patch('sys.stdout', new_callable=io.StringIO):
+            pasada.main(['--paso-tolerado', 'operacion --turso'])
+        anotar.assert_not_called()
+        with patch.object(pasada, '_cli', return_value=Mock(side_effect=SystemExit(1))), \
+                patch.object(pasada, 'ahora_utc', return_value=AHORA), patch('sys.stdout', new_callable=io.StringIO):
+            with self.assertRaises(SystemExit):
+                pasada.main(['--paso-tolerado', 'operacion --turso --descubrir'])
+        self.assertEqual(estado()['operacion']['mensaje'], 'operacion --turso --descubrir: 1')
+
     def test_guardado_parcial_avanza_el_reloj_y_deja_el_paso_fallido(self):
         cli = Mock(side_effect=cadencias.GuardadoParcial('Calendario PDF no se leyó'))
         with patch.object(pasada, '_cli', return_value=cli), patch.object(pasada, 'ahora_utc', return_value=AHORA), \

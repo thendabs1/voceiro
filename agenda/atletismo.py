@@ -185,17 +185,31 @@ def importar(anterior, pagina, observado):
         grupos[i] = a.grupo('agrupacion', i, clase, g.get('nombre'), padre=capa,
             url=enlace(fuente, g['url']), codigo=g.get('codigo_consulta'))
     for e in eventos:
-        equivalencia = equivalencias().get((fuente, deporte.literal(e['id'])))
+        previa = a.anterior('competicion', e['id'])
+        # La fuente publica la cita guardada con otro ID (atletismo_recogida.renumeraciones):
+        # el nuevo hereda identidad, programa y revisiones del ID guardado.
+        origen = deporte.literal(e['id'])
+        if e.get('renumerada_de') is not None and not previa:
+            origen = deporte.literal(e['renumerada_de'])
+            if a.anterior('competicion', origen) is None:
+                raise ValueError('Renumeración sin la cita guardada')
+        equivalencia = equivalencias().get((fuente, origen))
         identidad = (nucleo.identificador('atletismo-revisado', equivalencia['id'])
                      if equivalencia else None)
-        previa = a.anterior('competicion', e['id'])
         if identidad and previa and previa['id'] != identidad:
             raise ValueError('Equivalencia nueva sobre una cita existente: requiere conciliación explícita')
         identidad_grupo = nucleo.identificador('programa-atletismo-revisado', equivalencia['id']) if equivalencia else None
+        renumerada = origen != deporte.literal(e['id'])
+        if renumerada:
+            identidad = a.anterior('competicion', origen)['id']
+            identidad_grupo = (a.anterior('programa_competicion', origen) or {}).get('id')
         decision = decisiones[str(e['id'])]
-        automatica = next((c['metadatos'].get('coincidencia_automatica') for c in conocidas
-                           if c['fuente'] == fuente and c['id'] == str(e['id'])), None)
-        if not equivalencia and not previa and decision['estado'] == 'automatica':
+        guardada = next((c for c in conocidas if c['fuente'] == fuente and c['id'] == origen), None)
+        automatica = guardada and guardada['metadatos'].get('coincidencia_automatica')
+        # Siempre el primer ID guardado, también al reimportar: las incidencias
+        # conservan su clave aunque la fuente renumere otra vez.
+        raiz = (guardada and guardada['metadatos'].get('renumerada_de')) or (origen if renumerada else None)
+        if not equivalencia and not previa and not renumerada and decision['estado'] == 'automatica':
             identidad = decision['cita']['destino']['id']
             identidad_grupo = decision['cita']['grupo']['id']
             automatica = {'version': coincidencias.VERSION, 'referencia': decision['cita']['referencia'],
@@ -230,6 +244,7 @@ def importar(anterior, pagina, observado):
             sitio=e.get('lugar'), url=enlace(fuente, e['url']), identidad=identidad,
             bloques={'atletismo': {**(e.get('metadatos') or {}),
                 **({'coincidencia_automatica': automatica} if automatica else {}),
+                **({'renumerada_de': raiz} if raiz else {}),
                 **({'equivalencia_revisada': equivalencia} if equivalencia else {})},
                 'agenda': {'rol': 'principal', 'grupo': grupo}})
         for adicional in padres[1:]:

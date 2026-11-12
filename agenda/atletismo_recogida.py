@@ -4,6 +4,7 @@ Cada lector entrega el mismo contrato de atletismo.importar. Las federaciones
 conservan identidad, cobertura y errores independientes de sus coincidencias.
 """
 from calendar import monthrange
+from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from hashlib import sha256
 import json
@@ -402,12 +403,35 @@ def retirada(fuente, error):
         return True
     if fuente != 'fca' or error.code != 400:
         return False
-    # Tribe valida el ID: un evento borrado no es un parámetro válido.
+    # Tribe valida el ID: un evento borrado no es un parámetro válido, y un ID
+    # que ya es otro tipo de entrada no es un evento válido.
     try:
         cuerpo = json.loads(error.read())
     except (ValueError, OSError):
         return False
-    return cuerpo.get('code') == 'rest_invalid_param' and 'id' in ((cuerpo.get('data') or {}).get('params') or {})
+    return (cuerpo.get('code') == 'rest-invalid-event-id'
+            or cuerpo.get('code') == 'rest_invalid_param' and 'id' in ((cuerpo.get('data') or {}).get('params') or {}))
+
+
+def renumeraciones(conocidas, eventos, faltan):
+    """Guardadas que la lectura trae con otro ID: misma URL, mismas fechas, ID no guardado.
+
+    FCA renumeró sus eventos entre el 8 y el 10/11/2026 conservando URL y fechas.
+    Solo es candidata la única cita leída que encaja con una sola guardada; la
+    ficha retirada del ID guardado (en `reconsultar`) es lo que la acredita.
+    """
+    guardados = {c['id'] for c in conocidas}
+    por_url = {}
+    for e in eventos:
+        if str(e['id']) not in guardados:
+            por_url.setdefault(e['url'], []).append(e)
+    candidatas = {}
+    for c in faltan:
+        nuevas = [e for e in por_url.get(c.get('url'), []) if (e['inicio'], e['fin']) == (c['inicio'], c['fin'])]
+        if len(nuevas) == 1:
+            candidatas[c['id']] = str(nuevas[0]['id'])
+    reclamadas = Counter(candidatas.values())
+    return {i: nuevo for i, nuevo in candidatas.items() if reclamadas[nuevo] == 1}
 
 
 def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, observado):
@@ -421,7 +445,9 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
     Una cita que el listado deja pendiente con otras fechas no se reconsulta:
     deja de publicarse, porque su fecha guardada ya está desmentida. Si la
     lectura trae menos de la mitad de lo conocido (al menos cinco ausentes),
-    se trata como lectura rota: falla sin retirar nada.
+    se trata como lectura rota: falla sin retirar nada. En FCA, las que la
+    lectura trae con otro ID (`renumeraciones`) no cuentan como ausentes; si su
+    ficha está retirada, el ID nuevo hereda la identidad del guardado.
     """
     if fuente in ('fga', 'rfea') and not informe.get('aplicar_ausencias', True):
         return {'ausencias': [], 'reimportadas': []}
@@ -429,10 +455,12 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
     pendientes = {str(x['id']): x for x in informe['pendientes']}
     en_ventana = [c for c in conocidas if c['fin'] >= desde.isoformat() and c['inicio'] <= hasta.isoformat()]
     faltan = [c for c in en_ventana if c['id'] not in leidas]
-    if len(faltan) >= 5 and 2 * len(faltan) > len(en_ventana):
-        raise ValueError(f'{fuente}: la lectura no trae {len(faltan)} de {len(en_ventana)} citas conocidas; '
+    candidatas = renumeraciones(conocidas, entrada['eventos'], faltan) if fuente == 'fca' else {}
+    rotas = [c for c in faltan if c['id'] not in candidatas]
+    if len(rotas) >= 5 and 2 * len(rotas) > len(en_ventana):
+        raise ValueError(f'{fuente}: la lectura no trae {len(rotas)} de {len(en_ventana)} citas conocidas; '
                          'no se retira nada')
-    ausencias, reimportadas = [], []
+    ausencias, reimportadas, renumeradas = [], [], []
 
     def desmentida(c, p, motivo):
         # Pendiente con otras fechas (del listado o de su ficha): la guardada ya no vale.
@@ -490,8 +518,12 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
         except HTTPError as error:
             if not retirada(fuente, error):
                 raise
-            ausencias.append({'id': c['id'], 'url': c['url'], 'comprobado': observado,
-                              'motivo': f'ficha retirada (HTTP {error.code})'})
+            if c['id'] in candidatas:
+                renumeradas.append({'id': c['id'], 'nuevo': candidatas[c['id']]})
+                motivo = f"renumerada como {candidatas[c['id']]} (HTTP {error.code})"
+            else:
+                motivo = f'ficha retirada (HTTP {error.code})'
+            ausencias.append({'id': c['id'], 'url': c['url'], 'comprobado': observado, 'motivo': motivo})
             continue
         r = FICHAS[fuente](c, contenido, obtener)
         if r.get('bloqueo'):
@@ -514,7 +546,7 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
             entrada.setdefault('agrupaciones', []).extend(g for g in nueva.get('agrupaciones', []) if g['id'] not in vistas)
             entrada['eventos'].extend(nueva['eventos'])
             reimportadas.append(c['id'])
-    return {'ausencias': ausencias, 'reimportadas': reimportadas}
+    return {'ausencias': ausencias, 'reimportadas': reimportadas, 'renumeradas': renumeradas}
 
 
 def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=None, cache=None,
@@ -634,9 +666,13 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
             date.today(), obtener, observado or datetime.now(timezone.utc).isoformat(timespec='microseconds'))
     if bloqueo is not None:
         informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[],
-                       retry_after=(bloqueo.headers or {}).get('Retry-After'))
+                       renumeradas=[], retry_after=(bloqueo.headers or {}).get('Retry-After'))
         if fuente in ('rfea', 'fca'):
             atletismo_documentos.conservar(entrada['eventos'], conocidas, informe.get('documentos_revisados', {}))
+    # Solo con la ausencia del ID guardado: dos IDs vivos no comparten identidad.
+    por_id = {str(e['id']): e for e in entrada['eventos']}
+    for x in informe.get('renumeradas', []):
+        por_id[x['nuevo']]['renumerada_de'] = x['id']
     return entrada, {'version': 1, 'fuente': fuente, 'inicio': desde.isoformat(), 'fin': hasta.isoformat(),
                       'peticiones': peticiones, 'citas': len(entrada['eventos']), **informe}
 
@@ -835,6 +871,7 @@ def main(argv=None):
         guardar(args.informe, informe)
     print(json.dumps({**{k: informe[k] for k in ('fuente', 'inicio', 'fin', 'peticiones', 'citas', 'completo')},
                       'ausencias': len(informe.get('ausencias', [])), 'reimportadas': len(informe.get('reimportadas', [])),
+                      **({'renumeradas': len(informe['renumeradas'])} if informe.get('renumeradas') else {}),
                       **({'avisos': informe['avisos']} if informe.get('avisos') else {}),
                       **({'calendario_pdf': {k: v for k, v in informe['calendario_pdf'].items()
                                              if k in ('automaticas', 'a_revision', 'sin_fila', 'avisos')}}

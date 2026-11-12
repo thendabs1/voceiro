@@ -123,6 +123,16 @@ class Repositorio:
             'proxima_revision': max(temporadas.esperar_retry(retry_after, ahora) or temporadas.marca(ahora),
                                     temporadas.despues(ahora, hours=cadencias.espera_fallo(grupo, errores)))})
 
+    def vigilancias(self):
+        """Estado de los pasos tolerados de la pasada (agenda/vigilancia.py)."""
+        return {clave.removeprefix('vigilancia:'): json.loads(valor) for clave, valor in self.consultar(
+            "SELECT clave, valor_json FROM agenda_estado WHERE clave LIKE 'vigilancia:%'")}
+
+    def anotar_vigilancia(self, paso, valor):
+        self.escribir([('INSERT INTO agenda_estado(clave,valor_json) VALUES (?,?) '
+            'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json',
+            ('vigilancia:' + paso, codificar(valor)))])
+
     def _guardar_reloj(self, grupo, valor):
         self.escribir([('INSERT INTO agenda_estado(clave,valor_json) VALUES (?,?) '
             'ON CONFLICT(clave) DO UPDATE SET valor_json=excluded.valor_json',

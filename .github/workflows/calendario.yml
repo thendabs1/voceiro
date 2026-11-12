@@ -94,6 +94,7 @@ jobs:
           key: atletismo-fichas-${{ github.run_id }}
           restore-keys: atletismo-fichas-
       - name: Recoger, revisar temporadas y publicar con una sola carga del núcleo
+        id: pasada
         # Cada fuente guarda al terminar. Si una falla, las demás siguen, se publica
         # cuando toca y el job se marca fallido al final (agenda/pasada.py).
         env:
@@ -178,3 +179,10 @@ jobs:
           # workflow serializa la comprobación y creación de issues.
           pasos+=(--paso-final-tolerado "atletismo-revision --turso --issues --repo $GITHUB_REPOSITORY")
           python -m agenda.pasada "${pasos[@]}"
+      - name: Vigilar los pasos que fallan seguidos
+        # También tras una pasada fallida: abre un issue por paso con fallos
+        # seguidos y lo cierra cuando se recupera (agenda/vigilancia.py).
+        if: always() && steps.pasada.outcome != 'skipped' && inputs.operacion != 'migrar-nucleo'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m agenda.vigilancia --turso --issues --repo "$GITHUB_REPOSITORY"

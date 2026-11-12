@@ -332,12 +332,14 @@ def incidencias(n):
     Entre fuentes, identidades distintas o discrepancias de una ya compartida.
     Dentro de una fuente, que nunca se une sola, solo lo que parece un duplicado.
     """
-    ausentes = {(f, i) for f, d in n['fuentes'].items() for i in (d.get('ausencias') or {}).get('ids', {})}
-    conocidos = actuales(n)
+    ausentes = {(f, i): x for f, d in n['fuentes'].items() for i, x in (d.get('ausencias') or {}).get('ids', {}).items()}
+    # Un ID que la fuente renumeró lo sustituye el nuevo, que hereda la clave del par.
+    conocidos = [c for c in actuales(n)
+                 if not ausentes.get((c['fuente'], c['id']), {}).get('motivo', '').startswith('renumerada como ')]
     salida = {}
     for pos, a in enumerate(conocidos):
         for b in conocidos[pos + 1:]:
-            par = sorted([(a['fuente'], a['id']), (b['fuente'], b['id'])])
+            par = sorted([(c['fuente'], c['metadatos'].get('renumerada_de') or c['id']) for c in (a, b)])
             clave = sha256(nucleo.json_canonico(par).encode()).hexdigest()[:24]
             citas = sorted([a, b], key=lambda c: (c['fuente'], c['id']))
             if distribucion(a['fuente'], a['id']) == distribucion(b['fuente'], b['id']):
@@ -346,7 +348,7 @@ def incidencias(n):
                 if a['referencia'] == b['referencia']:
                     continue
                 # Un ID retirado por la fuente no es un duplicado: la sustituyó otro.
-                if {(a['fuente'], a['id']), (b['fuente'], b['id'])} & ausentes:
+                if {(a['fuente'], a['id']), (b['fuente'], b['id'])} & ausentes.keys():
                     continue
                 comparacion = comparar(a, b, por_enlace=False)
                 if a['destino'] == b['destino'] or posible_duplicado(comparacion):
