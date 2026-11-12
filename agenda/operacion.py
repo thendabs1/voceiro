@@ -307,6 +307,11 @@ def descubrir(repo, coleccion, ahora, *, proveedor=None, year=None, fecha=None, 
             year = next((y for y in candidatas if y.isdigit() and hoy.year <= int(y) <= hoy.year + 1
                          and y not in registradas), None)
             if year is None:
+                # Sin año que descubrir, un fallo anterior ya no espera reintento
+                # (sus temporadas se registraron por otra vía y se vigilan solas).
+                # Un bloqueo sí sigue pendiente hasta reabrirlo explícitamente.
+                if anterior and anterior.get('errores_consecutivos') and not anterior.get('bloqueada'):
+                    repo.guardar_descubrimiento(coleccion, {**anterior, 'errores_consecutivos': 0})
                 return None, None
         year = str(year)
         if any(t['referencia'] == year and t['estado'] == 'cerrada' for t in conocidas):
