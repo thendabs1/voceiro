@@ -314,7 +314,12 @@ test('«Todas» en Deportes pide todas las competiciones del catálogo sin topar
   assert.ok(todas.length > 20);
   const c = normalizarConsulta(new URL(`https://x.test${ventana}&q=${encodeURIComponent('deporte:' + todas.join(','))}`));
   assert.deepEqual(new Set(c.orden.ambitos), new Set(todas));
-  assert.throws(() => normalizarConsulta(new URL(`https://x.test${ventana}&temas=${Array.from({ length: 21 }, (_, i) => 't' + i).join(',')}`)), /Demasiados filtros/);
+  // «Próximas semanas en deportes» las manda en `circuitos`.
+  const t = normalizarConsulta(new URL(`https://x.test${ventana}&circuitos=${todas.join(',')}`));
+  assert.deepEqual(t.circuitos, [...todas].sort());
+  const libres = Array.from({ length: 21 }, (_, i) => 't' + i).join(',');
+  for (const p of ['temas', 'circuitos'])
+    assert.throws(() => normalizarConsulta(new URL(`https://x.test${ventana}&${p}=${libres}`)), /Demasiados filtros/);
 });
 
 test('prefijos deporte y circuito ignoran competiciones desconocidas sin vaciar mezclas ni abrir el filtro', async t => {

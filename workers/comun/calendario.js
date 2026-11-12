@@ -72,9 +72,11 @@ export function normalizarConsulta(url) {
     tipos: lista(p.get('tipo')), disponibilidad: p.get('disponibilidad') === '1', barras: p.get('barras') === '1', chips: p.get('chips') === '1', total: p.get('total') === '1',
     resultados: p.get('resultados') === '1' || Boolean(orden.tipos?.includes('resultados') && !orden.tipos.includes('calendario')) };
   if (c.total && (url.pathname !== '/calendario/eventos' || c.chips || c.pendientes)) throw error(400, 'El total solo se da en la lista de eventos con fechas');
-  // Los ámbitos y circuitos de q salen del catálogo cerrado (AMBITOS) sin repetir:
-  // ya están acotados, y «Todas» en Deportes pide todas las competiciones a la vez.
-  if ([c.temas, c.circuitos, c.formatos, c.modalidades, c.titular, c.actividades, c.excluirActividades].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
+  // Las competiciones del catálogo cerrado (AMBITOS) ya están acotadas por él, sin
+  // repetir: «Todas» en Deportes y «Próximas semanas» las piden todas a la vez, en q
+  // o en `circuitos`. El tope frena solo los circuitos que el catálogo no conoce.
+  const circuitosLibres = c.circuitos.filter(x => !(Object.hasOwn(AMBITOS, x) && AMBITOS[x].codigo));
+  if ([c.temas, circuitosLibres, c.formatos, c.modalidades, c.titular, c.actividades, c.excluirActividades].some(a => a.length > 20)) throw error(400, 'Demasiados filtros');
   if (c.modalidades.some(m => !MODALIDADES_ATLETISMO.includes(m))) throw error(400, 'Modalidad desconocida');
   if (c.titular.some(x => !TITULAR_ATLETISMO.test(x))) throw error(400, 'Titular desconocido');
   if ([...c.actividades, ...c.excluirActividades].some(a => !ACTIVIDADES_ATLETISMO.includes(a))) throw error(400, 'Actividad desconocida');
