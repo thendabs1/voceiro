@@ -179,8 +179,10 @@ def leer_ficha(html, i, url):
     return salida
 
 
-def completar_fichas(eventos, obtener, conocidas=()):
+def completar_fichas(eventos, obtener, conocidas=(), previos=None):
     """Añade lo exclusivo de ficha; un fallo conserva lo anterior y no anula el inventario.
+
+    `previos` (ID nuevo → anterior) recupera lo anterior de una cita renumerada en esta pasada.
 
     Un 403 o 429 corta esta superficie, no la lectura de la API. El presupuesto
     agotado sí se propaga: no se importa una recogida parcial.
@@ -205,7 +207,8 @@ def completar_fichas(eventos, obtener, conocidas=()):
                 informe['fallidas'].append({'id': e['id'], 'motivo': f'{type(error).__name__}: {error}'[:200]})
         meta = e['metadatos']
         presentes = {(d['url'], d['rol']) for d in meta['documentos']}
-        meta['documentos'] += [d for d in (anteriores.get(e['id'], []) if nuevos is None else nuevos)
+        previa = anteriores.get(e['id'], anteriores.get((previos or {}).get(e['id']), []))
+        meta['documentos'] += [d for d in (previa if nuevos is None else nuevos)
                                if (d['url'], d['rol']) not in presentes]
     return informe
 

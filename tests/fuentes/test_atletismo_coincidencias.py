@@ -107,6 +107,20 @@ class Alcance(unittest.TestCase):
         self.assertEqual([x['id'] for x in nuevo['citas']], ['300', '200'])
         self.assertEqual((nuevo['clave'], revision.huella(nuevo)), (caso['clave'], revision.huella(caso)))
 
+    def test_un_id_renumerado_no_atrae_coincidencias_automaticas(self):
+        # 100 → 200 y después 200 cambia de fecha: la última lectura de 100 ya está superada.
+        n = atletismo.importar(None, entrada('fca', '100'), AHORA)
+        luego = '2026-11-03T20:00:00+01:00'
+        n = atletismo.importar(n, entrada('fca', '200', renumerada_de='100'), luego)
+        n = atletismo.registrar_ausencias(n, 'fca', [{'id': '100', 'motivo': 'renumerada como 200 (HTTP 404)',
+            'url': entrada('fca')['eventos'][0]['url'], 'comprobado': luego, 'detalle': {'renumerada_como': '200'}}])
+        n = atletismo.importar(n, entrada('fca', '200', inicio='2026-11-08', fin='2026-11-08'),
+                               '2026-11-04T20:00:00+01:00')
+        rfea = entrada('rfea', '300')
+        self.assertEqual(c.decidir_lote(n, 'rfea', rfea['eventos'])['300']['estado'], 'nueva')
+        n = atletismo.importar(n, rfea, '2026-11-05T20:00:00+01:00')
+        self.assertFalse(any(e['programacion'].get('conflicto') for e in publicacion.proyectar(n)['eventos']))
+
     def test_decisiones_editoriales_reconocen_el_primer_id_de_una_renumerada(self):
         def renumerar(cita, nuevo):
             return {**cita, 'id': nuevo, 'metadatos': {**cita['metadatos'], 'renumerada_de': cita['id']}}

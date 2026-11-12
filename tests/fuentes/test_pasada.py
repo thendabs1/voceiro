@@ -9,10 +9,11 @@ import unittest
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 
-from agenda import cadencias, pasada, turso
+from agenda import cadencias, operacion, pasada, temporadas, turso
 from agenda.control import ConflictoControl, Repositorio
 from agenda.turso import Almacen, ConflictoCalendario
 from test_agenda import construir, ficha
+from test_adaptadores_deportivos import muestra as muestra_deportiva
 from test_calendario_cultura import muestra
 from test_calendario_turso import Servidor
 from turso_http import ErrorTurso
@@ -173,6 +174,43 @@ class Pasada(unittest.TestCase):
             self.assertEqual(estado()['operacion']['errores'], errores)
             self.assertEqual('sin recuperar; esperan reintento: wrc 2026' in salida.getvalue(), bool(pendientes))
         self.assertEqual(estado()['operacion']['recuperado'], '2026-11-05T04:30:00Z')
+
+    def test_operacion_parcial_no_recupera_las_colecciones_que_no_reviso(self):
+        # Tras dos fallos de WRC, una ejecución manual solo de NBA no cierra la vigilancia de operacion.
+        repo = Repositorio(remoto=Almacen())
+        repo.inicializar()
+        t = repo.registrar(temporadas.nueva('wrc', '2026', '2026-11-04T00:00:00Z', seleccion={'year': '2026'}))
+        for ahora in ('2026-11-04T04:30:00Z', '2026-11-04T10:30:00Z'):
+            with patch.object(pasada, 'ahora_utc', return_value=ahora), \
+                    patch.object(operacion.proveedores, 'recoger', side_effect=ValueError('WRC sin respuesta')), \
+                    patch('sys.stdout', new_callable=io.StringIO), self.assertRaises(SystemExit):
+                pasada.main(['--paso-tolerado', f'operacion --turso --ejecutar --coleccion wrc --ahora {ahora}'])
+        nba = (muestra_deportiva('espn-nba'), 'https://ejemplo.test/nba')
+        with patch.object(pasada, 'ahora_utc', return_value='2026-11-04T11:00:00Z'), \
+                patch.object(operacion.proveedores, 'recoger', return_value=nba), \
+                patch('sys.stdout', new_callable=io.StringIO) as salida:
+            pasada.main(['--paso-tolerado',
+                         'operacion --turso --ejecutar --descubrir --coleccion nba --ahora 2026-11-04T11:00:00Z'])
+        self.assertIn('sin recuperar; esperan reintento: wrc 2026', salida.getvalue())
+        self.assertEqual(repo.vigilancias()['operacion']['errores'], 2)
+        self.assertEqual(repo.obtener(t['id'])['errores_consecutivos'], 2)
+
+    def test_operacion_sin_descubrir_no_recupera_un_descubrimiento_fallido(self):
+        repo = Repositorio(remoto=Almacen())
+        repo.inicializar()
+        for ahora in ('2026-11-04T04:30:00Z', '2026-11-04T10:30:00Z'):
+            with patch.object(pasada, 'ahora_utc', return_value=ahora), \
+                    patch.object(operacion.proveedores, 'recoger', side_effect=ValueError('WRC sin respuesta')), \
+                    patch('sys.stdout', new_callable=io.StringIO), self.assertRaises(SystemExit):
+                pasada.main(['--paso-tolerado', f'operacion --turso --ejecutar --descubrir --coleccion wrc --ahora {ahora}'])
+        repo.registrar(temporadas.nueva('nba', '2027', '2026-11-04T00:00:00Z', seleccion={'year': '2027'}))
+        nba = (muestra_deportiva('espn-nba'), 'https://ejemplo.test/nba')
+        with patch.object(pasada, 'ahora_utc', return_value='2026-11-04T11:00:00Z'), \
+                patch.object(operacion.proveedores, 'recoger', return_value=nba), \
+                patch('sys.stdout', new_callable=io.StringIO) as salida:
+            pasada.main(['--paso-tolerado', 'operacion --turso --ejecutar --coleccion nba --ahora 2026-11-04T11:00:00Z'])
+        self.assertIn('sin recuperar; esperan reintento: descubrimiento wrc', salida.getvalue())
+        self.assertEqual(repo.vigilancias()['operacion']['errores'], 2)
 
     def test_guardado_parcial_avanza_el_reloj_y_deja_el_paso_fallido(self):
         cli = Mock(side_effect=cadencias.GuardadoParcial('Calendario PDF no se leyó'))

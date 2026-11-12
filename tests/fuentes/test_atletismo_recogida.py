@@ -413,6 +413,41 @@ class RecogidaAtletismo(unittest.TestCase):
             r.recoger('fca', '2026-11-01', '2026-11-30', conocidas=conocidas,
                       descargar=lambda u: json.dumps(pagina(*otras)) if '?' in u else obtener(u))
 
+    def test_fca_renumerada_conserva_lecturas_documentales_revisadas(self):
+        # El catálogo documental cita 89925; FCA la publica como 87344 desde el 10/11/2026.
+        raw = next(e for e in json.loads((MUESTRAS / 'fca' / 'api.json').read_text())['events'] if e['id'] == 89925)
+        html = (MUESTRAS / 'fca' / 'ficha-89925.html').read_text()
+        pdf = (MUESTRAS / 'circulares' / 'fca-combinades.pdf').read_bytes()
+
+        def fuente(evento, ficha=None):
+            def obtener(url, *, binario=False):
+                if binario:
+                    return pdf
+                if '?' in url:
+                    return json.dumps({'total': 1, 'total_pages': 1, 'events': [evento]})
+                if '/wp-json/' in url:
+                    raise HTTPError(url, 404, 'Not Found', {}, io.BytesIO(b''))
+                if ficha:
+                    raise HTTPError(url, ficha, 'Error', {}, io.BytesIO(b''))
+                return html.replace('post-89925', 'post-' + str(evento['id']))
+            return obtener
+
+        # Con la ficha nueva disponible o caída (500): sin ella, los documentos salen de lo guardado.
+        for ficha in (None, 500):
+            entrada, _ = r.recoger('fca', '2026-11-12', '2026-11-30', descargar=fuente(raw), observado=AHORA)
+            n = atletismo.importar(None, entrada, AHORA)
+            # La pasada que acredita la renumeración y la siguiente, que ya no trae el ID anterior.
+            for observado in ('2026-11-10T20:00:00+01:00', '2026-11-11T20:00:00+01:00'):
+                conocidas = [c for c in atletismo_coincidencias.actuales(n) if c['fuente'] == 'fca'
+                             and c['id'] not in r.renumerados(n['fuentes']['fca'])]
+                entrada, informe = r.recoger('fca', '2026-11-12', '2026-11-30',
+                    descargar=fuente({**raw, 'id': 87344}, ficha), conocidas=conocidas, observado=observado)
+                meta = entrada['eventos'][0]['metadatos']
+                self.assertEqual((meta['actividad']['valor'], meta['alcance']['tipo']), ('control', 'reunion'))
+                n = atletismo.registrar_ausencias(atletismo.importar(n, entrada, observado), 'fca', informe['ausencias'])
+            e, = publicacion.proyectar(n)['eventos']
+            self.assertIn('control', e['atletismo'].get('actividades', []))
+
     def test_fca_renumerada_dos_veces_bloqueo_y_reaparicion(self):
         def tribe(i, slug):
             return {'id': i, 'title': 'Cursa ' + slug, 'url': f'https://fcatletisme.cat/event/{slug}/',

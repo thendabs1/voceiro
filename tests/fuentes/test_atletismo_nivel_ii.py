@@ -7,6 +7,7 @@ import unittest
 
 from agenda import atletismo, atletismo_nivel_ii as nivel, publicacion
 from calendario import main
+from test_atletismo_coincidencias import entrada
 
 MUESTRAS = Path(__file__).with_name('muestras_calendario') / 'atletismo'
 AHORA = '2026-11-02T20:00:00+01:00'
@@ -175,6 +176,29 @@ class NivelII(unittest.TestCase):
         self.assertEqual(repetida['eventos'][0]['id'], identificador)
         n = atletismo.importar(n, repetida, '2026-11-03T20:00:00+01:00')
         self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)
+
+    def test_un_id_renumerado_no_resuelve_filas_con_su_lectura_superada(self):
+        # FCA 100 → 200 y después 200 cambia de fecha; el PDF conserva la anterior.
+        observacion = next(f for f in self.inventario['filas']
+                           if f['fila']['nombre'] == 'Campionat de Catalunya de Cros per Clubs')
+        f = observacion['fila']
+        inventario = {**self.inventario, 'filas': [observacion]}
+        evento = {'nombre': f['nombre'], 'inicio': f['fecha'], 'fin': f['fecha'],
+                  'lugar': {'nombre': f['ciudad']}, 'metadatos': {'modalidad_literal': f['tipo_literal']}}
+        luego = '2026-11-03T20:00:00+01:00'
+        n = atletismo.importar(None, entrada('fca', '100', **evento), AHORA)
+        n = atletismo.importar(n, entrada('fca', '200', **evento, renumerada_de='100'), luego)
+        n = atletismo.registrar_ausencias(n, 'fca', [{'id': '100', 'motivo': 'renumerada como 200 (HTTP 404)',
+            'url': entrada('fca')['eventos'][0]['url'], 'comprobado': luego, 'detalle': {'renumerada_como': '200'}}])
+        n = atletismo.importar(n, entrada('fca', '200', **{**evento, 'inicio': '2026-12-12', 'fin': '2026-12-12'}),
+                               '2026-11-04T20:00:00+01:00')
+        sin_revisar = {'version': 1, 'revisiones': []}
+        resultado = nivel.resolver(inventario, sin_revisar, n)
+        self.assertEqual((resultado['entrada']['eventos'], len(resultado['pendientes'])), ([], 1))
+        # Otra cita vigente que coincide se resuelve sin la ambigüedad que añadía el ID sustituido.
+        n = atletismo.importar(n, entrada('fga', '300', **evento), '2026-11-05T20:00:00+01:00')
+        resultado = nivel.resolver(inventario, sin_revisar, n, incorporar_nuevas=True)
+        self.assertEqual((len(resultado['entrada']['eventos']), resultado['pendientes']), (1, []))
 
     def test_cli_guarda_un_lote_con_equivalencia_y_conflicto_de_sede(self):
         entrada = nivel.resolver(self.inventario, revisiones())['entrada']

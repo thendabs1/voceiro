@@ -297,6 +297,25 @@ class ContratoControl:
         self.assertEqual(operacion.pendientes(self.repo, colecciones=['wrc'], descubrimiento=True),
                          ['descubrimiento wrc'])
 
+    def test_descubrimiento_sin_candidata_no_deja_su_fallo_pendiente(self):
+        # Un fallo antiguo cuyos años se registraron por otra vía no bloquea la vigilancia.
+        d = self.repo.comenzar_descubrimiento('wrc', 'ocblacktop-wrc', AHORA)
+        self.repo.terminar_descubrimiento(d, AHORA, error='Temporada WRC incompleta')
+        self.assertEqual(operacion.pendientes(self.repo, descubrimiento=True), ['descubrimiento wrc'])
+        hoy = temporadas.momento(AHORA).year
+        for year in (str(hoy), str(hoy + 1)):
+            self.repo.registrar(temporadas.nueva('wrc', year, AHORA, seleccion={'year': year}))
+        # Un bloqueo (401/403) sigue pendiente aunque se fuerce: solo se reabre explícitamente.
+        bloqueado = self.repo.descubrimiento('wrc')
+        self.repo.guardar_descubrimiento('wrc', {**bloqueado, 'bloqueada': True})
+        with patch.object(operacion.proveedores, 'recoger') as red:
+            self.assertEqual(operacion.descubrir(self.repo, 'wrc', AHORA, forzar=True), (None, None))
+            self.assertEqual(operacion.pendientes(self.repo, descubrimiento=True), ['descubrimiento wrc'])
+            self.repo.guardar_descubrimiento('wrc', bloqueado)
+            self.assertEqual(operacion.descubrir(self.repo, 'wrc', AHORA, forzar=True), (None, None))
+        red.assert_not_called()
+        self.assertEqual(operacion.pendientes(self.repo, descubrimiento=True), [])
+
     def test_temporada_cerrada_no_admite_pasadas_hasta_reabrirla(self):
         alcance = {'inicio': '2026-03-06', 'fin': '2026-12-06', 'evidencia': {'url': 'https://oficial.test'},
                    'fin_confirmado': True, 'cobertura_completa': True,

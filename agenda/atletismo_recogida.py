@@ -633,12 +633,17 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
                         else LECTORES[fuente](desde, hasta, obtener))
     informe.update(reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener,
                                observado or datetime.now(timezone.utc).isoformat(timespec='microseconds')))
+    # El ID nuevo de una renumeración hereda lo guardado bajo el anterior.
+    previos = {x['nuevo']: x['id'] for x in informe.get('renumeradas', [])}
     if fuente == 'fca':
-        informe['fichas'] = atletismo_fca.completar_fichas(entrada['eventos'], obtener, conocidas)
+        informe['fichas'] = atletismo_fca.completar_fichas(entrada['eventos'], obtener, conocidas, previos)
         informe.setdefault('avisos', []).extend(informe['fichas']['fallidas'])
     if fuente in ('rfea', 'fca') and bloqueo is None:
         try:
-            informe['documentos_revisados'] = atletismo_documentos.completar(fuente, entrada['eventos'], obtener)
+            # El catálogo documental cita el primer ID guardado; la fuente puede haberlo renumerado.
+            estables = {c['id']: coincidencias.id_estable(c) for c in conocidas}
+            estables.update({nuevo: estables.get(i, i) for nuevo, i in previos.items()})
+            informe['documentos_revisados'] = atletismo_documentos.completar(fuente, entrada['eventos'], obtener, estables)
             informe.setdefault('avisos', []).extend(informe['documentos_revisados']['avisos'])
         except HTTPError as error:
             if error.code not in (403, 429):

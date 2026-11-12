@@ -123,7 +123,9 @@ def resolver(inventario, revisiones, n=None, *, incorporar_nuevas=False):
     # Las filas coincidentes con una cita identificada no necesitan revisión
     # individual. Su ID editorial deriva de esa referencia estable, no del PDF.
     candidatos = []
-    conocidos = coincidencias.actuales(n)
+    # Sin los IDs renumerados: su última lectura ya está superada por la del ID nuevo.
+    retirados = coincidencias.sustituidos(n)
+    conocidos = [c for c in coincidencias.actuales(n) if (c['fuente'], c['id']) not in retirados]
     for observacion in inventario['filas']:
         f = observacion['fila']
         if observacion['huella'] in resueltas or len(indice[observacion['huella']]) != 1:

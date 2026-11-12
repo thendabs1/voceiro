@@ -72,20 +72,26 @@ def combinar(meta, acreditados, i):
 
 
 class Lecturas:
-    def __init__(self, fuente, obtener, *, catalogo=None):
+    def __init__(self, fuente, obtener, *, catalogo=None, estables=None):
         self.catalogo = lecturas_documentales(fuente) if catalogo is None else catalogo
         self.obtener = obtener
+        # ID actual → primer ID guardado: el catálogo cita el ID con que se revisó la cita.
+        self.estables = estables or {}
         self.verificadas = {}
         self.avisos = []
         self.superficies = []
         self.por_url = {}
+
+    def clave(self, lectura, i):
+        """El ID con que el catálogo cita la cita: el actual o, si la fuente la renumeró, el primero."""
+        return next((k for k in (str(i), self.estables.get(str(i))) if k in lectura['citas']), None)
 
     def verificar(self, documentos, i):
         for d in documentos:
             u = d['url']
             lectura = self.catalogo.get(u)
             if (not lectura or d.get('rol') in NO_LEER
-                    or 'citas' in lectura and str(i) not in lectura['citas']):
+                    or 'citas' in lectura and self.clave(lectura, i) is None):
                 continue
             if u in self.verificadas:
                 registro = self.por_url[u]
@@ -134,7 +140,7 @@ class Lecturas:
             d['hash'] = lectura['sha256']
             # Un reglamento compartido puede describir objetos distintos: la
             # revisión explicita el ID; compartir PDF nunca asocia dos citas.
-            datos = lectura.get('citas', {}).get(str(evento['id'])) if 'citas' in lectura else lectura
+            datos = lectura['citas'].get(self.clave(lectura, evento['id'])) if 'citas' in lectura else lectura
             if not datos:
                 continue
             datos = {**lectura, **datos}
@@ -181,8 +187,8 @@ def conservar(eventos, conocidas, revisados):
                 d.setdefault('hash', hashes[d['url']])
 
 
-def completar(fuente, eventos, obtener):
-    lector = Lecturas(fuente, obtener)
+def completar(fuente, eventos, obtener, estables=None):
+    lector = Lecturas(fuente, obtener, estables=estables)
     try:
         for e in eventos:
             lector.aplicar(e)
