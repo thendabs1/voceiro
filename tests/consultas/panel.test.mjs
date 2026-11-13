@@ -655,7 +655,7 @@ test('vista general: bloques por deporte, solo lo que existe y sin peticiones de
   // Euroliga tiene resultados y no calendario; FEB, al revés.
   assert.match(panel.innerHTML, /data-orden="resultados:euroliga"/);
   assert.doesNotMatch(panel.innerHTML, /data-orden="calendario:euroliga"|data-orden="resultados:feb-endesa"/);
-  assert.match(panel.innerHTML, /data-orden="resultados:primera"[^>]*>LaLiga <small>· Resultados/);
+  assert.match(panel.innerHTML, /data-orden="resultados:primera"[^>]*>LaLiga <small>Resultados/);
   // Con el prefijo, el nombre lo ejecuta y solo salen las que lo tienen.
   actualizar('clasificacion:');
   assert.match(panel.innerHTML, /class="dep-nombre"[^>]*data-orden="clasificacion:primera"[^>]*>LaLiga</);

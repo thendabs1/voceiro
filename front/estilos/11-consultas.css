@@ -138,7 +138,7 @@
 .dep-fila{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; padding: 3px 0; }
 .dep-fila button{ min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--fg); font: inherit; cursor: pointer; }
 .dep-fila .dep-nombre{ font-weight: 600; text-align: left; }
-.dep-nombre small{ font-size: .8em; font-weight: 400; color: var(--muted); }
+.dep-nombre small{ margin-left: 8px; font-size: .8em; font-weight: 400; text-decoration: underline; text-underline-offset: 2px; }
 .dep-otras{ display: flex; flex-wrap: wrap; gap: 0 10px; }
 .dep-fila .dep-accion{ font-size: .8em; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
 /* Deportes usa el ancho de la ventana: toda la vista, para que nada salte al cambiar de
@@ -153,7 +153,8 @@ body.vista-deportes{ max-width: none; }
 .dep-inicio{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px 24px; margin-block: 6px 12px; }
 .dep-atajos{ display: flex; gap: 6px; min-width: 0; max-width: 100%; }
 .dep-atajos button{ flex: none; min-height: 32px; padding: 0 12px; border-radius: 999px; white-space: nowrap; overflow-wrap: normal; }
-.dep-sigo{ display: flex; flex-wrap: wrap; gap: 2px 24px; min-width: 0; }
+.dep-sigo{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 24px; min-width: 0; }
+.dep-rotulo{ margin-right: -12px; font-size: .8em; color: var(--muted); }
 .dep-cab{ display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; }
 .dep-cab button{ flex: none; min-width: 0; min-height: 32px; padding: 0 2px; border: 0; background: none; color: var(--fg); font: inherit; white-space: nowrap; overflow-wrap: normal; cursor: pointer; }
 .dep-cab .dep-cerrar{ display: inline-flex; align-items: center; justify-content: center; min-width: 32px; }

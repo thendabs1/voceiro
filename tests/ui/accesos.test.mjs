@@ -90,7 +90,7 @@ test('pedir lo que una competición no tiene lo dice y ofrece lo que sí', () =>
 test('el nombre abre lo primero que haya o lo pedido, y lo demás queda al lado', () => {
   const s = escenario();
   const fila = c => s.run(`filaCompeticion('${c}')`);
-  assert.match(fila('f1'), /class="dep-nombre" data-accion="orden" data-orden="resultados:f1"[^>]*>F1 <small>· Resultados<\/small>/);
+  assert.match(fila('f1'), /class="dep-nombre" data-accion="orden" data-orden="resultados:f1"[^>]*>F1 <small>Resultados<\/small>/);
   assert.match(fila('f1'), /class="dep-accion"[^>]*data-orden="calendario:f1"/);
   // En clasificacion:, el nombre basta y Resultados pasa a alternativa.
   const tabla = s.run("filaCompeticion('f1', 'clasificacion')");
