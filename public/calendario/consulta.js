@@ -1,6 +1,6 @@
 // Selección estructurada compartida por el feed, la agenda y sus tres vistas.
-import { tokenizeQuery, normalize } from '../parser.js?v=abaeff4f11';
-import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=abaeff4f11';
+import { tokenizeQuery, normalize } from '../parser.js?v=e2307bd0ee';
+import { compilarTexto, coincide, palabrasDe, textoVacio } from '../busqueda/texto.js?v=e2307bd0ee';
 
 // Modalidad común de atletismo: códigos de shared/calendario/atletismo-modalidades.json
 // (una prueba lo comprueba). Los calcula la publicación; aquí solo se filtra.
@@ -37,26 +37,25 @@ export const AMBITOS = {
   tecnologia: { tema: 'tecnologia' },
   // Solo para deporte:deportes; deportes: abre la vista general.
   deportes: { tema: 'deportes' },
-  atp: { codigo: 'atp', noticias: ['ATP'] },
-  wta: { codigo: 'wta', noticias: ['WTA'] },
-  f1: { codigo: 'f1', noticias: ['F1', 'Fórmula 1'] },
-  f2: { codigo: 'f2', noticias: ['F2', 'Fórmula 2'] },
-  f3: { codigo: 'f3', noticias: ['F3', 'Fórmula 3'] },
-  motogp: { codigo: 'motogp', noticias: ['MotoGP'] },
-  moto2: { codigo: 'moto2', noticias: ['Moto2'] },
-  moto3: { codigo: 'moto3', noticias: ['Moto3'] },
-  wrc: { codigo: 'wrc', noticias: ['WRC', 'Mundial de Rallies'] },
-  // «LaLiga Hypermotion» es Segunda: no cuenta como Primera aunque empiece por LaLiga.
-  primera: { codigo: 'primera', noticias: ['LaLiga', 'Primera División'], noticiasNo: ['LaLiga Hypermotion'] },
-  segunda: { codigo: 'segunda', noticias: ['Segunda División', 'LaLiga Hypermotion'] },
-  'liga-f': { codigo: 'liga-f', nombre: 'Liga F', noticias: ['Liga F'] },
-  'copa-del-rey': { codigo: 'copa-del-rey', nombre: 'Copa del Rey', noticias: ['Copa del Rey'] },
-  champions: { codigo: 'champions', nombre: 'Champions', noticias: ['Champions League', 'Liga de Campeones', 'Champions'] },
-  nba: { codigo: 'nba', noticias: ['NBA'] },
-  wnba: { codigo: 'wnba', noticias: ['WNBA'] },
-  'feb-endesa': { codigo: 'feb-endesa', noticias: ['Liga Femenina Endesa'] },
-  'feb-primera': { codigo: 'feb-primera', noticias: ['Primera FEB'] },
-  'feb-challenge': { codigo: 'feb-challenge', noticias: ['Liga Femenina Challenge'] },
+  atp: { codigo: 'atp', nombre: 'ATP' },
+  wta: { codigo: 'wta', nombre: 'WTA' },
+  f1: { codigo: 'f1', nombre: 'F1' },
+  f2: { codigo: 'f2', nombre: 'F2' },
+  f3: { codigo: 'f3', nombre: 'F3' },
+  motogp: { codigo: 'motogp', nombre: 'MotoGP' },
+  moto2: { codigo: 'moto2', nombre: 'Moto2' },
+  moto3: { codigo: 'moto3', nombre: 'Moto3' },
+  wrc: { codigo: 'wrc', nombre: 'WRC' },
+  primera: { codigo: 'primera', nombre: 'LaLiga' },
+  segunda: { codigo: 'segunda', nombre: 'Segunda División' },
+  'liga-f': { codigo: 'liga-f', nombre: 'Liga F' },
+  'copa-del-rey': { codigo: 'copa-del-rey', nombre: 'Copa del Rey' },
+  champions: { codigo: 'champions', nombre: 'Champions' },
+  nba: { codigo: 'nba', nombre: 'NBA' },
+  wnba: { codigo: 'wnba', nombre: 'WNBA' },
+  'feb-endesa': { codigo: 'feb-endesa', nombre: 'Liga Femenina Endesa' },
+  'feb-primera': { codigo: 'feb-primera', nombre: 'Primera FEB' },
+  'feb-challenge': { codigo: 'feb-challenge', nombre: 'Liga Femenina Challenge' },
 };
 // Atajos de fecha, en cualquier idioma: `hoy:`, `f1:hoy` o `hoy:f1`. Sin dos puntos
 // siguen siendo palabras de búsqueda. `f1: hoy` es el prefijo más la palabra.
@@ -65,7 +64,7 @@ const RANGOS = { hoy: 'hoy', hoxe: 'hoy', avui: 'hoy', gaur: 'hoy', today: 'hoy'
   finde: 'finde', 'fin-de-semana': 'finde', 'cap-de-setmana': 'finde', asteburu: 'finde', asteburua: 'finde', weekend: 'finde' };
 const HORARIOS = new Set(['horarios', 'horaris', 'ordutegiak', 'schedule']);
 // Resultados y clasificaciones son consultas puntuales, no parte del calendario.
-const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario', noticias: 'noticias' };
+const TIPOS = { agenda: 'calendario', calendario: 'calendario', eventos: 'calendario' };
 const lista = s => normalize(s).split(',').map(v => v.trim()).filter(Boolean);
 
 // `tolerante` es para el worker: el front puede llegar antes que su despliegue con
@@ -101,12 +100,9 @@ export function leerConsultaCalendario(raw, { tolerante = false } = {}){
       }
     } else resto.push(tk.raw);
   }
-  // Noticias solo si cada prefijo las admite: un titular no cumple media consulta.
-  const conNoticias = [...ambitos, ...circuitos].every(a => AMBITOS[a].noticias);
-  if (tipos.has('noticias') && !conNoticias) desconocidos.push(raw);
   return activa ? { ambitos: [...ambitos], circuitos: [...circuitos], tipos: [...tipos],
     ...(rango ? { rango } : {}), ...(horarios ? { horarios } : {}), ...(todoDeporte ? { todoDeporte } : {}),
-    desconocidos, resto: resto.join(' '), noticias: (!tipos.size || tipos.has('noticias')) && conNoticias,
+    desconocidos, resto: resto.join(' '),
     // Solo competiciones ignoradas: sin esto la selección vacía se leería como «todo».
     ...(ignoradas && !ambitos.size && !circuitos.size ? { seleccionVacia: true } : {}) } : null;
 }
@@ -181,17 +177,4 @@ export function seleccionCalendario(datos, orden = {}, filtros = {}){
     return coincide(palabras, texto) && coincide(palabras, busqueda);
   };
   return { eventos: datos.eventos.filter(e => casa(e)), clasificaciones: datos.clasificaciones.filter(e => casa(e, true)) };
-}
-
-// Hasta que exista clasificación de artículos, las noticias se seleccionan
-// por texto del titular. Eso no crea enlaces con encuentros o participantes.
-export function noticiaEnAmbitos(titular, orden){
-  if (!orden) return true;
-  if (!orden.noticias || orden.desconocidos.length) return false;
-  // Palabras completas: «F15» no es F1 ni «NBATV» la NBA.
-  const palabras = normalize(titular).match(/[\p{L}\p{N}]+/gu) || [];
-  const en = (frase, i) => normalize(frase).split(' ').every((p, j) => palabras[i + j] === p);
-  const casa = a => palabras.some((_, i) => AMBITOS[a].noticias.some(n => en(n, i)) && !(AMBITOS[a].noticiasNo || []).some(n => en(n, i)));
-  return (!orden.ambitos.length || orden.ambitos.some(casa))
-    && (!orden.circuitos.length || orden.circuitos.some(casa));
 }
