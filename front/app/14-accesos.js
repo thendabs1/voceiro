@@ -42,8 +42,9 @@ function escribirAcceso(orden){
     .filter(tk => !(tk.prefix && (leerConsultaCalendario(tk.raw) || Object.hasOwn(PREFIJOS_CONSULTAS, tk.prefix))))
     .map(tk => tk.raw);
   cerrarAccesos(false);
-  // Un prefijo deja un espacio detrás: lo que se escriba después es texto (f1: alonso).
-  conPaso(() => escribirBusqueda([...resto, orden].filter(Boolean).join(' ') + (orden.endsWith(':') ? ' ' : '')));
+  // Un prefijo o un grupo deja un espacio detrás: lo que se escriba después es
+  // texto (f1: alonso, grupo:deportes alonso).
+  conPaso(() => escribirBusqueda([...resto, orden].filter(Boolean).join(' ') + (orden.endsWith(':') || orden.startsWith('grupo:') ? ' ' : '')));
 }
 
 function pintarAccesos(){
@@ -53,11 +54,10 @@ function pintarAccesos(){
   // Lo que sigo primero (★ de Deportes); sin nada, unas pocas conocidas.
   const sigo = calPreferencias()?.competiciones || [];
   const primeras = [...sigo, ...ACCESOS_POR_DEFECTO.filter(c => !sigo.includes(c))].map(c => filaCompeticion(c, contextoDeportes(PUNTUAL.activa?.tipo))).filter(Boolean).slice(0, ACCESOS_PRIMERAS);
-  const noticias = deportesSeguidos().map(([k, cs]) => fila(`data-orden="${calEsc(cs.map(c => c + ':').join(' '))}"`, t('accNoticiasDe', { x: t(CAL_NOMBRES_DEPORTE[k]) })));
   panel.innerHTML = `<div class="accesos-cab"><h2 id="accesos-titulo" tabindex="-1">${calEsc(t('accTitulo'))}</h2>
     <button type="button" class="accesos-cerrar" data-cerrar aria-label="${calEsc(t('calCerrar'))}">×</button></div>
     <div class="accesos-filas">${primeras.join('')}</div>
-    <ul class="accesos-lista">${[...noticias, fila('data-orden="hoy:deportes"', t('accHoyDeportes') + ' ›'), fila('data-orden="deportes:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
+    <ul class="accesos-lista">${[fila('data-orden="hoy:deportes"', t('accHoyDeportes') + ' ›'), fila('data-orden="deportes:"', t('accTodosDeportes') + ' ›'), fila('data-deportes', t('accCalendarioDeportes') + ' ›')].join('')}</ul>
     ${DEPORTES_DISP.cargando ? `<p class="accesos-estado" role="status">${calEsc(t('calCargando'))}</p>` : ''}`;
 }
 
@@ -102,12 +102,4 @@ function wireAccesos(){
   panel.addEventListener('focusout', e => {
     if (ACCESOS.abierto && e.relatedTarget && !panel.contains(e.relatedTarget) && e.relatedTarget !== boton) cerrarAccesos(false);
   });
-}
-
-// Deportes que sigo (★ de Deportes): [deporte, competiciones con datos].
-// Cada uno da una fila «Fútbol · noticias» en el ▾, que escribe sus prefijos
-// (primera: segunda:), como antes los iconos de la cabecera.
-function deportesSeguidos(){
-  const sigo = calPreferencias()?.competiciones || [];
-  return Object.entries(CAL_DEPORTES).map(([k, cs]) => [k, cs.filter(c => sigo.includes(c) && accesoHay(c))]).filter(([, cs]) => cs.length);
 }

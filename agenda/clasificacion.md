@@ -12,8 +12,8 @@ de revisar está al final.
 
 La agenda se muestra junto a las noticias y comparte con ellas el parser de
 búsqueda: en [consulta.js](../shared/calendario/consulta.js) cada ámbito
-(`teatro:`, `musica:`, `deportes:`) selecciona a la vez titulares (lista
-`noticias`) y citas (`tema`). Los modos personales son búsquedas guardadas y
+(`teatro:`, `musica:`, `deportes:`) selecciona citas (`tema` o `codigo`); los
+titulares no se filtran por ámbito. Los modos personales son búsquedas guardadas y
 «Seguir» es una línea de tema. De ahí salen tres niveles, por este orden:
 
 | Nivel | Pregunta | Dónde se usa |

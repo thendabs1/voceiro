@@ -38,7 +38,7 @@ import {
 import { I18N, traducir } from './idiomas/index.js';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
 import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos } from './calendario/consulta.js';
+import { AMBITOS, leerConsultaCalendario } from './calendario/consulta.js';
 import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js';
 import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).

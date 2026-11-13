@@ -42,7 +42,7 @@ conserva la última lectura buena.
 Pendiente de la interfaz, acordado: un solo chip «WA» en Atletismo; al marcarlo
 aparece una fila con sus circuitos (Diamond, Continental, Pista cubierta, Cross,
 Marcha, Combinadas, Ruta, Campeonatos). Los circuitos también se escriben en la
-barra; «Diamond League» filtra agenda y noticias por titular. Requiere entradas
+barra; «Diamond League» filtra la agenda (no las noticias). Requiere entradas
 en el catálogo de `consulta.js` y añadir `wa` a `CALENDARIO_FUENTES_PUBLICAS`.
 
 Identidad con las federaciones: WA no publica ningún ID compartido con ellas

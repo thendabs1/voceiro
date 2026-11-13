@@ -192,11 +192,8 @@ function programarPrensa(consulta){
   // prensa no puede acotarse (site: admite 3) y lo que trae no pasa el
   // filtro de medios: medido, 0 de 100. No se pide.
   const dominios = consulta.medios.dominios;
-  const calendario = consulta.calendario;
-  const ambitos = calendario ? (calendario.circuitos.length ? calendario.circuitos : calendario.ambitos) : [];
   const tieneQuery = !consulta.imposible
-    && (!calendario || calendario.noticias && !calendario.desconocidos.length && !calendario.sinPrensa)
-    && (consulta.texto.incluir.length || dominios !== null || ambitos.length)
+    && (consulta.texto.incluir.length || dominios !== null)
     && !(dominios && dominios.size > 3);
   if (!tieneQuery || !PRENSA_ACTIVA){
     _cancelarPrensa();
@@ -211,34 +208,23 @@ function programarPrensa(consulta){
   PRENSA_CLAVE = clave;
   PRENSA_FALLO = null;
   const texto = paraPrensa(consulta);
-  const textos = ambitos.length ? [...new Set(ambitos.map(a => `"${AMBITOS[a].noticias[0]}" ${texto}`.trim()))] : [texto];
   // Lo que ya está en caché no espera a que se deje de teclear.
-  const espera = textos.every(t => prensaCacheGet(prensaCacheKey(t))) ? 0 : PRENSA_DEBOUNCE_MS;
+  const espera = prensaCacheGet(prensaCacheKey(texto)) ? 0 : PRENSA_DEBOUNCE_MS;
   PRENSA_TIMER = setTimeout(async () => {
     PRENSA_TIMER = null;
     if (PRENSA_CLAVE !== clave) return;
 
     PRENSA_ABORT = new AbortController();
-    const signal = PRENSA_ABORT.signal;
-    // Una consulta por ámbito, con cancelación compartida y sin que una
-    // respuesta aborte a las demás. Se conserva la deduplicación del feed.
-    const respuestas = [];
-    for (const texto of textos){
-      if (signal.aborted || PRENSA_CLAVE !== clave) return;
-      respuestas.push(await buscarEnPrensa(consulta.parsed, texto, { silent: true, signal }));
-    }
-    const res = respuestas.every(Boolean) ? { items: respuestas.flatMap(r => r.items || []) } : null;
-    {
-      if (PRENSA_CLAVE !== clave) return;
-      PRENSA_CLAVE = null;
-      if (res) PRENSA_HECHA = clave; else PRENSA_FALLO = clave;
-      const items = respuestas.filter(Boolean).flatMap(r => r.items || []).map(_itemDePrensa).filter(Boolean);
-      if (items.length){
-        if (_mergearItemsEnNoticias(items, 'prensa', clave) > 0) hidratarNoticias();
-        aplicarFiltros();
-      } else if (!ULT_FILTRADAS.length) renderizar();   // el vacío deja de «buscar»
-      else pintarEstadoPrensa();
-    }
+    const res = await buscarEnPrensa(consulta.parsed, texto, { silent: true, signal: PRENSA_ABORT.signal });
+    if (PRENSA_CLAVE !== clave) return;
+    PRENSA_CLAVE = null;
+    if (res) PRENSA_HECHA = clave; else PRENSA_FALLO = clave;
+    const items = (res?.items || []).map(_itemDePrensa).filter(Boolean);
+    if (items.length){
+      if (_mergearItemsEnNoticias(items, 'prensa', clave) > 0) hidratarNoticias();
+      aplicarFiltros();
+    } else if (!ULT_FILTRADAS.length) renderizar();   // el vacío deja de «buscar»
+    else pintarEstadoPrensa();
   }, espera);
 }
 

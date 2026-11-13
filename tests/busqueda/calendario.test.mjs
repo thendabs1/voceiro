@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AMBITOS, leerConsultaCalendario, seleccionCalendario, noticiaEnAmbitos } from '../../shared/calendario/consulta.js';
+import { AMBITOS, leerConsultaCalendario, seleccionCalendario } from '../../shared/calendario/consulta.js';
 import { extremoVisible, enDia, agruparPorDiaCalendario, ventanaCalendario, moverFecha, ultimoDiaIncluido, presentacionCalendario } from '../../shared/calendario/fechas.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
@@ -43,7 +43,7 @@ for (const e of datos.eventos) datos.entidades['evento:' + e.id] = e;
 test('órdenes de deporte, circuito y contenido conservan filtros, comillas y texto', () => {
   assert.deepEqual(orden('calendario:tenis web:ejemplo.es "dobles femenino"'), {
     ambitos: ['tenis'], circuitos: [], tipos: ['calendario'], desconocidos: [],
-    resto: 'web:ejemplo.es "dobles femenino"', noticias: false,
+    resto: 'web:ejemplo.es "dobles femenino"',
   });
   assert.deepEqual(orden('f1:agenda').tipos, ['calendario']);
   assert.deepEqual(orden('agenda:f1').ambitos, ['f1']);
@@ -71,34 +71,26 @@ test('los ámbitos se suman sin duplicar eventos; circuitos, tema, fuente y text
   assert.deepEqual(ids('tenis:', { fuente: 'otra' }), []);
   assert.equal(seleccionCalendario(datos, orden('f1:')).clasificaciones.length, 1);
 });
-test('solo las competiciones suman noticias por texto; los temas solo seleccionan agenda', () => {
-  assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('tenis:')), false);
-  assert.equal(noticiaEnAmbitos('El teatro vuelve', orden('teatro:')), false);
-  assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('wta: tenis:')), false);
+// Deportes no filtra noticias por competición (#354): `:noticias` ya no es una orden.
+test('noticias ya no es un tipo del calendario: f1:noticias no se reconoce', () => {
+  assert.deepEqual(orden('f1:noticias').desconocidos, ['f1:noticias']);
   assert.deepEqual(orden('teatro:noticias').desconocidos, ['teatro:noticias']);
-  assert.deepEqual(orden('noticias:wta').desconocidos, []);
-  assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('atp:')), false);
-  assert.equal(noticiaEnAmbitos('La final WTA de dobles', orden('atp: wta:')), true);
-  assert.equal(noticiaEnAmbitos('Carrera de Fórmula 1', orden('f1:')), true);
-  assert.equal(noticiaEnAmbitos('ATP anuncia su calendario', orden('calendario:tenis')), false);
+  assert.equal(orden('noticias:wta'), null);
+  assert.equal('noticias' in orden('f1:'), false);
+  assert.equal(Object.values(AMBITOS).some(a => 'noticias' in a), false);
 });
-test('una competición se reconoce por palabras completas; LaLiga Hypermotion no es Primera', () => {
-  assert.equal(noticiaEnAmbitos('El nuevo F15 de Ford', orden('f1:')), false);
-  assert.equal(noticiaEnAmbitos('NBATV emitirá el partido', orden('nba:')), false);
-  assert.equal(noticiaEnAmbitos('La WNBA abre la temporada', orden('nba:')), false);
-  assert.equal(noticiaEnAmbitos('Alonso, cuarto en la F1', orden('f1:')), true);
-  assert.equal(noticiaEnAmbitos('LaLiga Hypermotion: el Celta Fortuna gana', orden('primera:')), false);
-  assert.equal(noticiaEnAmbitos('LaLiga Hypermotion: el Celta Fortuna gana', orden('segunda:')), true);
-  assert.equal(noticiaEnAmbitos('LaLiga y LaLiga Hypermotion reparten los derechos', orden('primera:')), true);
-  assert.equal(noticiaEnAmbitos('El Madrid lidera LaLiga', orden('primera:')), true);
-  assert.equal(noticiaEnAmbitos('Récord en la Primera División', orden('primera:')), true);
+test('los nombres visibles de las competiciones no cambian al retirar sus términos de noticias', () => {
+  const nombres = Object.fromEntries(Object.entries(AMBITOS).filter(([, a]) => a.codigo).map(([k, a]) => [k, a.nombre]));
+  assert.deepEqual(nombres, {
+    atp: 'ATP', wta: 'WTA', f1: 'F1', f2: 'F2', f3: 'F3', motogp: 'MotoGP', moto2: 'Moto2', moto3: 'Moto3', wrc: 'WRC',
+    primera: 'LaLiga', segunda: 'Segunda División', 'liga-f': 'Liga F', 'copa-del-rey': 'Copa del Rey', champions: 'Champions',
+    nba: 'NBA', wnba: 'WNBA', 'feb-endesa': 'Liga Femenina Endesa', 'feb-primera': 'Primera FEB', 'feb-challenge': 'Liga Femenina Challenge',
+    'atletismo-rfea': 'RFEA', 'atletismo-fga': 'Galicia · FGA', 'atletismo-fca': 'Cataluña · FCA',
+  });
 });
 test('Copa del Rey y Champions son competiciones con prefijo propio', () => {
   assert.deepEqual(orden('copa-del-rey: champions:').ambitos, ['copa-del-rey', 'champions']);
   assert.deepEqual(orden('circuito:copa-del-rey,champions').circuitos, ['copa-del-rey', 'champions']);
-  assert.equal(noticiaEnAmbitos('El Mallorca cae en la Copa del Rey', orden('copa-del-rey:')), true);
-  assert.equal(noticiaEnAmbitos('Noche grande de Champions League', orden('champions:')), true);
-  assert.equal(noticiaEnAmbitos('La Copa del Mundo empieza en junio', orden('copa-del-rey:')), false);
 });
 test('cada tema que usan las tablas de la agenda tiene su prefijo', () => {
   const dir = new URL('../../agenda/tablas/', import.meta.url), temas = new Set();

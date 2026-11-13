@@ -1,6 +1,5 @@
 // Texto, medios y fechas: lo decide el núcleo (shared/busqueda/consulta.js).
 function _pasaConsulta(n, consulta){
-  if (consulta.calendario && !noticiaEnAmbitos(n.titular, consulta.calendario)) return false;
   return consulta.pasa({
     dominio: n.dominio,
     titular: n.titular,
@@ -11,7 +10,6 @@ function _pasaConsulta(n, consulta){
 // Lo mismo para lo que trajo la prensa: las palabras buscadas pueden estar
 // en el cuerpo (consulta.pasaExterno).
 function _pasaExterno(n, consulta){
-  if (consulta.calendario && !noticiaEnAmbitos(n.titular, consulta.calendario)) return false;
   return consulta.pasaExterno({
     dominio: n.dominio,
     titular: n.titular,
@@ -107,18 +105,15 @@ function aplicarFiltros(){
   const rawProcesado = preprocesarInput(raw);
   const parsed = parseQuery(rawProcesado);
   // Semántica de la búsqueda (texto, medios, fechas): shared/busqueda/.
-  // Se interpreta una vez y la usan el filtro y la prensa.
+  // Se interpreta una vez y la usan el filtro y la prensa. Los prefijos de
+  // calendario no filtran noticias: solo cuenta lo que los acompaña (f1: alonso).
   const consulta = interpretarConsulta(raw, { catalogo: MEDIOS, ahora: Date.now() });
-  consulta.calendario = ordenCalendario;
-  if (ordenCalendario) consulta.clave += '|' + JSON.stringify(ordenCalendario);
   renderChips(parsed, raw);
   syncPanelFromParsed(parsed);
   actualizarTiempo(parsed.eltiempo);
   actualizarAlertas(parsed.alertas);
   actualizarConsultaPuntual(parsed, consulta.texto);
   pintarCabeceraCompeticion();
-  const deLaFicha = ordenCalendario ? null : noticiasDeLaFicha();
-  if (deLaFicha){ consulta.calendario = deLaFicha; consulta.clave += '|' + JSON.stringify(deLaFicha); }
   pintarBotonTiempo();
 
 const capas = capasRequeridas(parsed, consulta);
@@ -151,7 +146,7 @@ ajustarDiasActual(capasHistorico(parsed, consulta));
   const hayFuenteExplicita = hayDominio || hayMedio;
   const hayBusquedaActiva =
     hayTitulo || hayGrupo || hayTipo || hayTag ||
-    !!g || !!t2 || !!parsed.desde || !!parsed.hasta || !!ordenCalendario || !!deLaFicha;
+    !!g || !!t2 || !!parsed.desde || !!parsed.hasta;
 
   const presetConReglas = PRESET_ACTIVO && presetTieneReglas();
   // La vista 🔖 Temas filtra como un modo, con los temas de todos los modos.
@@ -161,11 +156,9 @@ ajustarDiasActual(capasHistorico(parsed, consulta));
   // Sin búsqueda, el modo filtra el feed (es tu forma de leerlo). Buscando,
   // el modo no esconde nada: los resultados se separan en dos pestañas,
   // «Modo · N» y «Todo · M» (en Todo, los del modo van marcados). Un filtro
-  // de medio escrito en la búsqueda manda sobre el modo: sin pestañas. Una
-  // competición (f1:) también: sus noticias, en el modo o en todo. Un prefijo
-  // sin noticias (teatro:) no deja nada que separar.
+  // de medio escrito en la búsqueda manda sobre el modo: sin pestañas.
   const presetEfectivo = conFiltro && !hayFuenteExplicita && !hayBusquedaActiva;
-  const conPestanas    = conFiltro && !hayFuenteExplicita && hayBusquedaActiva && (!ordenCalendario || ordenCalendario.noticias);
+  const conPestanas    = conFiltro && !hayFuenteExplicita && hayBusquedaActiva;
 
   _avisarMediosDesconocidos(consulta);
   const ctx = {

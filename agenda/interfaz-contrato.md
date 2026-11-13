@@ -92,14 +92,18 @@ los nuestros. Comprobado con datos reales en Primera, Segunda, Copa, Liga F,
 Champions, NBA, WNBA, ATP, WTA, F1 y MotoGP; Moto2 y Moto3 usan el mismo panel. Un enlace al partido sería un añadido
 posterior.
 
-## Noticias de una competición
+## Deportes y noticias
 
-Bajo resultados y clasificación salen las noticias de esa competición con ese mismo
-filtro, solo entre los titulares descargados y sin pedir a la prensa.
+Deportes es calendario, resultados y clasificación: no filtra noticias por
+competición (#354). Los titulares nombran equipos y deportistas, no competiciones.
+El único puente al feed es «Noticias de deportes» en el cuadro general, que escribe
+`grupo:deportes ` y carga su capa; detrás se busca por texto (`grupo:deportes alonso`).
+No va en el ▾ ni en la cabecera de competición.
 
-La pestaña Noticias escribe `competicion:noticias`. El filtro casa el titular con
-`AMBITOS[c].noticias` en el cliente (`noticiaEnAmbitos`), sin clasificar la noticia.
-Por deporte no existe aún: `futbol:` no es un ámbito.
+Un prefijo de calendario no filtra el feed ni pide a la prensa: solo cuenta el
+texto que lo acompaña (`f1: alonso` busca «alonso»). Bajo una ficha de resultados
+o clasificación se ve el feed normal. Cerrar el calendario quita sus prefijos.
+`competicion:noticias` es una selección no reconocida.
 
 ## Rótulos y detalle
 
