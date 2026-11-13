@@ -50,7 +50,7 @@ test('una competición ofrece sus resultados y su tabla por su nombre', () => {
 });
 
 test('un prefijo ya empezado enseña lo que admite y una consulta no sugiere nada', () => {
-  assert.deepEqual(Array.from(valores('f1:')), ['f1:', 'f1:hoy', 'f1:manana', 'f1:finde', 'f1:horarios', 'f1:noticias']);
+  assert.deepEqual(Array.from(valores('f1:')), ['f1:', 'f1:hoy', 'f1:manana', 'f1:finde', 'f1:horarios']);
   assert.deepEqual(valores('resultados:pri'), []);
 });
 

@@ -5,7 +5,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { noticiaEnAmbitos } from '../../shared/calendario/consulta.js';
 import { parseQuery, tokenizeQuery, normalize } from '../../shared/parser.js';
 import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
 import { rangosResaltado } from '../../shared/busqueda/texto.js';
@@ -58,7 +57,7 @@ function contexto({ buscar = '', responder }) {
     for (const [i, j] of rangosResaltado(texto, compilado)){ out += ctx.escapeHtml(texto.slice(last, i)) + '<mark>' + ctx.escapeHtml(texto.slice(i, j)) + '</mark>'; last = j; }
     return out + ctx.escapeHtml(texto.slice(last));
   };
-  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia, htmlCabeceraCompeticion, vistaCompeticion, noticiasDeLaFicha, irACompeticion, DEPORTES_CAB };', ctx);
+  runInNewContext(codigo + '\n' + codigoDeportes + '\nthis.api = { PUNTUAL, actualizarConsultaPuntual, abrirResultadosDelDia, htmlCabeceraCompeticion, vistaCompeticion, irACompeticion, DEPORTES_CAB };', ctx);
   // Como aplicarFiltros: la consulta recibe el texto compilado de la búsqueda.
   const actualizar = raw => {
     entrada.value = raw;
@@ -683,7 +682,8 @@ test('una competición enlaza sus secciones, las de su deporte y la vista genera
   assert.match(html, /data-orden="deportes:"[^>]*>‹ Deportes/);
   assert.match(html, /data-orden="resultados:primera" aria-current="page">Resultados/);
   assert.match(html, /data-orden="clasificacion:primera">Clasificación/);
-  assert.match(html, /data-orden="primera:noticias">Noticias/);
+  // Deportes no filtra noticias por competición (#354): sin pestaña de noticias.
+  assert.doesNotMatch(html, /noticias/i);
   assert.match(html, /data-orden="resultados:copa-del-rey">Copa del Rey/);
   assert.doesNotMatch(html, /data-orden="resultados:nba"/);
   // Las mismas hermanas en todas las vistas: la Copa no tiene tabla y lleva a lo suyo.
@@ -692,10 +692,12 @@ test('una competición enlaza sus secciones, las de su deporte y la vista genera
   assert.match(tabla, /data-orden="resultados:copa-del-rey">Copa del Rey/);
 });
 
-test('el cuadro de deportes empieza por hoy, finde y calendario; resultados: no', async () => {
+test('el cuadro de deportes empieza por hoy, finde, calendario y noticias; resultados: no', async () => {
   const { panel, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
   actualizar('deportes:'); await esperar();
-  assert.match(panel.innerHTML, /data-orden="hoy:deportes">Hoy[\s\S]*data-orden="finde:deportes">[\s\S]*data-accion="calendario-deportes">Calendario/);
+  assert.match(panel.innerHTML, /data-orden="hoy:deportes">Hoy[\s\S]*data-orden="finde:deportes">[\s\S]*data-accion="calendario-deportes">Calendario[\s\S]*data-accion="orden" data-orden="grupo:deportes">Noticias de deportes/);
+  // El único puente al feed: ni en las filas de competición ni en el ▾.
+  assert.equal(panel.innerHTML.match(/grupo:deportes/g).length, 1);
   assert.doesNotMatch(panel.innerHTML, /dep-sigo/);
   actualizar('resultados:'); await esperar();
   assert.doesNotMatch(panel.innerHTML, /dep-inicio/);
@@ -731,17 +733,6 @@ test('elegir otra consulta vuelve a filtrar las noticias de debajo', async () =>
   const antes = ctx.filtrados;
   pulsar({ accion: 'elegir', i: '0' });
   assert.equal(ctx.filtrados, antes + 1);
-});
-
-test('bajo una ficha, las noticias de su competición sin pedir a la prensa', async () => {
-  const { ctx, actualizar } = contexto({ responder: () => json(envoltorio('resultados', { ficha: null, estado: 'vacio' })) });
-  actualizar('resultados:primera'); await esperar();
-  const o = ctx.api.noticiasDeLaFicha();
-  assert.deepEqual([[...o.ambitos], o.noticias, o.sinPrensa], [['primera'], true, true]);
-  assert.equal(noticiaEnAmbitos('LaLiga: el Sevilla gana', o), true);
-  assert.equal(noticiaEnAmbitos('Hadassah abre un centro', o), false);
-  actualizar('resultados:'); await esperar();
-  assert.equal(ctx.api.noticiasDeLaFicha(), null);
 });
 
 test('la tarjeta abre los resultados de su día, también con esa consulta ya abierta', async () => {

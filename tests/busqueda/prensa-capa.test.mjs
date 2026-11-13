@@ -4,6 +4,7 @@ import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 import { interpretarConsulta } from '../../shared/busqueda/consulta.js';
 import { palabrasDe } from '../../shared/busqueda/texto.js';
+import { leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 
 // La prensa entra en NOTICIAS como capa de la consulta y la filtra el mismo
 // predicado que todo lo demás (_pasaVista). Funciones reales del frontal.
@@ -140,4 +141,15 @@ test(`un p con solo el día no es un instante y la hora de otra capa lo mejora`,
   runInNewContext('_adoptarPublicacion', ctx)(n, { p: hace(3) });
   assert.equal(n._tipoShow, 'pub');
   assert.equal(n._tsShow, Date.parse(hace(3)));
+});
+
+// Deportes no filtra noticias por competición (#354): aplicarFiltros interpreta solo
+// lo que acompaña al prefijo (`orden.resto`) y el predicado no mira la orden.
+test(`un prefijo de competición no filtra el feed; el texto que lo acompaña, sí`, () => {
+  const { meter, vista } = crear();
+  meter([propio('Alonso, cuarto en Brasil'), propio('El Celta gana en Vigo')], 'r2', null);
+  const resto = q => leerConsultaCalendario(q).resto;
+  assert.deepEqual(vista(resto('f1:')), ['Alonso, cuarto en Brasil', 'El Celta gana en Vigo']);
+  assert.deepEqual(vista(resto('f1: alonso')), ['Alonso, cuarto en Brasil']);
+  assert.doesNotMatch(funcion('_pasaConsulta') + funcion('_pasaExterno'), /calendario/);
 });

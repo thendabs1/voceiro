@@ -115,16 +115,17 @@ test('un acceso sustituye también una consulta deportiva, que ya no va al final
   assert.deepEqual(s.escritas, ['levante clasificacion:nba']);
 });
 
-test('deportes seguidos: una fila de noticias por deporte; escribe sus prefijos con espacio', () => {
-  const s = escenario({ sigo: ['nba', 'f1', 'motogp'], buscar: 'medio:as' });
+// Deportes no filtra noticias por competición (#354): el ▾ no tiene filas de noticias.
+test('el ▾ no ofrece noticias por deporte, aunque se sigan competiciones', () => {
+  const s = escenario({ sigo: ['nba', 'f1', 'motogp'] });
   s.run('pintarAccesos()');
-  assert.match(s.html(), /data-orden="nba:">Baloncesto · noticias/);
-  assert.match(s.html(), /data-orden="f1: motogp:">Motor · noticias/);
-  s.run("escribirAcceso('f1: motogp:')");
-  assert.equal(s.escritas.at(-1), 'medio:as f1: motogp: ');
-  const vacio = escenario();
-  vacio.run('pintarAccesos()');
-  assert.doesNotMatch(vacio.html(), /noticias</);
+  assert.doesNotMatch(s.html(), /noticias|grupo:deportes/i);
+});
+
+test('el enlace a noticias de deportes escribe el grupo, conserva el resto y deja un espacio', () => {
+  const s = escenario({ buscar: 'deportes: medio:as alonso' });
+  s.run("escribirAcceso('grupo:deportes')");
+  assert.equal(s.escritas.at(-1), 'medio:as alonso grupo:deportes ');
 });
 
 test('la lista por deporte incluye Euroliga junto a su deporte, sin ser capa del calendario', () => {

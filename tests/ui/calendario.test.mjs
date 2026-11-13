@@ -930,7 +930,7 @@ test('atajos: f1:hoy es lo mismo que hoy:f1 y abre la lista, no el mes', async (
   const lee = consulta.leerConsultaCalendario;
   for (const raw of ['f1:hoy', 'hoy:f1', 'hoxe:f1', 'F1:avui', 'gaur:f1', 'today:f1']){
     const o = lee(raw);
-    assert.deepEqual([[...o.ambitos], o.rango, [...o.tipos], o.noticias, o.desconocidos.length], [['f1'], 'hoy', ['calendario'], false, 0], raw);
+    assert.deepEqual([[...o.ambitos], o.rango, [...o.tipos], o.desconocidos.length], [['f1'], 'hoy', ['calendario'], 0], raw);
   }
   assert.equal(lee('nba:finde').rango, 'finde');
   assert.equal(lee('mañá:nba').rango, 'manana');
@@ -958,7 +958,7 @@ test('atajos: f1:hoy es lo mismo que hoy:f1 y abre la lista, no el mes', async (
 test('lo no reconocido enseña qué admite la competición', () => {
   const c = contexto();
   c.api.s.orden = consulta.leerConsultaCalendario('f1:xyz');
-  assert.match(c.api.calContenido(), /no reconocida: f1:xyz Prueba f1:hoy, f1:finde, f1:horarios o f1:noticias/);
+  assert.match(c.api.calContenido(), /no reconocida: f1:xyz Prueba f1:hoy, f1:finde o f1:horarios\./);
 });
 
 test('el día de un GP en curso no dice «0 citas»', () => {
@@ -1057,7 +1057,7 @@ test('la consulta del buscador pasa ámbitos y texto libre, sin prefijos ni sele
   await esperar();
   assert.equal(c.pedidas.length, antes);
   assert.match(c.api.calContenido(), /Selección no reconocida/);
-  // Una orden solo de noticias no pide la agenda.
+  // `:noticias` ya no es una orden (#354): no reconocida, no pide nada.
   c.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('tenis:noticias'));
   await esperar();
   assert.equal(c.pedidas.length, antes);
@@ -1180,7 +1180,7 @@ test('con un prefijo de tema, la agenda lo enseña como chip pulsado que se quit
   assert.deepEqual([c.aplicadas.at(-1), c.api.s.porPrefijo], ['jazz', false]);
 });
 
-test('cada vista toma de la orden solo lo suyo; una orden solo de noticias no filtra el calendario', async () => {
+test('cada vista toma de la orden solo lo suyo; f1:noticias ya no es una orden', async () => {
   const c = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   // Prefijos mixtos: Deportes pide solo la competición, no el teatro de cualquier sitio.
   // Prefijos mixtos: no se elige en silencio; se pregunta qué parte ver y no se pide nada.
@@ -1195,11 +1195,12 @@ test('cada vista toma de la orden solo lo suyo; una orden solo de noticias no fi
   c.buscar.value = 'teatro: f1: desde:hoy';
   await c.click('quedarse', 'agenda');
   assert.equal(c.aplicadas.at(-1), 'teatro: desde:hoy');
-  // «f1:noticias» no abre el calendario ni lo filtra: la agenda va a su sitio, sin la F1.
+  // «f1:noticias» ya no es una orden (#354): se avisa como otra selección no reconocida, sin pedir nada.
   const d = contexto({ sitios: [{ nombre: 'Vigo', lugar: { ine: '36057' } }] });
   d.api.actualizarConsultaCalendario(consulta.leerConsultaCalendario('f1:noticias'));
-  await d.abrir();
-  assert.deepEqual([d.api.s.vista, d.resumen().get('q'), d.resumen().get('territorio')], ['agenda', null, 'es:provincia:36']);
+  await esperar();
+  assert.equal(d.pedidas.filter(u => u.pathname === '/calendario/resumen').length, 0);
+  assert.match(d.api.calContenido(), /no reconocida: f1:noticias/);
 });
 
 test('con un prefijo de competición no hay capas: «Solo» y «Todas» no las crean', async () => {

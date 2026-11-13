@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { leerAplicacion } from '../soporte/frontend.mjs';
 import { runInNewContext } from 'node:vm';
 import { interpretarConsulta, paraPrensa } from '../../shared/busqueda/consulta.js';
-import { AMBITOS, leerConsultaCalendario } from '../../shared/calendario/consulta.js';
+import { leerConsultaCalendario } from '../../shared/calendario/consulta.js';
 
 // Ejecutar la función real del frontal sin hacer peticiones ni arrancar el DOM.
 const html = leerAplicacion();
@@ -20,7 +20,7 @@ function crear({ activa = true, cache = false } = {}) {
     ULT_FILTRADAS: [], ULT_CTX: null,
     paraPrensa, prensaCacheKey: s => s, prensaCacheGet: () => (cache ? [] : null),
     buscarEnPrensa: async () => estado.respuesta,
-    AbortController, AMBITOS,
+    AbortController,
     _itemDePrensa: it => it, _mergearItemsEnNoticias: items => items.length, hidratarNoticias() {},
     aplicarFiltros: () => { estado.filtrados++; }, renderizar: () => { estado.pintados++; },
     t: s => s, document: { getElementById: () => null },
@@ -93,24 +93,19 @@ test(`un fallo se indica y no se repite solo; otra búsqueda o volver a ella lo 
   assert.equal(s.ctx.estadoPrensa(), 'prensaBuscando');
 });
 
-test('ATP y WTA se buscan por separado, comparten cancelación y una consulta solo de agenda no pide prensa', async () => {
+// Un prefijo de calendario no pide prensa por su competición (#354): aplicarFiltros
+// solo le pasa lo que lo acompaña (f1: alonso → «alonso»).
+test('un prefijo de calendario no pide prensa; el texto que lo acompaña, una petición', async () => {
   const s = crear(), peticiones = [];
-  s.ctx.buscarEnPrensa = async (_, texto, opciones) => {
-    peticiones.push({ texto, signal: opciones.signal });
-    return { items: [{ t: texto }] };
-  };
-  const c = interpretarConsulta('final');
-  c.calendario = leerConsultaCalendario('atp: wta: final');
+  s.ctx.buscarEnPrensa = async (_, texto) => { peticiones.push(texto); return { items: [{ t: texto }] }; };
+  const resto = q => interpretarConsulta(leerConsultaCalendario(q).resto);
+  s.ctx.programar(resto('f1:'));
+  assert.equal(s.estado.timers.length, 0);
+  const c = resto('f1: alonso');
   s.ctx.ULT_CTX = { clavePrensa: s.ctx.clave(c) };
   s.ctx.programar(c);
   await s.estado.timers.at(-1).fn();
-  assert.equal(peticiones.length, 2);
-  assert.match(peticiones[0].texto, /ATP/); assert.match(peticiones[1].texto, /WTA/);
-  assert.equal(peticiones[0].signal, peticiones[1].signal);
-  const previas = s.estado.timers.length;
-  c.calendario = leerConsultaCalendario('calendario:tenis');
-  s.ctx.programar(c);
-  assert.equal(s.estado.timers.length, previas);
+  assert.deepEqual(peticiones, ['alonso']);
 });
 
 test(`otro idioma o país es otra petición`, () => {

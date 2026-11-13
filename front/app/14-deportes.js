@@ -42,12 +42,11 @@ function competicionesDeporte(k){
 const nombreCompeticionCorto = c => c === 'euroliga' ? t('conEuroliga') : CONSULTA_DEPORTES[c] || calNombreCompeticion(c);
 
 // Solo lo que existe: capacidades de shared/consultas/registro.js y citas publicadas.
-function accionesCompeticion(c, { noticias = false } = {}){
+function accionesCompeticion(c){
   const hay = { resultados: codigoDeporte('resultados', c), clasificacion: codigoDeporte('clasificacion', c),
     calendario: Object.hasOwn(AMBITOS, c) && accesoHay(c) };
-  const acciones = DEPORTES_ACCIONES.filter(([tipo]) => hay[tipo])
+  return DEPORTES_ACCIONES.filter(([tipo]) => hay[tipo])
     .map(([tipo, texto]) => ({ tipo, texto: t(texto), orden: `${tipo}:${c}` }));
-  return noticias && AMBITOS[c]?.noticias ? [...acciones, { tipo: 'noticias', texto: t('conNoticias'), orden: `${c}:noticias` }] : acciones;
 }
 
 // El nombre hace lo que se pidió; lo demás queda al lado. Con `contexto`
@@ -63,12 +62,14 @@ function filaCompeticion(c, contexto = ''){
 }
 const contextoDeportes = tipo => ['resultados', 'clasificacion'].includes(tipo) ? tipo : '';
 
-// Arriba del cuadro: lo de hoy y el finde, el calendario y lo que sigo.
+// Arriba del cuadro: lo de hoy y el finde, el calendario, las noticias y lo que
+// sigo. Deportes no filtra noticias por competición: su único puente al feed es
+// el grupo de medios deportivos, y detrás se busca por texto (alonso, celta).
 function htmlInicioDeportes(sigo){
   const orden = (o, texto) => `<button type="button" data-accion="orden" data-orden="${escapeHtml(o)}">${escapeHtml(texto)}</button>`;
   const filas = sigo.map(c => filaCompeticion(c)).join('');
   return `<div class="dep-inicio"><div class="dep-atajos ui-tira">${orden('hoy:deportes', t('calHoy'))}${orden('finde:deportes', t('calFinde'))}
-    <button type="button" data-accion="calendario-deportes">${escapeHtml(t('calTitulo'))}</button></div>
+    <button type="button" data-accion="calendario-deportes">${escapeHtml(t('calTitulo'))}</button>${orden('grupo:deportes', t('depNoticias'))}</div>
     ${filas ? `<div class="dep-sigo">${filas}</div>` : ''}</div>`;
 }
 // El botón Deportes: el cuadro general, que es una consulta y se escribe como
@@ -113,13 +114,6 @@ function competicionConsulta(){
   const codigo = normalize(c.texto);
   return codigoDeporte(c.tipo, codigo) ? codigo : '';
 }
-// Bajo resultados y clasificación, las noticias de esa competición y no el feed
-// general: el filtro de `primera:noticias`, solo con lo ya descargado. Abrir una
-// ficha no debe pedir a la prensa.
-function noticiasDeLaFicha(){
-  const c = competicionConsulta();
-  return AMBITOS[c]?.noticias ? { ambitos: [c], circuitos: [], tipos: ['noticias'], desconocidos: [], resto: '', noticias: true, sinPrensa: true } : null;
-}
 // Competición y vista en pantalla: la misma cabecera para las cuatro vistas.
 function vistaCompeticion(){
   if (CALENDARIO.abierto){
@@ -127,20 +121,17 @@ function vistaCompeticion(){
     return c ? { codigo: c, tipo: 'calendario' } : null;
   }
   const c = competicionConsulta();
-  if (c) return { codigo: c, tipo: PUNTUAL.activa.tipo };
-  const o = CALENDARIO.orden, n = o?.ambitos || [];
-  return o?.tipos.join() === 'noticias' && !o.circuitos.length && n.length === 1 && AMBITOS[n[0]]?.codigo
-    ? { codigo: n[0], tipo: 'noticias' } : null;
+  return c ? { codigo: c, tipo: PUNTUAL.activa.tipo } : null;
 }
 // Las hermanas salen del deporte, no de la vista: no cambian al pasar de pestaña.
 // Una que no tenga esta vista lleva a la primera que tenga.
 function htmlCabeceraCompeticion(codigo, tipo){
   const boton = (orden, texto, actual, valorActual) => `<button type="button" data-orden="${escapeHtml(orden)}"${actual ? ` aria-current="${valorActual}"` : ''}>${escapeHtml(texto)}</button>`;
   const deporte = DEPORTES_ORDEN.find(k => competicionesDeporte(k).includes(codigo));
-  const destino = c => { const a = accionesCompeticion(c, { noticias: true }); return a.find(x => x.tipo === tipo) || a[0]; };
+  const destino = c => { const a = accionesCompeticion(c); return a.find(x => x.tipo === tipo) || a[0]; };
   const hermanas = deporte ? competicionesDeporte(deporte).filter(destino) : [];
   return `<div class="dep-cab">${boton('deportes:', '‹ ' + t('calDeportesTitulo'))}
-    <div class="dep-tabs">${accionesCompeticion(codigo, { noticias: true }).map(a => boton(a.orden, a.texto, a.tipo === tipo, 'page')).join('')}</div>
+    <div class="dep-tabs">${accionesCompeticion(codigo).map(a => boton(a.orden, a.texto, a.tipo === tipo, 'page')).join('')}</div>
     ${hermanas.length > 1 ? `<div class="dep-hermanas ui-tira" role="group" aria-label="${escapeHtml(t('conOtrasCompeticiones'))}">${hermanas.map(c =>
       boton(destino(c).orden, nombreCompeticionCorto(c), c === codigo, 'true')).join('')}</div>` : ''}
     <button type="button" class="dep-cerrar" data-cerrar aria-label="${escapeHtml(t('conCerrar'))}" title="${escapeHtml(t('conCerrar'))}">${ico('x')}</button></div>`;

@@ -1,16 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AMBITOS, leerConsultaCalendario, noticiaEnAmbitos, seleccionCalendario } from '../../shared/calendario/consulta.js';
+import { AMBITOS, leerConsultaCalendario, seleccionCalendario } from '../../shared/calendario/consulta.js';
 
-test('Liga F admite agenda, circuito y noticias con su nombre propio', () => {
+test('Liga F admite agenda y circuito con su nombre propio', () => {
   assert.equal(AMBITOS['liga-f'].nombre, 'Liga F');
   assert.deepEqual(leerConsultaCalendario('liga-f:agenda').ambitos, ['liga-f']);
   assert.deepEqual(leerConsultaCalendario('circuito:liga-f').circuitos, ['liga-f']);
-  const orden = leerConsultaCalendario('liga-f:noticias');
-  assert.equal(noticiaEnAmbitos('El derbi de la Liga F se juega el domingo', orden), true);
-  for (const titular of ['La liga francesa empieza', 'La Liga Femenina Endesa se refuerza', 'LaLiga bate récords']) {
-    assert.equal(noticiaEnAmbitos(titular, orden), false);
-  }
+  assert.deepEqual(leerConsultaCalendario('liga-f:noticias').desconocidos, ['liga-f:noticias']);
   assert.equal(leerConsultaCalendario('resultados:liga-f'), null);
 });
 

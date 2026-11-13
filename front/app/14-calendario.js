@@ -603,14 +603,12 @@ function cerrarCalendario(volver = true){
   (menu && !menu.open ? menu.querySelector('summary') : origen)?.focus({ preventScroll: true });
   window.scrollTo({ top: s.scroll, behavior: 'auto' });
 }
-// Salir de la vista: con una agenda que admite noticias quedan sus noticias;
-// si no, se quitan sus prefijos del buscador (como al cerrar el tiempo) para
-// no dejar un feed vacío por construcción.
+// Salir de la vista quita sus prefijos del buscador (como al cerrar el tiempo):
+// no filtran noticias. Lo que los acompaña (f1: alonso) se queda.
 function salirCalendario(){
-  const s = CALENDARIO;
-  if (!s.orden || s.orden.noticias) return cerrarCalendario();
+  const conPrefijos = Boolean(CALENDARIO.orden);
   cerrarCalendario();
-  calQuitarPrefijos();
+  if (conPrefijos) calQuitarPrefijos();
 }
 // Quita del buscador los prefijos de agenda (o solo los que diga `quitar`).
 function calQuitarPrefijos(quitar = () => true){
@@ -899,7 +897,7 @@ function calMarcas(d, orden = Object.keys(CAL_MARCAS)){
 // línea: pasadas cinco, el CSS las oculta y enseña el «+N».
 const CAL_MARCAS_MOVIL = 5;
 const calMarcasHtml = marcas => marcas.length ? `<span class="cal-marcas" aria-hidden="true">${marcas.map(m => `<span class="cal-marca cal-dep cal-dep-${CAL_DEPORTE_DE[m.c]}" title="${calEsc(m.nombre)}">${calEsc(m.texto)}</span>`).join('')}${marcas.length > CAL_MARCAS_MOVIL ? `<span class="cal-marcas-mas">+${marcas.length - CAL_MARCAS_MOVIL}</span>` : ''}</span>` : '';
-const calNombreCompeticion = c => AMBITOS[c]?.nombre || AMBITOS[c]?.noticias?.[0] || c;
+const calNombreCompeticion = c => AMBITOS[c]?.nombre || c;
 const calPuntosHtml = cats => cats.length ? `<span class="cal-puntos" aria-hidden="true">${cats.map(c => `<span class="cal-punto cal-cat-${c}"></span>`).join('')}</span>` : '';
 const calNombreCategoria = c => c === 'otras' ? t('calOtras') : calNombre(CALENDARIO.meta?.catalogo?.conceptos?.[c]);
 // GP y programas de competición que siguen ese día: sus días sin carrera no
@@ -1611,15 +1609,14 @@ function pintarCalendario(repintado = false){
   // fecha y chips: en la agenda, temas; en Deportes, deportes y competiciones.
   p.innerHTML = `<div class="cal-barra${deportes ? ' cal-barra-deportes' : ''}"><h1 id="cal-titulo" class="${deportes && !cab ? 'cal-titulo-vista' : 'sr-only'}" tabindex="-1">${calEsc(cab ? calNombreCompeticion(cab) : t(deportes ? 'calDeportesTitulo' : 'calAgenda'))}</h1>
     ${deportes ? '' : calDonde()}<div class="cal-acciones">${deportes ? calEnlacesDeportes() : calBoton('asistente', '⚙', '0', `class="cal-icono" aria-label="${calEsc(t('calAsTitulo'))}" title="${calEsc(t('calAsTitulo'))}"`)}${calBoton('renovar', '↻', '', `class="cal-icono" aria-label="${calEsc(t('calActualizar'))}" title="${calEsc(t('calActualizar'))}"${s.cargando ? ' disabled' : ''}`)}
-    ${cab ? '' : s.orden?.noticias ? calBoton('cerrar', t('calVerNoticias')) : calBoton('cerrar', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calCerrar'))}" title="${calEsc(t('calCerrar'))}"`)}</div>
+    ${cab ? '' : calBoton('cerrar', '✕', '', `class="cal-icono" aria-label="${calEsc(t('calCerrar'))}" title="${calEsc(t('calCerrar'))}"`)}</div>
     <div class="cal-chips cal-rangos ui-tira" role="group" aria-label="${calEsc(t('calCuando'))}">${rango('hoy', hoy)}${rango('manana', manana)}${rango('finde')}
     ${calBoton('elegir-fecha', '📅', '', `class="cal-icono" aria-label="${calEsc(t('calFecha'))}" title="${calEsc(t('calFecha'))}"`)}
     <input id="cal-fecha" class="sr-only" type="date" tabindex="-1" aria-hidden="true" value="${s.fecha}"></div>
     ${s.navEnBarra}${deportes ? s.capas ? calChipsDeportes() : '' : calChips()}</div>
     <div class="cal-cuerpo"><p class="cal-estado" role="status">${calEsc(s.error ? t(s.error, { n: calSegundosEspera() }) : s.cargando || s.saltando ? t('calCargando') : s.salto)}</p>
     ${s.error === 'calError' ? calBoton('renovar', t('calReintentar')) : ''}<div class="cal-contenido">${contenido}</div>
-    ${s.meta ? `<p class="cal-nota cal-pie">${calEsc(t('calCobertura'))} ${calEsc(t('calGenerado', { fecha: calFormato({ dateStyle: 'short', timeStyle: 'short', timeZone: s.zona }).format(new Date(s.meta.generado)) }))}</p>` : ''}
-    ${s.orden?.noticias ? `<p class="cal-nota">${calEsc(t('calNoticiasTexto'))}</p>` : ''}</div>`;
+    ${s.meta ? `<p class="cal-nota cal-pie">${calEsc(t('calCobertura'))} ${calEsc(t('calGenerado', { fecha: calFormato({ dateStyle: 'short', timeStyle: 'short', timeZone: s.zona }).format(new Date(s.meta.generado)) }))}</p>` : ''}</div>`;
   p.querySelectorAll('.ui-tira').forEach((x, i) => { if (desplazadas[i]) x.scrollLeft = desplazadas[i]; });
   // Si el botón con el foco se sustituye al pintar («Ver las N» → «Mostrar menos»,
   // y al revés), el foco pasa a su sustituto del mismo día en vez de perderse.
@@ -1827,7 +1824,7 @@ function sugerenciasCalendario(raw){
   if (!m || !m[1]) return null;
   const q = normalize(m[1]);
   // Tras una competición, lo que admite: f1:h → f1:hoy, f1:horarios.
-  const comp = q.split(':')[0], valores = q.includes(':') && AMBITOS[comp]?.codigo ? ['hoy', 'manana', 'finde', 'horarios', 'noticias'].map(v => `${comp}:${v}`) : [];
+  const comp = q.split(':')[0], valores = q.includes(':') && AMBITOS[comp]?.codigo ? ['hoy', 'manana', 'finde', 'horarios'].map(v => `${comp}:${v}`) : [];
   const opciones = [...Object.keys(AMBITOS).map(a => a + ':'), 'hoy:', 'manana:', 'finde:', 'hoy:deportes', ...valores, 'calendario:', 'circuito:atp,wta'];
   const seleccion = opciones.filter(v => normalize(v).startsWith(q));
   if (!seleccion.length) return q.includes(':') && leerConsultaCalendario(q) ? [] : null;
