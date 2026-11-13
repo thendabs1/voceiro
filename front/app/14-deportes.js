@@ -51,14 +51,15 @@ function accionesCompeticion(c){
 
 // El nombre hace lo que se pidió; lo demás queda al lado. Con `contexto`
 // (resultados:, clasificacion:) solo salen las competiciones que lo tienen y el
-// nombre basta; sin él, abre lo primero que haya y escribe adónde lleva.
+// nombre basta; sin él, abre lo primero que haya y lo escribe al lado, con el
+// mismo aspecto de enlace que las demás: en gris parecía desactivado.
 function filaCompeticion(c, contexto = ''){
   const acciones = accionesCompeticion(c), nombre = nombreCompeticionCorto(c);
   const principal = contexto ? acciones.find(a => a.tipo === contexto) : acciones[0];
   if (!principal) return '';
   const boton = (a, clase, html) => `<button type="button" class="${clase}" data-accion="orden" data-orden="${escapeHtml(a.orden)}" aria-label="${escapeHtml(`${nombre}: ${a.texto}`)}">${html}</button>`;
   const otras = acciones.filter(a => a !== principal).map(a => boton(a, 'dep-accion', escapeHtml(a.texto))).join('');
-  return `<div class="dep-fila">${boton(principal, 'dep-nombre', escapeHtml(nombre) + (contexto ? '' : ` <small>· ${escapeHtml(principal.texto)}</small>`))}${otras ? `<span class="dep-otras">${otras}</span>` : ''}</div>`;
+  return `<div class="dep-fila">${boton(principal, 'dep-nombre', escapeHtml(nombre) + (contexto ? '' : ` <small>${escapeHtml(principal.texto)}</small>`))}${otras ? `<span class="dep-otras">${otras}</span>` : ''}</div>`;
 }
 const contextoDeportes = tipo => ['resultados', 'clasificacion'].includes(tipo) ? tipo : '';
 
@@ -70,7 +71,7 @@ function htmlInicioDeportes(sigo){
   const filas = sigo.map(c => filaCompeticion(c)).join('');
   return `<div class="dep-inicio"><div class="dep-atajos ui-tira">${orden('hoy:deportes', t('calHoy'))}${orden('finde:deportes', t('calFinde'))}
     <button type="button" data-accion="calendario-deportes">${escapeHtml(t('calTitulo'))}</button>${orden('grupo:deportes', t('depNoticias'))}</div>
-    ${filas ? `<div class="dep-sigo">${filas}</div>` : ''}</div>`;
+    ${filas ? `<div class="dep-sigo"><span class="dep-rotulo">${escapeHtml(t('calLasQueSigo'))}</span>${filas}</div>` : ''}</div>`;
 }
 // El botón Deportes: el cuadro general, que es una consulta y se escribe como
 // «‹ Deportes». Pulsado con el cuadro abierto, lo cierra.
@@ -82,15 +83,16 @@ function pulsarBotonDeportes(){
 function abrirCalendarioDeportes(){
   conPaso(() => { quitarConsultas(); abrirCalendario(document.getElementById('btn-deportes'), 'deportes'); });
 }
-// Vista general: en pantalla ancha, todo a la vista; en móvil, plegada salvo lo
-// que sigo o, sin nada seguido, el primer bloque.
+// Vista general: en pantalla ancha, todo a la vista, salvo que lo que sigo ya esté
+// arriba: entonces el catálogo va plegado y el cuadro no tapa la pantalla. En
+// móvil, plegada salvo lo que sigo o, sin nada seguido, el primer bloque.
 function htmlVistaDeportes(tipo){
   const sigo = calPreferencias()?.competiciones || [];
   const estrecha = globalThis.matchMedia?.('(max-width: 600px)').matches;
   const bloques = DEPORTES_ORDEN.map(k => ({ k, cs: competicionesDeporte(k), filas: competicionesDeporte(k).map(c => filaCompeticion(c, contextoDeportes(tipo))).join('') }))
     .filter(b => b.filas);
   return `${tipo === 'deportes' ? htmlInicioDeportes(sigo) : ''}<div class="dep-vista">${bloques.map((b, i) => {
-    const abierto = !estrecha || b.cs.some(c => sigo.includes(c)) || (!sigo.length && i === 0);
+    const abierto = estrecha ? b.cs.some(c => sigo.includes(c)) || (!sigo.length && i === 0) : !(tipo === 'deportes' && sigo.length);
     return `<details class="dep-bloque"${abierto ? ' open' : ''}><summary>${escapeHtml(t(CAL_NOMBRES_DEPORTE[b.k]))}</summary>${b.filas}</details>`;
   }).join('')}</div>`;
 }
