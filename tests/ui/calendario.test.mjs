@@ -25,6 +25,8 @@ const tarjeta = (id, dia, { hora = null, presentacion = 'cita', ...extra } = {})
   programacion: { valor: { modalidad: presentacion === 'prolongada' ? 'intervalo' : 'puntual',
     cuando: { inicio: extremo(dia || null, hora), fin: extremo(presentacion === 'prolongada' && dia ? fechas.sumarDiasCalendario(dia, 60) : null) } } },
   lugar: { nombre: 'Sala', municipio: 'Vigo' }, resultado_disponible: false, fuentes: ['galicia'], presentacion, dia, ...extra });
+// Día del mes sin nada que enseñar: el único que se raya más allá de lo publicado.
+const vaciarDia = (c, dia) => Object.assign(c.api.s.mes.dias.find(d => d.dia === dia), { chips: 0, citas: 0, programas: 0, en_curso: 0, competiciones: {}, muestras: [] });
 const META = { version: 1, revision: 'r1', generado: '2026-10-25T06:00:00Z',
   horizonte: { desde: '2026-09-10', hasta: '2027-10-27' }, cobertura: [{ fuente: 'galicia', comprobado: '2026-10-25T05:00:00Z' }],
   colecciones: [{ coleccion: 'nba', calendario_completo: false }, { coleccion: 'f1', calendario_completo: true }] };
@@ -859,7 +861,7 @@ test('mes de Deportes en ancho: marcas por competición, todas, y el motor en ba
   // La semana mide lo que lleva: sin alto fijo ni mínimo.
   assert.match(html, /class="cal-mg-semana" style="--carriles:1;--carril:24px">/);
   // GP del 30-10 al 1-11: del viernes al domingo de esa semana, y nada en la siguiente.
-  assert.match(html, /class="cal-mg-barra cal-dep cal-dep-motor" style="grid-column:5\/8;grid-row:2"[^>]*>GP de México/);
+  assert.match(html, /class="cal-mg-barra cal-dep cal-dep-motor" style="grid-column:5\/8;grid-row:2"[^>]*>F1 · GP de México/);
   assert.equal((html.match(/cal-mg-barra/g) || []).length, 1);
   const viernes = html.match(/data-valor="2026-10-30"[\s\S]*?<\/button>/)[0];
   assert.match(viernes, /title="WTA">WTA<\/span><\/span><\/button>/);
@@ -879,9 +881,31 @@ test('mes de Deportes: solo el motor va en barra, en todos los carriles que haga
   const barras = html => [...html.matchAll(/class="cal-mg-barra ([^"]*)" style="[^"]*grid-row:(\d)[^>]*>([^<]*)/g)].map(m => [m[1], m[2], m[3]]);
   c.window.innerHeight = 500;
   const html = c.api.calContenido();
-  assert.deepEqual(barras(html), [['cal-dep cal-dep-motor', '2', 'Torneo f1'], ['cal-dep cal-dep-motor', '3', 'Torneo motogp'], ['cal-dep cal-dep-motor', '4', 'Torneo wrc']]);
+  assert.deepEqual(barras(html), [['cal-dep cal-dep-motor', '2', 'F1 · Torneo f1'], ['cal-dep cal-dep-motor', '3', 'MGP · Torneo motogp'], ['cal-dep cal-dep-motor', '4', 'WRC · Torneo wrc']]);
   assert.match(html, /--carriles:3;--carril:24px/);
   delete c.window.innerHeight;
+});
+
+test('mes de Deportes: las categorías de un mismo fin de semana comparten barra, con sus marcas, y abren su día', async () => {
+  const c = contexto();
+  c.panel.clientWidth = 1000;
+  c.hoy = '2026-10-26';
+  await c.deportes();
+  const gp = (cod, nombre, desde, hasta = '2026-11-02') =>
+    ({ ...tarjeta(nombre, desde, { presentacion: 'programa', competiciones: [cod], categoria: 'deportes' }), id: cod + nombre, desde, hasta });
+  // Llegan mezcladas: F1 (desde el jueves) y F2 en Qatar; las tres de motos en Valencia; F1 sola la semana siguiente.
+  c.api.s.mes.barras = [gp('moto3', 'GP de Valencia', '2026-10-30'), gp('f2', 'Ronda de Lusail', '2026-10-30'), gp('motogp', 'GP de Valencia', '2026-10-30'),
+    gp('f1', 'GP de Qatar', '2026-10-29'), gp('moto2', 'GP de Valencia', '2026-10-30'), gp('f1', 'GP de Abu Dabi', '2026-11-06', '2026-11-09')];
+  const html = c.api.calContenido();
+  const barras = [...html.matchAll(/data-cal="(\w+)" data-valor="([^"]*)" class="cal-mg-barra [^"]*" style="grid-column:([\d/]+);grid-row:(\d)"([^>]*)>([^<]*)/g)].map(m => m.slice(1));
+  // Una barra por familia, con el nombre y el tramo más largo de la mayor; la fundida abre su primer día.
+  assert.deepEqual(barras.map(b => [b[0], b[1], b[2], b[3], b[5]]), [['dia', '2026-10-29', '4/8', '2', 'F1 F2 · GP de Qatar'],
+    ['dia', '2026-10-30', '5/8', '3', 'MGP M2 M3 · GP de Valencia'], ['evento', 'f1GP de Abu Dabi', '5/8', '2', 'F1 · GP de Abu Dabi']]);
+  assert.doesNotMatch(barras[0][4], /aria-haspopup/);
+  assert.match(barras[2][4], /aria-haspopup="dialog"/);
+  // En curso, abre hoy.
+  c.hoy = '2026-10-31';
+  assert.match(c.api.calContenido(), /data-cal="dia" data-valor="2026-10-31" class="cal-mg-barra/);
 });
 
 test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y lo no publicado rayado', async () => {
@@ -903,8 +927,12 @@ test('mes de Deportes con una o dos competiciones: sus partidos en cada día, y 
   assert.match(dia, /<span class="cal-mg-chip cal-cat-cultura" title="A2026-10-27"><b>18:00<\/b> A2026-10-27<\/span><span class="cal-mg-chip cal-cat-otras" title="B2026-10-27">B2026-10-27<\/span>/);
   assert.match(dia, /<span class="cal-mg-mas">\+23 más<\/span><\/button>/);
   assert.doesNotMatch(dia, /cal-marca/);
-  // Más allá del último día publicado (11-11), rayado y con su nota.
+  // Más allá del último día publicado (11-11), el día sin nada va rayado y con su nota; el que tiene algo, no.
+  assert.doesNotMatch(html, /cal-sin-publicar/);
+  vaciarDia(c, '2026-11-12');
+  html = c.api.calContenido();
   assert.doesNotMatch(html.match(/data-valor="2026-11-11"[^>]*/)[0], /cal-sin-publicar/);
+  assert.doesNotMatch(html.match(/data-valor="2026-11-13"[^>]*/)[0], /cal-sin-publicar/);
   assert.match(html, /class="cal-mg-dia cal-sin-publicar" style="grid-column:4"\s+data-cal="dia" data-valor="2026-11-12"/);
   assert.match(html, /class="cal-nota cal-leyenda-sin-publicar">Rayado: aún sin publicar/);
   // Con calendario completo, no hay límite.
@@ -977,6 +1005,7 @@ test('Deportes escrita con prefijo (`nba:`) también raya lo aún sin publicar',
   await esperar();
   assert.equal(c.api.s.capas, null);
   c.api.s.meta.colecciones = [{ coleccion: 'nba', estado: 'activa', calendario_completo: false, unidades: [{ fin: '2026-11-11' }] }];
+  vaciarDia(c, '2026-11-12');
   const html = c.api.calContenido();
   assert.match(html, /class="cal-mg-dia cal-sin-publicar" style="grid-column:4"\s+data-cal="dia" data-valor="2026-11-12"/);
   assert.match(html, /Los partidos se publican/);
@@ -1236,6 +1265,7 @@ test('Atletismo raya en el mes lo posterior a la ventana leída de cada federaci
   assert.doesNotMatch(c.api.calContenido(), /cal-sin-publicar/);
   c.api.s.meta.fuentes = { ...c.api.s.meta.fuentes, fga: { ventana: { inicio: '2026-10-01', fin: '2026-11-11' } },
     fca: { ventana: { inicio: '2026-10-01', fin: '2026-11-20' } } };
+  vaciarDia(c, '2026-11-12');
   const html = c.api.calContenido();
   // Manda la que menos tiene leído (FGA, 11-11); RFEA, sin ventana, no limita.
   assert.doesNotMatch(html.match(/data-valor="2026-11-11"[^>]*/)[0], /cal-sin-publicar/);
