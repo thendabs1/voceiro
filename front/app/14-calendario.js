@@ -1161,6 +1161,23 @@ function calPublicadoHasta(){
   }
   return fines.sort()[0] || '';
 }
+// Motor en el mes: las categorías que corren juntas el mismo fin de semana (F1 con
+// F2 y F3; MotoGP con Moto2 y Moto3) comparten barra, con el nombre de la mayor.
+const CAL_FAMILIAS_MOTOR = [['f1', 'f2', 'f3'], ['motogp', 'moto2', 'moto3'], ['wrc']];
+function calFundirBarras(barras){
+  const orden = b => CAL_COMPETICIONES.indexOf((b.competiciones || []).find(c => CAL_DEPORTE_DE[c]));
+  const porInicio = (x, y) => x.desde.localeCompare(y.desde) || orden(x) - orden(y);
+  const fundidas = [];
+  for (const b of [...barras].sort((x, y) => orden(x) - orden(y) || porInicio(x, y))){
+    const familia = CAL_FAMILIAS_MOTOR.findIndex(f => (b.competiciones || []).some(c => f.includes(c)));
+    const g = familia < 0 ? null : fundidas.find(x => x.familia === familia && x.desde < b.hasta && b.desde < x.hasta);
+    if (!g){ fundidas.push({ ...b, familia, miembros: 1 }); continue; }
+    if (b.desde < g.desde) g.desde = b.desde;
+    if (b.hasta > g.hasta) g.hasta = b.hasta;
+    g.competiciones = [...new Set([...g.competiciones, ...b.competiciones])]; g.miembros++;
+  }
+  return fundidas.sort(porInicio);
+}
 const calDiferencia = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5);
 // Cada semana, una cuadrícula: el día es un botón con su número, el hueco de
 // las barras y, en la agenda, hasta cuatro chips «hora título» (+N). En
@@ -1173,7 +1190,10 @@ function calMesTitulos(dias, rodante = false){
   const s = CALENDARIO, hoy = calHoy(), porDia = new Map((s.mes?.dias || []).map(d => [d.dia, d])), deportes = calModoDeportes();
   const partidos = calPartidosEnMes();
   // Con pocas competiciones también caben en barra los torneos de tenis.
-  const barras = (s.mes?.barras || []).filter(b => partidos || b.competiciones?.some(c => CAL_DEPORTE_DE[c] === 'motor'));
+  const barras = calFundirBarras((s.mes?.barras || []).filter(b => partidos || b.competiciones?.some(c => CAL_DEPORTE_DE[c] === 'motor')));
+  // La barra de motor dice de quién es («F1 F2 · GP de Qatar»): ya no va en las marcas del día.
+  const conMarcas = calCompeticionesPedidas().length !== 1;
+  const rotulo = b => (conMarcas && b.familia >= 0 ? b.competiciones.map(c => CAL_MARCAS[c]).filter(Boolean).join(' ') + ' · ' : '') + calNombreEvento(b);
   // Carril de 24 px como mínimo: barra de 22 con 1 px de margen arriba y abajo; las
   // barras quedan a 24 px una de otra (excepción de espaciado de AA, 2.5.8).
   const em = calEm(), alto = calAltoSemana(em), carril = Math.max(em * 1.3, 24), semanas = [];
@@ -1181,7 +1201,8 @@ function calMesTitulos(dias, rodante = false){
   const publicado = deportes ? calPublicadoHasta() : '';
   const sinPublicar = dia => Boolean(publicado) && dia > publicado;
   for (let i = 0; i < dias.length; i += 7) semanas.push(dias.slice(i, i + 7));
-  return `<div class="cal-mg" role="group" aria-label="${calEsc(t('calMes'))}"><div class="cal-mg-cabecera">${calCabeceraSemana(dias)}</div>${semanas.map(semana => {
+  let hayRayado = false;
+  const rejilla = `<div class="cal-mg" role="group" aria-label="${calEsc(t('calMes'))}"><div class="cal-mg-cabecera">${calCabeceraSemana(dias)}</div>${semanas.map(semana => {
     const fin = sumarDiasCalendario(semana[6], 1), carriles = [];
     const colocadas = barras.filter(b => b.desde < fin && b.hasta > semana[0]).map(b => {
       const a = Math.max(0, calDiferencia(semana[0], b.desde)), z = Math.min(7, calDiferencia(semana[0], b.hasta));
@@ -1195,6 +1216,9 @@ function calMesTitulos(dias, rodante = false){
     const caben = Math.max(0, Math.floor((alto - em * (1.3 + 1.1) - carril * n - 6) / (em * 1.15)));
     const celdas = semana.map((dia, i) => {
       const d = porDia.get(dia);
+      // Rayado solo el día sin nada que enseñar: con marcas o barra no parece «sin publicar».
+      const rayado = sinPublicar(dia) && !(d && calNDia(d)) && !calMarcas(d).length && !colocadas.some(x => x.a <= i && x.z > i);
+      if (rayado) hayRayado = true;
       let contenido, detalle;
       if (partidos){
         // Una o dos competiciones: sus partidos, hasta cinco, y «+N»; lo que va en barra no se repite.
@@ -1221,14 +1245,20 @@ function calMesTitulos(dias, rodante = false){
         detalle = muestras.map(m => calNombreEvento(m.padre ? { nombres: m.padre, lugar: m.lugar } : m));
       }
       const etiqueta = `${calDiaLargo(dia)}: ${sinPublicar(dia) && !d ? t('calSinPublicar') : d ? calCuentas(d) : calN('calNCitas', 0)}${detalle.length ? ' · ' + detalle.join(', ') : ''}`;
-      return `<button type="button" class="cal-mg-dia${!rodante && dia.slice(0, 7) !== s.fecha.slice(0, 7) ? ' cal-otro-mes' : ''}${dia < hoy ? ' cal-pasado' : ''}${sinPublicar(dia) ? ' cal-sin-publicar' : ''}" style="grid-column:${i + 1}"
+      return `<button type="button" class="cal-mg-dia${!rodante && dia.slice(0, 7) !== s.fecha.slice(0, 7) ? ' cal-otro-mes' : ''}${dia < hoy ? ' cal-pasado' : ''}${rayado ? ' cal-sin-publicar' : ''}" style="grid-column:${i + 1}"
         data-cal="dia" data-valor="${dia}" aria-pressed="${dia === s.fecha}"${dia === hoy ? ' aria-current="date"' : ''} aria-label="${calEsc(etiqueta)}">
         <span class="cal-num">${calEsc(calNumDia(dia, rodante))}</span><span class="cal-mg-hueco" aria-hidden="true"></span>${contenido}</button>`;
     }).join('');
-    const lineas = colocadas.map(({ b, a, z, carril: c }) => calBoton('evento', calNombreEvento(b), b.id,
-      `class="cal-mg-barra ${calColor(b)}${b.desde < semana[a] ? ' sigue-antes' : ''}${b.hasta > sumarDiasCalendario(semana[z - 1], 1) ? ' sigue-despues' : ''}" style="grid-column:${a + 1}/${z + 1};grid-row:${c + 2}" aria-haspopup="dialog" title="${calEsc(calNombreEvento(b))}"`)).join('');
+    // Una barra de una sola competición abre su ficha; la fundida, su día en la lista
+    // (hoy si está en curso), donde cada categoría tiene sus sesiones.
+    const lineas = colocadas.map(({ b, a, z, carril: c }) => {
+      const una = b.miembros === 1, enCurso = b.desde <= hoy && hoy < b.hasta;
+      return calBoton(una ? 'evento' : 'dia', rotulo(b), una ? b.id : enCurso ? hoy : b.desde,
+        `class="cal-mg-barra ${calColor(b)}${b.desde < semana[a] ? ' sigue-antes' : ''}${b.hasta > sumarDiasCalendario(semana[z - 1], 1) ? ' sigue-despues' : ''}" style="grid-column:${a + 1}/${z + 1};grid-row:${c + 2}"${una ? ' aria-haspopup="dialog"' : ''} title="${calEsc(rotulo(b))}"`);
+    }).join('');
     return `<div class="cal-mg-semana" style="--carriles:${n};--carril:${carril}px${deportes ? '' : `;height:${alto}px`}">${celdas}${lineas}</div>`;
-  }).join('')}</div>${dias.some(sinPublicar) ? `<p class="cal-nota cal-leyenda-sin-publicar">${calEsc(t(
+  }).join('')}</div>`;
+  return rejilla + `${hayRayado ? `<p class="cal-nota cal-leyenda-sin-publicar">${calEsc(t(
     calCompeticionesPedidas().every(c => CAL_FUENTE_ATLETISMO[c]) ? 'calSinPublicarNotaAtletismo' : 'calSinPublicarNota'))}</p>` : ''}`;
 }
 // Semana o mes que empieza en esta semana: un mes si no cruza; si cruza, los dos.
