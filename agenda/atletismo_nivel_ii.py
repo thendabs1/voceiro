@@ -14,7 +14,9 @@ from uuid import uuid4
 from . import atletismo, atletismo_coincidencias as coincidencias, deporte
 
 URL = 'https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf'
-TIPOS = {'AL', 'ST', 'Cross', 'Marcha', 'Ruta', 'Trail Running'}
+# Desde la versión del 11/11/2026 el PDF escribe «Pista Aire libre» y «Pista cubierta»
+# donde antes ponía AL y ST; se conservan los literales de ambas versiones.
+TIPOS = {'AL', 'ST', 'Pista Aire libre', 'Pista cubierta', 'Cross', 'Marcha', 'Ruta', 'Trail Running'}
 
 
 def huella(fila):
@@ -38,6 +40,8 @@ def leer(texto, paginas_esperadas):
     filas = []
     for numero, pagina in enumerate(paginas, 1):
         recibidas = 0
+        # Columnas donde empiezan nombre y ciudad (filas con lugar) y los nombres sin lugar.
+        nombres, ciudades, solo_nombre = [], [], []
         for linea in pagina.splitlines():
             if not linea.strip():
                 continue
@@ -54,9 +58,17 @@ def leer(texto, paginas_esperadas):
             campos = re.split(r'\s{2,}', m[3].strip())
             tipo = campos.pop(0) if campos[0] in TIPOS else ''
             # En esta distribución, un tipo ausente deja libre toda su columna.
-            if (not tipo and m.start(3) < 32) or len(campos) not in (2, 3):
+            # Sin instalación ni ciudad solo queda el nombre, anclado por el tipo.
+            if ((not tipo and m.start(3) < 32) or len(campos) not in (1, 2, 3)
+                    or (len(campos) == 1 and not tipo)):
                 raise ValueError(f'Nivel II: columnas ambiguas en página {numero}')
-            nombre, ciudad = campos[0], campos[-1]
+            nombre, ciudad = campos[0], campos[-1] if len(campos) > 1 else ''
+            columnas = [m.start(3) + x.start() for x in re.finditer(r'\S+(?: \S+)*', m[3])][bool(tipo):]
+            if len(campos) > 1:
+                nombres.append(columnas[0])
+                ciudades.append(columnas[-1])
+            else:
+                solo_nombre.append(columnas[0])
             fila = {'federacion_literal': m[1] or '', 'fecha': fecha,
                     'tipo_literal': tipo, 'nombre': nombre,
                     'instalacion': campos[1] if len(campos) == 3 else '', 'ciudad': ciudad}
@@ -64,6 +76,11 @@ def leer(texto, paginas_esperadas):
             recibidas += 1
         if not recibidas:
             raise ValueError(f'Nivel II: página {numero} sin filas')
+        # Un campo único es el nombre si está del lado de los nombres; los cortos
+        # salen centrados, así que el corte es el punto medio entre ambas columnas.
+        if solo_nombre and (not nombres or max(nombres) >= min(ciudades)
+                            or max(solo_nombre) >= (max(nombres) + min(ciudades)) / 2):
+            raise ValueError(f'Nivel II: columnas ambiguas en página {numero}')
     return {'version': 1, 'url': URL, 'temporada': temporada, 'actualizado': actualizado,
             'paginas': len(paginas), 'huella_texto': sha256(texto.encode()).hexdigest(), 'filas': filas}
 
@@ -116,6 +133,8 @@ def resolver(inventario, revisiones, n=None, *, incorporar_nuevas=False):
             'inicio': inicio, 'fin': fin, 'estado': estado,
             'lugar': {'nombre': f['instalacion'], 'city': f['ciudad']},
             'metadatos': {'nivel_rfea': 'II', 'modalidad_literal': f['tipo_literal'],
+                # Una revisión de identidad no confirma la duración si no lo dice.
+                **({'duracion_confirmada': False} if r.get('duracion_confirmada') is False else {}),
                 'nivel_ii': {'fila': f, 'huella': h, 'actualizado': inventario['actualizado'],
                     'huella_texto': inventario['huella_texto'], 'pagina': observacion['pagina'],
                     'revision': r}}})
