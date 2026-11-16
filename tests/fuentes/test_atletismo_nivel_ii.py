@@ -26,11 +26,11 @@ def revisiones():
 class NivelII(unittest.TestCase):
     def setUp(self):
         self.texto = (MUESTRAS / 'nivel-ii-2026.txt').read_text()
-        self.inventario = nivel.leer(self.texto, 15)
+        self.inventario = nivel.leer(self.texto, 10)
 
     def test_documento_completo_con_campos_ausentes_y_estados_literales(self):
         i = self.inventario
-        self.assertEqual((i['paginas'], len(i['filas']), i['actualizado']), (15, 441, '2026-10-15'))
+        self.assertEqual((i['paginas'], len(i['filas']), i['actualizado']), (10, 454, '2026-11-11'))
         filas = [f['fila'] for f in i['filas']]
         self.assertEqual(sum(not f['federacion_literal'] for f in filas), 1)
         self.assertEqual(sum(not f['tipo_literal'] for f in filas), 1)
@@ -38,30 +38,43 @@ class NivelII(unittest.TestCase):
         self.assertEqual(aplazada['fecha'], '2026-07-04')
         self.assertTrue(any('SUSPENDIDO' in f['nombre'] for f in filas))
         self.assertNotIn('id', aplazada)
+        # Fila con solo el nombre: sin instalación ni ciudad, pero con tipo.
+        sin_lugar = next(f for f in filas if f['nombre'] == '2026-11 P.L.P.')
+        self.assertEqual((sin_lugar['tipo_literal'], sin_lugar['instalacion'], sin_lugar['ciudad']),
+                         ('Pista Aire libre', '', ''))
 
     def test_falla_ante_truncamiento_lineas_desconocidas_o_columnas_ambiguas(self):
-        for texto, paginas in ((self.texto, 14),
-                               (self.texto.split('\f')[0], 15),
-                               (self.texto.replace('Reunión FAM 14 Gallur', 'Reunión FAM 14  Gallur'), 15),
-                               (self.texto + 'Una competición sin columnas\n', 15),
-                               (self.texto.replace('15/10/2026', ''), 15),
-                               (self.texto.replace('3/1/2026', '3/1/2027', 1), 15)):
+        for texto, paginas in ((self.texto, 9),
+                               (self.texto.split('\f')[0], 10),
+                               (self.texto.replace('Reunión FAM 14 Gallur', 'Reunión FAM 14  Gallur'), 10),
+                               (self.texto + 'Una competición sin columnas\n', 10),
+                               (self.texto.replace('11/11/2026', ''), 10),
+                               (self.texto.replace('3/1/2026', '3/1/2027', 1), 10),
+                               # Un solo campo sin tipo no permite saber qué columna es.
+                               (self.texto.replace('Pista Aire libre                                    2026-11 P.L.P.',
+                                                   '                                                    2026-11 P.L.P.'), 10),
+                               # Con tipo, un campo único en la columna de ciudad tampoco es un nombre.
+                               (self.texto.replace('CTO.XUNTA GALICIA CROSS DE CLUBES ABS.SUB23,SUB20,SUB18,SUB16',
+                                                   ' ' * 61), 10),
+                               # Aunque sea la ciudad más a la izquierda de su página.
+                               (self.texto.replace('FINAL CROSS - FEDERADOS INDIVIDUAL Y JJDD INDIVIDUAL Y POR EQUIPOS',
+                                                   ' ' * 66), 10)):
             with self.subTest(texto=texto[:40], paginas=paginas), self.assertRaises(ValueError):
                 nivel.leer(texto, paginas)
 
     def test_solo_identidades_revisadas_sin_declarar_cobertura_completa(self):
         vacio = nivel.resolver(self.inventario, {'version': 1, 'revisiones': []})
         self.assertFalse(vacio['completo'])
-        self.assertEqual(len(vacio['pendientes']), 441)
+        self.assertEqual(len(vacio['pendientes']), 454)
         self.assertEqual(vacio['entrada']['eventos'], [])
         resultado = nivel.resolver(self.inventario, revisiones())
         self.assertEqual(len(resultado['entrada']['eventos']), 1)
-        self.assertEqual(len(resultado['pendientes']), 440)
+        self.assertEqual(len(resultado['pendientes']), 453)
         self.assertFalse(resultado['completo'])
         self.assertEqual(resultado['revisiones_no_aplicadas'], [])
         e = resultado['entrada']['eventos'][0]
-        self.assertEqual(e['metadatos']['nivel_ii']['actualizado'], '2026-10-15')
-        self.assertEqual(e['metadatos']['modalidad_literal'], 'AL')
+        self.assertEqual(e['metadatos']['nivel_ii']['actualizado'], '2026-11-11')
+        self.assertEqual(e['metadatos']['modalidad_literal'], 'Pista Aire libre')
         # Carácter autonómico: está en el documento de la RFEA, pero no es suya.
         self.assertEqual(e['metadatos']['fuente']['relacion'], 'reflejo')
         self.assertEqual(e['metadatos']['fuente']['evidencia']['url'], e['url'])
@@ -69,6 +82,12 @@ class NivelII(unittest.TestCase):
         self.assertEqual({x['metadatos']['fuente']['relacion'] for x in todo['entrada']['eventos']}, {'reflejo'})
         self.assertEqual(todo['revisiones_no_aplicadas'], [])
         self.assertEqual(len(todo['entrada']['eventos']), len(registro()['revisiones']))
+        # Las identidades internas revisadas siguen sin duración confirmada.
+        locales = [x for x in todo['entrada']['eventos'] if x['id'].startswith('nivel-ii:local-')]
+        self.assertEqual(len(locales), 3)
+        self.assertEqual({x['metadatos'].get('duracion_confirmada') for x in locales}, {False})
+        self.assertNotIn('duracion_confirmada', next(
+            x for x in todo['entrada']['eventos'] if x['id'] == 'nivel-ii:lanzamentos-longos-ordes-2026')['metadatos'])
 
     def test_conciliacion_revisada_comparte_identidad_con_la_cita_territorial(self):
         from agenda import atletismo_coincidencias as c
@@ -98,7 +117,7 @@ class NivelII(unittest.TestCase):
             self.assertEqual({f['fuente'] for f in e['fuentes']}, {'rfea', 'fga'})
             self.assertFalse(e['programacion']['conflicto'])
             self.assertTrue(e['atletismo']['conflicto'])
-            self.assertEqual({v['valor']['modalidad_literal'] for v in e['atletismo']['variantes']}, {'AL', 'Marcha'})
+            self.assertEqual({v['valor']['modalidad_literal'] for v in e['atletismo']['variantes']}, {'Pista Aire libre', 'Marcha'})
             for fuente in ('rfea', 'fga'):
                 parcial = publicacion.proyectar(n, fuentes=[fuente])['eventos'][0]
                 self.assertEqual(parcial['id'], e['id'])
@@ -139,7 +158,7 @@ class NivelII(unittest.TestCase):
         i['filas'].append(deepcopy(fila))
         resultado = nivel.resolver(i, revisiones())
         self.assertEqual(resultado['entrada']['eventos'], [])
-        self.assertEqual(len(resultado['pendientes']), 442)
+        self.assertEqual(len(resultado['pendientes']), 455)
         i['filas'] = [f for f in i['filas'] if f['huella'] != fila['huella']]
         self.assertEqual(nivel.resolver(i, revisiones())['entrada']['eventos'], [])
 
@@ -167,7 +186,7 @@ class NivelII(unittest.TestCase):
         identidad = publicacion.proyectar(n)['eventos'][0]['id']
         resultado = nivel.resolver(self.inventario, {'version': 1, 'revisiones': []}, n)
         self.assertEqual(len(resultado['entrada']['eventos']), 1)
-        self.assertEqual(len(resultado['pendientes']), 440)
+        self.assertEqual(len(resultado['pendientes']), 453)
         identificador = resultado['entrada']['eventos'][0]['id']
         n = atletismo.importar(n, resultado['entrada'], AHORA)
         self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)

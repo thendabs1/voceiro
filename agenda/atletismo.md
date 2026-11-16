@@ -177,8 +177,8 @@ la categoría anterior y permite guardar la lectura mensual; las
 automáticas, revisiones y citas sin fila se cuentan aparte. La evidencia es
 estable entre pasadas y no entra en la huella de issues.
 
-**Nivel II.** PDF general enlazado por RFEA, 15 páginas y 441 filas,
-actualizado el 15/10/2026 (la carpeta `2025-03` de la URL no es la fecha).
+**Nivel II.** PDF general enlazado por RFEA, 10 páginas y 454 filas,
+actualizado el 11/11/2026 (la carpeta `2025-03` de la URL no es la fecha).
 Recoge pruebas autonómicas, incluidos controles, ausentes del mensual; no es
 otra capa ni el calendario de todas las territoriales. `atletismo_nivel_ii`
 lo extrae con Poppler y falla ante cambios de distribución. Una huella
@@ -186,8 +186,10 @@ identifica una fila, no una cita. El ID sale de
 `atletismo-nivel-ii-revisiones.json` (`nivel-ii:…`, editorial) o de una
 coincidencia inequívoca con una cita ya identificada (`nivel-ii:auto-…`,
 anclado a esa referencia y persistido). Las filas iguales o ambiguas quedan
-pendientes. El «Tipo» del PDF no tiene autoridad (marcha de Pontevedra: `AL`
-frente a «Marcha» de FGA). Sus filas son reflejo: tienen «carácter autonómico»
+pendientes. El «Tipo» del PDF no tiene autoridad (marcha de Pontevedra: «Pista
+Aire libre», antes `AL`, frente a «Marcha» de FGA). Ese cambio de literal del
+11/11/2026 cambió todas las huellas: las identidades guardadas se revisaron a
+mano en el registro, conservando sus IDs, también los `nivel-ii:local-…`. Sus filas son reflejo: tienen «carácter autonómico»
 (circular de inscripción en el calendario 2027, p. 2), aunque el Reglamento las
 coloque en categoría nacional.
 

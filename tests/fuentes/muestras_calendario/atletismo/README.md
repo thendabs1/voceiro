@@ -26,16 +26,17 @@ arriba. Los tres IDs se vinculan en el registro de equivalencias revisadas;
 se conservan los lugares y metadatos distintos de cada fuente.
 
 `nivel-ii-2026.txt` es la extracción íntegra con `pdftotext -layout` del
-PDF general Nivel II enlazado desde RFEA, descargado el 2/11/2026:
+PDF general Nivel II enlazado desde RFEA, descargado el 16/11/2026:
 https://atletismorfea.es/sites/default/files/2025-03/CalendarioNivel_II_general.pdf .
-Conserva las 15 páginas y 441 filas, actualización 15/10/2026. El lector
-todavía no acredita identidad para todas esas filas.
+Conserva las 10 páginas y 454 filas, actualización 11/11/2026, con los tipos
+«Pista Aire libre» y «Pista cubierta» (antes AL y ST) y una fila sin
+instalación ni ciudad. El lector todavía no acredita identidad para todas esas filas.
 
 `nivel-ii-fga-marcha.json` conserva la entrada 112621 del listado gallego
 de noviembre sin filtros de ámbito, contrastada el 2/11/2026 con la ficha
 https://atletismo.gal/competicions/xix-campionato-xunta-de-galicia-de-marcha-de-inverno/ .
 Se usa para comprobar la correspondencia con Nivel II, incluida la discrepancia
-AL/Marcha. El identificador Nivel II es editorial, no publicado por RFEA.
+Pista Aire libre/Marcha. El identificador Nivel II es editorial, no publicado por RFEA.
 
 El test de coincidencias contrasta además FCA 83650 de `fca.json` con las
 fichas oficiales de Atapuerca: RFEA `championship/64831` (campeonato de clubes,
