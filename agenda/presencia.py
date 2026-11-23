@@ -9,6 +9,8 @@ TIPOS = {f: m.TIPO_EXTERNO for f, m in CULTURA.items() if getattr(m, 'INVENTARIO
 # Un catálogo cultural cambia poco de un día a otro; una caída mayor suele ser
 # un fallo del proveedor (respuesta vacía o recortada) y ocultaría la fuente.
 CAIDA_MAXIMA = 0.3
+# Referencias de sesión que `sesiones_ausentes` puede retirar: atletismo y MotoGP.
+TIPOS_SESION = ('sesion', 'session_id')
 
 
 class InventarioDesplomado(ValueError):
@@ -175,6 +177,6 @@ def referencias_ausentes(n):
             and r['tipo_externo'] == TIPOS[r['proveedor']]
             and r['id_externo'] not in inventarios[r['proveedor']]
             or (r['proveedor'], nucleo.clave(r['destino'])) in acotadas
-            or r['tipo_externo'] == 'sesion' and r['contexto'] == {}
+            or r['tipo_externo'] in TIPOS_SESION and r['contexto'] == {}
             and r['id_externo'] in n['fuentes'][r['proveedor']].get('sesiones_ausentes', [])
             or r['proveedor'] in retiradas and retirada(r)}

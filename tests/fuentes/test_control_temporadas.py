@@ -67,6 +67,30 @@ class ContratoControl:
             recoger.assert_called_once()
             self.assertEqual(recoger.call_args.kwargs['fecha'], '2027-01-01')
 
+    def test_carrera_reanudada_se_importa_y_un_recorte_a_la_vez_no(self):
+        def cambiar(datos, quitar=(), carrera=None):
+            for b in datos['broadcasts']:
+                if (b.get('category') or {}).get('name') == 'Moto2' and b.get('shortname') == 'RAC' and carrera:
+                    b.update(id=carrera, shortname='RAC2')
+            datos['broadcasts'] = [b for b in datos['broadcasts'] if not (
+                (b.get('category') or {}).get('name') == 'Moto2' and b.get('shortname') in quitar)]
+            return datos
+        t = self.repo.registrar(temporadas.nueva('moto2', '2026', AHORA, seleccion={'year': '2026'}))
+        def pasada(pagina, ahora):
+            # La API de MotoGP devuelve la lista de GP de la temporada.
+            with patch.object(proveedores, 'recoger', return_value=([pagina], 'https://ejemplo.test')):
+                return operacion.ejecutar_temporada(self.repo, self.repo.obtener(t['id']), ahora, forzar=True)
+        self.assertEqual(pasada(muestra('moto2'), AHORA)['estado'], 'activa')
+        # Una Q2 recortada no pasa por sustitución aunque llegue a la vez una RAC2.
+        r = pasada(cambiar(muestra('moto2'), quitar={'Q2'}, carrera='rac2-a'), DESPUES)
+        self.assertEqual(r['estado'], 'fallida')
+        self.assertEqual([i['tipo'] for i in r['incidencias'] if i['tipo'] != 'programacion_pendiente'],
+                         ['ausentes_en_respuesta'])
+        r = pasada(cambiar(muestra('moto2'), carrera='rac2-a'), '2026-11-01T14:00:00Z')
+        self.assertEqual(r['estado'], 'activa')
+        self.assertEqual([i['tipo'] for i in r['incidencias']], ['sesiones_sustituidas'])
+        self.assertEqual(pasada(cambiar(muestra('moto2'), carrera='rac2-a'), '2026-11-01T15:00:00Z')['incidencias'], [])
+
     def test_cita_aplazada_no_relee_la_ventana_en_cada_tick(self):
         pagina = muestra('espn-nba')
         for evento in pagina['events']:
@@ -553,6 +577,24 @@ class IncidenciasDeRespuesta(unittest.TestCase):
             self.assertFalse(proveedores.limitado_a_ventana(proveedor, 'calendario'))
             self.assertFalse(proveedores.limitado_a_ventana(proveedor, 'programa:gp'))
 
+    def test_carrera_sustituida_no_es_respuesta_parcial(self):
+        # Portugal 2026: la API cambió la RAC de Moto2 por RAC2, con otro ID, al
+        # reanudar la carrera; la temporada quedó bloqueada desde el 22/11 (#362).
+        previa = [{'proveedor': 'moto2', 'unidad': '2026', 'recurso': 'programa:gp', 'eventos': ['fp1', 'q2', 'rac']}]
+        nuevas = [{'proveedor': 'moto2', 'unidad': '2026', 'recurso': 'programa:gp', 'eventos': ['fp1', 'q2', 'rac2']}]
+        ahora = '2026-11-23T00:00:00Z'
+        self.assertEqual(operacion._incidencias(previa, nuevas, [], ['2026'], ahora, sustituidas={'rac'}),
+                         [{'tipo': 'sesiones_sustituidas', 'unidad': '2026', 'recurso': 'programa:gp', 'eventos': ['rac']}])
+        # Solo lo que retiró la importación: sin eso, sigue faltando.
+        self.assertEqual(operacion._incidencias(previa, nuevas, [], ['2026'], ahora)[0]['tipo'], 'ausentes_en_respuesta')
+        # Otra ausencia en el mismo programa sigue rechazando la respuesta.
+        recorte = [{**nuevas[0], 'eventos': ['fp1', 'rac2']}]
+        self.assertEqual([(i['tipo'], i['eventos']) for i in
+                          operacion._incidencias(previa, recorte, [], ['2026'], ahora, sustituidas={'rac'})],
+                         [('sesiones_sustituidas', ['rac']), ('ausentes_en_respuesta', ['q2'])])
+        # Solo donde la importación retira la carrera sustituida.
+        self.assertEqual([p for p in ('motogp', 'moto2', 'moto3', 'formula1', 'formula2', 'espn-f1', 'laliga-primera')
+                          if proveedores.sustituye_sesiones(p)], ['motogp', 'moto2', 'moto3'])
 
 if __name__ == '__main__':
     unittest.main()

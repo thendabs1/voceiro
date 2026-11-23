@@ -102,7 +102,18 @@ def _jornadas_pendientes(filas, inicio, fin):
                    and (e.get('estado') == 'aplazado' or _en_ventana(e, inicio, fin))})
 
 
-def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, guardados=None, ventana=None):
+def _sustituidas(n, proveedor):
+    """Citas que la importación retiró por llegar otra en su lugar (motogp.importar)."""
+    if not proveedores.sustituye_sesiones(proveedor):
+        return set()
+    fuente = proveedores.fuente_nucleo(proveedor)
+    ids = set((n['fuentes'].get(fuente) or {}).get('sesiones_ausentes', []))
+    return {r['destino']['id'] for r in n['referencias'].values()
+            if r['proveedor'] == fuente and r['tipo_externo'] == 'session_id' and r['id_externo'] in ids}
+
+
+def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, guardados=None, ventana=None,
+                 sustituidas=frozenset()):
     incidencias = []
     por_recurso = {(c['unidad'], c['recurso']): c for c in nuevas}
     recibidos = {e['evento'] for e in eventos}
@@ -125,8 +136,13 @@ def _incidencias(previa, nuevas, eventos, unidades, ahora, *, incompleto=False, 
                                    for i in sorted(ausentes)
                                    if (guardados or {}).get(i, {}).get('unidad', c['unidad']) == c['unidad'])
             elif ausentes:
-                incidencias.append({'tipo': 'ausentes_en_respuesta', 'unidad': c['unidad'],
-                                    'recurso': c['recurso'], 'eventos': sorted(ausentes)})
+                # Una carrera sustituida (RAC por RAC2) la retira la importación y no
+                # cuenta como respuesta parcial; cualquier otra ausencia, sí.
+                for tipo, citas in (('sesiones_sustituidas', ausentes & sustituidas),
+                                    ('ausentes_en_respuesta', ausentes - sustituidas)):
+                    if citas:
+                        incidencias.append({'tipo': tipo, 'unidad': c['unidad'], 'recurso': c['recurso'],
+                                            'eventos': sorted(citas)})
     for e in eventos:
         if e['conflicto'] or e['estado'] == 'aplazado' or not e['inicio']:
             incidencias.append({'tipo': 'programacion_pendiente', 'evento': e['evento']})
@@ -228,7 +244,7 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
     ventana = ((coberturas[0]['inicio'], coberturas[0]['fin'])
                if proveedores.modo(proveedor) == 'temporada' and coberturas else None)
     incidencias = _incidencias(cobertura, coberturas, eventos, unidades, ahora, incompleto=incompleto,
-                               guardados=guardados, ventana=ventana)
+                               guardados=guardados, ventana=ventana, sustituidas=_sustituidas(n, proveedor))
     if any(i['tipo'] == 'ausentes_en_respuesta' for i in incidencias):
         error = ValueError('Respuesta parcial: faltan citas previamente acreditadas en la misma selección')
         repo.fallar(t, pasada, ahora, error)
