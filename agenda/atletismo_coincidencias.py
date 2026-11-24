@@ -14,11 +14,13 @@ from urllib.parse import urlsplit
 
 from . import atletismo_modalidades, nucleo
 
-VERSION = 5
+VERSION = 6
 FUENTES = {'rfea', 'fga', 'fca', 'wa'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
             'clubs': 'clubes', 'masters': 'master', 'curta': 'corta', 'xornada': 'jornada'}
+# Solo en los nombres: en una sede, «St» puede ser otra cosa.
+ABREVIATURAS = {'mixt': 'mixto', 'st': 'short track'}
 OMITIR = {'de', 'del', 'do', 'da', 'd', 'en', 'a', 'o', 'la', 'el', 'les', 'los', 'las', 'per', 'por'}
 # Qué alcance puede contener a cuál. Orienta la revisión: nunca une ni relaciona solo.
 CONTIENE = {'juegos': {'serie', 'reunion', 'jornada', 'titulos', 'titulo', 'sesion'},
@@ -37,12 +39,12 @@ def normalizar(texto):
 
 def nombre_comparable(texto):
     # Etiqueta administrativa exacta, no palabras ni paréntesis deportivos.
-    texto = re.sub(r'\(\s*RFEA\s*\)', '', texto, flags=re.I)
+    texto = re.sub(r'\(\s*RFEA\s*\)|\[\s*RFEA\s*\]', '', texto, flags=re.I)
     texto = ''.join(c for c in unicodedata.normalize('NFD', texto.lower())
                     if unicodedata.category(c) != 'Mn')
     # 103a / 60è / 27ª: conservar el número de edición. No tocar 10km o Sub16.
     texto = re.sub(r'\b(\d+)(?:a|e|o|ª|º)\b', r'\1', texto)
-    return normalizar(texto)
+    return ' '.join(ABREVIATURAS.get(t, t) for t in normalizar(texto).split())
 
 
 @lru_cache(maxsize=1)
@@ -91,11 +93,17 @@ def claves(e):
 
 
 def relacion_revisada(a, b):
-    """Par ya decidido por una separación: conjunto y parte siguen aparte."""
+    """Par ya decidido por una separación: conjunto y parte siguen aparte.
+
+    También de lo que una conciliación revisada identifica con esa otra cita."""
     ka, kb = claves(a), claves(b)
     for s in separaciones():
         propia = (s['referencia']['fuente'], s['referencia']['id'])
         otras = {(f, i) for f, i in s.get('contiene', []) + s.get('contenida_en', [])}
+        for r in revisiones_identidad():
+            refs = {(f, str(i)) for f, i in r['referencias'].items()}
+            if otras & refs and propia not in refs:
+                otras |= refs
         if any(propia in x and otras & y for x, y in ((ka, kb), (kb, ka))):
             return s
     return None
@@ -126,9 +134,32 @@ def comparar_referencias(a, b):
 
 
 def sede(e):
+    """(ciudad, detalle, país) de los formatos de cada fuente, normalizados.
+
+    RFEA: «Zaragoza (i)» es pista cubierta y «Barcelona-SE» lleva la pista. FCA:
+    «Ciudad (instalación o provincia)». WA: «recinto, ciudad (PAÍS)» y, en
+    Estados Unidos, «ciudad, MA (USA)».
+    """
     sitio = e.get('lugar') or {}
     # El municipio explícito es preferible al nombre de una instalación.
-    return normalizar(sitio.get('city') or sitio.get('municipio_literal') or sitio.get('nombre') or '')
+    texto = (sitio.get('city') or sitio.get('municipio_literal') or sitio.get('nombre') or '').strip()
+    texto, detalles, pais = re.sub(r'\s*\(i\)$', '', texto), [], ''
+    if m := re.fullmatch(r'(.+?)[\s-]*\(([A-Z]{3})\)', texto):
+        tramos, pais = [t.strip() for t in m[1].split(',')], m[2]
+        if len(tramos) > 1 and re.fullmatch('[A-Z]{2}', tramos[-1]):
+            detalles.append(tramos.pop())
+        texto = tramos.pop()
+        detalles += tramos
+    if m := re.fullmatch(r'(.+?)\s*\(([^()]*)\)|(.+?)-([A-Z]{2,3})', texto):
+        texto = m[1] or m[3]
+        detalles.append(m[2] or m[4] or '')
+    return normalizar(texto), normalizar(' '.join(detalles)), pais
+
+
+def misma_sede(a, b):
+    """Misma ciudad sin detalles ni países contradictorios; callar uno no contradice."""
+    sa, sb = sede(a), sede(b)
+    return bool(sa[0]) and sa[0] == sb[0] and all(not x or not y or x == y for x, y in zip(sa[1:], sb[1:]))
 
 
 def url_competicion(url):
@@ -210,7 +241,7 @@ def comparar_datos(a, b, por_enlace):
         if ma and mb and ma != mb:
             datos.append('modalidades diferentes')
         return {'estado': 'automatica' if fechas else 'revisar', 'enlace_directo': True, 'nombre': None,
-                'misma_fecha': fechas, 'misma_sede': bool(sede(a) and sede(a) == sede(b)),
+                'misma_fecha': fechas, 'misma_sede': misma_sede(a, b),
                 'datos_revisar': datos, 'motivos': [] if fechas else ['enlace con fechas diferentes: otra edición o alcance sin acreditar'],
                 'version': VERSION}
     solapan = all(e.get('inicio') and e.get('fin') for e in (a, b)) and max(a['inicio'], b['inicio']) <= min(a['fin'], b['fin'])
@@ -224,7 +255,7 @@ def comparar_datos(a, b, por_enlace):
     ta.discard((a.get('inicio') or '')[:4])
     tb.discard((b.get('inicio') or '')[:4])
     parecido = 2 * len(ta & tb) / (len(ta) + len(tb)) if ta and tb else 0
-    lugar = bool(sede(a) and sede(a) == sede(b))
+    lugar = misma_sede(a, b)
     numeros_a = {t for t in ta if t.isdigit() or re.fullmatch(r'[ivxlcdm]+', t)} - {(a.get('inicio') or '')[:4]}
     numeros_b = {t for t in tb if t.isdigit() or re.fullmatch(r'[ivxlcdm]+', t)} - {(b.get('inicio') or '')[:4]}
     # Distancia, edición y edades escritas en el título no se borran al comparar.
@@ -292,8 +323,12 @@ def distribucion(fuente, identificador):
 
 def decidir(fuente, evento, conocidos):
     candidatos = []
+    # La separación aparta la identidad entera, no solo la referencia citada.
+    separados = {c['destino']['id'] for c in conocidos if relacion_revisada({**evento, 'fuente': fuente}, c)}
     for c in conocidos:
         if distribucion(c['fuente'], c['id']) == distribucion(fuente, evento['id']):
+            continue
+        if c['destino']['id'] in separados:
             continue
         comparacion = comparar_referencias({**evento, 'fuente': fuente}, c)
         if comparacion['estado'] != 'distintas':

@@ -26,6 +26,10 @@ def huella(caso):
     # conciliación nueva no devuelve a revisión un caso ya cerrado.
     comparacion = {k: v for k, v in (caso.get('comparacion') or {}).items()
                    if k not in ('veredicto', 'revision_identidad')}
+    if 'version' in comparacion:
+        # Una regla nueva solo devuelve a revisión lo que cambia de resultado. El 5
+        # es la versión de las huellas ya guardadas en los issues.
+        comparacion['version'] = 5
     datos = {'motivo': caso['motivo'], 'comparacion': comparacion or caso.get('comparacion'), 'citas': [
         # Con el ID estable: una renumeración no son datos nuevos ni reabre lo revisado.
         {k: e.get(k) for k in ('fuente', 'nombre', 'inicio', 'fin', 'url', 'lugar')} | {'id': coincidencias.id_estable(e)}

@@ -264,6 +264,45 @@ class Coincidencias(unittest.TestCase):
         self.assertIn('campeonato', c.nombre_comparable('Carrera (Campeonato de España)'))
         self.assertIn('10 km', c.nombre_comparable('Carrera 10km Sub16'))
 
+    def test_formatos_de_sede_de_cada_fuente(self):
+        for a, b in [('Zaragoza', 'Zaragoza (i)'), ('Madrid', 'Madrid (ESP)'), ('Dakar (SEN)', 'Dakar - (SEN)'),
+                     ('Antequera', 'Centro de Tecnificación de Atletismo, Antequera (ESP)'),
+                     ('Ribadavia (Ourense)', 'Ribadavia'), ('Coruña, A', 'A Coruña'), ('Castro-Urdiales', 'Castro Urdiales')]:
+            for x, y in ((a, b), (b, a)):
+                self.assertTrue(c.misma_sede({'lugar': {'nombre': x}}, {'lugar': {'nombre': y}}), (x, y))
+        for a, b in [('Barcelona (Estadi Joan Serrahima)', 'Barcelona-SE'), ('Santiago (ESP)', 'Santiago (CHI)'),
+                     ('Antequera (Málaga)', 'Estadio, Antequera (ESP)'), ('Boston, MA (USA)', 'Boston, TX (USA)'),
+                     ('Santiponce (Sevilla)', 'Sevilla'), ('Elda', 'Vigo'), ('', ''), ('(i)', '')]:
+            for x, y in ((a, b), (b, a)):
+                self.assertFalse(c.misma_sede({'lugar': {'nombre': x}}, {'lugar': {'nombre': y}}), (x, y))
+        self.assertEqual(c.sede({'lugar': {'nombre': 'E.Nacional, Santiago de Chile (CHI)'}}),
+                         ('santiago chile', 'e nacional', 'CHI'))
+        self.assertEqual(c.sede({'lugar': {'nombre': 'Boston, MA (USA)'}}), ('boston', 'ma', 'USA'))
+
+    def test_abreviaturas_de_nombre_sin_tocar_la_sede(self):
+        fca = entrada('fca', nombre='European DNA Meeting Clubs Sub20 Mixt ST', lugar={'nombre': 'Zaragoza'})['eventos'][0]
+        rfea = entrada('rfea', nombre='European DNA Meeting Short Track sub-20 por Clubes mixto',
+                       lugar={'nombre': 'Zaragoza (i)'})['eventos'][0]
+        self.assertEqual(c.comparar(fca, rfea)['estado'], 'automatica')
+        self.assertEqual(c.comparar({**fca, 'nombre': fca['nombre'].replace('Mixt', '')}, rfea)['estado'], 'revisar')
+        self.assertEqual(c.nombre_comparable('Ultrafons [RFEA]'), c.nombre_comparable('Ultrafons (RFEA)'))
+        self.assertEqual(c.normalizar('St Anne'), 'st anne')
+
+    def test_una_separacion_no_se_vuelve_a_unir_al_importar(self):
+        # RFEA 67588 es parte de FCA 83074, y WA 7244650 está conciliada con FCA.
+        e = {'nombre': 'B100 Cursa dels Nassos', 'inicio': '2026-12-31', 'fin': '2026-12-31', 'metadatos': {}}
+        rfea = {**e, 'id': '67588', 'lugar': {'nombre': 'BarceloNa'}}
+        otras = [{**e, 'fuente': f, 'id': i, 'lugar': {'nombre': l}, 'lectura_ambigua': False, 'grupo': {'id': 'g'},
+                  'destino': {'tipo': 'evento', 'id': 'nassos'}}
+                 for f, i, l in (('fca', '83074', 'Barcelona'), ('wa', '7244650', 'Barcelona (ESP)'))]
+        self.assertEqual(c.decidir('rfea', rfea, otras)['estado'], 'nueva')
+        self.assertEqual(c.decidir('rfea', {**rfea, 'id': 'otra'}, otras)['estado'], 'automatica')
+        # Tampoco por otra referencia sin revisar que ya comparta el destino separado.
+        otras.append({**otras[1], 'id': 'sin-revisar'})
+        self.assertEqual(c.decidir('rfea', rfea, otras)['estado'], 'nueva')
+        otras[-1]['destino'] = {'tipo': 'evento', 'id': 'ajeno'}
+        self.assertEqual(c.decidir('rfea', rfea, otras)['estado'], 'automatica')
+
     def test_revision_de_san_martino_acredita_identidad_no_alias_de_sede_ni_fecha(self):
         a = {**entrada('fga', '113279', lugar={'nombre': 'Ourense'})['eventos'][0], 'fuente': 'fga'}
         b = {**entrada('rfea', '69339', lugar={'nombre': 'San Martiño'})['eventos'][0], 'fuente': 'rfea'}
@@ -448,6 +487,12 @@ class Issues(unittest.TestCase):
             **(cambiado['citas'][0].get('metadatos') or {}), 'modalidad_literal': 'Trail Running'}}
         self.assertEqual(anterior['motivo'], cambiado['motivo'])
         self.assertNotEqual(revision.huella(anterior), revision.huella(cambiado))
+
+    def test_la_version_del_comparador_no_cambia_la_huella(self):
+        def con(**k):
+            return revision.huella({**self.caso(), 'comparacion': {'estado': 'revisar', **k}})
+        self.assertEqual(con(version=5), con(version=c.VERSION))
+        self.assertNotEqual(con(version=5), con(version=5, misma_sede=True))
 
     def test_issue_anterior_sin_huella_la_recibe_sin_reabrirse_ni_perder_texto(self):
         paginas = [[{'html_url': 'https://github.com/issue/1', 'number': 1, 'state': 'closed',

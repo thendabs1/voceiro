@@ -295,10 +295,13 @@ horaria acreditada, se conservan como día, sin inventar un instante.
 
 ## Coincidencias e identidad
 
-`atletismo_coincidencias` (versión 5) compara federaciones y las dos
+`atletismo_coincidencias` (versión 6) compara federaciones y las dos
 distribuciones RFEA sin consultar webs. Normaliza mayúsculas, acentos,
 puntuación, año, variantes castellano/gallego/catalán, sufijos ordinales
-(`103a`→`103`, `60è`→`60`) y la etiqueta exacta `(RFEA)`. Una cita nueva
+(`103a`→`103`, `60è`→`60`), las etiquetas exactas `(RFEA)` y `[RFEA]` y, solo en
+el nombre, `mixt` y `ST`. La sede se lee como ciudad, detalle y país: `(i)` no
+cuenta, y un detalle (instalación, provincia o sufijo de pista como `-SE`) o un
+país solo contradicen a otro distinto, no a quien lo calla. Una cita nueva
 comparte identidad cuando hay un único candidato y:
 
 - enlaza directamente a la ficha ya identificada y tiene las mismas fechas
@@ -349,7 +352,8 @@ decisión y `veredicto` y `motivos`, el resultado del comparador.
   pertenencia y no tocan observaciones. El almacén solo lo acepta con la entrada
   registrada, y una cosecha posterior no lo deshace: la referencia ya tiene destino.
   La relación entre conjunto y parte (`contiene`, `contenida_en`) queda en el
-  registro y evita el issue del par; no va al grafo porque un `es_parte_de` entre
+  registro, evita el issue del par y que `decidir` lo vuelva a unir (también con lo
+  conciliado con esa otra cita); no va al grafo porque un `es_parte_de` entre
   grupos haría heredar a la parte la capa del conjunto y la mostraría en el chip de
   otra federación. Castro (RFEA 64834 reúne FCA 80237, FCA 80239 y FGA 112768) y
   Nassos (RFEA 67588 es parte de FCA 83074; WA 7244650 sigue con FCA, sin alcance
@@ -363,7 +367,7 @@ decisión y `veredicto` y `motivos`, el resultado del comparador.
   en Turso o venció el reloj de publicación (siempre en ejecución manual): un issue
   por par estable de IDs (marcador oculto, abiertos y cerrados), cinco
   escrituras como máximo por pasada. Cerrar un issue no fusiona datos; una
-  huella de lo que usa el comparador (incluidas modalidades y enlaces) comenta
+  huella de lo que usa el comparador (incluidas modalidades y enlaces, sin su versión) comenta
   los datos nuevos y lo reabre si cambian; el cuerpo conserva lo escrito a mano.
 
 ## Recogida
