@@ -101,13 +101,14 @@ class ContratoControl:
                 for x in tipos]
             return datos
         # RAC y RAC2 conviven y después cae RAC; RAC3 releva a las dos; una carrera
-        # anterior no releva a la que falta, tampoco si ya se había retirado; una RAC
-        # aplazada y sustituida no se espera.
+        # anterior no releva a la que falta, se hubiera retirado o no se hubiera visto
+        # nunca; una RAC aplazada y sustituida no se espera.
         for pasos in ([(['RAC'], 'activa'), (['RAC', 'RAC2'], 'activa'), (['RAC2'], 'activa'),
                        (['RAC2'], 'limpia')],
                       [(['RAC', 'RAC2'], 'activa'), (['RAC3'], 'activa'), (['RAC3'], 'limpia')],
                       [(['RAC', 'RAC2'], 'activa'), (['RAC'], 'fallida')],
                       [(['RAC'], 'activa'), (['RAC2'], 'activa'), (['RAC'], 'fallida'), (['RAC2'], 'limpia')],
+                      [(['RAC2'], 'activa'), (['RAC'], 'fallida'), (['RAC2'], 'limpia')],
                       [(['RAC'], 'DELAYED'), (['RAC2'], 'activa'), (['RAC2'], 'limpia')]):
             with self.subTest(pasos=pasos):
                 self.setUp()

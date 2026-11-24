@@ -111,12 +111,12 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
         # Solo carreras, y con relevo: otra posterior en la respuesta (aunque ya estuviera
         # guardada: RAC y RAC2 pueden convivir antes de caer RAC) o tantas nuevas como
         # faltan. Un programa vacío o recortado (también con una RAC2) conserva lo guardado.
-        # Una ya retirada no es nueva: si vuelve sola (respuesta vieja), falta la RAC2.
+        # Una anterior (respuesta vieja) no releva, ni una ya retirada cuenta como nueva.
         guardadas = {i: t for i, t in previas.get(nucleo.clave(grupo), {}).items() if i not in retiradas}
         faltan = guardadas.keys() - recibidas.keys()
         nuevas = [i for i in recibidas.keys() - guardadas.keys() - retiradas if carrera(recibidas[i])]
         ultima = max((_numero(t) for t in recibidas.values() if carrera(t)), default=0)
-        if all(carrera(guardadas[i]) for i in faltan) and (
+        if all(carrera(guardadas[i]) and _numero(guardadas[i]) <= ultima for i in faltan) and (
                 len(nuevas) >= len(faltan) or all(_numero(guardadas[i]) < ultima for i in faltan)):
             sustituidas |= faltan
     # Lo recibido en cualquier GP no falta; lo que ya no tiene referencia no se arrastra.
