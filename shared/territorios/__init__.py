@@ -8,9 +8,22 @@ from copy import deepcopy
 from functools import lru_cache
 import json
 from pathlib import Path
+import re
+import unicodedata
 
 
 CARPETA = Path(__file__).resolve().parent
+
+
+def _nombre(texto):
+    s = ''.join(c for c in unicodedata.normalize('NFD', texto.casefold()) if unicodedata.category(c) != 'Mn')
+    return ' '.join(re.findall(r'\w+', s))
+
+
+def _formas(nombre):
+    """«Coruña, A» → «a coruña»; «Ayala/Aiara» → las dos y la conjunta."""
+    partes = [nombre, *nombre.split('/')]
+    return {_nombre(' '.join(reversed(p.split(', ', 1)))) for p in partes} | {_nombre(nombre)}
 
 
 class Catalogo:
@@ -19,6 +32,7 @@ class Catalogo:
         self.fecha_referencia = municipios['fecha_referencia']
         self.entidades = {}
         self.codigos = {}
+        self._nombres = None
         for codigo, nombre, editorial in paises['paises']:
             identidad = 'pais:' + codigo
             if (not isinstance(codigo, str) or len(codigo) != 2 or not codigo.isascii() or not codigo.isalpha()
@@ -50,6 +64,24 @@ class Catalogo:
                 raise ValueError('Código municipal INE inválido')
             identidad = agregar('municipio', codigo, nombre, 'es:provincia:' + codigo[:2], 'ine:municipio')
             self.codigos['ine:municipio:dc', codigo + control] = identidad
+
+    def contradice(self, identidad, literal):
+        """El literal es el nombre oficial de otro municipio de la misma provincia.
+
+        Solo contradice: no devuelve cuál, porque un nombre nunca resuelve una
+        identidad. Un nombre que no es de ningún municipio (pedanía, barrio) calla.
+        """
+        dato = self.entidades.get(identidad)
+        if not dato or dato['tipo'] != 'municipio' or not isinstance(literal, str) or not _nombre(literal):
+            return False
+        if self._nombres is None:
+            self._nombres = {}
+            for e in self.entidades.values():
+                if e['tipo'] == 'municipio':
+                    for forma in _formas(e['nombre']):
+                        self._nombres.setdefault((e['padre'], forma), set()).add(e['id'])
+        homonimos = self._nombres.get((dato['padre'], _nombre(literal)), set())
+        return bool(homonimos) and identidad not in homonimos
 
     def resolver(self, sistema, codigo):
         if not isinstance(codigo, str):

@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "puntos": [
+    {
+      "id": "cyl-benavente-teatro-reina-sofia",
+      "referencia": {
+        "proveedor": "cyl",
+        "tipo_externo": "lugar_localidad_nombre",
+        "id_externo": "1179469338525:Teatro Reina Sofía"
+      },
+      "punto_descartado": {
+        "latitud": 41.951557,
+        "longitud": -5.880623
+      },
+      "territorio": "es:municipio:49021",
+      "revision": {
+        "fecha": "2026-11-24",
+        "criterio": "La misma fila de CyL declara localidad Benavente y CP 49600, y la ficha pública da «C.P.: 49600 Benavente. Zamora»; el punto cae en Morales de Valverde (49130). Vale solo para esta referencia y este punto: si CyL lo cambia o lo retira, deja de aplicarse.",
+        "evidencias": [
+          {
+            "fuente": "Junta de Castilla y León, agenda cultural (datos abiertos)",
+            "documento": "https://analisis.datosabiertos.jcyl.es/api/explore/v2.1/catalog/datasets/eventos-de-la-agenda-cultural-categorizados-y-geolocalizados/records?where=lugar_celebracion%3D%22Teatro%20Reina%20Sof%C3%ADa%22&limit=50",
+            "sha256": "0e33769a697b90cd5ee4da7b0f89fdca80e9a617feb453192366b4668a0b402e",
+            "ruta": "/results/0",
+            "dato": {
+              "id_evento": 1285666818546,
+              "fecha_inicio": "2026-11-29",
+              "lugar_celebracion": "Teatro Reina Sofía",
+              "cp": "49600",
+              "nombre_localidad": "Benavente",
+              "id_localidad": 1179469338525,
+              "codigo_provincia": 49,
+              "latitud": 41.951557,
+              "longitud": -5.880623
+            },
+            "comprobado": "2026-11-24"
+          },
+          {
+            "fuente": "Junta de Castilla y León, agenda cultural (datos abiertos)",
+            "documento": "https://analisis.datosabiertos.jcyl.es/api/explore/v2.1/catalog/datasets/eventos-de-la-agenda-cultural-categorizados-y-geolocalizados/records?where=lugar_celebracion%3D%22Teatro%20Reina%20Sof%C3%ADa%22&limit=50",
+            "sha256": "0e33769a697b90cd5ee4da7b0f89fdca80e9a617feb453192366b4668a0b402e",
+            "ruta": "/results/2",
+            "dato": {
+              "id_evento": 1285665768694,
+              "fecha_inicio": "2026-11-27",
+              "lugar_celebracion": "Teatro Reina Sofía",
+              "cp": "49600",
+              "nombre_localidad": "Benavente",
+              "id_localidad": 1179469338525,
+              "codigo_provincia": 49,
+              "latitud": 41.951557,
+              "longitud": -5.880623
+            },
+            "comprobado": "2026-11-24"
+          }
+        ]
+      }
+    }
+  ]
+}

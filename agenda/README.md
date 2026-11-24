@@ -446,7 +446,13 @@ Reglas para cada fuente nueva:
    cambia migrando.
 3. **Territorio por coordenadas.** El recinto guarda el bloque `coordenadas`
    y el municipio lo acreditan los límites del IGN; los códigos propios de la
-   fuente solo con correspondencia revisada.
+   fuente solo con correspondencia revisada. Si la cita declara el nombre oficial
+   de otro municipio de la misma provincia, queda sin territorio
+   (`municipio_declarado_distinto`), solo esa cita. El nombre contradice, nunca
+   ubica; una pedanía con el nombre de otro municipio de su provincia daría un
+   conflicto falso (ninguno en la copia del 6/11/2026). Una coordenada errónea
+   se descarta en `puntos-revisados.json`, por referencia y punto exactos: si la
+   fuente la cambia o la retira, deja de aplicarse.
 4. **Evidencia recortada** a los campos que se usan, para que un cambio
    irrelevante no cree observaciones nuevas. Las entidades compartidas
    (recinto, municipio, obra) llevan documento propio con sus campos, no el

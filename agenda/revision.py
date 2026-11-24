@@ -21,6 +21,8 @@ def revisar(n, fuentes=None, limites_municipales=None):
             lugares.setdefault(nucleo.clave(r['origen']), set()).add(nucleo.clave(r['destino']))
 
     def estado_evento(evento):
+        if evento.get('ubicacion_estado') == 'conflicto':
+            return 'conflicto'
         pendientes, vistos, estados = list(lugares.get(nucleo.clave(evento), ())), set(), []
         while pendientes:
             k = pendientes.pop()
