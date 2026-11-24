@@ -232,6 +232,39 @@ class Adaptadores(unittest.TestCase):
                     proveedores.describir(coleccion, [otra])
                 self.assertEqual(len(publicacion.proyectar(importar('motogp', otra))['eventos']), 1)
 
+    def test_carrera_reanudada_sustituye_a_la_anterior_en_el_programa(self):
+        # Tras una bandera roja la API retira la RAC y publica RAC2 con otro ID (Portugal 2026).
+        def reanudada(datos, id_):
+            for b in datos['broadcasts']:
+                if (b.get('category') or {}).get('name') == 'Moto2' and b.get('shortname') == 'RAC':
+                    b.update(id=id_, shortname='RAC2')
+            return datos
+        antes = importar('moto2')
+        rac = next(r['id_externo'] for r in antes['referencias'].values() if r['tipo_externo'] == 'session_id'
+                   and antes['observaciones'][next(o for o in nucleo.ultimas(antes)
+                       if antes['observaciones'][o]['referencia'] == r['id'])]['bloques']['agenda']['tipo_sesion'] == 'RAC')
+        despues = importar('moto2', reanudada(muestra('moto2'), 'rac2-reanudada'), anterior=antes, observado=DESPUES)
+        self.assertEqual(despues['fuentes']['moto2']['sesiones_ausentes'], [rac])
+        programa = publicacion.proyectar(despues)['eventos'][0]['programa']
+        self.assertEqual(sorted(s['agenda']['tipo_sesion'] for s in programa), ['FP1', 'FP2', 'PR', 'Q1', 'Q2', 'RAC2'])
+        # La ausencia se conserva en la pasada siguiente.
+        otra = importar('moto2', reanudada(muestra('moto2'), 'rac2-reanudada'), anterior=despues, observado=DESPUES)
+        self.assertEqual(otra['fuentes']['moto2']['sesiones_ausentes'], [rac])
+        vuelta = importar('moto2', anterior=despues, observado=DESPUES)
+        # Una RAC ya retirada que vuelve sola no releva a la RAC2 (operacion.py rechaza la pasada).
+        self.assertNotIn('sesiones_ausentes', vuelta['fuentes']['moto2'])
+        # Un recorte de otra sesión no se toma por sustitución aunque llegue una RAC2.
+        sin_q2 = reanudada(muestra('moto2'), 'rac2-reanudada')
+        sin_q2['broadcasts'] = [b for b in sin_q2['broadcasts']
+                                if not ((b.get('category') or {}).get('name') == 'Moto2' and b.get('shortname') == 'Q2')]
+        self.assertNotIn('sesiones_ausentes', importar('moto2', sin_q2, anterior=antes, observado=DESPUES)['fuentes']['moto2'])
+        # Con RAC2 el programa sigue completo: la temporada puede cerrarse.
+        self.assertTrue(proveedores.describir('moto2', [reanudada(muestra('moto2'), 'x')])['programa_completo'])
+        sin_carrera = muestra('moto2')
+        sin_carrera['broadcasts'] = [b for b in sin_carrera['broadcasts']
+                                     if not ((b.get('category') or {}).get('name') == 'Moto2' and b.get('shortname') == 'RAC')]
+        self.assertFalse(proveedores.describir('moto2', [sin_carrera])['programa_completo'])
+
     def test_wrc_intervalo_incluye_ultimo_dia_sin_inventar_horas(self):
         p = publicacion.proyectar(importar('ocblacktop-wrc'))
         e = next(e for e in p['eventos'] if 'Monte Carlo' in e['nombres']['und'])

@@ -66,6 +66,11 @@ def limitado_a_ventana(proveedor, recurso):
     return proveedor.startswith('laliga-') or (proveedor == 'formula1' and recurso.startswith('programa:'))
 
 
+def sustituye_sesiones(proveedor):
+    """Si su importación deja de publicar las sesiones que un GP ya no trae (motogp.py)."""
+    return proveedor in motogp.CATEGORIAS
+
+
 def importar(anterior, proveedor, pagina, observado, url=None, temporada=None):
     if proveedor in OFICIALES:
         return _oficial(proveedor).importar(anterior, pagina, observado, url=url, temporada=temporada,
@@ -118,8 +123,7 @@ def describir(proveedor, pagina, url=None):
         dias = [deporte.dias(e.get('date_start'), e.get('date_end'),
                             zona=deporte.zona_iana(e.get('time_zone'))) for e in gps]
         completos = all(d['inicio']['fecha'] and d['fin']['fecha'] for d in dias)
-        programa = all(motogp.PROGRAMAS[proveedor] <= {s.get('shortname') for s in motogp.sesiones(e, proveedor)}
-                       for e in gps)
+        programa = all(motogp.PROGRAMAS[proveedor] <= motogp.tipos_programa(e, proveedor) for e in gps)
         base.update(referencia=year, seleccion={'year': year},
             inicio=min((d['inicio']['fecha'] for d in dias if d['inicio']['fecha']), default=None),
             fin=max((d['fin']['fecha'] for d in dias if d['fin']['fecha']), default=None),

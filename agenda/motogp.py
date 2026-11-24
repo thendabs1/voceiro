@@ -1,9 +1,10 @@
 """Agenda del calendario oficial: GP y sesiones de MotoGP, Moto2 y Moto3, sin emisiones o resultados."""
 
 import json
+import re
 from urllib.parse import urlencode
 
-from . import deporte, recogida
+from . import deporte, nucleo, recogida
 
 
 BASE = 'https://api.pulselive.motogp.com/motogp/v1/events'
@@ -29,6 +30,36 @@ def sesiones(e, competicion):
             and s.get('type') == 'SESSION' and (s.get('category') or {}).get('name') == nombre]
 
 
+def carrera(tipo):
+    """RAC, o RAC2, RAC3… cuando la carrera se reanuda tras una bandera roja."""
+    return bool(re.fullmatch(r'RAC\d*', tipo or ''))
+
+
+def _numero(tipo):
+    """Orden de la carrera: RAC es la 1, RAC2 la 2…"""
+    return int(tipo[3:] or 1)
+
+
+def tipos_programa(e, competicion):
+    """Tipos de sesión del GP; una carrera reanudada sigue siendo la carrera."""
+    return {'RAC' if carrera(s.get('shortname')) else s.get('shortname') for s in sesiones(e, competicion)}
+
+
+def _sesiones_previas(anterior, fuente):
+    """Tipo de cada sesión guardada, por GP (clave de su agrupación), según su última lectura."""
+    if not anterior:
+        return {}
+    refs = {i: r['id_externo'] for i, r in anterior['referencias'].items()
+            if r['proveedor'] == fuente and r['tipo_externo'] == 'session_id'}
+    salida = {}
+    for i in nucleo.ultimas(anterior):
+        o = anterior['observaciones'][i]
+        if o['referencia'] in refs and (padre := o['bloques'].get('pertenencia')):
+            salida.setdefault(nucleo.clave(padre), {})[refs[o['referencia']]] = (
+                o['bloques'].get('agenda') or {}).get('tipo_sesion')
+    return salida
+
+
 def importar(anterior, pagina, observado, url=None, temporada=None, competicion='motogp'):
     eventos = pagina if isinstance(pagina, list) else [pagina]
     if len(eventos) > 200 or any(not isinstance(e, dict) or not e.get('kind') for e in eventos):
@@ -37,6 +68,12 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
     a = deporte.Agenda(anterior, competicion, nombre, 'https://www.motogp.com/en/calendar',
                        'motociclismo', observado, bool(url))
     campeonato = a.grupo('campeonato', competicion, 'competicion', nombre, codigo=competicion)
+    # Una carrera que su GP ya no trae porque llega otra en su lugar (RAC por RAC2 al
+    # reanudarla) deja de publicarse (presencia.py) y vuelve si otra respuesta la trae
+    # junto a su relevo. operacion.py solo acepta como ausente lo que se retira aquí.
+    previas = _sesiones_previas(anterior, competicion)
+    retiradas = frozenset(((anterior or {}).get('fuentes', {}).get(competicion) or {}).get('sesiones_ausentes', []))
+    sustituidas, todas = set(), set()
     for e in deporte.unicos(eventos, 'id'):
         if e['kind'] != 'GP':
             continue
@@ -59,6 +96,7 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
             estado=estado(e.get('status')), sitio=e.get('circuit'), url=enlace,
             bloques={'agenda': {'rol': 'principal', 'grupo': grupo, 'criterio_dias': 'circuito'},
                 'limites_proveedor': {'inicio': e.get('date_start'), 'fin': e.get('date_end'), 'zona': zona}})
+        recibidas = {}
         for s in deporte.unicos(deporte.filas({'broadcasts': e.get('broadcasts') or []}, 'broadcasts', 200), 'id'):
             categoria = s.get('category') or {}
             if s.get('type') != 'SESSION' or categoria.get('name') != nombre:
@@ -68,6 +106,24 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
                 deporte.intervalo(s.get('date_start'), s.get('date_end'), fin_igual_desconocido=True, zona=zona),
                 padre=grupo, estado=estado(s.get('status')), sitio=e.get('circuit'), url=enlace,
                 bloques={'agenda': {'rol': 'sesion', 'principal': principal, 'tipo_sesion': tipo}})
+            recibidas[deporte.literal(s['id'])] = tipo
+        todas.update(recibidas)
+        # Solo carreras, y con relevo: otra posterior en la respuesta (aunque ya estuviera
+        # guardada: RAC y RAC2 pueden convivir antes de caer RAC) o tantas nuevas como
+        # faltan. Un programa vacío o recortado (también con una RAC2) conserva lo guardado.
+        # Una anterior (respuesta vieja) no releva, ni una ya retirada cuenta como nueva.
+        guardadas = {i: t for i, t in previas.get(nucleo.clave(grupo), {}).items() if i not in retiradas}
+        faltan = guardadas.keys() - recibidas.keys()
+        nuevas = [i for i in recibidas.keys() - guardadas.keys() - retiradas if carrera(recibidas[i])]
+        ultima = max((_numero(t) for t in recibidas.values() if carrera(t)), default=0)
+        if all(carrera(guardadas[i]) and _numero(guardadas[i]) <= ultima for i in faltan) and (
+                len(nuevas) >= len(faltan) or all(_numero(guardadas[i]) < ultima for i in faltan)):
+            sustituidas |= faltan
+    # Lo recibido en cualquier GP no falta; lo que ya no tiene referencia no se arrastra.
+    conocidas = {i for gp in previas.values() for i in gp}
+    ausentes = ((retiradas | sustituidas) & conocidas) - todas
+    if ausentes:
+        a.c.n['fuentes'][competicion]['sesiones_ausentes'] = sorted(ausentes)
     return a.terminar()
 
 
