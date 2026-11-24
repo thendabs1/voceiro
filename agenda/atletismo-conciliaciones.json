@@ -316,6 +316,104 @@
           "https://fcatletisme.cat/event/campionat-despanya-de-marxa-dhivern-de-promocio-9/"
         ]
       }
+    },
+    {
+      "id": "ultrafons-24h-barcelona-2026",
+      "referencias": {
+        "fca": "90380",
+        "rfea": "69722"
+      },
+      "conservar": "fca",
+      "revision": {
+        "fecha": "2026-11-16",
+        "criterio": "Mismas 24 Hores d'Ultrafons en pista de Barcelona, 12–13/12/2026. FCA da el Estadi Joan Serrahima y RFEA solo «Barcelona-SE»; la sede escrita es la única diferencia. (RFEA) en el título FCA es la etiqueta administrativa. FCA renumeró 90380 como 87553: se cita el primer ID. Se conserva FCA, que la organiza.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/24-hores-dultrafons-en-pista-de-barcelona-rfea-3/",
+          "https://atletismorfea.es/calendario/campeonato/24-hores-dultrafons-en-pista-de-barcelona-1"
+        ]
+      }
+    },
+    {
+      "id": "san-silvestre-vallecana-2026",
+      "referencias": {
+        "rfea": "65210",
+        "fca": "83625",
+        "wa": "7249796"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-24",
+        "criterio": "Misma LXII San Silvestre Vallecana de Madrid, 31/12/2026, con la misma edición y patrocinador en las tres. RFEA y FCA ya compartían identidad y FCA enlaza la ficha de RFEA; se añade WA. Se conserva RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/lxii-nationale-nederlanden-san-silvestre-vallecana",
+          "https://fcatletisme.cat/event/lxii-nationale-nederlanden-san-silvestre-vallecana/",
+          "https://worldathletics.org/competition/calendar-results"
+        ]
+      }
+    },
+    {
+      "id": "dna-sub20-mixto-2027",
+      "referencias": {
+        "fca": "87394",
+        "rfea": "69336"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-24",
+        "criterio": "Mismo European DNA Meeting Short Track sub-20 mixto por clubes, Zaragoza, 16/01/2027. La ficha de FCA da a RFEA como organizadora. El de promoción del mismo día (87395 y 69335) es otra cita. Se conserva RFEA.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/european-dna-meeting-clubs-sub20-mixt-st/",
+          "https://atletismorfea.es/calendario/campeonato/european-dna-meeting-short-track-sub-20-por-clubes-mixto"
+        ]
+      }
+    },
+    {
+      "id": "cross-elgoibar-2027",
+      "referencias": {
+        "rfea": "68974",
+        "wa": "7246131"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-24",
+        "criterio": "Mismo LXXXIII Cross Juan Muguerza de Elgoibar, 17/01/2027: edición, nombre propio, día y localidad coinciden; WA lo traduce y añade el circuito de Mintxeta. Se conserva RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/lxxxiii-cross-internacional-juan-muguerza-de-elgoibar",
+          "https://worldathletics.org/competition/calendar-results"
+        ]
+      }
+    },
+    {
+      "id": "antequera-indoor-match-2027",
+      "referencias": {
+        "rfea": "69402",
+        "wa": "7247245"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-24",
+        "criterio": "Mismo Antequera Indoor Match, 23/01/2027: nombre, día y localidad coinciden; WA añade el Centro de Tecnificación. La ficha de RFEA lo marca como WA. Se conserva RFEA.",
+        "evidencias": [
+          "https://atletismorfea.es/calendario/campeonato/antequera-indoor-match-1",
+          "https://worldathletics.org/competition/calendar-results"
+        ]
+      }
+    },
+    {
+      "id": "dna-promocion-mixto-2027",
+      "referencias": {
+        "fca": "87395",
+        "rfea": "69335"
+      },
+      "conservar": "rfea",
+      "revision": {
+        "fecha": "2026-11-24",
+        "criterio": "Mismo European DNA Meeting Short Track de clubes de promoción mixto (sub-18 y sub-16), Zaragoza, 16/01/2027. La API de FCA da a RFEA como organizadora. El sub-20 del mismo día (87394 y 69336) es otra cita. Se conserva RFEA.",
+        "evidencias": [
+          "https://fcatletisme.cat/event/european-dna-meeting-clubs-promocio-mixt-st-sub18-i-sub16/",
+          "https://atletismorfea.es/calendario/campeonato/european-dna-meeting-short-track-clubes-promocion-mixto-sub-18-sub-16-1"
+        ]
+      }
     }
   ]
 }
