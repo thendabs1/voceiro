@@ -99,12 +99,16 @@ def relacion_revisada(a, b):
     ka, kb = claves(a), claves(b)
     for s in separaciones():
         propia = (s['referencia']['fuente'], s['referencia']['id'])
+        # Casi ningún par toca la separación: descartarlo antes de ampliar sus otras citas.
+        enfrente = (kb if propia in ka else set()) | (ka if propia in kb else set())
+        if not enfrente:
+            continue
         otras = {(f, i) for f, i in s.get('contiene', []) + s.get('contenida_en', [])}
         for r in revisiones_identidad():
             refs = {(f, str(i)) for f, i in r['referencias'].items()}
             if otras & refs and propia not in refs:
                 otras |= refs
-        if any(propia in x and otras & y for x, y in ((ka, kb), (kb, ka))):
+        if otras & enfrente:
             return s
     return None
 

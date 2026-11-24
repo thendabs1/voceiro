@@ -340,7 +340,9 @@ decisión y `veredicto` y `motivos`, el resultado del comparador.
   hay dos guardadas, `atletismo_conciliacion --turso [--simular]` las une
   sobre una carga fresca con la guardia de revisión (`--nucleo` para una
   copia local). Solo principales sin sesiones, resultados ni políticas
-  afectados; documentos y observaciones intactos. La entidad absorbida se
+  afectados; documentos y observaciones intactos. Los otros IDs de una cita
+  renumerada (según sus ausencias) solo se admiten en la identidad conservada;
+  citar el primero, que es el estable. La entidad absorbida se
   conserva sin referencias con `conciliada_en` (el almacén no retira
   entidades) y no se publica; el almacén solo acepta el cambio de destino de
   una referencia con esas dos marcas.
