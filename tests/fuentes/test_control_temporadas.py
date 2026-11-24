@@ -91,6 +91,34 @@ class ContratoControl:
         self.assertEqual([i['tipo'] for i in r['incidencias']], ['sesiones_sustituidas'])
         self.assertEqual(pasada(cambiar(muestra('moto2'), carrera='rac2-a'), '2026-11-01T15:00:00Z')['incidencias'], [])
 
+    def test_carrera_reanudada_en_dos_pasos_o_tras_un_retraso_no_bloquea(self):
+        def pagina(tipos, estado='NOT-STARTED'):
+            datos = muestra('moto2')
+            rac = next(b for b in datos['broadcasts'] if (b.get('category') or {}).get('name') == 'Moto2'
+                       and b.get('shortname') == 'RAC')
+            datos['broadcasts'] = [b for b in datos['broadcasts'] if b is not rac] + [
+                {**rac, 'shortname': x, 'id': rac['id'] if x == 'RAC' else x.lower() + '-a', 'status': estado}
+                for x in tipos]
+            return datos
+        # RAC y RAC2 conviven y después cae RAC; RAC3 releva a las dos; una carrera
+        # anterior no releva a la que falta; una RAC aplazada y sustituida no se espera.
+        for pasos in ([(['RAC'], 'activa'), (['RAC', 'RAC2'], 'activa'), (['RAC2'], 'activa'),
+                       (['RAC2'], 'limpia')],
+                      [(['RAC', 'RAC2'], 'activa'), (['RAC3'], 'activa'), (['RAC3'], 'limpia')],
+                      [(['RAC', 'RAC2'], 'activa'), (['RAC'], 'fallida')],
+                      [(['RAC'], 'DELAYED'), (['RAC2'], 'activa'), (['RAC2'], 'limpia')]):
+            with self.subTest(pasos=pasos):
+                self.setUp()
+                t = self.repo.registrar(temporadas.nueva('moto2', '2026', AHORA, seleccion={'year': '2026'}))
+                for i, (tipos, espera) in enumerate(pasos):
+                    datos = pagina(tipos, espera if espera == 'DELAYED' else 'NOT-STARTED')
+                    with patch.object(proveedores, 'recoger', return_value=([datos], 'https://ejemplo.test')):
+                        r = operacion.ejecutar_temporada(self.repo, self.repo.obtener(t['id']),
+                                                         f'2026-11-01T{12 + i}:00:00Z', forzar=True)
+                    self.assertEqual(r['estado'] == 'fallida', espera == 'fallida')
+                    if espera == 'limpia':
+                        self.assertEqual(r['incidencias'], [])
+
     def test_cita_aplazada_no_relee_la_ventana_en_cada_tick(self):
         pagina = muestra('espn-nba')
         for evento in pagina['events']:

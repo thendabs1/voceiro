@@ -243,15 +243,16 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
     guardados = {e['evento']: e for e in repo.eventos(t['id']) if e['proveedor'] == proveedor}
     ventana = ((coberturas[0]['inicio'], coberturas[0]['fin'])
                if proveedores.modo(proveedor) == 'temporada' and coberturas else None)
+    sustituidas = _sustituidas(n, proveedor)
     incidencias = _incidencias(cobertura, coberturas, eventos, unidades, ahora, incompleto=incompleto,
-                               guardados=guardados, ventana=ventana, sustituidas=_sustituidas(n, proveedor))
+                               guardados=guardados, ventana=ventana, sustituidas=sustituidas)
     if any(i['tipo'] == 'ausentes_en_respuesta' for i in incidencias):
         error = ValueError('Respuesta parcial: faltan citas previamente acreditadas en la misma selección')
         repo.fallar(t, pasada, ahora, error)
         return {'temporada': t['id'], 'estado': 'fallida', 'error': str(error), 'incidencias': incidencias}
     # Una cita aplazada o pendiente previamente guardada sigue bloqueando el cierre
-    # aunque desaparezca de la respuesta posterior.
-    vigentes = dict(guardados)
+    # aunque desaparezca de la respuesta posterior; la sustituida ya no se espera.
+    vigentes = {i: e for i, e in guardados.items() if i not in sustituidas}
     vigentes.update({e['evento']: e for e in eventos})
     # La cobertura nueva ya no lo lista: la marca dura en su fila hasta que reaparezca.
     movidos = [{**guardados[i['evento']], 'unidad': i['unidad'], 'ausente_de_su_fecha': i['unidad']}

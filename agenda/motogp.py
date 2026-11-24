@@ -35,6 +35,11 @@ def carrera(tipo):
     return bool(re.fullmatch(r'RAC\d*', tipo or ''))
 
 
+def _numero(tipo):
+    """Orden de la carrera: RAC es la 1, RAC2 la 2…"""
+    return int(tipo[3:] or 1)
+
+
 def tipos_programa(e, competicion):
     """Tipos de sesión del GP; una carrera reanudada sigue siendo la carrera."""
     return {'RAC' if carrera(s.get('shortname')) else s.get('shortname') for s in sesiones(e, competicion)}
@@ -103,12 +108,15 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
                 bloques={'agenda': {'rol': 'sesion', 'principal': principal, 'tipo_sesion': tipo}})
             recibidas[deporte.literal(s['id'])] = tipo
         todas.update(recibidas)
-        # Solo carreras, y con tantas carreras nuevas como faltan: un programa vacío o
-        # recortado (también si a la vez llega una RAC2) conserva lo guardado.
+        # Solo carreras, y con relevo: otra posterior en la respuesta (aunque ya estuviera
+        # guardada: RAC y RAC2 pueden convivir antes de caer RAC) o tantas nuevas como
+        # faltan. Un programa vacío o recortado (también con una RAC2) conserva lo guardado.
         guardadas = {i: t for i, t in previas.get(nucleo.clave(grupo), {}).items() if i not in retiradas}
         faltan = guardadas.keys() - recibidas.keys()
         nuevas = [i for i in recibidas.keys() - guardadas.keys() if carrera(recibidas[i])]
-        if all(carrera(guardadas[i]) for i in faltan) and len(nuevas) >= len(faltan):
+        ultima = max((_numero(t) for t in recibidas.values() if carrera(t)), default=0)
+        if all(carrera(guardadas[i]) for i in faltan) and (
+                len(nuevas) >= len(faltan) or all(_numero(guardadas[i]) < ultima for i in faltan)):
             sustituidas |= faltan
     # Lo recibido en cualquier GP no falta; lo que ya no tiene referencia no se arrastra.
     conocidas = {i for gp in previas.values() for i in gp}
