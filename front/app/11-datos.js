@@ -225,7 +225,6 @@ function hidratarNoticias(){
 
     n._titularEsc = escapeHtml(n.titular);
     n._medioEsc   = escapeHtml(n.medio);
-    n._tipoEsc    = escapeHtml(n.tipo);
     n._grupoEsc   = escapeHtml(n.grupo);
     n._enlaceEsc  = escapeHtml(n.enlace);
     n._esPreset   = false;

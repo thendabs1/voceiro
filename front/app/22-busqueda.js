@@ -256,6 +256,13 @@ ajustarDiasActual(capasHistorico(parsed, consulta));
 
   ULT_FILTRADAS = filtradas;
   ULT_TEXTO = consulta.texto.incluir.length ? consulta.texto : null;
+  // Toda la lista del mismo grupo (modo de un grupo, grupo:…): la tarjeta no
+  // lo repite. Se mantiene si su color distingue lo del modo de lo demás (la
+  // pestaña «Todo»); en Temas el grupo va sin color. Un grupo vacío (prensa sin
+  // identificar) rompe la igualdad: no se sabe de qué grupo es.
+  const g0 = filtradas[0];
+  ctx.ocultarGrupo = !!(g0 && g0.grupo) && filtradas.every(n => n.grupo === g0.grupo
+    && (vistaTemas || !!n._esPreset === !!g0._esPreset));
 
   // Contexto para el append incremental
   ULT_CTX = ctx;

@@ -121,7 +121,7 @@ function renderItemHtml(n, idx){
   let fechaHtml = '';
   if (n._tipoShow === 'pub'){
     const esFuturo = n._esFuturo;
-    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${fechaTarjetaHtml(n._tsShow)}</span>`;
+    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">${fechaTarjetaHtml(n._tsShow)}</span>`;
   } else if (n._tipoShow === 'est'){
     fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">≈ ${fechaTarjetaHtml(n._tsShow)}</span>`;
   } else if (!isNaN(n._tsShow)){
@@ -157,7 +157,8 @@ function renderItemHtml(n, idx){
   const estadoGuardar = enColaLeida ? 'leida' : enCola ? 'pendiente' : 'guardar';
 
   // En la vista Temas el grupo no es «el modo»: va sin color y la marca es el tema.
-  const presetBadge = n.grupo
+  // Si toda la lista es del mismo grupo, no se repite (aplicarFiltros).
+  const presetBadge = n.grupo && !(ULT_CTX && ULT_CTX.ocultarGrupo)
     ? (n._esPreset && !enVistaTemas
         ? `<span class="badge preset">${n._grupoEsc}</span>`
         : `<span class="badge">${n._grupoEsc}</span>`)
@@ -202,7 +203,6 @@ function renderItemHtml(n, idx){
   return `<article class="noticia${leida ? ' leida' : (vista ? ' vista' : '')}" data-idx="${idx}">
     <div class="cabecera">
       ${medioHtml}
-      ${n.tipo ? `<span class="badge tipo">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
       ${temaBadge}
       ${fechaHtml}
