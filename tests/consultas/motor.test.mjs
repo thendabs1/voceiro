@@ -81,6 +81,16 @@ test('MotoGP: OUTSTND solo significa no clasificado, sin inventar retirada o cer
   assert.deepEqual(muestra('motogp-sesiones').map(claveSesionMoto), ['FP1','PR','FP2','Q1','Q2','SPR','WUP','RAC']);
 });
 
+test('MotoGP: la carrera reanudada se distingue de la interrumpida y enlaza con su sesión de la agenda', () => {
+  const reanudada = { ...sesionMoto, number: 2 };
+  assert.equal(claveSesionMoto(reanudada), 'RAC2');
+  assert.equal(claveSesionMoto({ ...sesionMoto, number: null }), 'RAC');
+  assert.equal(claveSesionMoto({ ...sesionMoto, number: 1 }), 'RAC');
+  const f = baseMoto(reanudada, evento, 2026);
+  assert.equal(f.sesion.nombre, 'RAC2');
+  assert.deepEqual(f.referencias_agenda[1], { proveedor: 'motogp', tipo: 'tipo_sesion', id: 'RAC2' });
+});
+
 test('IDs de motor estrictos y separados: no aceptan parámetros, rutas ni categorías no expuestas', async () => {
   const b = banco();
   for (const id of ['openf1:sesion/2026/0', 'openf1:sesion/26/11404', `${idF1}?x=1`, `${idMoto}/x`, idMoto.toUpperCase(),
