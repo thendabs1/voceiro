@@ -23,7 +23,10 @@ export function leerIdMotor(id) {
   return moto ? { proveedor: 'motogp', competicion: moto[1] || 'motogp', temporada: Number(moto[2]), evento: moto[3], sesion: moto[4] } : null;
 }
 export const claveSesionMoto = s => /^(FP|Q)$/.test(s.type) && Number.isInteger(s.number) && s.number > 0 && s.number < 10
-  ? s.type + s.number : /^(PR|SPR|WUP|RAC)$/.test(s.type) ? s.type : null;
+  ? s.type + s.number
+  // La carrera reanudada (RAC con número 2, 3…) es otra sesión, la que puntúa; como en la agenda: RAC2.
+  : s.type === 'RAC' && Number.isInteger(s.number) && s.number > 1 && s.number < 10 ? s.type + s.number
+  : /^(PR|SPR|WUP|RAC)$/.test(s.type) ? s.type : null;
 
 // OpenF1 no declara estado de sesión: solo es seguro «cancelada» o «aún no empezó».
 const estadoF1 = (s, ahora) => s.is_cancelled === true ? 'cancelado'
