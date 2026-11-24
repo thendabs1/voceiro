@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=e2307bd0ee';
+} from './parser.js?v=4782078050';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=e2307bd0ee';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=e2307bd0ee';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=e2307bd0ee';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=e2307bd0ee';
-import { comparador } from './busqueda/orden.js?v=e2307bd0ee';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=4782078050';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=4782078050';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=4782078050';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=4782078050';
+import { comparador } from './busqueda/orden.js?v=4782078050';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=e2307bd0ee';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=e2307bd0ee';
+} from './sync/fusion.js?v=4782078050';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=4782078050';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=e2307bd0ee';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=e2307bd0ee';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=4782078050';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=4782078050';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=e2307bd0ee';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=4782078050';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=e2307bd0ee';
+} from './tiempo/avisos.js?v=4782078050';
 
-import { I18N, traducir } from './idiomas/index.js?v=e2307bd0ee';
+import { I18N, traducir } from './idiomas/index.js?v=4782078050';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=e2307bd0ee';
-import { AMBITOS, leerConsultaCalendario } from './calendario/consulta.js?v=e2307bd0ee';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=e2307bd0ee';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=e2307bd0ee';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=4782078050';
+import { AMBITOS, leerConsultaCalendario } from './calendario/consulta.js?v=4782078050';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=4782078050';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=4782078050';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=e2307bd0ee';
+import { ADMINISTRACION } from './territorios/administracion.js?v=4782078050';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -347,7 +347,7 @@ function parseFecha(s){
 function fechaTarjetaHtml(ts){
   const txt = formatearFecha(ts);
   const corte = txt.lastIndexOf(' · ');
-  if (corte < 0 || ts > Date.now()) return escapeHtml(txt);
+  if (corte < 0 || ts > Date.now() + HORIZONTE_FUTURO_MS) return escapeHtml(txt);
   return `<span class="fecha-abs">${escapeHtml(txt.slice(0, corte + 3))}</span>${escapeHtml(txt.slice(corte + 3))}`;
 }
 
@@ -359,7 +359,10 @@ function formatearFecha(ts){
     ABS_CACHE.set(ts, abs);
   }
   const diff = Date.now() - ts;
-  if (diff < 0) return abs + ' · ' + t('fechaProgramado');
+  // Hasta HORIZONTE_FUTURO_MS por delante es desfase del reloj del medio: la
+  // lista ya la ordena como «ahora» y no la marca como futura.
+  if (diff < -HORIZONTE_FUTURO_MS) return abs + ' · ' + t('fechaProgramado');
+  if (diff < 0) return abs + ' · ' + t('fechaAhora');
   if (diff >= 7 * 86400000) return abs;
   const min = (diff / 60000) | 0;
   const hr  = (diff / 3600000) | 0;
@@ -1950,7 +1953,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=e2307bd0ee');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=4782078050');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -2908,7 +2911,6 @@ function hidratarNoticias(){
 
     n._titularEsc = escapeHtml(n.titular);
     n._medioEsc   = escapeHtml(n.medio);
-    n._tipoEsc    = escapeHtml(n.tipo);
     n._grupoEsc   = escapeHtml(n.grupo);
     n._enlaceEsc  = escapeHtml(n.enlace);
     n._esPreset   = false;
@@ -7104,7 +7106,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=e2307bd0ee')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=4782078050')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -9833,6 +9835,13 @@ ajustarDiasActual(capasHistorico(parsed, consulta));
 
   ULT_FILTRADAS = filtradas;
   ULT_TEXTO = consulta.texto.incluir.length ? consulta.texto : null;
+  // Toda la lista del mismo grupo (modo de un grupo, grupo:…): la tarjeta no
+  // lo repite. Se mantiene si su color distingue lo del modo de lo demás (la
+  // pestaña «Todo»); en Temas el grupo va sin color. Un grupo vacío (prensa sin
+  // identificar) rompe la igualdad: no se sabe de qué grupo es.
+  const g0 = filtradas[0];
+  ctx.ocultarGrupo = !!(g0 && g0.grupo) && filtradas.every(n => n.grupo === g0.grupo
+    && (vistaTemas || !!n._esPreset === !!g0._esPreset));
 
   // Contexto para el append incremental
   ULT_CTX = ctx;
@@ -10441,7 +10450,7 @@ function renderItemHtml(n, idx){
   let fechaHtml = '';
   if (n._tipoShow === 'pub'){
     const esFuturo = n._esFuturo;
-    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">· ${fechaTarjetaHtml(n._tsShow)}</span>`;
+    fechaHtml = `<span class="badge${esFuturo ? ' futuro' : ''}">${fechaTarjetaHtml(n._tsShow)}</span>`;
   } else if (n._tipoShow === 'est'){
     fechaHtml = `<span class="badge estimada" title="${escapeHtml(t('sinFechaReal'))}">≈ ${fechaTarjetaHtml(n._tsShow)}</span>`;
   } else if (!isNaN(n._tsShow)){
@@ -10477,7 +10486,8 @@ function renderItemHtml(n, idx){
   const estadoGuardar = enColaLeida ? 'leida' : enCola ? 'pendiente' : 'guardar';
 
   // En la vista Temas el grupo no es «el modo»: va sin color y la marca es el tema.
-  const presetBadge = n.grupo
+  // Si toda la lista es del mismo grupo, no se repite (aplicarFiltros).
+  const presetBadge = n.grupo && !(ULT_CTX && ULT_CTX.ocultarGrupo)
     ? (n._esPreset && !enVistaTemas
         ? `<span class="badge preset">${n._grupoEsc}</span>`
         : `<span class="badge">${n._grupoEsc}</span>`)
@@ -10522,7 +10532,6 @@ function renderItemHtml(n, idx){
   return `<article class="noticia${leida ? ' leida' : (vista ? ' vista' : '')}" data-idx="${idx}">
     <div class="cabecera">
       ${medioHtml}
-      ${n.tipo ? `<span class="badge tipo">${n._tipoEsc}</span>` : ''}
       ${presetBadge}
       ${temaBadge}
       ${fechaHtml}

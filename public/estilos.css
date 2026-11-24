@@ -1161,10 +1161,6 @@
   /* Fecha corta por defecto; la opción avanzada permite mostrar la completa. */
   .noticia .fecha-abs{display:none}
   [data-fecha-larga="1"] .noticia .fecha-abs{display:inline}
-  /* Móvil: cabecera de la tarjeta en una línea y sin tipo de medio. */
-  @media (max-width:560px){
-    .noticia .badge.tipo{display:none}
-  }
   mark{background:var(--mark); color:var(--mark-fg); padding:0 3px; border-radius:2px}
 
 /* ═══ Resumen de medios de una búsqueda: chip «Medios · N ▾» que despliega
