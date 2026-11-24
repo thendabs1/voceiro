@@ -8,14 +8,33 @@ añadir un adaptador. Un único objeto R2 se sustituye después de validar todo.
 import argparse
 from copy import deepcopy
 from datetime import datetime, timezone
+from functools import lru_cache
 import json
 import os
+from pathlib import Path
 
 from . import atletismo_bloque, atletismo_modalidades, clasificador, nucleo, presencia
 from .clasificacion import cargar_catalogo
 from .tiempos import instante
 from shared.territorios import cargar as cargar_territorios
 from shared.territorios.relacionador import cargar as cargar_relacionador
+
+
+@lru_cache(maxsize=1)
+def puntos_revisados():
+    """Coordenadas erróneas de una fuente, por referencia y punto exactos."""
+    datos = json.loads(Path(__file__).with_name('puntos-revisados.json').read_text(encoding='utf-8'))
+    if datos.get('version') != 1:
+        raise ValueError('Versión de puntos revisados desconocida')
+    salida = {}
+    for p in datos['puntos']:
+        r, c = p['referencia'], p['punto_descartado']
+        clave = (r['proveedor'], r['tipo_externo'], r['id_externo'], c['latitud'], c['longitud'])
+        if (clave in salida or not p['revision'].get('criterio') or not p['revision'].get('evidencias')
+                or not cargar_territorios().territorio(p['territorio'])):
+            raise ValueError('Punto revisado repetido, sin evidencia o fuera del catálogo')
+        salida[clave] = p
+    return salida
 
 
 def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=None, informe=None):
@@ -171,8 +190,22 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                 origen = pruebas_origen(k, 'coordenadas')
                 for lat, lon in sorted({(c['latitud'], c['longitud']) for o in origen
                                         if (c := observaciones[o['observacion']]['bloques']['coordenadas'])}):
-                    puntos.append({**limites_municipales.resolver(lon, lat), 'origen': [o for o in origen
-                        if observaciones[o['observacion']]['bloques']['coordenadas'] == {'latitud': lat, 'longitud': lon}]})
+                    propias = [o for o in origen if observaciones[o['observacion']]['bloques']['coordenadas']
+                               == {'latitud': lat, 'longitud': lon}]
+                    punto = limites_municipales.resolver(lon, lat)
+                    refs = [n['referencias'][o['referencia']] for o in propias]
+                    revisados = [puntos_revisados().get((r['proveedor'], r['tipo_externo'], r['id_externo'], lat, lon))
+                                 for r in refs]
+                    # Solo si cada lectura de ese punto está revisada; otra fuente que lo acredite, no.
+                    if revisados and all(revisados) and len({p['territorio'] for p in revisados}) == 1:
+                        p = revisados[0]
+                        punto = {**punto, 'estado': 'resuelto', 'territorio': p['territorio'],
+                                 'motivo': 'punto_descartado_revisado', 'correccion': p['id'],
+                                 'candidatos': [{'territorio': p['territorio'],
+                                                 'evidencias': deepcopy(p['revision']['evidencias'])}],
+                                 'evidencias': deepcopy(p['revision']['evidencias'])}
+                        punto.pop('provincias', None)
+                    puntos.append({**punto, 'origen': propias})
             if referencias or puntos:
                 resolver_entidad(e, [{'sistema': 'madrid:instalacion_vgnextoid',
                                       'codigo': r['id_externo'], 'contexto': {}}
@@ -250,13 +283,20 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                      if rid in n['resultados'] and n['resultados'][rid]['observacion'] in observaciones else None)
         # Solo ubicación del evento o de su recinto; no el ámbito de una agrupación.
         pendientes, ubicaciones, vistos = list(lugares.get(k, ())), {}, set()
+        declarados = {l['municipio_literal'] for i in propias
+                      if isinstance(l := observaciones[i]['bloques'].get('lugar'), dict) and l.get('municipio_literal')}
+        contradicha = False
         while pendientes:
             lugar = pendientes.pop()
             if lugar in vistos:
                 continue
             vistos.add(lugar)
             comun = entidades[lugar].get('territorio_comun') or entidades[lugar].get('ubicacion_comun')
-            if comun:
+            # Por cita: una fila errónea no oculta las demás del mismo recinto.
+            if (comun and not entidades[lugar].get('territorio_comun')
+                    and any(territorios.contradice(comun['id'], m) for m in declarados)):
+                contradicha = True
+            elif comun:
                 ubicaciones[comun['id']] = {'territorio': comun['id'], 'papel': 'celebracion',
                                            'ancestros': comun['ancestros']}
             pendientes.extend(lugares.get(lugar, ()))
@@ -267,6 +307,8 @@ def proyectar(n, fuentes=None, generado=None, control=None, limites_municipales=
                               if observaciones[i]['bloques'].get('url_evento')}),
             'participaciones': por_evento.get(k, []),
             'fuentes': [procedencia(i) for i in sorted(propias)]})
+        if contradicha:
+            eventos[-1].update(ubicacion_estado='conflicto', ubicacion_motivo='municipio_declarado_distinto')
         agenda = seleccion(k, 'agenda')
         if agenda and agenda.get('valor'):
             eventos[-1]['agenda'] = agenda['valor']

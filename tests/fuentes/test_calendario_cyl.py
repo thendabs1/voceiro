@@ -130,6 +130,62 @@ class CastillaLeon(unittest.TestCase):
         self.assertEqual(len(leon), 2)
         self.assertTrue(all(e['territorios'][0]['territorio'] == 'es:municipio:24089' for e in leon))
 
+    def benavente(self, filas, **recintos):
+        from shared.territorios.limites import Limites
+        with tempfile.TemporaryDirectory() as tmp:
+            m, _ = provincias(tmp, recintos or {'49': [('49130', -5.9, 41.9, 0.1), ('49021', -5.7, 41.9, 0.1)]})
+            return proyectar(cyl.importar(None, filas, AHORA), limites_municipales=Limites(m, tmp))
+
+    def funcion(self, dia, **cambios):
+        return {**muestra('cyl')[6], 'id_evento': 1285666818546, 'fecha_inicio': dia, 'fecha_fin': dia,
+                'lugar_celebracion': 'Teatro Reina Sofía', 'nombre_localidad': 'Benavente', 'cp': '49600',
+                'id_localidad': 1179469338525, 'codigo_provincia': 49,
+                'latitud': 41.951557, 'longitud': -5.880623, **cambios}
+
+    def test_punto_revisado_ubica_el_teatro_de_benavente_y_caduca_si_cambia(self):
+        def territorios(p):
+            return [[t['territorio'] for t in e['territorios']] for e in p['eventos']]
+
+        p = self.benavente([self.funcion('2026-11-27'), self.funcion('2026-11-29')])
+        self.assertEqual(territorios(p), [['es:municipio:49021']] * 2)
+        self.assertFalse(any('ubicacion_estado' in e for e in p['eventos']))
+        recinto = next(e for e in p['entidades'].values() if e['tipo'] == 'lugar')
+        self.assertEqual([r['motivo'] for r in recinto['ubicacion_resoluciones']], ['punto_descartado_revisado'])
+        # Punto nuevo en Benavente: lo resuelve el límite, ya sin corrección.
+        p = self.benavente([self.funcion('2026-11-27', longitud=-5.65)])
+        self.assertEqual(territorios(p), [['es:municipio:49021']])
+        recinto = next(e for e in p['entidades'].values() if e['tipo'] == 'lugar')
+        self.assertEqual(recinto['ubicacion_motivo'], 'correspondencia_acreditada')
+        self.assertNotIn('correccion', recinto['ubicacion_resoluciones'][0])
+        # Otro punto erróneo o ninguno, u otra localidad con el mismo nombre de sala: no se corrige.
+        self.assertEqual(territorios(self.benavente([self.funcion('2026-11-27', longitud=-5.88)])), [[]])
+        self.assertEqual(territorios(self.benavente([self.funcion('2026-11-27', latitud=None)])), [[]])
+        self.assertEqual(territorios(self.benavente([self.funcion('2026-11-27', id_localidad=1)])), [[]])
+
+    def test_municipio_declarado_contradice_por_cita_sin_ocultar_el_recinto(self):
+        sala = {'lugar_celebracion': 'Sala', 'nombre_localidad': 'Morales de Valverde'}
+        p = self.benavente([self.funcion('2026-11-27', **sala),
+                            self.funcion('2026-11-28', **{**sala, 'nombre_localidad': 'BENAVENTE'}),
+                            # Ni una pedanía ni un municipio de otra provincia dicen nada.
+                            self.funcion('2026-11-29', **{**sala, 'nombre_localidad': 'Barrio de Abajo'}),
+                            self.funcion('2026-11-30', **{**sala, 'nombre_localidad': 'Burgos'})])
+        self.assertEqual(sorted((e['programacion']['valor']['cuando']['inicio']['fecha'],
+                                 [t['territorio'] for t in e['territorios']], e.get('ubicacion_estado'))
+                                for e in p['eventos']),
+                         [('2026-11-27', ['es:municipio:49130'], None), ('2026-11-28', [], 'conflicto'),
+                          ('2026-11-29', ['es:municipio:49130'], None), ('2026-11-30', ['es:municipio:49130'], None)])
+
+    def test_nombre_oficial_contradice_pero_nunca_resuelve(self):
+        from shared.territorios import cargar
+        contradice = cargar().contradice
+        self.assertTrue(contradice('es:municipio:49130', 'benavente'))
+        for identidad, literal in (('es:municipio:49021', 'Benavente'), ('es:municipio:15030', 'A Coruña'),
+                                   ('es:municipio:15030', 'Coruña, A'), ('es:municipio:49130', 'Zzz'),
+                                   ('es:municipio:49130', None), ('es:municipio:49130', ' '),
+                                   ('es:provincia:49', 'Benavente'), ('es:municipio:00000', 'Benavente')):
+            with self.subTest(identidad=identidad, literal=literal):
+                self.assertFalse(contradice(identidad, literal))
+
     def test_rechaza_funcion_sin_obra_o_fecha_y_repetida_distinta(self):
         fila = muestra('cyl')[0]
         for cambio in ({'id_evento': None}, {'fecha_inicio': None}, {'titulo': ' '}):
