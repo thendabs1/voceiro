@@ -247,14 +247,12 @@ class Adaptadores(unittest.TestCase):
         self.assertEqual(despues['fuentes']['moto2']['sesiones_ausentes'], [rac])
         programa = publicacion.proyectar(despues)['eventos'][0]['programa']
         self.assertEqual(sorted(s['agenda']['tipo_sesion'] for s in programa), ['FP1', 'FP2', 'PR', 'Q1', 'Q2', 'RAC2'])
-        # La ausencia se conserva en la pasada siguiente y la sesión vuelve si la respuesta la trae.
+        # La ausencia se conserva en la pasada siguiente.
         otra = importar('moto2', reanudada(muestra('moto2'), 'rac2-reanudada'), anterior=despues, observado=DESPUES)
         self.assertEqual(otra['fuentes']['moto2']['sesiones_ausentes'], [rac])
         vuelta = importar('moto2', anterior=despues, observado=DESPUES)
-        self.assertEqual(vuelta['fuentes']['moto2']['sesiones_ausentes'], ['rac2-reanudada'])
-        programa = publicacion.proyectar(vuelta)['eventos'][0]['programa']
-        self.assertEqual([s['agenda']['tipo_sesion'] for s in programa].count('RAC'), 1)
-        self.assertNotIn('RAC2', {s['agenda']['tipo_sesion'] for s in programa})
+        # Una RAC ya retirada que vuelve sola no releva a la RAC2 (operacion.py rechaza la pasada).
+        self.assertNotIn('sesiones_ausentes', vuelta['fuentes']['moto2'])
         # Un recorte de otra sesión no se toma por sustitución aunque llegue una RAC2.
         sin_q2 = reanudada(muestra('moto2'), 'rac2-reanudada')
         sin_q2['broadcasts'] = [b for b in sin_q2['broadcasts']

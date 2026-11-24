@@ -175,9 +175,10 @@ reacción automática a un error; el contraste valida en memoria sin publicar.
 - **Sesión sustituida (MotoGP, Moto2, Moto3):** al reanudar una carrera la API
   cambia `RAC` por `RAC2` con otro ID. Si en un GP solo faltan carreras y llega
   otra posterior o tantas nuevas como faltan, la importación retira las antiguas
-  (`sesiones_ausentes`, sin publicarse hasta que reaparezcan) y la pasada lo
-  anota (`sesiones_sustituidas`). Cualquier otra ausencia sigue rechazando la
-  respuesta. `RAC2` cuenta como la carrera del programa completo.
+  (`sesiones_ausentes`, sin publicarse salvo que vuelvan junto a su relevo) y la
+  pasada lo anota (`sesiones_sustituidas`). Cualquier otra ausencia sigue
+  rechazando la respuesta, también si vuelve sola la carrera retirada. `RAC2`
+  cuenta como la carrera del programa completo.
 - **Cupo diario:** las colecciones por fecha planifican solo los días que caben
   en lo que queda del cupo de su proveedor; sin cupo, esperan sin contar error.
 - La publicación (`--fuentes-control`) añade los principales validados y su

@@ -69,8 +69,8 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
                        'motociclismo', observado, bool(url))
     campeonato = a.grupo('campeonato', competicion, 'competicion', nombre, codigo=competicion)
     # Una carrera que su GP ya no trae porque llega otra en su lugar (RAC por RAC2 al
-    # reanudarla) deja de publicarse (presencia.py) y vuelve si otra respuesta la trae,
-    # como en atletismo. operacion.py solo acepta como ausente lo que se retira aquí.
+    # reanudarla) deja de publicarse (presencia.py) y vuelve si otra respuesta la trae
+    # junto a su relevo. operacion.py solo acepta como ausente lo que se retira aquí.
     previas = _sesiones_previas(anterior, competicion)
     retiradas = frozenset(((anterior or {}).get('fuentes', {}).get(competicion) or {}).get('sesiones_ausentes', []))
     sustituidas, todas = set(), set()
@@ -111,9 +111,10 @@ def importar(anterior, pagina, observado, url=None, temporada=None, competicion=
         # Solo carreras, y con relevo: otra posterior en la respuesta (aunque ya estuviera
         # guardada: RAC y RAC2 pueden convivir antes de caer RAC) o tantas nuevas como
         # faltan. Un programa vacío o recortado (también con una RAC2) conserva lo guardado.
+        # Una ya retirada no es nueva: si vuelve sola (respuesta vieja), falta la RAC2.
         guardadas = {i: t for i, t in previas.get(nucleo.clave(grupo), {}).items() if i not in retiradas}
         faltan = guardadas.keys() - recibidas.keys()
-        nuevas = [i for i in recibidas.keys() - guardadas.keys() if carrera(recibidas[i])]
+        nuevas = [i for i in recibidas.keys() - guardadas.keys() - retiradas if carrera(recibidas[i])]
         ultima = max((_numero(t) for t in recibidas.values() if carrera(t)), default=0)
         if all(carrera(guardadas[i]) for i in faltan) and (
                 len(nuevas) >= len(faltan) or all(_numero(guardadas[i]) < ultima for i in faltan)):
