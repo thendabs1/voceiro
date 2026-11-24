@@ -85,6 +85,44 @@ class Conciliacion(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'otras referencias'):
             conciliacion.conciliar(n)
 
+    def renumerada(self, conservar):
+        """FGA da otro ID a una cita guardada y el nuevo hereda su identidad."""
+        n, a, _ = self.anteriores()
+        luego = '2026-11-03T20:00:00+01:00'
+        nueva = {**a['eventos'][0], 'id': '999', 'renumerada_de': '113279'}
+        revision = {'id': 'prueba', 'referencias': {'fga': '113279', 'rfea': '69339'}, 'conservar': conservar,
+                    'revision': {'fecha': '2026-11-03', 'criterio': 'x', 'evidencias': ['https://example.org']}}
+        with patch.object(c, 'revisiones_identidad', return_value=[]):
+            n = atletismo.importar(n, {**a, 'eventos': [nueva]}, luego)
+        n = atletismo.registrar_ausencias(n, 'fga', [{'id': '113279', 'motivo': 'renumerada como 999 (HTTP 404)',
+            'url': nueva['url'], 'comprobado': luego, 'detalle': {'renumerada_como': '999'}}])
+        return n, {**a, 'eventos': [{k: v for k, v in nueva.items() if k != 'renumerada_de'}]}, revision
+
+    def test_una_renumerada_conservada_se_concilia_citando_cualquiera_de_sus_ids(self):
+        anterior, reimportada, revision = self.renumerada('fga')
+        for citado in ('113279', '999'):
+            with self.subTest(citado=citado):
+                r = {**revision, 'referencias': {**revision['referencias'], 'fga': citado}}
+                n, informe = conciliacion.conciliar(anterior, [r])
+                self.assertEqual(informe[0]['estado'], 'conciliada')
+                self.assertEqual(n['observaciones'], anterior['observaciones'])
+                with patch.object(c, 'revisiones_identidad', return_value=[r]):
+                    self.assertTrue(almacen_nucleo.planificar(anterior, n))
+                    self.assertEqual(conciliacion.conciliar(n, [r])[1][0]['estado'], 'ya conciliada')
+                    n = atletismo.importar(n, reimportada, '2026-11-04T20:00:00+01:00')
+                    self.assertEqual(c.incidencias(n), [])
+                self.assertEqual(len(publicacion.proyectar(n)['eventos']), 1)
+
+    def test_una_renumerada_absorbida_o_sin_acreditar_exige_otra_revision(self):
+        anterior, _, revision = self.renumerada('rfea')
+        with self.assertRaisesRegex(ValueError, 'otras referencias'):
+            conciliacion.conciliar(anterior, [revision])
+        anterior, _, revision = self.renumerada('fga')
+        anterior['fuentes']['fga']['ausencias']['ids']['113279']['detalle'] = {}
+        with patch.object(nucleo, 'validar'):
+            with self.assertRaisesRegex(ValueError, 'otras referencias'):
+                conciliacion.conciliar(anterior, [revision])
+
     def test_sesiones_y_politicas_requieren_revision_adicional(self):
         n, a, _ = self.anteriores()
         a['eventos'][0]['programa'] = [{'id': 'salida', 'nombre': 'Salida',

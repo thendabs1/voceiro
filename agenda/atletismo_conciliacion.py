@@ -13,6 +13,18 @@ def contiene(valor, objetivos):
     return isinstance(valor, list) and any(contiene(v, objetivos) for v in valor)
 
 
+def renumeradas(n, proveedor, identificador):
+    """IDs que la fuente dio a la misma cita, según las ausencias registradas."""
+    ids = ((n['fuentes'].get(proveedor) or {}).get('ausencias') or {}).get('ids') or {}
+    pares = [(viejo, x['detalle']['renumerada_como']) for viejo, x in ids.items()
+             if (x.get('detalle') or {}).get('renumerada_como')]
+    cadena, antes = {identificador}, None
+    while cadena != antes:
+        antes = set(cadena)
+        cadena.update(i for par in pares if cadena & set(par) for i in par)
+    return cadena
+
+
 def conciliar(anterior, revisiones=None):
     """Solo principales sin sesiones, resultados ni políticas afectadas.
 
@@ -39,13 +51,18 @@ def conciliar(anterior, revisiones=None):
             informe.append({'revision': revision['id'], 'estado': 'ya conciliada'})
             continue
         todas = [r for r in n['referencias'].values() if r['destino'] in objetivos]
-        if {r['id'] for r in todas} != {r['id'] for r in refs}:
+        # Los otros IDs de una renumerada ya están en la identidad conservada y no se
+        # mueven. En una absorbida cambiarían de destino: eso exige otra revisión.
+        propias = {(f, i) for f, i in claves for i in renumeradas(n, f, i)}
+        ajenas = [r for r in todas if r['id'] not in {x['id'] for x in refs}]
+        if any(r['destino'] != conservar or r['tipo_externo'] != 'competicion' or r['contexto'] != {}
+               or (r['proveedor'], r['id_externo']) not in propias for r in ajenas):
             raise ValueError('Conciliación con otras referencias no revisadas: ' + revision['id'])
         if any(o['tipo'] != 'evento' or n['entidades'][nucleo.clave(o)]['clase'] != 'encuentro'
                for o in objetivos):
             raise ValueError('Conciliación limitada a citas principales de atletismo')
         for o in n['observaciones'].values():
-            if n['referencias'][o['referencia']]['id'] in {r['id'] for r in refs}:
+            if n['referencias'][o['referencia']]['id'] in {r['id'] for r in todas}:
                 if (o['bloques'].get('agenda') or {}).get('rol') != 'principal':
                     raise ValueError('Conciliación de un evento sin papel principal')
             if contiene(o['bloques'], objetivos):
