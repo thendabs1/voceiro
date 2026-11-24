@@ -106,7 +106,7 @@ function parseFecha(s){
 function fechaTarjetaHtml(ts){
   const txt = formatearFecha(ts);
   const corte = txt.lastIndexOf(' · ');
-  if (corte < 0 || ts > Date.now()) return escapeHtml(txt);
+  if (corte < 0 || ts > Date.now() + HORIZONTE_FUTURO_MS) return escapeHtml(txt);
   return `<span class="fecha-abs">${escapeHtml(txt.slice(0, corte + 3))}</span>${escapeHtml(txt.slice(corte + 3))}`;
 }
 
@@ -118,7 +118,10 @@ function formatearFecha(ts){
     ABS_CACHE.set(ts, abs);
   }
   const diff = Date.now() - ts;
-  if (diff < 0) return abs + ' · ' + t('fechaProgramado');
+  // Hasta HORIZONTE_FUTURO_MS por delante es desfase del reloj del medio: la
+  // lista ya la ordena como «ahora» y no la marca como futura.
+  if (diff < -HORIZONTE_FUTURO_MS) return abs + ' · ' + t('fechaProgramado');
+  if (diff < 0) return abs + ' · ' + t('fechaAhora');
   if (diff >= 7 * 86400000) return abs;
   const min = (diff / 60000) | 0;
   const hr  = (diff / 3600000) | 0;
