@@ -234,6 +234,8 @@ export default {
   "cfgGruposHint": "Checking a group includes all its outlets. A blocked outlet stays hidden even if its group is checked.",
   "cfgMedios": "Outlets",
   "cfgMediosHint": "Always include adds the outlet even when your topics or groups do not match. Highlight also includes it and prioritizes its news for 3 hours. Block hides it in this mode.",
+  "cfgMediosHintElegidas": "Always include adds the outlet to your sources; if there are topics, its headlines must also match one. Highlight also includes it and prioritizes its news for 3 hours. Block hides it in this mode.",
+  "cfgMediosHintTodas": "This mode already uses all sources: including an outlet adds nothing and, if there are topics, its headlines must match one. Highlight prioritizes its news for 3 hours. Block hides it in this mode.",
   "forceInclude": "Include even if group or topics do not match",
   "forceFavorite": "Highlight recent news from this outlet",
   "forceExclude": "Always block",

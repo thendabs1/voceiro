@@ -234,6 +234,8 @@ export default {
   "cfgGruposHint": "Talde bat markatzean bere hedabide guztiak sartzen dira. Hedabide blokeatu bat ez da erakusten, bere taldea markatuta egon arren.",
   "cfgMedios": "Hedabideak",
   "cfgMediosHint": "Beti sartu aukerak hedabidea gehitzen du zure gai edo taldeekin bat ez etorri arren. Nabarmendu aukerak ere sartzen du eta bere albisteei lehentasuna ematen die 3 orduz. Blokeatu aukerak modu honetan ezkutatzen du.",
+  "cfgMediosHintElegidas": "Beti sartu aukerak hedabidea zure iturrietara gehitzen du; gaiak badaude, bere titularrek ere horietako batekin bat etorri behar dute. Nabarmendu aukerak ere sartzen du eta bere albisteei lehentasuna ematen die 3 orduz. Blokeatu aukerak modu honetan ezkutatzen du.",
+  "cfgMediosHintTodas": "Modu honek iturri guztiak erabiltzen ditu jada: hedabide bat sartzeak ez du ezer gehitzen eta, gaiak badaude, bere titularrek horietako batekin bat etorri behar dute. Nabarmendu aukerak bere albisteei lehentasuna ematen die 3 orduz. Blokeatu aukerak modu honetan ezkutatzen du.",
   "forceInclude": "Sartu taldea edo gaiak bat etorri ez arren",
   "forceFavorite": "Nabarmendu hedabide honen azken albisteak",
   "forceExclude": "Beti blokeatu",

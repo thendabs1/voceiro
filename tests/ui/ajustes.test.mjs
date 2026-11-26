@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
 import { leerAplicacion } from '../soporte/frontend.mjs';
+import { I18N } from '../../front/idiomas/index.js';
 
 const codigo = leerAplicacion();
 function cargar(ctx, ...nombres){
@@ -135,4 +136,14 @@ test('cambiar de editor guarda los temas pendientes en su modo antes de abrir ot
   assert.equal(pintados, 1);
   assert.equal(elementos['#filtro-estado-medio'].value, '');
   assert.equal(elementos['#aj-bloque-medios'].open, false);
+});
+
+test('la ayuda de Medios explica la regla del modo editado', () => {
+  const ctx = {};
+  cargar(ctx, 'clavePistaMedios');
+  const claves = [null, { v: 1, fuentes: 'elegidas' }, { v: 1, fuentes: 'todas' }].map(ctx.clavePistaMedios);
+  assert.deepEqual(claves, ['cfgMediosHint', 'cfgMediosHintElegidas', 'cfgMediosHintTodas']);
+  for (const [idioma, textos] of Object.entries(I18N)){
+    for (const clave of claves) assert.ok(textos[clave], `${idioma}: ${clave}`);
+  }
 });

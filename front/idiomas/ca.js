@@ -234,6 +234,8 @@ export default {
   "cfgGruposHint": "En marcar un grup s'hi inclouen tots els mitjans. Un mitjà bloquejat no es mostra encara que el seu grup estigui marcat.",
   "cfgMedios": "Mitjans",
   "cfgMediosHint": "Incloure sempre afegeix el mitjà encara que no coincideixi amb els teus temes o grups. Destacar també l’inclou i dona prioritat a les seves notícies durant 3 hores. Bloquejar l’amaga en aquest mode.",
+  "cfgMediosHintElegidas": "Incloure sempre suma el mitjà a les teves fonts; si hi ha temes, els seus titulars també han de coincidir amb algun. Destacar també l’inclou i dona prioritat a les seves notícies durant 3 hores. Bloquejar l’amaga en aquest mode.",
+  "cfgMediosHintTodas": "Aquest mode ja fa servir totes les fonts: incloure un mitjà no hi afegeix res i, si hi ha temes, els seus titulars han de coincidir amb algun. Destacar dona prioritat a les seves notícies durant 3 hores. Bloquejar l’amaga en aquest mode.",
   "forceInclude": "Incloure encara que no compleixi grup ni temes",
   "forceFavorite": "Destacar les notícies recents d’aquest mitjà",
   "forceExclude": "Bloquejar sempre",

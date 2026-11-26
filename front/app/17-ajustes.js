@@ -289,12 +289,20 @@ function ajEditarModo(id){
   else ajEmpujar('modo');
 }
 
+// Con regla, incluir un medio no salta el filtro de temas; sin ella
+// (modos antiguos), sí lo añade aunque no coincida.
+function clavePistaMedios(regla){
+  if (!regla) return 'cfgMediosHint';
+  return regla.fuentes === 'todas' ? 'cfgMediosHintTodas' : 'cfgMediosHintElegidas';
+}
+
 function pintarModo(){
   const modo = modoEnPanel();
   if (!modo) return;
   const regla = normalizarRegla(modo.regla);
   $('#aj-regla').value = regla ? regla.fuentes : 'sumar';
   $('#aj-regla-hint').textContent = t(regla ? 'asRegla' + (regla.fuentes === 'todas' ? 'Todas' : 'Elegidas') : 'asReglaSumar');
+  $('#cfg-medios-hint').textContent = t(clavePistaMedios(regla));
   const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
   const estado = $('#aj-modo-estado');
   estado.textContent = t('ajModoActivo');

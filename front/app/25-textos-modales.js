@@ -104,7 +104,6 @@ function aplicarTextos(){
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
   const det = $('#ov-pegar-wrap summary');
   if (det) det.textContent = t('cfgOverridePegar');
-  $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#filtro-medio').placeholder = t('cfgBuscarMedio');
   $('#filtro-medio').setAttribute('aria-label', t('cfgBuscarMedio'));
   $('#filtro-grupo-medio').setAttribute('aria-label', t('cfgTodosGrupos'));

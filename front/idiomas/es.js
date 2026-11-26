@@ -313,6 +313,8 @@ export default {
   "cfgGruposHint": "Al marcar un grupo se incluyen todos sus medios. Un medio bloqueado no se muestra aunque su grupo esté marcado.",
   "cfgMedios": "Medios",
   "cfgMediosHint": "Incluir siempre añade el medio aunque no coincida con tus temas o grupos. Destacar también lo incluye y da prioridad a sus noticias durante 3 horas. Bloquear lo oculta en este modo.",
+  "cfgMediosHintElegidas": "Incluir siempre suma el medio a tus fuentes; si hay temas, sus titulares también deben coincidir con alguno. Destacar también lo incluye y da prioridad a sus noticias durante 3 horas. Bloquear lo oculta en este modo.",
+  "cfgMediosHintTodas": "Este modo ya usa todas las fuentes: incluir un medio no añade nada y, si hay temas, sus titulares deben coincidir con alguno. Destacar da prioridad a sus noticias durante 3 horas. Bloquear lo oculta en este modo.",
   "forceInclude": "Incluir aunque no cumpla grupo ni temas",
   "forceFavorite": "Destacar las noticias recientes de este medio",
   "forceExclude": "Bloquear siempre",
