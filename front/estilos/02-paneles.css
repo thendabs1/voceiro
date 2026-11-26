@@ -87,6 +87,9 @@
   }
   .grupo-item:hover{background:var(--quote-bg)}
   .grupo-item input{accent-color:var(--accent); width:1.1em; height:1.1em}
+  /* Con «todas las fuentes» los grupos no se aplican (16-medios.js). */
+  .grupo-item:has(input:disabled), .grupo-cat-toggle-wrap:has(input:disabled){opacity:.55; cursor:default}
+  .grupo-item:has(input:disabled):hover{background:none}
   .grupo-item .flag{
     font-size:.85em; color:var(--accent); opacity:.7;
     margin-left:auto; padding-left:6px;

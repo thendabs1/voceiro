@@ -100,6 +100,8 @@ function renderListaGrupos(p){
   const afin   = gruposAfinesAlIdioma();
   const gSet   = new Set(p.grupos);
   const { buckets, supers } = bucketPorSuper(grupos, g => g);
+  // Con «todas» los grupos no cuentan: se desactivan sin perder lo marcado.
+  const inactivo = normalizarRegla(p.regla)?.fuentes === 'todas' ? 'disabled' : '';
 
   let html = '';
   supers.forEach(s => {
@@ -114,7 +116,7 @@ function renderListaGrupos(p){
         <label class="grupo-cat-toggle-wrap">
           <input type="checkbox" class="grupo-cat-toggle"
                 ${todos ? 'checked' : ''}
-                ${algunos ? 'data-indeterminate="1"' : ''}>
+                ${algunos ? 'data-indeterminate="1"' : ''} ${inactivo}>
           <strong>${escapeHtml(s)}</strong>
           <span class="grupo-cat-count">${enCat.length}</span>
         </label>
@@ -122,7 +124,7 @@ function renderListaGrupos(p){
     }
     enCat.forEach(g => {
       html += `<label class="grupo-item" data-cat="${escapeHtml(s)}">
-        <input type="checkbox" data-grupo="${escapeHtml(g)}" ${gSet.has(g) ? 'checked' : ''}>
+        <input type="checkbox" data-grupo="${escapeHtml(g)}" ${gSet.has(g) ? 'checked' : ''} ${inactivo}>
         <span>${escapeHtml(g)}</span>
         ${afin.has(g) ? '<span class="flag" title="idioma">●</span>' : ''}
       </label>`;
@@ -148,7 +150,10 @@ let MEDIOS_CATS_MODO = null;
 let MEDIOS_CATS_ABIERTAS = new Set();
 function medioActivoEnModo(m, modo){
   const estado = getOverride(m.dominio, modo);
-  return overrideIncluye(estado) || (estado !== 'ignore' && (modo?.grupos || []).includes(m.grupo));
+  if (estado === 'ignore') return false;
+  // Con «todas» entra cualquier medio no bloqueado (shared/busqueda/reglas.js).
+  return normalizarRegla(modo?.regla)?.fuentes === 'todas'
+    || overrideIncluye(estado) || (modo?.grupos || []).includes(m.grupo);
 }
 function ordenarCategoriasMedios(medios, modo){
   const categorias = new Map();

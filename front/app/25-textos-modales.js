@@ -120,7 +120,6 @@ function aplicarTextos(){
   $('#ov-pegar').setAttribute('aria-label', t('cfgOverridePegar'));
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-grupos').textContent = t('cfgGrupos');
-  $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
 
   // Lectura
   $('#ac-tema').textContent = t('acTema');
