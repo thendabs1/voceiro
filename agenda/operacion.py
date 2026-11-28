@@ -505,8 +505,12 @@ def main(argv=None):
         # La vigilancia de `pasada` publica este texto y comenta cada cambio: qué sigue
         # con errores, no solo el código 1. Los errores, en el JSON del log: con
         # enfriamientos distintos, las fallidas de cada pasada alternan.
-        nombres = espera or [' '.join(filter(None, (r.get('coleccion'), r.get('referencia')))) for r in fallidas]
-        raise SystemExit('Con errores: ' + ', '.join(sorted(set(nombres))))
+        nombres = sorted(set(espera or [' '.join(filter(None, (r.get('coleccion'), r.get('referencia'))))
+                                        for r in fallidas]))
+        # La vigilancia publica 600 caracteres: con el total, recuperar uno de los omitidos también cambia el texto.
+        vistos = [n for i, n in enumerate(nombres) if len(', '.join(nombres[:i + 1])) <= 480]
+        resto = f' y {len(nombres) - len(vistos)} más' if len(vistos) < len(nombres) else ''
+        raise SystemExit(f'Con errores ({len(nombres)}): ' + ', '.join(vistos) + resto)
     return {'pendientes': espera}
 
 

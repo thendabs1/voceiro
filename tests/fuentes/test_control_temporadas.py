@@ -638,14 +638,20 @@ class SalidaDeOperacion(unittest.TestCase):
         with patch.object(operacion, 'abrir', return_value=MagicMock()), \
                 patch.object(operacion, 'ejecutar', return_value=[{'estado': 'activa'}, fallida, descubrimiento]), \
                 patch('sys.stdout', new_callable=io.StringIO):
-            for pendientes, texto in (([], 'Con errores: atp 2027, wrc'),
+            for pendientes, texto in (([], 'Con errores (2): atp 2027, wrc'),
                                       # Lo que espera su reintento no alterna con los enfriamientos.
                                       (['f2 2026', 'atp 2027', 'descubrimiento wrc'],
-                                       'Con errores: atp 2027, descubrimiento wrc, f2 2026')):
+                                       'Con errores (3): atp 2027, descubrimiento wrc, f2 2026'),
+                                      ([f'coleccion-{i:02} 2026' for i in range(60)], None)):
                 with patch.object(operacion, 'pendientes', return_value=pendientes), \
                         self.assertRaises(SystemExit) as fin:
                     operacion.main(['--db', 'x.db', '--ejecutar', '--descubrir'])
-                self.assertEqual(str(fin.exception), texto)
+                if texto:
+                    self.assertEqual(str(fin.exception), texto)
+                else:
+                    self.assertLessEqual(len(str(fin.exception)), 600)
+                    self.assertTrue(str(fin.exception).startswith('Con errores (60): coleccion-00 2026'))
+                    self.assertRegex(str(fin.exception), r' y \d+ más$')
                 self.assertTrue(fin.exception.code)
 
 
