@@ -229,7 +229,8 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
         if isinstance(error, PresupuestoAgotado) and isinstance(error.__cause__, ErrorTurso):
             raise error.__cause__  # Una reserva de resultado incierto tampoco se repite.
         repo.fallar(t, pasada, ahora, error)
-        return {'temporada': t['id'], 'estado': 'fallida', 'error': str(error)}
+        return {'temporada': t['id'], 'coleccion': t['coleccion'], 'referencia': t['referencia'],
+                'estado': 'fallida', 'error': str(error)}
     if contraste:
         # Se valida su modelo en memoria, sin guardar otra autoridad ni IDs duplicados.
         repo.confirmar(t, pasada, t, None, [], [], ahora)
@@ -249,7 +250,8 @@ def ejecutar_temporada(repo, t, ahora, *, fechas=None, proveedor=None, contraste
     if any(i['tipo'] == 'ausentes_en_respuesta' for i in incidencias):
         error = ValueError('Respuesta parcial: faltan citas previamente acreditadas en la misma selección')
         repo.fallar(t, pasada, ahora, error)
-        return {'temporada': t['id'], 'estado': 'fallida', 'error': str(error), 'incidencias': incidencias}
+        return {'temporada': t['id'], 'coleccion': t['coleccion'], 'referencia': t['referencia'],
+                'estado': 'fallida', 'error': str(error), 'incidencias': incidencias}
     # Una cita aplazada o pendiente previamente guardada sigue bloqueando el cierre
     # aunque desaparezca de la respuesta posterior; la sustituida ya no se espera.
     vigentes = {i: e for i, e in guardados.items() if i not in sustituidas}
@@ -498,8 +500,17 @@ def main(argv=None):
                   if args.ejecutar else [])
     print(json.dumps(salida, ensure_ascii=False, indent=2))
     resultados = salida if isinstance(salida, list) else [salida]
-    if (args.ejecutar or args.contrastar) and any(r and r.get('estado') == 'fallida' for r in resultados):
-        raise SystemExit(1)
+    fallidas = [r for r in resultados if r and r.get('estado') == 'fallida']
+    if (args.ejecutar or args.contrastar) and fallidas:
+        # La vigilancia de `pasada` publica este texto y comenta cada cambio: qué sigue
+        # con errores, no solo el código 1. Los errores, en el JSON del log: con
+        # enfriamientos distintos, las fallidas de cada pasada alternan.
+        nombres = sorted(set(espera or [' '.join(filter(None, (r.get('coleccion'), r.get('referencia'))))
+                                        for r in fallidas]))
+        # La vigilancia publica 600 caracteres: con el total, recuperar uno de los omitidos también cambia el texto.
+        vistos = [n for i, n in enumerate(nombres) if len(', '.join(nombres[:i + 1])) <= 480]
+        resto = f' y {len(nombres) - len(vistos)} más' if len(vistos) < len(nombres) else ''
+        raise SystemExit(f'Con errores ({len(nombres)}): ' + ', '.join(vistos) + resto)
     return {'pendientes': espera}
 
 

@@ -31,7 +31,7 @@ publicadas; World Athletics se recoge sin publicar. Ver [atletismo](atletismo.md
 
 - **Cultura:** recogida diaria de Galicia, Madrid, Kulturklik, Zaragoza y Castilla y León
   en Turso y publicación en R2 y en las tablas de lectura.
-- **Deportes:** quince colecciones con adaptador y control de temporadas, todas
+- **Deportes:** diecinueve colecciones con adaptador y control de temporadas, todas
   publicadas; MotoGP y WTA ya tienen registrada la temporada 2027. La revisión
   entra en el cron programado a las 04:30, 10:30, 16:30 y 22:30 UTC (en la práctica,
   unas tres pasadas al día con horas de retraso): cada temporada decide si le toca.

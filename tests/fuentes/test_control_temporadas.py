@@ -1,11 +1,12 @@
 """Control durable, presupuestos y confirmación atómica con SQLite y Hrana."""
 
 from copy import deepcopy
+import io
 import sqlite3
 import tempfile
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from agenda import almacen, cadencias, deportes, operacion, proveedores, temporadas
 from agenda.control import ConflictoControl, PresupuestoAgotado, Repositorio
@@ -626,6 +627,33 @@ class IncidenciasDeRespuesta(unittest.TestCase):
         # Solo donde la importación retira la carrera sustituida.
         self.assertEqual([p for p in ('motogp', 'moto2', 'moto3', 'formula1', 'formula2', 'espn-f1', 'laliga-primera')
                           if proveedores.sustituye_sesiones(p)], ['motogp', 'moto2', 'moto3'])
+
+
+class SalidaDeOperacion(unittest.TestCase):
+    def test_la_salida_fallida_nombra_lo_que_sigue_con_errores(self):
+        # La vigilancia de `pasada` publica el texto de la salida: «1» no dice qué falló.
+        fallida = {'temporada': 'x', 'coleccion': 'atp', 'referencia': '2027', 'estado': 'fallida',
+                   'error': 'Respuesta parcial: faltan citas previamente acreditadas en la misma selección'}
+        descubrimiento = {'coleccion': 'wrc', 'estado': 'fallida', 'error': 'HTTP Error 500'}
+        with patch.object(operacion, 'abrir', return_value=MagicMock()), \
+                patch.object(operacion, 'ejecutar', return_value=[{'estado': 'activa'}, fallida, descubrimiento]), \
+                patch('sys.stdout', new_callable=io.StringIO):
+            for pendientes, texto in (([], 'Con errores (2): atp 2027, wrc'),
+                                      # Lo que espera su reintento no alterna con los enfriamientos.
+                                      (['f2 2026', 'atp 2027', 'descubrimiento wrc'],
+                                       'Con errores (3): atp 2027, descubrimiento wrc, f2 2026'),
+                                      ([f'coleccion-{i:02} 2026' for i in range(60)], None)):
+                with patch.object(operacion, 'pendientes', return_value=pendientes), \
+                        self.assertRaises(SystemExit) as fin:
+                    operacion.main(['--db', 'x.db', '--ejecutar', '--descubrir'])
+                if texto:
+                    self.assertEqual(str(fin.exception), texto)
+                else:
+                    self.assertLessEqual(len(str(fin.exception)), 600)
+                    self.assertTrue(str(fin.exception).startswith('Con errores (60): coleccion-00 2026'))
+                    self.assertRegex(str(fin.exception), r' y \d+ más$')
+                self.assertTrue(fin.exception.code)
+
 
 if __name__ == '__main__':
     unittest.main()
