@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 
 from . import atletismo_modalidades, nucleo
 
-VERSION = 6
+VERSION = 7
 FUENTES = {'rfea', 'fga', 'fca', 'wa'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
@@ -45,6 +45,24 @@ def nombre_comparable(texto):
     # 103a / 60è / 27ª: conservar el número de edición. No tocar 10km o Sub16.
     texto = re.sub(r'\b(\d+)(?:a|e|o|ª|º)\b', r'\1', texto)
     return ' '.join(ABREVIATURAS.get(t, t) for t in normalizar(texto).split())
+
+
+def grupos_clubes(texto):
+    """Letras de grupo del título: «Clubs A ST», «CLUBS A I B», «Clubs Sub12 Masculí “A”», «Grup B».
+
+    `normalizar` omite la «a», que suele ser preposición o artículo («Clubs a
+    l'aire lliure»): tras «clubs»/«clubes» o «grup»/«grupo»/«group» solo cuenta
+    en mayúscula; en otro sitio de un título de clubes, sola entre comillas.
+    Un título sin grupo devuelve un conjunto vacío.
+    """
+    s = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
+    letra = r'[«"“‘\']?[A-D][»"”’\']?'
+    serie = rf'((?:{letra}\s*(?:[iIyYeE]|/|-)\s*)*{letra})(?![\w\'’])'
+    grupos = [m[1] for m in re.finditer(rf'\b(?i:grup|grupo|group)\s+{serie}', s)]
+    if re.search(r'(?i)\bclub(?:s|es)\b', s):
+        grupos += [m[1] for m in re.finditer(rf'\b(?i:club(?:s|es))\s+{serie}', s)]
+        grupos += re.findall(r'[«"“‘\']\s*([A-D])\s*[»"”’\']', s)
+    return frozenset(g.lower() for texto in grupos for g in re.findall('[A-D]', texto))
 
 
 @lru_cache(maxsize=1)
@@ -266,6 +284,9 @@ def comparar_datos(a, b, por_enlace):
     numeros = numeros_a == numeros_b
     dimensiones = {'master', 'absoluto', 'masculino', 'femenino', 'mixto', 'individual', 'clubes', 'relevos', 'promocion'}
     categorias = (ta & dimensiones) == (tb & dimensiones)
+    # Clubs A y Clubs B solo difieren en una letra: el parecido no basta para distinguirlos.
+    ga, gb = grupos_clubes(a['nombre']), grupos_clubes(b['nombre'])
+    grupo = not ga or not gb or ga == gb
     distancias = re.findall(r'\b(\d+) (km|m)\b', normalizar(a['nombre'])) == re.findall(r'\b(\d+) (km|m)\b', normalizar(b['nombre']))
     ma, mb = modalidades(a), modalidades(b)
     modalidad = not ma or not mb or ma == mb
@@ -282,9 +303,11 @@ def comparar_datos(a, b, por_enlace):
         motivos.append('categoría, formato o distancia de distinto alcance')
     if not modalidad:
         motivos.append('modalidades diferentes')
+    if not grupo:
+        motivos.append('grupos de clubes diferentes')
     if compuesto:
         motivos.append('posible relación entre conjunto y partes')
-    automatica = fechas and lugar and numeros and categorias and distancias and modalidad and not compuesto and len(ta & tb) >= 3 and parecido >= .9
+    automatica = fechas and lugar and numeros and categorias and distancias and modalidad and grupo and not compuesto and len(ta & tb) >= 3 and parecido >= .9
     if automatica:
         estado = 'automatica'
     elif enlace or parecido >= .65 and (fechas or lugar):
@@ -351,7 +374,12 @@ def decidir(fuente, evento, conocidos):
     if len(destinos) == 1 and automaticos and all(not c['cita']['lectura_ambigua'] and c['cita']['grupo'] for c in candidatos):
         elegido = automaticos[0]
         destino = elegido['cita']['destino']
-        if not any(distribucion(c['fuente'], c['id']) == distribucion(fuente, evento['id']) and c['destino'] == destino and c['id'] != str(evento['id'])
+        # Por parecido de nombre, un alias sin grupo no une con una identidad cuyo
+        # otro alias, con estas fechas o no, escribe otro grupo. Enlace y revisión mandan.
+        grupo = grupos_clubes(evento['nombre'])
+        contradicha = grupo and not (elegido['comparacion']['enlace_directo'] or elegido['comparacion'].get('revision_identidad')) \
+            and any(grupos_clubes(c['nombre']) not in (frozenset(), grupo) for c in conocidos if c['destino'] == destino)
+        if not contradicha and not any(distribucion(c['fuente'], c['id']) == distribucion(fuente, evento['id']) and c['destino'] == destino and c['id'] != str(evento['id'])
                    for c in conocidos):
             return {'estado': 'automatica', **elegido}
     return {'estado': 'revisar' if candidatos else 'nueva', 'candidatos': candidatos}

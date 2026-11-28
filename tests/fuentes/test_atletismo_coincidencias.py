@@ -147,6 +147,32 @@ class Coincidencias(unittest.TestCase):
         self.assertEqual({f['fuente'] for f in e['fuentes']}, {'rfea', 'fga', 'fca'})
         self.assertEqual(c.incidencias(n), [])
 
+    def test_un_alias_sin_grupo_no_une_grupos_distintos(self):
+        n = None
+        for fuente, nombre in (('fca', 'Campionat de Catalunya de Clubs A ST'), ('rfea', 'Campionat de Catalunya de Clubs ST'),
+                               ('wa', 'Campionat de Catalunya de Clubs B ST')):
+            n = atletismo.importar(n, entrada(fuente, fuente, nombre=nombre), AHORA)
+        self.assertEqual(sorted(len(e['fuentes']) for e in publicacion.proyectar(n)['eventos']), [1, 2])
+        # Tampoco si el alias que escribe el grupo tiene ahora otras fechas.
+        n = None
+        for hora, (fuente, nombre, dia) in enumerate((('fca', 'Campionat de Catalunya de Clubs A ST', '2026-11-01'),
+                                                      ('rfea', 'Campionat de Catalunya de Clubs ST', '2026-11-01'),
+                                                      ('fca', 'Campionat de Catalunya de Clubs A ST', '2026-11-08'),
+                                                      ('wa', 'Campionat de Catalunya de Clubs B ST', '2026-11-01'))):
+            n = atletismo.importar(n, entrada(fuente, fuente, nombre=nombre, inicio=dia, fin=dia),
+                                   f'2026-11-02T2{hora}:00:00+01:00')
+        wa, = [e for e in publicacion.proyectar(n)['eventos'] if 'wa' in {f['fuente'] for f in e['fuentes']}]
+        self.assertEqual({f['fuente'] for f in wa['fuentes']}, {'wa'})
+
+    def test_una_conciliacion_revisada_une_aunque_los_grupos_difieran(self):
+        revision = {'id': 'clubs', 'referencias': {'fca': 'fca', 'wa': 'wa'}, 'conservar': 'fca',
+                    'revision': {'fecha': '2026-11-02', 'criterio': 'Grupo mal rotulado', 'evidencias': ['https://example.org']}}
+        with patch.object(c, 'revisiones_identidad', return_value=[revision]):
+            n = atletismo.importar(None, entrada('fca', 'fca', nombre='Campionat de Catalunya de Clubs A ST'), AHORA)
+            n = atletismo.importar(n, entrada('wa', 'wa', nombre='Campionat de Catalunya de Clubs B ST'), AHORA)
+            e, = publicacion.proyectar(n)['eventos']
+        self.assertEqual({f['fuente'] for f in e['fuentes']}, {'fca', 'wa'})
+
     def test_misma_cita_se_importa_sin_registro_manual_y_conserva_id_al_cambiar_fecha(self):
         for fuentes in (('rfea', 'fga'), ('fga', 'rfea')):
             n = atletismo.importar(None, entrada(fuentes[0]), AHORA)
@@ -250,6 +276,30 @@ class Coincidencias(unittest.TestCase):
             with self.subTest(nombre=nombre):
                 self.assertNotEqual(c.comparar(base, {**base, 'nombre': nombre})['estado'], 'automatica')
         self.assertNotEqual(c.comparar(base, {**base, 'nombre': base['nombre'] + ' II'})['estado'], 'automatica')
+
+    def test_grupos_de_clubes_distintos_no_se_unen_y_callarlo_no_contradice(self):
+        fca = entrada('fca', nombre='Campionat de Catalunya de Clubs A ST', lugar={'nombre': 'Sabadell'})['eventos'][0]
+        otra = {**entrada('rfea', lugar={'nombre': 'Sabadell'})['eventos'][0], 'fuente': 'rfea'}
+        r = c.comparar(fca, {**otra, 'nombre': 'Campionat de Catalunya de Clubs B ST'})
+        self.assertEqual(r['estado'], 'revisar')
+        self.assertIn('grupos de clubes diferentes', r['motivos'])
+        self.assertNotEqual(c.comparar(fca, {**otra, 'nombre': 'Campionat de Catalunya de Clubs A i B ST'})['estado'],
+                            'automatica')
+        for nombre in ('Campionat de Catalunya de Clubs «A» ST', 'Campionat de Catalunya de Clubs ST'):
+            with self.subTest(nombre=nombre):
+                self.assertEqual(c.comparar(fca, {**otra, 'nombre': nombre})['estado'], 'automatica')
+        # Grupo tras la categoría, entre comillas, como en la clasificación oficial de la FCA.
+        a = {**fca, 'nombre': 'Campionat de Catalunya de Clubs Sub12 Masculí “A”'}
+        self.assertEqual(c.comparar(a, {**otra, 'nombre': 'Campionat de Catalunya de Clubs Sub12 Masculí “B”'})['estado'],
+                         'revisar')
+        for nombre, grupos in [('Clubs A ST', {'a'}), ('Clubes «B» Sub16', {'b'}), ('Clubs A i B', {'a', 'b'}),
+                               ('Clubs A/B Sub14', {'a', 'b'}), ('Clubs Sub12 Masculí “A”', {'a'}),
+                               ('CLUBS A I B', {'a', 'b'}), ('Campionat de Catalunya de Clubs (1a Jornada Grup B)', {'b'}),
+                               ('European Champion Clubs Cup Group B', {'b'}), ('Grupo de trabajo', set()),
+                               ('CLUBS B ST', {'b'}), ("Clubs d'Atletisme", set()), ("CLUBS D'ATLETISME", set()),
+                               ('Clubs a l’aire lliure', set()), ('Clubs Absolut', set()),
+                               ('Cross por Clubes', set()), ('Clubes mixto', set()), ('Trofeu «A»', set())]:
+            self.assertEqual(c.grupos_clubes(nombre), grupos, nombre)
 
     def test_ordinales_y_marca_federativa_sin_rebajar_umbral_ni_borrar_edicion(self):
         for a, b in [('103a Allianz Jean Bouin (RFEA)', '103 Allianz Jean Bouin'),
@@ -383,7 +433,13 @@ class Coincidencias(unittest.TestCase):
                  'otra sede': [cita('a'), {**cita('b'), 'lugar': {'nombre': 'Milano'}}],
                  'otro día': [cita('a'), {**cita('b'), 'inicio': '2026-11-02', 'fin': '2026-11-02'}],
                  'otra categoría': [cita('a', 'Control Sub 16-18 ST'), cita('b', 'Control Absolut-Sub20 ST')],
-                 'título casi igual con otra edad': [cita('a', larga + ' Sub 16'), cita('b', larga + ' Sub 18')]}
+                 'título casi igual con otra edad': [cita('a', larga + ' Sub 16'), cita('b', larga + ' Sub 18')],
+                 'otro grupo de clubes': [cita('a', 'Campionat de Catalunya de Clubs A ST'),
+                                          cita('b', 'Campionat de Catalunya de Clubs B ST')],
+                 'otro grupo entre comillas': [cita('a', 'Campionat de Catalunya de Clubs «A» Sub16 ST'),
+                                               cita('b', 'Campionat de Catalunya de Clubs «B» Sub16 ST')],
+                 'grupo tras la categoría': [cita('a', 'Campionat de Catalunya de Clubs Sub12 Masculí “A”'),
+                                             cita('b', 'Campionat de Catalunya de Clubs Sub12 Masculí “B”')]}
         for caso, eventos in ruido.items():
             with self.subTest(caso):
                 n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': eventos}, AHORA)
