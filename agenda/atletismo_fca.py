@@ -10,6 +10,8 @@ from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 
+from .recogida import ErrorRelay
+
 API = 'https://fcatletisme.cat/wp-json/tribe/events/v1/events'
 ESPANA = re.compile(r'\bcamp(?:ionat|eonato) d(?:e |[’\'])espa(?:nya|ña)\b', re.I)
 ESTADO_TITULO = re.compile(r'\b(?:ajornat|ajornada|suspès|suspesa|cancel·lat|cancel·lada|anul·lat|anul·lada)\b', re.I)
@@ -188,34 +190,40 @@ def completar_fichas(eventos, obtener, conocidas=(), previos=None, leidas=None, 
 
     `previos` (ID nuevo → anterior) recupera lo anterior de una cita renumerada en esta pasada.
 
-    `leidas` (ID → {'modificado', 'leida'}) es la última lectura buena de cada ficha.
-    Con ella solo se piden las fichas sin lectura buena guardada o con otro `modified`
-    de Tribe (hasta CUPO_FICHAS, antes las más próximas) y las ROTACION leídas hace
-    más tiempo, por si una edición no cambiara `modified`. Las demás conservan lo
-    anterior. El informe devuelve el estado nuevo en `estado`. Sin `leidas`, se piden todas.
+    `leidas` (ID → {'modificado', 'leida'} o, tras un fallo, {'intentada'}) es la
+    última lectura de cada ficha. Con ella solo se piden las fichas sin lectura buena
+    guardada o con otro `modified` de Tribe (hasta CUPO_FICHAS: antes las nunca
+    intentadas y luego las que llevan más sin intentarse, para que una que falla
+    siempre no ocupe el cupo de las demás) y, detrás, las ROTACION leídas hace más
+    tiempo, por si una edición no cambiara `modified`. Las demás conservan lo anterior.
+    El informe devuelve el estado nuevo en `estado`. Sin `leidas`, se piden todas.
 
-    Un 403 o 429 corta esta superficie, no la lectura de la API. El presupuesto
-    agotado sí se propaga: no se importa una recogida parcial.
+    Un 403 o 429, o un fallo del relay, corta esta superficie, no la lectura de la API.
+    El presupuesto agotado sí se propaga: no se importa una recogida parcial.
     """
     anteriores = {c['id']: [d for d in c['metadatos'].get('documentos', [])
                             if d.get('evidencia', {}).get('superficie') == 'ficha']
                   for c in conocidas if c['fuente'] == 'fca' and not c.get('lectura_ambigua')}
     informe, bloqueada = {'leidas': 0, 'documentos': 0, 'fallidas': [], 'conservadas': 0, 'atrasadas': 0}, False
     if leidas is None:
-        pedir = {e['id'] for e in eventos}
+        seleccion = eventos
     else:
         def vigente(e):
             m = e['metadatos'].get('modificado')
             return bool(m) and (leidas.get(e['id']) or {}).get('modificado') == m and e['id'] in anteriores
-        cambiadas = sorted((e for e in eventos if not vigente(e)), key=lambda e: (e.get('inicio', ''), e['id']))
+        cambiadas = sorted((e for e in eventos if not vigente(e)), key=lambda e: (
+            (leidas.get(e['id']) or {}).get('intentada') or (leidas.get(e['id']) or {}).get('leida') or '',
+            e.get('inicio', ''), e['id']))
         resto = sorted((e for e in eventos if vigente(e)), key=lambda e: (leidas[e['id']]['leida'], e['id']))
-        pedir = {e['id'] for e in cambiadas[:CUPO_FICHAS] + resto[:ROTACION]}
+        seleccion = cambiadas[:CUPO_FICHAS] + resto[:ROTACION]
         informe['atrasadas'] = max(0, len(cambiadas) - CUPO_FICHAS)
-        # Sin pedir o cortada por un bloqueo, sigue la lectura guardada; si falla, se olvida y se repite.
+        # Sin pedir o cortada por un bloqueo, sigue la lectura guardada; si falla, queda el intento.
         informe['estado'] = {e['id']: leidas[e['id']] for e in eventos if e['id'] in leidas}
-    for e in eventos:
+    # Se piden por prioridad: si un bloqueo corta, lo nuevo ya se ha leído.
+    orden = {e['id']: n for n, e in enumerate(seleccion)}
+    for e in sorted(eventos, key=lambda e: orden.get(e['id'], len(orden))):
         nuevos = None
-        if e['id'] not in pedir or bloqueada:
+        if e['id'] not in orden or bloqueada:
             informe['conservadas'] += 1
         else:
             try:
@@ -230,9 +238,10 @@ def completar_fichas(eventos, obtener, conocidas=(), previos=None, leidas=None, 
             except (OSError, ValueError) as error:
                 if 'presupuesto' in str(error):
                     raise
+                bloqueada = isinstance(error, ErrorRelay)
                 informe['fallidas'].append({'id': e['id'], 'motivo': f'{type(error).__name__}: {error}'[:200]})
             if nuevos is None and 'estado' in informe:
-                informe['estado'].pop(e['id'], None)
+                informe['estado'][e['id']] = {'intentada': ahora}
         meta = e['metadatos']
         presentes = {(d['url'], d['rol']) for d in meta['documentos']}
         previa = anteriores.get(e['id'], anteriores.get((previos or {}).get(e['id']), []))

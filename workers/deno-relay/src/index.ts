@@ -66,7 +66,6 @@ Deno.serve(async (req) => {
       },
     });
 
-    const body = await r.arrayBuffer();
     const headers: Record<string, string> = {
       "content-type": r.headers.get("content-type") ?? "application/octet-stream",
       "x-relay-status": String(r.status),
@@ -74,7 +73,8 @@ Deno.serve(async (req) => {
     // Con un 429 o 503, la recogida espera lo que pida la fuente.
     const espera = r.headers.get("retry-after");
     if (espera) headers["retry-after"] = espera;
-    return new Response(body, { status: r.status, headers });
+    // En flujo: el relay no guarda la respuesta entera; el cliente corta lo que exceda su tope.
+    return new Response(r.body, { status: r.status, headers });
   } catch (e) {
     return new Response("relay error: " + (e as Error).message, { status: 502 });
   }

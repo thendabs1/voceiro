@@ -16,6 +16,10 @@ MAX_BYTES = 4_000_000
 # (workers/deno-relay/src/agenda.json). Sin RELAY_CLAVE, como en local, van directas.
 RELAY = 'https://voceiro-relay.thendabs1.deno.net/rss?u='
 POR_RELAY = ('fcatletisme.cat',)
+
+
+class ErrorRelay(OSError):
+    """El relay no trae respuesta de la fuente (clave, host o red): corta la pasada como un bloqueo."""
 CHROME_UA = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
              '(KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36')
 _CONTROL = ContextVar('agenda_control_descargas', default=None)
@@ -41,8 +45,9 @@ def descargar(url, cabeceras=None, *, binario=False):
     if clave and cabeceras:
         raise ValueError('El relay no reenvía cabeceras')
     req = Request(RELAY + quote(url, safe='') if clave else url,
-                  headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)', **(cabeceras or {}),
-                           **({'X-Voceiro-Relay': clave} if clave else {})})
+                  headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)', **(cabeceras or {})})
+    if clave:
+        req.add_unredirected_header('X-Voceiro-Relay', clave)  # Nunca a otro host por una redirección.
     control = _CONTROL.get()
     if control:
         control[0](url)
@@ -56,7 +61,7 @@ def descargar(url, cabeceras=None, *, binario=False):
         estado, headers = error.code, dict(error.headers or {})
         if clave and not (error.headers or {}).get('x-relay-status'):
             # Lo rechaza el propio relay (clave, host o red): no es un 403 o 429 de la fuente.
-            raise ValueError(f'El relay no trae respuesta de la fuente (HTTP {error.code})') from error
+            raise ErrorRelay(f'El relay no trae respuesta de la fuente (HTTP {error.code})') from error
         raise
     finally:
         if control:

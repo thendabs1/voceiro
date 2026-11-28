@@ -607,7 +607,7 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
             html = ((descargar or recogida.descargar)(url, binario=True) if binario
                     else (descargar or recogida.descargar)(url))
         except Exception as error:
-            if isinstance(error, HTTPError) and error.code in (403, 429):
+            if isinstance(error, HTTPError) and error.code in (403, 429) or isinstance(error, recogida.ErrorRelay):
                 bloqueo = error
             if fuente in ('fga', 'rfea', 'fca'):
                 memoria[clave] = error

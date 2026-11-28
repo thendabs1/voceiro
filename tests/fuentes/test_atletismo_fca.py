@@ -238,7 +238,7 @@ class FichasIncrementales(unittest.TestCase):
             informe = fca.completar_fichas(eventos, obtener, conocidas, leidas=leidas, ahora='2026-11-28')
         # 2 cambió, 5 es nueva y 3 es la leída hace más tiempo; 1 y 4 no se piden.
         self.assertEqual(sorted(vistas), ['2', '3', '5'])
-        self.assertEqual(informe['estado'], {'1': leidas['1'], '4': leidas['4'],
+        self.assertEqual(informe['estado'], {'1': leidas['1'], '4': leidas['4'], '5': {'intentada': '2026-11-28'},
                                              '2': {'modificado': 'm', 'leida': '2026-11-28'},
                                              '3': {'modificado': 'm', 'leida': '2026-11-28'}})
         self.assertEqual((informe['leidas'], len(informe['fallidas']), informe['conservadas'], informe['atrasadas']),
@@ -269,14 +269,43 @@ class FichasIncrementales(unittest.TestCase):
         with patch.object(fca, 'CUPO_FICHAS', 2):
             informe = fca.completar_fichas(eventos, lambda u: vistas.append(u) or ficha(u.rstrip('/').rsplit('/', 1)[1]),
                                            conocidas, leidas={}, ahora='2026-11-28')
-        self.assertEqual([u.rstrip('/').rsplit('/', 1)[1] for u in vistas], ['2', '1'])
+        self.assertEqual([u.rstrip('/').rsplit('/', 1)[1] for u in vistas], ['1', '2'])  # Por prioridad.
         self.assertEqual((informe['atrasadas'], informe['conservadas'], sorted(informe['estado'])), (2, 2, ['1', '2']))
         leidas = {i: {'modificado': 'antes', 'leida': '2026-11-01'} for i in ('1', '2', '3', '4')}
         def bloqueo(url):
             raise HTTPError(url, 403, 'x', {}, None)
         informe = fca.completar_fichas(eventos, bloqueo, conocidas, leidas=leidas, ahora='2026-11-28')
-        self.assertEqual(len(informe['fallidas']), 1)
-        self.assertEqual(sorted(informe['estado']), ['1', '2', '3'])  # La fallida (4) se olvida; las demás siguen.
+        self.assertEqual([f['id'] for f in informe['fallidas']], ['1'])  # Antes la más próxima.
+        self.assertEqual(informe['estado'], {**leidas, '1': {'intentada': '2026-11-28'}})
+
+    def test_la_que_falla_siempre_no_ocupa_el_cupo_y_la_rotacion_va_detras(self):
+        eventos, conocidas = self.citas(['1', '2', '3'])
+        vistas = []
+        def obtener(url):
+            i = url.rstrip('/').rsplit('/', 1)[1]
+            vistas.append(i)
+            if i == '1':
+                raise HTTPError(url, 500, 'x', {}, None)
+            return ficha(i)
+        leidas = {}
+        for dia in ('2026-11-27', '2026-11-28'):
+            with patch.object(fca, 'CUPO_FICHAS', 1), patch.object(fca, 'ROTACION', 0):
+                leidas = fca.completar_fichas(deepcopy(eventos), obtener, conocidas, leidas=leidas, ahora=dia)['estado']
+        self.assertEqual(vistas, ['1', '2'])  # El segundo día, la nunca intentada antes que la fallida.
+        vistas.clear()
+        leidas = {'1': {'modificado': 'm', 'leida': '2026-11-01'}, '3': {'modificado': 'm', 'leida': '2026-11-02'}}
+        with patch.object(fca, 'ROTACION', 1):
+            fca.completar_fichas(eventos, obtener, conocidas, leidas=leidas, ahora='2026-11-28')
+        self.assertEqual(vistas, ['2', '1'])  # La nueva antes que la de rotación, aunque vaya detrás en el listado.
+
+    def test_un_fallo_del_relay_corta_las_fichas(self):
+        eventos, conocidas = self.citas(['1', '2'])
+        vistas = []
+        def obtener(url):
+            vistas.append(url)
+            raise recogida.ErrorRelay('El relay no trae respuesta de la fuente (HTTP 502)')
+        informe = fca.completar_fichas(eventos, obtener, conocidas, leidas={}, ahora='2026-11-28')
+        self.assertEqual((len(vistas), informe['conservadas']), (1, 1))
 
     def test_dos_pasadas_guardan_el_estado_y_la_segunda_solo_pide_lo_cambiado(self):
         def tribe(i, modificado):
@@ -341,7 +370,7 @@ class Relay(unittest.TestCase):
                 with self.assertRaises(HTTPError):
                     recogida.descargar(self.URL)
             with patch('agenda.recogida.urlopen', side_effect=HTTPError(self.URL, 403, 'x', Message(), None)):
-                with self.assertRaisesRegex(ValueError, 'relay'):
+                with self.assertRaisesRegex(recogida.ErrorRelay, 'relay'):
                     recogida.descargar(self.URL)
             with self.assertRaisesRegex(ValueError, 'cabeceras'):
                 recogida.descargar(self.URL, {'Accept': 'x'})
