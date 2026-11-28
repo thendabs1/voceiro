@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 
 from . import atletismo_modalidades, nucleo
 
-VERSION = 6
+VERSION = 7
 FUENTES = {'rfea', 'fga', 'fca', 'wa'}
 PALABRAS = {'campionat': 'campeonato', 'campionato': 'campeonato', 'espanya': 'espana',
             'cros': 'cross', 'carreira': 'carrera', 'cursa': 'carrera', 'marxa': 'marcha',
@@ -45,6 +45,22 @@ def nombre_comparable(texto):
     # 103a / 60è / 27ª: conservar el número de edición. No tocar 10km o Sub16.
     texto = re.sub(r'\b(\d+)(?:a|e|o|ª|º)\b', r'\1', texto)
     return ' '.join(ABREVIATURAS.get(t, t) for t in normalizar(texto).split())
+
+
+def grupos_clubes(texto):
+    """Letras de grupo de clubes del título: «Clubs A ST», «Clubs A i B», «Clubs Sub12 Masculí “A”».
+
+    `normalizar` omite la «a», que suele ser preposición o artículo («Clubs a
+    l'aire lliure»): tras «clubs»/«clubes» solo cuenta en mayúscula, y en otro
+    sitio, sola entre comillas. Un título sin grupo devuelve un conjunto vacío.
+    """
+    s = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
+    if not re.search(r'(?i)\bclub(?:s|es)\b', s):
+        return frozenset()
+    letra = r'[«"“‘\']?[A-D][»"”’\']?'
+    tras = re.search(rf'\b(?i:club(?:s|es))\s+((?:{letra}\s*(?:i|y|e|/|-)\s*)*{letra})(?![\w\'’])', s)
+    citadas = re.findall(r'[«"“‘\']\s*([A-D])\s*[»"”’\']', s)
+    return frozenset(g.lower() for g in (re.findall('[A-D]', tras[1]) if tras else []) + citadas)
 
 
 @lru_cache(maxsize=1)
@@ -266,6 +282,9 @@ def comparar_datos(a, b, por_enlace):
     numeros = numeros_a == numeros_b
     dimensiones = {'master', 'absoluto', 'masculino', 'femenino', 'mixto', 'individual', 'clubes', 'relevos', 'promocion'}
     categorias = (ta & dimensiones) == (tb & dimensiones)
+    # Clubs A y Clubs B solo difieren en una letra: el parecido no basta para distinguirlos.
+    ga, gb = grupos_clubes(a['nombre']), grupos_clubes(b['nombre'])
+    grupo = not ga or not gb or ga == gb
     distancias = re.findall(r'\b(\d+) (km|m)\b', normalizar(a['nombre'])) == re.findall(r'\b(\d+) (km|m)\b', normalizar(b['nombre']))
     ma, mb = modalidades(a), modalidades(b)
     modalidad = not ma or not mb or ma == mb
@@ -282,9 +301,11 @@ def comparar_datos(a, b, por_enlace):
         motivos.append('categoría, formato o distancia de distinto alcance')
     if not modalidad:
         motivos.append('modalidades diferentes')
+    if not grupo:
+        motivos.append('grupos de clubes diferentes')
     if compuesto:
         motivos.append('posible relación entre conjunto y partes')
-    automatica = fechas and lugar and numeros and categorias and distancias and modalidad and not compuesto and len(ta & tb) >= 3 and parecido >= .9
+    automatica = fechas and lugar and numeros and categorias and distancias and modalidad and grupo and not compuesto and len(ta & tb) >= 3 and parecido >= .9
     if automatica:
         estado = 'automatica'
     elif enlace or parecido >= .65 and (fechas or lugar):

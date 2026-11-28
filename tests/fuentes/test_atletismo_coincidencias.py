@@ -251,6 +251,28 @@ class Coincidencias(unittest.TestCase):
                 self.assertNotEqual(c.comparar(base, {**base, 'nombre': nombre})['estado'], 'automatica')
         self.assertNotEqual(c.comparar(base, {**base, 'nombre': base['nombre'] + ' II'})['estado'], 'automatica')
 
+    def test_grupos_de_clubes_distintos_no_se_unen_y_callarlo_no_contradice(self):
+        fca = entrada('fca', nombre='Campionat de Catalunya de Clubs A ST', lugar={'nombre': 'Sabadell'})['eventos'][0]
+        otra = {**entrada('rfea', lugar={'nombre': 'Sabadell'})['eventos'][0], 'fuente': 'rfea'}
+        r = c.comparar(fca, {**otra, 'nombre': 'Campionat de Catalunya de Clubs B ST'})
+        self.assertEqual(r['estado'], 'revisar')
+        self.assertIn('grupos de clubes diferentes', r['motivos'])
+        self.assertNotEqual(c.comparar(fca, {**otra, 'nombre': 'Campionat de Catalunya de Clubs A i B ST'})['estado'],
+                            'automatica')
+        for nombre in ('Campionat de Catalunya de Clubs «A» ST', 'Campionat de Catalunya de Clubs ST'):
+            with self.subTest(nombre=nombre):
+                self.assertEqual(c.comparar(fca, {**otra, 'nombre': nombre})['estado'], 'automatica')
+        # Grupo tras la categoría, entre comillas, como en la clasificación oficial de la FCA.
+        a = {**fca, 'nombre': 'Campionat de Catalunya de Clubs Sub12 Masculí “A”'}
+        self.assertEqual(c.comparar(a, {**otra, 'nombre': 'Campionat de Catalunya de Clubs Sub12 Masculí “B”'})['estado'],
+                         'revisar')
+        for nombre, grupos in [('Clubs A ST', {'a'}), ('Clubes «B» Sub16', {'b'}), ('Clubs A i B', {'a', 'b'}),
+                               ('Clubs A/B Sub14', {'a', 'b'}), ('Clubs Sub12 Masculí “A”', {'a'}),
+                               ('CLUBS B ST', {'b'}), ("Clubs d'Atletisme", set()), ("CLUBS D'ATLETISME", set()),
+                               ('Clubs a l’aire lliure', set()), ('Clubs Absolut', set()),
+                               ('Cross por Clubes', set()), ('Clubes mixto', set()), ('Trofeu «A»', set())]:
+            self.assertEqual(c.grupos_clubes(nombre), grupos, nombre)
+
     def test_ordinales_y_marca_federativa_sin_rebajar_umbral_ni_borrar_edicion(self):
         for a, b in [('103a Allianz Jean Bouin (RFEA)', '103 Allianz Jean Bouin'),
                      ('60è Cros Internacional de Catalunya Ciutat de Granollers (RFEA)',
@@ -383,7 +405,13 @@ class Coincidencias(unittest.TestCase):
                  'otra sede': [cita('a'), {**cita('b'), 'lugar': {'nombre': 'Milano'}}],
                  'otro día': [cita('a'), {**cita('b'), 'inicio': '2026-11-02', 'fin': '2026-11-02'}],
                  'otra categoría': [cita('a', 'Control Sub 16-18 ST'), cita('b', 'Control Absolut-Sub20 ST')],
-                 'título casi igual con otra edad': [cita('a', larga + ' Sub 16'), cita('b', larga + ' Sub 18')]}
+                 'título casi igual con otra edad': [cita('a', larga + ' Sub 16'), cita('b', larga + ' Sub 18')],
+                 'otro grupo de clubes': [cita('a', 'Campionat de Catalunya de Clubs A ST'),
+                                          cita('b', 'Campionat de Catalunya de Clubs B ST')],
+                 'otro grupo entre comillas': [cita('a', 'Campionat de Catalunya de Clubs «A» Sub16 ST'),
+                                               cita('b', 'Campionat de Catalunya de Clubs «B» Sub16 ST')],
+                 'grupo tras la categoría': [cita('a', 'Campionat de Catalunya de Clubs Sub12 Masculí “A”'),
+                                             cita('b', 'Campionat de Catalunya de Clubs Sub12 Masculí “B”')]}
         for caso, eventos in ruido.items():
             with self.subTest(caso):
                 n = atletismo.importar(None, {'version': 1, 'fuente': 'fca', 'eventos': eventos}, AHORA)
