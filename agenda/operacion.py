@@ -315,6 +315,12 @@ def descubrir(repo, coleccion, ahora, *, proveedor=None, year=None, fecha=None, 
             limites = [t.get('limites_proveedor') or {} for t in conocidas]
             finales = [date.fromisoformat(l['endDate'][:10]) for l in limites if l.get('endDate')]
             fecha = max([hoy, *(d + timedelta(days=1) for d in finales)]).isoformat()
+            if int(fecha[:4]) > hoy.year + 1:
+                # Como en el modo temporada, solo el año actual o el siguiente: ESPN
+                # responde a cualquier fecha, y un día vacío no acredita otra temporada.
+                if anterior and anterior.get('errores_consecutivos') and not anterior.get('bloqueada'):
+                    repo.guardar_descubrimiento(coleccion, {**anterior, 'errores_consecutivos': 0})
+                return None, None
         year = str(year or hoy.year)
     else:
         if year is None:
