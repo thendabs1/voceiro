@@ -26,7 +26,7 @@ jobs:
           estado=$(curl -sS -o cuerpo -D cabeceras -w '%{http_code}' --max-time 40 \
             -H "X-Voceiro-Relay: $RELAY_CLAVE" \
             --get --data-urlencode "u=$URL" \
-            https://voceiro-relay-hzvcanr0wjdj.thendabs1.deno.net/rss)
+            https://voceiro-relay.thendabs1.deno.net/rss)
           echo "Estado: $estado"
           grep -i '^content-type:' cabeceras || true
           echo "Bytes: $(wc -c < cuerpo)"
