@@ -1,0 +1,33 @@
+name: Probar relay
+
+# Una sola petición por el relay de Deno a la URL indicada, para saber si una
+# fuente que bloquea a Actions responde desde Deno. El host debe estar en
+# permitidos.json o agenda.json del relay. Muestra estado, tipo y tamaño.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL de destino (https://…)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Petición por el relay
+        env:
+          URL: ${{ inputs.url }}
+          RELAY_CLAVE: ${{ secrets.RELAY_CLAVE }}
+        run: |
+          estado=$(curl -sS -o cuerpo -D cabeceras -w '%{http_code}' --max-time 40 \
+            -H "X-Voceiro-Relay: $RELAY_CLAVE" \
+            --get --data-urlencode "u=$URL" \
+            https://voceiro-relay-hzvcanr0wjdj.thendabs1.deno.net/rss)
+          echo "Estado: $estado"
+          grep -i '^content-type:' cabeceras || true
+          echo "Bytes: $(wc -c < cuerpo)"
+          head -c 300 cuerpo; echo
