@@ -253,11 +253,14 @@ function ajVaciarLector(){
    ═══════════════════════════════════════════════════════════════ */
 function resumenModo(p){
   if (!presetTieneReglas(p)) return t('ajModoVacio');
-  return t('ajResumenModo', {
-    t: compilarTemas(p.palabras || []).length,
-    g: (p.grupos || []).length,
-    m: Object.keys(p.overrides || {}).length,
-  });
+  const ov = Object.values(p.overrides || {});
+  const temas = compilarTemas(p.palabras || []).length;
+  const bloqueados = ov.filter(v => v === 'ignore').length;
+  // «medios» son los que suman como fuente; los bloqueados van aparte.
+  const base = normalizarRegla(p.regla)?.fuentes === 'todas'
+    ? t('ajResumenModoTodas', { t: temas })
+    : t('ajResumenModo', { t: temas, g: (p.grupos || []).length, m: ov.filter(overrideIncluye).length });
+  return base + (bloqueados ? t('ajResumenBloqueados', { n: bloqueados }) : '');
 }
 function renderListaModos(){
   const cont = $('#lista-modos');
@@ -289,12 +292,21 @@ function ajEditarModo(id){
   else ajEmpujar('modo');
 }
 
+// Ayudas que cambian con la regla: sin ella (modos antiguos) fuentes y
+// temas se suman; con ella se cruzan, y con «todas» los grupos no cuentan.
+function clavePistaRegla(base, regla){
+  if (!regla) return base;
+  return base + (regla.fuentes === 'todas' ? 'Todas' : 'Elegidas');
+}
+
 function pintarModo(){
   const modo = modoEnPanel();
   if (!modo) return;
   const regla = normalizarRegla(modo.regla);
   $('#aj-regla').value = regla ? regla.fuentes : 'sumar';
   $('#aj-regla-hint').textContent = t(regla ? 'asRegla' + (regla.fuentes === 'todas' ? 'Todas' : 'Elegidas') : 'asReglaSumar');
+  $('#cfg-medios-hint').textContent = t(clavePistaRegla('cfgMediosHint', regla));
+  $('#cfg-grupos-hint').textContent = t(clavePistaRegla('cfgGruposHint', regla));
   const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
   const estado = $('#aj-modo-estado');
   estado.textContent = t('ajModoActivo');

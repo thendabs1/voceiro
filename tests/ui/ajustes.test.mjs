@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
 import { leerAplicacion } from '../soporte/frontend.mjs';
+import { I18N } from '../../front/idiomas/index.js';
+import { normalizarRegla } from '../../shared/busqueda/reglas.js';
 
 const codigo = leerAplicacion();
 function cargar(ctx, ...nombres){
@@ -37,7 +39,7 @@ test('las categorías y sus filas priorizan los medios activos del modo', () => 
     grupos: ['Regional · Galicia'],
     overrides: { 'galicia-b.es': 'ignore', 'nacional-b.es': 'first' },
   };
-  const ctx = {};
+  const ctx = { normalizarRegla };
   cargar(ctx, 'getOverride', 'overrideIncluye', 'medioActivoEnModo', 'ordenarCategoriasMedios');
   const { categorias, grupos, activos } = ctx.ordenarCategoriasMedios(medios, modo);
   assert.deepEqual(Array.from(grupos), ['Regional · Galicia', 'Nacional']);
@@ -135,4 +137,58 @@ test('cambiar de editor guarda los temas pendientes en su modo antes de abrir ot
   assert.equal(pintados, 1);
   assert.equal(elementos['#filtro-estado-medio'].value, '');
   assert.equal(elementos['#aj-bloque-medios'].open, false);
+});
+
+test('las ayudas de Medios y Grupos explican la regla del modo editado', () => {
+  const ctx = {};
+  cargar(ctx, 'clavePistaRegla');
+  const reglas = [null, { v: 1, fuentes: 'elegidas' }, { v: 1, fuentes: 'todas' }];
+  for (const base of ['cfgMediosHint', 'cfgGruposHint']){
+    const claves = reglas.map(r => ctx.clavePistaRegla(base, r));
+    assert.deepEqual(claves, [base, base + 'Elegidas', base + 'Todas']);
+    for (const [idioma, textos] of Object.entries(I18N)){
+      for (const clave of claves) assert.ok(textos[clave], `${idioma}: ${clave}`);
+    }
+  }
+});
+
+test('con todas las fuentes cuentan como activos los medios no bloqueados', () => {
+  const ctx = { normalizarRegla };
+  cargar(ctx, 'getOverride', 'overrideIncluye', 'medioActivoEnModo');
+  const modo = { regla: { v: 1, fuentes: 'todas' }, grupos: [], overrides: { 'b.es': 'ignore' } };
+  assert.equal(ctx.medioActivoEnModo({ dominio: 'a.es', grupo: 'Nacional' }, modo), true);
+  assert.equal(ctx.medioActivoEnModo({ dominio: 'b.es', grupo: 'Nacional' }, modo), false);
+  // Sin regla o con fuentes elegidas, un medio sin grupo ni inclusión no cuenta.
+  for (const regla of [undefined, { v: 1, fuentes: 'elegidas' }])
+    assert.equal(ctx.medioActivoEnModo({ dominio: 'a.es', grupo: 'Nacional' }, { ...modo, regla }), false);
+});
+
+test('con todas las fuentes los grupos se desactivan sin perder lo marcado', () => {
+  const lista = { innerHTML: '', querySelectorAll: () => [] };
+  const ctx = {
+    $: () => lista, normalizarRegla, escapeHtml: s => s,
+    MEDIOS_UNICOS: [{ grupo: 'Regional · Galicia' }, { grupo: 'Regional · Asturias' }],
+    ordenarGruposPorIdioma: g => g, gruposAfinesAlIdioma: () => new Set(),
+    bucketPorSuper: g => ({ buckets: new Map([['Regional', g]]), supers: ['Regional'] }),
+  };
+  cargar(ctx, 'renderListaGrupos');
+  const modo = { grupos: ['Regional · Galicia'], regla: { v: 1, fuentes: 'todas' } };
+  ctx.renderListaGrupos(modo);
+  assert.equal(lista.innerHTML.match(/\bdisabled\b/g).length, 3);
+  assert.match(lista.innerHTML, /data-grupo="Regional · Galicia" checked/);
+  ctx.renderListaGrupos({ ...modo, regla: { v: 1, fuentes: 'elegidas' } });
+  assert.doesNotMatch(lista.innerHTML, /\bdisabled\b/);
+});
+
+test('el resumen de un modo cuenta como medios solo los que suman fuentes', () => {
+  const ctx = {
+    normalizarRegla, presetTieneReglas: () => true, compilarTemas: p => p,
+    t: (k, v = {}) => k + JSON.stringify(v),
+  };
+  cargar(ctx, 'overrideIncluye', 'resumenModo');
+  const overrides = { 'a.es': 'include', 'b.es': 'first', 'c.es': 'ignore' };
+  assert.equal(ctx.resumenModo({ palabras: ['x'], grupos: ['G'], overrides }),
+    'ajResumenModo{"t":1,"g":1,"m":2}ajResumenBloqueados{"n":1}');
+  assert.equal(ctx.resumenModo({ palabras: [], grupos: ['G'], overrides: {}, regla: { v: 1, fuentes: 'todas' } }),
+    'ajResumenModoTodas{"t":0}');
 });

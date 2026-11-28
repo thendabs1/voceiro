@@ -104,7 +104,6 @@ function aplicarTextos(){
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
   const det = $('#ov-pegar-wrap summary');
   if (det) det.textContent = t('cfgOverridePegar');
-  $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#filtro-medio').placeholder = t('cfgBuscarMedio');
   $('#filtro-medio').setAttribute('aria-label', t('cfgBuscarMedio'));
   $('#filtro-grupo-medio').setAttribute('aria-label', t('cfgTodosGrupos'));
@@ -121,7 +120,6 @@ function aplicarTextos(){
   $('#ov-pegar').setAttribute('aria-label', t('cfgOverridePegar'));
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-grupos').textContent = t('cfgGrupos');
-  $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
 
   // Lectura
   $('#ac-tema').textContent = t('acTema');
