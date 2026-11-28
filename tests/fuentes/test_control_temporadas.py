@@ -630,18 +630,23 @@ class IncidenciasDeRespuesta(unittest.TestCase):
 
 
 class SalidaDeOperacion(unittest.TestCase):
-    def test_la_salida_fallida_nombra_coleccion_temporada_y_error(self):
+    def test_la_salida_fallida_nombra_lo_que_sigue_con_errores(self):
         # La vigilancia de `pasada` publica el texto de la salida: «1» no dice qué falló.
         fallida = {'temporada': 'x', 'coleccion': 'atp', 'referencia': '2027', 'estado': 'fallida',
                    'error': 'Respuesta parcial: faltan citas previamente acreditadas en la misma selección'}
         descubrimiento = {'coleccion': 'wrc', 'estado': 'fallida', 'error': 'HTTP Error 500'}
         with patch.object(operacion, 'abrir', return_value=MagicMock()), \
                 patch.object(operacion, 'ejecutar', return_value=[{'estado': 'activa'}, fallida, descubrimiento]), \
-                patch.object(operacion, 'pendientes', return_value=[]), \
-                patch('sys.stdout', new_callable=io.StringIO), self.assertRaises(SystemExit) as fin:
-            operacion.main(['--db', 'x.db', '--ejecutar', '--descubrir'])
-        self.assertEqual(str(fin.exception), 'atp 2027: ' + fallida['error'] + '; wrc: HTTP Error 500')
-        self.assertTrue(fin.exception.code)
+                patch('sys.stdout', new_callable=io.StringIO):
+            for pendientes, texto in (([], 'Con errores: atp 2027, wrc'),
+                                      # Lo que espera su reintento no alterna con los enfriamientos.
+                                      (['f2 2026', 'atp 2027', 'descubrimiento wrc'],
+                                       'Con errores: atp 2027, descubrimiento wrc, f2 2026')):
+                with patch.object(operacion, 'pendientes', return_value=pendientes), \
+                        self.assertRaises(SystemExit) as fin:
+                    operacion.main(['--db', 'x.db', '--ejecutar', '--descubrir'])
+                self.assertEqual(str(fin.exception), texto)
+                self.assertTrue(fin.exception.code)
 
 
 if __name__ == '__main__':

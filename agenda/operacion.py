@@ -502,9 +502,11 @@ def main(argv=None):
     resultados = salida if isinstance(salida, list) else [salida]
     fallidas = [r for r in resultados if r and r.get('estado') == 'fallida']
     if (args.ejecutar or args.contrastar) and fallidas:
-        # La vigilancia de `pasada` publica este texto: qué falló, no solo el código 1.
-        raise SystemExit('; '.join(' '.join(filter(None, (r.get('coleccion'), r.get('referencia'))))
-                                   + ': ' + r.get('error', '') for r in fallidas))
+        # La vigilancia de `pasada` publica este texto y comenta cada cambio: qué sigue
+        # con errores, no solo el código 1. Los errores, en el JSON del log: con
+        # enfriamientos distintos, las fallidas de cada pasada alternan.
+        nombres = espera or [' '.join(filter(None, (r.get('coleccion'), r.get('referencia')))) for r in fallidas]
+        raise SystemExit('Con errores: ' + ', '.join(sorted(set(nombres))))
     return {'pendientes': espera}
 
 
