@@ -307,6 +307,18 @@ class FichasIncrementales(unittest.TestCase):
         informe = fca.completar_fichas(eventos, obtener, conocidas, leidas={}, ahora='2026-11-28')
         self.assertEqual((len(vistas), informe['conservadas']), (1, 1))
 
+    def test_un_fallo_del_relay_en_fichas_guarda_el_inventario_como_bloqueado(self):
+        respuestas = [json.dumps(pagina()), recogida.ErrorRelay('El relay no trae respuesta de la fuente (HTTP 502)')]
+        def descargar(url, binario=False):
+            r = respuestas.pop(0) if respuestas else self.fail('tras el fallo del relay no se pide nada más')
+            if isinstance(r, Exception):
+                raise r
+            return r
+        entrada, informe = r.recoger('fca', '2026-01-01', '2026-03-31', descargar=descargar, fichas={})
+        self.assertEqual(len(entrada['eventos']), pagina()['total'])
+        self.assertEqual((informe['bloqueada'], informe['aplicar_ausencias'], informe['retry_after']), (True, False, None))
+        self.assertEqual(len(informe['fichas']['fallidas']), 1)
+
     def test_dos_pasadas_guardan_el_estado_y_la_segunda_solo_pide_lo_cambiado(self):
         def tribe(i, modificado):
             return {'id': i, 'title': f'Cursa {i}', 'url': f'https://fcatletisme.cat/event/c{i}/',

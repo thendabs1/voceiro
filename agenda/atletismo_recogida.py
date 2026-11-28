@@ -683,7 +683,7 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
         nuevos = {x['nuevo'] for x in informe.get('renumeradas', [])}
         entrada['eventos'] = [e for e in entrada['eventos'] if str(e['id']) not in nuevos]
         informe.update(bloqueada=True, completo=False, aplicar_ausencias=False, ausencias=[],
-                       renumeradas=[], retry_after=(bloqueo.headers or {}).get('Retry-After'))
+                       renumeradas=[], retry_after=(getattr(bloqueo, 'headers', None) or {}).get('Retry-After'))
         if fuente in ('rfea', 'fca'):
             atletismo_documentos.conservar(entrada['eventos'], conocidas, informe.get('documentos_revisados', {}))
     # Solo con la ausencia del ID guardado: dos IDs vivos no comparten identidad.
