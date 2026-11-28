@@ -449,6 +449,24 @@ class ContratoControl:
         d = self.repo.descubrimiento('wrc')
         self.assertEqual((d['errores_consecutivos'], d['proxima_revision']), (0, '2026-11-08T12:00:00.000000+00:00'))
 
+    def test_descubrimiento_por_fecha_no_pasa_del_ano_siguiente(self):
+        # ATP (ESPN por fecha) creaba cada semana el año siguiente al último endDate guardado.
+        def alta(referencia):
+            t = temporadas.nueva('atp', referencia, AHORA, seleccion={'year': referencia})
+            fin = str(int(referencia) + 1)
+            self.repo.registrar({**t, 'limites_proveedor': {'startDate': referencia + '-01-01T08:00Z',
+                                                           'endDate': fin + '-01-01T07:59Z'}})
+        alta('2026')
+        with patch.object(operacion.proveedores, 'recoger', side_effect=ValueError('sin calendario')) as recoger:
+            operacion.descubrir(self.repo, 'atp', AHORA)
+        self.assertEqual(recoger.call_args.kwargs['fecha'], '2027-01-02')
+        alta('2027')
+        with patch.object(operacion.proveedores, 'recoger') as recoger:
+            self.assertEqual(operacion.descubrir(self.repo, 'atp', AHORA, forzar=True), (None, None))
+        recoger.assert_not_called()
+        self.assertEqual(self.repo.descubrimiento('atp')['errores_consecutivos'], 0)
+        self.assertEqual([t['referencia'] for t in self.repo.temporadas('atp')], ['2026', '2027'])
+
     def test_reserva_incierta_en_el_descubrimiento_no_es_temporada_ausente(self):
         def recoger(*args, **kwargs):
             try:
