@@ -2,7 +2,7 @@
 // los medios que bloquean la de GitHub Actions.
 //
 // Solo sirve hosts de permitidos.json, que genera scripts/sync_relay.py a
-// partir de las fuentes con 'relay' de medios.py (sync-relay.yml tras el
+// partir de las fuentes con 'relay' de medios.py (deploy-deno-relay.yml tras el
 // merge). No se edita a mano.
 //
 // agenda.json sí se edita a mano: fuentes de la agenda (no de medios.py) que
@@ -66,14 +66,15 @@ Deno.serve(async (req) => {
       },
     });
 
-    const body = await r.arrayBuffer();
-    return new Response(body, {
-      status: r.status,
-      headers: {
-        "content-type": r.headers.get("content-type") ?? "application/octet-stream",
-        "x-relay-status": String(r.status),
-      },
-    });
+    const headers: Record<string, string> = {
+      "content-type": r.headers.get("content-type") ?? "application/octet-stream",
+      "x-relay-status": String(r.status),
+    };
+    // Con un 429 o 503, la recogida espera lo que pida la fuente.
+    const espera = r.headers.get("retry-after");
+    if (espera) headers["retry-after"] = espera;
+    // En flujo: el relay no guarda la respuesta entera; el cliente corta lo que exceda su tope.
+    return new Response(r.body, { status: r.status, headers });
   } catch (e) {
     return new Response("relay error: " + (e as Error).message, { status: 502 });
   }

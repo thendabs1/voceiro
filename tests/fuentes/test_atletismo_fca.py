@@ -1,12 +1,18 @@
 """FCA sin red: literales, documentos, coste e identidad de las citas."""
 from copy import deepcopy
 from datetime import date
+from email.message import Message
+import io
 import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 from urllib.error import HTTPError
+from urllib.parse import quote
 
 from agenda import atletismo as a, atletismo_bloque, atletismo_fca as fca, atletismo_recogida as r
+from agenda import almacen, publicacion, recogida
 from agenda import atletismo_coincidencias as coincidencias
 
 MUESTRAS = Path(__file__).with_name('muestras_calendario') / 'atletismo'
@@ -99,7 +105,8 @@ class AdaptadorFCA(unittest.TestCase):
         self.assertEqual(len(vistas), 2)
         self.assertFalse(any(u.endswith('.pdf') for u in vistas))
         self.assertTrue(informe['completo'])
-        self.assertEqual(informe['fichas'], {'leidas': 1, 'documentos': 1, 'fallidas': []})
+        self.assertEqual(informe['fichas'], {'leidas': 1, 'documentos': 1, 'fallidas': [],
+                                             'conservadas': 0, 'atrasadas': 0})
         d = entrada['eventos'][0]['metadatos']['documentos'][-1]
         self.assertEqual((d['rol'], d['evidencia']['superficie'], d['evidencia']['localizador']),
                          ('reglamento', 'ficha', 'dl/Reglament'))
@@ -199,6 +206,190 @@ class AdaptadorFCA(unittest.TestCase):
         observaciones = set(n['observaciones'])
         nuevo = a.importar(n, entrada, '2026-11-04T12:00:00+01:00')
         self.assertEqual(set(nuevo['observaciones']), observaciones)
+
+
+def ficha(i):
+    return FICHA.replace('post-89925', 'post-' + str(i))
+
+
+class FichasIncrementales(unittest.TestCase):
+    PREVIO = {'url': 'https://fcatletisme.cat/r.pdf', 'nombre': 'Reglament', 'rol': 'reglamento',
+              'evidencia': {'superficie': 'ficha', 'url': 'https://fcatletisme.cat/event/x/'}}
+
+    def citas(self, ids, modificado='m'):
+        eventos = [{'id': i, 'url': f'https://fcatletisme.cat/event/{i}/', 'inicio': f'2026-12-{i:0>2}',
+                    'metadatos': {'documentos': [], 'modificado': modificado}} for i in ids]
+        conocidas = [{'id': i, 'fuente': 'fca', 'metadatos': {'documentos': [self.PREVIO]}} for i in ids]
+        return eventos, conocidas
+
+    def test_solo_nuevas_cambiadas_y_la_rotacion_mas_antigua(self):
+        eventos, conocidas = self.citas(['1', '2', '3', '4', '5'])
+        leidas = {'1': {'modificado': 'm', 'leida': '2026-11-20'}, '2': {'modificado': 'antes', 'leida': '2026-11-21'},
+                  '3': {'modificado': 'm', 'leida': '2026-11-01'}, '4': {'modificado': 'm', 'leida': '2026-11-10'},
+                  '9': {'modificado': 'm', 'leida': '2026-11-01'}}  # Fuera de la ventana: se olvida.
+        vistas = []
+        def obtener(url):
+            i = url.rstrip('/').rsplit('/', 1)[1]
+            vistas.append(i)
+            if i == '5':
+                raise HTTPError(url, 500, 'x', {}, None)
+            return ficha(i)
+        with patch.object(fca, 'ROTACION', 1):
+            informe = fca.completar_fichas(eventos, obtener, conocidas, leidas=leidas, ahora='2026-11-28')
+        # 2 cambió, 5 es nueva y 3 es la leída hace más tiempo; 1 y 4 no se piden.
+        self.assertEqual(sorted(vistas), ['2', '3', '5'])
+        self.assertEqual(informe['estado'], {'1': leidas['1'], '4': leidas['4'], '5': {'intentada': '2026-11-28'},
+                                             '2': {'modificado': 'm', 'leida': '2026-11-28'},
+                                             '3': {'modificado': 'm', 'leida': '2026-11-28'}})
+        self.assertEqual((informe['leidas'], len(informe['fallidas']), informe['conservadas'], informe['atrasadas']),
+                         (2, 1, 2, 0))
+        documentos = {e['id']: [d['url'] for d in e['metadatos']['documentos']] for e in eventos}
+        self.assertEqual(documentos['1'], [self.PREVIO['url']])  # Sin pedir: conserva lo anterior.
+        self.assertEqual(documentos['5'], [self.PREVIO['url']])  # Fallida: conserva y se repite.
+        self.assertNotEqual(documentos['2'], [self.PREVIO['url']])
+
+    def test_sin_modified_o_sin_lectura_guardada_se_pide(self):
+        eventos, conocidas = self.citas(['1', '2'], modificado=None)
+        leidas = {i: {'modificado': None, 'leida': '2026-11-27'} for i in ('1', '2')}
+        vistas = []
+        with patch.object(fca, 'ROTACION', 0):
+            fca.completar_fichas(eventos, lambda u: vistas.append(u) or ficha(u.rstrip('/').rsplit('/', 1)[1]),
+                                 conocidas[:1], leidas=leidas, ahora='2026-11-28')
+        self.assertEqual(len(vistas), 2)
+        eventos, _ = self.citas(['1'])
+        vistas.clear()
+        with patch.object(fca, 'ROTACION', 0):
+            fca.completar_fichas(eventos, lambda u: vistas.append(u) or ficha('1'), (),
+                                 leidas={'1': {'modificado': 'm', 'leida': '2026-11-27'}}, ahora='2026-11-28')
+        self.assertEqual(len(vistas), 1)  # Sin documentos guardados que conservar.
+
+    def test_cupo_pide_antes_las_mas_proximas_y_un_bloqueo_conserva_el_estado(self):
+        eventos, conocidas = self.citas(['4', '3', '2', '1'])
+        vistas = []
+        with patch.object(fca, 'CUPO_FICHAS', 2):
+            informe = fca.completar_fichas(eventos, lambda u: vistas.append(u) or ficha(u.rstrip('/').rsplit('/', 1)[1]),
+                                           conocidas, leidas={}, ahora='2026-11-28')
+        self.assertEqual([u.rstrip('/').rsplit('/', 1)[1] for u in vistas], ['1', '2'])  # Por prioridad.
+        self.assertEqual((informe['atrasadas'], informe['conservadas'], sorted(informe['estado'])), (2, 2, ['1', '2']))
+        leidas = {i: {'modificado': 'antes', 'leida': '2026-11-01'} for i in ('1', '2', '3', '4')}
+        def bloqueo(url):
+            raise HTTPError(url, 403, 'x', {}, None)
+        informe = fca.completar_fichas(eventos, bloqueo, conocidas, leidas=leidas, ahora='2026-11-28')
+        self.assertEqual([f['id'] for f in informe['fallidas']], ['1'])  # Antes la más próxima.
+        self.assertEqual(informe['estado'], {**leidas, '1': {'intentada': '2026-11-28'}})
+
+    def test_la_que_falla_siempre_no_ocupa_el_cupo_y_la_rotacion_va_detras(self):
+        eventos, conocidas = self.citas(['1', '2', '3'])
+        vistas = []
+        def obtener(url):
+            i = url.rstrip('/').rsplit('/', 1)[1]
+            vistas.append(i)
+            if i == '1':
+                raise HTTPError(url, 500, 'x', {}, None)
+            return ficha(i)
+        leidas = {}
+        for dia in ('2026-11-27', '2026-11-28'):
+            with patch.object(fca, 'CUPO_FICHAS', 1), patch.object(fca, 'ROTACION', 0):
+                leidas = fca.completar_fichas(deepcopy(eventos), obtener, conocidas, leidas=leidas, ahora=dia)['estado']
+        self.assertEqual(vistas, ['1', '2'])  # El segundo día, la nunca intentada antes que la fallida.
+        vistas.clear()
+        leidas = {'1': {'modificado': 'm', 'leida': '2026-11-01'}, '3': {'modificado': 'm', 'leida': '2026-11-02'}}
+        with patch.object(fca, 'ROTACION', 1):
+            fca.completar_fichas(eventos, obtener, conocidas, leidas=leidas, ahora='2026-11-28')
+        self.assertEqual(vistas, ['2', '1'])  # La nueva antes que la de rotación, aunque vaya detrás en el listado.
+
+    def test_un_fallo_del_relay_corta_las_fichas(self):
+        eventos, conocidas = self.citas(['1', '2'])
+        vistas = []
+        def obtener(url):
+            vistas.append(url)
+            raise recogida.ErrorRelay('El relay no trae respuesta de la fuente (HTTP 502)')
+        informe = fca.completar_fichas(eventos, obtener, conocidas, leidas={}, ahora='2026-11-28')
+        self.assertEqual((len(vistas), informe['conservadas']), (1, 1))
+
+    def test_un_fallo_del_relay_en_fichas_guarda_el_inventario_como_bloqueado(self):
+        respuestas = [json.dumps(pagina()), recogida.ErrorRelay('El relay no trae respuesta de la fuente (HTTP 502)')]
+        def descargar(url, binario=False):
+            r = respuestas.pop(0) if respuestas else self.fail('tras el fallo del relay no se pide nada más')
+            if isinstance(r, Exception):
+                raise r
+            return r
+        entrada, informe = r.recoger('fca', '2026-01-01', '2026-03-31', descargar=descargar, fichas={})
+        self.assertEqual(len(entrada['eventos']), pagina()['total'])
+        self.assertEqual((informe['bloqueada'], informe['aplicar_ausencias'], informe['retry_after']), (True, False, None))
+        self.assertEqual(len(informe['fichas']['fallidas']), 1)
+
+    def test_dos_pasadas_guardan_el_estado_y_la_segunda_solo_pide_lo_cambiado(self):
+        def tribe(i, modificado):
+            return {'id': i, 'title': f'Cursa {i}', 'url': f'https://fcatletisme.cat/event/c{i}/',
+                    'start_date': f'2099-03-1{i} 00:00:00', 'end_date': f'2099-03-1{i} 23:59:59', 'all_day': True,
+                    'modified_utc': modificado, 'venue': {'id': 1, 'venue': 'Pista', 'city': 'Lleida'},
+                    'categories': [], 'organizer': [], 'status': 'publish'}
+        api = {'eventos': [tribe(1, 'a'), tribe(2, 'a')]}
+        vistas = []
+        def descargar(url, binario=False):
+            vistas.append(url)
+            if url.startswith(fca.API):
+                return json.dumps({'total': 2, 'total_pages': 1, 'events': api['eventos']})
+            return ficha(url.rstrip('/')[-1])
+        with tempfile.TemporaryDirectory() as carpeta, patch('agenda.recogida.descargar', descargar), \
+                patch('agenda.atletismo_recogida.time.sleep'), patch.object(fca, 'ROTACION', 0):
+            db = str(Path(carpeta) / 'agenda.db')
+            args = ['--db', db, '--fuente', 'fca', '--inicio', '2099-03-01', '--fin', '2099-03-31']
+            r.main(args)
+            self.assertEqual(sum('/event/' in u for u in vistas), 2)
+            vistas.clear()
+            api['eventos'] = [tribe(1, 'a'), tribe(2, 'b')]
+            r.main(args)
+            self.assertEqual([u for u in vistas if '/event/' in u], ['https://fcatletisme.cat/event/c2/'])
+            with almacen.abrir(db) as conexion:
+                n = almacen.cargar(conexion)['nucleo']
+                guardado = json.loads(conexion.execute('SELECT valor_json FROM agenda_estado WHERE clave=?',
+                                                       ('atletismo-informe-fca',)).fetchone()[0])
+        self.assertEqual({i: x['modificado'] for i, x in n['fuentes']['fca']['fichas'].items()}, {'1': 'a', '2': 'b'})
+        self.assertNotIn('estado', guardado['fichas'])
+        self.assertEqual(guardado['fichas']['conservadas'], 1)
+        # La cita sin pedir conserva el reglamento de su ficha.
+        documentos = {c['id']: c['metadatos']['documentos'] for c in coincidencias.actuales(n)}
+        self.assertTrue(any(d['evidencia']['superficie'] == 'ficha' for d in documentos['1']))
+        self.assertNotIn('fichas', publicacion.proyectar(n, fuentes=['fca'])['fuentes']['fca'])
+
+
+class Relay(unittest.TestCase):
+    URL = 'https://fcatletisme.cat/wp-json/tribe/events/v1/events?per_page=1&page=2'
+
+    def test_con_clave_fca_va_por_el_relay_y_lo_demas_directo(self):
+        with patch.dict('os.environ', {'RELAY_CLAVE': 'clave-sintetica'}), \
+                patch('agenda.recogida.urlopen', side_effect=lambda req, timeout: io.BytesIO(b'{}')) as abrir:
+            recogida.descargar(self.URL)
+            recogida.descargar('https://atletismorfea.es/calendario')
+        relay, directa = (c.args[0] for c in abrir.call_args_list)
+        self.assertEqual(relay.full_url, recogida.RELAY + quote(self.URL, safe=''))
+        self.assertEqual(relay.get_header('X-voceiro-relay'), 'clave-sintetica')
+        self.assertTrue(relay.get_header('User-agent').startswith('Voceiro/'))
+        self.assertEqual(directa.full_url, 'https://atletismorfea.es/calendario')
+        self.assertIsNone(directa.get_header('X-voceiro-relay'))
+        with patch.dict('os.environ', {}, clear=True), \
+                patch('agenda.recogida.urlopen', return_value=io.BytesIO(b'{}')) as abrir:
+            recogida.descargar(self.URL)
+        self.assertEqual(abrir.call_args.args[0].full_url, self.URL)
+
+    def test_un_rechazo_del_relay_no_pasa_por_bloqueo_de_la_fuente(self):
+        fuente = Message()
+        fuente['x-relay-status'] = '403'
+        with patch.dict('os.environ', {'RELAY_CLAVE': 'clave-sintetica'}):
+            with patch('agenda.recogida.urlopen', side_effect=HTTPError(self.URL, 403, 'x', fuente, None)):
+                with self.assertRaises(HTTPError):
+                    recogida.descargar(self.URL)
+            with patch('agenda.recogida.urlopen', side_effect=HTTPError(self.URL, 403, 'x', Message(), None)):
+                with self.assertRaisesRegex(recogida.ErrorRelay, 'relay'):
+                    recogida.descargar(self.URL)
+            with self.assertRaisesRegex(ValueError, 'cabeceras'):
+                recogida.descargar(self.URL, {'Accept': 'x'})
+
+    def test_el_relay_admite_los_hosts_que_le_mandamos(self):
+        agenda = json.loads((Path(__file__).parents[2] / 'workers/deno-relay/src/agenda.json').read_text())
+        self.assertLessEqual(set(recogida.POR_RELAY), set(agenda))
 
 
 if __name__ == '__main__':

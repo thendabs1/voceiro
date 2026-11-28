@@ -1,14 +1,25 @@
 """Recogidas explícitas y acotadas; no programa ni publica datos."""
 
 import json
+import os
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import date, timedelta
 from urllib.error import HTTPError
+from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
 
 
 MAX_BYTES = 4_000_000
+# Fuentes que bloquean la IP de Actions: van por el relay de Deno (la misma
+# URL que cosecha/config.py), que las pide con el agente de Voceiro
+# (workers/deno-relay/src/agenda.json). Sin RELAY_CLAVE, como en local, van directas.
+RELAY = 'https://voceiro-relay.thendabs1.deno.net/rss?u='
+POR_RELAY = ('fcatletisme.cat',)
+
+
+class ErrorRelay(OSError):
+    """El relay no trae respuesta de la fuente (clave, host o red): corta la pasada como un bloqueo."""
 CHROME_UA = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
              '(KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36')
 _CONTROL = ContextVar('agenda_control_descargas', default=None)
@@ -24,8 +35,19 @@ def controlar(antes, despues):
         _CONTROL.reset(token)
 
 
+def por_relay(url):
+    host = (urlsplit(url).hostname or '').lower()
+    return any(host == h or host.endswith('.' + h) for h in POR_RELAY)
+
+
 def descargar(url, cabeceras=None, *, binario=False):
-    req = Request(url, headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)', **(cabeceras or {})})
+    clave = os.environ.get('RELAY_CLAVE') if por_relay(url) else None
+    if clave and cabeceras:
+        raise ValueError('El relay no reenvía cabeceras')
+    req = Request(RELAY + quote(url, safe='') if clave else url,
+                  headers={'User-Agent': 'Voceiro/1.0 (+https://voceiro.eu)', **(cabeceras or {})})
+    if clave:
+        req.add_unredirected_header('X-Voceiro-Relay', clave)  # Nunca a otro host por una redirección.
     control = _CONTROL.get()
     if control:
         control[0](url)
@@ -37,6 +59,9 @@ def descargar(url, cabeceras=None, *, binario=False):
             contenido = respuesta.read(MAX_BYTES + 1)
     except HTTPError as error:
         estado, headers = error.code, dict(error.headers or {})
+        if clave and not (error.headers or {}).get('x-relay-status'):
+            # Lo rechaza el propio relay (clave, host o red): no es un 403 o 429 de la fuente.
+            raise ErrorRelay(f'El relay no trae respuesta de la fuente (HTTP {error.code})') from error
         raise
     finally:
         if control:

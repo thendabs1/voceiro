@@ -245,9 +245,17 @@ hasta contrastar el convenio UTC/local. `atletismo_fca` añade bloque v2 desde
 Tribe y de la ficha: descripción en texto normalizado, documentos con rol por
 etiqueta o sección y su evidencia, organizaciones bajo el rótulo contrastado
 «Organitzador(s)», dirección y títulos de nombre reservado. `Reglament` y
-`Resultats` solo constan en la ficha, cuya clase `post-{id}` acredita la cita:
-una por cita, con pausa de 1 s. Si falla, conserva los documentos anteriores; un
-403 o 429 corta las fichas sin perder el inventario de la API. La ficha no lee PDF ni
+`Resultats` solo constan en la ficha, cuya clase `post-{id}` acredita la cita
+(pausa de 1 s). Se pide la ficha nueva, la de otro `modified_utc` de Tribe o la
+que no tiene lectura buena guardada (hasta 15 por pasada: antes las nunca
+intentadas y luego las que llevan más sin intentarse), más las 3 leídas hace más
+tiempo, por si una edición no cambiara `modified_utc`; las demás conservan sus
+documentos. La última lectura de cada ficha (`modificado` y `leida`, o `intentada`
+si falló) va en `fuentes.fca.fichas`, sin publicar. Si una falla, conserva los
+documentos anteriores y se repite cuando le toque; un 403 o 429, o un fallo del relay, corta las fichas sin perder el inventario de la API. Desde el 25/11/2026
+FCA da 403 a la IP de Actions (#385): con `RELAY_CLAVE`, `agenda/recogida.py`
+pide `fcatletisme.cat` por el relay de Deno (`workers/deno-relay`, `agenda.json`)
+con el agente de Voceiro; sin la clave, como en local, va directa. La ficha no lee PDF ni
 clasifica por categorías o título. Los avisos de estado solo en el título no
 cambian la programación. `status=publish` es editorial.
 
