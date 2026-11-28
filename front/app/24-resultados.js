@@ -524,29 +524,6 @@ function wireResultadosDelegation(){
 let VISTAS_OBSERVER = null;
 const VISTAS_TIMERS = new WeakMap();
 
-const VISTA_SCROLL_MS = 2500;   // 2,5 s visible antes de marcar
-
-function marcarVista(art, n){
-  const tmr = VISTAS_TIMERS.get(art);
-  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
-  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
-  marcarVistaLocal(n.enlace);
-  art.classList.add('vista');
-  persistirVistas();
-}
-
-function programarVista(art, n, ms){
-  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
-  if (VISTAS_TIMERS.has(art)) return;
-  const tmr = setTimeout(() => marcarVista(art, n), ms);
-  VISTAS_TIMERS.set(art, tmr);
-}
-
-function cancelarVista(art){
-  const tmr = VISTAS_TIMERS.get(art);
-  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
-}
-
 const VISTAS_SEEN = new WeakSet();
 
 

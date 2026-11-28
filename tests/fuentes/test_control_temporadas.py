@@ -1,11 +1,12 @@
 """Control durable, presupuestos y confirmación atómica con SQLite y Hrana."""
 
 from copy import deepcopy
+import io
 import sqlite3
 import tempfile
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from agenda import almacen, cadencias, deportes, operacion, proveedores, temporadas
 from agenda.control import ConflictoControl, PresupuestoAgotado, Repositorio
@@ -626,6 +627,22 @@ class IncidenciasDeRespuesta(unittest.TestCase):
         # Solo donde la importación retira la carrera sustituida.
         self.assertEqual([p for p in ('motogp', 'moto2', 'moto3', 'formula1', 'formula2', 'espn-f1', 'laliga-primera')
                           if proveedores.sustituye_sesiones(p)], ['motogp', 'moto2', 'moto3'])
+
+
+class SalidaDeOperacion(unittest.TestCase):
+    def test_la_salida_fallida_nombra_coleccion_temporada_y_error(self):
+        # La vigilancia de `pasada` publica el texto de la salida: «1» no dice qué falló.
+        fallida = {'temporada': 'x', 'coleccion': 'atp', 'referencia': '2027', 'estado': 'fallida',
+                   'error': 'Respuesta parcial: faltan citas previamente acreditadas en la misma selección'}
+        descubrimiento = {'coleccion': 'wrc', 'estado': 'fallida', 'error': 'HTTP Error 500'}
+        with patch.object(operacion, 'abrir', return_value=MagicMock()), \
+                patch.object(operacion, 'ejecutar', return_value=[{'estado': 'activa'}, fallida, descubrimiento]), \
+                patch.object(operacion, 'pendientes', return_value=[]), \
+                patch('sys.stdout', new_callable=io.StringIO), self.assertRaises(SystemExit) as fin:
+            operacion.main(['--db', 'x.db', '--ejecutar', '--descubrir'])
+        self.assertEqual(str(fin.exception), 'atp 2027: ' + fallida['error'] + '; wrc: HTTP Error 500')
+        self.assertTrue(fin.exception.code)
+
 
 if __name__ == '__main__':
     unittest.main()
