@@ -63,6 +63,8 @@ jobs:
       CALENDARIO_TURSO_URL: ${{ secrets.CALENDARIO_TURSO_URL }}
       CALENDARIO_TURSO_TOKEN: ${{ secrets.CALENDARIO_TURSO_TOKEN }}
       OCBLACKTOP_API_KEY: ${{ secrets.OCBLACKTOP_API_KEY }}
+      # Fuentes que bloquean la IP de Actions (FCA) van por el relay de Deno: agenda/recogida.py.
+      RELAY_CLAVE: ${{ secrets.RELAY_CLAVE }}
       # Núcleo en el bucket privado (objetos por huella, manifiesto en Turso); nunca en R2_BUCKET, que es público.
       AGENDA_R2_BUCKET: voceiro-agenda
       AGENDA_R2_ACCESS_KEY_ID: ${{ secrets.AGENDA_R2_ACCESS_KEY_ID }}

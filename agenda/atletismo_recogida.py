@@ -557,7 +557,7 @@ def reconsultar(fuente, conocidas, entrada, informe, desde, hasta, obtener, obse
 
 
 def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=None, cache=None,
-            conocidas=(), observado=None, indice_circulares=None, relectura=None):
+            conocidas=(), observado=None, indice_circulares=None, relectura=None, fichas=None):
     max_peticiones = max_peticiones or (PRESUPUESTO_RFEA if fuente == 'rfea' else 200)
     if fuente not in LECTORES or not 1 <= max_peticiones <= 500:
         raise ValueError('Fuente o presupuesto de atletismo desconocidos')
@@ -636,7 +636,8 @@ def recoger(fuente, inicio=None, fin=None, *, descargar=None, max_peticiones=Non
     # El ID nuevo de una renumeración hereda lo guardado bajo el anterior.
     previos = {x['nuevo']: x['id'] for x in informe.get('renumeradas', [])}
     if fuente == 'fca':
-        informe['fichas'] = atletismo_fca.completar_fichas(entrada['eventos'], obtener, conocidas, previos)
+        informe['fichas'] = atletismo_fca.completar_fichas(entrada['eventos'], obtener, conocidas, previos, fichas,
+            observado or datetime.now(timezone.utc).isoformat(timespec='microseconds'))
         informe.setdefault('avisos', []).extend(informe['fichas']['fallidas'])
     if fuente in ('rfea', 'fca') and bloqueo is None:
         try:
@@ -816,7 +817,8 @@ def main(argv=None):
                                    conocidas=conocidas, observado=observado,
                                    indice_circulares=json.loads(Path(args.indice_circulares).read_text()) if args.indice_circulares else None,
                                    relectura={'comprobadas': previa.get('relectura', {}),
-                                              'retiradas': (previa.get('ausencias') or {}).get('ids', {})})
+                                              'retiradas': (previa.get('ausencias') or {}).get('ids', {})},
+                                   fichas=previa.get('fichas', {}) if args.fuente == 'fca' else None)
         if informe.get('conservar_lectura'):
             return calendario, informe
         n = atletismo.importar(calendario['nucleo'], entrada, observado)
@@ -839,6 +841,9 @@ def main(argv=None):
         # Importar rehace la fuente: como la ventana, se anota después.
         if comprobadas := (relectura.pop('comprobadas') if relectura else previa.get('relectura')):
             n['fuentes'][args.fuente]['relectura'] = comprobadas
+        # Última lectura buena de cada ficha FCA: la próxima pasada solo pide las cambiadas.
+        if (fichas := (informe.get('fichas') or {}).pop('estado', previa.get('fichas'))) is not None:
+            n['fuentes'][args.fuente]['fichas'] = fichas
         # Literal nuevo: se avisa para ampliar la tabla; no hace incompleta la lectura.
         informe['modalidades_desconocidas'] = sorted({x for e in leidas
                                                       for x in atletismo_modalidades.de(e.get('metadatos'))[1]})
@@ -897,6 +902,8 @@ def main(argv=None):
                       **({'resultados': {'verificados': informe['resultados']['verificados'],
                                          'descartados': len(informe['resultados']['descartados'])}}
                          if 'resultados' in informe else {}),
+                      **({'fichas': {k: informe['fichas'][k] for k in ('leidas', 'conservadas', 'atrasadas')}}
+                         if 'fichas' in informe else {}),
                       **({'relectura': {k: informe['relectura'][k] for k in ('candidatas', 'leidas', 'fallidas')}
                          | {'hallados': len(informe['relectura']['hallados'])}} if 'relectura' in informe else {}),
                       **({'modalidades_desconocidas': informe['modalidades_desconocidas']}

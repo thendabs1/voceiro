@@ -18,6 +18,10 @@ AUTORIDADES = {'Federació Catalana d’Atletisme': 'fca',
                'Federació Andorrana d’Atletisme': 'faa',
                'WA (World Athletics)': 'wa', 'EA (European Athletics)': 'ea'}
 CAMPOS_FICHA = {'Reglament': 'reglamento', 'Resultats': 'resultados'}
+# Fichas por pasada: nuevas o cambiadas, y además las leídas hace más tiempo
+# (unas 90 citas en la ventana: un repaso completo al mes).
+CUPO_FICHAS = 15
+ROTACION = 3
 
 
 def texto(html):
@@ -179,10 +183,16 @@ def leer_ficha(html, i, url):
     return salida
 
 
-def completar_fichas(eventos, obtener, conocidas=(), previos=None):
+def completar_fichas(eventos, obtener, conocidas=(), previos=None, leidas=None, ahora=None):
     """Añade lo exclusivo de ficha; un fallo conserva lo anterior y no anula el inventario.
 
     `previos` (ID nuevo → anterior) recupera lo anterior de una cita renumerada en esta pasada.
+
+    `leidas` (ID → {'modificado', 'leida'}) es la última lectura buena de cada ficha.
+    Con ella solo se piden las fichas sin lectura buena guardada o con otro `modified`
+    de Tribe (hasta CUPO_FICHAS, antes las más próximas) y las ROTACION leídas hace
+    más tiempo, por si una edición no cambiara `modified`. Las demás conservan lo
+    anterior. El informe devuelve el estado nuevo en `estado`. Sin `leidas`, se piden todas.
 
     Un 403 o 429 corta esta superficie, no la lectura de la API. El presupuesto
     agotado sí se propaga: no se importa una recogida parcial.
@@ -190,14 +200,30 @@ def completar_fichas(eventos, obtener, conocidas=(), previos=None):
     anteriores = {c['id']: [d for d in c['metadatos'].get('documentos', [])
                             if d.get('evidencia', {}).get('superficie') == 'ficha']
                   for c in conocidas if c['fuente'] == 'fca' and not c.get('lectura_ambigua')}
-    informe, bloqueada = {'leidas': 0, 'documentos': 0, 'fallidas': []}, False
+    informe, bloqueada = {'leidas': 0, 'documentos': 0, 'fallidas': [], 'conservadas': 0, 'atrasadas': 0}, False
+    if leidas is None:
+        pedir = {e['id'] for e in eventos}
+    else:
+        def vigente(e):
+            m = e['metadatos'].get('modificado')
+            return bool(m) and (leidas.get(e['id']) or {}).get('modificado') == m and e['id'] in anteriores
+        cambiadas = sorted((e for e in eventos if not vigente(e)), key=lambda e: (e.get('inicio', ''), e['id']))
+        resto = sorted((e for e in eventos if vigente(e)), key=lambda e: (leidas[e['id']]['leida'], e['id']))
+        pedir = {e['id'] for e in cambiadas[:CUPO_FICHAS] + resto[:ROTACION]}
+        informe['atrasadas'] = max(0, len(cambiadas) - CUPO_FICHAS)
+        # Sin pedir o cortada por un bloqueo, sigue la lectura guardada; si falla, se olvida y se repite.
+        informe['estado'] = {e['id']: leidas[e['id']] for e in eventos if e['id'] in leidas}
     for e in eventos:
         nuevos = None
-        if not bloqueada:
+        if e['id'] not in pedir or bloqueada:
+            informe['conservadas'] += 1
+        else:
             try:
                 nuevos = leer_ficha(obtener(e['url']), e['id'], e['url'])
                 informe['leidas'] += 1
                 informe['documentos'] += len(nuevos)
+                if 'estado' in informe:
+                    informe['estado'][e['id']] = {'modificado': e['metadatos'].get('modificado'), 'leida': ahora}
             except HTTPError as error:
                 bloqueada = error.code in (403, 429)
                 informe['fallidas'].append({'id': e['id'], 'motivo': f'HTTP {error.code}'})
@@ -205,6 +231,8 @@ def completar_fichas(eventos, obtener, conocidas=(), previos=None):
                 if 'presupuesto' in str(error):
                     raise
                 informe['fallidas'].append({'id': e['id'], 'motivo': f'{type(error).__name__}: {error}'[:200]})
+            if nuevos is None and 'estado' in informe:
+                informe['estado'].pop(e['id'], None)
         meta = e['metadatos']
         presentes = {(d['url'], d['rol']) for d in meta['documentos']}
         previa = anteriores.get(e['id'], anteriores.get((previos or {}).get(e['id']), []))
