@@ -147,6 +147,13 @@ class Coincidencias(unittest.TestCase):
         self.assertEqual({f['fuente'] for f in e['fuentes']}, {'rfea', 'fga', 'fca'})
         self.assertEqual(c.incidencias(n), [])
 
+    def test_un_alias_sin_grupo_no_une_grupos_distintos(self):
+        n = None
+        for fuente, nombre in (('fca', 'Campionat de Catalunya de Clubs A ST'), ('rfea', 'Campionat de Catalunya de Clubs ST'),
+                               ('wa', 'Campionat de Catalunya de Clubs B ST')):
+            n = atletismo.importar(n, entrada(fuente, fuente, nombre=nombre), AHORA)
+        self.assertEqual(sorted(len(e['fuentes']) for e in publicacion.proyectar(n)['eventos']), [1, 2])
+
     def test_misma_cita_se_importa_sin_registro_manual_y_conserva_id_al_cambiar_fecha(self):
         for fuentes in (('rfea', 'fga'), ('fga', 'rfea')):
             n = atletismo.importar(None, entrada(fuentes[0]), AHORA)
@@ -268,6 +275,8 @@ class Coincidencias(unittest.TestCase):
                          'revisar')
         for nombre, grupos in [('Clubs A ST', {'a'}), ('Clubes «B» Sub16', {'b'}), ('Clubs A i B', {'a', 'b'}),
                                ('Clubs A/B Sub14', {'a', 'b'}), ('Clubs Sub12 Masculí “A”', {'a'}),
+                               ('CLUBS A I B', {'a', 'b'}), ('Campionat de Catalunya de Clubs (1a Jornada Grup B)', {'b'}),
+                               ('European Champion Clubs Cup Group B', {'b'}), ('Grupo de trabajo', set()),
                                ('CLUBS B ST', {'b'}), ("Clubs d'Atletisme", set()), ("CLUBS D'ATLETISME", set()),
                                ('Clubs a l’aire lliure', set()), ('Clubs Absolut', set()),
                                ('Cross por Clubes', set()), ('Clubes mixto', set()), ('Trofeu «A»', set())]:

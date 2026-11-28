@@ -310,10 +310,12 @@ comparte identidad cuando hay un único candidato y:
 - coinciden fechas completas, sede y al menos tres palabras significativas,
   con Dice ≥ 0,90 y sin contradicciones de distancia, edad, edición, sexo,
   formato, modalidad, grupo de clubes ni conjunto/partes. El grupo es la letra
-  en mayúscula que sigue a «Clubs»/«Clubes» («Clubs A ST») o una letra sola
-  entre comillas («Clubs Sub12 Masculí “A”»); la «a» minúscula es preposición
-  («Clubs a l'aire lliure»). Los dos títulos tienen que escribirlo para
-  contradecirse, porque la comparación omite la «a».
+  en mayúscula que sigue a «Clubs»/«Clubes» o a «Grup»/«Grupo»/«Group»
+  («Clubs A ST», «CLUBS A I B», «Jornada Grup B») o, en un título de clubes,
+  una letra sola entre comillas («Clubs Sub12 Masculí “A”»); la «a» minúscula
+  es preposición («Clubs a l'aire lliure»). Los dos títulos tienen que
+  escribirlo para contradecirse, porque la comparación omite la «a»; pero un
+  alias sin grupo no une con una identidad cuyo otro alias escribe otro grupo.
 
 El alcance solo limita (decisión del 4/11/2026): dos alcances acreditados y
 distintos nunca se unen solos y van a revisión, marcados `dentro_de` o

@@ -48,19 +48,21 @@ def nombre_comparable(texto):
 
 
 def grupos_clubes(texto):
-    """Letras de grupo de clubes del título: «Clubs A ST», «Clubs A i B», «Clubs Sub12 Masculí “A”».
+    """Letras de grupo del título: «Clubs A ST», «CLUBS A I B», «Clubs Sub12 Masculí “A”», «Grup B».
 
     `normalizar` omite la «a», que suele ser preposición o artículo («Clubs a
-    l'aire lliure»): tras «clubs»/«clubes» solo cuenta en mayúscula, y en otro
-    sitio, sola entre comillas. Un título sin grupo devuelve un conjunto vacío.
+    l'aire lliure»): tras «clubs»/«clubes» o «grup»/«grupo»/«group» solo cuenta
+    en mayúscula; en otro sitio de un título de clubes, sola entre comillas.
+    Un título sin grupo devuelve un conjunto vacío.
     """
     s = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
-    if not re.search(r'(?i)\bclub(?:s|es)\b', s):
-        return frozenset()
     letra = r'[«"“‘\']?[A-D][»"”’\']?'
-    tras = re.search(rf'\b(?i:club(?:s|es))\s+((?:{letra}\s*(?:i|y|e|/|-)\s*)*{letra})(?![\w\'’])', s)
-    citadas = re.findall(r'[«"“‘\']\s*([A-D])\s*[»"”’\']', s)
-    return frozenset(g.lower() for g in (re.findall('[A-D]', tras[1]) if tras else []) + citadas)
+    serie = rf'((?:{letra}\s*(?:[iIyYeE]|/|-)\s*)*{letra})(?![\w\'’])'
+    grupos = [m[1] for m in re.finditer(rf'\b(?i:grup|grupo|group)\s+{serie}', s)]
+    if re.search(r'(?i)\bclub(?:s|es)\b', s):
+        grupos += [m[1] for m in re.finditer(rf'\b(?i:club(?:s|es))\s+{serie}', s)]
+        grupos += re.findall(r'[«"“‘\']\s*([A-D])\s*[»"”’\']', s)
+    return frozenset(g.lower() for texto in grupos for g in re.findall('[A-D]', texto))
 
 
 @lru_cache(maxsize=1)
@@ -369,7 +371,10 @@ def decidir(fuente, evento, conocidos):
     automaticos = [c for c in candidatos if c['comparacion']['estado'] == 'automatica']
     # Una sola identidad candidata y ninguna variante ambigua. No elegir el
     # parecido mayor cuando varias competiciones pueden corresponder a la cita.
-    if len(destinos) == 1 and automaticos and all(not c['cita']['lectura_ambigua'] and c['cita']['grupo'] for c in candidatos):
+    # Un alias sin grupo no une con una identidad cuyo otro alias escribe otro grupo.
+    contradicha = any('grupos de clubes diferentes' in c['comparacion']['motivos'] for c in candidatos)
+    if (len(destinos) == 1 and automaticos and not contradicha
+            and all(not c['cita']['lectura_ambigua'] and c['cita']['grupo'] for c in candidatos)):
         elegido = automaticos[0]
         destino = elegido['cita']['destino']
         if not any(distribucion(c['fuente'], c['id']) == distribucion(fuente, evento['id']) and c['destino'] == destino and c['id'] != str(evento['id'])
