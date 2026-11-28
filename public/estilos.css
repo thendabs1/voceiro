@@ -439,6 +439,9 @@
   }
   .grupo-item:hover{background:var(--quote-bg)}
   .grupo-item input{accent-color:var(--accent); width:1.1em; height:1.1em}
+  /* Con «todas las fuentes» los grupos no se aplican (16-medios.js). */
+  .grupo-item:has(input:disabled), .grupo-cat-toggle-wrap:has(input:disabled){opacity:.55; cursor:default}
+  .grupo-item:has(input:disabled):hover{background:none}
   .grupo-item .flag{
     font-size:.85em; color:var(--accent); opacity:.7;
     margin-left:auto; padding-left:6px;
@@ -1799,9 +1802,11 @@
     padding:4px 8px 4px 2px; border:none; background:transparent; color:var(--accent);
     font-size:.85em; flex-shrink:0;
   }
+  /* Columna de lectura: al ensanchar el panel no se alargan las líneas. */
+  .aj-pagina{ max-width:40em; }
   .aj-pagina[hidden]{ display:none; }
   .aj-cuerpo h3:first-child{ border-top:none; padding-top:0; margin-top:0; }
-  .aj-hint{ font-size:.78em; color:var(--muted); margin:0 0 8px; line-height:1.45; }
+  .aj-hint{ font-size:.78em; color:var(--muted); margin:0 0 8px; line-height:1.5; }
   /* Hueco donde el lector pinta su panel de ajustes (página Lector) */
   .aj-lector-panel{ margin-top:12px; font-size:16px; }
   .sync-acciones{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
@@ -1842,18 +1847,22 @@
   .aj-nuevo{ font-size:.8em; }
 
   /* Un modo */
-  .aj-modo-cab{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; font-size:.95em; }
+  .aj-modo-cab{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:20px; font-size:.95em; }
+  /* Más aire entre grupos que dentro de ellos: la regla se separa de los bloques. */
+  #aj-regla-hint{ margin-bottom:20px; }
   .aj-modo-cab .aj-activo{ font-size:.72em; }
   .aj-pista{
     margin:0 0 12px; padding:10px 12px; border-radius:6px;
     background:var(--save-bg); color:var(--fg); font-size:.75em; line-height:1.5;
   }
-  .aj-bloque{ border:1px solid var(--border); border-radius:8px; margin-bottom:10px; padding:0 14px 14px; }
+  /* Acordeón: líneas entre secciones en vez de tarjetas, que dentro ya
+     tienen cajas propias (lista de medios, grupos). */
+  .aj-bloque{ border-top:1px solid var(--border); padding:0 0 20px; }
   .aj-bloque:not([open]){ padding-bottom:0; }
   .aj-bloque > summary{
     display:flex; align-items:center; gap:8px;
-    margin:0 -14px; padding:12px 14px; cursor:pointer; list-style:none;
-    font-size:.82em; font-weight:700;
+    padding:16px 0; cursor:pointer; list-style:none;
+    font-size:.92em; font-weight:700;
   }
   .aj-bloque > summary::-webkit-details-marker{ display:none; }
   .aj-bloque > summary::after{
@@ -1867,7 +1876,8 @@
   .aj-pegar{ margin:8px 0; }
   .aj-pegar > summary{ cursor:pointer; color:var(--save); font-size:.75em; font-weight:600; }
   .aj-resumen{ margin-top:6px; }
-  .aj-zona-peligro{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:16px; }
+  .aj-zona-peligro{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
+    padding-top:20px; border-top:1px solid var(--border); }
   .aj-zona-peligro button{ font-size:.75em; }
   .aj-zona-peligro button.danger{ color:var(--block); border-color:var(--block); }
   .aj-zona-peligro button.danger:hover{ background:var(--block-bg); }
@@ -1877,7 +1887,7 @@
     display:flex; flex-direction:column; gap:2px;
     padding:10px 12px; margin-bottom:8px;
     background:var(--quote-bg); border:1px solid var(--border); border-radius:6px;
-    font-size:.78em;
+    font-size:.85em;
   }
   .aj-radios-tit{ font-weight:600; margin-bottom:4px; }
   .aj-radios label{ display:flex; align-items:flex-start; gap:8px; padding:3px 0; cursor:pointer; }
@@ -1904,8 +1914,8 @@
   @container ajustes (max-width: 520px){
     .ctrl-medios{ grid-template-columns:minmax(0, 1fr); }
     .aj-bloque > summary{ flex-wrap:wrap; }
-    .aj-bloque .aj-n{ flex-basis:100%; font-size:.9em; }
-    .aj-bloque > summary::after{ position:absolute; right:16px; top:18px; }
+    .aj-bloque .aj-n{ font-size:.9em; }
+    .aj-bloque > summary::after{ position:absolute; right:6px; top:22px; }
     .aj-bloque > summary{ position:relative; padding-right:36px; }
     .backup-box .msg{ min-width:0; flex-basis:100%; }
     .aj-modo-fila{ flex-wrap:wrap; }
@@ -1913,8 +1923,6 @@
   @container ajustes (max-width: 400px){
     .medio-fila{ grid-template-columns:minmax(0, 1fr); }
     .aj-atras span{ display:none; }
-    .aj-bloque{ padding-left:10px; padding-right:10px; }
-    .aj-bloque > summary{ margin-left:-10px; margin-right:-10px; padding-left:10px; }
     .list-grupos{ padding:4px; }
   }
 
@@ -1949,8 +1957,15 @@
 
   /* Asistente de modos: los controles mantienen el tamaño del panel. */
   #btn-asistente-modo{ margin-bottom:8px; }
-  .as-campo{ display:flex; flex-direction:column; gap:6px; margin:12px 0; font-size:.85em; }
-  .as-campo :is(input, select, textarea){ width:100%; min-width:0; box-sizing:border-box; font:inherit;
+  /* Jerarquía: pregunta del paso > etiquetas > controles > ayudas. */
+  #asistente-modo > .aj-hint:first-child{ margin-bottom:4px; }
+  #asistente-modo h3{
+    margin:0 0 10px; padding:0; border:0;
+    font-size:1.1em; letter-spacing:0; text-transform:none; color:var(--fg);
+  }
+  #asistente-modo .aj-radios{ margin:12px 0 16px; }
+  .as-campo{ display:flex; flex-direction:column; gap:6px; margin:16px 0; font-size:.85em; font-weight:600; }
+  .as-campo :is(input, select, textarea){ width:100%; min-width:0; box-sizing:border-box; font:inherit; font-weight:400;
     padding:9px 10px; border:1px solid var(--btn-border); border-radius:6px; background:var(--bg); color:var(--fg); }
   .as-campo textarea{ min-height:120px; }
   .as-acciones{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; margin-top:12px; }

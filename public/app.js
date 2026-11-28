@@ -12,38 +12,38 @@ import {
   normStrict,
   normDomain,
   tokenizeQuery,
-} from './parser.js?v=4782078050';
+} from './parser.js?v=2fce3d2e79';
 // Núcleo del buscador (shared/busqueda/): una sola definición de qué casa.
-import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=4782078050';
-import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=4782078050';
-import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=4782078050';
-import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=4782078050';
-import { comparador } from './busqueda/orden.js?v=4782078050';
+import { interpretarConsulta, paraPrensa } from './busqueda/consulta.js?v=2fce3d2e79';
+import { coincide, palabrasDe, rangosResaltado } from './busqueda/texto.js?v=2fce3d2e79';
+import { compilarTemas, temasQueCasan, compiladoDeTemas, etiquetaVisible } from './busqueda/temas.js?v=2fce3d2e79';
+import { normalizarRegla, compilarRegla } from './busqueda/reglas.js?v=2fce3d2e79';
+import { comparador } from './busqueda/orden.js?v=2fce3d2e79';
 // Datos compartidos con el lector (shared/sync/): una regla de fusión.
 import {
   normalizeUrlForMatch, fusionarPendientes, fusionarPerfil, limpiarPerfil,
   fusionarLeidas, fusionarModos, masReciente, huella, huellaModo,
   CAMPOS_PERFIL, LEIDAS_MAX, limpiarColores, CLAVES_COLORES,
-} from './sync/fusion.js?v=4782078050';
-import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=4782078050';
+} from './sync/fusion.js?v=2fce3d2e79';
+import { paletaPersonalizada, contraste, VARS_PERSONALIZADAS } from './tema/personalizado.js?v=2fce3d2e79';
 // Sincronización entre dispositivos (cliente y código; servidor: workers/cf-sync).
-import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=4782078050';
-import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=4782078050';
+import { crearCliente, SERVIDORES_SYNC } from './sync/cliente.js?v=2fce3d2e79';
+import { generarCodigo, limpiarCodigo, formatearCodigo } from './sync/cripto.js?v=2fce3d2e79';
 // El tiempo (eltiempo:): búsqueda de municipios; la lista se importa al usarla.
-import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=4782078050';
+import { indexar, sugerirMunicipios, municipiosExactos, provinciaDe } from './tiempo/lugares.js?v=2fce3d2e79';
 import {
   PESO, comunidadDeZona, zonaHorariaAviso, empezado,
   filtrarAvisos, agruparAvisos,
-} from './tiempo/avisos.js?v=4782078050';
+} from './tiempo/avisos.js?v=2fce3d2e79';
 
-import { I18N, traducir } from './idiomas/index.js?v=4782078050';
+import { I18N, traducir } from './idiomas/index.js?v=2fce3d2e79';
 // Consultas puntuales (libro:, pelicula:…): competiciones con ficha en ESPN.
-import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=4782078050';
-import { AMBITOS, leerConsultaCalendario } from './calendario/consulta.js?v=4782078050';
-import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=4782078050';
-import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=4782078050';
+import { ESPN, PREFIJOS_CONSULTAS, admiteConsultaESPN, MOTOR, admiteConsultaMotor, destinoResultados } from './consultas/registro.js?v=2fce3d2e79';
+import { AMBITOS, leerConsultaCalendario } from './calendario/consulta.js?v=2fce3d2e79';
+import { fechaValida, sumarDiasCalendario, diaEnZona, extremoVisible, ultimoDiaIncluido, ventanaCalendario, moverFecha } from './calendario/fechas.js?v=2fce3d2e79';
+import { nombresSesion, nombresEvento, enMinusculas } from './calendario/nombres.js?v=2fce3d2e79';
 // Comunidades y provincias para el «dónde» del calendario (los municipios, con el tiempo).
-import { ADMINISTRACION } from './territorios/administracion.js?v=4782078050';
+import { ADMINISTRACION } from './territorios/administracion.js?v=2fce3d2e79';
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
@@ -1953,7 +1953,7 @@ async function alternarQr(){
     return;
   }
   try {
-    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=4782078050');
+    const { default: qrcode } = await import('./vendor/qrcode-1.4.4.js?v=2fce3d2e79');
     const qr = qrcode(0, 'M');
     qr.addData(enlaceSync());
     qr.make();
@@ -7106,7 +7106,7 @@ function cargarTiempoActivo(){
 // La lista de municipios (~90 KB) solo se descarga la primera vez que hace falta.
 function municipiosTiempo(){
   if (!TIEMPO.carga){
-    TIEMPO.carga = import('./tiempo/municipios.js?v=4782078050')
+    TIEMPO.carga = import('./tiempo/municipios.js?v=2fce3d2e79')
       .then(m => (TIEMPO.indice = indexar(m.MUNICIPIOS)))
       .catch(e => { TIEMPO.carga = null; throw e; });
   }
@@ -7917,6 +7917,8 @@ function renderListaGrupos(p){
   const afin   = gruposAfinesAlIdioma();
   const gSet   = new Set(p.grupos);
   const { buckets, supers } = bucketPorSuper(grupos, g => g);
+  // Con «todas» los grupos no cuentan: se desactivan sin perder lo marcado.
+  const inactivo = normalizarRegla(p.regla)?.fuentes === 'todas' ? 'disabled' : '';
 
   let html = '';
   supers.forEach(s => {
@@ -7931,7 +7933,7 @@ function renderListaGrupos(p){
         <label class="grupo-cat-toggle-wrap">
           <input type="checkbox" class="grupo-cat-toggle"
                 ${todos ? 'checked' : ''}
-                ${algunos ? 'data-indeterminate="1"' : ''}>
+                ${algunos ? 'data-indeterminate="1"' : ''} ${inactivo}>
           <strong>${escapeHtml(s)}</strong>
           <span class="grupo-cat-count">${enCat.length}</span>
         </label>
@@ -7939,7 +7941,7 @@ function renderListaGrupos(p){
     }
     enCat.forEach(g => {
       html += `<label class="grupo-item" data-cat="${escapeHtml(s)}">
-        <input type="checkbox" data-grupo="${escapeHtml(g)}" ${gSet.has(g) ? 'checked' : ''}>
+        <input type="checkbox" data-grupo="${escapeHtml(g)}" ${gSet.has(g) ? 'checked' : ''} ${inactivo}>
         <span>${escapeHtml(g)}</span>
         ${afin.has(g) ? '<span class="flag" title="idioma">●</span>' : ''}
       </label>`;
@@ -7965,7 +7967,10 @@ let MEDIOS_CATS_MODO = null;
 let MEDIOS_CATS_ABIERTAS = new Set();
 function medioActivoEnModo(m, modo){
   const estado = getOverride(m.dominio, modo);
-  return overrideIncluye(estado) || (estado !== 'ignore' && (modo?.grupos || []).includes(m.grupo));
+  if (estado === 'ignore') return false;
+  // Con «todas» entra cualquier medio no bloqueado (shared/busqueda/reglas.js).
+  return normalizarRegla(modo?.regla)?.fuentes === 'todas'
+    || overrideIncluye(estado) || (modo?.grupos || []).includes(m.grupo);
 }
 function ordenarCategoriasMedios(medios, modo){
   const categorias = new Map();
@@ -8366,11 +8371,14 @@ function ajVaciarLector(){
    ═══════════════════════════════════════════════════════════════ */
 function resumenModo(p){
   if (!presetTieneReglas(p)) return t('ajModoVacio');
-  return t('ajResumenModo', {
-    t: compilarTemas(p.palabras || []).length,
-    g: (p.grupos || []).length,
-    m: Object.keys(p.overrides || {}).length,
-  });
+  const ov = Object.values(p.overrides || {});
+  const temas = compilarTemas(p.palabras || []).length;
+  const bloqueados = ov.filter(v => v === 'ignore').length;
+  // «medios» son los que suman como fuente; los bloqueados van aparte.
+  const base = normalizarRegla(p.regla)?.fuentes === 'todas'
+    ? t('ajResumenModoTodas', { t: temas })
+    : t('ajResumenModo', { t: temas, g: (p.grupos || []).length, m: ov.filter(overrideIncluye).length });
+  return base + (bloqueados ? t('ajResumenBloqueados', { n: bloqueados }) : '');
 }
 function renderListaModos(){
   const cont = $('#lista-modos');
@@ -8402,12 +8410,21 @@ function ajEditarModo(id){
   else ajEmpujar('modo');
 }
 
+// Ayudas que cambian con la regla: sin ella (modos antiguos) fuentes y
+// temas se suman; con ella se cruzan, y con «todas» los grupos no cuentan.
+function clavePistaRegla(base, regla){
+  if (!regla) return base;
+  return base + (regla.fuentes === 'todas' ? 'Todas' : 'Elegidas');
+}
+
 function pintarModo(){
   const modo = modoEnPanel();
   if (!modo) return;
   const regla = normalizarRegla(modo.regla);
   $('#aj-regla').value = regla ? regla.fuentes : 'sumar';
   $('#aj-regla-hint').textContent = t(regla ? 'asRegla' + (regla.fuentes === 'todas' ? 'Todas' : 'Elegidas') : 'asReglaSumar');
+  $('#cfg-medios-hint').textContent = t(clavePistaRegla('cfgMediosHint', regla));
+  $('#cfg-grupos-hint').textContent = t(clavePistaRegla('cfgGruposHint', regla));
   const activo = PRESET_ACTIVO && modo.id === PRESETS.activo;
   const estado = $('#aj-modo-estado');
   estado.textContent = t('ajModoActivo');
@@ -10853,29 +10870,6 @@ function wireResultadosDelegation(){
 let VISTAS_OBSERVER = null;
 const VISTAS_TIMERS = new WeakMap();
 
-const VISTA_SCROLL_MS = 2500;   // 2,5 s visible antes de marcar
-
-function marcarVista(art, n){
-  const tmr = VISTAS_TIMERS.get(art);
-  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
-  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
-  marcarVistaLocal(n.enlace);
-  art.classList.add('vista');
-  persistirVistas();
-}
-
-function programarVista(art, n, ms){
-  if (art.classList.contains('vista') || art.classList.contains('leida')) return;
-  if (VISTAS_TIMERS.has(art)) return;
-  const tmr = setTimeout(() => marcarVista(art, n), ms);
-  VISTAS_TIMERS.set(art, tmr);
-}
-
-function cancelarVista(art){
-  const tmr = VISTAS_TIMERS.get(art);
-  if (tmr){ clearTimeout(tmr); VISTAS_TIMERS.delete(art); }
-}
-
 const VISTAS_SEEN = new WeakSet();
 
 
@@ -11016,7 +11010,6 @@ function aplicarTextos(){
   $('#ov-pegar-aplicar').textContent = t('cfgOverrideAplicar');
   const det = $('#ov-pegar-wrap summary');
   if (det) det.textContent = t('cfgOverridePegar');
-  $('#cfg-medios-hint').textContent = t('cfgMediosHint');
   $('#filtro-medio').placeholder = t('cfgBuscarMedio');
   $('#filtro-medio').setAttribute('aria-label', t('cfgBuscarMedio'));
   $('#filtro-grupo-medio').setAttribute('aria-label', t('cfgTodosGrupos'));
@@ -11033,7 +11026,6 @@ function aplicarTextos(){
   $('#ov-pegar').setAttribute('aria-label', t('cfgOverridePegar'));
   if ($('#filtro-grupo-medio').options[0]) $('#filtro-grupo-medio').options[0].text = t('cfgTodosGrupos');
   $('#cfg-grupos').textContent = t('cfgGrupos');
-  $('#cfg-grupos-hint').textContent = t('cfgGruposHint');
 
   // Lectura
   $('#ac-tema').textContent = t('acTema');
