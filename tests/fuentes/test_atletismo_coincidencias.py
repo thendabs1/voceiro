@@ -153,6 +153,25 @@ class Coincidencias(unittest.TestCase):
                                ('wa', 'Campionat de Catalunya de Clubs B ST')):
             n = atletismo.importar(n, entrada(fuente, fuente, nombre=nombre), AHORA)
         self.assertEqual(sorted(len(e['fuentes']) for e in publicacion.proyectar(n)['eventos']), [1, 2])
+        # Tampoco si el alias que escribe el grupo tiene ahora otras fechas.
+        n = None
+        for hora, (fuente, nombre, dia) in enumerate((('fca', 'Campionat de Catalunya de Clubs A ST', '2026-11-01'),
+                                                      ('rfea', 'Campionat de Catalunya de Clubs ST', '2026-11-01'),
+                                                      ('fca', 'Campionat de Catalunya de Clubs A ST', '2026-11-08'),
+                                                      ('wa', 'Campionat de Catalunya de Clubs B ST', '2026-11-01'))):
+            n = atletismo.importar(n, entrada(fuente, fuente, nombre=nombre, inicio=dia, fin=dia),
+                                   f'2026-11-02T2{hora}:00:00+01:00')
+        wa, = [e for e in publicacion.proyectar(n)['eventos'] if 'wa' in {f['fuente'] for f in e['fuentes']}]
+        self.assertEqual({f['fuente'] for f in wa['fuentes']}, {'wa'})
+
+    def test_una_conciliacion_revisada_une_aunque_los_grupos_difieran(self):
+        revision = {'id': 'clubs', 'referencias': {'fca': 'fca', 'wa': 'wa'}, 'conservar': 'fca',
+                    'revision': {'fecha': '2026-11-02', 'criterio': 'Grupo mal rotulado', 'evidencias': ['https://example.org']}}
+        with patch.object(c, 'revisiones_identidad', return_value=[revision]):
+            n = atletismo.importar(None, entrada('fca', 'fca', nombre='Campionat de Catalunya de Clubs A ST'), AHORA)
+            n = atletismo.importar(n, entrada('wa', 'wa', nombre='Campionat de Catalunya de Clubs B ST'), AHORA)
+            e, = publicacion.proyectar(n)['eventos']
+        self.assertEqual({f['fuente'] for f in e['fuentes']}, {'fca', 'wa'})
 
     def test_misma_cita_se_importa_sin_registro_manual_y_conserva_id_al_cambiar_fecha(self):
         for fuentes in (('rfea', 'fga'), ('fga', 'rfea')):

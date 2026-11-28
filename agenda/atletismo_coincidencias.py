@@ -371,13 +371,15 @@ def decidir(fuente, evento, conocidos):
     automaticos = [c for c in candidatos if c['comparacion']['estado'] == 'automatica']
     # Una sola identidad candidata y ninguna variante ambigua. No elegir el
     # parecido mayor cuando varias competiciones pueden corresponder a la cita.
-    # Un alias sin grupo no une con una identidad cuyo otro alias escribe otro grupo.
-    contradicha = any('grupos de clubes diferentes' in c['comparacion']['motivos'] for c in candidatos)
-    if (len(destinos) == 1 and automaticos and not contradicha
-            and all(not c['cita']['lectura_ambigua'] and c['cita']['grupo'] for c in candidatos)):
+    if len(destinos) == 1 and automaticos and all(not c['cita']['lectura_ambigua'] and c['cita']['grupo'] for c in candidatos):
         elegido = automaticos[0]
         destino = elegido['cita']['destino']
-        if not any(distribucion(c['fuente'], c['id']) == distribucion(fuente, evento['id']) and c['destino'] == destino and c['id'] != str(evento['id'])
+        # Por parecido de nombre, un alias sin grupo no une con una identidad cuyo
+        # otro alias, con estas fechas o no, escribe otro grupo. Enlace y revisión mandan.
+        grupo = grupos_clubes(evento['nombre'])
+        contradicha = grupo and not (elegido['comparacion']['enlace_directo'] or elegido['comparacion'].get('revision_identidad')) \
+            and any(grupos_clubes(c['nombre']) not in (frozenset(), grupo) for c in conocidos if c['destino'] == destino)
+        if not contradicha and not any(distribucion(c['fuente'], c['id']) == distribucion(fuente, evento['id']) and c['destino'] == destino and c['id'] != str(evento['id'])
                    for c in conocidos):
             return {'estado': 'automatica', **elegido}
     return {'estado': 'revisar' if candidatos else 'nueva', 'candidatos': candidatos}
