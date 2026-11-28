@@ -62,4 +62,4 @@ INVENTARIO_PATH   = 'public/datos/inventario.json'
 STATE_PATH        = 'state.json'
 # Relay del recolector: app de Deno Deploy enlazada a workers/deno-relay.
 # (El playground secret-worm-9453 es otro: lo usa el front para Google News.)
-DENO_RELAY_BASE = 'https://voceiro-relay-hzvcanr0wjdj.thendabs1.deno.net/rss?u='
+DENO_RELAY_BASE = 'https://voceiro-relay.thendabs1.deno.net/rss?u='
